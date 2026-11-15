@@ -102,7 +102,7 @@ class FileTextControllerDeepTest extends TestCase {
 
 	public function testFailuresAreLoggedAndAnsweredWithTheirOwnWording(): void {
 		$this->request->method('getParam')->willReturn(100);
-		$this->textExtractor->method('getExtractedText')->willThrowException(new \Exception('text fail'));
+		$this->textExtractor->method('readExtractedText')->willThrowException(new \Exception('text fail'));
 		$this->textExtractor->method('extractPendingFiles')->willThrowException(new \Exception('bulk fail'));
 		$this->textExtractor->method('getStats')->willThrowException(new \Exception('stats fail'));
 		$logged = [];

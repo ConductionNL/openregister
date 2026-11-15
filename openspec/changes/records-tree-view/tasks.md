@@ -3,7 +3,7 @@
 ## 1. Backend
 
 - [x] 1.1 `tree` presentation allowed only on a schema with `x-openregister-hierarchy`, config with label and extra fields. Verify: view save tests for accepted and refused.
-- [ ] 1.2 `_childCount=true` adding `@self.childCount` through one grouped count per page under the caller's RBAC. Verify: unit test asserts one query for a page of 50, API test on a department tree.
+- [x] 1.2 `_childCount=true` adding `@self.childCount` through one grouped count per page under the caller's RBAC. Verify: unit test asserts one query for a page of 50, API test on a department tree.
 - [ ] 1.3 Root request returns readable records with an unreadable parent, marked `@self.parentHidden`. Verify: API test with a hidden parent.
 
 ## 2. Interface

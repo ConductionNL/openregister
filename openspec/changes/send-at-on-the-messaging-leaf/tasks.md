@@ -8,6 +8,7 @@
 
 - [x] 2.1 Migration: `openregister_scheduled_messages` (channel, source, path, body, headers, object, author, send at, state, attempts, response, message id). — `Version1Date20261113190000`, plus `claimed_by`, `claimed_at`, `last_error`; read and written by `ScheduledMessageStore` (compare-and-set claim on id, state and attempts).
 - [ ] 2.2 `sendAt` and `object` on the send endpoints; list and cancel routes; audit entries on the object.
+      Built so far: `sendAt` and `object: {register, schema, id}` on `POST /api/integrations/{sms,whatsapp}/send` (202 with the stored message, 400 for a past or unreadable `sendAt`, 404 for an object the caller may not read, 503 without the scheduler, never sent now instead); `GET /api/objects/{register}/{schema}/{id}/messages` and `POST .../messages/{messageId}/cancel` (author or `update`, compare-and-set so a cancel cannot cross a claim, 409 once sent, parked or cancelled); scheduling and cancelling audited on the object (`ScheduledMessageScheduler`, `ScheduledMessagesController`). Left: the send and fail audit entries, written by the sweep, which has no object loader yet.
 - [x] 2.3 `ScheduledMessageSweepJob`, registered in `appinfo/info.xml`. — done: every five minutes, `ScheduledMessageSweep` applies `ScheduledMessagePolicy` and dispatches through `MessageDispatcherInterface`; states and attempt limit are the policy's (pending, claimed, sent, cancelled, parked; 5). **The
       RULES it obeys are built and tested** in
       `lib/Service/Notification/ScheduledMessagePolicy.php`; the job, the

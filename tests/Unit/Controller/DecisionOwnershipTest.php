@@ -91,6 +91,11 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\Decision\GivenDecision
  * @uses \OCA\OpenRegister\Service\Decision\RelationDecisionStores
  * @uses \OCA\OpenRegister\Service\Decision\ReviewPolicyFileOwners
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\MagicMappingOptions
+ * @uses   \OCA\OpenRegister\Service\Object\PermissionCheckOptions
+ * @uses   \OCA\OpenRegister\Service\Settings\EntityPatternSetSetting
  */
 class DecisionOwnershipTest extends TestCase {
 

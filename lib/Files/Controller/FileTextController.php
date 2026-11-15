@@ -188,6 +188,7 @@ class FileTextController extends Controller {
 	 * @return JSONResponse JSON response with file text or error
 	 *
 	 * @spec openspec/specs/api-test-coverage/spec.md
+	 * @spec openspec/changes/search-file-text-and-vector-facade/tasks.md#task-1.1
 	 */
 	public function getFileText(int $fileId): JSONResponse {
 		// IDOR guard: the text of a file is its content, so it is served only
@@ -195,30 +196,36 @@ class FileTextController extends Controller {
 		// does not tell a stranger which file ids exist.
 		if ($this->hasFileAccess(fileId: $fileId) === false) {
 			return new JSONResponse(
-				data: ['success' => false, 'message' => 'File not found or access denied', 'file_id' => $fileId],
+				data: ['success' => false, 'message' => 'File not found.', 'fileId' => $fileId, 'file_id' => $fileId],
 				statusCode: 404
 			);
 		}
 
 		try {
-			$text = $this->textExtractor->getExtractedText(fileId: $fileId);
-			if ($text === null) {
+			$read = $this->textExtractor->readExtractedText(fileId: $fileId);
+			if ($read === null) {
 				return new JSONResponse(
 					data: [
 						'success' => false,
-						'message' => 'No text has been extracted from this file yet. Extract it with POST /api/files/{fileId}/extract.',
+						'message' => 'No text has been extracted from this file yet.',
+						'fileId'  => $fileId,
 						'file_id' => $fileId,
 					],
 					statusCode: 404
 				);
 			}
 
+			// `fileId`, `text`, `chunkCount` and `extractedAt` are the published
+			// shape; `file_id` and `length` stay for callers of the earlier answer.
 			return new JSONResponse(
 				data: [
-					'success' => true,
-					'file_id' => $fileId,
-					'text' => $text,
-					'length' => strlen($text),
+					'success'     => true,
+					'fileId'      => $fileId,
+					'text'        => $read['text'],
+					'chunkCount'  => $read['chunkCount'],
+					'extractedAt' => $read['extractedAt'],
+					'file_id'     => $fileId,
+					'length'      => strlen($read['text']),
 				]
 			);
 		} catch (\Exception $e) {

@@ -21,7 +21,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Search;
 
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Service\Reference\ReferenceCardDeclaration;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -36,11 +38,13 @@ use Throwable;
 class SearchResultDeclarations {
 
 	/**
-	 * Schema id => its declaration, or null when it declares none.
+	 * Schema id => the schema, or null when it could not be loaded.
 	 *
-	 * @var array<int, SearchResultDeclaration|null>
+	 * One load serves both declarations a result reads.
+	 *
+	 * @var array<int, Schema|null>
 	 */
-	private array $cache = [];
+	private array $schemas = [];
 
 	/**
 	 * Constructor.
@@ -64,29 +68,65 @@ class SearchResultDeclarations {
 	 * @spec openspec/changes/platform-search-provider/specs/unified-search-provider/spec.md#requirement-a-schema-declares-its-result-title-subline-and-ordering-date-req-psp-002
 	 */
 	public function forSchema(int $schemaId): ?SearchResultDeclaration {
+		$schema = $this->schemaOf(schemaId: $schemaId);
+		if ($schema === null) {
+			return null;
+		}
+
+		return SearchResultDeclaration::of(schema: $schema);
+	}//end forSchema()
+
+	/**
+	 * The reference card one schema declares, or null.
+	 *
+	 * The smart picker offers objects through this search, so a result reads
+	 * the same card a pasted link renders: a schema that declares a card but
+	 * no search result shows the card's title and summary in the picker.
+	 *
+	 * @param int $schemaId The schema.
+	 *
+	 * @return ReferenceCardDeclaration|null The card.
+	 *
+	 * @spec openspec/changes/platform-reference-provider/specs/schema-scoped-reference-providers/spec.md#requirement-a-schema-declares-what-its-reference-card-shows-req-prp-002
+	 */
+	public function cardFor(int $schemaId): ?ReferenceCardDeclaration {
+		$schema = $this->schemaOf(schemaId: $schemaId);
+		if ($schema === null) {
+			return null;
+		}
+
+		return ReferenceCardDeclaration::of(schema: $schema);
+	}//end cardFor()
+
+	/**
+	 * The schema, loaded once, or null when it is not there or cannot be loaded.
+	 *
+	 * @param int $schemaId The schema.
+	 *
+	 * @return Schema|null The schema.
+	 */
+	private function schemaOf(int $schemaId): ?Schema {
 		if ($schemaId <= 0) {
 			return null;
 		}
 
-		if (array_key_exists($schemaId, $this->cache) === false) {
-			$this->cache[$schemaId] = $this->load(schemaId: $schemaId);
+		if (array_key_exists($schemaId, $this->schemas) === false) {
+			$this->schemas[$schemaId] = $this->load(schemaId: $schemaId);
 		}
 
-		return $this->cache[$schemaId];
-	}//end forSchema()
+		return $this->schemas[$schemaId];
+	}//end schemaOf()
 
 	/**
-	 * Load a schema's declaration.
+	 * Load a schema.
 	 *
 	 * @param int $schemaId The schema.
 	 *
-	 * @return SearchResultDeclaration|null The declaration.
+	 * @return Schema|null The schema.
 	 */
-	private function load(int $schemaId): ?SearchResultDeclaration {
+	private function load(int $schemaId): ?Schema {
 		try {
-			return SearchResultDeclaration::of(
-				schema: $this->schemaMapper->find($schemaId, _multitenancy: false, _rbac: false)
-			);
+			return $this->schemaMapper->find($schemaId, _multitenancy: false, _rbac: false);
 		} catch (Throwable $e) {
 			$this->logger->debug(
 				message: '[SearchResultDeclarations] Search result declaration not resolved',

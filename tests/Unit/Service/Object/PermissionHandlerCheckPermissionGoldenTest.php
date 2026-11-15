@@ -58,6 +58,8 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\Rbac\McpScope
  * @uses \OCA\OpenRegister\Service\Rbac\ObjectScopeResolver
  * @uses \OCA\OpenRegister\Service\SystemOperationContext
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation
+ * @uses \OCA\OpenRegister\Service\Rbac\UndecidablePosture
  */
 class PermissionHandlerCheckPermissionGoldenTest extends TestCase {
 

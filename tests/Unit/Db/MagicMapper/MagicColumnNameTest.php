@@ -34,6 +34,8 @@ use ReflectionClass;
  * @covers \OCA\OpenRegister\Db\MagicMapper
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicColumnSql
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicPgTrgmProbe
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicUnaccentProbe
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\SearchFolding
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicTableCreator
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicTableIndexer
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicBulkHandler

@@ -725,6 +725,18 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	protected ?string $identityKey = null;
 
 	/**
+	 * The object's resolved classification (`confidentiality-classification-primitive`):
+	 * tier, ground, releaseAt and released.
+	 *
+	 * Transient property populated by the render layer. Not persisted: the
+	 * classification is declared on the SCHEMA. Exposed in @self as
+	 * `confidentiality`, and omitted for a schema without the annotation.
+	 *
+	 * @var array<string, mixed>|null
+	 */
+	protected ?array $confidentiality = null;
+
+	/**
 	 * Whether the current user follows this object (`object-watchers`).
 	 *
 	 * Transient property populated by the render layer from
@@ -798,6 +810,17 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 * @var string|null
 	 */
 	protected ?string $viewedAt = null;
+
+	/**
+	 * How many children the reader may list under this object.
+	 *
+	 * Transient, set only on a `_childCount=true` page of a schema that
+	 * declares `x-openregister-hierarchy` (records-tree-view). Exposed in @self
+	 * as `childCount`, and absent on every other read.
+	 *
+	 * @var int|null
+	 */
+	protected ?int $childCount = null;
 
 	/**
 	 * What the reader may do with this object, as `{"update": bool, "<declared action>": bool}`.
@@ -1059,6 +1082,32 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	}//end setIdentityKey()
 
 	/**
+	 * Get the object's resolved classification, when set by the render layer.
+	 *
+	 * @return array<string, mixed>|null
+	 *
+	 * @spec openspec/changes/confidentiality-classification-primitive/specs/confidentiality-classification/spec.md
+	 */
+	public function getConfidentiality(): ?array {
+		return $this->confidentiality;
+	}//end getConfidentiality()
+
+	/**
+	 * Write the object's resolved classification.
+	 *
+	 * Surfaced in the @self envelope as `confidentiality` by getObjectArray().
+	 *
+	 * @param array<string, mixed>|null $confidentiality The tier, ground, releaseAt and released.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/confidentiality-classification-primitive/specs/confidentiality-classification/spec.md
+	 */
+	public function setConfidentiality(?array $confidentiality): void {
+		$this->confidentiality = $confidentiality;
+	}//end setConfidentiality()
+
+	/**
 	 * Write the current user's follow marker.
 	 *
 	 * Write-only on purpose: `mergeTransientRenderFields()` reads the property
@@ -1156,6 +1205,22 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	public function setViewedAt(?string $viewedAt): void {
 		$this->viewedAt = $viewedAt;
 	}//end setViewedAt()
+
+	/**
+	 * Write how many children the reader may list under this object.
+	 *
+	 * Write-only, like setViewedAt(): mergeTransientRenderFields() reads the
+	 * property directly. Surfaced in the @self envelope as `childCount`.
+	 *
+	 * @param int|null $childCount The number of readable children.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/records-tree-view/specs/saved-search-views/spec.md#requirement-the-tree-loads-one-level-at-a-time-with-child-counts
+	 */
+	public function setChildCount(?int $childCount): void {
+		$this->childCount = $childCount;
+	}//end setChildCount()
 
 	/**
 	 * Write what the reader may do with this object.
@@ -1664,6 +1729,9 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 		//   demands for this reader, absent when the schema declares none.
 		// - key: the identity values joined in declared order, absent when the
 		//   schema declares no identity (`modelling-composite-identity`).
+		// - confidentiality: the resolved tier, ground, releaseAt and released,
+		//   absent when the schema declares no confidentiality annotation
+		//   (`confidentiality-classification-primitive`).
 		// - watching, watcherCount: the reader's own follow state and the size
 		//   of the audience (`object-watchers`).
 		// - unread: whether the reader has seen this object since it last
@@ -1710,6 +1778,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 			'registry'                => $this->registryState,
 			'fieldRules'              => $this->fieldRules,
 			'key'                     => $this->identityKey,
+			'confidentiality'         => $this->confidentiality,
 		];
 	}//end renderedFields()
 
@@ -1726,6 +1795,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 			'watchNotify'             => $this->watchNotify,
 			'favourite'               => $this->watching,
 			'viewedAt'                => $this->viewedAt,
+			'childCount'              => $this->childCount,
 			'can'                     => $this->can,
 		];
 	}//end readerFields()

@@ -30,14 +30,14 @@
 
 ## 2. Reading
 
-- [ ] 2.1 `reveal` kind filter on the audit leaf; the processing-activity log
-      reads the rows as read events. **No longer blocked** now 1.2b writes the
-      rows; it is a read surface over an action that exists. PARTIAL: the
-      read-event half is in — `ReadEventVisibility` now treats the reveal
-      action (`property.revealed`) as a read of personal data, so a reveal row
-      is gated to the read-event groups and the processing-activity log reads
-      it as a read. The `reveal` kind filter on the audit page is a frontend
-      change and is still to do.
+- [x] 2.1 `reveal` kind filter on the audit leaf; the processing-activity log
+      reads the rows as read events. The read-event half: `ReadEventVisibility`
+      treats the reveal action (`property.revealed`) as a read of personal data,
+      so a reveal row is gated to the read-event groups and the
+      processing-activity log reads it as a read. The filter half: the audit
+      trail sidebar's action filter offers "Reveal" (`property.revealed`), which
+      the list endpoint already matches exactly, and the action column shows a
+      reveal with the read badge and icon.
 
 ## 3. Tests
 

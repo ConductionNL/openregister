@@ -93,6 +93,22 @@ final class RetentionEvaluatorTest extends TestCase {
 		self::assertSame([['role' => 'aanvrager', 'name' => 'Gemeente Zuiddrecht', 'id' => 'org-1']], $result['parties']);
 	}//end testDeclaredPartiesAreReadOffTheRow()
 
+	/**
+	 * @spec openspec/changes/archival-conformance/tasks.md#task-1.3
+	 */
+	public function testDeclaredContainmentListsThePartsOffTheRow(): void {
+		$result = $this->makeEvaluator()->evaluate(
+			annotation: ['retention' => ['default' => 'P30D'], 'containment' => 'onderdelen'],
+			row: ['onderdelen' => ['child-1', ['uuid' => 'child-2', 'naam' => 'Bijlage B']]],
+			createdAt: $this->created()
+		);
+
+		self::assertSame(
+			['property' => 'onderdelen', 'parts' => [['id' => 'child-1'], ['id' => 'child-2', 'name' => 'Bijlage B']]],
+			$result['containment']
+		);
+	}//end testDeclaredContainmentListsThePartsOffTheRow()
+
 	public function testAnUndeclaredFactIsAbsent(): void {
 		$result = $this->makeEvaluator()->evaluate(
 			annotation: ['retention' => ['default' => 'P30D']],
@@ -104,6 +120,7 @@ final class RetentionEvaluatorTest extends TestCase {
 		self::assertArrayNotHasKey('useRestriction', $result);
 		self::assertArrayNotHasKey('temporalCoverage', $result);
 		self::assertArrayNotHasKey('parties', $result);
+		self::assertArrayNotHasKey('containment', $result);
 	}//end testAnUndeclaredFactIsAbsent()
 
 	public function testTemporalCoverageIsAbsentWhenTheRowDoesNotCarryTheProperty(): void {

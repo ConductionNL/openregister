@@ -2487,12 +2487,23 @@ class MagicFacetHandler {
 		// NOTE: Even though MagicMapper's applyFuzzySearch() includes trigram % operator,
 		// in practice it seems to only use ILIKE. We match the actual behavior for consistency.
 		$platform = $this->db->getDatabasePlatform();
+		// The same accent folding as the search behind the facet, so a facet
+		// count stays equal to the number of results it narrows to.
+		$folding = $this->searchHandler?->searchFolding(query: $facet->baseQuery);
 
 		foreach ($searchableColumns as $column) {
-			if ($this->columnExists(tableName: $facet->tableName, columnName: $column) === true) {
-				$filter = new FacetColumnFilter(queryBuilder: $queryBuilder, columnName: $column);
-				$orConditions->add($filter->searchCondition(pattern: '%' . $searchTerm . '%', platform: $platform));
+			if ($this->columnExists(tableName: $facet->tableName, columnName: $column) === false) {
+				continue;
 			}
+
+			if ($folding !== null) {
+				$pattern = (string)$queryBuilder->createNamedParameter('%' . $searchTerm . '%');
+				$orConditions->add($queryBuilder->createFunction($folding->match(quotedColumn: $column, quotedPattern: $pattern, nullSafe: false)));
+				continue;
+			}
+
+			$filter = new FacetColumnFilter(queryBuilder: $queryBuilder, columnName: $column);
+			$orConditions->add($filter->searchCondition(pattern: '%' . $searchTerm . '%', platform: $platform));
 		}
 
 		if ($orConditions->count() > 0) {

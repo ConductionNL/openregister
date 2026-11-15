@@ -10334,6 +10334,9 @@
                       "    pm.expect(j.text).to.include('quarterly report');",
                       "    pm.expect(j.text).to.include('Pieter Bakker');",
                       "    pm.expect(j.length).to.eql(j.text.length);",
+                      "    pm.expect(j.fileId).to.eql(j.file_id);",
+                      "    pm.expect(j.chunkCount).to.be.at.least(1);",
+                      "    pm.expect(j).to.have.property('extractedAt');",
                       "});"
                     ]
                   }
@@ -10382,7 +10385,7 @@
                       "    pm.response.to.have.status(404);",
                       "    const j = pm.response.json();",
                       "    pm.expect(j.success, pm.response.text()).to.eql(false);",
-                      "    pm.expect(j.message).to.eql('File not found or access denied');",
+                      "    pm.expect(j.message).to.eql('File not found.');",
                       "    pm.expect(j).to.not.have.property('text');",
                       "});"
                     ]

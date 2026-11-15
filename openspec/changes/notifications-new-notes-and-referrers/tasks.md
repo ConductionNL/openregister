@@ -2,7 +2,7 @@
 
 ## 1. Note trigger
 
-- [ ] 1.1 `ObjectNoteAddedEvent` dispatched from `NoteService::createNoteAs()` after save. Verify: `NoteServiceTest` asserts one event with note id, actor and visibility.
+- [x] 1.1 `ObjectNoteAddedEvent` dispatched from `NoteService::createNoteAs()` after save. Verify: `NoteServiceTest` asserts one event with note id, actor and visibility. Built in `NoteService::postNote()` (what `createNoteAs()` became; `createNote()` and link-authored notes both go through it), verified by `tests/Unit/Service/NoteServiceNoteAddedEventTest.php`.
 - [ ] 1.2 `noteAdded` in the validator with the optional `visibility` key; the listener branch deferring to the dispatch job. Verify: `NotificationAnnotationValidatorTest` for valid, bad key and reserved app event; listener test.
 - [ ] 1.3 Dispatcher: matching, `note.author` and `note.excerpt`, author exclusion and the read filter. Verify: `AnnotationNotificationDispatcherTest` with a watcher, the author and a user without read.
 

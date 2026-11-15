@@ -175,6 +175,16 @@ describe('AuditTrailSideBar filters', () => {
 		expect(eventBus.emit).toHaveBeenCalledWith('audit-trail-filters-changed', expect.any(Object))
 	})
 
+	it('filters on reveals of sensitive properties and reads that filter back by its label', () => {
+		const vm = sidebar({ selectedActions: [{ value: 'read' }, { value: 'property.revealed' }] })
+		expect(vm.buildQueryFromState()).toMatchObject({ action: 'read,property.revealed' })
+
+		const back = sidebar({ $route: { path: '/audit-trails', query: { action: 'property.revealed' } } })
+		back.applyQueryParamsFromRoute()
+		expect(back.selectedActions).toEqual([{ label: 'Reveal', value: 'property.revealed' }])
+		expect(auditTrailStore.setAuditTrailFilters).toHaveBeenCalledWith(expect.objectContaining({ action: 'property.revealed' }))
+	})
+
 	it('ignores other routes and empty route values', () => {
 		const elsewhere = sidebar({ $route: { path: '/deleted', query: { object: 'x' } } })
 		elsewhere.applyQueryParamsFromRoute()

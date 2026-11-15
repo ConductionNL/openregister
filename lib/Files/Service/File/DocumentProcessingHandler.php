@@ -32,6 +32,8 @@ use OCA\OpenRegister\Files\Service\File\Pdf\RedactionPlan;
 use OCA\OpenRegister\Kernel\Contracts\StructurePreservation;
 use OCA\OpenRegister\Service\Anonymisation\PipelineSteps;
 use OCA\OpenRegister\Service\File\ImageRedactionService;
+use OCA\OpenRegister\Service\File\ImageRegionNotBurnableException;
+use OCA\OpenRegister\Service\File\OfficeMediaBurner;
 use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler;
 use OCA\OpenRegister\Files\Service\TextExtraction\PdfExtractor;
 use OCP\Files\File;
@@ -417,6 +419,12 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 			);
 		}
 
+		// The images inside a DOCX or ODT go through the image seam in the same
+		// call, so the output carries replaced text and burned images (REQ-AIS-004).
+		if (($node instanceof File) === true && OfficeMediaBurner::handles(mimeType: (string)$node->getMimeType()) === true) {
+			$this->burnOfficeImages(source: $node, output: $anonymizedFile);
+		}
+
 		// Flip the source's EntityRelation rows to `anonymized = 1` so the
 		// anonymised state is queryable downstream. Skip-aware (rows where
 		// `skip_anonymization = 1` are preserved per the
@@ -483,6 +491,49 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 
 		return $anonymized;
 	}//end anonymizeImage()
+
+	/**
+	 * Burn the decided image regions of a DOCX or ODT into its `_anonymized` output.
+	 *
+	 * Without the image seam, or without decided regions, the output stays as the
+	 * text path wrote it. When a region cannot be burned, the output is deleted
+	 * before the refusal is rethrown, so no half-redacted copy is left behind.
+	 *
+	 * @param File $source The office file.
+	 * @param File $output Its `_anonymized` sibling, as the text path wrote it.
+	 *
+	 * @throws \OCA\OpenRegister\Service\File\ImageRegionNotBurnableException When a region cannot be burned.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/anonymisation-image-seam/specs/image-anonymisation/spec.md#requirement-every-redaction-path-reaches-the-seam-req-ais-004
+	 */
+	private function burnOfficeImages(File $source, File $output): void {
+		$images = $this->redaction->images;
+		if ($images === null) {
+			return;
+		}
+
+		$regions = $images->decidedRegions(file: $source);
+		if ($regions === []) {
+			return;
+		}
+
+		try {
+			$burned = $images->burnOfficeMedia(
+				bytes: (string)$output->getContent(),
+				mimeType: (string)$source->getMimeType(),
+				regions: $regions,
+				fileName: $source->getName()
+			);
+		} catch (ImageRegionNotBurnableException $e) {
+			$output->delete();
+			throw $e;
+		}
+
+		$output->putContent($burned);
+		$this->markStepRan(step: PipelineSteps::IMAGE_BURNER);
+	}//end burnOfficeImages()
 
 	/**
 	 * Reset any report/residuals/placeholder-map/structure-result from a

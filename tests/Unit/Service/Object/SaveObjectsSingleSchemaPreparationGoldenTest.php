@@ -71,6 +71,8 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Service\Object\SaveObjects\BulkInverseRelations
  * @uses \OCA\OpenRegister\Service\Object\SaveObjects\BulkRelationScanner
  * @uses \OCA\OpenRegister\Service\Object\SaveObjects\BulkSchemaAnalysis
+ * @uses \OCA\OpenRegister\Db\HydrationKey
+ * @uses \OCA\OpenRegister\Service\Rbac\ExplicitReveal
  */
 class SaveObjectsSingleSchemaPreparationGoldenTest extends TestCase {
 

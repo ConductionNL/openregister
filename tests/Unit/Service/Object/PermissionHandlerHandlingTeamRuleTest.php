@@ -88,6 +88,8 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionRuleServices
  * @uses \OCA\OpenRegister\Service\Rbac\McpScope
  * @uses \OCA\OpenRegister\Service\Rbac\UndeclaredPropertyConditions
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation
+ * @uses \OCA\OpenRegister\Service\Rbac\UndecidablePosture
  */
 class PermissionHandlerHandlingTeamRuleTest extends TestCase {
 

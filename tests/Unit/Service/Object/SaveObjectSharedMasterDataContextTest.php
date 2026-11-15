@@ -159,6 +159,9 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\SelfSubmission
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\SlugRequest
  * @uses \OCA\OpenRegister\Service\Object\TranslationScope
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ClassificationFloorGuard
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ImageObjectForm
  */
 class SaveObjectSharedMasterDataContextTest extends TestCase {
 

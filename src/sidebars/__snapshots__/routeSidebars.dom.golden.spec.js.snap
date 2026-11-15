@@ -93,7 +93,7 @@ exports[`route sidebar auditTrail renders the filters without and with a registe
     <x-ncselect id="schemaSelect" options="[]" modelvalue="null" placeholder="t:All schemas" inputlabel="t:Schema" disabled="true" clearable="true"></x-ncselect>
   </div>
   <div class="filterGroup"><label for="actionSelect">t:Actions</label>
-    <x-ncselect id="actionSelect" modelvalue="[]" options="[{&quot;label&quot;:&quot;t:Create&quot;,&quot;value&quot;:&quot;create&quot;},{&quot;label&quot;:&quot;t:Read&quot;,&quot;value&quot;:&quot;read&quot;},{&quot;label&quot;:&quot;t:Update&quot;,&quot;value&quot;:&quot;update&quot;},{&quot;label&quot;:&quot;t:Delete&quot;,&quot;value&quot;:&quot;delete&quot;}]" placeholder="t:All actions" inputlabel="t:Actions" multiple="true" clearable="true">
+    <x-ncselect id="actionSelect" modelvalue="[]" options="[{&quot;label&quot;:&quot;t:Create&quot;,&quot;value&quot;:&quot;create&quot;},{&quot;label&quot;:&quot;t:Read&quot;,&quot;value&quot;:&quot;read&quot;},{&quot;label&quot;:&quot;t:Update&quot;,&quot;value&quot;:&quot;update&quot;},{&quot;label&quot;:&quot;t:Delete&quot;,&quot;value&quot;:&quot;delete&quot;},{&quot;label&quot;:&quot;t:Reveal&quot;,&quot;value&quot;:&quot;property.revealed&quot;}]" placeholder="t:All actions" inputlabel="t:Actions" multiple="true" clearable="true">
       <slot-option></slot-option>
     </x-ncselect>
   </div>
@@ -127,7 +127,7 @@ exports[`route sidebar auditTrail renders the filters without and with a registe
     <x-ncselect id="schemaSelect" options="[{&quot;value&quot;:2,&quot;label&quot;:&quot;S&quot;,&quot;title&quot;:&quot;S&quot;,&quot;schema&quot;:{&quot;id&quot;:2,&quot;title&quot;:&quot;S&quot;}}]" modelvalue="null" placeholder="t:All schemas" inputlabel="t:Schema" disabled="false" clearable="true" label="title"></x-ncselect>
   </div>
   <div class="filterGroup"><label for="actionSelect">t:Actions</label>
-    <x-ncselect id="actionSelect" modelvalue="[]" options="[{&quot;label&quot;:&quot;t:Create&quot;,&quot;value&quot;:&quot;create&quot;},{&quot;label&quot;:&quot;t:Read&quot;,&quot;value&quot;:&quot;read&quot;},{&quot;label&quot;:&quot;t:Update&quot;,&quot;value&quot;:&quot;update&quot;},{&quot;label&quot;:&quot;t:Delete&quot;,&quot;value&quot;:&quot;delete&quot;}]" placeholder="t:All actions" inputlabel="t:Actions" multiple="true" clearable="true">
+    <x-ncselect id="actionSelect" modelvalue="[]" options="[{&quot;label&quot;:&quot;t:Create&quot;,&quot;value&quot;:&quot;create&quot;},{&quot;label&quot;:&quot;t:Read&quot;,&quot;value&quot;:&quot;read&quot;},{&quot;label&quot;:&quot;t:Update&quot;,&quot;value&quot;:&quot;update&quot;},{&quot;label&quot;:&quot;t:Delete&quot;,&quot;value&quot;:&quot;delete&quot;},{&quot;label&quot;:&quot;t:Reveal&quot;,&quot;value&quot;:&quot;property.revealed&quot;}]" placeholder="t:All actions" inputlabel="t:Actions" multiple="true" clearable="true">
       <slot-option></slot-option>
     </x-ncselect>
   </div>
@@ -163,7 +163,7 @@ exports[`route sidebar auditTrail renders the whole filters tab: fields, clear b
         <x-ncselect id="schemaSelect" options="[]" modelvalue="null" placeholder="t:All schemas" inputlabel="t:Schema" disabled="true" clearable="true"></x-ncselect>
       </div>
       <div class="filterGroup"><label for="actionSelect">t:Actions</label>
-        <x-ncselect id="actionSelect" modelvalue="[]" options="[{&quot;label&quot;:&quot;t:Create&quot;,&quot;value&quot;:&quot;create&quot;},{&quot;label&quot;:&quot;t:Read&quot;,&quot;value&quot;:&quot;read&quot;},{&quot;label&quot;:&quot;t:Update&quot;,&quot;value&quot;:&quot;update&quot;},{&quot;label&quot;:&quot;t:Delete&quot;,&quot;value&quot;:&quot;delete&quot;}]" placeholder="t:All actions" inputlabel="t:Actions" multiple="true" clearable="true">
+        <x-ncselect id="actionSelect" modelvalue="[]" options="[{&quot;label&quot;:&quot;t:Create&quot;,&quot;value&quot;:&quot;create&quot;},{&quot;label&quot;:&quot;t:Read&quot;,&quot;value&quot;:&quot;read&quot;},{&quot;label&quot;:&quot;t:Update&quot;,&quot;value&quot;:&quot;update&quot;},{&quot;label&quot;:&quot;t:Delete&quot;,&quot;value&quot;:&quot;delete&quot;},{&quot;label&quot;:&quot;t:Reveal&quot;,&quot;value&quot;:&quot;property.revealed&quot;}]" placeholder="t:All actions" inputlabel="t:Actions" multiple="true" clearable="true">
           <slot-option></slot-option>
         </x-ncselect>
       </div>

@@ -198,14 +198,18 @@ class CodedValueGuard implements CodedValueGuardInterface {
 	private function lastViolation(CodedValueSubject $subject, array $values): ?string {
 		$violation = null;
 		foreach ($values as $value) {
-			// An unresolved value is skipped: scheme membership is refused by
-			// `property-code-list-from-concept-scheme`, and saying it twice
-			// would give one mistake two different messages.
+			// A value the (readable) scheme does not hold is refused here, naming the
+			// property and the scheme (property-code-list-from-concept-scheme). This
+			// is the only place scheme membership is judged, so one mistake gets one
+			// message.
 			$concept = $this->resolve(declaration: $subject->declaration, value: $value);
-			if ($concept !== null) {
-				$match = $subject->matched(value: $value, concept: $concept);
-				$violation = ($this->refusals->violationFor(subject: $subject, match: $match) ?? $violation);
+			if ($concept === null) {
+				$violation = $this->refusals->notInScheme(subject: $subject, value: $value);
+				continue;
 			}
+
+			$match = $subject->matched(value: $value, concept: $concept);
+			$violation = ($this->refusals->violationFor(subject: $subject, match: $match) ?? $violation);
 		}
 
 		return $violation;

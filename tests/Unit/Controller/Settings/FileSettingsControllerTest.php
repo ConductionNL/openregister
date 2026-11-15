@@ -9,6 +9,7 @@ use OCA\OpenRegister\Files\Controller\Support\FileSettingsControllerServices;
 use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendService;
 use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendServiceInterface;
 use OCA\OpenRegister\Service\Anonymisation\ProbeResult;
+use OCA\OpenRegister\Service\File\DocumentStore;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -206,6 +207,64 @@ class FileSettingsControllerTest extends TestCase {
 		$this->assertEquals(200, $result->getStatus());
 		$this->assertEquals('dolphin', $result->getData()['provider']);
 		$this->assertEquals('paragraph', $result->getData()['chunkingStrategy']);
+	}
+
+	/**
+	 * A controller whose services carry a document store.
+	 *
+	 * @param DocumentStore $store The store.
+	 *
+	 * @return FileSettingsController
+	 */
+	private function controllerWithStore(DocumentStore $store): FileSettingsController {
+		return new FileSettingsController(
+			$this->request,
+			new FileSettingsControllerServices($this->container, $this->settingsService, $this->logger, $store)
+		);
+	}
+
+	public function testDocumentStoreIsReturned(): void {
+		$described = [
+			'root' => 'Open Registers',
+			'storageId' => 'home::openregister',
+			'backend' => 'local',
+			'backendName' => 'local',
+			'mountPoint' => '/openregister/',
+			'separate' => false,
+			'freeBytes' => null,
+		];
+		$store = $this->createMock(DocumentStore::class);
+		$store->expects($this->once())->method('describe')->willReturn($described);
+		$this->settingsService->method('getFileSettingsOnly')->willReturn(['extractionEnabled' => true]);
+
+		$result = $this->controllerWithStore($store)->getFileSettings();
+
+		$this->assertSame(200, $result->getStatus());
+		$this->assertSame(['extractionEnabled' => true, 'documentStore' => $described], $result->getData());
+	}
+
+	public function testAnUndescribableDocumentStoreStillLoadsTheSettings(): void {
+		$store = $this->createMock(DocumentStore::class);
+		$store->method('describe')->willThrowException(new \RuntimeException('storage unavailable'));
+		$this->settingsService->method('getFileSettingsOnly')->willReturn(['extractionEnabled' => true]);
+		$this->logger->expects($this->once())->method('warning')
+			->with('[FileSettingsController] The document store cannot be described: {error}', ['error' => 'storage unavailable']);
+
+		$result = $this->controllerWithStore($store)->getFileSettings();
+
+		$this->assertSame(200, $result->getStatus());
+		$this->assertSame(['extractionEnabled' => true, 'documentStore' => null], $result->getData());
+	}
+
+	public function testAFailedSettingsReadDoesNotDescribeTheStore(): void {
+		$store = $this->createMock(DocumentStore::class);
+		$store->expects($this->never())->method('describe');
+		$this->settingsService->method('getFileSettingsOnly')->willThrowException(new \Exception('Failed'));
+
+		$result = $this->controllerWithStore($store)->getFileSettings();
+
+		$this->assertSame(500, $result->getStatus());
+		$this->assertSame(['error' => 'Failed'], $result->getData());
 	}
 
 	public function testGetFileSettingsException(): void {

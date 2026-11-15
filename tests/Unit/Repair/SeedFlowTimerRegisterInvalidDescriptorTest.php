@@ -67,7 +67,7 @@ class SeedFlowTimerRegisterInvalidDescriptorTest extends TestCase {
 		$apps->method('getAppPath')->willReturn($this->root);
 		$importer = $this->createMock(AppConfigurationImporterInterface::class);
 		$importer->expects($this->once())->method('importFromApp')
-			->with('openregister', ['openapi' => '3.0.0'], '1.2.0', false);
+			->with('openregister', ['openapi' => '3.0.0'], '1.4.0', false);
 		$output = $this->createMock(IOutput::class);
 		$output->expects($this->never())->method('warning');
 

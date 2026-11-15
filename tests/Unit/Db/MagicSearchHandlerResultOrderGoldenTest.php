@@ -42,6 +42,8 @@ use ReflectionMethod;
  *
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicPgTrgmProbe
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicUnaccentProbe
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\SearchFolding
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Service\DateTimeNormalizer
  * @uses   \OCA\OpenRegister\Db\MagicMapper\SortRequest

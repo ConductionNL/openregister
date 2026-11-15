@@ -31,6 +31,7 @@ namespace OCA\OpenRegister\Service;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectExporterInterface;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectExportRequest;
+use OCA\OpenRegister\Service\Rbac\AnonymousEnvelope;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Service\Export\ExportRequest;
 use OCA\OpenRegister\Service\Export\ExportTable;
@@ -369,10 +370,7 @@ class ExportService implements ObjectExporterInterface {
 			throw new InvalidArgumentException('JSON export requires a specific schema.');
 		}
 
-		$rows = array_map(
-			static fn (ObjectEntity $object): array => $object->jsonSerialize(),
-			$this->fetchObjectsForExport(request: $request)
-		);
+		$rows = $this->documentRows(request: $request);
 
 		return json_encode($rows, (JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
 	}//end jsonFor()
@@ -413,13 +411,43 @@ class ExportService implements ObjectExporterInterface {
 			throw new InvalidArgumentException('XML export requires a specific schema.');
 		}
 
+		$rows = $this->documentRows(request: $request);
+
+		return (new XmlObjectWriter())->write(rows: $rows);
+	}//end xmlFor()
+
+	/**
+	 * The objects of a JSON or XML export as documents.
+	 *
+	 * For the public principal the `@self` administration block is left out
+	 * (design D-3), and any envelope nested in a property loses the fields
+	 * that name people, as the anonymous list endpoint answers them.
+	 *
+	 * @param ExportRequest $request The export.
+	 *
+	 * @return array<int, array<string, mixed>> The documents.
+	 *
+	 * @spec openspec/changes/export-open-formats-and-public-download/specs/data-import-export/spec.md
+	 */
+	private function documentRows(ExportRequest $request): array {
 		$rows = array_map(
 			static fn (ObjectEntity $object): array => $object->jsonSerialize(),
 			$this->fetchObjectsForExport(request: $request)
 		);
+		if ($request->isForThePublic() === false) {
+			return $rows;
+		}
 
-		return (new XmlObjectWriter())->write(rows: $rows);
-	}//end xmlFor()
+		$envelope = new AnonymousEnvelope();
+
+		return array_map(
+			static function (array $row) use ($envelope): array {
+				unset($row['@self']);
+				return (array)$envelope->redact(data: $row);
+			},
+			$rows
+		);
+	}//end documentRows()
 
 	/**
 	 * Export data to PDF format
@@ -561,6 +589,86 @@ class ExportService implements ObjectExporterInterface {
 	}//end guardPdfRowCap()
 
 	/**
+	 * The properties a PDF report breaks the objects down by, in order of preference.
+	 */
+	private const PDF_BREAKDOWN_PROPERTIES = ['status', 'state', 'lifecycle', 'statusCode'];
+
+	/**
+	 * The summary block of a PDF report: the applied filters, and the objects
+	 * broken down by their status with counts and percentages
+	 * (rapportage-bi-export, "Export to PDF as a formatted report").
+	 *
+	 * The breakdown uses the first of PDF_BREAKDOWN_PROPERTIES that is an
+	 * exported column, so a property the caller may not read, or a masked one,
+	 * is never summarised.
+	 *
+	 * @param ExportRequest $request What is exported.
+	 * @param ExportTable   $table   The exported columns and objects.
+	 *
+	 * @return string The HTML fragment, empty when there is nothing to summarise.
+	 *
+	 * @spec openspec/changes/rapportage-bi-export/specs/rapportage-bi-export/spec.md#requirement-the-system-must-support-export-in-csv-excel-pdf-and-ods-formats
+	 */
+	private function pdfSummary(ExportRequest $request, ExportTable $table): string {
+		$html = '';
+		$filters = [];
+		foreach ($request->filters as $key => $value) {
+			if (is_scalar($value) === true && str_starts_with((string)$key, '_') === false) {
+				$filters[] = $key . ' = ' . (string)$value;
+			}
+		}
+
+		if ($filters !== []) {
+			$html .= '<p class="meta">Filters: ' . htmlspecialchars(implode('; ', $filters), ENT_QUOTES, 'UTF-8') . '</p>';
+		}
+
+		$property = $this->pdfBreakdownProperty(headers: $table->headers);
+		if ($property === null || $table->objects === []) {
+			return $html;
+		}
+
+		$counts = [];
+		foreach ($table->objects as $object) {
+			$value = ($object->getObject()[$property] ?? null);
+			$label = '(none)';
+			if (is_scalar($value) === true && (string)$value !== '') {
+				$label = (string)$value;
+			}
+
+			$counts[$label] = (($counts[$label] ?? 0) + 1);
+		}
+
+		arsort($counts);
+		$total = count($table->objects);
+		$html .= '<table class="summary"><thead><tr><th>' . htmlspecialchars($property, ENT_QUOTES, 'UTF-8')
+			. '</th><th>Count</th><th>%</th></tr></thead><tbody>';
+		foreach ($counts as $label => $count) {
+			$html .= '<tr><td>' . htmlspecialchars((string)$label, ENT_QUOTES, 'UTF-8') . '</td><td>' . $count . '</td><td>'
+				. number_format((($count * 100) / $total), 1, '.', '') . '%</td></tr>';
+		}
+
+		return $html . '<tr><td>Total</td><td>' . $total . '</td><td>100.0%</td></tr></tbody></table>';
+	}//end pdfSummary()
+
+	/**
+	 * The property a PDF report breaks the objects down by: the first breakdown
+	 * property that is an exported, unmasked column.
+	 *
+	 * @param array<int|string, int|string> $headers The exported columns.
+	 *
+	 * @return string|null The property, or null when none is exported.
+	 */
+	private function pdfBreakdownProperty(array $headers): ?string {
+		foreach (self::PDF_BREAKDOWN_PROPERTIES as $property) {
+			if (in_array($property, $headers, true) === true && isset($this->maskedColumns[$property]) === false) {
+				return $property;
+			}
+		}
+
+		return null;
+	}//end pdfBreakdownProperty()
+
+	/**
 	 * Build the escaped HTML for a single schema's export section.
 	 *
 	 * @param ExportRequest  $request The export; its register and schema title the section, its user drives header visibility.
@@ -582,6 +690,7 @@ class ExportService implements ObjectExporterInterface {
 			. 'Exported: ' . htmlspecialchars($timestamp, ENT_QUOTES, 'UTF-8')
 			. ' &middot; Objects: ' . count($objects)
 			. '</p>';
+		$html .= $this->pdfSummary(request: $request, table: $table);
 		$html .= '<table><thead><tr>';
 
 		foreach ($table->headers as $header) {
@@ -907,6 +1016,67 @@ class ExportService implements ObjectExporterInterface {
 	 * @return ObjectEntity[] Array of matching object entities.
 	 */
 	private function fetchObjectsForExport(ExportRequest $request): array {
+		$selection = $this->exportSelection(request: $request);
+		$query     = $selection['query'];
+		$page      = $request->page();
+		if ($page !== null) {
+			// A bounded export (design D-4) reads one page of the same selection.
+			$query['_limit']  = $page->size;
+			$query['_offset'] = (($page->number - 1) * $page->size);
+		}
+
+		$search = fn (): array => $this->objectService->searchObjects(
+			query: $query,
+			_rbac: true,
+			// Apply RBAC filtering.
+			_multitenancy: $selection['multitenancy'],
+			// Apply multi-tenancy filtering (respects explicit _multi parameter).
+			ids: $selection['ids'],
+			uses: null
+		);
+
+		if ($this->processAudit === null) {
+			return $search();
+		}
+
+		return $this->processAudit->run(run: new RevealingProcess(process: 'export', runId: Uuid::v4()->toRfc4122()), operation: $search);
+	}//end fetchObjectsForExport()
+
+	/**
+	 * How many objects the export's selection holds over all its pages.
+	 *
+	 * The same selection {@see fetchObjectsForExport()} reads, under the same
+	 * RBAC and multi-tenancy, counted rather than read, so a paged export can
+	 * say how many rows and pages there are without loading them.
+	 *
+	 * @param ExportRequest $request The register, schema, filters and user of the export.
+	 *
+	 * @return int The number of matching objects.
+	 *
+	 * @spec openspec/changes/export-open-formats-and-public-download/specs/data-import-export/spec.md
+	 */
+	public function countExportTotal(ExportRequest $request): int {
+		$selection = $this->exportSelection(request: $request);
+		$query     = $selection['query'];
+		unset($query['_limit'], $query['_offset']);
+
+		return $this->objectService->countSearchObjects(
+			query: $query,
+			_rbac: true,
+			_multitenancy: $selection['multitenancy'],
+			ids: $selection['ids'],
+			uses: null
+		);
+	}//end countExportTotal()
+
+	/**
+	 * The search an export runs: the query, the multi-tenancy flag and the selected ids.
+	 *
+	 * @param ExportRequest $request The register, schema, filters and user of the export.
+	 *
+	 * @return array{query: array<string, mixed>, multitenancy: bool, ids: array<int, string>|null}
+	 */
+	private function exportSelection(ExportRequest $request): array {
 		$register = $request->register;
 		$schema   = $request->schema;
 		$filters  = $request->filters;
@@ -921,27 +1091,9 @@ class ExportService implements ObjectExporterInterface {
 			$objectFilters['schema'] = $schema->getId();
 		}
 
-		// Apply additional filters. A property filter narrows the export as it
-		// narrows the list it came from; it used to be skipped, so a filtered
-		// list exported every row the caller could read (openregister#4088).
-		// The route's own parameters and `_`-prefixed controls are not filters.
-		$propertyFilters = [];
-		foreach ($filters as $key => $value) {
-			$key = (string) $key;
-			if (str_starts_with($key, '@self.') === false) {
-				if (str_starts_with($key, '_') === false && str_starts_with($key, '@') === false
-					&& in_array($key, self::NON_FILTER_EXPORT_PARAMS, true) === false
-				) {
-					$propertyFilters[$key] = $value;
-				}
-
-				continue;
-			}
-
-			// Metadata filter - remove @self. prefix.
-			$metaField = substr($key, 6);
-			$objectFilters[$metaField] = $value;
-		}
+		[$metaFilters, $propertyFilters] = self::splitFilters(filters: $filters);
+		// A metadata filter is applied after the register and schema, as it always was.
+		$objectFilters = array_replace($objectFilters, $metaFilters);
 
 		// `_multi` may narrow an export to the organisation for anyone, but only
 		// an administrator may lift the organisation boundary with it.
@@ -950,13 +1102,7 @@ class ExportService implements ObjectExporterInterface {
 		$multiExplicitlySet = (isset($filters['_multi']) || isset($filters['multi']))
 			&& ($isAdmin === true || self::requestedMultitenancy(filters: $filters) === true);
 
-		// `_ids` (a list or a comma-separated string) narrows the export to the
-		// selected objects; RBAC and multitenancy still apply to each.
-		$selected = implode(',', array_map('strval', (array) ($filters['_ids'] ?? [])));
-		$selectedIds = array_values(array_filter(array_map('trim', explode(',', $selected)), static fn (string $id): bool => $id !== ''));
-		if ($selectedIds === []) {
-			$selectedIds = null;
-		}
+		$selectedIds = self::selectedIds(filters: $filters);
 
 		// Use ObjectService::searchObjects directly with proper RBAC and multi-tenancy filtering.
 		// An export needs every row, so it asks for no limit: a number would be
@@ -969,23 +1115,60 @@ class ExportService implements ObjectExporterInterface {
 			'_multitenancy_explicit' => $multiExplicitlySet,
 		] + $propertyFilters;
 
-		$search = fn (): array => $this->objectService->searchObjects(
-			query: $query,
-			_rbac: true,
-			// Apply RBAC filtering.
-			_multitenancy: $multitenancy,
-			// Apply multi-tenancy filtering (respects explicit _multi parameter).
-			ids: $selectedIds,
-			uses: null
-		);
+		return ['query' => $query, 'multitenancy' => $multitenancy, 'ids' => $selectedIds];
+	}//end exportSelection()
 
-		if ($this->processAudit === null) {
-			return $search();
+	/**
+	 * The ids an export is narrowed to, or null for no narrowing.
+	 *
+	 * `_ids` (a list or a comma-separated string) narrows the export to the
+	 * selected objects; RBAC and multitenancy still apply to each.
+	 *
+	 * @param array<string, mixed> $filters The export filters.
+	 *
+	 * @return array<int, string>|null The ids, or null.
+	 */
+	private static function selectedIds(array $filters): ?array {
+		$selected = implode(',', array_map('strval', (array) ($filters['_ids'] ?? [])));
+		$selectedIds = array_values(array_filter(array_map('trim', explode(',', $selected)), static fn (string $id): bool => $id !== ''));
+		if ($selectedIds === []) {
+			return null;
 		}
 
-		return $this->processAudit->run(run: new RevealingProcess(process: 'export', runId: Uuid::v4()->toRfc4122()), operation: $search);
-	}//end fetchObjectsForExport()
+		return $selectedIds;
+	}//end selectedIds()
 
+	/**
+	 * The request filters split into `@self` metadata filters and property filters.
+	 *
+	 * A property filter narrows the export as it narrows the list it came from;
+	 * it used to be skipped, so a filtered list exported every row the caller
+	 * could read (openregister#4088). The route's own parameters and
+	 * `_`-prefixed controls are not filters.
+	 *
+	 * @param array<string, mixed> $filters The export filters.
+	 *
+	 * @return array{0: array<string, mixed>, 1: array<string, mixed>} The metadata filters (without `@self.`), and the property filters.
+	 */
+	private static function splitFilters(array $filters): array {
+		$metaFilters     = [];
+		$propertyFilters = [];
+		foreach ($filters as $key => $value) {
+			$key = (string) $key;
+			if (str_starts_with($key, '@self.') === true) {
+				$metaFilters[substr($key, 6)] = $value;
+				continue;
+			}
+
+			if (str_starts_with($key, '_') === false && str_starts_with($key, '@') === false
+				&& in_array($key, self::NON_FILTER_EXPORT_PARAMS, true) === false
+			) {
+				$propertyFilters[$key] = $value;
+			}
+		}
+
+		return [$metaFilters, $propertyFilters];
+	}//end splitFilters()
 
 	/**
 	 * The multitenancy an export's filters ask for: `_multi`, else `multi`, else on.

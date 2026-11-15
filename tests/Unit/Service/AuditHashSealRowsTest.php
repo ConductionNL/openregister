@@ -133,13 +133,18 @@ class AuditHashSealRowsTest extends TestCase {
 			'previous_hash' => null,
 		];
 
-		// getQueryBuilder() is used for (1) the range SELECT, (2) the
-		// hash-before SELECT (no prior row -> genesis), (3) the table name.
-		$rangeQb = $this->buildQueryBuilder([$row1, $row2], false);
+		// getQueryBuilder() is used for (1) the range SELECT of `id, hash`,
+		// (2) the payload SELECT of the unsealed rows, (3) the hash-before
+		// SELECT (no prior row -> genesis), (4) the table name.
+		$rangeQb = $this->buildQueryBuilder([['id' => 1, 'hash' => null], ['id' => 2, 'hash' => null]], false);
+		$payloadQb = $this->buildQueryBuilder([$row1, $row2], false);
 		$beforeQb = $this->buildQueryBuilder([], false);
 		$tableQb = $this->buildQueryBuilder([], false);
+		$rangeQb->expects($this->once())->method('select')->with('id', 'hash')->willReturnSelf();
+		$payloadQb->expects($this->once())->method('createNamedParameter')
+			->with([1, 2], IQueryBuilder::PARAM_INT_ARRAY)->willReturn(':ids');
 		$this->db->method('getQueryBuilder')
-			->willReturnOnConsecutiveCalls($rangeQb, $beforeQb, $tableQb);
+			->willReturnOnConsecutiveCalls($rangeQb, $payloadQb, $beforeQb, $tableQb);
 
 		$genesis = $this->service->getGenesisHash();
 		$hash1 = $this->service->computeHash($this->entityFromRow($row1), $genesis);
@@ -189,11 +194,16 @@ class AuditHashSealRowsTest extends TestCase {
 			'previous_hash' => null,
 		];
 
-		$rangeQb = $this->buildQueryBuilder([$row1, $row2], false);
+		// The sealed row is read as a chain link only; its payload is never
+		// fetched, so the payload SELECT asks for row 11 alone.
+		$rangeQb = $this->buildQueryBuilder([['id' => 10, 'hash' => $storedHash], ['id' => 11, 'hash' => null]], false);
+		$payloadQb = $this->buildQueryBuilder([$row2], false);
 		$beforeQb = $this->buildQueryBuilder([], false);
 		$tableQb = $this->buildQueryBuilder([], false);
+		$payloadQb->expects($this->once())->method('createNamedParameter')
+			->with([11], IQueryBuilder::PARAM_INT_ARRAY)->willReturn(':ids');
 		$this->db->method('getQueryBuilder')
-			->willReturnOnConsecutiveCalls($rangeQb, $beforeQb, $tableQb);
+			->willReturnOnConsecutiveCalls($rangeQb, $payloadQb, $beforeQb, $tableQb);
 
 		$expectedHash = $this->service->computeHash($this->entityFromRow($row2), $storedHash);
 
@@ -246,11 +256,12 @@ class AuditHashSealRowsTest extends TestCase {
 			'previous_hash' => null,
 		];
 
-		$rangeQb = $this->buildQueryBuilder([$row], false);
+		$rangeQb = $this->buildQueryBuilder([['id' => 1, 'hash' => null]], false);
+		$payloadQb = $this->buildQueryBuilder([$row], false);
 		$beforeQb = $this->buildQueryBuilder([], false);
 		$tableQb = $this->buildQueryBuilder([], false);
 		$this->db->method('getQueryBuilder')
-			->willReturnOnConsecutiveCalls($rangeQb, $beforeQb, $tableQb);
+			->willReturnOnConsecutiveCalls($rangeQb, $payloadQb, $beforeQb, $tableQb);
 		$this->db->method('executeStatement')->willReturn(1);
 
 		$this->lockingProvider->expects($this->once())
@@ -375,9 +386,10 @@ class AuditHashSealRowsTest extends TestCase {
 			'previous_hash' => null,
 		];
 
-		// --- sealRows([3]): range SELECT, predecessor SELECT (filtered to
+		// --- sealRows([3]): range SELECT, payload SELECT, predecessor SELECT (filtered to
 		// sealed rows -> returns h1), the table name for the UPDATE.
-		$rangeQb = $this->buildQueryBuilder([$row3], false);
+		$rangeQb = $this->buildQueryBuilder([['id' => 3, 'hash' => null]], false);
+		$payloadQb = $this->buildQueryBuilder([$row3], false);
 
 		$beforeExpr = $this->createMock(IExpressionBuilder::class);
 		$beforeExpr->method('lt')->willReturn('lt');
@@ -432,9 +444,10 @@ class AuditHashSealRowsTest extends TestCase {
 		$verifyQb->method('createNamedParameter')->willReturn(':p');
 		$verifyQb->method('executeQuery')->willReturn($verifyCursor);
 
-		// The seal path consumes exactly three builders; every builder after
-		// that belongs to the verify walk, which asks for one per window.
-		$sealBuilders = [$rangeQb, $beforeQb, $this->buildQueryBuilder([], false)];
+		// The seal path consumes exactly four builders (range, payload,
+		// predecessor, table); every builder after that belongs to the verify
+		// walk, which asks for one per window.
+		$sealBuilders = [$rangeQb, $payloadQb, $beforeQb, $this->buildQueryBuilder([], false)];
 		$this->db->method('getQueryBuilder')
 			->willReturnCallback(
 				function () use (&$sealBuilders, $verifyQb): IQueryBuilder {

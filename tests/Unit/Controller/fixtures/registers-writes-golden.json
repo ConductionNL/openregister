@@ -38,7 +38,7 @@
         ],
         "status": 500,
         "data": {
-            "error": "cache failed"
+            "error": "Internal server error"
         }
     },
     "create constraint": {
@@ -175,7 +175,7 @@
         ],
         "status": 500,
         "data": {
-            "error": "save failed"
+            "error": "Internal server error"
         }
     },
     "create refused rules": {

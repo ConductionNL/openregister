@@ -131,7 +131,8 @@ final class FilesRegistrar
                 userManager: $container->get('OCP\IUserManager')
             ),
             visibility: $container->get(TimelineVisibilityServiceInterface::class),
-            versions: $container->get(NoteVersionService::class)
+            versions: $container->get(NoteVersionService::class),
+            events: $container->get('OCP\EventDispatcher\IEventDispatcher')
         );
     }//end buildNoteService()
 }//end class
