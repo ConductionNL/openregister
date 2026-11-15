@@ -15131,3 +15131,4 @@ review:learniq:1882:ff0cebbf	GREEN: label-only manifest fix per own spec, no new
 review:versioniq:721:a9a532f3	GREEN: build matches change specs, suite equals baseline	session-20261115T213107-505dc338	2026-11-15T21:43:09Z
 review:opencatalogi:2650:e5e6d290	GREEN: spec-conform; one new PHP failure is the inherited renderEntity(_extend:) incompatibility with OR main	session-20261115T213122-e023a81e	2026-11-15T21:43:22Z
 review:opencatalogi:2674:52a7e65f	GREEN	session-20261115T202932-d1067ee4	2026-11-15T21:43:30Z
+review:opencatalogi:1889:a5e55a55	GREEN: CMS leftover removal per archived change tasks, 0 new failures	session-20261115T213110-6b33145c	2026-11-15T21:43:37Z
