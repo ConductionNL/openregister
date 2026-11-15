@@ -68,6 +68,9 @@
 		<!-- AI translation through Nextcloud's Task Processing -->
 		<TranslationConfiguration />
 
+		<!-- Load shedding: dependency breakers and database pressure -->
+		<LoadSheddingConfiguration />
+
 		<!-- File Configuration Section -->
 		<FileConfiguration />
 
@@ -93,6 +96,7 @@ import EdepotHostKeyConfiguration from './sections/EdepotHostKeyConfiguration.vu
 import FileConfiguration from './sections/FileConfiguration.vue'
 import FlowConfiguration from './sections/FlowConfiguration.vue'
 import LlmConfiguration from './sections/LlmConfiguration.vue'
+import LoadSheddingConfiguration from './sections/LoadSheddingConfiguration.vue'
 import LogIntegrity from './sections/LogIntegrity.vue'
 import MultitenancyConfiguration from './sections/MultitenancyConfiguration.vue'
 import OrganisationConfiguration from './sections/OrganisationConfiguration.vue'
@@ -134,6 +138,7 @@ export default {
 		PushNotificationsConfiguration,
 		LlmConfiguration,
 		TranslationConfiguration,
+		LoadSheddingConfiguration,
 		FileConfiguration,
 		ApiTokenConfiguration,
 		EdepotHostKeyConfiguration,

@@ -407,6 +407,9 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'Settings\AuditSettings#getAggregationSettings', 'url' => '/api/settings/audit-aggregation', 'verb' => 'GET'],
         ['name' => 'Settings\AuditSettings#updateAggregationSettings', 'url' => '/api/settings/audit-aggregation', 'verb' => 'PATCH'],
         ['name' => 'Settings\AuditSettings#updateAggregationSettings', 'url' => '/api/settings/audit-aggregation', 'verb' => 'PUT', 'postfix' => 'put'],
+        // The load shedding thresholds and the database-pressure switch (administrator only).
+        ['name' => 'Settings\LoadSheddingSettings#index', 'url' => '/api/settings/load-shedding', 'verb' => 'GET'],
+        ['name' => 'Settings\LoadSheddingSettings#update', 'url' => '/api/settings/load-shedding', 'verb' => 'PUT'],
 
         // Settings — additional endpoints.
         ['name' => 'settings#load',                     'url' => '/api/settings/load',                            'verb' => 'GET'],
