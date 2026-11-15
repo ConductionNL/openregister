@@ -14818,3 +14818,4 @@ review:pipelinq:2501:ca4bf396	GREEN: lock-only patch bumps; 8922 tests OK	sessio
 fix:shillinq:2081:29d9d8c7	conflict resolved, specs updated to scoped loads; vitest only inherited failure; REVERIFY at 27d1ddad	session-20261115T200026-9a5b8685	2026-11-15T20:34:15Z
 fix:filinq:2088:08907be9	conflict resolved, pushed 7e328ebd; REVERIFY recorded	session-20261115T202936-e956716f	2026-11-15T20:34:28Z
 fix:filinq:1086:be9ddbad	sbom regenerated; new head 7581c2a8, REVERIFY recorded	session-20261115T203016-ff00326d	2026-11-15T20:34:41Z
+review:portaliq:1353:c8141de2	BLOCK: phpmd 3 adds 17 findings on unchanged code, deprecated CLI	session-20261115T195958-28cb0304	2026-11-15T20:34:57Z
