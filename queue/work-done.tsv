@@ -14962,3 +14962,4 @@ fix:versioniq:736:732e80c8	merged development, pushed 91246664; REVERIFY recorde
 fix:versioniq:735:de63ae5e	conflict resolved in tab spec, vitest 3037 green; new head 0ba1d1c9	session-20261115T203013-157346e0	2026-11-15T20:59:12Z
 fix:larpinq:961:0c510953	development merged in; sbom already current (dev-only bump); new head 06d9f9ca, REVERIFY recorded	session-20261115T203029-7489abc7	2026-11-15T20:59:25Z
 fix:versioniq:504:7d37bf12	sbom regenerated after merging development; new head 918e8ff3, REVERIFY	session-20261115T200011-d13b13ca	2026-11-15T20:59:36Z
+fix:learniq:2134:cca08a57	fixed CONFLICT: merged development, re-migrated calls, suite = baseline; new head 908f17ac, REVERIFY	session-20261115T202955-7451ede9	2026-11-15T20:59:47Z
