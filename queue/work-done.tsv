@@ -14408,3 +14408,4 @@ fix:buildiq:1086:c366210f	closed #1086 (stylelint 18 outside library peer range,
 review:shillinq:2253:4f1aa3a0	GREEN: deleteObject migration, unit suite OK	session-20261115T185923-898cd631	2026-11-15T19:06:29Z
 fix:planninq:1065:53961d3e	closed: openregister main (and development) still take registerSlug/schemaSlug; development's calls already match main, target: form would throw	session-20261115T183034-bba160e3	2026-11-15T19:06:42Z
 review:planninq:1037:94d58586	GREEN: copy-only rename, vitest 3566 pass, l10n/manifest checks OK	session-20261115T190016-8d1377d2	2026-11-15T19:06:39Z
+review:portaliq:1995:d96754fb	GREEN: deleteObject adapted to ObjectDeletion	session-20261115T174747-978963d5	2026-11-15T19:06:54Z
