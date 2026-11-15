@@ -13543,3 +13543,4 @@ review:learniq:1158:bb9f61d9	GREEN: dev-only prettier bump, JS unit 9 inherited 
 review:opencatalogi:1889:38ce8706	GREEN (conflicts with development noted)	session-20261115T151007-45079d32	2026-11-15T16:25:05Z
 review:larpinq:877:339de0c7	GREEN: ocp dev bump, 860 tests OK	session-20261115T155913-70cee771	2026-11-15T16:25:26Z
 review:launchpad:885:04779dd2	CONFLICT #885: 5 files conflict with development	session-20261115T152601-38767331	2026-11-15T16:25:34Z
+review:learniq:1882:b05df18f	RED: employer portal manifest golden not updated for new field labels	session-20261115T152558-f97be55f	2026-11-15T16:25:43Z
