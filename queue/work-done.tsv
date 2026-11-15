@@ -13617,3 +13617,4 @@ review:learniq:2123:eeb728d3	GREEN: class names match openregister main; suite c
 merge:portaliq:2508:e096526c	merge3 tree of 2 portaliq PRs: merged=1 red=0 fail=0 skip=0; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-15T16:37:36Z
 review:planninq:869:0cf3f1b0	GREEN (conflicts with development, needs rebase): stylelint dev bump clean	session-20261115T155921-aabf185f	2026-11-15T16:37:32Z
 review:pipelinq:3145:76b4afe3	CONFLICT: faithful ObjectFindOptions migration, 95 files conflict with development	session-20261115T155902-d9805df0	2026-11-15T16:37:42Z
+review:opencatalogi:2263:a4046c90	GREEN: behaviour-preserving extract, no new failures (2 inherited)	session-20261115T155913-70cee771	2026-11-15T16:37:51Z
