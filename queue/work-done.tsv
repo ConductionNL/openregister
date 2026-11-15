@@ -14890,3 +14890,4 @@ fix:integriq:3564:4585a979	conflict resolved keeping both; new head 34a49284, RE
 verify:shillinq:3080:59a6ef0e	3080 GREEN, 3088 CONFLICT (after 3080: CHANGELOG, info.xml, register-versions.lock)	session-20261115T203029-7489abc7	2026-11-15T20:46:27Z
 review:pipelinq:2103:91e9bf9a	BLOCK: vueuse 15 violates @conduction/nextcloud-vue range ^11||^14	session-20261115T200041-8ff5af37	2026-11-15T20:46:44Z
 review:pipelinq:2187:fd65c00e	GREEN: phpmd 3 dev bump, unit OK; phpmd gate output shifts (noted)	session-20261115T203013-157346e0	2026-11-15T20:46:53Z
+fix:humaniq:670	fixed: sbom regenerated; new head 404bf31c	session-20261115T200000-e95b89c2	2026-11-15T20:47:02Z
