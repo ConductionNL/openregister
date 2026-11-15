@@ -14758,3 +14758,4 @@ fix:pipelinq:3084:01208829	merged development; sbom already current (dev-only de
 fix:pipelinq:3088:3135c0b1	failed: lockfile change is dev-only (eslint); regen-sbom on branch merged with development leaves sbom.cdx.json unchanged and --check passes, so no sbom change exists to commit; gate rule needs an exemption for dev-only lock changes	session-20261114T075643-75a598ab	2026-11-15T20:23:10Z
 fix:dossiq:3199	fixed: merged development, sbom regenerated; new head dd09a728	session-20261115T200000-e95b89c2	2026-11-15T20:23:12Z
 review:thematiq:1365:39f057e7	GREEN: additive tokens; 1 inherited failure, vitest 1565 pass	session-20261115T195958-28cb0304	2026-11-15T20:23:19Z
+fix:dossiq:3193:5b406bdb	fixed: development merged, sbom.cdx.json regenerated; new head ac67d68f	session-20261115T182940-bfeb7e78	2026-11-15T20:23:31Z
