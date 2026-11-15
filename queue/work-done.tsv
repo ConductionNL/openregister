@@ -12672,3 +12672,4 @@ cover:openregister:7350e3efm1efa:c8e24f36	PR openregister#10578: coverage metada
 cover:pipelinq:7f9dc8e6m195a:8c6788f4	already done: lib/Service/Gdpr at 100% (68/68) on development; no PR	session-20261114T234952-566b7ef5	2026-11-15T01:43:25Z
 fix:learniq:2484:109cbc95	merged development cleanly, new head b8c46f7c; remaining conflict is with other tree PRs	session-20261115T001740-566812b3	2026-11-15T01:43:25Z
 cover:keepiq:c967a31fmdbad:e372e6ff	already done: lib/Event/*.php 8/8 classes at 100% statements on development (29 tests); earlier -1 branch merged; no PR	session-20261115T014019-616e5977	2026-11-15T01:43:43Z
+measure:keepiq:20261115h00	js 92.91% (vitest 3 failing tests); php not measurable here (no pcov), kept 93.72% measured on the same commit	session-20261115T005141-9356bed0	2026-11-15T01:43:46Z
