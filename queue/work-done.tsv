@@ -13725,3 +13725,4 @@ merge:dossiq:6570:10a5bf95	merge3 tree of 10 dossiq PRs: merged=8 red=0 fail=0 s
 review:learniq:1164:7f7606d0	BLOCK: gridstack 14 outside nextcloud-vue peer range; conflicts with development	session-20261115T152554-949e9403	2026-11-15T16:48:56Z
 review:shillinq:1959:9a607395	CONFLICT: 19 files conflict with development; needs merge-forward before review	session-20261115T154311-e8600d84	2026-11-15T16:58:28Z
 review:stackiq:1043:a1603162	BLOCK: obsolete, development already locks sass 1.108.2	session-20261115T155902-521936b1	2026-11-15T16:58:33Z
+review:shillinq:2080:6a0ebf26	CONFLICT: access check OK, tests green on head; conflicts with development	session-20261114T102637-6688951e	2026-11-15T16:58:45Z
