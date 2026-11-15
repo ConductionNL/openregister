@@ -14268,3 +14268,4 @@ review:portaliq:1765:756be697	stale	session-20261115T174741-9deaa0be	2026-11-15T
 fix:shillinq:2100:32dc7230	RED+CONFLICT fixed, REVERIFY recorded	session-20261115T174747-978963d5	2026-11-15T18:44:32Z
 fix:dossiq:4886:63c08dd9	enum fixed + test, pushed 8a2f03f5, REVERIFY recorded	session-20261115T182948-465dcc8e	2026-11-15T18:44:48Z
 fix:learniq:1896:e4ec9b91	failed: the extra CouplingBetweenObjects findings come from phpmd 3 counting route attributes (PublicPage, NoCSRFRequired, AnonRateLimit...) as dependencies, not from code; restoring the rating needs a threshold calibration in the central hydra-gates phpmd ruleset (or controller refactors), not a fix on this PR	session-20261115T182940-bfeb7e78	2026-11-15T18:45:04Z
+fix:learniq:2507:c404ad7d	floor restored (unit_complexity 4.38->4.40), pushed 6eb2dbee, REVERIFY recorded	session-20261115T183023-a120e01a	2026-11-15T18:45:06Z
