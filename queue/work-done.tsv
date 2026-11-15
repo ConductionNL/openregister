@@ -15225,3 +15225,4 @@ review:shillinq:1899:3859758c	GREEN: matches change spec, suite OK	session-20261
 fix:pipelinq:2103:91e9bf9a	failed: not fixable on the branch; @vueuse/core is only declared to satisfy @conduction/nextcloud-vue's peer range ^11||^14, and the latest library (2.181.0) still does not accept 15; the bump must wait for a library release that widens the peer range (keep BLOCK)	session-20261115T213101-2fb56005	2026-11-15T22:02:24Z
 review:shillinq:3078:5300990f	RED: new saves use pre-main saveObject named args; 13 new tests fail on PR+development	session-20261115T213156-1ffcf961	2026-11-15T22:02:26Z
 review:shillinq:2070:fbb82225	RED: PaymentBlockService uses old saveObject named args; 2 new test errors	session-20261115T211111-34885d99	2026-11-15T22:02:40Z
+review:shillinq:2249:b619f486	GREEN: main-API migration of one call, suite green	session-20261115T213112-78aba834	2026-11-15T22:02:51Z
