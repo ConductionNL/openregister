@@ -13188,3 +13188,4 @@ build4:openregister:object-write-at-instance-floor:c5	partial: PR #10520 (branch
 review:openregister:10585:43cf2c12	APPROVE: tests only; Flow/Rules/Contract/Controller/Architecture green on merge with main	session-20261115T142934-6cab0c24	2026-11-15T15:21:18Z
 fix:shillinq:2997:70ee300e	fixed: regenerated scoped pages after merging development; new head 7b870224	session-20261115T142958-341f60db	2026-11-15T15:21:28Z
 build:hermiq:models-several-models-per-turn:c4	partial: PR #1781 head 00e5f205, task 5 fallback-chain editor (vitest 1518/1518, +7); task 6 ensemble setting and task 7 ensemble turn left; Playwright/Newman/live tasks left	session-20261114T073117-2bd2e050	2026-11-15T15:21:28Z
+review:learniq:2507:c404ad7d	GREEN: matches practical-exam-assessment specs; suite 6881 with only the inherited he.json failure; phpstan clean	session-20261115T145533-2db61682	2026-11-15T15:21:43Z
