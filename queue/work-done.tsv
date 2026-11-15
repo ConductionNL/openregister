@@ -12131,3 +12131,4 @@ merge:versioniq:721:9a977e3a	merge3 tree of 14 versioniq PRs: merged=1 red=2 fai
 cover:shillinq:05639debm9818:a215617b	already done: lib/Integration/*.php at 97.9% (297/300) on development; -1 and -2 merged; no PR	session-20261114T231738-b43a6a63	2026-11-15T00:05:34Z
 cover:decidiq:a5f973bbmae46:882bd950	already done: lib/Search/*.php at 100% lines (58/58) on development, 15 behaviour tests; no PR	session-20261114T234944-ee1416bc	2026-11-15T00:05:33Z
 verify:dossiq:6528:6afeec0a	6528 GREEN	session-20261114T224754-e4a2fcab	2026-11-15T00:05:52Z
+verify:larpinq:1054:df472e4d	stale	feeder	2026-11-15T00:05:29Z
