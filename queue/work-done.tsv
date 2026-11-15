@@ -13638,3 +13638,4 @@ review:portaliq:1011:584f0c5d	BLOCK: npm ci ERESOLVE, gridstack 14 outside the c
 review:pipelinq:3092:fbd3e247	RED: 29 vitest suites fail to load (nested p-queue in @nextcloud/vue 9.14.1); baseline 1 inherited failure	session-20261115T155903-abd003e3	2026-11-15T16:42:02Z
 review:portaliq:1353:5d73ef4a	GREEN: phpmd 3 runs, unit suite green; phpmd findings 85->102	session-20261115T154254-3d07b219	2026-11-15T16:42:12Z
 review:planninq:909:373cbce5	BLOCK (sbom only): runtime marked bump without sbom.cdx.json; vitest 3566 OK	session-20261115T145541-9d69768b	2026-11-15T16:42:26Z
+review:planninq:731:b7c438a1	RED: peer conflict with nextcloud-vue, npm ci fails	session-20261115T151007-45079d32	2026-11-15T16:42:46Z
