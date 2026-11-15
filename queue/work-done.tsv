@@ -13170,3 +13170,4 @@ build4:openregister:apphost-settings-plane:c6	PR #10553 head abe2513c79: 3.2 don
 verify:shillinq:3080:c709f71f	GREEN 3080: build within spec, no new failures	session-20261115T142958-341f60db	2026-11-15T15:17:05Z
 verify:shillinq:3078:afa296d4	3078 GREEN	session-20261115T142932-b9b408b7	2026-11-15T15:17:12Z
 verify:dossiq:6577:b1c71303	6577 GREEN	session-20261115T142150-6c965c2a	2026-11-15T15:17:29Z
+build:learniq:practical-exam-assessment:c4	PR #2507 head c404ad7d: built T7, T8, T10; left T5 eaExamsToday and T6 portal-side wiring (need portaliq features), T9 e2e	session-20261115T145541-9d69768b	2026-11-15T15:17:42Z
