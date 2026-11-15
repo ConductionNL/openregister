@@ -14139,3 +14139,4 @@ review:pipelinq:3835:1dcc79c3	GREEN 3835	session-20261115T154255-e54527e9	2026-1
 fix:dossiq:4886:073e3804	fixed undefined caseTypeRef in termContext + test; 19 inherited only; new head 63c08dd9	session-20261115T174739-b14c2df4	2026-11-15T18:22:47Z
 review:pipelinq:3150:033622ec	GREEN; stub namespace fixed, phpunit 8890 OK	session-20261115T152558-f97be55f	2026-11-15T18:23:09Z
 merge:planninq:869:dc6b7d1c	merge8 tree of 7 planninq PRs: merged=0 red=6 fail=0 skip=0; conflict 1, lint 0, moved 0; fix rows 1	merge8-20261115T170007-37538273	2026-11-15T18:23:42Z
+fix:portaliq:1766:ff523eae	lock regenerated, npm ci ok, pushed 23513ec0; REVERIFY	session-20261115T174741-9deaa0be	2026-11-15T18:23:45Z
