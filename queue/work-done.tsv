@@ -13774,6 +13774,7 @@ review:thematiq:1289:2557e0ba	GREEN: @vitest/ui patch bump, vitest 1559/1559	ses
 review:thematiq:1555:1e3652b9	BLOCK: psalm 7.1 needs php >=8.3.16 (platform 8.3) and a newer psalm/plugin-symfony; composer install fails	session-20261115T154311-e8600d84	2026-11-15T17:06:41Z
 verify:stackiq:1981:8d7fa4c7	GREEN 1981: 3629 OK, baseline 3626, no new failures	session-20261115T155903-abd003e3	2026-11-15T17:06:51Z
 review:thematiq:1293:09458d15	GREEN: webpack minor bump, vitest and build green	session-20261115T155902-d9805df0	2026-11-15T17:07:02Z
+review:shillinq:2100:32dc7230	RED: conflicts with development; merged tree breaks 3 vitest files added on development (deleted Settings.vue import, mocks missing CnSettingsFieldsSection)	session-20261115T155931-0926aa8e	2026-11-15T17:07:31Z
 review:opencatalogi:2677:209e89ba	stale	session-20261115T155903-abd003e3	2026-11-15T17:07:11Z
 review:stackiq:1067:7132da67	CONFLICT: package-lock.json only	session-20261115T154254-3d07b219	2026-11-15T17:07:32Z
 review:stackiq:1438:23ea35dd	GREEN: hydra-gates dev bump; phpunit 3626 OK	session-20261115T154407-94bf5f8c	2026-11-15T17:07:41Z
