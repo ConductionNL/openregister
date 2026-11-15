@@ -14234,3 +14234,4 @@ fix:shillinq:2411:6ca5ae67	failed: PR only adapts to openregister branch cloud/v
 review:portaliq:1764:b3d8a23e	GREEN: lint unchanged vs development	session-20261115T174741-9deaa0be	2026-11-15T18:40:15Z
 review:portaliq:1071:334e76b1	GREEN: challenge proof only; specs green (self-made fix, noted)	session-20261115T174808-50b8ceec	2026-11-15T18:40:22Z
 fix:shillinq:2091:67b5afb6	obsolete: closed, development already remembers the active administration	session-20261115T174819-9af28ef9	2026-11-15T18:40:27Z
+fix:shillinq:2258:630de5d0	conflict resolved + 7 new dev actions migrated to context, pushed 812b1f9e, REVERIFY recorded	session-20261115T182936-09049974	2026-11-15T18:40:32Z
