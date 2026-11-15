@@ -13675,3 +13675,4 @@ review:shillinq:1900:d987d5f1	CONFLICT: 13 files conflict with development; no d
 review:portaliq:1006:0bb7956e	BLOCK: npm ci ERESOLVE, nextcloud-vue peers @vueuse/core ^11||^14	session-20261114T085646-49a39060	2026-11-15T16:49:36Z
 review:portaliq:1666:00663233	CONFLICT: manifest.json overlaps development's header actions	session-20261115T155911-14cd078d	2026-11-15T16:49:56Z
 review:portaliq:1602:583ee358	GREEN/superseded: development already implements residentsAt; PR conflicts, close it	session-20261115T154407-94bf5f8c	2026-11-15T16:50:12Z
+review:portaliq:1670:1c1e6b95	CONFLICT: manifest.json conflicts with development; code OK, docblock misplaced	session-20261115T154258-dee2cc3d	2026-11-15T16:50:21Z
