@@ -14877,3 +14877,4 @@ fix:learniq:2126:af7f7379	sbom regenerated after merging development; REVERIFY a
 fix:decidiq:2207:d7b1eef1	fixed: l10n conflicts resolved and rebuilt, unit 4633 OK; head 4cc6ec94	session-20261115T200020-0f65b959	2026-11-15T20:44:24Z
 fix:decidiq:1947:35c86213	fixed: test doubles moved to ObjectSaveOptions, unit 4624 OK; new head 0429ddc5	session-20261115T182940-bfeb7e78	2026-11-15T20:44:33Z
 fix:integriq:2994:6a706bf6	fixed: merged development, regenerated sbom; new head a1ae6e95, REVERIFY recorded	session-20261114T073105-752e50ad	2026-11-15T20:44:43Z
+fix:humaniq:1096:e60cc3a3	merged development, regenerated sbom; new head 5b9e37da, REVERIFY recorded	session-20261115T203020-5a3aa6f4	2026-11-15T20:44:50Z
