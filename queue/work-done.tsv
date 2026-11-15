@@ -13871,3 +13871,4 @@ fix:larpinq:1041:6545e1de	floor restored by splitting new check-in units; floor 
 fix:buildiq:1090:de7f28aa	fixed: lockfile regenerated, npm ci + vitest + build green; new head 8b2df26a	session-20261115T160928-e92ec17a	2026-11-15T17:21:52Z
 fix:buildiq:1091:1fce7d65	fixed: lock resynced, npm ci + vitest green; new head c4dd3636, REVERIFY	session-20261115T154258-dee2cc3d	2026-11-15T17:22:09Z
 fix:buildiq:1093:7c1a6bdd	lock regenerated (marked only), npm ci ok, vitest 4692 passed; new head 16b82bb9, REVERIFY	session-20261115T154316-34f0db35	2026-11-15T17:22:16Z
+fix:dossiq:6577:dfc63bfe	conflict resolved (both registrations kept), no new failures; new head cee8f2a5e99f891b27cccf7fda805d294eb5d330	session-20261115T145535-3f9e5078	2026-11-15T17:22:52Z
