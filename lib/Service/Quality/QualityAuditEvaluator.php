@@ -110,28 +110,41 @@ class QualityAuditEvaluator {
 	 * @param iterable<ObjectEntity|array>          $population The objects the population query answered.
 	 * @param DateTimeImmutable                     $now        The moment of the run.
 	 * @param string                                $startedBy  The user id, or `schedule`, that started the run.
+	 * @param callable|null                         $onFailure  Receives each failing record as `array{record, rules}`
+	 *                                                          instead of the result collecting it, so a large
+	 *                                                          population is never held in memory (ADR-009).
 	 *
 	 * @return array{startedAt: string, startedBy: string, evaluated: int, score: float, tolerance: float, verdict: string,
-	 *     failures: array<int, array{record: string, rules: array<int, string>}>}
+	 *     failed: int, failures: array<int, array{record: string, rules: array<int, string>}>}
 	 *
 	 * @spec openspec/changes/runs-recorded-and-causes-named/specs/data-quality-scoring/spec.md#requirement-a-quality-audit-run-is-kept-with-its-failures-and-the-tolerance-it-was-judged-against-req-rcn-004
 	 */
-	public function evaluate(array $audit, iterable $population, DateTimeImmutable $now, string $startedBy): array {
+	public function evaluate(array $audit, iterable $population, DateTimeImmutable $now, string $startedBy, ?callable $onFailure = null): array {
 		$rules = array_values((array)($audit['rules'] ?? []));
 		$tolerance = (float)($audit['tolerance'] ?? 1.0);
 
 		$evaluated = 0;
 		$total = 0.0;
+		$failed = 0;
 		$failures = [];
 		foreach ($population as $member) {
 			$object = $this->dataOf(member: $member);
 			$evaluated++;
 			$total += $this->scorer->score(object: $object, rules: $rules, now: $now);
 
-			$failed = $this->failedRules(object: $object, rules: $rules, now: $now);
-			if ($failed !== []) {
-				$failures[] = ['record' => $this->idOf(member: $member, object: $object), 'rules' => $failed];
+			$failedRules = $this->failedRules(object: $object, rules: $rules, now: $now);
+			if ($failedRules === []) {
+				continue;
 			}
+
+			$failed++;
+			$failure = ['record' => $this->idOf(member: $member, object: $object), 'rules' => $failedRules];
+			if ($onFailure !== null) {
+				$onFailure($failure);
+				continue;
+			}
+
+			$failures[] = $failure;
 		}
 
 		$score = 1.0;
@@ -146,6 +159,7 @@ class QualityAuditEvaluator {
 			'score' => $score,
 			'tolerance' => $tolerance,
 			'verdict' => $this->verdict(score: $score, tolerance: $tolerance),
+			'failed' => $failed,
 			'failures' => $failures,
 		];
 	}//end evaluate()

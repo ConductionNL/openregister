@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Files\Controller\Support;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCA\OpenRegister\Service\File\DocumentStore;
 use Psr\Container\ContainerInterface;
+use OCA\OpenRegister\Service\File\MalwareScanState;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -40,6 +41,7 @@ final class FileSettingsControllerServices {
 	 * @param AppSettingsInterface $settingsService Settings service.
 	 * @param LoggerInterface      $logger          Logger.
 	 * @param DocumentStore|null   $documentStore   Where the documents live; null leaves it out of the file settings.
+	 * @param MalwareScanState|null $malwareScanState Whether uploads can be scanned for malware (upload-malware-scan).
 	 *
 	 * @spec openspec/changes/register-document-store/specs/file-actions/spec.md
 	 */
@@ -48,6 +50,7 @@ final class FileSettingsControllerServices {
 		public readonly AppSettingsInterface $settingsService,
 		public readonly LoggerInterface $logger,
 		public readonly ?DocumentStore $documentStore = null,
+		public readonly ?MalwareScanState $malwareScanState = null,
 	) {
 	}//end __construct()
 }//end class

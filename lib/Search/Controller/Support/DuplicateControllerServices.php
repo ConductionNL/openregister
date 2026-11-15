@@ -26,6 +26,7 @@ use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Search\Service\Quality\DismissedPairStore;
 use OCA\OpenRegister\Search\Service\Quality\DuplicateDetectionServiceInterface;
+use OCA\OpenRegister\Search\Service\Quality\NearDuplicateScope;
 
 /**
  * The services of the duplicate-detection API.
@@ -40,6 +41,7 @@ final class DuplicateControllerServices {
 	 * @param DismissedPairStore                 $dismissals    The dismissed-pair store
 	 * @param ObjectOperationsInterface          $objectService The object operations
 	 * @param ControllerSession                  $session       The caller's session
+	 * @param NearDuplicateScope|null           $nearDuplicates The readable files of a near-duplicate scope.
 	 *
 	 * @spec openspec/changes/mdm-surface-api/tasks.md#task-2
 	 */
@@ -48,6 +50,7 @@ final class DuplicateControllerServices {
 		public readonly DismissedPairStore $dismissals,
 		public readonly ObjectOperationsInterface $objectService,
 		public readonly ControllerSession $session,
+		public readonly ?NearDuplicateScope $nearDuplicates = null,
 	) {
 	}//end __construct()
 }//end class

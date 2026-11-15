@@ -44,6 +44,17 @@ use PHPUnit\Framework\TestCase;
  * decision to DraftService; a hidden object or draft answers 404.
  *
  * @covers \OCA\OpenRegister\Controller\VersionsController
+ * @uses   \OCA\OpenRegister\Db\ObjectEntity
+ * @uses   \OCA\OpenRegister\Db\Register
+ * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses   \OCA\OpenRegister\Db\DraftVersion
  */
 class VersionsControllerTest extends TestCase {
 

@@ -77,6 +77,18 @@ class ApiCapabilitiesServiceTest extends TestCase {
 		$this->assertArrayHasKey('pageSize', $published['limits']);
 	}//end testTheUnauthenticatedAnswerCarriesTheVersionsAndTheLimits()
 
+	/**
+	 * A caller can detect the `_where` condition tree once (listQuery.where).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/list-query-condition-groups/specs/zoeken-filteren/spec.md
+	 */
+	public function testTheAnswerSaysAListQueryTakesAConditionTree(): void {
+		$this->assertSame(['where' => true], $this->service()->publicCapabilities()['listQuery']);
+		$this->assertSame(['where' => true], $this->service()->sessionCapabilities()['listQuery']);
+	}//end testTheAnswerSaysAListQueryTakesAConditionTree()
+
 	public function testTheUnauthenticatedAnswerNamesNoRegisterNoSchemaAndNoSwitch(): void {
 		$published = $this->service()->publicCapabilities();
 

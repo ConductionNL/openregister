@@ -17,37 +17,64 @@
 
 ## 2. The data quality audit
 
-- [ ] 2.1 A `qualityAudit` record: a named population query, a rule set, a tolerance, a schedule.
-- [ ] 2.2 A run evaluates the declared rules over the population with the existing scorer.
-      (built: `QualityAuditEvaluator::evaluate()` scores every member with `QualityScorer` and reports one
-      population score; a record fails a rule when the scorer, given that rule alone, scores it below 1, so no
-      second rule evaluator exists. NOT YET: the runner that executes the population query and starts a run
-      from a schedule; it needs the 2.1 record.)
-- [ ] 2.3 The run records the score, the tolerance it was judged against, the verdict and the failing records with the rules they failed.
-      (built: the run result carries the moment, who started it, the count evaluated, the score, the tolerance
-      as it stood, the verdict and the failing records with their rules. NOT YET: storing it, which needs 2.1/2.4.)
-- [ ] 2.4 Runs are kept, so a score is readable beside its predecessors.
-- [ ] 2.5 The failing records of a run are exportable.
-      (built: `QualityAuditEvaluator::failuresCsv()`, one row per record with the rules it failed. NOT YET:
-      the export endpoint over a stored run.)
+- [x] 2.1 A `qualityAudit` record: a named population query, a rule set, a tolerance, a schedule.
+      `QualityAudit` (`openregister_quality_audits`, `Version1Date20261114130000`): name, a population of
+      register, schema and field filters, the scorer's rules, a tolerance and `daily`/`weekly`/`monthly` or
+      none. `QualityAuditService::save()` refuses a faulty declaration naming each fault (the evaluator's
+      check, an unknown schedule, a register or schema that does not exist), and `/api/quality-audits`
+      declares, reads, changes and removes them, administrators only.
+- [x] 2.2 A run evaluates the declared rules over the population with the existing scorer.
+      `QualityAuditService::run()` executes the population query a page at a time and hands the members to
+      `QualityAuditEvaluator::evaluate()`, which scores them with `QualityScorer`; no second rule evaluator
+      exists. On demand: `POST /api/quality-audits/{id}/run`. On a schedule: `QualityAuditScheduleJob`
+      (hourly) runs every audit whose period has passed since its last run.
+- [x] 2.3 The run records the score, the tolerance it was judged against, the verdict and the failing records with the rules they failed.
+      `QualityAuditRun` keeps the moment, who started it (a user or `schedule`), the count evaluated, the
+      score, the tolerance AS IT STOOD, the verdict and the failure count; the failing records go to
+      `openregister_quality_audit_failures` in batches as they are found, never held in memory. A run that
+      cannot finish is kept with the verdict `error`.
+- [x] 2.4 Runs are kept, so a score is readable beside its predecessors.
+      `GET /api/quality-audits/{id}` returns the audit with its runs oldest first; `/runs` pages them.
+      Changing an audit never touches its runs.
+- [x] 2.5 The failing records of a run are exportable.
+      `GET /api/quality-audit-runs/{id}/failures` (paged JSON) and `/failures.csv` (`record,rules`).
 
 ## 3. The import run
 
-- [ ] 3.1 An `importRun` record: file name, fingerprint, mapping, conflict policy, actor, moment, counts.
-- [ ] 3.2 One outcome per row with its reason, paged on read.
-- [ ] 3.3 The failed rows are exportable for correction.
-- [ ] 3.4 A retry of the failed rows creates a new run naming the original as its cause.
-- [ ] 3.5 Per-row detail is pruned on an administered period; the header and the counts are kept.
+- [x] 3.1 An `importRun` record: file name, fingerprint, mapping, conflict policy, actor, moment, counts.
+      The import preview of `import-preview-and-conflict-policy` already is that record (`sourceName`,
+      `sourceHash`, `packSlug`, `policy`, `createdBy`, `created`, the counts), so it is kept rather than
+      duplicated (D-7). `Version1Date20261114120000` adds `cause_run` and `rows_pruned_at` to it, and a
+      commit runs inside `WriteCause::runAs(import, <run uuid>)`, so every audit entry it writes names the run.
+- [x] 3.2 One outcome per row with its reason, paged on read.
+      The paged `/api/import-previews/{id}/rows` already existed; a row now also carries `outcome`
+      (`written` or `failed`), the object it created (its uuid fixed at preview time) or updated, and
+      `source`, the row as it was submitted.
+- [x] 3.3 The failed rows are exportable for correction.
+      `GET /api/import-previews/{id}/failed` (`ImportFailedRowsCsv`): every skipped, refused or failed row
+      in its submitted columns, read a page at a time, led by `_row` and `_reason`, which the importer
+      ignores, so the corrected file loads as it is.
+- [x] 3.4 A retry of the failed rows creates a new run naming the original as its cause.
+      `POST /api/import-previews` with `retryOf=<run id>`: only a run the caller may read is accepted, and
+      the new run's `causeRun` is the original's uuid; the original is not touched.
+- [x] 3.5 Per-row detail is pruned on an administered period; the header and the counts are kept.
+      `ImportRunRetentionJob` (daily) through `ImportRunRetention`: app config
+      `import_run_row_retention_days` (default 90). A pruned run reads `rowsPruned: true`, its rows say
+      `pruned`, and its failed-row export answers 410 rather than an empty file.
 
 ## 4. Tests
 
 - [x] 4.1 Unit tests for the cause derivation, the cascade cause, the forwarded cause and the ignored client-supplied cause.
 - [x] 4.2 Unit tests for the tolerance verdict, the stored tolerance and the failing-record list.
       (`tests/Unit/Service/Quality/QualityAuditEvaluatorTest.php`, against the real scorer; the definition
-      check of REQ-RCN-003 is covered there too.)
-- [ ] 4.3 Unit tests for the run record, the retry lineage and the prune that keeps the header.
+      check of REQ-RCN-003 is covered there too. The stored run, the schedule and the export:
+      `QualityAuditServiceTest`, `QualityAuditTest`, `QualityAuditControllerTest`.)
+- [x] 4.3 Unit tests for the run record, the retry lineage and the prune that keeps the header.
+      `ImportRunRecordTest`, `ImportFailedRowsCsvTest`, `ImportRunRetentionTest`, `ImportRunControllerTest`.
 - [ ] 4.4 An e2e over an import run read back after it finished, with a failed row and its reason.
-- [ ] 4.5 Deduplication check (ADR-012) recorded in the PR body.
+- [x] 4.5 Deduplication check (ADR-012) recorded in the PR body.
+      Section 1 in its PR and below; sections 2 and 3: the scorer and evaluator reused, the import preview
+      reused as the run record, the cause frame reused for the run identity, no second store or evaluator.
 
 ## What was built: section 1, the cause
 
@@ -87,14 +114,12 @@ failure the existing `flow_run` comment already records.
 - **1.3, the cause forwarded into deferred listener jobs.** Built since: the
   base `ActorForwardedJob` restores the frame around `runDeferred()`, so no
   subclass needed to change (see the task line above).
-- **Section 2 entirely, the data quality audit.** A `qualityAudit` record, a
-  population query, a rule set, a tolerance stored WITH the run, a schedule,
-  kept runs and exportable failures. That is a record with a lifecycle, not a
-  field.
-- **Section 3 entirely, the import run.** Same shape: a record, per-row
-  outcomes, paging, export, retry lineage and a prune that keeps the header.
-- **4.2, 4.3 and 4.4.** They test sections 2 and 3, and an e2e needs a live
-  instance.
+- **Sections 2 and 3**, the data quality audit and the import run: built in the
+  second pass (see the task lines above). The quality audit is three new tables
+  (the audit, its kept runs, their failing records); the import run reuses the
+  import preview as its record, as D-7 asks, rather than a second store.
+- **4.4, the e2e** over an import run read back with a failed row: it needs a
+  live instance, so it is left for a lane that has one.
 
 The cause vocabulary is deliberately the FIRST half: sections 2 and 3 both need
 somewhere for `cause_run` to point, and building the pointer before the thing it

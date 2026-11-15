@@ -237,6 +237,32 @@ class WebhookEventListenerTest extends TestCase {
 
 	// --- ObjectUpdatedEvent ---
 
+	public function testObjectUpdatedEventCarriesBothStates(): void {
+		$old = new ObjectEntity();
+		$old->setUuid('uuid-456');
+		$old->setObject(['status' => 'draft']);
+		$new = new ObjectEntity();
+		$new->setUuid('uuid-456');
+		$new->setObject(['status' => 'final']);
+
+		$payloads = [];
+		$this->webhookService->method('dispatchEvent')->willReturnCallback(
+			function (string $eventName, array $payload) use (&$payloads): void {
+				$payloads[] = $payload;
+			}
+		);
+
+		$this->listener->handle(new ObjectUpdatedEvent($new, $old));
+		$this->listener->handle(new ObjectUpdatedEvent($new));
+
+		$this->assertCount(2, $payloads);
+		$this->assertSame('final', $payloads[0]['newObject']['status']);
+		$this->assertSame('draft', $payloads[0]['oldObject']['status']);
+		$this->assertSame($payloads[0]['object'], $payloads[0]['newObject']);
+		$this->assertNull($payloads[1]['oldObject']);
+		$this->assertSame($payloads[1]['object'], $payloads[1]['newObject']);
+	}
+
 	public function testObjectUpdatedEventDispatchesWebhook(): void {
 		$object = new ObjectEntity();
 		$object->setUuid('uuid-456');

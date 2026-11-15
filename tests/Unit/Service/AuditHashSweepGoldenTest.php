@@ -350,13 +350,16 @@ class AuditHashSweepGoldenTest extends TestCase {
 		$rowFive = $this->row(5);
 		$rowSix = $this->row(6, 'h6');
 		$rowSeven = $this->row(7, '');
-		$this->results = [['all' => [$rowFive, $rowSix, $rowSeven]], ['row' => ['hash' => 'h4']]];
+		// The range is read as an `id, hash` skeleton; only the unsealed rows'
+		// payload is fetched (row 6 is sealed, so its payload never is).
+		$skeleton = [['id' => 5, 'hash' => null], ['id' => 6, 'hash' => 'h6'], ['id' => 7, 'hash' => '']];
+		$this->results = [['all' => $skeleton], ['all' => [$rowFive, $rowSeven]], ['row' => ['hash' => 'h4']]];
 
 		$this->assertSame(2, $this->service->sealRows([7, 5]));
 
 		$hashFive = $this->hashOf($rowFive, 'h4');
 		$hashSeven = $this->hashOf($rowSeven, 'h6');
-		$this->assertSame([[5, 7], [5, '']], $this->queries);
+		$this->assertSame([[5, 7], [[5, 7]], [5, '']], $this->queries);
 		$this->assertSame(
 			[
 				[
