@@ -15113,3 +15113,4 @@ review:integriq:2992:301b5d1e	GREEN: axe-core bump, vitest 2387/2387	session-202
 review:integriq:3057:2fbd882d	GREEN: dev-only bump, suite equals baseline	session-20261115T213107-505dc338	2026-11-15T21:39:24Z
 review:learniq:2126:4e6551e4	GREEN: phpstan bump, 0 phpstan errors, 1 inherited unit failure	session-20261115T213144-ab42ee6a	2026-11-15T21:39:40Z
 review:larpinq:1050:f7fb4695	GREEN: build matches spec, 999 PHP + 608 vitest OK	session-20261115T213156-1ffcf961	2026-11-15T21:39:47Z
+review:learniq:2134:908f17ac	GREEN: mechanical saveObject migration, args preserved, no new failures	session-20261115T213134-4b0d2823	2026-11-15T21:40:07Z
