@@ -14129,3 +14129,4 @@ fix:portaliq:1994:6ba432f4	merged development, unit 6120 OK, pushed cffe40a0; RE
 fix:portaliq:1229:8b002219	conflict resolved (stale suppression dropped), comment-only diff kept; new head facf71a31657fe456811aa8eb8ace13c12b9a2e5	session-20261114T102637-6688951e	2026-11-15T18:21:29Z
 review:pipelinq:2458:31ac15a5	GREEN; phpunit 8944 OK, vitest 1 inherited; note old deleteObject form like rest of dev	session-20261115T152558-f97be55f	2026-11-15T18:21:46Z
 fix:portaliq:1848:cc4102c9	fixed editor stamp lost in development's refactor; suite 6120 OK; new head 5c463cd1	session-20261115T174833-88ac0233	2026-11-15T18:21:56Z
+fix:portaliq:1354:23330bb3	lock regenerated, npm ci OK, REVERIFY recorded	session-20261115T174747-978963d5	2026-11-15T18:22:03Z
