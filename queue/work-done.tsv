@@ -13352,3 +13352,4 @@ review:buildiq:1265:5f5ede07	BLOCK: wrong namespace for the save option classes,
 review:decidiq:1944:e682b8bc	CONFLICT: diff correct, unit 2851 OK on head; conflicts with development in ~25 files + new old-style calls there	session-20261115T154300-03b63424	2026-11-15T15:52:08Z
 review:dossiq:3198:c19a6d9c	GREEN (lock conflict with development)	session-20261115T142951-2463b4c4	2026-11-15T15:52:20Z
 review:dossiq:3954:d0d56e69	CONFLICT: renames only, touched tests green on head; conflicts with development in 9 files	session-20261115T142934-de7c51d0	2026-11-15T15:52:26Z
+review:decidiq:1691:6a147074	RED: conflicts with development; structureProfile page-count test fails on head (104 vs 103)	session-20261115T152552-0cb4306e	2026-11-15T15:52:33Z
