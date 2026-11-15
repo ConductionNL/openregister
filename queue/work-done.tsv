@@ -15019,3 +15019,4 @@ fix:decidiq:1737:43c02ff7	stale	feeder	2026-11-15T21:15:07Z
 review:filinq:2122:c15c52d2	BLOCK: new repair uses dropped OR save args (silently re-points nothing); tests ok	session-20261115T203012-30a1abde	2026-11-15T21:17:01Z
 review:filinq:1355:307201af	GREEN: phpmd 3 bump, unit 6798 OK	session-20261115T211111-34885d99	2026-11-15T21:17:21Z
 review:filinq:1962:be24b1cd	GREEN: opis patch bump, 6798 tests ok (development sbom stale)	session-20261115T203012-30a1abde	2026-11-15T21:18:34Z
+review:filinq:1828:0e6a9fe3	RED: new phpcs sniff flags ObjectEventRegistrar.php:297	session-20261115T211111-34885d99	2026-11-15T21:18:49Z
