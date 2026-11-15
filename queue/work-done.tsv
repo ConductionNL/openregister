@@ -13359,6 +13359,8 @@ review:dossiq:3300:6bb977e0	CONFLICT with development; change itself fine	sessio
 review:decidiq:1615:16c70ed7	BLOCK 1615 (behaviour changes pending product decisions; heavy conflicts with development)	session-20261115T142201-ea23e682	2026-11-15T15:52:50Z
 review:dossiq:3298:85e60038	CONFLICT: AcController::update conflicts with development refactor; logic sound, needs merge	session-20261115T154254-3d07b219	2026-11-15T15:53:04Z
 review:dossiq:3936:d81910f6	CONFLICT: spec-conformant, head suite 8617/0 failures, conflicts with development in 15 files	session-20261115T154329-16a67e2f	2026-11-15T15:53:14Z
+build:launchpad:embedded-analytics:c4	partial: PR #1230 (head f043acfc) built tasks 6, 7, 9, 10, 14, 20-23, 26, 28, 30, 33, 34, 36; left 12, 13, 15-18, 27, 40 (admin UI), 19 dist + 24 (release), 37 i18n, 38/39 sign-offs, 35 e2e; phpunit 4269->4424 green, vitest 2600 green	session-20261115T142958-341f60db	2026-11-15T15:53:24Z
 review:dossiq:4882:13c8daa8	CONFLICT with development (9 files); diff clean, PR head unit green	session-20261115T154314-8216dc98	2026-11-15T15:53:25Z
 review:openregister:10586:dd1990e6	APPROVE (tests only, all green)	session-20261115T142949-9c6a3945	2026-11-15T15:53:38Z
 review:dossiq:3297:78031823	GREEN on its head (adds fail-closed case check); conflicts with development refactor, needs port	session-20261114T102641-d4fd3e25	2026-11-15T15:53:44Z
+review:dossiq:4149:9433f0b4	CONFLICT: 2 files conflict with development; behaviour notes recorded	session-20261115T142149-1d09fceb	2026-11-15T15:53:52Z
