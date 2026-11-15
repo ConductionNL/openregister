@@ -14931,3 +14931,5 @@ fix:opencatalogi:2677:6373144b	CONFLICT resolved, REVERIFY recorded; development
 fix:buildiq:1596	fixed: conflict resolved; new head 33a8b51d	session-20261115T200000-e95b89c2	2026-11-15T20:53:58Z
 fix:versioniq:497:bc42f75b	lock conflict resolved on development's lock, patches apply to 1.9.1; new head 39a7db06, REVERIFY	session-20261115T200011-d13b13ca	2026-11-15T20:54:14Z
 fix:opencatalogi:1889:38ce8706	fixed: 7 conflicts resolved, no new failures vs development (107 inherited); head a5e55a55	session-20261115T200020-0f65b959	2026-11-15T20:54:24Z
+fix:keepiq:1816:6bce7859	fixed: development merged keeping both sides; tests = baseline; new head f765ddb9	session-20261115T182940-bfeb7e78	2026-11-15T20:54:40Z
+fix:opencatalogi:2696:f7d699f3	fixed: development merged, red test green, no new failures; new head 2ec8a868	session-20261115T200043-78b85ca2	2026-11-15T20:54:46Z
