@@ -14989,3 +14989,6 @@ merge:shillinq:1899:ad1c159e	merge	shillinq	development	development	prs=1899@7b7
 merge:decidiq:2203:8430d523	merge	decidiq	development	development	prs=2203@d8307a7cb58e9a2cbbfa61c405fd98948dfe230f	2026-11-15T19:19:47Z
 merge:portaliq:1995:88866ec8	merge	portaliq	development	development	prs=1995@d96754fb33d5ca0fdd96837011afc28d85cf7325	2026-11-15T19:19:47Z
 merge:planninq:1037:d12258e0	merge	planninq	development	development	prs=1037@94d58586b04f15f66b803ea588ffc7b7e0a3dd09	2026-11-15T19:19:47Z
+fix:integriq:2716:a994c099	fix	integriq	development	2716	sha=a994c099b9f332995b01b1c497c6816a40f1abf5;verdict=CONFLICT;branch=dependabot/npm_and_yarn/development/vue-3.5.44;reason=merges clean on development alone, files: package-lock.json 	2026-11-15T18:48:22Z
+fix:integriq:2994:6a706bf6	fix	integriq	development	2994	sha=6a706bf6c0a83ab93ba638a04be7847a82ed59e6;verdict=CONFLICT;branch=dependabot/npm_and_yarn/development/sass-1.107.1;reason=merges clean on development alone, files: package-lock.json package.json 	2026-11-15T18:48:22Z
+fix:integriq:3564:4585a979	fix	integriq	development	3564	sha=4585a979b4981704a0fedc24a4b143a0efb639be;verdict=CONFLICT;branch=quality/build-gateway-api-design-rules-check;reason=conflicts with development, files: l10n/en.js l10n/nl.js 	2026-11-15T18:48:22Z
