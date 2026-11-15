@@ -12200,6 +12200,7 @@ fix:decidiq:2203:0b06187d	conflict resolved, new head 8d2d8f97, REVERIFY recorde
 verify:buildiq:1654:e8de909d	GREEN #1654: PHP 3217 (1 inherited), JS 4713 pass	session-20261114T234941-bc8686af	2026-11-15T00:19:44Z
 cover:portaliq:b60f3b81m4ccb:4c5a21c2	already done: lib/Service/Plans/*.php at 100% (692/692 stmts, 70 tests) on development 36f15797; no PR needed	session-20261115T001748-75994f45	2026-11-15T00:19:47Z
 cover:pipelinq:7f9dc8e6m799d:50cc8442	already done: lib/Util/*.php measures 100% lines (115/115) on development; no PR	session-20261114T231750-d1c755b0	2026-11-15T00:19:45Z
+build:shillinq:sales-webshop-orders:c5	done: PR #3088 (head 32682f0a9) built 2.3 VAT route, 2.5 credit notes, 3.1 pages, 4.1 docs; all code tasks ticked; unit 11490 no failures (baseline 11477); Playwright for 3.1 left (live)	session-20261114T234944-eb1b5f87	2026-11-15T00:19:56Z
 cover:pipelinq:7f9dc8e6m799d:e372e6ff	already done: lib/Event/*.php 111/111 statements (100%, pcov, full unit suite) on development 0d8e11ea2; no PR	session-20261114T225452-4fcfea7f	2026-11-15T00:19:55Z
 review:hermiq:1735:01675e5c	GREEN: suite 5267 OK, vitest 1539 OK	session-20261114T231755-998f7ff8	2026-11-15T00:20:08Z
 verify:shillinq:3055:75999b41	3055 GREEN (unit 11507 OK vs 11471; vitest dunningNextRun failure inherited)	session-20261114T233346-3552728d	2026-11-15T00:20:29Z
