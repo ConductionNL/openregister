@@ -13446,3 +13446,4 @@ review:hermiq:1579:dae558f0	RED: psalm 7.2.1 lock unsatisfiable under config.pla
 review:filinq:1311:f1d84cc5	GREEN: vitest 763/763; lockfile conflict with development	session-20261115T155915-84e5dc0a	2026-11-15T16:07:36Z
 review:hermiq:1175:ca7f829c	GREEN: patch bump; failures identical to baseline	session-20261115T154254-3d07b219	2026-11-15T16:08:23Z
 review:humaniq:667:3bb5749b	GREEN (dep bump, test:js unchanged vs development)	session-20261115T141023-b06d51da	2026-11-15T16:08:31Z
+review:humaniq:477:84c765e3	BLOCK: npm ci ERESOLVE, @conduction/nextcloud-vue peers @vueuse/core ^11||^14 vs ^15; development installs	session-20261114T085646-49a39060	2026-11-15T16:08:38Z
