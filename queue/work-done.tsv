@@ -14501,3 +14501,4 @@ fix:opencatalogi:2259:6c778379	failed: superseded, needs a manual close (closing
 fix:opencatalogi:2669:b357649e	conflict resolved (CHANGELOG, PublicationService); 2 inherited failures only; new head a67472fb	session-20261115T174739-b14c2df4	2026-11-15T19:19:49Z
 fix:launchpad:759:4d40c072	fixed: merged development, lockfile in sync, vitest 2578/2578; new head 3f179d5b	session-20261115T190008-ff700d5c	2026-11-15T19:20:01Z
 fix:opencatalogi:2665:b06af5bf	CONFLICT resolved (both-sides appends), pushed cdc5db8f; REVERIFY	session-20261115T174741-9deaa0be	2026-11-15T19:20:11Z
+fix:opencatalogi:2417:a2892ce3	fixed: main namespace, merged development, no new failures; new head cb054a7d	session-20261115T185930-76cdc846	2026-11-15T19:20:18Z
