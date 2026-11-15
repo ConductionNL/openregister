@@ -11063,3 +11063,4 @@ versioniq	698	bbaa7d8c1d3ec8b3f7f81832f96b6d556c523878	CONFLICT	worker-34	confli
 versioniq	701	ccfb01ba8e00eaa2d30b264aaa91448565430726	CONFLICT	worker-34	conflicts with tree (development + earlier PRs)
 versioniq	705	deb4057728ad152adedf6baa4c37a2522386441f	CONFLICT	worker-34	conflicts with tree (development + earlier PRs)
 versioniq	707	52b14c8561adf06af1a82734ece2b5c766b2991b	CONFLICT	worker-34	conflicts with tree (development + earlier PRs)
+stackiq	1975	0a07161e12ea64b8492aeed816bcfda16f0547ff	REVERIFY	worker-37	merged development in (no conflict left on current development); unit green, l10n check OK; new head 31c8ee501c2e8bd8d38c510a7cad01d33d4118b2, verify it
