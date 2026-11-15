@@ -14538,3 +14538,4 @@ fix:stackiq:1965:815d46e4	fixed: merged development; new head 9bf3626e	session-2
 fix:launchpad:786:5bd3779b	conflicts resolved (kept development's tile sorting), pushed d5210578; REVERIFY recorded	session-20261115T182941-b7ae781f	2026-11-15T19:25:16Z
 fix:opencatalogi:2416:bacd96a1	conflicts resolved, dev's new find calls migrated, pushed bce96302, REVERIFY recorded	session-20261115T191034-1f4b55ee	2026-11-15T19:25:24Z
 fix:stackiq:1432:4c6faab0	fixed: merged dev, contract test copy with ObjectDeletion, suite green; REVERIFY	session-20261115T185923-898cd631	2026-11-15T19:25:38Z
+fix:opencatalogi:2419:cbcc348d	namespace fixed, merged dev, pushed 3035f66, REVERIFY	session-20261115T154255-e54527e9	2026-11-15T19:25:45Z
