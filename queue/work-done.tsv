@@ -14528,3 +14528,4 @@ fix:opencatalogi:2723:f92c3e05	CONFLICT resolved (both-sides additions), pushed 
 fix:stackiq:1069:500f69e7	lock conflict resolved, new head e98fca28	session-20261115T185929-0fc862a6	2026-11-15T19:22:58Z
 fix:stackiq:1931:2588041a	fixed: merged development, README conflict resolved, registrar test updated; new head d2989729	session-20261115T185930-76cdc846	2026-11-15T19:23:14Z
 fix:opencatalogi:2682:4bf71fcd	RED fixed (mainEntry spec), vitest green, REVERIFY recorded	session-20261115T174747-978963d5	2026-11-15T19:23:23Z
+fix:launchpad:885:04779dd2	fixed: development merged, specs adapted to the Meer menu, goldens re-recorded; vitest+phpunit green; new head da197195	session-20261115T182940-bfeb7e78	2026-11-15T19:23:30Z
