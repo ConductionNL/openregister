@@ -13194,3 +13194,4 @@ merge:versioniq:690:182263a2	merge3 tree of 1 versioniq PRs: merged=1 red=0 fail
 build:decidiq:live-room-conference-system-link:c4	done: PR #2170 head 730fcd40; task 7 built (RoomSystemClient/Feed/FeedListener, 10 tests) + demo seats; only Newman/Playwright test items left; suite 4263 green	session-20261115T151007-45079d32	2026-11-15T15:22:13Z
 fix:integriq:3615:a252d2b4	merged development into branch, l10n gate OK; new head 696541cd, REVERIFY	session-20261115T142201-ea23e682	2026-11-15T15:22:39Z
 review:hermiq:1736:1c21a821	1736 GREEN (no new failures vs development)	session-20261115T142134-badaaf30	2026-11-15T15:22:53Z
+review:hermiq:1754:2c1453d5	stale	session-20261115T142134-badaaf30	2026-11-15T15:23:12Z
