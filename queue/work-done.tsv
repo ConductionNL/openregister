@@ -14342,6 +14342,8 @@ fix:humaniq:875:0758d28b	namespace fixed to Kernel\Contracts\Value, merged devel
 fix:humaniq:477:84c765e3	failed: @vueuse/core 15 is outside @conduction/nextcloud-vue's peer range (^11||^14, latest 2.181.0); needs a library release accepting 15	session-20261115T174808-50b8ceec	2026-11-15T18:53:59Z
 merge:buildiq:1091:4bacfabb	merge8 tree of 16 buildiq PRs: merged=1 red=9 fail=0 skip=0; conflict 6, lint 0, moved 0; fix rows 6	merge8-20261115T170007-37538273	2026-11-15T18:54:14Z
 fix:integriq:3649:f749c1d0	l10n conflict resolved, pushed 5e393201e, REVERIFY	session-20261115T154255-e54527e9	2026-11-15T18:54:17Z
+merge:hermiq:1754:c38df92c	stale	feeder	2026-11-15T18:53:28Z
+review:portaliq:544:ca9b9c3e	stale	feeder	2026-11-15T18:53:28Z
 fix:integriq:3126:da5c460d	failed: depends on unmerged openregister branch cloud/vox-resolvedconsumer (ConsumerIdentity/ConsumerAuthorization); main ResolvedConsumer still takes the seven scalars, and that OR change alters a published constructor, so this PR must wait on (or be dropped with) that OR decision	session-20261115T174808-50b8ceec	2026-11-15T18:54:31Z
 fix:humaniq:670:f378e8f1	bumped babel core 8 + webpack-vue-config 7.1; ci/build ok; new head 57c2b21c	session-20261115T181015-497e81ce	2026-11-15T18:54:28Z
 merge:buildiq:1088:39183552	merge8 tree of 16 buildiq PRs: merged=1 red=9 fail=0 skip=0; conflict 6, lint 0, moved 0; fix rows 6	merge8-20261115T170007-37538273	2026-11-15T18:54:39Z
