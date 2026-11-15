@@ -13339,3 +13339,4 @@ review:decidiq:1472:a40d36e1	GREEN: sass devdep bump, vitest 2825 passed	session
 review:decidiq:1942:76931393	RED: conflicts with development; merged tree TypeErrors in DecidiqRequestDecisionNodeBranchesTest (5)	session-20261115T154316-34f0db35	2026-11-15T15:50:01Z
 review:decidiq:1474:bbce152d	GREEN: devDep bump, vitest 2825 passed, eslint 0 errors	session-20261115T154307-1fc2cc78	2026-11-15T15:50:07Z
 review:buildiq:1233:f1c8aa72	GREEN: copy rename, vitest green; trivial add/add conflict with development	session-20261114T102641-d4fd3e25	2026-11-15T15:50:18Z
+review:decidiq:1920:dfa5dba2	GREEN: copy-only rename Store -> Marketplace; PHPUnit, vitest and l10n checks green	session-20261115T145533-2db61682	2026-11-15T15:50:28Z
