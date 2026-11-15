@@ -13839,3 +13839,4 @@ fix:filinq:2103:a4238696	merged development in (clean), suite 6822 OK, REVERIFY 
 fix:filinq:2094:87b43b49	merged development (clean), unit green, new head c8f196605b65; REVERIFY	session-20261114T085646-49a39060	2026-11-15T17:17:06Z
 fix:filinq:2088:a003bdfc	merged development in cleanly, suite green; new head 08907be906008fa2544f44f229ae355681507a6d	session-20261114T102637-6688951e	2026-11-15T17:17:13Z
 review:versioniq:506:c6a1011e	GREEN: vue patch bump, vitest 3001 pass, build ok	session-20261115T155911-f0070087	2026-11-15T17:17:28Z
+build:larpinq:events-casting-and-crew-roles:c3	already building: open branch quality/build-events-casting-and-crew-roles (PR #1054) has every code task; only 3.2 Playwright e2e left, needs a live instance	session-20261114T085646-49a39060	2026-11-15T17:17:45Z
