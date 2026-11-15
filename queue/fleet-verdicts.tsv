@@ -10887,3 +10887,4 @@ portaliq	2518	55bb8c128d4d27ed5631adef84cfd29f969a311e	GREEN	worker-14	unit 5947
 portaliq	2519	4badcac520ffdd4c8e0d9243d636a066286973ec	GREEN	worker-14	unit 5947 OK on tree 2500+2518+2519 (baseline 5840 OK), no new failures; no JS unit script; tests only
 launchpad	1209	418bb0e50b3cceb31d75aca980a6c97a3049ea16	CONFLICT	worker-04	conflicts in tree (after 1206) on lib/Controller/PageSettingsSources.php; clean on plain development
 launchpad	1210	7f9c64f6f96ecf0ea0e1babd72dde9da23d46c6e	CONFLICT	worker-04	conflicts in tree (after 1206) on lib/Controller/PageSettingsSources.php; clean on plain development
+launchpad	1214	eeb7c49b36a388ab52c613941a12107d10fdcc1e	CONFLICT	worker-04	conflicts in tree (after 1206) on l10n/nl.js; clean on plain development
