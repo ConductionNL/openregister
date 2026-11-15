@@ -15013,3 +15013,4 @@ review:filinq:1304:0bd181f9	GREEN: router bump, vitest 763/763	session-20261115T
 review:filinq:2114:bb690f12	RED: 6 failures after merging development (old OR save/delete args in new repositories)	session-20261115T203012-30a1abde	2026-11-15T21:13:08Z
 review:filinq:1102:8f276d18	GREEN: jszip range bump, tests ok	session-20261115T203012-30a1abde	2026-11-15T21:14:38Z
 review:keepiq:1499:88c1cad1	GREEN	session-20261115T202932-d1067ee4	2026-11-15T21:14:56Z
+review:filinq:2088:7e328ebd	RED: GenerationSourceObject uses old find() API vs development; 1 new test failure	session-20261115T211111-34885d99	2026-11-15T21:15:14Z
