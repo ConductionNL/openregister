@@ -13809,3 +13809,4 @@ review:thematiq:1303:392c8254	BLOCK: generated-file conflicts; checks clean on h
 fix:portaliq:2527:ee0b0ee1	merged development, conflicts resolved (register 0.119.0), pushed c2ba60d8; REVERIFY queued	session-20261115T154300-03b63424	2026-11-15T17:12:42Z
 review:stackiq:1431:c3199284	RED: suite red until hydra-gates ships the new find contract; conflicts with development	session-20261115T152554-949e9403	2026-11-15T17:12:47Z
 review:versioniq:484:92a0a429	CONFLICT/obsolete: development already has hydra-gates 1.19.0	session-20261115T155911-14cd078d	2026-11-15T17:12:54Z
+verify:launchpad:1223:70895889	CONFLICT: info.xml, routes.php, ImportLaunchpadRegister.php	session-20261115T160928-e92ec17a	2026-11-15T17:13:07Z
