@@ -13520,3 +13520,4 @@ review:launchpad:787:c954ea2d	CONFLICT: 19 conflicted paths, stacked branch part
 review:humaniq:669:3a6be5bd	GREEN: vue-router minor; build ok; test:js 210/211, 1 inherited	session-20261115T154316-34f0db35	2026-11-15T16:21:06Z
 review:learniq:1163:a7126f01	RED 1163: obsolete, development already has dompurify 3.4.17; lock conflict	session-20261115T142958-341f60db	2026-11-15T16:21:14Z
 review:integriq:2671:1ab1068a	BLOCK: phpmd 3 raises reported violations 158->186 vs existing baseline; tests unchanged	session-20261115T155902-521936b1	2026-11-15T16:21:22Z
+review:launchpad:833:62b5ba52	CONFLICT: 84 files incl. routes.php and src/personal.js (deleted on development)	session-20261115T154254-3d07b219	2026-11-15T16:21:30Z
