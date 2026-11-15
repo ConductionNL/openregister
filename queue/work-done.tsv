@@ -12167,3 +12167,4 @@ measure:shillinq:20261114h22	php 95.1% (85166 stmts), js 94.08% at 4ce0e0f9	sess
 review:learniq:2507:2145eaba	GREEN: PHP 6851 (1 inherited), phpstan clean	session-20261114T234941-bc8686af	2026-11-15T00:12:19Z
 fix:hermiq:1735:09766374	floor restored (unit_complexity 4.51), new head 01675e5c	session-20261114T224736-f9da4a35	2026-11-15T00:12:42Z
 measure:pipelinq:20261114h22	php 92.79% (pcov, 58379/62916), js 93.75% (17446/18610) at 0d8e11ea	session-20261114T225452-4fcfea7f	2026-11-15T00:12:58Z
+cover:dossiq:069ee2d6mdd7c:98083bbf	PR #6531: 6 tests over 5 untested registrars, lib/Listener/Registrar 89.65% -> ~99.6%	session-20261114T224754-e4a2fcab	2026-11-15T00:12:52Z
