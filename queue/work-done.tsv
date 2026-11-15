@@ -14173,6 +14173,7 @@ review:portaliq:1994:cffe40a0	GREEN: find() adapted to ObjectFindOptions, suite 
 fix:portaliq:1071:be71af8c	conflict resolved, narrowed to challenge proof on site form; pushed 334e76b1, REVERIFY	session-20261115T174808-50b8ceec	2026-11-15T18:29:31Z
 fix:shillinq:1910:23e71609	failed: gridstack 14 still outside @conduction/nextcloud-vue peer range (latest 2.180.0 declares ^12 || ^13); needs a library release first, not fixable in shillinq	session-20261115T182936-09049974	2026-11-15T18:30:03Z
 review:portaliq:1766:23513ec0	GREEN: dexie patch bump	session-20261115T174757-8dfa7406	2026-11-15T18:29:59Z
+fix:shillinq:1873:68200d2c	closed as obsolete: development locks nextcloud-vue 2.173.0 vs PR 2.60.0	session-20261115T182940-bfeb7e78	2026-11-15T18:30:14Z
 fix:portaliq:1996:498473cc	fixed: Kernel\Contracts\Value namespace, merged development; new head 69333191	session-20261115T174819-9af28ef9	2026-11-15T18:30:09Z
 review:portaliq:1848:5c463cd1	GREEN: suite 6120 OK, spec 11/11	session-20261115T174833-88ac0233	2026-11-15T18:30:19Z
 review:opencatalogi:2673:61140718	RED: 5 jest failures in WidgetData.spec.js	session-20261115T174741-56eeaa2f	2026-11-15T18:30:29Z
