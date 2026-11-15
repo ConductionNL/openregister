@@ -13778,3 +13778,4 @@ review:stackiq:1067:7132da67	CONFLICT: package-lock.json only	session-20261115T1
 review:stackiq:1438:23ea35dd	GREEN: hydra-gates dev bump; phpunit 3626 OK	session-20261115T154407-94bf5f8c	2026-11-15T17:07:41Z
 review:stackiq:1063:5ec1a4e3	GREEN: router floor bump, lock already at 3.2.0; no new failures	session-20261115T142934-6cab0c24	2026-11-15T17:07:49Z
 review:stackiq:1044:b39f982b	GREEN: parser floor bump; lock conflict resolves to development; 1 inherited vitest failure	session-20261115T155913-70cee771	2026-11-15T17:08:03Z
+review:shillinq:2255:723f7700	BLOCK: test doubles model a search API openregister main does not have; conflicts	session-20261115T142934-de7c51d0	2026-11-15T17:08:10Z
