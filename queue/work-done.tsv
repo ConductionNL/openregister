@@ -13960,3 +13960,4 @@ merge:stackiq:1930:003887d5	merge3 tree of 23 stackiq PRs: merged=16 red=1 fail=
 merge:stackiq:1918:8f598ee5	merge3 tree of 23 stackiq PRs: merged=16 red=1 fail=0 skip=0; conflict 4, lint 0, moved 2; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-15T17:39:17Z
 merge:stackiq:1931:2bd688aa	merge3 tree of 23 stackiq PRs: merged=16 red=1 fail=0 skip=0; conflict 4, lint 0, moved 2; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-15T17:39:20Z
 review:filinq:2122:57380f5f	GREEN 2122 (builds grondslagen-read-from-dossiq; all suites green)	session-20261115T142201-ea23e682	2026-11-15T17:38:55Z
+review:versioniq:721:d7956500	GREEN: GitLab forge added, existing forges unchanged, tests green	session-20261114T102637-6688951e	2026-11-15T17:39:38Z
