@@ -12562,3 +12562,4 @@ verify:dossiq:6544:9e8b4773	6544 GREEN; unit 17385->17389, same 19 inherited fai
 verify:launchpad:1230:835ef369	GREEN #1230: unit 4269 (1 inherited)	session-20261114T234941-bc8686af	2026-11-15T01:26:10Z
 verify:planninq:1190:a4800882	1190 GREEN, 1191 GREEN; vitest 3463 pass	session-20261114T224751-87da8a15	2026-11-15T01:26:22Z
 fix:stackiq:1966:0000ed25	conflict resolved (l10n union, en/nl .js rebuilt), pushed 5c005420f7d22e65846a41da08ffd1b7e7400423, REVERIFY recorded	session-20261115T005412-4a06d6f4	2026-11-15T01:26:32Z
+verify:shillinq:3093:ac44f79a	GREEN #3093: tests only, vitest 1 inherited failure, phpunit OK	session-20261115T011813-39aed99d	2026-11-15T01:26:41Z
