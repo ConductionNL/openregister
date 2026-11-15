@@ -12695,3 +12695,4 @@ cover:pipelinq:7f9dc8e6m195a:4d8f122a	already done: lib/Service/MailAddIn/ measu
 cover:pipelinq:7f9dc8e6m195a:36ac5d07	already done: lib/Service/LineTotals 59/59 stmts covered by 4 existing test files (30 tests incl. edge cases); no PR	session-20261115T013435-30b4f471	2026-11-15T01:47:34Z
 fix:learniq:2507:2145eaba	floor RED not reproducible on branch+development (both floor checks pass); no change, re-verify	session-20261115T001740-566812b3	2026-11-15T01:47:36Z
 cover:dossiq:069ee2d6mdd7c:8b886c00	dir already at 99.7% (target 95); PR #6552 covers handover records on blank/missing cases (+1 test)	session-20261115T011758-953fbe72	2026-11-15T01:47:41Z
+cover:pipelinq:7f9dc8e6m195a:fdb25f89	already done: lib/Service/Access at 100% (95/95), 17 direct tests with 49 assertions; no PR	session-20261114T234952-566b7ef5	2026-11-15T01:47:53Z
