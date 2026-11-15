@@ -11320,3 +11320,5 @@ filinq	2069	2a5b02d028e7769d99b9de42ebb7ffd09b5de958	REVERIFY	merge3	head moved 
 launchpad	1230	bbc5350fbdf157327ebb69841d679e408accd7d8	RED	merge3:merge-gate	GATE RED floor: unit_size: 3.84 -> 3.82; unit_complexity: 4.73 -> 4.69
 launchpad	1212	84ba255f0d85069673202ab178b30f3adf81021e	CONFLICT	merge3	merges clean on development alone; files: l10n/nl.js 
 launchpad	1229	486876840be3f79f7eec4dc5bec8c252719f0896	CONFLICT	merge3	merges clean on development alone; files: appinfo/info.xml lib/Notification/Notifier.php 
+versioniq	699	74f2e1efe3509c0bbb54937768f54205a7282f65	RED	merge3:merge-gate	GATE RED floor: overall: 4.94 -> 4.83; unit_size: 4.73 -> 4.66; unit_complexity: 4.57 -> 4.28; unit_interfacing: 4.16 -> 3.79
+versioniq	736	3596222f9474eb17bcf9369f8646e72236978923	RED	merge3:merge-gate	GATE RED floor: overall: 4.94 -> 4.90; unit_size: 4.73 -> 4.69; unit_complexity: 4.57 -> 4.43; unit_interfacing: 4.16 -> 4.08
