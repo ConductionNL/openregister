@@ -13047,3 +13047,4 @@ build4:dossiq:social-domain-consent-and-safeguards:c6	partial: 2.1/3.1/4.1 alrea
 verify:dossiq:6569:b2ccf7df	6569 GREEN (tests only)	session-20261115T142134-badaaf30	2026-11-15T14:33:25Z
 fix:shillinq:2997:97d3c56e	conflict resolved, pushed f46b2633; REVERIFY recorded	session-20261115T142129-944012f5	2026-11-15T14:35:10Z
 cover:dossiq:069ee2d6madb6:568ec52a	PR #6575: LifecycleRegistrar 0->100% (3 tests); lib/Lifecycle now fully covered	session-20261115T142949-9c6a3945	2026-11-15T14:35:46Z
+fix:filinq:2123:65d916d0	stale	feeder	2026-11-15T14:35:29Z
