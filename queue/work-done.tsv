@@ -14718,3 +14718,4 @@ review:opencatalogi:2654:6fc17083	GREEN: changed-since build matches spec, failu
 review:stackiq:1431:43c26b3c	RED: 17 golden/unit tests still expect old find() arguments; lib change otherwise equivalent	session-20261114T073105-752e50ad	2026-11-15T20:15:22Z
 verify:opencatalogi:2696:4b3960a6	2696 RED, 2723 CONFLICT, 2725 GREEN	session-20261115T200045-d3bb5c75	2026-11-15T20:15:43Z
 review:stackiq:1433:f9d52657	GREEN: patchObject ObjectPatch adaptation matches OR main; 3715 unit tests OK	session-20261115T200020-0f65b959	2026-11-15T20:15:50Z
+review:opencatalogi:2415:cf561973	GREEN: matches openregister main, no new failures	session-20261115T200011-d13b13ca	2026-11-15T20:16:02Z
