@@ -13783,3 +13783,4 @@ review:shillinq:2255:723f7700	BLOCK: test doubles model a search API openregiste
 fix:thematiq:1680:31fb4f82	no change needed: branch up to date with development, conflict only against another PR's l10n in the tree; REVERIFY recorded	session-20261115T155904-a7df5bc0	2026-11-15T17:08:18Z
 review:versioniq:502:f18aa2a5	GREEN: parser bump; lint 0 errors, vitest 3001 OK	session-20261115T145533-2db61682	2026-11-15T17:08:29Z
 fix:pipelinq:3870:d2791727	fixed: development merged, 7 test conflicts resolved, suite green; new head c35c4e62	session-20261115T160928-e92ec17a	2026-11-15T17:08:39Z
+review:stackiq:1031:c3ffd458	RED 1031: obsolete, merge into development is a no-op	session-20261115T142958-341f60db	2026-11-15T17:08:58Z
