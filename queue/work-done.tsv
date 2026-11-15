@@ -15328,3 +15328,4 @@ verify:stackiq:1954:b7430a74	GREEN 1954,1973,1975; RED 1959 (3 LandscapeComparis
 fix:decidiq:1473:4549406a	fixed: sbom regenerated, pushed fbdc77e4	session-20261115T213110-6b33145c	2026-11-15T22:20:59Z
 fix:filinq:2123:e76e9dab	fixed: conflict resolved, new OR calls on main API; new head 3f385b11	session-20261115T213100-e547b457	2026-11-15T22:21:10Z
 fix:stackiq:1168:2d1a29df	sbom regenerated, pushed 04f38d3ae4a4d17b142dbafb97d2a81126d6568c, REVERIFY	session-20261115T220011-f1302da8	2026-11-15T22:21:19Z
+fix:decidiq:1767:3e9af0ff	sbom regenerated; new head ef20753c	session-20261115T203012-30a1abde	2026-11-15T22:21:28Z
