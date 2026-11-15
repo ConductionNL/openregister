@@ -13326,3 +13326,4 @@ review:decidiq:1465:840ea3b6	GREEN: @nextcloud/vue bump, vitest 2825 passed 0 fa
 review:buildiq:1276:c5ef6c3f	BLOCK: depends on StoreListing, absent on openregister main; stubs mask the runtime failure	session-20261115T154311-e8600d84	2026-11-15T15:47:32Z
 review:decidiq:1468:dabc7105	GREEN: vitest 2825 pass, webpack build ok	session-20261115T154255-e54527e9	2026-11-15T15:47:45Z
 review:buildiq:1248:82ce29ad	GREEN: dev-only hydra-gates bump; phpunit 3192, only inherited ExportZipGoldenTest failure	session-20261115T145541-9d69768b	2026-11-15T15:47:56Z
+review:decidiq:1949:654f0e4b	RED: composer install fails (psalm 7 needs php>=8.3.16, platform pinned 8.3)	session-20261115T154300-03b63424	2026-11-15T15:48:03Z
