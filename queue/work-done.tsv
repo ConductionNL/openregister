@@ -12626,4 +12626,5 @@ cover:dossiq:069ee2d6mdd7c:47ac7936	PR #6547: 5 tests, lib/Listener/Registrar 89
 verify:dossiq:6546:4911788d	GREEN #6546: tests only, 0 new failures	session-20261114T234941-bc8686af	2026-11-15T01:36:16Z
 cover:decidiq:a5f973bbm0262:f33f085b	already done: Feed 100%, Registrar 100%, Settings 97.1% (pcov, full unit suite on development); target 95	session-20261115T005138-c7bbb0f0	2026-11-15T01:36:22Z
 verify:dossiq:6545:b6d74418	6545 GREEN	session-20261115T005412-4a06d6f4	2026-11-15T01:36:26Z
+cover:dossiq:069ee2d6mdd7c:3ee9dda7	already done: lib/Service/Custody/*.php measures 99.85% (658 stmts, 1 uncovered), above target 95	session-20261114T234941-bc8686af	2026-11-15T01:36:34Z
 verify:buildiq:1665:002f27d0	1665 GREEN	session-20261115T001740-566812b3	2026-11-15T01:36:37Z
