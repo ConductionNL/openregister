@@ -14397,3 +14397,4 @@ review:shillinq:2259:91b03c64	GREEN: audit-trail export record matches openregis
 review:planninq:908:8cdb1910	GREEN 908	session-20261115T154255-e54527e9	2026-11-15T19:04:51Z
 review:filinq:1309:fbd634f7	GREEN: dev-dep bump, vitest 763 pass, eslint same as baseline	session-20261115T185932-17792562	2026-11-15T19:04:58Z
 review:decidiq:2170:ed3ea097	GREEN: builds its change, suites green	session-20261115T174747-978963d5	2026-11-15T19:05:07Z
+review:dossiq:4886:8a2f03f5	RED dossiq#4886: l10n order check fails (keys appended); PHP suite no new failures	session-20261115T174739-b14c2df4	2026-11-15T19:05:15Z
