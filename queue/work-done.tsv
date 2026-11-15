@@ -12750,3 +12750,4 @@ verify:learniq:2549:075344e2	GREEN 2549: no new PHP or JS failures	session-20261
 cover:dossiq:069ee2d6madb6:98083bbf	PR #6557: 6 registrars covered, 6 tests; suite 19 inherited failures unchanged	session-20261115T015021-bd2172e5	2026-11-15T01:56:52Z
 cover:planninq:e1c9866dmcf99:jsea7197ec	done: PR #1192 (8 utils, 62 tests; suite 3459->3521 green; src/utils branches 89.09->92.01%, statements 99.35%)	session-20261115T014829-787a5341	2026-11-15T01:56:49Z
 cover:openregister:7350e3efm1efa:60c2c265	PR #10579: Controller 94.69%->96.13% stmts; 18 new tests + coverage metadata on 18 test files (52 risky -> 0)	session-20261115T005133-04e59268	2026-11-15T01:57:13Z
+verify:integriq:3648:e8a6b6b9	GREEN 3648 3649 (phpunit 9290 no new failures; vitest 2332 pass)	session-20261115T001758-161b0715	2026-11-15T01:57:22Z
