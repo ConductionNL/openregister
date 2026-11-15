@@ -13673,6 +13673,7 @@ review:pipelinq:3151:b944bc82	BLOCK: stub conflict with development (6eeab75ee);
 review:planninq:918:a2f30b52	GREEN: phpunit 1222 OK, phpstan same as development	session-20261115T145555-b33410db	2026-11-15T16:48:52Z
 review:portaliq:2350:e25d2cb7	RED: psalm 7.2.1 lock unsatisfiable with config.platform php 8.3	session-20261115T155902-d9805df0	2026-11-15T16:49:02Z
 review:shillinq:1900:d987d5f1	CONFLICT: 13 files conflict with development; no defect seen in the reverse-charge diff	session-20261115T154316-34f0db35	2026-11-15T16:49:12Z
+review:portaliq:1768:2c4e29aa	CONFLICT: merged lock out of sync (npm ci: missing pinia@4.1.0)	session-20261115T154307-1fc2cc78	2026-11-15T16:49:26Z
 review:portaliq:1006:0bb7956e	BLOCK: npm ci ERESOLVE, nextcloud-vue peers @vueuse/core ^11||^14	session-20261114T085646-49a39060	2026-11-15T16:49:36Z
 review:portaliq:1666:00663233	CONFLICT: manifest.json overlaps development's header actions	session-20261115T155911-14cd078d	2026-11-15T16:49:56Z
 review:portaliq:1602:583ee358	GREEN/superseded: development already implements residentsAt; PR conflicts, close it	session-20261115T154407-94bf5f8c	2026-11-15T16:50:12Z
