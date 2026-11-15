@@ -13384,3 +13384,4 @@ review:dossiq:4870:ec90c58c	CONFLICT: development already carries a build of the
 review:dossiq:5398:7c1b653e	RED: composer install fails (psalm 7.2.1 needs php ~8.3.16, platform pinned to 8.3)	session-20261115T145541-9d69768b	2026-11-15T15:56:49Z
 review:decidiq:1475:4c1b9a60	BLOCK: gridstack 14 outside the component library's peer range	session-20261115T142934-6cab0c24	2026-11-15T15:56:58Z
 review:dossiq:3201:6c926ab3	GREEN: dep bump, vitest 7178 passed, 2 inherited failures	session-20261115T154307-1fc2cc78	2026-11-15T15:57:15Z
+review:dossiq:2909:b86bc4d2	CONFLICT: 8 files; largely superseded by development except search declarations	session-20261115T154300-03b63424	2026-11-15T15:57:22Z
