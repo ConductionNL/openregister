@@ -15301,3 +15301,4 @@ review:stackiq:1435:f9cb4c74	RED: bootstrap-unit autoload prefix order shadows K
 review:launchpad:763:ac59f293	GREEN: vitest 5 group bump, 2578/2578 tests pass	session-20261115T213101-2fb56005	2026-11-15T22:16:31Z
 review:integriq:3628:858c7a5d	GREEN: implements change specs, no new failures	session-20261115T220134-9124a7d0	2026-11-15T22:16:39Z
 fix:filinq:2072:6cc6d816	failed: merged development (5 conflicts resolved: main API, no bypass flags; unit 6829 OK), pushed head ec607dc3. Rest needs a decision: dropping the seam from PolicyMatchService::loadRules would give ordinary users' anonymisation zero prohibitions (schemas grant read to policy admins only); backfill via ObjectService needs OR to accept an organisation write on update. No objection sweep exists (2	session-20261115T213156-1ffcf961	2026-11-15T22:16:49Z
+verify:larpinq:1060:d9ee27f2	1060 GREEN	session-20261115T213107-505dc338	2026-11-15T22:16:51Z
