@@ -12104,3 +12104,4 @@ verify:decidiq:2187:dd2696e2	2187 RED (duplicate DecisionDetail layout id 19, vi
 verify:shillinq:3062:50622393	3062 GREEN, 3065 CONFLICT (info.xml/lock after 3062), 3080 GREEN, 3085 GREEN	session-20261114T231738-b43a6a63	2026-11-15T00:00:22Z
 fix:shillinq:3051:2f5d4cd8	floor restored by refactoring new SBR units; floor PASS, suite green; new head 5f90cb65, REVERIFY	session-20261114T233346-3552728d	2026-11-15T00:00:30Z
 verify:versioniq:699:d1954624	699,714 GREEN; 719,722 CONFLICT	session-20261114T234953-2dec3184	2026-11-15T00:00:54Z
+verify:shillinq:3082:974bd08c	3082 GREEN, 3083 GREEN, 3084 CONFLICT (with 3082); 11917 tests OK	session-20261114T235442-bc1b76db	2026-11-15T00:01:08Z
