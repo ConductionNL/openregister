@@ -13984,3 +13984,4 @@ review:larpinq:1053:4113c48a	GREEN: unit 876 OK (baseline 860), phpstan clean	se
 review:filinq:2103:6113c988	GREEN; phpunit 6822 OK, vitest 764, jest 576	session-20261115T152558-f97be55f	2026-11-15T17:49:36Z
 review:shillinq:2997:3374c3bc	GREEN: per-spec, merges clean, suites pass (independent review)	session-20261115T142129-944012f5	2026-11-15T17:49:51Z
 review:opencatalogi:2650:dacca957	GREEN: per change specs; unit 5743, 2 inherited failures; phpstan clean	session-20261115T174741-9deaa0be	2026-11-15T17:50:14Z
+review:shillinq:2991:a48bd63d	GREEN: unit 12290 OK, vitest 1 inherited failure	session-20261115T152543-40aea993	2026-11-15T17:50:22Z
