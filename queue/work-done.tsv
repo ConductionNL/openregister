@@ -15111,3 +15111,4 @@ review:integriq:2744:53deb98f	GREEN: prettier devDep bump + sbom; vitest all pas
 review:integriq:2710:4de6b79e	GREEN: lock-only ocp bump, unit suite matches baseline	session-20261115T213112-78aba834	2026-11-15T21:38:57Z
 review:integriq:2992:301b5d1e	GREEN: axe-core bump, vitest 2387/2387	session-20261115T211111-34885d99	2026-11-15T21:39:05Z
 review:integriq:3057:2fbd882d	GREEN: dev-only bump, suite equals baseline	session-20261115T213107-505dc338	2026-11-15T21:39:24Z
+review:learniq:2126:4e6551e4	GREEN: phpstan bump, 0 phpstan errors, 1 inherited unit failure	session-20261115T213144-ab42ee6a	2026-11-15T21:39:40Z
