@@ -13599,3 +13599,14 @@ verify:learniq:2551:6a058249	verify	learniq	development	merge	prs=2551@d07fdeb33
 verify:decidiq:2207:4bb1bb14	verify	decidiq	development	merge	prs=2207@79d193be69556a8263ba2583b21e205406f28d06,2216@9099bccc0b8fe23b34321a20b6c4cc8ac964cee3	2026-11-15T15:15:29Z
 merge:pipelinq:3875:9f4b8976	merge	pipelinq	development	development	prs=3875@2e29f9d1c232dc7730975576dfddb1f115eb1e82	2026-11-15T15:15:29Z
 merge:filinq:2122:981fbf3a	merge	filinq	development	development	prs=2122@caf1301148b49025547334124afc76ba1197f0f1,2123@4b50c297bb09add8f0cc848f3da222e0b7c62dd9	2026-11-15T15:15:29Z
+review:learniq:2513:37f5504f	review	learniq	development	2513	sha=37f5504f9590353f6ce68da6737e0386f19a7724;branch=quality/build-permission-slips;title=feat(learniq): build permission-slips	2026-11-15T15:20:34Z
+review:learniq:2521:189663c4	review	learniq	development	2521	sha=189663c498d527ec45431cade7f27336e95a51a4;branch=quality/build-training-provider-course-days;title=feat(learniq): build training-provider-course-days	2026-11-15T15:20:34Z
+review:hermiq:1754:2c1453d5	review	hermiq	development	1754	sha=2c1453d52ecad5e62d21c26779fc69977192c0b9;branch=quality/build-tools-browser-and-computer-use;title=feat(hermiq): build tools-browser-and-computer-use	2026-11-15T15:20:34Z
+review:decidiq:2149:6cf9ca71	review	decidiq	development	2149	sha=6cf9ca71ad020283bee8ce5ec0dd75c1117eeb4d;branch=quality/build-document-accessibility-check;title=feat(decidiq): build document-accessibility-check	2026-11-15T15:20:34Z
+review:decidiq:2178:9d356a3b	review	decidiq	development	2178	sha=9d356a3b39d2db1c5baba017361944c142ede0a2;branch=quality/build-inspreekrecht-plenair;title=feat(decidiq): build inspreekrecht-plenair	2026-11-15T15:20:34Z
+review:filinq:2114:5462db39	review	filinq	development	2114	sha=5462db3976af7ffcb4e8ceec17c8899bc83cb52b;branch=quality/build-anonymization-review-workbench;title=feat(filinq): build anonymization-review-workbench	2026-11-15T15:20:34Z
+verify:integriq:3638:e4fdb7a0	verify	integriq	development	merge	prs=3638@80f3ed7527ba0857d0f959e1f699edfb302ab796	2026-11-15T15:20:34Z
+verify:decidiq:2207:b2782902	verify	decidiq	development	merge	prs=2207@91c94c38a4100641a257179058ed9aeb24dc2f5b,2212@b65d41d8624be71bf0f063131227a1f1f209e947,2217@5a7315b241831d515c20a94e39f2d2e852963e14	2026-11-15T15:20:34Z
+merge:dossiq:6577:b1c71303	merge	dossiq	development	development	prs=6577@dfc63bfe073a31074f5932b299448773c3faba1a	2026-11-15T15:20:34Z
+merge:shillinq:3078:f83c9d71	merge	shillinq	development	development	prs=3078@777f3b0bb59507803438d156bfe23c9189656a78,3080@555ec946c4ff5c416d7e7a28e9175b80060c9c62	2026-11-15T15:20:34Z
+merge:decidiq:2191:d3e70b50	merge	decidiq	development	development	prs=2191@1b6af6dc0abca9aea7ea576faf2a0dd6f3b8f3c5,2203@7a5f0d1f1763d42f5e43e92d0ad27f04cd1e625e,2216@9099bccc0b8fe23b34321a20b6c4cc8ac964cee3	2026-11-15T15:20:34Z
