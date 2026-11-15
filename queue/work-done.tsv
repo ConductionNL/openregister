@@ -14737,3 +14737,4 @@ review:stackiq:1432:aee61a38	GREEN: matches main's deleteObject(ObjectDeletion),
 fix:dossiq:4886	fixed: l10n canonical order after merging development; new head 19293aa0	session-20261115T200000-e95b89c2	2026-11-15T20:19:16Z
 review:thematiq:1303:35bcc381	RED: 5 golden tests still record the old epe set	session-20261115T195958-28cb0304	2026-11-15T20:19:23Z
 fix:dossiq:5396:7493d64f	brought up to date with development, pushed 861d4d0a, REVERIFY recorded	session-20261115T195957-8e60ca53	2026-11-15T20:19:34Z
+review:versioniq:500:890378b3	GREEN: jsdom dev bump, vitest 3012 OK	session-20261115T200043-78b85ca2	2026-11-15T20:19:45Z
