@@ -14961,3 +14961,4 @@ fix:versioniq:717:a769cc5a	floor restored (unit_complexity 4.60), REVERIFY recor
 fix:larpinq:1060:f17472dc	development merged clean, suite 1025 OK; new head 54265c8fe78dfcc4a40860fc95d955fa244ecd37	session-20261115T200041-8ff5af37	2026-11-15T20:58:37Z
 fix:larpinq:1050:67a10904	fixed: l10n conflict resolved as union, head f7fb4695	session-20261115T202932-ab57353c	2026-11-15T20:58:47Z
 fix:versioniq:736:732e80c8	merged development, pushed 91246664; REVERIFY recorded	session-20261115T202936-e956716f	2026-11-15T20:59:01Z
+fix:versioniq:735:de63ae5e	conflict resolved in tab spec, vitest 3037 green; new head 0ba1d1c9	session-20261115T203013-157346e0	2026-11-15T20:59:12Z
