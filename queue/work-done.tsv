@@ -14270,3 +14270,4 @@ fix:dossiq:4886:63c08dd9	enum fixed + test, pushed 8a2f03f5, REVERIFY recorded	s
 fix:learniq:2507:c404ad7d	floor restored (unit_complexity 4.38->4.40), pushed 6eb2dbee, REVERIFY recorded	session-20261115T183023-a120e01a	2026-11-15T18:45:06Z
 fix:learniq:1163:a7126f01	obsolete: development already locks dompurify 3.4.17; PR closed with comment	session-20261115T183029-6c0565bd	2026-11-15T18:45:19Z
 fix:filinq:1305:66e6aff4	sbom regenerated after merging development; unit 6772 OK; new head 72084b47	session-20261115T174739-b14c2df4	2026-11-15T18:45:16Z
+review:planninq:726:78fcfabe	GREEN: gridstack 14, tests pass, peer-range warning and adjacent-line conflict noted	session-20261115T174804-89f2739f	2026-11-15T18:45:35Z
