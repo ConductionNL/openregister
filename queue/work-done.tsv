@@ -13331,3 +13331,4 @@ review:decidiq:1692:afd2e246	GREEN: openspec-only sweep	session-20261115T142934-
 review:buildiq:1086:c366210f	BLOCK: npm ci ERESOLVE (nextcloud-vue peerOptional stylelint ^17)	session-20261115T145555-b33410db	2026-11-15T15:48:29Z
 review:decidiq:1469:bee189d6	GREEN 1469 (vitest equal to baseline)	session-20261115T142201-ea23e682	2026-11-15T15:48:39Z
 review:decidiq:1950:76d89347	GREEN: unit 4461/0 fail, phpstan clean	session-20261115T154314-8216dc98	2026-11-15T15:48:50Z
+build:opencatalogi:capability-rows-close-gaps:c3	PR #2696 updated: built 2.4 (version-history widget on publication page) and 2.8 (depublish on source end, flag on keep); all code tasks done; left 1.2 e2e and 3.2 live check (need a live instance)	session-20261115T142934-de7c51d0	2026-11-15T15:49:02Z
