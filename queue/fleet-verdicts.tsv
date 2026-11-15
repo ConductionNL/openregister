@@ -12718,3 +12718,13 @@ versioniq	506	c6a1011e57d832780fac868efaeb62f5ae3dcfc4	RED	merge8:merge-gate	GAT
 versioniq	691	c3a11b62492684743530f8243a331abf3c252683	RED	merge8:merge-gate	GATE RED floor: overall: 4.95 -> 4.89; duplication: 5.16 -> 5.13; unit_complexity: 4.59 -> 4.54; unit_interfacing: 4.16 -> 3.88
 versioniq	717	a769cc5a792379a2362cc9e383a67b9ca4552bc9	RED	merge8:merge-gate	GATE RED floor: unit_complexity: 4.59 -> 4.56
 versioniq	732	338949a6300653f262a2b4a291590337bdd6d55c	RED	merge8:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+versioniq	497	bc42f75b16b8340774bc14aeca7c344d70ab67cd	CONFLICT	merge8	conflicts with development; files: vendor-bin/openapi-extractor/composer.lock 
+versioniq	507	324d3f156e8feb47ed5691a6fef4d1eee03a685f	CONFLICT	merge8	conflicts with development; files: package-lock.json package.json 
+versioniq	508	f223efe6670d3f10d5b705eb3746a55489e66edd	CONFLICT	merge8	merges clean on development alone; files: package-lock.json package.json 
+versioniq	711	1d4bc36357fb30094327bc65dfd0d44470cc0c90	CONFLICT	merge8	merges clean on development alone; files: lib/Http/InstanceSettingsFields.php lib/Service/Settings/InstanceSettings.php 
+versioniq	721	d795650074942ac312b5ce5aac05aeb3b421c704	CONFLICT	merge8	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json openapi.json 
+versioniq	722	756a911d402808848e2a1ab38449c7410fce956f	CONFLICT	merge8	merges clean on development alone; files: lib/Service/Settings/InstanceSettings.php 
+versioniq	723	e74abf380e59afc53d627c0041f8d3197c582d19	CONFLICT	merge8	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json src/App.vue src/components/AutoUpdateOverview.vue tests/unit/BackgroundJob/AvailabilityRefreshJobTest.php tests/unit/Controller/fixtures/api-read-endpoi
+versioniq	725	039d4ea001baaf2c4f0bfa8bce90a26065ea824f	CONFLICT	merge8	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Service/Advisory/AdvisoryService.php lib/Service/Advisory/NextcloudAdvisoryFeed.php src/App.vue src/components/AdvisoriesPanel.spec.ts src/component
+versioniq	735	de63ae5ef12dc11d7ba34c3c43015342f8f56272	CONFLICT	merge8	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json openapi.json src/App.navigation.spec.ts src/App.vue 
+versioniq	736	732e80c828578b4ab4e77ffd4a57c0b71f05a936	CONFLICT	merge8	merges clean on development alone; files: src/App.vue 
