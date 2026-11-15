@@ -3403,3 +3403,13 @@ stackiq	1972	be31ee682effcf01c302e044f86cd767a4940245	MERGED	merge3	GATE OK sbom
 stackiq	1976	2fd15126eaabf872c37290fae257ef7a25cca357	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.06
 stackiq	1977	eb4d07c372dac047e6a6abb5ea05b5d8664b0456	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.06
 stackiq	1979	417f4045b045013e0912d3015ee3d2fafd7e9f46	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.06
+integriq	3546	994fb6f7175b5ba3541d7fb2ac669572e4d32ac4	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
+integriq	3589	e374c8c4585d40120b3b362c67b84e1e21c233cb	RED	merge3	GATE RED absolute floor: integriq maintainability 3.54 after merge is below its floor 3.56
+integriq	3595	b248545e0b4f21a1828ddbccaed7e2a3dbf07f56	RED	merge3	GATE RED absolute floor: integriq maintainability 3.55 after merge is below its floor 3.56
+integriq	3615	696541cd1840901e9756c325c532e80955f0f9c8	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
+integriq	3657	736d2fed6c25fdf0ec6f16ef43202ea17c506841	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
+integriq	3658	6098715a034814580c7da1c0086aed65a3702ff2	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
+integriq	3659	d6e21389966d9a21696d70687ff326be6a91128d	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
+integriq	3662	3ca2c15af0945943557dba6a368b0b05a529216f	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
+integriq	3663	a648fe064daed2719b5bf117ab8db0dd3e60db24	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
+integriq	3664	6194d2632c637a4322bc5a52af4786d19cb25796	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
