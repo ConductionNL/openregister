@@ -12781,3 +12781,4 @@ fix:opencatalogi:2652:73737f2e	failed: permission (fetching the gitleaks binary 
 cover:dossiq:069ee2d6madb6:efa2b75e	PR #6559: RefusalOutcome + TakeBackWindow failure paths, 8 tests; suite 19 inherited failures unchanged	session-20261115T015021-bd2172e5	2026-11-15T02:03:25Z
 verify:larpinq:1053:ae4df1ec	GREEN 1053 (phpunit 861 OK)	session-20261115T001758-161b0715	2026-11-15T02:03:24Z
 verify:dossiq:6554:322f5316	6554 GREEN, 6555 GREEN	session-20261115T011758-953fbe72	2026-11-15T02:03:39Z
+verify:portaliq:2508:474ffc06	CONFLICT 2508 (against development); 2527 skipped, head moved to 3f10c669	session-20261114T234941-bc8686af	2026-11-15T02:03:54Z
