@@ -1,36 +1,36 @@
 {
  "app": "shillinq",
- "commit": "045ffd218834b5c31edd34d24b37dbef323da222",
- "measured_at": "2026-11-14T07:10:35Z",
+ "commit": "4ce0e0f9b8b277b42c37b6ed22019d0758cf1ea5",
+ "measured_at": "2026-11-15T00:12:07Z",
  "php": {
   "tool": "pcov",
-  "pct": 92.26,
-  "statements": 81269,
-  "covered": 74981,
+  "pct": 95.1,
+  "statements": 85166,
+  "covered": 80997,
   "dirs": {
    "lib/AppInfo/": [
     72,
     70
    ],
    "lib/BackgroundJob/": [
-    1728,
-    1718
+    1736,
+    1726
    ],
    "lib/BackgroundJob/Support/": [
     12,
     12
    ],
    "lib/Budget/": [
-    235,
-    234
+    252,
+    251
    ],
    "lib/Command/": [
-    262,
-    259
+    275,
+    272
    ],
    "lib/Controller/": [
-    9893,
-    9584
+    10162,
+    9969
    ],
    "lib/Dashboard/": [
     164,
@@ -45,12 +45,12 @@
     96
    ],
    "lib/Guard/": [
-    2080,
-    1913
+    2093,
+    2069
    ],
    "lib/Integration/": [
-    259,
-    256
+    300,
+    297
    ],
    "lib/Kernel/": [
     4,
@@ -66,83 +66,87 @@
    ],
    "lib/Kernel/Model/": [
     140,
-    137
+    138
    ],
    "lib/Kernel/Support/": [
-    32,
-    32
+    36,
+    36
    ],
    "lib/Lifecycle/": [
-    7071,
-    6540
+    7192,
+    6823
    ],
    "lib/Lifecycle/Action/": [
-    616,
-    592
+    849,
+    816
    ],
    "lib/Listener/": [
-    2845,
-    2702
+    2950,
+    2820
    ],
    "lib/Listener/Registration/": [
-    335,
-    102
+    354,
+    228
    ],
    "lib/Mcp/": [
-    105,
-    103
+    735,
+    703
    ],
    "lib/Middleware/": [
     59,
     59
    ],
    "lib/Middleware/Support/": [
-    60,
-    57
+    64,
+    61
    ],
    "lib/Notification/": [
     85,
     85
    ],
    "lib/PaymentPlan/": [
-    513,
-    497
+    529,
+    523
    ],
    "lib/PaymentRun/": [
-    509,
-    499
+    511,
+    501
    ],
    "lib/PaymentRun/Generator/": [
     209,
     208
    ],
    "lib/Portal/": [
-    158,
-    157
+    159,
+    158
+   ],
+   "lib/Receivables/": [
+    175,
+    170
    ],
    "lib/Repair/": [
-    3924,
-    3214
+    3973,
+    3578
    ],
    "lib/Repair/Support/": [
     81,
     81
    ],
    "lib/Reporting/": [
-    346,
-    341
+    374,
+    368
    ],
    "lib/Reporting/Feed/": [
     30,
     30
    ],
    "lib/Reporting/Generator/": [
-    1528,
-    1526
+    1531,
+    1529
    ],
    "lib/Reporting/Schedule/": [
-    235,
-    232
+    239,
+    236
    ],
    "lib/Request/": [
     47,
@@ -153,32 +157,36 @@
     5
    ],
    "lib/Service/": [
-    33100,
-    29702
+    34221,
+    32017
    ],
    "lib/Service/Asset/": [
     564,
     562
    ],
    "lib/Service/Bank/": [
-    677,
-    633
+    701,
+    656
    ],
    "lib/Service/BbvMigration/": [
     102,
     102
    ],
+   "lib/Service/Billing/": [
+    1,
+    1
+   ],
    "lib/Service/Booking/": [
-    385,
-    367
+    470,
+    447
    ],
    "lib/Service/Commitment/": [
-    541,
-    475
+    543,
+    476
    ],
    "lib/Service/Dunning/": [
-    812,
-    808
+    818,
+    814
    ],
    "lib/Service/EInvoice/": [
     349,
@@ -212,6 +220,10 @@
     41,
     41
    ],
+   "lib/Service/External/Integriq/": [
+    78,
+    76
+   ],
    "lib/Service/External/Kvk/": [
     23,
     23
@@ -241,12 +253,12 @@
     42
    ],
    "lib/Service/Extraction/": [
-    272,
-    263
+    282,
+    273
    ],
    "lib/Service/Import/": [
-    898,
-    875
+    931,
+    923
    ],
    "lib/Service/Import/ImportProfile/": [
     116,
@@ -261,20 +273,20 @@
     11
    ],
    "lib/Service/Migration/": [
-    283,
-    283
+    273,
+    273
    ],
    "lib/Service/Payment/": [
-    258,
-    257
+    313,
+    310
    ],
    "lib/Service/Peppol/": [
     65,
     65
    ],
    "lib/Service/Pipelinq/": [
-    694,
-    653
+    705,
+    672
    ],
    "lib/Service/Pivot/": [
     185,
@@ -285,12 +297,12 @@
     159
    ],
    "lib/Service/Project/": [
-    113,
-    112
+    114,
+    113
    ],
    "lib/Service/PublicSector/": [
-    504,
-    497
+    578,
+    571
    ],
    "lib/Service/PurchaseOrder/": [
     126,
@@ -301,20 +313,20 @@
     91
    ],
    "lib/Service/Receivables/": [
-    142,
-    34
+    230,
+    229
    ],
    "lib/Service/Relation/": [
-    258,
-    258
+    261,
+    261
    ],
    "lib/Service/Sales/": [
-    473,
-    440
+    495,
+    462
    ],
    "lib/Service/Seed/": [
-    70,
-    69
+    72,
+    71
    ],
    "lib/Service/Signing/": [
     193,
@@ -325,20 +337,24 @@
     134
    ],
    "lib/Service/Tax/": [
-    59,
-    59
+    211,
+    209
    ],
    "lib/Service/Treasury/": [
-    538,
-    452
+    689,
+    597
    ],
    "lib/Service/Usage/": [
     100,
     100
    ],
    "lib/Service/Vat/": [
-    220,
-    219
+    231,
+    230
+   ],
+   "lib/Service/Webshop/": [
+    221,
+    213
    ],
    "lib/Settings/": [
     12,
@@ -353,16 +369,16 @@
     262
    ],
    "lib/Standards/Checks/": [
-    3759,
-    3519
+    3758,
+    3518
    ],
    "lib/Support/": [
     48,
     48
    ],
    "lib/Util/": [
-    155,
-    155
+    157,
+    157
    ],
    "lib/Validation/": [
     51,
@@ -371,9 +387,9 @@
   }
  },
  "js": {
-  "pct": 90.31,
-  "statements": 7571,
-  "covered": 6837,
+  "pct": 94.08,
+  "statements": 7731,
+  "covered": 7273,
   "dirs": {
    "src/": [
     3,
@@ -489,15 +505,15 @@
    ],
    "src/integrations/": [
     405,
-    370
+    387
    ],
    "src/manifest.d/": [
     4,
     4
    ],
    "src/modals/": [
-    1597,
-    1185
+    1642,
+    1497
    ],
    "src/store/": [
     3,
@@ -512,8 +528,8 @@
     0
    ],
    "src/utils/": [
-    669,
-    643
+    784,
+    750
    ],
    "src/views/": [
     502,

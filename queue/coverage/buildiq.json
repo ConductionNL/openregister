@@ -1,12 +1,12 @@
 {
  "app": "buildiq",
- "commit": "e11fe26f72e0739bdb135127c789390890fa8903",
- "measured_at": "2026-11-13T18:57:30Z",
+ "commit": "165fc0e3c54c1e4771a668d8a39afb8e37622ed1",
+ "measured_at": "2026-11-14T23:42:31Z",
  "php": {
   "tool": "pcov",
-  "pct": 91.18,
-  "statements": 19667,
-  "covered": 17932,
+  "pct": 90.88,
+  "statements": 21944,
+  "covered": 19943,
   "dirs": {
    "lib/": [
     11,
@@ -17,56 +17,68 @@
     26
    ],
    "lib/BackgroundJob/": [
-    245,
-    243
+    250,
+    249
    ],
    "lib/Command/": [
-    349,
-    348
+    532,
+    522
    ],
    "lib/Controller/": [
-    3352,
-    3157
+    3688,
+    3489
    ],
    "lib/Dashboard/": [
-    81,
-    80
+    39,
+    38
    ],
    "lib/Exception/": [
     64,
     64
    ],
    "lib/Integration/": [
-    220,
-    216
+    250,
+    208
+   ],
+   "lib/Kernel/": [
+    0,
+    0
+   ],
+   "lib/Kernel/Contracts/": [
+    0,
+    0
+   ],
+   "lib/Kernel/Values/": [
+    60,
+    60
    ],
    "lib/Lifecycle/": [
-    85,
-    84
+    99,
+    92
    ],
    "lib/Listener/": [
-    538,
-    530
+    700,
+    663
    ],
    "lib/Mcp/": [
-    31,
-    31
+    39,
+    39
    ],
    "lib/Mcp/Handler/": [
-    808,
-    806
+    833,
+    830
    ],
    "lib/Middleware/": [
-    59,
-    59
+    60,
+    60
    ],
    "lib/Middleware/Support/": [
     60,
     55
    ],
    "lib/Repair/": [
-    915,
-    913
+    932,
+    929
    ],
    "lib/Resources/template/": [
     3,
@@ -106,7 +118,7 @@
    ],
    "lib/Resources/template/phpcs-custom-sniffs/CustomSniffs/Sniffs/Functions/": [
     155,
-    151
+    154
    ],
    "lib/Resources/template/templates/": [
     3,
@@ -137,55 +149,59 @@
     0
    ],
    "lib/Service/": [
-    11281,
-    9940
+    12597,
+    11086
    ],
    "lib/Service/Automation/": [
     9,
     9
+   ],
+   "lib/Service/Branch/": [
+    222,
+    200
    ],
    "lib/Service/Connection/": [
     171,
     170
    ],
    "lib/Service/Copilot/": [
-    151,
-    149
+    206,
+    205
    ],
    "lib/Service/Credential/": [
     57,
-    52
+    56
    ],
    "lib/Service/Dashboard/": [
     141,
-    137
+    141
    ],
    "lib/Service/GitHub/": [
-    75,
-    74
+    62,
+    61
    ],
    "lib/Settings/": [
-    0,
-    0
+    22,
+    22
    ],
    "lib/Support/": [
-    389,
-    386
+    265,
+    263
    ]
   }
  },
  "js": {
-  "pct": 94.01,
-  "statements": 13627,
-  "covered": 12811,
+  "pct": 95.84,
+  "statements": 15997,
+  "covered": 15332,
   "dirs": {
    "src/": [
-    185,
-    183
+    188,
+    186
    ],
    "src/components/": [
-    690,
-    665
+    701,
+    675
    ],
    "src/components/agents/": [
     28,
@@ -193,7 +209,7 @@
    ],
    "src/components/applicationDetail/": [
     308,
-    293
+    297
    ],
    "src/components/applicationDetail/widgets/": [
     260,
@@ -207,73 +223,77 @@
     65,
     61
    ],
+   "src/components/journey-editor/": [
+    162,
+    143
+   ],
    "src/components/page-editor/": [
-    1685,
-    1502
+    1817,
+    1694
    ],
    "src/components/page-editor/fields/": [
-    1378,
-    1299
+    1918,
+    1798
    ],
    "src/components/runtime/": [
-    218,
-    218
+    364,
+    354
    ],
    "src/components/schema-editor/": [
-    805,
-    779
+    1024,
+    980
    ],
    "src/components/store/": [
-    94,
-    87
+    138,
+    129
    ],
    "src/components/tabs/": [
-    116,
-    109
+    203,
+    190
    ],
    "src/components/walkthrough-editor/": [
     284,
     280
    ],
    "src/composables/": [
-    778,
-    769
+    803,
+    793
    ],
    "src/dialogs/": [
-    2022,
-    1783
+    2152,
+    2044
    ],
    "src/dialogs/CreateApplicationWizard/": [
     205,
     204
    ],
    "src/manifest.d/": [
-    14,
-    14
+    17,
+    17
    ],
    "src/manifests/": [
     3,
     3
    ],
    "src/mixins/": [
-    206,
-    205
+    267,
+    258
    ],
    "src/modals/": [
-    726,
-    690
+    775,
+    759
    ],
    "src/router/": [
     1,
     1
    ],
    "src/services/": [
-    1224,
-    1210
+    1751,
+    1727
    ],
    "src/services/manifestValidation/": [
-    479,
-    477
+    545,
+    543
    ],
    "src/store/": [
     50,
@@ -284,12 +304,12 @@
     52
    ],
    "src/utils/": [
-    99,
-    99
+    102,
+    102
    ],
    "src/views/": [
-    1543,
-    1414
+    1705,
+    1628
    ],
    "src/views/settings/": [
     46,

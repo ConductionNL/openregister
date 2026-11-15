@@ -1,16 +1,16 @@
 {
  "app": "keepiq",
- "commit": "ba7cc67b800031fdf7dd399953bcf4cb34c3fbe9",
- "measured_at": "2026-11-13T19:02:25Z",
+ "commit": "4b38ea0c4593801503c14320809e15a3a42a6bd9",
+ "measured_at": "2026-11-14T23:33:09Z",
  "php": {
   "tool": "pcov",
-  "pct": 92.04,
-  "statements": 25166,
-  "covered": 23163,
+  "pct": 93.72,
+  "statements": 25568,
+  "covered": 23963,
   "dirs": {
    "lib/AppInfo/": [
-    146,
-    144
+    27,
+    26
    ],
    "lib/Attribute/": [
     5,
@@ -18,7 +18,7 @@
    ],
    "lib/BackgroundJob/": [
     407,
-    406
+    407
    ],
    "lib/Backup/": [
     481,
@@ -29,12 +29,12 @@
     181
    ],
    "lib/Controller/": [
-    4115,
-    4029
+    4156,
+    4108
    ],
    "lib/Db/": [
-    3212,
-    2854
+    3252,
+    3145
    ],
    "lib/Event/": [
     43,
@@ -52,45 +52,57 @@
     13,
     13
    ],
+   "lib/Kernel/": [
+    0,
+    0
+   ],
+   "lib/Kernel/Contracts/": [
+    0,
+    0
+   ],
    "lib/Listener/": [
-    418,
-    411
+    558,
+    555
    ],
    "lib/Mcp/": [
-    139,
-    139
+    140,
+    140
    ],
    "lib/Middleware/": [
-    212,
-    212
+    224,
+    224
    ],
    "lib/Middleware/Support/": [
     59,
     54
    ],
    "lib/Notification/": [
-    396,
-    394
+    397,
+    395
    ],
    "lib/Repair/": [
     1051,
-    1035
+    1036
    ],
    "lib/Search/": [
-    31,
-    31
+    32,
+    32
    ],
    "lib/Sections/": [
     5,
     5
    ],
    "lib/Service/": [
-    13236,
-    11712
+    13469,
+    12049
    ],
    "lib/Service/Connection/": [
     150,
     150
+   ],
+   "lib/Service/Flow/": [
+    34,
+    32
    ],
    "lib/Service/ShareSave/": [
     399,
@@ -105,12 +117,12 @@
     193
    ],
    "lib/Settings/": [
-    28,
-    28
+    45,
+    45
    ],
    "lib/SetupCheck/": [
-    8,
-    8
+    9,
+    9
    ],
    "lib/Support/": [
     15,
@@ -119,9 +131,9 @@
   }
  },
  "js": {
-  "pct": 91.82,
-  "statements": 12721,
-  "covered": 11680,
+  "pct": 93.44,
+  "statements": 13174,
+  "covered": 12310,
   "dirs": {
    "src/": [
     131,
@@ -140,8 +152,8 @@
     105
    ],
    "src/components/": [
-    1439,
-    1378
+    1513,
+    1480
    ],
    "src/components/KeepiqAppNav/": [
     146,
@@ -160,40 +172,40 @@
     91
    ],
    "src/components/settings/": [
-    1036,
-    940
+    1095,
+    1077
    ],
    "src/components/share/": [
     255,
     251
    ],
    "src/crypto/": [
-    748,
-    729
+    762,
+    743
    ],
    "src/cxf/": [
     189,
     188
    ],
    "src/dialogs/": [
-    1704,
-    1554
+    1753,
+    1646
    ],
    "src/export/": [
-    155,
-    152
+    204,
+    201
    ],
    "src/generator/": [
     258,
     256
    ],
    "src/health/": [
-    111,
-    108
+    130,
+    127
    ],
    "src/import/": [
-    82,
-    79
+    100,
+    97
    ],
    "src/import/parsers/": [
     275,
@@ -208,8 +220,8 @@
     106
    ],
    "src/modals/": [
-    243,
-    243
+    258,
+    257
    ],
    "src/offline/": [
     212,
@@ -240,20 +252,20 @@
     3
    ],
    "src/store/modules/": [
-    3160,
-    2641
+    3232,
+    2715
    ],
    "src/totp/": [
     187,
     187
    ],
    "src/utils/": [
-    273,
-    252
+    351,
+    326
    ],
    "src/views/": [
-    941,
-    894
+    947,
+    931
    ],
    "src/views/flows/": [
     2,
