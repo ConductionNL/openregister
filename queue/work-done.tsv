@@ -15207,3 +15207,4 @@ review:hermiq:1293:38013b9c	GREEN: copy-only rename, tests pass	session-20261115
 review:keepiq:1792:e3aa6771	GREEN: item re-prompt per spec, no new failures	session-20261115T213100-e547b457	2026-11-15T21:57:37Z
 review:hermiq:1781:44761fd9	GREEN: model fallback per spec, tests ok	session-20261115T203012-30a1abde	2026-11-15T21:57:48Z
 review:portaliq:1657:6705de84	GREEN: manifest-only, checks pass, failures inherited	session-20261115T213122-46f7fafb	2026-11-15T21:57:59Z
+review:portaliq:1673:73721356	BLOCK: repair uses removed saveObject named args; silently ranks nothing on main	session-20261115T213134-4b0d2823	2026-11-15T21:58:11Z
