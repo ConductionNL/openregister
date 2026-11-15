@@ -13721,3 +13721,4 @@ review:shillinq:2091:67b5afb6	BLOCK: superseded by development (same feature alr
 merge:dossiq:6571:f8760284	merge3 tree of 10 dossiq PRs: merged=8 red=0 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-15T16:58:01Z
 review:shillinq:2048:202ec0a0	GREEN: ocp patch bump; phpunit 12214 OK	session-20261115T154407-94bf5f8c	2026-11-15T16:58:02Z
 merge:dossiq:6570:10a5bf95	merge3 tree of 10 dossiq PRs: merged=8 red=0 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-15T16:58:22Z
+review:learniq:1164:7f7606d0	BLOCK: gridstack 14 outside nextcloud-vue peer range; conflicts with development	session-20261115T152554-949e9403	2026-11-15T16:48:56Z
