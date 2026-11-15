@@ -1,12 +1,12 @@
 {
  "app": "opencatalogi",
- "commit": "a1371322d53d190af455d523c801a97a75101e81",
- "measured_at": "2026-11-14T21:25:44Z",
+ "commit": "a2de56347fb399a8f6e0b4a6e45c4fdbf3a1faf1",
+ "measured_at": "2026-11-15T00:36:10Z",
  "php": {
   "tool": "pcov",
-  "pct": 95.64,
-  "statements": 18181,
-  "covered": 17388,
+  "pct": 95.53,
+  "statements": 18515,
+  "covered": 17687,
   "dirs": {
    "lib/BackgroundJob/": [
     91,
@@ -21,8 +21,8 @@
     10
    ],
    "lib/Controller/": [
-    3369,
-    3212
+    3539,
+    3352
    ],
    "lib/Controller/Setup/": [
     297,
@@ -77,8 +77,8 @@
     6
    ],
    "lib/Service/": [
-    8209,
-    7659
+    8249,
+    7696
    ],
    "lib/Service/Broadcast/": [
     2,
@@ -105,8 +105,8 @@
     566
    ],
    "lib/Service/Publication/": [
-    1116,
-    1112
+    1202,
+    1196
    ],
    "lib/Service/Table/": [
     163,
@@ -121,8 +121,8 @@
     151
    ],
    "lib/Service/Woo/": [
-    945,
-    945
+    983,
+    983
    ],
    "lib/Settings/": [
     24,
@@ -135,196 +135,84 @@
   }
  },
  "js": {
-  "pct": 16.97,
-  "statements": 11228,
-  "covered": 1905,
+  "pct": 85.82,
+  "statements": 2334,
+  "covered": 2003,
   "dirs": {
    "src/": [
-    115,
-    50
-   ],
-   "src/components/": [
-    274,
-    0
-   ],
-   "src/components/__snapshots__/": [
-    7,
-    0
-   ],
-   "src/components/tabs/": [
-    1,
-    0
+    113,
+    112
    ],
    "src/components/widgets/": [
-    316,
+    8,
     8
    ],
-   "src/components/widgets/__snapshots__/": [
-    15,
-    0
-   ],
    "src/composables/": [
-    89,
+    70,
     70
-   ],
-   "src/css/": [
-    0,
-    0
-   ],
-   "src/dialogs/": [
-    136,
-    0
-   ],
-   "src/dialogs/__snapshots__/": [
-    35,
-    0
-   ],
-   "src/dialogs/attachment/": [
-    53,
-    0
-   ],
-   "src/dialogs/attachment/__snapshots__/": [
-    12,
-    0
-   ],
-   "src/dialogs/caseType/": [
-    55,
-    0
-   ],
-   "src/dialogs/generic/": [
-    421,
-    0
-   ],
-   "src/dialogs/generic/__snapshots__/": [
-    28,
-    0
-   ],
-   "src/dialogs/retention/": [
-    64,
-    0
    ],
    "src/entities/": [
     13,
     12
    ],
    "src/entities/attachment/": [
-    44,
+    28,
     26
    ],
    "src/entities/catalogi/": [
-    39,
+    24,
     24
    ],
    "src/entities/configuration/": [
-    22,
+    6,
     4
    ],
    "src/entities/glossary/": [
-    29,
+    13,
     13
    ],
    "src/entities/listing/": [
-    25,
+    6,
     4
    ],
    "src/entities/organization/": [
-    48,
+    15,
     15
    ],
    "src/entities/publication/": [
-    41,
+    24,
     22
    ],
    "src/entities/publicationType/": [
-    40,
+    24,
     22
    ],
    "src/entities/theme/": [
-    28,
+    8,
     6
    ],
-   "src/manifest.d/": [
-    18,
-    0
-   ],
-   "src/modals/catalog/": [
-    207,
-    0
-   ],
-   "src/modals/catalog/__snapshots__/": [
-    9,
-    0
-   ],
-   "src/modals/directory/": [
-    551,
-    0
-   ],
    "src/modals/generic/": [
-    648,
+    23,
     23
    ],
    "src/modals/object/": [
-    1416,
+    163,
     162
    ],
-   "src/modals/theme/": [
-    271,
-    0
-   ],
    "src/navigation/": [
-    51,
+    19,
     19
    ],
    "src/services/": [
-    769,
-    579
-   ],
-   "src/sidebars/dashboard/": [
-    288,
-    0
-   ],
-   "src/sidebars/directory/": [
-    219,
-    0
-   ],
-   "src/sidebars/search/": [
-    222,
-    0
-   ],
-   "src/store/": [
-    4,
-    0
+    620,
+    615
    ],
    "src/store/modules/": [
-    2339,
+    1151,
     840
    ],
-   "src/views/catalogi/": [
-    85,
-    0
-   ],
-   "src/views/dashboard/": [
-    149,
-    0
-   ],
-   "src/views/directory/": [
-    231,
-    0
-   ],
-   "src/views/publications/": [
-    1063,
-    0
-   ],
-   "src/views/search/": [
-    15,
-    0
-   ],
-   "src/views/settings/": [
-    627,
-    0
-   ],
    "src/views/widgets/": [
-    96,
+    6,
     6
    ]
   }
