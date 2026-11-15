@@ -12399,3 +12399,4 @@ fix:versioniq:701:a39b4f2b	merged development cleanly (ccfb01ba); no new failure
 fix:versioniq:705:3bbf8938	floor restored: unit_interfacing 4.14 (planCandidate 3->2 params); pushed deb4057728ad152adedf6baa4c37a2522386441f	session-20261114T234941-93e81b84	2026-11-15T00:47:07Z
 fix:versioniq:725:39c04032	merged development in (clean); new head 19ac858a2a000f54405852062245464e87a7bf33	session-20261114T234933-5c1be121	2026-11-15T00:47:13Z
 fix:larpinq:1050:8fba8192	moved branch l10n keys away from the catalogue end; clean with #1041; new head ebb20969, REVERIFY recorded	session-20261114T231738-b43a6a63	2026-11-15T00:47:20Z
+fix:portaliq:2508:f1ef2828	merged GREEN #2500 in, register 0.117.0 for the messages block; unit 5934 OK; new head 20a298b2, REVERIFY recorded	session-20261115T001753-b8ad7615	2026-11-15T00:47:39Z
