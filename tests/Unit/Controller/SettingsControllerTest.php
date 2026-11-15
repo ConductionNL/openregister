@@ -21,6 +21,7 @@ use OCA\OpenRegister\Tests\Unit\Controller\Support\SettingsControllerFactory;
 use Doctrine\DBAL\Platforms\AbstractPlatform;
 use OCA\OpenRegister\Controller\SettingsController;
 use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Service\Settings\SearchBackendHandler;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
@@ -345,6 +346,80 @@ class SettingsControllerTest extends TestCase {
 		$data = $response->getData();
 		$this->assertIsArray($data);
 		$this->assertArrayHasKey('error', $data);
+	}
+
+	/**
+	 * A malformed accentInsensitive value is refused before anything is stored.
+	 *
+	 * @return void
+	 */
+	public function testUpdateSearchBackendRefusesAMalformedValue(): void {
+		$this->request->method('getParam')->willReturn('maybe');
+		$this->container->expects($this->never())->method('get');
+
+		$response = $this->controller->updateSearchBackend();
+
+		$this->assertSame(400, $response->getStatus());
+		$this->assertSame(['error' => 'accentInsensitive must be true or false.'], $response->getData());
+	}
+
+	/**
+	 * Enabling accent folding where it is unavailable answers 400 naming the reason.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/search-accent-insensitive/specs/zoeken-filteren/spec.md#requirement-accent-folding-is-visible-to-administrators-and-can-be-bypassed
+	 */
+	public function testUpdateSearchBackendRefusesUnavailableFolding(): void {
+		$this->request->method('getParam')->with('accentInsensitive')->willReturn(true);
+		$handler = $this->createMock(SearchBackendHandler::class);
+		$handler->expects($this->once())->method('setAccentInsensitive')->with(true)
+			->willThrowException(new \InvalidArgumentException('Accent-insensitive search is not available: the unaccent extension could not be created.'));
+		$handler->expects($this->never())->method('getSearchBackendConfig');
+		$this->container->method('get')->with(SearchBackendHandler::class)->willReturn($handler);
+
+		$response = $this->controller->updateSearchBackend();
+
+		$this->assertSame(400, $response->getStatus());
+		$this->assertSame(['error' => 'Accent-insensitive search is not available: the unaccent extension could not be created.'], $response->getData());
+	}
+
+	/**
+	 * Switching accent folding off stores it and answers the new configuration.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/search-accent-insensitive/specs/zoeken-filteren/spec.md#requirement-accent-folding-is-visible-to-administrators-and-can-be-bypassed
+	 */
+	public function testUpdateSearchBackendStoresTheChoice(): void {
+		$this->request->method('getParam')->with('accentInsensitive')->willReturn('false');
+		$config = ['active' => 'database', 'available' => ['database'], 'accentInsensitive' => ['enabled' => false, 'available' => true, 'reason' => '']];
+		$handler = $this->createMock(SearchBackendHandler::class);
+		$handler->expects($this->once())->method('setAccentInsensitive')->with(false)->willReturn($config['accentInsensitive']);
+		$handler->method('getSearchBackendConfig')->willReturn($config);
+		$this->container->method('get')->with(SearchBackendHandler::class)->willReturn($handler);
+
+		$response = $this->controller->updateSearchBackend();
+
+		$this->assertSame(200, $response->getStatus());
+		$this->assertSame($config, $response->getData());
+	}
+
+	/**
+	 * A failure to store answers 500 without the internal message.
+	 *
+	 * @return void
+	 */
+	public function testUpdateSearchBackendHidesAStorageFailure(): void {
+		$this->request->method('getParam')->willReturn(true);
+		$handler = $this->createMock(SearchBackendHandler::class);
+		$handler->method('setAccentInsensitive')->willThrowException(new \RuntimeException('database gone'));
+		$this->container->method('get')->willReturn($handler);
+
+		$response = $this->controller->updateSearchBackend();
+
+		$this->assertSame(500, $response->getStatus());
+		$this->assertSame(['error' => 'The search settings could not be stored.'], $response->getData());
 	}
 
 	/**

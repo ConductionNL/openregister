@@ -66,6 +66,7 @@ use OCA\OpenRegister\Service\ShippedBaseline\GuardedDescriptorMerge;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedAuthorizationDecision;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedBaselineStore;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedConfigurationGuard;
+use OCA\OpenRegister\Service\ShippedBaseline\ShippedDivergenceReport;
 use OCA\OpenRegister\Service\TaskService;
 use OCA\OpenRegister\Service\TenantKeyService;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
@@ -726,7 +727,12 @@ final class ConfigurationServiceRegistrar {
 		return new ConfigurationExplainer(
 			store: $container->get(ConfigurationValueStore::class),
 			deployments: $container->get(ConfigurationDeploymentMapperInterface::class),
-			bindings: $container->get(ConfigurationBindingMapperInterface::class)
+			bindings: $container->get(ConfigurationBindingMapperInterface::class),
+			divergence: new ShippedDivergenceReport(
+				schemas: $container->get(SchemaMapperInterface::class),
+				baselines: $container->get(ShippedBaselineStore::class),
+				comparator: new DivergenceComparator(parts: new DescriptorParts())
+			)
 		);
 	}//end buildConfigurationExplainer()
 

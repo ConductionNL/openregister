@@ -36,6 +36,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use OCA\OpenRegister\Service\Archival\DestructionListLinkConflicts;
 use OCA\OpenRegister\Service\Archival\InheritedAppraisal;
 use DateInterval;
 use DateTime;
@@ -119,6 +120,7 @@ class RetentionService implements RetentionServiceInterface {
 	 * @param IUserSession $userSession Current user session
 	 * @param LoggerInterface $logger Logger
 	 * @param InheritedAppraisal|null $inherited Holds an object back while a declared ancestor is kept permanently.
+	 * @param DestructionListLinkConflicts|null $linkConflicts Finds each new list entry's link conflicts; null records none.
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) A DI constructor for an aggregate service.
 	 *              Every parameter is a distinct collaborator this class genuinely uses, and the tenth
@@ -131,6 +133,7 @@ class RetentionService implements RetentionServiceInterface {
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
 		private readonly ?InheritedAppraisal $inherited=null,
+		private readonly ?DestructionListLinkConflicts $linkConflicts=null,
 	) {
 	}//end __construct()
 
@@ -1115,6 +1118,7 @@ class RetentionService implements RetentionServiceInterface {
 	 * @return array|null The destruction list data or null on failure
 	 *
 	 * @spec openspec/specs/retention-management/spec.md
+	 * @spec openspec/changes/retention-linked-destruction-conflict/specs/archival-destruction-workflow/spec.md#requirement-a-destruction-list-names-the-linked-records-its-entries-clash-with
 	 */
 	public function createDestructionList(array $objects): ?array {
 		if ($this->destructionListIds() === null) {
@@ -1126,12 +1130,25 @@ class RetentionService implements RetentionServiceInterface {
 
 		$userId = $this->currentUserIdOrSystem();
 
+		// Once for the whole list: the finder queries each referencing
+		// schema once for every entry together, never once per entry.
+		$conflicts = ($this->linkConflicts?->forEntries(entries: array_values($objects)) ?? []);
+
 		$objectEntries = [];
+		$conflictCount = 0;
 		foreach ($objects as $object) {
-			$objectEntries[] = $this->destructionListEntry(object: $object);
+			$entry = $this->destructionListEntry(object: $object);
+			$found = ($conflicts[(string) $object->getUuid()] ?? ['conflicts' => [], 'truncated' => false]);
+			$entry['linkConflicts']          = $found['conflicts'];
+			$entry['linkConflictsTruncated'] = $found['truncated'];
+			$conflictCount += count($found['conflicts']);
+			$objectEntries[] = $entry;
 		}
 
-		return self::newDestructionList(createdBy: $userId, entries: $objectEntries);
+		$list = self::newDestructionList(createdBy: $userId, entries: $objectEntries);
+		$list['linkConflictCount'] = $conflictCount;
+
+		return $list;
 	}//end createDestructionList()
 
 	/**

@@ -261,6 +261,8 @@
 					</CnDataTable>
 				</section>
 
+				<SeedReportSection />
+
 				<section class="consoleSection">
 					<h2>{{ t('openregister', 'Maintenance') }}</h2>
 
@@ -323,6 +325,7 @@ import axios from '@nextcloud/axios'
 import { n, t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
+import SeedReportSection from './SeedReportSection.vue'
 import { pageShellComponents } from '../pageShell.js'
 
 /**
@@ -353,6 +356,7 @@ export default {
 	components: {
 		CnDataTable,
 		CogOutline,
+		SeedReportSection,
 		...pageShellComponents,
 	},
 

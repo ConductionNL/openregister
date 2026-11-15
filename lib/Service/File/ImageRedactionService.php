@@ -26,6 +26,8 @@ use DateTime;
 use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Db\GdprEntity;
 use OCA\OpenRegister\Db\GdprEntityMapperInterface;
+use OCA\OpenRegister\Files\Db\AnonymisationLog;
+use OCA\OpenRegister\Files\Db\AnonymisationLogMapper;
 use OCA\OpenRegister\Files\Db\ChunkSourceReaderInterface;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler;
@@ -67,6 +69,8 @@ class ImageRedactionService {
 	 * @param ImageRegionDetectorRegistry $detectors The registered detectors.
 	 * @param OcrWordLocator              $locator   Finds values among OCR words.
 	 * @param ImageBurner                 $burner    Burns regions into pixels.
+	 * @param AnonymisationLogMapper|null $runs      Where detection runs are recorded; none records nothing.
+	 * @param OfficeMediaBurner|null      $media     Burns regions into the images of DOCX and ODT files.
 	 *
 	 * @spec openspec/changes/anonymisation-image-seam/specs/image-anonymisation/spec.md
 	 */
@@ -77,6 +81,8 @@ class ImageRedactionService {
 		private readonly ImageRegionDetectorRegistry $detectors,
 		private readonly OcrWordLocator $locator,
 		private readonly ImageBurner $burner,
+		private readonly ?AnonymisationLogMapper $runs = null,
+		private readonly ?OfficeMediaBurner $media = null,
 	) {
 	}//end __construct()
 
@@ -94,7 +100,7 @@ class ImageRedactionService {
 		$ocr = $this->ocrWordsOf(fileId: $fileId);
 		$words = $ocr['words'];
 		if ($ocr['chunkId'] === null || $words === []) {
-			return ImageDetection::notDetected(reason: self::NO_OCR);
+			return $this->recordRun(file: $file, detection: ImageDetection::notDetected(reason: self::NO_OCR));
 		}
 
 		$regions = $this->textRegions(fileId: $fileId, words: $words);
@@ -108,8 +114,55 @@ class ImageRedactionService {
 			}
 		}
 
-		return new ImageDetection(detected: true, regions: $regions, detectors: $statuses);
+		return $this->recordRun(file: $file, detection: new ImageDetection(detected: true, regions: $regions, detectors: $statuses));
 	}//end detectImage()
+
+	/**
+	 * Record a detection run on the anonymisation log.
+	 *
+	 * The row's steps carry `image-detection` with every detector's status and
+	 * `objectDetection`, so a run where no detector looked at the image reads as
+	 * `not-run`, never as clean. A file that could not be detected is a failed run
+	 * with the reason.
+	 *
+	 * @param File           $file      The file that was detected.
+	 * @param ImageDetection $detection The outcome.
+	 *
+	 * @return ImageDetection The same outcome.
+	 *
+	 * @spec openspec/changes/anonymisation-image-seam/specs/image-anonymisation/spec.md#requirement-region-detectors-plug-into-the-seam-and-an-absent-one-is-never-read-as-run-req-ais-002
+	 */
+	private function recordRun(File $file, ImageDetection $detection): ImageDetection {
+		if ($this->runs === null) {
+			return $detection;
+		}
+
+		$outcome = $detection->toArray();
+		$step = [
+			'outcome' => 'ran',
+			'objectDetection' => $outcome['objectDetection'],
+			'objectDetectionReason' => $outcome['objectDetectionReason'],
+			'detectors' => $outcome['detectors'],
+			'regions' => count($outcome['regions']),
+		];
+		$run = new AnonymisationLog();
+		$run->setFileId((int)$file->getId());
+		$run->setMimeType((string)$file->getMimeType());
+		$run->setEngine('ImageDetection');
+		$run->setStatus(AnonymisationLog::STATUS_SUCCESS);
+		$run->setReplacements(0);
+		if ($detection->detected === false) {
+			$step['outcome'] = 'skipped';
+			$run->setStatus(AnonymisationLog::STATUS_FAILURE);
+			$run->setReason($detection->reason);
+		}
+
+		$run->setSteps((string)json_encode(['image-detection' => $step]));
+		$run->setCreated(new DateTime());
+		$this->runs->insert(entity: $run);
+
+		return $detection;
+	}//end recordRun()
 
 	/**
 	 * The file's decided regions: every relation with a box not marked skipAnonymization.
@@ -144,7 +197,9 @@ class ImageRedactionService {
 	/**
 	 * Burn the regions into the pixels and write the `_anonymized` sibling.
 	 *
-	 * Nothing is written unless every region was burned.
+	 * Nothing is written unless every region was burned. For a DOCX or ODT the
+	 * region's `page` is the 1-based position of the image among the document's
+	 * media parts, and only those parts are replaced.
 	 *
 	 * @param File              $file    The image.
 	 * @param list<ImageRegion> $regions The decided regions.
@@ -157,6 +212,11 @@ class ImageRedactionService {
 	 */
 	public function redactImage(File $file, array $regions): File {
 		$mimeType = (string)$file->getMimeType();
+		if (OfficeMediaBurner::handles(mimeType: $mimeType) === true) {
+			$burned = $this->burnOfficeMedia(bytes: (string)$file->getContent(), mimeType: $mimeType, regions: $regions, fileName: $file->getName());
+			return $this->writeSibling(file: $file, bytes: $burned);
+		}
+
 		if (in_array($mimeType, self::STANDALONE_TYPES, true) === false) {
 			throw new ImageRegionNotBurnableException(
 				fileName: $file->getName(),
@@ -165,6 +225,44 @@ class ImageRedactionService {
 		}
 
 		$burned = $this->burner->burn(bytes: (string)$file->getContent(), mimeType: $mimeType, regions: $regions, fileName: $file->getName());
+
+		return $this->writeSibling(file: $file, bytes: $burned);
+	}//end redactImage()
+
+	/**
+	 * Burn the regions into the media of an office file's bytes.
+	 *
+	 * The text path writes the `_anonymized` DOCX or ODT first; this burns the
+	 * decided image regions into that output, so text and images come out of one
+	 * call. Nothing is returned unless every region was burned.
+	 *
+	 * @param string            $bytes    The office file, after its text was replaced.
+	 * @param string            $mimeType Its type (DOCX or ODT).
+	 * @param list<ImageRegion> $regions  The decided regions; `page` is the image's position among the media parts.
+	 * @param string            $fileName The source name, for the refusal.
+	 *
+	 * @throws ImageRegionNotBurnableException When a region cannot be burned.
+	 *
+	 * @return string The office file with the affected media replaced.
+	 *
+	 * @spec openspec/changes/anonymisation-image-seam/specs/image-anonymisation/spec.md#requirement-every-redaction-path-reaches-the-seam-req-ais-004
+	 */
+	public function burnOfficeMedia(string $bytes, string $mimeType, array $regions, string $fileName): string {
+		$media = ($this->media ?? new OfficeMediaBurner(burner: $this->burner));
+
+		return $media->burn(bytes: $bytes, mimeType: $mimeType, regions: $regions, fileName: $fileName);
+	}//end burnOfficeMedia()
+
+	/**
+	 * Write the `_anonymized` sibling, overwriting an earlier one.
+	 *
+	 * @param File   $file  The source file.
+	 * @param string $bytes The redacted content.
+	 *
+	 * @return File The sibling.
+	 */
+	private function writeSibling(File $file, string $bytes): File {
+		$burned = $bytes;
 
 		$parent = $file->getParent();
 		$name = $this->anonymizedName(name: $file->getName());
@@ -177,7 +275,7 @@ class ImageRedactionService {
 		}
 
 		return $parent->newFile($name, $burned);
-	}//end redactImage()
+	}//end writeSibling()
 
 	/**
 	 * Map the file's detected text entities to boxes and store page and box on each relation.

@@ -2,7 +2,7 @@
 
 ## 1. Aggregates
 
-- [ ] 1.1 Migration adding `(flow_id, created)` on `openregister_flow_runs`; grouped aggregate methods on `FlowRunMapper`, `FlowRunStepMapper` and `TaskMapper` reusing `applyOverdue()`. Verify: mapper tests asserting counts on seeded rows and a constant query count for 10 and 1,000 runs.
+- [ ] 1.1 (index built: Version1Date20261113220000 `or_flowrun_flow_created_idx`; the aggregates are not) Migration adding `(flow_id, created)` on `openregister_flow_runs`; grouped aggregate methods on `FlowRunMapper`, `FlowRunStepMapper` and `TaskMapper` reusing `applyOverdue()`. Verify: mapper tests asserting counts on seeded rows and a constant query count for 10 and 1,000 runs.
 - [ ] 1.2 `FlowProgressService` composing D-1, including `durationUnknown` for pruned steps and node display names. Verify: `tests/Unit/Service/Flow/FlowProgressServiceTest.php`.
 
 ## 2. API

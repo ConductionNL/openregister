@@ -70,6 +70,10 @@ final class SearchLeaf {
 			$column = "COALESCE({$text}, '')";
 		}
 
+		if ($this->scope->folding !== null) {
+			return $this->scope->folding->similarity(textExpression: $column, quotedLiteral: $this->quote(value: $this->literal));
+		}
+
 		return "similarity({$column}, {$this->quote(value: $this->literal)}) > 0.1";
 	}//end similarity()
 
@@ -89,6 +93,10 @@ final class SearchLeaf {
 	 * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md
 	 */
 	public function columnMatch(string $column, string $likePattern): string {
+		if ($this->scope->folding !== null) {
+			return $this->scope->folding->match(quotedColumn: $column, quotedPattern: $likePattern, nullSafe: $this->nullSafe);
+		}
+
 		if ($this->scope->isPostgres === true) {
 			// ILIKE is always case-insensitive on PostgreSQL.
 			$expression = "{$column}::text";

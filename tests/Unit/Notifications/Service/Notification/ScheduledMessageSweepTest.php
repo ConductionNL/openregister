@@ -97,6 +97,20 @@ class ScheduledMessageSweepTest extends TestCase {
 			public function record(string $id, array $fields): void {
 				$this->rows[$id] = array_merge($this->rows[$id], $fields);
 			}
+
+			public function insert(array $message): string {
+				$id = (string)(count($this->rows) + 1);
+				$this->rows[$id] = $message + ['id' => $id, 'state' => 'pending', 'attempts' => 0];
+				return $id;
+			}
+
+			public function forObject(string $objectUuid, int $limit): array {
+				return array_slice(array_values(array_filter($this->rows, static fn (array $r): bool => ($r['objectUuid'] ?? '') === $objectUuid)), 0, $limit);
+			}
+
+			public function find(string $id): ?array {
+				return ($this->rows[$id] ?? null);
+			}
 		};
 	}//end store()
 

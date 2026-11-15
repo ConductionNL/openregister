@@ -254,6 +254,8 @@ class PropertyValidatorHandler implements PropertyValidatorHandlerInterface {
 		'bsn',
 		// Dutch licence plate in one of the fourteen sidecodes. See LicensePlateNlFormat.
 		'license-plate-nl',
+		// International Bank Account Number, checked with mod-97. See IbanFormat.
+		'iban',
 		// Nextcloud user id, checked against the user backend. The referenced
 		// user must exist. See UserFormat.
 		'user',

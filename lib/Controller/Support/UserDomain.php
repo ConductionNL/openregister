@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Service\LoginSecurityInterface;
 use OCA\OpenRegister\Service\UserServiceInterface;
+use OCP\Authentication\TwoFactorAuth\IRegistry;
 use OCP\IUserManager;
 use OCP\IUserSession;
 
@@ -40,6 +41,7 @@ final class UserDomain {
 	 * @param LoginSecurityInterface $securityService Security service for input sanitization
 	 * @param IUserManager           $userManager     User manager for authentication
 	 * @param IUserSession           $userSession     User session manager
+	 * @param IRegistry              $twoFactor       Which second factors each user has enabled
 	 *
 	 * @spec openspec/specs/auth-system/spec.md
 	 */
@@ -48,6 +50,7 @@ final class UserDomain {
 		public readonly LoginSecurityInterface $securityService,
 		public readonly IUserManager $userManager,
 		public readonly IUserSession $userSession,
+		public readonly IRegistry $twoFactor,
 	) {
 	}//end __construct()
 }//end class

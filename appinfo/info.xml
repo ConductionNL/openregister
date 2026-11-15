@@ -159,6 +159,8 @@ Vrij en open source onder de EUPL-licentie.
 		<job>OCA\OpenRegister\BackgroundJob\FlowRunRetentionJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\AutomationRecordRetentionJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\RuleRunRetentionJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\ImportRunRetentionJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\QualityAuditScheduleJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\AuditSealJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\OneUseJobKeySweepJob</job>
 		<!--
@@ -548,6 +550,7 @@ Vrij en open source onder de EUPL-licentie.
 		<!-- Annotation-related commands have light DI graphs (mappers + evaluator). -->
 		<command>OCA\OpenRegister\Command\RematerialiseCalculationsCommand</command>
 		<command>OCA\OpenRegister\Command\ResetSchemaToShippedCommand</command>
+		<command>OCA\OpenRegister\Command\DocumentStoreStatusCommand</command>
 		<command>OCA\OpenRegister\Command\BackfillSystemOwnerCommand</command>
 		<command>OCA\OpenRegister\Command\AdoptOrganisationlessRowsCommand</command>
 		<command>OCA\OpenRegister\Command\BackfillObjectSlugsCommand</command>

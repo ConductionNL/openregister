@@ -117,9 +117,10 @@ class FlowNodeConfigFormKeysTest extends TestCase {
 				'register' => ['select', true, '/apps/openregister/api/registers'],
 				'schema' => ['select', true, '/apps/openregister/api/schemas'],
 			]],
-			'schedule needs a cron and an account' => [$nodes . 'TriggerScheduleNode', [
+			'schedule needs a cron and an account, and may name a timezone' => [$nodes . 'TriggerScheduleNode', [
 				'cron' => ['text', true, null],
 				'runAs' => ['text', true, null],
+				'timezone' => ['text', false, null],
 			]],
 			'manual trigger only says where to go next' => [$nodes . 'TriggerManualNode', [
 				'next' => ['text', false, null],

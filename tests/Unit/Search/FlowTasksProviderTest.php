@@ -13,6 +13,7 @@ namespace OCA\OpenRegister\Tests\Unit\Search;
 
 use OCA\OpenRegister\Db\TaskInboxCriteria;
 use OCA\OpenRegister\Search\FlowTasksProvider;
+use OCA\OpenRegister\Service\DeepLinkRegistryServiceInterface;
 use OCA\OpenRegister\Service\Task\TaskInboxPage;
 use OCA\OpenRegister\Service\Task\TaskInboxServiceInterface;
 use OCP\IDateTimeFormatter;
@@ -52,10 +53,11 @@ class FlowTasksProviderTest extends TestCase {
 	 *
 	 * @param array<int, array<string, mixed>> $rows  The rows.
 	 * @param int                              $total The total.
+	 * @param DeepLinkRegistryServiceInterface|null     $deepLinks The deep link registry, if any.
 	 *
 	 * @return FlowTasksProvider
 	 */
-	private function provider(array $rows, int $total): FlowTasksProvider {
+	private function provider(array $rows, int $total, ?DeepLinkRegistryServiceInterface $deepLinks = null): FlowTasksProvider {
 		$inbox = $this->createMock(TaskInboxServiceInterface::class);
 		$inbox->method('inbox')->willReturnCallback(function (TaskInboxCriteria $criteria, ?TaskInboxPage $page = null) use ($rows, $total): array {
 			$this->reads[] = [$criteria, $page];
@@ -70,7 +72,7 @@ class FlowTasksProviderTest extends TestCase {
 		$dates = $this->createMock(IDateTimeFormatter::class);
 		$dates->method('formatDate')->willReturnCallback(static fn (int $timestamp): string => gmdate('j M Y', $timestamp));
 
-		return new FlowTasksProvider($inbox, $groups, $l10n, $urls, $dates);
+		return new FlowTasksProvider($inbox, $groups, $l10n, $urls, $dates, $deepLinks);
 	}//end provider()
 
 	/**
@@ -201,4 +203,53 @@ class FlowTasksProviderTest extends TestCase {
 		$this->assertSame([], $provider->getAlternateIds());
 		$this->assertSame([], $provider->getCustomFilters());
 	}//end testIdentity()
+
+	/**
+	 * The subject's owning app's task route wins over the task page (design D-3).
+	 *
+	 * @return void
+	 */
+	public function testAnAppsOwnTaskRouteWins(): void {
+		$row = ['uuid' => 't-1', 'title' => 'Beoordelen', 'state' => 'enabled', 'objectUuid' => 'case-9', 'registerId' => 4, 'schemaId' => 17];
+		$deepLinks = $this->createMock(DeepLinkRegistryServiceInterface::class);
+		$deepLinks->expects($this->once())->method('resolveTaskUrl')->with(4, 17, $row)->willReturn('/apps/dossiq/#/tasks/t-1');
+
+		$entry = $this->provider([$row], 1, $deepLinks)->search($this->user(), $this->query('beoordelen'))->jsonSerialize()['entries'][0]->jsonSerialize();
+
+		$this->assertSame('/apps/dossiq/#/tasks/t-1', $entry['resourceUrl']);
+	}//end testAnAppsOwnTaskRouteWins()
+
+	/**
+	 * Without a task route, without a subject, or with a registry that fails, the task page is the link.
+	 *
+	 * @return void
+	 */
+	public function testTheTaskPageIsTheFallbackLink(): void {
+		$rows = [
+			['uuid' => 'no-route', 'title' => 'A', 'state' => 'enabled', 'registerId' => 4, 'schemaId' => 17],
+			['uuid' => 'no-subject', 'title' => 'B', 'state' => 'enabled', 'registerId' => null, 'schemaId' => null],
+			['uuid' => 'fails', 'title' => 'C', 'state' => 'enabled', 'registerId' => 5, 'schemaId' => 18],
+		];
+		$deepLinks = $this->createMock(DeepLinkRegistryServiceInterface::class);
+		$deepLinks->expects($this->exactly(2))->method('resolveTaskUrl')->willReturnCallback(
+			static function (int $registerId): ?string {
+				if ($registerId === 5) {
+					throw new \RuntimeException('registry unavailable');
+				}
+
+				return null;
+			}
+		);
+
+		$entries = $this->provider($rows, 3, $deepLinks)->search($this->user(), $this->query('x'))->jsonSerialize()['entries'];
+
+		$this->assertSame(
+			[
+				'/apps/openregister/flow-tasks/no-route#openregister.task.open',
+				'/apps/openregister/flow-tasks/no-subject#openregister.task.open',
+				'/apps/openregister/flow-tasks/fails#openregister.task.open',
+			],
+			array_map(static fn ($e): string => $e->jsonSerialize()['resourceUrl'], $entries)
+		);
+	}//end testTheTaskPageIsTheFallbackLink()
 }//end class

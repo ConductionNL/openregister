@@ -1,13 +1,18 @@
 # Tasks — unified search over magic-table storage
 
 ## 1. Register resolution for schema-only searches
-- [ ] 1.1 In `MagicMapper::searchObjectsPaginated`, when `schemaIds` is non-empty and no `registerId`/`registerIds` is present, derive all register IDs via `registerMapper->findAll(_rbac: false, _multitenancy: false)` and route to `searchObjectsPaginatedMultiSchema`.
-- [ ] 1.2 Unit test: schema-only query (no register) resolves to the multi-schema path and returns objects from the correct magic tables.
+- [x] 1.1 In `MagicMapper::searchObjectsPaginated`, when `schemaIds` is non-empty and no `registerId`/`registerIds` is present, derive all register IDs via `registerMapper->findAll(_rbac: false, _multitenancy: false)` and route to `searchObjectsPaginatedMultiSchema`.
+  - Built differently: a schema-only query takes `searchObjectsPaginatedMultiSchema`, which reads register ownership with `resolveSchemaOwnership()` (a direct membership query), not `registerMapper->findAll()`, whose organisation filter could hide owning registers.
+- [x] 1.2 Unit test: schema-only query (no register) resolves to the multi-schema path and returns objects from the correct magic tables.
+  - `tests/Unit/Db/MagicMapper/MagicMapperSchemaOwnershipTest.php` `testSchemaOnlyQueryResolvesOwnersFromTheMembershipTable`.
 
 ## 2. UNION column-cap fallback
-- [ ] 2.1 Add `UNION_MAX_COLUMNS` constant (≈1500) and compute `estimatedColumns` from `collectAllPropertyColumns()` + base metadata columns in `searchAcrossMultipleTablesWithUnion`.
-- [ ] 2.2 When `estimatedColumns > UNION_MAX_COLUMNS`, fall back to `searchAcrossMultipleTablesSequential` and log the fallback (no silent degradation).
-- [ ] 2.3 Unit test: a wide superset (mock `collectAllPropertyColumns` > cap) routes to the sequential path; a narrow one stays on UNION.
+- [x] 2.1 Add `UNION_MAX_COLUMNS` constant (≈1500) and compute `estimatedColumns` from `collectAllPropertyColumns()` + base metadata columns in `searchAcrossMultipleTablesWithUnion`.
+  - Built as `UNION_PROPERTY_COLUMN_BUDGET = 1500` on the property superset (`unionPropertyColumns()`).
+- [x] 2.2 When `estimatedColumns > UNION_MAX_COLUMNS`, fall back to `searchAcrossMultipleTablesSequential` and log the fallback (no silent degradation).
+  - Built differently: over the budget the UNION keeps running with a metadata-only projection (each arm still matches its own columns in WHERE and score), logged as a warning, instead of falling back to the sequential path. Same protection against the 1664-entry select-list limit without one query per table.
+- [x] 2.3 Unit test: a wide superset (mock `collectAllPropertyColumns` > cap) routes to the sequential path; a narrow one stays on UNION.
+  - `tests/Unit/Db/MagicMapper/MagicMapperUnionColumnBudgetTest.php`: 1500 columns keep their projection, 1501 fall back to metadata-only with the warning.
 
 ## 3. Index-backed unified search (performance)
 - [ ] 3.1 Confirm/extend the `search-index` schema row shape (object_uuid, register_id, schema_id, title, excerpt, search_text tsvector, organisation, owner, published).
