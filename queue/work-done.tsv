@@ -14210,7 +14210,11 @@ fix:shillinq:2227:13c58709	closed #2227 (vueuse 15 outside library peer range, u
 fix:pipelinq:3092:fbd3e247	fixed: lock @nextcloud/files 4.1.1, jsdom p-queue shim, spec mocks; vitest 1 inherited failure; new head f8d049f3	session-20261115T181015-497e81ce	2026-11-15T18:36:21Z
 fix:shillinq:2063:20eb03d6	conflict resolved, pushed 7f06f10a; REVERIFY recorded; legacy no-digest approved runs still need a decision	session-20261115T182941-b7ae781f	2026-11-15T18:36:41Z
 merge:launchpad:1098:a73ecff3	merge8 tree of 13 launchpad PRs: merged=1 red=8 fail=0 skip=0; conflict 4, lint 0, moved 0; fix rows 4	merge8-20261115T170007-37538273	2026-11-15T18:37:08Z
+merge:launchpad:756:c88517ec	merge8 tree of 13 launchpad PRs: merged=1 red=8 fail=0 skip=0; conflict 4, lint 0, moved 0; fix rows 4	merge8-20261115T170007-37538273	2026-11-15T18:37:14Z
 review:portaliq:1856:9258525b	GREEN: per REQ-RIF-003; unit green	session-20261115T174808-50b8ceec	2026-11-15T18:37:16Z
 fix:shillinq:2257:01cce78b	failed: not fixable within the fix cap - merging development conflicts in 74 files (development split many of them into named steps), and the value classes must move to OCA\OpenRegister\Kernel\Contracts\Value (same constructors on openregister main); needs a fresh migration of the ~324 saveObject calls on current development rather than a merge of this October branch	session-20261115T174747-978963d5	2026-11-15T18:37:24Z
 review:portaliq:1996:69333191	RED: 25 failures, test doubles in 14 classes still on the old saveObject signature	session-20261115T174741-9deaa0be	2026-11-15T18:37:23Z
+merge:launchpad:880:f56251f7	merge8 tree of 13 launchpad PRs: merged=1 red=8 fail=0 skip=0; conflict 4, lint 0, moved 0; fix rows 4	merge8-20261115T170007-37538273	2026-11-15T18:37:28Z
 fix:learniq:2549:844e24a3	merged development (both additions kept), JS tests = development baseline; new head e91472ae01076cd905a6b252502030bab81661ef	session-20261114T102637-6688951e	2026-11-15T18:37:43Z
+merge:launchpad:758:b72148cb	merge8 tree of 13 launchpad PRs: merged=1 red=8 fail=0 skip=0; conflict 4, lint 0, moved 0; fix rows 4	merge8-20261115T170007-37538273	2026-11-15T18:37:48Z
+merge:launchpad:1234:8d24d0ba	merge8 tree of 13 launchpad PRs: merged=1 red=8 fail=0 skip=0; conflict 4, lint 0, moved 0; fix rows 4	merge8-20261115T170007-37538273	2026-11-15T18:37:53Z
