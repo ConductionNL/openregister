@@ -13480,6 +13480,7 @@ review:integriq:2654:86718a25	GREEN: spec-only change, merges clean	session-2026
 review:keepiq:1500:1c81214a	GREEN: lock-only phpseclib 4.0.3 bump, suite 5213 OK on merge with development	session-20261115T152547-c779ca49	2026-11-15T16:13:05Z
 review:integriq:3050:ce4b1ee3	BLOCK: wrong namespace for BulkSaveOptions, bulk saves fail at runtime	session-20261115T152543-40aea993	2026-11-15T16:13:18Z
 review:integriq:2650:6bf97c5a	CONFLICT: 8 files; suite not runnable (missing php ext bcmath/soap in worker)	session-20261115T154300-03b63424	2026-11-15T16:13:29Z
+review:larpinq:853:e6fba787	GREEN: spec-only change; strict openspec warning noted	session-20261115T154407-94bf5f8c	2026-11-15T16:13:48Z
 review:integriq:2560:fd436abf	GREEN: devDep bump, vitest 2374 passed	session-20261115T154307-1fc2cc78	2026-11-15T16:14:03Z
 review:integriq:2994:6a706bf6	GREEN: vitest 2374/2374, build ok	session-20261115T155915-84e5dc0a	2026-11-15T16:14:19Z
 review:integriq:2652:7922fa98	CONFLICT: docs-only PR, ~37 add/add and rename conflicts with development	session-20261115T154258-dee2cc3d	2026-11-15T16:14:25Z
@@ -13487,3 +13488,4 @@ review:integriq:3056:6773effd	RED: composer install fails, psalm 7 needs php ~8.
 review:integriq:2991:f5cb1fd7	RED: guzzle 8 breaks 4 tests (null auth refused in AuthenticationService, TransferException ctor, DSO golden)	session-20261115T152539-8dadb15a	2026-11-15T16:14:46Z
 review:integriq:3053:86ebfa51	CONFLICT: 28 conflicted files against development	session-20261115T155903-abd003e3	2026-11-15T16:15:09Z
 review:integriq:3059:f3f45d92	GREEN: phpstan dev bump, phpstan clean on merged tree	session-20261115T155921-aabf185f	2026-11-15T16:15:20Z
+review:integriq:3051:ffe4b87c	BLOCK: uses old Service\Object namespace for lock request classes (now Kernel\Contracts\Value, no alias); also conflicts with development	session-20261115T155904-a7df5bc0	2026-11-15T16:15:26Z
