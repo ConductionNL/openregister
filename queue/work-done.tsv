@@ -14897,3 +14897,4 @@ fix:buildiq:1651:8f610194	development merged; nl strings moved off the catalogue
 fix:humaniq:662:5227edfc	sbom regenerated + phpmd baseline renamed, REVERIFY recorded	session-20261115T174747-978963d5	2026-11-15T20:47:37Z
 fix:keepiq:1815:4bf35882	test expectation updated for development's additionalUrls; REVERIFY at 26e9c5de	session-20261115T195958-28cb0304	2026-11-15T20:47:47Z
 fix:integriq:3059:f3f45d92	sbom regenerated after merging development; new head 4bb36a6b, REVERIFY	session-20261115T200011-d13b13ca	2026-11-15T20:47:57Z
+fix:learniq:1727:937a0671	sbom regenerated, development merged in; new head 18594988, REVERIFY recorded	session-20261115T203018-dcff1ace	2026-11-15T20:48:11Z
