@@ -13370,3 +13370,4 @@ review:dossiq:3955:e447a743	BLOCK: stale base, merged tree breaks the WooPublica
 review:dossiq:5266:f306c815	CONFLICT: 6 files (l10n + menu layout) conflict with development; change itself sound	session-20261115T154254-3d07b219	2026-11-15T15:54:29Z
 review:dossiq:4886:5dd9fb5e	BLOCK: new declaration read can throw out of DeadlineCaseCreatedListener (outside its try); also conflicts with development	session-20261115T142934-de7c51d0	2026-11-15T15:54:35Z
 review:dossiq:3199:4b5da277	GREEN: dev-only sass bump; build OK, vitest only 2 inherited failures	session-20261115T145541-9d69768b	2026-11-15T15:54:46Z
+review:dossiq:4887:ca6b5835	BLOCK: settle does not tie the signer to the obligation's holder (only excludes the case's own subject)	session-20261114T075643-acecaad6	2026-11-15T15:54:59Z
