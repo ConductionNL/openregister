@@ -14031,3 +14031,4 @@ verify:keepiq:1826:15d53d0e	GREEN 1826: unit 5298 OK, vitest 3 inherited failure
 fix:pipelinq:2504:e4cc137c	closed as obsolete: lead rotation already on development (3bf987a7)	session-20261115T174833-88ac0233	2026-11-15T18:01:56Z
 verify:buildiq:1649:4e2bd7dd	1649 GREEN; 1651, 1652 CONFLICT with development	session-20261115T174808-50b8ceec	2026-11-15T18:02:08Z
 review:openregister:10588:fca1fc97	APPROVE: additive filter operator, suites green, phpstan clean	session-20261115T174755-95dc8448	2026-11-15T18:02:16Z
+fix:pipelinq:3150:1a3b033c	merged development (stub signatures: branch side, imports: both); unit 8890 OK; new head 03b03d45c12021bb1c6869ce4c4d4e106415245f, REVERIFY	session-20261115T152552-0cb4306e	2026-11-15T18:02:24Z
