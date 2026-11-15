@@ -12529,3 +12529,4 @@ cover:shillinq:05639debmb38d:jsea7197ec	PR #3094: 22 vitest tests, src/utils 95.
 build:portaliq:intake-report-pages:c4	already done: PR #2444 merged into development, every code task ticked; only T01 (live instance check) left	session-20261115T005138-c7bbb0f0	2026-11-15T01:21:11Z
 cover:buildiq:70b3e29em66d0:f91e7417	already covered: lib/Service/Connection at 99.2% lines (pcov); the one uncovered line is a branch unreachable with the current FleetAppId constant; no PR	session-20261115T010928-f0987802	2026-11-15T01:21:36Z
 cover:dossiq:069ee2d6mdd7c:c17c6e8e	already done: lib/Service/Kcc/*.php at 98.8% stmts (801/810) on development, above 95% target; no PR	session-20261115T005133-04e59268	2026-11-15T01:21:34Z
+cover:pipelinq:7f9dc8e6m195a:js0be8c659	PR #3857: BulkChangeFieldModal mounted spec, 10 tests; src/modals 93.75%->96.1%; vitest 1 inherited failure unchanged	session-20261115T005141-9356bed0	2026-11-15T01:21:58Z
