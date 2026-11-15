@@ -13415,3 +13415,4 @@ review:filinq:1409:0d0e948a	BLOCK: obsolete, superseded on development, 32-file 
 review:filinq:1102:7156c4b9	GREEN: jszip patch bump, vitest 763/763 on merged tree	session-20261115T155921-aabf185f	2026-11-15T16:02:33Z
 review:filinq:1312:4c33817f	BLOCK: obsolete, development already has @nextcloud/vue 9.14.1; lock conflict	session-20261115T142934-6cab0c24	2026-11-15T16:02:40Z
 review:hermiq:1135:988cfbc8	GREEN: dev-only phpmd 3 bump; unit suite identical; notes on deprecated positional args and one new unused-param finding	session-20261114T075643-acecaad6	2026-11-15T16:02:49Z
+review:hermiq:1195:6284aad0	GREEN: eslint bump, vitest 1526 pass, lint identical to baseline	session-20261115T155913-70cee771	2026-11-15T16:02:56Z
