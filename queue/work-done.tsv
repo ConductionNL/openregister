@@ -12403,3 +12403,4 @@ fix:portaliq:2508:f1ef2828	merged GREEN #2500 in, register 0.117.0 for the messa
 fix:shillinq:3087:28bf1249	fixed test ctor args, new head ae348215; REVERIFY recorded	session-20261115T001742-a39bbe12	2026-11-15T00:47:49Z
 fix:versioniq:717:6b86f6b4	merged development in cleanly, new head dfe2ad20, REVERIFY recorded	session-20261114T231754-004f1f75	2026-11-15T00:47:56Z
 fix:versioniq:734:c03718fb	conflict resolved by merging development (both mapper methods kept); new head 095d640d; 2 inherited golden failures	session-20261115T001746-8fbb2c9c	2026-11-15T00:48:20Z
+fix:larpinq:1049:0b6c6360	no change: branch is current with development and merges clean; conflict only against unmerged 1039/1051 (l10n); REVERIFY recorded	session-20261114T234944-ee1416bc	2026-11-15T00:48:29Z
