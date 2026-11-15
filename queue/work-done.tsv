@@ -15154,3 +15154,4 @@ review:decidiq:1944:e77db8b0	GREEN: ObjectFindOptions migration, behaviour prese
 review:versioniq:508:4df37973	GREEN: plugin-vue patch, vitest 3012/3012, build ok	session-20261115T211111-34885d99	2026-11-15T21:47:21Z
 review:versioniq:691:eca00de3	GREEN: build matches spec, no new failures, vitest 3022 OK	session-20261115T213156-1ffcf961	2026-11-15T21:47:30Z
 review:launchpad:787:e3f05384	GREEN: PHP+vitest green, phpstan clean	session-20261115T213122-46f7fafb	2026-11-15T21:47:44Z
+review:buildiq:1596:33a8b51d	GREEN: organisation-scoped apps per spec, no new failures	session-20261115T213100-e547b457	2026-11-15T21:47:51Z
