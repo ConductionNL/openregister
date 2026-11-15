@@ -13238,3 +13238,4 @@ build:launchpad:launcher-tile-launch-types:c3	partial, no code left: PR #1226 (b
 build:launchpad:engagement-announcements:c3	partial, no code left: PR #1214 (73daaaf8) merged; open are 12 Playwright (live) and 13's spec copy at archive (task 13 asks only nl+en strings, done)	session-20261115T142134-badaaf30	2026-11-15T15:30:41Z
 review:filinq:2072:7e876bbd	GREEN: unit 6796 OK, phpstan clean	session-20261115T152554-949e9403	2026-11-15T15:30:39Z
 review:hermiq:1781:00e5f205	GREEN: 5238 unit OK, vitest/phpstan/eslint clean	session-20261115T152543-40aea993	2026-11-15T15:30:33Z
+measure:openregister:20261115h02	php 94.26% (pcov, 14 directory parts merged; tests/Unit/Architecture excluded: >280s without coverage), js 92.56% (jest)	session-20261115T142132-f4234592	2026-11-15T15:31:07Z
