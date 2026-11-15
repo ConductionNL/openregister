@@ -12759,3 +12759,4 @@ cover:integriq:92114ab0m6759:2af01be6	already done: lib/Intake/*.php measures 96
 review:learniq:2486:b690ac62	GREEN: PHP 6870 (1 inherited), phpstan clean	session-20261114T234941-bc8686af	2026-11-15T01:58:30Z
 verify:dossiq:6552:c5c28011	2 GREEN (6552, 6553): tests only, no new unit failures	session-20261115T005122-49ba1b99	2026-11-15T01:58:49Z
 merge:versioniq:700:b312ce04	merge3 tree of 6 versioniq PRs: merged=3 red=0 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-15T01:59:09Z
+merge:versioniq:694:5adeb269	merge3 tree of 6 versioniq PRs: merged=3 red=0 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-15T01:59:12Z
