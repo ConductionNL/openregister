@@ -12605,3 +12605,4 @@ portaliq	1582	9e21deeeb16e7bdfc274c0ee515cc3bdf497820f	RED	merge3:merge-gate	GAT
 portaliq	1682	505a7cd5fc3ec69bdf1f65a98d8079f5d62e2353	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
 portaliq	1982	19a536caaaf1ad5c295587c71af715d3b1b848df	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
 portaliq	2349	124b9f8678c713f568fe461688af30b87afcac23	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+opencatalogi	1888	0a19c236e333079488d932a24a8a5113bcdd7bc0	REVERIFY	worker-03	merged development (conflicts resolved keeping both: feed read ported onto CommunityPages, archived change @spec paths repointed, feed plumbing golden re-recorded); suite 5762 tests, only the 2 failures inherited from development (AppIdentityTest, WooControllerTest); new head e9655f0d96ceccdfd12bb94b59fc00a40f4d9214, verify it
