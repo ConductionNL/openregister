@@ -13748,3 +13748,4 @@ review:shillinq:2098:38bdcce2	BLOCK: conflict; dev tests import deleted view; co
 review:stackiq:1437:3de46f6b	GREEN: phpstan bump, analyse clean, unit suite OK	session-20261115T154311-e8600d84	2026-11-15T17:02:31Z
 review:shillinq:2081:29d9d8c7	GREEN on its own head; conflicts with development picker mixin refactor + l10n	session-20261115T155904-a7df5bc0	2026-11-15T17:02:50Z
 review:stackiq:1042:56393a99	CONFLICT (stale lockfile)	session-20261115T142134-badaaf30	2026-11-15T17:02:58Z
+review:shillinq:2257:01cce78b	BLOCK: wrong ObjectSaveOptions namespace (Kernel\Contracts\Value on OR main)	session-20261115T152558-f97be55f	2026-11-15T17:03:06Z
