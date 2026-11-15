@@ -13791,3 +13791,4 @@ review:versioniq:503:b1bf22e0	CONFLICT: package-lock.json conflicts; head builds
 review:thematiq:1365:d4435483	CONFLICT: generated dark-token CSS and reference docs conflict with development; code OK, vitest green on head	session-20261115T154311-e8600d84	2026-11-15T17:09:42Z
 verify:stackiq:1954:88db1ffb	1958 GREEN, 1982 GREEN; 1954 skipped (head moved to 7f13c4ef)	session-20261115T155902-521936b1	2026-11-15T17:09:48Z
 review:thematiq:1286:9f97aee6	GREEN: vitest 1559/1559	session-20261115T155915-84e5dc0a	2026-11-15T17:10:00Z
+review:thematiq:1557:b3ab646d	GREEN: phpstan bump, analyse clean	session-20261115T154316-34f0db35	2026-11-15T17:10:08Z
