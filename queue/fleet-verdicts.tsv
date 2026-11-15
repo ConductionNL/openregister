@@ -11158,3 +11158,4 @@ stackiq	1928	064e3b5386f3adc05e29fbf76cf9d1df7a888e99	REVERIFY	worker-14	no conf
 stackiq	1966	5c005420f7d22e65846a41da08ffd1b7e7400423	REVERIFY	worker-14	no conflict with development (already up to date); l10n conflicts only with unmerged siblings in the tree; verify alone or after they land; new head 5c005420f7d22e65846a41da08ffd1b7e7400423, verify it
 integriq	3646	6bc14ed8b267f19d26345f032d28e2fb32b19a06	GREEN	worker-17	phpunit 9223->9232, same 6 known baseline fails, no new failures; tests only
 pipelinq	3859	b27b0c41a0b6d827c9671a81ea76723566bf7217	GREEN	worker-11	tests only; unit 8638 OK on the tree (baseline 8627 OK), no new failures
+learniq	2549	f861a75f9da803969547b92865f21d9f266bdf14	REVERIFY	worker-56	merged development in (clean now); js unit 1374 tests, same 9 failures as development; new head d0f3714b7e647e2ee25aa967dec42478641c409c, verify it
