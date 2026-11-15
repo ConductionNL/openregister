@@ -14036,3 +14036,4 @@ fix:dossiq:5398:7c1b653e	failed: reproduced on the branch merged with developmen
 fix:dossiq:4882:13c8daa8	conflict resolved, pushed 2a47c981, REVERIFY recorded	session-20261115T174741-56eeaa2f	2026-11-15T18:02:39Z
 fix:dossiq:5365:b115fa9f	failed: depends on openregister searchObjectsBySlug accepting a RegisterSchemaRef alongside the string slugs; main takes strings only and #9103 replaces the signature (published contract), so it cannot be fixed in dossiq	session-20261115T174757-8dfa7406	2026-11-15T18:02:43Z
 fix:dossiq:3954:d0d56e69	CONFLICT resolved, pushed bf91e1b8, REVERIFY recorded	session-20261115T174747-978963d5	2026-11-15T18:02:55Z
+fix:dossiq:5556:cfd808c9	failed: depends on openregister StoreDescriptor accepting a StoreListing; main has no StoreListing and takes appId/schema/defaultRegister (published contract), so it cannot be fixed in dossiq	session-20261115T174757-8dfa7406	2026-11-15T18:03:18Z
