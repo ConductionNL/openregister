@@ -13606,3 +13606,4 @@ review:pipelinq:2503:8913d60e	BLOCK (conflict): info.xml + l10n conflict with de
 review:pipelinq:3083:ab965a9c	GREEN: vitest 5343/5344, 1 inherited failure	session-20261115T155911-14cd078d	2026-11-15T16:35:36Z
 review:launchpad:961:6afb1922	GREEN: copy-only rename; vitest 2578 OK	session-20261115T145541-9d69768b	2026-11-15T16:35:47Z
 review:pipelinq:3153:22a0348f	BLOCK: OpenRegister save-option classes imported from old namespace	session-20261115T155921-aabf185f	2026-11-15T16:35:53Z
+review:pipelinq:3281:c765403c	BLOCK: lock not installable under config.platform php 8.3	session-20261115T142951-2463b4c4	2026-11-15T16:36:02Z
