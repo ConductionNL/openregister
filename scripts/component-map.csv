@@ -972,6 +972,7 @@ Event/ReferenceValidatedEvent.php,5,Event,Event,Event/ReferenceValidatedEvent.ph
 Event/ReferenceValidationFailedEvent.php,5,Event,Event,Event/ReferenceValidationFailedEvent.php,0,,Kernel
 Event/RegisterCreatedEvent.php,14,Event,Event,Event/RegisterCreatedEvent.php,16,,Kernel
 Event/RegisterDeletedEvent.php,14,Event,Event,Event/RegisterDeletedEvent.php,3,,Kernel
+Event/RegisterFlowTriggersEvent.php,13,Event,Event,Event/RegisterFlowTriggersEvent.php,1,,Kernel
 Event/RegisterLeafProvidersEvent.php,18,Event,Event,Event/RegisterLeafProvidersEvent.php,99,,Kernel
 Event/RegisterUpdatedEvent.php,19,Event,Event,Event/RegisterUpdatedEvent.php,14,,Kernel
 Event/RegistrySubscriptionEndedEvent.php,22,Event,Event,Event/RegistrySubscriptionEndedEvent.php,0,,Kernel
