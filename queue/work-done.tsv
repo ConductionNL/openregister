@@ -12600,3 +12600,4 @@ verify:opencatalogi:2665:142f88f3	GREEN 2665; CONFLICT 2671 2686; PHP 5690 (2 in
 verify:shillinq:3094:4c805bcd	GREEN #3094 (vitest specs only, +22 tests, no new failures)	session-20261115T012426-ca0c1432	2026-11-15T01:32:24Z
 verify:integriq:3615:9d2b7162	GREEN 3615 3617 3644 3645 (phpunit 9268, no new failures; vitest 2335 pass)	session-20261115T001758-161b0715	2026-11-15T01:32:44Z
 verify:versioniq:705:2dd3ba53	705, 722 GREEN; 735 skipped: head moved from 0ba0e46a	session-20261114T231755-998f7ff8	2026-11-15T01:32:57Z
+fix:stackiq:1931:e0997de9	floor restored by refactor, pushed 2588041a504225cb78cf0baec8868f2861d7724d, REVERIFY recorded	session-20261115T005412-4a06d6f4	2026-11-15T01:33:08Z
