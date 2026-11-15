@@ -70,7 +70,13 @@ class RegisterMapperFindGoldenTest extends TestCase {
 		}
 
 		$cases['missing everywhere'] = ['missing', false, false, [[], []]];
-		$cases['filtered away'] = ['7', false, false, [[self::ROW], []]];
+		// The filtered lookup asks the id, slug and uuid arms first; the unfiltered
+		// existence probe runs only after all three missed, and finds the row.
+		$cases['filtered away'] = ['7', false, false, [[], [], [], [self::ROW]]];
+		// A numeric identifier that is no primary key falls through to the slug arm.
+		$cases['numeric slug'] = ['42', false, false, [[], [self::ROW]]];
+		// A UUID-shaped identifier asks the uuid arm alone when it hits.
+		$cases['uuid shaped'] = ['0b6c6f1e-8d5a-4c2b-9f3e-2a1d4c5b6e7f', false, false, [[self::ROW]]];
 		$cases['null slug and uuid'] = ['7', false, false, [[['id' => 7, 'uuid' => null, 'slug' => null]], [['id' => 7, 'uuid' => null, 'slug' => null]]]];
 
 		return $cases;

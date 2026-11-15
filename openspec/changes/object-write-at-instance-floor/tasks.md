@@ -196,6 +196,19 @@ survives even where the priority moved.
       - Split the three-way `uuid OR LOWER(slug) OR id` disjunction into the one
         arm the caller actually holds — a disjunction across three columns cannot
         use an index on any of them.
+      > 2026-11-15 (partial): the disjunction is split. `SchemaMapper::find()`/`findInIds()` and
+      > `RegisterMapper::find()` ask one column per query through the shared `IdentifierArms`:
+      > numeric → id, then slug, then uuid; UUID-shaped → uuid, then slug; anything else → slug,
+      > then uuid. The next arm runs only when the previous one found nothing, so a hit on the arm
+      > the caller holds is one indexable query. The only answer that moves is a cross-arm tie
+      > (two different rows matching different arms): it now follows the arm order, so on
+      > `RegisterMapper` an exact id beats a register whose slug is that number, as `SchemaMapper`
+      > already did. The register not-found probe now runs only on a miss instead of before every
+      > uncached lookup (one query less per register read). Outcomes pinned unchanged in the find
+      > goldens; arms in `tests/Unit/Db/IdentifierArmsTest`. Left: the `LOWER(slug)` functional
+      > index (an expression index is not modelled by the migration schema DBAL compares against,
+      > so it needs a live PostgreSQL/MySQL migration run to land safely), and `SELECT *`, which
+      > `find()` needs because it returns the full entity.
 
 - [ ] **Task 3 — same treatment for `RegisterMapper`.** 24 reads per create of
       the identical query shape. Do not copy the map; extract the one the
