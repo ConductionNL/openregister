@@ -14447,3 +14447,4 @@ review:shillinq:2070:7e9fe5b0	GREEN: access tightening, suite 12238 OK, vitest O
 fix:launchpad:673:6ba3c402	failed: blocked upstream: @conduction/nextcloud-vue (latest 3.4.0) still peers gridstack ^12||^13, gridstack 14 cannot install until the library allows it	session-20261115T190008-ff700d5c	2026-11-15T19:11:39Z
 review:shillinq:2083:bbd8bdb9	BLOCK: new discard uses old deleteObject API, fails with #2253	session-20261115T185923-898cd631	2026-11-15T19:11:55Z
 review:shillinq:2254:863e0786	GREEN: tests only, matches OR main contract, unit 12225 OK	session-20261115T174755-95dc8448	2026-11-15T19:12:09Z
+fix:planninq:1066:acc56236	fixed: main namespace for ObjectDeletion/ObjectFindTarget, merged development, unit green; new head b7c292c5	session-20261115T185930-76cdc846	2026-11-15T19:12:32Z
