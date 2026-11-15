@@ -150,6 +150,21 @@ cannot see is still refused. Covered by `tests/Unit/Service/Schemas/RowSchemaRef
 and `tests/Unit/Controller/BulkControllerMixedSchemaSlugScopeTest.php` (both directions:
 the register's schema admits where its namesake refuses, and refuses where its namesake admits).
 
+**Fixed in the sixth pass: the save's `$ref` resolver.** `SaveLookups::schemaId()` takes an
+optional `register` (last, default null). With one, a slug (also the last part of a path or URL
+reference) is matched among that register's own schemas first, through the save's own register
+cache, and kept per register and slug for the request; a slug the register lacks, an id, a uuid,
+no register, or a register that cannot be read resolves through the old chain unchanged. Callers
+that hold a register pass it: the cascade paths in `SaveObject` (`orphanScope()` the parent's
+register, `authorizedCascadeSchemaId()` and the cascade-rights pre-check the nested object's
+register), `ReferenceExistence` (the reference's target register, the object's own by default)
+and `InverseWriteBack` (the write-back's target register). `ReferenceFilterGuard::readReferenced()`
+uses the id only as a does-it-resolve guard and reads the object with no schema, so scoping
+changes nothing there; it stays as it is. Covered by
+`tests/Unit/Service/Object/SaveObject/SaveLookupsRegisterScopedSlugTest.php`; the cascade
+golden (`save-object-cascade-helpers-golden.json`) now records the one cached register read the
+scoped lookup makes before a nested save.
+
 ### Class (a) and (c)
 
 | Path | Disposition | Reason |

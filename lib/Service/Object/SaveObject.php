@@ -1053,13 +1053,16 @@ class SaveObject implements SaveObjectInterface {
 	 * For path and URL references, it extracts the last part and matches against schema slugs (case-insensitive).
 	 *
 	 * @param string $reference The schema reference to resolve
+	 * @param mixed  $register  The register the reference is resolved for; a slug is matched among its schemas
+	 *                          first. Null scopes nothing.
 	 *
 	 * @return null|numeric-string The resolved schema ID or null if not found
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 * @spec openspec/changes/register-scoped-schema-slug-resolution/specs/schema-slug-resolution/spec.md
 	 */
-	private function resolveSchemaReference(string $reference): ?string {
-		return $this->lookups()->schemaId(reference: $reference);
+	private function resolveSchemaReference(string $reference, mixed $register = null): ?string {
+		return $this->lookups()->schemaId(reference: $reference, register: $register);
 	}//end resolveSchemaReference()
 
 	/**
@@ -1651,7 +1654,7 @@ class SaveObject implements SaveObjectInterface {
 		$subSchemaRef = $definition['items']['$ref'] ?? $definition['$ref'] ?? null;
 		$subSchemaId = null;
 		if ($subSchemaRef !== null) {
-			$subSchemaId = $this->resolveSchemaReference(reference: $subSchemaRef);
+			$subSchemaId = $this->resolveSchemaReference(reference: $subSchemaRef, register: $objectEntity->getRegister());
 		}
 
 		$subSchema = null;
@@ -1818,7 +1821,7 @@ class SaveObject implements SaveObjectInterface {
 	 */
 	private function authorizedCascadeSchemaId(array $definition, mixed $register): string {
 		// Resolve schema reference to actual schema ID.
-		$schemaId = $this->resolveSchemaReference(reference: $definition['$ref']);
+		$schemaId = $this->resolveSchemaReference(reference: $definition['$ref'], register: $register);
 		if ($schemaId === null) {
 			throw new Exception("Invalid schema reference: {$definition['$ref']}");
 		}
@@ -2376,8 +2379,8 @@ class SaveObject implements SaveObjectInterface {
 			}
 
 			try {
-				$schemaId = $this->resolveSchemaReference(reference: $target['$ref']);
 				$registerRef = CascadeItem::register(definition: $target, parentRegister: $register->getId());
+				$schemaId = $this->resolveSchemaReference(reference: $target['$ref'], register: $registerRef);
 				if ($schemaId === null || (is_int($registerRef) === false && is_string($registerRef) === false)) {
 					continue;
 				}

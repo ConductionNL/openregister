@@ -27,7 +27,9 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Service\Schemas\SchemaRefInRegister;
 use OCP\AppFramework\Db\DoesNotExistException;
+use Throwable;
 
 /**
  * Finds the schemas and registers a save names, and keeps them for the request.
@@ -61,6 +63,13 @@ final class SaveLookups {
 	private array $schemaReferenceCache = [];
 
 	/**
+	 * Schema ids found inside a register, by register and slug; null when the register lacks the slug.
+	 *
+	 * @var array<string, string|null>
+	 */
+	private array $scopedSchemaCache = [];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param SchemaMapperInterface   $schemaMapper   Finds schemas.
@@ -83,6 +92,7 @@ final class SaveLookups {
 		$this->schemaCache = [];
 		$this->registerCache = [];
 		$this->schemaReferenceCache = [];
+		$this->scopedSchemaCache = [];
 	}//end clear()
 
 	/**
@@ -157,13 +167,20 @@ final class SaveLookups {
 	 * A reference is an id, a uuid, a slug, a path such as `#/components/schemas/Contact`
 	 * or a URL. Path and URL references match on their last part, case-insensitive.
 	 *
+	 * With a register in context, a slug is matched among that register's own schemas
+	 * first, so a slug two registers share names the register's schema. A slug the
+	 * register does not carry, or no register, resolves exactly as before.
+	 *
 	 * @param string $reference The reference.
+	 * @param mixed  $register  The register the reference is resolved for: the entity, its id, uuid or slug;
+	 *                          null (the default) scopes nothing.
 	 *
 	 * @return null|numeric-string The schema id.
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 * @spec openspec/changes/register-scoped-schema-slug-resolution/specs/schema-slug-resolution/spec.md
 	 */
-	public function schemaId(string $reference): ?string {
+	public function schemaId(string $reference, mixed $register = null): ?string {
 		if (empty($reference) === true) {
 			return null;
 		}
@@ -171,6 +188,11 @@ final class SaveLookups {
 		$text = new ReferenceText();
 		$clean = $text->withoutQuery(reference: $reference);
 		$slug = $text->lastSegment(reference: $clean);
+		$scoped = $this->schemaIdInRegister(slug: $slug, register: $register);
+		if ($scoped !== null) {
+			return $scoped;
+		}
+
 		$schemaId = ($this->schemaReferenceCache[$reference] ?? $this->schemaReferenceCache[$clean]
 			?? $this->schemaIdByIdentifier(identifier: $clean)
 			?? $this->schemaIdFromAll(slug: $slug)
@@ -379,4 +401,77 @@ final class SaveLookups {
 			return null;
 		}
 	}//end schemaIdBySlug()
+
+	/**
+	 * The id of the register's own schema carrying this slug, or null.
+	 *
+	 * @param string $slug     The reference's last part.
+	 * @param mixed  $register The register in context.
+	 *
+	 * @return string|null The schema id; null for an id, a uuid, no register, or a slug the register lacks.
+	 */
+	private function schemaIdInRegister(string $slug, mixed $register): ?string {
+		$registerKey = self::registerKey(register: $register);
+		if ($registerKey === null || $slug === '' || (new ReferenceText())->isIdentifier(value: $slug) === true) {
+			return null;
+		}
+
+		$cacheKey = $registerKey . "\0" . strtolower($slug);
+		if (array_key_exists($cacheKey, $this->scopedSchemaCache) === false) {
+			$this->scopedSchemaCache[$cacheKey] = $this->findSchemaIdInRegister(slug: $slug, register: $register);
+		}
+
+		return $this->scopedSchemaCache[$cacheKey];
+	}//end schemaIdInRegister()
+
+	/**
+	 * Look the slug up among the register's schemas, keeping the schema found.
+	 *
+	 * The register is read through this request's own register cache, which the
+	 * save reads it from anyway. Anything that cannot be read scopes nothing: the
+	 * reference then resolves exactly as it did before.
+	 *
+	 * @param string $slug     The slug.
+	 * @param mixed  $register The register in context.
+	 *
+	 * @return string|null The schema id.
+	 */
+	private function findSchemaIdInRegister(string $slug, mixed $register): ?string {
+		try {
+			if ($register instanceof Register === false) {
+				$register = $this->register(registerId: $register);
+			}
+
+			$schema = (new SchemaRefInRegister(schemas: $this->schemaMapper))->findInRegister(schemaRef: $slug, register: $register);
+		} catch (Throwable $e) {
+			return null;
+		}
+
+		if ($schema === null) {
+			return null;
+		}
+
+		$this->rememberSchema(schema: $schema);
+
+		return (string)$schema->getId();
+	}//end findSchemaIdInRegister()
+
+	/**
+	 * The cache key of a register in context, or null when it names none.
+	 *
+	 * @param mixed $register The register: the entity, its id, uuid or slug.
+	 *
+	 * @return string|null The key.
+	 */
+	private static function registerKey(mixed $register): ?string {
+		if ($register instanceof Register) {
+			return 'id:' . (string)$register->getId();
+		}
+
+		if ((is_int($register) === true || is_string($register) === true) && $register !== '') {
+			return 'ref:' . (string)$register;
+		}
+
+		return null;
+	}//end registerKey()
 }//end class
