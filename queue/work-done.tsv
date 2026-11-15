@@ -12284,3 +12284,5 @@ fix:launchpad:1214:3cd2835b	merged development, resolved 7 conflicts keeping bot
 cover:dossiq:069ee2d6mdd7c:60c2c265	PRs #6536 #6538: 13 controllers, 93 tests; Controller 85.51->~88.4% combined, lib 92.52->~92.9%; suite failures unchanged (19 inherited)	session-20261115T001016-a8991554	2026-11-15T00:29:33Z
 merge:integriq:3564:9372562c	merge3 tree of 17 integriq PRs: merged=3 red=6 fail=0 skip=2; conflict 6, lint 0, moved 0; fix rows 6	merge3-20261113T213425-c36bcd5f	2026-11-15T00:29:36Z
 merge:integriq:3549:0f8ef969	merge3 tree of 17 integriq PRs: merged=3 red=6 fail=0 skip=2; conflict 6, lint 0, moved 0; fix rows 6	merge3-20261113T213425-c36bcd5f	2026-11-15T00:29:39Z
+merge:integriq:3542:e1ff2b55	merge3 tree of 17 integriq PRs: merged=3 red=6 fail=0 skip=2; conflict 6, lint 0, moved 0; fix rows 6	merge3-20261113T213425-c36bcd5f	2026-11-15T00:29:43Z
+merge:integriq:3589:d1f6a28b	merge3 tree of 17 integriq PRs: merged=3 red=6 fail=0 skip=2; conflict 6, lint 0, moved 0; fix rows 6	merge3-20261113T213425-c36bcd5f	2026-11-15T00:29:46Z
