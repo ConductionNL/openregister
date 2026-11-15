@@ -14631,3 +14631,4 @@ review:integriq:3054:5b91fc9c	RED: conflicts in 9 files and unconverted saveObje
 review:integriq:3050:c9ca8d22	GREEN: bulk-save contract adaptation, same flags; suite same failures as development	session-20261114T075643-75a598ab	2026-11-15T19:47:37Z
 review:integriq:3058:46cc2fb4	GREEN: patch bump, sbom current, tests = baseline	session-20261115T182940-bfeb7e78	2026-11-15T19:49:05Z
 review:learniq:2132:3655c155	GREEN: find() adapted, flags unchanged	session-20261115T174747-978963d5	2026-11-15T19:50:16Z
+merge:filinq:2114:8c462267	merge3 tree of 21 filinq PRs: merged=3 red=7 fail=0 skip=0; conflict 11, lint 0, moved 0; fix rows 11	merge3-20261113T213425-c36bcd5f	2026-11-15T19:51:33Z
