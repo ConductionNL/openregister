@@ -13148,3 +13148,4 @@ build:learniq:capability-rows-say-what-they-do:c6	partial: -2 branch's 5 unmerge
 review:filinq:2123:4b50c297	GREEN: phpunit 6830 OK, jest 562, vitest 785	session-20261115T145555-b33410db	2026-11-15T15:11:01Z
 fix:decidiq:2207:a418f794	merged development in cleanly; new head 79d193be	session-20261115T151007-45079d32	2026-11-15T15:11:20Z
 review:filinq:2122:caf13011	GREEN: unit 6796 ok, vitest 769, jest 562, phpstan clean	session-20261115T142153-990a3fbe	2026-11-15T15:11:34Z
+fix:decidiq:2188:6507a1b9	no change: merges clean with development; conflict only with a sibling; REVERIFY recorded	session-20261115T145535-caebb5a3	2026-11-15T15:11:42Z
