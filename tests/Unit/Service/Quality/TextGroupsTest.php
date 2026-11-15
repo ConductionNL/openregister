@@ -57,6 +57,7 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Search\Service\Quality\PayloadComparator
  * @uses   \OCA\OpenRegister\Search\Service\Quality\SimilarityCalculator
  * @uses   \OCA\OpenRegister\Service\RegisterScopedSchemaResolvers
+ * @uses   \OCA\OpenRegister\Service\RegisterScopedSchemaResolver
  * @uses   \OCA\OpenRegister\Db\SchemaCatalog
  * @uses   \OCA\OpenRegister\Service\Quality\TextSignature
  * @uses   \OCA\OpenRegister\Db\TextSignature
