@@ -3112,3 +3112,49 @@ stackiq	1957	4de74d07773eda437814ed327495a3d2831d71c0	MERGED	merge3	GATE OK sbom
 stackiq	1961	db31535e95aed7756fd3e82856b0851e4f67e48c	SKIP	merge3	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
 stackiq	1962	0771746aa2cb9a5092ba8721d636abc0cdb0cb53	RED	merge3	GATE RED floor: duplication: 3.91 -> 3.83
 stackiq	1964	2bff81a118c45eaf66f47c803604666f333550b7	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.15
+portaliq	2444	14f7dd012a423cfafef609fe197f570b5003f83d	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.15
+portaliq	2516	32c8274028c1d05e8184a1e66e529677f9bdec32	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.15
+portaliq	2517	a50131061434ab6bb1d265a6da6af8dad1ab59ac	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.15
+portaliq	2518	55bb8c128d4d27ed5631adef84cfd29f969a311e	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.15
+portaliq	2519	4badcac520ffdd4c8e0d9243d636a066286973ec	SKIP	merge3	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
+learniq	2507	2145eabaa834ed203fd00db2cc4ba59c113e7172	RED	merge3	GATE RED absolute floor: learniq maintainability 3.98 after merge is below its floor 3.99
+learniq	2521	9260217ad9f1e86e05e5bfe35fafc27a3b5978cd	RED	merge3	GATE RED absolute floor: learniq maintainability 3.98 after merge is below its floor 3.99
+learniq	2548	a313d1e98bc38cb50cd7e27a9598f20dab220313	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 3.99
+pipelinq	3842	7b79334bd2781517ac08fffba9afced73613bf43	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.16
+pipelinq	3843	73494d8c75522efbbda2b445f79b34a8e115461e	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.16
+pipelinq	3844	c727734b9f8741e1d90a4fb46e938b8555a66d71	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.16
+pipelinq	3845	e0dd744ca2e826d116078083012a3d825b36e9a1	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.16
+pipelinq	3846	781401bfb0ecf09471945c1ceb6f57c8f5ab9a39	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.16
+pipelinq	3847	4c9414027e48e0b5538686d2e9c3056b9908e14c	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.16
+pipelinq	3848	069c9696e442df7dae5127858605b4340b1f4130	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.16
+pipelinq	3849	5ac26573b3b603f9deb787eae9f9575b6a38bbf0	SKIP	merge3	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
+pipelinq	3850	e6de08f6f2d517f542e1175c92eab1d05d0ee3f4	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.16
+pipelinq	3851	ffb1ffc286675b021070f9523f319a4c87e9d0b1	SKIP	merge3	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
+pipelinq	3852	eb8867aaf2cce3aaec16dbfed1264132c1c21014	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.16
+humaniq	1156	13c34f2d0b35f5c3211b533b3f33ecf953543db3	SKIP	merge3	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
+opencatalogi	2648	3eba922f97c6b1887753c445930d321c0d23336d	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.49
+opencatalogi	2652	73737f2ec348cb833b6366eed1be47cc5d8d742a	RED	merge3	GATE RED checker floor: secretscanning: pass -> fail; secretscanning stars: 5 -> 1
+opencatalogi	2672	3a4b88a511c692e12a942b635fb477c4d90c4375	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.49
+opencatalogi	2687	9e2ae324dd8822de1226b7ea1d11a9da7a648230	RED	merge3	GATE RED checker floor: maintainability stars: 5 -> 4
+opencatalogi	2698	eab92f085c5313ba601372372ef9558520ae2caf	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.49
+opencatalogi	2702	bb5ec0bcbbed00808044003b279efaaf93757ad9	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.49
+opencatalogi	2704	406651f3e601e00605d29c87b80a664f37c9af71	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.49
+opencatalogi	2720	fc520f800d62af93f33af7a0d7c8573d1ee937c0	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.49
+planninq	1180	48921ef678134fbc208366e6827074901d7ed310	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.66 holds at 3.78
+planninq	1181	1243a776d9002ffd07986e916ef42bdae5453647	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.66 holds at 3.78
+planninq	1182	8178aea5673364bfc2e776e74f54bba3e3b0256b	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.66 holds at 3.78
+planninq	1183	7d4bbd35da8f8529008fba9108727f3c762137fa	SKIP	merge3	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
+planninq	1184	07661072a659244c0eff2bce8b038fd9636a72b9	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.66 holds at 3.78
+planninq	1185	59875f39642c5496321832816aead58a23d994cb	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.66 holds at 3.78
+larpinq	1039	5450f7dd0d57af5964fa47ef2757ae0306cb45cb	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.07
+larpinq	1048	258a4b907098477295a89e6d2696b2967a4c6ca9	SKIP	merge3	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
+larpinq	1051	77585fbdb9fdf364deecdbc77c920c61efc4ac82	RED	merge3	GATE RED floor: overall: 4.99 -> 4.91; duplication: 5.14 -> 5.08; unit_size: 4.74 -> 4.70; unit_complexity: 4.87 -> 4.79; unit_interfacing: 4.71 -> 4.24
+larpinq	1052	1b2b0ad356c9f3412103f96707507ed8a1869548	RED	merge3	GATE RED checker floor: spdxheaders stars: 5 -> 4
+larpinq	1060	31b8e3db2bea3650df17a3230e527846dd526951	RED	merge3	GATE RED floor: overall: 4.99 -> 4.97; unit_size: 4.74 -> 4.72; unit_complexity: 4.87 -> 4.79; unit_interfacing: 4.71 -> 4.64
+larpinq	1061	ceb98cfdabbe3f5cfe9b5b35a557f1119da01ca1	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.07
+launchpad	1203	a278d5830a7fe1371b61d67773695426eb2650d8	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.65 holds at 3.67
+launchpad	1206	c13e34be7837ccbc7cf299e72ef6a0346683b8ba	SKIP	merge3	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
+launchpad	1226	d96f04dad53098d2e7c3f6786804ab6fc0f69823	RED	merge3	GATE RED floor: unit_complexity: 4.73 -> 4.71
+versioniq	694	69cc235c74aa72a728613e9eb195e65e55d029c5	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.97 holds at 3.99
+versioniq	714	bab85cc58909b719d21a5b6ee59c6f86345648bc	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.97 holds at 3.98
+versioniq	733	12c4f99641c4c0ef361c42add879b5cc4b4412cc	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.97 holds at 3.98

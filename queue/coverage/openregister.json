@@ -1,12 +1,12 @@
 {
  "app": "openregister",
- "commit": "35e25663ea1b159dfaea490a7b306b2ea8c82897",
- "measured_at": "2026-11-14T09:47:10Z",
+ "commit": "5db8e48b9a8a0b2252e1084bd1b2feb928041b84",
+ "measured_at": "2026-11-15T01:04:13Z",
  "php": {
   "tool": "pcov",
-  "pct": 95.08,
-  "statements": 224446,
-  "covered": 213403,
+  "pct": 94.28,
+  "statements": 229224,
+  "covered": 216104,
   "dirs": {
    "lib/Activity/": [
     53,
@@ -21,8 +21,8 @@
     472
    ],
    "lib/AppHost/Controller/": [
-    291,
-    287
+    298,
+    294
    ],
    "lib/AppHost/Controller/Support/": [
     4,
@@ -62,15 +62,15 @@
    ],
    "lib/AppHost/Service/": [
     765,
-    691
+    751
    ],
    "lib/AppHost/Settings/": [
     17,
     2
    ],
    "lib/AppHost/Store/": [
-    417,
-    406
+    423,
+    412
    ],
    "lib/AppHost/Store/Source/": [
     94,
@@ -78,11 +78,11 @@
    ],
    "lib/AppInfo/": [
     54,
-    54
+    53
    ],
    "lib/BackgroundJob/": [
-    3339,
-    3252
+    3396,
+    3330
    ],
    "lib/BackgroundJob/Support/": [
     71,
@@ -97,16 +97,16 @@
     501
    ],
    "lib/Capabilities/": [
-    125,
-    124
+    169,
+    168
    ],
    "lib/Collaboration/": [
-    44,
-    35
+    73,
+    34
    ],
    "lib/Command/": [
-    2717,
-    2685
+    2737,
+    2705
    ],
    "lib/Command/Support/": [
     82,
@@ -133,12 +133,12 @@
     1
    ],
    "lib/Controller/": [
-    20877,
-    19915
+    21234,
+    20123
    ],
    "lib/Controller/Settings/": [
-    758,
-    749
+    797,
+    788
    ],
    "lib/Controller/Support/": [
     1763,
@@ -157,8 +157,8 @@
     75
    ],
    "lib/Db/": [
-    14521,
-    11935
+    14646,
+    12051
    ],
    "lib/Db/AccessLink/": [
     0,
@@ -257,8 +257,8 @@
     0
    ],
    "lib/Db/MagicMapper/": [
-    6261,
-    5966
+    6516,
+    5960
    ],
    "lib/Db/Mapping/": [
     27,
@@ -301,12 +301,12 @@
     2
    ],
    "lib/Db/Schema/": [
-    665,
-    646
+    673,
+    654
    ],
    "lib/Db/SchemaMapper/": [
-    906,
-    716
+    963,
+    765
    ],
    "lib/Db/SchemaRun/": [
     0,
@@ -365,12 +365,12 @@
     0
    ],
    "lib/Dto/": [
-    132,
-    131
+    145,
+    144
    ],
    "lib/Event/": [
-    457,
-    452
+    464,
+    453
    ],
    "lib/Exception/": [
     528,
@@ -381,7 +381,7 @@
     24
    ],
    "lib/Files/": [
-    12,
+    13,
     3
    ],
    "lib/Files/BackgroundJob/": [
@@ -393,20 +393,20 @@
     10
    ],
    "lib/Files/Controller/": [
-    1469,
-    1440
+    1512,
+    1472
    ],
    "lib/Files/Controller/Settings/": [
-    141,
-    128
+    154,
+    141
    ],
    "lib/Files/Controller/Support/": [
     74,
     72
    ],
    "lib/Files/Db/": [
-    748,
-    701
+    799,
+    768
    ],
    "lib/Files/Db/Chunk/": [
     0,
@@ -417,12 +417,12 @@
     13
    ],
    "lib/Files/Service/": [
-    1253,
-    1229
+    1378,
+    1260
    ],
    "lib/Files/Service/File/": [
-    2363,
-    2099
+    2382,
+    1968
    ],
    "lib/Files/Service/File/Office/": [
     44,
@@ -437,7 +437,7 @@
     54
    ],
    "lib/Files/Service/File/Sanitizer/": [
-    446,
+    447,
     432
    ],
    "lib/Files/Service/Integration/": [
@@ -449,8 +449,8 @@
     120
    ],
    "lib/Files/Service/TextExtraction/": [
-    1955,
-    1888
+    2096,
+    1899
    ],
    "lib/Files/Service/TextExtraction/PatternSet/": [
     102,
@@ -481,8 +481,8 @@
     16
    ],
    "lib/Listener/": [
-    4480,
-    4234
+    4661,
+    4383
    ],
    "lib/Listener/FlowNodes/": [
     137,
@@ -549,8 +549,8 @@
     830
    ],
    "lib/Middleware/": [
-    678,
-    605
+    682,
+    646
    ],
    "lib/Middleware/Exception/": [
     64,
@@ -613,8 +613,8 @@
     30
    ],
    "lib/Notifications/Service/Notification/": [
-    4004,
-    3943
+    4200,
+    4000
    ],
    "lib/Notifications/Service/Party/": [
     87,
@@ -622,7 +622,7 @@
    ],
    "lib/Notifications/Service/Timeline/": [
     749,
-    700
+    695
    ],
    "lib/Notifications/Service/WebPush/": [
     178,
@@ -649,8 +649,8 @@
     12
    ],
    "lib/Search/": [
-    369,
-    345
+    408,
+    361
    ],
    "lib/Search/BackgroundJob/": [
     227,
@@ -677,7 +677,7 @@
     170
    ],
    "lib/Search/Listener/": [
-    90,
+    94,
     69
    ],
    "lib/Search/Service/": [
@@ -713,7 +713,7 @@
     24
    ],
    "lib/Search/Service/Quality/": [
-    436,
+    524,
     426
    ],
    "lib/Search/Service/Reporting/": [
@@ -737,8 +737,8 @@
     6
    ],
    "lib/Service/": [
-    21523,
-    20213
+    21662,
+    20267
    ],
    "lib/Service/Aggregation/": [
     1957,
@@ -746,7 +746,7 @@
    ],
    "lib/Service/Anonymisation/": [
     496,
-    414
+    412
    ],
    "lib/Service/ApiCaller/": [
     173,
@@ -757,15 +757,15 @@
     334
    ],
    "lib/Service/Archival/": [
-    3075,
-    2879
+    3158,
+    2960
    ],
    "lib/Service/Audit/": [
-    1068,
-    1007
+    1179,
+    1107
    ],
    "lib/Service/Authorization/": [
-    359,
+    360,
     355
    ],
    "lib/Service/Bindings/": [
@@ -825,12 +825,12 @@
     136
    ],
    "lib/Service/Configuration/": [
-    4519,
-    4483
+    4607,
+    4523
    ],
    "lib/Service/ConfigurationDeployment/": [
-    917,
-    882
+    922,
+    887
    ],
    "lib/Service/Connection/": [
     366,
@@ -849,8 +849,8 @@
     1814
    ],
    "lib/Service/Dbal/": [
-    429,
-    412
+    522,
+    497
    ],
    "lib/Service/Decision/": [
     334,
@@ -877,48 +877,48 @@
     1350
    ],
    "lib/Service/Edepot/Transport/": [
-    237,
-    236
+    240,
+    198
    ],
    "lib/Service/ExampleSet/": [
-    5050,
+    5054,
     4985
    ],
    "lib/Service/Exchange/": [
-    94,
-    93
+    264,
+    178
    ],
    "lib/Service/Export/": [
     702,
     684
    ],
    "lib/Service/Export/Odt/": [
-    248,
+    250,
     245
    ],
    "lib/Service/ExternalLink/": [
-    146,
+    148,
     141
    ],
    "lib/Service/Federation/": [
-    136,
-    135
+    142,
+    139
    ],
    "lib/Service/File/": [
-    2432,
-    2317
+    2636,
+    2445
    ],
    "lib/Service/Flow/": [
-    6347,
-    6104
+    6443,
+    6188
    ],
    "lib/Service/Flow/Bpmn/": [
     496,
     469
    ],
    "lib/Service/Flow/Nodes/": [
-    3734,
-    3715
+    3952,
+    3933
    ],
    "lib/Service/Flow/Oversight/": [
     128,
@@ -929,8 +929,8 @@
     122
    ],
    "lib/Service/Flow/Timer/": [
-    1844,
-    1821
+    1955,
+    1929
    ],
    "lib/Service/Form/": [
     1083,
@@ -1016,9 +1016,13 @@
     976,
     959
    ],
+   "lib/Service/Import/RecordImport/": [
+    225,
+    223
+   ],
    "lib/Service/Integration/": [
-    1061,
-    1034
+    1088,
+    1076
    ],
    "lib/Service/Integration/BuiltinProviders/": [
     160,
@@ -1037,8 +1041,8 @@
     316
    ],
    "lib/Service/Lifecycle/": [
-    2596,
-    2491
+    2600,
+    2495
    ],
    "lib/Service/Mail/": [
     73,
@@ -1049,8 +1053,8 @@
     74
    ],
    "lib/Service/Merge/": [
-    684,
-    593
+    804,
+    612
    ],
    "lib/Service/MigrationPack/": [
     386,
@@ -1061,12 +1065,12 @@
     294
    ],
    "lib/Service/Oas/": [
-    435,
-    434
+    517,
+    513
    ],
    "lib/Service/Object/": [
-    13605,
-    13205
+    13736,
+    13121
    ],
    "lib/Service/Object/Collaborators/": [
     15,
@@ -1093,8 +1097,12 @@
     1057
    ],
    "lib/Service/ObjectSource/": [
-    1928,
-    1923
+    2030,
+    1817
+   ],
+   "lib/Service/Observability/": [
+    12,
+    10
    ],
    "lib/Service/Operations/": [
     617,
@@ -1105,8 +1113,8 @@
     63
    ],
    "lib/Service/Outbound/": [
-    92,
-    92
+    172,
+    131
    ],
    "lib/Service/Party/": [
     620,
@@ -1117,28 +1125,28 @@
     311
    ],
    "lib/Service/Quality/": [
-    446,
-    429
+    581,
+    552
    ],
    "lib/Service/Query/": [
-    525,
-    515
+    550,
+    517
    ],
    "lib/Service/Quota/": [
     27,
     27
    ],
    "lib/Service/Rbac/": [
-    5702,
-    5558
+    5745,
+    5604
    ],
    "lib/Service/RecordTemplate/": [
     112,
     112
    ],
    "lib/Service/RedactionPolicy/": [
-    169,
-    167
+    193,
+    191
    ],
    "lib/Service/Reference/": [
     285,
@@ -1150,15 +1158,15 @@
    ],
    "lib/Service/Registry/": [
     240,
-    240
+    236
    ],
    "lib/Service/Relation/": [
-    1058,
+    1060,
     1029
    ],
    "lib/Service/Resilience/": [
     158,
-    110
+    111
    ],
    "lib/Service/Resolver/": [
     5,
@@ -1181,16 +1189,16 @@
     873
    ],
    "lib/Service/SchemaImport/": [
-    522,
+    524,
     518
    ],
    "lib/Service/Schemas/": [
-    1582,
-    1426
+    1656,
+    1486
    ],
    "lib/Service/Search/": [
-    683,
-    654
+    884,
+    837
    ],
    "lib/Service/Security/": [
     63,
@@ -1213,8 +1221,8 @@
     369
    ],
    "lib/Service/ShippedBaseline/": [
-    687,
-    670
+    725,
+    672
    ],
    "lib/Service/Survey/": [
     172,
@@ -1225,16 +1233,16 @@
     450
    ],
    "lib/Service/Sync/": [
-    326,
+    330,
     321
    ],
    "lib/Service/TalkLink/": [
     172,
-    162
+    152
    ],
    "lib/Service/Task/": [
     2420,
-    2405
+    2404
    ],
    "lib/Service/Task/Authorization/": [
     23,
@@ -1260,6 +1268,10 @@
     23,
     23
    ],
+   "lib/Service/UserMigration/": [
+    164,
+    158
+   ],
    "lib/Service/Vectorization/Strategies/": [
     192,
     191
@@ -1269,8 +1281,8 @@
     121
    ],
    "lib/Service/Vocabulary/": [
-    790,
-    786
+    807,
+    803
    ],
    "lib/Service/WellKnown/": [
     43,
@@ -1299,9 +1311,9 @@
   }
  },
  "js": {
-  "pct": 92.5,
-  "statements": 16516,
-  "covered": 15278,
+  "pct": 92.56,
+  "statements": 17151,
+  "covered": 15875,
   "dirs": {
    "src/": [
     248,
@@ -1334,6 +1346,10 @@
    "src/components/object-relations/": [
     135,
     129
+   ],
+   "src/components/object/": [
+    15,
+    15
    ],
    "src/components/register/": [
     7,
@@ -1504,8 +1520,8 @@
     87
    ],
    "src/modals/object/": [
-    1195,
-    1034
+    1238,
+    1073
    ],
    "src/modals/objectAuditTrail/": [
     42,
@@ -1516,12 +1532,12 @@
     384
    ],
    "src/modals/register/": [
-    227,
-    200
+    231,
+    204
    ],
    "src/modals/schema/": [
-    906,
-    809
+    926,
+    829
    ],
    "src/modals/settings/": [
     464,
@@ -1560,8 +1576,8 @@
     19
    ],
    "src/services/": [
-    883,
-    881
+    1090,
+    1078
    ],
    "src/shims/": [
     0,
@@ -1592,8 +1608,8 @@
     79
    ],
    "src/sidebars/search/": [
-    461,
-    456
+    484,
+    479
    ],
    "src/store/": [
     367,
@@ -1676,12 +1692,12 @@
     520
    ],
    "src/views/object/": [
-    217,
-    142
+    265,
+    194
    ],
    "src/views/operations/": [
-    74,
-    59
+    99,
+    83
    ],
    "src/views/organisation/": [
     96,
@@ -1692,8 +1708,8 @@
     143
    ],
    "src/views/register/": [
-    253,
-    246
+    410,
+    400
    ],
    "src/views/reports/": [
     153,
@@ -1704,24 +1720,24 @@
     1
    ],
    "src/views/schema/": [
-    188,
-    185
+    244,
+    221
    ],
    "src/views/schemas/": [
     0,
     0
    ],
    "src/views/search/": [
-    162,
-    145
+    180,
+    160
    ],
    "src/views/settings/": [
     4,
     4
    ],
    "src/views/settings/sections/": [
-    999,
-    958
+    1018,
+    976
    ],
    "src/views/source/": [
     43,

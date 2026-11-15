@@ -1,36 +1,36 @@
 {
  "app": "portaliq",
- "commit": "5bad07778d98c5083af3385ac89f7ae0648f80ba",
- "measured_at": "2026-11-13T18:05:53Z",
+ "commit": "4b3074afea3105fb951e57febfa2afc4000f1f9d",
+ "measured_at": "2026-11-15T01:48:08Z",
  "php": {
   "tool": "pcov",
-  "pct": 94.91,
-  "statements": 35793,
-  "covered": 33972,
+  "pct": 96.15,
+  "statements": 38615,
+  "covered": 37129,
   "dirs": {
    "lib/AppInfo/": [
-    42,
-    36
+    46,
+    39
    ],
    "lib/Auth/": [
     0,
     0
    ],
    "lib/BackgroundJob/": [
-    446,
-    438
+    449,
+    441
    ],
    "lib/Command/": [
-    335,
-    333
+    370,
+    368
    ],
    "lib/Contribution/": [
-    3642,
-    3586
+    3854,
+    3833
    ],
    "lib/Controller/": [
-    6056,
-    5809
+    6456,
+    6232
    ],
    "lib/Event/": [
     114,
@@ -40,17 +40,29 @@
     12,
     12
    ],
+   "lib/Kernel/": [
+    19,
+    19
+   ],
+   "lib/Kernel/Contracts/": [
+    0,
+    0
+   ],
+   "lib/Kernel/Support/": [
+    51,
+    50
+   ],
    "lib/Listener/": [
-    616,
-    271
+    708,
+    319
    ],
    "lib/Middleware/": [
-    131,
-    131
+    132,
+    132
    ],
    "lib/Middleware/Support/": [
-    59,
-    54
+    64,
+    59
    ],
    "lib/Notification/": [
     23,
@@ -61,120 +73,116 @@
     129
    ],
    "lib/Repair/": [
-    556,
-    467
+    680,
+    650
    ],
    "lib/Sections/": [
     5,
     5
    ],
    "lib/Service/": [
-    8557,
-    8077
+    9204,
+    8798
    ],
    "lib/Service/Actions/": [
-    266,
-    239
+    280,
+    262
    ],
    "lib/Service/Assistant/": [
     103,
     103
    ],
    "lib/Service/Availability/": [
-    240,
-    234
+    246,
+    240
    ],
    "lib/Service/Branch/": [
-    51,
-    51
+    18,
+    18
    ],
    "lib/Service/CaseTypeColumns/": [
     89,
     89
    ],
    "lib/Service/Cms/": [
-    1037,
-    1004
+    1233,
+    1215
    ],
    "lib/Service/Connection/": [
-    162,
-    162
+    160,
+    160
    ],
    "lib/Service/ExampleResident/": [
-    287,
-    266
+    294,
+    292
    ],
    "lib/Service/ExampleSite/": [
-    303,
-    298
+    312,
+    310
    ],
    "lib/Service/Identity/": [
-    2869,
-    2728
+    3076,
+    2924
    ],
    "lib/Service/Identity/EmailLink/": [
-    245,
-    243
+    269,
+    269
    ],
    "lib/Service/Intake/": [
-    2671,
-    2594
+    3005,
+    2964
    ],
    "lib/Service/Mail/": [
-    167,
-    165
+    211,
+    209
    ],
    "lib/Service/Messaging/": [
-    377,
-    318
+    425,
+    380
    ],
    "lib/Service/Notifications/": [
-    704,
-    663
+    752,
+    729
    ],
    "lib/Service/Overview/": [
     65,
     65
    ],
    "lib/Service/Plans/": [
-    693,
-    693
+    692,
+    692
    ],
    "lib/Service/Proposals/": [
-    250,
-    228
+    289,
+    289
    ],
    "lib/Service/Reports/": [
-    313,
-    304
-   ],
-   "lib/Service/Session/": [
-    8,
-    8
+    321,
+    319
    ],
    "lib/Service/Signin/": [
-    284,
-    284
+    346,
+    346
    ],
    "lib/Service/Tasks/": [
     92,
     92
    ],
    "lib/Service/Tenancy/": [
-    230,
-    225
+    341,
+    335
    ],
    "lib/Service/Theme/": [
-    261,
-    261
+    272,
+    272
    ],
    "lib/Service/Traffic/": [
-    2950,
-    2855
+    3042,
+    2987
    ],
    "lib/Service/Traffic/Geo/": [
-    336,
-    303
+    349,
+    333
    ],
    "lib/Settings/": [
     14,

@@ -1,12 +1,12 @@
 {
  "app": "dossiq",
- "commit": "7ac61b1e9d30dc1c36dd2224e2c7ec4bab9ba1d0",
- "measured_at": "2026-11-14T23:19:26Z",
+ "commit": "1e14ebbf7f77660d3af5a61665d80af9df44a985",
+ "measured_at": "2026-11-15T01:43:59Z",
  "php": {
   "tool": "pcov",
-  "pct": 92.52,
+  "pct": 92.85,
   "statements": 103722,
-  "covered": 95968,
+  "covered": 96311,
   "dirs": {
    "lib/": [
     56,
@@ -134,7 +134,7 @@
    ],
    "lib/Service/": [
     20173,
-    16623
+    16684
    ],
    "lib/Service/Access/": [
     1236,
@@ -150,7 +150,7 @@
    ],
    "lib/Service/Advice/": [
     262,
-    182
+    255
    ],
    "lib/Service/Ai/": [
     407,
@@ -170,7 +170,7 @@
    ],
    "lib/Service/Assistant/": [
     265,
-    195
+    262
    ],
    "lib/Service/Berichtenbox/": [
     59,
@@ -182,7 +182,7 @@
    ],
    "lib/Service/Beschikking/": [
     943,
-    861
+    896
    ],
    "lib/Service/Bezwaar/": [
     1569,
@@ -230,11 +230,11 @@
    ],
    "lib/Service/Complaint/": [
     312,
-    278
+    301
    ],
    "lib/Service/Consultation/": [
     382,
-    324
+    364
    ],
    "lib/Service/Conversation/": [
     385,
@@ -406,7 +406,7 @@
    ],
    "lib/Service/People/": [
     1004,
-    962
+    1001
    ],
    "lib/Service/Permit/": [
     102,
@@ -542,7 +542,7 @@
    ],
    "lib/Service/Task/": [
     867,
-    854
+    859
    ],
    "lib/Service/Team/": [
     272,

@@ -3328,3 +3328,4 @@
 10574 bc6f27707c6cb5b9e862e2747f7991d79adbb91e APPROVE Tests only: one jest spec for the property modal's computed-value section; merged with main the 5 EditSchemaProperty suites pass (74 tests), eslint clean; no lib or PHP change.
 10575 5c1e4d18cd8befbd7a71fb39bd3493a5e59f25ca APPROVE Tests only: two jest specs (record modal scope, bulk selection mixin) with real assertions; merged with main the 33 src/modals/object suites pass (598 tests), eslint clean; no lib or PHP change.
 10576 a257a4bad0475d00b5c9c6251b4ad10b593d0fe2 APPROVE Tests only (3 jest specs, no production code). Merged with main: 19 suites, 719 tests pass in avg/dashboard/object; eslint clean; fake timers restored, no skips.
+10578 f36ef580003d52e232fa3d855a9b32c5a6c6f9c5 APPROVE Test-only: adds coverage @uses/UsesClass metadata to 43 object service tests; all referenced classes exist; Service/Object, Architecture, Rules, Controller, Contract, Rbac unit suites green on PR merged with main.

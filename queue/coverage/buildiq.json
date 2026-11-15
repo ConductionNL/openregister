@@ -1,12 +1,12 @@
 {
  "app": "buildiq",
  "commit": "165fc0e3c54c1e4771a668d8a39afb8e37622ed1",
- "measured_at": "2026-11-14T23:42:31Z",
+ "measured_at": "2026-11-15T01:59:03Z",
  "php": {
   "tool": "pcov",
   "pct": 90.88,
   "statements": 21944,
-  "covered": 19943,
+  "covered": 19942,
   "dirs": {
    "lib/": [
     11,
@@ -150,7 +150,7 @@
    ],
    "lib/Service/": [
     12597,
-    11086
+    11085
    ],
    "lib/Service/Automation/": [
     9,
@@ -191,9 +191,9 @@
   }
  },
  "js": {
-  "pct": 95.84,
+  "pct": 95.85,
   "statements": 15997,
-  "covered": 15332,
+  "covered": 15333,
   "dirs": {
    "src/": [
     188,
@@ -233,7 +233,7 @@
    ],
    "src/components/page-editor/fields/": [
     1918,
-    1798
+    1799
    ],
    "src/components/runtime/": [
     364,
