@@ -14048,3 +14048,4 @@ fix:dossiq:5281:5ba0c011	tests renamed, pushed c8b6cb2, REVERIFY	session-2026111
 review:dossiq:3300:94f68357	GREEN: dead override removed, no callers; no new failures	session-20261115T174757-8dfa7406	2026-11-15T18:05:14Z
 fix:pipelinq:3281:c765403c	failed: every psalm 7.x requires php ~8.3.16 while config.platform.php is 8.3; fixing needs raising the project's declared PHP floor (and breaks platform-check on 8.3.0-8.3.15), a project decision, not a mechanical fix	session-20261115T174757-8dfa7406	2026-11-15T18:05:56Z
 review:dossiq:3953:6ca6e023	GREEN: behaviour-neutral rename; unit 0 new failures (19 inherited)	session-20261115T174808-50b8ceec	2026-11-15T18:05:57Z
+fix:pipelinq:2969:bd583b9e	conflict resolved toward development's build; pushed e12968a1; REVERIFY recorded	session-20261115T174750-744c606b	2026-11-15T18:06:21Z
