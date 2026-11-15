@@ -11124,3 +11124,4 @@ stackiq	1976	2fd15126eaabf872c37290fae257ef7a25cca357	GREEN	worker-47	phpunit 36
 opencatalogi	2665	b06af5bf3a18d510028dfa0289a8104681f6d761	GREEN	worker-25	PHP unit 5690 vs baseline 5669, 2 inherited failures (AppIdentityTest, WooControllerTest), 0 new; vitest 1103 pass; build PR per publication-translations
 opencatalogi	2671	6274e217321f11883eb7d63903de0050bdf3b487	CONFLICT	worker-25	conflicts on the tree after 2665
 opencatalogi	2686	6cda6a7f12f3d570e619e5d158a211d8d1fa044c	CONFLICT	worker-25	conflicts on the tree after 2665
+shillinq	3094	edddf400d7d971b73af7492b543a54ea016d12aa	GREEN	worker-26	phpunit 11471 (unchanged, no PHP touched); vitest 2772 vs baseline 2750, 1 inherited failure dunningNextRun.spec.js; new failures 0; tests only
