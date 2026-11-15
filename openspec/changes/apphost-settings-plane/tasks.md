@@ -26,6 +26,7 @@
   - `TablesController` (sync one, sync all) and `TmloController` (MDTO export single and batch, the TMLO summary) answer through their failure helpers: a typed failure goes through `handleApiException()` with its own status (an unknown register on sync is a 404, an argument failure on the batch export a 400), an untyped one is a 500 naming the action, the exception message in the server log only. The schema card's sync toast falls back to the response's `error`.
   - `ConversationController` (list, create, and every action on one conversation: show, messages, update, delete, restore, permanent delete) and `RelationsController` (the relations of an object) answer generic failures through `handleApiException()`: the exception message no longer reaches the response body, a typed failure keeps its own status.
   - `SchemaImportController` (import, reimport) answers a persistence failure through its helper: a typed one via `handleApiException()` with its own status, anything else a 500 naming the action, the cause in the server log.
+  - `McpController` (the public discovery catalog, a capability's detail, the grantable rights) answers its failures through `handleApiException()`: the public catalog no longer returns the exception message. Its services bundle `McpControllerServices` gains an optional logger, so an untyped failure's detail is logged.
 - [ ] 3.3 Reference consumer PR in one leaf app (petstore — scaffold origin) deleting its SettingsService/PreferencesController copies
 
 ## 4. Verification
