@@ -14347,3 +14347,4 @@ fix:integriq:3589:e374c8c4	failed: cannot reproduce the absolute-floor RED. floo
 fix:learniq:1883:9e6045c2	CONFLICT resolved, pushed fd136520; REVERIFY	session-20261115T174741-9deaa0be	2026-11-15T18:55:37Z
 fix:learniq:1901:d2b62a76	conflict resolved, pushed 0bee8d6d	session-20261115T174741-56eeaa2f	2026-11-15T18:56:00Z
 review:humaniq:875:ab9a9b54	GREEN: behaviour kept, suite green	session-20261115T182951-bdf9d68e	2026-11-15T18:56:08Z
+review:humaniq:1095:340163fd	GREEN: dev-only psalm 7 bump, unit 4405 OK; psalm not runnable locally (PHP 8.3.6)	session-20261115T181015-497e81ce	2026-11-15T18:56:18Z
