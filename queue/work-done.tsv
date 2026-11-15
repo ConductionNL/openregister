@@ -15336,3 +15336,4 @@ fix:filinq:1828:0e6a9fe3	fixed: Server::get replaced by container logger; phpcs 
 fix:learniq:2521:be3bc639	fixed: saveObject calls migrated to OR main API, tests aligned, pushed 25bda59e; REVERIFY recorded	session-20261115T213122-e023a81e	2026-11-15T22:22:15Z
 fix:hermiq:1195:6284aad0	sbom regenerated after merging development; new head 7d667839, REVERIFY queued	session-20261115T221310-15626e3a	2026-11-15T22:22:22Z
 fix:stackiq:1297:7bd31324	merged development, regenerated sbom, REVERIFY recorded	session-20261115T220025-8d429838	2026-11-15T22:22:31Z
+fix:decidiq:1468:dabc7105	fixed: sbom regenerated; REVERIFY at 7dc751fb	session-20261115T213107-505dc338	2026-11-15T22:22:43Z
