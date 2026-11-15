@@ -13668,6 +13668,7 @@ review:portaliq:1673:e715241c	CONFLICT: zuiddrecht.json seed and manifest.json c
 review:portaliq:1229:8b002219	CONFLICT: comment-only PR conflicts in Application.php	session-20261115T145541-9d69768b	2026-11-15T16:48:02Z
 review:portaliq:2349:124b9f86	2349 GREEN (phpstan clean)	session-20261115T142134-badaaf30	2026-11-15T16:48:12Z
 review:portaliq:1069:4ecba22b	BLOCK: superseded by development's own build of the change	session-20261115T152546-2c24b649	2026-11-15T16:48:22Z
+review:pipelinq:3151:b944bc82	BLOCK: stub conflict with development (6eeab75ee); saveObjects change itself matches openregister main	session-20261114T095641-533e2a00	2026-11-15T16:48:54Z
 review:planninq:918:a2f30b52	GREEN: phpunit 1222 OK, phpstan same as development	session-20261115T145555-b33410db	2026-11-15T16:48:52Z
 review:portaliq:2350:e25d2cb7	RED: psalm 7.2.1 lock unsatisfiable with config.platform php 8.3	session-20261115T155902-d9805df0	2026-11-15T16:49:02Z
 review:shillinq:1900:d987d5f1	CONFLICT: 13 files conflict with development; no defect seen in the reverse-charge diff	session-20261115T154316-34f0db35	2026-11-15T16:49:12Z
@@ -13680,3 +13681,14 @@ review:shillinq:2072:8b9e57e4	CONFLICT (3 files); tightening, role-name change n
 review:portaliq:1849:cb2411d1	CONFLICT: overlaps build already on development (26 files); no defect in diff	session-20261115T154314-8216dc98	2026-11-15T16:51:12Z
 review:portaliq:1682:505a7cd5	GREEN: ocp 35.0.2 dev bump, 6120 unit tests OK	session-20261115T155903-abd003e3	2026-11-15T16:51:22Z
 review:portaliq:1994:6ba432f4	CONFLICT: 5 files conflict with development; 4 newer find() call sites still use register:/schema:	session-20261115T154311-e8600d84	2026-11-15T16:51:32Z
+review:portaliq:663:508c5fce	CONFLICT: register json + 2 tests; logic sound	session-20261115T154254-3d07b219	2026-11-15T16:51:52Z
+review:portaliq:2339:fd417084	BLOCK: rename/delete conflicts, development moved woo/ to build/woo/; no runtime code change	session-20261114T095641-533e2a00	2026-11-15T16:52:01Z
+review:shillinq:1991:4377b437	GREEN: prettier bump adds no new format findings; vitest failure inherited	session-20261115T145533-2db61682	2026-11-15T16:52:15Z
+review:shillinq:2063:20eb03d6	CONFLICT: 3 files; note legacy approved runs without digest become unexportable	session-20261115T154254-3d07b219	2026-11-15T16:52:38Z
+review:portaliq:1997:a07869fb	BLOCK: wrong openregister namespace for BulkSaveOptions; conflict	session-20261115T154255-e54527e9	2026-11-15T16:52:48Z
+review:portaliq:1844:0fd00207	GREEN on its head; 13-file conflict with development	session-20261114T102641-d4fd3e25	2026-11-15T16:53:02Z
+review:portaliq:1767:fc41a4fc	BLOCK: merged lock out of sync with development (npm ci fails, missing pinia 4.1.0); needs lock regenerated	session-20261115T145546-378b432a	2026-11-15T16:53:12Z
+review:portaliq:1769:d443a45b	BLOCK: merged lock out of sync (pinia), npm ci EUSAGE	session-20261115T142934-6cab0c24	2026-11-15T16:53:20Z
+review:shillinq:2093:2cc2077c	CONFLICT: modify/delete on GRN detail component, spec and l10n conflicts	session-20261115T154258-dee2cc3d	2026-11-15T16:53:31Z
+review:portaliq:1843:0b799a1a	CONFLICT: parallel build of same change already partly on development	session-20261115T155915-84e5dc0a	2026-11-15T16:53:46Z
+review:portaliq:1657:489e5cbd	CONFLICT: manifest change sound but conflicts with development in src/manifest.json	session-20261115T152552-0cb4306e	2026-11-15T16:53:54Z
