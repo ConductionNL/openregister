@@ -14329,3 +14329,4 @@ review:shillinq:1912:12b4700e	GREEN: stylelint output unchanged, vitest 430 gree
 fix:planninq:1069:9cba21b3	failed: reproduced (psalm 7.1.0 needs php-64bit ~8.3.16, platform pin is 8.3); any fix (raise config.platform.php or keep psalm ^5/^6) needs a regenerated composer.lock, which workers may not commit; needs a dependabot recreate or a lane that may write the lock	session-20261115T174804-89f2739f	2026-11-15T18:52:56Z
 fix:integriq:2924:bac62706	merged development, vitest 2343 OK, lint 0 errors, pushed 408ef7bf; REVERIFY recorded	session-20261115T174755-95dc8448	2026-11-15T18:52:57Z
 merge:buildiq:1089:8e70db54	merge8 tree of 16 buildiq PRs: merged=1 red=9 fail=0 skip=0; conflict 6, lint 0, moved 0; fix rows 6	merge8-20261115T170007-37538273	2026-11-15T18:53:04Z
+merge:buildiq:1654:74087526	merge8 tree of 16 buildiq PRs: merged=1 red=9 fail=0 skip=0; conflict 6, lint 0, moved 0; fix rows 6	merge8-20261115T170007-37538273	2026-11-15T18:53:21Z
