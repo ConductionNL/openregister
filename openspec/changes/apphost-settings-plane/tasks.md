@@ -27,6 +27,7 @@
   - `ConversationController` (list, create, and every action on one conversation: show, messages, update, delete, restore, permanent delete) and `RelationsController` (the relations of an object) answer generic failures through `handleApiException()`: the exception message no longer reaches the response body, a typed failure keeps its own status.
   - `SchemaImportController` (import, reimport) answers a persistence failure through its helper: a typed one via `handleApiException()` with its own status, anything else a 500 naming the action, the cause in the server log.
   - `McpController` (the public discovery catalog, a capability's detail, the grantable rights) answers its failures through `handleApiException()`: the public catalog no longer returns the exception message. Its services bundle `McpControllerServices` gains an optional logger, so an untyped failure's detail is logged.
+  - `DeckController` (the cards of an object, the objects on a board) and `ActivityLinksController` (the activity of an object, the type and actor filter values) answer their generic failures through `handleApiException()`: the exception message no longer reaches the response body, a typed failure keeps its own status. Their services bundles gain an optional logger, so the detail of an untyped failure is logged.
 - [ ] 3.3 Reference consumer PR in one leaf app (petstore — scaffold origin) deleting its SettingsService/PreferencesController copies
 
 ## 4. Verification

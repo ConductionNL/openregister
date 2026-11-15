@@ -35,6 +35,7 @@ namespace OCA\OpenRegister\Controller;
 use OCA\OpenRegister\AppInfo\Application;
 use Exception;
 use OCA\OpenRegister\Controller\Support\ActivityLinksControllerServices;
+use OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
 use OCA\OpenRegister\Controller\Trait\ResolvesLinkedObjectTrait;
 use OCA\OpenRegister\Service\ActivityEntriesOptions;
 use OCA\OpenRegister\Service\ActivityFilter;
@@ -46,6 +47,7 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use Psr\Log\LoggerInterface;
 
 /**
  * Tier-2 Activity links controller (read-only).
@@ -54,7 +56,15 @@ use OCP\IRequest;
  * @package  OCA\OpenRegister\Controller
  */
 class ActivityLinksController extends Controller {
+	use HandlesExceptionsTrait;
 	use ResolvesLinkedObjectTrait;
+
+	/**
+	 * Logger, read by HandlesExceptionsTrait to log the detail of a failure.
+	 *
+	 * @var LoggerInterface|null
+	 */
+	protected readonly ?LoggerInterface $logger;
 
 	/**
 	 * Backing service.
@@ -91,6 +101,7 @@ class ActivityLinksController extends Controller {
 		$this->filterService = $services->filterService;
 		$this->objectService = $services->objectService;
 		$this->visibility = $services->visibility;
+		$this->logger = $services->logger;
 	}//end __construct()
 
 	/**
@@ -165,7 +176,7 @@ class ActivityLinksController extends Controller {
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => 'Object not found'], 404);
 		} catch (Exception $e) {
-			return new JSONResponse(['error' => $e->getMessage()], 500);
+			return $this->handleApiException(e: $e, context: 'Failed to list the activity of an object');
 		}//end try
 	}//end indexFor()
 
@@ -234,7 +245,7 @@ class ActivityLinksController extends Controller {
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => 'Object not found'], 404);
 		} catch (Exception $e) {
-			return new JSONResponse(['error' => $e->getMessage()], 500);
+			return $this->handleApiException(e: $e, context: 'Failed to list the activity filter values');
 		}//end try
 	}//end dropdown()
 

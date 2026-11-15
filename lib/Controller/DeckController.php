@@ -25,6 +25,7 @@ use Exception;
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\DeckControllerServices;
 use OCA\OpenRegister\Controller\Support\LinkedSourceResponses;
+use OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
 use OCA\OpenRegister\Service\DeckCardServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
@@ -32,6 +33,7 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use Psr\Log\LoggerInterface;
 
 /**
  * DeckController handles Deck card relation operations for objects.
@@ -40,6 +42,14 @@ use OCP\IRequest;
  * @package  OCA\OpenRegister\Controller
  */
 class DeckController extends Controller {
+	use HandlesExceptionsTrait;
+
+	/**
+	 * Logger, read by HandlesExceptionsTrait to log the detail of a failure.
+	 *
+	 * @var LoggerInterface|null
+	 */
+	protected readonly ?LoggerInterface $logger;
 
 	/**
 	 * Deck card service.
@@ -68,6 +78,7 @@ class DeckController extends Controller {
 		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->deckCardService = $services->deckCardService;
 		$this->objectService = $services->objectService;
+		$this->logger = $services->logger;
 	}//end __construct()
 
 	/**
@@ -112,7 +123,7 @@ class DeckController extends Controller {
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => 'Object not found'], 404);
 		} catch (Exception $e) {
-			return new JSONResponse(['error' => $e->getMessage()], 500);
+			return $this->handleApiException(e: $e, context: 'Failed to list the Deck cards of an object');
 		}
 	}//end indexFor()
 
@@ -221,7 +232,7 @@ class DeckController extends Controller {
 
 			return new JSONResponse(['results' => $results, 'total' => count($results)]);
 		} catch (Exception $e) {
-			return new JSONResponse(['error' => $e->getMessage()], 500);
+			return $this->handleApiException(e: $e, context: 'Failed to list the objects linked to a Deck board');
 		}
 	}//end objects()
 
