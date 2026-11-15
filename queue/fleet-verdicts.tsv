@@ -10827,3 +10827,17 @@ keepiq	1818	61dd7f8306a320a62ca6386b30a8b9b779a8ec25	GREEN	worker-41	unit 5215 t
 integriq	3641	3bd3436bea7b65b065542cbe4b8daf296be6002a	RED	worker-06	unit 9209 on tree vs 9203 baseline (baseline 2 errors + 4 failures inherited); new failure CloudEventListenerSelfSchemaFailureTest::testAnUnresolvableGuardForwardsAndWarns in natural order (passes alone): CloudEventListener::$selfSchemaIds static cache is not reset, order-dependent
 humaniq	1156	40bb5c448af5eb4652c6ba62981cb40d223fc9ee	REVERIFY	worker-09	size/complexity/interfacing floors: split normFor, schoolView, IPTO export and DeploymentController actions into <=2-param helpers, dropped stateless IptoExportService injection; suite 4357 OK; new head 13c34f2d0b35f5c3211b533b3f33ecf953543db3, verify it
 launchpad	1206	c495b327605cf73b1de190c28c919c97c38faf82	REVERIFY	worker-44	merged development in, l10n/nl.js conflict resolved keeping both sides' keys, parity OK; new head c13e34be7837ccbc7cf299e72ef6a0346683b8ba, verify it
+opencatalogi	2648	33597bb0316f211b0d85e6737e5b7ea75646f5e2	CONFLICT	merge3	merges clean on development alone; files: src/views/settings/Settings.vue 
+opencatalogi	2650	2f0dabac6c916a34d93ad76509787e09134bca33	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Controller/PublicationsController.php 
+opencatalogi	2652	50d4611a633806e8f5c3feda00815b525021fa4b	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+opencatalogi	2654	89b4f0559d413ea0bd92dfa9270dc63b361d3beb	CONFLICT	merge3	merges clean on development alone; files: lib/Service/DcatService.php 
+opencatalogi	2655	1c46277239ce48894e125ab697f81e210e8856ec	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+opencatalogi	2665	936d474b1f8a186466e26fec62f16835d5a77bd3	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json src/modals/catalog/CatalogModal.vue 
+opencatalogi	2670	cc1f0bf4bf8958db94c64fb4ddaa2e0d5135da71	CONFLICT	merge3	merges clean on development alone; files: lib/Controller/PublicationsController.php 
+opencatalogi	2671	cc569277b5b032e6e867f5604cc69bd46288fa2a	CONFLICT	merge3	merges clean on development alone; files: appinfo/info.xml lib/Controller/PublicationsController.php 
+opencatalogi	2672	c38df774d6ef9834fe877f079157733e4209f6e4	CONFLICT	merge3	merges clean on development alone; files: tests/Unit/Settings/PortalDetailSchemaTest.php 
+opencatalogi	2678	7f540c6abf630764847e00e846fd7da46a6c426d	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json tests/Unit/Settings/PortalDetailSchemaTest.php 
+opencatalogi	2679	05c95cd667c32f08596012dd5cd1d60e33008e5d	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+opencatalogi	2683	5621e0b5e2f1444d10a1a7f991269f3dc9b0aaad	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+opencatalogi	2687	5473354c4ca7f0d266598d5aabcea0cbda68c6a4	CONFLICT	merge3	merges clean on development alone; files: lib/Service/SettingsService.php src/views/settings/Settings.vue tests/Unit/Service/SettingsServiceTest.php tests/Unit/Service/SettingsWriteValuesTest.php tests/Unit/Service/fixtures/settings-read-gold
+opencatalogi	2715	fad40875155d522e175657b71cc81e0fb1d84cd3	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
