@@ -13668,3 +13668,4 @@ review:portaliq:1673:e715241c	CONFLICT: zuiddrecht.json seed and manifest.json c
 review:portaliq:1229:8b002219	CONFLICT: comment-only PR conflicts in Application.php	session-20261115T145541-9d69768b	2026-11-15T16:48:02Z
 review:portaliq:2349:124b9f86	2349 GREEN (phpstan clean)	session-20261115T142134-badaaf30	2026-11-15T16:48:12Z
 review:portaliq:1069:4ecba22b	BLOCK: superseded by development's own build of the change	session-20261115T152546-2c24b649	2026-11-15T16:48:22Z
+review:pipelinq:3151:b944bc82	BLOCK: stub conflict with development (6eeab75ee); saveObjects change itself matches openregister main	session-20261114T095641-533e2a00	2026-11-15T16:48:54Z
