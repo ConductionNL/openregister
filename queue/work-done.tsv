@@ -14771,3 +14771,4 @@ fix:pipelinq:2103:adb97dd8	conflict resolved, pushed 91e9bf9a; REVERIFY	session-
 fix:pipelinq:2557:5d12aa50	merged development; sbom already current (dev-only dep); suite OK; REVERIFY 74ee842a	session-20261115T200045-d3bb5c75	2026-11-15T20:25:28Z
 fix:pipelinq:3085:34857519	failed: sbom gate false positive - regen-sbom.sh on the branch (merged with development) leaves sbom.cdx.json unchanged (654 components): conduction/hydra-gates is require-dev and the SBOM uses --omit=dev, so merge_gate.sbom() needs a lockfile-only exception when regen --check passes; nothing pushed	session-20261115T200026-9a5b8685	2026-11-15T20:25:33Z
 fix:portaliq:1582:9e21deee	lock re-locked on development + sbom regenerated; REVERIFY at e2748568	session-20261115T195958-28cb0304	2026-11-15T20:25:45Z
+fix:dossiq:4112:d85d2c1c	fixed: merged development, regenerated sbom; head f460035e; REVERIFY recorded	session-20261115T200020-0f65b959	2026-11-15T20:26:02Z
