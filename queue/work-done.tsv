@@ -13062,3 +13062,4 @@ build4:openregister:import-preview-and-conflict-policy:c5	partial: not started t
 verify:dossiq:6570:aa20b669	6571-6574 GREEN (0 new failures over 19 baseline); 6570 skipped: head moved to e8ffa99	session-20261115T142132-f4234592	2026-11-15T14:43:02Z
 cover:pipelinq:7f9dc8e6m8519:jsd081840b	PR #3871: 3 specs, 29 tests (LeadForm, PosTransactionForm, PosRefundForm); dirs 94.99->96.16% lines; 1 inherited failure (myWorkPage)	session-20261115T142934-6cab0c24	2026-11-15T14:44:22Z
 cover:pipelinq:7f9dc8e6m8519:34f5c300	PRs #3870 (risky-test metadata + bootstrap preload: Service/*.php 90.36->92.54%, risky 127->29) and #3872 (24 tests, 3 classes, +0.37pt); suite 8800->8824 tests, 0 failures	session-20261115T142932-b9b408b7	2026-11-15T14:44:57Z
+review:filinq:2123:371aedd6	stale	feeder	2026-11-15T14:45:15Z
