@@ -14540,5 +14540,6 @@ fix:thematiq:1555:1e3652b9	failed: fix needs a regenerated composer.lock (worker
 fix:versioniq:500:ccaf6046	lock regenerated on development, pushed 890378b3; REVERIFY recorded	session-20261115T185932-17792562	2026-11-15T19:24:29Z
 fix:buildiq:1651:3e54ea1b	development merged in cleanly; new head 8f610194, REVERIFY	session-20261115T174757-8dfa7406	2026-11-15T19:24:37Z
 fix:stackiq:1930:8b2f3e05	l10n conflict resolved; only inherited failures; new head d6bf1559	session-20261115T174739-b14c2df4	2026-11-15T19:24:53Z
+fix:stackiq:1965:815d46e4	fixed: merged development; new head 9bf3626e	session-20261115T174819-9af28ef9	2026-11-15T19:25:08Z
 fix:launchpad:786:5bd3779b	conflicts resolved (kept development's tile sorting), pushed d5210578; REVERIFY recorded	session-20261115T182941-b7ae781f	2026-11-15T19:25:16Z
 fix:opencatalogi:2416:bacd96a1	conflicts resolved, dev's new find calls migrated, pushed bce96302, REVERIFY recorded	session-20261115T191034-1f4b55ee	2026-11-15T19:25:24Z
