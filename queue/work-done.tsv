@@ -13007,3 +13007,4 @@ merge:shillinq:3094:4c805bcd	merge3 tree of 10 shillinq PRs: merged=10 red=0 fai
 merge:shillinq:3051:67e9fffc	merge3 tree of 10 shillinq PRs: merged=10 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-15T05:14:49Z
 merge:decidiq:2214:4202737d	merge3 tree of 2 decidiq PRs: merged=2 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-15T05:17:00Z
 merge:decidiq:2210:f8390179	merge3 tree of 2 decidiq PRs: merged=2 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-15T05:17:03Z
+merge:integriq:3546:cb6e6cd3	merge3 tree of 26 integriq PRs: merged=15 red=4 fail=0 skip=2; conflict 5, lint 0, moved 0; fix rows 5	merge3-20261113T213425-c36bcd5f	2026-11-15T05:55:09Z
