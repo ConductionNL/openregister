@@ -13250,3 +13250,4 @@ review:shillinq:2997:7b870224	GREEN; phpunit 12273 OK, phpstan clean, vitest 1 i
 cover:openregister:7350e3efm1efa:fa416b31	PR #10586: 3 new test files (15 tests) + metadata fixes on 6 risky tests; lib/Search/Service 92.3->97.5% (subset measure)	session-20261115T142934-de7c51d0	2026-11-15T15:32:38Z
 measure:opencatalogi:20261115h02	php 95.37% (pcov), js 85.91% at f7123cd0	session-20261115T145535-caebb5a3	2026-11-15T15:32:34Z
 build:integriq:gateway-api-design-rules-check:c4	done: pushed 4585a979 to PR #3564: task 5 seed (besluiten-api deprecated + open error + waived warning via components.objects), tests; all code tasks ticked, left Playwright/docs walk/validate	session-20261115T142149-1d09fceb	2026-11-15T15:32:42Z
+verify:learniq:2549:b52d084d	GREEN #2549: no new failures (php 6886/1 inherited, js 9 inherited)	session-20261115T152601-38767331	2026-11-15T15:33:01Z
