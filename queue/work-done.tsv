@@ -13093,3 +13093,4 @@ build:filinq:document-sanitization:c6	partial: no code left to build now; 3.5/4.
 build:openregister:calendar-time-zone:c5	done: PR #10154 head 559689cd, 1.1 timezone required + admin form time zone field + time-zone in validator format list; all code tasks ticked	session-20261115T142931-4c5be241	2026-11-15T14:57:51Z
 fix:filinq:2096:603fca94	no change: up to date with development, merges clean alone; conflicts only with sibling #2095; queued REVERIFY	session-20261115T145555-b33410db	2026-11-15T14:57:47Z
 fix:portaliq:2508:0879b6c2	conflict resolved, merged development; new head 3b5b1439, REVERIFY recorded	session-20261115T145544-b059847e	2026-11-15T14:58:08Z
+fix:filinq:2079:eb1a5b1d	no change: up to date with development, merges clean alone; conflicts only with sibling PRs; queued REVERIFY	session-20261115T145555-b33410db	2026-11-15T14:58:16Z
