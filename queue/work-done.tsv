@@ -15384,3 +15384,4 @@ fix:hermiq:1760:ce2326e7	fixed: main-API migration of new workspace/build code; 
 fix:shillinq:1908:1862245f	stale	session-20261115T213144-ab42ee6a	2026-11-15T22:29:53Z
 review:dossiq:2705:643da12e	GREEN (empty): head already contained in development	session-20261115T213122-e023a81e	2026-11-15T22:29:55Z
 fix:thematiq:1556:ff5f73bc	merged development; sbom cannot change (dev-only dep), suite matches baseline; head 7acb440b	session-20261115T213112-78aba834	2026-11-15T22:30:06Z
+fix:filinq:1304:4ad5da28	stale	session-20261115T213112-78aba834	2026-11-15T22:31:11Z
