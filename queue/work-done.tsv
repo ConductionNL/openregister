@@ -12308,3 +12308,4 @@ cover:keepiq:c967a31fmdbad:d3522ea6	PR keepiq#1819: 8 Db mappers, 24 tests, suit
 fix:launchpad:1203:2603ce75	floor restored: unit_complexity 4.66 -> 4.72 by refactoring the calculated-field evaluator; new head a278d583, REVERIFY recorded	session-20261114T231755-998f7ff8	2026-11-15T00:32:59Z
 cover:keepiq:c967a31fmdbad:ecbab48a	PR #1820: 10 tests (ShareSaveStages writes, ShareSaveScope completeness/reach); suite 5213->5223 OK	session-20261115T001750-90323034	2026-11-15T00:33:08Z
 fix:integriq:3630:320ac7f7	conflict resolved, new head 0af2622c	session-20261115T001759-0085793c	2026-11-15T00:33:06Z
+cover:planninq:e1c9866dmcf99:9d3a1784	PR #1184: 5 tests, ExportProjectJob and ExportRequest fully covered, suite 1177->1182 OK	session-20261115T002445-1522cadc	2026-11-15T00:33:18Z
