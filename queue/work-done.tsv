@@ -13486,3 +13486,4 @@ review:integriq:2652:7922fa98	CONFLICT: docs-only PR, ~37 add/add and rename con
 review:integriq:3056:6773effd	RED: composer install fails, psalm 7 needs php ~8.3.16 vs config.platform 8.3	session-20261115T155911-14cd078d	2026-11-15T16:14:36Z
 review:integriq:2991:f5cb1fd7	RED: guzzle 8 breaks 4 tests (null auth refused in AuthenticationService, TransferException ctor, DSO golden)	session-20261115T152539-8dadb15a	2026-11-15T16:14:46Z
 review:filinq:1853:11051685	RED: 7 test failures from unadapted double; also conflicts with development	session-20261115T154329-16a67e2f	2026-11-15T16:15:09Z
+review:integriq:3053:86ebfa51	CONFLICT: 28 conflicted files against development	session-20261115T155903-abd003e3	2026-11-15T16:15:09Z
