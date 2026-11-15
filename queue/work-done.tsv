@@ -12697,3 +12697,4 @@ fix:learniq:2507:2145eaba	floor RED not reproducible on branch+development (both
 cover:dossiq:069ee2d6mdd7c:8b886c00	dir already at 99.7% (target 95); PR #6552 covers handover records on blank/missing cases (+1 test)	session-20261115T011758-953fbe72	2026-11-15T01:47:41Z
 cover:pipelinq:7f9dc8e6m195a:fdb25f89	already done: lib/Service/Access at 100% (95/95), 17 direct tests with 49 assertions; no PR	session-20261114T234952-566b7ef5	2026-11-15T01:47:53Z
 fix:learniq:2513:0c700c9a	REVERIFY: merged development, resolved po.json, l10n keys off the tail; new head fd13b215	session-20261115T001758-161b0715	2026-11-15T01:48:22Z
+measure:portaliq:20261115h00	php 96.15% (pcov, 37129/38615); js: no unit runner	session-20261115T011806-2ba8b68f	2026-11-15T01:48:28Z
