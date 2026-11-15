@@ -14197,3 +14197,4 @@ merge:integriq:3564:3c9d1988	merge	integriq	development	development	prs=3564@458
 merge:filinq:2114:8c462267	merge	filinq	development	development	prs=2114@473e80363f1c006e2d761aff68f67898e0509c5b	2026-11-15T15:45:20Z
 merge:launchpad:1229:46a36441	merge	launchpad	development	development	prs=1229@4e62ac9c3b8fce11393a03575b2eb04babf19d39,1233@b9dbac40a95962b0a5d8d5b149282c09b075f84a	2026-11-15T15:45:20Z
 merge:opencatalogi:2643:c03e82a2	merge	opencatalogi	development	development	prs=2643@876cac08a833f610b7913261142945d7a1ddf2e0	2026-11-15T15:45:20Z
+fix:portaliq:2527:ee0b0ee1	fix	portaliq	development	2527	sha=ee0b0ee1e6f8ea98f80d4f9add49e4d156dfeb8e;verdict=CONFLICT;branch=quality/build-resident-identity-in-forms;reason=merges clean on development alone, files: lib/Settings/portaliq_register.json tests/Unit/Settings/PortaliqRegisterConfigTest.php tests/example-site.spec.mjs 	2026-11-15T15:56:39Z
