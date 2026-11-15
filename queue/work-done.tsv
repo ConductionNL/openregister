@@ -13873,3 +13873,4 @@ fix:buildiq:1093:7c1a6bdd	lock regenerated (marked only), npm ci ok, vitest 4692
 merge:launchpad:1212:11faa5ec	merge8 tree of 2 launchpad PRs: merged=1 red=1 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge8-20261115T170007-37538273	2026-11-15T17:22:37Z
 merge:launchpad:1229:46a36441	merge8 tree of 2 launchpad PRs: merged=1 red=1 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge8-20261115T170007-37538273	2026-11-15T17:22:47Z
 fix:dossiq:6577:dfc63bfe	conflict resolved (both registrations kept), no new failures; new head cee8f2a5e99f891b27cccf7fda805d294eb5d330	session-20261115T145535-3f9e5078	2026-11-15T17:22:52Z
+fix:versioniq:695:b25e3fb6	merged development (4 conflicts kept both sides), pushed 9b2e45a1, REVERIFY recorded	session-20261115T145541-9d69768b	2026-11-15T17:23:04Z
