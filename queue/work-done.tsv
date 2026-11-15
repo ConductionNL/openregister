@@ -12623,3 +12623,4 @@ cover:decidiq:a5f973bbm0262:38e80a9f	already done: lib/Command at 99.1% (105/106
 cover:pipelinq:7f9dc8e6m195a:f545d745	PR #3861: RenameDutchPipelinqValues 46->58/58, NormalisePartyFormFields 68->84/85; 6 tests; suite 8620->8626 OK	session-20261114T224751-87da8a15	2026-11-15T01:35:49Z
 fix:portaliq:2500:211dedaa	failed: branch already contains development (4b3074af); the conflict is only with open PR #2498 (check:specs line in package.json, last constructor param of PortalPageController). Merging #2498 in would couple the PRs; resolve by merging development once #2498 lands	session-20261115T001758-161b0715	2026-11-15T01:36:12Z
 verify:dossiq:6546:4911788d	GREEN #6546: tests only, 0 new failures	session-20261114T234941-bc8686af	2026-11-15T01:36:16Z
+verify:dossiq:6545:b6d74418	6545 GREEN	session-20261115T005412-4a06d6f4	2026-11-15T01:36:26Z
