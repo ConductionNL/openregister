@@ -15223,3 +15223,4 @@ review:shillinq:2997:a355f8db	RED: 17 new failures (old OR save args in new Cbcr
 review:shillinq:2098:93d83382	GREEN	session-20261115T202932-d1067ee4	2026-11-15T22:02:11Z
 review:shillinq:1899:3859758c	GREEN: matches change spec, suite OK	session-20261115T213107-505dc338	2026-11-15T22:02:19Z
 fix:pipelinq:2103:91e9bf9a	failed: not fixable on the branch; @vueuse/core is only declared to satisfy @conduction/nextcloud-vue's peer range ^11||^14, and the latest library (2.181.0) still does not accept 15; the bump must wait for a library release that widens the peer range (keep BLOCK)	session-20261115T213101-2fb56005	2026-11-15T22:02:24Z
+review:shillinq:3078:5300990f	RED: new saves use pre-main saveObject named args; 13 new tests fail on PR+development	session-20261115T213156-1ffcf961	2026-11-15T22:02:26Z
