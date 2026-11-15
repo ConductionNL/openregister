@@ -14190,3 +14190,4 @@ fix:portaliq:1670:311e49a8	RED fixed: lint counts band placements, pushed 8ef03e
 review:learniq:1901:d2b62a76	CONFLICT: additive and per its spec; 4 lib files conflict with development	session-20261114T102637-6688951e	2026-11-15T18:33:19Z
 fix:shillinq:2086:572ee89c	conflict resolved, merged development, pushed 28d36484; REVERIFY recorded	session-20261115T182951-bdf9d68e	2026-11-15T18:33:34Z
 fix:shillinq:1965:6dd9752c	conflict resolved, pushed 3c0db1b5, REVERIFY recorded	session-20261115T182936-09049974	2026-11-15T18:33:45Z
+fix:learniq:1166:0748af52	closed as superseded: development locks @typescript-eslint/parser 8.72.2 (> 8.70.1)	session-20261114T102637-6688951e	2026-11-15T18:33:55Z
