@@ -12263,3 +12263,4 @@ merge:opencatalogi:2677:68c78b81	merge3 tree of 43 opencatalogi PRs: merged=20 r
 cover:stackiq:9ac19b3amad24:aae6d66c	already done: lib/Exception/*.php at 100% statements (4/4; two classes have no statements) on development; no PR	session-20261114T234932-1a68fd4b	2026-11-15T00:27:40Z
 verify:dossiq:6529:520616fa	6529 RED (3 vitest failures); 6530,6531,6532 GREEN	session-20261114T234941-e3e51cb9	2026-11-15T00:27:43Z
 merge:opencatalogi:2672:ffe5b40a	merge3 tree of 43 opencatalogi PRs: merged=20 red=6 fail=0 skip=3; conflict 14, lint 0, moved 0; fix rows 14	merge3-20261113T213425-c36bcd5f	2026-11-15T00:27:50Z
+cover:buildiq:70b3e29em66d0:60c2c265	PR #1657: 3 tests, lib/Controller 94.66% -> 95.04%	session-20261114T221759-cd5c5678	2026-11-15T00:27:54Z
