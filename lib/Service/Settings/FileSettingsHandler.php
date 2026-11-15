@@ -26,8 +26,10 @@ use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Service\Anonymisation\CapacityPolicy;
 use OCA\OpenRegister\Service\Anonymisation\OfficialsSource;
+use OCA\OpenRegister\Service\Anonymisation\PersonRegisterSource;
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Exception\ConfidenceThresholdOutOfRangeException;
+use OCA\OpenRegister\Exception\PersonRegisterPurposeMissingException;
 use OCA\OpenRegister\Exception\UnknownMaskFormException;
 use OCA\OpenRegister\Exception\UnknownPatternSetException;
 use OCA\OpenRegister\Files\Service\File\MaskForm;
@@ -141,6 +143,9 @@ class FileSettingsHandler {
 			'confidenceThreshold' => self::DEFAULT_CONFIDENCE_THRESHOLD,
 			'capacityPolicy' => CapacityPolicy::DEFAULT,
 			'officialsSource' => null,
+			'personRegister' => null,
+			'personRegisterBoost' => PersonRegisterSource::DEFAULT_BOOST,
+			'placeRegister' => null,
 		],
 		ArchiveBounds::SETTINGS_KEY => ArchiveBounds::DEFAULTS,
 	];
@@ -279,6 +284,9 @@ class FileSettingsHandler {
 		} catch (UnknownMaskFormException $e) {
 			// A refused mask form, answered as 400 naming the entity type.
 			throw $e;
+		} catch (PersonRegisterPurposeMissingException $e) {
+			// A persons register without a purpose, answered as 400 (REQ-DKP-003).
+			throw $e;
 		} catch (Exception $e) {
 			throw new RuntimeException('Failed to update File Management settings: ' . $e->getMessage());
 		}//end try
@@ -379,6 +387,9 @@ class FileSettingsHandler {
 
 		$settings['capacityPolicy'] = CapacityPolicy::fromStored(stored: ($settings['capacityPolicy'] ?? null))->rules();
 		$settings['officialsSource'] = OfficialsSource::normalise(value: ($settings['officialsSource'] ?? null));
+		$settings['personRegister'] = PersonRegisterSource::personRegister(value: ($settings['personRegister'] ?? null));
+		$settings['personRegisterBoost'] = PersonRegisterSource::boost(value: ($settings['personRegisterBoost'] ?? null));
+		$settings['placeRegister'] = PersonRegisterSource::placeRegister(value: ($settings['placeRegister'] ?? null));
 
 		return $settings;
 	}//end readableAnonymisation()
@@ -406,6 +417,39 @@ class FileSettingsHandler {
 	}//end officialsSource()
 
 	/**
+	 * The persons register a person detection is matched against, or null when none is configured (REQ-DKP-003).
+	 *
+	 * @return array<string, string>|null The source and its purpose.
+	 *
+	 * @spec openspec/changes/detection-knows-the-person/tasks.md#task-3.1
+	 */
+	public function personRegister(): ?array {
+		return PersonRegisterSource::personRegister(value: $this->storedAnonymisation()['personRegister'] ?? null);
+	}//end personRegister()
+
+	/**
+	 * The confidence a persons register match adds (REQ-DKP-003), default 0.2.
+	 *
+	 * @return float
+	 *
+	 * @spec openspec/changes/detection-knows-the-person/tasks.md#task-3.1
+	 */
+	public function personRegisterBoost(): float {
+		return PersonRegisterSource::boost(value: $this->storedAnonymisation()['personRegisterBoost'] ?? null);
+	}//end personRegisterBoost()
+
+	/**
+	 * The street or place register a person detection is checked against, or null when none is configured (REQ-DKP-003).
+	 *
+	 * @return array<string, string>|null
+	 *
+	 * @spec openspec/changes/detection-knows-the-person/tasks.md#task-3.1
+	 */
+	public function placeRegister(): ?array {
+		return PersonRegisterSource::placeRegister(value: $this->storedAnonymisation()['placeRegister'] ?? null);
+	}//end placeRegister()
+
+	/**
 	 * The stored anonymisation settings, as stored.
 	 *
 	 * @return array<string, mixed> Empty when none are stored.
@@ -429,6 +473,7 @@ class FileSettingsHandler {
 	 *
 	 * @throws ConfidenceThresholdOutOfRangeException When the threshold is not a number between 0 and 1.
 	 * @throws UnknownMaskFormException                When a mask form is unknown or its n is below 1.
+	 * @throws PersonRegisterPurposeMissingException   When a persons register is named without a purpose.
 	 *
 	 * @spec openspec/changes/anonymisation-discloses-itself/specs/anonymisation-disclosure/spec.md#requirement-the-confidence-threshold-is-an-organisation-setting-req-adi-007
 	 * @spec openspec/changes/anonymisation-placeholder-id-scope/specs/entity-relation-grondslagen/spec.md#requirement-a-detection-may-be-masked-in-part-with-the-form-set-per-entity-type-req-pis-010
@@ -454,9 +499,15 @@ class FileSettingsHandler {
 		// A save that does not name the capacity policy or the officials
 		// source keeps the stored ones (REQ-DKP-001); what is kept is
 		// normalised, so an unknown capacity or decision never reaches a run.
-		$submitted += array_intersect_key($this->storedAnonymisation(), ['capacityPolicy' => true, 'officialsSource' => true]);
+		$submitted += array_intersect_key(
+			$this->storedAnonymisation(),
+			['capacityPolicy' => true, 'officialsSource' => true, 'personRegister' => true, 'personRegisterBoost' => true, 'placeRegister' => true]
+		);
 		$submitted['capacityPolicy'] = CapacityPolicy::fromStored(stored: ($submitted['capacityPolicy'] ?? null))->rules();
 		$submitted['officialsSource'] = OfficialsSource::normalise(value: ($submitted['officialsSource'] ?? null));
+		$submitted['personRegister'] = PersonRegisterSource::submittedPersonRegister(value: ($submitted['personRegister'] ?? null));
+		$submitted['personRegisterBoost'] = PersonRegisterSource::boost(value: ($submitted['personRegisterBoost'] ?? null));
+		$submitted['placeRegister'] = PersonRegisterSource::placeRegister(value: ($submitted['placeRegister'] ?? null));
 
 		if (self::isThreshold(value: $submitted['confidenceThreshold']) === false) {
 			throw new ConfidenceThresholdOutOfRangeException(message: 'anonymisation.confidenceThreshold must be a number between 0 and 1');

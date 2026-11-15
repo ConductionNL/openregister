@@ -33,6 +33,8 @@ use OCA\OpenRegister\Db\DecisionMetadataEdit;
 use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\DecisionConflictException;
+use OCA\OpenRegister\Service\Anonymisation\CapacityPolicy;
+use OCA\OpenRegister\Service\Settings\FileSettingsHandler;
 use OCP\IUser;
 use Throwable;
 
@@ -67,11 +69,13 @@ class RelationDecisionService implements RelationDecisionServiceInterface {
 	 * @param RelationDecisionStores $stores    The relation store, the decision store and the transaction.
 	 * @param DecisionOwnership      $ownership The ownership rule.
 	 * @param ReviewPolicyResolver   $policies  The relation's policy.
+	 * @param FileSettingsHandler|null $fileSettings The organisation's capacity policy (REQ-DKP-002); the shipped default without it.
 	 */
 	public function __construct(
 		private readonly RelationDecisionStores $stores,
 		private readonly DecisionOwnership $ownership,
 		private readonly ReviewPolicyResolver $policies,
+		private readonly ?FileSettingsHandler $fileSettings=null,
 	) {
 	}//end __construct()
 
@@ -85,7 +89,7 @@ class RelationDecisionService implements RelationDecisionServiceInterface {
 	 * the old one, and linked from the relation, all in one transaction.
 	 *
 	 * @param EntityRelation       $relation The relation.
-	 * @param array<string, mixed> $body     bases, skipAnonymization and decisionNote.
+	 * @param array<string, mixed> $body     bases, skipAnonymization, capacity and decisionNote.
 	 * @param IUser                $actor    The reviewer.
 	 *
 	 * @return array{relation: EntityRelation, decision: Decision|null} The relation and its current decision.
@@ -119,8 +123,43 @@ class RelationDecisionService implements RelationDecisionServiceInterface {
 		$note    = $this->noteFrom(body: $body);
 		unset($body[self::NOTE_FIELD]);
 
-		return new GivenDecision(fields: $body, hasNote: $hasNote, note: $note);
+		return new GivenDecision(fields: $this->withCapacityRule(body: $body), hasNote: $hasNote, note: $note);
 	}//end givenOf()
+
+	/**
+	 * A confirmed capacity brings the policy's decision and ground (REQ-DKP-002):
+	 * `release` releases the occurrence, `withhold` redacts it under the ground.
+	 * A decision or grounds the reviewer sets in the same body win over the policy.
+	 * An unknown capacity is left for the mapper to refuse.
+	 *
+	 * @param array<string, mixed> $body The decision fields.
+	 *
+	 * @return array<string, mixed> The fields, with the policy's decision and ground filled in.
+	 *
+	 * @spec openspec/changes/detection-knows-the-person/tasks.md#task-2.1
+	 */
+	private function withCapacityRule(array $body): array {
+		$capacity = ($body['capacity'] ?? null);
+		if (in_array($capacity, CapacityPolicy::CAPACITIES, true) === false) {
+			return $body;
+		}
+
+		$policy = CapacityPolicy::fromStored(stored: null);
+		if ($this->fileSettings !== null) {
+			$policy = $this->fileSettings->capacityPolicy();
+		}
+
+		$rule = $policy->ruleFor(capacity: $capacity);
+		if (array_key_exists('skipAnonymization', $body) === false) {
+			$body['skipAnonymization'] = ($rule['decision'] === 'release');
+		}
+
+		if (array_key_exists('bases', $body) === false && $rule['decision'] === 'withhold' && $rule['ground'] !== null) {
+			$body['bases'] = [$rule['ground']];
+		}
+
+		return $body;
+	}//end withCapacityRule()
 
 	/**
 	 * Write the change and, when it is a new decision, record and link it, in one transaction.

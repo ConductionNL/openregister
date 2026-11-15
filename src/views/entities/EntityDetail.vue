@@ -157,6 +157,12 @@
 										})
 									}}
 								</span>
+								<span
+									v-if="capacityLine(relation)"
+									class="relationCapacity"
+									data-testid="relation-capacity">
+									{{ capacityLine(relation) }}
+								</span>
 							</div>
 							<div class="relationActions">
 								<NcButton
@@ -176,6 +182,18 @@
 										<EyeOutline :size="20" />
 									</template>
 									{{ t('openregister', 'View File') }}
+								</NcButton>
+								<NcButton
+									v-if="canConfirmCapacity(relation)"
+									variant="primary"
+									data-testid="relation-confirm-capacity"
+									:disabled="confirmingCapacity === relation.id"
+									@click="confirmRelationCapacity(relation)">
+									<template #icon>
+										<NcLoadingIcon v-if="confirmingCapacity === relation.id" :size="20" />
+										<CheckCircleOutline v-else :size="20" />
+									</template>
+									{{ t('openregister', 'Confirm capacity') }}
 								</NcButton>
 							</div>
 						</div>
@@ -200,6 +218,7 @@ import {
 import AccountOutline from 'vue-material-design-icons/AccountOutline.vue'
 import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
 import ArrowLeft from 'vue-material-design-icons/ArrowLeft.vue'
+import CheckCircleOutline from 'vue-material-design-icons/CheckCircleOutline.vue'
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
 import EyeOutline from 'vue-material-design-icons/EyeOutline.vue'
 import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
@@ -208,6 +227,7 @@ import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
 import ListActionsBar from '../../components/shared/ListActionsBar.vue'
 import EntityStatsTable from './EntityStatsTable.vue'
 import { displayDateTime } from '../../services/displayDateTime.js'
+import { canConfirmCapacity, capacityLine, confirmCapacity } from '../../services/entityCapacity.js'
 import { refreshAction } from '../../services/menuActions.js'
 
 /**
@@ -254,6 +274,7 @@ export default {
 		DatabaseOutline,
 		TextBoxOutline,
 		EyeOutline,
+		CheckCircleOutline,
 	},
 
 	data() {
@@ -263,6 +284,7 @@ export default {
 			loading: true,
 			loadingRelations: false,
 			error: null,
+			confirmingCapacity: null,
 		}
 	},
 
@@ -274,6 +296,35 @@ export default {
 		refreshAction,
 
 		t,
+
+		canConfirmCapacity,
+
+		capacityLine,
+
+		/**
+		 * Confirm the suggested capacity of one relation and show what the
+		 * server recorded, the policy's decision included.
+		 *
+		 * @param {object} relation The relation
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/detection-knows-the-person/tasks.md#task-2.3
+		 */
+		async confirmRelationCapacity(relation) {
+			this.confirmingCapacity = relation.id
+			try {
+				const answer = await confirmCapacity(relation)
+				this.relations = this.relations.map(
+					(candidate) => (candidate.id === relation.id ? { ...candidate, ...answer } : candidate),
+				)
+			} catch (error) {
+				showError(
+					error?.response?.data?.error
+						|| t('openregister', 'Could not confirm the capacity'),
+				)
+			} finally {
+				this.confirmingCapacity = null
+			}
+		},
 
 		/**
 		 * Load entity from the API
@@ -540,6 +591,11 @@ export default {
 	font-size: 12px;
 	color: var(--color-text-maxcontrast);
 	margin-bottom: 12px;
+}
+
+.relationCapacity {
+	color: var(--color-main-text);
+	font-weight: bold;
 }
 
 .relationActions {
