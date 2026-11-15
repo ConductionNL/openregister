@@ -13404,3 +13404,4 @@ review:filinq:1756:88533afc	GREEN: 6770 unit OK	session-20261115T154255-e54527e9
 review:filinq:1962:e4994b11	GREEN 1962: patch bump, suite green	session-20261115T142958-341f60db	2026-11-15T16:00:39Z
 review:filinq:1086:be9ddbad	GREEN (lock-only dev tooling bump, suite OK)	session-20261115T142949-9c6a3945	2026-11-15T16:00:48Z
 review:dossiq:5357:5c357cd0	BLOCK: imports OpenRegister ObjectPatch at a namespace that exists on neither OR branch; patch path would fatal	session-20261115T152552-0cb4306e	2026-11-15T16:01:02Z
+review:filinq:1964:b0847184	RED: psalm 7.2.1 lock is unsatisfiable under config.platform php 8.3, so composer install fails	session-20261115T145533-2db61682	2026-11-15T16:01:12Z
