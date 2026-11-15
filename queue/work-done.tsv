@@ -12223,5 +12223,6 @@ cover:buildiq:70b3e29em66d0:38e80a9f	already done: lib/Command/*.php at 98.12% o
 cover:buildiq:70b3e29em66d0:f545d745	already done: lib/Repair/*.php measured 99.6% lines (680/683) at development 165fc0e3c, above 95 target; earlier -1/-2 PRs merged; only getName getters + 1 null branch uncovered, no PR	session-20261114T234944-eb1b5f87	2026-11-15T00:23:22Z
 fix:planninq:1180:83231991	merged development, l10n conflicts resolved mid-catalogue; new head 48921ef6, REVERIFY recorded	session-20261114T231755-998f7ff8	2026-11-15T00:23:19Z
 verify:pipelinq:3849:6bf9c30d	3849 GREEN: tests only, unit 8452->8453 ok	session-20261114T234944-ee1416bc	2026-11-15T00:23:41Z
+cover:buildiq:70b3e29em66d0:d39f9857	already done: lib/Support/*.php at 99.2% lines (263/265) on development 165fc0e3c, target 95	session-20261114T231755-998f7ff8	2026-11-15T00:23:49Z
 verify:keepiq:1818:df898677	GREEN keepiq#1818 (tests only, 5215 OK)	session-20261115T001742-a39bbe12	2026-11-15T00:23:49Z
 cover:pipelinq:7f9dc8e6m799d:568ec52a	PR #3850: LifecycleRegistrar 25/43 -> 43/43, 6 tests; other Lifecycle classes already 98-100%	session-20261114T234758-aa94f07d	2026-11-15T00:23:56Z
