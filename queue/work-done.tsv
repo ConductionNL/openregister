@@ -14810,3 +14810,4 @@ fix:filinq:1311:f1d84cc5	conflict resolved; new head ae2749a3, REVERIFY recorded
 fix:dossiq:4887:fc7097f8	conflicts resolved, pushed 5518d499, suite at baseline, REVERIFY recorded	session-20261115T201132-b8ddc5e5	2026-11-15T20:33:12Z
 merge:humaniq:877:6366aa87	stale	feeder	2026-11-15T20:30:45Z
 fix:humaniq:874:6278788c	stale	feeder	2026-11-15T20:30:45Z
+review:dossiq:3297:2d7e3f4a	GREEN: adds fail-closed case guard, no new failures	session-20261115T195957-8e60ca53	2026-11-15T20:33:26Z
