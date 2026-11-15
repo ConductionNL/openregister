@@ -2540,6 +2540,16 @@ class MagicSearchHandler {
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	private function rawArrayPropertyConditionSql(RawObjectFieldFilter $field, mixed $value): string {
+		// `contains`: one entry holding every given key and value.
+		if (JsonArrayContainment::applies(value: $value) === true) {
+			$json = JsonArrayContainment::json(value: $value);
+			if ($json === null) {
+				return JsonArrayContainment::NO_MATCH;
+			}
+
+			return JsonArrayContainment::condition(column: $field->quotedCol, json: $field->quote(value: $json), isPostgres: $field->isPostgres);
+		}
+
 		return $this->buildArrayPropertyConditionSql(
 			column: new QuotedSqlColumn(name: $field->quotedCol, connection: $field->connection),
 			value: $value
@@ -4127,6 +4137,17 @@ class MagicSearchHandler {
 	private function jsonArrayCondition(ObjectFieldFilter $field, mixed $value): string|ICompositeExpression {
 		$qb         = $field->qb;
 		$columnName = $field->columnName;
+		// `contains`: one entry holding every given key and value.
+		if (JsonArrayContainment::applies(value: $value) === true) {
+			$json = JsonArrayContainment::json(value: $value);
+			if ($json === null) {
+				return JsonArrayContainment::NO_MATCH;
+			}
+
+			$param = (string) $qb->createNamedParameter($json);
+			return JsonArrayContainment::condition(column: $field->columnRef(), json: $param, isPostgres: $field->isPostgres);
+		}
+
 		// Normalize value to array.
 		$values = [$value];
 		if (is_array($value) === true) {
