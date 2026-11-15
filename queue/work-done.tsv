@@ -13895,4 +13895,5 @@ merge:buildiq:1620:0d5e4a8e	merge3 tree of 22 buildiq PRs: merged=14 red=1 fail=
 merge:buildiq:1649:fc552467	merge3 tree of 22 buildiq PRs: merged=14 red=1 fail=0 skip=0; conflict 6, lint 0, moved 1; fix rows 6	merge3-20261113T213425-c36bcd5f	2026-11-15T17:25:59Z
 merge:buildiq:1596:8b6efcf9	merge3 tree of 22 buildiq PRs: merged=14 red=1 fail=0 skip=0; conflict 6, lint 0, moved 1; fix rows 6	merge3-20261113T213425-c36bcd5f	2026-11-15T17:26:28Z
 merge:buildiq:1622:df861555	merge3 tree of 22 buildiq PRs: merged=14 red=1 fail=0 skip=0; conflict 6, lint 0, moved 1; fix rows 6	merge3-20261113T213425-c36bcd5f	2026-11-15T17:26:33Z
+merge:buildiq:1596:a3494497	merge3 tree of 22 buildiq PRs: merged=14 red=1 fail=0 skip=0; conflict 6, lint 0, moved 1; fix rows 6	merge3-20261113T213425-c36bcd5f	2026-11-15T17:26:38Z
 fix:buildiq:1620:2a2fcb1c	merged development (l10n en/nl json+js resolved as the union of both sides, test:l10n OK); new head 64b6280e, REVERIFY	session-20261115T142201-ea23e682	2026-11-15T17:26:36Z
