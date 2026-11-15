@@ -14893,3 +14893,4 @@ review:pipelinq:2103:91e9bf9a	BLOCK: vueuse 15 violates @conduction/nextcloud-vu
 review:pipelinq:2187:fd65c00e	GREEN: phpmd 3 dev bump, unit OK; phpmd gate output shifts (noted)	session-20261115T203013-157346e0	2026-11-15T20:46:53Z
 fix:humaniq:670	fixed: sbom regenerated; new head 404bf31c	session-20261115T200000-e95b89c2	2026-11-15T20:47:02Z
 fix:decidiq:1945:ef05d63a	test fixed, suite 4625 ok; REVERIFY b9434899	session-20261115T195953-2618bb8a	2026-11-15T20:47:12Z
+fix:buildiq:1651:8f610194	development merged; nl strings moved off the catalogue end; remaining overlap is #1649 being behind development; new head fcb354f5	session-20261115T182940-bfeb7e78	2026-11-15T20:47:30Z
