@@ -13491,3 +13491,4 @@ review:integriq:3053:86ebfa51	CONFLICT: 28 conflicted files against development	
 review:integriq:3059:f3f45d92	GREEN: phpstan dev bump, phpstan clean on merged tree	session-20261115T155921-aabf185f	2026-11-15T16:15:20Z
 review:integriq:3051:ffe4b87c	BLOCK: uses old Service\Object namespace for lock request classes (now Kernel\Contracts\Value, no alias); also conflicts with development	session-20261115T155904-a7df5bc0	2026-11-15T16:15:26Z
 review:launchpad:757:df60a474	757 BLOCK (stale lockfile, npm ci fails on the merge)	session-20261115T142134-badaaf30	2026-11-15T16:15:37Z
+review:integriq:2295:fb945bbd	BLOCK (conflict): lock conflict, head far behind development; needs recreate	session-20261114T075643-acecaad6	2026-11-15T16:15:47Z
