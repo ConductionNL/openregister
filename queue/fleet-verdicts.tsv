@@ -11126,3 +11126,4 @@ opencatalogi	2671	6274e217321f11883eb7d63903de0050bdf3b487	CONFLICT	worker-25	co
 opencatalogi	2686	6cda6a7f12f3d570e619e5d158a211d8d1fa044c	CONFLICT	worker-25	conflicts on the tree after 2665
 shillinq	3094	edddf400d7d971b73af7492b543a54ea016d12aa	GREEN	worker-26	phpunit 11471 (unchanged, no PHP touched); vitest 2772 vs baseline 2750, 1 inherited failure dunningNextRun.spec.js; new failures 0; tests only
 integriq	3615	a252d2b44f98561e497acb396bba4c4772da35be	GREEN	worker-17	phpunit tree 9268 (baseline 9223, 6 known fails; no new failures); vitest 2335 pass; build automation-integration-regression-tests within its specs (record gated by regression-suite.record, override per REQ-IRT-005)
+integriq	3617	cc9683d5822eda42617c96ba8b22bd01f442b3c2	GREEN	worker-17	phpunit tree 9268 (baseline 9223, 6 known fails; no new failures); vitest 2335 pass; build events-async-api-products within its specs (channel routes behind product credentials)
