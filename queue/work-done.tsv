@@ -14942,3 +14942,4 @@ fix:keepiq:1826:6a8875d0	development merged in cleanly, unit OK; new head 98fff9
 fix:opencatalogi:2665:cdc5db8f	RED fixed, pushed fbbdb9b4, REVERIFY recorded	session-20261115T195957-8e60ca53	2026-11-15T20:55:39Z
 fix:versioniq:501:e3e915e4	sbom regenerated, merged development, vitest green; new head 451c8f59	session-20261115T203013-157346e0	2026-11-15T20:55:51Z
 fix:opencatalogi:2699:b0f3f779	conflicts resolved; new head 89a2eae1	session-20261115T203012-30a1abde	2026-11-15T20:56:00Z
+fix:versioniq:721:d7956500	merged development (clean); REVERIFY at a9a532f3	session-20261115T195958-28cb0304	2026-11-15T20:56:11Z
