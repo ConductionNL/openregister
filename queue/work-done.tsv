@@ -14700,3 +14700,4 @@ review:launchpad:763	GREEN: vitest 5 bump, 2578 pass, coverage OK	session-202611
 review:planninq:869:6ffcb32c	GREEN: stylelint 0 problems both sides, vitest 3566 ok	session-20261114T073105-752e50ad	2026-11-15T20:12:07Z
 review:planninq:918:90a6ddf0	GREEN: unit 1222 ok, phpstan unchanged vs development	session-20261115T200026-9a5b8685	2026-11-15T20:12:18Z
 review:opencatalogi:2687:9198190b	GREEN; no new failures, jest spec passes	session-20261115T200045-d3bb5c75	2026-11-15T20:12:26Z
+review:planninq:933:cb3692d7	GREEN: access checks first, refactor verbatim; phpunit 1231 OK, vitest 3565 pass	session-20261115T195958-28cb0304	2026-11-15T20:12:33Z
