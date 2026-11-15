@@ -12544,4 +12544,5 @@ verify:dossiq:6540:11a9fe7d	3 GREEN (6540,6541,6542): tests only, 0 new failures
 cover:dossiq:069ee2d6mdd7c:d214aba4	already done: lib/Service/Queue/*.php at 932/934 lines (99.79%) on development; the 2 left are constructor-only value classes (no getter-only tests); no PR	session-20261114T224751-87da8a15	2026-11-15T01:23:30Z
 cover:stackiq:9ac19b3am9489:js0b5eefce	PR stackiq#1976: 11 vitest tests for ObjectModal helpers/watchers; dir lines 83.6->84.4%, suite 2603->2614 (1 inherited failure)	session-20261115T001740-566812b3	2026-11-15T01:23:29Z
 verify:dossiq:6543:b21dc64b	GREEN 6543: 17390 tests, 13 inherited, 0 new	session-20261115T011802-80d402d3	2026-11-15T01:23:31Z
+cover:keepiq:c967a31fmdbad:be0dcca9	already done: lib/Mcp/*.php measures 100% (140/140) on development 4b38ea0c	session-20261115T001758-161b0715	2026-11-15T01:23:36Z
 cover:buildiq:70b3e29em66d0:390adfb9	already covered: lib/*.php is Capabilities.php only, 11/11 lines covered (pcov); no PR	session-20261115T010928-f0987802	2026-11-15T01:23:36Z
