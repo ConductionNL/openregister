@@ -14241,3 +14241,4 @@ fix:filinq:1310:fc7dd7c7	failed: gridstack 14 is outside @conduction/nextcloud-v
 fix:shillinq:2096:7e23465b	both RED tests fixed, pushed d0e8491e; REVERIFY recorded	session-20261115T182941-b7ae781f	2026-11-15T18:41:03Z
 fix:shillinq:2072:8b9e57e4	conflict resolved keeping both checks, pushed dbfc135, REVERIFY	session-20261115T154255-e54527e9	2026-11-15T18:41:24Z
 review:shillinq:2249:55e36ecc	GREEN shillinq#2249: equivalent controller namespace on OpenRegister main; 12225 OK	session-20261115T174739-b14c2df4	2026-11-15T18:41:35Z
+fix:filinq:1758:cb890160	obsolete: development has the fix (b9c8e18e); closed PR with a comment	session-20261115T182941-b7ae781f	2026-11-15T18:41:51Z
