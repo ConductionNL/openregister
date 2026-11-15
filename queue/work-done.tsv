@@ -12757,3 +12757,4 @@ cover:integriq:92114ab0m6759:b89b25f9	already done: lib/Adapters/LearningMateria
 cover:integriq:92114ab0m6759:dffb5af6	already done: lib/Directory/*.php measures 100% (600/600) on development 53067e87	session-20261115T001758-161b0715	2026-11-15T01:58:18Z
 cover:integriq:92114ab0m6759:2af01be6	already done: lib/Intake/*.php measures 96.39% (508/527) on development 53067e87 (target 95)	session-20261115T001758-161b0715	2026-11-15T01:58:31Z
 review:learniq:2486:b690ac62	GREEN: PHP 6870 (1 inherited), phpstan clean	session-20261114T234941-bc8686af	2026-11-15T01:58:30Z
+verify:dossiq:6552:c5c28011	2 GREEN (6552, 6553): tests only, no new unit failures	session-20261115T005122-49ba1b99	2026-11-15T01:58:49Z
