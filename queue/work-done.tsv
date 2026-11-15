@@ -13518,6 +13518,7 @@ review:larpinq:961:0c510953	GREEN: hydra-gates dev bump; phpunit 860 OK	session-
 review:launchpad:984:2f958a94	BLOCK: wrong OpenRegister namespace for ObjectSaveOptions/ObjectFindTarget	session-20261115T155921-aabf185f	2026-11-15T16:19:46Z
 review:launchpad:977:dd835410	GREEN: phpunit 4359 OK, phpcs unchanged	session-20261115T155915-84e5dc0a	2026-11-15T16:20:02Z
 review:launchpad:760:cdb3d779	760 GREEN (npm ci ok, vitest 2578 pass)	session-20261115T142134-badaaf30	2026-11-15T16:20:15Z
+review:hermiq:1319:7dd547c6	BLOCK: calls a processMessage(request:) signature OpenRegister does not have; stub hides it; conflicts with development	session-20261115T142934-6cab0c24	2026-11-15T16:20:39Z
 review:launchpad:832:0ef99698	GREEN (openspec-only), but conflicts with development archive moves	session-20261115T155904-a7df5bc0	2026-11-15T16:20:45Z
 review:launchpad:787:c954ea2d	CONFLICT: 19 conflicted paths, stacked branch partly already on development	session-20261115T155903-abd003e3	2026-11-15T16:20:55Z
 review:humaniq:669:3a6be5bd	GREEN: vue-router minor; build ok; test:js 210/211, 1 inherited	session-20261115T154316-34f0db35	2026-11-15T16:21:06Z
@@ -13545,6 +13546,7 @@ review:integriq:3057:a972c60e	GREEN: lock-only hydra-gates 1.19 dev bump; suite 
 review:opencatalogi:1888:0a19c236	CONFLICT: merge with development conflicts in 5 lib files; head green; behaviour matches spec	session-20261114T085646-49a39060	2026-11-15T16:24:41Z
 review:learniq:1158:bb9f61d9	GREEN: dev-only prettier bump, JS unit 9 inherited failures, no new	session-20261115T152547-c779ca49	2026-11-15T16:24:47Z
 review:opencatalogi:1889:38ce8706	GREEN (conflicts with development noted)	session-20261115T151007-45079d32	2026-11-15T16:25:05Z
+review:opencatalogi:2650:b0dd47d9	stale	session-20261115T154316-34f0db35	2026-11-15T16:25:15Z
 review:larpinq:877:339de0c7	GREEN: ocp dev bump, 860 tests OK	session-20261115T155913-70cee771	2026-11-15T16:25:26Z
 review:launchpad:885:04779dd2	CONFLICT #885: 5 files conflict with development	session-20261115T152601-38767331	2026-11-15T16:25:34Z
 review:learniq:1882:b05df18f	RED: employer portal manifest golden not updated for new field labels	session-20261115T152558-f97be55f	2026-11-15T16:25:43Z
@@ -13568,6 +13570,7 @@ review:pipelinq:1936:27cdae0d	CONFLICT #1936: obsolete, development already newe
 review:learniq:2126:af7f7379	GREEN: phpstan clean, no new failures	session-20261114T102637-6688951e	2026-11-15T16:28:48Z
 review:opencatalogi:2415:da40ef23	CONFLICT: PublicationsController conflicts with development (call moved to rendered()); diff itself correct	session-20261115T155911-14cd078d	2026-11-15T16:28:56Z
 review:learniq:1903:3f6c3b60	GREEN: dev-only ocp bump; installs, suite has only the inherited failure	session-20261115T145533-2db61682	2026-11-15T16:29:09Z
+review:opencatalogi:2259:6c778379	BLOCK: superseded by development's own refactor, conflicts	session-20261114T102641-d4fd3e25	2026-11-15T16:29:29Z
 review:opencatalogi:2250:626634c5	GREEN: equivalent refactor, 0 new failures	session-20261115T154300-03b63424	2026-11-15T16:29:17Z
 review:learniq:1884:16330d9e	no verdict: conflicts with development in 11 files; recorded CONFLICT for the fix lane	session-20261115T142958-341f60db	2026-11-15T16:29:33Z
 review:opencatalogi:1894:552c9a7c	CONFLICT: openspec-only PR conflicts with development in 6 files	session-20261114T085646-49a39060	2026-11-15T16:29:42Z
@@ -13594,3 +13597,23 @@ review:learniq:1881:5f883140	GREEN (intended fix; conflicts with development)	se
 review:pipelinq:3149:3c7ae62d	BLOCK: wrong ObjectPatch/ObjectFindTarget namespace	session-20261115T142951-2463b4c4	2026-11-15T16:33:33Z
 review:pipelinq:3085:34857519	GREEN: lock-only dev-tool bump, 8890 tests green merged with development	session-20261114T095641-533e2a00	2026-11-15T16:33:40Z
 review:pipelinq:3084:01208829	GREEN: phpstan bump, analysis clean, suite green	session-20261115T154258-dee2cc3d	2026-11-15T16:33:56Z
+review:pipelinq:2959:0f2f1b3f	CONFLICT #2959: 16 files, partly on development already	session-20261115T152601-38767331	2026-11-15T16:34:12Z
+merge:pipelinq:3835:cef49b87	merge3 tree of 6 pipelinq PRs: merged=4 red=0 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-15T16:34:23Z
+merge:pipelinq:3870:787e050f	merge3 tree of 6 pipelinq PRs: merged=4 red=0 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-15T16:34:26Z
+merge:pipelinq:3873:e74d58c4	merge3 tree of 6 pipelinq PRs: merged=4 red=0 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-15T16:34:30Z
+review:planninq:1037:f2da0a3f	CONFLICT: trivial l10n/en.js+en.json, keep both; change itself fine	session-20261115T154300-03b63424	2026-11-15T16:34:32Z
+merge:pipelinq:3875:9f4b8976	merge3 tree of 6 pipelinq PRs: merged=4 red=0 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-15T16:34:43Z
+review:pipelinq:2963:59117082	BLOCK: duplicate of the change already built on development; conflicts in 10 files; likely obsolete	session-20261115T145546-378b432a	2026-11-15T16:34:52Z
+review:pipelinq:2503:8913d60e	BLOCK (conflict): info.xml + l10n conflict with development; the code change itself tightens access and is consistent	session-20261114T075643-acecaad6	2026-11-15T16:35:15Z
+review:pipelinq:3083:ab965a9c	GREEN: vitest 5343/5344, 1 inherited failure	session-20261115T155911-14cd078d	2026-11-15T16:35:36Z
+review:launchpad:961:6afb1922	GREEN: copy-only rename; vitest 2578 OK	session-20261115T145541-9d69768b	2026-11-15T16:35:47Z
+review:pipelinq:3153:22a0348f	BLOCK: OpenRegister save-option classes imported from old namespace	session-20261115T155921-aabf185f	2026-11-15T16:35:53Z
+review:pipelinq:3281:c765403c	BLOCK: lock not installable under config.platform php 8.3	session-20261115T142951-2463b4c4	2026-11-15T16:36:02Z
+review:pipelinq:3142:e7c6f9ad	GREEN: spec-only, validates	session-20261114T102637-6688951e	2026-11-15T16:36:26Z
+review:pipelinq:2507:ecccdb3f	BLOCK: obsolete, development already on nextcloud-vue 2.180 with these changes	session-20261115T145555-b33410db	2026-11-15T16:36:49Z
+review:pipelinq:2566:0b0d7736	CONFLICT: 217 conflicting files with development	session-20261114T085646-49a39060	2026-11-15T16:37:03Z
+review:pipelinq:2458:9c135002	BLOCK: 18-file conflict with development; code clean	session-20261115T154255-e54527e9	2026-11-15T16:37:12Z
+review:learniq:2123:eeb728d3	GREEN: class names match openregister main; suite clean apart from an unrelated generated-file check	session-20261115T142934-de7c51d0	2026-11-15T16:37:19Z
+review:planninq:869:0cf3f1b0	GREEN (conflicts with development, needs rebase): stylelint dev bump clean	session-20261115T155921-aabf185f	2026-11-15T16:37:32Z
+review:pipelinq:3145:76b4afe3	CONFLICT: faithful ObjectFindOptions migration, 95 files conflict with development	session-20261115T155902-d9805df0	2026-11-15T16:37:42Z
+review:opencatalogi:2263:a4046c90	GREEN: behaviour-preserving extract, no new failures (2 inherited)	session-20261115T155913-70cee771	2026-11-15T16:37:51Z
