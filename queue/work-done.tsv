@@ -14641,3 +14641,4 @@ review:learniq:1883:fd136520	GREEN: matches change spec, access unchanged, 1 inh
 merge:learniq:864:7c651a34	merge3 tree of 11 learniq PRs: merged=2 red=7 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-15T19:52:25Z
 merge:learniq:1162:17f0a437	merge3 tree of 11 learniq PRs: merged=2 red=7 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-15T19:52:30Z
 merge:learniq:2127:7dfc9a1c	merge3 tree of 11 learniq PRs: merged=2 red=7 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-15T19:52:34Z
+review:learniq:2521:60fa2998	GREEN: builds its change, failures inherited	session-20261115T174747-978963d5	2026-11-15T19:53:53Z
