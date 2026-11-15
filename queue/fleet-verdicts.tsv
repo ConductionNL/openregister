@@ -12912,3 +12912,4 @@ stackiq	1437	3de46f6b1075b4187f475822045ef6880bc42b92	RED	merge8:merge-gate	GATE
 stackiq	1438	23ea35dd424a254cba3cbaee76ab7e4fa58828da	RED	merge8:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
 stackiq	1954	7f13c4ef79c4d740e48a9309045acd64414f140c	RED	merge8:merge-gate	GATE RED checker floor: adrvalidator: pass -> warn; adrvalidator stars: 5 -> 3; score: 100 -> 97
 stackiq	1978	90d2828bd1192bd1fcd6702a87b638ea133bca93	RED	merge8:merge-gate	GATE RED checker floor: adrvalidator: pass -> fail; adrvalidator stars: 5 -> 1; score: 100 -> 93
+stackiq	1924	ae4e4f180d393ac0f14003f4b828f3ff7ffce668	GREEN	worker-11:review	implements openspec sharing-compliance-documents as specified (new schema, audience read rules public/government/named, default named, owner-org update/delete; no existing schema changed); phpunit 3722 pass; vitest 2732/2733, the 1 failure (facets.spec FACET_DIMENSIONS) is inherited from development
