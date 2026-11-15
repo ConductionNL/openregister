@@ -333,6 +333,7 @@ class TextExtractionService implements TextExtractionServiceInterface {
 
 		// Persist textual chunks and include the metadata chunk at the end.
 		$this->persistChunksForSource(text: $text, chunks: $chunks);
+		$this->sources->storage->signatures?->store(fileId: (int)$fileId, text: (string)($text->payload['text'] ?? ''));
 
 		if ($this->extractFileEntities(fileId: $fileId, entityTypes: $entityTypes) === false) {
 			return;
@@ -386,6 +387,7 @@ class TextExtractionService implements TextExtractionServiceInterface {
 		$payload = $this->archivePayload(source: $source, text: implode("\n\n", $texts));
 		$payload['archive'] = $extraction->report();
 		$this->persistChunksForSource(text: new SourceText(payload: $payload, sourceTimestamp: $sourceTimestamp), chunks: $chunks);
+		$this->sources->storage->signatures?->store(fileId: $source->sourceId, text: (string)($payload['text'] ?? ''));
 
 		$this->analysis->logger->debug(
 			message: '[TextExtractionService] Archive indexed',
@@ -987,6 +989,11 @@ class TextExtractionService implements TextExtractionServiceInterface {
 			$this->sources->storage->db->rollBack();
 			throw $throwable;
 		}//end try
+
+		// The signature belongs to the text just replaced: it goes with the chunks.
+		if ($source->sourceType === 'file') {
+			$this->sources->storage->signatures?->forget(fileId: $source->sourceId);
+		}
 	}//end persistChunksForSource()
 
 	/**
