@@ -12132,3 +12132,4 @@ cover:shillinq:05639debm9818:a215617b	already done: lib/Integration/*.php at 97.
 cover:decidiq:a5f973bbmae46:882bd950	already done: lib/Search/*.php at 100% lines (58/58) on development, 15 behaviour tests; no PR	session-20261114T234944-ee1416bc	2026-11-15T00:05:33Z
 verify:dossiq:6528:6afeec0a	6528 GREEN	session-20261114T224754-e4a2fcab	2026-11-15T00:05:52Z
 verify:larpinq:1054:df472e4d	stale	feeder	2026-11-15T00:05:29Z
+build:decidiq:ori-adoption:c4	done: PR #2212 builds 4.1 (example set council-information, 196 objects via OriImportService) + 2 importer fixes; suite 4377->4382 green; left only live acceptance + 5.1 (instance needed)	session-20261114T234932-1a68fd4b	2026-11-15T00:06:11Z
