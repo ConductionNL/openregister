@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.5/phpunit.xsd"
+         bootstrap="tests/bootstrap.php"
+         colors="true"
+         cacheDirectory=".phpunit.cache"
+         executionOrder="default"
+         defaultTestSuite="Unit Tests"
+         requireCoverageMetadata="false"
+         beStrictAboutCoverageMetadata="true"
+         beStrictAboutOutputDuringTests="true"
+         failOnRisky="false"
+         failOnWarning="true"
+         displayDetailsOnTestsThatTriggerWarnings="true"
+         failOnDeprecation="false">
+    
+<testsuites><testsuite name="Unit Tests">
+<file>tests/Unit/Architecture/A10InterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/A19InterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/BpmnIsABoundaryTest.php</file>
+<file>tests/Unit/Architecture/C01GdprInterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/C02GitHubIssuesInterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/C02RbacReportsInterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/C03EdepotInterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/C03SharingInterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/C08ApiMiddlewareInterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/C08ValidationInterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/C11InterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/D12InterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/D3InterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/D8InterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/E17InterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/E18DecisionTableInterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/E18QueuedJobsInterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/F01StaticEntriesTest.php</file>
+<file>tests/Unit/Architecture/F02RuntimeInterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/F04OrganisationAuditorInterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/F05HistoryInterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/F06AuditPageInterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/F06FlowVersionInterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/F07JobHandlesTest.php</file>
+<file>tests/Unit/Architecture/F08ContractBindingsEntryTest.php</file>
+<file>tests/Unit/Architecture/F09ControllerBoundaryTest.php</file>
+<file>tests/Unit/Architecture/F10IntegrationMcpInterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/F11FlowAccessInterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/F12HardeningInterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/FileExtractRouteTest.php</file>
+<file>tests/Unit/Architecture/H11InterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/H19InterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/K03InterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/K19OasInterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/K27InterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/M08InterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/ObjectCrudFiresOnlyObjectEventsTest.php</file>
+<file>tests/Unit/Architecture/ReferenceOptionsRouteIsReachableTest.php</file>
+<file>tests/Unit/Contract/EmailLinkReaderContractTest.php</file>
+<file>tests/Unit/Controller/ControllerServicesWiringTest.php</file>
+<file>tests/Unit/Search/Service/GraphQL/JsonTypeLiteralTest.php</file>
+<file>tests/Unit/Service/GraphQL/GraphQLAggregationFilterTest.php</file>
+<file>tests/Unit/Service/GraphQL/GraphQLResolverMutationGoldenTest.php</file>
+<file>tests/Unit/Service/GraphQL/ScalarTypesTest.php</file>
+<file>tests/Unit/Service/Rules/ConditionDialectOnSavePathTest.php</file>
+<file>tests/Unit/Service/Rules/ExpressionDefaultResolverTest.php</file>
+<file>tests/Unit/Service/Rules/NamedConditionTest.php</file>
+<file>tests/Unit/Service/Rules/RuleCeilingServiceTest.php</file>
+<file>tests/Unit/Service/Rules/RuleScopeTest.php</file>
+</testsuite></testsuites></phpunit>

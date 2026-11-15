@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.5/phpunit.xsd"
+         bootstrap="tests/bootstrap.php"
+         colors="true"
+         cacheDirectory=".phpunit.cache"
+         executionOrder="default"
+         defaultTestSuite="Unit Tests"
+         requireCoverageMetadata="false"
+         beStrictAboutCoverageMetadata="true"
+         beStrictAboutOutputDuringTests="true"
+         failOnRisky="false"
+         failOnWarning="true"
+         displayDetailsOnTestsThatTriggerWarnings="true"
+         failOnDeprecation="false">
+    
+<testsuites><testsuite name="Unit Tests">
+<file>tests/Unit/Architecture/A04InterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/A14InterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/A27InterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/C01ArchivalDelegationInterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/C01OAuth2InterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/C02InterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/C02RelationsInterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/C03MiscInterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/C06AccessInterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/C08InterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/C09InterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/ContractIsALeafTest.php</file>
+<file>tests/Unit/Architecture/D14InterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/D5InterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/E17AccessInterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/E18AuditInterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/E18FormatsInterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/F01GdprInterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/F02CredentialInterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/F04DeletionInterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/F04SearchGrammarInterfacesTest.php</file>
+<file>tests/Unit/Architecture/F05SchemaImportInterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/F06DbLookupsInterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/F07AccessInterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/F07PortalRegistryInterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/F08InterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/F09SharingInterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/F10RbacRulesInterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/F11ValueInterfacesTest.php</file>
+<file>tests/Unit/Architecture/F12SchemaTeardownInterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/H01InterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/H15InterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/H20JobHandlesTest.php</file>
+<file>tests/Unit/Architecture/K11InterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/K22InterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/K29InterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/M09InterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/ObjectShareRoutesTest.php</file>
+<file>tests/Unit/Architecture/TestMethodsCanFailTest.php</file>
+<file>tests/Unit/Contract/HitlRetirementInventoryTest.php</file>
+<file>tests/Unit/Search/Service/GraphQL/CompositionHandlerGoldenTest.php</file>
+<file>tests/Unit/Search/Service/GraphQL/TypeMapperInputAndConnectionTypesTest.php</file>
+<file>tests/Unit/Service/GraphQL/GraphQLNamesTest.php</file>
+<file>tests/Unit/Service/GraphQL/MetadataFieldPrecedenceTest.php</file>
+<file>tests/Unit/Service/GraphQL/SchemaGeneratorTest.php</file>
+<file>tests/Unit/Service/Rules/ConditionTracerTest.php</file>
+<file>tests/Unit/Service/Rules/NamedConditionEvaluatorGoldenTest.php</file>
+<file>tests/Unit/Service/Rules/RelativeTimeConditionGoldenTest.php</file>
+<file>tests/Unit/Service/Rules/RuleInventoryServiceTest.php</file>
+<file>tests/Unit/Service/Rules/RulesServicesGoldenTest.php</file>
+</testsuite></testsuites></phpunit>
