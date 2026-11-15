@@ -3443,3 +3443,12 @@ launchpad	977	dd835410dc5adc1e3f7a756c55b1ec0c23ca0c63	RED	merge8	GATE RED sbom:
 launchpad	1098	1720a6d32297542976c2d048a6d2ff7084e2193d	RED	merge8	GATE RED sbom: composer.lock changed without sbom.cdx.json
 launchpad	1229	444ff7437a3d1799b71fe7a73eda4109cc9b4db1	RED	merge8	GATE RED floor: unit_complexity: 4.73 -> 4.69; unit_interfacing: 3.57 -> 3.55
 launchpad	1234	d725a0f05e32e8677fad84090dc7925f03492fe2	RED	merge8	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+pipelinq	2187	ebdded89e7974f71df19e999901872b308decead	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
+pipelinq	2557	5d12aa50f9fac2057c026beb4b74d34aaed1b4f6	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
+pipelinq	2593	c56203710cc6476ff6bd5695de7ecb781dfabb13	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.36
+pipelinq	3083	ab965a9c0deeb660bf9b0b4d47c505a817ce9835	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+pipelinq	3084	012088294b81df9416cc16f60866771d7bac8622	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
+pipelinq	3085	34857519bac429d0d2d4ee7845f73ae693827d33	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
+pipelinq	3088	3135c0b1fd518352b7f25ce329aeedbf29528011	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+pipelinq	3142	e7c6f9ad9a7caa418171c6acb1f50e0afee7db6a	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.36
+pipelinq	3870	c35c4e62752ab8075a172a38b679855d64daa9a1	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.36
