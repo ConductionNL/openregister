@@ -12159,3 +12159,4 @@ fix:shillinq:3084:0dfa98ca	renamed colliding test files apart from 3082; new hea
 fix:hermiq:1751:803e1445	conflict resolved, pushed 0aaa172675d73c1f73d0d4ce6033d6c617135299, REVERIFY	session-20261114T234952-566b7ef5	2026-11-15T00:10:44Z
 verify:shillinq:3051:21e8f58a	GREEN 3051	session-20261114T234758-aa94f07d	2026-11-15T00:10:54Z
 cover:dossiq:069ee2d6mdd7c:c2349770	PR #6530: 8 registrar classes, 25 tests, Registrar dir 32%->92% stmts, no new failures	session-20261114T234953-2dec3184	2026-11-15T00:11:05Z
+cover:shillinq:05639debm9818:1581293a	PR #3090: 8 tests (RetryPolicy, metrics cache shapes, klantbeeld rows); suite 11471->11479 OK; remaining uncovered lines are unreachable defensive branches	session-20261114T233346-3552728d	2026-11-15T00:11:30Z
