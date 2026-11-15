@@ -13874,3 +13874,4 @@ fix:buildiq:1093:7c1a6bdd	lock regenerated (marked only), npm ci ok, vitest 4692
 fix:dossiq:6577:dfc63bfe	conflict resolved (both registrations kept), no new failures; new head cee8f2a5e99f891b27cccf7fda805d294eb5d330	session-20261115T145535-3f9e5078	2026-11-15T17:22:52Z
 fix:versioniq:695:b25e3fb6	merged development (4 conflicts kept both sides), pushed 9b2e45a1, REVERIFY recorded	session-20261115T145541-9d69768b	2026-11-15T17:23:04Z
 verify:buildiq:1648:c25b1a82	1650 GREEN; 1648 skipped (head moved bfb0ac11->a6359df5)	session-20261115T154307-1fc2cc78	2026-11-15T17:23:11Z
+fix:filinq:2121:38c2112f	merged development, green; new head cb1efd91	session-20261114T102641-d4fd3e25	2026-11-15T17:23:19Z
