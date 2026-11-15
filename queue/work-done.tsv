@@ -14357,3 +14357,4 @@ review:decidiq:1942:62504df6	GREEN: matches OR main FlowNodeCall; unit green	ses
 fix:integriq:3058:73d0ebfe	sbom regenerated, 0 new failures; new head 46cc2fb4	session-20261115T174833-88ac0233	2026-11-15T18:57:31Z
 fix:integriq:3049:47b3a17d	fixed: imports moved to Kernel\Contracts\Value, development merged, unit equals baseline; new head 3154eb08	session-20261115T182940-bfeb7e78	2026-11-15T18:57:38Z
 review:decidiq:1691:36ec8671	GREEN: frontend ad hoc meeting page, vitest green	session-20261115T174747-978963d5	2026-11-15T18:57:45Z
+fix:integriq:3054:672f5082	namespace fixed to Kernel\Contracts\Value, pushed 5b91fc9c; REVERIFY recorded	session-20261115T183029-6c0565bd	2026-11-15T18:57:54Z
