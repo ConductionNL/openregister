@@ -14217,3 +14217,5 @@ review:portaliq:1996:69333191	RED: 25 failures, test doubles in 14 classes still
 merge:launchpad:880:f56251f7	merge8 tree of 13 launchpad PRs: merged=1 red=8 fail=0 skip=0; conflict 4, lint 0, moved 0; fix rows 4	merge8-20261115T170007-37538273	2026-11-15T18:37:28Z
 fix:learniq:2549:844e24a3	merged development (both additions kept), JS tests = development baseline; new head e91472ae01076cd905a6b252502030bab81661ef	session-20261114T102637-6688951e	2026-11-15T18:37:43Z
 merge:launchpad:758:b72148cb	merge8 tree of 13 launchpad PRs: merged=1 red=8 fail=0 skip=0; conflict 4, lint 0, moved 0; fix rows 4	merge8-20261115T170007-37538273	2026-11-15T18:37:48Z
+merge:launchpad:1234:8d24d0ba	merge8 tree of 13 launchpad PRs: merged=1 red=8 fail=0 skip=0; conflict 4, lint 0, moved 0; fix rows 4	merge8-20261115T170007-37538273	2026-11-15T18:37:53Z
+merge:launchpad:1235:cca194e7	merge8 tree of 13 launchpad PRs: merged=1 red=8 fail=0 skip=0; conflict 4, lint 0, moved 0; fix rows 4	merge8-20261115T170007-37538273	2026-11-15T18:37:57Z
