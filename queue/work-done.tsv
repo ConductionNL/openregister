@@ -14288,3 +14288,4 @@ fix:decidiq:2191:1b6af6dc	conflict resolved, duplicate layout id fixed; vitest a
 fix:decidiq:1691:6a147074	CONFLICT+RED resolved, vitest green, REVERIFY recorded	session-20261115T174747-978963d5	2026-11-15T18:47:29Z
 review:dossiq:5357:9bb3d18c	GREEN: 0 new failures (19 inherited)	session-20261115T174833-88ac0233	2026-11-15T18:47:37Z
 fix:hermiq:1324:c54cfec4	failed: depends on openregister #9103 (Kernel\Contracts\SearchOptions); main has no SearchOptions and searchObjectsPaginated still takes ids/uses/views (published contract), so it cannot be fixed in hermiq	session-20261115T174757-8dfa7406	2026-11-15T18:47:56Z
+fix:portaliq:1995:277966b3	fixed namespace, merged development, unit 6120 OK, pushed d96754fb; REVERIFY recorded	session-20261115T174755-95dc8448	2026-11-15T18:47:58Z
