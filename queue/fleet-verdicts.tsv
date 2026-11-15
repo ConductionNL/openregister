@@ -11149,3 +11149,4 @@ learniq	2549	f861a75f9da803969547b92865f21d9f266bdf14	CONFLICT	merge3	merges cle
 dossiq	6545	fb85c0e45d945d3744a069972f8bdb9bf8b722d5	GREEN	worker-56	17445 tests on tree, baseline 17442 with 19 inherited failures, no new failures; tests only
 dossiq	6546	faa05dfb028d17960ebd23d74ce75513722c32c0	GREEN	worker-25	tests only (9 new test files); unit 17475 vs baseline 17442, the same 19 inherited failures, 0 new; php -l clean
 buildiq	1665	27b55e37e1c156d1b202bff9058ed728b2093628	GREEN	worker-37	unit 3192->3215 tests, baseline 1 failure unchanged, no new failures; tests only
+portaliq	2522	72ba05947bc6467bf179fe4d669c925eab19f073	GREEN	worker-06	unit 5946 on tree (3 PRs), baseline 5873 0 failures, new failures 0; tests only
