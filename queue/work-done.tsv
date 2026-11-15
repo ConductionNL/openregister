@@ -14786,3 +14786,4 @@ review:dossiq:2902:852fcee3	GREEN: no new failures (19 inherited)	session-202611
 fix:shillinq:2083:bbd8bdb9	fixed: discard via ObjectDeletion, #2253 merged in; unit 12234 OK; new head fc181f39	session-20261115T200043-78b85ca2	2026-11-15T20:28:17Z
 review:dossiq:5396:861d4d0a	GREEN: dev lock bump, 18185 unit tests OK	session-20261115T200020-0f65b959	2026-11-15T20:28:28Z
 fix:shillinq:3080:44d2bdbe	merged development (clean); conflict is with another tree PR; REVERIFY at 5b6628be	session-20261115T195958-28cb0304	2026-11-15T20:28:41Z
+fix:shillinq:2048	fixed: sbom regenerated; new head f88b17a7	session-20261115T200000-e95b89c2	2026-11-15T20:28:48Z
