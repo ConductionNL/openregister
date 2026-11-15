@@ -5,12 +5,16 @@
 # Every result goes to queue/fleet-merged.tsv: MERGED, FAIL (non-2xx, never retried), RED (gate; also a RED
 # row in queue/fleet-verdicts.tsv so a fix task follows) or SKIP (gate unmeasured, or an earlier stack member
 # was not merged). Only base development of a fleet app; never main or beta, never openregister.
+# REQUIRE_REVIEW=1 (cloud workers): a PR merges only with an APPROVE review at its head sha as the latest
+# review row of that sha in queue/fleet-reviews.tsv; else SKIP. MERGE_LOCK=<app>: renew the app's merge lock
+# before every merge and stop (SKIP the rest) when it is lost.
 # Prints "merged=<k> red=<k> fail=<k> skip=<k>".
 set -u
 clone=$1 app=$2 prs=$3 stacks=${4:-} lane=${5:-${W:-worker}}
-BIN=$(cd "$(dirname "$0")" && pwd)
+BIN=${MT_BIN:-$(cd "$(dirname "$0")" && pwd)}
 export ST=${ST:-$(dirname "$BIN")}
 source "$BIN/state.sh"
+source "$BIN/work.sh"
 [ "$app" = openregister ] && { echo "openregister is never merged here"; exit 2; }
 declare -A blocked
 m=0 r=0 f=0 s=0
@@ -33,16 +37,34 @@ flush() {
 	for i in 1 2 3 4 5; do [ ${#buf_v[@]} = 0 ] && break; st_append queue/fleet-verdicts.tsv "${buf_v[@]}" && buf_v=(); done
 }
 trap flush EXIT
+# latest review verdict of app/pr at sha in queue/fleet-reviews.tsv (APPROVE, REQUEST_CHANGES or empty)
+review_at() {
+	awk -F'\t' -v a="$app" -v n="$1" -v s="$2" '$1 == a && $2 == n && $3 == s {v = $4} END {print v}' "$ST/queue/fleet-reviews.tsv" 2>/dev/null
+}
+[ -n "${REQUIRE_REVIEW:-}" ] && { st_sync || st_sync; }
+lost=""
 rec() { _put queue/fleet-merged.tsv "$app"$'\t'"$1"$'\t'"$2"$'\t'"$3"$'\t'"$lane"$'\t'"$(_line "$4")"; }
 stack_of() { local g; for g in $stacks; do [[ ">$g>" == *">$1>"* ]] && { echo "$g"; return; }; done; }
+# Every merge but the last item of the list carries [skip ci]: one development CI run per batch.
+last_item=${prs##*,}
 for item in ${prs//,/ }; do
 	n=${item%@*} sha=${item#*@}
+	skipci=(-f "commit_message=Merged in a batch of $app PRs [skip ci]"); [ "$item" = "$last_item" ] && skipci=()
 	g=$(stack_of "$n")
 	if [ -n "$g" ] && [ -n "${blocked[$g]:-}" ]; then rec "$n" "$sha" SKIP "stack: #${blocked[$g]} was not merged"; s=$((s + 1)); continue; fi
+	if [ -n "$lost" ]; then rec "$n" "$sha" SKIP "merge lock lost"; s=$((s + 1)); continue; fi
+	if [ -n "${REQUIRE_REVIEW:-}" ] && [ "$(review_at "$n" "$sha")" != APPROVE ]; then
+		rec "$n" "$sha" SKIP "no APPROVE review at this head"; s=$((s + 1))
+		[ -n "$g" ] && blocked[$g]=$n
+		continue
+	fi
 	out=$(python3 "$BIN/merge_gate.py" "$clone" "$n" "$sha" 2>&1); rc=$?
 	why=$(printf '%s\n' "$out" | tail -1)
+	if [ "$rc" = 0 ] && [ -n "${MERGE_LOCK:-}" ] && ! merge_lock_renew "$MERGE_LOCK"; then
+		lost=1; rec "$n" "$sha" SKIP "merge lock lost"; s=$((s + 1)); continue
+	fi
 	if [ "$rc" = 0 ]; then
-		resp=$(gh api -X PUT "repos/ConductionNL/$app/pulls/$n/merge" -f merge_method=merge -f sha="$sha" 2>&1)
+		resp=$(gh api -X PUT "repos/ConductionNL/$app/pulls/$n/merge" -f merge_method=merge -f sha="$sha" "${skipci[@]}" 2>&1)
 		if [ $? = 0 ]; then rec "$n" "$sha" MERGED "$why"; m=$((m + 1)); continue; fi
 		rec "$n" "$sha" FAIL "$resp"; f=$((f + 1))
 	elif [ "$rc" = 1 ]; then
