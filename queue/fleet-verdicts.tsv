@@ -12572,4 +12572,5 @@ pipelinq	3083	ab965a9c0deeb660bf9b0b4d47c505a817ce9835	RED	merge3:merge-gate	GAT
 pipelinq	3084	012088294b81df9416cc16f60866771d7bac8622	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
 pipelinq	3085	34857519bac429d0d2d4ee7845f73ae693827d33	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
 pipelinq	3088	3135c0b1fd518352b7f25ce329aeedbf29528011	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+buildiq	1233	f1c8aa729aa907976aa88bceb272f79a4e7bb0b9	REVERIFY	worker-33	merged development: l10n/spec conflicts kept both sides; nl hint re-keyed from store to marketplace; test:l10n OK, parity same 10 misses as development; new head fbc18f0064cdfcd59c03ed6f43d22ec6296386d8, verify it
 launchpad	1235	91e1b63285d60d9c22157df476ce0f2ccad264a4	REVERIFY	worker-48	merged development in; l10n en/nl conflicts resolved to development's lines (Store renamed Marketplace) plus this branch's two filter-telemetry keys; locale files parse; parity gaps unchanged except the branch's own two keys in the 35 other locales; new head 5447328b2d80008ddcd0d674c30fc6e75df0bce5, verify it
