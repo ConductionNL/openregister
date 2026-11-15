@@ -10773,3 +10773,4 @@ hermiq	1750	e161826555c4680510b8af8de6fddc7a43ee39fc	REVERIFY	worker-11	merged d
 larpinq	1041	2309f59a66204117fc80f6b02df63768f8732982	GREEN	worker-58	tree dev+1041: unit 845 OK (baseline 832 OK), vitest 589 passed; new failures none; builds events-qr-checkin, check-in-by-code endpoint behind the game-master check and rate limited
 larpinq	1050	8fba81923cf2fee8c1a7b22788bdd004db0d5bea	CONFLICT	worker-58	merges clean on development alone; conflicts with #1041 in l10n/en.js en.json nl.js nl.json
 thematiq	1680	31fb4f82491973605e3b9fd0fb721096311bc020	GREEN	worker-45	phpunit 2892 tests (baseline 2873, 1 inherited MigrateOverrideValueTypesTest red), no new failures; no frontend changes; build of rows-without-a-requirement (admin-only font library per custom-fonts spec)
+pipelinq	3846	781401bfb0ecf09471945c1ceb6f57c8f5ab9a39	GREEN	worker-15	tests only; unit 8509 OK (baseline 8452 OK); vitest 5181, 1 failure myWorkPage.spec.js inherited from development 0d8e11ea2
