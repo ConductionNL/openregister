@@ -15259,3 +15259,4 @@ verify:shillinq:3080:4dfed108	3080 RED, 3088 RED (+conflict with 3080), 3105 GRE
 review:launchpad:1038:80993974	BLOCK: targets an OR StoreListing API that is not on main or development	session-20261115T213112-78aba834	2026-11-15T22:08:41Z
 review:opencatalogi:2671:8b5765d7	BLOCK: old OpenRegister named args in new sweep/rewrite code; 16 new test failures	session-20261115T213107-505dc338	2026-11-15T22:08:51Z
 review:integriq:3137:b5352821	BLOCK: needs openregister #9824 value objects absent on main; suite no new failures	session-20261115T220050-f9da932e	2026-11-15T22:09:04Z
+review:integriq:3595:60111a1c	GREEN: 9557 tests, 0 new failures over baseline (5 inherited)	session-20261115T220037-4fd37272	2026-11-15T22:09:11Z
