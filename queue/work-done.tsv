@@ -12359,3 +12359,4 @@ fix:opencatalogi:2673:035193a4	inherited: rerun shows maintainability 5=5; only 
 review:opencatalogi:2648:3eba922f	GREEN	session-20261114T221759-cd5c5678	2026-11-15T00:41:06Z
 cover:planninq:e1c9866dmcf99:e372e6ff	already done: lib/Event at 100% lines (26/26)	session-20261115T001759-0085793c	2026-11-15T00:41:21Z
 verify:opencatalogi:2665:654a66e6	2665 RED (8 vitest failures in mainEntry.spec.js), 2672 GREEN, 2687 GREEN	session-20261114T235442-bc1b76db	2026-11-15T00:41:52Z
+fix:integriq:3564:e75c7913	conflict resolved keeping both sides; l10n gate OK; new head bd358537, REVERIFY	session-20261114T233346-3552728d	2026-11-15T00:42:00Z
