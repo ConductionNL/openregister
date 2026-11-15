@@ -131,3 +131,15 @@ every log call (the search-backend and webhook health checks were built in the f
 cache hit/miss and import progress need instrumentation in `CacheHandler` and the import
 jobs; the dashboard widget and serverinfo section are UI/integration work. BIO2 audit items
 were not re-verified in this pass.
+
+**Sixth pass, 2026-11-15: storage growth threshold.** Scenario "Storage growth threshold" of
+"Alerting Threshold Configuration" is built. `Service\Observability\StorageGrowthMetricsProvider`
+joins `OpenRegisterMetricsProvider` and publishes `storage_growth_bytes` (the bytes of the
+vectors added in the last 24 hours, one aggregate query on `openregister_vectors`) and
+`storage_growth_exceeded` (1 when that is over the `storage_growth_alert_bytes` app config
+value, with a WARNING logged). The threshold is set with
+`occ config:app:set openregister storage_growth_alert_bytes --value=<bytes>`; unset, zero or not
+a whole number means no threshold, and a growth that cannot be read publishes no growth and no
+alert. "Alerting Threshold Configuration" stays unticked: the error-rate and response-time
+thresholds and their admin notifications are not built.
+

@@ -25,6 +25,7 @@ use OCA\OpenRegister\Search\Service\SearchMetricsReader;
 use OCA\OpenRegister\Service\Observability\DatabaseHealthMetricsProvider;
 use OCA\OpenRegister\Service\Observability\OpenRegisterMetricsProvider;
 use OCA\OpenRegister\Service\Observability\SearchMetricsProvider;
+use OCA\OpenRegister\Service\Observability\StorageGrowthMetricsProvider;
 use OCA\OpenRegister\Service\Observability\WebhookDurationMetricsProvider;
 use OCA\OpenRegister\Service\Observability\WebhookRetryMetricsProvider;
 use OCA\OpenRegister\Service\Task\TaskMetricsProviderInterface;
@@ -68,16 +69,21 @@ final class OpenRegisterMetricsProviderTest extends TestCase {
 		$reader->expects($this->once())->method('searchStats')->willReturn([]);
 		$reader->expects($this->once())->method('embeddingCounts')->willReturn(['success' => 0, 'failure' => 0]);
 
+		$growth = new MetricSample(name: 'storage_growth_exceeded', type: 'gauge', help: 'h', samples: [['labels' => [], 'value' => 0]]);
+		$storage = $this->createMock(StorageGrowthMetricsProvider::class);
+		$storage->expects($this->once())->method('metrics')->willReturn([$growth]);
+
 		$metrics = (new OpenRegisterMetricsProvider(
 			tasks: $tasks,
 			webhooks: new WebhookRetryMetricsProvider(logs: $logs, time: $time),
 			search: new SearchMetricsProvider(reader: $reader, logger: $this->createMock(LoggerInterface::class)),
 			durations: new WebhookDurationMetricsProvider(logs: $logs, logger: $this->createMock(LoggerInterface::class)),
-			database: new DatabaseHealthMetricsProvider(db: $db, time: $time, logger: $this->createMock(LoggerInterface::class))
+			database: new DatabaseHealthMetricsProvider(db: $db, time: $time, logger: $this->createMock(LoggerInterface::class)),
+			storage: $storage
 		))->metrics();
 
 		$this->assertSame(
-			['tasks_overdue_total', 'webhook_retry_queue_depth', 'search_requests_total', 'search_duration_seconds', 'embeddings_generated_total', 'webhook_delivery_duration_seconds', 'db_connection_healthy'],
+			['tasks_overdue_total', 'webhook_retry_queue_depth', 'search_requests_total', 'search_duration_seconds', 'embeddings_generated_total', 'webhook_delivery_duration_seconds', 'db_connection_healthy', 'storage_growth_exceeded'],
 			array_map(static fn (MetricSample $m): string => $m->name, $metrics)
 		);
 		$this->assertSame($overdue, $metrics[0]);

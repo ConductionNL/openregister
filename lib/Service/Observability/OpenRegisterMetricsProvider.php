@@ -47,6 +47,7 @@ final class OpenRegisterMetricsProvider implements IMetricsProvider {
 	 * @param SearchMetricsProvider          $search    The search and embedding metrics.
 	 * @param WebhookDurationMetricsProvider $durations The webhook delivery latency histogram.
 	 * @param DatabaseHealthMetricsProvider  $database  The database connection health gauge.
+	 * @param StorageGrowthMetricsProvider   $storage   The storage growth threshold.
 	 */
 	public function __construct(
 		private readonly TaskMetricsProviderInterface $tasks,
@@ -54,11 +55,12 @@ final class OpenRegisterMetricsProvider implements IMetricsProvider {
 		private readonly SearchMetricsProvider $search,
 		private readonly WebhookDurationMetricsProvider $durations,
 		private readonly DatabaseHealthMetricsProvider $database,
+		private readonly StorageGrowthMetricsProvider $storage,
 	) {
 	}//end __construct()
 
 	/**
-	 * The samples of every joined provider: tasks, webhook retries, search, webhook durations, then database health.
+	 * The samples of every joined provider: tasks, webhook retries, search, webhook durations, database health, then storage growth.
 	 *
 	 * @return array<int, MetricSample>
 	 *
@@ -71,6 +73,7 @@ final class OpenRegisterMetricsProvider implements IMetricsProvider {
 			...$this->search->metrics(),
 			...$this->durations->metrics(),
 			...$this->database->metrics(),
+			...$this->storage->metrics(),
 		];
 	}//end metrics()
 }//end class
