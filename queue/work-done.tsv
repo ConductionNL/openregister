@@ -13358,3 +13358,4 @@ review:decidiq:1691:6a147074	RED: conflicts with development; structureProfile p
 review:dossiq:3300:6bb977e0	CONFLICT with development; change itself fine	session-20261115T152546-2c24b649	2026-11-15T15:52:40Z
 review:decidiq:1615:16c70ed7	BLOCK 1615 (behaviour changes pending product decisions; heavy conflicts with development)	session-20261115T142201-ea23e682	2026-11-15T15:52:50Z
 review:dossiq:3298:85e60038	CONFLICT: AcController::update conflicts with development refactor; logic sound, needs merge	session-20261115T154254-3d07b219	2026-11-15T15:53:04Z
+review:dossiq:3936:d81910f6	CONFLICT: spec-conformant, head suite 8617/0 failures, conflicts with development in 15 files	session-20261115T154329-16a67e2f	2026-11-15T15:53:14Z
