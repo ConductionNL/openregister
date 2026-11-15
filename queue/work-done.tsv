@@ -12580,3 +12580,4 @@ measure:decidiq:20261115h00	php 91.94% (28583 stmts, pcov), js 98.42% (3291 stmt
 fix:versioniq:705:deb40577	merged development (clean), pushed 3943d35e, REVERIFY	session-20261114T234941-bc8686af	2026-11-15T01:28:41Z
 fix:stackiq:1962:0771746a	duplication floor restored; new head 95e027c7	session-20261115T011811-95390b97	2026-11-15T01:28:57Z
 fix:versioniq:729:a4722246	nothing to fix yet: branch already contains development; it conflicts only with 717/718, which are not on development; rebuild the tree once they land	session-20261114T234941-bc8686af	2026-11-15T01:29:01Z
+fix:versioniq:728:0ec98de1	nothing to fix yet: branch already contains development; it conflicts only with 717/718, which are not on development; rebuild the tree once they land	session-20261114T234941-bc8686af	2026-11-15T01:29:18Z
