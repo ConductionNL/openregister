@@ -3712,3 +3712,13 @@ hermiq	1797	19ec54aabf0d1f9a693924b8c872b7b436c1127f	MERGED	merge3	GATE OK sbom,
 hermiq	1798	00eb3dc080e6e4dd3de66d509e5ad31c58f332a4	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.77 holds at 3.77
 hermiq	1799	966f19f18d0097d3d0081eda2520852548100149	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.77 holds at 3.77
 hermiq	1800	86ddafb4de7887c2b2dd1ac7019e343930e68235	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.77 holds at 3.77
+thematiq	1070	422062557d516520c95eb7989761f60b434b7472	RED	merge8	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+thematiq	1124	c6a62f1f5b4a45a1285a0dcb7f634f9d956c6268	RED	merge8	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+thematiq	1286	9f97aee60e49cd3beb1abd47a86ad9284e632be6	RED	merge8	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+thematiq	1287	622c0c4827491c4cff70c85c9a6fb9083c091a4a	RED	merge8	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+thematiq	1288	34db28e552316cc82c53b0c81f09b27446ea45a8	RED	merge8	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+thematiq	1289	2557e0bad801f3a73a99cfa6f1d2ac0861598309	RED	merge8	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+thematiq	1556	ff5f73bc8d0dc6f12bac429db068c7a3da6df24b	RED	merge8	GATE RED sbom: composer.lock changed without sbom.cdx.json
+thematiq	1557	b3ab646d8fa634f7d71c5465a5553a97865a8929	RED	merge8	GATE RED sbom: composer.lock changed without sbom.cdx.json
+thematiq	1558	4e04b3da12fdd1e8be1832f3eeed91751c1e1667	RED	merge8	GATE RED sbom: composer.lock changed without sbom.cdx.json
+thematiq	1677	5e934e94706006fbd51f109fcc53208443fdf956	SKIP	merge8	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
