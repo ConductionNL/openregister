@@ -15137,3 +15137,12 @@ review:opencatalogi:2679:22b67cf7	GREEN: build matches change specs, no new fail
 review:opencatalogi:2678:05397e9f	GREEN: build matches spec, no new failures vs baseline (OR main beside)	session-20261115T213156-1ffcf961	2026-11-15T21:44:19Z
 review:versioniq:501:451c8f59	GREEN: dev bump, lint 0 errors, vitest pass	session-20261115T213107-505dc338	2026-11-15T21:44:23Z
 review:learniq:2132:55fe38d5	CONFLICT: superseded by development 9f17766b migration; obsolete	session-20261115T213134-4b0d2823	2026-11-15T21:44:49Z
+review:opencatalogi:2244:9178373d	GREEN: pure refactor, golden tests pass on old and new code, no new failures	session-20261115T213122-e023a81e	2026-11-15T21:45:01Z
+review:opencatalogi:2677:b9314794	GREEN: build PR matches spec, 0 new unit failures (106 inherited), phpstan clean	session-20261115T213101-2fb56005	2026-11-15T21:45:08Z
+review:versioniq:502:c6d0467e	GREEN: dev-dep bump, eslint clean, vitest 3012/3012	session-20261115T213112-78aba834	2026-11-15T21:45:18Z
+review:opencatalogi:2670:eed46219	GREEN: per spec, no new failures	session-20261115T211111-34885d99	2026-11-15T21:45:29Z
+review:opencatalogi:2407:15ee026e	GREEN: nextcloud-vue lock refresh, no new failures	session-20261115T203012-30a1abde	2026-11-15T21:45:40Z
+review:versioniq:722:a03bd1c7	GREEN: spec-conform, 0 new failures, touched PHP/vitest green	session-20261115T213110-6b33145c	2026-11-15T21:45:52Z
+review:learniq:2133:a86fbd92	stale	feeder	2026-11-15T21:45:35Z
+review:learniq:1901:07332d28	CONFLICT: import-only conflict with development; code GREEN per own spec, tests clean when resolved	session-20261115T213144-ab42ee6a	2026-11-15T21:46:11Z
+review:versioniq:725:c2115872	GREEN: build matches specs, suite equals baseline	session-20261115T213107-505dc338	2026-11-15T21:46:19Z
