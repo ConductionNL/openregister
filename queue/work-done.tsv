@@ -13463,3 +13463,4 @@ review:humaniq:686:03602584	GREEN: test:js 210/211, failure inherited from devel
 review:dossiq:3894:c91ec402	GREEN: dev-only phpmd 2.15->3.0 bump; suite unchanged vs development (19 inherited); phpmd runs the ruleset	session-20261115T145546-378b432a	2026-11-15T16:10:25Z
 review:humaniq:610:02e0a4dc	GREEN: @nextcloud/vue minor bump, test:js 210/211 (1 inherited), build ok	session-20261115T155921-aabf185f	2026-11-15T16:10:36Z
 review:humaniq:664:17ede803	GREEN: dep patch bump, JS failure inherited	session-20261114T102637-6688951e	2026-11-15T16:10:50Z
+review:humaniq:670:f378e8f1	RED: npm ci ERESOLVE, preset-env 8 needs @babel/core 8 (root pins 7)	session-20261115T155911-14cd078d	2026-11-15T16:11:11Z
