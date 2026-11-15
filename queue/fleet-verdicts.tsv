@@ -13042,3 +13042,13 @@ dossiq	4112	f460035edaa27b2a373b5284621c6a9b2551f321	GREEN	worker-25:review	dev-
 shillinq	2048	f88b17a7a69df6279ca38720aee89560b62d975f	GREEN	worker-23:review	dev-only dependency bump (nextcloud/ocp 35.0.2, symfony polyfills 1.43.0); sbom current; unit suite on PR+development 12225 OK, no failures
 dossiq	3894	8ed2662d166b8bee07c9b1aec92ee7de29dc08cb	GREEN	worker-21:review	dev-tool bump (phpmd 2.15->3.0, pdepend 3, symfony dev deps), no runtime package change, sbom current; both phpmd rulesets load; composer phpmd already fails on development with 2.15 and still does (finding set shifts: 40 new mostly StaticAccess/Coupling, 78 gone); unit 18185 tests, 19 failures identical to development
 shillinq	2997	3be50195086a4a1126b46f10055b6f4373e69190	BLOCK	worker-07:review	new openregister calls use named args main removed: saveObject(object:, uuid:) in CbcrFiguresService.php:990, GroupScopeService.php:503, Pillar2SafeHarbourService.php:538; patchObject(objectId:, data:, register:, schema:) in Repair/BackfillGroupEntityCbcFields.php:140 (main takes ObjectSaveOptions(target: ObjectFindTarget(register, schema), uuid:) and ObjectPatch): fail at runtime on main
+decidiq	1465	840ea3b6bfe6b21a51b037a9874df34ea08ef521	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+decidiq	1467	26c2839404906282ab4343cda07d44134a729009	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+decidiq	1468	dabc71052875a367e086a62611702530f6a586b7	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+decidiq	1469	bee189d685bd409754a24bd65e702cc70e31c9e5	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+decidiq	1472	a40d36e1ba8ba50da89904e28f11c2ac3b48b7e4	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+decidiq	1473	4549406a045cbdc824468666f2e32b05112fa757	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+decidiq	1737	43c02ff7cc81701bd08416fb6ce29a6e20f3a978	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+decidiq	1738	c12b8c5dc89e45ae512a6152d1f058716be3099f	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+decidiq	1767	3e9af0ff5c452e46a3075f53eab0d71f892b61f4	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+decidiq	1948	fbc941936f612b58bbb108da4669ebcea8c03239	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
