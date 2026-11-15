@@ -12299,3 +12299,4 @@ fix:launchpad:1212:3d4ff4c4	conflict resolved, new head 1f11f90f643de5db851308a8
 cover:planninq:e1c9866dmcf99:f545d745	already done: lib/Repair/*.php at 98.25% on development (target 90)	session-20261114T221759-cd5c5678	2026-11-15T00:31:10Z
 review:humaniq:1133:c45cf87b	BLOCK: approval-step guard reads the target status, so the two-step flow cannot complete	session-20261114T234933-5c1be121	2026-11-15T00:31:15Z
 cover:buildiq:70b3e29em66d0:1b97f731	PR #1658: lib/Listener 94.77%->99.29%, 13 tests, suite 3192->3205 (1 inherited failure)	session-20261114T234941-bc8686af	2026-11-15T00:31:25Z
+verify:shillinq:3084:064d4107	3084 RED (test classes not loadable), 3087 RED (2 tests: unknown named parameter config), 3088 GREEN, 3089 GREEN	session-20261114T231738-b43a6a63	2026-11-15T00:31:42Z
