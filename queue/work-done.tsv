@@ -15177,3 +15177,4 @@ review:hermiq:1736:476d3761	GREEN: build matches change, no new failures	session
 review:learniq:2484:13aa1fe4	CONFLICT: content fine, test file conflicts with development migration	session-20261115T213134-4b0d2823	2026-11-15T21:51:17Z
 review:decidiq:2178:5867902a	BLOCK: new find/saveObject calls use removed named-arg openregister API; tests green	session-20261115T213101-2fb56005	2026-11-15T21:51:41Z
 review:filinq:1086:926d1e45	GREEN: hydra-gates dev bump after dev merge	session-20261115T203012-30a1abde	2026-11-15T21:51:55Z
+review:decidiq:2170:a39ae47e	GREEN: spec build, unit 4655 OK, vitest OK; old OR call shape noted for ORMIG	session-20261115T213110-6b33145c	2026-11-15T21:52:03Z
