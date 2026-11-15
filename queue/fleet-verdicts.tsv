@@ -11237,3 +11237,4 @@ versioniq	724	8f1df7b96b46c46ab235c0234500625857a7fb35	GREEN	worker-17	phpunit (
 integriq	3650	25b454cb2e1d4a0ada16c39ca1ee5c7493aa1da5	GREEN	worker-56	vitest 2358 on tree vs 2316 baseline, all pass; tests only, no PHP touched (PHP suite = development, 7 inherited)
 larpinq	1051	fa7cedb49eeaf2240d456f442c29bd3d8b2b8407	GREEN	worker-52	tree #1051+#1060: phpunit-unit 903 (baseline 845), 0 failures; vitest 563 pass; build of events-post-event-survey
 larpinq	1054	8a1a352364fd06f42b82d9a3e388672fbb8a7c2d	CONFLICT	worker-52	clean on development alone; conflicts after #1051 in src/manifest.json and tests/vitest/fixtures/effectiveManifest.golden.json
+larpinq	1060	759898b3b319473aa0acb48bbf6e9a4189d7814a	GREEN	worker-52	tree #1051+#1060: phpunit-unit 903, 0 failures; vitest 563 pass; build of admin-staff-roles-and-invites, rights per REQ-ASR-002 and design (no staff delete on characters/registrations)
