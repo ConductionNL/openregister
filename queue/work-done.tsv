@@ -12661,3 +12661,4 @@ cover:dossiq:069ee2d6mdd7c:13d4699e	dir already at 99.7% (target 95); PR #6549 c
 verify:pipelinq:3859:70a30ab9	GREEN 3859	session-20261114T234952-566b7ef5	2026-11-15T01:41:23Z
 cover:dossiq:069ee2d6mdd7c:7593a315	PR #6550: LinkMarkerRule + CaseRelationDetails edges, 14 tests; suite 17516->17530, same 19 baseline failures	session-20261115T011806-2ba8b68f	2026-11-15T01:41:41Z
 fix:learniq:2549:f861a75f	merged development (clean), pushed d0f3714b7e647e2ee25aa967dec42478641c409c, REVERIFY recorded	session-20261115T005412-4a06d6f4	2026-11-15T01:41:59Z
+verify:stackiq:1931:23206367	1931,1978 GREEN; 1958 CONFLICT	session-20261115T011811-95390b97	2026-11-15T01:42:12Z
