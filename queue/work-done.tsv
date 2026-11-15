@@ -13488,6 +13488,7 @@ review:integriq:2994:6a706bf6	GREEN: vitest 2374/2374, build ok	session-20261115
 review:integriq:2652:7922fa98	CONFLICT: docs-only PR, ~37 add/add and rename conflicts with development	session-20261115T154258-dee2cc3d	2026-11-15T16:14:25Z
 review:integriq:3056:6773effd	RED: composer install fails, psalm 7 needs php ~8.3.16 vs config.platform 8.3	session-20261115T155911-14cd078d	2026-11-15T16:14:36Z
 review:integriq:2991:f5cb1fd7	RED: guzzle 8 breaks 4 tests (null auth refused in AuthenticationService, TransferException ctor, DSO golden)	session-20261115T152539-8dadb15a	2026-11-15T16:14:46Z
+review:filinq:1853:11051685	RED: 7 test failures from unadapted double; also conflicts with development	session-20261115T154329-16a67e2f	2026-11-15T16:15:09Z
 review:buildiq:1089:322d7e65	GREEN #1089: vitest 4667 passed before and after	session-20261115T152601-38767331	2026-11-15T16:15:04Z
 review:integriq:3053:86ebfa51	CONFLICT: 28 conflicted files against development	session-20261115T155903-abd003e3	2026-11-15T16:15:09Z
 review:integriq:3059:f3f45d92	GREEN: phpstan dev bump, phpstan clean on merged tree	session-20261115T155921-aabf185f	2026-11-15T16:15:20Z
@@ -13554,6 +13555,7 @@ review:launchpad:880:04f9f39f	GREEN: ocp patch bump, suite identical	session-202
 review:learniq:2127:6e8befed	GREEN: lock-only dev bump; 1 inherited failure	session-20261115T154254-3d07b219	2026-11-15T16:26:01Z
 review:learniq:1165:ffd74a05	CONFLICT: lock conflict, superseded (development locks vue 3.5.45)	session-20261115T154307-1fc2cc78	2026-11-15T16:26:08Z
 review:opencatalogi:2416:bacd96a1	CONFLICT: 4 files conflict with development; diff itself correct	session-20261115T154258-dee2cc3d	2026-11-15T16:26:24Z
+review:larpinq:960:f38d0e35	GREEN: phpstan bump, phpstan clean, unit 860 OK	session-20261115T155911-f0070087	2026-11-15T16:26:37Z
 review:learniq:1166:0748af52	CONFLICT/obsolete: development already has parser 8.72.2	session-20261115T155915-84e5dc0a	2026-11-15T16:26:35Z
 review:larpinq:962:6aa0ff3d	RED: composer install fails, psalm 7 needs php ~8.3.16 vs config.platform 8.3	session-20261115T155911-14cd078d	2026-11-15T16:27:02Z
 build4:openregister:tasks-progress-report:c2	already building: build/tasks-progress-report-3 (another worker, 1.1-4.1) landed while this run was paused; local 1.1/1.2 work dropped unpushed	session-20261114T095641-533e2a00	2026-11-15T16:27:10Z
@@ -13578,6 +13580,7 @@ review:pipelinq:2957:0a390a39	BLOCK: conflicts in 19 files; development already 
 review:pipelinq:2187:ebdded89	GREEN: phpmd 3 runs, unit suite green; phpmd findings 62->95 (mostly attribute false positives)	session-20261115T154254-3d07b219	2026-11-15T16:29:58Z
 review:pipelinq:2557:5d12aa50	GREEN: ocp patch bump, 8890 unit tests 0 failures	session-20261115T160928-e92ec17a	2026-11-15T16:30:06Z
 review:opencatalogi:2417:a2892ce3	BLOCK: wrong namespace for ObjectDeletion/ObjectFindTarget vs openregister main; 1 new test failure	session-20261115T145555-b33410db	2026-11-15T16:30:13Z
+review:opencatalogi:2674:8c2edb69	GREEN: per-spec build of tasks 1.1-2.2; 2 inherited unit failures, none new	session-20261115T152547-c779ca49	2026-11-15T16:30:20Z
 review:pipelinq:2504:e4cc137c	BLOCK: superseded by the build already on development; conflicts in every file	session-20261115T154311-e8600d84	2026-11-15T16:30:32Z
 review:pipelinq:2501:81b7343b	GREEN: unit 8890/0 fail	session-20261115T154314-8216dc98	2026-11-15T16:30:46Z
 review:learniq:1162:18f186f9	GREEN	session-20261115T142951-2463b4c4	2026-11-15T16:30:53Z
@@ -13591,6 +13594,7 @@ review:pipelinq:2969:bd583b9e	no verdict: conflicts; backend already on developm
 review:pipelinq:2964:65b04b14	CONFLICT: behaviour OK vs spec, no new failures on head; merge conflict with development	session-20261114T102637-6688951e	2026-11-15T16:32:12Z
 review:pipelinq:2482:99a4545c	BLOCK: new deleteObject call uses the old openregister signature; conflicts with development	session-20261115T145555-b33410db	2026-11-15T16:32:22Z
 review:opencatalogi:1892:6953eb3c	GREEN: openspec notes only	session-20261115T142149-1d09fceb	2026-11-15T16:32:48Z
+review:learniq:1168:41eae3eb	BLOCK: npm ci ERESOLVE (nextcloud-vue peers vueuse ^11||^14); conflicts with development	session-20261115T152552-0cb4306e	2026-11-15T16:33:05Z
 review:pipelinq:2498:acffd38a	CONFLICT #2498: 17 files, likely superseded by the build on development	session-20261115T152601-38767331	2026-11-15T16:33:01Z
 review:opencatalogi:2407:21b8b65a	GREEN	session-20261115T151007-45079d32	2026-11-15T16:33:10Z
 review:learniq:1881:5f883140	GREEN (intended fix; conflicts with development)	session-20261115T141023-b06d51da	2026-11-15T16:33:22Z
@@ -13610,6 +13614,7 @@ review:launchpad:961:6afb1922	GREEN: copy-only rename; vitest 2578 OK	session-20
 review:pipelinq:3153:22a0348f	BLOCK: OpenRegister save-option classes imported from old namespace	session-20261115T155921-aabf185f	2026-11-15T16:35:53Z
 review:pipelinq:3281:c765403c	BLOCK: lock not installable under config.platform php 8.3	session-20261115T142951-2463b4c4	2026-11-15T16:36:02Z
 review:pipelinq:3142:e7c6f9ad	GREEN: spec-only, validates	session-20261114T102637-6688951e	2026-11-15T16:36:26Z
+review:learniq:1160:0f92c2da	BLOCK: obsolete, development already has @nextcloud/vue 9.14.1; lock conflict	session-20261115T142934-6cab0c24	2026-11-15T16:36:56Z
 review:pipelinq:2507:ecccdb3f	BLOCK: obsolete, development already on nextcloud-vue 2.180 with these changes	session-20261115T145555-b33410db	2026-11-15T16:36:49Z
 review:pipelinq:2566:0b0d7736	CONFLICT: 217 conflicting files with development	session-20261114T085646-49a39060	2026-11-15T16:37:03Z
 review:pipelinq:2458:9c135002	BLOCK: 18-file conflict with development; code clean	session-20261115T154255-e54527e9	2026-11-15T16:37:12Z
@@ -13618,3 +13623,66 @@ merge:portaliq:2508:e096526c	merge3 tree of 2 portaliq PRs: merged=1 red=0 fail=
 review:planninq:869:0cf3f1b0	GREEN (conflicts with development, needs rebase): stylelint dev bump clean	session-20261115T155921-aabf185f	2026-11-15T16:37:32Z
 review:pipelinq:3145:76b4afe3	CONFLICT: faithful ObjectFindOptions migration, 95 files conflict with development	session-20261115T155902-d9805df0	2026-11-15T16:37:42Z
 review:opencatalogi:2263:a4046c90	GREEN: behaviour-preserving extract, no new failures (2 inherited)	session-20261115T155913-70cee771	2026-11-15T16:37:51Z
+review:pipelinq:3150:1a3b033c	CONFLICT: 2 stub files vs development; change itself sound	session-20261115T155915-84e5dc0a	2026-11-15T16:38:05Z
+review:planninq:1066:acc56236	BLOCK: wrong namespace for ObjectDeletion/ObjectFindTarget (main: Kernel\Contracts\Value)	session-20261115T155911-14cd078d	2026-11-15T16:38:56Z
+review:pipelinq:3147:b0a445eb	BLOCK: stubs for unmerged openregister #9103; conflict; PartyReferenceMover caller incompatible	session-20261115T154254-3d07b219	2026-11-15T16:38:26Z
+review:planninq:1070:e04ed25c	GREEN: hydra-gates minor bump; no new failing gate, unit suite identical	session-20261114T075643-acecaad6	2026-11-15T16:39:06Z
+review:planninq:1069:9cba21b3	RED: lock not installable (psalm 7.1 needs php>=8.3.16, platform pinned 8.3)	session-20261115T154407-94bf5f8c	2026-11-15T16:39:27Z
+review:pipelinq:3146:97b91f19	RED: 6 newer development Flow tests call the old execute() form; lib change itself correct	session-20261115T145535-3f9e5078	2026-11-15T16:39:45Z
+review:pipelinq:2108:6bc5f8a0	BLOCK: gridstack 14 outside nextcloud-vue peer range	session-20261115T152546-2c24b649	2026-11-15T16:39:59Z
+review:planninq:871:7d17dd48	BLOCK: lockfile conflict only; lint clean	session-20261115T154255-e54527e9	2026-11-15T16:40:11Z
+review:planninq:1067:e3dc5a7a	CONFLICT (2 files); migration correct vs openregister main	session-20261115T142134-badaaf30	2026-11-15T16:40:17Z
+review:planninq:908:07c0fdd2	GREEN: playwright bump, npm ci ok, vitest and phpunit green	session-20261115T154258-dee2cc3d	2026-11-15T16:40:32Z
+review:launchpad:759:4d40c072	RED: npm ci fails, lockfile out of sync (vite/esbuild missing)	session-20261115T154329-16a67e2f	2026-11-15T16:40:52Z
+review:planninq:1065:53961d3e	BLOCK: targets a searchObjectsBySlug signature openregister main does not have	session-20261114T102641-d4fd3e25	2026-11-15T16:40:53Z
+review:pipelinq:3088:3135c0b1	GREEN: eslint bump, lint output unchanged	session-20261115T154311-e8600d84	2026-11-15T16:41:04Z
+review:planninq:933:9b784ac7	CONFLICT: 10 files incl. 6 add/add with already-landed sibling work	session-20261115T154300-03b63424	2026-11-15T16:41:12Z
+review:portaliq:1071:be71af8c	CONFLICT: 21-file conflict with development, which already holds both features in another implementation (likely superseded); no defect found in the code itself	session-20261115T152547-c779ca49	2026-11-15T16:41:21Z
+review:planninq:930:bddd2139	CONFLICT: 10 files incl. 6 add/add against development's own ProjectAction classes	session-20261115T154307-1fc2cc78	2026-11-15T16:41:32Z
+review:portaliq:1011:584f0c5d	BLOCK: npm ci ERESOLVE, gridstack 14 outside the component library peer range	session-20261115T142934-6cab0c24	2026-11-15T16:41:46Z
+review:pipelinq:3092:fbd3e247	RED: 29 vitest suites fail to load (nested p-queue in @nextcloud/vue 9.14.1); baseline 1 inherited failure	session-20261115T155903-abd003e3	2026-11-15T16:42:02Z
+review:portaliq:1353:5d73ef4a	GREEN: phpmd 3 runs, unit suite green; phpmd findings 85->102	session-20261115T154254-3d07b219	2026-11-15T16:42:12Z
+review:planninq:909:373cbce5	BLOCK (sbom only): runtime marked bump without sbom.cdx.json; vitest 3566 OK	session-20261115T145541-9d69768b	2026-11-15T16:42:26Z
+review:planninq:731:b7c438a1	RED: peer conflict with nextcloud-vue, npm ci fails	session-20261115T151007-45079d32	2026-11-15T16:42:46Z
+review:planninq:1068:0077bc6d	GREEN: phpstan findings unchanged, suite OK	session-20261115T142149-1d09fceb	2026-11-15T16:42:53Z
+review:portaliq:1594:7d7e983b	CONFLICT with development (package files, manifest, tasks.md); content UI-only, own spec 8/8	session-20261115T145535-3f9e5078	2026-11-15T16:43:02Z
+review:planninq:1096:c5dc8b42	BLOCK: depends on openregister value objects not on main	session-20261115T142951-2463b4c4	2026-11-15T16:43:36Z
+review:portaliq:1684:6cc52719	RED: CmsReaderTest::testThePageShapesAreServedAsRecorded pins the old page shape	session-20261115T154307-1fc2cc78	2026-11-15T16:43:17Z
+review:portaliq:1685:d8c2567a	GREEN: manifest UI change, specs no new failures	session-20261115T154258-dee2cc3d	2026-11-15T16:43:47Z
+review:pipelinq:3271:65502a07	BLOCK: AggregationQuery::create has no layout param on OR main/development; reports would throw	session-20261115T152552-0cb4306e	2026-11-15T16:44:02Z
+review:portaliq:1152:a324482e	CONFLICT: likely superseded by the draft feature already on development	session-20261114T102637-6688951e	2026-11-15T16:44:17Z
+review:portaliq:1474:8e1a7978	CONFLICT: 53 files, many add/add (partly landed already)	session-20261115T154254-3d07b219	2026-11-15T16:44:32Z
+review:portaliq:1680:b1f0459b	BLOCK: 4-file conflict; code and tests clean	session-20261115T154255-e54527e9	2026-11-15T16:44:39Z
+review:pipelinq:2103:adb97dd8	GREEN: vueuse 15 unused directly; vitest 5343/5344 with 1 inherited failure; conflicts in package.json/lock	session-20261115T145546-378b432a	2026-11-15T16:45:11Z
+review:portaliq:1354:23330bb3	BLOCK: merged lock out of sync (pinia), npm ci EUSAGE	session-20261115T142934-6cab0c24	2026-11-15T16:45:26Z
+review:portaliq:1606:e4a6d0b1	BLOCK: PartyTreeSource uses openregister signatures main lacks; tree mandates refused at runtime	session-20261114T102641-d4fd3e25	2026-11-15T16:45:33Z
+review:portaliq:1467:a56bbcbc	CONFLICT: 31 files; development already has a parallel build of portal-identity-from-the-admin	session-20261115T155902-d9805df0	2026-11-15T16:45:46Z
+review:portaliq:1992:df536a4a	BLOCK: narrows supported openregister versions; OR main restored the old call form	session-20261114T102637-6688951e	2026-11-15T16:45:52Z
+review:portaliq:1848:cc4102c9	RED: 3 new unit failures on merged tree	session-20261115T151007-45079d32	2026-11-15T16:46:06Z
+review:portaliq:1468:09694f2e	CONFLICT (35 files, stale since 10 Oct)	session-20261115T142134-badaaf30	2026-11-15T16:46:32Z
+review:planninq:1064:54981d9f	RED: conflicts with development; new old-form find() callers in ProjectCopyService/ProjectExportService uncovered	session-20261115T154316-34f0db35	2026-11-15T16:46:42Z
+review:portaliq:1995:277966b3	BLOCK: wrong OpenRegister namespace for ObjectDeletion/ObjectFindTarget; 5 conflicts	session-20261115T154254-3d07b219	2026-11-15T16:46:52Z
+merge:filinq:2069:e87c8717	merge3 tree of 11 filinq PRs: merged=2 red=1 fail=0 skip=0; conflict 8, lint 0, moved 0; fix rows 8	merge3-20261113T213425-c36bcd5f	2026-11-15T16:47:18Z
+review:planninq:910:b94a9117	GREEN: dev-only phpmd 3; suite identical; findings 25->22	session-20261114T075643-acecaad6	2026-11-15T16:47:37Z
+review:pipelinq:3280:57a83e99	GREEN: phpstan 2.3.5 clean on the project, suite 8890 OK	session-20261115T145533-2db61682	2026-11-15T16:47:32Z
+review:portaliq:1673:e715241c	CONFLICT: zuiddrecht.json seed and manifest.json conflict with development	session-20261115T155903-abd003e3	2026-11-15T16:47:42Z
+review:portaliq:1229:8b002219	CONFLICT: comment-only PR conflicts in Application.php	session-20261115T145541-9d69768b	2026-11-15T16:48:02Z
+review:portaliq:2349:124b9f86	2349 GREEN (phpstan clean)	session-20261115T142134-badaaf30	2026-11-15T16:48:12Z
+review:portaliq:1069:4ecba22b	BLOCK: superseded by development's own build of the change	session-20261115T152546-2c24b649	2026-11-15T16:48:22Z
+review:pipelinq:3151:b944bc82	BLOCK: stub conflict with development (6eeab75ee); saveObjects change itself matches openregister main	session-20261114T095641-533e2a00	2026-11-15T16:48:54Z
+review:planninq:918:a2f30b52	GREEN: phpunit 1222 OK, phpstan same as development	session-20261115T145555-b33410db	2026-11-15T16:48:52Z
+review:portaliq:2350:e25d2cb7	RED: psalm 7.2.1 lock unsatisfiable with config.platform php 8.3	session-20261115T155902-d9805df0	2026-11-15T16:49:02Z
+review:shillinq:1900:d987d5f1	CONFLICT: 13 files conflict with development; no defect seen in the reverse-charge diff	session-20261115T154316-34f0db35	2026-11-15T16:49:12Z
+review:portaliq:1006:0bb7956e	BLOCK: npm ci ERESOLVE, nextcloud-vue peers @vueuse/core ^11||^14	session-20261114T085646-49a39060	2026-11-15T16:49:36Z
+review:portaliq:1666:00663233	CONFLICT: manifest.json overlaps development's header actions	session-20261115T155911-14cd078d	2026-11-15T16:49:56Z
+review:portaliq:1602:583ee358	GREEN/superseded: development already implements residentsAt; PR conflicts, close it	session-20261115T154407-94bf5f8c	2026-11-15T16:50:12Z
+review:portaliq:1670:1c1e6b95	CONFLICT: manifest.json conflicts with development; code OK, docblock misplaced	session-20261115T154258-dee2cc3d	2026-11-15T16:50:21Z
+review:portaliq:1681:1c5961b5	CONFLICT: seed-only change is clean; conflicts with development in 2 files	session-20261115T142934-de7c51d0	2026-11-15T16:50:52Z
+review:shillinq:2072:8b9e57e4	CONFLICT (3 files); tightening, role-name change noted	session-20261115T142134-badaaf30	2026-11-15T16:51:02Z
+review:portaliq:1849:cb2411d1	CONFLICT: overlaps build already on development (26 files); no defect in diff	session-20261115T154314-8216dc98	2026-11-15T16:51:12Z
+review:portaliq:1682:505a7cd5	GREEN: ocp 35.0.2 dev bump, 6120 unit tests OK	session-20261115T155903-abd003e3	2026-11-15T16:51:22Z
+review:portaliq:1994:6ba432f4	CONFLICT: 5 files conflict with development; 4 newer find() call sites still use register:/schema:	session-20261115T154311-e8600d84	2026-11-15T16:51:32Z
+review:portaliq:663:508c5fce	CONFLICT: register json + 2 tests; logic sound	session-20261115T154254-3d07b219	2026-11-15T16:51:52Z
+review:portaliq:2339:fd417084	BLOCK: rename/delete conflicts, development moved woo/ to build/woo/; no runtime code change	session-20261114T095641-533e2a00	2026-11-15T16:52:01Z
+review:shillinq:1991:4377b437	GREEN: prettier bump adds no new format findings; vitest failure inherited	session-20261115T145533-2db61682	2026-11-15T16:52:15Z
+review:shillinq:2063:20eb03d6	CONFLICT: 3 files; note legacy approved runs without digest become unexportable	session-20261115T154254-3d07b219	2026-11-15T16:52:38Z
