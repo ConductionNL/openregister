@@ -13892,3 +13892,5 @@ review:integriq:2746:cf8bdce8	GREEN 2746 (types-only bump, vitest all pass)	sess
 review:opencatalogi:2059:75ffe574	GREEN 2059 (equivalent refactor; conflicts with development in 2 modals)	session-20261115T142201-ea23e682	2026-11-15T17:25:07Z
 merge:buildiq:1621:22c93022	merge3 tree of 22 buildiq PRs: merged=14 red=1 fail=0 skip=0; conflict 6, lint 0, moved 1; fix rows 6	merge3-20261113T213425-c36bcd5f	2026-11-15T17:25:51Z
 merge:buildiq:1620:0d5e4a8e	merge3 tree of 22 buildiq PRs: merged=14 red=1 fail=0 skip=0; conflict 6, lint 0, moved 1; fix rows 6	merge3-20261113T213425-c36bcd5f	2026-11-15T17:25:55Z
+merge:buildiq:1649:fc552467	merge3 tree of 22 buildiq PRs: merged=14 red=1 fail=0 skip=0; conflict 6, lint 0, moved 1; fix rows 6	merge3-20261113T213425-c36bcd5f	2026-11-15T17:25:59Z
+merge:buildiq:1596:8b6efcf9	merge3 tree of 22 buildiq PRs: merged=14 red=1 fail=0 skip=0; conflict 6, lint 0, moved 1; fix rows 6	merge3-20261113T213425-c36bcd5f	2026-11-15T17:26:28Z
