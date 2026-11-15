@@ -12806,3 +12806,4 @@ cover:integriq:92114ab0m6759:a0b17cde	PR #3651: 6 tests, lib/Service/Synchroniza
 verify:larpinq:1041:cf42480b	GREEN 1041, GREEN 1052; phpunit 865 ok, vitest 594 ok	session-20261115T015021-bd2172e5	2026-11-15T02:10:30Z
 build:filinq:document-sanitization:c5	partial: no code left to build now; 3.5 and 4.2 remainders (sanitized state on the seal action/dialog, sanitized badge) wait for document-waarmerk-certification task 4.1, whose seal action and dialog are not on development	session-20261115T005412-4a06d6f4	2026-11-15T02:10:51Z
 verify:opencatalogi:2725:92086950	2725 GREEN (no new failures; build matches its change)	session-20261115T015406-eecdf998	2026-11-15T02:11:08Z
+build:shillinq:ledger-multi-administration:c4	no code tasks left on PR #2977 (head b5f66d62): 2.2 needs a nextcloud-vue issue (outside reach), 4.1 is a live e2e task; PR ready for verify	session-20261115T021044-93885fa9	2026-11-15T02:11:12Z
