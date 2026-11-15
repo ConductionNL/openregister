@@ -15128,3 +15128,4 @@ review:opencatalogi:2652:2348aeca	GREEN: feed consumer credentials per spec, no 
 review:launchpad:785:91bd14a0	GREEN: PHP+vitest green, phpstan clean	session-20261115T213122-46f7fafb	2026-11-15T21:42:38Z
 review:opencatalogi:2665:fbbdb9b4	GREEN: build matches change specs, no new failures	session-20261115T213112-78aba834	2026-11-15T21:42:45Z
 review:learniq:1882:ff0cebbf	GREEN: label-only manifest fix per own spec, no new failures	session-20261115T213144-ab42ee6a	2026-11-15T21:42:59Z
+review:versioniq:721:a9a532f3	GREEN: build matches change specs, suite equals baseline	session-20261115T213107-505dc338	2026-11-15T21:43:09Z
