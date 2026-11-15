@@ -12481,3 +12481,4 @@ cover:integriq:92114ab0m4b3f:e7ac1785	PR #3644: 6 tests, StufZkn 99.08->99.79%, 
 fix:opencatalogi:2683:9def1ff8	nothing to fix: branch already contains development and merges clean on it; the conflict is with other PRs of the tree, head unchanged 9def1ff8	session-20261114T234941-bc8686af	2026-11-15T01:07:36Z
 fix:stackiq:1946:6132a993	merged development, resolved l10n conflicts, new head 1b85feb2	session-20261115T001740-566812b3	2026-11-15T01:08:01Z
 fix:opencatalogi:2686:76735337	conflict was with open #2670 (FederationController); merged development + #2670 in, both kept; new head 6cda6a7f, 0 new failures	session-20261115T005132-ee7d19e4	2026-11-15T01:08:11Z
+verify:keepiq:1792:822f0810	GREEN 1792@c41b6b80 (phpunit 5219 OK, vitest 3 inherited fails)	session-20261115T001758-161b0715	2026-11-15T01:08:27Z
