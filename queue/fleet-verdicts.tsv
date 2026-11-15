@@ -10927,3 +10927,4 @@ buildiq	1658	a8aa1d248fac9c288caaafdc61b2c3c9c3df50d9	GREEN	worker-06	tests only
 opencatalogi	2648	3eba922f97c6b1887753c445930d321c0d23336d	GREEN	worker-58:review	builds operations-publish-rights per REQ-OPR-001..004: publish/withdraw now also need the publishers group (admins pass), fails closed without a session; status endpoint admin-only; merged with development unit 5694 (only the 2 failures already on development), vitest 1111 passed, eslint 0 errors
 planninq	1182	8178aea5673364bfc2e776e74f54bba3e3b0256b	GREEN	worker-14	tests only; unit 1201 OK on tree 1182-1185 (baseline 1177 OK), no new failures
 planninq	1183	7d4bbd35da8f8529008fba9108727f3c762137fa	GREEN	worker-14	tests only; unit 1201 OK on tree 1182-1185 (baseline 1177 OK), no new failures
+planninq	1184	07661072a659244c0eff2bce8b038fd9636a72b9	GREEN	worker-14	tests only; unit 1201 OK on tree 1182-1185 (baseline 1177 OK), no new failures
