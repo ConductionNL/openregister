@@ -13495,3 +13495,4 @@ review:integriq:2295:fb945bbd	BLOCK (conflict): lock conflict, head far behind d
 review:integriq:2716:a994c099	GREEN: vue patch bump; vitest 2374/2374	session-20261115T154254-3d07b219	2026-11-15T16:16:02Z
 review:launchpad:1099:6f005198	BLOCK: lock not installable under platform php 8.3	session-20261115T154255-e54527e9	2026-11-15T16:16:09Z
 review:launchpad:785:91201465	CONFLICT #785: 13 files conflict with development, no verdict on behaviour	session-20261115T152601-38767331	2026-11-15T16:16:17Z
+review:launchpad:776:7495f48c	BLOCK: obsolete, development already on nextcloud-vue 2.180.0 (PR has 2.60.0, conflicts)	session-20261115T155904-a7df5bc0	2026-11-15T16:16:24Z
