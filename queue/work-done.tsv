@@ -12116,3 +12116,4 @@ merge:launchpad:1226:208205d7	merge3 tree of 11 launchpad PRs: merged=3 red=2 fa
 merge:launchpad:1209:1ecaf271	merge3 tree of 11 launchpad PRs: merged=3 red=2 fail=0 skip=0; conflict 6, lint 0, moved 0; fix rows 6	merge3-20261113T213425-c36bcd5f	2026-11-15T00:02:22Z
 merge:launchpad:1210:5b0390e9	merge3 tree of 11 launchpad PRs: merged=3 red=2 fail=0 skip=0; conflict 6, lint 0, moved 0; fix rows 6	merge3-20261113T213425-c36bcd5f	2026-11-15T00:02:26Z
 review:shillinq:2991:25b1c43d	GREEN: per change specs; unit 11516 green, phpstan clean, 1 inherited vitest failure	session-20261114T234938-86f69098	2026-11-15T00:02:36Z
+fix:learniq:2507:b8157252	floor restored (unit_interfacing 3.11, tolerance 0.01), new head 2145eaba	session-20261114T224736-f9da4a35	2026-11-15T00:02:55Z
