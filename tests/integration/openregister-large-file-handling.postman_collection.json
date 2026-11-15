@@ -1,0 +1,679 @@
+{
+	"info": {
+		"_postman_id": "or-large-file-handling-2026-11-15",
+		"name": "OpenRegister Uploads In Parts",
+		"description": "REQ-LFH-002/003 through the routes (openspec/changes/large-file-handling, task 3.3).\n\nWHAT IT ASSERTS: a session for a 25 MiB file opens at 10 MiB parts (201, three end-inclusive ranges); parts 1 and 3 are stored out of order; the status then names part 2 as missing with complete false; part 2 completes the set; complete answers 201 with the file, and GET .../files lists it at the full 26214400 bytes. The file is generated in the pre-request scripts from the plan's ranges (MiB m is a 64-byte block naming m, repeated), so nothing large is stored in the repository; its SHA-256 is fixed below and checked by the server on complete.\n\nAssumes the instance's default part size (upload.partSizeBytes = 10485760); the collection does not change settings.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "basic",
+		"basic": [
+			{
+				"key": "username",
+				"value": "{{admin_user}}",
+				"type": "string"
+			},
+			{
+				"key": "password",
+				"value": "{{admin_password}}",
+				"type": "string"
+			}
+		]
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8080"
+		},
+		{
+			"key": "admin_user",
+			"value": "admin"
+		},
+		{
+			"key": "admin_password",
+			"value": "admin"
+		},
+		{
+			"key": "run",
+			"value": ""
+		},
+		{
+			"key": "registerId",
+			"value": ""
+		},
+		{
+			"key": "schemaId",
+			"value": ""
+		},
+		{
+			"key": "objectId",
+			"value": ""
+		},
+		{
+			"key": "uploadId",
+			"value": ""
+		},
+		{
+			"key": "parts",
+			"value": "[]"
+		},
+		{
+			"key": "fileId",
+			"value": ""
+		}
+	],
+	"item": [
+		{
+			"name": "setUp: a register",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the register is created', () => pm.expect(pm.response.code, pm.response.text()).to.be.below(300));",
+							"pm.collectionVariables.set('registerId', String(pm.response.json().id));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": "{{base_url}}/index.php/apps/openregister/api/registers",
+				"body": {
+					"mode": "raw",
+					"raw": "{\"title\": \"large-file newman register\", \"description\": \"large-file-handling collection fixture\"}"
+				}
+			}
+		},
+		{
+			"name": "setUp: a schema",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the schema is created', () => pm.expect(pm.response.code, pm.response.text()).to.be.below(300));",
+							"pm.collectionVariables.set('schemaId', String(pm.response.json().id));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": "{{base_url}}/index.php/apps/openregister/api/schemas",
+				"body": {
+					"mode": "raw",
+					"raw": "{\"title\": \"large-file newman schema\", \"description\": \"large-file-handling collection fixture\", \"properties\": {\"titel\": {\"type\": \"string\", \"title\": \"Titel\", \"maxLength\": 255}}, \"authorization\": {\"read\": [\"authenticated\"], \"create\": [\"authenticated\"], \"update\": [\"authenticated\"], \"delete\": [\"authenticated\"]}}"
+				}
+			}
+		},
+		{
+			"name": "setUp: the register carries the schema",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the schema is attached', () => pm.expect(pm.response.code, pm.response.text()).to.be.below(300));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": "{{base_url}}/index.php/apps/openregister/api/registers/{{registerId}}",
+				"body": {
+					"mode": "raw",
+					"raw": "{\"schemas\": [\"{{schemaId}}\"]}"
+				}
+			}
+		},
+		{
+			"name": "setUp: an object to attach the file to",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the object is created', () => pm.expect(pm.response.code, pm.response.text()).to.be.below(300));",
+							"const b = pm.response.json(); pm.collectionVariables.set('objectId', String((b['@self'] && b['@self'].id) || b.id || b.uuid));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}",
+				"body": {
+					"mode": "raw",
+					"raw": "{\"titel\": \"een groot bestand\"}"
+				}
+			}
+		},
+		{
+			"name": "open a session for a 25 MiB file -> 201 with three 10 MiB parts",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"if (!pm.collectionVariables.get('run')) { pm.collectionVariables.set('run', Math.random().toString(36).slice(2, 10)); }"
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the session is opened', () => pm.expect(pm.response.code, pm.response.text()).to.equal(201));",
+							"const b = pm.response.json();",
+							"pm.test('an upload id', () => pm.expect(b.uploadId).to.match(/^[0-9a-f-]{36}$/));",
+							"pm.test('10 MiB parts (the default part size)', () => pm.expect(b.partSize).to.equal(10485760));",
+							"pm.test('three parts', () => pm.expect(b.partCount).to.equal(3));",
+							"pm.test('the ranges cover the file end-inclusive', () => pm.expect(b.parts).to.eql([{n: 1, start: 0, end: 10485759}, {n: 2, start: 10485760, end: 20971519}, {n: 3, start: 20971520, end: 26214399}]));",
+							"pm.test('an expiry', () => pm.expect(b.expiresAt).to.be.a('string'));",
+							"pm.collectionVariables.set('uploadId', b.uploadId);",
+							"pm.collectionVariables.set('parts', JSON.stringify(b.parts || []));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectId}}/uploads",
+				"body": {
+					"mode": "raw",
+					"raw": "{\"name\": \"lfh-{{run}}.txt\", \"size\": 26214400, \"sha256\": \"ab41e1f85fb5e3bf25284009df7faa90261b4a82f3b4532c8f14b1d3d59201ea\"}"
+				}
+			}
+		},
+		{
+			"name": "send part 1 -> 200, parts 2 and 3 missing",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"// The file is 25 MiB of ASCII, generated rather than stored: MiB m is a 64-byte block naming m, repeated.",
+							"// Any range of it can be rebuilt from the plan's {start, end}, so the parts follow the server's own plan.",
+							"const MIB = 1048576;",
+							"const ALPHA = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';",
+							"const block = (m) => ('lfh-mib-' + String(m).padStart(2, '0') + '-' + ALPHA).slice(0, 64);",
+							"const slice = (start, end) => { let out = ''; let i = start; while (i <= end) { const m = Math.floor(i / MIB); const stop = Math.min(end, (m + 1) * MIB - 1); const chunk = block(m).repeat(MIB / 64); out += chunk.slice(i - m * MIB, stop - m * MIB + 1); i = stop + 1; } return out; };",
+							"const parts = JSON.parse(pm.collectionVariables.get('parts') || '[]');",
+							"const range = parts.find((p) => p.n === 1);",
+							"if (!range) { throw new Error('the plan has no part 1'); }",
+							"pm.request.body.update({ mode: 'raw', raw: slice(range.start, range.end) });"
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('part 1 is stored', () => pm.expect(pm.response.code, pm.response.text()).to.equal(200));",
+							"const b = pm.response.json();",
+							"pm.test('received is [1]', () => pm.expect(b.received).to.eql([1]));",
+							"pm.test('missing is [2, 3]', () => pm.expect(b.missing).to.eql([2, 3]));",
+							"pm.test('complete is false', () => pm.expect(b.complete).to.equal(false));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/octet-stream"
+					}
+				],
+				"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectId}}/uploads/{{uploadId}}/parts/1",
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				}
+			}
+		},
+		{
+			"name": "send part 3 -> 200, part 2 missing",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"// The file is 25 MiB of ASCII, generated rather than stored: MiB m is a 64-byte block naming m, repeated.",
+							"// Any range of it can be rebuilt from the plan's {start, end}, so the parts follow the server's own plan.",
+							"const MIB = 1048576;",
+							"const ALPHA = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';",
+							"const block = (m) => ('lfh-mib-' + String(m).padStart(2, '0') + '-' + ALPHA).slice(0, 64);",
+							"const slice = (start, end) => { let out = ''; let i = start; while (i <= end) { const m = Math.floor(i / MIB); const stop = Math.min(end, (m + 1) * MIB - 1); const chunk = block(m).repeat(MIB / 64); out += chunk.slice(i - m * MIB, stop - m * MIB + 1); i = stop + 1; } return out; };",
+							"const parts = JSON.parse(pm.collectionVariables.get('parts') || '[]');",
+							"const range = parts.find((p) => p.n === 3);",
+							"if (!range) { throw new Error('the plan has no part 3'); }",
+							"pm.request.body.update({ mode: 'raw', raw: slice(range.start, range.end) });"
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('part 3 is stored', () => pm.expect(pm.response.code, pm.response.text()).to.equal(200));",
+							"const b = pm.response.json();",
+							"pm.test('received is [1, 3]', () => pm.expect(b.received).to.eql([1, 3]));",
+							"pm.test('missing is [2]', () => pm.expect(b.missing).to.eql([2]));",
+							"pm.test('complete is false', () => pm.expect(b.complete).to.equal(false));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/octet-stream"
+					}
+				],
+				"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectId}}/uploads/{{uploadId}}/parts/3",
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				}
+			}
+		},
+		{
+			"name": "read the status -> part 2 missing, not complete",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the status is read', () => pm.expect(pm.response.code, pm.response.text()).to.equal(200));",
+							"const b = pm.response.json();",
+							"pm.test('the plan is repeated', () => { pm.expect(b.uploadId).to.equal(pm.collectionVariables.get('uploadId')); pm.expect(b.partCount).to.equal(3); });",
+							"pm.test('the declared file', () => { pm.expect(b.size).to.equal(26214400); pm.expect(b.sha256).to.equal('ab41e1f85fb5e3bf25284009df7faa90261b4a82f3b4532c8f14b1d3d59201ea'); });",
+							"pm.test('parts 1 and 3 received', () => pm.expect(b.received).to.eql([1, 3]));",
+							"pm.test('part 2 missing', () => pm.expect(b.missing).to.eql([2]));",
+							"pm.test('not complete', () => pm.expect(b.complete).to.equal(false));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectId}}/uploads/{{uploadId}}"
+			}
+		},
+		{
+			"name": "send part 2 -> 200, complete",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"// The file is 25 MiB of ASCII, generated rather than stored: MiB m is a 64-byte block naming m, repeated.",
+							"// Any range of it can be rebuilt from the plan's {start, end}, so the parts follow the server's own plan.",
+							"const MIB = 1048576;",
+							"const ALPHA = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';",
+							"const block = (m) => ('lfh-mib-' + String(m).padStart(2, '0') + '-' + ALPHA).slice(0, 64);",
+							"const slice = (start, end) => { let out = ''; let i = start; while (i <= end) { const m = Math.floor(i / MIB); const stop = Math.min(end, (m + 1) * MIB - 1); const chunk = block(m).repeat(MIB / 64); out += chunk.slice(i - m * MIB, stop - m * MIB + 1); i = stop + 1; } return out; };",
+							"const parts = JSON.parse(pm.collectionVariables.get('parts') || '[]');",
+							"const range = parts.find((p) => p.n === 2);",
+							"if (!range) { throw new Error('the plan has no part 2'); }",
+							"pm.request.body.update({ mode: 'raw', raw: slice(range.start, range.end) });"
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('part 2 is stored', () => pm.expect(pm.response.code, pm.response.text()).to.equal(200));",
+							"const b = pm.response.json();",
+							"pm.test('received is [1, 2, 3]', () => pm.expect(b.received).to.eql([1, 2, 3]));",
+							"pm.test('missing is []', () => pm.expect(b.missing).to.eql([]));",
+							"pm.test('complete is true', () => pm.expect(b.complete).to.equal(true));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/octet-stream"
+					}
+				],
+				"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectId}}/uploads/{{uploadId}}/parts/2",
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				}
+			}
+		},
+		{
+			"name": "complete -> 201, the file",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the file is created', () => pm.expect(pm.response.code, pm.response.text()).to.equal(201));",
+							"const b = pm.response.json();",
+							"pm.test('it has an id', () => pm.expect(b.id).to.not.equal(undefined));",
+							"pm.test('it carries the name', () => pm.expect(String(b.title || b.name || b.path)).to.contain('lfh-' + pm.collectionVariables.get('run') + '.txt'));",
+							"pm.collectionVariables.set('fileId', String(b.id));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectId}}/uploads/{{uploadId}}/complete"
+			}
+		},
+		{
+			"name": "the file is listed by GET .../files with the full size",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the files are listed', () => pm.expect(pm.response.code, pm.response.text()).to.equal(200));",
+							"const b = pm.response.json(); const list = Array.isArray(b) ? b : (b.results || []);",
+							"const f = list.find((x) => String(x.id) === pm.collectionVariables.get('fileId'));",
+							"pm.test('the assembled file is there', () => pm.expect(f, JSON.stringify(list.map((x) => x.id))).to.not.equal(undefined));",
+							"pm.test('all 25 MiB arrived', () => pm.expect(Number(f.size)).to.equal(26214400));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectId}}/files"
+			}
+		},
+		{
+			"name": "CONTROL: the finished session is gone -> 404",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('a completed session no longer answers', () => pm.expect(pm.response.code, pm.response.text()).to.equal(404));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectId}}/uploads/{{uploadId}}"
+			}
+		},
+		{
+			"name": "tearDown: the object",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('removed', () => pm.expect(pm.response.code, pm.response.text()).to.be.below(400));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectId}}"
+			}
+		},
+		{
+			"name": "tearDown: the schema",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('removed', () => pm.expect(pm.response.code, pm.response.text()).to.be.below(400));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": "{{base_url}}/index.php/apps/openregister/api/schemas/{{schemaId}}"
+			}
+		},
+		{
+			"name": "tearDown: the register",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('removed', () => pm.expect(pm.response.code, pm.response.text()).to.be.below(400));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": "{{base_url}}/index.php/apps/openregister/api/registers/{{registerId}}"
+			}
+		}
+	]
+}

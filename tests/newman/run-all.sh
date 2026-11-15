@@ -122,6 +122,7 @@ DOMAIN_ORDER=(
     "upsert-on-key"
     "draft-activation"
     "anonymisation-disclosures"
+    "large-file-handling"
 )
 
 declare -A DOMAIN_COLLECTIONS=(
@@ -223,6 +224,10 @@ declare -A DOMAIN_COLLECTIONS=(
     [draft-activation]="$REPO_ROOT/tests/integration/openregister-draft-activation.postman_collection.json"
     # REQ-ADI-005/006: file disclosures (reader 200, non-reader 403) and the admin pipeline report.
     [anonymisation-disclosures]="$REPO_ROOT/tests/newman/openregister-anonymisation-disclosures.postman_collection.json"
+    # REQ-LFH-002/003: an upload in parts through the routes. HTTP-shaped: the raw
+    # part bodies, the out-of-order parts and the status between them only exist
+    # over the wire. Under tests/integration so gate-112 (newman-reach) sees it.
+    [large-file-handling]="$REPO_ROOT/tests/integration/openregister-large-file-handling.postman_collection.json"
 )
 
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
