@@ -1,12 +1,12 @@
 {
  "app": "pipelinq",
- "commit": "20452452291557956be3f2ff084cdb9b8bff09c8",
- "measured_at": "2026-11-14T09:04:09Z",
+ "commit": "0d8e11ea2b1d22ff9194ea1eb6cc304302266ddd",
+ "measured_at": "2026-11-15T00:12:32Z",
  "php": {
   "tool": "pcov",
-  "pct": 90.04,
-  "statements": 61119,
-  "covered": 55034,
+  "pct": 92.79,
+  "statements": 62916,
+  "covered": 58379,
   "dirs": {
    "lib/Activity/": [
     66,
@@ -21,20 +21,20 @@
     63
    ],
    "lib/AppInfo/": [
-    27,
-    26
+    29,
+    28
    ],
    "lib/BackgroundJob/": [
-    1785,
-    1728
+    1637,
+    1581
    ],
    "lib/Command/": [
-    382,
-    382
+    423,
+    423
    ],
    "lib/Controller/": [
-    8490,
-    7771
+    8693,
+    7990
    ],
    "lib/Dashboard/": [
     42,
@@ -49,8 +49,8 @@
     111
    ],
    "lib/Flow/": [
-    128,
-    128
+    134,
+    134
    ],
    "lib/Integration/": [
     305,
@@ -65,12 +65,12 @@
     0
    ],
    "lib/Lifecycle/": [
-    272,
-    253
+    271,
+    252
    ],
    "lib/Listener/": [
-    1834,
-    1796
+    1906,
+    1865
    ],
    "lib/Mcp/": [
     26,
@@ -81,20 +81,20 @@
     58
    ],
    "lib/Middleware/Support/": [
-    59,
-    54
+    64,
+    59
    ],
    "lib/Notification/": [
-    163,
-    163
+    187,
+    173
    ],
    "lib/Portal/": [
     557,
     557
    ],
    "lib/Repair/": [
-    2589,
-    2393
+    2661,
+    2461
    ],
    "lib/Repair/Support/": [
     95,
@@ -105,12 +105,12 @@
     5
    ],
    "lib/Service/": [
-    31679,
-    27043
+    32404,
+    29290
    ],
    "lib/Service/Access/": [
-    86,
-    86
+    95,
+    95
    ],
    "lib/Service/Berichtenbox/": [
     12,
@@ -121,20 +121,20 @@
     4
    ],
    "lib/Service/CallReview/": [
-    103,
-    103
+    159,
+    159
    ],
    "lib/Service/Competitor/": [
-    600,
-    592
+    643,
+    634
    ],
    "lib/Service/Consent/": [
     67,
     67
    ],
    "lib/Service/Cti/": [
-    108,
-    108
+    114,
+    114
    ],
    "lib/Service/Cti/Adapter/": [
     243,
@@ -145,20 +145,20 @@
     17
    ],
    "lib/Service/Demo/": [
-    490,
-    428
+    517,
+    455
    ],
    "lib/Service/Egress/": [
-    118,
+    124,
     72
    ],
    "lib/Service/Event/": [
-    67,
-    67
+    68,
+    68
    ],
    "lib/Service/Export/": [
-    1204,
-    1187
+    1359,
+    1337
    ],
    "lib/Service/External/Berichtenbox/": [
     48,
@@ -173,16 +173,16 @@
     68
    ],
    "lib/Service/Labels/": [
-    96,
-    96
+    112,
+    105
    ],
    "lib/Service/Lead/": [
     55,
     55
    ],
    "lib/Service/Letter/": [
-    160,
-    160
+    164,
+    164
    ],
    "lib/Service/Lifecycle/": [
     134,
@@ -201,12 +201,12 @@
     85
    ],
    "lib/Service/Marketing/": [
-    2263,
-    2197
+    2410,
+    2397
    ],
    "lib/Service/Marketing/Transport/": [
-    335,
-    330
+    332,
+    327
    ],
    "lib/Service/Matomo/": [
     72,
@@ -217,8 +217,8 @@
     49
    ],
    "lib/Service/Merge/": [
-    73,
-    73
+    127,
+    126
    ],
    "lib/Service/Messaging/": [
     9,
@@ -233,16 +233,16 @@
     10
    ],
    "lib/Service/Portal/": [
-    1440,
-    1439
+    1448,
+    1447
    ],
    "lib/Service/PosCart/": [
     67,
     67
    ],
    "lib/Service/Provider/": [
-    104,
-    103
+    106,
+    105
    ],
    "lib/Service/ScheduledTask/": [
     92,
@@ -261,8 +261,8 @@
     12
    ],
    "lib/Service/Sla/": [
-    212,
-    212
+    222,
+    222
    ],
    "lib/Service/Social/": [
     877,
@@ -272,17 +272,21 @@
     86,
     86
    ],
+   "lib/Service/Upl/": [
+    117,
+    115
+   ],
    "lib/Service/WebForm/": [
-    400,
-    398
+    465,
+    462
    ],
    "lib/Service/Worklist/": [
-    66,
-    66
+    126,
+    126
    ],
    "lib/Service/Zgw/": [
-    728,
-    726
+    732,
+    730
    ],
    "lib/Settings/": [
     24,
@@ -297,31 +301,27 @@
     32
    ],
    "lib/Util/": [
-    106,
-    106
+    115,
+    115
    ]
   }
  },
  "js": {
-  "pct": 94.9,
-  "statements": 17592,
-  "covered": 16695,
+  "pct": 93.75,
+  "statements": 18610,
+  "covered": 17446,
   "dirs": {
    "src/": [
-    88,
-    88
+    191,
+    115
    ],
    "src/components/": [
-    1464,
-    1425
-   ],
-   "src/components/CapabilityComparison/": [
-    25,
-    23
+    1486,
+    1447
    ],
    "src/components/admin/": [
-    473,
-    463
+    479,
+    467
    ],
    "src/components/billing/": [
     74,
@@ -330,6 +330,10 @@
    "src/components/bookings/": [
     432,
     410
+   ],
+   "src/components/clients/": [
+    60,
+    33
    ],
    "src/components/dashboard/": [
     56,
@@ -347,13 +351,17 @@
     480,
     466
    ],
+   "src/components/merge/": [
+    48,
+    44
+   ],
    "src/components/pos/": [
     412,
     389
    ],
    "src/components/products/": [
     71,
-    60
+    61
    ],
    "src/components/rapportage/": [
     139,
@@ -408,20 +416,20 @@
     7
    ],
    "src/dialogs/": [
-    1779,
-    1711
+    1803,
+    1720
    ],
    "src/manifest.d/": [
-    53,
-    53
+    59,
+    59
    ],
    "src/mixins/": [
     225,
     225
    ],
    "src/modals/": [
-    1234,
-    1188
+    1440,
+    1346
    ],
    "src/portal/": [
     100,
@@ -436,8 +444,8 @@
     249
    ],
    "src/services/": [
-    1990,
-    1977
+    2180,
+    2146
    ],
    "src/store/": [
     21,
@@ -452,8 +460,8 @@
     18
    ],
    "src/utils/": [
-    541,
-    539
+    650,
+    648
    ],
    "src/views/": [
     9,
@@ -464,12 +472,16 @@
     40
    ],
    "src/views/blasts/": [
-    345,
-    320
+    348,
+    323
    ],
    "src/views/bookings/": [
-    480,
-    418
+    479,
+    417
+   ],
+   "src/views/bulk/": [
+    45,
+    9
    ],
    "src/views/clients/": [
     155,
@@ -488,8 +500,8 @@
     131
    ],
    "src/views/export/": [
-    323,
-    306
+    391,
+    368
    ],
    "src/views/flows/": [
     2,
@@ -544,8 +556,8 @@
     175
    ],
    "src/views/settings/": [
-    1188,
-    1161
+    1342,
+    1280
    ],
    "src/views/social/": [
     164,
