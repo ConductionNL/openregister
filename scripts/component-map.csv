@@ -1228,6 +1228,7 @@ Formats/CalendarRangeValue.php,60,Formats,Formats,Formats/CalendarRangeValue.php
 Formats/CronFormat.php,78,Formats,Formats,Formats/CronFormat.php,0,,Kernel
 Formats/ExtendedFieldTypeValidator.php,93,Formats,Formats,Formats/ExtendedFieldTypeValidator.php,0,,Kernel
 Formats/ImageUrlValue.php,55,Formats,Formats,Formats/ImageUrlValue.php,0,,Kernel
+Formats/IbanFormat.php,66,Formats,Formats,Formats/IbanFormat.php,0,,Kernel
 Formats/Iso8601DateTimeFormat.php,18,Formats,Formats,Formats/Iso8601DateTimeFormat.php,0,,Kernel
 Formats/SemVerFormat.php,18,Formats,Formats,Formats/SemVerFormat.php,0,,Kernel
 Formats/UserFormat.php,25,Formats,Formats,Formats/UserFormat.php,0,,Kernel
