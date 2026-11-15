@@ -15295,3 +15295,4 @@ review:buildiq:1620:42a0d795	GREEN: per spec, no new failures	session-20261115T2
 review:stackiq:1931:ff2b9697	RED: new OR calls use named args removed on openregister main, 8 new test errors	session-20261115T220011-f1302da8	2026-11-15T22:15:24Z
 fix:versioniq:723:2e4c0e66	fixed: failedAt kept apart from checkedAt; pushed 332a8036, REVERIFY	session-20261115T220037-4fd37272	2026-11-15T22:15:38Z
 fix:hermiq:1133:05c6caa3	sbom regenerated, development merged; new head 6fd08d09 REVERIFY	session-20261115T220050-f9da932e	2026-11-15T22:15:47Z
+fix:portaliq:1353:c8141de2	phpmd 3 findings cleared, new head dc6ca37d	session-20261115T202932-d1067ee4	2026-11-15T22:16:02Z
