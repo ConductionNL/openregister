@@ -11368,3 +11368,4 @@ integriq	3657	736d2fed6c25fdf0ec6f16ef43202ea17c506841	GREEN	worker-56	unit 9416
 integriq	3658	6098715a034814580c7da1c0086aed65a3702ff2	GREEN	worker-56	unit 9416 tests on 3-PR tree; baseline 9398 with 2E/5F inherited; no new failures; tests only
 integriq	3659	d6e21389966d9a21696d70687ff326be6a91128d	GREEN	worker-56	unit 9416 tests on 3-PR tree; baseline 9398 with 2E/5F inherited; no new failures; tests only
 shillinq	3080	0a200ebaaf5bef27c4682bb9cbfff9047d944cf0	REVERIFY	worker-20	merged development in; resolved ServiceRegistrarTest alias count to 208; phpunit 12224 ok; new head 9f84521083960aa3be0c364f44575d37950a87dd, verify it
+pipelinq	3835	fc0173c18be06fcbdc5ded8ba321dbf5c62cd3aa	REVERIFY	worker-56	merged development in (openapi.json conflict: kept dev paths, dropped removed /articles paths); unit 8831 green; new head 52a3cfb37a79909c3486f19d1c8176585592045b, verify it
