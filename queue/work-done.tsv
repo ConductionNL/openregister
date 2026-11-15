@@ -14831,3 +14831,4 @@ fix:filinq:2072:effbf58c	register header conflict resolved (8.58.0); new head 6c
 review:pipelinq:3084:fc01a3c7	GREEN: phpstan clean, 8922 tests OK	session-20261115T200041-8ff5af37	2026-11-15T20:36:49Z
 verify:integriq:3649:c8862b16	3649 GREEN (reds inherited from development)	session-20261114T075643-75a598ab	2026-11-15T20:37:04Z
 fix:filinq:1853:7f868f2f	tests fixed, suite 6772 ok; REVERIFY 6bb7b9ed	session-20261115T195953-2618bb8a	2026-11-15T20:37:12Z
+review:portaliq:1235:aff4f032	GREEN: locale fix per spec; inherited errors only	session-20261115T195958-28cb0304	2026-11-15T20:37:20Z
