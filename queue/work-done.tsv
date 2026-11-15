@@ -13763,3 +13763,4 @@ review:stackiq:1417:d2903140	GREEN: copy rename; add/add l10n conflict with deve
 fix:pipelinq:3835:52a3cfb3	fixed: development merged, conflict resolved, suite green; new head 8a345d33	session-20261115T160928-e92ec17a	2026-11-15T17:04:54Z
 review:thematiq:1124:c6a62f1f	GREEN: devDep bump, vitest 1559 passed, lint clean	session-20261115T154307-1fc2cc78	2026-11-15T17:05:09Z
 review:stackiq:1439:ba500f7a	BLOCK: psalm 7.1 needs php >=8.3.16, platform pinned to 8.3; composer install fails	session-20261115T154311-e8600d84	2026-11-15T17:05:24Z
+review:shillinq:2254:29ae60be	BLOCK: stubs mirror a LockRequest namespace openregister main lacks	session-20261115T142951-2463b4c4	2026-11-15T17:05:45Z
