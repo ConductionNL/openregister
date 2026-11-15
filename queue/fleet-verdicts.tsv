@@ -11164,3 +11164,4 @@ stackiq	1958	bc5aef60441bebaf37e30079dfb859c32d52cca1	CONFLICT	worker-14	conflic
 stackiq	1978	d26ea92d7dd005f25a4a346ac8cb1ab28fc2715d	GREEN	worker-14	phpunit 3677 OK on tree 1931+1978 (baseline 3626 OK), 0 new failures; vitest 1 failure inherited (facets.spec)
 learniq	2484	109cbc9571e59edf69768d4fee96a75623420bd4	REVERIFY	worker-37	merged development in (clean, branch was 2 behind; the CONFLICT came from other PRs in the tree, not development); unit 6865, 1 failure HigherEducationExampleSetTest::testTheFileIsWhatTheGeneratorProduces also fails on plain development; new head b8c46f7c4c80c26cea26f138e57ec0afe11fc2ac, verify it
 decidiq	2214	6b3f73488e20fa0d7749352a6aef7e078b11cc40	GREEN	worker-42	phpunit-unit 4377 tests OK (baseline 4377 OK), tests-only change, no new failures
+stackiq	1979	417f4045b045013e0912d3015ee3d2fafd7e9f46	GREEN	worker-14	tests only; phpunit 3626 OK (= baseline); vitest 2616 passed, 1 failure inherited (facets.spec), 0 new
