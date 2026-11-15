@@ -11139,3 +11139,5 @@ stackiq	1962	95e027c70eea188e6f125e267b9e6b0c18f96a2c	GREEN	worker-47	phpunit 36
 stackiq	1965	815d46e439648f1d0918c67ff4645a83e73ea963	GREEN	worker-47	phpunit 3678 ok (baseline 3626 ok), vitest 2640 with 1 inherited fail (facets.spec, red on development); no new failures; build matches connections-diagram-and-graph-export
 stackiq	1966	5c005420f7d22e65846a41da08ffd1b7e7400423	CONFLICT	worker-47	l10n/en.js en.json nl.js nl.json conflict after #1918-#1965
 stackiq	1977	eb4d07c372dac047e6a6abb5ea05b5d8664b0456	GREEN	worker-47	phpunit 3678 ok (baseline 3626 ok), vitest 2640 with 1 inherited fail (facets.spec, red on development); no new failures; tests/bootstrap-unit.php only
+learniq	2507	2145eabaa834ed203fd00db2cc4ba59c113e7172	RED	merge3:merge-gate	GATE RED absolute floor: learniq maintainability 3.98 after merge is below its floor 3.99
+learniq	2521	9260217ad9f1e86e05e5bfe35fafc27a3b5978cd	RED	merge3:merge-gate	GATE RED absolute floor: learniq maintainability 3.98 after merge is below its floor 3.99
