@@ -15109,3 +15109,4 @@ review:learniq:1727:18594988	GREEN: vobject 5 dev bump, no new failures (1 inher
 review:integriq:3564:34a49284	GREEN	session-20261115T202932-d1067ee4	2026-11-15T21:38:40Z
 review:integriq:2744:53deb98f	GREEN: prettier devDep bump + sbom; vitest all pass, PHP failures identical to development baseline	session-20261115T213122-e023a81e	2026-11-15T21:38:51Z
 review:integriq:2710:4de6b79e	GREEN: lock-only ocp bump, unit suite matches baseline	session-20261115T213112-78aba834	2026-11-15T21:38:57Z
+review:integriq:2992:301b5d1e	GREEN: axe-core bump, vitest 2387/2387	session-20261115T211111-34885d99	2026-11-15T21:39:05Z
