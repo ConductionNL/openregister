@@ -13475,6 +13475,7 @@ review:humaniq:606:5bf20ffe	GREEN: dev lock bump, suite green, audit unchanged	s
 review:integriq:2924:bac62706	CONFLICT: unmergeable with development; dev added legacy-only helpers importing the deleted file; diff otherwise dead-code + comments	session-20261115T155903-abd003e3	2026-11-15T16:12:05Z
 review:integriq:2563:1c673cef	BLOCK (sbom only): runtime dep bump without sbom.cdx.json; npm ci, vitest 2374, build OK	session-20261115T145541-9d69768b	2026-11-15T16:12:16Z
 review:integriq:3047:1d492aea	BLOCK: RenderSelection imported from a namespace openregister does not have (stub masks it)	session-20261115T142934-de7c51d0	2026-11-15T16:12:26Z
+review:humaniq:687:bad2cefa	GREEN: install and build ok; 1 inherited JS test failure	session-20261114T085646-49a39060	2026-11-15T16:12:35Z
 review:filinq:1303:00345c6f	RED 1303: lock conflict with development, npm ci fails at head; needs regenerated lock	session-20261115T142958-341f60db	2026-11-15T16:12:51Z
 review:humaniq:876:284aab2c	BLOCK: wrong openregister namespace for ObjectPatch/ObjectFindTarget	session-20261115T154255-e54527e9	2026-11-15T16:12:52Z
 review:integriq:2654:86718a25	GREEN: spec-only change, merges clean	session-20261115T154254-3d07b219	2026-11-15T16:13:02Z
@@ -13516,3 +13517,11 @@ review:launchpad:819:9dcfeabe	GREEN: phpmd 3.0 dev bump, phpunit 4359 OK; note +
 review:larpinq:961:0c510953	GREEN: hydra-gates dev bump; phpunit 860 OK	session-20261115T154407-94bf5f8c	2026-11-15T16:19:22Z
 review:launchpad:977:dd835410	GREEN: phpunit 4359 OK, phpcs unchanged	session-20261115T155915-84e5dc0a	2026-11-15T16:20:02Z
 review:launchpad:760:cdb3d779	760 GREEN (npm ci ok, vitest 2578 pass)	session-20261115T142134-badaaf30	2026-11-15T16:20:15Z
+review:launchpad:832:0ef99698	GREEN (openspec-only), but conflicts with development archive moves	session-20261115T155904-a7df5bc0	2026-11-15T16:20:45Z
+review:launchpad:787:c954ea2d	CONFLICT: 19 conflicted paths, stacked branch partly already on development	session-20261115T155903-abd003e3	2026-11-15T16:20:55Z
+review:humaniq:669:3a6be5bd	GREEN: vue-router minor; build ok; test:js 210/211, 1 inherited	session-20261115T154316-34f0db35	2026-11-15T16:21:06Z
+review:learniq:1163:a7126f01	RED 1163: obsolete, development already has dompurify 3.4.17; lock conflict	session-20261115T142958-341f60db	2026-11-15T16:21:14Z
+review:integriq:2671:1ab1068a	BLOCK: phpmd 3 raises reported violations 158->186 vs existing baseline; tests unchanged	session-20261115T155902-521936b1	2026-11-15T16:21:22Z
+review:launchpad:833:62b5ba52	CONFLICT: 84 files incl. routes.php and src/personal.js (deleted on development)	session-20261115T154254-3d07b219	2026-11-15T16:21:30Z
+review:integriq:3126:da5c460d	BLOCK: uses ResolvedConsumer shape that openregister main does not have (stubs mask it)	session-20261115T142934-de7c51d0	2026-11-15T16:21:43Z
+review:keepiq:1498:65127fcb	BLOCK (psalm 7.1 unsatisfiable under config.platform php 8.3; composer install fails)	session-20261115T141023-b06d51da	2026-11-15T16:21:51Z
