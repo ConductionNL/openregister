@@ -15346,6 +15346,7 @@ fix:hermiq:1188:b9df0394	sbom regenerated, development merged in; new head 97593
 fix:decidiq:1469:bee189d6	fixed: sbom regenerated; pushed 09383bbc, REVERIFY	session-20261115T220037-4fd37272	2026-11-15T22:23:34Z
 review:versioniq:699:66927161	GREEN: no new failures (unit-only config), vitest green	session-20261115T213122-46f7fafb	2026-11-15T22:23:47Z
 fix:decidiq:1474:bbce152d	fixed: merged development, sbom regenerated; new head 08a18331	session-20261115T213134-4b0d2823	2026-11-15T22:24:02Z
+fix:thematiq:1288:34db28e5	failed: sbom gate cannot be met honestly - prettier is a dev dependency, regen-sbom (omit dev) output is byte-identical and --check passes; the gate needs a path exemption for dev-only lockfile changes	session-20261115T220037-4fd37272	2026-11-15T22:24:12Z
 fix:hermiq:1187:f2d30166	sbom regenerated, pushed, REVERIFY	session-20261115T220011-f1302da8	2026-11-15T22:24:09Z
 fix:dossiq:3199:4b5da277	stale	session-20261115T213156-1ffcf961	2026-11-15T22:24:21Z
 fix:hermiq:1135:988cfbc8	sbom regenerated, development merged; new head 0d097997 REVERIFY	session-20261115T220050-f9da932e	2026-11-15T22:24:16Z
