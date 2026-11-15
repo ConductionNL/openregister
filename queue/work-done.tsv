@@ -13080,3 +13080,4 @@ build:shillinq:tax-cbcr-and-pillar2-returns:c4	partial: PR #2997 head 70ee300e, 
 fix:shillinq:3062:d70c391d	conflict resolved, pushed 6c6743f0, REVERIFY recorded	session-20261115T141023-b06d51da	2026-11-15T14:53:56Z
 build:shillinq:sales-time-and-expense-billing:c5	PR #3080: built 3.1-3.3, 4.1, 5.1 (suite 12242 OK, vitest only inherited dunningNextRun red); 2.3 still waits on hours-to-humaniq 3.3; Playwright for 4.1 not run	session-20261115T142148-bdb54e0a	2026-11-15T14:54:09Z
 review:shillinq:3055:d0b8868b	GREEN: phpunit 12250 OK, phpstan/eslint clean	session-20261115T142951-2463b4c4	2026-11-15T14:54:15Z
+verify:pipelinq:3870:787e050f	3870,3871,3872 GREEN (tests only)	session-20261115T142134-badaaf30	2026-11-15T14:54:38Z
