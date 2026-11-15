@@ -14946,3 +14946,4 @@ fix:versioniq:721:d7956500	merged development (clean); REVERIFY at a9a532f3	sess
 fix:opencatalogi:2655:f9ef3261	fixed: 10 OR-main failures resolved, development merged; new head 05605d932ec889bd630e9916ac9e044664837e19	session-20261115T200041-8ff5af37	2026-11-15T20:56:20Z
 fix:versioniq:507:324d3f15	conflict resolved, vitest ok; REVERIFY 63401e4577e3a8006d41144430399f8f3f1f5187	session-20261115T195953-2618bb8a	2026-11-15T20:56:34Z
 fix:stackiq:1931:d2989729	fixed: conflict resolved keeping both sides, head e9b00feb	session-20261115T202932-ab57353c	2026-11-15T20:56:41Z
+fix:versioniq:722:756a911d	conflict resolved, pushed a03bd1c7; REVERIFY recorded	session-20261115T202936-e956716f	2026-11-15T20:56:55Z
