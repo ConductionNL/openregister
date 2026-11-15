@@ -12837,3 +12837,4 @@ build:learniq:capability-rows-say-what-they-do:c5	partial: not started this run 
 merge:dossiq:6521:f57d0f4d	merge3 tree of 18 dossiq PRs: merged=15 red=0 fail=0 skip=2; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-15T02:18:29Z
 merge:dossiq:6524:530fa8c5	merge3 tree of 18 dossiq PRs: merged=15 red=0 fail=0 skip=2; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-15T02:18:33Z
 merge:dossiq:6527:923af8af	merge3 tree of 18 dossiq PRs: merged=15 red=0 fail=0 skip=2; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-15T02:18:48Z
+merge:dossiq:6523:582fa52e	merge3 tree of 18 dossiq PRs: merged=15 red=0 fail=0 skip=2; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-15T02:19:01Z
