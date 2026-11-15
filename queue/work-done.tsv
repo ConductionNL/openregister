@@ -13134,3 +13134,4 @@ build:filinq:multi-tenant-hardening:c4	partial: pushed to PR #2072 (head 7e876bb
 review:hermiq:1736:9cd02fc9	GREEN: spec-conform G7/G8 build; suite 5218->5235 no new failures	session-20261115T145544-b059847e	2026-11-15T15:08:13Z
 review:filinq:2094:87b43b49	GREEN: phpunit 6799 OK, jest 570, vitest 763	session-20261115T145555-b33410db	2026-11-15T15:08:24Z
 fix:decidiq:2203:8d2d8f97	development merged in cleanly, pushed 7a5f0d1f; REVERIFY recorded	session-20261115T142129-944012f5	2026-11-15T15:08:42Z
+build:filinq:template-library-leaf:c4	done: PR #2088 pushed a003bdfc: 2.3 sourceObject + host folder (GenerationSourceObject, schema 1.8.0, register 8.59.0), 3.3 EN/NL strings; left 3.2 e2e, 3.3 docs screenshots, 3.4 dossiq hand-off; PHP 6792 ok, vitest 772 ok	session-20261115T141023-b06d51da	2026-11-15T15:08:57Z
