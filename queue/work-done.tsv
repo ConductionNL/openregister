@@ -14316,3 +14316,4 @@ fix:decidiq:1946:b7542a86	fixed: imports moved to Kernel\Contracts\Value, develo
 fix:hermiq:1319:7dd547c6	failed: depends on openregister processMessage accepting a ChatMessageRequest; main takes conversationId/userId/userMessage (published contract), so it cannot be fixed in hermiq	session-20261115T174757-8dfa7406	2026-11-15T18:51:24Z
 fix:hermiq:1323:787cee12	namespace fixed to Kernel\Contracts\Value, suite green, pushed 29cf1f48; REVERIFY recorded	session-20261115T183034-bba160e3	2026-11-15T18:51:25Z
 fix:humaniq:1095:b9247c40	platform pin raised to 8.3.16, install and suite green; pushed 340163fd; REVERIFY recorded	session-20261115T182951-bdf9d68e	2026-11-15T18:51:36Z
+fix:decidiq:1947:ae3bb0fe	namespace fixed to main's Kernel\Contracts\Value, development merged, pushed 35c86213, REVERIFY recorded	session-20261115T182948-465dcc8e	2026-11-15T18:51:54Z
