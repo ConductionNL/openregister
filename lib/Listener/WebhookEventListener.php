@@ -28,6 +28,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Event\AgentCreatedEvent;
+use OCA\OpenRegister\Event\AppWebhookEvents;
 use OCA\OpenRegister\Event\AgentDeletedEvent;
 use OCA\OpenRegister\Event\AgentUpdatedEvent;
 use OCA\OpenRegister\Event\ApplicationCreatedEvent;
@@ -231,12 +232,15 @@ class WebhookEventListener implements IEventListener {
 	 * Events that carry one entity map to `objectType`, `action` and the
 	 * serialised entity under the objectType key (SNAPSHOT_EVENTS). Object
 	 * create, update and revert events carry more context (objectPayload()).
+	 * An event another app declared through AppWebhookEvents returns its own
+	 * payload.
 	 *
 	 * @param Event $event The event
 	 *
 	 * @return array<string, mixed>|null The event payload or null if not extractable
 	 *
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md#requirement-event-payload-input-must-include-full-context-for-mapping-templates
+	 * @spec openspec/changes/connect-document-webhooks/specs/app-declared-webhook-events/spec.md#requirement-a-declared-event-is-delivered-with-its-own-payload
 	 */
 	private function extractPayload(Event $event): ?array {
 		foreach (self::SNAPSHOT_EVENTS as $class => [$objectType, $action, $getter]) {
@@ -249,7 +253,8 @@ class WebhookEventListener implements IEventListener {
 			}
 		}
 
-		return $this->objectPayload(event: $event);
+		// An event another app declared hands over its own payload.
+		return ($this->objectPayload(event: $event) ?? AppWebhookEvents::payloadOf(event: $event));
 	}//end extractPayload()
 
 	/**

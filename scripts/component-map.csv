@@ -911,6 +911,7 @@ Event/AgentCreatedEvent.php,14,Event,Event,Event/AgentCreatedEvent.php,0,,Kernel
 Event/AgentDeletedEvent.php,14,Event,Event,Event/AgentDeletedEvent.php,0,,Kernel
 Event/AgentRunRequestedEvent.php,71,Event,Event,Event/AgentRunRequestedEvent.php,19,,Kernel
 Event/AgentUpdatedEvent.php,22,Event,Event,Event/AgentUpdatedEvent.php,0,,Kernel
+Event/AppWebhookEvents.php,87,Event,Event,Event/AppWebhookEvents.php,0,,Kernel
 Event/ApplicationCreatedEvent.php,14,Event,Event,Event/ApplicationCreatedEvent.php,0,,Kernel
 Event/ApplicationDeletedEvent.php,14,Event,Event,Event/ApplicationDeletedEvent.php,0,,Kernel
 Event/ApplicationUpdatedEvent.php,19,Event,Event,Event/ApplicationUpdatedEvent.php,0,,Kernel
