@@ -14739,3 +14739,4 @@ review:thematiq:1303:35bcc381	RED: 5 golden tests still record the old epe set	s
 fix:dossiq:5396:7493d64f	brought up to date with development, pushed 861d4d0a, REVERIFY recorded	session-20261115T195957-8e60ca53	2026-11-15T20:19:34Z
 review:versioniq:500:890378b3	GREEN: jsdom dev bump, vitest 3012 OK	session-20261115T200043-78b85ca2	2026-11-15T20:19:45Z
 review:stackiq:1931:d2989729	CONFLICT with development (2 JS files, keep both); code GREEN otherwise, PHP 3751 OK, vitest only inherited facets failure	session-20261115T200020-0f65b959	2026-11-15T20:19:59Z
+review:versioniq:503:2d7f74a1	GREEN: deps bump, vitest+build ok	session-20261115T195953-2618bb8a	2026-11-15T20:20:06Z
