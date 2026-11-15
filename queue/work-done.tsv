@@ -12341,3 +12341,4 @@ fix:integriq:3549:931cf8b2	pushed 2d954e73: fixture reordered, gitleaks finding 
 fix:opencatalogi:2650:2f0dabac	merged development, conflict resolved keeping both sides; new head 533307629eeddd7dba1df397c1ccd557ab0b823a, REVERIFY	session-20261114T221759-cd5c5678	2026-11-15T00:38:04Z
 fix:opencatalogi:2654:89b4f055	conflict resolved (l10n both sides); new head 7fa3daaf34baedd7959384188ca1b434f164e969	session-20261114T234933-5c1be121	2026-11-15T00:38:18Z
 fix:integriq:3542:a633c1cf	conflict resolved via json + l10n:build, pushed 026646583e748111aa50ad31c83af71449ec69e3; REVERIFY recorded	session-20261115T001016-a8991554	2026-11-15T00:38:26Z
+fix:opencatalogi:2671:cc569277	merged development, kept both sides, pushed a9085b0b, REVERIFY	session-20261114T234941-bc8686af	2026-11-15T00:38:36Z
