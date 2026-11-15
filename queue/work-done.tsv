@@ -12815,3 +12815,4 @@ build:shillinq:receivables-payment-links:c5	failed: blocked: PR #3077 has every 
 verify:versioniq:699:9ee8aece	GREEN 699 724, CONFLICT 700 (after 699); no new failures, vitest 3011 pass	session-20261115T001758-161b0715	2026-11-15T02:12:11Z
 verify:integriq:3650:9d404309	3650 GREEN	session-20261115T005412-4a06d6f4	2026-11-15T02:12:52Z
 build:dossiq:capability-rows-say-the-whole-capability:c6	partial: PR #6563 row 2.18 (case page user/group grants over OpenRegister object sharing, vitest +12); left: provider rows to their apps, 1.16 needs a document picker in the library mail widget, 1.17/1.18 library widget work, 1.9/1.12/1.22/1.24/2.17/2.19 larger features, 3.x not code	session-20261115T005122-49ba1b99	2026-11-15T02:13:20Z
+verify:larpinq:1051:349a6e63	#1051 #1060 GREEN (903 tests, 0 failures; vitest 563); #1054 CONFLICT in the tree (clean on development alone)	session-20261115T005141-9356bed0	2026-11-15T02:13:23Z
