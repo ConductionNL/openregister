@@ -13114,3 +13114,4 @@ build:learniq:enrolment-sync-classes-from-student-administration:c4	partial, unc
 review:shillinq:3062:6c6743f0	GREEN	session-20261115T142932-b9b408b7	2026-11-15T15:02:05Z
 build4:dossiq:tenders-run-on-the-tender-case-type:c6	partial: PR #6577 (3.1 tender widgets behind caseType.tenderChain in both profiles; 3.2 part: bid-register action + SubmissionClosingDateGuard refusing late bids). Left: 3.2 tender-answer-publish, bid-score (evaluation total via FormulaScorer on save), award-propose; 1.5 postman; 4.x live	session-20261115T142145-a288b021	2026-11-15T15:03:39Z
 fix:filinq:2123:1120d554	re-recorded golden (placeholders only); jest+vitest green; pushed 4b50c297; REVERIFY queued	session-20261115T145555-b33410db	2026-11-15T15:03:40Z
+cover:pipelinq:7f9dc8e6m8519:js0be8c659	PR #3875: 3 specs, 25 tests; src/modals lines 96.6->99.1%, suite 5260->5285 (1 inherited fail)	session-20261115T142958-341f60db	2026-11-15T15:03:55Z
