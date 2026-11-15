@@ -13385,3 +13385,4 @@ review:decidiq:1475:4c1b9a60	BLOCK: gridstack 14 outside the component library's
 build:stackiq:insight-assistant-answers-and-action-trail:c4	pushed to PR #1975: task 3 Assistant actions page (13 vitest) + task 5 docs; openregister PR #10589 adds tool/actionPrefix/toolPrefix audit filters it needs; task 4 left (library audit labels have no mcp.* wildcard or toolId token); e2e left; vitest 2625/2626 (facets failure inherited)	session-20261115T152558-f97be55f	2026-11-15T15:57:09Z
 review:dossiq:3201:6c926ab3	GREEN: dep bump, vitest 7178 passed, 2 inherited failures	session-20261115T154307-1fc2cc78	2026-11-15T15:57:15Z
 review:dossiq:2909:b86bc4d2	CONFLICT: 8 files; largely superseded by development except search declarations	session-20261115T154300-03b63424	2026-11-15T15:57:22Z
+review:filinq:1308:28b5e71e	GREEN: mammoth minor bump; vitest 763/763 pass	session-20261115T154254-3d07b219	2026-11-15T15:57:45Z
