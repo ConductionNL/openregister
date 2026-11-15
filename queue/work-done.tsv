@@ -15184,3 +15184,4 @@ review:hermiq:1735:ca8e4b6f	RED: new code uses removed OR named args, 25 new fai
 review:dossiq:3297:cecaeb85	GREEN: adds case guard, no new failures	session-20261115T211111-34885d99	2026-11-15T21:52:54Z
 review:dossiq:4887:e60cd452	RED: 2 new failures (ListenerRegistrarTest, ObligationDeclarationEdgesTest expectations)	session-20261115T213122-46f7fafb	2026-11-15T21:53:03Z
 review:filinq:2114:1694e39c	RED: same 6 failures (old OR args in new repositories)	session-20261115T203012-30a1abde	2026-11-15T21:53:10Z
+review:portaliq:1229:a2bd58a2	GREEN: comment-only, no new failures	session-20261115T213134-4b0d2823	2026-11-15T21:53:24Z
