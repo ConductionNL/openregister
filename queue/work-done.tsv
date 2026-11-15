@@ -12755,3 +12755,4 @@ cover:integriq:92114ab0m6759:9dc6d594	already done: lib/Service/Mail/*.php measu
 cover:dossiq:069ee2d6madb6:8b886c00	already done: lib/Service/People/*.php at 99.7% lines (1001/1004) on development 058200d, above 95 target; no PR	session-20261115T015406-eecdf998	2026-11-15T01:57:56Z
 cover:integriq:92114ab0m6759:b89b25f9	already done: lib/Adapters/LearningMaterial/*.php measures 99.76% (417/418) on development 53067e87	session-20261115T001758-161b0715	2026-11-15T01:58:02Z
 cover:integriq:92114ab0m6759:dffb5af6	already done: lib/Directory/*.php measures 100% (600/600) on development 53067e87	session-20261115T001758-161b0715	2026-11-15T01:58:18Z
+review:learniq:2486:b690ac62	GREEN: PHP 6870 (1 inherited), phpstan clean	session-20261114T234941-bc8686af	2026-11-15T01:58:30Z
