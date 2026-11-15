@@ -3087,3 +3087,14 @@ opencatalogi	2716	c962b1a0c500e398b69da51e3900dee50599de26	MERGED	merge3	GATE OK
 opencatalogi	2717	341f4c5602eba241863d18d74fd962356c21c948	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.49
 opencatalogi	2718	a9140d9ddc3d682c5947b55c5e491b4b78f32a44	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.49
 opencatalogi	2719	3710b27607b29020c64b56cbaff5c063ffb45cbc	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.49
+integriq	3539	7b1673f3651ea7f3d3f575b5316258211e0bc66b	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
+integriq	3546	46dc8e548b2f37e59cb49523d4d6e747ffea5ba8	RED	merge3	GATE RED absolute floor: integriq maintainability 3.55 after merge is below its floor 3.56
+integriq	3549	931cf8b207dcfd23729430d2fb38c92645a71870	RED	merge3	GATE RED checker floor: secretscanning: pass -> fail; secretscanning stars: 5 -> 1
+integriq	3589	0ae03844241ee6c802c1c0207ad9fbfc7560f14d	RED	merge3	GATE RED absolute floor: integriq maintainability 3.54 after merge is below its floor 3.56
+integriq	3592	741a06386e557a2a4b7a5e35a857138637b4e12c	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
+integriq	3612	b4580cdb615b31cf6e8833ff85673cb5f45dec93	RED	merge3	GATE RED absolute floor: integriq maintainability 3.55 after merge is below its floor 3.56
+integriq	3615	f8ce5455289071ec1c00714a622b8e6674af7b27	RED	merge3	GATE RED absolute floor: integriq maintainability 3.55 after merge is below its floor 3.56
+integriq	3617	ff5e9b84d118fdbd053ea8893caafcd1bd8d3688	RED	merge3	GATE RED absolute floor: integriq maintainability 3.55 after merge is below its floor 3.56
+integriq	3628	626c2e6f59943208459fd06bcbb64652dd68f1b6	SKIP	merge3	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
+integriq	3636	9153285de91b788ff2261d9308562db41afc9589	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
+integriq	3637	cfec360e12db5196fefbce1216d21ebd98db0b1f	SKIP	merge3	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
