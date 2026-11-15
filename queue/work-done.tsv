@@ -14224,3 +14224,35 @@ review:learniq:2521:2a90e6d1	BLOCK: course day build fine, tests green beyond in
 fix:shillinq:2093:2cc2077c	conflict resolved, merged development, pushed d0aa436a4; REVERIFY recorded	session-20261115T182953-0722a05e	2026-11-15T18:38:11Z
 merge:launchpad:1229:489ec46d	merge8 tree of 13 launchpad PRs: merged=1 red=8 fail=0 skip=0; conflict 4, lint 0, moved 0; fix rows 4	merge8-20261115T170007-37538273	2026-11-15T18:38:14Z
 fix:shillinq:2098:38bdcce2	conflict resolved, pushed f23dc6e2, REVERIFY recorded	session-20261115T182948-465dcc8e	2026-11-15T18:38:21Z
+review:pipelinq:3151:bc0319a8	GREEN: stubs match openregister main; unit 8890 OK	session-20261115T181015-497e81ce	2026-11-15T18:38:29Z
+review:portaliq:1670:8ef03e9f	GREEN: per its spec delta; no new failures	session-20261115T174808-50b8ceec	2026-11-15T18:38:47Z
+fix:shillinq:2071:027f8107	conflict resolved, pushed 513cd9f5, REVERIFY recorded	session-20261115T174741-56eeaa2f	2026-11-15T18:39:03Z
+fix:shillinq:2256:f4d1ab9a	fixed CONFLICT + stub namespace; unit 12225 OK; new head 8f9155fe, REVERIFY recorded	session-20261115T152543-40aea993	2026-11-15T18:39:16Z
+fix:shillinq:1959:9a607395	failed: not a conflict fix; branch deletes PurchaseOrderApprovalService/Controller (in-object approval engine) while development has since built on it (Kernel PurchaseOrderApprovalServiceInterface, McpPurchaseOrderTools decide, Lifecycle PurchaseOrderApprovalGuard, PurchaseOrderDecisionLockListener, ApprovalDecision, parity/golden tests); 19 conflicts need a redesign onto OpenRegister's approval c	session-20261115T182948-465dcc8e	2026-11-15T18:39:15Z
+review:shillinq:2086:28d36484	BLOCK: new service uses removed openregister named-arg API	session-20261115T181015-497e81ce	2026-11-15T18:39:19Z
+fix:shillinq:2259:f41c6ff8	fixed: merged development; new head 91b03c64	session-20261115T174819-9af28ef9	2026-11-15T18:39:34Z
+fix:shillinq:1958:66501062	fixed: conflicts resolved onto development refactor, new head 3f5a3226	session-20261115T174804-89f2739f	2026-11-15T18:39:45Z
+fix:shillinq:2411:6ca5ae67	failed: PR only adapts to openregister branch cloud/vox-generic-settings (SettingsPlacement/AdminFormServices/SectionAppearance), not on main; development already matches main's GenericAdminSettings constructor. Hold until that openregister change lands.	session-20261115T181015-497e81ce	2026-11-15T18:39:53Z
+review:portaliq:1764:b3d8a23e	GREEN: lint unchanged vs development	session-20261115T174741-9deaa0be	2026-11-15T18:40:15Z
+review:portaliq:1071:334e76b1	GREEN: challenge proof only; specs green (self-made fix, noted)	session-20261115T174808-50b8ceec	2026-11-15T18:40:22Z
+fix:shillinq:2091:67b5afb6	obsolete: closed, development already remembers the active administration	session-20261115T174819-9af28ef9	2026-11-15T18:40:27Z
+fix:shillinq:2767:c0cd6601	failed: raising composer.json config.platform.php to 8.3.16 is not enough; composer install takes the platform from composer.lock platform-overrides (php 8.3), so the lock must be regenerated and workers may not commit composer.lock. Raise config.platform.php on development, then have dependabot recreate the PR (runner PHP here is 8.3.6, below psalm 7.2's floor, so it cannot be verified locally ei	session-20261115T182948-465dcc8e	2026-11-15T18:40:27Z
+fix:shillinq:2258:630de5d0	conflict resolved + 7 new dev actions migrated to context, pushed 812b1f9e, REVERIFY recorded	session-20261115T182936-09049974	2026-11-15T18:40:32Z
+review:shillinq:1965:3c0db1b5	GREEN: additive schema fragment, suite 12225 OK	session-20261115T174747-978963d5	2026-11-15T18:40:40Z
+fix:shillinq:2255:723f7700	closed: tests-only move to a search API openregister main's published ObjectServiceInterface does not have; development's doubles already match main	session-20261115T174804-89f2739f	2026-11-15T18:40:57Z
+review:shillinq:2099:8bc4dce5	GREEN	session-20261115T174741-56eeaa2f	2026-11-15T18:40:56Z
+fix:filinq:1310:fc7dd7c7	failed: gridstack 14 is outside @conduction/nextcloud-vue's peer range (^12||^13) in every published version (latest 2.181.0); needs a library release that supports gridstack 14 first	session-20261115T174808-50b8ceec	2026-11-15T18:41:03Z
+fix:shillinq:2096:7e23465b	both RED tests fixed, pushed d0e8491e; REVERIFY recorded	session-20261115T182941-b7ae781f	2026-11-15T18:41:03Z
+fix:shillinq:2072:8b9e57e4	conflict resolved keeping both checks, pushed dbfc135, REVERIFY	session-20261115T154255-e54527e9	2026-11-15T18:41:24Z
+review:shillinq:2249:55e36ecc	GREEN shillinq#2249: equivalent controller namespace on OpenRegister main; 12225 OK	session-20261115T174739-b14c2df4	2026-11-15T18:41:35Z
+fix:filinq:1758:cb890160	obsolete: development has the fix (b9c8e18e); closed PR with a comment	session-20261115T182941-b7ae781f	2026-11-15T18:41:51Z
+fix:shillinq:2254:29ae60be	stubs moved to Kernel\Contracts\Value, development merged, suite 12225 OK, pushed 863e0786; REVERIFY recorded	session-20261115T183025-d89c1e14	2026-11-15T18:41:51Z
+fix:filinq:1409:0d0e948a	failed: permission (closing PRs is refused for this worker). Obsolete: development already carries this work; close #1409 as superseded	session-20261115T154255-e54527e9	2026-11-15T18:41:49Z
+fix:shillinq:2252:1f1318e2	namespace fixed to Kernel\Contracts\Value, merged development, suite green; pushed eea2842a; REVERIFY recorded	session-20261115T182951-bdf9d68e	2026-11-15T18:41:58Z
+fix:filinq:1852:38008824	failed: still premature, openregister main (3800106bd) keeps searchObjectsBySlug(registerSlug, schemaSlug, ...); the PR's target: RegisterSchemaRef call needs openregister #9103 on main first	session-20261115T174819-9af28ef9	2026-11-15T18:42:03Z
+fix:filinq:1451:258e0913	obsolete: closed #1451, superseded by development's 20-pipelinq-letter-template.json (#1457)	session-20261115T174739-b14c2df4	2026-11-15T18:42:23Z
+fix:filinq:1964:b0847184	failed: psalm 7.2.1 needs php >=8.3.16 but config.platform pins php 8.3; fixing it means raising the platform pin and regenerating composer.lock, which workers may not commit. Needs a decision: raise the pin to 8.3.16 (and let dependabot rebase) or close/ignore psalm 7.2	session-20261115T182941-b7ae781f	2026-11-15T18:42:31Z
+review:shillinq:2095:bd295859	GREEN	session-20261115T182953-0722a05e	2026-11-15T18:42:32Z
+fix:filinq:1307:af2c6d19	obsolete: closed, development locks sass 1.108.2	session-20261115T174819-9af28ef9	2026-11-15T18:42:37Z
+fix:learniq:1164:7f7606d0	failed: not fixable in learniq; latest @conduction/nextcloud-vue (2.181.0) still peers gridstack ^12||^13, so the bump needs a library release first	session-20261115T182953-0722a05e	2026-11-15T18:43:02Z
+fix:shillinq:2253:69b4e3e6	fixed: ObjectDeletion/ObjectFindTarget from Kernel\Contracts\Value, merged development, unit green; new head 4f1aa3a0	session-20261115T182940-bfeb7e78	2026-11-15T18:43:04Z
