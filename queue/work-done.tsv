@@ -14960,3 +14960,4 @@ fix:larpinq:1060:f17472dc	development merged clean, suite 1025 OK; new head 5426
 fix:larpinq:1050:67a10904	fixed: l10n conflict resolved as union, head f7fb4695	session-20261115T202932-ab57353c	2026-11-15T20:58:47Z
 fix:versioniq:736:732e80c8	merged development, pushed 91246664; REVERIFY recorded	session-20261115T202936-e956716f	2026-11-15T20:59:01Z
 fix:versioniq:735:de63ae5e	conflict resolved in tab spec, vitest 3037 green; new head 0ba1d1c9	session-20261115T203013-157346e0	2026-11-15T20:59:12Z
+fix:larpinq:961:0c510953	development merged in; sbom already current (dev-only bump); new head 06d9f9ca, REVERIFY recorded	session-20261115T203029-7489abc7	2026-11-15T20:59:25Z
