@@ -13852,3 +13852,4 @@ cover:stackiq:9ac19b3amf894:js0b5eefce	PR #1983: src/modals/object/ 83.5% -> 96.
 fix:filinq:2122:caf13011	merged development in cleanly, checks green; new head 57380f5f072e32897dbc5ebe6d646a2f735f7899	session-20261115T142949-9c6a3945	2026-11-15T17:19:21Z
 verify:integriq:3666:3a408d86	GREEN #3666: tests only, 9467 tests, no new failures	session-20261115T142934-6cab0c24	2026-11-15T17:19:29Z
 fix:larpinq:1060:759898b3	pushed f17472dc: secret-scan fixture renamed (gitleaks clean), +tests for staff views/invite states; ratio improved but may remain under floor	session-20261115T155902-521936b1	2026-11-15T17:19:39Z
+fix:larpinq:1053:181ec51c	merged development (clean), unit green; conflict was with another PR in the tree; REVERIFY at 4113c48a	session-20261115T155904-a7df5bc0	2026-11-15T17:19:50Z
