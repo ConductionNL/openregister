@@ -14060,6 +14060,7 @@ fix:dossiq:3955:e447a743	CONFLICT resolved, renames reapplied on development, pu
 fix:pipelinq:2546:ed45af1a	obsolete: merge with development equals development; closed PR with comment	session-20261115T174755-95dc8448	2026-11-15T18:08:17Z
 merge:integriq:3657:7f12c750	merge3 tree of 13 integriq PRs: merged=8 red=2 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-15T18:08:25Z
 merge:integriq:3615:73ce4aeb	merge3 tree of 13 integriq PRs: merged=8 red=2 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-15T18:08:28Z
+fix:pipelinq:3271:65502a07	failed: depends on openregister AggregationQuery::create accepting a layout; main's create() takes groupBy/dateBucket/metrics/cumulative only (published contract), so it cannot be fixed in pipelinq	session-20261115T174757-8dfa7406	2026-11-15T18:08:33Z
 merge:integriq:3589:8d6a8b8a	merge3 tree of 13 integriq PRs: merged=8 red=2 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-15T18:08:30Z
 merge:integriq:3546:b8d12ec0	merge3 tree of 13 integriq PRs: merged=8 red=2 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-15T18:08:34Z
 review:dossiq:4882:2a47c981	GREEN: changes match its spec delta; 0 new failures	session-20261115T174808-50b8ceec	2026-11-15T18:08:40Z
