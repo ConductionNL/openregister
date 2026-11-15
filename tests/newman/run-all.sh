@@ -122,6 +122,7 @@ DOMAIN_ORDER=(
     "upsert-on-key"
     "draft-activation"
     "anonymisation-disclosures"
+    "organisation-audit"
 )
 
 declare -A DOMAIN_COLLECTIONS=(
@@ -223,6 +224,7 @@ declare -A DOMAIN_COLLECTIONS=(
     [draft-activation]="$REPO_ROOT/tests/integration/openregister-draft-activation.postman_collection.json"
     # REQ-ADI-005/006: file disclosures (reader 200, non-reader 403) and the admin pipeline report.
     [anonymisation-disclosures]="$REPO_ROOT/tests/newman/openregister-anonymisation-disclosures.postman_collection.json"
+    [organisation-audit]="$REPO_ROOT/tests/newman/openregister-organisation-audit.postman_collection.json"
 )
 
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
