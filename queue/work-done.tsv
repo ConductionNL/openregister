@@ -12992,3 +12992,4 @@ merge:dossiq:6544:9e8b4773	merge3 tree of 31 dossiq PRs: merged=26 red=0 fail=0 
 merge:dossiq:6545:0c102e6c	merge3 tree of 31 dossiq PRs: merged=26 red=0 fail=0 skip=4; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-15T04:54:04Z
 merge:dossiq:6547:2e54593d	merge3 tree of 31 dossiq PRs: merged=26 red=0 fail=0 skip=4; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-15T04:54:07Z
 merge:dossiq:6549:fbd31ec9	merge3 tree of 31 dossiq PRs: merged=26 red=0 fail=0 skip=4; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-15T04:54:11Z
+merge:dossiq:6552:c5c28011	merge3 tree of 31 dossiq PRs: merged=26 red=0 fail=0 skip=4; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-15T04:54:14Z
