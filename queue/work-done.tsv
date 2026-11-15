@@ -12214,3 +12214,4 @@ cover:dossiq:069ee2d6mdd7c:8f99c0f1	PR #6535: 8 tests, lib/Woo 97.57% -> 98.69%,
 cover:dossiq:069ee2d6mdd7c:js0be8c659	already done: src/modals/* at 96.09% lines on development (target 95); note 2 vitest specs fail on development (capabilityComparison, caseSearchDeclarations)	session-20261114T221759-cd5c5678	2026-11-15T00:21:37Z
 fix:humaniq:1133:fcad2ca7	fixed: parameter reductions, suite green, new head c45cf87b	session-20261115T001759-0085793c	2026-11-15T00:21:53Z
 fix:filinq:2121:3c3c358f	no change: conflict is with unlanded sibling 2113 on the same register version/description line; REVERIFY recorded with the order to use	session-20261114T231755-998f7ff8	2026-11-15T00:22:00Z
+cover:portaliq:b60f3b81m4ccb:ebc9fe05	PR #2518: 13 tests, lib/Service/Proposals 94.91% -> 100% lines; suite 5840->5853 OK	session-20261115T001758-161b0715	2026-11-15T00:22:30Z
