@@ -12763,3 +12763,4 @@ cover:dossiq:069ee2d6madb6:094a3419	PR #6558: +13 tests (CompoundFileStreams 100
 merge:versioniq:694:5adeb269	merge3 tree of 6 versioniq PRs: merged=3 red=0 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-15T01:59:12Z
 measure:buildiq:20261115h00	php 90.88% (pcov, 19942/21944), js 95.85% (15333/15997) at 165fc0e3	session-20261115T010928-f0987802	2026-11-15T01:59:22Z
 verify:pipelinq:3863:d7a78ef0	3863 GREEN, 3864 CONFLICT	session-20261115T005412-4a06d6f4	2026-11-15T01:59:24Z
+fix:larpinq:1053:e06c2e6d	REVERIFY: merged development, README row moved off the shared insertion point; new head 181ec51c	session-20261115T001758-161b0715	2026-11-15T01:59:44Z
