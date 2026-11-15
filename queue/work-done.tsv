@@ -14165,3 +14165,4 @@ fix:pipelinq:3151:988cd148	stubs moved to Kernel\Contracts\Value; new head bc031
 review:portaliq:1354:84f30a14	GREEN: unused direct dep bump, merges clean	session-20261115T174833-88ac0233	2026-11-15T18:27:57Z
 review:portaliq:1684:744eadec	GREEN: specced helpText on page answer; unit 6121 OK	session-20261115T174757-8dfa7406	2026-11-15T18:28:05Z
 fix:portaliq:1764:a896834e	fixed RED: lock rebuilt on development, npm ci OK; new head b3d8a23e, REVERIFY recorded	session-20261115T152543-40aea993	2026-11-15T18:28:15Z
+fix:portaliq:1997:a07869fb	fixed: namespace moved to Kernel\Contracts\Value, development merged, new head 3d645d7e	session-20261115T174804-89f2739f	2026-11-15T18:28:26Z
