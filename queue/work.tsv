@@ -13553,3 +13553,10 @@ verify:shillinq:3080:66640968	verify	shillinq	development	merge	prs=3080@6c759e1
 merge:dossiq:6570:10a5bf95	merge	dossiq	development	development	prs=6570@e8ffa99ec5c3464c4eea2e246b24ebabfc467856,6575@86cee0d7ba43603be152eed6925ce3de183f084f	2026-11-15T14:50:35Z
 merge:pipelinq:3835:cef49b87	merge	pipelinq	development	development	prs=3835@52a3cfb37a79909c3486f19d1c8176585592045b	2026-11-15T14:50:35Z
 merge:shillinq:2997:59df849a	merge	shillinq	development	development	prs=2997@f46b2633c46a1603af13e1c8baa598ae1eca8ce8,3088@d40d616087f24d4fd143f4d237148d504603b9d2,3097@e43d2b44cbd0c9ea6586f132a00df104ab10fbe2	2026-11-15T14:50:35Z
+review:openregister:10583:f9f81edd	review	openregister	main	10583	sha=f9f81edd15152930bb54f4c650b245e58d1041ed;last_approved=;title=test(openregister): cover resilience, handoff drain, graphql relations, fix coverage metadata	2026-11-15T14:55:33Z
+review:shillinq:2997:70ee300e	review	shillinq	development	2997	sha=70ee300e40011573bcc2fca2aff1b20b45f3631b;branch=quality/build-tax-cbcr-and-pillar2-returns;title=feat(shillinq): build tax-cbcr-and-pillar2-returns	2026-11-15T14:55:33Z
+review:shillinq:3062:6c6743f0	review	shillinq	development	3062	sha=6c6743f0df7f493f0c3b2b8566b2cf5d0aead9a6;branch=quality/build-tax-vat-return-from-books-c2;title=feat(shillinq): build tax-vat-return-from-books	2026-11-15T14:55:33Z
+verify:pipelinq:3873:e74d58c4	verify	pipelinq	development	merge	prs=3873@353a0b8961af6a93b7ba81fec8bcf2958196094b	2026-11-15T14:55:33Z
+verify:shillinq:3080:c709f71f	verify	shillinq	development	merge	prs=3080@555ec946c4ff5c416d7e7a28e9175b80060c9c62	2026-11-15T14:55:33Z
+merge:pipelinq:3870:787e050f	merge	pipelinq	development	development	prs=3870@d2791727010f9b9bb462123bbba1ed7327a88915,3871@78cc23f646a43b6982722764942a558965180b46,3872@31e99222bb819c446e4194f0d449019595031a46	2026-11-15T14:55:33Z
+merge:shillinq:3055:d9bc6b70	merge	shillinq	development	development	prs=3055@d0b8868b0a91d3d1b78b070b200028c8771376d5	2026-11-15T14:55:33Z
