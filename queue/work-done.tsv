@@ -15096,3 +15096,4 @@ review:learniq:1158:5ca84f75	GREEN: prettier bump, js-unit 9 inherited fails, no
 review:learniq:2127:68efea31	GREEN: dev-only hydra-gates bump, suite 6868 tests, 1 inherited failure	session-20261115T213110-6b33145c	2026-11-15T21:34:42Z
 review:larpinq:960:659b6749	GREEN: dev-only phpstan bump, phpstan clean, 986 unit tests OK	session-20261115T213156-1ffcf961	2026-11-15T21:35:11Z
 review:humaniq:667:c3822863	GREEN: marked minor, build + lint ok	session-20261115T203012-30a1abde	2026-11-15T21:35:35Z
+review:integriq:2711:b46c56fe	GREEN: playwright bump, vitest green, e2e suite loads	session-20261115T213101-2fb56005	2026-11-15T21:35:43Z
