@@ -12151,3 +12151,4 @@ cover:decidiq:a5f973bbmae46:0f859653	already done: lib/Flow/*.php at 100% statem
 verify:decidiq:2203:6a9b444d	2203 CONFLICT with development (l10n, SaveGuardSubscriptions, manifest, menu-layout, registry)	session-20261114T234944-ee1416bc	2026-11-15T00:08:59Z
 cover:shillinq:05639debm9818:e763166c	PR #3089: 4 tests, lib/Service/PublicSector 578/578 lines; suite 11471->11475 OK	session-20261114T235442-bc1b76db	2026-11-15T00:09:06Z
 fix:learniq:2521:33d6a10d	deduplicated course day row reads (PHP dup 5038->5005), pushed 9260217a, REVERIFY	session-20261114T234941-bc8686af	2026-11-15T00:09:19Z
+cover:decidiq:a5f973bbmae46:d528dcf0	already done: lib/Dashboard/*.php (DecidiqDashboardWidget) 100% lines (65/65) on development dbda6812; no PR	session-20261114T234944-ee1416bc	2026-11-15T00:09:32Z
