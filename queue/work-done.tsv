@@ -13629,8 +13629,10 @@ review:pipelinq:3146:97b91f19	RED: 6 newer development Flow tests call the old e
 review:pipelinq:2108:6bc5f8a0	BLOCK: gridstack 14 outside nextcloud-vue peer range	session-20261115T152546-2c24b649	2026-11-15T16:39:59Z
 review:planninq:871:7d17dd48	BLOCK: lockfile conflict only; lint clean	session-20261115T154255-e54527e9	2026-11-15T16:40:11Z
 review:planninq:908:07c0fdd2	GREEN: playwright bump, npm ci ok, vitest and phpunit green	session-20261115T154258-dee2cc3d	2026-11-15T16:40:32Z
+review:launchpad:759:4d40c072	RED: npm ci fails, lockfile out of sync (vite/esbuild missing)	session-20261115T154329-16a67e2f	2026-11-15T16:40:52Z
 review:planninq:1065:53961d3e	BLOCK: targets a searchObjectsBySlug signature openregister main does not have	session-20261114T102641-d4fd3e25	2026-11-15T16:40:53Z
 review:pipelinq:3088:3135c0b1	GREEN: eslint bump, lint output unchanged	session-20261115T154311-e8600d84	2026-11-15T16:41:04Z
 review:planninq:933:9b784ac7	CONFLICT: 10 files incl. 6 add/add with already-landed sibling work	session-20261115T154300-03b63424	2026-11-15T16:41:12Z
 review:portaliq:1071:be71af8c	CONFLICT: 21-file conflict with development, which already holds both features in another implementation (likely superseded); no defect found in the code itself	session-20261115T152547-c779ca49	2026-11-15T16:41:21Z
 review:planninq:930:bddd2139	CONFLICT: 10 files incl. 6 add/add against development's own ProjectAction classes	session-20261115T154307-1fc2cc78	2026-11-15T16:41:32Z
+review:pipelinq:3092:fbd3e247	RED: 29 vitest suites fail to load (nested p-queue in @nextcloud/vue 9.14.1); baseline 1 inherited failure	session-20261115T155903-abd003e3	2026-11-15T16:42:02Z
