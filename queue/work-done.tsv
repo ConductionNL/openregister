@@ -14204,3 +14204,4 @@ fix:shillinq:2095:0bdac976	conflict resolved, merged development, pushed bd29585
 fix:shillinq:2092:e3baa4d4	CONFLICT resolved, REVERIFY recorded	session-20261115T174747-978963d5	2026-11-15T18:35:42Z
 review:portaliq:1765:065fabf8	GREEN: lock-only bump, npm ci ok	session-20261115T174741-9deaa0be	2026-11-15T18:35:52Z
 fix:shillinq:2227:13c58709	closed #2227 (vueuse 15 outside library peer range, unused directly); opened #3105 holding the @vueuse/core major in dependabot config	session-20261115T174739-b14c2df4	2026-11-15T18:36:07Z
+fix:pipelinq:3092:fbd3e247	fixed: lock @nextcloud/files 4.1.1, jsdom p-queue shim, spec mocks; vitest 1 inherited failure; new head f8d049f3	session-20261115T181015-497e81ce	2026-11-15T18:36:21Z
