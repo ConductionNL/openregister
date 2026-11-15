@@ -13568,6 +13568,7 @@ review:opencatalogi:2418:6a6c6361	BLOCK: needs openregister #9103 on main first 
 review:opencatalogi:2244:58b3e9f1	GREEN: behaviour-preserving refactor; golden passes pre and post; suite green; conflicts with development in DirectoryServiceTest.php	session-20261115T145546-378b432a	2026-11-15T16:28:03Z
 review:launchpad:753:51b86dbd	BLOCK: lockfile out of sync, npm ci fails	session-20261115T154314-8216dc98	2026-11-15T16:28:19Z
 review:learniq:1169:9731f440	GREEN: webpack minor bump, production build compiles	session-20261115T155903-abd003e3	2026-11-15T16:28:27Z
+review:launchpad:786:5bd3779b	CONFLICT: 14 files conflict with development (896 commits behind); recorded for a fix	session-20261115T152539-8dadb15a	2026-11-15T16:28:42Z
 review:pipelinq:1936:27cdae0d	CONFLICT #1936: obsolete, development already newer	session-20261115T152601-38767331	2026-11-15T16:28:39Z
 review:learniq:2126:af7f7379	GREEN: phpstan clean, no new failures	session-20261114T102637-6688951e	2026-11-15T16:28:48Z
 review:opencatalogi:2415:da40ef23	CONFLICT: PublicationsController conflicts with development (call moved to rendered()); diff itself correct	session-20261115T155911-14cd078d	2026-11-15T16:28:56Z
@@ -13706,8 +13707,25 @@ review:portaliq:1989:4db47cae	GREEN: reference rename only, unit 6120 OK	session
 review:shillinq:2252:1f1318e2	BLOCK: OpenRegister ObjectPatch at a namespace present on neither OR branch; 21 patch sites would fail	session-20261115T152552-0cb4306e	2026-11-15T16:55:50Z
 review:shillinq:2083:cb3e6a42	CONFLICT: 8 files conflict with development; new endpoint guarded correctly	session-20261115T154258-dee2cc3d	2026-11-15T16:55:56Z
 review:portaliq:1854:60bd5395	BLOCK: superseded by development's build of the change	session-20261115T152546-2c24b649	2026-11-15T16:56:07Z
+review:portaliq:1982:19a536ca	GREEN: dev tool bump, 6120 tests OK	session-20261115T155913-70cee771	2026-11-15T16:56:27Z
 review:shillinq:2226:dcacc634	GREEN: pinia minor bump, vitest identical to development (1 inherited)	session-20261115T155904-a7df5bc0	2026-11-15T16:56:26Z
 review:shillinq:2092:e3baa4d4	CONFLICT: modify/delete with development; development specs import the deleted components	session-20261115T155911-14cd078d	2026-11-15T16:56:33Z
 review:shillinq:1899:c535cb99	CONFLICT: 11 files conflict with development	session-20261115T154258-dee2cc3d	2026-11-15T16:56:40Z
 review:shillinq:2070:036e98c2	CONFLICT: 11 files conflict with development	session-20261115T155903-abd003e3	2026-11-15T16:56:50Z
+review:pipelinq:3258:1f7d2689	BLOCK #3258: targets a StoreDescriptor signature openregister main lacks; also conflicts	session-20261115T152601-38767331	2026-11-15T16:57:02Z
 review:shillinq:2071:027f8107	BLOCK (conflict only): 5 files conflict with development's refactor 4133ba516; the change tightens access and should be carried over	session-20261114T095641-533e2a00	2026-11-15T16:57:11Z
+review:shillinq:2253:69b4e3e6	BLOCK: wrong ObjectDeletion namespace (Kernel\Contracts\Value on OR main), 9 conflicts	session-20261115T152558-f97be55f	2026-11-15T16:57:25Z
+review:learniq:2128:e26f8db2	BLOCK: lock not installable under the repo's platform php 8.3 (psalm 7 needs ~8.3.16)	session-20261115T155902-521936b1	2026-11-15T16:57:46Z
+review:shillinq:2767:c0cd6601	RED: psalm 7.2 lock uninstallable under config.platform php 8.3	session-20261115T155903-abd003e3	2026-11-15T16:57:46Z
+review:shillinq:2091:67b5afb6	BLOCK: superseded by development (same feature already merged); close as obsolete	session-20261115T142934-de7c51d0	2026-11-15T16:57:52Z
+review:shillinq:2048:202ec0a0	GREEN: ocp patch bump; phpunit 12214 OK	session-20261115T154407-94bf5f8c	2026-11-15T16:58:02Z
+review:learniq:1164:7f7606d0	BLOCK: gridstack 14 outside nextcloud-vue peer range; conflicts with development	session-20261115T152554-949e9403	2026-11-15T16:48:56Z
+review:shillinq:1959:9a607395	CONFLICT: 19 files conflict with development; needs merge-forward before review	session-20261115T154311-e8600d84	2026-11-15T16:58:28Z
+review:stackiq:1043:a1603162	BLOCK: obsolete, development already locks sass 1.108.2	session-20261115T155902-521936b1	2026-11-15T16:58:33Z
+review:shillinq:2080:6a0ebf26	CONFLICT: access check OK, tests green on head; conflicts with development	session-20261114T102637-6688951e	2026-11-15T16:58:45Z
+review:shillinq:1965:6dd9752c	CONFLICT (version + lock fixture only); additive schema fragment	session-20261115T142134-badaaf30	2026-11-15T16:58:53Z
+review:shillinq:2230:b859457f	GREEN: patch bump, build ok, 1 inherited vitest failure	session-20261114T102641-d4fd3e25	2026-11-15T16:59:14Z
+review:shillinq:2227:13c58709	BLOCK: @vueuse/core 15 outside the component library peer range	session-20261115T142934-6cab0c24	2026-11-15T16:59:27Z
+review:shillinq:2411:6ca5ae67	BLOCK: targets openregister settings value objects that exist only on an unmerged branch; would fail against openregister main	session-20261114T095641-533e2a00	2026-11-15T16:59:35Z
+review:shillinq:2408:837e65b7	BLOCK: create(layout:) does not exist in OpenRegister main; stub masks it; also conflicts	session-20261115T142149-1d09fceb	2026-11-15T16:59:46Z
+review:shillinq:2766:64b9e198	GREEN: phpstan minor bump, analyse clean on both	session-20261114T075643-acecaad6	2026-11-15T16:59:55Z
