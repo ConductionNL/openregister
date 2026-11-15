@@ -14896,3 +14896,4 @@ fix:decidiq:1945:ef05d63a	test fixed, suite 4625 ok; REVERIFY b9434899	session-2
 fix:buildiq:1651:8f610194	development merged; nl strings moved off the catalogue end; remaining overlap is #1649 being behind development; new head fcb354f5	session-20261115T182940-bfeb7e78	2026-11-15T20:47:30Z
 fix:humaniq:662:5227edfc	sbom regenerated + phpmd baseline renamed, REVERIFY recorded	session-20261115T174747-978963d5	2026-11-15T20:47:37Z
 fix:keepiq:1815:4bf35882	test expectation updated for development's additionalUrls; REVERIFY at 26e9c5de	session-20261115T195958-28cb0304	2026-11-15T20:47:47Z
+fix:integriq:3059:f3f45d92	sbom regenerated after merging development; new head 4bb36a6b, REVERIFY	session-20261115T200011-d13b13ca	2026-11-15T20:47:57Z
