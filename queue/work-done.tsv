@@ -15023,3 +15023,4 @@ review:filinq:1828:0e6a9fe3	RED: new phpcs sniff flags ObjectEventRegistrar.php:
 review:keepiq:1793:651a3476	GREEN	session-20261115T202932-d1067ee4	2026-11-15T21:19:30Z
 review:filinq:1308:f18e7d0d	GREEN: mammoth bump, vitest 763/763	session-20261115T211111-34885d99	2026-11-15T21:19:50Z
 review:filinq:1311:ae2749a3	GREEN: marked range bump, JS tests ok	session-20261115T203012-30a1abde	2026-11-15T21:20:00Z
+review:filinq:2123:e76e9dab	CONFLICT: SigningService.php vs development ORMIG migration; no verdict on behaviour	session-20261115T211111-34885d99	2026-11-15T21:21:06Z
