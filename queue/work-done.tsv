@@ -13849,6 +13849,7 @@ verify:opencatalogi:2699:f8c393d1	2729 GREEN (5715, 2 inherited failures); 2699 
 review:versioniq:505:54c33622	GREEN: dev dep bump, vitest 3001 OK	session-20261115T152543-40aea993	2026-11-15T17:18:25Z
 review:thematiq:1070:42206255	GREEN: shared lock refresh, vitest 1559 pass, phpunit 1 environmental failure	session-20261115T155921-aabf185f	2026-11-15T17:07:17Z
 verify:launchpad:1223:d1a9b4cd	1235 GREEN; 1223, 1230 skipped (head moved)	session-20261115T142934-de7c51d0	2026-11-15T17:19:05Z
+cover:stackiq:9ac19b3amf894:js0b5eefce	PR #1983: src/modals/object/ 83.5% -> 96.1% statements (61 tests in 4 specs); suite 2603 -> 2664, same 1 inherited facets failure; notes DownloadObject objectItem bug	session-20261115T142134-badaaf30	2026-11-15T17:19:28Z
 fix:filinq:2122:caf13011	merged development in cleanly, checks green; new head 57380f5f072e32897dbc5ebe6d646a2f735f7899	session-20261115T142949-9c6a3945	2026-11-15T17:19:21Z
 verify:integriq:3666:3a408d86	GREEN #3666: tests only, 9467 tests, no new failures	session-20261115T142934-6cab0c24	2026-11-15T17:19:29Z
 fix:larpinq:1060:759898b3	pushed f17472dc: secret-scan fixture renamed (gitleaks clean), +tests for staff views/invite states; ratio improved but may remain under floor	session-20261115T155902-521936b1	2026-11-15T17:19:39Z
