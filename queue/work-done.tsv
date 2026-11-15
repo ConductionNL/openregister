@@ -13018,3 +13018,4 @@ merge:integriq:3651:5f76cee5	merge3 tree of 26 integriq PRs: merged=15 red=4 fai
 merge:integriq:3653:f6d51267	merge3 tree of 26 integriq PRs: merged=15 red=4 fail=0 skip=2; conflict 5, lint 0, moved 0; fix rows 5	merge3-20261113T213425-c36bcd5f	2026-11-15T05:55:35Z
 merge:integriq:3655:12e47fb6	merge3 tree of 26 integriq PRs: merged=15 red=4 fail=0 skip=2; conflict 5, lint 0, moved 0; fix rows 5	merge3-20261113T213425-c36bcd5f	2026-11-15T05:55:39Z
 merge:integriq:3595:d42965ce	merge3 tree of 26 integriq PRs: merged=15 red=4 fail=0 skip=2; conflict 5, lint 0, moved 0; fix rows 5	merge3-20261113T213425-c36bcd5f	2026-11-15T05:55:42Z
+verify:shillinq:3095:df5c02bd	4 GREEN (3095,3096,3098,3099), 3097 CONFLICT; vitest 1 inherited failure	session-20261115T141023-b06d51da	2026-11-15T14:15:02Z
