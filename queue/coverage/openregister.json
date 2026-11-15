@@ -1,12 +1,12 @@
 {
  "app": "openregister",
  "commit": "5db8e48b9a8a0b2252e1084bd1b2feb928041b84",
- "measured_at": "2026-11-15T01:04:13Z",
+ "measured_at": "2026-11-15T15:30:46Z",
  "php": {
   "tool": "pcov",
-  "pct": 94.28,
+  "pct": 94.26,
   "statements": 229224,
-  "covered": 216104,
+  "covered": 216074,
   "dirs": {
    "lib/Activity/": [
     53,
@@ -158,7 +158,7 @@
    ],
    "lib/Db/": [
     14646,
-    12051
+    12049
    ],
    "lib/Db/AccessLink/": [
     0,
@@ -258,7 +258,7 @@
    ],
    "lib/Db/MagicMapper/": [
     6516,
-    5960
+    5966
    ],
    "lib/Db/Mapping/": [
     27,
@@ -418,7 +418,7 @@
    ],
    "lib/Files/Service/": [
     1378,
-    1260
+    1258
    ],
    "lib/Files/Service/File/": [
     2382,
@@ -738,7 +738,7 @@
    ],
    "lib/Service/": [
     21662,
-    20267
+    20300
    ],
    "lib/Service/Aggregation/": [
     1957,
@@ -774,7 +774,7 @@
    ],
    "lib/Service/BulkJob/": [
     687,
-    663
+    662
    ],
    "lib/Service/Calculation/": [
     1316,
@@ -802,7 +802,7 @@
    ],
    "lib/Service/Case/": [
     1728,
-    1714
+    1657
    ],
    "lib/Service/Case/Nodes/": [
     165,
@@ -898,7 +898,7 @@
    ],
    "lib/Service/ExternalLink/": [
     148,
-    141
+    142
    ],
    "lib/Service/Federation/": [
     142,
@@ -910,7 +910,7 @@
    ],
    "lib/Service/Flow/": [
     6443,
-    6188
+    6189
    ],
    "lib/Service/Flow/Bpmn/": [
     496,
@@ -1006,7 +1006,7 @@
    ],
    "lib/Service/Hinge/": [
     554,
-    553
+    551
    ],
    "lib/Service/History/": [
     111,
@@ -1070,7 +1070,7 @@
    ],
    "lib/Service/Object/": [
     13736,
-    13121
+    13125
    ],
    "lib/Service/Object/Collaborators/": [
     15,
@@ -1122,7 +1122,7 @@
    ],
    "lib/Service/Portal/": [
     312,
-    311
+    299
    ],
    "lib/Service/Quality/": [
     581,
@@ -1146,7 +1146,7 @@
    ],
    "lib/Service/RedactionPolicy/": [
     193,
-    191
+    188
    ],
    "lib/Service/Reference/": [
     285,
@@ -1158,7 +1158,7 @@
    ],
    "lib/Service/Registry/": [
     240,
-    236
+    240
    ],
    "lib/Service/Relation/": [
     1060,
