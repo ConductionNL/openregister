@@ -13379,3 +13379,4 @@ review:dossiq:3204:7d112fdf	GREEN: npm ci ok, eslint and vitest same as developm
 review:dossiq:5358:b179a791	BLOCK: wrong OpenRegister namespace for LockRequest/UnlockRequest; conflict in DrcController	session-20261115T154254-3d07b219	2026-11-15T15:56:03Z
 review:dossiq:2705:b7e00cc6	GREEN: dev-tool lock bump, no new failures	session-20261115T154258-dee2cc3d	2026-11-15T15:56:13Z
 review:dossiq:5353:15d28d9d	CONFLICT: 97 files conflict with development	session-20261115T142149-1d09fceb	2026-11-15T15:56:24Z
+review:dossiq:5556:cfd808c9	BLOCK: depends on StoreListing absent from openregister main; also conflicts	session-20261115T154314-8216dc98	2026-11-15T15:56:31Z
