@@ -11240,3 +11240,4 @@ opencatalogi	2687	8336209f169415f332dc2bf399b4d1d81a1443f7	GREEN	worker-06	unit 
 larpinq	1054	8a1a352364fd06f42b82d9a3e388672fbb8a7c2d	CONFLICT	worker-52	clean on development alone; conflicts after #1051 in src/manifest.json and tests/vitest/fixtures/effectiveManifest.golden.json
 larpinq	1060	759898b3b319473aa0acb48bbf6e9a4189d7814a	GREEN	worker-52	tree #1051+#1060: phpunit-unit 903, 0 failures; vitest 563 pass; build of admin-staff-roles-and-invites, rights per REQ-ASR-002 and design (no staff delete on characters/registrations)
 dossiq	6559	67082054df0fe7bcd48281250a68448f93a4c536	GREEN	worker-26	tree 6559+6560+6561: phpunit 17591 (baseline 17581, 19 inherited failures), vitest 7140 (2 inherited failures); new failures 0; tests only
+dossiq	6560	b28f467c11e069aff24d0b621ebf0755e60c6638	GREEN	worker-26	tree 6559+6560+6561: phpunit 17591 (baseline 17581, 19 inherited failures), vitest 7140 (2 inherited failures); new failures 0; tests only
