@@ -3235,3 +3235,5 @@ larpinq	1050	ebb209691f38f2cdd3812275fbc828831dc90d7e	RED	merge3	GATE RED floor:
 larpinq	1051	fa7cedb49eeaf2240d456f442c29bd3d8b2b8407	RED	merge3	GATE RED checker floor: testcoderatio: warn -> fail; testcoderatio stars: 3 -> 2
 larpinq	1052	35cdf6d223397f7e9112f15be8e0abf024da03a4	SKIP	merge3	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
 larpinq	1060	759898b3b319473aa0acb48bbf6e9a4189d7814a	RED	merge3	GATE RED checker floor: secretscanning: pass -> fail; testcoderatio: warn -> fail; secretscanning stars: 5 -> 1; testcoderatio stars: 3 -> 2
+filinq	2070	88c644391052b203b8ac34670c5abca6b6b517ea	RED	merge3	GATE RED checker floor: adrvalidator: pass -> warn; owaspsecurecoding: pass -> warn; adrvalidator stars: 5 -> 3; owaspsecurecoding stars: 5 -> 3; score: 100 -> 93
+filinq	2132	7921bf916a70e340e5db1bbd761a35ec90a0a4ce	SKIP	merge3	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
