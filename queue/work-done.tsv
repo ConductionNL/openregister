@@ -15281,3 +15281,4 @@ review:opencatalogi:2679:467db25a	stale	session-20261115T213156-1ffcf961	2026-11
 fix:dossiq:6203:f6f40df6	fixed: test double matches main find(); Portal 209 OK; new head 5bb98561	session-20261115T213134-4b0d2823	2026-11-15T22:12:44Z
 review:stackiq:1928:36057a15	GREEN: per change spec, suite 3723 tests OK	session-20261115T220036-9d15b9ea	2026-11-15T22:12:52Z
 review:launchpad:1229:348b5e3e	GREEN: spec build, unit 4538 OK, vitest 2608 OK	session-20261115T213110-6b33145c	2026-11-15T22:13:05Z
+review:opencatalogi:2687:a52c913a	GREEN: matches change specs, 0 new failures	session-20261115T220011-f1302da8	2026-11-15T22:13:19Z
