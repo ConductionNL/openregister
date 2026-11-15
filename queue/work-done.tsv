@@ -14044,3 +14044,4 @@ fix:dossiq:4886:5dd9fb5e	fixed: merged development, pick read failure falls back
 review:buildiq:1088:419fccd1	GREEN: vite dev bump, vitest 4692/4692 before and after	session-20261115T174804-89f2739f	2026-11-15T18:04:23Z
 review:dossiq:3936:7ae9f014	GREEN	session-20261115T174741-56eeaa2f	2026-11-15T18:04:30Z
 fix:pipelinq:2482:99a4545c	failed: merge with development conflicts in 19 files (Application.php now split into registrars: port the CallEventListener registration + BackgroundServiceAccountCheck there; IncomingCallFinder refactored into steps: re-add the mirror branch; mock register, info.xml, 6 locales, tests/bootstrap, Settings.vue). Not a code defect: CallMirror deleteObject(uuid:,register:,schema:,permanent:) matches o	session-20261115T152552-0cb4306e	2026-11-15T18:04:36Z
+fix:dossiq:5281:5ba0c011	tests renamed, pushed c8b6cb2, REVERIFY	session-20261115T154255-e54527e9	2026-11-15T18:04:45Z
