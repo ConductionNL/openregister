@@ -12362,5 +12362,6 @@ cover:opencatalogi:fc83bfb1md382:js5e878140	PR #2721: 10 jest tests; Retention 3
 verify:opencatalogi:2665:654a66e6	2665 RED (8 vitest failures in mainEntry.spec.js), 2672 GREEN, 2687 GREEN	session-20261114T235442-bc1b76db	2026-11-15T00:41:52Z
 fix:integriq:3564:e75c7913	conflict resolved keeping both sides; l10n gate OK; new head bd358537, REVERIFY	session-20261114T233346-3552728d	2026-11-15T00:42:00Z
 verify:buildiq:1658:f2f1c411	GREEN #1658	session-20261114T234948-b89aaae1	2026-11-15T00:42:11Z
+cover:planninq:e1c9866dmcf99:34763eb4	already done: lib/Middleware/*.php at 100% on development (target 90)	session-20261114T221759-cd5c5678	2026-11-15T00:42:20Z
 fix:opencatalogi:2643:e9586088	failed: maintainability floor not restorable by a small change: base 4.49-4.51 (5 stars, at the boundary), head 4.47-4.49; drops are component independence php 92.6->92.0% (new DonlRegistrationService used across controller and job) and unit interfacing 3+/5+ params +0.1pt; needs a structural rework or a floor decision	session-20261114T234933-5c1be121	2026-11-15T00:42:18Z
 cover:planninq:e1c9866dmcf99:dfaef732	PR #1187: 14 tests for lib/Notification (3 resolvers + Notifier) and coverage metadata on the existing resolver test; suite 1177 -> 1191, no failures	session-20261115T001753-b8ad7615	2026-11-15T00:42:19Z
