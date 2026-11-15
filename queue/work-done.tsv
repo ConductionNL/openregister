@@ -14860,3 +14860,4 @@ review:shillinq:2766:4d51285b	GREEN: phpstan clean, unit 12225 ok	session-202611
 fix:learniq:1169:9731f440	fixed: merged development, regenerated sbom; new head 6f8c6510, REVERIFY	session-20261115T202955-7451ede9	2026-11-15T20:41:30Z
 review:pipelinq:3083:c1e2e782	GREEN: vitest 1 inherited failure	session-20261115T200041-8ff5af37	2026-11-15T20:41:37Z
 fix:learniq:1167:4b75be29	fixed: merged development (clean) + sbom regen, head 61811d4d	session-20261115T202932-ab57353c	2026-11-15T20:41:50Z
+review:dossiq:3201	GREEN: marked minor bump, vitest no new failures	session-20261115T200000-e95b89c2	2026-11-15T20:42:04Z
