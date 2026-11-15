@@ -12806,3 +12806,4 @@ cover:integriq:92114ab0m6759:a0b17cde	PR #3651: 6 tests, lib/Service/Synchroniza
 verify:larpinq:1041:cf42480b	GREEN 1041, GREEN 1052; phpunit 865 ok, vitest 594 ok	session-20261115T015021-bd2172e5	2026-11-15T02:10:30Z
 cover:integriq:92114ab0m6759:dec5cec8	failed: permission (every Sms class already has behaviour tests, 0.24pt gap needs a line report; pcov install was refused)	session-20261115T005141-9356bed0	2026-11-15T02:10:56Z
 build:filinq:document-sanitization:c5	partial: no code left to build now; 3.5 and 4.2 remainders (sanitized state on the seal action/dialog, sanitized badge) wait for document-waarmerk-certification task 4.1, whose seal action and dialog are not on development	session-20261115T005412-4a06d6f4	2026-11-15T02:10:51Z
+verify:opencatalogi:2725:92086950	2725 GREEN (no new failures; build matches its change)	session-20261115T015406-eecdf998	2026-11-15T02:11:08Z
