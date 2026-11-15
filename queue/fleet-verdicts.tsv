@@ -10863,4 +10863,5 @@ integriq	3593	b138cdd2b5f61d0d2fb616e18929d1ffd9b66d3e	CONFLICT	merge3	merges cl
 integriq	3595	66f788bdd8e3f9a9c5273bf914f25fdc2a05bc86	CONFLICT	merge3	merges clean on development alone; files: tests/Unit/Service/CatalogRegistrySeedGoldenTest.php 
 integriq	3630	320ac7f7dbb3f0cda64fd1bac47dffc10e393e0c	CONFLICT	merge3	merges clean on development alone; files: src/modals/v2/ModalHost.vue 
 integriq	3631	dd984ef44ff0dcbb2ca2ea602d519616f9d6dc52	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+launchpad	1209	9d0c1bf3af425e7b9395c501d306fb56ef5bfedb	REVERIFY	worker-44	merged development in, l10n/en.js conflict resolved keeping both; l10n parity red on branch head already (19 frontend keys untranslated per locale); new head 418bb0e50b3cceb31d75aca980a6c97a3049ea16, verify it
 planninq	1180	48921ef678134fbc208366e6827074901d7ed310	GREEN	worker-58	tree dev+1180: unit 1177 OK (baseline 1177 OK), vitest 3447 passed; new failures none; builds projects-wiki (frontend attachment upload into the page body, additive)
