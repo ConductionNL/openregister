@@ -14817,3 +14817,4 @@ fix:filinq:1355:1c90e8ba	sbom regenerated, development merged in; new head 30720
 review:pipelinq:2501:ca4bf396	GREEN: lock-only patch bumps; 8922 tests OK	session-20261115T200041-8ff5af37	2026-11-15T20:34:08Z
 fix:shillinq:2081:29d9d8c7	conflict resolved, specs updated to scoped loads; vitest only inherited failure; REVERIFY at 27d1ddad	session-20261115T200026-9a5b8685	2026-11-15T20:34:15Z
 fix:filinq:2088:08907be9	conflict resolved, pushed 7e328ebd; REVERIFY recorded	session-20261115T202936-e956716f	2026-11-15T20:34:28Z
+fix:filinq:1086:be9ddbad	sbom regenerated; new head 7581c2a8, REVERIFY recorded	session-20261115T203016-ff00326d	2026-11-15T20:34:41Z
