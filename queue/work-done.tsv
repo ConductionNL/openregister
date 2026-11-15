@@ -13507,3 +13507,4 @@ review:integriq:3058:73d0ebfe	BLOCK (sbom only): runtime lock bump without sbom.
 review:keepiq:1497:1c1ef76b	GREEN: phpstan patch bump; phpstan clean, unit 5213 OK	session-20261115T152552-0cb4306e	2026-11-15T16:17:59Z
 review:launchpad:755:03f2fd44	RED: npm ci ERESOLVE, coverage-v8 5 needs vitest 5 (vitest/ui stay 4.1.11)	session-20261115T152539-8dadb15a	2026-11-15T16:18:06Z
 review:launchpad:1038:8f31cf39	BLOCK: needs openregister StoreListing which is not on main	session-20261115T154300-03b63424	2026-11-15T16:18:15Z
+review:launchpad:788:470c789d	CONFLICT #788: 40 files, likely superseded by the engagement-announcements build on development	session-20261115T152601-38767331	2026-11-15T16:18:22Z
