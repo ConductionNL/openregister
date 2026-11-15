@@ -14015,3 +14015,4 @@ review:pipelinq:3835:8a345d33	RED: articleDetailFormDialogEditor.spec.js imports
 fix:dossiq:5353:15d28d9d	failed: 295-file refactor conflicts in 97 files, beyond the 45 min cap; also imports OCA\OpenRegister\Service\Object\ObjectSaveOptions/ObjectFindTarget but openregister main has them in Kernel\Contracts\Value (no alias), so it needs regenerating on current development with the right namespace, not a merge	session-20261115T154255-e54527e9	2026-11-15T17:59:10Z
 fix:dossiq:3953:1fa01764	conflicts resolved, pushed 6ca6e023; REVERIFY recorded	session-20261115T142129-944012f5	2026-11-15T17:59:09Z
 fix:dossiq:3936:d81910f6	conflict resolved, pushed 7ae9f014, REVERIFY recorded	session-20261115T174741-56eeaa2f	2026-11-15T17:59:23Z
+fix:pipelinq:2593:6a42067a	conflict resolved, pushed c5620371; REVERIFY recorded	session-20261115T174750-744c606b	2026-11-15T17:59:30Z
