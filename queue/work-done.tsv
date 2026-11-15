@@ -14887,3 +14887,4 @@ fix:humaniq:684:c6a338ca	merged development, regenerated sbom; new head 036f7e9f
 review:shillinq:2226:e54eecaf	GREEN: pinia minor bump, vitest no new failures	session-20261115T200043-78b85ca2	2026-11-15T20:45:58Z
 fix:integriq:2562:a0c8e1bf	sbom regenerated, development merged; REVERIFY at 7e5a8712	session-20261114T075643-75a598ab	2026-11-15T20:46:09Z
 fix:integriq:3564:4585a979	conflict resolved keeping both; new head 34a49284, REVERIFY	session-20261115T200011-d13b13ca	2026-11-15T20:46:16Z
+verify:shillinq:3080:59a6ef0e	3080 GREEN, 3088 CONFLICT (after 3080: CHANGELOG, info.xml, register-versions.lock)	session-20261115T203029-7489abc7	2026-11-15T20:46:27Z
