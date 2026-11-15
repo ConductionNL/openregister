@@ -11123,3 +11123,4 @@ stackiq	1928	064e3b5386f3adc05e29fbf76cf9d1df7a888e99	CONFLICT	worker-47	conflic
 stackiq	1976	2fd15126eaabf872c37290fae257ef7a25cca357	GREEN	worker-47	phpunit 3646 ok (baseline 3626 ok), vitest 2664 with 1 inherited fail (facets.spec, red on development); no new failures; tests only (objectModalHelpers.spec.js)
 opencatalogi	2665	b06af5bf3a18d510028dfa0289a8104681f6d761	GREEN	worker-25	PHP unit 5690 vs baseline 5669, 2 inherited failures (AppIdentityTest, WooControllerTest), 0 new; vitest 1103 pass; build PR per publication-translations
 opencatalogi	2671	6274e217321f11883eb7d63903de0050bdf3b487	CONFLICT	worker-25	conflicts on the tree after 2665
+opencatalogi	2686	6cda6a7f12f3d570e619e5d158a211d8d1fa044c	CONFLICT	worker-25	conflicts on the tree after 2665
