@@ -12445,3 +12445,4 @@ cover:keepiq:c967a31fmdbad:a4b15ae4	already done: lib/Event/Audit/ measures 100%
 cover:portaliq:b60f3b81m4ccb:2820f177	already done: lib/Service/Mail/ at 99.1% lines (209/211) on development 36f157973, target 95	session-20261114T231755-998f7ff8	2026-11-15T00:57:54Z
 verify:shillinq:3092:6d27e720	GREEN 3092; no new failures	session-20261114T234952-566b7ef5	2026-11-15T00:57:57Z
 review:integriq:3549:2d954e73	GREEN: per-item references per spec, no new failures (9237 tests, 7 inherited), phpstan clean	session-20261115T005138-c7bbb0f0	2026-11-15T00:58:11Z
+verify:integriq:3564:4ebdf7ba	4 GREEN (3564,3593,3612,3641), 3 CONFLICT (3615,3617,3631); no new unit failures	session-20261115T005122-49ba1b99	2026-11-15T00:58:36Z
