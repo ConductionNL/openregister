@@ -14819,3 +14819,4 @@ fix:shillinq:2081:29d9d8c7	conflict resolved, specs updated to scoped loads; vit
 fix:filinq:2088:08907be9	conflict resolved, pushed 7e328ebd; REVERIFY recorded	session-20261115T202936-e956716f	2026-11-15T20:34:28Z
 fix:filinq:1086:be9ddbad	sbom regenerated; new head 7581c2a8, REVERIFY recorded	session-20261115T203016-ff00326d	2026-11-15T20:34:41Z
 review:portaliq:1353:c8141de2	BLOCK: phpmd 3 adds 17 findings on unchanged code, deprecated CLI	session-20261115T195958-28cb0304	2026-11-15T20:34:57Z
+fix:shillinq:2224:8a7a3aa7	fixed: sbom regenerated, development merged; new head ff4aa606	session-20261115T200043-78b85ca2	2026-11-15T20:35:04Z
