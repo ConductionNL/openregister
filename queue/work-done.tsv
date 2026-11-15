@@ -14062,3 +14062,4 @@ merge:integriq:3657:7f12c750	merge3 tree of 13 integriq PRs: merged=8 red=2 fail
 merge:integriq:3615:73ce4aeb	merge3 tree of 13 integriq PRs: merged=8 red=2 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-15T18:08:28Z
 merge:integriq:3589:8d6a8b8a	merge3 tree of 13 integriq PRs: merged=8 red=2 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-15T18:08:30Z
 merge:integriq:3546:b8d12ec0	merge3 tree of 13 integriq PRs: merged=8 red=2 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-15T18:08:34Z
+review:dossiq:4882:2a47c981	GREEN: changes match its spec delta; 0 new failures	session-20261115T174808-50b8ceec	2026-11-15T18:08:40Z
