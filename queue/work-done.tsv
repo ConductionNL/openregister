@@ -12952,3 +12952,4 @@ merge:learniq:2484:544eb8a6	merge3 tree of 5 learniq PRs: merged=0 red=1 fail=0 
 merge:learniq:2486:8f862e71	merge3 tree of 5 learniq PRs: merged=0 red=1 fail=0 skip=0; conflict 4, lint 0, moved 0; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-15T03:54:06Z
 merge:learniq:2513:f219ff0f	merge3 tree of 5 learniq PRs: merged=0 red=1 fail=0 skip=0; conflict 4, lint 0, moved 0; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-15T03:54:09Z
 merge:humaniq:1133:90a94639	merge3 tree of 1 humaniq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-15T03:56:07Z
+merge:pipelinq:3853:0783b221	merge3 tree of 15 pipelinq PRs: merged=14 red=0 fail=0 skip=1; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-15T03:59:45Z
