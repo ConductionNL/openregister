@@ -14507,3 +14507,4 @@ fix:buildiq:1648:a6359df5	conflict resolved, pushed 30c0874a; ExportZipGoldenTes
 fix:opencatalogi:2655:a2523fc9	conflict resolved, pushed f9ef3261, REVERIFY recorded	session-20261115T182948-465dcc8e	2026-11-15T19:20:48Z
 measure:opencatalogi:20261115h16	php 95.37% (pcov, 5750 tests, 2 failures), js 96.66% lines	session-20261115T182951-bdf9d68e	2026-11-15T19:20:58Z
 fix:buildiq:1091:c4dd3636	merged development, pushed d342b9dd	session-20261115T174741-56eeaa2f	2026-11-15T19:21:01Z
+fix:launchpad:753:51b86dbd	lockfile regenerated on development, npm ci + vitest green, pushed d16aabc3; REVERIFY recorded	session-20261115T183029-6c0565bd	2026-11-15T19:21:11Z
