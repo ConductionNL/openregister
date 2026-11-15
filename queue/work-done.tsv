@@ -14527,6 +14527,7 @@ fix:stackiq:1042:56393a99	lock regenerated on development, pushed; REVERIFY reco
 fix:launchpad:819:9dcfeabe	sbom regenerated after merging development, pushed; REVERIFY recorded	session-20261115T174755-95dc8448	2026-11-15T19:22:31Z
 fix:opencatalogi:2723:f92c3e05	CONFLICT resolved (both-sides additions), pushed 8d90b4a9; REVERIFY	session-20261115T174741-9deaa0be	2026-11-15T19:22:40Z
 fix:stackiq:1069:500f69e7	lock conflict resolved, new head e98fca28	session-20261115T185929-0fc862a6	2026-11-15T19:22:58Z
+fix:stackiq:1065:7afbf58c	failed: @vueuse/core 15 violates the peer of @conduction/nextcloud-vue (^11||^14, also in latest 2.181.0); merge itself resolves (drop axe-core, keep 15) but the bump must wait for the library to accept 15. Nothing pushed.	session-20261115T181015-497e81ce	2026-11-15T19:23:09Z
 fix:stackiq:1434:b9dab81b	failed: the PR's saveObjects(options: BulkSaveOptions) call matches openregister main, but the tests mock OCA\OpenRegister\Contract\ObjectServiceInterface from the vendored hydra-gates contracts (locked .github 477f930e and newer bfb34cc6), which still declare saveObjects(objects, register, schema, ...); the 39 reds clear only when hydra-gates ships main's contract; not fixable on this branch	session-20261115T183029-6c0565bd	2026-11-15T19:23:08Z
 fix:larpinq:830:794bac00	failed: the only fix is regenerating composer.lock against development (the PR is a lock-only phpmd bump that conflicts), and workers may not commit composer.lock; needs a dependabot recreate or a local lane	session-20261115T183023-a120e01a	2026-11-15T19:23:13Z
 fix:stackiq:1931:2588041a	fixed: merged development, README conflict resolved, registrar test updated; new head d2989729	session-20261115T185930-76cdc846	2026-11-15T19:23:14Z
@@ -14539,3 +14540,4 @@ fix:thematiq:1555:1e3652b9	failed: fix needs a regenerated composer.lock (worker
 fix:versioniq:500:ccaf6046	lock regenerated on development, pushed 890378b3; REVERIFY recorded	session-20261115T185932-17792562	2026-11-15T19:24:29Z
 fix:buildiq:1651:3e54ea1b	development merged in cleanly; new head 8f610194, REVERIFY	session-20261115T174757-8dfa7406	2026-11-15T19:24:37Z
 fix:stackiq:1930:8b2f3e05	l10n conflict resolved; only inherited failures; new head d6bf1559	session-20261115T174739-b14c2df4	2026-11-15T19:24:53Z
+fix:launchpad:786:5bd3779b	conflicts resolved (kept development's tile sorting), pushed d5210578; REVERIFY recorded	session-20261115T182941-b7ae781f	2026-11-15T19:25:16Z
