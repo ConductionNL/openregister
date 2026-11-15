@@ -14144,3 +14144,4 @@ merge:planninq:908:5035230c	merge8 tree of 7 planninq PRs: merged=0 red=6 fail=0
 fix:portaliq:1768:2c4e29aa	fixed: lock rebuilt on development, npm ci OK; new head 5560c998, REVERIFY recorded	session-20261115T152543-40aea993	2026-11-15T18:23:53Z
 review:portaliq:1670:311e49a8	RED: validate-manifest gains 5 errors for widgets moved to band	session-20261115T174833-88ac0233	2026-11-15T18:23:59Z
 merge:planninq:725:0402f280	merge8 tree of 7 planninq PRs: merged=0 red=6 fail=0 skip=0; conflict 1, lint 0, moved 0; fix rows 1	merge8-20261115T170007-37538273	2026-11-15T18:24:06Z
+fix:portaliq:1681:1c5961b5	fixed: merged development, draft lookup on version 2; new head ea79ed8c	session-20261115T174819-9af28ef9	2026-11-15T18:24:11Z
