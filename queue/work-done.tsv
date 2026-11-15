@@ -13348,3 +13348,4 @@ review:dossiq:3193:5b406bdb	GREEN: lock-only dev bump; 19 baseline failures, non
 review:decidiq:1948:fbc94193	GREEN: unit 4461/0 fail, phpcs/phpmd unchanged vs development	session-20261115T154314-8216dc98	2026-11-15T15:51:21Z
 review:decidiq:1946:b7542a86	BLOCK: ObjectPatch/ObjectFindTarget imported from wrong namespace vs openregister main; psalm.xml conflict	session-20261115T154258-dee2cc3d	2026-11-15T15:51:32Z
 build:opencatalogi:instance-staging-mode:c3	done: PR #2699 head b0f3f779; 2.2 all sites gated, 2.3 grep test, 1.1 mode+audit, 1.2/2.4 code (banner, outside list, Dry runs page; e2e left), 4.1 docs, 5.x run; left 3.2 live + e2e specs; suite 5723, 2 inherited	session-20261115T151007-45079d32	2026-11-15T15:51:48Z
+review:dossiq:3957:89c80a54	CONFLICT: 15 files conflict with development (new Kernel contracts on renamed classes); recorded for fix	session-20261115T154307-1fc2cc78	2026-11-15T15:51:48Z
