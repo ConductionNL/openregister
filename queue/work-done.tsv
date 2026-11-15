@@ -14183,3 +14183,4 @@ fix:portaliq:1856:d612dba3	conflict resolved, pushed 9258525b; REVERIFY recorded
 fix:portaliq:1767:fc41a4fc	fixed: lock rebuilt on development, npm ci + build OK; new head 886f4fa1, REVERIFY recorded	session-20261115T152543-40aea993	2026-11-15T18:31:34Z
 review:portaliq:1657:8ce73cab	GREEN: manifest styling/text only	session-20261115T174757-8dfa7406	2026-11-15T18:32:07Z
 fix:portaliq:1606:2cc8c923	failed: branch replaces the tree resolver's design that development refactored; needs a rebuild of the reach feature on development, beyond a conflict fix	session-20261114T102637-6688951e	2026-11-15T18:32:16Z
+review:portaliq:1659:3bad2deb	GREEN: manifest copy change, node specs identical to baseline	session-20261115T174804-89f2739f	2026-11-15T18:32:25Z
