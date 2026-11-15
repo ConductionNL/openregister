@@ -14853,3 +14853,4 @@ review:pipelinq:2557:74ee842a	GREEN: lock-only ocp bump, unit 8922 OK	session-20
 review:shillinq:2083:fc181f39	GREEN: stricter correction allowlist and guarded discard; tests green; includes #2253	session-20261115T182940-bfeb7e78	2026-11-15T20:40:25Z
 review:dossiq:3106:2e124449	GREEN: eslint bump, identical lint findings, sbom current	session-20261114T073105-752e50ad	2026-11-15T20:40:32Z
 fix:learniq:1903:3f6c3b60	sbom regenerated after merging development; REVERIFY at a21f3b3b	session-20261115T195958-28cb0304	2026-11-15T20:40:39Z
+review:dossiq:3204:d7bb586b	GREEN: dev-dependency bump only, vitest 2 inherited failures, eslint unchanged	session-20261115T203018-dcff1ace	2026-11-15T20:40:51Z
