@@ -12904,3 +12904,4 @@ build:hermiq:store-through-federated-config:c6	partial: hermiq#1736 +9cd02fc9 bu
 verify:integriq:3655:d4be6928	3655 GREEN	session-20261115T011811-95390b97	2026-11-15T02:35:17Z
 cover:pipelinq:7f9dc8e6m8519:0798b7cf	already done: lib/Service/PosCart/ at 100% statements on development (earlier -1/-2); no PR	session-20261115T012426-ca0c1432	2026-11-15T02:35:23Z
 cover:shillinq:05639debma41a:js3f3bfe56	PR #3100: 17 vitest tests for src/App.vue, setPublicPath.js, integration-init.js, pinia.js; src lines 83.82->84.05, suite 2749->2766 passed (1 inherited failure); main.js/settings.js not coverable offline	session-20261115T021838-d11621d8	2026-11-15T02:35:45Z
+measure:stackiq:20261115h02	php 91.02% js 93.31% (1 failing vitest spec facets.spec.js on development)	session-20261115T022508-c7a0f495	2026-11-15T02:36:49Z
