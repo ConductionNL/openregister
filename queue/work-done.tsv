@@ -13711,6 +13711,7 @@ review:shillinq:2083:cb3e6a42	CONFLICT: 8 files conflict with development; new e
 review:portaliq:1854:60bd5395	BLOCK: superseded by development's build of the change	session-20261115T152546-2c24b649	2026-11-15T16:56:07Z
 review:portaliq:1982:19a536ca	GREEN: dev tool bump, 6120 tests OK	session-20261115T155913-70cee771	2026-11-15T16:56:27Z
 review:shillinq:2226:dcacc634	GREEN: pinia minor bump, vitest identical to development (1 inherited)	session-20261115T155904-a7df5bc0	2026-11-15T16:56:26Z
+review:pipelinq:3148:71f5a4bf	BLOCK: wrong openregister namespace for ObjectDeletion/ObjectFindTarget (runtime class-not-found); also conflicts	session-20261115T160928-e92ec17a	2026-11-15T16:56:29Z
 review:shillinq:2092:e3baa4d4	CONFLICT: modify/delete with development; development specs import the deleted components	session-20261115T155911-14cd078d	2026-11-15T16:56:33Z
 review:shillinq:1899:c535cb99	CONFLICT: 11 files conflict with development	session-20261115T154258-dee2cc3d	2026-11-15T16:56:40Z
 review:shillinq:2070:036e98c2	CONFLICT: 11 files conflict with development	session-20261115T155903-abd003e3	2026-11-15T16:56:50Z
@@ -13732,7 +13733,9 @@ review:shillinq:2227:13c58709	BLOCK: @vueuse/core 15 outside the component libra
 review:shillinq:2411:6ca5ae67	BLOCK: targets openregister settings value objects that exist only on an unmerged branch; would fail against openregister main	session-20261114T095641-533e2a00	2026-11-15T16:59:35Z
 review:shillinq:2408:837e65b7	BLOCK: create(layout:) does not exist in OpenRegister main; stub masks it; also conflicts	session-20261115T142149-1d09fceb	2026-11-15T16:59:46Z
 review:shillinq:2766:64b9e198	GREEN: phpstan minor bump, analyse clean on both	session-20261114T075643-acecaad6	2026-11-15T16:59:55Z
+review:shillinq:2095:0bdac976	CONFLICT: 7 files conflict with development (2748 commits behind)	session-20261115T152539-8dadb15a	2026-11-15T17:00:19Z
 review:shillinq:1958:66501062	CONFLICT: lib and l10n conflicts with development refactors; diff additive	session-20261115T145555-b33410db	2026-11-15T17:00:22Z
 review:shillinq:2249:530fcbd0	CONFLICT (use-block only; resolved locally unit 12214 OK, otherwise GREEN)	session-20261115T154307-1fc2cc78	2026-11-15T17:00:33Z
 review:shillinq:1908:1862245f	GREEN: test-utils patch bump; 1 inherited vitest failure	session-20261115T154254-3d07b219	2026-11-15T17:00:55Z
 review:stackiq:1064:92f38c90	CONFLICT: package-lock.json	session-20261115T142149-1d09fceb	2026-11-15T17:00:53Z
+review:stackiq:1433:1276a79b	RED: conflicts (trivial) + development's ReferencesAuditCommandFailuresTest fake uses old patchObject signature	session-20261115T155903-abd003e3	2026-11-15T17:01:08Z
