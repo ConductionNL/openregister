@@ -1,0 +1,16 @@
+
+To whom it may concern: Psalm cannot detect unused classes, methods and properties
+when analyzing individual files and folders. Run on the full project to enable
+complete unused code detection.
+
+------------------------------
+[42;2m                              [0m
+[42;30;2m       No errors found!       [0m
+[42;2m                              [0m
+------------------------------
+58 other issues found.
+You can display them with [30;48;5;195m--show-info=true[0m
+------------------------------
+
+Checks took 14.49 seconds and used 416.413MB of memory
+Psalm was able to infer types for 95.8984% of the codebase
