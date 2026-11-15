@@ -12145,3 +12145,4 @@ cover:shillinq:05639debm9818:81b1241f	PR #3087: lib/Portal 353/353 lines (+2 tes
 cover:decidiq:a5f973bbmae46:d39f9857	already done: lib/Support/*.php at 100% statements (62/62) after quality/test-coverage-d39f9857-1 merged; no PR	session-20261114T234932-1a68fd4b	2026-11-15T00:07:56Z
 verify:larpinq:1054:78b36e57	1054 GREEN	session-20261114T221759-cd5c5678	2026-11-15T00:07:55Z
 fix:shillinq:3065:82dc0d10	no change: branch already contains development (82dc0d10 merges clean); conflict is only against unmerged #3062 (info.xml version, register lock); merge development in once #3062 lands	session-20261114T234948-b89aaae1	2026-11-15T00:08:11Z
+cover:shillinq:05639debm9818:e587f75a	already done: lib/PaymentRun/*.php measures 98.04% lines (501/511) on development, above the 95% target; no PR	session-20261114T231750-d1c755b0	2026-11-15T00:08:39Z
