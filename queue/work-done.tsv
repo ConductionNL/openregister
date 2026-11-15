@@ -12849,3 +12849,4 @@ build:versioniq:safety-rollback-backup-and-preflight:c3	built 3.1-3.5 and 4.1 (c
 fix:larpinq:1054:8a1a3523	no change: clean on development; conflicts only with unmerged #1051, re-verify after it lands	session-20261115T021855-b3590e6a	2026-11-15T02:20:39Z
 build:filinq:templates-employer-statement:c4	already done: no code task left on filinq#2090 (923c98e0); only live 2.2 occ run and 3.1 screenshot remain	session-20261115T014841-06b22da6	2026-11-15T02:21:00Z
 verify:keepiq:1824:293432db	GREEN 1824: tests only, 5217 tests no failures	session-20261115T005138-c7bbb0f0	2026-11-15T02:21:00Z
+fix:dossiq:6527:63dd4276	conflict resolved (branch test moved to its own class), new head 6d54f2239; REVERIFY recorded	session-20261115T012426-ca0c1432	2026-11-15T02:21:50Z
