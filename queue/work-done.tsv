@@ -14069,3 +14069,4 @@ fix:pipelinq:2458:9c135002	conflict resolved, merged development, unit suite gre
 fix:dossiq:3957:89c80a54	fixed: merged development onto renamed classes; new head 17cbacac	session-20261115T174819-9af28ef9	2026-11-15T18:09:30Z
 review:dossiq:3299:518945cf	GREEN: bug fix only, no new failures	session-20261115T174741-9deaa0be	2026-11-15T18:09:48Z
 fix:dossiq:4870:ec90c58c	merged development, kept allowDraft additions; new head 3d0c3c95, REVERIFY recorded	session-20261115T152558-f97be55f	2026-11-15T18:10:04Z
+review:dossiq:4887:fc7097f8	GREEN (conflicts with development: 3 files); PR head unit 10129 OK	session-20261115T152543-40aea993	2026-11-15T18:10:14Z
