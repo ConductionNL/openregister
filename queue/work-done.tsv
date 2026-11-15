@@ -13525,3 +13525,11 @@ review:integriq:2671:1ab1068a	BLOCK: phpmd 3 raises reported violations 158->186
 review:launchpad:833:62b5ba52	CONFLICT: 84 files incl. routes.php and src/personal.js (deleted on development)	session-20261115T154254-3d07b219	2026-11-15T16:21:30Z
 review:integriq:3126:da5c460d	BLOCK: uses ResolvedConsumer shape that openregister main does not have (stubs mask it)	session-20261115T142934-de7c51d0	2026-11-15T16:21:43Z
 review:keepiq:1498:65127fcb	BLOCK (psalm 7.1 unsatisfiable under config.platform php 8.3; composer install fails)	session-20261115T141023-b06d51da	2026-11-15T16:21:51Z
+review:learniq:864:9226e150	GREEN: no-op, development already at hydra-gates v1.18.0	session-20261115T155902-521936b1	2026-11-15T16:22:07Z
+review:launchpad:763:832b5d0a	RED: npm ci ERESOLVE, @vitest/ui 5 vs vitest 4	session-20261115T154300-03b63424	2026-11-15T16:22:17Z
+review:launchpad:784:f46ccf4d	CONFLICT: development already has a different build of launcher-tile-sorting; PR sound alone (15 specs pass)	session-20261115T145533-2db61682	2026-11-15T16:22:26Z
+review:launchpad:653:0c8c8740	RED: npm ci ERESOLVE, babel-config 2 needs Babel 8	session-20261114T102641-d4fd3e25	2026-11-15T16:22:33Z
+review:integriq:2714:45199b02	GREEN: vitest and build pass	session-20261115T152546-2c24b649	2026-11-15T16:22:43Z
+review:keepiq:1195:3f2200c4	BLOCK: phpmd 3 changes gate findings 7->13 and deprecates the CLI form used	session-20261114T102637-6688951e	2026-11-15T16:22:54Z
+review:learniq:2133:743baa5c	BLOCK: ObjectDeletion/ObjectFindTarget imported from a namespace openregister does not have	session-20261115T142934-de7c51d0	2026-11-15T16:23:07Z
+review:learniq:2134:189e76b4	BLOCK (imports save-option classes from a namespace openregister does not provide)	session-20261115T141023-b06d51da	2026-11-15T16:23:14Z
