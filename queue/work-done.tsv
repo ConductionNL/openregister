@@ -14575,3 +14575,4 @@ merge:dossiq:3300:f9aecbf6	merge3 tree of 26 dossiq PRs: merged=8 red=11 fail=0 
 merge:dossiq:2909:7d38d396	merge3 tree of 26 dossiq PRs: merged=8 red=11 fail=0 skip=0; conflict 7, lint 0, moved 0; fix rows 7	merge3-20261113T213425-c36bcd5f	2026-11-15T19:31:56Z
 merge:portaliq:1353:9b7f3e10	merge3 tree of 12 portaliq PRs: merged=4 red=5 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-15T19:32:23Z
 merge:portaliq:544:6a4c6189	merge3 tree of 12 portaliq PRs: merged=4 red=5 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-15T19:32:33Z
+merge:portaliq:2527:a6de80af	merge3 tree of 12 portaliq PRs: merged=4 red=5 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-15T19:32:45Z
