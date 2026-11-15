@@ -44,6 +44,11 @@
 - [ ] Implement: The system MUST support custom calculated metrics
 - [ ] Implement: Reports and exports MUST enforce RBAC permissions
 - [ ] Implement: The system MUST support report caching for performance
+      PARTLY DONE: the report, chart and ad-hoc aggregation responses now carry `X-Cache: HIT|MISS` beside the
+      existing `X-OR-Cache`; results were already cached per caller and organisation by `AggregationCache` and evicted
+      on every object create, update, delete and transition by `AggregationCacheInvalidationListener`. Left: the spec's
+      5-minute default TTL (the cache keeps the 60 s the aggregations-backend-native spec set; changing it is a
+      decision for that spec) and caching template report files, which waits on report templates.
 - [ ] Implement: The system MUST support WOO transparency reporting
 - [ ] Implement: The system MUST support audit report generation
 - [ ] Implement: The system MUST enforce multi-tenant reporting isolation

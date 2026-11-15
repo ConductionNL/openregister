@@ -366,6 +366,9 @@ class AggregationController extends Controller {
 		}
 
 		$response->addHeader('X-OR-Cache', $cacheHeader);
+		// The reporting spelling (rapportage-bi-export, report caching): the
+		// same verdict as `X-Cache: HIT` / `MISS`, beside the original header.
+		$response->addHeader('X-Cache', strtoupper($cacheHeader));
 		return $response;
 	}//end withCacheHeader()
 
@@ -978,7 +981,9 @@ class AggregationController extends Controller {
 		);
 
 		$response = new JSONResponse(['type' => $type] + $chart);
-		$response->addHeader('X-OR-Cache', (string)($report->getHeaders()['X-OR-Cache'] ?? 'miss'));
+		$cacheHeader = (string)($report->getHeaders()['X-OR-Cache'] ?? 'miss');
+		$response->addHeader('X-OR-Cache', $cacheHeader);
+		$response->addHeader('X-Cache', strtoupper($cacheHeader));
 		return $response;
 	}//end chart()
 

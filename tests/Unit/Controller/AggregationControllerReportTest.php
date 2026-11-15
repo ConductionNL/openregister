@@ -105,6 +105,7 @@ class AggregationControllerReportTest extends TestCase {
 			$response->getData()
 		);
 		$this->assertSame('miss', $response->getHeaders()['X-OR-Cache'] ?? null);
+		$this->assertSame('MISS', $response->getHeaders()['X-Cache'] ?? null);
 		$this->assertSame(['field' => 'status'], $captured->groupBy);
 		$this->assertSame('count', $captured->metric);
 	}//end testCountByStatusReturnsResultsAndTotal()

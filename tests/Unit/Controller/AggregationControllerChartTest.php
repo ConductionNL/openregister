@@ -110,6 +110,7 @@ class AggregationControllerChartTest extends TestCase {
 			$response->getData()
 		);
 		$this->assertSame('hit', $response->getHeaders()['X-OR-Cache'] ?? null);
+		$this->assertSame('HIT', $response->getHeaders()['X-Cache'] ?? null);
 	}//end testABarChartOfTheStatusDistribution()
 
 	public function testALineChartKeepsTheGapFilledMonths(): void {
