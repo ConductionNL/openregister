@@ -11072,3 +11072,4 @@ shillinq	3087	ae34821598d917ae70e16b748ea0142dd4d279d5	GREEN	worker-11	tests onl
 pipelinq	3853	9e930a6ba52fd011f201adac3f8a5d089f905008	GREEN	worker-58	unit 8500 run on tree, baseline 8496 OK (2 skipped), no new failures; tests only
 buildiq	1659	c3dc25c53c9e5bbdf9d330cd6d189dff3ffd7144	GREEN	worker-09	3199 tests on tree, baseline 3192 with 1 failure (ExportZipGoldenTest), no new failures; tests only
 buildiq	1660	c39067d3512f8b2f4ca1b3f0c2255f611b8437c5	GREEN	worker-09	3199 tests on tree, baseline 3192 with 1 failure (ExportZipGoldenTest), no new failures; tests only
+launchpad	1229	486876840be3f79f7eec4dc5bec8c252719f0896	GREEN	worker-22	PHPUnit 4312 tests on tree (baseline 4235, 1 inherited failure OpenApiStabilityTest, no new); vitest 2357 passed (baseline 2352); php -l clean; builds scheduled-exports per its specs, owner-or-admin checks in service, existing behaviour unchanged
