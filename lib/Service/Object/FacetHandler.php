@@ -90,6 +90,7 @@ class FacetHandler {
 	 * @param PropertyRbacHandlerInterface|null $propertyRbac Withholds a facet over a property the caller may not read.
 	 *                                               Nullable and last so no construction site shifts; absent, a
 	 *                                               governed property is withheld, which is the safe direction.
+	 * @param FacetWeekNumbering|null $weekNumbering Which calendar's first week the week buckets follow; null keeps ISO weeks.
 	 *
 	 * @return void
 	 *
@@ -103,6 +104,7 @@ class FacetHandler {
 		// container always supplies it; null happens only in a hand-built test,
 		// and then a GOVERNED property is withheld, which is the safe direction.
 		private readonly ?PropertyRbacHandlerInterface $propertyRbac = null,
+		private readonly ?FacetWeekNumbering $weekNumbering = null,
 	) {
 		$this->unifiedObjectMapper = $lookups->unifiedObjectMapper;
 		$this->schemaMapper        = $lookups->schemaMapper;
@@ -166,7 +168,11 @@ class FacetHandler {
 	private function storedFacets(string $cacheKey, FacetRun $run): array {
 		$schemas = $this->getSchemasForQuery(baseQuery: $run->query);
 		$facetableConfig = $this->getFacetableFieldsFromSchemas(schemas: $schemas);
-		$result = $this->calculateFacetsWithFallback(facetQuery: $run->query, facetableConfig: $facetableConfig);
+		$result = $this->calculateFacets(
+			facetQuery: $run->query,
+			facetableConfig: $facetableConfig,
+			weeks: $this->weekNumbering?->labelsFor(schemas: $schemas)
+		);
 		$result['performance_metadata']['total_execution_time_ms'] = $run->elapsedMs();
 		$this->responseCache->put(cacheKey: $cacheKey, result: $result);
 		$this->logCompletion(result: $result);
@@ -270,23 +276,20 @@ class FacetHandler {
 	}//end getFacetableFields()
 
 	/**
-	 * Calculate Facets with Intelligent Fallback Strategy.
+	 * Calculate the facets, with week buckets labelled by a declared first week when one applies.
 	 *
-	 * Implements smart fallback logic that ensures users always see meaningful facet
-	 * options, even when their current search/filters return zero results.
-	 * Also handles non-aggregated facets by making separate schema-scoped queries.
+	 * @param array                $facetQuery      Query for facet calculation (without pagination).
+	 * @param array                $facetableConfig Facetable field configuration from schema discovery.
+	 * @param FacetWeekLabels|null $weeks           Relabels week buckets; null keeps ISO weeks.
 	 *
-	 * @param array $facetQuery      Query for facet calculation (without pagination).
-	 * @param array $facetableConfig Facetable field configuration from schema discovery.
+	 * @return array Facets with performance metadata.
 	 *
-	 * @return array Facets with performance metadata including strategy and fallback status.
-	 *
-	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-facet-request-configuration-via-facets-parameter
+	 * @spec openspec/changes/working-calendar-admin/specs/flow-business-timers/spec.md#requirement-a-calendar-declares-blackout-periods-and-its-first-week-of-the-year-req-wca-007
 	 */
-	private function calculateFacetsWithFallback(array $facetQuery, array $facetableConfig = []): array {
-		return (new FacetCalculation(mapper: $this->unifiedObjectMapper, logger: $this->logger))
+	private function calculateFacets(array $facetQuery, array $facetableConfig, ?FacetWeekLabels $weeks): array {
+		return (new FacetCalculation(mapper: $this->unifiedObjectMapper, logger: $this->logger, weeks: $weeks))
 			->calculate(facetQuery: $facetQuery, facetableConfig: $facetableConfig);
-	}//end calculateFacetsWithFallback()
+	}//end calculateFacets()
 
 	/**
 	 * Get schemas relevant to the current query (cached for performance).

@@ -2716,6 +2716,8 @@ Service/Object/FacetHandler.php,105,Service,Service,Service/Object/FacetHandler.
 Service/Object/FacetListing.php,160,Service,Service,Service/Object/FacetListing.php,0,,Core
 Service/Object/FacetResponseCache.php,132,Service,Service,Service/Object/FacetResponseCache.php,0,,Core
 Service/Object/FacetRun.php,13,Service,Service,Service/Object/FacetRun.php,0,,Core
+Service/Object/FacetWeekLabels.php,56,Service,Service,Service/Object/FacetWeekLabels.php,0,,Core
+Service/Object/FacetWeekNumbering.php,49,Service,Service,Service/Object/FacetWeekNumbering.php,0,,Core
 Service/Object/FacetableFieldDiscovery.php,120,Service,Service,Service/Object/FacetableFieldDiscovery.php,0,,Core
 Service/Object/FileWriteGuard.php,22,Service,Service,Service/Object/FileWriteGuard.php,0,465,Core
 Service/Object/GetObject.php,183,Service,Service,Service/Object/GetObject.php,0,,Core

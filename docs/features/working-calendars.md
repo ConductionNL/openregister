@@ -167,3 +167,22 @@ The term diagnostic says which happened: `calendarScope` is `timer`,
 `recordType`, `unit` or `instance` (or `given` for a definition you send it),
 and `workingPattern` is `person` or `calendar`, with the app it came from in
 `workingPatternSource`.
+
+## Week numbers
+
+A calendar may declare its first week of the year as `firstWeekOfYear`:
+
+| Value | Week 1 is |
+| --- | --- |
+| `iso` (the default) | the week holding 4 January, as ISO 8601 counts |
+| `containsJanuary1` | the week holding 1 January |
+| `firstFullWeek` | the first week that starts on a Monday in January |
+
+Weeks run Monday to Sunday under every declaration, so only the number a week
+gets changes. Week histograms in facets (`interval: week`) follow it: when
+every faceted schema names the same `workingCalendar`, its declaration
+applies; otherwise the instance calendar's does. A bucket keeps its count and
+its from and to dates; only its key changes, for example ISO `2026-53` reads
+`2027-01` under `containsJanuary1`. Cached facet responses pick up a changed
+declaration within the facet cache's lifetime (one hour at most), or at once
+after a schema change or a cache flush.

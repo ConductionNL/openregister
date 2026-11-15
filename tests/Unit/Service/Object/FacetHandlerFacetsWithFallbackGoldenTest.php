@@ -1,7 +1,7 @@
 <?php
 
 /**
- * FacetHandler::calculateFacetsWithFallback() builds facets and their scoped queries exactly as recorded.
+ * FacetHandler::calculateFacets() builds facets and their scoped queries exactly as recorded.
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -152,11 +152,9 @@ class FacetHandlerFacetsWithFallbackGoldenTest extends TestCase {
 			$logger
 		);
 
-		$method = new ReflectionMethod(FacetHandler::class, 'calculateFacetsWithFallback');
-		$args   = [$scenario['query'], $scenario['config']];
-		if ($method->getNumberOfParameters() === 3) {
-			$args = [$scenario['query'], ['ignored' => true], $scenario['config']];
-		}
+		// No week numbering: the buckets stay as the mapper keyed them.
+		$method = new ReflectionMethod(FacetHandler::class, 'calculateFacets');
+		$args   = [$scenario['query'], $scenario['config'], null];
 
 		try {
 			$record['result'] = $method->invokeArgs($handler, $args);
