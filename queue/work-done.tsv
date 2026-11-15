@@ -12774,3 +12774,4 @@ review:learniq:2513:fd13b215	GREEN: dev merge only since last GREEN, PHP 6868 (1
 cover:integriq:92114ab0m6759:js971eca14	done: PR #3650 (JobScheduleFields, intakeRuleApi, IntakeRuleEditorModal; 42 tests; suite 2316->2358 green; src/modals/v2 statements 88.83->96.71%)	session-20261115T014829-787a5341	2026-11-15T02:02:27Z
 review:learniq:2521:91383eb4	GREEN: per spec, no new failures; noted dropped SPDX headers in 22 locale files from a merge	session-20261115T005138-c7bbb0f0	2026-11-15T02:02:27Z
 fix:larpinq:1052:1b2b0ad3	SPDX header moved into first lines of McpTool stub; new head 35cdf6d2	session-20261115T011813-39aed99d	2026-11-15T02:02:45Z
+fix:versioniq:699:ccc8c628	conflict resolved, merged development, new head 74f2e1ef	session-20261115T014841-06b22da6	2026-11-15T02:02:51Z
