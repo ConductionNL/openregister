@@ -15136,3 +15136,4 @@ review:learniq:1883:9da73589	GREEN: portal labels per its spec, no new failures	
 review:opencatalogi:2679:22b67cf7	GREEN: build matches change specs, no new failures	session-20261115T213112-78aba834	2026-11-15T21:44:04Z
 review:opencatalogi:2678:05397e9f	GREEN: build matches spec, no new failures vs baseline (OR main beside)	session-20261115T213156-1ffcf961	2026-11-15T21:44:19Z
 review:versioniq:501:451c8f59	GREEN: dev bump, lint 0 errors, vitest pass	session-20261115T213107-505dc338	2026-11-15T21:44:23Z
+review:learniq:2132:55fe38d5	CONFLICT: superseded by development 9f17766b migration; obsolete	session-20261115T213134-4b0d2823	2026-11-15T21:44:49Z
