@@ -14522,8 +14522,10 @@ fix:stackiq:1042:56393a99	lock regenerated on development, pushed; REVERIFY reco
 fix:launchpad:819:9dcfeabe	sbom regenerated after merging development, pushed; REVERIFY recorded	session-20261115T174755-95dc8448	2026-11-15T19:22:31Z
 fix:opencatalogi:2723:f92c3e05	CONFLICT resolved (both-sides additions), pushed 8d90b4a9; REVERIFY	session-20261115T174741-9deaa0be	2026-11-15T19:22:40Z
 fix:stackiq:1069:500f69e7	lock conflict resolved, new head e98fca28	session-20261115T185929-0fc862a6	2026-11-15T19:22:58Z
+fix:larpinq:830:794bac00	failed: the only fix is regenerating composer.lock against development (the PR is a lock-only phpmd bump that conflicts), and workers may not commit composer.lock; needs a dependabot recreate or a local lane	session-20261115T183023-a120e01a	2026-11-15T19:23:13Z
 fix:stackiq:1931:2588041a	fixed: merged development, README conflict resolved, registrar test updated; new head d2989729	session-20261115T185930-76cdc846	2026-11-15T19:23:14Z
 fix:opencatalogi:2682:4bf71fcd	RED fixed (mainEntry spec), vitest green, REVERIFY recorded	session-20261115T174747-978963d5	2026-11-15T19:23:23Z
 fix:launchpad:885:04779dd2	fixed: development merged, specs adapted to the Meer menu, goldens re-recorded; vitest+phpunit green; new head da197195	session-20261115T182940-bfeb7e78	2026-11-15T19:23:30Z
 fix:stackiq:1064:92f38c90	lockfile conflict resolved, pushed adce3cb4	session-20261115T185925-f99529ae	2026-11-15T19:23:37Z
 fix:opencatalogi:2673:61140718	RED fixed (dev widget tests moved to the overview), pushed 9b953103, REVERIFY recorded	session-20261115T182936-09049974	2026-11-15T19:23:45Z
+fix:stackiq:1924:b3cd5b3a	l10n conflict resolved, new head ae4e4f18	session-20261115T185929-0fc862a6	2026-11-15T19:24:14Z
