@@ -12677,3 +12677,4 @@ verify:decidiq:2214:4202737d	GREEN 2214 (4377 tests OK, tests only)	session-2026
 cover:pipelinq:7f9dc8e6m195a:f0c02922	already done: lib/Service/External 48/48 stmts covered by 3 existing test files (branches -1,-2 merged); no PR	session-20261115T013435-30b4f471	2026-11-15T01:44:03Z
 cover:keepiq:c967a31fmdbad:59826f43	already done: lib/Settings/*.php 7/7 classes at 100% statements on development (23 tests); -1 branch merged; no PR	session-20261115T014019-616e5977	2026-11-15T01:44:33Z
 measure:dossiq:20261115h00	php 92.85% (pcov, 103722 stmts), js 94.9% at 1e14ebbf	session-20261114T234941-bc8686af	2026-11-15T01:44:32Z
+cover:dossiq:069ee2d6mdd7c:6ecc72bb	already done: lib/Service/Workflow/*.php measures 99.68% (616 stmts, 2 uncovered) at 1e14ebbf, above target 95	session-20261114T234941-bc8686af	2026-11-15T01:44:47Z
