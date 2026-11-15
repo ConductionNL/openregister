@@ -11503,3 +11503,4 @@ buildiq	1090	de7f28aa0f39994f7a54f19dd24c69b462e11870	RED	worker-57:review	npm c
 buildiq	1086	c366210fb16654246fdd25d5f716fe957c4eac44	BLOCK	worker-28:review	stylelint 18 cannot install: npm ci fails with ERESOLVE on the PR alone and merged with development, because @conduction/nextcloud-vue declares peerOptional stylelint ^17.9.1; development's npm ci passes. Needs the library's peer range widened first, or close
 launchpad	1223	721729feb7ebd206a740663c27ce70dd07fcb4a0	CONFLICT	worker-38	conflicts with development d4750aeb in appinfo/routes.php
 launchpad	1229	4e62ac9c3b8fce11393a03575b2eb04babf19d39	GREEN	worker-38	phpunit 4538 OK with 1233 (baseline 4359 OK), vitest 2583 OK; builds scheduled-exports, owner-or-admin checks in service, additive
+launchpad	1233	b9dbac40a95962b0a5d8d5b149282c09b075f84a	GREEN	worker-38	phpunit 4538 OK with 1229 (baseline 4359 OK), vitest 2583 OK; builds widget-calculated-fields, new classes only
