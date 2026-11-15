@@ -13,7 +13,7 @@
 
 ## 3. Adoption proof
 - [ ] 3.1 Migrate OR's own SettingsController canonical surface onto the generic service (kitchen-sink extras stay in their own controllers)
-- [ ] 3.2 Adopt HandlesApiExceptionsTrait in OR controllers (wave 1: the 20 highest-traffic)
+- [x] 3.2 Adopt HandlesApiExceptionsTrait in OR controllers (wave 1: the 20 highest-traffic)
   - Started: `MappingsController` (show, create, update, destroy) answers through `handleApiException()`; typed failures keep their status and message, anything else is a generic 500 with the detail in the server log.
   - `RegistersController` (show, create, destroy, schemas, the import soft delete) answers its generic failures through `handleApiException()` too: the public `show` no longer returns the exception message, and a constraint failure on delete is a 409. Its 400 answers (export, import, template) are unchanged. The other 18 controllers of wave 1 remain.
   - `SchemasController` (destroy, related, stats, indexes) answers its remaining generic failures through `handleApiException()`: an unknown schema on delete is now a 404 and a constraint failure a 409, while an untyped failure stays the generic 500. Its earlier typed catches (archival 403, attached-objects 409, the 404s) are unchanged. The other 17 controllers of wave 1 remain.
@@ -31,6 +31,7 @@
   - `CalendarEventsController` (the events of an object, the calendars, the events of a calendar) answers its generic failures through `handleApiException()`: an unknown calendar stays a 404, a typed failure keeps its own status, anything else is a generic 500 with the detail in the server log. Its 400 answers on writes are unchanged; its services bundle gains an optional logger.
   - `ImportPreviewController` (build a preview, commit one) answers its untyped failures through `handleApiException()`: a typed failure keeps its own status, anything else is a generic 500 with the detail in the server log. Its 400 and 409 answers are unchanged; its services bundle gains an optional logger.
   - `BulkController` (bulk delete, bulk save, and the schema, objects and register table deletes) answers its generic failures through `handleApiException()`: the exception message no longer reaches the response body, the operation is named in the server log line instead, and a typed failure keeps its own status. The deliberate refusals (404, 403 archival, 409 frozen, 423 locked, 422 UUID conflict) are unchanged; its services bundle gains an optional logger.
+  - `AuditTrailController` (export, clear all, the integrity status, the chain verification, the processing activities, the subject audit trail) answers its generic failures through `handleApiException()`: the exception message no longer reaches the response body, the operation is named in the server log line, a typed failure keeps its own status. Its 400 and 404 answers are unchanged; its services bundle gains an optional logger. This completes wave 1.
 - [ ] 3.3 Reference consumer PR in one leaf app (petstore — scaffold origin) deleting its SettingsService/PreferencesController copies
 
 ## 4. Verification
