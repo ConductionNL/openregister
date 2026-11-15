@@ -15356,3 +15356,4 @@ fix:filinq:2121:7021db61	fixed: migrated 3 classes to OR main options objects, s
 fix:thematiq:1126:b0b0a98c	merged development in cleanly, vitest green; new head 5620b7cb, REVERIFY	session-20261115T220036-e665285d	2026-11-15T22:25:00Z
 fix:learniq:1901:07332d28	conflict resolved (imports), pushed 152da34c; REVERIFY recorded	session-20261115T213122-e023a81e	2026-11-15T22:25:14Z
 fix:decidiq:2149:25a0bf97	migrated new calls to main's options API; head acad1376, REVERIFY	session-20261115T220134-9124a7d0	2026-11-15T22:25:25Z
+fix:hermiq:1754:90d73dbf	fixed: OR main API in ComputerTargetService; new head 69e02cc7	session-20261115T213100-e547b457	2026-11-15T22:25:43Z
