@@ -14756,3 +14756,4 @@ verify:versioniq:738:50ada5e5	GREEN 738	session-20261115T200043-78b85ca2	2026-11
 fix:dossiq:3894:c91ec402	sbom regenerated after merging development; new head 8ed2662d, REVERIFY	session-20261115T200011-d13b13ca	2026-11-15T20:22:47Z
 fix:pipelinq:3084:01208829	merged development; sbom already current (dev-only dep); REVERIFY fc01a3c7	session-20261115T200045-d3bb5c75	2026-11-15T20:22:57Z
 fix:pipelinq:3088:3135c0b1	failed: lockfile change is dev-only (eslint); regen-sbom on branch merged with development leaves sbom.cdx.json unchanged and --check passes, so no sbom change exists to commit; gate rule needs an exemption for dev-only lock changes	session-20261114T075643-75a598ab	2026-11-15T20:23:10Z
+fix:dossiq:3199	fixed: merged development, sbom regenerated; new head dd09a728	session-20261115T200000-e95b89c2	2026-11-15T20:23:12Z
