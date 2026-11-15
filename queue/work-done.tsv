@@ -14504,3 +14504,4 @@ fix:opencatalogi:2665:b06af5bf	CONFLICT resolved (both-sides appends), pushed cd
 fix:opencatalogi:2417:a2892ce3	fixed: main namespace, merged development, no new failures; new head cb054a7d	session-20261115T185930-76cdc846	2026-11-15T19:20:18Z
 fix:opencatalogi:2415:da40ef23	fixed: merged development, rendered() uses RenderSelection; new head cf561973	session-20261115T174819-9af28ef9	2026-11-15T19:20:25Z
 fix:buildiq:1648:a6359df5	conflict resolved, pushed 30c0874a; ExportZipGoldenTest red inherited from development	session-20261115T185925-f99529ae	2026-11-15T19:20:38Z
+fix:opencatalogi:2655:a2523fc9	conflict resolved, pushed f9ef3261, REVERIFY recorded	session-20261115T182948-465dcc8e	2026-11-15T19:20:48Z
