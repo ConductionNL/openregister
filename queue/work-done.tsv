@@ -13727,3 +13727,4 @@ review:shillinq:1965:6dd9752c	CONFLICT (version + lock fixture only); additive s
 review:shillinq:2259:f41c6ff8	CONFLICT: 2 files conflict with development; OR API present on main	session-20261115T154258-dee2cc3d	2026-11-15T16:59:06Z
 review:shillinq:2230:b859457f	GREEN: patch bump, build ok, 1 inherited vitest failure	session-20261114T102641-d4fd3e25	2026-11-15T16:59:14Z
 review:shillinq:2227:13c58709	BLOCK: @vueuse/core 15 outside the component library peer range	session-20261115T142934-6cab0c24	2026-11-15T16:59:27Z
+review:shillinq:2411:6ca5ae67	BLOCK: targets openregister settings value objects that exist only on an unmerged branch; would fail against openregister main	session-20261114T095641-533e2a00	2026-11-15T16:59:35Z
