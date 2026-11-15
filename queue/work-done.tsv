@@ -12163,4 +12163,5 @@ cover:dossiq:069ee2d6mdd7c:ea81adeb	already done: lib/Service/Zgw/*.php at 98.76
 cover:shillinq:05639debm9818:1581293a	PR #3090: 8 tests (RetryPolicy, metrics cache shapes, klantbeeld rows); suite 11471->11479 OK; remaining uncovered lines are unreachable defensive branches	session-20261114T233346-3552728d	2026-11-15T00:11:30Z
 build:learniq:capability-rows-say-what-they-do:c4	partial: PR learniq#2544 now also builds 2.1 (learner signs own attestation), 2.6 (rubric-complete mark release), 2.7 (what-if average), 2.8 (cohort skills gap), 2.13 (moved lesson notice); left 2.2 form, 2.3, 2.5, 2.10, 2.14, 2.15, 3.1, 4.1; unit 6786->6866, 1 inherited fail	session-20261114T234933-5c1be121	2026-11-15T00:11:21Z
 verify:decidiq:2211:f4ebbea8	GREEN #2211: 4399 tests, 0 new failures	session-20261114T234932-1a68fd4b	2026-11-15T00:12:00Z
+measure:shillinq:20261114h22	php 95.1% (85166 stmts), js 94.08% at 4ce0e0f9	session-20261114T231738-b43a6a63	2026-11-15T00:12:16Z
 review:learniq:2507:2145eaba	GREEN: PHP 6851 (1 inherited), phpstan clean	session-20261114T234941-bc8686af	2026-11-15T00:12:19Z
