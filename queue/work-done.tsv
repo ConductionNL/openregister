@@ -12191,5 +12191,6 @@ verify:dossiq:6529:18bdfaf3	stale	session-20261114T234933-5c1be121	2026-11-15T00
 cover:shillinq:05639debm9818:d47bb994	PR #3091: 2 tests, lib/Reporting/*.php to 374/374 statements; suite 11471->11473 green	session-20261114T234938-86f69098	2026-11-15T00:17:38Z
 cover:pipelinq:7f9dc8e6m799d:0a24f15f	already done: lib/Service/Letter/ measures 100% lines (164/164) on development with 4 existing test files; no PR	session-20261114T231750-d1c755b0	2026-11-15T00:17:37Z
 cover:pipelinq:7f9dc8e6m799d:0a8f160f	already done: lib/Service/Sla 100% lines on development (suite 8452 OK)	session-20261114T235442-bc1b76db	2026-11-15T00:17:46Z
+build:decidiq:configurable-types-domain-model:c5	done: pushed to PR #2206 (head ed84c103): 3.5 Post half (fragment 99-posts-are-position-types, counted MigratePostsToPositionHolds, appointment writes PositionHold, seeds repointed), +12 tests, suite 4377->4389 ok, vitest ok; left 1.24 (shared lib), 3.4 (needs schedule export), 5.3/5.4 (humaniq handoff), none code here	session-20261114T234944-ee1416bc	2026-11-15T00:19:06Z
 verify:stackiq:1967:662ac200	6 GREEN (1967-1972), 3639 tests, 0 new failures	session-20261115T001714-673c9984	2026-11-15T00:19:03Z
 fix:decidiq:2203:0b06187d	conflict resolved, new head 8d2d8f97, REVERIFY recorded	session-20261114T234932-1a68fd4b	2026-11-15T00:19:21Z
