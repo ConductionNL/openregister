@@ -12282,3 +12282,4 @@ merge:opencatalogi:2665:a0384d19	merge3 tree of 43 opencatalogi PRs: merged=20 r
 verify:humaniq:1156:54c890d4	GREEN 1156	session-20261114T234933-5c1be121	2026-11-15T00:28:56Z
 fix:launchpad:1214:3cd2835b	merged development, resolved 7 conflicts keeping both; new head eeb7c49b	session-20261115T002445-1522cadc	2026-11-15T00:29:06Z
 cover:dossiq:069ee2d6mdd7c:60c2c265	PRs #6536 #6538: 13 controllers, 93 tests; Controller 85.51->~88.4% combined, lib 92.52->~92.9%; suite failures unchanged (19 inherited)	session-20261115T001016-a8991554	2026-11-15T00:29:33Z
+merge:integriq:3564:9372562c	merge3 tree of 17 integriq PRs: merged=3 red=6 fail=0 skip=2; conflict 6, lint 0, moved 0; fix rows 6	merge3-20261113T213425-c36bcd5f	2026-11-15T00:29:36Z
