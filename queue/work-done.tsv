@@ -14025,3 +14025,4 @@ fix:dossiq:3299:779b4422	CONFLICT resolved, pushed 518945cf; REVERIFY recorded	s
 fix:pipelinq:2507:ecccdb3f	obsolete: development is on nextcloud-vue ^2.180.0, PR pinned ^2.84.0; closed with a neutral comment	session-20261115T152552-0cb4306e	2026-11-15T18:00:37Z
 fix:pipelinq:1936:27cdae0d	closed as obsolete: development already locks nextcloud-vue 2.180.0	session-20261115T174833-88ac0233	2026-11-15T18:00:31Z
 fix:dossiq:3934:90d125eb	conflicts resolved, tests retargeted; new head c4912dc2f436f1bb46c4f748a89cc19a32f4b848, REVERIFY	session-20261115T174757-8dfa7406	2026-11-15T18:01:03Z
+fix:dossiq:4887:ca6b5835	fixed: settle bound to entry holderSubject (403 not_holder otherwise); suite 10129 OK; new head fc7097f8	session-20261115T174739-b14c2df4	2026-11-15T18:01:10Z
