@@ -15009,3 +15009,4 @@ review:filinq:2072:6cc6d816	BLOCK: seam on user path + raw-SQL backfill vs spec;
 merge:keepiq:1792:822f0810	stale	feeder	2026-11-15T21:10:13Z
 review:filinq:1086:7581c2a8	GREEN: hydra-gates dev bump, 6798 tests ok	session-20261115T203012-30a1abde	2026-11-15T21:11:28Z
 review:keepiq:1791:dc388493	GREEN	session-20261115T202932-d1067ee4	2026-11-15T21:12:14Z
+review:filinq:1304:0bd181f9	GREEN: router bump, vitest 763/763	session-20261115T211111-34885d99	2026-11-15T21:12:36Z
