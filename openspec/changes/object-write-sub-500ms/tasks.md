@@ -157,8 +157,16 @@ that number is read, so "done" is a measurement rather than an opinion.
       narrowed to the register's id set, first hit wins; the combined
       `uuid OR LOWER(slug) OR id` builder is gone from `SchemaMapper`.
       Pinned in `SchemaMapperIdentifierArmsTest` (4 tests) and the re-recorded
-      `schema-mapper-find-in-ids-golden.json`. `RegisterMapper::find()` still
-      builds the combined query; that is task 3's register half.
+      `schema-mapper-find-in-ids-golden.json`.
+      2026-11-15 (c5): the register half. `RegisterMapper::find()` walks the
+      same arms (`SchemaMapper::identifierArms()`), each under the
+      organisation filter, oldest row first, capped to one; the
+      before-filter probe only runs on a miss, so a hit is one query instead
+      of two. `Version1Date20261115090000` creates `idx_registers_lower_slug`
+      on PostgreSQL and SQLite. Pinned in `RegisterMapperIdentifierArmsTest`
+      (6 tests) and the re-recorded `register-mapper-find-golden.json` (same
+      outcomes and cache keys for every case). The combined builder is gone
+      from `RegisterMapper` too. Only the `SELECT *` narrowing remains.
 
 - [ ] **Task 4 — cross-request cache.**
       APCu layer keyed on `schema.id + schema.updated`, so a cold worker does

@@ -40,6 +40,7 @@ use OCA\OpenRegister\Db\RegisterMapperServices;
 /**
  * @covers \OCA\OpenRegister\Db\RegisterMapper
  * @uses   \OCA\OpenRegister\Db\Register
+ * @uses   \OCA\OpenRegister\Db\SchemaMapper
  * @uses   \OCA\OpenRegister\Db\MultiTenancyTrait
  * @uses   \OCA\OpenRegister\Service\OrganisationContext
  * @uses \OCA\OpenRegister\Db\MappingMapper
@@ -68,8 +69,13 @@ class RegisterMapperFindGoldenTest extends TestCase {
 			}
 		}
 
-		$cases['missing everywhere'] = ['missing', false, false, [[], []]];
-		$cases['filtered away'] = ['7', false, false, [[self::ROW], []]];
+		// One query per identifier column (id for a numeric identifier, then
+		// uuid, then slug), first hit wins; only a miss of every column runs the
+		// unfiltered probe, again column by column.
+		$cases['missing everywhere'] = ['missing', false, false, [[], [], [], []]];
+		$cases['filtered away'] = ['7', false, false, [[], [], [], [self::ROW]]];
+		$cases['numeric slug found on the slug column'] = ['7', false, true, [[], [], [self::ROW]]];
+		$cases['slug found after the uuid column misses'] = ['Seven-Slug', true, true, [[], [self::ROW]]];
 		$cases['null slug and uuid'] = ['7', false, false, [[['id' => 7, 'uuid' => null, 'slug' => null]], [['id' => 7, 'uuid' => null, 'slug' => null]]]];
 
 		return $cases;

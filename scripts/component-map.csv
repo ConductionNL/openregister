@@ -4111,6 +4111,7 @@ Migration/Version1Date20261113200000.php,30,Migration,,,,,Platform
 Migration/Version1Date20261113210000.php,85,Migration,,,,,Platform
 Migration/Version1Date20261113220000.php,69,Migration,,,,,Platform
 Migration/Version1Date20261114170000.php,85,Migration,,,,,Platform
+Migration/Version1Date20261115090000.php,96,Migration,,,,,Platform
 Exception/GrantExceedsGranterException.php,,Exception,,,,,Kernel
 Service/Authorization/AddedGrants.php,,Service,,,,,Core
 Service/Authorization/GrantCeiling.php,,Service,,,,,Core

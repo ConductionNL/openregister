@@ -9,18 +9,9 @@
         "queries": [
             "#1 select(*)",
             "#1 from(openregister_registers, NULL)",
-            "#1 param :p1 = 7, 2",
-            "#1 expr.eq(uuid, :p1, NULL)",
-            "#1 func.lower(slug)",
-            "#1 param :p2 = 7, 2",
-            "#1 expr.eq(lower(slug), :p2, NULL)",
-            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
-            "#1 param :p3 = 7, 1",
-            "#1 expr.eq(id, :p3, NULL)",
-            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))+[eq(id, :p3, NULL)])",
-            "#1 orderBy(id, ASC)",
-            "#1 setMaxResults(1)",
-            "#1 executeQuery()",
+            "#1 param :p1 = 7, 1",
+            "#1 expr.eq(id, :p1, NULL)",
+            "#1 where(eq(id, :p1, NULL))",
             "#1 orderBy(id, ASC)",
             "#1 setMaxResults(1)",
             "#1 executeQuery()"
@@ -33,15 +24,6 @@
                     "identifier": "7",
                     "rbac": false,
                     "multi": false
-                }
-            },
-            {
-                "log": "debug",
-                "message": "[RegisterMapper] Register exists before filters",
-                "context": {
-                    "identifier": "7",
-                    "registerId": 7,
-                    "organisation": null
                 }
             }
         ],
@@ -57,18 +39,9 @@
         "queries": [
             "#1 select(*)",
             "#1 from(openregister_registers, NULL)",
-            "#1 param :p1 = 7, 2",
-            "#1 expr.eq(uuid, :p1, NULL)",
-            "#1 func.lower(slug)",
-            "#1 param :p2 = 7, 2",
-            "#1 expr.eq(lower(slug), :p2, NULL)",
-            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
-            "#1 param :p3 = 7, 1",
-            "#1 expr.eq(id, :p3, NULL)",
-            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))+[eq(id, :p3, NULL)])",
-            "#1 orderBy(id, ASC)",
-            "#1 setMaxResults(1)",
-            "#1 executeQuery()",
+            "#1 param :p1 = 7, 1",
+            "#1 expr.eq(id, :p1, NULL)",
+            "#1 where(eq(id, :p1, NULL))",
             "#1 orderBy(id, ASC)",
             "#1 setMaxResults(1)",
             "#1 executeQuery()"
@@ -81,15 +54,6 @@
                     "identifier": "7",
                     "rbac": true,
                     "multi": false
-                }
-            },
-            {
-                "log": "debug",
-                "message": "[RegisterMapper] Register exists before filters",
-                "context": {
-                    "identifier": "7",
-                    "registerId": 7,
-                    "organisation": null
                 }
             }
         ],
@@ -105,18 +69,9 @@
         "queries": [
             "#1 select(*)",
             "#1 from(openregister_registers, NULL)",
-            "#1 param :p1 = 7, 2",
-            "#1 expr.eq(uuid, :p1, NULL)",
-            "#1 func.lower(slug)",
-            "#1 param :p2 = 7, 2",
-            "#1 expr.eq(lower(slug), :p2, NULL)",
-            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
-            "#1 param :p3 = 7, 1",
-            "#1 expr.eq(id, :p3, NULL)",
-            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))+[eq(id, :p3, NULL)])",
-            "#1 orderBy(id, ASC)",
-            "#1 setMaxResults(1)",
-            "#1 executeQuery()",
+            "#1 param :p1 = 7, 1",
+            "#1 expr.eq(id, :p1, NULL)",
+            "#1 where(eq(id, :p1, NULL))",
             "#1 expr.isNull(organisation)",
             "#1 andWhere(isNull(organisation))",
             "#1 orderBy(id, ASC)",
@@ -131,15 +86,6 @@
                     "identifier": "7",
                     "rbac": false,
                     "multi": true
-                }
-            },
-            {
-                "log": "debug",
-                "message": "[RegisterMapper] Register exists before filters",
-                "context": {
-                    "identifier": "7",
-                    "registerId": 7,
-                    "organisation": null
                 }
             },
             {
@@ -165,18 +111,9 @@
         "queries": [
             "#1 select(*)",
             "#1 from(openregister_registers, NULL)",
-            "#1 param :p1 = 7, 2",
-            "#1 expr.eq(uuid, :p1, NULL)",
-            "#1 func.lower(slug)",
-            "#1 param :p2 = 7, 2",
-            "#1 expr.eq(lower(slug), :p2, NULL)",
-            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
-            "#1 param :p3 = 7, 1",
-            "#1 expr.eq(id, :p3, NULL)",
-            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))+[eq(id, :p3, NULL)])",
-            "#1 orderBy(id, ASC)",
-            "#1 setMaxResults(1)",
-            "#1 executeQuery()",
+            "#1 param :p1 = 7, 1",
+            "#1 expr.eq(id, :p1, NULL)",
+            "#1 where(eq(id, :p1, NULL))",
             "#1 expr.isNull(organisation)",
             "#1 andWhere(isNull(organisation))",
             "#1 orderBy(id, ASC)",
@@ -191,15 +128,6 @@
                     "identifier": "7",
                     "rbac": true,
                     "multi": true
-                }
-            },
-            {
-                "log": "debug",
-                "message": "[RegisterMapper] Register exists before filters",
-                "context": {
-                    "identifier": "7",
-                    "registerId": 7,
-                    "organisation": null
                 }
             },
             {
@@ -225,18 +153,9 @@
         "queries": [
             "#1 select(*)",
             "#1 from(openregister_registers, NULL)",
-            "#1 param :p1 = 7, 2",
-            "#1 expr.eq(uuid, :p1, NULL)",
-            "#1 func.lower(slug)",
-            "#1 param :p2 = 7, 2",
-            "#1 expr.eq(lower(slug), :p2, NULL)",
-            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
-            "#1 param :p3 = 7, 1",
-            "#1 expr.eq(id, :p3, NULL)",
-            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))+[eq(id, :p3, NULL)])",
-            "#1 orderBy(id, ASC)",
-            "#1 setMaxResults(1)",
-            "#1 executeQuery()",
+            "#1 param :p1 = 7, 1",
+            "#1 expr.eq(id, :p1, NULL)",
+            "#1 where(eq(id, :p1, NULL))",
             "#1 orderBy(id, ASC)",
             "#1 setMaxResults(1)",
             "#1 executeQuery()"
@@ -249,15 +168,6 @@
                     "identifier": 7,
                     "rbac": false,
                     "multi": false
-                }
-            },
-            {
-                "log": "debug",
-                "message": "[RegisterMapper] Register exists before filters",
-                "context": {
-                    "identifier": 7,
-                    "registerId": 7,
-                    "organisation": null
                 }
             }
         ],
@@ -273,18 +183,9 @@
         "queries": [
             "#1 select(*)",
             "#1 from(openregister_registers, NULL)",
-            "#1 param :p1 = 7, 2",
-            "#1 expr.eq(uuid, :p1, NULL)",
-            "#1 func.lower(slug)",
-            "#1 param :p2 = 7, 2",
-            "#1 expr.eq(lower(slug), :p2, NULL)",
-            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
-            "#1 param :p3 = 7, 1",
-            "#1 expr.eq(id, :p3, NULL)",
-            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))+[eq(id, :p3, NULL)])",
-            "#1 orderBy(id, ASC)",
-            "#1 setMaxResults(1)",
-            "#1 executeQuery()",
+            "#1 param :p1 = 7, 1",
+            "#1 expr.eq(id, :p1, NULL)",
+            "#1 where(eq(id, :p1, NULL))",
             "#1 orderBy(id, ASC)",
             "#1 setMaxResults(1)",
             "#1 executeQuery()"
@@ -297,15 +198,6 @@
                     "identifier": 7,
                     "rbac": true,
                     "multi": false
-                }
-            },
-            {
-                "log": "debug",
-                "message": "[RegisterMapper] Register exists before filters",
-                "context": {
-                    "identifier": 7,
-                    "registerId": 7,
-                    "organisation": null
                 }
             }
         ],
@@ -321,18 +213,9 @@
         "queries": [
             "#1 select(*)",
             "#1 from(openregister_registers, NULL)",
-            "#1 param :p1 = 7, 2",
-            "#1 expr.eq(uuid, :p1, NULL)",
-            "#1 func.lower(slug)",
-            "#1 param :p2 = 7, 2",
-            "#1 expr.eq(lower(slug), :p2, NULL)",
-            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
-            "#1 param :p3 = 7, 1",
-            "#1 expr.eq(id, :p3, NULL)",
-            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))+[eq(id, :p3, NULL)])",
-            "#1 orderBy(id, ASC)",
-            "#1 setMaxResults(1)",
-            "#1 executeQuery()",
+            "#1 param :p1 = 7, 1",
+            "#1 expr.eq(id, :p1, NULL)",
+            "#1 where(eq(id, :p1, NULL))",
             "#1 expr.isNull(organisation)",
             "#1 andWhere(isNull(organisation))",
             "#1 orderBy(id, ASC)",
@@ -347,15 +230,6 @@
                     "identifier": 7,
                     "rbac": false,
                     "multi": true
-                }
-            },
-            {
-                "log": "debug",
-                "message": "[RegisterMapper] Register exists before filters",
-                "context": {
-                    "identifier": 7,
-                    "registerId": 7,
-                    "organisation": null
                 }
             },
             {
@@ -381,18 +255,9 @@
         "queries": [
             "#1 select(*)",
             "#1 from(openregister_registers, NULL)",
-            "#1 param :p1 = 7, 2",
-            "#1 expr.eq(uuid, :p1, NULL)",
-            "#1 func.lower(slug)",
-            "#1 param :p2 = 7, 2",
-            "#1 expr.eq(lower(slug), :p2, NULL)",
-            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
-            "#1 param :p3 = 7, 1",
-            "#1 expr.eq(id, :p3, NULL)",
-            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))+[eq(id, :p3, NULL)])",
-            "#1 orderBy(id, ASC)",
-            "#1 setMaxResults(1)",
-            "#1 executeQuery()",
+            "#1 param :p1 = 7, 1",
+            "#1 expr.eq(id, :p1, NULL)",
+            "#1 where(eq(id, :p1, NULL))",
             "#1 expr.isNull(organisation)",
             "#1 andWhere(isNull(organisation))",
             "#1 orderBy(id, ASC)",
@@ -407,15 +272,6 @@
                     "identifier": 7,
                     "rbac": true,
                     "multi": true
-                }
-            },
-            {
-                "log": "debug",
-                "message": "[RegisterMapper] Register exists before filters",
-                "context": {
-                    "identifier": 7,
-                    "registerId": 7,
-                    "organisation": null
                 }
             },
             {
@@ -443,14 +299,7 @@
             "#1 from(openregister_registers, NULL)",
             "#1 param :p1 = Seven-Slug, 2",
             "#1 expr.eq(uuid, :p1, NULL)",
-            "#1 func.lower(slug)",
-            "#1 param :p2 = seven-slug, 2",
-            "#1 expr.eq(lower(slug), :p2, NULL)",
-            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
-            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL)))",
-            "#1 orderBy(id, ASC)",
-            "#1 setMaxResults(1)",
-            "#1 executeQuery()",
+            "#1 where(eq(uuid, :p1, NULL))",
             "#1 orderBy(id, ASC)",
             "#1 setMaxResults(1)",
             "#1 executeQuery()"
@@ -463,15 +312,6 @@
                     "identifier": "Seven-Slug",
                     "rbac": false,
                     "multi": false
-                }
-            },
-            {
-                "log": "debug",
-                "message": "[RegisterMapper] Register exists before filters",
-                "context": {
-                    "identifier": "Seven-Slug",
-                    "registerId": 7,
-                    "organisation": null
                 }
             }
         ],
@@ -489,14 +329,7 @@
             "#1 from(openregister_registers, NULL)",
             "#1 param :p1 = Seven-Slug, 2",
             "#1 expr.eq(uuid, :p1, NULL)",
-            "#1 func.lower(slug)",
-            "#1 param :p2 = seven-slug, 2",
-            "#1 expr.eq(lower(slug), :p2, NULL)",
-            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
-            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL)))",
-            "#1 orderBy(id, ASC)",
-            "#1 setMaxResults(1)",
-            "#1 executeQuery()",
+            "#1 where(eq(uuid, :p1, NULL))",
             "#1 orderBy(id, ASC)",
             "#1 setMaxResults(1)",
             "#1 executeQuery()"
@@ -509,15 +342,6 @@
                     "identifier": "Seven-Slug",
                     "rbac": true,
                     "multi": false
-                }
-            },
-            {
-                "log": "debug",
-                "message": "[RegisterMapper] Register exists before filters",
-                "context": {
-                    "identifier": "Seven-Slug",
-                    "registerId": 7,
-                    "organisation": null
                 }
             }
         ],
@@ -535,14 +359,7 @@
             "#1 from(openregister_registers, NULL)",
             "#1 param :p1 = Seven-Slug, 2",
             "#1 expr.eq(uuid, :p1, NULL)",
-            "#1 func.lower(slug)",
-            "#1 param :p2 = seven-slug, 2",
-            "#1 expr.eq(lower(slug), :p2, NULL)",
-            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
-            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL)))",
-            "#1 orderBy(id, ASC)",
-            "#1 setMaxResults(1)",
-            "#1 executeQuery()",
+            "#1 where(eq(uuid, :p1, NULL))",
             "#1 expr.isNull(organisation)",
             "#1 andWhere(isNull(organisation))",
             "#1 orderBy(id, ASC)",
@@ -557,15 +374,6 @@
                     "identifier": "Seven-Slug",
                     "rbac": false,
                     "multi": true
-                }
-            },
-            {
-                "log": "debug",
-                "message": "[RegisterMapper] Register exists before filters",
-                "context": {
-                    "identifier": "Seven-Slug",
-                    "registerId": 7,
-                    "organisation": null
                 }
             },
             {
@@ -593,14 +401,7 @@
             "#1 from(openregister_registers, NULL)",
             "#1 param :p1 = Seven-Slug, 2",
             "#1 expr.eq(uuid, :p1, NULL)",
-            "#1 func.lower(slug)",
-            "#1 param :p2 = seven-slug, 2",
-            "#1 expr.eq(lower(slug), :p2, NULL)",
-            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
-            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL)))",
-            "#1 orderBy(id, ASC)",
-            "#1 setMaxResults(1)",
-            "#1 executeQuery()",
+            "#1 where(eq(uuid, :p1, NULL))",
             "#1 expr.isNull(organisation)",
             "#1 andWhere(isNull(organisation))",
             "#1 orderBy(id, ASC)",
@@ -615,15 +416,6 @@
                     "identifier": "Seven-Slug",
                     "rbac": true,
                     "multi": true
-                }
-            },
-            {
-                "log": "debug",
-                "message": "[RegisterMapper] Register exists before filters",
-                "context": {
-                    "identifier": "Seven-Slug",
-                    "registerId": 7,
-                    "organisation": null
                 }
             },
             {
@@ -651,14 +443,7 @@
             "#1 from(openregister_registers, NULL)",
             "#1 param :p1 = uuid-seven, 2",
             "#1 expr.eq(uuid, :p1, NULL)",
-            "#1 func.lower(slug)",
-            "#1 param :p2 = uuid-seven, 2",
-            "#1 expr.eq(lower(slug), :p2, NULL)",
-            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
-            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL)))",
-            "#1 orderBy(id, ASC)",
-            "#1 setMaxResults(1)",
-            "#1 executeQuery()",
+            "#1 where(eq(uuid, :p1, NULL))",
             "#1 orderBy(id, ASC)",
             "#1 setMaxResults(1)",
             "#1 executeQuery()"
@@ -671,15 +456,6 @@
                     "identifier": "uuid-seven",
                     "rbac": false,
                     "multi": false
-                }
-            },
-            {
-                "log": "debug",
-                "message": "[RegisterMapper] Register exists before filters",
-                "context": {
-                    "identifier": "uuid-seven",
-                    "registerId": 7,
-                    "organisation": null
                 }
             }
         ],
@@ -697,14 +473,7 @@
             "#1 from(openregister_registers, NULL)",
             "#1 param :p1 = uuid-seven, 2",
             "#1 expr.eq(uuid, :p1, NULL)",
-            "#1 func.lower(slug)",
-            "#1 param :p2 = uuid-seven, 2",
-            "#1 expr.eq(lower(slug), :p2, NULL)",
-            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
-            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL)))",
-            "#1 orderBy(id, ASC)",
-            "#1 setMaxResults(1)",
-            "#1 executeQuery()",
+            "#1 where(eq(uuid, :p1, NULL))",
             "#1 orderBy(id, ASC)",
             "#1 setMaxResults(1)",
             "#1 executeQuery()"
@@ -717,15 +486,6 @@
                     "identifier": "uuid-seven",
                     "rbac": true,
                     "multi": false
-                }
-            },
-            {
-                "log": "debug",
-                "message": "[RegisterMapper] Register exists before filters",
-                "context": {
-                    "identifier": "uuid-seven",
-                    "registerId": 7,
-                    "organisation": null
                 }
             }
         ],
@@ -743,14 +503,7 @@
             "#1 from(openregister_registers, NULL)",
             "#1 param :p1 = uuid-seven, 2",
             "#1 expr.eq(uuid, :p1, NULL)",
-            "#1 func.lower(slug)",
-            "#1 param :p2 = uuid-seven, 2",
-            "#1 expr.eq(lower(slug), :p2, NULL)",
-            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
-            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL)))",
-            "#1 orderBy(id, ASC)",
-            "#1 setMaxResults(1)",
-            "#1 executeQuery()",
+            "#1 where(eq(uuid, :p1, NULL))",
             "#1 expr.isNull(organisation)",
             "#1 andWhere(isNull(organisation))",
             "#1 orderBy(id, ASC)",
@@ -765,15 +518,6 @@
                     "identifier": "uuid-seven",
                     "rbac": false,
                     "multi": true
-                }
-            },
-            {
-                "log": "debug",
-                "message": "[RegisterMapper] Register exists before filters",
-                "context": {
-                    "identifier": "uuid-seven",
-                    "registerId": 7,
-                    "organisation": null
                 }
             },
             {
@@ -801,14 +545,7 @@
             "#1 from(openregister_registers, NULL)",
             "#1 param :p1 = uuid-seven, 2",
             "#1 expr.eq(uuid, :p1, NULL)",
-            "#1 func.lower(slug)",
-            "#1 param :p2 = uuid-seven, 2",
-            "#1 expr.eq(lower(slug), :p2, NULL)",
-            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
-            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL)))",
-            "#1 orderBy(id, ASC)",
-            "#1 setMaxResults(1)",
-            "#1 executeQuery()",
+            "#1 where(eq(uuid, :p1, NULL))",
             "#1 expr.isNull(organisation)",
             "#1 andWhere(isNull(organisation))",
             "#1 orderBy(id, ASC)",
@@ -823,15 +560,6 @@
                     "identifier": "uuid-seven",
                     "rbac": true,
                     "multi": true
-                }
-            },
-            {
-                "log": "debug",
-                "message": "[RegisterMapper] Register exists before filters",
-                "context": {
-                    "identifier": "uuid-seven",
-                    "registerId": 7,
-                    "organisation": null
                 }
             },
             {
@@ -860,14 +588,7 @@
             "#1 from(openregister_registers, NULL)",
             "#1 param :p1 = 7abc, 2",
             "#1 expr.eq(uuid, :p1, NULL)",
-            "#1 func.lower(slug)",
-            "#1 param :p2 = 7abc, 2",
-            "#1 expr.eq(lower(slug), :p2, NULL)",
-            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
-            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL)))",
-            "#1 orderBy(id, ASC)",
-            "#1 setMaxResults(1)",
-            "#1 executeQuery()",
+            "#1 where(eq(uuid, :p1, NULL))",
             "#1 orderBy(id, ASC)",
             "#1 setMaxResults(1)",
             "#1 executeQuery()"
@@ -880,15 +601,6 @@
                     "identifier": "7abc",
                     "rbac": false,
                     "multi": false
-                }
-            },
-            {
-                "log": "debug",
-                "message": "[RegisterMapper] Register exists before filters",
-                "context": {
-                    "identifier": "7abc",
-                    "registerId": 7,
-                    "organisation": null
                 }
             }
         ],
@@ -907,14 +619,7 @@
             "#1 from(openregister_registers, NULL)",
             "#1 param :p1 = 7abc, 2",
             "#1 expr.eq(uuid, :p1, NULL)",
-            "#1 func.lower(slug)",
-            "#1 param :p2 = 7abc, 2",
-            "#1 expr.eq(lower(slug), :p2, NULL)",
-            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
-            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL)))",
-            "#1 orderBy(id, ASC)",
-            "#1 setMaxResults(1)",
-            "#1 executeQuery()",
+            "#1 where(eq(uuid, :p1, NULL))",
             "#1 orderBy(id, ASC)",
             "#1 setMaxResults(1)",
             "#1 executeQuery()"
@@ -927,15 +632,6 @@
                     "identifier": "7abc",
                     "rbac": true,
                     "multi": false
-                }
-            },
-            {
-                "log": "debug",
-                "message": "[RegisterMapper] Register exists before filters",
-                "context": {
-                    "identifier": "7abc",
-                    "registerId": 7,
-                    "organisation": null
                 }
             }
         ],
@@ -954,14 +650,7 @@
             "#1 from(openregister_registers, NULL)",
             "#1 param :p1 = 7abc, 2",
             "#1 expr.eq(uuid, :p1, NULL)",
-            "#1 func.lower(slug)",
-            "#1 param :p2 = 7abc, 2",
-            "#1 expr.eq(lower(slug), :p2, NULL)",
-            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
-            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL)))",
-            "#1 orderBy(id, ASC)",
-            "#1 setMaxResults(1)",
-            "#1 executeQuery()",
+            "#1 where(eq(uuid, :p1, NULL))",
             "#1 expr.isNull(organisation)",
             "#1 andWhere(isNull(organisation))",
             "#1 orderBy(id, ASC)",
@@ -976,15 +665,6 @@
                     "identifier": "7abc",
                     "rbac": false,
                     "multi": true
-                }
-            },
-            {
-                "log": "debug",
-                "message": "[RegisterMapper] Register exists before filters",
-                "context": {
-                    "identifier": "7abc",
-                    "registerId": 7,
-                    "organisation": null
                 }
             },
             {
@@ -1013,14 +693,7 @@
             "#1 from(openregister_registers, NULL)",
             "#1 param :p1 = 7abc, 2",
             "#1 expr.eq(uuid, :p1, NULL)",
-            "#1 func.lower(slug)",
-            "#1 param :p2 = 7abc, 2",
-            "#1 expr.eq(lower(slug), :p2, NULL)",
-            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
-            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL)))",
-            "#1 orderBy(id, ASC)",
-            "#1 setMaxResults(1)",
-            "#1 executeQuery()",
+            "#1 where(eq(uuid, :p1, NULL))",
             "#1 expr.isNull(organisation)",
             "#1 andWhere(isNull(organisation))",
             "#1 orderBy(id, ASC)",
@@ -1035,15 +708,6 @@
                     "identifier": "7abc",
                     "rbac": true,
                     "multi": true
-                }
-            },
-            {
-                "log": "debug",
-                "message": "[RegisterMapper] Register exists before filters",
-                "context": {
-                    "identifier": "7abc",
-                    "registerId": 7,
-                    "organisation": null
                 }
             },
             {
@@ -1067,17 +731,36 @@
             "#1 from(openregister_registers, NULL)",
             "#1 param :p1 = missing, 2",
             "#1 expr.eq(uuid, :p1, NULL)",
-            "#1 func.lower(slug)",
-            "#1 param :p2 = missing, 2",
-            "#1 expr.eq(lower(slug), :p2, NULL)",
-            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
-            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL)))",
+            "#1 where(eq(uuid, :p1, NULL))",
             "#1 orderBy(id, ASC)",
             "#1 setMaxResults(1)",
             "#1 executeQuery()",
-            "#1 orderBy(id, ASC)",
-            "#1 setMaxResults(1)",
-            "#1 executeQuery()"
+            "#2 select(*)",
+            "#2 from(openregister_registers, NULL)",
+            "#2 func.lower(slug)",
+            "#2 param :p2 = missing, 2",
+            "#2 expr.eq(lower(slug), :p2, NULL)",
+            "#2 where(eq(lower(slug), :p2, NULL))",
+            "#2 orderBy(id, ASC)",
+            "#2 setMaxResults(1)",
+            "#2 executeQuery()",
+            "#3 select(*)",
+            "#3 from(openregister_registers, NULL)",
+            "#3 param :p3 = missing, 2",
+            "#3 expr.eq(uuid, :p3, NULL)",
+            "#3 where(eq(uuid, :p3, NULL))",
+            "#3 orderBy(id, ASC)",
+            "#3 setMaxResults(1)",
+            "#3 executeQuery()",
+            "#4 select(*)",
+            "#4 from(openregister_registers, NULL)",
+            "#4 func.lower(slug)",
+            "#4 param :p4 = missing, 2",
+            "#4 expr.eq(lower(slug), :p4, NULL)",
+            "#4 where(eq(lower(slug), :p4, NULL))",
+            "#4 orderBy(id, ASC)",
+            "#4 setMaxResults(1)",
+            "#4 executeQuery()"
         ],
         "logs": [
             {
@@ -1116,21 +799,37 @@
         "queries": [
             "#1 select(*)",
             "#1 from(openregister_registers, NULL)",
-            "#1 param :p1 = 7, 2",
-            "#1 expr.eq(uuid, :p1, NULL)",
-            "#1 func.lower(slug)",
-            "#1 param :p2 = 7, 2",
-            "#1 expr.eq(lower(slug), :p2, NULL)",
-            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
-            "#1 param :p3 = 7, 1",
-            "#1 expr.eq(id, :p3, NULL)",
-            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))+[eq(id, :p3, NULL)])",
+            "#1 param :p1 = 7, 1",
+            "#1 expr.eq(id, :p1, NULL)",
+            "#1 where(eq(id, :p1, NULL))",
             "#1 orderBy(id, ASC)",
             "#1 setMaxResults(1)",
             "#1 executeQuery()",
-            "#1 orderBy(id, ASC)",
-            "#1 setMaxResults(1)",
-            "#1 executeQuery()"
+            "#2 select(*)",
+            "#2 from(openregister_registers, NULL)",
+            "#2 param :p2 = 7, 2",
+            "#2 expr.eq(uuid, :p2, NULL)",
+            "#2 where(eq(uuid, :p2, NULL))",
+            "#2 orderBy(id, ASC)",
+            "#2 setMaxResults(1)",
+            "#2 executeQuery()",
+            "#3 select(*)",
+            "#3 from(openregister_registers, NULL)",
+            "#3 func.lower(slug)",
+            "#3 param :p3 = 7, 2",
+            "#3 expr.eq(lower(slug), :p3, NULL)",
+            "#3 where(eq(lower(slug), :p3, NULL))",
+            "#3 orderBy(id, ASC)",
+            "#3 setMaxResults(1)",
+            "#3 executeQuery()",
+            "#4 select(*)",
+            "#4 from(openregister_registers, NULL)",
+            "#4 param :p4 = 7, 1",
+            "#4 expr.eq(id, :p4, NULL)",
+            "#4 where(eq(id, :p4, NULL))",
+            "#4 orderBy(id, ASC)",
+            "#4 setMaxResults(1)",
+            "#4 executeQuery()"
         ],
         "logs": [
             {
@@ -1164,6 +863,152 @@
         ],
         "queriesOnCacheHit": 0
     },
+    "numeric slug found on the slug column": {
+        "found": 7,
+        "cacheKeys": [
+            "7:0:1",
+            "uuid-seven:0:1",
+            "seven-slug:0:1"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_registers, NULL)",
+            "#1 param :p1 = 7, 1",
+            "#1 expr.eq(id, :p1, NULL)",
+            "#1 where(eq(id, :p1, NULL))",
+            "#1 expr.isNull(organisation)",
+            "#1 andWhere(isNull(organisation))",
+            "#1 orderBy(id, ASC)",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()",
+            "#2 select(*)",
+            "#2 from(openregister_registers, NULL)",
+            "#2 param :p2 = 7, 2",
+            "#2 expr.eq(uuid, :p2, NULL)",
+            "#2 where(eq(uuid, :p2, NULL))",
+            "#2 expr.isNull(organisation)",
+            "#2 andWhere(isNull(organisation))",
+            "#2 orderBy(id, ASC)",
+            "#2 setMaxResults(1)",
+            "#2 executeQuery()",
+            "#3 select(*)",
+            "#3 from(openregister_registers, NULL)",
+            "#3 func.lower(slug)",
+            "#3 param :p3 = 7, 2",
+            "#3 expr.eq(lower(slug), :p3, NULL)",
+            "#3 where(eq(lower(slug), :p3, NULL))",
+            "#3 expr.isNull(organisation)",
+            "#3 andWhere(isNull(organisation))",
+            "#3 orderBy(id, ASC)",
+            "#3 setMaxResults(1)",
+            "#3 executeQuery()"
+        ],
+        "logs": [
+            {
+                "log": "info",
+                "message": "[RegisterMapper] Searching for register",
+                "context": {
+                    "identifier": "7",
+                    "rbac": false,
+                    "multi": true
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MultiTenancyTrait] Unauthenticated request, no automatic access",
+                "context": []
+            },
+            {
+                "log": "debug",
+                "message": "[MultiTenancyTrait] getActiveOrganisationUuid called",
+                "context": []
+            },
+            {
+                "log": "debug",
+                "message": "[MultiTenancyTrait] Unauthenticated request, no automatic access",
+                "context": []
+            },
+            {
+                "log": "debug",
+                "message": "[MultiTenancyTrait] getActiveOrganisationUuid called",
+                "context": []
+            },
+            {
+                "log": "debug",
+                "message": "[MultiTenancyTrait] Unauthenticated request, no automatic access",
+                "context": []
+            },
+            {
+                "log": "debug",
+                "message": "[MultiTenancyTrait] getActiveOrganisationUuid called",
+                "context": []
+            }
+        ],
+        "queriesOnCacheHit": 0
+    },
+    "slug found after the uuid column misses": {
+        "found": 7,
+        "cacheKeys": [
+            "seven-slug:1:1",
+            "7:1:1",
+            "uuid-seven:1:1"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_registers, NULL)",
+            "#1 param :p1 = Seven-Slug, 2",
+            "#1 expr.eq(uuid, :p1, NULL)",
+            "#1 where(eq(uuid, :p1, NULL))",
+            "#1 expr.isNull(organisation)",
+            "#1 andWhere(isNull(organisation))",
+            "#1 orderBy(id, ASC)",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()",
+            "#2 select(*)",
+            "#2 from(openregister_registers, NULL)",
+            "#2 func.lower(slug)",
+            "#2 param :p2 = seven-slug, 2",
+            "#2 expr.eq(lower(slug), :p2, NULL)",
+            "#2 where(eq(lower(slug), :p2, NULL))",
+            "#2 expr.isNull(organisation)",
+            "#2 andWhere(isNull(organisation))",
+            "#2 orderBy(id, ASC)",
+            "#2 setMaxResults(1)",
+            "#2 executeQuery()"
+        ],
+        "logs": [
+            {
+                "log": "info",
+                "message": "[RegisterMapper] Searching for register",
+                "context": {
+                    "identifier": "Seven-Slug",
+                    "rbac": true,
+                    "multi": true
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MultiTenancyTrait] Unauthenticated request, no automatic access",
+                "context": []
+            },
+            {
+                "log": "debug",
+                "message": "[MultiTenancyTrait] getActiveOrganisationUuid called",
+                "context": []
+            },
+            {
+                "log": "debug",
+                "message": "[MultiTenancyTrait] Unauthenticated request, no automatic access",
+                "context": []
+            },
+            {
+                "log": "debug",
+                "message": "[MultiTenancyTrait] getActiveOrganisationUuid called",
+                "context": []
+            }
+        ],
+        "queriesOnCacheHit": 0
+    },
     "null slug and uuid": {
         "found": 7,
         "cacheKeys": [
@@ -1172,18 +1017,9 @@
         "queries": [
             "#1 select(*)",
             "#1 from(openregister_registers, NULL)",
-            "#1 param :p1 = 7, 2",
-            "#1 expr.eq(uuid, :p1, NULL)",
-            "#1 func.lower(slug)",
-            "#1 param :p2 = 7, 2",
-            "#1 expr.eq(lower(slug), :p2, NULL)",
-            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
-            "#1 param :p3 = 7, 1",
-            "#1 expr.eq(id, :p3, NULL)",
-            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))+[eq(id, :p3, NULL)])",
-            "#1 orderBy(id, ASC)",
-            "#1 setMaxResults(1)",
-            "#1 executeQuery()",
+            "#1 param :p1 = 7, 1",
+            "#1 expr.eq(id, :p1, NULL)",
+            "#1 where(eq(id, :p1, NULL))",
             "#1 orderBy(id, ASC)",
             "#1 setMaxResults(1)",
             "#1 executeQuery()"
@@ -1196,15 +1032,6 @@
                     "identifier": "7",
                     "rbac": false,
                     "multi": false
-                }
-            },
-            {
-                "log": "debug",
-                "message": "[RegisterMapper] Register exists before filters",
-                "context": {
-                    "identifier": "7",
-                    "registerId": 7,
-                    "organisation": null
                 }
             }
         ],
