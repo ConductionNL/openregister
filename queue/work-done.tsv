@@ -12310,3 +12310,4 @@ cover:keepiq:c967a31fmdbad:ecbab48a	PR #1820: 10 tests (ShareSaveStages writes, 
 fix:integriq:3630:320ac7f7	conflict resolved, new head 0af2622c	session-20261115T001759-0085793c	2026-11-15T00:33:06Z
 cover:planninq:e1c9866dmcf99:9d3a1784	PR #1184: 5 tests, ExportProjectJob and ExportRequest fully covered, suite 1177->1182 OK	session-20261115T002445-1522cadc	2026-11-15T00:33:18Z
 fix:opencatalogi:2665:936d474b	merged development (clean), l10n-js OK, unit fails inherited; new head 0a93cd29	session-20261114T225452-4fcfea7f	2026-11-15T00:33:28Z
+fix:integriq:3595:66f788bd	merged development (clean), pushed 7f9f7e7636235d1c2c65274db22d2186c1875c89; conflict is golden-hash overlap with #3549 (land one, recompute the other); REVERIFY recorded	session-20261115T001016-a8991554	2026-11-15T00:33:45Z
