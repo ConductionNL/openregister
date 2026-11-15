@@ -14428,6 +14428,7 @@ fix:portaliq:1996:69333191	RED fixed (14 doubles), suite green, REVERIFY recorde
 review:shillinq:1899:7b7a34c7	GREEN: unit 12239 OK, vitest/eslint clean	session-20261115T181015-497e81ce	2026-11-15T19:09:04Z
 review:shillinq:2072:dbfc1357	GREEN: access tightening, suite 12231 OK	session-20261115T185929-0fc862a6	2026-11-15T19:09:15Z
 verify:learniq:2551:2f991eae	GREEN 2551	session-20261115T174741-56eeaa2f	2026-11-15T19:09:22Z
+fix:buildiq:1261:901e0708	failed: whole PR migrates to searchObjectsBySlug(target: RegisterSchemaRef), which openregister main lacks (still registerSlug/schemaSlug); reverting to main's form empties it; hold until openregister ships the target form	session-20261115T190007-40e51d5a	2026-11-15T19:09:38Z
 fix:planninq:871:7d17dd48	conflict resolved: lock regenerated (eslint 10.12.0), lint+vitest green, new head 95bfabe1	session-20261115T190016-8d1377d2	2026-11-15T19:09:44Z
 fix:buildiq:1256:a68cddc3	failed: the PR is a composer.lock-only refresh (hydra-gates v1.18.0->v1.19.0, development still on v1.18.0) and its conflict is in composer.lock; resolving it means committing a regenerated composer.lock, which workers may not do; needs the local lane or a fresh lock refresh	session-20261115T174739-b14c2df4	2026-11-15T19:10:00Z
 review:shillinq:1900:fef99b3e	GREEN: matches change spec, suite 12240 OK	session-20261115T174833-88ac0233	2026-11-15T19:09:57Z
