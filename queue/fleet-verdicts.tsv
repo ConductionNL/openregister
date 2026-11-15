@@ -11281,3 +11281,6 @@ shillinq	3062	d70c391db96e40986f1c78859efc6fe04cf6eca5	CONFLICT	merge3	merges cl
 shillinq	3078	9577c251b9ba7d792fed5e2ea8bff157a068d864	CONFLICT	merge3	merges clean on development alone; files: appinfo/info.xml openapi.json src/manifestActions.js 
 shillinq	3080	0a200ebaaf5bef27c4682bb9cbfff9047d944cf0	CONFLICT	merge3	merges clean on development alone; files: tests/Unit/Service/ServiceRegistrarTest.php 
 shillinq	3088	32682f0a9dbd14af75b76358b8eaa6c54f5cd0be	CONFLICT	merge3	merges clean on development alone; files: appinfo/info.xml l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json tests/fixtures/register-versions.lock.json 
+decidiq	2149	08dbad8ecba3e4f877f1c762bdd8471d8942f800	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 3.90 -> 3.88
+decidiq	2187	24c1e4c0a778727af137702b91764e5c9ed215b7	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 3.90 -> 3.87
+decidiq	2212	ca4e385612be4e6d9e4f3cc8b1e584ba7ec7b56f	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 3.90 -> 3.88
