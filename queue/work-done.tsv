@@ -14474,6 +14474,7 @@ fix:buildiq:1090:8b2df26a	sbom regenerated, new head 8e11ea7a	session-20261115T1
 fix:buildiq:1608:b3506415	sandbox enforced by response CSP, headers restored, pushed 08f7f4d3; REVERIFY recorded	session-20261115T174750-744c606b	2026-11-15T19:15:11Z
 fix:launchpad:1098:1720a6d3	sbom regenerated after merging development, pushed 08b61447; REVERIFY recorded	session-20261115T174755-95dc8448	2026-11-15T19:15:30Z
 fix:planninq:725:6961dd1e	fixed: sbom regenerated; new head f5dce57c	session-20261115T174819-9af28ef9	2026-11-15T19:15:39Z
+fix:buildiq:1265:5f5ede07	failed: namespace fix (Kernel\Contracts\Value) and development merge done locally (13 conflicts; 16 new dev saves migrated), but buildiq's unit bootstrap loads ObjectServiceInterface from vendor conduction/hydra-gates contracts, whose saveObject still takes register/schema/uuid named args: PR head already 1129 errors, merged tree 228 failures vs 1 on development (Unknown named parameter $options).	session-20261115T183025-d89c1e14	2026-11-15T19:16:04Z
 fix:launchpad:1223:8946cefa	conflict resolved (register 1.0.4), pushed 65b428f7, REVERIFY recorded	session-20261115T182936-09049974	2026-11-15T19:15:55Z
 fix:buildiq:1654:aaec7e14	fixed: conflicts resolved keeping both sides, new head fc4a934c	session-20261115T174804-89f2739f	2026-11-15T19:16:03Z
 fix:launchpad:984:2f958a94	namespace fixed, pushed 1ed02407, REVERIFY recorded	session-20261115T182948-465dcc8e	2026-11-15T19:16:11Z
@@ -14497,6 +14498,7 @@ fix:launchpad:757:df60a474	lock resynced on development, npm ci + vitest green; 
 fix:launchpad:1234:d725a0f0	fixed RED sbom: regenerated sbom.cdx.json; new head 0bc43ee2, REVERIFY recorded	session-20261115T152543-40aea993	2026-11-15T19:19:07Z
 fix:opencatalogi:1893:143da9ef	conflicts resolved, pushed e1cf5480, REVERIFY recorded	session-20261115T191034-1f4b55ee	2026-11-15T19:19:20Z
 fix:launchpad:785:91201465	conflict resolved (dev's tile-sorting kept, shortcuts wired via PageSettingsSources, openapi documented); phpunit+vitest green; new head 962d3592	session-20261115T185944-49ff6c32	2026-11-15T19:19:38Z
+fix:stackiq:1043:a1603162	closed as obsolete: development already locks sass 1.108.2	session-20261115T152543-40aea993	2026-11-15T19:19:49Z
 fix:opencatalogi:2259:6c778379	failed: superseded, needs a manual close (closing PRs is refused by permission here): development has the same splits (da9461cb2, 83b172e8a, 993043f63) and the branch conflicts with them	session-20261115T182936-09049974	2026-11-15T19:19:46Z
 fix:opencatalogi:2669:b357649e	conflict resolved (CHANGELOG, PublicationService); 2 inherited failures only; new head a67472fb	session-20261115T174739-b14c2df4	2026-11-15T19:19:49Z
 fix:launchpad:759:4d40c072	fixed: merged development, lockfile in sync, vitest 2578/2578; new head 3f179d5b	session-20261115T190008-ff700d5c	2026-11-15T19:20:01Z
@@ -14506,3 +14508,15 @@ fix:opencatalogi:2415:da40ef23	fixed: merged development, rendered() uses Render
 fix:buildiq:1648:a6359df5	conflict resolved, pushed 30c0874a; ExportZipGoldenTest red inherited from development	session-20261115T185925-f99529ae	2026-11-15T19:20:38Z
 fix:launchpad:1212:838ac053	failed: over the 45 min cap; diagnosis: vs development tip (after a clean dev merge) duplication 4.66->4.64 and module_coupling 4.73->4.69. Coupling: new AdminCatalogueController makes lib/Settings/LaunchPadAdmin.php fan-in 20->21 (enters >20 bucket, +79 loc); fold its endpoints into an existing LaunchPadAdmin referrer (e.g. AdminSettingsController). Duplication: PHP +77 redundant lines (new contr	session-20261115T174804-89f2739f	2026-11-15T19:20:53Z
 fix:opencatalogi:2655:a2523fc9	conflict resolved, pushed f9ef3261, REVERIFY recorded	session-20261115T182948-465dcc8e	2026-11-15T19:20:48Z
+measure:opencatalogi:20261115h16	php 95.37% (pcov, 5750 tests, 2 failures), js 96.66% lines	session-20261115T182951-bdf9d68e	2026-11-15T19:20:58Z
+fix:buildiq:1091:c4dd3636	merged development, pushed d342b9dd	session-20261115T174741-56eeaa2f	2026-11-15T19:21:01Z
+fix:launchpad:753:51b86dbd	lockfile regenerated on development, npm ci + vitest green, pushed d16aabc3; REVERIFY recorded	session-20261115T183029-6c0565bd	2026-11-15T19:21:11Z
+fix:opencatalogi:2696:53c089e7	spec fixed + development merged; pushed f7d699f3, REVERIFY recorded	session-20261115T183023-a120e01a	2026-11-15T19:21:27Z
+fix:opencatalogi:2541:87b928f1	fixed find() to ObjectFindOptions, pushed 55851e9d; REVERIFY recorded	session-20261115T185932-17792562	2026-11-15T19:21:38Z
+fix:stackiq:1433:1276a79b	fixed: conflicts resolved, test double migrated, suite green; REVERIFY	session-20261115T185923-898cd631	2026-11-15T19:21:53Z
+fix:opencatalogi:1888:0a19c236	conflict resolved, new head e9655f0d, 2 inherited failures	session-20261115T185929-0fc862a6	2026-11-15T19:22:02Z
+fix:opencatalogi:2725:0414a9a7	merged development clean; tree conflict is with a sibling PR; new head ef1e2d84	session-20261115T181015-497e81ce	2026-11-15T19:22:09Z
+fix:stackiq:1042:56393a99	lock regenerated on development, pushed; REVERIFY recorded	session-20261115T174750-744c606b	2026-11-15T19:22:19Z
+fix:launchpad:819:9dcfeabe	sbom regenerated after merging development, pushed; REVERIFY recorded	session-20261115T174755-95dc8448	2026-11-15T19:22:31Z
+fix:opencatalogi:2723:f92c3e05	CONFLICT resolved (both-sides additions), pushed 8d90b4a9; REVERIFY	session-20261115T174741-9deaa0be	2026-11-15T19:22:40Z
+fix:stackiq:1069:500f69e7	lock conflict resolved, new head e98fca28	session-20261115T185929-0fc862a6	2026-11-15T19:22:58Z
