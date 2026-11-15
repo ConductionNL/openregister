@@ -15338,3 +15338,4 @@ fix:hermiq:1195:6284aad0	sbom regenerated after merging development; new head 7d
 fix:stackiq:1297:7bd31324	merged development, regenerated sbom, REVERIFY recorded	session-20261115T220025-8d429838	2026-11-15T22:22:31Z
 fix:decidiq:1468:dabc7105	fixed: sbom regenerated; REVERIFY at 7dc751fb	session-20261115T213107-505dc338	2026-11-15T22:22:43Z
 fix:hermiq:1189:9c7d6a51	fixed: sbom regenerated; new head 25278c92	session-20261115T213100-e547b457	2026-11-15T22:22:53Z
+fix:hermiq:1307:81668700	sbom regenerated, pushed 1007dac617c9bde9350369bf4adb9a791a8aa04b, REVERIFY	session-20261115T220011-f1302da8	2026-11-15T22:23:03Z
