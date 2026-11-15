@@ -12659,3 +12659,4 @@ verify:integriq:3646:9e94aa28	GREEN 3646 (phpunit 9232, no new failures, tests o
 merge:portaliq:2508:b7e3d098	stale	feeder	2026-11-15T01:40:32Z
 cover:dossiq:069ee2d6mdd7c:13d4699e	dir already at 99.7% (target 95); PR #6549 covers the default link expiry (+1 test); last line unreachable	session-20261115T011758-953fbe72	2026-11-15T01:41:21Z
 verify:pipelinq:3859:70a30ab9	GREEN 3859	session-20261114T234952-566b7ef5	2026-11-15T01:41:23Z
+cover:dossiq:069ee2d6mdd7c:7593a315	PR #6550: LinkMarkerRule + CaseRelationDetails edges, 14 tests; suite 17516->17530, same 19 baseline failures	session-20261115T011806-2ba8b68f	2026-11-15T01:41:41Z
