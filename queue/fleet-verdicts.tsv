@@ -11205,3 +11205,4 @@ versioniq	699	ccc8c62812a3cf71721e4bc4e5b8476d12fba54c	CONFLICT	merge3	conflicts
 versioniq	700	3c18ee39c94fb4fdb4346ae50dfee18563bf1405	CONFLICT	merge3	conflicts with development; files: lib/Db/AuditEntryMapper.php src/App.vue 
 versioniq	724	56dbbd6b3b35d00ed489e65964d8ea674c2ed709	CONFLICT	merge3	merges clean on development alone; files: lib/Service/InstallerService.php 
 pipelinq	3863	82a98cede7a18ff1a170984f38420895a5fa6f1c	GREEN	worker-56	unit 8653 on tree vs baseline 8627, no failures; tests only
+pipelinq	3864	730c25fae3c5ecf1c14b8539fbaf559014aec955	CONFLICT	worker-56	add/add conflict with development in tests/vitest/posTenderTypeManagerMounted.spec.js and scorecardManagerMounted.spec.js
