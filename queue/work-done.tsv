@@ -13465,6 +13465,7 @@ review:dossiq:3894:c91ec402	GREEN: dev-only phpmd 2.15->3.0 bump; suite unchange
 review:humaniq:610:02e0a4dc	GREEN: @nextcloud/vue minor bump, test:js 210/211 (1 inherited), build ok	session-20261115T155921-aabf185f	2026-11-15T16:10:36Z
 review:humaniq:664:17ede803	GREEN: dep patch bump, JS failure inherited	session-20261114T102637-6688951e	2026-11-15T16:10:50Z
 review:humaniq:670:f378e8f1	RED: npm ci ERESOLVE, preset-env 8 needs @babel/core 8 (root pins 7)	session-20261115T155911-14cd078d	2026-11-15T16:11:11Z
+review:humaniq:1096:e60cc3a3	GREEN: lock-only phpstan bump; suite 4380 OK, phpstan 2.3.5 clean	session-20261115T145535-3f9e5078	2026-11-15T16:11:18Z
 review:humaniq:877:358453bf	BLOCK (imports save-option classes from a namespace openregister does not provide)	session-20261115T141023-b06d51da	2026-11-15T16:11:29Z
 review:hermiq:1167:8c40d8f8	RED: icon markup change breaks one golden fixture	session-20261115T152546-2c24b649	2026-11-15T16:11:40Z
 review:integriq:2992:365213f7	GREEN: axe-core minor dev bump; vitest 2374/2374	session-20261115T154254-3d07b219	2026-11-15T16:11:49Z
