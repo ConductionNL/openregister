@@ -14531,3 +14531,4 @@ fix:stackiq:1924:b3cd5b3a	l10n conflict resolved, new head ae4e4f18	session-2026
 fix:thematiq:1555:1e3652b9	failed: fix needs a regenerated composer.lock (workers may not commit it) and config.platform.php raised app-wide; psalm 5->7 major also needs psalm/plugin-symfony replaced - left for a human/local lane	session-20261115T185925-f99529ae	2026-11-15T19:24:20Z
 fix:versioniq:500:ccaf6046	lock regenerated on development, pushed 890378b3; REVERIFY recorded	session-20261115T185932-17792562	2026-11-15T19:24:29Z
 fix:buildiq:1651:3e54ea1b	development merged in cleanly; new head 8f610194, REVERIFY	session-20261115T174757-8dfa7406	2026-11-15T19:24:37Z
+fix:stackiq:1930:8b2f3e05	l10n conflict resolved; only inherited failures; new head d6bf1559	session-20261115T174739-b14c2df4	2026-11-15T19:24:53Z
