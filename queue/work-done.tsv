@@ -14781,3 +14781,4 @@ fix:shillinq:2063:7f06f10a	fixed: pre-lock approved runs exportable, fail-closed
 review:portaliq:1682:08c494c0	GREEN: dev lock bump; 16 inherited errors identical to development	session-20261115T195958-28cb0304	2026-11-15T20:27:26Z
 fix:shillinq:2766	fixed: sbom regenerated; new head 4d51285b	session-20261115T200000-e95b89c2	2026-11-15T20:27:38Z
 merge:shillinq:1904:12d9835d	merge3 tree of 20 shillinq PRs: merged=2 red=11 fail=0 skip=0; conflict 7, lint 0, moved 0; fix rows 7	merge3-20261113T213425-c36bcd5f	2026-11-15T20:27:51Z
+fix:pipelinq:2187:ebdded89	merged dev, SBOM current (dev-only dep, no SBOM change possible); REVERIFY fd65c00e86140ac77446493773e44549967c3fa3	session-20261115T195953-2618bb8a	2026-11-15T20:27:59Z
