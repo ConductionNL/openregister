@@ -11347,3 +11347,4 @@ shillinq	3098	06ccad8d58e0e659f6f27ce74917e171a11d73a0	GREEN	worker-20	phpunit 1
 shillinq	3099	c9f447f08953418546709d832e6258cf2cd27981	GREEN	worker-20	phpunit 12214 ok (no PHP touched); vitest 2960, baseline 1 fail inherited (dunningNextRun), new failures 0; tests only
 shillinq	3100	0ca8e28e950bfdb241362d5348666ae281718980	GREEN	worker-20	phpunit baseline 12214 ok (no PHP touched); vitest 2919, 1 inherited fail (dunningNextRun), new failures 0; tests only
 shillinq	3101	b7107e40ca4f3275f900ffffb1c1e2fc4a43b1ac	GREEN	worker-20	phpunit baseline 12214 ok (no PHP touched); vitest 2919, 1 inherited fail (dunningNextRun), new failures 0; tests only
+shillinq	3088	32682f0a9dbd14af75b76358b8eaa6c54f5cd0be	REVERIFY	worker-20	merged development in: resolved info.xml/l10n/version-lock conflicts, new lock entry, regenerated scoped pages; phpunit 12233 ok, vitest 1 inherited fail (dunningNextRun); new head d40d616087f24d4fd143f4d237148d504603b9d2, verify it
