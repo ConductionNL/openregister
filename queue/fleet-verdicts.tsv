@@ -10776,3 +10776,4 @@ thematiq	1680	31fb4f82491973605e3b9fd0fb721096311bc020	GREEN	worker-45	phpunit 2
 pipelinq	3846	781401bfb0ecf09471945c1ceb6f57c8f5ab9a39	GREEN	worker-15	tests only; unit 8509 OK (baseline 8452 OK); vitest 5181, 1 failure myWorkPage.spec.js inherited from development 0d8e11ea2
 pipelinq	3847	4c9414027e48e0b5538686d2e9c3056b9908e14c	GREEN	worker-15	tests only; unit 8509 OK (baseline 8452 OK); vitest 5181, 1 failure myWorkPage.spec.js inherited from development 0d8e11ea2
 pipelinq	3848	069c9696e442df7dae5127858605b4340b1f4130	GREEN	worker-15	tests only; unit 8509 OK (baseline 8452 OK); vitest 5181, 1 failure myWorkPage.spec.js inherited from development 0d8e11ea2
+larpinq	1054	3498aefd75042d35969859d5a0b63542a4c7c62f	GREEN	worker-58	tree dev+1054: unit 870 OK (baseline 832 OK), vitest 571 passed; new failures none; builds events-casting-and-crew-roles, test edits follow the 3 new schemas and castingEvent field, casting guard only adds refusals
