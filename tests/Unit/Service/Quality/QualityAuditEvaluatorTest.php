@@ -264,6 +264,52 @@ class QualityAuditEvaluatorTest extends TestCase {
 	}//end testAMalformedAuditIsRefusedNamingTheFault()
 
 	/**
+	 * A failure sink receives each failing record, so a large population is not held in memory.
+	 *
+	 * @return void
+	 */
+	public function testAFailureSinkReceivesEachFailureInsteadOfTheResult(): void {
+		$seen = [];
+		$run = $this->evaluator->evaluate(
+			audit: self::AUDIT,
+			population: self::addresses(noPostcode: [3], noHouseNumber: [3, 7]),
+			now: new DateTimeImmutable(),
+			startedBy: 'steward',
+			onFailure: static function (array $failure) use (&$seen): void {
+				$seen[] = $failure;
+			}
+		);
+
+		$this->assertSame(
+			[
+				['record' => 'address-3', 'rules' => ['required:postcode', 'house number present']],
+				['record' => 'address-7', 'rules' => ['house number present']],
+			],
+			$seen
+		);
+		$this->assertSame([], $run['failures']);
+		$this->assertSame(2, $run['failed']);
+		$this->assertSame(20, $run['evaluated']);
+	}//end testAFailureSinkReceivesEachFailureInsteadOfTheResult()
+
+	/**
+	 * Without a sink the failures are on the result and counted.
+	 *
+	 * @return void
+	 */
+	public function testWithoutASinkTheFailuresAreCounted(): void {
+		$run = $this->evaluator->evaluate(
+			audit: self::AUDIT,
+			population: self::addresses(noPostcode: [3], noHouseNumber: [3, 7]),
+			now: new DateTimeImmutable(),
+			startedBy: 'steward'
+		);
+
+		$this->assertSame(2, $run['failed']);
+		$this->assertCount(2, $run['failures']);
+	}//end testWithoutASinkTheFailuresAreCounted()
+
+	/**
 	 * A rule is reported by its name, else by type and field.
 	 *
 	 * @return void

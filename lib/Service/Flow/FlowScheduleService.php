@@ -45,6 +45,7 @@ namespace OCA\OpenRegister\Service\Flow;
 use Cron\CronExpression;
 use DateTimeImmutable;
 use DateTimeInterface;
+use DateTimeZone;
 use OCA\OpenRegister\Service\Delegation\DelegationRefused;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
@@ -186,7 +187,7 @@ class FlowScheduleService implements FlowScheduleServiceInterface {
 			return false;
 		}
 
-		$next = $this->nextRunAfter(cron: $cron, baseline: $baseline);
+		$next = $this->nextRunAfter(cron: $cron, baseline: $baseline, timezone: $this->timezoneOf(candidate: $candidate));
 		if ($next === null || $next > $now) {
 			return false;
 		}
@@ -365,18 +366,51 @@ class FlowScheduleService implements FlowScheduleServiceInterface {
 	/**
 	 * The first cron occurrence after a flow's baseline, or null when the cron or the baseline cannot be read.
 	 *
-	 * @param string $cron     The cron expression.
-	 * @param string $baseline The last fire, or the moment the flow was scheduled from.
+	 * With a timezone the cron's fields are read in it ("0 7 * * *" is 07:00 in
+	 * Europe/Amsterdam, summer and winter); without one, in the server's.
+	 *
+	 * @param string            $cron     The cron expression.
+	 * @param string            $baseline The last fire, or the moment the flow was scheduled from.
+	 * @param DateTimeZone|null $timezone The timezone the cron is read in, or null for the server's.
 	 *
 	 * @return DateTimeInterface|null The next run date.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
 	 */
-	private function nextRunAfter(string $cron, string $baseline): ?DateTimeInterface {
+	private function nextRunAfter(string $cron, string $baseline, ?DateTimeZone $timezone = null): ?DateTimeInterface {
 		try {
-			return (new CronExpression($cron))->getNextRunDate(new DateTimeImmutable($baseline));
+			$from = new DateTimeImmutable($baseline);
+			if ($timezone === null) {
+				return (new CronExpression($cron))->getNextRunDate($from);
+			}
+
+			return (new CronExpression($cron))->getNextRunDate($from->setTimezone($timezone), 0, false, $timezone->getName());
 		} catch (Throwable $e) {
 			return null;
 		}
 	}//end nextRunAfter()
+
+	/**
+	 * The timezone a candidate's cron is read in, or null for the server's.
+	 *
+	 * An identifier PHP does not know reads as the server's timezone: the
+	 * trigger node refuses one on save, so only a candidate a source wrote by
+	 * hand can carry it, and refusing to schedule it would stop the flow.
+	 *
+	 * @param array<string, mixed> $candidate The candidate flow.
+	 *
+	 * @return DateTimeZone|null The timezone, or null.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
+	 */
+	private function timezoneOf(array $candidate): ?DateTimeZone {
+		$name = trim((string)($candidate['timezone'] ?? ''));
+		if ($name === '' || in_array(needle: $name, haystack: DateTimeZone::listIdentifiers(), strict: true) === false) {
+			return null;
+		}
+
+		return new DateTimeZone($name);
+	}//end timezoneOf()
 
 	/**
 	 * The moment a flow's next occurrence is measured from.

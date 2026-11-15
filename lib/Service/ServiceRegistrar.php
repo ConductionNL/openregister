@@ -21,12 +21,14 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Contract\EmailLinkReaderInterface;
+use OCA\OpenRegister\Contract\ObjectFileReaderInterface;
 use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
+use OCA\OpenRegister\Service\File\ObjectFileReader;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionRunner;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
@@ -135,6 +137,14 @@ final class ServiceRegistrar {
 			EmailLinkReaderInterface::class,
 			function ($c) {
 				return $c->get(EmailLinkService::class);
+			}
+		);
+
+		// The published read of an object's attached files, for consuming apps.
+		$context->registerService(
+			ObjectFileReaderInterface::class,
+			function ($c) {
+				return $c->get(ObjectFileReader::class);
 			}
 		);
 	}//end registerRequestScoped()

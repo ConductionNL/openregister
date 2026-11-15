@@ -23,8 +23,9 @@
 
 ## 3. Read-path efficiency
 
-- [ ] Split `sealRowsLocked()` into a narrow `id, hash` skeleton read over the range
+- [x] Split `sealRowsLocked()` into a narrow `id, hash` skeleton read over the range
       plus a full-row read restricted to the unsealed ids
+      - built as `linksBetween()` + `withUnsealedPayloads()`; the payload read is chunked at 1000 ids
       - sealed rows contribute only a chain link; their ~5.3 KB payload must not be fetched
       - keeps bytes read proportional to unsealed rows, not to the window's id span
 

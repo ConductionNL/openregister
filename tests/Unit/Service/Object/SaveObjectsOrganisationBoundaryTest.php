@@ -152,6 +152,9 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Service\Object\SaveObjects\BulkSchemaAnalysis
  * @uses \OCA\OpenRegister\Service\Object\SaveObjects\IdentifiedRow
  * @uses \OCA\OpenRegister\Service\Object\SaveObjects\PersistedChunk
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation
+ * @uses \OCA\OpenRegister\Service\Rbac\UndecidablePosture
+ * @uses \OCA\OpenRegister\Db\HydrationKey
  */
 class SaveObjectsOrganisationBoundaryTest extends TestCase {
 

@@ -42,6 +42,13 @@ use Psr\Log\LoggerInterface;
  *
  * @covers \OCA\OpenRegister\Service\Object\ValidateObject
  * @covers \OCA\OpenRegister\Service\Object\ValidationErrorMessages
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Formats\FormatFactory
+ * @uses \OCA\OpenRegister\Formats\UserFormat
+ * @uses \OCA\OpenRegister\Service\Object\ExtendedFieldCheck
+ * @uses \OCA\OpenRegister\Service\Object\RefLoopGuardParser
+ * @uses \OCA\OpenRegister\Service\Object\ValidationLookups
+ * @uses \OCA\OpenRegister\Service\Object\ValidationSchemaSource
  */
 class ValidateObjectStatedRequirementsTest extends TestCase {
 

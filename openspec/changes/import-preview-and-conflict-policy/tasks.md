@@ -28,14 +28,15 @@
 
 ## 5. Instance serialisation
 
-- [ ] 5.1 Serialise registers, schemas, objects, files and configuration as a portable set (D-5).
+- [ ] 5.1 Serialise registers, schemas, objects, files and configuration as a portable set (D-5). PARTIAL: `InstanceSetSerialiser::serialise()` writes registers with their schemas and objects (each through the existing configuration export, `ExportHandler::exportConfig(includeObjects: true)`, so only what the caller may read) and the app configuration (`InstanceAppConfigReader`) as one set, `format: openregister-instance-set`, `version: 1`, with a per-register outcome (`exported` with its object count, or `failed` with the error while the rest still serialise). Files are not in the set yet, and the set is not yet produced as a background job or reachable from an endpoint; both come with 5.2.
 - [ ] 5.2 Load a set into another instance, as a bulk job with a per-row outcome.
-- [ ] 5.3 Exclude secrets and record the exclusion in the set.
+- [x] 5.3 Exclude secrets and record the exclusion in the set.
+  - `InstanceSecretFilter` leaves out every entry whose key names a secret (password, token, API key, client secret, private key, credential, authorization) from the register, every export section and the objects; schema definitions are kept whole, since a property named `password` is a field and not a credential. `InstanceAppConfigReader` leaves out every key Nextcloud keeps as sensitive (unreadable counts as sensitive), every secret-named key, and secret entries inside a JSON object value. The set always carries `secrets: {excluded: true, paths: [...], note}`, the paths naming each left-out entry and never its value, so an absent credential is not read as there having been none.
 
 ## 6. Tests
 
 - [x] 6.1 `tests/e2e/ci/import-preview.spec.ts`: map a file, preview it, see the counts, run it, see the rows.
-- [ ] 6.2 Unit tests: the four policies, the double match refusal, the changed-file refusal, the failed copy, the secret exclusion. PARTIAL: the policies, the double match and the changed file are covered; the failed copy is now covered (`DestructionCopyWriterTest`, `DestructionListRunBehaviourTest::testNoCopyNoDestruction`); the secret exclusion belongs to section 5.
+- [ ] 6.2 Unit tests: the four policies, the double match refusal, the changed-file refusal, the failed copy, the secret exclusion. PARTIAL: the policies, the double match and the changed file are covered; the failed copy is now covered (`DestructionCopyWriterTest`, `DestructionListRunBehaviourTest::testNoCopyNoDestruction`); the secret exclusion is covered by `InstanceSetSerialiserTest::testAnInstanceWithCredentialsIsSerialisedWithoutThemAndSaysSo`, `InstanceSecretFilterTest` and `InstanceAppConfigReaderTest`. Left open for the load (5.2).
 - [x] 6.3 `openspec validate import-preview-and-conflict-policy --strict`.
 
 ## 7. Hand over
