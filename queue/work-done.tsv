@@ -12412,3 +12412,5 @@ fix:versioniq:722:98541474	conflict resolved (SettingsController), pushed 08999a
 fix:shillinq:3084:38841f5c	renamed 2 test classes to match files; 105 new tests run green, suite 11576 OK; head e6ce7a27	session-20261115T004018-2e5dec64	2026-11-15T00:49:18Z
 fix:opencatalogi:2677:2c81f0dc	maintainability restored to 5 stars, pushed a53630d7; opensourcehealth drop inherited from development	session-20261115T003406-a607297a	2026-11-15T00:49:29Z
 fix:versioniq:690:5a25cc95	l10n keys moved off the append point; new head e0abdb09, REVERIFY	session-20261114T235442-bc1b76db	2026-11-15T00:49:39Z
+fix:versioniq:685:7f027ce2	floor restored (PASS), suites green apart from inherited; new head aadbc252, REVERIFY	session-20261114T233346-3552728d	2026-11-15T00:50:09Z
+fix:versioniq:729:94184de7	merged development, openapi.json conflict resolved; new head a4722246, REVERIFY recorded	session-20261114T231755-998f7ff8	2026-11-15T00:50:17Z
