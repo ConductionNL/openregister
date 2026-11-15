@@ -14562,3 +14562,4 @@ fix:versioniq:709:f55ff85c	CONFLICT resolved (12 files), pushed fa10e6b8; REVERI
 fix:launchpad:653:0c8c8740	fixed: Babel 8 via webpack-vue-config ^7.1.0, build+vitest green, new head 7dd62332	session-20261115T190016-8d1377d2	2026-11-15T19:28:57Z
 fix:stackiq:1431:c3199284	fixed: merged development, contract test copy, doubles updated; 17 inherited failures only (development 399); new head 43c26b3c	session-20261115T190008-ff700d5c	2026-11-15T19:29:29Z
 fix:stackiq:1959:760635d9	fixed floor: unit_interfacing restored to 4.72; unit 3734 OK; new head 6831689a, REVERIFY recorded	session-20261115T152543-40aea993	2026-11-15T19:29:37Z
+merge:integriq:3564:3c9d1988	merge8 tree of 17 integriq PRs: merged=3 red=11 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge8-20261115T170007-37538273	2026-11-15T19:30:49Z
