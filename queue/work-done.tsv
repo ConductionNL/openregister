@@ -14428,6 +14428,7 @@ fix:portaliq:1996:69333191	RED fixed (14 doubles), suite green, REVERIFY recorde
 review:shillinq:1899:7b7a34c7	GREEN: unit 12239 OK, vitest/eslint clean	session-20261115T181015-497e81ce	2026-11-15T19:09:04Z
 review:shillinq:2072:dbfc1357	GREEN: access tightening, suite 12231 OK	session-20261115T185929-0fc862a6	2026-11-15T19:09:15Z
 verify:learniq:2551:2f991eae	GREEN 2551	session-20261115T174741-56eeaa2f	2026-11-15T19:09:22Z
+fix:buildiq:1261:901e0708	failed: whole PR migrates to searchObjectsBySlug(target: RegisterSchemaRef), which openregister main lacks (still registerSlug/schemaSlug); reverting to main's form empties it; hold until openregister ships the target form	session-20261115T190007-40e51d5a	2026-11-15T19:09:38Z
 fix:planninq:871:7d17dd48	conflict resolved: lock regenerated (eslint 10.12.0), lint+vitest green, new head 95bfabe1	session-20261115T190016-8d1377d2	2026-11-15T19:09:44Z
 fix:buildiq:1256:a68cddc3	failed: the PR is a composer.lock-only refresh (hydra-gates v1.18.0->v1.19.0, development still on v1.18.0) and its conflict is in composer.lock; resolving it means committing a regenerated composer.lock, which workers may not do; needs the local lane or a fresh lock refresh	session-20261115T174739-b14c2df4	2026-11-15T19:10:00Z
 review:shillinq:1900:fef99b3e	GREEN: matches change spec, suite 12240 OK	session-20261115T174833-88ac0233	2026-11-15T19:09:57Z
@@ -14439,6 +14440,7 @@ fix:planninq:930:bddd2139	conflict resolved, pushed de4742c6; REVERIFY recorded	
 fix:keepiq:1498:65127fcb	failed: the fix needs composer.json config.platform.php raised to >= 8.3.16 and composer.lock regenerated, and workers may not commit composer.lock; same pattern as launchpad #1099 (psalm 7 bump) - better handled by a lane that owns lockfiles, or by closing the bump	session-20261115T154255-e54527e9	2026-11-15T19:11:01Z
 review:shillinq:2252:eea2842a	GREEN: 12225 unit tests pass, migration keeps behaviour	session-20261115T190008-ff700d5c	2026-11-15T19:11:02Z
 verify:shillinq:3105:c6218d85	GREEN: dependabot config only; unit 12225 OK	session-20261115T182941-b7ae781f	2026-11-15T19:11:13Z
+fix:buildiq:1620:64b6280e	failed: cannot reproduce the floor drop - with lizard 1.24.3, jscpd 4.0.5 and estimator 391d6ca5ea39 (the committed floor's tool_version) development and development+#1620 both measure overall 4.29 (range 4.29-4.37; unit_size 3.68->3.69, unit_complexity 3.32->3.31, interfacing 3.44->3.45); the lane's 3.89 vs absolute 3.91 is not attributable to this PR, recommend re-measuring the lane's absolute f	session-20261115T174747-978963d5	2026-11-15T19:11:28Z
 fix:buildiq:1248:82ce29ad	failed: sbom gate false positive: the lock change is require-dev only (conduction/hydra-gates 1.18.0->1.19.0), regen-sbom writes an identical sbom.cdx.json and --check passes on 82ce29ad; nothing to commit, the gate needs to accept an unchanged sbom for dev-only lock changes	session-20261115T183029-6c0565bd	2026-11-15T19:11:21Z
 fix:planninq:1067:e3dc5a7a	conflict resolved, namespace corrected to OR main, 7 more calls migrated; suite green; new head 98afc66e	session-20261115T185938-cd1c2813	2026-11-15T19:11:26Z
 fix:keepiq:1195:3f2200c4	failed: phpmd 3.0 is a gate change, not a mechanical fix: v3 counts CouplingBetweenObjects differently (3 -> 12 findings) so landing it means refactoring those classes or re-baselining the gate (a decision), plus moving 'composer phpmd' off positional args; out of scope for a fix task	session-20261115T154255-e54527e9	2026-11-15T19:11:31Z
@@ -14450,8 +14452,10 @@ review:shillinq:2083:bbd8bdb9	BLOCK: new discard uses old deleteObject API, fail
 review:shillinq:2254:863e0786	GREEN: tests only, matches OR main contract, unit 12225 OK	session-20261115T174755-95dc8448	2026-11-15T19:12:09Z
 fix:launchpad:1038:8f31cf39	failed: still premature, nothing to fix on the branch: it is one of a coordinated set (dossiq, buildiq, pipelinq, launchpad, learniq) for openregister #9817 (StoreListing/StoreSharing), which is open and not on main (main 3800106b has no StoreListing). Merge it together with #9817	session-20261115T182941-b7ae781f	2026-11-15T19:12:18Z
 fix:planninq:1066:acc56236	fixed: main namespace for ObjectDeletion/ObjectFindTarget, merged development, unit green; new head b7c292c5	session-20261115T185930-76cdc846	2026-11-15T19:12:32Z
+fix:integriq:3595:b248545e	unit_size restored (3.57->3.59 vs dev 3.58), pushed 3b413349, REVERIFY recorded	session-20261115T182936-09049974	2026-11-15T19:12:36Z
 fix:buildiq:1596:e5795e30	fixed floor: helper extraction, unit_complexity 3.32 (base 3.33, PASS); new head ba6566ea61	session-20261115T185944-49ff6c32	2026-11-15T19:12:46Z
 fix:buildiq:1249:a5648e98	sbom regenerated, merged development, pushed 0997f504; REVERIFY	session-20261115T174741-9deaa0be	2026-11-15T19:12:57Z
+fix:launchpad:776:7495f48c	failed: permission (closing the obsolete PR was refused; confirmed superseded: PR lock 2.60.0 vs development 2.180.0, needs a manual close)	session-20261115T182936-09049974	2026-11-15T19:13:12Z
 fix:launchpad:1099:6f005198	failed: installing needs platform php 8.3.16 in composer.json AND in the lock (platform-overrides, content-hash); workers may not commit composer.lock. Raise config.platform.php to 8.3.16 on development, then let dependabot recreate the PR	session-20261115T174755-95dc8448	2026-11-15T19:13:12Z
 review:versioniq:499:36c6819e	BLOCK: conflicts with development's exact vite 8.2.4 pin; would loosen it to ^8.3.1, superseded	session-20261115T183023-a120e01a	2026-11-15T19:13:08Z
 fix:buildiq:1114:1c8fce1e	sbom regenerated, merged development, pushed 9381ce974; REVERIFY recorded	session-20261115T182953-0722a05e	2026-11-15T19:13:17Z
@@ -14459,3 +14463,13 @@ fix:buildiq:1649:90cf9793	fixed CONFLICT: merged development, strings moved mid-
 fix:buildiq:820:306021ea	fixed: development merged, sbom.cdx.json regenerated; new head a6bd63eb	session-20261115T182940-bfeb7e78	2026-11-15T19:13:40Z
 fix:buildiq:1089:322d7e65	no change needed: merges clean on development; conflict only with another lockfile PR in the tree; REVERIFY as one-PR tree recorded	session-20261115T183029-6c0565bd	2026-11-15T19:13:49Z
 fix:launchpad:833:62b5ba52	failed: not a mergeable conflict: 84 files, 5-week-old base, and the branch's activity settings hang off src/personal.js which development deleted (no personal settings pages; user settings belong in the settings modal). The unique work (ActivityReportController/Service, ColleagueActivityService/Widget, ActivityEventReader, OrphanedPersonalLayerEntriesCategory, in-widget row filter) should be rebu	session-20261115T154255-e54527e9	2026-11-15T19:13:55Z
+review:shillinq:1958:3f5a3226	GREEN	session-20261115T182948-465dcc8e	2026-11-15T19:14:13Z
+fix:launchpad:1235:91e1b632	l10n conflicts resolved, pushed 5447328b; REVERIFY recorded	session-20261115T182941-b7ae781f	2026-11-15T19:14:21Z
+fix:buildiq:1652:023b900b	merged development (clean now); pushed 74a237c7, REVERIFY	session-20261115T174808-50b8ceec	2026-11-15T19:14:30Z
+fix:buildiq:1233:f1c8aa72	conflict resolved; l10n OK; new head fbc18f00	session-20261115T181015-497e81ce	2026-11-15T19:14:41Z
+fix:launchpad:1230:f043acfc	merged development (clean), suite green, pushed 30aa8e54; REVERIFY	session-20261115T174741-9deaa0be	2026-11-15T19:14:48Z
+fix:buildiq:1090:8b2df26a	sbom regenerated, new head 8e11ea7a	session-20261115T185929-0fc862a6	2026-11-15T19:14:59Z
+fix:buildiq:1608:b3506415	sandbox enforced by response CSP, headers restored, pushed 08f7f4d3; REVERIFY recorded	session-20261115T174750-744c606b	2026-11-15T19:15:11Z
+fix:launchpad:1098:1720a6d3	sbom regenerated after merging development, pushed 08b61447; REVERIFY recorded	session-20261115T174755-95dc8448	2026-11-15T19:15:30Z
+fix:planninq:725:6961dd1e	fixed: sbom regenerated; new head f5dce57c	session-20261115T174819-9af28ef9	2026-11-15T19:15:39Z
+fix:launchpad:1223:8946cefa	conflict resolved (register 1.0.4), pushed 65b428f7, REVERIFY recorded	session-20261115T182936-09049974	2026-11-15T19:15:55Z
