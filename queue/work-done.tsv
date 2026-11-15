@@ -15249,3 +15249,4 @@ review:opencatalogi:2654:9a530c05	GREEN: changes-since endpoint per spec, no new
 review:integriq:3049:5e51514f	GREEN: 9535 tests, 0 new failures over baseline (5 inherited)	session-20261115T220037-4fd37272	2026-11-15T22:06:56Z
 review:shillinq:1958:9dadcfff	GREEN: matches spec additions, 12239 PHP OK, vitest only inherited failure	session-20261115T213156-1ffcf961	2026-11-15T22:07:03Z
 review:integriq:3612:0000c176	GREEN: per change spec, suite 9554 tests, no new failures (5 inherited)	session-20261115T220036-9d15b9ea	2026-11-15T22:07:18Z
+review:buildiq:1641:1cc1383a	GREEN: no new failures; note suite fatals at bootstrap with openregister main beside (inherited)	session-20261115T213122-46f7fafb	2026-11-15T22:07:26Z
