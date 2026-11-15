@@ -13404,3 +13404,4 @@ review:dossiq:5397:e528f075	GREEN: phpstan dev bump; suite and phpstan output un
 review:filinq:1756:88533afc	GREEN: 6770 unit OK	session-20261115T154255-e54527e9	2026-11-15T16:00:27Z
 review:filinq:1962:e4994b11	GREEN 1962: patch bump, suite green	session-20261115T142958-341f60db	2026-11-15T16:00:39Z
 review:filinq:1086:be9ddbad	GREEN (lock-only dev tooling bump, suite OK)	session-20261115T142949-9c6a3945	2026-11-15T16:00:48Z
+review:dossiq:5357:5c357cd0	BLOCK: imports OpenRegister ObjectPatch at a namespace that exists on neither OR branch; patch path would fatal	session-20261115T152552-0cb4306e	2026-11-15T16:01:02Z
