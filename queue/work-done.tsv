@@ -15192,3 +15192,4 @@ review:dossiq:5281:98019614	GREEN: renames match openregister main, no new failu
 review:portaliq:1684:d522fb21	GREEN: help text in page answer, no new failures	session-20261115T213134-4b0d2823	2026-11-15T21:54:23Z
 review:hermiq:1760:ce2326e7	RED: new code uses removed OR named args, 17 new failures vs OR main	session-20261115T213112-78aba834	2026-11-15T21:54:50Z
 review:portaliq:1659:14ee4936	GREEN: manifest label only, 0 new failures	session-20261115T213110-6b33145c	2026-11-15T21:54:56Z
+review:hermiq:1756:1435f079	GREEN: talk tool per spec, 5299 tests ok (agentId-on-direct-MCP note)	session-20261115T203012-30a1abde	2026-11-15T21:55:07Z
