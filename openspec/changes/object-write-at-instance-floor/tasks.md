@@ -206,7 +206,7 @@ survives even where the priority moved.
       > already did. The register not-found probe now runs only on a miss instead of before every
       > uncached lookup (one query less per register read). Outcomes pinned unchanged in the find
       > goldens; arms in `tests/Unit/Db/IdentifierArmsTest`. Left: the `LOWER(slug)` functional
-      > index (an expression index is not modelled by the migration schema DBAL compares against,
+      > index (an expression index has to be checked against the schema comparison Nextcloud runs on later migrations,
       > so it needs a live PostgreSQL/MySQL migration run to land safely), and `SELECT *`, which
       > `find()` needs because it returns the full entity.
 
