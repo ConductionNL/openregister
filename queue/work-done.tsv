@@ -14716,3 +14716,4 @@ verify:buildiq:1648:02309192	GREEN: 1648 verified	session-20261115T174747-978963
 review:opencatalogi:2679	BLOCK: new code uses removed OR named-arg saveObject API; tests no new failures	session-20261115T200000-e95b89c2	2026-11-15T20:14:41Z
 review:portaliq:1602:cc086817	GREEN: docs and comment only	session-20261115T174747-978963d5	2026-11-15T20:14:51Z
 review:opencatalogi:2669:a67472fb	GREEN: matches change spec, tools read-only and gated, tests = baseline	session-20261115T182940-bfeb7e78	2026-11-15T20:15:04Z
+review:opencatalogi:2654:6fc17083	GREEN: changed-since build matches spec, failures inherited	session-20261115T195957-8e60ca53	2026-11-15T20:15:12Z
