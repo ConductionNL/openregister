@@ -14534,3 +14534,4 @@ fix:versioniq:500:ccaf6046	lock regenerated on development, pushed 890378b3; REV
 fix:versioniq:484:92a0a429	obsolete: development has hydra-gates v1.19.0; closed #484 with a neutral comment	session-20261115T183023-a120e01a	2026-11-15T19:24:34Z
 fix:buildiq:1651:3e54ea1b	development merged in cleanly; new head 8f610194, REVERIFY	session-20261115T174757-8dfa7406	2026-11-15T19:24:37Z
 fix:stackiq:1930:8b2f3e05	l10n conflict resolved; only inherited failures; new head d6bf1559	session-20261115T174739-b14c2df4	2026-11-15T19:24:53Z
+fix:launchpad:786:5bd3779b	conflicts resolved (kept development's tile sorting), pushed d5210578; REVERIFY recorded	session-20261115T182941-b7ae781f	2026-11-15T19:25:16Z
