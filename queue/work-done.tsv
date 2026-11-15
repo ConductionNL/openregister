@@ -15270,3 +15270,4 @@ review:integriq:3574:65269c9d	GREEN: per spec, refactors equivalent, no new fail
 review:opencatalogi:2669:8c31eee0	GREEN: MCP adoption per spec, no new failures	session-20261115T211111-34885d99	2026-11-15T22:10:39Z
 review:buildiq:1583:83cecfc6	GREEN	session-20261115T202932-d1067ee4	2026-11-15T22:10:46Z
 review:integriq:3596:2efdcccd	GREEN: no new failures (5 inherited), vitest OK	session-20261115T220032-9e5549d1	2026-11-15T22:10:58Z
+verify:integriq:3649:14cb20dc	GREEN 3649: phpunit 9597 no new failures, vitest 2403 passed	session-20261115T220036-9d15b9ea	2026-11-15T22:11:13Z
