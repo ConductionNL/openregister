@@ -12296,4 +12296,5 @@ cover:planninq:e1c9866dmcf99:38e80a9f	PR #1182: 8 tests, lib/Command 100% lines 
 fix:launchpad:1226:2e6e68db	merged development, 4 conflicts resolved keeping both sides; vitest 2378 pass, unit fail inherited; new head d96f04da	session-20261114T225452-4fcfea7f	2026-11-15T00:30:38Z
 verify:decidiq:2203:3a86356b	2203 GREEN, 2213 GREEN	session-20261115T001759-0085793c	2026-11-15T00:30:54Z
 fix:launchpad:1212:3d4ff4c4	conflict resolved, new head 1f11f90f643de5db851308a889bb8e2156c74ed4	session-20261114T234758-aa94f07d	2026-11-15T00:31:05Z
+cover:planninq:e1c9866dmcf99:f545d745	already done: lib/Repair/*.php at 98.25% on development (target 90)	session-20261114T221759-cd5c5678	2026-11-15T00:31:10Z
 review:humaniq:1133:c45cf87b	BLOCK: approval-step guard reads the target status, so the two-step flow cannot complete	session-20261114T234933-5c1be121	2026-11-15T00:31:15Z
