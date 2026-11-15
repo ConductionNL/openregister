@@ -14564,3 +14564,4 @@ fix:stackiq:1431:c3199284	fixed: merged development, contract test copy, doubles
 fix:stackiq:1959:760635d9	fixed floor: unit_interfacing restored to 4.72; unit 3734 OK; new head 6831689a, REVERIFY recorded	session-20261115T152543-40aea993	2026-11-15T19:29:37Z
 merge:integriq:3564:3c9d1988	merge8 tree of 17 integriq PRs: merged=3 red=11 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge8-20261115T170007-37538273	2026-11-15T19:30:49Z
 merge:integriq:2562:af79ed1b	merge8 tree of 17 integriq PRs: merged=3 red=11 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge8-20261115T170007-37538273	2026-11-15T19:30:52Z
+merge:integriq:2560:8bfbdb85	merge8 tree of 17 integriq PRs: merged=3 red=11 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge8-20261115T170007-37538273	2026-11-15T19:30:56Z
