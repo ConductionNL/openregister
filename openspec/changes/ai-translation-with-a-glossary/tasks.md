@@ -12,12 +12,12 @@
 
 ## 3. Settings and page
 
-- [ ] 3.1 Add the "Translation" section to the Open Register admin settings: provider choice, the Task Processing providers Nextcloud reports for the two task types with local or remote, and the confirmation that record text is sent. Verify: `src/views/settings/sections/TranslationConfiguration.spec.js`; saving without the confirmation keeps `translation_allow_external` false.
+- [x] 3.1 Add the "Translation" section to the Open Register admin settings: provider choice, the Task Processing providers Nextcloud reports for the two task types with local or remote, and the confirmation that record text is sent. Verify: `src/views/settings/sections/TranslationConfiguration.spec.js`; saving without the confirmation keeps `translation_allow_external` false.
 - [ ] 3.2 Add the "Translate" action to `src/views/object/ObjectDetails.vue` for administrators on a schema with a translatable property in a multi-language register, open `BulkTranslateDialog` through `src/dialogs/Dialogs.vue`, persist the returned map and reload; move the dialog's strings to `t()` and list drafted fields with their missing terms. Verify: `src/dialogs/i18n/BulkTranslateDialog.spec.js` extended for the drafted list; `src/views/object/ObjectDetails.spec.js` asserts the action is hidden for a single-language register.
 
 ## 4. Docs and end-to-end test
 
-- [ ] 4.1 Document enabling AI translation, the glossary and style guide, the draft-on-miss rule and the encrypted-field rule in `docs/i18n.md`. Verify: `npm run build` in `docs/` succeeds.
+- [x] 4.1 Document enabling AI translation, the glossary and style guide, the draft-on-miss rule and the encrypted-field rule in `docs/i18n.md`. Verify: `npm run build` in `docs/` succeeds.
 - [ ] 4.2 Add `tests/e2e/ci/ai-translation-glossary.spec.ts`: with Nextcloud's `testing` app enabled in the CI instance for its fake `FakeTranslateProvider` and `FakeTextToTextProvider`, an administrator enables AI translation, translates a record from `nl` to `en` from the object page, and sees the fields filled and the glossary term present (the fake text2text provider echoes its prompt, which carries the term). The draft-on-miss rule cannot be produced by the fake provider and is proven by the unit tests of 2.1 and 2.2. Verify: the spec runs green in the Playwright CI project.
 
 ## Acceptance

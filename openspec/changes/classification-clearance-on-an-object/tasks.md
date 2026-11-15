@@ -20,10 +20,21 @@
 
 ## 3. Enforcement
 
-- [ ] 3.1 `PermissionHandler` refuses a find above the caller's clearance.
+- [x] 3.1 `PermissionHandler` refuses a find above the caller's clearance.
+      > 2026-11-14: `Service/Rbac/ClassificationReadGate`, called from
+      > `PermissionHandler::evaluatePermission()` after the deny pass and before
+      > any grant, as a final refusal (no grant, schema rule or elevation
+      > re-opens it). Only an ask about one object; a schema without the block
+      > is never looked at further. Tests: `ClassificationReadGateTest`,
+      > `PermissionHandlerClassificationTest`.
 - [ ] 3.2 `MagicRbacHandler` compiles the comparison into the list and
       aggregation queries as an `IN` over the admitted labels.
 - [ ] 3.3 Ceilings refuse a scope ahead of every grant and schema rule.
+      > 2026-11-14, find path only: an anonymous caller is the `public` scope,
+      > and a ceiling on it refuses every action on an object at or above its
+      > level, ahead of a public schema rule and the object's own public grant
+      > (`PermissionHandlerClassificationTest::testACeilingBeatsEveryGrantToItsScope`).
+      > The list path waits on 3.2; scopes other than `public` are not mapped yet.
 - [x] 3.4 The floor is checked at save and a lowering write is refused naming
       both levels.
 

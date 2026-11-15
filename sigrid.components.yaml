@@ -156,7 +156,7 @@ components:
       - ".*/lib/Db/ExportProfile/[^/]*"
       - ".*/lib/Db/JobRun/[^/]*"
       - ".*/lib/Db/Translation/[^/]*"
-      - ".*/lib/Listener/(ShareableConfigTypeRegistrationListener)[.]php"
+      - ".*/lib/Listener/(RedactionPolicyCacheListener|ShareableConfigTypeRegistrationListener)[.]php"
       - ".*/lib/Service/(AppRegisterImportRunner|ApplicationMove|ApplicationService|ConfigurationService|ConfigurationServiceInterface|ConfigurationTransferInterface|ConfigurationUpdateNotice|ContractBindings|CountedRegisterImport|DemoDataService|DescriptorImportTarget|ExportService|FormsAppRows|ImportService|LanguageGapScan|LanguageService|ManifestProfile|ManifestService|MassValidationRun|McpCatalogSummaries|McpDiscoveryService|MdiIconRenderer|MigrationPackService|MigrationPackServiceInterface|MigrationService|MockImportRun|NotificationService|OperationsConsoleService|PropertyDiscoveryRun|RecordUpdate|RegisterDescriptorService|ScheduledReportRun|ScheduledReportService|SchemaApplicationMigrator|SchemaCascade|SchemaProperty|SchemaService|SchemaSplitRun|SequenceScope|SequenceService|SettingsService|SharedSchemaDedupeService|SharedSchemaPlanRun|SharedSchemaUse|ShippedRegister|SourceLanguageLookup|TenantKeyService|TranslationProjectionService|TranslationSearch|TranslationStatusService|ValidationChunkResult|VocabularyImportService)[.]php"
       - ".*/lib/Service/Capability/[^/]*"
       - ".*/lib/Service/Config/[^/]*"
