@@ -14462,6 +14462,7 @@ fix:buildiq:1114:1c8fce1e	sbom regenerated, merged development, pushed 9381ce974
 fix:buildiq:1649:90cf9793	fixed CONFLICT: merged development, strings moved mid-catalogue; new head dae57dbf, REVERIFY recorded	session-20261115T152543-40aea993	2026-11-15T19:13:26Z
 fix:buildiq:820:306021ea	fixed: development merged, sbom.cdx.json regenerated; new head a6bd63eb	session-20261115T182940-bfeb7e78	2026-11-15T19:13:40Z
 fix:buildiq:1089:322d7e65	no change needed: merges clean on development; conflict only with another lockfile PR in the tree; REVERIFY as one-PR tree recorded	session-20261115T183029-6c0565bd	2026-11-15T19:13:49Z
+fix:launchpad:833:62b5ba52	failed: not a mergeable conflict: 84 files, 5-week-old base, and the branch's activity settings hang off src/personal.js which development deleted (no personal settings pages; user settings belong in the settings modal). The unique work (ActivityReportController/Service, ColleagueActivityService/Widget, ActivityEventReader, OrphanedPersonalLayerEntriesCategory, in-widget row filter) should be rebu	session-20261115T154255-e54527e9	2026-11-15T19:13:55Z
 review:shillinq:1958:3f5a3226	GREEN	session-20261115T182948-465dcc8e	2026-11-15T19:14:13Z
 fix:launchpad:1235:91e1b632	l10n conflicts resolved, pushed 5447328b; REVERIFY recorded	session-20261115T182941-b7ae781f	2026-11-15T19:14:21Z
 fix:buildiq:1652:023b900b	merged development (clean now); pushed 74a237c7, REVERIFY	session-20261115T174808-50b8ceec	2026-11-15T19:14:30Z
@@ -14489,3 +14490,4 @@ fix:launchpad:756:a464d5db	sbom regenerated, pushed e5da8a84; REVERIFY recorded	
 fix:launchpad:760:cdb3d779	merged development, npm ci + vitest green, pushed 77add312; REVERIFY	session-20261115T174741-9deaa0be	2026-11-15T19:18:07Z
 fix:launchpad:755:03f2fd44	fixed: vitest+ui bumped to 5, npm ci ok, 2578 tests pass; REVERIFY	session-20261115T185923-898cd631	2026-11-15T19:18:13Z
 fix:buildiq:1088:419fccd1	sbom regenerated, vitest green, pushed 8d663611; REVERIFY recorded	session-20261115T183034-bba160e3	2026-11-15T19:18:31Z
+fix:opencatalogi:1894:552c9a7c	conflict resolved (openspec only), new head 4083bd1a	session-20261115T181015-497e81ce	2026-11-15T19:18:39Z
