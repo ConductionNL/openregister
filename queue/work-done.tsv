@@ -12125,3 +12125,4 @@ merge:versioniq:685:24d1ef05	merge3 tree of 14 versioniq PRs: merged=1 red=2 fai
 cover:decidiq:a5f973bbmae46:7505aeb4	already done: lib/Activity/*.php at 100% lines (79/79) on development with golden and behaviour tests; no PR	session-20261114T234944-ee1416bc	2026-11-15T00:04:55Z
 merge:versioniq:690:c520d41f	merge3 tree of 14 versioniq PRs: merged=1 red=2 fail=0 skip=0; conflict 11, lint 0, moved 0; fix rows 11	merge3-20261113T213425-c36bcd5f	2026-11-15T00:05:07Z
 fix:shillinq:2997:787ad8e7	fixed: job registered in info.xml, new head 97d3c56e405ad880702514c9f18e79e931b0a189	session-20261114T234758-aa94f07d	2026-11-15T00:05:09Z
+merge:versioniq:701:e20d8355	merge3 tree of 14 versioniq PRs: merged=1 red=2 fail=0 skip=0; conflict 11, lint 0, moved 0; fix rows 11	merge3-20261113T213425-c36bcd5f	2026-11-15T00:05:19Z
