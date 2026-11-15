@@ -3722,3 +3722,10 @@ thematiq	1556	ff5f73bc8d0dc6f12bac429db068c7a3da6df24b	RED	merge8	GATE RED sbom:
 thematiq	1557	b3ab646d8fa634f7d71c5465a5553a97865a8929	RED	merge8	GATE RED sbom: composer.lock changed without sbom.cdx.json
 thematiq	1558	4e04b3da12fdd1e8be1832f3eeed91751c1e1667	RED	merge8	GATE RED sbom: composer.lock changed without sbom.cdx.json
 thematiq	1677	5e934e94706006fbd51f109fcc53208443fdf956	SKIP	merge8	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
+pipelinq	2187	fd65c00e86140ac77446493773e44549967c3fa3	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
+pipelinq	2458	31ac15a557059bcfc8765f6a1eba6ed73162a48f	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.38
+pipelinq	2557	74ee842a603c3a10940a0a193154d00418abe78a	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
+pipelinq	2966	ed8ef9f5c99b8e6f7ade233d96c14c7caa255d3e	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.38
+pipelinq	3083	c1e2e782afa038ade39fd007e8dc6523515461d7	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+pipelinq	3084	fc01a3c72e9bf68a0befcea11ebf9a010b2a92fd	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
+pipelinq	3092	f8d049f34e69ece75f6b5915bae3db471efaee4e	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
