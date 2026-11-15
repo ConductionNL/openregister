@@ -12456,3 +12456,4 @@ cover:planninq:e1c9866dmcf99:81b1241f	already done: lib/Portal at 100% lines/met
 fix:launchpad:1229:1cc93b57	merged development, clean; inherited OpenApiStability red; new head 486876840be3f79f7eec4dc5bec8c252719f0896	session-20261115T005139-0d6ecf1d	2026-11-15T00:59:43Z
 cover:portaliq:b60f3b81m4ccb:34763eb4	already done: lib/Middleware/*.php at 100% lines (132/132) on development 36f157973	session-20261114T231755-998f7ff8	2026-11-15T01:00:10Z
 cover:planninq:e1c9866dmcf99:568ec52a	already done: lib/Lifecycle at 100% (15/15 stmts) on development; no PR	session-20261115T005133-04e59268	2026-11-15T01:00:44Z
+cover:dossiq:069ee2d6mdd7c:b6fccd13	PR #6540: CaseAuthorizationEntries, 17 tests; suite 17379->17396, 19 inherited failures unchanged	session-20261115T005141-9356bed0	2026-11-15T01:01:09Z
