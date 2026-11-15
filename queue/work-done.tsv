@@ -14898,3 +14898,4 @@ fix:integriq:3059:f3f45d92	sbom regenerated after merging development; new head 
 fix:learniq:1727:937a0671	sbom regenerated, development merged in; new head 18594988, REVERIFY recorded	session-20261115T203018-dcff1ace	2026-11-15T20:48:11Z
 fix:humaniq:669:3a6be5bd	sbom regenerated; test:js only inherited failure; REVERIFY at 88ae160d	session-20261115T200026-9a5b8685	2026-11-15T20:48:28Z
 fix:humaniq:687:bad2cefa	merged development, sbom regenerated, pushed f6b6a0aa; REVERIFY recorded	session-20261115T202936-e956716f	2026-11-15T20:48:40Z
+fix:integriq:2992:365213f7	fixed: sbom regenerated; new head 301b5d1e	session-20261115T200043-78b85ca2	2026-11-15T20:48:51Z
