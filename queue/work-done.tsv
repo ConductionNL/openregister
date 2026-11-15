@@ -14436,5 +14436,6 @@ fix:buildiq:1262:c955fcfd	namespace fixed to Kernel\Contracts\Value, pushed 106c
 fix:planninq:918:a2f30b52	sbom already current (dev-only dep); merged development, pushed 90a6ddf09; REVERIFY recorded	session-20261115T182953-0722a05e	2026-11-15T19:10:25Z
 fix:planninq:909:373cbce5	lock+sbom regenerated, pushed db6e11d8f, REVERIFY	session-20261115T154255-e54527e9	2026-11-15T19:10:32Z
 fix:planninq:930:bddd2139	conflict resolved, pushed de4742c6; REVERIFY recorded	session-20261115T185932-17792562	2026-11-15T19:10:46Z
+fix:keepiq:1498:65127fcb	failed: the fix needs composer.json config.platform.php raised to >= 8.3.16 and composer.lock regenerated, and workers may not commit composer.lock; same pattern as launchpad #1099 (psalm 7 bump) - better handled by a lane that owns lockfiles, or by closing the bump	session-20261115T154255-e54527e9	2026-11-15T19:11:01Z
 review:shillinq:2252:eea2842a	GREEN: 12225 unit tests pass, migration keeps behaviour	session-20261115T190008-ff700d5c	2026-11-15T19:11:02Z
 verify:shillinq:3105:c6218d85	GREEN: dependabot config only; unit 12225 OK	session-20261115T182941-b7ae781f	2026-11-15T19:11:13Z
