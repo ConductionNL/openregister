@@ -11305,3 +11305,15 @@ larpinq	1051	fa7cedb49eeaf2240d456f442c29bd3d8b2b8407	RED	merge3:merge-gate	GATE
 larpinq	1060	759898b3b319473aa0acb48bbf6e9a4189d7814a	RED	merge3:merge-gate	GATE RED checker floor: secretscanning: pass -> fail; testcoderatio: warn -> fail; secretscanning stars: 5 -> 1; testcoderatio stars: 3 -> 2
 larpinq	1053	181ec51cd4e808def9d3795fed3b7a5de2e74239	CONFLICT	merge3	merges clean on development alone; files: lib/Service/SettingsLoadService.php lib/Settings/larpinq_mock_register.json 
 filinq	2070	88c644391052b203b8ac34670c5abca6b6b517ea	RED	merge3:merge-gate	GATE RED checker floor: adrvalidator: pass -> warn; owaspsecurecoding: pass -> warn; adrvalidator stars: 5 -> 3; owaspsecurecoding stars: 5 -> 3; score: 100 -> 93
+filinq	2072	347356f9d88b887653709146273f192f2a0c6aab	CONFLICT	merge3	merges clean on development alone; files: lib/Settings/filinq_register.json 
+filinq	2079	eb1a5b1d1a0caf2f7fdfe4f893176edc2d994d52	CONFLICT	merge3	merges clean on development alone; files: lib/Settings/filinq_register.json 
+filinq	2085	432c7b61c70dd584e71f805269fa45a3506da207	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json lib/Settings/filinq_register.json 
+filinq	2088	0e8040fe110fa3dddda28b7e9df0d26b835abbd6	CONFLICT	merge3	merges clean on development alone; files: lib/Settings/filinq_register.json 
+filinq	2094	804945226c6a90cac6f38e5b3845e927c75edac2	CONFLICT	merge3	merges clean on development alone; files: lib/Settings/filinq_register.json 
+filinq	2095	e0ebb0e0ebe5754c9471ca10c172be747f2d726f	CONFLICT	merge3	merges clean on development alone; files: lib/Settings/filinq_register.json 
+filinq	2096	603fca94818d1573050fe726735132110eb11832	CONFLICT	merge3	merges clean on development alone; files: lib/Settings/filinq_register.json 
+filinq	2102	726c91bb383caf23ef38a11f6c9d72f6b685e684	CONFLICT	merge3	merges clean on development alone; files: lib/Settings/filinq_register.json 
+filinq	2106	3c54d4a072f28786fe76e05412cbfe63044f7408	CONFLICT	merge3	merges clean on development alone; files: lib/Settings/filinq_register.json 
+filinq	2113	45e6b64f8a2ce720ba101fcdd409f41779c0cc63	CONFLICT	merge3	merges clean on development alone; files: lib/Settings/filinq_register.json 
+filinq	2123	65d916d0072db231070fb22bd3e8b85db36e6eee	CONFLICT	merge3	merges clean on development alone; files: src/views/intake/IntakeIndex.vue src/views/myDocuments/MyDocumentsIndex.vue 
+filinq	2069	2a5b02d028e7769d99b9de42ebb7ffd09b5de958	REVERIFY	merge3	head moved since the verdict (was 2b2b094efbc6741520db0b5663097320ee7cfce3, 2b2b094e:GREEN,be103c8c:GREEN); verify the new head
