@@ -30,10 +30,8 @@ use OCA\OpenRegister\Controller\ObjectsController;
 use OCA\OpenRegister\Controller\TablesController;
 use OCA\OpenRegister\Search\Controller\GraphQLController;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
-use OCP\AppFramework\Http\ContentSecurityPolicy;
 use OCP\AppFramework\Http\Attribute\PublicPage;
 use PHPUnit\Framework\TestCase;
-use ReflectionClassConstant;
 use ReflectionMethod;
 
 /**
@@ -73,23 +71,15 @@ class AdminOnlyMaintenanceRoutesTest extends TestCase {
 		$this->assertMatchesRegularExpression('/@auth admin-only \S/', $docblock);
 	}//end testTheMethodDoesNotLetANonAdministratorThrough()
 
-	public function testEveryExplorerAssetIsPinnedWithAnIntegrityHash(): void {
-		$html = (string)(new ReflectionClassConstant(GraphQLController::class, 'EXPLORER_PAGE'))->getValue();
+	public function testTheExplorerLoadsNoAssetFromOutsideTheInstance(): void {
+		$this->assertFalse((new \ReflectionClass(GraphQLController::class))->hasConstant('EXPLORER_PAGE'));
 
-		preg_match_all('/<(?:script|link)\b[^>]*\b(?:src|href)="https?:\/\/[^"]+"[^>]*>/', $html, $tags);
-		$this->assertCount(4, $tags[0]);
-		foreach ($tags[0] as $tag) {
-			$this->assertMatchesRegularExpression('/@\d+\.\d+\.\d+\//', $tag, 'unpinned asset: ' . $tag);
-			$this->assertMatchesRegularExpression('/\bintegrity="sha384-[A-Za-z0-9+\/=]{64}"/', $tag, 'asset without integrity: ' . $tag);
-			$this->assertStringContainsString('crossorigin="anonymous"', $tag);
-		}
-	}//end testEveryExplorerAssetIsPinnedWithAnIntegrityHash()
+		$template = (string)file_get_contents(__DIR__ . '/../../../templates/graphqlExplorer.php');
+		$this->assertDoesNotMatchRegularExpression('/<(?:script|link)\b/', $template);
+		$this->assertDoesNotMatchRegularExpression('/https?:\/\//', $template);
+	}//end testTheExplorerLoadsNoAssetFromOutsideTheInstance()
 
 	public function testTheExplorerPolicyDoesNotAllowInlineScripts(): void {
-		if (method_exists(ContentSecurityPolicy::class, 'allowEvalScript') === false) {
-			$this->markTestSkipped('explorerPolicy() needs ContentSecurityPolicy::allowEvalScript()');
-		}
-
 		$controller = (new \ReflectionClass(GraphQLController::class))->newInstanceWithoutConstructor();
 		$policy = (new ReflectionMethod(GraphQLController::class, 'explorerPolicy'))->invoke($controller)->buildPolicy();
 
