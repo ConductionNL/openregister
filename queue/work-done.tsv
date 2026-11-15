@@ -12188,5 +12188,6 @@ review:hermiq:1750:4ea33cc6	GREEN: suite 5258 OK, vitest 1545 OK, phpstan clean	
 cover:dossiq:069ee2d6mdd7c:js5794e9fc	PR #6533: 20 vitest tests (RoleTreeManager, RulesTab); settings lines 87.51->89.73%, no new failures	session-20261114T234941-e3e51cb9	2026-11-15T00:17:24Z
 cover:pipelinq:7f9dc8e6m799d:197c84b8	PR #3849: AdapterRegistrar 5/16 -> 16/16, lib/Adapter/*.php 85.1% -> 100%; 1 test; suite 8452 -> 8453 OK	session-20261114T225452-4fcfea7f	2026-11-15T00:17:22Z
 verify:dossiq:6529:18bdfaf3	stale	session-20261114T234933-5c1be121	2026-11-15T00:17:41Z
+cover:shillinq:05639debm9818:d47bb994	PR #3091: 2 tests, lib/Reporting/*.php to 374/374 statements; suite 11471->11473 green	session-20261114T234938-86f69098	2026-11-15T00:17:38Z
 cover:pipelinq:7f9dc8e6m799d:0a24f15f	already done: lib/Service/Letter/ measures 100% lines (164/164) on development with 4 existing test files; no PR	session-20261114T231750-d1c755b0	2026-11-15T00:17:37Z
 cover:pipelinq:7f9dc8e6m799d:0a8f160f	already done: lib/Service/Sla 100% lines on development (suite 8452 OK)	session-20261114T235442-bc1b76db	2026-11-15T00:17:46Z
