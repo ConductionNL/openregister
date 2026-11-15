@@ -14883,3 +14883,4 @@ review:dossiq:3199:dd09a728	GREEN: sass bump, tests/build ok, 2 inherited vitest
 fix:integriq:2714:45199b02	fixed: sbom regenerated; head ebda35bb	session-20261115T200020-0f65b959	2026-11-15T20:45:42Z
 fix:humaniq:684:c6a338ca	merged development, regenerated sbom; new head 036f7e9f, REVERIFY recorded	session-20261115T203020-5a3aa6f4	2026-11-15T20:45:49Z
 review:shillinq:2226:e54eecaf	GREEN: pinia minor bump, vitest no new failures	session-20261115T200043-78b85ca2	2026-11-15T20:45:58Z
+fix:integriq:2562:a0c8e1bf	sbom regenerated, development merged; REVERIFY at 7e5a8712	session-20261114T075643-75a598ab	2026-11-15T20:46:09Z
