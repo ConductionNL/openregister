@@ -15127,3 +15127,4 @@ merge:thematiq:1293:39a733f4	merge8 tree of 15 thematiq PRs: merged=0 red=9 fail
 review:opencatalogi:2652:2348aeca	GREEN: feed consumer credentials per spec, no new failures	session-20261115T211111-34885d99	2026-11-15T21:42:30Z
 review:launchpad:785:91bd14a0	GREEN: PHP+vitest green, phpstan clean	session-20261115T213122-46f7fafb	2026-11-15T21:42:38Z
 review:opencatalogi:2665:fbbdb9b4	GREEN: build matches change specs, no new failures	session-20261115T213112-78aba834	2026-11-15T21:42:45Z
+review:learniq:1882:ff0cebbf	GREEN: label-only manifest fix per own spec, no new failures	session-20261115T213144-ab42ee6a	2026-11-15T21:42:59Z
