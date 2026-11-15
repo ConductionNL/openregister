@@ -13931,3 +13931,4 @@ build:buildiq:pages-custom-code:c4	partial: PR #1608 new head b3506415 - merged 
 merge:learniq:2507:4b9859c5	merge3 tree of 5 learniq PRs: merged=1 red=1 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-15T17:30:25Z
 merge:learniq:2521:05a0098e	merge3 tree of 5 learniq PRs: merged=1 red=1 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-15T17:30:29Z
 merge:learniq:2549:b52d084d	merge3 tree of 5 learniq PRs: merged=1 red=1 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-15T17:30:33Z
+fix:shillinq:3078:777f3b0b	fixed CONFLICT: merged development, both actions kept; new head 308c8c7e, REVERIFY recorded	session-20261115T152543-40aea993	2026-11-15T17:31:00Z
