@@ -14220,3 +14220,4 @@ merge:launchpad:758:b72148cb	merge8 tree of 13 launchpad PRs: merged=1 red=8 fai
 merge:launchpad:1234:8d24d0ba	merge8 tree of 13 launchpad PRs: merged=1 red=8 fail=0 skip=0; conflict 4, lint 0, moved 0; fix rows 4	merge8-20261115T170007-37538273	2026-11-15T18:37:53Z
 merge:launchpad:1235:cca194e7	merge8 tree of 13 launchpad PRs: merged=1 red=8 fail=0 skip=0; conflict 4, lint 0, moved 0; fix rows 4	merge8-20261115T170007-37538273	2026-11-15T18:37:57Z
 merge:launchpad:1230:9521447b	merge8 tree of 13 launchpad PRs: merged=1 red=8 fail=0 skip=0; conflict 4, lint 0, moved 0; fix rows 4	merge8-20261115T170007-37538273	2026-11-15T18:38:01Z
+review:learniq:2521:2a90e6d1	BLOCK: course day build fine, tests green beyond inherited; restore SPDX headers dropped from 24 l10n locale files	session-20261115T183023-a120e01a	2026-11-15T18:38:03Z
