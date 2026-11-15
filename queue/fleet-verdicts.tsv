@@ -12184,3 +12184,4 @@ launchpad	1229	444ff7437a3d1799b71fe7a73eda4109cc9b4db1	GREEN	worker-47	phpunit 
 dossiq	6577	cee8f2a5e99f891b27cccf7fda805d294eb5d330	GREEN	worker-41	unit 18123 tests (baseline 18104), 19 inherited failures (sibling openregister checkout), 0 new; vitest 7186, 2 inherited failures, 0 new; implements tenders-run-on-the-tender-case-type 3.1/3.2
 dossiq	6547	69fff5a5da676baa1fdc263bdf1709643feaffa1	GREEN	worker-07	unit 18104 tests; baseline 19 failures, tree 19 identical; no new failures (tests-only: renames and one added assertion)
 buildiq	1093	16b82bb91867244ecca9666282941f1f11c78e14	GREEN	worker-50:review	deps-only (marked ^18.1.3, lock 18.2.0); no direct import in src; vitest on PR+development 500 files/4692 tests pass; no PHP touched
+stackiq	1983	21e19281d39b77b8176aac7830aa8408226af754	GREEN	worker-23	tests only (4 vitest specs); tree on development: vitest 2787/2788, the one failure (facets FACET_DIMENSIONS) inherited from development
