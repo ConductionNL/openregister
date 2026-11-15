@@ -15,6 +15,12 @@
 #   task_done <id> <result>     record the result and release the task lease
 #   task_lease <id>             print the lease name of a task
 #   task_open                   print every open task (claimed or not), oldest first
+#   merge_lock <app> [min]      take the per-app merge lock leases/merge-<app>.lease (default 180 min); 1 = held
+#   merge_lock_renew <app>      0 = still ours (renewed when under three quarters left); 1 = lost: stop merging
+#   merge_unlock <app>          release it
+# One merger per app (a cloud worker or a local runner; the local runners take the same lease): a merge task is
+# claimed together with its app's merge lock, in one commit, and merge tasks of an app whose lock someone else
+# holds are not claimable. task_done of a merge task releases the lock in the same commit.
 # Type rank: fix, review/measure, verify/merge, gap, cover. Type `integrate` (openregister main, behind the single
 # `integrator` lease) is reserved: never claimed unless named in [types] (comma list).
 WQ=queue/work.tsv
@@ -22,6 +28,10 @@ WD=queue/work-done.tsv
 WORKER_SLOTS=${WORKER_SLOTS:-58}
 
 task_lease() { printf 'task-%s' "$(printf '%s' "$1" | tr -c 'A-Za-z0-9._-' '_')"; }
+
+merge_lock() { lease_acquire "merge-$1" "${2:-180}"; }
+merge_lock_renew() { lease_renew "merge-$1" "${2:-180}"; }
+merge_unlock() { lease_release "merge-$1"; }
 
 worker_slot() {
 	local k
@@ -36,7 +46,7 @@ worker_slot() {
 # Open tasks as "<rank>\t<created>\t<row>", sorted; with $1=claimable also drops tasks under a live lease.
 _task_rows() {
 	local mode=${1:-open} types=${2:-}
-	awk -F'\t' -v mode="$mode" -v types=",$types," -v now="$(date -u +%s)" -v leases="$ST/leases" \
+	awk -F'\t' -v mode="$mode" -v types=",$types," -v now="$(date -u +%s)" -v leases="$ST/leases" -v me="$ST_ME" \
 		-v order="$(grep -v '^#' "$ST/queue/app-order.txt" 2>/dev/null | tr '\n' ' ')" '
 		BEGIN { n = split(order, o, " "); for (i = 1; i <= n; i++) pos[o[i]] = i }
 		function lname(id,   s) { s = id; gsub(/[^A-Za-z0-9._-]/, "_", s); return leases "/task-" s ".lease" }
@@ -44,6 +54,15 @@ _task_rows() {
 			f = lname(id); e = 0
 			while ((getline line < f) > 0) if (line ~ /^expires_epoch=/) { sub(/^expires_epoch=/, "", line); e = line + 0 }
 			close(f); return e > now
+		}
+		# The merge lock of the app is live and held by another session.
+		function locked(app,   f, line, e, h) {
+			f = leases "/merge-" app ".lease"; e = 0; h = ""
+			while ((getline line < f) > 0) {
+				if (line ~ /^expires_epoch=/) { sub(/^expires_epoch=/, "", line); e = line + 0 }
+				if (line ~ /^holder=/) { sub(/^holder=/, "", line); h = line }
+			}
+			close(f); return e > now && h != me
 		}
 		FNR == NR { if ($0 !~ /^#/ && NF) done[$1] = 1; next }
 		/^#/ || NF < 7 || ($1 in done) || ($1 in seen) { next }
@@ -56,6 +75,7 @@ _task_rows() {
 			if (types != ",,") { if (index(types, "," $2 ",") == 0) next }
 			else if ($2 == "integrate") next
 			if (mode == "claimable" && live($1)) next
+			if (mode == "claimable" && $2 == "merge" && locked($3)) next
 			printf "%d\t%s\t%s\n", r, $7, $0
 		}' "$ST/$WD" "$ST/$WQ" 2>/dev/null | sort -t$'\t' -k1,1n -k2,2
 }
@@ -65,7 +85,7 @@ task_open() { _task_rows open "$1" | cut -f3-; }
 # One commit per claim: the task lease, plus a refresh of the worker's own slot lease when that is past a quarter of
 # its 360 min (so a claiming worker never needs a separate lease_renew commit for its slot).
 task_claim() {
-	local worker=$1 app=${2:-} types=${3:-} rows prows n w pick id row tries=0 exp
+	local worker=$1 app=${2:-} types=${3:-} rows prows n w pick id row tries=0 exp mapp
 	st_sync || st_sync || return 2
 	[ -f "$ST/$WQ" ] || { _st_flush; return 1; }
 	mkdir -p "$ST/leases"; touch "$ST/$WD"
@@ -88,6 +108,13 @@ task_claim() {
 		row=$(printf '%s\n' "$rows" | sed -n "${pick}p" | cut -f3-)
 		id=${row%%$'\t'*}
 		_lease_free "$(task_lease "$id")" || continue
+		# A merge task goes out together with its app's merge lock (one push: both or neither).
+		mapp=""
+		if [ "$(printf '%s' "$row" | cut -f2)" = merge ]; then
+			mapp=$(printf '%s' "$row" | cut -f3)
+			_lease_free "merge-$mapp" || continue
+			_lease_stage "merge-$mapp" 180
+		fi
 		if [ -n "$worker" ] && [ "$(_lease_field "$worker" holder)" = "$ST_ME" ]; then
 			exp=$(_lease_field "$worker" expires_epoch)
 			[ "$(( ${exp:-0} - $(_now) ))" -gt $(( 360 * 45 )) ] || _lease_stage "$worker" 360
@@ -97,6 +124,7 @@ task_claim() {
 		# A done row that landed between our read and our lease is in the tree we just pushed.
 		if awk -F'\t' -v id="$id" '$1 == id {f = 1} END {exit !f}' "$ST/$WD"; then
 			lease_release "$(task_lease "$id")"
+			[ -n "$mapp" ] && merge_unlock "$mapp"
 			continue
 		fi
 		printf '%s\n' "$row"
@@ -112,7 +140,9 @@ task_renew() { lease_renew "$(task_lease "$1")" 120; }
 # branch sees one write per task instead of two. If the commit conflicts (the lease changed hands), the row goes out
 # on its own and the lease is left to its holder.
 task_done() {
-	local id=$1 result rc i pre lease
+	local id=$1 result rc i pre lease mlock=""
+	# A merge task (merge:<app>:...) also releases its app's merge lock.
+	case $id in merge:*:*) mlock=merge-$(printf '%s' "$id" | cut -d: -f2) ;; esac
 	result=$(printf '%s' "${2:-done}" | tr '\t\n\r' '   ' | cut -c1-400)
 	lease=$(task_lease "$id")
 	if st_sync; then
@@ -120,6 +150,7 @@ task_done() {
 		printf '%s\n' "$id"$'\t'"$result"$'\t'"$ST_ME"$'\t'"$(date -u +%FT%TZ)" >> "$ST/$WD"
 		_g add "$WD"
 		[ "$(_lease_field "$lease" holder)" = "$ST_ME" ] && _g rm -q "leases/$lease.lease"
+		[ -n "$mlock" ] && [ "$(_lease_field "$mlock" holder)" = "$ST_ME" ] && _g rm -q "leases/$mlock.lease"
 		ST_PUSH_TRIES=${ST_DONE_TRIES:-3} _st_push "state: task $id done by $ST_ME"; rc=$?
 		[ "$rc" = 0 ] || [ "$rc" = 2 ] && return 0
 		_st_undo_to "$pre"
@@ -133,4 +164,6 @@ task_done() {
 	done
 	[ "$rc" = 0 ] || return "$rc"
 	lease_release "$lease"
+	[ -n "$mlock" ] && lease_release "$mlock"
+	return 0
 }

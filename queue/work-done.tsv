@@ -14637,7 +14637,9 @@ merge:filinq:1086:79a29db4	merge3 tree of 21 filinq PRs: merged=3 red=7 fail=0 s
 merge:filinq:1848:b8585a50	merge3 tree of 21 filinq PRs: merged=3 red=7 fail=0 skip=0; conflict 11, lint 0, moved 0; fix rows 11	merge3-20261113T213425-c36bcd5f	2026-11-15T19:51:43Z
 merge:filinq:2070:2333a06f	merge3 tree of 21 filinq PRs: merged=3 red=7 fail=0 skip=0; conflict 11, lint 0, moved 0; fix rows 11	merge3-20261113T213425-c36bcd5f	2026-11-15T19:51:47Z
 merge:filinq:2088:b53a2212	merge3 tree of 21 filinq PRs: merged=3 red=7 fail=0 skip=0; conflict 11, lint 0, moved 0; fix rows 11	merge3-20261113T213425-c36bcd5f	2026-11-15T19:51:50Z
+merge:filinq:2072:037b03c1	merge3 tree of 21 filinq PRs: merged=3 red=7 fail=0 skip=0; conflict 11, lint 0, moved 0; fix rows 11	merge3-20261113T213425-c36bcd5f	2026-11-15T19:51:54Z
 review:learniq:1883:fd136520	GREEN: matches change spec, access unchanged, 1 inherited failure	session-20261115T182940-bfeb7e78	2026-11-15T19:51:57Z
+merge:filinq:2121:14462153	merge3 tree of 21 filinq PRs: merged=3 red=7 fail=0 skip=0; conflict 11, lint 0, moved 0; fix rows 11	merge3-20261113T213425-c36bcd5f	2026-11-15T19:52:16Z
 merge:learniq:864:7c651a34	merge3 tree of 11 learniq PRs: merged=2 red=7 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-15T19:52:25Z
 merge:learniq:1162:17f0a437	merge3 tree of 11 learniq PRs: merged=2 red=7 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-15T19:52:30Z
 merge:learniq:2127:7dfc9a1c	merge3 tree of 11 learniq PRs: merged=2 red=7 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-15T19:52:34Z
@@ -14668,3 +14670,338 @@ merge:humaniq:669:3a2e1412	merge3 tree of 13 humaniq PRs: merged=2 red=8 fail=0 
 review:launchpad:759:3f179d5b	RED: lockfile out of sync, npm ci fails (vite@8.3.8, esbuild@0.28.2 missing); development installs clean	session-20261114T073105-752e50ad	2026-11-15T20:04:40Z
 merge:humaniq:662:f6b584db	merge3 tree of 13 humaniq PRs: merged=2 red=8 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-15T20:04:47Z
 review:buildiq:1608:08f7f4d3	GREEN: matches change specs, access gated, tests green except inherited golden	session-20261115T182940-bfeb7e78	2026-11-15T20:04:51Z
+review:launchpad:760:77add312	GREEN: vitest 2578/2578 pass on merged tree	session-20261115T200041-8ff5af37	2026-11-15T20:04:59Z
+review:buildiq:1262:106caafb	BLOCK: conflicts with development; lock helpers and interface stub need conversion, 36 tests red on merge	session-20261114T075643-75a598ab	2026-11-15T20:05:08Z
+review:opencatalogi:1894:4083bd1a	GREEN; openspec-only, clean merge	session-20261115T200045-d3bb5c75	2026-11-15T20:05:22Z
+review:launchpad:757	GREEN: dev-dep bump, vitest 2578 pass	session-20261115T200000-e95b89c2	2026-11-15T20:05:32Z
+merge:keepiq:1819:38edb6e4	stale	feeder	2026-11-15T20:05:34Z
+review:launchpad:1098:08b61447	GREEN: phpstan clean, phpunit 4461 pass	session-20261115T200041-8ff5af37	2026-11-15T20:06:26Z
+verify:buildiq:1649:696e8889	1649 GREEN; 1651/1652/1654 CONFLICT with 1649	session-20261114T075643-75a598ab	2026-11-15T20:06:49Z
+review:launchpad:761:ca2815b8	GREEN: vitest 2578 pass under v5	session-20261115T200026-9a5b8685	2026-11-15T20:07:00Z
+review:opencatalogi:2419:3035f661	GREEN; faithful ObjectSaveOptions migration, failures 398->248, none new	session-20261115T200045-d3bb5c75	2026-11-15T20:07:09Z
+verify:buildiq:1669:625818f5	1669 GREEN	session-20261114T075643-75a598ab	2026-11-15T20:07:28Z
+verify:launchpad:1230:07024c80	GREEN 1230,1234,1235; phpunit 4529 ok, vitest 2614 ok	session-20261115T195953-2618bb8a	2026-11-15T20:07:47Z
+review:buildiq:1091:d342b9dd	GREEN: dev-dep bump, vitest 4719 passed	session-20261115T195957-8e60ca53	2026-11-15T20:07:59Z
+merge:keepiq:697:25142faf	merge8 tree of 21 keepiq PRs: merged=10 red=5 fail=0 skip=0; conflict 5, lint 0, moved 0; fix rows 6	merge8-20261115T170007-37538273	2026-11-15T20:08:26Z
+merge:keepiq:1826:15d53d0e	merge8 tree of 21 keepiq PRs: merged=10 red=5 fail=0 skip=0; conflict 5, lint 0, moved 0; fix rows 6	merge8-20261115T170007-37538273	2026-11-15T20:08:29Z
+review:opencatalogi:2655:f9ef3261	RED; 10 new test failures vs OR main, repair uses removed saveObject named args	session-20261115T200045-d3bb5c75	2026-11-15T20:08:37Z
+review:launchpad:819:c5c80a07	GREEN: unit 4461 ok; phpmd v3 finding set differs (gate already red on development)	session-20261115T200026-9a5b8685	2026-11-15T20:08:50Z
+review:launchpad:832:99de3089	GREEN: openspec-only sweep, suite ok	session-20261115T195953-2618bb8a	2026-11-15T20:08:57Z
+review:planninq:910:59fb2d6b	GREEN: phpmd 3 works with existing rulesets, suite unchanged	session-20261114T075643-75a598ab	2026-11-15T20:09:20Z
+review:launchpad:755:7e918f87	GREEN: vitest 5 bump, 2578/2578 JS tests pass before and after	session-20261115T200020-0f65b959	2026-11-15T20:09:28Z
+review:launchpad:885:da197195	GREEN: vitest 2602 ok, phpunit 4461 ok, gates unchanged in the new Meer menu	session-20261114T073105-752e50ad	2026-11-15T20:09:36Z
+review:launchpad:787:d2dedbb4	BLOCK: internalUrl unvalidated on tile create (REQ-TIA-002), garbled TileUpdater docblock; suites green	session-20261115T200011-d13b13ca	2026-11-15T20:09:48Z
+review:planninq:1067:98afc66e	GREEN: mechanical ObjectSaveOptions migration, 1222 tests OK	session-20261115T195957-8e60ca53	2026-11-15T20:09:52Z
+review:buildiq:1090:8e11ea7a	GREEN: webpack dev bump; vitest 4719 pass, build ok	session-20261115T195958-28cb0304	2026-11-15T20:10:02Z
+review:opencatalogi:2541:55851e9d	GREEN; no new failures, OR main signatures match	session-20261115T200045-d3bb5c75	2026-11-15T20:10:16Z
+review:planninq:871:95bfabe1	GREEN: lint 0 errors under eslint 10.12	session-20261115T200026-9a5b8685	2026-11-15T20:10:32Z
+review:planninq:1070:e52ec55b	GREEN: lock-only dev bump, 1222 unit tests pass on merge with development	session-20261115T200020-0f65b959	2026-11-15T20:10:40Z
+review:planninq:1068:40deb423	GREEN: phpstan bump, no new findings, 1222 tests OK	session-20261115T195957-8e60ca53	2026-11-15T20:11:04Z
+merge:keepiq:1822:ff134ec0	stale	feeder	2026-11-15T20:10:34Z
+merge:keepiq:1824:293432db	stale	feeder	2026-11-15T20:10:34Z
+review:buildiq:1093:9d8db577	GREEN: minor marked bump, sbom current, vitest green	session-20261115T182940-bfeb7e78	2026-11-15T20:11:26Z
+review:opencatalogi:2417:cb054a7d	GREEN: signature matches openregister main, no new failures (2 inherited)	session-20261115T200011-d13b13ca	2026-11-15T20:11:49Z
+review:launchpad:763	GREEN: vitest 5 bump, 2578 pass, coverage OK	session-20261115T200000-e95b89c2	2026-11-15T20:11:56Z
+review:planninq:869:6ffcb32c	GREEN: stylelint 0 problems both sides, vitest 3566 ok	session-20261114T073105-752e50ad	2026-11-15T20:12:07Z
+review:planninq:918:90a6ddf0	GREEN: unit 1222 ok, phpstan unchanged vs development	session-20261115T200026-9a5b8685	2026-11-15T20:12:18Z
+review:opencatalogi:2687:9198190b	GREEN; no new failures, jest spec passes	session-20261115T200045-d3bb5c75	2026-11-15T20:12:26Z
+review:planninq:933:cb3692d7	GREEN: access checks first, refactor verbatim; phpunit 1231 OK, vitest 3565 pass	session-20261115T195958-28cb0304	2026-11-15T20:12:33Z
+review:launchpad:786:d5210578	GREEN: additive features, suites pass	session-20261115T195953-2618bb8a	2026-11-15T20:12:43Z
+review:planninq:909:db6e11d8	GREEN: marked minor bump, vitest 3566 passed	session-20261115T195957-8e60ca53	2026-11-15T20:12:53Z
+review:planninq:930:de4742c6	GREEN: refactor + new guarded server actions; PHP 1226 OK, vitest 3564 pass	session-20261115T200020-0f65b959	2026-11-15T20:13:03Z
+review:launchpad:785:962d3592	RED: props golden fixture lacks new shortcuts prop; PHP 4476 OK	session-20261115T200043-78b85ca2	2026-11-15T20:13:15Z
+review:opencatalogi:2416:bce96302	RED: 2 development tests still mock the old find() shape (PlooiDeliveryEdgeCases, PublicationCatalogFiltersGolden); lib migration fine	session-20261115T182940-bfeb7e78	2026-11-15T20:13:33Z
+review:launchpad:653:7dd62332	GREEN: build ok, vitest 2578 pass	session-20261115T200041-8ff5af37	2026-11-15T20:13:44Z
+review:planninq:1066:b7c292c5	GREEN: ObjectDeletion migration matches main; phpunit 1222 OK	session-20261115T195958-28cb0304	2026-11-15T20:13:54Z
+review:planninq:1064:849ed2f7	GREEN: unit 1222 ok, signatures match openregister main	session-20261115T200026-9a5b8685	2026-11-15T20:14:08Z
+review:opencatalogi:2682:3f1e3bed	GREEN: per spec, no new failures; note old OR API in drafter	session-20261115T200011-d13b13ca	2026-11-15T20:14:19Z
+verify:buildiq:1648:02309192	GREEN: 1648 verified	session-20261115T174747-978963d5	2026-11-15T20:14:28Z
+review:opencatalogi:2679	BLOCK: new code uses removed OR named-arg saveObject API; tests no new failures	session-20261115T200000-e95b89c2	2026-11-15T20:14:41Z
+review:portaliq:1602:cc086817	GREEN: docs and comment only	session-20261115T174747-978963d5	2026-11-15T20:14:51Z
+review:opencatalogi:2669:a67472fb	GREEN: matches change spec, tools read-only and gated, tests = baseline	session-20261115T182940-bfeb7e78	2026-11-15T20:15:04Z
+review:opencatalogi:2654:6fc17083	GREEN: changed-since build matches spec, failures inherited	session-20261115T195957-8e60ca53	2026-11-15T20:15:12Z
+review:stackiq:1431:43c26b3c	RED: 17 golden/unit tests still expect old find() arguments; lib change otherwise equivalent	session-20261114T073105-752e50ad	2026-11-15T20:15:22Z
+verify:opencatalogi:2696:4b3960a6	2696 RED, 2723 CONFLICT, 2725 GREEN	session-20261115T200045-d3bb5c75	2026-11-15T20:15:43Z
+review:stackiq:1433:f9d52657	GREEN: patchObject ObjectPatch adaptation matches OR main; 3715 unit tests OK	session-20261115T200020-0f65b959	2026-11-15T20:15:50Z
+review:opencatalogi:2415:cf561973	GREEN: matches openregister main, no new failures	session-20261115T200011-d13b13ca	2026-11-15T20:16:02Z
+review:opencatalogi:1888:e9655f0d	GREEN: suite = baseline (2 inherited failures)	session-20261115T195953-2618bb8a	2026-11-15T20:16:09Z
+review:stackiq:1067:c6fb0482	GREEN: range-only vue bump, vitest same as development (1 inherited failure)	session-20261115T201132-b8ddc5e5	2026-11-15T20:16:23Z
+review:stackiq:1042:ad6e35bb	GREEN: vitest 2726/2727, 1 inherited failure	session-20261115T200026-9a5b8685	2026-11-15T20:16:34Z
+review:opencatalogi:2673	GREEN: matches change spec, no new failures	session-20261115T200000-e95b89c2	2026-11-15T20:16:41Z
+fix:portaliq:2349:124b9f86	sbom regenerated, REVERIFY recorded	session-20261115T174747-978963d5	2026-11-15T20:17:06Z
+review:stackiq:1924:ae4e4f18	GREEN: per spec; phpunit 3722 pass; vitest 1 inherited failure	session-20261115T200041-8ff5af37	2026-11-15T20:17:14Z
+review:versioniq:707:9729dcff	GREEN: suite = baseline (2 inherited)	session-20261115T195953-2618bb8a	2026-11-15T20:17:24Z
+review:stackiq:1064:adce3cb4	GREEN; range-only devDependency bump	session-20261115T200045-d3bb5c75	2026-11-15T20:17:38Z
+review:opencatalogi:1893:e1cf5480	GREEN: openspec-only sweep, merges cleanly	session-20261115T182940-bfeb7e78	2026-11-15T20:17:46Z
+fix:dossiq:2902:791b50a4	conflict resolved, pushed 852fcee3, REVERIFY recorded	session-20261115T195957-8e60ca53	2026-11-15T20:17:54Z
+review:opencatalogi:2665:cdc5db8f	RED: ViewObjectSaveLogic jest test now gets PATCH; PHP no new failures	session-20261115T200043-78b85ca2	2026-11-15T20:18:08Z
+review:stackiq:1435:b772719e	GREEN: phpunit 3719 ok, calls equivalent on openregister main	session-20261114T073105-752e50ad	2026-11-15T20:18:20Z
+review:versioniq:709:fa10e6b8	GREEN: php = baseline, vitest ok	session-20261115T195953-2618bb8a	2026-11-15T20:18:44Z
+fix:dossiq:3196:ccb57e36	fixed: development merged, sbom.cdx.json regenerated; new head bdbdd4b2	session-20261115T182940-bfeb7e78	2026-11-15T20:18:51Z
+review:stackiq:1432:aee61a38	GREEN: matches main's deleteObject(ObjectDeletion), unit 3718/0 fail	session-20261115T201132-b8ddc5e5	2026-11-15T20:18:58Z
+fix:dossiq:4886	fixed: l10n canonical order after merging development; new head 19293aa0	session-20261115T200000-e95b89c2	2026-11-15T20:19:16Z
+review:thematiq:1303:35bcc381	RED: 5 golden tests still record the old epe set	session-20261115T195958-28cb0304	2026-11-15T20:19:23Z
+fix:dossiq:5396:7493d64f	brought up to date with development, pushed 861d4d0a, REVERIFY recorded	session-20261115T195957-8e60ca53	2026-11-15T20:19:34Z
+review:versioniq:500:890378b3	GREEN: jsdom dev bump, vitest 3012 OK	session-20261115T200043-78b85ca2	2026-11-15T20:19:45Z
+review:stackiq:1931:d2989729	CONFLICT with development (2 JS files, keep both); code GREEN otherwise, PHP 3751 OK, vitest only inherited facets failure	session-20261115T200020-0f65b959	2026-11-15T20:19:59Z
+review:versioniq:503:2d7f74a1	GREEN: deps bump, vitest+build ok	session-20261115T195953-2618bb8a	2026-11-15T20:20:06Z
+fix:portaliq:1682:505a7cd5	sbom regenerated, REVERIFY recorded; development red on RefIntegrationProvider stub	session-20261115T174747-978963d5	2026-11-15T20:20:13Z
+review:thematiq:1117:2427508a	GREEN: no behaviour change, phpmd 3 clean, no new failures	session-20261115T200011-d13b13ca	2026-11-15T20:20:29Z
+fix:dossiq:2705:b7e00cc6	fixed: development merged, sbom.cdx.json regenerated; new head 643da12e	session-20261115T182940-bfeb7e78	2026-11-15T20:20:40Z
+fix:dossiq:3297:78031823	conflict resolved, pushed 2d7e3f4a, REVERIFY recorded	session-20261115T201132-b8ddc5e5	2026-11-15T20:20:53Z
+fix:dossiq:5397	fixed: sbom regenerated; new head 7ff72b32	session-20261115T200000-e95b89c2	2026-11-15T20:21:01Z
+review:planninq:725:f5dce57c	GREEN: vitest 3566 pass, build compiles	session-20261114T075643-75a598ab	2026-11-15T20:21:17Z
+review:stackiq:1930:d6bf1559	BLOCK; new saveObject call uses removed OR named args	session-20261115T200045-d3bb5c75	2026-11-15T20:21:25Z
+review:stackiq:1069:e98fca28	GREEN: types-only bump; vitest 1 inherited failure	session-20261115T200041-8ff5af37	2026-11-15T20:21:37Z
+fix:dossiq:3106:039c380f	fixed: development merged, sbom.cdx.json regenerated; new head 2e124449	session-20261115T182940-bfeb7e78	2026-11-15T20:21:45Z
+verify:stackiq:1959:949ed09f	GREEN 1959,1973,1975; RED 1965 (archiMateImportExportErrorDetails vitest); phpunit 3748 ok	session-20261115T200026-9a5b8685	2026-11-15T20:22:14Z
+fix:dossiq:3198:c19a6d9c	obsolete: development already has vite ^8.3.5; PR closed with comment	session-20261115T201132-b8ddc5e5	2026-11-15T20:21:57Z
+fix:portaliq:1353:5d73ef4a	sbom regenerated, REVERIFY recorded, phpmd +17 findings noted	session-20261115T174747-978963d5	2026-11-15T20:22:26Z
+verify:versioniq:738:50ada5e5	GREEN 738	session-20261115T200043-78b85ca2	2026-11-15T20:22:34Z
+fix:dossiq:3894:c91ec402	sbom regenerated after merging development; new head 8ed2662d, REVERIFY	session-20261115T200011-d13b13ca	2026-11-15T20:22:47Z
+fix:pipelinq:3084:01208829	merged development; sbom already current (dev-only dep); REVERIFY fc01a3c7	session-20261115T200045-d3bb5c75	2026-11-15T20:22:57Z
+fix:pipelinq:3088:3135c0b1	failed: lockfile change is dev-only (eslint); regen-sbom on branch merged with development leaves sbom.cdx.json unchanged and --check passes, so no sbom change exists to commit; gate rule needs an exemption for dev-only lock changes	session-20261114T075643-75a598ab	2026-11-15T20:23:10Z
+fix:dossiq:3199	fixed: merged development, sbom regenerated; new head dd09a728	session-20261115T200000-e95b89c2	2026-11-15T20:23:12Z
+review:thematiq:1365:39f057e7	GREEN: additive tokens; 1 inherited failure, vitest 1565 pass	session-20261115T195958-28cb0304	2026-11-15T20:23:19Z
+fix:dossiq:3193:5b406bdb	fixed: development merged, sbom.cdx.json regenerated; new head ac67d68f	session-20261115T182940-bfeb7e78	2026-11-15T20:23:31Z
+fix:opencatalogi:2416:bce96302	stale	feeder	2026-11-15T20:20:32Z
+fix:pipelinq:3083:ab965a9c	merged development; sbom already current (dev-only dep); REVERIFY c1e2e782	session-20261115T200045-d3bb5c75	2026-11-15T20:23:58Z
+fix:dossiq:3204:7d112fdf	sbom regenerated after merging development; new head d7bb586b, REVERIFY	session-20261115T200011-d13b13ca	2026-11-15T20:24:12Z
+fix:pipelinq:2501:81b7343b	merged development in (clean); unit 8922 ok; REVERIFY at ca4bf396	session-20261115T200026-9a5b8685	2026-11-15T20:24:25Z
+fix:dossiq:3197	fixed: sbom regenerated; new head 4fd9129c	session-20261115T200000-e95b89c2	2026-11-15T20:24:33Z
+fix:portaliq:1982:19a536ca	sbom regenerated after merging development; REVERIFY at ebea533f	session-20261115T195958-28cb0304	2026-11-15T20:24:48Z
+fix:dossiq:3936:7ae9f014	floor restored (3.24), pushed 916d1651, REVERIFY recorded	session-20261115T195957-8e60ca53	2026-11-15T20:25:01Z
+fix:dossiq:3201:6c926ab3	fixed: merged development, regenerated sbom; new head 1fedc9a2, REVERIFY recorded	session-20261114T073105-752e50ad	2026-11-15T20:25:09Z
+fix:pipelinq:2103:adb97dd8	conflict resolved, pushed 91e9bf9a; REVERIFY	session-20261115T195953-2618bb8a	2026-11-15T20:25:15Z
+fix:pipelinq:2557:5d12aa50	merged development; sbom already current (dev-only dep); suite OK; REVERIFY 74ee842a	session-20261115T200045-d3bb5c75	2026-11-15T20:25:28Z
+fix:pipelinq:3085:34857519	failed: sbom gate false positive - regen-sbom.sh on the branch (merged with development) leaves sbom.cdx.json unchanged (654 components): conduction/hydra-gates is require-dev and the SBOM uses --omit=dev, so merge_gate.sbom() needs a lockfile-only exception when regen --check passes; nothing pushed	session-20261115T200026-9a5b8685	2026-11-15T20:25:33Z
+fix:portaliq:1582:9e21deee	lock re-locked on development + sbom regenerated; REVERIFY at e2748568	session-20261115T195958-28cb0304	2026-11-15T20:25:45Z
+fix:dossiq:4112:d85d2c1c	fixed: merged development, regenerated sbom; head f460035e; REVERIFY recorded	session-20261115T200020-0f65b959	2026-11-15T20:26:02Z
+fix:portaliq:1235:31e3cae9	CONFLICT resolved by porting onto refactored CmsReader, REVERIFY recorded	session-20261115T174747-978963d5	2026-11-15T20:26:12Z
+fix:pipelinq:3280:57a83e99	no change: clean on development, conflict only with a sibling lockfile PR in the tree; REVERIFY recorded	session-20261114T075643-75a598ab	2026-11-15T20:26:24Z
+fix:shillinq:3088:0dc86d0f	development merged in cleanly, unit 12244 OK; overlap is only with sibling PRs' version bumps; new head ad434f71	session-20261115T182940-bfeb7e78	2026-11-15T20:26:38Z
+review:dossiq:2705	GREEN: dev tooling lock bump, 19 failures = baseline	session-20261115T200000-e95b89c2	2026-11-15T20:26:45Z
+review:portaliq:2349:b92b6364	GREEN: phpstan patch bump, sbom current	session-20261115T174747-978963d5	2026-11-15T20:27:03Z
+fix:shillinq:2063:7f06f10a	fixed: pre-lock approved runs exportable, fail-closed kept for stamped runs; suite 12241 OK; new head d268a2452040358e3b0929eeaf62c3703e0be84e	session-20261115T200041-8ff5af37	2026-11-15T20:27:14Z
+review:portaliq:1682:08c494c0	GREEN: dev lock bump; 16 inherited errors identical to development	session-20261115T195958-28cb0304	2026-11-15T20:27:26Z
+fix:shillinq:2766	fixed: sbom regenerated; new head 4d51285b	session-20261115T200000-e95b89c2	2026-11-15T20:27:38Z
+merge:shillinq:1904:12d9835d	merge3 tree of 20 shillinq PRs: merged=2 red=11 fail=0 skip=0; conflict 7, lint 0, moved 0; fix rows 7	merge3-20261113T213425-c36bcd5f	2026-11-15T20:27:51Z
+merge:shillinq:2224:b504636f	merge3 tree of 20 shillinq PRs: merged=2 red=11 fail=0 skip=0; conflict 7, lint 0, moved 0; fix rows 7	merge3-20261113T213425-c36bcd5f	2026-11-15T20:27:54Z
+fix:pipelinq:2187:ebdded89	merged dev, SBOM current (dev-only dep, no SBOM change possible); REVERIFY fd65c00e86140ac77446493773e44549967c3fa3	session-20261115T195953-2618bb8a	2026-11-15T20:27:59Z
+merge:shillinq:3062:a1da7e07	merge3 tree of 20 shillinq PRs: merged=2 red=11 fail=0 skip=0; conflict 7, lint 0, moved 0; fix rows 7	merge3-20261113T213425-c36bcd5f	2026-11-15T20:28:04Z
+review:dossiq:2902:852fcee3	GREEN: no new failures (19 inherited)	session-20261115T195957-8e60ca53	2026-11-15T20:28:05Z
+merge:shillinq:2991:49981cf2	merge3 tree of 20 shillinq PRs: merged=2 red=11 fail=0 skip=0; conflict 7, lint 0, moved 0; fix rows 7	merge3-20261113T213425-c36bcd5f	2026-11-15T20:28:15Z
+fix:shillinq:2083:bbd8bdb9	fixed: discard via ObjectDeletion, #2253 merged in; unit 12234 OK; new head fc181f39	session-20261115T200043-78b85ca2	2026-11-15T20:28:17Z
+review:dossiq:5396:861d4d0a	GREEN: dev lock bump, 18185 unit tests OK	session-20261115T200020-0f65b959	2026-11-15T20:28:28Z
+fix:shillinq:3080:44d2bdbe	merged development (clean); conflict is with another tree PR; REVERIFY at 5b6628be	session-20261115T195958-28cb0304	2026-11-15T20:28:41Z
+fix:shillinq:2048	fixed: sbom regenerated; new head f88b17a7	session-20261115T200000-e95b89c2	2026-11-15T20:28:48Z
+review:dossiq:4886:19293aa0	GREEN: phpunit 0 new failures (19 inherited), l10n gates pass, additive resolution order	session-20261114T073105-752e50ad	2026-11-15T20:29:05Z
+review:dossiq:3196:bdbdd4b2	GREEN: dev-dep bump, no new failures	session-20261115T200011-d13b13ca	2026-11-15T20:29:12Z
+fix:shillinq:3078:308c8c7e	merged dev, l10n union; REVERIFY 07b981950f5e8d12c1075291d28db27d73041ed3	session-20261115T195953-2618bb8a	2026-11-15T20:29:19Z
+fix:shillinq:2997:3374c3bc	merged development in (clean); unit 12284 ok; REVERIFY at 3be50195	session-20261115T200026-9a5b8685	2026-11-15T20:29:33Z
+fix:shillinq:2226:dcacc634	sbom regenerated, REVERIFY recorded	session-20261115T174747-978963d5	2026-11-15T20:29:42Z
+fix:shillinq:1908	fixed: sbom regenerated; new head ca21609b	session-20261115T200000-e95b89c2	2026-11-15T20:30:01Z
+fix:shillinq:3062:d337cccd	merged dev clean; REVERIFY 92f7ebcabee910b133253367fa8bd61c59485c77	session-20261115T195953-2618bb8a	2026-11-15T20:30:34Z
+fix:shillinq:1904:8c5e1f2e	sbom regenerated, pushed cc11db13, REVERIFY recorded	session-20261115T195957-8e60ca53	2026-11-15T20:30:53Z
+fix:filinq:2094:c8f19660	fixed: register conflict resolved (8.57.0), unit 6832 OK; head cefdb934	session-20261115T200020-0f65b959	2026-11-15T20:31:00Z
+fix:filinq:1102:7156c4b9	sbom regenerated, merged development; new head 8f276d18, REVERIFY recorded	session-20261115T202932-d1067ee4	2026-11-15T20:31:16Z
+fix:shillinq:1991:4377b437	fixed: merged development, regenerated sbom; new head 29abf7fb, REVERIFY recorded	session-20261114T073105-752e50ad	2026-11-15T20:31:23Z
+fix:filinq:1304	fixed: sbom regenerated; new head 0bd181f9	session-20261115T200000-e95b89c2	2026-11-15T20:31:34Z
+fix:shillinq:2228:b6167ac5	sbom regenerated after merging development; REVERIFY at ec4b69c7	session-20261115T195958-28cb0304	2026-11-15T20:31:54Z
+fix:filinq:1962:e4994b11	sbom regenerated, pushed be24b1cd; REVERIFY recorded	session-20261115T202936-e956716f	2026-11-15T20:32:05Z
+fix:shillinq:2230:b859457f	sbom regenerated after merging development; new head 62ff7961, REVERIFY	session-20261115T200011-d13b13ca	2026-11-15T20:32:15Z
+fix:shillinq:1912:12b4700e	fixed: sbom regenerated, development merged; new head a7d98b523c8c9952e0731ec9f7dd99c883030cc8	session-20261115T200041-8ff5af37	2026-11-15T20:32:26Z
+fix:filinq:1308:28b5e71e	merged development, sbom regenerated; new head f18e7d0d; adjacent-line overlap with #1102 noted	session-20261115T202932-d1067ee4	2026-11-15T20:32:32Z
+review:portaliq:1982:ebea533f	GREEN: dev lock bump; inherited errors only	session-20261115T195958-28cb0304	2026-11-15T20:32:45Z
+fix:filinq:1430:7097f298	merged dev, SBOM regenerated; REVERIFY 8f366f599b0c5ce29b3897701df854f8c9985483	session-20261115T195953-2618bb8a	2026-11-15T20:32:55Z
+fix:filinq:1311:f1d84cc5	conflict resolved; new head ae2749a3, REVERIFY recorded	session-20261115T203016-ff00326d	2026-11-15T20:33:03Z
+fix:dossiq:4887:fc7097f8	conflicts resolved, pushed 5518d499, suite at baseline, REVERIFY recorded	session-20261115T201132-b8ddc5e5	2026-11-15T20:33:12Z
+merge:humaniq:877:6366aa87	stale	feeder	2026-11-15T20:30:45Z
+fix:humaniq:874:6278788c	stale	feeder	2026-11-15T20:30:45Z
+review:dossiq:3297:2d7e3f4a	GREEN: adds fail-closed case guard, no new failures	session-20261115T195957-8e60ca53	2026-11-15T20:33:26Z
+fix:filinq:2114:473e8036	fixed: 3 conflicts resolved, unit 6892 OK; head bb690f12	session-20261115T200020-0f65b959	2026-11-15T20:33:40Z
+fix:filinq:1828	fixed: sbom regenerated; new head 0e6a9fe3	session-20261115T200000-e95b89c2	2026-11-15T20:33:47Z
+fix:filinq:1355:1c90e8ba	sbom regenerated, development merged in; new head 307201af, REVERIFY recorded	session-20261115T203029-7489abc7	2026-11-15T20:33:58Z
+review:pipelinq:2501:ca4bf396	GREEN: lock-only patch bumps; 8922 tests OK	session-20261115T200041-8ff5af37	2026-11-15T20:34:08Z
+fix:shillinq:2081:29d9d8c7	conflict resolved, specs updated to scoped loads; vitest only inherited failure; REVERIFY at 27d1ddad	session-20261115T200026-9a5b8685	2026-11-15T20:34:15Z
+fix:filinq:2088:08907be9	conflict resolved, pushed 7e328ebd; REVERIFY recorded	session-20261115T202936-e956716f	2026-11-15T20:34:28Z
+fix:filinq:1086:be9ddbad	sbom regenerated; new head 7581c2a8, REVERIFY recorded	session-20261115T203016-ff00326d	2026-11-15T20:34:41Z
+review:portaliq:1353:c8141de2	BLOCK: phpmd 3 adds 17 findings on unchanged code, deprecated CLI	session-20261115T195958-28cb0304	2026-11-15T20:34:57Z
+fix:shillinq:2224:8a7a3aa7	fixed: sbom regenerated, development merged; new head ff4aa606	session-20261115T200043-78b85ca2	2026-11-15T20:35:04Z
+fix:filinq:2121:cb1efd91	conflict resolved (register 8.57.0), suite green; new head 58135cfb	session-20261115T202932-d1067ee4	2026-11-15T20:35:18Z
+fix:filinq:1963	fixed: sbom regenerated; new head 1540e45d	session-20261115T200000-e95b89c2	2026-11-15T20:35:33Z
+fix:shillinq:2991:a48bd63d	partial-to-full: methods split, risk profile most of the way back to development (re-measure floor); tests green; new head e30b3b5b	session-20261115T182940-bfeb7e78	2026-11-15T20:35:40Z
+review:dossiq:3193:ac67d68f	GREEN: twig dev bump, sbom current, phpunit 0 new failures	session-20261114T073105-752e50ad	2026-11-15T20:35:54Z
+fix:filinq:2103:6113c988	conflict resolved, pushed b21f6f3b; REVERIFY recorded	session-20261115T202936-e956716f	2026-11-15T20:36:01Z
+fix:shillinq:2096:d0e8491e	fixed: saveObject moved to ObjectSaveOptions, pushed 132b339a, REVERIFY recorded	session-20261115T202932-ab57353c	2026-11-15T20:36:08Z
+review:dossiq:3936:916d1651	RED: one test still calls record() with old named args	session-20261115T201132-b8ddc5e5	2026-11-15T20:36:28Z
+fix:filinq:2072:effbf58c	register header conflict resolved (8.58.0); new head 6cc6d816, REVERIFY recorded	session-20261115T203016-ff00326d	2026-11-15T20:36:35Z
+review:pipelinq:3084:fc01a3c7	GREEN: phpstan clean, 8922 tests OK	session-20261115T200041-8ff5af37	2026-11-15T20:36:49Z
+verify:integriq:3649:c8862b16	3649 GREEN (reds inherited from development)	session-20261114T075643-75a598ab	2026-11-15T20:37:04Z
+fix:filinq:1853:7f868f2f	tests fixed, suite 6772 ok; REVERIFY 6bb7b9ed	session-20261115T195953-2618bb8a	2026-11-15T20:37:12Z
+review:portaliq:1235:aff4f032	GREEN: locale fix per spec; inherited errors only	session-20261115T195958-28cb0304	2026-11-15T20:37:20Z
+review:dossiq:5397:7ff72b32	GREEN: no new phpstan errors or test failures	session-20261115T200011-d13b13ca	2026-11-15T20:37:33Z
+review:filinq:2094:cefdb934	GREEN: suite 6832 OK, jest 8/8	session-20261115T203029-7489abc7	2026-11-15T20:37:40Z
+review:shillinq:1991:29abf7fb	GREEN; vitest 1 inherited failure	session-20261115T202932-d1067ee4	2026-11-15T20:37:50Z
+review:shillinq:2230:62ff7961	GREEN: build ok, vitest only inherited failure	session-20261115T200026-9a5b8685	2026-11-15T20:38:01Z
+fix:filinq:2123:9de4be6b	fixed: 3 conflicts + audit API adaptation, unit 6863 OK; head e76e9dab	session-20261115T200020-0f65b959	2026-11-15T20:38:10Z
+review:shillinq:2228:ec4b69c7	GREEN: eslint range bump, no lint drift	session-20261115T174747-978963d5	2026-11-15T20:38:23Z
+fix:filinq:2122:57380f5f	conflict resolved (register 8.57.0), unit 6829 green, new head c15c52d2	session-20261115T203013-157346e0	2026-11-15T20:38:32Z
+review:shillinq:2224:ff4aa606	GREEN: dev bump + sbom, unit 12225 OK	session-20261115T200043-78b85ca2	2026-11-15T20:38:39Z
+review:shillinq:1908:ca21609b	GREEN: dev-dep range bump, vitest 3046/3047 (1 inherited), sbom current	session-20261115T202932-ab57353c	2026-11-15T20:38:54Z
+review:portaliq:1582:e2748568	GREEN: range-only bump, tree unchanged	session-20261115T195958-28cb0304	2026-11-15T20:39:01Z
+review:shillinq:2048:f88b17a7	GREEN: dev dep bump, sbom current, 12225 tests OK	session-20261115T202936-e956716f	2026-11-15T20:39:23Z
+review:dossiq:4112:f460035e	GREEN: lock+sbom only, unit 18185 tests 0 failures	session-20261115T202955-7451ede9	2026-11-15T20:39:30Z
+review:dossiq:3894:8ed2662d	GREEN: dev-tool bump, no new test failures	session-20261115T195957-8e60ca53	2026-11-15T20:39:37Z
+review:shillinq:2997:3be50195	BLOCK: saveObject(uuid:) x3 and patchObject(named args) use API removed on openregister main	session-20261115T202932-ab57353c	2026-11-15T20:39:58Z
+review:pipelinq:2557:74ee842a	GREEN: lock-only ocp bump, unit 8922 OK	session-20261115T203013-157346e0	2026-11-15T20:40:14Z
+review:shillinq:2083:fc181f39	GREEN: stricter correction allowlist and guarded discard; tests green; includes #2253	session-20261115T182940-bfeb7e78	2026-11-15T20:40:25Z
+review:dossiq:3106:2e124449	GREEN: eslint bump, identical lint findings, sbom current	session-20261114T073105-752e50ad	2026-11-15T20:40:32Z
+fix:learniq:1903:3f6c3b60	sbom regenerated after merging development; REVERIFY at a21f3b3b	session-20261115T195958-28cb0304	2026-11-15T20:40:39Z
+review:dossiq:3204:d7bb586b	GREEN: dev-dependency bump only, vitest 2 inherited failures, eslint unchanged	session-20261115T203018-dcff1ace	2026-11-15T20:40:51Z
+fix:learniq:1158:bb9f61d9	fixed: sbom regenerated after merging development, head 5ca84f75	session-20261115T202932-ab57353c	2026-11-15T20:40:59Z
+review:shillinq:1912:a7d98b52	GREEN: stylelint dev bump, identical lint output	session-20261115T202936-e956716f	2026-11-15T20:41:09Z
+review:shillinq:2766:4d51285b	GREEN: phpstan clean, unit 12225 ok	session-20261115T203016-ff00326d	2026-11-15T20:41:19Z
+fix:learniq:1169:9731f440	fixed: merged development, regenerated sbom; new head 6f8c6510, REVERIFY	session-20261115T202955-7451ede9	2026-11-15T20:41:30Z
+review:pipelinq:3083:c1e2e782	GREEN: vitest 1 inherited failure	session-20261115T200041-8ff5af37	2026-11-15T20:41:37Z
+fix:learniq:1167:4b75be29	fixed: merged development (clean) + sbom regen, head 61811d4d	session-20261115T202932-ab57353c	2026-11-15T20:41:50Z
+review:dossiq:3201	GREEN: marked minor bump, vitest no new failures	session-20261115T200000-e95b89c2	2026-11-15T20:42:04Z
+fix:learniq:1162:18f186f9	fixed: sbom regenerated; head 59935569; 9 js-unit failures inherited from development	session-20261115T200020-0f65b959	2026-11-15T20:42:12Z
+review:shillinq:3078:07b98195	BLOCK; new saveObject calls use removed OR named args	session-20261115T200045-d3bb5c75	2026-11-15T20:42:25Z
+review:shillinq:3062:92f7ebca	GREEN: builds its change, suites green	session-20261115T174747-978963d5	2026-11-15T20:42:19Z
+fix:learniq:1881:5f883140	conflict resolved keeping both sides; new head a1be2d79, REVERIFY	session-20261115T200011-d13b13ca	2026-11-15T20:42:34Z
+review:shillinq:3055:faf02682	GREEN	session-20261115T202932-d1067ee4	2026-11-15T20:42:47Z
+fix:humaniq:606:5bf20ffe	fixed: merged development + sbom regen, head 647da215	session-20261115T202932-ab57353c	2026-11-15T20:42:54Z
+review:dossiq:4887:5518d499	RED: 2 new failures (ListenerRegistrarTest order, ObligationDeclarationEdgesTest defaults need whenUnmet); code matches spec	session-20261115T203020-5a3aa6f4	2026-11-15T20:43:09Z
+fix:learniq:2127:6e8befed	sbom regenerated, pushed 68efea31, REVERIFY recorded	session-20261115T195957-8e60ca53	2026-11-15T20:43:28Z
+review:shillinq:1904:cc11db13	GREEN: unit ok, phpmd findings 153->152 (gate already red on development)	session-20261115T200026-9a5b8685	2026-11-15T20:43:39Z
+fix:humaniq:661:e498ba1f	sbom regenerated, REVERIFY recorded	session-20261115T174747-978963d5	2026-11-15T20:43:47Z
+fix:humaniq:685:5020bb2b	merged development, sbom regenerated, pushed c73546cd; REVERIFY recorded	session-20261115T202936-e956716f	2026-11-15T20:43:57Z
+review:shillinq:2063:d268a245	GREEN: hardening, suite ok	session-20261115T195953-2618bb8a	2026-11-15T20:44:08Z
+fix:learniq:2126:af7f7379	sbom regenerated after merging development; REVERIFY at 4e6551e4	session-20261115T195958-28cb0304	2026-11-15T20:44:17Z
+fix:decidiq:2207:d7b1eef1	fixed: l10n conflicts resolved and rebuilt, unit 4633 OK; head 4cc6ec94	session-20261115T200020-0f65b959	2026-11-15T20:44:24Z
+fix:decidiq:1947:35c86213	fixed: test doubles moved to ObjectSaveOptions, unit 4624 OK; new head 0429ddc5	session-20261115T182940-bfeb7e78	2026-11-15T20:44:33Z
+fix:integriq:2994:6a706bf6	fixed: merged development, regenerated sbom; new head a1ae6e95, REVERIFY recorded	session-20261114T073105-752e50ad	2026-11-15T20:44:43Z
+fix:humaniq:1096:e60cc3a3	merged development, regenerated sbom; new head 5b9e37da, REVERIFY recorded	session-20261115T203020-5a3aa6f4	2026-11-15T20:44:50Z
+fix:humaniq:610:02e0a4dc	fixed: merged development + sbom regen, head 12fe7c13	session-20261115T202932-ab57353c	2026-11-15T20:45:00Z
+fix:humaniq:667:3bb5749b	sbom regenerated; new head c3822863, REVERIFY recorded	session-20261115T203016-ff00326d	2026-11-15T20:45:09Z
+review:dossiq:3197:4fd9129c	GREEN: router bump, vitest at baseline, sbom current	session-20261115T201132-b8ddc5e5	2026-11-15T20:45:20Z
+review:dossiq:3199:dd09a728	GREEN: sass bump, tests/build ok, 2 inherited vitest fails	session-20261115T203012-30a1abde	2026-11-15T20:45:31Z
+fix:integriq:2714:45199b02	fixed: sbom regenerated; head ebda35bb	session-20261115T200020-0f65b959	2026-11-15T20:45:42Z
+fix:humaniq:874:6278788c	failed: permission (PR obsolete: dev #1162 already migrated every touched file to ObjectFindOptions; closing it was refused)	session-20261115T203016-ff00326d	2026-11-15T20:45:49Z
+fix:humaniq:684:c6a338ca	merged development, regenerated sbom; new head 036f7e9f, REVERIFY recorded	session-20261115T203020-5a3aa6f4	2026-11-15T20:45:49Z
+review:shillinq:2226:e54eecaf	GREEN: pinia minor bump, vitest no new failures	session-20261115T200043-78b85ca2	2026-11-15T20:45:58Z
+fix:integriq:2562:a0c8e1bf	sbom regenerated, development merged; REVERIFY at 7e5a8712	session-20261114T075643-75a598ab	2026-11-15T20:46:09Z
+fix:integriq:3564:4585a979	conflict resolved keeping both; new head 34a49284, REVERIFY	session-20261115T200011-d13b13ca	2026-11-15T20:46:16Z
+verify:shillinq:3080:59a6ef0e	3080 GREEN, 3088 CONFLICT (after 3080: CHANGELOG, info.xml, register-versions.lock)	session-20261115T203029-7489abc7	2026-11-15T20:46:27Z
+review:pipelinq:2103:91e9bf9a	BLOCK: vueuse 15 violates @conduction/nextcloud-vue range ^11||^14	session-20261115T200041-8ff5af37	2026-11-15T20:46:44Z
+review:pipelinq:2187:fd65c00e	GREEN: phpmd 3 dev bump, unit OK; phpmd gate output shifts (noted)	session-20261115T203013-157346e0	2026-11-15T20:46:53Z
+fix:humaniq:670	fixed: sbom regenerated; new head 404bf31c	session-20261115T200000-e95b89c2	2026-11-15T20:47:02Z
+fix:decidiq:1945:ef05d63a	test fixed, suite 4625 ok; REVERIFY b9434899	session-20261115T195953-2618bb8a	2026-11-15T20:47:12Z
+fix:buildiq:1651:8f610194	development merged; nl strings moved off the catalogue end; remaining overlap is #1649 being behind development; new head fcb354f5	session-20261115T182940-bfeb7e78	2026-11-15T20:47:30Z
+fix:humaniq:662:5227edfc	sbom regenerated + phpmd baseline renamed, REVERIFY recorded	session-20261115T174747-978963d5	2026-11-15T20:47:37Z
+fix:keepiq:1815:4bf35882	test expectation updated for development's additionalUrls; REVERIFY at 26e9c5de	session-20261115T195958-28cb0304	2026-11-15T20:47:47Z
+fix:integriq:3059:f3f45d92	sbom regenerated after merging development; new head 4bb36a6b, REVERIFY	session-20261115T200011-d13b13ca	2026-11-15T20:47:57Z
+fix:learniq:1727:937a0671	sbom regenerated, development merged in; new head 18594988, REVERIFY recorded	session-20261115T203018-dcff1ace	2026-11-15T20:48:11Z
+fix:humaniq:669:3a6be5bd	sbom regenerated; test:js only inherited failure; REVERIFY at 88ae160d	session-20261115T200026-9a5b8685	2026-11-15T20:48:28Z
+fix:humaniq:687:bad2cefa	merged development, sbom regenerated, pushed f6b6a0aa; REVERIFY recorded	session-20261115T202936-e956716f	2026-11-15T20:48:40Z
+fix:integriq:2992:365213f7	fixed: sbom regenerated; new head 301b5d1e	session-20261115T200043-78b85ca2	2026-11-15T20:48:51Z
+fix:integriq:2716:a994c099	merged development, sbom regenerated; new head 98572e41	session-20261115T202932-d1067ee4	2026-11-15T20:49:06Z
+fix:integriq:3057:a972c60e	sbom regenerated, development merged in; new head 2fbd882d, REVERIFY recorded	session-20261115T203018-dcff1ace	2026-11-15T20:49:13Z
+fix:buildiq:1652:74a237c7	insertions moved, clean with 1649; REVERIFY b14118499019827d493de724825c6c406fb04874	session-20261115T195953-2618bb8a	2026-11-15T20:49:20Z
+fix:buildiq:1654:fc4a934c	conflict with 1649 resolved in nl.json; new head a81c7ddf	session-20261115T203012-30a1abde	2026-11-15T20:49:30Z
+fix:keepiq:1789:2f3708d1	l10n conflict resolved keeping both; REVERIFY at 2b1b12ac	session-20261115T195958-28cb0304	2026-11-15T20:49:47Z
+fix:integriq:2746:cf8bdce8	fixed: sbom regenerated; head ff5f2df8	session-20261115T200020-0f65b959	2026-11-15T20:49:56Z
+fix:integriq:2560:fd436abf	merged development, regenerated sbom; REVERIFY a80037a8	session-20261115T200045-d3bb5c75	2026-11-15T20:50:10Z
+fix:launchpad:787:d2dedbb4	BLOCK fixed (create-path validation + docblock cleanup), REVERIFY recorded	session-20261115T174747-978963d5	2026-11-15T20:50:21Z
+fix:keepiq:1793:bb8eaec8	l10n conflicts resolved, pushed 651a3476, REVERIFY recorded	session-20261115T201132-b8ddc5e5	2026-11-15T20:50:31Z
+fix:humaniq:686:03602584	fixed: merged development + sbom regen, head fe1cbc0a	session-20261115T202932-ab57353c	2026-11-15T20:50:40Z
+fix:keepiq:1500:1c81214a	sbom regenerated; new head 56b81f7c	session-20261115T203012-30a1abde	2026-11-15T20:50:47Z
+fix:keepiq:1497:1c1ef76b	lock rebuilt on development; sbom already current; REVERIFY at 2b071054	session-20261115T195958-28cb0304	2026-11-15T20:51:04Z
+fix:opencatalogi:2059:75ffe574	fixed: conflicts resolved; new head fa65b847	session-20261115T200043-78b85ca2	2026-11-15T20:51:15Z
+fix:integriq:2711:e9ef8372	sbom regenerated, development merged; REVERIFY at b46c56fe	session-20261114T075643-75a598ab	2026-11-15T20:51:23Z
+fix:buildiq:1262:106caafb	merged development, lock tests migrated; unit = dev baseline (1 inherited); new head a0a4f287	session-20261115T203013-157346e0	2026-11-15T20:51:31Z
+fix:opencatalogi:2674:8c2edb69	l10n conflict resolved, pushed 52a7e65f; REVERIFY recorded	session-20261115T202936-e956716f	2026-11-15T20:51:41Z
+fix:opencatalogi:2244:58b3e9f1	conflict resolved (kept both test sets); REVERIFY 9178373d	session-20261115T200045-d3bb5c75	2026-11-15T20:51:52Z
+fix:keepiq:1791:8a173b56	fixed: development merged, l10n conflicts resolved keeping both sides; new head dc388493f621af327f8dd5bb35392a58c9201c69	session-20261115T200041-8ff5af37	2026-11-15T20:52:03Z
+fix:keepiq:1496:c1d424cc	lock cleaned, sbom current (dev-only); new head ab293916	session-20261115T203012-30a1abde	2026-11-15T20:52:18Z
+fix:integriq:3054:5b91fc9c	failed: merge with development resolves (9 conflicts plus 16 new old-style saveObject calls converted) but 128 tests in 50 classes written on development still use the old saveObject doubles/expectations; beyond the 45-min fix cap, nothing pushed; redo the conversion from current development	session-20261115T200011-d13b13ca	2026-11-15T20:52:30Z
+fix:integriq:2744:58fef09b	sbom regenerated, pushed 53deb98f, REVERIFY recorded	session-20261115T195957-8e60ca53	2026-11-15T20:52:28Z
+fix:opencatalogi:2678:3f20c722	CONFLICT resolved (l10n union + rebuild); new head 05397e9f, REVERIFY recorded	session-20261115T203018-dcff1ace	2026-11-15T20:52:38Z
+fix:opencatalogi:2407:21b8b65a	merged development, regenerated sbom; REVERIFY 15ee026e	session-20261115T200045-d3bb5c75	2026-11-15T20:52:49Z
+fix:integriq:2710:8b1d42d4	sbom regenerated; new head 4de6b79e, REVERIFY recorded	session-20261115T203016-ff00326d	2026-11-15T20:52:58Z
+fix:integriq:3593:28966ef1	migrated SourceHostKeyController to main's object API; new head f34b8147, REVERIFY recorded	session-20261115T203020-5a3aa6f4	2026-11-15T20:53:10Z
+fix:versioniq:508:f223efe6	merged development, vitest 3012 green, build ok; new head 4df37973	session-20261115T203013-157346e0	2026-11-15T20:53:20Z
+fix:opencatalogi:2652:dc289b2f	l10n conflict resolved and js rebuilt; no new failures; REVERIFY at 2348aeca	session-20261115T200026-9a5b8685	2026-11-15T20:53:30Z
+fix:stackiq:1930:d6bf1559	fixed: saveObject moved to ObjectSaveOptions, head 4b692e5a	session-20261115T202932-ab57353c	2026-11-15T20:53:41Z
+fix:opencatalogi:2677:6373144b	CONFLICT resolved, REVERIFY recorded; development red (missing ObjectSaveOptions stub since #2733)	session-20261115T174747-978963d5	2026-11-15T20:53:49Z
+fix:buildiq:1596	fixed: conflict resolved; new head 33a8b51d	session-20261115T200000-e95b89c2	2026-11-15T20:53:58Z
+fix:versioniq:497:bc42f75b	lock conflict resolved on development's lock, patches apply to 1.9.1; new head 39a7db06, REVERIFY	session-20261115T200011-d13b13ca	2026-11-15T20:54:14Z
+fix:opencatalogi:1889:38ce8706	fixed: 7 conflicts resolved, no new failures vs development (107 inherited); head a5e55a55	session-20261115T200020-0f65b959	2026-11-15T20:54:24Z
+fix:keepiq:1816:6bce7859	fixed: development merged keeping both sides; tests = baseline; new head f765ddb9	session-20261115T182940-bfeb7e78	2026-11-15T20:54:40Z
+fix:opencatalogi:2696:f7d699f3	fixed: development merged, red test green, no new failures; new head 2ec8a868	session-20261115T200043-78b85ca2	2026-11-15T20:54:46Z
+fix:launchpad:785:962d3592	golden recorded, vitest ok; REVERIFY 91bd14a0c96181818b7b5c9405c8098dd9e28904	session-20261115T195953-2618bb8a	2026-11-15T20:54:57Z
+fix:keepiq:1499:95735770	sbom regenerated, pushed 88c1cad1, REVERIFY recorded	session-20261115T201132-b8ddc5e5	2026-11-15T20:55:08Z
+fix:opencatalogi:2679:467db25a	saveObject migrated to ObjectSaveOptions; REVERIFY at 22b67cf7	session-20261115T195958-28cb0304	2026-11-15T20:55:18Z
+fix:keepiq:1826:6a8875d0	development merged in cleanly, unit OK; new head 98fff903, REVERIFY recorded	session-20261115T203029-7489abc7	2026-11-15T20:55:32Z
+fix:opencatalogi:2665:cdc5db8f	RED fixed, pushed fbbdb9b4, REVERIFY recorded	session-20261115T195957-8e60ca53	2026-11-15T20:55:39Z
+fix:versioniq:501:e3e915e4	sbom regenerated, merged development, vitest green; new head 451c8f59	session-20261115T203013-157346e0	2026-11-15T20:55:51Z
+fix:opencatalogi:2699:b0f3f779	conflicts resolved; new head 89a2eae1	session-20261115T203012-30a1abde	2026-11-15T20:56:00Z
+fix:versioniq:721:d7956500	merged development (clean); REVERIFY at a9a532f3	session-20261115T195958-28cb0304	2026-11-15T20:56:11Z
+fix:opencatalogi:2655:f9ef3261	fixed: 10 OR-main failures resolved, development merged; new head 05605d932ec889bd630e9916ac9e044664837e19	session-20261115T200041-8ff5af37	2026-11-15T20:56:20Z
+fix:versioniq:507:324d3f15	conflict resolved, vitest ok; REVERIFY 63401e4577e3a8006d41144430399f8f3f1f5187	session-20261115T195953-2618bb8a	2026-11-15T20:56:34Z
+fix:stackiq:1931:d2989729	fixed: conflict resolved keeping both sides, head e9b00feb	session-20261115T202932-ab57353c	2026-11-15T20:56:41Z
+fix:versioniq:722:756a911d	conflict resolved, pushed a03bd1c7; REVERIFY recorded	session-20261115T202936-e956716f	2026-11-15T20:56:55Z
+fix:larpinq:877:339de0c7	failed: sbom gate false positive; nextcloud/ocp is a dev dependency, regen-sbom (--omit=dev) leaves sbom.cdx.json unchanged and --check passes, but the gate requires the file in the diff; merged development in (head 0d04ecfc809c8f114723a77614d7ef4cddf938ef); needs a gate rule for dev-only lock changes	session-20261115T200041-8ff5af37	2026-11-15T20:57:01Z
+fix:versioniq:711:1d4bc363	fixed: 4 conflicts resolved; 2 inherited golden failures; head dc3fffc4	session-20261115T200020-0f65b959	2026-11-15T20:57:06Z
+fix:versioniq:505:54c33622	sbom regenerated, pushed aeceef74, REVERIFY recorded	session-20261115T195957-8e60ca53	2026-11-15T20:57:14Z
+fix:integriq:3628:b222d402	failed: floor is check_sig_maintainability report overall (dev 3.56, PR merged 3.54); cause is php component independence 91.4% -> 90.6% (+~1000 exposed lines: new Sms*/NotifyNl services called directly from Controller/EventListener), not duplication. Restoring it needs a design change (thin facade in Service so SmsDispatchService/RestNotifyNlProvider are only called inside Service), beyond a 45-m	session-20261114T073105-752e50ad	2026-11-15T20:57:31Z
+fix:larpinq:960:f38d0e35	development merged in; sbom already current (dev-only bump), no sbom diff possible; new head 659b6749, REVERIFY recorded	session-20261115T203029-7489abc7	2026-11-15T20:57:31Z
+fix:opencatalogi:2723:8d90b4a9	merged development in (clean); no new failures; REVERIFY at 28b856d8	session-20261115T200026-9a5b8685	2026-11-15T20:57:40Z
+fix:versioniq:499:36c6819e	closed as superseded: development pins vite 8.2.4 (newer patched release than 8.3.1)	session-20261115T195957-8e60ca53	2026-11-15T20:57:50Z
+fix:versioniq:732:338949a6	SBOM regenerated; REVERIFY edb0233ba6169cf4419f02b6bed018d9f56875ee	session-20261115T195953-2618bb8a	2026-11-15T20:57:51Z
+fix:versioniq:723:e74abf38	conflicts resolved keeping both; REVERIFY at 2e4c0e66	session-20261115T195958-28cb0304	2026-11-15T20:57:57Z
+fix:versioniq:506:c6a1011e	fixed: sbom regenerated; new head cf0ff5ad	session-20261115T200043-78b85ca2	2026-11-15T20:58:06Z
+fix:versioniq:717:a769cc5a	floor restored (unit_complexity 4.60), REVERIFY recorded	session-20261115T174747-978963d5	2026-11-15T20:58:20Z
+fix:larpinq:1060:f17472dc	development merged clean, suite 1025 OK; new head 54265c8fe78dfcc4a40860fc95d955fa244ecd37	session-20261115T200041-8ff5af37	2026-11-15T20:58:37Z
+fix:larpinq:1050:67a10904	fixed: l10n conflict resolved as union, head f7fb4695	session-20261115T202932-ab57353c	2026-11-15T20:58:47Z
+fix:versioniq:736:732e80c8	merged development, pushed 91246664; REVERIFY recorded	session-20261115T202936-e956716f	2026-11-15T20:59:01Z
+fix:versioniq:735:de63ae5e	conflict resolved in tab spec, vitest 3037 green; new head 0ba1d1c9	session-20261115T203013-157346e0	2026-11-15T20:59:12Z
+fix:larpinq:961:0c510953	development merged in; sbom already current (dev-only bump); new head 06d9f9ca, REVERIFY recorded	session-20261115T203029-7489abc7	2026-11-15T20:59:25Z
+fix:versioniq:504:7d37bf12	sbom regenerated after merging development; new head 918e8ff3, REVERIFY	session-20261115T200011-d13b13ca	2026-11-15T20:59:36Z
+fix:learniq:2134:cca08a57	fixed CONFLICT: merged development, re-migrated calls, suite = baseline; new head 908f17ac, REVERIFY	session-20261115T202955-7451ede9	2026-11-15T20:59:47Z
+fix:versioniq:502:f18aa2a5	fixed: sbom regenerated; head c6d0467e	session-20261115T200020-0f65b959	2026-11-15T20:59:55Z
+fix:opencatalogi:2670:27c8de92	floor restored (PASS), merged development; REVERIFY eed46219	session-20261115T200045-d3bb5c75	2026-11-15T21:00:09Z
+fix:opencatalogi:2650:dacca957	conflicts resolved, REVERIFY at e5e6d290	session-20261114T075643-75a598ab	2026-11-15T21:00:24Z
+fix:versioniq:725:039d4ea0	merged development, conflicts resolved (both advisory features kept); new head c2115872, REVERIFY recorded	session-20261115T203016-ff00326d	2026-11-15T21:00:33Z
+fix:opencatalogi:2643:876cac08	CONFLICT resolved (vue/test/l10n); new head 7bc24339, REVERIFY recorded	session-20261115T203018-dcff1ace	2026-11-15T21:00:42Z
+fix:stackiq:1965:9bf3626e	test updated for the connections switch; new head 67582d07, REVERIFY recorded	session-20261115T203020-5a3aa6f4	2026-11-15T21:00:57Z
+fix:versioniq:691	failed: floor partly restored at eca00de3 (merged development, unit_size holds, interfacing 4.00->4.18 of 4.26); still below: module_coupling 5.12<5.23 (PatchPolicyController makes AuditLogger/AuditSubject/AuditedVersions fan-in 11; needs an audit-recording seam), unit_interfacing, unit_complexity 4.60<4.63, duplication 5.14<5.17	session-20261115T200000-e95b89c2	2026-11-15T21:01:09Z
+fix:thematiq:1303:35bcc381	goldens re-recorded for epe, pushed 550d277c, REVERIFY recorded	session-20261115T201132-b8ddc5e5	2026-11-15T21:01:42Z
+merge:decidiq:1465:74bb8b9a	merge3 tree of 17 decidiq PRs: merged=1 red=10 fail=0 skip=0; conflict 6, lint 0, moved 0; fix rows 6	merge3-20261113T213425-c36bcd5f	2026-11-15T21:02:48Z
+merge:decidiq:1474:40f33c83	merge3 tree of 17 decidiq PRs: merged=1 red=10 fail=0 skip=0; conflict 6, lint 0, moved 0; fix rows 6	merge3-20261113T213425-c36bcd5f	2026-11-15T21:02:55Z
+merge:decidiq:1950:0a0589ce	merge3 tree of 17 decidiq PRs: merged=1 red=10 fail=0 skip=0; conflict 6, lint 0, moved 0; fix rows 6	merge3-20261113T213425-c36bcd5f	2026-11-15T21:02:59Z
+fix:larpinq:1053:4113c48a	floor restored (overall 5.04, coupling 4.99); new head fa6976fd	session-20261115T203012-30a1abde	2026-11-15T21:03:23Z
+merge:keepiq:1792:1b9862e8	stale	feeder	2026-11-15T20:48:06Z
+merge:stackiq:1168:c0b345fa	merge8 tree of 14 stackiq PRs: merged=4 red=7 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge8-20261115T170007-37538273	2026-11-15T21:04:35Z
+merge:stackiq:1044:797bf41b	merge8 tree of 14 stackiq PRs: merged=4 red=7 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge8-20261115T170007-37538273	2026-11-15T21:04:40Z
+merge:stackiq:1954:1ec6dc7b	merge8 tree of 14 stackiq PRs: merged=4 red=7 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge8-20261115T170007-37538273	2026-11-15T21:04:46Z
+fix:decidiq:1950:76d89347	dev merged, sbom regenerated; conflict only with superseded #1737; new head e876f7ce	session-20261115T203012-30a1abde	2026-11-15T21:04:51Z
+merge:keepiq:1789:4bde5ea5	stale	feeder	2026-11-15T21:04:09Z
+merge:keepiq:1791:a5297cc2	stale	feeder	2026-11-15T21:04:09Z
+merge:keepiq:1793:8d1e42ff	stale	feeder	2026-11-15T21:04:09Z
+review:filinq:1853:6bb7b9ed	stale	feeder	2026-11-15T21:04:09Z
+merge:stackiq:1978:dfbf6950	merge8 tree of 14 stackiq PRs: merged=4 red=7 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge8-20261115T170007-37538273	2026-11-15T21:05:19Z
+fix:keepiq:1792:c41b6b80	floor restored (dedup refactor), new head e3aa6771	session-20261115T202932-d1067ee4	2026-11-15T21:06:22Z
+review:decidiq:1947:0429ddc5	GREEN: call-shape migration only, 4624 tests ok	session-20261115T203012-30a1abde	2026-11-15T21:06:53Z
+merge:hermiq:1739:6384388f	merge3 tree of 30 hermiq PRs: merged=5 red=12 fail=0 skip=0; conflict 10, lint 0, moved 0; fix rows 13	merge3-20261113T213425-c36bcd5f	2026-11-15T21:07:43Z
+merge:hermiq:1760:ecf0431e	merge3 tree of 30 hermiq PRs: merged=5 red=12 fail=0 skip=0; conflict 10, lint 0, moved 0; fix rows 13	merge3-20261113T213425-c36bcd5f	2026-11-15T21:07:47Z
+merge:hermiq:1751:db1e53de	merge3 tree of 30 hermiq PRs: merged=5 red=12 fail=0 skip=0; conflict 10, lint 0, moved 0; fix rows 13	merge3-20261113T213425-c36bcd5f	2026-11-15T21:07:51Z
+merge:hermiq:1735:5c7b2f49	merge3 tree of 30 hermiq PRs: merged=5 red=12 fail=0 skip=0; conflict 10, lint 0, moved 0; fix rows 13	merge3-20261113T213425-c36bcd5f	2026-11-15T21:07:55Z
+merge:hermiq:1736:d0c07b65	merge3 tree of 30 hermiq PRs: merged=5 red=12 fail=0 skip=0; conflict 10, lint 0, moved 0; fix rows 13	merge3-20261113T213425-c36bcd5f	2026-11-15T21:07:59Z
+merge:hermiq:1781:5cf7b908	merge3 tree of 30 hermiq PRs: merged=5 red=12 fail=0 skip=0; conflict 10, lint 0, moved 0; fix rows 13	merge3-20261113T213425-c36bcd5f	2026-11-15T21:08:04Z
+merge:hermiq:1791:9531c6a9	merge3 tree of 30 hermiq PRs: merged=5 red=12 fail=0 skip=0; conflict 10, lint 0, moved 0; fix rows 13	merge3-20261113T213425-c36bcd5f	2026-11-15T21:08:09Z
+merge:hermiq:1754:f5886b44	merge3 tree of 30 hermiq PRs: merged=5 red=12 fail=0 skip=0; conflict 10, lint 0, moved 0; fix rows 13	merge3-20261113T213425-c36bcd5f	2026-11-15T21:08:14Z
+review:decidiq:1945:b9434899	GREEN: deleteObject call-shape migration, 4625 tests ok	session-20261115T203012-30a1abde	2026-11-15T21:08:19Z
+merge:hermiq:1133:778a875e	merge3 tree of 30 hermiq PRs: merged=5 red=12 fail=0 skip=0; conflict 10, lint 0, moved 0; fix rows 13	merge3-20261113T213425-c36bcd5f	2026-11-15T21:08:36Z
+merge:hermiq:1195:11b3aab8	merge3 tree of 30 hermiq PRs: merged=5 red=12 fail=0 skip=0; conflict 10, lint 0, moved 0; fix rows 13	merge3-20261113T213425-c36bcd5f	2026-11-15T21:08:41Z
