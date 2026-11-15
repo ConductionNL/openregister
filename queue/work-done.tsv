@@ -12210,3 +12210,4 @@ fix:filinq:2114:789d94cb	no change needed: up to date with development, conflict
 cover:portaliq:b60f3b81m4ccb:11ce03ab	already done: lib/Service/Theme/ 272/272 statements (100%, pcov, full unit suite) on development; every class has tests; no PR	session-20261114T225452-4fcfea7f	2026-11-15T00:21:23Z
 cover:dossiq:069ee2d6mdd7c:f545d745	PR dossiq#6534: 4 Repair classes, 11 tests; suite 17379->17390, same 19 inherited failures	session-20261114T234933-5c1be121	2026-11-15T00:21:28Z
 fix:filinq:2102:1985bdd5	fixed: unfiltered listPublications call restored, worklist spec aligned; vitest 763 ok, jest 569 ok; new head 726c91bb	session-20261114T234944-ee1416bc	2026-11-15T00:21:29Z
+fix:humaniq:1133:fcad2ca7	fixed: parameter reductions, suite green, new head c45cf87b	session-20261115T001759-0085793c	2026-11-15T00:21:53Z
