@@ -13597,3 +13597,4 @@ review:pipelinq:3084:01208829	GREEN: phpstan bump, analysis clean, suite green	s
 review:pipelinq:2959:0f2f1b3f	CONFLICT #2959: 16 files, partly on development already	session-20261115T152601-38767331	2026-11-15T16:34:12Z
 merge:pipelinq:3835:cef49b87	merge3 tree of 6 pipelinq PRs: merged=4 red=0 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-15T16:34:23Z
 merge:pipelinq:3870:787e050f	merge3 tree of 6 pipelinq PRs: merged=4 red=0 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-15T16:34:26Z
+review:planninq:1037:f2da0a3f	CONFLICT: trivial l10n/en.js+en.json, keep both; change itself fine	session-20261115T154300-03b63424	2026-11-15T16:34:32Z
