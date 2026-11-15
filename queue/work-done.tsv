@@ -12468,3 +12468,4 @@ review:integriq:3542:02664658	GREEN: per spec, fail-closed auth, no new failures
 cover:dossiq:069ee2d6mdd7c:d2a82d9f	already done: lib/Service/Termijn/*.php measures 99.65% (1439 stmts, 5 uncovered), above target 95	session-20261114T234941-bc8686af	2026-11-15T01:03:57Z
 verify:versioniq:690:1e1787ea	failed: permission (versioniq vendor has no phpunit; fetching one was refused earlier this session)	session-20261115T005141-9356bed0	2026-11-15T01:04:15Z
 verify:opencatalogi:2699:7a30a369	5 GREEN (2699,2715,2721,2722,2723), 0 new failures	session-20261115T005132-ee7d19e4	2026-11-15T01:04:26Z
+cover:dossiq:069ee2d6mdd7c:23f6b1f1	PR dossiq#6542: 20 tests over ApprovalGate, CaseSplitPolicy, CaseAreaResolver; suite 17379->17399, same 19 inherited failures	session-20261115T001740-566812b3	2026-11-15T01:04:43Z
