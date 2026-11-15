@@ -13568,6 +13568,7 @@ review:pipelinq:1936:27cdae0d	CONFLICT #1936: obsolete, development already newe
 review:learniq:2126:af7f7379	GREEN: phpstan clean, no new failures	session-20261114T102637-6688951e	2026-11-15T16:28:48Z
 review:opencatalogi:2415:da40ef23	CONFLICT: PublicationsController conflicts with development (call moved to rendered()); diff itself correct	session-20261115T155911-14cd078d	2026-11-15T16:28:56Z
 review:learniq:1903:3f6c3b60	GREEN: dev-only ocp bump; installs, suite has only the inherited failure	session-20261115T145533-2db61682	2026-11-15T16:29:09Z
+review:opencatalogi:2259:6c778379	BLOCK: superseded by development's own refactor, conflicts	session-20261114T102641-d4fd3e25	2026-11-15T16:29:29Z
 review:opencatalogi:2250:626634c5	GREEN: equivalent refactor, 0 new failures	session-20261115T154300-03b63424	2026-11-15T16:29:17Z
 review:learniq:1884:16330d9e	no verdict: conflicts with development in 11 files; recorded CONFLICT for the fix lane	session-20261115T142958-341f60db	2026-11-15T16:29:33Z
 review:opencatalogi:1894:552c9a7c	CONFLICT: openspec-only PR conflicts with development in 6 files	session-20261114T085646-49a39060	2026-11-15T16:29:42Z
@@ -13594,3 +13595,10 @@ review:learniq:1881:5f883140	GREEN (intended fix; conflicts with development)	se
 review:pipelinq:3149:3c7ae62d	BLOCK: wrong ObjectPatch/ObjectFindTarget namespace	session-20261115T142951-2463b4c4	2026-11-15T16:33:33Z
 review:pipelinq:3085:34857519	GREEN: lock-only dev-tool bump, 8890 tests green merged with development	session-20261114T095641-533e2a00	2026-11-15T16:33:40Z
 review:pipelinq:3084:01208829	GREEN: phpstan bump, analysis clean, suite green	session-20261115T154258-dee2cc3d	2026-11-15T16:33:56Z
+review:pipelinq:2959:0f2f1b3f	CONFLICT #2959: 16 files, partly on development already	session-20261115T152601-38767331	2026-11-15T16:34:12Z
+merge:pipelinq:3835:cef49b87	merge3 tree of 6 pipelinq PRs: merged=4 red=0 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-15T16:34:23Z
+merge:pipelinq:3870:787e050f	merge3 tree of 6 pipelinq PRs: merged=4 red=0 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-15T16:34:26Z
+merge:pipelinq:3873:e74d58c4	merge3 tree of 6 pipelinq PRs: merged=4 red=0 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-15T16:34:30Z
+review:planninq:1037:f2da0a3f	CONFLICT: trivial l10n/en.js+en.json, keep both; change itself fine	session-20261115T154300-03b63424	2026-11-15T16:34:32Z
+merge:pipelinq:3875:9f4b8976	merge3 tree of 6 pipelinq PRs: merged=4 red=0 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-15T16:34:43Z
+review:pipelinq:2963:59117082	BLOCK: duplicate of the change already built on development; conflicts in 10 files; likely obsolete	session-20261115T145546-378b432a	2026-11-15T16:34:52Z
