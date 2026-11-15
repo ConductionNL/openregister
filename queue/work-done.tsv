@@ -14554,3 +14554,4 @@ fix:larpinq:962:6aa0ff3d	failed: psalm 7 needs platform php >=8.3.16, which roav
 fix:stackiq:1973:c345112a	conflict resolved, pushed f01e743e, REVERIFY recorded	session-20261115T182948-465dcc8e	2026-11-15T19:27:41Z
 fix:thematiq:1303:392c8254	generated files regenerated, new head 35bcc381	session-20261115T185929-0fc862a6	2026-11-15T19:27:52Z
 fix:thematiq:1117:29c03f73	phpmd 3.0 findings fixed, pushed 2427508a, REVERIFY recorded	session-20261115T182936-09049974	2026-11-15T19:28:02Z
+fix:launchpad:763:832b5d0a	vitest family bumped together; pushed ac59f293, REVERIFY	session-20261115T174808-50b8ceec	2026-11-15T19:28:13Z
