@@ -14553,3 +14553,4 @@ fix:versioniq:738:d693e01b	DiscoverPanel conflict resolved; new head f3f7da6d, R
 fix:larpinq:962:6aa0ff3d	failed: psalm 7 needs platform php >=8.3.16, which roave/security-advisories then pushes to >=8.3.36; fleet-wide platform decision, not a branch fix	session-20261115T174833-88ac0233	2026-11-15T19:27:34Z
 fix:stackiq:1973:c345112a	conflict resolved, pushed f01e743e, REVERIFY recorded	session-20261115T182948-465dcc8e	2026-11-15T19:27:41Z
 fix:thematiq:1303:392c8254	generated files regenerated, new head 35bcc381	session-20261115T185929-0fc862a6	2026-11-15T19:27:52Z
+fix:thematiq:1117:29c03f73	phpmd 3.0 findings fixed, pushed 2427508a, REVERIFY recorded	session-20261115T182936-09049974	2026-11-15T19:28:02Z
