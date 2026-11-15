@@ -13031,3 +13031,4 @@ fix:filinq:2085:432c7b61	no change: up to date with development; conflicts only 
 fix:filinq:2102:726c91bb	no change: up to date with development; conflicts only with siblings on register version bump	session-20261115T142127-97291b3d	2026-11-15T14:26:54Z
 verify:dossiq:6568:6b054a6d	GREEN 6568 (tests only, no new failures)	session-20261115T142201-ea23e682	2026-11-15T14:27:07Z
 fix:filinq:2113:45e6b64f	no change: up to date with development; conflicts only with sibling PRs	session-20261115T142127-97291b3d	2026-11-15T14:27:24Z
+cover:dossiq:069ee2d6madb6:4bcfe3d9	PR #6569: AdviceTimer 92.9->100% lines (+10 tests), Advice dir now 100%; suite failures unchanged (19 inherited)	session-20261115T142132-f4234592	2026-11-15T14:27:43Z
