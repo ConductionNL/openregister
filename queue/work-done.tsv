@@ -14010,3 +14010,4 @@ verify:stackiq:1983:43f10173	1983 GREEN (tests only, vitest 1 inherited)	session
 review:buildiq:1622:b26786dc	GREEN 1622	session-20261115T154255-e54527e9	2026-11-15T17:58:18Z
 review:buildiq:1093:16b82bb9	GREEN: marked bump, vitest 4692/4692 pass	session-20261115T174833-88ac0233	2026-11-15T17:58:25Z
 review:buildiq:1091:c4dd3636	GREEN: 4692/4692 vitest pass on merge with development, coverage report OK	session-20261115T174819-9af28ef9	2026-11-15T17:58:36Z
+fix:dossiq:2909:b86bc4d2	CONFLICT resolved, pushed 23f03bf8; inherited red caseSearchDeclarations gdprClassification noted	session-20261115T174747-978963d5	2026-11-15T17:58:43Z
