@@ -15066,3 +15066,15 @@ review:humaniq:684:036f7e9f	GREEN: ocp dev bump, 4405 tests + phpstan ok	session
 review:humaniq:662:d7499aec	GREEN: phpmd 3 bump, unit 4405 OK, phpmd findings 172->164 (baseline red)	session-20261115T211111-34885d99	2026-11-15T21:26:16Z
 review:humaniq:661:f523f286	GREEN: babel 8 bump, build + lint ok	session-20261115T203012-30a1abde	2026-11-15T21:27:09Z
 review:humaniq:686:fe1cbc0a	GREEN: jsdom bump, test:js 230/231 (1 inherited)	session-20261115T211111-34885d99	2026-11-15T21:27:39Z
+merge:integriq:2924:9377495b	stale	feeder	2026-11-15T21:25:35Z
+merge:planninq:1037:d12258e0	stale	feeder	2026-11-15T21:25:35Z
+merge:opencatalogi:1894:6b066206	stale	feeder	2026-11-15T21:25:35Z
+merge:opencatalogi:2419:2f7358e4	stale	feeder	2026-11-15T21:25:35Z
+merge:opencatalogi:2417:9e7ac356	stale	feeder	2026-11-15T21:25:35Z
+merge:stackiq:1042:49e714fb	stale	feeder	2026-11-15T21:25:35Z
+merge:stackiq:1069:5a8e133f	stale	feeder	2026-11-15T21:25:35Z
+review:stackiq:1931:e9b00feb	stale	feeder	2026-11-15T21:25:35Z
+verify:stackiq:1965:1f9f60d7	stale	feeder	2026-11-15T21:25:35Z
+fix:stackiq:1954:7f13c4ef	stale	feeder	2026-11-15T21:25:35Z
+fix:stackiq:1978:90d2828b	stale	feeder	2026-11-15T21:25:35Z
+fix:hermiq:1735:01675e5c	stale	feeder	2026-11-15T21:25:35Z
