@@ -12187,3 +12187,4 @@ cover:decidiq:a5f973bbmae46:aae6d66c	PR #2213: OnboardingStepRefusedException vi
 review:hermiq:1750:4ea33cc6	GREEN: suite 5258 OK, vitest 1545 OK, phpstan clean	session-20261114T231755-998f7ff8	2026-11-15T00:17:08Z
 cover:dossiq:069ee2d6mdd7c:js5794e9fc	PR #6533: 20 vitest tests (RoleTreeManager, RulesTab); settings lines 87.51->89.73%, no new failures	session-20261114T234941-e3e51cb9	2026-11-15T00:17:24Z
 cover:pipelinq:7f9dc8e6m799d:197c84b8	PR #3849: AdapterRegistrar 5/16 -> 16/16, lib/Adapter/*.php 85.1% -> 100%; 1 test; suite 8452 -> 8453 OK	session-20261114T225452-4fcfea7f	2026-11-15T00:17:22Z
+verify:dossiq:6529:18bdfaf3	stale	session-20261114T234933-5c1be121	2026-11-15T00:17:41Z
