@@ -13127,3 +13127,4 @@ fix:shillinq:3078:babfb38d	regenerated scoped-pages index; new head 777f3b0b, RE
 review:filinq:2103:a4238696	GREEN: unit 6815 ok, phpstan clean, jest 14 ok	session-20261115T142153-990a3fbe	2026-11-15T15:07:20Z
 verify:portaliq:2527:96a26a46	2527 GREEN (6074 tests, 0 new failures)	session-20261115T142145-a288b021	2026-11-15T15:07:28Z
 review:openregister:10583:f9f81edd	APPROVE: tests only, all touched and required suites pass	session-20261115T142129-944012f5	2026-11-15T15:07:34Z
+merge:integriq:3617:22fa17a2	merge3 tree of 2 integriq PRs: merged=2 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-15T15:07:45Z
