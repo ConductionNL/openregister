@@ -12294,3 +12294,4 @@ planninq	910	b94a91172cb01e22709d8306fe1cc09332e70681	RED	merge8:merge-gate	GATE
 planninq	918	a2f30b5287b08459630446ba4878a1b31ad4273a	RED	merge8:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
 planninq	1068	0077bc6d09addfee7b801ca19af62ba4a1f7ba55	RED	merge8:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
 planninq	1070	e04ed25c6a38cd623b1359257033a777bd5bffbc	RED	merge8:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+portaliq	1768	2c4e29aaf388d11d0ce73ad24f70345c7dcc4477	REVERIFY	worker-08	merged development in and rebuilt the lock from development's with only sass moved (resolves 1.108.2 within ^1.106.1); npm ci OK, admin webpack build OK; diff vs development is package.json + package-lock.json; new head 5560c998c1377d82b0b5fc84edd1eadcd8473571, verify it
