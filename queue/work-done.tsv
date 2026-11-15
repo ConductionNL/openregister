@@ -12406,3 +12406,4 @@ fix:versioniq:734:c03718fb	conflict resolved by merging development (both mapper
 fix:larpinq:1049:0b6c6360	no change: branch is current with development and merges clean; conflict only against unmerged 1039/1051 (l10n); REVERIFY recorded	session-20261114T234944-ee1416bc	2026-11-15T00:48:29Z
 fix:humaniq:1133:c45cf87b	guard reads the stored object via checkTransition; new head 8311ae6076d2e8595a0b091401c0314a9733c0ce, REVERIFY	session-20261114T221759-cd5c5678	2026-11-15T00:48:47Z
 fix:versioniq:718:b1c9cae4	merged development (clean; conflict is with siblings 694/724); unit 1781, 2 inherited; new head e805f4c1	session-20261114T225452-4fcfea7f	2026-11-15T00:48:58Z
+fix:versioniq:722:98541474	conflict resolved (SettingsController), pushed 08999af9643bc843747154e5c0c888da5b53b180, REVERIFY	session-20261115T001714-673c9984	2026-11-15T00:49:05Z
