@@ -14786,3 +14786,4 @@ fix:pipelinq:2187:ebdded89	merged dev, SBOM current (dev-only dep, no SBOM chang
 merge:shillinq:3062:a1da7e07	merge3 tree of 20 shillinq PRs: merged=2 red=11 fail=0 skip=0; conflict 7, lint 0, moved 0; fix rows 7	merge3-20261113T213425-c36bcd5f	2026-11-15T20:28:04Z
 review:dossiq:2902:852fcee3	GREEN: no new failures (19 inherited)	session-20261115T195957-8e60ca53	2026-11-15T20:28:05Z
 merge:shillinq:2991:49981cf2	merge3 tree of 20 shillinq PRs: merged=2 red=11 fail=0 skip=0; conflict 7, lint 0, moved 0; fix rows 7	merge3-20261113T213425-c36bcd5f	2026-11-15T20:28:15Z
+fix:shillinq:2083:bbd8bdb9	fixed: discard via ObjectDeletion, #2253 merged in; unit 12234 OK; new head fc181f39	session-20261115T200043-78b85ca2	2026-11-15T20:28:17Z
