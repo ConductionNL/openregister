@@ -12175,3 +12175,4 @@ dossiq	3196	ccb57e36e4752179a48cfe9ff7fed618c792ced9	GREEN	worker-07:review	devD
 pipelinq	3870	c35c4e62752ab8075a172a38b679855d64daa9a1	GREEN	worker-20	tests only (coverage metadata + bootstrap preload); unit 8890 OK on tree, baseline 8890 OK, no new failures
 buildiq	1651	3e54ea1b46195cd345a239fbee6385d61a8622ba	CONFLICT	worker-02	conflicts with development: l10n/en.js, l10n/nl.js, l10n/nl.json
 buildiq	1652	023b900b9448723e6f9efa0bfaadf1c997a71ce1	CONFLICT	worker-02	conflicts with development: lib/Service/ApplicationCreationService.php, tests/Unit/Service/ApplicationCreationServiceTest.php
+buildiq	1092	8fb29c552c3dff86010f859bbbc198a8da2996db	GREEN	worker-05:review	devDep sass 1.104->1.108.2 only (package.json+lock); no code change; vitest 500 files/4692 tests pass on PR merged with development; scss compiles
