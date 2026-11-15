@@ -15181,3 +15181,4 @@ review:decidiq:2170:a39ae47e	GREEN: spec build, unit 4655 OK, vitest OK; old OR 
 review:learniq:2521:be3bc639	RED: 9 new errors merged with development (old saveObject named args)	session-20261115T213144-ab42ee6a	2026-11-15T21:52:14Z
 review:filinq:2121:7021db61	RED: new code uses removed openregister named args; 8 own tests fail on main	session-20261115T202932-d1067ee4	2026-11-15T21:52:31Z
 review:hermiq:1735:ca8e4b6f	RED: new code uses removed OR named args, 25 new failures vs OR main	session-20261115T213112-78aba834	2026-11-15T21:52:38Z
+review:dossiq:3297:cecaeb85	GREEN: adds case guard, no new failures	session-20261115T211111-34885d99	2026-11-15T21:52:54Z
