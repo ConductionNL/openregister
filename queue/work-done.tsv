@@ -14823,3 +14823,4 @@ fix:filinq:1963	fixed: sbom regenerated; new head 1540e45d	session-20261115T2000
 fix:shillinq:2991:a48bd63d	partial-to-full: methods split, risk profile most of the way back to development (re-measure floor); tests green; new head e30b3b5b	session-20261115T182940-bfeb7e78	2026-11-15T20:35:40Z
 review:dossiq:3193:ac67d68f	GREEN: twig dev bump, sbom current, phpunit 0 new failures	session-20261114T073105-752e50ad	2026-11-15T20:35:54Z
 fix:filinq:2103:6113c988	conflict resolved, pushed b21f6f3b; REVERIFY recorded	session-20261115T202936-e956716f	2026-11-15T20:36:01Z
+fix:shillinq:2096:d0e8491e	fixed: saveObject moved to ObjectSaveOptions, pushed 132b339a, REVERIFY recorded	session-20261115T202932-ab57353c	2026-11-15T20:36:08Z
