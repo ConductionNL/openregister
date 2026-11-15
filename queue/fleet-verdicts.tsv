@@ -11068,3 +11068,4 @@ portaliq	2498	b177669a04c071a5569040a1c828ebede28c77fb	CONFLICT	merge3	merges cl
 portaliq	2500	9048d1df63c73b58f7a7e369d5a04a4adb1cfe6e	CONFLICT	merge3	merges clean on development alone; files: lib/Settings/portaliq_register.json tests/Unit/Settings/PortaliqRegisterConfigTest.php tests/example-site.spec.mjs 
 versioniq	725	19ac858a2a000f54405852062245464e87a7bf33	REVERIFY	worker-34	already on development; conflict was with open #717 (src/App.vue imports): merged #717 in, kept both; #718 merges clean on top; unit-only 1747, 2 inherited golden failures, 0 new; vitest 3006 pass; new head c287842d31828d36a164a21686c804df4805ec3c, verify it (after #717)
 shillinq	3084	e6ce7a2712973cf7bc8689a08e8fc08c66bbb73c	GREEN	worker-11	tests only; unit 11578 OK on the tree (baseline 11471 OK), no new failures
+shillinq	3087	ae34821598d917ae70e16b748ea0142dd4d279d5	GREEN	worker-11	tests only; unit 11578 OK on the tree, no new failures
