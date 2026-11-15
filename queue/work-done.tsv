@@ -15203,3 +15203,4 @@ review:shillinq:2063:e1c291c4	GREEN	session-20261115T202932-d1067ee4	2026-11-15T
 review:hermiq:1750:70078246	RED: 1 new failure from a development test vs the new retrievalScope key	session-20261115T213144-ab42ee6a	2026-11-15T21:56:49Z
 review:portaliq:1681:4f75ff20	GREEN: example data only, no new failures	session-20261115T213134-4b0d2823	2026-11-15T21:57:05Z
 review:hermiq:1751:1d2fbb88	GREEN: build matches change specs, no new failures	session-20261115T213112-78aba834	2026-11-15T21:57:11Z
+review:hermiq:1293:38013b9c	GREEN: copy-only rename, tests pass	session-20261115T213122-e023a81e	2026-11-15T21:57:29Z
