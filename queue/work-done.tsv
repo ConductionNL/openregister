@@ -13858,3 +13858,4 @@ build:opencatalogi:publication-detail-for-the-portal:c3	partial: PR #2670 merged
 build:larpinq:larpinq-manifest-tier-4:c4	partial: still no code task buildable; 2.1 needs CnAppRoot.mount(), absent in nextcloud-vue 2.180.0 (latest on npm); 4.2 strict issues predate the change; 4.3/4.4 live/visual	session-20261115T142934-6cab0c24	2026-11-15T17:20:04Z
 fix:versioniq:718:e805f4c1	conflicts resolved, new head 756fab92; suite green beyond 2 inherited failures	session-20261115T155911-14cd078d	2026-11-15T17:20:07Z
 verify:buildiq:1654:74087526	GREEN: phpunit 3289 (1 inherited), vitest 4741/4741	session-20261115T155915-84e5dc0a	2026-11-15T17:20:22Z
+review:opencatalogi:2678:3f20c722	GREEN: spec-conform build, no new unit failures (5731 tests, 2 inherited)	session-20261115T155931-0926aa8e	2026-11-15T17:20:48Z
