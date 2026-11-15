@@ -14981,3 +14981,7 @@ merge:keepiq:1792:1b9862e8	stale	feeder	2026-11-15T20:48:06Z
 merge:stackiq:1168:c0b345fa	merge8 tree of 14 stackiq PRs: merged=4 red=7 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge8-20261115T170007-37538273	2026-11-15T21:04:35Z
 merge:stackiq:1044:797bf41b	merge8 tree of 14 stackiq PRs: merged=4 red=7 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge8-20261115T170007-37538273	2026-11-15T21:04:40Z
 fix:decidiq:1950:76d89347	dev merged, sbom regenerated; conflict only with superseded #1737; new head e876f7ce	session-20261115T203012-30a1abde	2026-11-15T21:04:51Z
+merge:keepiq:1789:4bde5ea5	stale	feeder	2026-11-15T21:04:09Z
+merge:keepiq:1791:a5297cc2	stale	feeder	2026-11-15T21:04:09Z
+merge:keepiq:1793:8d1e42ff	stale	feeder	2026-11-15T21:04:09Z
+review:filinq:1853:6bb7b9ed	stale	feeder	2026-11-15T21:04:09Z
