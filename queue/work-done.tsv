@@ -14451,3 +14451,4 @@ review:shillinq:2254:863e0786	GREEN: tests only, matches OR main contract, unit 
 fix:launchpad:1038:8f31cf39	failed: still premature, nothing to fix on the branch: it is one of a coordinated set (dossiq, buildiq, pipelinq, launchpad, learniq) for openregister #9817 (StoreListing/StoreSharing), which is open and not on main (main 3800106b has no StoreListing). Merge it together with #9817	session-20261115T182941-b7ae781f	2026-11-15T19:12:18Z
 fix:planninq:1066:acc56236	fixed: main namespace for ObjectDeletion/ObjectFindTarget, merged development, unit green; new head b7c292c5	session-20261115T185930-76cdc846	2026-11-15T19:12:32Z
 fix:buildiq:1596:e5795e30	fixed floor: helper extraction, unit_complexity 3.32 (base 3.33, PASS); new head ba6566ea61	session-20261115T185944-49ff6c32	2026-11-15T19:12:46Z
+fix:buildiq:1249:a5648e98	sbom regenerated, merged development, pushed 0997f504; REVERIFY	session-20261115T174741-9deaa0be	2026-11-15T19:12:57Z
