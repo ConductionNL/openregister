@@ -12848,3 +12848,8 @@ buildiq	1669	af64f23a49cdaa33a32b421c3b38f7d7eb47a898	GREEN	worker-10	3333 tests
 launchpad	1230	30aa8e54d3338f13eaba6b2b6fff71f023cb727a	GREEN	worker-17	phpunit 4529 tests ok (baseline 4461 ok, 13 skipped both), vitest 274 files/2614 tests ok; new failures: none; builds embedded-analytics per its specs, admin routes AuthorizedAdminSetting
 launchpad	1234	0bc43ee2d44d22dfe4fdc17735d6ae97b6aebf80	GREEN	worker-17	phpunit 4529 tests ok (baseline 4461 ok, 13 skipped both), vitest 274 files/2614 tests ok; new failures: none; lockfile+SBOM only
 launchpad	1235	5447328b2d80008ddcd0d674c30fc6e75df0bce5	GREEN	worker-17	phpunit 4529 tests ok (baseline 4461 ok, 13 skipped both), vitest 274 files/2614 tests ok; new failures: none; builds drill-down-cross-widget-filter telemetry opt-in per its specs
+keepiq	1496	c1d424cc0b06e74dd8842a8cfe942c5e4f055bd0	RED	merge8:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+keepiq	1497	1c1ef76bc10d70467127e9e81434a344d941a1d3	RED	merge8:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+keepiq	1499	9573577039746d41e4ed0e689b8d3e24b03bcab8	RED	merge8:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+keepiq	1500	1c81214a5de8682ffbb3463cce7d2f76d821212f	RED	merge8:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+keepiq	1792	c41b6b80f325613dc679809230b9a78cea7ece2c	RED	merge8:merge-gate	GATE RED floor: duplication: 4.19 -> 4.15; module_coupling: 3.33 -> 3.31
