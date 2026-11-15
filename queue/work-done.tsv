@@ -13398,6 +13398,7 @@ review:filinq:1309:ba8558cc	CONFLICT: package-lock.json vs development; PR alone
 review:dossiq:3203:021d79cc	RED: @nextcloud/vue 9.13.1 needs newer @nextcloud/files; 36 vitest files fail vs 2 baseline; lock conflict	session-20261115T154316-34f0db35	2026-11-15T15:59:23Z
 review:filinq:1313:0908232d	CONFLICT: package-lock.json conflicts with development; bump itself harmless	session-20261115T154258-dee2cc3d	2026-11-15T15:59:35Z
 review:dossiq:3197:4bd6d2ba	GREEN: router minor bump; vitest 7178 pass, 2 inherited failures, 0 new	session-20261115T154407-94bf5f8c	2026-11-15T15:59:43Z
+review:dossiq:4112:d85d2c1c	GREEN	session-20261115T151007-45079d32	2026-11-15T15:59:55Z
 review:filinq:1304:4ad5da28	GREEN 1304 (vitest equal to baseline)	session-20261115T142201-ea23e682	2026-11-15T16:00:04Z
 review:filinq:1355:1c90e8ba	GREEN: phpmd 3 runs, unit suite green; note +3 coupling findings on unchanged code	session-20261115T154254-3d07b219	2026-11-15T16:00:12Z
 review:dossiq:5397:e528f075	GREEN: phpstan dev bump; suite and phpstan output unchanged vs development	session-20261115T142934-de7c51d0	2026-11-15T16:00:18Z
@@ -13412,3 +13413,21 @@ review:hermiq:1323:787cee12	BLOCK: OpenRegister ObjectPatch at a namespace prese
 review:filinq:1850:ab19bf6b	BLOCK: ObjectPatch/ObjectFindTarget imported from wrong namespace vs openregister main	session-20261115T154300-03b63424	2026-11-15T16:02:04Z
 review:filinq:1851:5759e36e	BLOCK: imports ObjectDeletion/ObjectFindTarget from a namespace OpenRegister does not have (real one is Kernel\Contracts\Value); stubs hide it	session-20261115T145533-2db61682	2026-11-15T16:02:17Z
 review:filinq:1409:0d0e948a	BLOCK: obsolete, superseded on development, 32-file conflict	session-20261115T154255-e54527e9	2026-11-15T16:02:23Z
+build4:openregister:register-scoped-schema-slug-resolution:c2	stale: session paused past the task lease; continuations c3-c5 completed task 3.1 in PR #10538, so this pass's overlapping local work was discarded unpushed	session-20261114T102637-6688951e	2026-11-15T16:02:36Z
+review:filinq:1102:7156c4b9	GREEN: jszip patch bump, vitest 763/763 on merged tree	session-20261115T155921-aabf185f	2026-11-15T16:02:33Z
+review:filinq:1312:4c33817f	BLOCK: obsolete, development already has @nextcloud/vue 9.14.1; lock conflict	session-20261115T142934-6cab0c24	2026-11-15T16:02:40Z
+review:hermiq:1135:988cfbc8	GREEN: dev-only phpmd 3 bump; unit suite identical; notes on deprecated positional args and one new unused-param finding	session-20261114T075643-acecaad6	2026-11-15T16:02:49Z
+review:hermiq:1195:6284aad0	GREEN: eslint bump, vitest 1526 pass, lint identical to baseline	session-20261115T155913-70cee771	2026-11-15T16:02:56Z
+review:filinq:1451:258e0913	BLOCK: duplicate of template already on development (#1457); suite 6765 OK	session-20261115T152558-f97be55f	2026-11-15T16:03:13Z
+review:dossiq:2902:791b50a4	GREEN (no behaviour change; conflicts with development, keep StepConfigCheck)	session-20261115T141023-b06d51da	2026-11-15T16:03:22Z
+review:dossiq:3202:d10800f6	BLOCK: gridstack 14 outside shared library peer range; conflicts with development	session-20261114T102641-d4fd3e25	2026-11-15T16:03:33Z
+review:hermiq:1324:c54cfec4	BLOCK: targets nonexistent OpenRegister SearchOptions API; unit suite fatals on merged tree	session-20261115T155902-d9805df0	2026-11-15T16:03:39Z
+review:hermiq:1189:9c7d6a51	GREEN: pinia 4 bump, vitest 1526 passed	session-20261115T154316-34f0db35	2026-11-15T16:03:52Z
+review:humaniq:434:dc6c275a	BLOCK: obsolete lock bump (development already newer), conflicts	session-20261115T155911-f0070087	2026-11-15T16:04:06Z
+build:keepiq:capability-requirements-from-the-matrix:c5	done: PR #1826 head 6a8875d0; 3.1 built (privileged mark, access requests, approve/deny, serve-time gate on detail/list/search/extension/offline, audit+notify, sidebar panel, extension reason); every task ticked; PHP 5298 OK, vitest 3 inherited HealthReportView fails	session-20261115T152547-c779ca49	2026-11-15T16:04:31Z
+review:filinq:1963:4c695442	GREEN: lock bump, suite green incl. PDF tests	session-20261115T154258-dee2cc3d	2026-11-15T16:04:26Z
+review:hermiq:1150:4fcdbcee	no verdict on behaviour: CONFLICT recorded, 1510 behind development, 15 conflicting files	session-20261115T145541-9d69768b	2026-11-15T16:04:35Z
+review:filinq:1965:49589d88	RED: phpstan 2.3.5 adds 1 error (TesseractCommand.php:69 dead catch)	session-20261115T142951-2463b4c4	2026-11-15T16:04:46Z
+review:humaniq:661:6367bef4	RED: npm ci ERESOLVE, @babel/preset-env 7 peers on @babel/core ^7	session-20261115T152558-f97be55f	2026-11-15T16:05:02Z
+review:filinq:1828:63118b3c	GREEN: suite OK, gate failures 10 -> 8	session-20261115T142149-1d09fceb	2026-11-15T16:05:22Z
+review:hermiq:1102:53901bab	BLOCK: obsolete, development already at nextcloud-vue 2.180.0 (PR would downgrade to 2.60.0)	session-20261115T155902-521936b1	2026-11-15T16:05:32Z
