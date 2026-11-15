@@ -2013,6 +2013,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
 
 		// Entity Relations - Decision-metadata PATCH (bases + skipAnonymization). See `entity-relation-grondslagen`.
 		['name' => 'entityRelations#update', 'url' => '/api/entity-relations/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '\\d+']],
+		// Entity Relations - the findings of one file, as the caller may see them (woo-document-assessment-screen).
+		['name' => 'fileEntityRelations#index', 'url' => '/api/entity-relations', 'verb' => 'GET'],
 
 		// GDPR Entities - Manage detected PII entities.
 		['name' => 'gdprEntities#index', 'url' => '/api/entities', 'verb' => 'GET'],
