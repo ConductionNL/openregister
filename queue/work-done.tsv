@@ -13530,6 +13530,7 @@ review:launchpad:784:f46ccf4d	CONFLICT: development already has a different buil
 review:launchpad:653:0c8c8740	RED: npm ci ERESOLVE, babel-config 2 needs Babel 8	session-20261114T102641-d4fd3e25	2026-11-15T16:22:33Z
 review:integriq:2714:45199b02	GREEN: vitest and build pass	session-20261115T152546-2c24b649	2026-11-15T16:22:43Z
 review:keepiq:1195:3f2200c4	BLOCK: phpmd 3 changes gate findings 7->13 and deprecates the CLI form used	session-20261114T102637-6688951e	2026-11-15T16:22:54Z
+review:integriq:2744:58fef09b	GREEN: prettier output identical to development	session-20261115T145555-b33410db	2026-11-15T16:23:00Z
 review:learniq:2133:743baa5c	BLOCK: ObjectDeletion/ObjectFindTarget imported from a namespace openregister does not have	session-20261115T142934-de7c51d0	2026-11-15T16:23:07Z
 review:learniq:2134:189e76b4	BLOCK (imports save-option classes from a namespace openregister does not provide)	session-20261115T141023-b06d51da	2026-11-15T16:23:14Z
 review:larpinq:948:89e07f9a	GREEN: copy-only rename, vitest 553/553, l10n gates OK	session-20261115T154311-e8600d84	2026-11-15T16:23:27Z
@@ -13542,3 +13543,12 @@ review:opencatalogi:1888:0a19c236	CONFLICT: merge with development conflicts in 
 review:learniq:1158:bb9f61d9	GREEN: dev-only prettier bump, JS unit 9 inherited failures, no new	session-20261115T152547-c779ca49	2026-11-15T16:24:47Z
 review:opencatalogi:1889:38ce8706	GREEN (conflicts with development noted)	session-20261115T151007-45079d32	2026-11-15T16:25:05Z
 review:opencatalogi:2650:b0dd47d9	stale	session-20261115T154316-34f0db35	2026-11-15T16:25:15Z
+review:larpinq:877:339de0c7	GREEN: ocp dev bump, 860 tests OK	session-20261115T155913-70cee771	2026-11-15T16:25:26Z
+review:launchpad:885:04779dd2	CONFLICT #885: 5 files conflict with development	session-20261115T152601-38767331	2026-11-15T16:25:34Z
+review:learniq:1882:b05df18f	RED: employer portal manifest golden not updated for new field labels	session-20261115T152558-f97be55f	2026-11-15T16:25:43Z
+review:launchpad:880:04f9f39f	GREEN: ocp patch bump, suite identical	session-20261114T075643-acecaad6	2026-11-15T16:25:53Z
+review:learniq:2127:6e8befed	GREEN: lock-only dev bump; 1 inherited failure	session-20261115T154254-3d07b219	2026-11-15T16:26:01Z
+review:learniq:1165:ffd74a05	CONFLICT: lock conflict, superseded (development locks vue 3.5.45)	session-20261115T154307-1fc2cc78	2026-11-15T16:26:08Z
+review:opencatalogi:2416:bacd96a1	CONFLICT: 4 files conflict with development; diff itself correct	session-20261115T154258-dee2cc3d	2026-11-15T16:26:24Z
+review:learniq:1166:0748af52	CONFLICT/obsolete: development already has parser 8.72.2	session-20261115T155915-84e5dc0a	2026-11-15T16:26:35Z
+review:launchpad:761:c14f910d	BLOCK: npm ci ERESOLVE, @vitest/* left at 4	session-20261115T154255-e54527e9	2026-11-15T16:27:04Z
