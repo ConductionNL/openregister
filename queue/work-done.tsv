@@ -15309,6 +15309,7 @@ verify:learniq:2549:433de304	2549 GREEN, 2551 CONFLICT (l10n with 2549)	session-
 fix:dossiq:4887:e60cd452	fixed: test expectations for new listener and default; no new failures; new head f530c6e6	session-20261115T213134-4b0d2823	2026-11-15T22:17:46Z
 review:launchpad:1106:fc1084ce	GREEN: transitive npm refresh, tests+build pass, fewer advisories	session-20261115T213144-ab42ee6a	2026-11-15T22:17:55Z
 fix:stackiq:1417:d2903140	CONFLICT resolved, pushed 603fa7bc, REVERIFY	session-20261115T220011-f1302da8	2026-11-15T22:18:07Z
+fix:dossiq:4886:8a2f03f5	stale	session-20261115T213134-4b0d2823	2026-11-15T22:18:12Z
 fix:filinq:2103:b21f6f3b	fixed: OR main save API + development merged; new head b650ff7b	session-20261115T213100-e547b457	2026-11-15T22:18:17Z
 fix:dossiq:3936:916d1651	fixed: test uses SigningConclusion, merged development (delete/modify resolved to deletion); pushed 692e66a3	session-20261115T213110-6b33145c	2026-11-15T22:18:28Z
 fix:decidiq:1467:26c28394	sbom regenerated, development merged in; new head dfb19ea0e2beff3a28cb376c7bc29ced93c70234	session-20261115T213101-2fb56005	2026-11-15T22:18:38Z
@@ -15320,3 +15321,4 @@ fix:filinq:2114:1694e39c	fixed: migrated 2 repositories to OR main options objec
 fix:hermiq:1785:9d543e2c	conflict resolved, delegated run store moved to OR main API; suite green; new head 8d6ac93b REVERIFY	session-20261115T220050-f9da932e	2026-11-15T22:19:27Z
 fix:decidiq:2178:5867902a	migrated 2 calls to options API, unit 4666 OK, pushed f3f4328f, REVERIFY	session-20261115T220021-7060b99c	2026-11-15T22:19:41Z
 fix:stackiq:1941:40710dd9	conflict resolved + main-API migration of new code; new head 3f74a899, REVERIFY recorded	session-20261115T220036-9d15b9ea	2026-11-15T22:19:55Z
+review:opencatalogi:2673:9b953103	GREEN: no new failures vs development, jest OK	session-20261115T220032-9e5549d1	2026-11-15T22:20:02Z
