@@ -13686,3 +13686,4 @@ review:portaliq:663:508c5fce	CONFLICT: register json + 2 tests; logic sound	sess
 review:portaliq:2339:fd417084	BLOCK: rename/delete conflicts, development moved woo/ to build/woo/; no runtime code change	session-20261114T095641-533e2a00	2026-11-15T16:52:01Z
 review:portaliq:1582:9e21deee	GREEN: dompurify patch bump, lock installs with npm 11	session-20261115T155904-a7df5bc0	2026-11-15T16:52:17Z
 review:shillinq:1991:4377b437	GREEN: prettier bump adds no new format findings; vitest failure inherited	session-20261115T145533-2db61682	2026-11-15T16:52:15Z
+review:shillinq:2063:20eb03d6	CONFLICT: 3 files; note legacy approved runs without digest become unexportable	session-20261115T154254-3d07b219	2026-11-15T16:52:38Z
