@@ -12403,3 +12403,4 @@ fix:larpinq:1050:8fba8192	moved branch l10n keys away from the catalogue end; cl
 fix:portaliq:2508:f1ef2828	merged GREEN #2500 in, register 0.117.0 for the messages block; unit 5934 OK; new head 20a298b2, REVERIFY recorded	session-20261115T001753-b8ad7615	2026-11-15T00:47:39Z
 fix:shillinq:3087:28bf1249	fixed test ctor args, new head ae348215; REVERIFY recorded	session-20261115T001742-a39bbe12	2026-11-15T00:47:49Z
 fix:versioniq:717:6b86f6b4	merged development in cleanly, new head dfe2ad20, REVERIFY recorded	session-20261114T231754-004f1f75	2026-11-15T00:47:56Z
+fix:versioniq:734:c03718fb	conflict resolved by merging development (both mapper methods kept); new head 095d640d; 2 inherited golden failures	session-20261115T001746-8fbb2c9c	2026-11-15T00:48:20Z
