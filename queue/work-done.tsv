@@ -12491,3 +12491,4 @@ fix:integriq:3615:2553da56	merged development in, suites green, new head a252d2b
 cover:keepiq:c967a31fmdbad:aae6d66c	already done: lib/Exception/*.php measures 100% (30/30 statements) on development 4b38ea0c	session-20261115T001758-161b0715	2026-11-15T01:09:38Z
 cover:pipelinq:7f9dc8e6m195a:fbd330ee	already done: lib/Service/Worklist 126/126 lines covered on development, no PR	session-20261115T005412-4a06d6f4	2026-11-15T01:09:31Z
 cover:decidiq:a5f973bbmae46:6f346b68	already covered: lib/Sections has one class (SettingsSection) and tests/Unit/Sections/SettingsSectionTest.php asserts every method; no PR	session-20261115T010928-f0987802	2026-11-15T01:09:59Z
+cover:integriq:92114ab0m4b3f:0d678885	PR #3645: SystemDnsResolver test (3 tests); dir already 98.1% > target 95, rest unreachable fallbacks; suite 9223->9226 no new failures	session-20261115T005138-c7bbb0f0	2026-11-15T01:10:19Z
