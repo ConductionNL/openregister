@@ -10737,3 +10737,4 @@ shillinq	3085	b0345e7bce971113539622706d075b82e46ee14f	GREEN	worker-40	tests onl
 shillinq	3082	d99431c677c3f23c53e48ad233d4b6c87101dd0a	GREEN	worker-29	unit 11917 tests on tree, baseline 11471 OK, no new failures; tests only
 versioniq	699	ccc8c62812a3cf71721e4bc4e5b8476d12fba54c	GREEN	worker-24	unit-only 1745 (baseline 1697, 2 inherited golden failures: External/SelectedReleaseInstallGoldenTest), vitest 2982 ok (baseline 2960), 0 new failures
 versioniq	714	bab85cc58909b719d21a5b6ee59c6f86345648bc	GREEN	worker-24	unit-only 1745 (baseline 1697, 2 inherited golden failures: External/SelectedReleaseInstallGoldenTest), vitest 2982 ok (baseline 2960), 0 new failures
+versioniq	719	8d1c90cb512dcb68587a300d1e9538574ef8bc4e	CONFLICT	worker-24	conflicts in openapi.json after 699+714
