@@ -14511,3 +14511,4 @@ fix:opencatalogi:2655:a2523fc9	conflict resolved, pushed f9ef3261, REVERIFY reco
 fix:buildiq:1091:c4dd3636	merged development, pushed d342b9dd	session-20261115T174741-56eeaa2f	2026-11-15T19:21:01Z
 fix:launchpad:753:51b86dbd	lockfile regenerated on development, npm ci + vitest green, pushed d16aabc3; REVERIFY recorded	session-20261115T183029-6c0565bd	2026-11-15T19:21:11Z
 fix:opencatalogi:2696:53c089e7	spec fixed + development merged; pushed f7d699f3, REVERIFY recorded	session-20261115T183023-a120e01a	2026-11-15T19:21:27Z
+fix:opencatalogi:2541:87b928f1	fixed find() to ObjectFindOptions, pushed 55851e9d; REVERIFY recorded	session-20261115T185932-17792562	2026-11-15T19:21:38Z
