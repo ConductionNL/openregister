@@ -14748,3 +14748,4 @@ fix:dossiq:5397	fixed: sbom regenerated; new head 7ff72b32	session-20261115T2000
 review:planninq:725:f5dce57c	GREEN: vitest 3566 pass, build compiles	session-20261114T075643-75a598ab	2026-11-15T20:21:17Z
 review:stackiq:1930:d6bf1559	BLOCK; new saveObject call uses removed OR named args	session-20261115T200045-d3bb5c75	2026-11-15T20:21:25Z
 review:stackiq:1069:e98fca28	GREEN: types-only bump; vitest 1 inherited failure	session-20261115T200041-8ff5af37	2026-11-15T20:21:37Z
+fix:dossiq:3106:039c380f	fixed: development merged, sbom.cdx.json regenerated; new head 2e124449	session-20261115T182940-bfeb7e78	2026-11-15T20:21:45Z
