@@ -14616,3 +14616,4 @@ merge:larpinq:960:02614b27	merge8 tree of 11 larpinq PRs: merged=5 red=4 fail=0 
 merge:larpinq:1053:0a5fb14d	merge8 tree of 11 larpinq PRs: merged=5 red=4 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge8-20261115T170007-37538273	2026-11-15T19:38:52Z
 merge:larpinq:1041:2236b261	merge8 tree of 11 larpinq PRs: merged=5 red=4 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge8-20261115T170007-37538273	2026-11-15T19:38:56Z
 review:integriq:2671:3e5c293b	GREEN: phpmd 3 dev bump, failures inherited, sbom note	session-20261115T174747-978963d5	2026-11-15T19:39:10Z
+review:humaniq:877:4c8ac31b	GREEN: faithful ObjectSaveOptions migration, unit 4405 OK; 2 SetupAdministrations calls left for a follow-up	session-20261115T182940-bfeb7e78	2026-11-15T19:39:39Z
