@@ -12259,3 +12259,4 @@ verify:dossiq:6533:c7c62f15	GREEN 6533	session-20261114T234933-5c1be121	2026-11-
 cover:stackiq:9ac19b3amad24:aae6d66c	already done: lib/Exception/*.php at 100% statements (4/4; two classes have no statements) on development; no PR	session-20261114T234932-1a68fd4b	2026-11-15T00:27:40Z
 verify:dossiq:6529:520616fa	6529 RED (3 vitest failures); 6530,6531,6532 GREEN	session-20261114T234941-e3e51cb9	2026-11-15T00:27:43Z
 cover:integriq:92114ab0m4b3f:f545d745	PR #3643: 6 tests over InitializeRegister/MigrateLegacyStorage/RemoveMigratedSourceSecretFields; rest of lib/Repair gaps are getName or unreachable	session-20261115T001755-2a5521bb	2026-11-15T00:27:59Z
+cover:buildiq:70b3e29em66d0:60c2c265	PR #1657: 3 tests, lib/Controller 94.66% -> 95.04%	session-20261114T221759-cd5c5678	2026-11-15T00:27:54Z
