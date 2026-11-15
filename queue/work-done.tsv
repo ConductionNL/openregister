@@ -15271,3 +15271,4 @@ review:opencatalogi:2669:8c31eee0	GREEN: MCP adoption per spec, no new failures	
 review:buildiq:1583:83cecfc6	GREEN	session-20261115T202932-d1067ee4	2026-11-15T22:10:46Z
 review:integriq:3596:2efdcccd	GREEN: no new failures (5 inherited), vitest OK	session-20261115T220032-9e5549d1	2026-11-15T22:10:58Z
 verify:integriq:3649:14cb20dc	GREEN 3649: phpunit 9597 no new failures, vitest 2403 passed	session-20261115T220036-9d15b9ea	2026-11-15T22:11:13Z
+verify:hermiq:1795:66e63980	RED x3: 1795 fatal (old OR saveObject API), 1801 1 new failure, 1802 3 new failures	session-20261115T220050-f9da932e	2026-11-15T22:11:28Z
