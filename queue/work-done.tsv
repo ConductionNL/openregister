@@ -14663,3 +14663,4 @@ review:launchpad:977:4ec996d3	GREEN: dev-dep bump, unit 4461 OK, phpmd unchanged
 review:buildiq:820:a6bd63eb	GREEN: plugin-vue patch bump, vitest green	session-20261115T174747-978963d5	2026-11-15T20:03:56Z
 review:launchpad:758:96b93252	GREEN: dev-dep bump only, vitest 2578/2578 passed	session-20261115T200011-d13b13ca	2026-11-15T20:04:09Z
 review:hermiq:1150:9f31a6df	GREEN; suite 5227 OK; conflicts with development (ContextAgentInteractionService)	session-20261115T200045-d3bb5c75	2026-11-15T20:04:22Z
+review:launchpad:759:3f179d5b	RED: lockfile out of sync, npm ci fails (vite@8.3.8, esbuild@0.28.2 missing); development installs clean	session-20261114T073105-752e50ad	2026-11-15T20:04:40Z
