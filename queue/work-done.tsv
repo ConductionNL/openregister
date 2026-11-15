@@ -13132,3 +13132,4 @@ merge:integriq:3652:cf12c5da	merge3 tree of 2 integriq PRs: merged=2 red=0 fail=
 review:filinq:2072:5ed8e94d	stale	session-20261115T142153-990a3fbe	2026-11-15T15:08:14Z
 build:filinq:multi-tenant-hardening:c4	partial: pushed to PR #2072 (head 7e876bbd): 2.2 done (PolicyMatchService loads rules as the system via SystemContextSeam), 2.3 done (PolicyCrudService+ConsentUpdateHandler flags removed, register 8.57.0 grants prohibition-admins/standing-consent-admins what their endpoints admit), 3.2 batch report labelled with org name+UUID; left 2.4 (~40 bypass sites outside the D2 inventory), 3.1 org-admin wri	session-20261115T145535-caebb5a3	2026-11-15T15:08:14Z
 review:hermiq:1736:9cd02fc9	GREEN: spec-conform G7/G8 build; suite 5218->5235 no new failures	session-20261115T145544-b059847e	2026-11-15T15:08:13Z
+review:filinq:2094:87b43b49	GREEN: phpunit 6799 OK, jest 570, vitest 763	session-20261115T145555-b33410db	2026-11-15T15:08:24Z
