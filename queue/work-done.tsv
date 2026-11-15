@@ -13504,3 +13504,12 @@ review:integriq:3137:b8b9a97a	BLOCK: depends on openregister value objects not o
 review:integriq:2527:1cf364f6	BLOCK: obsolete lock bump, development already newer (would downgrade); conflict	session-20261115T155913-70cee771	2026-11-15T16:17:16Z
 review:integriq:2711:e9ef8372	GREEN: dev bump, vitest green, e2e specs load	session-20261114T102641-d4fd3e25	2026-11-15T16:17:28Z
 review:integriq:3058:73d0ebfe	BLOCK (sbom only): runtime lock bump without sbom.cdx.json; phpunit only inherited failures	session-20261115T145541-9d69768b	2026-11-15T16:17:46Z
+review:keepiq:1497:1c1ef76b	GREEN: phpstan patch bump; phpstan clean, unit 5213 OK	session-20261115T152552-0cb4306e	2026-11-15T16:17:59Z
+review:launchpad:755:03f2fd44	RED: npm ci ERESOLVE, coverage-v8 5 needs vitest 5 (vitest/ui stay 4.1.11)	session-20261115T152539-8dadb15a	2026-11-15T16:18:06Z
+review:launchpad:1038:8f31cf39	BLOCK: needs openregister StoreListing which is not on main	session-20261115T154300-03b63424	2026-11-15T16:18:15Z
+review:launchpad:788:470c789d	CONFLICT #788: 40 files, likely superseded by the engagement-announcements build on development	session-20261115T152601-38767331	2026-11-15T16:18:22Z
+review:integriq:3054:672f5082	BLOCK: value classes imported from a namespace OpenRegister main does not have	session-20261115T152554-949e9403	2026-11-15T16:18:35Z
+review:keepiq:697:4521a1c3	GREEN: no-op, development already has hydra-gates v1.18.0; merged tree identical to development	session-20261115T152547-c779ca49	2026-11-15T16:18:44Z
+review:keepiq:1499:95735770	GREEN: lock-only patch bump, 5213 unit tests 0 failures	session-20261115T160928-e92ec17a	2026-11-15T16:18:52Z
+review:launchpad:819:9dcfeabe	GREEN: phpmd 3.0 dev bump, phpunit 4359 OK; note +15 phpmd findings	session-20261115T155903-abd003e3	2026-11-15T16:19:03Z
+review:larpinq:961:0c510953	GREEN: hydra-gates dev bump; phpunit 860 OK	session-20261115T154407-94bf5f8c	2026-11-15T16:19:22Z
