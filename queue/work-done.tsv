@@ -12767,3 +12767,4 @@ cover:pipelinq:7f9dc8e6m195a:js0023cfc7	PR #3865: 27 vitest tests for 4 dialogs;
 cover:pipelinq:7f9dc8e6m195a:6f346b68	already done: lib/Sections/*.php 5/5 lines covered on development, no PR	session-20261115T005412-4a06d6f4	2026-11-15T01:59:46Z
 fix:larpinq:1053:e06c2e6d	REVERIFY: merged development, README row moved off the shared insertion point; new head 181ec51c	session-20261115T001758-161b0715	2026-11-15T01:59:44Z
 cover:dossiq:069ee2d6madb6:0c7c4f5d	already done: lib/Service/Term/*.php at 100% lines (483/483) on development; no PR	session-20261115T015406-eecdf998	2026-11-15T01:59:50Z
+review:openregister:10578:f36ef580	APPROVE: test metadata only, suites green	session-20261115T014841-06b22da6	2026-11-15T02:00:13Z
