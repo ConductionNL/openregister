@@ -14474,6 +14474,7 @@ fix:buildiq:1090:8b2df26a	sbom regenerated, new head 8e11ea7a	session-20261115T1
 fix:buildiq:1608:b3506415	sandbox enforced by response CSP, headers restored, pushed 08f7f4d3; REVERIFY recorded	session-20261115T174750-744c606b	2026-11-15T19:15:11Z
 fix:launchpad:1098:1720a6d3	sbom regenerated after merging development, pushed 08b61447; REVERIFY recorded	session-20261115T174755-95dc8448	2026-11-15T19:15:30Z
 fix:planninq:725:6961dd1e	fixed: sbom regenerated; new head f5dce57c	session-20261115T174819-9af28ef9	2026-11-15T19:15:39Z
+fix:buildiq:1265:5f5ede07	failed: namespace fix (Kernel\Contracts\Value) and development merge done locally (13 conflicts; 16 new dev saves migrated), but buildiq's unit bootstrap loads ObjectServiceInterface from vendor conduction/hydra-gates contracts, whose saveObject still takes register/schema/uuid named args: PR head already 1129 errors, merged tree 228 failures vs 1 on development (Unknown named parameter $options).	session-20261115T183025-d89c1e14	2026-11-15T19:16:04Z
 fix:launchpad:1223:8946cefa	conflict resolved (register 1.0.4), pushed 65b428f7, REVERIFY recorded	session-20261115T182936-09049974	2026-11-15T19:15:55Z
 fix:buildiq:1654:aaec7e14	fixed: conflicts resolved keeping both sides, new head fc4a934c	session-20261115T174804-89f2739f	2026-11-15T19:16:03Z
 fix:launchpad:984:2f958a94	namespace fixed, pushed 1ed02407, REVERIFY recorded	session-20261115T182948-465dcc8e	2026-11-15T19:16:11Z
@@ -14502,3 +14503,9 @@ fix:opencatalogi:2669:b357649e	conflict resolved (CHANGELOG, PublicationService)
 fix:stackiq:1031:c3ffd458	closed as obsolete: merge changes no file	session-20261115T174833-88ac0233	2026-11-15T19:20:05Z
 fix:launchpad:759:4d40c072	fixed: merged development, lockfile in sync, vitest 2578/2578; new head 3f179d5b	session-20261115T190008-ff700d5c	2026-11-15T19:20:01Z
 fix:opencatalogi:2665:b06af5bf	CONFLICT resolved (both-sides appends), pushed cdc5db8f; REVERIFY	session-20261115T174741-9deaa0be	2026-11-15T19:20:11Z
+fix:opencatalogi:2417:a2892ce3	fixed: main namespace, merged development, no new failures; new head cb054a7d	session-20261115T185930-76cdc846	2026-11-15T19:20:18Z
+fix:opencatalogi:2415:da40ef23	fixed: merged development, rendered() uses RenderSelection; new head cf561973	session-20261115T174819-9af28ef9	2026-11-15T19:20:25Z
+fix:buildiq:1648:a6359df5	conflict resolved, pushed 30c0874a; ExportZipGoldenTest red inherited from development	session-20261115T185925-f99529ae	2026-11-15T19:20:38Z
+fix:opencatalogi:2655:a2523fc9	conflict resolved, pushed f9ef3261, REVERIFY recorded	session-20261115T182948-465dcc8e	2026-11-15T19:20:48Z
+fix:buildiq:1091:c4dd3636	merged development, pushed d342b9dd	session-20261115T174741-56eeaa2f	2026-11-15T19:21:01Z
+fix:launchpad:753:51b86dbd	lockfile regenerated on development, npm ci + vitest green, pushed d16aabc3; REVERIFY recorded	session-20261115T183029-6c0565bd	2026-11-15T19:21:11Z
