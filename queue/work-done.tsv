@@ -13413,3 +13413,4 @@ review:filinq:1851:5759e36e	BLOCK: imports ObjectDeletion/ObjectFindTarget from 
 review:filinq:1409:0d0e948a	BLOCK: obsolete, superseded on development, 32-file conflict	session-20261115T154255-e54527e9	2026-11-15T16:02:23Z
 build4:openregister:register-scoped-schema-slug-resolution:c2	stale: session paused past the task lease; continuations c3-c5 completed task 3.1 in PR #10538, so this pass's overlapping local work was discarded unpushed	session-20261114T102637-6688951e	2026-11-15T16:02:36Z
 review:filinq:1102:7156c4b9	GREEN: jszip patch bump, vitest 763/763 on merged tree	session-20261115T155921-aabf185f	2026-11-15T16:02:33Z
+review:filinq:1312:4c33817f	BLOCK: obsolete, development already has @nextcloud/vue 9.14.1; lock conflict	session-20261115T142934-6cab0c24	2026-11-15T16:02:40Z
