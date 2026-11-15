@@ -13714,3 +13714,4 @@ review:shillinq:2070:036e98c2	CONFLICT: 11 files conflict with development	sessi
 review:shillinq:2071:027f8107	BLOCK (conflict only): 5 files conflict with development's refactor 4133ba516; the change tightens access and should be carried over	session-20261114T095641-533e2a00	2026-11-15T16:57:11Z
 merge:dossiq:6568:6b054a6d	merge3 tree of 10 dossiq PRs: merged=8 red=0 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-15T16:57:20Z
 review:shillinq:2253:69b4e3e6	BLOCK: wrong ObjectDeletion namespace (Kernel\Contracts\Value on OR main), 9 conflicts	session-20261115T152558-f97be55f	2026-11-15T16:57:25Z
+merge:dossiq:6547:1212c238	merge3 tree of 10 dossiq PRs: merged=8 red=0 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-15T16:57:47Z
