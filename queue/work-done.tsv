@@ -13883,3 +13883,4 @@ verify:buildiq:1648:c25b1a82	1650 GREEN; 1648 skipped (head moved bfb0ac11->a635
 fix:filinq:2121:38c2112f	merged development, green; new head cb1efd91	session-20261114T102641-d4fd3e25	2026-11-15T17:23:19Z
 build:larpinq:rules-rulebook-and-spell-lists:c3	partial: PR #1050 head 67a109047 — 4.1 done (27 strings x 35 locales, parity green); left Playwright and live import; check:schema-l10n 86/84 is inherited from development	session-20261114T095641-533e2a00	2026-11-15T17:23:35Z
 fix:buildiq:1088:817518a2	fixed: lock regenerated on development, npm ci clean, vitest green; new head 419fccd1	session-20261115T142958-341f60db	2026-11-15T17:23:51Z
+fix:larpinq:1051:fa7cedb4	fixed: +89 tests restore the test/code ratio above development; new head 334c0ec3, REVERIFY	session-20261115T152601-38767331	2026-11-15T17:23:59Z
