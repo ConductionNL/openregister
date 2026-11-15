@@ -13368,3 +13368,4 @@ review:dossiq:4149:9433f0b4	CONFLICT: 2 files conflict with development; behavio
 review:decidiq:1945:f2b2f28e	BLOCK: wrong namespace for ObjectDeletion/ObjectFindTarget (openregister main has them in Kernel\Contracts\Value, no alias); stubs hide it	session-20261114T075643-acecaad6	2026-11-15T15:54:06Z
 review:dossiq:3955:e447a743	BLOCK: stale base, merged tree breaks the WooPublicationServiceInterface binding	session-20261115T151007-45079d32	2026-11-15T15:54:15Z
 review:dossiq:5266:f306c815	CONFLICT: 6 files (l10n + menu layout) conflict with development; change itself sound	session-20261115T154254-3d07b219	2026-11-15T15:54:29Z
+review:dossiq:4886:5dd9fb5e	BLOCK: new declaration read can throw out of DeadlineCaseCreatedListener (outside its try); also conflicts with development	session-20261115T142934-de7c51d0	2026-11-15T15:54:35Z
