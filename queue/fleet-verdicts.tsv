@@ -12828,3 +12828,4 @@ humaniq	1096	e60cc3a3e6c3a870a5dddc3b804f7bd33cbef335	RED	merge3:merge-gate	GATE
 humaniq	685	5020bb2bfb80345fdfed757f5725e4b63311edf7	CONFLICT	merge3	merges clean on development alone; files: package-lock.json package.json 
 humaniq	687	bad2cefae186746ff6c8ddcc1cc0658d145acb00	CONFLICT	merge3	merges clean on development alone; files: package-lock.json package.json 
 humaniq	874	6278788c7cb4d515c015e52bbde91961d238969c	CONFLICT	merge3	conflicts with development; files: lib/Service/OfferApplicationRepository.php tests/Unit/Controller/PayrollHandoffControllerTest.php tests/Unit/Controller/ThirdPartyReportControllerTest.php tests/Unit/Service/InterviewCalendarServiceTe
+buildiq	820	a6bd63eb2f68837d7f3fe2f2263f6ae8dc5c7a9e	GREEN	worker-05:review	devDep @vitejs/plugin-vue 6.0.8->6.0.9 with lock and sbom.cdx.json (regen-sbom --check: current, 718 components); no code change; vitest 503 files / 4719 tests pass on PR merged with development
