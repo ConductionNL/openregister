@@ -13077,3 +13077,4 @@ review:filinq:2121:d8456bbd	stale	feeder	2026-11-15T14:50:35Z
 review:filinq:2123:de09b685	stale	feeder	2026-11-15T14:50:35Z
 cover:pipelinq:7f9dc8e6m8519:js0023cfc7	PR #3873: 30 tests for 6 dialogs; src/dialogs lines 97.65->98.30, branches 93.20->94.71; suite 5289 pass + 1 inherited fail	session-20261115T142935-a9f3c36c	2026-11-15T14:52:02Z
 build:shillinq:tax-cbcr-and-pillar2-returns:c4	partial: PR #2997 head 70ee300e, built Mark submitted with reference (6.2/6.3) and Create correction (6.2, endpoint+service+tests); left 2.1 (OECD XSDs need a browser), 4.1-4.3 (wait on 2.1), Generate XML refusal of 5.1 and fixed-asset warning, Enter/Import figures and account mapping tab of 6.1, Checks/Entities/Reconciliation tabs of 6.2/6.3 (need a widget/tabs layout), 7.1, Playwright	session-20261115T142129-944012f5	2026-11-15T14:52:20Z
+fix:shillinq:3062:d70c391d	conflict resolved, pushed 6c6743f0, REVERIFY recorded	session-20261115T141023-b06d51da	2026-11-15T14:53:56Z
