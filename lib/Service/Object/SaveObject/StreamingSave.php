@@ -37,14 +37,20 @@ final class StreamingSave {
 	 * @param Schema|int|string|null    $schema   Schema context for the batch.
 	 * @param iterable                  $rows     Input rows, each the shape `saveObject` accepts.
 	 * @param BatchOperationStatus|null $status   A pre-existing status to accumulate on across calls.
+	 * @param bool                      $dryRun   Prepare and check every row as the real save does, and
+	 *                                            classify it, but write nothing.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) A dry run is a mode of the batch, off by default.
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 * @spec openspec/changes/widget-record-import/tasks.md
 	 */
 	public function __construct(
 		public readonly Register|int|string|null $register,
 		public readonly Schema|int|string|null $schema,
 		public readonly iterable $rows,
 		public readonly ?BatchOperationStatus $status = null,
+		public readonly bool $dryRun = false,
 	) {
 	}//end __construct()
 }//end class

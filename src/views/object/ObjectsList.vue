@@ -5,170 +5,174 @@ import { navigationStore, objectStore } from '../../store/store.js'
 
 <template>
 	<NcAppContentList>
-		<div class="listHeader">
-			<div class="searchListHeader">
-				<NcTextField
-					v-model="search"
-					:showTrailingButton="search !== ''"
-					:label="t('openregister', 'Search')"
-					class="searchField"
-					trailingButtonIcon="close"
-					@trailingButtonClick="search = ''">
-					<Magnify :size="20" />
-				</NcTextField>
-				<NcActions>
-					<NcActionButton
-						closeAfterClick
-						@click="
-							objectStore.refreshObjectList({
-								search: search,
-								page: 1,
-							})
-						">
-						<template #icon>
-							<Refresh :size="20" />
-						</template>
-						Refresh
-					</NcActionButton>
-					<NcActionButton
-						closeAfterClick
-						@click="
-							() => {
-								objectStore.setObjectItem(null)
-								navigationStore.setModal('uploadObject')
-							}
-						">
-						<template #icon>
-							<Upload :size="20" />
-						</template>
-						Upload
-					</NcActionButton>
-					<NcActionButton closeAfterClick @click="addObject">
-						<template #icon>
-							<Plus :size="20" />
-						</template>
-						Add Object
-					</NcActionButton>
-				</NcActions>
-			</div>
-			<div
-				v-if="
-					objectStore.getCollection(objectStore.currentType).length > 0
-					&& objectStore.getPagination(objectStore.currentType).total
-						> limit
-				">
-				<span
-					>Page {{ currentPage }} of
-					{{
-						objectStore.getPagination(objectStore.currentType).pages
-					}}</span
-				>
-				<CnPagination
-					class="listPagination"
-					:currentPage="currentPage"
-					:totalPages="
-						objectStore.getPagination(objectStore.currentType).pages
-					"
-					:totalItems="
-						objectStore.getPagination(objectStore.currentType).total
-					"
-					:currentPageSize="limit"
-					:minItemsToShow="10"
-					@pageChanged="currentPage = $event"
-					@pageSizeChanged="onPageSizeChanged" />
-			</div>
-		</div>
-		<ul
-			v-if="
-				objectStore.getCollection(objectStore.currentType)
-				&& objectStore.getCollection(objectStore.currentType).length > 0
-				&& !loading
-			">
-			<NcListItem
-				v-for="(object, i) in objectStore.getCollection(
-					objectStore.currentType,
-				)"
-				:key="`${object}${i}`"
-				:name="object.id?.toString()"
-				:active="objectStore.objectItem?.id === object?.id"
-				:forceDisplayActions="true"
-				@click="objectStore.setObjectItem(object)">
-				<template #icon>
-					<CubeOutline
-						:class="
-							objectStore.objectItem?.id === object.id
-							&& 'selectedObjectIcon'
+		<RecordFileDropTarget
+			:register="objectStore.filters?.register"
+			:schema="objectStore.filters?.schema">
+			<div class="listHeader">
+				<div class="searchListHeader">
+					<NcTextField
+						v-model="search"
+						:showTrailingButton="search !== ''"
+						:label="t('openregister', 'Search')"
+						class="searchField"
+						trailingButtonIcon="close"
+						@trailingButtonClick="search = ''">
+						<Magnify :size="20" />
+					</NcTextField>
+					<NcActions>
+						<NcActionButton
+							closeAfterClick
+							@click="
+								objectStore.refreshObjectList({
+									search: search,
+									page: 1,
+								})
+							">
+							<template #icon>
+								<Refresh :size="20" />
+							</template>
+							Refresh
+						</NcActionButton>
+						<NcActionButton
+							closeAfterClick
+							@click="
+								() => {
+									objectStore.setObjectItem(null)
+									navigationStore.setModal('uploadObject')
+								}
+							">
+							<template #icon>
+								<Upload :size="20" />
+							</template>
+							Upload
+						</NcActionButton>
+						<NcActionButton closeAfterClick @click="addObject">
+							<template #icon>
+								<Plus :size="20" />
+							</template>
+							Add Object
+						</NcActionButton>
+					</NcActions>
+				</div>
+				<div
+					v-if="
+						objectStore.getCollection(objectStore.currentType).length > 0
+						&& objectStore.getPagination(objectStore.currentType).total
+							> limit
+					">
+					<span
+						>Page {{ currentPage }} of
+						{{
+							objectStore.getPagination(objectStore.currentType).pages
+						}}</span
+					>
+					<CnPagination
+						class="listPagination"
+						:currentPage="currentPage"
+						:totalPages="
+							objectStore.getPagination(objectStore.currentType).pages
 						"
-						disableMenu
-						:size="44" />
-				</template>
-				<template #subname>
-					{{ object.uuid }}
-				</template>
-				<template #actions>
-					<NcActionButton
-						closeAfterClick
-						@click="
-							() => {
-								objectStore.setObjectItem(object)
-								navigationStore.setModal('viewObject')
-							}
-						">
-						<template #icon>
-							<Pencil />
-						</template>
-						Edit
-					</NcActionButton>
-					<NcActionButton
-						v-if="!object.locked"
-						closeAfterClick
-						@click="
-							() => {
-								objectStore.setObjectItem(object)
-								navigationStore.setModal('lockObject')
-							}
-						">
-						<template #icon>
-							<LockOutline />
-						</template>
-						Lock
-					</NcActionButton>
-					<NcActionButton
-						v-if="object.locked"
-						closeAfterClick
-						@click="objectStore.unlockObject(objectStore.objectItem.id)">
-						<template #icon>
-							<LockOpenOutline />
-						</template>
-						Unlock
-					</NcActionButton>
-					<NcActionButton
-						closeAfterClick
-						@click="
-							() => {
-								objectStore.setObjectItem(object)
-								navigationStore.setDialog('deleteObject')
-							}
-						">
-						<template #icon>
-							<TrashCanOutline />
-						</template>
-						Delete
-					</NcActionButton>
-				</template>
-			</NcListItem>
-		</ul>
+						:totalItems="
+							objectStore.getPagination(objectStore.currentType).total
+						"
+						:currentPageSize="limit"
+						:minItemsToShow="10"
+						@pageChanged="currentPage = $event"
+						@pageSizeChanged="onPageSizeChanged" />
+				</div>
+			</div>
+			<ul
+				v-if="
+					objectStore.getCollection(objectStore.currentType)
+					&& objectStore.getCollection(objectStore.currentType).length > 0
+					&& !loading
+				">
+				<NcListItem
+					v-for="(object, i) in objectStore.getCollection(
+						objectStore.currentType,
+					)"
+					:key="`${object}${i}`"
+					:name="object.id?.toString()"
+					:active="objectStore.objectItem?.id === object?.id"
+					:forceDisplayActions="true"
+					@click="objectStore.setObjectItem(object)">
+					<template #icon>
+						<CubeOutline
+							:class="
+								objectStore.objectItem?.id === object.id
+								&& 'selectedObjectIcon'
+							"
+							disableMenu
+							:size="44" />
+					</template>
+					<template #subname>
+						{{ object.uuid }}
+					</template>
+					<template #actions>
+						<NcActionButton
+							closeAfterClick
+							@click="
+								() => {
+									objectStore.setObjectItem(object)
+									navigationStore.setModal('viewObject')
+								}
+							">
+							<template #icon>
+								<Pencil />
+							</template>
+							Edit
+						</NcActionButton>
+						<NcActionButton
+							v-if="!object.locked"
+							closeAfterClick
+							@click="
+								() => {
+									objectStore.setObjectItem(object)
+									navigationStore.setModal('lockObject')
+								}
+							">
+							<template #icon>
+								<LockOutline />
+							</template>
+							Lock
+						</NcActionButton>
+						<NcActionButton
+							v-if="object.locked"
+							closeAfterClick
+							@click="objectStore.unlockObject(objectStore.objectItem.id)">
+							<template #icon>
+								<LockOpenOutline />
+							</template>
+							Unlock
+						</NcActionButton>
+						<NcActionButton
+							closeAfterClick
+							@click="
+								() => {
+									objectStore.setObjectItem(object)
+									navigationStore.setDialog('deleteObject')
+								}
+							">
+							<template #icon>
+								<TrashCanOutline />
+							</template>
+							Delete
+						</NcActionButton>
+					</template>
+				</NcListItem>
+			</ul>
 
-		<NcLoadingIcon
-			v-if="loading"
-			class="loadingIcon"
-			:size="64"
-			appearance="dark"
-			name="Loading Objects" />
+			<NcLoadingIcon
+				v-if="loading"
+				class="loadingIcon"
+				:size="64"
+				appearance="dark"
+				name="Loading Objects" />
 
-		<div v-if="objectStore.getCollection(objectStore.currentType)?.length === 0">
-			No objects have been defined yet.
-		</div>
+			<div v-if="objectStore.getCollection(objectStore.currentType)?.length === 0">
+				No objects have been defined yet.
+			</div>
+		</RecordFileDropTarget>
 	</NcAppContentList>
 </template>
 
@@ -191,6 +195,7 @@ import Plus from 'vue-material-design-icons/Plus.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
+import RecordFileDropTarget from '../../components/RecordFileDropTarget.vue'
 import {
 	liveCollectionLifecycle,
 	liveCollectionMethods,
@@ -200,6 +205,7 @@ import { openAddObjectModal } from '../../composables/openAddObject.js'
 export default {
 	name: 'ObjectsList',
 	components: {
+		RecordFileDropTarget,
 		NcListItem,
 		NcActions,
 		NcActionButton,
