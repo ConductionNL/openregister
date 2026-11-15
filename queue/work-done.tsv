@@ -12331,3 +12331,4 @@ fix:opencatalogi:2678:7f540c6a	conflict resolved, both intents kept; new head 8b
 cover:keepiq:c967a31fmdbad:1b97f731	PR #1822: 2 tests, FlowTriggerForwardListener 100%, Listener/*.php 99.8% (1 line OCP-version unreachable); suite 5213->5215 green	session-20261115T001746-8fbb2c9c	2026-11-15T00:36:16Z
 fix:integriq:3641:3bd3436b	fixed test-order leak (static reset); merged development; new head 5244f99b, REVERIFY	session-20261114T233346-3552728d	2026-11-15T00:36:22Z
 verify:dossiq:6534:170fa35a	4 GREEN (6534-6537); unit 17469, 0 new failures over 19 inherited; vitest 2 inherited	session-20261114T234944-eb1b5f87	2026-11-15T00:36:44Z
+fix:opencatalogi:2655:1c462772	merged development in, resolved spec import conflict, adapted development's sitemap test to the branch's hold-back rule; new head a2523fc9, REVERIFY recorded	session-20261114T231738-b43a6a63	2026-11-15T00:36:55Z
