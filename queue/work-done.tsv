@@ -15320,3 +15320,4 @@ fix:stackiq:1438:23ea35dd	merged development; sbom current (dev-only bump leaves
 fix:filinq:2114:1694e39c	fixed: migrated 2 repositories to OR main options objects, suite green; head 78a005c2	session-20261115T213112-78aba834	2026-11-15T22:19:13Z
 fix:hermiq:1785:9d543e2c	conflict resolved, delegated run store moved to OR main API; suite green; new head 8d6ac93b REVERIFY	session-20261115T220050-f9da932e	2026-11-15T22:19:27Z
 fix:decidiq:2178:5867902a	migrated 2 calls to options API, unit 4666 OK, pushed f3f4328f, REVERIFY	session-20261115T220021-7060b99c	2026-11-15T22:19:41Z
+fix:stackiq:1941:40710dd9	conflict resolved + main-API migration of new code; new head 3f74a899, REVERIFY recorded	session-20261115T220036-9d15b9ea	2026-11-15T22:19:55Z
