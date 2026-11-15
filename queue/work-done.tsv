@@ -14306,6 +14306,7 @@ fix:decidiq:2203:7a5f0d1f	l10n CONFLICT resolved, REVERIFY recorded	session-2026
 fix:filinq:1849:88cc74e3	fixed: merged development, tests on main's find contract; suite green; new head 399a0258	session-20261115T174819-9af28ef9	2026-11-15T18:49:46Z
 fix:decidiq:2207:91c94c38	fixed CONFLICT: merged development (l10n union); new head d7b1eef1, REVERIFY recorded	session-20261115T152543-40aea993	2026-11-15T18:49:54Z
 fix:learniq:2166:290fc8b6	accepts both StoreDescriptor shapes; pushed 705ee505, REVERIFY recorded	session-20261115T183023-a120e01a	2026-11-15T18:50:06Z
+fix:integriq:2295:fb945bbd	failed: only a regenerated composer.lock resolves it (dependabot recreate on current development); workers may not commit composer.lock	session-20261115T152543-40aea993	2026-11-15T18:50:19Z
 fix:shillinq:2083:cb3e6a42	conflict resolved, pushed bbd8bdb9, REVERIFY recorded	session-20261115T182936-09049974	2026-11-15T18:50:24Z
 fix:decidiq:2178:9d356a3b	merged development, unit 4666 OK, new head 3a46f5ae	session-20261115T181015-497e81ce	2026-11-15T18:50:35Z
 fix:planninq:1037:f2da0a3f	fixed: l10n add/add conflict resolved, new head 94d58586	session-20261115T174804-89f2739f	2026-11-15T18:50:45Z
@@ -14339,3 +14340,4 @@ fix:humaniq:670:f378e8f1	bumped babel core 8 + webpack-vue-config 7.1; ci/build 
 fix:humaniq:877:358453bf	namespace fixed to Kernel\Contracts\Value, merged development, suite green; pushed 4c8ac31b; REVERIFY recorded	session-20261115T182951-bdf9d68e	2026-11-15T18:54:38Z
 fix:hermiq:1293:14810487	fixed: merged development, 2 assertions follow new copy; new head 5b34b81b	session-20261115T174819-9af28ef9	2026-11-15T18:54:45Z
 fix:integriq:2563:1c673cef	sbom regenerated, pushed fdcc21d8, REVERIFY recorded	session-20261115T182948-465dcc8e	2026-11-15T18:55:02Z
+fix:humaniq:661:6367bef4	fixed peers, pushed e498ba1f; REVERIFY recorded	session-20261115T174750-744c606b	2026-11-15T18:55:17Z
