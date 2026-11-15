@@ -47,6 +47,38 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 			@pageSizeChanged="onPageSizeChanged"
 			@select="onSelect"
 			@massDelete="handleMassDelete">
+			<!-- REQ-HSA-011: record history by default; the administrative
+			     changes (schemas, registers, organisations, settings) on request. -->
+			<template #below-header>
+				<div
+					class="audit-category-switch"
+					role="radiogroup"
+					:aria-label="t('openregister', 'Which changes to show')">
+					<NcCheckboxRadioSwitch
+						:modelValue="auditTrailStore.auditTrailCategory"
+						:buttonVariant="true"
+						value="domain"
+						name="audit_category_radio"
+						type="radio"
+						buttonVariantGrouped="horizontal"
+						data-testid="audit-category-domain"
+						@update:modelValue="setCategory">
+						{{ t('openregister', 'Record history') }}
+					</NcCheckboxRadioSwitch>
+					<NcCheckboxRadioSwitch
+						:modelValue="auditTrailStore.auditTrailCategory"
+						:buttonVariant="true"
+						value="administrative"
+						name="audit_category_radio"
+						type="radio"
+						buttonVariantGrouped="horizontal"
+						data-testid="audit-category-administrative"
+						@update:modelValue="setCategory">
+						{{ t('openregister', 'Administrative changes') }}
+					</NcCheckboxRadioSwitch>
+				</div>
+			</template>
+
 			<!-- Export covers the current filter set rather than the row selection,
 			     so it stays a custom entry instead of the built-in mass export. -->
 			<template #action-items>
@@ -133,6 +165,7 @@ import { showError, showSuccess } from '@nextcloud/dialogs'
 import {
 	NcActionButton,
 	NcAppContent,
+	NcCheckboxRadioSwitch,
 	NcDateTime,
 	NcEmptyContent,
 } from '@nextcloud/vue'
@@ -280,6 +313,7 @@ export default {
 		NcAppContent,
 		NcEmptyContent,
 		NcActionButton,
+		NcCheckboxRadioSwitch,
 		NcDateTime,
 		CnIndexPage,
 		CnStatusBadge,
@@ -468,6 +502,22 @@ export default {
 				console.error('Error loading audit trails:', error)
 				showError(t('openregister', 'Error loading audit trails'))
 			}
+		},
+
+		/**
+		 * Switch between the record history and the administrative changes,
+		 * from the first page, with nothing selected.
+		 *
+		 * @param {string} category - `domain` or `administrative`
+		 * @return {void}
+		 *
+		 * @spec openspec/changes/history-schema-and-settings-edits-audited/tasks.md
+		 */
+		setCategory(category) {
+			auditTrailStore.setAuditTrailCategory(category)
+			auditTrailStore.setAuditTrailPagination({ ...auditTrailStore.auditTrailPagination, page: 1 })
+			this.selectedAuditTrails = []
+			this.loadAuditTrails()
 		},
 
 		/**
@@ -820,6 +870,12 @@ export default {
 
 <style scoped lang="scss">
 @use '../../styles/views.scss' as *;
+
+.audit-category-switch {
+	display: flex;
+	gap: 0;
+	margin-block: 8px;
+}
 
 /* Row accent, keyed on the CnStatusBadge variant that getRowClass resolves from
    actionColorMap — so the accent colour is always the Action badge's colour.
