@@ -14604,3 +14604,4 @@ merge:portaliq:1995:88866ec8	stale	feeder	2026-11-15T19:35:18Z
 fix:dossiq:5340:06631624	stale	feeder	2026-11-15T19:35:18Z
 merge:versioniq:497:74168559	merge8 tree of 21 versioniq PRs: merged=2 red=8 fail=0 skip=0; conflict 11, lint 0, moved 0; fix rows 10	merge8-20261115T170007-37538273	2026-11-15T19:36:14Z
 merge:versioniq:508:3526e8ba	merge8 tree of 21 versioniq PRs: merged=2 red=8 fail=0 skip=0; conflict 11, lint 0, moved 0; fix rows 10	merge8-20261115T170007-37538273	2026-11-15T19:36:18Z
+merge:versioniq:691:970f5c68	merge8 tree of 21 versioniq PRs: merged=2 red=8 fail=0 skip=0; conflict 11, lint 0, moved 0; fix rows 10	merge8-20261115T170007-37538273	2026-11-15T19:36:22Z
