@@ -13360,3 +13360,4 @@ review:decidiq:1615:16c70ed7	BLOCK 1615 (behaviour changes pending product decis
 review:dossiq:3298:85e60038	CONFLICT: AcController::update conflicts with development refactor; logic sound, needs merge	session-20261115T154254-3d07b219	2026-11-15T15:53:04Z
 review:dossiq:3936:d81910f6	CONFLICT: spec-conformant, head suite 8617/0 failures, conflicts with development in 15 files	session-20261115T154329-16a67e2f	2026-11-15T15:53:14Z
 review:dossiq:4882:13c8daa8	CONFLICT with development (9 files); diff clean, PR head unit green	session-20261115T154314-8216dc98	2026-11-15T15:53:25Z
+review:openregister:10586:dd1990e6	APPROVE (tests only, all green)	session-20261115T142949-9c6a3945	2026-11-15T15:53:38Z
