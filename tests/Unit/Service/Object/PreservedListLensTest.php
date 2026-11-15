@@ -38,6 +38,8 @@ use PHPUnit\Framework\TestCase;
 #[CoversClass(PreservedListLens::class)]
 #[CoversClass(PreservedListing::class)]
 #[UsesClass(Schema::class)]
+#[UsesClass(\OCA\OpenRegister\Db\Schema\ConfigurationEntryRules::class)]
+#[UsesClass(\OCA\OpenRegister\Db\Schema\ConfigurationValidator::class)]
 final class PreservedListLensTest extends TestCase {
 
 	/**
