@@ -13568,6 +13568,7 @@ review:opencatalogi:2418:6a6c6361	BLOCK: needs openregister #9103 on main first 
 review:opencatalogi:2244:58b3e9f1	GREEN: behaviour-preserving refactor; golden passes pre and post; suite green; conflicts with development in DirectoryServiceTest.php	session-20261115T145546-378b432a	2026-11-15T16:28:03Z
 review:launchpad:753:51b86dbd	BLOCK: lockfile out of sync, npm ci fails	session-20261115T154314-8216dc98	2026-11-15T16:28:19Z
 review:learniq:1169:9731f440	GREEN: webpack minor bump, production build compiles	session-20261115T155903-abd003e3	2026-11-15T16:28:27Z
+review:launchpad:786:5bd3779b	CONFLICT: 14 files conflict with development (896 commits behind); recorded for a fix	session-20261115T152539-8dadb15a	2026-11-15T16:28:42Z
 review:pipelinq:1936:27cdae0d	CONFLICT #1936: obsolete, development already newer	session-20261115T152601-38767331	2026-11-15T16:28:39Z
 review:learniq:2126:af7f7379	GREEN: phpstan clean, no new failures	session-20261114T102637-6688951e	2026-11-15T16:28:48Z
 review:opencatalogi:2415:da40ef23	CONFLICT: PublicationsController conflicts with development (call moved to rendered()); diff itself correct	session-20261115T155911-14cd078d	2026-11-15T16:28:56Z
@@ -13703,3 +13704,12 @@ review:shillinq:1910:23e71609	BLOCK: gridstack 14 outside nextcloud-vue peer ran
 review:shillinq:1904:8c5e1f2e	GREEN: dev-only phpmd 3; suite identical	session-20261114T075643-acecaad6	2026-11-15T16:55:16Z
 review:shillinq:2094:1837090d	GREEN: card routes exist; vitest only inherited failure	session-20261115T145541-9d69768b	2026-11-15T16:55:24Z
 review:portaliq:1989:4db47cae	GREEN: reference rename only, unit 6120 OK	session-20261115T155911-f0070087	2026-11-15T16:55:35Z
+review:shillinq:2252:1f1318e2	BLOCK: OpenRegister ObjectPatch at a namespace present on neither OR branch; 21 patch sites would fail	session-20261115T152552-0cb4306e	2026-11-15T16:55:50Z
+review:shillinq:2083:cb3e6a42	CONFLICT: 8 files conflict with development; new endpoint guarded correctly	session-20261115T154258-dee2cc3d	2026-11-15T16:55:56Z
+review:portaliq:1854:60bd5395	BLOCK: superseded by development's build of the change	session-20261115T152546-2c24b649	2026-11-15T16:56:07Z
+review:shillinq:2226:dcacc634	GREEN: pinia minor bump, vitest identical to development (1 inherited)	session-20261115T155904-a7df5bc0	2026-11-15T16:56:26Z
+review:shillinq:2092:e3baa4d4	CONFLICT: modify/delete with development; development specs import the deleted components	session-20261115T155911-14cd078d	2026-11-15T16:56:33Z
+review:shillinq:1899:c535cb99	CONFLICT: 11 files conflict with development	session-20261115T154258-dee2cc3d	2026-11-15T16:56:40Z
+review:shillinq:2070:036e98c2	CONFLICT: 11 files conflict with development	session-20261115T155903-abd003e3	2026-11-15T16:56:50Z
+review:shillinq:2071:027f8107	BLOCK (conflict only): 5 files conflict with development's refactor 4133ba516; the change tightens access and should be carried over	session-20261114T095641-533e2a00	2026-11-15T16:57:11Z
+review:shillinq:2253:69b4e3e6	BLOCK: wrong ObjectDeletion namespace (Kernel\Contracts\Value on OR main), 9 conflicts	session-20261115T152558-f97be55f	2026-11-15T16:57:25Z
