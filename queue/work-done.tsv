@@ -14532,3 +14532,4 @@ fix:thematiq:1555:1e3652b9	failed: fix needs a regenerated composer.lock (worker
 fix:stackiq:1436:9cff2a95	failed: 25 conflicts resolve (dev side + ObjectSaveOptions imports, 5 newer dev saveObject calls converted, Kernel stub map kept), but 47 dev test classes (271 tests) use old saveObject(register:, schema:, uuid:) doubles; dev baseline 3715 OK. Needs a test migration (SaveCallShape) beyond the 45 min cap; nothing pushed	session-20261115T174755-95dc8448	2026-11-15T19:24:34Z
 fix:versioniq:500:ccaf6046	lock regenerated on development, pushed 890378b3; REVERIFY recorded	session-20261115T185932-17792562	2026-11-15T19:24:29Z
 fix:buildiq:1651:3e54ea1b	development merged in cleanly; new head 8f610194, REVERIFY	session-20261115T174757-8dfa7406	2026-11-15T19:24:37Z
+fix:stackiq:1930:8b2f3e05	l10n conflict resolved; only inherited failures; new head d6bf1559	session-20261115T174739-b14c2df4	2026-11-15T19:24:53Z
