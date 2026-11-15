@@ -13490,3 +13490,4 @@ review:integriq:2991:f5cb1fd7	RED: guzzle 8 breaks 4 tests (null auth refused in
 review:integriq:3053:86ebfa51	CONFLICT: 28 conflicted files against development	session-20261115T155903-abd003e3	2026-11-15T16:15:09Z
 review:integriq:3059:f3f45d92	GREEN: phpstan dev bump, phpstan clean on merged tree	session-20261115T155921-aabf185f	2026-11-15T16:15:20Z
 review:integriq:3051:ffe4b87c	BLOCK: uses old Service\Object namespace for lock request classes (now Kernel\Contracts\Value, no alias); also conflicts with development	session-20261115T155904-a7df5bc0	2026-11-15T16:15:26Z
+review:launchpad:757:df60a474	757 BLOCK (stale lockfile, npm ci fails on the merge)	session-20261115T142134-badaaf30	2026-11-15T16:15:37Z
