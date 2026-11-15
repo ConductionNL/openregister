@@ -11340,3 +11340,4 @@ integriq	3593	c89e41d0504cad06bb6158a0e2f2846eb46f05a5	CONFLICT	merge3	merges cl
 integriq	3595	7f9f7e7636235d1c2c65274db22d2186c1875c89	CONFLICT	merge3	merges clean on development alone; files: tests/Unit/Service/CatalogRegistrySeedGoldenTest.php 
 integriq	3615	a252d2b44f98561e497acb396bba4c4772da35be	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/nl.js 
 integriq	3649	236dc3f71d4ef5ec025d1064384d884bab03c55c	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+shillinq	3095	9376212cf1146ed4bc5126f26a5f5a62e01154e5	GREEN	worker-20	phpunit 12214 ok (no PHP touched); vitest 2960, baseline 1 fail inherited (dunningNextRun), new failures 0; tests only
