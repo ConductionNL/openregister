@@ -14304,3 +14304,4 @@ fix:decidiq:1600:33021efc	failed: permission (closing PRs is refused for this wo
 fix:learniq:1882:b05df18f	fixed: employer manifest golden re-recorded, development merged; HigherEducationExampleSetTest inherited (red on development); new head 7805a594	session-20261115T182940-bfeb7e78	2026-11-15T18:49:17Z
 fix:decidiq:2203:7a5f0d1f	l10n CONFLICT resolved, REVERIFY recorded	session-20261115T174747-978963d5	2026-11-15T18:49:28Z
 fix:filinq:1849:88cc74e3	fixed: merged development, tests on main's find contract; suite green; new head 399a0258	session-20261115T174819-9af28ef9	2026-11-15T18:49:46Z
+fix:decidiq:2207:91c94c38	fixed CONFLICT: merged development (l10n union); new head d7b1eef1, REVERIFY recorded	session-20261115T152543-40aea993	2026-11-15T18:49:54Z
