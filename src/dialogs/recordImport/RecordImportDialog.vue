@@ -29,6 +29,9 @@
 			<p v-if="uploaded < 1">
 				{{ t('openregister', 'Uploading the file: {percent}%', { percent: Math.round(uploaded * 100) }) }}
 			</p>
+			<p v-else-if="rowsRead > 0">
+				{{ n('openregister', 'Uploaded. The server has processed {count} row so far.', 'Uploaded. The server has processed {count} rows so far.', rowsRead, { count: rowsRead }) }}
+			</p>
 			<p v-else>
 				{{ t('openregister', 'Uploaded. The server is processing the rows; a large file can take a while.') }}
 			</p>
@@ -135,14 +138,16 @@
 
 <script>
 import { NcButton, NcDialog, NcNoteCard, NcProgressBar } from '@nextcloud/vue'
-import { t } from '../../modals/object/l10n.js'
+import { n, t } from '../../modals/object/l10n.js'
 import {
 	dryRunImport,
 	failedRowsFile,
 	initialDecisions,
+	newProgressToken,
 	proposeMapping,
 	runImport,
 	undecidedColumns,
+	watchImportProgress,
 } from '../../services/recordImport.js'
 import { navigationStore } from '../../store/store.js'
 import { recordImportHandoff } from './openRecordImport.js'
@@ -181,6 +186,7 @@ export default {
 			identifier: '',
 			busy: false,
 			uploaded: 0,
+			rowsRead: 0,
 			result: null,
 			error: '',
 		}
@@ -264,6 +270,7 @@ export default {
 	},
 
 	methods: {
+		n,
 		t,
 
 		/**
@@ -297,15 +304,27 @@ export default {
 			}
 
 			const send = dryRun ? dryRunImport : runImport
-			await this.request(async (onProgress) => {
-				this.result = null
-				this.result = await send({
-					...this.handoff,
-					decisions: this.confirmedDecisions(),
-					identifier: this.identifier || null,
-					onProgress,
-				})
+			const progressToken = newProgressToken()
+			const stop = watchImportProgress({
+				token: progressToken,
+				onRows: (progress) => {
+					this.rowsRead = progress.rows
+				},
 			})
+			try {
+				await this.request(async (onProgress) => {
+					this.result = null
+					this.result = await send({
+						...this.handoff,
+						decisions: this.confirmedDecisions(),
+						identifier: this.identifier || null,
+						onProgress,
+						progressToken,
+					})
+				})
+			} finally {
+				stop()
+			}
 		},
 
 		/**
@@ -318,6 +337,7 @@ export default {
 		async request(work) {
 			this.busy = true
 			this.uploaded = 0
+			this.rowsRead = 0
 			this.error = ''
 			try {
 				await work((fraction) => {

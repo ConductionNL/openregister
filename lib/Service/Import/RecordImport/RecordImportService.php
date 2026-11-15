@@ -54,12 +54,14 @@ class RecordImportService {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService    $objects The object service: the streaming save and the identity lookup.
-	 * @param RecordFileReader $reader  Reads the file.
+	 * @param ObjectService       $objects  The object service: the streaming save and the identity lookup.
+	 * @param RecordFileReader    $reader   Reads the file.
+	 * @param ImportProgress|null $progress Where the rows read are reported while an import runs.
 	 */
 	public function __construct(
 		private readonly ObjectService $objects,
 		private readonly RecordFileReader $reader,
+		private readonly ?ImportProgress $progress = null,
 	) {
 	}//end __construct()
 
@@ -171,7 +173,13 @@ class RecordImportService {
 	 */
 	private function objectRows(RecordImportRequest $request, array &$lines, array &$refused): Generator {
 		$position = 0;
+		$read     = 0;
 		foreach ($this->reader->rows(path: $request->path, format: $request->format) as $row) {
+			$read++;
+			if ($read % ImportProgress::EVERY === 0) {
+				$this->reportProgress(request: $request, rows: $read, done: false);
+			}
+
 			$data = $request->mapping->apply(values: $row['values']);
 			$identifier = $request->mapping->identifier;
 			if ($identifier !== null && isset($data[$identifier]) === true) {
@@ -193,7 +201,28 @@ class RecordImportService {
 			$position++;
 			yield $data;
 		}//end foreach
+
+		$this->reportProgress(request: $request, rows: $read, done: true);
 	}//end objectRows()
+
+	/**
+	 * Report the rows read so far, when the import asked for progress and a reporter is wired.
+	 *
+	 * @param RecordImportRequest $request The import.
+	 * @param int                 $rows    The rows read so far.
+	 * @param bool                $done    Whether the whole file has been read.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/widget-record-import/tasks.md#5.2
+	 */
+	private function reportProgress(RecordImportRequest $request, int $rows, bool $done): void {
+		if ($request->progressKey === null) {
+			return;
+		}
+
+		$this->progress?->report(key: $request->progressKey, rows: $rows, done: $done);
+	}//end reportProgress()
 
 	/**
 	 * The uuids of the objects in the import's register and schema whose identifying property has this value.

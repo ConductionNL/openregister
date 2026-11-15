@@ -2,19 +2,22 @@ import axios from '@nextcloud/axios'
 import {
 	dryRunImport,
 	failedRowsFile,
+	fetchImportProgress,
 	initialDecisions,
 	isRecordFile,
+	newProgressToken,
 	proposeMapping,
 	runImport,
 	undecidedColumns,
+	watchImportProgress,
 } from './recordImport.js'
 
 // The import surface: which routes it calls with which body, and the pure helpers around them.
 
-jest.mock('@nextcloud/axios', () => ({ __esModule: true, default: { post: jest.fn() } }))
+jest.mock('@nextcloud/axios', () => ({ __esModule: true, default: { post: jest.fn(), get: jest.fn() } }))
 jest.mock('@nextcloud/router', () => ({
 	__esModule: true,
-	generateUrl: (path, params) => path.replace('{register}', params.register).replace('{schema}', params.schema),
+	generateUrl: (path, params) => path.replace('{register}', params.register).replace('{schema}', params.schema).replace('{token}', params.token),
 }))
 
 /**
@@ -123,3 +126,65 @@ describe('failedRowsFile', () => {
 		expect(failedRowsFile(null, 'people.csv')).toBeNull()
 	})
 })
+
+describe('import progress', () => {
+	beforeEach(() => {
+		axios.post.mockReset()
+		axios.get.mockReset()
+	})
+
+	afterEach(() => jest.useRealTimers())
+
+	it('sends the progress token with an import and a dry run, and none without one', async () => {
+		axios.post.mockResolvedValue({ data: {} })
+
+		await runImport({ register: 5, schema: 7, file: file(), decisions: {}, identifier: null, progressToken: 'tok-12345678' })
+		await dryRunImport({ register: 5, schema: 7, file: file(), decisions: {}, identifier: null, progressToken: 'tok-12345678' })
+		await runImport({ register: 5, schema: 7, file: file(), decisions: {}, identifier: null })
+
+		expect(axios.post.mock.calls[0][1].get('progress')).toBe('tok-12345678')
+		expect(axios.post.mock.calls[1][1].get('progress')).toBe('tok-12345678')
+		expect(axios.post.mock.calls[2][1].has('progress')).toBe(false)
+	})
+
+	it('makes a fresh 32-character hexadecimal token each time', () => {
+		const first = newProgressToken()
+
+		expect(first).toMatch(/^[0-9a-f]{32}$/)
+		expect(newProgressToken()).not.toBe(first)
+	})
+
+	it('reads the progress, and none while the server has reported none', async () => {
+		axios.get.mockResolvedValueOnce({ data: { rows: 150, done: false } })
+		axios.get.mockRejectedValueOnce({ response: { status: 404 } })
+
+		expect(await fetchImportProgress('tok-12345678')).toEqual({ rows: 150, done: false })
+		expect(axios.get.mock.calls[0][0]).toBe('/apps/openregister/api/record-import/progress/tok-12345678')
+		expect(await fetchImportProgress('tok-12345678')).toBeNull()
+	})
+
+	it('passes on any other failure to read the progress', async () => {
+		axios.get.mockRejectedValueOnce({ response: { status: 403 } })
+
+		await expect(fetchImportProgress('tok-12345678')).rejects.toEqual({ response: { status: 403 } })
+	})
+
+	it('polls until stopped, skipping empty and failed polls', async () => {
+		jest.useFakeTimers()
+		axios.get
+			.mockRejectedValueOnce({ response: { status: 404 } })
+			.mockRejectedValueOnce({ response: { status: 500 } })
+			.mockResolvedValueOnce({ data: { rows: 50, done: false } })
+			.mockResolvedValue({ data: { rows: 120, done: true } })
+		const seen = []
+
+		const stop = watchImportProgress({ token: 'tok-12345678', onRows: (progress) => seen.push(progress.rows), interval: 1000 })
+		await jest.advanceTimersByTimeAsync(4000)
+		stop()
+		await jest.advanceTimersByTimeAsync(3000)
+
+		expect(seen).toEqual([50, 120])
+		expect(axios.get).toHaveBeenCalledTimes(4)
+	})
+})
+

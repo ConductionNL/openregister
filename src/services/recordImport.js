@@ -57,14 +57,19 @@ function importUrl(register, schema, suffix = '') {
  * @param {File|Blob} file The record file.
  * @param {object} [decisions] Column => property name, or null to ignore the column.
  * @param {string|null} [identifier] The identifying property, or null to create only.
+ * @param {string} [progressToken] The token to report the rows read under, so they can be polled.
  * @return {FormData} The body.
  */
-function body(file, decisions, identifier) {
+function body(file, decisions, identifier, progressToken) {
 	const form = new FormData()
 	form.append('file', file, file.name)
 	if (decisions !== undefined) {
 		form.append('decisions', JSON.stringify(decisions))
 		form.append('identifier', identifier ?? '')
+	}
+
+	if (typeof progressToken === 'string' && progressToken !== '') {
+		form.append('progress', progressToken)
 	}
 
 	return form
@@ -106,26 +111,26 @@ export async function proposeMapping({ register, schema, file, onProgress }) {
 /**
  * What the import would do with the confirmed mapping, writing nothing.
  *
- * @param {{register: string|number, schema: string|number, file: File, decisions: object, identifier: string|null, onProgress?: (fraction: number) => void}} request The import.
+ * @param {{register: string|number, schema: string|number, file: File, decisions: object, identifier: string|null, onProgress?: (fraction: number) => void, progressToken?: string}} request The import.
  * @return {Promise<object>} The report, `dryRun: true`.
  *
  * @spec openspec/changes/widget-record-import/specs/widget-record-import/spec.md#requirement-a-dry-run-must-report-outcomes-without-writing
  */
-export async function dryRunImport({ register, schema, file, decisions, identifier, onProgress }) {
-	const response = await axios.post(importUrl(register, schema, '/dry-run'), body(file, decisions, identifier), progress(onProgress))
+export async function dryRunImport({ register, schema, file, decisions, identifier, onProgress, progressToken }) {
+	const response = await axios.post(importUrl(register, schema, '/dry-run'), body(file, decisions, identifier, progressToken), progress(onProgress))
 	return response.data
 }
 
 /**
  * Import the file with the confirmed mapping.
  *
- * @param {{register: string|number, schema: string|number, file: File, decisions: object, identifier: string|null, onProgress?: (fraction: number) => void}} request The import.
+ * @param {{register: string|number, schema: string|number, file: File, decisions: object, identifier: string|null, onProgress?: (fraction: number) => void, progressToken?: string}} request The import.
  * @return {Promise<object>} The import status.
  *
  * @spec openspec/changes/widget-record-import/specs/widget-record-import/spec.md#requirement-a-record-import-must-write-through-the-streaming-path
  */
-export async function runImport({ register, schema, file, decisions, identifier, onProgress }) {
-	const response = await axios.post(importUrl(register, schema), body(file, decisions, identifier), progress(onProgress))
+export async function runImport({ register, schema, file, decisions, identifier, onProgress, progressToken }) {
+	const response = await axios.post(importUrl(register, schema), body(file, decisions, identifier, progressToken), progress(onProgress))
 	return response.data
 }
 
@@ -174,4 +179,67 @@ export function failedRowsFile(result, fileName) {
 
 	const base = String(fileName ?? 'records').replace(/\.[^.]*$/, '')
 	return { name: `${base}-failed.csv`, blob: new Blob([result.failedRows], { type: 'text/csv;charset=utf-8' }) }
+}
+
+/**
+ * A fresh token that names one running import, for its progress to be read under.
+ *
+ * @return {string} 32 hexadecimal characters.
+ * @spec openspec/changes/widget-record-import/tasks.md#5.2
+ */
+export function newProgressToken() {
+	const bytes = new Uint8Array(16)
+	globalThis.crypto.getRandomValues(bytes)
+	return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('')
+}
+
+/**
+ * The rows a running import has read so far, or null while the server has reported none.
+ *
+ * @param {string} token The import's progress token.
+ * @return {Promise<{rows: number, done: boolean}|null>} The progress.
+ * @spec openspec/changes/widget-record-import/tasks.md#5.2
+ */
+export async function fetchImportProgress(token) {
+	try {
+		const response = await axios.get(generateUrl('/apps/openregister/api/record-import/progress/{token}', { token }))
+		return response.data
+	} catch (failure) {
+		if (failure?.response?.status === 404) {
+			return null
+		}
+
+		throw failure
+	}
+}
+
+/**
+ * Poll an import's progress until stopped, handing each answer to `onRows`.
+ *
+ * A failed poll is skipped: the import request itself reports any real failure.
+ *
+ * @param {object} options The options.
+ * @param {string} options.token The import's progress token.
+ * @param {(progress: {rows: number, done: boolean}) => void} options.onRows Receives each reported progress.
+ * @param {number} [options.interval] Milliseconds between polls.
+ * @return {() => void} Stops the polling.
+ * @spec openspec/changes/widget-record-import/tasks.md#5.2
+ */
+export function watchImportProgress({ token, onRows, interval = 1000 }) {
+	let stopped = false
+	const timer = setInterval(async () => {
+		try {
+			const progress = await fetchImportProgress(token)
+			if (!stopped && progress !== null) {
+				onRows(progress)
+			}
+		} catch {
+			// Skipped: the next poll or the import's own answer will tell.
+		}
+	}, interval)
+
+	return () => {
+		stopped = true
+		clearInterval(timer)
+	}
 }

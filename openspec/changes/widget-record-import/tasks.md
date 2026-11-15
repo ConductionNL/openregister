@@ -77,11 +77,17 @@
     every step through `services/recordImport.js` (mapping, dry run, import), keeps
     Dry run and Import disabled while a column is undecided, and states create-only
     when no identifying property is chosen.
-- [ ] 5.2 Progress reporting for long imports.
-  - Partly built (14 Nov): the dialog shows the upload's progress and then that the
-    server is processing the rows. Row-by-row progress needs the streaming loop to run
-    asynchronously and report from a job, which the streaming primitive leaves out of
-    scope; it stays open for that.
+- [x] 5.2 Progress reporting for long imports.
+  - Built (14 Nov): the dialog shows the upload's progress and then that the
+    server is processing the rows.
+  - Built (15 Nov): row progress while the import or dry run runs. The dialog sends
+    a fresh `progress` token with the request; the import reports the rows it has
+    read every 50 rows and at the end (`ImportProgress`, in the distributed cache,
+    keyed by the user and the token, expiring after an hour), and the dialog polls
+    `GET /api/record-import/progress/{token}` (administrators only, a user reads only
+    their own token) each second to show "processed N rows so far". The import
+    itself stays one synchronous request; without a cache backend no progress is
+    reported and the dialog keeps the processing message.
 
 ## Verification
 

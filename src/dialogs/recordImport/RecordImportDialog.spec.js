@@ -1,4 +1,4 @@
-import { dryRunImport, proposeMapping, runImport } from '../../services/recordImport.js'
+import { dryRunImport, proposeMapping, runImport, watchImportProgress } from '../../services/recordImport.js'
 import { navigationStore } from '../../store/store.js'
 import RecordImportDialog from './RecordImportDialog.vue'
 
@@ -8,13 +8,14 @@ jest.mock('@nextcloud/vue', () => ({}))
 jest.mock('../../modals/object/l10n.js', () => ({
 	__esModule: true,
 	t: (app, text, vars = {}) => text.replace(/\{(\w+)\}/g, (_, key) => String(vars[key])),
+	n: (app, singular, plural, count, vars = {}) => (count === 1 ? singular : plural).replace(/\{(\w+)\}/g, (_, key) => String(vars[key])),
 }))
 jest.mock('../../store/store.js', () => ({
 	navigationStore: { setDialog: jest.fn(), clearTransferData: jest.fn(), getTransferData: jest.fn(() => null) },
 }))
 jest.mock('../../services/recordImport.js', () => {
 	const actual = jest.requireActual('../../services/recordImport.js')
-	return { ...actual, proposeMapping: jest.fn(), dryRunImport: jest.fn(), runImport: jest.fn() }
+	return { ...actual, proposeMapping: jest.fn(), dryRunImport: jest.fn(), runImport: jest.fn(), watchImportProgress: jest.fn(() => jest.fn()) }
 })
 
 const FILE = { name: 'people.csv' }
@@ -166,5 +167,52 @@ describe('RecordImportDialog', () => {
 
 		expect(proposeMapping).not.toHaveBeenCalled()
 		expect(ctx.error).toBe('No record file was handed to the import.')
+	})
+
+	it('watches the run under its own progress token, shows the rows read and stops watching after', async () => {
+		proposeMapping.mockResolvedValue(PROPOSAL)
+		const stop = jest.fn()
+		let onRows
+		watchImportProgress.mockImplementation((options) => {
+			onRows = options.onRows
+			return stop
+		})
+		let finish
+		runImport.mockImplementation(() => new Promise((resolve) => {
+			finish = resolve
+		}))
+		const ctx = context()
+		await ctx.loadProposal()
+		ctx.setDecision('postcode', ctx.IGNORE)
+
+		const running = ctx.run(false)
+		await Promise.resolve()
+		onRows({ rows: 150, done: false })
+
+		expect(ctx.rowsRead).toBe(150)
+		const token = watchImportProgress.mock.calls[0][0].token
+		expect(token).toMatch(/^[0-9a-f]{32}$/)
+		expect(runImport).toHaveBeenCalledWith(expect.objectContaining({ progressToken: token }))
+		expect(stop).not.toHaveBeenCalled()
+
+		finish({ createdCount: 3, failedCount: 0, failures: [] })
+		await running
+		expect(stop).toHaveBeenCalledTimes(1)
+		expect(ctx.busy).toBe(false)
+	})
+
+	it('stops watching the progress when the run fails', async () => {
+		proposeMapping.mockResolvedValue(PROPOSAL)
+		const stop = jest.fn()
+		watchImportProgress.mockReturnValue(stop)
+		dryRunImport.mockRejectedValue({ response: { data: { error: 'Nope' } } })
+		const ctx = context()
+		await ctx.loadProposal()
+		ctx.setDecision('postcode', ctx.IGNORE)
+
+		await ctx.run(true)
+
+		expect(stop).toHaveBeenCalledTimes(1)
+		expect(ctx.error).toBe('Nope')
 	})
 })

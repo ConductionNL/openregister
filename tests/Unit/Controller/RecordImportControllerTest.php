@@ -29,6 +29,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Import\RecordImport\ColumnMapper;
 use OCA\OpenRegister\Service\Import\RecordImport\FailedRowExport;
+use OCA\OpenRegister\Service\Import\RecordImport\ImportProgress;
 use OCA\OpenRegister\Service\Import\RecordImport\RecordFileReader;
 use OCA\OpenRegister\Service\Import\RecordImport\RecordImportRequest;
 use OCA\OpenRegister\Service\Import\RecordImport\RecordImportService;
@@ -36,7 +37,11 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\PublicPage;
+use OCP\ICache;
+use OCP\ICacheFactory;
 use OCP\IRequest;
+use OCP\IUser;
+use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
@@ -48,6 +53,7 @@ use ReflectionMethod;
  * @uses   \OCA\OpenRegister\Service\Import\RecordImport\ColumnMapper
  * @uses   \OCA\OpenRegister\Service\Import\RecordImport\ConfirmedMapping
  * @uses   \OCA\OpenRegister\Service\Import\RecordImport\FailedRowExport
+ * @uses   \OCA\OpenRegister\Service\Import\RecordImport\ImportProgress
  * @uses   \OCA\OpenRegister\Service\Import\RecordImport\RecordFileReader
  * @uses   \OCA\OpenRegister\Service\Import\RecordImport\RecordImportRequest
  * @uses   \OCA\OpenRegister\Service\Import\RecordImport\UnconfirmedMappingException
@@ -67,8 +73,23 @@ class RecordImportControllerTest extends TestCase {
 
 	private Schema $schema;
 
+	/** @var array<string, mixed> */
+	private array $cached = [];
+
+	private ImportProgress $progress;
+
 	protected function setUp(): void {
 		$this->importer = $this->createMock(RecordImportService::class);
+		$cache = $this->createMock(ICache::class);
+		$cache->method('set')->willReturnCallback(function (string $key, mixed $value): bool {
+			$this->cached[$key] = $value;
+			return true;
+		});
+		$cache->method('get')->willReturnCallback(fn (string $key): mixed => ($this->cached[$key] ?? null));
+		$factory = $this->createMock(ICacheFactory::class);
+		$factory->method('isAvailable')->willReturn(true);
+		$factory->method('createDistributed')->willReturn($cache);
+		$this->progress = new ImportProgress($factory);
 		$this->register = new Register();
 		$this->register->setId(5);
 		$this->schema = new Schema();
@@ -217,7 +238,9 @@ class RecordImportControllerTest extends TestCase {
 			new RecordFileReader(),
 			new ColumnMapper(),
 			$this->importer,
-			new FailedRowExport(new RecordFileReader())
+			new FailedRowExport(new RecordFileReader()),
+			$this->progress,
+			$this->session('admin')
 		);
 
 		$this->assertSame(404, $controller->mapping('9', '7')->getStatus());
@@ -225,13 +248,73 @@ class RecordImportControllerTest extends TestCase {
 	}
 
 	public function testEveryActionIsForAdministratorsOnlyAndKeepsTheRequestToken(): void {
-		foreach (['mapping', 'import', 'dryRun'] as $action) {
+		foreach (['mapping', 'import', 'dryRun', 'progress'] as $action) {
 			$method = new ReflectionMethod(RecordImportController::class, $action);
 			$this->assertSame([], $method->getAttributes(NoAdminRequired::class), $action);
 			$this->assertSame([], $method->getAttributes(PublicPage::class), $action);
 			$this->assertSame([], $method->getAttributes(NoCSRFRequired::class), $action);
 			$this->assertStringNotContainsString('@NoAdminRequired', (string)$method->getDocComment(), $action);
 		}
+	}
+
+	public function testAnImportWithAProgressTokenReportsUnderTheCallersKey(): void {
+		$keys = [];
+		$this->importer->expects($this->exactly(2))->method('import')
+			->willReturnCallback(static function (RecordImportRequest $request) use (&$keys): array {
+				$keys[] = $request->progressKey;
+				return ['failedCount' => 0];
+			});
+		$decisions = ['reference' => 'reference', 'name' => 'name', 'postcode' => null];
+
+		$this->controller($this->request(file: $this->upload(self::CSV, 'people.csv'), params: ['decisions' => $decisions, 'progress' => 'tok-12345678']))->import('5', '7');
+		$this->controller($this->request(file: $this->upload(self::CSV, 'people.csv'), params: ['decisions' => $decisions, 'progress' => 'bad token!']))->import('5', '7');
+
+		$this->assertSame([ImportProgress::key(userId: 'admin', token: 'tok-12345678'), null], $keys);
+		$this->assertNotSame(ImportProgress::key(userId: 'someone-else', token: 'tok-12345678'), $keys[0]);
+	}
+
+	public function testADryRunWithoutAProgressTokenReportsNothing(): void {
+		$this->importer->expects($this->once())->method('dryRun')
+			->with($this->callback(static fn (RecordImportRequest $request): bool => $request->progressKey === null))
+			->willReturn(['failedCount' => 0]);
+
+		$this->controller($this->request(
+			file: $this->upload(self::CSV, 'people.csv'),
+			params: ['decisions' => ['reference' => 'reference', 'name' => 'name', 'postcode' => null]]
+		))->dryRun('5', '7');
+	}
+
+	public function testProgressAnswersTheRowsReportedForTheCallersToken(): void {
+		$this->progress->report(key: ImportProgress::key(userId: 'admin', token: 'tok-12345678'), rows: 150, done: false);
+		$controller = $this->controller($this->request(file: null));
+
+		$response = $controller->progress('tok-12345678');
+
+		$this->assertSame(200, $response->getStatus());
+		$this->assertSame(['rows' => 150, 'done' => false], $response->getData());
+	}
+
+	public function testProgressOfAnotherUsersImportIsNotFound(): void {
+		$this->progress->report(key: ImportProgress::key(userId: 'someone-else', token: 'tok-12345678'), rows: 150, done: true);
+
+		$response = $this->controller($this->request(file: null))->progress('tok-12345678');
+
+		$this->assertSame(404, $response->getStatus());
+		$this->assertSame('No progress has been reported for this token.', $response->getData()['error']);
+	}
+
+	public function testAnInvalidProgressTokenIsRefused(): void {
+		$response = $this->controller($this->request(file: null))->progress('short');
+
+		$this->assertSame(400, $response->getStatus());
+	}
+
+	private function session(string $uid): IUserSession {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn($uid);
+		$session = $this->createMock(IUserSession::class);
+		$session->method('getUser')->willReturn($user);
+		return $session;
 	}
 
 	private function controller(IRequest $request): RecordImportController {
@@ -248,7 +331,9 @@ class RecordImportControllerTest extends TestCase {
 			new RecordFileReader(),
 			new ColumnMapper(),
 			$this->importer,
-			new FailedRowExport(new RecordFileReader())
+			new FailedRowExport(new RecordFileReader()),
+			$this->progress,
+			$this->session('admin')
 		);
 	}
 

@@ -1389,6 +1389,7 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         // Record import (administrators only): propose a column mapping for an uploaded
         // file, then import it with the confirmed mapping through the streaming save.
         ['name' => 'recordImport#mapping', 'url' => '/api/record-import/{register}/{schema}/mapping', 'verb' => 'POST'],
+        ['name' => 'recordImport#progress', 'url' => '/api/record-import/progress/{token}', 'verb' => 'GET'],
         ['name' => 'recordImport#dryRun', 'url' => '/api/record-import/{register}/{schema}/dry-run', 'verb' => 'POST'],
         ['name' => 'recordImport#import', 'url' => '/api/record-import/{register}/{schema}', 'verb' => 'POST'],
         ['name' => 'bulk#save', 'url' => '/api/bulk/{register}/{schema}/save', 'verb' => 'POST'],

@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Import\RecordImport\ColumnMapper;
 use OCA\OpenRegister\Service\Import\RecordImport\FailedRowExport;
+use OCA\OpenRegister\Service\Import\RecordImport\ImportProgress;
 use OCA\OpenRegister\Service\Import\RecordImport\RecordFileReader;
 use OCA\OpenRegister\Service\Import\RecordImport\RecordImportRequest;
 use OCA\OpenRegister\Service\Import\RecordImport\RecordImportService;
@@ -43,6 +44,7 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use OCP\IUserSession;
 
 /**
  * Administrator-only: there is no `#[NoAdminRequired]` on any action.
@@ -60,14 +62,16 @@ class RecordImportController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string                  $appName   The app id.
-	 * @param IRequest                $request   The request.
-	 * @param RegisterMapperInterface $registers Finds the target register.
-	 * @param SchemaMapperInterface   $schemas   Finds the target schema.
-	 * @param RecordFileReader        $reader    Reads the file's columns.
-	 * @param ColumnMapper            $mapper    Proposes and confirms the column mapping.
-	 * @param RecordImportService     $importer  Writes the rows.
-	 * @param FailedRowExport         $failures  Exports the failed rows.
+	 * @param string                  $appName     The app id.
+	 * @param IRequest                $request     The request.
+	 * @param RegisterMapperInterface $registers   Finds the target register.
+	 * @param SchemaMapperInterface   $schemas     Finds the target schema.
+	 * @param RecordFileReader        $reader      Reads the file's columns.
+	 * @param ColumnMapper            $mapper      Proposes and confirms the column mapping.
+	 * @param RecordImportService     $importer    Writes the rows.
+	 * @param FailedRowExport         $failures    Exports the failed rows.
+	 * @param ImportProgress          $progress    Where a running import reports the rows it has read.
+	 * @param IUserSession            $userSession The signed-in administrator, who owns the progress entry.
 	 *
 	 * @spec openspec/changes/widget-record-import/specs/widget-record-import/spec.md
 	 */
@@ -80,6 +84,8 @@ class RecordImportController extends Controller {
 		private readonly ColumnMapper $mapper,
 		private readonly RecordImportService $importer,
 		private readonly FailedRowExport $failures,
+		private readonly ImportProgress $progress,
+		private readonly IUserSession $userSession,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -162,6 +168,33 @@ class RecordImportController extends Controller {
 	}//end dryRun()
 
 	/**
+	 * GET /api/record-import/progress/{token} — how many rows the caller's running import has read.
+	 *
+	 * The import and dry-run requests take an optional `progress` token; while
+	 * one runs, this answers the rows read so far and whether the file has been
+	 * read to the end. Only the administrator who started the import can read it.
+	 *
+	 * @param string $token The token the import was started with.
+	 *
+	 * @return JSONResponse 200 with `rows` and `done`; 404 while nothing has been reported; 400 for an invalid token.
+	 *
+	 * @spec openspec/changes/widget-record-import/tasks.md#5.2
+	 */
+	public function progress(string $token): JSONResponse {
+		$key = ImportProgress::key(userId: $this->userId(), token: $token);
+		if ($key === null) {
+			return self::error(message: 'The progress token must be 8 to 64 letters, digits, dashes or underscores.', status: Http::STATUS_BAD_REQUEST);
+		}
+
+		$progress = $this->progress->read(key: $key);
+		if ($progress === null) {
+			return self::error(message: 'No progress has been reported for this token.', status: Http::STATUS_NOT_FOUND);
+		}
+
+		return new JSONResponse(data: $progress);
+	}//end progress()
+
+	/**
 	 * Import, or dry-run, an uploaded file with the confirmed mapping.
 	 *
 	 * @param string $register The register id, uuid or slug.
@@ -210,7 +243,8 @@ class RecordImportController extends Controller {
 			format: $file['format'],
 			register: $target['register'],
 			schema: $target['schema'],
-			mapping: $mapping
+			mapping: $mapping,
+			progressKey: $this->progressKey()
 		);
 		$result = $this->report(request: $request, dryRun: $dryRun);
 
@@ -325,6 +359,29 @@ class RecordImportController extends Controller {
 
 		return trim($identifier);
 	}//end identifier()
+
+	/**
+	 * The progress key of this import, or null when the request asked for no (valid) progress token.
+	 *
+	 * @return string|null
+	 */
+	private function progressKey(): ?string {
+		$token = $this->request->getParam(key: 'progress');
+		if (is_string($token) === false) {
+			return null;
+		}
+
+		return ImportProgress::key(userId: $this->userId(), token: $token);
+	}//end progressKey()
+
+	/**
+	 * The signed-in user's id, or an empty string when there is none.
+	 *
+	 * @return string
+	 */
+	private function userId(): string {
+		return (string)$this->userSession->getUser()?->getUID();
+	}//end userId()
 
 	/**
 	 * The schema's property names.

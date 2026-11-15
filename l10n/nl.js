@@ -46,6 +46,7 @@ OC.L10N.register(
     "_Restore {count} object_::_Restore {count} objects_" : ["{count} object herstellen","{count} objecten herstellen"],
     "_schema_::_schemas_" : ["schema","schema's"],
     "_Successfully restored {count} object_::_Successfully restored {count} objects_" : ["{count} object succesvol hersteld","{count} objecten succesvol hersteld"],
+    "_Uploaded. The server has processed {count} row so far._::_Uploaded. The server has processed {count} rows so far._" : ["Geüpload. De server heeft tot nu toe {count} rij verwerkt.","Geüpload. De server heeft tot nu toe {count} rijen verwerkt."],
     "_Validate {count} object_::_Validate {count} objects_" : ["{count} object valideren","{count} objecten valideren"],
     "_{count} email_::_{count} emails_" : ["{count} e-mail","{count} e-mails"],
     "_{count} object could not be validated_::_{count} objects could not be validated_" : ["{count} object kon niet worden gevalideerd","{count} objecten konden niet worden gevalideerd"],
