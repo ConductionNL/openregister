@@ -12054,3 +12054,50 @@ build:openregister:calendar-time-zone:c4	partial: PR #10154 head 9e4c9ca6 — bu
 build:larpinq:players-care-details-and-erasure:c2	pushed to PR #1053: 1.3 seed data + CareDetailsSeedTest, 5.1 strings in all 35 other locales (parity OK), 5.2 feature doc; left: 1.2 Newman and 3.1 destruction run (live), 4.1 EventDetail care list (needs manifest.json, not allowed on build branches); suite 848 OK	session-20261114T225452-4fcfea7f	2026-11-14T23:50:01Z
 merge:planninq:1179:bd288274	merge3 tree of 3 planninq PRs: merged=2 red=0 fail=0 skip=0; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-14T23:50:21Z
 merge:planninq:1169:ee486a62	merge3 tree of 3 planninq PRs: merged=2 red=0 fail=0 skip=0; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-14T23:50:31Z
+fix:hermiq:1760:8be53b00	merged development in, resolved ScheduleService ctor conflict keeping both collaborators, new head c3344e5a, REVERIFY recorded	session-20261114T231754-004f1f75	2026-11-14T23:51:41Z
+review:filinq:2069:2b2b094e	GREEN: spec-conformant, 6788 unit tests OK on merged tree	session-20261114T234952-566b7ef5	2026-11-14T23:51:48Z
+verify:decidiq:2209:11e69e4f	GREEN #2209: 4385 tests, 0 new failures	session-20261114T234932-1a68fd4b	2026-11-14T23:51:57Z
+review:openregister:10576:a257a4ba	APPROVE: test-only jest specs, 719 tests green on merge with main	session-20261114T234941-93e81b84	2026-11-14T23:52:04Z
+review:portaliq:2444:14f7dd01	GREEN: frontend/schema per change specs; unit 5840 green, node checks pass	session-20261114T234938-86f69098	2026-11-14T23:52:10Z
+review:filinq:2102:1985bdd5	RED: vitest serviceRoutesAndLabels.spec.js listPublications call shape changed; PHP/jest green	session-20261114T234758-aa94f07d	2026-11-14T23:52:19Z
+review:filinq:2095:e0ebb0e0	GREEN: suite green on merge with development, matches change specs	session-20261114T234941-e3e51cb9	2026-11-14T23:52:39Z
+build4:openregister:unit-test-coverage:c4	partial: PR #10527 head 5ad6bbd8 + listener support tests (HandlesObjectDeletion, NodeWriteTarget, CalculationSaveRun; 9 tests, mutation-checked); every Format and Exception class already referenced by a test; umbrella tasks (Service/Controller/Db/Event coverage, gate, CI) still open	session-20261114T224736-f9da4a35	2026-11-14T23:53:09Z
+verify:hermiq:1796:fac8f884	GREEN hermiq #1796-#1802 (tests only, no new failures)	session-20261114T224738-9571d712	2026-11-14T23:53:06Z
+review:filinq:2072:347356f9	GREEN: unit 6784 ok, phpstan clean	session-20261114T234953-2dec3184	2026-11-14T23:53:13Z
+review:filinq:2106:3c54d4a0	GREEN: spec-conform; unit 6792 OK	session-20261114T234948-b89aaae1	2026-11-14T23:53:26Z
+review:filinq:2096:603fca94	GREEN: unit 6810/6810 (baseline 6765), phpstan clean	session-20261114T234941-bc8686af	2026-11-14T23:53:38Z
+verify:portaliq:2498:a27eacfc	GREEN 2498: unit 5868 green (baseline 5840), node checks pass	session-20261114T234938-86f69098	2026-11-14T23:53:54Z
+review:decidiq:2178:b9927684	GREEN: unit 4419 ok, phpstan ok, vitest ok; eslint style nits in one new cell	session-20261114T234944-ee1416bc	2026-11-14T23:54:02Z
+verify:larpinq:1039:f74a40b6	GREEN 1039,1051,1061; CONFLICT 1049 (l10n vs 1039/1051, clean on development alone); 1053 skipped (head moved); unit 868 OK, vitest 556	session-20261114T225452-4fcfea7f	2026-11-14T23:54:16Z
+review:learniq:2484:109cbc95	GREEN: matches change specs; 6863 tests, 1 inherited failure, none new	session-20261114T234933-5c1be121	2026-11-14T23:54:27Z
+review:filinq:2088:0e8040fe	GREEN: PHP 6782 OK, vitest/jest green	session-20261114T234758-aa94f07d	2026-11-14T23:54:39Z
+review:hermiq:1739:4f848818	GREEN: matches the change specs; unit suite 5236 green, vitest/eslint/phpstan clean	session-20261114T231754-004f1f75	2026-11-14T23:54:49Z
+review:filinq:2094:80494522	GREEN: suites green on merge with development	session-20261114T234941-e3e51cb9	2026-11-14T23:55:14Z
+build:larpinq:rules-rulebook-and-spell-lists:c2	partial: PR #1050 now has tasks 1.1-3.1 and 4.2 (seed, pages, Rulebook.vue, portal skillLists, docs), en+nl strings; left: 4.1 the other 34 locales (27 keys, test:l10n parity red), Playwright and live import	session-20261114T224754-e4a2fcab	2026-11-14T23:55:25Z
+build:larpinq:events-qr-checkin:c2	PR #1041 head 2309f59a: 3.1 QR cell on My registrations, 3.2 scan panel (BarcodeDetector + code field), 4.1 strings in all 36 locales (parity gate green again), 4.3 qrcode MIT + sbom; vitest 548->589, PHPUnit 845 OK; left 3.3 e2e and 4.2 docs screenshot (live tasks)	session-20261114T231755-998f7ff8	2026-11-14T23:55:20Z
+build:decidiq:termijnagenda:c4	done: PR #2203 head 0b06187d adds PlannedAgendaItemRulesGuardListener (task 1 owner + lapse rules enforced on save, 8 tests); suite 4232->4240 green; only task 7 e2e left (not code)	session-20261114T234932-1a68fd4b	2026-11-14T23:55:33Z
+verify:portaliq:2500:aec7803c	2500 GREEN (unit 5921 green, baseline 5840); 2508 CONFLICT on register version tests	session-20261114T234938-86f69098	2026-11-14T23:55:57Z
+verify:filinq:2113:7a633dc7	2 GREEN (2113,2123), 3 CONFLICT (2114,2121,2126 on filinq_register.json in tree); suite 6816 green	session-20261114T234941-93e81b84	2026-11-14T23:56:07Z
+verify:decidiq:2188:86d66dfe	3 GREEN (2188,2199,2210); unit 4455 ok, vitest ok	session-20261114T234944-ee1416bc	2026-11-14T23:56:25Z
+verify:larpinq:1050:eb04f1a2	GREEN 1053; CONFLICT 1054,1056 (settings/mock register vs 1053, clean on development alone); 1050 skipped (head moved); unit 848 OK, vitest 548	session-20261114T225452-4fcfea7f	2026-11-14T23:56:35Z
+review:filinq:2079:eb1a5b1d	GREEN: spec-conformant, 6860 unit + 767 vitest OK	session-20261114T234952-566b7ef5	2026-11-14T23:56:47Z
+build:decidiq:meeting-pack-board-book:c4	no code tasks left: tasks 1-8 ticked on PR #2199 (68646faa, verified GREEN); task 9 e2e/newman needs a live instance	session-20261114T234944-ee1416bc	2026-11-14T23:57:02Z
+fix:hermiq:1754:8f57a36c	merged development (AdminRoot conflict resolved), l10n moved mid-catalogue; new head 2a87aaa9	session-20261114T224738-9571d712	2026-11-14T23:56:58Z
+build:thematiq:rows-without-a-requirement:c2	PR #1680: tasks 3.1-3.3 (approved font library: BundledFontLibrary, FontService assign/unassign, admin endpoints + UI, 19 tests) and 4.1 (archived, specs merged, matrix rows repointed, typ-org-font-library built); no code tasks left	session-20261114T224920-352ef0eb	2026-11-14T23:57:09Z
+verify:larpinq:1051:aba6cb6d	1060 GREEN; 1051 skipped: head moved e02d02f9 -> 77585fbd	session-20261114T231755-998f7ff8	2026-11-14T23:57:06Z
+review:shillinq:2997:787ad8e7	BLOCK: weekly job not registered in info.xml; suite green	session-20261114T234948-b89aaae1	2026-11-14T23:57:33Z
+build:hermiq:tools-deep-research-report:c5	partial: not started this pass (worker context nearly full); flows-hand-off-and-wait still unbuilt on development (no Handoff schema), so Tasks 5/6 stay blocked; Task 1 runner and Task 2 gathering left	session-20261114T224738-9571d712	2026-11-14T23:57:39Z
+review:filinq:2085:432c7b61	GREEN: unit 6787 ok, vitest 772 ok	session-20261114T234953-2dec3184	2026-11-14T23:57:47Z
+review:decidiq:2149:08dbad8e	GREEN #2149: suite 4438 green, vitest 2851 pass	session-20261114T234932-1a68fd4b	2026-11-14T23:57:55Z
+verify:buildiq:1653:6c939f2b	1653 GREEN	session-20261114T224754-e4a2fcab	2026-11-14T23:58:13Z
+review:learniq:2486:a242580e	GREEN: per spec, no new failures (6868 tests), phpstan clean	session-20261114T224736-f9da4a35	2026-11-14T23:58:23Z
+build4:openregister:history-schema-and-settings-edits-audited:c4	partial: PR #10515 head 83da7162: 3.1 Changes tab/section, 6.1 category column+backfill, 6.2 category read filter, 6.3 administrative retention built; left 5.2 door test+Newman, live/e2e 1.3, 4.2, 6.4, V.4 gates	session-20261114T224751-87da8a15	2026-11-14T23:58:35Z
+review:shillinq:3000:7a353f6d	GREEN: per change specs, unit 11486/0 new failures, phpstan clean	session-20261114T234944-eb1b5f87	2026-11-14T23:58:34Z
+merge:larpinq:1041:95a58113	stale	feeder	2026-11-14T23:55:38Z
+fix:shillinq:2977:dcb02193	fixed: SPDX headers on 2 specs; new head b5f66d62	session-20261114T234948-b89aaae1	2026-11-14T23:58:56Z
+verify:planninq:1181:5ad5104c	GREEN 1181 (tests only); vitest 3449 pass, unit 1177 OK	session-20261114T225452-4fcfea7f	2026-11-14T23:59:14Z
+build:dossiq:capability-rows-say-the-whole-capability:c5	partial: no new code this run (PR #6520 already merged). Findings for the next run: 1.17 gauge: nextcloud-vue CnGaugeWidget (type gauge) exists but words the value/target ratio (80 vs 90 reads 89%), not '80% of target 90%', and reads an OR aggregate, so an on-time-percentage source plus a library wording option are needed; 1.16: CaseEmailService sends attachments only as paths in the sender's own 	session-20261114T224920-352ef0eb	2026-11-14T23:59:23Z
+verify:opencatalogi:2720:aa902ddb	GREEN 2720: no new failures (2 inherited)	session-20261114T234952-566b7ef5	2026-11-14T23:59:21Z
+cover:shillinq:05639debm9818:2befd24e	stale: lib/Service/Asset/ no longer exists on development (moved in a refactor); nothing to cover	session-20261114T234948-b89aaae1	2026-11-14T23:59:42Z
+verify:dossiq:6523:582fa52e	GREEN 6523 (tests only, no new failures)	session-20261114T234941-e3e51cb9	2026-11-14T23:59:40Z
+verify:decidiq:2187:dd2696e2	2187 RED (duplicate DecisionDetail layout id 19, vitest sendForApproval); 2191, 2207 GREEN	session-20261114T234944-ee1416bc	2026-11-14T23:59:53Z
