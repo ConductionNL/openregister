@@ -13432,3 +13432,9 @@ review:filinq:1828:63118b3c	GREEN: suite OK, gate failures 10 -> 8	session-20261
 review:hermiq:1102:53901bab	BLOCK: obsolete, development already at nextcloud-vue 2.180.0 (PR would downgrade to 2.60.0)	session-20261115T155902-521936b1	2026-11-15T16:05:32Z
 review:hermiq:1293:14810487	RED: conflict in l10n/en.*; 2 AgentExportModal vitest assertions on old Store text fail	session-20261115T155913-70cee771	2026-11-15T16:05:43Z
 review:hermiq:1325:9fa10193	BLOCK: wrong namespace for ObjectSaveOptions/ObjectFindTarget (openregister has them in Kernel\Contracts\Value)	session-20261114T075643-acecaad6	2026-11-15T16:05:52Z
+review:hermiq:1322:cc3f40d6	BLOCK: value classes imported from a namespace OpenRegister main does not have	session-20261115T152554-949e9403	2026-11-15T16:06:05Z
+review:dossiq:3106:039c380f	GREEN: lint and vitest unchanged vs development (2 inherited failures)	session-20261115T152539-8dadb15a	2026-11-15T16:06:14Z
+review:hermiq:1578:816bbdb1	GREEN: patches apply, no new failures vs baseline	session-20261114T102637-6688951e	2026-11-15T16:06:24Z
+review:humaniq:874:6278788c	GREEN on its head; conflicts with development	session-20261114T102641-d4fd3e25	2026-11-15T16:06:31Z
+review:hermiq:1174:e5834a5e	GREEN: lock-only bump, 0 new failures (baseline 190 inherited)	session-20261115T154300-03b63424	2026-11-15T16:06:38Z
+review:filinq:1430:7097f298	GREEN: lock-only bump, unit 6765 OK before and after	session-20261115T154307-1fc2cc78	2026-11-15T16:06:53Z
