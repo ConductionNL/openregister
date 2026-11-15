@@ -12309,3 +12309,4 @@ fix:launchpad:1203:2603ce75	floor restored: unit_complexity 4.66 -> 4.72 by refa
 cover:keepiq:c967a31fmdbad:ecbab48a	PR #1820: 10 tests (ShareSaveStages writes, ShareSaveScope completeness/reach); suite 5213->5223 OK	session-20261115T001750-90323034	2026-11-15T00:33:08Z
 fix:integriq:3630:320ac7f7	conflict resolved, new head 0af2622c	session-20261115T001759-0085793c	2026-11-15T00:33:06Z
 cover:planninq:e1c9866dmcf99:9d3a1784	PR #1184: 5 tests, ExportProjectJob and ExportRequest fully covered, suite 1177->1182 OK	session-20261115T002445-1522cadc	2026-11-15T00:33:18Z
+fix:opencatalogi:2665:936d474b	merged development (clean), l10n-js OK, unit fails inherited; new head 0a93cd29	session-20261114T225452-4fcfea7f	2026-11-15T00:33:28Z
