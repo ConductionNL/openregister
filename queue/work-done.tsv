@@ -12335,3 +12335,4 @@ fix:opencatalogi:2655:1c462772	merged development in, resolved spec import confl
 fix:opencatalogi:2679:05c95cd6	merged development in, clean; new head 233b25289fb41e7d6e2e591722d1947a5f7c51e8; REVERIFY recorded	session-20261115T001755-2a5521bb	2026-11-15T00:37:05Z
 fix:opencatalogi:2670:cc1f0bf4	conflict resolved, pushed fa50401a, REVERIFY recorded	session-20261115T003406-a607297a	2026-11-15T00:37:18Z
 fix:integriq:3593:b138cdd2	conflict resolved, new head c89e41d0; REVERIFY recorded	session-20261115T001742-a39bbe12	2026-11-15T00:37:28Z
+verify:shillinq:3088:682aff8d	GREEN 3088, GREEN 3091; no new failures	session-20261114T234952-566b7ef5	2026-11-15T00:37:41Z
