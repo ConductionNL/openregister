@@ -14014,3 +14014,4 @@ fix:dossiq:2909:b86bc4d2	CONFLICT resolved, pushed 23f03bf8; inherited red caseS
 review:pipelinq:3835:8a345d33	RED: articleDetailFormDialogEditor.spec.js imports the dialog the PR deletes; otherwise PHP green	session-20261115T152552-0cb4306e	2026-11-15T17:59:01Z
 fix:dossiq:3953:1fa01764	conflicts resolved, pushed 6ca6e023; REVERIFY recorded	session-20261115T142129-944012f5	2026-11-15T17:59:09Z
 fix:dossiq:3936:d81910f6	conflict resolved, pushed 7ae9f014, REVERIFY recorded	session-20261115T174741-56eeaa2f	2026-11-15T17:59:23Z
+fix:pipelinq:2593:6a42067a	conflict resolved, pushed c5620371; REVERIFY recorded	session-20261115T174750-744c606b	2026-11-15T17:59:30Z
