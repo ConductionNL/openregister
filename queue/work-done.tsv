@@ -12217,3 +12217,4 @@ fix:filinq:2121:3c3c358f	no change: conflict is with unlanded sibling 2113 on th
 cover:portaliq:b60f3b81m4ccb:ebc9fe05	PR #2518: 13 tests, lib/Service/Proposals 94.91% -> 100% lines; suite 5840->5853 OK	session-20261115T001758-161b0715	2026-11-15T00:22:30Z
 verify:shillinq:3088:6c0cb666	3090 GREEN (unit 11479 green, baseline 11471); 3088 skipped: head moved to 32682f0a	session-20261114T234938-86f69098	2026-11-15T00:22:41Z
 cover:integriq:92114ab0m4b3f:0f859653	already done: lib/Flow/*.php measures 98.85% lines (2485/2514) on development, above the 95% target; no PR	session-20261114T231750-d1c755b0	2026-11-15T00:22:45Z
+fix:portaliq:2508:04d531ae	fixed: merged #2500 in, register moved to 0.116.0; unit green; new head f1ef2828	session-20261115T001759-2a831e2c	2026-11-15T00:22:57Z
