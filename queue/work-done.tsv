@@ -13612,3 +13612,4 @@ review:pipelinq:3153:22a0348f	BLOCK: OpenRegister save-option classes imported f
 review:pipelinq:3281:c765403c	BLOCK: lock not installable under config.platform php 8.3	session-20261115T142951-2463b4c4	2026-11-15T16:36:02Z
 review:pipelinq:3142:e7c6f9ad	GREEN: spec-only, validates	session-20261114T102637-6688951e	2026-11-15T16:36:26Z
 review:pipelinq:2507:ecccdb3f	BLOCK: obsolete, development already on nextcloud-vue 2.180 with these changes	session-20261115T145555-b33410db	2026-11-15T16:36:49Z
+review:pipelinq:2566:0b0d7736	CONFLICT: 217 conflicting files with development	session-20261114T085646-49a39060	2026-11-15T16:37:03Z
