@@ -29,6 +29,7 @@ use Exception;
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\CalendarEventsControllerServices;
 use OCA\OpenRegister\Controller\Trait\ChecksObjectUpdateRight;
+use OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarEventsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -41,6 +42,7 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Service\LinkTarget;
 
 /**
@@ -53,6 +55,14 @@ use OCA\OpenRegister\Service\LinkTarget;
  */
 class CalendarEventsController extends Controller {
 	use ChecksObjectUpdateRight;
+	use HandlesExceptionsTrait;
+
+	/**
+	 * Logger, read by HandlesExceptionsTrait to log the detail of a failure.
+	 *
+	 * @var LoggerInterface|null
+	 */
+	protected readonly ?LoggerInterface $logger;
 
 	/**
 	 * Calendar event service (legacy X-OR-* CalDAV custom properties).
@@ -100,6 +110,7 @@ class CalendarEventsController extends Controller {
 		$this->calendarEventService = $services->calendarEventService;
 		$this->calendarLinkService = $services->calendarLinkService;
 		$this->objectService = $services->objectService;
+		$this->logger = $services->logger;
 	}//end __construct()
 
 	/**
@@ -240,7 +251,7 @@ class CalendarEventsController extends Controller {
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => 'Object not found'], 404);
 		} catch (Exception $e) {
-			return new JSONResponse(['error' => $e->getMessage()], 500);
+			return $this->handleApiException(e: $e, context: 'Failed to list the calendar events of an object');
 		}
 	}//end listEvents()
 
@@ -448,7 +459,7 @@ class CalendarEventsController extends Controller {
 			$calendars = $this->calendarLinkService->getAvailableCalendars();
 			return new JSONResponse(['results' => $calendars, 'total' => count($calendars)]);
 		} catch (Exception $e) {
-			return new JSONResponse(['error' => $e->getMessage()], 500);
+			return $this->handleApiException(e: $e, context: 'Failed to list the calendars');
 		}
 	}//end listCalendars()
 
@@ -480,7 +491,11 @@ class CalendarEventsController extends Controller {
 
 			return new JSONResponse(['results' => $events, 'total' => count($events)]);
 		} catch (Exception $e) {
-			return new JSONResponse(['error' => $e->getMessage()], $this->listingFailureStatus(error: $e));
+			if ($this->isUnknownCalendar(error: $e) === true) {
+				return new JSONResponse(['error' => $e->getMessage()], 404);
+			}
+
+			return $this->handleApiException(e: $e, context: 'Failed to list the events of a calendar');
 		}//end try
 	}//end listCalendarEvents()
 
@@ -521,19 +536,17 @@ class CalendarEventsController extends Controller {
 	}//end requestedWindowStart()
 
 	/**
-	 * The status of a failed event listing: 404 for the service's unknown-calendar refusal, else 500.
+	 * Whether a failed event listing is the service's unknown-calendar refusal (code 404).
 	 *
 	 * @param Exception $error The failure.
 	 *
-	 * @return int The HTTP status.
+	 * @return bool True for the 404-coded refusal.
+	 *
+	 * @spec openspec/changes/apphost-settings-plane/tasks.md
 	 */
-	private function listingFailureStatus(Exception $error): int {
-		if ($error->getCode() === 404) {
-			return 404;
-		}
-
-		return 500;
-	}//end listingFailureStatus()
+	private function isUnknownCalendar(Exception $error): bool {
+		return $error->getCode() === 404;
+	}//end isUnknownCalendar()
 
 	/**
 	 * Validate that the object exists.
