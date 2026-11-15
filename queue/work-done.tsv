@@ -13942,3 +13942,4 @@ fix:shillinq:2997:7b870224	conflict resolved, pushed 3374c3b, REVERIFY	session-2
 fix:shillinq:3080:555ec946	merged development; info.xml version moved above both sides (0.5.7-unstable.20261115180000), lock keeps both recorded entries plus the merged register entry; suite 12253 OK; new head 44d2bdbe, REVERIFY	session-20261115T142201-ea23e682	2026-11-15T17:33:43Z
 fix:shillinq:3062:6c6743f0	conflict resolved (version + register lock), suite green; new head d337cccd5c0003792325208eed13a23de031d351	session-20261114T102637-6688951e	2026-11-15T17:35:06Z
 merge:humaniq:1149:597b94e4	merge3 tree of 2 humaniq PRs: merged=2 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-15T17:35:47Z
+fix:shillinq:3055:d0b8868b	fixed CONFLICT: merged development (l10n union, new app version + lock entry); unit 12261 OK; new head aa654dd7, REVERIFY recorded	session-20261115T152543-40aea993	2026-11-15T17:35:50Z
