@@ -13418,13 +13418,30 @@ review:filinq:1312:4c33817f	BLOCK: obsolete, development already has @nextcloud/
 review:hermiq:1135:988cfbc8	GREEN: dev-only phpmd 3 bump; unit suite identical; notes on deprecated positional args and one new unused-param finding	session-20261114T075643-acecaad6	2026-11-15T16:02:49Z
 review:hermiq:1195:6284aad0	GREEN: eslint bump, vitest 1526 pass, lint identical to baseline	session-20261115T155913-70cee771	2026-11-15T16:02:56Z
 review:filinq:1451:258e0913	BLOCK: duplicate of template already on development (#1457); suite 6765 OK	session-20261115T152558-f97be55f	2026-11-15T16:03:13Z
+build:launchpad:scheduled-exports:c4	partial: PR #1229 head 444ff743: tasks 12-16 and 19 built (export editor, list, run history, run detail with retry, preview, dashboard menu entry; 5 vitest specs), 32 and 34 ticked, 31 noted (change's PHP clean, repo-wide phpcs/psalm errors in announcement files). Vitest 2608 all pass after the dup nl 'Port' fix; PHP 4436 OK. Left: 27-30 Playwright, 31 repo-wide, 36 other locales (parity warns)	session-20261115T142134-badaaf30	2026-11-15T16:03:22Z
 review:dossiq:2902:791b50a4	GREEN (no behaviour change; conflicts with development, keep StepConfigCheck)	session-20261115T141023-b06d51da	2026-11-15T16:03:22Z
 review:dossiq:3202:d10800f6	BLOCK: gridstack 14 outside shared library peer range; conflicts with development	session-20261114T102641-d4fd3e25	2026-11-15T16:03:33Z
 review:hermiq:1324:c54cfec4	BLOCK: targets nonexistent OpenRegister SearchOptions API; unit suite fatals on merged tree	session-20261115T155902-d9805df0	2026-11-15T16:03:39Z
 review:hermiq:1189:9c7d6a51	GREEN: pinia 4 bump, vitest 1526 passed	session-20261115T154316-34f0db35	2026-11-15T16:03:52Z
 review:humaniq:434:dc6c275a	BLOCK: obsolete lock bump (development already newer), conflicts	session-20261115T155911-f0070087	2026-11-15T16:04:06Z
 review:humaniq:1095:b9247c40	RED: lock not installable under the repo's platform pin	session-20261115T151007-45079d32	2026-11-15T16:04:16Z
+build:keepiq:capability-requirements-from-the-matrix:c5	done: PR #1826 head 6a8875d0; 3.1 built (privileged mark, access requests, approve/deny, serve-time gate on detail/list/search/extension/offline, audit+notify, sidebar panel, extension reason); every task ticked; PHP 5298 OK, vitest 3 inherited HealthReportView fails	session-20261115T152547-c779ca49	2026-11-15T16:04:31Z
 review:filinq:1963:4c695442	GREEN: lock bump, suite green incl. PDF tests	session-20261115T154258-dee2cc3d	2026-11-15T16:04:26Z
 review:hermiq:1150:4fcdbcee	no verdict on behaviour: CONFLICT recorded, 1510 behind development, 15 conflicting files	session-20261115T145541-9d69768b	2026-11-15T16:04:35Z
 review:filinq:1965:49589d88	RED: phpstan 2.3.5 adds 1 error (TesseractCommand.php:69 dead catch)	session-20261115T142951-2463b4c4	2026-11-15T16:04:46Z
 review:humaniq:661:6367bef4	RED: npm ci ERESOLVE, @babel/preset-env 7 peers on @babel/core ^7	session-20261115T152558-f97be55f	2026-11-15T16:05:02Z
+review:filinq:1828:63118b3c	GREEN: suite OK, gate failures 10 -> 8	session-20261115T142149-1d09fceb	2026-11-15T16:05:22Z
+review:hermiq:1102:53901bab	BLOCK: obsolete, development already at nextcloud-vue 2.180.0 (PR would downgrade to 2.60.0)	session-20261115T155902-521936b1	2026-11-15T16:05:32Z
+review:hermiq:1293:14810487	RED: conflict in l10n/en.*; 2 AgentExportModal vitest assertions on old Store text fail	session-20261115T155913-70cee771	2026-11-15T16:05:43Z
+review:hermiq:1325:9fa10193	BLOCK: wrong namespace for ObjectSaveOptions/ObjectFindTarget (openregister has them in Kernel\Contracts\Value)	session-20261114T075643-acecaad6	2026-11-15T16:05:52Z
+review:hermiq:1322:cc3f40d6	BLOCK: value classes imported from a namespace OpenRegister main does not have	session-20261115T152554-949e9403	2026-11-15T16:06:05Z
+build:opencatalogi:woo-request-intake-hands-over-to-dossiq:c3	built 3.2 (+sweep of stamped requests), 4.1, 5.1, 5.3, 5.4 on PR #2677, head 6373144b: counts+read-only flag stored by the step, readiness/settings show them, read-only listener on OR pre-save events, middleware 404 without dossiq / 410 when read-only, portal intake unavailable without dossiq, release notes; contracts keep component independence above base; suite 5727->5746 (2 inherited reds); lef	session-20261115T145535-3f9e5078	2026-11-15T16:06:21Z
+review:dossiq:3106:039c380f	GREEN: lint and vitest unchanged vs development (2 inherited failures)	session-20261115T152539-8dadb15a	2026-11-15T16:06:14Z
+review:hermiq:1578:816bbdb1	GREEN: patches apply, no new failures vs baseline	session-20261114T102637-6688951e	2026-11-15T16:06:24Z
+review:humaniq:874:6278788c	GREEN on its head; conflicts with development	session-20261114T102641-d4fd3e25	2026-11-15T16:06:31Z
+review:hermiq:1174:e5834a5e	GREEN: lock-only bump, 0 new failures (baseline 190 inherited)	session-20261115T154300-03b63424	2026-11-15T16:06:38Z
+review:filinq:1430:7097f298	GREEN: lock-only bump, unit 6765 OK before and after	session-20261115T154307-1fc2cc78	2026-11-15T16:06:53Z
+review:filinq:1849:88cc74e3	RED 1849 (9 failing interface-mock tests; conflicts with development)	session-20261115T142201-ea23e682	2026-11-15T16:07:08Z
+review:filinq:1848:ac00c57a	GREEN: equivalent audit call, suite clean on merged tree	session-20261115T142934-de7c51d0	2026-11-15T16:07:15Z
+review:hermiq:1579:dae558f0	RED: psalm 7.2.1 lock unsatisfiable under config.platform php 8.3; composer install fails	session-20261115T145533-2db61682	2026-11-15T16:07:23Z
+review:filinq:1311:f1d84cc5	GREEN: vitest 763/763; lockfile conflict with development	session-20261115T155915-84e5dc0a	2026-11-15T16:07:36Z
