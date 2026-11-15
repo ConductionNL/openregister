@@ -14320,3 +14320,4 @@ fix:decidiq:1947:ae3bb0fe	namespace fixed to main's Kernel\Contracts\Value, deve
 merge:buildiq:1114:acc67423	merge8 tree of 16 buildiq PRs: merged=1 red=9 fail=0 skip=0; conflict 6, lint 0, moved 0; fix rows 6	merge8-20261115T170007-37538273	2026-11-15T18:52:06Z
 fix:planninq:908:07c0fdd2	fixed: sbom regenerated, development merged, new head 8cdb1910	session-20261115T174804-89f2739f	2026-11-15T18:52:04Z
 fix:decidiq:2170:730fcd40	conflict resolved, pushed ed3ea097; REVERIFY recorded	session-20261115T183029-6c0565bd	2026-11-15T18:52:12Z
+fix:decidiq:2149:6cf9ca71	floor RED not reproducible with fleet estimator; deduplicated consent reader (dup back to base), unit 4441 OK; new head 3e3c6a58	session-20261115T174739-b14c2df4	2026-11-15T18:52:22Z
