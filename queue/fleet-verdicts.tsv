@@ -11364,3 +11364,4 @@ shillinq	3000	2e77cb19b75246d0c9d5f648edeae7c45350ef9c	GREEN	worker-07:review	Im
 shillinq	3055	7a38e15de676d6407f6a959a82d3368699a6ef1b	REVERIFY	worker-18	merged development in: l10n union, version 0.5.7-unstable.20261114230000 recorded in the lock, alias count 209+25; unit 12250 OK, l10n gates OK; new head d0b8868b0a91d3d1b78b070b200028c8771376d5, verify it
 dossiq	6569	268ea6fadbdf724c47fe0c6ba3374c04cde9a60e	GREEN	worker-14	unit 17959 tests on dev+PR, baseline 17949 with 19 failures, no new failures; tests only (AdviceTimerTest)
 shillinq	2997	97d3c56e405ad880702514c9f18e79e931b0a189	REVERIFY	worker-18	merged development in: l10n union, version 0.5.7-unstable.20261115143234 recorded in the lock; unit 12265 OK, l10n gates OK; new head f46b2633c46a1603af13e1c8baa598ae1eca8ce8, verify it
+integriq	3657	736d2fed6c25fdf0ec6f16ef43202ea17c506841	GREEN	worker-56	unit 9416 tests on 3-PR tree; baseline 9398 with 2E/5F inherited; no new failures; tests only
