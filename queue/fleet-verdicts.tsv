@@ -12854,3 +12854,9 @@ keepiq	1497	1c1ef76bc10d70467127e9e81434a344d941a1d3	RED	merge8:merge-gate	GATE 
 keepiq	1499	9573577039746d41e4ed0e689b8d3e24b03bcab8	RED	merge8:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
 keepiq	1500	1c81214a5de8682ffbb3463cce7d2f76d821212f	RED	merge8:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
 keepiq	1792	c41b6b80f325613dc679809230b9a78cea7ece2c	RED	merge8:merge-gate	GATE RED floor: duplication: 4.19 -> 4.15; module_coupling: 3.33 -> 3.31
+keepiq	1789	2f3708d1ddb711fe001168c706e2702953d89f71	CONFLICT	merge8	conflicts with development; files: l10n/nl.js l10n/nl.json 
+keepiq	1791	8a173b56d00aad46c195daef530b7886f586ac55	CONFLICT	merge8	merges clean on development alone; files: l10n/be.js l10n/be.json l10n/bg.js l10n/bg.json l10n/bs.js l10n/bs.json l10n/ca.js l10n/ca.json l10n/cs.js l10n/cs.json l10n/da.js l10n/da.json l10n/de.js l10n/de.json l10n/el.js l10n/el.json l10n/es.
+keepiq	1793	bb8eaec883cc0c963405e6125e18c15d56a0e2ec	CONFLICT	merge8	merges clean on development alone; files: l10n/be.js l10n/be.json l10n/bg.js l10n/bg.json l10n/bs.js l10n/bs.json l10n/ca.js l10n/ca.json l10n/cs.js l10n/cs.json l10n/da.js l10n/da.json l10n/de.js l10n/de.json l10n/el.js l10n/el.json l10n/en.
+keepiq	1816	6bce7859193afe2e9d68403c55748a003ac16869	CONFLICT	merge8	conflicts with development; files: lib/Service/AdminSettingsService.php src/store/modules/health.js src/views/settings/Settings.vue src/views/settings/adminAreas.js tests/Unit/Service/golden/admin-settings-payload.json 
+keepiq	1826	6a8875d0677a112953c783a741f3ecdcdc0f6aea	CONFLICT	merge8	merges clean on development alone; files: appinfo/info.xml openapi.json 
+keepiq	1815	4bf358827265045609ffe71c4d85cc3ee402707d	RED	merge8	adds unit failure(s) with the PRs before it in the tree: GdprServiceSectionsTest::testOrganisationListsOnlyOrganisedSecrets
