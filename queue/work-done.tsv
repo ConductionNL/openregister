@@ -12382,3 +12382,4 @@ verify:integriq:3595:757108c6	GREEN 3595, GREEN 3630: no new unit failures (9268
 verify:pipelinq:3850:b98fad66	3850, 3851, 3852 GREEN; 8473 tests OK	session-20261114T235442-bc1b76db	2026-11-15T00:44:47Z
 review:opencatalogi:2652:73737f2e	GREEN: per change spec, auth gate intact; unit 5724 (2 inherited failures)	session-20261114T234938-86f69098	2026-11-15T00:44:53Z
 fix:versioniq:707:edd40e93	merged development (clean), pushed 52b14c8561adf06af1a82734ece2b5c766b2991b, REVERIFY; 2 inherited golden failures also on development	session-20261115T001714-673c9984	2026-11-15T00:45:12Z
+fix:versioniq:728:890f0f0f	merged development in (clean); new head 0ec98de1ebfedcb10bcbaf8893cb8dd5fff0b76e	session-20261114T234933-5c1be121	2026-11-15T00:45:26Z
