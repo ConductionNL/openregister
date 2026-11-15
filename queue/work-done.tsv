@@ -14838,3 +14838,4 @@ review:shillinq:1991:29abf7fb	GREEN; vitest 1 inherited failure	session-20261115
 review:shillinq:2230:62ff7961	GREEN: build ok, vitest only inherited failure	session-20261115T200026-9a5b8685	2026-11-15T20:38:01Z
 fix:filinq:2123:9de4be6b	fixed: 3 conflicts + audit API adaptation, unit 6863 OK; head e76e9dab	session-20261115T200020-0f65b959	2026-11-15T20:38:10Z
 review:shillinq:2228:ec4b69c7	GREEN: eslint range bump, no lint drift	session-20261115T174747-978963d5	2026-11-15T20:38:23Z
+fix:filinq:2122:57380f5f	conflict resolved (register 8.57.0), unit 6829 green, new head c15c52d2	session-20261115T203013-157346e0	2026-11-15T20:38:32Z
