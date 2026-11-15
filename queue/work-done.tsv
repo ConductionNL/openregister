@@ -13806,3 +13806,4 @@ verify:versioniq:732:cc08f5ca	GREEN: 732 (ocp patch bump), no new failures	sessi
 review:thematiq:1117:29c03f73	RED: phpmd 3 adds 3 violations, composer phpmd fails	session-20261115T154258-dee2cc3d	2026-11-15T17:11:40Z
 review:stackiq:1432:4c6faab0	RED (11 CmdbExportImportServiceTest failures from the delete double; conflicts with development)	session-20261115T141023-b06d51da	2026-11-15T17:11:53Z
 review:thematiq:1303:392c8254	BLOCK: generated-file conflicts; checks clean on head	session-20261115T154255-e54527e9	2026-11-15T17:12:22Z
+fix:portaliq:2527:ee0b0ee1	merged development, conflicts resolved (register 0.119.0), pushed c2ba60d8; REVERIFY queued	session-20261115T154300-03b63424	2026-11-15T17:12:42Z
