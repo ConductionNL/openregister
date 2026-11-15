@@ -3424,3 +3424,13 @@ planninq	910	b94a91172cb01e22709d8306fe1cc09332e70681	RED	merge8	GATE RED sbom: 
 planninq	918	a2f30b5287b08459630446ba4878a1b31ad4273a	RED	merge8	GATE RED sbom: composer.lock changed without sbom.cdx.json
 planninq	1068	0077bc6d09addfee7b801ca19af62ba4a1f7ba55	RED	merge8	GATE RED sbom: composer.lock changed without sbom.cdx.json
 planninq	1070	e04ed25c6a38cd623b1359257033a777bd5bffbc	RED	merge8	GATE RED sbom: composer.lock changed without sbom.cdx.json
+buildiq	820	306021ea136ff1a86cd0c87615c936f65f3c1e52	RED	merge8	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+buildiq	1088	419fccd1b6a26e0fe37d8fbe07c0f01a88fd4126	RED	merge8	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+buildiq	1090	8b2df26aae4a757aa76b853ce2ae74bd85655daa	RED	merge8	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+buildiq	1092	8fb29c552c3dff86010f859bbbc198a8da2996db	RED	merge8	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+buildiq	1093	16b82bb91867244ecca9666282941f1f11c78e14	RED	merge8	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+buildiq	1114	1c8fce1e297010eb75a6996830da4dc2adf928db	RED	merge8	GATE RED sbom: composer.lock changed without sbom.cdx.json
+buildiq	1248	82ce29adc92e8f6bfe0fd73c2061aa4c78f205ec	RED	merge8	GATE RED sbom: composer.lock changed without sbom.cdx.json
+buildiq	1249	a5648e987487a374090e3b7ea665fbc82be11190	RED	merge8	GATE RED sbom: composer.lock changed without sbom.cdx.json
+buildiq	1620	64b6280e87953fe682298d13d65bc3e6db7a28d1	RED	merge8	GATE RED absolute floor: buildiq maintainability 3.89 after merge is below its floor 3.91
+buildiq	1622	b26786dc74ba108460cc9a6123ccb7f5f01f4261	MERGED	merge8	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.91 holds at 3.91
