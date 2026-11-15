@@ -3592,3 +3592,12 @@ filinq	1848	ac00c57a86feb7e018e486715966d85e07591a82	MERGED	merge3	GATE OK sbom,
 filinq	1962	e4994b11c3361b8e44cf9841e1c63f4084425419	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
 filinq	1963	4c69544209aba34495684a1fbb6ce3a72979fe39	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
 filinq	2070	5c49e6f2da56cc0cc41d9a41091fe8eebdf7b01d	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.09
+learniq	864	9226e15066823ee4c331af08a3302a451585f093	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 3.99
+learniq	1158	bb9f61d906858f8ec8edd8e63b8b4d0fb4216cec	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+learniq	1162	18f186f9acf56f9062a100c08aa8ada630a781dd	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+learniq	1169	9731f440c8c263f83eaa47d2eb85409bf84524e3	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+learniq	1727	937a06717963b48f8b8ebd2e0983d0d52759a4b5	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
+learniq	1903	3f6c3b607560531cfd6b2df4567f44762b6caa7e	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
+learniq	2123	eeb728d3d4d1403ec465b4935a3381402d44801b	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 3.99
+learniq	2126	af7f7379f6ac7a9316577188b001e88f886eccb9	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
+learniq	2127	6e8befed2ebb8dcdf00d96b8412d1052c7454758	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
