@@ -13156,3 +13156,4 @@ build4:openregister:unit-test-coverage:c5	partial: PR #10527 head fac3a213 + 12 
 verify:pipelinq:3875:9f4b8976	GREEN #3875	session-20261115T142947-86d9b7fe	2026-11-15T15:13:12Z
 cover:decidiq:a5f973bbm0262:58192586	PR #2216: 3 classes (DossierCategory, OpenRegisterArchive, SecurityClassification), 46 tests added, suite 4461 -> 4507 OK	session-20261115T142129-944012f5	2026-11-15T15:13:28Z
 build:hermiq:store-through-federated-config:c7	partial: hermiq#1736 +1c21a821 ticks 2.1-2.6 (G1-G6 built on openregister build/store-through-federated-config, PR open); left 3.3 route through engine and 3.4 delete bespoke services, blocked until that openregister PR is on main	session-20261115T142947-86d9b7fe	2026-11-15T15:14:48Z
+review:openregister:10584:6dc48682	APPROVE: additive read-only mapper method, suites green	session-20261115T142931-4c5be241	2026-11-15T15:14:56Z
