@@ -13715,3 +13715,4 @@ review:shillinq:2070:036e98c2	CONFLICT: 11 files conflict with development	sessi
 review:shillinq:2071:027f8107	BLOCK (conflict only): 5 files conflict with development's refactor 4133ba516; the change tightens access and should be carried over	session-20261114T095641-533e2a00	2026-11-15T16:57:11Z
 review:shillinq:2253:69b4e3e6	BLOCK: wrong ObjectDeletion namespace (Kernel\Contracts\Value on OR main), 9 conflicts	session-20261115T152558-f97be55f	2026-11-15T16:57:25Z
 review:shillinq:2767:c0cd6601	RED: psalm 7.2 lock uninstallable under config.platform php 8.3	session-20261115T155903-abd003e3	2026-11-15T16:57:46Z
+review:shillinq:2091:67b5afb6	BLOCK: superseded by development (same feature already merged); close as obsolete	session-20261115T142934-de7c51d0	2026-11-15T16:57:52Z
