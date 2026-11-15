@@ -13733,6 +13733,7 @@ review:shillinq:1965:6dd9752c	CONFLICT (version + lock fixture only); additive s
 review:shillinq:2259:f41c6ff8	CONFLICT: 2 files conflict with development; OR API present on main	session-20261115T154258-dee2cc3d	2026-11-15T16:59:06Z
 review:shillinq:2230:b859457f	GREEN: patch bump, build ok, 1 inherited vitest failure	session-20261114T102641-d4fd3e25	2026-11-15T16:59:14Z
 review:shillinq:2227:13c58709	BLOCK: @vueuse/core 15 outside the component library peer range	session-20261115T142934-6cab0c24	2026-11-15T16:59:27Z
+review:planninq:725:6961dd1e	GREEN (dep bump; vitest and build ok)	session-20261115T141023-b06d51da	2026-11-15T16:59:37Z
 review:shillinq:2411:6ca5ae67	BLOCK: targets openregister settings value objects that exist only on an unmerged branch; would fail against openregister main	session-20261114T095641-533e2a00	2026-11-15T16:59:35Z
 review:shillinq:2408:837e65b7	BLOCK: create(layout:) does not exist in OpenRegister main; stub masks it; also conflicts	session-20261115T142149-1d09fceb	2026-11-15T16:59:46Z
 review:shillinq:2766:64b9e198	GREEN: phpstan minor bump, analyse clean on both	session-20261114T075643-acecaad6	2026-11-15T16:59:55Z
@@ -13802,3 +13803,4 @@ review:shillinq:2096:7e23465b	RED: 2 new unit failures (openapi route undocument
 verify:opencatalogi:2699:979a13f9	2730 GREEN (vitest 1123 OK, phpunit baseline 2 inherited); 2699 skipped: head moved	session-20261115T155903-abd003e3	2026-11-15T17:11:11Z
 verify:versioniq:732:cc08f5ca	GREEN: 732 (ocp patch bump), no new failures	session-20261115T155904-a7df5bc0	2026-11-15T17:11:26Z
 review:thematiq:1117:29c03f73	RED: phpmd 3 adds 3 violations, composer phpmd fails	session-20261115T154258-dee2cc3d	2026-11-15T17:11:40Z
+review:stackiq:1432:4c6faab0	RED (11 CmdbExportImportServiceTest failures from the delete double; conflicts with development)	session-20261115T141023-b06d51da	2026-11-15T17:11:53Z
