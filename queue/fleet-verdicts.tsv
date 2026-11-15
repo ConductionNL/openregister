@@ -10741,3 +10741,4 @@ versioniq	719	8d1c90cb512dcb68587a300d1e9538574ef8bc4e	CONFLICT	worker-24	confli
 versioniq	722	98541474495be6d0496d9e0bfcde1b0a7e6bcb33	CONFLICT	worker-24	conflicts in src/components/HistoryPanel.vue and HistoryPanel.spec.ts after 699+714
 shillinq	3083	6a01db375b066370087fcfa627d2cf9d1e2885b1	GREEN	worker-29	unit 11917 tests on tree, baseline 11471 OK, no new failures; tests only
 shillinq	3084	0dfa98cab21e8fc3165cbba36e46686c11d33a90	CONFLICT	worker-29	add/add conflict with 3082 on Standards/Checks NationalExtraTail/NationalReportingTail tests
+shillinq	2995	58069ff7bee36fef424f115faa2405112fae8945	GREEN	worker-14:review	matches tax-investment-deduction-claims specs; calculate endpoint checks post rights (masked 404); PHP unit 11482 OK (dev 11471 OK); vitest 2757/2758, the 1 failure dunningNextRun.spec.js is inherited from development; manifest budget pass
