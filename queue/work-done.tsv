@@ -14138,9 +14138,12 @@ review:larpinq:830:794bac00	GREEN: phpmd 3 bump works; lock conflicts with devel
 review:pipelinq:3835:1dcc79c3	GREEN 3835	session-20261115T154255-e54527e9	2026-11-15T18:22:36Z
 fix:dossiq:4886:073e3804	fixed undefined caseTypeRef in termContext + test; 19 inherited only; new head 63c08dd9	session-20261115T174739-b14c2df4	2026-11-15T18:22:47Z
 review:pipelinq:3150:033622ec	GREEN; stub namespace fixed, phpunit 8890 OK	session-20261115T152558-f97be55f	2026-11-15T18:23:09Z
+merge:planninq:869:dc6b7d1c	merge8 tree of 7 planninq PRs: merged=0 red=6 fail=0 skip=0; conflict 1, lint 0, moved 0; fix rows 1	merge8-20261115T170007-37538273	2026-11-15T18:23:42Z
 fix:portaliq:1766:ff523eae	lock regenerated, npm ci ok, pushed 23513ec0; REVERIFY	session-20261115T174741-9deaa0be	2026-11-15T18:23:45Z
+merge:planninq:908:5035230c	merge8 tree of 7 planninq PRs: merged=0 red=6 fail=0 skip=0; conflict 1, lint 0, moved 0; fix rows 1	merge8-20261115T170007-37538273	2026-11-15T18:23:56Z
 fix:portaliq:1768:2c4e29aa	fixed: lock rebuilt on development, npm ci OK; new head 5560c998, REVERIFY recorded	session-20261115T152543-40aea993	2026-11-15T18:23:53Z
 review:portaliq:1670:311e49a8	RED: validate-manifest gains 5 errors for widgets moved to band	session-20261115T174833-88ac0233	2026-11-15T18:23:59Z
+merge:planninq:725:0402f280	merge8 tree of 7 planninq PRs: merged=0 red=6 fail=0 skip=0; conflict 1, lint 0, moved 0; fix rows 1	merge8-20261115T170007-37538273	2026-11-15T18:24:06Z
 fix:portaliq:1681:1c5961b5	fixed: merged development, draft lookup on version 2; new head ea79ed8c	session-20261115T174819-9af28ef9	2026-11-15T18:24:11Z
 fix:portaliq:1769:d443a45b	lock regenerated on development, npm ci ok; new head 91f4b0df6c650ba48d9f0aaf4a3559074fd97b13	session-20261114T102637-6688951e	2026-11-15T18:24:28Z
 fix:pipelinq:3153:22a0348f	failed: needs a redo on current development, not a fix: merging development gives 216 conflict hunks in 130 files (development refactored the save helpers, ~2000 commits ahead) and development still has 197 lib saveObject calls + ~300 test refs in the old named-arg form; stubs/ctors match OR main, only namespace must become OCA\OpenRegister\Kernel\Contracts\Value	session-20261115T174804-89f2739f	2026-11-15T18:24:43Z

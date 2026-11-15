@@ -3434,3 +3434,12 @@ buildiq	1248	82ce29adc92e8f6bfe0fd73c2061aa4c78f205ec	RED	merge8	GATE RED sbom: 
 buildiq	1249	a5648e987487a374090e3b7ea665fbc82be11190	RED	merge8	GATE RED sbom: composer.lock changed without sbom.cdx.json
 buildiq	1620	64b6280e87953fe682298d13d65bc3e6db7a28d1	RED	merge8	GATE RED absolute floor: buildiq maintainability 3.89 after merge is below its floor 3.91
 buildiq	1622	b26786dc74ba108460cc9a6123ccb7f5f01f4261	MERGED	merge8	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.91 holds at 3.91
+launchpad	756	a464d5dba1f2baf02f797bfb5842e43ec2f6f1a0	RED	merge8	GATE RED sbom: composer.lock changed without sbom.cdx.json
+launchpad	758	06d536b2468b7cf1106e97eb1720c556e70c40e7	RED	merge8	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+launchpad	819	9dcfeabe678b29ba239e19aec8752d4b1f676af4	RED	merge8	GATE RED sbom: composer.lock changed without sbom.cdx.json
+launchpad	880	04f9f39fbccd98e0402f0f1b1dae8f1e06dce5fd	RED	merge8	GATE RED sbom: composer.lock changed without sbom.cdx.json
+launchpad	961	6afb1922ec1741d66c8a9c0be5149a9319904cdb	MERGED	merge8	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.65 holds at 3.69
+launchpad	977	dd835410dc5adc1e3f7a756c55b1ec0c23ca0c63	RED	merge8	GATE RED sbom: composer.lock changed without sbom.cdx.json
+launchpad	1098	1720a6d32297542976c2d048a6d2ff7084e2193d	RED	merge8	GATE RED sbom: composer.lock changed without sbom.cdx.json
+launchpad	1229	444ff7437a3d1799b71fe7a73eda4109cc9b4db1	RED	merge8	GATE RED floor: unit_complexity: 4.73 -> 4.69; unit_interfacing: 3.57 -> 3.55
+launchpad	1234	d725a0f05e32e8677fad84090dc7925f03492fe2	RED	merge8	GATE RED sbom: package-lock.json changed without sbom.cdx.json
