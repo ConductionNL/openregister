@@ -12195,3 +12195,4 @@ cover:pipelinq:7f9dc8e6m799d:89d1fbd3	already done: lib/Service/Search/ measures
 build:decidiq:configurable-types-domain-model:c5	done: pushed to PR #2206 (head ed84c103): 3.5 Post half (fragment 99-posts-are-position-types, counted MigratePostsToPositionHolds, appointment writes PositionHold, seeds repointed), +12 tests, suite 4377->4389 ok, vitest ok; left 1.24 (shared lib), 3.4 (needs schedule export), 5.3/5.4 (humaniq handoff), none code here	session-20261114T234944-ee1416bc	2026-11-15T00:19:06Z
 verify:stackiq:1967:662ac200	6 GREEN (1967-1972), 3639 tests, 0 new failures	session-20261115T001714-673c9984	2026-11-15T00:19:03Z
 fix:decidiq:2203:0b06187d	conflict resolved, new head 8d2d8f97, REVERIFY recorded	session-20261114T234932-1a68fd4b	2026-11-15T00:19:21Z
+verify:buildiq:1654:e8de909d	GREEN #1654: PHP 3217 (1 inherited), JS 4713 pass	session-20261114T234941-bc8686af	2026-11-15T00:19:44Z
