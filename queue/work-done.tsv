@@ -13122,3 +13122,4 @@ merge:shillinq:3100:051d682a	merge3 tree of 6 shillinq PRs: merged=6 red=0 fail=
 review:filinq:2070:6f40e77a	GREEN: phpunit 6786 OK, jest 570, vitest 763	session-20261115T145555-b33410db	2026-11-15T15:06:00Z
 verify:portaliq:2508:e658426a	2508 GREEN (6120 tests, 0 new failures)	session-20261115T142145-a288b021	2026-11-15T15:06:07Z
 review:openregister:10582:ad7a0b9b	APPROVE: tests only, all gate suites green	session-20261115T142931-4c5be241	2026-11-15T15:06:28Z
+cover:openregister:7350e3efm1efa:9b457b26	PR #10585: 7 classes, 25 new tests + @uses fixes in 8 tests; Flow uncovered 358->222 stmts	session-20261115T142947-86d9b7fe	2026-11-15T15:06:44Z
