@@ -1,2 +1,0 @@
-- [x] 1.1 rematerialise skips `fallback` calculations in the did-it-materialise check
-- [x] 1.2 tests (RematerialiseFallbackCalculationTest), red first

@@ -1,2 +1,0 @@
-- [x] T01 Cast organisation Buurtvereniging Oost and person Marja Verbeek with their entries
-- [x] T02 PHPUnit: the shipped Zuiddrecht set names them and resolves

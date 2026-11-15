@@ -1,4 +1,0 @@
-- [x] T01 Catalogue reads and checks quota and members of a cast organisation
-- [x] T02 A new organisation is created with its quota and members
-- [x] T03 Zuiddrecht: Waterland gets its quota and Marieke and Pieter as members
-- [x] T04 PHPUnit

@@ -1,9 +1,0 @@
-{
-  "schema_version": 2,
-  "spec_slug": "add-live-updates",
-  "app": "openregister",
-  "repo": "https://github.com/ConductionNL/openregister",
-  "issue": null,
-  "depends_on": [],
-  "cycles": []
-}

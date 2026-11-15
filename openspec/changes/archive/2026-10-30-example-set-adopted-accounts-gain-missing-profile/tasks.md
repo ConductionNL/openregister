@@ -1,2 +1,0 @@
-- [x] 1.1 ExampleSetProfiles::fillMissing(); ExampleSetPeople writes it for an adopted account
-- [x] 1.2 tests (ExampleSetProfilesTest)

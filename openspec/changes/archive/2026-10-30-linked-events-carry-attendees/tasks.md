@@ -1,2 +1,0 @@
-- [x] 1.1 attendees on link-table rows (CalendarLinkService)
-- [x] 1.2 tests (CalendarLinkServiceTest), red first

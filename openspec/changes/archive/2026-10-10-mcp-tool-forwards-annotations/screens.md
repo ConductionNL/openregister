@@ -1,1 +1,0 @@
-- No screen: a PHP attribute parameter read by the MCP tool scanner; it changes tool descriptors, not a page.

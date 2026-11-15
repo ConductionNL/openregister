@@ -1,7 +1,0 @@
-{
-    "standard": "schema.org",
-    "version": "schemaorg-current-https-27.01",
-    "release": "27.01",
-    "source": "https://schema.org/version/27.01/schemaorg-current-https.jsonld",
-    "note": "Curated subset of the official schemaorg-current-https JSON-LD release, sufficient for the common open-data types (Thing, Person, Organization, Place, PostalAddress, ContactPoint, CreativeWork, Event). Refresh via tools/generate-schemaorg-snapshot against the full upstream release."
-}

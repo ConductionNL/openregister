@@ -1,3 +1,0 @@
-- [x] 1.1 ExampleSetViews: derived uuid on write, update in place
-- [x] 1.2 ExampleSetEngineRows: updatesInPlace() and update(), mode() and writeOrUpdate()
-- [x] 1.3 tests (ExampleSetViewsTest, ExampleSetHeldEntriesTest)

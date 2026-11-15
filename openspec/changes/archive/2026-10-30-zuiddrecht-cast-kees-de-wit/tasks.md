@@ -1,2 +1,0 @@
-- [x] T01 Cast person Kees de Wit, secretary of Buurtvereniging Oost, without BSN or account
-- [x] T02 PHPUnit: the shipped Zuiddrecht set names him, with no BSN and no account

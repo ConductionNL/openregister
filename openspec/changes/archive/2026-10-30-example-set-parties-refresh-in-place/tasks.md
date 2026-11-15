@@ -1,2 +1,0 @@
-- [x] 1.1 parties in REFRESHED; ExampleSetParties::updatesInPlace()
-- [x] 1.2 tests (ExampleSetPartiesTest)

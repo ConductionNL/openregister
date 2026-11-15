@@ -1,7 +1,0 @@
-From: Alice Bakker <alice@example.com>
-To: Bob de Vries <bob@example.com>
-Subject: Email with bad date
-Date: this-is-not-a-date
-Content-Type: text/plain; charset=UTF-8
-
-Email with malformed date header.
