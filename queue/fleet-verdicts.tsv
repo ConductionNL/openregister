@@ -11085,3 +11085,4 @@ dossiq	6541	27cfda33c578b3c0f12b6d57186ec31b04e529ba	GREEN	worker-18	unit 17424 
 dossiq	6542	2aac516c52ecfcb2255dcac04f69ac879c56f5ce	GREEN	worker-18	unit 17424 tests on tree, baseline 29 failures (17383 tests), 0 new failures; tests only
 dossiq	6543	92a7ddfc9df1a1daf824eebae809493f80aa91a2	GREEN	worker-49	17390 tests run (+7), baseline 13 failures (inherited stub drift), 0 new; tests only
 stackiq	1954	8b717642825f15a77b91d0474b0a2b20a527c110	GREEN	worker-14	phpunit 3638 OK (baseline 3626 OK, 0 new failures); vitest 1 failure inherited from development (facets.spec FACET_DIMENSIONS)
+portaliq	2498	b177669a04c071a5569040a1c828ebede28c77fb	REVERIFY	worker-56	merged development in, kept both sides' l10n keys, regenerated l10n/*.js (check:l10n-js clean; schema-l10n 29 uncovered same as development); new head 23c4f3e4423582c61cda2e36c6fa3d550d39e5ad, verify it
