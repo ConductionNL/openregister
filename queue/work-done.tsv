@@ -12854,3 +12854,4 @@ build4:openregister:production-observability:c4	partial: PR #10537 (+1 commit, h
 verify:launchpad:1226:39c42839	GREEN launchpad#1226: no new failures (php 4288, vitest 2539)	session-20261115T021828-68c5f276	2026-11-15T02:22:44Z
 build4:openregister:widget-record-import:c4	PR #10542 +1 commit 3d310a48: 5.2 row progress (ImportProgress cache, admin-only GET progress route, dialog polling), 13 PHP + 9 JS tests; every code task ticked, V1-V6 live checks left; unit suite: only inherited failures (ExampleSetTalkStore, network-bound ReservedColumnNames)	session-20261115T011803-3ec5f099	2026-11-15T02:23:13Z
 verify:launchpad:1212:74d5caea	1212 GREEN (no new failures; build matches its change)	session-20261115T015406-eecdf998	2026-11-15T02:23:22Z
+cover:integriq:92114ab0m6759:6dc9019f	PR #3655: 6 tests, lib/Service/Registry statements 96.19->100%	session-20261115T011811-95390b97	2026-11-15T02:23:31Z
