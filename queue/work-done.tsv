@@ -15151,3 +15151,4 @@ review:decidiq:1950:e876f7ce	GREEN: phpstan 2.3.5 clean, unit 4624/4624 pass	ses
 review:versioniq:504:918e8ff3	GREEN: dev-only stylelint bump, stylelint clean, vitest 3012 OK	session-20261115T213110-6b33145c	2026-11-15T21:46:53Z
 review:versioniq:732:edb0233b	GREEN: lock-only ocp bump, unit suite matches baseline	session-20261115T213112-78aba834	2026-11-15T21:47:00Z
 review:decidiq:1944:e77db8b0	GREEN: ObjectFindOptions migration, behaviour preserved, 4624 tests green	session-20261115T213101-2fb56005	2026-11-15T21:47:10Z
+review:versioniq:508:4df37973	GREEN: plugin-vue patch, vitest 3012/3012, build ok	session-20261115T211111-34885d99	2026-11-15T21:47:21Z
