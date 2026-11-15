@@ -12974,3 +12974,4 @@ merge:planninq:1189:d736a658	merge3 tree of 8 planninq PRs: merged=5 red=0 fail=
 merge:planninq:1190:a4800882	merge3 tree of 8 planninq PRs: merged=5 red=0 fail=0 skip=3; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-15T04:09:42Z
 merge:planninq:1183:d7c43a4c	merge3 tree of 8 planninq PRs: merged=5 red=0 fail=0 skip=3; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-15T04:09:45Z
 merge:planninq:1192:81d1f115	merge3 tree of 8 planninq PRs: merged=5 red=0 fail=0 skip=3; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-15T04:09:48Z
+merge:launchpad:1214:6c4ae51e	merge3 tree of 6 launchpad PRs: merged=2 red=1 fail=0 skip=1; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-15T04:12:41Z
