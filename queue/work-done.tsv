@@ -15101,3 +15101,4 @@ review:learniq:1167:61811d4d	GREEN: sass dev bump, no new test failures	session-
 review:learniq:1169:6f8c6510	GREEN: webpack bump builds; no new test failures (9 js + 1 php inherited)	session-20261115T213100-e547b457	2026-11-15T21:36:08Z
 review:learniq:1903:a21f3b3b	GREEN: ocp 35.0.2 lock bump, suite 6868 tests, 1 inherited failure	session-20261115T213110-6b33145c	2026-11-15T21:37:01Z
 review:larpinq:961:06d9f9ca	GREEN: dev-only hydra-gates bump, no new gate failures, 986 unit tests OK	session-20261115T213156-1ffcf961	2026-11-15T21:37:12Z
+review:integriq:2562:7e5a8712	GREEN: vueuse 15, vitest 2387/2387, build ok (peer-range note)	session-20261115T211111-34885d99	2026-11-15T21:37:22Z
