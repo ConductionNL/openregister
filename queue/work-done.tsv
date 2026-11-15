@@ -13610,3 +13610,4 @@ review:launchpad:961:6afb1922	GREEN: copy-only rename; vitest 2578 OK	session-20
 review:pipelinq:3153:22a0348f	BLOCK: OpenRegister save-option classes imported from old namespace	session-20261115T155921-aabf185f	2026-11-15T16:35:53Z
 review:pipelinq:3281:c765403c	BLOCK: lock not installable under config.platform php 8.3	session-20261115T142951-2463b4c4	2026-11-15T16:36:02Z
 review:pipelinq:3142:e7c6f9ad	GREEN: spec-only, validates	session-20261114T102637-6688951e	2026-11-15T16:36:26Z
+review:pipelinq:2507:ecccdb3f	BLOCK: obsolete, development already on nextcloud-vue 2.180 with these changes	session-20261115T145555-b33410db	2026-11-15T16:36:49Z
