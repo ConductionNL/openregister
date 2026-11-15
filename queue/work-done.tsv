@@ -14923,3 +14923,4 @@ fix:keepiq:1496:c1d424cc	lock cleaned, sbom current (dev-only); new head ab29391
 fix:integriq:2744:58fef09b	sbom regenerated, pushed 53deb98f, REVERIFY recorded	session-20261115T195957-8e60ca53	2026-11-15T20:52:28Z
 fix:opencatalogi:2678:3f20c722	CONFLICT resolved (l10n union + rebuild); new head 05397e9f, REVERIFY recorded	session-20261115T203018-dcff1ace	2026-11-15T20:52:38Z
 fix:opencatalogi:2407:21b8b65a	merged development, regenerated sbom; REVERIFY 15ee026e	session-20261115T200045-d3bb5c75	2026-11-15T20:52:49Z
+fix:integriq:2710:8b1d42d4	sbom regenerated; new head 4de6b79e, REVERIFY recorded	session-20261115T203016-ff00326d	2026-11-15T20:52:58Z
