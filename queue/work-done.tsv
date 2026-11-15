@@ -13398,3 +13398,11 @@ review:filinq:1309:ba8558cc	CONFLICT: package-lock.json vs development; PR alone
 review:dossiq:3203:021d79cc	RED: @nextcloud/vue 9.13.1 needs newer @nextcloud/files; 36 vitest files fail vs 2 baseline; lock conflict	session-20261115T154316-34f0db35	2026-11-15T15:59:23Z
 review:filinq:1313:0908232d	CONFLICT: package-lock.json conflicts with development; bump itself harmless	session-20261115T154258-dee2cc3d	2026-11-15T15:59:35Z
 review:dossiq:3197:4bd6d2ba	GREEN: router minor bump; vitest 7178 pass, 2 inherited failures, 0 new	session-20261115T154407-94bf5f8c	2026-11-15T15:59:43Z
+review:filinq:1304:4ad5da28	GREEN 1304 (vitest equal to baseline)	session-20261115T142201-ea23e682	2026-11-15T16:00:04Z
+review:filinq:1355:1c90e8ba	GREEN: phpmd 3 runs, unit suite green; note +3 coupling findings on unchanged code	session-20261115T154254-3d07b219	2026-11-15T16:00:12Z
+review:dossiq:5397:e528f075	GREEN: phpstan dev bump; suite and phpstan output unchanged vs development	session-20261115T142934-de7c51d0	2026-11-15T16:00:18Z
+review:filinq:1756:88533afc	GREEN: 6770 unit OK	session-20261115T154255-e54527e9	2026-11-15T16:00:27Z
+review:filinq:1962:e4994b11	GREEN 1962: patch bump, suite green	session-20261115T142958-341f60db	2026-11-15T16:00:39Z
+review:filinq:1086:be9ddbad	GREEN (lock-only dev tooling bump, suite OK)	session-20261115T142949-9c6a3945	2026-11-15T16:00:48Z
+review:dossiq:5357:5c357cd0	BLOCK: imports OpenRegister ObjectPatch at a namespace that exists on neither OR branch; patch path would fatal	session-20261115T152552-0cb4306e	2026-11-15T16:01:02Z
+review:filinq:1964:b0847184	RED: psalm 7.2.1 lock is unsatisfiable under config.platform php 8.3, so composer install fails	session-20261115T145533-2db61682	2026-11-15T16:01:12Z
