@@ -15016,3 +15016,4 @@ review:keepiq:1499:88c1cad1	GREEN	session-20261115T202932-d1067ee4	2026-11-15T21
 review:filinq:2088:7e328ebd	RED: GenerationSourceObject uses old find() API vs development; 1 new test failure	session-20261115T211111-34885d99	2026-11-15T21:15:14Z
 fix:decidiq:1471:b6694064	stale	feeder	2026-11-15T21:15:07Z
 fix:decidiq:1737:43c02ff7	stale	feeder	2026-11-15T21:15:07Z
+review:filinq:2122:c15c52d2	BLOCK: new repair uses dropped OR save args (silently re-points nothing); tests ok	session-20261115T203012-30a1abde	2026-11-15T21:17:01Z
