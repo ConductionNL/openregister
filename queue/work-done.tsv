@@ -14466,3 +14466,4 @@ fix:buildiq:1652:023b900b	merged development (clean now); pushed 74a237c7, REVER
 fix:buildiq:1233:f1c8aa72	conflict resolved; l10n OK; new head fbc18f00	session-20261115T181015-497e81ce	2026-11-15T19:14:41Z
 fix:launchpad:1230:f043acfc	merged development (clean), suite green, pushed 30aa8e54; REVERIFY	session-20261115T174741-9deaa0be	2026-11-15T19:14:48Z
 fix:buildiq:1090:8b2df26a	sbom regenerated, new head 8e11ea7a	session-20261115T185929-0fc862a6	2026-11-15T19:14:59Z
+fix:buildiq:1608:b3506415	sandbox enforced by response CSP, headers restored, pushed 08f7f4d3; REVERIFY recorded	session-20261115T174750-744c606b	2026-11-15T19:15:11Z
