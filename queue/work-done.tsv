@@ -13821,3 +13821,4 @@ review:stackiq:1069:500f69e7	CONFLICT: package-lock.json conflicts with developm
 review:opencatalogi:2652:dc289b2f	GREEN: implements its change, no new failures	session-20261115T155902-521936b1	2026-11-15T17:14:06Z
 fix:buildiq:1277:e4d24801	failed: waits on openregister: SettingsPlacement/SectionAppearance/AdminFormServices still not on openregister main; nothing to fix in buildiq until that lands	session-20261115T154300-03b63424	2026-11-15T17:14:26Z
 fix:filinq:2072:7e876bbd	merged development in cleanly, suite green; new head effbf58ca359564cb79a653edd72e91327697525	session-20261114T102637-6688951e	2026-11-15T17:14:24Z
+fix:versioniq:717:dfe2ad20	conflicts resolved, pushed a769cc5a, REVERIFY recorded	session-20261115T155902-d9805df0	2026-11-15T17:14:53Z
