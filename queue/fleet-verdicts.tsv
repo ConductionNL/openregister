@@ -13310,3 +13310,12 @@ buildiq	1262	a0a4f2874c6db16ba6d9845bc8c1385d2d6ae0a4	GREEN	worker-15:review	4 l
 larpinq	877	0d04ecfc809c8f114723a77614d7ef4cddf938ef	GREEN	worker-02:review	composer.lock only: nextcloud/ocp 35.0.1 -> 35.0.2 plus symfony polyfill/process minor bumps. Merged with development: phpstan OK no errors; unit suite 986 OK, 20 skipped.
 opencatalogi	2059	fa65b8475bfd5a1fc55c6e7914ca1801c99dc08e	GREEN	worker-36:review	behaviour-preserving refactor: the five Mass*Objects dialogs share one shell and mixin; success/error/auto-close/refresh logic, messages, button variants and selection count unchanged; removed CSS was unused or a no-op; vitest 1171 OK; eslint 0 errors on src/modals/object
 integriq	2716	98572e4167aca01ea05fda93a4d015ea9f674d6a	GREEN	worker-07:review	vue 3.5.42->3.5.44 patch (+@vue/* and babel parser deps), no code change; vitest 2387/2387 pass and production webpack build succeeds (only size/sax warnings) merged with development
+thematiq	1070	422062557d516520c95eb7989761f60b434b7472	RED	merge8:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+thematiq	1124	c6a62f1f5b4a45a1285a0dcb7f634f9d956c6268	RED	merge8:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+thematiq	1286	9f97aee60e49cd3beb1abd47a86ad9284e632be6	RED	merge8:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+thematiq	1287	622c0c4827491c4cff70c85c9a6fb9083c091a4a	RED	merge8:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+thematiq	1288	34db28e552316cc82c53b0c81f09b27446ea45a8	RED	merge8:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+thematiq	1289	2557e0bad801f3a73a99cfa6f1d2ac0861598309	RED	merge8:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+thematiq	1556	ff5f73bc8d0dc6f12bac429db068c7a3da6df24b	RED	merge8:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+thematiq	1557	b3ab646d8fa634f7d71c5465a5553a97865a8929	RED	merge8:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+thematiq	1558	4e04b3da12fdd1e8be1832f3eeed91751c1e1667	RED	merge8:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
