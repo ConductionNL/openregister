@@ -14199,3 +14199,4 @@ fix:learniq:1168:41eae3eb	failed: blocked upstream: @conduction/nextcloud-vue 2.
 fix:shillinq:2099:b77de1fd	modify/delete resolved, tests rewritten; new head 8bc4dce59f34930f42389ad0056fdcbc139062e7, REVERIFY	session-20261115T174757-8dfa7406	2026-11-15T18:34:44Z
 review:portaliq:1997:3d645d7e	GREEN: matches openregister main signatures, suite green	session-20261115T174741-9deaa0be	2026-11-15T18:34:58Z
 fix:shillinq:2249:530fcbd0	fixed: import conflict merged; new head 55e36ecc	session-20261115T174819-9af28ef9	2026-11-15T18:35:15Z
+review:portaliq:663:7709e801	GREEN: opt-in, default unchanged; unit green	session-20261115T174808-50b8ceec	2026-11-15T18:35:23Z
