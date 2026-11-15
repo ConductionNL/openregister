@@ -14734,3 +14734,4 @@ review:stackiq:1435:b772719e	GREEN: phpunit 3719 ok, calls equivalent on openreg
 review:versioniq:709:fa10e6b8	GREEN: php = baseline, vitest ok	session-20261115T195953-2618bb8a	2026-11-15T20:18:44Z
 fix:dossiq:3196:ccb57e36	fixed: development merged, sbom.cdx.json regenerated; new head bdbdd4b2	session-20261115T182940-bfeb7e78	2026-11-15T20:18:51Z
 review:stackiq:1432:aee61a38	GREEN: matches main's deleteObject(ObjectDeletion), unit 3718/0 fail	session-20261115T201132-b8ddc5e5	2026-11-15T20:18:58Z
+fix:dossiq:4886	fixed: l10n canonical order after merging development; new head 19293aa0	session-20261115T200000-e95b89c2	2026-11-15T20:19:16Z
