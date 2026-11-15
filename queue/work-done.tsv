@@ -12121,3 +12121,4 @@ cover:shillinq:05639debm9818:d969c322	PRs #3085 (33 tests: CommitmentLedger, FX 
 review:hermiq:1754:2a87aaa9	GREEN: spec-conformant, unit 5248 OK, vitest 1533 OK	session-20261114T234952-566b7ef5	2026-11-15T00:03:36Z
 cover:decidiq:a5f973bbmae46:7556941f	PR #2211: 22 tests, lib/Service/Ori 92%->100%, suite 4377->4399 ok	session-20261114T234944-ee1416bc	2026-11-15T00:04:10Z
 build:larpinq:events-casting-and-crew-roles:c2	partial: PR #1054 head 3498aefd; tasks 1.1,1.2,3.1,4.2 built (guard+listener, seed, Casting tabs, docs, 36-locale strings); left 3.2 Playwright e2e (needs live instance); PHP 856->870, vitest 548->571 green	session-20261114T221759-cd5c5678	2026-11-15T00:04:37Z
+merge:versioniq:685:24d1ef05	merge3 tree of 14 versioniq PRs: merged=1 red=2 fail=0 skip=0; conflict 11, lint 0, moved 0; fix rows 11	merge3-20261113T213425-c36bcd5f	2026-11-15T00:04:56Z
