@@ -3155,3 +3155,6 @@ larpinq	1061	ceb98cfdabbe3f5cfe9b5b35a557f1119da01ca1	MERGED	merge3	GATE OK sbom
 launchpad	1203	a278d5830a7fe1371b61d67773695426eb2650d8	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.65 holds at 3.67
 launchpad	1206	c13e34be7837ccbc7cf299e72ef6a0346683b8ba	SKIP	merge3	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
 launchpad	1226	d96f04dad53098d2e7c3f6786804ab6fc0f69823	RED	merge3	GATE RED floor: unit_complexity: 4.73 -> 4.71
+versioniq	694	69cc235c74aa72a728613e9eb195e65e55d029c5	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.97 holds at 3.99
+versioniq	714	bab85cc58909b719d21a5b6ee59c6f86345648bc	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.97 holds at 3.98
+versioniq	733	12c4f99641c4c0ef361c42add879b5cc4b4412cc	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.97 holds at 3.98
