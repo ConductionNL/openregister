@@ -14378,3 +14378,4 @@ review:shillinq:2258:812b1f9e	GREEN: signature-only move to LifecycleActionConte
 review:shillinq:2098:f23dc6e2	GREEN: UI refactor, checks pass	session-20261115T174833-88ac0233	2026-11-15T19:01:14Z
 review:filinq:1965:1ed89699	GREEN	session-20261115T182948-465dcc8e	2026-11-15T19:01:42Z
 review:learniq:2134:cca08a57	CONFLICT: ~70 files conflict with development; no merged-tree verdict	session-20261115T174741-9deaa0be	2026-11-15T19:01:51Z
+review:filinq:1851:48cc416c	GREEN: deleteObject call-shape migration, behaviour unchanged, suite green	session-20261115T183029-6c0565bd	2026-11-15T19:02:01Z
