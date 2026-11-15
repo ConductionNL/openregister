@@ -13628,6 +13628,7 @@ review:planninq:1066:acc56236	BLOCK: wrong namespace for ObjectDeletion/ObjectFi
 review:pipelinq:3147:b0a445eb	BLOCK: stubs for unmerged openregister #9103; conflict; PartyReferenceMover caller incompatible	session-20261115T154254-3d07b219	2026-11-15T16:38:26Z
 review:planninq:1070:e04ed25c	GREEN: hydra-gates minor bump; no new failing gate, unit suite identical	session-20261114T075643-acecaad6	2026-11-15T16:39:06Z
 review:planninq:1069:9cba21b3	RED: lock not installable (psalm 7.1 needs php>=8.3.16, platform pinned 8.3)	session-20261115T154407-94bf5f8c	2026-11-15T16:39:27Z
+review:learniq:1896:e4ec9b91	BLOCK: phpmd 3 adds 14 CouplingBetweenObjects findings (rating) and deprecates the script's CLI form; unit suite unchanged	session-20261115T155904-a7df5bc0	2026-11-15T16:39:43Z
 review:pipelinq:3146:97b91f19	RED: 6 newer development Flow tests call the old execute() form; lib change itself correct	session-20261115T145535-3f9e5078	2026-11-15T16:39:45Z
 review:pipelinq:2108:6bc5f8a0	BLOCK: gridstack 14 outside nextcloud-vue peer range	session-20261115T152546-2c24b649	2026-11-15T16:39:59Z
 review:planninq:871:7d17dd48	BLOCK: lockfile conflict only; lint clean	session-20261115T154255-e54527e9	2026-11-15T16:40:11Z
@@ -13685,8 +13686,15 @@ review:portaliq:1682:505a7cd5	GREEN: ocp 35.0.2 dev bump, 6120 unit tests OK	ses
 review:portaliq:1994:6ba432f4	CONFLICT: 5 files conflict with development; 4 newer find() call sites still use register:/schema:	session-20261115T154311-e8600d84	2026-11-15T16:51:32Z
 review:portaliq:663:508c5fce	CONFLICT: register json + 2 tests; logic sound	session-20261115T154254-3d07b219	2026-11-15T16:51:52Z
 review:portaliq:2339:fd417084	BLOCK: rename/delete conflicts, development moved woo/ to build/woo/; no runtime code change	session-20261114T095641-533e2a00	2026-11-15T16:52:01Z
+review:portaliq:1582:9e21deee	GREEN: dompurify patch bump, lock installs with npm 11	session-20261115T155904-a7df5bc0	2026-11-15T16:52:17Z
 review:shillinq:1991:4377b437	GREEN: prettier bump adds no new format findings; vitest failure inherited	session-20261115T145533-2db61682	2026-11-15T16:52:15Z
 review:shillinq:2063:20eb03d6	CONFLICT: 3 files; note legacy approved runs without digest become unexportable	session-20261115T154254-3d07b219	2026-11-15T16:52:38Z
+review:portaliq:1997:a07869fb	BLOCK: wrong openregister namespace for BulkSaveOptions; conflict	session-20261115T154255-e54527e9	2026-11-15T16:52:48Z
 review:portaliq:1844:0fd00207	GREEN on its head; 13-file conflict with development	session-20261114T102641-d4fd3e25	2026-11-15T16:53:02Z
 review:portaliq:1767:fc41a4fc	BLOCK: merged lock out of sync with development (npm ci fails, missing pinia 4.1.0); needs lock regenerated	session-20261115T145546-378b432a	2026-11-15T16:53:12Z
 review:portaliq:1769:d443a45b	BLOCK: merged lock out of sync (pinia), npm ci EUSAGE	session-20261115T142934-6cab0c24	2026-11-15T16:53:20Z
+review:shillinq:2093:2cc2077c	CONFLICT: modify/delete on GRN detail component, spec and l10n conflicts	session-20261115T154258-dee2cc3d	2026-11-15T16:53:31Z
+review:portaliq:1843:0b799a1a	CONFLICT: parallel build of same change already partly on development	session-20261115T155915-84e5dc0a	2026-11-15T16:53:46Z
+review:portaliq:1657:489e5cbd	CONFLICT: manifest change sound but conflicts with development in src/manifest.json	session-20261115T152552-0cb4306e	2026-11-15T16:53:54Z
+review:portaliq:1764:a896834e	RED: npm ci fails, lock out of sync (pinia@4.1.0 missing)	session-20261115T152543-40aea993	2026-11-15T16:54:08Z
+review:shillinq:1873:68200d2c	BLOCK: obsolete, would downgrade nextcloud-vue 2.173.0 -> 2.60.0	session-20261115T142951-2463b4c4	2026-11-15T16:54:22Z
