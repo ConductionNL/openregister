@@ -11206,3 +11206,4 @@ versioniq	700	3c18ee39c94fb4fdb4346ae50dfee18563bf1405	CONFLICT	merge3	conflicts
 versioniq	724	56dbbd6b3b35d00ed489e65964d8ea674c2ed709	CONFLICT	merge3	merges clean on development alone; files: lib/Service/InstallerService.php 
 pipelinq	3863	82a98cede7a18ff1a170984f38420895a5fa6f1c	GREEN	worker-56	unit 8653 on tree vs baseline 8627, no failures; tests only
 pipelinq	3864	730c25fae3c5ecf1c14b8539fbaf559014aec955	CONFLICT	worker-56	add/add conflict with development in tests/vitest/posTenderTypeManagerMounted.spec.js and scorecardManagerMounted.spec.js
+larpinq	1053	e06c2e6d56a337b0f91019db10fe823a4fc44bea	REVERIFY	worker-17	merged development (clean), moved the new docs/features/README.md row away from the row siblings append after; phpunit 861 OK; new head 181ec51cd4e808def9d3795fed3b7a5de2e74239, verify it
