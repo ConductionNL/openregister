@@ -14230,3 +14230,4 @@ fix:shillinq:1959:9a607395	failed: not a conflict fix; branch deletes PurchaseOr
 review:shillinq:2086:28d36484	BLOCK: new service uses removed openregister named-arg API	session-20261115T181015-497e81ce	2026-11-15T18:39:19Z
 fix:shillinq:2259:f41c6ff8	fixed: merged development; new head 91b03c64	session-20261115T174819-9af28ef9	2026-11-15T18:39:34Z
 fix:shillinq:1958:66501062	fixed: conflicts resolved onto development refactor, new head 3f5a3226	session-20261115T174804-89f2739f	2026-11-15T18:39:45Z
+fix:shillinq:2411:6ca5ae67	failed: PR only adapts to openregister branch cloud/vox-generic-settings (SettingsPlacement/AdminFormServices/SectionAppearance), not on main; development already matches main's GenericAdminSettings constructor. Hold until that openregister change lands.	session-20261115T181015-497e81ce	2026-11-15T18:39:53Z
