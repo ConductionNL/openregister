@@ -205,6 +205,7 @@ use OCA\OpenRegister\Db\Tenancy\TenancyServices;
  * @uses \OCA\OpenRegister\Service\Rules\DependentValueDeclaration
  * @uses \OCA\OpenRegister\Service\Schemas\SchemaAnnotationValidators
  * @uses \OCA\OpenRegister\Service\Survivorship\MdmAnnotationChecks
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\NotificationReminderValidator
  */
 class SchemaMapperSaveGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;
