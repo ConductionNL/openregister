@@ -157,6 +157,38 @@ class ImportPreviewMapper extends QBMapper implements ImportPreviewFinderInterfa
 	}//end previewFrom()
 
 	/**
+	 * Runs created before a moment whose row detail has not been pruned yet,
+	 * oldest first. A run still being decided or written is never offered.
+	 *
+	 * @param DateTime $before The moment.
+	 * @param int      $limit  At most this many.
+	 *
+	 * @return ImportPreview[] The runs.
+	 *
+	 * @spec openspec/changes/runs-recorded-and-causes-named/specs/data-import-export/spec.md#requirement-import-detail-is-pruned-while-the-run-survives-req-rcn-007
+	 */
+	public function findUnprunedBefore(DateTime $before, int $limit): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->lt('created', $qb->createNamedParameter($before, IQueryBuilder::PARAM_DATETIME_MUTABLE)))
+			->andWhere($qb->expr()->isNull('rows_pruned_at'))
+			->andWhere(
+				$qb->expr()->notIn(
+					'state',
+					$qb->createNamedParameter(
+						[ImportPreview::STATE_PREVIEWING, ImportPreview::STATE_COMMITTING],
+						IQueryBuilder::PARAM_STR_ARRAY
+					)
+				)
+			)
+			->orderBy('created', 'ASC')
+			->setMaxResults(max(1, $limit));
+
+		return $this->findEntities(query: $qb);
+	}//end findUnprunedBefore()
+
+	/**
 	 * Persist a preview, moving its updated timestamp.
 	 *
 	 * @param ImportPreview $preview The preview to persist.
