@@ -13556,3 +13556,4 @@ review:launchpad:761:c14f910d	BLOCK: npm ci ERESOLVE, @vitest/* left at 4	sessio
 review:opencatalogi:2541:87b928f1	BLOCK: find() named args do not match openregister main ObjectService::find; repair hands nothing	session-20261114T085646-49a39060	2026-11-15T16:27:28Z
 review:opencatalogi:2419:cbcc348d	BLOCK: wrong namespace for OpenRegister save value objects (Kernel\Contracts\Value)	session-20261114T075643-acecaad6	2026-11-15T16:27:36Z
 review:learniq:1167:4b75be29	GREEN: sass dev bump, build ok, JS unit 9 inherited failures, none new	session-20261115T160928-e92ec17a	2026-11-15T16:27:43Z
+review:opencatalogi:2244:58b3e9f1	GREEN: behaviour-preserving refactor; golden passes pre and post; suite green; conflicts with development in DirectoryServiceTest.php	session-20261115T145546-378b432a	2026-11-15T16:28:03Z
