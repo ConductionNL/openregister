@@ -14474,3 +14474,4 @@ fix:planninq:725:6961dd1e	fixed: sbom regenerated; new head f5dce57c	session-202
 fix:launchpad:1223:8946cefa	conflict resolved (register 1.0.4), pushed 65b428f7, REVERIFY recorded	session-20261115T182936-09049974	2026-11-15T19:15:55Z
 fix:buildiq:1654:aaec7e14	fixed: conflicts resolved keeping both sides, new head fc4a934c	session-20261115T174804-89f2739f	2026-11-15T19:16:03Z
 fix:launchpad:984:2f958a94	namespace fixed, pushed 1ed02407, REVERIFY recorded	session-20261115T182948-465dcc8e	2026-11-15T19:16:11Z
+fix:launchpad:880:04f9f39f	sbom regenerated after merging development, pushed; REVERIFY recorded	session-20261115T174755-95dc8448	2026-11-15T19:16:24Z
