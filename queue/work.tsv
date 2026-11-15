@@ -13184,3 +13184,18 @@ build:shillinq:sales-invoice-sending:c4	build	shillinq	development	sales-invoice
 cover:dossiq:069ee2d6madb6:f545d745	cover	dossiq	development	quality/test-coverage-f545d745	lang=php;dirs=lib/Repair/*.php;focus=uncovered;weight=1056;coverage=92.85;target=95.0	2026-08-16T23:39:25Z
 cover:dossiq:069ee2d6madb6:3641032a	cover	dossiq	development	quality/test-coverage-3641032a	lang=php;dirs=lib/Service/Pipelinq/;focus=thin;weight=1980;coverage=92.85;target=95.0	2026-08-16T23:24:01Z
 cover:dossiq:069ee2d6madb6:9ece5c6f	cover	dossiq	development	quality/test-coverage-9ece5c6f	lang=php;dirs=lib/Controller/Support/;focus=thin;weight=1800;coverage=92.85;target=95.0	2026-08-16T23:27:01Z
+fix:dossiq:6556:6c2c0adc	fix	dossiq	development	6556	sha=6c2c0adc767ec1b19a62dcd53f07c15ac1053bbf;verdict=CONFLICT;branch=quality/test-coverage-47ac7936-1;reason=add/add conflict with development in tests/Unit/AppInfo/BezwaarSubscriptionRegistrarTest.php and CasePriorityListenerRegistrarTest.php (development added them in b1ef8e573)	2026-11-15T02:10:13Z
+review:openregister:10580:d25c0866	review	openregister	main	10580	sha=d25c0866b710440800f4b5a6771837a34259579b;last_approved=;title=test(openregister): cover file services and declare what their tests execute	2026-11-15T02:10:13Z
+verify:dossiq:6562:45578f85	verify	dossiq	development	merge	prs=6562@1cbd05974c4598db182cec96836b93aa4ef2f25c	2026-11-15T02:10:13Z
+verify:keepiq:1824:293432db	verify	keepiq	development	merge	prs=1824@b2f2ab280dcbc261cd6547360a9a60e2dab093be	2026-11-15T02:10:13Z
+verify:launchpad:1226:39c42839	verify	launchpad	development	merge	prs=1226@bf28a8ea762cd5e8c367aae0a501b3bc2d607537	2026-11-15T02:10:13Z
+verify:opencatalogi:2687:1fa87b59	verify	opencatalogi	development	merge	prs=2687@8336209f169415f332dc2bf399b4d1d81a1443f7	2026-11-15T02:10:13Z
+verify:larpinq:1051:349a6e63	verify	larpinq	development	merge	prs=1051@fa7cedb49eeaf2240d456f442c29bd3d8b2b8407,1054@8a1a352364fd06f42b82d9a3e388672fbb8a7c2d,1060@759898b3b319473aa0acb48bbf6e9a4189d7814a	2026-11-15T02:10:13Z
+merge:dossiq:6557:fa6a1172	merge	dossiq	development	development	prs=6557@bfdc67d100d613f234568f6978929d5ddcf4bdfd,6558@29daa3b9138d941b8e68c1b3261a2e30b1c1f698	2026-11-15T02:10:13Z
+cover:dossiq:069ee2d6madb6:8f99c0f1	cover	dossiq	development	quality/test-coverage-8f99c0f1	lang=php;dirs=lib/Woo/*.php;focus=uncovered;weight=123;coverage=92.85;target=95.0	2026-08-16T23:59:39Z
+cover:dossiq:069ee2d6madb6:67b69054	cover	dossiq	development	quality/test-coverage-67b69054	lang=php;dirs=lib/Service/Conversation/;focus=thin;weight=1711;coverage=92.85;target=95.0	2026-08-16T23:33:11Z
+cover:dossiq:069ee2d6madb6:afe29cfd	cover	dossiq	development	quality/test-coverage-afe29cfd	lang=php;dirs=lib/Service/Consultation/;focus=thin;weight=1697;coverage=92.85;target=95.0	2026-08-16T23:33:25Z
+cover:dossiq:069ee2d6madb6:9951e799	cover	dossiq	development	quality/test-coverage-9951e799	lang=php;dirs=lib/Service/DecisionDocument/;focus=thin;weight=1671;coverage=92.85;target=95.0	2026-08-16T23:33:51Z
+cover:dossiq:069ee2d6madb6:cdc59513	cover	dossiq	development	quality/test-coverage-cdc59513	lang=php;dirs=lib/Service/Inspection/;focus=thin;weight=1659;coverage=92.85;target=95.0	2026-08-16T23:34:03Z
+cover:dossiq:069ee2d6madb6:5ebe3eb6	cover	dossiq	development	quality/test-coverage-5ebe3eb6	lang=php;dirs=lib/Service/Mcp/;focus=thin;weight=1648;coverage=92.85;target=95.0	2026-08-16T23:34:14Z
+cover:openregister:7350e3efm1efa:fa416b31	cover	openregister	main	test/coverage-fa416b31	lang=php;dirs=lib/Search/Service/;focus=uncovered;weight=1260;coverage=94.28;target=95.0	2026-11-15T01:06:41Z
