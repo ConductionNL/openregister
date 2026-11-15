@@ -3639,3 +3639,14 @@ shillinq	2228	b6167ac55ae14ad83dc188c817bee1f75e1a7843	RED	merge3	GATE RED sbom:
 shillinq	2230	b859457f29008577e3c0cc89ac54941c08f713fb	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 shillinq	2766	64b9e1981e90cbcb6fa6d4b4036ddad4dc4c69f2	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
 shillinq	2991	a48bd63d9e6d59dca40e341049f36244f9baf703	RED	merge3	GATE RED floor: unit_size: 4.42 -> 4.40; unit_complexity: 4.94 -> 4.92
+stackiq	1063	5ec1a4e3057215ea0b5b8b2282257fb38c78a233	RED	merge8	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+stackiq	1168	2d1a29df6b60a93b19f659b6385328cc7deb6a3d	RED	merge8	GATE RED sbom: composer.lock changed without sbom.cdx.json
+stackiq	1297	7bd3132460fcc78f3d5b687a66de677bd39eafde	RED	merge8	GATE RED sbom: composer.lock changed without sbom.cdx.json
+stackiq	1437	3de46f6b1075b4187f475822045ef6880bc42b92	RED	merge8	GATE RED sbom: composer.lock changed without sbom.cdx.json
+stackiq	1438	23ea35dd424a254cba3cbaee76ab7e4fa58828da	RED	merge8	GATE RED sbom: composer.lock changed without sbom.cdx.json
+stackiq	1954	7f13c4ef79c4d740e48a9309045acd64414f140c	RED	merge8	GATE RED checker floor: adrvalidator: pass -> warn; adrvalidator stars: 5 -> 3; score: 100 -> 97
+stackiq	1958	7a2b0cf118538de22c96f1de4c811e3dcb67a548	MERGED	merge8	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.06
+stackiq	1978	90d2828bd1192bd1fcd6702a87b638ea133bca93	RED	merge8	GATE RED checker floor: adrvalidator: pass -> fail; adrvalidator stars: 5 -> 1; score: 100 -> 93
+stackiq	1981	c33d00731ac03f4bb05019be164dd92196d5601c	MERGED	merge8	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.06
+stackiq	1982	d2f772bb2718e5c79067c64bfc33e9c5b45142b7	MERGED	merge8	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.06
+stackiq	1983	21e19281d39b77b8176aac7830aa8408226af754	MERGED	merge8	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.06
