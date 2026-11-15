@@ -12898,3 +12898,4 @@ build:launchpad:drill-down-cross-widget-filter:c4	partial: PR #1231 task 14 (sav
 cover:shillinq:05639debma41a:js857dda77	PR #3095: +12 vitest tests (BBVKPICards, BBVComplianceChart, BBVProgrammeTable); vitest 2750->2762, 1 inherited failure; Dashboard dir 18.7->64.8% lines	session-20261115T012426-ca0c1432	2026-11-15T02:33:27Z
 cover:shillinq:05639debma41a:jsb0e7037d	PR shillinq#3096: 37 vitest specs, src/components/reporting 1.0->69.6% lines; baseline 1 failure unchanged	session-20261115T005139-0d6ecf1d	2026-11-15T02:33:32Z
 cover:shillinq:05639debma41a:jsea7197ec	PR #3097: 29 vitest tests; src/utils lines 95.6->98.3%, branches 87.4->90.8%	session-20261115T011813-39aed99d	2026-11-15T02:33:49Z
+cover:shillinq:05639debma41a:js9fbdf3ee	PR #3098: 10 tests, src/views/invoice 85.7% stmts (both views had no tests); suite 2750->2760, same 1 inherited failure	session-20261115T005133-04e59268	2026-11-15T02:33:47Z
