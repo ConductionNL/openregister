@@ -11162,3 +11162,4 @@ learniq	2549	f861a75f9da803969547b92865f21d9f266bdf14	REVERIFY	worker-56	merged 
 stackiq	1931	2588041a504225cb78cf0baec8868f2861d7724d	GREEN	worker-14	phpunit 3677 OK on tree 1931+1978 (baseline 3626 OK), 0 new failures; vitest 1 failure inherited (facets.spec)
 stackiq	1958	bc5aef60441bebaf37e30079dfb859c32d52cca1	CONFLICT	worker-14	conflicts in src/customComponents.js, src/dialogs/Dialogs.vue after #1931 in tree
 stackiq	1978	d26ea92d7dd005f25a4a346ac8cb1ab28fc2715d	GREEN	worker-14	phpunit 3677 OK on tree 1931+1978 (baseline 3626 OK), 0 new failures; vitest 1 failure inherited (facets.spec)
+learniq	2484	109cbc9571e59edf69768d4fee96a75623420bd4	REVERIFY	worker-37	merged development in (clean, branch was 2 behind; the CONFLICT came from other PRs in the tree, not development); unit 6865, 1 failure HigherEducationExampleSetTest::testTheFileIsWhatTheGeneratorProduces also fails on plain development; new head b8c46f7c4c80c26cea26f138e57ec0afe11fc2ac, verify it
