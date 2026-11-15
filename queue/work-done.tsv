@@ -12823,3 +12823,4 @@ cover:dossiq:069ee2d6madb6:67b69054	already done: lib/Service/Conversation/ at 9
 verify:dossiq:6559:f9b1226b	GREEN 6559, 6560, 6561 (tests only; no new PHP or vitest failures)	session-20261115T012426-ca0c1432	2026-11-15T02:14:30Z
 verify:dossiq:6562:45578f85	GREEN 6562 (tests only, no new failures)	session-20261115T015021-bd2172e5	2026-11-15T02:14:43Z
 cover:dossiq:069ee2d6madb6:9951e799	already done: lib/Service/DecisionDocument/ measures 100% (385/385) on development f4fac8d3	session-20261115T001758-161b0715	2026-11-15T02:15:58Z
+cover:dossiq:069ee2d6madb6:cdc59513	already done: lib/Service/Inspection 397/397 lines covered on development, no PR	session-20261115T005412-4a06d6f4	2026-11-15T02:16:08Z
