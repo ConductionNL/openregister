@@ -1,12 +1,12 @@
 {
  "app": "stackiq",
- "commit": "dbebfae7e52672db46b125477170f2fbd35fb500",
- "measured_at": "2026-11-15T00:25:13Z",
+ "commit": "445b90ddc093236468d4b525f1bfd578f4493630",
+ "measured_at": "2026-11-15T02:36:41Z",
  "php": {
   "tool": "pcov",
-  "pct": 89.33,
-  "statements": 33342,
-  "covered": 29784,
+  "pct": 91.02,
+  "statements": 33424,
+  "covered": 30421,
   "dirs": {
    "lib/AppInfo/": [
     51,
@@ -18,11 +18,11 @@
    ],
    "lib/Command/": [
     282,
-    223
+    282
    ],
    "lib/Controller/": [
-    3976,
-    3864
+    3988,
+    3876
    ],
    "lib/Controller/Settings/": [
     74,
@@ -77,8 +77,8 @@
     6
    ],
    "lib/Service/": [
-    19551,
-    16379
+    19621,
+    16945
    ],
    "lib/Service/AangebodenGebruik/": [
     61,
@@ -127,12 +127,12 @@
   }
  },
  "js": {
-  "pct": 94.28,
-  "statements": 9018,
-  "covered": 8502,
+  "pct": 93.31,
+  "statements": 9231,
+  "covered": 8613,
   "dirs": {
    "src/": [
-    91,
+    92,
     89
    ],
    "src/assets/": [
@@ -199,6 +199,10 @@
     50,
     50
    ],
+   "src/manifest.d/": [
+    34,
+    0
+   ],
    "src/modals/": [
     368,
     362
@@ -211,6 +215,14 @@
     32,
     32
    ],
+   "src/sidebars/": [
+    1,
+    0
+   ],
+   "src/sidebars/dashboard/": [
+    6,
+    0
+   ],
    "src/sidebars/directory/": [
     85,
     78
@@ -219,8 +231,12 @@
     26,
     20
    ],
+   "src/store/": [
+    5,
+    0
+   ],
    "src/store/modules/": [
-    782,
+    783,
     769
    ],
    "src/store/plugins/": [
@@ -228,20 +244,28 @@
     416
    ],
    "src/utils/": [
-    1274,
-    1261
+    1321,
+    1308
    ],
    "src/views/": [
     457,
     444
    ],
+   "src/views/architecture/": [
+    45,
+    0
+   ],
    "src/views/cmdb/": [
     52,
     52
    ],
+   "src/views/flows/": [
+    1,
+    0
+   ],
    "src/views/organisaties/": [
-    208,
-    203
+    264,
+    254
    ],
    "src/views/settings/": [
     207,
@@ -249,7 +273,11 @@
    ],
    "src/views/settings/sections/": [
     1498,
-    1438
+    1451
+   ],
+   "src/views/suites/": [
+    16,
+    0
    ],
    "src/views/widgets/": [
     26,
