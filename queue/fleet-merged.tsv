@@ -3470,3 +3470,22 @@ portaliq	1982	19a536caaaf1ad5c295587c71af715d3b1b848df	RED	merge3	GATE RED sbom:
 portaliq	1989	4db47cae66c813180acfff62ae05b6b6f8fef5e3	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.11
 portaliq	2349	124b9f8678c713f568fe461688af30b87afcac23	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
 portaliq	2527	c2ba60d892059e085dd9814f3b900f52b3cca58c	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.11
+dossiq	2705	b7e00cc6d2e915e3e45024406ff314eaeb0b8261	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
+dossiq	2909	23f03bf8218b9b2b7064651a534a35d6bc5ca38e	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.30
+dossiq	3106	039c380fedb12353a53ec92da1a704408b79bda5	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+dossiq	3174	92484c5f342637e309b0ff604f5c456f400c8e9b	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.30
+dossiq	3193	5b406bdbc429a355937f63af91941233dad9dd9a	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
+dossiq	3196	ccb57e36e4752179a48cfe9ff7fed618c792ced9	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+dossiq	3197	4bd6d2baf1aae132a44cc4669575a0971f9f50c1	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+dossiq	3201	6c926ab3c970388fceb715fe0c159482a69dec8f	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+dossiq	3204	7d112fdfd405043baef3446a983da988143f365a	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+dossiq	3299	518945cf6c57a4e707ba9ddef971b17a3d88e73b	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.30
+dossiq	3300	94f683579de07f54ed6902e0f1865ba9fe71f944	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.30
+dossiq	3894	c91ec40217844fa38f2ebad1fa9923f12f663237	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
+dossiq	3936	7ae9f014600a53cfb86b3f44019641e681d302f2	RED	merge3	GATE RED floor: unit_interfacing: 3.25 -> 3.22
+dossiq	3953	6ca6e02331d3698a32a5ad8d03f347cf240e9354	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.30
+dossiq	4112	d85d2c1ccf59ea4bacaedb5e1a381d8291c6ff75	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
+dossiq	4882	2a47c981684a0e7bfbdec69c1e9d5e67e8147207	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.28
+dossiq	5397	e528f07510fd9a509fbc5febad8dd7160c271a48	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
+dossiq	6547	69fff5a5da676baa1fdc263bdf1709643feaffa1	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.28
+dossiq	6577	cee8f2a5e99f891b27cccf7fda805d294eb5d330	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.28
