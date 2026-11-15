@@ -14497,3 +14497,5 @@ fix:launchpad:757:df60a474	lock resynced on development, npm ci + vitest green; 
 fix:launchpad:1234:d725a0f0	fixed RED sbom: regenerated sbom.cdx.json; new head 0bc43ee2, REVERIFY recorded	session-20261115T152543-40aea993	2026-11-15T19:19:07Z
 fix:opencatalogi:1893:143da9ef	conflicts resolved, pushed e1cf5480, REVERIFY recorded	session-20261115T191034-1f4b55ee	2026-11-15T19:19:20Z
 fix:launchpad:785:91201465	conflict resolved (dev's tile-sorting kept, shortcuts wired via PageSettingsSources, openapi documented); phpunit+vitest green; new head 962d3592	session-20261115T185944-49ff6c32	2026-11-15T19:19:38Z
+fix:opencatalogi:2259:6c778379	failed: superseded, needs a manual close (closing PRs is refused by permission here): development has the same splits (da9461cb2, 83b172e8a, 993043f63) and the branch conflicts with them	session-20261115T182936-09049974	2026-11-15T19:19:46Z
+fix:opencatalogi:2669:b357649e	conflict resolved (CHANGELOG, PublicationService); 2 inherited failures only; new head a67472fb	session-20261115T174739-b14c2df4	2026-11-15T19:19:49Z
