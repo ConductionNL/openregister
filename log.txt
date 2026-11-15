@@ -3401,3 +3401,4 @@
 2026-11-15T15:14:49Z integrator-20261111T115842-a749432d GREEN tree 45512c71c8 on dev 5db8e48b9a prs 35 front=ok: Tests: 62391, Assertions: 218191, Errors: 3, Failures: 4, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24.
 2026-11-15T15:16:39Z integrator-20261111T115842-a749432d HEAD-MOVED #10529 before push; rebuild
 2026-11-15T16:04:17Z integrator-20261111T115842-a749432d MERGED-TREE bfccde5fac: 34 PRs in one push, main now bfccde5fac = tested tree
+2026-11-15T16:31:08Z integrator-20261111T115842-a749432d RED tree bafa95e78f prs 7 front=skip: Tests: 62465, Assertions: 218463, Errors: 3, Failures: 4, Deprecations: 4, PHPUnit Depreca; first failures: OCA\OpenRegister\Tests\Unit\Db\MagicMapper\MagicTableIndexerCreateTest::testPostgresCreatesTheBasePlatformAndP
