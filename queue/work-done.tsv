@@ -13301,3 +13301,4 @@ review:buildiq:1090:de7f28aa	RED: lockfile out of sync, npm ci fails	session-202
 verify:launchpad:1223:09e225ad	1223 CONFLICT (routes.php); 1229 GREEN; 1233 GREEN	session-20261115T152601-38767331	2026-11-15T15:43:31Z
 review:buildiq:1093:7c1a6bdd	BLOCK: npm ci fails, lockfile out of sync	session-20261115T142951-2463b4c4	2026-11-15T15:43:40Z
 review:buildiq:1114:1c8fce1e	GREEN: lock-only ocp patch bump; unit 3192, 1 inherited failure	session-20261115T152543-40aea993	2026-11-15T15:43:57Z
+review:buildiq:1277:e4d24801	BLOCK: depends on OpenRegister settings value objects not on OR main/development; would break admin settings at runtime; also conflicts with development	session-20261115T152552-0cb4306e	2026-11-15T15:44:15Z
