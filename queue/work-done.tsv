@@ -12466,3 +12466,4 @@ cover:dossiq:069ee2d6mdd7c:e7fd1c43	already done: lib/Service/Intake/*.php measu
 cover:dossiq:069ee2d6mdd7c:3b1fd60e	PR #6541: ReviewContractRegistrar + ReviewConfiguration, 4 tests; suite 17379->17383, 19 inherited failures unchanged	session-20261115T005141-9356bed0	2026-11-15T01:03:53Z
 review:integriq:3542:02664658	GREEN: per spec, fail-closed auth, no new failures (9279 tests), phpstan/eslint/vitest clean	session-20261115T005138-c7bbb0f0	2026-11-15T01:03:53Z
 cover:dossiq:069ee2d6mdd7c:d2a82d9f	already done: lib/Service/Termijn/*.php measures 99.65% (1439 stmts, 5 uncovered), above target 95	session-20261114T234941-bc8686af	2026-11-15T01:03:57Z
+verify:versioniq:690:1e1787ea	failed: permission (versioniq vendor has no phpunit; fetching one was refused earlier this session)	session-20261115T005141-9356bed0	2026-11-15T01:04:15Z
