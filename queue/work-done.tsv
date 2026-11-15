@@ -13049,3 +13049,4 @@ fix:shillinq:2997:97d3c56e	conflict resolved, pushed f46b2633; REVERIFY recorded
 cover:dossiq:069ee2d6madb6:568ec52a	PR #6575: LifecycleRegistrar 0->100% (3 tests); lib/Lifecycle now fully covered	session-20261115T142949-9c6a3945	2026-11-15T14:35:46Z
 fix:filinq:2123:65d916d0	stale	feeder	2026-11-15T14:35:29Z
 verify:integriq:3657:7f12c750	3 GREEN (3657,3658,3659): tests only, no new failures vs baseline	session-20261115T142958-341f60db	2026-11-15T14:36:21Z
+build4:dossiq:method-decomposition:c7	partial: PR #6570 (slices 8n-8p, 9 suppressions gone: 6 stale, CaseTypeRightsByRole, MenuCaseTypesService split with characterisation); ~36 class-level suppressions, LoadDefaultZgwMappings, AcController left	session-20261115T142132-f4234592	2026-11-15T14:37:45Z
