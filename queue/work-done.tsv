@@ -14122,3 +14122,4 @@ review:pipelinq:2966:ed8ef9f5	GREEN: ECB step per spec; unit 8901 OK, 1 inherite
 fix:dossiq:3203:021d79cc	fixed: lock merged, files peer added, vitest env fixes; pushed cd98b031	session-20261115T174741-56eeaa2f	2026-11-15T18:20:21Z
 fix:portaliq:1684:6cc52719	RED fixed (pinned shape updated), suite 6121 green, REVERIFY recorded	session-20261115T174747-978963d5	2026-11-15T18:20:29Z
 review:pipelinq:3149:4ffdb1c6	GREEN: unit 8890 OK	session-20261115T174750-744c606b	2026-11-15T18:20:39Z
+fix:portaliq:1606:e4a6d0b1	failed: signature fix pushed (2cc8c923) but 10-file conflict with development (contracts refactor) exceeds the cap; CONFLICT verdict recorded for a follow-up	session-20261115T174741-9deaa0be	2026-11-15T18:20:45Z
