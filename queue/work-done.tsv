@@ -14095,3 +14095,4 @@ fix:portaliq:1680:b1f0459b	fixed CONFLICT: merged development (4 files), unit 61
 fix:pipelinq:3835:8a345d33	RED fixed: dropped spec of the moved dialog, pushed 1dcc79c3; REVERIFY	session-20261115T174741-9deaa0be	2026-11-15T18:14:07Z
 review:integriq:3049:47b3a17d	BLOCK: value classes imported from a namespace absent on openregister main; delete paths would fatal	session-20261115T181015-497e81ce	2026-11-15T18:14:17Z
 fix:pipelinq:3145:76b4afe3	failed: conflicts resolvable (94 files, dev side + options rewrite of 110 find calls) but merged tree has 273 failing tests in 64 dev test files that mock the old find(register:, schema:) shape (dev baseline 8890 OK); needs a test migration beyond the 45 min cap, nothing pushed	session-20261115T174755-95dc8448	2026-11-15T18:14:27Z
+review:pipelinq:3152:6f459260	GREEN: matches openregister main dispatch; unit 8890 OK	session-20261115T174757-8dfa7406	2026-11-15T18:14:24Z
