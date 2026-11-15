@@ -12843,3 +12843,4 @@ buildiq	1651	8f6101946c3e787f54b34b7df2f06167187eeeca	CONFLICT	worker-10	conflic
 buildiq	1652	74a237c75562a8c04909970940bc81194db8c1a5	CONFLICT	worker-10	conflicts with 1649 in ApplicationCreationService.php and its test (clean on development alone)
 launchpad	761	ca2815b851deb1969d5b23ac0c29185819391d2e	GREEN	worker-10:review	dev-only vitest/coverage-v8/ui 4->5 bump with lock and sbom; merges cleanly, npm ci ok, vitest 2578/2578 pass under v5
 buildiq	1654	fc4a934cc05116ec1c53ef19e3da44d35392f8ab	CONFLICT	worker-10	conflicts with 1649 in l10n/nl.json (clean on development alone)
+opencatalogi	2419	3035f6614c83b0f9fe38a12d2939ef6312179cf1	GREEN	worker-15:review	saveObject calls moved to ObjectSaveOptions with the same register, schema, uuid, unowned, silent, _rbac and _multitenancy; clean merge; unit suite with OR main beside: 5750 run, failures 398 on development -> 248 merged, no new failures.
