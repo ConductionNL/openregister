@@ -13233,3 +13233,4 @@ cover:integriq:92114ab0m6759:ff9d26ed	PR #3664: 8 tests, lib/Command/Integration
 fix:integriq:3649:236dc3f7	re-sorted en.js/nl.js replaced by development's order + 13 added keys; merged development; head f749c1d03c11688068a6c1de64e4a6c58dde7c24, REVERIFY	session-20261115T142134-badaaf30	2026-11-15T15:29:42Z
 verify:integriq:3638:e4fdb7a0	GREEN 3638; no new failures attributable to the PR	session-20261115T142951-2463b4c4	2026-11-15T15:29:49Z
 verify:integriq:3615:475e58f4	3615 GREEN, 3662 GREEN; no new failures (inherited reds only), vitest 2387 OK	session-20261115T145535-caebb5a3	2026-11-15T15:30:16Z
+build:launchpad:launcher-tile-launch-types:c3	partial, no code left: PR #1226 (bf28a8ea) is merged; open are 6's axe check, 7 Playwright (live instance) and 8's spec fold at archive	session-20261115T142134-badaaf30	2026-11-15T15:30:20Z
