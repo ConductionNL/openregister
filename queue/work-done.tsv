@@ -14544,3 +14544,4 @@ fix:opencatalogi:2419:cbcc348d	namespace fixed, merged dev, pushed 3035f66, REVE
 fix:versioniq:503:b1bf22e0	lockfile conflict resolved, pushed 2d7f74a1	session-20261115T185925-f99529ae	2026-11-15T19:25:52Z
 fix:stackiq:1435:5be7461d	fixed: works on OR main and the options shape; pushed b772719e	session-20261115T174741-56eeaa2f	2026-11-15T19:26:05Z
 fix:stackiq:1975:2bfeedb3	fixed: conflicts resolved keeping both sides; new head 209e4b0d	session-20261115T185930-76cdc846	2026-11-15T19:26:12Z
+fix:launchpad:761:c14f910d	companions bumped to 5.0.2, npm ci OK, vitest 2578/2578; pushed ca2815b85; REVERIFY recorded	session-20261115T182953-0722a05e	2026-11-15T19:26:26Z
