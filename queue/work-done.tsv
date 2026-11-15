@@ -13788,3 +13788,4 @@ cover:stackiq:9ac19b3amf894:js7de78384	stale: src/manifest.d now holds only JSON
 review:thematiq:1290:f560b357	GREEN: devDep bump, vitest 1559 passed with coverage	session-20261115T154307-1fc2cc78	2026-11-15T17:09:14Z
 review:thematiq:1288:34db28e5	GREEN: prettier bump, vitest 1559 pass, format findings inherited	session-20261115T155911-f0070087	2026-11-15T17:09:21Z
 review:versioniq:503:b1bf22e0	CONFLICT: package-lock.json conflicts; head builds	session-20261115T155902-d9805df0	2026-11-15T17:09:32Z
+review:thematiq:1365:d4435483	CONFLICT: generated dark-token CSS and reference docs conflict with development; code OK, vitest green on head	session-20261115T154311-e8600d84	2026-11-15T17:09:42Z
