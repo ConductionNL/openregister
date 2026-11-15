@@ -10950,3 +10950,4 @@ integriq	3630	0af2622c5f1e53f08aba7febd449a19fcca3f0d3	GREEN	worker-05	same tree
 versioniq	691	8386b5aa44179b19ce106e0bfc37e384eb88c092	REVERIFY	worker-09	merged development in; l10n merged clean, conflict was AuditLogger.php constants, kept both (patch_policy + instance_connection); l10n:check up to date; unit-only suite 1786, 2 failures (Installer golden tests) inherited, red on development too; new head 81048e6f4531225c6d6a44b42ecb8b6bb439bb8e, verify it
 pipelinq	3850	e6de08f6f2d517f542e1175c92eab1d05d0ee3f4	GREEN	worker-29	unit 8473 tests on tree, baseline 8452 OK, no new failures; tests only
 pipelinq	3851	ffb1ffc286675b021070f9523f319a4c87e9d0b1	GREEN	worker-29	unit 8473 tests on tree, baseline 8452 OK, no new failures; tests only
+pipelinq	3852	eb8867aaf2cce3aaec16dbfed1264132c1c21014	GREEN	worker-29	unit 8473 tests on tree, baseline 8452 OK, no new failures; tests only
