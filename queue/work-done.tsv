@@ -13346,6 +13346,7 @@ review:decidiq:1920:dfa5dba2	GREEN: copy-only rename Store -> Marketplace; PHPUn
 review:decidiq:1737:43c02ff7	GREEN: phpstan 2.3.1 clean, unit suite 4461 OK same as development	session-20261115T152539-8dadb15a	2026-11-15T15:50:45Z
 review:buildiq:820:306021ea	GREEN: patch dev-dep bump, vitest 4667 pass	session-20261115T142149-1d09fceb	2026-11-15T15:50:59Z
 review:dossiq:3193:5b406bdb	GREEN: lock-only dev bump; 19 baseline failures, none new	session-20261115T154254-3d07b219	2026-11-15T15:51:10Z
+verify:stackiq:1954:75830783	stale	feeder	2026-11-15T15:45:20Z
 review:decidiq:1948:fbc94193	GREEN: unit 4461/0 fail, phpcs/phpmd unchanged vs development	session-20261115T154314-8216dc98	2026-11-15T15:51:21Z
 review:decidiq:1946:b7542a86	BLOCK: ObjectPatch/ObjectFindTarget imported from wrong namespace vs openregister main; psalm.xml conflict	session-20261115T154258-dee2cc3d	2026-11-15T15:51:32Z
 build:opencatalogi:publication-relations-place-and-source-ids:c3	partial: PR #2650 adds 1.4 code half (related grouped by relation, form pickers) and 2.3 public filter; OR piece openregister#10588 (contains operator). Left: 1.4 e2e, ready list route (not on development), 3.1 dossiq issue, group 5 (D10)	session-20261115T152554-949e9403	2026-11-15T15:51:47Z
@@ -13621,6 +13622,7 @@ review:pipelinq:2507:ecccdb3f	BLOCK: obsolete, development already on nextcloud-
 review:pipelinq:2566:0b0d7736	CONFLICT: 217 conflicting files with development	session-20261114T085646-49a39060	2026-11-15T16:37:03Z
 review:pipelinq:2458:9c135002	BLOCK: 18-file conflict with development; code clean	session-20261115T154255-e54527e9	2026-11-15T16:37:12Z
 review:learniq:2123:eeb728d3	GREEN: class names match openregister main; suite clean apart from an unrelated generated-file check	session-20261115T142934-de7c51d0	2026-11-15T16:37:19Z
+merge:portaliq:2508:e096526c	merge3 tree of 2 portaliq PRs: merged=1 red=0 fail=0 skip=0; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-15T16:37:36Z
 review:planninq:869:0cf3f1b0	GREEN (conflicts with development, needs rebase): stylelint dev bump clean	session-20261115T155921-aabf185f	2026-11-15T16:37:32Z
 review:pipelinq:3145:76b4afe3	CONFLICT: faithful ObjectFindOptions migration, 95 files conflict with development	session-20261115T155902-d9805df0	2026-11-15T16:37:42Z
 review:opencatalogi:2263:a4046c90	GREEN: behaviour-preserving extract, no new failures (2 inherited)	session-20261115T155913-70cee771	2026-11-15T16:37:51Z
@@ -13925,3 +13927,24 @@ merge:shillinq:3078:f83c9d71	merge3 tree of 10 shillinq PRs: merged=2 red=0 fail
 fix:versioniq:736:3596222f	floor restored, pushed 732e80c, REVERIFY	session-20261115T154255-e54527e9	2026-11-15T17:29:01Z
 merge:shillinq:2997:27bbd61c	merge3 tree of 10 shillinq PRs: merged=2 red=0 fail=0 skip=0; conflict 8, lint 0, moved 0; fix rows 8	merge3-20261113T213425-c36bcd5f	2026-11-15T17:29:11Z
 fix:buildiq:1652:b3c39fa0	merged development in, checks green (1 inherited failure); new head 023b900b9448723e6f9efa0bfaadf1c997a71ce1, REVERIFY	session-20261115T152552-0cb4306e	2026-11-15T17:29:09Z
+fix:buildiq:1649:c40e299a	merged development: CopilotService keeps the document reader and assist access check plus development's knowledge reader and run trace; tests rebuilt as development's file plus the branch block; l10n union (3 nl dups dropped); suite 3408, 1 inherited failure; new head 90cf9793, REVERIFY	session-20261115T142201-ea23e682	2026-11-15T17:29:03Z
+build:versioniq:install-multi-instance-promotion:c4	PR #735 (+2 commits, head de63ae5): 4.1 Instances tab, connection and promote dialogs, rollback via last-known-good, 4.2 waiting-period field + settings API read/update, 4.3 en/nl strings; vitest 3026 pass (+23 new), PHP unit 1875 with 2 failures inherited from development; left: 4.4 e2e needs a live instance, 6.1 close after merge	session-20261114T102637-6688951e	2026-11-15T17:29:41Z
+fix:buildiq:1622:02120619	development merged in cleanly, pushed b26786dc; REVERIFY recorded; ExportZipGoldenTest red on development itself	session-20261115T142129-944012f5	2026-11-15T17:29:34Z
+build:buildiq:pages-custom-code:c4	partial: PR #1608 new head b3506415 - merged development (l10n conflict kept both), T04 page half: Write your own in CustomPageEditor + CodeComponentEditor + pageCode manifest validation, 16 vitest cases, en/nl strings; left T04 widget editors, T07 preview sandbox, T06 nextcloud-vue, T08 e2e, T10	session-20261115T142949-9c6a3945	2026-11-15T17:30:25Z
+merge:learniq:2507:4b9859c5	merge3 tree of 5 learniq PRs: merged=1 red=1 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-15T17:30:25Z
+merge:learniq:2521:05a0098e	merge3 tree of 5 learniq PRs: merged=1 red=1 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-15T17:30:29Z
+merge:learniq:2549:b52d084d	merge3 tree of 5 learniq PRs: merged=1 red=1 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-15T17:30:33Z
+build:versioniq:sources-gitlab-forge:c3	pushed to PR #721 (head d7956500): 2.1 GitLab release normalisation, 3.1 token deeplink, 4.1 GitLab pickers/host section + GET/PUT /api/forges/gitlab, 4.2 en/nl strings, 5.0 recorded; all code tasks done; left 4.3 e2e and 5.1 close; unit 1864 (2 inherited golden failures), vitest 3004/3004	session-20261115T152558-f97be55f	2026-11-15T17:31:04Z
+fix:shillinq:3078:777f3b0b	fixed CONFLICT: merged development, both actions kept; new head 308c8c7e, REVERIFY recorded	session-20261115T152543-40aea993	2026-11-15T17:31:00Z
+fix:buildiq:1651:75838f52	merged development, l10n union-resolved and rebuilt; checks green (1 inherited); new head 3e54ea1b46195cd345a239fbee6385d61a8622ba, REVERIFY	session-20261115T152552-0cb4306e	2026-11-15T17:31:08Z
+review:opencatalogi:2677:b988c22d	stale	feeder	2026-11-15T17:18:52Z
+verify:keepiq:1826:33eeb9d8	stale	feeder	2026-11-15T17:18:52Z
+verify:versioniq:735:df901ed5	stale	feeder	2026-11-15T17:31:48Z
+fix:shillinq:2997:7b870224	conflict resolved, pushed 3374c3b, REVERIFY	session-20261115T154255-e54527e9	2026-11-15T17:33:21Z
+fix:shillinq:3080:555ec946	merged development; info.xml version moved above both sides (0.5.7-unstable.20261115180000), lock keeps both recorded entries plus the merged register entry; suite 12253 OK; new head 44d2bdbe, REVERIFY	session-20261115T142201-ea23e682	2026-11-15T17:33:43Z
+fix:shillinq:3062:6c6743f0	conflict resolved (version + register lock), suite green; new head d337cccd5c0003792325208eed13a23de031d351	session-20261114T102637-6688951e	2026-11-15T17:35:06Z
+fix:shillinq:3055:d0b8868b	fixed CONFLICT: merged development (l10n union, new app version + lock entry); unit 12261 OK; new head aa654dd7, REVERIFY recorded	session-20261115T152543-40aea993	2026-11-15T17:35:50Z
+fix:shillinq:3088:d40d6160	conflict resolved, pushed 0dc86d0f; REVERIFY recorded	session-20261115T142129-944012f5	2026-11-15T17:35:58Z
+fix:learniq:2521:189663c4	merged development, resolved test counts; new head 2a90e6d1, REVERIFY recorded	session-20261115T152558-f97be55f	2026-11-15T17:36:09Z
+review:versioniq:717:a769cc5a	GREEN: matches change spec, tests green	session-20261114T102637-6688951e	2026-11-15T17:36:24Z
+review:filinq:2070:5c49e6f2	GREEN 2070 (builds intake-pdf-password-removal; all suites green)	session-20261115T142201-ea23e682	2026-11-15T17:36:27Z
