@@ -69,6 +69,7 @@ final class DbRegistrar {
 		ApiCallRecordMapperInterface::class => ApiCallRecordMapper::class,
 		ApplicationMapperInterface::class => ApplicationMapper::class,
 		AuditFlowAttributionInterface::class => AuditFlowAttribution::class,
+		\OCA\OpenRegister\Db\AuditTrail\AuditDiffStoreInterface::class => \OCA\OpenRegister\Db\AuditTrail\AuditDiffStore::class,
 		AuditTrailMapperInterface::class => AuditTrailMapper::class,
 		AuditTrailPageQueryInterface::class => AuditTrailPageQuery::class,
 		BookmarkLinkMapperInterface::class => BookmarkLinkMapper::class,

@@ -1111,6 +1111,7 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\Archival\ArchiveReferenceReaderInterface::class => \OCA\OpenRegister\Service\Archival\ArchiveActionDateCalculator::class,
 		\OCA\OpenRegister\Service\AuditSealInterface::class => \OCA\OpenRegister\Service\AuditHashService::class,
 		\OCA\OpenRegister\Service\AuditRechainInterface::class => \OCA\OpenRegister\Service\AuditHashService::class,
+		\OCA\OpenRegister\Service\Audit\AuditResealInterface::class => \OCA\OpenRegister\Service\AuditHashService::class,
 		\OCA\OpenRegister\Service\InboundAuthRateLimitInterface::class => \OCA\OpenRegister\Service\SecurityService::class,
 		\OCA\OpenRegister\Service\LoginSecurityInterface::class => \OCA\OpenRegister\Service\SecurityService::class,
 		\OCA\OpenRegister\Service\RateLimitResetInterface::class => \OCA\OpenRegister\Service\SecurityService::class,
