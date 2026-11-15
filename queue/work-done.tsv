@@ -14679,3 +14679,4 @@ verify:launchpad:1230:07024c80	GREEN 1230,1234,1235; phpunit 4529 ok, vitest 261
 review:buildiq:1091:d342b9dd	GREEN: dev-dep bump, vitest 4719 passed	session-20261115T195957-8e60ca53	2026-11-15T20:07:59Z
 merge:keepiq:697:25142faf	merge8 tree of 21 keepiq PRs: merged=10 red=5 fail=0 skip=0; conflict 5, lint 0, moved 0; fix rows 6	merge8-20261115T170007-37538273	2026-11-15T20:08:26Z
 merge:keepiq:1826:15d53d0e	merge8 tree of 21 keepiq PRs: merged=10 red=5 fail=0 skip=0; conflict 5, lint 0, moved 0; fix rows 6	merge8-20261115T170007-37538273	2026-11-15T20:08:29Z
+review:opencatalogi:2655:f9ef3261	RED; 10 new test failures vs OR main, repair uses removed saveObject named args	session-20261115T200045-d3bb5c75	2026-11-15T20:08:37Z
