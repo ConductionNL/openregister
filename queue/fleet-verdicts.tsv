@@ -13159,3 +13159,13 @@ versioniq	723	e74abf380e59afc53d627c0041f8d3197c582d19	REVERIFY	worker-44	merged
 larpinq	1060	f17472dc4978a11f179a8d510cdc9e857ccd409a	REVERIFY	worker-11	merged development in (27 commits, clean; the SettingsServiceTest conflict is with another open tree PR, not development); unit suite 1025 tests, 0 failures; new head 54265c8fe78dfcc4a40860fc95d955fa244ecd37, verify it
 versioniq	717	a769cc5a792379a2362cc9e383a67b9ca4552bc9	REVERIFY	worker-05	restored the floor: quickUpdateTarget, batchOutcome, safeVersionFor and openQuickUpdate (CCN 6-7) split into named helpers with no behaviour change, unit_complexity 4.56 -> 4.60 vs base 4.59 (floor_check compare PASS, also after merging development); vue-tsc error count unchanged (174, as development), eslint 0 errors, vitest 3030/3030; new head 8419af1d7c38c7852aa8354f89ad55a4a3ace8c4, verify it
 larpinq	1050	67a109047a01b2a6439afb7c1dd152a52b8ac2cd	REVERIFY	worker-07	merged development in; l10n/en.js and en.json conflicts resolved as the union of both key sets (no duplicates); check:l10n-js and test:l10n green; new head f7fb4695da92f783c2b95985f82b173605c67536, verify it
+decidiq	1465	840ea3b6bfe6b21a51b037a9874df34ea08ef521	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+decidiq	1467	26c2839404906282ab4343cda07d44134a729009	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+decidiq	1468	dabc71052875a367e086a62611702530f6a586b7	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+decidiq	1469	bee189d685bd409754a24bd65e702cc70e31c9e5	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+decidiq	1472	a40d36e1ba8ba50da89904e28f11c2ac3b48b7e4	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+decidiq	1473	4549406a045cbdc824468666f2e32b05112fa757	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+decidiq	1737	43c02ff7cc81701bd08416fb6ce29a6e20f3a978	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+decidiq	1738	c12b8c5dc89e45ae512a6152d1f058716be3099f	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+decidiq	1767	3e9af0ff5c452e46a3075f53eab0d71f892b61f4	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+decidiq	1948	fbc941936f612b58bbb108da4669ebcea8c03239	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
