@@ -13160,4 +13160,5 @@ review:openregister:10584:6dc48682	APPROVE: additive read-only mapper method, su
 fix:decidiq:2187:24c1e4c0	complexity floor restored by helper extraction (no behaviour change); new head 2f3b8012; REVERIFY recorded	session-20261115T145535-caebb5a3	2026-11-15T15:15:05Z
 review:learniq:2521:01e853a6	2521 GREEN (build per spec, gated by course-day.plan, no new failures)	session-20261115T142134-badaaf30	2026-11-15T15:15:40Z
 review:openregister:10505:c12ee85b	APPROVE	session-20261114T073117-2bd2e050	2026-11-15T15:15:49Z
+build:humaniq:education-staff-deployment-and-count:c4	failed: no buildable code task left on PR #1156 (head 13c34f2d, merges cleanly with development): 1.3 needs the CAO PO primary text (host not reachable from this session), 3.1-3.3 need the non-public IPTO specification from DUO/OCW, 4.2 is a live check	session-20261115T142931-4c5be241	2026-11-15T15:15:53Z
 fix:decidiq:2149:08dbad8e	split 6 complex units to restore unit_complexity; new head 6cf9ca71	session-20261115T151007-45079d32	2026-11-15T15:15:56Z
