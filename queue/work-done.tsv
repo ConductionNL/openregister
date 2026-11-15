@@ -12948,3 +12948,4 @@ merge:portaliq:2521:21b5de8b	merge3 tree of 11 portaliq PRs: merged=9 red=0 fail
 merge:portaliq:2525:4208f3aa	merge3 tree of 11 portaliq PRs: merged=9 red=0 fail=0 skip=1; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-15T03:46:45Z
 merge:portaliq:2527:17dbf00a	merge3 tree of 11 portaliq PRs: merged=9 red=0 fail=0 skip=1; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-15T03:46:49Z
 merge:portaliq:2508:5c7cd01a	merge3 tree of 11 portaliq PRs: merged=9 red=0 fail=0 skip=1; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-15T03:46:52Z
+merge:learniq:2484:544eb8a6	merge3 tree of 5 learniq PRs: merged=0 red=1 fail=0 skip=0; conflict 4, lint 0, moved 0; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-15T03:54:02Z
