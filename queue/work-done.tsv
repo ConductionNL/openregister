@@ -13581,3 +13581,4 @@ review:opencatalogi:2682:4bf71fcd	RED: 8 new vitest failures in mainEntry.spec.j
 review:pipelinq:2546:ed45af1a	CONFLICT with development (l10n + structureProfile page count); content config-only, no defect found	session-20261115T145535-3f9e5078	2026-11-15T16:31:30Z
 review:pipelinq:2593:6a42067a	CONFLICT (l10n en/nl and two count specs); change sound per spec, vitest 1028 green on head	session-20261115T145533-2db61682	2026-11-15T16:31:52Z
 review:pipelinq:2969:bd583b9e	no verdict: conflicts; backend already on development via 83837c6f7, only the Tickets phone search is new; recorded CONFLICT	session-20261115T142958-341f60db	2026-11-15T16:32:03Z
+review:pipelinq:2964:65b04b14	CONFLICT: behaviour OK vs spec, no new failures on head; merge conflict with development	session-20261114T102637-6688951e	2026-11-15T16:32:12Z
