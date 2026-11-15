@@ -12610,3 +12610,4 @@ cover:pipelinq:7f9dc8e6m195a:60c2c265	PR #3859: 4 untested Controller classes, 1
 build4:openregister:object-event-sync-async-split:c5	no code task left: re-checked tasks.md on main; open items are obsolete (1.x, 2.2/2.3/2.5, 4.4), no subject (4b.8), hydra-gates repo (5.1/5.2), pre-existing phpmd (5.3) or live (5.4/5.5)	session-20261115T001740-566812b3	2026-11-15T01:34:03Z
 cover:integriq:92114ab0m4b3f:2fbf11bd	already done: lib/Service/Objecten/*.php measures 99.86% (699/700) on development 53067e87	session-20261115T001758-161b0715	2026-11-15T01:34:09Z
 build4:openregister:classification-clearance-on-an-object:c5	blocked: #10548 still open (not merged); 6.1-6.2 must wait for it, 5.2 is e2e; no other code task	session-20261115T001740-566812b3	2026-11-15T01:34:21Z
+verify:stackiq:1918:1ec9c473	1918 1959 1962 1965 1977 GREEN, 1966 CONFLICT (l10n)	session-20261115T011758-953fbe72	2026-11-15T01:34:39Z
