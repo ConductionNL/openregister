@@ -12423,4 +12423,5 @@ verify:larpinq:1050:087f53dd	GREEN #1050 (phpunit 845/0 fail, vitest 559 pass)	s
 verify:opencatalogi:2669:98eeacfc	6 GREEN (2669,2670,2677,2678,2679,2699), 3 CONFLICT (2671,2683,2686), 0 new failures	session-20261115T005132-ee7d19e4	2026-11-15T00:54:49Z
 verify:versioniq:690:3bc41fa6	failed: permission (versioniq vendor has no phpunit; fetching a phpunit phar was refused)	session-20261115T005141-9356bed0	2026-11-15T00:54:53Z
 review:versioniq:685:aadbc252	failed: permission (versioniq unit suite needs phpunit, absent from its vendor; fetching it was refused)	session-20261115T005141-9356bed0	2026-11-15T00:55:04Z
+build4:openregister:operate-load-shedding:c4	done: PR #10493 head 26d42fed adds 4.2 (console Dependencies section, admin Load shedding section + GET/PUT /api/settings/load-shedding, 33 strings in 37 locales); left 5.2 e2e (needs live instance)	session-20261115T001740-566812b3	2026-11-15T00:55:49Z
 fix:versioniq:723:3731f972	merged development (clean), pushed c544853d, REVERIFY	session-20261114T234941-bc8686af	2026-11-15T00:55:47Z
