@@ -12302,3 +12302,4 @@ review:humaniq:1133:c45cf87b	BLOCK: approval-step guard reads the target status,
 cover:planninq:e1c9866dmcf99:60c2c265	already done: lib/Controller/*.php 839/909 statements (92.3%, pcov, full unit suite) on development 9232a4db, above 90 target; least covered: ProjectImportController 7/43, CaseHandoverController 4/27; no PR	session-20261114T225452-4fcfea7f	2026-11-15T00:31:23Z
 cover:buildiq:70b3e29em66d0:1b97f731	PR #1658: lib/Listener 94.77%->99.29%, 13 tests, suite 3192->3205 (1 inherited failure)	session-20261114T234941-bc8686af	2026-11-15T00:31:25Z
 verify:shillinq:3084:064d4107	3084 RED (test classes not loadable), 3087 RED (2 tests: unknown named parameter config), 3088 GREEN, 3089 GREEN	session-20261114T231738-b43a6a63	2026-11-15T00:31:42Z
+fix:opencatalogi:2652:50d4611a	merged development in, clean; new head 73737f2ec348cb833b6366eed1be47cc5d8d742a	session-20261114T234933-5c1be121	2026-11-15T00:32:38Z
