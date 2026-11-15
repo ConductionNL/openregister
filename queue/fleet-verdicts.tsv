@@ -11872,3 +11872,4 @@ filinq	2121	38c2112f6823b3d1bc8fa994ddbba29f68e0cce7	CONFLICT	merge3	merges clea
 filinq	2122	caf1301148b49025547334124afc76ba1197f0f1	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Settings/filinq_register.json 
 filinq	2123	4b50c297bb09add8f0cc848f3da222e0b7c62dd9	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Settings/filinq_register.json 
 portaliq	2349	124b9f8678c713f568fe461688af30b87afcac23	GREEN	worker-14:review	dev-only bump phpstan 2.3.1 -> 2.3.5 (composer.lock only); merged with development phpstan 2.3.5 reports no errors
+portaliq	1682	505a7cd5fc3ec69bdf1f65a98d8079f5d62e2353	GREEN	worker-50:review	composer.lock only (nextcloud/ocp v35.0.0->v35.0.2 dev stubs, symfony polyfills ->v1.43.0); merges clean; phpunit-unit 6120 OK (96 skipped).
