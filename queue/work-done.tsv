@@ -13331,6 +13331,7 @@ review:decidiq:1692:afd2e246	GREEN: openspec-only sweep	session-20261115T142934-
 review:buildiq:1086:c366210f	BLOCK: npm ci ERESOLVE (nextcloud-vue peerOptional stylelint ^17)	session-20261115T145555-b33410db	2026-11-15T15:48:29Z
 review:decidiq:1469:bee189d6	GREEN 1469 (vitest equal to baseline)	session-20261115T142201-ea23e682	2026-11-15T15:48:39Z
 review:decidiq:1950:76d89347	GREEN: unit 4461/0 fail, phpstan clean	session-20261115T154314-8216dc98	2026-11-15T15:48:50Z
+build:opencatalogi:capability-rows-close-gaps:c3	PR #2696 updated: built 2.4 (version-history widget on publication page) and 2.8 (depublish on source end, flag on keep); all code tasks done; left 1.2 e2e and 3.2 live check (need a live instance)	session-20261115T142934-de7c51d0	2026-11-15T15:49:02Z
 review:decidiq:1471:b6694064	GREEN: vite range bump only; lockfile conflicts, development already locks vite 8.3.8; vitest 2825 pass	session-20261115T154407-94bf5f8c	2026-11-15T15:49:02Z
 review:decidiq:1470:9e304842	GREEN: npm ci OK, vitest 2825 passed	session-20261115T142951-2463b4c4	2026-11-15T15:49:24Z
 review:decidiq:1941:4df452c6	GREEN: 4461 unit OK; psalm.xml conflict noted	session-20261115T154255-e54527e9	2026-11-15T15:49:31Z
@@ -13339,3 +13340,4 @@ review:decidiq:1472:a40d36e1	GREEN: sass devdep bump, vitest 2825 passed	session
 review:decidiq:1942:76931393	RED: conflicts with development; merged tree TypeErrors in DecidiqRequestDecisionNodeBranchesTest (5)	session-20261115T154316-34f0db35	2026-11-15T15:50:01Z
 review:decidiq:1474:bbce152d	GREEN: devDep bump, vitest 2825 passed, eslint 0 errors	session-20261115T154307-1fc2cc78	2026-11-15T15:50:07Z
 review:buildiq:1233:f1c8aa72	GREEN: copy rename, vitest green; trivial add/add conflict with development	session-20261114T102641-d4fd3e25	2026-11-15T15:50:18Z
+review:decidiq:1920:dfa5dba2	GREEN: copy-only rename Store -> Marketplace; PHPUnit, vitest and l10n checks green	session-20261115T145533-2db61682	2026-11-15T15:50:28Z
