@@ -15201,3 +15201,4 @@ review:dossiq:4870:75e95061	GREEN: manifest-only, failures inherited	session-202
 review:hermiq:1791:4f9f1e85	RED: 14 new failures, old openregister object API in new code	session-20261115T213122-46f7fafb	2026-11-15T21:56:12Z
 review:shillinq:2063:e1c291c4	GREEN	session-20261115T202932-d1067ee4	2026-11-15T21:56:38Z
 review:hermiq:1750:70078246	RED: 1 new failure from a development test vs the new retrievalScope key	session-20261115T213144-ab42ee6a	2026-11-15T21:56:49Z
+review:portaliq:1681:4f75ff20	GREEN: example data only, no new failures	session-20261115T213134-4b0d2823	2026-11-15T21:57:05Z
