@@ -13468,3 +13468,4 @@ review:humaniq:877:358453bf	BLOCK (imports save-option classes from a namespace 
 review:hermiq:1167:8c40d8f8	RED: icon markup change breaks one golden fixture	session-20261115T152546-2c24b649	2026-11-15T16:11:40Z
 review:integriq:2992:365213f7	GREEN: axe-core minor dev bump; vitest 2374/2374	session-20261115T154254-3d07b219	2026-11-15T16:11:49Z
 review:humaniq:606:5bf20ffe	GREEN: dev lock bump, suite green, audit unchanged	session-20261114T102641-d4fd3e25	2026-11-15T16:11:56Z
+review:integriq:2924:bac62706	CONFLICT: unmergeable with development; dev added legacy-only helpers importing the deleted file; diff otherwise dead-code + comments	session-20261115T155903-abd003e3	2026-11-15T16:12:05Z
