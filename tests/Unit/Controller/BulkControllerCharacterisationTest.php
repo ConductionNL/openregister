@@ -62,6 +62,8 @@ class BulkControllerCharacterisationTest extends TestCase {
 
 	private IDBConnection&MockObject $db;
 
+	private \Psr\Log\LoggerInterface&MockObject $logger;
+
 	private BulkController $controller;
 
 	protected function setUp(): void {
@@ -73,6 +75,7 @@ class BulkControllerCharacterisationTest extends TestCase {
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->groupManager = $this->createMock(IGroupManager::class);
 		$this->db = $this->createMock(IDBConnection::class);
+		$this->logger = $this->createMock(\Psr\Log\LoggerInterface::class);
 
 		$this->objectService->method('setRegister')->willReturnSelf();
 		$this->objectService->method('setSchema')->willReturnSelf();
@@ -87,7 +90,9 @@ class BulkControllerCharacterisationTest extends TestCase {
 			$this->schemaMapper,
 			$this->userSession,
 			$this->groupManager,
-			$this->db
+			$this->db,
+			null,
+			$this->logger
 		);
 	}
 
@@ -136,7 +141,7 @@ class BulkControllerCharacterisationTest extends TestCase {
 		$this->assertArrayHasKey('detail', $data);
 	}
 
-	public function testSaveGenericFailureCarriesItsPrefix(): void {
+	public function testSaveGenericFailureAnswersAGenericBody(): void {
 		$this->asAdmin();
 		$this->schemaMapper->method('find')->willReturn($this->schema(2));
 		$this->request->method('getParams')->willReturn(['objects' => [['name' => 'a']]]);
@@ -145,7 +150,7 @@ class BulkControllerCharacterisationTest extends TestCase {
 		$response = $this->controller->save('1', '2');
 
 		$this->assertSame(500, $response->getStatus());
-		$this->assertSame(['error' => 'Bulk save operation failed: boom'], $response->getData());
+		$this->assertSame(['error' => 'Internal server error'], $response->getData());
 	}
 
 	public function testAnAtomicRollbackWithoutAnIndexNamesARow(): void {
@@ -192,6 +197,20 @@ class BulkControllerCharacterisationTest extends TestCase {
 		$this->assertSame(['error' => 'Schema not found'], $response->getData());
 	}
 
+	public function testSaveTypedFailureKeepsItsStatusAndMessage(): void {
+		$this->asAdmin();
+		$this->schemaMapper->method('find')->willReturn($this->schema(2));
+		$this->request->method('getParams')->willReturn(['objects' => [['name' => 'a']]]);
+		$this->objectService->method('saveObjects')->willThrowException(new \InvalidArgumentException('objects must be a list'));
+
+		$response = $this->controller->save('1', '2');
+
+		$this->assertSame(
+			[400, ['message' => 'objects must be a list', 'error' => 'invalid-argument']],
+			[$response->getStatus(), $response->getData()]
+		);
+	}
+
 	public function testDeleteRegisterAnswers404ForAnUnknownRegister(): void {
 		$this->asAdmin();
 		$this->registerMapper->method('find')->willThrowException(new DoesNotExistException('nope'));
@@ -203,24 +222,36 @@ class BulkControllerCharacterisationTest extends TestCase {
 		$this->assertSame(['error' => 'Register not found'], $response->getData());
 	}
 
-	public function testTheTableDeletesKeepTheirFailurePrefixes(): void {
+	public function testTheTableDeletesLogTheirContextAndAnswerAGenericBody(): void {
 		$this->asAdmin();
 		$this->schemaMapper->method('find')->willReturn($this->schema(2));
 		$this->registerMapper->method('find')->willReturn(new Register());
 		$this->request->method('getParams')->willReturn([]);
 		$this->objectService->method('deleteObjectsOfTable')->willThrowException(new \RuntimeException('x'));
 		$this->objectService->method('deleteObjectsByRegister')->willThrowException(new \RuntimeException('y'));
+		$logged = [];
+		$this->logger->method('error')->willReturnCallback(
+			function (string $message) use (&$logged): void {
+				$logged[] = $message;
+			}
+		);
 
 		$schema = $this->controller->deleteSchema('1', '2');
 		$objects = $this->controller->deleteSchemaObjects('1', '2');
 		$register = $this->controller->deleteRegister('1');
 
-		$this->assertSame(500, $schema->getStatus());
-		$this->assertSame(['error' => 'Schema objects deletion failed: x'], $schema->getData());
-		$this->assertSame(500, $objects->getStatus());
-		$this->assertSame(['error' => 'Objects deletion failed: x'], $objects->getData());
-		$this->assertSame(500, $register->getStatus());
-		$this->assertSame(['error' => 'Register objects deletion failed: y'], $register->getData());
+		$generic = [500, ['error' => 'Internal server error']];
+		$this->assertSame($generic, [$schema->getStatus(), $schema->getData()]);
+		$this->assertSame($generic, [$objects->getStatus(), $objects->getData()]);
+		$this->assertSame($generic, [$register->getStatus(), $register->getData()]);
+		$this->assertSame(
+			[
+				'[OCA\\OpenRegister\\Controller\\BulkController] Schema objects deletion failed: x',
+				'[OCA\\OpenRegister\\Controller\\BulkController] Objects deletion failed: x',
+				'[OCA\\OpenRegister\\Controller\\BulkController] Register objects deletion failed: y',
+			],
+			$logged
+		);
 	}
 
 	public function testAnArchivalRefusalIsA403OnEveryTableDelete(): void {
