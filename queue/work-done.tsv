@@ -13730,3 +13730,4 @@ review:shillinq:2227:13c58709	BLOCK: @vueuse/core 15 outside the component libra
 review:shillinq:2411:6ca5ae67	BLOCK: targets openregister settings value objects that exist only on an unmerged branch; would fail against openregister main	session-20261114T095641-533e2a00	2026-11-15T16:59:35Z
 review:shillinq:2408:837e65b7	BLOCK: create(layout:) does not exist in OpenRegister main; stub masks it; also conflicts	session-20261115T142149-1d09fceb	2026-11-15T16:59:46Z
 review:shillinq:2766:64b9e198	GREEN: phpstan minor bump, analyse clean on both	session-20261114T075643-acecaad6	2026-11-15T16:59:55Z
+review:shillinq:1958:66501062	CONFLICT: lib and l10n conflicts with development refactors; diff additive	session-20261115T145555-b33410db	2026-11-15T17:00:22Z
