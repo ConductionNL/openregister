@@ -14798,3 +14798,4 @@ fix:shillinq:1904:8c5e1f2e	sbom regenerated, pushed cc11db13, REVERIFY recorded	
 fix:filinq:2094:c8f19660	fixed: register conflict resolved (8.57.0), unit 6832 OK; head cefdb934	session-20261115T200020-0f65b959	2026-11-15T20:31:00Z
 fix:filinq:1102:7156c4b9	sbom regenerated, merged development; new head 8f276d18, REVERIFY recorded	session-20261115T202932-d1067ee4	2026-11-15T20:31:16Z
 fix:shillinq:1991:4377b437	fixed: merged development, regenerated sbom; new head 29abf7fb, REVERIFY recorded	session-20261114T073105-752e50ad	2026-11-15T20:31:23Z
+fix:filinq:1304	fixed: sbom regenerated; new head 0bd181f9	session-20261115T200000-e95b89c2	2026-11-15T20:31:34Z
