@@ -13315,3 +13315,4 @@ review:decidiq:1467:26c28394	GREEN: dev-dep bump, vitest 2825 passed, coverage r
 review:decidiq:1600:33021efc	BLOCK: obsolete lock downgrade (2.60.0 vs dev 2.135.0), conflicts; close as superseded	session-20261115T154316-34f0db35	2026-11-15T15:45:51Z
 review:buildiq:1094:85dea460	BLOCK: lockfile out of sync, npm ci fails	session-20261115T154314-8216dc98	2026-11-15T15:46:02Z
 review:buildiq:1262:c955fcfd	BLOCK: wrong LockRequest/UnlockRequest namespace, runtime class-not-found	session-20261115T142951-2463b4c4	2026-11-15T15:46:15Z
+review:decidiq:1767:3e9af0ff	GREEN: dev-only lock bump installs, unit 4461 OK unchanged	session-20261115T152552-0cb4306e	2026-11-15T15:46:33Z
