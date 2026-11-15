@@ -12370,3 +12370,7 @@ launchpad	977	dd835410dc5adc1e3f7a756c55b1ec0c23ca0c63	RED	merge8:merge-gate	GAT
 launchpad	1098	1720a6d32297542976c2d048a6d2ff7084e2193d	RED	merge8:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
 launchpad	1229	444ff7437a3d1799b71fe7a73eda4109cc9b4db1	RED	merge8:merge-gate	GATE RED floor: unit_complexity: 4.73 -> 4.69; unit_interfacing: 3.57 -> 3.55
 launchpad	1234	d725a0f05e32e8677fad84090dc7925f03492fe2	RED	merge8:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+launchpad	760	cdb3d779f3f11204696688cc610c46fb9278ec38	CONFLICT	merge8	merges clean on development alone; files: package-lock.json package.json 
+launchpad	832	0ef9969802bdc9fd481072094d4cc4ebd0418656	CONFLICT	merge8	conflicts with development; files: openspec/changes/adopt-connection-registry/.openspec.yaml openspec/changes/adopt-connection-registry/design.md openspec/changes/adopt-connection-registry/proposal.md openspec/changes/adopt-connection-
+launchpad	1230	f043acfc5691ac06aeed0096c18ecd3acaa80799	CONFLICT	merge8	merges clean on development alone; files: l10n/nl.json lib/Notification/Notifier.php openapi.json 
+launchpad	1235	91e1b63285d60d9c22157df476ce0f2ccad264a4	CONFLICT	merge8	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
