@@ -129,6 +129,12 @@
 - [ ] 3.3b Handing it to `MagicRbacHandler`'s query builder in the sweep
       itself. The shape the builder needs is what `compile()` returns; joining
       it in is the sweep's change, not this one.
+      (15 Nov, still open: design question 3 proposes a TimedJob per schema
+      firing `$age` rules once per due object. The only `$age` rule with an
+      action is an `autoWhen`, so the sweep would apply lifecycle transitions
+      with no request actor, and objects of different organisations compile
+      to different thresholds; both need building with the transition engine,
+      not beside it.)
 - [x] 3.4 Refused at save AND at evaluation, by the same check: `compile()`
       runs `refusalFor()` every time, so a condition stored before the
       validator existed meets the refusal at the moment it would otherwise have
@@ -172,6 +178,9 @@
       and nothing else — there is no warnings channel on a save response to put
       it in. Recorded rather than dropped while the channel is missing, and
       named here rather than left to look like a feature.
+      (15 Nov, still open: the channel has to reach every save path — API,
+      import, bulk — through `WriteVetoState`, which is a change to the save
+      response of its own.)
 - [x] 4.4 Two new assertions in `RuleEvaluationPointTest`: the listener is
       subscribed to both events, and it records its verdict. The validation is
       also a kind in `RuleVocabulary` (order 4, ahead of flows, which moved to
