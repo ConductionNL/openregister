@@ -13319,3 +13319,8 @@ thematiq	1289	2557e0bad801f3a73a99cfa6f1d2ac0861598309	RED	merge8:merge-gate	GAT
 thematiq	1556	ff5f73bc8d0dc6f12bac429db068c7a3da6df24b	RED	merge8:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
 thematiq	1557	b3ab646d8fa634f7d71c5465a5553a97865a8929	RED	merge8:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
 thematiq	1558	4e04b3da12fdd1e8be1832f3eeed91751c1e1667	RED	merge8:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+thematiq	1126	b0b0a98c600b6a564f0c947ec254d82b273e49d2	CONFLICT	merge8	merges clean on development alone; files: package-lock.json package.json 
+thematiq	1290	f560b3571c372be9380d55790c45e1def0f9fa37	CONFLICT	merge8	merges clean on development alone; files: package-lock.json package.json 
+thematiq	1291	3fac1acaf85f1e23a9e4dd00e978e2c20b15fb74	CONFLICT	merge8	merges clean on development alone; files: package-lock.json 
+thematiq	1292	f21993f36acab8e8cd83bc536582c9055beb9ebd	CONFLICT	merge8	merges clean on development alone; files: package-lock.json package.json 
+thematiq	1293	09458d1551d2043d077a70fded90654a4072e0d2	CONFLICT	merge8	merges clean on development alone; files: package-lock.json package.json 
