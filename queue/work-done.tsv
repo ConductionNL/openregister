@@ -14938,3 +14938,4 @@ fix:opencatalogi:2696:f7d699f3	fixed: development merged, red test green, no new
 fix:launchpad:785:962d3592	golden recorded, vitest ok; REVERIFY 91bd14a0c96181818b7b5c9405c8098dd9e28904	session-20261115T195953-2618bb8a	2026-11-15T20:54:57Z
 fix:keepiq:1499:95735770	sbom regenerated, pushed 88c1cad1, REVERIFY recorded	session-20261115T201132-b8ddc5e5	2026-11-15T20:55:08Z
 fix:opencatalogi:2679:467db25a	saveObject migrated to ObjectSaveOptions; REVERIFY at 22b67cf7	session-20261115T195958-28cb0304	2026-11-15T20:55:18Z
+fix:keepiq:1826:6a8875d0	development merged in cleanly, unit OK; new head 98fff903, REVERIFY recorded	session-20261115T203029-7489abc7	2026-11-15T20:55:32Z
