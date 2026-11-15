@@ -14135,3 +14135,4 @@ fix:portaliq:1011:584f0c5d	failed: @conduction/nextcloud-vue 2.180.0 (latest) st
 review:dossiq:5266:db2ab4a5	GREEN: config-only card; 0 new failures	session-20261115T174808-50b8ceec	2026-11-15T18:22:21Z
 review:larpinq:830:794bac00	GREEN: phpmd 3 bump works; lock conflicts with development (needs regeneration)	session-20261115T174757-8dfa7406	2026-11-15T18:22:28Z
 review:pipelinq:3835:1dcc79c3	GREEN 3835	session-20261115T154255-e54527e9	2026-11-15T18:22:36Z
+fix:dossiq:4886:073e3804	fixed undefined caseTypeRef in termContext + test; 19 inherited only; new head 63c08dd9	session-20261115T174739-b14c2df4	2026-11-15T18:22:47Z
