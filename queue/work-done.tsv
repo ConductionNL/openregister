@@ -14150,3 +14150,4 @@ fix:portaliq:1659:3c90bf4d	conflict resolved (dup rowClass dropped), pushed 3bad
 review:pipelinq:3146:9853385c	GREEN; FlowNodeCall namespace matches OR main, phpunit 8890 OK	session-20261115T152558-f97be55f	2026-11-15T18:25:08Z
 review:dossiq:3957:b44c6a4f	GREEN: matches its change spec; 0 new failures	session-20261115T174808-50b8ceec	2026-11-15T18:25:19Z
 fix:portaliq:1666:00663233	conflict resolved keeping development's actions; new head 3a173dca3d9798e6eef30195d81dc42bb356d376, REVERIFY	session-20261115T174757-8dfa7406	2026-11-15T18:25:32Z
+fix:portaliq:1992:df536a4a	failed: obsolete - openregister main's aliasStoreController again accepts appId:/controllerNs: (and adoption:), so development's current call works and this PR only narrows compatibility; nothing to keep, closing PRs is refused to this worker, close #1992 by hand	session-20261115T174747-978963d5	2026-11-15T18:25:47Z
