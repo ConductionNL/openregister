@@ -14275,4 +14275,5 @@ fix:filinq:1305:66e6aff4	sbom regenerated after merging development; unit 6772 O
 review:planninq:726:78fcfabe	GREEN: gridstack 14, tests pass, peer-range warning and adjacent-line conflict noted	session-20261115T174804-89f2739f	2026-11-15T18:45:35Z
 fix:shillinq:3000:2e77cb19	conflict resolved, unit 12270 OK, new head 3a531ca4	session-20261115T181015-497e81ce	2026-11-15T18:45:44Z
 fix:shillinq:1899:c535cb99	conflicts resolved, unit suite green, pushed 7b7a34c7; REVERIFY recorded	session-20261115T183034-bba160e3	2026-11-15T18:45:58Z
+fix:learniq:2551:d07fdeb3	registry import conflict resolved; new head 8927e907dbacc38217efca341f9aa2020c319940, REVERIFY	session-20261115T174757-8dfa7406	2026-11-15T18:46:16Z
 fix:learniq:1884:16330d9e	failed: overlaps development's site-workplace-trainer-portal-design build, which already returns an hour week with a question via approve (returnOf: question + returnedDate per day) and reworked ExcuseRequestOwnerStamp/TrainerSitePages/register; 12 files conflict on two competing designs, needs a rework decision, not a merge	session-20261115T183029-6c0565bd	2026-11-15T18:46:08Z
