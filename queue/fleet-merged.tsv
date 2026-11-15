@@ -3413,3 +3413,8 @@ integriq	3659	d6e21389966d9a21696d70687ff326be6a91128d	MERGED	merge3	GATE OK sbo
 integriq	3662	3ca2c15af0945943557dba6a368b0b05a529216f	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
 integriq	3663	a648fe064daed2719b5bf117ab8db0dd3e60db24	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
 integriq	3664	6194d2632c637a4322bc5a52af4786d19cb25796	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
+opencatalogi	2654	7fa3daaf34baedd7959384188ca1b434f164e969	RED	merge3	GATE RED floor: unit_complexity: 4.88 -> 4.86; unit_interfacing: 4.85 -> 4.83
+opencatalogi	2679	233b25289fb41e7d6e2e591722d1947a5f7c51e8	RED	merge3	GATE RED floor: unit_complexity: 4.88 -> 4.86; module_coupling: 5.45 -> 5.41
+opencatalogi	2715	c6738e8f139ae9ede3392d1708f583a1fbd3a545	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.49
+opencatalogi	2721	871968ceac371bd9230aa976b0de473b9a2234b3	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.49
+opencatalogi	2724	7292cb7b15c17c5907c092f3c342124e058dd88e	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.49
