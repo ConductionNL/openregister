@@ -12223,3 +12223,4 @@ integriq	3593	ab56426a1b0e7bb92da691a0a6a7f1a86a98f3e8	CONFLICT	merge3	merges cl
 integriq	3596	efb65024a9aaea41a427ba79d4af92b544f8f4ad	CONFLICT	merge3	merges clean on development alone; files: tests/Unit/Service/CatalogRegistrySeedGoldenTest.php 
 integriq	3649	f749c1d03c11688068a6c1de64e4a6c58dde7c24	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/nl.js 
 integriq	3638	5a09bf5c30d9a40505206836fee1fb5ff388c919	REVERIFY	merge3	head moved since the verdict (was 80f3ed7527ba0857d0f959e1f699edfb302ab796, c6195be6:REVERIFY,80f3ed75:GREEN); verify the new head
+dossiq	4882	2a47c981684a0e7bfbdec69c1e9d5e67e8147207	GREEN	worker-02:review	behaviour changes (storage_gb->storage_mb, userQuota on organisation, upload storage gate, standing quotas skip reset) all specified in the PR's REQ-TQ-ENF-02 delta with a repair step for stored rows; unit 18116, same 19 inherited failures, 0 new; vitest spec 4/4
