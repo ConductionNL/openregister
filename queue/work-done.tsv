@@ -13169,3 +13169,4 @@ fix:learniq:2513:fd13b215	fixed: refactor restores every rating to the merge bas
 build4:openregister:apphost-settings-plane:c6	PR #10553 head abe2513c79: 3.2 done (Deck, ActivityLinks, CalendarEvents, ImportPreview, Bulk, AuditTrail via handleApiException + optional loggers; Controller 10224/Architecture 2364/Contract 69 green); SettingsController failures too. Left: 3.1 data move needs a settings-shape decision, 3.3 leaf app, 4.2-4.4 not code tasks	session-20261115T142935-a9f3c36c	2026-11-15T15:17:08Z
 verify:shillinq:3080:c709f71f	GREEN 3080: build within spec, no new failures	session-20261115T142958-341f60db	2026-11-15T15:17:05Z
 verify:shillinq:3078:afa296d4	3078 GREEN	session-20261115T142932-b9b408b7	2026-11-15T15:17:12Z
+verify:dossiq:6577:b1c71303	6577 GREEN	session-20261115T142150-6c965c2a	2026-11-15T15:17:29Z
