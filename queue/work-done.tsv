@@ -14103,3 +14103,4 @@ fix:pipelinq:3149:3c7ae62d	fixed namespace + new callers, pushed 4ffdb1c6; REVER
 fix:pipelinq:2565:b4af6499	failed: 149 conflicting files across a 52-commit integration batch vs 3362 development commits; not resolvable with intent kept inside the 45 min cap; needs re-cutting the batch from current development (per feature branch)	session-20261115T174741-9deaa0be	2026-11-15T18:15:05Z
 review:dossiq:3957:17cbacac	BLOCK: behaviour change (category from data, publish fails on decision-type read failure) in a refactor PR	session-20261114T102637-6688951e	2026-11-15T18:15:06Z
 review:dossiq:4886:073e3804	BLOCK: undefined $caseTypeRef in termContext makes the case-type pick dead on create	session-20261115T174808-50b8ceec	2026-11-15T18:15:21Z
+fix:pipelinq:2964:65b04b14	obsolete: change already built on development by its build branch; closed PR with comment	session-20261115T174755-95dc8448	2026-11-15T18:15:42Z
