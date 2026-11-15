@@ -13419,3 +13419,4 @@ review:hermiq:1135:988cfbc8	GREEN: dev-only phpmd 3 bump; unit suite identical; 
 review:hermiq:1195:6284aad0	GREEN: eslint bump, vitest 1526 pass, lint identical to baseline	session-20261115T155913-70cee771	2026-11-15T16:02:56Z
 review:filinq:1451:258e0913	BLOCK: duplicate of template already on development (#1457); suite 6765 OK	session-20261115T152558-f97be55f	2026-11-15T16:03:13Z
 review:dossiq:2902:791b50a4	GREEN (no behaviour change; conflicts with development, keep StepConfigCheck)	session-20261115T141023-b06d51da	2026-11-15T16:03:22Z
+review:dossiq:3202:d10800f6	BLOCK: gridstack 14 outside shared library peer range; conflicts with development	session-20261114T102641-d4fd3e25	2026-11-15T16:03:33Z
