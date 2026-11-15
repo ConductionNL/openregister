@@ -13566,3 +13566,4 @@ review:learniq:2126:af7f7379	GREEN: phpstan clean, no new failures	session-20261
 review:opencatalogi:2415:da40ef23	CONFLICT: PublicationsController conflicts with development (call moved to rendered()); diff itself correct	session-20261115T155911-14cd078d	2026-11-15T16:28:56Z
 review:learniq:1903:3f6c3b60	GREEN: dev-only ocp bump; installs, suite has only the inherited failure	session-20261115T145533-2db61682	2026-11-15T16:29:09Z
 review:learniq:1884:16330d9e	no verdict: conflicts with development in 11 files; recorded CONFLICT for the fix lane	session-20261115T142958-341f60db	2026-11-15T16:29:33Z
+review:opencatalogi:1894:552c9a7c	CONFLICT: openspec-only PR conflicts with development in 6 files	session-20261114T085646-49a39060	2026-11-15T16:29:42Z
