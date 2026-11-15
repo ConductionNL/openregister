@@ -3386,3 +3386,20 @@ decidiq	2212	b65d41d8624be71bf0f063131227a1f1f209e947	MERGED	merge3	GATE OK sbom
 decidiq	2216	9099bccc0b8fe23b34321a20b6c4cc8ac964cee3	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.78 holds at 3.79
 decidiq	2217	5a7315b241831d515c20a94e39f2d2e852963e14	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.78 holds at 3.79
 decidiq	2218	b16364d215e56298139fbef52ecfb728dbb9edfa	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.78 holds at 3.79
+stackiq	1706	59b724c4744af256e70361cc88b9480acd17f92c	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.15
+stackiq	1908	6726be39a829f4636784dec56e6c986f56dceb8f	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.15
+stackiq	1918	28f988e32e2088e48fe88c04ef9e552f206cb9ca	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.15
+stackiq	1926	66368aab8e11ae5a1d64e5cb458a5eecb139b801	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.16
+stackiq	1953	addc913f86d2644b4a2510fcfd8a6b0753ac1256	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.16
+stackiq	1959	760635d97eaf89816969c18a0330d2edcc6ae40a	RED	merge3	GATE RED floor: unit_interfacing: 4.72 -> 4.68
+stackiq	1961	db31535e95aed7756fd3e82856b0851e4f67e48c	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.16
+stackiq	1962	95e027c70eea188e6f125e267b9e6b0c18f96a2c	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.06
+stackiq	1967	2c9ca6eb845e6e38377bd32f8c9f9a455c59b869	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.06
+stackiq	1968	6a26dd94b5ba8f7db347d7b09d981ac0b2ad955b	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.06
+stackiq	1969	011ca233f5d5d39b9cfd01260abbeab76c78f305	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.06
+stackiq	1970	70ef7639e62084c64261183d843d615e84bf5302	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.06
+stackiq	1971	7210ea2634ed2e098d2511f914b31cbe7ea5762b	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.06
+stackiq	1972	be31ee682effcf01c302e044f86cd767a4940245	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.06
+stackiq	1976	2fd15126eaabf872c37290fae257ef7a25cca357	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.06
+stackiq	1977	eb4d07c372dac047e6a6abb5ea05b5d8664b0456	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.06
+stackiq	1979	417f4045b045013e0912d3015ee3d2fafd7e9f46	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.06
