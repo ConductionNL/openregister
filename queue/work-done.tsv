@@ -13037,3 +13037,4 @@ review:shillinq:2991:e2225c58	GREEN: per-spec, tests pass; conflicts with develo
 verify:dossiq:6547:aa7b9580	6547 GREEN (tests only, no new failures)	session-20261115T142134-badaaf30	2026-11-15T14:31:10Z
 review:shillinq:3000:2e77cb19	GREEN: matches change specs, suite OK on head; conflicts with development (l10n, register lock)	session-20261115T142148-bdb54e0a	2026-11-15T14:31:17Z
 cover:dossiq:069ee2d6madb6:c900fa11	PR dossiq#6571: FilterPipeline 8 tests, 96.9%->100% lines; suite 17949->17957, same 19 inherited failures	session-20261115T142132-f36ad68b	2026-11-15T14:31:33Z
+merge:pipelinq:3860:65cbe5b7	merge3 tree of 1 pipelinq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-15T14:31:48Z
