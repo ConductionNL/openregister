@@ -12307,3 +12307,4 @@ fix:opencatalogi:2652:50d4611a	merged development in, clean; new head 73737f2ec3
 cover:keepiq:c967a31fmdbad:d3522ea6	PR keepiq#1819: 8 Db mappers, 24 tests, suite 5213->5237 OK	session-20261115T001742-a39bbe12	2026-11-15T00:32:53Z
 fix:launchpad:1203:2603ce75	floor restored: unit_complexity 4.66 -> 4.72 by refactoring the calculated-field evaluator; new head a278d583, REVERIFY recorded	session-20261114T231755-998f7ff8	2026-11-15T00:32:59Z
 fix:integriq:3630:320ac7f7	conflict resolved, new head 0af2622c	session-20261115T001759-0085793c	2026-11-15T00:33:06Z
+cover:planninq:e1c9866dmcf99:9d3a1784	PR #1184: 5 tests, ExportProjectJob and ExportRequest fully covered, suite 1177->1182 OK	session-20261115T002445-1522cadc	2026-11-15T00:33:18Z
