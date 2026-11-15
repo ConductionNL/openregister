@@ -14529,3 +14529,4 @@ fix:launchpad:885:04779dd2	fixed: development merged, specs adapted to the Meer 
 fix:stackiq:1064:92f38c90	lockfile conflict resolved, pushed adce3cb4	session-20261115T185925-f99529ae	2026-11-15T19:23:37Z
 fix:opencatalogi:2673:61140718	RED fixed (dev widget tests moved to the overview), pushed 9b953103, REVERIFY recorded	session-20261115T182936-09049974	2026-11-15T19:23:45Z
 fix:stackiq:1924:b3cd5b3a	l10n conflict resolved, new head ae4e4f18	session-20261115T185929-0fc862a6	2026-11-15T19:24:14Z
+fix:thematiq:1555:1e3652b9	failed: fix needs a regenerated composer.lock (workers may not commit it) and config.platform.php raised app-wide; psalm 5->7 major also needs psalm/plugin-symfony replaced - left for a human/local lane	session-20261115T185925-f99529ae	2026-11-15T19:24:20Z
