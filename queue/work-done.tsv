@@ -12425,6 +12425,7 @@ verify:versioniq:690:3bc41fa6	failed: permission (versioniq vendor has no phpuni
 review:versioniq:685:aadbc252	failed: permission (versioniq unit suite needs phpunit, absent from its vendor; fetching it was refused)	session-20261115T005141-9356bed0	2026-11-15T00:55:04Z
 build4:openregister:operate-load-shedding:c4	done: PR #10493 head 26d42fed adds 4.2 (console Dependencies section, admin Load shedding section + GET/PUT /api/settings/load-shedding, 33 strings in 37 locales); left 5.2 e2e (needs live instance)	session-20261115T001740-566812b3	2026-11-15T00:55:49Z
 fix:versioniq:723:3731f972	merged development (clean), pushed c544853d, REVERIFY	session-20261114T234941-bc8686af	2026-11-15T00:55:47Z
+cover:keepiq:c967a31fmdbad:dfaef732	already done: lib/Notification/*.php measures 99.5% (395/397) on development; the 2 left are the unreachable fallback after every mapped subject renders	session-20261115T001758-161b0715	2026-11-15T00:56:34Z
 merge:stackiq:1706:dab90f6f	merge3 tree of 25 stackiq PRs: merged=8 red=2 fail=0 skip=4; conflict 11, lint 0, moved 0; fix rows 11	merge3-20261113T213425-c36bcd5f	2026-11-15T00:56:35Z
 merge:stackiq:1906:66216a3a	merge3 tree of 25 stackiq PRs: merged=8 red=2 fail=0 skip=4; conflict 11, lint 0, moved 0; fix rows 11	merge3-20261113T213425-c36bcd5f	2026-11-15T00:56:39Z
 merge:stackiq:1905:5b0b5883	merge3 tree of 25 stackiq PRs: merged=8 red=2 fail=0 skip=4; conflict 11, lint 0, moved 0; fix rows 11	merge3-20261113T213425-c36bcd5f	2026-11-15T00:56:42Z
