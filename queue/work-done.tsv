@@ -14012,6 +14012,7 @@ review:buildiq:1093:16b82bb9	GREEN: marked bump, vitest 4692/4692 pass	session-2
 review:buildiq:1091:c4dd3636	GREEN: 4692/4692 vitest pass on merge with development, coverage report OK	session-20261115T174819-9af28ef9	2026-11-15T17:58:36Z
 fix:dossiq:2909:b86bc4d2	CONFLICT resolved, pushed 23f03bf8; inherited red caseSearchDeclarations gdprClassification noted	session-20261115T174747-978963d5	2026-11-15T17:58:43Z
 review:pipelinq:3835:8a345d33	RED: articleDetailFormDialogEditor.spec.js imports the dialog the PR deletes; otherwise PHP green	session-20261115T152552-0cb4306e	2026-11-15T17:59:01Z
+fix:dossiq:5353:15d28d9d	failed: 295-file refactor conflicts in 97 files, beyond the 45 min cap; also imports OCA\OpenRegister\Service\Object\ObjectSaveOptions/ObjectFindTarget but openregister main has them in Kernel\Contracts\Value (no alias), so it needs regenerating on current development with the right namespace, not a merge	session-20261115T154255-e54527e9	2026-11-15T17:59:10Z
 fix:dossiq:3953:1fa01764	conflicts resolved, pushed 6ca6e023; REVERIFY recorded	session-20261115T142129-944012f5	2026-11-15T17:59:09Z
 fix:dossiq:3936:d81910f6	conflict resolved, pushed 7ae9f014, REVERIFY recorded	session-20261115T174741-56eeaa2f	2026-11-15T17:59:23Z
 fix:pipelinq:2593:6a42067a	conflict resolved, pushed c5620371; REVERIFY recorded	session-20261115T174750-744c606b	2026-11-15T17:59:30Z
