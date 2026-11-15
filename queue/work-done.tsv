@@ -12338,3 +12338,4 @@ fix:opencatalogi:2670:cc1f0bf4	conflict resolved, pushed fa50401a, REVERIFY reco
 fix:integriq:3593:b138cdd2	conflict resolved, new head c89e41d0; REVERIFY recorded	session-20261115T001742-a39bbe12	2026-11-15T00:37:28Z
 verify:shillinq:3088:682aff8d	GREEN 3088, GREEN 3091; no new failures	session-20261114T234952-566b7ef5	2026-11-15T00:37:41Z
 fix:integriq:3549:931cf8b2	pushed 2d954e73: fixture reordered, gitleaks finding gone (targetRules allowlists are ignored by gitleaks 8.28 with useDefault); REVERIFY recorded	session-20261115T001750-90323034	2026-11-15T00:37:56Z
+fix:opencatalogi:2654:89b4f055	conflict resolved (l10n both sides); new head 7fa3daaf34baedd7959384188ca1b434f164e969	session-20261114T234933-5c1be121	2026-11-15T00:38:18Z
