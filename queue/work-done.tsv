@@ -14110,3 +14110,4 @@ fix:pipelinq:3148:71f5a4bf	fixed namespace to Kernel\Contracts\Value, merged dev
 fix:portaliq:1594:7d7e983b	obsolete: copy buttons already on development; closed PR with comment	session-20261115T174755-95dc8448	2026-11-15T18:16:23Z
 review:dossiq:4149:e758cb15	GREEN dossiq#4149: no new failures (19 inherited), phpstan clean	session-20261115T174739-b14c2df4	2026-11-15T18:16:25Z
 fix:pipelinq:3146:97b91f19	tests moved to FlowNodeCall, pushed 9853385, REVERIFY	session-20261115T154255-e54527e9	2026-11-15T18:16:44Z
+review:dossiq:5338:4924e28d	GREEN: matches openregister main TaskService signature	session-20261115T174819-9af28ef9	2026-11-15T18:16:57Z
