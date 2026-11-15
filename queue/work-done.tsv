@@ -15257,3 +15257,4 @@ review:integriq:3051:80f07d8c	GREEN: lock request migration, no new failures	ses
 review:integriq:3047:261ea2e5	GREEN: RenderSelection migration matches OR main, no new failures	session-20261115T220025-8d429838	2026-11-15T22:08:20Z
 verify:shillinq:3080:4dfed108	3080 RED, 3088 RED (+conflict with 3080), 3105 GREEN: build PRs use removed OR register:/schema: args	session-20261115T213110-6b33145c	2026-11-15T22:08:27Z
 review:launchpad:1038:80993974	BLOCK: targets an OR StoreListing API that is not on main or development	session-20261115T213112-78aba834	2026-11-15T22:08:41Z
+review:opencatalogi:2671:8b5765d7	BLOCK: old OpenRegister named args in new sweep/rewrite code; 16 new test failures	session-20261115T213107-505dc338	2026-11-15T22:08:51Z
