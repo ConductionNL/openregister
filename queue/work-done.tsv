@@ -13299,3 +13299,4 @@ build:opencatalogi:integration-feed-consumer-credentials:c3	done: PR #2652 head 
 review:buildiq:1095:c5896b0e	RED: gridstack 14 conflicts with nextcloud-vue peer range, npm ci fails	session-20261115T142149-1d09fceb	2026-11-15T15:42:35Z
 review:buildiq:1090:de7f28aa	RED: lockfile out of sync, npm ci fails	session-20261115T152546-2c24b649	2026-11-15T15:42:42Z
 review:buildiq:1093:7c1a6bdd	BLOCK: npm ci fails, lockfile out of sync	session-20261115T142951-2463b4c4	2026-11-15T15:43:40Z
+cover:openregister:7350e3efm1efa:e98782c5	PR #10587: lib/Notifications/Service 95.11->97.28% (pcov); @uses fixes un-risk 16 tests (NotificationReminderValidator was hidden), +16 tests for GraphQL SubscriptionService and TimelineEntryService; HexIconService left (Imagick-only paths); suite no new failures; possible defect: event stream filter compares int ids with string schema/register	session-20261114T075643-acecaad6	2026-11-15T15:43:56Z
