@@ -14689,3 +14689,4 @@ review:launchpad:787:d2dedbb4	BLOCK: internalUrl unvalidated on tile create (REQ
 review:planninq:1067:98afc66e	GREEN: mechanical ObjectSaveOptions migration, 1222 tests OK	session-20261115T195957-8e60ca53	2026-11-15T20:09:52Z
 review:buildiq:1090:8e11ea7a	GREEN: webpack dev bump; vitest 4719 pass, build ok	session-20261115T195958-28cb0304	2026-11-15T20:10:02Z
 review:opencatalogi:2541:55851e9d	GREEN; no new failures, OR main signatures match	session-20261115T200045-d3bb5c75	2026-11-15T20:10:16Z
+review:planninq:871:95bfabe1	GREEN: lint 0 errors under eslint 10.12	session-20261115T200026-9a5b8685	2026-11-15T20:10:32Z
