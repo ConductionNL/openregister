@@ -13652,3 +13652,4 @@ review:portaliq:1152:a324482e	CONFLICT: likely superseded by the draft feature a
 review:portaliq:1474:8e1a7978	CONFLICT: 53 files, many add/add (partly landed already)	session-20261115T154254-3d07b219	2026-11-15T16:44:32Z
 review:portaliq:1680:b1f0459b	BLOCK: 4-file conflict; code and tests clean	session-20261115T154255-e54527e9	2026-11-15T16:44:39Z
 review:pipelinq:2103:adb97dd8	GREEN: vueuse 15 unused directly; vitest 5343/5344 with 1 inherited failure; conflicts in package.json/lock	session-20261115T145546-378b432a	2026-11-15T16:45:11Z
+review:portaliq:1354:23330bb3	BLOCK: merged lock out of sync (pinia), npm ci EUSAGE	session-20261115T142934-6cab0c24	2026-11-15T16:45:26Z
