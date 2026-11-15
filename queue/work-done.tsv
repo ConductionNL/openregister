@@ -14792,3 +14792,4 @@ review:dossiq:3196:bdbdd4b2	GREEN: dev-dep bump, no new failures	session-2026111
 fix:shillinq:3078:308c8c7e	merged dev, l10n union; REVERIFY 07b981950f5e8d12c1075291d28db27d73041ed3	session-20261115T195953-2618bb8a	2026-11-15T20:29:19Z
 fix:shillinq:2997:3374c3bc	merged development in (clean); unit 12284 ok; REVERIFY at 3be50195	session-20261115T200026-9a5b8685	2026-11-15T20:29:33Z
 fix:shillinq:2226:dcacc634	sbom regenerated, REVERIFY recorded	session-20261115T174747-978963d5	2026-11-15T20:29:42Z
+fix:shillinq:1908	fixed: sbom regenerated; new head ca21609b	session-20261115T200000-e95b89c2	2026-11-15T20:30:01Z
