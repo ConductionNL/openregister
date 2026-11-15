@@ -14549,3 +14549,4 @@ fix:opencatalogi:2679:233b2528	maintainability floor PASS vs merge base, suite =
 fix:launchpad:787:c954ea2d	conflicts resolved (19 paths), suites green; new head d2dedbb4	session-20261115T185938-cd1c2813	2026-11-15T19:26:52Z
 fix:stackiq:1067:7132da67	lock regenerated on development, pushed; REVERIFY recorded	session-20261115T174750-744c606b	2026-11-15T19:27:01Z
 fix:versioniq:738:d693e01b	DiscoverPanel conflict resolved; new head f3f7da6d, REVERIFY	session-20261115T174757-8dfa7406	2026-11-15T19:27:21Z
+fix:larpinq:962:6aa0ff3d	failed: psalm 7 needs platform php >=8.3.16, which roave/security-advisories then pushes to >=8.3.36; fleet-wide platform decision, not a branch fix	session-20261115T174833-88ac0233	2026-11-15T19:27:34Z
