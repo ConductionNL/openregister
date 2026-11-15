@@ -14747,3 +14747,4 @@ fix:dossiq:3297:78031823	conflict resolved, pushed 2d7e3f4a, REVERIFY recorded	s
 fix:dossiq:5397	fixed: sbom regenerated; new head 7ff72b32	session-20261115T200000-e95b89c2	2026-11-15T20:21:01Z
 review:planninq:725:f5dce57c	GREEN: vitest 3566 pass, build compiles	session-20261114T075643-75a598ab	2026-11-15T20:21:17Z
 review:stackiq:1930:d6bf1559	BLOCK; new saveObject call uses removed OR named args	session-20261115T200045-d3bb5c75	2026-11-15T20:21:25Z
+review:stackiq:1069:e98fca28	GREEN: types-only bump; vitest 1 inherited failure	session-20261115T200041-8ff5af37	2026-11-15T20:21:37Z
