@@ -15324,3 +15324,4 @@ fix:stackiq:1941:40710dd9	conflict resolved + main-API migration of new code; ne
 review:opencatalogi:2673:9b953103	GREEN: no new failures vs development, jest OK	session-20261115T220032-9e5549d1	2026-11-15T22:20:02Z
 fix:decidiq:1465:840ea3b6	sbom regenerated, development merged in; new head c16cd40a576d75aeda154a94b4c66265f5a79c7e	session-20261115T213101-2fb56005	2026-11-15T22:20:13Z
 fix:decidiq:1472:a40d36e1	sbom regenerated after merging development; head 92d14428, REVERIFY	session-20261115T220134-9124a7d0	2026-11-15T22:20:23Z
+fix:decidiq:1948:fbc94193	failed: sbom.cdx.json already current (regen-sbom --check passes, 629 components); hydra-gates is a dev dependency, omitted from the SBOM, so regen gives no diff; the gate's lock-without-sbom rule is a false positive for dev-only bumps	session-20261115T220021-7060b99c	2026-11-15T22:20:40Z
