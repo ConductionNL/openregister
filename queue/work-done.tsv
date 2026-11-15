@@ -15366,3 +15366,4 @@ fix:thematiq:1291:3fac1aca	fixed: development merged in; REVERIFY at ac416a6a	se
 fix:portaliq:1673:73721356	saveObject moved to ObjectSaveOptions; new head 06264bd1	session-20261115T202932-d1067ee4	2026-11-15T22:26:37Z
 fix:thematiq:1289:2557e0ba	no change needed: sbom already current (dev-only bump), regen --check passes	session-20261115T211111-34885d99	2026-11-15T22:26:46Z
 fix:thematiq:1293:09458d15	merged development, tests and build green, REVERIFY recorded	session-20261115T220025-8d429838	2026-11-15T22:27:01Z
+fix:thematiq:1290:f560b357	dev merged; conflict is with sibling dependabot PRs only	session-20261115T203012-30a1abde	2026-11-15T22:27:11Z
