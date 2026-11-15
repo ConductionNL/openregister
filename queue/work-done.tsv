@@ -14516,3 +14516,4 @@ fix:opencatalogi:1888:0a19c236	conflict resolved, new head e9655f0d, 2 inherited
 fix:opencatalogi:2725:0414a9a7	merged development clean; tree conflict is with a sibling PR; new head ef1e2d84	session-20261115T181015-497e81ce	2026-11-15T19:22:09Z
 fix:stackiq:1042:56393a99	lock regenerated on development, pushed; REVERIFY recorded	session-20261115T174750-744c606b	2026-11-15T19:22:19Z
 fix:launchpad:819:9dcfeabe	sbom regenerated after merging development, pushed; REVERIFY recorded	session-20261115T174755-95dc8448	2026-11-15T19:22:31Z
+fix:opencatalogi:2723:f92c3e05	CONFLICT resolved (both-sides additions), pushed 8d90b4a9; REVERIFY	session-20261115T174741-9deaa0be	2026-11-15T19:22:40Z
