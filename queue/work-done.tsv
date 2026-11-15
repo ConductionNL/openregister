@@ -14842,3 +14842,4 @@ review:shillinq:1908:ca21609b	GREEN: dev-dep range bump, vitest 3046/3047 (1 inh
 review:portaliq:1582:e2748568	GREEN: range-only bump, tree unchanged	session-20261115T195958-28cb0304	2026-11-15T20:39:01Z
 review:shillinq:2048:f88b17a7	GREEN: dev dep bump, sbom current, 12225 tests OK	session-20261115T202936-e956716f	2026-11-15T20:39:23Z
 review:dossiq:4112:f460035e	GREEN: lock+sbom only, unit 18185 tests 0 failures	session-20261115T202955-7451ede9	2026-11-15T20:39:30Z
+review:dossiq:3894:8ed2662d	GREEN: dev-tool bump, no new test failures	session-20261115T195957-8e60ca53	2026-11-15T20:39:37Z
