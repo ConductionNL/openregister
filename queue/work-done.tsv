@@ -14478,3 +14478,4 @@ fix:buildiq:1090:8b2df26a	sbom regenerated, new head 8e11ea7a	session-20261115T1
 fix:buildiq:1608:b3506415	sandbox enforced by response CSP, headers restored, pushed 08f7f4d3; REVERIFY recorded	session-20261115T174750-744c606b	2026-11-15T19:15:11Z
 fix:launchpad:1098:1720a6d3	sbom regenerated after merging development, pushed 08b61447; REVERIFY recorded	session-20261115T174755-95dc8448	2026-11-15T19:15:30Z
 fix:planninq:725:6961dd1e	fixed: sbom regenerated; new head f5dce57c	session-20261115T174819-9af28ef9	2026-11-15T19:15:39Z
+fix:launchpad:1223:8946cefa	conflict resolved (register 1.0.4), pushed 65b428f7, REVERIFY recorded	session-20261115T182936-09049974	2026-11-15T19:15:55Z
