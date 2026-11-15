@@ -301,12 +301,40 @@ class WebhookEventListener implements IEventListener {
 	private function statePayload(Event $event): ?array {
 		foreach (self::OBJECT_STATE_EVENTS as $class => [$action, $getter]) {
 			if ($event instanceof $class) {
-				return $this->objectStatePayload(object: $event->{$getter}(), action: $action);
+				$payload = $this->objectStatePayload(object: $event->{$getter}(), action: $action);
+				if ($event instanceof ObjectUpdatedEvent) {
+					$payload = $this->withUpdateStates(payload: $payload, event: $event);
+				}
+
+				return $payload;
 			}
 		}
 
 		return null;
 	}//end statePayload()
+
+	/**
+	 * Add the object before and after an update to its payload.
+	 *
+	 * `newObject` and `oldObject` let a webhook filter on a change rather than
+	 * on a state, such as `{"oldObject.status": "draft", "newObject.status":
+	 * "final"}`, which matches only the update that made the move. `object`
+	 * stays as it was, so existing subscriptions and mappings see the same
+	 * payload. Without an old object `oldObject` is null.
+	 *
+	 * @param array<string, mixed> $payload The update payload.
+	 * @param ObjectUpdatedEvent   $event   The event.
+	 *
+	 * @return array<string, mixed> The payload with both states.
+	 *
+	 * @spec openspec/changes/publication-tells-its-source/specs/webhooks/spec.md#requirement-an-update-payload-carries-the-object-before-and-after
+	 */
+	private function withUpdateStates(array $payload, ObjectUpdatedEvent $event): array {
+		$payload['newObject'] = $payload['object'];
+		$payload['oldObject'] = $event->getOldObject()?->jsonSerialize();
+
+		return $payload;
+	}//end withUpdateStates()
 
 	/**
 	 * Build the payload of an object about to be created.
