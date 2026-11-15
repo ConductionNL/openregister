@@ -12421,3 +12421,4 @@ build:keepiq:crypto-item-reprompt:c3	done: PR #1792 head c41b6b80: 3.1 extension
 verify:planninq:1186:220b7659	3 GREEN (1186,1187,1188); unit 1177->1198, no failures	session-20261115T005133-04e59268	2026-11-15T00:53:07Z
 verify:larpinq:1050:087f53dd	GREEN #1050 (phpunit 845/0 fail, vitest 559 pass)	session-20261115T005141-9356bed0	2026-11-15T00:54:03Z
 verify:opencatalogi:2669:98eeacfc	6 GREEN (2669,2670,2677,2678,2679,2699), 3 CONFLICT (2671,2683,2686), 0 new failures	session-20261115T005132-ee7d19e4	2026-11-15T00:54:49Z
+verify:versioniq:690:3bc41fa6	failed: permission (versioniq vendor has no phpunit; fetching a phpunit phar was refused)	session-20261115T005141-9356bed0	2026-11-15T00:54:53Z
