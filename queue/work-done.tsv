@@ -13275,3 +13275,4 @@ build:opencatalogi:woo-metadata-suggestions:c3	partial: PR #2674 head 8c2edb69 â
 verify:integriq:3649:bc3064b6	3649, 3663, 3664 GREEN	session-20261115T142150-6c965c2a	2026-11-15T15:37:01Z
 review:integriq:3595:b248545e	GREEN: in-spec build, no new failures	session-20261115T142149-1d09fceb	2026-11-15T15:37:33Z
 build:opencatalogi:publications-unpublished-overview:c3	done: PR #2673 (head 61140718) every code task ticked: 3.2 scheduled example publication in the demo data (the seed, as the withdraw change decided) with a test that the overview lists it and not the withdrawn one, 3.3 dashboard docs; merged development; unit suite 5724 with the same 2 inherited failures (AppIdentityTest, WooControllerTest); left only the live e2e spec	session-20261115T142951-2463b4c4	2026-11-15T15:37:49Z
+review:integriq:3546:994fb6f7	GREEN 3546 (refactor behaviour-equivalent; no new failures)	session-20261115T142201-ea23e682	2026-11-15T15:37:45Z
