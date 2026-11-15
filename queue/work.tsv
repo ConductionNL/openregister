@@ -13568,3 +13568,13 @@ review:filinq:2103:a4238696	review	filinq	development	2103	sha=a4238696c319e884b
 verify:portaliq:2508:e658426a	verify	portaliq	development	merge	prs=2508@5beb27c00920e7e0900a6571f5d5718f0f06db15	2026-11-15T15:00:29Z
 verify:filinq:2134:ebf3485d	verify	filinq	development	merge	prs=2134@3e6351562361ff9a3664338f0cb20dc51bbc1625	2026-11-15T15:00:29Z
 merge:shillinq:2995:dc9ec9ca	merge	shillinq	development	development	prs=2995@e209ceb0f28617ad1f604f53d672712b59679b94	2026-11-15T15:00:29Z
+review:openregister:10584:6dc48682	review	openregister	main	10584	sha=6dc48682bdb481ab75a91e52eda0a921bda8baff;last_approved=;title=feat(openregister): build grondslagen-read-from-dossiq	2026-11-15T15:05:19Z
+review:learniq:2521:01e853a6	review	learniq	development	2521	sha=01e853a6d10a5cf5d6ec5c79f45c80ebed5561ab;branch=quality/build-training-provider-course-days;title=feat(learniq): build training-provider-course-days	2026-11-15T15:05:19Z
+review:filinq:2072:5ed8e94d	review	filinq	development	2072	sha=5ed8e94db387ddb2c891d7677271687023597de7;branch=quality/build-multi-tenant-hardening;title=feat(filinq): build multi-tenant-hardening	2026-11-15T15:05:19Z
+review:filinq:2122:caf13011	review	filinq	development	2122	sha=caf1301148b49025547334124afc76ba1197f0f1;branch=quality/build-grondslagen-read-from-dossiq-c2;title=feat(filinq): build grondslagen-read-from-dossiq	2026-11-15T15:05:19Z
+review:filinq:2123:4b50c297	review	filinq	development	2123	sha=4b50c297bb09add8f0cc848f3da222e0b7c62dd9;branch=quality/build-specify-capability-rows;title=feat(filinq): build specify-capability-rows	2026-11-15T15:05:19Z
+verify:dossiq:6577:b1c71303	verify	dossiq	development	merge	prs=6577@dfc63bfe073a31074f5932b299448773c3faba1a	2026-11-15T15:05:19Z
+verify:pipelinq:3875:9f4b8976	verify	pipelinq	development	merge	prs=3875@2e29f9d1c232dc7730975576dfddb1f115eb1e82	2026-11-15T15:05:19Z
+verify:portaliq:2527:96a26a46	verify	portaliq	development	merge	prs=2527@ee0b0ee1e6f8ea98f80d4f9add49e4d156dfeb8e	2026-11-15T15:05:19Z
+merge:shillinq:3062:afc90e46	merge	shillinq	development	development	prs=3062@6c6743f0df7f493f0c3b2b8566b2cf5d0aead9a6	2026-11-15T15:05:19Z
+merge:filinq:2121:e99e8b50	merge	filinq	development	development	prs=2121@38c2112f6823b3d1bc8fa994ddbba29f68e0cce7	2026-11-15T15:05:19Z
