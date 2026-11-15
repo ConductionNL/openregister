@@ -12638,5 +12638,6 @@ cover:integriq:92114ab0m4b3f:c5021ae5	already done: lib/Service/DigitalPost/*.ph
 merge:pipelinq:3846:90672811	merge3 tree of 11 pipelinq PRs: merged=9 red=0 fail=0 skip=2; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-15T01:37:41Z
 merge:pipelinq:3849:6bf9c30d	merge3 tree of 11 pipelinq PRs: merged=9 red=0 fail=0 skip=2; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-15T01:37:45Z
 merge:pipelinq:3850:b98fad66	merge3 tree of 11 pipelinq PRs: merged=9 red=0 fail=0 skip=2; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-15T01:37:48Z
+cover:openregister:7350e3efm1efa:34f5c300	PR #10577: 35 tests, 8 lib/Service classes (FormLinkService, ObjectServiceMapperAdapter, CaseTokenService, ...); Service suite 35859->35894, same 1 inherited failure	session-20261115T011803-3ec5f099	2026-11-15T01:37:54Z
 verify:portaliq:2522:52e351c9	3 GREEN (2522,2523,2524); unit 5946, 0 failures	session-20261115T013435-30b4f471	2026-11-15T01:38:07Z
 cover:stackiq:9ac19b3am9489:js5794e9fc	PR #1979: 14 tests, src/views/settings statements 97.18->98.65%	session-20261115T011811-95390b97	2026-11-15T01:38:21Z
