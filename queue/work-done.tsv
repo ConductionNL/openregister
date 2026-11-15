@@ -14977,3 +14977,4 @@ merge:decidiq:1465:74bb8b9a	merge3 tree of 17 decidiq PRs: merged=1 red=10 fail=
 merge:decidiq:1474:40f33c83	merge3 tree of 17 decidiq PRs: merged=1 red=10 fail=0 skip=0; conflict 6, lint 0, moved 0; fix rows 6	merge3-20261113T213425-c36bcd5f	2026-11-15T21:02:55Z
 merge:decidiq:1950:0a0589ce	merge3 tree of 17 decidiq PRs: merged=1 red=10 fail=0 skip=0; conflict 6, lint 0, moved 0; fix rows 6	merge3-20261113T213425-c36bcd5f	2026-11-15T21:02:59Z
 fix:larpinq:1053:4113c48a	floor restored (overall 5.04, coupling 4.99); new head fa6976fd	session-20261115T203012-30a1abde	2026-11-15T21:03:23Z
+merge:keepiq:1792:1b9862e8	stale	feeder	2026-11-15T20:48:06Z
