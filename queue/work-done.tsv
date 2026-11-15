@@ -13372,3 +13372,4 @@ review:dossiq:4886:5dd9fb5e	BLOCK: new declaration read can throw out of Deadlin
 review:dossiq:3199:4b5da277	GREEN: dev-only sass bump; build OK, vitest only 2 inherited failures	session-20261115T145541-9d69768b	2026-11-15T15:54:46Z
 review:dossiq:4887:ca6b5835	BLOCK: settle does not tie the signer to the obligation's holder (only excludes the case's own subject)	session-20261114T075643-acecaad6	2026-11-15T15:54:59Z
 review:dossiq:5349:59ceb47d	BLOCK: imports ObjectDeletion from a namespace openregister does not have	session-20261115T152546-2c24b649	2026-11-15T15:55:16Z
+review:dossiq:3934:90d125eb	RED: conflicts + 4 new failures from development tests naming old class	session-20261115T154255-e54527e9	2026-11-15T15:55:33Z
