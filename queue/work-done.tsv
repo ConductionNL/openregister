@@ -14814,3 +14814,4 @@ review:dossiq:3297:2d7e3f4a	GREEN: adds fail-closed case guard, no new failures	
 fix:filinq:2114:473e8036	fixed: 3 conflicts resolved, unit 6892 OK; head bb690f12	session-20261115T200020-0f65b959	2026-11-15T20:33:40Z
 fix:filinq:1828	fixed: sbom regenerated; new head 0e6a9fe3	session-20261115T200000-e95b89c2	2026-11-15T20:33:47Z
 fix:filinq:1355:1c90e8ba	sbom regenerated, development merged in; new head 307201af, REVERIFY recorded	session-20261115T203029-7489abc7	2026-11-15T20:33:58Z
+review:pipelinq:2501:ca4bf396	GREEN: lock-only patch bumps; 8922 tests OK	session-20261115T200041-8ff5af37	2026-11-15T20:34:08Z
