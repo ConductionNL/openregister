@@ -13810,6 +13810,7 @@ review:thematiq:1303:392c8254	BLOCK: generated-file conflicts; checks clean on h
 fix:portaliq:2527:ee0b0ee1	merged development, conflicts resolved (register 0.119.0), pushed c2ba60d8; REVERIFY queued	session-20261115T154300-03b63424	2026-11-15T17:12:42Z
 review:stackiq:1431:c3199284	RED: suite red until hydra-gates ships the new find contract; conflicts with development	session-20261115T152554-949e9403	2026-11-15T17:12:47Z
 review:versioniq:484:92a0a429	CONFLICT/obsolete: development already has hydra-gates 1.19.0	session-20261115T155911-14cd078d	2026-11-15T17:12:54Z
+fix:buildiq:1085:8d6197ad	failed: not fixable inside this bump. development is already red on composer phpmd (72 findings past the baseline under 2.15, inherited); phpmd 3.0 adds 33 more, mostly ExcessiveClassComplexity 4->22 and ExcessiveClassLength 1->8, from changed metrics against the shared hydra-gates ruleset. Needs the ruleset thresholds and the positional CLI form updated in conduction/hydra-gates for phpmd 3 first	session-20261115T154258-dee2cc3d	2026-11-15T17:13:10Z
 verify:launchpad:1223:70895889	CONFLICT: info.xml, routes.php, ImportLaunchpadRegister.php	session-20261115T160928-e92ec17a	2026-11-15T17:13:07Z
 review:thematiq:1291:3fac1aca	GREEN: npm ci, code-editor build and vitest 1559 pass	session-20261115T145555-b33410db	2026-11-15T17:13:19Z
 fix:buildiq:1095:c5896b0e	failed: not fixable in buildiq: latest @conduction/nextcloud-vue 2.180.0 still peers gridstack ^12||^13; needs the library to widen its peer range first	session-20261115T154300-03b63424	2026-11-15T17:13:36Z
