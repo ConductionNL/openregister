@@ -13279,3 +13279,4 @@ build:opencatalogi:data-file-import-failure-alert:c3	partial: PR #2729 (1.1 noti
 review:integriq:3546:994fb6f7	GREEN 3546 (refactor behaviour-equivalent; no new failures)	session-20261115T142201-ea23e682	2026-11-15T15:37:45Z
 verify:opencatalogi:2699:e61b711a	stale	session-20261115T142951-2463b4c4	2026-11-15T15:38:23Z
 review:launchpad:1212:838ac053	GREEN #1212: phpunit 4384 OK, vitest 2598 OK, additive per spec	session-20261115T152601-38767331	2026-11-15T15:38:34Z
+build:opencatalogi:catalogs:c3	partial: no further code task buildable on PR #2701 (head 493cd752): getCatalogBySlug caches for anonymous callers only on purpose (an RBAC-filtered result must not be served from a shared cache), the @conduction/nextcloud-vue-only import rule conflicts with the repo's Nc imports from @nextcloud/vue (72 files), positional findObject args conflict with the named-args sniff, @self stripping conflict	session-20261115T142951-2463b4c4	2026-11-15T15:39:10Z
