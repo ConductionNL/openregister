@@ -12776,3 +12776,4 @@ review:learniq:2521:91383eb4	GREEN: per spec, no new failures; noted dropped SPD
 fix:larpinq:1052:1b2b0ad3	SPDX header moved into first lines of McpTool stub; new head 35cdf6d2	session-20261115T011813-39aed99d	2026-11-15T02:02:45Z
 build:portaliq:resident-identity-in-forms:c5	partial: PR #2527 head 3f10c6696 (T04 submit hold, invite/ended mails, co-sign routes, /mede-ondertekenen page, waiting line on confirmation and status; T08 strings), left T04 Mijn zaken line (needs a held-request listing), Playwright for T04/T08, T09 live check	session-20261115T005141-9356bed0	2026-11-15T02:02:50Z
 fix:versioniq:699:ccc8c628	conflict resolved, merged development, new head 74f2e1ef	session-20261115T014841-06b22da6	2026-11-15T02:02:51Z
+fix:versioniq:700:3c18ee39	conflict resolved, merged development; new head d6286a7e, REVERIFY recorded	session-20261115T014828-6d62dfc6	2026-11-15T02:03:10Z
