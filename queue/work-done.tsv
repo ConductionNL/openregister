@@ -14953,4 +14953,5 @@ fix:larpinq:960:f38d0e35	development merged in; sbom already current (dev-only b
 fix:opencatalogi:2723:8d90b4a9	merged development in (clean); no new failures; REVERIFY at 28b856d8	session-20261115T200026-9a5b8685	2026-11-15T20:57:40Z
 fix:versioniq:499:36c6819e	closed as superseded: development pins vite 8.2.4 (newer patched release than 8.3.1)	session-20261115T195957-8e60ca53	2026-11-15T20:57:50Z
 fix:versioniq:732:338949a6	SBOM regenerated; REVERIFY edb0233ba6169cf4419f02b6bed018d9f56875ee	session-20261115T195953-2618bb8a	2026-11-15T20:57:51Z
+fix:versioniq:723:e74abf38	conflicts resolved keeping both; REVERIFY at 2e4c0e66	session-20261115T195958-28cb0304	2026-11-15T20:57:57Z
 fix:versioniq:506:c6a1011e	fixed: sbom regenerated; new head cf0ff5ad	session-20261115T200043-78b85ca2	2026-11-15T20:58:06Z
