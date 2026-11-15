@@ -13804,6 +13804,7 @@ review:versioniq:504:7d37bf12	GREEN: stylelint bump; stylelint clean, vitest 300
 review:thematiq:1287:622c0c48	GREEN: dev-only playwright bump; vitest 1559 OK	session-20261115T145535-3f9e5078	2026-11-15T17:10:50Z
 review:shillinq:2096:7e23465b	RED: 2 new unit failures (openapi route undocumented; stored-lookup guard flags SuggestedMappingConfirmation)	session-20261115T152552-0cb4306e	2026-11-15T17:11:01Z
 verify:opencatalogi:2699:979a13f9	2730 GREEN (vitest 1123 OK, phpunit baseline 2 inherited); 2699 skipped: head moved	session-20261115T155903-abd003e3	2026-11-15T17:11:11Z
+build:stackiq:architecture-views-to-office-documents:c4	partial: pushed 90d2828b to PR #1978: Task 4 initial state view_document_export + Export menu module (viewExport.js, 12 vitest, 3 PHPUnit), Task 5 en/nl strings; left: mount menu in ArchitectureViewEditor.vue and docs section, both waiting on unmerged architecture-views-editor branch	session-20261115T142149-1d09fceb	2026-11-15T17:11:35Z
 verify:versioniq:732:cc08f5ca	GREEN: 732 (ocp patch bump), no new failures	session-20261115T155904-a7df5bc0	2026-11-15T17:11:26Z
 review:thematiq:1117:29c03f73	RED: phpmd 3 adds 3 violations, composer phpmd fails	session-20261115T154258-dee2cc3d	2026-11-15T17:11:40Z
 review:stackiq:1432:4c6faab0	RED (11 CmdbExportImportServiceTest failures from the delete double; conflicts with development)	session-20261115T141023-b06d51da	2026-11-15T17:11:53Z
@@ -13840,3 +13841,4 @@ fix:filinq:2103:a4238696	merged development in (clean), suite 6822 OK, REVERIFY 
 fix:filinq:2094:87b43b49	merged development (clean), unit green, new head c8f196605b65; REVERIFY	session-20261114T085646-49a39060	2026-11-15T17:17:06Z
 fix:filinq:2088:a003bdfc	merged development in cleanly, suite green; new head 08907be906008fa2544f44f229ae355681507a6d	session-20261114T102637-6688951e	2026-11-15T17:17:13Z
 review:versioniq:506:c6a1011e	GREEN: vue patch bump, vitest 3001 pass, build ok	session-20261115T155911-f0070087	2026-11-15T17:17:28Z
+fix:versioniq:722:01366da8	merged development, openapi.json 3-way JSON merge; pushed 756a911d; REVERIFY queued	session-20261115T145555-b33410db	2026-11-15T17:17:59Z
