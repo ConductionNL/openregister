@@ -14034,3 +14034,4 @@ review:openregister:10588:fca1fc97	APPROVE: additive filter operator, suites gre
 fix:pipelinq:3150:1a3b033c	merged development (stub signatures: branch side, imports: both); unit 8890 OK; new head 03b03d45c12021bb1c6869ce4c4d4e106415245f, REVERIFY	session-20261115T152552-0cb4306e	2026-11-15T18:02:24Z
 fix:dossiq:4882:13c8daa8	conflict resolved, pushed 2a47c981, REVERIFY recorded	session-20261115T174741-56eeaa2f	2026-11-15T18:02:39Z
 fix:dossiq:5365:b115fa9f	failed: depends on openregister searchObjectsBySlug accepting a RegisterSchemaRef alongside the string slugs; main takes strings only and #9103 replaces the signature (published contract), so it cannot be fixed in dossiq	session-20261115T174757-8dfa7406	2026-11-15T18:02:43Z
+fix:dossiq:3954:d0d56e69	CONFLICT resolved, pushed bf91e1b8, REVERIFY recorded	session-20261115T174747-978963d5	2026-11-15T18:02:55Z
