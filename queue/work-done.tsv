@@ -14125,3 +14125,4 @@ review:pipelinq:3149:4ffdb1c6	GREEN: unit 8890 OK	session-20261115T174750-744c60
 fix:portaliq:1606:e4a6d0b1	failed: signature fix pushed (2cc8c923) but 10-file conflict with development (contracts refactor) exceeds the cap; CONFLICT verdict recorded for a follow-up	session-20261115T174741-9deaa0be	2026-11-15T18:20:45Z
 review:dossiq:5357:7d05868b	CONFLICT: diff fine, conflicts with development in 4 files	session-20261115T174819-9af28ef9	2026-11-15T18:20:59Z
 fix:portaliq:1006:0bb7956e	failed: not fixable in portaliq; latest @conduction/nextcloud-vue (2.180.0) still peers @vueuse/core ^11||^14, library must accept ^15 first	session-20261115T174750-744c606b	2026-11-15T18:20:56Z
+fix:portaliq:1994:6ba432f4	merged development, unit 6120 OK, pushed cffe40a0; REVERIFY recorded	session-20261115T174755-95dc8448	2026-11-15T18:21:13Z
