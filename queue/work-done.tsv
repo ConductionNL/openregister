@@ -14811,6 +14811,8 @@ review:portaliq:1982:ebea533f	GREEN: dev lock bump; inherited errors only	sessio
 fix:filinq:1430:7097f298	merged dev, SBOM regenerated; REVERIFY 8f366f599b0c5ce29b3897701df854f8c9985483	session-20261115T195953-2618bb8a	2026-11-15T20:32:55Z
 fix:filinq:1311:f1d84cc5	conflict resolved; new head ae2749a3, REVERIFY recorded	session-20261115T203016-ff00326d	2026-11-15T20:33:03Z
 fix:dossiq:4887:fc7097f8	conflicts resolved, pushed 5518d499, suite at baseline, REVERIFY recorded	session-20261115T201132-b8ddc5e5	2026-11-15T20:33:12Z
+merge:humaniq:877:6366aa87	stale	feeder	2026-11-15T20:30:45Z
+fix:humaniq:874:6278788c	stale	feeder	2026-11-15T20:30:45Z
 review:dossiq:3297:2d7e3f4a	GREEN: adds fail-closed case guard, no new failures	session-20261115T195957-8e60ca53	2026-11-15T20:33:26Z
 fix:filinq:2114:473e8036	fixed: 3 conflicts resolved, unit 6892 OK; head bb690f12	session-20261115T200020-0f65b959	2026-11-15T20:33:40Z
 fix:filinq:1828	fixed: sbom regenerated; new head 0e6a9fe3	session-20261115T200000-e95b89c2	2026-11-15T20:33:47Z
@@ -14975,3 +14977,4 @@ merge:decidiq:1465:74bb8b9a	merge3 tree of 17 decidiq PRs: merged=1 red=10 fail=
 merge:decidiq:1474:40f33c83	merge3 tree of 17 decidiq PRs: merged=1 red=10 fail=0 skip=0; conflict 6, lint 0, moved 0; fix rows 6	merge3-20261113T213425-c36bcd5f	2026-11-15T21:02:55Z
 merge:decidiq:1950:0a0589ce	merge3 tree of 17 decidiq PRs: merged=1 red=10 fail=0 skip=0; conflict 6, lint 0, moved 0; fix rows 6	merge3-20261113T213425-c36bcd5f	2026-11-15T21:02:59Z
 fix:larpinq:1053:4113c48a	floor restored (overall 5.04, coupling 4.99); new head fa6976fd	session-20261115T203012-30a1abde	2026-11-15T21:03:23Z
+merge:keepiq:1792:1b9862e8	stale	feeder	2026-11-15T20:48:06Z
