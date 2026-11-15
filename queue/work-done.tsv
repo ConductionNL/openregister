@@ -13705,3 +13705,4 @@ review:shillinq:1904:8c5e1f2e	GREEN: dev-only phpmd 3; suite identical	session-2
 review:shillinq:2094:1837090d	GREEN: card routes exist; vitest only inherited failure	session-20261115T145541-9d69768b	2026-11-15T16:55:24Z
 review:portaliq:1989:4db47cae	GREEN: reference rename only, unit 6120 OK	session-20261115T155911-f0070087	2026-11-15T16:55:35Z
 review:shillinq:2252:1f1318e2	BLOCK: OpenRegister ObjectPatch at a namespace present on neither OR branch; 21 patch sites would fail	session-20261115T152552-0cb4306e	2026-11-15T16:55:50Z
+review:shillinq:2083:cb3e6a42	CONFLICT: 8 files conflict with development; new endpoint guarded correctly	session-20261115T154258-dee2cc3d	2026-11-15T16:55:56Z
