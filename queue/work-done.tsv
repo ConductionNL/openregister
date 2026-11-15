@@ -12107,3 +12107,4 @@ verify:versioniq:699:d1954624	699,714 GREEN; 719,722 CONFLICT	session-20261114T2
 verify:shillinq:3082:974bd08c	3082 GREEN, 3083 GREEN, 3084 CONFLICT (with 3082); 11917 tests OK	session-20261114T235442-bc1b76db	2026-11-15T00:01:08Z
 fix:larpinq:1054:b305b24a	stale	feeder	2026-11-15T00:00:27Z
 merge:launchpad:1195:7e93ec41	merge3 tree of 11 launchpad PRs: merged=3 red=2 fail=0 skip=0; conflict 6, lint 0, moved 0; fix rows 6	merge3-20261113T213425-c36bcd5f	2026-11-15T00:01:44Z
+merge:launchpad:1212:fe7143aa	merge3 tree of 11 launchpad PRs: merged=3 red=2 fail=0 skip=0; conflict 6, lint 0, moved 0; fix rows 6	merge3-20261113T213425-c36bcd5f	2026-11-15T00:01:47Z
