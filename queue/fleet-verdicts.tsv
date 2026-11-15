@@ -12367,3 +12367,11 @@ buildiq	1256	a68cddc36bde8a13452a07caf024b7ef438eb115	CONFLICT	merge8	merges cle
 buildiq	1649	90cf9793a23846efc138e7220e1848ffcf35a474	CONFLICT	merge8	merges clean on development alone; files: l10n/en.js l10n/en.json 
 buildiq	1654	aaec7e14fa9bf9d85f61567a7cd9f1e3fb5b759f	CONFLICT	merge8	merges clean on development alone; files: l10n/en.js l10n/en.json lib/Controller/DashboardController.php src/components/page-editor/FormPageEditor.vue 
 shillinq	2063	20eb03d6b04796d5db77eb58a159a768a865d078	REVERIFY	worker-48	merged development in: PaymentRunLockListener registration moved into ListenerRegistrar (dev moved registrations out of Application), golden registration file re-recorded, PaymentRun 0.4.0 recorded under app version 0.5.7-unstable.20261115180000, dev's newer export tests pass the approval lock and a stamped digest; full unit suite 12239 tests, 0 failures. Open decision unchanged: runs approved before this change have no digest, cannot export and have no lifecycle path back to draft; new head 7f06f10a470b1e3a778397bba89814b2275f15f4, verify it
+launchpad	756	a464d5dba1f2baf02f797bfb5842e43ec2f6f1a0	RED	merge8:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+launchpad	758	06d536b2468b7cf1106e97eb1720c556e70c40e7	RED	merge8:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+launchpad	819	9dcfeabe678b29ba239e19aec8752d4b1f676af4	RED	merge8:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+launchpad	880	04f9f39fbccd98e0402f0f1b1dae8f1e06dce5fd	RED	merge8:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+launchpad	977	dd835410dc5adc1e3f7a756c55b1ec0c23ca0c63	RED	merge8:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+launchpad	1098	1720a6d32297542976c2d048a6d2ff7084e2193d	RED	merge8:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+launchpad	1229	444ff7437a3d1799b71fe7a73eda4109cc9b4db1	RED	merge8:merge-gate	GATE RED floor: unit_complexity: 4.73 -> 4.69; unit_interfacing: 3.57 -> 3.55
+launchpad	1234	d725a0f05e32e8677fad84090dc7925f03492fe2	RED	merge8:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
