@@ -14094,3 +14094,4 @@ review:dossiq:5358:c7b0b291	GREEN dossiq#5358: matches OpenRegister main lock co
 fix:portaliq:1680:b1f0459b	fixed CONFLICT: merged development (4 files), unit 6124 OK; new head 13aebbdf, REVERIFY recorded	session-20261115T152543-40aea993	2026-11-15T18:13:45Z
 fix:pipelinq:3835:8a345d33	RED fixed: dropped spec of the moved dialog, pushed 1dcc79c3; REVERIFY	session-20261115T174741-9deaa0be	2026-11-15T18:14:07Z
 fix:portaliq:1467:a56bbcbc	failed: permission (closing as superseded refused; development carries its own build of portal-identity-from-the-admin, 31 conflicting files; recommend closing #1467 by hand)	session-20261115T174747-978963d5	2026-11-15T18:14:15Z
+review:integriq:3049:47b3a17d	BLOCK: value classes imported from a namespace absent on openregister main; delete paths would fatal	session-20261115T181015-497e81ce	2026-11-15T18:14:17Z
