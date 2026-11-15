@@ -13623,3 +13623,4 @@ review:pipelinq:3147:b0a445eb	BLOCK: stubs for unmerged openregister #9103; conf
 review:planninq:1070:e04ed25c	GREEN: hydra-gates minor bump; no new failing gate, unit suite identical	session-20261114T075643-acecaad6	2026-11-15T16:39:06Z
 review:planninq:1069:9cba21b3	RED: lock not installable (psalm 7.1 needs php>=8.3.16, platform pinned 8.3)	session-20261115T154407-94bf5f8c	2026-11-15T16:39:27Z
 review:learniq:1896:e4ec9b91	BLOCK: phpmd 3 adds 14 CouplingBetweenObjects findings (rating) and deprecates the script's CLI form; unit suite unchanged	session-20261115T155904-a7df5bc0	2026-11-15T16:39:43Z
+review:pipelinq:3146:97b91f19	RED: 6 newer development Flow tests call the old execute() form; lib change itself correct	session-20261115T145535-3f9e5078	2026-11-15T16:39:45Z
