@@ -13573,3 +13573,4 @@ review:pipelinq:2187:ebdded89	GREEN: phpmd 3 runs, unit suite green; phpmd findi
 review:pipelinq:2557:5d12aa50	GREEN: ocp patch bump, 8890 unit tests 0 failures	session-20261115T160928-e92ec17a	2026-11-15T16:30:06Z
 review:opencatalogi:2417:a2892ce3	BLOCK: wrong namespace for ObjectDeletion/ObjectFindTarget vs openregister main; 1 new test failure	session-20261115T145555-b33410db	2026-11-15T16:30:13Z
 review:pipelinq:2504:e4cc137c	BLOCK: superseded by the build already on development; conflicts in every file	session-20261115T154311-e8600d84	2026-11-15T16:30:32Z
+review:pipelinq:2501:81b7343b	GREEN: unit 8890/0 fail	session-20261115T154314-8216dc98	2026-11-15T16:30:46Z
