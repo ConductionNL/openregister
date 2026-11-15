@@ -14878,3 +14878,5 @@ fix:integriq:2994:6a706bf6	fixed: merged development, regenerated sbom; new head
 fix:humaniq:1096:e60cc3a3	merged development, regenerated sbom; new head 5b9e37da, REVERIFY recorded	session-20261115T203020-5a3aa6f4	2026-11-15T20:44:50Z
 fix:humaniq:610:02e0a4dc	fixed: merged development + sbom regen, head 12fe7c13	session-20261115T202932-ab57353c	2026-11-15T20:45:00Z
 fix:humaniq:667:3bb5749b	sbom regenerated; new head c3822863, REVERIFY recorded	session-20261115T203016-ff00326d	2026-11-15T20:45:09Z
+review:dossiq:3197:4fd9129c	GREEN: router bump, vitest at baseline, sbom current	session-20261115T201132-b8ddc5e5	2026-11-15T20:45:20Z
+review:dossiq:3199:dd09a728	GREEN: sass bump, tests/build ok, 2 inherited vitest fails	session-20261115T203012-30a1abde	2026-11-15T20:45:31Z
