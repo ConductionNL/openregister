@@ -10995,3 +10995,5 @@ opencatalogi	2683	9def1ff8ccf4c4e9d47eb4f96e34a557ec3f4b40	CONFLICT	worker-34	co
 opencatalogi	2686	7673533722c290e4262fb08ae58db760bd3c950c	CONFLICT	worker-34	conflicts with tree (development + earlier PRs)
 opencatalogi	2699	541442a583e36ca1126727e26a7d44c4625b83eb	GREEN	worker-34	unit 5712 tests on tree, baseline 5669 with 2 inherited failures (AppIdentityTest::testNoComponentImportsApplication, WooControllerTest::testInventarislijstRouteIsAGet), 0 new; build instance-staging-mode per spec
 versioniq	723	3731f972ea2e090315a93c73caa1c5bd259cf215	REVERIFY	worker-25	merged development in, clean (the conflicts are with 694/724 in the tree, not with development); unit 1724 with 2 failures development also has (ExternalReleaseInstallGoldenTest, SelectedReleaseInstallGoldenTest); new head c544853de87f80a8a1766e6f90caafe3c445442e, verify it
+stackiq	1931	e0997de959cc2f167101ae9610158b58c6cb0dff	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 3.68 -> 3.65; unit_interfacing: 4.73 -> 4.68
+stackiq	1962	0771746aa2cb9a5092ba8721d636abc0cdb0cb53	RED	merge3:merge-gate	GATE RED floor: duplication: 3.91 -> 3.83
