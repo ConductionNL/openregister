@@ -13537,3 +13537,4 @@ review:learniq:2166:290fc8b6	BLOCK: builds StoreDescriptor from StoreListing/Sto
 review:launchpad:756:a464d5db	GREEN: dev lock bump, suite green	session-20261115T154258-dee2cc3d	2026-11-15T16:23:45Z
 review:learniq:2132:5ccb8d0b	CONFLICT (60 files with development); change itself correct vs openregister main; recorded for a fix	session-20261115T142134-badaaf30	2026-11-15T16:23:59Z
 review:learniq:1883:9e6045c2	CONFLICT: 3 lib/Portal files vs development constants refactor; behaviour per own change	session-20261115T155915-84e5dc0a	2026-11-15T16:24:22Z
+review:integriq:2710:8b1d42d4	GREEN: lockfile bump, no new failures	session-20261115T142149-1d09fceb	2026-11-15T16:24:33Z
