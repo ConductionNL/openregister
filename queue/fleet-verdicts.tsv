@@ -10851,3 +10851,9 @@ launchpad	1214	3cd2835baeac4536235db08074c69127aa8d6981	REVERIFY	worker-44	merge
 humaniq	1156	13c34f2d0b35f5c3211b533b3f33ecf953543db3	GREEN	worker-52	Implements education-staff-deployment-and-count (school view, IPTO export behind HR check), refactor keeps the norm computation; unit 4370 tests, 0 failures (baseline 4354, 0); no JS/Vue code touched
 larpinq	1041	4ea3e47661b3270916a9506fe9035edcbfc5bee7	REVERIFY	merge3	verdict sha is not the head: head is 2309f59a66204117fc80f6b02df63768f8732982
 larpinq	1045	e9397f8e141fcfd7c8241c7c5fed4d0525c8a77a	REVERIFY	merge3	head moved since the verdict (was fc4e9f54d114969ef8a183ef3f7db479bfb71694, 8588a19f:REVERIFY,fc4e9f54:GREEN); verify the new head
+integriq	3546	46dc8e548b2f37e59cb49523d4d6e747ffea5ba8	RED	merge3:merge-gate	GATE RED absolute floor: integriq maintainability 3.55 after merge is below its floor 3.56
+integriq	3549	931cf8b207dcfd23729430d2fb38c92645a71870	RED	merge3:merge-gate	GATE RED checker floor: secretscanning: pass -> fail; secretscanning stars: 5 -> 1
+integriq	3589	0ae03844241ee6c802c1c0207ad9fbfc7560f14d	RED	merge3:merge-gate	GATE RED absolute floor: integriq maintainability 3.54 after merge is below its floor 3.56
+integriq	3612	b4580cdb615b31cf6e8833ff85673cb5f45dec93	RED	merge3:merge-gate	GATE RED absolute floor: integriq maintainability 3.55 after merge is below its floor 3.56
+integriq	3615	f8ce5455289071ec1c00714a622b8e6674af7b27	RED	merge3:merge-gate	GATE RED absolute floor: integriq maintainability 3.55 after merge is below its floor 3.56
+integriq	3617	ff5e9b84d118fdbd053ea8893caafcd1bd8d3688	RED	merge3:merge-gate	GATE RED absolute floor: integriq maintainability 3.55 after merge is below its floor 3.56
