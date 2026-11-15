@@ -12838,3 +12838,4 @@ buildiq	1608	08f7f4d3b6d7cac41d4606502cc160b0edb432d3	GREEN	worker-55:review	bui
 opencatalogi	1894	4083bd1a7b0987a3621437b03318227fd826838d	GREEN	worker-15:review	openspec tasks.md ticks and one archive move only; no code or tests changed (suite not affected); sampled ticks match code; merges cleanly with development.
 launchpad	757	674cfd98d8006ae4c69b2e9bf9b14cdeec3e15bb	GREEN	worker-13:review	dev-only @typescript-eslint/parser bump (lock 8.72.2), no code change; vitest 270 files/2578 tests pass; eslint 2 errors inherited in untouched announcements.spec.js
 launchpad	1098	08b6144744978ee052f69f5452afa076f8d9d101	GREEN	worker-11:review	devDependency bump phpstan 2.2.14->2.3.5 (lock + sbom only); phpstan 2.3.5 reports no errors; phpunit 4461 tests, 0 failures, 13 skipped on PR merged with development
+buildiq	1649	dae57dbf58de730fe5c4378def184f4e1cb3f3b1	GREEN	worker-10	3418 tests, only failure ExportZipGoldenTest also red on development
