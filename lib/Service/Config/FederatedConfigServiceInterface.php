@@ -167,6 +167,29 @@ interface FederatedConfigServiceInterface {
 	): array;
 
 	/**
+	 * Read a package's files out of a GitHub repository at a ref: one tarball
+	 * download where possible, else the tree and one read per file; a brokered
+	 * read the broker refuses is retried anonymously.
+	 *
+	 * @param string              $repo         The `owner/repo`.
+	 * @param string|null         $ref          A branch, tag or commit; the default branch when null.
+	 * @param array<int, string>  $paths        Exact paths, and prefixes ending in `/`; [] reads every file.
+	 * @param string|null         $credentialId Optional broker credential.
+	 * @param BrokerIdentity|null $identity     The app and acting user a brokered read names.
+	 *
+	 * @return array{files: array<string, string>, truncated: bool, source: string}
+	 *
+	 * @throws RuntimeException When the repository or the ref is not a safe GitHub coordinate.
+	 */
+	public function fetchPackage(
+		string $repo,
+		?string $ref = null,
+		array $paths = [],
+		?string $credentialId = null,
+		?BrokerIdentity $identity = null
+	): array;
+
+	/**
 	 * This instance's signing public key (base64) for others to trust.
 	 *
 	 * @return string The base64 Ed25519 public key.

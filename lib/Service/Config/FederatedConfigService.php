@@ -107,18 +107,34 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 	public const DISCOVERY_UNREACHABLE = 'unreachable';
 
 	/**
+	 * The most bytes one fetchPackage() read returns (16 MiB).
+	 *
+	 * @var int
+	 */
+	public const MAX_PACKAGE_BYTES = 16777216;
+
+	/**
+	 * The most files a file-by-file fetchPackage() read fetches.
+	 *
+	 * @var int
+	 */
+	public const MAX_PACKAGE_FILES = 4096;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param FederatedConfigTransport    $transport The credential, signing and HTTP collaborators federated config sharing talks through.
 	 * @param ShareableConfigTypeRegistry $registry  The contributed types.
 	 * @param IAppConfig                  $appConfig Reads the org source allowlist.
 	 * @param LoggerInterface             $logger    The logger.
+	 * @param GitHubRepoReader|null       $repoReader Reads packages out of repositories; built from the transport when null.
 	 */
 	public function __construct(
 		private readonly FederatedConfigTransport $transport,
 		private readonly ShareableConfigTypeRegistry $registry,
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
+		private readonly ?GitHubRepoReader $repoReader = null,
 	) {
 	}//end __construct()
 
@@ -874,6 +890,55 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 			)
 		);
 	}//end fetchBundle()
+
+	/**
+	 * Read a package's files out of a GitHub repository at a ref (G3).
+	 *
+	 * Unlike {@see fetchBundle()}, which reads one JSON file, this reads every
+	 * file the caller names — a markdown package and the auxiliary files beside
+	 * it, or a bundle's `skills/` and `agents/` trees — with ONE tarball download
+	 * where it can, and falls back to the tree and one contents read per file
+	 * when it cannot. A brokered read that the broker refuses is retried
+	 * anonymously. The files are returned as they are; decoding a format is the
+	 * calling type's job.
+	 *
+	 * @param string              $repo         The `owner/repo`.
+	 * @param string|null         $ref          A branch, tag or commit; the default branch when null.
+	 * @param array<int, string>  $paths        Exact paths, and prefixes ending in `/`; [] reads every file.
+	 * @param string|null         $credentialId Optional broker credential for an authenticated read.
+	 * @param BrokerIdentity|null $identity     The app and acting user a brokered read names; OpenRegister when null.
+	 *
+	 * @return array{files: array<string, string>, truncated: bool, source: string} `source` is `archive`,
+	 *                                                                              `tree`, or `none` when
+	 *                                                                              the repository could not be read.
+	 *
+	 * @throws RuntimeException When the repository or the ref is not a safe GitHub coordinate.
+	 *
+	 * @spec openspec/changes/store-through-federated-config
+	 */
+	public function fetchPackage(
+		string $repo,
+		?string $ref = null,
+		array $paths = [],
+		?string $credentialId = null,
+		?BrokerIdentity $identity = null
+	): array {
+		return $this->repoReader()->files(
+			read: GitHubRepoRead::of(repo: $repo, ref: $ref, credentialId: $credentialId, identity: $identity),
+			paths: $paths,
+			maxBytes: self::MAX_PACKAGE_BYTES,
+			maxFiles: self::MAX_PACKAGE_FILES
+		);
+	}//end fetchPackage()
+
+	/**
+	 * The package reader: the injected one, else one over this service's transport.
+	 *
+	 * @return GitHubRepoReader
+	 */
+	private function repoReader(): GitHubRepoReader {
+		return ($this->repoReader ?? new GitHubRepoReader(transport: $this->transport, extractor: new GitHubArchiveExtractor(), logger: $this->logger));
+	}//end repoReader()
 
 	/**
 	 * Read and decode the bundle file a fetch request names.

@@ -1950,6 +1950,9 @@ Service/Config/BundleCrossingGuard.php,36,Service,Configuration,Configuration/Se
 Service/Config/BundleSigner.php,94,Service,Integrations,Integrations/Service/Config/BundleSigner.php,0,,Configuration
 Service/Config/FederatedConfigAccess.php,41,Service,Configuration,Configuration/Service/Config/FederatedConfigAccess.php,0,,Configuration
 Service/Config/FederatedConfigService.php,318,Service,Integrations,Integrations/Service/Config/FederatedConfigService.php,0,67,Configuration
+Service/Config/GitHubArchiveExtractor.php,126,Service,Integrations,Integrations/Service/Config/GitHubArchiveExtractor.php,0,,Configuration
+Service/Config/GitHubRepoRead.php,50,Service,Integrations,Integrations/Service/Config/GitHubRepoRead.php,0,,Configuration
+Service/Config/GitHubRepoReader.php,161,Service,Integrations,Integrations/Service/Config/GitHubRepoReader.php,0,,Configuration
 Service/Config/IShareableConfigType.php,10,Service,Configuration,Configuration/Service/Config/IShareableConfigType.php,5,,Configuration
 Service/Config/RegisterShareableConfigTypesEvent.php,13,Service,Service,Service/Config/RegisterShareableConfigTypesEvent.php,11,,Configuration
 Service/Config/SchemaShareableConfigScanner.php,77,Service,Configuration,Configuration/Service/Config/SchemaShareableConfigScanner.php,0,,Configuration
