@@ -51,13 +51,33 @@ if (!isDev) {
 	// self-contained, each page must now load ALL of its entry's initial chunks
 	// (see ScriptManifestLoader on the PHP side, fed by the manifest below).
 	//
+	// `graphqlExplorer` is EXCLUDED as well: it bundles React, GraphiQL and the
+	// editor workers, which no other page needs, so sharing chunks would put them
+	// in the vendor chunk every app page loads.
+	//
 	// `integrationGlobal` is deliberately EXCLUDED from splitting: it is injected
 	// on EVERY Nextcloud page via addInitScript, so sharing chunks with it would
 	// (a) pull this app's vendor code onto every page of the whole instance and
 	// (b) create a second webpack runtime co-loading shared chunks with the
 	// page's real entry. Keeping it self-contained preserves today's behaviour.
+	// Split a chunk only when every entry it is reached from shares chunks.
+	// A worker is its own unnamed entry point, so the explorer's editor workers
+	// stay self-contained too.
+	const selfContainedEntries = ['integrationGlobal', 'graphqlExplorer']
+	const entriesOf = (group, seen = new Set()) => {
+		if (seen.has(group)) {
+			return []
+		}
+		seen.add(group)
+		const parents = [...group.parentsIterable]
+		return parents.length === 0 ? [group] : parents.flatMap((parent) => entriesOf(parent, seen))
+	}
+	const sharesChunks = (chunk) => [...chunk.groupsIterable]
+		.flatMap((group) => entriesOf(group))
+		.every((entry) => typeof entry.name === 'string' && !selfContainedEntries.includes(entry.name))
+
 	webpackConfig.optimization.splitChunks = {
-		chunks: (chunk) => chunk.name !== 'integrationGlobal',
+		chunks: (chunk) => sharesChunks(chunk),
 		cacheGroups: {
 			vendor: {
 				test: /[\\/]node_modules[\\/]/,
@@ -298,6 +318,13 @@ webpackConfig.entry = {
 	accessLink: {
 		import: path.join(__dirname, 'src', 'access-link.js'),
 		filename: appId + '-access-link.js',
+	},
+	// The GraphQL explorer, bundled so the page loads no script from outside the
+	// instance (api-explorer-in-the-app). Loaded by templates/graphqlExplorer.php
+	// from GraphQLController::explorer().
+	graphqlExplorer: {
+		import: path.join(__dirname, 'src', 'graphqlExplorer.js'),
+		filename: appId + '-graphqlExplorer.js',
 	},
 }
 

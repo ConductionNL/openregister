@@ -102,11 +102,13 @@ class CreateFileHandler {
 	 * @param CreateFileSources             $sources              The object folders, the object mapper and the logger a create works with.
 	 * @param FileValidationHandler         $fileValidHandler     File validation handler.
 	 * @param FileOwnershipHandlerInterface $fileOwnershipHandler File ownership handler.
+	 * @param FileChecksum|null             $checksum             Records the SHA-256 of the written file.
 	 */
 	public function __construct(
 		CreateFileSources $sources,
 		private readonly FileValidationHandler $fileValidHandler,
 		private readonly FileOwnershipHandlerInterface $fileOwnershipHandler,
+		private readonly ?FileChecksum $checksum = null,
 	) {
 		$this->folderMgmtHandler = $sources->folderMgmtHandler;
 		$this->objectEntityMapper = $sources->objectEntityMapper;
@@ -345,6 +347,7 @@ class CreateFileHandler {
 		$this->fileValidHandler->checkOwnership($file);
 		$file->putContent($run->content);
 		$this->fileOwnershipHandler->transferFileOwnershipIfNeeded($file);
+		$this->checksum?->record(file: $file);
 		return $file;
 	}//end writeNewFile()
 

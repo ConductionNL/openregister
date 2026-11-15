@@ -22,13 +22,13 @@ Reuses `MagicRbacHandler`/`ConditionMatcher`'s `$now` dynamic variable
 
 ## 3. Render mirror
 
-- [ ] 3.1 Add `@self.confidentiality` materialisation (`tier`, `ground`, `releaseAt`, `released`) at the `RenderObject` choke point for schemas declaring the annotation, following the same "materialise unconditionally at the render boundary" precedent as the `@self.relations` mirror.
+- [x] 3.1 Add `@self.confidentiality` materialisation (`tier`, `ground`, `releaseAt`, `released`) at the `RenderObject` choke point for schemas declaring the annotation, following the same "materialise unconditionally at the render boundary" precedent as the `@self.relations` mirror.
 
 ## 4. Tests
 
 - [x] 4.1 Add PHPUnit unit tests for `ConfidentialityAnnotationValidator` covering: valid annotation, undeclared `tierProperty`, unknown `clearance` tier, non-date-time `releaseAtProperty`, clearance-inheritance resolution.
 - [ ] 4.2 Add PHPUnit tests for the derived-rule generator + `MagicRbacHandler`/`ConditionMatcher` integration covering every scenario in `specs/confidentiality-classification/spec.md`: denied below clearance, allowed with clearance, allowed once released, future release does not grant access, owner/admin bypass, pagination count reflects only accessible objects, fail-closed on invalid annotation, unaffected schema without the annotation.
-- [ ] 4.3 Add a render test asserting `@self.confidentiality` content for an unreleased and a released object.
+- [x] 4.3 Add a render test asserting `@self.confidentiality` content for an unreleased and a released object.
 
 ## 5. Verification
 

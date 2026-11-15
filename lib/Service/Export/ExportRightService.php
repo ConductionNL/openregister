@@ -65,6 +65,13 @@ class ExportRightService {
 	public const FALLBACK_ACTION = 'read';
 
 	/**
+	 * The principal an anonymous caller acts as.
+	 *
+	 * @var string
+	 */
+	public const PUBLIC_PRINCIPAL = 'public';
+
+	/**
 	 * Wire the RBAC collaborators.
 	 *
 	 * @param PermissionHandlerInterface $permissionHandler Canonical RBAC verdict.
@@ -103,6 +110,74 @@ class ExportRightService {
 
 		return $this->refusalForUid(schema: $schema, userId: $user->getUID());
 	}//end refusalFor()
+
+	/**
+	 * The refusal for a caller without a session, or null when the public may export.
+	 *
+	 * The public principal may export a schema only when its effective export
+	 * grant names `public`: the `export` list when the schema declares one,
+	 * otherwise the `read` list, the same fallback a signed-in caller gets. A
+	 * schema with no such grant, or one whose authorization cannot be read,
+	 * answers 401 `not-public`, so a visitor learns they need an account and
+	 * not that the schema exists privately.
+	 *
+	 * @param Schema $schema The schema being exported.
+	 *
+	 * @return ExportRefusedException|null The refusal, or null when the public may export.
+	 *
+	 * @spec openspec/changes/export-open-formats-and-public-download/specs/data-import-export/spec.md
+	 */
+	public function refusalForAnonymous(Schema $schema): ?ExportRefusedException {
+		$authorization = null;
+		try {
+			$authorization = $this->permissionHandler->resolveAuthorization(schema: $schema);
+		} catch (Throwable $e) {
+			// An unreadable rule refuses: nothing here is a grant.
+			$this->logger->warning(
+				message: '[ExportRight] Authorization unresolvable, refusing the anonymous export',
+				context: ['schema' => $schema->getId(), 'error' => $e->getMessage()]
+			);
+		}
+
+		$action = self::FALLBACK_ACTION;
+		if (is_array($authorization) === true && is_array($authorization[self::ACTION] ?? null) === true) {
+			$action = self::ACTION;
+		}
+
+		if (self::grantNamesPublic(grant: ($authorization[$action] ?? null)) === true) {
+			return null;
+		}
+
+		return new ExportRefusedException(
+			rule: 'not-public',
+			reason: 'Exporting this schema requires an account.',
+			statusCode: 401,
+			context: ['evaluated' => $action]
+		);
+	}//end refusalForAnonymous()
+
+	/**
+	 * Whether a grant list names the `public` principal, as a name or a rule entry.
+	 *
+	 * @param mixed $grant The list of an authorization verb.
+	 *
+	 * @return bool True when `public` is in it.
+	 */
+	private static function grantNamesPublic(mixed $grant): bool {
+		if (is_array($grant) === false) {
+			return false;
+		}
+
+		foreach ($grant as $entry) {
+			if ($entry === self::PUBLIC_PRINCIPAL
+				|| (is_array($entry) === true && ($entry['group'] ?? null) === self::PUBLIC_PRINCIPAL)
+			) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end grantNamesPublic()
 
 	/**
 	 * Whether a principal sees every export run, or only their own.

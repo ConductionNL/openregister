@@ -98,6 +98,12 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Controller\Support\LinkedDataServices
  * @uses   \OCA\OpenRegister\Db\FederatedShare
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidator
@@ -524,9 +530,26 @@ class AnonymousEnvelopeReadPathsTest extends TestCase {
 	}//end testASignedInAnswerIsNotRewritten()
 
 	/**
+	 * The export answers a file the middleware does not read, so it is public only
+	 * through its own path: rate limited for the anonymous caller, which writes
+	 * no `@self` block (PublicExportService, ExportService::documentRows()).
+	 *
+	 * @return void
+	 */
+	public function testTheExportIsPublicOnlyWithItsOwnLimit(): void {
+		$route = new ReflectionMethod(ObjectsController::class, 'export');
+
+		$this->assertStringContainsString(needle: '@PublicPage', haystack: (string)$route->getDocComment());
+		$limits = $route->getAttributes(\OCP\AppFramework\Http\Attribute\AnonRateLimit::class);
+		$this->assertCount(1, $limits);
+		$this->assertSame(['limit' => 10, 'period' => 60], $limits[0]->getArguments());
+	}//end testTheExportIsPublicOnlyWithItsOwnLimit()
+
+	/**
 	 * The routes that answer records in a form the middleware does not read stay behind a login.
 	 *
-	 * Export answers a file, and MCP's public discovery catalogue carries no records.
+	 * MCP's public discovery catalogue carries no records. The export is public by
+	 * design and checked above.
 	 *
 	 * @param class-string $controller The controller.
 	 * @param string       $method     The route's method.
@@ -551,7 +574,6 @@ class AnonymousEnvelopeReadPathsTest extends TestCase {
 	 */
 	public static function signedInOnlyRoutes(): array {
 		return [
-			'export'         => [ObjectsController::class, 'export'],
 			'mcp capability' => [McpController::class, 'discoverCapability'],
 		];
 	}//end signedInOnlyRoutes()

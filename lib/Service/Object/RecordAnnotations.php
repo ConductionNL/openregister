@@ -25,10 +25,13 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use Closure;
+use DateTimeInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Archival\ArchivalDecisionResolver;
 use OCA\OpenRegister\Service\Archival\RetentionEvaluator;
+use OCA\OpenRegister\Service\Confidentiality\ConfidentialityAnnotationValidator;
+use OCA\OpenRegister\Service\Confidentiality\ConfidentialityRule;
 use OCA\OpenRegister\Service\ExternalLink\ExternalLinkResolver;
 use OCA\OpenRegister\Service\Schemas\SchemaDeclarationValidators;
 use Psr\Log\LoggerInterface;
@@ -211,6 +214,39 @@ final class RecordAnnotations {
 
 		return $objectData;
 	}//end withLinks()
+
+	/**
+	 * Attach the resolved classification under `@self.confidentiality`.
+	 *
+	 * Read from the stored object, before any caller projection or property
+	 * strip, so the mirror states the object's real tier, ground and release
+	 * to every caller who may read the object at all. A schema without the
+	 * annotation gets no key. A faulty annotation still gets the mirror, with
+	 * no tier and `released` false, matching the fail-closed rule.
+	 *
+	 * @param ObjectEntity      $entity The rendered object.
+	 * @param Schema|null       $schema Its schema.
+	 * @param array             $stored The stored object data.
+	 * @param DateTimeInterface $now    The moment a release is measured against.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/confidentiality-classification-primitive/specs/confidentiality-classification/spec.md#requirement-the-resolved-classification-must-be-exposed-on-render-as-selfconfidentiality
+	 */
+	public function attachConfidentiality(ObjectEntity $entity, ?Schema $schema, array $stored, DateTimeInterface $now): void {
+		$block = (($schema?->getConfiguration() ?? [])[ConfidentialityAnnotationValidator::ANNOTATION] ?? null);
+		if ($block === null) {
+			return;
+		}
+
+		$this->guarded(
+			failure: 'confidentiality mirror failed for ' . (string)$entity->getUuid(),
+			step: static function () use ($entity, $schema, $block, $stored, $now): void {
+				$rule = ConfidentialityRule::fromBlock(block: $block, properties: ($schema?->getProperties() ?? []));
+				$entity->setConfidentiality($rule->describe(object: $stored, now: $now));
+			}
+		);
+	}//end attachConfidentiality()
 
 	/**
 	 * The entity's data, always as an array.

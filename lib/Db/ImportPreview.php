@@ -85,6 +85,10 @@ use OCP\AppFramework\Db\Entity;
  * @method void setCreated(?DateTime $created)
  * @method DateTime|null getUpdated()
  * @method void setUpdated(?DateTime $updated)
+ * @method string|null getCauseRun()
+ * @method void setCauseRun(?string $causeRun)
+ * @method DateTime|null getRowsPrunedAt()
+ * @method void setRowsPrunedAt(?DateTime $rowsPrunedAt)
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  *
@@ -298,6 +302,20 @@ class ImportPreview extends Entity implements JsonSerializable {
 	protected ?DateTime $updated = null;
 
 	/**
+	 * The uuid of the run this one retries, when it is a retry (D-6).
+	 *
+	 * @var string|null
+	 */
+	protected ?string $causeRun = null;
+
+	/**
+	 * When the per-row detail was pruned; the header and counts survive (D-5).
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $rowsPrunedAt = null;
+
+	/**
 	 * Constructor — registers field types for hydration.
 	 */
 	public function __construct() {
@@ -344,6 +362,8 @@ class ImportPreview extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'createdBy', type: 'string');
 		$this->addType(fieldName: 'created', type: 'datetime');
 		$this->addType(fieldName: 'updated', type: 'datetime');
+		$this->addType(fieldName: 'causeRun', type: 'string');
+		$this->addType(fieldName: 'rowsPrunedAt', type: 'datetime');
 
 	}//end addProgressTypes()
 
@@ -402,6 +422,9 @@ class ImportPreview extends Entity implements JsonSerializable {
 			'createdBy' => $this->createdBy,
 			'created' => $this->created?->format('c'),
 			'updated' => $this->updated?->format('c'),
+			'causeRun' => $this->causeRun,
+			'rowsPruned' => $this->rowsPrunedAt !== null,
+			'rowsPrunedAt' => $this->rowsPrunedAt?->format('c'),
 		];
 	}//end progressJson()
 

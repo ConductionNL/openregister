@@ -33,14 +33,16 @@ adds a fourth cross-cutting loud-discard fix, folds in two adjacent silent-failu
 
 ## 5. Fix 4 — loud discard (cross-cutting)
 
-- [ ] 5.1 Add a `warnings` collection point in the schema-save path that aggregates the validation errors from all seven `SchemaMapper::validate*Annotation()` families (`lifecycle`, `aggregations`, `calculations`, `quality`, `dedup`, `survivorship`, `merge`) for the schema being saved, without changing the existing warn-and-continue import behavior.
-- [ ] 5.2 Surface the aggregated `warnings` list on the schema-save API response (REST schema controller and the config-import pipeline's result structure), keyed by annotation family and schema slug.
-- [ ] 5.3 Keep the existing `nextcloud.log` warning emission unchanged (additive, not a replacement).
+- [x] 5.1 Add a `warnings` collection point in the schema-save path that aggregates the validation errors from all seven `SchemaMapper::validate*Annotation()` families (`lifecycle`, `aggregations`, `calculations`, `quality`, `dedup`, `survivorship`, `merge`) for the schema being saved, without changing the existing warn-and-continue import behavior.
+- [x] 5.2 Surface the aggregated `warnings` list on the schema-save API response (REST schema controller and the config-import pipeline's result structure), keyed by annotation family and schema slug.
+- [x] 5.3 Keep the existing `nextcloud.log` warning emission unchanged (additive, not a replacement).
+      > 2026-11-14: `DiscardedAnnotations` collects, per save, what `AdvisoryAnnotationChecks` (aggregations, quality, dedup, survivorship, merge, plus hinge and party), `CalculationAnnotationCheck` and `LifecycleAnnotationCheck` log; each check records next to its unchanged log line, and nothing new refuses a save. `SchemaMapper::discardedAnnotations()` (also on `SchemaMapperInterface`) answers for the last save. The schemas API create and update answer with the schema's fields plus `warnings: [{family, schema, messages}]` (empty when none); `publishDraft` reads the stored schema back by id, since the update body is no longer the entity. A configuration import returns `warnings` for every imported schema's last save.
 
 ## 6. Adjacent repair A — seed $ref resolution
 
-- [ ] 6.1 Add a `$ref`-value resolution pass in `ImportHandler::importSeedDataObjects()` that resolves a seed object's `$ref`-typed property (scalar or array-of-`$ref`) from a slug to the target UUID, checking the current run's slug-keyed maps first, then a scoped database lookup.
-- [ ] 6.2 Leave an unresolvable `$ref` slug as-authored with a logged warning naming the property and slug — do not abort the seed object's import (per-entity resilience unchanged).
+- [x] 6.1 Add a `$ref`-value resolution pass in `ImportHandler::importSeedDataObjects()` that resolves a seed object's `$ref`-typed property (scalar or array-of-`$ref`) from a slug to the target UUID, checking the current run's slug-keyed maps first, then a scoped database lookup.
+- [x] 6.2 Leave an unresolvable `$ref` slug as-authored with a logged warning naming the property and slug — do not abort the seed object's import (per-entity resilience unchanged).
+      > 2026-11-14: `SeedReferenceResolver` replaces a slug in a seed object's reference property (a property with a `$ref`, or an array whose items have one) by the uuid of the object it names: objects stored or found earlier in the same seed pass first, then the register through the object mapper. A uuid is kept; a slug neither knows is kept as written, with a warning naming the property and the slug, and the object is still imported. `SeedReferenceResolverTest`, `ImportHandlerSeedReferencesTest`.
 
 ## 7. Adjacent repair B — nested $ref in array-of-objects
 
@@ -56,9 +58,11 @@ adds a fourth cross-cutting loud-discard fix, folds in two adjacent silent-failu
 
 - [x] 9.1 Add PHPUnit tests for Fixes 1-2 covering: a related-schema filter field is accepted, a genuinely unknown field is still rejected, an explicit `from` spec is unaffected, and `mul`/`add`/`sub`/`div` evaluate identically to `*`/`+`/`-`/`/` at both validation and evaluation.
       > 2026-11-13: Fix 2 in `ArithmeticAliasesTest`; Fix 1 in `CrossSchemaTargetTest`, `AdvisoryAnnotationChecksTest::testAnAggregationOverARelatedSchemaIsKeptAtSave` and the `schema-key-*` cases of `AggregationRunnerRunGoldenTest`.
-- [ ] 9.2 Add PHPUnit tests for Fixes 3-4 covering: a calculation name absent from `properties` is rejected and present-and-matching validates/persists; a discarded annotation appears in the save response `warnings` (and a clean schema's list is empty, multiple families each report separately, the log warning still fires).
+- [x] 9.2 Add PHPUnit tests for Fixes 3-4 covering: a calculation name absent from `properties` is rejected and present-and-matching validates/persists; a discarded annotation appears in the save response `warnings` (and a clean schema's list is empty, multiple families each report separately, the log warning still fires).
       > 2026-11-13 (partial): the Fix 3 half is in `MaterialisedOutputPropertyTest`; the Fix 4 half waits for Fix 4.
-- [ ] 9.3 Add PHPUnit tests for Adjacent A-B covering: an in-run seed `$ref` slug resolves to a UUID and an unresolvable one is left as-authored with a warning; a valid nested array-of-objects `$ref` UUID validates and existing single-level `$ref` support is unaffected (regression guard).
+      > 2026-11-14: the Fix 4 half in `DiscardedAnnotationsTest`, `AdvisoryAnnotationChecksTest` (recorded per family, nothing without a fault), `SchemaMapperDiscardedAnnotationsTest` (two families each listed and still logged, a clean save lists nothing), `SchemasControllerTest` (create and update) and `ImportHandlerImportFromJsonGoldenTest::testDiscardedAnnotationsReachTheImportResult`.
+- [x] 9.3 Add PHPUnit tests for Adjacent A-B covering: an in-run seed `$ref` slug resolves to a UUID and an unresolvable one is left as-authored with a warning; a valid nested array-of-objects `$ref` UUID validates and existing single-level `$ref` support is unaffected (regression guard).
+      > 2026-11-14: Adjacent A in `SeedReferenceResolverTest` and `ImportHandlerSeedReferencesTest`; Adjacent B was covered by `ValidateObjectNestedItemRefTest` (task 7).
 
 ## 10. Verification
 

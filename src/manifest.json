@@ -382,6 +382,12 @@
             "label": "Add integration",
             "icon": "PowerPlugOutline",
             "handler": "openIntegriqConnections"
+          },
+          {
+            "id": "connection-report",
+            "label": "Daily report by e-mail",
+            "icon": "EmailOutline",
+            "handler": "openConnectionReportDialog"
           }
         ],
         "defaultSort": {

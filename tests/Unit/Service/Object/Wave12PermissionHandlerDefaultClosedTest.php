@@ -63,6 +63,8 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionGrantServices
  * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionRuleServices
  * @uses \OCA\OpenRegister\Service\Rbac\McpScope
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation
+ * @uses \OCA\OpenRegister\Service\Rbac\UndecidablePosture
  */
 class Wave12PermissionHandlerDefaultClosedTest extends TestCase {
 

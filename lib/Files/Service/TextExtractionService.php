@@ -37,6 +37,7 @@ use OCA\OpenRegister\Files\Service\TextExtraction\ArchiveExtraction;
 use OCA\OpenRegister\Files\Service\TextExtraction\ArchiveTextExtractor;
 use OCA\OpenRegister\Files\Service\TextExtraction\SourceText;
 use OCA\OpenRegister\Files\Service\TextExtraction\ChunkSource;
+use OCA\OpenRegister\Files\Db\MailHeader;
 use OCA\OpenRegister\Files\Service\TextExtraction\EmlParser;
 use OCA\OpenRegister\Files\Service\TextExtraction\ExtractionCeiling;
 use OCA\OpenRegister\Files\Service\TextExtraction\ObjectHandler;
@@ -332,6 +333,7 @@ class TextExtractionService implements TextExtractionServiceInterface {
 
 		// Persist textual chunks and include the metadata chunk at the end.
 		$this->persistChunksForSource(text: $text, chunks: $chunks);
+		$this->sources->storage->signatures?->store(fileId: (int)$fileId, text: (string)($text->payload['text'] ?? ''));
 
 		if ($this->extractFileEntities(fileId: $fileId, entityTypes: $entityTypes) === false) {
 			return;
@@ -385,6 +387,7 @@ class TextExtractionService implements TextExtractionServiceInterface {
 		$payload = $this->archivePayload(source: $source, text: implode("\n\n", $texts));
 		$payload['archive'] = $extraction->report();
 		$this->persistChunksForSource(text: new SourceText(payload: $payload, sourceTimestamp: $sourceTimestamp), chunks: $chunks);
+		$this->sources->storage->signatures?->store(fileId: $source->sourceId, text: (string)($payload['text'] ?? ''));
 
 		$this->analysis->logger->debug(
 			message: '[TextExtractionService] Archive indexed',
@@ -526,15 +529,76 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	 * @spec openspec/specs/api-test-coverage/spec.md
 	 */
 	public function getExtractedText(int $fileId): ?string {
-		$text = null;
+		$read = $this->readExtractedText(fileId: $fileId);
+		if ($read === null) {
+			return null;
+		}
+
+		return $read['text'];
+	}//end getExtractedText()
+
+	/**
+	 * The text extracted from a file, with how many chunks it came from and when.
+	 *
+	 * The text is assembled exactly as {@see self::getExtractedText()} does.
+	 * `chunkCount` counts the content chunks (the metadata chunk is not text),
+	 * and `extractedAt` is the latest time one of them was written, as an
+	 * ISO 8601 string, or null when no chunk carries a time.
+	 *
+	 * @param int $fileId Nextcloud file ID.
+	 *
+	 * @return array{text: string, chunkCount: int, extractedAt: string|null}|null Null when the file has no text chunks.
+	 *
+	 * @spec openspec/changes/search-file-text-and-vector-facade/tasks.md#task-1.1
+	 */
+	public function readExtractedText(int $fileId): ?array {
+		$text   = null;
+		$count  = 0;
+		$latest = null;
 		foreach ($this->chunkMapper->findBySource(sourceType: 'file', sourceId: $fileId) as $chunk) {
-			if ($this->isContentChunk(chunk: $chunk) === true) {
-				$text = $this->joinChunk(text: $text, content: $chunk->getTextContent());
+			if ($this->isContentChunk(chunk: $chunk) === false) {
+				continue;
+			}
+
+			$text = $this->joinChunk(text: $text, content: (string)$chunk->getTextContent());
+			$count++;
+			$written = $this->writtenAt(chunk: $chunk);
+			if ($written !== null && ($latest === null || $written > $latest)) {
+				$latest = $written;
 			}
 		}
 
-		return $text;
-	}//end getExtractedText()
+		if ($text === null) {
+			return null;
+		}
+
+		return [
+			'text'        => $text,
+			'chunkCount'  => $count,
+			'extractedAt' => $latest?->format(DATE_ATOM),
+		];
+	}//end readExtractedText()
+
+	/**
+	 * When a chunk was last written: its update time, else its creation time.
+	 *
+	 * @param Chunk $chunk The chunk.
+	 *
+	 * @return \DateTimeInterface|null Null when the chunk carries neither.
+	 */
+	private function writtenAt(Chunk $chunk): ?\DateTimeInterface {
+		$updated = $chunk->getUpdatedAt();
+		if ($updated instanceof \DateTimeInterface) {
+			return $updated;
+		}
+
+		$created = $chunk->getCreatedAt();
+		if ($created instanceof \DateTimeInterface) {
+			return $created;
+		}
+
+		return null;
+	}//end writtenAt()
 
 	/**
 	 * Whether a stored chunk holds file content, not metadata.
@@ -986,6 +1050,11 @@ class TextExtractionService implements TextExtractionServiceInterface {
 			$this->sources->storage->db->rollBack();
 			throw $throwable;
 		}//end try
+
+		// The signature belongs to the text just replaced: it goes with the chunks.
+		if ($source->sourceType === 'file') {
+			$this->sources->storage->signatures?->forget(fileId: $source->sourceId);
+		}
 	}//end persistChunksForSource()
 
 	/**
@@ -1727,8 +1796,11 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	private function extractEml(\OCP\Files\File $file): ?string {
 		try {
 			$structure = $this->readers->emlParser->parse(file: $file);
+			$this->storeMailHeaders(fileId: (int)$file->getId(), headers: $structure->headers);
 			return $this->readers->emlParser->flatten(structure: $structure);
 		} catch (\OCA\OpenRegister\Exception\EmlParseException $e) {
+			// A file that no longer parses keeps no thread headers from an earlier extraction.
+			$this->storeMailHeaders(fileId: (int)$file->getId(), headers: null);
 			$sanitised = \OCA\OpenRegister\Files\Service\TextExtraction\EmlParser::sanitisePiiForLogging(message: $e->getMessage());
 			$this->analysis->logger->error(
 				message: '[TextExtractionService] EML parse failed: ' . $sanitised,
@@ -1739,6 +1811,42 @@ class TextExtractionService implements TextExtractionServiceInterface {
 			return null;
 		}//end try
 	}//end extractEml()
+
+	/**
+	 * Store the thread headers of an `.eml` file, replacing the row an earlier extraction wrote.
+	 *
+	 * Null headers delete the file's row. A failure is logged, not thrown: the
+	 * text index must not be lost because the header row could not be written.
+	 *
+	 * @param int                       $fileId  The Nextcloud file id.
+	 * @param array<string, mixed>|null $headers The parsed headers, or null to forget the file's row.
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) MailHeader::fromHeaders is a named constructor.
+	 *
+	 * @spec openspec/changes/reply-threading-by-headers/specs/integration-email/spec.md#requirement-collected-mail-files-carry-their-thread-headers-req-rth-010
+	 */
+	private function storeMailHeaders(int $fileId, ?array $headers): void {
+		$mailHeaders = $this->sources->storage->mailHeaders;
+		if ($mailHeaders === null) {
+			return;
+		}
+
+		try {
+			if ($headers === null) {
+				$mailHeaders->deleteByFileId(fileId: $fileId);
+				return;
+			}
+
+			$mailHeaders->replaceForFile(row: MailHeader::fromHeaders(fileId: $fileId, headers: $headers));
+		} catch (Throwable $e) {
+			$this->analysis->logger->warning(
+				message: '[TextExtractionService] Could not store the mail thread headers',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $fileId, 'exception' => get_class($e)]
+			);
+		}
+	}//end storeMailHeaders()
 
 	/**
 	 * Public structured-parse entry point for EML files.

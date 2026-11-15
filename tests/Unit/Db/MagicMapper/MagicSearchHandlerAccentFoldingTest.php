@@ -38,6 +38,9 @@ use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use OCP\DB\QueryBuilder\ICompositeExpression;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCA\OpenRegister\Db\MagicMapper\SortRequest;
+use OCP\DB\QueryBuilder\IQueryFunction;
+use OCP\IAppConfig;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -53,6 +56,8 @@ use ReflectionProperty;
  * @covers \OCA\OpenRegister\Db\MagicMapper\SearchLeaf
  * @covers \OCA\OpenRegister\Db\MagicMapper\SearchLeafScope
  * @uses   \OCA\OpenRegister\Db\MagicMapper\SearchFolding
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\AccentFoldingSetting
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\SortRequest
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicUnaccentProbe
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicPgTrgmProbe
  */
@@ -181,6 +186,55 @@ class MagicSearchHandlerAccentFoldingTest extends TestCase {
 	}//end testSearchFoldingAnswers()
 
 	/**
+	 * An administrator who switched folding off gets the historical comparison
+	 * even where the database could fold; switched on, it folds.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/search-accent-insensitive/specs/zoeken-filteren/spec.md#requirement-accent-folding-is-visible-to-administrators-and-can-be-bypassed
+	 */
+	public function testSwitchedOffFoldingKeepsTheHistoricalComparison(): void {
+		$off = $this->createMock(IAppConfig::class);
+		$off->method('getValueString')->willReturn('false');
+		$on = $this->createMock(IAppConfig::class);
+		$on->method('getValueString')->willReturnCallback(static fn (string $app, string $key, string $default = ''): string => $default);
+
+		$this->assertNull($this->handler(isPostgres: true, available: true, appConfig: $off)->searchFolding(query: []));
+		$this->assertTrue($this->handler(isPostgres: true, available: true, appConfig: $on)->searchFolding(query: [])?->isFolded());
+	}//end testSwitchedOffFoldingKeepsTheHistoricalComparison()
+
+	/**
+	 * The relevance order of a folded search scores folded text; without
+	 * folding it keeps the historical expression.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/search-accent-insensitive/specs/zoeken-filteren/spec.md#requirement-object-search-ignores-accents-where-the-database-supports-it
+	 */
+	public function testTheRelevanceOrderScoresFoldedText(): void {
+		$handler = $this->handler(isPostgres: true, available: true, fuzzy: true);
+		$method  = new ReflectionMethod(MagicSearchHandler::class, 'relevanceSortExpression');
+
+		$qb = $this->createMock(IQueryBuilder::class);
+		$qb->method('createNamedParameter')->willReturn(':term');
+		$qb->method('createFunction')->willReturnCallback(
+			function (string $sql): IQueryFunction {
+				$function = $this->createMock(IQueryFunction::class);
+				$function->method('__toString')->willReturn($sql);
+				return $function;
+			}
+		);
+
+		$sort = new SortRequest(order: ['_relevance' => 'DESC'], schema: $this->schema());
+		$sort->searchTerm = 'cafe';
+		$sort->folding = $handler->searchFolding(query: []);
+		$this->assertSame('similarity(openregister_fold(t._name::text), openregister_fold(:term))', (string) $method->invoke($handler, $qb, $sort));
+
+		$sort->folding = null;
+		$this->assertSame('similarity(t._name::text, :term)', (string) $method->invoke($handler, $qb, $sort));
+	}//end testTheRelevanceOrderScoresFoldedText()
+
+	/**
 	 * The UNION-path conditions for one search.
 	 *
 	 * @param bool                 $isPostgres Whether the platform is PostgreSQL.
@@ -235,10 +289,11 @@ class MagicSearchHandlerAccentFoldingTest extends TestCase {
 	 * @param bool $isPostgres Whether the platform is PostgreSQL.
 	 * @param bool $available  Whether accent folding is available.
 	 * @param bool $fuzzy      What the pg_trgm probe answers.
+	 * @param IAppConfig|null $appConfig The app config holding the accent choice; none by default.
 	 *
 	 * @return MagicSearchHandler The handler.
 	 */
-	private function handler(bool $isPostgres, bool $available, bool $fuzzy = false): MagicSearchHandler {
+	private function handler(bool $isPostgres, bool $available, bool $fuzzy = false, ?IAppConfig $appConfig = null): MagicSearchHandler {
 		$connection = $this->createMock(IDBConnection::class);
 		$connection->method('quote')->willReturnCallback(static fn ($value): string => "'" . (string) $value . "'");
 
@@ -267,7 +322,8 @@ class MagicSearchHandlerAccentFoldingTest extends TestCase {
 			$organisation,
 			new SchemaTypeConverter(),
 			$this->createMock(DateTimeNormalizer::class),
-			relatedRows: $this->createMock(RelatedRowQueryApplier::class)
+			relatedRows: $this->createMock(RelatedRowQueryApplier::class),
+			appConfig: $appConfig
 		);
 
 		$trgm = new MagicPgTrgmProbe($this->createMock(IDBConnection::class), $this->createMock(LoggerInterface::class));

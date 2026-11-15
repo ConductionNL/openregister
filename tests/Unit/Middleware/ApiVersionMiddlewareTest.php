@@ -201,6 +201,34 @@ class ApiVersionMiddlewareTest extends TestCase {
 		);
 	}//end testANonApiRequestIsNeitherRefusedNorDecorated()
 
+	public function testAnAnswerToAnUndeclaredVersionCarriesNoVersionHeaders(): void {
+		$middleware = $this->build(
+			declaration: self::deprecatedAndSupported(),
+			headers: ['API-Version' => '9'],
+		);
+
+		$response = $middleware->afterController($this->createMock(Controller::class), 'index', new JSONResponse(['ok' => true]));
+
+		$this->assertArrayNotHasKey('API-Version', $response->getHeaders());
+		$this->assertArrayNotHasKey('Deprecation', $response->getHeaders());
+		$this->assertArrayNotHasKey('Sunset', $response->getHeaders());
+	}//end testAnAnswerToAnUndeclaredVersionCarriesNoVersionHeaders()
+
+	public function testARequestWithoutAPathIsNotAnApiRequest(): void {
+		$middleware = $this->build(
+			declaration: self::deprecatedAndSupported(),
+			headers: ['API-Version' => '9'],
+			path: '',
+		);
+		$controller = $this->createMock(Controller::class);
+
+		// An undeclared version on an API path is refused; without a path nothing is.
+		$middleware->beforeController($controller, 'index');
+		$response = $middleware->afterController($controller, 'index', new JSONResponse([]));
+
+		$this->assertArrayNotHasKey('API-Version', $response->getHeaders());
+	}//end testARequestWithoutAPathIsNotAnApiRequest()
+
 	public function testAnUnrelatedExceptionIsRethrown(): void {
 		$middleware = $this->build(declaration: self::deprecatedAndSupported());
 

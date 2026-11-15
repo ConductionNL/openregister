@@ -123,6 +123,8 @@ use OCA\OpenRegister\Tests\Unit\Service\Object\Support\SaveObjectArgs;
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\EmptyValues
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\NestedObjectTarget
  * @uses \OCA\OpenRegister\Service\Rbac\McpScope
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation
+ * @uses \OCA\OpenRegister\Service\Rbac\UndecidablePosture
  */
 class CascadeCreateRightsTest extends TestCase {
 
