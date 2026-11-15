@@ -14365,3 +14365,4 @@ review:learniq:1901:0bee8d6d	GREEN: per its change spec, no new failures	session
 review:humaniq:872:deea55b1	GREEN: matches openregister main Gdpr request objects; unit 4405 OK	session-20261115T181015-497e81ce	2026-11-15T18:58:39Z
 review:decidiq:1945:ef05d63a	RED decidiq#1945: 5 new OpenCatalogiPublisherTest failures from the changed container key	session-20261115T174739-b14c2df4	2026-11-15T18:58:50Z
 review:decidiq:1944:19250e66	GREEN: call-shape adaptation, flags preserved; unit green	session-20261115T174808-50b8ceec	2026-11-15T18:58:57Z
+fix:integriq:3047:1d492aea	namespace fixed, pushed 16876431, REVERIFY recorded	session-20261115T182948-465dcc8e	2026-11-15T18:59:19Z
