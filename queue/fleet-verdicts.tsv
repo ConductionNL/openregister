@@ -11141,3 +11141,7 @@ stackiq	1966	5c005420f7d22e65846a41da08ffd1b7e7400423	CONFLICT	worker-47	l10n/en
 stackiq	1977	eb4d07c372dac047e6a6abb5ea05b5d8664b0456	GREEN	worker-47	phpunit 3678 ok (baseline 3626 ok), vitest 2640 with 1 inherited fail (facets.spec, red on development); no new failures; tests/bootstrap-unit.php only
 learniq	2507	2145eabaa834ed203fd00db2cc4ba59c113e7172	RED	merge3:merge-gate	GATE RED absolute floor: learniq maintainability 3.98 after merge is below its floor 3.99
 learniq	2521	9260217ad9f1e86e05e5bfe35fafc27a3b5978cd	RED	merge3:merge-gate	GATE RED absolute floor: learniq maintainability 3.98 after merge is below its floor 3.99
+learniq	2484	109cbc9571e59edf69768d4fee96a75623420bd4	CONFLICT	merge3	merges clean on development alone; files: 
+learniq	2486	a242580e4f3ca0ee80bae0e6dd56382e894dac87	CONFLICT	merge3	merges clean on development alone; files: 
+learniq	2513	0c700c9ac0ac01939c55ecbc56b8c217cd758e97	CONFLICT	merge3	merges clean on development alone; files: l10n/en.json 
+learniq	2549	f861a75f9da803969547b92865f21d9f266bdf14	CONFLICT	merge3	merges clean on development alone; files: tests/unit-js/structureProfile.test.mjs 
