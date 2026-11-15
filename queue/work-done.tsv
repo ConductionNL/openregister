@@ -12169,3 +12169,4 @@ fix:hermiq:1735:09766374	floor restored (unit_complexity 4.51), new head 01675e5
 cover:shillinq:05639debm9818:be0dcca9	stale: lib/Mcp/ no longer exists on development	session-20261114T234948-b89aaae1	2026-11-15T00:12:58Z
 measure:pipelinq:20261114h22	php 92.79% (pcov, 58379/62916), js 93.75% (17446/18610) at 0d8e11ea	session-20261114T225452-4fcfea7f	2026-11-15T00:12:58Z
 cover:dossiq:069ee2d6mdd7c:98083bbf	PR #6531: 6 tests over 5 untested registrars, lib/Listener/Registrar 89.65% -> ~99.6%	session-20261114T224754-e4a2fcab	2026-11-15T00:12:52Z
+cover:pipelinq:7f9dc8e6m799d:0f859653	already done: lib/Flow/*.php 134/134 statements (100%, pcov, full unit suite) on development 0d8e11ea2; no PR	session-20261114T225452-4fcfea7f	2026-11-15T00:13:26Z
