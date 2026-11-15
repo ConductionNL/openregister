@@ -14356,3 +14356,4 @@ fix:integriq:3593:ab56426a	conflict resolved (ten providers); no new failures; n
 review:humaniq:876:0c6ca9f0	GREEN; noted leftover old-signature caller SetupAdministrations:242	session-20261115T174750-744c606b	2026-11-15T18:56:59Z
 review:hermiq:1293:5b34b81b	GREEN: copy-only, vitest 1526/1526	session-20261115T174819-9af28ef9	2026-11-15T18:57:09Z
 review:decidiq:1942:62504df6	GREEN: matches OR main FlowNodeCall; unit green	session-20261115T174808-50b8ceec	2026-11-15T18:57:20Z
+fix:integriq:3058:73d0ebfe	sbom regenerated, 0 new failures; new head 46cc2fb4	session-20261115T174833-88ac0233	2026-11-15T18:57:31Z
