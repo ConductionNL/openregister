@@ -12841,3 +12841,4 @@ launchpad	1098	08b6144744978ee052f69f5452afa076f8d9d101	GREEN	worker-11:review	d
 buildiq	1649	dae57dbf58de730fe5c4378def184f4e1cb3f3b1	GREEN	worker-10	3418 tests, only failure ExportZipGoldenTest also red on development
 buildiq	1651	8f6101946c3e787f54b34b7df2f06167187eeeca	CONFLICT	worker-10	conflicts with 1649 in l10n/nl.js, l10n/nl.json (clean on development alone)
 buildiq	1652	74a237c75562a8c04909970940bc81194db8c1a5	CONFLICT	worker-10	conflicts with 1649 in ApplicationCreationService.php and its test (clean on development alone)
+buildiq	1654	fc4a934cc05116ec1c53ef19e3da44d35392f8ab	CONFLICT	worker-10	conflicts with 1649 in l10n/nl.json (clean on development alone)
