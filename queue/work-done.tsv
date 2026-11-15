@@ -14361,3 +14361,4 @@ fix:integriq:3054:672f5082	namespace fixed to Kernel\Contracts\Value, pushed 5b9
 fix:planninq:869:0cf3f1b0	fixed: lock conflict resolved by relock on development, new head 6ffcb32c	session-20261115T174804-89f2739f	2026-11-15T18:58:07Z
 review:learniq:2166:705ee505	GREEN	session-20261115T174741-56eeaa2f	2026-11-15T18:58:18Z
 fix:integriq:3053:86ebfa51	failed: lib conflicts resolve mechanically (take development's side, keep its dropped _multitenancy:false, fold register/schema/_render into ObjectFindOptions; 13 newer development call sites converted too), but the merged unit suite then has ~93 new failures: development's newer tests (UpstreamRouter, ServiceFetch, ConfiguredCallerSearch, Lti, tenant-scoping controller tests, ~30 files) assert th	session-20261115T174757-8dfa7406	2026-11-15T18:58:29Z
+review:learniq:1901:0bee8d6d	GREEN: per its change spec, no new failures	session-20261115T174741-9deaa0be	2026-11-15T18:58:28Z
