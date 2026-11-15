@@ -14120,3 +14120,4 @@ fix:dossiq:3957:17cbacac	behaviour landed as openspec change publication-categor
 review:dossiq:4870:3d0c3c95	GREEN: manifest draft config, failures inherited	session-20261114T102637-6688951e	2026-11-15T18:19:58Z
 review:pipelinq:2966:ed8ef9f5	GREEN: ECB step per spec; unit 8901 OK, 1 inherited vitest failure	session-20261115T174757-8dfa7406	2026-11-15T18:20:07Z
 fix:dossiq:3203:021d79cc	fixed: lock merged, files peer added, vitest env fixes; pushed cd98b031	session-20261115T174741-56eeaa2f	2026-11-15T18:20:21Z
+fix:portaliq:1684:6cc52719	RED fixed (pinned shape updated), suite 6121 green, REVERIFY recorded	session-20261115T174747-978963d5	2026-11-15T18:20:29Z
