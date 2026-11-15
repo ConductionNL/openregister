@@ -15279,3 +15279,4 @@ verify:opencatalogi:2701:1918cebf	RED: 2701 breaks CatalogueSharedPublicationTes
 verify:buildiq:1652:6d8da72a	both CONFLICT (l10n/en.js, en.json vs development 013580c7)	session-20261115T220036-e665285d	2026-11-15T22:12:34Z
 review:opencatalogi:2679:467db25a	stale	session-20261115T213156-1ffcf961	2026-11-15T22:12:42Z
 fix:dossiq:6203:f6f40df6	fixed: test double matches main find(); Portal 209 OK; new head 5bb98561	session-20261115T213134-4b0d2823	2026-11-15T22:12:44Z
+review:stackiq:1928:36057a15	GREEN: per change spec, suite 3723 tests OK	session-20261115T220036-9d15b9ea	2026-11-15T22:12:52Z
