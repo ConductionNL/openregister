@@ -11303,3 +11303,4 @@ larpinq	1041	6545e1defff3c1df86fa4fea90515c4c0b87731f	RED	merge3:merge-gate	GATE
 larpinq	1050	ebb209691f38f2cdd3812275fbc828831dc90d7e	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 4.87 -> 4.85
 larpinq	1051	fa7cedb49eeaf2240d456f442c29bd3d8b2b8407	RED	merge3:merge-gate	GATE RED checker floor: testcoderatio: warn -> fail; testcoderatio stars: 3 -> 2
 larpinq	1060	759898b3b319473aa0acb48bbf6e9a4189d7814a	RED	merge3:merge-gate	GATE RED checker floor: secretscanning: pass -> fail; testcoderatio: warn -> fail; secretscanning stars: 5 -> 1; testcoderatio stars: 3 -> 2
+larpinq	1053	181ec51cd4e808def9d3795fed3b7a5de2e74239	CONFLICT	merge3	merges clean on development alone; files: lib/Service/SettingsLoadService.php lib/Settings/larpinq_mock_register.json 
