@@ -14728,3 +14728,5 @@ review:opencatalogi:2673	GREEN: matches change spec, no new failures	session-202
 fix:portaliq:2349:124b9f86	sbom regenerated, REVERIFY recorded	session-20261115T174747-978963d5	2026-11-15T20:17:06Z
 review:stackiq:1924:ae4e4f18	GREEN: per spec; phpunit 3722 pass; vitest 1 inherited failure	session-20261115T200041-8ff5af37	2026-11-15T20:17:14Z
 review:versioniq:707:9729dcff	GREEN: suite = baseline (2 inherited)	session-20261115T195953-2618bb8a	2026-11-15T20:17:24Z
+review:stackiq:1064:adce3cb4	GREEN; range-only devDependency bump	session-20261115T200045-d3bb5c75	2026-11-15T20:17:38Z
+review:opencatalogi:1893:e1cf5480	GREEN: openspec-only sweep, merges cleanly	session-20261115T182940-bfeb7e78	2026-11-15T20:17:46Z
