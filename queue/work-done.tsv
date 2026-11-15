@@ -12479,3 +12479,4 @@ fix:opencatalogi:2665:0a93cd29	fixed mainEntry.spec for the new widget, vitest 1
 fix:opencatalogi:2671:a9085b0b	moved the step so it merges beside 2669/2670; REVERIFY recorded	session-20261114T231755-998f7ff8	2026-11-15T01:07:05Z
 cover:integriq:92114ab0m4b3f:e7ac1785	PR #3644: 6 tests, StufZkn 99.08->99.79%, suite 9229 with 7 inherited failures	session-20261115T005412-4a06d6f4	2026-11-15T01:07:28Z
 fix:opencatalogi:2683:9def1ff8	nothing to fix: branch already contains development and merges clean on it; the conflict is with other PRs of the tree, head unchanged 9def1ff8	session-20261114T234941-bc8686af	2026-11-15T01:07:36Z
+fix:stackiq:1946:6132a993	merged development, resolved l10n conflicts, new head 1b85feb2	session-20261115T001740-566812b3	2026-11-15T01:08:01Z
