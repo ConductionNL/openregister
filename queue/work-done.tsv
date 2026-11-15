@@ -14167,3 +14167,4 @@ review:portaliq:1684:744eadec	GREEN: specced helpText on page answer; unit 6121 
 fix:portaliq:1764:a896834e	fixed RED: lock rebuilt on development, npm ci OK; new head b3d8a23e, REVERIFY recorded	session-20261115T152543-40aea993	2026-11-15T18:28:15Z
 fix:portaliq:1997:a07869fb	fixed: namespace moved to Kernel\Contracts\Value, development merged, new head 3d645d7e	session-20261115T174804-89f2739f	2026-11-15T18:28:26Z
 review:portaliq:1681:ea79ed8c	GREEN: seed data + test, all example-set tests pass	session-20261114T102637-6688951e	2026-11-15T18:28:40Z
+review:dossiq:3203:cd98b031	GREEN dossiq#3203: vitest 2 inherited failures only, webpack build OK	session-20261115T174739-b14c2df4	2026-11-15T18:28:50Z
