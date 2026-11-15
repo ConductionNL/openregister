@@ -13500,6 +13500,7 @@ review:launchpad:1099:6f005198	BLOCK: lock not installable under platform php 8.
 review:launchpad:785:91201465	CONFLICT #785: 13 files conflict with development, no verdict on behaviour	session-20261115T152601-38767331	2026-11-15T16:16:17Z
 review:launchpad:776:7495f48c	BLOCK: obsolete, development already on nextcloud-vue 2.180.0 (PR has 2.60.0, conflicts)	session-20261115T155904-a7df5bc0	2026-11-15T16:16:24Z
 review:larpinq:721:94b57b97	GREEN: obsolete, development already has the same lock update (no-op merge)	session-20261115T154407-94bf5f8c	2026-11-15T16:16:32Z
+review:keepiq:1496:c1d424cc	GREEN: lock-only hydra-gates bump; suite 5213 OK	session-20261115T145535-3f9e5078	2026-11-15T16:16:42Z
 review:humaniq:875:0758d28b	BLOCK: wrong ObjectDeletion namespace (Kernel\Contracts\Value on OR main), plus merge conflict	session-20261115T152558-f97be55f	2026-11-15T16:16:52Z
 review:launchpad:673:6ba3c402	RED: gridstack 14 violates nextcloud-vue peer range (npm ci ERESOLVE); also conflicts	session-20261115T155903-abd003e3	2026-11-15T16:17:00Z
 review:integriq:3137:b8b9a97a	BLOCK: depends on openregister value objects not on main	session-20261115T142951-2463b4c4	2026-11-15T16:17:09Z
