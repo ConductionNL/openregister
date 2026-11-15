@@ -14947,5 +14947,7 @@ fix:opencatalogi:2655:f9ef3261	fixed: 10 OR-main failures resolved, development 
 fix:versioniq:507:324d3f15	conflict resolved, vitest ok; REVERIFY 63401e4577e3a8006d41144430399f8f3f1f5187	session-20261115T195953-2618bb8a	2026-11-15T20:56:34Z
 fix:stackiq:1931:d2989729	fixed: conflict resolved keeping both sides, head e9b00feb	session-20261115T202932-ab57353c	2026-11-15T20:56:41Z
 fix:versioniq:722:756a911d	conflict resolved, pushed a03bd1c7; REVERIFY recorded	session-20261115T202936-e956716f	2026-11-15T20:56:55Z
+fix:larpinq:877:339de0c7	failed: sbom gate false positive; nextcloud/ocp is a dev dependency, regen-sbom (--omit=dev) leaves sbom.cdx.json unchanged and --check passes, but the gate requires the file in the diff; merged development in (head 0d04ecfc809c8f114723a77614d7ef4cddf938ef); needs a gate rule for dev-only lock changes	session-20261115T200041-8ff5af37	2026-11-15T20:57:01Z
 fix:versioniq:711:1d4bc363	fixed: 4 conflicts resolved; 2 inherited golden failures; head dc3fffc4	session-20261115T200020-0f65b959	2026-11-15T20:57:06Z
 fix:versioniq:505:54c33622	sbom regenerated, pushed aeceef74, REVERIFY recorded	session-20261115T195957-8e60ca53	2026-11-15T20:57:14Z
+fix:larpinq:960:f38d0e35	development merged in; sbom already current (dev-only bump), no sbom diff possible; new head 659b6749, REVERIFY recorded	session-20261115T203029-7489abc7	2026-11-15T20:57:31Z
