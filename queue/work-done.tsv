@@ -12572,3 +12572,4 @@ fix:versioniq:707:52b14c85	nothing to fix: branch already contains development a
 verify:versioniq:725:936b5bc1	GREEN 725 (phpunit 1747/2 inherited, vitest 3006 pass)	session-20261115T011743-1dcf0056	2026-11-15T01:27:31Z
 cover:portaliq:b60f3b81m4ccb:ef511ebd	PR #2521: 20 tests for CaseTypeColumns (3 classes), suite 5873->5893, 0 failures	session-20261115T011749-0a09092e	2026-11-15T01:27:44Z
 fix:versioniq:692:e6c0112a	no change: clean on development; conflict is only with unmerged #690/#691, REVERIFY recorded	session-20261115T011806-2ba8b68f	2026-11-15T01:27:43Z
+fix:stackiq:1965:9ec5fe4f	merged development, l10n conflicts resolved keeping both; head 815d46e4, REVERIFY recorded	session-20261115T005138-c7bbb0f0	2026-11-15T01:27:57Z
