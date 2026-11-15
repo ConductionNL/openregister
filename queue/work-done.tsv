@@ -14725,3 +14725,4 @@ review:opencatalogi:1888:e9655f0d	GREEN: suite = baseline (2 inherited failures)
 review:stackiq:1067:c6fb0482	GREEN: range-only vue bump, vitest same as development (1 inherited failure)	session-20261115T201132-b8ddc5e5	2026-11-15T20:16:23Z
 review:stackiq:1042:ad6e35bb	GREEN: vitest 2726/2727, 1 inherited failure	session-20261115T200026-9a5b8685	2026-11-15T20:16:34Z
 review:opencatalogi:2673	GREEN: matches change spec, no new failures	session-20261115T200000-e95b89c2	2026-11-15T20:16:41Z
+fix:portaliq:2349:124b9f86	sbom regenerated, REVERIFY recorded	session-20261115T174747-978963d5	2026-11-15T20:17:06Z
