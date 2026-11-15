@@ -10949,3 +10949,4 @@ versioniq	727	745065b5a50c2a9717daf552af2b9b70e3c7e138	REVERIFY	worker-52	merged
 integriq	3630	0af2622c5f1e53f08aba7febd449a19fcca3f0d3	GREEN	worker-05	same tree: unit 9268, no new failures beyond the 6 inherited; vitest 177 files / 2326 tests green; build of connectors-sharepoint-publication-intake, intake route admin-gated like lookup, nextLink paging additive
 learniq	2549	f861a75f9da803969547b92865f21d9f266bdf14	GREEN	worker-32	build learner-list-and-page-follow-the-boards; unit 6864 (baseline 6846), same 1 inherited failure HigherEducationExampleSetTest::testTheFileIsWhatTheGeneratorProduces, no new; js-unit same 9 inherited failures as development
 pipelinq	3850	e6de08f6f2d517f542e1175c92eab1d05d0ee3f4	GREEN	worker-29	unit 8473 tests on tree, baseline 8452 OK, no new failures; tests only
+pipelinq	3851	ffb1ffc286675b021070f9523f319a4c87e9d0b1	GREEN	worker-29	unit 8473 tests on tree, baseline 8452 OK, no new failures; tests only
