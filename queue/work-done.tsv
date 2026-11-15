@@ -14881,3 +14881,5 @@ fix:humaniq:667:3bb5749b	sbom regenerated; new head c3822863, REVERIFY recorded	
 review:dossiq:3197:4fd9129c	GREEN: router bump, vitest at baseline, sbom current	session-20261115T201132-b8ddc5e5	2026-11-15T20:45:20Z
 review:dossiq:3199:dd09a728	GREEN: sass bump, tests/build ok, 2 inherited vitest fails	session-20261115T203012-30a1abde	2026-11-15T20:45:31Z
 fix:integriq:2714:45199b02	fixed: sbom regenerated; head ebda35bb	session-20261115T200020-0f65b959	2026-11-15T20:45:42Z
+fix:humaniq:684:c6a338ca	merged development, regenerated sbom; new head 036f7e9f, REVERIFY recorded	session-20261115T203020-5a3aa6f4	2026-11-15T20:45:49Z
+review:shillinq:2226:e54eecaf	GREEN: pinia minor bump, vitest no new failures	session-20261115T200043-78b85ca2	2026-11-15T20:45:58Z
