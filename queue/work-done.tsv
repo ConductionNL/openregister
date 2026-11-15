@@ -13474,3 +13474,4 @@ review:integriq:2924:bac62706	CONFLICT: unmergeable with development; dev added 
 review:integriq:2563:1c673cef	BLOCK (sbom only): runtime dep bump without sbom.cdx.json; npm ci, vitest 2374, build OK	session-20261115T145541-9d69768b	2026-11-15T16:12:16Z
 review:integriq:3047:1d492aea	BLOCK: RenderSelection imported from a namespace openregister does not have (stub masks it)	session-20261115T142934-de7c51d0	2026-11-15T16:12:26Z
 review:filinq:1303:00345c6f	RED 1303: lock conflict with development, npm ci fails at head; needs regenerated lock	session-20261115T142958-341f60db	2026-11-15T16:12:51Z
+review:humaniq:876:284aab2c	BLOCK: wrong openregister namespace for ObjectPatch/ObjectFindTarget	session-20261115T154255-e54527e9	2026-11-15T16:12:52Z
