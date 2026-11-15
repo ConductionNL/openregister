@@ -13139,3 +13139,4 @@ build:hermiq:schedules-onto-engine-triggers:c7	done: no code tasks left; branch 
 merge:planninq:1188:dffb9d1a	merge3 tree of 3 planninq PRs: merged=3 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-15T15:09:34Z
 verify:pipelinq:3873:e74d58c4	GREEN 3873: tests only, no new failures	session-20261115T142958-341f60db	2026-11-15T15:09:46Z
 verify:filinq:2134:ebf3485d	2134 GREEN; unit 6766 OK (baseline 6765)	session-20261115T145535-caebb5a3	2026-11-15T15:09:54Z
+build:hermiq:tools-agent-workspace-and-installed-tools:c4	partial: blocked; PR #1760 head c3344e5a unchanged. Tasks 2 (runCode useWorkspace), 4 (installer/installTool) and 5 (runInstalledTool) extend RunCodeTool, CodeSandboxToolDescriptors and exapp/code-sandbox, which exist only on the open build quality/build-tools-code-sandbox (97a61ef1); resume after it merges to development	session-20261115T145544-b059847e	2026-11-15T15:10:01Z
