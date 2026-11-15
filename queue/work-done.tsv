@@ -13248,3 +13248,4 @@ build4:openregister:history-schema-and-settings-edits-audited:c5	PR #10515 head 
 fix:integriq:3546:26a9245c	floor: ratchet findings 2->0 (11-param ctor split, dup removed), duplication +0.01; new head 994fb6f7, REVERIFY	session-20261115T142201-ea23e682	2026-11-15T15:32:06Z
 review:shillinq:2997:7b870224	GREEN; phpunit 12273 OK, phpstan clean, vitest 1 inherited failure; note: backfill repair step not registered in info.xml	session-20261115T152558-f97be55f	2026-11-15T15:32:16Z
 measure:opencatalogi:20261115h02	php 95.37% (pcov), js 85.91% at f7123cd0	session-20261115T145535-caebb5a3	2026-11-15T15:32:34Z
+build:integriq:gateway-api-design-rules-check:c4	done: pushed 4585a979 to PR #3564: task 5 seed (besluiten-api deprecated + open error + waived warning via components.objects), tests; all code tasks ticked, left Playwright/docs walk/validate	session-20261115T142149-1d09fceb	2026-11-15T15:32:42Z
