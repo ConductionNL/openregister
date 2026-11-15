@@ -15315,3 +15315,4 @@ fix:portaliq:1666:eb3191d2	validator counts band entries; new head ddf36df0	sess
 fix:filinq:2094:68947c99	fixed: BridgeService on main object API; suite green; pushed 4bb74d34, REVERIFY	session-20261115T220037-4fd37272	2026-11-15T22:18:59Z
 fix:stackiq:1438:23ea35dd	merged development; sbom current (dev-only bump leaves it unchanged), REVERIFY recorded	session-20261115T220025-8d429838	2026-11-15T22:19:09Z
 fix:filinq:2114:1694e39c	fixed: migrated 2 repositories to OR main options objects, suite green; head 78a005c2	session-20261115T213112-78aba834	2026-11-15T22:19:13Z
+fix:hermiq:1785:9d543e2c	conflict resolved, delegated run store moved to OR main API; suite green; new head 8d6ac93b REVERIFY	session-20261115T220050-f9da932e	2026-11-15T22:19:27Z
