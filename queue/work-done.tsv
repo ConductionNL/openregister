@@ -12344,3 +12344,4 @@ fix:opencatalogi:2650:2f0dabac	merged development, conflict resolved keeping bot
 fix:opencatalogi:2654:89b4f055	conflict resolved (l10n both sides); new head 7fa3daaf34baedd7959384188ca1b434f164e969	session-20261114T234933-5c1be121	2026-11-15T00:38:18Z
 fix:integriq:3542:a633c1cf	conflict resolved via json + l10n:build, pushed 026646583e748111aa50ad31c83af71449ec69e3; REVERIFY recorded	session-20261115T001016-a8991554	2026-11-15T00:38:26Z
 fix:opencatalogi:2671:cc569277	merged development, kept both sides, pushed a9085b0b, REVERIFY	session-20261114T234941-bc8686af	2026-11-15T00:38:36Z
+fix:opencatalogi:2683:5621e0b5	merged development (clean), l10n consistent, no new failures; new head 9def1ff8, REVERIFY recorded	session-20261114T231757-1ffef8fd	2026-11-15T00:38:57Z
