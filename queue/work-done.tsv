@@ -15174,3 +15174,4 @@ review:decidiq:2203:14dc6807	GREEN: spec-conform build, all checks pass	session-
 review:decidiq:2149:25a0bf97	BLOCK: 6 new openregister calls use removed named-arg API (find/saveObject register:/schema:); tests green	session-20261115T213101-2fb56005	2026-11-15T21:50:46Z
 review:dossiq:6109:aa8d7473	GREEN: tests only, pass on merged tree	session-20261115T213107-505dc338	2026-11-15T21:50:56Z
 review:hermiq:1736:476d3761	GREEN: build matches change, no new failures	session-20261115T213112-78aba834	2026-11-15T21:51:07Z
+review:learniq:2484:13aa1fe4	CONFLICT: content fine, test file conflicts with development migration	session-20261115T213134-4b0d2823	2026-11-15T21:51:17Z
