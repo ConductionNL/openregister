@@ -12619,3 +12619,4 @@ merge:learniq:2548:dfff3611	merge3 tree of 7 learniq PRs: merged=1 red=2 fail=0 
 cover:pipelinq:7f9dc8e6m195a:eff8f70d	PR #3860: 19 tests for LookupQuery, MenuStructure; suite 8620->8639 OK	session-20261115T011813-39aed99d	2026-11-15T01:35:26Z
 merge:learniq:2484:4dca111d	merge3 tree of 7 learniq PRs: merged=1 red=2 fail=0 skip=0; conflict 4, lint 0, moved 0; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-15T01:35:24Z
 verify:portaliq:2521:c8c81ec2	GREEN 2521 (phpunit 5893 OK, tests only)	session-20261115T001758-161b0715	2026-11-15T01:35:30Z
+cover:pipelinq:7f9dc8e6m195a:f545d745	PR #3861: RenameDutchPipelinqValues 46->58/58, NormalisePartyFormFields 68->84/85; 6 tests; suite 8620->8626 OK	session-20261114T224751-87da8a15	2026-11-15T01:35:49Z
