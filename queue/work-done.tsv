@@ -12246,3 +12246,4 @@ measure:stackiq:20261114h22	php 89.33% (pcov), js 94.28% at dbebfae7	session-202
 fix:launchpad:1206:c495b327	merged development, resolved l10n/nl.js conflict (kept both); new head c13e34be	session-20261115T002445-1522cadc	2026-11-15T00:25:57Z
 cover:stackiq:9ac19b3amad24:34763eb4	already done: lib/Middleware/*.php measures 98.28% lines (57/58) on development; no PR	session-20261114T231750-d1c755b0	2026-11-15T00:26:12Z
 merge:portaliq:2500:9eae5f98	stale	feeder	2026-11-15T00:25:25Z
+cover:stackiq:9ac19b3amad24:05630945	already covered: dir at 57/62; the 5 uncovered lines need non-empty RENAMED/WITHOUT_SUCCESSOR consts in a final class, unreachable from tests; no PR	session-20261115T001714-673c9984	2026-11-15T00:26:27Z
