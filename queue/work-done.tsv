@@ -15339,3 +15339,4 @@ fix:decidiq:1468:dabc7105	fixed: sbom regenerated; REVERIFY at 7dc751fb	session-
 fix:hermiq:1189:9c7d6a51	fixed: sbom regenerated; new head 25278c92	session-20261115T213100-e547b457	2026-11-15T22:22:53Z
 fix:hermiq:1307:81668700	sbom regenerated, pushed 1007dac617c9bde9350369bf4adb9a791a8aa04b, REVERIFY	session-20261115T220011-f1302da8	2026-11-15T22:23:03Z
 fix:filinq:2122:e0f7a647	fixed: ObjectSaveOptions in RepointWooGrounds; new head d654b8fc, REVERIFY recorded	session-20261115T211111-34885d99	2026-11-15T22:23:12Z
+fix:hermiq:1188:b9df0394	sbom regenerated, development merged in; new head 97593dc8ffffbb6783bfaaca2bcdb450ca9ff291	session-20261115T213101-2fb56005	2026-11-15T22:23:26Z
