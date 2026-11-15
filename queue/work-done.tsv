@@ -14306,6 +14306,7 @@ fix:decidiq:2203:7a5f0d1f	l10n CONFLICT resolved, REVERIFY recorded	session-2026
 fix:filinq:1849:88cc74e3	fixed: merged development, tests on main's find contract; suite green; new head 399a0258	session-20261115T174819-9af28ef9	2026-11-15T18:49:46Z
 fix:decidiq:2207:91c94c38	fixed CONFLICT: merged development (l10n union); new head d7b1eef1, REVERIFY recorded	session-20261115T152543-40aea993	2026-11-15T18:49:54Z
 fix:learniq:2166:290fc8b6	accepts both StoreDescriptor shapes; pushed 705ee505, REVERIFY recorded	session-20261115T183023-a120e01a	2026-11-15T18:50:06Z
+fix:integriq:2295:fb945bbd	failed: only a regenerated composer.lock resolves it (dependabot recreate on current development); workers may not commit composer.lock	session-20261115T152543-40aea993	2026-11-15T18:50:19Z
 fix:shillinq:2083:cb3e6a42	conflict resolved, pushed bbd8bdb9, REVERIFY recorded	session-20261115T182936-09049974	2026-11-15T18:50:24Z
 fix:decidiq:2178:9d356a3b	merged development, unit 4666 OK, new head 3a46f5ae	session-20261115T181015-497e81ce	2026-11-15T18:50:35Z
 fix:planninq:1037:f2da0a3f	fixed: l10n add/add conflict resolved, new head 94d58586	session-20261115T174804-89f2739f	2026-11-15T18:50:45Z
@@ -14333,6 +14334,7 @@ fix:integriq:2924:bac62706	merged development, vitest 2343 OK, lint 0 errors, pu
 merge:buildiq:1089:8e70db54	merge8 tree of 16 buildiq PRs: merged=1 red=9 fail=0 skip=0; conflict 6, lint 0, moved 0; fix rows 6	merge8-20261115T170007-37538273	2026-11-15T18:53:04Z
 merge:buildiq:1654:74087526	merge8 tree of 16 buildiq PRs: merged=1 red=9 fail=0 skip=0; conflict 6, lint 0, moved 0; fix rows 6	merge8-20261115T170007-37538273	2026-11-15T18:53:21Z
 fix:hermiq:1322:cc3f40d6	namespace fixed, merged development, 0 new failures; new head 34ea3522	session-20261115T174833-88ac0233	2026-11-15T18:53:23Z
+fix:integriq:2650:6bf97c5a	failed: needs a composer.lock change - the branch adds phpseclib/phpseclib ^3.0.54 and development has since updated its lock, so the merge needs development's lock plus phpseclib with a new content-hash, which workers may not commit. Rest is mechanical: info.xml take development, l10n union, Application.php take development's registrar split and add SftpAdapter/FtpsAdapter beside S3Adapter's addP	session-20261115T174747-978963d5	2026-11-15T18:53:37Z
 fix:humaniq:876:284aab2c	namespace fixed; pushed 0c6ca9f0, REVERIFY	session-20261115T174808-50b8ceec	2026-11-15T18:53:35Z
 merge:buildiq:1090:7dfd3528	merge8 tree of 16 buildiq PRs: merged=1 red=9 fail=0 skip=0; conflict 6, lint 0, moved 0; fix rows 6	merge8-20261115T170007-37538273	2026-11-15T18:53:45Z
 fix:integriq:3137:b8b9a97a	failed: nothing to fix in integriq; the PR's whole content follows an openregister constructor change (SettingsPlacement/SectionAppearance/AdminFormServices) that is not on main (3800106b), and development already builds GenericAdminSettings/GenericSettingsSection with main's signature. It can only land after openregister ships those value objects as an added form (published-contract rule); otherw	session-20261115T182948-465dcc8e	2026-11-15T18:53:39Z
@@ -14340,7 +14342,71 @@ fix:humaniq:875:0758d28b	namespace fixed to Kernel\Contracts\Value, merged devel
 fix:humaniq:477:84c765e3	failed: @vueuse/core 15 is outside @conduction/nextcloud-vue's peer range (^11||^14, latest 2.181.0); needs a library release accepting 15	session-20261115T174808-50b8ceec	2026-11-15T18:53:59Z
 merge:buildiq:1091:4bacfabb	merge8 tree of 16 buildiq PRs: merged=1 red=9 fail=0 skip=0; conflict 6, lint 0, moved 0; fix rows 6	merge8-20261115T170007-37538273	2026-11-15T18:54:14Z
 fix:integriq:3649:f749c1d0	l10n conflict resolved, pushed 5e393201e, REVERIFY	session-20261115T154255-e54527e9	2026-11-15T18:54:17Z
+fix:integriq:3126:da5c460d	failed: depends on unmerged openregister branch cloud/vox-resolvedconsumer (ConsumerIdentity/ConsumerAuthorization); main ResolvedConsumer still takes the seven scalars, and that OR change alters a published constructor, so this PR must wait on (or be dropped with) that OR decision	session-20261115T174808-50b8ceec	2026-11-15T18:54:31Z
 fix:humaniq:670:f378e8f1	bumped babel core 8 + webpack-vue-config 7.1; ci/build ok; new head 57c2b21c	session-20261115T181015-497e81ce	2026-11-15T18:54:28Z
 merge:buildiq:1088:39183552	merge8 tree of 16 buildiq PRs: merged=1 red=9 fail=0 skip=0; conflict 6, lint 0, moved 0; fix rows 6	merge8-20261115T170007-37538273	2026-11-15T18:54:39Z
 fix:humaniq:877:358453bf	namespace fixed to Kernel\Contracts\Value, merged development, suite green; pushed 4c8ac31b; REVERIFY recorded	session-20261115T182951-bdf9d68e	2026-11-15T18:54:38Z
 fix:hermiq:1293:14810487	fixed: merged development, 2 assertions follow new copy; new head 5b34b81b	session-20261115T174819-9af28ef9	2026-11-15T18:54:45Z
+fix:integriq:2563:1c673cef	sbom regenerated, pushed fdcc21d8, REVERIFY recorded	session-20261115T182948-465dcc8e	2026-11-15T18:55:02Z
+fix:humaniq:661:6367bef4	fixed peers, pushed e498ba1f; REVERIFY recorded	session-20261115T174750-744c606b	2026-11-15T18:55:17Z
+fix:hermiq:1150:4fcdbcee	conflicts resolved by merging development and porting the change onto dev's refactors; no new failures vs development baseline (190 inherited); pushed 9f31a6df; REVERIFY recorded	session-20261115T183025-d89c1e14	2026-11-15T18:55:28Z
+fix:integriq:3589:e374c8c4	failed: cannot reproduce the absolute-floor RED. floor_check.py (dotgithub main) on head e374c8c4: compare vs merge base PASS (overall 3.94=3.94, no property drops); head+development against .maintainability-floor.json PASS (3.94 vs floor 3.68). The 3.54/3.56 scale is not one these tools produce; needs the local lane's measurement to locate the drop	session-20261115T182941-b7ae781f	2026-11-15T18:55:36Z
+fix:learniq:1883:9e6045c2	CONFLICT resolved, pushed fd136520; REVERIFY	session-20261115T174741-9deaa0be	2026-11-15T18:55:37Z
+fix:integriq:3056:6773effd	failed: psalm 7.1 (and plugin-symfony 5.10) need php >=8.3.16 while config.platform.php is 8.3; fixing means raising the platform and regenerating composer.lock, which workers may not commit; needs a human decision (raise platform or close and stay on psalm 5)	session-20261115T174747-978963d5	2026-11-15T18:55:56Z
+fix:learniq:1901:d2b62a76	conflict resolved, pushed 0bee8d6d	session-20261115T174741-56eeaa2f	2026-11-15T18:56:00Z
+review:humaniq:875:ab9a9b54	GREEN: behaviour kept, suite green	session-20261115T182951-bdf9d68e	2026-11-15T18:56:08Z
+review:hermiq:1323:29cf1f48	GREEN: matches openregister main patchObject; no new failures	session-20261115T174819-9af28ef9	2026-11-15T18:56:31Z
+review:humaniq:1095:340163fd	GREEN: dev-only psalm 7 bump, unit 4405 OK; psalm not runnable locally (PHP 8.3.6)	session-20261115T181015-497e81ce	2026-11-15T18:56:18Z
+fix:integriq:3593:ab56426a	conflict resolved (ten providers); no new failures; new head 28966ef1	session-20261115T174739-b14c2df4	2026-11-15T18:56:42Z
+review:humaniq:876:0c6ca9f0	GREEN; noted leftover old-signature caller SetupAdministrations:242	session-20261115T174750-744c606b	2026-11-15T18:56:59Z
+review:hermiq:1293:5b34b81b	GREEN: copy-only, vitest 1526/1526	session-20261115T174819-9af28ef9	2026-11-15T18:57:09Z
+review:decidiq:1942:62504df6	GREEN: matches OR main FlowNodeCall; unit green	session-20261115T174808-50b8ceec	2026-11-15T18:57:20Z
+fix:integriq:3058:73d0ebfe	sbom regenerated, 0 new failures; new head 46cc2fb4	session-20261115T174833-88ac0233	2026-11-15T18:57:31Z
+fix:integriq:3049:47b3a17d	fixed: imports moved to Kernel\Contracts\Value, development merged, unit equals baseline; new head 3154eb08	session-20261115T182940-bfeb7e78	2026-11-15T18:57:38Z
+review:decidiq:1691:36ec8671	GREEN: frontend ad hoc meeting page, vitest green	session-20261115T174747-978963d5	2026-11-15T18:57:45Z
+fix:integriq:3054:672f5082	namespace fixed to Kernel\Contracts\Value, pushed 5b91fc9c; REVERIFY recorded	session-20261115T183029-6c0565bd	2026-11-15T18:57:54Z
+fix:planninq:869:0cf3f1b0	fixed: lock conflict resolved by relock on development, new head 6ffcb32c	session-20261115T174804-89f2739f	2026-11-15T18:58:07Z
+review:learniq:2166:705ee505	GREEN	session-20261115T174741-56eeaa2f	2026-11-15T18:58:18Z
+fix:integriq:3053:86ebfa51	failed: lib conflicts resolve mechanically (take development's side, keep its dropped _multitenancy:false, fold register/schema/_render into ObjectFindOptions; 13 newer development call sites converted too), but the merged unit suite then has ~93 new failures: development's newer tests (UpstreamRouter, ServiceFetch, ConfiguredCallerSearch, Lti, tenant-scoping controller tests, ~30 files) assert th	session-20261115T174757-8dfa7406	2026-11-15T18:58:29Z
+review:learniq:1901:0bee8d6d	GREEN: per its change spec, no new failures	session-20261115T174741-9deaa0be	2026-11-15T18:58:28Z
+review:humaniq:872:deea55b1	GREEN: matches openregister main Gdpr request objects; unit 4405 OK	session-20261115T181015-497e81ce	2026-11-15T18:58:39Z
+review:decidiq:1945:ef05d63a	RED decidiq#1945: 5 new OpenCatalogiPublisherTest failures from the changed container key	session-20261115T174739-b14c2df4	2026-11-15T18:58:50Z
+review:decidiq:1944:19250e66	GREEN: call-shape adaptation, flags preserved; unit green	session-20261115T174808-50b8ceec	2026-11-15T18:58:57Z
+review:hermiq:1167:9bf6ab11	GREEN: icons bump, vitest 1526/1526	session-20261115T174819-9af28ef9	2026-11-15T18:59:08Z
+fix:integriq:3047:1d492aea	namespace fixed, pushed 16876431, REVERIFY recorded	session-20261115T182948-465dcc8e	2026-11-15T18:59:19Z
+fix:integriq:3596:efb65024	merged development (clean), no new failures (5 inherited), pushed 960d8584; REVERIFY recorded	session-20261115T174755-95dc8448	2026-11-15T18:59:26Z
+fix:planninq:910:b94a9117	fixed: development merged; sbom already current (dev-only dep), new head 59fb2d6b	session-20261115T174804-89f2739f	2026-11-15T18:59:33Z
+fix:integriq:3050:ce4b1ee3	namespace fixed to Kernel\Contracts\Value; pushed c9ca8d22, REVERIFY recorded	session-20261115T183023-a120e01a	2026-11-15T18:59:45Z
+review:filinq:1305:72084b47	GREEN: twig 3.30.0 lock bump, unit suite green	session-20261115T183029-6c0565bd	2026-11-15T18:59:57Z
+review:hermiq:1322:34ea3522	GREEN: call-shape migration only, no new failures vs development baseline	session-20261115T183025-d89c1e14	2026-11-15T19:00:09Z
+review:shillinq:2256:8f9155fe	GREEN: tests only, unit 12225 OK	session-20261115T174750-744c606b	2026-11-15T19:00:26Z
+review:decidiq:1946:e54aa745	GREEN decidiq#1946: 4624 OK merged	session-20261115T174739-b14c2df4	2026-11-15T19:00:44Z
+review:decidiq:2149:3e3c6a58	GREEN: builds its change, suites green, phpcs nits noted	session-20261115T174747-978963d5	2026-11-15T19:00:58Z
+review:shillinq:2258:812b1f9e	GREEN: signature-only move to LifecycleActionContext, compatible with openregister main; unit 12226 OK	session-20261115T182941-b7ae781f	2026-11-15T19:01:07Z
+review:shillinq:2098:f23dc6e2	GREEN: UI refactor, checks pass	session-20261115T174833-88ac0233	2026-11-15T19:01:14Z
+review:filinq:1965:1ed89699	GREEN	session-20261115T182948-465dcc8e	2026-11-15T19:01:42Z
+fix:integriq:3051:ffe4b87c	fixed BLOCK: namespace + merged development; same failures as development; new head 1e76f3b5, REVERIFY recorded	session-20261115T152543-40aea993	2026-11-15T19:01:28Z
+review:learniq:2134:cca08a57	CONFLICT: ~70 files conflict with development; no merged-tree verdict	session-20261115T174741-9deaa0be	2026-11-15T19:01:51Z
+review:filinq:1851:48cc416c	GREEN: deleteObject call-shape migration, behaviour unchanged, suite green	session-20261115T183029-6c0565bd	2026-11-15T19:02:01Z
+review:decidiq:2191:2ada5ea6	GREEN: matches change specs; vitest 2847 and phpunit 4624 green, manifest valid	session-20261115T182940-bfeb7e78	2026-11-15T19:02:10Z
+review:integriq:2924:408ef7bf	GREEN 2924	session-20261115T154255-e54527e9	2026-11-15T19:02:17Z
+verify:decidiq:2207:39453593	CONFLICT (l10n en/nl), recorded	session-20261115T174747-978963d5	2026-11-15T19:02:28Z
+fix:learniq:2132:5ccb8d0b	conflict resolved, merged development, pushed 3655c1558; REVERIFY recorded	session-20261115T182953-0722a05e	2026-11-15T19:02:37Z
+review:decidiq:1947:35c86213	RED: lib correct, 126 test failures from old-shape test doubles (36 classes)	session-20261115T182951-bdf9d68e	2026-11-15T19:02:46Z
+review:shillinq:2093:d0aa436a	GREEN: manifest refactor, vitest no new failures	session-20261115T185923-898cd631	2026-11-15T19:02:54Z
+review:decidiq:2203:d8307a7c	GREEN: per termijnagenda spec; PHP + vitest green	session-20261115T174808-50b8ceec	2026-11-15T19:03:03Z
+fix:planninq:1064:54981d9f	fixed: conflicts + development's old-shape find calls converted, suite green, new head 849ed2f7	session-20261115T174804-89f2739f	2026-11-15T19:03:23Z
+fix:learniq:2521:2a90e6d1	SPDX headers restored, pushed 60fa2998	session-20261115T174741-56eeaa2f	2026-11-15T19:03:43Z
+review:filinq:1849:399a0258	GREEN: find() migrated to ObjectFindOptions, suite 6772 OK	session-20261115T185929-0fc862a6	2026-11-15T19:04:01Z
+review:filinq:1853:7f868f2f	RED: 19 new unit failures (test doubles/assertions still on old saveObject shape); production diff itself faithful	session-20261115T185938-cd1c2813	2026-11-15T19:04:08Z
+review:learniq:1882:7805a594	GREEN: 6869 unit tests, 1 inherited failure, none new	session-20261115T190008-ff700d5c	2026-11-15T19:04:26Z
+review:shillinq:2259:91b03c64	GREEN: audit-trail export record matches openregister main API; unit 12227 OK	session-20261115T182941-b7ae781f	2026-11-15T19:04:34Z
+review:planninq:908:8cdb1910	GREEN 908	session-20261115T154255-e54527e9	2026-11-15T19:04:51Z
+review:filinq:1309:fbd634f7	GREEN: dev-dep bump, vitest 763 pass, eslint same as baseline	session-20261115T185932-17792562	2026-11-15T19:04:58Z
+review:decidiq:2170:ed3ea097	GREEN: builds its change, suites green	session-20261115T174747-978963d5	2026-11-15T19:05:07Z
+review:dossiq:4886:8a2f03f5	RED dossiq#4886: l10n order check fails (keys appended); PHP suite no new failures	session-20261115T174739-b14c2df4	2026-11-15T19:05:15Z
+fix:integriq:2671:1ab1068a	baseline rules renamed for phpmd 3 (156 vs 158 before), suite = baseline, pushed 3e5c293b; REVERIFY recorded	session-20261115T183034-bba160e3	2026-11-15T19:05:25Z
+review:decidiq:2178:3a46f5ae	GREEN: build matches change, guards present, suites green	session-20261115T174819-9af28ef9	2026-11-15T19:05:36Z
+review:learniq:2507:6eb2dbee	GREEN: unit 6901, no new failures beyond inherited he.json	session-20261115T185930-76cdc846	2026-11-15T19:05:53Z
+review:shillinq:2063:7f06f10a	BLOCK: pre-existing approved runs (no digest) become unexportable; suite green	session-20261115T174755-95dc8448	2026-11-15T19:06:02Z
+review:filinq:1850:538df5d9	GREEN: patchObject call-shape migration, suite green	session-20261115T183029-6c0565bd	2026-11-15T19:06:09Z
