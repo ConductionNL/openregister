@@ -14779,3 +14779,4 @@ review:dossiq:2705	GREEN: dev tooling lock bump, 19 failures = baseline	session-
 review:portaliq:2349:b92b6364	GREEN: phpstan patch bump, sbom current	session-20261115T174747-978963d5	2026-11-15T20:27:03Z
 fix:shillinq:2063:7f06f10a	fixed: pre-lock approved runs exportable, fail-closed kept for stamped runs; suite 12241 OK; new head d268a2452040358e3b0929eeaf62c3703e0be84e	session-20261115T200041-8ff5af37	2026-11-15T20:27:14Z
 review:portaliq:1682:08c494c0	GREEN: dev lock bump; 16 inherited errors identical to development	session-20261115T195958-28cb0304	2026-11-15T20:27:26Z
+fix:shillinq:2766	fixed: sbom regenerated; new head 4d51285b	session-20261115T200000-e95b89c2	2026-11-15T20:27:38Z
