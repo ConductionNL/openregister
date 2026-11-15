@@ -14186,3 +14186,4 @@ fix:portaliq:1606:2cc8c923	failed: branch replaces the tree resolver's design th
 review:portaliq:1659:3bad2deb	GREEN: manifest copy change, node specs identical to baseline	session-20261115T174804-89f2739f	2026-11-15T18:32:25Z
 review:portaliq:1666:3a173dca	GREEN: manifest band layout	session-20261115T174747-978963d5	2026-11-15T18:32:43Z
 review:portaliq:1673:7d3109ad	GREEN: additive sort rank per its spec; unit green	session-20261115T174808-50b8ceec	2026-11-15T18:33:02Z
+fix:portaliq:1670:311e49a8	RED fixed: lint counts band placements, pushed 8ef03e9f; REVERIFY	session-20261115T174741-9deaa0be	2026-11-15T18:33:10Z
