@@ -3245,3 +3245,7 @@ planninq	1189	4de6df93a510c2bd4073d33b5b40384aee4a0bf4	SKIP	merge3	GATE UNMEASUR
 planninq	1190	40a075f6e4da72db51b3bd8190b41c1d919ea0d2	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.66 holds at 3.78
 planninq	1191	662066c3616af40f181eb44242e849bcd46fef62	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.66 holds at 3.78
 planninq	1192	35a4f84d5b4c1dc7aefd43184e48ce6bd5adf089	SKIP	merge3	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
+launchpad	1206	c13e34be7837ccbc7cf299e72ef6a0346683b8ba	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.65 holds at 3.67
+launchpad	1214	73daaaf8258420b7d53aa4b02e9014cb0c0c6e1d	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.65 holds at 3.68
+launchpad	1226	bf28a8ea762cd5e8c367aae0a501b3bc2d607537	SKIP	merge3	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
+launchpad	1230	bbc5350fbdf157327ebb69841d679e408accd7d8	RED	merge3	GATE RED floor: unit_size: 3.84 -> 3.82; unit_complexity: 4.73 -> 4.69
