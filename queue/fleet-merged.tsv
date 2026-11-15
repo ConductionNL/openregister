@@ -3214,3 +3214,18 @@ portaliq	2526	23381c38a9852d7fd881e488850456b14200a564	MERGED	merge3	GATE OK sbo
 portaliq	2527	3f10c6696fe4eda0dad28fb91c99d04a17c13772	SKIP	merge3	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
 learniq	2513	fd13b215eebf611a6e73fb75b234a8deddd0e6ee	RED	merge3	GATE RED absolute floor: learniq maintainability 3.98 after merge is below its floor 3.99
 humaniq	1133	8311ae6076d2e8595a0b091401c0314a9733c0ce	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.47 holds at 3.48
+pipelinq	3849	5ac26573b3b603f9deb787eae9f9575b6a38bbf0	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.16
+pipelinq	3851	ffb1ffc286675b021070f9523f319a4c87e9d0b1	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.16
+pipelinq	3853	9e930a6ba52fd011f201adac3f8a5d089f905008	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.16
+pipelinq	3854	ad0e0d6df910dc3218b65b035d74fd329828ba61	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.16
+pipelinq	3855	c26473c1d1a2462bbc47139019e63fab2025318c	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.16
+pipelinq	3856	a2ea6c932a50bc0b9ddb5b117cdef8e5af075d80	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.16
+pipelinq	3857	c37f3e5d34e182af0e8cc0d59ce12f3cd7e60f47	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.16
+pipelinq	3858	21670b6fc2a7fff02af36fa257513e2d087dbbb6	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.16
+pipelinq	3859	b27b0c41a0b6d827c9671a81ea76723566bf7217	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.16
+pipelinq	3860	6530405fda94fcd681447f65fb303e06e9d40028	SKIP	merge3	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
+pipelinq	3861	8f4d092886b07c32b39781e7b7d00c953726813f	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.16
+pipelinq	3862	780b1a7ec5607c9bc05198f0d6f7a034c2210443	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.16
+pipelinq	3863	82a98cede7a18ff1a170984f38420895a5fa6f1c	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.16
+pipelinq	3864	3f1b0fe32cccbe0226939925040165ae2e0046a3	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.16
+pipelinq	3865	868db80e7b21ca32e58fb793132b99160325b1c6	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.16
