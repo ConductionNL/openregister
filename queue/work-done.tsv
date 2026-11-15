@@ -12783,4 +12783,5 @@ verify:larpinq:1053:ae4df1ec	GREEN 1053 (phpunit 861 OK)	session-20261115T001758
 verify:dossiq:6554:322f5316	6554 GREEN, 6555 GREEN	session-20261115T011758-953fbe72	2026-11-15T02:03:39Z
 verify:portaliq:2508:474ffc06	CONFLICT 2508 (against development); 2527 skipped, head moved to 3f10c669	session-20261114T234941-bc8686af	2026-11-15T02:03:54Z
 cover:dossiq:069ee2d6madb6:c2349770	PR #6561: 2 tests for BespokeServiceRegistrar factories, lib/Service/Registrar 91.8->96.9%; suite 17562->17564, same 19 inherited failures; AdminSettings factory misses the packageTabs argument (noted in PR, left for a production fix)	session-20261115T005122-49ba1b99	2026-11-15T02:04:12Z
+fix:versioniq:724:56dbbd6b	merged development, resolved InstallerService conflict; new head 8f1df7b9, REVERIFY recorded	session-20261115T014828-6d62dfc6	2026-11-15T02:04:15Z
 cover:dossiq:069ee2d6madb6:js5794e9fc	PR #6560: +22 vitest tests (CaseEmailMatchSettings, ChecklistTemplatesTab, StufAuditLog); vitest 7098->7120, 2 inherited failures; src/views/settings 87.51->88.99% lines	session-20261115T012426-ca0c1432	2026-11-15T02:04:12Z
