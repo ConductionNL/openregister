@@ -3175,3 +3175,13 @@ dossiq	6536	ccaa8669f7e04679029cf9e6a69b5622b3f88eb8	SKIP	merge3	GATE UNMEASURED
 dossiq	6537	be95b62edc1336baa50a05013b6e20f282a39f9c	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.18
 dossiq	6538	55b1b3fa6891a90b5774b25bea000da8cec136bb	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.18
 dossiq	6539	2ac04ac8dda9b19099868184f8c345e51f388787	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.18
+shillinq	2977	b5f66d62103f785d805f7d84af96ba98b262f306	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.08
+shillinq	3051	5f90cb659e290d57a966a5ac50b5500ed079d109	SKIP	merge3	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
+shillinq	3081	fb778598c279cbd2a7809618b96213a43621c037	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.08
+shillinq	3082	d99431c677c3f23c53e48ad233d4b6c87101dd0a	SKIP	merge3	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
+shillinq	3083	6a01db375b066370087fcfa627d2cf9d1e2885b1	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.08
+shillinq	3085	b0345e7bce971113539622706d075b82e46ee14f	SKIP	merge3	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
+shillinq	3086	ba9bec7f853a4f4407ba5ab83efcef6b52db64dc	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.08
+shillinq	3089	a41b06594fbc3ff267279a2649351bc55ab1340d	SKIP	merge3	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
+shillinq	3090	fa4c2ee5038efeb38446c6c1f6cc3dc14769613b	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.08
+shillinq	3091	d57c47e36d62df4ab361f2805c9defa2133e4e2d	SKIP	merge3	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
