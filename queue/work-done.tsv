@@ -15375,3 +15375,4 @@ fix:learniq:2484:13aa1fe4	conflict resolved, pushed 32d62246, REVERIFY	session-2
 fix:thematiq:1124:c6a62f1f	no change needed: sbom current (dev-only bump), regen --check passes	session-20261115T213100-e547b457	2026-11-15T22:28:04Z
 fix:shillinq:2048:202ec0a0	stale	session-20261115T220025-8d429838	2026-11-15T22:28:21Z
 fix:hermiq:1578:816bbdb1	sbom regenerated after merging development; new head c7adfb00, REVERIFY	session-20261115T220032-9e5549d1	2026-11-15T22:28:19Z
+fix:hermiq:1735:ca8e4b6f	migrated new OR calls to main's option objects, 23 errors gone; ListenerRegistrarTest red on development too (inherited); new head ca2c7585	session-20261115T221310-15626e3a	2026-11-15T22:28:31Z
