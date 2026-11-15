@@ -13709,3 +13709,4 @@ review:portaliq:1854:60bd5395	BLOCK: superseded by development's build of the ch
 review:shillinq:2226:dcacc634	GREEN: pinia minor bump, vitest identical to development (1 inherited)	session-20261115T155904-a7df5bc0	2026-11-15T16:56:26Z
 review:shillinq:2092:e3baa4d4	CONFLICT: modify/delete with development; development specs import the deleted components	session-20261115T155911-14cd078d	2026-11-15T16:56:33Z
 review:shillinq:1899:c535cb99	CONFLICT: 11 files conflict with development	session-20261115T154258-dee2cc3d	2026-11-15T16:56:40Z
+review:shillinq:2070:036e98c2	CONFLICT: 11 files conflict with development	session-20261115T155903-abd003e3	2026-11-15T16:56:50Z
