@@ -17849,3 +17849,4 @@ merge:portaliq:2533:223d2a04	merge3 tree of 1 portaliq PRs: merged=1 red=0 fail=
 verify:versioniq:751:76039aa5	751 CONFLICT with development 175397de	session-20261116T211421-0d5107fb	2026-11-16T21:17:17Z
 merge:planninq:1206:b5eb42fa	merge3 tree of 1 planninq PRs: merged=0 red=1 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-16T21:17:45Z
 review:versioniq:691:57ab5aa2	691 already on development (57ab5aa2 in 175397de); no review needed	session-20261116T211421-0d5107fb	2026-11-16T21:17:50Z
+lane:arch5:shillinq:next-shillinq-r5	failed: permission: recording the APPROVE review of #3126 was refused (PR holds this worker's commits); PR #3126 opened, tree green (12345 tests, 0 new), GREEN verdict recorded for an independent merge task, lock released, r6 queued	session-20261116T203338-4b40ff15	2026-11-16T21:18:24Z
