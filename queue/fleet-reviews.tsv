@@ -298,3 +298,4 @@ stackiq	1991	31e2224c5b0f2e1105b1556e2ef7efc3d06f9474	APPROVE	worker-07	Standard
 learniq	2559	db446f193443038edcd27938ddb8aeef420ca005	REQUEST_CHANGES	worker-02	Quick; blocker: lockfile changed without regenerating sbom.cdx.json (bin/regen-sbom.sh); no other findings, tree unit suite and webpack build green
 hermiq	1133	6fd08d09db1ca26724058d9c83bec7eb477cfec5	APPROVE	worker-42	Quick; no blockers; dev-dep stylelint bump + sbom
 hermiq	1135	0d097997db1a2b53afae0ba11817aff5667f2f08	APPROVE	worker-42	Quick; no blockers; phpmd 3.0 runs against phpmd.xml (checked)
+keepiq	1792	af22b4ea9e8110c436553126d94f748ee8cd97ad	APPROVE	worker-37	Strict; no blockers (spec-coverage gate on promptSlot.js fixed in af22b4e); reprompt flag set via existing create/update access paths, copy inherits owner flag; vitest 3 HealthReportView failures inherited
