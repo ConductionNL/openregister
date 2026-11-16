@@ -14623,3 +14623,6 @@ integriq	2744	53deb98f7cdb1b6780f15f48e92d1825829d8513	RED	worker-47:merge-gate	
 learniq	1881	fffa1128975dd927184ddcba8f85d13b5bf86997	RED	worker-46:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
 integriq	2746	ff5f2df859dc0664166676b1e4a688ca9dcf5daf	RED	worker-47:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 integriq	3057	2fbd882db4b90477039aeb267982241373c712f0	RED	worker-47:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+integriq	2711	b46c56feef596d6aeef7e07e9c28ab9230f901df	REVERIFY	worker-47:merge	verdict sha is not the head: head is 6f3fdc050e0380cd7dfe4f122026010313ba5a23
+integriq	3564	34a4928487285db2a4a00c8db8821183b554f797	REVERIFY	worker-47:merge	verdict sha is not the head: head is da7832e5056025aaef7febc84c6cb79231c7c362
+integriq	3593	f34b8147e42798037f31af830b5	REVERIFY	worker-47:merge	verdict sha is not the head: head is 8dad155cd38b784d183d27dd74f05a69f3418116
