@@ -17101,6 +17101,7 @@ cover:openregister:7350e3efm9dc5:34f5c300	deferred: openregister has 188 open PR
 cover:buildiq:70b3e29em3841:390adfb9	deferred: buildiq has 56 open PRs	session-20261116T181429-b5d49a13	2026-11-16T18:23:49Z
 fix:hermiq:1756:6c5bc380	fixed the review blocker, pushed d3c836c0f3; hermiq merge lock held elsewhere, REVERIFY queued	session-20261116T173141-f87aaa9d	2026-11-16T18:23:47Z
 verify:filinq:2146:e3601822	filinq #2146 GREEN (6889 tests, 0 new failures)	session-20261116T182126-f8ae2f13	2026-11-16T18:24:07Z
+build:decidiq:one-consultation-schema	deferred: decidiq has 52 open PRs	session-20261116T173141-f87aaa9d	2026-11-16T18:24:36Z
 fix:decidiq:2222:c48b29b2	failed: inherited: origin/development alone measures 3.77 (range 3.77-3.81) below the decidiq floor 3.78; the PR touches only locks, sbom and a test spec, so every decidiq merge stays RED until development regains 0.01	session-20261116T172806-3ef5ead7	2026-11-16T18:24:44Z
 cover:decidiq:a5f973bbm0262:05630945	deferred: decidiq has 52 open PRs	session-20261116T173227-3f62e794	2026-11-16T18:24:56Z
 cover:decidiq:a5f973bbm0262:34763eb4	deferred: decidiq has 52 open PRs	session-20261116T173227-3f62e794	2026-11-16T18:25:02Z
@@ -17112,8 +17113,15 @@ cover:decidiq:a5f973bbm0262:c76ae287	deferred: decidiq has 53 open PRs	session-2
 build:decidiq:bodies-director-remuneration	already built: tasks 1-3 implemented on development (117-mandate-remuneration.json, MandateRemunerationRegisterTest, manifest widgets); only live Newman/Playwright halves left	session-20261116T182514-f3633b18	2026-11-16T18:27:02Z
 cover:stackiq:9ac19b3amdf03:007dc1d0	deferred: stackiq has 41 open PRs	session-20261116T181151-999832c6	2026-11-16T18:26:53Z
 review:larpinq:1050:d2d372bb	GREEN: per spec; phpunit 1016 OK, vitest 608 passed	session-20261116T174053-4a550291	2026-11-16T18:26:59Z
+cover:integriq:92114ab0m1db0:jsf3772e2d	deferred: integriq has 70 open PRs	session-20261116T174053-4a550291	2026-11-16T18:27:36Z
 cover:buildiq:70b3e29em3841:f91e7417	deferred: buildiq has 56 open PRs	session-20261116T181603-6d014baf	2026-11-16T18:27:22Z
 fix:shillinq:2997:37951348	merged development in, new head cd7db0f0; REVERIFY queued (merge lock held elsewhere)	session-20261116T182218-e80be6aa	2026-11-16T18:27:37Z
 build:decidiq:live-public-livestream	already done: every code task on development; only live/Newman/e2e checks open	session-20261116T173306-f68895a7	2026-11-16T18:27:42Z
+cover:buildiq:70b3e29em3841:05630945	deferred: buildiq has 56 open PRs	session-20261116T181603-6d014baf	2026-11-16T18:28:01Z
+cover:decidiq:a5f973bbm0262:59826f43	deferred: decidiq has 53 open PRs	session-20261116T173306-f68895a7	2026-11-16T18:28:07Z
 merge:learniq:1882:3f11e78d	cloud tree of 3 learniq PRs: merged=0 red=2 fail=0 skip=0; conflict 1, lint 0, red 0, moved 0, done 0	session-20261116T173256-6277a58c	2026-11-16T18:28:16Z
 cover:decidiq:a5f973bbm0262:6f346b68	deferred: decidiq has 53 open PRs	session-20261116T181151-999832c6	2026-11-16T18:28:20Z
+cover:integriq:92114ab0m1db0:js0023cfc7	deferred: integriq has 70 open PRs	session-20261116T174053-4a550291	2026-11-16T18:28:41Z
+cover:integriq:92114ab0m1db0:js0d617ff5	deferred: integriq has 70 open PRs	session-20261116T174053-4a550291	2026-11-16T18:28:51Z
+fix:learniq:2557:29ed293d	fixed conflict with #1881 (stub header aligned); new head 3fe186b0, REVERIFY queued (merge lock held)	session-20261116T181418-c3cd424d	2026-11-16T18:29:08Z
+cover:buildiq:70b3e29em3841:d528dcf0	deferred: buildiq has 56 open PRs	session-20261116T181603-6d014baf	2026-11-16T18:29:19Z
