@@ -18012,6 +18012,7 @@ cover:pipelinq:7f9dc8e6m3dbb:6b792e82	stacked on #3602 (open-PR budget 43>40): 9
 review:openregister:10598:d5ee9f8d	APPROVE: spec/tasks only, no code	session-20261116T215131-4f02c975	2026-11-16T21:53:49Z
 review:shillinq:1900:3f647361	GREEN: 12360 unit tests OK merged with development; phpmd.xml conflicts with development	session-20261116T214602-f1d20ac7	2026-11-16T21:54:10Z
 fix:versioniq:751:d4a52b7c	failed: permission: review+land of #751 refused; conflict fixed and pushed, new head c7c576b4, REVERIFY recorded	session-20261116T213150-99e9143b	2026-11-16T21:54:42Z
+fix:hermiq:1754:6096bd37	failed: floor drop now spans 6 ratings vs merge base 6f37064 (overall 4.24->4.18, dup, unit_size, complexity, interfacing 2.72->2.55, coupling 5.25->5.05); ~15 new computer-use units over bounds (ApprovalService preauthorise*, ComputerTargetService post/answer, ComputerActionRecord traceExtra, FacadeToolInvoker handleConfirmClassifiedInvocation, 3 clones); refactor exceeds fix cap	session-20261116T214541-d7f19722	2026-11-16T21:55:08Z
 verify:learniq:2570:da43ca7d	GREEN #2570 (6906 tests, no new failures)	session-20261116T214732-e08c2cfa	2026-11-16T21:55:03Z
 verify:thematiq:1686:75f2448e	GREEN 1686 (2881 tests, 0 new failures)	session-20261116T214739-8ff46d14	2026-11-16T21:55:29Z
 fix:shillinq:3055:3c4a7efd	conflict resolved, pushed a4da7e8d; suite green; merge lock held elsewhere, REVERIFY queued	session-20261116T214553-9fb39259	2026-11-16T21:55:53Z
