@@ -15391,3 +15391,5 @@ dossiq	6203	1eb428dc7eadc528a5c821ec9d2d5bbe7fbfdeac	GREEN	worker-20:review	test
 hermiq	1735	33b209c96970262e0c72fa1f23c3a9d9b43f77b9	CONFLICT	worker-23:merge	conflicts with development; files: openapi.json 
 hermiq	1811	782c0bc538cb4e1699c30b7695af21acaf5b647c	RED	worker-23:merge	adds unit failure(s) with the PRs before it in the tree: ApplicationRegistrationGoldenTest::testRegisterMakesTheRecordedRegistrations
 hermiq	1808	f027dd397f53ce3ca507c45c8a16a81f7731c5c5	REVERIFY	worker-24	merged development in, composer.lock conflict resolved (hydra-gates entry: kept development's published-time), sbom current; new head d3f1ce0e343f352081371b2c5012964c0ab5ef93, verify it
+hermiq	1810	797e940a32ce0bb7e10f537a5ddd9cfe9fc2e6e7	REVERIFY	worker-24	merged development in cleanly (the conflict was with another PR of that tree, not development); new head bb716464ad2c9c147f1b05c90a7cb52e4dd8bf74, verify it
+larpinq	1074	0a276a6c4b7c7f20a101b296be5e65620ae86a52	RED	merge3:merge-gate	GATE RED floor: duplication: 5.17 -> 5.15
