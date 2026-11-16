@@ -17214,6 +17214,7 @@ verify:stackiq:1996:ca667bfa	GREEN 1996	session-20261116T184852-c0730778	2026-11
 build:buildiq:apps-copy-app-and-page	already built: all code present on development; T03 stays unticked only for a live Playwright run	session-20261116T181429-b5d49a13	2026-11-16T18:52:03Z
 verify:buildiq:1672:96932e00	CONFLICT: #1672 conflicts with development in lib/Controller/ApplicationsController.php	session-20261116T184842-6fa5fc5d	2026-11-16T18:52:21Z
 build:integriq:dso-intake-through-an-integriq-connection	already done: every code task is on development (4.3 picker, account state and en/nl strings present); only 4.3's nightly e2e run is left, no PR	session-20261116T184909-5d2099f4	2026-11-16T18:52:35Z
+measure:integriq:20261116h18	php 95.29% js 94.89% at 2e38bb2b	session-20261116T173211-a3411be5	2026-11-16T18:52:39Z
 cover:keepiq:c967a31fmba5a:34763eb4	PR #1850: JwtAuthMiddleware +4 tests and coverage metadata; lib/Middleware/*.php already 224/224 lines; suite 5337->5341, 0 failures	session-20261116T182720-9950372f	2026-11-16T18:52:36Z
 cover:stackiq:9ac19b3amdf03:b5905f71	deferred: stackiq has 42 open PRs	session-20261116T184852-c0730778	2026-11-16T18:52:36Z
 cover:stackiq:9ac19b3amdf03:6f346b68	deferred: stackiq has 42 open PRs	session-20261116T184852-c0730778	2026-11-16T18:53:01Z
