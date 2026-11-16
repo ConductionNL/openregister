@@ -17029,3 +17029,4 @@ build:pipelinq:recurring-revenue-runrate-widget	build	pipelinq	development	recur
 build:pipelinq:segment-last-contact-signal	build	pipelinq	development	segment-last-contact-signal	change=segment-last-contact-signal;open=1	2026-11-16T15:32:42Z
 build:pipelinq:simple-contact-dashboard	build	pipelinq	development	simple-contact-dashboard	change=simple-contact-dashboard;open=1	2026-11-16T15:32:42Z
 build:pipelinq:simple-ticket-page	build	pipelinq	development	simple-ticket-page	change=simple-ticket-page;open=1	2026-11-16T15:32:42Z
+build:pipelinq:tickets-list-by-party	build	pipelinq	development	tickets-list-by-party	change=tickets-list-by-party;open=1	2026-11-16T15:33:27Z
