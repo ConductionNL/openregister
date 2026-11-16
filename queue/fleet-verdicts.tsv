@@ -15565,3 +15565,4 @@ stackiq	1941	60d39b71485af24164e25721dadbd1d91cce345c	GREEN	worker-27:review	bui
 integriq	3680	248bd1af2baa14391681f4c66b90da300878a2ca	GREEN	worker-21	unit 9603 run, baseline 9597 with 5 inherited failures, no new failures; build of connectors-job-board-multiposting per its specs
 buildiq	1686	4d547e0f99421e5d6e693cdb27f662615589c83b	CONFLICT	worker-54:merge	conflicts with development; files: lib/Service/AutomationCompilerService.php lib/Service/FormDestinationCheck.php 
 pipelinq	3602	8427cc8b1f95149c932f990de063e03492256be1	REVERIFY	worker-33	added DashboardRegistrarTest (tests only) via cover task; new head f0c9f69290529802c6d83c10eba17c43f2741853, verify it
+buildiq	1687	ebc1696ed3c091a2f8fb5735ab05c20e9485a26c	CONFLICT	worker-43	conflicts with development in AutomationCompilerService.php and FormDestinationCheck.php; baseline 3441 tests 0 failures; #1688 carries this branch with both resolved
