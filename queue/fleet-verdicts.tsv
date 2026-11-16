@@ -15907,6 +15907,7 @@ dossiq	6353	60a451ec2178d0c85abe001143ac09af72767f80	CONFLICT	worker-06	conflict
 filinq	2090	923c98e033f7a781763895ce2a83eca95d902a0f	CONFLICT	worker-23	conflict in lib/Settings/filinq_register.json against development; baseline 6960 tests OK
 hermiq	1578	c7adfb0008435059ecda8b9aae4cdc57df32832a	CONFLICT	worker-13	conflicts with development in composer.lock and sbom.cdx.json (dependency bump; regenerate lock + sbom on the merged base); no tests run
 filinq	2112	297a10b4a7f3e87e642ee92ec28d7c0d11dc63d6	CONFLICT	worker-14	conflicts with development in lib/Settings/filinq_register.json, filinq_mock_register.json, openapi.json; suite not run
+filinq	2105	2929a64c8a81ffd9acafec313ab0e61ceb37e4c8	CONFLICT	worker-10	conflicts with development in: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Settings/filinq_mock_register.json lib/Settings/filinq_register.json openapi.json tests/unit/Settings/DocumentProductionSchemaTest.php
 hermiq	1763	36a77c20f63e10ab109b4a9f18105bb92108a107	CONFLICT	worker-13	conflicts with development in appinfo/info.xml, routes.php, l10n (4), Notifier.php, AdminRoot.vue, admin-root.spec.js; no tests run
 filinq	2113	45e6b64f8a2ce720ba101fcdd409f41779c0cc63	CONFLICT	worker-38	conflicts with development (4cbdbe9e) in CHANGELOG.md, lib/Settings/filinq_register.json, tests/unit/Service/ConsentUpdateFlowTest.php; baseline unit 6960/0 fail; not tested
 humaniq	1139	181389a647ba547cc989314075d21fd374263a8b	CONFLICT	worker-45	conflicts with origin/development in l10n/en.js, l10n/nl.js; not run on tree
