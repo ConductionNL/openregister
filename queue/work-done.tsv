@@ -16059,3 +16059,4 @@ review:versioniq:725:bd0db7f7	GREEN: only inherited failures, vitest 3058 pass; 
 fix:stackiq:1931:8e3de7ae	fixed BLOCK: 7 icons registered, pushed 75fc2149; lock held elsewhere, REVERIFY queued	session-20261116T091834-4216158d	2026-11-16T09:29:36Z
 verify:pipelinq:3883:85bd794e	3883 GREEN; 3885 skipped (head moved to 6b8029c1)	session-20261116T091721-aaaa75bd	2026-11-16T09:30:17Z
 fix:filinq:2141:d980f90d	inherited/environmental: opensourcehealth drop is api.osv.dev unreachable, not the PR; no change, REVERIFY queued	session-20261116T092158-aeab11ae	2026-11-16T09:30:36Z
+lane:arch5:pipelinq:next-pipelinq	PR #3887 open (estimate 4.48-4.49 -> 4.50-4.51, goal met); merge lock held elsewhere, GREEN verdict queued for merge	session-20261116T091519-51eaae8b	2026-11-16T09:30:53Z
