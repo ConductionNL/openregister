@@ -16793,3 +16793,4 @@ fix:learniq:2551:87132cc4	no change needed: branch up to date with development, 
 fix:filinq:2123:f0a61512	no conflict with development (tree-only); merge lock busy, REVERIFY queued	session-20261116T171623-7de92e46	2026-11-16T17:21:01Z
 fix:buildiq:1608:53c9f80a	no change: conflict only with other tree PRs; REVERIFY queued	session-20261116T170557-1cef7e8d	2026-11-16T17:21:24Z
 fix:hermiq:1150:e594ec91	fixed: conflicts + spec tags, new head 9ed6a46b; REVERIFY queued (merge gate host unreachable, no end-to-end)	session-20261113T204551-fafe539e	2026-11-16T17:21:36Z
+fix:opencatalogi:2686:74309a26	merged development in, pushed 75f5b243; merge lock busy, REVERIFY queued	session-20261116T171623-7de92e46	2026-11-16T17:22:03Z
