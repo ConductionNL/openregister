@@ -18101,3 +18101,4 @@ review:hermiq:1781:bf818a9a	GREEN: spec-conform; 5342 phpunit + 1548 vitest pass
 fix:shillinq:3124:b3f4591a	fixed: scan test reads alias map; new head f16c855b, REVERIFY (merge lock held elsewhere)	session-20261116T220522-6d402fd2	2026-11-16T22:20:12Z
 fix:keepiq:1863:0a71ceb1	merged #1863 at 9a7c1da8e9b5ffccdf0f9aeda7a254cb3e64846c (conflict resolved: privileged_access.* whitelist carried into AuditMetadataPolicy)	session-20261116T214640-6a01c0c6	2026-11-16T22:20:30Z
 merge:thematiq:1686:75f2448e	cloud tree of 1 thematiq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T221021-11e5d550	2026-11-16T22:20:41Z
+fix:hermiq:1791:1747024b	no change needed: merges clean on development; conflict is with a sibling PR; REVERIFY queued (merge lock busy)	session-20261116T221523-34c05d70	2026-11-16T22:20:42Z
