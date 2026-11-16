@@ -16622,6 +16622,7 @@ verify:keepiq:1826:40f599b0	GREEN #1826: phpunit 5392/0 fail (baseline 5307/0), 
 verify:pipelinq:3883:3221b143	GREEN #3883: PHP 9000 OK = baseline, vitest 1 inherited fail, 0 new	session-20261116T150917-ab25a304	2026-11-16T15:29:23Z
 fix:integriq:3596:25615492	fixed: module_coupling floor restored (5.03), pushed 5124b212; REVERIFY queued	session-20261116T150935-ce9ba78b	2026-11-16T15:29:52Z
 fix:opencatalogi:2699:54be4094	unmeasured: api.osv.dev (floor fixed and pushed at 64dd55f6, APPROVE recorded, not landed)	session-20261116T150148-cf8c9aec	2026-11-16T15:30:27Z
+merge:hermiq:1193:deb03057	unmeasured: static.developer.overheid.nl (proxy 403); reviewed 6 IN APPROVE, 1307 RED sbom, 1736/1750 CONFLICT, 1754 MOVED	session-20261116T151429-748effed	2026-11-16T15:30:51Z
 verify:integriq:3671:f2d55882	GREEN #3671 (9535 tests, no new failures vs baseline 5)	session-20261116T152316-98784bf4	2026-11-16T15:30:50Z
 fix:learniq:1167:b9644fb4	fixed: learniq floor restored 3.98->3.99, pushed 2c125d9d; REVERIFY queued (not landed: self-approval recording is refused in this session)	session-20261116T145220-87e5504e	2026-11-16T15:31:00Z
 merge:buildiq:1583:f571cd76	unmeasured: static.developer.overheid.nl (api.osv.dev also refused by this session's proxy); 1652 GATE RED floor unit_complexity 3.32->3.30; reviews APPROVE recorded for 1583,1641,1652; tree adds 0 failures	session-20261116T150932-9cfa73ee	2026-11-16T15:31:12Z
