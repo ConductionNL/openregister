@@ -18444,3 +18444,4 @@ verify:learniq:2533:bc10459d	#2533 CONFLICT (learniq_register.json)	session-2026
 verify:learniq:2524:272b43ee	CONFLICT #2524	session-20261116T232519-f84cca9a	2026-11-16T23:49:52Z
 review:integriq:3638:6ec56940	RED: CatalogRegistrySeedGoldenTest::testCollectIsUnchanged (golden hash not updated for new catalog entry)	session-20261116T232911-3dffa1ae	2026-11-16T23:50:04Z
 verify:learniq:2484:01ffa98d	failed: learniq development not installable here (locked vimeo/psalm 7.5 needs php >=8.3.16, container php 8.3.6)	session-20261116T233921-33ab4c87	2026-11-16T23:50:37Z
+verify:integriq:3545:7fac08d5	CONFLICT: l10n/en.js,en.json,nl.js,nl.json vs development	session-20261116T232925-45c70e73	2026-11-16T23:50:32Z
