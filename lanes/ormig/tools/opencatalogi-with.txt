@@ -1,0 +1,12 @@
+tests/Unit/Controller/ThemesControllerTest.php find id,_extend,files,register,schema,_rbac,_multitenancy,_render,_audit
+tests/Unit/Service/CatalogiServiceTest.php find id,_extend,files,register,schema,_rbac,_multitenancy,_render,_audit
+tests/Unit/Service/PublicationServiceTest.php find id,_extend,files,register,schema,_rbac,_multitenancy,_render,_audit
+tests/Unit/Service/OoapiServiceTest.php find id,_extend,files,register,schema,_rbac,_multitenancy,_render,_audit
+tests/Unit/Service/EventServiceAutoPublishingTest.php find id,_extend,files,register,schema,_rbac,_multitenancy,_render,_audit
+tests/Unit/Service/Publication/PlooiDeliveryEdgeCasesTest.php find id,_extend,files,register,schema,_rbac,_multitenancy,_render,_audit
+tests/Unit/Service/Publication/PublicationRightsTest.php find id,_extend,files,register,schema,_rbac,_multitenancy,_render,_audit
+tests/Unit/Service/Publication/PublicationRightsOwnerTest.php find id,_extend,files,register,schema,_rbac,_multitenancy,_render,_audit
+tests/Unit/Service/DownloadServiceTest.php find id,_extend,files,register,schema,_rbac,_multitenancy,_render,_audit
+tests/Unit/Service/CatalogiServiceTest.php saveObject object,extend,register,schema,uuid,_rbac,_multitenancy,silent,_validation,uploadedFiles,currentUser,failIfExists
+tests/Unit/Tool/CMSToolTest.php saveObject object,extend,register,schema,uuid,_rbac,_multitenancy,silent,_validation,uploadedFiles,currentUser,failIfExists
+tests/Unit/Controller/ListingsControllerTest.php deleteObject uuid,register,schema,_rbac,_multitenancy,_retentionSweep,currentUser,permanent
