@@ -306,3 +306,5 @@ opencatalogi	1888	3c646648f528b3809be689a76e9dacb02ccb4ec4	APPROVE	worker-11	Tho
 opencatalogi	1893	c984555798eba603920305a449a1da12ff8fe5b7	APPROVE	worker-11	Quick; no blockers; openspec tasks.md ticks and archive moves only, no code
 opencatalogi	1894	81ec0aebb96ac0ea55f9e0fd74b189b396df7ab8	APPROVE	worker-11	Quick; no blockers; openspec tasks.md ticks and archive moves only, no code
 opencatalogi	2407	15ee026e9e5cc880f1ef5812343e2da79e65c3d1	APPROVE	worker-11	Quick; no blockers; lock-only refresh of shared packages plus regenerated sbom; tree suite adds no failures
+hermiq	1193	7d49a897eacda342108a8ffdf6d0ba0a3967dc67	APPROVE	worker-42	Quick; no blockers; dev-dep sass bump + sbom
+hermiq	1801	b8e31c29c0755366e44d0de7ddd7cee5f6d4be87	APPROVE	worker-42	Quick; no blockers; tests only, fail-closed assertions
