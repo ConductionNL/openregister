@@ -187,6 +187,10 @@ use OCA\OpenRegister\Kernel\Contracts\Value\SaveActor;
  * @uses \OCA\OpenRegister\Service\Object\StoredObjectUpdate
  * @uses \OCA\OpenRegister\Service\ProtectedCarryForward
  * @uses \OCA\OpenRegister\Service\RecordUpdate
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ClassificationFloorGuard
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ImageObjectForm
+ * @uses \OCA\OpenRegister\Service\Rbac\ExplicitReveal
  */
 final class SaveObjectUpdatePathTest extends TestCase {
 

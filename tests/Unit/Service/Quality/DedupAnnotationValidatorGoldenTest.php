@@ -51,7 +51,7 @@ class DedupAnnotationValidatorGoldenTest extends TestCase {
 			],
 			'unknown method' => [
 				$d(['matchRules' => [['field' => 'a', 'method' => 'fuzzy', 'weight' => 'x']]]),
-				[['code' => 'dedup.unknown-method', 'message' => 'Match rule #0 has unknown method "fuzzy" (expected one of: exact, normalized, levenshtein).']],
+				[['code' => 'dedup.unknown-method', 'message' => 'Match rule #0 has unknown method "fuzzy" (expected one of: exact, normalized, levenshtein, text).']],
 			],
 			'bad weight' => [
 				$d(['matchRules' => [['field' => 'a', 'method' => 'levenshtein', 'weight' => 'x']]]),

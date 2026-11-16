@@ -197,6 +197,24 @@ class FlowLocatorTest extends TestCase {
 		$this->assertSame('', $candidates[2]['since']);
 	}//end testAScheduledFlowCarriesWhenItWasLastSaved()
 
+	public function testAScheduledFlowCarriesItsTriggerTimezone(): void {
+		$zoned = $this->flow(['uuid' => 's1', 'trigger' => 'schedule', 'cron' => '0 7 * * *', 'nodes' => [
+			['id' => 't0', 'type' => 'openregister.trigger-manual', 'config' => ['timezone' => 'Asia/Tokyo']],
+			['id' => 't1', 'type' => 'openregister.trigger-schedule', 'config' => ['cron' => '0 7 * * *', 'runAs' => 'alice', 'timezone' => ' Europe/Amsterdam ']],
+		]]);
+		$plain = $this->flow(['uuid' => 's2', 'trigger' => 'schedule', 'cron' => '0 7 * * *', 'nodes' => [
+			['id' => 't1', 'type' => 'openregister.trigger-schedule', 'config' => ['cron' => '0 7 * * *', 'runAs' => 'alice']],
+		]]);
+
+		$mapper = $this->createMock(FlowMapper::class);
+		$mapper->method('findScheduled')->willReturn([$zoned, $plain]);
+
+		$candidates = $this->locator($mapper)->scheduledFlows();
+
+		$this->assertSame('Europe/Amsterdam', $candidates[0]['timezone']);
+		$this->assertSame('', $candidates[1]['timezone']);
+	}//end testAScheduledFlowCarriesItsTriggerTimezone()
+
 	public function testAnOwnerlessScheduledFlowIsNotDispatched(): void {
 		$mapper = $this->createMock(FlowMapper::class);
 		$mapper->method('findScheduled')->willReturn(

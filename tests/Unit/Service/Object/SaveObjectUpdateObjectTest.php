@@ -158,6 +158,8 @@ use Stringable;
  * @uses \OCA\OpenRegister\Service\ProtectedCarryForward
  * @uses \OCA\OpenRegister\Service\RecordUpdate
  * @uses \OCA\OpenRegister\Db\AuditTrail\AuditedChange
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ImageObjectForm
+ * @uses \OCA\OpenRegister\Service\Rbac\ExplicitReveal
  */
 final class SaveObjectUpdateObjectTest extends TestCase {
 

@@ -327,9 +327,35 @@ class TriggerNodesTest extends TestCase {
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testTheScheduleTriggerNamesItsVocabulary(): void {
-		$this->assertSame(['cron', 'runAs'], $this->schedule->configKeys());
+		$this->assertSame(['cron', 'runAs', 'timezone'], $this->schedule->configKeys());
 
 	}//end testTheScheduleTriggerNamesItsVocabulary()
+
+	/**
+	 * A schedule trigger may name the timezone its cron is read in, and a
+	 * timezone PHP does not know is refused on save, naming the value.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
+	 */
+	public function testAScheduleTriggerTimezoneMustBeAKnownIdentifier(): void {
+		$this->schedule->validateConfig(['cron' => '0 7 * * *', 'runAs' => 'alice', 'timezone' => 'Europe/Amsterdam']);
+		$this->schedule->validateConfig(['cron' => '0 7 * * *', 'runAs' => 'alice', 'timezone' => '']);
+		$this->addToAssertionCount(2);
+
+		foreach (['Europe/Amsterdan', 'CEST', '+02:00'] as $bad) {
+			try {
+				$this->schedule->validateConfig(['cron' => '0 7 * * *', 'runAs' => 'alice', 'timezone' => $bad]);
+				$this->fail(sprintf('The timezone "%s" was accepted.', $bad));
+			} catch (InvalidArgumentException $e) {
+				$this->assertStringContainsString($bad, $e->getMessage());
+			}
+		}
+
+		$keys = array_column($this->schedule->configForm(), 'required', 'key');
+		$this->assertFalse($keys['timezone']);
+	}//end testAScheduleTriggerTimezoneMustBeAKnownIdentifier()
 
 	/**
 	 * A manual trigger accepts exactly one key: where the person goes after the

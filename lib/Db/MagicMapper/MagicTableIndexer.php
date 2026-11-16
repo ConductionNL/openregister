@@ -60,17 +60,32 @@ final class MagicTableIndexer {
 	private const DROPPABLE_SUFFIXES = ['sort_idx', 'facet_idx', 'rel_idx', 'lower_idx'];
 
 	/**
+	 * The suffix of a trigram index on the folded text of a column.
+	 */
+	public const FOLDED_TRIGRAM_SUFFIX = 'foldgin_idx';
+
+	/**
+	 * Says whether `openregister_fold()` exists; built on first use.
+	 *
+	 * @var MagicUnaccentProbe|null
+	 */
+	private ?MagicUnaccentProbe $unaccent = null;
+
+	/**
 	 * Build the indexer.
 	 *
 	 * @param IDBConnection    $db     The connection.
 	 * @param LoggerInterface  $logger Receives the outcome.
 	 * @param MagicPgTrgmProbe $trgm   Says whether trigram indexes can be made.
+	 * @param MagicUnaccentProbe|null $unaccent Says whether the folded expression exists; asked of the connection when null.
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,
 		private readonly LoggerInterface $logger,
 		private readonly MagicPgTrgmProbe $trgm,
+		?MagicUnaccentProbe $unaccent = null,
 	) {
+		$this->unaccent = $unaccent;
 	}//end __construct()
 
 	/**
@@ -208,7 +223,67 @@ final class MagicTableIndexer {
 		if ($this->trgm->available() === true) {
 			$this->createNameTrigramIndex(run: $run);
 		}
+
+		if ($this->foldedIndexesPossible() === true) {
+			$this->createFoldedTrigramIndex(
+				run: $run,
+				name: "{$table}_name_" . self::FOLDED_TRIGRAM_SUFFIX,
+				quotedColumn: '_name'
+			);
+		}
 	}//end createPostgresIndexes()
+
+	/**
+	 * Whether trigram indexes on folded text can be made: PostgreSQL with
+	 * pg_trgm and the `openregister_fold()` wrapper. A failed check counts as no.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/search-accent-insensitive/specs/zoeken-filteren/spec.md#requirement-object-search-ignores-accents-where-the-database-supports-it
+	 */
+	private function foldedIndexesPossible(): bool {
+		if ($this->trgm->available() === false) {
+			return false;
+		}
+
+		try {
+			$this->unaccent ??= new MagicUnaccentProbe(db: $this->db, logger: $this->logger);
+			return $this->unaccent->available();
+		} catch (\Throwable $e) {
+			return false;
+		}
+	}//end foldedIndexesPossible()
+
+	/**
+	 * Create a pg_trgm GIN index on the folded text of a column.
+	 *
+	 * The expression is the one a folded search compares
+	 * ({@see SearchFolding::column()}), so the search keeps an index path. A
+	 * failure is logged and the pass goes on.
+	 *
+	 * @param MagicTableIndexRun $run          The index-creation pass.
+	 * @param string             $name         The index name.
+	 * @param string             $quotedColumn The quoted column.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/search-accent-insensitive/specs/zoeken-filteren/spec.md#requirement-object-search-ignores-accents-where-the-database-supports-it
+	 */
+	private function createFoldedTrigramIndex(MagicTableIndexRun $run, string $name, string $quotedColumn): void {
+		$expression = (new SearchFolding(platform: SearchFolding::PLATFORM_POSTGRES, folded: true))
+			->column(quotedColumn: $quotedColumn, nullSafe: false);
+
+		try {
+			$this->db->executeStatement(
+				"CREATE INDEX IF NOT EXISTS {$name} ON {$run->fullTableName} USING GIN (({$expression}) gin_trgm_ops)"
+			);
+		} catch (Exception $e) {
+			$this->logger->warning(
+				message: '[MagicMapper] Skipped folded trigram index',
+				context: ['tableName' => $run->tableName, 'index' => $name, 'error' => $e->getMessage()]
+			);
+		}
+	}//end createFoldedTrigramIndex()
 
 	/**
 	 * Create the baseline pg_trgm GIN index on the `_name` metadata column.
@@ -314,6 +389,17 @@ final class MagicTableIndexer {
 
 		if (($propertyConfig['searchable'] ?? false) === true && $this->trgm->available() === true) {
 			$this->createSearchableIndex(run: $run);
+		}
+
+		if (($propertyConfig['searchable'] ?? false) === true
+			&& $run->isPostgres === true
+			&& $this->foldedIndexesPossible() === true
+		) {
+			$this->createFoldedTrigramIndex(
+				run: $run,
+				name: $run->columnIndexName(suffix: self::FOLDED_TRIGRAM_SUFFIX),
+				quotedColumn: $run->quotedColumn
+			);
 		}
 
 		$this->createLowerOrderingIndex(run: $run, propertyConfig: $propertyConfig);
@@ -517,6 +603,7 @@ final class MagicTableIndexer {
 		self::SORT_SUFFIX => ['kind' => 'btree', 'flag' => 'indexed'],
 		'lower_idx' => ['kind' => 'btree', 'flag' => null],
 		'trgm_idx' => ['kind' => 'trigram', 'flag' => 'searchable'],
+		self::FOLDED_TRIGRAM_SUFFIX => ['kind' => 'trigram', 'flag' => 'searchable'],
 	];
 
 	/**

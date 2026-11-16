@@ -649,11 +649,24 @@ final class NotificationAnnotationValidator implements NotificationAnnotationVal
 	/**
 	 * Whether a `webhook` block lacks a valid absolute http or https `url`.
 	 *
+	 * A non-persistent block may name a `urlField` instead: the property of the
+	 * object that fired which holds the URL, checked when the rule fires. A
+	 * persistent block always needs a fixed `url`, because its Webhook entity is
+	 * provisioned once, before any object exists.
+	 *
 	 * @param mixed $hook The declared webhook block.
 	 *
 	 * @return bool
+	 *
+	 * @spec openspec/changes/webhook-url-from-object-field/specs/notificatie-engine/spec.md#requirement-a-webhook-rule-may-take-its-url-from-the-object-req-nrg-020
 	 */
 	private function isWebhookUrlMissing(mixed $hook): bool {
+		if (is_array($hook) === true && array_key_exists('urlField', $hook) === true && empty($hook['url']) === true) {
+			return is_string($hook['urlField']) === false
+				|| preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', trim($hook['urlField'])) !== 1
+				|| ($hook['persistent'] ?? false) === true;
+		}
+
 		if (is_array($hook) === false || empty($hook['url']) === true || is_string($hook['url']) === false
 			|| filter_var($hook['url'], FILTER_VALIDATE_URL) === false
 		) {

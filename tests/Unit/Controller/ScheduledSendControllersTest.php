@@ -41,6 +41,14 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Controller\ScheduledMessagesController
  * @uses   \OCA\OpenRegister\Notifications\Controller\Support\ReadableObject
  * @uses   \OCA\OpenRegister\Notifications\Service\Notification\ScheduledMessageRefusal
+ * @uses   \OCA\OpenRegister\Db\ObjectEntity
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses   \OCA\OpenRegister\Service\Integration\Providers\OutboundMessage
  */
 class ScheduledSendControllersTest extends TestCase {
 

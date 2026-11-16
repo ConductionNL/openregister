@@ -31,6 +31,7 @@ use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
@@ -38,6 +39,14 @@ use RuntimeException;
  * Tests for the collections route.
  */
 #[CoversClass(ObjectCollectionsController::class)]
+#[UsesClass(\OCA\OpenRegister\Db\ObjectEntity::class)]
+#[UsesClass(\OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults::class)]
+#[UsesClass(\OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions::class)]
+#[UsesClass(\OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions::class)]
+#[UsesClass(\OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget::class)]
+#[UsesClass(\OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions::class)]
+#[UsesClass(\OCA\OpenRegister\Kernel\Contracts\Value\SaveActor::class)]
+#[UsesClass(\OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy::class)]
 class ObjectCollectionsControllerTest extends TestCase {
 
 	/**

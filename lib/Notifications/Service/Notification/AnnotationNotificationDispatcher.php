@@ -1807,21 +1807,35 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	/**
 	 * POST the firing to a declared, non-persistent webhook with a valid URL.
 	 *
-	 * The URL must be http or https. The call goes through Nextcloud's HTTP client,
-	 * which pins the address it resolves and refuses local and private addresses at
-	 * connect time, so the address checked is the address called; redirects are not
-	 * followed.
+	 * The URL is the rule's `webhook.url`, or, when the rule names a
+	 * `webhook.urlField`, the value of that property on the object that fired, so
+	 * each object can carry its own callback. The URL must be http or https. The
+	 * call goes through Nextcloud's HTTP client, which pins the address it
+	 * resolves and refuses local and private addresses at connect time, so the
+	 * address checked is the address called; redirects are not followed.
 	 *
 	 * @param array<string, mixed> $hook   The rule's `webhook` block.
 	 * @param RuleFiring           $firing The rule, the object, its recipients and the default-locale subject.
 	 *
 	 * @return string|null Why the call did not land, or null when it did.
+	 *
+	 * @spec openspec/changes/webhook-url-from-object-field/specs/notificatie-engine/spec.md#requirement-a-webhook-rule-may-take-its-url-from-the-object-req-nrg-020
 	 */
 	private function postWebhook(array $hook, RuleFiring $firing): ?string {
-		$url = (string)($hook['url'] ?? '');
+		$url = $this->webhookUrl(hook: $hook, firing: $firing);
 		if ($url === '' || filter_var($url, FILTER_VALIDATE_URL) === false) {
-			return 'webhook url missing or malformed';
+			$reason = 'webhook url missing or malformed';
+			if ($this->webhookUrlField(hook: $hook) !== '') {
+				$reason = sprintf('webhook url field %s missing or malformed on the object', $this->webhookUrlField(hook: $hook));
+				$this->logger->info(
+					sprintf('[AnnotationNotificationDispatcher] rule %s: %s, nothing sent', $firing->ruleId, $reason)
+				);
+			}
+
+			return $reason;
 		}
+
+		$hook['url'] = $url;
 
 		$scheme = strtolower((string)parse_url($url, PHP_URL_SCHEME));
 		if ($scheme !== 'http' && $scheme !== 'https') {
@@ -1830,6 +1844,48 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 
 		return $this->sendWebhook(hook: $hook, options: $this->webhookOptions(hook: $hook, firing: $firing));
 	}//end postWebhook()
+
+	/**
+	 * The URL a webhook call goes to: the object's `webhook.urlField` property
+	 * when the rule names one, else the rule's own `webhook.url`.
+	 *
+	 * @param array<string, mixed> $hook   The rule's `webhook` block.
+	 * @param RuleFiring           $firing The rule and the object that fired.
+	 *
+	 * @return string The URL (the object's value trimmed); '' when there is none.
+	 *
+	 * @spec openspec/changes/webhook-url-from-object-field/specs/notificatie-engine/spec.md#requirement-a-webhook-rule-may-take-its-url-from-the-object-req-nrg-020
+	 */
+	private function webhookUrl(array $hook, RuleFiring $firing): string {
+		$field = $this->webhookUrlField(hook: $hook);
+		if ($field === '') {
+			return (string)($hook['url'] ?? '');
+		}
+
+		$data  = ($firing->object->getObject() ?? []);
+		$value = ($data[$field] ?? null);
+		if (is_string($value) === false) {
+			return '';
+		}
+
+		return trim($value);
+	}//end webhookUrl()
+
+	/**
+	 * The object property a rule takes its webhook URL from, or ''.
+	 *
+	 * @param array<string, mixed> $hook The rule's `webhook` block.
+	 *
+	 * @return string The property name.
+	 */
+	private function webhookUrlField(array $hook): string {
+		$field = ($hook['urlField'] ?? null);
+		if (is_string($field) === false) {
+			return '';
+		}
+
+		return trim($field);
+	}//end webhookUrlField()
 
 	/**
 	 * The request options of a webhook call: the JSON payload, the headers and the timeout.

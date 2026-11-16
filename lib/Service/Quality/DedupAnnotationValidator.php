@@ -39,7 +39,7 @@ class DedupAnnotationValidator implements DedupAnnotationValidatorInterface {
 	 *
 	 * @var array<int, string>
 	 */
-	private const VALID_METHODS = ['exact', 'normalized', 'levenshtein'];
+	private const VALID_METHODS = ['exact', 'normalized', 'levenshtein', 'text'];
 
 	/**
 	 * Recognised `onCreate` policies.
@@ -247,6 +247,11 @@ class DedupAnnotationValidator implements DedupAnnotationValidatorInterface {
 	private function validateRule($rule, int $index): array {
 		if (is_array($rule) === false) {
 			return [['code' => 'dedup.rule-not-object', 'message' => sprintf('Match rule #%d must be an object.', $index)]];
+		}
+
+		// A text rule compares the objects' attached files and takes no field (REQ-NDT-003).
+		if (($rule['method'] ?? null) === 'text') {
+			return $this->weightErrors(rule: $rule, index: $index);
 		}
 
 		if ((string)($rule['field'] ?? '') === '') {

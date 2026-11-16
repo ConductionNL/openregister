@@ -1,65 +1,87 @@
 <?php
 
 /**
- * DeploymentOrigin: where a configuration deployment came from, and the state it records.
+ * Unit tests for DeploymentOrigin: where a deployment came from and the state it records.
  *
- * @category Test
+ * @category Tests
  * @package  OCA\OpenRegister\Tests\Unit\Service\ConfigurationDeployment
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
+ * @link https://conduction.nl
+ *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- *
- * @link https://www.OpenRegister.app
- *
- * @spec openspec/changes/unit-test-coverage/tasks.md
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Tests\Unit\Service\ConfigurationDeployment;
-
-// phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
-// phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
+namespace Unit\Service\ConfigurationDeployment;
 
 use OCA\OpenRegister\Db\ConfigurationDeployment;
 use OCA\OpenRegister\Db\ConfigurationDraftSet;
 use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentOrigin;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 
 /**
- * @covers \OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentOrigin
- * @uses   \OCA\OpenRegister\Db\ConfigurationDraftSet
+ * A deployment of an approved set names the set, its author and approver and
+ * is applied; a rollback names only the deployment it restores and its actor
+ * and is rolled back.
  */
+#[CoversClass(DeploymentOrigin::class)]
+#[UsesClass(ConfigurationDraftSet::class)]
 class DeploymentOriginTest extends TestCase {
 
-	public function testADraftSetDeploysAsAppliedWithItsAuthorAndApprover(): void {
+	/**
+	 * An approved set's deployment carries the set, its author and approver, and is applied.
+	 *
+	 * @return void
+	 */
+	public function testASetsDeploymentNamesTheSetItsAuthorAndApprover(): void {
 		$set = new ConfigurationDraftSet();
 		$set->setUuid('set-1');
 		$set->setCreatedBy('alice');
 		$set->setApprovedBy('bob');
 
-		$origin = DeploymentOrigin::ofSet($set);
+		$origin = DeploymentOrigin::ofSet(set: $set);
 
-		$this->assertSame(['set-1', 'alice', 'bob', null], [$origin->setUuid, $origin->author, $origin->approver, $origin->restoresUuid]);
-		$this->assertSame(ConfigurationDeployment::STATE_APPLIED, $origin->state());
-	}
+		$this->assertSame(
+			expected: ['set-1', 'alice', 'bob', null],
+			actual: [$origin->setUuid, $origin->author, $origin->approver, $origin->restoresUuid]
+		);
+		$this->assertSame(expected: ConfigurationDeployment::STATE_APPLIED, actual: $origin->state());
+		$this->assertSame(expected: 'applied', actual: $origin->state());
+	}//end testASetsDeploymentNamesTheSetItsAuthorAndApprover()
 
-	public function testADraftSetWithoutUuidDeploysUnderAnEmptyUuid(): void {
-		$origin = DeploymentOrigin::ofSet(new ConfigurationDraftSet());
+	/**
+	 * A set never approved keeps a null approver; a set without a uuid gives an empty one.
+	 *
+	 * @return void
+	 */
+	public function testAnUnapprovedSetKeepsANullApprover(): void {
+		$origin = DeploymentOrigin::ofSet(set: new ConfigurationDraftSet());
 
-		$this->assertSame('', $origin->setUuid);
-		$this->assertNull($origin->author);
-	}
+		$this->assertSame(expected: ['', null, null], actual: [$origin->setUuid, $origin->author, $origin->approver]);
+		$this->assertSame(expected: 'applied', actual: $origin->state());
+	}//end testAnUnapprovedSetKeepsANullApprover()
 
-	public function testARollbackRecordsTheRestoredDeploymentAndTheActorOnly(): void {
-		$origin = DeploymentOrigin::rollbackOf('dep-7', 'carol');
+	/**
+	 * A rollback names the deployment it restores and who rolled back, no set, and is rolled back.
+	 *
+	 * @return void
+	 */
+	public function testARollbackNamesWhatItRestores(): void {
+		$origin = DeploymentOrigin::rollbackOf(restoresUuid: 'dep-7', actor: 'carol');
 
-		$this->assertSame([null, 'carol', null, 'dep-7'], [$origin->setUuid, $origin->author, $origin->approver, $origin->restoresUuid]);
-		$this->assertSame(ConfigurationDeployment::STATE_ROLLED_BACK, $origin->state());
-		$this->assertNull(DeploymentOrigin::rollbackOf('dep-7', null)->author);
-	}
-}
+		$this->assertSame(
+			expected: [null, 'carol', null, 'dep-7'],
+			actual: [$origin->setUuid, $origin->author, $origin->approver, $origin->restoresUuid]
+		);
+		$this->assertSame(expected: ConfigurationDeployment::STATE_ROLLED_BACK, actual: $origin->state());
+		$this->assertSame(expected: 'rolled-back', actual: DeploymentOrigin::rollbackOf(restoresUuid: 'dep-7', actor: null)->state());
+	}//end testARollbackNamesWhatItRestores()
+}//end class

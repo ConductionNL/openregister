@@ -56,6 +56,10 @@ use OCP\AppFramework\Db\Entity;
  * @method void setAppliedAt(?DateTime $appliedAt)
  * @method DateTime|null getCreated()
  * @method void setCreated(?DateTime $created)
+ * @method array|null getSource()
+ * @method void setSource(?array $source)
+ * @method string|null getOutcome()
+ * @method void setOutcome(?string $outcome)
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
@@ -88,6 +92,20 @@ class ImportPreviewRow extends Entity implements JsonSerializable {
 	 * @var string
 	 */
 	public const DECISION_REFUSE = 'refuse';
+
+	/**
+	 * A commit wrote the row.
+	 *
+	 * @var string
+	 */
+	public const OUTCOME_WRITTEN = 'written';
+
+	/**
+	 * A commit tried to write the row and the write failed.
+	 *
+	 * @var string
+	 */
+	public const OUTCOME_FAILED = 'failed';
 
 	/**
 	 * Every decision a row may carry.
@@ -165,6 +183,21 @@ class ImportPreviewRow extends Entity implements JsonSerializable {
 	protected ?DateTime $created = null;
 
 	/**
+	 * The row as it was submitted, before mapping, so a failed row can be
+	 * exported in that shape and loaded again (REQ-RCN-006).
+	 *
+	 * @var array<string, mixed>|null
+	 */
+	protected ?array $source = null;
+
+	/**
+	 * `written` or `failed` once a commit wrote the row or failed to; null before.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $outcome = null;
+
+	/**
 	 * Constructor — registers field types for hydration.
 	 */
 	public function __construct() {
@@ -177,6 +210,8 @@ class ImportPreviewRow extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'payload', type: 'json');
 		$this->addType(fieldName: 'appliedAt', type: 'datetime');
 		$this->addType(fieldName: 'created', type: 'datetime');
+		$this->addType(fieldName: 'source', type: 'json');
+		$this->addType(fieldName: 'outcome', type: 'string');
 
 	}//end __construct()
 
@@ -190,6 +225,17 @@ class ImportPreviewRow extends Entity implements JsonSerializable {
 	}//end writes()
 
 	/**
+	 * Whether the row did not land: skipped, refused, or a write that failed.
+	 *
+	 * @return bool True for a row an operator has to correct and load again.
+	 *
+	 * @spec openspec/changes/runs-recorded-and-causes-named/specs/data-import-export/spec.md#requirement-the-failed-rows-of-an-import-are-exportable-and-retryable-req-rcn-006
+	 */
+	public function failed(): bool {
+		return $this->writes() === false || $this->outcome === self::OUTCOME_FAILED;
+	}//end failed()
+
+	/**
 	 * JSON serialisation.
 	 *
 	 * @return array<string, mixed> The serialised row.
@@ -200,6 +246,7 @@ class ImportPreviewRow extends Entity implements JsonSerializable {
 			[
 				'candidates' => ($this->candidates ?? []),
 				'payload' => ($this->payload ?? []),
+				'source' => ($this->source ?? []),
 			]
 		);
 	}//end jsonSerialize()

@@ -51,6 +51,7 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\CauseFrame
  * @uses \OCA\OpenRegister\Service\Reference\ObjectPreviewSources
  * @uses \OCA\OpenRegister\Service\WriteCause
+ * @uses   \OCA\OpenRegister\Service\Reference\ReferenceCardDeclaration
  */
 class ObjectPreviewFormatterBuildReferenceGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/object-preview-build-reference-golden.json';

@@ -38,6 +38,16 @@ use RuntimeException;
  * a validator that throws never blocks generation.
  *
  * @covers \OCA\OpenRegister\Service\OasService
+ * @uses \OCA\OpenRegister\Service\Oas\NlGovConformance
+ * @uses \OCA\OpenRegister\Service\Oas\NlGovDocumentRules
+ * @uses \OCA\OpenRegister\Service\Oas\NlGovFindings
+ * @uses \OCA\OpenRegister\Service\Oas\NlGovDateTimeRules
+ * @uses \OCA\OpenRegister\Service\Oas\NlGovErrorRules
+ * @uses \OCA\OpenRegister\Service\Oas\NlGovDocumentInfoRules
+ * @uses \OCA\OpenRegister\Service\Oas\NlGovMarker
+ * @uses \OCA\OpenRegister\Service\Oas\NlGovRuleCatalogue
+ * @uses \OCA\OpenRegister\Formats\SemVerFormat
+ * @uses \OCA\OpenRegister\Formats\FormatFactory
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Register\RegisterSchemaIds
  * @uses \OCA\OpenRegister\Db\Schema

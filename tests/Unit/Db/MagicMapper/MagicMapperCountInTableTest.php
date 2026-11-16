@@ -23,6 +23,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
 use OCA\OpenRegister\Db\MagicMapper\TableSearch;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Exception\ConditionGroupException;
 use OCA\OpenRegister\Exception\EncryptedFieldFilterException;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
@@ -108,6 +109,26 @@ class MagicMapperCountInTableTest extends TestCase {
 		$this->expectException(EncryptedFieldFilterException::class);
 		$this->mapper(answer: new EncryptedFieldFilterException('enc'))->countObjectsInRegisterSchemaTable([], $register, $schema);
 	}//end testACountOnAnEncryptedFieldFailsLoud()
+
+	/**
+	 * A refused `_where` tree reaches the caller (and its 400 with the node
+	 * path) instead of degrading into a count of 0.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/list-query-condition-groups/specs/zoeken-filteren/spec.md
+	 */
+	public function testACountWithARefusedConditionTreeFailsLoud(): void {
+		[$register, $schema] = $this->table();
+
+		try {
+			$this->mapper(answer: new ConditionGroupException(message: 'The schema does not declare the property colour', path: '$.children[1]'))
+				->countObjectsInRegisterSchemaTable(['_where' => '{}'], $register, $schema);
+			$this->fail('A refused condition tree must not become a count.');
+		} catch (ConditionGroupException $e) {
+			$this->assertSame('$.children[1]', $e->toResponseBody()['path']);
+		}
+	}//end testACountWithARefusedConditionTreeFailsLoud()
 
 	public function testACountOrFailAnswersTheNumberOrRefuses(): void {
 		[$register, $schema] = $this->table();

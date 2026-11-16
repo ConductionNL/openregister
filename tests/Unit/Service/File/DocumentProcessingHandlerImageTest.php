@@ -67,6 +67,9 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Db\TypedFieldsJson
  *
  * @spec openspec/changes/anonymisation-image-seam/specs/image-anonymisation/spec.md#requirement-every-redaction-path-reaches-the-seam-req-ais-004
+ * @uses   \OCA\OpenRegister\Db\EntityRelation
+ * @uses   \OCA\OpenRegister\Db\GdprEntity
+ * @uses   \OCA\OpenRegister\Service\File\OfficeMediaBurner
  */
 final class DocumentProcessingHandlerImageTest extends TestCase {
 

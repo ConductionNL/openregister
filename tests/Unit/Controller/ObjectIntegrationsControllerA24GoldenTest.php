@@ -58,6 +58,15 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\Integration\IntegrationRegistry
  * @uses \OCA\OpenRegister\Service\Integration\PaginatedResult
  * @uses \OCA\OpenRegister\Service\Integration\PaginatedResults
+ * @uses   \OCA\OpenRegister\Kernel\Compat\ImplementationForm
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses   \OCA\OpenRegister\Service\Integration\IntegrationProviderInvoker
+ * @uses   \OCA\OpenRegister\Service\Object\PermissionCheckOptions
  */
 final class ObjectIntegrationsControllerA24GoldenTest extends TestCase {
 

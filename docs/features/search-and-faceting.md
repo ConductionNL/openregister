@@ -12,7 +12,7 @@ Triggered via the `_search` query parameter:
 
 - Searches across all `type: string` properties in the schema's dynamic table
 - Always includes metadata fields: `_name`, `_description`, `_summary`
-- Case-insensitive matching via `ILIKE` in the database backend
+- Case-insensitive matching via `ILIKE` in the database backend, and accent-insensitive where the database can fold accents (see [Accents](#accents-_accents))
 - String properties with `format: date`, `format: date-time`, or `format: time` are excluded from text search
 - PostgreSQL `pg_trgm` extension enables fuzzy matching when installed
 - Solr and Elasticsearch backends use their native query parsers
@@ -20,6 +20,33 @@ Triggered via the `_search` query parameter:
 ```
 GET /api/objects/meldingen-register/meldingen?_search=geluidsoverlast
 ```
+
+### Accents (`_accents`)
+
+A search ignores accents as well as case: `cafe` finds "Café de Flore" and `reunie` finds "Reünie oud-raadsleden". This applies to the plain search, to every term of a boolean search, to fuzzy matching and to the search behind facet counts, so a facet count still equals the number of results behind it.
+
+How the database does it:
+
+- **PostgreSQL** compares through `openregister_fold()`, a wrapper over the `unaccent` extension that a migration creates. Where the extension cannot be created (it needs the right to create a trusted extension, the default for a database owner from PostgreSQL 13), accent-insensitive search is unavailable and searches compare as before.
+- **MariaDB and MySQL** compare through the accent-insensitive `utf8mb4_unicode_ci` collation; nothing needs installing, so it is always available.
+- Other databases cannot fold accents.
+
+An administrator sees and switches it in the **Search Configuration** section of the Open Register admin settings, or through the API:
+
+```
+GET   /api/settings/search-backend        → "accentInsensitive": {"enabled": true, "available": true, "reason": ""}
+PATCH /api/settings/search-backend        {"accentInsensitive": false}
+```
+
+It is on by default wherever it is available. Switching it on where it is unavailable answers 400 with the reason, for example "the unaccent extension could not be created". Switching it off makes every search compare accents exactly again.
+
+One search can ask for the exact comparison with `_accents=exact`, whatever the setting:
+
+```
+GET /api/objects/{register}/{schema}?_search=cafe&_accents=exact
+```
+
+Any other `_accents` value is ignored.
 
 ### Widening to attached-file body text (`_content_search`)
 

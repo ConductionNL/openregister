@@ -529,12 +529,35 @@ class AuditTrailController extends Controller {
 			options: new TrailPageOptions(
 				limit: (int)$params['limit'],
 				cursor: $cursor,
-				query: $this->readableLister->query(filters: ($params['filters'] ?? []), search: ($params['search'] ?? null))
+				query: $this->readableLister->query(filters: $this->readableFilters(filters: ($params['filters'] ?? [])), search: ($params['search'] ?? null))
 			)
 		);
 
 		return new JSONResponse(data: $page);
 	}//end readable()
+
+	/**
+	 * The scoped list's column filters, with `register` when it names a register id.
+	 *
+	 * The shared parameter reader leaves `register` out of the column filters,
+	 * so an app that lists the entries of its own register passes its register
+	 * id here. Anything other than a whole number is ignored, as before. It
+	 * narrows the list only: every row still passes the caller's read scope.
+	 *
+	 * @param array<string, mixed> $filters The column filters from the request.
+	 *
+	 * @return array<string, mixed> The filters, with the register id when one was given.
+	 *
+	 * @spec openspec/changes/record-history-on-every-detail-page/specs/audit-trail-immutable/spec.md#requirement-the-readable-audit-list-can-be-narrowed-to-one-register
+	 */
+	private function readableFilters(array $filters): array {
+		$register = $this->request->getParam(key: 'register');
+		if (is_scalar($register) === true && ctype_digit((string)$register) === true) {
+			$filters['register'] = (int)$register;
+		}
+
+		return $filters;
+	}//end readableFilters()
 
 	/**
 	 * Get lifetime audit trail counts, optionally scoped to a register/schema

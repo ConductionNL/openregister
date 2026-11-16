@@ -40,6 +40,7 @@ class ContractIsALeafTest extends TestCase {
 	private const PUBLISHED = [
 		'EmailLinkReaderInterface.php',
 		'ObjectEntityInterface.php',
+		'ObjectFileReaderInterface.php',
 		'ObjectServiceInterface.php',
 		'RegisterSlugResolution.php',
 		'RegisterSlugResolverInterface.php',
