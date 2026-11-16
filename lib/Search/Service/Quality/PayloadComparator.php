@@ -146,6 +146,9 @@ class PayloadComparator {
 	 *
 	 * @param array{0: array<string, mixed>, 1: array<string, mixed>} $payloads The two payloads.
 	 * @param array<int, array<string, mixed>>                        $rules    Match rules.
+	 * @param list<array{field: string, method: string, weight: float, similarity: float}> $prescored Rules scored
+	 *                                                                                                elsewhere (the `text` rule, which
+	 *                                                                                                reads files, not payloads).
 	 *
 	 * @return array{
 	 *   score: float,
@@ -154,11 +157,13 @@ class PayloadComparator {
 	 * }
 	 *
 	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-candidate-can-be-checked-against-the-stored-objects-before-it-is-saved
+	 * @spec openspec/changes/near-duplicate-documents-by-text/specs/duplicate-detection/spec.md#requirement-a-schema-can-declare-text-similarity-as-a-match-rule-req-ndt-003
 	 */
-	public function score(array $payloads, array $rules): array {
+	public function score(array $payloads, array $rules, array $prescored=[]): array {
 		$weightedSum = 0.0;
 		$totalWeight = 0.0;
 		$scoredRules = array_values(array_filter(array_map(fn (array $rule): ?array => $this->scoreRule(rule: $rule, payloads: $payloads), $rules)));
+		array_push($scoredRules, ...$prescored);
 		foreach ($scoredRules as $scored) {
 			$weightedSum += ($scored['similarity'] * $scored['weight']);
 			$totalWeight += $scored['weight'];
@@ -206,6 +211,11 @@ class PayloadComparator {
 	private function scoreRule(array $rule, array $payloads): ?array {
 		$field = (string) ($rule['field'] ?? '');
 		$method = (string) ($rule['method'] ?? '');
+		if ($method === ObjectTextSimilarity::METHOD) {
+			// Compares attached files, not payload values: scored by the caller.
+			return null;
+		}
+
 		$weight = $this->ruleWeight(rule: $rule);
 		$valueA = $this->valueAt(data: $payloads[0], path: $field);
 		$valueB = $this->valueAt(data: $payloads[1], path: $field);

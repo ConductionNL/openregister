@@ -164,6 +164,10 @@ use OCA\OpenRegister\Kernel\Contracts\Value\SaveActor;
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\SelfSubmission
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\SlugRequest
  * @uses \OCA\OpenRegister\Service\Object\TranslationScope
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ClassificationFloorGuard
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ImageObjectForm
+ * @uses \OCA\OpenRegister\Service\Rbac\ExplicitReveal
  */
 final class SaveObjectCreateObjectTest extends TestCase {
 

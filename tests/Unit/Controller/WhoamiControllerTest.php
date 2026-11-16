@@ -47,6 +47,8 @@ use ReflectionMethod;
 #[UsesClass(TokenGrantSource::class)]
 #[UsesClass(TokenGrantReach::class)]
 #[UsesClass(TokenGrantTerms::class)]
+#[UsesClass(\OCA\OpenRegister\Middleware\Support\ApiPathAliases::class)]
+#[UsesClass(\OCA\OpenRegister\Middleware\Support\StandardProtocolPaths::class)]
 class WhoamiControllerTest extends TestCase {
 
 	private TokenGrantSource $grants;

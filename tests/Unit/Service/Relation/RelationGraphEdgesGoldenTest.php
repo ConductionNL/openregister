@@ -47,6 +47,7 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Service\Relation\RelationGraphShapes
  * @uses \OCA\OpenRegister\Service\Relation\RelationGraphSources
  * @uses \OCA\OpenRegister\Service\Relation\RelationValueReader
+ * @uses   \OCA\OpenRegister\Db\HydrationKey
  */
 class RelationGraphEdgesGoldenTest extends TestCase {
 

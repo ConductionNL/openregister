@@ -15,7 +15,11 @@
 
 ## 4. Page
 
-- [ ] 4.1 Add the `connection-report` header action to the `connections` page in `src/manifest.json`, the `openConnectionReportDialog` handler in `src/customComponents.js`, and `src/dialogs/connections/ConnectionReportDialog.vue` rendered from `src/dialogs/Dialogs.vue`, with create, change, switch off and "Send a test now". Verify: `src/tests/connections-page.spec.js` extended for the new action and handler; `src/dialogs/connections/ConnectionReportDialog.spec.js` for the recipients choice and the quiet-day option.
+- [x] 4.1 Add the `connection-report` header action to the `connections` page in `src/manifest.json`, the `openConnectionReportDialog` handler in `src/customComponents.js`, and `src/dialogs/connections/ConnectionReportDialog.vue` rendered from `src/dialogs/Dialogs.vue`, with create, change, switch off and "Send a test now". Verify: `src/tests/connections-page.spec.js` extended for the new action and handler; `src/dialogs/connections/ConnectionReportDialog.spec.js` for the recipients choice and the quiet-day option.
+  - Done: the header action (icon `EmailOutline`, registered in `src/icons.js`), `openConnectionReportDialog`
+    setting the `connectionReport` dialog in the navigation store, and the dialog with create (`POST`), change
+    (`PUT`), switch off (`DELETE`) and "Send a test now" (`run-now`). "All administrators" stores the `@admins`
+    token; the hour picks the daily `scheduleHour`. Nine new UI strings are in all 37 frontend bundles.
 
 ## 5. Docs and end-to-end test
 
@@ -38,5 +42,5 @@
 - 3.1: skipped administrators and the overflow are named in `lastError` of a successful run, for the same reason.
 - The read of synchronizations and sources is a bounded list (1,000 each) rather than a fetch by id.
 - Fixed sentences go through `IL10N`; the backend catalogue (`l10n/*.json`) gets no new keys in this build.
-- 4.1, 5.1 and 5.2 are left open: the Connections page action and dialog, the user doc, and the Playwright
-  spec are not built here.
+- 4.1 and 5.1 were built in later passes; 5.2, the Playwright spec, is left open: it needs integriq in the CI
+  instance and runs in the e2e project, not in a unit build.

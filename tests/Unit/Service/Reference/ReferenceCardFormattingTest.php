@@ -50,6 +50,9 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\Reference\ReferenceCardDeclaration
  * @uses \OCA\OpenRegister\Service\WriteCause
  * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses   \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses   \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses   \OCA\OpenRegister\Service\CauseFrame
  */
 final class ReferenceCardFormattingTest extends TestCase {
 

@@ -66,6 +66,8 @@ use Throwable;
  * @uses \OCA\OpenRegister\Service\Rbac\ProvenanceOptions
  * @uses \OCA\OpenRegister\Service\Rbac\RoleActionMap
  * @uses \OCA\OpenRegister\Service\Rbac\StagedDenial
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation
+ * @uses \OCA\OpenRegister\Service\Rbac\UndecidablePosture
  */
 class PermissionHandlerCallerDecisionsGoldenTest extends TestCase {
 

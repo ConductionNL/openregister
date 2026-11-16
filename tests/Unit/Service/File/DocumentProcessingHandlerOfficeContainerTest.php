@@ -56,6 +56,9 @@ use ZipArchive;
  * @uses   \OCA\OpenRegister\Files\Service\File\SanitizationStructureCounts
  * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\DocumentAnonymisationOptions
  * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\WordReplacementRequest
+ * @uses   \OCA\OpenRegister\Files\Service\File\MaskForm
+ * @uses   \OCA\OpenRegister\Files\Service\File\PlaceholderText
+ * @uses   \OCA\OpenRegister\Service\File\OfficeMediaBurner
  */
 class DocumentProcessingHandlerOfficeContainerTest extends TestCase {
 

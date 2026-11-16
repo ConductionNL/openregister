@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Files\Service\TextExtraction;
 
 use OCA\OpenRegister\Files\Db\FileMapperInterface;
 use OCA\OpenRegister\Files\Db\MailHeaderMapper;
+use OCA\OpenRegister\Service\Quality\TextSignatureStore;
 use OCP\Files\IRootFolder;
 use OCP\IDBConnection;
 
@@ -38,6 +39,7 @@ final class TextExtractionStorage {
 	 * @param IRootFolder         $rootFolder Nextcloud root folder
 	 * @param IDBConnection       $db         Database connection
 	 * @param MailHeaderMapper|null $mailHeaders The thread headers of collected `.eml` files.
+	 * @param TextSignatureStore|null $signatures The text signatures of extracted files.
 	 *
 	 * @SuppressWarnings(PHPMD.ShortVariable) $db is a well-known PHP idiom for a database connection parameter.
 	 */
@@ -46,6 +48,7 @@ final class TextExtractionStorage {
 		public readonly IRootFolder $rootFolder,
 		public readonly IDBConnection $db,
 		public readonly ?MailHeaderMapper $mailHeaders = null,
+		public readonly ?TextSignatureStore $signatures = null,
 	) {
 	}//end __construct()
 }//end class

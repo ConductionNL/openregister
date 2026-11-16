@@ -40,6 +40,7 @@ use PHPUnit\Framework\TestCase;
  * @uses   \OCA\OpenRegister\Search\Service\Aggregation\AggregationMetricsAnnotationValidator
  * @uses   \OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery
  * @uses   \OCA\OpenRegister\Search\Service\Aggregation\GroupByMember
+ * @uses   \OCA\OpenRegister\Search\Service\Aggregation\AggregationQueryShape
  */
 class CrossSchemaTargetTest extends TestCase {
 

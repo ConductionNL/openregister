@@ -100,6 +100,7 @@ use Psr\Log\NullLogger;
  * @uses   \OCA\OpenRegister\Db\Schema\AnnotationVocabulary
  * @uses   \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
  * @uses   \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Service\Rbac\UndecidablePosture
  *
  * @spec openspec/changes/classification-clearance-on-an-object/specs/classification-clearance/spec.md#requirement-read-above-a-callers-clearance-is-refused-on-both-layers
  */

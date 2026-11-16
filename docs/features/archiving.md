@@ -218,8 +218,8 @@ the export never writes an empty element.
 | `waardering` | Always (required) | The archiefnominatie: Blijvend te bewaren, Tijdelijk te bewaren, or Nader te bepalen |
 | `bewaartermijn` | When known | The retention period and the disposal date |
 | `informatiecategorie` | When known | The selectielijst category |
-| `isOnderdeelVan` | Left out | Containment between records is not exported yet |
-| `bevatOnderdeel` | Left out | Containment between records is not exported yet |
+| `isOnderdeelVan` | When a containing record lists this one | The records that reference this one and whose schema's `x-openregister-archival.containment` property lists it as a part |
+| `bevatOnderdeel` | When declared and set on the record | `x-openregister-archival.containment`, naming the relation property that holds the parts (`"containment": "onderdelen"`); a part named only by id gets the name of the record it points at |
 | `heeftRepresentatie` | One per file | The files packaged with the record |
 | `aanvullendeMetagegevens` | Left out | |
 | `gerelateerdInformatieobject` | Left out | |
