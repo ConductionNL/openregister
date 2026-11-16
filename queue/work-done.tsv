@@ -16620,3 +16620,4 @@ verify:learniq:2551:f126bb35	6 GREEN (2551 2555 2556 2558 2559 2562), 1 CONFLICT
 review:keepiq:1791:123b7f25	GREEN: specs met, no new failures (3 inherited vitest)	session-20261116T151005-df77eb85	2026-11-16T15:28:45Z
 verify:keepiq:1826:40f599b0	GREEN #1826: phpunit 5392/0 fail (baseline 5307/0), vitest 3 inherited failures	session-20261116T143136-ae6d04cb	2026-11-16T15:28:58Z
 verify:pipelinq:3883:3221b143	GREEN #3883: PHP 9000 OK = baseline, vitest 1 inherited fail, 0 new	session-20261116T150917-ab25a304	2026-11-16T15:29:23Z
+fix:integriq:3596:25615492	fixed: module_coupling floor restored (5.03), pushed 5124b212; REVERIFY queued	session-20261116T150935-ce9ba78b	2026-11-16T15:29:52Z
