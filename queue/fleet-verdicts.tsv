@@ -15970,6 +15970,7 @@ learniq	2533	adbae3b0cb1c6df378db735c449288dcc7091c70	CONFLICT	worker-57	merge o
 learniq	2497	c85c59131ff95ca94a1b6a84d4175a6a8da8d545	CONFLICT	worker-17	conflicts with development in l10n/en.js,en.json,nl.js, lib/Settings/learniq_register.json
 larpinq	1055	3553b217084367d6f7078f260cc8ebae9f7a722d	CONFLICT	worker-48	conflicts with development in l10n/*.js/json (all locales); baseline 1120 tests OK, 20 skipped
 launchpad	761	ca2815b851deb1969d5b23ac0c29185819391d2e	CONFLICT	worker-41	conflicts with development (package-lock/package.json/sbom); tree not run
+learniq	2518	6f169224fb68e4b47062a891d6ea45001308f260	CONFLICT	worker-20	conflicts with development in lib/Settings/learniq_register.json and tests/Unit/Settings/OpenLearningMaterialRegisterTest.php; not tested
 launchpad	1218	1286fcd0409e4b8257f70267f16aafa55da48901	CONFLICT	worker-26	conflicts with development in 37 l10n bundles (js+json), AdminController.php, PageController.php, AdminSettingKey.php, AdminSettingsService.php, InitialStateBuilder.php, TileUpdater.php, TileWidget.vue, AdminSettings.vue, TileEditor.vue, loadInitialState.js, Views.vue and 3 tests; tests not run
 keepiq	1829	d00cfb44b9c63a0d62eff367e3060cdd9eecb1df	CONFLICT	worker-05	composer.lock conflicts with origin/development; baseline 5618 tests 0 failures
 launchpad	763	68f987122bfeea56f4ce89310f71d3de850ab6e2	CONFLICT	worker-22	conflicts with development in package-lock.json only; suite not run
