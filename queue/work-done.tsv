@@ -18192,3 +18192,4 @@ cover:buildiq:70b3e29eme3dd:baa54041	deferred: buildiq has 49 open PRs	session-2
 cover:buildiq:70b3e29eme3dd:568ec52a	deferred: buildiq has 49 open PRs	session-20261116T220904-ce70c542	2026-11-16T22:45:10Z
 cover:buildiq:70b3e29eme3dd:59826f43	deferred: buildiq has 49 open PRs	session-20261116T220904-ce70c542	2026-11-16T22:45:16Z
 lane:arch5:shillinq:next-shillinq-r10	partial: not started (worker context low after a long build); whole round queued as :c1	session-20261116T220522-6d402fd2	2026-11-16T22:45:26Z
+review:portaliq:2448:eaab719e	stale	session-20261116T222655-da719429	2026-11-16T22:45:57Z
