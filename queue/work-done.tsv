@@ -16643,3 +16643,4 @@ review:stackiq:1965:dae73f1f	GREEN: per spec, suite OK on PR+development	session
 review:integriq:3589:6a7f1b92	GREEN: build platform-connector-extension-kit matches its specs, suite adds no failures	session-20261116T152057-2c4d4a8b	2026-11-16T15:38:37Z
 merge:versioniq:507:f792faa9	failed: prep exit 2, no vendor/bin/phpunit (composer-cloud writes an empty vendor-bin/phpunit composer.cloud.json, so prep skips composer bin phpunit install)	session-20261116T153800-2f867ebc	2026-11-16T15:38:54Z
 review:portaliq:1767:47038abd	GREEN	session-20261116T144202-f2b26030	2026-11-16T15:39:10Z
+review:decidiq:2207:12b85479	GREEN: implements change tasks 6.x; unit 4633 OK, phpstan/phpcs clean	session-20261116T153259-1f82a352	2026-11-16T15:39:22Z
