@@ -18403,7 +18403,9 @@ verify:hermiq:1757:59cadfdd	CONFLICT #1757 (l10n catalogues, EngineSwitchedOffTe
 verify:learniq:2502:bdbd6462	failed: composer install impossible here, learniq lock needs vimeo/psalm 7.5 (php >=8.3.16), container php 8.3.6	session-20261116T232912-634ff2e8	2026-11-16T23:38:58Z
 verify:filinq:2091:fe554cc9	CONFLICT #2091	session-20261116T232918-5354fd88	2026-11-16T23:38:49Z
 verify:filinq:2113:51b5285f	CONFLICT: #2113 vs development in CHANGELOG.md, filinq_register.json, ConsentUpdateFlowTest.php	session-20261116T232911-3dffa1ae	2026-11-16T23:39:03Z
+verify:humaniq:1142:9666a5ef	CONFLICT: #1142 vs development in l10n, hr-leave register, manifest files	session-20261116T232911-3dffa1ae	2026-11-16T23:40:06Z
 verify:hermiq:1763:959522d3	CONFLICT #1763 (9 files)	session-20261116T224246-d9bde508	2026-11-16T23:39:28Z
 verify:launchpad:1246:09cffd9d	stale	feeder	2026-11-16T23:37:23Z
 verify:hermiq:1760:f84a6f07	CONFLICT: info.xml, l10n, hermiq_register.json, openapi.json	session-20261116T233003-c7bea420	2026-11-16T23:40:32Z
 verify:humaniq:1148:f2562361	CONFLICT #1148 (l10n, hr-timesheet manifest)	session-20261116T233427-cfe22922	2026-11-16T23:40:48Z
+verify:humaniq:670:40bebbca	CONFLICT #670 (sbom.cdx.json vs development)	session-20261116T233800-0f135937	2026-11-16T23:41:06Z
