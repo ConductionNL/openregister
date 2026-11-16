@@ -13650,6 +13650,17 @@ buildiq	1114	9381ce974c70d039e0864ef92e7887b77b95824e	RED	merge8:merge-gate	GATE
 buildiq	1249	0997f504b0eac297c5df04973323bef6894adb7e	RED	merge8:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
 buildiq	1256	342dece0d678059a47b5743de2303db5fabfe837	RED	merge8:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
 buildiq	1596	33a8b51d6ee0f8da44eece4449f064758c5bb69a	RED	merge8:merge-gate	GATE RED absolute floor: buildiq maintainability 3.90 after merge is below its floor 3.91
+buildiq	1091	d342b9dd37f32a145c49309eeed5e14c5b67603a	CONFLICT	merge8	merges clean on development alone; files: package-lock.json package.json 
+buildiq	1094	224fef61bce09103aaac0549c181e49a425c8100	CONFLICT	merge8	conflicts with development; files: package-lock.json package.json 
+buildiq	1583	83cecfc6cae20a6d686bfeeb465380d814c39d78	CONFLICT	merge8	merges clean on development alone; files: tests/stubs/openregister-stubs.php 
+buildiq	1608	08f7f4d3b6d7cac41d4606502cc160b0edb432d3	CONFLICT	merge8	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Mcp/Handler/AbstractToolHandler.php 
+buildiq	1620	42a0d7959ddac9d2daafbd2c87ff6ea2b8144452	CONFLICT	merge8	merges clean on development alone; files: l10n/en.js l10n/en.json 
+buildiq	1624	de704581ba01ad804791c555684025dbb6a971d3	CONFLICT	merge8	conflicts with development; files: l10n/en.js l10n/en.json 
+buildiq	1641	1cc1383aef71bc17edcf86590829b20909fb2657	CONFLICT	merge8	merges clean on development alone; files: l10n/en.js 
+buildiq	1649	dae57dbf58de730fe5c4378def184f4e1cb3f3b1	CONFLICT	merge8	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+buildiq	1651	fcb354f5414a479ebdbb4f9516d8d967cd91cda7	CONFLICT	merge8	merges clean on development alone; files: l10n/en.js l10n/en.json tests/stubs/openregister-stubs.php 
+buildiq	1262	a0a4f2874c6db16ba6d9845bc8c1385d2d6ae0a4	RED	merge8	adds unit failure(s) with the PRs before it in the tree: ApplicationVersionsControllerBehaviourTest::testAFailedSaveReleasesTheLockAndIs422 ApplicationVersionsControllerBehaviourTest::testUpdateMergesMutableFieldsUnderALock AbstractToolHandlerWriteGuardTest
+buildiq	1648	30c0874a20095dfbccc1341121763143ecb5a521	RED	merge8	adds unit failure(s) with the PRs before it in the tree: AppOrganisationGuardCoverageTest::testNoNewReaderSkipsTheDecision
 hermiq	1807	a3d16b99cc2d5df80d3d37eb026b6547ef9fb5b2	GREEN	worker-27	unit 5291 OK (baseline 5291 OK), vitest 1526 OK, no new failures; lock-only (hydra-gates 1.19.0, nextcloud-vue 2.181.0)
 learniq	1901	152da34cc2608eb2586c6085a6073ee9f3e4a744	GREEN	worker-34:review	Refusals add errors/invalid per field and keep error code, status and access order, as its own change spec asks; approveHourWeek declares its schema. Merged with development: 6871 tests, 1 inherited fail (he.json out of date on development), phpstan clean
 hermiq	1802	5e3d55d508902291f30d41602f031f26673b7201	REVERIFY	worker-09	WorkspacePusherTest find() mock updated to the ObjectFindOptions signature development now uses (old named args made the lookup throw, pins null); suite 5312 tests, no failures beyond the 192 inherited; new head 5e2885e3e660cb042b21292e305f27b2d9a26093, verify it
