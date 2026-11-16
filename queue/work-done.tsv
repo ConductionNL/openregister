@@ -16724,3 +16724,4 @@ merge:buildiq:1091:23716f96	unmeasured: static.developer.overheid.nl (1596 appro
 review:stackiq:1931:f5df0ce8	GREEN (unit 3751 OK; conflicts with development in register json)	session-20261116T165811-2336fe78	2026-11-16T17:00:56Z
 merge:hermiq:1308:8e6eca33	merge3 tree of 9 hermiq PRs: merged=3 red=2 fail=0 skip=0; conflict 4, lint 0, moved 0; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-16T17:02:04Z
 review:versioniq:691:ed265e00	GREEN: 2025 tests, 0 new failures (2 inherited), vitest 19/19	session-20261116T165247-ed439eb0	2026-11-16T17:02:25Z
+merge:buildiq:1673:1d190070	unmeasured: static.developer.overheid.nl (1673 approved, tree green)	session-20261116T164354-a7d53f16	2026-11-16T17:03:12Z
