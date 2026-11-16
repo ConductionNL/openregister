@@ -17313,3 +17313,4 @@ cover:dossiq:069ee2d6m9d1b:8ed5443b	failed: lib/Kernel/Contracts holds interface
 fix:shillinq:2083:4b847a69	no change: merges clean on development; l10n conflict only with unlanded tree PRs; REVERIFY queued	session-20261116T181151-999832c6	2026-11-16T19:13:44Z
 fix:shillinq:1958:191f6a9e	no change: merges clean on development; conflict only with unlanded tree PRs; REVERIFY queued	session-20261116T181151-999832c6	2026-11-16T19:14:03Z
 build:shillinq:platform-administration-import:r2	already done: every code task ticked on development; only 3.2 (Playwright run on a live instance) is open, spec file already written	session-20261116T181151-999832c6	2026-11-16T19:14:24Z
+cover:pipelinq:7f9dc8e6m3dbb:50cc8442	added to PR #3659 (open-PR budget, 45 open): fixed @uses on ContainerObjectFind/Save tests; lib/Util/*.php 90.6%->99.6%, 490 tests green	session-20261116T184831-8be58c40	2026-11-16T19:14:32Z
