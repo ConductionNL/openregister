@@ -15762,6 +15762,7 @@ fix:learniq:2507:334d2575	raised info.xml version, pushed 1fad4deb; merge lock b
 fix:learniq:1881:a1be2d79	fixed RED (test mock to ObjectSaveOptions), merge lock held elsewhere -> REVERIFY at fffa1128	session-20261116T081640-cbf74452	2026-11-16T08:23:57Z
 fix:learniq:2560:a9c9e418	failed: blocked upstream: @conduction/nextcloud-vue (latest 2.181.0) peers gridstack ^12||^13; gridstack 14 needs a library release first	session-20261116T081618-2145ecb3	2026-11-16T08:24:12Z
 verify:shillinq:3108:64020915	GREEN #3108: no new failures (php 12225 ok; vitest 1 inherited red)	session-20261116T081638-f48babcb	2026-11-16T08:25:00Z
+fix:opencatalogi:2650:e5e6d290	no change needed: branch up to date with development, conflict was tree-only; REVERIFY recorded (merge lock busy)	session-20261116T082353-191a2dc3	2026-11-16T08:25:11Z
 fix:learniq:1158:5ca84f75	inherited: plain development also fails the checker floor (spdxheaders 5 -> 4) because tests/Stubs/Contract/ObjectServiceInterface.php has no SPDX header; the PR (prettier bump + sbom) adds nothing, merges cleanly; no change pushed	session-20261116T081649-ec7372ec	2026-11-16T08:25:14Z
 fix:shillinq:3105:364f54d3	failed: inherited RED on plain development: tests/stubs/OpenRegister/Contract/ObjectServiceInterface.php lost its SPDX-License-Identifier line in 0d688ca2f (#3106 ormig), dropping spdxheaders 5->4 for every shillinq PR; #3105 only touches .github/dependabot.yml	session-20261116T082121-c1741fb9	2026-11-16T08:25:08Z
 fix:shillinq:1958:98ce92e5	fixed SPDX header window in BudgetGridScenarioOverlay.php; pushed 55f82d52; merge lock held elsewhere, REVERIFY recorded	session-20261116T081702-4281d743	2026-11-16T08:25:18Z
@@ -15772,7 +15773,14 @@ fix:launchpad:785:91bd14a0	partial: complexity floor restored, pushed 085c96eb; 
 fix:stackiq:1959:fe24e23b	no change needed: up to date with development, merges clean; conflict was with unmerged tree siblings; REVERIFY written	session-20261116T080103-dd70aeff	2026-11-16T08:26:14Z
 fix:opencatalogi:1888:e9655f0d	conflict resolved, pushed 3c646648; REVERIFY (merge lock busy)	session-20261116T075953-c9c4b65a	2026-11-16T08:26:25Z
 merge:launchpad:753:5d3c05ef	cloud tree of 1 launchpad PRs: merged=0 red=0 fail=0 skip=1; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T081705-6c8f795b	2026-11-16T08:26:32Z
+fix:opencatalogi:1889:a5e55a55	inherited: plain development (0f496962) already fails its own .checker-floor.json (opensourcehealth 4->3 stars, freshness/activity drift of deps); PR touches no dependency file; needs a floor refresh on development, not a PR fix	session-20261116T081618-2145ecb3	2026-11-16T08:26:39Z
 review:filinq:1355:1ed49fc4	GREEN: dev-only phpmd 3 bump, unit 6798 OK, phpmd gate exit unchanged	session-20261116T081640-cbf74452	2026-11-16T08:26:39Z
 fix:opencatalogi:2677:b9314794	no change: branch already contains development and merges clean; conflict only against sibling PRs in a tree; REVERIFY recorded for a one-PR tree; lock held elsewhere	session-20261116T081707-5872785d	2026-11-16T08:26:52Z
 fix:opencatalogi:2665:fbbdb9b4	no change needed: already merges clean on development; REVERIFY	session-20261116T075953-c9c4b65a	2026-11-16T08:27:10Z
 merge:larpinq:1060:9c72be28	cloud tree of 2 larpinq PRs: merged=0 red=1 fail=0 skip=1; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T081647-1fba2b50	2026-11-16T08:27:09Z
+review:filinq:2122:79127975	GREEN: phpunit 6829 pass (base 6798), vitest 769, jest 570	session-20261116T080741-43082fe2	2026-11-16T08:27:23Z
+review:filinq:2103:1a1abdb4	stale	session-20261116T082637-06597b03	2026-11-16T08:27:33Z
+fix:buildiq:1620:ff3f376b	fixed import order, pushed 7c13e441; merge lock held elsewhere, REVERIFY queued	session-20261116T075942-394736ff	2026-11-16T08:27:53Z
+review:filinq:2072:a07d41bd	GREEN #2072: implements change per specs; unit 6829 ok, phpstan clean	session-20261116T081638-f48babcb	2026-11-16T08:28:05Z
+review:shillinq:2071:85bf3df1	GREEN: phpunit 12230 OK, vitest touched OK	session-20261116T075936-d83d6c1e	2026-11-16T08:28:16Z
+fix:opencatalogi:2244:9178373d	inherited: opensourcehealth 4->3 also red on plain development 0f496962; PR changes no dependency files; branch contains development; no change pushed; needs a floor refresh on development	session-20261116T082353-191a2dc3	2026-11-16T08:28:32Z
