@@ -16947,6 +16947,7 @@ fix:learniq:2521:9e646ec1	failed: inherited: development drops spdxheaders 5->4 
 cover:decidiq:a5f973bbm0262:98083bbf	deferred: decidiq has 52 open PRs	session-20261116T173254-f6972957	2026-11-16T17:47:34Z
 cover:decidiq:a5f973bbm0262:568ec52a	deferred: decidiq has 52 open PRs	session-20261116T173211-a3411be5	2026-11-16T17:47:56Z
 fix:filinq:2094:5c76485b	unmeasured: static.developer.overheid.nl (fixed and approved at ff0c7f80, REVERIFY queued)	session-20261116T170555-ecf14af5	2026-11-16T17:48:04Z
+cover:integriq:92114ab0m6759:60c2c265	deferred: integriq has 70 open PRs	session-20261116T173213-a5a52019	2026-11-16T17:48:47Z
 cover:decidiq:a5f973bbm0262:8ed5443b	deferred: decidiq has 52 open PRs	session-20261116T173713-4d98e280	2026-11-16T17:48:59Z
 fix:decidiq:2223:34982cb6	inherited: plain development already measures 3.77 (range 3.77-3.81), below decidiq floor 3.78; PR #2223 leaves every rating unchanged; nothing to fix in the PR	session-20261116T174323-ba3ec1dc	2026-11-16T17:48:44Z
 cover:decidiq:a5f973bbm0262:be0dcca9	deferred: decidiq has 52 open PRs	session-20261116T174053-4a550291	2026-11-16T17:48:30Z
@@ -16967,6 +16968,7 @@ fix:integriq:3051:5649956b	fixed spdx floor: SPDX headers on 3 new stubs, pushed
 cover:buildiq:70b3e29em3841:f545d745	deferred: buildiq has 56 open PRs	session-20261116T173103-d3bed8f8	2026-11-16T17:50:41Z
 cover:filinq:7a9ef677:cd622249	deferred: filinq has 49 open PRs	session-20261116T171507-41a673e9	2026-11-16T17:50:55Z
 cover:buildiq:70b3e29em3841:1b97f731	deferred: buildiq has 56 open PRs	session-20261116T173103-d3bed8f8	2026-11-16T17:50:51Z
+fix:decidiq:2170:8002c6de	failed: pushed 8ede76a378 (ObjectRows helper, listener clones removed, ratchet 0 dup fragments; RoomSystem tests 37 OK) but absolute floor stays RED: plain development measures 3.77 with the cloud estimator (floor 3.78), PR 3.76 via component independence 2.47->2.42; needs a floor decision or a wider refactor	session-20261116T173141-f87aaa9d	2026-11-16T17:51:23Z
 cover:buildiq:70b3e29em3841:aae6d66c	deferred: buildiq has 56 open PRs	session-20261116T173103-d3bed8f8	2026-11-16T17:51:04Z
 fix:integriq:3049:f122cee2	development merged in, touched tests green; REVERIFY at 129bee96 (merge lock held elsewhere)	session-20261116T173254-f6972957	2026-11-16T17:51:25Z
 review:dossiq:6203:ef4bffa6	stale	session-20261116T173211-a3411be5	2026-11-16T17:51:44Z
@@ -16984,6 +16986,7 @@ cover:buildiq:70b3e29em3841:0d8702e3	deferred: buildiq has 56 open PRs	session-2
 measure:stackiq:20261116h16	php 88.93% (pcov), js 96.31% at 4e7ff878	session-20261116T171035-683856c3	2026-11-16T17:54:07Z
 cover:keepiq:c967a31fmba5a:f545d745	no PR: lib/Repair/*.php already at 98.6% (1036/1051) on development, above target 95; uncovered lines are getName() strings, a value-object constructor and openssl-failure branches (getter-only or unreachable)	session-20261116T173256-6277a58c	2026-11-16T17:54:07Z
 review:openregister:10597:9dcbb7e2	APPROVE: publiccode.yml metadata only	session-20261116T173227-109a6e00	2026-11-16T17:54:09Z
+cover:keepiq:c967a31fmba5a:60c2c265	PR keepiq#1842: 17 tests, RecoveryKitController + FederatedInboundController, suite 5323->5340 OK	session-20261116T173246-2dce7fd2	2026-11-16T17:54:29Z
 merge:versioniq:691:86c1cc56	failed: cm_tree prep exit 2: no vendor/bin/phpunit after composer-cloud	session-20261116T173240-b63ad758	2026-11-16T17:54:15Z
 review:filinq:2072:5c869835	GREEN: unit 6912/0 failures on PR+development (baseline 6878/0), phpstan clean	session-20261116T173342-1d8a0fb9	2026-11-16T17:54:34Z
 fix:hermiq:1795:fdc2c517	fixed: floor restored to 3.77 at e06004f (REVERIFY queued; not landed, gitdocumentatie.logius.nl blocked)	session-20261116T165351-3ccaad0e	2026-11-16T17:54:56Z
@@ -16992,3 +16995,13 @@ review:decidiq:2178:d8c9d162	GREEN: phpunit 4666 OK, vitest 2872 passed on the P
 fix:versioniq:738:f3f7da6d	conflict resolved, pushed 001e5515; not landed (merge gate host unreachable here), REVERIFY queued	session-20261116T172806-3ef5ead7	2026-11-16T17:56:02Z
 review:hermiq:1736:4200349d	GREEN #1736 (0 new failures; dev baseline 167E/26F inherited)	session-20261116T173308-9a80cd8d	2026-11-16T17:56:20Z
 review:hermiq:1788:ce467188	GREEN: no new failures, spec-conformant, access gated	session-20261116T174709-5787ce39	2026-11-16T17:56:38Z
+review:opencatalogi:2682:4e12e44e	GREEN: 0 new failures (5869 tests, 80 inherited), jest/vitest green	session-20261116T173254-f6972957	2026-11-16T17:56:49Z
+build:filinq:inbound-auto-classification	already built: every code task ticked on development; 4.2 e2e and 4.4 screenshots need a live instance	session-20261116T170545-a4f14b83	2026-11-16T17:57:29Z
+review:learniq:2507:f29e84b7	GREEN: matches the change's specs; suite 6901, only the inherited HigherEducationExampleSetTest failure	session-20261116T173311-8d6b3275	2026-11-16T17:57:36Z
+fix:stackiq:1931:f5df0ce8	conflict resolved, pushed 3faf7c6; REVERIFY queued (merge off on this account)	session-20261116T173207-e7bfa399	2026-11-16T17:57:47Z
+verify:hermiq:1807:87e37da2	GREEN #1807: 0 new failures (5340 php, 1535 js)	session-20261116T170823-40772b73	2026-11-16T17:58:07Z
+review:filinq:2122:8da97635	GREEN: build matches change specs; unit 6910 OK, vitest touched 20/20	session-20261116T173211-a3411be5	2026-11-16T17:58:18Z
+verify:pipelinq:3894:9807d239	GREEN #3894: 9030 tests, 0 new failures	session-20261116T173713-4d98e280	2026-11-16T17:58:29Z
+review:hermiq:1754:b6dc1f4e	GREEN: unit 5388 pass, touched vitest 31 pass	session-20261116T173227-109a6e00	2026-11-16T17:58:46Z
+fix:versioniq:721:e012b413	CONFLICT resolved (l10n union, js rebuilt); new head bc63b63642, REVERIFY queued; 2 golden-test failures inherited from development	session-20261116T171010-393e4bc2	2026-11-16T17:58:57Z
+fix:hermiq:1808:d92c1c64	conflict resolved (sbom regenerated), pushed f027dd39; REVERIFY queued (merge off on this account)	session-20261116T173342-1d8a0fb9	2026-11-16T17:59:10Z
