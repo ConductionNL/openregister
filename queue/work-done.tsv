@@ -16984,6 +16984,7 @@ cover:buildiq:70b3e29em3841:0d8702e3	deferred: buildiq has 56 open PRs	session-2
 measure:stackiq:20261116h16	php 88.93% (pcov), js 96.31% at 4e7ff878	session-20261116T171035-683856c3	2026-11-16T17:54:07Z
 cover:keepiq:c967a31fmba5a:f545d745	no PR: lib/Repair/*.php already at 98.6% (1036/1051) on development, above target 95; uncovered lines are getName() strings, a value-object constructor and openssl-failure branches (getter-only or unreachable)	session-20261116T173256-6277a58c	2026-11-16T17:54:07Z
 review:openregister:10597:9dcbb7e2	APPROVE: publiccode.yml metadata only	session-20261116T173227-109a6e00	2026-11-16T17:54:09Z
+cover:keepiq:c967a31fmba5a:60c2c265	PR keepiq#1842: 17 tests, RecoveryKitController + FederatedInboundController, suite 5323->5340 OK	session-20261116T173246-2dce7fd2	2026-11-16T17:54:29Z
 merge:versioniq:691:86c1cc56	failed: cm_tree prep exit 2: no vendor/bin/phpunit after composer-cloud	session-20261116T173240-b63ad758	2026-11-16T17:54:15Z
 review:filinq:2072:5c869835	GREEN: unit 6912/0 failures on PR+development (baseline 6878/0), phpstan clean	session-20261116T173342-1d8a0fb9	2026-11-16T17:54:34Z
 fix:hermiq:1795:fdc2c517	fixed: floor restored to 3.77 at e06004f (REVERIFY queued; not landed, gitdocumentatie.logius.nl blocked)	session-20261116T165351-3ccaad0e	2026-11-16T17:54:56Z
