@@ -15900,12 +15900,15 @@ filinq	2099	2529cfcb0dad4e34702730a36a0ecf588ee4823d	CONFLICT	worker-45	conflict
 filinq	2098	ee9aee9cbe8b6c6c0a521d32cd3021c6fd4b3875	CONFLICT	worker-14	conflicts with development in l10n/en.js, en.json, nl.js, nl.json; suite not run
 filinq	2124	5e42335d1e29a3e766b0ba6f1598a6e09e960777	CONFLICT	worker-21	merge conflict with origin/development in webpack.config.js; suite not run
 filinq	2114	78a005c251fc9ce1db35ba012ea58f6d6ef2b57c	CONFLICT	worker-58	conflicts with development in l10n/en.js,nl.js,en.json,nl.json, filinq_register.json, filinq_mock_register.json, openapi.json
+hermiq	1740	26c96d0f36165b80cf152e5800d67e939551599c	CONFLICT	worker-49	conflicts with development, files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Settings/hermiq_register.json openapi.json
 filinq	2091	72c1df1540cdfb1054b2eb6bc498611efc0415ab	CONFLICT	worker-07	conflicts with development (l10n en/nl, lib/Settings/filinq_register.json, Settings.vue, settings-page golden); baseline 6960 OK
 dossiq	3894	8ed2662d166b8bee07c9b1aec92ee7de29dc08cb	CONFLICT	worker-11	sbom.cdx.json conflicts with development; baseline unit 18363 tests, 1 error (StatusEntryRequirementsGuardTest, inherited); PR suite not run
 hermiq	1738	441006a018a20c8d20c4f77b68276a0dd0ba20c0	CONFLICT	worker-31	conflicts with development in l10n en/nl js+json, SessionController, Engine FacadeToolInvoker/ResponseGenerationHandler/ToolLoop/ToolSurfaceRun, hermiq_register.json, Chat.vue; baseline 5461 tests
 dossiq	6353	60a451ec2178d0c85abe001143ac09af72767f80	CONFLICT	worker-06	conflicts with development in NotesController.php, NotePush.php, NoteEnvelope.php, NoteEnvelopeTest.php (modify/delete); baseline unit 18363 tests 16 failures; tree not tested
 filinq	2090	923c98e033f7a781763895ce2a83eca95d902a0f	CONFLICT	worker-23	conflict in lib/Settings/filinq_register.json against development; baseline 6960 tests OK
 hermiq	1578	c7adfb0008435059ecda8b9aae4cdc57df32832a	CONFLICT	worker-13	conflicts with development in composer.lock and sbom.cdx.json (dependency bump; regenerate lock + sbom on the merged base); no tests run
+filinq	2112	297a10b4a7f3e87e642ee92ec28d7c0d11dc63d6	CONFLICT	worker-14	conflicts with development in lib/Settings/filinq_register.json, filinq_mock_register.json, openapi.json; suite not run
+filinq	2105	2929a64c8a81ffd9acafec313ab0e61ceb37e4c8	CONFLICT	worker-10	conflicts with development in: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Settings/filinq_mock_register.json lib/Settings/filinq_register.json openapi.json tests/unit/Settings/DocumentProductionSchemaTest.php
 hermiq	1763	36a77c20f63e10ab109b4a9f18105bb92108a107	CONFLICT	worker-13	conflicts with development in appinfo/info.xml, routes.php, l10n (4), Notifier.php, AdminRoot.vue, admin-root.spec.js; no tests run
 filinq	2113	45e6b64f8a2ce720ba101fcdd409f41779c0cc63	CONFLICT	worker-38	conflicts with development (4cbdbe9e) in CHANGELOG.md, lib/Settings/filinq_register.json, tests/unit/Service/ConsentUpdateFlowTest.php; baseline unit 6960/0 fail; not tested
 humaniq	1139	181389a647ba547cc989314075d21fd374263a8b	CONFLICT	worker-45	conflicts with origin/development in l10n/en.js, l10n/nl.js; not run on tree
@@ -15916,3 +15919,6 @@ hermiq	1760	440cf2e9d2cd1a94d89bdd25448aa67be433ec8d	CONFLICT	worker-43	conflict
 filinq	2141	d980f90d4ce78bd5a27004221e0eaad88cd1b166	GREEN	worker-35	unit 6960 tests, baseline 6960 OK (6 skipped), new failures 0; replaceWords migrated to main's WordReplacementRequest, same arguments
 hermiq	1757	c5c53ee833f45f7b3fe0a3bd183382bd7dc1ff9e	CONFLICT	worker-06	conflicts with development in l10n/en.js, en.json, nl.js, nl.json and tests/Unit/Service/Engine/EngineSwitchedOffTest.php; not tested
 humaniq	1142	5bcc930d755704bf968a6a8c668e8e7636643a7c	CONFLICT	worker-38	conflicts with development (9d5661de) in l10n/en.js, en.json, nl.js, nl.json, register.d/hr-leave.json, manifest.d/00-templates.json, hours-process-redesign.json, manifest.effective.json, manifest-canonical.json; not tested
+humaniq	670	404bf31cb757d644e62c90ffdf08de1a76c009d8	CONFLICT	worker-28	conflict in sbom.cdx.json with development 9d5661de; baseline 4411 tests OK, 1 skipped; tree not run
+hermiq	1794	97a61ef1f8c212a30d231ab9df7c34b874c3600a	CONFLICT	worker-11	conflicts with development in l10n, HermiqToolProvider, FacadeToolInvoker, openapi.json, AdminRoot.vue and tests; suite not run
+integriq	3618	e9d117fd8fe69bbba563f07fd9bb2a0b1b621f02	CONFLICT	worker-43	conflicts with development in l10n/en.js, l10n/nl.js
