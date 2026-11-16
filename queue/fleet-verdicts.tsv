@@ -14447,3 +14447,4 @@ learniq	2484	a20cc6e5bf5a38b0a2fb0ad8e4fab1915eecc970	RED	worker-24:merge-gate	G
 humaniq	670	404bf31cb757d644e62c90ffdf08de1a76c009d8	CONFLICT	worker-26:merge	merges clean on development alone; files: package-lock.json package.json sbom.cdx.json 
 humaniq	685	c73546cde14f4c4a1b1f723d1c23c6892615eddd	CONFLICT	worker-26:merge	merges clean on development alone; files: package-lock.json package.json 
 humaniq	686	fe1cbc0ae582ec29fbb26fc246d74dbf3974	REVERIFY	worker-26:merge	verdict sha is not the head: head is fe1cbc0ae582ec29fbb26fc246d74dbf397480b5
+stackiq	1989	45dbd96288cca2c93a2162055fe2c65597c4ed55	RED	worker-35:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
