@@ -16437,3 +16437,4 @@ review:integriq:2711:6f3fdc05	GREEN: dev-only playwright bump, vitest 2387/2387 
 review:humaniq:1095:ac05e3a9	GREEN: dev-only psalm bump, suite 4405 OK	session-20261116T142710-649b1d69	2026-11-16T14:29:06Z
 review:integriq:3564:da7832e5	BLOCK: new openregister calls use removed named-arg API (main); suite no new failures	session-20261116T142700-f4d651ea	2026-11-16T14:30:37Z
 review:integriq:2924:500b1263	GREEN: dead legacy modals removed, helper callers all updated; vitest green, PHP reds inherited	session-20261116T142614-50d85edb	2026-11-16T14:31:26Z
+review:keepiq:1793:3b29e6ab	GREEN: matches change specs; vitest 3 inherited failures only	session-20261116T142730-381a9016	2026-11-16T14:32:12Z
