@@ -15804,3 +15804,4 @@ review:filinq:2094:a2f8cc99	GREEN: phpunit 6832 pass (base 6798), vitest 763, je
 fix:versioniq:500:890378b3	sbom regenerated, pushed 7b3a6f4e; REVERIFY (merge lock busy)	session-20261116T075953-c9c4b65a	2026-11-16T08:31:56Z
 fix:versioniq:735:0ba1d1c9	no change: merges clean on development, conflict is tree-only (sibling PR on openapi.json); REVERIFY recorded	session-20261116T081640-cbf74452	2026-11-16T08:32:16Z
 fix:stackiq:1931:42bba8a9	fixed: @spec tags added, pushed 8e3de7ae; merge lock held elsewhere, REVERIFY recorded	session-20261116T083044-10866b36	2026-11-16T08:32:30Z
+review:filinq:2123:e7b32d65	GREEN: unit 6863 ok, vitest 785 ok	session-20261116T082637-06597b03	2026-11-16T08:32:44Z
