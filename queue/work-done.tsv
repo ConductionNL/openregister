@@ -17512,3 +17512,4 @@ merge:opencatalogi:2696:1c565281	cloud tree of 1 opencatalogi PRs: none; conflic
 merge:planninq:1202:d7e7e9ea	merge3 tree of 1 planninq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-16T19:54:17Z
 cover:dossiq:069ee2d6m9d1b:39189253	stacked on #6203 (open-PR budget): lib/Service/Transitions 99.6% -> 99.9%, +8 tests	session-20261116T184907-cd59fdf4	2026-11-16T19:54:58Z
 review:hermiq:1735:33b209c9	GREEN (openapi.json conflicts with current development)	session-20261116T194719-57db1c57	2026-11-16T19:55:32Z
+review:hermiq:1754:3e57e4dc	GREEN: 5422 unit tests OK, vitest touched specs pass	session-20261116T195229-a18ea10d	2026-11-16T19:55:41Z
