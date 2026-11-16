@@ -16652,3 +16652,4 @@ build:pipelinq:question-text-is-required-on-the-portal	deferred: pipelinq has 46
 review:opencatalogi:2699:64dd55f6	GREEN: 0 new failures, implements instance-staging-mode	session-20261116T153714-5e625caa	2026-11-16T15:40:39Z
 review:stackiq:1930:854ac389	GREEN: per spec, suite OK on PR+development	session-20261116T144734-1dc150d8	2026-11-16T15:40:58Z
 review:decidiq:2178:a58bcd58	GREEN: unit 4666 OK, vitest 2872 passed, phpstan clean	session-20261116T153259-1f82a352	2026-11-16T15:41:07Z
+review:integriq:3051:5649956b	GREEN: lock/unlock via main's LockRequest, no new failures (stubs miss SPDX lines)	session-20261116T152057-2c4d4a8b	2026-11-16T15:41:19Z
