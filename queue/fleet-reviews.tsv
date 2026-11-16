@@ -630,3 +630,4 @@ shillinq	2258	3651ee9db119d80a90d13640a5b4d8c82aab8951	APPROVE	worker-51	Thoroug
 shillinq	2259	48de59f1a9e0bf8ffba75343ff03148754ed469c	APPROVE	worker-51	Standard; no blockers; export request recorded via AuditTrailMapper::recordRegisterEvent (exists on openregister main), fails closed with 500 per REQ-RAP-005; gate fails inherited
 shillinq	3088	e27bd6329f98217f15c1b5e5b6ba3a1c9b954ed6	APPROVE	worker-51	Thorough; no blockers; build sales-webshop-orders: VAT route, settle on paid, credit note on refund per REQ-SWO-003..005, tests added; listener re-entry guarded by state checks; gate fails inherited
 shillinq	3109	95bf71e1b5b49d1ade835e3ae9eb2b94df7af954	APPROVE	worker-51	Quick; no blockers; SPDX header on a test stub only
+integriq	2671	f4218e170982307bdf1ebe71fe738453a8155f5e	APPROVE	worker-50	Quick; no blockers; dev-only phpmd 3 bump with baseline renamed to its new rule names, sbom regenerated
