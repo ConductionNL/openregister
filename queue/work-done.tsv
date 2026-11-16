@@ -16746,3 +16746,4 @@ fix:keepiq:1826:07082bd9	merged development in (clean); pushed 95a54b11, REVERIF
 build:pipelinq:close-pipelinq-register-to-staff:r2	already done: every code task (1.1-1.3) is ticked and on development; only live task 2.1 left	session-20261116T165653-a1481a13	2026-11-16T17:10:27Z
 review:shillinq:2991:84a86ec5	GREEN: build per change specs; phpunit 12296 ok, touched vitest 92 ok	session-20261116T170601-1695d108	2026-11-16T17:10:41Z
 build:pipelinq:erase-on-soft-delete:r2	already done: tasks 1.1/1.2 built on development (980c7695e); only 1.3 live check left, not code	session-20261116T171008-17ad9db7	2026-11-16T17:10:47Z
+review:integriq:3564:0c8819d0	GREEN: spec-conform build, no new failures; concerns noted (create-as-active not guarded)	session-20261116T170138-65b3b637	2026-11-16T17:11:24Z
