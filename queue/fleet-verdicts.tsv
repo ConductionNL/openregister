@@ -13877,3 +13877,12 @@ launchpad	653	7dd62332f078073df03444ab4c6c6b1f2c66f246	REVERIFY	worker-04	merged
 stackiq	1954	8ec8ab7148eb45c264f52f32289e01d1582b2b87	REVERIFY	worker-34	floors: export() takes a CatalogExportRequest (was 6 args), export grant check moved to CatalogExportGate (no 7-arg constructor), long units split; behaviour and query unchanged. floor_check compare vs merge base: PASS (interfacing 4.72=4.72, overall 4.33 vs 4.32). Suite 3732 OK, phpstan/phpcs clean; new head b53c26d5710de0264ce2e8ece7108faf24900ec4, verify it
 stackiq	1417	603fa7bc772b26911bf07fedbd31ca5ff45303ee	RED	worker-23:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
 stackiq	1438	382aa36aab68ee72bcc38e311b8dcd92b0c081f4	RED	worker-23:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+shillinq	1899	7b7a34c742931675702d5b069c5364d8216b9dce	REVERIFY	worker-11:merge	verdict sha is not the head: head is 3859758c38929cc8611f88cfdb14871dfd333549
+shillinq	1900	fef99b3eea5e8ef87da4bb4a14c2fa2beb3433e1	REVERIFY	worker-11:merge	verdict sha is not the head: head is 4eb4258f0a4e2971ae8669c219c0739a097b9f52
+shillinq	1958	3f5a3226cd38ec7110167e5727f4d982aabce678	REVERIFY	worker-11:merge	verdict sha is not the head: head is 9dadcfffae4d2e863cfa98f18de4d0b5a879a8a0
+shillinq	2070	7e9fe5b030faf6fdaa45c177caae47f4f64f06d2	REVERIFY	worker-11:merge	verdict sha is not the head: head is 29369cd1e5f54228d28f425cda326d85923bff8f
+shillinq	2071	513cd9f5bfb777ebf8ae2ec3e366d0295b6eb4fd	CONFLICT	worker-11:merge	conflicts with development; files: lib/Service/ReconciliationResolutionService.php 
+shillinq	2072	dbfc1357d6412b1bd787679f90d11b76296cead7	REVERIFY	worker-11:merge	verdict sha is not the head: head is 794dec2a01cc38a274a3d45633ab11b445e982e4
+shillinq	2100	a13e62e97b853d91f8905c72cb50e2b1e9bddbb1	REVERIFY	worker-11:merge	verdict sha is not the head: head is ef5824e8297a92847875e0c668ee88d5c7e69e50
+shillinq	2251	47c7025284484828492cf317b1130434fdaa5a60	CONFLICT	worker-11:merge	conflicts with development; files: lib/Lifecycle/SupplierInvoicePayGuard.php lib/Util/ObjectIdentifier.php tests/Unit/Consolidation/ConsolidationGuardTest.php tests/Unit/Listener/TenderNedAwardDetectedListenerTest.php tests/Unit/Paymen
+shillinq	2252	eea2842a74d04dbf7c7f3995f15	REVERIFY	worker-11:merge	verdict sha is not the head: head is eea2842a74d04dbf7c7f3995f152483258cef509
