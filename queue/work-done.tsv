@@ -15458,3 +15458,4 @@ verify:portaliq:2530:8664f141	GREEN 2530: lock refresh, no new failures	session-
 review:hermiq:1175:42637555	GREEN: 5291 tests OK	session-20261116T062109-81fc252e	2026-11-16T06:34:27Z
 review:learniq:1901:152da34c	GREEN: matches its spec, suite green beyond 1 inherited	session-20261116T062050-add210c3	2026-11-16T06:35:09Z
 verify:hermiq:1807:2db42155	GREEN 1807: unit 5291 OK, vitest 1526 OK	session-20261116T062544-335bf148	2026-11-16T06:35:19Z
+merge:buildiq:1092:1d26377a	merge8 tree of 20 buildiq PRs: merged=4 red=5 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 11	merge8-20261115T170007-37538273	2026-11-16T06:35:34Z
