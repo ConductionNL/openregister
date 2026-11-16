@@ -15282,3 +15282,4 @@ integriq	2924	500b126369a6ed627489af45ef717b0a6b6db364	RED	worker-50:merge-gate	
 integriq	3574	538c9e9b698c603c89e9b0170b63111b23b946bd	RED	worker-50:merge-gate	GATE RED absolute floor: integriq maintainability 3.55 after merge is below its floor 3.56
 decidiq	2170	80617c3777f2a16f84f8ee5a966bb46cfa7f1713	RED	worker-58:review	vitest simpleMeetingPage.spec.js: 'loses no block' (expects 26 widgets, gets 27) and 'gives every block in a tab a type' (20 vs 21) fail on the PR head and merged tree, pass on development; new meeting-room-system widget not counted. PHPUnit 4730 tests OK; access via staff guard and RBAC per spec.
 decidiq	1767	1582903c267265c964b1af5bddd432f6f7e882bf	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+decidiq	2228	0abc6d2ce3f0e6b6289f09f140c8953558cf17dd	CONFLICT	merge3	merges clean on development alone; files: lib/Settings/profiles/association.json 
