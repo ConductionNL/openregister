@@ -16341,3 +16341,4 @@ build:dossiq:task-list-states-in-task-words	already done: config and vitest on d
 fix:hermiq:1760:440cf2e9	no change: branch up to date with development and merges clean alone; conflict only with a tree sibling; REVERIFY queued	session-20261116T104807-0149ceda	2026-11-16T11:19:46Z
 fix:learniq:2507:1fad4deb	fixed demo-data blocker, pushed 82c09d5c71; merge lock held by another merger, REVERIFY queued	session-20261116T101101-e7e34372	2026-11-16T11:19:56Z
 fix:integriq:2744:53deb98f	no change: sbom already current at head; REVERIFY queued	session-20261116T105625-9a95dd96	2026-11-16T11:20:45Z
+fix:pipelinq:2501:58a531d9	failed: sbom gate false positive: lock change is dev-only (symfony/yaml, symfony/http-foundation in packages-dev), regen-sbom from scratch is byte-identical and --check is current; merge_gate sbom() needs to accept a current sbom when only dev packages moved	session-20261116T110114-f035d055	2026-11-16T11:21:34Z
