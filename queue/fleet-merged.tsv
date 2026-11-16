@@ -4764,3 +4764,4 @@ hermiq	1810	bb716464ad2c9c147f1b05c90a7cb52e4dd8bf74	MERGED	merge3	GATE OK sbom,
 hermiq	1811	8eb3fd31e5eb675ca66056f04fdb39814d200ca4	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.77 holds at 3.83
 keepiq	1826	1863322573ad2a5fd82e2646c2fc80fa9e17e57c	SKIP	worker-11	no APPROVE review at this head
 keepiq	1849	00014df8ba6438163c44d2892ef8f7d212351d04	MERGED	worker-11	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.58 holds at 3.59
+larpinq	1077	25684453a601753ec30a96a7e5eadf78e45acd4e	MERGED	worker-09	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.17
