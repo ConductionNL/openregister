@@ -4746,3 +4746,4 @@ learniq	2559	64fd61a80179557f884440e26b650fd61bb8122b	MERGED	worker-46	GATE OK s
 learniq	2562	7726a54cc67ec9a8c40f7c44e8fea0cf725b9fd2	MERGED	worker-46	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 3.99
 decidiq	2170	60361ba1035cef5e803fb6e08a195d0ca3bfc007	MERGED	worker-09	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.78 holds at 3.80
 decidiq	2231	1fd72d0ddf391c812eb24cde3f816f6604ebb77b	MERGED	worker-09	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.78 holds at 3.84
+decidiq	2188	abed0e39fd022e4968c6b5190e2a0078fe7fafd3	RED	worker-09	GATE RED floor: unit_complexity: 3.99 -> 3.97
