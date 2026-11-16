@@ -18401,3 +18401,4 @@ merge:learniq:2578:d2cb7b4e	failed: prep exit 2, composer lock needs vimeo/psalm
 verify:filinq:2078:d8dd2bca	CONFLICT: tests/unit/Settings/DocumentProductionSchemaTest.php vs development	session-20261116T232925-45c70e73	2026-11-16T23:38:28Z
 verify:hermiq:1757:59cadfdd	CONFLICT #1757 (l10n catalogues, EngineSwitchedOffTest)	session-20261116T232912-d58d1a81	2026-11-16T23:38:39Z
 verify:learniq:2502:bdbd6462	failed: composer install impossible here, learniq lock needs vimeo/psalm 7.5 (php >=8.3.16), container php 8.3.6	session-20261116T232912-634ff2e8	2026-11-16T23:38:58Z
+verify:filinq:2091:fe554cc9	CONFLICT #2091	session-20261116T232918-5354fd88	2026-11-16T23:38:49Z
