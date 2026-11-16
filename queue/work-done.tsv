@@ -16150,3 +16150,4 @@ fix:shillinq:1991:29abf7fb	inherited: development reads spdx 4 stars; root fix o
 merge:buildiq:1256:689ba24c	cloud tree of 4 buildiq PRs: merged=0 red=1 fail=0 skip=3; conflict 0, lint 0, red 0, moved 0, done 0 (1256 gate RED sbom; 1583/1641/1652 REQUEST_CHANGES on gate findings)	session-20261116T101258-04edb59b	2026-11-16T10:30:36Z
 verify:dossiq:6587:ee6dcb2b	GREEN 6587, GREEN 6590; unit 18335/0 fail, vitest 2 inherited	session-20261116T101558-c6863013	2026-11-16T10:30:36Z
 fix:shillinq:1958:55f82d52	fixed: spdx header on inherited stub, pushed 6f600fec; merge lock held elsewhere, REVERIFY queued	session-20261116T101053-f719e178	2026-11-16T10:31:01Z
+fix:dossiq:6591:f47542d5	merged development in; new head b9982eb8, REVERIFY queued (merge lock held elsewhere)	session-20261116T101035-b42d3ee7	2026-11-16T10:31:29Z
