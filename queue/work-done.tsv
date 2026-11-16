@@ -16272,8 +16272,11 @@ review:integriq:3593:8dad155c	GREEN: no new failures (9608 tests, 5 inherited), 
 build:dossiq:mandated-case-steps-read-unscoped	already done: code tasks 1.1-1.2 ticked and on development (fix(portal) 2026-10-16); 1.3 is live	session-20261116T110121-4578b190	2026-11-16T11:08:38Z
 build:dossiq:hours-card-board-look	already built: code tasks 1.1/1.2 on development (feat(case-page) 2026-10-23); only live check 2.1 left	session-20261116T105550-e90eeee3	2026-11-16T11:08:45Z
 fix:shillinq:2230:62ff7961	merged development, restored stub SPDX header (inherited drop), pushed a06c8804; REVERIFY queued	session-20261116T102639-f9f23dec	2026-11-16T11:08:47Z
+build:dossiq:location-dialog-map-layers	already done: tasks 1.1-1.3 on development (feat(location) 2026-10-24); only 1.4 live check left, not code	session-20261116T105651-a587f79b	2026-11-16T11:08:59Z
+build:dossiq:history-note-card	already done: every code task ticked on development (composer separate/only, readsToggle, visibilityLabel, vitest); only the live check is left	session-20261116T105625-05822e4f	2026-11-16T11:08:53Z
 build:dossiq:objects-index-like-cases	already done: 1.1 on development (fix(objects) 2026-10-23); 2.1 is live	session-20261116T110121-4578b190	2026-11-16T11:08:54Z
 build:dossiq:lists-let-the-reader-choose-columns	already built: spec-only change, 1.1-1.2 ticked; only e2e task 1.3 left	session-20261116T105637-494def63	2026-11-16T11:08:52Z
+build:dossiq:case-type-handler-label	already built: 1.1/1.2 on development (feat(case-types) 2026-10-24); only live check 1.3 left	session-20261116T105550-e90eeee3	2026-11-16T11:09:33Z
 build:dossiq:contacts-list-columns-as-drawn	already done: 1.1-1.2 ticked, spec on development; 1.3 is live	session-20261116T110121-4578b190	2026-11-16T11:09:40Z
 build:dossiq:guards-refuse-when-unsure	already built: all code tasks 1.1-6.3 ticked and on development (e7824552f, fc36f808b, 779eab330); only live 7.1 left	session-20261116T105334-a341eb02	2026-11-16T11:09:42Z
 build:dossiq:organisation-side-lists-stacked	already built: 1.1-1.2 on development; only measurement 1.3 left (waits on an nc-vue release)	session-20261116T105334-a341eb02	2026-11-16T11:10:39Z
@@ -16303,6 +16306,7 @@ build:dossiq:recent-tile-shows-when-you-opened	already done: config tasks 1.1-1.
 build:dossiq:outbox-cards-with-summary	already done: code task 1.1 ticked and on development; only live check 1.2 left	session-20261116T105606-edb14de6	2026-11-16T11:13:53Z
 review:launchpad:785:cfc3d84d	GREEN: unit 4491 OK, vitest 1058 pass, phpstan clean	session-20261116T105712-260c30d3	2026-11-16T11:14:18Z
 merge:opencatalogi:1888:4f51a0aa	unmeasured: static.developer.overheid.nl (4 approved PRs 1888 1893 1894 2407 skipped at the gate; 2643 2670 RED, 2655 2673 CONFLICT, 2679 MOVED)	session-20261116T110144-2dffa885	2026-11-16T11:14:58Z
+merge:larpinq:1053:9a7017c3	unmeasured: static.developer.overheid.nl	session-20261116T105625-9a95dd96	2026-11-16T11:15:24Z
 build:dossiq:task-case-card-handler-name	already done: code tasks 1.1-1.2 ticked and on development; only live task 1.3 left	session-20261116T105606-edb14de6	2026-11-16T11:15:05Z
 build:dossiq:report-card-handler-name	already done: tasks 1.1-1.2 on development; only live check 1.3 left	session-20261116T105557-2fdfe8f3	2026-11-16T11:15:13Z
 build:dossiq:organisations-count-pills	already done: 1.1/1.2 on development since 50897f91d (test + manifest zeroAs/purple/widths); only 1.3 live check left, not a code task	session-20261116T105712-ca7768af	2026-11-16T11:15:13Z
@@ -16310,11 +16314,13 @@ build:dossiq:stuf-provider-through-integriq	already done: all code tasks ticked 
 build:dossiq:inbound-mail-filters	already done: all code tasks ticked on development; 8.4 is an e2e run	session-20261116T110121-4578b190	2026-11-16T11:15:38Z
 build:dossiq:party-contact-moments-board-lines	already done: every code task on development; only 1 live/e2e task(s) left	session-20261116T105426-4e0b8984	2026-11-16T11:15:39Z
 build:dossiq:party-tickets-link	already done: 1.1/1.2 on development since de2eac6d3 (test + manifest link + en/nl key); only 1.3 live check left	session-20261116T105712-ca7768af	2026-11-16T11:16:29Z
+review:shillinq:2093:c70fbea8	BLOCK: GRN header actions send no administrationId, endpoints return 400; unit suite green	session-20261116T105659-4edb3184	2026-11-16T11:15:52Z
 build:dossiq:task-list-header-funnels	already done: code tasks 1.1-1.2 ticked and on development (4b63ff42e); only live check 1.3 left	session-20261116T105620-b2654149	2026-11-16T11:16:26Z
 build:dossiq:suspend-return-date	already done: code tasks 1.1 and 1.3 on development; only live check 1.2 left	session-20261116T105557-2fdfe8f3	2026-11-16T11:16:20Z
 build:dossiq:portal-case-list-declarations	already done: every code task ticked and on development (64 tests OK); only live check 2.2 left	session-20261116T105712-260c30d3	2026-11-16T11:16:06Z
 build:dossiq:task-holds-up-next-status	already done: every code task on development; only 1 live/e2e task(s) left	session-20261116T105426-4e0b8984	2026-11-16T11:15:47Z
 build:dossiq:task-description-in-side-card	already done: code tasks ticked on development; 1.3 is live	session-20261116T110121-4578b190	2026-11-16T11:16:22Z
+build:dossiq:task-header-case-and-deadline	already done: code tasks ticked on development; 1.3 is live	session-20261116T110121-4578b190	2026-11-16T11:16:51Z
 fix:shillinq:3055:faf02682	merged development, restored stub SPDX header (inherited drop), pushed 6be8ada8; REVERIFY queued	session-20261116T102639-f9f23dec	2026-11-16T11:17:01Z
 build:dossiq:stuf-writes-through-integriq	already done: every code task ticked, ConnectedSystemCaseWriter and the listener hand-off are on development; only the live pass is left	session-20261116T110055-454b71dd	2026-11-16T11:17:13Z
 build:dossiq:party-history-link	already done: 1.1/1.2 on development (23 Oct); only 1.3 live remains	session-20261116T104807-0149ceda	2026-11-16T11:17:09Z
@@ -16322,4 +16328,12 @@ build:dossiq:party-dates-longdate	already done: every code task on development; 
 build:dossiq:task-list-titles-wrap	already done: every code task on development; only 1 live/e2e task(s) left	session-20261116T105426-4e0b8984	2026-11-16T11:17:22Z
 build:dossiq:starter-content-and-templates	already built: every dossiq code task ticked on development; 7.2 partial by design (task, note and approval surfaces live in nextcloud-vue/openregister, lane L1 per decision 156)	session-20261116T105334-a341eb02	2026-11-16T11:17:43Z
 build:dossiq:penalty-is-a-stored-calculation	already done: code tasks ticked and on development; 1.4 is live after openregister#4571	session-20261116T110114-f035d055	2026-11-16T11:17:34Z
+merge:shillinq:2072:83fa9646	unmeasured: static.developer.overheid.nl (2072, 2099, 2259 approved, left for the local lander); 3110, 3111 RED spdxheaders floor	session-20261116T104018-e4b2d192	2026-11-16T11:18:05Z
+build:dossiq:the-support-note-can-be-switched-off	already done: 1.1-1.3 on development (15 Oct); only 1.4 live remains	session-20261116T104807-0149ceda	2026-11-16T11:18:26Z
 build:dossiq:task-list-pooled-handler	already done: config, nl key and vitest on development; only live check 1.3 left	session-20261116T105712-260c30d3	2026-11-16T11:18:14Z
+build:dossiq:task-list-sorts-by-deadline	already done: code tasks ticked and on development; 1.3 is a live check	session-20261116T110114-f035d055	2026-11-16T11:18:35Z
+build:dossiq:task-side-history-in-words	already done: tasks 1.1-1.2 on development; only live check 1.3 left	session-20261116T105557-2fdfe8f3	2026-11-16T11:18:44Z
+merge:filinq:2072:a0472251	merge3 tree of 5 filinq PRs: merged=1 red=0 fail=0 skip=0; conflict 4, lint 0, moved 0; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-16T11:18:46Z
+build:dossiq:termijn-notices-send	already done: code tasks 1.1-1.3 ticked and on development (f6ec1e4a5, #3334); only live check 1.4 left	session-20261116T105620-b2654149	2026-11-16T11:19:01Z
+build:dossiq:task-list-states-in-task-words	already done: config and vitest on development; only live check 1.3 left	session-20261116T105712-260c30d3	2026-11-16T11:18:58Z
+fix:hermiq:1760:440cf2e9	no change: branch up to date with development and merges clean alone; conflict only with a tree sibling; REVERIFY queued	session-20261116T104807-0149ceda	2026-11-16T11:19:46Z
