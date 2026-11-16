@@ -17740,3 +17740,4 @@ build:learniq:training-provider-course-days:c5	partial: PR learniq#2521 head 704
 merge:buildiq:1672:5b518a2d	cloud tree of 1 buildiq PRs: merged=0 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T195830-617c8479	2026-11-16T20:45:13Z
 cover:dossiq:069ee2d6m9d1b:d214aba4	added 8 Queue tests to open PR #6203 (dossiq over 40 open PRs); suite 18754->18762, 19 inherited failures	session-20261116T203541-85ca4a1a	2026-11-16T20:45:37Z
 fix:portaliq:2531:cc495ec9	merged #2531 at 77439a5aba09fb92d6f763555de81efaf2e99e6c	session-20261116T201953-a718bf5e	2026-11-16T20:45:36Z
+fix:portaliq:2533:93c37669	fixed: duplication floor holds (4.35 vs 4.36); pushed 4857818f; REVERIFY queued (merge lock held elsewhere)	session-20261116T203823-d4fa239e	2026-11-16T20:45:43Z
