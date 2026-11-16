@@ -17663,3 +17663,4 @@ fix:shillinq:2997:cd7db0f0	stale	session-20261116T201445-8cab6741	2026-11-16T20:
 cover:buildiq:70b3e29em9bad:34763eb4	deferred: buildiq has 51 open PRs	session-20261116T195844-88f5f001	2026-11-16T20:30:12Z
 merge:dossiq:5398:1d940fac	merge3 tree of 1 dossiq PRs: merged=0 red=1 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-16T20:30:25Z
 fix:shillinq:2991:7d526afc	merged #2991 at 8db8659fb75b2c8ef554ce907391c9df3d51ed74	session-20261116T195830-617c8479	2026-11-16T20:30:36Z
+cover:buildiq:70b3e29em9bad:b65a63c3	deferred: buildiq has 51 open PRs	session-20261116T195830-617c8479	2026-11-16T20:31:10Z
