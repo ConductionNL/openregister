@@ -16905,6 +16905,7 @@ build:shillinq:budget-grid-view	already done: built on development in #961; only
 fix:learniq:2556:489b7f4d	failed: inherited: development itself drops spdxheaders 5->4 (tests/Stubs/Contract/ObjectServiceInterface.php has no SPDX line); the header fix rides on learniq #2507 head f29e84b71d	session-20261116T171010-393e4bc2	2026-11-16T17:42:42Z
 cover:filinq:7a9ef677:aae6d66c	deferred: filinq has 49 open PRs	session-20261116T174053-4a550291	2026-11-16T17:42:58Z
 build:shillinq:tax-vat-number-check	already done: built on development 2026-10-02 (route vat-number-checks, FoldCustomerVatId, e2e spec); only 3.2 live e2e run left	session-20261116T173217-7353a3fb	2026-11-16T17:42:55Z
+cover:filinq:7a9ef677:34f5c300	deferred: filinq has 49 open PRs	session-20261116T174053-4a550291	2026-11-16T17:43:19Z
 build:shillinq:integration-config-to-openconnector	already done: built on development 2026-08-20 (REQ-ICO-001..007); only the live e2e run is left unchecked	session-20261116T173217-7353a3fb	2026-11-16T17:43:18Z
 build:filinq:anonymise-prohibition-consent-guard	deferred: filinq has 49 open PRs	session-20261116T171035-683856c3	2026-11-16T17:43:03Z
 build:shillinq:billable-period-becomes-an-invoice	already done: 1.1-1.4 built on development (10 Oct); only 1.5 live pass left	session-20261116T173311-8d6b3275	2026-11-16T17:43:14Z
@@ -16932,3 +16933,6 @@ build:filinq:signer-identity-rails	deferred: filinq has 49 open PRs	session-2026
 review:buildiq:1091:0a8185a0	GREEN: dev-dep bump, vitest 4719/4719 pass on merge with development	session-20261116T173240-b63ad758	2026-11-16T17:46:42Z
 cover:decidiq:a5f973bbm0262:81b1241f	deferred: decidiq has 52 open PRs	session-20261116T174323-ba3ec1dc	2026-11-16T17:47:00Z
 cover:buildiq:70b3e29em3841:d33a91b0	deferred: buildiq has 56 open PRs	session-20261116T173240-b63ad758	2026-11-16T17:47:49Z
+cover:decidiq:a5f973bbm0262:98083bbf	deferred: decidiq has 52 open PRs	session-20261116T173254-f6972957	2026-11-16T17:47:34Z
+cover:decidiq:a5f973bbm0262:568ec52a	deferred: decidiq has 52 open PRs	session-20261116T173211-a3411be5	2026-11-16T17:47:56Z
+fix:filinq:2094:5c76485b	unmeasured: static.developer.overheid.nl (fixed and approved at ff0c7f80, REVERIFY queued)	session-20261116T170555-ecf14af5	2026-11-16T17:48:04Z
