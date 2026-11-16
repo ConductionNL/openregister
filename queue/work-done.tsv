@@ -16225,3 +16225,4 @@ review:shillinq:2098:91bd5616	GREEN: settings-tab relocation, endpoint and admin
 review:integriq:3596:25615492	GREEN: as spec, no new failures (9554 tests, 5 inherited)	session-20261116T105557-2fdfe8f3	2026-11-16T11:01:27Z
 review:shillinq:1912:66b47f5d	GREEN: stylelint dev bump, stylelint 0 errors	session-20261116T102639-f9f23dec	2026-11-16T11:01:39Z
 review:stackiq:1965:29a743e1	BLOCK: connection read not scoped to the organisation; suite green	session-20261116T105648-edfb89ae	2026-11-16T11:02:09Z
+build:dossiq:a-verdict-marks-its-document-in-scope	already done: every code task (1.1-1.3) is on development (4da9c294c5); 1.4 is a live task	session-20261116T110121-4578b190	2026-11-16T11:02:30Z
