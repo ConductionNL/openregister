@@ -17011,3 +17011,4 @@ fix:hermiq:1808:d92c1c64	conflict resolved (sbom regenerated), pushed f027dd39; 
 cover:stackiq:9ac19b3amf894:59f569b2	deferred: stackiq has 46 open PRs	session-20261116T173227-109a6e00	2026-11-16T17:59:35Z
 review:hermiq:1150:9ed6a46b	RED: 5 vitest failures in admin-root and llm-provider-modal specs	session-20261116T165351-3ccaad0e	2026-11-16T18:00:02Z
 merge:humaniq:606:787b43d0	unmeasured: static.developer.overheid.nl (checker floor scan did not measure adrvalidator); 6 APPROVE recorded (610,661,667,669,684,686), 684 gate RED sbom, 606/662 CONFLICT, 1096 MOVED	session-20261116T173242-1dd97d52	2026-11-16T18:00:15Z
+fix:stackiq:1978:723683e2	development merged in clean, pushed edde87e6; REVERIFY queued	session-20261116T171035-683856c3	2026-11-16T18:00:23Z
