@@ -15872,4 +15872,6 @@ fix:pipelinq:3882:b1c037ef	no change needed: contains development, tree-only com
 review:stackiq:1978:315e616b	GREEN: unit 3739 ok (baseline 3718), vitest 12 ok, phpstan clean	session-20261116T084437-2e80ba88	2026-11-16T08:48:24Z
 fix:pipelinq:3835:1dcc79c3	conflict resolved, pushed ceb76db390ef; merge lock busy, REVERIFY recorded	session-20261116T081647-1fba2b50	2026-11-16T08:48:34Z
 review:learniq:2549:6aa40c9b	GREEN: no failures beyond development	session-20261116T082637-06597b03	2026-11-16T08:48:44Z
+review:opencatalogi:2655:f3ddd327	GREEN: no new failures (5792 tests vs 5750 baseline), matches its change's specs	session-20261116T084401-bf65ba54	2026-11-16T08:48:55Z
 review:versioniq:503:7514a922	GREEN: vitest 3012/3012 pass, vite build ok on merged tree	session-20261116T084459-8070a613	2026-11-16T08:49:07Z
+review:opencatalogi:2673:55afbbab	RED: ServiceRegistrarGoldenTest needs the new alias recorded; otherwise in line with the change spec	session-20261116T082353-191a2dc3	2026-11-16T08:49:20Z
