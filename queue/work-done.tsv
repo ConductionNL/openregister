@@ -18281,5 +18281,6 @@ cover:decidiq:a5f973bbm56fe:c76ae287	deferred: decidiq has 46 open PRs	session-2
 review:launchpad:1229:e2a90392	GREEN: scheduled-exports build; PHP 4574 green, vitest 2616 green	session-20261116T222416-013d48d6	2026-11-16T23:10:07Z
 verify:decidiq:2236:3d61125e	2236 GREEN	session-20261116T224608-d6967eb8	2026-11-16T23:10:29Z
 cover:decidiq:a5f973bbm56fe:81b1241f	already done: lib/Portal/*.php 246/246 lines covered at development aaedbb43 (46 tests green); nothing to add	session-20261116T230818-aebff84c	2026-11-16T23:10:14Z
+build:hermiq:tools-browser-and-computer-use:c6	partial: still blocked, tasks 1-3 extend exapp/code-sandbox which is only on open quality/build-tools-code-sandbox (97a61ef1, not on development); PR #1754 holds tasks 4-7	session-20261116T230934-9ee320cf	2026-11-16T23:10:40Z
 review:launchpad:1230:b2fce999	GREEN: phpunit 4567 ok, vitest 2665 ok	session-20261116T230531-f9095b0f	2026-11-16T23:10:43Z
 fix:shillinq:3055:a4da7e8d	conflict resolved, pushed 915da0af, unit 12485/0; REVERIFY queued (merge lock busy)	session-20261116T214640-6a01c0c6	2026-11-16T23:10:58Z
