@@ -16779,3 +16779,4 @@ review:larpinq:1060:b45d1e9b	GREEN: units 1057 OK, vitest 639 OK	session-2026111
 review:integriq:3638:3f3dacbb	GREEN: per change specs; 9592 tests, no new failures (5 inherited)	session-20261116T170557-1cef7e8d	2026-11-16T17:16:54Z
 fix:hermiq:1756:1435f079	conflict resolved, pushed 6c5bc38; merge lock held elsewhere, REVERIFY queued	session-20261116T171008-5daa9ed6	2026-11-16T17:17:12Z
 fix:hermiq:1756:1435f079	conflict resolved, pushed 6c5bc38; merge lock held elsewhere, REVERIFY queued	session-20261116T171008-5daa9ed6	2026-11-16T17:17:16Z
+fix:learniq:2484:6e3b8399	nothing to fix: branch contains development; tree-only conflict on the ObjectServiceInterface stub, REVERIFY queued	session-20261116T165653-a1481a13	2026-11-16T17:17:38Z
