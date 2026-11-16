@@ -17981,6 +17981,7 @@ build:opencatalogi:woo-metadata-suggestions:c4	PR #2674 head 03f3adb8: built 3.1
 build:launchpad:drill-down-cross-widget-filter:c6	PR #1235 at 92f8baab: tasks 8,11,12,13,16,30,31,33,34 done (+10 code); left 7 (blocked on nextcloud-vue chart selection event; 32 toast strings with it), 9 config-UI half, profiling 10/35, e2e 22-29	session-20261116T212719-d025d113	2026-11-16T21:49:44Z
 cover:pipelinq:7f9dc8e6m3dbb:2ea9e4f7	deferred: pipelinq has 43 open PRs	session-20261116T214553-9fb39259	2026-11-16T21:49:39Z
 review:opencatalogi:2678:9d1090cf	stale	session-20261116T214739-8ff46d14	2026-11-16T21:49:56Z
+review:launchpad:1230:80a4c122	BLOCK: suite green (4563/0), blocking gate fails on PR lines (82 throttling, 23 or-abstraction, 16, 51, 101); openapi.json conflict	session-20261116T214543-5851eb46	2026-11-16T21:50:27Z
 cover:pipelinq:7f9dc8e6m3dbb:e19add4c	deferred: pipelinq has 43 open PRs	session-20261116T214553-9fb39259	2026-11-16T21:50:19Z
 cover:launchpad:fb10c50fmf487:34763eb4	deferred: launchpad has 46 open PRs	session-20261116T212719-d025d113	2026-11-16T21:50:36Z
 merge:launchpad:1106:0c550d07	cloud tree of 3 launchpad PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T202633-f7fb0e3a	2026-11-16T21:50:32Z
