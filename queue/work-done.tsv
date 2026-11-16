@@ -15632,3 +15632,4 @@ fix:launchpad:819:c5c80a07	inherited: development itself measures opensourceheal
 fix:launchpad:760:77add312	merged development, regenerated sbom; new head 091c4dbf, REVERIFY written	session-20261116T064118-a5aff8df	2026-11-16T07:14:20Z
 merge:learniq:2507:e3b1f029	cloud tree of 1 learniq PRs: merged=0 red=0 fail=0 skip=1; conflict 0, lint 0, red 0, moved 0, done 0; REQUEST_CHANGES: register version raised without app version	session-20261116T065234-884bc496	2026-11-16T07:14:44Z
 fix:launchpad:761:ca2815b8	inherited: opensourcehealth 3 stars on development itself, stale floor file; vitest 2578 pass, head unchanged	session-20261116T062120-7c38c5f1	2026-11-16T07:14:43Z
+fix:launchpad:755:7e918f87	sbom regenerated, pushed f41902ff; REVERIFY recorded	session-20261116T063134-3a4fc8af	2026-11-16T07:15:12Z
