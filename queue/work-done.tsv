@@ -15596,3 +15596,4 @@ review:stackiq:1959:fe24e23b	GREEN: spec-conform, suite OK	session-20261116T0620
 review:buildiq:1094:2ea9dbb4	GREEN: prettier bump, vitest 4719 pass, format result unchanged	session-20261116T062120-7c38c5f1	2026-11-16T07:07:19Z
 review:decidiq:2178:32c05171	GREEN: decidiq #2178 reviewed, unit 4666 OK, vitest pass; concerns noted	session-20261116T070226-5d062725	2026-11-16T07:07:29Z
 review:buildiq:1608:53c9f80a	GREEN: matches change specs, tests green beyond 1 inherited failure	session-20261116T062109-81fc252e	2026-11-16T07:07:53Z
+merge:opencatalogi:1893:e03679c4	failed: opencatalogi development 0f496962 fails its own checker floor (opensourcehealth pass->warn, 4->3 stars), so every PR is gate RED; floor needs re-recording or deps refresh	session-20261116T063134-3a4fc8af	2026-11-16T07:08:00Z
