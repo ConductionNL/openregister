@@ -16532,3 +16532,4 @@ fix:versioniq:507:63401e45	failed: sbom gate wants sbom.cdx.json in the diff, bu
 fix:shillinq:1958:6f600fec	merged development in clean, suite 12245 OK; new head 191f6a9e, REVERIFY queued	session-20261116T142931-c6a20eeb	2026-11-16T15:03:53Z
 fix:decidiq:1470:d4e9a56b	inherited: decidiq development itself measures maintainability 3.77 below its floor 3.78; PR changes only package.json, lock and sbom	session-20261116T142700-f4d651ea	2026-11-16T15:04:09Z
 fix:decidiq:2170:d54fcb29	unmeasured: static.developer.overheid.nl (fixed demo-data blocker, new head 8002c6de, APPROVE recorded, not landed)	session-20261116T144202-f2b26030	2026-11-16T15:04:38Z
+fix:keepiq:1791:dc388493	fixed spec-coverage (4 methods tagged), merged development; pushed 123b7f25; REVERIFY queued	session-20261116T143136-ae6d04cb	2026-11-16T15:04:56Z
