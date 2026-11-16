@@ -289,7 +289,7 @@ survives even where the priority moved.
 
 ## Phase 4 — per-request work outside the write (ADR-076)
 
-- [ ] **Task 11 — pipelinq: stop building an app-store lookup per request.**
+- [x] **Task 11 — pipelinq: stop building an app-store lookup per request.**
       `resolveDependencyStatuses()` → `buildAppStoreLookup()` →
       `AppFetcher::get()` iterates the **3.4 MB** appstore catalogue on every
       request. It is free on this instance **only because
@@ -303,6 +303,12 @@ survives even where the priority moved.
         Initial state exists for page loads; an object-create API call pays for
         it and throws it away. Gate on the request being a page request, or move
         it to a controller.
+      > 2026-11-16: both halves are on pipelinq `development` (checked at 934bb58c2).
+      > `Application::resolveDependencyStatuses()` caches the statuses in a local
+      > `ICacheFactory` cache keyed on app version + dependency list (5 min TTL), so the
+      > appstore walk runs once per worker per window, and `boot()` skips the whole
+      > initial-state block when `requestRendersPage()` says the path is an API, OCS, DAV,
+      > webhook or asset route. No openregister code is involved.
 
 - [ ] **Task 12 — openconnector: move the repair-step fallback to cron.**
       `ensureRegisterBootstrapped()` invokes a repair step from `boot()`. It is
