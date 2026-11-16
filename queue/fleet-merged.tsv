@@ -4592,3 +4592,4 @@ humaniq	661	f523f286b290dfce227eab0ee9bb36a5418b4a2b	MERGED	worker-16	GATE OK sb
 humaniq	667	c3822863e74efaa1f7512786743723ab486e70f2	MERGED	worker-16	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.47 holds at 3.47
 humaniq	669	88ae160d9c7abbc76321f26a411c6125cc34b28d	MERGED	worker-16	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.47 holds at 3.47
 humaniq	686	fe1cbc0ae582ec29fbb26fc246d74dbf397480b5	MERGED	worker-16	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.47 holds at 3.47
+integriq	2671	f4218e170982307bdf1ebe71fe738453a8155f5e	SKIP	worker-14	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
