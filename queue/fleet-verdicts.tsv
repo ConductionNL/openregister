@@ -14434,3 +14434,4 @@ integriq	2716	98572e4167aca01ea05fda93a4d015ea9f674d6a	REVERIFY	worker-07	merged
 thematiq	1682	3f39ef0d0f1d79e5bf27de397c577993924fcf7e	RED	worker-46:merge-gate	GATE RED sbom: composer.lock, package-lock.json changed without sbom.cdx.json
 dossiq	3203	2c689dc958f4d2ad3603b422f1c3f5a2f9460ec4	RED	worker-55:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 integriq	3670	ecc30716f6cdaa27854ad597b14b592252099816	REVERIFY	worker-33	merged development in: kept the bundle's vue ^3.5.44, took development's bumps, lockfile resolved, sbom regenerated (--check current); vitest 2387/2387; merge lock held elsewhere; new head d4f5bcc83b7208371d998e46641f53b3703480ef, verify it
+integriq	3669	04075d461b1bc7703cea98fe27b0e7abfac64558	REVERIFY	worker-51	merged development in (clean), regenerated stale sbom; vitest 2387 pass; merge lock held elsewhere; new head a2e27ca84e0633f568c5b8396dd55abb2257a12c, verify it
