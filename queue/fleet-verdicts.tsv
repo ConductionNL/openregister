@@ -14415,3 +14415,4 @@ shillinq	3080	5b6628bedaef904a02c0e1f497655def4909ac35	REVERIFY	worker-16:merge	
 versioniq	721	2524b722d51434a114c0f942019fae2eb306a81b	RED	worker-14:merge-gate	GATE RED floor: unit_complexity: 4.63 -> 4.61; module_coupling: 5.23 -> 5.20
 shillinq	1991	29abf7fb303a9a25601637bfbbaecaeb9a1feae7	REVERIFY	worker-45	spdxheaders red is inherited from development (stub header dropped by 0d688ca2f), fixed in #3112; no change to this branch; new head 29abf7fb303a9a25601637bfbbaecaeb9a1feae7, verify it after #3112
 dossiq	6590	e05ebf369ae06f6003bbbc058625dfd8e78b491a	GREEN	worker-51	unit 18335 tests on tree (baseline 18317, 0 failures), 0 new; calls match openregister main signatures, rbac flags and behaviour kept
+stackiq	1954	9c3e8a905908495c25c672a2c4bda2eb0f70c6c5	RED	worker-11:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
