@@ -678,3 +678,4 @@ buildiq	1652	209a678f1127ca034aa59a7530d57f6d3e78e9e1	APPROVE	worker-24	Thorough
 larpinq	1071	9204f9b36c1d49344b3e5c5753474ba275772bb2	APPROVE	worker-36	Quick; no blockers; tests only, FleetAppIdService cover
 larpinq	1072	f8beca6267b69449cab252e81fcb21f71b7ea4e4	APPROVE	worker-36	Quick; no blockers; tests only, Notifier cover, no assertions removed
 larpinq	1073	c3a2bf43b3476f9f1b05f2f65fe5a70493f7187a	APPROVE	worker-36	Quick; no blockers; tests only, middleware edge cases
+larpinq	1074	0a276a6c4b7c7f20a101b296be5e65620ae86a52	APPROVE	worker-36	Thorough; no blockers; implements forms-registration-is-checked-at-binding 1.1 as specced, fail-closed on unverifiable binding, OR main API signatures checked; 1.2 left unbuilt with reason
