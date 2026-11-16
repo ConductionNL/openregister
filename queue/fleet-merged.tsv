@@ -4744,3 +4744,4 @@ shillinq	3121	31c97d4e7639634edb1c347f972cab31c192882d	FAIL	worker-03	{"message"
 dossiq	5398	0574972c864d76681209aa9163ca32450a6fa810	MERGED	worker-14	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.40
 learniq	2559	64fd61a80179557f884440e26b650fd61bb8122b	MERGED	worker-46	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 3.99
 learniq	2562	7726a54cc67ec9a8c40f7c44e8fea0cf725b9fd2	MERGED	worker-46	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 3.99
+decidiq	2170	60361ba1035cef5e803fb6e08a195d0ca3bfc007	MERGED	worker-09	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.78 holds at 3.80
