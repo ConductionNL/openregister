@@ -16215,3 +16215,4 @@ review:shillinq:2092:71d6e19e	GREEN #2092: orphan deletion, suites match baselin
 review:planninq:933:86d76c41	GREEN: phpunit 1232 ok, vitest 3565 ok, lint clean	session-20261116T105550-e90eeee3	2026-11-16T10:58:13Z
 review:integriq:2994:672207a4	GREEN: dev-only sass bump, vitest 2387/2387 pass	session-20261116T105625-05822e4f	2026-11-16T10:58:33Z
 review:portaliq:1768:a2fd2704	GREEN: sass dev bump; site build size-limit error inherited from development	session-20261116T102639-f9f23dec	2026-11-16T10:58:44Z
+review:portaliq:663:07e3f56b	GREEN: additive opt-in fallback switch, no new failures (16 inherited)	session-20261116T105712-ca7768af	2026-11-16T10:59:56Z
