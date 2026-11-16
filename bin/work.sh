@@ -15,7 +15,7 @@
 #   task_done <id> <result>     record the result and release the task lease
 #   task_lease <id>             print the lease name of a task
 #   task_open                   print every open task (claimed or not), oldest first
-#   merge_lock <app> [min]      take the per-app merge lock leases/merge-<app>.lease (default 180 min); 1 = held
+#   merge_lock <app> [min]      take the per-app merge lock leases/merge-<app>.lease (default 90 min, renewed while merging); 1 = held
 #   merge_lock_renew <app>      0 = still ours (renewed when under three quarters left); 1 = lost: stop merging
 #   merge_unlock <app>          release it
 # One merger per app (a cloud worker or a local runner; the local runners take the same lease): a merge task is
@@ -29,8 +29,8 @@ WORKER_SLOTS=${WORKER_SLOTS:-58}
 
 task_lease() { printf 'task-%s' "$(printf '%s' "$1" | tr -c 'A-Za-z0-9._-' '_')"; }
 
-merge_lock() { lease_acquire "merge-$1" "${2:-180}"; }
-merge_lock_renew() { lease_renew "merge-$1" "${2:-180}"; }
+merge_lock() { lease_acquire "merge-$1" "${2:-90}"; }
+merge_lock_renew() { lease_renew "merge-$1" "${2:-90}"; }
 merge_unlock() { lease_release "merge-$1"; }
 
 worker_slot() {
@@ -113,7 +113,7 @@ task_claim() {
 		if [ "$(printf '%s' "$row" | cut -f2)" = merge ]; then
 			mapp=$(printf '%s' "$row" | cut -f3)
 			_lease_free "merge-$mapp" || continue
-			_lease_stage "merge-$mapp" 180
+			_lease_stage "merge-$mapp" 90
 		fi
 		if [ -n "$worker" ] && [ "$(_lease_field "$worker" holder)" = "$ST_ME" ]; then
 			exp=$(_lease_field "$worker" expires_epoch)
