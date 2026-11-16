@@ -1,12 +1,12 @@
 {
  "app": "integriq",
- "commit": "53067e87f37a55a34be58bdd16478364884a94f5",
- "measured_at": "2026-11-15T01:52:28Z",
+ "commit": "d9d474f0f4cc722cd8e37fc20093f9be6e739cf2",
+ "measured_at": "2026-11-16T07:17:53Z",
  "php": {
   "tool": "pcov",
-  "pct": 94.76,
-  "statements": 68703,
-  "covered": 65101,
+  "pct": 95.29,
+  "statements": 69540,
+  "covered": 66264,
   "dirs": {
    "lib/Adapters/": [
     181,
@@ -14,11 +14,11 @@
    ],
    "lib/Adapters/Berichtenbox/": [
     393,
-    389
+    390
    ],
    "lib/Adapters/Digikoppeling/": [
     525,
-    489
+    521
    ],
    "lib/Adapters/LearningMaterial/": [
     418,
@@ -34,7 +34,7 @@
    ],
    "lib/Adapters/Pdok/": [
     343,
-    338
+    342
    ],
    "lib/Adapters/Rod/": [
     2,
@@ -46,7 +46,7 @@
    ],
    "lib/Adapters/Slo/": [
     743,
-    736
+    743
    ],
    "lib/Adapters/Support/": [
     44,
@@ -74,7 +74,7 @@
    ],
    "lib/Auth/Idp/": [
     797,
-    782
+    791
    ],
    "lib/BackgroundJob/": [
     1019,
@@ -102,19 +102,19 @@
    ],
    "lib/Command/Integration/": [
     355,
-    336
+    353
    ],
    "lib/Connectors/": [
     276,
     272
    ],
    "lib/Controller/": [
-    6713,
-    6393
+    6938,
+    6593
    ],
    "lib/Db/": [
     187,
-    186
+    187
    ],
    "lib/Directory/": [
     600,
@@ -125,8 +125,8 @@
     487
    ],
    "lib/EventListener/": [
-    1547,
-    1409
+    1587,
+    1463
    ],
    "lib/Exception/": [
     62,
@@ -141,12 +141,12 @@
     36
    ],
    "lib/Flow/": [
-    2514,
-    2485
+    2590,
+    2561
    ],
    "lib/Gateway/": [
     333,
-    331
+    332
    ],
    "lib/Gateway/Adapter/": [
     78,
@@ -170,7 +170,7 @@
    ],
    "lib/Mcp/": [
     152,
-    142
+    145
    ],
    "lib/Middleware/": [
     62,
@@ -190,23 +190,23 @@
    ],
    "lib/Observability/Otel/": [
     276,
-    275
+    276
    ],
    "lib/Outbound/": [
     580,
-    505
+    573
    ],
    "lib/Outbound/Call/": [
-    698,
-    670
+    700,
+    672
    ],
    "lib/Outbound/Identity/": [
     1250,
-    1226
+    1228
    ],
    "lib/PropertySource/": [
     257,
-    248
+    257
    ],
    "lib/PropertySource/Exception/": [
     23,
@@ -218,7 +218,7 @@
    ],
    "lib/Repair/": [
     1288,
-    1231
+    1247
    ],
    "lib/Rule/": [
     121,
@@ -233,8 +233,8 @@
     7
    ],
    "lib/Service/": [
-    23552,
-    21419
+    23672,
+    21664
    ],
    "lib/Service/Adapter/": [
     48,
@@ -245,12 +245,12 @@
     75
    ],
    "lib/Service/Adapter/DocumentCms/": [
-    101,
-    101
+    202,
+    199
    ],
    "lib/Service/Adapter/EndpointWorkspace/": [
-    73,
-    69
+    274,
+    263
    ],
    "lib/Service/Adapter/Saas/": [
     165,
@@ -282,7 +282,7 @@
    ],
    "lib/Service/ConfigurationHandlers/": [
     364,
-    361
+    364
    ],
    "lib/Service/Consumer/": [
     354,
@@ -298,7 +298,7 @@
    ],
    "lib/Service/DocumentGeneration/": [
     444,
-    441
+    444
    ],
    "lib/Service/Dso/": [
     762,
@@ -314,7 +314,7 @@
    ],
    "lib/Service/Exchange/": [
     968,
-    956
+    964
    ],
    "lib/Service/Forms/": [
     162,
@@ -366,7 +366,7 @@
    ],
    "lib/Service/MessageValidation/": [
     364,
-    356
+    362
    ],
    "lib/Service/Migration/": [
     370,
@@ -405,8 +405,8 @@
     96
    ],
    "lib/Service/Portal/": [
-    50,
-    50
+    49,
+    49
    ],
    "lib/Service/Psd2/": [
     138,
@@ -426,11 +426,11 @@
    ],
    "lib/Service/Registry/": [
     289,
-    278
+    289
    ],
    "lib/Service/Regression/": [
-    32,
-    32
+    104,
+    102
    ],
    "lib/Service/Residency/": [
     160,
@@ -445,8 +445,8 @@
     50
    ],
    "lib/Service/Security/": [
-    1045,
-    1021
+    1046,
+    1022
    ],
    "lib/Service/ServiceFetch/": [
     235,
@@ -462,7 +462,7 @@
    ],
    "lib/Service/StufZkn/": [
     1950,
-    1932
+    1946
    ],
    "lib/Service/Subscriptions/": [
     82,
@@ -470,7 +470,7 @@
    ],
    "lib/Service/Synchronization/": [
     173,
-    165
+    173
    ],
    "lib/Service/Tables/": [
     283,
@@ -535,9 +535,9 @@
   }
  },
  "js": {
-  "pct": 93.74,
-  "statements": 7798,
-  "covered": 7310,
+  "pct": 94.89,
+  "statements": 8148,
+  "covered": 7732,
   "dirs": {
    "src/": [
     94,
@@ -563,13 +563,17 @@
     240,
     237
    ],
+   "src/components/regression/": [
+    56,
+    56
+   ],
    "src/dialogs/": [
-    583,
-    578
+    730,
+    689
    ],
    "src/handlers/": [
-    111,
-    104
+    112,
+    105
    ],
    "src/integration/": [
     51,
@@ -580,8 +584,8 @@
     263
    ],
    "src/modals/": [
-    135,
-    111
+    195,
+    161
    ],
    "src/modals/CallLog/": [
     187,
@@ -628,16 +632,16 @@
     22
    ],
    "src/modals/v2/": [
-    1908,
-    1695
+    1923,
+    1860
    ],
    "src/store/": [
     31,
     31
    ],
    "src/views/ApiProducts/": [
-    126,
-    124
+    190,
+    160
    ],
    "src/views/Approvals/": [
     103,
@@ -652,8 +656,8 @@
     36
    ],
    "src/views/ExecutionTrace/": [
-    64,
-    63
+    69,
+    64
    ],
    "src/views/Migration/": [
     42,
@@ -672,16 +676,16 @@
     414
    ],
    "src/views/Synchronization/": [
-    937,
-    916
+    938,
+    917
    ],
    "src/views/admin/": [
     585,
     561
    ],
    "src/views/wrappers/": [
-    219,
-    214
+    220,
+    215
    ]
   }
  }
