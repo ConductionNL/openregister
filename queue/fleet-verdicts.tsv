@@ -15989,3 +15989,4 @@ opencatalogi	2654	9a530c0512155f6ca2d3f5bfcf8c04dc2b3487d5	CONFLICT	worker-41	co
 learniq	2551	87132cc4b612dafcfa698763be2779ae50d08401	CONFLICT	worker-22	conflicts with development in l10n/en.js, en.json, nl.js, nl.json and scripts/example-sets/__pycache__/example_set.cpython-311.pyc; suite not run
 opencatalogi	2683	9def1ff8ccf4c4e9d47eb4f96e34a557ec3f4b40	CONFLICT	worker-41	conflicts with development in all l10n/*.js|json and robust-first-run-setup tasks.md; tree not run
 learniq	2523	6236bc6db8ce0a88227f1c7e49ace2fd48cd485c	CONFLICT	worker-26	conflicts with development in l10n en/nl, ParentSitePages.php, PortalContributionProvider.php, learniq_register.json, profiles/po.json, scripts/example-sets/po.py and 4 tests; tests not run
+pipelinq	3718	5c2cc12e9d9d414ba74212cd32e5155fb22caee2	CONFLICT	worker-26	conflicts with development in l10n en/nl, DealUpdatedListener.php, ForecastDealService.php; tests not run
