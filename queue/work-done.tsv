@@ -18429,3 +18429,4 @@ verify:larpinq:1056:85518065	CONFLICT #1056 (routes.php, l10n catalogues)	sessio
 verify:filinq:2106:48eff116	CONFLICT #2106 (SigningService.php, filinq_register.json)	session-20261116T233011-100ff0c6	2026-11-16T23:45:42Z
 verify:humaniq:1147:50dd2ee9	CONFLICT #1147 (l10n, PayrollRunService and its tests)	session-20261116T232033-3ca59164	2026-11-16T23:46:02Z
 verify:integriq:3601:c832d6a2	CONFLICT #3601 (l10n, docs, golden test vs development)	session-20261116T233834-fbe601d1	2026-11-16T23:46:15Z
+verify:learniq:2537:016b101a	CONFLICT #2537	session-20261116T232519-f84cca9a	2026-11-16T23:47:12Z
