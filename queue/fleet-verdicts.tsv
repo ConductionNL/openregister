@@ -13900,3 +13900,4 @@ launchpad	785	91bd14a0c96181818b7b5c9405c8098dd9e28904	RED	worker-12:merge-gate	
 filinq	2072	ec607dc3215ac306c4ccbc98744800d52f49334a	BLOCK	worker-23:review	review: Strict; blockers: appinfo version not raised although a repair step and a register version bump are added (occ upgrade would run neither), two new schema properties lack title/description, WooProfileService saveProfileFor/removeProfileFor have no caller; concerns: removed bypass flags tighten reads 
 filinq	2088	bd2b46498b1e238e37d6b2162ae9f2d2af95f6b4	CONFLICT	worker-23:merge	merges clean on development alone; files: CHANGELOG.md lib/Settings/filinq_register.json 
 filinq	2123	3f385b112ecbbf73b9da1afd67611e4c3feaa311	CONFLICT	worker-23:merge	merges clean on development alone; files: lib/Settings/filinq_mock_register.json lib/Settings/filinq_register.json 
+planninq	1070	0324724d24fe6d0db28116a01a3102143ea1dcb2	RED	worker-12:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
