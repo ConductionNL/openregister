@@ -15897,3 +15897,4 @@ fix:dossiq:5338:4924e28d	conflict resolved, pushed 4d53d9bb (tests/phpcs/phpstan
 fix:dossiq:3199:dd09a728	merged development in, new head 53d908ab; lock busy, REVERIFY queued	session-20261116T084528-6b5f71dd	2026-11-16T08:53:16Z
 fix:dossiq:5396:861d4d0a	conflict resolved, pushed cc232d59; REVERIFY recorded (merge lock held elsewhere); dev-only bump will hit the sbom lock-without-sbom rule	session-20261116T082121-c1741fb9	2026-11-16T08:53:35Z
 lane:depbundle:learniq:bundle	opened #2561 (11 updates, verified); merge lock held elsewhere, GREEN verdict queued	session-20261116T083627-a5dc872b	2026-11-16T08:53:57Z
+fix:dossiq:4887:f530c6e6	conflict resolved, pushed 5b3dec5c; merge lock held elsewhere, REVERIFY queued	session-20261116T084847-50980336	2026-11-16T08:54:07Z
