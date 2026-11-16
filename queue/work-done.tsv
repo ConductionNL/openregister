@@ -17186,3 +17186,4 @@ merge:hermiq:1193:c42da9d2	unmeasured: gitdocumentatie.logius.nl (static.develop
 review:humaniq:662:f0ddf8e5	GREEN: phpmd 3 bump, suite 4405 OK on merge with development, sbom current	session-20261116T173242-1dd97d52	2026-11-16T18:41:48Z
 cover:keepiq:c967a31fmba5a:ecbab48a	already done: lib/Service/ShareSave/ measures 100% lines (399/399) with pcov	session-20261116T173306-f68895a7	2026-11-16T18:41:59Z
 review:hermiq:1756:d3c836c0	GREEN: suite OK 5349 tests, access checks fail closed	session-20261116T181517-93723df6	2026-11-16T18:42:18Z
+cover:keepiq:c967a31fmba5a:js3f3bfe56	PR #1848: +23 tests (main.js 0->100%, App.vue 66->71%; src/* lines 53.6->79.2%); suite 6894 pass / 3 inherited fails	session-20261116T182240-4aa65022	2026-11-16T18:42:55Z
