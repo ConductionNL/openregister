@@ -14135,3 +14135,4 @@ opencatalogi	2655	f3ddd32755f07b8cc2c89f45f975c56de5f750cc	GREEN	worker-44:revie
 shillinq	2259	614a5c5a2c43f3647a83a4556528ce74ea0046f3	RED	worker-22:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
 shillinq	1965	38aa9e98d92064163730059c45e299b358346b33	CONFLICT	worker-22:merge	merges clean on development alone; files: appinfo/info.xml tests/fixtures/register-versions.lock.json 
 shillinq	2063	e1c291c48624c1084f7f4d14098e89a055e47db5	CONFLICT	worker-22:merge	merges clean on development alone; files: appinfo/info.xml tests/fixtures/register-versions.lock.json 
+pipelinq	3092	f8d049f34e69ece75f6b5915bae3db471efaee4e	REVERIFY	worker-47	merged development in and regenerated sbom.cdx.json (regen --check OK); reviewed APPROVE at new head; land skipped: merge gate UNMEASURED (checker scan did not measure adrvalidator); new head f041615e2cce52415f7c71cc60df53271a377f88, verify it
