@@ -16079,3 +16079,4 @@ merge:larpinq:1050:4e0ac1bc	not landed: head 48b34820 was gated RED in this sess
 lane:arch5:dossiq:next-dossiq:c2	PR #6593 opened (4.40-4.43 -> 4.41-4.43), GREEN verdict recorded; merge lock held elsewhere, a merge task lands it; next round queued as next-dossiq-r2	session-20261116T091756-9df6b5a8	2026-11-16T09:35:22Z
 merge:pipelinq:3152:774c8082	merge3 tree of 4 pipelinq PRs: merged=4 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-16T09:35:39Z
 merge:pipelinq:3092:a1a9721c	merge3 tree of 4 pipelinq PRs: merged=4 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-16T09:35:50Z
+merge:dossiq:6203:148ddd5d	merge3 tree of 2 dossiq PRs: merged=1 red=0 fail=0 skip=0; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-16T09:35:57Z
