@@ -17297,3 +17297,4 @@ cover:openregister:7350e3efm9dc5:9b457b26	stacked on #10587 (open-PR budget: 188
 review:filinq:2072:174b63c7	stale	session-20261116T184841-a3bc3002	2026-11-16T19:08:54Z
 cover:dossiq:069ee2d6m9d1b:60c2c265	stacked on #6203 (open-PR budget 41): 8 controllers, +146 tests, lib/Controller 88.7% -> 94.6%	session-20261116T184907-cd59fdf4	2026-11-16T19:09:45Z
 merge:keepiq:1842:2787f816	cloud tree of 4 keepiq PRs: merged=4 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T184852-b8356331	2026-11-16T19:10:00Z
+review:learniq:2507:c5edc819	GREEN: matches specs, no new failures (1 inherited); header conflict with development in a test stub	session-20261116T190656-a33397e6	2026-11-16T19:10:35Z
