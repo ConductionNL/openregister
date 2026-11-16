@@ -15906,3 +15906,4 @@ hermiq	1578	c7adfb0008435059ecda8b9aae4cdc57df32832a	CONFLICT	worker-13	conflict
 humaniq	1139	181389a647ba547cc989314075d21fd374263a8b	CONFLICT	worker-45	conflicts with origin/development in l10n/en.js, l10n/nl.js; not run on tree
 learniq	2578	1ce84f5b7b6b7f2cde5febf91d9cb2fb62431aad	GREEN	worker-17	unit 6974 tests on tree; baseline 6966 with 1 inherited failure (HigherEducationExampleSetTest he.json out of date); 0 new failures; private-method refactor, behaviour kept
 humaniq	1143	67a2f379f4280d46ca916efc4d6b915827dc567f	CONFLICT	worker-34	merge with development conflicts in l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+filinq	2126	5e6533ee71489d563587aaedfbd24555ef720dab	CONFLICT	worker-51	conflicts with development in l10n/en.js,en.json,nl.js,nl.json and lib/Settings/filinq_register.json; baseline 6960 tests green, not run on tree
