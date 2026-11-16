@@ -14466,3 +14466,5 @@ dossiq	3955	051bc7d2b741f9b08073976359219c0fae9ce6cb	CONFLICT	worker-55:merge	co
 humaniq	1095	340163fdc4208370ae8ac1bde6cdbef09083a930	RED	worker-26:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
 thematiq	1126	5620b7cb2d7fa051b0dab741117d4c9133f10990	RED	worker-46:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 thematiq	1290	7ea88173002bf91ab287816948c9f546a334f6b0	RED	worker-46:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+humaniq	687	f6b6a0aa4d02b84def34ef30b96fe8c44f383ced	CONFLICT	worker-26:merge	merges clean on development alone; files: package-lock.json package.json 
+humaniq	872	deea55b1b0665552ac70ac4ac4003d970eb42f9a	REVERIFY	worker-26:merge	verdict sha is not the head: head is a3d94bb2dd2fdb56d8db5354fe8b51a30e1fb477
