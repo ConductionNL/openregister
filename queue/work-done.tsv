@@ -18146,3 +18146,4 @@ merge:versioniq:707:81847bfa	cloud tree of 1 versioniq PRs: merged=0 red=1 fail=
 cover:buildiq:70b3e29eme3dd:34763eb4	deferred: buildiq has 52 open PRs	session-20261116T222156-bd715f7e	2026-11-16T22:29:27Z
 cover:pipelinq:7f9dc8e6m3dbb:a274b153	added 3f5ffded to open PR #3602 (43 open PRs): @uses for nested traits in 3 risky tests; Upl 99/114 -> 113/114; suite 9218, 0 failures, risky 13->5	session-20261116T220647-b92c8f52	2026-11-16T22:29:39Z
 cover:buildiq:70b3e29eme3dd:f91e7417	deferred: buildiq has 49 open PRs	session-20261116T222954-929c895c	2026-11-16T22:30:26Z
+cover:dossiq:069ee2d6m9d1b:825b9846	PR #6617: 33 tests for Controller/Support (ApplicatieRules, ApplicatieRepresentation, IntakeRoleGate, ReportingAudienceGuard, TranslatesRefusals); suite 19 failures before and after	session-20261116T222053-b1ae1d9a	2026-11-16T22:30:36Z
