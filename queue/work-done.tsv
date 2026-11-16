@@ -18221,3 +18221,4 @@ cover:buildiq:70b3e29eme3dd:e372e6ff	deferred: buildiq has 50 open PRs	session-2
 cover:launchpad:fb10c50fm88bd:60c2c265	deferred: launchpad has 45 open PRs	session-20261116T224625-4fd1a21f	2026-11-16T22:49:55Z
 cover:dossiq:069ee2d6m9d1b:0f859653	already covered: lib/Flow/*.php misses are 7 lines, all unreachable defensive branches (typed gateway, validated config, double settings read)	session-20261116T222948-81ec1395	2026-11-16T22:49:53Z
 cover:buildiq:70b3e29eme3dd:390adfb9	deferred: buildiq has 50 open PRs	session-20261116T224608-d6967eb8	2026-11-16T22:50:32Z
+cover:buildiq:70b3e29eme3dd:05630945	deferred: buildiq has 50 open PRs	session-20261116T224608-d6967eb8	2026-11-16T22:50:47Z
