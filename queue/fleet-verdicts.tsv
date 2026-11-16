@@ -15069,3 +15069,4 @@ larpinq	1060	b45d1e9be24990e3f8d521dc0eb15642226040e8	GREEN	worker-09:review	sam
 humaniq	606	647da215609758b6eb51cbe1182861a618182015	CONFLICT	worker-52:merge	conflicts with development; files: composer.lock 
 humaniq	662	d7499aecffd3be7525553af3896068e429d61751	CONFLICT	worker-52:merge	conflicts with development; files: composer.lock 
 humaniq	1096	5b9e37da9472745c3d714e8f3b4574d67d4	REVERIFY	worker-52:merge	verdict sha is not the head: head is 5b9e37da9472745c3d714e8f3b4574d67d4acbfa
+integriq	3051	5649956bcbad2c739503fb4a9c936c1883e6aa5f	REVERIFY	worker-14	added SPDX headers to the three new lock request stubs (spdxheaders floor); new head 3f6ca6b60604ab69c8a08838e03580dbda77d00b, verify it
