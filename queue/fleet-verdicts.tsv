@@ -15205,3 +15205,4 @@ filinq	2122	8da9763506ad04235e73f6e889997e6b37d0432a	REVERIFY	worker-09	merged o
 learniq	2557	3fe186b0e65f5134d7d024165f423b6f5aa4469c	GREEN	worker-43	PHP unit 6868 tests, baseline 1 failure (HigherEducationExampleSetTest, inherited), new 0; JS node --test 1383, 9 inherited, new 0; dev-dep psalm bump + SBOM + stub header, no behaviour change
 filinq	2094	7be3348d41cf88e9b402e4741381294ce12f0cbc	RED	worker-03:merge-gate	GATE RED checker floor: adrvalidator: pass -> warn; adrvalidator stars: 5 -> 3; score: 100 -> 97
 learniq	2559	307b93039061bdfac0af3334ec66ff80fbbff0e8	CONFLICT	worker-43	conflicts in the tree after 2557 on tests/Stubs/Contract/ObjectServiceInterface.php (SPDX header); merges clean on development alone
+learniq	2562	9bda8314f7f18deccba80b4954151c8d340cf7cc	GREEN	worker-43	PHP unit 6868 tests, baseline 1 inherited, new 0; JS 1383, 9 inherited, new 0; minimatch advisory lock fix + SBOM + stub header, no behaviour change
