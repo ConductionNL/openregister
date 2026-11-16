@@ -13932,3 +13932,4 @@ learniq	2127	68efea31c565ca8b2506f50814b1ab554a25b7b9	RED	worker-15:merge-gate	G
 opencatalogi	2673	9b9531032c82409ec13b1844b2e8390e047c42df	BLOCK	worker-13:review	review: Thorough; floors: merge gate checker floor maintainability stars 5->4 with this PR, restore the rating (opensourcehealth drop is inherited from development); tree adds no unit failures
 larpinq	960	659b6749ae8b0a7d1b55bdf6d58fad66b1b393e0	RED	worker-23:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
 larpinq	961	06d9f9ca3929251feb0616338f90bd38bf5c196d	RED	worker-23:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+larpinq	1053	fa6976fd13ab5e8f301a037ce834dd3d1d818f9f	CONFLICT	worker-23:merge	merges clean on development alone; files: lib/Service/SettingsLoadService.php lib/Settings/larpinq_mock_register.json 
