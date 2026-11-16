@@ -16006,3 +16006,4 @@ review:filinq:2088:421aab4e	GREEN filinq#2088: unit 6825 OK, vitest 772 OK, no b
 review:dossiq:3957:3a1d1a08	GREEN: behaviour per its openspec change; 19 unit failures inherited from development	session-20261116T091549-b399a636	2026-11-16T09:19:24Z
 review:planninq:933:ff903468	GREEN: unit 1232 ok, vitest 3565 ok, access checks precede writes	session-20261116T091613-0f6d95fe	2026-11-16T09:19:35Z
 fix:shillinq:1965:38aa9e98	no change: merges clean on development, conflict was tree-only; REVERIFY queued (merge lock busy)	session-20261116T084459-8070a613	2026-11-16T09:19:45Z
+review:shillinq:3078:c1655bb8	GREEN: suite 12272 ok, vitest 9/9	session-20261116T091532-d81a601b	2026-11-16T09:19:56Z
