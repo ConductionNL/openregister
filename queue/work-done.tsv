@@ -17509,3 +17509,4 @@ fix:stackiq:1996:66a3bdf8	merged #1996 at 4df183ac3a213a1175198c8cd83acf1c54dc0a
 review:hermiq:1788:2e1f7461	already merged into development (e1d57437); no review needed	session-20261116T195325-4766bbcd	2026-11-16T19:53:52Z
 verify:learniq:2557:0e7d2b71	3 GREEN (2557, 2559, 2562): no new PHP or JS failures	session-20261116T190918-81e43f73	2026-11-16T19:53:51Z
 merge:opencatalogi:2696:1c565281	cloud tree of 1 opencatalogi PRs: none; conflict 1, lint 0, red 0, moved 0, done 0	session-20261116T195130-dbadc12c	2026-11-16T19:54:41Z
+merge:planninq:1202:d7e7e9ea	merge3 tree of 1 planninq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-16T19:54:17Z
