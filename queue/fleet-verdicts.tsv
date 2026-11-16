@@ -14636,3 +14636,4 @@ integriq	3612	0000c17621f3afaa620e370875472d46df3b84d1	REVERIFY	worker-47:merge	
 integriq	3628	858c7a5daf994cdee85d2208d40103edcf6f52cd	REVERIFY	worker-47:merge	verdict sha is not the head: head is 58bae4ecc822b35bfd0ba0364d0e1376a3652709
 integriq	3638	7466fd09d3366a2278bd751a6b10e20e0f7f41e5	REVERIFY	worker-47:merge	verdict sha is not the head: head is 3d602f6be073781a0c73a05e59aca82b74a18366
 integriq	3649	977d1a6a3fc1dbbf511e4dcba0e2bb7c4b4b59ea	REVERIFY	worker-47:merge	verdict sha is not the head: head is bd9eaae6119e3b61ec891904fd1757ff228e399a
+opencatalogi	2655	f3ddd32755f07b8cc2c89f45f975c56de5f750cc	REVERIFY	worker-45	merged development in (kept both sides of ServiceRegistrar imports and en/nl l10n, regenerated l10n js); tree adds no unit failures; reviewed APPROVE at the new head; merge gate UNMEASURED (static.developer.overheid.nl unreachable); new head 4b3298a0da1fe54e94d30ea4ed591a9f72fd716e, verify it
