@@ -14645,3 +14645,4 @@ decidiq	1691	d103222b2f9f51517c3c7de2194fc68cd4940546	RED	merge3:merge-gate	GATE
 decidiq	1767	ef20753cf5af14ce526904d1a06b54c59bfb59fc	RED	merge3:merge-gate	GATE RED absolute floor: decidiq maintainability 3.77 after merge is below its floor 3.78
 decidiq	1950	e876f7cecae4332eb0a07df3b2effe4dd9b06afb	RED	merge3:merge-gate	GATE RED absolute floor: decidiq maintainability 3.77 after merge is below its floor 3.78
 keepiq	1791	dc388493f621af327f8dd5bb35392a58c9201c69	BLOCK	worker-19:review	review: Strict; blocker: spec-coverage gate FAIL on added lines, 4 methods lack @spec (RecoveryKitPanel.vue created/kitText, RecoveryKitUnlock.vue canRecover/created); not reviewed further
+keepiq	1496	ab293916d16e386a9d44278dc6c7013a7b1e31c6	RED	worker-19:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
