@@ -552,3 +552,4 @@ opencatalogi	2699	64dd55f629ebec0808c4392acdeb733f6e871660	APPROVE	worker-07	Str
 hermiq	1193	7d49a897eacda342108a8ffdf6d0ba0a3967dc67	APPROVE	worker-11	Quick; no blockers; sass dev bump 1.104.1->1.106.1 with regenerated sbom
 hermiq	1195	7d6678393fcb6f34e5686d5bae1b98fb9a9688de	APPROVE	worker-11	Quick; no blockers; eslint dev bump 10.11.0->10.13.0 with regenerated sbom
 hermiq	1293	38013b9c66979f974a60e5b5c2fecf48c323ee46	APPROVE	worker-11	Quick; no blockers; copy Store->Marketplace in manifest, l10n en/nl, specs and two vitest expectations; concern: en.js keeps the now unused Store key
+opencatalogi	2725	defb7b6a9822f96bb369f99795f0945912eb4242	APPROVE	worker-07	Thorough; no blockers: title written into the attached copy only, signed/encrypted PDFs skipped, write failure leaves bytes and does not stop the batch; concerns: gate-82/119 inherited
