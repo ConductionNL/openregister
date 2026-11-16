@@ -18374,3 +18374,4 @@ verify:filinq:2083:3414fa08	CONFLICT #2083 (tests/unit/EventListener/ListenerReg
 verify:decidiq:2165:a572940b	CONFLICT #2165 (7 files conflict with development)	session-20261116T233050-d0df160f	2026-11-16T23:33:35Z
 verify:filinq:2120:b3bf30b4	CONFLICT #2120 (l10n, register json, webpack, ListenerRegistrarTest)	session-20261116T232951-07569878	2026-11-16T23:33:45Z
 verify:filinq:2059:fa0efc47	CONFLICT #2059 (l10n/nl.json, register json, mock register json)	session-20261116T232033-3ca59164	2026-11-16T23:33:55Z
+verify:decidiq:2154:a35c4716	CONFLICT: #2154 conflicts with development (l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Listener/Registrar/SaveGuardSubscriptions.php lib/Settings/profiles/municipality.json src/manifest.json )	session-20261113T214350-9762e143	2026-11-16T23:34:05Z
