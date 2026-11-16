@@ -17504,3 +17504,4 @@ review:learniq:1882:cfff5ab1	GREEN: labels only; 1 inherited failure (HigherEduc
 fix:humaniq:662:f0ddf8e5	merged #662 at f0ddf8e5865ef5e7cecb30c3b8fd324396a2ffc8 (sbom already current: dev-only lock change)	session-20261116T194621-b8f6108e	2026-11-16T19:52:23Z
 fix:humaniq:606:999cc286	stale	feeder	2026-11-16T19:47:15Z
 merge:hermiq:1795:16849e43	cloud tree of 3 hermiq PRs: merged=1 red=0 fail=0 skip=0; conflict 2, lint 0, red 0, moved 0, done 0	session-20261116T194731-f9ebdd55	2026-11-16T19:53:08Z
+fix:stackiq:1996:66a3bdf8	merged #1996 at 4df183ac3a213a1175198c8cd83acf1c54dc0a01	session-20261116T194719-57db1c57	2026-11-16T19:53:12Z
