@@ -15858,3 +15858,4 @@ fix:pipelinq:2501:ca4bf396	merged development in cleanly, pushed 58a531d9; merge
 fix:stackiq:1297:f6f898a1	inherited: spdx stars 5->4 comes from development (tests/Stubs/Contract/ObjectServiceInterface.php has no SPDX header there); #1435 head 8d2e5a8e carries that fix; no change to this PR	session-20261116T080103-dd70aeff	2026-11-16T08:43:04Z
 review:stackiq:1435:8d2e5a8e	failed: self-review - worker-16 pushed this head (8d2e5a8e); needs a different reviewer	session-20261116T080103-dd70aeff	2026-11-16T08:43:15Z
 fix:pipelinq:3152:6f459260	conflict resolved, pushed 29e9143d; REVERIFY recorded (merge lock held elsewhere)	session-20261116T082121-c1741fb9	2026-11-16T08:43:35Z
+review:shillinq:2083:16d6ee15	BLOCK: receipt confirm silently drops the editable photoUri field; suite 12234, 1 inherited error	session-20261116T074147-edb7c708	2026-11-16T08:43:50Z
