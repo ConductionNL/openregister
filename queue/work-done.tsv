@@ -15884,3 +15884,4 @@ fix:pipelinq:2969:17a6a9c4	conflict resolved (l10n, both sides kept), pushed 23b
 review:learniq:2126:c3504350	GREEN: dependency bump only, phpstan clean, 1 inherited unit failure	session-20261116T084553-d7ab8477	2026-11-16T08:51:24Z
 review:filinq:2103:cface20c	stale	session-20261116T081426-24e3a1d6	2026-11-16T08:51:34Z
 fix:pipelinq:3092:f8d049f3	sbom regenerated, pushed f041615e; APPROVE recorded; land skipped (gate UNMEASURED: checker did not measure adrvalidator)	session-20261116T081618-2145ecb3	2026-11-16T08:51:35Z
+review:launchpad:785:085c96eb	GREEN: phpunit 4485 ok, vitest 2586 ok, no behaviour regressions	session-20261116T084356-f50aa190	2026-11-16T08:51:48Z
