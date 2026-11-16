@@ -15507,3 +15507,4 @@ fix:buildiq:1652:b1411849	CONFLICT resolved, pushed 2b887096e99104c20abaf165361a
 verify:larpinq:1065:1b4e8491	GREEN: no new PHP or vitest failures	session-20261116T062123-fa6fb6b0	2026-11-16T06:46:46Z
 verify:planninq:1196:345eb8c3	GREEN 1196: unit 1222 OK	session-20261116T062544-335bf148	2026-11-16T06:46:57Z
 review:shillinq:2096:8af31d73	RED: 2 ImportWizardCoverage vitest tests still expect the old PATCH	session-20261116T062126-9d7735e0	2026-11-16T06:47:12Z
+fix:hermiq:1735:ca2c7585	fixed: registrar test expects FlowRunTerminalListener; new head 80b67d82, REVERIFY recorded	session-20261116T062109-81fc252e	2026-11-16T06:47:19Z
