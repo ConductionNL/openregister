@@ -14631,3 +14631,8 @@ learniq	2549	6aa40c9b5463e3c34c562033eb813ab5e31cdf8a	RED	worker-46:merge-gate	G
 learniq	2561	65d65e789380b6c6cb7eaca1be6f3b3717d314a0	CONFLICT	worker-46:merge	merges clean on development alone; files: package-lock.json package.json 
 larpinq	1060	9f9d2d55aed2135114719c89293197e464127587	REVERIFY	worker-41	merged development in (settings test now expects both new slugs, 70 keys); added staff invite edge tests to lift testcoderatio back over 75% (74.56 -> 75.05); tree 1055 tests 0 new failures; Strict review APPROVE; merge gate unmeasured (static.developer.overheid.nl unreachable); new head 701044e668f5b0522fb7bf5d2b4223773dcf9bc6, verify it
 decidiq	2203	14dc68070ac11502fc0ca03de58	REVERIFY	worker-55:merge	verdict sha is not the head: head is 14dc68070ac11502fc0ca03de58869b820f8905a
+integriq	3596	2efdcccdd8a9d80667d7a88d4ddfa9aebfcf3ad8	REVERIFY	worker-47:merge	verdict sha is not the head: head is 25615492e0d40840b763637d39e7129cf4a76920
+integriq	3612	0000c17621f3afaa620e370875472d46df3b84d1	REVERIFY	worker-47:merge	verdict sha is not the head: head is 27e3d6e61355bf4be3b71fc33e70ade810f9272b
+integriq	3628	858c7a5daf994cdee85d2208d40103edcf6f52cd	REVERIFY	worker-47:merge	verdict sha is not the head: head is 58bae4ecc822b35bfd0ba0364d0e1376a3652709
+integriq	3638	7466fd09d3366a2278bd751a6b10e20e0f7f41e5	REVERIFY	worker-47:merge	verdict sha is not the head: head is 3d602f6be073781a0c73a05e59aca82b74a18366
+integriq	3649	977d1a6a3fc1dbbf511e4dcba0e2bb7c4b4b59ea	REVERIFY	worker-47:merge	verdict sha is not the head: head is bd9eaae6119e3b61ec891904fd1757ff228e399a
