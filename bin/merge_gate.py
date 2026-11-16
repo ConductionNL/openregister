@@ -29,6 +29,12 @@ merge), 2 UNMEASURED (do not merge, record why). A gate that cannot run never pa
 """
 import argparse, json, os, subprocess, sys, tempfile, time
 
+# Node's built-in fetch ignores HTTPS_PROXY unless NODE_USE_ENV_PROXY is set. In a cloud session
+# direct egress has no DNS, so without this the checker's ADR ruleset download fails (ENOTFOUND)
+# and the checker floor ends UNMEASURED even with the host allowlisted. Every child inherits it.
+if os.environ.get("HTTPS_PROXY") or os.environ.get("https_proxy"):
+    os.environ.setdefault("NODE_USE_ENV_PROXY", "1")
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 CACHE = os.path.expanduser("~/.cache/hydra-gates")
 DOTGITHUB = os.path.join(CACHE, "dotgithub")
