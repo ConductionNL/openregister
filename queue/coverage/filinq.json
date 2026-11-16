@@ -1,28 +1,28 @@
 {
  "app": "filinq",
- "commit": "7b9588e43b1785072f055490785551963acc0593",
- "measured_at": "2026-11-13T09:45:21Z",
+ "commit": "25528d945dfb940e6e113365fde35eef2b0a2db0",
+ "measured_at": "2026-11-16T10:13:32Z",
  "php": {
   "tool": "pcov",
-  "pct": 95.28,
-  "statements": 34099,
-  "covered": 32490,
+  "pct": 95.31,
+  "statements": 36413,
+  "covered": 34707,
   "dirs": {
    "lib/AppInfo/": [
-    87,
-    59
+    86,
+    58
    ],
    "lib/BackgroundJob/": [
-    458,
-    458
+    462,
+    462
    ],
    "lib/Command/": [
     27,
     27
    ],
    "lib/Controller/": [
-    3878,
-    3712
+    4002,
+    3840
    ],
    "lib/Controller/Support/": [
     88,
@@ -33,20 +33,24 @@
     17
    ],
    "lib/Event/": [
-    168,
-    168
+    182,
+    182
    ],
    "lib/Event/Support/": [
     2,
     2
    ],
+   "lib/Event/Webhook/": [
+    28,
+    28
+   ],
    "lib/EventListener/": [
-    1119,
-    1100
+    1274,
+    1255
    ],
    "lib/Exception/": [
-    79,
-    79
+    83,
+    81
    ],
    "lib/Flow/": [
     99,
@@ -61,12 +65,12 @@
     0
    ],
    "lib/Mcp/": [
-    4,
-    4
+    1,
+    1
    ],
    "lib/Middleware/": [
-    116,
-    115
+    118,
+    117
    ],
    "lib/Middleware/Support/": [
     59,
@@ -77,8 +81,8 @@
     16
    ],
    "lib/Portal/": [
-    181,
-    181
+    184,
+    184
    ],
    "lib/Repair/": [
     790,
@@ -89,96 +93,112 @@
     6
    ],
    "lib/Service/": [
-    15693,
-    14631
+    16638,
+    15493
    ],
    "lib/Service/BulkSigning/": [
-    286,
-    284
+    295,
+    293
    ],
    "lib/Service/Charts/": [
     865,
     857
    ],
    "lib/Service/Classification/": [
-    192,
-    187
+    193,
+    188
    ],
    "lib/Service/Comparison/": [
     258,
     253
    ],
    "lib/Service/Contract/": [
-    290,
-    278
+    295,
+    283
    ],
    "lib/Service/Conversion/": [
     932,
-    894
+    895
+   ],
+   "lib/Service/Detection/": [
+    317,
+    300
    ],
    "lib/Service/Editing/": [
-    1846,
-    1811
+    1997,
+    1980
    ],
    "lib/Service/EmailIngestion/": [
-    267,
-    247
+    273,
+    253
    ],
    "lib/Service/EntitySearch/": [
-    307,
-    298
+    306,
+    297
    ],
    "lib/Service/Extraction/": [
     160,
     154
    ],
+   "lib/Service/Grounds/": [
+    36,
+    35
+   ],
    "lib/Service/Intake/": [
-    153,
-    153
+    173,
+    173
    ],
    "lib/Service/LegalHold/": [
-    403,
-    377
+    404,
+    378
+   ],
+   "lib/Service/MailArchive/": [
+    137,
+    119
    ],
    "lib/Service/Ocr/": [
-    135,
-    118
+    141,
+    124
    ],
    "lib/Service/Office/": [
-    127,
-    127
+    165,
+    165
    ],
    "lib/Service/Pseudonymisation/": [
-    386,
-    348
+    381,
+    343
    ],
    "lib/Service/Publication/": [
-    337,
-    324
+    367,
+    355
+   ],
+   "lib/Service/Qr/": [
+    219,
+    219
    ],
    "lib/Service/Redaction/": [
-    652,
-    642
+    648,
+    638
    ],
    "lib/Service/Sanitization/": [
-    147,
-    134
+    148,
+    135
    ],
    "lib/Service/SignerAuth/": [
     483,
     467
    ],
    "lib/Service/Signing/": [
-    867,
-    866
+    933,
+    932
    ],
    "lib/Service/SigningEnvelope/": [
     197,
     191
    ],
    "lib/Service/SubjectErasure/": [
-    820,
-    804
+    811,
+    795
    ],
    "lib/Service/Suggestion/": [
     88,
@@ -193,12 +213,12 @@
     228
    ],
    "lib/Service/VeraPdf/": [
-    309,
-    300
+    315,
+    306
    ],
    "lib/Service/Wizard/": [
-    422,
-    418
+    431,
+    427
    ],
    "lib/Settings/": [
     14,
@@ -207,13 +227,13 @@
   }
  },
  "js": {
-  "pct": 99.04,
-  "statements": 3123,
-  "covered": 3093,
+  "pct": 98.18,
+  "statements": 3081,
+  "covered": 3025,
   "dirs": {
    "src/": [
-    114,
-    114
+    68,
+    68
    ],
    "src/assets/": [
     0,
@@ -236,16 +256,20 @@
     115
    ],
    "src/services/": [
-    1209,
-    1201
+    1186,
+    1154
+   ],
+   "src/sidebars/": [
+    20,
+    19
    ],
    "src/store/": [
     37,
     37
    ],
    "src/store/modules/": [
-    1469,
-    1449
+    1476,
+    1455
    ],
    "src/utils/": [
     11,
