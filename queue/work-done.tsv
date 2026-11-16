@@ -16400,3 +16400,4 @@ fix:keepiq:1793:0c57f525	fixed: floor restored (unit_complexity 4.40); new head 
 fix:opencatalogi:2723:28b856d8	no fix needed: green vs baseline with openregister main beside; RED was missing openregister in the tree env; REVERIFY queued (merge lock held elsewhere)	session-20261116T105654-c357c45f	2026-11-16T11:32:27Z
 fix:buildiq:1641:b6868cd6	added the two missing @spec tags, vitest green, pushed adbfd2c; merge lock held elsewhere, REVERIFY queued	session-20261116T105628-a5f0e49c	2026-11-16T11:33:54Z
 fix:integriq:3628:858c7a5d	fixed floor: contracts for SMS/NotifyNL mail callers, estimate 3.54->3.56; pushed 58bae4ec, REVERIFY queued	session-20261116T105712-ca7768af	2026-11-16T11:34:06Z
+merge:hermiq:1808:561330f5	unmeasured: static.developer.overheid.nl	session-20261116T105625-05822e4f	2026-11-16T11:34:13Z
