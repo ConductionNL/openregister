@@ -14216,3 +14216,11 @@ filinq	2094	a2f8cc99002a05e5716d0949e45af50b7d556634	CONFLICT	worker-11:merge	me
 filinq	2122	79127975d8661aa09d13f75673f69dd6a09de23f	CONFLICT	worker-11:merge	merges clean on development alone; files: lib/Settings/filinq_register.json 
 filinq	2123	e7b32d659243047176773d7a1f70e1113cdb3f32	CONFLICT	worker-11:merge	merges clean on development alone; files: lib/Settings/filinq_mock_register.json lib/Settings/filinq_register.json 
 dossiq	6587	28ecad91f1baffcfa031c48d360ffca1c1d4a7b5	RED	merge3:merge-gate	GATE RED sbom: composer.lock, package-lock.json changed without sbom.cdx.json
+dossiq	3199	53d908abc135941903fee153cb5996d2272b1e75	REVERIFY	merge3	head moved since the verdict (was dd09a728474d3fb60fe47807bdb2371b54768a06, dd09a728:CONFLICT,dd09a728:REVERIFY); verify the new head
+dossiq	3954	7af4262b4349b8632739fb1ec670c950276d9a18	REVERIFY	merge3	head moved since the verdict (was bf91e1b82b36690bae861fc634cff4afeb3dcf0f, bf91e1b8:CONFLICT,bf91e1b8:REVERIFY); verify the new head
+dossiq	3955	051bc7d2b741f9b08073976359219c0fae9ce6cb	REVERIFY	merge3	head moved since the verdict (was 0024f3604962e47b6cab4690ee4ef20ee317dedc, 0024f360:CONFLICT,0024f360:REVERIFY); verify the new head
+dossiq	3957	3a1d1a08f64d7027bfa7aab898ccf508d2a350e6	REVERIFY	merge3	head moved since the verdict (was b44c6a4fc878d30dd53e6c9a2213510c1b5f4c12, b44c6a4f:CONFLICT,b44c6a4f:REVERIFY); verify the new head
+dossiq	4887	5b3dec5ca972c54ea21728550536d15500e0eb20	REVERIFY	merge3	head moved since the verdict (was f530c6e6fdf6c17a9604f2f9802142bf4f4b9b67, f530c6e6:CONFLICT,f530c6e6:REVERIFY); verify the new head
+dossiq	5266	2cd5ee932a79779a717f6f0071fcaa89f3c2531f	REVERIFY	merge3	head moved since the verdict (was db2ab4a5d77285e0fea2aeb9146db1b295c7a2c0, db2ab4a5:CONFLICT,db2ab4a5:REVERIFY); verify the new head
+dossiq	5338	4d53d9bb81b7509b25749cbb9a751100c91e616c	REVERIFY	merge3	head moved since the verdict (was 4924e28da77fe70cbc4717ee9ce03ca31c2b2289, 4924e28d:CONFLICT,4924e28d:REVERIFY); verify the new head
+dossiq	5396	cc232d59d722611002ea5e7e1096bab19bbdfc34	REVERIFY	merge3	head moved since the verdict (was 861d4d0ae94c2884fa5de7c4df9274a64ae551d9, 861d4d0a:CONFLICT,861d4d0a:REVERIFY); verify the new head
