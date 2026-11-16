@@ -17326,3 +17326,4 @@ review:keepiq:1793:3fae302f	GREEN: 0 new failures (vitest 6967, 3 inherited)	ses
 cover:pipelinq:7f9dc8e6m3dbb:ea81adeb	already covered: lib/Service/Zgw/*.php measures 99.73% (728 stmts, 2 uncovered, 1 unreachable) on development with its 93 tests, none risky; no PR	session-20261116T184841-a3bc3002	2026-11-16T19:16:54Z
 build:pipelinq:simple-contact-dashboard:r3	already done: every code task ticked on development; only 3.1 (live check) is open	session-20261116T181151-999832c6	2026-11-16T19:16:56Z
 build:pipelinq:first-time-setup:r3	already done: every code task ticked on development; only the live pass is open	session-20261116T181151-999832c6	2026-11-16T19:17:24Z
+build:pipelinq:tickets-list-by-party:r3	already done: every code task ticked on development; only 1.3 (live check) is open	session-20261116T181151-999832c6	2026-11-16T19:17:38Z
