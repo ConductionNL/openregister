@@ -250,3 +250,4 @@ hermiq	1801	b8e31c29c0755366e44d0de7ddd7cee5f6d4be87	APPROVE	worker-32	Quick; no
 hermiq	1802	5e2885e3e660cb042b21292e305f27b2d9a26093	APPROVE	worker-32	Quick; no blockers; tests only (workspace pusher, forge locator, run scope), helper refactors keep assertions; tree unit 5322 ok
 stackiq	1989	45dbd96288cca2c93a2162055fe2c65597c4ed55	APPROVE	worker-35	Quick (dependency bundle); no blockers; vueuse 15 major only reached transitively (no direct src imports), lock dedupes nested copies
 shillinq	3109	95bf71e1b5b49d1ade835e3ae9eb2b94df7af954	APPROVE	worker-16	Quick; no blockers; restores the SPDX tag of the ObjectServiceInterface stub that 0d688ca2 dropped (development reads spdxheaders 4 stars without it); tree suite green
+humaniq	686	fe1cbc0ae582ec29fbb26fc246d74dbf397480b5	APPROVE	worker-26	Quick; no blockers; jsdom dev minor bump, lock+sbom
