@@ -15217,6 +15217,13 @@ versioniq	691	ed265e00f936a4cd03193e2caceb769dc33e3d83	RED	merge3:merge-gate	GAT
 integriq	3671	4b0e1b0a423662d5834cee85bf86311246344660	REVERIFY	worker-18	moved SPDX identifier into first 30 lines of two test stubs (IFlowNode, ObjectServiceInterface) to restore spdxheaders 5 stars; merge lock held elsewhere; new head cb905dcfe03cc3ac0f8e4d87050a629c98c8a3c3, verify it
 decidiq	2228	0abc6d2ce3f0e6b6289f09f140c8953558cf17dd	GREEN	worker-21	unit 4638 tests on tree, baseline 4624 OK, 0 new failures; seeds ranked round per change specs
 integriq	3649	9b271f27a945bbc79cf8ea2f8bf1c695445a8659	GREEN	worker-54:review	build PR matches its change specs (zgw leg, files as caller service account, resume steps, admin-only dry run); unit 9597 tests on tree vs 9535 baseline, no new failures (5 inherited); 4 vitest specs 58 pass
+shillinq	1900	f0577318258e64ba145db876d666dcafd5a99efa	CONFLICT	worker-08:merge	merges clean on development alone; files: appinfo/routes.php l10n/en.json l10n/nl.json lib/Service/Vat/VatReturnCheckService.php tests/Unit/Controller/VATReturnControllerGapsTest.php tests/Unit/Mcp/McpVatReturnToolsTest.php 
+shillinq	1958	191f6a9e9f42dea0ee59b6b7ab11addcca352193	CONFLICT	worker-08:merge	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json tests/fixtures/register-versions.lock.json 
+shillinq	2070	764ed7a933a1590a324ba39a0de87d0580ae10a4	CONFLICT	worker-08:merge	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json tests/fixtures/register-versions.lock.json 
+shillinq	2071	abd73b77c8b814e4c2e54f23d0453faa2f433b0c	CONFLICT	worker-08:merge	merges clean on development alone; files: tests/fixtures/register-versions.lock.json 
+shillinq	2083	4b847a69f8ad3048ff82a9f425a90bad9480520d	CONFLICT	worker-08:merge	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+shillinq	2098	91bd5616fcf72747bc4072cca1d	REVERIFY	worker-08:merge	verdict sha is not the head: head is 91bd5616fcf72747bc4072cca1dfcfc94ca22761
 larpinq	1050	d2d372bb8b6fa72cf4753b520d003adb2fa6efd4	RED	worker-42:merge-gate	GATE RED checker floor: testcoderatio: warn -> fail; testcoderatio stars: 3 -> 2
 learniq	1881	df81c10bcc93f8f5dc2925ea9f52c6163d4ff2d4	CONFLICT	worker-23:merge	merges clean on development alone; files: tests/Stubs/Contract/ObjectServiceInterface.php 
 learniq	2565	64d9b4285e2a6a91d6595d7755e11a381f160d41	CONFLICT	worker-23:merge	merges clean on development alone; files: tests/Stubs/Contract/ObjectServiceInterface.php 
+opencatalogi	2686	75f5b243a5bce7e8320525bf3f8f4842b2893a66	REVERIFY	worker-23	merged development in (clean; publiccode.yml); new head 84ac3f44ccfadafde8561479017d418e5d68f55e, verify it
