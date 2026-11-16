@@ -16947,6 +16947,7 @@ fix:learniq:2521:9e646ec1	failed: inherited: development drops spdxheaders 5->4 
 cover:decidiq:a5f973bbm0262:98083bbf	deferred: decidiq has 52 open PRs	session-20261116T173254-f6972957	2026-11-16T17:47:34Z
 cover:decidiq:a5f973bbm0262:568ec52a	deferred: decidiq has 52 open PRs	session-20261116T173211-a3411be5	2026-11-16T17:47:56Z
 fix:filinq:2094:5c76485b	unmeasured: static.developer.overheid.nl (fixed and approved at ff0c7f80, REVERIFY queued)	session-20261116T170555-ecf14af5	2026-11-16T17:48:04Z
+cover:buildiq:70b3e29em3841:d39f9857	deferred: buildiq has 56 open PRs	session-20261116T173808-386fe9e9	2026-11-16T17:48:57Z
 cover:integriq:92114ab0m6759:60c2c265	deferred: integriq has 70 open PRs	session-20261116T173213-a5a52019	2026-11-16T17:48:47Z
 cover:decidiq:a5f973bbm0262:8ed5443b	deferred: decidiq has 52 open PRs	session-20261116T173713-4d98e280	2026-11-16T17:48:59Z
 fix:decidiq:2223:34982cb6	inherited: plain development already measures 3.77 (range 3.77-3.81), below decidiq floor 3.78; PR #2223 leaves every rating unchanged; nothing to fix in the PR	session-20261116T174323-ba3ec1dc	2026-11-16T17:48:44Z
@@ -16996,14 +16997,41 @@ fix:versioniq:738:f3f7da6d	conflict resolved, pushed 001e5515; not landed (merge
 review:hermiq:1736:4200349d	GREEN #1736 (0 new failures; dev baseline 167E/26F inherited)	session-20261116T173308-9a80cd8d	2026-11-16T17:56:20Z
 review:hermiq:1788:ce467188	GREEN: no new failures, spec-conformant, access gated	session-20261116T174709-5787ce39	2026-11-16T17:56:38Z
 review:opencatalogi:2682:4e12e44e	GREEN: 0 new failures (5869 tests, 80 inherited), jest/vitest green	session-20261116T173254-f6972957	2026-11-16T17:56:49Z
+fix:opencatalogi:2696:a67460be	pushed 8fcdf471c5: 5 of 6 review gate blockers fixed; component_independence floor left; REVERIFY queued	session-20261116T170518-9fa71e6e	2026-11-16T17:57:13Z
 build:filinq:inbound-auto-classification	already built: every code task ticked on development; 4.2 e2e and 4.4 screenshots need a live instance	session-20261116T170545-a4f14b83	2026-11-16T17:57:29Z
 review:learniq:2507:f29e84b7	GREEN: matches the change's specs; suite 6901, only the inherited HigherEducationExampleSetTest failure	session-20261116T173311-8d6b3275	2026-11-16T17:57:36Z
 build:shillinq:receivables-automatic-dunning:r2	already built: every code task ticked on development; 4.1 Playwright half and 5.1 live check are live-only, left open	session-20261116T175344-2379cd1f	2026-11-16T17:57:47Z
 fix:stackiq:1931:f5df0ce8	conflict resolved, pushed 3faf7c6; REVERIFY queued (merge off on this account)	session-20261116T173207-e7bfa399	2026-11-16T17:57:47Z
 verify:hermiq:1807:87e37da2	GREEN #1807: 0 new failures (5340 php, 1535 js)	session-20261116T170823-40772b73	2026-11-16T17:58:07Z
+build:shillinq:spend-analytics-ui:r2	already built: 17 tasks ticked on development (#1143); only a Playwright run on a live deployment left	session-20261116T170545-a4f14b83	2026-11-16T17:58:12Z
 review:filinq:2122:8da97635	GREEN: build matches change specs; unit 6910 OK, vitest touched 20/20	session-20261116T173211-a3411be5	2026-11-16T17:58:18Z
+cover:stackiq:9ac19b3amf894:f4b2f7af	deferred: stackiq has 46 open PRs	session-20261116T173207-e7bfa399	2026-11-16T17:58:28Z
 verify:pipelinq:3894:9807d239	GREEN #3894: 9030 tests, 0 new failures	session-20261116T173713-4d98e280	2026-11-16T17:58:29Z
+cover:stackiq:9ac19b3amf894:8ed5443b	deferred: stackiq has 46 open PRs	session-20261116T173713-4d98e280	2026-11-16T17:58:43Z
+fix:hermiq:1187:0e261189	failed: dev-only lockfile bump (@playwright/test); regen-sbom leaves sbom.cdx.json unchanged (855 components, --omit dev), so the gate rule 'lockfile changed without sbom.cdx.json' cannot be met; needs a gate exception for dev-only lock changes	session-20261116T174709-5787ce39	2026-11-16T17:58:41Z
 review:hermiq:1754:b6dc1f4e	GREEN: unit 5388 pass, touched vitest 31 pass	session-20261116T173227-109a6e00	2026-11-16T17:58:46Z
 fix:versioniq:721:e012b413	CONFLICT resolved (l10n union, js rebuilt); new head bc63b63642, REVERIFY queued; 2 golden-test failures inherited from development	session-20261116T171010-393e4bc2	2026-11-16T17:58:57Z
 fix:hermiq:1808:d92c1c64	conflict resolved (sbom regenerated), pushed f027dd39; REVERIFY queued (merge off on this account)	session-20261116T173342-1d8a0fb9	2026-11-16T17:59:10Z
 merge:learniq:1882:c3c364ab	cloud tree of 5 learniq PRs: merged=0 red=1 fail=0 skip=1; conflict 2, lint 0, red 0, moved 1, done 0	session-20261116T173306-f68895a7	2026-11-16T17:59:48Z
+build:shillinq:adopt-connection-registry:r2	already built: every code task ticked on development; 5.1 needs integriq on the CI instance (e2e), left open	session-20261116T175344-2379cd1f	2026-11-16T17:59:49Z
+cover:stackiq:9ac19b3amf894:be0dcca9	deferred: stackiq has 46 open PRs	session-20261116T173342-1d8a0fb9	2026-11-16T17:59:37Z
+cover:stackiq:9ac19b3amf894:59f569b2	deferred: stackiq has 46 open PRs	session-20261116T173227-109a6e00	2026-11-16T17:59:35Z
+cover:stackiq:9ac19b3amf894:f545d745	deferred: stackiq has 46 open PRs	session-20261116T173227-109a6e00	2026-11-16T18:00:01Z
+cover:keepiq:c967a31fmba5a:js0023cfc7	PR #1843: 15 tests, dialogs lines 93.68% -> 95.06%	session-20261116T173313-424dff86	2026-11-16T18:00:10Z
+review:hermiq:1150:9ed6a46b	RED: 5 vitest failures in admin-root and llm-provider-modal specs	session-20261116T165351-3ccaad0e	2026-11-16T18:00:02Z
+merge:humaniq:606:787b43d0	unmeasured: static.developer.overheid.nl (checker floor scan did not measure adrvalidator); 6 APPROVE recorded (610,661,667,669,684,686), 684 gate RED sbom, 606/662 CONFLICT, 1096 MOVED	session-20261116T173242-1dd97d52	2026-11-16T18:00:15Z
+cover:stackiq:9ac19b3amf894:c2bb21fa	deferred: stackiq has 46 open PRs	session-20261116T173207-e7bfa399	2026-11-16T18:00:21Z
+fix:stackiq:1978:723683e2	development merged in clean, pushed edde87e6; REVERIFY queued	session-20261116T171035-683856c3	2026-11-16T18:00:23Z
+cover:stackiq:9ac19b3amf894:60c2c265	deferred: stackiq has 46 open PRs	session-20261116T173342-1d8a0fb9	2026-11-16T18:00:55Z
+cover:stackiq:9ac19b3amf894:007dc1d0	deferred: stackiq has 46 open PRs	session-20261116T173207-e7bfa399	2026-11-16T18:00:41Z
+fix:opencatalogi:2655:31c2efe2	conflicts resolved, touched tests green; REVERIFY at 21d93581 (merge lock held elsewhere)	session-20261116T173254-f6972957	2026-11-16T18:00:48Z
+fix:versioniq:725:bd0db7f7	resolved conflict, pushed b54e382d; REVERIFY queued (end-to-end skipped: cm_tree prep cannot build versioniq vendor phpunit)	session-20261116T173240-b63ad758	2026-11-16T18:01:19Z
+merge:portaliq:1767:595cdc26	unmeasured: static.developer.overheid.nl	session-20261116T173306-d04a65dc	2026-11-16T18:01:37Z
+review:shillinq:3088:e27bd632	GREEN: 12250 tests OK on PR merged with development	session-20261116T173310-7d288d7d	2026-11-16T18:02:15Z
+review:filinq:2094:ff0c7f80	GREEN: unit 6915 pass, jest 592 pass	session-20261116T175243-a5e4d922	2026-11-16T18:02:33Z
+merge:buildiq:1091:0aabbd05	cloud tree of 5 buildiq PRs: merged=0 red=0 fail=0 skip=3; conflict 2, lint 0, red 0, moved 0, done 0	session-20261116T170555-ecf14af5	2026-11-16T18:03:11Z
+merge:decidiq:1467:4b8008c7	unmeasured: gitdocumentatie.logius.nl (redirect target of static.developer.overheid.nl ruleset; 6 PRs reviewed APPROVE, tree green, nothing landed)	session-20261116T174053-4a550291	2026-11-16T18:03:33Z
+merge:shillinq:2098:ca22f911	unmeasured: static.developer.overheid.nl (proxy 403 on adr ruleset); reviewed 6: APPROVE 2098 2226 2258 2259 3109, REQUEST_CHANGES 2991; conflict 2997 3055, moved 3110; nothing landed	session-20261116T173313-2df2ba63	2026-11-16T18:03:43Z
+fix:versioniq:723:332a8036	conflict resolved, pushed 0aa4f351; not landed (merge gate host unreachable here), REVERIFY queued	session-20261116T172806-3ef5ead7	2026-11-16T18:03:50Z
+fix:hermiq:1735:80b67d82	conflict resolved, pushed ce935d59; merge lock held elsewhere, REVERIFY queued	session-20261116T173308-9a80cd8d	2026-11-16T18:04:05Z
+fix:larpinq:1050:f3c30b43	fixed REQ-RRS-004 blocker, pushed d2d372bb; not landed (merge gate host developer.overheid.nl blocked), REVERIFY queued	session-20261116T170823-40772b73	2026-11-16T18:04:24Z
