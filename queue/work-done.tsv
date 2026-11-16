@@ -16662,3 +16662,4 @@ build:pipelinq:a-contact-question-is-required-and-dated	deferred: pipelinq has 4
 build:pipelinq:filter-menu-owner-and-street	deferred: pipelinq has 46 open PRs	session-20261116T150749-2f742a8d	2026-11-16T15:42:05Z
 build:pipelinq:pos-psp-keys-via-broker	deferred: pipelinq has 46 open PRs	session-20261116T150749-2f742a8d	2026-11-16T15:42:11Z
 build:pipelinq:avg-consume-or-workflow	deferred: pipelinq has 46 open PRs	session-20261116T150749-2f742a8d	2026-11-16T15:42:18Z
+build:pipelinq:segment-last-contact-signal	deferred: pipelinq has 46 open PRs	session-20261116T150749-2f742a8d	2026-11-16T15:42:24Z
