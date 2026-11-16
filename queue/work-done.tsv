@@ -18319,3 +18319,4 @@ fix:hermiq:1781:bf818a9a	conflict resolved, pushed dd5b5dad, 0 new failures; REV
 verify:learniq:2577:35b1bebd	RED 2577: menuOrderUnique.test.mjs, order 58 shared by Grades and CourseParticipantsMenu	session-20261116T222948-81ec1395	2026-11-16T23:17:14Z
 lane:arch5:learniq:next-learniq-r6:c2	PR #2578, GREEN (r6: 4.08-4.10 -> 4.08-4.11; next round queued as :c3)	session-20261116T220647-b92c8f52	2026-11-16T23:17:33Z
 review:opencatalogi:2678:5c3be416	GREEN: 0 new failures (6066 tests, 103 inherited), 12 jest pass	session-20261116T230931-e5ee8bcb	2026-11-16T23:18:10Z
+lane:arch5:learniq:next-learniq-r6:c3	skipped: stopped app (coordinator)	coordinator	2026-11-16T23:18:45Z
