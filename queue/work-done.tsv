@@ -16162,3 +16162,4 @@ fix:stackiq:1930:e29285ec	REVERIFY: floor + SPDX fixed, new head 9a43150cd9; not
 merge:larpinq:1060:a9bd04d4	unmeasured: static.developer.overheid.nl (reviews recorded APPROVE for #1060, #1065; tree green)	session-20261116T100825-9860772f	2026-11-16T10:34:06Z
 fix:integriq:3049:5e51514f	merged development in, pushed 2da4ecc8; merge lock busy, REVERIFY queued	session-20261116T103230-dd6d4c71	2026-11-16T10:34:48Z
 fix:integriq:3593:f34b8147	merged development in; new head 8dad155c, REVERIFY queued (merge lock held elsewhere)	session-20261116T103223-3619169e	2026-11-16T10:34:59Z
+fix:integriq:2716:98572e41	conflict resolved, pushed 6edb6eea; merge lock held elsewhere, REVERIFY queued	session-20261116T103023-366232b4	2026-11-16T10:35:35Z
