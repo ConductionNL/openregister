@@ -17047,3 +17047,4 @@ review:opencatalogi:2679:3b4372c2	BLOCK: floors (php component_independence 93.1
 fix:buildiq:1620:7c13e441	fixed: @spec on 7 methods, spec-coverage PASS; new head afacfca7d5, REVERIFY queued (end-to-end skipped: merge gate unmeasured here)	session-20261116T173103-d3bed8f8	2026-11-16T18:05:04Z
 merge:opencatalogi:2699:a5342ed8	cloud tree of 2 opencatalogi PRs: merged=0 red=0 fail=0 skip=2; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T173213-a5a52019	2026-11-16T18:05:40Z
 review:hermiq:1750:4656eeb3	GREEN: phpunit 5380 OK, vitest 1556 passed on the PR merged with development	session-20261116T174323-ba3ec1dc	2026-11-16T18:06:19Z
+verify:learniq:2555:ab4c967d	GREEN 2555, GREEN 2558 (no new failures)	session-20261116T173227-3f62e794	2026-11-16T18:08:13Z
