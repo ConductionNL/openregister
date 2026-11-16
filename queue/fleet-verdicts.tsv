@@ -14554,3 +14554,4 @@ hermiq\t1760\t440cf2e9d2cd1a94d89bdd25448aa67be433ec8d\tREVERIFY\tworker-52\tbra
 keepiq	1497	2b0710543667991b1ee7fc988e0d48840735e484	RED	worker-37:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
 learniq	1883	b958696628bfdb6a748cfabc44b519cd91dae052	RED	worker-14:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
 integriq	2744	53deb98f7cdb1b6780f15f48e92d1825829d8513	REVERIFY	worker-48	sbom gate re-checked: sbom.cdx.json is in the PR diff and regen-sbom --check reports it current (691 components); no change needed; new head 53deb98f7cdb1b6780f15f48e92d1825829d8513, verify it
+integriq	2924	81032a2e25be20a55d65581e9c199af938b2368c	RED	worker-47:merge-gate	GATE RED floor: unit_interfacing: 1.93 -> 1.91
