@@ -17749,3 +17749,4 @@ review:dossiq:6203:1c2e722f	GREEN: tests only; 18754 tests, 19 inherited sibling
 review:versioniq:691:f1aa0f7f	GREEN; conflicts with development in l10n + AutoUpdateOverview.vue	session-20261116T203550-c395c778	2026-11-16T20:46:44Z
 review:shillinq:1899:65bdef77	GREEN #1899 (spec'd behaviour, access checks intact, suite ok); conflicts with development now	session-20261116T202104-9ad6a286	2026-11-16T20:46:55Z
 verify:shillinq:3110:d458ce1f	GREEN #3110: phpunit 12322 = baseline, vitest 1 inherited failure	session-20261116T201628-7b6853de	2026-11-16T20:47:12Z
+fix:dossiq:5398:0574972c	merged #5398 at 0574972c86 (sbom already current: dev-only bump; no code change)	session-20261116T203029-cbd53de3	2026-11-16T20:47:45Z
