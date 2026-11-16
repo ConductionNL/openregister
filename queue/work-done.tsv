@@ -17994,6 +17994,7 @@ review:launchpad:1235:906e0ad0	stale	session-20261116T202633-f7fb0e3a	2026-11-16
 cover:launchpad:fb10c50fmf487:d39f9857	deferred: launchpad has 46 open PRs	session-20261116T212719-d025d113	2026-11-16T21:51:12Z
 cover:pipelinq:7f9dc8e6m3dbb:0a24f15f	already done: lib/Service/Letter at 100% lines (164/164) on development 6b2c80436; no PR	session-20261116T214700-0702980b	2026-11-16T21:51:26Z
 cover:launchpad:fb10c50fmf487:b67d52c3	deferred: launchpad has 46 open PRs	session-20261116T212719-d025d113	2026-11-16T21:51:26Z
+verify:humaniq:1173:67065b8a	failed: this worker authored PR #1173 in this session (its own review was refused by a permission check); needs a verify by another worker	session-20261116T202633-f7fb0e3a	2026-11-16T21:51:46Z
 cover:pipelinq:7f9dc8e6m3dbb:6ff6c9d5	deferred: pipelinq has 43 open PRs	session-20261116T214553-9fb39259	2026-11-16T21:51:34Z
 verify:planninq:1207:5b8e86d3	GREEN 1207; 1243 tests, 0 new failures	session-20261116T214624-beb72d49	2026-11-16T21:52:00Z
 cover:integriq:92114ab0m5970:js0023cfc7	deferred: integriq has 67 open PRs	session-20261116T215114-2a602255	2026-11-16T21:52:26Z
@@ -18023,6 +18024,7 @@ fix:shillinq:2997:bc640379	conflict resolved, new head adca596c; REVERIFY queued
 merge:stackiq:2000:a76a4319	cloud tree of 6 stackiq PRs: merged=6 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T212655-3d3d6ec1	2026-11-16T21:57:15Z
 merge:buildiq:1672:84dacbd1	cloud tree of 4 buildiq PRs: merged=2 red=0 fail=0 skip=0; conflict 2, lint 0, red 0, moved 0, done 0	session-20261116T214724-12edb2d3	2026-11-16T21:57:50Z
 review:dossiq:6203:700a2276	GREEN: tests only; 18836 unit tests, 1 inherited error; vitest 13/13	session-20261116T214700-0702980b	2026-11-16T21:58:04Z
+build:buildiq:logic-automation-actions-that-run:c6	done: PR buildiq#1648 head a87fb3d8 — T04, T06 (composer + recompile on activation), T11 done; T10 e2e and T12 openspec validate left (live instance / CLI); suite 3498 tests, ExportZipGoldenTest inherited	session-20261116T212546-8f77b091	2026-11-16T21:58:17Z
 cover:dossiq:069ee2d6m9d1b:c17c6e8e	added to PR #6203 (dossiq over 40 open PRs): 4 ContactMomentPayload update-duration tests, Kcc dir already ~98% lines covered locally; remaining misses are unreachable (class_exists guard, preg_split false, empty-pool fallbacks); suite 18836->18840, same 19 inherited failures	session-20261116T212336-79038316	2026-11-16T21:58:15Z
 fix:planninq:1206:f0e5ce61	merged #1206 at adadcc7feebc3199e3ad29ffef75fd4aaec98258 (duplication 4.62 -> 4.65 via shared result-reader trait)	session-20261116T214624-beb72d49	2026-11-16T21:58:29Z
 review:buildiq:1650:c0d47084	GREEN: buildiq #1650 matches its change, 4818/4818 vitest on PR+dev; needs development merged in (conflicts in en.js, fieldTypes.js)	session-20261116T214156-ac589fdb	2026-11-16T21:58:37Z
@@ -18030,3 +18032,9 @@ cover:dossiq:069ee2d6m9d1b:47ac7936	deferred PR budget (41 open): added 3 regist
 verify:versioniq:754:7da035af	755 GREEN; 754 skipped (head moved 70e9dc9 -> 5ca8b99)	session-20261116T212719-33567982	2026-11-16T21:58:56Z
 lane:arch5:buildiq:next-buildiq-r5	PR #1687, GREEN (php complexity 2.21 -> 2.26, floor PASS; r6 queued)	session-20261116T212156-27d8410f	2026-11-16T21:59:14Z
 fix:hermiq:1735:42dffb64	failed: permission (review record refused; fix pushed, new head 3d8280ac, REVERIFY queued)	session-20261116T214741-cce55d5f	2026-11-16T21:59:48Z
+lane:arch5:shillinq:next-shillinq-r8	partial: nothing built; context too low for a full round after a build task; requeued as :c2 with the DBAController plan	session-20261116T212353-0c92a0b1	2026-11-16T21:59:59Z
+cover:dossiq:069ee2d6m9d1b:b7fd3ec4	added 13 tests to open PR #6203 (dossiq over 40 open PRs); lib/Service/Beschikking 96.0% -> 97.9%, suite failures unchanged (19 inherited)	session-20261116T214802-7ef7ea3b	2026-11-16T22:00:21Z
+fix:dossiq:6613:073611ae	merged #6613 at ee20850459 (conflict resolved: kept CaseStatusRecords and DwellHeatmap)	session-20261116T214828-87eb0908	2026-11-16T22:01:06Z
+fix:buildiq:1683:4ed47e29	merged development in, pushed f4629c1e; merge lock held elsewhere, REVERIFY queued	session-20261116T214417-663bc13a	2026-11-16T22:01:10Z
+fix:filinq:2072:268b3e0d	failed: permission (landing review of own commit refused); fix pushed as 65ad1d32, REVERIFY queued	session-20261116T211553-db0d2c78	2026-11-16T22:02:03Z
+merge:shillinq:1899:1682266d	merge3 tree of 4 shillinq PRs: merged=3 red=0 fail=0 skip=0; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-16T22:02:46Z
