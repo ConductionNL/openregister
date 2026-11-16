@@ -17248,3 +17248,6 @@ build:filinq:generate-document-runs-directly-on-an-object	build	filinq	developme
 build:filinq:inbound-auto-classification	build	filinq	development	inbound-auto-classification	change=inbound-auto-classification;open=2	2026-11-16T17:27:52Z
 build:filinq:signer-identity-rails	build	filinq	development	signer-identity-rails	change=signer-identity-rails;open=1	2026-11-16T17:27:52Z
 build:filinq:signing-trust-rebuild	build	filinq	development	signing-trust-rebuild	change=signing-trust-rebuild;open=3	2026-11-16T17:27:52Z
+build:shillinq:adopt-connection-registry:r2	build	shillinq	development	adopt-connection-registry	change=adopt-connection-registry;open=1	2026-11-16T17:45:47Z
+build:shillinq:spend-analytics-ui:r2	build	shillinq	development	spend-analytics-ui	change=spend-analytics-ui;open=1	2026-11-16T17:45:47Z
+build:shillinq:receivables-automatic-dunning:r2	build	shillinq	development	receivables-automatic-dunning	change=receivables-automatic-dunning;open=2	2026-11-16T17:45:47Z
