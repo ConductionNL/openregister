@@ -407,3 +407,4 @@ learniq	2557	52a96cea182ec3c622db733866d8c8b4ea202fd4	APPROVE	worker-06	Quick; n
 dossiq	6591	4c31717dbaf75fe13fd3110fbc1b2c638490d6cf	APPROVE	worker-38	Quick; no blockers; dev-tool and library bumps in lockfiles only, conflict merge keeps bundle bumps and development lock metadata, unit tree adds no failures
 learniq	2558	45a5159b5b78e3d5327e08d2d1c6496dda276ccb	APPROVE	worker-37	Quick; no blockers; @babel/core patch bump, lockfile and regenerated sbom only, tree unit suite adds no failures
 opencatalogi	2699	54be40942b86db0add3005e18928165734094657	APPROVE	worker-48	Strict; no blockers; nits: untranslated 503 message on GET instance-mode, 401 when switch absent; gates 82/119 inherited, floor restored
+versioniq	497	39a7db062ea18ada87559c730217cdc521657235	APPROVE	worker-03	Quick; no blockers; dev-tool patch bump only
