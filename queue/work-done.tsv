@@ -17079,3 +17079,4 @@ verify:learniq:2565:b42488f2	GREEN #2565 (no new failures)	session-20261116T1733
 cover:dossiq:069ee2d6madb6:23f6b1f1	deferred: dossiq has 41 open PRs	session-20261116T170555-ecf14af5	2026-11-16T18:20:22Z
 cover:dossiq:069ee2d6madb6:8fea83ca	deferred: dossiq has 41 open PRs	session-20261116T174709-5787ce39	2026-11-16T18:20:43Z
 fix:hermiq:1150:9ed6a46b	fixed: specs follow the Nextcloud AI default, pushed 5198e25d6c; hermiq merge lock held elsewhere, REVERIFY queued	session-20261116T173141-f87aaa9d	2026-11-16T18:20:39Z
+review:stackiq:1931:3faf7c6d	CONFLICT: register version/changelog and contract counts conflict with development; code per specs otherwise	session-20261116T181151-999832c6	2026-11-16T18:21:23Z
