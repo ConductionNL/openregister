@@ -16806,3 +16806,4 @@ fix:filinq:2122:f4330506	fixed BLOCK (guard resolves schema id to slug), pushed 
 fix:filinq:2072:b8b9f680	fixed review blocker (backfill via OR adoption tooling); pushed 5c869835, REVERIFY queued (merge lock held)	session-20261116T165653-a1481a13	2026-11-16T17:24:44Z
 fix:opencatalogi:2679:0e72dcc6	conflict resolved, pushed 3b4372c2; merge lock busy, REVERIFY queued	session-20261116T172017-c2e1c8b9	2026-11-16T17:25:00Z
 fix:opencatalogi:2682:d8b519df	floor restored (sig-floor PASS), pushed 4e12e44e9; not landed: merge lock held by another merger, REVERIFY queued	session-20261116T170324-19e96cf4	2026-11-16T17:25:39Z
+fix:hermiq:1736:476d3761	development merged in clean, no new failures; new head 4200349d, REVERIFY queued (hermiq merge lock held elsewhere)	session-20261116T170138-65b3b637	2026-11-16T17:25:56Z
