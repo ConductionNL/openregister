@@ -4452,3 +4452,7 @@ keepiq	1791	123b7f2512968c472ee9f71652d23dd883b908e4	MERGED	merge3	GATE OK sbom,
 keepiq	1792	5d484110eef783bb32a8ca647a51e7e8f42101a9	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.58 holds at 3.59
 larpinq	1050	f3c30b43c8c42a02566382fa0f11cf7dbf53029b	SKIP	worker-09	no APPROVE review at this head
 portaliq	1767	47038abd625e99f16530974f324d21982c30c858	SKIP	worker-24	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
+shillinq	3088	21646560bc582d5f84de2fee87f3033c65ee98b1	RED	worker-36	GATE RED floor: unit_complexity: 4.94 -> 4.92
+versioniq	507	444dec7b3067d343cb09993f3c3eb3395628b17b	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+versioniq	722	a03bd1c7f8eae6518cc8e02603588596a9da7b84	RED	merge3	GATE RED floor: overall: 4.98 -> 4.96; unit_complexity: 4.63 -> 4.60; module_coupling: 5.23 -> 5.11
+versioniq	732	edb0233ba6169cf4419f02b6bed018d9f56875ee	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.97 holds at 4.03
