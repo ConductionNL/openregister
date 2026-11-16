@@ -17295,3 +17295,4 @@ merge:versioniq:691:6c1777e2	merge3 tree of 5 versioniq PRs: merged=3 red=1 fail
 merge:shillinq:1899:fdfb0220	unmeasured: gitdocumentatie.logius.nl (adrvalidator not measured; 1899, 2093, 2096 reviewed APPROVE and tree green, skipped; 5 conflict, 1 moved)	session-20261116T181151-999832c6	2026-11-16T19:07:43Z
 cover:openregister:7350e3efm9dc5:9b457b26	stacked on #10587 (open-PR budget: 188 open): 0195d21 lib/Service/Flow +27 tests, 6 classes, 5 risky tests fixed; Flow-only line coverage 98.19->98.73%; suite 2814->2841, no new failures	session-20261116T184841-a3bc3002	2026-11-16T19:08:21Z
 review:filinq:2072:174b63c7	stale	session-20261116T184841-a3bc3002	2026-11-16T19:08:54Z
+cover:dossiq:069ee2d6m9d1b:60c2c265	stacked on #6203 (open-PR budget 41): 8 controllers, +146 tests, lib/Controller 88.7% -> 94.6%	session-20261116T184907-cd59fdf4	2026-11-16T19:09:45Z
