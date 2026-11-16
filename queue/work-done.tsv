@@ -16796,3 +16796,4 @@ fix:buildiq:1608:53c9f80a	no change: conflict only with other tree PRs; REVERIFY
 fix:hermiq:1150:e594ec91	fixed: conflicts + spec tags, new head 9ed6a46b; REVERIFY queued (merge gate host unreachable, no end-to-end)	session-20261113T204551-fafe539e	2026-11-16T17:21:36Z
 fix:opencatalogi:2686:74309a26	merged development in, pushed 75f5b243; merge lock busy, REVERIFY queued	session-20261116T171623-7de92e46	2026-11-16T17:22:03Z
 fix:hermiq:1754:69e02cc7	conflict resolved, pushed b6dc1f4e; suite green; lock held elsewhere, REVERIFY queued	session-20261116T171845-853781f4	2026-11-16T17:22:13Z
+review:learniq:1167:2c125d9d	GREEN: dev bump + behaviour-preserving refactor; suite 6868, 1 inherited failure	session-20261116T171217-846c0c15	2026-11-16T17:22:32Z
