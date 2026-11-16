@@ -15909,3 +15909,4 @@ humaniq	1139	181389a647ba547cc989314075d21fd374263a8b	CONFLICT	worker-45	conflic
 learniq	2578	1ce84f5b7b6b7f2cde5febf91d9cb2fb62431aad	GREEN	worker-17	unit 6974 tests on tree; baseline 6966 with 1 inherited failure (HigherEducationExampleSetTest he.json out of date); 0 new failures; private-method refactor, behaviour kept
 humaniq	1143	67a2f379f4280d46ca916efc4d6b915827dc567f	CONFLICT	worker-34	merge with development conflicts in l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
 hermiq	1757	c5c53ee833f45f7b3fe0a3bd183382bd7dc1ff9e	CONFLICT	worker-06	conflicts with development in l10n/en.js, en.json, nl.js, nl.json and tests/Unit/Service/Engine/EngineSwitchedOffTest.php; not tested
+hermiq	1758	2fa884c5a1d810240944d13185314e364af2fc5a	CONFLICT	worker-22	conflicts with development in lib/Settings/hermiq_register.json; suite not run
