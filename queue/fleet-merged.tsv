@@ -4132,3 +4132,4 @@ versioniq	504	918e8ff34bf4ea3f610ff396051718276fc9c7c8	SKIP	worker-14	GATE UNMEA
 versioniq	505	aeceef74a654df9ff29acf01994dd6bb8cbe10c2	SKIP	worker-14	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 thematiq	1558	756f3b85ff9c7cd053b9e02959bb340357082171	RED	worker-46	GATE RED sbom: composer.lock changed without sbom.cdx.json
 versioniq	506	cf0ff5adda7079a02c3358ac8c403d4211cfdef6	SKIP	worker-14	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
+humaniq	667	c3822863e74efaa1f7512786743723ab486e70f2	SKIP	worker-26	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
