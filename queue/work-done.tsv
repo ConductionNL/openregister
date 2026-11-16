@@ -16572,3 +16572,4 @@ review:learniq:2521:9e646ec1	GREEN: build matches change specs; no new unit or J
 fix:portaliq:1767:171143de	conflict resolved (dev merged, bump re-applied, lock+sbom regenerated); pushed 47038abd; REVERIFY queued	session-20261116T143136-ae6d04cb	2026-11-16T15:14:28Z
 review:shillinq:2767:fa1f580f	BLOCK: lock does not install (psalm 7.5 needs php >=8.3.16, platform pinned 8.3)	session-20261116T142700-f4d651ea	2026-11-16T15:14:49Z
 fix:stackiq:1965:29a743e1	BLOCK fixed: connections scoped to the organisation, test added; new head dae73f1f, REVERIFY	session-20261116T144734-1dc150d8	2026-11-16T15:15:12Z
+review:filinq:2122:f4330506	GREEN filinq #2122: unit 6909 ok (baseline 6878), vitest/jest ok, phpstan clean	session-20261116T150930-eac38835	2026-11-16T15:15:27Z
