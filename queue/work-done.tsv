@@ -16248,3 +16248,4 @@ verify:shillinq:3112:499678b6	GREEN #3112 (12225 tests, 0 new failures)	session-
 review:integriq:3649:bd9eaae6	GREEN: no new failures (9597 tests, 5 inherited), touched vitest pass	session-20261116T105651-a587f79b	2026-11-16T11:06:53Z
 review:integriq:3050:a397a9f1	GREEN: 9535 tests, 5 inherited failures, none new	session-20261116T105550-e90eeee3	2026-11-16T11:07:07Z
 build:dossiq:bsn-exact-lookup	already built: tasks 1.1-1.2 ticked and on development (68c5138b5, PersonLookupController/PersonNumberLookup + tests + picker sources); only live task 1.3 left	session-20261116T105637-494def63	2026-11-16T11:07:27Z
+review:stackiq:1924:ef9a11b2	GREEN: build matches change specs; unit 3725 green, vitest 5/5	session-20261116T105633-0d9ecf47	2026-11-16T11:07:40Z
