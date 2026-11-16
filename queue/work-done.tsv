@@ -16873,4 +16873,5 @@ build:portaliq:site-matches-the-zuiddrecht-boards	already done: every code task 
 build:portaliq:public-faq-and-product-finder	already done: T01-T07 built on development (8 Oct); only T08 live check left	session-20261116T173311-8d6b3275	2026-11-16T17:39:31Z
 merge:stackiq:1931:17ea89e6	cloud tree of 1 stackiq PRs: none; conflict 1, lint 0, red 0, moved 0, done 0	session-20261116T173256-6277a58c	2026-11-16T17:39:31Z
 build:portaliq:site-home-follows-the-school-boards	already done: every code task ticked on development; open tasks are live checks only, left	session-20261116T170823-40772b73	2026-11-16T17:39:28Z
+build:portaliq:site-catalogue-follows-the-school-boards	already built: tasks 1-4 ticked and on development (#1424); only task 5 live check left	session-20261116T170545-a4f14b83	2026-11-16T17:39:47Z
 build:portaliq:site-links-the-theme-bridge	already done: every code task ticked on development; open tasks are live checks only, left	session-20261116T170823-40772b73	2026-11-16T17:39:42Z
