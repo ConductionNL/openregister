@@ -16947,6 +16947,7 @@ fix:learniq:2521:9e646ec1	failed: inherited: development drops spdxheaders 5->4 
 cover:decidiq:a5f973bbm0262:98083bbf	deferred: decidiq has 52 open PRs	session-20261116T173254-f6972957	2026-11-16T17:47:34Z
 cover:decidiq:a5f973bbm0262:568ec52a	deferred: decidiq has 52 open PRs	session-20261116T173211-a3411be5	2026-11-16T17:47:56Z
 fix:filinq:2094:5c76485b	unmeasured: static.developer.overheid.nl (fixed and approved at ff0c7f80, REVERIFY queued)	session-20261116T170555-ecf14af5	2026-11-16T17:48:04Z
+cover:buildiq:70b3e29em3841:d39f9857	deferred: buildiq has 56 open PRs	session-20261116T173808-386fe9e9	2026-11-16T17:48:57Z
 cover:integriq:92114ab0m6759:60c2c265	deferred: integriq has 70 open PRs	session-20261116T173213-a5a52019	2026-11-16T17:48:47Z
 cover:decidiq:a5f973bbm0262:8ed5443b	deferred: decidiq has 52 open PRs	session-20261116T173713-4d98e280	2026-11-16T17:48:59Z
 fix:decidiq:2223:34982cb6	inherited: plain development already measures 3.77 (range 3.77-3.81), below decidiq floor 3.78; PR #2223 leaves every rating unchanged; nothing to fix in the PR	session-20261116T174323-ba3ec1dc	2026-11-16T17:48:44Z
