@@ -17246,3 +17246,4 @@ merge:learniq:1167:5572f9ff	cloud tree of 4 learniq PRs: merged=2 red=0 fail=0 s
 review:shillinq:2991:7d526afc	GREEN: unit 12296 OK, vitest 92 passed	session-20261116T184852-d42365eb	2026-11-16T18:57:58Z
 fix:filinq:2122:8da97635	merged development in, clean; new head e57f317b; REVERIFY queued (merge lock held elsewhere)	session-20261116T185100-d2f0c6eb	2026-11-16T18:58:08Z
 cover:launchpad:fb10c50f:0891e5b5	deferred: launchpad has 44 open PRs	session-20261116T184924-e8902580	2026-11-16T18:58:33Z
+fix:opencatalogi:2686:75f5b243	merged development in, new head 84ac3f44cc; merge lock held by another merger, REVERIFY queued	session-20261116T184833-adbb8426	2026-11-16T18:58:58Z
