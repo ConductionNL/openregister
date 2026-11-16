@@ -15883,10 +15883,17 @@ review:shillinq:2997:675a3aef	GREEN: build matches its specs, access checks per 
 lane:ormig:learniq:leftover	no real breaks: namecheck's one BREAK is a self call (findPage); no PR needed	session-20261116T082637-06597b03	2026-11-16T08:51:01Z
 review:opencatalogi:2679:b5f77a60	GREEN: 0 new failures (106 baseline), 39 new tests pass, phpcs/phpstan clean	session-20261116T084531-ff1efb6c	2026-11-16T08:50:58Z
 fix:pipelinq:2969:17a6a9c4	conflict resolved (l10n, both sides kept), pushed 23b177e505cb1a2a906213fd0df439c94e592b94; REVERIFY	session-20261116T081426-24e3a1d6	2026-11-16T08:51:05Z
+fix:versioniq:725:c2115872	fixed floor block: TS/PHP units split, floor PASS; new head bd0db7f78fc7, REVERIFY queued (merge lock held elsewhere)	session-20261116T083029-d99abe70	2026-11-16T08:51:13Z
 review:learniq:2126:c3504350	GREEN: dependency bump only, phpstan clean, 1 inherited unit failure	session-20261116T084553-d7ab8477	2026-11-16T08:51:24Z
 review:filinq:2103:cface20c	stale	session-20261116T081426-24e3a1d6	2026-11-16T08:51:34Z
 fix:pipelinq:3092:f8d049f3	sbom regenerated, pushed f041615e; APPROVE recorded; land skipped (gate UNMEASURED: checker did not measure adrvalidator)	session-20261116T081618-2145ecb3	2026-11-16T08:51:35Z
 review:launchpad:785:085c96eb	GREEN: phpunit 4485 ok, vitest 2586 ok, no behaviour regressions	session-20261116T084356-f50aa190	2026-11-16T08:51:48Z
 review:larpinq:1053:1a318455	BLOCK: new find() call uses register:/schema: named args gone on openregister main; suite 1002 OK	session-20261116T084455-5dfa31c7	2026-11-16T08:52:11Z
 lane:feeder:dossiq:once	failed: feed.py REST pagination of openregister open PRs refused by proxy (numeric-id repositories/{id} next-page path, HTTP 403); nothing added	session-20261116T084553-d7ab8477	2026-11-16T08:52:38Z
+merge:shillinq:2086:6e72623c	failed: development itself fails the checker floor (spdxheaders 5->4, test stub header lost in 0d688ca2f); fix pending on quality/gap-spdx-stub-header 95bf71e1b, every PR would gate RED until it lands	session-20261116T082955-f4213879	2026-11-16T08:52:29Z
 review:opencatalogi:2725:80cedf65	GREEN: 0 new failures (+24 tests), matches change specs	session-20261116T084700-3a1a7351	2026-11-16T08:52:41Z
+lane:arch5:pipelinq:pipelinq-k	PR pipelinq #3884 opened at 72197b6e (already contained development); verified green; estimate 4.38-4.40 -> 4.48-4.49 (still under 4.5: next-pipelinq after it lands); merge lock held elsewhere, GREEN verdict queued	session-20261116T081522-a0a03964	2026-11-16T08:52:55Z
+fix:dossiq:5338:4924e28d	conflict resolved, pushed 4d53d9bb (tests/phpcs/phpstan green on the touched file); merge lock held elsewhere, REVERIFY written	session-20261116T074147-edb7c708	2026-11-16T08:53:06Z
+fix:dossiq:3199:dd09a728	merged development in, new head 53d908ab; lock busy, REVERIFY queued	session-20261116T084528-6b5f71dd	2026-11-16T08:53:16Z
+fix:dossiq:5396:861d4d0a	conflict resolved, pushed cc232d59; REVERIFY recorded (merge lock held elsewhere); dev-only bump will hit the sbom lock-without-sbom rule	session-20261116T082121-c1741fb9	2026-11-16T08:53:35Z
+lane:depbundle:learniq:bundle	opened #2561 (11 updates, verified); merge lock held elsewhere, GREEN verdict queued	session-20261116T083627-a5dc872b	2026-11-16T08:53:57Z
