@@ -17886,3 +17886,4 @@ cover:pipelinq:7f9dc8e6m3dbb:8f6f87c1	already done: lib/Service/Cti/*.php at 100
 cover:decidiq:a5f973bbm9cda:d528dcf0	deferred: decidiq has 45 open PRs	session-20261116T212057-3d2ff8ce	2026-11-16T21:26:00Z
 build:integriq:platform-connector-extension-kit:c5	already done: every code task ticked on PR #3589; only e2e/live verification left (not cloud-buildable)	session-20261116T211529-39ccc7ff	2026-11-16T21:26:27Z
 review:shillinq:1899:acc6426f	GREEN: no blockers; PHPUnit OK, one inherited vitest red	session-20261116T211641-8431b36d	2026-11-16T21:26:41Z
+cover:decidiq:a5f973bbm9cda:c76ae287	deferred: decidiq has 45 open PRs	session-20261116T212057-3d2ff8ce	2026-11-16T21:27:06Z
