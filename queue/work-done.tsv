@@ -16482,3 +16482,4 @@ fix:learniq:2549:6aa40c9b	fixed spdx (inherited stub header); REVERIFY new head 
 fix:keepiq:1497:2b071054	failed: dev-only phpstan bump; regen-sbom leaves sbom.cdx.json unchanged (dev deps omitted), so nothing to commit, yet the gate demands sbom.cdx.json in any lockfile diff; also covered by bundle #1829	session-20261116T142730-381a9016	2026-11-16T14:47:53Z
 fix:shillinq:3110:a0ee6bc0	merged development in, new head e7c788adcc; REVERIFY queued (merge lock held elsewhere)	session-20261116T142616-2623e37a	2026-11-16T14:47:56Z
 merge:hermiq:1133:4cac2462	unmeasured: gitdocumentatie.logius.nl (static.developer.overheid.nl redirects there; proxy refuses it); 7 PRs approved, merged 0; 1150 CONFLICT, 1189 MOVED	session-20261116T142714-8127c132	2026-11-16T14:47:52Z
+fix:learniq:2166:a323b0c1	fixed spdx (header missing on development's ObjectServiceInterface stub); new head 5e708c03; REVERIFY (lock held)	session-20261116T144202-f2b26030	2026-11-16T14:48:12Z
