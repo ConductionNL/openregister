@@ -18333,3 +18333,4 @@ merge:launchpad:1106:eb5b270d	no complete base and tree suite: not landed	sessio
 build4:openregister:scoped-api-tokens:c6	partial: PR #10514 new head d2ebb1d0 - merged main in (MagicRbacHandler classification + token ceiling combined: accessConditions caps uncappedAccessConditions, which applies main's classification over unclassifiedAccessConditions; component map unioned, components yaml regenerated), C40.6 ticked (its three in-scope tests exist); MagicMapper 2109, Rbac 1308, Architecture 2364, Middleware 259, Db 5	session-20261116T224246-d9bde508	2026-11-16T23:22:56Z
 review:hermiq:1735:370656f7	stale	session-20261116T224246-d9bde508	2026-11-16T23:23:29Z
 verify:buildiq:1630:d73b5833	1630 CONFLICT	session-20261116T224608-d6967eb8	2026-11-16T23:23:27Z
+verify:buildiq:1605:c5d7f0c9	1605 CONFLICT	session-20261116T224608-d6967eb8	2026-11-16T23:24:09Z
