@@ -14609,3 +14609,5 @@ buildiq	1641	b6868cd6b6f9eec39772064f4979ffcdb1432599	REVERIFY	worker-53	added @
 stackiq	1991	31e2224c5b0f2e1105b1556e2ef7efc3d06f9474	RED	worker-35:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
 integriq	3671	18d443b4f429398d1ffefc8657304b1b56a5c625	RED	worker-47:merge-gate	GATE RED floor: duplication: 3.81 -> 3.75; unit_size: 3.58 -> 3.56
 opencatalogi	2679	b5f77a604845e645f7654394f4541d202c272ce5	RED	merge3:merge-gate	GATE RED checker floor: maintainability stars: 5 -> 4
+opencatalogi	2655	f3ddd32755f07b8cc2c89f45f975c56de5f750cc	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Service/ServiceRegistrar.php 
+opencatalogi	2673	6dd0d2004c69bde1f857f3eb5a75cbc57bd5c033	CONFLICT	merge3	merges clean on development alone; files: openspec/changes/dashboard-consume-or-aggregations/tasks.md 
