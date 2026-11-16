@@ -15889,5 +15889,7 @@ review:filinq:2103:cface20c	stale	session-20261116T081426-24e3a1d6	2026-11-16T08
 fix:pipelinq:3092:f8d049f3	sbom regenerated, pushed f041615e; APPROVE recorded; land skipped (gate UNMEASURED: checker did not measure adrvalidator)	session-20261116T081618-2145ecb3	2026-11-16T08:51:35Z
 review:launchpad:785:085c96eb	GREEN: phpunit 4485 ok, vitest 2586 ok, no behaviour regressions	session-20261116T084356-f50aa190	2026-11-16T08:51:48Z
 review:larpinq:1053:1a318455	BLOCK: new find() call uses register:/schema: named args gone on openregister main; suite 1002 OK	session-20261116T084455-5dfa31c7	2026-11-16T08:52:11Z
+merge:shillinq:2086:6e72623c	failed: development itself fails the checker floor (spdxheaders 5->4, test stub header lost in 0d688ca2f); fix pending on quality/gap-spdx-stub-header 95bf71e1b, every PR would gate RED until it lands	session-20261116T082955-f4213879	2026-11-16T08:52:29Z
 review:opencatalogi:2725:80cedf65	GREEN: 0 new failures (+24 tests), matches change specs	session-20261116T084700-3a1a7351	2026-11-16T08:52:41Z
 lane:arch5:pipelinq:pipelinq-k	PR pipelinq #3884 opened at 72197b6e (already contained development); verified green; estimate 4.38-4.40 -> 4.48-4.49 (still under 4.5: next-pipelinq after it lands); merge lock held elsewhere, GREEN verdict queued	session-20261116T081522-a0a03964	2026-11-16T08:52:55Z
+fix:dossiq:3199:dd09a728	merged development in, new head 53d908ab; lock busy, REVERIFY queued	session-20261116T084528-6b5f71dd	2026-11-16T08:53:16Z
