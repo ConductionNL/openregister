@@ -15783,3 +15783,4 @@ fix:buildiq:1620:ff3f376b	fixed import order, pushed 7c13e441; merge lock held e
 review:filinq:2072:a07d41bd	GREEN #2072: implements change per specs; unit 6829 ok, phpstan clean	session-20261116T081638-f48babcb	2026-11-16T08:28:05Z
 review:shillinq:2071:85bf3df1	GREEN: phpunit 12230 OK, vitest touched OK	session-20261116T075936-d83d6c1e	2026-11-16T08:28:16Z
 fix:opencatalogi:2244:9178373d	inherited: opensourcehealth 4->3 also red on plain development 0f496962; PR changes no dependency files; branch contains development; no change pushed; needs a floor refresh on development	session-20261116T082353-191a2dc3	2026-11-16T08:28:32Z
+fix:opencatalogi:2725:ef1e2d84	conflict resolved, pushed 80cedf65; REVERIFY recorded (merge lock held elsewhere)	session-20261116T082121-c1741fb9	2026-11-16T08:28:43Z
