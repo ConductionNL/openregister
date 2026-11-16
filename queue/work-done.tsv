@@ -15626,3 +15626,4 @@ fix:launchpad:832:5cb157b3	inherited: plain development already fails the checke
 fix:launchpad:757:674cfd98	sbom regenerated; pushed 2ba3b33d	session-20261116T062117-388e9de2	2026-11-16T07:12:57Z
 review:opencatalogi:2696:e3f1409d	GREEN: 0 new PHP failures (5793 tests, 106 inherited), vitest green	session-20261116T070715-d16cf4c6	2026-11-16T07:13:19Z
 merge:versioniq:699:59d2dc12	cloud tree of 3 versioniq PRs: merged=0 red=0 fail=0 skip=2; conflict 1, lint 0, red 0, moved 0, done 0	session-20261116T064721-c9a0b5c9	2026-11-16T07:13:32Z
+fix:learniq:2551:3b2c2a67	fixed: 8 new failures resolved (OR main API); new head 86a3e2d4	session-20261116T062050-3a7e109c	2026-11-16T07:13:54Z
