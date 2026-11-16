@@ -14718,3 +14718,12 @@ larpinq	1050	5f2419c464329b49f18057b74fdaccd482faa674	CONFLICT	merge3	conflicts 
 shillinq	2226	5f2a77239a689c087689c3e8d91fcfd2041a1eaa	GREEN	worker-05:review	pinia 4.0.3->4.1.0 minor bump, lock change limited to pinia; sbom current (regen-sbom --check); stub gains SPDX lines only; phpunit 12231 OK; vitest 3047, 1 failure dunningNextRun.spec inherited from development
 keepiq	1829	d00cfb44b9c63a0d62eff367e3060cdd9eecb1df	CONFLICT	worker-30:merge	merges clean on development alone; files: composer.lock 
 learniq	2549	6aa40c9b5463e3c34c562033eb813ab5e31cdf8a	REVERIFY	worker-37	spdx floor: the only header-less source file was tests/Stubs/Contract/ObjectServiceInterface.php (from development 9f17766b, so inherited); added its SPDX line; branch already up to date with development; merge lock held elsewhere; new head 3c970465e837d0d9f5babefc7b5f2589e07d979d, verify it
+decidiq	1465	c16cd40a576d75aeda154a94b4c66265f5a79c7e	RED	merge3:merge-gate	GATE RED absolute floor: decidiq maintainability 3.77 after merge is below its floor 3.78
+decidiq	1467	dfb19ea0e2beff3a28cb376c7bc29ced93c70234	RED	merge3:merge-gate	GATE RED absolute floor: decidiq maintainability 3.77 after merge is below its floor 3.78
+decidiq	1472	92d144283d53fb5446e36d055326c802a9d73dbe	RED	merge3:merge-gate	GATE RED absolute floor: decidiq maintainability 3.77 after merge is below its floor 3.78
+decidiq	1473	fbdc77e40ce26b62e5d8e01c082907767f885f48	RED	merge3:merge-gate	GATE RED absolute floor: decidiq maintainability 3.77 after merge is below its floor 3.78
+decidiq	1692	faa2a2eb94e5996ace0de2e05bc550c8824894f3	RED	merge3:merge-gate	GATE RED absolute floor: decidiq maintainability 3.77 after merge is below its floor 3.78
+decidiq	1738	dabfcc9222a3ef5a0403f3e34014445adb503bf6	RED	merge3:merge-gate	GATE RED absolute floor: decidiq maintainability 3.77 after merge is below its floor 3.78
+decidiq	2149	acad13767619d3c32607d26b948e73a7a36daa35	RED	merge3:merge-gate	GATE RED absolute floor: decidiq maintainability 3.76 after merge is below its floor 3.78
+decidiq	2191	29114ea549b1df7741db17358e85829c10be8c82	RED	merge3:merge-gate	GATE RED absolute floor: decidiq maintainability 3.77 after merge is below its floor 3.78
+decidiq	2207	4cc6ec944a9c332488078dfd95666982ed716c9a	RED	merge3:merge-gate	GATE RED absolute floor: decidiq maintainability 3.76 after merge is below its floor 3.78
