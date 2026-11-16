@@ -15050,5 +15050,6 @@ learniq	2507	57440a16f271d9f331852896523bfd34db1eaf07	RED	worker-26:merge-gate	G
 integriq	3049	f122cee2e43a751cb616f888569f53754f431e19	CONFLICT	worker-21:merge	merges clean on development alone; files: lib/Service/SynchronizationService.php tests/bootstrap.php 
 integriq	3589	6a7f1b92db78983ccb11eee4e54	REVERIFY	worker-21:merge	verdict sha is not the head: head is 6a7f1b92db78983ccb11eee4e547aa1776752d6e
 hermiq	1756	6c5bc3805bd08f117478fdc6b10d028a6cfbd080	GREEN	worker-04:review	implements tools-post-a-talk-message per its spec: member-only post via agent bot, fail-closed membership, run-injected agentId like other artefact writes; unit suite on PR+development 5348 tests OK
+opencatalogi	2655	31c2efe24a9991bcbd53fc80fc18401a0300792b	CONFLICT	worker-14:merge	conflicts with development; files: appinfo/info.xml openapi.json openapi.standards.json 
 stackiq	1931	f5df0ce845a98a12e7b26184bb0b3deeacf3fef8	CONFLICT	worker-08:merge	conflicts with development; files: lib/Settings/softwarecatalogus_register.json lib/Settings/stackiq_mock_register.json 
 shillinq	3078	33420e1face4172be5851323f53a2febef4b20ae	GREEN	worker-33:review	build of bookings-messages-and-embedding per its specs; widget guard still runs first, CORS only for registered origins, origins endpoint admin-only; unit 12278 tests 0 failures merged with development; vitest 9/9, eslint clean
