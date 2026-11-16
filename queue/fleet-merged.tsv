@@ -4726,3 +4726,4 @@ larpinq	1073	c3a2bf43b3476f9f1b05f2f65fe5a70493f7187a	SKIP	merge3	GATE UNMEASURE
 larpinq	1074	0a276a6c4b7c7f20a101b296be5e65620ae86a52	RED	merge3	GATE RED floor: duplication: 5.17 -> 5.15
 opencatalogi	2696	cdc6289daa81ea492ed3725cca855f4f7dea0139	RED	worker-39	GATE RED floor: duplication: 4.07 -> 4.05; unit_size: 4.66 -> 4.64; unit_complexity: 4.86 -> 4.84
 learniq	2507	e2e4770e3dfae716ee2246e428418284784277e3	MERGED	worker-51	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 3.99
+planninq	1204	26c3d2ded381bb04d3bf7ab473f3bd312336a817	MERGED	worker-44	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.66 holds at 3.78
