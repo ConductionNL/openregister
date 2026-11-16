@@ -15715,3 +15715,4 @@ review:hermiq:1167:dae65138	GREEN: vitest 1526 OK, sbom current	session-20261116
 merge:shillinq:1958:e387219c	cloud tree of 3 shillinq PRs: merged=0 red=2 fail=0 skip=0; conflict 1, lint 0, red 0, moved 0, done 0	session-20261116T074147-edb7c708	2026-11-16T08:12:21Z
 review:launchpad:753:26ce5b2b	GREEN: vue patch bump, 2578/2578 tests pass	session-20261116T080016-01e1a0d7	2026-11-16T08:12:28Z
 fix:launchpad:977:4ec996d3	inherited: opensourcehealth reads 3 stars on plain development too (overall 3, identical per-property on dev and PR; floor of 4 was recorded 14 Nov), not caused by the hydra-gates bump; branch SBOM is current; no change pushed	session-20261116T080031-6bfb8cef	2026-11-16T08:13:01Z
+fix:learniq:1903:a21f3b3b	inherited: checker floor spdxheaders stars 5 -> 4 also on plain development (merge base 2398190339); PR only bumps composer.lock+sbom, sbom check passes; no change pushed	session-20261116T075942-394736ff	2026-11-16T08:13:35Z
