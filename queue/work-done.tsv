@@ -16456,3 +16456,4 @@ review:filinq:2094:5c76485b	GREEN: phpunit 6912 OK, vitest 773, jest 592, no new
 review:opencatalogi:2655:4b3298a0	GREEN: build matches change specs; unit no new failures (5838 tests); widget jest 13/13	session-20261116T142651-57b203fe	2026-11-16T14:37:56Z
 review:buildiq:1583:cb1e01bf	GREEN: build matches its change specs; vitest green, PHP red inherited	session-20261116T142614-50d85edb	2026-11-16T14:38:22Z
 review:shillinq:3055:6be8ada8	GREEN: suite 12261 OK, vitest 12/12	session-20261116T142931-c6a20eeb	2026-11-16T14:38:36Z
+review:filinq:2123:f0a61512	GREEN: matches change specs; phpunit 6943/0 fail, vitest 795, jest 584	session-20261116T143136-ae6d04cb	2026-11-16T14:38:52Z
