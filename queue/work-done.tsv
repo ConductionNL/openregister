@@ -18202,7 +18202,10 @@ cover:decidiq:a5f973bbm56fe:e372e6ff	deferred: decidiq has 45 open PRs	session-2
 cover:decidiq:a5f973bbm56fe:f545d745	deferred: decidiq has 45 open PRs	session-20261116T221523-34c05d70	2026-11-16T22:47:33Z
 review:shillinq:2997:b01baecf	GREEN: 12494 tests 0 failures, vitest 11/11, phpstan/eslint clean	session-20261116T221549-588bbbce	2026-11-16T22:47:35Z
 lane:arch5:shillinq:next-shillinq-r10:c1	skipped: stopped app (coordinator)	coordinator	2026-11-16T22:47:45Z
+merge:versioniq:751:9c98f245	cloud tree of 3 versioniq PRs: merged=0 red=0 fail=2 skip=0; conflict 1 (751/753 add no diff to development, GitHub reports conflicts: obsolete)	session-20261116T224315-f5aa3af9	2026-11-16T22:47:54Z
 cover:decidiq:a5f973bbm56fe:1b97f731	deferred: decidiq has 45 open PRs	session-20261116T221523-34c05d70	2026-11-16T22:47:49Z
 cover:decidiq:a5f973bbm56fe:60c2c265	PR #2236: lib/Controller 96.62% -> 98.52%, 15 tests, fixed risky metadata	session-20261113T213325-5a151438	2026-11-16T22:48:13Z
+cover:pipelinq:7f9dc8e6m3dbb:0798b7cf	already covered: lib/Service/PosCart/ 73/73 lines (100%) in the measure and locally; no PR	session-20261116T224529-30de497c	2026-11-16T22:48:03Z
 review:filinq:2123:f0f290fe	stale	session-20261116T221549-588bbbce	2026-11-16T22:48:11Z
 verify:dossiq:6617:efa216b4	GREEN 6617, GREEN 6618	session-20261116T222948-81ec1395	2026-11-16T22:48:15Z
+cover:pipelinq:7f9dc8e6m3dbb:11fc5f4e	already covered: lib/Service/Document/ 121/123 lines locally (98%); the 2 left are tempnam/ZipArchive::open failure branches; no PR	session-20261116T224529-30de497c	2026-11-16T22:49:01Z
