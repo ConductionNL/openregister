@@ -18444,9 +18444,15 @@ verify:hermiq:1755:b730ea34	CONFLICT #1755 (tests/Unit/Service/ScheduleServiceTe
 verify:learniq:2533:bc10459d	#2533 CONFLICT (learniq_register.json)	session-20261116T230843-e8244832	2026-11-16T23:49:32Z
 verify:learniq:2524:272b43ee	CONFLICT #2524	session-20261116T232519-f84cca9a	2026-11-16T23:49:52Z
 review:integriq:3638:6ec56940	RED: CatalogRegistrySeedGoldenTest::testCollectIsUnchanged (golden hash not updated for new catalog entry)	session-20261116T232911-3dffa1ae	2026-11-16T23:50:04Z
+verify:learniq:2484:01ffa98d	failed: learniq development not installable here (locked vimeo/psalm 7.5 needs php >=8.3.16, container php 8.3.6)	session-20261116T233921-33ab4c87	2026-11-16T23:50:37Z
 verify:integriq:3545:7fac08d5	CONFLICT: l10n/en.js,en.json,nl.js,nl.json vs development	session-20261116T232925-45c70e73	2026-11-16T23:50:32Z
 verify:launchpad:885:64e2e764	CONFLICT #885 (src/views/Views.vue)	session-20261116T232944-146e39d7	2026-11-16T23:50:43Z
 verify:launchpad:761:3f39b409	CONFLICT #761	session-20261116T233901-7abe1a78	2026-11-16T23:50:57Z
 verify:larpinq:1055:5b0a89f1	CONFLICT: l10n catalogues vs development	session-20261116T233900-0eb43466	2026-11-16T23:51:05Z
 verify:humaniq:687:3fe05074	CONFLICT: package.json, package-lock.json vs development	session-20261116T232912-634ff2e8	2026-11-16T23:51:31Z
 verify:launchpad:1219:95f8a0fb	CONFLICT #1219 (l10n catalogues)	session-20261116T232918-35016340	2026-11-16T23:51:52Z
+verify:integriq:3572:346f03e1	CONFLICT #3572 (l10n, openapi.json)	session-20261116T233929-170accb7	2026-11-16T23:52:03Z
+verify:integriq:3585:65c80612	CONFLICT: #3585 conflicts with development (routes, l10n, payments controller/service, actions seed, openapi)	session-20261113T214350-9762e143	2026-11-16T23:52:19Z
+verify:integriq:2650:d3c85c9c	CONFLICT #2650 (8 files vs development)	session-20261116T233933-3050c00d	2026-11-16T23:52:31Z
+verify:integriq:3600:cada744c	CONFLICT #3600 (l10n, AdminSettings.vue, seed golden test)	session-20261116T230934-9ee320cf	2026-11-16T23:52:42Z
+verify:learniq:2497:761f1e58	CONFLICT #2497	session-20261116T232519-f84cca9a	2026-11-16T23:52:54Z
