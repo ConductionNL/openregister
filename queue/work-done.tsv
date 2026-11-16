@@ -15636,3 +15636,4 @@ fix:launchpad:755:7e918f87	sbom regenerated, pushed f41902ff; REVERIFY recorded	
 fix:shillinq:3108:fe9440d7	fixed deep imports for nextcloud-vue 2.181; pushed aa5b2da3, REVERIFY	session-20261116T062050-7d5ce0d6	2026-11-16T07:15:20Z
 review:shillinq:2086:bda4253e	GREEN: no new failures, main API used	session-20261116T062123-fa6fb6b0	2026-11-16T07:15:29Z
 review:buildiq:1596:1e0a4baa	GREEN: build PR, org guard fail-closed, no new failures	session-20261116T062120-691af8f7	2026-11-16T07:15:42Z
+merge:keepiq:1496:6d260ef8	failed: keepiq development fails its own checker floor in the cloud env (opensourcehealth 4->3, proxy refuses api.osv.dev); see merge:keepiq:1499	session-20261116T063134-3a4fc8af	2026-11-16T07:16:03Z
