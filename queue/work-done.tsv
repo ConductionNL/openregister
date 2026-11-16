@@ -17846,3 +17846,4 @@ build4:openregister:scoped-api-tokens:c5	partial: PR #10514 +4 commits (head 0f8
 lane:arch5:keepiq:next-keepiq-r1	failed: permission: recording an APPROVE review of PR #1863 (my own) was refused; PR #1863 open at 0a71ceb1 (estimate mid 3.62->3.69, module coupling 3.36->3.89; phpstan 0, suite 5406/0 failures, tree on development 5424/0 new, 40 gates green); needs an independent review to land	session-20261116T200543-e8f76f14	2026-11-16T21:14:57Z
 merge:versioniq:722:afa5bff2	cloud tree of 1 versioniq PRs: none; conflict 1, lint 0, red 0, moved 0, done 0	session-20261116T211421-0d5107fb	2026-11-16T21:16:01Z
 merge:portaliq:2533:223d2a04	merge3 tree of 1 portaliq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-16T21:16:22Z
+verify:versioniq:751:76039aa5	751 CONFLICT with development 175397de	session-20261116T211421-0d5107fb	2026-11-16T21:17:17Z
