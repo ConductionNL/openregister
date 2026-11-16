@@ -17976,5 +17976,6 @@ review:hermiq:1795:efce9000	GREEN #1795 at efce9000: PHPUnit 5395 ok, vitest 154
 cover:launchpad:fb10c50fmf487:59826f43	deferred: launchpad has 47 open PRs	session-20261116T212048-3752a879	2026-11-16T21:49:02Z
 review:pipelinq:3602:ea5eea45	GREEN: tests only, suite 9194 tests 0 failures merged with development	session-20261116T214553-9fb39259	2026-11-16T21:49:02Z
 verify:opencatalogi:2755:cbe5dd86	GREEN 2755 (tasks.md tick, claim checked)	session-20261116T214739-8ff46d14	2026-11-16T21:49:34Z
+build:launchpad:drill-down-cross-widget-filter:c6	PR #1235 at 92f8baab: tasks 8,11,12,13,16,30,31,33,34 done (+10 code); left 7 (blocked on nextcloud-vue chart selection event; 32 toast strings with it), 9 config-UI half, profiling 10/35, e2e 22-29	session-20261116T212719-d025d113	2026-11-16T21:49:44Z
 cover:pipelinq:7f9dc8e6m3dbb:2ea9e4f7	deferred: pipelinq has 43 open PRs	session-20261116T214553-9fb39259	2026-11-16T21:49:39Z
 review:opencatalogi:2678:9d1090cf	stale	session-20261116T214739-8ff46d14	2026-11-16T21:49:56Z
