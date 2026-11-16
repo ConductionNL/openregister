@@ -15963,6 +15963,7 @@ launchpad	885	2efbf863811faecf97b113753a8db0e0633bcd9d	CONFLICT	worker-22	confli
 launchpad	1209	418bb0e50b3cceb31d75aca980a6c97a3049ea16	CONFLICT	worker-53	conflicts with development; files: l10n/*, lib/Controller/AdminController.php PageController.php PageSettingsSources.php lib/Db/AdminSettingKey.php lib/Service/AdminSettingsService.php InitialStateBuilder.php src/utils/loadInitialState.js and 2 tests
 learniq	2524	593b6b3784220353064af7c871ab4a4cd59ee388	CONFLICT	worker-17	conflicts with development in l10n catalogues, lib/Listener/Registrar/IntegrityListenerRegistrar.php, lib/Settings/learniq_register.json, tests/Unit/Settings/HourPlanRegisterTest.php
 learniq	2533	adbae3b0cb1c6df378db735c449288dcc7091c70	CONFLICT	worker-57	merge onto development 9f16d123 conflicts in lib/Settings/learniq_register.json; no tests run on it (baseline 6966 tests, 2 inherited failures)
+learniq	2497	c85c59131ff95ca94a1b6a84d4175a6a8da8d545	CONFLICT	worker-17	conflicts with development in l10n/en.js,en.json,nl.js, lib/Settings/learniq_register.json
 larpinq	1055	3553b217084367d6f7078f260cc8ebae9f7a722d	CONFLICT	worker-48	conflicts with development in l10n/*.js/json (all locales); baseline 1120 tests OK, 20 skipped
 launchpad	761	ca2815b851deb1969d5b23ac0c29185819391d2e	CONFLICT	worker-41	conflicts with development (package-lock/package.json/sbom); tree not run
 launchpad	1217	edcbef17e9264918bc3f67df8dd4bd791f15c768	CONFLICT	worker-41	conflicts with development in tests/Unit/Service/TileUpdaterTest.php; tree not run
