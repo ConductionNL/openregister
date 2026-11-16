@@ -16656,3 +16656,4 @@ review:integriq:3051:5649956b	GREEN: lock/unlock via main's LockRequest, no new 
 build:pipelinq:pos-stock-moved-event	deferred: pipelinq has 46 open PRs	session-20261116T150749-2f742a8d	2026-11-16T15:41:34Z
 build:pipelinq:a-resident-asks-a-question-without-a-dossier	deferred: pipelinq has 46 open PRs	session-20261116T150749-2f742a8d	2026-11-16T15:41:40Z
 build:pipelinq:erase-on-soft-delete	deferred: pipelinq has 46 open PRs	session-20261116T150749-2f742a8d	2026-11-16T15:41:46Z
+build:pipelinq:recurring-revenue-runrate-widget	deferred: pipelinq has 46 open PRs	session-20261116T150749-2f742a8d	2026-11-16T15:41:53Z
