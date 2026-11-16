@@ -15605,4 +15605,5 @@ opencatalogi	2756	d7a2df601f100243b235b392858ee8fd16eaf3f6	GREEN	worker-49	phpun
 learniq	2575	e638a18cf890066d297025899334acf190db4de2	GREEN	worker-13	one-PR tree on development 9f16d1235 (stacked on #2574): 6966 tests, baseline 6966 with 1 failure (HigherEducationExampleSetTest), new failures 0; phpstan 0, phpcs/phpmd same as development
 dossiq	6203	4e2aff99bc0ebbbf65bdca58db50025730b8aa51	GREEN	worker-50:review	tests only (110 files, no lib/ change); unit suite on PR+development 18866 tests, 1 error inherited (StatusEntryRequirementsGuardTest, red on development too); 2 vitest specs 13/13 pass; edited existing tests only refactor helpers, no assertions removed
 versioniq	755	fd86702a5469497adb6ffc95abf2bf09975242a5	RED	worker-08:merge-gate	GATE RED floor: duplication: 5.17 -> 5.15
+versioniq	707	53beddbcccad406f69feb6e4e5a360ad36564bbd	CONFLICT	worker-08	conflicts with development; files: lib/BackgroundJob/AutoUpdateJob.php
 opencatalogi	2678	a10a8ae601eb6fc4f5746b207f499fa2a6fb8096	RED	worker-15:merge-gate	GATE RED floor: unit_complexity: 4.88 -> 4.85
