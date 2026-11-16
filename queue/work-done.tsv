@@ -17701,3 +17701,4 @@ review:learniq:2507:e2e4770e	stale: already merged into development (c44c6f38)	s
 verify:hermiq:1808:b331dd92	GREEN #1808 (unit OK 5374, vitest OK 1540)	session-20261116T201953-a718bf5e	2026-11-16T20:37:38Z
 merge:opencatalogi:2699:8d531e14	cloud tree of 1 opencatalogi PRs: none; conflict 1, lint 0, red 0, moved 0, done 0	session-20261116T201644-3ef8cda3	2026-11-16T20:38:00Z
 measure:stackiq:20261116h20	php 88.69%, js 95.07% at 00516ba	session-20261116T203029-cbd53de3	2026-11-16T20:38:19Z
+build:dossiq:capability-rows-say-the-whole-capability:c8	partial: PR #6613 rows 10.1 (KPI gauge preset on the Dashboard) and 10.4 (dwell-time heatmap, view=heatmap), left: 1.9 task panel, 1.12 needs structured action proposals, 1.16 case documents as mail attachments (send path takes the sender's own file paths), 1.24 offline inspection, 2.19 twelve widget kinds; provider rows to their apps	session-20261116T202108-f101ad43	2026-11-16T20:38:28Z
