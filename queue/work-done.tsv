@@ -16993,3 +16993,4 @@ fix:versioniq:738:f3f7da6d	conflict resolved, pushed 001e5515; not landed (merge
 review:hermiq:1736:4200349d	GREEN #1736 (0 new failures; dev baseline 167E/26F inherited)	session-20261116T173308-9a80cd8d	2026-11-16T17:56:20Z
 review:hermiq:1788:ce467188	GREEN: no new failures, spec-conformant, access gated	session-20261116T174709-5787ce39	2026-11-16T17:56:38Z
 review:opencatalogi:2682:4e12e44e	GREEN: 0 new failures (5869 tests, 80 inherited), jest/vitest green	session-20261116T173254-f6972957	2026-11-16T17:56:49Z
+build:filinq:inbound-auto-classification	already built: every code task ticked on development; 4.2 e2e and 4.4 screenshots need a live instance	session-20261116T170545-a4f14b83	2026-11-16T17:57:29Z
