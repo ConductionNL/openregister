@@ -17870,4 +17870,5 @@ merge:opencatalogi:2752:3339ead3	cloud tree of 1 opencatalogi PRs: merged=1 red=
 cover:launchpad:fb10c50fmf487:d8ac3ddd	deferred: launchpad has 45 open PRs	session-20261116T211128-4ec7d28f	2026-11-16T21:23:20Z
 cover:launchpad:fb10c50fmf487:33ae6285	deferred: launchpad has 45 open PRs	session-20261116T211128-4ec7d28f	2026-11-16T21:23:38Z
 verify:buildiq:1672:42cabbe3	GREEN 1672,1679; CONFLICT 1683 (AutomationCompilerService vs 1672)	session-20261116T211521-a6f938c5	2026-11-16T21:23:44Z
+cover:dossiq:069ee2d6m9d1b:6fbba20d	added 7 tests to PR #6203 (dossiq over 40 open PRs); Starter dir stmts now fully covered; suite 18829->18836 tests, failures 19 baseline unchanged	session-20261116T211553-db0d2c78	2026-11-16T21:23:53Z
 review:shillinq:3077:6307fa1f	GREEN: unit 12358/0 failures, phpstan, eslint, vitest clean	session-20261116T211640-2352b56a	2026-11-16T21:24:18Z
