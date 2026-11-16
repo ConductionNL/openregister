@@ -15522,3 +15522,4 @@ fix:shillinq:3088:13b45b93	fixed RED: two saves moved to ObjectSaveOptions; unit
 merge:thematiq:1117:1f934e0c	cloud tree of 1 thematiq PRs: merged=0 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T062121-edb2d73b	2026-11-16T06:50:04Z
 fix:planninq:930:de4742c6	conflict resolved; new head 3db13fea, REVERIFY	session-20261116T062544-335bf148	2026-11-16T06:50:09Z
 fix:buildiq:1249:0997f504	sbom current (dev dep omitted); merged development, pushed e01a3111488d17974ac20b492fdd9e5593f8cd37, REVERIFY	session-20261116T062050-7d5ce0d6	2026-11-16T06:50:30Z
+fix:buildiq:1624:de704581	conflict resolved (kept both l10n key sets), pushed	session-20261116T062050-add210c3	2026-11-16T06:50:37Z
