@@ -16596,3 +16596,4 @@ review:hermiq:1739:5a3ceaf4	GREEN: unit OK 5309, vitest 9/9	session-20261116T150
 fix:learniq:2126:c3504350	inherited: plain learniq development reads maintainability 3.98 (range 3.98-4.01) below its 3.99 floor with the gate's estimator; the PR only bumps phpstan (composer.lock, sbom, a test stub), nothing to fix on the branch	session-20261116T150938-2294e41a	2026-11-16T15:20:20Z
 merge:decidiq:2222:5e414a10	cloud tree of 3 decidiq PRs: merged=0 red=0 fail=0 skip=2; conflict 1, lint 0, red 0, moved 0, done 0	session-20261116T150917-ab25a304	2026-11-16T15:20:29Z
 fix:integriq:3051:8f6b6de3	fixed conflict with #3047; REVERIFY 5649956b	session-20261116T142700-f4d651ea	2026-11-16T15:20:45Z
+review:shillinq:2071:abd73b77	GREEN	session-20261116T144202-f2b26030	2026-11-16T15:20:57Z
