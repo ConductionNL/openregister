@@ -15730,3 +15730,4 @@ fix:launchpad:1229:348b5e3e	no change needed: up to date with development, confl
 fix:filinq:1355:307201af	conflict resolved, pushed 1ed49fc4; merge lock busy, REVERIFY recorded	session-20261116T081618-2145ecb3	2026-11-16T08:18:07Z
 review:hermiq:1189:4990197f	GREEN: build OK, vitest 1526 OK, sbom current	session-20261116T075936-d83d6c1e	2026-11-16T08:18:18Z
 fix:launchpad:787:e3f05384	failed: floor restore needs a redesign beyond the fix cap (158-file feature); reproduced 4.56->4.53; levers: module fan-in >10 +338 loc (coupling), PHP 3+ params +191 loc (BookmarkImport/PageController/SearchShortcuts/OfficeNetworks ctors 5-6, BookmarkImportService createAll/import), JS McCabe>10 useTileSearch pressEnter 13, new duplication	session-20261116T080031-6bfb8cef	2026-11-16T08:18:30Z
+review:shillinq:2070:29369cd1	GREEN: unit 12238 OK, vitest 1 inherited; concerns on stale four-eyes text and 500 on listener refusal	session-20261116T075953-c9c4b65a	2026-11-16T08:18:27Z
