@@ -310,3 +310,4 @@ opencatalogi	2407	15ee026e9e5cc880f1ef5812343e2da79e65c3d1	APPROVE	worker-11	Qui
 hermiq	1193	7d49a897eacda342108a8ffdf6d0ba0a3967dc67	APPROVE	worker-42	Quick; no blockers; dev-dep sass bump + sbom
 hermiq	1801	b8e31c29c0755366e44d0de7ddd7cee5f6d4be87	APPROVE	worker-42	Quick; no blockers; tests only, fail-closed assertions
 hermiq	1802	5e2885e3e660cb042b21292e305f27b2d9a26093	APPROVE	worker-42	Standard; no blockers; tests only, existing tests extended not weakened
+shillinq	3110	a0ee6bc0a0cab83e9f4998a81594f802cfe4ab3c	APPROVE	worker-58	Quick; no blockers; minor/patch dependency bundle with regenerated SBOM; composer-audit advisories are on symfony packages already on development; gate failures inherited
