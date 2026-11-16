@@ -16165,3 +16165,4 @@ fix:integriq:3593:f34b8147	merged development in; new head 8dad155c, REVERIFY qu
 fix:integriq:2716:98572e41	conflict resolved, pushed 6edb6eea; merge lock held elsewhere, REVERIFY queued	session-20261116T103023-366232b4	2026-11-16T10:35:35Z
 fix:integriq:2994:a1ae6e95	REVERIFY: merged development in, new head 672207a470; not landed (gate unmeasured here)	session-20261116T101220-07929334	2026-11-16T10:35:45Z
 merge:opencatalogi:2723:6d587ed1	cloud tree of 1 opencatalogi PRs: none; conflict 0, lint 0, red 1, moved 0, done 0	session-20261116T101053-f719e178	2026-11-16T10:35:56Z
+fix:integriq:3670:ecc30716	conflict resolved, pushed d4f5bcc8; lock held elsewhere, REVERIFY queued	session-20261116T101013-986398f9	2026-11-16T10:36:08Z
