@@ -186,3 +186,4 @@ shillinq	1958	55f82d52277eede6df1c34287254996742aff7c6	APPROVE	worker-33	Thoroug
 shillinq	1991	29abf7fb303a9a25601637bfbbaecaeb9a1feae7	APPROVE	worker-33	Quick; no blockers; dev-only prettier patch bump with sbom
 shillinq	2048	f88b17a7a69df6279ca38720aee89560b62d975f	APPROVE	worker-33	Quick; no blockers; dev-only nextcloud/ocp patch bump with lock and sbom
 shillinq	2224	ff4aa606e92e5e1b481b9d57db877beb814a2c4e	APPROVE	worker-33	Quick; no blockers; dev-only hydra-gates minor bump with lock and sbom
+shillinq	3109	95bf71e1b5b49d1ade835e3ae9eb2b94df7af954	APPROVE	worker-33	Quick; no blockers; comment-only SPDX header on one test stub, restores the spdxheaders floor
