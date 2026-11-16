@@ -16039,3 +16039,4 @@ fix:launchpad:757:2ba3b33d	inherited: plain development also reads opensourcehea
 fix:opencatalogi:2673:55afbbab	fixed RED: golden re-recorded, pushed 6dd0d200; lock held elsewhere, REVERIFY queued	session-20261116T091834-4216158d	2026-11-16T09:24:59Z
 fix:filinq:2123:e7b32d65	conflict resolved, pushed 821f64bb; merge lock busy, REVERIFY queued	session-20261116T092158-aeab11ae	2026-11-16T09:25:20Z
 merge:planninq:1198:4ef22590	cloud tree of 1 planninq PRs: merged=0 red=0 fail=0 skip=1; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T091613-0f6d95fe	2026-11-16T09:25:58Z
+merge:portaliq:1997:3ac8d909	cloud tree of 1 portaliq PRs: merged=0 red=0 fail=0 skip=1 (gate unmeasured: static.developer.overheid.nl unreachable)	session-20261116T091541-9e19ce49	2026-11-16T09:26:12Z
