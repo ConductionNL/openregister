@@ -15860,3 +15860,4 @@ buildiq	1632	c06b2a4f61038870ae1dfbc682a651ae808af05d	CONFLICT	worker-56	conflic
 buildiq	1590	0761fb37549017029643fd57e42ca59a23a7c37e	CONFLICT	worker-17	conflicts with development in l10n/en.js,en.json,nl.js,nl.json, openapi.json, src/icons.js, src/views/VersionHistory.vue; baseline 3456 tests 0 failures
 buildiq	1623	e24b334fa50134345d8c9bba3cba2b0477f89521	CONFLICT	worker-13	conflicts with development in l10n/en.js, en.json, nl.js, nl.json, FieldEditor.vue and the FieldEditorConversion golden snapshot; no tests run
 buildiq	1597	b4d6685f15a88f33cd1f90edad134ba6de802e91	CONFLICT	worker-17	conflicts with development in l10n/en.js,en.json,nl.js,nl.json; baseline 3456 tests 0 failures
+decidiq	2171	a9fe23d912171fce917fb0fdec80d6cd3ebd5321	CONFLICT	worker-13	conflicts with development in lib/Settings/profiles/municipality.json, src/manifest.json, src/registry.js, tests/Unit/RegisterAuthorizationTest.php, tests/vitest/simpleMeetingPage.spec.js; no tests run
