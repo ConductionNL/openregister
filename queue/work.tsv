@@ -17294,3 +17294,6 @@ merge:portaliq:1767:595cdc26	merge	portaliq	development	development	prs=1767@470
 merge:keepiq:1793:421e7e17	merge	keepiq	development	development	prs=1793@b87d8b92603b8fc5bc7b835ea838176d9ca866d9,1816@c999bfc2e54087d2325b4b92871a0e738a639500,1826@95a54b1107c36a29261175ed20e0569ce4050e99	2026-11-16T17:47:27Z
 merge:opencatalogi:2699:a5342ed8	merge	opencatalogi	development	development	prs=2699@64dd55f629ebec0808c4392acdeb733f6e871660,2725@defb7b6a9822f96bb369f99795f0945912eb4242	2026-11-16T17:47:27Z
 merge:versioniq:691:86c1cc56	merge	versioniq	development	development	prs=691@ed265e00f936a4cd03193e2caceb769dc33e3d83,711@052268bfdb66670183b89287e26285169f6e5fd9	2026-11-16T17:47:27Z
+build:shillinq:adopt-connection-registry:r2	build	shillinq	development	adopt-connection-registry	change=adopt-connection-registry;open=1	2026-11-16T17:45:47Z
+build:shillinq:spend-analytics-ui:r2	build	shillinq	development	spend-analytics-ui	change=spend-analytics-ui;open=1	2026-11-16T17:45:47Z
+build:shillinq:receivables-automatic-dunning:r2	build	shillinq	development	receivables-automatic-dunning	change=receivables-automatic-dunning;open=2	2026-11-16T17:45:47Z
