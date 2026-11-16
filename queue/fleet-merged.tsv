@@ -4825,3 +4825,4 @@ launchpad	1246	05dc9f7ecff35a08bda3fb8462fe4492da2e0297	RED	merge3	GATE RED floo
 larpinq	1080	f97fdfc48671b21a77f66bda5933e8cdb59cf45c	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.26
 opencatalogi	2756	d7a2df601f100243b235b392858ee8fd16eaf3f6	SKIP	worker-34	no APPROVE review at this head
 versioniq	751	c7c576b43d4a32cd4be8e89bc2625a036ea52fba	FAIL	worker-03	{"message":"Pull Request has merge conflicts","documentation_url":"https://docs.github.com/rest/pulls/pulls#merge-a-pull-request","status":"405"}gh: Pull Request has merge conflicts (HTTP 405)
+versioniq	753	f4103ca1ca2f3b0b58450aa19154d52dab9d32f4	FAIL	worker-03	{"message":"Pull Request has merge conflicts","documentation_url":"https://docs.github.com/rest/pulls/pulls#merge-a-pull-request","status":"405"}gh: Pull Request has merge conflicts (HTTP 405)
