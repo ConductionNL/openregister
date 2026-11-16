@@ -15503,3 +15503,4 @@ stackiq	2004	3abacc55decaf583bc9497566ae9c6da6f5fba99	GREEN	worker-35	tree of 6:
 stackiq	2005	d037535241d8a2bd88bf460c043dd0adb24ea646	GREEN	worker-35	tree of 6: 3901 tests, baseline 3822 with 0 failures, new failures 0; tests only
 keepiq	1861	e2fac7fe7f578d54c5e372a928014a134cb28866	GREEN	worker-51	PHP unit 5445 (baseline 5421, 0 fail); vitest 7106, 3 fail inherited from development (HealthReportView.controls); new failures: none; tests only
 hermiq	1754	6096bd3720698bcfc96b6fdfd0bacddb0447873e	RED	worker-12:merge-gate	GATE RED floor: unit_complexity: 4.56 -> 4.52; unit_interfacing: 2.57 -> 2.55
+integriq	3678	31eb3920fa952bd5e6e91f7aefaadddb2adc96a8	GREEN	worker-22	unit 9597 tests, baseline 2E/3F inherited, no new failures; phpstan clean on changed lib; interface extraction + aliases only
