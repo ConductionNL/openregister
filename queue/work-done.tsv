@@ -15745,3 +15745,4 @@ fix:filinq:2094:4bb74d34	fixed blockers, pushed a2f8cc99002a; merge lock busy, R
 merge:portaliq:1354:22f771c5	stale	feeder	2026-11-16T08:20:24Z
 review:shillinq:1958:98ce92e5	GREEN: unit 12239 OK, vitest 18/18, phpstan/eslint clean	session-20261116T081702-4281d743	2026-11-16T08:21:21Z
 review:launchpad:757:2ba3b33d	GREEN: ts-eslint parser minor bump, tests+lint same as baseline	session-20261116T080016-01e1a0d7	2026-11-16T08:21:43Z
+review:planninq:933:91b55b70	GREEN: unit 1231 OK, vitest 3565 OK, lint/phpstan clean; access checks preserved	session-20261116T081649-ec7372ec	2026-11-16T08:21:51Z
