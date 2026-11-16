@@ -18203,3 +18203,4 @@ cover:decidiq:a5f973bbm56fe:f545d745	deferred: decidiq has 45 open PRs	session-2
 review:shillinq:2997:b01baecf	GREEN: 12494 tests 0 failures, vitest 11/11, phpstan/eslint clean	session-20261116T221549-588bbbce	2026-11-16T22:47:35Z
 lane:arch5:shillinq:next-shillinq-r10:c1	skipped: stopped app (coordinator)	coordinator	2026-11-16T22:47:45Z
 cover:decidiq:a5f973bbm56fe:1b97f731	deferred: decidiq has 45 open PRs	session-20261116T221523-34c05d70	2026-11-16T22:47:49Z
+verify:dossiq:6617:efa216b4	GREEN 6617, GREEN 6618	session-20261116T222948-81ec1395	2026-11-16T22:48:15Z
