@@ -704,3 +704,4 @@ learniq	2557	572f94324c877a9dd48b0657cf3d3b88563c6c90	APPROVE	worker-46	Quick; n
 learniq	2559	64fd61a80179557f884440e26b650fd61bb8122b	APPROVE	worker-46	Quick; no blockers; dev-only webpack-dev-server 6.1.0
 buildiq	1672	23675f9b919ac36ba1fa0d61ce234362b1e2d407	APPROVE	worker-12	Thorough; no blockers; openregister main object API migration: _rbac/_multitenancy flags preserved per file (11/11), find/save/delete/lock/unlock targets and advisory flags carried into the option objects matching main's signatures, test assertions 17 removed/17 added, tree suite 3409 with the 1 bas
 learniq	2562	7726a54cc67ec9a8c40f7c44e8fea0cf725b9fd2	APPROVE	worker-46	Quick; no blockers; lockfile minimatch advisory fix under eslint plus SBOM
+dossiq	5398	0574972c864d76681209aa9163ca32450a6fa810	APPROVE	worker-14	Quick; no blockers; dev-only psalm 5->7.5 bump plus composer platform pin 8.3.16, no lib/src changes, sbom unchanged (dev deps omitted), tree suite 18300 tests no new failures
