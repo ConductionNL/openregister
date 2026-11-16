@@ -4812,3 +4812,4 @@ buildiq	1687	e9f9ddf281f6b31e0a979ffa201e4c911900665f	MERGED	worker-35	GATE OK s
 versioniq	755	fd86702a5469497adb6ffc95abf2bf09975242a5	RED	worker-08	GATE RED floor: duplication: 5.17 -> 5.15
 opencatalogi	2678	a10a8ae601eb6fc4f5746b207f499fa2a6fb8096	RED	worker-15	GATE RED floor: unit_complexity: 4.88 -> 4.85
 launchpad	1247	ccd5cdeece92e0a41cd7f8b9b915c60b41e978d1	MERGED	worker-31	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.65 holds at 3.78
+hermiq	1750	a0d94c86f801a08c9356d53624d591db1cb47423	RED	worker-12	GATE RED checker floor: adrvalidator: pass -> warn; adrvalidator stars: 5 -> 3; score: 100 -> 97
