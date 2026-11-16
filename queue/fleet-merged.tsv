@@ -3899,3 +3899,9 @@ decidiq	2203	14dc68070ac11502fc0ca03de58869b820f8905a	SKIP	worker-01	GATE UNMEAS
 larpinq	877	0d04ecfc809c8f114723a77614d7ef4cddf938ef	RED	worker-23	GATE RED sbom: composer.lock changed without sbom.cdx.json
 thematiq	1303	550d277c14273dd3b9908587fb0804741182805c	SKIP	worker-12	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator, secretscanning; this is not a pass
 shillinq	2997	5788e1ce9f8b8c48fefdb048497a3f9d1bd8dca7	RED	worker-11	GATE RED floor: unit_size: 4.41 -> 4.39; unit_complexity: 4.94 -> 4.92; unit_interfacing: 2.76 -> 2.74
+shillinq	1904	cc11db135048c9dc26794b32c82a3d2b674a6ad9	SKIP	worker-45	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
+shillinq	1908	ca21609bb71603fe45c7d58dd33216df70aee655	SKIP	worker-45	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
+shillinq	1912	a7d98b523c8c9952e0731ec9f7dd99c883030cc8	SKIP	worker-45	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
+shillinq	1991	29abf7fb303a9a25601637bfbbaecaeb9a1feae7	SKIP	worker-45	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
+shillinq	2048	f88b17a7a69df6279ca38720aee89560b62d975f	SKIP	worker-45	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
+shillinq	2224	ff4aa606e92e5e1b481b9d57db877beb814a2c4e	SKIP	worker-45	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
