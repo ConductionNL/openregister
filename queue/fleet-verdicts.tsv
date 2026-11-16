@@ -14967,3 +14967,9 @@ versioniq	711	052268bfdb66670183b89287e26285169f6e5fd9	GREEN	worker-12:review	bu
 opencatalogi	2682	d8b519df4b336de03cd62c4570efec60d5744b95	RED	merge3:merge-gate	GATE RED checker floor: maintainability stars: 5 -> 4
 integriq	3050	ba946f8e3a5e7aeab450672f945a97ee9e98de62	GREEN	worker-35:review	Moves 3 saveObjects calls to main's BulkSaveOptions/BulkBatchDefaults with the same register, schema, validation, events, audit, rbac and multitenancy flags; stubs match main's signature. Unit 9535 tests: 2 errors + 3 failures, identical on plain development (inherited), none new.
 buildiq	1652	fd2e894ab2488b523b31ce2263c461c60518bbb2	REVERIFY	worker-39	floor fix: split 4 complex helpers, unit_complexity 3.30 -> 3.32 (floor PASS), touched tests + vitest green; new head e48b9bd3adf4289d0848bd17d2627058a48c4863, verify it
+learniq	1881	a0896acdbc0c57ad4b6fac04f3f0d56bd59c89bd	RED	merge3:merge-gate	GATE RED absolute floor: learniq maintainability 3.96 after merge is below its floor 3.99
+learniq	1901	e959109637b3fae8a7eb4d5b704274d2005a4bfc	RED	merge3:merge-gate	GATE RED absolute floor: learniq maintainability 3.98 after merge is below its floor 3.99
+learniq	2166	5e708c03b21527b11d964eac32ec5d62d984da40	RED	merge3:merge-gate	GATE RED absolute floor: learniq maintainability 3.98 after merge is below its floor 3.99
+learniq	2521	9e646ec13b847eb3dff5f62b6c67361a5df6c0ac	RED	merge3:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
+learniq	2555	df653e98026a269a36f529b6052fe46694c246d3	RED	merge3:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
+learniq	2556	489b7f4d5721f51aa0332db8b74ec0f3ab3b0fed	RED	merge3:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
