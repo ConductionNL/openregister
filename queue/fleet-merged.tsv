@@ -4082,3 +4082,4 @@ shillinq	2230	62ff796165624dd3a7cb0a10c95e8f1bcc712aaa	RED	worker-16	GATE RED ch
 humaniq	1164	73689a5c14d96133ee6b263874b8bbf12f49dd44	SKIP	worker-22	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 shillinq	2766	4d51285b749a43e73a8ab6060e699b9e46003461	RED	worker-16	GATE RED checker floor: spdxheaders stars: 5 -> 4
 dossiq	3199	53d908abc135941903fee153cb5996d2272b1e75	SKIP	worker-55	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
+keepiq	1793	0c57f5258b1cd7453b2bb3d0b473663f64f5f8b2	RED	worker-37	GATE RED floor: unit_complexity: 4.40 -> 4.37
