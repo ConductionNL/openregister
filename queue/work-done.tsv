@@ -18338,3 +18338,4 @@ verify:decidiq:2236:f824c814	2236 GREEN	session-20261116T230531-f9095b0f	2026-11
 review:hermiq:1781:dd5b5dad	GREEN: unit 5465 OK, vitest 1583 OK on PR+development; minor gate concerns noted	session-20261116T231848-eaef2e51	2026-11-16T23:24:41Z
 verify:buildiq:1607:1ad4a7c3	CONFLICT #1607 (l10n + FieldEditor.vue)	session-20261116T224246-d9bde508	2026-11-16T23:24:52Z
 verify:buildiq:1602:5b0f2edd	1602 CONFLICT	session-20261116T224608-d6967eb8	2026-11-16T23:25:14Z
+verify:decidiq:2148:0924bc83	2148 CONFLICT (src/manifest.json)	session-20261116T230531-f9095b0f	2026-11-16T23:25:25Z
