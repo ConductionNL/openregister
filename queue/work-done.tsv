@@ -17730,3 +17730,4 @@ verify:keepiq:1857:f5fa80be	GREEN #1857 (tests only; 5417 tests, 0 new failures)
 cover:decidiq:a5f973bbm9cda:fa6ed6d4	failed: permission (open-PR count via gh pr list refused)	session-20261113T202611-3b383b96	2026-11-16T20:42:48Z
 merge:keepiq:1854:fccd7153	cloud tree of 3 keepiq PRs: merged=3 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T184852-b8356331	2026-11-16T20:42:34Z
 fix:filinq:2122:d9cac23f	merged #2122 at 33fe19d956dc8619f531e1529a2596c45a4acc61	session-20261116T201445-8cab6741	2026-11-16T20:42:41Z
+cover:buildiq:70b3e29em9bad:e372e6ff	deferred: buildiq has 51 open PRs	session-20261116T202128-6be5fc02	2026-11-16T20:43:21Z
