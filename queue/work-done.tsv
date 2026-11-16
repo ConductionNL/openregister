@@ -18187,3 +18187,4 @@ merge:larpinq:1080:c010eb93	merge3 tree of 1 larpinq PRs: merged=1 red=0 fail=0 
 cover:buildiq:70b3e29eme3dd:716923f8	deferred: buildiq has 49 open PRs	session-20261116T220904-ce70c542	2026-11-16T22:44:39Z
 cover:dossiq:069ee2d6m9d1b:3ee9dda7	added to PR #6619 (open-PR budget): DossierRegister 41/41, CaseCustodyChain 115/115, 10 tests, suite 19 inherited failures, none new	session-20261116T222948-81ec1395	2026-11-16T22:44:52Z
 cover:buildiq:70b3e29eme3dd:d528dcf0	deferred: buildiq has 49 open PRs	session-20261116T220904-ce70c542	2026-11-16T22:44:57Z
+build:portaliq:publication-detail-page-complete:c3	done: PR #2448 at 160e1aed9, 2.1 document page built (all code tasks ticked; 5.1 live, 6.x verify/release left), development merged in, document-page spec 10 tests, specs fails all inherited	session-20261116T222655-da719429	2026-11-16T22:45:03Z
