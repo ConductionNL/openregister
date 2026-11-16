@@ -18110,4 +18110,5 @@ fix:hermiq:1795:efce9000	no change needed: merges clean on development; conflict
 verify:larpinq:1080:c010eb93	GREEN #1080	session-20261116T221216-1ebc1c2a	2026-11-16T22:21:28Z
 fix:buildiq:1685:224abd6d	merged #1685 at 54a96aae3f6792eeb02b1afe7878a1a64b819828	session-20261116T221330-514f14d5	2026-11-16T22:21:35Z
 merge:learniq:2521:befd9bd4	cloud tree of 2 learniq PRs: merged=2 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T220904-ce70c542	2026-11-16T22:21:42Z
+cover:keepiq:c967a31fmaddd:60c2c265	PR #1868: 33 tests, 7 controllers, lib/Controller 96.99->99.58%	session-20261116T221511-75761e32	2026-11-16T22:22:46Z
 review:hermiq:1735:3d8280ac	GREEN #1735 (5423 php ok, 21 vitest ok, clean merge)	session-20261116T220858-93068d3c	2026-11-16T22:22:54Z
