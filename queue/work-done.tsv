@@ -16072,3 +16072,4 @@ review:shillinq:2259:48de59f1	GREEN: matches spec and openregister main API, uni
 measure:stackiq:20261116h08	php 88.93% js 97.04% at 0cdd4afa (1 vitest failure: facets.spec FACET_DIMENSIONS)	session-20261116T092539-dc11f615	2026-11-16T09:32:53Z
 verify:integriq:3671:30723070	GREEN #3671: no new unit failures (9508, 5 inherited)	session-20261116T091246-00cbe321	2026-11-16T09:33:24Z
 merge:planninq:933:bd094103	cloud tree of 1 planninq PRs: merged=0 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T092435-e1a408a7	2026-11-16T09:33:35Z
+merge:launchpad:753:b55a2824	cloud tree of 5 launchpad PRs: merged=0 red=1 fail=0 skip=2; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T091602-8b44c7c2	2026-11-16T09:33:49Z
