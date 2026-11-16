@@ -15922,3 +15922,4 @@ fix:portaliq:1765:065fabf8	sbom regenerated, pushed 582e2f29; merge lock held, R
 review:learniq:1881:fffa1128	GREEN: suite 6871, 1 inherited failure, none new	session-20261116T084600-33f35544	2026-11-16T08:57:57Z
 review:filinq:2103:cd98f739	GREEN: matches change specs, gates clean, unit 6851 OK	session-20261116T080103-dd70aeff	2026-11-16T08:58:05Z
 fix:launchpad:763:68f98712	no change needed: branch up to date with development, package conflict tree-only; REVERIFY recorded (merge lock busy)	session-20261116T082353-191a2dc3	2026-11-16T08:58:25Z
+fix:portaliq:2349:b92b6364	merged development in, sbom current, phpstan unchanged vs 2.3.1; new head e7812cc2, REVERIFY queued (merge lock held)	session-20261116T084920-18fd4376	2026-11-16T08:58:57Z
