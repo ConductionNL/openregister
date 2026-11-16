@@ -4385,3 +4385,4 @@ humaniq	667	c3822863e74efaa1f7512786743723ab486e70f2	SKIP	worker-58	GATE UNMEASU
 hermiq	1735	80b67d8252b18d63d70f5f77b427c7fa70b431c9	SKIP	worker-53	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 buildiq	1652	fd2e894ab2488b523b31ce2263c461c60518bbb2	RED	worker-16	GATE RED floor: unit_complexity: 3.32 -> 3.30
 humaniq	669	88ae160d9c7abbc76321f26a411c6125cc34b28d	SKIP	worker-58	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
+learniq	1882	334e6e479def3699df5e52bbcc4e4d89ce9c8c25	SKIP	worker-12	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
