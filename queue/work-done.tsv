@@ -17472,3 +17472,4 @@ cover:learniq:e6498ddd:befc51b3	deferred: learniq has 60 open PRs	session-202611
 merge:shillinq:2099:3df1d67e	cloud tree of 5 shillinq PRs: merged=3 red=0 fail=0 skip=0; conflict 2, lint 0, red 0, moved 0, done 0	session-20261116T184852-b8356331	2026-11-16T19:44:50Z
 cover:learniq:e6498ddd:80b3d955	deferred: learniq has 60 open PRs	session-20261116T192127-f26e2e56	2026-11-16T19:45:04Z
 cover:learniq:e6498ddd:98083bbf	deferred: learniq has 60 open PRs	session-20261116T192127-f26e2e56	2026-11-16T19:45:11Z
+lane:arch5:shillinq:next-shillinq-r1	PR #3118 opened (estimate 4.03-4.06 -> 4.08-4.12), verified green; merge lock held elsewhere, GREEN verdict queued	session-20261116T192325-bb4c31dd	2026-11-16T19:45:40Z
