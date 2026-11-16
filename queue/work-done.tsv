@@ -16351,3 +16351,4 @@ fix:hermiq:1785:8d6ac93b	no change: branch up to date with development and merge
 fix:filinq:2072:6c719f2c	conflict resolved, pushed b8b9f680; merge lock held elsewhere, REVERIFY queued	session-20261116T105620-b2654149	2026-11-16T11:22:11Z
 fix:opencatalogi:2669:8c31eee0	inherited: test passes with openregister main beside; fails only via the inherited OpenRegister stub gap (ObjectSaveOptions unstubbed) that errors 1300+ tests on development; no new failures vs development; nothing pushed	session-20261116T110144-2dffa885	2026-11-16T11:22:33Z
 fix:integriq:2711:b46c56fe	fixed: merged development, sbom current; new head 6f3fdc05, REVERIFY queued (merge lock held elsewhere)	session-20261116T112058-ef6ff806	2026-11-16T11:22:40Z
+fix:pipelinq:3883:e0b01647	conflict resolved, pushed d9fffa2b1b6ea00309fd942e483b77e3d121c6fd; lock held elsewhere, REVERIFY queued	session-20261116T110114-f035d055	2026-11-16T11:22:52Z
