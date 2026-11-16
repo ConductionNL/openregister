@@ -15458,3 +15458,4 @@ shillinq	3124	cab1145aa76fc5208af087d4862854c52d891d9d	RED	merge3:merge-gate	GAT
 integriq	3675	8263d5471ccee753028f79a6a45128cd8acac5a4	GREEN	worker-48	unit 9614 tests on tree, baseline development 9597 (2 errors, 3 failures inherited), new failures 0; build of open-formulieren-submits-into-its-case per its specs; php -l clean; openregister main Form API matches the stubs
 opencatalogi	2699	41285ef5a7aa544260c78c2fca08e31d869a71a1	RED	worker-56:merge-gate	GATE RED floor: unit_size: 4.66 -> 4.64
 shillinq	1899	65bdef778c12e9576363018a4a242cb7b0e47e54	CONFLICT	merge3	conflicts with development; files: appinfo/info.xml l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json tests/fixtures/register-versions.lock.json 
+launchpad	1243	c02aab8b80b2f635c9443d697eb91507a4373325	GREEN	worker-05:lane	phpstan 0, SAME-PHPCS, SAME-PHPMD, suite 4491 tests 0 failures (base 0), merge tree green, review APPROVE recorded; landing refused by a permission check in this session
