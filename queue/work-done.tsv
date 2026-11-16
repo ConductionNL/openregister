@@ -17125,8 +17125,12 @@ cover:pipelinq:7f9dc8e6m8519:8f8dca30	added to #3659 (budget): ExportAccessPolic
 cover:buildiq:70b3e29em3841:05630945	deferred: buildiq has 56 open PRs	session-20261116T181603-6d014baf	2026-11-16T18:28:01Z
 cover:decidiq:a5f973bbm0262:59826f43	deferred: decidiq has 53 open PRs	session-20261116T173306-f68895a7	2026-11-16T18:28:07Z
 merge:learniq:1882:3f11e78d	cloud tree of 3 learniq PRs: merged=0 red=2 fail=0 skip=0; conflict 1, lint 0, red 0, moved 0, done 0	session-20261116T173256-6277a58c	2026-11-16T18:28:16Z
+build:decidiq:bodies-substitute-mandate-swap	already built: tasks 1-4 implemented on development; only live Newman/Playwright halves left	session-20261116T182514-f3633b18	2026-11-16T18:28:46Z
 cover:integriq:92114ab0m1db0:js0023cfc7	deferred: integriq has 70 open PRs	session-20261116T174053-4a550291	2026-11-16T18:28:41Z
 cover:integriq:92114ab0m1db0:js0d617ff5	deferred: integriq has 70 open PRs	session-20261116T174053-4a550291	2026-11-16T18:28:51Z
 fix:learniq:2557:29ed293d	fixed conflict with #1881 (stub header aligned); new head 3fe186b0, REVERIFY queued (merge lock held)	session-20261116T181418-c3cd424d	2026-11-16T18:29:08Z
 cover:buildiq:70b3e29em3841:d528dcf0	deferred: buildiq has 56 open PRs	session-20261116T181603-6d014baf	2026-11-16T18:29:19Z
 fix:learniq:2559:a2575752	fixed: SPDX header on inherited stub; new head 307b9303, REVERIFY (merge lock held elsewhere)	session-20261116T182126-f8ae2f13	2026-11-16T18:29:44Z
+cover:stackiq:9ac19b3amdf03:f4b2f7af	deferred: stackiq has 41 open PRs	session-20261116T173256-6277a58c	2026-11-16T18:30:40Z
+fix:integriq:3649:ceff4454	unmeasured: static.developer.overheid.nl (adrvalidator); floor fixed at 9b271f27 (unit_complexity 3.90), APPROVE recorded, REVERIFY queued	session-20261116T173211-a3411be5	2026-11-16T18:30:05Z
+fix:opencatalogi:2679:3b4372c2	floors fixed (component independence 93.6% vs 93.1% base); pushed 16fe088f; REVERIFY queued (merge lock held elsewhere)	session-20261116T181308-35bc38de	2026-11-16T18:30:52Z
