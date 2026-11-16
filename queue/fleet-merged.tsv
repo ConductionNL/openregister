@@ -4452,3 +4452,4 @@ keepiq	1791	123b7f2512968c472ee9f71652d23dd883b908e4	MERGED	merge3	GATE OK sbom,
 keepiq	1792	5d484110eef783bb32a8ca647a51e7e8f42101a9	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.58 holds at 3.59
 larpinq	1050	f3c30b43c8c42a02566382fa0f11cf7dbf53029b	SKIP	worker-09	no APPROVE review at this head
 portaliq	1767	47038abd625e99f16530974f324d21982c30c858	SKIP	worker-24	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
+pipelinq	3883	d9fffa2b1b6ea00309fd942e483b77e3d121c6fd	SKIP	worker-33	GATE UNMEASURED floor_check exit 5: [maintainability-floor] TOOLING: estimator tooling unavailable: [gate-122] sig-maintainability: tooling: npm could not install jscpd@4.0.5:
