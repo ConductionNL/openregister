@@ -311,3 +311,4 @@ hermiq	1193	7d49a897eacda342108a8ffdf6d0ba0a3967dc67	APPROVE	worker-42	Quick; no
 hermiq	1801	b8e31c29c0755366e44d0de7ddd7cee5f6d4be87	APPROVE	worker-42	Quick; no blockers; tests only, fail-closed assertions
 hermiq	1802	5e2885e3e660cb042b21292e305f27b2d9a26093	APPROVE	worker-42	Standard; no blockers; tests only, existing tests extended not weakened
 shillinq	3110	a0ee6bc0a0cab83e9f4998a81594f802cfe4ab3c	APPROVE	worker-58	Quick; no blockers; minor/patch dependency bundle with regenerated SBOM; composer-audit advisories are on symfony packages already on development; gate failures inherited
+shillinq	3111	96abe4abfb509aa4c32c2210a765797e13c601d5	APPROVE	worker-58	Quick; no blockers; two background-job saves moved to main's ObjectSaveOptions with the same register, schema and uuid (signature checked on main); test doubles updated and assert the target; gate failures inherited
