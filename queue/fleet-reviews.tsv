@@ -634,3 +634,4 @@ buildiq	1673	80b457317f46b9f6ab80d28bb3c4606923489bc6	APPROVE	worker-35	Quick; n
 integriq	2671	f4218e170982307bdf1ebe71fe738453a8155f5e	APPROVE	worker-50	Quick; no blockers; dev-only phpmd 3 bump with baseline renamed to its new rule names, sbom regenerated
 integriq	2716	6edb6eeaafff98e0aa865e39475b0c55f4f9ce02	APPROVE	worker-50	Quick; no blockers; vue 3.5.44 patch bump, lockfile and sbom; vitest 2365 green on the tree
 integriq	2924	500b126369a6ed627489af45ef717b0a6b6db364	APPROVE	worker-50	Thorough; no blockers; removed modals and their tests have no remaining importers (grep empty), option-object refactor updates every caller and test; vitest green; gate fails only inherited (throttling, procedure-code)
+integriq	2994	672207a470cba6d332f1df141ce039272fc4624f	APPROVE	worker-50	Quick; no blockers; sass 1.107.1 dev bump, lockfile and sbom
