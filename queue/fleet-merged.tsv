@@ -4007,3 +4007,4 @@ stackiq	1978	315e616b2d61a4366c9527185a4c1dfeab77a8f0	RED	worker-19	GATE RED flo
 shillinq	2092	e2044223414ef221e48a27d8ca2ed1756e842312	RED	worker-49	GATE RED checker floor: spdxheaders stars: 5 -> 4
 portaliq	663	6dc142e054f417065f264200584adb1c807aa348	SKIP	worker-57	no APPROVE review at this head
 shillinq	2098	93d83382d296a2cfda1bed9d43188bd4d9961678	RED	worker-49	GATE RED checker floor: spdxheaders stars: 5 -> 4
+portaliq	1765	582e2f298cff75a9d11555480aad9098b4d9cca6	SKIP	worker-57	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
