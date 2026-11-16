@@ -71,7 +71,7 @@
 - [ ] 6.2 `JourneyRunService::startFromLink()`: prefill the declared fields from the object, refuse answers for undeclared fields, and submit through `ObjectService::saveObject()` as an update; red first in `tests/Unit/Service/Form/JourneyRunServiceTest.php`.
 - [ ] 6.3 Render the journey on the public link page (`AccessLinkPageController`, `AccessLinkPage.vue`) when the link carries `edit`; `tests/e2e/ci/form-update-link.spec.ts` changes a field through the link and reads the audit entry.
 
-### Task 7: Repeating writes, a target per item and a bundle (REQ-FJR-009)
+### Task 7: Repeating writes, a target per item and a bundle (REQ-FJR-009, REQ-FJR-010)
 - **spec_ref**: `openspec/changes/or-form-and-journey-registry/specs/form-and-journey-registry/spec.md#requirement-a-journey-write-may-repeat-per-list-item-each-item-to-its-own-target-req-fjr-009`
 - **files**: `lib/Settings/forms_register.json`, `lib/Service/Form/JourneyAuthoringValidator.php`, `lib/Service/Form/JourneyRunService.php`, `tests/Unit/Service/Form/JourneyRunServiceTest.php`
 - **acceptance_criteria**:

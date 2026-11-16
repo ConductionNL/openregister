@@ -207,26 +207,12 @@ A journey MAY declare `mode: update` with a target schema. It SHALL then be star
 
 ### Requirement: A journey write MAY repeat per list item, each item to its own target (REQ-FJR-009)
 
-Filed by buildiq's `forms-multi-product-request` (REQ-BQMP-001, REQ-BQMP-002,
-REQ-BQMP-003), whose designer authors these keys. A `writes[]` entry MAY carry
-`forEach`, the key of a list answer collected at or before the entry's step; the
-run SHALL then commit the entry once per item, in list order, with `item.<key>`
-in the mapping reading the item's own fields and every other answer readable as
-before. A repeating entry MAY carry `targetBy` (an item field) and `targets`, a
-map from each allowed value of that field to `{register, schema, typeValue}`;
-each item SHALL be written to the target of its own value, and the journey SHALL
-be refused at save when a value has no target, when `targets` appears without
-`forEach` or `targetBy`, or when the mapping names a property one of the target
-schemas lacks, the finding naming the value and the property. One entry MAY
-carry `bundle: true`; it SHALL NOT repeat, it SHALL commit before the repeating
-entry, and item mappings MAY reference its id with `{ "$write": "<as>" }`. A
-refused bundle SHALL write no item. Each item SHALL commit all or none on its
-own: a refused item SHALL NOT undo the items committed before it. The step's
-response SHALL report each item's outcome (the written id, or the refusal's
-findings) under its list index. Every item object SHALL carry the run's draft
-reference and its list index, so that resubmitting the step writes only the
-items that have no committed object and never writes an item twice. An entry
-without `forEach` SHALL behave as before.
+Filed by buildiq `forms-multi-product-request` (REQ-BQMP-001, REQ-BQMP-002). A
+`writes[]` entry MAY carry `forEach`, an earlier list answer; the run SHALL
+commit it once per item in list order, `item.<key>` reading the item's fields.
+`targetBy` and `targets` SHALL send each item to `{register, schema, typeValue}`
+of its own value. Save SHALL refuse an unmapped value or a mapping property one
+target lacks, naming value and property.
 
 #### Scenario: Two products, each on its own case type, under one bundle
 
@@ -246,6 +232,14 @@ without `forEach` SHALL behave as before.
 - **GIVEN** a repeating write whose mapping writes `kenteken`, and the target schema for `afvalcontainer` without that property
 - **WHEN** the journey is saved
 - **THEN** the save is refused with a finding naming `afvalcontainer` and `kenteken`
+
+### Requirement: Repeated items MAY hang under one bundle and MUST commit and retry per item (REQ-FJR-010)
+
+Filed by buildiq `forms-multi-product-request` (REQ-BQMP-003). One non-repeating
+entry MAY carry `bundle: true`; it SHALL commit first, items MAY reference it with
+`{ "$write": "<as>" }`, and a refused bundle SHALL write no item. Each item SHALL
+commit all or none on its own. The response SHALL report each item's outcome by
+list index. A resubmit SHALL write only items without a committed object.
 
 #### Scenario: A failed item is retried without duplicating the others
 
