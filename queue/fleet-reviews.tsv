@@ -393,3 +393,4 @@ hermiq	1187	415fb0238e6625fe4d8401b5cf2e03b85a5c4e8d	APPROVE	worker-10	Quick; no
 hermiq	1188	97593dc8ffffbb6783bfaaca2bcdb450ca9ff291	APPROVE	worker-10	Quick; no blockers; @nextcloud/vue minor bump; vitest 1526 green on the tree
 keepiq	1499	88c1cad153a7733153a2335d9ef1fc3abdcf8aaa	APPROVE	worker-30	Quick; no blockers; patch bump of web-token/jwt-library with regenerated sbom
 keepiq	1500	56b81f7c398f2a09052673c885856a1acedc90dc	APPROVE	worker-30	Quick; no blockers; patch bump of phpseclib with regenerated sbom
+keepiq	1789	2b1b12acbe7835083af606772713ff2f0a386103	APPROVE	worker-30	Standard; no blockers; build of platform-properties per its specs: theme colour with validated fallback, stylelint hex rule, nl coverage gate, tests added
