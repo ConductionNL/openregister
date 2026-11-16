@@ -15862,6 +15862,7 @@ review:shillinq:2083:16d6ee15	BLOCK: receipt confirm silently drops the editable
 fix:pipelinq:3083:c1e2e782	failed: unfixable by sbom regen - jsdom is a devDependency, regen-sbom (--omit dev) leaves sbom.cdx.json unchanged, so the gate's 'lockfile changed without sbom.cdx.json' can never pass for this dependabot PR; leave it to the deps bundle (quality/deps-bundle-20261115 / pipelinq #3882); nothing pushed	session-20261116T082121-c1741fb9	2026-11-16T08:44:33Z
 lane:depbundle:decidiq:bundle	opened #2224 (11 updates), verified green vs development; merge lock held by another merger, GREEN verdict queued for merge	session-20261116T083020-e59421bc	2026-11-16T08:44:37Z
 review:shillinq:1958:55f82d52	GREEN: matches specs, phpunit 12239 OK, vitest only inherited dunningNextRun failure	session-20261116T083044-10866b36	2026-11-16T08:44:45Z
+review:stackiq:1931:8e3de7ae	BLOCK: unregistered manifest icons, missing info.xml version bump, no demo data for new schemas, component_independence floor lost	session-20261116T080103-dd70aeff	2026-11-16T08:45:29Z
 merge:planninq:933:6ee7ff9b	failed: permission (approving new head ff903468 after my own fix was refused; REQUEST_CHANGES at 91b55b70 fixed and pushed, REVERIFY recorded, nothing landed)	session-20261116T082353-191a2dc3	2026-11-16T08:45:38Z
 review:versioniq:500:7b3a6f4e	GREEN: vitest 3012/3012 pass on merged tree, dev-dep bump only	session-20261116T084459-8070a613	2026-11-16T08:46:37Z
 review:decidiq:2191:29114ea5	GREEN: spec-conform UI wiring; vitest 2847 pass, manifest valid	session-20261116T084528-6b5f71dd	2026-11-16T08:47:03Z
@@ -15883,6 +15884,7 @@ review:shillinq:2997:675a3aef	GREEN: build matches its specs, access checks per 
 lane:ormig:learniq:leftover	no real breaks: namecheck's one BREAK is a self call (findPage); no PR needed	session-20261116T082637-06597b03	2026-11-16T08:51:01Z
 review:opencatalogi:2679:b5f77a60	GREEN: 0 new failures (106 baseline), 39 new tests pass, phpcs/phpstan clean	session-20261116T084531-ff1efb6c	2026-11-16T08:50:58Z
 fix:pipelinq:2969:17a6a9c4	conflict resolved (l10n, both sides kept), pushed 23b177e505cb1a2a906213fd0df439c94e592b94; REVERIFY	session-20261116T081426-24e3a1d6	2026-11-16T08:51:05Z
+fix:versioniq:725:c2115872	fixed floor block: TS/PHP units split, floor PASS; new head bd0db7f78fc7, REVERIFY queued (merge lock held elsewhere)	session-20261116T083029-d99abe70	2026-11-16T08:51:13Z
 review:learniq:2126:c3504350	GREEN: dependency bump only, phpstan clean, 1 inherited unit failure	session-20261116T084553-d7ab8477	2026-11-16T08:51:24Z
 review:filinq:2103:cface20c	stale	session-20261116T081426-24e3a1d6	2026-11-16T08:51:34Z
 fix:pipelinq:3092:f8d049f3	sbom regenerated, pushed f041615e; APPROVE recorded; land skipped (gate UNMEASURED: checker did not measure adrvalidator)	session-20261116T081618-2145ecb3	2026-11-16T08:51:35Z
@@ -15891,6 +15893,17 @@ review:larpinq:1053:1a318455	BLOCK: new find() call uses register:/schema: named
 merge:shillinq:2086:6e72623c	failed: development itself fails the checker floor (spdxheaders 5->4, test stub header lost in 0d688ca2f); fix pending on quality/gap-spdx-stub-header 95bf71e1b, every PR would gate RED until it lands	session-20261116T082955-f4213879	2026-11-16T08:52:29Z
 review:opencatalogi:2725:80cedf65	GREEN: 0 new failures (+24 tests), matches change specs	session-20261116T084700-3a1a7351	2026-11-16T08:52:41Z
 lane:arch5:pipelinq:pipelinq-k	PR pipelinq #3884 opened at 72197b6e (already contained development); verified green; estimate 4.38-4.40 -> 4.48-4.49 (still under 4.5: next-pipelinq after it lands); merge lock held elsewhere, GREEN verdict queued	session-20261116T081522-a0a03964	2026-11-16T08:52:55Z
+fix:portaliq:1856:9258525b	failed: design conflict, not textual: development already ships co-sign T04 (PortalCosignFlow, awaiting-cosign queue state, CosignDeadlineJob, CosignPage) per its REQ-RIF-003; this PR replaces it with the decision-271 design (case created at once, intakeObligations) and rewrites the spec; picking one needs an owner decision, 17 files conflict	session-20261116T084920-18fd4376	2026-11-16T08:53:06Z
+fix:dossiq:5338:4924e28d	conflict resolved, pushed 4d53d9bb (tests/phpcs/phpstan green on the touched file); merge lock held elsewhere, REVERIFY written	session-20261116T074147-edb7c708	2026-11-16T08:53:06Z
 fix:dossiq:3199:dd09a728	merged development in, new head 53d908ab; lock busy, REVERIFY queued	session-20261116T084528-6b5f71dd	2026-11-16T08:53:16Z
 merge:shillinq:1904:88a5d388	failed: development fails the checker floor (spdxheaders 5->4) until #3109 lands; every PR would gate RED	session-20261116T082955-f4213879	2026-11-16T08:53:30Z
 fix:dossiq:5396:861d4d0a	conflict resolved, pushed cc232d59; REVERIFY recorded (merge lock held elsewhere); dev-only bump will hit the sbom lock-without-sbom rule	session-20261116T082121-c1741fb9	2026-11-16T08:53:35Z
+lane:ormig:larpinq:leftover	already done: namecheck on development 412dbade shows no BREAK; 2 REVIEW-positional (saveObject/deleteObject in RegisterObjectFetcher) already use main's option objects; prs=none	session-20261116T084455-5dfa31c7	2026-11-16T08:53:56Z
+lane:depbundle:learniq:bundle	opened #2561 (11 updates, verified); merge lock held elsewhere, GREEN verdict queued	session-20261116T083627-a5dc872b	2026-11-16T08:53:57Z
+fix:dossiq:4887:f530c6e6	conflict resolved, pushed 5b3dec5c; merge lock held elsewhere, REVERIFY queued	session-20261116T084847-50980336	2026-11-16T08:54:07Z
+review:stackiq:1965:c6e522ff	GREEN: spec-conform, suites green (1 inherited vitest red)	session-20261116T084536-1bd0bd69	2026-11-16T08:54:21Z
+review:opencatalogi:2670:7cd46940	GREEN: no new failures (5766 tests vs base 5750, 107 inherited), phpstan clean	session-20261116T084401-2bd440a4	2026-11-16T08:55:02Z
+verify:shillinq:3109:ff5d2021	GREEN #3109 (SPDX header in test stub; unit 12225 OK, no new failures)	session-20261116T084449-ebc88ac4	2026-11-16T08:55:21Z
+lane:depbundle:pipelinq:land	verified #3882 at b1c037ef (no new failures vs development, sbom current); merge lock held elsewhere, GREEN recorded for a merge task	session-20261116T075942-394736ff	2026-11-16T08:55:29Z
+review:larpinq:1050:48b34820	GREEN: PHP 999 ok, vitest 608 ok	session-20261116T082637-06597b03	2026-11-16T08:55:37Z
+fix:portaliq:1766:23513ec0	sbom regenerated, pushed 931554ac; merge lock busy, REVERIFY queued	session-20261116T085112-b61e5d15	2026-11-16T08:55:53Z
