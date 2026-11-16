@@ -16231,3 +16231,4 @@ review:shillinq:2048:0e551132	GREEN: ocp dev-dep bump, no behaviour change, 1222
 review:integriq:3051:8f6b6de3	GREEN: suite 9535 tests, no failures beyond development baseline	session-20261116T105334-a341eb02	2026-11-16T11:03:01Z
 review:shillinq:1904:e4417595	GREEN: tooling-only bump, 12225 unit tests pass on merged tree	session-20261116T105637-494def63	2026-11-16T11:03:14Z
 build:dossiq:ai-activity-rows-and-download	already done: task 1.1 on development (8b5f08c8), only live check 1.2 left (not code)	session-20261116T105613-dddf963a	2026-11-16T11:03:31Z
+review:integriq:2716:6edb6eea	GREEN: vue bump, vitest 2387/2387 both sides, webpack build ok	session-20261116T105628-a5f0e49c	2026-11-16T11:03:53Z
