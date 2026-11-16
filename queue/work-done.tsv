@@ -15460,3 +15460,4 @@ review:learniq:1901:152da34c	GREEN: matches its spec, suite green beyond 1 inher
 verify:hermiq:1807:2db42155	GREEN 1807: unit 5291 OK, vitest 1526 OK	session-20261116T062544-335bf148	2026-11-16T06:35:19Z
 fix:hermiq:1795:c4658c1f	fixed: old-API saveObject/find moved to option objects; suite 5312 OK; new head fdc2c517	session-20261116T062140-6a300781	2026-11-16T06:35:40Z
 review:stackiq:1438:382aa36a	GREEN: lock-only dev bump, 0 new failures (1 inherited)	session-20261116T061736-e271ba12	2026-11-16T06:35:47Z
+review:thematiq:1291:ac416a6a	GREEN: dev dep bump; vitest 1559/1559, code-editor build OK	session-20261116T062050-7d5ce0d6	2026-11-16T06:35:58Z
