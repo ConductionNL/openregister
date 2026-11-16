@@ -17256,6 +17256,7 @@ cover:launchpad:fb10c50f:0891e5b5	deferred: launchpad has 44 open PRs	session-20
 cover:launchpad:fb10c50f:882bd950	deferred: launchpad has 44 open PRs	session-20261116T184924-e8902580	2026-11-16T18:58:53Z
 measure:launchpad:20261116h18	php 94.94%, js 96.2% at 6a3f3239	session-20261116T182720-9950372f	2026-11-16T18:58:54Z
 fix:opencatalogi:2686:75f5b243	merged development in, new head 84ac3f44cc; merge lock held by another merger, REVERIFY queued	session-20261116T184833-adbb8426	2026-11-16T18:58:58Z
+cover:stackiq:9ac19b3amdf03:17d367ab	deferred: stackiq has 42 open PRs	session-20261116T182720-9950372f	2026-11-16T18:59:46Z
 fix:opencatalogi:2696:8fcdf471	fixed jest specs, pushed 0d0512a6; merge lock busy, REVERIFY queued	session-20261116T184852-b8356331	2026-11-16T18:59:43Z
 fix:opencatalogi:2699:64dd55f6	merged development in, new head 3dfb66bdc2; merge lock held by another merger, REVERIFY queued	session-20261116T184833-adbb8426	2026-11-16T18:59:51Z
 cover:stackiq:9ac19b3amdf03:216a9a0a	deferred: stackiq has 42 open PRs	session-20261116T184852-d42365eb	2026-11-16T19:00:12Z
