@@ -62,6 +62,7 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\Credential\InjectableSecretRequest
  * @uses \OCA\OpenRegister\Service\Credential\OAuth2RefreshTarget
  * @uses \OCA\OpenRegister\Service\Credential\TokenSetAddress
+ * @uses \OCA\OpenRegister\Service\Credential\OutsideCustody
  */
 class CredentialBrokerOAuth2Test extends TestCase {
 	/** @var array<string, mixed>|null The options the outbound client was called with. */
