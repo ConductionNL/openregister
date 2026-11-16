@@ -16656,3 +16656,4 @@ review:decidiq:2178:a58bcd58	GREEN: unit 4666 OK, vitest 2872 passed, phpstan cl
 review:integriq:3051:5649956b	GREEN: lock/unlock via main's LockRequest, no new failures (stubs miss SPDX lines)	session-20261116T152057-2c4d4a8b	2026-11-16T15:41:19Z
 build:pipelinq:pos-stock-moved-event	deferred: pipelinq has 46 open PRs	session-20261116T150749-2f742a8d	2026-11-16T15:41:34Z
 build:pipelinq:a-resident-asks-a-question-without-a-dossier	deferred: pipelinq has 46 open PRs	session-20261116T150749-2f742a8d	2026-11-16T15:41:40Z
+build:pipelinq:erase-on-soft-delete	deferred: pipelinq has 46 open PRs	session-20261116T150749-2f742a8d	2026-11-16T15:41:46Z
