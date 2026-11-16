@@ -4224,3 +4224,4 @@ larpinq	1053	c3e9d42774ab4defd00e396838edbd0f54622831	MERGED	merge3	GATE OK sbom
 larpinq	1065	b4cd6229bc8a4c76e19474e9d716e4c5b905e373	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.05
 decidiq	1468	7dc751fb076903e2e43ec5e7338bc901791d14a5	SKIP	worker-55	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 larpinq	1060	535a2221d2513e56df74cbe225c0a7b8bc8f7578	RED	worker-41	GATE RED checker floor: testcoderatio: warn -> fail; testcoderatio stars: 3 -> 2
+integriq	2744	53deb98f7cdb1b6780f15f48e92d1825829d8513	RED	worker-47	GATE RED sbom: package-lock.json changed without sbom.cdx.json
