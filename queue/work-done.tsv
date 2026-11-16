@@ -15948,3 +15948,4 @@ merge:launchpad:755:b15cdcdd	cloud tree of 1 launchpad PRs: merged=0 red=1 fail=
 lane:depbundle:larpinq:bundle	opened #1066 (3 updates, verified); merge lock held elsewhere, GREEN verdict queued	session-20261116T083627-a5dc872b	2026-11-16T09:04:17Z
 fix:portaliq:1767:886f4fa1	merged development in, pushed 171143de; merge lock held elsewhere, REVERIFY queued	session-20261116T084902-22557114	2026-11-16T09:04:35Z
 lane:ormig:humaniq:leftover	#872 updated to a3d94bb2, verified green, GREEN queued for merge (lock busy); namecheck: no other real BREAK (rest are humaniq-internal calls), no names PR needed	session-20261116T084700-3a1a7351	2026-11-16T09:05:02Z
+lane:arch5:dossiq:dossiq-round5	PR #6589 opened at 503c16af9c (estimate 4.33-4.35 -> 4.40-4.43), verified GREEN; merge lock held elsewhere, GREEN row queued	session-20261116T083029-d99abe70	2026-11-16T09:05:10Z
