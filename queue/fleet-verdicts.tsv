@@ -15213,3 +15213,5 @@ integriq	3671	4b0e1b0a423662d5834cee85bf86311246344660	REVERIFY	worker-18	moved 
 decidiq	2228	0abc6d2ce3f0e6b6289f09f140c8953558cf17dd	GREEN	worker-21	unit 4638 tests on tree, baseline 4624 OK, 0 new failures; seeds ranked round per change specs
 integriq	3649	9b271f27a945bbc79cf8ea2f8bf1c695445a8659	GREEN	worker-54:review	build PR matches its change specs (zgw leg, files as caller service account, resume steps, admin-only dry run); unit 9597 tests on tree vs 9535 baseline, no new failures (5 inherited); 4 vitest specs 58 pass
 larpinq	1050	d2d372bb8b6fa72cf4753b520d003adb2fa6efd4	RED	worker-42:merge-gate	GATE RED checker floor: testcoderatio: warn -> fail; testcoderatio stars: 3 -> 2
+learniq	1881	df81c10bcc93f8f5dc2925ea9f52c6163d4ff2d4	CONFLICT	worker-23:merge	merges clean on development alone; files: tests/Stubs/Contract/ObjectServiceInterface.php 
+learniq	2565	64d9b4285e2a6a91d6595d7755e11a381f160d41	CONFLICT	worker-23:merge	merges clean on development alone; files: tests/Stubs/Contract/ObjectServiceInterface.php 
