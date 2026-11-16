@@ -4766,3 +4766,4 @@ keepiq	1826	1863322573ad2a5fd82e2646c2fc80fa9e17e57c	SKIP	worker-11	no APPROVE r
 launchpad	1243	c02aab8b80b2f635c9443d697eb91507a4373325	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.65 holds at 3.70
 keepiq	1849	00014df8ba6438163c44d2892ef8f7d212351d04	MERGED	worker-11	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.58 holds at 3.59
 larpinq	1077	25684453a601753ec30a96a7e5eadf78e45acd4e	MERGED	worker-09	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.17
+opencatalogi	2752	cbea3dfe5dfb91a28c9c123fb0b4a760c42c1d15	MERGED	worker-24	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.56
