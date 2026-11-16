@@ -206,14 +206,58 @@ def sbom(head, base):
     return "UNMEASURED", f"regen-sbom exit {p.returncode}: {last}"
 
 
+# Hosts the checker's network-bound criteria read. A session whose egress blocks one of them cannot measure
+# that criterion; it then reads worse (opensourcehealth rates fewer properties) or "not measured" (adrvalidator).
+CRITERION_HOSTS = {
+    "opensourcehealth": ("https://api.osv.dev/v1/vulns/GHSA-0000-0000-0000", "https://repo.packagist.org/p2/composer/composer.json",
+                         "https://registry.npmjs.org/npm", "https://pypi.org/pypi/pip/json"),
+    "adrvalidator": ("https://static.developer.overheid.nl/adr/ruleset.yaml", "https://raw.githubusercontent.com/ConductionNL/.github/main/README.md"),
+}
+
+
+def unreachable(criterion):
+    """Hosts of a criterion this session cannot reach (a proxy refusal or no answer within 8 s).
+    Any HTTP answer from the host itself, a 404 included, counts as reachable."""
+    import urllib.request, urllib.error
+    from urllib.parse import urlparse
+    bad = []
+    for url in CRITERION_HOSTS.get(criterion, ()):
+        try:
+            urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": "merge-gate-probe"}), timeout=8).close()
+        except urllib.error.HTTPError as e:
+            if e.code in (403, 407):
+                bad.append(urlparse(url).netloc)
+        except Exception:
+            bad.append(urlparse(url).netloc)
+    return bad
+
+
 def checker(tool, head, base, env=None):
     p = run([sys.executable, tool, "compare", head, "--base-ref", base], env=env)
     lines, last = tail(p)
+    # "did not measure" is mostly a transient fetch failure (seen locally too): scan once more without the
+    # scan cache, which would otherwise hand back the same unmeasured scan of this tree commit.
+    if p.returncode == 2 and "did not measure" in last:
+        with tempfile.TemporaryDirectory(prefix="checker-rescan-") as fresh:
+            p = run([sys.executable, tool, "compare", head, "--base-ref", base],
+                    env={**(env or os.environ), "HYDRA_GATE_FLOOR_CACHE": fresh})
+        lines, last = tail(p)
     if p.returncode in (0, 3, 4):
         return "OK", last
     if p.returncode == 1:
-        worse = "; ".join(l.strip()[6:] for l in lines if l.strip().startswith("WORSE "))
-        return "RED", "checker floor: " + (worse or last or "worse")
+        worse = [l.strip()[6:] for l in lines if l.strip().startswith("WORSE ")]
+        why = "; ".join(worse)
+        # Only network-bound criteria got worse: a blocked registry is not the PR's doing.
+        crits = {w.split(":")[0].split()[0] for w in worse}
+        if worse and crits <= set(CRITERION_HOSTS):
+            bad = sorted({h for c in crits for h in unreachable(c)})
+            if bad:
+                return "UNMEASURED", f"checker floor: {why} while {', '.join(bad)} is unreachable from this session"
+        return "RED", "checker floor: " + (why or last or "worse")
+    if "did not measure" in last:
+        bad = sorted({h for c in CRITERION_HOSTS if c in last for h in unreachable(c)})
+        if bad:
+            last += f" ({', '.join(bad)} unreachable from this session)"
     return "UNMEASURED", f"checker_floor exit {p.returncode}: {last}"
 
 
