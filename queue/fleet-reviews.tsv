@@ -732,3 +732,4 @@ stackiq	2002	ff096b820beb42309602b3ca2265cb01134b46ad	APPROVE	worker-54	Quick (t
 stackiq	2003	b30706bd7f0b6b085b38494b688b8ef27372d92b	APPROVE	worker-54	Quick (tests only, no lib/ change); no blockers; existing tests only gain @uses metadata
 stackiq	2004	3abacc55decaf583bc9497566ae9c6da6f5fba99	APPROVE	worker-54	Quick (tests only, no lib/ change); no blockers; none
 stackiq	2005	d037535241d8a2bd88bf460c043dd0adb24ea646	APPROVE	worker-54	Quick (tests only, no lib/ change); no blockers; existing tests only gain @uses metadata
+launchpad	1244	4b69a0271a2fc6d035d5d89ed3195f7e3998c657	APPROVE	worker-33	Strict (touches VisibilityChecker and UrlSafetyValidator); no blockers; every hunk is a phase extraction with identical branch outcomes, order, messages and early returns (allow-list empty config still allows, missing host still refuses; include/exclude evaluation unchanged; resync buckets unchanged
