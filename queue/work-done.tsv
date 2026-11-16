@@ -18032,3 +18032,4 @@ verify:versioniq:754:7da035af	755 GREEN; 754 skipped (head moved 70e9dc9 -> 5ca8
 lane:arch5:buildiq:next-buildiq-r5	PR #1687, GREEN (php complexity 2.21 -> 2.26, floor PASS; r6 queued)	session-20261116T212156-27d8410f	2026-11-16T21:59:14Z
 fix:hermiq:1735:42dffb64	failed: permission (review record refused; fix pushed, new head 3d8280ac, REVERIFY queued)	session-20261116T214741-cce55d5f	2026-11-16T21:59:48Z
 lane:arch5:shillinq:next-shillinq-r8	partial: nothing built; context too low for a full round after a build task; requeued as :c2 with the DBAController plan	session-20261116T212353-0c92a0b1	2026-11-16T21:59:59Z
+cover:dossiq:069ee2d6m9d1b:b7fd3ec4	added 13 tests to open PR #6203 (dossiq over 40 open PRs); lib/Service/Beschikking 96.0% -> 97.9%, suite failures unchanged (19 inherited)	session-20261116T214802-7ef7ea3b	2026-11-16T22:00:21Z
