@@ -14637,3 +14637,10 @@ integriq	3628	858c7a5daf994cdee85d2208d40103edcf6f52cd	REVERIFY	worker-47:merge	
 integriq	3638	7466fd09d3366a2278bd751a6b10e20e0f7f41e5	REVERIFY	worker-47:merge	verdict sha is not the head: head is 3d602f6be073781a0c73a05e59aca82b74a18366
 integriq	3649	977d1a6a3fc1dbbf511e4dcba0e2bb7c4b4b59ea	REVERIFY	worker-47:merge	verdict sha is not the head: head is bd9eaae6119e3b61ec891904fd1757ff228e399a
 opencatalogi	2655	f3ddd32755f07b8cc2c89f45f975c56de5f750cc	REVERIFY	worker-45	merged development in (kept both sides of ServiceRegistrar imports and en/nl l10n, regenerated l10n js); tree adds no unit failures; reviewed APPROVE at the new head; merge gate UNMEASURED (static.developer.overheid.nl unreachable); new head 4b3298a0da1fe54e94d30ea4ed591a9f72fd716e, verify it
+decidiq	1468	7dc751fb076903e2e43ec5e7338bc901791d14a5	RED	merge3:merge-gate	GATE RED absolute floor: decidiq maintainability 3.77 after merge is below its floor 3.78
+decidiq	1469	09383bbcc1479f735f6f91b06b9eab2bc002c9b9	RED	merge3:merge-gate	GATE RED absolute floor: decidiq maintainability 3.77 after merge is below its floor 3.78
+decidiq	1470	d4e9a56bd03ff9b791d94f382e91a9560de24a53	RED	merge3:merge-gate	GATE RED absolute floor: decidiq maintainability 3.77 after merge is below its floor 3.78
+decidiq	1474	08a18331e7494f87957cc48a01384d4bdd132036	RED	merge3:merge-gate	GATE RED absolute floor: decidiq maintainability 3.77 after merge is below its floor 3.78
+decidiq	1691	d103222b2f9f51517c3c7de2194fc68cd4940546	RED	merge3:merge-gate	GATE RED absolute floor: decidiq maintainability 3.77 after merge is below its floor 3.78
+decidiq	1767	ef20753cf5af14ce526904d1a06b54c59bfb59fc	RED	merge3:merge-gate	GATE RED absolute floor: decidiq maintainability 3.77 after merge is below its floor 3.78
+decidiq	1950	e876f7cecae4332eb0a07df3b2effe4dd9b06afb	RED	merge3:merge-gate	GATE RED absolute floor: decidiq maintainability 3.77 after merge is below its floor 3.78
