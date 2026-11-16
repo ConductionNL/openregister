@@ -16597,3 +16597,4 @@ fix:learniq:2126:c3504350	inherited: plain learniq development reads maintainabi
 merge:decidiq:2222:5e414a10	cloud tree of 3 decidiq PRs: merged=0 red=0 fail=0 skip=2; conflict 1, lint 0, red 0, moved 0, done 0	session-20261116T150917-ab25a304	2026-11-16T15:20:29Z
 fix:integriq:3051:8f6b6de3	fixed conflict with #3047; REVERIFY 5649956b	session-20261116T142700-f4d651ea	2026-11-16T15:20:45Z
 review:shillinq:2071:abd73b77	GREEN	session-20261116T144202-f2b26030	2026-11-16T15:20:57Z
+fix:versioniq:500:7b3a6f4e	closed #500 as obsolete: development already has jsdom 30.1.1	session-20261116T150938-2294e41a	2026-11-16T15:21:03Z
