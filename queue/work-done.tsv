@@ -18093,3 +18093,4 @@ fix:shillinq:1899:acc6426f	conflict resolved, pushed fd17f119; unit 12395 OK; lo
 review:shillinq:2997:adca596c	GREEN; conflicts with development in register-versions.lock.json (needs appVersion bump)	session-20261116T220914-8593c6b1	2026-11-16T22:17:17Z
 verify:launchpad:1246:310c46ed	GREEN #1246: phpunit 4498 ok (baseline 4491), vitest 2616 ok	session-20261116T220411-e35751c0	2026-11-16T22:18:00Z
 merge:versioniq:756:00c33f39	cloud tree of 2 versioniq PRs: merged=2 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T215102-33996dc2	2026-11-16T22:18:11Z
+measure:decidiq:20261116h20	php 91.43% (pcov), js 98.39% at aaedbb43	session-20261116T221549-588bbbce	2026-11-16T22:18:59Z
