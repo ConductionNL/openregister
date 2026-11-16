@@ -17706,14 +17706,20 @@ merge:planninq:1204:d4ce0b47	cloud tree of 1 planninq PRs: merged=1 red=0 fail=0
 merge:opencatalogi:2699:8d531e14	cloud tree of 1 opencatalogi PRs: none; conflict 1, lint 0, red 0, moved 0, done 0	session-20261116T201644-3ef8cda3	2026-11-16T20:38:00Z
 build:hermiq:tools-custom-tools-without-code	partial: PR #1764 (T1,T2; invoker, page and seed left)	session-20261113T202611-3b383b96	2026-11-16T20:38:17Z
 measure:stackiq:20261116h20	php 88.69%, js 95.07% at 00516ba	session-20261116T203029-cbd53de3	2026-11-16T20:38:19Z
+review:shillinq:2997:08a59a1f	stale	session-20261116T194104-8906f18f	2026-11-16T20:38:30Z
 build:dossiq:capability-rows-say-the-whole-capability:c8	partial: PR #6613 rows 10.1 (KPI gauge preset on the Dashboard) and 10.4 (dwell-time heatmap, view=heatmap), left: 1.9 task panel, 1.12 needs structured action proposals, 1.16 case documents as mail attachments (send path takes the sender's own file paths), 1.24 offline inspection, 2.19 twelve widget kinds; provider rows to their apps	session-20261116T202108-f101ad43	2026-11-16T20:38:28Z
 fix:filinq:2072:21673d4a	fixed BLOCK on #2072 (sweep org-scoped again), pushed 68c796a1; lock busy, REVERIFY queued	session-20261116T202104-9ad6a286	2026-11-16T20:38:30Z
 build:learniq:learner-list-and-page-follow-the-boards:c7	PR #2549 head fe0077f4: merged development (conflict resolved), T6 groep 7 Monday example data (Lina dentist, Hamza ill; absent-today 2), Dutch strings of the change complete; suite 6906, 1 inherited failure (HE generator float). Remaining T1-T4/T6 items need register fields or portaliq data, noted in tasks.md	session-20261116T202147-7121aee7	2026-11-16T20:39:11Z
 lane:arch5:shillinq:next-shillinq-r3	PR #3124 opened (4.12-4.16 -> 4.13-4.18), GREEN verdict queued; merge lock held elsewhere; next round queued	session-20261116T201628-7b6853de	2026-11-16T20:39:07Z
 verify:learniq:2567:908b4487	GREEN #2567 (6902 tests, 0 new failures)	session-20261116T200545-32ab46ec	2026-11-16T20:39:14Z
 cover:keepiq:c967a31fm902f:05630945	already done: lib/Middleware/Support 54/59 lines; the 5 left are loop bodies over the empty WITHOUT_SUCCESSOR/RENAMED constants, unreachable from tests; no PR	session-20261116T200543-e8f76f14	2026-11-16T20:39:32Z
+cover:keepiq:c967a31fm902f:9b457b26	already done: lib/Service/Flow 100% lines (34/34), 9-test dedicated suite; -1 PR merged; no PR	session-20261116T200543-e8f76f14	2026-11-16T20:40:01Z
 cover:buildiq:70b3e29em9bad:baa54041	deferred: buildiq has 51 open PRs	session-20261116T200545-32ab46ec	2026-11-16T20:39:50Z
 verify:dossiq:6612:e228317a	6612 GREEN; 6613 skipped (head moved to 073611ae)	session-20261116T203542-d21e7ade	2026-11-16T20:40:02Z
+merge:portaliq:2535:74c44cfc	cloud tree of 1 portaliq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T203539-f268bd6b	2026-11-16T20:40:24Z
 cover:openregister:7350e3efm9dc5:ad523ef3	added 5 tests (SettingsDraftGate +4, TokenResolver +1) to open cover PR #10587 at ffe054ad; OfficialsSource/TokenResolver failure paths were already pushed there by another worker; openregister over PR budget (188)	session-20261116T200628-a3f8f9fc	2026-11-16T20:40:15Z
 fix:hermiq:1754:3e57e4dc	fixed review blockers; pushed 90999c3d, REVERIFY queued	session-20261116T201953-a718bf5e	2026-11-16T20:40:35Z
 cover:buildiq:70b3e29em9bad:716923f8	deferred: buildiq has 51 open PRs	session-20261116T200545-32ab46ec	2026-11-16T20:40:50Z
+fix:hermiq:1579:d717a45b	failed: needs config.platform bump plus a regenerated composer.lock (psalm 7 requires php ~8.3.16); workers may not commit composer.lock, needs a human decision on the platform pin	session-20261116T201953-a718bf5e	2026-11-16T20:41:04Z
+fix:hermiq:1811:782c0bc5	fixed RED (golden lacked branch aliases), pushed 8eb3fd31; REVERIFY queued	session-20261116T202154-fbc59c50	2026-11-16T20:41:25Z
+review:shillinq:3078:55887f01	GREEN: 12369 tests, 0 failures	session-20261116T203632-17bf60c7	2026-11-16T20:41:45Z
