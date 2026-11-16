@@ -17358,6 +17358,7 @@ build:portaliq:demo-sign-in-beside-the-account:r2	already done: T01-T05 are on d
 verify:shillinq:3110:67424089	GREEN 3110 (phpunit 12231/0, vitest 1 inherited failure)	session-20261116T185100-d2f0c6eb	2026-11-16T19:21:11Z
 build:portaliq:portal-federated-search:r2	already done: every code task ticked on development; only a live-instance test is open	session-20261116T181151-999832c6	2026-11-16T19:21:15Z
 merge:learniq:2557:d1a26106	merge3 tree of 2 learniq PRs: none; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-16T19:21:33Z
+cover:decidiq:a5f973bbm9cda:34f5c300	deferred: decidiq has 48 open PRs	session-20261116T185100-d2f0c6eb	2026-11-16T19:22:24Z
 build:portaliq:portal-acts-for-its-organisation:r2	already done: every code task ticked on development; only T06 (live dry run) is open	session-20261116T181151-999832c6	2026-11-16T19:21:36Z
 build:portaliq:nextcloud-account-registration:r2	already done: T01-T04 ticked; only live round trip T05 left (needs tenant + mail)	session-20261116T191856-c437ae89	2026-11-16T19:21:50Z
 fix:opencatalogi:2725:defb7b6a	already merged: #2725 landed on development as 7eaf8724, nothing to fix	session-20261116T191156-bbdb7add	2026-11-16T19:22:10Z
