@@ -15891,3 +15891,4 @@ filinq	2093	282560c20d706ec16d98282e71e2ce8231175f8f	CONFLICT	worker-07	conflict
 decidiq	2192	5deb2820c6d2f401b66ef8a5ecd808e4034594fa	CONFLICT	worker-26	conflicts with development in openapi.json src/manifest.json src/menu-layout.simple.json src/registry.js ; tests not run
 filinq	2120	261649dc22979f0fb626a6aeb7642c218a64ca07	CONFLICT	worker-58	conflicts with development in l10n/en.js,nl.js,en.json,nl.json, filinq_register.json, ListenerRegistrarTest.php, webpack.config.js
 filinq	2114	78a005c251fc9ce1db35ba012ea58f6d6ef2b57c	CONFLICT	worker-58	conflicts with development in l10n/en.js,nl.js,en.json,nl.json, filinq_register.json, filinq_mock_register.json, openapi.json
+portaliq	2448	160e1aed97cc47f853a6e0fdb792b61785450e2d	RED	merge3:merge-gate	GATE RED floor: duplication: 4.35 -> 4.33; unit_complexity: 4.57 -> 4.54
