@@ -17211,6 +17211,7 @@ build:buildiq:reuse-gallery-categories-and-form-library	already built: every cod
 measure:keepiq:20261116h18	php 94.27% js 94.09% @92ee17d6	session-20261116T182240-4aa65022	2026-11-16T18:50:31Z
 merge:decidiq:2170:4e5fcd00	cloud tree of 1 decidiq PRs: merged=0 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T173242-1dd97d52	2026-11-16T18:51:46Z
 verify:stackiq:1996:ca667bfa	GREEN 1996	session-20261116T184852-c0730778	2026-11-16T18:51:57Z
+build:buildiq:apps-copy-app-and-page	already built: all code present on development; T03 stays unticked only for a live Playwright run	session-20261116T181429-b5d49a13	2026-11-16T18:52:03Z
 verify:buildiq:1672:96932e00	CONFLICT: #1672 conflicts with development in lib/Controller/ApplicationsController.php	session-20261116T184842-6fa5fc5d	2026-11-16T18:52:21Z
 cover:keepiq:c967a31fmba5a:34763eb4	PR #1850: JwtAuthMiddleware +4 tests and coverage metadata; lib/Middleware/*.php already 224/224 lines; suite 5337->5341, 0 failures	session-20261116T182720-9950372f	2026-11-16T18:52:36Z
 cover:stackiq:9ac19b3amdf03:b5905f71	deferred: stackiq has 42 open PRs	session-20261116T184852-c0730778	2026-11-16T18:52:36Z
@@ -17230,6 +17231,7 @@ fix:learniq:2555:20db1885	inherited: development c960466e alone measures 3.98 < 
 review:dossiq:6203:f6392408	GREEN: tests only, suite 18414 OK on merged tree	session-20261116T184655-77bda400	2026-11-16T18:55:17Z
 build:learniq:participant-portal:r3	already done: every code task ticked on development (d84b379, #1763); only T4 e2e left	session-20261116T184858-b0d9d60e	2026-11-16T18:55:49Z
 verify:decidiq:2227:ed9602aa	GREEN 2227, GREEN 2228; tree 4638 tests, 0 new failures	session-20261116T184836-f6622adb	2026-11-16T18:55:50Z
+cover:pipelinq:7f9dc8e6m3dbb:f545d745	already done: every lib/Repair class has tests on development (incl. d477c25f0); remaining line gaps need a coverage driver, none installable here; pipelinq has ~45 open PRs, no new PR	session-20261116T184838-1279a0d5	2026-11-16T18:56:13Z
 cover:launchpad:fb10c50f:33ae6285	deferred: launchpad has 44 open PRs	session-20261116T184655-77bda400	2026-11-16T18:56:20Z
 cover:launchpad:fb10c50f:34763eb4	deferred: launchpad has 44 open PRs	session-20261116T185304-a3eb3adc	2026-11-16T18:56:22Z
 fix:integriq:3671:4b0e1b0a	fixed spdxheaders (2 stubs lacked SPDX in first 30 lines); pushed cb905dcf; merge lock held, REVERIFY queued	session-20261116T184910-72b8278a	2026-11-16T18:56:22Z
@@ -17238,6 +17240,8 @@ cover:launchpad:fb10c50f:aae6d66c	deferred: launchpad has 44 open PRs	session-20
 cover:launchpad:fb10c50f:34f5c300	deferred: launchpad has 44 open PRs	session-20261116T185304-a3eb3adc	2026-11-16T18:56:47Z
 review:integriq:3649:9b271f27	GREEN: no new failures, 62 new unit tests, 58 vitest pass	session-20261116T184924-e8902580	2026-11-16T18:57:00Z
 cover:launchpad:fb10c50f:f545d745	deferred: launchpad has 44 open PRs	session-20261116T185304-a3eb3adc	2026-11-16T18:57:12Z
+measure:decidiq:20261116h18	php 94.13% js 98.45% at 1bf4171e	session-20261116T184217-f2c5e14b	2026-11-16T18:57:16Z
 merge:learniq:1167:5572f9ff	cloud tree of 4 learniq PRs: merged=2 red=0 fail=0 skip=0; conflict 2, lint 0, red 0, moved 0, done 0	session-20261116T184833-adbb8426	2026-11-16T18:57:50Z
 review:shillinq:2991:7d526afc	GREEN: unit 12296 OK, vitest 92 passed	session-20261116T184852-d42365eb	2026-11-16T18:57:58Z
 fix:filinq:2122:8da97635	merged development in, clean; new head e57f317b; REVERIFY queued (merge lock held elsewhere)	session-20261116T185100-d2f0c6eb	2026-11-16T18:58:08Z
+cover:launchpad:fb10c50f:0891e5b5	deferred: launchpad has 44 open PRs	session-20261116T184924-e8902580	2026-11-16T18:58:33Z
