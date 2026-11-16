@@ -17736,6 +17736,7 @@ fix:keepiq:1849:cf3a1104	fixed secretscanning false positive (test PEM label), p
 merge:pipelinq:3602:ba5589f7	cloud tree of 2 pipelinq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 1, done 0	session-20261116T202142-f327703a	2026-11-16T20:43:23Z
 cover:buildiq:70b3e29em9bad:e372e6ff	deferred: buildiq has 51 open PRs	session-20261116T202128-6be5fc02	2026-11-16T20:43:21Z
 fix:buildiq:1620:9cf97ff7	fixed floor (3.90->3.91) at ad45ffb6; buildiq merge lock held elsewhere, REVERIFY queued	session-20261116T200628-a3f8f9fc	2026-11-16T20:43:48Z
+merge:versioniq:747:b7301314	cloud tree of 1 versioniq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T203601-d842ef20	2026-11-16T20:44:12Z
 cover:buildiq:70b3e29em9bad:59826f43	deferred: buildiq has 51 open PRs	session-20261116T200545-32ab46ec	2026-11-16T20:44:25Z
 review:decidiq:2188:157dce06	GREEN: decidiq #2188 at 157dce06, suite 4707 OK	session-20261116T202147-7121aee7	2026-11-16T20:44:43Z
 build:learniq:training-provider-course-days:c5	partial: PR learniq#2521 head 70435b292: T6 planner Today (PlannerTodayService, GET /api/course-days/today, PlannerTodayWidget) and T8 example set done; left T7 list columns+participant header (needs derived certificate state for colour rule), bringList shown on participant next day and public course page, per-part attendance seed for 5 Oct	session-20261116T202127-f6b983cc	2026-11-16T20:45:00Z
