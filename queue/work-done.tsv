@@ -16771,3 +16771,4 @@ build:pipelinq:simple-contact-dashboard:r2	deferred: pipelinq has 50 open PRs	se
 fix:opencatalogi:2696:08865a78	merged development in (clean), pushed a67460be2; not landed: review REQUEST_CHANGES on gate blockers (idor exemption, contract-shift, component_independence floor, spec anchors)	session-20261116T170324-19e96cf4	2026-11-16T17:15:08Z
 build:pipelinq:first-time-setup:r2	deferred: pipelinq has 50 open PRs	session-20261116T170138-65b3b637	2026-11-16T17:15:23Z
 build:pipelinq:marketing-block-editor:r2	deferred: pipelinq has 50 open PRs	session-20261116T170138-65b3b637	2026-11-16T17:15:29Z
+build:pipelinq:only-the-drawn-pipelines:r2	already built: tasks 1.1-1.2 ticked and present on development; only the live check 1.3 remains	session-20261116T171010-393e4bc2	2026-11-16T17:16:08Z
