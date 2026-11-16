@@ -3729,3 +3729,8 @@ pipelinq	2966	ed8ef9f5c99b8e6f7ade233d96c14c7caa255d3e	MERGED	merge3	GATE OK sbo
 pipelinq	3083	c1e2e782afa038ade39fd007e8dc6523515461d7	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 pipelinq	3084	fc01a3c72e9bf68a0befcea11ebf9a010b2a92fd	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
 pipelinq	3092	f8d049f34e69ece75f6b5915bae3db471efaee4e	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+dossiq	2705	643da12e92cbdb8ef9c84b25c937a907e2a8b5d2	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.34
+dossiq	2902	852fcee3164fff03aebf87e1d755d674143539b9	SKIP	merge3	GATE UNMEASURED head moved to 8a0f3ca6db
+dossiq	3196	bdbdd4b2343ec19de2c5d6e0a3681a4a8c517857	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+dossiq	3197	4fd9129cae30320898c8905d5fc6d07581b354c7	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.34
+dossiq	3201	1fedc9a2fa5d72e4b1978d23676c5e05c25cd080	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.34
