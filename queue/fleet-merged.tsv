@@ -4422,3 +4422,4 @@ dossiq	3203	628c5ad89e18ab9a292678e1e53cdf057cf8ecec	SKIP	worker-35	GATE UNMEASU
 buildiq	1620	7c13e441ea94c953a6fe1ac993a2bfd52ac31de8	SKIP	worker-50	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 buildiq	1672	8130284789a8757ad622970f76ae77dbc5b02418	RED	worker-50	GATE RED checker floor: spdxheaders stars: 5 -> 4
 buildiq	1091	13bc446b3ff8a04f2e70a612adc51a37c801a382	RED	worker-39	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+buildiq	1094	2ea9dbb488b0e4ebb832485f152e1c96842c72c2	RED	worker-39	GATE RED sbom: package-lock.json changed without sbom.cdx.json
