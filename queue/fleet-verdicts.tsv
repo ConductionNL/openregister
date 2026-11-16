@@ -13982,3 +13982,4 @@ launchpad	1212	b82c095c96c16db83792928c8f39cb5bd0fc52cc	REVERIFY	worker-27	no ch
 stackiq	1435	81fb6bd471562d78ea02224fdc7b0574cc6a9082	RED	worker-16:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
 stackiq	1978	0e16289a82d0c3f5edcf4674448e72031b372f93	RED	worker-16:merge-gate	GATE RED floor: unit_interfacing: 4.72 -> 4.68
 stackiq	1959	fe24e23b6c69c5bd04762183e2bc4aead326686d	CONFLICT	worker-16:merge	merges clean on development alone; files: appinfo/routes.php openapi.json 
+launchpad	1223	6e8cfb5e9629971bda71e39160afc383308598d0	REVERIFY	worker-27	no change needed: merges clean with current development; openapi.json conflict is only against another PR in the tree; merge lock held by another merger; new head 6e8cfb5e9629971bda71e39160afc383308598d0, verify it
