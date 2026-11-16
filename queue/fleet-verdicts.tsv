@@ -13902,3 +13902,4 @@ filinq	2088	bd2b46498b1e238e37d6b2162ae9f2d2af95f6b4	CONFLICT	worker-23:merge	me
 filinq	2123	3f385b112ecbbf73b9da1afd67611e4c3feaa311	CONFLICT	worker-23:merge	merges clean on development alone; files: lib/Settings/filinq_mock_register.json lib/Settings/filinq_register.json 
 planninq	1070	0324724d24fe6d0db28116a01a3102143ea1dcb2	RED	worker-12:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
 filinq	1086	926d1e453b7e155e8c957bc7a5cd99645d2bcabe	CONFLICT	worker-23:merge	conflicts with development; files: composer.lock 
+learniq	2549	8928cf92a03db606cdde9650a94cdce1e587261c	RED	worker-15:merge-gate	GATE RED floor: unit_complexity: 4.38 -> 4.36; unit_interfacing: 3.12 -> 3.09
