@@ -1,12 +1,12 @@
 {
  "app": "openregister",
  "commit": "3800106bd5c9af9ef36632adbbf87ceef61afa2a",
- "measured_at": "2026-11-16T19:01:22Z",
+ "measured_at": "2026-11-16T21:48:39Z",
  "php": {
   "tool": "pcov",
-  "pct": 95.13,
-  "statements": 231143,
-  "covered": 219885,
+  "pct": 95.01,
+  "statements": 231223,
+  "covered": 219675,
   "dirs": {
    "lib/Activity/": [
     53,
@@ -78,7 +78,7 @@
    ],
    "lib/AppInfo/": [
     54,
-    54
+    53
    ],
    "lib/BackgroundJob/": [
     3424,
@@ -133,7 +133,7 @@
     1
    ],
    "lib/Controller/": [
-    21445,
+    21456,
     20595
    ],
    "lib/Controller/Settings/": [
@@ -157,7 +157,7 @@
     75
    ],
    "lib/Db/": [
-    14857,
+    14861,
     12142
    ],
    "lib/Db/AccessLink/": [
@@ -257,7 +257,7 @@
     0
    ],
    "lib/Db/MagicMapper/": [
-    6593,
+    6598,
     5991
    ],
    "lib/Db/Mapping/": [
@@ -393,7 +393,7 @@
     10
    ],
    "lib/Files/Controller/": [
-    1507,
+    1516,
     1476
    ],
    "lib/Files/Controller/Settings/": [
@@ -417,8 +417,8 @@
     13
    ],
    "lib/Files/Service/": [
-    1404,
-    1361
+    1406,
+    1372
    ],
    "lib/Files/Service/File/": [
     2447,
@@ -437,7 +437,7 @@
     54
    ],
    "lib/Files/Service/File/Sanitizer/": [
-    446,
+    447,
     432
    ],
    "lib/Files/Service/Integration/": [
@@ -450,7 +450,7 @@
    ],
    "lib/Files/Service/TextExtraction/": [
     2096,
-    1969
+    2003
    ],
    "lib/Files/Service/TextExtraction/PatternSet/": [
     102,
@@ -481,8 +481,8 @@
     16
    ],
    "lib/Listener/": [
-    4663,
-    4392
+    4667,
+    4389
    ],
    "lib/Listener/FlowNodes/": [
     137,
@@ -677,7 +677,7 @@
     170
    ],
    "lib/Search/Listener/": [
-    90,
+    94,
     69
    ],
    "lib/Search/Service/": [
@@ -737,15 +737,15 @@
     6
    ],
    "lib/Service/": [
-    21642,
-    20488
+    21649,
+    20463
    ],
    "lib/Service/Aggregation/": [
     1957,
     1911
    ],
    "lib/Service/Anonymisation/": [
-    494,
+    496,
     422
    ],
    "lib/Service/ApiCaller/": [
@@ -757,7 +757,7 @@
     335
    ],
    "lib/Service/Archival/": [
-    3253,
+    3255,
     3046
    ],
    "lib/Service/Audit/": [
@@ -765,7 +765,7 @@
     1107
    ],
    "lib/Service/Authorization/": [
-    359,
+    360,
     355
    ],
    "lib/Service/Bindings/": [
@@ -849,7 +849,7 @@
     1814
    ],
    "lib/Service/Dbal/": [
-    518,
+    522,
     497
    ],
    "lib/Service/Decision/": [
@@ -858,7 +858,7 @@
    ],
    "lib/Service/Deferral/": [
     249,
-    229
+    231
    ],
    "lib/Service/Delegation/": [
     303,
@@ -877,11 +877,11 @@
     1406
    ],
    "lib/Service/Edepot/Transport/": [
-    237,
-    236
+    240,
+    198
    ],
    "lib/Service/ExampleSet/": [
-    5050,
+    5054,
     4985
    ],
    "lib/Service/Exchange/": [
@@ -893,11 +893,11 @@
     795
    ],
    "lib/Service/Export/Odt/": [
-    248,
+    250,
     245
    ],
    "lib/Service/ExternalLink/": [
-    146,
+    148,
     142
    ],
    "lib/Service/Federation/": [
@@ -906,7 +906,7 @@
    ],
    "lib/Service/File/": [
     2642,
-    2512
+    2451
    ],
    "lib/Service/Flow/": [
     6495,
@@ -929,7 +929,7 @@
     123
    ],
    "lib/Service/Flow/Timer/": [
-    1953,
+    1955,
     1929
    ],
    "lib/Service/Form/": [
@@ -1069,7 +1069,7 @@
     660
    ],
    "lib/Service/Object/": [
-    13735,
+    13736,
     13391
    ],
    "lib/Service/Object/Collaborators/": [
@@ -1098,7 +1098,7 @@
    ],
    "lib/Service/ObjectSource/": [
     2030,
-    1940
+    1817
    ],
    "lib/Service/Observability/": [
     12,
@@ -1146,7 +1146,7 @@
    ],
    "lib/Service/RedactionPolicy/": [
     193,
-    188
+    191
    ],
    "lib/Service/Reference/": [
     285,
@@ -1161,7 +1161,7 @@
     240
    ],
    "lib/Service/Relation/": [
-    1058,
+    1060,
     1038
    ],
    "lib/Service/Resilience/": [
@@ -1189,7 +1189,7 @@
     873
    ],
    "lib/Service/SchemaImport/": [
-    522,
+    524,
     518
    ],
    "lib/Service/Schemas/": [
@@ -1221,7 +1221,7 @@
     369
    ],
    "lib/Service/ShippedBaseline/": [
-    723,
+    725,
     672
    ],
    "lib/Service/Survey/": [
@@ -1233,16 +1233,16 @@
     450
    ],
    "lib/Service/Sync/": [
-    326,
+    330,
     321
    ],
    "lib/Service/TalkLink/": [
     172,
-    162
+    152
    ],
    "lib/Service/Task/": [
     2420,
-    2404
+    2405
    ],
    "lib/Service/Task/Authorization/": [
     23,
