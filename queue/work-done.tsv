@@ -15534,3 +15534,4 @@ merge:hermiq:1174:0c97b899	failed: permission (merge gate checker floor cannot m
 fix:buildiq:820:a6bd63eb	failed: sbom gate unsatisfiable - dev-only @vitejs/plugin-vue lock bump; regen-sbom (--omit dev) leaves sbom.cdx.json unchanged, but merge_gate.sbom requires the file in the diff; needs a dev-only-lock exemption in the gate	session-20261116T062120-691af8f7	2026-11-16T06:51:36Z
 fix:planninq:910:59fb2d6b	sbom false positive (dev-only); merged development, new head 8ffad303, REVERIFY queued	session-20261116T062120-7c38c5f1	2026-11-16T06:51:53Z
 fix:buildiq:1651:fcb354f5	development merged in cleanly, pushed; residual conflicts only vs other unmerged PRs	session-20261116T062050-add210c3	2026-11-16T06:52:00Z
+fix:shillinq:2086:692ec2a9	fixed: 8 failures cleared (old OR API + undocumented routes); suite 12233 OK; new head bda4253e	session-20261116T062140-6a300781	2026-11-16T06:52:20Z
