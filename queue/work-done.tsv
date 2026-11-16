@@ -17994,6 +17994,7 @@ review:launchpad:1235:906e0ad0	stale	session-20261116T202633-f7fb0e3a	2026-11-16
 cover:launchpad:fb10c50fmf487:d39f9857	deferred: launchpad has 46 open PRs	session-20261116T212719-d025d113	2026-11-16T21:51:12Z
 cover:pipelinq:7f9dc8e6m3dbb:0a24f15f	already done: lib/Service/Letter at 100% lines (164/164) on development 6b2c80436; no PR	session-20261116T214700-0702980b	2026-11-16T21:51:26Z
 cover:launchpad:fb10c50fmf487:b67d52c3	deferred: launchpad has 46 open PRs	session-20261116T212719-d025d113	2026-11-16T21:51:26Z
+verify:humaniq:1173:67065b8a	failed: this worker authored PR #1173 in this session (its own review was refused by a permission check); needs a verify by another worker	session-20261116T202633-f7fb0e3a	2026-11-16T21:51:46Z
 cover:pipelinq:7f9dc8e6m3dbb:6ff6c9d5	deferred: pipelinq has 43 open PRs	session-20261116T214553-9fb39259	2026-11-16T21:51:34Z
 verify:planninq:1207:5b8e86d3	GREEN 1207; 1243 tests, 0 new failures	session-20261116T214624-beb72d49	2026-11-16T21:52:00Z
 cover:integriq:92114ab0m5970:js0023cfc7	deferred: integriq has 67 open PRs	session-20261116T215114-2a602255	2026-11-16T21:52:26Z
