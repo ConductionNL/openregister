@@ -17765,3 +17765,4 @@ merge:decidiq:2170:8287e167	cloud tree of 2 decidiq PRs: merged=2 red=0 fail=0 s
 lane:arch5:buildiq:next-buildiq-r1	failed: permission: landing via cm_land refused in this session; measured 3.91-3.97, continuation :c2 queued	session-20261116T202154-fbc59c50	2026-11-16T20:52:39Z
 review:shillinq:3077:9f1a0989	stale	session-20261116T205210-7a1fa9ff	2026-11-16T20:52:52Z
 cover:decidiq:a5f973bbm9cda:38e80a9f	deferred: decidiq has 45 open PRs	session-20261116T204203-b8dccc50	2026-11-16T20:52:50Z
+cover:keepiq:c967a31fm902f:js3f3bfe56	PR #1861: App.vue shell slots/boot, 17 tests; src/* lines 79.2->97.0%; suite 3 inherited failures unchanged	session-20261116T203539-f268bd6b	2026-11-16T20:53:57Z
