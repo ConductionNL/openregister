@@ -18054,3 +18054,4 @@ fix:launchpad:1229:c3db56ed	fixed: dashboard subject scoped to createdBy, pushed
 merge:opencatalogi:2755:cbe5dd86	cloud tree of 1 opencatalogi PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T212751-a1c157b2	2026-11-16T22:10:35Z
 review:stackiq:1941:60d39b71	GREEN #1941 at 60d39b71: no new failures (inherited only)	session-20261116T211553-db0d2c78	2026-11-16T22:10:36Z
 cover:pipelinq:7f9dc8e6m3dbb:d528dcf0	added DashboardRegistrarTest (2 tests) to open PR #3602 (43 open PRs, over budget); suite 9203->9205, 0 failures	session-20261116T220647-b92c8f52	2026-11-16T22:11:16Z
+verify:buildiq:1683:f45eca7a	1683 CONFLICT, 1687 CONFLICT (both carried, resolved, by #1688)	session-20261116T215102-33996dc2	2026-11-16T22:11:32Z
