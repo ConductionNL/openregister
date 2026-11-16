@@ -17629,6 +17629,7 @@ verify:portaliq:2535:74c44cfc	GREEN #2535 (no new failures, 16 baseline errors)	
 verify:learniq:2567:56734df7	stale: #2567 head moved to 046431f2c	session-20261116T202147-7121aee7	2026-11-16T20:24:09Z
 cover:dossiq:069ee2d6m9d1b:33af3743	no change: lib/Service/Bezwaar/*.php already measures 99.7% (1559/1564 lines, pcov, suite 18752 tests, 19 inherited failures), above target 95; the 5 left are a readonly ctor and the decision-app-absent branch, unreachable while the bootstrap loads the event stubs	session-20261116T201835-c2c94090	2026-11-16T20:24:11Z
 review:pipelinq:3602:150e1963	GREEN: tests only, suite 9144 tests 0 failures	session-20261116T202142-f327703a	2026-11-16T20:24:45Z
+cover:pipelinq:7f9dc8e6m3dbb:e78626a8	already met: lib/Service/Marketing/*.php at 99.2% stmt coverage on development 934bb58c2 (target 95), 9136 unit tests green; no PR	session-20261116T202127-f6b983cc	2026-11-16T20:24:53Z
 cover:dossiq:069ee2d6m9d1b:b6fccd13	no change: lib/Service/Access/*.php already measures 98.70% (1219/1235 lines, pcov on current dossiq), above target 95	session-20261116T201835-c2c94090	2026-11-16T20:24:54Z
 verify:keepiq:1854:b0ec9348	GREEN #1854 #1855 (JS tests only; 3 inherited vitest failures in HealthReportView.controls)	session-20261116T200543-e8f76f14	2026-11-16T20:25:14Z
 review:shillinq:1900:7f46ac64	GREEN: shillinq #1900, unit 12272 OK (baseline 12257), no new failures	session-20261116T201628-7b6853de	2026-11-16T20:25:24Z
