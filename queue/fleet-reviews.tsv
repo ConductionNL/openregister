@@ -299,3 +299,4 @@ learniq	2559	db446f193443038edcd27938ddb8aeef420ca005	REQUEST_CHANGES	worker-02	
 hermiq	1133	6fd08d09db1ca26724058d9c83bec7eb477cfec5	APPROVE	worker-42	Quick; no blockers; dev-dep stylelint bump + sbom
 hermiq	1135	0d097997db1a2b53afae0ba11817aff5667f2f08	APPROVE	worker-42	Quick; no blockers; phpmd 3.0 runs against phpmd.xml (checked)
 hermiq	1175	42637555c30a617e2512d88fcac2b0a205657ddc	APPROVE	worker-42	Quick; no blockers; cron-expression patch bump + sbom
+keepiq	1792	af22b4ea9e8110c436553126d94f748ee8cd97ad	APPROVE	worker-37	Strict; no blockers (spec-coverage gate on promptSlot.js fixed in af22b4e); reprompt flag set via existing create/update access paths, copy inherits owner flag; vitest 3 HealthReportView failures inherited
