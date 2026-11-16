@@ -18190,3 +18190,5 @@ cover:buildiq:70b3e29eme3dd:d528dcf0	deferred: buildiq has 49 open PRs	session-2
 build:portaliq:publication-detail-page-complete:c3	done: PR #2448 at 160e1aed9, 2.1 document page built (all code tasks ticked; 5.1 live, 6.x verify/release left), development merged in, document-page spec 10 tests, specs fails all inherited	session-20261116T222655-da719429	2026-11-16T22:45:03Z
 cover:buildiq:70b3e29eme3dd:baa54041	deferred: buildiq has 49 open PRs	session-20261116T220904-ce70c542	2026-11-16T22:45:03Z
 cover:buildiq:70b3e29eme3dd:568ec52a	deferred: buildiq has 49 open PRs	session-20261116T220904-ce70c542	2026-11-16T22:45:10Z
+cover:buildiq:70b3e29eme3dd:59826f43	deferred: buildiq has 49 open PRs	session-20261116T220904-ce70c542	2026-11-16T22:45:16Z
+lane:arch5:shillinq:next-shillinq-r10	partial: not started (worker context low after a long build); whole round queued as :c1	session-20261116T220522-6d402fd2	2026-11-16T22:45:26Z
