@@ -4092,3 +4092,4 @@ buildiq	1641	b6868cd6b6f9eec39772064f4979ffcdb1432599	SKIP	worker-04	no APPROVE 
 buildiq	1652	2b887096e99104c20abaf165361ab630a1c40eb1	SKIP	worker-04	no APPROVE review at this head
 dossiq	3203	2c689dc958f4d2ad3603b422f1c3f5a2f9460ec4	RED	worker-55	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 thematiq	1682	3f39ef0d0f1d79e5bf27de397c577993924fcf7e	RED	worker-46	GATE RED sbom: composer.lock, package-lock.json changed without sbom.cdx.json
+humaniq	606	647da215609758b6eb51cbe1182861a618182015	SKIP	worker-26	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
