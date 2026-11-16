@@ -167,6 +167,20 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 */
 	private array $refCache = [];
 
+	/**
+	 * Register-scoped lookups answered in this request, keyed by lookup.
+	 *
+	 * The methods findInIds() and findBySlugInIds() resolve one identifier inside a
+	 * register's schema list, and a save asks the same pair again for every object
+	 * it touches. Only hits are kept, and the whole memo is dropped on every schema
+	 * write and clearFindCache(), because a rename or a new schema changes which
+	 * row a scoped identifier names. It never feeds the identity map: a scoped answer
+	 * is not the unscoped one.
+	 *
+	 * @var array<string, Schema>
+	 */
+	private array $scopedCache = [];
+
 	// Note: $appConfig is provided by MultiTenancyTrait (protected ?IAppConfig $appConfig=null)
 	// We assign it in the constructor to make it available to the trait methods.
 
@@ -681,6 +695,11 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 			return null;
 		}
 
+		$key = self::scopedKey(kind: 'slug', identifier: $slug, ids: $ids);
+		if (isset($this->scopedCache[$key]) === true) {
+			return $this->scopedCache[$key];
+		}
+
 		$this->readTrace()->record(method: 'findBySlugInIds');
 
 		$qb = $this->db->getQueryBuilder();
@@ -690,7 +709,12 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 			->andWhere($this->idIn(qb: $qb, ids: $ids))
 			->setMaxResults(1);
 
-		return $this->firstResolved(qb: $qb);
+		$schema = $this->firstResolved(qb: $qb);
+		if ($schema !== null) {
+			$this->scopedCache[$key] = $schema;
+		}
+
+		return $schema;
 	}//end findBySlugInIds()
 
 	/**
@@ -748,6 +772,11 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 			return null;
 		}
 
+		$key = self::scopedKey(kind: 'id', identifier: $id, ids: $ids);
+		if (isset($this->scopedCache[$key]) === true) {
+			return $this->scopedCache[$key];
+		}
+
 		$this->readTrace()->record(method: 'findInIds');
 
 		// Same identifier arms and tie-breaks as find(), narrowed to the id set.
@@ -758,6 +787,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 
 			$schema = $this->firstResolved(qb: $qb);
 			if ($schema !== null) {
+				$this->scopedCache[$key] = $schema;
 				return $schema;
 			}
 		}
@@ -815,8 +845,42 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 		// Drop every key that points at this schema, and every raw `$ref`
 		// load: a changed parent changes each child composed from it.
 		$this->findCache->forget(entityId: $schemaId);
-		$this->refCache = [];
+		$this->forgetRequestLoads();
 	}//end clearFindCache()
+
+	/**
+	 * Drop the raw `$ref` loads and the register-scoped lookups of this request.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/object-write-at-instance-floor/specs/object-write-performance/spec.md
+	 */
+	private function forgetRequestLoads(): void {
+		$this->refCache    = [];
+		$this->scopedCache = [];
+	}//end forgetRequestLoads()
+
+	/**
+	 * The memo key of a register-scoped lookup.
+	 *
+	 * @param string          $kind       Which lookup: `slug` or `id`.
+	 * @param int|string      $identifier The identifier asked for.
+	 * @param array<int, int> $ids        The candidate schema ids.
+	 *
+	 * @return string The key.
+	 */
+	private static function scopedKey(string $kind, string|int $identifier, array $ids): string {
+		$ids = array_values(array_unique($ids));
+		sort($ids);
+
+		// Slugs match case-insensitively; an id or uuid is kept as asked.
+		$identifier = (string)$identifier;
+		if ($kind === 'slug') {
+			$identifier = strtolower($identifier);
+		}
+
+		return $kind . ':' . $identifier . ':' . implode(',', $ids);
+	}//end scopedKey()
 
 	/**
 	 * Finds multiple schemas by id
@@ -1093,8 +1157,8 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 * @psalm-suppress LessSpecificImplementedReturnType - Schema is more specific than Entity
 	 */
 	public function insert(Entity $entity): Entity {
-		// A write can change what a composition `$ref` loads; read those again.
-		$this->refCache = [];
+		// A write can change what a composition `$ref` or a scoped lookup loads; read those again.
+		$this->forgetRequestLoads();
 
 		// Verify RBAC permission to create.
 		$this->verifyRbacPermission(action: 'create', entityType: 'schema');
@@ -1416,8 +1480,8 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-a-schema-save-that-changes-nothing-publishes-nothing
 	 */
 	public function update(Entity $entity): Entity {
-		// A write can change what a composition `$ref` loads; read those again.
-		$this->refCache = [];
+		// A write can change what a composition `$ref` or a scoped lookup loads; read those again.
+		$this->forgetRequestLoads();
 
 		// Verify RBAC permission to update.
 		$this->verifyRbacPermission(action: 'update', entityType: 'schema');
@@ -1670,8 +1734,8 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 * @spec openspec/changes/schema-delete-cascade/specs/runtime-schema-api/spec.md
 	 */
 	public function delete(Entity $entity, bool $force = false): Schema {
-		// A write can change what a composition `$ref` loads; read those again.
-		$this->refCache = [];
+		// A write can change what a composition `$ref` or a scoped lookup loads; read those again.
+		$this->forgetRequestLoads();
 
 		// Verify RBAC permission to delete.
 		$this->verifyRbacPermission(action: 'delete', entityType: 'schema');

@@ -187,6 +187,14 @@ survives even where the priority moved.
       > from an unscoped row with the visibility check applied in PHP (needs the organisation
       > predicate reproduced exactly, including shared master data; not done blind).
       > Pinned in `tests/Unit/Db/SchemaMapperIdentityMapTest` and `RequestIdentityMapTest`.
+      > 2026-11-16 (partial): the register-scoped lookups a save repeats per object,
+      > `findInIds()` and `findBySlugInIds()`, now answer a repeated (identifier, schema-id set)
+      > from a request memo instead of the database. Only hits are kept; the whole memo is
+      > dropped on every schema insert/update/delete and by `clearFindCache()`, since a rename
+      > or a new schema changes which row a scoped identifier names. It is kept apart from the
+      > identity map, so a scoped answer never serves an unscoped `find()`. Pinned in
+      > `tests/Unit/Db/SchemaMapperScopedLookupMemoTest`. Left as before: `findBySlug` /
+      > `findAll` (paged lists) and serving a multi-tenancy lookup from an unscoped row.
 
 - [ ] **Task 2 — make the miss path cheap.**
       - Drop `SELECT *` where only metadata is needed; `properties` is ~2 KB per
