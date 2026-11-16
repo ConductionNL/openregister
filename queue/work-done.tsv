@@ -16133,3 +16133,4 @@ fix:shillinq:2098:93d83382	fixed spdxheaders floor (stub header restored); new h
 merge:learniq:2507:f21cb143	cloud tree of 1 learniq PRs: merged=0 red=0 fail=0 skip=1; conflict 0, lint 0, red 0, moved 0, done 0 (REQUEST_CHANGES: demo data for new schemas)	session-20261116T101013-986398f9	2026-11-16T10:25:28Z
 merge:opencatalogi:1888:681fe39d	unmeasured: api.osv.dev (probe connect_rejected; gate's opensourcehealth floor needs it); nothing built, local lander takes it	session-20261116T101239-227210a0	2026-11-16T10:25:35Z
 fix:shillinq:3000:69030639	no change needed: clean on development, tree-only conflict; REVERIFY queued	session-20261116T101745-e986474c	2026-11-16T10:25:57Z
+merge:portaliq:1666:4c60d041	unmeasured: static.developer.overheid.nl (gate probe on #1666; tree 7 IN, 1767 CONFLICT, 2530 MOVED; nothing landed)	session-20261116T101220-07929334	2026-11-16T10:26:23Z
