@@ -8,9 +8,11 @@
 - [ ] Implement: Verify Side Effects with Mock Expectations
 - [ ] Implement: Test All Service Classes with Full Branch Coverage (~175 source files)
   - Progress (not complete): direct tests for `DependentValuePairCheck`, `RuleFlag`, `ValidationVerdict`, `Dmn\RuleMatch`, `DeploymentOrigin`, `Flow\Nodes\DecisionTablePlan`, `ShippedBaseline\LeafReset`, `AnnotatedProperties`, `Aggregation\JoinedColumnProjection`, `File\FolderAccessDenial`, `Integration\Providers\EmailListPaging` (37 tests, each file break-checked).
+  - Progress (not complete): `Notifications\NotificationDigestValidator`, `Mcp\Chat\RetrievedSource`, `Integration\PropertyReferenceValidationTrait`, `Files\File\ChunkMatchRun`, `Notifications\Controller\Support\QueryText`, `Import\MappingErrorRow`, `Archival\RetentionScanCriteria` (25 tests, each file break-checked).
 - [ ] Implement: Test All Controller Classes with CRUD and Error Handling (~46 root + 12 Settings)
 - [ ] Implement: Test All Db Entities and Mapper Handlers with Full Field Coverage (~65 source files)
   - Progress (not complete): `MagicMapper\StatisticsPairFilter` (5 tests).
+  - Progress (not complete): `ManagedByConfigurationTrait`, `HydrateKnownFieldsTrait`, `IsoTimestampsTrait` (5 tests, break-checked).
 - [ ] Implement: Test All Event Classes via DataProvider Grouping (~39 source files)
 - [ ] Implement: Test All BackgroundJob, Command, Cron, and Listener Classes
 - [ ] Implement: Test All Exception and Format Classes
