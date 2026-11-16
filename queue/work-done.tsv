@@ -15988,3 +15988,4 @@ lane:depbundle:hermiq:bundle	opened #1808 (9 updates; pinia 4 and icons 5.4 left
 fix:shillinq:2063:e1c291c4	no change: branch already up to date with development and merges clean alone; conflict is a sibling's version bump in the tree; REVERIFY queued	session-20261116T085359-7eb6c05c	2026-11-16T09:14:08Z
 review:portaliq:1766:931554ac	BLOCK: dexie 4.4.7 would drift from openregister's 4.4.6 (two-Dexie runtime failure); wait for openregister bump	session-20261116T091246-00cbe321	2026-11-16T09:14:17Z
 review:portaliq:1673:574c1672	GREEN: matches its change spec; suite 6186 tests, no new failures; phpstan unchanged	session-20261116T084851-6e832488	2026-11-16T09:15:07Z
+merge:shillinq:2071:79638dab	cloud tree of 1 shillinq PRs: merged=0 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T084459-8070a613	2026-11-16T09:15:18Z
