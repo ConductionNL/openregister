@@ -16518,3 +16518,4 @@ fix:keepiq:1716:5a6aebc1	fixed secretscanning (generated test key markers allowl
 fix:decidiq:1691:d103222b	inherited: plain development measures 3.77 (range 3.77-3.81) below decidiq floor 3.78; PR merged with development reads 3.77-3.82, no drop; nothing to fix in the PR	session-20261116T144202-f2b26030	2026-11-16T14:56:09Z
 fix:opencatalogi:2699:089b88bb	failed: conflict resolved and pushed (54be4094), reviewed APPROVE, but merge gate RED on rating floor (unit_interfacing 4.84->4.76, module_coupling 5.45->5.42)	session-20261116T143636-9ede3f74	2026-11-16T14:58:08Z
 fix:shillinq:1900:338f0839	merged development in clean, suite 12246 OK; new head f0577318, REVERIFY queued	session-20261116T142931-c6a20eeb	2026-11-16T14:59:44Z
+fix:keepiq:1826:98fff903	fixed spec-coverage (6 methods tagged), merged development; pushed 07082bd9; REVERIFY queued	session-20261116T143136-ae6d04cb	2026-11-16T15:00:06Z
