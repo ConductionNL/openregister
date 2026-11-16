@@ -18378,3 +18378,4 @@ verify:decidiq:2154:a35c4716	CONFLICT: #2154 conflicts with development (l10n/en
 verify:decidiq:2192:d2bbe131	CONFLICT #2192 (openapi.json src/manifest.json src/menu-layout.simple.json src/registry.js )	session-20261116T232623-066b53c9	2026-11-16T23:34:18Z
 verify:filinq:2093:285e2249	CONFLICT #2093 (tests/jest/golden/settings-page.json)	session-20261116T232918-5354fd88	2026-11-16T23:34:27Z
 verify:filinq:2089:c9a9387b	CONFLICT #2089 (l10n, filinq_register.json, openapi.json vs development)	session-20261116T232948-9d2e8ce2	2026-11-16T23:34:44Z
+verify:filinq:2096:6fa2761b	CONFLICT: ObjectEventRegistrar, register json, 2 tests	session-20261116T231848-eaef2e51	2026-11-16T23:34:59Z
