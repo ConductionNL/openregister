@@ -16762,3 +16762,4 @@ build:pipelinq:tickets-list-by-party:r2	deferred: pipelinq has 50 open PRs	sessi
 build:pipelinq:recurring-revenue-runrate-widget:r2	deferred: pipelinq has 50 open PRs	session-20261116T170138-65b3b637	2026-11-16T17:14:12Z
 build:pipelinq:questions-about-a-citizen-dossier:r2	already built: every code task is on development and ticked; only 6.1 (live) remains	session-20261116T171008-5daa9ed6	2026-11-16T17:14:18Z
 build:pipelinq:question-text-is-required-on-the-portal:r2	deferred: pipelinq has 50 open PRs	session-20261116T170138-65b3b637	2026-11-16T17:14:19Z
+build:pipelinq:a-contact-question-is-required-and-dated:r2	deferred: pipelinq has 50 open PRs	session-20261116T170138-65b3b637	2026-11-16T17:14:25Z
