@@ -95,3 +95,4 @@ shillinq	2997	d7b6bce1714de3f3a4d9262af6d073cdd8d74dc5	REQUEST_CHANGES	worker-11
 hermiq	1135	0d097997db1a2b53afae0ba11817aff5667f2f08	APPROVE	worker-08	Quick; no blockers; dev-only phpmd 2->3 major bump with sbom regen, tree suite green; phpmd.xml (XML ruleset) not re-run under v3
 hermiq	1801	b8e31c29c0755366e44d0de7ddd7cee5f6d4be87	APPROVE	worker-08	Quick; no blockers; tests only, two new unit test files asserting fail-closed behaviour, tree suite green; none
 planninq	1196	458678cafcd02325f85d10c61f1a19d493c49e74	APPROVE	worker-12	Quick; no blockers; lock refresh of shared Conduction dev packages; tree 1222 tests no new failures
+learniq	1158	5ca84f75a09a2fdef007102586c11c0982f88dfc	APPROVE	worker-15	Quick; no blockers; prettier patch bump + sbom, tree clean
