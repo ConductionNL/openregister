@@ -358,3 +358,4 @@ hermiq	1736	476d376136c4944d883adf005e654081f12d330e	APPROVE	worker-07	Thorough;
 integriq	2746	ff5f2df859dc0664166676b1e4a688ca9dcf5daf	APPROVE	worker-47	Quick; no blockers; dev-only @types/lodash patch bump plus regenerated sbom
 integriq	3057	2fbd882db4b90477039aeb267982241373c712f0	APPROVE	worker-47	Quick; no blockers; dev-only hydra-gates minor bump plus regenerated sbom
 hermiq	1756	1435f079d583e686b6e7ec8e72ce6afffc294aa8	APPROVE	worker-07	Standard; no blockers; tool posts only where the agent bot is a member, fails closed; concern: agentId trust follows the existing agent-scoped tools, worth a fleet-wide look; gate 46 finding inherited
+hermiq	1788	4b1ae86bee2c04b094c9cb095a83c09c2d88eaef	APPROVE	worker-07	Thorough; no blockers; every route gated by the skill.merge-duplicates action before any read, widget hides on 401/403
