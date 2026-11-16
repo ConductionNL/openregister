@@ -15833,3 +15833,4 @@ merge:pipelinq:2187:43648dc7	merge3 tree of 10 pipelinq PRs: merged=0 red=5 fail
 merge:pipelinq:2969:f70eef63	merge3 tree of 10 pipelinq PRs: merged=0 red=5 fail=0 skip=0; conflict 5, lint 0, moved 0; fix rows 5	merge3-20261113T213425-c36bcd5f	2026-11-16T08:38:21Z
 merge:pipelinq:3882:bd237aa2	merge3 tree of 10 pipelinq PRs: merged=0 red=5 fail=0 skip=0; conflict 5, lint 0, moved 0; fix rows 5	merge3-20261113T213425-c36bcd5f	2026-11-16T08:38:25Z
 fix:filinq:2103:b650ff7b	failed: permission (recording the review for landing was refused); pushed fixes, merge gate still red only on opensourcehealth (api.osv.dev blocked in cloud, plain development reads the same); REVERIFY at cd98f739	session-20261116T081426-24e3a1d6	2026-11-16T08:38:46Z
+fix:versioniq:736:91246664	fixed blockers (dump->dumpTables, @spec on 7 methods), pushed 40fa5a89; unit suite no new failures; REVERIFY recorded (merge lock busy)	session-20261116T082353-191a2dc3	2026-11-16T08:38:54Z
