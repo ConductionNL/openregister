@@ -14465,3 +14465,4 @@ thematiq	1293	70f30610bdf7db46fa14e32935ad703e829c02bf	RED	worker-46:merge-gate	
 stackiq	1992	6d5c12d7da6c42f6e7984bf3e02c8fd1fb2de00b	REVERIFY	worker-49:lane	new PR: SPDX lines on tests/Stubs/Contract/ObjectServiceInterface.php (development's spdxheaders reads under its floor, which turns every stackiq merge gate RED); verify it, then land with #1990 #1991
 thematiq	1558	756f3b85ff9c7cd053b9e02959bb340357082171	RED	worker-46:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
 versioniq	507	63401e4577e3a8006d41144430399f8f3f1f5187	RED	worker-14:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+humaniq	670	404bf31cb757d644e62c90ffdf08de1a76c009d8	REVERIFY	worker-26	no change: merges clean on development; conflicts only with #661 (same babel 8 move); once one lands the other is obsolete; new head 404bf31cb757d644e62c90ffdf08de1a76c009d8, verify it
