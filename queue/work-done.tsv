@@ -15814,3 +15814,4 @@ merge:stackiq:1924:92ce335c	failed: stackiq development itself fails the checker
 fix:larpinq:1050:f7fb4695	added @spec tags (gate-16 PASS); custom page already has _note; pushed 48b34820; merge lock held elsewhere, REVERIFY recorded	session-20261116T081702-4281d743	2026-11-16T08:34:16Z
 fix:opencatalogi:2643:7bc24339	fixed: maintainability restored to 5 stars via contract interfaces (floor PASS, 0 new unit failures); new head adb68bca, REVERIFY recorded; lock held elsewhere	session-20261116T081707-5872785d	2026-11-16T08:34:35Z
 fix:versioniq:709:fa10e6b8	already up to date with development; conflict is tree-order only; REVERIFY recorded (merge lock held elsewhere)	session-20261116T083054-c78348d1	2026-11-16T08:34:48Z
+fix:shillinq:2997:5788e1ce	fixed floor drop (unit size/complexity/interfacing back to base) at 675a3aef; merge lock held elsewhere, REVERIFY recorded	session-20261116T081719-f2f21a3b	2026-11-16T08:35:24Z
