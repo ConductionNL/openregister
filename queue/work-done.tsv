@@ -17918,3 +17918,4 @@ cover:keepiq:c967a31fm902f:ca1d90c4	already done: lib/Attribute/*.php 100% lines
 verify:stackiq:2000:a76a4319	6 GREEN (2000-2005), tree 3901 tests, 0 new failures	session-20261116T212636-b8ecff83	2026-11-16T21:32:34Z
 verify:integriq:3678:534ee436	GREEN #3678 (9597 tests, no new failures, phpstan clean)	session-20261116T212336-79038316	2026-11-16T21:32:45Z
 verify:keepiq:1861:ea80913b	3 GREEN (1861,1862,1863); no new failures	session-20261116T212048-3752a879	2026-11-16T21:33:09Z
+fix:learniq:1882:cfff5ab1	merged #1882 at af18b8c34cb305149e9af6c01163260572ddac35	session-20261116T212020-285af434	2026-11-16T21:33:34Z
