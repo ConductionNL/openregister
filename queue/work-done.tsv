@@ -15467,3 +15467,4 @@ review:thematiq:1126:5620b7cb	GREEN: jsdom dev bump, vitest 1559 OK	session-2026
 review:hermiq:1189:25278c92	RED: pinia 4 breaks production webpack build (cannot resolve 'pinia'); tests pass	session-20261116T062121-edb2d73b	2026-11-16T06:37:05Z
 review:stackiq:1941:3f74a899	GREEN: PHP unit 3742 OK, phpstan clean, vitest 1 inherited failure	session-20261116T063134-3a4fc8af	2026-11-16T06:37:27Z
 review:shillinq:2070:b00d1ffe	BLOCK: tightens block/release permissions beyond spec (payment.block matrix + four-eyes); tests green	session-20261116T062050-3a7e109c	2026-11-16T06:37:37Z
+fix:stackiq:1435:f9cb4c74	fixed stub autoload order; suite 3722, only inherited golden failure; new head 81fb6bd4	session-20261116T061736-e271ba12	2026-11-16T06:37:47Z
