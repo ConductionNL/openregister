@@ -4555,3 +4555,9 @@ hermiq	1293	38013b9c66979f974a60e5b5c2fecf48c323ee46	SKIP	worker-11	GATE UNMEASU
 hermiq	1534	b7a7d45bfa93bc796ed10723ca14602299d17d9d	SKIP	worker-11	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 hermiq	1756	6c5bc3805bd08f117478fdc6b10d028a6cfbd080	SKIP	worker-11	no APPROVE review at this head
 learniq	1167	2c125d9d5b87d633f53d9f8f8b96f8a909fc72d5	SKIP	worker-34	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
+pipelinq	3835	c550a2ad23eed0bc415b4c9a273a90564c74bd49	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.48
+pipelinq	3883	d9fffa2b1b6ea00309fd942e483b77e3d121c6fd	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.48
+pipelinq	3889	8111e17b3404f548360bdf5c55468b9828810963	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.48
+pipelinq	3890	d7fb766085e2f75c1be55c5d55dcf64299145345	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.48
+pipelinq	3891	b5a3d2118dfb43267f2283851d1d5ecefc7a1d44	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.48
+pipelinq	3892	a8cc9e6b727a3c7c250a769f12f034f152c93b54	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.48
