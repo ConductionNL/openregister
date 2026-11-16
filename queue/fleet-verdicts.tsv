@@ -13650,3 +13650,4 @@ buildiq	1114	9381ce974c70d039e0864ef92e7887b77b95824e	RED	merge8:merge-gate	GATE
 buildiq	1249	0997f504b0eac297c5df04973323bef6894adb7e	RED	merge8:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
 buildiq	1256	342dece0d678059a47b5743de2303db5fabfe837	RED	merge8:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
 buildiq	1596	33a8b51d6ee0f8da44eece4449f064758c5bb69a	RED	merge8:merge-gate	GATE RED absolute floor: buildiq maintainability 3.90 after merge is below its floor 3.91
+learniq	1901	152da34cc2608eb2586c6085a6073ee9f3e4a744	GREEN	worker-34:review	Refusals add errors/invalid per field and keep error code, status and access order, as its own change spec asks; approveHourWeek declares its schema. Merged with development: 6871 tests, 1 inherited fail (he.json out of date on development), phpstan clean
