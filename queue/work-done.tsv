@@ -15617,3 +15617,4 @@ review:buildiq:1649:f58cb410	GREEN: matches ai-copilot-documents-and-code-help s
 review:opencatalogi:2671:0c44bbf1	GREEN: no new failures vs development baseline	session-20261116T062109-81fc252e	2026-11-16T07:11:20Z
 fix:launchpad:753:d16aabc3	sbom regenerated, pushed 26ce5b2b; REVERIFY recorded	session-20261116T063134-3a4fc8af	2026-11-16T07:11:36Z
 review:opencatalogi:2682:266a8421	GREEN: no new failures, phpstan clean	session-20261116T062140-6a300781	2026-11-16T07:11:43Z
+fix:thematiq:1117:2427508a	failed: regen-sbom.sh leaves sbom.cdx.json unchanged (dev-only bump; thematiq sbom lists only prod deps), so the merge gate's 'lock changed without sbom' rule cannot be met; same for 1556-1558; needs a gate rule change, not a PR fix	session-20261116T062121-edb2d73b	2026-11-16T07:11:54Z
