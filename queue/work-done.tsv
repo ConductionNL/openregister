@@ -17526,3 +17526,4 @@ lane:arch5:hermiq:next-hermiq-r3	partial: not started, waits for #1810 and #1811
 review:dossiq:6203:20803212	stale	session-20261116T195844-a81a321a	2026-11-16T20:00:31Z
 review:integriq:3056:dba18fc0	BLOCK: lock not installable (psalm 7.5 needs php>=8.3.16, platform pin 8.3)	session-20261116T195325-4766bbcd	2026-11-16T20:00:55Z
 merge:filinq:2072:d02cb114	cloud tree of 2 filinq PRs: merged=1 red=0 fail=0 skip=1; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T195229-a18ea10d	2026-11-16T20:01:11Z
+cover:pipelinq:7f9dc8e6m3dbb:0a8f160f	already done: lib/Service/Sla/ at 100% (231/231 stmts) on development; suite 9129 tests OK	session-20261116T195808-6c4f6988	2026-11-16T20:01:14Z
