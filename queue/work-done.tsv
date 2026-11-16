@@ -17336,6 +17336,7 @@ fix:versioniq:721:bc63b636	merged #721 at b48214583a	session-20261116T184833-adb
 build:pipelinq:opt-out-before-send:r3	already done: every code task ticked on development; only live check 8.1 left	session-20261116T184852-b8356331	2026-11-16T19:18:28Z
 build:pipelinq:marketing-block-editor:r3	nothing to build: every code task is ticked; only 3.3's live-send rendering check in mail clients is open	session-20261116T184841-a3bc3002	2026-11-16T19:18:21Z
 build:pipelinq:a-contact-question-is-required-and-dated:r3	already done: every code task ticked on development; only 1.3 (live check) is open	session-20261116T181151-999832c6	2026-11-16T19:18:29Z
+build:portaliq:example-site-zuiddrecht:r2	already done: tasks 1-8 ticked and on development; only 9 (live check on a fresh instance) left	session-20261116T191704-9a63be87	2026-11-16T19:19:00Z
 review:opencatalogi:2686:84ac3f44	GREEN: no new failures (5920 vs baseline 5893, same 80 inherited); concerns noted	session-20261116T191156-bbdb7add	2026-11-16T19:18:49Z
 build:portaliq:form-binding-settings-page:r2	already done: code task ticked on development; only live check T02 left	session-20261116T184852-b8356331	2026-11-16T19:19:06Z
 measure:humaniq:20261116h18	php 95.77% (pcov, 26211/27370); js none (no vitest/jest)	session-20261116T184921-a7624794	2026-11-16T19:19:04Z
