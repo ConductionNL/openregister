@@ -3816,3 +3816,6 @@ humaniq	686	fe1cbc0ae582ec29fbb26fc246d74dbf397480b5	SKIP	worker-53	GATE UNMEASU
 versioniq	500	890378b335a6437a175c190f8627fdc91ddc4733	RED	worker-50	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 versioniq	503	2d7f74a1bcc195a9c6630723fd089cfb3b9fff77	RED	worker-50	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 versioniq	707	9729dcff80bab36770e43b15864969807474727f	SKIP	worker-50	no APPROVE review at this head
+launchpad	756	e5da8a8442e3254be403a4d29fe3cb21312df78c	RED	worker-12	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+launchpad	880	3c07107533c5035ff96566d9aa97a6c5c78aa5e3	RED	worker-12	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+launchpad	977	4ec996d31439daed99af546858b9614b2ca4a159	RED	worker-12	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
