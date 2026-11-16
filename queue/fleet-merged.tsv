@@ -4333,3 +4333,4 @@ learniq	2558	45a5159b5b78e3d5327e08d2d1c6496dda276ccb	RED	worker-37	GATE RED che
 opencatalogi	2699	54be40942b86db0add3005e18928165734094657	RED	worker-48	GATE RED floor: overall: 4.88 -> 4.86; unit_interfacing: 4.84 -> 4.76; module_coupling: 5.45 -> 5.42
 versioniq	497	39a7db062ea18ada87559c730217cdc521657235	SKIP	worker-03	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 versioniq	501	451c8f5901c5ec4277fdccbd82e4349166c89e9f	SKIP	worker-03	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
+versioniq	711	dc3fffc4091930880b05adf9f0e76b6a2caf5c4a	RED	worker-03	GATE RED floor: unit_complexity: 4.63 -> 4.60; unit_interfacing: 4.26 -> 4.22
