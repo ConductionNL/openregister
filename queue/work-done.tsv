@@ -16474,3 +16474,4 @@ fix:shillinq:2083:0ee980ae	merged development in, green; new head 4b847a69, REVE
 fix:shillinq:3080:cb96e451	no change needed: merges clean on development (conflict only against sibling PRs); REVERIFY queued	session-20261116T142710-649b1d69	2026-11-16T14:44:15Z
 fix:learniq:2559:db446f19	sbom regenerated, pushed a2575752; lock busy, REVERIFY queued	session-20261116T142859-fa64ab70	2026-11-16T14:44:35Z
 review:learniq:2484:6e3b8399	GREEN	session-20261116T142700-f4d651ea	2026-11-16T14:45:20Z
+review:shillinq:2226:5f2a7723	GREEN: phpunit 12231 OK, vitest 1 inherited failure (dunningNextRun)	session-20261116T142616-2623e37a	2026-11-16T14:45:49Z
