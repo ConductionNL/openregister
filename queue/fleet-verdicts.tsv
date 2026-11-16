@@ -14315,3 +14315,4 @@ shillinq	3000	69030639c8c5a9b5fe3052e4765177f669dd366a	CONFLICT	worker-49:merge	
 shillinq	2093	cc5e1a5ebb84ed6bccdcf622b871b1d90d97b930	RED	worker-49:merge	adds unit failure(s) with the PRs before it in the tree: GoodsReceiptNoteIntegrationTest::testManifestFragmentExposesGrnPages
 portaliq	1768	73711bf061a935d6c5b8923175690cefe42d08f4	RED	worker-57:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 launchpad	785	085c96eb87cd18355f4b1396afcd247357d36f41	RED	worker-40:merge-gate	GATE RED floor: module_coupling: 4.73 -> 4.68
+launchpad	1239	793d60336936c8b1bb2989a8c17900a0a7c2457d	CONFLICT	worker-40:merge	merges clean on development alone; files: package-lock.json sbom.cdx.json 
