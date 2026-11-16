@@ -15444,3 +15444,4 @@ review:learniq:2484:32d62246	BLOCK: schema auth block lacks create/update/delete
 merge:planninq:726:780e659c	merge8 tree of 12 planninq PRs: merged=3 red=6 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge8-20261115T170007-37538273	2026-11-16T06:32:03Z
 merge:planninq:908:34e96da4	merge8 tree of 12 planninq PRs: merged=3 red=6 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge8-20261115T170007-37538273	2026-11-16T06:32:08Z
 review:portaliq:1673:06264bd1	GREEN: additive rank field + repair, no new failures	session-20261116T062120-691af8f7	2026-11-16T06:32:18Z
+review:portaliq:1666:ddf36df0	GREEN: manifest band layout, tests unchanged vs development	session-20261116T062126-9d7735e0	2026-11-16T06:32:30Z
