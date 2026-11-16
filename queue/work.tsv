@@ -18149,3 +18149,4 @@ measure:buildiq:20261116h20	measure	buildiq	development	queue/coverage/buildiq.j
 measure:integriq:20261116h20	measure	integriq	development	queue/coverage/integriq.json	why=slices need per-directory coverage	2026-11-16T20:12:02Z
 measure:keepiq:20261116h20	measure	keepiq	development	queue/coverage/keepiq.json	why=slices need per-directory coverage	2026-11-16T21:11:34Z
 measure:openregister:20261116h20	measure	openregister	main	queue/coverage/openregister.json	why=slices need per-directory coverage	2026-11-16T21:11:34Z
+fix:versioniq:722:276692bd	fix	versioniq	development	722	sha=276692bd60dc5a63b6082b3254520187f0ce2948;verdict=CONFLICT;branch=quality/build-sources-trust-audit-and-offline-feed;reason=conflicts with development, files: lib/Controller/SettingsController.php 	2026-11-16T21:18:21Z
