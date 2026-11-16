@@ -542,3 +542,4 @@ decidiq	1469	c712bd4b957efea8e0c3f414234239c3e5927ff8	APPROVE	worker-47	Standard
 decidiq	1767	1582903c267265c964b1af5bddd432f6f7e882bf	APPROVE	worker-47	Standard; no blockers; ocp dev bump plus the same behaviour-preserving repair-step split as #1467
 decidiq	2203	25c89067fe5543733a63e852b78c2fe8305fbaed	APPROVE	worker-47	Thorough; no blockers; builds termijnagenda tasks 1,4,5,6 per spec: save guard for owner/lapse reason (adds refusals only), board, dialogs in src/dialogs, NcSelect has inputLabel; vitest green
 decidiq	2207	12b854793b911a1de6aed09fa8c7e434d58e0735	APPROVE	worker-47	Thorough; no blockers; builds REQ-DWP-006 release job per spec: approved docs only, patched via OpenRegister, failures logged and retried, frozen-clock tests
+decidiq	2222	c48b29b22a9114e3d924a26c8c2f287883188572	APPROVE	worker-47	Quick; no blockers; shared lock refresh and an axios stub in one spec; tree vitest 2869 passed
