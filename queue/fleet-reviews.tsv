@@ -395,3 +395,6 @@ keepiq	1499	88c1cad153a7733153a2335d9ef1fc3abdcf8aaa	APPROVE	worker-30	Quick; no
 keepiq	1500	56b81f7c398f2a09052673c885856a1acedc90dc	APPROVE	worker-30	Quick; no blockers; patch bump of phpseclib with regenerated sbom
 keepiq	1789	2b1b12acbe7835083af606772713ff2f0a386103	APPROVE	worker-30	Standard; no blockers; build of platform-properties per its specs: theme colour with validated fallback, stylelint hex rule, nl coverage gate, tests added
 keepiq	1815	26e9c5de274f2804632ecebcc4ae96703dae3cff	APPROVE	worker-30	Quick; no blockers; tests only, tree suite green
+integriq	2716	6edb6eeaafff98e0aa865e39475b0c55f4f9ce02	APPROVE	worker-45	Quick; no blockers; vue 3.5.42->3.5.44 lockfile and sbom only, gate fails all inherited
+integriq	2994	672207a470cba6d332f1df141ce039272fc4624f	APPROVE	worker-45	Quick; no blockers; sass dev bump, lockfile and sbom only, gate fails inherited
+integriq	3049	2da4ecc8a220e37618f328126eaad0045314c3cd	APPROVE	worker-45	Thorough; no blockers; every deleteObject call moved to ObjectDeletion/ObjectFindTarget with same uuid, target and rbac/multitenancy/permanent flags; openregister main has the API; test doubles adapted, no old-style call left in lib
