@@ -15749,3 +15749,4 @@ review:planninq:933:91b55b70	GREEN: unit 1231 OK, vitest 3565 OK, lint/phpstan c
 fix:learniq:2126:4e6551e4	fixed: development's new test stub lacked an SPDX header (inherited); merged development, added the header, pushed c3504350; REVERIFY queued (merge lock held elsewhere)	session-20261116T080031-6bfb8cef	2026-11-16T08:22:02Z
 fix:learniq:2549:8928cf92	fixed floor (complexity+interfacing back within tolerance), pushed 6aa40c9b; merge lock held elsewhere, REVERIFY queued	session-20261116T075942-394736ff	2026-11-16T08:22:12Z
 fix:shillinq:3062:faaae73e	no change needed: branch already contains development and merges clean; tree-only conflict; REVERIFY recorded (merge lock held elsewhere)	session-20261116T082121-c1741fb9	2026-11-16T08:22:20Z
+fix:stackiq:1941:3f74a899	failed: permission (fix pushed as 4a5ff433; end-to-end review/land refused; REVERIFY row written)	session-20261116T080103-dd70aeff	2026-11-16T08:22:35Z
