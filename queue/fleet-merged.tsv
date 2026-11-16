@@ -4366,3 +4366,4 @@ decidiq	2223	34982cb60fb5a9dacbdc943059a5690fdc7854cf	SKIP	worker-14	GATE UNMEAS
 opencatalogi	2541	131ce0fa2c470dbe80bfc84563ed1235afce4730	SKIP	worker-47	GATE UNMEASURED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3 while api.osv.dev is unreachable from this session
 opencatalogi	2673	61f25128c9c36b5ca1d7519327d3ffbd942c0c46	SKIP	worker-47	GATE UNMEASURED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3 while api.osv.dev is unreachable from this session
 portaliq	2349	e7812cc2231a27fa071df300fa8477ffb36e9a79	RED	worker-48	GATE RED sbom: composer.lock changed without sbom.cdx.json
+portaliq	2530	23908dc9409b67edbb7c1748002e6f9859115f48	RED	worker-48	GATE RED sbom: composer.lock changed without sbom.cdx.json
