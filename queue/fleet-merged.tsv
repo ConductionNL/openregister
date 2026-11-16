@@ -4360,3 +4360,4 @@ versioniq	711	dc3fffc4091930880b05adf9f0e76b6a2caf5c4a	RED	merge3	GATE RED floor
 versioniq	717	8419af1d7c38c7852aa8354f89ad55a4a3ace8c4	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.97 holds at 4.03
 larpinq	1060	701044e668f5b0522fb7bf5d2b4223773dcf9bc6	SKIP	worker-52	no APPROVE review at this head
 hermiq	1174	0ac44763a2885346a3b300547e9dc5c046dc8be7	RED	worker-01	GATE RED sbom: composer.lock changed without sbom.cdx.json
+decidiq	2222	c48b29b22a9114e3d924a26c8c2f287883188572	SKIP	worker-14	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
