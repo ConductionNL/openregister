@@ -15694,3 +15694,4 @@ review:larpinq:1060:11a6a4ea	GREEN: larpinq #1060 phpunit 1025 ok, vitest 627 ok
 review:planninq:930:b3e1916c	GREEN: suite 1227 OK, vitest 3567 OK; concern on one-sided link check	session-20261116T075936-d83d6c1e	2026-11-16T08:02:20Z
 fix:planninq:910:8ffad303	failed: sbom already current (phpmd is a dev dep; regen-sbom --check passes, regenerated file byte-identical), so nothing to commit; merge_gate sbom() requires sbom.cdx.json in the diff and will stay RED for dev-only lock bumps	session-20261116T075936-d83d6c1e	2026-11-16T08:03:25Z
 review:stackiq:1930:e29285ec	GREEN: matches change specs; no new unit failures (1 inherited)	session-20261116T080103-dd70aeff	2026-11-16T08:04:05Z
+review:portaliq:1354:ba4c6885	GREEN: dependency-only bump, not imported by src, merges cleanly	session-20261116T075953-c9c4b65a	2026-11-16T08:04:24Z
