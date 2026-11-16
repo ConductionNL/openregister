@@ -16158,3 +16158,4 @@ fix:stackiq:1965:c6e522ff	fixed, pushed 29a743e1; lock held elsewhere, REVERIFY 
 fix:integriq:3638:7466fd09	merged development (clean), pushed 3d602f6be0; REVERIFY queued	session-20261116T101745-e986474c	2026-11-16T10:33:16Z
 fix:planninq:933:ff903468	fixed floor (unit_interfacing 4.77), pushed 86d76c41; not landed: stacked on unmerged #929/#930 (933 lacks #930's latest fix); REVERIFY queued	session-20261116T101050-f149dcd6	2026-11-16T10:33:26Z
 fix:stackiq:1930:e29285ec	REVERIFY: floor + SPDX fixed, new head 9a43150cd9; not landed, gate unmeasured: static.developer.overheid.nl	session-20261116T101220-07929334	2026-11-16T10:33:44Z
+merge:hermiq:1133:0848d022	unmeasured: static.developer.overheid.nl (1133/1175/1193 approved, gate UNMEASURED; 1750 REQUEST_CHANGES; 1578/1760/1785/1791 CONFLICT)	session-20261116T101043-1357d62e	2026-11-16T10:34:24Z
