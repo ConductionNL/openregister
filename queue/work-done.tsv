@@ -17015,3 +17015,4 @@ review:hermiq:1150:9ed6a46b	RED: 5 vitest failures in admin-root and llm-provide
 cover:stackiq:9ac19b3amf894:c2bb21fa	deferred: stackiq has 46 open PRs	session-20261116T173207-e7bfa399	2026-11-16T18:00:21Z
 fix:stackiq:1978:723683e2	development merged in clean, pushed edde87e6; REVERIFY queued	session-20261116T171035-683856c3	2026-11-16T18:00:23Z
 fix:opencatalogi:2655:31c2efe2	conflicts resolved, touched tests green; REVERIFY at 21d93581 (merge lock held elsewhere)	session-20261116T173254-f6972957	2026-11-16T18:00:48Z
+cover:stackiq:9ac19b3amf894:2302034c	deferred: stackiq has 46 open PRs	session-20261116T173254-f6972957	2026-11-16T18:01:21Z
