@@ -191,3 +191,4 @@ shillinq	2070	29369cd1e5f54228d28f425cda326d85923bff8f	REQUEST_CHANGES	worker-33
 hermiq	1133	6fd08d09db1ca26724058d9c83bec7eb477cfec5	APPROVE	worker-29	Quick; no blockers; stylelint minor bump + sbom regen
 hermiq	1175	42637555c30a617e2512d88fcac2b0a205657ddc	APPROVE	worker-29	Quick; no blockers; cron-expression patch bump + sbom regen
 hermiq	1193	7d49a897eacda342108a8ffdf6d0ba0a3967dc67	APPROVE	worker-29	Quick; no blockers; sass minor bump + sbom regen
+learniq	1882	ff0cebbf373a84986b0174e333013e3503af7dd1	APPROVE	worker-33	Standard; no blockers; display-only field labels for the employer booking detail plus a test asserting each label has a Dutch translation; e2e updates follow the live week
