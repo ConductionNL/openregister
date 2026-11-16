@@ -4798,3 +4798,4 @@ stackiq	2002	ff096b820beb42309602b3ca2265cb01134b46ad	MERGED	merge3	GATE OK sbom
 stackiq	2003	b30706bd7f0b6b085b38494b688b8ef27372d92b	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.19
 stackiq	2004	3abacc55decaf583bc9497566ae9c6da6f5fba99	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.19
 stackiq	2005	d037535241d8a2bd88bf460c043dd0adb24ea646	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.19
+opencatalogi	2755	b425331e9095f8f2c6838f5d39a71332c45fcf54	MERGED	worker-53	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.56
