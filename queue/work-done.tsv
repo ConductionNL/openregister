@@ -17471,9 +17471,13 @@ cover:learniq:e6498ddd:38e80a9f	deferred: learniq has 60 open PRs	session-202611
 cover:learniq:e6498ddd:689c9915	deferred: learniq has 60 open PRs	session-20261116T192127-f26e2e56	2026-11-16T19:44:40Z
 cover:learniq:e6498ddd:befc51b3	deferred: learniq has 60 open PRs	session-20261116T192127-f26e2e56	2026-11-16T19:44:50Z
 merge:shillinq:2099:3df1d67e	cloud tree of 5 shillinq PRs: merged=3 red=0 fail=0 skip=0; conflict 2, lint 0, red 0, moved 0, done 0	session-20261116T184852-b8356331	2026-11-16T19:44:50Z
+cover:pipelinq:7f9dc8e6m3dbb:568ec52a	already covered: lib/Lifecycle/*.php measures 99.63% (271 stmts, 1 uncovered) on development with its 100 tests, none risky; no PR	session-20261116T184841-a3bc3002	2026-11-16T19:45:04Z
 cover:learniq:e6498ddd:80b3d955	deferred: learniq has 60 open PRs	session-20261116T192127-f26e2e56	2026-11-16T19:45:04Z
 cover:learniq:e6498ddd:98083bbf	deferred: learniq has 60 open PRs	session-20261116T192127-f26e2e56	2026-11-16T19:45:11Z
 cover:learniq:e6498ddd:95d5249b	deferred: learniq has 60 open PRs	session-20261116T192127-f26e2e56	2026-11-16T19:45:17Z
 cover:learniq:e6498ddd:jsc89f0f80	deferred: learniq has 60 open PRs	session-20261116T194405-fc188e9a	2026-11-16T19:45:17Z
 lane:arch5:shillinq:next-shillinq-r1	PR #3118 opened (estimate 4.03-4.06 -> 4.08-4.12), verified green; merge lock held elsewhere, GREEN verdict queued	session-20261116T192325-bb4c31dd	2026-11-16T19:45:40Z
 measure:learniq:20261116h18	php 95.51% js 99.8% at 386ba62 (suite: 6868 tests, 1 failure inherited)	session-20261116T192824-ee4fb14b	2026-11-16T19:46:05Z
+cover:pipelinq:7f9dc8e6m3dbb:38e80a9f	already done: lib/Command/*.php is 100% (427/427 stmts) on development 601862a8; no PR	session-20261116T193642-e39387da	2026-11-16T19:46:30Z
+cover:learniq:e6498ddd:jsdec3d422	deferred: learniq has 60 open PRs	session-20261116T192325-bb4c31dd	2026-11-16T19:46:22Z
+fix:larpinq:1050:d2d372bb	merged #1050 at 7cfec2447da9e1e2aec0580423be39e9779c3204 (tests restored testcoderatio 73.8->75.4%; shared SKILL_FIELDS restored duplication 5.15->5.17)	session-20261116T192645-5f5cd9b9	2026-11-16T19:46:49Z
