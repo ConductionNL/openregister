@@ -507,3 +507,4 @@ decidiq	2207	12b854793b911a1de6aed09fa8c7e434d58e0735	APPROVE	worker-31	Standard
 stackiq	1954	3afda7d673093d1c6d13f3a4211d31d34e98c5f7	APPROVE	worker-57	Strict; no blockers; export gated by schema export grant and RBAC read, CSV cells guarded, org access reuses verifyOrgScope; custom page justified in _note
 stackiq	1965	dae73f1f93573f35c1f3c4c7854ba70d1268e5c2	APPROVE	worker-57	Thorough; no blockers; connections read in org scope, flows only for ends in the model, matches REQ-CDX-004
 stackiq	1990	fb7faba8e594609ab0595cd9d59b48a314ab19c7	APPROVE	worker-57	Standard; no blockers; type-only contract extraction, aliases registered, behaviour unchanged
+stackiq	1991	eae67fd41291aadfec62cd5d47ee72c2e1e40e67	APPROVE	worker-57	Strict; no blockers; pure extraction, identical group lists and registeredBy logic, tests pass
