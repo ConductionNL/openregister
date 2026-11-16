@@ -18403,6 +18403,7 @@ verify:hermiq:1757:59cadfdd	CONFLICT #1757 (l10n catalogues, EngineSwitchedOffTe
 verify:learniq:2502:bdbd6462	failed: composer install impossible here, learniq lock needs vimeo/psalm 7.5 (php >=8.3.16), container php 8.3.6	session-20261116T232912-634ff2e8	2026-11-16T23:38:58Z
 verify:filinq:2091:fe554cc9	CONFLICT #2091	session-20261116T232918-5354fd88	2026-11-16T23:38:49Z
 verify:filinq:2113:51b5285f	CONFLICT: #2113 vs development in CHANGELOG.md, filinq_register.json, ConsentUpdateFlowTest.php	session-20261116T232911-3dffa1ae	2026-11-16T23:39:03Z
+verify:hermiq:1738:0d2920d5	CONFLICT 1738: 11 files conflict with development	session-20261116T230931-e5ee8bcb	2026-11-16T23:39:39Z
 verify:humaniq:1142:9666a5ef	CONFLICT: #1142 vs development in l10n, hr-leave register, manifest files	session-20261116T232911-3dffa1ae	2026-11-16T23:40:06Z
 verify:hermiq:1763:959522d3	CONFLICT #1763 (9 files)	session-20261116T224246-d9bde508	2026-11-16T23:39:28Z
 lane:arch5:learniq:next-learniq-r6:c3	PR #2580, GREEN (r7: php dup 3.30 -> 3.32); learniq stopped by coordinator, no further round queued	session-20261116T220647-b92c8f52	2026-11-16T23:40:25Z
