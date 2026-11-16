@@ -15551,3 +15551,4 @@ fix:opencatalogi:2682:e88dc4b8	fixed: old-API find/save moved to option objects;
 review:buildiq:1641:b6868cd6	GREEN: spec-conform build; no new failures	session-20261116T062123-fa6fb6b0	2026-11-16T06:56:19Z
 review:planninq:918:6289a597	GREEN: dev-only bump, suite OK, phpstan unchanged	session-20261116T062050-add210c3	2026-11-16T06:56:29Z
 fix:buildiq:1091:d342b9dd	merged development in; vitest 4719 pass; new head 13bc446b	session-20261116T061736-e271ba12	2026-11-16T06:56:39Z
+fix:opencatalogi:2671:8b5765d7	fixed: OR main API migration in sweep/rewrite/show; 0 new failures vs baseline; new head 0c44bbf1	session-20261116T062050-3a7e109c	2026-11-16T06:56:47Z
