@@ -15802,3 +15802,4 @@ fix:larpinq:960:659b6749	failed: dev-only lock change (phpstan require-dev); reg
 fix:opencatalogi:2673:9b953103	restored maintainability (split overview service behind contract); pushed 55afbbab; merge lock held elsewhere, REVERIFY recorded	session-20261116T081702-4281d743	2026-11-16T08:31:17Z
 review:filinq:2094:a2f8cc99	GREEN: phpunit 6832 pass (base 6798), vitest 763, jest 578	session-20261116T080741-43082fe2	2026-11-16T08:31:30Z
 fix:versioniq:500:890378b3	sbom regenerated, pushed 7b3a6f4e; REVERIFY (merge lock busy)	session-20261116T075953-c9c4b65a	2026-11-16T08:31:56Z
+fix:versioniq:735:0ba1d1c9	no change: merges clean on development, conflict is tree-only (sibling PR on openapi.json); REVERIFY recorded	session-20261116T081640-cbf74452	2026-11-16T08:32:16Z
