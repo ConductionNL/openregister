@@ -17814,3 +17814,4 @@ cover:stackiq:9ac19b3am2187:efa2a923	no change: lib/EventListener 1053/1062 (99.
 cover:stackiq:9ac19b3am2187:59f569b2	already covered: lib/Service/Settings/*.php at 1271/1273 statements (99.8%) on development 00516ba7; no PR	session-20261116T204203-b8dccc50	2026-11-16T21:02:50Z
 cover:stackiq:9ac19b3am2187:b5905f71	no change: lib/Service/Federation/ already 385/389 (99%) per measure at 00516ba7	session-20261116T205732-a5f08498	2026-11-16T21:03:30Z
 cover:stackiq:9ac19b3am2187:05630945	no PR: Support at 57/62; the 5 uncovered lines (ApiPathAliases 103-104, 239-241) loop over the empty WITHOUT_SUCCESSOR/RENAMED constants, unreachable without a production change	session-20261116T205645-edca2f78	2026-11-16T21:03:50Z
+cover:stackiq:9ac19b3am2187:407c4b68	already done: lib/Service/Registration/ServiceFactories.php 426/426 lines covered on development (quality/test-coverage-407c4b68-1 merged)	session-20261116T205614-f09d5844	2026-11-16T21:03:55Z
