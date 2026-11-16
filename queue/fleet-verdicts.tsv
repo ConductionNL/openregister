@@ -15853,6 +15853,7 @@ buildiq	1628	5ecf09c2db820fe6deb7b5561b1b9442b569d790	CONFLICT	worker-12	conflic
 decidiq	2199	68646faa2457838725c278873a7f023a7aa39dd6	CONFLICT	worker-53	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json src/manifest.json tests/vitest/simpleMeetingPage.spec.js
 buildiq	1643	5d14674ceb93199648ec70e2d8be9b542f28e67f	CONFLICT	worker-56	conflicts with development in l10n/en.json and l10n/nl.json; baseline 3456 tests, 1 inherited failure
 buildiq	1651	e765d7defef743214c8b1a95ec54e0f7cee07fa5	CONFLICT	worker-12	conflicts with development, files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+hermiq	1496	2271f36d4ab81c1d15c14480dd12d15eb1febd93	CONFLICT	worker-49	conflicts with development (lib/Service/Llm/ProviderFactory.php); baseline 5463 OK
 decidiq	2193	03fef7f11207c7492d4a975306397dbcd79b1e66	CONFLICT	worker-53	conflicts with development; files: lib/Listener/Registrar/SaveGuardSubscriptions.php
 opencatalogi	2674	05957a6ee795832ad4d79c271017fc59067ebb17	RED	worker-31:merge-gate	GATE RED floor: overall: 4.89 -> 4.87; unit_size: 4.66 -> 4.64; unit_complexity: 4.88 -> 4.85; module_coupling: 5.44 -> 5.41
 buildiq	1626	cac162dc488f54c56c692b9ae276f0558bc9fe53	CONFLICT	worker-12	conflicts with development, files: l10n/nl.js l10n/nl.json tests/stubs/openregister-stubs.php 
@@ -15860,4 +15861,6 @@ buildiq	1632	c06b2a4f61038870ae1dfbc682a651ae808af05d	CONFLICT	worker-56	conflic
 buildiq	1590	0761fb37549017029643fd57e42ca59a23a7c37e	CONFLICT	worker-17	conflicts with development in l10n/en.js,en.json,nl.js,nl.json, openapi.json, src/icons.js, src/views/VersionHistory.vue; baseline 3456 tests 0 failures
 buildiq	1623	e24b334fa50134345d8c9bba3cba2b0477f89521	CONFLICT	worker-13	conflicts with development in l10n/en.js, en.json, nl.js, nl.json, FieldEditor.vue and the FieldEditorConversion golden snapshot; no tests run
 buildiq	1597	b4d6685f15a88f33cd1f90edad134ba6de802e91	CONFLICT	worker-17	conflicts with development in l10n/en.js,en.json,nl.js,nl.json; baseline 3456 tests 0 failures
+hermiq	1496	2271f36d4ab81c1d15c14480dd12d15eb1febd93	CONFLICT	worker-49	conflicts with development (lib/Service/Llm/ProviderFactory.php) after #1735 landed; baseline 5463 OK
 buildiq	1619	e0722b685a4313508d76e6064c1501f7e4fe66f4	CONFLICT	worker-26	conflicts with development in src/components/page-editor/IndexPageEditor.vue, src/composables/useManifestValidator.js; baseline PHP 3456 tests OK, not run on tree
+filinq	2072	8a0992cbb74f2b7df9dbc9e29159077ce5307e05	RED	worker-08:merge-gate	GATE RED floor: unit_complexity: 4.47 -> 4.40
