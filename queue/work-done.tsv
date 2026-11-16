@@ -17089,4 +17089,5 @@ cover:buildiq:70b3e29em3841:6891a8ac	deferred: buildiq has 56 open PRs	session-2
 review:hermiq:1795:e06004f3	GREEN at bba547a (docblock exemption tag added on top of e06004f)	session-20261116T165351-3ccaad0e	2026-11-16T18:22:13Z
 build:decidiq:agenda-incoming-documents-list	already done: only live/e2e tasks left (1)	session-20261116T172806-3ef5ead7	2026-11-16T18:22:21Z
 fix:learniq:2562:2e394133	fixed tree conflict (stub header aligned with #1882), merged development; new head 9bda8314, REVERIFY (merge lock held elsewhere)	session-20261116T173306-f68895a7	2026-11-16T18:22:31Z
+cover:pipelinq:7f9dc8e6m8519:e78626a8	added to #3659 (budget 45 open): 10 risky tests fixed, +5 tests; Marketing SegmentQueryCompiler 1->98%, JourneyService 100%, MailBlockRenderer 100%, PortaliqArticleStore 98%; suite 9037 OK	session-20261116T173240-b63ad758	2026-11-16T18:22:56Z
 review:dossiq:6203:0a0ae26b	GREEN: tests only, suite 18357/0 failures on merged tree	session-20261116T181504-15a4396b	2026-11-16T18:23:10Z
