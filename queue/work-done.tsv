@@ -15889,3 +15889,4 @@ fix:pipelinq:3092:f8d049f3	sbom regenerated, pushed f041615e; APPROVE recorded; 
 review:launchpad:785:085c96eb	GREEN: phpunit 4485 ok, vitest 2586 ok, no behaviour regressions	session-20261116T084356-f50aa190	2026-11-16T08:51:48Z
 review:larpinq:1053:1a318455	BLOCK: new find() call uses register:/schema: named args gone on openregister main; suite 1002 OK	session-20261116T084455-5dfa31c7	2026-11-16T08:52:11Z
 lane:feeder:dossiq:once	failed: feed.py REST pagination of openregister open PRs refused by proxy (numeric-id repositories/{id} next-page path, HTTP 403); nothing added	session-20261116T084553-d7ab8477	2026-11-16T08:52:38Z
+review:opencatalogi:2725:80cedf65	GREEN: 0 new failures (+24 tests), matches change specs	session-20261116T084700-3a1a7351	2026-11-16T08:52:41Z
