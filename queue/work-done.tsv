@@ -16688,3 +16688,4 @@ fix:learniq:2561:7b697917	no change: #2561 merges clean on current development; 
 review:hermiq:1187:0e261189	GREEN: dev-only bump, vitest 1535 passed	session-20261116T153800-2f867ebc	2026-11-16T15:47:17Z
 fix:planninq:1069:496f9b7f	failed: not fixable within the PR's scope: psalm 7.5 needs php-64bit ~8.3.16, so the fix is raising config.platform.php for all production deps (changes the install floor) or retargeting to psalm ^6; neither is a dev-tool bump, left for a deliberate platform decision	session-20261116T153800-2f867ebc	2026-11-16T15:47:54Z
 merge:shillinq:2098:eba23a5f	unmeasured: static.developer.overheid.nl (merged=0; 2230 and 2766 RED on sbom gate; 2099, 3078 CONFLICT; 3109 MOVED)	session-20261116T150944-f856ccd8	2026-11-16T15:48:02Z
+review:shillinq:2070:764ed7a9	GREEN: unit OK 12248, vitest 32/32	session-20261116T150749-2f742a8d	2026-11-16T15:48:09Z
