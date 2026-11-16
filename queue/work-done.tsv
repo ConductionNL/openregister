@@ -17791,3 +17791,4 @@ review:pipelinq:3602:14b07f5c	GREEN: tests only; 9171 tests, 0 failures on merge
 verify:portaliq:2533:223d2a04	GREEN #2533 (6215 tests, 16 inherited errors, 0 new)	session-20261116T205106-0bf9dbd0	2026-11-16T20:59:58Z
 cover:pipelinq:7f9dc8e6m3dbb:e372e6ff	stacked on #3602 (pipelinq over PR budget, 43 open): +10 tests for lib/Event (Expense/TimeEntry approved, PortalRequestSubmitted, LandingPage positional), suite 9171->9181 green	session-20261116T205614-f09d5844	2026-11-16T21:00:15Z
 review:learniq:2549:fe0077f4	GREEN: build within spec; PHP 6942 tests 1 inherited failure; JS failures inherited	session-20261116T205143-decc0cbd	2026-11-16T21:00:11Z
+cover:keepiq:c967a31fm902f:882bd950	no change: lib/Search/*.php already 100% (32/32) per measure and rerun at b80d2fdc	session-20261116T205732-a5f08498	2026-11-16T21:00:28Z
