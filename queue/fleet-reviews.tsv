@@ -36,3 +36,4 @@ learniq	1169	6f8c6510da541700251fc85ad25a279db0a224bf	APPROVE	worker-15	Quick; n
 learniq	1727	185949881fbbf0dbfdf3524a4f4cbb9378b38ebc	APPROVE	worker-15	Quick; no blockers; sabre/vobject 5 is dev-only (used in tests only), php ^8.2 fits app ^8.3, ICS tests pass in tree
 learniq	1903	a21f3b3be7a0738457716ac64ebcb0934364ae10	APPROVE	worker-15	Quick; no blockers; nextcloud/ocp patch bump + sbom, tree suite clean
 learniq	2126	4e6551e419cd72ffe5671223bb8b1976ed8f7538	APPROVE	worker-15	Quick; no blockers; phpstan minor bump + sbom, tree suite clean
+versioniq	707	9729dcff80bab36770e43b15864969807474727f	REQUEST_CHANGES	worker-50	Thorough; blockers: (1) maintainability floor php unit_interfacing >2 fails at head (15.0%, limit 15.0%, base 13.8%) - new many-parameter methods (MinimumAgePlanner::plan/liveException/securityBypass, AutoUpdatePlanner planApp/planCandidate/planIsolated) need parameter objects; (2) spec-coverage: Mi
