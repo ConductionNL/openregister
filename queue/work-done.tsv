@@ -16247,6 +16247,7 @@ build:dossiq:bsn-reveal-logged	already done: code tasks 1.1-1.2 landed on develo
 verify:stackiq:1992:2410c201	GREEN #1992: 3718 tests, 0 new failures	session-20261116T105620-b2654149	2026-11-16T11:05:29Z
 build:dossiq:archive-stage-opens-case-archive	already done: every code task ticked and its vitest config check holds on development; only live check 1.2 left	session-20261116T110055-454b71dd	2026-11-16T11:05:37Z
 fix:shillinq:2766:4d51285b	merged development, restored stub SPDX header (drop inherited from development, same as #1912), pushed f2fbe5f8; REVERIFY queued	session-20261116T102639-f9f23dec	2026-11-16T11:05:38Z
+build:dossiq:case-files-list-columns	already built: every code task ticked on development (feature commit 2026-10-30); only live task 6 left	session-20261116T105654-c357c45f	2026-11-16T11:06:24Z
 merge:thematiq:1303:4df2ccb4	unmeasured: static.developer.overheid.nl (1303, 1677 reviewed APPROVE, tree clean, skipped at gate; 1365 CONFLICT)	session-20261116T101101-e7e34372	2026-11-16T11:06:20Z
 merge:learniq:2551:ae9ac49b	cloud tree of 5 learniq PRs: merged=0 red=0 fail=0 skip=5; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T103605-722bf416	2026-11-16T11:06:06Z
 build:dossiq:creating-into-deliberation-runs-the-panel-check	already done: all code tasks ticked and on development (DeliberationStartGuard on ObjectCreatingEvent); only live task 1 left	session-20261116T105606-edb14de6	2026-11-16T11:05:44Z
@@ -16357,4 +16358,6 @@ fix:pipelinq:3883:e0b01647	conflict resolved, pushed d9fffa2b1b6ea00309fd942e483
 fix:opencatalogi:2671:0c44bbf1	no change needed: branch is up to date with development and merges clean; conflict was tree-only with another PR; REVERIFY queued	session-20261116T110144-2dffa885	2026-11-16T11:23:23Z
 fix:integriq:3057:2fbd882d	failed: no fix possible: hydra-gates is a dev-only dependency, omitted from the SBOM (--omit=dev); regen-sbom --check says sbom.cdx.json is current, and merged with development the PR changes composer.lock only, so merge_gate's 'lock changed without sbom' rule cannot pass for this bump	session-20261116T105606-edb14de6	2026-11-16T11:23:04Z
 fix:opencatalogi:2654:9a530c05	no change: clean on development, conflict in-tree only (tasks.md)	session-20261116T102639-f9f23dec	2026-11-16T11:23:39Z
+fix:thematiq:1126:5620b7cb	failed: sbom gate false positive: jsdom is a devDependency, regen-sbom leaves sbom.cdx.json unchanged and --check current; merge_gate sbom() needs to accept a current sbom when only dev packages moved	session-20261116T110114-f035d055	2026-11-16T11:23:29Z
 fix:filinq:2094:6498e5a9	conflict resolved, pushed 5c76485b; merge lock held elsewhere, REVERIFY queued	session-20261116T105620-b2654149	2026-11-16T11:23:47Z
+fix:learniq:1882:ff0cebbf	fixed: SPDX header on inherited stub, new head 334e6e47; merge lock held elsewhere, REVERIFY queued	session-20261116T105625-05822e4f	2026-11-16T11:24:05Z
