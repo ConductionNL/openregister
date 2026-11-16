@@ -15946,3 +15946,4 @@ fix:portaliq:1982:ebea533f	sbom current at head (regen-sbom --check ok); lock he
 lane:ormig:portaliq:leftover	#1997 verified GREEN on main API (lock busy, verdict queued); #1992 closed (main keeps the appId/controllerNs call); namecheck: no real BREAK beyond #1997, no names PR needed	session-20261116T084536-1bd0bd69	2026-11-16T09:03:51Z
 merge:launchpad:755:b15cdcdd	cloud tree of 1 launchpad PRs: merged=0 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T084554-ed039664	2026-11-16T09:04:01Z
 lane:depbundle:larpinq:bundle	opened #1066 (3 updates, verified); merge lock held elsewhere, GREEN verdict queued	session-20261116T083627-a5dc872b	2026-11-16T09:04:17Z
+fix:portaliq:1767:886f4fa1	merged development in, pushed 171143de; merge lock held elsewhere, REVERIFY queued	session-20261116T084902-22557114	2026-11-16T09:04:35Z
