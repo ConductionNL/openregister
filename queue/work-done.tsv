@@ -18455,3 +18455,4 @@ verify:launchpad:1219:95f8a0fb	CONFLICT #1219 (l10n catalogues)	session-20261116
 verify:integriq:3572:346f03e1	CONFLICT #3572 (l10n, openapi.json)	session-20261116T233929-170accb7	2026-11-16T23:52:03Z
 verify:integriq:3585:65c80612	CONFLICT: #3585 conflicts with development (routes, l10n, payments controller/service, actions seed, openapi)	session-20261113T214350-9762e143	2026-11-16T23:52:19Z
 verify:integriq:2650:d3c85c9c	CONFLICT #2650 (8 files vs development)	session-20261116T233933-3050c00d	2026-11-16T23:52:31Z
+verify:integriq:3600:cada744c	CONFLICT #3600 (l10n, AdminSettings.vue, seed golden test)	session-20261116T230934-9ee320cf	2026-11-16T23:52:42Z
