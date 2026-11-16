@@ -16328,4 +16328,5 @@ build:dossiq:the-support-note-can-be-switched-off	already done: 1.1-1.3 on devel
 build:dossiq:task-list-pooled-handler	already done: config, nl key and vitest on development; only live check 1.3 left	session-20261116T105712-260c30d3	2026-11-16T11:18:14Z
 build:dossiq:task-side-history-in-words	already done: tasks 1.1-1.2 on development; only live check 1.3 left	session-20261116T105557-2fdfe8f3	2026-11-16T11:18:44Z
 merge:filinq:2072:a0472251	merge3 tree of 5 filinq PRs: merged=1 red=0 fail=0 skip=0; conflict 4, lint 0, moved 0; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-16T11:18:46Z
+build:dossiq:termijn-notices-send	already done: code tasks 1.1-1.3 ticked and on development (f6ec1e4a5, #3334); only live check 1.4 left	session-20261116T105620-b2654149	2026-11-16T11:19:01Z
 build:dossiq:task-list-states-in-task-words	already done: config and vitest on development; only live check 1.3 left	session-20261116T105712-260c30d3	2026-11-16T11:18:58Z
