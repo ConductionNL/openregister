@@ -4603,8 +4603,14 @@ integriq	3574	538c9e9b698c603c89e9b0170b63111b23b946bd	SKIP	worker-14	GATE UNMEA
 buildiq	1583	cb1e01bf5bb8b6fa92d5ef01b0765ee06f7300e7	MERGED	worker-55	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.91 holds at 3.91
 buildiq	1596	1e0a4baa0fc45422fef22a990189036758d6d2d4	MERGED	worker-55	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.91 holds at 3.91
 filinq	2146	125367015109bfa4d1f15e4a1dfdb8e43786d232	MERGED	worker-03	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.06
+versioniq	691	ed265e00f936a4cd03193e2caceb769dc33e3d83	RED	merge3	GATE RED floor: overall: 4.98 -> 4.94; duplication: 5.17 -> 5.14; unit_complexity: 4.63 -> 4.60; unit_interfacing: 4.26 -> 4.14; module_coupling: 5.23 -> 5.12
+versioniq	711	052268bfdb66670183b89287e26285169f6e5fd9	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.97 holds at 4.04
+versioniq	725	b54e382d2163653db839916be9217d3ce4c24bac	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.97 holds at 4.05
+versioniq	738	001e5515422fab3a291488c691066cc4b0df3461	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.97 holds at 4.05
 decidiq	2170	8ede76a3788b7bf174d1eaf4ca42a7591d7e0f7b	RED	worker-16	GATE RED absolute floor: decidiq maintainability 3.76 after merge is below its floor 3.78
 shillinq	1899	040e84a6688a8492f5564b985c3fb974a41ea77b	SKIP	worker-08	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
 shillinq	2093	223f0cbe9550deaa3cf354df508127ec21961d27	SKIP	worker-08	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
 filinq	2094	7be3348d41cf88e9b402e4741381294ce12f0cbc	RED	worker-03	GATE RED checker floor: adrvalidator: pass -> warn; adrvalidator stars: 5 -> 3; score: 100 -> 97
+larpinq	1050	d2d372bb8b6fa72cf4753b520d003adb2fa6efd4	RED	worker-42	GATE RED checker floor: testcoderatio: warn -> fail; testcoderatio stars: 3 -> 2
 learniq	1167	2c125d9d5b87d633f53d9f8f8b96f8a909fc72d5	MERGED	worker-23	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 3.99
+shillinq	2096	a1c73fc3585457496a4d304afb02eaf6c25b0008	SKIP	worker-08	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
