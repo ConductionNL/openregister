@@ -17453,3 +17453,4 @@ merge:filinq:2122:f25c02ad	cloud tree of 1 filinq PRs: none; conflict 1, lint 0,
 verify:buildiq:1673:5d79d864	GREEN #1677; #1673 head 80b4573 is already on development (no verdict); vitest 4744 pass, PHP baseline unchanged	session-20261116T184841-a3bc3002	2026-11-16T19:41:49Z
 fix:opencatalogi:2679:16fe088f	conflict resolved, pushed e65a0507; merge lock held elsewhere, REVERIFY queued	session-20261116T190918-81e43f73	2026-11-16T19:42:07Z
 merge:versioniq:723:77687fec	failed: cm_tree base exit 2: versioniq development installs no vendor/bin/phpunit (phpunit missing from composer require-dev), suite cannot run; nothing landed	session-20261116T184841-a3bc3002	2026-11-16T19:42:17Z
+review:opencatalogi:2655:eecf9130	already merged: eecf9130 is on development (merge f0141ca6)	session-20261116T190918-81e43f73	2026-11-16T19:42:34Z
