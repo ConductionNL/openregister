@@ -15897,6 +15897,7 @@ lane:arch5:pipelinq:pipelinq-k	PR pipelinq #3884 opened at 72197b6e (already con
 fix:portaliq:1856:9258525b	failed: design conflict, not textual: development already ships co-sign T04 (PortalCosignFlow, awaiting-cosign queue state, CosignDeadlineJob, CosignPage) per its REQ-RIF-003; this PR replaces it with the decision-271 design (case created at once, intakeObligations) and rewrites the spec; picking one needs an owner decision, 17 files conflict	session-20261116T084920-18fd4376	2026-11-16T08:53:06Z
 fix:dossiq:5338:4924e28d	conflict resolved, pushed 4d53d9bb (tests/phpcs/phpstan green on the touched file); merge lock held elsewhere, REVERIFY written	session-20261116T074147-edb7c708	2026-11-16T08:53:06Z
 fix:dossiq:3199:dd09a728	merged development in, new head 53d908ab; lock busy, REVERIFY queued	session-20261116T084528-6b5f71dd	2026-11-16T08:53:16Z
+merge:shillinq:1904:88a5d388	failed: development fails the checker floor (spdxheaders 5->4) until #3109 lands; every PR would gate RED	session-20261116T082955-f4213879	2026-11-16T08:53:30Z
 fix:dossiq:5396:861d4d0a	conflict resolved, pushed cc232d59; REVERIFY recorded (merge lock held elsewhere); dev-only bump will hit the sbom lock-without-sbom rule	session-20261116T082121-c1741fb9	2026-11-16T08:53:35Z
 lane:ormig:larpinq:leftover	already done: namecheck on development 412dbade shows no BREAK; 2 REVIEW-positional (saveObject/deleteObject in RegisterObjectFetcher) already use main's option objects; prs=none	session-20261116T084455-5dfa31c7	2026-11-16T08:53:56Z
 lane:depbundle:learniq:bundle	opened #2561 (11 updates, verified); merge lock held elsewhere, GREEN verdict queued	session-20261116T083627-a5dc872b	2026-11-16T08:53:57Z
@@ -15908,9 +15909,18 @@ lane:depbundle:pipelinq:land	verified #3882 at b1c037ef (no new failures vs deve
 review:larpinq:1050:48b34820	GREEN: PHP 999 ok, vitest 608 ok	session-20261116T082637-06597b03	2026-11-16T08:55:37Z
 fix:portaliq:1353:dc6ca37d	failed: dev-only bump (phpmd require-dev); regen-sbom --check says sbom.cdx.json is current (921 components) and regeneration changes nothing, so the gate's 'lockfile changed without sbom.cdx.json' rule cannot be met without an artificial edit; needs a gate exemption for dev-only lock changes	session-20261116T085141-f326990f	2026-11-16T08:55:57Z
 fix:portaliq:1766:23513ec0	sbom regenerated, pushed 931554ac; merge lock busy, REVERIFY queued	session-20261116T085112-b61e5d15	2026-11-16T08:55:53Z
+fix:dossiq:3954:bf91e1b8	conflict resolved, pushed 7af4262b; merge lock busy, REVERIFY queued	session-20261116T084851-92549055	2026-11-16T08:56:05Z
 fix:portaliq:1673:06264bd1	merged development, manifest l10n conflict resolved keeping both strings, pushed 574c1672; REVERIFY recorded (merge lock busy)	session-20261116T082353-191a2dc3	2026-11-16T08:56:13Z
 fix:portaliq:1768:5560c998	sbom regenerated, pushed 73711bf0; lock busy, REVERIFY queued	session-20261116T084536-1bd0bd69	2026-11-16T08:56:25Z
 review:opencatalogi:1888:3c646648	GREEN: no new failures (5762 tests, 106 inherited); behaviour matches the archived specs	session-20261116T084906-c933b95f	2026-11-16T08:56:43Z
 fix:launchpad:760:091c4dbf	no conflict on development alone; REVERIFY at same head (landing blocked by inherited checker floor)	session-20261116T081705-6c8f795b	2026-11-16T08:57:01Z
 lane:ormig:hermiq:leftover	closed #1324 and #1319 as obsolete (development already matches main's searchObjectsPaginated/processMessage); namecheck: 0 real BREAKs, no names PR needed	session-20261116T084847-50980336	2026-11-16T08:57:12Z
 fix:shillinq:3078:3eccef84	fixed: unit_interfacing drop (appointmentsAnswer payload) and inherited spdx stub header, pushed c1655bb8; lock held elsewhere, REVERIFY recorded	session-20261116T083044-10866b36	2026-11-16T08:57:16Z
+fix:portaliq:2530:55e242b9	development merged in, clean; new head 23908dc9, REVERIFY queued (merge lock busy)	session-20261116T084700-3a1a7351	2026-11-16T08:57:24Z
+review:versioniq:736:40fa5a89	GREEN: unit 1987 tests, only 2 inherited failures; vitest 3022 pass	session-20261116T084459-8070a613	2026-11-16T08:57:31Z
+fix:portaliq:1765:065fabf8	sbom regenerated, pushed 582e2f29; merge lock held, REVERIFY queued	session-20261116T083627-a5dc872b	2026-11-16T08:57:46Z
+review:learniq:1881:fffa1128	GREEN: suite 6871, 1 inherited failure, none new	session-20261116T084600-33f35544	2026-11-16T08:57:57Z
+review:filinq:2103:cd98f739	GREEN: matches change specs, gates clean, unit 6851 OK	session-20261116T080103-dd70aeff	2026-11-16T08:58:05Z
+fix:launchpad:763:68f98712	no change needed: branch up to date with development, package conflict tree-only; REVERIFY recorded (merge lock busy)	session-20261116T082353-191a2dc3	2026-11-16T08:58:25Z
+fix:portaliq:2349:b92b6364	merged development in, sbom current, phpstan unchanged vs 2.3.1; new head e7812cc2, REVERIFY queued (merge lock held)	session-20261116T084920-18fd4376	2026-11-16T08:58:57Z
+review:opencatalogi:2643:adb68bca	GREEN: spec-conform, 0 new failures (106 inherited), jest 74/74	session-20261116T084755-b37f1e99	2026-11-16T08:59:08Z
