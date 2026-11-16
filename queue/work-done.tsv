@@ -16908,3 +16908,4 @@ review:shillinq:2230:e61ebeb7	GREEN: babel dev-dep bump, vitest 3030/3031 (1 inh
 build:shillinq:sales-usage-billing	deferred: shillinq has 81 open PRs	session-20261116T172806-3ef5ead7	2026-11-16T17:44:03Z
 build:shillinq:public-sector-quarterly-returns	deferred: shillinq has 81 open PRs	session-20261116T172806-3ef5ead7	2026-11-16T17:44:11Z
 fix:learniq:2555:df653e98	fixed inherited SPDX drop (stub header) + merged development; new head 20db188505, REVERIFY queued (merge lock held elsewhere)	session-20261116T171010-393e4bc2	2026-11-16T17:44:42Z
+build:shillinq:budget-known-costs	already done: built on development in #967; only the e2e run (not code) is left	session-20261116T173227-3f62e794	2026-11-16T17:44:55Z
