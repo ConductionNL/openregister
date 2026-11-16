@@ -3975,3 +3975,4 @@ launchpad	755	f41902ffc1787ffe4a7d70ba97ae5a49187f10dc	RED	worker-09	GATE RED ch
 portaliq	1997	46fd8f94d573383ea70b908b05bcaba3b33882cd	SKIP	worker-32	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
 larpinq	1065	b4cd6229bc8a4c76e19474e9d716e4c5b905e373	SKIP	worker-17	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
 shillinq	2099	6c67d88f51230e7a739e0e623d9a88cfb1ac525e	RED	worker-20	GATE RED checker floor: spdxheaders stars: 5 -> 4
+filinq	1355	1ed49fc431d3180365afb6b981791604eea7f243	RED	worker-11	GATE RED sbom: composer.lock changed without sbom.cdx.json
