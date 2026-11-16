@@ -17224,3 +17224,4 @@ verify:learniq:2557:21cab0f2	2557 GREEN, 2559 CONFLICT, 2562 GREEN; no new failu
 review:opencatalogi:2679:16fe088f	GREEN: no new failures (5869 tests, baseline 80 inherited)	session-20261116T184852-b8356331	2026-11-16T18:55:04Z
 fix:learniq:2555:20db1885	inherited: development c960466e alone measures 3.98 < floor 3.99; PR touches only composer.lock, sbom and a test stub	session-20261116T184945-c098409e	2026-11-16T18:55:18Z
 review:dossiq:6203:f6392408	GREEN: tests only, suite 18414 OK on merged tree	session-20261116T184655-77bda400	2026-11-16T18:55:17Z
+verify:decidiq:2227:ed9602aa	GREEN 2227, GREEN 2228; tree 4638 tests, 0 new failures	session-20261116T184836-f6622adb	2026-11-16T18:55:50Z
