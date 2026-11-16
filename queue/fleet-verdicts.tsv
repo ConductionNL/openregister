@@ -14408,3 +14408,4 @@ shillinq	3055	faf02682118d7f626db6c613f33227f837889737	RED	worker-16:merge-gate	
 shillinq	3062	92f7ebcabee910b133253367fa8bd61c59485c77	REVERIFY	worker-16:merge	verdict sha is not the head: head is faaae73e234727476b1a3a73e75779e41d5d05a1
 shillinq	3080	5b6628bedaef904a02c0e1f497655def4909ac35	REVERIFY	worker-16:merge	verdict sha is not the head: head is cb96e451755a868ae8ce0e556a51cea3dd856dab
 versioniq	721	2524b722d51434a114c0f942019fae2eb306a81b	RED	worker-14:merge-gate	GATE RED floor: unit_complexity: 4.63 -> 4.61; module_coupling: 5.23 -> 5.20
+shillinq	1991	29abf7fb303a9a25601637bfbbaecaeb9a1feae7	REVERIFY	worker-45	spdxheaders red is inherited from development (stub header dropped by 0d688ca2f), fixed in #3112; no change to this branch; new head 29abf7fb303a9a25601637bfbbaecaeb9a1feae7, verify it after #3112
