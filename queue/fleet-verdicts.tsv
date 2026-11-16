@@ -14306,3 +14306,4 @@ stackiq	1978	315e616b2d61a4366c9527185a4c1dfeab77a8f0	RED	worker-19:merge-gate	G
 stackiq	1930	e29285ec856ff1804b5a98923ff0153fd1686c37	CONFLICT	worker-19:merge	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Settings/softwarecatalogus_register.json 
 portaliq	663	6dc142e054f417065f264200584adb1c807aa348	BLOCK	worker-57:review	review: Standard; blocker: register info.version 0.120.0->0.121.0 raised without raising appinfo/info.xml <version>, so existing instances never import the allowSlugFallback property (gate-120 on lines this PR changed); concerns: none on the resolver change (default true keeps behaviour, collector-only)
 shillinq	2092	e2044223414ef221e48a27d8ca2ed1756e842312	RED	worker-49:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
+shillinq	2098	93d83382d296a2cfda1bed9d43188bd4d9961678	RED	worker-49:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
