@@ -16375,3 +16375,4 @@ fix:hermiq:1578:c7adfb00	no change needed: merges clean on development; REVERIFY
 fix:integriq:3047:261ea2e5	fixed: SPDX header on new stub, pushed 75eb55fe; REVERIFY queued (merge lock held elsewhere)	session-20261116T105334-a341eb02	2026-11-16T11:25:14Z
 merge:keepiq:1497:6b1efefa	unmeasured: static.developer.overheid.nl (1500); 1497 RED sbom: composer.lock changed without sbom.cdx.json	session-20261116T101039-34d7071f	2026-11-16T11:25:44Z
 merge:integriq:2924:43759d18	unmeasured: static.developer.overheid.nl (3574, 3589); cloud tree of 9 integriq PRs: merged=0 red=2 fail=0 skip=3; moved 4	session-20261116T104954-a428a9fd	2026-11-16T11:26:16Z
+fix:integriq:3612:0000c176	fixed floor (3.55 -> 3.56), pushed 27e3d6e6; merge lock held elsewhere, REVERIFY queued	session-20261116T105550-e90eeee3	2026-11-16T11:27:08Z
