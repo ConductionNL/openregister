@@ -15434,3 +15434,7 @@ fix:decidiq:2222:2e518c37	fixed RED: mocked @nextcloud/axios in connectionRegist
 fix:shillinq:2411:871a57e5	failed: PR only switches to SettingsPlacement/SectionAppearance/AdminFormServices, still absent on openregister main 3800106b (only on its cloud/vox-generic-settings branch); nothing to fix in shillinq until that lands	session-20261116T062050-3a7e109c	2026-11-16T06:30:10Z
 review:dossiq:6203:5bb98561	GREEN: tests only, all pass	session-20261116T062126-9d7735e0	2026-11-16T06:30:32Z
 review:hermiq:1735:ca2c7585	RED: ListenerRegistrarTest expected listener list not updated for FlowRunTerminalListener	session-20261116T062140-6a300781	2026-11-16T06:30:41Z
+merge:filinq:1305:546ae578	stale	feeder	2026-11-16T06:30:11Z
+merge:filinq:1086:2e3a35fc	stale	feeder	2026-11-16T06:30:11Z
+merge:filinq:1430:dda99a0a	stale	feeder	2026-11-16T06:30:11Z
+verify:pipelinq:3882:5e672c7f	stale	feeder	2026-11-16T06:30:11Z
