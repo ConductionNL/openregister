@@ -15475,3 +15475,4 @@ review:stackiq:1941:3f74a899	GREEN: PHP unit 3742 OK, phpstan clean, vitest 1 in
 review:shillinq:2070:b00d1ffe	BLOCK: tightens block/release permissions beyond spec (payment.block matrix + four-eyes); tests green	session-20261116T062050-3a7e109c	2026-11-16T06:37:37Z
 merge:buildiq:1624:d2e95ae7	merge8 tree of 20 buildiq PRs: merged=4 red=5 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 11	merge8-20261115T170007-37538273	2026-11-16T06:37:43Z
 fix:stackiq:1435:f9cb4c74	fixed stub autoload order; suite 3722, only inherited golden failure; new head 81fb6bd4	session-20261116T061736-e271ba12	2026-11-16T06:37:47Z
+merge:buildiq:1256:622a97b6	merge8 tree of 20 buildiq PRs: merged=4 red=5 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 11	merge8-20261115T170007-37538273	2026-11-16T06:38:01Z
