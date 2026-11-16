@@ -16838,3 +16838,4 @@ build:portaliq:own-contacts-and-invitations	already done: only live/e2e tasks le
 build:portaliq:card-status-today	already done: only live/e2e tasks left (1)	session-20261116T172806-3ef5ead7	2026-11-16T17:32:47Z
 build:portaliq:password-reset-from-the-sign-in-page	already done: only live/e2e tasks left (2)	session-20261116T172806-3ef5ead7	2026-11-16T17:32:54Z
 review:shillinq:3088:21646560	stale	session-20261116T165351-3ccaad0e	2026-11-16T17:33:46Z
+build:portaliq:mandated-case-offers-no-writes	already done: code task T1 ticked on development; T2 is a live check, left	session-20261116T170823-40772b73	2026-11-16T17:33:26Z
