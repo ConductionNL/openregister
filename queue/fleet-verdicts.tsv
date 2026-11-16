@@ -15967,5 +15967,6 @@ learniq	2533	adbae3b0cb1c6df378db735c449288dcc7091c70	CONFLICT	worker-57	merge o
 learniq	2497	c85c59131ff95ca94a1b6a84d4175a6a8da8d545	CONFLICT	worker-17	conflicts with development in l10n/en.js,en.json,nl.js, lib/Settings/learniq_register.json
 larpinq	1055	3553b217084367d6f7078f260cc8ebae9f7a722d	CONFLICT	worker-48	conflicts with development in l10n/*.js/json (all locales); baseline 1120 tests OK, 20 skipped
 launchpad	761	ca2815b851deb1969d5b23ac0c29185819391d2e	CONFLICT	worker-41	conflicts with development (package-lock/package.json/sbom); tree not run
+launchpad	1217	edcbef17e9264918bc3f67df8dd4bd791f15c768	CONFLICT	worker-41	conflicts with development in tests/Unit/Service/TileUpdaterTest.php; tree not run
 launchpad	1219	da16c5dfecd1f4e40902aa5c9b009ae6af38ac60	CONFLICT	worker-21	merge conflict with origin/development in l10n/*.js and l10n/en.json; suite not run
 learniq	2536	a9efa8960e7474a2c8c1d4318ff0e00a68108d62	CONFLICT	worker-33	conflicts with development 9f16d123 on its own: appinfo/routes.php, l10n/en|nl.js|json, lib/Service/ContractBindings.php, lib/Settings/learniq_register.json, lib/Settings/profiles/mbo.json and more; baseline 6966 tests, 1 failure
