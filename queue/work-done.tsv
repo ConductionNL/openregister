@@ -17585,3 +17585,4 @@ lane:scan5:versioniq:scan-1	versioniq (development a5ed6f03, rating 4.5): all cr
 fix:opencatalogi:2699:3dfb66bd	conflict resolved, pushed d316a20b; merge lock busy, REVERIFY queued	session-20261116T200630-ff5921fe	2026-11-16T20:10:15Z
 merge:shillinq:2991:ce6148a7	cloud tree of 3 shillinq PRs: none; conflict 3, lint 0, red 0, moved 0, done 0	session-20261116T195830-617c8479	2026-11-16T20:10:33Z
 fix:shillinq:1900:0046f1c5	fixed: development merged in, conflicts resolved, tests moved to LifecycleActionContext; unit 12272 OK; not landed (shillinq merge lock held), REVERIFY at 7f46ac64	session-20261116T190656-a33397e6	2026-11-16T20:11:11Z
+fix:filinq:2122:e57f317b	merged development in (conflicts resolved), restored the dropped repair registration, raised app version, added @spec tags; new head d9cac23f, review REQUEST_CHANGES: component-independence floor 94.4->93.9, BLOCK stands	session-20261116T195844-a81a321a	2026-11-16T20:11:40Z
