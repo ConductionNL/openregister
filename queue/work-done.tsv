@@ -18278,3 +18278,4 @@ cover:dossiq:069ee2d6m9d1b:682b3e74	added 15 tests (ReadsRegisterShards, ColumnM
 cover:decidiq:a5f973bbm56fe:aae6d66c	deferred: decidiq has 46 open PRs	session-20261116T224608-d6967eb8	2026-11-16T23:08:56Z
 cover:decidiq:a5f973bbm56fe:c76ae287	deferred: decidiq has 46 open PRs	session-20261116T224608-d6967eb8	2026-11-16T23:09:06Z
 review:launchpad:1229:e2a90392	GREEN: scheduled-exports build; PHP 4574 green, vitest 2616 green	session-20261116T222416-013d48d6	2026-11-16T23:10:07Z
+cover:decidiq:a5f973bbm56fe:81b1241f	already done: lib/Portal/*.php 246/246 lines covered at development aaedbb43 (46 tests green); nothing to add	session-20261116T230818-aebff84c	2026-11-16T23:10:14Z
