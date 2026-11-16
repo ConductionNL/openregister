@@ -4147,3 +4147,5 @@ hermiq	1189	4990197f996880aaa0b623dab850d64ee4bed3be	SKIP	worker-52	GATE UNMEASU
 hermiq	1739	103d88e1dcaf83fab76c8bff7c042ffc6011ff37	SKIP	worker-52	no APPROVE review at this head
 filinq	2088	e12aae2153239817f28019c88621877492bb8145	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.06
 thematiq	1303	550d277c14273dd3b9908587fb0804741182805c	SKIP	worker-46	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
+integriq	3059	4bb36a6bc436d992b2b565e72bed42cea5b16c1d	RED	worker-47	GATE RED sbom: composer.lock changed without sbom.cdx.json
+thematiq	1677	ad0dd3b79a1e6abfd5d6c936f121fbe770b01fba	SKIP	worker-46	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
