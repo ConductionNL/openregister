@@ -24,3 +24,6 @@ launchpad	819	c5c80a07dc500fcc4e5064cd5126241a9f4bf32a	APPROVE	worker-12	Quick; 
 launchpad	1098	08b6144744978ee052f69f5452afa076f8d9d101	APPROVE	worker-12	Quick; no blockers; dev-only phpstan 2.3.5 with sbom regen
 thematiq	1303	550d277c14273dd3b9908587fb0804741182805c	APPROVE	worker-17	Thorough (>500 lines; token data, docs, goldens, font alias, no lib code); no blockers; all 22 applicable gates green, token-sets suite 425 OK on tree, contrast misses are upstream theme values and documented in the PR
 thematiq	1677	ad0dd3b79a1e6abfd5d6c936f121fbe770b01fba	APPROVE	worker-17	Thorough (88 files, build of token-references-stay-live); no blockers after adding the missing @spec on TokenReference::to() (ad0dd3b); references still pass the injection guard first, unknown targets and cycles refused, dark path consistent; concern: class-level @spec phpcs warning
+humaniq	606	647da215609758b6eb51cbe1182861a618182015	APPROVE	worker-53	Quick; no blockers; composer.lock minor bumps (twig) with regenerated sbom
+humaniq	661	f523f286b290dfce227eab0ee9bb36a5418b4a2b	APPROVE	worker-53	Quick; no blockers; babel 7->8 major and webpack-vue-config bump; concern: frontend build not exercised in this review
+humaniq	662	d7499aecffd3be7525553af3896068e429d61751	APPROVE	worker-53	Quick; no blockers; phpmd 3 with baseline rules renamed to phpmd 3 class names
