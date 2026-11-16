@@ -14962,3 +14962,4 @@ hermiq	1754	69e02cc70605b287770a0f70358780f4a4861b6e	CONFLICT	merge3	merges clea
 hermiq	1756	1435f079d583e686b6e7ec8e72ce6afffc294aa8	CONFLICT	merge3	merges clean on development alone; files: tests/Unit/Mcp/HermiqToolProviderTest.php 
 hermiq	1788	4b1ae86bee2c04b094c9cb095a83c09c2d88eaef	CONFLICT	merge3	merges clean on development alone; files: src/registry.js 
 hermiq	1807	36283a373892b12aa856fdc7b1b4420cdec74781	CONFLICT	merge3	conflicts with development; files: composer.lock 
+versioniq	691	ed265e00f936a4cd03193e2caceb769dc33e3d83	GREEN	worker-12:review	build of autoupdate-security-first, matches its specs; no stored patch policy keeps the previous planning; new endpoints admin-only and password-confirmed with audit; unit 2025 tests vs 1957 baseline, same 2 inherited installer golden failures, 0 new; vitest 19/19; eslint 0 errors
