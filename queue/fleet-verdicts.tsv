@@ -13874,3 +13874,5 @@ shillinq	3108	fe9440d799669c12ee9909da8731f6d24a77c3d1	REVERIFY	worker-56	nextcl
 stackiq	1941	3f74a8991865e4e8d466edb216ef9d7cc740dee0	BLOCK	worker-23:review	review: Thorough; blocker: spec-coverage gate fails on a method the PR added (src/components/merge/MergedRecordBanner.vue handler has no @spec); concerns: none on access, Find duplicates hint mirrors the sync admin rule, MergeObject removal is in the change
 launchpad	763	ac59f2930cb25b439f9fdffbe39af0aa2b8b0f7e	REVERIFY	worker-17	merged development in (clean), regenerated sbom.cdx.json with regen-sbom.sh (681 components), vitest 2578 OK; new head 68f987122bfeea56f4ce89310f71d3de850ab6e2, verify it
 launchpad	653	7dd62332f078073df03444ab4c6c6b1f2c66f246	REVERIFY	worker-04	merged development in, regenerated sbom.cdx.json (regen-sbom --check current); vitest 2578 passed; new head e8ad33b0e8cc3a33b0f4bff70c3a14da6a5cccbd, verify it
+stackiq	1417	603fa7bc772b26911bf07fedbd31ca5ff45303ee	RED	worker-23:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
+stackiq	1438	382aa36aab68ee72bcc38e311b8dcd92b0c081f4	RED	worker-23:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
