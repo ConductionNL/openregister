@@ -4654,3 +4654,4 @@ shillinq	3088	e27bd6329f98217f15c1b5e5b6ba3a1c9b954ed6	MERGED	worker-51	GATE OK 
 opencatalogi	2655	eecf91309acb9a06e7fc66bc1bcc0c01e7a00cf9	MERGED	worker-57	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.51
 shillinq	3109	95bf71e1b5b49d1ade835e3ae9eb2b94df7af954	MERGED	worker-51	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.03
 humaniq	1164	d6e3f06686ecdc75a4797451f379feb485d62f56	MERGED	worker-33	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.47 holds at 3.47
+integriq	2716	6edb6eeaafff98e0aa865e39475b0c55f4f9ce02	MERGED	worker-50	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
