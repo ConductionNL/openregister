@@ -18474,6 +18474,7 @@ verify:keepiq:1829:9b528e45	CONFLICT: #1829 composer.lock conflicts with develop
 verify:launchpad:1218:a8711f00	CONFLICT #1218 (l10n, admin settings, tile code)	session-20261116T232623-066b53c9	2026-11-16T23:55:20Z
 verify:opencatalogi:2706:03bd33eb	CONFLICT: #2706 vs development in l10n, PublicationsController, manifest, PublishedTableServiceTest	session-20261116T232911-3dffa1ae	2026-11-16T23:55:33Z
 verify:opencatalogi:2654:98398fa4	CONFLICT #2654 (DcatService, l10n, tasks.md)	session-20261116T233901-7abe1a78	2026-11-16T23:55:46Z
+verify:learniq:2518:1c67710b	CONFLICT: learniq_register.json, OpenLearningMaterialRegisterTest.php vs development	session-20261116T232925-45c70e73	2026-11-16T23:56:17Z
 verify:learniq:2523:470fe891	CONFLICT #2523 (portal, register, l10n)	session-20261116T232623-066b53c9	2026-11-16T23:56:30Z
 verify:launchpad:1239:91355d38	CONFLICT #1239 (package-lock.json, sbom.cdx.json)	session-20261116T232918-35016340	2026-11-16T23:56:42Z
 verify:hermiq:1751:7910efb6	CONFLICT: l10n/en.js l10n/en.json lib/Settings/hermiq_register.json (on development bbead49a)	session-20261116T224609-c0ad2be4	2026-11-16T23:56:54Z
@@ -18481,3 +18482,9 @@ verify:integriq:3582:1a80d4e9	CONFLICT: routes.php, l10n, openapi.json, src/* vs
 verify:integriq:3631:b8cfb722	CONFLICT #3631 (l10n)	session-20261116T232923-e93e6b40	2026-11-16T23:57:05Z
 verify:launchpad:760:381968d2	CONFLICT 760 (package-lock.json, sbom.cdx.json)	session-20261116T232406-b9eb038c	2026-11-16T23:57:21Z
 verify:opencatalogi:2683:b7fb1366	CONFLICT #2683 (l10n, tasks.md)	session-20261116T233901-7abe1a78	2026-11-16T23:57:29Z
+verify:pipelinq:3718:0a80e9c1	CONFLICT #3718 (DealUpdatedListener, ForecastDealService, l10n)	session-20261116T232623-066b53c9	2026-11-16T23:57:46Z
+verify:opencatalogi:2671:78e38071	CONFLICT #2671 (10 files)	session-20261116T233901-7abe1a78	2026-11-16T23:58:02Z
+verify:launchpad:1216:f8adb1a6	CONFLICT #1216 (15 files; change may already be on development)	session-20261116T232951-07569878	2026-11-16T23:58:13Z
+verify:learniq:2538:ba86b4ad	CONFLICT #2538 (4 files conflict with development)	session-20261116T233050-d0df160f	2026-11-16T23:58:29Z
+verify:launchpad:1227:40a50cad	1227 CONFLICT	session-20261116T230531-f9095b0f	2026-11-16T23:58:33Z
+verify:opencatalogi:2685:434bb906	CONFLICT #2685 (Sitemap*, l10n)	session-20261116T233901-7abe1a78	2026-11-16T23:58:46Z
