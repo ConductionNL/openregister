@@ -15975,3 +15975,4 @@ launchpad	819	c5c80a07dc500fcc4e5064cd5126241a9f4bf32a	GREEN	worker-38	dev-dep p
 learniq	2534	097afa2d9090610d05c97d2c2e116aeeed835108	CONFLICT	worker-27	conflicts with development in l10n/en.js,en.json,nl.js,nl.json, lib/Service/ContractBindings.php
 learniq	2519	644c2a7995dd39085b6e8c57a462495226c6efec	CONFLICT	worker-17	conflicts with development in l10n/en.js,en.json,nl.js, tests/Unit/Portal/golden/PortalManifests.json
 opencatalogi	2665	fbbdb9b4979ec70fcf42d330b65402fe8dd25534	CONFLICT	worker-32	conflicts with development in 20 files (l10n, Catalogi/FederationController, DcatSerializer, SettingsService, src/main.js, manifest, settings views, their tests); baseline 6066 tests, 103 inherited failures/errors; PR not tested
+opencatalogi	2684	8f4a54a3fb21e0dbf759ace3f6058ff85231177d	CONFLICT	worker-41	conflicts with development in 12 files (info.xml, l10n, ThemesController, ListenerRegistrar, PublicationQueryService, openapi, tasks.md); tree not run
