@@ -13917,3 +13917,6 @@ filinq	2103	b650ff7b57b52c19feacacaac0f0195e9c840702	CONFLICT	worker-23:merge	me
 filinq	2114	78a005c251fc9ce1db35ba012ea58f6d6ef2b57c	CONFLICT	worker-23:merge	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Settings/filinq_register.json openapi.json 
 filinq	2121	f68451461865f69a04d35fe4a91e26660fc5d21d	CONFLICT	worker-23:merge	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Settings/filinq_mock_register.json lib/Settings/filinq_register.json openapi.json 
 filinq	2122	d654b8fcba601f860babc8f6d2884726c44db10a	CONFLICT	worker-23:merge	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Settings/filinq_register.json openapi.json 
+opencatalogi	1889	a5e55a557ee338785dc600d83abef5e2ce111343	RED	worker-13:merge-gate	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+opencatalogi	2059	fa65b8475bfd5a1fc55c6e7914ca1801c99dc08e	RED	worker-13:merge-gate	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+opencatalogi	2244	9178373d320ba947d116220fe88c0cd71550e833	RED	worker-13:merge-gate	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
