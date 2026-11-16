@@ -13632,3 +13632,4 @@ learniq	2484	32d622462227e6ad1f4572cc2952b0a8f7745327	BLOCK	worker-34:review	New
 planninq	726	78fcfabe93c1baa19096da91a1eb939748cc973d	CONFLICT	merge8	conflicts with development; files: package-lock.json package.json 
 planninq	930	de4742c6a813a35b678d5f21fe5c3bc7264b5c69	CONFLICT	merge8	conflicts with development; files: lib/Service/ProjectActionService.php 
 planninq	933	cb3692d7f8cfa9c3eac2fdc92e4305c701b8844c	CONFLICT	merge8	conflicts with development; files: lib/Service/ProjectActionService.php 
+portaliq	1673	06264bd1ad0f4bd56492113372cd7931d8432f6f	GREEN	worker-37:review	Additive stateRank field written with every state write, repair backfill (main ObjectSaveOptions API, matches openregister main), manifest sort+overline; tenant scope checks unchanged; unit 6181 tests, same 16 inherited errors as baseline 6178 (missing OpenRegister RefIntegrationProvider); new repair/service tests pass
