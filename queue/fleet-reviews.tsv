@@ -323,3 +323,4 @@ integriq	3574	65269c9d780b25ea93f59787282d50a6c5cfc4bc	APPROVE	worker-47	Strict;
 integriq	3589	604f71b58f00c5374d10fbc294fa81af37cfabe5	APPROVE	worker-47	Strict; no blockers; builds platform-connector-extension-kit per spec, built-in providers cannot be replaced by extensions; new path-filtered read-only CI workflow for the example kit
 keepiq	1497	2b0710543667991b1ee7fc988e0d48840735e484	APPROVE	worker-37	Quick; no blockers; phpstan 2.3.4->2.3.5 dev-dependency patch bump, lockfile only
 integriq	3595	60111a1cbeeab82e205393bd750ca75566d963aa	APPROVE	worker-47	Thorough; no blockers; builds sources-route-distance-and-rdw-lookup per spec, seeded sources dormant, calls limited to declared+linked connections, GET/POST, path kept below source
+keepiq	1500	56b81f7c398f2a09052673c885856a1acedc90dc	APPROVE	worker-37	Quick; no blockers; phpseclib 4.0.2->4.0.3 patch bump with regenerated SBOM
