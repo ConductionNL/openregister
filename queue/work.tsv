@@ -17113,3 +17113,7 @@ build:pipelinq:segment-last-contact-signal:r2	build	pipelinq	development	segment
 build:pipelinq:simple-contact-dashboard:r2	build	pipelinq	development	simple-contact-dashboard	change=simple-contact-dashboard;open=1	2026-11-16T17:01:33Z
 build:pipelinq:simple-ticket-page:r2	build	pipelinq	development	simple-ticket-page	change=simple-ticket-page;open=1	2026-11-16T17:01:33Z
 build:pipelinq:tickets-list-by-party:r2	build	pipelinq	development	tickets-list-by-party	change=tickets-list-by-party;open=1	2026-11-16T17:01:33Z
+fix:hermiq:1754:69e02cc7	fix	hermiq	development	1754	sha=69e02cc70605b287770a0f70358780f4a4861b6e;verdict=CONFLICT;branch=quality/build-tools-browser-and-computer-use;reason=merges clean on development alone, files: tests/Unit/Mcp/HermiqToolProviderTest.php 	2026-11-16T15:38:17Z
+fix:hermiq:1756:1435f079	fix	hermiq	development	1756	sha=1435f079d583e686b6e7ec8e72ce6afffc294aa8;verdict=CONFLICT;branch=quality/build-tools-post-a-talk-message;reason=merges clean on development alone, files: tests/Unit/Mcp/HermiqToolProviderTest.php 	2026-11-16T15:38:17Z
+fix:hermiq:1788:4b1ae86b	fix	hermiq	development	1788	sha=4b1ae86bee2c04b094c9cb095a83c09c2d88eaef;verdict=CONFLICT;branch=quality/build-skills-curator-merges-duplicates-c2;reason=merges clean on development alone, files: src/registry.js 	2026-11-16T15:38:17Z
+fix:hermiq:1807:36283a37	fix	hermiq	development	1807	sha=36283a373892b12aa856fdc7b1b4420cdec74781;verdict=CONFLICT;branch=chore/fleet-shared-deps-20261116;reason=conflicts with development, files: composer.lock 	2026-11-16T15:38:17Z
