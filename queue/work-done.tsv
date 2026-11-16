@@ -15609,3 +15609,4 @@ fix:stackiq:1924:62eff96d	failed: spdxheaders scorer not available in cloud; eve
 review:buildiq:1620:ff3f376b	BLOCK: one new eslint sort-imports error in FormFieldBuilder.vue; behaviour per spec	session-20261116T062120-7c38c5f1	2026-11-16T07:09:32Z
 merge:keepiq:1499:a68f163d	failed: keepiq development 317cf090 fails its own checker floor here (opensourcehealth 4->3: proxy refuses api.osv.dev), every PR would be gate RED	session-20261116T063134-3a4fc8af	2026-11-16T07:09:53Z
 review:stackiq:1965:db980e34	GREEN: no new failures, specs-conformant build	session-20261116T065640-54a747b9	2026-11-16T07:10:09Z
+merge:decidiq:1470:112c796a	cloud tree of 1 decidiq PRs: merged=0 red=0 fail=0 skip=1; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T070226-5d062725	2026-11-16T07:10:22Z
