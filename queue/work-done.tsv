@@ -16013,3 +16013,4 @@ review:pipelinq:2969:23b177e5	GREEN: frontend phone search; vitest 1 inherited f
 lane:ormig:integriq:migrate	PR #3671 opened at 18d443b4, suite = development baseline; merge lock busy, GREEN verdict queued for merge	session-20261116T084851-92549055	2026-11-16T09:20:30Z
 review:portaliq:1767:171143de	GREEN: dev-dependency bump, build ok, node specs 2696/2702 pass, 4 failures inherited from development	session-20261116T091541-9e19ce49	2026-11-16T09:20:51Z
 review:portaliq:2349:e7812cc2	GREEN: lock-only bump, suite and phpstan equal to baseline; sbom not regenerated (covered by bundle #2531)	session-20261116T084851-6e832488	2026-11-16T09:21:07Z
+gap:filinq:opensourcehealth:21f468cf	failed: not a gap-sized fix; the 3-star rating is held by Activity 2 stars (upstream maintenance of transitive deps, 42% inactive >1y) which no in-app change lifts; needs the L dependency-replacement sweep (GAP-QUEUE row 16)	session-20261116T091324-bb324ce0	2026-11-16T09:21:17Z
