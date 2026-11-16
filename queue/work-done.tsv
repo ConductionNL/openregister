@@ -16553,3 +16553,4 @@ fix:opencatalogi:2696:e3f1409d	conflicts resolved, no new failures, pushed 08865
 merge:versioniq:497:853866ff	failed: cm_tree prep exit 2: versioniq keeps phpunit in vendor-bin/phpunit and composer bin install fails in the cloud, so no vendor/bin/phpunit	session-20261116T143636-9ede3f74	2026-11-16T15:09:25Z
 review:hermiq:1308:fa7ea701	GREEN: lock-only phpstan bump, no new failures	session-20261116T150749-2f742a8d	2026-11-16T15:10:07Z
 review:decidiq:1767:bc1df2c1	GREEN	session-20261116T144202-f2b26030	2026-11-16T15:10:44Z
+fix:decidiq:1469:09383bbc	failed: permission (recording APPROVE review of own fix refused); floor restored and pushed c712bd4b, tree green, REVERIFY queued	session-20261116T145220-87e5504e	2026-11-16T15:10:52Z
