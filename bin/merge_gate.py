@@ -195,13 +195,16 @@ def sbom(head, base):
     locks = [f for f in LOCKFILES if f in names]
     if not locks:
         return "OK", "no lockfile change"
-    if "sbom.cdx.json" not in names:
-        return "RED", f"sbom: {', '.join(locks)} changed without sbom.cdx.json"
+    # A lockfile change that touches only dev dependencies leaves the SBOM (built with --omit=dev) unchanged,
+    # so a head without an sbom.cdx.json change is judged by the check alone, not by the file list.
+    touched = "sbom.cdx.json" in names
     p = run(["bash", REGEN, "--check", head])
     _, last = tail(p)
     if p.returncode == 0:
-        return "OK", last
+        return "OK", last if touched else f"{last} (unchanged by {', '.join(locks)})"
     if p.returncode == 1:
+        if not touched:
+            return "RED", f"sbom: {', '.join(locks)} changed without sbom.cdx.json"
         return "RED", "sbom: sbom.cdx.json does not match " + ", ".join(locks)
     return "UNMEASURED", f"regen-sbom exit {p.returncode}: {last}"
 
