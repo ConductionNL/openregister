@@ -16419,3 +16419,4 @@ merge:hermiq:1736:a289e43b	unmeasured: static.developer.overheid.nl (tree 3 IN, 
 fix:larpinq:1060:9f9d2d55	unmeasured: static.developer.overheid.nl (conflict resolved, testcoderatio restored, new head 701044e6, APPROVE recorded, REVERIFY queued)	session-20261116T105426-4e0b8984	2026-11-16T11:44:40Z
 merge:learniq:1167:6583dc27	unmeasured: static.developer.overheid.nl (all 4 IN reviewed APPROVE, tree clean; 1881 and 2549 also gate RED on spdxheaders floor 5->4; 2561 CONFLICT)	session-20261116T101101-e7e34372	2026-11-16T11:44:48Z
 merge:hermiq:1807:e03b5038	unmeasured: gitdocumentatie.logius.nl (adr ruleset redirect target refused by the proxy; gate cannot measure hermiq)	session-20261116T105712-ca7768af	2026-11-16T11:45:37Z
+merge:hermiq:1293:5b216557	unmeasured: gitdocumentatie.logius.nl (adr ruleset redirect target refused by the proxy)	session-20261116T105712-ca7768af	2026-11-16T11:45:55Z
