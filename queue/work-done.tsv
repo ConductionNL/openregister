@@ -17626,6 +17626,19 @@ verify:planninq:1204:d4ce0b47	planninq #1204 GREEN (deps pin; phpunit 1232 ok, v
 build4:openregister:cross-app-semantic-references:c7	partial: nothing left to build in code; PR #10549 (4.1, 6.x) open, 4.3 needs a live instance, 5.x lives in nextcloud-vue	session-20261116T202229-ea7e3aab	2026-11-16T20:23:37Z
 cover:decidiq:a5f973bbm9cda:98083bbf	deferred: decidiq has 47 open PRs	session-20261116T195130-dbadc12c	2026-11-16T20:23:56Z
 verify:portaliq:2535:74c44cfc	GREEN #2535 (no new failures, 16 baseline errors)	session-20261116T202128-6be5fc02	2026-11-16T20:23:58Z
+verify:learniq:2567:56734df7	stale: #2567 head moved to 046431f2c	session-20261116T202147-7121aee7	2026-11-16T20:24:09Z
 cover:dossiq:069ee2d6m9d1b:33af3743	no change: lib/Service/Bezwaar/*.php already measures 99.7% (1559/1564 lines, pcov, suite 18752 tests, 19 inherited failures), above target 95; the 5 left are a readonly ctor and the decision-app-absent branch, unreachable while the bootstrap loads the event stubs	session-20261116T201835-c2c94090	2026-11-16T20:24:11Z
 review:pipelinq:3602:150e1963	GREEN: tests only, suite 9144 tests 0 failures	session-20261116T202142-f327703a	2026-11-16T20:24:45Z
 cover:pipelinq:7f9dc8e6m3dbb:e78626a8	already met: lib/Service/Marketing/*.php at 99.2% stmt coverage on development 934bb58c2 (target 95), 9136 unit tests green; no PR	session-20261116T202127-f6b983cc	2026-11-16T20:24:53Z
+cover:dossiq:069ee2d6m9d1b:b6fccd13	no change: lib/Service/Access/*.php already measures 98.70% (1219/1235 lines, pcov on current dossiq), above target 95	session-20261116T201835-c2c94090	2026-11-16T20:24:54Z
+verify:keepiq:1854:b0ec9348	GREEN #1854 #1855 (JS tests only; 3 inherited vitest failures in HealthReportView.controls)	session-20261116T200543-e8f76f14	2026-11-16T20:25:14Z
+review:shillinq:1900:7f46ac64	GREEN: shillinq #1900, unit 12272 OK (baseline 12257), no new failures	session-20261116T201628-7b6853de	2026-11-16T20:25:24Z
+merge:versioniq:722:79e3e090	cloud tree of 2 versioniq PRs: merged=1 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T200545-32ab46ec	2026-11-16T20:25:35Z
+verify:versioniq:747:b7301314	GREEN #747 (deps only; 2 env-only golden failures)	session-20261116T202128-6be5fc02	2026-11-16T20:25:46Z
+review:hermiq:1579:d717a45b	BLOCK: lock not installable (platform php 8.3 vs psalm 7.5 needs ~8.3.16)	session-20261116T202154-fbc59c50	2026-11-16T20:26:04Z
+build:pipelinq:marketing-articles-move-to-portaliq:c5	done: no code tasks left on PR #3835 (head c550a2ad); 4.2 waits on live repair report, 5.1/5.2 live/release checks	session-20261116T202128-6be5fc02	2026-11-16T20:26:19Z
+fix:shillinq:1899:040e84a6	fixed conflict + test API drift, pushed 65bdef77; merge lock held elsewhere, REVERIFY queued	session-20261116T201445-8cab6741	2026-11-16T20:26:34Z
+merge:keepiq:1852:30e67835	cloud tree of 2 keepiq PRs: merged=2 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T195835-1a6b6332	2026-11-16T20:26:44Z
+review:dossiq:6203:1eb428dc	GREEN: tests only; suite 18752 tests, 19 inherited failures, none new; vitest 13/13	session-20261116T202215-987ce878	2026-11-16T20:27:06Z
+merge:portaliq:1767:e8665e68	merge3 tree of 4 portaliq PRs: merged=2 red=2 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-16T20:27:14Z
+merge:hermiq:1735:6e89889b	cloud tree of 3 hermiq PRs: merged=0 red=0 fail=0 skip=1; conflict 1, lint 0, red 1, moved 0, done 0	session-20261116T201953-a718bf5e	2026-11-16T20:27:32Z
