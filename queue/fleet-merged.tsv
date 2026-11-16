@@ -4247,3 +4247,10 @@ decidiq	1767	ef20753cf5af14ce526904d1a06b54c59bfb59fc	SKIP	worker-55	GATE UNMEAS
 decidiq	1950	e876f7cecae4332eb0a07df3b2effe4dd9b06afb	SKIP	worker-55	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 decidiq	2178	32c0517191c436a3e329ce9775106b75847f3c8d	SKIP	worker-55	no APPROVE review at this head
 opencatalogi	2655	4b3298a0da1fe54e94d30ea4ed591a9f72fd716e	SKIP	worker-45	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
+decidiq	1468	7dc751fb076903e2e43ec5e7338bc901791d14a5	RED	merge3	GATE RED absolute floor: decidiq maintainability 3.77 after merge is below its floor 3.78
+decidiq	1469	09383bbcc1479f735f6f91b06b9eab2bc002c9b9	RED	merge3	GATE RED absolute floor: decidiq maintainability 3.77 after merge is below its floor 3.78
+decidiq	1470	d4e9a56bd03ff9b791d94f382e91a9560de24a53	RED	merge3	GATE RED absolute floor: decidiq maintainability 3.77 after merge is below its floor 3.78
+decidiq	1474	08a18331e7494f87957cc48a01384d4bdd132036	RED	merge3	GATE RED absolute floor: decidiq maintainability 3.77 after merge is below its floor 3.78
+decidiq	1691	d103222b2f9f51517c3c7de2194fc68cd4940546	RED	merge3	GATE RED absolute floor: decidiq maintainability 3.77 after merge is below its floor 3.78
+decidiq	1767	ef20753cf5af14ce526904d1a06b54c59bfb59fc	RED	merge3	GATE RED absolute floor: decidiq maintainability 3.77 after merge is below its floor 3.78
+decidiq	1950	e876f7cecae4332eb0a07df3b2effe4dd9b06afb	RED	merge3	GATE RED absolute floor: decidiq maintainability 3.77 after merge is below its floor 3.78
