@@ -16104,3 +16104,4 @@ review:filinq:2072:6c719f2c	GREEN (conflicts with development after #2103; needs
 review:filinq:2123:821f64bb	GREEN: 6916 unit OK, vitest 786, jest 584; spec-conform, no access weakening	session-20261116T101050-f149dcd6	2026-11-16T10:15:02Z
 fix:portaliq:1768:73711bf0	failed: sbom gate false RED: dev-only lock change (sass devDependency), regen-sbom --check ok and sbom identical to development; merged development in, new head a2fd270418; gate needs to accept an unchanged-but-current sbom	session-20261116T100945-f01894e6	2026-11-16T10:15:24Z
 review:larpinq:1053:c3e9d427	GREEN: unit 1002 OK (baseline 986), phpstan clean	session-20261116T101200-ccfd103b	2026-11-16T10:16:30Z
+merge:learniq:1882:9d2aa949	cloud tree of 2 learniq PRs: merged=0 red=1 fail=0 skip=0; conflict 1, lint 0, red 0, moved 0, done 0	session-20261116T101013-986398f9	2026-11-16T10:16:54Z
