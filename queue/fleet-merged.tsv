@@ -4704,3 +4704,7 @@ larpinq	1071	9204f9b36c1d49344b3e5c5753474ba275772bb2	MERGED	worker-36	GATE OK s
 larpinq	1072	f8beca6267b69449cab252e81fcb21f71b7ea4e4	MERGED	worker-36	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.06
 larpinq	1073	c3a2bf43b3476f9f1b05f2f65fe5a70493f7187a	MERGED	worker-36	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.06
 larpinq	1074	0a276a6c4b7c7f20a101b296be5e65620ae86a52	RED	worker-36	GATE RED floor: duplication: 5.17 -> 5.15
+portaliq	1767	47038abd625e99f16530974f324d21982c30c858	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.10
+portaliq	2531	cc495ec942f7ff42194adc085de1b2afbccfebb6	RED	merge3	GATE RED sbom: composer.lock, package-lock.json changed without sbom.cdx.json
+portaliq	2533	93c376694e767704e5e9736028aefb5d9f159aad	RED	merge3	GATE RED floor: duplication: 4.36 -> 4.32
+portaliq	2534	46b098d64c2def38295db134f6f8d86f108e0604	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.11
