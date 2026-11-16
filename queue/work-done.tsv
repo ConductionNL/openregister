@@ -17674,3 +17674,4 @@ fix:hermiq:1808:f027dd39	conflict resolved, pushed d3f1ce0e; merge lock held els
 cover:pipelinq:7f9dc8e6m3dbb:a3bb9eeb	added to #3602 (open-PR budget 44>40): 2 PortalRequestService addReply refusal tests; lib/Service/Portal/*.php now 1457/1457 stmts; suite 9144->9146 no failures	session-20261116T202104-9ad6a286	2026-11-16T20:32:09Z
 fix:hermiq:1810:797e940a	development merged in clean, pushed bb716464; merge lock held elsewhere, REVERIFY queued	session-20261116T195844-88f5f001	2026-11-16T20:32:39Z
 cover:launchpad:fb10c50fmf487:a1252b57	deferred: launchpad has 44 open PRs	session-20261116T202104-9ad6a286	2026-11-16T20:32:46Z
+cover:launchpad:fb10c50fmf487:7505aeb4	deferred: launchpad has 44 open PRs	session-20261116T195844-88f5f001	2026-11-16T20:32:52Z
