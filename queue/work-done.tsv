@@ -17069,3 +17069,4 @@ review:versioniq:723:0aa4f351	RED: maintainability floor drops (overall 4.98->4.
 verify:hermiq:1808:d75966c0	GREEN 1808 (5340 PHP OK, vitest 1535/1535)	session-20261116T173141-f87aaa9d	2026-11-16T18:16:30Z
 fix:buildiq:1672:33d5106e	no real conflict with development; merged it in, new head 8c29bf33aa; REVERIFY queued	session-20261116T173103-d3bed8f8	2026-11-16T18:17:57Z
 cover:buildiq:70b3e29em3841:9d3a1784	deferred: buildiq has 56 open PRs	session-20261116T173103-d3bed8f8	2026-11-16T18:18:09Z
+review:opencatalogi:2696:8fcdf471	RED: jest WidgetData.spec.js (3 most-viewed tests) and CatalogModalFeedback.spec.js suite load; php and vitest clean	session-20261116T181308-35bc38de	2026-11-16T18:18:56Z
