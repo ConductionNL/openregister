@@ -18002,6 +18002,7 @@ review:shillinq:3078:767508fe	GREEN: unit 12392/0 fail, vitest 9/9, lint clean	s
 cover:decidiq:a5f973bbm9cda:882bd950	deferred: decidiq has 44 open PRs	session-20261116T212048-3752a879	2026-11-16T21:52:54Z
 review:launchpad:1229:c3db56ed	BLOCK: dashboard subject of a tabular render not scoped to the export creator (REQ-SCH-002); tests green (unit 4568, vitest 393)	session-20261116T212742-68ee361e	2026-11-16T21:52:57Z
 cover:decidiq:a5f973bbm9cda:59826f43	deferred: decidiq has 44 open PRs	session-20261116T212048-3752a879	2026-11-16T21:53:14Z
+cover:integriq:92114ab0m5970:js0d617ff5	deferred: integriq has 67 open PRs	session-20261116T212742-68ee361e	2026-11-16T21:53:44Z
 cover:integriq:92114ab0m5970:jsf3772e2d	deferred: integriq has 67 open PRs	session-20261116T215130-059ff429	2026-11-16T21:53:27Z
 cover:pipelinq:7f9dc8e6m3dbb:6b792e82	stacked on #3602 (open-PR budget 43>40): 9 tests in 3 files for lib/Service/Merge, unit suite 9203 OK, commit 8427cc8b	session-20261116T214709-afa43f07	2026-11-16T21:53:22Z
 review:openregister:10598:d5ee9f8d	APPROVE: spec/tasks only, no code	session-20261116T215131-4f02c975	2026-11-16T21:53:49Z
