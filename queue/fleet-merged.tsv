@@ -3923,3 +3923,8 @@ stackiq	1965	db980e34d066f3521ea46508230669f301337ee8	SKIP	worker-16	no APPROVE 
 stackiq	1978	0e16289a82d0c3f5edcf4674448e72031b372f93	RED	worker-16	GATE RED floor: unit_interfacing: 4.72 -> 4.68
 launchpad	1234	6a94a1fa7ca29a5267bfc77210f29d21bd36c68e	SKIP	worker-31	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
 launchpad	1234	6a94a1fa7ca29a5267bfc77210f29d21bd36c68e	SKIP	worker-31	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator, secretscanning; this is not a pass
+pipelinq	2187	fd65c00e86140ac77446493773e44549967c3fa3	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
+pipelinq	2557	74ee842a603c3a10940a0a193154d00418abe78a	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
+pipelinq	3083	c1e2e782afa038ade39fd007e8dc6523515461d7	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+pipelinq	3092	f8d049f34e69ece75f6b5915bae3db471efaee4e	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+pipelinq	3883	e27a1a725e4225bb7c5c07dc56793ca1bf3f207e	RED	merge3	GATE RED sbom: composer.lock, package-lock.json changed without sbom.cdx.json
