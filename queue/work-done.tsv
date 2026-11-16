@@ -15480,3 +15480,4 @@ merge:hermiq:1167:1101ee8c	cloud tree of 4 hermiq PRs: merged=0 red=1 fail=0 ski
 review:thematiq:1290:7ea88173	GREEN: coverage-v8 dev bump, vitest+coverage OK	session-20261116T062544-335bf148	2026-11-16T06:40:29Z
 review:stackiq:1417:603fa7bc	GREEN: copy rename, only inherited failures	session-20261116T061736-e271ba12	2026-11-16T06:40:37Z
 fix:integriq:3137:b5352821	failed: not fixable in integriq; the PR exists only to adopt SettingsPlacement/SectionAppearance/AdminFormServices, still absent on openregister main (unmerged openregister #9824); hold until that lands	session-20261116T062109-81fc252e	2026-11-16T06:40:43Z
+verify:learniq:2551:45983442	2551 RED: 8 new failures in its own new tests on development	session-20261116T062050-add210c3	2026-11-16T06:41:00Z
