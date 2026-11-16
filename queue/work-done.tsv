@@ -17163,3 +17163,4 @@ cover:pipelinq:7f9dc8e6m8519:a3bb9eeb	added to #3659 (budget): PasswordResetServ
 cover:openregister:7350e3efm9dc5:fa416b31	added to open PR #10587 (budget: 188 open PRs): risky metadata fixed in 17 test classes (67 risky -> 0); lib/Search/Service uncovered 192->122 lines	session-20261116T173213-356ea2aa	2026-11-16T18:33:45Z
 fix:shillinq:2991:84a86ec5	fixed blockers, pushed 7d526afc; merge lock held elsewhere, REVERIFY queued	session-20261116T182254-5f17ae21	2026-11-16T18:33:19Z
 cover:keepiq:c967a31fmba5a:1b97f731	already done: lib/Listener/*.php covers 557/558 statements on development 92ee17d6; the one line left is the pre-NC33 class_exists early return in FederationEventRegistrar::boot, unreachable with the stubs; no PR	session-20261116T181423-c7b48242	2026-11-16T18:35:10Z
+measure:dossiq:20261116h18	php 94.26% (pcov), js 95.36% at f293b773; vitest has 2 inherited failures on development	session-20261116T170555-ecf14af5	2026-11-16T18:35:53Z
