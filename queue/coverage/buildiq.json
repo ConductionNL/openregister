@@ -1,12 +1,12 @@
 {
  "app": "buildiq",
- "commit": "165fc0e3c54c1e4771a668d8a39afb8e37622ed1",
- "measured_at": "2026-11-15T01:59:03Z",
+ "commit": "b5702f9b906db515a337f0553dbf1deb64dec7c2",
+ "measured_at": "2026-11-16T18:48:12Z",
  "php": {
   "tool": "pcov",
-  "pct": 90.88,
-  "statements": 21944,
-  "covered": 19942,
+  "pct": 92.67,
+  "statements": 22209,
+  "covered": 20581,
   "dirs": {
    "lib/": [
     11,
@@ -25,12 +25,12 @@
     522
    ],
    "lib/Controller/": [
-    3688,
-    3489
+    3710,
+    3527
    ],
    "lib/Dashboard/": [
     39,
-    38
+    39
    ],
    "lib/Exception/": [
     64,
@@ -38,7 +38,7 @@
    ],
    "lib/Integration/": [
     250,
-    208
+    245
    ],
    "lib/Kernel/": [
     0,
@@ -54,11 +54,11 @@
    ],
    "lib/Lifecycle/": [
     99,
-    92
+    98
    ],
    "lib/Listener/": [
-    700,
-    663
+    725,
+    720
    ],
    "lib/Mcp/": [
     39,
@@ -149,8 +149,8 @@
     0
    ],
    "lib/Service/": [
-    12597,
-    11085
+    12725,
+    11484
    ],
    "lib/Service/Automation/": [
     9,
@@ -158,15 +158,15 @@
    ],
    "lib/Service/Branch/": [
     222,
-    200
+    211
    ],
    "lib/Service/Connection/": [
     171,
     170
    ],
    "lib/Service/Copilot/": [
-    206,
-    205
+    296,
+    295
    ],
    "lib/Service/Credential/": [
     57,
@@ -192,20 +192,20 @@
  },
  "js": {
   "pct": 95.85,
-  "statements": 15997,
-  "covered": 15333,
+  "statements": 16256,
+  "covered": 15582,
   "dirs": {
    "src/": [
     188,
     186
    ],
    "src/components/": [
-    701,
-    675
+    706,
+    679
    ],
    "src/components/agents/": [
-    28,
-    27
+    36,
+    35
    ],
    "src/components/applicationDetail/": [
     308,
@@ -228,12 +228,12 @@
     143
    ],
    "src/components/page-editor/": [
-    1817,
-    1694
+    1835,
+    1711
    ],
    "src/components/page-editor/fields/": [
-    1918,
-    1799
+    2012,
+    1888
    ],
    "src/components/runtime/": [
     364,
@@ -260,8 +260,8 @@
     793
    ],
    "src/dialogs/": [
-    2152,
-    2044
+    2230,
+    2119
    ],
    "src/dialogs/CreateApplicationWizard/": [
     205,
@@ -288,12 +288,12 @@
     1
    ],
    "src/services/": [
-    1751,
-    1727
+    1793,
+    1769
    ],
    "src/services/manifestValidation/": [
-    545,
-    543
+    548,
+    546
    ],
    "src/store/": [
     50,
@@ -308,8 +308,8 @@
     102
    ],
    "src/views/": [
-    1705,
-    1628
+    1716,
+    1639
    ],
    "src/views/settings/": [
     46,
