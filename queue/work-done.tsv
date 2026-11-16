@@ -17212,3 +17212,4 @@ cover:stackiq:9ac19b3amdf03:b5905f71	deferred: stackiq has 42 open PRs	session-2
 review:shillinq:3055:8918b6e6	GREEN: 12267 unit tests OK, vitest 12/12, administration checks on new endpoints	session-20261116T184217-f2c5e14b	2026-11-16T18:53:05Z
 merge:stackiq:1978:c1561c85	cloud tree of 1 stackiq PRs: none; conflict 1, lint 0, red 0, moved 0, done 0	session-20261116T184928-c82468e8	2026-11-16T18:53:18Z
 fix:learniq:2507:f29e84b7	merged development in, clean; merge lock held elsewhere, REVERIFY at c5edc819	session-20261116T184945-c098409e	2026-11-16T18:53:19Z
+fix:learniq:1882:334e6e47	inherited: plain development already reads maintainability 3.98 (range 3.98-4.01) below the 3.99 floor; PR #1882 merged reads the same 3.98, it adds no drop; nothing to fix on the branch	session-20261116T184912-ef98c646	2026-11-16T18:53:52Z
