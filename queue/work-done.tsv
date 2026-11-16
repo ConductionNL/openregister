@@ -18410,6 +18410,7 @@ verify:launchpad:1246:09cffd9d	stale	feeder	2026-11-16T23:37:23Z
 verify:hermiq:1760:f84a6f07	CONFLICT: info.xml, l10n, hermiq_register.json, openapi.json	session-20261116T233003-c7bea420	2026-11-16T23:40:32Z
 build:learniq:exam-registration-and-certificate-issue:c2	PR #2579 (quality/build-exam-registration-and-certificate-issue): T1-T6 built and ticked; suite 6998 tests, 2 inherited failures (baseline 6966/2)	session-20261116T230843-e8244832	2026-11-16T23:41:11Z
 verify:humaniq:670:40bebbca	CONFLICT #670 (sbom.cdx.json vs development)	session-20261116T233800-0f135937	2026-11-16T23:41:06Z
+verify:hermiq:1794:e6b137d8	CONFLICT #1794	session-20261116T232923-e93e6b40	2026-11-16T23:41:47Z
 merge:pipelinq:3602:a4bb937b	merge3 tree of 1 pipelinq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-16T23:41:42Z
 verify:hermiq:1740:a42b5b75	CONFLICT #1740 (l10n, register, openapi)	session-20261116T230934-9ee320cf	2026-11-16T23:42:02Z
 verify:filinq:2112:a9282c63	CONFLICT #2112 (register json, openapi.json)	session-20261116T232844-9c7f5cce	2026-11-16T23:42:13Z
