@@ -18398,3 +18398,4 @@ verify:humaniq:1143:9cdcc864	CONFLICT #1143 (l10n/en.js l10n/en.json l10n/nl.js 
 verify:learniq:2578:d2cb7b4e	GREEN #2578	session-20261116T232519-f84cca9a	2026-11-16T23:38:03Z
 verify:humaniq:1139:4ca3cd5e	CONFLICT #1139 (l10n en.js/nl.js vs development)	session-20261116T232852-594dae77	2026-11-16T23:38:13Z
 verify:filinq:2078:d8dd2bca	CONFLICT: tests/unit/Settings/DocumentProductionSchemaTest.php vs development	session-20261116T232925-45c70e73	2026-11-16T23:38:28Z
+verify:hermiq:1757:59cadfdd	CONFLICT #1757 (l10n catalogues, EngineSwitchedOffTest)	session-20261116T232912-d58d1a81	2026-11-16T23:38:39Z
