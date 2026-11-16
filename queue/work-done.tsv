@@ -16002,6 +16002,7 @@ review:dossiq:4887:5b3dec5c	GREEN: unit 18305 (baseline 18291), same 19 inherite
 gap:buildiq:opensourcehealth:a6c0d835	failed: not reachable in buildiq alone: activity 2 stars and freshness capped at 3 by transitive deps (d3-* 3.x, asynckit, agent-base >5y behind) pulled in by shared libraries; moving node-polyfill-webpack-plugin to devDependencies cuts prod deps 526->370 and >5y-behind 17->10 but overall stays 3	session-20261116T075942-394736ff	2026-11-16T09:18:34Z
 review:dossiq:3199:53d908ab	GREEN: sass devDep bump, vitest no new failures (2 inherited)	session-20261116T090836-f2cf24a5	2026-11-16T09:18:39Z
 fix:shillinq:2072:794dec2a	inherited from development (stub lost SPDX header); restored header, pushed 04fc7224c, merge lock busy so REVERIFY queued	session-20261116T084459-8070a613	2026-11-16T09:18:57Z
+fix:dossiq:5397:7ff72b32	covered by bundle #6591 (phpstan 2.3.5 with regenerated sbom); no separate fix, dependabot closes it after the bundle lands	session-20261116T084528-6b5f71dd	2026-11-16T09:19:18Z
 review:filinq:2088:421aab4e	GREEN filinq#2088: unit 6825 OK, vitest 772 OK, no blockers	session-20261116T091324-bb324ce0	2026-11-16T09:19:16Z
 review:dossiq:3957:3a1d1a08	GREEN: behaviour per its openspec change; 19 unit failures inherited from development	session-20261116T091549-b399a636	2026-11-16T09:19:24Z
 review:planninq:933:ff903468	GREEN: unit 1232 ok, vitest 3565 ok, access checks precede writes	session-20261116T091613-0f6d95fe	2026-11-16T09:19:35Z
