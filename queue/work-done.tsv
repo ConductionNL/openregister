@@ -16711,3 +16711,4 @@ cover:pipelinq:7f9dc8e6m8519:1b97f731	PR #3892: listeners 82.75→95.22%, metada
 merge:filinq:2122:b4033955	cloud tree of 1 filinq PRs: merged=0 red=0 fail=0 skip=1; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T161939-73ecac50	2026-11-16T16:24:49Z
 merge:dossiq:3203:439df883	unmeasured: static.developer.overheid.nl (dossiq #3203 APPROVE recorded at 628c5ad89e; 6203 excluded: never merged)	session-20261116T161639-0d250ee2	2026-11-16T16:33:08Z
 cover:openregister:7350e3efm9dc5:js766f640b	partial: PRs #10591 #10592, target views 85.52→~94.2% (95 not reached)	session-20261113T204551-fafe539e	2026-11-16T16:38:11Z
+fix:dossiq:6591:b9982eb8	stale	session-20261116T163847-0bbfb27d	2026-11-16T16:39:34Z
