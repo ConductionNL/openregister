@@ -17774,3 +17774,4 @@ merge:decidiq:2188:8bbd5004	cloud tree of 1 decidiq PRs: merged=0 red=1 fail=0 s
 merge:versioniq:691:2c31a00d	cloud tree of 1 versioniq PRs: none; conflict 1, lint 0, red 0, moved 0, done 0	session-20261116T205217-2b48a08c	2026-11-16T20:57:00Z
 review:filinq:2072:68c796a1	stale	session-20261116T205635-1c5a7977	2026-11-16T20:57:27Z
 review:shillinq:2997:bc640379	GREEN (conflicts with development: info.xml, l10n, lock fixture)	session-20261116T205210-7a1fa9ff	2026-11-16T20:57:33Z
+review:learniq:2521:70435b29	RED: EmployerBookingFactsTest::testTheSeededBookingsAgreeWithTheServer (seed bookings 7 vs 4); 1 inherited failure	session-20261116T205351-e92d06a8	2026-11-16T20:57:57Z
