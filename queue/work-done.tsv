@@ -16543,3 +16543,4 @@ fix:decidiq:1738:dabfcc92	inherited: decidiq development itself measures maintai
 fix:decidiq:1472:92d14428	inherited: decidiq development itself measures maintainability 3.77 below its floor 3.78; dependency-only PR	session-20261116T142700-f4d651ea	2026-11-16T15:07:03Z
 fix:stackiq:1990:e0356aab	spdx floor: merged development (stale stub without header), 100% SPDX, suite OK; new head fb7faba8, REVERIFY	session-20261116T144734-1dc150d8	2026-11-16T15:07:19Z
 fix:decidiq:1692:faa2a2eb	inherited: decidiq development itself measures maintainability 3.77 below its floor 3.78; PR touches openspec/ only	session-20261116T142700-f4d651ea	2026-11-16T15:07:25Z
+fix:decidiq:2178:32c05171	fixed spec-coverage + demo data for the 2 added schemas; new head a58bcd58; REVERIFY	session-20261116T144202-f2b26030	2026-11-16T15:07:47Z
