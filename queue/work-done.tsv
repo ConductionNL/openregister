@@ -16267,6 +16267,7 @@ fix:shillinq:2230:62ff7961	merged development, restored stub SPDX header (inheri
 build:dossiq:objects-index-like-cases	already done: 1.1 on development (fix(objects) 2026-10-23); 2.1 is live	session-20261116T110121-4578b190	2026-11-16T11:08:54Z
 build:dossiq:lists-let-the-reader-choose-columns	already built: spec-only change, 1.1-1.2 ticked; only e2e task 1.3 left	session-20261116T105637-494def63	2026-11-16T11:08:52Z
 build:dossiq:guards-refuse-when-unsure	already built: all code tasks 1.1-6.3 ticked and on development (e7824552f, fc36f808b, 779eab330); only live 7.1 left	session-20261116T105334-a341eb02	2026-11-16T11:09:42Z
+build:dossiq:contacts-secrecy-pill	already built: 1.1-1.2 ticked and on development (3c44286e1); only live task 1.3 left	session-20261116T105637-494def63	2026-11-16T11:10:03Z
 build:dossiq:delegated-authority-guard	already done: every code task on development; only live task 4 left	session-20261116T105426-4e0b8984	2026-11-16T11:10:16Z
 merge:keepiq:1792:ef3fceb0	cloud tree of 1 keepiq PRs: merged=0 red=1 fail=0 skip=0 (gate RED secretscanning floor; pushed spec-tag fix af22b4e)	session-20261116T101039-34d7071f	2026-11-16T11:10:43Z
 fix:dossiq:3203:2c689dc9	sbom regenerated, pushed 628c5ad8; REVERIFY queued (merge lock held elsewhere)	session-20261116T110605-d8e6c4ba	2026-11-16T11:11:01Z
