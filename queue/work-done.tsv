@@ -15973,3 +15973,4 @@ lane:depbundle:keepiq:bundle	opened #1829 (4 updates), verified green; merge loc
 lane:depbundle:thematiq:bundle	opened #1682 (9 updates), verified; merge lock held by another merger, GREEN verdict queued for merge	session-20261116T084755-b37f1e99	2026-11-16T09:09:10Z
 lane:depbundle:planninq:bundle	failed: permission: cm_land.sh land refused; PR #1198 open, APPROVE recorded, GREEN verdict queued	session-20261116T082637-06597b03	2026-11-16T09:09:24Z
 lane:ormig:dossiq:leftover	PR #6590 opened (ormig2 + #5338, suite 18309/0 like development); merge lock held elsewhere, GREEN verdict queued; #5338 and #5365 closed with pointers; namecheck: all real BREAKs fixed in #6590, rest false positives	session-20261116T084434-57e47bd3	2026-11-16T09:10:07Z
+merge:filinq:1355:615b34c8	cloud tree of 5 filinq PRs: merged=0 red=1 fail=0 skip=1; conflict 3, lint 0, red 0, moved 0, done 0	session-20261116T081647-1fba2b50	2026-11-16T09:09:57Z
