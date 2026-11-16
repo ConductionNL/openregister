@@ -18275,3 +18275,4 @@ fix:launchpad:1235:92f8baab	merged #1235 at bb3459a53c1b068f59360186b8ad6d9615a5
 review:versioniq:715:37497a7e	CONFLICT with development (src/App.vue)	session-20261116T225636-8e1a844d	2026-11-16T23:07:38Z
 verify:versioniq:754:117f80b1	754 CONFLICT; 755 already merged	session-20261116T224608-d6967eb8	2026-11-16T23:08:33Z
 cover:dossiq:069ee2d6m9d1b:682b3e74	added 15 tests (ReadsRegisterShards, ColumnMove) to #6619 (over PR budget: 43 open); suite 18340->18355, 19 inherited failures	session-20261116T230245-c73891ff	2026-11-16T23:08:39Z
+cover:decidiq:a5f973bbm56fe:aae6d66c	deferred: decidiq has 46 open PRs	session-20261116T224608-d6967eb8	2026-11-16T23:08:56Z
