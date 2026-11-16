@@ -16816,3 +16816,4 @@ build:portaliq:adopt-connection-registry	already done: only 6.1 (e2e on a live i
 merge:stackiq:1930:21edb772	unmeasured: static.developer.overheid.nl (proxy 403 in this session); 5 IN approved in ledger (1930,1954,1965,1990,1991), 1978 CONFLICT; nothing landed	session-20261116T170823-40772b73	2026-11-16T17:29:27Z
 build:portaliq:admin-dialogs-board-look	already done: only 1.4 (live comparison after a build) left, not a code task	session-20261116T172806-3ef5ead7	2026-11-16T17:29:58Z
 build:portaliq:demo-sign-in-beside-the-account	deferred: portaliq has 62 open PRs	session-20261116T171035-683856c3	2026-11-16T17:30:07Z
+merge:opencatalogi:2415:35811d3c	unmeasured: static.developer.overheid.nl (2699, 2725 approved, not landed; 2415 2541 2673 2701 already on development)	session-20261116T171507-41a673e9	2026-11-16T17:30:21Z
