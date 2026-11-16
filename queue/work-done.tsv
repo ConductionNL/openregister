@@ -16631,3 +16631,4 @@ merge:learniq:1882:6267c134	cloud tree of 4 learniq PRs: merged=0 red=0 fail=0 s
 merge:humaniq:606:4e10fdf7	unmeasured: static.developer.overheid.nl (proxy 403); 8 IN approved, 0 merged, 872 MOVED	session-20261116T150930-eac38835	2026-11-16T15:33:41Z
 fix:versioniq:711:dc3fffc4	floor restored locally (complexity +0.01, interfacing +0.05 vs development); new head 052268bf; REVERIFY	session-20261116T144202-f2b26030	2026-11-16T15:33:57Z
 merge:humaniq:872:a5fbcf32	unmeasured: static.developer.overheid.nl (proxy 403 in this session; lock released before building)	session-20261116T150930-eac38835	2026-11-16T15:34:29Z
+review:decidiq:1767:1582903c	GREEN: unit 4625 OK (baseline 4624), phpstan clean; phpcs inline-IF note	session-20261116T153259-1f82a352	2026-11-16T15:34:49Z
