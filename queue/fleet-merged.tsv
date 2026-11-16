@@ -4090,4 +4090,5 @@ versioniq	721	2524b722d51434a114c0f942019fae2eb306a81b	RED	worker-14	GATE RED fl
 buildiq	1583	df8986ae74fb916058d55d798144fb1f99177038	SKIP	worker-04	no APPROVE review at this head
 buildiq	1641	b6868cd6b6f9eec39772064f4979ffcdb1432599	SKIP	worker-04	no APPROVE review at this head
 buildiq	1652	2b887096e99104c20abaf165361ab630a1c40eb1	SKIP	worker-04	no APPROVE review at this head
+dossiq	3203	2c689dc958f4d2ad3603b422f1c3f5a2f9460ec4	RED	worker-55	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 thematiq	1682	3f39ef0d0f1d79e5bf27de397c577993924fcf7e	RED	worker-46	GATE RED sbom: composer.lock, package-lock.json changed without sbom.cdx.json
