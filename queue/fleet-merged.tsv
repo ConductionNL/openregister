@@ -4290,3 +4290,9 @@ opencatalogi	2737	c0fc79045479600f16b9517d4534658bbf0be6d8	MERGED	merge3	GATE OK
 humaniq	684	036f7e9ffb9a36fce46245fcd1b17c73680556ff	SKIP	worker-27	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 hermiq	1133	6fd08d09db1ca26724058d9c83bec7eb477cfec5	SKIP	worker-10	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 humaniq	686	fe1cbc0ae582ec29fbb26fc246d74dbf397480b5	SKIP	worker-27	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
+shillinq	1899	311621f90e010c55f6e82be1e7826f4fb494d0f6	RED	merge3	GATE RED checker floor: spdxheaders stars: 5 -> 4
+shillinq	1904	e44175957e500baa6f9a391126d97ad65cf98cb0	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.05
+shillinq	1912	66b47f5d8a9b86184f6af5388171e9a5175e8969	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.05
+shillinq	2048	0e5511327e8a917224328ea0d65f6abf119bc2a3	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
+shillinq	2072	04fc7224c4769d3cd137ed1dd710b1fb946e939b	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.05
+shillinq	2092	71d6e19e6a6d57109b000ee5b8e8ec1256b847a7	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.05
