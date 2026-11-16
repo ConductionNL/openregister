@@ -16069,3 +16069,4 @@ review:dossiq:3203:2c689dc9	GREEN: dependency bump, vitest and build same as bas
 review:shillinq:2072:04fc7224	GREEN: access tightened as titled, suite 12231/0; concern noted on ownerless invoices	session-20261116T085359-7eb6c05c	2026-11-16T09:32:34Z
 review:shillinq:2259:48de59f1	GREEN: matches spec and openregister main API, unit green (+2 tests), phpstan clean	session-20261116T091521-a6030cec	2026-11-16T09:33:01Z
 measure:stackiq:20261116h08	php 88.93% js 97.04% at 0cdd4afa (1 vitest failure: facets.spec FACET_DIMENSIONS)	session-20261116T092539-dc11f615	2026-11-16T09:32:53Z
+verify:integriq:3671:30723070	GREEN #3671: no new unit failures (9508, 5 inherited)	session-20261116T091246-00cbe321	2026-11-16T09:33:24Z
