@@ -16552,3 +16552,4 @@ review:versioniq:507:444dec7b	GREEN: vitest 3012/3012 pass before and after the 
 fix:opencatalogi:2696:e3f1409d	conflicts resolved, no new failures, pushed 08865a78; review REQUEST_CHANGES (component independence floor worse, undeclared DcatServiceInterface addition), not landed	session-20261116T145634-daeb1424	2026-11-16T15:09:25Z
 merge:versioniq:497:853866ff	failed: cm_tree prep exit 2: versioniq keeps phpunit in vendor-bin/phpunit and composer bin install fails in the cloud, so no vendor/bin/phpunit	session-20261116T143636-9ede3f74	2026-11-16T15:09:25Z
 review:hermiq:1308:fa7ea701	GREEN: lock-only phpstan bump, no new failures	session-20261116T150749-2f742a8d	2026-11-16T15:10:07Z
+review:decidiq:1767:bc1df2c1	GREEN	session-20261116T144202-f2b26030	2026-11-16T15:10:44Z
