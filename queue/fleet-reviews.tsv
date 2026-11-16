@@ -484,3 +484,5 @@ portaliq	1767	47038abd625e99f16530974f324d21982c30c858	APPROVE	worker-24	Quick; 
 shillinq	3088	21646560bc582d5f84de2fee87f3033c65ee98b1	APPROVE	worker-36	Thorough; no blockers (unregistered Storefront icons on the new pages fixed in 2164656); concerns: other gate findings (integration parity, l10n keys, elevation, dependency shape) are inherited from development
 pipelinq	3883	d9fffa2b1b6ea00309fd942e483b77e3d121c6fd	APPROVE	worker-33	Quick; no blockers; lock-only @conduction/nextcloud-vue 2.180.0->2.181.0 plus matching sbom, PHP unit tree 9000 tests no new failures
 buildiq	1583	cb1e01bf5bb8b6fa92d5ef01b0765ee06f7300e7	APPROVE	worker-02	Thorough; no blockers; builds logic-approval-task-form per its specs, gates fail only on inherited lines (ControllerRegistrar, manifest l10n, e2e seed) or setup (ajv)
+integriq	2671	f4218e170982307bdf1ebe71fe738453a8155f5e	APPROVE	worker-21	Quick; no blockers; dev-only phpmd 2->3 bump, baseline rules renamed 1:1 to phpmd 3 names, sbom regenerated
+integriq	2716	6edb6eeaafff98e0aa865e39475b0c55f4f9ce02	APPROVE	worker-21	Quick; no blockers; vue patch bump within 3.5, lockfile+sbom; vitest 2349/2349 on tree
