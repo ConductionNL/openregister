@@ -15977,3 +15977,4 @@ lane:ormig:dossiq:leftover	PR #6590 opened (ormig2 + #5338, suite 18309/0 like d
 merge:filinq:1355:615b34c8	cloud tree of 5 filinq PRs: merged=0 red=1 fail=0 skip=1; conflict 3, lint 0, red 0, moved 0, done 0	session-20261116T081647-1fba2b50	2026-11-16T09:09:57Z
 merge:shillinq:2093:ac9a8fa0	stale	feeder	2026-11-16T09:09:14Z
 lane:feeder:dossiq:once2	added {'fix': 19, 'review': 26, 'verify': 4, 'merge': 17, 'gap': 10, 'build': 0} stale=1 open=211 by-type={'merge': 76, 'cover': 66, 'lane': 10, 'fix': 19, 'review': 26, 'verify': 4, 'gap': 10} rest=1	session-20261116T090836-f2cf24a5	2026-11-16T09:10:56Z
+merge:dossiq:6587:dab3e303	merge3 tree of 1 dossiq PRs: merged=0 red=1 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-16T09:11:51Z
