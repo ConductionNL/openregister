@@ -3753,3 +3753,5 @@ dossiq	2902	852fcee3164fff03aebf87e1d755d674143539b9	SKIP	merge3	GATE UNMEASURED
 dossiq	3196	bdbdd4b2343ec19de2c5d6e0a3681a4a8c517857	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 dossiq	3197	4fd9129cae30320898c8905d5fc6d07581b354c7	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.34
 dossiq	3201	1fedc9a2fa5d72e4b1978d23676c5e05c25cd080	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.34
+buildiq	1092	996ef9e614476985eb35a9ad72d672a44732fbc6	MERGED	cloudmerge-pilot	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.91 holds at 3.91
+buildiq	1233	fbc18f0064cdfcd59c03ed6f43d22ec6296386d8	MERGED	cloudmerge-pilot	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.91 holds at 3.91
