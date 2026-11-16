@@ -18224,4 +18224,5 @@ cover:launchpad:fb10c50fm88bd:d3522ea6	deferred: launchpad has 45 open PRs	sessi
 cover:buildiq:70b3e29eme3dd:390adfb9	deferred: buildiq has 50 open PRs	session-20261116T224608-d6967eb8	2026-11-16T22:50:32Z
 cover:buildiq:70b3e29eme3dd:05630945	deferred: buildiq has 50 open PRs	session-20261116T224608-d6967eb8	2026-11-16T22:50:47Z
 review:stackiq:1941:c6e6242e	GREEN: unit 3926 OK, phpstan clean, vitest 1 inherited red	session-20261116T224530-1f167ca0	2026-11-16T22:50:52Z
+build4:openregister:rules-compose-read-transitions-and-time:c7	PR #10529 pushed a40350d6e: 3.3b sweep query (RelativeTimeSweep, 7 tests; design q3 decided: selection here, autoWhen firing is the timed-transition change); all code tasks ticked, 5.4 e2e left (live); unit suite 62132, 71 red all inherited	session-20261116T221021-11e5d550	2026-11-16T22:51:06Z
 review:buildiq:1608:09ddceb4	GREEN: unit 3487/0 fail, vitest 835 pass	session-20261116T224612-bc069233	2026-11-16T22:51:05Z
