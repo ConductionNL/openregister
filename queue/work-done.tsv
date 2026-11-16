@@ -17258,3 +17258,4 @@ fix:opencatalogi:2686:75f5b243	merged development in, new head 84ac3f44cc; merge
 build:launchpad:launchpad-manifest-tier-3	already built: every code task in tasks.md is ticked and on development (router, registry, CnAppRoot, AdminSettingsRedirect); only the live E2E task is left	session-20261116T184838-1279a0d5	2026-11-16T18:59:09Z
 fix:opencatalogi:2696:8fcdf471	fixed jest specs, pushed 0d0512a6; merge lock busy, REVERIFY queued	session-20261116T184852-b8356331	2026-11-16T18:59:43Z
 fix:opencatalogi:2699:64dd55f6	merged development in, new head 3dfb66bdc2; merge lock held by another merger, REVERIFY queued	session-20261116T184833-adbb8426	2026-11-16T18:59:51Z
+cover:stackiq:9ac19b3amdf03:05630945	deferred: stackiq has 42 open PRs	session-20261116T184919-ae590ea9	2026-11-16T19:00:21Z
