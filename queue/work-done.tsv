@@ -16062,4 +16062,5 @@ fix:filinq:2141:d980f90d	inherited/environmental: opensourcehealth drop is api.o
 lane:arch5:pipelinq:next-pipelinq	PR #3887 open (estimate 4.48-4.49 -> 4.50-4.51, goal met); merge lock held elsewhere, GREEN verdict queued for merge	session-20261116T091519-51eaae8b	2026-11-16T09:30:53Z
 fix:dossiq:6590:1ff7ee00	conflict resolved, pushed e05ebf36; merge lock held elsewhere, REVERIFY queued	session-20261116T092826-3efb332e	2026-11-16T09:31:05Z
 review:dossiq:5266:2cd5ee93	GREEN: vitest 40/40, php suite no new failures	session-20261116T091532-d81a601b	2026-11-16T09:31:35Z
+merge:portaliq:1673:e981be5a	cloud tree of 1 portaliq PRs: merged=0 red=0 fail=0 skip=1 (APPROVE recorded; gate unmeasured: static.developer.overheid.nl unreachable)	session-20261116T091541-9e19ce49	2026-11-16T09:31:49Z
 review:dossiq:3203:2c689dc9	GREEN: dependency bump, vitest and build same as baseline	session-20261116T091210-012bb190	2026-11-16T09:31:52Z
