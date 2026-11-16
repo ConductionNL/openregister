@@ -17632,3 +17632,4 @@ review:pipelinq:3602:150e1963	GREEN: tests only, suite 9144 tests 0 failures	ses
 cover:dossiq:069ee2d6m9d1b:b6fccd13	no change: lib/Service/Access/*.php already measures 98.70% (1219/1235 lines, pcov on current dossiq), above target 95	session-20261116T201835-c2c94090	2026-11-16T20:24:54Z
 verify:keepiq:1854:b0ec9348	GREEN #1854 #1855 (JS tests only; 3 inherited vitest failures in HealthReportView.controls)	session-20261116T200543-e8f76f14	2026-11-16T20:25:14Z
 review:shillinq:1900:7f46ac64	GREEN: shillinq #1900, unit 12272 OK (baseline 12257), no new failures	session-20261116T201628-7b6853de	2026-11-16T20:25:24Z
+merge:versioniq:722:79e3e090	cloud tree of 2 versioniq PRs: merged=1 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T200545-32ab46ec	2026-11-16T20:25:35Z
