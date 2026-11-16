@@ -16476,3 +16476,4 @@ fix:learniq:2559:db446f19	sbom regenerated, pushed a2575752; lock busy, REVERIFY
 review:learniq:2484:6e3b8399	GREEN	session-20261116T142700-f4d651ea	2026-11-16T14:45:20Z
 review:shillinq:2226:5f2a7723	GREEN: phpunit 12231 OK, vitest 1 inherited failure (dunningNextRun)	session-20261116T142616-2623e37a	2026-11-16T14:45:49Z
 review:learniq:2507:82c09d5c	GREEN: unit 6901, 1 inherited failure	session-20261116T144202-f2b26030	2026-11-16T14:45:56Z
+merge:keepiq:1499:97590ce8	unmeasured: static.developer.overheid.nl (land: merged=0 skip=4, conflict 1 #1829 composer.lock)	session-20261116T142730-381a9016	2026-11-16T14:46:37Z
