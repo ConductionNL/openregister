@@ -18376,3 +18376,4 @@ verify:filinq:2120:b3bf30b4	CONFLICT #2120 (l10n, register json, webpack, Listen
 verify:filinq:2059:fa0efc47	CONFLICT #2059 (l10n/nl.json, register json, mock register json)	session-20261116T232033-3ca59164	2026-11-16T23:33:55Z
 verify:decidiq:2154:a35c4716	CONFLICT: #2154 conflicts with development (l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Listener/Registrar/SaveGuardSubscriptions.php lib/Settings/profiles/municipality.json src/manifest.json )	session-20261113T214350-9762e143	2026-11-16T23:34:05Z
 verify:decidiq:2192:d2bbe131	CONFLICT #2192 (openapi.json src/manifest.json src/menu-layout.simple.json src/registry.js )	session-20261116T232623-066b53c9	2026-11-16T23:34:18Z
+verify:filinq:2093:285e2249	CONFLICT #2093 (tests/jest/golden/settings-page.json)	session-20261116T232918-5354fd88	2026-11-16T23:34:27Z
