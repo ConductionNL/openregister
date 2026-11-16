@@ -13924,3 +13924,4 @@ opencatalogi	2650	e5e6d2907206ec8c9238e38ed6096efdb53467a8	CONFLICT	worker-13:me
 opencatalogi	2652	2348aeca1bad551e3e485ff6910acc05812c7e8c	CONFLICT	worker-13:merge	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
 opencatalogi	2665	fbbdb9b4979ec70fcf42d330b65402fe8dd25534	CONFLICT	worker-13:merge	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json src/modals/catalog/CatalogModal.vue 
 planninq	1196	458678cafcd02325f85d10c61f1a19d493c49e74	RED	worker-12:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+hermiq	1807	a3d16b99cc2d5df80d3d37eb026b6547ef9fb5b2	CONFLICT	worker-08:merge	merges clean on development alone; files: composer.lock 
