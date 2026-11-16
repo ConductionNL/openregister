@@ -17416,6 +17416,7 @@ build:humaniq:time-non-project-activities	stale: branch quality/build-time-non-p
 cover:keepiq:c967a31fm902f:2c3e981f	already done: lib/Service/ShareSync/ 100% line coverage (174/174) at 4c5e079b	session-20261116T192104-d9eeae3f	2026-11-16T19:30:38Z
 cover:keepiq:c967a31fm902f:dfaef732	PR #1852: NotificationRegistrar 2 tests; KeepiqNotifier 99.5% (2 unreachable lines); suite 5367->5369 green	session-20261116T191448-870933e4	2026-11-16T19:30:22Z
 fix:hermiq:1754:b6dc1f4e	conflict resolved, pushed 3e57e4dc; merge lock held elsewhere, REVERIFY queued	session-20261116T192325-bb4c31dd	2026-11-16T19:30:34Z
+fix:humaniq:1164:8c712c86	merged #1164 at d6e3f06686ecdc75a4797451f379feb485d62f56	session-20261116T184921-a7624794	2026-11-16T19:30:43Z
 merge:shillinq:2098:3286165d	cloud tree of 6 shillinq PRs: merged=6 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T191103-1ba6d222	2026-11-16T19:30:47Z
 build:keepiq:clients-extension-firefox-and-safari-builds	no code left: 1.2 needs a macOS runner and Apple identity, 2.1 is verified by a workflow run (.github/workflows/browser-extension.yml already builds chromium/firefox/safari); no PR	session-20261116T191448-870933e4	2026-11-16T19:31:12Z
 fix:hermiq:1735:ce935d59	conflict resolved, new head 33b209c9; merge lock busy, REVERIFY queued	session-20261116T192142-66caeb8e	2026-11-16T19:31:12Z
@@ -17424,6 +17425,7 @@ build:integriq:retire-dso-case-handoff	already done: tasks 1.1-1.2 on developmen
 cover:larpinq:c4471360:dfaef732	PR #1072: Notifier 3 tests, lib/Notification 93.75%->100%, suite 1057->1060 green	session-20261116T184831-8be58c40	2026-11-16T19:31:49Z
 cover:larpinq:c4471360:34763eb4	PR #1073: +4 middleware tests, suite 1054->1058, 0 failures	session-20261116T192254-fe50fb9b	2026-11-16T19:32:19Z
 fix:stackiq:1978:edde87e6	merged #1978 at 76744e83bf9b874a6986dbb0b063ffc8ea7b3d93	session-20261116T192122-0fac4997	2026-11-16T19:33:13Z
+fix:buildiq:1652:e48b9bd3	conflict resolved, pushed 209a678f; merge lock held elsewhere, REVERIFY queued	session-20261116T191856-c437ae89	2026-11-16T19:33:53Z
 cover:keepiq:c967a31fm902f:0d67c1f3	PR #1853: +5 tests SiemSinkRequest (dir already 100% line-covered; thin tests strengthened), suite 5367->5372 OK	session-20261116T192132-006e7c93	2026-11-16T19:35:28Z
 build:shillinq:spend-analytics-ui	already built: on development via #1143, every code task ticked; only the live Playwright task remains (needs a deployment)	session-20261116T193315-3e9a027b	2026-11-16T19:35:12Z
 build:portaliq:operate-pages-per-portal-and-client:r2	PR #2533: T03 and T05 built (navigation section, hidden pages field, routes, 25 PHPUnit + 8 node tests); T06 partial (screenshots, openspec validate, e2e need a live instance)	session-20261116T192133-e3734874	2026-11-16T19:36:02Z
