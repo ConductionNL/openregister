@@ -16568,3 +16568,4 @@ fix:decidiq:1467:dfb19ea0	fixed: floor restored 3.77->3.78 (repair-step split + 
 fix:stackiq:1954:34c6f73a	adr fix: two new ADR findings removed, linter equals development; new head 3afda7d6, REVERIFY	session-20261116T144734-1dc150d8	2026-11-16T15:13:42Z
 review:opencatalogi:2686:74309a26	GREEN: 0 new failures (5833 tests, baseline 106 inherited)	session-20261116T150935-ce9ba78b	2026-11-16T15:13:51Z
 review:shillinq:1958:191f6a9e	GREEN: unit 12245 OK, vitest 18 OK	session-20261116T150944-f856ccd8	2026-11-16T15:14:05Z
+review:learniq:2521:9e646ec1	GREEN: build matches change specs; no new unit or JS failures (1 PHP, 9 JS inherited)	session-20261116T150849-786441a0	2026-11-16T15:14:19Z
