@@ -3982,3 +3982,4 @@ filinq	2103	cd98f739abe89a4b485b9a757fd5591eab514203	MERGED	merge3	GATE OK sbom,
 shillinq	2071	85bf3df1b10c36b4280f8d233ea8bae5a618cabe	RED	worker-20	GATE RED checker floor: spdxheaders stars: 5 -> 4
 dossiq	6589	503c16af9c34bd2cbc05af877894edd0cbe33060	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.40
 portaliq	1997	46fd8f94d573383ea70b908b05bcaba3b33882cd	SKIP	worker-50	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
+planninq	1198	f4370679900c3aded15e653a6ebd0521c8fc79dd	SKIP	worker-29	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
