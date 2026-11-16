@@ -15960,3 +15960,4 @@ learniq	2524	593b6b3784220353064af7c871ab4a4cd59ee388	CONFLICT	worker-17	conflic
 learniq	2533	adbae3b0cb1c6df378db735c449288dcc7091c70	CONFLICT	worker-57	merge onto development 9f16d123 conflicts in lib/Settings/learniq_register.json; no tests run on it (baseline 6966 tests, 2 inherited failures)
 larpinq	1055	3553b217084367d6f7078f260cc8ebae9f7a722d	CONFLICT	worker-48	conflicts with development in l10n/*.js/json (all locales); baseline 1120 tests OK, 20 skipped
 launchpad	761	ca2815b851deb1969d5b23ac0c29185819391d2e	CONFLICT	worker-41	conflicts with development (package-lock/package.json/sbom); tree not run
+keepiq	1829	d00cfb44b9c63a0d62eff367e3060cdd9eecb1df	CONFLICT	worker-05	composer.lock conflicts with origin/development; baseline 5618 tests 0 failures
