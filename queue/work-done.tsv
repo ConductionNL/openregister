@@ -16189,3 +16189,4 @@ merge:dossiq:3199:1afd255c	unmeasured: static.developer.overheid.nl; merged=0 re
 merge:integriq:3670:a8797820	merge3 tree of 32 integriq PRs: merged=7 red=14 fail=0 skip=0; conflict 11, lint 0, moved 0; fix rows 11	merge3-20261113T213425-c36bcd5f	2026-11-16T10:46:45Z
 merge:humaniq:686:130dafec	unmeasured: static.developer.overheid.nl (686,1096 approved; 1095 gate RED sbom not regenerated; 687 conflict; 872 moved)	session-20261116T102639-f9f23dec	2026-11-16T10:47:01Z
 merge:hermiq:1167:8572c5be	unmeasured: static.developer.overheid.nl	session-20261116T103605-722bf416	2026-11-16T10:47:09Z
+merge:learniq:2521:6369883b	cloud tree of 2 learniq PRs: merged=0 red=1 fail=0 skip=1; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T101200-ccfd103b	2026-11-16T10:47:35Z
