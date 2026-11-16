@@ -17769,3 +17769,4 @@ build4:openregister:flow-object-attribution:c6	PR #10491 merged main in and fini
 cover:keepiq:c967a31fm902f:js3f3bfe56	PR #1861: App.vue shell slots/boot, 17 tests; src/* lines 79.2->97.0%; suite 3 inherited failures unchanged	session-20261116T203539-f268bd6b	2026-11-16T20:53:57Z
 review:buildiq:1620:ad45ffb6	RED: ApplicationRegisterTest golden lacks new alias	session-20261116T202154-fbc59c50	2026-11-16T20:54:27Z
 review:versioniq:722:276692bd	GREEN: build PR matches change specs; unit 2099 (2 inherited fails), vitest 3092 pass	session-20261116T205217-2b48a08c	2026-11-16T20:55:29Z
+lane:arch5:shillinq:next-shillinq-r4	PR #3125 opened (r4, contains #3124): estimate 4.05-4.09 -> 4.11-4.15, suite 0 failures; GREEN verdict recorded, merge lock held elsewhere; r5 queued	session-20261116T203338-4b40ff15	2026-11-16T20:56:32Z
