@@ -16760,3 +16760,4 @@ fix:shillinq:2230:a06c8804	merged development in, sbom current, vitest inherited
 build:pipelinq:filter-menu-owner-and-street:r2	deferred: pipelinq has 50 open PRs	session-20261116T170138-65b3b637	2026-11-16T17:13:59Z
 build:pipelinq:contact-moments-keep-draft:r2	already done: code tasks ticked and on development; only Playwright 1.3 verify and live 1.6 left	session-20261116T165653-a1481a13	2026-11-16T17:14:07Z
 build:pipelinq:tickets-list-by-party:r2	deferred: pipelinq has 50 open PRs	session-20261116T170138-65b3b637	2026-11-16T17:14:06Z
+build:pipelinq:recurring-revenue-runrate-widget:r2	deferred: pipelinq has 50 open PRs	session-20261116T170138-65b3b637	2026-11-16T17:14:12Z
