@@ -18387,3 +18387,4 @@ verify:filinq:2124:83ead21d	CONFLICT #2124 (webpack.config.js)	session-20261116T
 verify:dossiq:3894:beb380ce	CONFLICT #3894 (sbom.cdx.json)	session-20261116T232923-e93e6b40	2026-11-16T23:35:59Z
 review:filinq:2123:8c586cdc	GREEN: unit 7053/0 fail (base 6960), vitest 787 pass	session-20261116T232911-3dffa1ae	2026-11-16T23:36:09Z
 verify:filinq:2098:9ecdad94	CONFLICT #2098 (l10n en/nl)	session-20261116T232844-9c7f5cce	2026-11-16T23:36:16Z
+verify:hermiq:1578:4d2d6d1f	CONFLICT #1578 (composer.lock + sbom)	session-20261116T224246-d9bde508	2026-11-16T23:36:38Z
