@@ -16870,8 +16870,11 @@ build:portaliq:portal-notices-as-drawn	already done: every code task ticked on d
 build:portaliq:resident-lands-on-the-portal	already done: every code task ticked on development; open tasks are live checks only, left	session-20261116T170823-40772b73	2026-11-16T17:39:06Z
 build:portaliq:portal-host-root-redirect	already done: every code task ticked on development; open tasks are live checks only, left	session-20261116T170823-40772b73	2026-11-16T17:39:12Z
 build:portaliq:site-matches-the-zuiddrecht-boards	already done: every code task ticked on development; open tasks are live checks only, left	session-20261116T170823-40772b73	2026-11-16T17:39:22Z
+build:portaliq:public-faq-and-product-finder	already done: T01-T07 built on development (8 Oct); only T08 live check left	session-20261116T173311-8d6b3275	2026-11-16T17:39:31Z
 merge:stackiq:1931:17ea89e6	cloud tree of 1 stackiq PRs: none; conflict 1, lint 0, red 0, moved 0, done 0	session-20261116T173256-6277a58c	2026-11-16T17:39:31Z
 build:portaliq:site-home-follows-the-school-boards	already done: every code task ticked on development; open tasks are live checks only, left	session-20261116T170823-40772b73	2026-11-16T17:39:28Z
 build:portaliq:site-catalogue-follows-the-school-boards	already built: tasks 1-4 ticked and on development (#1424); only task 5 live check left	session-20261116T170545-a4f14b83	2026-11-16T17:39:47Z
 build:portaliq:site-links-the-theme-bridge	already done: every code task ticked on development; open tasks are live checks only, left	session-20261116T170823-40772b73	2026-11-16T17:39:42Z
 merge:integriq:2671:37a34ead	unmeasured: static.developer.overheid.nl (proxy 403; env allowlist has typo overherheid); 7 IN reviewed APPROVE, 3051 gate RED spdxheaders 5->4, 3049 CONFLICT, 3589 MOVED; nothing merged	session-20261116T170518-9fa71e6e	2026-11-16T17:40:07Z
+merge:portaliq:2531:c19fc384	cloud tree of 1 portaliq PRs: merged=0 red=0 fail=0 skip=1; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T172806-3ef5ead7	2026-11-16T17:40:11Z
+review:shillinq:3078:33420e1f	GREEN: unit 12278 tests 0 failures, vitest 9/9, eslint clean	session-20261116T173217-7353a3fb	2026-11-16T17:40:31Z
