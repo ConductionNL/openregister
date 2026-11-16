@@ -17238,3 +17238,4 @@ cover:launchpad:fb10c50f:34f5c300	deferred: launchpad has 44 open PRs	session-20
 review:integriq:3649:9b271f27	GREEN: no new failures, 62 new unit tests, 58 vitest pass	session-20261116T184924-e8902580	2026-11-16T18:57:00Z
 cover:launchpad:fb10c50f:f545d745	deferred: launchpad has 44 open PRs	session-20261116T185304-a3eb3adc	2026-11-16T18:57:12Z
 cover:launchpad:fb10c50f:33952d4b	deferred: launchpad has 44 open PRs	session-20261116T184852-c0730778	2026-11-16T18:57:44Z
+merge:learniq:1167:5572f9ff	cloud tree of 4 learniq PRs: merged=2 red=0 fail=0 skip=0; conflict 2, lint 0, red 0, moved 0, done 0	session-20261116T184833-adbb8426	2026-11-16T18:57:50Z
