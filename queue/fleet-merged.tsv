@@ -3833,3 +3833,6 @@ learniq	1169	6f8c6510da541700251fc85ad25a279db0a224bf	RED	worker-15	GATE RED che
 learniq	1727	185949881fbbf0dbfdf3524a4f4cbb9378b38ebc	RED	worker-15	GATE RED checker floor: spdxheaders stars: 5 -> 4
 learniq	1903	a21f3b3be7a0738457716ac64ebcb0934364ae10	RED	worker-15	GATE RED checker floor: spdxheaders stars: 5 -> 4
 learniq	2126	4e6551e419cd72ffe5671223bb8b1976ed8f7538	RED	worker-15	GATE RED checker floor: spdxheaders stars: 5 -> 4
+versioniq	505	aeceef74a654df9ff29acf01994dd6bb8cbe10c2	SKIP	worker-50	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
+versioniq	725	c21158724c57858896fee8e8b6a247070aec5026	SKIP	worker-50	no APPROVE review at this head
+versioniq	732	edb0233ba6169cf4419f02b6bed018d9f56875ee	SKIP	worker-50	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
