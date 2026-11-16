@@ -16222,3 +16222,4 @@ merge:hermiq:1189:62df0391	unmeasured: static.developer.overheid.nl (#1189 APPRO
 review:shillinq:2070:756a08e8	GREEN: unit 12242 pass, no new failures	session-20261116T105612-e2dd1f4f	2026-11-16T11:00:44Z
 review:stackiq:1978:17efb788	GREEN: unit 3739 OK, vitest 12 pass, phpstan clean	session-20261116T105712-260c30d3	2026-11-16T11:00:55Z
 review:shillinq:2098:91bd5616	GREEN: settings-tab relocation, endpoint and admin check unchanged; PHP OK, vitest 1 inherited failure	session-20261116T105606-edb14de6	2026-11-16T11:01:14Z
+build:dossiq:a-portal-filed-case-opens-like-a-staff-created-one	already done: every code task (1.1-1.4) landed on development in #3897; only live task 1.5 left	session-20261116T105426-4e0b8984	2026-11-16T11:01:26Z
