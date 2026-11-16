@@ -17550,5 +17550,6 @@ lane:scan5:filinq:scan-1	filinq (development, 4.6): no cheap fix; not cheap: ope
 lane:scan5:shillinq:scan-1	shillinq (development c32ba1c22, rating 4.7): all criteria 5 except maintainability 4 (arch5), opensourcehealth 4, testcoderatio 4; not cheap: opensourcehealth (activity 2 stars: 31.5% of 400 npm deps inactive >2y, 28 >5.5y; needs dependency replacement), testcoderatio 110.5% -> 120% needs ~23k test lines; unmeasured: secretscanning (gitleaks not installed on checker host)	session-20261116T195830-617c8479	2026-11-16T20:04:37Z
 cover:buildiq:70b3e29em9bad:aae6d66c	deferred: buildiq has 53 open PRs	session-20261116T200139-9f494e52	2026-11-16T20:04:52Z
 cover:buildiq:70b3e29em9bad:38e80a9f	deferred: buildiq has 53 open PRs	session-20261116T200354-a4252cff	2026-11-16T20:04:50Z
+cover:buildiq:70b3e29em9bad:13d51e6a	deferred: buildiq has 53 open PRs	session-20261116T200354-a4252cff	2026-11-16T20:05:02Z
 lane:arch5:filinq:next-filinq-r1	PR #2150 opened (4.06-4.14 -> 4.09-4.18), GREEN verdict recorded, merge lock held by another merger; queued next-filinq-r2	session-20261116T194712-13a51568	2026-11-16T20:05:00Z
 review:buildiq:1620:9cf97ff7	GREEN: 0 new failures (3409 tests), vitest 49 passed	session-20261116T194731-f9ebdd55	2026-11-16T20:05:13Z
