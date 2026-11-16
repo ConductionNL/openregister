@@ -4711,3 +4711,4 @@ portaliq	2534	46b098d64c2def38295db134f6f8d86f108e0604	MERGED	merge3	GATE OK sbo
 dossiq	5398	0574972c864d76681209aa9163ca32450a6fa810	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
 versioniq	722	dbd7dee792c55e627416587713142ada0378e4d2	RED	worker-51	GATE RED checker floor: adrvalidator: warn -> fail; adrvalidator stars: 3 -> 1; score: 97 -> 93
 versioniq	723	22fd2bc279eddbdcd0147e0aff717813b8a27a9f	MERGED	worker-51	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.97 holds at 4.06
+keepiq	1852	d2699a90a616df3fa29d27bd9ca10e4ba500b213	MERGED	worker-35	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.58 holds at 3.59
