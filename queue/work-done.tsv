@@ -17392,3 +17392,4 @@ cover:buildiq:70b3e29em9bad:f84921d5	deferred: buildiq has 54 open PRs (note: 4 
 fix:hermiq:1750:4656eeb3	conflict resolved, new head 5b31e8f3; merge lock busy, REVERIFY queued	session-20261116T192142-66caeb8e	2026-11-16T19:28:06Z
 cover:launchpad:fb10c50fmf487:34f5c300	deferred: launchpad has 44 open PRs	session-20261116T192104-d9eeae3f	2026-11-16T19:28:36Z
 fix:versioniq:691:ed265e00	failed: floor needs a redesign beyond a fix: the patch-policy audit adds an 11th/12th consumer to AuditLogger, AuditSubject and AuditedVersions (fan-in >10, coupling 5.25->5.15), and interfacing 4.35->4.23 comes from many new 3+ parameter units; development merged in at 478f595cafa579f00febfd06880adc294612e8a0	session-20261116T184833-adbb8426	2026-11-16T19:28:33Z
+fix:buildiq:1620:afacfca7	conflict resolved, pushed 9cf97ff7; merge lock held elsewhere, REVERIFY queued	session-20261116T190918-81e43f73	2026-11-16T19:28:55Z
