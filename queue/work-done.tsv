@@ -18469,3 +18469,4 @@ verify:integriq:3613:efe7fa58	CONFLICT #3613 (openapi.json vs development)	sessi
 verify:opencatalogi:2684:e4f04e41	CONFLICT #2684 (12 files)	session-20261116T233901-7abe1a78	2026-11-16T23:54:37Z
 verify:keepiq:1829:9b528e45	CONFLICT: #1829 composer.lock conflicts with development	session-20261116T233923-d48b13fa	2026-11-16T23:54:56Z
 verify:launchpad:1218:a8711f00	CONFLICT #1218 (l10n, admin settings, tile code)	session-20261116T232623-066b53c9	2026-11-16T23:55:20Z
+verify:opencatalogi:2706:03bd33eb	CONFLICT: #2706 vs development in l10n, PublicationsController, manifest, PublishedTableServiceTest	session-20261116T232911-3dffa1ae	2026-11-16T23:55:33Z
