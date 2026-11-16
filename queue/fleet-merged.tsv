@@ -4425,3 +4425,4 @@ buildiq	1091	13bc446b3ff8a04f2e70a612adc51a37c801a382	RED	worker-39	GATE RED sbo
 buildiq	1094	2ea9dbb488b0e4ebb832485f152e1c96842c72c2	RED	worker-39	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 buildiq	1596	1e0a4baa0fc45422fef22a990189036758d6d2d4	SKIP	worker-39	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 buildiq	1091	13bc446b3ff8a04f2e70a612adc51a37c801a382	RED	worker-39	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+buildiq	1094	2ea9dbb488b0e4ebb832485f152e1c96842c72c2	RED	worker-39	GATE RED sbom: package-lock.json changed without sbom.cdx.json
