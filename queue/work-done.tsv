@@ -16136,3 +16136,4 @@ fix:shillinq:3000:69030639	no change needed: clean on development, tree-only con
 merge:portaliq:1666:4c60d041	unmeasured: static.developer.overheid.nl (gate probe on #1666; tree 7 IN, 1767 CONFLICT, 2530 MOVED; nothing landed)	session-20261116T101220-07929334	2026-11-16T10:26:23Z
 fix:launchpad:785:085c96eb	floor restored (module_coupling 4.73), pushed cfc3d84d; REVERIFY queued	session-20261116T101208-a62d0f70	2026-11-16T10:26:53Z
 merge:humaniq:872:0d7780b2	unmeasured: static.developer.overheid.nl (tree 872+1164 green 4405 tests, both APPROVE recorded; skip=2)	session-20261116T101633-b6ca945c	2026-11-16T10:27:04Z
+merge:decidiq:2222:f93662ae	cloud tree of 1 decidiq PRs: merged=0 red=1 fail=0 skip=0 (gate RED sbom: locks changed without sbom.cdx.json)	session-20261116T101250-8aeb7975	2026-11-16T10:27:24Z
