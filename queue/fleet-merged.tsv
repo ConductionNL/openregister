@@ -4348,3 +4348,5 @@ decidiq	2170	8002c6debd436efc4fcfa7624811d81b9eef9d75	SKIP	worker-26	GATE UNMEAS
 stackiq	1924	ef9a11b21b086cefec24cca4f5f1e7e31f4b1426	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.05
 stackiq	1954	34c6f73a6edec4ca5d54daff2b80273be29cdf68	RED	merge3	GATE RED checker floor: adrvalidator: pass -> warn; adrvalidator stars: 5 -> 3; score: 100 -> 97
 stackiq	1978	17efb7880705315a03b1690ba0a2da374e593432	RED	merge3	GATE RED checker floor: adrvalidator: pass -> fail; adrvalidator stars: 5 -> 1; score: 100 -> 93
+planninq	933	86d76c4199ab32cd2aeec13baab6b11384feb0c4	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.66 holds at 3.79
+planninq	1198	f4370679900c3aded15e653a6ebd0521c8fc79dd	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.66 holds at 3.79
