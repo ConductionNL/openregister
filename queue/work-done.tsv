@@ -17514,3 +17514,4 @@ cover:dossiq:069ee2d6m9d1b:39189253	stacked on #6203 (open-PR budget): lib/Servi
 review:hermiq:1735:33b209c9	GREEN (openapi.json conflicts with current development)	session-20261116T194719-57db1c57	2026-11-16T19:55:32Z
 review:hermiq:1754:3e57e4dc	GREEN: 5422 unit tests OK, vitest touched specs pass	session-20261116T195229-a18ea10d	2026-11-16T19:55:41Z
 review:opencatalogi:2679:e65a0507	GREEN: 41 tests added, 0 new failures	session-20261116T195130-dbadc12c	2026-11-16T19:56:30Z
+lane:scan5:hermiq:scan-1	hermiq: rating 4.6 at 85eae121; every criterion 5 stars except maintainability (arch5 lane) and opensourcehealth 4 (activity 2: 81 deps inactive >5.5y, freshness 3: 20 deps >5y, licence 4: 2 low-risk) - not cheap: replacing inactive/old transitive deps is a design decision; no PRs; unmeasured: secretscanning (gitleaks not installed on checker host), openssfscorecard (GitHub-only)	session-20261116T194719-57db1c57	2026-11-16T19:57:54Z
