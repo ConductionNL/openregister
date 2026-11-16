@@ -16879,5 +16879,6 @@ build:portaliq:update-row-action-condition	already done: every code task ticked 
 merge:opencatalogi:2655:bc7e84a2	cloud tree of 1 opencatalogi PRs: none; conflict 1, lint 0, red 0, moved 0, done 0	session-20261116T173211-a3411be5	2026-11-16T17:40:22Z
 merge:portaliq:2531:c19fc384	cloud tree of 1 portaliq PRs: merged=0 red=0 fail=0 skip=1; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T172806-3ef5ead7	2026-11-16T17:40:11Z
 build:portaliq:site-breadcrumb-follows-the-school-boards	already done: all code tasks built on development (#1425); only live check task 6 left	session-20261116T173256-6277a58c	2026-11-16T17:40:23Z
+build:portaliq:site-callouts-steps-and-tables-follow-the-boards	already built: tasks 1-4 ticked and on development; only task 5 live check left	session-20261116T170545-a4f14b83	2026-11-16T17:40:29Z
 review:shillinq:3078:33420e1f	GREEN: unit 12278 tests 0 failures, vitest 9/9, eslint clean	session-20261116T173217-7353a3fb	2026-11-16T17:40:31Z
 build:portaliq:write-record-names-the-mandate	already done: every code task ticked on development; open tasks are live checks only, left	session-20261116T170823-40772b73	2026-11-16T17:40:55Z
