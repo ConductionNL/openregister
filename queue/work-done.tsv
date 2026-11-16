@@ -17571,3 +17571,4 @@ lane:scan5:integriq:scan-1	integriq (development e7623d1f9, rating 4.6, score 10
 lane:arch5:hermiq:next-hermiq-r3:c2	partial: not started, #1810 and #1811 still not on development (hermiq merge in progress elsewhere); re-queued as :c3	session-20261116T200640-0ad90913	2026-11-16T20:08:05Z
 fix:integriq:3574:538c9e9b	fixed: development merged (floor holds 3.56), test mock updated; new head 606ffc5d, REVERIFY queued (merge lock held elsewhere)	session-20261116T195325-4766bbcd	2026-11-16T20:08:33Z
 fix:shillinq:2099:ea7e61ea	conflict resolved, pushed 5c0e743f; merge lock held by another merger, REVERIFY queued	session-20261116T195229-a18ea10d	2026-11-16T20:08:43Z
+merge:pipelinq:3659:f891b4bf	merge3 tree of 2 pipelinq PRs: merged=2 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-16T20:08:52Z
