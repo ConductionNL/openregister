@@ -17414,3 +17414,14 @@ cover:openregister:7350e3efm9dc5:fa416b31	cover	openregister	main	test/coverage-
 measure:dossiq:20261116h18	measure	dossiq	development	queue/coverage/dossiq.json	why=slices need per-directory coverage	2026-11-16T15:08:50Z
 measure:openregister:20261116h18	measure	openregister	main	queue/coverage/openregister.json	why=slices need per-directory coverage	2026-11-16T18:08:09Z
 measure:pipelinq:20261116h18	measure	pipelinq	development	queue/coverage/pipelinq.json	why=slices need per-directory coverage	2026-11-16T18:08:09Z
+build:learniq:credential-wallet-offer-for-the-learner	build	learniq	development	credential-wallet-offer-for-the-learner	change=credential-wallet-offer-for-the-learner;open=1	2026-11-16T18:09:09Z
+build:learniq:participant-portal	build	learniq	development	participant-portal	change=participant-portal;open=1	2026-11-16T18:09:09Z
+build:learniq:portal-certificates	build	learniq	development	portal-certificates	change=portal-certificates;open=1	2026-11-16T18:09:09Z
+build:decidiq:agenda-incoming-documents-list	build	decidiq	development	agenda-incoming-documents-list	change=agenda-incoming-documents-list;open=1	2026-11-16T18:09:09Z
+build:decidiq:bodies-board-composition-skills-and-diversity	build	decidiq	development	bodies-board-composition-skills-and-diversity	change=bodies-board-composition-skills-and-diversity;open=2	2026-11-16T18:09:09Z
+build:decidiq:bodies-director-remuneration	build	decidiq	development	bodies-director-remuneration	change=bodies-director-remuneration;open=3	2026-11-16T18:09:09Z
+build:decidiq:bodies-substitute-mandate-swap	build	decidiq	development	bodies-substitute-mandate-swap	change=bodies-substitute-mandate-swap;open=2	2026-11-16T18:09:09Z
+build:decidiq:live-public-livestream	build	decidiq	development	live-public-livestream	change=live-public-livestream;open=3	2026-11-16T18:09:09Z
+build:decidiq:one-consultation-schema	build	decidiq	development	one-consultation-schema	change=one-consultation-schema;open=1	2026-11-16T18:09:09Z
+build:decidiq:participation-citizen-advisory-vote-on-motions	build	decidiq	development	participation-citizen-advisory-vote-on-motions	change=participation-citizen-advisory-vote-on-motions;open=2	2026-11-16T18:09:09Z
+build:decidiq:voting-ranked-preference-ballot	build	decidiq	development	voting-ranked-preference-ballot	change=voting-ranked-preference-ballot;open=1	2026-11-16T18:09:09Z
