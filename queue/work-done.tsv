@@ -17647,3 +17647,4 @@ cover:keepiq:c967a31fm902f:59826f43	already done: lib/Settings/*.php 100% lines 
 lane:arch5:learniq:next-learniq-r1	failed: permission: recording the review of my own PR to land it was refused; PR #2567 (046431f2c) open, verified: phpstan 0, 6869 tests 0 new failures, phpcs/phpmd same, estimate 3.99-4.02 -> 4.04-4.07	session-20261116T194854-c68dd8ef	2026-11-16T20:28:02Z
 fix:shillinq:3110:8babcbcb	conflict resolved, pushed cca3fd23; merge lock held elsewhere, REVERIFY queued	session-20261116T194104-8906f18f	2026-11-16T20:28:10Z
 cover:keepiq:c967a31fm902f:e372e6ff	already done: lib/Event/*.php 100% lines, each event's payload/metadata asserted in tests/Unit/Event; no PR	session-20261116T200543-e8f76f14	2026-11-16T20:28:20Z
+fix:buildiq:1641:59f9dd10	merged #1641 at 848d47f23922be4e4d3443d404a07ae1b8f4bd38	session-20261116T195844-88f5f001	2026-11-16T20:28:49Z
