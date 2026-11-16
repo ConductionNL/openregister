@@ -18131,4 +18131,5 @@ build:buildiq:logic-script-step:c2	failed: still blocked on logic-automation-act
 cover:buildiq:70b3e29eme3dd:6818da73	deferred: buildiq has 52 open PRs	session-20261116T222156-bd715f7e	2026-11-16T22:26:30Z
 cover:buildiq:70b3e29eme3dd:6891a8ac	deferred: buildiq has 52 open PRs	session-20261116T222156-bd715f7e	2026-11-16T22:26:44Z
 verify:opencatalogi:2756:7f36d292	GREEN #2756: no new failures (phpunit 6040, vitest 1165)	session-20261116T222117-aa9736ea	2026-11-16T22:27:00Z
+fix:buildiq:1687:ebc1696e	merged #1687 at e9f9ddf281f6b31e0a979ffa201e4c911900665f	session-20261116T221330-514f14d5	2026-11-16T22:27:18Z
 verify:keepiq:1863:f1004fcc	1867 GREEN (tests only, 0 new failures); 1863 already merged on development, no verdict	session-20261116T214640-6a01c0c6	2026-11-16T22:27:18Z
