@@ -16908,6 +16908,7 @@ build:filinq:anonymise-prohibition-consent-guard	deferred: filinq has 49 open PR
 build:shillinq:billable-period-becomes-an-invoice	already done: 1.1-1.4 built on development (10 Oct); only 1.5 live pass left	session-20261116T173311-8d6b3275	2026-11-16T17:43:14Z
 review:openregister:10595:8cc9923c	APPROVE: tests only, 8 new tests green, required suites green	session-20261116T173213-a5a52019	2026-11-16T17:43:20Z
 review:keepiq:1826:95a54b11	GREEN: keepiq #1826, unit 5408/0 fail, vitest 99 pass; version-line conflict with development	session-20261116T173313-424dff86	2026-11-16T17:43:27Z
+cover:filinq:7a9ef677:1174c39d	deferred: filinq has 49 open PRs	session-20261116T173213-a5a52019	2026-11-16T17:43:46Z
 build:shillinq:setup-wizard-english	already built: T01-T10,T12-T13 ticked on development (fix(i18n) 2026-08-19); only T11 left, a live e2e run	session-20261116T173808-386fe9e9	2026-11-16T17:43:36Z
 review:shillinq:2230:e61ebeb7	GREEN: babel dev-dep bump, vitest 3030/3031 (1 inherited failure)	session-20261116T173342-1d8a0fb9	2026-11-16T17:43:49Z
 build:shillinq:sales-usage-billing	deferred: shillinq has 81 open PRs	session-20261116T172806-3ef5ead7	2026-11-16T17:44:03Z
@@ -16921,3 +16922,4 @@ build:filinq:anonymisation-batch-output-folder-layout	already built: every code 
 merge:buildiq:1596:0a6a854e	unmeasured: static.developer.overheid.nl (node fetch in checker-floor cannot reach it; curl can); 1596 and 1673 reviewed APPROVE, tree green, nothing landed	session-20261116T173103-d3bed8f8	2026-11-16T17:45:52Z
 fix:decidiq:2178:a58bcd58	fixed icons, pushed d8c9d1623e; merge lock held by merge3, REVERIFY queued	session-20261116T173141-f87aaa9d	2026-11-16T17:46:08Z
 build:filinq:dossier-management-ui	deferred: filinq has 49 open PRs	session-20261116T171035-683856c3	2026-11-16T17:46:16Z
+build:filinq:signer-identity-rails	deferred: filinq has 49 open PRs	session-20261116T171035-683856c3	2026-11-16T17:46:23Z
