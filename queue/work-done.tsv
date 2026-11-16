@@ -18133,3 +18133,4 @@ cover:buildiq:70b3e29eme3dd:6891a8ac	deferred: buildiq has 52 open PRs	session-2
 verify:opencatalogi:2756:7f36d292	GREEN #2756: no new failures (phpunit 6040, vitest 1165)	session-20261116T222117-aa9736ea	2026-11-16T22:27:00Z
 fix:buildiq:1687:ebc1696e	merged #1687 at e9f9ddf281f6b31e0a979ffa201e4c911900665f	session-20261116T221330-514f14d5	2026-11-16T22:27:18Z
 verify:keepiq:1863:f1004fcc	1867 GREEN (tests only, 0 new failures); 1863 already merged on development, no verdict	session-20261116T214640-6a01c0c6	2026-11-16T22:27:18Z
+cover:keepiq:c967a31fmaddd:34f5c300	PR #1871: 36 tests over 5 Service classes; suite 5542->5578 OK	session-20261116T220905-333eed09	2026-11-16T22:27:38Z
