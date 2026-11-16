@@ -4233,3 +4233,4 @@ hermiq	1736	476d376136c4944d883adf005e654081f12d330e	SKIP	worker-07	GATE UNMEASU
 decidiq	1470	d4e9a56bd03ff9b791d94f382e91a9560de24a53	SKIP	worker-55	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 integriq	2746	ff5f2df859dc0664166676b1e4a688ca9dcf5daf	RED	worker-47	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 hermiq	1756	1435f079d583e686b6e7ec8e72ce6afffc294aa8	SKIP	worker-07	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
+learniq	2126	c35043502445af1315db6d77b7c0c0a84222a33b	SKIP	worker-46	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
