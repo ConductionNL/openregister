@@ -16443,4 +16443,5 @@ review:learniq:1882:334e6e47	GREEN: additive field labels; suite 6869 tests, 1 i
 review:integriq:3047:75eb55fe	GREEN	session-20261116T142700-f4d651ea	2026-11-16T14:33:09Z
 merge:portaliq:663:e6ccd188	merge3 tree of 9 portaliq PRs: merged=7 red=1 fail=0 skip=0; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-16T14:33:21Z
 review:integriq:3595:6e9939f8	GREEN: suite 9557, 4 inherited failures, no new	session-20261116T142931-c6a20eeb	2026-11-16T14:33:52Z
+review:buildiq:1652:fd2e894a	GREEN: unit 3346 (1 inherited ExportZipGolden), vitest 4736 pass	session-20261116T142616-2623e37a	2026-11-16T14:34:06Z
 review:integriq:2671:f4218e17	GREEN: dev-tooling bump, unit suite identical to development, phpmd no worse	session-20261116T142651-57b203fe	2026-11-16T14:34:02Z
