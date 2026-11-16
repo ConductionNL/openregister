@@ -16109,3 +16109,4 @@ review:opencatalogi:2673:6dd0d200	GREEN: 0 new failures (106 inherited), vitest 
 review:shillinq:2083:0ee980ae	GREEN: unit 12234 ok, vitest 49 ok	session-20261116T101248-fe4447ca	2026-11-16T10:18:15Z
 review:shillinq:1900:338f0839	GREEN: unit 12240 OK, no blockers, gate fails inherited	session-20261116T101053-f719e178	2026-11-16T10:18:36Z
 review:shillinq:2071:75f4741b	GREEN: suite 12230 OK, touched 27 OK, vitest/eslint clean	session-20261116T101206-d1581575	2026-11-16T10:18:58Z
+review:stackiq:1931:75fc2149	BLOCK: info.xml version not raised for register bump; no demo data for 2 new schemas; component_independence below floor	session-20261116T101226-98074c97	2026-11-16T10:19:08Z
