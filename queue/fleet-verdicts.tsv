@@ -15619,3 +15619,4 @@ stackiq	1941	60d39b71485af24164e25721dadbd1d91cce345c	REVERIFY	worker-06	review 
 shillinq	3124	f16c855b11e5ba8d71e8e3d30641d0bf0c604b4d	GREEN	worker-46	unit 12388 on tree (baseline 12381, 0 failures both), 0 new; same 226 contract aliases as development
 shillinq	3131	4f7d9938dcc0000725e3515727ba905c70e0de87	GREEN	worker-46	unit 12388 on tree (baseline 12381, 0 failures both), 0 new; lookups extracted with the same messages, codes and access checks
 buildiq	1650	c0d470847eaf0c41464fdbc3508667d92fc39faf	CONFLICT	worker-57:merge	conflicts with development; files: l10n/en.js src/components/page-editor/fields/fieldTypes.js 
+stackiq	1973	c80d3c07778d7cca0a56d0df59e0f763b2acfadc	CONFLICT	worker-06	conflicts with #1941 in src/views/FacetedCatalogIndexView.vue (merges clean on development alone)
