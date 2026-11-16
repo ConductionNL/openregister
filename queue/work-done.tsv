@@ -17459,11 +17459,19 @@ verify:filinq:2149:7a908f9a	GREEN #2149 (docs only); 6926 tests, 0 new failures	
 fix:decidiq:2228:0abc6d2c	merged #2228 at 0fe237ed088554296db5e3b40d1b8055f8c3de06	session-20261116T193350-bd20edd7	2026-11-16T19:43:12Z
 review:buildiq:1641:59f9dd10	GREEN: no new failures (3396 tests, 1 inherited), vitest 6/6	session-20261116T192127-f26e2e56	2026-11-16T19:43:19Z
 review:pipelinq:3659:855423fe	GREEN: tests only, suite 9129 ok	session-20261116T194104-8906f18f	2026-11-16T19:43:27Z
+cover:decidiq:a5f973bbm9cda:1b97f731	deferred: decidiq has 47 open PRs	session-20261116T193350-bd20edd7	2026-11-16T19:43:37Z
 cover:learniq:e6498ddd:568ec52a	deferred: learniq has 60 open PRs	session-20261116T192127-f26e2e56	2026-11-16T19:43:50Z
 review:shillinq:1900:0046f1c5	RED: 10 new test errors on development (execute() takes LifecycleActionContext; new tests pass an array) + conflict in info.xml/register-versions lock	session-20261116T193315-3e9a027b	2026-11-16T19:43:49Z
 review:pipelinq:3602:d73ec367	CONFLICT #3602: add/add on two test files development already has; likely superseded	session-20261116T193642-e39387da	2026-11-16T19:43:58Z
+cover:dossiq:069ee2d6m9d1b:094a3419	1 test on #6203 (stacked, dossiq 41 open PRs): Email dir saturated, remaining uncovered lines are unreachable defensive branches or getter-only value objects; suite failures unchanged 19	session-20261116T193813-1392568e	2026-11-16T19:44:18Z
 cover:learniq:e6498ddd:7dbbf814	deferred: learniq has 60 open PRs	session-20261116T192127-f26e2e56	2026-11-16T19:44:10Z
 cover:learniq:e6498ddd:js3f3bfe56	deferred: learniq has 60 open PRs	session-20261116T193315-3e9a027b	2026-11-16T19:44:12Z
 fix:versioniq:722:c6a909c2	conflict resolved, pushed dbd7dee7; REVERIFY queued (no end-to-end: merge tree cannot run phpunit on versioniq)	session-20261116T184841-a3bc3002	2026-11-16T19:44:15Z
 cover:learniq:e6498ddd:38e80a9f	deferred: learniq has 60 open PRs	session-20261116T193315-3e9a027b	2026-11-16T19:44:36Z
 cover:learniq:e6498ddd:689c9915	deferred: learniq has 60 open PRs	session-20261116T192127-f26e2e56	2026-11-16T19:44:40Z
+cover:learniq:e6498ddd:befc51b3	deferred: learniq has 60 open PRs	session-20261116T192127-f26e2e56	2026-11-16T19:44:50Z
+merge:shillinq:2099:3df1d67e	cloud tree of 5 shillinq PRs: merged=3 red=0 fail=0 skip=0; conflict 2, lint 0, red 0, moved 0, done 0	session-20261116T184852-b8356331	2026-11-16T19:44:50Z
+cover:learniq:e6498ddd:80b3d955	deferred: learniq has 60 open PRs	session-20261116T192127-f26e2e56	2026-11-16T19:45:04Z
+cover:learniq:e6498ddd:98083bbf	deferred: learniq has 60 open PRs	session-20261116T192127-f26e2e56	2026-11-16T19:45:11Z
+cover:learniq:e6498ddd:jsc89f0f80	deferred: learniq has 60 open PRs	session-20261116T194405-fc188e9a	2026-11-16T19:45:17Z
+lane:arch5:shillinq:next-shillinq-r1	PR #3118 opened (estimate 4.03-4.06 -> 4.08-4.12), verified green; merge lock held elsewhere, GREEN verdict queued	session-20261116T192325-bb4c31dd	2026-11-16T19:45:40Z
