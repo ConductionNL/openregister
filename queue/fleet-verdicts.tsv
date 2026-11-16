@@ -14111,3 +14111,4 @@ dossiq	4887	f530c6e6fdf6c17a9604f2f9802142bf4f4b9b67	CONFLICT	merge3	merges clea
 dossiq	5266	db2ab4a5d77285e0fea2aeb9146db1b295c7a2c0	CONFLICT	merge3	conflicts with development; files: src/menu-layout.simple.json 
 dossiq	5338	4924e28da77fe70cbc4717ee9ce03ca31c2b2289	CONFLICT	merge3	conflicts with development; files: lib/Service/Task/EngineTaskGateway.php 
 dossiq	5396	861d4d0ae94c2884fa5de7c4df9274a64ae551d9	CONFLICT	merge3	conflicts with development; files: composer.lock 
+pipelinq	3152	6f459260fe0cf059f385fdb47807cd298cd8fcb8	REVERIFY	worker-43	merged development in, resolved MessageDispatchTrait conflict (development's request array + OutboundMessage from openregister main); 20 messaging test classes green, phpcs+phpstan clean; merge lock held elsewhere; new head 29e9143da84178245bbb5d01735472c600e85c60, verify it
