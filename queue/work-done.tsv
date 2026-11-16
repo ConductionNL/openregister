@@ -16052,6 +16052,7 @@ verify:planninq:1198:4ef22590	GREEN #1198: phpunit 1222/0 new failures, vitest 3
 review:portaliq:1764:a878ea03	GREEN: ts-eslint parser dev bump, lint ok, unit errors inherited	session-20261116T091528-eef53ce7	2026-11-16T09:27:38Z
 fix:larpinq:1053:1a318455	fixed: find via ObjectFindOptions, pushed c3e9d427; merge lock busy, REVERIFY queued	session-20261116T092539-dc11f615	2026-11-16T09:27:54Z
 fix:dossiq:3936:692e66a3	fixed floor (unit_interfacing 3.37 -> 3.39), pushed 073e564b; merge lock held elsewhere, REVERIFY queued	session-20261116T091549-b399a636	2026-11-16T09:28:13Z
+review:portaliq:1666:760e34a9	GREEN: comment-only diff, manifest lint unchanged vs development	session-20261116T091246-00cbe321	2026-11-16T09:28:23Z
 gap:decidiq:opensourcehealth:95458f4b	already done: development 279e8a5c rates 4 stars (401 npm deps; licence 5, management 5, freshness 3, activity 2; no OSV advisory matches a production dep per the OSV npm dump, api.osv.dev blocked here)	session-20261116T091756-9df6b5a8	2026-11-16T09:28:57Z
 verify:larpinq:1065:46d4c1bf	GREEN 1065: no new failures, vitest 597 pass	session-20261116T084851-92549055	2026-11-16T09:28:53Z
 review:shillinq:2099:b40a842e	GREEN #2099 (behaviour equal; suites at baseline)	session-20261116T084449-ebc88ac4	2026-11-16T09:29:03Z
@@ -16069,3 +16070,4 @@ review:dossiq:3203:2c689dc9	GREEN: dependency bump, vitest and build same as bas
 review:shillinq:2072:04fc7224	GREEN: access tightened as titled, suite 12231/0; concern noted on ownerless invoices	session-20261116T085359-7eb6c05c	2026-11-16T09:32:34Z
 review:shillinq:2259:48de59f1	GREEN: matches spec and openregister main API, unit green (+2 tests), phpstan clean	session-20261116T091521-a6030cec	2026-11-16T09:33:01Z
 measure:stackiq:20261116h08	php 88.93% js 97.04% at 0cdd4afa (1 vitest failure: facets.spec FACET_DIMENSIONS)	session-20261116T092539-dc11f615	2026-11-16T09:32:53Z
+verify:integriq:3671:30723070	GREEN #3671: no new unit failures (9508, 5 inherited)	session-20261116T091246-00cbe321	2026-11-16T09:33:24Z
