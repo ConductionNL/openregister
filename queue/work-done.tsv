@@ -17859,6 +17859,7 @@ lane:arch5:buildiq:next-buildiq-r2	PR #1684, GREEN (estimate 3.92-3.98 -> 3.93-3
 review:dossiq:6203:6a6113a8	GREEN: tests only, suite clean beyond 1 inherited error	session-20261116T211529-39ccc7ff	2026-11-16T21:20:35Z
 cover:dossiq:069ee2d6m9d1b:9d3a1784	deferred: dossiq has 41 open PRs	session-20261116T211529-39ccc7ff	2026-11-16T21:20:55Z
 review:filinq:2072:268b3e0d	BLOCK: policy rule load uses the system seam on a user path without an organisation filter; suite green	session-20261116T211641-8431b36d	2026-11-16T21:21:00Z
+merge:keepiq:1826:c6a76e57	cloud tree of 2 keepiq PRs: merged=1 red=0 fail=0 skip=1 (#1849 merged; #1826 not reviewed here: its head carries this worker's own commits, needs another reviewer)	session-20261116T200543-e8f76f14	2026-11-16T21:21:27Z
 lane:arch5:versioniq:next-versioniq-r2	PR #753, GREEN (estimate 4.05-4.22 -> 4.22-4.34 incl. #751 commits; this round alone +0.03; under 4.5, next lever unit interfacing/complexity)	session-20261116T211115-33d23e06	2026-11-16T21:21:22Z
 cover:dossiq:069ee2d6m9d1b:f8ba5a90	deferred: dossiq has 41 open PRs	session-20261116T211115-33d23e06	2026-11-16T21:22:07Z
 fix:shillinq:3078:55887f01	fixed adrvalidator floor (API-Version on preflight 204s), pushed 767508fe; REVERIFY queued (merge lock busy)	session-20261116T211700-abd020e0	2026-11-16T21:22:22Z
