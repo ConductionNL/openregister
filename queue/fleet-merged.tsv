@@ -4179,8 +4179,13 @@ larpinq	1065	b4cd6229bc8a4c76e19474e9d716e4c5b905e373	SKIP	worker-48	GATE UNMEAS
 opencatalogi	2407	15ee026e9e5cc880f1ef5812343e2da79e65c3d1	SKIP	worker-11	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 shillinq	2259	48de59f1a9e0bf8ffba75343ff03148754ed469c	SKIP	worker-58	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 shillinq	3110	a0ee6bc0a0cab83e9f4998a81594f802cfe4ab3c	RED	worker-58	GATE RED checker floor: spdxheaders stars: 5 -> 4
+decidiq	2191	29114ea549b1df7741db17358e85829c10be8c82	SKIP	worker-27	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 pipelinq	2969	23b177e505cb1a2a906213fd0df439c94e592b94	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.48
 pipelinq	3885	6b8029c1c0ce49d9a97aa91a0f30f0be27f4476e	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.48
 pipelinq	3887	17b6026c5b66fcb53bfc9ce3bc6cb3e80a42c509	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.50
 hermiq	1175	42637555c30a617e2512d88fcac2b0a205657ddc	SKIP	worker-42	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 shillinq	3111	96abe4abfb509aa4c32c2210a765797e13c601d5	RED	worker-58	GATE RED checker floor: spdxheaders stars: 5 -> 4
+integriq	2924	81032a2e25be20a55d65581e9c199af938b2368c	RED	worker-47	GATE RED floor: unit_interfacing: 1.93 -> 1.91
+keepiq	1497	2b0710543667991b1ee7fc988e0d48840735e484	RED	worker-37	GATE RED sbom: composer.lock changed without sbom.cdx.json
+decidiq	2203	14dc68070ac11502fc0ca03de58869b820f8905a	SKIP	worker-27	no APPROVE review at this head
+learniq	1883	b958696628bfdb6a748cfabc44b519cd91dae052	RED	worker-14	GATE RED checker floor: spdxheaders stars: 5 -> 4
