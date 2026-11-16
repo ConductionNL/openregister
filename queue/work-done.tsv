@@ -17498,3 +17498,4 @@ lane:arch5:hermiq:next-hermiq-r2	partial: not started, #1810 not landed yet (her
 verify:humaniq:1164:8d592c67	1168 GREEN, 1169 GREEN (4405->4411, 0 failures); 1164 already merged on development, no verdict	session-20261116T193813-1392568e	2026-11-16T19:49:28Z
 cover:pipelinq:7f9dc8e6m3dbb:1174c39d	pipelinq has 45 open PRs: added to #3602; Support dir uncovered lines 13 -> 0, suite 9071 ok	session-20261116T194104-8906f18f	2026-11-16T19:49:38Z
 cover:learniq:e6498ddd:81b1241f	already covered: lib/Portal/*.php measures 99.15% (3057 stmts, 26 uncovered) on development under the full unit suite; no untested class left; no PR	session-20261116T184841-a3bc3002	2026-11-16T19:50:17Z
+cover:keepiq:c967a31fm902f:js0023cfc7	PR #1854: +20 vitest specs, src/dialogs 93.8%->96.8% stmts; suite 6902->6922 pass (3 inherited HealthReportView fails)	session-20261116T192132-006e7c93	2026-11-16T19:51:05Z
