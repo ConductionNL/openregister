@@ -4548,3 +4548,4 @@ stackiq	1991	eae67fd41291aadfec62cd5d47ee72c2e1e40e67	MERGED	merge3	GATE OK sbom
 keepiq	1816	c999bfc2e54087d2325b4b92871a0e738a639500	SKIP	worker-44	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 integriq	3670	d4f5bcc83b7208371d998e46641f53b3703480ef	SKIP	worker-14	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 hermiq	1195	7d6678393fcb6f34e5686d5bae1b98fb9a9688de	SKIP	worker-11	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
+integriq	3671	4b0e1b0a423662d5834cee85bf86311246344660	RED	worker-14	GATE RED checker floor: spdxheaders stars: 5 -> 4
