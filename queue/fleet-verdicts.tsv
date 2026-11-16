@@ -14328,3 +14328,5 @@ shillinq	1958	55f82d52277eede6df1c34287254996742aff7c6	RED	worker-33:merge-gate	
 shillinq	1991	29abf7fb303a9a25601637bfbbaecaeb9a1feae7	RED	worker-33:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
 shillinq	2048	f88b17a7a69df6279ca38720aee89560b62d975f	RED	worker-33:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
 shillinq	2224	ff4aa606e92e5e1b481b9d57db877beb814a2c4e	RED	worker-33:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
+shillinq	2086	bda4253ea12989f83fad32449a9c981e81007e41	CONFLICT	worker-33:merge	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+shillinq	2258	76c438402dd575bb4890213efe7	REVERIFY	worker-33:merge	verdict sha is not the head: head is 76c438402dd575bb4890213efe7e67781193fc4b
