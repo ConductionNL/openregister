@@ -3827,3 +3827,4 @@ launchpad	977	4ec996d31439daed99af546858b9614b2ca4a159	RED	worker-12	GATE RED ch
 stackiq	1168	04f38d3ae4a4d17b142dbafb97d2a81126d6568c	SKIP	worker-23	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
 stackiq	1297	f6f898a1ce156bb7902c6cbdc55ca55df63daf3a	SKIP	worker-23	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
 stackiq	1988	084061aa2765cef73b46e59c4e2a5149b5db4232	RED	worker-23	GATE RED sbom: composer.lock changed without sbom.cdx.json
+thematiq	1365	39f057e7817920c340d55e29be4587cb04702941	SKIP	worker-17	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator, secretscanning; this is not a pass
