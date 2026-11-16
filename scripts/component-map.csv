@@ -4258,3 +4258,4 @@ Controller/Support/PersonalTokenGrantsServices.php,,Controller,Access,Access/Con
 Middleware/PersonalTokenGrantMiddleware.php,,Middleware,Platform,Platform/Middleware/PersonalTokenGrantMiddleware.php,0,,Platform
 Service/Rbac/PersonalTokenGrantBinder.php,,Service,Access,Access/Service/Rbac/PersonalTokenGrantBinder.php,0,,Core
 Service/Rbac/PersonalTokenGrantStore.php,,Service,Access,Access/Service/Rbac/PersonalTokenGrantStore.php,0,,Core
+Listener/PersonalTokenGrantRevokedListener.php,,Listener,Access,Access/Listener/PersonalTokenGrantRevokedListener.php,0,,Core

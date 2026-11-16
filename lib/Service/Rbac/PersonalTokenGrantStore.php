@@ -70,6 +70,13 @@ class PersonalTokenGrantStore {
 	public const MAX_RENEWALS = 20;
 
 	/**
+	 * The app value listing every token that carries a grant, so a sweep can find them.
+	 *
+	 * @var string
+	 */
+	public const INDEX_KEY = 'personal_token_grants';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IConfig $config Holds the user values.
@@ -155,6 +162,7 @@ class PersonalTokenGrantStore {
 		}
 
 		$this->config->setUserValue($uid, Application::APP_ID, self::key(tokenId: $tokenId), (string) json_encode($record));
+		$this->index(uid: $uid, tokenId: $tokenId, present: true);
 
 		return $record;
 	}//end write()
@@ -171,7 +179,54 @@ class PersonalTokenGrantStore {
 	 */
 	public function remove(string $uid, string $tokenId): void {
 		$this->config->deleteUserValue($uid, Application::APP_ID, self::key(tokenId: $tokenId));
+		$this->index(uid: $uid, tokenId: $tokenId, present: false);
 	}//end remove()
+
+	/**
+	 * Every token that carries a grant, as its owner and id.
+	 *
+	 * @return array<int, array{uid: string, tokenId: string}> The tokens.
+	 *
+	 * @spec openspec/changes/scoped-api-tokens/specs/auth-system/spec.md#requirement-a-token-carries-a-required-end-date-and-is-warned-before-it-lapses-req-sat-003
+	 */
+	public function all(): array {
+		$entries = json_decode((string) $this->config->getAppValue(Application::APP_ID, self::INDEX_KEY, '[]'), true);
+		if (is_array($entries) === false) {
+			return [];
+		}
+
+		$tokens = [];
+		foreach ($entries as $entry) {
+			if (is_array($entry) === true && is_string(($entry['uid'] ?? null)) === true && is_string(($entry['tokenId'] ?? null)) === true) {
+				$tokens[] = ['uid' => $entry['uid'], 'tokenId' => $entry['tokenId']];
+			}
+		}
+
+		return $tokens;
+	}//end all()
+
+	/**
+	 * Add a token to, or drop it from, the index.
+	 *
+	 * @param string $uid     The token's owner.
+	 * @param string $tokenId The token id.
+	 * @param bool   $present Whether the token now carries a grant.
+	 *
+	 * @return void
+	 */
+	private function index(string $uid, string $tokenId, bool $present): void {
+		$tokens = array_values(
+			array_filter(
+				$this->all(),
+				static fn (array $entry): bool => ($entry['uid'] !== $uid || $entry['tokenId'] !== $tokenId)
+			)
+		);
+		if ($present === true) {
+			$tokens[] = ['uid' => $uid, 'tokenId' => $tokenId];
+		}
+
+		$this->config->setAppValue(Application::APP_ID, self::INDEX_KEY, (string) json_encode($tokens));
+	}//end index()
 
 	/**
 	 * The id a personal token is named by in `actorVia`, whoami and the rate limit.

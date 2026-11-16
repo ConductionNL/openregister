@@ -65,8 +65,16 @@
         `PersonalTokenGrantBinderTest.php` (7),
         `tests/Unit/Middleware/PersonalTokenGrantMiddlewareTest.php` (4),
         `tests/Unit/Controller/PersonalTokenGrantsControllerTest.php` (11).
-      - Left: the lapse warning (`TokenGrantLapseJob`) reads Consumers only;
-        personal grants are not yet enumerated for it.
+      - Done, the lapse warning for personal tokens: the store keeps an index
+        of granted tokens (app value `personal_token_grants`) and
+        `TokenGrantLapseJob` also warns the owner of each personal token whose
+        grant lapses within the window (`warnForPersonal()`).
+        `PersonalTokenGrantRevokedListener` removes a revoked token's grant on
+        Nextcloud's `TokenInvalidatedEvent`, so no warning names a token that
+        is gone. Tests: `TokenGrantLapseJobTest` (+2),
+        `PersonalTokenGrantStoreTest` (+2),
+        `tests/Unit/Listener/PersonalTokenGrantRevokedListenerTest.php` (4);
+        the listener goldens are updated for the one added registration.
 - [x] 1.1d The `match` row condition is carried and returned but not yet
       evaluated: it belongs in the conditional-scope evaluator beside the other
       rules, which is task 2.1's SQL half.

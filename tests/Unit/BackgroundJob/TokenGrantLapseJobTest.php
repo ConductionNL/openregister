@@ -27,8 +27,10 @@ use OCA\OpenRegister\BackgroundJob\TokenGrantLapseJob;
 use OCA\OpenRegister\Db\Consumer;
 use OCA\OpenRegister\Db\ConsumerMapperInterface;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogueInterface;
+use OCA\OpenRegister\Service\Rbac\PersonalTokenGrantStore;
 use OCA\OpenRegister\Service\Rbac\TokenGrantValidator;
 use OCP\AppFramework\Utility\ITimeFactory;
+use OCP\IConfig;
 use OCP\IUser;
 use OCP\IUserManager;
 use OCP\Notification\IManager;
@@ -42,6 +44,7 @@ use RuntimeException;
 /**
  * @covers \OCA\OpenRegister\BackgroundJob\TokenGrantLapseJob
  * @uses   \OCA\OpenRegister\Db\Consumer
+ * @uses   \OCA\OpenRegister\Service\Rbac\PersonalTokenGrantStore
  * @uses   \OCA\OpenRegister\Service\Rbac\TokenGrant
  * @uses   \OCA\OpenRegister\Service\Rbac\TokenGrantReach
  * @uses   \OCA\OpenRegister\Service\Rbac\TokenGrantTerms
@@ -77,6 +80,13 @@ class TokenGrantLapseJobTest extends TestCase {
 	 * @var TokenGrantLapseJob
 	 */
 	private TokenGrantLapseJob $job;
+
+	/**
+	 * The constructor arguments of the job, so a test can add the personal grants.
+	 *
+	 * @var array<string, mixed>
+	 */
+	private array $arguments = [];
 
 	/**
 	 * A job over a fixed clock, recording what it sends.
@@ -121,15 +131,56 @@ class TokenGrantLapseJobTest extends TestCase {
 		$time = $this->createMock(ITimeFactory::class);
 		$time->method('getDateTime')->willReturnCallback(static fn (): DateTime => new DateTime(self::NOW));
 
-		$this->job = new TokenGrantLapseJob(
-			time: $time,
-			logger: $this->logger,
-			consumers: $this->consumers,
-			validator: new TokenGrantValidator(catalogue: $this->createMock(PermissionCatalogueInterface::class)),
-			notifications: $this->notifications,
-			users: $users
-		);
+		$this->arguments = [
+			'time' => $time,
+			'logger' => $this->logger,
+			'consumers' => $this->consumers,
+			'validator' => new TokenGrantValidator(catalogue: $this->createMock(PermissionCatalogueInterface::class)),
+			'notifications' => $this->notifications,
+			'users' => $users,
+		];
+		$this->job       = new TokenGrantLapseJob(...$this->arguments);
 	}//end setUp()
+
+	/**
+	 * A personal token store over an in-memory config holding the given grants.
+	 *
+	 * @param array<int, array{string, string, array<string, mixed>}> $grants Owner, token id and grant of each token.
+	 *
+	 * @return PersonalTokenGrantStore The store.
+	 */
+	private function personalStore(array $grants): PersonalTokenGrantStore {
+		$values = [];
+		$app    = [];
+		$config = $this->createMock(IConfig::class);
+		$config->method('getUserValue')->willReturnCallback(
+			static function (string $uid, string $appId, string $key, $default = '') use (&$values) {
+				return ($values["$uid/$key"] ?? $default);
+			}
+		);
+		$config->method('setUserValue')->willReturnCallback(
+			static function (string $uid, string $appId, string $key, $value) use (&$values): void {
+				$values["$uid/$key"] = (string) $value;
+			}
+		);
+		$config->method('getAppValue')->willReturnCallback(
+			static function (string $appId, string $key, $default = '') use (&$app) {
+				return ($app[$key] ?? $default);
+			}
+		);
+		$config->method('setAppValue')->willReturnCallback(
+			static function (string $appId, string $key, $value) use (&$app): void {
+				$app[$key] = (string) $value;
+			}
+		);
+
+		$store = new PersonalTokenGrantStore(config: $config);
+		foreach ($grants as [$uid, $tokenId, $grant]) {
+			$store->write(uid: $uid, tokenId: $tokenId, grant: $grant, actor: $uid, now: new DateTimeImmutable(self::NOW));
+		}
+
+		return $store;
+	}//end personalStore()
 
 	/**
 	 * A notification double that keeps what is set on it.
@@ -308,4 +359,51 @@ class TokenGrantLapseJobTest extends TestCase {
 
 		$this->assertSame([], $this->sent);
 	}//end testAFailingSweepIsLoggedNotThrown()
+
+	/**
+	 * A personal token ending inside the window warns its owner, naming the token; others are left alone.
+	 *
+	 * @return void
+	 */
+	public function testAPersonalTokenEndingInsideTheWindowWarnsItsOwner(): void {
+		$this->consumers->method('findAll')->willReturn([]);
+		$store = $this->personalStore(
+			[
+				['alice', '42', ['verbs' => ['read'], 'expiresAt' => '2026-11-25T12:00:00+00:00']],
+				['alice', '44', ['verbs' => ['read'], 'expiresAt' => '2027-06-01T12:00:00+00:00']],
+				['gone', '43', ['verbs' => ['read'], 'expiresAt' => '2026-11-20T12:00:00+00:00']],
+			]
+		);
+		$this->job = new TokenGrantLapseJob(...($this->arguments + ['personalGrants' => $store]));
+		$this->logger->expects($this->once())->method('info')
+			->with('[TokenGrantLapseJob] Warned {count} holders of lapsing tokens', ['count' => 1]);
+
+		$this->sweep();
+
+		$this->assertSame(
+			[
+				[
+					'user' => 'alice',
+					'object' => ['token_grant', 'app-password:42'],
+					'subject' => 'token_grant_lapsing',
+					'parameters' => ['token' => 'app-password:42', 'endsAt' => '2026-11-25', 'daysLeft' => 10],
+				],
+			],
+			$this->sent
+		);
+	}//end testAPersonalTokenEndingInsideTheWindowWarnsItsOwner()
+
+	/**
+	 * A personal token without a stored grant, or a job without the store, warns nobody.
+	 *
+	 * @return void
+	 */
+	public function testAPersonalTokenWithoutAGrantWarnsNobody(): void {
+		$now = new DateTimeImmutable(self::NOW);
+		$this->notifications->expects($this->never())->method('notify');
+
+		$this->assertSame(0, $this->job->warnForPersonal(uid: 'alice', tokenId: '42', now: $now));
+		$withStore = new TokenGrantLapseJob(...($this->arguments + ['personalGrants' => $this->personalStore([])]));
+		$this->assertSame(0, $withStore->warnForPersonal(uid: 'alice', tokenId: '42', now: $now));
+	}//end testAPersonalTokenWithoutAGrantWarnsNobody()
 }//end class

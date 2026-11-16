@@ -49,6 +49,13 @@ final class PersonalTokenGrantStoreTest extends TestCase {
 	 */
 	private array $values = [];
 
+	/**
+	 * The app values the fake config holds, keyed by key.
+	 *
+	 * @var array<string, string>
+	 */
+	private array $app = [];
+
 	private function store(): PersonalTokenGrantStore {
 		$config = $this->createMock(IConfig::class);
 		$config->method('getUserValue')->willReturnCallback(
@@ -62,6 +69,15 @@ final class PersonalTokenGrantStoreTest extends TestCase {
 		$config->method('deleteUserValue')->willReturnCallback(
 			function (string $uid, string $app, string $key): void {
 				unset($this->values["$uid/$app/$key"]);
+			}
+		);
+
+		$config->method('getAppValue')->willReturnCallback(
+			fn (string $app, string $key, $default = ''): string => ($this->app[$key] ?? $default)
+		);
+		$config->method('setAppValue')->willReturnCallback(
+			function (string $app, string $key, $value): void {
+				$this->app[$key] = (string) $value;
 			}
 		);
 
@@ -157,4 +173,24 @@ final class PersonalTokenGrantStoreTest extends TestCase {
 		$this->assertNull($store->grantFor('alice', '42'));
 		$this->assertSame([], $this->values);
 	}//end testRemovingTheGrantLeavesTheTokenWithNone()
+
+	public function testTheIndexListsEveryGrantedTokenOnceUntilItIsRemoved(): void {
+		$store = $this->store();
+		$now   = new DateTimeImmutable('2026-11-16T10:00:00+00:00');
+		$store->write('alice', '42', self::grant(), 'alice', $now);
+		$store->write('alice', '42', self::grant('2027-02-01T00:00:00+00:00'), 'alice', $now);
+		$store->write('bob', '42', self::grant(), 'bob', $now);
+
+		$this->assertSame([['uid' => 'alice', 'tokenId' => '42'], ['uid' => 'bob', 'tokenId' => '42']], $store->all());
+
+		$store->remove('alice', '42');
+
+		$this->assertSame([['uid' => 'bob', 'tokenId' => '42']], $store->all());
+	}//end testTheIndexListsEveryGrantedTokenOnceUntilItIsRemoved()
+
+	public function testAnUnreadableIndexListsNothing(): void {
+		$this->app[PersonalTokenGrantStore::INDEX_KEY] = '{broken';
+
+		$this->assertSame([], $this->store()->all());
+	}//end testAnUnreadableIndexListsNothing()
 }//end class

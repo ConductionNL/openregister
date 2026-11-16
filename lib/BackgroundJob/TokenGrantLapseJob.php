@@ -26,6 +26,7 @@ use DateTime;
 use DateTimeInterface;
 use OCA\OpenRegister\Db\Consumer;
 use OCA\OpenRegister\Db\ConsumerMapperInterface;
+use OCA\OpenRegister\Service\Rbac\PersonalTokenGrantStore;
 use OCA\OpenRegister\Service\Rbac\TokenGrant;
 use OCA\OpenRegister\Service\Rbac\TokenGrantValidator;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -77,6 +78,7 @@ class TokenGrantLapseJob extends TimedJob {
 	 * @param TokenGrantValidator     $validator     Answers whether a grant lapses soon.
 	 * @param INotificationManager    $notifications Sends the warning.
 	 * @param IUserManager            $users         Confirms the holder still exists.
+	 * @param PersonalTokenGrantStore|null $personalGrants The grants on personal tokens, when wired.
 	 */
 	public function __construct(
 		ITimeFactory $time,
@@ -85,6 +87,7 @@ class TokenGrantLapseJob extends TimedJob {
 		private readonly TokenGrantValidator $validator,
 		private readonly INotificationManager $notifications,
 		private readonly IUserManager $users,
+		private readonly ?PersonalTokenGrantStore $personalGrants = null,
 	) {
 		parent::__construct(time: $time);
 		$this->setInterval(seconds: self::INTERVAL_SECONDS);
@@ -113,6 +116,10 @@ class TokenGrantLapseJob extends TimedJob {
 				$warned += $this->warnFor(consumer: $consumer, now: $now);
 			}
 
+			foreach (($this->personalGrants?->all() ?? []) as $token) {
+				$warned += $this->warnForPersonal(uid: $token['uid'], tokenId: $token['tokenId'], now: $now);
+			}
+
 			$this->logger->info('[TokenGrantLapseJob] Warned {count} holders of lapsing tokens', ['count' => $warned]);
 		} catch (Throwable $e) {
 			$this->logger->warning('[TokenGrantLapseJob] Sweep failed: {error}', ['error' => $e->getMessage(), 'exception' => $e]);
@@ -135,11 +142,53 @@ class TokenGrantLapseJob extends TimedJob {
 			stored: ($consumer->getAuthorizationConfiguration()[TokenGrant::KEY] ?? null),
 			tokenId: $tokenId
 		);
+
+		return $this->notifyIfLapsing(
+			grant: $grant,
+			holder: (string)($consumer->getUserId() ?? ''),
+			name: (string)($consumer->getName() ?? $tokenId),
+			now: $now
+		);
+	}//end warnFor()
+
+	/**
+	 * Warn the owner of one personal token when its grant lapses within the window.
+	 *
+	 * @param string            $uid     The token's owner.
+	 * @param string            $tokenId The token id.
+	 * @param DateTimeInterface $now     The sweep's moment.
+	 *
+	 * @return int 1 when the owner was warned, else 0.
+	 *
+	 * @spec openspec/changes/scoped-api-tokens/specs/auth-system/spec.md#requirement-a-token-carries-a-required-end-date-and-is-warned-before-it-lapses-req-sat-003
+	 */
+	public function warnForPersonal(string $uid, string $tokenId, DateTimeInterface $now): int {
+		$grant = $this->personalGrants?->grantFor(uid: $uid, tokenId: $tokenId);
+		if ($grant === null) {
+			return 0;
+		}
+
+		return $this->notifyIfLapsing(grant: $grant, holder: $uid, name: $grant->tokenId, now: $now);
+	}//end warnForPersonal()
+
+	/**
+	 * Notify the holder when the grant lapses within the warning window.
+	 *
+	 * The notification's object is the grant's token id, so a new warning
+	 * replaces the previous one for the same token instead of stacking.
+	 *
+	 * @param TokenGrant|null   $grant  The grant, or null for none.
+	 * @param string            $holder The user to warn.
+	 * @param string            $name   The token's name in the warning.
+	 * @param DateTimeInterface $now    The sweep's moment.
+	 *
+	 * @return int 1 when the holder was warned, else 0.
+	 */
+	private function notifyIfLapsing(?TokenGrant $grant, string $holder, string $name, DateTimeInterface $now): int {
 		if ($grant === null || $grant->expiresAt === null || $this->validator->lapsesSoon(grant: $grant, now: $now) === false) {
 			return 0;
 		}
 
-		$holder = (string)($consumer->getUserId() ?? '');
 		if ($holder === '' || $this->users->get($holder)?->getUID() !== $holder) {
 			return 0;
 		}
@@ -147,11 +196,11 @@ class TokenGrantLapseJob extends TimedJob {
 		$notification = $this->notifications->createNotification()
 			->setApp('openregister')
 			->setUser($holder)
-			->setObject(self::OBJECT_TYPE, $tokenId)
+			->setObject(self::OBJECT_TYPE, $grant->tokenId)
 			->setSubject(
 				self::SUBJECT,
 				[
-					'token' => (string)($consumer->getName() ?? $tokenId),
+					'token' => $name,
 					'endsAt' => $grant->expiresAt->format('Y-m-d'),
 					'daysLeft' => (int)$grant->daysLeft(now: $now),
 				]
@@ -160,5 +209,5 @@ class TokenGrantLapseJob extends TimedJob {
 		$this->notifications->notify($notification->setDateTime(new DateTime()));
 
 		return 1;
-	}//end warnFor()
+	}//end notifyIfLapsing()
 }//end class

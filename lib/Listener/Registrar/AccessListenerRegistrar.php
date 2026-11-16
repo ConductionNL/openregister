@@ -54,5 +54,11 @@ final class AccessListenerRegistrar {
 			\OCP\User\Events\BeforeUserDeletedEvent::class,
 			\OCA\OpenRegister\Listener\SharerViewsEndWithUserListener::class
 		);
+
+		// A revoked personal token takes its grant with it (scoped-api-tokens 1.1c).
+		$context->registerEventListener(
+			\OCP\Authentication\Events\TokenInvalidatedEvent::class,
+			\OCA\OpenRegister\Listener\PersonalTokenGrantRevokedListener::class
+		);
 	}//end register()
 }//end class
