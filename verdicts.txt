@@ -3351,3 +3351,4 @@
 10595 8cc9923cc8da8e8169d0e8dfeacb5db3e04877e2 APPROVE tests only (2 new files, 8 tests green); Architecture, Rules, Controller, Contract suites green merged with main
 10597 9dcbb7e2bafc2cc4c860f908de68e0088bf26eab APPROVE publiccode.yml metadata only: maintenance type contract with a contractor entry (name, until, email, website) and one description line per language; YAML parses, no code or tests touched
 10598 d5ee9f8dcba616b1d170cd0c758d78ef8c51c622 APPROVE openspec spec and tasks only (REQ-FJR-009/010, task 7 of or-form-and-journey-registry); no lib, test or frontend change; no behaviour change
+10599 088c26fd90916ca930c2322deb2a2b7cedc65d7f APPROVE adds three form-layout keys (columns, totals, addFrom) to the property vocabulary as typed modifiers; no access or validation path changes; phpstan clean; Architecture, Rules, Controller, Contract, Schemas green on the PR merged with main
