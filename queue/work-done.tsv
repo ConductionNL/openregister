@@ -17351,6 +17351,7 @@ build:pipelinq:pipelinq-open-client-on-contactmoment:r3	PR #3899: re-declared in
 build:portaliq:admin-rights-page:r2	already done: code tasks ticked on development; only live check T03 left	session-20261116T184852-b8356331	2026-11-16T19:20:20Z
 merge:opencatalogi:2679:823ce981	cloud tree of 1 opencatalogi PRs: none; conflict 1, lint 0, red 0, moved 0, done 0	session-20261116T191156-bbdb7add	2026-11-16T19:20:38Z
 build:portaliq:portal-headless-content-api:r2	already done: all code tasks ticked; only the live 429/conformance walk left (needs running instance)	session-20261116T191856-c437ae89	2026-11-16T19:20:44Z
+build:portaliq:action-summary-sentence:r2	already done: code tasks ticked; learniq already declares the summary on createExcuseRequest; only the live check of T3 left	session-20261116T184852-b8356331	2026-11-16T19:20:56Z
 build:portaliq:site-article-page-follows-the-board:r2	already done: code tasks 1-5 ticked; only live check task 6 left (needs instance)	session-20261116T191856-c437ae89	2026-11-16T19:21:11Z
 build:portaliq:demo-sign-in-beside-the-account:r2	already done: T01-T05 are on development (fix(sign-in) 2026-10-14, residentsOf/offeredResidents, inloggen-met-account, tests); only T06, a live check on a demo instance, is left	session-20261116T184831-8be58c40	2026-11-16T19:21:04Z
 verify:shillinq:3110:67424089	GREEN 3110 (phpunit 12231/0, vitest 1 inherited failure)	session-20261116T185100-d2f0c6eb	2026-11-16T19:21:11Z
