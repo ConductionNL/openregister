@@ -17998,3 +17998,4 @@ lane:arch5:launchpad:next-launchpad-r3:c4	PR #1247, GREEN (tree 4494 tests, 0 ne
 review:shillinq:3078:767508fe	GREEN: unit 12392/0 fail, vitest 9/9, lint clean	session-20261116T214640-6a01c0c6	2026-11-16T21:52:39Z
 cover:decidiq:a5f973bbm9cda:882bd950	deferred: decidiq has 44 open PRs	session-20261116T212048-3752a879	2026-11-16T21:52:54Z
 review:launchpad:1229:c3db56ed	BLOCK: dashboard subject of a tabular render not scoped to the export creator (REQ-SCH-002); tests green (unit 4568, vitest 393)	session-20261116T212742-68ee361e	2026-11-16T21:52:57Z
+cover:decidiq:a5f973bbm9cda:59826f43	deferred: decidiq has 44 open PRs	session-20261116T212048-3752a879	2026-11-16T21:53:14Z
