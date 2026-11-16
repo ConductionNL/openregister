@@ -16433,3 +16433,4 @@ merge:learniq:2166:f1322682	cloud tree of 1 learniq PRs: merged=0 red=1 fail=0 s
 merge:learniq:2562:a40eaf65	cloud tree of 1 learniq PRs: merged=0 red=1 fail=0 skip=0; red = spdxheaders 5->4 inherited from development (fixed by #2126)	session-20261116T105426-4e0b8984	2026-11-16T12:10:15Z
 merge:learniq:1901:4c7512c3	cloud tree of 1 learniq PRs: merged=0 red=1 fail=0 skip=0; red = spdxheaders 5->4 inherited from development (fixed by #2126)	session-20261116T105426-4e0b8984	2026-11-16T12:15:29Z
 merge:pipelinq:3835:dfaa7ec0	merge3 tree of 1 pipelinq PRs: merged=0 red=1 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-16T14:26:46Z
+review:integriq:2711:6f3fdc05	GREEN: dev-only playwright bump, vitest 2387/2387 pass	session-20261116T142703-f07e9998	2026-11-16T14:28:58Z
