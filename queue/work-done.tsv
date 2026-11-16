@@ -15466,3 +15466,4 @@ review:thematiq:1291:ac416a6a	GREEN: dev dep bump; vitest 1559/1559, code-editor
 review:hermiq:1135:0d097997	GREEN: dev-only phpmd 3.0 bump; rulesets run, unit 5291/0 fail	session-20261116T062117-388e9de2	2026-11-16T06:36:09Z
 merge:buildiq:1090:1978f005	merge8 tree of 20 buildiq PRs: merged=4 red=5 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 11	merge8-20261115T170007-37538273	2026-11-16T06:36:14Z
 fix:hermiq:1802:5e3d55d5	fixed: test mock moved to ObjectFindOptions; new head 5e2885e3, REVERIFY queued	session-20261116T062120-7c38c5f1	2026-11-16T06:36:25Z
+merge:buildiq:1093:0f79663b	merge8 tree of 20 buildiq PRs: merged=4 red=5 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 11	merge8-20261115T170007-37538273	2026-11-16T06:36:43Z
