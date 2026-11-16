@@ -15639,3 +15639,4 @@ shillinq	2997	b01baecfec37deef532b2c0622254e1344022317	GREEN	worker-09:review	bu
 dossiq	6617	df25ce85aa64a0d466efbc553ef6e4df5420a745	GREEN	worker-40	tests only; tree 18363 tests, baseline 19 failures, 0 new
 dossiq	6618	6d0b67644685e431358c8174e8b64329c59a9e01	GREEN	worker-40	tests only; tree 18363 tests, baseline 19 failures, 0 new
 pipelinq	3602	3f5ffded9e13a03b06ce3df55e5ae9d3308d889b	GREEN	worker-23:review	tests only (42 test files, no lib/ change); unit suite on PR+development 9218 tests, 0 failures, 0 errors
+opencatalogi	2756	d7a2df601f100243b235b392858ee8fd16eaf3f6	RED	merge3:merge-gate	GATE RED floor: overall: 4.89 -> 4.87; unit_complexity: 4.88 -> 4.86; unit_interfacing: 4.81 -> 4.74; module_coupling: 5.44 -> 5.40
