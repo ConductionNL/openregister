@@ -16787,3 +16787,4 @@ merge:pipelinq:3883:3221b143	cloud tree of 1 pipelinq PRs: merged=0 red=0 fail=0
 fix:learniq:2558:374f52e9	fixed CONFLICT: dropped unrelated stub hunk, new head e67cf928; lock held elsewhere, REVERIFY queued	session-20261116T170557-1cef7e8d	2026-11-16T17:19:07Z
 fix:learniq:1883:de89b902	nothing to fix: branch contains development; tree-only conflict, REVERIFY queued	session-20261116T165653-a1481a13	2026-11-16T17:19:25Z
 fix:hermiq:1750:4d8f973f	conflict resolved, pushed 4656eeb3; merge lock busy, REVERIFY queued	session-20261116T171623-7de92e46	2026-11-16T17:19:50Z
+fix:buildiq:1651:e765d7de	no change: conflict only with other tree PRs (l10n); lock held elsewhere, REVERIFY queued	session-20261116T170557-1cef7e8d	2026-11-16T17:20:03Z
