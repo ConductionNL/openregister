@@ -17078,3 +17078,4 @@ verify:learniq:2565:b42488f2	GREEN #2565 (no new failures)	session-20261116T1733
 cover:dossiq:069ee2d6madb6:23f6b1f1	deferred: dossiq has 41 open PRs	session-20261116T170555-ecf14af5	2026-11-16T18:20:22Z
 cover:dossiq:069ee2d6madb6:8fea83ca	deferred: dossiq has 41 open PRs	session-20261116T174709-5787ce39	2026-11-16T18:20:43Z
 fix:hermiq:1150:9ed6a46b	fixed: specs follow the Nextcloud AI default, pushed 5198e25d6c; hermiq merge lock held elsewhere, REVERIFY queued	session-20261116T173141-f87aaa9d	2026-11-16T18:20:39Z
+review:hermiq:1735:ce935d59	GREEN: hermiq#1735 unit 5389 OK, vitest OK; gate notes: schema titles, demo data, spec tags	session-20261116T181447-534b3ff8	2026-11-16T18:21:02Z
