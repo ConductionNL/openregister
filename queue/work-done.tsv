@@ -18101,3 +18101,4 @@ review:hermiq:1781:bf818a9a	GREEN: spec-conform; 5342 phpunit + 1548 vitest pass
 fix:shillinq:3124:b3f4591a	fixed: scan test reads alias map; new head f16c855b, REVERIFY (merge lock held elsewhere)	session-20261116T220522-6d402fd2	2026-11-16T22:20:12Z
 fix:keepiq:1863:0a71ceb1	merged #1863 at 9a7c1da8e9b5ffccdf0f9aeda7a254cb3e64846c (conflict resolved: privileged_access.* whitelist carried into AuditMetadataPolicy)	session-20261116T214640-6a01c0c6	2026-11-16T22:20:30Z
 fix:hermiq:1791:1747024b	no change needed: merges clean on development; conflict is with a sibling PR; REVERIFY queued (merge lock busy)	session-20261116T221523-34c05d70	2026-11-16T22:20:42Z
+cover:keepiq:c967a31fmaddd:d3522ea6	already done: lib/Db/*.php fully covered at 7dbd55bb (pcov, all statements hit; suite 5542 tests OK)	session-20261116T220858-93068d3c	2026-11-16T22:20:49Z
