@@ -14558,3 +14558,4 @@ integriq	2744	53deb98f7cdb1b6780f15f48e92d1825829d8513	REVERIFY	worker-48	sbom g
 integriq	2924	81032a2e25be20a55d65581e9c199af938b2368c	RED	worker-47:merge-gate	GATE RED floor: unit_interfacing: 1.93 -> 1.91
 hermiq	1791	27599b8c5a2c5b86c951dad96611964b4003096c	REVERIFY	worker-35	branch already contains development, merges clean; conflict was only against other PRs of the tree, no change needed; new head 27599b8c5a2c5b86c951dad96611964b4003096c, verify it
 integriq	3047	261ea2e51572de7eea587257a403b5236d99e86b	RED	worker-47:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
+filinq	2072	6c719f2c9b935138b8c3cc0be2d7bfdecb0e5595	REVERIFY	worker-25	merged development in: register 8.62.0 combines both changelog lines, seed objects of both sides kept, app version raised past both; unit suite 6910 tests 0 failures; merge lock held by another merger; new head b8b9f6800f906dd852f09e77db9deca981ab652a, verify it
