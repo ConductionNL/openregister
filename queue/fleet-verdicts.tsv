@@ -13980,3 +13980,4 @@ launchpad	1238	8be8c1decce989324547048dd4f85ba4ac786595	REVERIFY	worker-07	clean
 launchpad	755	f41902ffc1787ffe4a7d70ba97ae5a49187f10dc	GREEN	worker-48:review	dev-only vitest 4->5 bump (lock resolves 5.1.0); npm ci ok; vitest 2578/2578 pass on PR+development (baseline 2578/2578); coverage-v8 report runs; no source changes
 stackiq	1435	81fb6bd471562d78ea02224fdc7b0574cc6a9082	RED	worker-16:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
 stackiq	1978	0e16289a82d0c3f5edcf4674448e72031b372f93	RED	worker-16:merge-gate	GATE RED floor: unit_interfacing: 4.72 -> 4.68
+stackiq	1959	fe24e23b6c69c5bd04762183e2bc4aead326686d	CONFLICT	worker-16:merge	merges clean on development alone; files: appinfo/routes.php openapi.json 
