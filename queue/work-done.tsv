@@ -16019,3 +16019,4 @@ fix:shillinq:2071:85bf3df1	inherited SPDX floor; restored stub header, pushed 75
 review:pipelinq:2501:58a531d9	GREEN: lock-only dev patch bumps; 8987 unit tests, 0 failures	session-20261116T091756-9df6b5a8	2026-11-16T09:21:35Z
 review:pipelinq:3835:ceb76db3	BLOCK: new PortaliqArticleStore uses removed ObjectService register:/schema: args, article move fails on openregister main; suite 8999 green	session-20261116T091600-b1e91ae8	2026-11-16T09:21:55Z
 verify:shillinq:3110:ea0d55d6	GREEN #3110 (deps bundle; PHP unit 12225 OK = baseline; vitest 1 inherited failure)	session-20261116T084449-ebc88ac4	2026-11-16T09:22:16Z
+fix:shillinq:2259:614a5c5a	RED inherited from development (#3106 dropped SPDX tag on ObjectServiceInterface stub); restored header on branch, pushed 48de59f1a; REVERIFY queued (merge lock held elsewhere; adrvalidator host blocked here)	session-20261116T085359-7eb6c05c	2026-11-16T09:22:26Z
