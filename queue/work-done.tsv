@@ -17301,3 +17301,4 @@ review:learniq:2507:c5edc819	GREEN: matches specs, no new failures (1 inherited)
 fix:filinq:2072:5c869835	failed: permission (fix pushed, head 21673d4a, tree green 6962/0; recording own review refused; REVERIFY queued)	session-20261116T185100-d2f0c6eb	2026-11-16T19:10:55Z
 review:filinq:2122:e57f317b	GREEN (conflicts with development: 7 files); suite 6921/0 failures	session-20261116T184841-a3bc3002	2026-11-16T19:12:00Z
 fix:shillinq:1900:f0577318	fixed CONFLICT: merged #1899 head and development in, unit 12246 OK; new head 0046f1c5, REVERIFY (not landed: merge gate unmeasured)	session-20261116T181151-999832c6	2026-11-16T19:12:09Z
+cover:openregister:7350e3efm9dc5:716923f8	added to PR #10587 (open-PR budget, 188 open): OutsideCustodyTest + risky-metadata fix on 11 tests; lib/Service/Credential 85.4%->96.5%, 628->653 tests green	session-20261116T184831-8be58c40	2026-11-16T19:12:22Z
