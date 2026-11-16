@@ -15874,3 +15874,4 @@ merge:planninq:933:6ee7ff9b	failed: permission (approving new head ff903468 afte
 merge:dossiq:3936:6f5fe348	merge3 tree of 22 dossiq PRs: merged=8 red=5 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 9	merge3-20261113T213425-c36bcd5f	2026-11-16T08:45:54Z
 merge:dossiq:6203:112b4841	merge3 tree of 22 dossiq PRs: merged=8 red=5 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 9	merge3-20261113T213425-c36bcd5f	2026-11-16T08:46:08Z
 review:versioniq:500:7b3a6f4e	GREEN: vitest 3012/3012 pass on merged tree, dev-dep bump only	session-20261116T084459-8070a613	2026-11-16T08:46:37Z
+review:decidiq:2170:d54fcb29	GREEN #2170 at d54fcb29: matches spec, suite 4655 OK, phpstan 0, vitest pass	session-20261116T083020-e59421bc	2026-11-16T08:47:27Z
