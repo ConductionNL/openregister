@@ -409,3 +409,4 @@ learniq	2558	45a5159b5b78e3d5327e08d2d1c6496dda276ccb	APPROVE	worker-37	Quick; n
 opencatalogi	2699	54be40942b86db0add3005e18928165734094657	APPROVE	worker-48	Strict; no blockers; nits: untranslated 503 message on GET instance-mode, 401 when switch absent; gates 82/119 inherited, floor restored
 versioniq	497	39a7db062ea18ada87559c730217cdc521657235	APPROVE	worker-03	Quick; no blockers; dev-tool patch bump only
 versioniq	501	451c8f5901c5ec4277fdccbd82e4349166c89e9f	APPROVE	worker-03	Quick; no blockers; eslint dev bump with regenerated sbom
+versioniq	711	dc3fffc4091930880b05adf9f0e76b6a2caf5c4a	APPROVE	worker-03	Thorough; no blockers; implements inventory-lifecycle-signals per its specs, admin-only setting, fail-closed to unknown; concern: spec-coverage gate notes one changed method without @spec
