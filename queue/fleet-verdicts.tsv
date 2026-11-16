@@ -14469,3 +14469,4 @@ humaniq	670	404bf31cb757d644e62c90ffdf08de1a76c009d8	REVERIFY	worker-26	no chang
 versioniq	508	4df379734440df2cbb6d9a59c9c71b6523285110	CONFLICT	worker-14:merge	merges clean on development alone; files: package-lock.json package.json 
 humaniq	1095	340163fdc4208370ae8ac1bde6cdbef09083a930	REVERIFY	worker-26	regenerated sbom.cdx.json for the psalm 7 lock (regen-sbom --check current); end-to-end skipped: merge gate host unreachable here; new head ac05e3a9d4e8585366438183576f051cd40eb01f, verify it
 humaniq	685	c73546cde14f4c4a1b1f723d1c23c6892615eddd	REVERIFY	worker-26	no change: merges clean on current development; conflict was only with other PRs in the same tree (package.json/package-lock.json); new head c73546cde14f4c4a1b1f723d1c23c6892615eddd, verify it
+shillinq	2096	7effe6f879623dc80a398d368a54663c20be23e0	RED	worker-58:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
