@@ -18276,3 +18276,4 @@ review:versioniq:715:37497a7e	CONFLICT with development (src/App.vue)	session-20
 verify:versioniq:754:117f80b1	754 CONFLICT; 755 already merged	session-20261116T224608-d6967eb8	2026-11-16T23:08:33Z
 build4:openregister:object-write-sub-500ms:c7	partial: PR #10568 new head d6d45901 - task 3 narrowing via the row cache: findInIds/findBySlugInIds probe narrow columns and complete from SchemaRowCache, findMultipleOptimized probes its chunk and reads only cache misses in one query, 10 tests (SchemaMapperScopedRowCacheTest), Db 5868 green, 1185 SchemaMapper-caller test files green; left: 2 (mt key), 3 findAll/findBySlug listings, 6 object inde	session-20261116T224246-d9bde508	2026-11-16T23:08:42Z
 cover:decidiq:a5f973bbm56fe:aae6d66c	deferred: decidiq has 46 open PRs	session-20261116T224608-d6967eb8	2026-11-16T23:08:56Z
+cover:decidiq:a5f973bbm56fe:c76ae287	deferred: decidiq has 46 open PRs	session-20261116T224608-d6967eb8	2026-11-16T23:09:06Z
