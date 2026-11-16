@@ -17052,3 +17052,4 @@ verify:learniq:2555:ab4c967d	GREEN 2555, GREEN 2558 (no new failures)	session-20
 cover:openregister:7350e3efm9dc5:32df05fd	added to open PR #10587 (budget: 188 open PRs): 38 tests, 6 classes in lib/Files/Service failure paths, tests/Unit/Files 159->197 green	session-20261116T173213-356ea2aa	2026-11-16T18:09:08Z
 merge:stackiq:1930:88fc58f9	merge3 tree of 5 stackiq PRs: merged=5 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-16T18:09:39Z
 merge:integriq:3649:2036a2f3	cloud tree of 4 integriq PRs: merged=0 red=2 fail=0 skip=2; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T173211-a3411be5	2026-11-16T18:10:09Z
+merge:keepiq:1793:421e7e17	unmeasured: static.developer.overheid.nl (checker floor scan); 1816 reviewed APPROVE, not landed; 1793 and 1826 CONFLICT	session-20261116T173311-8d6b3275	2026-11-16T18:10:03Z
