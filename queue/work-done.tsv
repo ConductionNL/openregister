@@ -16314,3 +16314,4 @@ build:dossiq:task-description-in-side-card	already done: code tasks ticked on de
 fix:shillinq:3055:faf02682	merged development, restored stub SPDX header (inherited drop), pushed 6be8ada8; REVERIFY queued	session-20261116T102639-f9f23dec	2026-11-16T11:17:01Z
 build:dossiq:party-dates-longdate	already done: every code task on development; only 1 live/e2e task(s) left	session-20261116T105426-4e0b8984	2026-11-16T11:17:15Z
 build:dossiq:task-list-titles-wrap	already done: every code task on development; only 1 live/e2e task(s) left	session-20261116T105426-4e0b8984	2026-11-16T11:17:22Z
+build:dossiq:starter-content-and-templates	already built: every dossiq code task ticked on development; 7.2 partial by design (task, note and approval surfaces live in nextcloud-vue/openregister, lane L1 per decision 156)	session-20261116T105334-a341eb02	2026-11-16T11:17:43Z
