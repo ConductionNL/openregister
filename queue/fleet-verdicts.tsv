@@ -15975,3 +15975,4 @@ launchpad	1239	793d60336936c8b1bb2989a8c17900a0a7c2457d	CONFLICT	worker-21	merge
 launchpad	819	c5c80a07dc500fcc4e5064cd5126241a9f4bf32a	GREEN	worker-38	dev-dep phpmd 2.15->3.0 + sbom; unit 4516 base -> 4516 tree, 0 new failures; note: phpmd already exits 2 on development, 3.0 reports more findings (text lines 66->81, unusedparams 4->5) and deprecates positional args
 learniq	2534	097afa2d9090610d05c97d2c2e116aeeed835108	CONFLICT	worker-27	conflicts with development in l10n/en.js,en.json,nl.js,nl.json, lib/Service/ContractBindings.php
 learniq	2519	644c2a7995dd39085b6e8c57a462495226c6efec	CONFLICT	worker-17	conflicts with development in l10n/en.js,en.json,nl.js, tests/Unit/Portal/golden/PortalManifests.json
+opencatalogi	2684	8f4a54a3fb21e0dbf759ace3f6058ff85231177d	CONFLICT	worker-41	conflicts with development in 12 files (info.xml, l10n, ThemesController, ListenerRegistrar, PublicationQueryService, openapi, tasks.md); tree not run
