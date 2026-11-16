@@ -192,4 +192,5 @@ hermiq	1133	6fd08d09db1ca26724058d9c83bec7eb477cfec5	APPROVE	worker-29	Quick; no
 hermiq	1175	42637555c30a617e2512d88fcac2b0a205657ddc	APPROVE	worker-29	Quick; no blockers; cron-expression patch bump + sbom regen
 hermiq	1193	7d49a897eacda342108a8ffdf6d0ba0a3967dc67	APPROVE	worker-29	Quick; no blockers; sass minor bump + sbom regen
 learniq	1882	ff0cebbf373a84986b0174e333013e3503af7dd1	APPROVE	worker-33	Standard; no blockers; display-only field labels for the employer booking detail plus a test asserting each label has a Dutch translation; e2e updates follow the live week
+pipelinq	2501	58a531d903d7a54e9307f3b5a220a6c2ee33186a	APPROVE	worker-27	Quick; no blockers; lock-only patch bump symfony/yaml 6.4.43->6.4.48 and http-foundation 6.4.40->6.4.48, tree suite unchanged
 hermiq	1750	005a39ab9f2b8066cb39c46942d716bb882fcb7b	REQUEST_CHANGES	worker-29	Thorough; blockers: hermiq_register.json info.version 0.57.0->0.58.0 without raising appinfo/info.xml <version> (gate-120: existing instances never import ragFileFilters/validated fields), 6 new ragFileFilters sub-properties lack title+description (gate-51), src/utils/retrievalScope.js similarityTex
