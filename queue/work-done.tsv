@@ -15643,3 +15643,4 @@ fix:stackiq:1954:8ec8ab71	floor restored (floor_check PASS), suite OK, pushed b5
 merge:decidiq:2207:19061678	cloud tree of 1 decidiq PRs: merged=0 red=0 fail=0 skip=1; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T070226-5d062725	2026-11-16T07:16:59Z
 fix:launchpad:763:ac59f293	sbom regenerated + development merged; REVERIFY at 68f98712 (end-to-end merge skipped: merge gate cannot measure here)	session-20261116T062121-edb2d73b	2026-11-16T07:17:07Z
 merge:versioniq:738:50ada5e5	cloud tree of 1 versioniq PRs: merged=0 red=0 fail=0 skip=1; conflict 0, lint 0, red 0, moved 0, done 0 (738 approved; merge gate UNMEASURED: ADR ruleset host blocked, gitleaks too old)	session-20261116T064721-c9a0b5c9	2026-11-16T07:17:20Z
+measure:integriq:20261116h06	php 95.29% (pcov), js 94.89% at d9d474f0	session-20261116T061736-e271ba12	2026-11-16T07:18:09Z
