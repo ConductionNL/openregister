@@ -4187,3 +4187,4 @@ hermiq	1175	42637555c30a617e2512d88fcac2b0a205657ddc	SKIP	worker-42	GATE UNMEASU
 shillinq	3111	96abe4abfb509aa4c32c2210a765797e13c601d5	RED	worker-58	GATE RED checker floor: spdxheaders stars: 5 -> 4
 keepiq	1497	2b0710543667991b1ee7fc988e0d48840735e484	RED	worker-37	GATE RED sbom: composer.lock changed without sbom.cdx.json
 decidiq	2203	14dc68070ac11502fc0ca03de58869b820f8905a	SKIP	worker-27	no APPROVE review at this head
+learniq	1883	b958696628bfdb6a748cfabc44b519cd91dae052	RED	worker-14	GATE RED checker floor: spdxheaders stars: 5 -> 4
