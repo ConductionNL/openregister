@@ -4185,11 +4185,13 @@ pipelinq	3885	6b8029c1c0ce49d9a97aa91a0f30f0be27f4476e	MERGED	merge3	GATE OK sbo
 pipelinq	3887	17b6026c5b66fcb53bfc9ce3bc6cb3e80a42c509	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.50
 hermiq	1175	42637555c30a617e2512d88fcac2b0a205657ddc	SKIP	worker-42	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 shillinq	3111	96abe4abfb509aa4c32c2210a765797e13c601d5	RED	worker-58	GATE RED checker floor: spdxheaders stars: 5 -> 4
+hermiq	1193	7d49a897eacda342108a8ffdf6d0ba0a3967dc67	SKIP	worker-42	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 integriq	2924	81032a2e25be20a55d65581e9c199af938b2368c	RED	worker-47	GATE RED floor: unit_interfacing: 1.93 -> 1.91
 keepiq	1497	2b0710543667991b1ee7fc988e0d48840735e484	RED	worker-37	GATE RED sbom: composer.lock changed without sbom.cdx.json
 decidiq	2203	14dc68070ac11502fc0ca03de58869b820f8905a	SKIP	worker-27	no APPROVE review at this head
 learniq	1883	b958696628bfdb6a748cfabc44b519cd91dae052	RED	worker-14	GATE RED checker floor: spdxheaders stars: 5 -> 4
 decidiq	2207	4cc6ec944a9c332488078dfd95666982ed716c9a	SKIP	worker-27	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
+keepiq	1500	56b81f7c398f2a09052673c885856a1acedc90dc	SKIP	worker-37	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 integriq	3047	261ea2e51572de7eea587257a403b5236d99e86b	RED	worker-47	GATE RED checker floor: spdxheaders stars: 5 -> 4
 decidiq	2224	6d7dfdcffadf85e7bf13eda87f64e3652300a102	SKIP	worker-27	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 integriq	3574	65269c9d780b25ea93f59787282d50a6c5cfc4bc	SKIP	worker-47	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
