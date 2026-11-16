@@ -18073,3 +18073,4 @@ review:opencatalogi:2674:03f3adb8	CONFLICT: conflicts with development in 9 file
 cover:buildiq:70b3e29eme3dd:60c2c265	deferred: buildiq has 54 open PRs	session-20261116T220905-333eed09	2026-11-16T22:13:58Z
 review:hermiq:1735:76123a3c	stale	session-20261116T215102-33996dc2	2026-11-16T22:13:41Z
 review:dossiq:6203:94882a39	stale	session-20261116T221330-514f14d5	2026-11-16T22:13:56Z
+build4:openregister:cross-app-semantic-references:c8	partial: no code task left in openregister; PR #10549 open at dce475dc; 4.3 needs a live instance, 5.1-5.3 live in nextcloud-vue (not reachable from this worker)	session-20261116T220858-93068d3c	2026-11-16T22:14:21Z
