@@ -16777,3 +16777,5 @@ build:pipelinq:only-the-drawn-pipelines:r2	already built: tasks 1.1-1.2 ticked a
 fix:shillinq:3078:c1655bb8	merged development in, new head 33420e1f; merge lock held elsewhere, REVERIFY queued	session-20261116T165247-ed439eb0	2026-11-16T17:16:05Z
 review:larpinq:1060:b45d1e9b	GREEN: units 1057 OK, vitest 639 OK	session-20261116T170555-ecf14af5	2026-11-16T17:16:25Z
 review:integriq:3638:3f3dacbb	GREEN: per change specs; 9592 tests, no new failures (5 inherited)	session-20261116T170557-1cef7e8d	2026-11-16T17:16:54Z
+fix:hermiq:1756:1435f079	conflict resolved, pushed 6c5bc38; merge lock held elsewhere, REVERIFY queued	session-20261116T171008-5daa9ed6	2026-11-16T17:17:12Z
+fix:hermiq:1756:1435f079	conflict resolved, pushed 6c5bc38; merge lock held elsewhere, REVERIFY queued	session-20261116T171008-5daa9ed6	2026-11-16T17:17:16Z
