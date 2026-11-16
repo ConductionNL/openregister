@@ -17884,6 +17884,7 @@ fix:hermiq:1795:69b741d5	merged development in (clean); new head efce9000; REVER
 merge:dossiq:6613:58181149	cloud tree of 1 dossiq PRs: none; conflict 1, lint 0, red 0, moved 0, done 0	session-20261116T211650-654dd569	2026-11-16T21:25:39Z
 cover:pipelinq:7f9dc8e6m3dbb:197c84b8	already done: lib/Adapter/*.php at 100% lines (11 files, 76/76) on development; nothing to add	session-20261116T212114-cc948c71	2026-11-16T21:25:55Z
 fix:hermiq:1750:a0e29d18	conflict resolved, pushed ec9bd2f6; REVERIFY queued (merge lock held)	session-20261116T211529-39ccc7ff	2026-11-16T21:25:54Z
+cover:decidiq:a5f973bbm9cda:05630945	deferred: decidiq has 45 open PRs	session-20261116T211650-654dd569	2026-11-16T21:26:13Z
 build:hermiq:store-through-federated-config:c8	partial: still blocked, openregister build/store-through-federated-config (55be6699) not on main; 3.3 route through engine and 3.4 delete bespoke services left	session-20261116T211115-33d23e06	2026-11-16T21:26:03Z
 merge:shillinq:2997:0db153ed	cloud tree of 3 shillinq PRs: merged=1 red=0 fail=0 skip=0; conflict 2, lint 0, red 0, moved 0, done 0	session-20261116T211747-0802340c	2026-11-16T21:26:17Z
 cover:pipelinq:7f9dc8e6m3dbb:8f6f87c1	already done: lib/Service/Cti/*.php at 100% lines (116/116) on development; nothing to add	session-20261116T212114-cc948c71	2026-11-16T21:26:22Z
