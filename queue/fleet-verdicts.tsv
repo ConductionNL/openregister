@@ -15042,3 +15042,4 @@ humaniq	1164	73689a5c14d96133ee6b263874b8bbf12f49dd44	CONFLICT	merge3	merges cle
 hermiq	1735	80b67d8252b18d63d70f5f77b427c7fa70b431c9	CONFLICT	worker-25:merge	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json tests/Unit/Mcp/HermiqToolProviderTest.php 
 hermiq	1807	36283a373892b12aa856fdc7b1b4420cdec74781	CONFLICT	worker-25:merge	conflicts with development; files: composer.lock 
 hermiq	1808	d92c1c64c29a1a3d559e0d6e3f10da062039597d	CONFLICT	worker-25:merge	conflicts with development; files: sbom.cdx.json 
+stackiq	1978	723683e2cea093c598e8bbdad9e0de104feb46ed	CONFLICT	worker-57:merge	merges clean on development alone; files: openapi.json 
