@@ -14764,3 +14764,4 @@ shillinq	2997	675a3aef09bd22f210c4cbc5540840317ece0b38	REVERIFY	worker-51	merged
 keepiq	1716	5a6aebc10a49fca22476eb937f790a2b57ee378a	REVERIFY	worker-11	secretscanning: PEM marker strings around a runtime-generated test key in tests/store/emergencyAccess.more.spec.js; added to the existing test allowlist (gitleaks: no leaks); not landed here (merge gate unmeasured); new head feea9fa196d543567e22adb2f90d400423be2386, verify it
 keepiq	1829	d00cfb44b9c63a0d62eff367e3060cdd9eecb1df	CONFLICT	merge3	merges clean on development alone; files: composer.lock 
 opencatalogi	2699	54be40942b86db0add3005e18928165734094657	RED	worker-48:merge-gate	GATE RED floor: overall: 4.88 -> 4.86; unit_interfacing: 4.84 -> 4.76; module_coupling: 5.45 -> 5.42
+learniq	2558	45a5159b5b78e3d5327e08d2d1c6496dda276ccb	RED	worker-37:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
