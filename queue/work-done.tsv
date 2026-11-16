@@ -18174,3 +18174,4 @@ build:learniq:training-provider-course-days:c6	PR learniq#2577 head 15fc4a905: b
 cover:dossiq:069ee2d6m9d1b:13d4699e	already covered: lib/Service/Sharing/*.php 754/755 lines, the one miss (CaseLinkShares:592) is unreachable	session-20261116T222948-81ec1395	2026-11-16T22:40:48Z
 merge:dossiq:6203:d5fcf192	merge3 tree of 0 dossiq PRs: nothing; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-16T22:40:50Z
 review:hermiq:1764:b3921191	GREEN at head (5417 phpunit, 1549 vitest); conflicts with development on register version and nl.js; reviewer also built tasks 3-5	session-20261116T221523-34c05d70	2026-11-16T22:40:57Z
+merge:shillinq:3055:093d180a	cloud tree of 1 shillinq PRs: none; conflict 1, lint 0, red 0, moved 0, done 0	session-20261116T214640-6a01c0c6	2026-11-16T22:41:29Z
