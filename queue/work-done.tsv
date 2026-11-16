@@ -18012,3 +18012,4 @@ fix:versioniq:751:d4a52b7c	failed: permission: review+land of #751 refused; conf
 verify:learniq:2570:da43ca7d	GREEN #2570 (6906 tests, no new failures)	session-20261116T214732-e08c2cfa	2026-11-16T21:55:03Z
 verify:thematiq:1686:75f2448e	GREEN 1686 (2881 tests, 0 new failures)	session-20261116T214739-8ff46d14	2026-11-16T21:55:29Z
 fix:shillinq:3055:3c4a7efd	conflict resolved, pushed a4da7e8d; suite green; merge lock held elsewhere, REVERIFY queued	session-20261116T214553-9fb39259	2026-11-16T21:55:53Z
+cover:dossiq:069ee2d6m9d1b:7593a315	added 4 tests (Relation: SubjectLinkRule, RoleLinkDefinitionReader) to open PR #6203 at 94882a3 (dossiq over open-PR budget: 41); Relation dir lines uncovered 5 -> 1; suite 18836->18840, baseline 19 failures unchanged	session-20261116T214802-5ec3bf72	2026-11-16T21:56:00Z
