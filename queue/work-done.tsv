@@ -16816,6 +16816,7 @@ merge:hermiq:1187:5b9c4371	unmeasured: static.developer.overheid.nl (proxy 403 i
 build:portaliq:adopt-connection-registry	already done: only 6.1 (e2e on a live instance) left, not a code task	session-20261116T172806-3ef5ead7	2026-11-16T17:29:26Z
 merge:stackiq:1930:21edb772	unmeasured: static.developer.overheid.nl (proxy 403 in this session); 5 IN approved in ledger (1930,1954,1965,1990,1991), 1978 CONFLICT; nothing landed	session-20261116T170823-40772b73	2026-11-16T17:29:27Z
 build:portaliq:admin-dialogs-board-look	already done: only 1.4 (live comparison after a build) left, not a code task	session-20261116T172806-3ef5ead7	2026-11-16T17:29:58Z
+build:portaliq:a-create-stamps-the-moment-it-was-made	already done: code task 1.1 ticked on development (9f1ea83be); 1.2 is a live check, left; portaliq has 62 open PRs	session-20261116T170823-40772b73	2026-11-16T17:30:20Z
 build:portaliq:dashboard-figures-across-portals	already done: only T04 (live check) left, not a code task	session-20261116T172806-3ef5ead7	2026-11-16T17:30:22Z
 build:portaliq:demo-sign-in-beside-the-account	deferred: portaliq has 62 open PRs	session-20261116T171035-683856c3	2026-11-16T17:30:07Z
 merge:opencatalogi:2415:35811d3c	unmeasured: static.developer.overheid.nl (2699, 2725 approved, not landed; 2415 2541 2673 2701 already on development)	session-20261116T171507-41a673e9	2026-11-16T17:30:21Z
@@ -16826,7 +16827,20 @@ build:portaliq:form-flow-repeating-groups-calculations-and-decisions	deferred: p
 build:portaliq:action-summary-sentence	deferred: portaliq has 62 open PRs	session-20261116T171035-683856c3	2026-11-16T17:31:05Z
 build:portaliq:example-site-zuiddrecht	deferred: portaliq has 62 open PRs	session-20261116T171035-683856c3	2026-11-16T17:31:12Z
 build:portaliq:business-audience-group	already done: only live/e2e tasks left (1)	session-20261116T172806-3ef5ead7	2026-11-16T17:31:26Z
+build:portaliq:mandated-case-opens-on-its-record-page	already done: only live/e2e tasks left (1)	session-20261116T172806-3ef5ead7	2026-11-16T17:31:32Z
 fix:shillinq:3088:27e4a523	unmeasured: static.developer.overheid.nl (PR #3088 fixed to e27bd63, tree green, APPROVE recorded, not landed)	session-20261116T165351-3ccaad0e	2026-11-16T17:31:35Z
 build:portaliq:admin-rights-page	deferred: portaliq has 62 open PRs	session-20261116T171035-683856c3	2026-11-16T17:31:46Z
 build:portaliq:contact-question-form-names-its-action	deferred: portaliq has 62 open PRs	session-20261116T171035-683856c3	2026-11-16T17:31:54Z
 build:portaliq:operate-pages-per-portal-and-client	deferred: portaliq has 62 open PRs	session-20261116T171035-683856c3	2026-11-16T17:32:07Z
+build:portaliq:example-resident-zuiddrecht	deferred: portaliq has 62 open PRs	session-20261116T171035-683856c3	2026-11-16T17:32:14Z
+build:portaliq:form-binding-settings-page	deferred: portaliq has 62 open PRs	session-20261116T171035-683856c3	2026-11-16T17:32:21Z
+build:portaliq:close-portaliq-register-to-staff	already done: only live/e2e tasks left (1)	session-20261116T172806-3ef5ead7	2026-11-16T17:32:34Z
+build:portaliq:own-contacts-and-invitations	already done: only live/e2e tasks left (1)	session-20261116T172806-3ef5ead7	2026-11-16T17:32:41Z
+build:portaliq:card-status-today	already done: only live/e2e tasks left (1)	session-20261116T172806-3ef5ead7	2026-11-16T17:32:47Z
+build:portaliq:password-reset-from-the-sign-in-page	already done: only live/e2e tasks left (2)	session-20261116T172806-3ef5ead7	2026-11-16T17:32:54Z
+review:shillinq:3088:21646560	stale	session-20261116T165351-3ccaad0e	2026-11-16T17:33:46Z
+build:portaliq:instance-loopback-self-calls	already done: only live/e2e tasks left (1)	session-20261116T172806-3ef5ead7	2026-11-16T17:33:02Z
+build:portaliq:mandated-case-offers-no-writes	already done: code task T1 ticked on development; T2 is a live check, left	session-20261116T170823-40772b73	2026-11-16T17:33:26Z
+build:portaliq:hero-aside	already done: only live/e2e tasks left (1)	session-20261116T172806-3ef5ead7	2026-11-16T17:33:57Z
+build:portaliq:action-forward-survives-a-slow-answer	already done: code tasks 1.1-2.2 ticked on development; 3.1 is a live check, left	session-20261116T170823-40772b73	2026-11-16T17:34:07Z
+build:portaliq:operate-roles-for-content-and-actions	already done: every code task ticked on development; T01 is a live check, left	session-20261116T170823-40772b73	2026-11-16T17:34:46Z
