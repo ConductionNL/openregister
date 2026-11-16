@@ -16183,3 +16183,4 @@ merge:stackiq:1989:9bfe8cc8	cloud tree of 1 stackiq PRs: merged=0 red=1 fail=0 s
 merge:humaniq:606:2c571902	unmeasured: static.developer.overheid.nl (6 IN approved, 2 conflict, 1 moved; none landed)	session-20261116T102639-f9f23dec	2026-11-16T10:41:11Z
 merge:hermiq:1135:0f2fc4bb	unmeasured: static.developer.overheid.nl (APPROVE recorded for #1135, #1801, #1802; tree green 5322)	session-20261116T100825-9860772f	2026-11-16T10:41:56Z
 merge:buildiq:1249:774d5e4f	cloud tree of 1 buildiq PRs: merged=0 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0 (gate RED sbom)	session-20261116T101258-04edb59b	2026-11-16T10:42:47Z
+merge:decidiq:2170:7fd90fb1	unmeasured: static.developer.overheid.nl (3 PRs reviewed APPROVE, tree green 4655 tests, 0 new failures)	session-20261116T101250-8aeb7975	2026-11-16T10:42:36Z
