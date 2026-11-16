@@ -14278,3 +14278,4 @@ versioniq	725	bd0db7f78fc7f06f9ded92a916114f67b4a546f0	GREEN	worker-20:review	bu
 portaliq	2531	23d566859cc3dba12f726946b8081029f38b618b	GREEN	worker-09	unit 6183 tests, baseline 16 errors, no new failures; no JS unit script, npm run build same as development (site asset-size limit errors inherited)
 planninq	1198	f4370679900c3aded15e653a6ebd0521c8fc79dd	GREEN	worker-40	phpunit 1222 tests, baseline 0 failures, 0 new; vitest 3566 passed; deps/lockfile bundle only
 larpinq	1066	93d7998b3878e3386aa5cdb296bfd4f215c153d5	RED	worker-28:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+larpinq	1053	1a318455a6c9ec04db103a7218bdea6fc0b0d890	REVERIFY	worker-44	getObjectWithAppAuthority now passes ObjectFindOptions (openregister main API); in-memory double takes main's find signature; suite 1002 tests OK, phpcs/phpstan clean; merge lock busy; new head c3e9d42774ab4defd00e396838edbd0f54622831, verify it
