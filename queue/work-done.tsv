@@ -17487,8 +17487,13 @@ build:integriq:open-formulieren-submits-into-its-case	PR #3675: tasks 1.1-1.3 an
 cover:learniq:e6498ddd:60c2c265	deferred: learniq has 60 open PRs	session-20261116T192325-bb4c31dd	2026-11-16T19:46:45Z
 fix:larpinq:1050:d2d372bb	merged #1050 at 7cfec2447da9e1e2aec0580423be39e9779c3204 (tests restored testcoderatio 73.8->75.4%; shared SKILL_FIELDS restored duplication 5.15->5.17)	session-20261116T192645-5f5cd9b9	2026-11-16T19:46:49Z
 cover:learniq:e6498ddd:js4829b6aa	deferred: learniq has 60 open PRs	session-20261116T192127-f26e2e56	2026-11-16T19:47:18Z
+cover:learniq:e6498ddd:js0023cfc7	deferred: learniq has 60 open PRs	session-20261116T193642-e39387da	2026-11-16T19:47:22Z
+cover:learniq:e6498ddd:1b97f731	deferred: learniq has 60 open PRs	session-20261116T192325-bb4c31dd	2026-11-16T19:47:32Z
 cover:learniq:e6498ddd:b86497d7	deferred: learniq has 60 open PRs	session-20261116T184833-adbb8426	2026-11-16T19:47:51Z
 cover:launchpad:fb10c50fmf487:33952d4b	deferred: launchpad has 44 open PRs	session-20261116T194719-57db1c57	2026-11-16T19:47:56Z
 review:learniq:1881:57e4a54a	GREEN: intended fix per its spec; 6871 tests, 1 inherited failure, 0 new	session-20261116T192133-e3734874	2026-11-16T19:47:53Z
 fix:hermiq:1788:ce467188	merged #1788 at 2e1f74617db30e812beaa1b76294db645aded838 (declared the skill-merge tag in openapi.json; ADR lint clean)	session-20261116T191704-9a63be87	2026-11-16T19:48:25Z
 fix:humaniq:606:999cc286	stale: PR already merged, branch deleted	session-20261116T194731-f9ebdd55	2026-11-16T19:48:17Z
+lane:arch5:hermiq:next-hermiq-r2	partial: not started, #1810 not landed yet (hermiq merge lock held by another merger); re-queued as :c2	session-20261116T190656-a33397e6	2026-11-16T19:49:13Z
+verify:humaniq:1164:8d592c67	1168 GREEN, 1169 GREEN (4405->4411, 0 failures); 1164 already merged on development, no verdict	session-20261116T193813-1392568e	2026-11-16T19:49:28Z
+cover:pipelinq:7f9dc8e6m3dbb:1174c39d	pipelinq has 45 open PRs: added to #3602; Support dir uncovered lines 13 -> 0, suite 9071 ok	session-20261116T194104-8906f18f	2026-11-16T19:49:38Z
