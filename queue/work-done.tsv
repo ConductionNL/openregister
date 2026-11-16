@@ -18098,3 +18098,4 @@ lane:arch5:shillinq:next-shillinq-r8:c2	PR #3131, GREEN (estimate 4.11-4.15 -> 4
 measure:decidiq:20261116h20	php 91.43% (pcov), js 98.39% at aaedbb43	session-20261116T221549-588bbbce	2026-11-16T22:18:59Z
 fix:versioniq:753:6f871076	conflict resolved, pushed f4103ca1; REVERIFY queued (merge lock held elsewhere)	session-20261116T220914-2d1f0dd9	2026-11-16T22:19:11Z
 verify:versioniq:751:180f25fc	751 GREEN, 754 CONFLICT, 758 GREEN; 0 new failures	session-20261116T220813-c25016f1	2026-11-16T22:19:39Z
+review:hermiq:1781:bf818a9a	GREEN: spec-conform; 5342 phpunit + 1548 vitest pass at head; conflicts with development (l10n, register version)	session-20261116T221523-34c05d70	2026-11-16T22:19:54Z
