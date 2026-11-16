@@ -15500,3 +15500,4 @@ verify:pipelinq:3883:9db6174e	GREEN 3883: unit 8987 OK = baseline; 1 inherited v
 review:stackiq:1297:f6f898a1	GREEN: phpmd 3.0, 0 new failures	session-20261116T061736-e271ba12	2026-11-16T06:45:09Z
 merge:launchpad:753:74970f66	cloud tree of 7 launchpad PRs: merged=0 red=1 fail=0 skip=3; conflict 2, lint 0, red 0, moved 1, done 0	session-20261116T064118-a5aff8df	2026-11-16T06:45:34Z
 review:stackiq:1168:04f38d3a	GREEN: lock+sbom; 1 inherited golden failure	session-20261116T062544-335bf148	2026-11-16T06:45:46Z
+fix:stackiq:1931:ff2b9697	fixed: attestation calls migrated to main options API; new head 42bba8a9, REVERIFY recorded	session-20261116T062109-81fc252e	2026-11-16T06:46:00Z
