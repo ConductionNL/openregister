@@ -14558,3 +14558,4 @@ integriq	2744	53deb98f7cdb1b6780f15f48e92d1825829d8513	REVERIFY	worker-48	sbom g
 integriq	2924	81032a2e25be20a55d65581e9c199af938b2368c	RED	worker-47:merge-gate	GATE RED floor: unit_interfacing: 1.93 -> 1.91
 hermiq	1791	27599b8c5a2c5b86c951dad96611964b4003096c	REVERIFY	worker-35	branch already contains development, merges clean; conflict was only against other PRs of the tree, no change needed; new head 27599b8c5a2c5b86c951dad96611964b4003096c, verify it
 integriq	2671	3e5c293bccd965b0586f268395ce86bfbb21b974	REVERIFY	worker-55	merged development in (clean), regenerated sbom.cdx.json (regen-sbom --check current), lock installs, phpmd 3.0.0 baseline has no phpmd-2 rule names; merge lock held elsewhere; new head f4218e170982307bdf1ebe71fe738453a8155f5e, verify it
+integriq	3047	261ea2e51572de7eea587257a403b5236d99e86b	RED	worker-47:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
