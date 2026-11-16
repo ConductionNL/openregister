@@ -18183,3 +18183,4 @@ verify:decidiq:2235:e01c3390	GREEN 2235 (4761 tests, 0 failures, baseline clean)
 review:buildiq:1648:696ebfc5	GREEN buildiq#1648 at 696ebfc54: 3513 unit tests, no failures; touched vitest specs pass	session-20261116T220904-ce70c542	2026-11-16T22:43:52Z
 merge:opencatalogi:2756:7f36d292	cloud tree of 1 opencatalogi PRs: merged=0 red=0 fail=0 skip=1; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T223913-6956ff41	2026-11-16T22:43:59Z
 merge:larpinq:1080:c010eb93	merge3 tree of 1 larpinq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-16T22:44:20Z
+cover:buildiq:70b3e29eme3dd:716923f8	deferred: buildiq has 49 open PRs	session-20261116T220904-ce70c542	2026-11-16T22:44:39Z
