@@ -16888,9 +16888,12 @@ build:portaliq:site-callouts-steps-and-tables-follow-the-boards	already built: t
 review:shillinq:3078:33420e1f	GREEN: unit 12278 tests 0 failures, vitest 9/9, eslint clean	session-20261116T173217-7353a3fb	2026-11-16T17:40:31Z
 build:portaliq:portal-theme-application	already done: code built on development (8 Oct); left only an info.xml dependency decision and browser/e2e tasks	session-20261116T173311-8d6b3275	2026-11-16T17:40:44Z
 build:portaliq:write-record-names-the-mandate	already done: every code task ticked on development; open tasks are live checks only, left	session-20261116T170823-40772b73	2026-11-16T17:40:55Z
+review:openregister:10596:1cde2635	APPROVE: test docblock only, ExampleSet suite same as main	session-20261116T171507-41a673e9	2026-11-16T17:41:04Z
 build:portaliq:resident-on-example-set	already done: every code task ticked on development; open tasks are live checks only, left	session-20261116T170823-40772b73	2026-11-16T17:41:01Z
 build:portaliq:staff-revoke-one-session	already done: T01,T02 on development since #1647; only T03 (live check) left	session-20261116T173306-f68895a7	2026-11-16T17:41:26Z
 fix:learniq:2507:82c09d5c	unmeasured: static.developer.overheid.nl (fixed interfacing floor + SPDX stub header; new head f29e84b71d, APPROVE recorded, REVERIFY queued)	session-20261116T171010-393e4bc2	2026-11-16T17:41:23Z
+build:portaliq:submission-records-its-action-title	already done: code tasks 1.1-1.3 built on development (2 Nov); only live task 1.4 left	session-20261116T173256-6277a58c	2026-11-16T17:41:57Z
+build:portaliq:staff-resend-an-invitation	already built: T01-T03 ticked and on development; only T04 live check left	session-20261116T170545-a4f14b83	2026-11-16T17:41:33Z
 build:portaliq:site-school-blocks	already done: every code task is ticked and on development; only live tasks T8 and T12 are left	session-20261116T173227-3f62e794	2026-11-16T17:41:54Z
 build:portaliq:site-shared-page-blocks	already done: only live/e2e tasks left (2)	session-20261116T172806-3ef5ead7	2026-11-16T17:41:40Z
 build:portaliq:zuiddrecht-resident-pages-match-the-boards	already done: only live/e2e tasks left (1)	session-20261116T172806-3ef5ead7	2026-11-16T17:42:02Z
@@ -16907,3 +16910,7 @@ cover:filinq:7a9ef677:1174c39d	deferred: filinq has 49 open PRs	session-20261116
 review:shillinq:2230:e61ebeb7	GREEN: babel dev-dep bump, vitest 3030/3031 (1 inherited failure)	session-20261116T173342-1d8a0fb9	2026-11-16T17:43:49Z
 build:shillinq:sales-usage-billing	deferred: shillinq has 81 open PRs	session-20261116T172806-3ef5ead7	2026-11-16T17:44:03Z
 build:shillinq:public-sector-quarterly-returns	deferred: shillinq has 81 open PRs	session-20261116T172806-3ef5ead7	2026-11-16T17:44:11Z
+review:shillinq:2099:ea7e61ea	GREEN (vitest 1 inherited failure)	session-20261116T165351-3ccaad0e	2026-11-16T17:44:21Z
+fix:learniq:2555:df653e98	fixed inherited SPDX drop (stub header) + merged development; new head 20db188505, REVERIFY queued (merge lock held elsewhere)	session-20261116T171010-393e4bc2	2026-11-16T17:44:42Z
+build:shillinq:budget-known-costs	already done: built on development in #967; only the e2e run (not code) is left	session-20261116T173227-3f62e794	2026-11-16T17:44:55Z
+review:keepiq:1816:c999bfc2	GREEN keepiq#1816: phpunit 5337 OK, vitest 4680 OK, matches change specs	session-20261116T173246-2dce7fd2	2026-11-16T17:44:52Z
