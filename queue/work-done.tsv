@@ -17896,6 +17896,7 @@ build:integriq:access-developer-portal-and-subscriptions:c2	failed: depends_on s
 cover:launchpad:fb10c50fmf487:dfaef732	deferred: launchpad has 45 open PRs	session-20261116T211641-8431b36d	2026-11-16T21:27:38Z
 build:humaniq:self-service-mobile:c5	already built: PR #1149 merged into development at 12627139; left 2.2 (receiptFile is a string schema property; the library's camera hint needs type file, a schema change the design rules out: needs a decision) and 3.2 (live phone check)	session-20261116T212057-3d2ff8ce	2026-11-16T21:28:18Z
 cover:pipelinq:7f9dc8e6m3dbb:28cccfd9	pipelinq has 43 open PRs: added 6 tests (SlugMatches, SourceRecordLink, ReadsSchemaRows entity path) to open cover PR #3602 at ea5eea4; suite 9142 green	session-20261116T212135-71cff2f3	2026-11-16T21:27:37Z
+cover:keepiq:c967a31fm902f:6f346b68	already done: lib/Sections/*.php 100% lines (5/5), SettingsSectionTest exists; -1 PR on record; no PR	session-20261116T200543-e8f76f14	2026-11-16T21:28:41Z
 cover:stackiq:9ac19b3am2187:59826f43	deferred: stackiq has 45 open PRs	session-20261116T212743-88642781	2026-11-16T21:29:06Z
 fix:learniq:2521:70435b29	fixed: seeded course-day bookings get employer facts, test expects 7; merge lock held elsewhere, REVERIFY at a3328ae41	session-20261116T212150-27f1bda2	2026-11-16T21:28:56Z
 lane:arch5:launchpad:next-launchpad-r3	partial: 2 splits pushed on quality/arch5-launchpad-r3, no PR yet; rest queued as :c2	session-20261116T211128-4ec7d28f	2026-11-16T21:29:09Z
