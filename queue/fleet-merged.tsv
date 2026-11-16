@@ -4107,4 +4107,5 @@ hermiq	1801	b8e31c29c0755366e44d0de7ddd7cee5f6d4be87	SKIP	worker-32	GATE UNMEASU
 humaniq	669	88ae160d9c7abbc76321f26a411c6125cc34b28d	SKIP	worker-26	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 stackiq	1989	45dbd96288cca2c93a2162055fe2c65597c4ed55	RED	worker-35	GATE RED checker floor: spdxheaders stars: 5 -> 4
 humaniq	684	036f7e9ffb9a36fce46245fcd1b17c73680556ff	SKIP	worker-26	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
+hermiq	1802	5e2885e3e660cb042b21292e305f27b2d9a26093	SKIP	worker-32	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 dossiq	5396	cc232d59d722611002ea5e7e1096bab19bbdfc34	RED	worker-55	GATE RED sbom: composer.lock changed without sbom.cdx.json
