@@ -14309,3 +14309,7 @@ shillinq	2092	e2044223414ef221e48a27d8ca2ed1756e842312	RED	worker-49:merge-gate	
 shillinq	2098	93d83382d296a2cfda1bed9d43188bd4d9961678	RED	worker-49:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
 filinq	2088	421aab4eda850b98259d4df5087bb0e8bc268323	CONFLICT	merge3	conflicts with development; files: appinfo/info.xml l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Settings/filinq_register.json 
 shillinq	2249	b619f48667d363243a7640cc06e3e957f6060462	RED	worker-49:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
+shillinq	2081	5c4b6e15884f9ade7eb22f959d12f708da02d2c9	CONFLICT	worker-49:merge	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+shillinq	2100	ef5824e8297a92847875e0c668ee88d5c7e69e50	CONFLICT	worker-49:merge	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json src/views/settings/AdminRoot.vue tests/vitest/adminRootCoverage.spec.js tests/vitest/adminSettingsTabs.spec.js tests/vitest/settingsViewsRender.spec.js 
+shillinq	3000	69030639c8c5a9b5fe3052e4765177f669dd366a	CONFLICT	worker-49:merge	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json tests/fixtures/register-versions.lock.json 
+shillinq	2093	cc5e1a5ebb84ed6bccdcf622b871b1d90d97b930	RED	worker-49:merge	adds unit failure(s) with the PRs before it in the tree: GoodsReceiptNoteIntegrationTest::testManifestFragmentExposesGrnPages
