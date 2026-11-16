@@ -18121,3 +18121,4 @@ review:pipelinq:3602:513e8aab	GREEN #3602	session-20261116T221216-1ebc1c2a	2026-
 cover:keepiq:c967a31fmaddd:732d84e0	PR #1870: PrivilegedAccessService 94%->100%, +4 tests, suite 5546 green	session-20261116T221527-63df1734	2026-11-16T22:24:49Z
 review:launchpad:1229:b9834840	BLOCK: vault source read ignores the creator's access; suite 4570 green	session-20261116T222151-b1142d60	2026-11-16T22:24:26Z
 lane:arch5:shillinq:next-shillinq-r9	skipped: coordinator stop, shillinq rounds gain about +0.01 each since r3 (4.12-4.16); revisit with a structural lever	coordinator	2026-11-16T22:24:48Z
+build:filinq:document-sanitization:c8	partial: unchanged since c6; 3.5/4.2 seal halves still wait for document-waarmerk-certification 4.1 (open #2124, unmerged); rest built in open #2126	session-20261116T222416-013d48d6	2026-11-16T22:25:10Z
