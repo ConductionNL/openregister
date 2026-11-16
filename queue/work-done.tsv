@@ -16401,3 +16401,4 @@ fix:opencatalogi:2723:28b856d8	no fix needed: green vs baseline with openregiste
 fix:buildiq:1641:b6868cd6	added the two missing @spec tags, vitest green, pushed adbfd2c; merge lock held elsewhere, REVERIFY queued	session-20261116T105628-a5f0e49c	2026-11-16T11:33:54Z
 fix:integriq:3628:858c7a5d	fixed floor: contracts for SMS/NotifyNL mail callers, estimate 3.54->3.56; pushed 58bae4ec, REVERIFY queued	session-20261116T105712-ca7768af	2026-11-16T11:34:06Z
 merge:hermiq:1808:561330f5	unmeasured: static.developer.overheid.nl	session-20261116T105625-05822e4f	2026-11-16T11:34:13Z
+merge:integriq:3671:30723070	cloud tree of 1 integriq PRs: merged=0 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T104954-a428a9fd	2026-11-16T11:34:53Z
