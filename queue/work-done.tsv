@@ -15999,6 +15999,7 @@ review:portaliq:1765:582e2f29	GREEN: build ok, specs no new failures (1 inherite
 review:portaliq:1997:46fd8f94	GREEN: same flags via BulkSaveOptions, stubs match main, no new unit failures (16 inherited)	session-20261116T091521-a6030cec	2026-11-16T09:18:00Z
 review:dossiq:3954:7af4262b	GREEN: rename only, suite same as baseline (16 inherited failures)	session-20261116T091210-012bb190	2026-11-16T09:18:11Z
 review:dossiq:4887:5b3dec5c	GREEN: unit 18305 (baseline 18291), same 19 inherited failures, phpstan clean	session-20261116T084437-2e80ba88	2026-11-16T09:18:24Z
+gap:buildiq:opensourcehealth:a6c0d835	failed: not reachable in buildiq alone: activity 2 stars and freshness capped at 3 by transitive deps (d3-* 3.x, asynckit, agent-base >5y behind) pulled in by shared libraries; moving node-polyfill-webpack-plugin to devDependencies cuts prod deps 526->370 and >5y-behind 17->10 but overall stays 3	session-20261116T075942-394736ff	2026-11-16T09:18:34Z
 review:portaliq:1768:73711bf0	GREEN: sass dev bump, build ok, unit errors inherited	session-20261116T091528-eef53ce7	2026-11-16T09:18:35Z
 review:dossiq:3199:53d908ab	GREEN: sass devDep bump, vitest no new failures (2 inherited)	session-20261116T090836-f2cf24a5	2026-11-16T09:18:39Z
 fix:shillinq:2072:794dec2a	inherited from development (stub lost SPDX header); restored header, pushed 04fc7224c, merge lock busy so REVERIFY queued	session-20261116T084459-8070a613	2026-11-16T09:18:57Z
@@ -16021,3 +16022,5 @@ review:pipelinq:3835:ceb76db3	BLOCK: new PortaliqArticleStore uses removed Objec
 gap:pipelinq:opensourcehealth:92d758c2	failed: stars come from ~488 mostly transitive npm deps via Nextcloud/Conduction UI libraries; the one bounded step (PR #3794, polyfills to devDependencies, verified GREEN) awaits its merge task; no further app-level change lifts it to 4 stars	session-20261116T091600-b1e91ae8	2026-11-16T09:22:17Z
 verify:shillinq:3110:ea0d55d6	GREEN #3110 (deps bundle; PHP unit 12225 OK = baseline; vitest 1 inherited failure)	session-20261116T084449-ebc88ac4	2026-11-16T09:22:16Z
 fix:shillinq:2259:614a5c5a	RED inherited from development (#3106 dropped SPDX tag on ObjectServiceInterface stub); restored header on branch, pushed 48de59f1a; REVERIFY queued (merge lock held elsewhere; adrvalidator host blocked here)	session-20261116T085359-7eb6c05c	2026-11-16T09:22:26Z
+review:portaliq:1769:1f21b5e3	GREEN: dependency-only minor bump, no behaviour change	session-20261116T084851-92549055	2026-11-16T09:22:41Z
+review:dossiq:3955:051bc7d2	GREEN: rename-only refactor, suite at baseline	session-20261116T084528-6b5f71dd	2026-11-16T09:23:01Z
