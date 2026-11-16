@@ -16124,3 +16124,4 @@ verify:learniq:2562:a40eaf65	GREEN #2562 (deps+SBOM; php 6868/1 inherited, js 9 
 merge:opencatalogi:1893:b1a47d92	unmeasured: api.osv.dev; tree 5 IN (2669 RED cull, 2654/2671 CONFLICT, 2682 MOVED); 2415 gate RED (spdxheaders 5->4), 2541 REQUEST_CHANGES (repair step without version bump); merged 0	session-20261116T101220-07929334	2026-11-16T10:22:09Z
 review:dossiq:6593:063f50b3	GREEN: refactor keeps behaviour; suite 19 failures = baseline	session-20261116T101405-cc6d1a17	2026-11-16T10:22:52Z
 fix:shillinq:2093:cc5e1a5e	fixed: manifest test updated for the built-in detail page; pushed c70fbea8; merge lock held elsewhere, REVERIFY queued	session-20261116T101916-4045770b	2026-11-16T10:23:23Z
+review:dossiq:3936:073e564b	GREEN: 18282 tests, 19 inherited failures, no new; gates inherited only	session-20261116T101035-b42d3ee7	2026-11-16T10:23:48Z
