@@ -17001,3 +17001,4 @@ fix:stackiq:1931:f5df0ce8	conflict resolved, pushed 3faf7c6; REVERIFY queued (me
 verify:hermiq:1807:87e37da2	GREEN #1807: 0 new failures (5340 php, 1535 js)	session-20261116T170823-40772b73	2026-11-16T17:58:07Z
 review:filinq:2122:8da97635	GREEN: build matches change specs; unit 6910 OK, vitest touched 20/20	session-20261116T173211-a3411be5	2026-11-16T17:58:18Z
 verify:pipelinq:3894:9807d239	GREEN #3894: 9030 tests, 0 new failures	session-20261116T173713-4d98e280	2026-11-16T17:58:29Z
+fix:hermiq:1187:0e261189	failed: dev-only lockfile bump (@playwright/test); regen-sbom leaves sbom.cdx.json unchanged (855 components, --omit dev), so the gate rule 'lockfile changed without sbom.cdx.json' cannot be met; needs a gate exception for dev-only lock changes	session-20261116T174709-5787ce39	2026-11-16T17:58:41Z
