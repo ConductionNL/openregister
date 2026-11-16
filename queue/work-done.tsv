@@ -17478,3 +17478,4 @@ cover:learniq:e6498ddd:jsc89f0f80	deferred: learniq has 60 open PRs	session-2026
 lane:arch5:shillinq:next-shillinq-r1	PR #3118 opened (estimate 4.03-4.06 -> 4.08-4.12), verified green; merge lock held elsewhere, GREEN verdict queued	session-20261116T192325-bb4c31dd	2026-11-16T19:45:40Z
 measure:learniq:20261116h18	php 95.51% js 99.8% at 386ba62 (suite: 6868 tests, 1 failure inherited)	session-20261116T192824-ee4fb14b	2026-11-16T19:46:05Z
 merge:integriq:3671:a1fc0d47	cloud tree of 1 integriq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T190656-a33397e6	2026-11-16T19:46:41Z
+cover:learniq:e6498ddd:jsdec3d422	deferred: learniq has 60 open PRs	session-20261116T192325-bb4c31dd	2026-11-16T19:46:22Z
