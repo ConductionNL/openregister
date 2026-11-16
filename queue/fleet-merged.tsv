@@ -4656,5 +4656,6 @@ shillinq	3109	95bf71e1b5b49d1ade835e3ae9eb2b94df7af954	MERGED	worker-51	GATE OK 
 humaniq	1164	d6e3f06686ecdc75a4797451f379feb485d62f56	MERGED	worker-33	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.47 holds at 3.47
 integriq	2716	6edb6eeaafff98e0aa865e39475b0c55f4f9ce02	MERGED	worker-50	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
 stackiq	1978	76744e83bf9b874a6986dbb0b063ffc8ea7b3d93	MERGED	worker-16	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.17
+buildiq	1673	80b457317f46b9f6ab80d28bb3c4606923489bc6	MERGED	worker-35	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.91 holds at 3.91
 integriq	2924	500b126369a6ed627489af45ef717b0a6b6db364	RED	worker-50	GATE RED absolute floor: integriq maintainability 3.55 after merge is below its floor 3.56
 integriq	2994	672207a470cba6d332f1df141ce039272fc4624f	MERGED	worker-50	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
