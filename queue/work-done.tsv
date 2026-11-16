@@ -17546,6 +17546,7 @@ cover:buildiq:70b3e29em9bad:d33a91b0	deferred: buildiq has 53 open PRs	session-2
 cover:decidiq:a5f973bbm9cda:58192586	deferred: decidiq has 47 open PRs	session-20261116T200354-a4252cff	2026-11-16T20:04:21Z
 lane:scan5:decidiq:scan-1	decidiq: no cheap fixes, no PRs; not cheap: testcoderatio 2 (56.3%, needs ~150k test lines for 120%), opensourcehealth 4 (activity 2/freshness 3 capped by 27 inactive and 10 stale transitive npm deps under the Nextcloud libraries); unmeasured: secretscanning (gitleaks not installed on checker host)	session-20261116T200139-9f494e52	2026-11-16T20:04:19Z
 fix:decidiq:1767:1582903c	merged #1767 at 1582903c267265c964b1af5bddd432f6f7e882bf (RED no longer reproduced: SBOM check passes on the tree with current development)	session-20261116T190656-a33397e6	2026-11-16T20:04:23Z
+cover:buildiq:70b3e29em9bad:aae6d66c	deferred: buildiq has 53 open PRs	session-20261116T200139-9f494e52	2026-11-16T20:04:52Z
 cover:buildiq:70b3e29em9bad:38e80a9f	deferred: buildiq has 53 open PRs	session-20261116T200354-a4252cff	2026-11-16T20:04:50Z
 cover:buildiq:70b3e29em9bad:13d51e6a	deferred: buildiq has 53 open PRs	session-20261116T200354-a4252cff	2026-11-16T20:05:02Z
 lane:arch5:filinq:next-filinq-r1	PR #2150 opened (4.06-4.14 -> 4.09-4.18), GREEN verdict recorded, merge lock held by another merger; queued next-filinq-r2	session-20261116T194712-13a51568	2026-11-16T20:05:00Z
