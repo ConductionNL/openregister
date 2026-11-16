@@ -4378,3 +4378,4 @@ hermiq	1307	1007dac617c9bde9350369bf4adb9a791a8aa04b	RED	worker-53	GATE RED sbom
 buildiq	1583	cb1e01bf5bb8b6fa92d5ef01b0765ee06f7300e7	SKIP	worker-16	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 buildiq	1641	adbfd2cca801c9cd569ed9d6e418c6f14ac1b1f1	SKIP	worker-16	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 integriq	3050	a397a9f1b40d43e5c9653f76cb132058105b9520	RED	worker-15	GATE RED checker floor: spdxheaders stars: 5 -> 4
+hermiq	1534	b7a7d45bfa93bc796ed10723ca14602299d17d9d	SKIP	worker-53	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
