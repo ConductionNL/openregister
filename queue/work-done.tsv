@@ -18328,5 +18328,6 @@ verify:versioniq:758:437c8999	758 GREEN	session-20261116T224608-d6967eb8	2026-11
 verify:launchpad:1246:762681f4	1250 GREEN; 1246 skipped (merged)	session-20261116T230531-f9095b0f	2026-11-16T23:21:51Z
 lane:arch5:shillinq:next-shillinq-r10:c1	PR #3135, GREEN (estimate 4.09-4.13 -> 4.12-4.16; component independence 3.12->3.28; still under 4.5, r11 queued)	session-20261116T224609-c0ad2be4	2026-11-16T23:22:22Z
 verify:buildiq:1089:e5304c70	1089 CONFLICT	session-20261116T224608-d6967eb8	2026-11-16T23:22:28Z
+verify:shillinq:3135:9c6d750f	already verified: GREEN at 543f595d recorded by the lane task that opened it (one-PR tree on 1fb758e51, 0 new failures); not self-judged again	session-20261116T224609-c0ad2be4	2026-11-16T23:22:51Z
 merge:launchpad:1106:eb5b270d	no complete base and tree suite: not landed	session-20261116T230531-f9095b0f	2026-11-16T23:22:48Z
 build4:openregister:scoped-api-tokens:c6	partial: PR #10514 new head d2ebb1d0 - merged main in (MagicRbacHandler classification + token ceiling combined: accessConditions caps uncappedAccessConditions, which applies main's classification over unclassifiedAccessConditions; component map unioned, components yaml regenerated), C40.6 ticked (its three in-scope tests exist); MagicMapper 2109, Rbac 1308, Architecture 2364, Middleware 259, Db 5	session-20261116T224246-d9bde508	2026-11-16T23:22:56Z
