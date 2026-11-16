@@ -318,3 +318,4 @@ decidiq	2203	14dc68070ac11502fc0ca03de58869b820f8905a	REQUEST_CHANGES	worker-27	
 decidiq	2207	4cc6ec944a9c332488078dfd95666982ed716c9a	APPROVE	worker-27	Standard; no blockers; daily release job follows the change spec, tests added; integration-parity failure inherited
 decidiq	2224	6d7dfdcffadf85e7bf13eda87f64e3652300a102	APPROVE	worker-27	Quick; no blockers; gridstack major bump is not imported by src directly; tree unit suite green
 integriq	2924	81032a2e25be20a55d65581e9c199af938b2368c	APPROVE	worker-47	Thorough; no blockers; removes unreachable legacy rule/endpoint modals and their tests, no remaining imports, register.d edits are comment-only
+integriq	3047	261ea2e51572de7eea587257a403b5236d99e86b	APPROVE	worker-47	Standard; no blockers; renderEntity call moved to openregister main RenderSelection API, same extend all
