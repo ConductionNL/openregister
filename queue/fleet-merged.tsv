@@ -3755,3 +3755,12 @@ dossiq	3197	4fd9129cae30320898c8905d5fc6d07581b354c7	MERGED	merge3	GATE OK sbom,
 dossiq	3201	1fedc9a2fa5d72e4b1978d23676c5e05c25cd080	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.34
 buildiq	1092	996ef9e614476985eb35a9ad72d672a44732fbc6	MERGED	cloudmerge-pilot	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.91 holds at 3.91
 buildiq	1233	fbc18f0064cdfcd59c03ed6f43d22ec6296386d8	MERGED	cloudmerge-pilot	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.91 holds at 3.91
+planninq	725	f5dce57ccb5c64d59b1bf29f2c8e9d3e163e29b6	MERGED	merge8	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.66 holds at 3.77
+planninq	871	95bfabe1fba239c71a740e393ca39d0ba96f494d	RED	merge8	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+planninq	908	8cdb1910f5769d0c250c3ec878064e9414311a3a	RED	merge8	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+planninq	909	db6e11d8f72cf79a377abc5a904e90f5c10727df	MERGED	merge8	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.66 holds at 3.77
+planninq	910	59fb2d6b5243a16491c1ffaf85638f15344641b4	RED	merge8	GATE RED sbom: composer.lock changed without sbom.cdx.json
+planninq	918	90a6ddf09f993b4de614cf5d5233d0289f44b22e	RED	merge8	GATE RED sbom: composer.lock changed without sbom.cdx.json
+planninq	1037	e8b53d51f4768bebb1d05b8d693b28e7eeec71aa	MERGED	merge8	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.66 holds at 3.77
+planninq	1068	40deb423f1222b7b1faa5b7624b9c58ff150df52	RED	merge8	GATE RED sbom: composer.lock changed without sbom.cdx.json
+planninq	1070	e52ec55b0363caa130a4ebc3c2d99589f9c893ca	RED	merge8	GATE RED sbom: composer.lock changed without sbom.cdx.json
