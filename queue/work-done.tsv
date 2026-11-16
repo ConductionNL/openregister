@@ -17390,6 +17390,7 @@ cover:humaniq:a18a13fb:7ed71db5	PR humaniq#1168: Setup 2 classes to 100% stateme
 fix:decidiq:2170:8ede76a3	floor restored: merged development (conflicts resolved), tree measures 3.80 >= 3.78; new head 80617c37	session-20261113T212411-bd385ec2	2026-11-16T19:26:36Z
 fix:buildiq:1641:bb9b55d3	conflict resolved (l10n/en.js), pushed 59f9dd1; merge lock held elsewhere, REVERIFY queued	session-20261116T184831-8be58c40	2026-11-16T19:26:50Z
 cover:larpinq:c4471360:81b1241f	already done: lib/Portal/*.php is 155/155 statements covered (100%) by PortalContributionProviderTest on development; no PR	session-20261113T212411-bd385ec2	2026-11-16T19:28:09Z
+cover:launchpad:fb10c50fmf487:d3522ea6	deferred: launchpad has 44 open PRs	session-20261116T181151-999832c6	2026-11-16T19:27:22Z
 cover:launchpad:fb10c50fmf487:60c2c265	deferred: launchpad has 44 open PRs	session-20261116T184852-b8356331	2026-11-16T19:27:21Z
 cover:buildiq:70b3e29em9bad:8ed5443b	deferred: buildiq has 54 open PRs	session-20261116T192645-5f5cd9b9	2026-11-16T19:27:43Z
 cover:buildiq:70b3e29em9bad:f84921d5	deferred: buildiq has 54 open PRs (note: 4 Mcp/Handler tests are risky for lack of @uses AppOrganisationGuard; adding it lifts lib/Mcp/Handler 91.9%->99.65%)	session-20261116T184831-8be58c40	2026-11-16T19:27:44Z
