@@ -16668,3 +16668,4 @@ build:pipelinq:simple-ticket-page	deferred: pipelinq has 46 open PRs	session-202
 build:pipelinq:opt-out-before-send	deferred: pipelinq has 46 open PRs	session-20261116T150749-2f742a8d	2026-11-16T15:42:53Z
 build:pipelinq:only-the-drawn-pipelines	deferred: pipelinq has 46 open PRs	session-20261116T150749-2f742a8d	2026-11-16T15:43:01Z
 build:pipelinq:kcc-report-top-occupancy-forecast-export	deferred: pipelinq has 46 open PRs	session-20261116T150749-2f742a8d	2026-11-16T15:43:16Z
+review:decidiq:2203:25c89067	GREEN: unit 4632 OK, vitest 22 OK, no blockers	session-20261116T153800-2f867ebc	2026-11-16T15:43:14Z
