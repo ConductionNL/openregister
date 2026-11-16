@@ -35,6 +35,7 @@ use PHPUnit\Framework\TestCase;
  */
 #[CoversClass(FileEntityRelationsController::class)]
 #[UsesClass(CallerFileAccess::class)]
+#[UsesClass(EntityRelation::class)]
 final class FileEntityRelationsControllerTest extends TestCase {
 	/**
 	 * The controller, with `jan` signed in, whose folder holds the given files.
