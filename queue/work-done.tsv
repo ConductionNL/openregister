@@ -17690,5 +17690,6 @@ fix:opencatalogi:2696:0d0512a6	conflict resolved, pushed cdc6289da; not landed: 
 fix:hermiq:1795:bba547a1	failed: permission (fixed and pushed 69b741d5, tree green; self-review/land refused, REVERIFY queued)	session-20261116T202154-fbc59c50	2026-11-16T20:34:57Z
 build4:openregister:rules-compose-read-transitions-and-time:c6	partial: PR #10529 pushed 4.3b (warn validations returned on the save response via OpenRegister-Warnings header and @self.warnings), left 3.3b sweep (design question 3 unanswered), 5.4 e2e	session-20261116T202229-ea7e3aab	2026-11-16T20:35:14Z
 fix:hermiq:1750:a6a7d9f3	fixed floor (unit_complexity restored, suite OK 5414); pushed a0e29d18, REVERIFY queued	session-20261116T201953-a718bf5e	2026-11-16T20:35:08Z
+review:hermiq:1795:4db38b5f	stale	session-20261116T202154-fbc59c50	2026-11-16T20:35:23Z
 cover:pipelinq:7f9dc8e6m3dbb:8f8dca30	added 5 tests (lib/Service/Export edge branches) to open cover PR #3602 (app over PR budget, 44 open); suite 9151/0 failures	session-20261116T202142-f327703a	2026-11-16T20:35:33Z
 fix:keepiq:1826:f651073d	fixed floor: merged development, interfacing 3.33->3.32 (PASS), refactor to value objects; suite 5499 OK; new head 18633225; REVERIFY (lock held elsewhere)	session-20261116T200543-e8f76f14	2026-11-16T20:35:45Z
