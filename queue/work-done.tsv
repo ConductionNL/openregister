@@ -17357,11 +17357,21 @@ build:portaliq:demo-sign-in-beside-the-account:r2	already done: T01-T05 are on d
 verify:shillinq:3110:67424089	GREEN 3110 (phpunit 12231/0, vitest 1 inherited failure)	session-20261116T185100-d2f0c6eb	2026-11-16T19:21:11Z
 build:portaliq:portal-federated-search:r2	already done: every code task ticked on development; only a live-instance test is open	session-20261116T181151-999832c6	2026-11-16T19:21:15Z
 cover:decidiq:a5f973bbm9cda:34f5c300	deferred: decidiq has 48 open PRs	session-20261116T185100-d2f0c6eb	2026-11-16T19:22:24Z
+build:portaliq:nextcloud-account-registration:r2	already done: T01-T04 ticked; only live round trip T05 left (needs tenant + mail)	session-20261116T191856-c437ae89	2026-11-16T19:21:50Z
+fix:opencatalogi:2725:defb7b6a	already merged: #2725 landed on development as 7eaf8724, nothing to fix	session-20261116T191156-bbdb7add	2026-11-16T19:22:10Z
 build:portaliq:media-usage-count:r2	already done: T01-T03 on development (#1647: MediaUsage, MediaUsageJob, usedOn, pill test); only T04, a live check, is left	session-20261116T184831-8be58c40	2026-11-16T19:21:31Z
+cover:integriq:92114ab0m505c:js0023cfc7	deferred: integriq has 70 open PRs	session-20261116T192202-7c713c59	2026-11-16T19:22:37Z
+build:portaliq:example-resident-zuiddrecht:r2	already built: tasks 1-5 ticked (#1227), installer since superseded by resident-on-example-set (53be7ab1b); only task 6 live check left, not code	session-20261116T192127-f26e2e56	2026-11-16T19:22:39Z
 build:portaliq:contact-question-form-names-its-action:r2	already done: T1 on development; T2 is a live check	session-20261116T191704-9a63be87	2026-11-16T19:22:34Z
 cover:decidiq:a5f973bbm9cda:8ed5443b	failed: lib/Kernel/Contracts/*.php is interfaces only (0 executable statements, nothing to cover); also deferred: decidiq has 48 open PRs	session-20261116T192132-006e7c93	2026-11-16T19:22:35Z
 fix:learniq:2557:3fe186b0	conflict resolved, pushed 572f9432; not landed: psalm 7.5 does not install under config.platform php 8.3 (needs >=8.3.16)	session-20261116T192046-9440725d	2026-11-16T19:22:37Z
 build:portaliq:mijn-taken-lists-contributed-tasks:r2	already done: T1-T2 on development (fix(site) 2026-10-16, contributedTasks.js + tasks-page tests); only T3, a live check, is left	session-20261116T184831-8be58c40	2026-11-16T19:22:43Z
+merge:versioniq:722:cd704eab	cloud tree of 1 versioniq PRs: none; conflict 1, lint 0, red 0, moved 0, done 0	session-20261116T184833-adbb8426	2026-11-16T19:23:01Z
 build:portaliq:search-suggestions-while-typing:r2	already done: T01-T03 on development (feat 2026-10-08: SearchSuggestions.vue + spec); only T04, Playwright/live check, is left	session-20261116T184831-8be58c40	2026-11-16T19:23:11Z
 cover:decidiq:a5f973bbm9cda:9d3a1784	deferred: decidiq has 48 open PRs	session-20261116T192132-006e7c93	2026-11-16T19:23:00Z
 verify:keepiq:1847:05c68928	4 GREEN (1847,1848,1849,1850); php 5392 tests 0 new failures; vitest 3 inherited	session-20261116T191448-870933e4	2026-11-16T19:23:39Z
+cover:integriq:92114ab0m505c:jsf3772e2d	deferred: integriq has 70 open PRs	session-20261116T192125-8d7de83c	2026-11-16T19:23:49Z
+cover:humaniq:a18a13fb:be6d0ab9	already done: lib/Payroll/Pension/ (PensionBase) measures 100% (19/19 statements) on development with the existing PensionBaseTest; no PR	session-20261116T191704-9a63be87	2026-11-16T19:24:43Z
+fix:learniq:2559:307b9303	merged development in, pushed 64fd61a8; merge lock held elsewhere, REVERIFY queued	session-20261116T192046-9440725d	2026-11-16T19:24:42Z
+fix:learniq:1881:df81c10b	fixed CONFLICT, pushed 57e4a54a; lock held elsewhere, REVERIFY queued	session-20261116T192127-f26e2e56	2026-11-16T19:25:17Z
+verify:integriq:3671:a1fc0d47	GREEN #3671; 9535 tests, no new failures (1 flaky inherited)	session-20261116T184841-a3bc3002	2026-11-16T19:25:26Z
