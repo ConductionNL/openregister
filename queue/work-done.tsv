@@ -15808,3 +15808,4 @@ review:filinq:2123:e7b32d65	GREEN: unit 6863 ok, vitest 785 ok	session-20261116T
 fix:decidiq:2170:a39ae47e	fixed: migrated room-system calls to main object API, suite green; merge lock busy, REVERIFY at d54fcb29	session-20261116T082957-20288fea	2026-11-16T08:33:11Z
 fix:stackiq:1965:db980e34	partial: spec tags added (new head c6e522ff); semantic-controls blocker on the map's pointer-only edge click remains; REVERIFY written	session-20261116T080103-dd70aeff	2026-11-16T08:33:25Z
 fix:opencatalogi:2670:eed46219	fixed: maintainability 5 stars restored via contract interfaces; pushed 7cd46940; REVERIFY recorded (merge lock held elsewhere)	session-20261116T081649-ec7372ec	2026-11-16T08:33:35Z
+fix:decidiq:2191:58233c56	fixed: ProgressCheck registered in src/icons.js, pushed 29114ea5; REVERIFY (merge lock held elsewhere)	session-20261116T081720-9a06ad30	2026-11-16T08:33:50Z
