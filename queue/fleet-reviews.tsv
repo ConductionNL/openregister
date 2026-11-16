@@ -454,3 +454,4 @@ integriq	3050	ba946f8e3a5e7aeab450672f945a97ee9e98de62	APPROVE	worker-15	Thoroug
 opencatalogi	2415	f57435cd4bed261f5a3a21a7066af9160fc83d79	APPROVE	worker-48	Quick; no blockers; renderEntity call moved to RenderSelection, matches openregister main signature
 opencatalogi	2541	131ce0fa2c470dbe80bfc84563ed1235afce4730	APPROVE	worker-48	Strict; no blockers; repair step runs inside a system operation, calls match openregister main, skips cleanly on an older OpenRegister; none
 opencatalogi	2673	61f25128c9c36b5ca1d7519327d3ffbd942c0c46	APPROVE	worker-48	Thorough; no blockers; new dashboard endpoint is session-only, reads with RBAC on, files only of readable publications; multitenancy off on the read, as elsewhere
+opencatalogi	2682	d8b519df4b336de03cd62c4570efec60d5744b95	APPROVE	worker-48	Strict; no blockers; draft/poll/accept read the publication with RBAC and require the update right, tasks bound to caller and publication; none
