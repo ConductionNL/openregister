@@ -15482,3 +15482,197 @@ review:stackiq:1417:603fa7bc	GREEN: copy rename, only inherited failures	session
 fix:integriq:3137:b5352821	failed: not fixable in integriq; the PR exists only to adopt SettingsPlacement/SectionAppearance/AdminFormServices, still absent on openregister main (unmerged openregister #9824); hold until that lands	session-20261116T062109-81fc252e	2026-11-16T06:40:43Z
 verify:learniq:2551:45983442	2551 RED: 8 new failures in its own new tests on development	session-20261116T062050-add210c3	2026-11-16T06:41:00Z
 fix:learniq:2484:32d62246	fixed: write groups restated + test; pushed da699898	session-20261116T062126-9d7735e0	2026-11-16T06:41:33Z
+verify:stackiq:1988:3f051d4f	GREEN 1988: no new failures (baseline 1 inherited)	session-20261116T062109-81fc252e	2026-11-16T06:41:54Z
+review:learniq:2507:334d2575	GREEN: matches practical-exam-assessment specs; unit 6901, 2 inherited failures, phpstan clean	session-20261116T062117-388e9de2	2026-11-16T06:42:05Z
+verify:decidiq:2222:f93662ae	GREEN 2222: unit 4624 OK, vitest 2847 OK	session-20261116T062544-335bf148	2026-11-16T06:42:22Z
+fix:stackiq:1965:f16cad4c	conflict resolved (l10n strings moved off tail); new head db980e34	session-20261116T061736-e271ba12	2026-11-16T06:42:39Z
+review:thematiq:1556:7acb440b	GREEN: dbal 4 dev bump, 0 new failures (1 inherited)	session-20261116T062121-edb2d73b	2026-11-16T06:42:50Z
+review:filinq:1964:773f3663	BLOCK: psalm 7.5 lock not installable under config.platform.php 8.3	session-20261116T062117-388e9de2	2026-11-16T06:42:58Z
+verify:dossiq:6587:b6cd9ff6	RED: lock refresh breaks vitest nextcloudVue276.spec.js and validateManifestLag.spec.js; PHP suite clean vs baseline	session-20261116T062123-fa6fb6b0	2026-11-16T06:43:13Z
+fix:stackiq:1978:10c9e69f	conflict resolved (l10n strings moved off tail); new head 0e16289a	session-20261116T061736-e271ba12	2026-11-16T06:43:33Z
+verify:shillinq:3108:74e1d5d1	RED: lock bump breaks manifestActions.spec.js load (deep dist import gone in nextcloud-vue 2.181)	session-20261116T062050-3a7e109c	2026-11-16T06:43:46Z
+fix:stackiq:1959:9c86f22a	fixed: migrated scenario find to ObjectFindOptions; new head fe24e23b, REVERIFY recorded	session-20261116T062109-81fc252e	2026-11-16T06:43:55Z
+fix:planninq:1068:40deb423	failed: nothing to fix - regen-sbom.sh --check passes and regen leaves sbom.cdx.json unchanged (phpstan 2.3.5 is dev-only, omitted from the SBOM); the gate's lockfile-without-sbom name rule is a false red for dev-only bumps, needs a lane decision	session-20261116T062117-388e9de2	2026-11-16T06:44:00Z
+fix:decidiq:2178:f3f4328f	fixed eslint errors; new head 32c05171, REVERIFY	session-20261116T062544-335bf148	2026-11-16T06:44:06Z
+verify:keepiq:1828:b313725c	GREEN: 5260 OK, baseline same	session-20261116T062140-6a300781	2026-11-16T06:44:17Z
+review:shillinq:3078:db907ca5	GREEN: spec-conform, suites green beyond 1 inherited vitest	session-20261116T062050-add210c3	2026-11-16T06:44:37Z
+verify:pipelinq:3883:9db6174e	GREEN 3883: unit 8987 OK = baseline; 1 inherited vitest failure	session-20261116T062050-7d5ce0d6	2026-11-16T06:44:47Z
+review:stackiq:1297:f6f898a1	GREEN: phpmd 3.0, 0 new failures	session-20261116T061736-e271ba12	2026-11-16T06:45:09Z
+merge:launchpad:753:74970f66	cloud tree of 7 launchpad PRs: merged=0 red=1 fail=0 skip=3; conflict 2, lint 0, red 0, moved 1, done 0	session-20261116T064118-a5aff8df	2026-11-16T06:45:34Z
+review:stackiq:1168:04f38d3a	GREEN: lock+sbom; 1 inherited golden failure	session-20261116T062544-335bf148	2026-11-16T06:45:46Z
+fix:stackiq:1931:ff2b9697	fixed: attestation calls migrated to main options API; new head 42bba8a9, REVERIFY recorded	session-20261116T062109-81fc252e	2026-11-16T06:46:00Z
+fix:planninq:933:cb3692d7	conflict resolved, moved OR calls migrated to main API; unit 1231/0 fail; pushed 6f703f97	session-20261116T062117-388e9de2	2026-11-16T06:46:12Z
+review:shillinq:2997:d7b6bce1	GREEN: build PR, access checks per administration, no new failures	session-20261116T062120-691af8f7	2026-11-16T06:46:19Z
+fix:buildiq:1652:b1411849	CONFLICT resolved, pushed 2b887096e99104c20abaf165361ab630a1c40eb1, REVERIFY recorded	session-20261116T062050-7d5ce0d6	2026-11-16T06:46:31Z
+verify:larpinq:1065:1b4e8491	GREEN: no new PHP or vitest failures	session-20261116T062123-fa6fb6b0	2026-11-16T06:46:46Z
+verify:planninq:1196:345eb8c3	GREEN 1196: unit 1222 OK	session-20261116T062544-335bf148	2026-11-16T06:46:57Z
+review:shillinq:2096:8af31d73	RED: 2 ImportWizardCoverage vitest tests still expect the old PATCH	session-20261116T062126-9d7735e0	2026-11-16T06:47:12Z
+fix:hermiq:1735:ca2c7585	fixed: registrar test expects FlowRunTerminalListener; new head 80b67d82, REVERIFY recorded	session-20261116T062109-81fc252e	2026-11-16T06:47:19Z
+merge:stackiq:1924:b6607297	cloud tree of 5 stackiq PRs: merged=0 red=4 fail=0 skip=0; conflict 1, lint 0, red 0, moved 0, done 0	session-20261116T063134-3a4fc8af	2026-11-16T06:47:57Z
+fix:shillinq:3080:f73df8d1	fixed: save migrated to ObjectSaveOptions, suite 12253 green; new head cb96e451	session-20261116T062050-3a7e109c	2026-11-16T06:47:55Z
+fix:shillinq:2991:adf6174a	fixed: saveObject uuid -> ObjectSaveOptions, suite green, pushed 4a34a03e	session-20261116T062050-add210c3	2026-11-16T06:48:09Z
+verify:launchpad:1238:41c15e2e	GREEN 1238: 4461 tests OK	session-20261116T062109-81fc252e	2026-11-16T06:48:22Z
+fix:buildiq:1094:224fef61	CONFLICT resolved, pushed 2ea9dbb4, REVERIFY recorded	session-20261116T062050-7d5ce0d6	2026-11-16T06:48:33Z
+fix:launchpad:1038:80993974	failed: not fixable in launchpad; the PR exists only to adopt StoreListing/StoreDescriptor(listing:), still absent on openregister main; hold until that openregister change lands	session-20261116T062109-81fc252e	2026-11-16T06:48:43Z
+fix:buildiq:1583:83cecfc6	conflict resolved (stub moved off tail); new head df8986ae	session-20261116T061736-e271ba12	2026-11-16T06:48:48Z
+verify:pipelinq:3882:cddb1eed	GREEN 3882: no new failures (php 8987 ok; vitest 1 inherited)	session-20261116T062120-7c38c5f1	2026-11-16T06:49:10Z
+fix:buildiq:1256:342dece0	sbom already current (dev-only lock change); merged development, pushed	session-20261116T062050-add210c3	2026-11-16T06:49:17Z
+fix:buildiq:1654:a81c7ddf	conflict resolved (l10n keep both); new head ac924f1b	session-20261116T062123-fa6fb6b0	2026-11-16T06:49:27Z
+fix:planninq:918:90a6ddf0	sbom already current (dev-only dep); merged development, unit green; new head 6289a597	session-20261116T062050-3a7e109c	2026-11-16T06:49:39Z
+fix:shillinq:3088:13b45b93	fixed RED: two saves moved to ObjectSaveOptions; unit 12244 green; new head 27e4a523	session-20261116T062120-691af8f7	2026-11-16T06:49:52Z
+merge:thematiq:1117:1f934e0c	cloud tree of 1 thematiq PRs: merged=0 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T062121-edb2d73b	2026-11-16T06:50:04Z
+fix:planninq:930:de4742c6	conflict resolved; new head 3db13fea, REVERIFY	session-20261116T062544-335bf148	2026-11-16T06:50:09Z
+merge:hermiq:1293:c5e8b7d2	cloud tree of 5 hermiq PRs: merged=0 red=0 fail=0 skip=3; conflict 2, lint 0, red 0, moved 0, done 0	session-20261116T063608-d33f86e6	2026-11-16T06:50:20Z
+fix:buildiq:1249:0997f504	sbom current (dev dep omitted); merged development, pushed e01a3111488d17974ac20b492fdd9e5593f8cd37, REVERIFY	session-20261116T062050-7d5ce0d6	2026-11-16T06:50:30Z
+fix:buildiq:1624:de704581	conflict resolved (kept both l10n key sets), pushed	session-20261116T062050-add210c3	2026-11-16T06:50:37Z
+fix:buildiq:1114:9381ce97	failed: sbom gate unsatisfiable - dev-only nextcloud/ocp lock bump; regen-sbom (--omit=dev) leaves sbom.cdx.json unchanged and --check passes, but merge_gate.sbom requires the file in the diff; needs a dev-only-lock exemption in the gate	session-20261116T062120-691af8f7	2026-11-16T06:50:59Z
+fix:planninq:908:8cdb1910	restored lockfile dev flags; opensourcehealth 4 again; pushed d3be6570	session-20261116T062117-388e9de2	2026-11-16T06:50:56Z
+fix:planninq:871:95bfabe1	sbom regenerated, development merged; new head c207058e	session-20261116T062050-3a7e109c	2026-11-16T06:51:08Z
+fix:buildiq:1648:30c0874a	failed: tree interaction, not a defect on this branch: AppOrganisationGuardCoverageTest comes from branch quality/build-operate-organisation-scoped-apps and flags this PR's new lib/Service/Automation/AutomationFlowBackend.php (an internal helper of AutomationWriteService, which that test lists as not yet reviewed); the classification must be added to that test once both meet (by whichever merges s	session-20261116T062123-fa6fb6b0	2026-11-16T06:51:17Z
+fix:buildiq:1641:1cc1383a	merged development cleanly, pushed b6868cd6b6f9eec39772064f4979ffcdb1432599, REVERIFY	session-20261116T062050-7d5ce0d6	2026-11-16T06:51:29Z
+merge:hermiq:1174:0c97b899	failed: permission (merge gate checker floor cannot measure secretscanning/adrvalidator on this host: gitleaks missing, its install refused)	session-20261116T063608-d33f86e6	2026-11-16T06:51:40Z
+fix:buildiq:820:a6bd63eb	failed: sbom gate unsatisfiable - dev-only @vitejs/plugin-vue lock bump; regen-sbom (--omit dev) leaves sbom.cdx.json unchanged, but merge_gate.sbom requires the file in the diff; needs a dev-only-lock exemption in the gate	session-20261116T062120-691af8f7	2026-11-16T06:51:36Z
+fix:planninq:910:59fb2d6b	sbom false positive (dev-only); merged development, new head 8ffad303, REVERIFY queued	session-20261116T062120-7c38c5f1	2026-11-16T06:51:53Z
+fix:buildiq:1651:fcb354f5	development merged in cleanly, pushed; residual conflicts only vs other unmerged PRs	session-20261116T062050-add210c3	2026-11-16T06:52:00Z
+fix:shillinq:2086:692ec2a9	fixed: 8 failures cleared (old OR API + undocumented routes); suite 12233 OK; new head bda4253e	session-20261116T062140-6a300781	2026-11-16T06:52:20Z
+merge:launchpad:653:5051a1d9	cloud tree of 4 launchpad PRs: merged=0 red=2 fail=0 skip=0; conflict 0, lint 0, red 0, moved 2, done 0	session-20261116T064118-a5aff8df	2026-11-16T06:52:37Z
+review:versioniq:723:332a8036	GREEN: build matches specs, no new failures	session-20261116T062126-9d7735e0	2026-11-16T06:52:36Z
+fix:planninq:1070:e52ec55b	sbom already current (dev-only bump); merged development, new head 0324724d, REVERIFY	session-20261116T062544-335bf148	2026-11-16T06:53:05Z
+fix:buildiq:1608:08f7f4d3	fixed CONFLICT: merged development, kept both l10n key sets; new head 53c9f80a	session-20261116T062120-691af8f7	2026-11-16T06:53:31Z
+fix:buildiq:1262:a0a4f287	RED not reproducible on branch+current development; named tests pass, 1 inherited failure; REVERIFY recorded	session-20261116T062117-388e9de2	2026-11-16T06:53:59Z
+merge:launchpad:832:2474456e	cloud tree of 1 launchpad PRs: merged=0 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T064118-a5aff8df	2026-11-16T06:54:26Z
+fix:opencatalogi:2701:88eb3297	fixed: stale test updated to the spec's 404; new head 59468b61	session-20261116T062123-fa6fb6b0	2026-11-16T06:54:24Z
+fix:opencatalogi:2696:2ec8a868	fixed BLOCK (OR main API in 2 calls), pushed e3f1409d; REVERIFY recorded	session-20261116T063608-d33f86e6	2026-11-16T06:54:43Z
+fix:opencatalogi:2699:89a2eae1	fixed: dry-run store on main's save API, test double updated, pushed 089b88bb	session-20261116T062050-add210c3	2026-11-16T06:54:50Z
+review:buildiq:1249:e01a3111	GREEN: phpstan patch bump, no new findings or failures	session-20261116T062120-691af8f7	2026-11-16T06:55:05Z
+fix:buildiq:1649:dae57dbf	merged development (clean), checks green; new head f58cb410, REVERIFY queued	session-20261116T062120-7c38c5f1	2026-11-16T06:55:17Z
+review:planninq:1070:0324724d	GREEN: dev-only bump, suite OK	session-20261116T062050-add210c3	2026-11-16T06:55:31Z
+fix:opencatalogi:2682:e88dc4b8	fixed: old-API find/save moved to option objects; no new failures (106 inherited); new head 266a8421	session-20261116T062140-6a300781	2026-11-16T06:55:50Z
+review:buildiq:1641:b6868cd6	GREEN: spec-conform build; no new failures	session-20261116T062123-fa6fb6b0	2026-11-16T06:56:19Z
+review:planninq:918:6289a597	GREEN: dev-only bump, suite OK, phpstan unchanged	session-20261116T062050-add210c3	2026-11-16T06:56:29Z
+fix:buildiq:1091:d342b9dd	merged development in; vitest 4719 pass; new head 13bc446b	session-20261116T061736-e271ba12	2026-11-16T06:56:39Z
+fix:opencatalogi:2671:8b5765d7	fixed: OR main API migration in sweep/rewrite/show; 0 new failures vs baseline; new head 0c44bbf1	session-20261116T062050-3a7e109c	2026-11-16T06:56:47Z
+review:buildiq:1583:df8986ae	GREEN: matches change spec, no new failures	session-20261116T062120-7c38c5f1	2026-11-16T06:57:08Z
+review:buildiq:1256:2fc80cec	GREEN: lock-only; suite same as baseline (1 inherited failure)	session-20261116T062140-6a300781	2026-11-16T06:57:16Z
+review:planninq:871:c207058e	GREEN	session-20261116T063608-d33f86e6	2026-11-16T06:57:28Z
+fix:buildiq:1596:33a8b51d	floor restored to 3.91 by splitting guard; pushed 1e0a4baa, REVERIFY	session-20261116T062050-7d5ce0d6	2026-11-16T06:58:00Z
+merge:thematiq:1303:7ed03e6f	cloud tree of 2 thematiq PRs: merged=0 red=0 fail=0 skip=2; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T062121-edb2d73b	2026-11-16T06:58:06Z
+review:buildiq:1652:2b887096	GREEN: spec-conform build; no new failures	session-20261116T062123-fa6fb6b0	2026-11-16T06:58:17Z
+review:planninq:908:d3be6570	GREEN: dev-only bump, vitest pass	session-20261116T062050-add210c3	2026-11-16T06:58:26Z
+review:hermiq:1735:80b67d82	GREEN: matches change specs, access checks intact, suites green	session-20261116T062050-3a7e109c	2026-11-16T06:59:12Z
+fix:buildiq:1620:42a0d795	fixed: merged development in; new head ff3f376b, REVERIFY recorded	session-20261116T062109-81fc252e	2026-11-16T06:59:24Z
+review:planninq:933:6f703f97	GREEN	session-20261116T063608-d33f86e6	2026-11-16T06:59:55Z
+review:hermiq:1802:5e2885e3	GREEN: tests only, suite green	session-20261116T062050-3a7e109c	2026-11-16T07:00:09Z
+merge:launchpad:755:2e39c670	cloud tree of 9 launchpad PRs: merged=0 red=5 fail=0 skip=0; conflict 0, lint 0, red 0, moved 4, done 0	session-20261116T064118-a5aff8df	2026-11-16T07:00:21Z
+review:hermiq:1795:fdc2c517	GREEN: phpunit 5312 OK, vitest 1532 OK, phpstan clean	session-20261116T062140-6a300781	2026-11-16T07:00:24Z
+review:planninq:930:3db13fea	BLOCK: unspecified behaviour change + deleted spec-named tests; suites green	session-20261116T062050-add210c3	2026-11-16T07:00:32Z
+merge:humaniq:606:9335fd4a	cloud tree of 5 humaniq PRs: merged=0 red=0 fail=0 skip=5; conflict 0, lint 0, red 0, moved 0, done 0 (gate unmeasured here: ADR ruleset host unreachable, gitleaks too old)	session-20261116T063134-3a4fc8af	2026-11-16T07:00:49Z
+review:stackiq:1931:42bba8a9	GREEN: no new failures, specs-conformant build	session-20261116T065640-54a747b9	2026-11-16T07:01:17Z
+merge:humaniq:872:8c0b2018	failed: merge gate cannot measure humaniq in the cloud env (ADR ruleset host refused by proxy; apt gitleaks 8.16 lacks dir); same as merge:humaniq:606 skip=5	session-20261116T063134-3a4fc8af	2026-11-16T07:01:29Z
+merge:humaniq:684:4f9ce225	failed: merge gate cannot measure humaniq in the cloud env (ADR ruleset host refused by proxy); see merge:humaniq:606	session-20261116T063134-3a4fc8af	2026-11-16T07:01:46Z
+fix:hermiq:1167:9bf6ab11	sbom regenerated, development merged; new head dae65138	session-20261116T062050-3a7e109c	2026-11-16T07:01:44Z
+review:stackiq:1435:81fb6bd4	GREEN: behaviour kept on main, suite OK	session-20261116T062050-add210c3	2026-11-16T07:02:10Z
+review:buildiq:1651:e765d7de	GREEN: matches logic-shared-flows-and-automations specs; unit 3353, 1 inherited failure; vitest clean	session-20261116T062117-388e9de2	2026-11-16T07:02:33Z
+merge:versioniq:500:595b6cab	cloud tree of 4 versioniq PRs: merged=0 red=2 fail=0 skip=1; conflict 1, lint 0, red 0, moved 0, done 0	session-20261116T064721-c9a0b5c9	2026-11-16T07:02:37Z
+review:planninq:910:8ffad303	BLOCK (sbom not regenerated)	session-20261116T063608-d33f86e6	2026-11-16T07:02:44Z
+merge:launchpad:756:b2709c96	cloud tree of 4 launchpad PRs: merged=0 red=3 fail=0 skip=0; conflict 1, lint 0, red 0, moved 0, done 0	session-20261116T064118-a5aff8df	2026-11-16T07:03:08Z
+fix:hermiq:1739:5cf3f827	failed: @spec tags on headline()/noteType() added (head 103d88e1); custom-widget ratchet 22->23 remains: needs a decision to retire a widget or a built-in slot widget for chat health	session-20261116T062050-3a7e109c	2026-11-16T07:03:15Z
+fix:shillinq:2070:b00d1ffe	fixed: who-may-block back to the spec's bookkeeper (caller RBAC), new head 29369cd1	session-20261116T062123-fa6fb6b0	2026-11-16T07:03:33Z
+fix:hermiq:1751:1d2fbb88	nothing to fix: branch already contains development and merges clean alone; the CONFLICT is with another PR's l10n/en.js|en.json lines in the tree, verify it alone or after that PR lands	session-20261116T062050-3a7e109c	2026-11-16T07:03:56Z
+review:buildiq:1624:ae655c59	GREEN: build PR, plan gate fail-closed, no new failures	session-20261116T062120-691af8f7	2026-11-16T07:04:01Z
+review:shillinq:3088:27e4a523	GREEN: unit 12244 OK, 1 inherited vitest failure; matches change specs	session-20261116T062050-7d5ce0d6	2026-11-16T07:04:09Z
+fix:stackiq:1930:4b692e5a	conflicts resolved, suite OK, pushed	session-20261116T062050-add210c3	2026-11-16T07:04:29Z
+fix:hermiq:1781:44761fd9	nothing to fix yet: branch already contains development; it conflicts with sibling PR #1751 (l10n and hermiq_register.json), resolve after one of them lands	session-20261116T062050-3a7e109c	2026-11-16T07:04:34Z
+review:buildiq:1654:ac924f1b	GREEN: 0 new failures, vitest 4768 pass	session-20261116T061736-e271ba12	2026-11-16T07:04:50Z
+fix:shillinq:2096:8af31d73	fixed: stale vitest updated to the new endpoint; new head 7effe6f8	session-20261116T062123-fa6fb6b0	2026-11-16T07:04:59Z
+fix:portaliq:1354:84f30a14	sbom regenerated, development merged; new head ba4c6885	session-20261116T062050-3a7e109c	2026-11-16T07:05:11Z
+fix:hermiq:1189:25278c92	fixed: pinia alias to exports entry; build compiles, vitest 1526 OK; new head 4990197f	session-20261116T062140-6a300781	2026-11-16T07:05:27Z
+review:opencatalogi:2701:59468b61	GREEN: no new failures (106 inherited)	session-20261116T063134-3a4fc8af	2026-11-16T07:05:47Z
+merge:stackiq:1168:e1fbf779	cloud tree of 3 stackiq PRs: merged=0 red=1 fail=0 skip=2; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T065640-54a747b9	2026-11-16T07:05:59Z
+fix:stackiq:1975:a2ac0793	failed: spdxheaders star scorer not available in cloud; reuse lint on branch+development shows no added or changed file without SPDX id/copyright (all 8 new js/vue/md files carry both), so the 5->4 drop needs a local checker run to locate	session-20261116T062050-add210c3	2026-11-16T07:06:02Z
+merge:thematiq:1365:14430142	cloud tree of 1 thematiq PRs: merged=0 red=0 fail=0 skip=1; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T062121-edb2d73b	2026-11-16T07:06:06Z
+merge:learniq:1167:571362fd	cloud tree of 7 learniq PRs: merged=0 red=5 fail=0 skip=0; conflict 1, lint 0, red 1, moved 0, done 0 (first land: sbom gate unmeasured, composer refuses plugins as root; rerun with COMPOSER_ALLOW_SUPERUSER=1)	session-20261116T065234-884bc496	2026-11-16T07:06:40Z
+review:stackiq:1959:fe24e23b	GREEN: spec-conform, suite OK	session-20261116T062050-add210c3	2026-11-16T07:07:03Z
+review:buildiq:1094:2ea9dbb4	GREEN: prettier bump, vitest 4719 pass, format result unchanged	session-20261116T062120-7c38c5f1	2026-11-16T07:07:19Z
+review:decidiq:2178:32c05171	GREEN: decidiq #2178 reviewed, unit 4666 OK, vitest pass; concerns noted	session-20261116T070226-5d062725	2026-11-16T07:07:29Z
+merge:versioniq:505:501e5d35	cloud tree of 3 versioniq PRs: merged=0 red=0 fail=0 skip=3 (505/732 approved but merge gate UNMEASURED: checker_floor did not measure adrvalidator, secretscanning; 725 REQUEST_CHANGES)	session-20261116T064721-c9a0b5c9	2026-11-16T07:07:54Z
+review:buildiq:1608:53c9f80a	GREEN: matches change specs, tests green beyond 1 inherited failure	session-20261116T062109-81fc252e	2026-11-16T07:07:53Z
+merge:opencatalogi:1893:e03679c4	failed: opencatalogi development 0f496962 fails its own checker floor (opensourcehealth pass->warn, 4->3 stars), so every PR is gate RED; floor needs re-recording or deps refresh	session-20261116T063134-3a4fc8af	2026-11-16T07:08:00Z
+review:stackiq:1978:0e16289a	GREEN: no new failures, specs-conformant build	session-20261116T065640-54a747b9	2026-11-16T07:08:03Z
+fix:stackiq:1973:a9441088	failed: spdxheaders scorer not available in cloud; reuse lint shows no new header gap vs development (new PHP/js/vue files carry SPDX + @license/@copyright). stackiq 1975 shows the same 5->4 drop, so the cause is likely development or the scorer, not this PR; needs a local checker run	session-20261116T062050-add210c3	2026-11-16T07:08:09Z
+review:shillinq:3080:cb96e451	GREEN: unit 12253 OK, 1 inherited vitest failure; matches change specs	session-20261116T062050-7d5ce0d6	2026-11-16T07:08:21Z
+fix:planninq:930:3db13fea	fixed BLOCK: stop-and-report restored server-side + spec change, pushed b3e1916c; REVERIFY recorded	session-20261116T063608-d33f86e6	2026-11-16T07:08:33Z
+fix:stackiq:1928:36057a15	nothing to fix on the branch: already contains development and merges clean; the src/manifest.json conflict is only with another unmerged PR in the tree, so land that one first and re-merge development then	session-20261116T062050-add210c3	2026-11-16T07:08:52Z
+review:opencatalogi:2699:089b88bb	GREEN: no new failures (phpunit/jest reds inherited), phpstan clean	session-20261116T062140-6a300781	2026-11-16T07:08:54Z
+merge:launchpad:787:974ea88f	cloud tree of 1 launchpad PRs: merged=0 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T064118-a5aff8df	2026-11-16T07:09:17Z
+fix:stackiq:1924:62eff96d	failed: spdxheaders scorer not available in cloud; every added file carries an SPDX header. Same 5->4 drop on stackiq 1973 and 1975, so the cause is likely development or the scorer, not these PRs; needs a local checker run	session-20261116T062050-add210c3	2026-11-16T07:09:17Z
+review:buildiq:1620:ff3f376b	BLOCK: one new eslint sort-imports error in FormFieldBuilder.vue; behaviour per spec	session-20261116T062120-7c38c5f1	2026-11-16T07:09:32Z
+merge:keepiq:1499:a68f163d	failed: keepiq development 317cf090 fails its own checker floor here (opensourcehealth 4->3: proxy refuses api.osv.dev), every PR would be gate RED	session-20261116T063134-3a4fc8af	2026-11-16T07:09:53Z
+review:stackiq:1965:db980e34	GREEN: no new failures, specs-conformant build	session-20261116T065640-54a747b9	2026-11-16T07:10:09Z
+merge:decidiq:1470:112c796a	cloud tree of 1 decidiq PRs: merged=0 red=0 fail=0 skip=1; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T070226-5d062725	2026-11-16T07:10:22Z
+review:learniq:2484:da699898	GREEN: per change specs, suites at baseline	session-20261116T062050-3a7e109c	2026-11-16T07:10:32Z
+review:thematiq:1677:ad0dd3b7	GREEN: 0 new failures, gates green	session-20261116T062121-edb2d73b	2026-11-16T07:10:40Z
+fix:launchpad:1098:08b61447	inherited: plain development (1475bdce) already fails the checker floor the same way (opensourcehealth pass->warn, stars 4->3, a dependency-health rating that moves with upstream data); the phpstan bump does not cause it, no change pushed	session-20261116T063608-d33f86e6	2026-11-16T07:10:44Z
+review:buildiq:1649:f58cb410	GREEN: matches ai-copilot-documents-and-code-help specs; unit 3418, 1 inherited failure; vitest clean	session-20261116T062117-388e9de2	2026-11-16T07:11:02Z
+review:opencatalogi:2671:0c44bbf1	GREEN: no new failures vs development baseline	session-20261116T062109-81fc252e	2026-11-16T07:11:20Z
+fix:launchpad:753:d16aabc3	sbom regenerated, pushed 26ce5b2b; REVERIFY recorded	session-20261116T063134-3a4fc8af	2026-11-16T07:11:36Z
+review:opencatalogi:2682:266a8421	GREEN: no new failures, phpstan clean	session-20261116T062140-6a300781	2026-11-16T07:11:43Z
+fix:thematiq:1117:2427508a	failed: regen-sbom.sh leaves sbom.cdx.json unchanged (dev-only bump; thematiq sbom lists only prod deps), so the merge gate's 'lock changed without sbom' rule cannot be met; same for 1556-1558; needs a gate rule change, not a PR fix	session-20261116T062121-edb2d73b	2026-11-16T07:11:54Z
+merge:launchpad:786:d9466327	cloud tree of 9 launchpad PRs: merged=0 red=2 fail=0 skip=0; conflict 4, lint 0, red 0, moved 1, done 0	session-20261116T064118-a5aff8df	2026-11-16T07:12:12Z
+review:shillinq:2991:4a34a03e	GREEN: unit 12290 OK, 1 inherited vitest failure; matches change specs	session-20261116T062050-7d5ce0d6	2026-11-16T07:12:33Z
+review:buildiq:1091:13bc446b	GREEN: vitest 4719 pass	session-20261116T061736-e271ba12	2026-11-16T07:12:44Z
+fix:launchpad:758:96b93252	merged development in (clean), pushed a042a574; REVERIFY recorded	session-20261116T063608-d33f86e6	2026-11-16T07:12:48Z
+fix:launchpad:832:5cb157b3	inherited: plain development already fails the checker floor the same way (opensourcehealth pass->warn, stars 4->3, measured this session on 1475bdce); not caused by this PR, no change pushed	session-20261116T063608-d33f86e6	2026-11-16T07:13:00Z
+fix:launchpad:757:674cfd98	sbom regenerated; pushed 2ba3b33d	session-20261116T062117-388e9de2	2026-11-16T07:12:57Z
+review:opencatalogi:2696:e3f1409d	GREEN: 0 new PHP failures (5793 tests, 106 inherited), vitest green	session-20261116T070715-d16cf4c6	2026-11-16T07:13:19Z
+merge:versioniq:699:59d2dc12	cloud tree of 3 versioniq PRs: merged=0 red=0 fail=0 skip=2; conflict 1, lint 0, red 0, moved 0, done 0	session-20261116T064721-c9a0b5c9	2026-11-16T07:13:32Z
+fix:filinq:1964:773f3663	failed: not fixable within worker rules: psalm 7.5.0 needs php ~8.3.16 against config.platform.php 8.3; raising the platform requires regenerating and committing composer.lock (workers never commit it) and it is a 5->7 major bump; BLOCK stands, hold the bump or let a maintainer raise the platform	session-20261116T063608-d33f86e6	2026-11-16T07:13:47Z
+fix:learniq:2551:3b2c2a67	fixed: 8 new failures resolved (OR main API); new head 86a3e2d4	session-20261116T062050-3a7e109c	2026-11-16T07:13:54Z
+fix:launchpad:819:c5c80a07	inherited: development itself measures opensourcehealth 3 stars; PR changes dev packages only	session-20261116T062117-388e9de2	2026-11-16T07:14:07Z
+fix:launchpad:760:77add312	merged development, regenerated sbom; new head 091c4dbf, REVERIFY written	session-20261116T064118-a5aff8df	2026-11-16T07:14:20Z
+merge:learniq:2507:e3b1f029	cloud tree of 1 learniq PRs: merged=0 red=0 fail=0 skip=1; conflict 0, lint 0, red 0, moved 0, done 0; REQUEST_CHANGES: register version raised without app version	session-20261116T065234-884bc496	2026-11-16T07:14:44Z
+fix:launchpad:761:ca2815b8	inherited: opensourcehealth 3 stars on development itself, stale floor file; vitest 2578 pass, head unchanged	session-20261116T062120-7c38c5f1	2026-11-16T07:14:43Z
+fix:launchpad:755:7e918f87	sbom regenerated, pushed f41902ff; REVERIFY recorded	session-20261116T063134-3a4fc8af	2026-11-16T07:15:12Z
+fix:shillinq:3108:fe9440d7	fixed deep imports for nextcloud-vue 2.181; pushed aa5b2da3, REVERIFY	session-20261116T062050-7d5ce0d6	2026-11-16T07:15:20Z
+review:shillinq:2086:bda4253e	GREEN: no new failures, main API used	session-20261116T062123-fa6fb6b0	2026-11-16T07:15:29Z
+review:buildiq:1596:1e0a4baa	GREEN: build PR, org guard fail-closed, no new failures	session-20261116T062120-691af8f7	2026-11-16T07:15:42Z
+merge:keepiq:1496:6d260ef8	failed: keepiq development fails its own checker floor in the cloud env (opensourcehealth 4->3, proxy refuses api.osv.dev); see merge:keepiq:1499	session-20261116T063134-3a4fc8af	2026-11-16T07:16:03Z
+fix:launchpad:653:7dd62332	fixed: sbom regenerated; new head e8ad33b0, REVERIFY recorded	session-20261116T062109-81fc252e	2026-11-16T07:16:17Z
+merge:stackiq:1417:8898ed2b	cloud tree of 3 stackiq PRs: merged=0 red=2 fail=0 skip=1; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T065640-54a747b9	2026-11-16T07:16:31Z
+fix:stackiq:1954:8ec8ab71	floor restored (floor_check PASS), suite OK, pushed b53c26d5	session-20261116T062050-add210c3	2026-11-16T07:16:43Z
+merge:decidiq:2207:19061678	cloud tree of 1 decidiq PRs: merged=0 red=0 fail=0 skip=1; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T070226-5d062725	2026-11-16T07:16:59Z
+fix:launchpad:763:ac59f293	sbom regenerated + development merged; REVERIFY at 68f98712 (end-to-end merge skipped: merge gate cannot measure here)	session-20261116T062121-edb2d73b	2026-11-16T07:17:07Z
+merge:versioniq:738:50ada5e5	cloud tree of 1 versioniq PRs: merged=0 red=0 fail=0 skip=1; conflict 0, lint 0, red 0, moved 0, done 0 (738 approved; merge gate UNMEASURED: ADR ruleset host blocked, gitleaks too old)	session-20261116T064721-c9a0b5c9	2026-11-16T07:17:20Z
+measure:integriq:20261116h06	php 95.29% (pcov), js 94.89% at d9d474f0	session-20261116T061736-e271ba12	2026-11-16T07:18:09Z
+merge:filinq:1355:77246e3e	cloud tree of 2 filinq PRs: merged=0 red=0 fail=0 skip=1; conflict 1, lint 0, red 0, moved 0, done 0 (1962 closed upstream, not reviewed)	session-20261116T065640-54a747b9	2026-11-16T07:18:56Z
+fix:dossiq:6587:c8fd1135	fixed: 2 vitest specs follow nextcloud-vue 2.181; new head 28ecad91	session-20261116T062050-3a7e109c	2026-11-16T07:19:03Z
+measure:stackiq:20261116h06	php 88.93% (pcov), js 96.35% at 0cdd4afa	session-20261116T062117-388e9de2	2026-11-16T07:19:49Z
+merge:shillinq:1899:ad1c159e	cloud tree of 9 shillinq PRs: none; conflict 2, lint 0, red 0, moved 7, done 0	session-20261116T071324-07369689	2026-11-16T07:19:33Z
+merge:launchpad:1230:f3af8fe8	cloud tree of 3 launchpad PRs: merged=0 red=2 fail=0 skip=1; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T064118-a5aff8df	2026-11-16T07:20:27Z
+merge:decidiq:1468:348144b7	cloud tree of 4 decidiq PRs: merged=0 red=0 fail=0 skip=4; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T070226-5d062725	2026-11-16T07:20:48Z
+merge:opencatalogi:2407:0dd2f594	cloud tree of 6 opencatalogi PRs: merged=0 red=0 fail=0 skip=3; conflict 3, lint 0, red 0, moved 0, done 0	session-20261116T070715-d16cf4c6	2026-11-16T07:20:56Z
+merge:versioniq:497:69c867c0	cloud tree of 4 versioniq PRs: merged=0 red=0 fail=0 skip=4; conflict 0, lint 0, red 0, moved 0, done 0 (497/501/502 approved, gate UNMEASURED in cloud; 721 REQUEST_CHANGES)	session-20261116T064721-c9a0b5c9	2026-11-16T07:21:20Z
+merge:versioniq:504:c2a03206	failed: versioniq merge gate is UNMEASURED in cloud sessions (checker floor cannot measure adrvalidator: ADR ruleset host blocked by proxy; secretscanning: gitleaks too old); 4 earlier versioniq trees landed nothing for this reason - land it on a local runner	session-20261116T064721-c9a0b5c9	2026-11-16T07:21:39Z
+merge:humaniq:610:5302362d	failed: merge gate is UNMEASURED in cloud sessions (checker floor cannot measure adrvalidator/secretscanning here; humaniq 606/661/662/685/686 SKIPped for it) - land on a local runner	session-20261116T064721-c9a0b5c9	2026-11-16T07:21:56Z
+merge:launchpad:785:07df7dca	cloud tree of 1 launchpad PRs: merged=0 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T064118-a5aff8df	2026-11-16T07:21:59Z
+merge:filinq:2072:bdfff182	cloud tree of 3 filinq PRs: merged=0 red=0 fail=0 skip=1; conflict 2, lint 0, red 0, moved 0, done 0	session-20261116T065640-54a747b9	2026-11-16T07:22:34Z
+merge:larpinq:1060:d9ee27f2	cloud tree of 1 larpinq PRs: merged=0 red=0 fail=0 skip=1 (merge gate unmeasured: adrvalidator, secretscanning); review APPROVE at 11a6a4e after pushing gate fixes	session-20261116T071508-90e506e7	2026-11-16T07:23:32Z
+merge:planninq:1070:2492b6c0	cloud tree of 1 planninq PRs: merged=0 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T064118-a5aff8df	2026-11-16T07:23:34Z
+merge:filinq:1086:3edadf9d	cloud tree of 1 filinq PRs: none; conflict 1, lint 0, red 0, moved 0, done 0	session-20261116T065640-54a747b9	2026-11-16T07:24:15Z
+merge:learniq:2549:3521fac6	cloud tree of 1 learniq PRs: merged=0 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0; pushed @spec fix 8928cf92, merge gate RED on maintainability floor (unit_complexity/interfacing)	session-20261116T065234-884bc496	2026-11-16T07:24:37Z
+merge:larpinq:1065:1b4e8491	failed: cloud merge gate cannot measure (adrvalidator: static.developer.overheid.nl blocked by the cloud network; secretscanning: gitleaks not installed); 306 cloud SKIP rows with the same cause	session-20261116T071508-90e506e7	2026-11-16T07:25:30Z
+merge:decidiq:1691:8ce4b4d3	cloud tree of 6 decidiq PRs: merged=0 red=0 fail=0 skip=3; conflict 2, lint 0, red 0, moved 0, done 1	session-20261116T070226-5d062725	2026-11-16T07:26:47Z
+merge:planninq:871:76fb554b	cloud tree of 4 planninq PRs: merged=0 red=3 fail=0 skip=1; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T064118-a5aff8df	2026-11-16T07:26:54Z
+merge:filinq:2094:08cb8d5a	cloud tree of 5 filinq PRs: merged=0 red=0 fail=0 skip=1; conflict 4, lint 0, red 0, moved 0, done 0	session-20261116T065640-54a747b9	2026-11-16T07:27:32Z
+merge:opencatalogi:1889:ec6750ee	cloud tree of 8 opencatalogi PRs: merged=0 red=3 fail=0 skip=2; conflict 3, lint 0, red 0, moved 0, done 0; payload truncated after 2670 (2674 dropped)	session-20261116T070715-d16cf4c6	2026-11-16T07:27:48Z
+merge:planninq:1196:345eb8c3	cloud tree of 1 planninq PRs: merged=0 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T064118-a5aff8df	2026-11-16T07:28:26Z
+merge:hermiq:1135:3aad0120	cloud tree of 3 hermiq PRs: merged=0 red=0 fail=0 skip=2; conflict 1, lint 0, red 0, moved 0, done 0 (skips: merge gate UNMEASURED - sbom regen / checker-floor)	session-20261116T072348-09bc3aba	2026-11-16T07:29:10Z
+merge:larpinq:960:a70e41a5	cloud tree of 4 larpinq PRs: merged=0 red=2 fail=0 skip=1; conflict 1, lint 0, red 0, moved 0, done 0	session-20261116T065640-54a747b9	2026-11-16T07:30:27Z
+merge:opencatalogi:1888:ad7e1f56	cloud tree of 5 opencatalogi PRs: merged=0 red=0 fail=0 skip=1; conflict 2, lint 0, red 0, moved 2, done 0	session-20261116T070715-d16cf4c6	2026-11-16T07:30:48Z
+merge:decidiq:2170:0425a6b9	cloud tree of 2 decidiq PRs: merged=0 red=0 fail=0 skip=1; conflict 0, lint 0, red 1, moved 0, done 0	session-20261116T070226-5d062725	2026-11-16T07:31:13Z
+merge:learniq:1158:e93af686	cloud tree of 3 learniq PRs: merged=0 red=3 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0; inherited: development lacks SPDX line in tests/Stubs/Contract/ObjectServiceInterface.php (9f17766b2), spdxheaders 5->4 on every PR	session-20261116T065234-884bc496	2026-11-16T07:31:21Z
+merge:keepiq:1828:b313725c	cloud tree of 1 keepiq PRs: merged=0 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T072254-7074dcc6	2026-11-16T07:31:30Z
+merge:larpinq:830:f0558c58	cloud tree of 1 larpinq PRs: none; conflict 1, lint 0, red 0, moved 0, done 0	session-20261116T065640-54a747b9	2026-11-16T07:31:38Z
+merge:larpinq:877:3c6f12d8	cloud tree of 1 larpinq PRs: merged=0 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T065640-54a747b9	2026-11-16T07:32:45Z
+merge:thematiq:1303:d641bc37	cloud tree of 1 thematiq PRs: merged=0 red=0 fail=0 skip=1; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T064118-a5aff8df	2026-11-16T07:33:00Z
+merge:shillinq:2997:53a54d6d	cloud tree of 2 shillinq PRs: merged=0 red=1 fail=0 skip=0; conflict 1, lint 0, red 0, moved 0, done 0	session-20261116T071324-07369689	2026-11-16T07:33:28Z
