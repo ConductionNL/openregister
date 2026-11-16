@@ -15543,3 +15543,4 @@ fix:buildiq:1262:a0a4f287	RED not reproducible on branch+current development; na
 merge:launchpad:832:2474456e	cloud tree of 1 launchpad PRs: merged=0 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T064118-a5aff8df	2026-11-16T06:54:26Z
 fix:opencatalogi:2701:88eb3297	fixed: stale test updated to the spec's 404; new head 59468b61	session-20261116T062123-fa6fb6b0	2026-11-16T06:54:24Z
 fix:opencatalogi:2696:2ec8a868	fixed BLOCK (OR main API in 2 calls), pushed e3f1409d; REVERIFY recorded	session-20261116T063608-d33f86e6	2026-11-16T06:54:43Z
+fix:opencatalogi:2699:89a2eae1	fixed: dry-run store on main's save API, test double updated, pushed 089b88bb	session-20261116T062050-add210c3	2026-11-16T06:54:50Z
