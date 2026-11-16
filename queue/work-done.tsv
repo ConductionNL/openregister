@@ -17401,6 +17401,7 @@ fix:buildiq:1620:afacfca7	conflict resolved, pushed 9cf97ff7; merge lock held el
 build:learniq:learner-grade-read-follows-visible-from	already built: T1 on development since 0aa6bd8 (5 Nov); only live task T2 left	session-20261116T192824-ee4fb14b	2026-11-16T19:29:06Z
 review:opencatalogi:2696:0d0512a6	GREEN: no new PHP failures, phpstan clean; conflicts with development (no block)	session-20261116T191156-bbdb7add	2026-11-16T19:29:30Z
 build:learniq:board-dialog-inputs-and-row-names	already built: code tasks T1 and T2 are ticked and on development (7aa43ab4); only T3 (live check) is left, not a code task	session-20261116T191156-bbdb7add	2026-11-16T19:30:06Z
+fix:opencatalogi:2682:4e12e44e	already merged: #2682 is merged into development, nothing to fix	session-20261116T191409-74b1bedd	2026-11-16T19:29:42Z
 fix:buildiq:1672:8c29bf33	conflict resolved, pushed 23675f9b; suite 3377, only inherited ExportZipGoldenTest red; REVERIFY queued	session-20261116T191704-9a63be87	2026-11-16T19:30:12Z
 cover:keepiq:c967a31fm902f:2c3e981f	already done: lib/Service/ShareSync/ 100% line coverage (174/174) at 4c5e079b	session-20261116T192104-d9eeae3f	2026-11-16T19:30:38Z
 cover:keepiq:c967a31fm902f:dfaef732	PR #1852: NotificationRegistrar 2 tests; KeepiqNotifier 99.5% (2 unreachable lines); suite 5367->5369 green	session-20261116T191448-870933e4	2026-11-16T19:30:22Z
