@@ -385,3 +385,4 @@ humaniq	669	88ae160d9c7abbc76321f26a411c6125cc34b28d	APPROVE	worker-27	Quick; no
 humaniq	684	036f7e9ffb9a36fce46245fcd1b17c73680556ff	APPROVE	worker-27	Quick; no blockers; dependency bump + sbom only, tree unit suite 4405 OK, test:js no new failure (indexExport inherited), webpack build compiles
 humaniq	686	fe1cbc0ae582ec29fbb26fc246d74dbf397480b5	APPROVE	worker-27	Quick; no blockers; dependency bump + sbom only, tree unit suite 4405 OK, test:js no new failure (indexExport inherited), webpack build compiles
 hermiq	1133	6fd08d09db1ca26724058d9c83bec7eb477cfec5	APPROVE	worker-10	Quick; no blockers; no concerns
+hermiq	1135	0d097997db1a2b53afae0ba11817aff5667f2f08	APPROVE	worker-10	Quick; no blockers; phpmd major 2->3 is dev-only tooling; watch composer phpmd output
