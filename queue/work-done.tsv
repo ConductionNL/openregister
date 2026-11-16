@@ -15650,3 +15650,4 @@ measure:stackiq:20261116h06	php 88.93% (pcov), js 96.35% at 0cdd4afa	session-202
 merge:shillinq:1899:ad1c159e	cloud tree of 9 shillinq PRs: none; conflict 2, lint 0, red 0, moved 7, done 0	session-20261116T071324-07369689	2026-11-16T07:19:33Z
 merge:launchpad:1230:f3af8fe8	cloud tree of 3 launchpad PRs: merged=0 red=2 fail=0 skip=1; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T064118-a5aff8df	2026-11-16T07:20:27Z
 merge:opencatalogi:2407:0dd2f594	cloud tree of 6 opencatalogi PRs: merged=0 red=0 fail=0 skip=3; conflict 3, lint 0, red 0, moved 0, done 0	session-20261116T070715-d16cf4c6	2026-11-16T07:20:56Z
+merge:versioniq:497:69c867c0	cloud tree of 4 versioniq PRs: merged=0 red=0 fail=0 skip=4; conflict 0, lint 0, red 0, moved 0, done 0 (497/501/502 approved, gate UNMEASURED in cloud; 721 REQUEST_CHANGES)	session-20261116T064721-c9a0b5c9	2026-11-16T07:21:20Z
