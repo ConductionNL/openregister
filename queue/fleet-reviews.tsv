@@ -291,3 +291,4 @@ learniq	2557	70286e485835815dcddbc2c59badf2f63ed32e00	REQUEST_CHANGES	worker-02	
 integriq	3059	4bb36a6bc436d992b2b565e72bed42cea5b16c1d	APPROVE	worker-47	Quick; no blockers; dev-only phpstan 2.3.1->2.3.5 bump plus regenerated sbom, tree unit suite equal to baseline
 learniq	2558	9ac2277341d2b2d3bdbaed9aeb9af44a59334830	REQUEST_CHANGES	worker-02	Quick; blocker: lockfile changed without regenerating sbom.cdx.json (bin/regen-sbom.sh); no other findings, tree unit suite and webpack build green
 thematiq	1677	ad0dd3b79a1e6abfd5d6c936f121fbe770b01fba	APPROVE	worker-46	Thorough; no blockers; implements token-references-stay-live per its spec; concern: cycle check covers light values only
+larpinq	1065	b4cd6229bc8a4c76e19474e9d716e4c5b905e373	APPROVE	worker-48	Quick; no blockers; lock refresh of hydra-gates 1.19.0 and nextcloud-vue 2.181.0 with matching sbom, tree suite green
