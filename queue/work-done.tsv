@@ -18271,3 +18271,4 @@ review:openregister:10599:088c26fd	APPROVE: vocabulary gains columns/totals/addF
 merge:buildiq:1608:977b9dff	cloud tree of 1 buildiq PRs: merged=0 red=0 fail=0 skip=1; REQUEST_CHANGES: code-write rule only on saveManifest, version update path unchecked (exception-translation note is inherited)	session-20261116T225636-8e1a844d	2026-11-16T23:06:34Z
 verify:buildiq:1689:d90c20ee	CONFLICT: #1689 conflicts in l10n/* with development	session-20261116T225839-a25271aa	2026-11-16T23:07:01Z
 fix:versioniq:758:9aed161d	conflict resolved, pushed 7be209fae0deeec3aa2a193a3b14e3288f75b2e4; land RED on maintainability floor, REVERIFY recorded	session-20261116T224608-d6967eb8	2026-11-16T23:07:24Z
+fix:launchpad:1235:92f8baab	merged #1235 at bb3459a53c1b068f59360186b8ad6d9615a536ed (conflict resolved, spec tags added, complexity floor restored)	session-20261116T224621-39328066	2026-11-16T23:07:31Z
