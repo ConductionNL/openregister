@@ -16202,3 +16202,4 @@ fix:humaniq:670:404bf31c	no change: clean on development, duplicates #661 (babel
 merge:versioniq:497:aa4d0c68	unmeasured: static.developer.overheid.nl (6 approved dep bumps skipped); #507 RED sbom not regenerated; #691 REQUEST_CHANGES spec tags; #508 CONFLICT	session-20261116T101336-9d5ecdfc	2026-11-16T10:50:29Z
 merge:versioniq:691:8888a29f	unmeasured: static.developer.overheid.nl (redirects to gitdocumentatie.logius.nl, proxy 403); lock released before review, local lander takes it	session-20261116T101336-9d5ecdfc	2026-11-16T10:51:09Z
 merge:versioniq:500:7be9d1e8	unmeasured: static.developer.overheid.nl (redirect host gitdocumentatie.logius.nl refused by proxy); lock released	session-20261116T101336-9d5ecdfc	2026-11-16T10:51:26Z
+fix:humaniq:1095:340163fd	sbom regenerated, pushed ac05e3a9; REVERIFY queued (gate host unreachable for end-to-end)	session-20261116T102639-f9f23dec	2026-11-16T10:51:37Z
