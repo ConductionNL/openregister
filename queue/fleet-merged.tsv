@@ -4837,3 +4837,4 @@ versioniq	755	01df198d9ef13b3fdddd6b6027b14059c8576ec9	MERGED	worker-12	GATE OK 
 stackiq	1973	fe9e8676d9605d1b10f00d28fa172fff606e09b2	MERGED	worker-40	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.19
 launchpad	1235	9abeffa2ac6dd6c17bc2641f5f4e654d8f12fef2	RED	worker-06	GATE RED floor: unit_complexity: 4.74 -> 4.71
 buildiq	1648	26919cc440790285012d4e2665ca8d82e8bc754b	RED	worker-56	GATE RED floor: overall: 4.33 -> 4.31; unit_size: 3.72 -> 3.70; module_coupling: 5.44 -> 5.36
+versioniq	758	a25f1ca91f8bb5d172b41717fb0590880c7007f7	RED	worker-12	GATE RED floor: overall: 5.07 -> 5.05; unit_size: 4.85 -> 4.83; unit_complexity: 4.79 -> 4.73; unit_interfacing: 4.59 -> 4.56
