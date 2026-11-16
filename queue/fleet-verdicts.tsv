@@ -15937,3 +15937,4 @@ shillinq	2997	94a7046f39056afefe7f97508b449787fed0f493	CONFLICT	merge3	conflicts
 integriq	2650	6bf97c5a81bb69737d66deeb8323a1141a817133	CONFLICT	worker-02	baseline 9603 tests (2E/3F inherited); conflicts with development in appinfo/info.xml composer.lock l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/AppInfo/Application.php lib/Service/SynchronizationService.php
 larpinq	1056	641d4f010fe2b690fd4928ccbacec198633df311	CONFLICT	worker-06	conflicts with development in appinfo/routes.php and the l10n catalogues; not tested
 integriq	3601	be3e4259ac257c0fa3cd07f418850dd15d366231	CONFLICT	worker-36	conflicts with development in docs/features/README.md, l10n/en.js, en.json, nl.js, nl.json, tests/Unit/Service/CatalogRegistrySeedGoldenTest.php; suite not run
+integriq	3561	a24572ec8783f55290b104524696faf13e85dde8	CONFLICT	worker-23	conflicts with development in l10n en/nl, ProductSubscriptionsController.php, EndpointService.php, ApiProductDetail.vue; suite not run
