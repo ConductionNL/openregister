@@ -355,3 +355,4 @@ keepiq	1716	5a6aebc10a49fca22476eb937f790a2b57ee378a	APPROVE	worker-19	Quick; no
 keepiq	1816	f765ddb90f59f91c9aceb98d810d6db842e43bca	APPROVE	worker-19	Thorough; no blockers; build of health-site-security-checks matches its specs: signed-in GET with no input, admin switch default off, fail-soft refresh, docs links filtered to https; 65 gates green; PHP tree suite no new failures
 keepiq	1826	98fff903417a33f0777030490c73f07dacbc752f	REQUEST_CHANGES	worker-19	Strict; blocker: spec-coverage gate FAIL on added lines, 6 methods of src/components/PrivilegedAccessPanel.vue lack @spec (run, secretId, startApproval, stateLabel, url, windowText); not reviewed further
 integriq	2746	ff5f2df859dc0664166676b1e4a688ca9dcf5daf	APPROVE	worker-47	Quick; no blockers; dev-only @types/lodash patch bump plus regenerated sbom
+integriq	3057	2fbd882db4b90477039aeb267982241373c712f0	APPROVE	worker-47	Quick; no blockers; dev-only hydra-gates minor bump plus regenerated sbom
