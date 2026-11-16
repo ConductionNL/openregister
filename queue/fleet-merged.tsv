@@ -4157,12 +4157,21 @@ learniq	2557	70286e485835815dcddbc2c59badf2f63ed32e00	SKIP	worker-02	no APPROVE 
 learniq	2558	9ac2277341d2b2d3bdbaed9aeb9af44a59334830	SKIP	worker-02	no APPROVE review at this head
 learniq	2559	db446f193443038edcd27938ddb8aeef420ca005	SKIP	worker-02	no APPROVE review at this head
 stackiq	1991	31e2224c5b0f2e1105b1556e2ef7efc3d06f9474	RED	worker-07	GATE RED checker floor: spdxheaders stars: 5 -> 4
+dossiq	3199	53d908abc135941903fee153cb5996d2272b1e75	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.40
+dossiq	3936	073e564b788a932c363ece275805dc1ebeb9016d	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.40
+dossiq	5266	2cd5ee932a79779a717f6f0071fcaa89f3c2531f	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.40
+dossiq	6587	b11faca9084a4b9bf828b6ef2e9e2d6a3bb0c2a4	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.40
+dossiq	6590	e05ebf369ae06f6003bbbc058625dfd8e78b491a	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.40
+dossiq	6593	063f50b3ac2c3fea4dd798661b83d44440f46d69	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.40
 keepiq	1792	af22b4ea9e8110c436553126d94f748ee8cd97ad	RED	worker-37	GATE RED checker floor: secretscanning: pass -> fail; secretscanning stars: 5 -> 1
 opencatalogi	1888	3c646648f528b3809be689a76e9dacb02ccb4ec4	SKIP	worker-11	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 hermiq	1133	6fd08d09db1ca26724058d9c83bec7eb477cfec5	SKIP	worker-42	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 opencatalogi	1893	c984555798eba603920305a449a1da12ff8fe5b7	SKIP	worker-11	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 shillinq	2072	04fc7224c4769d3cd137ed1dd710b1fb946e939b	SKIP	worker-58	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
+decidiq	2170	d54fcb2999d1b0aedf619035ca041cab3063118e	SKIP	worker-27	no APPROVE review at this head
 opencatalogi	1894	81ec0aebb96ac0ea55f9e0fd74b189b396df7ab8	SKIP	worker-11	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 shillinq	2099	b40a842e1e089500c7321bc89e60ce287a8aac2b	SKIP	worker-58	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 larpinq	1065	b4cd6229bc8a4c76e19474e9d716e4c5b905e373	SKIP	worker-48	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 opencatalogi	2407	15ee026e9e5cc880f1ef5812343e2da79e65c3d1	SKIP	worker-11	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
+shillinq	2259	48de59f1a9e0bf8ffba75343ff03148754ed469c	SKIP	worker-58	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
+shillinq	3110	a0ee6bc0a0cab83e9f4998a81594f802cfe4ab3c	RED	worker-58	GATE RED checker floor: spdxheaders stars: 5 -> 4
