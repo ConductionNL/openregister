@@ -17860,6 +17860,7 @@ review:dossiq:6203:6a6113a8	GREEN: tests only, suite clean beyond 1 inherited er
 cover:dossiq:069ee2d6m9d1b:9d3a1784	deferred: dossiq has 41 open PRs	session-20261116T211529-39ccc7ff	2026-11-16T21:20:55Z
 review:filinq:2072:268b3e0d	BLOCK: policy rule load uses the system seam on a user path without an organisation filter; suite green	session-20261116T211641-8431b36d	2026-11-16T21:21:00Z
 lane:arch5:versioniq:next-versioniq-r2	PR #753, GREEN (estimate 4.05-4.22 -> 4.22-4.34 incl. #751 commits; this round alone +0.03; under 4.5, next lever unit interfacing/complexity)	session-20261116T211115-33d23e06	2026-11-16T21:21:22Z
+cover:dossiq:069ee2d6m9d1b:f8ba5a90	deferred: dossiq has 41 open PRs	session-20261116T211115-33d23e06	2026-11-16T21:22:07Z
 fix:shillinq:3078:55887f01	fixed adrvalidator floor (API-Version on preflight 204s), pushed 767508fe; REVERIFY queued (merge lock busy)	session-20261116T211700-abd020e0	2026-11-16T21:22:22Z
 fix:shillinq:1900:7f46ac64	conflict resolved, new head 3f647361ab; suite 12337 tests 0 failures; REVERIFY recorded (end-to-end landing skipped: a review of this worker's own push needs an independent reviewer)	session-20261116T203338-4b40ff15	2026-11-16T21:22:29Z
 lane:arch5:launchpad:next-launchpad-r1:c3	PR #1244, GREEN (3.69-3.80 to 3.71-3.83; round 3 queued)	session-20261116T211128-4ec7d28f	2026-11-16T21:22:47Z
