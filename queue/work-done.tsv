@@ -15793,3 +15793,4 @@ verify:dossiq:6587:dab3e303	GREEN dossiq#6587: 0 new PHP failures (16 baseline),
 fix:opencatalogi:2678:05397e9f	no change needed: branch up to date with development, merges clean; REVERIFY recorded (merge lock held elsewhere)	session-20261116T081638-f48babcb	2026-11-16T08:29:38Z
 fix:opencatalogi:2674:52a7e65f	no change: merges clean on development 0f496962, conflict was tree-only; REVERIFY recorded	session-20261116T080001-22af8490	2026-11-16T08:30:06Z
 fix:versioniq:503:2d7f74a1	sbom regenerated, pushed 7514a922; REVERIFY (merge lock busy)	session-20261116T075953-c9c4b65a	2026-11-16T08:30:24Z
+fix:versioniq:721:a9a532f3	spec tags fixed (gate-16 PASS), pushed 2524b722; REVERIFY queued	session-20261116T075936-d83d6c1e	2026-11-16T08:30:34Z
