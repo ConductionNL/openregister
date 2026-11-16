@@ -18119,3 +18119,4 @@ review:shillinq:1899:fd17f119	GREEN shillinq#1899	session-20261116T220522-6d402f
 build:learniq:capability-rows-say-what-they-do:c8	failed: learniq development not installable since 70286e485 (psalm 7.5.0 needs php>=8.3.16, composer.json config.platform.php=8.3), no unit suite can run; row left for after that is fixed	session-20261116T222156-bd715f7e	2026-11-16T22:23:52Z
 review:pipelinq:3602:513e8aab	GREEN #3602	session-20261116T221216-1ebc1c2a	2026-11-16T22:24:10Z
 review:launchpad:1229:b9834840	BLOCK: vault source read ignores the creator's access; suite 4570 green	session-20261116T222151-b1142d60	2026-11-16T22:24:26Z
+lane:arch5:shillinq:next-shillinq-r9	skipped: coordinator stop, shillinq rounds gain about +0.01 each since r3 (4.12-4.16); revisit with a structural lever	coordinator	2026-11-16T22:24:48Z
