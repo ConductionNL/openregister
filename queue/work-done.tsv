@@ -17330,6 +17330,7 @@ build:pipelinq:first-time-setup:r3	already done: every code task ticked on devel
 build:pipelinq:tickets-list-by-party:r3	already done: every code task ticked on development; only 1.3 (live check) is open	session-20261116T181151-999832c6	2026-11-16T19:17:38Z
 review:pipelinq:3659:4020c7e2	stale	session-20261116T184852-b8356331	2026-11-16T19:17:56Z
 cover:pipelinq:7f9dc8e6m3dbb:8f2b650b	already covered: lib/Service/Competitor/*.php measures 98.58% (633 stmts, 9 uncovered) on development with its 111 tests, none risky; no PR	session-20261116T184841-a3bc3002	2026-11-16T19:17:50Z
+cover:pipelinq:7f9dc8e6m3dbb:e0a30dd2	added 39 tests (Payment webhook guards) to open cover PR #3602 (pipelinq has 45 open PRs); suite 5787->5826, 1 inherited failure	session-20261116T190918-81e43f73	2026-11-16T19:18:14Z
 build:pipelinq:avg-consume-or-workflow:r3	already done: every code task ticked and on development (providers in lib/Service/Gdpr, policy pack seed, AVG surface retired); only 1.1 human gate and 4.2 live check left	session-20261116T191704-9a63be87	2026-11-16T19:18:17Z
 build:pipelinq:filter-menu-owner-and-street:r3	already done: every code task ticked on development; only 1.4 (live check after a nextcloud-vue release) is open	session-20261116T181151-999832c6	2026-11-16T19:17:58Z
 fix:versioniq:721:bc63b636	merged #721 at b48214583a	session-20261116T184833-adbb8426	2026-11-16T19:18:14Z
