@@ -15609,3 +15609,4 @@ versioniq	755	fd86702a5469497adb6ffc95abf2bf09975242a5	RED	worker-08:merge-gate	
 versioniq	707	53beddbcccad406f69feb6e4e5a360ad36564bbd	CONFLICT	worker-08	conflicts with development; files: lib/BackgroundJob/AutoUpdateJob.php
 opencatalogi	2678	a10a8ae601eb6fc4f5746b207f499fa2a6fb8096	RED	worker-15:merge-gate	GATE RED floor: unit_complexity: 4.88 -> 4.85
 versioniq	715	bc2d7a7a1c1589cf902a3ff9039746c3a9ad15e9	CONFLICT	worker-08	conflicts with development; files: lib/Controller/SettingsController.php lib/Http/InstanceSettingsFields.php lib/Service/Settings/InstanceSettings.php openapi.json src/components/InstanceSettingsPanel*
+versioniq	753	f4103ca1ca2f3b0b58450aa19154d52dab9d32f4	GREEN	worker-08	unit 2171 tests, baseline 2 failures (same), new failures 0; merge adds no diff over development (content already landed via arch5 r3/r4)
