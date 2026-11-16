@@ -15537,3 +15537,4 @@ fix:buildiq:1651:fcb354f5	development merged in cleanly, pushed; residual confli
 fix:shillinq:2086:692ec2a9	fixed: 8 failures cleared (old OR API + undocumented routes); suite 12233 OK; new head bda4253e	session-20261116T062140-6a300781	2026-11-16T06:52:20Z
 merge:launchpad:653:5051a1d9	cloud tree of 4 launchpad PRs: merged=0 red=2 fail=0 skip=0; conflict 0, lint 0, red 0, moved 2, done 0	session-20261116T064118-a5aff8df	2026-11-16T06:52:37Z
 review:versioniq:723:332a8036	GREEN: build matches specs, no new failures	session-20261116T062126-9d7735e0	2026-11-16T06:52:36Z
+fix:planninq:1070:e52ec55b	sbom already current (dev-only bump); merged development, new head 0324724d, REVERIFY	session-20261116T062544-335bf148	2026-11-16T06:53:05Z
