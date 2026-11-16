@@ -1,36 +1,40 @@
 {
  "app": "larpinq",
- "commit": "3fbcc23ac6ac90dffba8a56d820cc665daced469",
- "measured_at": "2026-11-13T18:55:57Z",
+ "commit": "8142072a268405844e55bd9ef50f9269e17101d6",
+ "measured_at": "2026-11-16T19:27:33Z",
  "php": {
   "tool": "pcov",
-  "pct": 96.84,
-  "statements": 4152,
-  "covered": 4021,
+  "pct": 96.99,
+  "statements": 5018,
+  "covered": 4867,
   "dirs": {
    "lib/AppInfo/": [
-    106,
-    78
+    116,
+    88
    ],
    "lib/BackgroundJob/": [
-    9,
-    9
+    14,
+    14
    ],
    "lib/Command/": [
     19,
     19
    ],
    "lib/Controller/": [
-    558,
-    553
+    691,
+    684
    ],
    "lib/Event/": [
     21,
     21
    ],
    "lib/Listener/": [
-    521,
-    516
+    540,
+    534
+   ],
+   "lib/Mcp/": [
+    1,
+    1
    ],
    "lib/Middleware/": [
     56,
@@ -40,21 +44,25 @@
     59,
     54
    ],
+   "lib/Notification/": [
+    16,
+    15
+   ],
    "lib/Portal/": [
     155,
     155
    ],
    "lib/Repair/": [
-    280,
-    280
+    315,
+    310
    ],
    "lib/Sections/": [
     6,
     6
    ],
    "lib/Service/": [
-    2305,
-    2217
+    2952,
+    2853
    ],
    "lib/Settings/": [
     12,
@@ -67,13 +75,21 @@
   }
  },
  "js": {
-  "pct": 97.05,
-  "statements": 1120,
-  "covered": 1087,
+  "pct": 97.23,
+  "statements": 1407,
+  "covered": 1368,
   "dirs": {
    "src/": [
-    58,
-    57
+    90,
+    89
+   ],
+   "src/components/": [
+    11,
+    10
+   ],
+   "src/components/cells/": [
+    5,
+    5
    ],
    "src/dialogs/": [
     104,
@@ -88,8 +104,8 @@
     4
    ],
    "src/services/": [
-    498,
-    493
+    621,
+    615
    ],
    "src/store/": [
     18,
@@ -100,8 +116,8 @@
     38
    ],
    "src/views/": [
-    310,
-    292
+    426,
+    404
    ],
    "src/views/settings/": [
     74,
