@@ -15844,3 +15844,4 @@ buildiq	1630	d47a3654ed6fa1bf501d87d6bec4e20a0872fb78	CONFLICT	worker-12	conflic
 launchpad	1230	b2fce99975b1ac4e2b7eed0abc072ff4d5d752a9	CONFLICT	worker-53	conflicts with development; files: openapi.json
 buildiq	1605	a29438425f0724f9b3eb17da1b8980febaa9acaf	CONFLICT	worker-12	conflicts with development, files: docs/form-logic-authoring.md l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json src/components/page-editor/FormPageEditor.vue src/services/manifestValidation/formLogic.js tests/services/formLogicValidation.spec.js; baseline 3456 OK
 decidiq	2236	4393817765911bbbfec341ea0e8d7349ffe086c6	GREEN	worker-53	tests only (no deletions); tree on development 4784 tests OK, no new failures
+buildiq	1607	2af29a31bd3ab150fee2845703e1efa48a91baa9	CONFLICT	worker-13	conflicts with development in l10n/en.js, en.json, nl.js, nl.json and src/components/schema-editor/FieldEditor.vue; PHP baseline 3456 tests green, JS suite not run
