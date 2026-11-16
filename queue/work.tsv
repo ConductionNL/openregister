@@ -16453,6 +16453,7 @@ verify:portaliq:2531:26c63d51	verify	portaliq	development	merge	prs=2531@23d5668
 merge:hermiq:1808:561330f5	merge	hermiq	development	development	prs=1808@d92c1c64c29a1a3d559e0d6e3f10da062039597d	2026-11-16T09:15:21Z
 merge:shillinq:3110:da8e9ab3	merge	shillinq	development	development	prs=3110@a0ee6bc0a0cab83e9f4998a81594f802cfe4ab3c,3111@96abe4abfb509aa4c32c2210a765797e13c601d5	2026-11-16T09:15:21Z
 merge:portaliq:1673:e981be5a	merge	portaliq	development	development	prs=1673@574c16721291bca11b190df5e3c8aae8be782c38	2026-11-16T09:15:21Z
+fix:dossiq:6590:1ff7ee00	fix	dossiq	development	6590	sha=1ff7ee00c2218e490fd394664a6a0ac234e82383;verdict=CONFLICT;branch=quality/ormig2-dossiq;reason=merges clean on development alone, files: lib/Repair/FoldCasePropertiesOntoCase.php 	2026-11-16T09:17:25Z
 review:shillinq:2072:04fc7224	review	shillinq	development	2072	sha=04fc7224c4769d3cd137ed1dd710b1fb946e939b;branch=feature/sh-abstract-sh2-purchase-bank-s6-exception-acceptance;title=fix(three-way-match): only the exception's approver role accepts, never the invoice's creator	2026-11-16T09:20:22Z
 review:shillinq:2259:48de59f1	review	shillinq	development	2259	sha=48de59f1a9e0bf8ffba75343ff03148754ed469c;branch=fix/or-surface-register-audit-event;title=feat(compliance): record the export request on the hash-chained audit trail	2026-11-16T09:20:22Z
 verify:integriq:3671:30723070	verify	integriq	development	merge	prs=3671@18d443b4f429398d1ffefc8657304b1b56a5c625	2026-11-16T09:20:22Z
