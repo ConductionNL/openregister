@@ -4287,3 +4287,4 @@ humaniq	669	88ae160d9c7abbc76321f26a411c6125cc34b28d	SKIP	worker-27	GATE UNMEASU
 opencatalogi	2687	a52c913ae9203c6ff4ac668558cdfe9d5c7400f6	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.50
 opencatalogi	2725	80cedf65de564b418d9638a3dd64a5d87cc5390b	RED	merge3	GATE RED floor: unit_size: 4.64 -> 4.62; unit_interfacing: 4.86 -> 4.82
 opencatalogi	2737	c0fc79045479600f16b9517d4534658bbf0be6d8	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.50
+humaniq	684	036f7e9ffb9a36fce46245fcd1b17c73680556ff	SKIP	worker-27	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
