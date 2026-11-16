@@ -15430,3 +15430,4 @@ review:filinq:2122:d654b8fc	GREEN: matches grondslagen-read-from-dossiq specs; u
 fix:shillinq:3078:5300990f	fixed: saves migrated to ObjectSaveOptions, suite 12272 green; new head db907ca5	session-20261116T062050-3a7e109c	2026-11-16T06:29:31Z
 review:hermiq:1754:69e02cc7	GREEN: unit 5339 OK vs 5291, vitest 31/31; matches change specs	session-20261116T062050-7d5ce0d6	2026-11-16T06:29:43Z
 review:hermiq:1195:7d667839	GREEN: vitest 1526 passed, eslint 0 errors	session-20261116T062109-81fc252e	2026-11-16T06:29:55Z
+fix:decidiq:2222:2e518c37	fixed RED: mocked @nextcloud/axios in connectionRegistry spec; vitest green; new head 10e2178a	session-20261116T062120-691af8f7	2026-11-16T06:30:02Z
