@@ -701,7 +701,8 @@ class MagicRbacHandler {
 				rule: $rule,
 				userGroups: $userGroups,
 				userId: $userId,
-				inheritFromPublic: $inheritFromPublic
+				inheritFromPublic: $inheritFromPublic,
+				schema: $schema
 			);
 
 			if ($ruleCondition === true) {
@@ -806,6 +807,8 @@ class MagicRbacHandler {
 	 * @param array $userGroups User's group IDs
 	 * @param string|null $userId Current user ID
 	 * @param bool $inheritFromPublic Whether auth users inherit public rights
+	 * @param Schema|null $schema The schema the rule belongs to, so a `match` property resolves to the
+	 *                            column it actually has even when written in the other language.
 	 *
 	 * @return mixed True if unconditional access, SQL expression for conditional, null/false if no access
 	 *
@@ -817,6 +820,7 @@ class MagicRbacHandler {
 		array $userGroups,
 		?string $userId,
 		bool $inheritFromPublic,
+		?Schema $schema = null,
 	): mixed {
 		// Simple rule: just a group name string.
 		if (is_string($rule) === true) {
@@ -831,7 +835,8 @@ class MagicRbacHandler {
 				rule: $rule,
 				userGroups: $userGroups,
 				userId: $userId,
-				inheritFromPublic: $inheritFromPublic
+				inheritFromPublic: $inheritFromPublic,
+				schema: $schema
 			);
 		}
 
@@ -920,6 +925,8 @@ class MagicRbacHandler {
 	 * @param array $userGroups User's group IDs
 	 * @param string|null $userId Current user ID
 	 * @param bool $inheritFromPublic Whether auth users inherit public rights
+	 * @param Schema|null $schema The schema the rule belongs to, so a `match` property resolves to the
+	 *                            column it actually has even when written in the other language.
 	 *
 	 * @return mixed True if unconditional access, SQL expression for conditional, false if no access
 	 *
@@ -931,6 +938,7 @@ class MagicRbacHandler {
 		array $userGroups,
 		?string $userId,
 		bool $inheritFromPublic,
+		?Schema $schema = null,
 	): mixed {
 		$group = ($rule['group'] ?? null);
 		$match = $rule['match'] ?? null;
@@ -961,7 +969,7 @@ class MagicRbacHandler {
 		}
 
 		// Build SQL conditions for the match criteria.
-		return $this->buildMatchConditions(qb: $qb, match: $match);
+		return $this->buildMatchConditions(qb: $qb, match: $match, schema: $schema);
 	}//end processConditionalRule()
 
 	/**
@@ -969,14 +977,16 @@ class MagicRbacHandler {
 	 *
 	 * @param IQueryBuilder $qb Query builder
 	 * @param array $match Match conditions
+	 * @param Schema|null $schema The schema the rule belongs to, so a `match` property resolves to the
+	 *                            column it actually has even when written in the other language.
 	 *
 	 * @return mixed SQL expression or null if invalid
 	 */
-	private function buildMatchConditions(IQueryBuilder $qb, array $match): mixed {
+	private function buildMatchConditions(IQueryBuilder $qb, array $match, ?Schema $schema = null): mixed {
 		$conditions = [];
 
 		foreach ($match as $property => $value) {
-			$condition = $this->buildPropertyCondition(qb: $qb, property: $property, value: $value);
+			$condition = $this->buildPropertyCondition(qb: $qb, property: $property, value: $value, schema: $schema);
 			if ($condition !== null) {
 				$conditions[] = $condition;
 			}
@@ -1051,12 +1061,15 @@ class MagicRbacHandler {
 	 * @param IQueryBuilder $qb Query builder
 	 * @param string $property Property name
 	 * @param mixed $value Value or operator object
+	 * @param Schema|null $schema The schema the rule belongs to, so a property name the rule writes in one
+	 *                            language but the schema still declares in the other resolves to the column
+	 *                            that actually exists, instead of a blind camelCase->snake_case guess.
 	 *
 	 * @return mixed SQL expression or null
 	 */
-	private function buildPropertyCondition(IQueryBuilder $qb, string $property, mixed $value): mixed {
+	private function buildPropertyCondition(IQueryBuilder $qb, string $property, mixed $value, ?Schema $schema = null): mixed {
 		// Convert camelCase property to snake_case column name.
-		$columnName = $this->propertyToColumnName(property: $property);
+		$columnName = $this->propertyToColumnName(property: $property, schema: $schema);
 
 		// Resolve dynamic variables in the value.
 		$resolvedValue = $this->resolveDynamicValue(value: $value);
@@ -1328,16 +1341,60 @@ class MagicRbacHandler {
 	}//end buildArrayOperatorCondition()
 
 	/**
+	 * Dutch/English synonym pairs for RBAC rule properties.
+	 *
+	 * A handful of Woo-domain schemas still declare these properties in Dutch
+	 * while their `authorization.read` rules (and OpenCatalogi's own
+	 * canonical Publication/Document/WooBatch schemas) reference the English
+	 * name. {@see propertyToColumnName()} falls back to the schema's own
+	 * declared synonym rather than blindly converting a name the schema does
+	 * not actually carry a column for.
+	 *
+	 * @var array<string, string>
+	 */
+	private const PROPERTY_SYNONYMS = [
+		'publicationDate' => 'publicatiedatum',
+		'publicatiedatum' => 'publicationDate',
+		'depublicationDate' => 'depublicatiedatum',
+		'depublicatiedatum' => 'depublicationDate',
+		'decisionLetter' => 'besluit',
+		'besluit' => 'decisionLetter',
+		'inventoryList' => 'inventarislijst',
+		'inventarislijst' => 'inventoryList',
+	];
+
+	/**
 	 * Convert camelCase property name to snake_case column name
 	 *
 	 * @param string $property Property name in camelCase
+	 * @param Schema|null $schema The schema the rule belongs to, so a property name the rule writes in one
+	 *                            language but the schema still declares in the other resolves to the column
+	 *                            that actually exists, instead of a blind camelCase->snake_case guess.
 	 *
 	 * @return string Column name in snake_case
 	 */
-	private function propertyToColumnName(string $property): string {
+	private function propertyToColumnName(string $property, ?Schema $schema = null): string {
 		// Convert camelCase to snake_case.
-		$columnName = preg_replace('/([a-z0-9])([A-Z])/', '$1_$2', $property);
-		return strtolower($columnName);
+		$columnName = strtolower(preg_replace('/([a-z0-9])([A-Z])/', '$1_$2', $property));
+
+		if ($schema === null) {
+			return $columnName;
+		}
+
+		$properties = $schema->getProperties();
+		if (isset($properties[$property]) === true) {
+			return $columnName;
+		}
+
+		// The schema does not declare this literal property name. Fall back to
+		// its synonym only when the schema actually declares THAT one — never
+		// guess past what the schema can confirm.
+		$synonym = (self::PROPERTY_SYNONYMS[$property] ?? null);
+		if ($synonym !== null && isset($properties[$synonym]) === true) {
+			return strtolower(preg_replace('/([a-z0-9])([A-Z])/', '$1_$2', $synonym));
+		}
+
+		return $columnName;
 	}//end propertyToColumnName()
 
 	/**
@@ -1994,7 +2051,8 @@ class MagicRbacHandler {
 				rule: $rule,
 				userGroups: $userGroups,
 				userId: $userId,
-				inheritFromPublic: $inheritFromPublic
+				inheritFromPublic: $inheritFromPublic,
+				schema: $schema
 			);
 
 			if ($ruleResult === true) {
@@ -2027,6 +2085,8 @@ class MagicRbacHandler {
 	 *                             UNION member. Unqualified, a column name still parses inside a
 	 *                             subquery and binds to the innermost FROM, which is silently wrong
 	 *                             the moment the related table does not carry it.
+	 * @param Schema|null $schema The schema the rule belongs to, so a `match` property resolves to the
+	 *                            column it actually has even when written in the other language.
 	 *
 	 * @return mixed True if unconditional access, SQL string for conditional, false if no access.
 	 *
@@ -2037,7 +2097,8 @@ class MagicRbacHandler {
 		array $userGroups,
 		?string $userId,
 		bool $inheritFromPublic,
-		string $columnPrefix = ''
+		string $columnPrefix = '',
+		?Schema $schema = null
 	): mixed {
 		// Simple rule: just a group name string.
 		if (is_string($rule) === true) {
@@ -2052,7 +2113,8 @@ class MagicRbacHandler {
 				userGroups: $userGroups,
 				userId: $userId,
 				inheritFromPublic: $inheritFromPublic,
-				columnPrefix: $columnPrefix
+				columnPrefix: $columnPrefix,
+				schema: $schema
 			);
 		}
 
@@ -2070,6 +2132,8 @@ class MagicRbacHandler {
 	 *                             UNION member. Unqualified, a column name still parses inside a
 	 *                             subquery and binds to the innermost FROM, which is silently wrong
 	 *                             the moment the related table does not carry it.
+	 * @param Schema|null $schema The schema the rule belongs to, so a `match` property resolves to the
+	 *                            column it actually has even when written in the other language.
 	 *
 	 * @return mixed True if unconditional access, SQL string for conditional, false if no access.
 	 *
@@ -2080,7 +2144,8 @@ class MagicRbacHandler {
 		array $userGroups,
 		?string $userId,
 		bool $inheritFromPublic,
-		string $columnPrefix = ''
+		string $columnPrefix = '',
+		?Schema $schema = null
 	): mixed {
 		$group = ($rule['group'] ?? null);
 		$match = $rule['match'] ?? null;
@@ -2118,7 +2183,7 @@ class MagicRbacHandler {
 		}
 
 		// Build SQL conditions for the match criteria.
-		return $this->buildMatchConditionsSql(match: $match, columnPrefix: $columnPrefix);
+		return $this->buildMatchConditionsSql(match: $match, columnPrefix: $columnPrefix, schema: $schema);
 	}//end processConditionalRuleSql()
 
 	/**
@@ -2129,14 +2194,16 @@ class MagicRbacHandler {
 	 *                             UNION member. Unqualified, a column name still parses inside a
 	 *                             subquery and binds to the innermost FROM, which is silently wrong
 	 *                             the moment the related table does not carry it.
+	 * @param Schema|null $schema The schema the rule belongs to, so a `match` property resolves to the
+	 *                            column it actually has even when written in the other language.
 	 *
 	 * @return string|null SQL expression or null if invalid.
 	 */
-	private function buildMatchConditionsSql(array $match, string $columnPrefix = ''): ?string {
+	private function buildMatchConditionsSql(array $match, string $columnPrefix = '', ?Schema $schema = null): ?string {
 		$conditions = [];
 
 		foreach ($match as $property => $value) {
-			$condition = $this->buildPropertyConditionSql(property: $property, value: $value, columnPrefix: $columnPrefix);
+			$condition = $this->buildPropertyConditionSql(property: $property, value: $value, columnPrefix: $columnPrefix, schema: $schema);
 			if ($condition !== null) {
 				$conditions[] = $condition;
 			}
@@ -2164,10 +2231,13 @@ class MagicRbacHandler {
 	 *                             UNION member. Unqualified, a column name still parses inside a
 	 *                             subquery and binds to the innermost FROM, which is silently wrong
 	 *                             the moment the related table does not carry it.
+	 * @param Schema|null $schema The schema the rule belongs to, so a property name the rule writes in one
+	 *                            language but the schema still declares in the other resolves to the column
+	 *                            that actually exists, instead of a blind camelCase->snake_case guess.
 	 *
 	 * @return string|null SQL expression or null.
 	 */
-	private function buildPropertyConditionSql(string $property, mixed $value, string $columnPrefix = ''): ?string {
+	private function buildPropertyConditionSql(string $property, mixed $value, string $columnPrefix = '', ?Schema $schema = null): ?string {
 		// Convert camelCase property to snake_case column name.
 		// The prefix qualifies it with a table alias when this predicate is
 		// going inside a subquery over a SECOND table. Unqualified, the name
@@ -2175,7 +2245,7 @@ class MagicRbacHandler {
 		// right by accident and silently wrong the moment the related table
 		// does not carry the column: SQL then resolves it against the OUTER
 		// row, so the access check would pass by testing the wrong record.
-		$columnName = $columnPrefix . $this->propertyToColumnName(property: $property);
+		$columnName = $columnPrefix . $this->propertyToColumnName(property: $property, schema: $schema);
 
 		// Resolve dynamic variables in the value.
 		$resolvedValue = $this->resolveDynamicValue(value: $value);
@@ -2702,7 +2772,8 @@ class MagicRbacHandler {
 				rule: $rule,
 				userGroups: $userGroups,
 				userId: $userId,
-				inheritFromPublic: $inheritFromPublic
+				inheritFromPublic: $inheritFromPublic,
+				schema: $schema
 			);
 			if ($verdict !== false) {
 				return true;
