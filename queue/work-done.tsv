@@ -18403,3 +18403,4 @@ verify:hermiq:1757:59cadfdd	CONFLICT #1757 (l10n catalogues, EngineSwitchedOffTe
 verify:filinq:2091:fe554cc9	CONFLICT #2091	session-20261116T232918-5354fd88	2026-11-16T23:38:49Z
 verify:filinq:2113:51b5285f	CONFLICT: #2113 vs development in CHANGELOG.md, filinq_register.json, ConsentUpdateFlowTest.php	session-20261116T232911-3dffa1ae	2026-11-16T23:39:03Z
 verify:hermiq:1763:959522d3	CONFLICT #1763 (9 files)	session-20261116T224246-d9bde508	2026-11-16T23:39:28Z
+verify:hermiq:1760:f84a6f07	CONFLICT: info.xml, l10n, hermiq_register.json, openapi.json	session-20261116T233003-c7bea420	2026-11-16T23:40:32Z
