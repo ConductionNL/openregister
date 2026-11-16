@@ -17861,6 +17861,7 @@ cover:dossiq:069ee2d6m9d1b:9d3a1784	deferred: dossiq has 41 open PRs	session-202
 review:filinq:2072:268b3e0d	BLOCK: policy rule load uses the system seam on a user path without an organisation filter; suite green	session-20261116T211641-8431b36d	2026-11-16T21:21:00Z
 merge:keepiq:1826:c6a76e57	cloud tree of 2 keepiq PRs: merged=1 red=0 fail=0 skip=1 (#1849 merged; #1826 not reviewed here: its head carries this worker's own commits, needs another reviewer)	session-20261116T200543-e8f76f14	2026-11-16T21:21:27Z
 lane:arch5:versioniq:next-versioniq-r2	PR #753, GREEN (estimate 4.05-4.22 -> 4.22-4.34 incl. #751 commits; this round alone +0.03; under 4.5, next lever unit interfacing/complexity)	session-20261116T211115-33d23e06	2026-11-16T21:21:22Z
+merge:larpinq:1077:53d85f32	cloud tree of 1 larpinq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T204203-b8dccc50	2026-11-16T21:22:00Z
 cover:dossiq:069ee2d6m9d1b:f8ba5a90	deferred: dossiq has 41 open PRs	session-20261116T211115-33d23e06	2026-11-16T21:22:07Z
 fix:shillinq:3078:55887f01	fixed adrvalidator floor (API-Version on preflight 204s), pushed 767508fe; REVERIFY queued (merge lock busy)	session-20261116T211700-abd020e0	2026-11-16T21:22:22Z
 fix:shillinq:1900:7f46ac64	conflict resolved, new head 3f647361ab; suite 12337 tests 0 failures; REVERIFY recorded (end-to-end landing skipped: a review of this worker's own push needs an independent reviewer)	session-20261116T203338-4b40ff15	2026-11-16T21:22:29Z
@@ -17890,6 +17891,14 @@ cover:decidiq:a5f973bbm9cda:d528dcf0	deferred: decidiq has 45 open PRs	session-2
 build:integriq:platform-connector-extension-kit:c5	already done: every code task ticked on PR #3589; only e2e/live verification left (not cloud-buildable)	session-20261116T211529-39ccc7ff	2026-11-16T21:26:27Z
 review:shillinq:1899:acc6426f	GREEN: no blockers; PHPUnit OK, one inherited vitest red	session-20261116T211641-8431b36d	2026-11-16T21:26:41Z
 cover:decidiq:a5f973bbm9cda:c76ae287	deferred: decidiq has 45 open PRs	session-20261116T212057-3d2ff8ce	2026-11-16T21:27:06Z
+cover:decidiq:a5f973bbm9cda:34763eb4	already done: lib/Middleware/*.php at 100% lines (59/59) on development; nothing to add	session-20261116T212114-cc948c71	2026-11-16T21:28:36Z
+build:integriq:access-developer-portal-and-subscriptions:c2	failed: depends_on still unlanded on development: access-consumer-credentials (branch 6/13 tasks) and gateway-openapi-import-and-publish (branch 6/11); build after both merge	session-20261116T211529-39ccc7ff	2026-11-16T21:27:19Z
+cover:launchpad:fb10c50fmf487:dfaef732	deferred: launchpad has 45 open PRs	session-20261116T211641-8431b36d	2026-11-16T21:27:38Z
 build:humaniq:self-service-mobile:c5	already built: PR #1149 merged into development at 12627139; left 2.2 (receiptFile is a string schema property; the library's camera hint needs type file, a schema change the design rules out: needs a decision) and 3.2 (live phone check)	session-20261116T212057-3d2ff8ce	2026-11-16T21:28:18Z
 cover:pipelinq:7f9dc8e6m3dbb:28cccfd9	pipelinq has 43 open PRs: added 6 tests (SlugMatches, SourceRecordLink, ReadsSchemaRows entity path) to open cover PR #3602 at ea5eea4; suite 9142 green	session-20261116T212135-71cff2f3	2026-11-16T21:27:37Z
 cover:keepiq:c967a31fm902f:6f346b68	already done: lib/Sections/*.php 100% lines (5/5), SettingsSectionTest exists; -1 PR on record; no PR	session-20261116T200543-e8f76f14	2026-11-16T21:28:41Z
+fix:learniq:2521:70435b29	fixed: seeded course-day bookings get employer facts, test expects 7; merge lock held elsewhere, REVERIFY at a3328ae41	session-20261116T212150-27f1bda2	2026-11-16T21:28:56Z
+lane:arch5:launchpad:next-launchpad-r3	partial: 2 splits pushed on quality/arch5-launchpad-r3, no PR yet; rest queued as :c2	session-20261116T211128-4ec7d28f	2026-11-16T21:29:09Z
+build:opencatalogi:catalogs:c4	partial: PR #2755 ticks the verified component-registration item; left: Cn* UI rewrites of CatalogModal/ViewCatalogi/widget (no browser check), seed catalogues of real bodies (needs decision), items that would weaken RBAC or change a published contract, live checks	session-20261116T212742-68ee361e	2026-11-16T21:29:36Z
+lane:arch5:integriq:next-integriq-r2	PR #3679, GREEN (estimate 3.61 -> 3.665 with r1; r2 itself +0.005, remaining levers blocked by hard boundaries)	session-20261116T205700-b760902d	2026-11-16T21:29:54Z
+cover:keepiq:c967a31fm902f:6925f818	already covered: lib/SetupCheck 9/9 stmts (100%) on development; no PR	session-20261116T211631-e825058a	2026-11-16T21:30:07Z
