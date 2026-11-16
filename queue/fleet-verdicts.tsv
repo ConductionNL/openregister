@@ -14630,3 +14630,4 @@ keepiq	1816	f765ddb90f59f91c9aceb98d810d6db842e43bca	RED	worker-19:merge-gate	GA
 learniq	2549	6aa40c9b5463e3c34c562033eb813ab5e31cdf8a	RED	worker-46:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
 learniq	2561	65d65e789380b6c6cb7eaca1be6f3b3717d314a0	CONFLICT	worker-46:merge	merges clean on development alone; files: package-lock.json package.json 
 larpinq	1060	9f9d2d55aed2135114719c89293197e464127587	REVERIFY	worker-41	merged development in (settings test now expects both new slugs, 70 keys); added staff invite edge tests to lift testcoderatio back over 75% (74.56 -> 75.05); tree 1055 tests 0 new failures; Strict review APPROVE; merge gate unmeasured (static.developer.overheid.nl unreachable); new head 701044e668f5b0522fb7bf5d2b4223773dcf9bc6, verify it
+decidiq	2203	14dc68070ac11502fc0ca03de58	REVERIFY	worker-55:merge	verdict sha is not the head: head is 14dc68070ac11502fc0ca03de58869b820f8905a
