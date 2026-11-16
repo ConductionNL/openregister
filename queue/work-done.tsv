@@ -15877,6 +15877,7 @@ review:versioniq:503:7514a922	GREEN: vitest 3012/3012 pass, vite build ok on mer
 review:opencatalogi:2673:55afbbab	RED: ServiceRegistrarGoldenTest needs the new alias recorded; otherwise in line with the change spec	session-20261116T082353-191a2dc3	2026-11-16T08:49:20Z
 merge:shillinq:1900:6b45c52a	cloud tree of 5 shillinq PRs: merged=0 red=3 fail=0 skip=0; conflict 2, lint 0, red 0, moved 0, done 0	session-20261116T082955-f4213879	2026-11-16T08:49:53Z
 fix:pipelinq:3883:e27a1a72	sbom regenerated, pushed e0b01647; REVERIFY recorded (merge lock held elsewhere)	session-20261116T082121-c1741fb9	2026-11-16T08:49:57Z
+fix:launchpad:758:a042a574	failed: inherited: plain development 1475bdce fails its own checker floor identically (opensourcehealth pass->warn, 4->3); not caused by the PR, floor needs re-baselining	session-20261116T081705-6c8f795b	2026-11-16T08:50:24Z
 review:versioniq:721:2524b722	GREEN: versioniq #721 behaviour per spec, no new unit failures (2 inherited), vitest green	session-20261116T084434-57e47bd3	2026-11-16T08:50:26Z
 review:shillinq:2997:675a3aef	GREEN: build matches its specs, access checks per administration, suite 12284 with 1 inherited error	session-20261116T074147-edb7c708	2026-11-16T08:50:44Z
 review:opencatalogi:2679:b5f77a60	GREEN: 0 new failures (106 baseline), 39 new tests pass, phpcs/phpstan clean	session-20261116T084531-ff1efb6c	2026-11-16T08:50:58Z
