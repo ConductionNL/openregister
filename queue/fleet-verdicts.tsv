@@ -13970,3 +13970,4 @@ launchpad	1238	8be8c1decce989324547048dd4f85ba4ac786595	RED	worker-07:merge-gate
 hermiq	1167	dae65138d4911e944cdd0e955e0226a9ac641cce	GREEN	worker-55:review	Runtime icon dependency minor bump; golden fixture follows the new icon markup (comment node order only); sbom.cdx.json current per regen-sbom --check; vitest 1526/1526 on PR merged with development, same as baseline; no PHP changed
 shillinq	1958	98ce92e545cdd6092fe131653b75add6effe2c1d	RED	worker-45:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
 shillinq	3105	364f54d39befb54daae657f3e3bb5adf1fb6469a	RED	worker-45:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
+shillinq	3062	faaae73e234727476b1a3a73e75779e41d5d05a1	CONFLICT	worker-45:merge	merges clean on development alone; files: appinfo/info.xml tests/fixtures/register-versions.lock.json 
