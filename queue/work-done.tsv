@@ -16555,3 +16555,4 @@ review:decidiq:1767:bc1df2c1	GREEN	session-20261116T144202-f2b26030	2026-11-16T1
 fix:decidiq:1469:09383bbc	failed: permission (recording APPROVE review of own fix refused); floor restored and pushed c712bd4b, tree green, REVERIFY queued	session-20261116T145220-87e5504e	2026-11-16T15:10:52Z
 fix:shillinq:2070:756a08e8	merged development in clean, suite 12248 OK; new head 764ed7a9, REVERIFY queued	session-20261116T142931-c6a20eeb	2026-11-16T15:11:02Z
 fix:stackiq:1978:17efb788	adr fix: OAS 3.0 type list -> oneOf, 502/503 problem+json, spectral oas clean; new head 723683e2, REVERIFY	session-20261116T144734-1dc150d8	2026-11-16T15:11:14Z
+review:planninq:1069:496f9b7f	BLOCK: psalm 7.5 lock not installable under config.platform php 8.3	session-20261116T150915-6a97321b	2026-11-16T15:11:26Z
