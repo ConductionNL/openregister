@@ -15397,3 +15397,17 @@ merge:decidiq:1945:dfd489d5	stale	feeder	2026-11-16T06:15:02Z
 review:decidiq:1470:d4e9a56b	GREEN: router bump, vitest 2847 pass, 0 fail	session-20261116T061736-e271ba12	2026-11-16T06:19:08Z
 review:decidiq:1472:92d14428	GREEN: sass bump, vitest 2847 pass, 0 fail	session-20261116T061736-e271ba12	2026-11-16T06:20:19Z
 review:decidiq:1465:c16cd40a	GREEN: vitest 2847 passed on merge with development	session-20261116T062109-81fc252e	2026-11-16T06:22:35Z
+verify:decidiq:2222:f6fffea1	RED: vitest connectionRegistry.spec.js fails to load with nextcloud-vue 2.181 (window undefined)	session-20261116T061736-e271ba12	2026-11-16T06:22:46Z
+review:shillinq:2099:6c67d88f	GREEN: UI refactor to fields section, token-preserve kept; vitest 1 inherited red	session-20261116T062050-3a7e109c	2026-11-16T06:22:52Z
+review:decidiq:2149:acad1376	GREEN: spec-conform, phpunit 4688 OK, vitest 2873 pass, phpstan clean	session-20261116T062050-add210c3	2026-11-16T06:23:10Z
+review:decidiq:1738:dabfcc92	GREEN: dev-only phpmd 3 bump, 4624 unit tests pass, phpmd rulesets load	session-20261116T062120-691af8f7	2026-11-16T06:23:19Z
+review:filinq:2072:ec607dc3	GREEN: unit 6829 OK vs baseline 6798 OK; matches change specs	session-20261116T062050-7d5ce0d6	2026-11-16T06:23:35Z
+review:decidiq:1467:dfb19ea0	GREEN: dev-dep bump, vitest 2847 passed, coverage run ok	session-20261116T062121-edb2d73b	2026-11-16T06:23:48Z
+review:filinq:2088:bd2b4649	GREEN: matches template-library-leaf specs; unit 6825/0 fail, phpstan, vitest, parity clean	session-20261116T062117-388e9de2	2026-11-16T06:24:08Z
+review:decidiq:1692:faa2a2eb	GREEN: openspec-only sweep, 4624 unit tests pass	session-20261116T062120-691af8f7	2026-11-16T06:24:19Z
+review:filinq:2123:3f385b11	GREEN: phpunit 6863 OK, jest 570 OK, phpstan clean	session-20261116T062140-6a300781	2026-11-16T06:24:36Z
+review:decidiq:1473:fbdc77e4	GREEN: patch bump, vitest 2847 pass, phpunit 4624 OK	session-20261116T062050-add210c3	2026-11-16T06:24:43Z
+fix:shillinq:2070:fbb82225	fixed: save migrated to ObjectSaveOptions, tests green; new head b00d1ffe	session-20261116T062050-3a7e109c	2026-11-16T06:25:05Z
+review:decidiq:1767:ef20753c	GREEN: ocp bump, 4624 unit tests pass	session-20261116T062121-edb2d73b	2026-11-16T06:25:13Z
+review:decidiq:1474:08a18331	GREEN: vitest 2847 passed, eslint 0 errors	session-20261116T062109-81fc252e	2026-11-16T06:25:20Z
+review:filinq:2121:f6845146	GREEN: unit 6825 OK, vitest manifest 5/5; matches change specs	session-20261116T062050-7d5ce0d6	2026-11-16T06:25:31Z
