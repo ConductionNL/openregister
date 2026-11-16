@@ -17710,3 +17710,4 @@ build:learniq:learner-list-and-page-follow-the-boards:c7	PR #2549 head fe0077f4:
 lane:arch5:shillinq:next-shillinq-r3	PR #3124 opened (4.12-4.16 -> 4.13-4.18), GREEN verdict queued; merge lock held elsewhere; next round queued	session-20261116T201628-7b6853de	2026-11-16T20:39:07Z
 verify:learniq:2567:908b4487	GREEN #2567 (6902 tests, 0 new failures)	session-20261116T200545-32ab46ec	2026-11-16T20:39:14Z
 cover:keepiq:c967a31fm902f:05630945	already done: lib/Middleware/Support 54/59 lines; the 5 left are loop bodies over the empty WITHOUT_SUCCESSOR/RENAMED constants, unreachable from tests; no PR	session-20261116T200543-e8f76f14	2026-11-16T20:39:32Z
+cover:keepiq:c967a31fm902f:9b457b26	already done: lib/Service/Flow 100% lines (34/34), 9-test dedicated suite; -1 PR merged; no PR	session-20261116T200543-e8f76f14	2026-11-16T20:40:01Z
