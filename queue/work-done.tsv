@@ -15942,3 +15942,4 @@ review:larpinq:1060:9f9d2d55	GREEN: larpinq #1060 at 9f9d2d5, unit 1025 ok, vite
 fix:portaliq:1997:3d645d7e	conflict fixed, pushed 46fd8f94; APPROVE recorded; not landed: merge gate unmeasured (checker floor), REVERIFY queued	session-20261116T084531-ff1efb6c	2026-11-16T09:00:30Z
 fix:dossiq:3955:0024f360	conflicts resolved, pushed 051bc7d2; suite OK 18298; merge lock held elsewhere, REVERIFY queued	session-20261116T081522-a0a03964	2026-11-16T09:00:40Z
 lane:ormig:opencatalogi:leftover	done: #2418 closed (obsolete, development matches main); #2415 GREEN (fixes 27 inherited failures), #2737 opened for the one namecheck BREAK, GREEN; both await a merge task (lock held elsewhere)	session-20261116T084401-bf65ba54	2026-11-16T09:00:54Z
+fix:dossiq:3957:b44c6a4f	conflict resolved, pushed 3a1d1a08; merge lock held elsewhere, REVERIFY queued	session-20261116T084709-9ade0b9b	2026-11-16T09:01:17Z
