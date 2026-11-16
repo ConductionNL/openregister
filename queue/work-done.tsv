@@ -16126,3 +16126,4 @@ review:dossiq:6593:063f50b3	GREEN: refactor keeps behaviour; suite 19 failures =
 fix:shillinq:2093:cc5e1a5e	fixed: manifest test updated for the built-in detail page; pushed c70fbea8; merge lock held elsewhere, REVERIFY queued	session-20261116T101916-4045770b	2026-11-16T10:23:23Z
 review:dossiq:3936:073e564b	GREEN: 18282 tests, 19 inherited failures, no new; gates inherited only	session-20261116T101035-b42d3ee7	2026-11-16T10:23:48Z
 fix:shillinq:2224:ff4aa606	inherited: development itself fails spdxheaders floor (stub header, fixed by #2071); no change to PR	session-20261116T101206-d1581575	2026-11-16T10:24:04Z
+fix:shillinq:2092:e2044223	fixed spdx stub header, pushed 71d6e19e6a; gate unmeasured: static.developer.overheid.nl; REVERIFY queued	session-20261116T101745-e986474c	2026-11-16T10:24:17Z
