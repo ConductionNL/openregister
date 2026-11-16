@@ -17456,3 +17456,4 @@ merge:versioniq:723:77687fec	failed: cm_tree base exit 2: versioniq development 
 review:opencatalogi:2655:eecf9130	already merged: eecf9130 is on development (merge f0141ca6)	session-20261116T190918-81e43f73	2026-11-16T19:42:34Z
 review:hermiq:1750:5b31e8f3	GREEN: 5407 tests green on the tree; spec-conformant, admin-only settings, fails closed	session-20261116T191704-9a63be87	2026-11-16T19:42:36Z
 verify:filinq:2149:7a908f9a	GREEN #2149 (docs only); 6926 tests, 0 new failures	session-20261116T192133-e3734874	2026-11-16T19:42:51Z
+fix:decidiq:2228:0abc6d2c	merged #2228 at 0fe237ed088554296db5e3b40d1b8055f8c3de06	session-20261116T193350-bd20edd7	2026-11-16T19:43:12Z
