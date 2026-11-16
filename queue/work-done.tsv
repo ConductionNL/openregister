@@ -16847,6 +16847,7 @@ build:shillinq:adopt-connection-registry	deferred: shillinq has 81 open PRs	sess
 build:portaliq:action-forward-survives-a-slow-answer	already done: code tasks 1.1-2.2 ticked on development; 3.1 is a live check, left	session-20261116T170823-40772b73	2026-11-16T17:34:07Z
 merge:versioniq:691:68bfdd77	failed: prep exit 2: versioniq development has no phpunit in require-dev (no vendor/bin/phpunit)	session-20261116T173227-109a6e00	2026-11-16T17:35:10Z
 build:portaliq:operate-roles-for-content-and-actions	already done: every code task ticked on development; T01 is a live check, left	session-20261116T170823-40772b73	2026-11-16T17:34:46Z
+cover:dossiq:069ee2d6madb6:e7fd1c43	stale: lib/Service/Intake/ no longer exists on development	session-20261116T173254-f6972957	2026-11-16T17:35:25Z
 build:portaliq:receipt-date-reads-in-the-portals-language	already done: code task ticked on development; 1.2 is a live check, left	session-20261116T170823-40772b73	2026-11-16T17:35:18Z
 cover:dossiq:069ee2d6madb6:js0023cfc7	deferred: dossiq has 43 open PRs	session-20261116T173306-d04a65dc	2026-11-16T17:35:41Z
 cover:dossiq:069ee2d6madb6:ea81adeb	deferred: dossiq has 43 open PRs	session-20261116T173227-3f62e794	2026-11-16T17:35:11Z
@@ -16862,6 +16863,7 @@ build:portaliq:search-suggestions-while-typing	deferred: portaliq has 62 open PR
 build:portaliq:portal-acts-for-its-organisation	deferred: portaliq has 62 open PRs	session-20261116T171035-683856c3	2026-11-16T17:36:54Z
 build:portaliq:media-usage-count	deferred: portaliq has 62 open PRs	session-20261116T171035-683856c3	2026-11-16T17:37:07Z
 build:portaliq:collection-column-labels	deferred: portaliq has 62 open PRs	session-20261116T171035-683856c3	2026-11-16T17:37:14Z
+build:portaliq:site-article-page-follows-the-board	deferred: portaliq has 62 open PRs	session-20261116T171035-683856c3	2026-11-16T17:37:21Z
 build:shillinq:receivables-automatic-dunning	deferred: shillinq has 81 open PRs	session-20261116T165351-3ccaad0e	2026-11-16T17:37:42Z
 build:portaliq:resident-pages-live-round-3	already done: every code task ticked and on development (fix(site): resident pages after live round 3, 14 Oct); only 5.1 live check left	session-20261116T173311-8d6b3275	2026-11-16T17:37:56Z
 cover:dossiq:069ee2d6madb6:8ed5443b	deferred: dossiq has 43 open PRs	session-20261116T173306-d04a65dc	2026-11-16T17:38:27Z
@@ -16887,9 +16889,25 @@ build:portaliq:site-callouts-steps-and-tables-follow-the-boards	already built: t
 review:shillinq:3078:33420e1f	GREEN: unit 12278 tests 0 failures, vitest 9/9, eslint clean	session-20261116T173217-7353a3fb	2026-11-16T17:40:31Z
 build:portaliq:portal-theme-application	already done: code built on development (8 Oct); left only an info.xml dependency decision and browser/e2e tasks	session-20261116T173311-8d6b3275	2026-11-16T17:40:44Z
 build:portaliq:write-record-names-the-mandate	already done: every code task ticked on development; open tasks are live checks only, left	session-20261116T170823-40772b73	2026-11-16T17:40:55Z
+review:openregister:10596:1cde2635	APPROVE: test docblock only, ExampleSet suite same as main	session-20261116T171507-41a673e9	2026-11-16T17:41:04Z
+build:portaliq:resident-on-example-set	already done: every code task ticked on development; open tasks are live checks only, left	session-20261116T170823-40772b73	2026-11-16T17:41:01Z
 build:portaliq:staff-revoke-one-session	already done: T01,T02 on development since #1647; only T03 (live check) left	session-20261116T173306-f68895a7	2026-11-16T17:41:26Z
 fix:learniq:2507:82c09d5c	unmeasured: static.developer.overheid.nl (fixed interfacing floor + SPDX stub header; new head f29e84b71d, APPROVE recorded, REVERIFY queued)	session-20261116T171010-393e4bc2	2026-11-16T17:41:23Z
+build:portaliq:staff-resend-an-invitation	already built: T01-T03 ticked and on development; only T04 live check left	session-20261116T170545-a4f14b83	2026-11-16T17:41:33Z
 build:portaliq:site-school-blocks	already done: every code task is ticked and on development; only live tasks T8 and T12 are left	session-20261116T173227-3f62e794	2026-11-16T17:41:54Z
 build:portaliq:site-shared-page-blocks	already done: only live/e2e tasks left (2)	session-20261116T172806-3ef5ead7	2026-11-16T17:41:40Z
 build:portaliq:zuiddrecht-resident-pages-match-the-boards	already done: only live/e2e tasks left (1)	session-20261116T172806-3ef5ead7	2026-11-16T17:42:02Z
+build:shillinq:inventory-pos-decrement	already done: only live/e2e tasks left (1)	session-20261116T172806-3ef5ead7	2026-11-16T17:42:25Z
 build:portaliq:steps-as-bars	already done: tasks 1-3 on development; task 4 is cross-repo learniq + live check	session-20261116T173306-f68895a7	2026-11-16T17:42:10Z
+build:shillinq:budget-grid-view	already done: built on development in #961; only the e2e run (not code) is left	session-20261116T173227-3f62e794	2026-11-16T17:42:41Z
+fix:learniq:2556:489b7f4d	failed: inherited: development itself drops spdxheaders 5->4 (tests/Stubs/Contract/ObjectServiceInterface.php has no SPDX line); the header fix rides on learniq #2507 head f29e84b71d	session-20261116T171010-393e4bc2	2026-11-16T17:42:42Z
+cover:filinq:7a9ef677:aae6d66c	deferred: filinq has 49 open PRs	session-20261116T174053-4a550291	2026-11-16T17:42:58Z
+build:shillinq:tax-vat-number-check	already done: built on development 2026-10-02 (route vat-number-checks, FoldCustomerVatId, e2e spec); only 3.2 live e2e run left	session-20261116T173217-7353a3fb	2026-11-16T17:42:55Z
+build:shillinq:billable-period-becomes-an-invoice	already done: 1.1-1.4 built on development (10 Oct); only 1.5 live pass left	session-20261116T173311-8d6b3275	2026-11-16T17:43:14Z
+review:openregister:10595:8cc9923c	APPROVE: tests only, 8 new tests green, required suites green	session-20261116T173213-a5a52019	2026-11-16T17:43:20Z
+review:keepiq:1826:95a54b11	GREEN: keepiq #1826, unit 5408/0 fail, vitest 99 pass; version-line conflict with development	session-20261116T173313-424dff86	2026-11-16T17:43:27Z
+review:shillinq:2230:e61ebeb7	GREEN: babel dev-dep bump, vitest 3030/3031 (1 inherited failure)	session-20261116T173342-1d8a0fb9	2026-11-16T17:43:49Z
+build:shillinq:sales-usage-billing	deferred: shillinq has 81 open PRs	session-20261116T172806-3ef5ead7	2026-11-16T17:44:03Z
+build:shillinq:public-sector-quarterly-returns	deferred: shillinq has 81 open PRs	session-20261116T172806-3ef5ead7	2026-11-16T17:44:11Z
+fix:learniq:2555:df653e98	fixed inherited SPDX drop (stub header) + merged development; new head 20db188505, REVERIFY queued (merge lock held elsewhere)	session-20261116T171010-393e4bc2	2026-11-16T17:44:42Z
+review:keepiq:1816:c999bfc2	GREEN keepiq#1816: phpunit 5337 OK, vitest 4680 OK, matches change specs	session-20261116T173246-2dce7fd2	2026-11-16T17:44:52Z
