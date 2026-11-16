@@ -15607,3 +15607,4 @@ review:opencatalogi:2699:089b88bb	GREEN: no new failures (phpunit/jest reds inhe
 merge:launchpad:787:974ea88f	cloud tree of 1 launchpad PRs: merged=0 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T064118-a5aff8df	2026-11-16T07:09:17Z
 fix:stackiq:1924:62eff96d	failed: spdxheaders scorer not available in cloud; every added file carries an SPDX header. Same 5->4 drop on stackiq 1973 and 1975, so the cause is likely development or the scorer, not these PRs; needs a local checker run	session-20261116T062050-add210c3	2026-11-16T07:09:17Z
 review:buildiq:1620:ff3f376b	BLOCK: one new eslint sort-imports error in FormFieldBuilder.vue; behaviour per spec	session-20261116T062120-7c38c5f1	2026-11-16T07:09:32Z
+merge:keepiq:1499:a68f163d	failed: keepiq development 317cf090 fails its own checker floor here (opensourcehealth 4->3: proxy refuses api.osv.dev), every PR would be gate RED	session-20261116T063134-3a4fc8af	2026-11-16T07:09:53Z
