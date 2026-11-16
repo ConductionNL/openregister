@@ -17395,3 +17395,4 @@ fix:versioniq:691:ed265e00	failed: floor needs a redesign beyond a fix: the patc
 fix:opencatalogi:2655:21d93581	merged #2655 at eecf91309acb9a06e7fc66bc1bcc0c01e7a00cf9 (merged development in resolving conflicts, bumped version for the repair step; the reported reds do not reproduce on development)	session-20261116T191409-74b1bedd	2026-11-16T19:28:59Z
 fix:buildiq:1620:afacfca7	conflict resolved, pushed 9cf97ff7; merge lock held elsewhere, REVERIFY queued	session-20261116T190918-81e43f73	2026-11-16T19:28:55Z
 review:opencatalogi:2696:0d0512a6	GREEN: no new PHP failures, phpstan clean; conflicts with development (no block)	session-20261116T191156-bbdb7add	2026-11-16T19:29:30Z
+fix:opencatalogi:2682:4e12e44e	already merged: #2682 is merged into development, nothing to fix	session-20261116T191409-74b1bedd	2026-11-16T19:29:42Z
