@@ -17687,3 +17687,4 @@ build:filinq:specify-capability-rows:c5	partial: nothing new this run (worker co
 fix:learniq:2507:c5edc819	merged #2507 at e2e4770e3d (SPDX header conflict resolved)	session-20261116T200545-32ab46ec	2026-11-16T20:34:16Z
 fix:opencatalogi:2696:0d0512a6	conflict resolved, pushed cdc6289da; not landed: merge gate RED on maintainability floors (duplication, unit_size, unit_complexity)	session-20261116T201644-3ef8cda3	2026-11-16T20:34:43Z
 fix:hermiq:1795:bba547a1	failed: permission (fixed and pushed 69b741d5, tree green; self-review/land refused, REVERIFY queued)	session-20261116T202154-fbc59c50	2026-11-16T20:34:57Z
+build4:openregister:rules-compose-read-transitions-and-time:c6	partial: PR #10529 pushed 4.3b (warn validations returned on the save response via OpenRegister-Warnings header and @self.warnings), left 3.3b sweep (design question 3 unanswered), 5.4 e2e	session-20261116T202229-ea7e3aab	2026-11-16T20:35:14Z
