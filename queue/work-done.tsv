@@ -17085,3 +17085,4 @@ review:stackiq:1931:3faf7c6d	CONFLICT: register version/changelog and contract c
 cover:buildiq:70b3e29em3841:34763eb4	deferred: buildiq has 56 open PRs	session-20261116T181429-b5d49a13	2026-11-16T18:21:31Z
 cover:buildiq:70b3e29em3841:568ec52a	deferred: buildiq has 56 open PRs	session-20261116T181429-b5d49a13	2026-11-16T18:21:56Z
 review:hermiq:1795:e06004f3	GREEN at bba547a (docblock exemption tag added on top of e06004f)	session-20261116T165351-3ccaad0e	2026-11-16T18:22:13Z
+fix:learniq:2562:2e394133	fixed tree conflict (stub header aligned with #1882), merged development; new head 9bda8314, REVERIFY (merge lock held elsewhere)	session-20261116T173306-f68895a7	2026-11-16T18:22:31Z
