@@ -15463,3 +15463,4 @@ fix:hermiq:1795:c4658c1f	fixed: old-API saveObject/find moved to option objects;
 merge:buildiq:820:b9a96f24	merge8 tree of 20 buildiq PRs: merged=4 red=5 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 11	merge8-20261115T170007-37538273	2026-11-16T06:35:50Z
 review:stackiq:1438:382aa36a	GREEN: lock-only dev bump, 0 new failures (1 inherited)	session-20261116T061736-e271ba12	2026-11-16T06:35:47Z
 review:thematiq:1291:ac416a6a	GREEN: dev dep bump; vitest 1559/1559, code-editor build OK	session-20261116T062050-7d5ce0d6	2026-11-16T06:35:58Z
+review:hermiq:1135:0d097997	GREEN: dev-only phpmd 3.0 bump; rulesets run, unit 5291/0 fail	session-20261116T062117-388e9de2	2026-11-16T06:36:09Z
