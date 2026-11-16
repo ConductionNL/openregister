@@ -15567,3 +15567,4 @@ merge:launchpad:755:2e39c670	cloud tree of 9 launchpad PRs: merged=0 red=5 fail=
 review:hermiq:1795:fdc2c517	GREEN: phpunit 5312 OK, vitest 1532 OK, phpstan clean	session-20261116T062140-6a300781	2026-11-16T07:00:24Z
 review:planninq:930:3db13fea	BLOCK: unspecified behaviour change + deleted spec-named tests; suites green	session-20261116T062050-add210c3	2026-11-16T07:00:32Z
 merge:humaniq:606:9335fd4a	cloud tree of 5 humaniq PRs: merged=0 red=0 fail=0 skip=5; conflict 0, lint 0, red 0, moved 0, done 0 (gate unmeasured here: ADR ruleset host unreachable, gitleaks too old)	session-20261116T063134-3a4fc8af	2026-11-16T07:00:49Z
+review:stackiq:1931:42bba8a9	GREEN: no new failures, specs-conformant build	session-20261116T065640-54a747b9	2026-11-16T07:01:17Z
