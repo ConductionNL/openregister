@@ -17891,3 +17891,4 @@ build:integriq:platform-connector-extension-kit:c5	already done: every code task
 review:shillinq:1899:acc6426f	GREEN: no blockers; PHPUnit OK, one inherited vitest red	session-20261116T211641-8431b36d	2026-11-16T21:26:41Z
 cover:decidiq:a5f973bbm9cda:c76ae287	deferred: decidiq has 45 open PRs	session-20261116T212057-3d2ff8ce	2026-11-16T21:27:06Z
 cover:pipelinq:7f9dc8e6m3dbb:28cccfd9	pipelinq has 43 open PRs: added 6 tests (SlugMatches, SourceRecordLink, ReadsSchemaRows entity path) to open cover PR #3602 at ea5eea4; suite 9142 green	session-20261116T212135-71cff2f3	2026-11-16T21:27:37Z
+cover:keepiq:c967a31fm902f:6f346b68	already done: lib/Sections/*.php 100% lines (5/5), SettingsSectionTest exists; -1 PR on record; no PR	session-20261116T200543-e8f76f14	2026-11-16T21:28:41Z
