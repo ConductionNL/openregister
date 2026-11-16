@@ -15575,3 +15575,4 @@ review:stackiq:1435:81fb6bd4	GREEN: behaviour kept on main, suite OK	session-202
 review:buildiq:1651:e765d7de	GREEN: matches logic-shared-flows-and-automations specs; unit 3353, 1 inherited failure; vitest clean	session-20261116T062117-388e9de2	2026-11-16T07:02:33Z
 merge:versioniq:500:595b6cab	cloud tree of 4 versioniq PRs: merged=0 red=2 fail=0 skip=1; conflict 1, lint 0, red 0, moved 0, done 0	session-20261116T064721-c9a0b5c9	2026-11-16T07:02:37Z
 review:planninq:910:8ffad303	BLOCK (sbom not regenerated)	session-20261116T063608-d33f86e6	2026-11-16T07:02:44Z
+merge:launchpad:756:b2709c96	cloud tree of 4 launchpad PRs: merged=0 red=3 fail=0 skip=0; conflict 1, lint 0, red 0, moved 0, done 0	session-20261116T064118-a5aff8df	2026-11-16T07:03:08Z
