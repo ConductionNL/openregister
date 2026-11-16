@@ -16870,6 +16870,7 @@ build:portaliq:portal-notices-as-drawn	already done: every code task ticked on d
 build:portaliq:resident-lands-on-the-portal	already done: every code task ticked on development; open tasks are live checks only, left	session-20261116T170823-40772b73	2026-11-16T17:39:06Z
 build:portaliq:portal-host-root-redirect	already done: every code task ticked on development; open tasks are live checks only, left	session-20261116T170823-40772b73	2026-11-16T17:39:12Z
 build:portaliq:site-matches-the-zuiddrecht-boards	already done: every code task ticked on development; open tasks are live checks only, left	session-20261116T170823-40772b73	2026-11-16T17:39:22Z
+merge:stackiq:1931:17ea89e6	cloud tree of 1 stackiq PRs: none; conflict 1, lint 0, red 0, moved 0, done 0	session-20261116T173256-6277a58c	2026-11-16T17:39:31Z
 build:portaliq:site-home-follows-the-school-boards	already done: every code task ticked on development; open tasks are live checks only, left	session-20261116T170823-40772b73	2026-11-16T17:39:28Z
 build:portaliq:site-links-the-theme-bridge	already done: every code task ticked on development; open tasks are live checks only, left	session-20261116T170823-40772b73	2026-11-16T17:39:42Z
 merge:integriq:2671:37a34ead	unmeasured: static.developer.overheid.nl (proxy 403; env allowlist has typo overherheid); 7 IN reviewed APPROVE, 3051 gate RED spdxheaders 5->4, 3049 CONFLICT, 3589 MOVED; nothing merged	session-20261116T170518-9fa71e6e	2026-11-16T17:40:07Z
