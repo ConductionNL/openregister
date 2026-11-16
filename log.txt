@@ -3410,3 +3410,4 @@ To https://github.; per-PR merges
 2026-11-16T16:42:42Z session-20261116T163610-906ae6be worker-50 handed back merge:buildiq:1091:23716f96 unworked: static.developer.overheid.nl blocked (proxy 403) in this session, merges cannot be measured here
 2026-11-16T22:02:38Z session-20261116T211553-db0d2c78 worker-27 handed back review:filinq:2072:65ad1d32 (head includes its own fix commit; needs an independent reviewer)
 2026-11-16T22:03:08Z session-20261116T211553-db0d2c78 worker-27 handed back review:hermiq:1781:bf818a9a (it built that head; needs an independent reviewer)
+2026-11-16T23:23:51Z integrator-20261111T115842-a749432d GREEN tree ac0fe06b30 on dev 3800106bd5 prs 9 front=ok: Tests: 62466, Assertions: 218478, Errors: 3, Failures: 3, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24.
