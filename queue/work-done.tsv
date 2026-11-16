@@ -16323,3 +16323,4 @@ build:dossiq:starter-content-and-templates	already built: every dossiq code task
 build:dossiq:penalty-is-a-stored-calculation	already done: code tasks ticked and on development; 1.4 is live after openregister#4571	session-20261116T110114-f035d055	2026-11-16T11:17:34Z
 build:dossiq:the-support-note-can-be-switched-off	already done: 1.1-1.3 on development (15 Oct); only 1.4 live remains	session-20261116T104807-0149ceda	2026-11-16T11:18:26Z
 build:dossiq:task-list-pooled-handler	already done: config, nl key and vitest on development; only live check 1.3 left	session-20261116T105712-260c30d3	2026-11-16T11:18:14Z
+merge:filinq:2072:a0472251	merge3 tree of 5 filinq PRs: merged=1 red=0 fail=0 skip=0; conflict 4, lint 0, moved 0; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-16T11:18:46Z
