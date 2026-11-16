@@ -17260,6 +17260,7 @@ cover:pipelinq:7f9dc8e6m3dbb:34f5c300	added to open cover PR #3659 (45 open PRs)
 cover:stackiq:9ac19b3amdf03:59826f43	deferred: stackiq has 42 open PRs	session-20261116T184912-ef98c646	2026-11-16T18:59:13Z
 cover:stackiq:9ac19b3amdf03:17d367ab	deferred: stackiq has 42 open PRs	session-20261116T182720-9950372f	2026-11-16T18:59:46Z
 fix:opencatalogi:2696:8fcdf471	fixed jest specs, pushed 0d0512a6; merge lock busy, REVERIFY queued	session-20261116T184852-b8356331	2026-11-16T18:59:43Z
+cover:stackiq:9ac19b3amdf03:aae6d66c	deferred: stackiq has 42 open PRs (earlier cover PR #1746 for this target already merged)	session-20261116T181517-93723df6	2026-11-16T18:59:51Z
 fix:opencatalogi:2699:64dd55f6	merged development in, new head 3dfb66bdc2; merge lock held by another merger, REVERIFY queued	session-20261116T184833-adbb8426	2026-11-16T18:59:51Z
 cover:dossiq:069ee2d6m9d1b:1b97f731	dossiq has 41 open PRs: added 29 tests for 4 untested lib/Listener classes to open PR #6203 (299f90c); suite 18414->18443, 19 inherited failures unchanged	session-20261116T184901-b88952b2	2026-11-16T19:00:34Z
 cover:stackiq:9ac19b3amdf03:05630945	deferred: stackiq has 42 open PRs	session-20261116T184919-ae590ea9	2026-11-16T19:00:21Z
