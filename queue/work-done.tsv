@@ -16891,3 +16891,4 @@ build:portaliq:site-school-blocks	already done: every code task is ticked and on
 build:portaliq:site-shared-page-blocks	already done: only live/e2e tasks left (2)	session-20261116T172806-3ef5ead7	2026-11-16T17:41:40Z
 build:portaliq:zuiddrecht-resident-pages-match-the-boards	already done: only live/e2e tasks left (1)	session-20261116T172806-3ef5ead7	2026-11-16T17:42:02Z
 build:shillinq:inventory-pos-decrement	already done: only live/e2e tasks left (1)	session-20261116T172806-3ef5ead7	2026-11-16T17:42:25Z
+build:portaliq:steps-as-bars	already done: tasks 1-3 on development; task 4 is cross-repo learniq + live check	session-20261116T173306-f68895a7	2026-11-16T17:42:10Z
