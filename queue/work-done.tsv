@@ -15697,3 +15697,4 @@ review:stackiq:1930:e29285ec	GREEN: matches change specs; no new unit failures (
 review:portaliq:1354:ba4c6885	GREEN: dependency-only bump, not imported by src, merges cleanly	session-20261116T075953-c9c4b65a	2026-11-16T08:04:24Z
 review:launchpad:758:a042a574	GREEN: dev-dep bump, vitest 2578 pass, phpunit 4461 OK	session-20261116T080001-22af8490	2026-11-16T08:04:37Z
 fix:launchpad:756:e5da8a84	inherited: plain development 1475bdce already fails the checker floor the same way (opensourcehealth pass->warn, 4->3 stars, measured on that commit earlier today); twig bump does not cause it, head unchanged, no change pushed	session-20261116T080001-22af8490	2026-11-16T08:05:07Z
+fix:planninq:933:6f703f97	floor restored (complexity 4.88, interfacing 4.75), pushed 91b55b70; REVERIFY queued	session-20261116T075936-d83d6c1e	2026-11-16T08:06:39Z
