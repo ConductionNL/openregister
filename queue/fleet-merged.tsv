@@ -4129,3 +4129,4 @@ decidiq	1467	dfb19ea0e2beff3a28cb376c7bc29ced93c70234	SKIP	worker-40	GATE UNMEAS
 versioniq	502	c6d0467e61059cf8e5a0263c5f728008a7ee6c67	SKIP	worker-14	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 thematiq	1293	70f30610bdf7db46fa14e32935ad703e829c02bf	RED	worker-46	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 versioniq	504	918e8ff34bf4ea3f610ff396051718276fc9c7c8	SKIP	worker-14	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
+thematiq	1558	756f3b85ff9c7cd053b9e02959bb340357082171	RED	worker-46	GATE RED sbom: composer.lock changed without sbom.cdx.json
