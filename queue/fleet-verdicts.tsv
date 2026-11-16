@@ -14464,3 +14464,4 @@ buildiq	1249	e01a3111488d17974ac20b492fdd9e5593f8cd37	RED	worker-04:merge-gate	G
 versioniq	691	eca00de334c5e77d1c39e55199d03edf2bb99dd5	BLOCK	worker-14:review	review: Strict; blocker: spec-coverage gate fails on four new public methods without @spec tags (PlanRun rowOf/hold/holds, PatchPolicy toArray); otherwise matches autoupdate-security-first, touched tests green
 dossiq	3955	051bc7d2b741f9b08073976359219c0fae9ce6cb	CONFLICT	worker-55:merge	conflicts with development; files: lib/Service/Publication/OutcomePublisher.php lib/Service/Publication/SourceCollectionReturn.php 
 humaniq	1095	340163fdc4208370ae8ac1bde6cdbef09083a930	RED	worker-26:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+thematiq	1126	5620b7cb2d7fa051b0dab741117d4c9133f10990	RED	worker-46:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
