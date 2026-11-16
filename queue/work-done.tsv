@@ -16914,3 +16914,4 @@ review:shillinq:2099:ea7e61ea	GREEN (vitest 1 inherited failure)	session-2026111
 fix:learniq:2555:df653e98	fixed inherited SPDX drop (stub header) + merged development; new head 20db188505, REVERIFY queued (merge lock held elsewhere)	session-20261116T171010-393e4bc2	2026-11-16T17:44:42Z
 build:shillinq:budget-known-costs	already done: built on development in #967; only the e2e run (not code) is left	session-20261116T173227-3f62e794	2026-11-16T17:44:55Z
 review:keepiq:1816:c999bfc2	GREEN keepiq#1816: phpunit 5337 OK, vitest 4680 OK, matches change specs	session-20261116T173246-2dce7fd2	2026-11-16T17:44:52Z
+build:filinq:anonymisation-batch-output-folder-layout	already built: every code task ticked on development (ecccc66ac, 517095251); only live Newman/smoke tasks 11 and 13 remain, not code	session-20261116T174323-ba3ec1dc	2026-11-16T17:45:00Z
