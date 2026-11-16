@@ -17082,3 +17082,4 @@ fix:hermiq:1150:9ed6a46b	fixed: specs follow the Nextcloud AI default, pushed 51
 merge:larpinq:1060:fce01a68	cloud tree of 1 larpinq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T172806-3ef5ead7	2026-11-16T18:20:51Z
 review:stackiq:1931:3faf7c6d	CONFLICT: register version/changelog and contract counts conflict with development; code per specs otherwise	session-20261116T181151-999832c6	2026-11-16T18:21:23Z
 cover:buildiq:70b3e29em3841:34763eb4	deferred: buildiq has 56 open PRs	session-20261116T181429-b5d49a13	2026-11-16T18:21:31Z
+cover:buildiq:70b3e29em3841:568ec52a	deferred: buildiq has 56 open PRs	session-20261116T181429-b5d49a13	2026-11-16T18:21:56Z
