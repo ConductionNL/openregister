@@ -16563,3 +16563,4 @@ fix:decidiq:2191:29114ea5	inherited: tree 3.77 equals decidiq development's own 
 review:opencatalogi:2696:08865a78	GREEN: no new failures (5849 vs 5806 tests), vitest 1170 pass	session-20261116T143636-9ede3f74	2026-11-16T15:12:03Z
 review:decidiq:2170:8002c6de	GREEN: unit 4655 OK vs baseline 4624, phpstan/vitest/eslint clean	session-20261116T150917-ab25a304	2026-11-16T15:12:15Z
 review:opencatalogi:2679:0e72dcc6	GREEN: no new failures, behaviour per change specs	session-20261116T150148-cf8c9aec	2026-11-16T15:12:36Z
+review:opencatalogi:2701:23a62678	GREEN: catalogs build matches its spec, no new failures	session-20261116T145634-daeb1424	2026-11-16T15:12:56Z
