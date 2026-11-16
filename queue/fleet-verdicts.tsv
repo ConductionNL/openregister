@@ -13920,3 +13920,6 @@ filinq	2122	d654b8fcba601f860babc8f6d2884726c44db10a	CONFLICT	worker-23:merge	me
 opencatalogi	1889	a5e55a557ee338785dc600d83abef5e2ce111343	RED	worker-13:merge-gate	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
 opencatalogi	2059	fa65b8475bfd5a1fc55c6e7914ca1801c99dc08e	RED	worker-13:merge-gate	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
 opencatalogi	2244	9178373d320ba947d116220fe88c0cd71550e833	RED	worker-13:merge-gate	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+opencatalogi	2650	e5e6d2907206ec8c9238e38ed6096efdb53467a8	CONFLICT	worker-13:merge	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Controller/PublicationsController.php 
+opencatalogi	2652	2348aeca1bad551e3e485ff6910acc05812c7e8c	CONFLICT	worker-13:merge	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+opencatalogi	2665	fbbdb9b4979ec70fcf42d330b65402fe8dd25534	CONFLICT	worker-13:merge	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json src/modals/catalog/CatalogModal.vue 
