@@ -1,0 +1,555 @@
+diff --git a/lib/Repair/FoldCasePropertiesOntoCase.php b/lib/Repair/FoldCasePropertiesOntoCase.php
+index ef132d7fee..cefa3b74cc 100644
+--- a/lib/Repair/FoldCasePropertiesOntoCase.php
++++ b/lib/Repair/FoldCasePropertiesOntoCase.php
+@@ -311,7 +311,7 @@ class FoldCasePropertiesOntoCase implements IRepairStep {
+ 	 * @throws Throwable When the read fails.
+ 	 */
+ 	private function readCase(object $objectService, string $caseId): mixed {
+-		$case = $objectService->find($caseId, ['_rbac' => false, '_multitenancy' => false]);
++		$case = $objectService->find(id: $caseId, _rbac: false, _multitenancy: false);
+ 		if (is_object($case) === true && method_exists($case, 'jsonSerialize') === true) {
+ 			$case = $case->jsonSerialize();
+ 		}
+diff --git a/tests/Support/InMemoryTaskEngine.php b/tests/Support/InMemoryTaskEngine.php
+index de517846b0..d249aee824 100644
+--- a/tests/Support/InMemoryTaskEngine.php
++++ b/tests/Support/InMemoryTaskEngine.php
+@@ -102,7 +102,9 @@ class InMemoryTaskEngine {
+ 	 *
+ 	 * @return array{results: array<int, array<string, mixed>>, total: int} The envelope.
+ 	 */
+-	public function inbox(object $criteria, int $limit, int $offset): array {
++	public function inbox(object $criteria, ?object $page = null): array {
++		$limit = ($page?->limit ?? 25);
++		$offset = ($page?->offset ?? 0);
+ 		$rows = array_values(
+ 			array_filter(
+ 				$this->tasks,
+diff --git a/tests/Unit/Command/DrainIntakeObjectsCommandEdgesTest.php b/tests/Unit/Command/DrainIntakeObjectsCommandEdgesTest.php
+index 16e2ec17b9..df16555c71 100644
+--- a/tests/Unit/Command/DrainIntakeObjectsCommandEdgesTest.php
++++ b/tests/Unit/Command/DrainIntakeObjectsCommandEdgesTest.php
+@@ -159,7 +159,12 @@ class DrainIntakeObjectsCommandEdgesTest extends TestCase {
+ 			 *
+ 			 * @return array<string, string>
+ 			 */
+-			public function submit(array $destination, ?array $mapping, array $payload, ?IUser $subject = null): array {
++			public function submit(object $submission, ?string $idempotencyKey = null): array {
++				$destination = $submission->writes[0];
++				$mapping = ($destination['mapping'] ?? null);
++				unset($destination['mapping']);
++				$payload = $submission->payload;
++				$subject = $submission->subject;
+ 				$this->submits[] = ['payload' => $payload, 'subject' => $subject];
+ 				if ($this->fails !== null) {
+ 					throw $this->fails;
+diff --git a/tests/Unit/Command/DrainIntakeObjectsCommandTest.php b/tests/Unit/Command/DrainIntakeObjectsCommandTest.php
+index 9d164af70c..c78b81e15d 100644
+--- a/tests/Unit/Command/DrainIntakeObjectsCommandTest.php
++++ b/tests/Unit/Command/DrainIntakeObjectsCommandTest.php
+@@ -114,7 +114,12 @@ class DrainIntakeObjectsCommandTest extends TestCase {
+ 			 *
+ 			 * @return array<string, mixed> The answer.
+ 			 */
+-			public function submit(array $destination, ?array $mapping, array $payload, ?IUser $subject = null): array {
++			public function submit(object $submission, ?string $idempotencyKey = null): array {
++				$destination = $submission->writes[0];
++				$mapping = ($destination['mapping'] ?? null);
++				unset($destination['mapping']);
++				$payload = $submission->payload;
++				$subject = $submission->subject;
+ 				$this->submits[] = ['destination' => $destination, 'payload' => $payload];
+ 				return ['id' => 'case-new', 'reference' => '2026-0001'];
+ 			}
+diff --git a/tests/Unit/Fixtures/FlowTimerEngineFake.php b/tests/Unit/Fixtures/FlowTimerEngineFake.php
+index f0f68d50b4..11dc300632 100644
+--- a/tests/Unit/Fixtures/FlowTimerEngineFake.php
++++ b/tests/Unit/Fixtures/FlowTimerEngineFake.php
+@@ -85,14 +85,13 @@ class FlowTimerEngineFake {
+ 	 *
+ 	 * @return FlowTimer
+ 	 */
+-	public function suspend(
+-		string $uuid,
+-		string $reason,
+-		?DateTimeInterface $until,
+-		?string $actor,
+-		?string $basis = null,
+-		?DateTimeInterface $now = null,
+-	): FlowTimer {
++	public function suspend(object $suspension, object $act): FlowTimer {
++		$uuid = $suspension->uuid;
++		$reason = $suspension->reason;
++		$until = $suspension->until;
++		$basis = $suspension->basis;
++		$actor = $act->actor;
++		$now = null;
+ 		$this->record(operation: 'suspend', args: ['uuid' => $uuid, 'reason' => $reason, 'until' => $until, 'actor' => $actor, 'basis' => $basis, 'now' => $now]);
+ 		return new FlowTimer();
+ 	}
+@@ -107,7 +106,11 @@ class FlowTimerEngineFake {
+ 	 *
+ 	 * @return FlowTimer
+ 	 */
+-	public function resume(string $uuid, ?string $reason, ?string $actor, ?DateTimeInterface $now = null): FlowTimer {
++	public function resume(object $decision, object $act): FlowTimer {
++		$uuid = $decision->uuid;
++		$reason = $decision->reason;
++		$actor = $act->actor;
++		$now = null;
+ 		$this->record(operation: 'resume', args: ['uuid' => $uuid, 'reason' => $reason, 'actor' => $actor, 'now' => $now]);
+ 		return new FlowTimer();
+ 	}
+@@ -124,14 +127,13 @@ class FlowTimerEngineFake {
+ 	 *
+ 	 * @return FlowTimer
+ 	 */
+-	public function extend(
+-		string $uuid,
+-		int $amount,
+-		string $unit,
+-		string $rationale,
+-		?string $actor,
+-		?DateTimeInterface $now = null,
+-	): FlowTimer {
++	public function extend(object $request, object $act): FlowTimer {
++		$uuid = $request->uuid;
++		$amount = $request->amount;
++		$unit = $request->unit;
++		$rationale = $request->rationale;
++		$actor = $act->actor;
++		$now = null;
+ 		$this->record(operation: 'extend', args: ['uuid' => $uuid, 'amount' => $amount, 'unit' => $unit, 'rationale' => $rationale, 'actor' => $actor]);
+ 		return new FlowTimer();
+ 	}
+@@ -148,14 +150,13 @@ class FlowTimerEngineFake {
+ 	 *
+ 	 * @return FlowTimer
+ 	 */
+-	public function extendWithOverride(
+-		string $uuid,
+-		int $amount,
+-		string $unit,
+-		string $rationale,
+-		string $actor,
+-		?DateTimeInterface $now = null,
+-	): FlowTimer {
++	public function extendWithOverride(object $request, object $act): FlowTimer {
++		$uuid = $request->uuid;
++		$amount = $request->amount;
++		$unit = $request->unit;
++		$rationale = $request->rationale;
++		$actor = (string)$act->actor;
++		$now = null;
+ 		$this->record(operation: 'extendWithOverride', args: ['uuid' => $uuid, 'amount' => $amount, 'unit' => $unit, 'rationale' => $rationale, 'actor' => $actor]);
+ 		return new FlowTimer();
+ 	}
+diff --git a/tests/Unit/Repair/FoldCasePropertiesOntoCaseTest.php b/tests/Unit/Repair/FoldCasePropertiesOntoCaseTest.php
+index 768996c26e..b86bd7d290 100644
+--- a/tests/Unit/Repair/FoldCasePropertiesOntoCaseTest.php
++++ b/tests/Unit/Repair/FoldCasePropertiesOntoCaseTest.php
+@@ -82,8 +82,8 @@ final class FoldCasePropertiesOntoCaseTest extends TestCase {
+ 				return ($this->rows[$query['filters']['schema']] ?? []);
+ 			}
+ 
+-			public function find(string $id, array $options): mixed {
+-				$this->finds[] = [$id, $options];
++			public function find(string $id, ?object $options = null, bool $_rbac = true, bool $_multitenancy = true): mixed {
++				$this->finds[] = [$id, ['_rbac' => $_rbac, '_multitenancy' => $_multitenancy]];
+ 				$case = ($this->cases[$id] ?? null);
+ 				if ($case instanceof \Throwable) {
+ 					throw $case;
+@@ -92,7 +92,9 @@ final class FoldCasePropertiesOntoCaseTest extends TestCase {
+ 				return $case;
+ 			}
+ 
+-			public function saveObject(string $schema, array $object, array $options): void {
++			public function saveObject(array $object, ?object $options = null, bool $_rbac = true, bool $_multitenancy = true): void {
++				$schema = $options?->target->schema;
++				$options = ['_rbac' => $_rbac, '_multitenancy' => $_multitenancy];
+ 				if (($object['id'] ?? '') === 'c-unsaveable') {
+ 					throw new RuntimeException('validation failed');
+ 				}
+diff --git a/tests/Unit/Service/Access/OpenRegisterGrantsGatewayLookupTest.php b/tests/Unit/Service/Access/OpenRegisterGrantsGatewayLookupTest.php
+index c9eedd257c..49cd66902d 100644
+--- a/tests/Unit/Service/Access/OpenRegisterGrantsGatewayLookupTest.php
++++ b/tests/Unit/Service/Access/OpenRegisterGrantsGatewayLookupTest.php
+@@ -88,7 +88,11 @@ class OpenRegisterGrantsGatewayLookupTest extends TestCase {
+ 			 *
+ 			 * @return mixed The dictated answer.
+ 			 */
+-			public function provenanceFor($schema = null, $actions = [], $userId = null, $object = null): mixed {
++			public function provenanceFor(object $request): mixed {
++				$schema = $request->schema;
++				$actions = $request->actions;
++				$userId = $request->userId;
++				$object = $request->object;
+ 				$this->asked[] = compact('schema', 'actions', 'userId', 'object');
+ 				return $this->answer;
+ 			}
+diff --git a/tests/Unit/Service/Access/OpenRegisterGrantsGatewayTest.php b/tests/Unit/Service/Access/OpenRegisterGrantsGatewayTest.php
+index 11ad42d231..27a03b520f 100644
+--- a/tests/Unit/Service/Access/OpenRegisterGrantsGatewayTest.php
++++ b/tests/Unit/Service/Access/OpenRegisterGrantsGatewayTest.php
+@@ -161,7 +161,11 @@ class OpenRegisterGrantsGatewayTest extends TestCase {
+ 			 *
+ 			 * @return array<string, mixed> Never returns.
+ 			 */
+-			public function provenanceFor($schema = null, $actions = [], $userId = null, $object = null): array {
++			public function provenanceFor(object $request): array {
++				$schema = $request->schema;
++				$actions = $request->actions;
++				$userId = $request->userId;
++				$object = $request->object;
+ 				throw new RuntimeException('the rbac tables are unreachable');
+ 			}
+ 		};
+@@ -229,7 +233,11 @@ class OpenRegisterGrantsGatewayTest extends TestCase {
+ 			 *
+ 			 * @return array<string, mixed> The provenance.
+ 			 */
+-			public function provenanceFor($schema = null, $actions = [], $userId = null, $object = null): array {
++			public function provenanceFor(object $request): array {
++				$schema = $request->schema;
++				$actions = $request->actions;
++				$userId = $request->userId;
++				$object = $request->object;
+ 				return ['update' => $this->record];
+ 			}
+ 		};
+@@ -317,7 +325,11 @@ class OpenRegisterGrantsGatewayTest extends TestCase {
+ 				 *
+ 				 * @return array<string, mixed> The provenance.
+ 				 */
+-				public function provenanceFor($schema = null, $actions = [], $userId = null, $object = null): array {
++				public function provenanceFor(object $request): array {
++					$schema = $request->schema;
++					$actions = $request->actions;
++					$userId = $request->userId;
++					$object = $request->object;
+ 					return ['update' => ['action' => 'update', 'granted' => $this->granted, 'source' => 'role']];
+ 				}
+ 			};
+diff --git a/tests/Unit/Service/BeschikkingServiceTest.php b/tests/Unit/Service/BeschikkingServiceTest.php
+index aac2a9bc03..e6e6cf24a9 100644
+--- a/tests/Unit/Service/BeschikkingServiceTest.php
++++ b/tests/Unit/Service/BeschikkingServiceTest.php
+@@ -372,7 +372,10 @@ class BeschikkingServiceTest extends TestCase {
+ 			 *
+ 			 * @return int The reserved value.
+ 			 */
+-			public function reserveNext(int $registerId, int $schemaId, string $scopeKey): int {
++			public function reserveNext(object $sequence): int {
++				$registerId = $sequence->registerId;
++				$schemaId = $sequence->schemaId;
++				$scopeKey = $sequence->scopeKey;
+ 				$value = ($this->next[$scopeKey] ?? 1);
+ 				$this->next[$scopeKey] = ($value + 1);
+ 
+diff --git a/tests/Unit/Service/CasePlanModelLookupTest.php b/tests/Unit/Service/CasePlanModelLookupTest.php
+index 2aa96c18ea..3326175581 100644
+--- a/tests/Unit/Service/CasePlanModelLookupTest.php
++++ b/tests/Unit/Service/CasePlanModelLookupTest.php
+@@ -95,7 +95,12 @@ final class CasePlanModelLookupTest extends TestCase {
+ 			 *
+ 			 * @return array<string, mixed>
+ 			 */
+-			public function createPlanAsSystem(string $objectUuid, ?int $registerId, ?int $schemaId, array $definition, string $app): array {
++			public function createPlanAsSystem(object $write): array {
++				$objectUuid = $write->anchor->objectUuid;
++				$registerId = $write->anchor->registerId;
++				$schemaId = $write->anchor->schemaId;
++				$definition = $write->definition;
++				$app = $write->app;
+ 				unset($objectUuid, $registerId, $schemaId, $definition, $app);
+ 				return [];
+ 			}
+diff --git a/tests/Unit/Service/CasePlanProjectionServiceTest.php b/tests/Unit/Service/CasePlanProjectionServiceTest.php
+index 8f33a834ce..f2035db562 100644
+--- a/tests/Unit/Service/CasePlanProjectionServiceTest.php
++++ b/tests/Unit/Service/CasePlanProjectionServiceTest.php
+@@ -327,7 +327,12 @@ final class CasePlanProjectionServiceTest extends TestCase {
+ 			 *
+ 			 * @return array<string, mixed> An empty plan.
+ 			 */
+-			public function createPlanAsSystem(string $objectUuid, ?int $registerId, ?int $schemaId, array $definition, string $app): array {
++			public function createPlanAsSystem(object $write): array {
++				$objectUuid = $write->anchor->objectUuid;
++				$registerId = $write->anchor->registerId;
++				$schemaId = $write->anchor->schemaId;
++				$definition = $write->definition;
++				$app = $write->app;
+ 				$this->calls[] = compact('objectUuid', 'registerId', 'schemaId', 'definition', 'app');
+ 
+ 				return [];
+@@ -589,7 +594,12 @@ final class CasePlanProjectionServiceTest extends TestCase {
+ 			 *
+ 			 * @return array<string, mixed> An empty plan.
+ 			 */
+-			public function createPlanAsSystem(string $objectUuid, ?int $registerId, ?int $schemaId, array $definition, string $app): array {
++			public function createPlanAsSystem(object $write): array {
++				$objectUuid = $write->anchor->objectUuid;
++				$registerId = $write->anchor->registerId;
++				$schemaId = $write->anchor->schemaId;
++				$definition = $write->definition;
++				$app = $write->app;
+ 				unset($objectUuid, $registerId, $schemaId, $app);
+ 				$this->definitions[] = $definition;
+ 
+diff --git a/tests/Unit/Service/Consultation/ExternalConsultationLinkServiceTest.php b/tests/Unit/Service/Consultation/ExternalConsultationLinkServiceTest.php
+index 3f68e10a93..d22508e34d 100644
+--- a/tests/Unit/Service/Consultation/ExternalConsultationLinkServiceTest.php
++++ b/tests/Unit/Service/Consultation/ExternalConsultationLinkServiceTest.php
+@@ -54,10 +54,10 @@ final class EclFakeNoteService {
+ 	/**
+ 	 * @return array<int, array<string, mixed>>
+ 	 */
+-	public function getNotesForObject(string $objectUuid, int $limit = 50, int $offset = 0, ?string $visibility = null): array {
+-		unset($objectUuid, $limit, $offset, $visibility);
++	public function listNotes(object $query): array {
++		unset($query);
+ 		return $this->notes;
+-	}//end getNotesForObject()
++	}//end listNotes()
+ }//end class
+ 
+ /**
+@@ -537,7 +537,7 @@ class ExternalConsultationLinkServiceTest extends TestCase {
+ 			/**
+ 			 * @return array<int, array<string, mixed>>
+ 			 */
+-			public function getNotesForObject(string $objectUuid, int $limit = 50): array {
++			public function listNotes(object $query): array {
+ 				throw new \RuntimeException('database gone');
+ 			}
+ 		};
+diff --git a/tests/Unit/Service/DocumentSeries/DocumentSeriesNumbererEdgeCasesTest.php b/tests/Unit/Service/DocumentSeries/DocumentSeriesNumbererEdgeCasesTest.php
+index 1efd7bd171..e0a5b51046 100644
+--- a/tests/Unit/Service/DocumentSeries/DocumentSeriesNumbererEdgeCasesTest.php
++++ b/tests/Unit/Service/DocumentSeries/DocumentSeriesNumbererEdgeCasesTest.php
+@@ -115,7 +115,10 @@ class DocumentSeriesNumbererEdgeCasesTest extends TestCase {
+ 			 *
+ 			 * @return int|string The answer.
+ 			 */
+-			public function reserveNext(int $registerId, int $schemaId, string $scopeKey): int|string {
++			public function reserveNext(object $sequence): int|string {
++				$registerId = $sequence->registerId;
++				$schemaId = $sequence->schemaId;
++				$scopeKey = $sequence->scopeKey;
+ 				$this->calls[] = [$registerId, $schemaId, $scopeKey];
+ 
+ 				return $this->answer;
+diff --git a/tests/Unit/Service/DocumentSeries/DocumentSeriesNumbererTest.php b/tests/Unit/Service/DocumentSeries/DocumentSeriesNumbererTest.php
+index f857d10b4d..160aa286fe 100644
+--- a/tests/Unit/Service/DocumentSeries/DocumentSeriesNumbererTest.php
++++ b/tests/Unit/Service/DocumentSeries/DocumentSeriesNumbererTest.php
+@@ -56,7 +56,10 @@ class InMemorySequences {
+ 	 *
+ 	 * @return int The reserved value.
+ 	 */
+-	public function reserveNext(int $registerId, int $schemaId, string $scopeKey): int {
++	public function reserveNext(object $sequence): int {
++		$registerId = $sequence->registerId;
++		$schemaId = $sequence->schemaId;
++		$scopeKey = $sequence->scopeKey;
+ 		$key = $registerId.'/'.$schemaId.'/'.$scopeKey;
+ 		$value = ($this->next[$key] ?? 1);
+ 		$this->next[$key] = ($value + 1);
+@@ -264,7 +267,10 @@ class DocumentSeriesNumbererTest extends TestCase {
+ 			 *
+ 			 * @return int Zero.
+ 			 */
+-			public function reserveNext(int $registerId, int $schemaId, string $scopeKey): int {
++			public function reserveNext(object $sequence): int {
++				$registerId = $sequence->registerId;
++				$schemaId = $sequence->schemaId;
++				$scopeKey = $sequence->scopeKey;
+ 				return 0;
+ 			}//end reserveNext()
+ 		};
+diff --git a/tests/Unit/Service/DuplicatePolicyTest.php b/tests/Unit/Service/DuplicatePolicyTest.php
+index c133a6bc99..586ad68fce 100644
+--- a/tests/Unit/Service/DuplicatePolicyTest.php
++++ b/tests/Unit/Service/DuplicatePolicyTest.php
+@@ -113,7 +113,11 @@ class DuplicatePolicyTest extends TestCase {
+ 			 *
+ 			 * @return array<int, array<string, mixed>> The matches.
+ 			 */
+-			public function checkCandidate($register, $schema, array $candidate, ?array $matchRules = null, ?float $threshold = null): array {
++			public function checkCandidate(object $request, array $candidate): array {
++				$register = $request->register;
++				$schema = $request->schema;
++				$matchRules = $request->matchRules;
++				$threshold = $request->threshold;
+ 				return $this->matches;
+ 			}
+ 
+diff --git a/tests/Unit/Service/Intake/DuplicatePolicyDeclarationTest.php b/tests/Unit/Service/Intake/DuplicatePolicyDeclarationTest.php
+index 847020d9b6..985b1f5575 100644
+--- a/tests/Unit/Service/Intake/DuplicatePolicyDeclarationTest.php
++++ b/tests/Unit/Service/Intake/DuplicatePolicyDeclarationTest.php
+@@ -73,7 +73,9 @@ class DuplicatePolicyDeclarationTest extends TestCase {
+ 			 *
+ 			 * @return mixed
+ 			 */
+-			public function checkCandidate(string $register, string $schema, array $candidate): mixed {
++			public function checkCandidate(object $request, array $candidate): mixed {
++				$register = $request->register;
++				$schema = $request->schema;
+ 				$this->candidates[] = ['register' => $register, 'schema' => $schema, 'candidate' => $candidate];
+ 				return $this->matches;
+ 			}
+diff --git a/tests/Unit/Service/ProcessMining/WorkingClockTest.php b/tests/Unit/Service/ProcessMining/WorkingClockTest.php
+index f94945e644..93e24304b8 100644
+--- a/tests/Unit/Service/ProcessMining/WorkingClockTest.php
++++ b/tests/Unit/Service/ProcessMining/WorkingClockTest.php
+@@ -303,7 +303,10 @@ class FakeEngineCalculator {
+ 	 *
+ 	 * @return float The working hours.
+ 	 */
+-	public function elapsedBusinessHours(\DateTimeInterface $from, \DateTimeInterface $to, object $calendar): float {
++	public function elapsedBusinessHours(object $span): float {
++		$from = $span->from;
++		$to = $span->to;
++		$calendar = $span->calendar;
+ 		if ($this->refuse === true) {
+ 			throw new RuntimeException('no calendar for that year');
+ 		}
+diff --git a/tests/Unit/Service/Sharing/CaseAccessLinkServiceTest.php b/tests/Unit/Service/Sharing/CaseAccessLinkServiceTest.php
+index 634d48c8f4..a7133fe5ab 100644
+--- a/tests/Unit/Service/Sharing/CaseAccessLinkServiceTest.php
++++ b/tests/Unit/Service/Sharing/CaseAccessLinkServiceTest.php
+@@ -73,15 +73,14 @@ final class CalFakeAccessLinkService {
+ 	 *
+ 	 * @return array<string, mixed>
+ 	 */
+-	public function mint(
+-		string $userId,
+-		string $subjectType,
+-		string $subjectId,
+-		array $capabilities = [],
+-		?string $expiresAt = null,
+-		?string $password = null,
+-		?string $label = null,
+-	): array {
++	public function mint(object $request): array {
++		$userId = $request->minter;
++		$subjectType = $request->subjectType;
++		$subjectId = $request->subjectId;
++		$capabilities = $request->terms->capabilities;
++		$expiresAt = $request->terms->expiresAt;
++		$password = $request->terms->password;
++		$label = $request->terms->label;
+ 		if ($this->throwOnMint === true) {
+ 			throw new \RuntimeException('no link for you');
+ 		}
+diff --git a/tests/Unit/Service/Task/EngineInboxQueryTest.php b/tests/Unit/Service/Task/EngineInboxQueryTest.php
+index c3766e4aee..07ee3c6950 100644
+--- a/tests/Unit/Service/Task/EngineInboxQueryTest.php
++++ b/tests/Unit/Service/Task/EngineInboxQueryTest.php
+@@ -95,7 +95,9 @@ class EngineInboxQueryTest extends TestCase {
+ 			 *
+ 			 * @return mixed
+ 			 */
+-			public function inbox(TaskInboxCriteria $criteria, int $limit, int $offset): mixed {
++			public function inbox(object $criteria, ?object $page = null): mixed {
++				$limit = ($page?->limit ?? 25);
++				$offset = ($page?->offset ?? 0);
+ 				$this->calls[] = [$criteria, $limit, $offset];
+ 				if ($this->answer instanceof \Throwable) {
+ 					throw $this->answer;
+diff --git a/tests/Unit/Service/Task/EngineTaskInboxCaseAndInstanceTest.php b/tests/Unit/Service/Task/EngineTaskInboxCaseAndInstanceTest.php
+index f4f88eedd3..55c4903fa9 100644
+--- a/tests/Unit/Service/Task/EngineTaskInboxCaseAndInstanceTest.php
++++ b/tests/Unit/Service/Task/EngineTaskInboxCaseAndInstanceTest.php
+@@ -76,7 +76,9 @@ class EngineTaskInboxCaseAndInstanceTest extends TestCase {
+ 			 *
+ 			 * @return array<string, mixed> The envelope.
+ 			 */
+-			public function inbox(object $criteria, int $limit, int $offset): array {
++			public function inbox(object $criteria, ?object $page = null): array {
++				$limit = ($page?->limit ?? 25);
++				$offset = ($page?->offset ?? 0);
+ 				$this->seenCriteria = $criteria;
+ 				$this->seenLimit    = $limit;
+ 
+diff --git a/tests/Unit/Service/Task/EngineTaskInboxTest.php b/tests/Unit/Service/Task/EngineTaskInboxTest.php
+index e58758d54b..f2a9389c3b 100644
+--- a/tests/Unit/Service/Task/EngineTaskInboxTest.php
++++ b/tests/Unit/Service/Task/EngineTaskInboxTest.php
+@@ -112,7 +112,9 @@ class EngineTaskInboxTest extends TestCase {
+ 			 *
+ 			 * @return mixed The rows.
+ 			 */
+-			public function inbox(object $criteria, int $limit, int $offset): mixed {
++			public function inbox(object $criteria, ?object $page = null): mixed {
++				$limit = ($page?->limit ?? 25);
++				$offset = ($page?->offset ?? 0);
+ 				$this->seenCriteria = $criteria;
+ 				$this->seenLimit    = $limit;
+ 
+@@ -502,7 +504,9 @@ class EngineTaskInboxTest extends TestCase {
+ 			 *
+ 			 * @return array<string, mixed> The page.
+ 			 */
+-			public function inbox(object $criteria, int $limit, int $offset): array {
++			public function inbox(object $criteria, ?object $page = null): array {
++				$limit = ($page?->limit ?? 25);
++				$offset = ($page?->offset ?? 0);
+ 				if ($this->first === true) {
+ 					$this->first = false;
+ 					throw new RuntimeException('engine down');
+diff --git a/tests/Unit/Service/Task/OnboardingStepsRowsTest.php b/tests/Unit/Service/Task/OnboardingStepsRowsTest.php
+index a8c1aaa5e3..e10e2fa1cc 100644
+--- a/tests/Unit/Service/Task/OnboardingStepsRowsTest.php
++++ b/tests/Unit/Service/Task/OnboardingStepsRowsTest.php
+@@ -74,7 +74,9 @@ class OnboardingStepsRowsTest extends TestCase {
+ 			 *
+ 			 * @return mixed The answer.
+ 			 */
+-			public function inbox(object $criteria, int $limit, int $offset): mixed {
++			public function inbox(object $criteria, ?object $page = null): mixed {
++				$limit = ($page?->limit ?? 25);
++				$offset = ($page?->offset ?? 0);
+ 				$this->seen = $criteria;
+ 				if ($this->answer instanceof \Throwable) {
+ 					throw $this->answer;
+diff --git a/tests/Unit/Service/Timeline/CaseTimelineTest.php b/tests/Unit/Service/Timeline/CaseTimelineTest.php
+index 7445d4d571..f29f7924b6 100644
+--- a/tests/Unit/Service/Timeline/CaseTimelineTest.php
++++ b/tests/Unit/Service/Timeline/CaseTimelineTest.php
+@@ -212,12 +212,10 @@ class FakeTimelineReader {
+ 	 *
+ 	 * @return array<int, mixed> The entries.
+ 	 */
+-	public function listForObject(
+-		mixed $object,
+-		?string $visibility = null,
+-		int $limit = 50,
+-		int $offset = 0,
+-	): array {
++	public function listForObject(mixed $object, ?object $query = null): array {
++		$visibility = ($query?->filters['visibility'] ?? null);
++		$limit = ($query?->limit ?? 50);
++		$offset = ($query?->offset ?? 0);
+ 		if ($this->throws === true) {
+ 			throw new RuntimeException('the reader is a release behind');
+ 		}
+diff --git a/tests/Unit/Service/Zaakdossier/FileRestrictionMirrorTest.php b/tests/Unit/Service/Zaakdossier/FileRestrictionMirrorTest.php
+index 8b7269cf43..04b84350b8 100644
+--- a/tests/Unit/Service/Zaakdossier/FileRestrictionMirrorTest.php
++++ b/tests/Unit/Service/Zaakdossier/FileRestrictionMirrorTest.php
+@@ -55,7 +55,11 @@ class FileRestrictionMirrorTest extends TestCase {
+ 			/** @var list<array<int, mixed>> */
+ 			public array $calls = [];
+ 
+-			public function restrict(int $fileId, array $users, array $groups, string $reason): void {
++			public function restrict(object $request): void {
++				$fileId = $request->fileId;
++				$users = $request->users;
++				$groups = $request->groups;
++				$reason = $request->reason;
+ 				$this->calls[] = ['restrict', $fileId, $users, $groups, $reason];
+ 			}
+ 
