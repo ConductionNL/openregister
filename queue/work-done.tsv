@@ -17010,3 +17010,4 @@ fix:versioniq:721:e012b413	CONFLICT resolved (l10n union, js rebuilt); new head 
 fix:hermiq:1808:d92c1c64	conflict resolved (sbom regenerated), pushed f027dd39; REVERIFY queued (merge off on this account)	session-20261116T173342-1d8a0fb9	2026-11-16T17:59:10Z
 cover:stackiq:9ac19b3amf894:59f569b2	deferred: stackiq has 46 open PRs	session-20261116T173227-109a6e00	2026-11-16T17:59:35Z
 review:hermiq:1150:9ed6a46b	RED: 5 vitest failures in admin-root and llm-provider-modal specs	session-20261116T165351-3ccaad0e	2026-11-16T18:00:02Z
+fix:stackiq:1978:723683e2	development merged in clean, pushed edde87e6; REVERIFY queued	session-20261116T171035-683856c3	2026-11-16T18:00:23Z
