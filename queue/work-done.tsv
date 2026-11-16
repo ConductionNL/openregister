@@ -18039,3 +18039,5 @@ fix:buildiq:1683:4ed47e29	merged development in, pushed f4629c1e; merge lock hel
 merge:keepiq:1826:1d5a39c0	merge3 tree of 4 keepiq PRs: merged=3 red=0 fail=0 skip=0; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-16T22:01:58Z
 fix:filinq:2072:268b3e0d	failed: permission (landing review of own commit refused); fix pushed as 65ad1d32, REVERIFY queued	session-20261116T211553-db0d2c78	2026-11-16T22:02:03Z
 merge:shillinq:1899:1682266d	merge3 tree of 4 shillinq PRs: merged=3 red=0 fail=0 skip=0; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-16T22:02:46Z
+merge:larpinq:1078:252d08ef	merge3 tree of 1 larpinq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-16T22:03:20Z
+build:opencatalogi:publication-detail-for-the-portal:c4	PR #2756 (head d7a2df60): built 2.1, 5.1, 6.1 and the code of 1.2 and 5.2; left 1.2/5.2 e2e specs, 7.2 gate-19 and 7.3 composer check:strict (root refused); unit 6040 tests, no failures beyond development's 78	session-20261116T212751-a1c157b2	2026-11-16T22:04:41Z
