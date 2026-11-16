@@ -16120,6 +16120,7 @@ fix:shillinq:2081:5c4b6e15	no change needed: up to date with development, confli
 fix:shillinq:2086:bda4253e	no change needed: merges clean on current development, conflict was tree-only; merge lock held elsewhere, REVERIFY queued	session-20261116T101050-f149dcd6	2026-11-16T10:21:28Z
 fix:larpinq:1066:93d7998b	failed: lock change is dev-only (phpstan, ocp, hydra-gates, polyfills); regen-sbom.sh leaves sbom.cdx.json unchanged (--omit=dev), so the sbom gate rule cannot be met without a no-op sbom edit	session-20261116T101200-ccfd103b	2026-11-16T10:21:32Z
 merge:decidiq:2203:b6f70c84	unmeasured: static.developer.overheid.nl (both PRs reviewed APPROVE, tree green 4641 tests, 0 new failures; local lander takes them)	session-20261116T101250-8aeb7975	2026-11-16T10:21:35Z
+merge:thematiq:1556:2b6c21f3	cloud tree of 1 thematiq PRs: merged=0 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0 (gate: sbom not regenerated)	session-20261116T101101-e7e34372	2026-11-16T10:21:43Z
 verify:learniq:2562:a40eaf65	GREEN #2562 (deps+SBOM; php 6868/1 inherited, js 9 inherited, no new)	session-20261116T101239-227210a0	2026-11-16T10:22:01Z
 merge:opencatalogi:1893:b1a47d92	unmeasured: api.osv.dev; tree 5 IN (2669 RED cull, 2654/2671 CONFLICT, 2682 MOVED); 2415 gate RED (spdxheaders 5->4), 2541 REQUEST_CHANGES (repair step without version bump); merged 0	session-20261116T101220-07929334	2026-11-16T10:22:09Z
 review:dossiq:6593:063f50b3	GREEN: refactor keeps behaviour; suite 19 failures = baseline	session-20261116T101405-cc6d1a17	2026-11-16T10:22:52Z
