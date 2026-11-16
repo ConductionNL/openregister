@@ -15483,3 +15483,4 @@ fix:integriq:3137:b5352821	failed: not fixable in integriq; the PR exists only t
 verify:learniq:2551:45983442	2551 RED: 8 new failures in its own new tests on development	session-20261116T062050-add210c3	2026-11-16T06:41:00Z
 fix:learniq:2484:32d62246	fixed: write groups restated + test; pushed da699898	session-20261116T062126-9d7735e0	2026-11-16T06:41:33Z
 verify:stackiq:1988:3f051d4f	GREEN 1988: no new failures (baseline 1 inherited)	session-20261116T062109-81fc252e	2026-11-16T06:41:54Z
+review:learniq:2507:334d2575	GREEN: matches practical-exam-assessment specs; unit 6901, 2 inherited failures, phpstan clean	session-20261116T062117-388e9de2	2026-11-16T06:42:05Z
