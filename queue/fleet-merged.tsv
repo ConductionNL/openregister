@@ -4827,3 +4827,4 @@ opencatalogi	2756	d7a2df601f100243b235b392858ee8fd16eaf3f6	SKIP	worker-34	no APP
 versioniq	751	c7c576b43d4a32cd4be8e89bc2625a036ea52fba	FAIL	worker-03	{"message":"Pull Request has merge conflicts","documentation_url":"https://docs.github.com/rest/pulls/pulls#merge-a-pull-request","status":"405"}gh: Pull Request has merge conflicts (HTTP 405)
 versioniq	753	f4103ca1ca2f3b0b58450aa19154d52dab9d32f4	FAIL	worker-03	{"message":"Pull Request has merge conflicts","documentation_url":"https://docs.github.com/rest/pulls/pulls#merge-a-pull-request","status":"405"}gh: Pull Request has merge conflicts (HTTP 405)
 keepiq	1867	4219cdbf2d57227a45c17d4a595526d4fc2127b1	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.58 holds at 3.65
+opencatalogi	2756	d7a2df601f100243b235b392858ee8fd16eaf3f6	RED	merge3	GATE RED floor: overall: 4.89 -> 4.87; unit_complexity: 4.88 -> 4.86; unit_interfacing: 4.81 -> 4.74; module_coupling: 5.44 -> 5.40
