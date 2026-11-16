@@ -16413,3 +16413,4 @@ fix:integriq:3589:604f71b5	absolute floor restored (3.54 -> 3.56) at 58d8983d; R
 fix:buildiq:1583:df8986ae	unmeasured: static.developer.overheid.nl (fixed titles + complexity floor, new head cb1e01bf, APPROVE recorded, REVERIFY queued)	session-20261116T105426-4e0b8984	2026-11-16T11:37:19Z
 fix:opencatalogi:2673:6dd0d200	conflict resolved, pushed 61f25128; merge lock held elsewhere, REVERIFY queued	session-20261116T113732-23c591e6	2026-11-16T11:40:55Z
 merge:integriq:2562:d1c7280f	cloud tree of 9 integriq PRs: merged=0 red=3 fail=0 skip=0; conflict 0, lint 0, red 0, moved 3, done 3	session-20261116T104954-a428a9fd	2026-11-16T11:43:18Z
+merge:shillinq:3078:c98b9cd1	unmeasured: static.developer.overheid.nl (#3078 approved, left for the local lander)	session-20261116T104018-e4b2d192	2026-11-16T11:43:26Z
