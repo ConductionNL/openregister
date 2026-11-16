@@ -17202,3 +17202,4 @@ merge:filinq:2146:e3601822	cloud tree of 1 filinq PRs: merged=1 red=0 fail=0 ski
 build:buildiq:forms-live-values-and-checks	deferred: buildiq has 53 open PRs	session-20261116T183806-fd5587ea	2026-11-16T18:47:53Z
 measure:buildiq:20261116h18	php 92.67% js 95.85% at b5702f9b	session-20261116T181429-b5d49a13	2026-11-16T18:48:26Z
 fix:shillinq:3110:e7c788ad	merged development in, new head 8babcbcb; merge lock held elsewhere, REVERIFY queued	session-20261116T184217-f2c5e14b	2026-11-16T18:48:34Z
+review:dossiq:5398:1ba53a17	RED: lock uninstallable, psalm 7.5 needs php>=8.3.16 vs platform pin 8.3	session-20261116T184836-f6622adb	2026-11-16T18:49:53Z
