@@ -16581,3 +16581,4 @@ review:opencatalogi:2682:d8b519df	GREEN: plain-language build matches its spec, 
 review:shillinq:2096:a1c73fc3	GREEN: unit 12235 OK, vitest 31 OK, no behaviour weakening	session-20261116T151016-54cee2b8	2026-11-16T15:16:22Z
 review:shillinq:2083:4b847a69	GREEN	session-20261116T144202-f2b26030	2026-11-16T15:16:43Z
 fix:hermiq:1174:296b7354	failed: gate false RED - dev-only lock bump leaves sbom unchanged (regen --check current), merge_gate requires an sbom diff; branch updated to 0ac44763	session-20261116T150749-2f742a8d	2026-11-16T15:17:28Z
+fix:larpinq:1050:5f2419c4	conflict resolved (merged development, kept both sides), pushed f3c30b43; REVERIFY queued	session-20261116T145220-87e5504e	2026-11-16T15:17:46Z
