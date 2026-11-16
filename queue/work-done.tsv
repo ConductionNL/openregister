@@ -18363,3 +18363,4 @@ verify:hermiq:1741:6b894775	CONFLICT #1741 (RunNowController, HermiqToolProvider
 verify:buildiq:1649:64837d79	CONFLICT #1649 (l10n, AutomationEditDialog.vue)	session-20261116T232519-f84cca9a	2026-11-16T23:31:00Z
 verify:buildiq:1262:92cd509b	CONFLICT: lock call sites vs development	session-20261116T231848-eaef2e51	2026-11-16T23:31:16Z
 verify:decidiq:2195:0dfa2458	CONFLICT #2195 (manifest + spec)	session-20261116T224246-d9bde508	2026-11-16T23:31:26Z
+verify:buildiq:1654:1a1c94ae	1654 CONFLICT	session-20261116T224608-d6967eb8	2026-11-16T23:31:46Z
