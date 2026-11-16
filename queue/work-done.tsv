@@ -15580,3 +15580,4 @@ fix:hermiq:1739:5cf3f827	failed: @spec tags on headline()/noteType() added (head
 fix:shillinq:2070:b00d1ffe	fixed: who-may-block back to the spec's bookkeeper (caller RBAC), new head 29369cd1	session-20261116T062123-fa6fb6b0	2026-11-16T07:03:33Z
 fix:hermiq:1751:1d2fbb88	nothing to fix: branch already contains development and merges clean alone; the CONFLICT is with another PR's l10n/en.js|en.json lines in the tree, verify it alone or after that PR lands	session-20261116T062050-3a7e109c	2026-11-16T07:03:56Z
 review:buildiq:1624:ae655c59	GREEN: build PR, plan gate fail-closed, no new failures	session-20261116T062120-691af8f7	2026-11-16T07:04:01Z
+review:shillinq:3088:27e4a523	GREEN: unit 12244 OK, 1 inherited vitest failure; matches change specs	session-20261116T062050-7d5ce0d6	2026-11-16T07:04:09Z
