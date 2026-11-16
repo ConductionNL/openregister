@@ -16405,3 +16405,4 @@ fix:integriq:3628:858c7a5d	fixed floor: contracts for SMS/NotifyNL mail callers,
 merge:hermiq:1808:561330f5	unmeasured: static.developer.overheid.nl	session-20261116T105625-05822e4f	2026-11-16T11:34:13Z
 merge:integriq:3671:30723070	cloud tree of 1 integriq PRs: merged=0 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T104954-a428a9fd	2026-11-16T11:34:53Z
 lane:arch5:stackiq:next-stackiq:c7	partial: round 3 not started; tree #1992+#1990+#1991 built green (3724 tests, 0 new) and APPROVE reviews recorded, but nothing landed: #1992 merge gate unmeasured: static.developer.overheid.nl; #1990/#1991 red until #1992 lands; requeued as :c8	session-20261116T105659-4edb3184	2026-11-16T11:35:11Z
+fix:integriq:3574:65269c9d	failed: floor raised 3.54->3.55, still below 3.56 after 45 min; pushed 538c9e9b, REVERIFY queued	session-20261116T105625-9a95dd96	2026-11-16T11:35:33Z
