@@ -16896,3 +16896,4 @@ build:portaliq:zuiddrecht-resident-pages-match-the-boards	already done: only liv
 build:portaliq:steps-as-bars	already done: tasks 1-3 on development; task 4 is cross-repo learniq + live check	session-20261116T173306-f68895a7	2026-11-16T17:42:10Z
 cover:filinq:7a9ef677:aae6d66c	deferred: filinq has 49 open PRs	session-20261116T174053-4a550291	2026-11-16T17:42:58Z
 build:shillinq:tax-vat-number-check	already done: built on development 2026-10-02 (route vat-number-checks, FoldCustomerVatId, e2e spec); only 3.2 live e2e run left	session-20261116T173217-7353a3fb	2026-11-16T17:42:55Z
+build:shillinq:integration-config-to-openconnector	already done: built on development 2026-08-20 (REQ-ICO-001..007); only the live e2e run is left unchecked	session-20261116T173217-7353a3fb	2026-11-16T17:43:18Z
