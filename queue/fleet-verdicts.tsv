@@ -13621,3 +13621,4 @@ planninq	918	90a6ddf09f993b4de614cf5d5233d0289f44b22e	RED	merge8:merge-gate	GATE
 planninq	1068	40deb423f1222b7b1faa5b7624b9c58ff150df52	RED	merge8:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
 planninq	1070	e52ec55b0363caa130a4ebc3c2d99589f9c893ca	RED	merge8:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
 shillinq	3078	5300990f8a86a017222fe70739c51c73489542ae	REVERIFY	worker-18	both saveObject calls moved to ObjectSaveOptions(target, uuid); test save mocks updated to the new signature; phpstan clean; unit suite 12272 tests, 0 failures (was 13); new head db907ca5ddb5588d0e74b60c458ed9d98223ac83, verify it
+hermiq	1754	69e02cc70605b287770a0f70358780f4a4861b6e	GREEN	worker-56:review	implements openspec tools-browser-and-computer-use; non-computer tool classification/approval paths unchanged; new endpoints admin-only or reviewer-guarded; unit 5339 OK (dev 5291 OK), vitest touched 31/31
