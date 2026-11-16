@@ -15941,6 +15941,12 @@ fix:portaliq:663:7709e801	conflict resolved, pushed 6dc142e0; merge lock busy, R
 review:larpinq:1060:9f9d2d55	GREEN: larpinq #1060 at 9f9d2d5, unit 1025 ok, vitest 627 ok, no blockers	session-20261116T084858-bfae751a	2026-11-16T09:00:19Z
 fix:portaliq:1997:3d645d7e	conflict fixed, pushed 46fd8f94; APPROVE recorded; not landed: merge gate unmeasured (checker floor), REVERIFY queued	session-20261116T084531-ff1efb6c	2026-11-16T09:00:30Z
 fix:dossiq:3955:0024f360	conflicts resolved, pushed 051bc7d2; suite OK 18298; merge lock held elsewhere, REVERIFY queued	session-20261116T081522-a0a03964	2026-11-16T09:00:40Z
+lane:ormig:launchpad:leftover	done: closed #1038 (development already builds StoreDescriptor per openregister main; its StoreListing is not on main); namecheck and check.py on development: 0 flagged, no names PR needed	session-20261116T080103-dd70aeff	2026-11-16T09:01:01Z
 lane:ormig:opencatalogi:leftover	done: #2418 closed (obsolete, development matches main); #2415 GREEN (fixes 27 inherited failures), #2737 opened for the one namecheck BREAK, GREEN; both await a merge task (lock held elsewhere)	session-20261116T084401-bf65ba54	2026-11-16T09:00:54Z
 fix:dossiq:3957:b44c6a4f	conflict resolved, pushed 3a1d1a08; merge lock held elsewhere, REVERIFY queued	session-20261116T084709-9ade0b9b	2026-11-16T09:01:17Z
 fix:dossiq:5266:db2ab4a5	conflict resolved (both cards kept), pushed 2cd5ee93, touched tests green; merge lock held elsewhere, REVERIFY written	session-20261116T074147-edb7c708	2026-11-16T09:01:34Z
+review:buildiq:1620:7c13e441	GREEN: build PR matches change specs; suite green bar 1 inherited failure	session-20261116T084414-2f572a4a	2026-11-16T09:02:23Z
+fix:larpinq:1065:936a9601	fixed sbom, pushed b4cd6229; not landed: merge gate checker_floor unmeasured (SKIP), REVERIFY queued	session-20261116T084455-5dfa31c7	2026-11-16T09:02:38Z
+review:learniq:1167:b9644fb4	GREEN: sass devDep bump, no new failures, build passes	session-20261116T084922-9fc29e74	2026-11-16T09:02:46Z
+lane:depbundle:launchpad:bundle	opened #1239 (8 updates), merge lock held by another merger: left GREEN for a merge task	session-20261116T084356-f50aa190	2026-11-16T09:02:59Z
+fix:portaliq:1666:ddf36df0	conflict resolved, pushed 760e34a9; REVERIFY recorded (merge lock held elsewhere)	session-20261116T085141-f326990f	2026-11-16T09:03:16Z
