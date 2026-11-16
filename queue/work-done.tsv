@@ -16559,3 +16559,4 @@ fix:stackiq:1978:17efb788	adr fix: OAS 3.0 type list -> oneOf, 502/503 problem+j
 review:planninq:1069:496f9b7f	BLOCK: psalm 7.5 lock not installable under config.platform php 8.3	session-20261116T150915-6a97321b	2026-11-16T15:11:26Z
 fix:decidiq:2207:4cc6ec94	partly fixed: complexity restored, tree 3.76 vs dev 3.77; floor 3.78 inherited (development 3.77); REVERIFY 12b85479	session-20261116T142700-f4d651ea	2026-11-16T15:11:47Z
 fix:decidiq:2191:29114ea5	inherited: tree 3.77 equals decidiq development's own 3.77, below the 3.78 floor; the PR does not lower it	session-20261116T142700-f4d651ea	2026-11-16T15:11:58Z
+review:opencatalogi:2696:08865a78	GREEN: no new failures (5849 vs 5806 tests), vitest 1170 pass	session-20261116T143636-9ede3f74	2026-11-16T15:12:03Z
