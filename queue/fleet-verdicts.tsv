@@ -15465,3 +15465,4 @@ dossiq	6613	073611ae8cd1e9be158ed6f2aaa35b084becd242	GREEN	worker-15	phpunit 183
 shillinq	1899	65bdef778c12e9576363018a4a242cb7b0e47e54	REVERIFY	worker-09	merged development in (l10n key union, info.xml bumped above development, register lock entry appended); suite 12336 OK; new head acc6426f54406deab48974ab3621bbb7140d39a2, verify it
 versioniq	722	276692bd60dc5a63b6082b3254520187f0ce2948	CONFLICT	worker-13:merge	conflicts with development; files: lib/Controller/SettingsController.php 
 versioniq	751	d4a52b7c0feebfc6e4a1297fd1421dec743ae3f3	CONFLICT	worker-13	does not merge cleanly into development 175397de; baseline 2142 tests, 2 failures
+planninq	1206	f0e5ce61d0efff7fdc5d51e1a38d004910a7c074	RED	merge3:merge-gate	GATE RED floor: duplication: 4.64 -> 4.62

@@ -4757,6 +4757,7 @@ hermiq	1808	d3f1ce0e343f352081371b2c5012964c0ab5ef93	MERGED	merge3	GATE OK sbom,
 opencatalogi	2699	41285ef5a7aa544260c78c2fca08e31d869a71a1	RED	worker-56	GATE RED floor: unit_size: 4.66 -> 4.64
 opencatalogi	2699	7d569fb821f74f1c15c600c7aafd41fc090616b9	MERGED	worker-56	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.52
 versioniq	691	57ab5aa2b834e43ba9363e5c0cb379f70d1fb470	MERGED	worker-57	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.97 holds at 4.05
+planninq	1206	f0e5ce61d0efff7fdc5d51e1a38d004910a7c074	RED	merge3	GATE RED floor: duplication: 4.64 -> 4.62
 portaliq	2533	4857818f6b8c625a07d0d283a7b99ffae2088068	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.16
 hermiq	1735	42dffb64543bd700e3054978b504a7a26c2b3a2d	RED	merge3	GATE RED floor: unit_complexity: 4.52 -> 4.50
 hermiq	1810	bb716464ad2c9c147f1b05c90a7cb52e4dd8bf74	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.77 holds at 3.79
