@@ -16192,3 +16192,4 @@ merge:learniq:2521:6369883b	cloud tree of 2 learniq PRs: merged=0 red=1 fail=0 s
 merge:keepiq:1829:ea717661	unmeasured: api.osv.dev	session-20261116T101039-34d7071f	2026-11-16T10:47:52Z
 lane:arch5:stackiq:next-stackiq:c5	failed: permission: recording the cm_land.sh review for stackiq #1992/#1990/#1991 was refused; tree of 3 built green (3724 tests, 0 new failures), nothing landed; opened #1992 (SPDX fix that unblocks the stackiq gate), queued for verify	session-20261116T104304-8b6b5410	2026-11-16T10:48:13Z
 merge:thematiq:1126:f2879085	cloud tree of 6 thematiq PRs: merged=0 red=6 fail=0 skip=0 (all gate sbom RED on dev-only lockfile bumps; tests clean)	session-20261116T101101-e7e34372	2026-11-16T10:49:10Z
+lane:arch5:stackiq:next-stackiq:c6	partial: not started, #1992/#1990/#1991 not landed yet; requeued as :c7	session-20261116T104304-8b6b5410	2026-11-16T10:49:18Z
