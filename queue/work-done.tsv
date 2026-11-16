@@ -16445,3 +16445,4 @@ merge:portaliq:663:e6ccd188	merge3 tree of 9 portaliq PRs: merged=7 red=1 fail=0
 review:integriq:3595:6e9939f8	GREEN: suite 9557, 4 inherited failures, no new	session-20261116T142931-c6a20eeb	2026-11-16T14:33:52Z
 review:buildiq:1652:fd2e894a	GREEN: unit 3346 (1 inherited ExportZipGolden), vitest 4736 pass	session-20261116T142616-2623e37a	2026-11-16T14:34:06Z
 review:integriq:2671:f4218e17	GREEN: dev-tooling bump, unit suite identical to development, phpmd no worse	session-20261116T142651-57b203fe	2026-11-16T14:34:02Z
+review:larpinq:1060:701044e6	GREEN: matches change specs; phpunit 1055/0 fail, vitest 639 pass	session-20261116T143136-ae6d04cb	2026-11-16T14:34:22Z
