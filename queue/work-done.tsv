@@ -16187,3 +16187,4 @@ merge:decidiq:2170:7fd90fb1	unmeasured: static.developer.overheid.nl (3 PRs revi
 lane:arch5:stackiq:next-stackiq:c4	partial: not started, #1990/#1991 not landed yet (stackiq merge gate red on development: tests/Stubs/Contract/ObjectServiceInterface.php lacks SPDX lines); requeued as :c5	session-20261116T103618-2f6d69a7	2026-11-16T10:42:52Z
 merge:dossiq:3199:1afd255c	unmeasured: static.developer.overheid.nl; merged=0 red=2 (3203,5396 sbom not regenerated) skip=3; 3955 CONFLICT; 6203 EXCL	session-20261116T101237-531edc64	2026-11-16T10:44:27Z
 merge:integriq:3670:a8797820	merge3 tree of 32 integriq PRs: merged=7 red=14 fail=0 skip=0; conflict 11, lint 0, moved 0; fix rows 11	merge3-20261113T213425-c36bcd5f	2026-11-16T10:46:45Z
+merge:humaniq:686:130dafec	unmeasured: static.developer.overheid.nl (686,1096 approved; 1095 gate RED sbom not regenerated; 687 conflict; 872 moved)	session-20261116T102639-f9f23dec	2026-11-16T10:47:01Z
