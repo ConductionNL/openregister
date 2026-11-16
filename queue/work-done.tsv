@@ -16588,3 +16588,4 @@ review:keepiq:1716:feea9fa1	GREEN: tests only, 3 inherited failures	session-2026
 review:shillinq:2997:37951348	GREEN: unit 12290 OK, vitest 5 OK	session-20261116T150944-f856ccd8	2026-11-16T15:18:35Z
 review:learniq:2549:3c970465	GREEN: build matches spec, no new failures (php 6906/1 inherited, js 1388/9 inherited)	session-20261116T150938-2294e41a	2026-11-16T15:18:48Z
 review:shillinq:1900:f0577318	GREEN	session-20261116T142700-f4d651ea	2026-11-16T15:19:00Z
+review:learniq:1901:e9591096	GREEN: learniq #1901 (1 inherited failure)	session-20261116T151429-748effed	2026-11-16T15:19:24Z
