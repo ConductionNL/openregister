@@ -17221,6 +17221,7 @@ fix:learniq:2507:f29e84b7	merged development in, clean; merge lock held elsewher
 cover:launchpad:fb10c50f:38e80a9f	deferred: launchpad has 44 open PRs	session-20261116T184901-5d8e5c9a	2026-11-16T18:54:08Z
 review:versioniq:722:c6a909c2	GREEN; conflicts with development (InstanceSettings, NextcloudAdvisoryFeedTest), needs a merge before landing	session-20261116T184902-3ba300c9	2026-11-16T18:54:05Z
 build:integriq:registry-bindings-speak-the-registry-api	already done: code tasks on development (#2665); only the live pass with credentials left	session-20261116T173306-f68895a7	2026-11-16T18:54:32Z
+build:integriq:openformulieren-intake-through-an-integriq-connection	already built: every code task ticked on development (b7a864249); only 4.3 e2e run left, runs in nightly Playwright	session-20261116T184846-301eb7a8	2026-11-16T18:54:56Z
 verify:learniq:2557:21cab0f2	2557 GREEN, 2559 CONFLICT, 2562 GREEN; no new failures (PHP 1, JS 9 inherited)	session-20261116T181517-93723df6	2026-11-16T18:54:53Z
 review:opencatalogi:2679:16fe088f	GREEN: no new failures (5869 tests, baseline 80 inherited)	session-20261116T184852-b8356331	2026-11-16T18:55:04Z
 fix:learniq:2555:20db1885	inherited: development c960466e alone measures 3.98 < floor 3.99; PR touches only composer.lock, sbom and a test stub	session-20261116T184945-c098409e	2026-11-16T18:55:18Z
