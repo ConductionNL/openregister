@@ -17330,6 +17330,7 @@ build:pipelinq:first-time-setup:r3	already done: every code task ticked on devel
 build:pipelinq:tickets-list-by-party:r3	already done: every code task ticked on development; only 1.3 (live check) is open	session-20261116T181151-999832c6	2026-11-16T19:17:38Z
 review:pipelinq:3659:4020c7e2	stale	session-20261116T184852-b8356331	2026-11-16T19:17:56Z
 cover:pipelinq:7f9dc8e6m3dbb:8f2b650b	already covered: lib/Service/Competitor/*.php measures 98.58% (633 stmts, 9 uncovered) on development with its 111 tests, none risky; no PR	session-20261116T184841-a3bc3002	2026-11-16T19:17:50Z
+cover:pipelinq:7f9dc8e6m3dbb:e0a30dd2	added 39 tests (Payment webhook guards) to open cover PR #3602 (pipelinq has 45 open PRs); suite 5787->5826, 1 inherited failure	session-20261116T190918-81e43f73	2026-11-16T19:18:14Z
 build:pipelinq:avg-consume-or-workflow:r3	already done: every code task ticked and on development (providers in lib/Service/Gdpr, policy pack seed, AVG surface retired); only 1.1 human gate and 4.2 live check left	session-20261116T191704-9a63be87	2026-11-16T19:18:17Z
 build:pipelinq:filter-menu-owner-and-street:r3	already done: every code task ticked on development; only 1.4 (live check after a nextcloud-vue release) is open	session-20261116T181151-999832c6	2026-11-16T19:17:58Z
 fix:versioniq:721:bc63b636	merged #721 at b48214583a	session-20261116T184833-adbb8426	2026-11-16T19:18:14Z
@@ -17376,10 +17377,12 @@ cover:integriq:92114ab0m505c:js0d617ff5	deferred: integriq has 70 open PRs	sessi
 cover:integriq:92114ab0m505c:jsf3772e2d	deferred: integriq has 70 open PRs	session-20261116T192125-8d7de83c	2026-11-16T19:23:49Z
 cover:humaniq:a18a13fb:be6d0ab9	already done: lib/Payroll/Pension/ (PensionBase) measures 100% (19/19 statements) on development with the existing PensionBaseTest; no PR	session-20261116T191704-9a63be87	2026-11-16T19:24:43Z
 fix:learniq:2559:307b9303	merged development in, pushed 64fd61a8; merge lock held elsewhere, REVERIFY queued	session-20261116T192046-9440725d	2026-11-16T19:24:42Z
+cover:buildiq:70b3e29em9bad:34f5c300	deferred: buildiq has 54 open PRs	session-20261116T191856-c437ae89	2026-11-16T19:25:16Z
 merge:stackiq:1996:ca667bfa	cloud tree of 1 stackiq PRs: none; conflict 1, lint 0, red 0, moved 0, done 0	session-20261116T192122-0fac4997	2026-11-16T19:24:55Z
 fix:learniq:1881:df81c10b	fixed CONFLICT, pushed 57e4a54a; lock held elsewhere, REVERIFY queued	session-20261116T192127-f26e2e56	2026-11-16T19:25:17Z
 verify:integriq:3671:a1fc0d47	GREEN #3671; 9535 tests, no new failures (1 flaky inherited)	session-20261116T184841-a3bc3002	2026-11-16T19:25:26Z
 fix:learniq:2562:9bda8314	conflict resolved, pushed 7726a54c; merge lock held elsewhere, REVERIFY queued	session-20261116T192046-9440725d	2026-11-16T19:26:09Z
+cover:humaniq:a18a13fb:f91e7417	PR #1169: ConnectionReporter 26/28 -> 28/28, +2 tests, suite 4405 -> 4407 green	session-20261116T191704-9a63be87	2026-11-16T19:26:38Z
 cover:humaniq:a18a13fb:7ed71db5	PR humaniq#1168: Setup 2 classes to 100% statements, +4 tests, suite 4405->4409 OK	session-20261116T184852-b8356331	2026-11-16T19:26:24Z
 fix:decidiq:2170:8ede76a3	floor restored: merged development (conflicts resolved), tree measures 3.80 >= 3.78; new head 80617c37	session-20261113T212411-bd385ec2	2026-11-16T19:26:36Z
 fix:buildiq:1641:bb9b55d3	conflict resolved (l10n/en.js), pushed 59f9dd1; merge lock held elsewhere, REVERIFY queued	session-20261116T184831-8be58c40	2026-11-16T19:26:50Z
