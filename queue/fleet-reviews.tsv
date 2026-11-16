@@ -110,3 +110,4 @@ larpinq	877	0d04ecfc809c8f114723a77614d7ef4cddf938ef	APPROVE	worker-23	Quick; no
 shillinq	1904	cc11db135048c9dc26794b32c82a3d2b674a6ad9	APPROVE	worker-45	Quick (dev dependency bump); no blockers; phpmd 3.0 is a major bump of a dev tool, run composer phpmd once after merge to confirm phpmd.xml still loads
 shillinq	1908	ca21609bb71603fe45c7d58dd33216df70aee655	APPROVE	worker-45	Quick (dev dependency patch bump + sbom); no blockers; none
 shillinq	1912	a7d98b523c8c9952e0731ec9f7dd99c883030cc8	APPROVE	worker-45	Quick (dev dependency minor bump + sbom); no blockers; none
+shillinq	1991	29abf7fb303a9a25601637bfbbaecaeb9a1feae7	APPROVE	worker-45	Quick (dev dependency patch bump + sbom); no blockers; none
