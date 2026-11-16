@@ -411,3 +411,4 @@ versioniq	497	39a7db062ea18ada87559c730217cdc521657235	APPROVE	worker-03	Quick; 
 versioniq	501	451c8f5901c5ec4277fdccbd82e4349166c89e9f	APPROVE	worker-03	Quick; no blockers; eslint dev bump with regenerated sbom
 versioniq	711	dc3fffc4091930880b05adf9f0e76b6a2caf5c4a	APPROVE	worker-03	Thorough; no blockers; implements inventory-lifecycle-signals per its specs, admin-only setting, fail-closed to unknown; concern: spec-coverage gate notes one changed method without @spec
 versioniq	717	8419af1d7c38c7852aa8354f89ad55a4a3ace8c4	APPROVE	worker-03	Thorough; no blockers; one-click updates reuse the guarded install path, no override flags, dialogs in src/dialogs, 29 vitest specs pass; no concerns
+learniq	2558	374f52e94024e697970fc9676362d55fe16c7236	APPROVE	worker-37	Quick; no blockers; @babel/core patch bump, lockfile, regenerated sbom and an SPDX line on a test stub; tree unit suite adds no failures
