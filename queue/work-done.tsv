@@ -16119,3 +16119,4 @@ fix:launchpad:1239:793d6033	no change: current with development, conflict only w
 fix:shillinq:2081:5c4b6e15	no change needed: up to date with development, conflict only against a sibling PR in the tree; merge lock held elsewhere, REVERIFY	session-20261116T101530-34aec2a4	2026-11-16T10:21:14Z
 fix:shillinq:2086:bda4253e	no change needed: merges clean on current development, conflict was tree-only; merge lock held elsewhere, REVERIFY queued	session-20261116T101050-f149dcd6	2026-11-16T10:21:28Z
 merge:decidiq:2203:b6f70c84	unmeasured: static.developer.overheid.nl (both PRs reviewed APPROVE, tree green 4641 tests, 0 new failures; local lander takes them)	session-20261116T101250-8aeb7975	2026-11-16T10:21:35Z
+merge:thematiq:1556:2b6c21f3	cloud tree of 1 thematiq PRs: merged=0 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0 (gate: sbom not regenerated)	session-20261116T101101-e7e34372	2026-11-16T10:21:43Z
