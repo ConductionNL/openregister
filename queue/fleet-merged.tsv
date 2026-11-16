@@ -3862,3 +3862,7 @@ decidiq	1468	7dc751fb076903e2e43ec5e7338bc901791d14a5	SKIP	worker-01	GATE UNMEAS
 decidiq	1469	09383bbcc1479f735f6f91b06b9eab2bc002c9b9	SKIP	worker-01	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
 decidiq	1474	08a18331e7494f87957cc48a01384d4bdd132036	SKIP	worker-01	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
 decidiq	1767	ef20753cf5af14ce526904d1a06b54c59bfb59fc	SKIP	worker-01	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
+versioniq	497	39a7db062ea18ada87559c730217cdc521657235	SKIP	worker-50	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator, secretscanning; this is not a pass
+versioniq	501	451c8f5901c5ec4277fdccbd82e4349166c89e9f	SKIP	worker-50	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator, secretscanning; this is not a pass
+versioniq	502	c6d0467e61059cf8e5a0263c5f728008a7ee6c67	SKIP	worker-50	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator, secretscanning; this is not a pass
+versioniq	721	a9a532f37b7b8a421d4320aa0f6bcf3dd2d2db2c	SKIP	worker-50	no APPROVE review at this head
