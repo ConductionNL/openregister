@@ -693,7 +693,7 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 			return null;
 		}
 
-		return $this->matchSql()->matchConditions(block: $rule['match'], columnPrefix: $columns->prefix);
+		return $this->matchSql()->matchConditions(block: $rule['match'], columnPrefix: $columns->prefix, columns: $columns);
 	}//end denialPredicateSql()
 
 	/**
@@ -1127,7 +1127,7 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 			return self::IMPOSSIBLE_SQL_CONDITION;
 		}
 
-		return $this->matchSql()->matchConditions(block: $block);
+		return $this->matchSql()->matchConditions(block: $block, columns: $columns);
 	}//end crossOrganisationBranchSql()
 
 	/**
@@ -1322,7 +1322,7 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 			return $compiler->impossible();
 		}
 
-		return $compiler->matchConditions(block: $block);
+		return $compiler->matchConditions(block: $block, columns: $caller['columns']);
 	}//end processConditionalRule()
 
 	/**
@@ -2148,7 +2148,7 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 			return self::IMPOSSIBLE_SQL_CONDITION;
 		}
 
-		return $this->matchSql()->matchConditions(block: $block, columnPrefix: $caller['columns']->prefix);
+		return $this->matchSql()->matchConditions(block: $block, columnPrefix: $caller['columns']->prefix, columns: $caller['columns']);
 	}//end processConditionalRuleSql()
 
 	/**

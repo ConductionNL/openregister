@@ -114,15 +114,19 @@ final class RbacMatchSql {
 	 *
 	 * @param array<string, mixed> $block        The match conditions.
 	 * @param string               $columnPrefix A table alias with its dot, or ''.
+	 * @param RuleColumns|null     $columns      The schema-bound columns a `match` key may name, so a key written
+	 *                                           in one language resolves to the column the schema actually has
+	 *                                           when it declares the property in the other. Null falls back to
+	 *                                           an unbound RuleColumns (metadata keys only).
 	 *
 	 * @return string|null The predicate, or null when no condition could be built.
 	 */
-	public function matchConditions(array $block, string $columnPrefix = ''): ?string {
+	public function matchConditions(array $block, string $columnPrefix = '', ?RuleColumns $columns = null): ?string {
 		if ($this->matcher->namesUnknownMetadata(match: $block) === true) {
 			return self::IMPOSSIBLE;
 		}
 
-		return self::joined(terms: $this->propertyConditions(block: $block, columnPrefix: $columnPrefix), glue: ' AND ');
+		return self::joined(terms: $this->propertyConditions(block: $block, columnPrefix: $columnPrefix, columns: $columns), glue: ' AND ');
 	}//end matchConditions()
 
 	/**
@@ -193,13 +197,15 @@ final class RbacMatchSql {
 	 *
 	 * @param array<string, mixed> $block        The match conditions.
 	 * @param string               $columnPrefix A table alias with its dot, or ''.
+	 * @param RuleColumns|null     $columns      The schema-bound columns a `match` key may name. Null falls
+	 *                                           back to an unbound RuleColumns (metadata keys only).
 	 *
 	 * @return array<int, string> The conditions that could be built.
 	 */
-	private function propertyConditions(array $block, string $columnPrefix): array {
+	private function propertyConditions(array $block, string $columnPrefix, ?RuleColumns $columns = null): array {
 		$conditions = [];
 		foreach ($block as $property => $value) {
-			$column = $columnPrefix . $this->dialect->quotedColumn(columnName: (new RuleColumns())->columnOf(key: $property));
+			$column = $columnPrefix . $this->dialect->quotedColumn(columnName: ($columns ?? new RuleColumns())->columnOf(key: $property));
 			$conditions[] = $this->valueCondition(column: $column, value: $value);
 		}
 
