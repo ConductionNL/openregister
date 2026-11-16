@@ -15848,3 +15848,4 @@ decidiq	2236	4393817765911bbbfec341ea0e8d7349ffe086c6	GREEN	worker-53	tests only
 buildiq	1602	0e7fc4e73ca83c76c29b770188ebccc6bc8f848f	CONFLICT	worker-12	conflicts with development, files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json src/components/page-editor/DetailPageEditor.vue; baseline 3456 OK
 buildiq	1607	2af29a31bd3ab150fee2845703e1efa48a91baa9	CONFLICT	worker-13	conflicts with development in l10n/en.js, en.json, nl.js, nl.json and src/components/schema-editor/FieldEditor.vue; PHP baseline 3456 tests green, JS suite not run
 decidiq	2148	2bf0e3469827829fc4b3a0eb38c55057dcad1639	CONFLICT	worker-53	conflicts with development; files: src/manifest.json
+buildiq	1618	53cd30c60fd0818e18015d33f191a86058337c78	CONFLICT	worker-13	conflicts with development in l10n/en.js, en.json, nl.js, nl.json, DetailPageEditor.vue and its spec; no tests run
