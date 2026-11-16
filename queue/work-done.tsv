@@ -17857,6 +17857,16 @@ cover:dossiq:069ee2d6m9d1b:8b886c00	already done: lib/Service/People/*.php 1018/
 cover:pipelinq:7f9dc8e6m3dbb:85f7d10b	already covered: target dirs at 66/67 stmts (98.5%) on development; only LoyaltyPurchase ctor uncovered (value object, no getter-only test); no PR	session-20261116T211631-e825058a	2026-11-16T21:20:16Z
 lane:arch5:buildiq:next-buildiq-r2	PR #1684, GREEN (estimate 3.92-3.98 -> 3.93-3.99, includes r1 #1683; still under 4.5)	session-20261116T210639-4564b5ec	2026-11-16T21:20:27Z
 review:dossiq:6203:6a6113a8	GREEN: tests only, suite clean beyond 1 inherited error	session-20261116T211529-39ccc7ff	2026-11-16T21:20:35Z
+cover:dossiq:069ee2d6m9d1b:9d3a1784	deferred: dossiq has 41 open PRs	session-20261116T211529-39ccc7ff	2026-11-16T21:20:55Z
 review:filinq:2072:268b3e0d	BLOCK: policy rule load uses the system seam on a user path without an organisation filter; suite green	session-20261116T211641-8431b36d	2026-11-16T21:21:00Z
 lane:arch5:versioniq:next-versioniq-r2	PR #753, GREEN (estimate 4.05-4.22 -> 4.22-4.34 incl. #751 commits; this round alone +0.03; under 4.5, next lever unit interfacing/complexity)	session-20261116T211115-33d23e06	2026-11-16T21:21:22Z
 merge:larpinq:1077:53d85f32	cloud tree of 1 larpinq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T204203-b8dccc50	2026-11-16T21:22:00Z
+cover:dossiq:069ee2d6m9d1b:f8ba5a90	deferred: dossiq has 41 open PRs	session-20261116T211115-33d23e06	2026-11-16T21:22:07Z
+fix:shillinq:3078:55887f01	fixed adrvalidator floor (API-Version on preflight 204s), pushed 767508fe; REVERIFY queued (merge lock busy)	session-20261116T211700-abd020e0	2026-11-16T21:22:22Z
+fix:shillinq:1900:7f46ac64	conflict resolved, new head 3f647361ab; suite 12337 tests 0 failures; REVERIFY recorded (end-to-end landing skipped: a review of this worker's own push needs an independent reviewer)	session-20261116T203338-4b40ff15	2026-11-16T21:22:29Z
+lane:arch5:launchpad:next-launchpad-r1:c3	PR #1244, GREEN (3.69-3.80 to 3.71-3.83; round 3 queued)	session-20261116T211128-4ec7d28f	2026-11-16T21:22:47Z
+fix:shillinq:3110:cca3fd23	sbom already current (regen-sbom --check passes on head and on tree with development); merge lock held elsewhere, queued REVERIFY	session-20261116T212057-3d2ff8ce	2026-11-16T21:23:10Z
+cover:pipelinq:7f9dc8e6m3dbb:0f859653	already done: lib/Flow/*.php at 100% lines (4 classes, 132/132) on development; nothing to add	session-20261116T212114-cc948c71	2026-11-16T21:23:24Z
+merge:opencatalogi:2752:3339ead3	cloud tree of 1 opencatalogi PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T211645-8f77eb91	2026-11-16T21:23:26Z
+cover:launchpad:fb10c50fmf487:d8ac3ddd	deferred: launchpad has 45 open PRs	session-20261116T211128-4ec7d28f	2026-11-16T21:23:20Z
+verify:buildiq:1672:42cabbe3	GREEN 1672,1679; CONFLICT 1683 (AutomationCompilerService vs 1672)	session-20261116T211521-a6f938c5	2026-11-16T21:23:44Z
