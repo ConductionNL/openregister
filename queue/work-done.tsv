@@ -16539,3 +16539,4 @@ merge:launchpad:753:ae33cf29	merge3 tree of 3 launchpad PRs: merged=3 red=0 fail
 fix:decidiq:2203:14dc6807	fixed @spec coverage; REVERIFY new head 25c89067	session-20261116T142700-f4d651ea	2026-11-16T15:06:22Z
 review:versioniq:721:e012b413	GREEN: no new failures (1995 vs 1957 tests, same 2 failures), gates clean	session-20261116T143636-9ede3f74	2026-11-16T15:06:37Z
 fix:decidiq:1473:fbdc77e4	inherited: decidiq development itself measures maintainability 3.77 below its floor 3.78; PR changes only dependency files	session-20261116T142700-f4d651ea	2026-11-16T15:06:42Z
+fix:decidiq:1738:dabfcc92	inherited: decidiq development itself measures maintainability 3.77 below its floor 3.78; dependency-only PR	session-20261116T142700-f4d651ea	2026-11-16T15:06:53Z
