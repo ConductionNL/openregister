@@ -8,3 +8,4 @@ launchpad	880	3c07107533c5035ff96566d9aa97a6c5c78aa5e3	APPROVE	worker-12	Quick; 
 launchpad	977	4ec996d31439daed99af546858b9614b2ca4a159	APPROVE	worker-12	Quick; no blockers; dependency bump (dev-only hydra-gates 1.19.0, sbom regenerated), merge-tree unit suite 4461 tests, no new failures
 stackiq	1924	62eff96df63034daba7133a32d5d71748aa7b0cb	APPROVE	worker-53	Strict; no blockers; complianceDocument read/write rules match design D2 (audience public/government/named, publisher org edits)
 stackiq	1954	8ec8ab7148eb45c264f52f32289e01d1582b2b87	APPROVE	worker-53	Strict; no blockers; export limited to module/catalogService, schema export grant checked before work, rows via FacetService with caller rights, CSV cells sanitised
+stackiq	1973	a944108885b24551a5044812231490fe52d142ca	APPROVE	worker-53	Thorough; no blockers; guard implements REQ-SCCD-007; concern: mock register seeds Active contracts with approvalState none, which the new create guard may refuse
