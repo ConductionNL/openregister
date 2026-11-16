@@ -18081,3 +18081,4 @@ cover:buildiq:70b3e29eme3dd:8ed5443b	deferred: buildiq has 54 open PRs	session-2
 cover:buildiq:70b3e29eme3dd:f545d745	deferred: buildiq has 54 open PRs	session-20261116T220858-93068d3c	2026-11-16T22:14:38Z
 cover:buildiq:70b3e29eme3dd:1106b038	deferred: buildiq has 54 open PRs	session-20261116T220858-93068d3c	2026-11-16T22:14:52Z
 cover:buildiq:70b3e29eme3dd:38e80a9f	deferred: buildiq has 54 open PRs	session-20261116T220858-93068d3c	2026-11-16T22:15:08Z
+cover:dossiq:069ee2d6m9d1b:59f569b2	nothing to add: lib/Service/Settings testable statements all covered; the 21 left are environment-only branches (register JSON missing/invalid at a fixed path, unreadable fragment, array_is_list fallback), not reachable without production changes	session-20261116T211553-db0d2c78	2026-11-16T22:15:25Z
