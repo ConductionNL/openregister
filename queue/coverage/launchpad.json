@@ -1,12 +1,12 @@
 {
  "app": "launchpad",
- "commit": "d6a7f892fa22bfc450a6c298813e11f15d26af2a",
- "measured_at": "2026-11-13T18:16:48Z",
+ "commit": "6a3f32399e91fd28ef93a2bbabcc3de20aeb10a0",
+ "measured_at": "2026-11-16T18:58:16Z",
  "php": {
   "tool": "pcov",
-  "pct": 96.19,
-  "statements": 22125,
-  "covered": 21281,
+  "pct": 94.94,
+  "statements": 24454,
+  "covered": 23217,
   "dirs": {
    "lib/Activity/": [
     337,
@@ -17,40 +17,44 @@
     22
    ],
    "lib/AppInfo/": [
-    132,
-    100
+    141,
+    109
    ],
    "lib/BackgroundJob/": [
-    136,
-    136
+    144,
+    144
    ],
    "lib/Command/": [
     1357,
     1357
    ],
    "lib/Controller/": [
-    4625,
-    4387
+    4847,
+    4622
    ],
    "lib/Db/": [
-    2102,
-    2100
+    2194,
+    2117
    ],
    "lib/Event/": [
     6,
     6
    ],
    "lib/Exception/": [
-    55,
-    55
+    57,
+    57
    ],
    "lib/Job/": [
     48,
     48
    ],
    "lib/Listener/": [
-    267,
-    267
+    286,
+    285
+   ],
+   "lib/Mcp/": [
+    141,
+    135
    ],
    "lib/Middleware/": [
     59,
@@ -58,23 +62,27 @@
    ],
    "lib/Middleware/Support/": [
     60,
-    54
+    55
    ],
    "lib/Notification/": [
-    85,
-    85
+    94,
+    94
    ],
    "lib/Repair/": [
-    313,
-    296
+    333,
+    315
    ],
    "lib/Search/": [
     202,
     202
    ],
    "lib/Service/": [
-    11530,
-    10998
+    12655,
+    11849
+   ],
+   "lib/Service/CalculatedFields/": [
+    406,
+    363
    ],
    "lib/Service/Cleanup/": [
     42,
@@ -87,6 +95,10 @@
    "lib/Service/Connection/": [
     172,
     172
+   ],
+   "lib/Service/Embed/": [
+    276,
+    269
    ],
    "lib/Service/InitialState/": [
     0,
@@ -103,77 +115,85 @@
   }
  },
  "js": {
-  "pct": 96.92,
-  "statements": 7243,
-  "covered": 7020,
+  "pct": 96.2,
+  "statements": 9115,
+  "covered": 8769,
   "dirs": {
    "src/": [
-    44,
-    30
+    53,
+    39
    ],
    "src/components/": [
-    464,
-    447
+    500,
+    482
+   ],
+   "src/components/Announcements/": [
+    61,
+    59
    ],
    "src/components/Widgets/": [
-    234,
-    234
+    238,
+    238
    ],
    "src/components/Widgets/Renderers/": [
-    1302,
-    1288
+    1534,
+    1488
    ],
    "src/components/Workspace/": [
-    324,
-    308
+    344,
+    327
    ],
    "src/components/Workspace/config/": [
     126,
     121
    ],
    "src/components/admin/": [
-    1056,
-    1002
+    1191,
+    1133
    ],
    "src/components/admin/tabs/": [
-    233,
-    227
+    271,
+    263
    ],
    "src/composables/": [
-    378,
-    365
+    650,
+    634
    ],
    "src/constants/": [
-    47,
-    46
+    48,
+    47
    ],
    "src/dialogs/": [
-    267,
-    247
+    287,
+    266
    ],
    "src/modals/": [
-    638,
-    618
+    746,
+    699
    ],
    "src/services/": [
-    526,
-    503
+    554,
+    508
    ],
    "src/stores/": [
     715,
     703
    ],
    "src/utils/": [
-    132,
-    127
+    299,
+    291
+   ],
+   "src/utils/calculatedFields/": [
+    684,
+    664
    ],
    "src/views/": [
-    717,
-    717
+    751,
+    747
    ],
    "src/views/settings/": [
-    40,
-    37
+    63,
+    60
    ]
   }
  }
