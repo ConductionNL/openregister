@@ -18350,3 +18350,4 @@ verify:buildiq:1632:0082e902	CONFLICT: l10n + builder.js, ApplicationDetailActio
 verify:buildiq:1626:7a6961a5	1626 CONFLICT	session-20261116T224608-d6967eb8	2026-11-16T23:27:33Z
 verify:buildiq:1597:01723f3e	CONFLICT #1597 (l10n catalogues)	session-20261116T232519-f84cca9a	2026-11-16T23:27:41Z
 verify:buildiq:1623:973040f5	CONFLICT #1623 (l10n + FieldEditor)	session-20261116T224246-d9bde508	2026-11-16T23:27:55Z
+merge:opencatalogi:2674:1e5a3397	cloud tree of 1 opencatalogi PRs: merged=0 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0 (2674 gate RED: maintainability floor 4.89->4.87)	session-20261116T230931-e5ee8bcb	2026-11-16T23:28:15Z
