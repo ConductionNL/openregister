@@ -17265,6 +17265,7 @@ cover:stackiq:9ac19b3amdf03:17d367ab	deferred: stackiq has 42 open PRs	session-2
 fix:opencatalogi:2696:8fcdf471	fixed jest specs, pushed 0d0512a6; merge lock busy, REVERIFY queued	session-20261116T184852-b8356331	2026-11-16T18:59:43Z
 cover:stackiq:9ac19b3amdf03:aae6d66c	deferred: stackiq has 42 open PRs (earlier cover PR #1746 for this target already merged)	session-20261116T181517-93723df6	2026-11-16T18:59:51Z
 fix:opencatalogi:2699:64dd55f6	merged development in, new head 3dfb66bdc2; merge lock held by another merger, REVERIFY queued	session-20261116T184833-adbb8426	2026-11-16T18:59:51Z
+fix:filinq:2094:ff0c7f80	merged #2094 at fc7a98369b7f2cb91cfd259568597d9c493900bd	session-20261116T184345-1b09dc94	2026-11-16T18:59:58Z
 cover:stackiq:9ac19b3amdf03:216a9a0a	deferred: stackiq has 42 open PRs	session-20261116T184852-d42365eb	2026-11-16T19:00:12Z
 cover:stackiq:9ac19b3amdf03:05630945	deferred: stackiq has 42 open PRs	session-20261116T184919-ae590ea9	2026-11-16T19:00:21Z
 cover:openregister:7350e3efm9dc5:d0c80d11	added 5 test files (39 tests: DictionaryExpansion, SearchTokenStream, HistoryNarrowing, LeafReset, DescriptorFold) to open PR #10595 (188 open PRs, no new PR); Search/ShippedBaseline suites green	session-20261116T184842-6fa5fc5d	2026-11-16T19:00:50Z
