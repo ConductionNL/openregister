@@ -15160,3 +15160,4 @@ learniq	1882	334e6e479def3699df5e52bbcc4e4d89ce9c8c25	RED	worker-47:merge-gate	G
 shillinq	3055	6be8ada8c89f3a422809578a18d8f757d46c1d2a	REVERIFY	worker-03	merged origin/development in (clean; lock-file conflict was with other tree PRs only); merge lock held by another merger; new head 8918b6e658d4dbb560bb98a98b5a464cf516ba7c, verify it
 filinq	2094	ff0c7f807893c4d02574237605e153bd13b69410	CONFLICT	worker-13:merge	merges clean on development alone; files: appinfo/info.xml lib/Settings/filinq_mock_register.json lib/Settings/filinq_register.json 
 filinq	2122	8da9763506ad04235e73f6e889997e6b37d0432a	CONFLICT	worker-13:merge	merges clean on development alone; files: appinfo/info.xml lib/Settings/filinq_register.json 
+learniq	2555	20db188505a8fb4c07a56b7a897ef199cd9e164a	RED	worker-47:merge-gate	GATE RED absolute floor: learniq maintainability 3.98 after merge is below its floor 3.99
