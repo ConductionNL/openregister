@@ -18136,3 +18136,4 @@ fix:buildiq:1687:ebc1696e	merged #1687 at e9f9ddf281f6b31e0a979ffa201e4c91190066
 verify:keepiq:1863:f1004fcc	1867 GREEN (tests only, 0 new failures); 1863 already merged on development, no verdict	session-20261116T214640-6a01c0c6	2026-11-16T22:27:18Z
 cover:buildiq:70b3e29eme3dd:be0dcca9	deferred: buildiq has 51 open PRs	session-20261116T221330-514f14d5	2026-11-16T22:27:36Z
 review:dossiq:6203:4e2aff99	GREEN: tests only, suite adds no failures	session-20261116T222132-964f3fa2	2026-11-16T22:27:48Z
+lane:arch5:learniq:next-learniq-r5	PR #2575, GREEN	session-20261116T215125-0190b3c7	2026-11-16T22:28:00Z
