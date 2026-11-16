@@ -16129,6 +16129,7 @@ review:dossiq:3936:073e564b	GREEN: 18282 tests, 19 inherited failures, no new; g
 fix:shillinq:2224:ff4aa606	inherited: development itself fails spdxheaders floor (stub header, fixed by #2071); no change to PR	session-20261116T101206-d1581575	2026-11-16T10:24:04Z
 fix:shillinq:2092:e2044223	fixed spdx stub header, pushed 71d6e19e6a; gate unmeasured: static.developer.overheid.nl; REVERIFY queued	session-20261116T101745-e986474c	2026-11-16T10:24:17Z
 fix:shillinq:2100:ef5824e8	no change needed: merges clean on development; REVERIFY queued (merge lock held elsewhere)	session-20261116T101248-fe4447ca	2026-11-16T10:24:37Z
+fix:shillinq:2098:93d83382	fixed spdxheaders floor (stub header restored); new head 91bd5616, REVERIFY queued (lock held)	session-20261116T101200-ccfd103b	2026-11-16T10:25:07Z
 merge:learniq:2507:f21cb143	cloud tree of 1 learniq PRs: merged=0 red=0 fail=0 skip=1; conflict 0, lint 0, red 0, moved 0, done 0 (REQUEST_CHANGES: demo data for new schemas)	session-20261116T101013-986398f9	2026-11-16T10:25:28Z
 merge:opencatalogi:1888:681fe39d	unmeasured: api.osv.dev (probe connect_rejected; gate's opensourcehealth floor needs it); nothing built, local lander takes it	session-20261116T101239-227210a0	2026-11-16T10:25:35Z
 fix:shillinq:3000:69030639	no change needed: clean on development, tree-only conflict; REVERIFY queued	session-20261116T101745-e986474c	2026-11-16T10:25:57Z
