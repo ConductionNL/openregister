@@ -3869,3 +3869,4 @@ versioniq	721	a9a532f37b7b8a421d4320aa0f6bcf3dd2d2db2c	SKIP	worker-50	no APPROVE
 launchpad	785	91bd14a0c96181818b7b5c9405c8098dd9e28904	RED	worker-12	GATE RED floor: overall: 4.56 -> 4.54; unit_complexity: 4.72 -> 4.69; module_coupling: 4.73 -> 4.68
 filinq	2072	ec607dc3215ac306c4ccbc98744800d52f49334a	SKIP	worker-23	no APPROVE review at this head
 larpinq	1060	11a6a4eac7c3cc7f699331c7d33d607e07c5b2e4	SKIP	worker-38	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator, secretscanning; this is not a pass
+planninq	1070	0324724d24fe6d0db28116a01a3102143ea1dcb2	RED	worker-12	GATE RED sbom: composer.lock changed without sbom.cdx.json
