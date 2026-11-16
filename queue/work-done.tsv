@@ -16800,3 +16800,4 @@ review:learniq:1167:2c125d9d	GREEN: dev bump + behaviour-preserving refactor; su
 verify:pipelinq:3889:0061b762	GREEN 3889,3890,3891,3892; unit 9020/0 new; vitest 1 inherited fail	session-20261116T171008-17ad9db7	2026-11-16T17:23:09Z
 merge:buildiq:1583:8186b2d8	unmeasured: static.developer.overheid.nl	session-20261116T170659-0fa9b365	2026-11-16T17:23:17Z
 merge:keepiq:1716:33734fff	cloud tree of 3 keepiq PRs: none; conflict 0, lint 0, red 0, moved 0, done 3	session-20261116T170526-86f54433	2026-11-16T17:23:21Z
+verify:shillinq:3108:116f0394	GREEN #3108: phpunit 12231 ok, vitest 1 inherited failure, no new	session-20261116T170601-1695d108	2026-11-16T17:23:57Z
