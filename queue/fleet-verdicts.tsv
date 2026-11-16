@@ -15200,3 +15200,4 @@ learniq	2507	f29e84b71d4cb3e541070995f5539d1bedf72311	REVERIFY	worker-36	merged 
 stackiq	1978	edde87e6895196c71ef0a7ed464be0c8455a1cfe	CONFLICT	worker-40:merge	conflicts with development; files: openapi.json 
 stackiq	1996	66a3bdf85100d06da1aaf07f1e2431b1cc7d0f3f	GREEN	worker-11	unit 3768 tests, baseline 0 failures, 0 new failures; behaviour-preserving refactor (contract interface + log helpers)
 shillinq	3055	8918b6e658d4dbb560bb98a98b5a464cf516ba7c	GREEN	worker-01:review	Thorough; builds public-sector-council-and-auditor-statements per its specs; new endpoints check the record's administration (404 otherwise); existing ENSIA finding descriptions unchanged for scored questions; unit suite 12267 OK merged with development, vitest 12/12, eslint clean
+filinq	2122	8da9763506ad04235e73f6e889997e6b37d0432a	REVERIFY	worker-09	merged origin/development in (clean, info.xml keeps both commands); new head e57f317b766796a46fef9e730715d0eb4b20b9e2, verify it
