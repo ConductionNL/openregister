@@ -120,3 +120,4 @@ stackiq	1168	04f38d3ae4a4d17b142dbafb97d2a81126d6568c	APPROVE	worker-16	Quick; n
 stackiq	1297	f6f898a1ce156bb7902c6cbdc55ca55df63daf3a	APPROVE	worker-16	Quick; no blockers; dev-only phpmd 3 bump with sbom, advisories inherited from development
 stackiq	1435	81fb6bd471562d78ea02224fdc7b0574cc6a9082	APPROVE	worker-16	Standard; no blockers; search selection adapter keeps the same query, dropped deleted:false equals the default
 stackiq	1931	42bba8a9c3f33af822ee56a73844d3398278ef8b	REQUEST_CHANGES	worker-16	Strict; spec-coverage gate fails on added code: startAttestationRound, confirmAttestationRequest, openAttestationEntry in src/services/attestation.js lack @spec; access checks fail closed, no other concern
+stackiq	1965	db980e34d066f3521ea46508230669f301337ee8	REQUEST_CHANGES	worker-16	Thorough; spec-coverage gate fails on added code: ConnectionMapWidget.vue drawing() and src/utils/connectionMap.js connectionMap lack @spec; manifest lint failures are inherited
