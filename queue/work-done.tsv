@@ -17090,6 +17090,7 @@ cover:buildiq:70b3e29em3841:6891a8ac	deferred: buildiq has 56 open PRs	session-2
 review:hermiq:1795:e06004f3	GREEN at bba547a (docblock exemption tag added on top of e06004f)	session-20261116T165351-3ccaad0e	2026-11-16T18:22:13Z
 build:decidiq:agenda-incoming-documents-list	already done: only live/e2e tasks left (1)	session-20261116T172806-3ef5ead7	2026-11-16T18:22:21Z
 fix:learniq:2562:2e394133	fixed tree conflict (stub header aligned with #1882), merged development; new head 9bda8314, REVERIFY (merge lock held elsewhere)	session-20261116T173306-f68895a7	2026-11-16T18:22:31Z
+build:learniq:credential-wallet-offer-for-the-learner	already done: all code tasks on development; 4.2 e2e and 4.3 live sign-off left	session-20261116T173306-f68895a7	2026-11-16T18:22:55Z
 build:decidiq:bodies-board-composition-skills-and-diversity	already done: only live/e2e tasks left (2)	session-20261116T172806-3ef5ead7	2026-11-16T18:22:54Z
 cover:pipelinq:7f9dc8e6m8519:e78626a8	added to #3659 (budget 45 open): 10 risky tests fixed, +5 tests; Marketing SegmentQueryCompiler 1->98%, JourneyService 100%, MailBlockRenderer 100%, PortaliqArticleStore 98%; suite 9037 OK	session-20261116T173240-b63ad758	2026-11-16T18:22:56Z
 review:dossiq:6203:0a0ae26b	GREEN: tests only, suite 18357/0 failures on merged tree	session-20261116T181504-15a4396b	2026-11-16T18:23:10Z
@@ -17109,4 +17110,14 @@ cover:decidiq:a5f973bbm0262:d528dcf0	deferred: decidiq has 53 open PRs	session-2
 cover:dossiq:069ee2d6madb6:53c979ad	added 17 tests (4 files, Zaakdossier) to open PR #6203 at 77bf482 (dossiq has 41 open PRs); suite 19 failures before/after, inherited	session-20261116T181711-7fa8bcf4	2026-11-16T18:26:22Z
 fix:shillinq:3055:6be8ada8	merged development in (clean); lock busy, REVERIFY at 8918b6e6	session-20261116T181603-6d014baf	2026-11-16T18:26:28Z
 cover:decidiq:a5f973bbm0262:c76ae287	deferred: decidiq has 53 open PRs	session-20261116T182514-f3633b18	2026-11-16T18:26:32Z
+build:decidiq:bodies-director-remuneration	already built: tasks 1-3 implemented on development (117-mandate-remuneration.json, MandateRemunerationRegisterTest, manifest widgets); only live Newman/Playwright halves left	session-20261116T182514-f3633b18	2026-11-16T18:27:02Z
+cover:stackiq:9ac19b3amdf03:007dc1d0	deferred: stackiq has 41 open PRs	session-20261116T181151-999832c6	2026-11-16T18:26:53Z
 review:larpinq:1050:d2d372bb	GREEN: per spec; phpunit 1016 OK, vitest 608 passed	session-20261116T174053-4a550291	2026-11-16T18:26:59Z
+cover:integriq:92114ab0m1db0:jsf3772e2d	deferred: integriq has 70 open PRs	session-20261116T174053-4a550291	2026-11-16T18:27:36Z
+cover:buildiq:70b3e29em3841:f91e7417	deferred: buildiq has 56 open PRs	session-20261116T181603-6d014baf	2026-11-16T18:27:22Z
+fix:shillinq:2997:37951348	merged development in, new head cd7db0f0; REVERIFY queued (merge lock held elsewhere)	session-20261116T182218-e80be6aa	2026-11-16T18:27:37Z
+build:decidiq:live-public-livestream	already done: every code task on development; only live/Newman/e2e checks open	session-20261116T173306-f68895a7	2026-11-16T18:27:42Z
+cover:decidiq:a5f973bbm0262:59826f43	deferred: decidiq has 53 open PRs	session-20261116T173306-f68895a7	2026-11-16T18:28:07Z
+merge:learniq:1882:3f11e78d	cloud tree of 3 learniq PRs: merged=0 red=2 fail=0 skip=0; conflict 1, lint 0, red 0, moved 0, done 0	session-20261116T173256-6277a58c	2026-11-16T18:28:16Z
+cover:integriq:92114ab0m1db0:js0023cfc7	deferred: integriq has 70 open PRs	session-20261116T174053-4a550291	2026-11-16T18:28:41Z
+cover:integriq:92114ab0m1db0:js0d617ff5	deferred: integriq has 70 open PRs	session-20261116T174053-4a550291	2026-11-16T18:28:51Z
