@@ -17781,3 +17781,4 @@ review:learniq:2521:70435b29	RED: EmployerBookingFactsTest::testTheSeededBooking
 fix:buildiq:1672:23675f9b	floor restored (p-1 3.9067), pushed 4980cad7; REVERIFY queued	session-20261116T202154-fbc59c50	2026-11-16T20:58:15Z
 review:shillinq:3055:3c4a7efd	GREEN (conflicts with development on info.xml version + register lock; needs a merge before landing)	session-20261116T202633-f7fb0e3a	2026-11-16T20:58:28Z
 review:hermiq:1750:a0e29d18	GREEN: unit 5414 OK (baseline 5374), vitest 29 pass	session-20261116T205530-bfd0de31	2026-11-16T20:58:43Z
+lane:arch5:larpinq:next-larpinq-r1	failed: permission: recording a review of my own PR was refused; PR #1077 open (4.07-4.25 -> 4.17-4.32), GREEN verdict, lock released	session-20261116T194104-8906f18f	2026-11-16T20:58:54Z
