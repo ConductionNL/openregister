@@ -645,3 +645,4 @@ larpinq	1050	e8d7437e5c73dab94dfb6ea341e978a36fe90d8c	APPROVE	worker-44	Thorough
 shillinq	3108	5565f98d2c7e00a4b1ea7984d82972cc5a95f05f	APPROVE	worker-53	Quick (dependency bump); no blockers; dunningNextRun spec now loads, its remaining ENABLED_PROPERTY source assertion fails on development too (constant moved to the interface)
 shillinq	3111	bfad3169ce3d468738ac4039e17ab2d4b5bccb59	APPROVE	worker-53	Quick; no blockers; same register, schema and uuid passed through main's ObjectSaveOptions
 shillinq	3112	43d820967368195dcf4ba2fbf07d8493c5ed236b	APPROVE	worker-53	Quick (test stub header); no blockers; none
+portaliq	2534	46b098d64c2def38295db134f6f8d86f108e0604	APPROVE	worker-25	Strict (touches the admin write gate wiring); no blockers; type-only moves to contracts aliased to the same shared instances, ContractRegistrarTest green, gate fails inherited (or-abstraction on AuditTrailServiceInterface, manifest l10n)
