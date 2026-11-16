@@ -423,6 +423,7 @@ opencatalogi	2541	131ce0fa2c470dbe80bfc84563ed1235afce4730	APPROVE	worker-47	Str
 opencatalogi	2673	61f25128c9c36b5ca1d7519327d3ffbd942c0c46	APPROVE	worker-47	Thorough; no blockers; implements publications-unpublished-overview DSH-011; endpoint logged-in only, rows from RBAC-on search, files only of readable publications; FileMapper calls exist on main
 portaliq	2349	e7812cc2231a27fa071df300fa8477ffb36e9a79	APPROVE	worker-48	Quick; no blockers; dev dependency phpstan 2.3.1 -> 2.3.5, lock only, tree adds no failures
 portaliq	2530	23908dc9409b67edbb7c1748002e6f9859115f48	APPROVE	worker-48	Quick; no blockers; shared Conduction lock refresh (.github 1.18 -> 1.19), lock only, tree adds no failures
+humaniq	606	647da215609758b6eb51cbe1182861a618182015	APPROVE	worker-58	Quick; no blockers; twig 3.29->3.30 dev dep + sbom; tree unit 4405 ok = baseline, test:js 1 inherited manifest-export failure untouched by the PR
 hermiq	1193	7d49a897eacda342108a8ffdf6d0ba0a3967dc67	APPROVE	worker-53	Quick; no blockers; sass dev bump with regenerated sbom
 hermiq	1195	7d6678393fcb6f34e5686d5bae1b98fb9a9688de	APPROVE	worker-53	Quick; no blockers; eslint dev bump with regenerated sbom
 hermiq	1307	1007dac617c9bde9350369bf4adb9a791a8aa04b	APPROVE	worker-53	Quick; no blockers; hydra-gates dev bump with regenerated sbom
