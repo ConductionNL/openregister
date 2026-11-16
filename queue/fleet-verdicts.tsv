@@ -15888,3 +15888,4 @@ filinq	2093	282560c20d706ec16d98282e71e2ce8231175f8f	CONFLICT	worker-07	conflict
 decidiq	2192	5deb2820c6d2f401b66ef8a5ecd808e4034594fa	CONFLICT	worker-26	conflicts with development in openapi.json src/manifest.json src/menu-layout.simple.json src/registry.js ; tests not run
 filinq	2120	261649dc22979f0fb626a6aeb7642c218a64ca07	CONFLICT	worker-58	conflicts with development in l10n/en.js,nl.js,en.json,nl.json, filinq_register.json, ListenerRegistrarTest.php, webpack.config.js
 filinq	2114	78a005c251fc9ce1db35ba012ea58f6d6ef2b57c	CONFLICT	worker-58	conflicts with development in l10n/en.js,nl.js,en.json,nl.json, filinq_register.json, filinq_mock_register.json, openapi.json
+dossiq	3894	8ed2662d166b8bee07c9b1aec92ee7de29dc08cb	CONFLICT	worker-11	sbom.cdx.json conflicts with development; baseline unit 18363 tests, 1 error (StatusEntryRequirementsGuardTest, inherited); PR suite not run
