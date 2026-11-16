@@ -4840,3 +4840,5 @@ buildiq	1648	26919cc440790285012d4e2665ca8d82e8bc754b	RED	worker-56	GATE RED flo
 versioniq	758	a25f1ca91f8bb5d172b41717fb0590880c7007f7	RED	worker-12	GATE RED floor: overall: 5.07 -> 5.05; unit_size: 4.85 -> 4.83; unit_complexity: 4.79 -> 4.73; unit_interfacing: 4.59 -> 4.56
 buildiq	1608	09ddceb4e2b51804e124259fe3076570d3a4e69d	SKIP	worker-56	no APPROVE review at this head
 launchpad	1235	bb3459a53c1b068f59360186b8ad6d9615a536ed	MERGED	worker-06	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.65 holds at 3.78
+dossiq	6617	df25ce85aa64a0d466efbc553ef6e4df5420a745	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.40
+dossiq	6618	6d0b67644685e431358c8174e8b64329c59a9e01	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.40
