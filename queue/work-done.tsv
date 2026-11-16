@@ -16049,3 +16049,4 @@ merge:larpinq:1050:a5d0b0fe	cloud tree of 3 larpinq PRs: merged=0 red=2 fail=0 s
 verify:planninq:1198:4ef22590	GREEN #1198: phpunit 1222/0 new failures, vitest 3566 passed	session-20261116T092435-e1a408a7	2026-11-16T09:27:27Z
 review:portaliq:1764:a878ea03	GREEN: ts-eslint parser dev bump, lint ok, unit errors inherited	session-20261116T091528-eef53ce7	2026-11-16T09:27:38Z
 fix:larpinq:1053:1a318455	fixed: find via ObjectFindOptions, pushed c3e9d427; merge lock busy, REVERIFY queued	session-20261116T092539-dc11f615	2026-11-16T09:27:54Z
+fix:dossiq:3936:692e66a3	fixed floor (unit_interfacing 3.37 -> 3.39), pushed 073e564b; merge lock held elsewhere, REVERIFY queued	session-20261116T091549-b399a636	2026-11-16T09:28:13Z
