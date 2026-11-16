@@ -18359,6 +18359,7 @@ verify:decidiq:2190:647d8817	CONFLICT #2190 (8 files incl. OndermandaatGuardServ
 verify:decidiq:2174:7dfedbc9	2174 CONFLICT	session-20261116T230531-f9095b0f	2026-11-16T23:29:54Z
 verify:decidiq:2171:994e7d37	CONFLICT #2171 (5 files)	session-20261116T224246-d9bde508	2026-11-16T23:30:10Z
 verify:decidiq:2189:d5e92fa9	CONFLICT #2189 (lib/Service/MeetingPackageService.php lib/Settings/profiles/municipality.json )	session-20261116T232623-066b53c9	2026-11-16T23:30:41Z
+verify:hermiq:1741:6b894775	CONFLICT #1741 (RunNowController, HermiqToolProvider + test)	session-20261116T230934-9ee320cf	2026-11-16T23:30:50Z
 verify:buildiq:1649:64837d79	CONFLICT #1649 (l10n, AutomationEditDialog.vue)	session-20261116T232519-f84cca9a	2026-11-16T23:31:00Z
 verify:buildiq:1262:92cd509b	CONFLICT: lock call sites vs development	session-20261116T231848-eaef2e51	2026-11-16T23:31:16Z
 verify:decidiq:2195:0dfa2458	CONFLICT #2195 (manifest + spec)	session-20261116T224246-d9bde508	2026-11-16T23:31:26Z
