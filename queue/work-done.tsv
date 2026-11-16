@@ -15711,3 +15711,4 @@ fix:planninq:918:6289a597	failed: sbom already current (dev dep nextcloud/ocp bu
 fix:launchpad:885:2efbf863	no change: branch up to date with development, conflict only tree-relative; REVERIFY queued (merge lock held elsewhere)	session-20261116T080031-6bfb8cef	2026-11-16T08:10:00Z
 verify:learniq:2551:092c2d2e	5 GREEN (2551,2556-2559), 1 RED (2560: gridstack peer conflict breaks npm ci)	session-20261116T075942-394736ff	2026-11-16T08:10:32Z
 fix:shillinq:2071:513cd9f5	conflict resolved, pushed 85bf3df1; REVERIFY (merge lock busy)	session-20261116T075953-c9c4b65a	2026-11-16T08:10:44Z
+review:hermiq:1167:dae65138	GREEN: vitest 1526 OK, sbom current	session-20261116T075936-d83d6c1e	2026-11-16T08:12:01Z
