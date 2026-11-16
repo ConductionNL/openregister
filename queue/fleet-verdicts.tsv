@@ -14728,3 +14728,4 @@ decidiq	2207	4cc6ec944a9c332488078dfd95666982ed716c9a	RED	merge3:merge-gate	GATE
 hermiq	1150	9f31a6df5bd51ee8f40135390b5d8bb07ddb8e3d	CONFLICT	worker-10:merge	conflicts with development; files: lib/Service/ContextAgentInteractionService.php 
 hermiq	1189	4990197f996880aaa0b623dab85	REVERIFY	worker-10:merge	verdict sha is not the head: head is 4990197f996880aaa0b623dab850d64ee4bed3be
 integriq	3049	2da4ecc8a220e37618f328126eaad0045314c3cd	RED	worker-45:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
+learniq	2166	a323b0c1d43a49a4a740a714d4434d6cefffb39f	REVERIFY	worker-26	spdx drop came from development's tests/Stubs/Contract/ObjectServiceInterface.php (no SPDX header); merged development in and added the header, spdx share back to 100%, store tests 199 green; merge lock held by another merger; new head 5e708c03b21527b11d964eac32ec5d62d984da40, verify it
