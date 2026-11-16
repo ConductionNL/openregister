@@ -16722,3 +16722,4 @@ cover:openregister:7350e3efm9dc5:c8e24f36	PR #10595: Service/Object 97.13→97.3
 merge:decidiq:2170:950c5215	merge3 tree of 3 decidiq PRs: merged=0 red=2 fail=0 skip=1; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-16T17:00:36Z
 merge:buildiq:1091:23716f96	unmeasured: static.developer.overheid.nl (1596 approved, gate could not measure; 1091/1094 GATE RED sbom; 1624 RED; 1608/1649/1651/1654 CONFLICT)	session-20261116T164354-a7d53f16	2026-11-16T17:00:45Z
 review:stackiq:1931:f5df0ce8	GREEN (unit 3751 OK; conflicts with development in register json)	session-20261116T165811-2336fe78	2026-11-16T17:00:56Z
+merge:hermiq:1308:8e6eca33	merge3 tree of 9 hermiq PRs: merged=3 red=2 fail=0 skip=0; conflict 4, lint 0, moved 0; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-16T17:02:04Z
