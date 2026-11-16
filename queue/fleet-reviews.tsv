@@ -348,3 +348,4 @@ decidiq	1691	d103222b2f9f51517c3c7de2194fc68cd4940546	APPROVE	worker-55	Thorough
 decidiq	2178	32c0517191c436a3e329ce9775106b75847f3c8d	REQUEST_CHANGES	worker-55	Strict; blocker: spec-coverage gate fails on PR-added src/components/tabs/SpeakingSlotsBlock.vue watcher place() (missing @spec); concerns: no-admin-idor gate hits on agenda/queue are false positives (fail-closed staff guard forMeeting runs first)
 learniq	1167	b9644fb4e9c377845c07d5fc7711b21cc1e3ce3a	APPROVE	worker-46	Quick; no blockers; dev dependency bump with regenerated sbom and SPDX header on a test stub
 learniq	2126	c35043502445af1315db6d77b7c0c0a84222a33b	APPROVE	worker-46	Quick; no blockers; dev dependency bump, composer-audit advisories are on packages it does not change (inherited)
+learniq	1881	fffa1128975dd927184ddcba8f85d13b5bf86997	APPROVE	worker-46	Standard; no blockers; past course days stop being upcoming per past-course-days-drop-off spec, hourly job with tests
