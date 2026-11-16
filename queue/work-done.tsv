@@ -16486,3 +16486,4 @@ fix:learniq:2166:a323b0c1	fixed spdx (header missing on development's ObjectServ
 fix:opencatalogi:2679:b5f77a60	fixed: maintainability back to 5 stars (checker 4.51), pushed 0e72dcc6; REVERIFY queued (gate unmeasured here: static.developer.overheid.nl)	session-20261116T142651-57b203fe	2026-11-16T14:48:42Z
 fix:integriq:3671:18d443b4	fixed floor (duplication 3.87, unit_size 3.58); pushed 4b0e1b0a; lock held elsewhere, REVERIFY queued	session-20261116T142815-db93bef4	2026-11-16T14:49:07Z
 merge:integriq:2716:bdcca480	unmeasured: static.developer.overheid.nl (merged=0; 2716/2994 gate UNMEASURED; 3049, 3596 gate RED floor; 3638, 3649 REQUEST_CHANGES; 3050/3051/3593 CONFLICT)	session-20261116T142703-f07e9998	2026-11-16T14:49:34Z
+fix:learniq:2556:8dedbada	sbom regenerated; new head 489b7f4d; REVERIFY (lock held)	session-20261116T144202-f2b26030	2026-11-16T14:49:31Z
