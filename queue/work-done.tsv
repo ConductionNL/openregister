@@ -17438,3 +17438,4 @@ review:decidiq:2170:80617c37	RED: 2 vitest failures in simpleMeetingPage.spec.js
 cover:decidiq:a5f973bbm9cda:f545d745	deferred: decidiq has 48 open PRs	session-20261116T193350-bd20edd7	2026-11-16T19:38:10Z
 lane:arch5:hermiq:next-hermiq-r1	PR #1810 opened (estimate 3.77-3.82 -> 3.79-3.83, suite green); hermiq merge lock held by another merger, GREEN verdict recorded; next-hermiq-r2 queued	session-20261116T191704-9a63be87	2026-11-16T19:38:41Z
 merge:opencatalogi:2686:4fd9583f	cloud tree of 2 opencatalogi PRs: none; conflict 2, lint 0, red 0, moved 0, done 0	session-20261116T190918-81e43f73	2026-11-16T19:38:53Z
+merge:decidiq:1467:c6cd3d50	merge3 tree of 8 decidiq PRs: merged=6 red=1 fail=0 skip=0; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-16T19:39:14Z
