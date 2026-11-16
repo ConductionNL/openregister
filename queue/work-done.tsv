@@ -18310,3 +18310,4 @@ merge:hermiq:1764:b1627de7	cloud tree of 1 hermiq PRs: none; conflict 1, lint 0,
 merge:decidiq:2235:e01c3390	cloud tree of 1 decidiq PRs: merged=0 red=0 fail=0 skip=1 (#2235 REQUEST_CHANGES: repair step without version bump)	session-20261116T230927-c680b0de	2026-11-16T23:14:25Z
 review:launchpad:1223:430e98a0	BLOCK: tests green; gates 7/51/55/101 fail on added lines; openapi.json conflict	session-20261116T224621-39328066	2026-11-16T23:14:30Z
 review:openregister:10602:8205c1fc	APPROVE: additive findFileIdsWithEntities pager; Architecture/Rules/Controller/Contract/Db green merged with main	session-20261116T222109-41a45b55	2026-11-16T23:15:13Z
+cover:launchpad:fb10c50fm88bd:aae6d66c	added PlainExceptionContractsTest (9 tests) to open PR #1250 (launchpad has 45 open PRs); suite 4508->4517, no new failures; no pcov here, coverage not re-measured	session-20261116T231206-3746f18d	2026-11-16T23:15:20Z
