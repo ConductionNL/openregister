@@ -776,3 +776,4 @@ keepiq	1868	e69d0ac52344ce388c685ebf74a84d4cf795c3ad	APPROVE	worker-05	Quick (te
 keepiq	1870	2f3435f5868e0a6450eb6f074c6c0a297a19bef1	APPROVE	worker-05	Quick (tests only); no blockers; audit-failure test pins existing log-and-continue behaviour
 keepiq	1871	6308066bd3e3db5258363087bd6b5eac02ea3f5b	APPROVE	worker-05	Quick (tests only, 5 new test files); no blockers; none
 decidiq	2235	dd4b29b474d580437ec01d83251b525301860e2b	REQUEST_CHANGES	worker-43	Thorough; blocker: new post-migration repair step RepairApprovalActionStates registered in appinfo/info.xml but <version> not bumped (gate migration-version-bump), so occ upgrade never runs it on existing installs - bump the version; concerns: repair and trail read use findAll without paging, may mi
+launchpad	1246	5e0ab643e3e4e1e8cc08b9907c95b653b18b3ca6	APPROVE	worker-53	Thorough; no blockers; assertAcyclic not yet wired server-side (task 23 left, documented), OR-abstraction gate hit is inherited from development
