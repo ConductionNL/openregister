@@ -15807,3 +15807,4 @@ fix:versioniq:735:0ba1d1c9	no change: merges clean on development, conflict is t
 fix:stackiq:1931:42bba8a9	fixed: @spec tags added, pushed 8e3de7ae; merge lock held elsewhere, REVERIFY recorded	session-20261116T083044-10866b36	2026-11-16T08:32:30Z
 review:filinq:2123:e7b32d65	GREEN: unit 6863 ok, vitest 785 ok	session-20261116T082637-06597b03	2026-11-16T08:32:44Z
 fix:decidiq:2170:a39ae47e	fixed: migrated room-system calls to main object API, suite green; merge lock busy, REVERIFY at d54fcb29	session-20261116T082957-20288fea	2026-11-16T08:33:11Z
+fix:stackiq:1965:db980e34	partial: spec tags added (new head c6e522ff); semantic-controls blocker on the map's pointer-only edge click remains; REVERIFY written	session-20261116T080103-dd70aeff	2026-11-16T08:33:25Z
