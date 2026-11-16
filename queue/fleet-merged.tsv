@@ -4342,3 +4342,4 @@ hermiq	1187	415fb0238e6625fe4d8401b5cf2e03b85a5c4e8d	RED	merge3	GATE RED sbom: p
 hermiq	1188	97593dc8ffffbb6783bfaaca2bcdb450ca9ff291	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.77 holds at 3.77
 hermiq	1189	4990197f996880aaa0b623dab850d64ee4bed3be	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.77 holds at 3.77
 versioniq	711	dc3fffc4091930880b05adf9f0e76b6a2caf5c4a	RED	worker-03	GATE RED floor: unit_complexity: 4.63 -> 4.60; unit_interfacing: 4.26 -> 4.22
+versioniq	717	8419af1d7c38c7852aa8354f89ad55a4a3ace8c4	SKIP	worker-03	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
