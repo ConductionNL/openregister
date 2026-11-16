@@ -18092,6 +18092,7 @@ lane:arch5:learniq:next-learniq-r4	PR #2574, GREEN	session-20261116T215125-0190b
 review:launchpad:1223:e2a4d5a1	GREEN: phpunit 4605 OK, vitest 2635 OK; merges with additive conflicts (openapi.json, PersonalLayerService)	session-20261116T220845-a0bf4665	2026-11-16T22:16:55Z
 fix:shillinq:1899:acc6426f	conflict resolved, pushed fd17f119; unit 12395 OK; lock busy, REVERIFY queued	session-20261116T220950-f845cd73	2026-11-16T22:17:07Z
 review:shillinq:2997:adca596c	GREEN; conflicts with development in register-versions.lock.json (needs appVersion bump)	session-20261116T220914-8593c6b1	2026-11-16T22:17:17Z
+cover:pipelinq:7f9dc8e6m3dbb:9ece5c6f	already done: lib/Controller/Support/ is 100% lines (11/11 classes, strict metadata, 15 tests OK) on development	session-20261116T221004-b3e0abd6	2026-11-16T22:17:54Z
 verify:launchpad:1246:310c46ed	GREEN #1246: phpunit 4498 ok (baseline 4491), vitest 2616 ok	session-20261116T220411-e35751c0	2026-11-16T22:18:00Z
 merge:versioniq:756:00c33f39	cloud tree of 2 versioniq PRs: merged=2 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T215102-33996dc2	2026-11-16T22:18:11Z
 measure:decidiq:20261116h20	php 91.43% (pcov), js 98.39% at aaedbb43	session-20261116T221549-588bbbce	2026-11-16T22:18:59Z
