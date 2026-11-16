@@ -75,6 +75,7 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\Case\CaseTransitionCause
  * @uses \OCA\OpenRegister\Service\Case\CaseTransitionEffects
  * @uses \OCA\OpenRegister\Service\Flow\FlowExpressionDataOptions
+ * @uses \OCA\OpenRegister\Service\Flow\EventCatalogService
  */
 class CasePlanCascadeTest extends TestCase {
 

@@ -43,6 +43,40 @@ use Psr\Log\LoggerInterface;
  * An imported register keeps its schemas' exportable flag.
  *
  * @covers \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\Configuration
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Register\ExactKeyHydration
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValueRules
+ * @uses \OCA\OpenRegister\Db\Schema\TopLevelAnnotationFold
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Service\Configuration\AppConfigurationRecord
+ * @uses \OCA\OpenRegister\Service\Configuration\ArrayStructure
+ * @uses \OCA\OpenRegister\Service\Configuration\ConfigurationImportRecords
+ * @uses \OCA\OpenRegister\Service\Configuration\ExportHandler
+ * @uses \OCA\OpenRegister\Service\Configuration\ImportComponent
+ * @uses \OCA\OpenRegister\Service\Configuration\ImportDuplicates
+ * @uses \OCA\OpenRegister\Service\Configuration\ImportHandler
+ * @uses \OCA\OpenRegister\Service\Configuration\ImportReferenceMap
+ * @uses \OCA\OpenRegister\Service\Configuration\ImportRun
+ * @uses \OCA\OpenRegister\Service\Configuration\ImportedSchemaLookup
+ * @uses \OCA\OpenRegister\Service\Configuration\ImportedSchemaShape
+ * @uses \OCA\OpenRegister\Service\Configuration\RejectedSchemaReport
+ * @uses \OCA\OpenRegister\Service\Configuration\SchemaImportOptions
+ * @uses \OCA\OpenRegister\Service\Configuration\SchemaImportSteps
+ * @uses \OCA\OpenRegister\Service\Configuration\SeedImport
+ * @uses \OCA\OpenRegister\Service\Configuration\SeedRelatedItems
+ * @uses \OCA\OpenRegister\Service\Configuration\SeedVersionLedger
+ * @uses \OCA\OpenRegister\Service\Configuration\ShippedSchemaBaseline
+ * @uses \OCA\OpenRegister\Db\Register\RegisterJson
+ * @uses \OCA\OpenRegister\Db\Register\RegisterSchemaIds
+ * @uses \OCA\OpenRegister\Db\Schema\AuthorizationRulesValidator
+ * @uses \OCA\OpenRegister\Db\Schema\DeclaredActions
+ * @uses \OCA\OpenRegister\Service\Authorization\RbacGroupCollector
+ * @uses \OCA\OpenRegister\Service\Configuration\ConfigurationExportRun
+ * @uses \OCA\OpenRegister\Service\Configuration\ExportSlugMaps
  */
 class SchemaExportableImportTest extends TestCase {
 

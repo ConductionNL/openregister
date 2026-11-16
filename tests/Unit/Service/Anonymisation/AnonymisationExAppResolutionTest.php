@@ -38,6 +38,8 @@ use Psr\Log\LoggerInterface;
 #[UsesClass(AnonymisationBackendCollaborators::class)]
 #[UsesClass(AnonymiserCall::class)]
 #[UsesClass(ProbeResultCache::class)]
+#[UsesClass(\OCA\OpenRegister\Service\Anonymisation\DetectorVersionHistory::class)]
+#[UsesClass(\OCA\OpenRegister\Service\Anonymisation\DetectorVersionReader::class)]
 final class AnonymisationExAppResolutionTest extends TestCase {
 
 	/**

@@ -54,6 +54,8 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Db\TypedFieldsJson
  * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  * @uses \OCA\OpenRegister\Service\Configuration\ConfigurationExportRun
+ * @uses \OCA\OpenRegister\Db\LockTerms
+ * @uses \OCA\OpenRegister\Db\SoftDeletion
  */
 class ExportHandlerGoldenTest extends TestCase {
 
