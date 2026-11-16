@@ -15407,3 +15407,4 @@ review:filinq:2088:bd2b4649	GREEN: matches template-library-leaf specs; unit 682
 review:decidiq:1692:faa2a2eb	GREEN: openspec-only sweep, 4624 unit tests pass	session-20261116T062120-691af8f7	2026-11-16T06:24:19Z
 review:filinq:2123:3f385b11	GREEN: phpunit 6863 OK, jest 570 OK, phpstan clean	session-20261116T062140-6a300781	2026-11-16T06:24:36Z
 review:decidiq:1473:fbdc77e4	GREEN: patch bump, vitest 2847 pass, phpunit 4624 OK	session-20261116T062050-add210c3	2026-11-16T06:24:43Z
+fix:shillinq:2070:fbb82225	fixed: save migrated to ObjectSaveOptions, tests green; new head b00d1ffe	session-20261116T062050-3a7e109c	2026-11-16T06:25:05Z
