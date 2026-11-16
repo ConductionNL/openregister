@@ -3774,3 +3774,134 @@ buildiq	1256	342dece0d678059a47b5743de2303db5fabfe837	RED	merge8	GATE RED sbom: 
 buildiq	1596	33a8b51d6ee0f8da44eece4449f064758c5bb69a	RED	merge8	GATE RED absolute floor: buildiq maintainability 3.90 after merge is below its floor 3.91
 buildiq	1669	af64f23a49cdaa33a32b421c3b38f7d7eb47a898	MERGED	merge8	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.91 holds at 3.91
 hermiq	1167	9bf6ab112ffdb0243b935c2a21e551a19df05fe1	RED	worker-22	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+launchpad	753	d16aabc36feeed32b92d557a943abd47e48c054a	RED	worker-12	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+launchpad	756	e5da8a8442e3254be403a4d29fe3cb21312df78c	SKIP	worker-12	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
+launchpad	880	3c07107533c5035ff96566d9aa97a6c5c78aa5e3	SKIP	worker-12	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
+launchpad	977	4ec996d31439daed99af546858b9614b2ca4a159	SKIP	worker-12	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
+stackiq	1924	62eff96df63034daba7133a32d5d71748aa7b0cb	RED	worker-53	GATE RED checker floor: spdxheaders stars: 5 -> 4
+stackiq	1954	8ec8ab7148eb45c264f52f32289e01d1582b2b87	RED	worker-53	GATE RED floor: unit_interfacing: 4.72 -> 4.70
+stackiq	1973	a944108885b24551a5044812231490fe52d142ca	RED	worker-53	GATE RED checker floor: spdxheaders stars: 5 -> 4
+stackiq	1975	a2ac07938baaf124dcffeabb8e0dee04800b4786	RED	worker-53	GATE RED checker floor: spdxheaders stars: 5 -> 4
+portaliq	1229	a2bd58a243559017238c34449a1cf079c2acb5af	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.11
+portaliq	1354	84f30a141f0eb4ba2c9fe1321745dc811282a1a5	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+portaliq	1657	6705de8474198e5fc8de69b76c6663f50ec9f173	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.11
+portaliq	1659	14ee493687347da3a9da9b27e85e73ccd0938ccf	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.11
+portaliq	1670	8ef03e9f6f255a7cec4c55eff8657a438d8a8932	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.11
+portaliq	1680	1c24f617f10e0e309a8be6a26b0301709ad33eed	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.11
+portaliq	1681	4f75ff2065177fa6602b8bf996953b0e3383174a	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.11
+hermiq	1293	38013b9c66979f974a60e5b5c2fecf48c323ee46	SKIP	worker-22	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator, secretscanning; this is not a pass
+hermiq	1534	b7a7d45bfa93bc796ed10723ca14602299d17d9d	SKIP	worker-22	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator, secretscanning; this is not a pass
+hermiq	1739	5cf3f827da61c88ed80a91cc9d749136f3e970fe	SKIP	worker-22	no APPROVE review at this head
+thematiq	1117	2427508a3106eb9c72d567060d7d6beaeab72430	RED	worker-17	GATE RED sbom: composer.lock changed without sbom.cdx.json
+launchpad	653	7dd62332f078073df03444ab4c6c6b1f2c66f246	RED	worker-12	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+launchpad	763	ac59f2930cb25b439f9fdffbe39af0aa2b8b0f7e	RED	worker-12	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+launchpad	832	5cb157b3a864251534d0e0eea939fb8029de3108	RED	worker-12	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+launchpad	755	7e918f87d18e313d38cf536b22ef077d2faaca26	RED	worker-12	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+launchpad	757	674cfd98d8006ae4c69b2e9bf9b14cdeec3e15bb	RED	worker-12	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+launchpad	761	ca2815b851deb1969d5b23ac0c29185819391d2e	SKIP	worker-12	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
+launchpad	819	c5c80a07dc500fcc4e5064cd5126241a9f4bf32a	SKIP	worker-12	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
+launchpad	1098	08b6144744978ee052f69f5452afa076f8d9d101	SKIP	worker-12	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
+thematiq	1303	550d277c14273dd3b9908587fb0804741182805c	SKIP	worker-17	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator, secretscanning; this is not a pass
+thematiq	1677	5e934e94706006fbd51f109fcc53208443fdf956	SKIP	worker-17	no APPROVE review at this head
+launchpad	755	7e918f87d18e313d38cf536b22ef077d2faaca26	RED	worker-12	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+launchpad	757	674cfd98d8006ae4c69b2e9bf9b14cdeec3e15bb	RED	worker-12	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+launchpad	761	ca2815b851deb1969d5b23ac0c29185819391d2e	RED	worker-12	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+launchpad	819	c5c80a07dc500fcc4e5064cd5126241a9f4bf32a	RED	worker-12	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+launchpad	1098	08b6144744978ee052f69f5452afa076f8d9d101	RED	worker-12	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+humaniq	606	647da215609758b6eb51cbe1182861a618182015	SKIP	worker-53	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator, secretscanning; this is not a pass
+humaniq	661	f523f286b290dfce227eab0ee9bb36a5418b4a2b	SKIP	worker-53	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator, secretscanning; this is not a pass
+humaniq	662	d7499aecffd3be7525553af3896068e429d61751	SKIP	worker-53	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator, secretscanning; this is not a pass
+humaniq	685	c73546cde14f4c4a1b1f723d1c23c6892615eddd	SKIP	worker-53	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator, secretscanning; this is not a pass
+humaniq	686	fe1cbc0ae582ec29fbb26fc246d74dbf397480b5	SKIP	worker-53	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator, secretscanning; this is not a pass
+versioniq	500	890378b335a6437a175c190f8627fdc91ddc4733	RED	worker-50	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+versioniq	503	2d7f74a1bcc195a9c6630723fd089cfb3b9fff77	RED	worker-50	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+versioniq	707	9729dcff80bab36770e43b15864969807474727f	SKIP	worker-50	no APPROVE review at this head
+learniq	1167	61811d4d8a8ea24ea9173de09dbf224a753fa79c	SKIP	worker-15	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
+learniq	1169	6f8c6510da541700251fc85ad25a279db0a224bf	SKIP	worker-15	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
+learniq	1727	185949881fbbf0dbfdf3524a4f4cbb9378b38ebc	SKIP	worker-15	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
+learniq	1903	a21f3b3be7a0738457716ac64ebcb0934364ae10	SKIP	worker-15	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
+learniq	2126	4e6551e419cd72ffe5671223bb8b1976ed8f7538	SKIP	worker-15	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
+launchpad	756	e5da8a8442e3254be403a4d29fe3cb21312df78c	RED	worker-12	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+launchpad	880	3c07107533c5035ff96566d9aa97a6c5c78aa5e3	RED	worker-12	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+launchpad	977	4ec996d31439daed99af546858b9614b2ca4a159	RED	worker-12	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+stackiq	1168	04f38d3ae4a4d17b142dbafb97d2a81126d6568c	SKIP	worker-23	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
+stackiq	1297	f6f898a1ce156bb7902c6cbdc55ca55df63daf3a	SKIP	worker-23	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
+stackiq	1988	084061aa2765cef73b46e59c4e2a5149b5db4232	RED	worker-23	GATE RED sbom: composer.lock changed without sbom.cdx.json
+thematiq	1365	39f057e7817920c340d55e29be4587cb04702941	SKIP	worker-17	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator, secretscanning; this is not a pass
+learniq	1167	61811d4d8a8ea24ea9173de09dbf224a753fa79c	RED	worker-15	GATE RED checker floor: spdxheaders stars: 5 -> 4
+learniq	1169	6f8c6510da541700251fc85ad25a279db0a224bf	RED	worker-15	GATE RED checker floor: spdxheaders stars: 5 -> 4
+learniq	1727	185949881fbbf0dbfdf3524a4f4cbb9378b38ebc	RED	worker-15	GATE RED checker floor: spdxheaders stars: 5 -> 4
+learniq	1903	a21f3b3be7a0738457716ac64ebcb0934364ae10	RED	worker-15	GATE RED checker floor: spdxheaders stars: 5 -> 4
+learniq	2126	4e6551e419cd72ffe5671223bb8b1976ed8f7538	RED	worker-15	GATE RED checker floor: spdxheaders stars: 5 -> 4
+versioniq	505	aeceef74a654df9ff29acf01994dd6bb8cbe10c2	SKIP	worker-50	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
+versioniq	725	c21158724c57858896fee8e8b6a247070aec5026	SKIP	worker-50	no APPROVE review at this head
+versioniq	732	edb0233ba6169cf4419f02b6bed018d9f56875ee	SKIP	worker-50	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
+versioniq	505	aeceef74a654df9ff29acf01994dd6bb8cbe10c2	SKIP	worker-50	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator, secretscanning; this is not a pass
+versioniq	725	c21158724c57858896fee8e8b6a247070aec5026	SKIP	worker-50	no APPROVE review at this head
+versioniq	732	edb0233ba6169cf4419f02b6bed018d9f56875ee	SKIP	worker-50	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator, secretscanning; this is not a pass
+launchpad	787	e3f05384134362146c7d467811c03fd9ec82059b	RED	worker-12	GATE RED floor: overall: 4.56 -> 4.53; duplication: 4.66 -> 4.63; unit_complexity: 4.72 -> 4.68; unit_interfacing: 3.59 -> 3.52; module_coupling: 4.73 -> 4.69
+decidiq	1470	d4e9a56bd03ff9b791d94f382e91a9560de24a53	SKIP	worker-01	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
+launchpad	786	f38de5677b75323e5f6dffb20b4f39284cce4528	RED	worker-12	GATE RED floor: overall: 4.56 -> 4.53; unit_size: 3.94 -> 3.92; unit_complexity: 4.72 -> 4.68; unit_interfacing: 3.59 -> 3.51; module_coupling: 4.73 -> 4.68
+launchpad	1224	c152df9e6d2445e7a7af0f9fc5fce00f26a1e35e	RED	worker-12	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+versioniq	699	669271613b589912b60e8ed236b9767d4632550f	SKIP	worker-50	no APPROVE review at this head
+versioniq	736	9124666410c83a049238128de282c51abd7b60da	SKIP	worker-50	no APPROVE review at this head
+learniq	2507	334d2575558f2d142b480a2f19098f9065d57cc9	SKIP	worker-15	no APPROVE review at this head
+stackiq	1417	603fa7bc772b26911bf07fedbd31ca5ff45303ee	RED	worker-23	GATE RED checker floor: spdxheaders stars: 5 -> 4
+stackiq	1438	382aa36aab68ee72bcc38e311b8dcd92b0c081f4	RED	worker-23	GATE RED sbom: composer.lock changed without sbom.cdx.json
+stackiq	1941	3f74a8991865e4e8d466edb216ef9d7cc740dee0	SKIP	worker-23	no APPROVE review at this head
+versioniq	738	f3f7da6d169b73e4fde2fc64bbc78a43994842cd	SKIP	worker-50	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator, secretscanning; this is not a pass
+decidiq	2207	4cc6ec944a9c332488078dfd95666982ed716c9a	SKIP	worker-01	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator, secretscanning; this is not a pass
+filinq	1962	be24b1cd6853dabcb310d2c95e0291546e57d77f	SKIP	worker-23	no APPROVE review at this head
+launchpad	1230	12d856f3048ccf1a557406e217061c6b395172ed	RED	worker-12	GATE RED floor: overall: 4.56 -> 4.53; unit_size: 3.94 -> 3.92; unit_complexity: 4.72 -> 4.66; unit_interfacing: 3.59 -> 3.51; module_coupling: 4.73 -> 4.71
+launchpad	1234	6a94a1fa7ca29a5267bfc77210f29d21bd36c68e	SKIP	worker-12	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator, secretscanning; this is not a pass
+launchpad	1235	fe672232fedcfa4801d0f4ede0e8e2e3fec2a58d	RED	worker-12	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+opencatalogi	2407	15ee026e9e5cc880f1ef5812343e2da79e65c3d1	SKIP	worker-13	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
+opencatalogi	2655	05605d932ec889bd630e9916ac9e044664837e19	SKIP	worker-13	no APPROVE review at this head
+opencatalogi	2679	22b67cf7a8a1538fe76e60f3fd0a713b896ffc06	SKIP	worker-13	no APPROVE review at this head
+decidiq	1468	7dc751fb076903e2e43ec5e7338bc901791d14a5	SKIP	worker-01	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
+decidiq	1469	09383bbcc1479f735f6f91b06b9eab2bc002c9b9	SKIP	worker-01	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
+decidiq	1474	08a18331e7494f87957cc48a01384d4bdd132036	SKIP	worker-01	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
+decidiq	1767	ef20753cf5af14ce526904d1a06b54c59bfb59fc	SKIP	worker-01	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
+versioniq	497	39a7db062ea18ada87559c730217cdc521657235	SKIP	worker-50	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator, secretscanning; this is not a pass
+versioniq	501	451c8f5901c5ec4277fdccbd82e4349166c89e9f	SKIP	worker-50	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator, secretscanning; this is not a pass
+versioniq	502	c6d0467e61059cf8e5a0263c5f728008a7ee6c67	SKIP	worker-50	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator, secretscanning; this is not a pass
+versioniq	721	a9a532f37b7b8a421d4320aa0f6bcf3dd2d2db2c	SKIP	worker-50	no APPROVE review at this head
+launchpad	785	91bd14a0c96181818b7b5c9405c8098dd9e28904	RED	worker-12	GATE RED floor: overall: 4.56 -> 4.54; unit_complexity: 4.72 -> 4.69; module_coupling: 4.73 -> 4.68
+filinq	2072	ec607dc3215ac306c4ccbc98744800d52f49334a	SKIP	worker-23	no APPROVE review at this head
+larpinq	1060	11a6a4eac7c3cc7f699331c7d33d607e07c5b2e4	SKIP	worker-38	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator, secretscanning; this is not a pass
+planninq	1070	0324724d24fe6d0db28116a01a3102143ea1dcb2	RED	worker-12	GATE RED sbom: composer.lock changed without sbom.cdx.json
+learniq	2549	8928cf92a03db606cdde9650a94cdce1e587261c	RED	worker-15	GATE RED floor: unit_complexity: 4.38 -> 4.36; unit_interfacing: 3.12 -> 3.09
+decidiq	1691	d103222b2f9f51517c3c7de2194fc68cd4940546	SKIP	worker-01	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator, secretscanning; this is not a pass
+decidiq	1950	e876f7cecae4332eb0a07df3b2effe4dd9b06afb	SKIP	worker-01	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
+decidiq	2191	58233c56976149d9693c08a2fd992b99c2e6e0c1	SKIP	worker-01	no APPROVE review at this head
+planninq	871	c207058ef15da9886b349f626675653529593ab3	SKIP	worker-12	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator, secretscanning; this is not a pass
+planninq	908	d3be65702cebbde17585b38168c1b3b9353a9712	RED	worker-12	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+planninq	918	6289a59743741d162f71a87526216d4697bc1247	RED	worker-12	GATE RED sbom: composer.lock changed without sbom.cdx.json
+planninq	933	6f703f97ef60607a57d16ca90675442a8ed0010c	RED	worker-12	GATE RED floor: unit_complexity: 4.88 -> 4.86; unit_interfacing: 4.75 -> 4.73
+opencatalogi	1889	a5e55a557ee338785dc600d83abef5e2ce111343	RED	worker-13	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+opencatalogi	2059	fa65b8475bfd5a1fc55c6e7914ca1801c99dc08e	RED	worker-13	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+opencatalogi	2244	9178373d320ba947d116220fe88c0cd71550e833	RED	worker-13	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+opencatalogi	2643	7bc2433945f732c8cf0072d2f18554f8d29f2799	SKIP	worker-13	no APPROVE review at this head
+opencatalogi	2670	eed46219e9cfb33b3d3a6d40373bee0b46f3fe10	SKIP	worker-13	no APPROVE review at this head
+filinq	2094	4bb74d349673ed91712f3e90839a8c258e6f3b7e	SKIP	worker-23	no APPROVE review at this head
+planninq	1196	458678cafcd02325f85d10c61f1a19d493c49e74	RED	worker-12	GATE RED sbom: composer.lock changed without sbom.cdx.json
+hermiq	1135	0d097997db1a2b53afae0ba11817aff5667f2f08	SKIP	worker-08	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
+hermiq	1801	b8e31c29c0755366e44d0de7ddd7cee5f6d4be87	SKIP	worker-08	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator, secretscanning; this is not a pass
+learniq	1158	5ca84f75a09a2fdef007102586c11c0982f88dfc	RED	worker-15	GATE RED checker floor: spdxheaders stars: 5 -> 4
+learniq	1162	59935569e666c89964655c0288c4729a788558da	RED	worker-15	GATE RED checker floor: spdxheaders stars: 5 -> 4
+learniq	2127	68efea31c565ca8b2506f50814b1ab554a25b7b9	RED	worker-15	GATE RED checker floor: spdxheaders stars: 5 -> 4
+opencatalogi	2673	9b9531032c82409ec13b1844b2e8390e047c42df	SKIP	worker-13	no APPROVE review at this head
+larpinq	960	659b6749ae8b0a7d1b55bdf6d58fad66b1b393e0	RED	worker-23	GATE RED sbom: composer.lock changed without sbom.cdx.json
+larpinq	961	06d9f9ca3929251feb0616338f90bd38bf5c196d	RED	worker-23	GATE RED sbom: composer.lock changed without sbom.cdx.json
+larpinq	1050	f7fb4695da92f783c2b95985f82b173605c67536	SKIP	worker-23	no APPROVE review at this head
+keepiq	1828	08437392c0e81cd95adac94cd9a3d3bf4c1b4162	RED	worker-21	GATE RED sbom: composer.lock changed without sbom.cdx.json
+decidiq	2203	14dc68070ac11502fc0ca03de58869b820f8905a	SKIP	worker-01	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator, secretscanning; this is not a pass
+larpinq	877	0d04ecfc809c8f114723a77614d7ef4cddf938ef	RED	worker-23	GATE RED sbom: composer.lock changed without sbom.cdx.json
+thematiq	1303	550d277c14273dd3b9908587fb0804741182805c	SKIP	worker-12	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator, secretscanning; this is not a pass
+shillinq	2997	5788e1ce9f8b8c48fefdb048497a3f9d1bd8dca7	RED	worker-11	GATE RED floor: unit_size: 4.41 -> 4.39; unit_complexity: 4.94 -> 4.92; unit_interfacing: 2.76 -> 2.74
+shillinq	1904	cc11db135048c9dc26794b32c82a3d2b674a6ad9	SKIP	worker-45	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
+shillinq	1908	ca21609bb71603fe45c7d58dd33216df70aee655	SKIP	worker-45	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
+shillinq	1912	a7d98b523c8c9952e0731ec9f7dd99c883030cc8	SKIP	worker-45	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
+shillinq	1991	29abf7fb303a9a25601637bfbbaecaeb9a1feae7	SKIP	worker-45	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
+shillinq	2048	f88b17a7a69df6279ca38720aee89560b62d975f	SKIP	worker-45	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
+shillinq	2224	ff4aa606e92e5e1b481b9d57db877beb814a2c4e	SKIP	worker-45	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
