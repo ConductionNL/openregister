@@ -16606,3 +16606,4 @@ fix:versioniq:504:918e8ff3	obsolete: development already has stylelint 17.15.0; 
 fix:versioniq:505:aeceef74	obsolete: development already has @vue/test-utils 2.5.1; closed with a comment	session-20261116T144202-f2b26030	2026-11-16T15:22:49Z
 fix:hermiq:1187:415fb023	failed: gate false RED - dev-only lock bump leaves sbom unchanged; branch updated to 0e261189	session-20261116T150749-2f742a8d	2026-11-16T15:23:31Z
 fix:versioniq:506:cf0ff5ad	closed #506 as obsolete: development already has vue 3.5.43	session-20261116T150938-2294e41a	2026-11-16T15:24:03Z
+review:learniq:1881:a0896acd	GREEN: intended spec'd fix; 6871 tests, 1 inherited failure	session-20261116T151753-162a5bdd	2026-11-16T15:23:57Z
