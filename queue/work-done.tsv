@@ -18489,3 +18489,4 @@ verify:launchpad:1227:40a50cad	1227 CONFLICT	session-20261116T230531-f9095b0f	20
 verify:opencatalogi:2685:434bb906	CONFLICT #2685 (Sitemap*, l10n)	session-20261116T233901-7abe1a78	2026-11-16T23:58:46Z
 verify:portaliq:2442:659856a4	CONFLICT #2442 (tests/shared-plans.spec.mjs vs development)	session-20261116T233800-0f135937	2026-11-16T23:59:12Z
 verify:portaliq:2417:ef1fa4da	CONFLICT #2417 (l10n, package.json, editor vue files)	session-20261116T232951-07569878	2026-11-16T23:59:21Z
+verify:larpinq:1043:2b7b6a6b	CONFLICT #1043 (tests/vitest/fixtures/objectTabs.golden.json)	session-20261116T234001-3407ae9e	2026-11-16T23:59:27Z
