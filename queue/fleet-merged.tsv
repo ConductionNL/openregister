@@ -4152,6 +4152,7 @@ pipelinq	3885	6b8029c1c0ce49d9a97aa91a0f30f0be27f4476e	MERGED	merge3	GATE OK sbo
 pipelinq	3887	17b6026c5b66fcb53bfc9ce3bc6cb3e80a42c509	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.50
 integriq	3059	4bb36a6bc436d992b2b565e72bed42cea5b16c1d	RED	worker-47	GATE RED sbom: composer.lock changed without sbom.cdx.json
 thematiq	1677	ad0dd3b79a1e6abfd5d6c936f121fbe770b01fba	SKIP	worker-46	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
+stackiq	1990	e0356aabe966bb4bc3cdc58fd21da3a06d63f078	RED	worker-07	GATE RED checker floor: spdxheaders stars: 5 -> 4
 learniq	2551	86a3e2d4132919bf5eb3336c3e388c8e8c3325f3	SKIP	worker-02	no APPROVE review at this head
 learniq	2556	8dedbadaf29c0b6554a081b4bc7507382137583c	SKIP	worker-02	no APPROVE review at this head
 learniq	2557	70286e485835815dcddbc2c59badf2f63ed32e00	SKIP	worker-02	no APPROVE review at this head
