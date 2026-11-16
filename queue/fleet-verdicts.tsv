@@ -14682,3 +14682,4 @@ integriq	3628	58bae4ecc822b35bfd0ba0364d0e1376a3652709	GREEN	worker-28:review	bu
 larpinq	1050	5f2419c464329b49f18057b74fdaccd482faa674	CONFLICT	worker-11:merge	conflicts with development; files: lib/Service/SettingsLoadService.php lib/Settings/larpinq_mock_register.json 
 learniq	1167	b9644fb4e9c377845c07d5fc7711b21cc1e3ce3a	RED	merge3:merge-gate	GATE RED absolute floor: learniq maintainability 3.98 after merge is below its floor 3.99
 learniq	2126	c35043502445af1315db6d77b7c0c0a84222a33b	RED	merge3:merge-gate	GATE RED absolute floor: learniq maintainability 3.98 after merge is below its floor 3.99
+filinq	2094	5c76485b6dd48744e1a425fead48426399bea491	GREEN	worker-46:review	build of zgw-document-bridge matches its specs; new endpoints declare auth, admin-only schemas go through OpenRegister RBAC, file access resolved in the caller's own folder; l10n/mock-register diffs are reorder/reformat only; phpunit 6912 OK (base 6878 OK), vitest 773 pass, jest 592 pass
