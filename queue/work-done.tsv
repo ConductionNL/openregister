@@ -17514,6 +17514,7 @@ cover:dossiq:069ee2d6m9d1b:39189253	stacked on #6203 (open-PR budget): lib/Servi
 review:hermiq:1735:33b209c9	GREEN (openapi.json conflicts with current development)	session-20261116T194719-57db1c57	2026-11-16T19:55:32Z
 review:hermiq:1754:3e57e4dc	GREEN: 5422 unit tests OK, vitest touched specs pass	session-20261116T195229-a18ea10d	2026-11-16T19:55:41Z
 review:opencatalogi:2679:e65a0507	GREEN: 41 tests added, 0 new failures	session-20261116T195130-dbadc12c	2026-11-16T19:56:30Z
+merge:shillinq:1899:9b59a964	cloud tree of 4 shillinq PRs: merged=2 red=0 fail=0 skip=0; conflict 2, lint 0, red 0, moved 0, done 0	session-20261116T184852-b8356331	2026-11-16T19:57:57Z
 lane:scan5:hermiq:scan-1	hermiq: rating 4.6 at 85eae121; every criterion 5 stars except maintainability (arch5 lane) and opensourcehealth 4 (activity 2: 81 deps inactive >5.5y, freshness 3: 20 deps >5y, licence 4: 2 low-risk) - not cheap: replacing inactive/old transitive deps is a design decision; no PRs; unmeasured: secretscanning (gitleaks not installed on checker host), openssfscorecard (GitHub-only)	session-20261116T194719-57db1c57	2026-11-16T19:57:54Z
 lane:arch5:hermiq:next-hermiq-r2:c2	PR #1811 opened (stacked on #1810; estimate 3.79-3.83 -> 3.83-3.88, suite no new failures); hermiq merge lock held by another merger, GREEN verdict recorded	session-20261116T190656-a33397e6	2026-11-16T19:58:26Z
 merge:hermiq:1750:e0058f03	cloud tree of 2 hermiq PRs: merged=0 red=1 fail=0 skip=0; conflict 1, lint 0, red 0, moved 0, done 0	session-20261116T194731-f9ebdd55	2026-11-16T19:59:23Z
@@ -17530,6 +17531,7 @@ merge:filinq:2072:d02cb114	cloud tree of 2 filinq PRs: merged=1 red=0 fail=0 ski
 cover:pipelinq:7f9dc8e6m3dbb:0a8f160f	already done: lib/Service/Sla/ at 100% (231/231 stmts) on development; suite 9129 tests OK	session-20261116T195808-6c4f6988	2026-11-16T20:01:14Z
 cover:decidiq:a5f973bbm9cda:be0dcca9	deferred: decidiq has 48 open PRs	session-20261116T193813-1392568e	2026-11-16T20:01:33Z
 fix:pipelinq:3602:d73ec367	stale	session-20261116T195845-1ddfd1da	2026-11-16T20:01:33Z
+cover:decidiq:a5f973bbm9cda:e372e6ff	deferred: decidiq has 48 open PRs	session-20261116T193813-1392568e	2026-11-16T20:01:50Z
 cover:keepiq:c967a31fm902f:js06645759	PR #1855: 39 tests in 5 files, src/components lines 97.90->98.76%, branches 91.85->93.70%, no new failures (3 inherited)	session-20261116T194655-7dd275d6	2026-11-16T20:01:53Z
 cover:pipelinq:7f9dc8e6m3dbb:2cc09f74	already done: Transport/ 313/317 stmts; the 4 uncovered lines (ConnectorSourceTransport::extractProviderId object/string branches, L537-545) are unreachable since decodeCallLogResponseBody returns only array|null; needs a production cleanup, not tests	session-20261116T195808-6c4f6988	2026-11-16T20:02:01Z
 merge:buildiq:1641:3f534724	cloud tree of 2 buildiq PRs: merged=1 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T190918-81e43f73	2026-11-16T20:02:00Z
@@ -17537,3 +17539,6 @@ lane:arch5:portaliq:next-portaliq-r2	failed: permission: recording the APPROVE r
 verify:larpinq:1071:72a4ecac	4 GREEN (1071,1072,1073,1074); 1119 tests, 0 new failures	session-20261116T195827-98c146c0	2026-11-16T20:02:36Z
 fix:decidiq:2170:80617c37	stale	session-20261116T194228-5e65fd16	2026-11-16T20:03:12Z
 verify:keepiq:1852:30e67835	GREEN 1852, 1853; unit 5374 pass, baseline 5367 pass	session-20261116T195639-71287c2b	2026-11-16T20:03:13Z
+lane:scan5:portaliq:scan-1	portaliq (development 813cd4471, rating 4.7): all criteria 5 except maintainability 4 (arch5), opensourcehealth 4, testcoderatio 4; not cheap: opensourcehealth (activity 2 stars: 85 transitive npm deps inactive >5.5y, needs dependency replacement), testcoderatio 101% -> 120% needs ~35k test lines; unmeasured: secretscanning (gitleaks not installed on checker host)	session-20261116T195830-617c8479	2026-11-16T20:03:28Z
+cover:pipelinq:7f9dc8e6m3dbb:ab7f3595	added 1 test to #3602 (open-PR budget 44>40): MessageDispatchTrait missing-leaf guard; Provider dir now fully covered; suite 9136->9137 OK	session-20261116T195808-723e030f	2026-11-16T20:03:28Z
+review:dossiq:5398:0574972c	GREEN: dev-only bump, prod deps unchanged, unit suite equals baseline; psalm 7.5 needs PHP>=8.3.16 (not run here)	session-20261116T195801-81edf7d7	2026-11-16T20:03:53Z
