@@ -13773,3 +13773,7 @@ buildiq	1583	df8986ae74fb916058d55d798144fb1f99177038	GREEN	worker-09:review	imp
 buildiq	1596	33a8b51d6ee0f8da44eece4449f064758c5bb69a	REVERIFY	worker-56	merged development in; drop came from php component independence (new AppOrganisationGuard exposed to Controller/Mcp); moved holder/membership/multitenancy reads into AppOrganisationMembership used only by the guard, same behaviour; estimator lower bound 3.90 -> 3.91 (floor 3.91); unit 3366, 1 inherited failure (ExportZipGoldenTest); new head 1e0a4baa0fc45422fef22a990189036758d6d2d4, verify it
 launchpad	755	7e918f87d18e313d38cf536b22ef077d2faaca26	RED	worker-12:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 launchpad	757	674cfd98d8006ae4c69b2e9bf9b14cdeec3e15bb	RED	worker-12:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+launchpad	832	99de3089fc0402fb8ef981069920ec8d1b2ae912	REVERIFY	worker-12:merge	verdict sha is not the head: head is 5cb157b3a864251534d0e0eea939fb8029de3108
+launchpad	1230	30aa8e54d3338f13eaba6b2b6fff71f023cb727a	REVERIFY	worker-12:merge	verdict sha is not the head: head is 12d856f3048ccf1a557406e217061c6b395172ed
+launchpad	1234	0bc43ee2d44d22dfe4fdc17735d6ae97b6aebf80	REVERIFY	worker-12:merge	verdict sha is not the head: head is 6a94a1fa7ca29a5267bfc77210f29d21bd36c68e
+launchpad	1235	5447328b2d80008ddcd0d674c30fc6e7	REVERIFY	worker-12:merge	verdict sha is not the head: head is fe672232fedcfa4801d0f4ede0e8e2e3fec2a58d
