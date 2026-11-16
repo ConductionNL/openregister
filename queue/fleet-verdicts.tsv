@@ -15850,3 +15850,4 @@ buildiq	1607	2af29a31bd3ab150fee2845703e1efa48a91baa9	CONFLICT	worker-13	conflic
 decidiq	2148	2bf0e3469827829fc4b3a0eb38c55057dcad1639	CONFLICT	worker-53	conflicts with development; files: src/manifest.json
 buildiq	1628	5ecf09c2db820fe6deb7b5561b1b9442b569d790	CONFLICT	worker-12	conflicts with development, files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Controller/DashboardController.php src/builder.js src/components/ApplicationDetailActions.vue src/modals/AppSettingsModal.vue 
 decidiq	2199	68646faa2457838725c278873a7f023a7aa39dd6	CONFLICT	worker-53	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json src/manifest.json tests/vitest/simpleMeetingPage.spec.js
+buildiq	1643	5d14674ceb93199648ec70e2d8be9b542f28e67f	CONFLICT	worker-56	conflicts with development in l10n/en.json and l10n/nl.json; baseline 3456 tests, 1 inherited failure
