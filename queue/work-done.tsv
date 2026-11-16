@@ -16417,3 +16417,4 @@ merge:shillinq:3078:c98b9cd1	unmeasured: static.developer.overheid.nl (#3078 app
 merge:keepiq:1716:7b1af375	cloud tree of 3 keepiq PRs: merged=0 red=2 fail=0 skip=1; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T105613-dddf963a	2026-11-16T11:43:50Z
 merge:hermiq:1736:a289e43b	unmeasured: static.developer.overheid.nl (tree 3 IN, 5323 tests green, all 3 reviewed APPROVE)	session-20261116T105712-ca7768af	2026-11-16T11:44:08Z
 fix:larpinq:1060:9f9d2d55	unmeasured: static.developer.overheid.nl (conflict resolved, testcoderatio restored, new head 701044e6, APPROVE recorded, REVERIFY queued)	session-20261116T105426-4e0b8984	2026-11-16T11:44:40Z
+merge:learniq:1167:6583dc27	unmeasured: static.developer.overheid.nl (all 4 IN reviewed APPROVE, tree clean; 1881 and 2549 also gate RED on spdxheaders floor 5->4; 2561 CONFLICT)	session-20261116T101101-e7e34372	2026-11-16T11:44:48Z
