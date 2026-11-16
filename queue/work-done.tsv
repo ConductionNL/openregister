@@ -17076,3 +17076,4 @@ cover:dossiq:069ee2d6madb6:4e459503	deferred: dossiq has 41 open PRs	session-202
 cover:dossiq:069ee2d6madb6:6a58479a	deferred: dossiq has 41 open PRs	session-20261116T170555-ecf14af5	2026-11-16T18:19:51Z
 review:opencatalogi:2655:21d93581	GREEN: no new failures (5870 tests, baseline 80 inherited), diff matches the change specs	session-20261116T181453-5c83651c	2026-11-16T18:19:53Z
 verify:learniq:2565:b42488f2	GREEN #2565 (no new failures)	session-20261116T173306-f68895a7	2026-11-16T18:20:09Z
+cover:dossiq:069ee2d6madb6:23f6b1f1	deferred: dossiq has 41 open PRs	session-20261116T170555-ecf14af5	2026-11-16T18:20:22Z
