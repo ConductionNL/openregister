@@ -17284,3 +17284,4 @@ fix:versioniq:723:0aa4f351	floors restored (overall 5.00, dup 5.17, unit_complex
 cover:pipelinq:7f9dc8e6m3dbb:1b97f731	added 21 listener tests (8 classes, Listener 97.71->99.18%) to open PR #3659 (over budget: 45 open); suite 9063 OK	session-20261116T184852-80c4ebdf	2026-11-16T19:02:54Z
 measure:openregister:20261116h18	php 95.13% (pcov, tests/Unit/Architecture excluded: times out under coverage), js 93.15%	session-20261116T174709-5787ce39	2026-11-16T19:02:32Z
 fix:keepiq:1793:b87d8b92	fixed: conflict resolved and secret-scan finding allowlisted, new head 3fae302f, APPROVE recorded; not landed (gate UNMEASURED: ADR ruleset fetch, then lock held by another merger); REVERIFY queued	session-20261116T173311-8d6b3275	2026-11-16T19:02:53Z
+fix:stackiq:1931:3faf7c6d	merged #1931 at f40072a7dde67e002ef2d523a58a0432257b81c9	session-20261116T184928-c82468e8	2026-11-16T19:05:05Z
