@@ -14460,3 +14460,4 @@ humaniq	685	c73546cde14f4c4a1b1f723d1c23c6892615eddd	CONFLICT	worker-26:merge	me
 humaniq	686	fe1cbc0ae582ec29fbb26fc246d74dbf3974	REVERIFY	worker-26:merge	verdict sha is not the head: head is fe1cbc0ae582ec29fbb26fc246d74dbf397480b5
 stackiq	1989	45dbd96288cca2c93a2162055fe2c65597c4ed55	RED	worker-35:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
 dossiq	5396	cc232d59d722611002ea5e7e1096bab19bbdfc34	RED	worker-55:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+buildiq	1249	e01a3111488d17974ac20b492fdd9e5593f8cd37	RED	worker-04:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
