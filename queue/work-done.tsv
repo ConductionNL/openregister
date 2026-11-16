@@ -16577,3 +16577,4 @@ fix:portaliq:1768:a2fd2704	failed: sbom already current (sass is a devDependency
 review:shillinq:2093:223f0cbe	GREEN: suite 12231 OK, vitest 3/3	session-20261116T142931-c6a20eeb	2026-11-16T15:15:40Z
 fix:stackiq:1992:6d5c12d7	obsolete: SPDX header already on development; closed	session-20261116T144734-1dc150d8	2026-11-16T15:15:55Z
 review:opencatalogi:2682:d8b519df	GREEN: plain-language build matches its spec, access checks in place, no new failures	session-20261116T145634-daeb1424	2026-11-16T15:16:05Z
+review:shillinq:2096:a1c73fc3	GREEN: unit 12235 OK, vitest 31 OK, no behaviour weakening	session-20261116T151016-54cee2b8	2026-11-16T15:16:22Z
