@@ -68,3 +68,5 @@ launchpad	1230	12d856f3048ccf1a557406e217061c6b395172ed	APPROVE	worker-12	Strict
 launchpad	1234	6a94a1fa7ca29a5267bfc77210f29d21bd36c68e	APPROVE	worker-12	Quick; no blockers; lockfile refresh for production dependency advisories, package.json unchanged, sbom regenerated; vitest 2614 passed on the tree
 launchpad	1235	fe672232fedcfa4801d0f4ede0e8e2e3fec2a58d	APPROVE	worker-12	Standard; no blockers; build of drill-down-cross-widget-filter: admin opt-in filterTelemetryEnabled (default off, only stored true enables) and frontend telemetry composable; tests added; suites green
 versioniq	497	39a7db062ea18ada87559c730217cdc521657235	APPROVE	worker-50	Quick; no blockers; nextcloud/openapi-extractor dev tool bump in vendor-bin
+versioniq	501	451c8f5901c5ec4277fdccbd82e4349166c89e9f	APPROVE	worker-50	Quick; no blockers; eslint 10.9.1->10.11.0 devDependency bump with regenerated SBOM
+versioniq	502	c6d0467e61059cf8e5a0263c5f728008a7ee6c67	APPROVE	worker-50	Quick; no blockers; @typescript-eslint/parser 8.68.0->8.71.0 devDependency bump with regenerated SBOM
