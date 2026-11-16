@@ -14729,3 +14729,4 @@ hermiq	1150	9f31a6df5bd51ee8f40135390b5d8bb07ddb8e3d	CONFLICT	worker-10:merge	co
 hermiq	1189	4990197f996880aaa0b623dab85	REVERIFY	worker-10:merge	verdict sha is not the head: head is 4990197f996880aaa0b623dab850d64ee4bed3be
 shillinq	3110	a0ee6bc0a0cab83e9f4998a81594f802cfe4ab3c	REVERIFY	worker-05	merged development in (composer.lock conflict from phpmd ^3.0: took development's lock and re-ran composer update for the bundle's 7 packages); sbom unchanged; npm ci clean; no tracked source file lacks an SPDX header, so the spdxheaders drop likely came from the stale base; merge lock held elsewhere; new head e7c788adccce2ed082b36e9cb7188d80a1f52787, verify it
 integriq	3049	2da4ecc8a220e37618f328126eaad0045314c3cd	RED	worker-45:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
+learniq	2557	52a96cea182ec3c622db733866d8c8b4ea202fd4	RED	worker-06:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
