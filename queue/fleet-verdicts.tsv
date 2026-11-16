@@ -15978,6 +15978,7 @@ launchpad	763	68f987122bfeea56f4ce89310f71d3de850ab6e2	CONFLICT	worker-22	confli
 launchpad	1217	edcbef17e9264918bc3f67df8dd4bd791f15c768	CONFLICT	worker-41	conflicts with development in tests/Unit/Service/TileUpdaterTest.php; tree not run
 launchpad	1219	da16c5dfecd1f4e40902aa5c9b009ae6af38ac60	CONFLICT	worker-21	merge conflict with origin/development in l10n/*.js and l10n/en.json; suite not run
 portaliq	2448	160e1aed97cc47f853a6e0fdb792b61785450e2d	RED	merge3:merge-gate	GATE RED floor: duplication: 4.35 -> 4.33; unit_complexity: 4.57 -> 4.54
+launchpad	1239	793d60336936c8b1bb2989a8c17900a0a7c2457d	CONFLICT	worker-21	merge conflict with origin/development in package-lock.json and sbom.cdx.json; suite not run
 launchpad	819	c5c80a07dc500fcc4e5064cd5126241a9f4bf32a	GREEN	worker-38	dev-dep phpmd 2.15->3.0 + sbom; unit 4516 base -> 4516 tree, 0 new failures; note: phpmd already exits 2 on development, 3.0 reports more findings (text lines 66->81, unusedparams 4->5) and deprecates positional args
 learniq	2534	097afa2d9090610d05c97d2c2e116aeeed835108	CONFLICT	worker-27	conflicts with development in l10n/en.js,en.json,nl.js,nl.json, lib/Service/ContractBindings.php
 learniq	2519	644c2a7995dd39085b6e8c57a462495226c6efec	CONFLICT	worker-17	conflicts with development in l10n/en.js,en.json,nl.js, tests/Unit/Portal/golden/PortalManifests.json
