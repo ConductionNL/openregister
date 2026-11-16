@@ -16625,3 +16625,4 @@ fix:opencatalogi:2699:54be4094	unmeasured: api.osv.dev (floor fixed and pushed a
 verify:integriq:3671:f2d55882	GREEN #3671 (9535 tests, no new failures vs baseline 5)	session-20261116T152316-98784bf4	2026-11-16T15:30:50Z
 fix:learniq:1167:b9644fb4	fixed: learniq floor restored 3.98->3.99, pushed 2c125d9d; REVERIFY queued (not landed: self-approval recording is refused in this session)	session-20261116T145220-87e5504e	2026-11-16T15:31:00Z
 merge:buildiq:1583:f571cd76	unmeasured: static.developer.overheid.nl (api.osv.dev also refused by this session's proxy); 1652 GATE RED floor unit_complexity 3.32->3.30; reviews APPROVE recorded for 1583,1641,1652; tree adds 0 failures	session-20261116T150932-9cfa73ee	2026-11-16T15:31:12Z
+fix:integriq:3564:da7832e5	fixed: migrated 5 openregister calls to main's API, pushed 0c8819d0, REVERIFY queued	session-20261116T150938-2294e41a	2026-11-16T15:31:35Z
