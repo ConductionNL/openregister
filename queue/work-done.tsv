@@ -17234,3 +17234,4 @@ fix:integriq:3671:4b0e1b0a	fixed spdxheaders (2 stubs lacked SPDX in first 30 li
 cover:launchpad:fb10c50f:34f5c300	deferred: launchpad has 44 open PRs	session-20261116T185304-a3eb3adc	2026-11-16T18:56:47Z
 review:integriq:3649:9b271f27	GREEN: no new failures, 62 new unit tests, 58 vitest pass	session-20261116T184924-e8902580	2026-11-16T18:57:00Z
 cover:launchpad:fb10c50f:f545d745	deferred: launchpad has 44 open PRs	session-20261116T185304-a3eb3adc	2026-11-16T18:57:12Z
+measure:decidiq:20261116h18	php 94.13% js 98.45% at 1bf4171e	session-20261116T184217-f2c5e14b	2026-11-16T18:57:16Z
