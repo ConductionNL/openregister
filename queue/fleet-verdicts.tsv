@@ -15184,3 +15184,4 @@ humaniq	662	f0ddf8e5865ef5e7cecb30c3b8fd324396a2ffc8	GREEN	worker-16:review	dev-
 hermiq	1756	d3c836c0f37583812e3c94710cf2f969fc2125e2	GREEN	worker-43:review	builds tools-post-a-talk-message per its spec; tool refuses without agent context, unless the acting user may access the agent, unless the agent bot is a room member; all lookups fail closed; unit suite on PR+development OK 5349 tests (baseline 5340), no new failures
 keepiq	1793	e5fa9df6418c504a28e69afb5cea03349b8adbde	RED	worker-44:merge-gate	GATE RED checker floor: secretscanning: pass -> fail; secretscanning stars: 5 -> 1
 humaniq	606	999cc2866e6aa8b58b9b76ea5c11fa01becb1b6a	GREEN	worker-16:review	dev-dep bump twig 3.29->3.30, composer.lock only; merged with development: unit 4405 OK, sbom current
+humaniq	1164	8c712c86e8514d1f16459263ec7d4bc96a77e5c6	CONFLICT	worker-16	conflicts with development (272d2e53); files: package-lock.json package.json sbom.cdx.json
