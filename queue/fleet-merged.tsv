@@ -4822,3 +4822,4 @@ versioniq	759	f4c83864c8d8ea20135b5aabca8bf5c4807de192	MERGED	merge3	GATE OK sbo
 hermiq	1750	caba9fa0ec708cb3f2e0e16ad6eeec1e98b389c0	MERGED	worker-12	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.77 holds at 3.84
 integriq	3680	248bd1af2baa14391681f4c66b90da300878a2ca	MERGED	worker-08	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.57
 launchpad	1246	05dc9f7ecff35a08bda3fb8462fe4492da2e0297	RED	merge3	GATE RED floor: unit_complexity: 4.73 -> 4.68
+opencatalogi	2756	d7a2df601f100243b235b392858ee8fd16eaf3f6	SKIP	worker-34	no APPROVE review at this head
