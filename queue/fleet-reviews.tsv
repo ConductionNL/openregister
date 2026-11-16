@@ -667,3 +667,5 @@ filinq	2122	d9cac23f40a3f5f38e4d6a2b55987e6785ea8193	REQUEST_CHANGES	worker-20	T
 keepiq	1793	3fae302fa968c26da94766b29990c71ac2919396	APPROVE	worker-35	Strict; no blockers; frontend-only build of the change per its specs, private key stays the encrypted value, public key and fingerprint ride in the encrypted blob, fingerprint derived not trusted; Playwright tasks left open as stated
 integriq	2924	58d5ba348a658ef8cdd6b3a8540e4af59cd7c7d2	APPROVE	worker-51	Thorough; no blockers; deleted modals unreferenced from src/tests/lib/webpack, six helper signature changes have every caller and test updated, vitest 2359/2359, unit suite adds no failures
 keepiq	1847	47774f1f3377f361693db8b1e9bf1dae14c87b7f	APPROVE	worker-35	Quick; no blockers; tests only, assert refusals and exact collaborator calls
+keepiq	1848	23964ca2122e652ef1895c1e5a80d176a4e23509	APPROVE	worker-35	Thorough; no blockers; tests only (544 lines), vitest green on the tree
+keepiq	1849	cf3a1104f97f43ce25baf84a32edd898048df612	APPROVE	worker-35	Thorough; no blockers; tests only (1090 lines), vitest green on the tree
