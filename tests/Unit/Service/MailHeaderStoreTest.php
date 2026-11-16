@@ -57,6 +57,28 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionStorage
  *
  * @spec openspec/changes/reply-threading-by-headers/specs/integration-email/spec.md#requirement-collected-mail-files-carry-their-thread-headers-req-rth-010
+ * @uses   \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses   \OCA\OpenRegister\Files\Db\Chunk
+ * @uses   \OCA\OpenRegister\Files\Service\ChunkSizing
+ * @uses   \OCA\OpenRegister\Files\Service\ChunkingPlan
+ * @uses   \OCA\OpenRegister\Files\Service\ExtractionSource
+ * @uses   \OCA\OpenRegister\Files\Service\FileExtractionOptions
+ * @uses   \OCA\OpenRegister\Files\Service\SourceStamp
+ * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\ChunkOwnership
+ * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\ChunkSource
+ * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\EmlBody
+ * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\EmlFlattener
+ * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\EmlHeaderParser
+ * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\EmlStructure
+ * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\ExtractionCeiling
+ * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\PdfExtractor
+ * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\SourceText
+ * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\SpreadsheetExtractor
+ * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionAnalysis
+ * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionObjects
+ * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionReaders
+ * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionSources
+ * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\WordExtractor
  */
 class MailHeaderStoreTest extends TestCase {
 	/**

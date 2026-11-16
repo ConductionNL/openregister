@@ -206,6 +206,10 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
  * @uses \OCA\OpenRegister\Service\Object\StoredObjectUpdate
  * @uses \OCA\OpenRegister\Service\Object\TranslationScope
  * @uses \OCA\OpenRegister\Service\ProtectedCarryForward
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ClassificationFloorGuard
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ImageObjectForm
+ * @uses \OCA\OpenRegister\Service\Rbac\ExplicitReveal
  */
 class SaveObjectOrphanCleanupTest extends TestCase {
 

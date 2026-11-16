@@ -43,6 +43,7 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\Relation\GraphExportOptions
  * @uses \OCA\OpenRegister\Service\Relation\RelationGraphShapes
  * @uses \OCA\OpenRegister\Service\Relation\RelationGraphSources
+ * @uses   \OCA\OpenRegister\Db\HydrationKey
  */
 class RelationGraphServiceTest extends TestCase {
 	/**

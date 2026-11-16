@@ -58,6 +58,8 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\File\ArchiveBounds
  * @uses \OCA\OpenRegister\Service\Settings\EntityPatternSetSetting
  * @uses \OCA\OpenRegister\Service\TextExtraction\EntityRecognitionBackends
+ * @uses   \OCA\OpenRegister\Service\Anonymisation\CapacityPolicy
+ * @uses   \OCA\OpenRegister\Service\Anonymisation\OfficialsSource
  */
 class EntityRecognitionThresholdTest extends TestCase {
 

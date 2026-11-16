@@ -55,6 +55,7 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\Relation\ProvenanceLink
  * @uses \OCA\OpenRegister\Service\Relation\RelationEndpoint
  * @uses \OCA\OpenRegister\Service\Relation\RelationRowFields
+ * @uses   \OCA\OpenRegister\Db\HydrationKey
  */
 class ObjectRelationServiceTest extends TestCase {
 	private ObjectRelationService $service;

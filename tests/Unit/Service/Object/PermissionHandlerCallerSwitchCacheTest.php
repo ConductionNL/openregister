@@ -49,6 +49,9 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionGrantServices
  * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionRuleServices
  * @uses \OCA\OpenRegister\Service\Rbac\McpScope
+ * @uses \OCA\OpenRegister\Service\Rbac\UndecidablePosture
+ * @uses \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 class PermissionHandlerCallerSwitchCacheTest extends TestCase {
 

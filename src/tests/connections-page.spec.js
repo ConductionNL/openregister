@@ -32,9 +32,13 @@ jest.mock('@nextcloud/initial-state', () => ({
 import fs from 'fs'
 import path from 'path'
 import customComponents, {
+	CONNECTION_REPORT_DIALOG,
 	INTEGRIQ_CONNECTIONS_PATH,
+	openConnectionReportDialog,
 	openIntegriqConnections,
 } from '../customComponents.js'
+import pinia from '../pinia.js'
+import { useNavigationStore } from '../store/modules/navigation.js'
 
 const ROOT = path.resolve(__dirname, '..', '..')
 const read = (...parts) => fs.readFileSync(path.join(ROOT, ...parts), 'utf8')
@@ -106,6 +110,35 @@ describe('the Connections page', () => {
 		)
 		expect(INTEGRIQ_CONNECTIONS_PATH).toBe(
 			'/apps/integriq/connections?app=openregister&link=1',
+		)
+	})
+
+	it('offers the daily report by e-mail, which opens its dialog', () => {
+		const ids = page.config.headerActions.map((a) => a.id)
+		expect(ids).toEqual(['add-integration', 'connection-report'])
+		const report = page.config.headerActions.find(
+			(a) => a.id === 'connection-report',
+		)
+		expect(report.label).toBe('Daily report by e-mail')
+		expect(report.icon).toBe('EmailOutline')
+		expect(report.handler).toBe('openConnectionReportDialog')
+		expect(customComponents.openConnectionReportDialog).toBe(
+			openConnectionReportDialog,
+		)
+
+		const navigation = useNavigationStore(pinia)
+		navigation.setDialog(false)
+		openConnectionReportDialog()
+		expect(CONNECTION_REPORT_DIALOG).toBe('connectionReport')
+		expect(navigation.dialog).toBe('connectionReport')
+		expect(read('src', 'dialogs', 'Dialogs.vue')).toMatch(
+			/<ConnectionReportDialog\s+v-if="navigationStore\.dialog === 'connectionReport'"\s*\/>/,
+		)
+	})
+
+	it('registers the icon the report action names', () => {
+		expect(read('src', 'icons.js')).toMatch(
+			/import EmailOutline from 'vue-material-design-icons\/EmailOutline\.vue'/,
 		)
 	})
 

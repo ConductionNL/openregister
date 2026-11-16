@@ -77,6 +77,24 @@ use ZipArchive;
  * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\WordReplacementRequest
  * @uses   \OCA\OpenRegister\Service\File\DocumentAnonymization
  * @uses   \OCA\OpenRegister\Service\FileService
+ * @uses   \OCA\OpenRegister\Files\Service\File\DocxTextMatch
+ * @uses   \OCA\OpenRegister\Files\Service\File\Pdf\PdfMetadataSanitizer
+ * @uses   \OCA\OpenRegister\Files\Service\File\Pdf\PdfRedaction
+ * @uses   \OCA\OpenRegister\Files\Service\File\Pdf\PdfStructureInspector
+ * @uses   \OCA\OpenRegister\Files\Service\File\Pdf\RedactionPlan
+ * @uses   \OCA\OpenRegister\Files\Service\File\Pdf\SerialisedPdf
+ * @uses   \OCA\OpenRegister\Files\Service\File\Pdf\StructureMeasurement
+ * @uses   \OCA\OpenRegister\Files\Service\File\SanitizationRevisionCounts
+ * @uses   \OCA\OpenRegister\Files\Service\File\SanitizationStructureCounts
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\StructurePreservation
+ * @uses   \OCA\OpenRegister\Service\File\FileContentHandlers
+ * @uses   \OCA\OpenRegister\Service\File\FileFolderHandlers
+ * @uses   \OCA\OpenRegister\Service\File\FileHistoryHandlers
+ * @uses   \OCA\OpenRegister\Service\File\FileLifecycleHandlers
+ * @uses   \OCA\OpenRegister\Service\File\FileNodeHandlers
+ * @uses   \OCA\OpenRegister\Service\File\FileServicePlatform
+ * @uses   \OCA\OpenRegister\Service\File\FileStorageHandlers
+ * @uses   \OCA\OpenRegister\Service\File\OfficeMediaBurner
  */
 class PlaceholderGroundTest extends TestCase {
 
