@@ -13939,3 +13939,4 @@ opencatalogi	2415	cf561973728159e76338c198bfb10b428a5360b1	REVERIFY	worker-13:me
 opencatalogi	2725	ef1e2d8475f88d2aafc7c59528f9cd43f521d2db	CONFLICT	worker-13:merge	conflicts with development; files: lib/Service/Woo/BatchPublicationWriter.php 
 decidiq	2170	a39ae47e0e86ca10f951d3e74debd495976c3a4c	RED	worker-01:merge	adds unit failure(s) with the PRs before it in the tree: RoomSystemFeedTest::testAClosedRoundSendsItsTotalsWithTheCurrentItem RoomSystemFeedTest::testANewSpeechSendsTheSpeakersListInOrder RoomSystemFeedTest::testAPublishedAgendaSendsItsItemsInOrder RoomSyst
 larpinq	830	794bac00bff45bdce041a07528da37426b2650dc	CONFLICT	worker-23:merge	conflicts with development; files: composer.lock 
+keepiq	1828	08437392c0e81cd95adac94cd9a3d3bf4c1b4162	RED	worker-21:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
