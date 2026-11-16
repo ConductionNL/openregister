@@ -16936,6 +16936,7 @@ cover:filinq:7a9ef677:8ed5443b	deferred: filinq has 49 open PRs	session-20261116
 review:buildiq:1091:0a8185a0	GREEN: dev-dep bump, vitest 4719/4719 pass on merge with development	session-20261116T173240-b63ad758	2026-11-16T17:46:42Z
 fix:learniq:2166:5e708c03	failed: inherited: plain development measures 3.98 (range 3.98-4.01) below floor 3.99 too; the PR changes no property rating, nothing to fix on the branch	session-20261116T173256-6277a58c	2026-11-16T17:47:09Z
 cover:decidiq:a5f973bbm0262:81b1241f	deferred: decidiq has 52 open PRs	session-20261116T174323-ba3ec1dc	2026-11-16T17:47:00Z
+cover:buildiq:70b3e29em3841:d33a91b0	deferred: buildiq has 56 open PRs	session-20261116T173240-b63ad758	2026-11-16T17:47:49Z
 fix:learniq:2521:9e646ec1	failed: inherited: development drops spdxheaders 5->4 (stub without SPDX line, fix rides on #2555) and sits at 3.98 under the 3.99 absolute floor	session-20261116T171010-393e4bc2	2026-11-16T17:47:41Z
 cover:decidiq:a5f973bbm0262:98083bbf	deferred: decidiq has 52 open PRs	session-20261116T173254-f6972957	2026-11-16T17:47:34Z
 cover:decidiq:a5f973bbm0262:568ec52a	deferred: decidiq has 52 open PRs	session-20261116T173211-a3411be5	2026-11-16T17:47:56Z
