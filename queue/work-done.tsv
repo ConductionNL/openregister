@@ -15524,3 +15524,4 @@ fix:planninq:930:de4742c6	conflict resolved; new head 3db13fea, REVERIFY	session
 merge:hermiq:1293:c5e8b7d2	cloud tree of 5 hermiq PRs: merged=0 red=0 fail=0 skip=3; conflict 2, lint 0, red 0, moved 0, done 0	session-20261116T063608-d33f86e6	2026-11-16T06:50:20Z
 fix:buildiq:1249:0997f504	sbom current (dev dep omitted); merged development, pushed e01a3111488d17974ac20b492fdd9e5593f8cd37, REVERIFY	session-20261116T062050-7d5ce0d6	2026-11-16T06:50:30Z
 fix:buildiq:1624:de704581	conflict resolved (kept both l10n key sets), pushed	session-20261116T062050-add210c3	2026-11-16T06:50:37Z
+fix:planninq:908:8cdb1910	restored lockfile dev flags; opensourcehealth 4 again; pushed d3be6570	session-20261116T062117-388e9de2	2026-11-16T06:50:56Z
