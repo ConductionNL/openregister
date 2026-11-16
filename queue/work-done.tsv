@@ -16717,3 +16717,4 @@ fix:filinq:2122:1bbeef44	stale	session-20261116T164147-8ab1ee2b	2026-11-16T16:42
 cover:openregister:7350e3efm9dc5:js7af948c9	partial: PR #10593, modals 88.47→90.33%; rest is script-setup getters unreachable from templates	session-20261113T204551-fafe539e	2026-11-16T16:45:33Z
 cover:openregister:7350e3efm9dc5:js0b5eefce	partial: PR #10594, object modals 86.83→91.92%; rest is script-setup getters	session-20261113T204551-fafe539e	2026-11-16T16:52:05Z
 fix:shillinq:3108:aa5b2da3	fixed sbom; pushed 5565f98d, REVERIFY queued (merge lock held)	session-20261116T165653-a1481a13	2026-11-16T16:58:11Z
+fix:shillinq:2991:4a34a03e	merged development in; new head 84a86ec5, REVERIFY queued (merge lock held elsewhere)	session-20261116T165811-2336fe78	2026-11-16T16:59:05Z
