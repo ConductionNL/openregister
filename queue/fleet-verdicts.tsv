@@ -14316,3 +14316,4 @@ shillinq	2093	cc5e1a5ebb84ed6bccdcf622b871b1d90d97b930	RED	worker-49:merge	adds 
 portaliq	1768	73711bf061a935d6c5b8923175690cefe42d08f4	RED	worker-57:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 launchpad	785	085c96eb87cd18355f4b1396afcd247357d36f41	RED	worker-40:merge-gate	GATE RED floor: module_coupling: 4.73 -> 4.68
 launchpad	1239	793d60336936c8b1bb2989a8c17900a0a7c2457d	CONFLICT	worker-40:merge	merges clean on development alone; files: package-lock.json sbom.cdx.json 
+dossiq	4887	5b3dec5ca972c54ea21728550536d15500e0eb20	BLOCK	worker-30:review	review: Strict; gate schema-property-titles fails on the 8 new case.intakeObligations item properties (no title/description), gate register-version-needs-app-version fails (register 0.20.98->0.20.99 without raising appinfo/info.xml version); concerns: lapse() writes expired even when a withdraw failed, so t
