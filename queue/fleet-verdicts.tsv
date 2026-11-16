@@ -14947,3 +14947,4 @@ buildiq	1654	ac924f1b60c5efd99287762b607a3b9a06109f76	CONFLICT	worker-39:merge	m
 buildiq	1624	ae655c59311e2bf849dcd94f4243fc84f440070d	RED	worker-39:merge	adds unit failure(s) with the PRs before it in the tree: AppOrganisationGuardCoverageTest::testNoNewReaderSkipsTheDecision
 shillinq	2991	4a34a03e91bcd07db31842676997882402dde23a	REVERIFY	worker-16	merged origin/development in (clean, no conflicts with development alone); merge lock held elsewhere; new head 84a86ec5f66223a9971e7fadee23066c2d8476db, verify it
 buildiq	1091	13bc446b3ff8a04f2e70a612adc51a37c801a382	RED	worker-39:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+buildiq	1094	2ea9dbb488b0e4ebb832485f152e1c96842c72c2	RED	worker-39:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
