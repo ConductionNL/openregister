@@ -15822,3 +15822,4 @@ fix:shillinq:2997:5788e1ce	fixed floor drop (unit size/complexity/interfacing ba
 fix:stackiq:1978:0e16289a	partial: unit_interfacing 4.68->4.69 (floor 4.72), pushed 315e616b; remaining drop is ViewController ctor 6->8 params and new 3-param PHP units, needs collaborator redesign; REVERIFY recorded	session-20261116T080001-22af8490	2026-11-16T08:35:58Z
 review:filinq:2103:1a1abdb4	stale	feeder	2026-11-16T08:25:06Z
 fix:opencatalogi:2655:05605d93	floors restored (floor_check PASS), pushed f3ddd327; end-to-end skipped: development's own checker floor is red (opensourcehealth), REVERIFY recorded	session-20261116T081618-2145ecb3	2026-11-16T08:36:25Z
+fix:larpinq:1053:fa6976fd	demo-data fixed, pushed 1a318455a6c; reviewed APPROVE; land skipped (merge gate checker floor unmeasured), REVERIFY recorded	session-20261116T081647-1fba2b50	2026-11-16T08:36:42Z
