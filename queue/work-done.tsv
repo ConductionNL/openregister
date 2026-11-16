@@ -15739,3 +15739,4 @@ fix:filinq:2121:f6845146	no change: merges clean with development, conflict only
 fix:filinq:2072:ec607dc3	fixed 2 of 3 blockers (version bump, schema titles; 3rd inherited from development), merge lock held elsewhere -> REVERIFY at a07d41bd	session-20261116T081640-cbf74452	2026-11-16T08:20:00Z
 review:hermiq:1739:103d88e1	GREEN: 5309 unit tests OK, vitest 9/9, lint clean	session-20261116T081705-6c8f795b	2026-11-16T08:20:09Z
 fix:filinq:2088:bd2b4649	merged development in, pushed bb28f1bd; merge lock busy, REVERIFY recorded	session-20261116T081618-2145ecb3	2026-11-16T08:20:16Z
+fix:filinq:2114:78a005c2	no change: merges clean with development, conflict only tree-relative; REVERIFY queued	session-20261116T080031-6bfb8cef	2026-11-16T08:20:30Z
