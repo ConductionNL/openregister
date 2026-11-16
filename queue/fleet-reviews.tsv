@@ -487,3 +487,4 @@ hermiq	1187	0e261189edce91dd7853b2e7e02fb58999048351	APPROVE	worker-25	Quick; no
 integriq	2671	f4218e170982307bdf1ebe71fe738453a8155f5e	APPROVE	worker-21	Quick; no blockers; dev-only phpmd 2->3 bump, baseline rules renamed 1:1 to phpmd 3 names, sbom regenerated
 integriq	2716	6edb6eeaafff98e0aa865e39475b0c55f4f9ce02	APPROVE	worker-21	Quick; no blockers; vue patch bump within 3.5, lockfile+sbom; vitest 2349/2349 on tree
 hermiq	1193	7d49a897eacda342108a8ffdf6d0ba0a3967dc67	APPROVE	worker-25	Quick; no blockers; dev-dependency bump of sass, lockfile and sbom regenerated
+hermiq	1195	7d6678393fcb6f34e5686d5bae1b98fb9a9688de	APPROVE	worker-25	Quick; no blockers; dev-dependency bump of eslint, lockfile and sbom regenerated
