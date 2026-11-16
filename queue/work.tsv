@@ -17735,3 +17735,11 @@ cover:keepiq:c967a31fm902f:js0023cfc7	cover	keepiq	development	quality/test-cove
 cover:keepiq:c967a31fm902f:js06645759	cover	keepiq	development	quality/test-coverage-js-06645759	lang=js;dirs=src/components/*;focus=uncovered;weight=210;coverage=94.09;target=95.0	2026-11-16T18:29:10Z
 cover:launchpad:fb10c50fmf487:33952d4b	cover	launchpad	development	quality/test-coverage-33952d4b	lang=php;dirs=lib/Service/CalculatedFields/;focus=uncovered;weight=129;coverage=94.94;target=95.0	2026-11-16T19:21:30Z
 measure:learniq:20261116h18	measure	learniq	development	queue/coverage/learniq.json	why=slices need per-directory coverage	2026-11-16T19:26:50Z
+build:buildiq:decision-tables-live-in-openregister	build	buildiq	development	decision-tables-live-in-openregister	change=decision-tables-live-in-openregister;open=1	2026-11-16T19:27:15Z
+build:integriq:dso-attachments-on-the-request	build	integriq	development	dso-attachments-on-the-request	change=dso-attachments-on-the-request;open=1	2026-11-16T19:27:15Z
+build:integriq:open-formulieren-submits-into-its-case	build	integriq	development	open-formulieren-submits-into-its-case	change=open-formulieren-submits-into-its-case;open=1	2026-11-16T19:27:15Z
+build:integriq:retire-dso-case-handoff	build	integriq	development	retire-dso-case-handoff	change=retire-dso-case-handoff;open=1	2026-11-16T19:27:15Z
+build:keepiq:clients-extension-firefox-and-safari-builds	build	keepiq	development	clients-extension-firefox-and-safari-builds	change=clients-extension-firefox-and-safari-builds;open=1	2026-11-16T19:27:15Z
+build:larpinq:forms-registration-is-checked-at-binding	build	larpinq	development	forms-registration-is-checked-at-binding	change=forms-registration-is-checked-at-binding;open=1	2026-11-16T19:27:15Z
+build:learniq:board-dialog-inputs-and-row-names	build	learniq	development	board-dialog-inputs-and-row-names	change=board-dialog-inputs-and-row-names;open=1	2026-11-16T19:27:15Z
+build:learniq:learner-grade-read-follows-visible-from	build	learniq	development	learner-grade-read-follows-visible-from	change=learner-grade-read-follows-visible-from;open=1	2026-11-16T19:27:15Z
