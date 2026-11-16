@@ -16894,6 +16894,7 @@ fix:learniq:2507:82c09d5c	unmeasured: static.developer.overheid.nl (fixed interf
 build:portaliq:site-school-blocks	already done: every code task is ticked and on development; only live tasks T8 and T12 are left	session-20261116T173227-3f62e794	2026-11-16T17:41:54Z
 build:portaliq:site-shared-page-blocks	already done: only live/e2e tasks left (2)	session-20261116T172806-3ef5ead7	2026-11-16T17:41:40Z
 build:portaliq:zuiddrecht-resident-pages-match-the-boards	already done: only live/e2e tasks left (1)	session-20261116T172806-3ef5ead7	2026-11-16T17:42:02Z
+build:shillinq:inventory-pos-decrement	already done: only live/e2e tasks left (1)	session-20261116T172806-3ef5ead7	2026-11-16T17:42:25Z
 build:portaliq:steps-as-bars	already done: tasks 1-3 on development; task 4 is cross-repo learniq + live check	session-20261116T173306-f68895a7	2026-11-16T17:42:10Z
 fix:learniq:2556:489b7f4d	failed: inherited: development itself drops spdxheaders 5->4 (tests/Stubs/Contract/ObjectServiceInterface.php has no SPDX line); the header fix rides on learniq #2507 head f29e84b71d	session-20261116T171010-393e4bc2	2026-11-16T17:42:42Z
 cover:filinq:7a9ef677:aae6d66c	deferred: filinq has 49 open PRs	session-20261116T174053-4a550291	2026-11-16T17:42:58Z
