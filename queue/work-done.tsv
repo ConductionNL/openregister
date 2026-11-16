@@ -16641,3 +16641,4 @@ review:integriq:3649:ceff4454	GREEN: no new failures, vitest 58/58	session-20261
 review:decidiq:1469:c712bd4b	GREEN: phpunit 4625 OK, vitest 2847 passed	session-20261116T153259-1f82a352	2026-11-16T15:37:40Z
 review:stackiq:1965:dae73f1f	GREEN: per spec, suite OK on PR+development	session-20261116T144734-1dc150d8	2026-11-16T15:38:10Z
 review:integriq:3589:6a7f1b92	GREEN: build platform-connector-extension-kit matches its specs, suite adds no failures	session-20261116T152057-2c4d4a8b	2026-11-16T15:38:37Z
+merge:versioniq:507:f792faa9	failed: prep exit 2, no vendor/bin/phpunit (composer-cloud writes an empty vendor-bin/phpunit composer.cloud.json, so prep skips composer bin phpunit install)	session-20261116T153800-2f867ebc	2026-11-16T15:38:54Z
