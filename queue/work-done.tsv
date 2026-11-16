@@ -15508,8 +15508,26 @@ verify:larpinq:1065:1b4e8491	GREEN: no new PHP or vitest failures	session-202611
 verify:planninq:1196:345eb8c3	GREEN 1196: unit 1222 OK	session-20261116T062544-335bf148	2026-11-16T06:46:57Z
 review:shillinq:2096:8af31d73	RED: 2 ImportWizardCoverage vitest tests still expect the old PATCH	session-20261116T062126-9d7735e0	2026-11-16T06:47:12Z
 fix:hermiq:1735:ca2c7585	fixed: registrar test expects FlowRunTerminalListener; new head 80b67d82, REVERIFY recorded	session-20261116T062109-81fc252e	2026-11-16T06:47:19Z
+merge:stackiq:1924:b6607297	cloud tree of 5 stackiq PRs: merged=0 red=4 fail=0 skip=0; conflict 1, lint 0, red 0, moved 0, done 0	session-20261116T063134-3a4fc8af	2026-11-16T06:47:57Z
 fix:shillinq:3080:f73df8d1	fixed: save migrated to ObjectSaveOptions, suite 12253 green; new head cb96e451	session-20261116T062050-3a7e109c	2026-11-16T06:47:55Z
 fix:shillinq:2991:adf6174a	fixed: saveObject uuid -> ObjectSaveOptions, suite green, pushed 4a34a03e	session-20261116T062050-add210c3	2026-11-16T06:48:09Z
 verify:launchpad:1238:41c15e2e	GREEN 1238: 4461 tests OK	session-20261116T062109-81fc252e	2026-11-16T06:48:22Z
 fix:buildiq:1094:224fef61	CONFLICT resolved, pushed 2ea9dbb4, REVERIFY recorded	session-20261116T062050-7d5ce0d6	2026-11-16T06:48:33Z
+fix:launchpad:1038:80993974	failed: not fixable in launchpad; the PR exists only to adopt StoreListing/StoreDescriptor(listing:), still absent on openregister main; hold until that openregister change lands	session-20261116T062109-81fc252e	2026-11-16T06:48:43Z
 fix:buildiq:1583:83cecfc6	conflict resolved (stub moved off tail); new head df8986ae	session-20261116T061736-e271ba12	2026-11-16T06:48:48Z
+verify:pipelinq:3882:cddb1eed	GREEN 3882: no new failures (php 8987 ok; vitest 1 inherited)	session-20261116T062120-7c38c5f1	2026-11-16T06:49:10Z
+fix:buildiq:1256:342dece0	sbom already current (dev-only lock change); merged development, pushed	session-20261116T062050-add210c3	2026-11-16T06:49:17Z
+fix:buildiq:1654:a81c7ddf	conflict resolved (l10n keep both); new head ac924f1b	session-20261116T062123-fa6fb6b0	2026-11-16T06:49:27Z
+fix:planninq:918:90a6ddf0	sbom already current (dev-only dep); merged development, unit green; new head 6289a597	session-20261116T062050-3a7e109c	2026-11-16T06:49:39Z
+fix:shillinq:3088:13b45b93	fixed RED: two saves moved to ObjectSaveOptions; unit 12244 green; new head 27e4a523	session-20261116T062120-691af8f7	2026-11-16T06:49:52Z
+merge:thematiq:1117:1f934e0c	cloud tree of 1 thematiq PRs: merged=0 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T062121-edb2d73b	2026-11-16T06:50:04Z
+fix:planninq:930:de4742c6	conflict resolved; new head 3db13fea, REVERIFY	session-20261116T062544-335bf148	2026-11-16T06:50:09Z
+merge:hermiq:1293:c5e8b7d2	cloud tree of 5 hermiq PRs: merged=0 red=0 fail=0 skip=3; conflict 2, lint 0, red 0, moved 0, done 0	session-20261116T063608-d33f86e6	2026-11-16T06:50:20Z
+fix:buildiq:1249:0997f504	sbom current (dev dep omitted); merged development, pushed e01a3111488d17974ac20b492fdd9e5593f8cd37, REVERIFY	session-20261116T062050-7d5ce0d6	2026-11-16T06:50:30Z
+fix:buildiq:1624:de704581	conflict resolved (kept both l10n key sets), pushed	session-20261116T062050-add210c3	2026-11-16T06:50:37Z
+fix:buildiq:1114:9381ce97	failed: sbom gate unsatisfiable - dev-only nextcloud/ocp lock bump; regen-sbom (--omit=dev) leaves sbom.cdx.json unchanged and --check passes, but merge_gate.sbom requires the file in the diff; needs a dev-only-lock exemption in the gate	session-20261116T062120-691af8f7	2026-11-16T06:50:59Z
+fix:planninq:908:8cdb1910	restored lockfile dev flags; opensourcehealth 4 again; pushed d3be6570	session-20261116T062117-388e9de2	2026-11-16T06:50:56Z
+fix:planninq:871:95bfabe1	sbom regenerated, development merged; new head c207058e	session-20261116T062050-3a7e109c	2026-11-16T06:51:08Z
+fix:buildiq:1641:1cc1383a	merged development cleanly, pushed b6868cd6b6f9eec39772064f4979ffcdb1432599, REVERIFY	session-20261116T062050-7d5ce0d6	2026-11-16T06:51:29Z
+fix:buildiq:820:a6bd63eb	failed: sbom gate unsatisfiable - dev-only @vitejs/plugin-vue lock bump; regen-sbom (--omit dev) leaves sbom.cdx.json unchanged, but merge_gate.sbom requires the file in the diff; needs a dev-only-lock exemption in the gate	session-20261116T062120-691af8f7	2026-11-16T06:51:36Z
+fix:planninq:910:59fb2d6b	sbom false positive (dev-only); merged development, new head 8ffad303, REVERIFY queued	session-20261116T062120-7c38c5f1	2026-11-16T06:51:53Z
