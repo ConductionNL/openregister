@@ -14784,3 +14784,4 @@ stackiq	1954	34c6f73a6edec4ca5d54daff2b80273be29cdf68	RED	merge3:merge-gate	GATE
 stackiq	1978	17efb7880705315a03b1690ba0a2da374e593432	RED	merge3:merge-gate	GATE RED checker floor: adrvalidator: pass -> fail; adrvalidator stars: 5 -> 1; score: 100 -> 93
 stackiq	1930	9a43150cd9dda108dd4e990c92a0111e20b2542f	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Settings/softwarecatalogus_register.json 
 stackiq	1992	6d5c12d7da6c42f6e7984bf3e02c8fd1fb2de00b	CONFLICT	merge3	merges clean on development alone; files: tests/Stubs/Contract/ObjectServiceInterface.php 
+decidiq	1767	ef20753cf5af14ce526904d1a06b54c59bfb59fc	REVERIFY	worker-52	floor restored: split 3 repair steps into small units (development 3.77 -> 3.78, absolute floor OK), unit suite 4624 green, phpcs/phpstan clean; new head bc1df2c11c996ac8be69e94c075382478b1a296b, verify it
