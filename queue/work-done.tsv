@@ -17340,5 +17340,6 @@ build:pipelinq:recurring-revenue-runrate-widget:r3	nothing to build: every code 
 build:portaliq:a-task-opens-the-app-action-that-completes-it:r2	already done: every code task ticked on development; only 2.1 (live pass) is open	session-20261116T181151-999832c6	2026-11-16T19:18:52Z
 build:portaliq:example-site-zuiddrecht:r2	already done: tasks 1-8 ticked and on development; only 9 (live check on a fresh instance) left	session-20261116T191704-9a63be87	2026-11-16T19:19:00Z
 review:opencatalogi:2686:84ac3f44	GREEN: no new failures (5920 vs baseline 5893, same 80 inherited); concerns noted	session-20261116T191156-bbdb7add	2026-11-16T19:18:49Z
+build:portaliq:form-binding-settings-page:r2	already done: code task ticked on development; only live check T02 left	session-20261116T184852-b8356331	2026-11-16T19:19:06Z
 measure:humaniq:20261116h18	php 95.77% (pcov, 26211/27370); js none (no vitest/jest)	session-20261116T184921-a7624794	2026-11-16T19:19:04Z
 build:portaliq:form-flow-repeating-groups-calculations-and-decisions:r2	already done: T01-T07 on development; T08 Playwright and T09 live check need a live instance	session-20261116T191704-9a63be87	2026-11-16T19:19:34Z
