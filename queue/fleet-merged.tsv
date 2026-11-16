@@ -4624,3 +4624,4 @@ keepiq	1843	047becb72bcf5605cbd21b276c045469d66938a4	MERGED	worker-53	GATE OK sb
 keepiq	1844	b5f96b4c0be0beb9eb68869a4e28bf71fc287f02	MERGED	worker-53	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.58 holds at 3.59
 keepiq	1845	f296786e117a8d5196cea62f34ccf4322f700e32	MERGED	worker-53	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.58 holds at 3.59
 opencatalogi	2682	4e12e44e97a1ee7e636708f9ec65a4962916d02c	MERGED	worker-09	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.51
+opencatalogi	2725	defb7b6a9822f96bb369f99795f0945912eb4242	MERGED	worker-09	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.51
