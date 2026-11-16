@@ -17110,3 +17110,4 @@ cover:dossiq:069ee2d6madb6:53c979ad	added 17 tests (4 files, Zaakdossier) to ope
 fix:shillinq:3055:6be8ada8	merged development in (clean); lock busy, REVERIFY at 8918b6e6	session-20261116T181603-6d014baf	2026-11-16T18:26:28Z
 cover:decidiq:a5f973bbm0262:c76ae287	deferred: decidiq has 53 open PRs	session-20261116T182514-f3633b18	2026-11-16T18:26:32Z
 review:larpinq:1050:d2d372bb	GREEN: per spec; phpunit 1016 OK, vitest 608 passed	session-20261116T174053-4a550291	2026-11-16T18:26:59Z
+fix:shillinq:2997:37951348	merged development in, new head cd7db0f0; REVERIFY queued (merge lock held elsewhere)	session-20261116T182218-e80be6aa	2026-11-16T18:27:37Z
