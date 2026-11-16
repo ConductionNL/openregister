@@ -15790,6 +15790,7 @@ fix:opencatalogi:2244:9178373d	inherited: opensourcehealth 4->3 also red on plai
 fix:opencatalogi:2725:ef1e2d84	conflict resolved, pushed 80cedf65; REVERIFY recorded (merge lock held elsewhere)	session-20261116T082121-c1741fb9	2026-11-16T08:28:43Z
 fix:opencatalogi:2652:2348aeca	no change needed: branch up to date with development, l10n conflict was tree-only; REVERIFY recorded (merge lock busy)	session-20261116T082353-191a2dc3	2026-11-16T08:29:02Z
 verify:dossiq:6587:dab3e303	GREEN dossiq#6587: 0 new PHP failures (16 baseline), 2 inherited vitest failures	session-20261116T081720-9a06ad30	2026-11-16T08:29:13Z
+merge:stackiq:1168:a6ec246a	cloud tree of 2 stackiq PRs: merged=0 red=2 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T080031-6bfb8cef	2026-11-16T08:29:39Z
 fix:larpinq:877:0d04ecfc	failed: dev-only bump (nextcloud/ocp in require-dev); regen-sbom leaves sbom.cdx.json unchanged (current, 650 components), so the merge gate's 'lockfile changed without sbom.cdx.json' rule cannot be met without an artificial edit; needs a gate exemption for dev-only lock changes	session-20261116T081647-1fba2b50	2026-11-16T08:29:24Z
 fix:opencatalogi:2678:05397e9f	no change needed: branch up to date with development, merges clean; REVERIFY recorded (merge lock held elsewhere)	session-20261116T081638-f48babcb	2026-11-16T08:29:38Z
 review:stackiq:1941:4a5ff433	failed: self-review - worker-16 pushed this head (4a5ff433); needs a different reviewer	session-20261116T080103-dd70aeff	2026-11-16T08:29:59Z
