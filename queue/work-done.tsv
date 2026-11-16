@@ -15974,3 +15974,4 @@ lane:depbundle:thematiq:bundle	opened #1682 (9 updates), verified; merge lock he
 lane:depbundle:planninq:bundle	failed: permission: cm_land.sh land refused; PR #1198 open, APPROVE recorded, GREEN verdict queued	session-20261116T082637-06597b03	2026-11-16T09:09:24Z
 merge:filinq:1355:615b34c8	cloud tree of 5 filinq PRs: merged=0 red=1 fail=0 skip=1; conflict 3, lint 0, red 0, moved 0, done 0	session-20261116T081647-1fba2b50	2026-11-16T09:09:57Z
 merge:shillinq:2093:ac9a8fa0	stale	feeder	2026-11-16T09:09:14Z
+lane:feeder:dossiq:once2	added {'fix': 19, 'review': 26, 'verify': 4, 'merge': 17, 'gap': 10, 'build': 0} stale=1 open=211 by-type={'merge': 76, 'cover': 66, 'lane': 10, 'fix': 19, 'review': 26, 'verify': 4, 'gap': 10} rest=1	session-20261116T090836-f2cf24a5	2026-11-16T09:10:56Z
