@@ -17124,6 +17124,7 @@ cover:integriq:92114ab0m1db0:jsf3772e2d	deferred: integriq has 70 open PRs	sessi
 cover:buildiq:70b3e29em3841:f91e7417	deferred: buildiq has 56 open PRs	session-20261116T181603-6d014baf	2026-11-16T18:27:22Z
 fix:shillinq:2997:37951348	merged development in, new head cd7db0f0; REVERIFY queued (merge lock held elsewhere)	session-20261116T182218-e80be6aa	2026-11-16T18:27:37Z
 build:decidiq:live-public-livestream	already done: every code task on development; only live/Newman/e2e checks open	session-20261116T173306-f68895a7	2026-11-16T18:27:42Z
+cover:decidiq:a5f973bbm0262:dfaef732	deferred: decidiq has 53 open PRs	session-20261116T182218-e80be6aa	2026-11-16T18:27:58Z
 cover:pipelinq:7f9dc8e6m8519:8f8dca30	added to #3659 (budget): ExportAccessPolicy 0->100% (risky metadata), ReportMailRun 95->100%, +2 tests; suite 9039 OK	session-20261116T173240-b63ad758	2026-11-16T18:28:21Z
 cover:buildiq:70b3e29em3841:05630945	deferred: buildiq has 56 open PRs	session-20261116T181603-6d014baf	2026-11-16T18:28:01Z
 cover:decidiq:a5f973bbm0262:59826f43	deferred: decidiq has 53 open PRs	session-20261116T173306-f68895a7	2026-11-16T18:28:07Z
