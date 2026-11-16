@@ -17231,6 +17231,7 @@ build:integriq:observability-opentelemetry-export	already done: every code task 
 review:opencatalogi:2679:16fe088f	GREEN: no new failures (5869 tests, baseline 80 inherited)	session-20261116T184852-b8356331	2026-11-16T18:55:04Z
 fix:learniq:2555:20db1885	inherited: development c960466e alone measures 3.98 < floor 3.99; PR touches only composer.lock, sbom and a test stub	session-20261116T184945-c098409e	2026-11-16T18:55:18Z
 review:dossiq:6203:f6392408	GREEN: tests only, suite 18414 OK on merged tree	session-20261116T184655-77bda400	2026-11-16T18:55:17Z
+build:decidiq:one-consultation-schema:r3	already done: every code task in tasks.md is ticked and on development; only 5.2 e2e (needs live instance) left	session-20261116T184919-ae590ea9	2026-11-16T18:55:53Z
 build:learniq:participant-portal:r3	already done: every code task ticked on development (d84b379, #1763); only T4 e2e left	session-20261116T184858-b0d9d60e	2026-11-16T18:55:49Z
 verify:decidiq:2227:ed9602aa	GREEN 2227, GREEN 2228; tree 4638 tests, 0 new failures	session-20261116T184836-f6622adb	2026-11-16T18:55:50Z
 cover:pipelinq:7f9dc8e6m3dbb:f545d745	already done: every lib/Repair class has tests on development (incl. d477c25f0); remaining line gaps need a coverage driver, none installable here; pipelinq has ~45 open PRs, no new PR	session-20261116T184838-1279a0d5	2026-11-16T18:56:13Z
