@@ -16462,3 +16462,4 @@ review:filinq:2072:b8b9f680	GREEN: phpunit 6910 OK, no new failures	session-2026
 review:dossiq:3203:628c5ad8	GREEN	session-20261116T142700-f4d651ea	2026-11-16T14:40:00Z
 review:learniq:1883:de89b902	GREEN learniq#1883: spec-conform, no new failures (1 inherited)	session-20261116T142951-88449a68	2026-11-16T14:40:11Z
 review:opencatalogi:2673:61f25128	GREEN: build matches change specs; unit no new failures (5811 tests); jest 50/50	session-20261116T142651-57b203fe	2026-11-16T14:40:27Z
+review:opencatalogi:2415:f57435cd	GREEN: no new failures (80 vs 107 baseline with openregister main)	session-20261116T143636-9ede3f74	2026-11-16T14:40:57Z
