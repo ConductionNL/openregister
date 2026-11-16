@@ -113,3 +113,4 @@ shillinq	1912	a7d98b523c8c9952e0731ec9f7dd99c883030cc8	APPROVE	worker-45	Quick (
 shillinq	1991	29abf7fb303a9a25601637bfbbaecaeb9a1feae7	APPROVE	worker-45	Quick (dev dependency patch bump + sbom); no blockers; none
 shillinq	2048	f88b17a7a69df6279ca38720aee89560b62d975f	APPROVE	worker-45	Quick (dev dependency patch bump, lock + sbom only); no blockers; none
 shillinq	2224	ff4aa606e92e5e1b481b9d57db877beb814a2c4e	APPROVE	worker-45	Quick (dev dependency minor bump, lock + sbom only); no blockers; none
+shillinq	1958	98ce92e545cdd6092fe131653b75add6effe2c1d	APPROVE	worker-45	Thorough (31 files, 1241 lines; implements budget-scenarios REQ-BSC-011 and leges-at-intake REQ-SOPR-011); no blockers (missing @spec on 3 changed BudgetGrid.vue methods fixed in 98ce92e5); administration access check still runs before the scenario lookup, foreign scenario ids read as 404; concerns:
