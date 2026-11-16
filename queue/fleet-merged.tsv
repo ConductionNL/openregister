@@ -4629,4 +4629,12 @@ versioniq	721	9113809ee4dcdcce38fc0338cef5c8d7f64be063	RED	worker-23	GATE RED fl
 humaniq	606	999cc2866e6aa8b58b9b76ea5c11fa01becb1b6a	RED	worker-33	GATE RED sbom: composer.lock changed without sbom.cdx.json
 humaniq	662	f0ddf8e5865ef5e7cecb30c3b8fd324396a2ffc8	RED	worker-33	GATE RED sbom: composer.lock changed without sbom.cdx.json
 pipelinq	3894	79dda5b9905f3a95a0462e89eff19ac7527c85bb	MERGED	worker-55	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.48
+decidiq	1467	ae151ff0a51583e168d7b15a56df6bd2531995ec	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.78 holds at 3.78
+decidiq	1469	c712bd4b957efea8e0c3f414234239c3e5927ff8	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.78 holds at 3.78
+decidiq	1767	1582903c267265c964b1af5bddd432f6f7e882bf	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
+decidiq	2178	d8c9d1623ecddbb069f60c014e021f7eb50f6d13	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.78 holds at 3.78
+decidiq	2203	25c89067fe5543733a63e852b78c2fe8305fbaed	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.78 holds at 3.79
+decidiq	2207	12b854793b911a1de6aed09fa8c7e434d58e0735	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.78 holds at 3.78
+decidiq	2227	ef576d1f6daadaf87ea9b598e7d2300a7342a1de	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.78 holds at 3.80
 versioniq	721	b48214583a9c86d6d1701e2a4ced73b3009b6836	MERGED	worker-23	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.97 holds at 4.06
+shillinq	2098	91bd5616fcf72747bc4072cca1dfcfc94ca22761	MERGED	worker-51	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.05
