@@ -16141,3 +16141,4 @@ merge:humaniq:872:0d7780b2	unmeasured: static.developer.overheid.nl (tree 872+11
 merge:decidiq:2222:f93662ae	cloud tree of 1 decidiq PRs: merged=0 red=1 fail=0 skip=0 (gate RED sbom: locks changed without sbom.cdx.json)	session-20261116T101250-8aeb7975	2026-11-16T10:27:24Z
 fix:shillinq:2048:f88b17a7	fixed: spdx header on test stub (inherited floor drop), new head 0e551132; REVERIFY queued (merge lock busy)	session-20261116T101004-34dc3e61	2026-11-16T10:28:09Z
 fix:pipelinq:3835:ceb76db3	fixed: article store on main's object API, pushed 48e31f72; merge lock held elsewhere, REVERIFY queued	session-20261116T102204-b7990ddc	2026-11-16T10:28:19Z
+fix:shillinq:2070:29369cd1	fixed review blockers (veto answered 403, release texts corrected, 4 tests); merge lock held elsewhere, REVERIFY at 756a08e8e8	session-20261116T101530-34aec2a4	2026-11-16T10:28:29Z
