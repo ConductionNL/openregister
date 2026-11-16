@@ -17223,6 +17223,7 @@ fix:learniq:2507:f29e84b7	merged development in, clean; merge lock held elsewher
 fix:learniq:1882:334e6e47	inherited: plain development already reads maintainability 3.98 (range 3.98-4.01) below the 3.99 floor; PR #1882 merged reads the same 3.98, it adds no drop; nothing to fix on the branch	session-20261116T184912-ef98c646	2026-11-16T18:53:52Z
 cover:launchpad:fb10c50f:38e80a9f	deferred: launchpad has 44 open PRs	session-20261116T184901-5d8e5c9a	2026-11-16T18:54:08Z
 review:versioniq:722:c6a909c2	GREEN; conflicts with development (InstanceSettings, NextcloudAdvisoryFeedTest), needs a merge before landing	session-20261116T184902-3ba300c9	2026-11-16T18:54:05Z
+build:integriq:rule-editor-a11y-i18n-hardening	deferred: integriq has 70 open PRs	session-20261116T183806-fd5587ea	2026-11-16T18:54:49Z
 build:integriq:registry-bindings-speak-the-registry-api	already done: code tasks on development (#2665); only the live pass with credentials left	session-20261116T173306-f68895a7	2026-11-16T18:54:32Z
 build:integriq:openformulieren-intake-through-an-integriq-connection	already built: every code task ticked on development (b7a864249); only 4.3 e2e run left, runs in nightly Playwright	session-20261116T184846-301eb7a8	2026-11-16T18:54:56Z
 verify:learniq:2557:21cab0f2	2557 GREEN, 2559 CONFLICT, 2562 GREEN; no new failures (PHP 1, JS 9 inherited)	session-20261116T181517-93723df6	2026-11-16T18:54:53Z
@@ -17248,6 +17249,7 @@ measure:decidiq:20261116h18	php 94.13% js 98.45% at 1bf4171e	session-20261116T18
 merge:learniq:1167:5572f9ff	cloud tree of 4 learniq PRs: merged=2 red=0 fail=0 skip=0; conflict 2, lint 0, red 0, moved 0, done 0	session-20261116T184833-adbb8426	2026-11-16T18:57:50Z
 review:shillinq:2991:7d526afc	GREEN: unit 12296 OK, vitest 92 passed	session-20261116T184852-d42365eb	2026-11-16T18:57:58Z
 fix:filinq:2122:8da97635	merged development in, clean; new head e57f317b; REVERIFY queued (merge lock held elsewhere)	session-20261116T185100-d2f0c6eb	2026-11-16T18:58:08Z
+cover:stackiq:9ac19b3amdf03:d528dcf0	deferred: stackiq has 42 open PRs	session-20261116T181429-b5d49a13	2026-11-16T18:58:48Z
 cover:launchpad:fb10c50f:d3522ea6	deferred: launchpad has 44 open PRs	session-20261116T184852-d42365eb	2026-11-16T18:58:42Z
 cover:launchpad:fb10c50f:0891e5b5	deferred: launchpad has 44 open PRs	session-20261116T184924-e8902580	2026-11-16T18:58:33Z
 cover:launchpad:fb10c50f:882bd950	deferred: launchpad has 44 open PRs	session-20261116T184924-e8902580	2026-11-16T18:58:53Z
