@@ -17859,3 +17859,4 @@ lane:arch5:buildiq:next-buildiq-r2	PR #1684, GREEN (estimate 3.92-3.98 -> 3.93-3
 review:dossiq:6203:6a6113a8	GREEN: tests only, suite clean beyond 1 inherited error	session-20261116T211529-39ccc7ff	2026-11-16T21:20:35Z
 review:filinq:2072:268b3e0d	BLOCK: policy rule load uses the system seam on a user path without an organisation filter; suite green	session-20261116T211641-8431b36d	2026-11-16T21:21:00Z
 lane:arch5:versioniq:next-versioniq-r2	PR #753, GREEN (estimate 4.05-4.22 -> 4.22-4.34 incl. #751 commits; this round alone +0.03; under 4.5, next lever unit interfacing/complexity)	session-20261116T211115-33d23e06	2026-11-16T21:21:22Z
+merge:larpinq:1077:53d85f32	cloud tree of 1 larpinq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T204203-b8dccc50	2026-11-16T21:22:00Z
