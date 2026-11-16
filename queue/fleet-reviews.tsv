@@ -84,3 +84,4 @@ decidiq	2191	58233c56976149d9693c08a2fd992b99c2e6e0c1	REQUEST_CHANGES	worker-01	
 planninq	871	c207058ef15da9886b349f626675653529593ab3	APPROVE	worker-12	Quick; no blockers; dev-only eslint 10.12.0 with sbom regen
 planninq	908	d3be65702cebbde17585b38168c1b3b9353a9712	APPROVE	worker-12	Quick; no blockers; dev-only @playwright/test bump, dev flags restored in lock
 planninq	918	6289a59743741d162f71a87526216d4697bc1247	APPROVE	worker-12	Quick; no blockers; dev-only nextcloud/ocp 35.0.2 stubs
+planninq	933	6f703f97ef60607a57d16ca90675442a8ed0010c	APPROVE	worker-12	Thorough; no blockers; board order endpoints check readability and project membership, column changes keep the existing owner-or-admin rule, card writes go as the caller, uses openregister main API; removed JS helper tests cover logic moved server-side with new PHP tests; php tree 1231 no new failur
