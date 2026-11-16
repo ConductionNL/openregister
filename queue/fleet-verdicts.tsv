@@ -13706,6 +13706,7 @@ shillinq	3078	db907ca5ddb5588d0e74b60c458ed9d98223ac83	GREEN	worker-34:review	Im
 stackiq	1297	f6f898a1ce156bb7902c6cbdc55ca55df63daf3a	GREEN	worker-24:review	dev-dep bump phpmd 2.15->3.0 (composer.json/lock/sbom); phpunit 3718, 1 inherited failure (CmdbImportProfileOverviewGoldenTest), 0 new; composer phpmd red on development already (102 lines) and 92 lines with 3.0 (fewer, positional-args deprecation notice only)
 stackiq	1168	04f38d3ae4a4d17b142dbafb97d2a81126d6568c	GREEN	worker-27:review	twig 3.28->3.30 lock bump + sbom, no code change; unit 3718 tests, 1 failure (CmdbImportProfileOverviewGoldenTest) inherited from development
 launchpad	753	d16aabc36feeed32b92d557a943abd47e48c054a	RED	worker-12:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+larpinq	1065	936a9601ce25a94ea88cc5285019b0919221028d	GREEN	worker-46	lock refresh only; PHP unit 986 tests, 18 errors/failures = baseline, none new (run without result cache: defect-first reordering surfaces order-dependent tests); vitest 597/597 before and after with nextcloud-vue 2.181.0
 launchpad	758	96b9325253ca72dc817735695e63364ebf7a5a45	CONFLICT	worker-12:merge	merges clean on development alone; files: package-lock.json 
 launchpad	760	77add31235ef88f837a3f5bf089fdf18003862b4	CONFLICT	worker-12:merge	merges clean on development alone; files: package-lock.json 
 launchpad	1223	65b428f7d63ef7022e4c3748dcb028f109cd18d7	REVERIFY	worker-12:merge	verdict sha is not the head: head is 6e8cfb5e9629971bda71e39160afc383308598d0
