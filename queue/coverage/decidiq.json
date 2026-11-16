@@ -1,12 +1,12 @@
 {
  "app": "decidiq",
- "commit": "dbda681281415dfaa38d4dc925274ec788c245ed",
- "measured_at": "2026-11-15T01:28:27Z",
+ "commit": "1bf4171e2b5cd4c7f220ca4bf47cb21994f5ca3a",
+ "measured_at": "2026-11-16T18:55:27Z",
  "php": {
   "tool": "pcov",
-  "pct": 91.94,
-  "statements": 28583,
-  "covered": 26280,
+  "pct": 94.13,
+  "statements": 29029,
+  "covered": 27324,
   "dirs": {
    "lib/Activity/": [
     79,
@@ -21,16 +21,16 @@
     37
    ],
    "lib/BackgroundJob/": [
-    636,
-    607
+    653,
+    624
    ],
    "lib/Command/": [
     106,
     105
    ],
    "lib/Controller/": [
-    3274,
-    3127
+    3282,
+    3226
    ],
    "lib/Dashboard/": [
     65,
@@ -42,11 +42,11 @@
    ],
    "lib/Exception/": [
     20,
-    18
+    20
    ],
    "lib/Flow/": [
-    182,
-    182
+    185,
+    185
    ],
    "lib/Kernel/": [
     0,
@@ -61,12 +61,12 @@
     256
    ],
    "lib/Listener/": [
-    1497,
-    1361
+    1588,
+    1582
    ],
    "lib/Listener/Registrar/": [
-    117,
-    117
+    126,
+    126
    ],
    "lib/Mcp/": [
     534,
@@ -89,8 +89,8 @@
     246
    ],
    "lib/Repair/": [
-    803,
-    803
+    807,
+    807
    ],
    "lib/Search/": [
     58,
@@ -101,8 +101,8 @@
     5
    ],
    "lib/Service/": [
-    19083,
-    17191
+    19364,
+    17787
    ],
    "lib/Service/Feed/": [
     31,
@@ -113,12 +113,12 @@
     74
    ],
    "lib/Service/Ori/": [
-    571,
-    518
+    581,
+    580
    ],
    "lib/Service/Records/": [
-    379,
-    371
+    402,
+    402
    ],
    "lib/Service/Registrar/": [
     26,
@@ -139,9 +139,9 @@
   }
  },
  "js": {
-  "pct": 98.42,
-  "statements": 3291,
-  "covered": 3239,
+  "pct": 98.45,
+  "statements": 3359,
+  "covered": 3307,
   "dirs": {
    "src/": [
     95,
@@ -196,8 +196,8 @@
     72
    ],
    "src/utils/": [
-    1898,
-    1884
+    1966,
+    1952
    ],
    "src/views/dashboard/widgets/": [
     103,
