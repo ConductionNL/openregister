@@ -17170,3 +17170,4 @@ cover:openregister:7350e3efm9dc5:fa416b31	added to open PR #10587 (budget: 188 o
 fix:shillinq:2991:84a86ec5	fixed blockers, pushed 7d526afc; merge lock held elsewhere, REVERIFY queued	session-20261116T182254-5f17ae21	2026-11-16T18:33:19Z
 cover:keepiq:c967a31fmba5a:1b97f731	already done: lib/Listener/*.php covers 557/558 statements on development 92ee17d6; the one line left is the pre-NC33 class_exists early return in FederationEventRegistrar::boot, unreachable with the stubs; no PR	session-20261116T181423-c7b48242	2026-11-16T18:35:10Z
 lane:arch5:stackiq:next-stackiq:c9	failed: permission: self-review APPROVE of own PR #1996 refused; PR open at 66a3bdf851 (4.20-4.24), REVERIFY queued	session-20261116T173141-f87aaa9d	2026-11-16T18:36:00Z
+measure:pipelinq:20261116h18	php 93.43% js 95.72% (1 vitest failure on development: myWorkPage.spec.js)	session-20261116T181504-15a4396b	2026-11-16T18:37:03Z
