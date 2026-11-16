@@ -16610,3 +16610,4 @@ review:learniq:1881:a0896acd	GREEN: intended spec'd fix; 6871 tests, 1 inherited
 verify:shillinq:3110:74ba81c9	3110 GREEN, 3111 GREEN; unit 12231 OK; vitest 1 inherited fail	session-20261116T151016-54cee2b8	2026-11-16T15:24:39Z
 fix:integriq:3593:8dad155c	no change needed: merges clean on development alone; REVERIFY queued (merge lock held elsewhere)	session-20261116T151753-162a5bdd	2026-11-16T15:24:47Z
 fix:learniq:2557:52a96cea	unmeasured: static.developer.overheid.nl (pushed SPDX header fix for inherited floor drop; new head 29ed293d, APPROVE recorded)	session-20261116T150849-786441a0	2026-11-16T15:25:10Z
+fix:integriq:3049:2da4ecc8	fixed spdx headers, pushed f122cee2; merge lock busy, REVERIFY queued	session-20261116T152348-7a1549ed	2026-11-16T15:25:22Z
