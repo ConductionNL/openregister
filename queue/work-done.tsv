@@ -18400,6 +18400,20 @@ verify:humaniq:1139:4ca3cd5e	CONFLICT #1139 (l10n en.js/nl.js vs development)	se
 merge:learniq:2578:d2cb7b4e	failed: prep exit 2, composer lock needs vimeo/psalm 7.5 (php >=8.3.16), container php 8.3.6; nothing landed	session-20261116T232912-634ff2e8	2026-11-16T23:38:20Z
 verify:filinq:2078:d8dd2bca	CONFLICT: tests/unit/Settings/DocumentProductionSchemaTest.php vs development	session-20261116T232925-45c70e73	2026-11-16T23:38:28Z
 verify:hermiq:1757:59cadfdd	CONFLICT #1757 (l10n catalogues, EngineSwitchedOffTest)	session-20261116T232912-d58d1a81	2026-11-16T23:38:39Z
+verify:learniq:2502:bdbd6462	failed: composer install impossible here, learniq lock needs vimeo/psalm 7.5 (php >=8.3.16), container php 8.3.6	session-20261116T232912-634ff2e8	2026-11-16T23:38:58Z
 verify:filinq:2091:fe554cc9	CONFLICT #2091	session-20261116T232918-5354fd88	2026-11-16T23:38:49Z
 verify:filinq:2113:51b5285f	CONFLICT: #2113 vs development in CHANGELOG.md, filinq_register.json, ConsentUpdateFlowTest.php	session-20261116T232911-3dffa1ae	2026-11-16T23:39:03Z
 verify:filinq:2141:f4c0f231	GREEN #2141	session-20261116T233050-d0df160f	2026-11-16T23:39:15Z
+verify:humaniq:1142:9666a5ef	CONFLICT: #1142 vs development in l10n, hr-leave register, manifest files	session-20261116T232911-3dffa1ae	2026-11-16T23:40:06Z
+verify:hermiq:1763:959522d3	CONFLICT #1763 (9 files)	session-20261116T224246-d9bde508	2026-11-16T23:39:28Z
+verify:launchpad:1246:09cffd9d	stale	feeder	2026-11-16T23:37:23Z
+verify:hermiq:1760:f84a6f07	CONFLICT: info.xml, l10n, hermiq_register.json, openapi.json	session-20261116T233003-c7bea420	2026-11-16T23:40:32Z
+build:learniq:exam-registration-and-certificate-issue:c2	PR #2579 (quality/build-exam-registration-and-certificate-issue): T1-T6 built and ticked; suite 6998 tests, 2 inherited failures (baseline 6966/2)	session-20261116T230843-e8244832	2026-11-16T23:41:11Z
+verify:humaniq:670:40bebbca	CONFLICT #670 (sbom.cdx.json vs development)	session-20261116T233800-0f135937	2026-11-16T23:41:06Z
+merge:pipelinq:3602:a4bb937b	merge3 tree of 1 pipelinq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-16T23:41:42Z
+verify:hermiq:1740:a42b5b75	CONFLICT #1740 (l10n, register, openapi)	session-20261116T230934-9ee320cf	2026-11-16T23:42:02Z
+verify:filinq:2112:a9282c63	CONFLICT #2112 (register json, openapi.json)	session-20261116T232844-9c7f5cce	2026-11-16T23:42:13Z
+verify:hermiq:1749:adcb7c52	CONFLICT: lib/Controller/SessionController.php vs development	session-20261116T232959-6ccea9dc	2026-11-16T23:42:32Z
+verify:learniq:1883:09e73c39	CONFLICT #1883	session-20261116T232519-f84cca9a	2026-11-16T23:42:52Z
+verify:hermiq:1795:9fd6a345	CONFLICT #1795 (info.xml, openapi.json, agent-form-payload golden)	session-20261116T232912-d58d1a81	2026-11-16T23:43:22Z
+verify:hermiq:1762:38c2be62	CONFLICT #1762 (l10n + actions.seed.json vs development)	session-20261116T233834-fbe601d1	2026-11-16T23:43:42Z
