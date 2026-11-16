@@ -16851,6 +16851,7 @@ build:portaliq:receipt-date-reads-in-the-portals-language	already done: code tas
 cover:dossiq:069ee2d6madb6:js0023cfc7	deferred: dossiq has 43 open PRs	session-20261116T173306-d04a65dc	2026-11-16T17:35:41Z
 cover:dossiq:069ee2d6madb6:ea81adeb	deferred: dossiq has 43 open PRs	session-20261116T173227-3f62e794	2026-11-16T17:35:11Z
 review:hermiq:1756:6c5bc380	GREEN: 5348 tests OK on PR merged with development	session-20261116T173310-7d288d7d	2026-11-16T17:35:45Z
+build:portaliq:hero-links-follow-the-site-address	already built: T1,T2 ticked and on development (fix(site) 2026-10-16); only T3 live check left, not a code task	session-20261116T170545-a4f14b83	2026-11-16T17:36:00Z
 build:portaliq:mijn-taken-lists-contributed-tasks	deferred: portaliq has 62 open PRs	session-20261116T171035-683856c3	2026-11-16T17:35:55Z
 build:portaliq:contact-question-form-reads-dutch	deferred: portaliq has 62 open PRs	session-20261116T171035-683856c3	2026-11-16T17:36:03Z
 build:portaliq:portal-federated-search	deferred: portaliq has 62 open PRs	session-20261116T171035-683856c3	2026-11-16T17:36:10Z
@@ -16869,3 +16870,4 @@ build:portaliq:resident-lands-on-the-portal	already done: every code task ticked
 build:portaliq:portal-host-root-redirect	already done: every code task ticked on development; open tasks are live checks only, left	session-20261116T170823-40772b73	2026-11-16T17:39:12Z
 build:portaliq:site-matches-the-zuiddrecht-boards	already done: every code task ticked on development; open tasks are live checks only, left	session-20261116T170823-40772b73	2026-11-16T17:39:22Z
 build:portaliq:public-faq-and-product-finder	already done: T01-T07 built on development (8 Oct); only T08 live check left	session-20261116T173311-8d6b3275	2026-11-16T17:39:31Z
+build:portaliq:site-home-follows-the-school-boards	already done: every code task ticked on development; open tasks are live checks only, left	session-20261116T170823-40772b73	2026-11-16T17:39:28Z
