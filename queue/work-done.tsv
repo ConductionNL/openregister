@@ -16494,3 +16494,4 @@ fix:shillinq:2093:c70fbea8	fixed: administrationId payload on both GRN actions +
 fix:learniq:2561:65d65e78	RED inherited from development (stub without SPDX); restored rating, pushed 7b697917; lock busy, REVERIFY queued	session-20261116T142859-fa64ab70	2026-11-16T14:50:19Z
 fix:thematiq:1365:39f057e7	no change: branch already contains development, conflict was only with sibling #1303; REVERIFY queued	session-20261116T143136-ae6d04cb	2026-11-16T14:50:38Z
 fix:learniq:2557:70286e48	sbom fixed, pushed 52a96cea; not landed: merge gate checker floor spdxheaders 5->4 is inherited from development 239819033	session-20261116T142951-88449a68	2026-11-16T14:50:46Z
+fix:shillinq:3111:96abe4ab	merged development in, spdx back to 5 stars; new head bfad3169, REVERIFY (gate unmeasured: gitdocumentatie.logius.nl blocked)	session-20261116T142644-e92c7bef	2026-11-16T14:51:08Z
