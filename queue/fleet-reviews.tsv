@@ -261,3 +261,4 @@ thematiq	1292	1c6de77205aea0e02fe0ff817f09d1390297dc51	APPROVE	worker-46	Quick; 
 thematiq	1293	70f30610bdf7db46fa14e32935ad703e829c02bf	APPROVE	worker-46	Quick; no blockers; lockfile/dev dependency bump, tree PHP suite only inherited failure, vitest 1559/1559 on tree
 thematiq	1558	756f3b85ff9c7cd053b9e02959bb340357082171	APPROVE	worker-46	Quick; no blockers; lockfile/dev dependency bump, tree PHP suite only inherited failure, vitest 1559/1559 on tree
 hermiq	1167	dae65138d4911e944cdd0e955e0226a9ac641cce	APPROVE	worker-02	Quick; no blockers; npm dep bump 5.3.1->5.4.0 with re-recorded icon snapshot (comment node order only) and regenerated sbom (tool version metadata differs); no source changes, unit suite 5291 green
+decidiq	1465	c16cd40a576d75aeda154a94b4c66265f5a79c7e	APPROVE	worker-40	Quick; no blockers; @nextcloud/vue minor bump with regenerated sbom; tree green
