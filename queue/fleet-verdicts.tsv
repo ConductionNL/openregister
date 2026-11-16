@@ -13708,3 +13708,4 @@ launchpad	753	d16aabc36feeed32b92d557a943abd47e48c054a	RED	worker-12:merge-gate	
 launchpad	758	96b9325253ca72dc817735695e63364ebf7a5a45	CONFLICT	worker-12:merge	merges clean on development alone; files: package-lock.json 
 launchpad	760	77add31235ef88f837a3f5bf089fdf18003862b4	CONFLICT	worker-12:merge	merges clean on development alone; files: package-lock.json 
 launchpad	1223	65b428f7d63ef7022e4c3748dcb028f109cd18d7	REVERIFY	worker-12:merge	verdict sha is not the head: head is 6e8cfb5e9629971bda71e39160afc383308598d0
+shillinq	2997	d7b6bce1714de3f3a4d9262af6d073cdd8d74dc5	GREEN	worker-37:review	Builds tax-cbcr-and-pillar2-returns per its tasks; new endpoints NoAdminRequired + per-administration canAccess, 404 on refusal, guards fail-closed; OR saves via ObjectSaveOptions; PHP unit 12284 (base 12225) no failures; vitest 3051/3052, the 1 failure (dunningNextRun.spec) inherited from development
