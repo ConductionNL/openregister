@@ -4383,3 +4383,5 @@ opencatalogi	2699	64dd55f629ebec0808c4392acdeb733f6e871660	SKIP	worker-54	GATE U
 humaniq	662	d7499aecffd3be7525553af3896068e429d61751	SKIP	worker-58	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 humaniq	667	c3822863e74efaa1f7512786743723ab486e70f2	SKIP	worker-58	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 hermiq	1735	80b67d8252b18d63d70f5f77b427c7fa70b431c9	SKIP	worker-53	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
+thematiq	1303	550d277c14273dd3b9908587fb0804741182805c	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.09
+thematiq	1677	ad0dd3b79a1e6abfd5d6c936f121fbe770b01fba	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.09
