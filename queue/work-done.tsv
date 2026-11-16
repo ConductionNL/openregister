@@ -15419,3 +15419,4 @@ review:filinq:2114:78a005c2	GREEN: phpunit 6892 OK, jest 588, vitest 785, phpsta
 review:filinq:1828:f7b90817	GREEN: 6798 tests OK, phpstan clean	session-20261116T062109-81fc252e	2026-11-16T06:27:03Z
 review:dossiq:4887:f530c6e6	GREEN: matches change spec; touched tests and phpstan clean	session-20261116T062126-9d7735e0	2026-11-16T06:27:14Z
 review:filinq:2103:b650ff7b	GREEN: unit 6848 OK, jest/vitest touched specs pass; matches change specs	session-20261116T062050-7d5ce0d6	2026-11-16T06:27:27Z
+review:decidiq:1468:7dc751fb	GREEN: dev-only webpack patch bump, vitest 2847 pass	session-20261116T062120-691af8f7	2026-11-16T06:27:38Z
