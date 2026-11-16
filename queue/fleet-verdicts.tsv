@@ -14519,3 +14519,4 @@ stackiq	1992	6d5c12d7da6c42f6e7984bf3e02c8fd1fb2de00b	GREEN	worker-25	3718 tests
 shillinq	3112	43d820967368195dcf4ba2fbf07d8493c5ed236b	GREEN	worker-51	unit 12225 tests, baseline 0 failures, new failures 0; comment-only header change
 stackiq	1990	e0356aabe966bb4bc3cdc58fd21da3a06d63f078	RED	worker-07:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
 integriq	3593	8dad155cd38b784d183d27dd74f05a69f3418116	GREEN	worker-06:review	build of sources-sftp-adapter per its specs; host-key endpoints admin-only, pin required before login, paths confined to root, egress guard first; unit 9608 vs baseline 9535, same 5 inherited reds, no new failures; vitest 125 pass; eslint/phpcs clean
+integriq	3669	a2e27ca84e0633f568c5b8396dd55abb2257a12c	GREEN	worker-38	phpunit 9535 tests, baseline 3F/2E, no new failures; vitest 2387/2387
