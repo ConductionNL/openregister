@@ -4565,6 +4565,7 @@ versioniq	722	c6a909c212434beea60b2efeaee240e085d5546c	SKIP	worker-31	GATE UNMEA
 versioniq	722	c6a909c212434beea60b2efeaee240e085d5546c	SKIP	worker-31	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 keepiq	1816	c999bfc2e54087d2325b4b92871a0e738a639500	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.58 holds at 3.59
 decidiq	1467	ae151ff0a51583e168d7b15a56df6bd2531995ec	SKIP	worker-58	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
+humaniq	610	12fe7c133566a989d3faa7e51cbf930f67043da3	SKIP	worker-16	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
 larpinq	1060	337dffb9d77a753f3a333d33b2580c6cf96482cd	MERGED	worker-40	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.06
 decidiq	1469	c712bd4b957efea8e0c3f414234239c3e5927ff8	SKIP	worker-58	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
 hermiq	1736	4200349d04e91a9455eba9e107da1996430105ed	SKIP	worker-43	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
