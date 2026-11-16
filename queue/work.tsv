@@ -16859,3 +16859,4 @@ merge:versioniq:497:ac489d35	merge	versioniq	development	development	prs=497@39a
 merge:larpinq:1050:0d9f281a	merge	larpinq	development	development	prs=1050@5f2419c464329b49f18057b74fdaccd482faa674	2026-11-16T14:21:52Z
 merge:thematiq:1303:9660e5b3	merge	thematiq	development	development	prs=1303@550d277c14273dd3b9908587fb0804741182805c,1677@ad0dd3b79a1e6abfd5d6c936f121fbe770b01fba	2026-11-16T14:21:52Z
 measure:stackiq:20261116h14	measure	stackiq	development	queue/coverage/stackiq.json	why=slices need per-directory coverage	2026-11-16T10:22:21Z
+fix:portaliq:1767:171143de	fix	portaliq	development	1767	sha=171143de171a9195317c5b4e3cf04e8960c0e6a6;verdict=CONFLICT;branch=dependabot/npm_and_yarn/development/vue/compiler-sfc-3.5.44;reason=merges clean on development alone, files: package-lock.json package.json 	2026-11-16T14:25:32Z
