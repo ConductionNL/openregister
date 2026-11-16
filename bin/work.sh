@@ -21,7 +21,7 @@
 # One merger per app (a cloud worker or a local runner; the local runners take the same lease): a merge task is
 # claimed together with its app's merge lock, in one commit, and merge tasks of an app whose lock someone else
 # holds are not claimable. task_done of a merge task releases the lock in the same commit.
-# Type rank: fix, review/measure, verify/merge, gap, cover. Type `integrate` (openregister main, behind the single
+# Type rank: fix, review/measure, verify/merge, gap/lane, cover. Type `integrate` (openregister main, behind the single
 # `integrator` lease) is reserved: never claimed unless named in [types] (comma list).
 WQ=queue/work.tsv
 WD=queue/work-done.tsv
@@ -68,7 +68,7 @@ _task_rows() {
 		/^#/ || NF < 7 || ($1 in done) || ($1 in seen) { next }
 		{
 			seen[$1] = 1
-			r = ($2 == "fix") ? 1 : ($2 == "review" || $2 == "measure") ? 2 : ($2 == "verify" || $2 == "merge") ? 3 : ($2 == "gap") ? 4 : ($2 == "cover") ? 5 : 9
+			r = ($2 == "fix") ? 1 : ($2 == "review" || $2 == "measure") ? 2 : ($2 == "verify" || $2 == "merge") ? 3 : ($2 == "gap" || $2 == "lane") ? 4 : ($2 == "cover") ? 5 : 9
 			# Finishing open PRs (verify, merge, review) comes first; all other work goes app by app in
 			# queue/app-order.txt order, by type rank within an app.
 			if ($2 != "verify" && $2 != "merge" && $2 != "review") r += 10 * (($3 in pos) ? pos[$3] : 90)
