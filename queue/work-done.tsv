@@ -15455,3 +15455,4 @@ merge:planninq:725:3333abed	merge8 tree of 12 planninq PRs: merged=3 red=6 fail=
 review:hermiq:1578:c7adfb00	GREEN: lock+sbom, unit 5291 OK with llphant 1.0.10	session-20261116T062544-335bf148	2026-11-16T06:33:13Z
 review:hermiq:1785:8d6ac93b	GREEN: matches delegation-runs-in-parallel specs; unit 5315/0 fail, phpstan, vitest clean	session-20261116T062117-388e9de2	2026-11-16T06:33:21Z
 merge:planninq:1037:394d480f	merge8 tree of 12 planninq PRs: merged=3 red=6 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge8-20261115T170007-37538273	2026-11-16T06:33:35Z
+review:hermiq:1750:005a39ab	GREEN: phpunit 5331 OK, vitest 1545 pass	session-20261116T061736-e271ba12	2026-11-16T06:33:33Z
