@@ -16902,3 +16902,4 @@ build:shillinq:billable-period-becomes-an-invoice	already done: 1.1-1.4 built on
 review:openregister:10595:8cc9923c	APPROVE: tests only, 8 new tests green, required suites green	session-20261116T173213-a5a52019	2026-11-16T17:43:20Z
 review:keepiq:1826:95a54b11	GREEN: keepiq #1826, unit 5408/0 fail, vitest 99 pass; version-line conflict with development	session-20261116T173313-424dff86	2026-11-16T17:43:27Z
 review:shillinq:2230:e61ebeb7	GREEN: babel dev-dep bump, vitest 3030/3031 (1 inherited failure)	session-20261116T173342-1d8a0fb9	2026-11-16T17:43:49Z
+build:shillinq:assets-method-change-and-reserve	already done: code tasks built on development; only 4.1 Playwright run left (needs a live instance)	session-20261116T173311-8d6b3275	2026-11-16T17:44:04Z
