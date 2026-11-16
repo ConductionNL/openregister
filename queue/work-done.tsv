@@ -16488,3 +16488,4 @@ fix:integriq:3671:18d443b4	fixed floor (duplication 3.87, unit_size 3.58); pushe
 fix:thematiq:1558:756f3b85	failed: sbom already current (bump is a dev-only dependency, regen-sbom --check passes, 1 component); gate needs sbom.cdx.json in the diff, nothing real to change	session-20261116T143136-ae6d04cb	2026-11-16T14:49:26Z
 merge:integriq:2716:bdcca480	unmeasured: static.developer.overheid.nl (merged=0; 2716/2994 gate UNMEASURED; 3049, 3596 gate RED floor; 3638, 3649 REQUEST_CHANGES; 3050/3051/3593 CONFLICT)	session-20261116T142703-f07e9998	2026-11-16T14:49:34Z
 fix:learniq:2556:8dedbada	sbom regenerated; new head 489b7f4d; REVERIFY (lock held)	session-20261116T144202-f2b26030	2026-11-16T14:49:31Z
+fix:learniq:2551:86a3e2d4	fixed blocker; REVERIFY new head 87132cc4	session-20261116T142700-f4d651ea	2026-11-16T14:50:00Z
