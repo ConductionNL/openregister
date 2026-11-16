@@ -551,3 +551,4 @@ buildiq	1596	1e0a4baa0fc45422fef22a990189036758d6d2d4	APPROVE	worker-09	Strict (
 opencatalogi	2699	64dd55f629ebec0808c4392acdeb733f6e871660	APPROVE	worker-07	Strict (admin setting); no blockers: endpoints AuthorizedAdminSetting with CSRF, unreadable mode holds as staging, every hold before the send, callers tolerate null timestamps; concerns: gate-82/119 inherited, ajv gates did not run (manifest checked by hand)
 hermiq	1193	7d49a897eacda342108a8ffdf6d0ba0a3967dc67	APPROVE	worker-11	Quick; no blockers; sass dev bump 1.104.1->1.106.1 with regenerated sbom
 hermiq	1195	7d6678393fcb6f34e5686d5bae1b98fb9a9688de	APPROVE	worker-11	Quick; no blockers; eslint dev bump 10.11.0->10.13.0 with regenerated sbom
+opencatalogi	2725	defb7b6a9822f96bb369f99795f0945912eb4242	APPROVE	worker-07	Thorough; no blockers: title written into the attached copy only, signed/encrypted PDFs skipped, write failure leaves bytes and does not stop the batch; concerns: gate-82/119 inherited
