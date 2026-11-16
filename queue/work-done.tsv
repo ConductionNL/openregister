@@ -17752,3 +17752,4 @@ review:shillinq:1899:65bdef77	GREEN #1899 (spec'd behaviour, access checks intac
 verify:shillinq:3110:d458ce1f	GREEN #3110: phpunit 12322 = baseline, vitest 1 inherited failure	session-20261116T201628-7b6853de	2026-11-16T20:47:12Z
 fix:dossiq:5398:0574972c	merged #5398 at 0574972c86 (sbom already current: dev-only bump; no code change)	session-20261116T203029-cbd53de3	2026-11-16T20:47:45Z
 fix:larpinq:1074:0a276a6c	merged #1074 at f4965d4956080a9c78575bb25efc497f5bc5cb83	session-20261116T184852-b8356331	2026-11-16T20:47:55Z
+cover:dossiq:069ee2d6m9d1b:3b1fd60e	dossiq has 43 open PRs: added to #6203; lib/Review uncovered lines 10 -> 3, suite 18756 ok	session-20261116T194104-8906f18f	2026-11-16T20:48:12Z
