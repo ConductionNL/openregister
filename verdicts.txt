@@ -3345,3 +3345,4 @@
 10588 fca1fc979f2c9a1feb1252b6b25f60a029fb25bd APPROVE additive contains operator on array filters; existing filter paths unchanged; Architecture, Rules, Controller, Contract, Db/MagicMapper green on PR merged with main; phpstan clean
 10594 34ee9c5fa848b2cede16ab5a73f68d71eb1aacd6 APPROVE tests only: 2 new jest specs (20 tests) for ViewObject helpers and MassValidateObjects; no lib/src changes; eslint clean; specs pass on head (main unchanged); no clock-pinned asserts
 10592 58f77a162cff5ef3af15d474b63a0ba83c4f53cb APPROVE Tests only (2 jest specs, 451 lines); merged with main, views/avg and views/object suites 18 files 681 tests pass; eslint clean; no production code changed.
+10591 bdab430e1291cd2dc2c3f729110e66ee9c4a0d7d APPROVE tests only: 5 new jest specs (33 tests) mounting object/dashboard/log views; no lib/src changes; eslint clean; all pass on head; module mocks are per-file, no clock-pinned asserts
