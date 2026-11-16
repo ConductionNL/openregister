@@ -15368,3 +15368,4 @@ shillinq	3121	31c97d4e7639634edb1c347f972cab31c192882d	GREEN	worker-02:lane	phps
 buildiq	1620	9cf97ff767fed5c9b84d911ccf97fe77a08b4162	RED	worker-24:merge-gate	GATE RED absolute floor: buildiq maintainability 3.90 after merge is below its floor 3.91
 versioniq	691	478f595cafa579f00febfd06880adc294612e8a0	REVERIFY	worker-23	floor redesign: audit log reached through AdminChangeAuditInterface, planner/candidate/policy units split; merge gate OK at the new head; new head f1aa0f7ffa58534b8b4980afc73a6a904376c7b1, verify it
 pipelinq	3902	85212f589a1698f9a3a45d3f0c963a32495e8819	GREEN	worker-55:lane	arch5 r2: 2 Kernel contracts; suite 9136 no failures (= development), phpstan 0, phpcs SAME, phpmd SAME; estimate 4.48-4.49 -> 4.50-4.51
+larpinq	1074	0a276a6c4b7c7f20a101b296be5e65620ae86a52	RED	worker-36:merge-gate	GATE RED floor: duplication: 5.17 -> 5.15
