@@ -15869,3 +15869,4 @@ review:shillinq:1958:55f82d52	GREEN: matches specs, phpunit 12239 OK, vitest onl
 merge:dossiq:2705:411106d6	merge3 tree of 22 dossiq PRs: merged=8 red=5 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 9	merge3-20261113T213425-c36bcd5f	2026-11-16T08:45:03Z
 merge:dossiq:3197:73cb696b	merge3 tree of 22 dossiq PRs: merged=8 red=5 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 9	merge3-20261113T213425-c36bcd5f	2026-11-16T08:45:15Z
 merge:dossiq:3297:7b19cd34	merge3 tree of 22 dossiq PRs: merged=8 red=5 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 9	merge3-20261113T213425-c36bcd5f	2026-11-16T08:45:32Z
+merge:dossiq:2902:0adcacd1	merge3 tree of 22 dossiq PRs: merged=8 red=5 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 9	merge3-20261113T213425-c36bcd5f	2026-11-16T08:45:44Z
