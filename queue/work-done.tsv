@@ -17344,3 +17344,4 @@ build:portaliq:form-binding-settings-page:r2	already done: code task ticked on d
 measure:humaniq:20261116h18	php 95.77% (pcov, 26211/27370); js none (no vitest/jest)	session-20261116T184921-a7624794	2026-11-16T19:19:04Z
 build:portaliq:form-flow-repeating-groups-calculations-and-decisions:r2	already done: T01-T07 on development; T08 Playwright and T09 live check need a live instance	session-20261116T191704-9a63be87	2026-11-16T19:19:34Z
 build:portaliq:collection-column-labels:r2	already done: every code task ticked, landed in #1369; only live task 4 left (needs live instance)	session-20261116T191856-c437ae89	2026-11-16T19:20:08Z
+review:opencatalogi:2699:3dfb66bd	GREEN: no new failures, behaviour per instance-staging-mode specs	session-20261116T191409-74b1bedd	2026-11-16T19:20:11Z
