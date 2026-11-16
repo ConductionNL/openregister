@@ -4000,3 +4000,4 @@ pipelinq	3092	f041615e2cce52415f7c71cc60df53271a377f88	MERGED	merge3	GATE OK sbo
 pipelinq	3152	29e9143da84178245bbb5d01735472c600e85c60	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.38
 pipelinq	3882	b1c037ef63161d2bf43df8dfff5b0e4ffb6c60b2	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.38
 pipelinq	3884	72197b6efa3c090590d2a646c7dff108aded3e4c	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.48
+stackiq	1924	f5164c8d7b2f04e1f06272ad5dd21436e2232d39	RED	worker-19	GATE RED checker floor: spdxheaders stars: 5 -> 4
