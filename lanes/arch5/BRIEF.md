@@ -1,6 +1,6 @@
 # Lane brief: ARCH5 (maintainability of dossiq and pipelinq to an estimate of 4.5)
 
-Claimed as a `lane` task (WORKER.md). Payload: `brief=lanes/arch5/BRIEF.md;app=<dossiq|pipelinq>;item=<name>;branch=<branch>;note=<text>`.
+Claimed as a `lane` task (WORKER.md). Payload: `brief=lanes/arch5/BRIEF.md;app=<dossiq|pipelinq|stackiq>;item=<name>;branch=<branch>;note=<text>`.
 
 ## Goal and measure
 Raise the maintainability estimate of the app to a midpoint of at least 4.5 (5 stars: `ratingToStars(mid)`, mid = (p1 + p-1) / 2 of the estimator) by behaviour-preserving refactors of PHP in lib/ (and Vue/JS duplication in src/). No gaming of the metric: no reformatting or re-wrapping, no 1:1 body wraps (a public method forwarding all its parameters to a private copy of its body), no renaming variables or reordering use statements to break duplicate windows, no comments inserted into code. Rejected before: a second pass of 1:1 body wraps (quality/arch5-g-f2 after 9e7a3e2a45).
