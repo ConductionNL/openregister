@@ -16697,3 +16697,4 @@ review:shillinq:1899:040e84a6	GREEN shillinq #1899: unit 12245 ok (baseline 1223
 fix:keepiq:1793:3b29e6ab	fixed CONFLICT: kept both sides' nl keys, pushed b87d8b92; not landed: merge gate cannot measure here	session-20261116T150749-2f742a8d	2026-11-16T15:49:42Z
 review:larpinq:1050:f3c30b43	GREEN: unit 1015 OK (base 1002), vitest 608 OK	session-20261116T150944-f856ccd8	2026-11-16T15:50:12Z
 fix:portaliq:2531:23d56685	conflict resolved; new head cc495ec9; REVERIFY	session-20261116T144202-f2b26030	2026-11-16T15:50:41Z
+merge:opencatalogi:2415:a451d521	unmeasured: static.developer.overheid.nl (proxy 403 in this session); cloud tree of 8 opencatalogi PRs: merged=0 red=1 (2682 maintainability 5->4) skip=4; conflict 3	session-20261116T153714-5e625caa	2026-11-16T15:50:48Z
