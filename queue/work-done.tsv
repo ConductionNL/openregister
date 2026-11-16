@@ -17226,3 +17226,4 @@ fix:learniq:2555:20db1885	inherited: development c960466e alone measures 3.98 < 
 review:dossiq:6203:f6392408	GREEN: tests only, suite 18414 OK on merged tree	session-20261116T184655-77bda400	2026-11-16T18:55:17Z
 build:learniq:participant-portal:r3	already done: every code task ticked on development (d84b379, #1763); only T4 e2e left	session-20261116T184858-b0d9d60e	2026-11-16T18:55:49Z
 verify:decidiq:2227:ed9602aa	GREEN 2227, GREEN 2228; tree 4638 tests, 0 new failures	session-20261116T184836-f6622adb	2026-11-16T18:55:50Z
+cover:launchpad:fb10c50f:33ae6285	deferred: launchpad has 44 open PRs	session-20261116T184655-77bda400	2026-11-16T18:56:20Z
