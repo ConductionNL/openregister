@@ -15973,3 +15973,4 @@ launchpad	1217	edcbef17e9264918bc3f67df8dd4bd791f15c768	CONFLICT	worker-41	confl
 launchpad	1219	da16c5dfecd1f4e40902aa5c9b009ae6af38ac60	CONFLICT	worker-21	merge conflict with origin/development in l10n/*.js and l10n/en.json; suite not run
 learniq	2534	097afa2d9090610d05c97d2c2e116aeeed835108	CONFLICT	worker-27	conflicts with development in l10n/en.js,en.json,nl.js,nl.json, lib/Service/ContractBindings.php
 learniq	2519	644c2a7995dd39085b6e8c57a462495226c6efec	CONFLICT	worker-17	conflicts with development in l10n/en.js,en.json,nl.js, tests/Unit/Portal/golden/PortalManifests.json
+learniq	2514	2e2444ab4454d26a110258855a257f891ba0768c	CONFLICT	worker-27	conflicts with development in tests/Unit/Portal/golden/PortalManifests.json
