@@ -1,40 +1,44 @@
 {
  "app": "pipelinq",
- "commit": "b95089f952bbee39abb8cd61e0f86209bdb86a1a",
- "measured_at": "2026-11-15T02:30:04Z",
+ "commit": "6d48d6dca64645d21ea492627407a99f727c7cdd",
+ "measured_at": "2026-11-16T18:36:34Z",
  "php": {
   "tool": "pcov",
-  "pct": 94.36,
-  "statements": 62916,
-  "covered": 59365,
+  "pct": 93.43,
+  "statements": 61865,
+  "covered": 57802,
   "dirs": {
    "lib/Activity/": [
-    66,
-    66
+    68,
+    68
    ],
    "lib/Activity/Setting/": [
     27,
     27
    ],
    "lib/Adapter/": [
-    74,
-    63
+    76,
+    76
    ],
    "lib/AppInfo/": [
     29,
     28
    ],
    "lib/BackgroundJob/": [
-    1637,
-    1635
+    1572,
+    1361
    ],
    "lib/Command/": [
-    423,
-    423
+    427,
+    427
    ],
    "lib/Controller/": [
-    8693,
-    8155
+    8368,
+    7981
+   ],
+   "lib/Controller/Support/": [
+    70,
+    70
    ],
    "lib/Dashboard/": [
     42,
@@ -45,16 +49,16 @@
     26
    ],
    "lib/Event/": [
-    111,
-    111
+    112,
+    112
    ],
    "lib/Flow/": [
-    134,
-    134
+    146,
+    146
    ],
    "lib/Integration/": [
-    305,
-    305
+    297,
+    297
    ],
    "lib/Kernel/": [
     0,
@@ -69,8 +73,12 @@
     270
    ],
    "lib/Listener/": [
-    1906,
-    1865
+    1838,
+    1796
+   ],
+   "lib/Listener/Support/": [
+    48,
+    48
    ],
    "lib/Mcp/": [
     26,
@@ -85,32 +93,32 @@
     59
    ],
    "lib/Notification/": [
-    187,
-    173
+    184,
+    184
    ],
    "lib/Portal/": [
-    557,
-    557
+    560,
+    560
    ],
    "lib/Repair/": [
-    2661,
-    2562
+    2497,
+    2437
    ],
    "lib/Repair/Support/": [
-    95,
-    95
+    144,
+    144
    ],
    "lib/Sections/": [
     5,
     5
    ],
    "lib/Service/": [
-    32404,
-    29937
+    30953,
+    28129
    ],
    "lib/Service/Access/": [
-    95,
-    95
+    97,
+    97
    ],
    "lib/Service/Berichtenbox/": [
     12,
@@ -121,20 +129,24 @@
     4
    ],
    "lib/Service/CallReview/": [
-    159,
-    159
+    168,
+    168
+   ],
+   "lib/Service/Calls/": [
+    204,
+    189
    ],
    "lib/Service/Competitor/": [
-    643,
-    634
+    633,
+    624
    ],
    "lib/Service/Consent/": [
-    67,
-    67
+    68,
+    68
    ],
    "lib/Service/Cti/": [
-    114,
-    114
+    116,
+    68
    ],
    "lib/Service/Cti/Adapter/": [
     243,
@@ -145,20 +157,20 @@
     17
    ],
    "lib/Service/Demo/": [
-    517,
-    455
+    527,
+    490
    ],
    "lib/Service/Egress/": [
     124,
-    72
+    78
    ],
    "lib/Service/Event/": [
-    68,
-    68
+    72,
+    72
    ],
    "lib/Service/Export/": [
-    1359,
-    1337
+    1287,
+    1261
    ],
    "lib/Service/External/Berichtenbox/": [
     48,
@@ -173,8 +185,8 @@
     68
    ],
    "lib/Service/Labels/": [
-    112,
-    105
+    118,
+    118
    ],
    "lib/Service/Lead/": [
     55,
@@ -197,119 +209,135 @@
     14
    ],
    "lib/Service/MailAddIn/": [
-    86,
-    85
+    88,
+    87
    ],
    "lib/Service/Marketing/": [
-    2410,
-    2397
+    2564,
+    2444
    ],
    "lib/Service/Marketing/Transport/": [
-    332,
-    328
+    318,
+    314
    ],
    "lib/Service/Matomo/": [
     72,
     72
    ],
    "lib/Service/Mdm/": [
-    126,
+    131,
     49
    ],
    "lib/Service/Merge/": [
-    127,
-    126
+    143,
+    142
    ],
    "lib/Service/Messaging/": [
-    9,
-    9
+    18,
+    18
    ],
    "lib/Service/Payment/": [
-    633,
-    626
+    610,
+    603
+   ],
+   "lib/Service/Payment/Support/": [
+    12,
+    12
    ],
    "lib/Service/PersonLookup/": [
     10,
     10
    ],
    "lib/Service/Portal/": [
-    1448,
-    1447
+    1457,
+    1457
+   ],
+   "lib/Service/Portal/Support/": [
+    8,
+    8
    ],
    "lib/Service/PosCart/": [
-    67,
-    67
+    73,
+    73
    ],
    "lib/Service/Provider/": [
-    106,
-    105
+    112,
+    111
    ],
    "lib/Service/ScheduledTask/": [
     92,
     92
    ],
    "lib/Service/Search/": [
-    383,
-    369
+    394,
+    380
    ],
    "lib/Service/SearchConsole/": [
-    298,
-    287
+    299,
+    288
    ],
    "lib/Service/Settings/": [
     12,
     12
    ],
    "lib/Service/Sla/": [
-    222,
-    222
+    235,
+    235
    ],
    "lib/Service/Social/": [
-    877,
-    797
+    862,
+    785
+   ],
+   "lib/Service/Social/Support/": [
+    3,
+    3
    ],
    "lib/Service/Store/": [
     86,
     86
    ],
+   "lib/Service/Support/": [
+    313,
+    310
+   ],
    "lib/Service/Upl/": [
-    117,
-    115
+    114,
+    94
    ],
    "lib/Service/WebForm/": [
-    465,
-    462
+    484,
+    481
    ],
    "lib/Service/Worklist/": [
-    126,
-    126
+    127,
+    127
    ],
    "lib/Service/Zgw/": [
-    732,
-    730
+    728,
+    726
    ],
    "lib/Settings/": [
     24,
     24
    ],
    "lib/SetupCheck/": [
-    27,
-    27
-   ],
-   "lib/Support/": [
-    32,
+    33,
     32
    ],
+   "lib/Support/": [
+    33,
+    33
+   ],
    "lib/Util/": [
-    115,
-    115
+    265,
+    264
    ]
   }
  },
  "js": {
-  "pct": 94.32,
-  "statements": 18562,
-  "covered": 17508,
+  "pct": 95.72,
+  "statements": 18337,
+  "covered": 17552,
   "dirs": {
    "src/": [
     118,
@@ -332,12 +360,12 @@
     54
    ],
    "src/components/bookings/": [
-    432,
-    410
+    437,
+    414
    ],
    "src/components/clients/": [
     60,
-    33
+    58
    ],
    "src/components/dashboard/": [
     56,
@@ -352,8 +380,8 @@
     25
    ],
    "src/components/marketing/": [
-    480,
-    466
+    337,
+    326
    ],
    "src/components/merge/": [
     48,
@@ -368,8 +396,8 @@
     61
    ],
    "src/components/rapportage/": [
-    139,
-    138
+    137,
+    136
    ],
    "src/components/satisfaction/": [
     71,
@@ -420,20 +448,20 @@
     7
    ],
    "src/dialogs/": [
-    1803,
-    1731
+    1793,
+    1752
    ],
    "src/manifest.d/": [
-    59,
-    59
+    57,
+    57
    ],
    "src/mixins/": [
     225,
     225
    ],
    "src/modals/": [
-    1440,
-    1346
+    1389,
+    1367
    ],
    "src/portal/": [
     100,
@@ -448,8 +476,8 @@
     249
    ],
    "src/services/": [
-    2180,
-    2146
+    2173,
+    2159
    ],
    "src/store/": [
     21,
@@ -464,8 +492,8 @@
     18
    ],
    "src/utils/": [
-    650,
-    648
+    661,
+    659
    ],
    "src/views/": [
     9,
@@ -480,20 +508,20 @@
     323
    ],
    "src/views/bookings/": [
-    479,
-    417
+    475,
+    452
    ],
    "src/views/bulk/": [
     45,
-    9
+    44
    ],
    "src/views/clients/": [
-    155,
-    140
+    153,
+    138
    ],
    "src/views/contacts/": [
-    77,
-    64
+    75,
+    62
    ],
    "src/views/contracts/": [
     58,
@@ -504,8 +532,8 @@
     131
    ],
    "src/views/export/": [
-    391,
-    368
+    390,
+    367
    ],
    "src/views/flows/": [
     2,
@@ -517,7 +545,7 @@
    ],
    "src/views/leads/": [
     156,
-    132
+    144
    ],
    "src/views/leads/cells/": [
     46,
@@ -528,8 +556,8 @@
     25
    ],
    "src/views/marketing/": [
-    440,
-    420
+    431,
+    411
    ],
    "src/views/messaging/": [
     175,
@@ -540,12 +568,12 @@
     577
    ],
    "src/views/portal/": [
-    140,
-    130
+    132,
+    124
    ],
    "src/views/pos/": [
     855,
-    798
+    828
    ],
    "src/views/prospects/": [
     97,
@@ -561,7 +589,7 @@
    ],
    "src/views/settings/": [
     1342,
-    1308
+    1309
    ],
    "src/views/social/": [
     164,
