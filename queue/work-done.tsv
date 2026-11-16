@@ -15726,3 +15726,4 @@ fix:launchpad:786:f38de567	failed: floor drop spans 3 stacked features, beyond 4
 merge:stackiq:1168:59ea2366	cloud tree of 7 stackiq PRs: merged=0 red=2 fail=0 skip=4; conflict 1, lint 0, red 0, moved 0, done 0	session-20261116T080103-dd70aeff	2026-11-16T08:16:16Z
 fix:launchpad:1212:b82c095c	no change: merges clean with development, conflict only tree-relative; REVERIFY queued (merge lock held elsewhere)	session-20261116T080031-6bfb8cef	2026-11-16T08:16:42Z
 fix:launchpad:1223:6e8cfb5e	no change: merges clean with development, conflict only tree-relative; REVERIFY queued	session-20261116T080031-6bfb8cef	2026-11-16T08:17:35Z
+fix:launchpad:1229:348b5e3e	no change needed: up to date with development, conflict only with sibling PRs; REVERIFY	session-20261116T080741-43082fe2	2026-11-16T08:17:49Z
