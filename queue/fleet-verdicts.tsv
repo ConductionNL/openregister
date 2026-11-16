@@ -15834,3 +15834,5 @@ larpinq	1043	b1b57382ee888ba3ba9de17ba6afc628de011378	REVERIFY	push17:reverify	c
 larpinq	1042	72685514b207e555bfc82bc626786cc25e3015ef	REVERIFY	push17:reverify	conflict was only with other PRs of a tree (merges clean on development alone); verify alone
 integriq	3638	3b0efc92b56e18ea477a6bd8246aae86721c0e09	REVERIFY	worker-12	merged development in (l10n/en.js keeps both sides' keys; seed golden takes development's hash), no new unit failures vs development; new head 6ec569409b99e63c8570ab1637a34b1ff2249fd7, verify it
 opencatalogi	2756	a362a4ec22bbc023bb7044a021f46a6903f28bca	GREEN	worker-31	build publication-detail-for-the-portal per its specs; unit 6041 tests, baseline 6017 with 103 inherited failures, 0 new; vitest 1165 pass; php -l clean
+hermiq	1735	370656f7d3ae7927609cf995aa861241df9740cc	RED	worker-49:merge-gate	GATE RED checker floor: adrvalidator: pass -> warn; adrvalidator stars: 5 -> 3; score: 100 -> 97
+versioniq	758	7be209fae0deeec3aa2a193a3b14e3288f75b2e4	GREEN	worker-12	unit 2214 tests vs baseline 2171, 2 inherited golden failures, no new; vitest 3136 pass; note: maintainability floor still dropped at this head when last measured
