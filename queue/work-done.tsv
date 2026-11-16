@@ -17668,4 +17668,5 @@ cover:buildiq:70b3e29em9bad:b65a63c3	deferred: buildiq has 51 open PRs	session-2
 cover:buildiq:70b3e29em9bad:6818da73	deferred: buildiq has 51 open PRs	session-20261116T195830-617c8479	2026-11-16T20:31:25Z
 cover:buildiq:70b3e29em9bad:be0dcca9	deferred: buildiq has 51 open PRs	session-20261116T195830-617c8479	2026-11-16T20:31:31Z
 cover:buildiq:70b3e29em9bad:568ec52a	deferred: buildiq has 51 open PRs	session-20261116T195830-617c8479	2026-11-16T20:31:37Z
+build:openregister:anonymising-as-an-archival-outcome:c6	nothing left to build: every tasks.md box is ticked on PR #10132 (head ce226647, open, awaiting review/integrator). The anonymise-job/write-target follow-up is named by no task and needs a spec change first	session-20261116T202215-987ce878	2026-11-16T20:31:47Z
 fix:hermiq:1808:f027dd39	conflict resolved, pushed d3f1ce0e; merge lock held elsewhere, REVERIFY queued	session-20261116T195844-88f5f001	2026-11-16T20:31:52Z
