@@ -18423,3 +18423,4 @@ merge:shillinq:1900:4fd05b97	merge3 tree of 2 shillinq PRs: none; conflict 2, li
 verify:integriq:3557:9bf75dd1	CONFLICT #3557	session-20261116T232918-5354fd88	2026-11-16T23:44:55Z
 verify:integriq:3550:13bae0ed	CONFLICT #3550 (l10n + AdminSettings.vue vs development)	session-20261116T233834-fbe601d1	2026-11-16T23:45:12Z
 verify:larpinq:1056:85518065	CONFLICT #1056 (routes.php, l10n catalogues)	session-20261116T232912-d58d1a81	2026-11-16T23:45:23Z
+verify:filinq:2106:48eff116	CONFLICT #2106 (SigningService.php, filinq_register.json)	session-20261116T233011-100ff0c6	2026-11-16T23:45:42Z
