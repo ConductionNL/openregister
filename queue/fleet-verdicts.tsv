@@ -15574,3 +15574,5 @@ versioniq	707	53beddbcccad406f69feb6e4e5a360ad36564bbd	GREEN	worker-06:review	im
 buildiq	1608	fc0354bad445a45120d5002da1088d312f497184	CONFLICT	worker-34:review	conflicts with development itself: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Mcp/Handler/AbstractToolHandler.php; not reviewed until it merges
 launchpad	1246	05dc9f7ecff35a08bda3fb8462fe4492da2e0297	GREEN	worker-49	phpunit 4498 OK (baseline 4491 OK), vitest 2616 pass, lint clean; additive build of widget-calculated-fields, no new failures
 hermiq	1750	ec9bd2f685487749c8745112577fa94a77a6734b	RED	worker-25:merge-gate	GATE RED floor: unit_interfacing: 2.57 -> 2.55
+hermiq	1791	1747024bf17842747da1291a34b77b4e876e27cf	CONFLICT	worker-25:merge	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js lib/Controller/SessionController.php lib/Service/Engine/Engine.php lib/Service/Engine/MessageHistoryHandler.php lib/Settings/hermiq_register.json tests/Fixtures/Gold
+hermiq	1795	efce9000bb1052baae439018b05029f365eb2dc2	CONFLICT	worker-25:merge	merges clean on development alone; files: appinfo/info.xml tests/Fixtures/Golden/agent-form-payload.json 
