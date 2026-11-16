@@ -18027,4 +18027,5 @@ cover:dossiq:069ee2d6m9d1b:c17c6e8e	added to PR #6203 (dossiq over 40 open PRs):
 fix:planninq:1206:f0e5ce61	merged #1206 at adadcc7feebc3199e3ad29ffef75fd4aaec98258 (duplication 4.62 -> 4.65 via shared result-reader trait)	session-20261116T214624-beb72d49	2026-11-16T21:58:29Z
 review:buildiq:1650:c0d47084	GREEN: buildiq #1650 matches its change, 4818/4818 vitest on PR+dev; needs development merged in (conflicts in en.js, fieldTypes.js)	session-20261116T214156-ac589fdb	2026-11-16T21:58:37Z
 cover:dossiq:069ee2d6m9d1b:47ac7936	deferred PR budget (41 open): added 3 registrar tests to #6203 (quality/test-coverage-81b1241f-1); dir already 60/62 lines, the 2 left are class_exists guards	session-20261116T215102-33996dc2	2026-11-16T21:59:08Z
+verify:versioniq:754:7da035af	755 GREEN; 754 skipped (head moved 70e9dc9 -> 5ca8b99)	session-20261116T212719-33567982	2026-11-16T21:58:56Z
 lane:arch5:buildiq:next-buildiq-r5	PR #1687, GREEN (php complexity 2.21 -> 2.26, floor PASS; r6 queued)	session-20261116T212156-27d8410f	2026-11-16T21:59:14Z
