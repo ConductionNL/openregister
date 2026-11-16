@@ -17123,3 +17123,4 @@ cover:integriq:92114ab0m1db0:js0023cfc7	deferred: integriq has 70 open PRs	sessi
 cover:integriq:92114ab0m1db0:js0d617ff5	deferred: integriq has 70 open PRs	session-20261116T174053-4a550291	2026-11-16T18:28:51Z
 fix:learniq:2557:29ed293d	fixed conflict with #1881 (stub header aligned); new head 3fe186b0, REVERIFY queued (merge lock held)	session-20261116T181418-c3cd424d	2026-11-16T18:29:08Z
 merge:decidiq:1467:7e883ace	unmeasured: gitdocumentatie.logius.nl (6 PRs reviewed APPROVE, tree 4684 tests green; land skip=6, adrvalidator not measured)	session-20261116T180946-98cfe827	2026-11-16T18:29:13Z
+cover:buildiq:70b3e29em3841:d528dcf0	deferred: buildiq has 56 open PRs	session-20261116T181603-6d014baf	2026-11-16T18:29:19Z
