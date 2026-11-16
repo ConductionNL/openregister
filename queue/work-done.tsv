@@ -16702,3 +16702,4 @@ review:hermiq:1150:e594ec91	BLOCK: 2 new methods missing @spec (gate-16); suite 
 verify:learniq:2557:f995adfa	GREEN #2557: 0 new failures	session-20261116T144734-1dc150d8	2026-11-16T15:52:43Z
 fix:larpinq:1060:701044e6	unmeasured: static.developer.overheid.nl (fixed redeem race, pushed b45d1e9b, APPROVE recorded, lock released)	session-20261116T153259-1f82a352	2026-11-16T15:53:40Z
 merge:keepiq:1716:f636bcc5	unmeasured: static.developer.overheid.nl (3 IN approved: 1716,1791,1792; 1826 CONFLICT)	session-20261116T154119-0461dfb6	2026-11-16T15:54:52Z
+merge:integriq:2671:c6baac7c	unmeasured: static.developer.overheid.nl (8 PRs reviewed APPROVE; 2711 RED sbom; 3612 REVERIFY; 7 skipped, none merged)	session-20261116T154313-4e4790ab	2026-11-16T16:07:05Z
