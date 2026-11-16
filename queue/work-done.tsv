@@ -16099,3 +16099,4 @@ merge:versioniq:723:1e9ee69e	failed: prep exit 2, no vendor/bin/phpunit (phpunit
 review:filinq:2088:e12aae21	GREEN: unit 6878 OK (baseline 6851), vitest 773 OK, no new failures	session-20261116T101004-34dc3e61	2026-11-16T10:13:29Z
 review:filinq:2094:6498e5a9	GREEN: filinq #2094 matches zgw-document-bridge specs; phpunit 6885 ok, vitest 764 ok	session-20261116T100945-f01894e6	2026-11-16T10:13:37Z
 measure:filinq:20261116h10	php 95.31% js 98.18% at 25528d94	session-20261116T100825-9860772f	2026-11-16T10:13:50Z
+merge:versioniq:725:bf0a3822	failed: prep exit 2, no vendor/bin/phpunit (composer-cloud leaves vendor-bin/phpunit empty: COMPOSER=composer.cloud.json reaches the bamarni sub-installs)	session-20261116T101336-9d5ecdfc	2026-11-16T10:14:38Z
