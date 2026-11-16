@@ -18484,6 +18484,7 @@ verify:opencatalogi:2683:b7fb1366	CONFLICT #2683 (l10n, tasks.md)	session-202611
 verify:pipelinq:3718:0a80e9c1	CONFLICT #3718 (DealUpdatedListener, ForecastDealService, l10n)	session-20261116T232623-066b53c9	2026-11-16T23:57:46Z
 verify:opencatalogi:2671:78e38071	CONFLICT #2671 (10 files)	session-20261116T233901-7abe1a78	2026-11-16T23:58:02Z
 verify:launchpad:1216:f8adb1a6	CONFLICT #1216 (15 files; change may already be on development)	session-20261116T232951-07569878	2026-11-16T23:58:13Z
+verify:learniq:2538:ba86b4ad	CONFLICT #2538 (4 files conflict with development)	session-20261116T233050-d0df160f	2026-11-16T23:58:29Z
 verify:launchpad:1227:40a50cad	1227 CONFLICT	session-20261116T230531-f9095b0f	2026-11-16T23:58:33Z
 verify:opencatalogi:2685:434bb906	CONFLICT #2685 (Sitemap*, l10n)	session-20261116T233901-7abe1a78	2026-11-16T23:58:46Z
 lane:arch5:shillinq:next-shillinq-r11	skipped: shillinq lane stopped by the coordinator (22:47); r10 result is #3135 GREEN	session-20261116T224609-c0ad2be4	2026-11-16T23:58:59Z
