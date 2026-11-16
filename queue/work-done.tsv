@@ -17136,4 +17136,5 @@ merge:shillinq:2099:c89ccf6b	unmeasured: merge gate checker_floor could not meas
 cover:stackiq:9ac19b3amdf03:f4b2f7af	deferred: stackiq has 41 open PRs	session-20261116T173256-6277a58c	2026-11-16T18:30:40Z
 fix:integriq:3649:ceff4454	unmeasured: static.developer.overheid.nl (adrvalidator); floor fixed at 9b271f27 (unit_complexity 3.90), APPROVE recorded, REVERIFY queued	session-20261116T173211-a3411be5	2026-11-16T18:30:05Z
 fix:opencatalogi:2679:3b4372c2	floors fixed (component independence 93.6% vs 93.1% base); pushed 16fe088f; REVERIFY queued (merge lock held elsewhere)	session-20261116T181308-35bc38de	2026-11-16T18:30:52Z
+merge:opencatalogi:2682:e8beab38	unmeasured: gitdocumentatie.logius.nl (adrvalidator NO RESULT; ruleset redirects there); 2682, 2725 APPROVED and skipped; 2686, 2699 CONFLICT	session-20261116T181453-5c83651c	2026-11-16T18:31:22Z
 fix:humaniq:606:647da215	conflict resolved, pushed 999cc2866e; merge lock held elsewhere, REVERIFY queued	session-20261116T174053-4a550291	2026-11-16T18:31:29Z
