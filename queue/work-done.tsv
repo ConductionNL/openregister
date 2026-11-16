@@ -15472,3 +15472,4 @@ merge:buildiq:1262:bfb22cff	merge8 tree of 20 buildiq PRs: merged=4 red=5 fail=0
 review:hermiq:1189:25278c92	RED: pinia 4 breaks production webpack build (cannot resolve 'pinia'); tests pass	session-20261116T062121-edb2d73b	2026-11-16T06:37:05Z
 merge:buildiq:1596:198cd09b	merge8 tree of 20 buildiq PRs: merged=4 red=5 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 11	merge8-20261115T170007-37538273	2026-11-16T06:37:17Z
 review:stackiq:1941:3f74a899	GREEN: PHP unit 3742 OK, phpstan clean, vitest 1 inherited failure	session-20261116T063134-3a4fc8af	2026-11-16T06:37:27Z
+review:shillinq:2070:b00d1ffe	BLOCK: tightens block/release permissions beyond spec (payment.block matrix + four-eyes); tests green	session-20261116T062050-3a7e109c	2026-11-16T06:37:37Z
