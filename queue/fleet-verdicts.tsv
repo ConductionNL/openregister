@@ -14868,3 +14868,4 @@ learniq	2562	2e394133b08a5a4c16c85b0fbf7e41c0c6783011	GREEN	worker-55	lockfile +
 hermiq	1307	1007dac617c9bde9350369bf4adb9a791a8aa04b	RED	worker-53:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
 keepiq	1826	07082bd96f2591fbed1b8b9703c9fc1567fbfe88	GREEN	worker-11	phpunit 5392 tests 0 failures (baseline 5307, 0 failures); vitest 6687 pass, 3 HealthReportView.controls failures inherited from development; build PR judged against capability-requirements-from-the-matrix, owner checks in service; new failures 0
 keepiq	1791	123b7f2512968c472ee9f71652d23dd883b908e4	GREEN	worker-33:review	matches crypto-recovery-kit specs; owner-only endpoints, rate-limited fetch, audited; PHP unit 5317 ok, vitest 6685 ok + 3 inherited HealthReportView fails
+integriq	3050	a397a9f1b40d43e5c9653f76cb132058105b9520	RED	worker-15:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
