@@ -16675,3 +16675,4 @@ build:pipelinq:tickets-list-by-party	deferred: pipelinq has 46 open PRs	session-
 build:pipelinq:clients-preferred-name	deferred: pipelinq has 46 open PRs	session-20261116T150749-2f742a8d	2026-11-16T15:43:57Z
 build:pipelinq:questions-about-a-citizen-dossier	deferred: pipelinq has 46 open PRs	session-20261116T150749-2f742a8d	2026-11-16T15:44:07Z
 build:pipelinq:contact-moments-keep-draft	deferred: pipelinq has 46 open PRs	session-20261116T150749-2f742a8d	2026-11-16T15:44:15Z
+fix:decidiq:2224:6d7dfdcf	no change: merges clean on development; composer.lock conflict is tree-only; REVERIFY queued (unmeasured: static.developer.overheid.nl)	session-20261116T153800-2f867ebc	2026-11-16T15:44:27Z
