@@ -17904,3 +17904,4 @@ build:opencatalogi:catalogs:c4	partial: PR #2755 ticks the verified component-re
 lane:arch5:integriq:next-integriq-r2	PR #3679, GREEN (estimate 3.61 -> 3.665 with r1; r2 itself +0.005, remaining levers blocked by hard boundaries)	session-20261116T205700-b760902d	2026-11-16T21:29:54Z
 lane:arch5:thematiq:next-thematiq-r1	failed: permission: recording my own APPROVE on thematiq #1686 (bf2b7d5e) was refused; PR open, verified (phpstan 0, suite SAME-FAILS, tree 0 new failures), estimate 4.09-4.28 -> 4.15-4.33, not landed	session-20261116T205635-1c5a7977	2026-11-16T21:30:12Z
 cover:keepiq:c967a31fm902f:6925f818	already covered: lib/SetupCheck 9/9 stmts (100%) on development; no PR	session-20261116T211631-e825058a	2026-11-16T21:30:07Z
+cover:stackiq:9ac19b3am2187:216a9a0a	deferred: stackiq has 45 open PRs	session-20261116T212743-88642781	2026-11-16T21:31:00Z
