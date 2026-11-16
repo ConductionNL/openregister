@@ -236,4 +236,5 @@ humaniq	606	647da215609758b6eb51cbe1182861a618182015	APPROVE	worker-26	Quick; no
 thematiq	1682	3f39ef0d0f1d79e5bf27de397c577993924fcf7e	APPROVE	worker-46	Quick; no blockers; dev-only bumps, PHP tree suite only inherited failure, vitest 1559/1559, regen-sbom --check current (SBOM omits dev deps)
 buildiq	1249	e01a3111488d17974ac20b492fdd9e5593f8cd37	APPROVE	worker-04	Quick; no blockers; dev-only phpstan 2.3.1->2.3.5 lock bump, suite unchanged
 learniq	2484	da6998981d4ad74c567c5da167d6f31b1b4277d4	REQUEST_CHANGES	worker-24	Strict; PeerFeedbackSummary schema authorization replaces the register baseline: hr loses read (spec: staff read access must stay as it is) and delete is newly granted to four groups (baseline named no delete); concerns: Talk room listener lookups (getLinkedRooms, enrolment findAll) are outside try
+humaniq	610	12fe7c133566a989d3faa7e51cbf930f67043da3	APPROVE	worker-26	Quick; no blockers; @nextcloud/vue minor bump, tree builds
 decidiq	2191	29114ea549b1df7741db17358e85829c10be8c82	APPROVE	worker-40	Thorough; no blockers; manifest, l10n, icon registration and newman collection for followup-implementation-progress; gate findings inherited
