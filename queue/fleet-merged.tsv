@@ -3884,3 +3884,4 @@ opencatalogi	2244	9178373d320ba947d116220fe88c0cd71550e833	RED	worker-13	GATE RE
 opencatalogi	2643	7bc2433945f732c8cf0072d2f18554f8d29f2799	SKIP	worker-13	no APPROVE review at this head
 opencatalogi	2670	eed46219e9cfb33b3d3a6d40373bee0b46f3fe10	SKIP	worker-13	no APPROVE review at this head
 filinq	2094	4bb74d349673ed91712f3e90839a8c258e6f3b7e	SKIP	worker-23	no APPROVE review at this head
+planninq	1196	458678cafcd02325f85d10c61f1a19d493c49e74	RED	worker-12	GATE RED sbom: composer.lock changed without sbom.cdx.json
