@@ -17658,3 +17658,4 @@ cover:dossiq:069ee2d6m9d1b:6a58479a	added 2 tests (CaseRecordAccess read/write s
 cover:buildiq:70b3e29em9bad:6891a8ac	deferred: buildiq has 51 open PRs	session-20261116T195844-88f5f001	2026-11-16T20:29:17Z
 cover:buildiq:70b3e29em9bad:f91e7417	deferred: buildiq has 51 open PRs	session-20261116T195844-88f5f001	2026-11-16T20:29:40Z
 build4:openregister:import-preview-and-conflict-policy:c6	deferred: openregister has 188 open PRs (PR #10517 already merged into main; no open build branch for this change). Left: 2.3, 5.1 job+endpoint+files, 5.2, 6.2 load tests, 8.1 Airtable/NocoDB, 8.3, 8.4, 7.x/8.5	session-20261116T202215-987ce878	2026-11-16T20:30:09Z
+cover:buildiq:70b3e29em9bad:34763eb4	deferred: buildiq has 51 open PRs	session-20261116T195844-88f5f001	2026-11-16T20:30:12Z
