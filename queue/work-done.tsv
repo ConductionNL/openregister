@@ -16932,3 +16932,4 @@ build:filinq:signer-identity-rails	deferred: filinq has 49 open PRs	session-2026
 review:buildiq:1091:0a8185a0	GREEN: dev-dep bump, vitest 4719/4719 pass on merge with development	session-20261116T173240-b63ad758	2026-11-16T17:46:42Z
 cover:decidiq:a5f973bbm0262:81b1241f	deferred: decidiq has 52 open PRs	session-20261116T174323-ba3ec1dc	2026-11-16T17:47:00Z
 fix:hermiq:1308:fa7ea701	failed: dev-only phpstan bump; regen-sbom --check says sbom.cdx.json is current (855 components) after merging development, so the gate's 'lock changed without sbom.cdx.json' rule cannot be met honestly; needs a gate exemption for dev-only lock changes	session-20261116T173227-3f62e794	2026-11-16T17:47:45Z
+fix:filinq:2094:5c76485b	unmeasured: static.developer.overheid.nl (fixed and approved at ff0c7f80, REVERIFY queued)	session-20261116T170555-ecf14af5	2026-11-16T17:48:04Z
