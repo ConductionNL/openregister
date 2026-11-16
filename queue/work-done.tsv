@@ -16008,3 +16008,4 @@ review:planninq:933:ff903468	GREEN: unit 1232 ok, vitest 3565 ok, access checks 
 fix:dossiq:4112:f460035e	failed: gate limitation - nextcloud/ocp is require-dev, so the SBOM (--omit=dev) is unchanged; after merging development the tree's sbom.cdx.json equals development's and regen-sbom --check passes, but merge_gate sbom() requires sbom.cdx.json in the diff whenever composer.lock changes; needs a gate rule for dev-only lock changes	session-20261116T084437-2e80ba88	2026-11-16T09:19:41Z
 fix:shillinq:1965:38aa9e98	no change: merges clean on development, conflict was tree-only; REVERIFY queued (merge lock busy)	session-20261116T084459-8070a613	2026-11-16T09:19:45Z
 review:shillinq:3078:c1655bb8	GREEN: suite 12272 ok, vitest 9/9	session-20261116T091532-d81a601b	2026-11-16T09:19:56Z
+review:pipelinq:2969:23b177e5	GREEN: frontend phone search; vitest 1 inherited failure only	session-20261116T091519-51eaae8b	2026-11-16T09:20:20Z
