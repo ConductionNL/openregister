@@ -3980,6 +3980,10 @@ filinq	2072	a07d41bdd0452ef712eccff125357b5240903950	SKIP	worker-11	no APPROVE r
 dossiq	6587	28ecad91f1baffcfa031c48d360ffca1c1d4a7b5	RED	merge3	GATE RED sbom: composer.lock, package-lock.json changed without sbom.cdx.json
 filinq	2103	cd98f739abe89a4b485b9a757fd5591eab514203	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.08
 shillinq	2071	85bf3df1b10c36b4280f8d233ea8bae5a618cabe	RED	worker-20	GATE RED checker floor: spdxheaders stars: 5 -> 4
+pipelinq	3092	f041615e2cce52415f7c71cc60df53271a377f88	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.38
+pipelinq	3152	29e9143da84178245bbb5d01735472c600e85c60	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.38
+pipelinq	3882	b1c037ef63161d2bf43df8dfff5b0e4ffb6c60b2	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.38
+pipelinq	3884	72197b6efa3c090590d2a646c7dff108aded3e4c	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.48
 dossiq	6589	503c16af9c34bd2cbc05af877894edd0cbe33060	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.40
 portaliq	1997	46fd8f94d573383ea70b908b05bcaba3b33882cd	SKIP	worker-50	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 planninq	1198	f4370679900c3aded15e653a6ebd0521c8fc79dd	SKIP	worker-29	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
@@ -3992,6 +3996,11 @@ shillinq	1899	3859758c38929cc8611f88cfdb14871dfd333549	RED	worker-49	GATE RED ch
 launchpad	785	085c96eb87cd18355f4b1396afcd247357d36f41	RED	worker-02	GATE RED floor: module_coupling: 4.73 -> 4.68
 launchpad	1234	6a94a1fa7ca29a5267bfc77210f29d21bd36c68e	SKIP	worker-02	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 planninq	933	ff903468694ce6817a5b83d3dd6cec800f5c6f34	RED	worker-40	GATE RED floor: unit_interfacing: 4.75 -> 4.73
+pipelinq	3092	f041615e2cce52415f7c71cc60df53271a377f88	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.38
+pipelinq	3152	29e9143da84178245bbb5d01735472c600e85c60	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.38
+pipelinq	3882	b1c037ef63161d2bf43df8dfff5b0e4ffb6c60b2	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.38
+pipelinq	3884	72197b6efa3c090590d2a646c7dff108aded3e4c	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.48
 stackiq	1924	f5164c8d7b2f04e1f06272ad5dd21436e2232d39	RED	worker-19	GATE RED checker floor: spdxheaders stars: 5 -> 4
 stackiq	1954	b53c26d5710de0264ce2e8ece7108faf24900ec4	SKIP	worker-19	no APPROVE review at this head
 stackiq	1965	c6e522ff2096e4720bc1183e2b8de9d4bfa15bc8	SKIP	worker-19	no APPROVE review at this head
+stackiq	1978	315e616b2d61a4366c9527185a4c1dfeab77a8f0	RED	worker-19	GATE RED floor: unit_interfacing: 4.72 -> 4.69
