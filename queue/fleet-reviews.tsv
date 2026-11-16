@@ -4,3 +4,4 @@ buildiq	1233	fbc18f0064cdfcd59c03ed6f43d22ec6296386d8	APPROVE	cloudmerge-pilot	S
 hermiq	1167	9bf6ab112ffdb0243b935c2a21e551a19df05fe1	APPROVE	worker-22	Quick; no blockers; dependency bump 5.3.1->5.4.0, snapshot fixture re-recorded only for the moved title v-if node
 launchpad	753	d16aabc36feeed32b92d557a943abd47e48c054a	APPROVE	worker-12	Quick; no blockers; dependency bump (vue 3.5.42->3.5.44 runtime patch bump, lockfile only), merge-tree unit suite 4461 tests, no new failures
 launchpad	756	e5da8a8442e3254be403a4d29fe3cb21312df78c	APPROVE	worker-12	Quick; no blockers; dependency bump (dev-only twig 3.30.0 + polyfill-mbstring, sbom regenerated), merge-tree unit suite 4461 tests, no new failures
+launchpad	880	3c07107533c5035ff96566d9aa97a6c5c78aa5e3	APPROVE	worker-12	Quick; no blockers; dependency bump (dev-only nextcloud/ocp 35.0.2 stubs, sbom regenerated), merge-tree unit suite 4461 tests, no new failures
