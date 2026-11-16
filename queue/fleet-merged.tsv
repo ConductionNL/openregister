@@ -4810,3 +4810,4 @@ learniq	2570	c168c0128ac96ecfd6022b30f5b6c0b865841e73	MERGED	worker-10	GATE OK s
 planninq	1207	63a572f74115df00a68311e3bb4360e071d521f2	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.66 holds at 4.07
 buildiq	1687	e9f9ddf281f6b31e0a979ffa201e4c911900665f	MERGED	worker-35	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.91 holds at 3.99
 versioniq	755	fd86702a5469497adb6ffc95abf2bf09975242a5	RED	worker-08	GATE RED floor: duplication: 5.17 -> 5.15
+opencatalogi	2678	a10a8ae601eb6fc4f5746b207f499fa2a6fb8096	RED	worker-15	GATE RED floor: unit_complexity: 4.88 -> 4.85
