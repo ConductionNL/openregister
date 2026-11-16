@@ -18383,3 +18383,4 @@ verify:filinq:2089:c9a9387b	CONFLICT #2089 (l10n, filinq_register.json, openapi.
 verify:filinq:2096:6fa2761b	CONFLICT: ObjectEventRegistrar, register json, 2 tests	session-20261116T231848-eaef2e51	2026-11-16T23:34:59Z
 verify:hermiq:1719:70a033b0	CONFLICT #1719 (13 files)	session-20261116T230934-9ee320cf	2026-11-16T23:35:17Z
 verify:dossiq:6619:d0c4f2a4	GREEN 6619 (tests only, 0 new failures)	session-20261116T232406-b9eb038c	2026-11-16T23:35:27Z
+verify:filinq:2124:83ead21d	CONFLICT #2124 (webpack.config.js)	session-20261116T232918-35016340	2026-11-16T23:35:40Z
