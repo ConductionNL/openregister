@@ -16146,3 +16146,4 @@ fix:stackiq:1924:f5164c8d	fixed: SPDX header on the inherited test stub restores
 merge:opencatalogi:2682:7babb44b	unmeasured: api.osv.dev (probe connect_rejected); nothing built, local lander takes it	session-20261116T101239-227210a0	2026-11-16T10:28:55Z
 merge:opencatalogi:1888:7fff7b2e	unmeasured: api.osv.dev (probe connect_rejected); nothing built, local lander takes it	session-20261116T101239-227210a0	2026-11-16T10:29:59Z
 fix:shillinq:1991:29abf7fb	inherited: development reads spdx 4 stars; root fix opened as #3112	session-20261116T101745-e986474c	2026-11-16T10:30:09Z
+verify:dossiq:6587:ee6dcb2b	GREEN 6587, GREEN 6590; unit 18335/0 fail, vitest 2 inherited	session-20261116T101558-c6863013	2026-11-16T10:30:36Z
