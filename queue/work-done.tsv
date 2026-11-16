@@ -17218,3 +17218,4 @@ merge:stackiq:1978:c1561c85	cloud tree of 1 stackiq PRs: none; conflict 1, lint 
 fix:learniq:2507:f29e84b7	merged development in, clean; merge lock held elsewhere, REVERIFY at c5edc819	session-20261116T184945-c098409e	2026-11-16T18:53:19Z
 review:versioniq:722:c6a909c2	GREEN; conflicts with development (InstanceSettings, NextcloudAdvisoryFeedTest), needs a merge before landing	session-20261116T184902-3ba300c9	2026-11-16T18:54:05Z
 build:integriq:registry-bindings-speak-the-registry-api	already done: code tasks on development (#2665); only the live pass with credentials left	session-20261116T173306-f68895a7	2026-11-16T18:54:32Z
+build:integriq:openformulieren-intake-through-an-integriq-connection	already built: every code task ticked on development (b7a864249); only 4.3 e2e run left, runs in nightly Playwright	session-20261116T184846-301eb7a8	2026-11-16T18:54:56Z
