@@ -38,6 +38,7 @@ FLEET = ("stackiq learniq dossiq buildiq pipelinq hermiq integriq humaniq shilli
 OR = "openregister"
 BASE = {**{a: "development" for a in FLEET}, OR: "main"}
 TREE_MAX = 25
+VERIFY_TREE = 8  # 17 Nov push (Ruben): small verify trees, fewer conflicts between siblings
 MIN_OPEN = 80  # open tasks other than merge
 REST_FLOOR = int(os.environ.get("FEEDER_REST_FLOOR", "800"))
 COVER_TARGET = 90.0  # PHP and JS suites, per app (Ruben 12 Nov 22:10: five stars, coverage included)
@@ -764,11 +765,12 @@ def main():
             if p["baseRefName"] != "development" or not mergeable_branch(p):
                 continue
             at = rows_at.get((a, n, s), [])
-            if not at or any(x[3] == "REVERIFY" for x in at):
+            if not at or at[-1][3] == "REVERIFY":
                 continue
             last = at[-1]
             if last[3] in ("RED", "CONFLICT", "BLOCK", "LINT"):
-                if add(f"fix:{a}:{n}:{s[:8]}", "fix", a, "development", n,
+                again = any(x[3] == "REVERIFY" for x in at)
+                if add(f"fix:{a}:{n}:{s[:8]}" + (f":v{len(at)}" if again else ""), "fix", a, "development", n,
                        payload({"sha": s, "verdict": last[3], "branch": p["headRefName"],
                                 "reason": clean(last[5] if len(last) > 5 else "", 250)})):
                     counts["fix"] += 1
@@ -820,16 +822,24 @@ def main():
     # verify (merging over REST: paused when the shared quota is low)
     if not paused:
         for a in FLEET:
-            todo = []
+            todo, solo = [], []
             for p in sorted(prs[a], key=lambda x: x["number"]):
                 n, s = p["number"], p["headRefOid"]
                 if p["baseRefName"] != "development" or not mergeable_branch(p) or p["isDraft"]:
                     continue
-                if (a, n, s) in queued or [x for x in rows_at.get((a, n, s), []) if x[3] != "REVERIFY"]:
+                at = rows_at.get((a, n, s), [])
+                if (a, n, s) in queued or (at and at[-1][3] != "REVERIFY"):
+                    continue
+                if [x for x in at if x[3] != "REVERIFY"]:
+                    # verified before at this head and sent back: alone, so a sibling cannot conflict it again
+                    n_re = sum(1 for x in at if x[3] == "REVERIFY")
+                    if add(f"verify:{a}:{n}:{h8(f'{n}@{s}:r{n_re}')}", "verify", a, "development", "merge",
+                           payload({"prs": f"{n}@{s}"})):
+                        counts["verify"] += 1
                     continue
                 todo.append(f"{n}@{s}")
-            for i in range(0, len(todo), TREE_MAX):
-                tree = todo[i:i + TREE_MAX]
+            for i in range(0, len(todo), VERIFY_TREE):
+                tree = todo[i:i + VERIFY_TREE]
                 if add(f"verify:{a}:{tree[0].split('@')[0]}:{h8(','.join(tree))}", "verify", a, "development",
                        "merge", payload({"prs": ",".join(tree)})):
                     counts["verify"] += 1
@@ -854,14 +864,19 @@ def main():
         except FileNotFoundError:
             pass
         for a in FLEET:
-            green = {}
+            green, resalt = {}, set()
             for p in prs[a]:
                 n, s = p["number"], p["headRefOid"]
                 if p["baseRefName"] != "development" or not mergeable_branch(p) or p["isDraft"]:
                     continue
                 at = rows_at.get((a, n, s), [])
-                if at and at[-1][3] == "GREEN" and (a, n, s) not in red and (a, n, s) not in queued_merge:
+                kinds = [x[3] for x in at]
+                reverified = "REVERIFY" in kinds and kinds[-1] == "GREEN" and \
+                    len(kinds) - 1 - kinds[::-1].index("REVERIFY") < len(kinds) - 1
+                if at and kinds[-1] == "GREEN" and ((a, n, s) not in red or reverified) and (a, n, s) not in queued_merge:
                     green[n] = s
+                    if reverified:
+                        resalt.add(n)
             in_stack = {n for st in stacks[a] for n in st}
             order = [n for n in sorted(green) if n not in in_stack]
             groups = []
@@ -877,7 +892,8 @@ def main():
                 pl = {"prs": ",".join(tree)}
                 if st:
                     pl["stacks"] = " ".join(st)
-                if add(f"merge:{a}:{order[i]}:{h8(','.join(tree))}", "merge", a, "development", "development", payload(pl)):
+                salt = ":r" if chunk & resalt else ""
+                if add(f"merge:{a}:{order[i]}:{h8(','.join(tree))}{salt}", "merge", a, "development", "development", payload(pl)):
                     counts["merge"] += 1
 
     # gap: GAP-QUEUE rows, then SCORES-LOCAL findings, then the dompurify override; one open task per app and criterion

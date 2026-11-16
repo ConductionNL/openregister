@@ -51,7 +51,12 @@ land)
 	vrows=()
 	while IFS=$'\t' read -r n sha st why; do
 		case $st in
-		CONFLICT|LINT|RED) vrows+=("$app"$'\t'"$n"$'\t'"$sha"$'\t'"$st"$'\t'"$lane:merge"$'\t'"$(line "$why")") ;;
+		CONFLICT) # a conflict only with an earlier PR of this tree is not the PR's fault: re-verify it alone
+			case $why in
+			*"merges clean on development alone"*) vrows+=("$app"$'\t'"$n"$'\t'"$sha"$'\t'REVERIFY$'\t'"$lane:merge"$'\t'"conflicts only with an earlier PR of the merge tree: $(line "$why")") ;;
+			*) vrows+=("$app"$'\t'"$n"$'\t'"$sha"$'\t'"$st"$'\t'"$lane:merge"$'\t'"$(line "$why")") ;;
+			esac ;;
+		LINT|RED) vrows+=("$app"$'\t'"$n"$'\t'"$sha"$'\t'"$st"$'\t'"$lane:merge"$'\t'"$(line "$why")") ;;
 		MOVED) vrows+=("$app"$'\t'"$n"$'\t'"$sha"$'\t'REVERIFY$'\t'"$lane:merge"$'\t'"verdict sha is not the head: $(line "$why")") ;;
 		esac
 	done < <(grep -v $'\tIN\t' "$T")
