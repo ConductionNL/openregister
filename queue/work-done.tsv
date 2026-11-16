@@ -16514,3 +16514,4 @@ fix:decidiq:1950:e876f7ce	inherited: decidiq development 279e8a5c itself measure
 verify:decidiq:2222:c280270c	GREEN 2222	session-20261116T144202-f2b26030	2026-11-16T14:54:42Z
 fix:keepiq:1792:af22b4ea	fixed secretscanning (test seed allowlisted like its sibling spec); pushed 5d484110; REVERIFY queued	session-20261116T143136-ae6d04cb	2026-11-16T14:55:01Z
 fix:shillinq:2997:675a3aef	merged development in clean, suite 12290 OK; new head 37951348, REVERIFY queued	session-20261116T142931-c6a20eeb	2026-11-16T14:55:40Z
+fix:keepiq:1716:5a6aebc1	fixed secretscanning (generated test key markers allowlisted); pushed feea9fa1; REVERIFY queued	session-20261116T143136-ae6d04cb	2026-11-16T14:56:02Z
