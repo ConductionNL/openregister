@@ -17302,6 +17302,7 @@ fix:filinq:2072:5c869835	failed: permission (fix pushed, head 21673d4a, tree gre
 build:buildiq:forms-live-values-and-checks:r3	PR #1677: T11 built (BuildiqFormPage wrapper, 6 vitest); T07 e2e left; vitest 4744/4744	session-20261116T184921-a7624794	2026-11-16T19:11:42Z
 review:filinq:2122:e57f317b	GREEN (conflicts with development: 7 files); suite 6921/0 failures	session-20261116T184841-a3bc3002	2026-11-16T19:12:00Z
 fix:shillinq:1900:f0577318	fixed CONFLICT: merged #1899 head and development in, unit 12246 OK; new head 0046f1c5, REVERIFY (not landed: merge gate unmeasured)	session-20261116T181151-999832c6	2026-11-16T19:12:09Z
+cover:openregister:7350e3efm9dc5:716923f8	added to PR #10587 (open-PR budget, 188 open): OutsideCustodyTest + risky-metadata fix on 11 tests; lib/Service/Credential 85.4%->96.5%, 628->653 tests green	session-20261116T184831-8be58c40	2026-11-16T19:12:22Z
 review:dossiq:6203:af854a0c	stale	session-20261116T191156-bbdb7add	2026-11-16T19:12:36Z
 build:shillinq:sales-usage-billing:r2	already done: every code task ticked on development; only 3.2 (Playwright run on a live instance) is open, spec file already written	session-20261116T181151-999832c6	2026-11-16T19:12:45Z
 review:versioniq:723:22fd2bc2	GREEN: 0 new failures (2 inherited), vitest green; minor concern on availability failure after a saved sweep	session-20261116T190918-81e43f73	2026-11-16T19:12:47Z
