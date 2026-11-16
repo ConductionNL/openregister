@@ -17626,3 +17626,4 @@ cover:larpinq:c4471360:38e80a9f	cover	larpinq	development	quality/test-coverage-
 cover:larpinq:c4471360:dfaef732	cover	larpinq	development	quality/test-coverage-dfaef732	lang=php;dirs=lib/Notification/*.php;focus=thin;weight=108;coverage=92.62;target=95.0	2026-11-16T16:41:17Z
 measure:humaniq:20261116h18	measure	humaniq	development	queue/coverage/humaniq.json	why=slices need per-directory coverage	2026-11-16T19:05:29Z
 measure:larpinq:20261116h18	measure	larpinq	development	queue/coverage/larpinq.json	why=slices need per-directory coverage	2026-11-16T19:05:29Z
+build:integriq:rule-editor-a11y-i18n-hardening:r3	build	integriq	development	rule-editor-a11y-i18n-hardening	change=rule-editor-a11y-i18n-hardening;open=1	2026-11-16T19:01:05Z
