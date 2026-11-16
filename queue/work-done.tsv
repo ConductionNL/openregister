@@ -17121,3 +17121,4 @@ cover:decidiq:a5f973bbm0262:59826f43	deferred: decidiq has 53 open PRs	session-2
 merge:learniq:1882:3f11e78d	cloud tree of 3 learniq PRs: merged=0 red=2 fail=0 skip=0; conflict 1, lint 0, red 0, moved 0, done 0	session-20261116T173256-6277a58c	2026-11-16T18:28:16Z
 cover:integriq:92114ab0m1db0:js0023cfc7	deferred: integriq has 70 open PRs	session-20261116T174053-4a550291	2026-11-16T18:28:41Z
 cover:integriq:92114ab0m1db0:js0d617ff5	deferred: integriq has 70 open PRs	session-20261116T174053-4a550291	2026-11-16T18:28:51Z
+fix:learniq:2557:29ed293d	fixed conflict with #1881 (stub header aligned); new head 3fe186b0, REVERIFY queued (merge lock held)	session-20261116T181418-c3cd424d	2026-11-16T18:29:08Z
