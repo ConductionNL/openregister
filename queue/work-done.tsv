@@ -18041,3 +18041,14 @@ fix:filinq:2072:268b3e0d	failed: permission (landing review of own commit refuse
 merge:shillinq:1899:1682266d	merge3 tree of 4 shillinq PRs: merged=3 red=0 fail=0 skip=0; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-16T22:02:46Z
 merge:larpinq:1078:252d08ef	merge3 tree of 1 larpinq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-16T22:03:20Z
 build:opencatalogi:publication-detail-for-the-portal:c4	PR #2756 (head d7a2df60): built 2.1, 5.1, 6.1 and the code of 1.2 and 5.2; left 1.2/5.2 e2e specs, 7.2 gate-19 and 7.3 composer check:strict (root refused); unit 6040 tests, no failures beyond development's 78	session-20261116T212751-a1c157b2	2026-11-16T22:04:41Z
+lane:arch5:learniq:next-learniq-r3:c2	PR #2573, GREEN	session-20261116T215125-0190b3c7	2026-11-16T22:06:22Z
+review:stackiq:1973:c80d3c07	GREEN #1973 at c80d3c07: no new failures (2 inherited from development)	session-20261116T211553-db0d2c78	2026-11-16T22:06:31Z
+review:opencatalogi:2678:a10a8ae6	GREEN: implements woo-review-surface per its specs; no new unit failures (6066 tests), JS specs pass, phpstan clean	session-20261116T212751-a1c157b2	2026-11-16T22:07:05Z
+review:integriq:3638:3b0efc92	GREEN: unit 9654 vs 9597 baseline, no new failures; en.js conflict with development	session-20261116T220159-21deb2e5	2026-11-16T22:07:34Z
+review:launchpad:1235:92f8baab	GREEN: phpunit 4506 ok, vitest 1148 ok, phpstan clean; openapi.json conflict with development	session-20261116T220411-e35751c0	2026-11-16T22:07:59Z
+build:integriq:idp-broker-yivi-route:c2	failed: depends on portal-idp-broker-config, still not on development (PR #3638 reviewed GREEN, awaiting merge); task 4 still waits on Ruben's floor decision	session-20261116T220159-21deb2e5	2026-11-16T22:08:08Z
+review:pipelinq:3602:8427cc8b	GREEN: tests only, 9203 tests 0 failures	session-20261116T220647-b92c8f52	2026-11-16T22:08:37Z
+cover:keepiq:c967a31fm902f:jsd48eb217	PR #1867: 30 tests, store lines 93.80% -> 95.55%, suite 7153 (3 inherited HealthReportView failures)	session-20261116T214640-6a01c0c6	2026-11-16T22:09:48Z
+lane:arch5:buildiq:next-buildiq-r6	PR #1688, GREEN (estimate 4.01-4.07, dev 3.91-3.98; carries r5 #1687)	session-20261116T215102-33996dc2	2026-11-16T22:09:26Z
+fix:launchpad:1229:c3db56ed	fixed: dashboard subject scoped to createdBy, pushed b9834840; lock held elsewhere, REVERIFY queued	session-20261116T220411-e35751c0	2026-11-16T22:09:52Z
+review:stackiq:1941:60d39b71	GREEN #1941 at 60d39b71: no new failures (inherited only)	session-20261116T211553-db0d2c78	2026-11-16T22:10:36Z

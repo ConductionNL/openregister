@@ -4792,3 +4792,10 @@ planninq	1206	adadcc7feebc3199e3ad29ffef75fd4aaec98258	MERGED	worker-49	GATE OK 
 dossiq	6613	ee2085045965d3c00360df5dce4db755520df9b0	MERGED	worker-20	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.40
 larpinq	1078	80c8010ef182e5d3f6344ff712f7a16fbe03566f	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.26
 buildiq	1679	7b472152e989bf242565d99193a7ce0f7f71d80f	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.91 holds at 3.91
+stackiq	2000	7cf40a444328d854821fd3b11378a970f51fcff8	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.19
+stackiq	2001	b444c6f0684e4e7448b9357336b1ec84a518ec52	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.19
+stackiq	2002	ff096b820beb42309602b3ca2265cb01134b46ad	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.19
+stackiq	2003	b30706bd7f0b6b085b38494b688b8ef27372d92b	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.19
+stackiq	2004	3abacc55decaf583bc9497566ae9c6da6f5fba99	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.19
+stackiq	2005	d037535241d8a2bd88bf460c043dd0adb24ea646	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.19
+opencatalogi	2755	b425331e9095f8f2c6838f5d39a71332c45fcf54	MERGED	worker-53	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.56
