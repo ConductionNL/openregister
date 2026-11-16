@@ -17858,3 +17858,4 @@ cover:pipelinq:7f9dc8e6m3dbb:85f7d10b	already covered: target dirs at 66/67 stmt
 lane:arch5:buildiq:next-buildiq-r2	PR #1684, GREEN (estimate 3.92-3.98 -> 3.93-3.99, includes r1 #1683; still under 4.5)	session-20261116T210639-4564b5ec	2026-11-16T21:20:27Z
 review:dossiq:6203:6a6113a8	GREEN: tests only, suite clean beyond 1 inherited error	session-20261116T211529-39ccc7ff	2026-11-16T21:20:35Z
 cover:dossiq:069ee2d6m9d1b:9d3a1784	deferred: dossiq has 41 open PRs	session-20261116T211529-39ccc7ff	2026-11-16T21:20:55Z
+review:filinq:2072:268b3e0d	BLOCK: policy rule load uses the system seam on a user path without an organisation filter; suite green	session-20261116T211641-8431b36d	2026-11-16T21:21:00Z
