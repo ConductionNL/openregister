@@ -17799,3 +17799,4 @@ cover:launchpad:fb10c50fmf487:9d3a1784	deferred: launchpad has 44 open PRs	sessi
 cover:pipelinq:7f9dc8e6m3dbb:910f9247	already done: no uncovered statements left in the six dirs (suite 9171 ok)	session-20261116T194104-8906f18f	2026-11-16T21:01:10Z
 review:hermiq:1754:90999c3d	GREEN #1754 (5422 unit + 31 vitest, no failures)	session-20261116T205635-df8941f2	2026-11-16T21:01:29Z
 merge:hermiq:1808:b331dd92	cloud tree of 1 hermiq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T205728-3b03d115	2026-11-16T21:01:51Z
+cover:stackiq:9ac19b3am2187:692f8a78	already done: lib/Service/Contactpersoon/ measured 207/207 (100%) at 00516ba7	session-20261116T205645-edca2f78	2026-11-16T21:02:14Z
