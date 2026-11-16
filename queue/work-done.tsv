@@ -15910,3 +15910,4 @@ fix:portaliq:1353:dc6ca37d	failed: dev-only bump (phpmd require-dev); regen-sbom
 fix:portaliq:1766:23513ec0	sbom regenerated, pushed 931554ac; merge lock busy, REVERIFY queued	session-20261116T085112-b61e5d15	2026-11-16T08:55:53Z
 fix:portaliq:1673:06264bd1	merged development, manifest l10n conflict resolved keeping both strings, pushed 574c1672; REVERIFY recorded (merge lock busy)	session-20261116T082353-191a2dc3	2026-11-16T08:56:13Z
 fix:portaliq:1768:5560c998	sbom regenerated, pushed 73711bf0; lock busy, REVERIFY queued	session-20261116T084536-1bd0bd69	2026-11-16T08:56:25Z
+review:opencatalogi:1888:3c646648	GREEN: no new failures (5762 tests, 106 inherited); behaviour matches the archived specs	session-20261116T084906-c933b95f	2026-11-16T08:56:43Z
