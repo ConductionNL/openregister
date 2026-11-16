@@ -18441,3 +18441,4 @@ verify:launchpad:1209:086ef975	1209 CONFLICT	session-20261116T230531-f9095b0f	20
 verify:learniq:2182:07a86edd	failed: learniq development not installable here (locked vimeo/psalm 7.5 needs php >=8.3.16, container php 8.3.6)	session-20261116T233921-33ab4c87	2026-11-16T23:49:29Z
 verify:hermiq:1755:b730ea34	CONFLICT #1755 (tests/Unit/Service/ScheduleServiceTest.php)	session-20261116T233901-7abe1a78	2026-11-16T23:49:23Z
 verify:learniq:2533:bc10459d	#2533 CONFLICT (learniq_register.json)	session-20261116T230843-e8244832	2026-11-16T23:49:32Z
+verify:learniq:2524:272b43ee	CONFLICT #2524	session-20261116T232519-f84cca9a	2026-11-16T23:49:52Z
