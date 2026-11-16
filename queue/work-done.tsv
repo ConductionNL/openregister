@@ -15875,3 +15875,4 @@ review:opencatalogi:2655:f3ddd327	GREEN: no new failures (5792 tests vs 5750 bas
 review:versioniq:503:7514a922	GREEN: vitest 3012/3012 pass, vite build ok on merged tree	session-20261116T084459-8070a613	2026-11-16T08:49:07Z
 review:opencatalogi:2673:55afbbab	RED: ServiceRegistrarGoldenTest needs the new alias recorded; otherwise in line with the change spec	session-20261116T082353-191a2dc3	2026-11-16T08:49:20Z
 merge:shillinq:1900:6b45c52a	cloud tree of 5 shillinq PRs: merged=0 red=3 fail=0 skip=0; conflict 2, lint 0, red 0, moved 0, done 0	session-20261116T082955-f4213879	2026-11-16T08:49:53Z
+fix:pipelinq:3883:e27a1a72	sbom regenerated, pushed e0b01647; REVERIFY recorded (merge lock held elsewhere)	session-20261116T082121-c1741fb9	2026-11-16T08:49:57Z
