@@ -18473,3 +18473,4 @@ verify:keepiq:1787:b185b6e6	CONFLICT: l10n catalogues + src/export/serializer.js
 verify:launchpad:1218:a8711f00	CONFLICT #1218 (l10n, admin settings, tile code)	session-20261116T232623-066b53c9	2026-11-16T23:55:20Z
 verify:opencatalogi:2706:03bd33eb	CONFLICT: #2706 vs development in l10n, PublicationsController, manifest, PublishedTableServiceTest	session-20261116T232911-3dffa1ae	2026-11-16T23:55:33Z
 verify:opencatalogi:2654:98398fa4	CONFLICT #2654 (DcatService, l10n, tasks.md)	session-20261116T233901-7abe1a78	2026-11-16T23:55:46Z
+verify:learniq:2523:470fe891	CONFLICT #2523 (portal, register, l10n)	session-20261116T232623-066b53c9	2026-11-16T23:56:30Z
