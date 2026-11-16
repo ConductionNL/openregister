@@ -15270,3 +15270,4 @@ hermiq	1150	5198e25d6c9bad18abe4696fe79df3b8fa167348	RED	merge3:merge-gate	GATE 
 hermiq	1788	ce4671888f6536433ed4fec0c655aaf53763ce65	RED	merge3:merge-gate	GATE RED checker floor: adrvalidator: pass -> warn; adrvalidator stars: 5 -> 3; score: 100 -> 97
 learniq	2562	9bda8314f7f18deccba80b4954151c8d340cf7cc	REVERIFY	worker-19	merged development in (stub SPDX header conflict, took development's), sbom current; learniq merge lock held elsewhere; new head 7726a54cc67ec9a8c40f7c44e8fea0cf725b9fd2, verify it
 hermiq	1735	ce935d59a8288cace6c3fb283cbc11859d0eecf3	CONFLICT	merge3	merges clean on development alone; files: src/views/AdminRoot.vue tests/vitest/admin-root.spec.js 
+hermiq	1750	4656eeb3115b5f43beb321ca3a71c55d567ef9e0	REVERIFY	worker-34	merged development in, register conflict resolved to v0.59.0, unit suite 5407 OK; new head 5b31e8f3a3a68488a9dbbe5a8847f2b9a6b2128c, verify it
