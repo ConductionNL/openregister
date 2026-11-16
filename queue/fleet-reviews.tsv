@@ -446,3 +446,4 @@ buildiq	1652	fd2e894ab2488b523b31ce2263c461c60518bbb2	APPROVE	worker-16	Thorough
 shillinq	2098	91bd5616fcf72747bc4072cca1dfcfc94ca22761	APPROVE	worker-21	Thorough (18 files); no blockers; moves the admin-only FX import status from an in-app route to a tab on the admin settings page, same admin-gated endpoint; status textMap strings are not wrapped in t()
 learniq	1882	334e6e479def3699df5e52bbcc4e4d89ce9c8c25	APPROVE	worker-12	Standard; no blockers; adds display labels for opened-booking fields plus nl string and unit test, e2e expectation updates, no access or data-path change; gate runner not cached, checklist by hand
 shillinq	2226	5f2a77239a689c087689c3e8d91fcfd2041a1eaa	APPROVE	worker-21	Quick; no blockers; pinia 4.0.3 to 4.1.0 with lock and sbom regenerated
+shillinq	2230	a06c88048dcd65fc9d7131b487c8bc14570e7ac7	APPROVE	worker-21	Quick; no blockers; @babel/core 8.0.6 to 8.0.10 dev bump, lock and sbom regenerated
