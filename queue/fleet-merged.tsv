@@ -4162,3 +4162,4 @@ dossiq	5266	2cd5ee932a79779a717f6f0071fcaa89f3c2531f	MERGED	merge3	GATE OK sbom,
 dossiq	6587	b11faca9084a4b9bf828b6ef2e9e2d6a3bb0c2a4	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.40
 dossiq	6590	e05ebf369ae06f6003bbbc058625dfd8e78b491a	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.40
 dossiq	6593	063f50b3ac2c3fea4dd798661b83d44440f46d69	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.40
+keepiq	1792	af22b4ea9e8110c436553126d94f748ee8cd97ad	RED	worker-37	GATE RED checker floor: secretscanning: pass -> fail; secretscanning stars: 5 -> 1
