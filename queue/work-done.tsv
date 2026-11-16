@@ -17548,3 +17548,4 @@ lane:scan5:decidiq:scan-1	decidiq: no cheap fixes, no PRs; not cheap: testcodera
 fix:decidiq:1767:1582903c	merged #1767 at 1582903c267265c964b1af5bddd432f6f7e882bf (RED no longer reproduced: SBOM check passes on the tree with current development)	session-20261116T190656-a33397e6	2026-11-16T20:04:23Z
 review:buildiq:1652:209a678f	GREEN: 0 new failures (1 inherited), touched vitest green	session-20261116T190918-81e43f73	2026-11-16T20:04:43Z
 cover:buildiq:70b3e29em9bad:38e80a9f	deferred: buildiq has 53 open PRs	session-20261116T200354-a4252cff	2026-11-16T20:04:50Z
+lane:arch5:filinq:next-filinq-r1	PR #2150 opened (4.06-4.14 -> 4.09-4.18), GREEN verdict recorded, merge lock held by another merger; queued next-filinq-r2	session-20261116T194712-13a51568	2026-11-16T20:05:00Z
