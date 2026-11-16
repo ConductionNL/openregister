@@ -14212,3 +14212,6 @@ thematiq	1682	3f39ef0d0f1d79e5bf27de397c577993924fcf7e	GREEN	worker-29:lane	depe
 filinq	2072	a07d41bdd0452ef712eccff125357b5240903950	BLOCK	worker-11:review	review: Strict; blocker: PolicyRetroactiveService loadInFlightDocumentRecords/forceResolveToAnonymized dropped the bypass, but prohibitions are saved by filinq-prohibition-admins (PolicyCrudService::assertProhibitionPermission) while publicationConsent read/update name only filinq-policy-admins, so a prohib
 planninq	1198	f4370679900c3aded15e653a6ebd0521c8fc79dd	GREEN	worker-14:lane	5 dependency updates + sbom; PHP 1222 ok, phpstan 9 = development, vitest 3566 ok, lint equal; one-PR tree adds no failures
 filinq	1355	1ed49fc431d3180365afb6b981791604eea7f243	RED	worker-11:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+filinq	2094	a2f8cc99002a05e5716d0949e45af50b7d556634	CONFLICT	worker-11:merge	merges clean on development alone; files: lib/Settings/filinq_mock_register.json lib/Settings/filinq_register.json 
+filinq	2122	79127975d8661aa09d13f75673f69dd6a09de23f	CONFLICT	worker-11:merge	merges clean on development alone; files: lib/Settings/filinq_register.json 
+filinq	2123	e7b32d659243047176773d7a1f70e1113cdb3f32	CONFLICT	worker-11:merge	merges clean on development alone; files: lib/Settings/filinq_mock_register.json lib/Settings/filinq_register.json 
