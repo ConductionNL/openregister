@@ -16824,3 +16824,4 @@ build:portaliq:a-task-opens-the-app-action-that-completes-it	deferred: portaliq 
 build:portaliq:form-flow-repeating-groups-calculations-and-decisions	deferred: portaliq has 62 open PRs	session-20261116T171035-683856c3	2026-11-16T17:30:58Z
 build:portaliq:action-summary-sentence	deferred: portaliq has 62 open PRs	session-20261116T171035-683856c3	2026-11-16T17:31:05Z
 build:portaliq:business-audience-group	already done: only live/e2e tasks left (1)	session-20261116T172806-3ef5ead7	2026-11-16T17:31:26Z
+build:portaliq:mandated-case-opens-on-its-record-page	already done: only live/e2e tasks left (1)	session-20261116T172806-3ef5ead7	2026-11-16T17:31:32Z
