@@ -17914,3 +17914,4 @@ build:opencatalogi:publication-relations-place-and-source-ids:c4	blocked: no cod
 build:buildiq:logic-automation-actions-that-run:c5	partial: PR #1648 head 6c58279f, T07 done (run route, listing, runtime action, openapi, tests); left T04, T06 composer + recompile, T11; continuation c6 queued	session-20261116T210639-4564b5ec	2026-11-16T21:31:08Z
 fix:buildiq:1620:ad45ffb6	merged #1620 at 8d224ba2a210be1ddf84887f4f6fd6f8895b78b4 (re-recorded registration golden; ExportZipGoldenTest inherited)	session-20261116T212546-8f77b091	2026-11-16T21:31:31Z
 cover:keepiq:c967a31fm902f:ca1d90c4	already done: lib/Attribute/*.php 100% lines (5/5), exercised by the VaultKeyProof middleware suites; no PR	session-20261116T200543-e8f76f14	2026-11-16T21:32:17Z
+verify:stackiq:2000:a76a4319	6 GREEN (2000-2005), tree 3901 tests, 0 new failures	session-20261116T212636-b8ecff83	2026-11-16T21:32:34Z
