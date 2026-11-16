@@ -729,3 +729,5 @@ versioniq	722	ed29af36302fffbdf007bc907b928a9b2446c26f	APPROVE	worker-52	Strict 
 stackiq	2000	7cf40a444328d854821fd3b11378a970f51fcff8	APPROVE	worker-54	Quick (tests only, no lib/ change); no blockers; none
 stackiq	2001	b444c6f0684e4e7448b9357336b1ec84a518ec52	APPROVE	worker-54	Quick (tests only, no lib/ change); no blockers; none
 stackiq	2002	ff096b820beb42309602b3ca2265cb01134b46ad	APPROVE	worker-54	Quick (tests only, no lib/ change); no blockers; two tests pin the existing allow-when-no-export-rule behaviour of the export gate as characterisation
+stackiq	2003	b30706bd7f0b6b085b38494b688b8ef27372d92b	APPROVE	worker-54	Quick (tests only, no lib/ change); no blockers; existing tests only gain @uses metadata
+stackiq	2004	3abacc55decaf583bc9497566ae9c6da6f5fba99	APPROVE	worker-54	Quick (tests only, no lib/ change); no blockers; none
