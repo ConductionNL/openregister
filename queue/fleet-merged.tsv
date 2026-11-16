@@ -4351,3 +4351,6 @@ stackiq	1978	17efb7880705315a03b1690ba0a2da374e593432	RED	merge3	GATE RED checke
 planninq	933	86d76c4199ab32cd2aeec13baab6b11384feb0c4	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.66 holds at 3.79
 planninq	1198	f4370679900c3aded15e653a6ebd0521c8fc79dd	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.66 holds at 3.79
 decidiq	2170	8002c6debd436efc4fcfa7624811d81b9eef9d75	SKIP	worker-26	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
+launchpad	753	26ce5b2bb96d848f20002dc92a63cdd0704f77f2	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.65 holds at 3.69
+launchpad	785	cfc3d84dd7f92d83a183a1cc52dd6b674e290799	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.65 holds at 3.69
+launchpad	1234	6a94a1fa7ca29a5267bfc77210f29d21bd36c68e	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.65 holds at 3.69
