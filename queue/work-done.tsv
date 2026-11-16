@@ -16058,3 +16058,4 @@ lane:arch5:dossiq:next-dossiq	partial: branch quality/arch5-dossiq-r1 at 3a54788
 review:versioniq:725:bd0db7f7	GREEN: only inherited failures, vitest 3058 pass; note it includes #717	session-20261116T084459-8070a613	2026-11-16T09:29:13Z
 fix:stackiq:1931:8e3de7ae	fixed BLOCK: 7 icons registered, pushed 75fc2149; lock held elsewhere, REVERIFY queued	session-20261116T091834-4216158d	2026-11-16T09:29:36Z
 verify:pipelinq:3883:85bd794e	3883 GREEN; 3885 skipped (head moved to 6b8029c1)	session-20261116T091721-aaaa75bd	2026-11-16T09:30:17Z
+fix:filinq:2141:d980f90d	inherited/environmental: opensourcehealth drop is api.osv.dev unreachable, not the PR; no change, REVERIFY queued	session-20261116T092158-aeab11ae	2026-11-16T09:30:36Z
