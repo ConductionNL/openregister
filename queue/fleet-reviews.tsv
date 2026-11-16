@@ -253,3 +253,4 @@ shillinq	3109	95bf71e1b5b49d1ade835e3ae9eb2b94df7af954	APPROVE	worker-16	Quick; 
 thematiq	1126	5620b7cb2d7fa051b0dab741117d4c9133f10990	APPROVE	worker-46	Quick; no blockers; lockfile/dev dependency bump, tree PHP suite only inherited failure, vitest 1559/1559 on tree
 humaniq	686	fe1cbc0ae582ec29fbb26fc246d74dbf397480b5	APPROVE	worker-26	Quick; no blockers; jsdom dev minor bump, lock+sbom
 humaniq	1095	340163fdc4208370ae8ac1bde6cdbef09083a930	APPROVE	worker-26	Quick; no blockers; psalm 5->7 dev bump, composer platform pin 8.3->8.3.16 for resolution only, runtime require ^8.3 unchanged; concern: psalm 7 config not exercised here
+humaniq	1096	5b9e37da9472745c3d714e8f3b4574d67d4acbfa	APPROVE	worker-26	Quick; no blockers; phpstan patch dev bump, lock+sbom
