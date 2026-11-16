@@ -15496,3 +15496,4 @@ fix:planninq:1068:40deb423	failed: nothing to fix - regen-sbom.sh --check passes
 fix:decidiq:2178:f3f4328f	fixed eslint errors; new head 32c05171, REVERIFY	session-20261116T062544-335bf148	2026-11-16T06:44:06Z
 verify:keepiq:1828:b313725c	GREEN: 5260 OK, baseline same	session-20261116T062140-6a300781	2026-11-16T06:44:17Z
 review:shillinq:3078:db907ca5	GREEN: spec-conform, suites green beyond 1 inherited vitest	session-20261116T062050-add210c3	2026-11-16T06:44:37Z
+verify:pipelinq:3883:9db6174e	GREEN 3883: unit 8987 OK = baseline; 1 inherited vitest failure	session-20261116T062050-7d5ce0d6	2026-11-16T06:44:47Z
