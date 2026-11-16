@@ -16465,3 +16465,5 @@ review:opencatalogi:2673:61f25128	GREEN: build matches change specs; unit no new
 review:opencatalogi:2415:f57435cd	GREEN: no new failures (80 vs 107 baseline with openregister main)	session-20261116T143636-9ede3f74	2026-11-16T14:40:57Z
 review:buildiq:1641:adbfd2cc	GREEN: unit 3352 (1 inherited ExportZipGolden), vitest 4725 pass	session-20261116T142616-2623e37a	2026-11-16T14:41:12Z
 merge:humaniq:606:98c55451	unmeasured: gitdocumentatie.logius.nl (static.developer.overheid.nl/adr/ruleset.yaml now 301-redirects there; blocked by proxy). 8 PRs reviewed APPROVE, tree suite green; 872 MOVED	session-20261116T142710-649b1d69	2026-11-16T14:42:31Z
+fix:learniq:2521:25bda59e	fixed gate-16/26/51, pushed 9e646ec1; gate-68 (second Cohort index page) left for a design call; REVERIFY queued	session-20261116T142859-fa64ab70	2026-11-16T14:43:05Z
+fix:shillinq:2258:76c43840	not reproducible on branch+development (12226 OK); merged dev in, new head 3651ee9d, REVERIFY queued	session-20261116T142931-c6a20eeb	2026-11-16T14:43:14Z
