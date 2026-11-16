@@ -3347,3 +3347,4 @@
 10592 58f77a162cff5ef3af15d474b63a0ba83c4f53cb APPROVE Tests only (2 jest specs, 451 lines); merged with main, views/avg and views/object suites 18 files 681 tests pass; eslint clean; no production code changed.
 10591 bdab430e1291cd2dc2c3f729110e66ee9c4a0d7d APPROVE tests only: 5 new jest specs (33 tests) mounting object/dashboard/log views; no lib/src changes; eslint clean; all pass on head; module mocks are per-file, no clock-pinned asserts
 10593 dfebdc4c53def56e7b9546e90a5e240eb8e356b6 APPROVE Tests only (4 jest specs, 24 tests, 42 assertions); merged with main, modals/organisation and modals/schema 46 suites 603 tests pass; eslint clean; no production code changed.
+10596 1cde2635e6265050db2b4866df05866028bebfae APPROVE Test-only: removes one invalid @uses line (anonymous class name with NUL byte); no production code. ExampleSet suite on PR merged with main equals main (2 inherited process-isolation errors).
