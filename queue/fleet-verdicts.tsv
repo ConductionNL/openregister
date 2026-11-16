@@ -15930,5 +15930,6 @@ integriq	3618	e9d117fd8fe69bbba563f07fd9bb2a0b1b621f02	CONFLICT	worker-43	confli
 integriq	3569	4c0f474df5dfbe9ff9197cf4750a2a532570eca9	CONFLICT	worker-14	conflicts with development in l10n en/nl, lib/Settings/integriq_mock_register.json, tests/Unit/Service/CatalogRegistrySeedGoldenTest.php; suite not run
 hermiq	1762	6f2d6587c1d018f621bb2f38a1f18c3747790563	CONFLICT	worker-36	baseline 5463 tests 0 failures; conflicts with development in l10n/en.js, en.json, nl.js, nl.json, lib/actions.seed.json
 larpinq	1042	72685514b207e555bfc82bc626786cc25e3015ef	CONFLICT	worker-06	conflicts with development in all l10n catalogues (.js and .json) and src/services/userLanguage.js (add/add); not tested
+integriq	3550	b299513010b1702e08431366b20aa2c7a7f12486	CONFLICT	worker-36	conflicts with development in l10n/en.js, en.json, nl.js, nl.json, src/views/admin/AdminSettings.vue; suite not run
 shillinq	1900	65225988bf5200218c0eb4b807e3dbeb19f0df7d	CONFLICT	merge3	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json phpmd.xml 
 shillinq	2997	94a7046f39056afefe7f97508b449787fed0f493	CONFLICT	merge3	conflicts with development; files: appinfo/info.xml l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json tests/Unit/Service/fixtures/rule-audit-golden.json tests/fixtures/register-versions.lock.json 
