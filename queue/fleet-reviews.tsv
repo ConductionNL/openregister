@@ -97,3 +97,4 @@ hermiq	1801	b8e31c29c0755366e44d0de7ddd7cee5f6d4be87	APPROVE	worker-08	Quick; no
 planninq	1196	458678cafcd02325f85d10c61f1a19d493c49e74	APPROVE	worker-12	Quick; no blockers; lock refresh of shared Conduction dev packages; tree 1222 tests no new failures
 learniq	1158	5ca84f75a09a2fdef007102586c11c0982f88dfc	APPROVE	worker-15	Quick; no blockers; prettier patch bump + sbom, tree clean
 learniq	1162	59935569e666c89964655c0288c4729a788558da	APPROVE	worker-15	Quick; no blockers; marked patch bump + sbom, tree clean
+learniq	2127	68efea31c565ca8b2506f50814b1ab554a25b7b9	APPROVE	worker-15	Quick; no blockers; hydra-gates dev-dep minor bump + sbom, tree clean
