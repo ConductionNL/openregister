@@ -3846,3 +3846,6 @@ launchpad	1224	c152df9e6d2445e7a7af0f9fc5fce00f26a1e35e	RED	worker-12	GATE RED c
 versioniq	699	669271613b589912b60e8ed236b9767d4632550f	SKIP	worker-50	no APPROVE review at this head
 versioniq	736	9124666410c83a049238128de282c51abd7b60da	SKIP	worker-50	no APPROVE review at this head
 learniq	2507	334d2575558f2d142b480a2f19098f9065d57cc9	SKIP	worker-15	no APPROVE review at this head
+stackiq	1417	603fa7bc772b26911bf07fedbd31ca5ff45303ee	RED	worker-23	GATE RED checker floor: spdxheaders stars: 5 -> 4
+stackiq	1438	382aa36aab68ee72bcc38e311b8dcd92b0c081f4	RED	worker-23	GATE RED sbom: composer.lock changed without sbom.cdx.json
+stackiq	1941	3f74a8991865e4e8d466edb216ef9d7cc740dee0	SKIP	worker-23	no APPROVE review at this head
