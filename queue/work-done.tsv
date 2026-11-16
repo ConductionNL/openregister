@@ -17396,6 +17396,7 @@ cover:launchpad:fb10c50fmf487:60c2c265	deferred: launchpad has 44 open PRs	sessi
 cover:buildiq:70b3e29em9bad:8ed5443b	deferred: buildiq has 54 open PRs	session-20261116T192645-5f5cd9b9	2026-11-16T19:27:43Z
 cover:buildiq:70b3e29em9bad:f84921d5	deferred: buildiq has 54 open PRs (note: 4 Mcp/Handler tests are risky for lack of @uses AppOrganisationGuard; adding it lifts lib/Mcp/Handler 91.9%->99.65%)	session-20261116T184831-8be58c40	2026-11-16T19:27:44Z
 fix:hermiq:1750:4656eeb3	conflict resolved, new head 5b31e8f3; merge lock busy, REVERIFY queued	session-20261116T192142-66caeb8e	2026-11-16T19:28:06Z
+build:integriq:dso-attachments-on-the-request	already done: every code task ticked on development; only 4.1 (live proof, blocked on intake identity) remains, not buildable in code	session-20261113T213320-1f5acbff	2026-11-16T19:28:22Z
 build:buildiq:decision-tables-live-in-openregister	already done: all code tasks merged in #1100 (2026-10-12); only the live occ upgrade check is left	session-20261116T184831-8be58c40	2026-11-16T19:28:27Z
 cover:launchpad:fb10c50fmf487:34f5c300	deferred: launchpad has 44 open PRs	session-20261116T192104-d9eeae3f	2026-11-16T19:28:36Z
 fix:versioniq:691:ed265e00	failed: floor needs a redesign beyond a fix: the patch-policy audit adds an 11th/12th consumer to AuditLogger, AuditSubject and AuditedVersions (fan-in >10, coupling 5.25->5.15), and interfacing 4.35->4.23 comes from many new 3+ parameter units; development merged in at 478f595cafa579f00febfd06880adc294612e8a0	session-20261116T184833-adbb8426	2026-11-16T19:28:33Z
