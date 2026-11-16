@@ -17882,3 +17882,4 @@ merge:dossiq:6613:58181149	cloud tree of 1 dossiq PRs: none; conflict 1, lint 0,
 cover:pipelinq:7f9dc8e6m3dbb:197c84b8	already done: lib/Adapter/*.php at 100% lines (11 files, 76/76) on development; nothing to add	session-20261116T212114-cc948c71	2026-11-16T21:25:55Z
 fix:hermiq:1750:a0e29d18	conflict resolved, pushed ec9bd2f6; REVERIFY queued (merge lock held)	session-20261116T211529-39ccc7ff	2026-11-16T21:25:54Z
 build:hermiq:store-through-federated-config:c8	partial: still blocked, openregister build/store-through-federated-config (55be6699) not on main; 3.3 route through engine and 3.4 delete bespoke services left	session-20261116T211115-33d23e06	2026-11-16T21:26:03Z
+build:integriq:platform-connector-extension-kit:c5	already done: every code task ticked on PR #3589; only e2e/live verification left (not cloud-buildable)	session-20261116T211529-39ccc7ff	2026-11-16T21:26:27Z
