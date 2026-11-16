@@ -15901,6 +15901,7 @@ review:filinq:2103:cface20c	stale	session-20261116T081426-24e3a1d6	2026-11-16T08
 fix:pipelinq:3092:f8d049f3	sbom regenerated, pushed f041615e; APPROVE recorded; land skipped (gate UNMEASURED: checker did not measure adrvalidator)	session-20261116T081618-2145ecb3	2026-11-16T08:51:35Z
 review:launchpad:785:085c96eb	GREEN: phpunit 4485 ok, vitest 2586 ok, no behaviour regressions	session-20261116T084356-f50aa190	2026-11-16T08:51:48Z
 review:larpinq:1053:1a318455	BLOCK: new find() call uses register:/schema: named args gone on openregister main; suite 1002 OK	session-20261116T084455-5dfa31c7	2026-11-16T08:52:11Z
+lane:feeder:dossiq:once	failed: feed.py REST pagination of openregister open PRs refused by proxy (numeric-id repositories/{id} next-page path, HTTP 403); nothing added	session-20261116T084553-d7ab8477	2026-11-16T08:52:38Z
 merge:shillinq:2086:6e72623c	failed: development itself fails the checker floor (spdxheaders 5->4, test stub header lost in 0d688ca2f); fix pending on quality/gap-spdx-stub-header 95bf71e1b, every PR would gate RED until it lands	session-20261116T082955-f4213879	2026-11-16T08:52:29Z
 review:opencatalogi:2725:80cedf65	GREEN: 0 new failures (+24 tests), matches change specs	session-20261116T084700-3a1a7351	2026-11-16T08:52:41Z
 lane:arch5:pipelinq:pipelinq-k	PR pipelinq #3884 opened at 72197b6e (already contained development); verified green; estimate 4.38-4.40 -> 4.48-4.49 (still under 4.5: next-pipelinq after it lands); merge lock held elsewhere, GREEN verdict queued	session-20261116T081522-a0a03964	2026-11-16T08:52:55Z
@@ -15924,6 +15925,7 @@ fix:portaliq:1673:06264bd1	merged development, manifest l10n conflict resolved k
 fix:portaliq:1768:5560c998	sbom regenerated, pushed 73711bf0; lock busy, REVERIFY queued	session-20261116T084536-1bd0bd69	2026-11-16T08:56:25Z
 review:opencatalogi:1888:3c646648	GREEN: no new failures (5762 tests, 106 inherited); behaviour matches the archived specs	session-20261116T084906-c933b95f	2026-11-16T08:56:43Z
 fix:launchpad:760:091c4dbf	no conflict on development alone; REVERIFY at same head (landing blocked by inherited checker floor)	session-20261116T081705-6c8f795b	2026-11-16T08:57:01Z
+lane:ormig:hermiq:leftover	closed #1324 and #1319 as obsolete (development already matches main's searchObjectsPaginated/processMessage); namecheck: 0 real BREAKs, no names PR needed	session-20261116T084847-50980336	2026-11-16T08:57:12Z
 fix:shillinq:3078:3eccef84	fixed: unit_interfacing drop (appointmentsAnswer payload) and inherited spdx stub header, pushed c1655bb8; lock held elsewhere, REVERIFY recorded	session-20261116T083044-10866b36	2026-11-16T08:57:16Z
 fix:portaliq:2530:55e242b9	development merged in, clean; new head 23908dc9, REVERIFY queued (merge lock busy)	session-20261116T084700-3a1a7351	2026-11-16T08:57:24Z
 review:versioniq:736:40fa5a89	GREEN: unit 1987 tests, only 2 inherited failures; vitest 3022 pass	session-20261116T084459-8070a613	2026-11-16T08:57:31Z
@@ -15931,6 +15933,7 @@ fix:portaliq:1765:065fabf8	sbom regenerated, pushed 582e2f29; merge lock held, R
 review:learniq:1881:fffa1128	GREEN: suite 6871, 1 inherited failure, none new	session-20261116T084600-33f35544	2026-11-16T08:57:57Z
 review:filinq:2103:cd98f739	GREEN: matches change specs, gates clean, unit 6851 OK	session-20261116T080103-dd70aeff	2026-11-16T08:58:05Z
 fix:launchpad:763:68f98712	no change needed: branch up to date with development, package conflict tree-only; REVERIFY recorded (merge lock busy)	session-20261116T082353-191a2dc3	2026-11-16T08:58:25Z
+lane:ormig:planninq:leftover	already done: namecheck on development 71f40a13 has no BREAK (9 REVIEW-positional already on main forms or ZipArchive), check.py's 3 rows are self-calls to a private find() that uses ObjectFindOptions; no PR needed	session-20261116T084906-c933b95f	2026-11-16T08:58:50Z
 fix:portaliq:2349:b92b6364	merged development in, sbom current, phpstan unchanged vs 2.3.1; new head e7812cc2, REVERIFY queued (merge lock held)	session-20261116T084920-18fd4376	2026-11-16T08:58:57Z
 review:opencatalogi:2643:adb68bca	GREEN: spec-conform, 0 new failures (106 inherited), jest 74/74	session-20261116T084755-b37f1e99	2026-11-16T08:59:08Z
 fix:filinq:2088:bb28f1bd	fixed version, property docs, component independence and complexity floor; pushed 421aab4e; REVERIFY (not landed: cloud merge gate reds on opensourcehealth for development too)	session-20261116T081426-24e3a1d6	2026-11-16T08:59:23Z
@@ -15945,6 +15948,7 @@ lane:ormig:launchpad:leftover	done: closed #1038 (development already builds Sto
 lane:ormig:opencatalogi:leftover	done: #2418 closed (obsolete, development matches main); #2415 GREEN (fixes 27 inherited failures), #2737 opened for the one namecheck BREAK, GREEN; both await a merge task (lock held elsewhere)	session-20261116T084401-bf65ba54	2026-11-16T09:00:54Z
 fix:dossiq:3957:b44c6a4f	conflict resolved, pushed 3a1d1a08; merge lock held elsewhere, REVERIFY queued	session-20261116T084709-9ade0b9b	2026-11-16T09:01:17Z
 fix:dossiq:5266:db2ab4a5	conflict resolved (both cards kept), pushed 2cd5ee93, touched tests green; merge lock held elsewhere, REVERIFY written	session-20261116T074147-edb7c708	2026-11-16T09:01:34Z
+verify:stackiq:1989:9bfe8cc8	GREEN #1989: no new failures (php 3718 OK, vitest 1 inherited fail), build ok	session-20261116T083020-e59421bc	2026-11-16T09:02:04Z
 review:buildiq:1620:7c13e441	GREEN: build PR matches change specs; suite green bar 1 inherited failure	session-20261116T084414-2f572a4a	2026-11-16T09:02:23Z
 fix:larpinq:1065:936a9601	fixed sbom, pushed b4cd6229; not landed: merge gate checker_floor unmeasured (SKIP), REVERIFY queued	session-20261116T084455-5dfa31c7	2026-11-16T09:02:38Z
 review:learniq:1167:b9644fb4	GREEN: sass devDep bump, no new failures, build passes	session-20261116T084922-9fc29e74	2026-11-16T09:02:46Z
@@ -15952,5 +15956,9 @@ lane:depbundle:launchpad:bundle	opened #1239 (8 updates), merge lock held by ano
 fix:portaliq:1666:ddf36df0	conflict resolved, pushed 760e34a9; REVERIFY recorded (merge lock held elsewhere)	session-20261116T085141-f326990f	2026-11-16T09:03:16Z
 lane:ormig:pipelinq:leftover	failed: permission: recording the APPROVE review / land of #3885 was refused. Done: #3885 opened (CallMirror save/delete + AVG erase on main's API, 8987 tests 0 new failures, head 6b8029c1c); #3152 GREEN verdict (another worker had merged dev in); #3271/#3258 left open, they wait on open openregister #9818/#9817 and main still takes the old form	session-20261116T084110-0c4bcd9c	2026-11-16T09:03:30Z
 fix:portaliq:1982:ebea533f	sbom current at head (regen-sbom --check ok); lock held elsewhere, REVERIFY queued	session-20261116T084401-2bd440a4	2026-11-16T09:03:43Z
+lane:ormig:portaliq:leftover	#1997 verified GREEN on main API (lock busy, verdict queued); #1992 closed (main keeps the appId/controllerNs call); namecheck: no real BREAK beyond #1997, no names PR needed	session-20261116T084536-1bd0bd69	2026-11-16T09:03:51Z
 merge:launchpad:755:b15cdcdd	cloud tree of 1 launchpad PRs: merged=0 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T084554-ed039664	2026-11-16T09:04:01Z
 lane:depbundle:larpinq:bundle	opened #1066 (3 updates, verified); merge lock held elsewhere, GREEN verdict queued	session-20261116T083627-a5dc872b	2026-11-16T09:04:17Z
+fix:portaliq:1767:886f4fa1	merged development in, pushed 171143de; merge lock held elsewhere, REVERIFY queued	session-20261116T084902-22557114	2026-11-16T09:04:35Z
+lane:ormig:humaniq:leftover	#872 updated to a3d94bb2, verified green, GREEN queued for merge (lock busy); namecheck: no other real BREAK (rest are humaniq-internal calls), no names PR needed	session-20261116T084700-3a1a7351	2026-11-16T09:05:02Z
+lane:arch5:dossiq:dossiq-round5	PR #6589 opened at 503c16af9c (estimate 4.33-4.35 -> 4.40-4.43), verified GREEN; merge lock held elsewhere, GREEN row queued	session-20261116T083029-d99abe70	2026-11-16T09:05:10Z
