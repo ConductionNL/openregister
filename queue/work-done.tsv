@@ -17223,6 +17223,7 @@ fix:learniq:2507:f29e84b7	merged development in, clean; merge lock held elsewher
 fix:learniq:1882:334e6e47	inherited: plain development already reads maintainability 3.98 (range 3.98-4.01) below the 3.99 floor; PR #1882 merged reads the same 3.98, it adds no drop; nothing to fix on the branch	session-20261116T184912-ef98c646	2026-11-16T18:53:52Z
 cover:launchpad:fb10c50f:38e80a9f	deferred: launchpad has 44 open PRs	session-20261116T184901-5d8e5c9a	2026-11-16T18:54:08Z
 review:versioniq:722:c6a909c2	GREEN; conflicts with development (InstanceSettings, NextcloudAdvisoryFeedTest), needs a merge before landing	session-20261116T184902-3ba300c9	2026-11-16T18:54:05Z
+build:integriq:rule-editor-a11y-i18n-hardening	deferred: integriq has 70 open PRs	session-20261116T183806-fd5587ea	2026-11-16T18:54:49Z
 build:integriq:registry-bindings-speak-the-registry-api	already done: code tasks on development (#2665); only the live pass with credentials left	session-20261116T173306-f68895a7	2026-11-16T18:54:32Z
 build:integriq:openformulieren-intake-through-an-integriq-connection	already built: every code task ticked on development (b7a864249); only 4.3 e2e run left, runs in nightly Playwright	session-20261116T184846-301eb7a8	2026-11-16T18:54:56Z
 verify:learniq:2557:21cab0f2	2557 GREEN, 2559 CONFLICT, 2562 GREEN; no new failures (PHP 1, JS 9 inherited)	session-20261116T181517-93723df6	2026-11-16T18:54:53Z
@@ -17243,6 +17244,7 @@ cover:launchpad:fb10c50f:34f5c300	deferred: launchpad has 44 open PRs	session-20
 review:integriq:3649:9b271f27	GREEN: no new failures, 62 new unit tests, 58 vitest pass	session-20261116T184924-e8902580	2026-11-16T18:57:00Z
 cover:launchpad:fb10c50f:f545d745	deferred: launchpad has 44 open PRs	session-20261116T185304-a3eb3adc	2026-11-16T18:57:12Z
 cover:launchpad:fb10c50f:33952d4b	deferred: launchpad has 44 open PRs	session-20261116T184852-c0730778	2026-11-16T18:57:44Z
+cover:launchpad:fb10c50f:60c2c265	deferred: launchpad has 44 open PRs	session-20261116T184858-b0d9d60e	2026-11-16T18:57:53Z
 cover:launchpad:fb10c50f:be0dcca9	deferred: launchpad has 44 open PRs	session-20261116T185304-a3eb3adc	2026-11-16T18:57:18Z
 measure:decidiq:20261116h18	php 94.13% js 98.45% at 1bf4171e	session-20261116T184217-f2c5e14b	2026-11-16T18:57:16Z
 merge:learniq:1167:5572f9ff	cloud tree of 4 learniq PRs: merged=2 red=0 fail=0 skip=0; conflict 2, lint 0, red 0, moved 0, done 0	session-20261116T184833-adbb8426	2026-11-16T18:57:50Z
