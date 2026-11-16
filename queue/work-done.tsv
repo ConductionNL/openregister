@@ -17747,3 +17747,4 @@ review:dossiq:6203:1c2e722f	GREEN: tests only; 18754 tests, 19 inherited sibling
 review:versioniq:691:f1aa0f7f	GREEN; conflicts with development in l10n + AutoUpdateOverview.vue	session-20261116T203550-c395c778	2026-11-16T20:46:44Z
 cover:dossiq:069ee2d6m9d1b:913a213e	added 25 tests (4 files) to open PR #6203 (over 40 open PRs); lib/Service/Flow 97.81->99.45%; suite failures 19 before/after (inherited)	session-20261116T203542-d21e7ade	2026-11-16T20:46:59Z
 review:shillinq:1899:65bdef77	GREEN #1899 (spec'd behaviour, access checks intact, suite ok); conflicts with development now	session-20261116T202104-9ad6a286	2026-11-16T20:46:55Z
+verify:shillinq:3110:d458ce1f	GREEN #3110: phpunit 12322 = baseline, vitest 1 inherited failure	session-20261116T201628-7b6853de	2026-11-16T20:47:12Z
