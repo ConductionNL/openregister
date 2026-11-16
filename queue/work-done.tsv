@@ -17880,3 +17880,4 @@ fix:hermiq:1795:69b741d5	merged development in (clean); new head efce9000; REVER
 merge:dossiq:6613:58181149	cloud tree of 1 dossiq PRs: none; conflict 1, lint 0, red 0, moved 0, done 0	session-20261116T211650-654dd569	2026-11-16T21:25:39Z
 cover:pipelinq:7f9dc8e6m3dbb:197c84b8	already done: lib/Adapter/*.php at 100% lines (11 files, 76/76) on development; nothing to add	session-20261116T212114-cc948c71	2026-11-16T21:25:55Z
 fix:hermiq:1750:a0e29d18	conflict resolved, pushed ec9bd2f6; REVERIFY queued (merge lock held)	session-20261116T211529-39ccc7ff	2026-11-16T21:25:54Z
+cover:pipelinq:7f9dc8e6m3dbb:8f6f87c1	already done: lib/Service/Cti/*.php at 100% lines (116/116) on development; nothing to add	session-20261116T212114-cc948c71	2026-11-16T21:26:22Z
