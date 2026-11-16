@@ -84,6 +84,84 @@ final class TokenResolverTest extends TestCase {
 		return $consumer;
 	}//end consumer()
 
+	public function testAnUnreadableSessionIsNoTokenAndAsksNoProvider(): void {
+		$session = $this->createMock(ISession::class);
+		$session->method('get')->willThrowException(new \RuntimeException('session closed'));
+		$provider = $this->createMock(ITokenProvider::class);
+		$provider->expects(self::never())->method('getToken');
+
+		$resolver = new TokenResolver($session, $provider, $this->userSession('alice'), $this->consumers([]));
+
+		self::assertNull($resolver->resolve());
+	}//end testAnUnreadableSessionIsNoTokenAndAsksNoProvider()
+
+	public function testATokenWithoutReadableNameOrOwnerIsLeftUnnamedAndLooksUpNoConsumer(): void {
+		$token = $this->createMock(IToken::class);
+		$token->method('getId')->willReturn(12);
+		$token->method('getName')->willThrowException(new \RuntimeException('no name'));
+		$token->method('getUID')->willReturn('   ');
+		$provider = $this->createMock(ITokenProvider::class);
+		$provider->method('getToken')->willReturn($token);
+		$mapper = $this->createMock(ConsumerMapper::class);
+		$mapper->expects(self::never())->method('findAll');
+
+		$identity = (new TokenResolver($this->session('pw'), $provider, $this->userSession('alice', 'Alice'), $mapper))->resolve();
+
+		self::assertNotNull($identity);
+		self::assertSame('12', $identity->reference());
+		self::assertNull($identity->name());
+		self::assertNull($identity->ownerUid());
+		self::assertNull($identity->ownerName());
+		self::assertNull($identity->consumerUuid());
+	}//end testATokenWithoutReadableNameOrOwnerIsLeftUnnamedAndLooksUpNoConsumer()
+
+	public function testABlankNameAndAnUnreadableOwnerAreLeftUnnamed(): void {
+		$token = $this->createMock(IToken::class);
+		$token->method('getId')->willReturn(13);
+		$token->method('getName')->willReturn('  ');
+		$token->method('getUID')->willThrowException(new \RuntimeException('no owner'));
+		$provider = $this->createMock(ITokenProvider::class);
+		$provider->method('getToken')->willReturn($token);
+
+		$identity = (new TokenResolver($this->session('pw'), $provider, $this->userSession('alice', 'Alice'), $this->consumers([])))->resolve();
+
+		self::assertNotNull($identity);
+		self::assertNull($identity->name());
+		self::assertNull($identity->ownerUid());
+	}//end testABlankNameAndAnUnreadableOwnerAreLeftUnnamed()
+
+	public function testTheOwnerIsNotNamedFromAnotherSessionUser(): void {
+		$provider = $this->createMock(ITokenProvider::class);
+		$provider->method('getToken')->willReturn($this->token(14, 'Sync', 'svc-sync'));
+
+		$identity = (new TokenResolver($this->session('pw'), $provider, $this->userSession('alice', 'Alice'), $this->consumers([])))->resolve();
+
+		self::assertNotNull($identity);
+		self::assertSame('svc-sync', $identity->ownerUid());
+		self::assertNull($identity->ownerName(), 'The display name of a different session user must not be attributed to the token owner.');
+	}//end testTheOwnerIsNotNamedFromAnotherSessionUser()
+
+	public function testAFailedConsumerLookupNamesNoConsumer(): void {
+		$provider = $this->createMock(ITokenProvider::class);
+		$provider->method('getToken')->willReturn($this->token(15, 'Sync', 'svc-sync'));
+		$mapper = $this->createMock(ConsumerMapper::class);
+		$asked = [];
+		$mapper->expects(self::once())->method('findAll')->willReturnCallback(
+			static function (...$args) use (&$asked): array {
+				$asked = $args;
+				throw new \RuntimeException('db down');
+			}
+		);
+
+		$identity = (new TokenResolver($this->session('pw'), $provider, $this->userSession('svc-sync', 'Sync'), $mapper))->resolve();
+
+		self::assertNotNull($identity);
+		self::assertSame('Sync', $identity->ownerName());
+		self::assertNull($identity->consumerUuid());
+		self::assertNull($identity->consumerName());
+		self::assertContains(['user_id' => 'svc-sync'], $asked, 'The lookup asks for the consumers running as the owner.');
+	}//end testAFailedConsumerLookupNamesNoConsumer()
+
 	public function testAnInteractiveSessionResolvesToNoToken(): void {
 		// No app password means a person is clicking, and a row naming a token
 		// would be a false claim about who wrote it.
