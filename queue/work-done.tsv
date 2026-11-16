@@ -17713,3 +17713,4 @@ verify:learniq:2567:908b4487	GREEN #2567 (6902 tests, 0 new failures)	session-20
 cover:keepiq:c967a31fm902f:05630945	already done: lib/Middleware/Support 54/59 lines; the 5 left are loop bodies over the empty WITHOUT_SUCCESSOR/RENAMED constants, unreachable from tests; no PR	session-20261116T200543-e8f76f14	2026-11-16T20:39:32Z
 verify:dossiq:6612:e228317a	6612 GREEN; 6613 skipped (head moved to 073611ae)	session-20261116T203542-d21e7ade	2026-11-16T20:40:02Z
 merge:portaliq:2535:74c44cfc	cloud tree of 1 portaliq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T203539-f268bd6b	2026-11-16T20:40:24Z
+cover:openregister:7350e3efm9dc5:ad523ef3	added 5 tests (SettingsDraftGate +4, TokenResolver +1) to open cover PR #10587 at ffe054ad; OfficialsSource/TokenResolver failure paths were already pushed there by another worker; openregister over PR budget (188)	session-20261116T200628-a3f8f9fc	2026-11-16T20:40:15Z
