@@ -4604,3 +4604,4 @@ buildiq	1583	cb1e01bf5bb8b6fa92d5ef01b0765ee06f7300e7	MERGED	worker-55	GATE OK s
 buildiq	1596	1e0a4baa0fc45422fef22a990189036758d6d2d4	MERGED	worker-55	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.91 holds at 3.91
 filinq	2146	125367015109bfa4d1f15e4a1dfdb8e43786d232	MERGED	worker-03	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.06
 decidiq	2170	8ede76a3788b7bf174d1eaf4ca42a7591d7e0f7b	RED	worker-16	GATE RED absolute floor: decidiq maintainability 3.76 after merge is below its floor 3.78
+shillinq	1899	040e84a6688a8492f5564b985c3fb974a41ea77b	SKIP	worker-08	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
