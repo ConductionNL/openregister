@@ -18194,6 +18194,7 @@ cover:buildiq:70b3e29eme3dd:59826f43	deferred: buildiq has 49 open PRs	session-2
 lane:arch5:shillinq:next-shillinq-r10	partial: not started (worker context low after a long build); whole round queued as :c1	session-20261116T220522-6d402fd2	2026-11-16T22:45:26Z
 review:portaliq:2448:eaab719e	stale	session-20261116T222655-da719429	2026-11-16T22:45:57Z
 verify:learniq:2577:cded6cf6	stale	session-20261116T221523-34c05d70	2026-11-16T22:45:40Z
+cover:decidiq:a5f973bbm56fe:568ec52a	deferred: decidiq has 45 open PRs	session-20261116T224559-4d911472	2026-11-16T22:46:41Z
 cover:decidiq:a5f973bbm56fe:8ed5443b	failed: lib/Kernel/Contracts/*.php is 136 interfaces with no executable lines; no behaviour to cover	session-20261116T221523-34c05d70	2026-11-16T22:46:36Z
 fix:shillinq:1900:3f647361	conflict resolved, new head 65225988b; merge lock held elsewhere, REVERIFY queued	session-20261116T220905-333eed09	2026-11-16T22:46:35Z
 cover:decidiq:a5f973bbm56fe:be0dcca9	deferred: decidiq has 45 open PRs	session-20261116T222655-da719429	2026-11-16T22:46:48Z
