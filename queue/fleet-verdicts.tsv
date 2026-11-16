@@ -15898,3 +15898,4 @@ filinq	2114	78a005c251fc9ce1db35ba012ea58f6d6ef2b57c	CONFLICT	worker-58	conflict
 dossiq	3894	8ed2662d166b8bee07c9b1aec92ee7de29dc08cb	CONFLICT	worker-11	sbom.cdx.json conflicts with development; baseline unit 18363 tests, 1 error (StatusEntryRequirementsGuardTest, inherited); PR suite not run
 filinq	2090	923c98e033f7a781763895ce2a83eca95d902a0f	CONFLICT	worker-23	conflict in lib/Settings/filinq_register.json against development; baseline 6960 tests OK
 hermiq	1578	c7adfb0008435059ecda8b9aae4cdc57df32832a	CONFLICT	worker-13	conflicts with development in composer.lock and sbom.cdx.json (dependency bump; regenerate lock + sbom on the merged base); no tests run
+learniq	2578	1ce84f5b7b6b7f2cde5febf91d9cb2fb62431aad	GREEN	worker-17	unit 6974 tests on tree; baseline 6966 with 1 inherited failure (HigherEducationExampleSetTest he.json out of date); 0 new failures; private-method refactor, behaviour kept
