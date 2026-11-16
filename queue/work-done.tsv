@@ -16695,3 +16695,4 @@ merge:shillinq:1900:71366c05	unmeasured: static.developer.overheid.nl (proxy ref
 fix:pipelinq:3835:48e31f72	unmeasured: static.developer.overheid.nl; floor fixed and pushed, new head c550a2ad23, REVERIFY queued	session-20261116T152116-9cbc8d97	2026-11-16T15:49:05Z
 review:shillinq:1899:040e84a6	GREEN shillinq #1899: unit 12245 ok (baseline 12231), vitest 1 inherited	session-20261116T150930-eac38835	2026-11-16T15:49:24Z
 fix:keepiq:1793:3b29e6ab	fixed CONFLICT: kept both sides' nl keys, pushed b87d8b92; not landed: merge gate cannot measure here	session-20261116T150749-2f742a8d	2026-11-16T15:49:42Z
+review:larpinq:1050:f3c30b43	GREEN: unit 1015 OK (base 1002), vitest 608 OK	session-20261116T150944-f856ccd8	2026-11-16T15:50:12Z
