@@ -15314,3 +15314,5 @@ humaniq	1169	a923fe593ee46a2b9cc5f9d5a14a00853e478ebb	GREEN	worker-18	4411 tests
 decidiq	2170	80617c3777f2a16f84f8ee5a966bb46cfa7f1713	REVERIFY	worker-58	merged development, updated simpleMeetingPage.spec.js counts (27 blocks, 21 custom); vitest 2898 passed, PHPUnit 4733 OK; new head da7560c15abbf5d60c6d1e5a2a573c780fae56e2, verify it
 learniq	2507	c5edc819418d9ca4989aa22a7ba7d00942918bcd	CONFLICT	worker-54:merge	conflicts with development; files: tests/Stubs/Contract/ObjectServiceInterface.php 
 learniq	2557	572f94324c877a9dd48b0657cf3d3b88563c6c90	GREEN	worker-40	psalm dev dependency 5 to 7; unit 6868 tests on the 3-PR tree, baseline 1 failure, 0 new; node --test 1383, 9 failing same as development
+hermiq	1795	bba547a10d1e0c42e55aad2ff7edfd5bee58732e	CONFLICT	worker-26:merge	conflicts with development; files: openapi.json 
+hermiq	1808	f027dd397f53ce3ca507c45c8a16a81f7731c5c5	CONFLICT	worker-26:merge	merges clean on development alone; files: composer.lock 
