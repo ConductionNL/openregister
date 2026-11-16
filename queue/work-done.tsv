@@ -17523,4 +17523,5 @@ lane:scan5:opencatalogi:scan-1	opencatalogi (development scan): all criteria 5 e
 fix:keepiq:1826:e606b09f	fixed and pushed f651073d (version, write-response and attachment paths gated, tests added, suite green); not merged: land gate RED floor unit_interfacing 3.32 -> 3.30; REVERIFY queued	session-20261116T192125-8d7de83c	2026-11-16T19:59:35Z
 review:keepiq:1826:cba1f5b2	stale	session-20261116T195835-1a6b6332	2026-11-16T20:00:16Z
 lane:arch5:hermiq:next-hermiq-r3	partial: not started, waits for #1810 and #1811 to land; re-queued as :c2	session-20261116T190656-a33397e6	2026-11-16T20:00:06Z
+review:dossiq:6203:20803212	stale	session-20261116T195844-a81a321a	2026-11-16T20:00:31Z
 review:integriq:3056:dba18fc0	BLOCK: lock not installable (psalm 7.5 needs php>=8.3.16, platform pin 8.3)	session-20261116T195325-4766bbcd	2026-11-16T20:00:55Z
