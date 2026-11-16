@@ -16505,3 +16505,4 @@ fix:learniq:1901:152da34c	RED inherited (stub without SPDX); restored rating, pu
 fix:learniq:2562:2eb28548	added missing SPDX line (inherited spdxheaders floor red), pushed 2e394133; lock held elsewhere, REVERIFY queued	session-20261116T142951-88449a68	2026-11-16T14:52:21Z
 fix:learniq:2555:c1c2b81a	sbom regenerated; new head df653e98; REVERIFY (lock held)	session-20261116T144202-f2b26030	2026-11-16T14:52:29Z
 fix:shillinq:2071:75f4741b	development merged in, new head abd73b77, REVERIFY queued (end-to-end skipped: gate host unreachable)	session-20261116T142703-f07e9998	2026-11-16T14:52:56Z
+fix:hermiq:1739:103d88e1	fixed ratchet blocker; pushed 5a3ceaf4; REVERIFY queued (landing skipped: merge gate host blocked)	session-20261116T142714-8127c132	2026-11-16T14:53:16Z
