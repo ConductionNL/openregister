@@ -1,12 +1,12 @@
 {
  "app": "keepiq",
- "commit": "4b38ea0c4593801503c14320809e15a3a42a6bd9",
- "measured_at": "2026-11-15T01:43:23Z",
+ "commit": "92ee17d6edbaf01aaf4e899de0935339f07113a3",
+ "measured_at": "2026-11-16T18:48:54Z",
  "php": {
   "tool": "pcov",
-  "pct": 93.72,
-  "statements": 25568,
-  "covered": 23963,
+  "pct": 94.27,
+  "statements": 25755,
+  "covered": 24279,
   "dirs": {
    "lib/AppInfo/": [
     27,
@@ -17,8 +17,8 @@
     5
    ],
    "lib/BackgroundJob/": [
-    407,
-    407
+    415,
+    415
    ],
    "lib/Backup/": [
     481,
@@ -29,12 +29,12 @@
     181
    ],
    "lib/Controller/": [
-    4156,
-    4108
+    4210,
+    4134
    ],
    "lib/Db/": [
-    3252,
-    3145
+    3273,
+    3229
    ],
    "lib/Event/": [
     43,
@@ -62,7 +62,7 @@
    ],
    "lib/Listener/": [
     558,
-    555
+    557
    ],
    "lib/Mcp/": [
     140,
@@ -93,8 +93,8 @@
     5
    ],
    "lib/Service/": [
-    13469,
-    12049
+    13573,
+    12243
    ],
    "lib/Service/Connection/": [
     150,
@@ -102,7 +102,7 @@
    ],
    "lib/Service/Flow/": [
     34,
-    32
+    34
    ],
    "lib/Service/ShareSave/": [
     399,
@@ -131,13 +131,13 @@
   }
  },
  "js": {
-  "pct": 92.91,
-  "statements": 13250,
-  "covered": 12310,
+  "pct": 94.09,
+  "statements": 13745,
+  "covered": 12933,
   "dirs": {
    "src/": [
-    170,
-    90
+    171,
+    91
    ],
    "src/assets/": [
     0,
@@ -153,11 +153,11 @@
    ],
    "src/certificates/": [
     114,
-    105
+    107
    ],
    "src/components/": [
-    1513,
-    1480
+    1652,
+    1582
    ],
    "src/components/KeepiqAppNav/": [
     146,
@@ -180,24 +180,28 @@
     91
    ],
    "src/components/settings/": [
-    1095,
-    1077
+    1107,
+    1089
    ],
    "src/components/share/": [
     255,
     251
    ],
+   "src/composables/": [
+    12,
+    12
+   ],
    "src/crypto/": [
-    762,
-    743
+    802,
+    782
    ],
    "src/cxf/": [
     189,
     188
    ],
    "src/dialogs/": [
-    1753,
-    1646
+    1763,
+    1653
    ],
    "src/export/": [
     204,
@@ -208,8 +212,8 @@
     256
    ],
    "src/health/": [
-    141,
-    127
+    270,
+    256
    ],
    "src/import/": [
     100,
@@ -228,12 +232,12 @@
     139
    ],
    "src/mixins/": [
-    109,
-    106
+    121,
+    118
    ],
    "src/modals/": [
-    258,
-    257
+    302,
+    296
    ],
    "src/offline/": [
     212,
@@ -256,16 +260,20 @@
     30
    ],
    "src/services/": [
-    297,
-    295
+    313,
+    310
+   ],
+   "src/shared/": [
+    3,
+    3
    ],
    "src/store/": [
     3,
     3
    ],
    "src/store/modules/": [
-    3232,
-    2715
+    3301,
+    2957
    ],
    "src/totp/": [
     187,
@@ -276,8 +284,8 @@
     326
    ],
    "src/views/": [
-    947,
-    931
+    955,
+    939
    ],
    "src/views/flows/": [
     2,
