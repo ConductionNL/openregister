@@ -4450,3 +4450,6 @@ learniq	2556	489b7f4d5721f51aa0332db8b74ec0f3ab3b0fed	RED	merge3	GATE RED checke
 humaniq	872	a3d94bb2dd2fdb56d8db5354fe8b51a30e1fb477	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.47 holds at 3.47
 humaniq	1095	ac05e3a9d4e8585366438183576f051cd40eb01f	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.47 holds at 3.47
 humaniq	1096	5b9e37da9472745c3d714e8f3b4574d67d4acbfa	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
+keepiq	1716	feea9fa196d543567e22adb2f90d400423be2386	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.58 holds at 3.58
+keepiq	1791	123b7f2512968c472ee9f71652d23dd883b908e4	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.58 holds at 3.59
+keepiq	1792	5d484110eef783bb32a8ca647a51e7e8f42101a9	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.58 holds at 3.59
