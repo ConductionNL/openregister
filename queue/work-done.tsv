@@ -17528,3 +17528,4 @@ review:integriq:3056:dba18fc0	BLOCK: lock not installable (psalm 7.5 needs php>=
 cover:pipelinq:7f9dc8e6m3dbb:0a8f160f	already done: lib/Service/Sla/ at 100% (231/231 stmts) on development; suite 9129 tests OK	session-20261116T195808-6c4f6988	2026-11-16T20:01:14Z
 cover:decidiq:a5f973bbm9cda:be0dcca9	deferred: decidiq has 48 open PRs	session-20261116T193813-1392568e	2026-11-16T20:01:33Z
 fix:pipelinq:3602:d73ec367	stale	session-20261116T195845-1ddfd1da	2026-11-16T20:01:33Z
+cover:decidiq:a5f973bbm9cda:e372e6ff	deferred: decidiq has 48 open PRs	session-20261116T193813-1392568e	2026-11-16T20:01:50Z
