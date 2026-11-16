@@ -15877,3 +15877,4 @@ review:versioniq:503:7514a922	GREEN: vitest 3012/3012 pass, vite build ok on mer
 review:opencatalogi:2673:55afbbab	RED: ServiceRegistrarGoldenTest needs the new alias recorded; otherwise in line with the change spec	session-20261116T082353-191a2dc3	2026-11-16T08:49:20Z
 fix:pipelinq:3883:e27a1a72	sbom regenerated, pushed e0b01647; REVERIFY recorded (merge lock held elsewhere)	session-20261116T082121-c1741fb9	2026-11-16T08:49:57Z
 review:versioniq:721:2524b722	GREEN: versioniq #721 behaviour per spec, no new unit failures (2 inherited), vitest green	session-20261116T084434-57e47bd3	2026-11-16T08:50:26Z
+review:shillinq:2997:675a3aef	GREEN: build matches its specs, access checks per administration, suite 12284 with 1 inherited error	session-20261116T074147-edb7c708	2026-11-16T08:50:44Z
