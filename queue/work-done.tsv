@@ -16598,3 +16598,4 @@ merge:decidiq:2222:5e414a10	cloud tree of 3 decidiq PRs: merged=0 red=0 fail=0 s
 fix:integriq:3051:8f6b6de3	fixed conflict with #3047; REVERIFY 5649956b	session-20261116T142700-f4d651ea	2026-11-16T15:20:45Z
 review:shillinq:2071:abd73b77	GREEN	session-20261116T144202-f2b26030	2026-11-16T15:20:57Z
 fix:hermiq:1150:9f31a6df	conflict resolved (first-turn handling + main find API); suite 5300 OK; new head e594ec91, REVERIFY	session-20261116T144734-1dc150d8	2026-11-16T15:21:07Z
+fix:versioniq:502:c6d0467e	obsolete: development already has @typescript-eslint/parser 8.71.0; closed with a comment	session-20261116T144202-f2b26030	2026-11-16T15:21:34Z
