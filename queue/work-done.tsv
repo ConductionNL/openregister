@@ -17609,3 +17609,4 @@ review:integriq:3574:606ffc5d	GREEN #3574 (no new failures)	session-20261116T200
 review:shillinq:2099:5c0e743f	GREEN: frontend refactor, vitest no new failures (1 inherited)	session-20261116T201445-8cab6741	2026-11-16T20:17:18Z
 review:opencatalogi:2686:23635351	already merged: #2686 head is on development (4897d5bb2)	session-20261116T201644-3ef8cda3	2026-11-16T20:17:27Z
 merge:keepiq:1793:d0323639	cloud tree of 5 keepiq PRs: merged=4 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T195835-1a6b6332	2026-11-16T20:18:37Z
+fix:shillinq:3078:33420e1f	conflict resolved, pushed 55887f01; merge lock busy, REVERIFY queued	session-20261116T184852-b8356331	2026-11-16T20:19:11Z
