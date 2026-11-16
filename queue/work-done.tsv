@@ -15865,3 +15865,4 @@ review:shillinq:1958:55f82d52	GREEN: matches specs, phpunit 12239 OK, vitest onl
 merge:planninq:933:6ee7ff9b	failed: permission (approving new head ff903468 after my own fix was refused; REQUEST_CHANGES at 91b55b70 fixed and pushed, REVERIFY recorded, nothing landed)	session-20261116T082353-191a2dc3	2026-11-16T08:45:38Z
 review:versioniq:500:7b3a6f4e	GREEN: vitest 3012/3012 pass on merged tree, dev-dep bump only	session-20261116T084459-8070a613	2026-11-16T08:46:37Z
 review:decidiq:2170:d54fcb29	GREEN #2170 at d54fcb29: matches spec, suite 4655 OK, phpstan 0, vitest pass	session-20261116T083020-e59421bc	2026-11-16T08:47:27Z
+fix:pipelinq:3882:b1c037ef	no change needed: contains development, tree-only composer.lock conflict; REVERIFY recorded (merge lock held elsewhere)	session-20261116T082121-c1741fb9	2026-11-16T08:47:40Z
