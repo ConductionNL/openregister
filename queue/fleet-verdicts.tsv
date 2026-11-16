@@ -13614,3 +13614,9 @@ hermiq	1188	97593dc8ffffbb6783bfaaca2bcdb450ca9ff291	GREEN	worker-24:review	deps
 decidiq	1469	09383bbcc1479f735f6f91b06b9eab2bc002c9b9	GREEN	worker-34:review	Patch bump of vue 3.5.42 to 3.5.43 (lock dedupes nested @vue packages, SBOM consistent); merged with development: vitest 2847 pass, phpunit 4624 OK
 hermiq	1187	415fb0238e6625fe4d8401b5cf2e03b85a5c4e8d	GREEN	worker-09:review	dev-dep bump @playwright/test 1.63.0->1.64.1 + sbom only; no PHP/src change; PHPUnit 5289 tests identical to development (same PHP tree); vitest 1526/1526 pass; playwright config lists 197 tests
 filinq	2122	d654b8fcba601f860babc8f6d2884726c44db10a	GREEN	worker-25:review	implements grondslagen-read-from-dossiq (grounds via resolver, Woo base seeds retired, guard on new Woo base, non-destructive repoint repair); unit 6829 tests 0 failures merged with development; phpstan clean on changed lib; vitest 769/769, jest 570/570; l10n gate passes
+planninq	871	95bfabe1fba239c71a740e393ca39d0ba96f494d	RED	merge8:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+planninq	908	8cdb1910f5769d0c250c3ec878064e9414311a3a	RED	merge8:merge-gate	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+planninq	910	59fb2d6b5243a16491c1ffaf85638f15344641b4	RED	merge8:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+planninq	918	90a6ddf09f993b4de614cf5d5233d0289f44b22e	RED	merge8:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+planninq	1068	40deb423f1222b7b1faa5b7624b9c58ff150df52	RED	merge8:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+planninq	1070	e52ec55b0363caa130a4ebc3c2d99589f9c893ca	RED	merge8:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
