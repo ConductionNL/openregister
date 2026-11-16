@@ -14849,3 +14849,4 @@ portaliq	2349	e7812cc2231a27fa071df300fa8477ffb36e9a79	RED	worker-48:merge-gate	
 shillinq	3110	e7c788adccce2ed082b36e9cb7188d80a1f52787	GREEN	worker-35	unit 12231 OK on tree (baseline 12231 OK), vitest 3031 with 1 inherited fail (dunningNextRun reads untouched PHP); no new failures
 portaliq	2530	23908dc9409b67edbb7c1748002e6f9859115f48	RED	worker-48:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
 portaliq	2531	23d566859cc3dba12f726946b8081029f38b618b	CONFLICT	worker-48:merge	conflicts with development; files: composer.lock package-lock.json package.json sbom.cdx.json 
+shillinq	3111	bfad3169ce3d468738ac4039e17ab2d4b5bccb59	GREEN	worker-35	unit 12231 OK on tree (baseline 12231 OK); same-target saves moved to ObjectSaveOptions; no new failures
