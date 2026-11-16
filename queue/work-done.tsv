@@ -17745,3 +17745,4 @@ fix:portaliq:2531:cc495ec9	merged #2531 at 77439a5aba09fb92d6f763555de81efaf2e99
 fix:portaliq:2533:93c37669	fixed: duplication floor holds (4.35 vs 4.36); pushed 4857818f; REVERIFY queued (merge lock held elsewhere)	session-20261116T203823-d4fa239e	2026-11-16T20:45:43Z
 fix:versioniq:722:dbd7dee7	fixed openapi.json ADR errors, pushed 276692bd; lock held elsewhere, REVERIFY queued	session-20261116T203535-6145165c	2026-11-16T20:46:07Z
 review:dossiq:6203:1c2e722f	GREEN: tests only; 18754 tests, 19 inherited sibling-openregister failures	session-20261116T203632-17bf60c7	2026-11-16T20:46:23Z
+review:versioniq:691:f1aa0f7f	GREEN; conflicts with development in l10n + AutoUpdateOverview.vue	session-20261116T203550-c395c778	2026-11-16T20:46:44Z
