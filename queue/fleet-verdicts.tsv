@@ -13886,3 +13886,4 @@ shillinq	2072	dbfc1357d6412b1bd787679f90d11b76296cead7	REVERIFY	worker-11:merge	
 shillinq	2100	a13e62e97b853d91f8905c72cb50e2b1e9bddbb1	REVERIFY	worker-11:merge	verdict sha is not the head: head is ef5824e8297a92847875e0c668ee88d5c7e69e50
 shillinq	2251	47c7025284484828492cf317b1130434fdaa5a60	CONFLICT	worker-11:merge	conflicts with development; files: lib/Lifecycle/SupplierInvoicePayGuard.php lib/Util/ObjectIdentifier.php tests/Unit/Consolidation/ConsolidationGuardTest.php tests/Unit/Listener/TenderNedAwardDetectedListenerTest.php tests/Unit/Paymen
 shillinq	2252	eea2842a74d04dbf7c7f3995f15	REVERIFY	worker-11:merge	verdict sha is not the head: head is eea2842a74d04dbf7c7f3995f152483258cef509
+filinq	1355	307201af88f5c0325eee2abd29c42f2bcedc072c	CONFLICT	worker-23:merge	conflicts with development; files: composer.lock sbom.cdx.json 
