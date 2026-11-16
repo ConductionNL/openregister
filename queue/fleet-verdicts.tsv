@@ -15245,3 +15245,4 @@ shillinq	2083	4b847a69f8ad3048ff82a9f425a90bad9480520d	REVERIFY	worker-08	no cha
 shillinq	1958	191f6a9e9f42dea0ee59b6b7ab11addcca352193	REVERIFY	worker-08	no change: merges clean on development; its tree conflict (l10n, register-versions lock) is with unlanded #1899/#2093/#2096, verify again after they land; head unchanged 191f6a9e9f42dea0ee59b6b7ab11addcca352193
 shillinq	2070	764ed7a933a1590a324ba39a0de87d0580ae10a4	REVERIFY	worker-08	no change: merges clean on development; its tree conflict (l10n, register-versions lock) is with unlanded #1899/#2093/#2096, verify again after they land; head unchanged 764ed7a933a1590a324ba39a0de87d0580ae10a4
 versioniq	721	9113809ee4dcdcce38fc0338cef5c8d7f64be063	RED	worker-23:merge-gate	GATE RED floor: module_coupling: 5.25 -> 5.23
+humaniq	606	999cc2866e6aa8b58b9b76ea5c11fa01becb1b6a	RED	worker-33:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
