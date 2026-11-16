@@ -16967,6 +16967,7 @@ cover:buildiq:70b3e29em3841:a215617b	deferred: buildiq has 56 open PRs	session-2
 fix:integriq:3051:5649956b	fixed spdx floor: SPDX headers on 3 new stubs, pushed 3f6ca6b6; merge lock held elsewhere, REVERIFY queued	session-20261116T173211-a3411be5	2026-11-16T17:50:45Z
 cover:buildiq:70b3e29em3841:f545d745	deferred: buildiq has 56 open PRs	session-20261116T173103-d3bed8f8	2026-11-16T17:50:41Z
 cover:buildiq:70b3e29em3841:1b97f731	deferred: buildiq has 56 open PRs	session-20261116T173103-d3bed8f8	2026-11-16T17:50:51Z
+fix:decidiq:2170:8002c6de	failed: pushed 8ede76a378 (ObjectRows helper, listener clones removed, ratchet 0 dup fragments; RoomSystem tests 37 OK) but absolute floor stays RED: plain development measures 3.77 with the cloud estimator (floor 3.78), PR 3.76 via component independence 2.47->2.42; needs a floor decision or a wider refactor	session-20261116T173141-f87aaa9d	2026-11-16T17:51:23Z
 cover:buildiq:70b3e29em3841:aae6d66c	deferred: buildiq has 56 open PRs	session-20261116T173103-d3bed8f8	2026-11-16T17:51:04Z
 fix:integriq:3049:f122cee2	development merged in, touched tests green; REVERIFY at 129bee96 (merge lock held elsewhere)	session-20261116T173254-f6972957	2026-11-16T17:51:25Z
 review:dossiq:6203:ef4bffa6	stale	session-20261116T173211-a3411be5	2026-11-16T17:51:44Z
@@ -16995,4 +16996,11 @@ review:hermiq:1736:4200349d	GREEN #1736 (0 new failures; dev baseline 167E/26F i
 review:hermiq:1788:ce467188	GREEN: no new failures, spec-conformant, access gated	session-20261116T174709-5787ce39	2026-11-16T17:56:38Z
 review:opencatalogi:2682:4e12e44e	GREEN: 0 new failures (5869 tests, 80 inherited), jest/vitest green	session-20261116T173254-f6972957	2026-11-16T17:56:49Z
 fix:opencatalogi:2696:a67460be	pushed 8fcdf471c5: 5 of 6 review gate blockers fixed; component_independence floor left; REVERIFY queued	session-20261116T170518-9fa71e6e	2026-11-16T17:57:13Z
+build:filinq:inbound-auto-classification	already built: every code task ticked on development; 4.2 e2e and 4.4 screenshots need a live instance	session-20261116T170545-a4f14b83	2026-11-16T17:57:29Z
 review:learniq:2507:f29e84b7	GREEN: matches the change's specs; suite 6901, only the inherited HigherEducationExampleSetTest failure	session-20261116T173311-8d6b3275	2026-11-16T17:57:36Z
+fix:stackiq:1931:f5df0ce8	conflict resolved, pushed 3faf7c6; REVERIFY queued (merge off on this account)	session-20261116T173207-e7bfa399	2026-11-16T17:57:47Z
+verify:hermiq:1807:87e37da2	GREEN #1807: 0 new failures (5340 php, 1535 js)	session-20261116T170823-40772b73	2026-11-16T17:58:07Z
+review:filinq:2122:8da97635	GREEN: build matches change specs; unit 6910 OK, vitest touched 20/20	session-20261116T173211-a3411be5	2026-11-16T17:58:18Z
+verify:pipelinq:3894:9807d239	GREEN #3894: 9030 tests, 0 new failures	session-20261116T173713-4d98e280	2026-11-16T17:58:29Z
+review:hermiq:1754:b6dc1f4e	GREEN: unit 5388 pass, touched vitest 31 pass	session-20261116T173227-109a6e00	2026-11-16T17:58:46Z
+fix:versioniq:721:e012b413	CONFLICT resolved (l10n union, js rebuilt); new head bc63b63642, REVERIFY queued; 2 golden-test failures inherited from development	session-20261116T171010-393e4bc2	2026-11-16T17:58:57Z
