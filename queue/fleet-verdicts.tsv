@@ -15862,3 +15862,4 @@ buildiq	1623	e24b334fa50134345d8c9bba3cba2b0477f89521	CONFLICT	worker-13	conflic
 buildiq	1597	b4d6685f15a88f33cd1f90edad134ba6de802e91	CONFLICT	worker-17	conflicts with development in l10n/en.js,en.json,nl.js,nl.json; baseline 3456 tests 0 failures
 buildiq	1262	a0a4f2874c6db16ba6d9845bc8c1385d2d6ae0a4	CONFLICT	worker-56	conflicts with development in all 4 lock call sites and their tests (development may already carry the LockRequest migration)
 buildiq	1619	e0722b685a4313508d76e6064c1501f7e4fe66f4	CONFLICT	worker-26	conflicts with development in src/components/page-editor/IndexPageEditor.vue, src/composables/useManifestValidator.js; baseline PHP 3456 tests OK, not run on tree
+filinq	2072	8a0992cbb74f2b7df9dbc9e29159077ce5307e05	RED	worker-08:merge-gate	GATE RED floor: unit_complexity: 4.47 -> 4.40
