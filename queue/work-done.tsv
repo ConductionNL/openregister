@@ -17610,3 +17610,4 @@ review:shillinq:2099:5c0e743f	GREEN: frontend refactor, vitest no new failures (
 review:opencatalogi:2686:23635351	already merged: #2686 head is on development (4897d5bb2)	session-20261116T201644-3ef8cda3	2026-11-16T20:17:27Z
 merge:keepiq:1793:d0323639	cloud tree of 5 keepiq PRs: merged=4 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T195835-1a6b6332	2026-11-16T20:18:37Z
 verify:keepiq:1856:0bb3dfbb	GREEN #1856 (tests only, 5392 tests, 0 failures)	session-20261116T200543-e8f76f14	2026-11-16T20:19:27Z
+merge:shillinq:3118:bd41f9fc	cloud tree of 1 shillinq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T195830-617c8479	2026-11-16T20:19:41Z
