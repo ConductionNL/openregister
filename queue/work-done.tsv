@@ -17460,3 +17460,4 @@ fix:decidiq:2228:0abc6d2c	merged #2228 at 0fe237ed088554296db5e3b40d1b8055f8c3de
 review:buildiq:1641:59f9dd10	GREEN: no new failures (3396 tests, 1 inherited), vitest 6/6	session-20261116T192127-f26e2e56	2026-11-16T19:43:19Z
 review:pipelinq:3659:855423fe	GREEN: tests only, suite 9129 ok	session-20261116T194104-8906f18f	2026-11-16T19:43:27Z
 cover:learniq:e6498ddd:568ec52a	deferred: learniq has 60 open PRs	session-20261116T192127-f26e2e56	2026-11-16T19:43:50Z
+review:shillinq:1900:0046f1c5	RED: 10 new test errors on development (execute() takes LifecycleActionContext; new tests pass an array) + conflict in info.xml/register-versions lock	session-20261116T193315-3e9a027b	2026-11-16T19:43:49Z
