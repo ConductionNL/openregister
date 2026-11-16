@@ -16115,3 +16115,4 @@ fix:larpinq:1050:48b34820	fixed floor: unit_interfacing 4.75 -> 4.78; new head 5
 fix:portaliq:663:6dc142e0	fixed: raised info.xml version for the register bump; pushed 07e3f56bbc, REVERIFY queued (land step paused)	session-20261116T100945-f01894e6	2026-11-16T10:19:41Z
 merge:launchpad:753:e9885abf	unmeasured: api.osv.dev, static.developer.overheid.nl (753, 1234 APPROVE recorded; 1106, 1109 EXCL never merged)	session-20261116T101208-a62d0f70	2026-11-16T10:20:06Z
 fix:shillinq:1912:a7d98b52	fixed: restored SPDX header lost on development, merged development; new head 66b47f5d, merge lock held elsewhere, REVERIFY queued	session-20261116T101050-f149dcd6	2026-11-16T10:20:36Z
+fix:launchpad:1239:793d6033	no change: current with development, conflict only with tree sibling #1234; REVERIFY queued	session-20261116T100945-f01894e6	2026-11-16T10:20:58Z
