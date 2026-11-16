@@ -14453,3 +14453,4 @@ integriq	3050	8c85da90fed1634ee6a16085003aed7d344d3bb7	REVERIFY	worker-34	merged
 stackiq	1954	b53c26d5710de0264ce2e8ece7108faf24900ec4	REVERIFY	worker-11	added @spec to 10 frontend methods, scope=col on the reports table headers, SPDX header on tests/Stubs/Contract/ObjectServiceInterface.php (development lacks it, which reds the spdxheaders floor for every stackiq PR); tree adds no failures, reviewed APPROVE; merge gate unmeasured (static.developer.overheid.nl); new head 34c6f73a6edec4ca5d54daff2b80273be29cdf68, verify it
 versioniq	736	40fa5a891b05589cf3acb0a21b786add62c8217f	RED	worker-14:merge-gate	GATE RED floor: unit_size: 4.77 -> 4.75; module_coupling: 5.23 -> 5.12
 versioniq	503	7514a922e63c6e6fe2e22b1f05971ca7ee537ce0	CONFLICT	worker-14:merge	merges clean on development alone; files: sbom.cdx.json 
+learniq	2484	a20cc6e5bf5a38b0a2fb0ad8e4fab1915eecc970	RED	worker-24:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
