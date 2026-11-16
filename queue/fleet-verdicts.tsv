@@ -14769,3 +14769,6 @@ opencatalogi	2699	089b88bb6b60f81b991d7ab27067b8efaa76b6c3	REVERIFY	worker-48	me
 shillinq	1900	338f0839c8b43417a466880e911d65bab818d5bd	REVERIFY	worker-51	merged current development in (clean), unit suite 12246 OK; tree conflict was with other PRs in the same tree; merge lock held elsewhere; new head f0577318258e64ba145db876d666dcafd5a99efa, verify it
 keepiq	1826	98fff903417a33f0777030490c73f07dacbc752f	REVERIFY	worker-11	added @spec to the 6 untagged PrivilegedAccessPanel methods, merged development in; eslint clean, vitest 6687 pass + 3 HealthReportView.controls failures inherited from development; not landed here (merge gate unmeasured); new head 07082bd96f2591fbed1b8b9703c9fc1567fbfe88, verify it
 versioniq	711	dc3fffc4091930880b05adf9f0e76b6a2caf5c4a	RED	worker-03:merge-gate	GATE RED floor: unit_complexity: 4.63 -> 4.60; unit_interfacing: 4.26 -> 4.22
+hermiq	1135	0d097997db1a2b53afae0ba11817aff5667f2f08	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+hermiq	1174	296b735486520bafd8c45b024c2bc40d06515c4b	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+hermiq	1187	415fb0238e6625fe4d8401b5cf2e03b85a5c4e8d	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
