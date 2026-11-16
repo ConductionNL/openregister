@@ -17891,6 +17891,7 @@ cover:decidiq:a5f973bbm9cda:d528dcf0	deferred: decidiq has 45 open PRs	session-2
 build:integriq:platform-connector-extension-kit:c5	already done: every code task ticked on PR #3589; only e2e/live verification left (not cloud-buildable)	session-20261116T211529-39ccc7ff	2026-11-16T21:26:27Z
 review:shillinq:1899:acc6426f	GREEN: no blockers; PHPUnit OK, one inherited vitest red	session-20261116T211641-8431b36d	2026-11-16T21:26:41Z
 cover:decidiq:a5f973bbm9cda:c76ae287	deferred: decidiq has 45 open PRs	session-20261116T212057-3d2ff8ce	2026-11-16T21:27:06Z
+cover:decidiq:a5f973bbm9cda:34763eb4	already done: lib/Middleware/*.php at 100% lines (59/59) on development; nothing to add	session-20261116T212114-cc948c71	2026-11-16T21:28:36Z
 build:integriq:access-developer-portal-and-subscriptions:c2	failed: depends_on still unlanded on development: access-consumer-credentials (branch 6/13 tasks) and gateway-openapi-import-and-publish (branch 6/11); build after both merge	session-20261116T211529-39ccc7ff	2026-11-16T21:27:19Z
 cover:launchpad:fb10c50fmf487:dfaef732	deferred: launchpad has 45 open PRs	session-20261116T211641-8431b36d	2026-11-16T21:27:38Z
 build:humaniq:self-service-mobile:c5	already built: PR #1149 merged into development at 12627139; left 2.2 (receiptFile is a string schema property; the library's camera hint needs type file, a schema change the design rules out: needs a decision) and 3.2 (live phone check)	session-20261116T212057-3d2ff8ce	2026-11-16T21:28:18Z
