@@ -15967,3 +15967,4 @@ lane:arch5:dossiq:dossiq-round5	PR #6589 opened at 503c16af9c (estimate 4.33-4.3
 lane:depbundle:integriq:bundle	PR #3670 opened (9 npm updates); merge lock held elsewhere, GREEN recorded for a merge task	session-20261116T082121-c1741fb9	2026-11-16T09:06:53Z
 fix:dossiq:3203:cd98b031	conflict resolved, pushed 2c689dc95; merge lock held elsewhere, REVERIFY queued	session-20261116T084957-4e2b0583	2026-11-16T09:07:03Z
 lane:depbundle:humaniq:bundle	opened #1164 (9 updates), verified GREEN; merge lock held by another merger, GREEN verdict queued for a merge task	session-20261116T084920-18fd4376	2026-11-16T09:07:12Z
+lane:ormig:buildiq:migrate	PR #1672 opened at 8130284789a8, verified (main beside: 2 inherited failures; stubs only = development); merge lock held elsewhere, GREEN verdict recorded	session-20261116T084850-3eaccefe	2026-11-16T09:07:31Z
