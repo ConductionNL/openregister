@@ -15492,3 +15492,4 @@ verify:dossiq:6587:b6cd9ff6	RED: lock refresh breaks vitest nextcloudVue276.spec
 fix:stackiq:1978:10c9e69f	conflict resolved (l10n strings moved off tail); new head 0e16289a	session-20261116T061736-e271ba12	2026-11-16T06:43:33Z
 verify:shillinq:3108:74e1d5d1	RED: lock bump breaks manifestActions.spec.js load (deep dist import gone in nextcloud-vue 2.181)	session-20261116T062050-3a7e109c	2026-11-16T06:43:46Z
 fix:stackiq:1959:9c86f22a	fixed: migrated scenario find to ObjectFindOptions; new head fe24e23b, REVERIFY recorded	session-20261116T062109-81fc252e	2026-11-16T06:43:55Z
+fix:decidiq:2178:f3f4328f	fixed eslint errors; new head 32c05171, REVERIFY	session-20261116T062544-335bf148	2026-11-16T06:44:06Z
