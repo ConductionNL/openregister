@@ -15905,6 +15905,7 @@ review:opencatalogi:2670:7cd46940	GREEN: no new failures (5766 tests vs base 575
 verify:shillinq:3109:ff5d2021	GREEN #3109 (SPDX header in test stub; unit 12225 OK, no new failures)	session-20261116T084449-ebc88ac4	2026-11-16T08:55:21Z
 lane:depbundle:pipelinq:land	verified #3882 at b1c037ef (no new failures vs development, sbom current); merge lock held elsewhere, GREEN recorded for a merge task	session-20261116T075942-394736ff	2026-11-16T08:55:29Z
 review:larpinq:1050:48b34820	GREEN: PHP 999 ok, vitest 608 ok	session-20261116T082637-06597b03	2026-11-16T08:55:37Z
+fix:portaliq:1353:dc6ca37d	failed: dev-only bump (phpmd require-dev); regen-sbom --check says sbom.cdx.json is current (921 components) and regeneration changes nothing, so the gate's 'lockfile changed without sbom.cdx.json' rule cannot be met without an artificial edit; needs a gate exemption for dev-only lock changes	session-20261116T085141-f326990f	2026-11-16T08:55:57Z
 fix:portaliq:1766:23513ec0	sbom regenerated, pushed 931554ac; merge lock busy, REVERIFY queued	session-20261116T085112-b61e5d15	2026-11-16T08:55:53Z
 fix:portaliq:1673:06264bd1	merged development, manifest l10n conflict resolved keeping both strings, pushed 574c1672; REVERIFY recorded (merge lock busy)	session-20261116T082353-191a2dc3	2026-11-16T08:56:13Z
 fix:portaliq:1768:5560c998	sbom regenerated, pushed 73711bf0; lock busy, REVERIFY queued	session-20261116T084536-1bd0bd69	2026-11-16T08:56:25Z
