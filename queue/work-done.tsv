@@ -18059,3 +18059,4 @@ cover:pipelinq:7f9dc8e6m3dbb:d528dcf0	added DashboardRegistrarTest (2 tests) to 
 verify:opencatalogi:2756:dd32b5f2	stale: #2756 head moved to d7a2df601f100243b235b392858ee8fd16eaf3f6	session-20261116T221004-b3e0abd6	2026-11-16T22:11:25Z
 verify:dossiq:6613:8420df6d	already merged: #6613 head ee208504 is in development (f686ebd0)	session-20261116T211553-db0d2c78	2026-11-16T22:11:42Z
 verify:buildiq:1683:f45eca7a	1683 CONFLICT, 1687 CONFLICT (both carried, resolved, by #1688)	session-20261116T215102-33996dc2	2026-11-16T22:11:32Z
+merge:buildiq:1686:ae6c0b98	cloud tree of 1 buildiq PRs: none; conflict 1, lint 0, red 0, moved 0, done 0	session-20261116T220905-333eed09	2026-11-16T22:11:54Z
