@@ -18260,3 +18260,4 @@ review:pipelinq:3602:e66468d4	GREEN: tests only, suite 9238 OK on PR merged with
 measure:stackiq:20261116h22	php 92.26% js 96.12% at cfe14021 (1 inherited vitest failure: facets.spec FACET_DIMENSIONS)	session-20261116T222948-81ec1395	2026-11-16T23:03:12Z
 cover:pipelinq:7f9dc8e6m3dbb:23d187f5	deferred: pipelinq has 43 open PRs	session-20261116T230116-3c4ab97b	2026-11-16T23:03:32Z
 merge:buildiq:1648:39053d1f	cloud tree of 1 buildiq PRs: merged=0 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T225636-8e1a844d	2026-11-16T23:03:39Z
+review:launchpad:1235:b9ddad8b	stale	session-20261116T222416-013d48d6	2026-11-16T23:03:38Z
