@@ -14696,3 +14696,8 @@ opencatalogi	2415	f57435cd4bed261f5a3a21a7066af9160fc83d79	GREEN	worker-48:revie
 buildiq	1641	adbfd2cca801c9cd569ed9d6e418c6f14ac1b1f1	GREEN	worker-05:review	build of rules-evaluation-for-other-apps matches its spec (callableBy list in caller scope, typed command answered never thrown, actions suppressed, callerApp logged; refusal clause split into REQ-BQRX-003 unchanged in meaning); phpunit 3352, 1 failure ExportZipGoldenTest inherited; vitest 4725 pass; phpstan/phpcs clean
 humaniq	872	a3d94bb2dd2fdb56d8db5354fe8b51a30e1f	REVERIFY	worker-27:merge	verdict sha is not the head: head is a3d94bb2dd2fdb56d8db5354fe8b51a30e1fb477
 opencatalogi	2725	80cedf65de564b418d9638a3dd64a5d87cc5390b	RED	merge3:merge-gate	GATE RED floor: unit_size: 4.64 -> 4.62; unit_interfacing: 4.86 -> 4.82
+opencatalogi	2682	266a8421daa02f0831ef84218cc4d6e655217a6a	CONFLICT	merge3	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+opencatalogi	2686	e3e8f093c9bad4978dce384ca88db6ce5046306f	CONFLICT	merge3	conflicts with development; files: lib/Controller/FederationController.php 
+opencatalogi	2696	e3f1409db872a15a1465ee82cec0af0bb5c61b8a	CONFLICT	merge3	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Controller/FederationController.php 
+opencatalogi	2699	089b88bb6b60f81b991d7ab27067b8efaa76b6c3	CONFLICT	merge3	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json src/views/settings/Settings.vue 
+opencatalogi	2701	59468b61e1b8145b2d834a4e8e6fb5b16bac5eee	CONFLICT	merge3	conflicts with development; files: openspec/changes/catalogs/tasks.md 
