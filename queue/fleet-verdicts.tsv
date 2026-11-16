@@ -14102,3 +14102,12 @@ dossiq	3894	8ed2662d166b8bee07c9b1aec92ee7de29dc08cb	RED	merge3:merge-gate	GATE 
 dossiq	3936	692e66a391f55db71cf44174d6c026c8d74035e6	RED	merge3:merge-gate	GATE RED floor: unit_interfacing: 3.39 -> 3.37
 dossiq	4112	f460035edaa27b2a373b5284621c6a9b2551f321	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
 dossiq	5397	7ff72b326425d92996261dd963ddb2a0e16985c7	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+dossiq	3199	dd09a728474d3fb60fe47807bdb2371b54768a06	CONFLICT	merge3	merges clean on development alone; files: package-lock.json package.json 
+dossiq	3203	cd98b03110439fdfbc0208800dcf105fde1066e2	CONFLICT	merge3	conflicts with development; files: package-lock.json package.json 
+dossiq	3954	bf91e1b82b36690bae861fc634cff4afeb3dcf0f	CONFLICT	merge3	conflicts with development; files: .procedure-code-baseline.json lib/Repair/BackfillWooPublicationState.php lib/Service/Publication/SourceCollectionReturn.php lib/Service/WooPublicationService.php 
+dossiq	3955	0024f3604962e47b6cab4690ee4ef20ee317dedc	CONFLICT	merge3	conflicts with development; files: .procedure-code-baseline.json lib/Service/Publication/OutcomePublisher.php lib/Service/Publication/SourceCollectionReturn.php 
+dossiq	3957	b44c6a4fc878d30dd53e6c9a2213510c1b5f4c12	CONFLICT	merge3	conflicts with development; files: .procedure-code-baseline.json lib/Repair/BackfillWooPublicationState.php lib/Service/Publication/CasePublicationState.php lib/Service/Publication/OutcomePublisher.php tests/Unit/Woo/WooPublicationCarr
+dossiq	4887	f530c6e6fdf6c17a9604f2f9802142bf4f4b9b67	CONFLICT	merge3	merges clean on development alone; files: tests/Unit/AppInfo/DraftIsNotReceivedRegistrationTest.php 
+dossiq	5266	db2ab4a5d77285e0fea2aeb9146db1b295c7a2c0	CONFLICT	merge3	conflicts with development; files: src/menu-layout.simple.json 
+dossiq	5338	4924e28da77fe70cbc4717ee9ce03ca31c2b2289	CONFLICT	merge3	conflicts with development; files: lib/Service/Task/EngineTaskGateway.php 
+dossiq	5396	861d4d0ae94c2884fa5de7c4df9274a64ae551d9	CONFLICT	merge3	conflicts with development; files: composer.lock 
