@@ -17827,3 +17827,4 @@ cover:stackiq:9ac19b3am2187:4168ade6	PR #2002: 21 tests for CatalogExportGate an
 cover:stackiq:9ac19b3am2187:be0dcca9	PR #2003: lib/Mcp 88.7% -> 99.5% (4 tests + @uses fix), suite 3822 -> 3826 OK	session-20261113T213325-fbdd5614	2026-11-16T21:06:13Z
 verify:keepiq:1849:174dd0fc	GREEN 1849	session-20261116T202154-fbc59c50	2026-11-16T21:06:16Z
 lane:arch5:integriq:next-integriq-r1	failed: permission: recording the review of my own PR #3678 for landing was refused; PR open at 31eb3920f (estimate 3.57-3.65 -> 3.61-3.71, suite SAME-FAILS, phpstan 0, phpcs/phpmd same, idor same), not landed	session-20261116T205047-b299a486	2026-11-16T21:06:28Z
+cover:stackiq:9ac19b3am2187:60c2c265	PR #2004: 6 tests (ControllerRegistrar, Contactpersonen updateUserGroups refusals, Settings 401s); Controller 97.6%->98.3%; suite 3822->3828 green	session-20261116T204203-b8dccc50	2026-11-16T21:06:54Z
