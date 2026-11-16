@@ -17050,3 +17050,4 @@ merge:opencatalogi:2699:a5342ed8	cloud tree of 2 opencatalogi PRs: merged=0 red=
 review:hermiq:1750:4656eeb3	GREEN: phpunit 5380 OK, vitest 1556 passed on the PR merged with development	session-20261116T174323-ba3ec1dc	2026-11-16T18:06:19Z
 verify:learniq:2555:ab4c967d	GREEN 2555, GREEN 2558 (no new failures)	session-20261116T173227-3f62e794	2026-11-16T18:08:13Z
 cover:openregister:7350e3efm9dc5:32df05fd	added to open PR #10587 (budget: 188 open PRs): 38 tests, 6 classes in lib/Files/Service failure paths, tests/Unit/Files 159->197 green	session-20261116T173213-356ea2aa	2026-11-16T18:09:08Z
+merge:stackiq:1930:88fc58f9	merge3 tree of 5 stackiq PRs: merged=5 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-16T18:09:39Z
