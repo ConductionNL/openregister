@@ -4715,3 +4715,4 @@ versioniq	723	22fd2bc279eddbdcd0147e0aff717813b8a27a9f	MERGED	worker-51	GATE OK 
 keepiq	1852	d2699a90a616df3fa29d27bd9ca10e4ba500b213	MERGED	worker-35	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.58 holds at 3.59
 keepiq	1853	a523f5b408d71ea94110831e7034cc688ac02123	MERGED	worker-35	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.58 holds at 3.59
 humaniq	1168	5ca7de0c7f217ee13df2098c98dba11a73482c4c	SKIP	worker-57	GATE UNMEASURED floor_check exit 5: [maintainability-floor] TOOLING: estimator tooling unavailable: [gate-122] sig-maintainability: tooling: /root/.cache/hydra-gates/tools/jscpd-4.0.5/node_modules/.bin/jscpd reports jscpd ?, not the pinned 4.0.5
+buildiq	1641	848d47f23922be4e4d3443d404a07ae1b8f4bd38	MERGED	worker-24	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.91 holds at 3.91
