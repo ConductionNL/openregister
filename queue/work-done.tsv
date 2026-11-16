@@ -18233,6 +18233,7 @@ fix:launchpad:1223:e2a4d5a1	conflict resolved, pushed 430e98a0; merge lock busy,
 cover:decidiq:a5f973bbm56fe:58192586	added to #2236 (over PR budget, 46 open): Records 100% lines, 6 risky tests fixed; suite 4757 OK	session-20261116T224848-94c15fcc	2026-11-16T22:52:28Z
 fix:launchpad:1230:bb0ec0bb	conflict resolved, pushed b2fce999 (suite green); lock held elsewhere, REVERIFY queued	session-20261116T224521-2bf04f6e	2026-11-16T22:52:32Z
 cover:launchpad:fb10c50fm88bd:33952d4b	PR #1250: CalculatedFields 89.41% -> 98.52%, 14 tests	session-20261113T213325-5a151438	2026-11-16T22:52:56Z
+build:buildiq:logic-email-and-webhook-triggers:c2	PR #1689 (stacked on #1648): T01-T05, T07 built; T06 e2e and T08 openspec validate left (need live stack / CLI); suite 3498->3524 tests, no new failures	session-20261116T222541-71f2d228	2026-11-16T22:53:31Z
 cover:keepiq:c967a31fmaddd:0d67c1f3	already done: lib/Service/Siem/ fully covered (193/193 statements, local pcov run agrees), no PR	session-20261116T222655-da719429	2026-11-16T22:53:33Z
 fix:launchpad:1229:b9834840	fixed: vault source held to the export creator (owner or admin); pushed e2a90392, REVERIFY queued	session-20261116T224625-4fd1a21f	2026-11-16T22:53:45Z
 fix:opencatalogi:2674:2136f4a7	pushed 05957a6ee: 4 of 5 review blockers fixed, component_independence floor still short (93.4 vs 94.3); REVERIFY queued, not landed	session-20261116T223913-6956ff41	2026-11-16T22:54:06Z
