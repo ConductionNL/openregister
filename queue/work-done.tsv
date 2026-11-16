@@ -16629,3 +16629,4 @@ merge:buildiq:1583:f571cd76	unmeasured: static.developer.overheid.nl (api.osv.de
 fix:integriq:3564:da7832e5	fixed: migrated 5 openregister calls to main's API, pushed 0c8819d0, REVERIFY queued	session-20261116T150938-2294e41a	2026-11-16T15:31:35Z
 merge:learniq:1882:6267c134	cloud tree of 4 learniq PRs: merged=0 red=0 fail=0 skip=1; conflict 3, lint 0, red 0, moved 0, done 0	session-20261116T150915-6a97321b	2026-11-16T15:32:19Z
 merge:humaniq:606:4e10fdf7	unmeasured: static.developer.overheid.nl (proxy 403); 8 IN approved, 0 merged, 872 MOVED	session-20261116T150930-eac38835	2026-11-16T15:33:41Z
+fix:versioniq:711:dc3fffc4	floor restored locally (complexity +0.01, interfacing +0.05 vs development); new head 052268bf; REVERIFY	session-20261116T144202-f2b26030	2026-11-16T15:33:57Z
