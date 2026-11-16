@@ -15519,3 +15519,4 @@ verify:pipelinq:3882:cddb1eed	GREEN 3882: no new failures (php 8987 ok; vitest 1
 fix:buildiq:1256:342dece0	sbom already current (dev-only lock change); merged development, pushed	session-20261116T062050-add210c3	2026-11-16T06:49:17Z
 fix:buildiq:1654:a81c7ddf	conflict resolved (l10n keep both); new head ac924f1b	session-20261116T062123-fa6fb6b0	2026-11-16T06:49:27Z
 fix:planninq:918:90a6ddf0	sbom already current (dev-only dep); merged development, unit green; new head 6289a597	session-20261116T062050-3a7e109c	2026-11-16T06:49:39Z
+fix:shillinq:3088:13b45b93	fixed RED: two saves moved to ObjectSaveOptions; unit 12244 green; new head 27e4a523	session-20261116T062120-691af8f7	2026-11-16T06:49:52Z
