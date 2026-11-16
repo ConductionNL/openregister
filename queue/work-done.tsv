@@ -16582,3 +16582,4 @@ review:shillinq:2096:a1c73fc3	GREEN: unit 12235 OK, vitest 31 OK, no behaviour w
 review:shillinq:2083:4b847a69	GREEN	session-20261116T144202-f2b26030	2026-11-16T15:16:43Z
 fix:hermiq:1174:296b7354	failed: gate false RED - dev-only lock bump leaves sbom unchanged (regen --check current), merge_gate requires an sbom diff; branch updated to 0ac44763	session-20261116T150749-2f742a8d	2026-11-16T15:17:28Z
 fix:shillinq:2048:0e551132	failed: nextcloud/ocp is a dev dependency, regen-sbom.sh leaves sbom.cdx.json unchanged (633 components, current); the gate's 'lockfile changed without sbom.cdx.json' rule cannot be met without an artificial change; needs a gate exception for dev-only lock changes	session-20261116T144202-f2b26030	2026-11-16T15:17:45Z
+fix:larpinq:1050:5f2419c4	conflict resolved (merged development, kept both sides), pushed f3c30b43; REVERIFY queued	session-20261116T145220-87e5504e	2026-11-16T15:17:46Z
