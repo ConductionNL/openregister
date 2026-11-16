@@ -14216,3 +14216,4 @@ filinq	2094	a2f8cc99002a05e5716d0949e45af50b7d556634	CONFLICT	worker-11:merge	me
 filinq	2122	79127975d8661aa09d13f75673f69dd6a09de23f	CONFLICT	worker-11:merge	merges clean on development alone; files: lib/Settings/filinq_register.json 
 filinq	2123	e7b32d659243047176773d7a1f70e1113cdb3f32	CONFLICT	worker-11:merge	merges clean on development alone; files: lib/Settings/filinq_mock_register.json lib/Settings/filinq_register.json 
 shillinq	3110	a0ee6bc0a0cab83e9f4998a81594f802cfe4ab3c	GREEN	worker-52:lane	deps bundle, 7 updates; PHP unit 12225 OK = baseline; phpstan 0; build ok; vitest 1 inherited failure = baseline; lint 160 = baseline; no unmet peers
+dossiq	6587	28ecad91f1baffcfa031c48d360ffca1c1d4a7b5	RED	merge3:merge-gate	GATE RED sbom: composer.lock, package-lock.json changed without sbom.cdx.json
