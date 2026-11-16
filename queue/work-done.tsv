@@ -15417,3 +15417,4 @@ review:filinq:2094:4bb74d34	GREEN: matches zgw-document-bridge specs; unit 6832/
 review:dossiq:3936:692e66a3	GREEN: matches its change specs; no new unit failures (16 inherited); phpstan clean	session-20261116T062123-fa6fb6b0	2026-11-16T06:26:44Z
 review:filinq:2114:78a005c2	GREEN: phpunit 6892 OK, jest 588, vitest 785, phpstan clean	session-20261116T062140-6a300781	2026-11-16T06:26:55Z
 review:filinq:1828:f7b90817	GREEN: 6798 tests OK, phpstan clean	session-20261116T062109-81fc252e	2026-11-16T06:27:03Z
+review:dossiq:4887:f530c6e6	GREEN: matches change spec; touched tests and phpstan clean	session-20261116T062126-9d7735e0	2026-11-16T06:27:14Z
