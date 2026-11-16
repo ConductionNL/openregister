@@ -17296,3 +17296,21 @@ merge:shillinq:1899:fdfb0220	unmeasured: gitdocumentatie.logius.nl (adrvalidator
 cover:openregister:7350e3efm9dc5:9b457b26	stacked on #10587 (open-PR budget: 188 open): 0195d21 lib/Service/Flow +27 tests, 6 classes, 5 risky tests fixed; Flow-only line coverage 98.19->98.73%; suite 2814->2841, no new failures	session-20261116T184841-a3bc3002	2026-11-16T19:08:21Z
 review:filinq:2072:174b63c7	stale	session-20261116T184841-a3bc3002	2026-11-16T19:08:54Z
 cover:dossiq:069ee2d6m9d1b:60c2c265	stacked on #6203 (open-PR budget 41): 8 controllers, +146 tests, lib/Controller 88.7% -> 94.6%	session-20261116T184907-cd59fdf4	2026-11-16T19:09:45Z
+merge:keepiq:1842:2787f816	cloud tree of 4 keepiq PRs: merged=4 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T184852-b8356331	2026-11-16T19:10:00Z
+review:learniq:2507:c5edc819	GREEN: matches specs, no new failures (1 inherited); header conflict with development in a test stub	session-20261116T190656-a33397e6	2026-11-16T19:10:35Z
+fix:filinq:2072:5c869835	failed: permission (fix pushed, head 21673d4a, tree green 6962/0; recording own review refused; REVERIFY queued)	session-20261116T185100-d2f0c6eb	2026-11-16T19:10:55Z
+build:buildiq:forms-live-values-and-checks:r3	PR #1677: T11 built (BuildiqFormPage wrapper, 6 vitest); T07 e2e left; vitest 4744/4744	session-20261116T184921-a7624794	2026-11-16T19:11:42Z
+review:filinq:2122:e57f317b	GREEN (conflicts with development: 7 files); suite 6921/0 failures	session-20261116T184841-a3bc3002	2026-11-16T19:12:00Z
+fix:shillinq:1900:f0577318	fixed CONFLICT: merged #1899 head and development in, unit 12246 OK; new head 0046f1c5, REVERIFY (not landed: merge gate unmeasured)	session-20261116T181151-999832c6	2026-11-16T19:12:09Z
+cover:openregister:7350e3efm9dc5:716923f8	added to PR #10587 (open-PR budget, 188 open): OutsideCustodyTest + risky-metadata fix on 11 tests; lib/Service/Credential 85.4%->96.5%, 628->653 tests green	session-20261116T184831-8be58c40	2026-11-16T19:12:22Z
+review:dossiq:6203:af854a0c	stale	session-20261116T191156-bbdb7add	2026-11-16T19:12:36Z
+build:shillinq:sales-usage-billing:r2	already done: every code task ticked on development; only 3.2 (Playwright run on a live instance) is open, spec file already written	session-20261116T181151-999832c6	2026-11-16T19:12:45Z
+review:versioniq:723:22fd2bc2	GREEN: 0 new failures (2 inherited), vitest green; minor concern on availability failure after a saved sweep	session-20261116T190918-81e43f73	2026-11-16T19:12:47Z
+fix:shillinq:2071:abd73b77	no change: merges clean on development; conflict only with unlanded #1899 in the tree (register-versions lock); REVERIFY queued	session-20261116T181151-999832c6	2026-11-16T19:13:17Z
+build:filinq:dossier-management-ui:r2	partial: PR #2149 docs for 4.5; left: 4.5 screenshots (live instance) and openspec strict-validate warnings (spec wording)	session-20261116T184841-a3bc3002	2026-11-16T19:13:33Z
+verify:planninq:1202:d7e7e9ea	GREEN 1202 (phpunit 1232/0, vitest 3578/0)	session-20261116T185100-d2f0c6eb	2026-11-16T19:13:30Z
+cover:dossiq:069ee2d6m9d1b:8ed5443b	failed: lib/Kernel/Contracts holds interfaces only, 0 executable statements in measured coverage (f293b77); nothing to cover	session-20261116T191156-bbdb7add	2026-11-16T19:13:36Z
+fix:shillinq:2083:4b847a69	no change: merges clean on development; l10n conflict only with unlanded tree PRs; REVERIFY queued	session-20261116T181151-999832c6	2026-11-16T19:13:44Z
+fix:shillinq:1958:191f6a9e	no change: merges clean on development; conflict only with unlanded tree PRs; REVERIFY queued	session-20261116T181151-999832c6	2026-11-16T19:14:03Z
+build:shillinq:platform-administration-import:r2	already done: every code task ticked on development; only 3.2 (Playwright run on a live instance) is open, spec file already written	session-20261116T181151-999832c6	2026-11-16T19:14:24Z
+cover:pipelinq:7f9dc8e6m3dbb:50cc8442	added to PR #3659 (open-PR budget, 45 open): fixed @uses on ContainerObjectFind/Save tests; lib/Util/*.php 90.6%->99.6%, 490 tests green	session-20261116T184831-8be58c40	2026-11-16T19:14:32Z
