@@ -4802,3 +4802,4 @@ opencatalogi	2755	b425331e9095f8f2c6838f5d39a71332c45fcf54	MERGED	worker-53	GATE
 hermiq	1750	ec9bd2f685487749c8745112577fa94a77a6734b	RED	worker-25	GATE RED floor: unit_interfacing: 2.57 -> 2.55
 versioniq	756	1b99dcb20ab396a0b3ce3b88937e9e56c86cc506	MERGED	worker-43	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.97 holds at 4.26
 versioniq	759	f4c83864c8d8ea20135b5aabca8bf5c4807de192	MERGED	worker-43	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.97 holds at 4.27
+learniq	2521	a3328ae41eeefd78e64c99c525be0b47ab1e0455	MERGED	worker-10	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 3.99
