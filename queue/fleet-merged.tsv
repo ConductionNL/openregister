@@ -3839,3 +3839,4 @@ versioniq	732	edb0233ba6169cf4419f02b6bed018d9f56875ee	SKIP	worker-50	GATE UNMEA
 versioniq	505	aeceef74a654df9ff29acf01994dd6bb8cbe10c2	SKIP	worker-50	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator, secretscanning; this is not a pass
 versioniq	725	c21158724c57858896fee8e8b6a247070aec5026	SKIP	worker-50	no APPROVE review at this head
 versioniq	732	edb0233ba6169cf4419f02b6bed018d9f56875ee	SKIP	worker-50	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator, secretscanning; this is not a pass
+launchpad	787	e3f05384134362146c7d467811c03fd9ec82059b	RED	worker-12	GATE RED floor: overall: 4.56 -> 4.53; duplication: 4.66 -> 4.63; unit_complexity: 4.72 -> 4.68; unit_interfacing: 3.59 -> 3.52; module_coupling: 4.73 -> 4.69
