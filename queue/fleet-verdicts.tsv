@@ -13789,3 +13789,7 @@ launchpad	757	674cfd98d8006ae4c69b2e9bf9b14cdeec3e15bb	RED	worker-12:merge-gate	
 launchpad	761	ca2815b851deb1969d5b23ac0c29185819391d2e	RED	worker-12:merge-gate	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
 launchpad	819	c5c80a07dc500fcc4e5064cd5126241a9f4bf32a	RED	worker-12:merge-gate	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
 launchpad	1098	08b6144744978ee052f69f5452afa076f8d9d101	RED	worker-12:merge-gate	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+launchpad	832	99de3089fc0402fb8ef981069920ec8d1b2ae912	REVERIFY	worker-12:merge	verdict sha is not the head: head is 5cb157b3a864251534d0e0eea939fb8029de3108
+launchpad	1230	30aa8e54d3338f13eaba6b2b6fff71f023cb727a	REVERIFY	worker-12:merge	verdict sha is not the head: head is 12d856f3048ccf1a557406e217061c6b395172ed
+launchpad	1234	0bc43ee2d44d22dfe4fdc17735d6ae97b6aebf80	REVERIFY	worker-12:merge	verdict sha is not the head: head is 6a94a1fa7ca29a5267bfc77210f29d21bd36c68e
+launchpad	1235	5447328b2d80008ddcd0d674c30fc6e7	REVERIFY	worker-12:merge	verdict sha is not the head: head is fe672232fedcfa4801d0f4ede0e8e2e3fec2a58d
