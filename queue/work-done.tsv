@@ -18357,3 +18357,4 @@ verify:hermiq:1496:f7853995	CONFLICT #1496 (ProviderFactory.php)	session-2026111
 merge:filinq:2072:4619e6f4	cloud tree of 1 filinq PRs: merged=0 red=1 (gate floor unit_complexity 4.47->4.40) fail=0 skip=0	session-20261116T232033-3ca59164	2026-11-16T23:29:02Z
 verify:decidiq:2190:647d8817	CONFLICT #2190 (8 files incl. OndermandaatGuardService.php)	session-20261116T232623-066b53c9	2026-11-16T23:29:05Z
 verify:decidiq:2171:994e7d37	CONFLICT #2171 (5 files)	session-20261116T224246-d9bde508	2026-11-16T23:30:10Z
+verify:decidiq:2189:d5e92fa9	CONFLICT #2189 (lib/Service/MeetingPackageService.php lib/Settings/profiles/municipality.json )	session-20261116T232623-066b53c9	2026-11-16T23:30:41Z
