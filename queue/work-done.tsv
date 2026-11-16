@@ -16876,6 +16876,7 @@ merge:stackiq:1931:17ea89e6	cloud tree of 1 stackiq PRs: none; conflict 1, lint 
 build:portaliq:site-home-follows-the-school-boards	already done: every code task ticked on development; open tasks are live checks only, left	session-20261116T170823-40772b73	2026-11-16T17:39:28Z
 build:portaliq:site-catalogue-follows-the-school-boards	already built: tasks 1-4 ticked and on development (#1424); only task 5 live check left	session-20261116T170545-a4f14b83	2026-11-16T17:39:47Z
 build:portaliq:site-links-the-theme-bridge	already done: every code task ticked on development; open tasks are live checks only, left	session-20261116T170823-40772b73	2026-11-16T17:39:42Z
+build:portaliq:mail-templates-admin-screen	no code left: T01-T06 already built on development (Oct 8); open T07/T08 need a live instance and Playwright	session-20261116T173306-d04a65dc	2026-11-16T17:40:23Z
 build:portaliq:update-row-action-condition	already done: every code task ticked on development; open tasks are live checks only, left	session-20261116T170823-40772b73	2026-11-16T17:39:52Z
 merge:opencatalogi:2655:bc7e84a2	cloud tree of 1 opencatalogi PRs: none; conflict 1, lint 0, red 0, moved 0, done 0	session-20261116T173211-a3411be5	2026-11-16T17:40:22Z
 merge:portaliq:2531:c19fc384	cloud tree of 1 portaliq PRs: merged=0 red=0 fail=0 skip=1; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T172806-3ef5ead7	2026-11-16T17:40:11Z
@@ -16883,5 +16884,7 @@ build:portaliq:site-breadcrumb-follows-the-school-boards	already done: all code 
 build:portaliq:site-callouts-steps-and-tables-follow-the-boards	already built: tasks 1-4 ticked and on development; only task 5 live check left	session-20261116T170545-a4f14b83	2026-11-16T17:40:29Z
 review:shillinq:3078:33420e1f	GREEN: unit 12278 tests 0 failures, vitest 9/9, eslint clean	session-20261116T173217-7353a3fb	2026-11-16T17:40:31Z
 build:portaliq:write-record-names-the-mandate	already done: every code task ticked on development; open tasks are live checks only, left	session-20261116T170823-40772b73	2026-11-16T17:40:55Z
+build:portaliq:staff-revoke-one-session	already done: T01,T02 on development since #1647; only T03 (live check) left	session-20261116T173306-f68895a7	2026-11-16T17:41:26Z
 fix:learniq:2507:82c09d5c	unmeasured: static.developer.overheid.nl (fixed interfacing floor + SPDX stub header; new head f29e84b71d, APPROVE recorded, REVERIFY queued)	session-20261116T171010-393e4bc2	2026-11-16T17:41:23Z
 build:portaliq:staff-resend-an-invitation	already built: T01-T03 ticked and on development; only T04 live check left	session-20261116T170545-a4f14b83	2026-11-16T17:41:33Z
+build:portaliq:site-shared-page-blocks	already done: only live/e2e tasks left (2)	session-20261116T172806-3ef5ead7	2026-11-16T17:41:40Z
