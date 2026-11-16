@@ -701,3 +701,4 @@ versioniq	747	8da04998d00c69464de0c2353adf90a19f327d90	APPROVE	worker-21	Quick; 
 shillinq	2099	5c0e743f4dd880f64efd676037d5ccb61138f57a	APPROVE	worker-03	Strict (token setting); no blockers; secret field is sent only when typed (nc-vue 2.181 CnSettingsFieldsSection), so saveAll does not clear the stored token; same admin-only endpoints; gate-23/24 failures are on untouched files
 learniq	1881	57e4a54a930da5eae3da28757ba52f6ed85db2ec	APPROVE	worker-46	Standard; no blockers; implements past-course-days-drop-off: upcoming follows last course day, hourly job re-derives, tests added
 learniq	2557	572f94324c877a9dd48b0657cf3d3b88563c6c90	APPROVE	worker-46	Quick; no blockers; dev-only psalm 5->7.5 bump, lock consistent; psalm 7 may report new findings in the score step
+learniq	2559	64fd61a80179557f884440e26b650fd61bb8122b	APPROVE	worker-46	Quick; no blockers; dev-only webpack-dev-server 6.1.0
