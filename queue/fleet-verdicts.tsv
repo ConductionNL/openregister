@@ -14062,6 +14062,14 @@ opencatalogi	2655	05605d932ec889bd630e9916ac9e044664837e19	REVERIFY	worker-47	re
 stackiq	1978	0e16289a82d0c3f5edcf4674448e72031b372f93	REVERIFY	worker-07	floor fix partial: dropped the test-only http param of createViewDocument (unit_interfacing 4.68->4.69, floor 4.72); rest is PHP: ViewController ctor 6->8 params (>6 bucket) and new 3-param units in ViewDocumentGateway/ViewDocumentContent push the >2 share to 0.1258 (limit 0.125); needs the document collaborators combined; vitest 2832 pass, 1 unrelated fail facets.spec FACET_DIMENSIONS; new head 315e616b2d61a4366c9527185a4c1dfeab77a8f0, verify it
 shillinq	3109	95bf71e1b5b49d1ade835e3ae9eb2b94df7af954	REVERIFY	worker-45	new PR: SPDX header on one test stub, restores spdxheaders 5 stars on development (every shillinq merge is RED on that floor until it lands); verify it
 larpinq	1053	fa6976fd13ab5e8f301a037ce834dd3d1d818f9f	REVERIFY	worker-11	branch was current with development (conflict was with a sibling PR only); seeded three eventCareRecord demo objects for the demo-data floor; one-PR tree green (1002 tests, 0 new failures), Strict review APPROVE at new head; land skipped: merge gate checker_floor unmeasured (adrvalidator); new head 1a318455a6c9ec04db103a7218bdea6fc0b0d890, verify it
+portaliq	1353	dc6ca37da68657461ec6ee5cdda5d90d471c6312	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+portaliq	1764	b3d8a23ef94e8ac730c7ba0bb92bfdc95adc8c30	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+portaliq	1765	065fabf8c9c39cac3f4bb60b474eb3c6dcb5e96e	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+portaliq	1766	23513ec0a91d2cbac220fce53fd5a5e18f1e47ba	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+portaliq	1768	5560c998c1377d82b0b5fc84edd1eadcd8473571	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+portaliq	1769	91f4b0df6c650ba48d9f0aaf4a3559074fd97b13	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+portaliq	1982	ebea533f0f3f8c061e63c23de231ae5193517228	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+portaliq	2349	b92b6364b5ba81896e5557cd7c616f864672f87a	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
 pipelinq	2501	ca4bf396c0dff715566fe9c093916a203257b037	CONFLICT	merge3	merges clean on development alone; files: composer.lock 
 pipelinq	2969	17a6a9c48ec737b47d9ede30b35b2e28d5b164ea	CONFLICT	merge3	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
 pipelinq	3152	6f459260fe0cf059f385fdb47807cd298cd8fcb8	CONFLICT	merge3	conflicts with development; files: lib/Service/Provider/MessageDispatchTrait.php 
