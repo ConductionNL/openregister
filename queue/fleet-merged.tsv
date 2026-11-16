@@ -4160,3 +4160,4 @@ learniq	2558	9ac2277341d2b2d3bdbaed9aeb9af44a59334830	SKIP	worker-02	no APPROVE 
 learniq	2559	db446f193443038edcd27938ddb8aeef420ca005	SKIP	worker-02	no APPROVE review at this head
 stackiq	1991	31e2224c5b0f2e1105b1556e2ef7efc3d06f9474	RED	worker-07	GATE RED checker floor: spdxheaders stars: 5 -> 4
 keepiq	1792	af22b4ea9e8110c436553126d94f748ee8cd97ad	RED	worker-37	GATE RED checker floor: secretscanning: pass -> fail; secretscanning stars: 5 -> 1
+opencatalogi	1888	3c646648f528b3809be689a76e9dacb02ccb4ec4	SKIP	worker-11	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
