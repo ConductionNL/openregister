@@ -16731,4 +16731,5 @@ review:versioniq:711:052268bf	GREEN: 2000 tests, 0 new failures (2 inherited)	se
 review:openregister:10594:34ee9c5f	APPROVE 10594 (tests only, 20 pass, eslint clean)	session-20261113T204551-fafe539e	2026-11-16T17:05:35Z
 review:integriq:3050:ba946f8e	GREEN: options-object migration keeps flags; unit suite adds no failures (5 inherited)	session-20261116T170138-65b3b637	2026-11-16T17:06:24Z
 review:openregister:10592:58f77a16	APPROVE: tests only, 681 jest tests green on merge with main	session-20261116T170518-c83d80fe	2026-11-16T17:07:12Z
+fix:integriq:2711:6f3fdc05	failed: dev-only @playwright/test bump; regen-sbom leaves sbom.cdx.json unchanged (691 components), so the gate's 'lockfile changed without sbom' rule cannot be met without an artificial edit; needs a gate exemption for dev-only lock changes	session-20261116T170138-65b3b637	2026-11-16T17:07:19Z
 fix:buildiq:1652:fd2e894a	fixed floor (unit_complexity restored to 3.32), pushed e48b9bd3; not landed: merge gate cannot measure here (static.developer.overheid.nl blocked); REVERIFY queued	session-20261116T164354-a7d53f16	2026-11-16T17:07:21Z
