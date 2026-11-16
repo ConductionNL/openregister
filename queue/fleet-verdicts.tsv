@@ -15227,3 +15227,4 @@ larpinq	1050	d2d372bb8b6fa72cf4753b520d003adb2fa6efd4	RED	worker-42:merge-gate	G
 learniq	1881	df81c10bcc93f8f5dc2925ea9f52c6163d4ff2d4	CONFLICT	worker-23:merge	merges clean on development alone; files: tests/Stubs/Contract/ObjectServiceInterface.php 
 learniq	2565	64d9b4285e2a6a91d6595d7755e11a381f160d41	CONFLICT	worker-23:merge	merges clean on development alone; files: tests/Stubs/Contract/ObjectServiceInterface.php 
 opencatalogi	2686	75f5b243a5bce7e8320525bf3f8f4842b2893a66	REVERIFY	worker-23	merged development in (clean; publiccode.yml); new head 84ac3f44ccfadafde8561479017d418e5d68f55e, verify it
+versioniq	721	bc63b63642280456458fe8760474fe1937cafa8a	CONFLICT	merge3	merges clean on development alone; files: openapi.json 
