@@ -17852,3 +17852,4 @@ review:versioniq:691:57ab5aa2	691 already on development (57ab5aa2 in 175397de);
 lane:arch5:shillinq:next-shillinq-r5	failed: permission: recording the APPROVE review of #3126 was refused (PR holds this worker's commits); PR #3126 opened, tree green (12345 tests, 0 new), GREEN verdict recorded for an independent merge task, lock released, r6 queued	session-20261116T203338-4b40ff15	2026-11-16T21:18:24Z
 merge:hermiq:1735:2d8a0336	merge3 tree of 6 hermiq PRs: merged=2 red=1 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-16T21:19:05Z
 review:versioniq:691:57ab5aa2	stale	feeder	2026-11-16T21:17:16Z
+lane:arch5:larpinq:next-larpinq-r2	PR #1078, GREEN (4.17-4.32 -> 4.26-4.39, includes #1077)	session-20261116T204203-b8dccc50	2026-11-16T21:19:29Z
