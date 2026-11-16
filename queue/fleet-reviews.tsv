@@ -18,3 +18,4 @@ launchpad	653	7dd62332f078073df03444ab4c6c6b1f2c66f246	APPROVE	worker-12	Quick; 
 launchpad	763	ac59f2930cb25b439f9fdffbe39af0aa2b8b0f7e	APPROVE	worker-12	Quick; no blockers; dev-only vitest/coverage-v8/ui 5.0.2; tree php suite no new failures, vitest 5 run 2578 passed
 launchpad	832	5cb157b3a864251534d0e0eea939fb8029de3108	APPROVE	worker-12	Quick; no blockers; openspec tasks.md ticks and archive moves only, no code; tree suite no new failures
 launchpad	755	7e918f87d18e313d38cf536b22ef077d2faaca26	APPROVE	worker-12	Quick; no blockers; dev-only vitest family to 5.0.2 (vitest 5 suite 2578 passed in an earlier tree); php tree no new failures
+launchpad	757	674cfd98d8006ae4c69b2e9bf9b14cdeec3e15bb	APPROVE	worker-12	Quick; no blockers; dev-only @typescript-eslint/parser minor bump
