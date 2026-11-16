@@ -18486,3 +18486,4 @@ verify:opencatalogi:2671:78e38071	CONFLICT #2671 (10 files)	session-20261116T233
 verify:launchpad:1216:f8adb1a6	CONFLICT #1216 (15 files; change may already be on development)	session-20261116T232951-07569878	2026-11-16T23:58:13Z
 verify:launchpad:1227:40a50cad	1227 CONFLICT	session-20261116T230531-f9095b0f	2026-11-16T23:58:33Z
 verify:opencatalogi:2685:434bb906	CONFLICT #2685 (Sitemap*, l10n)	session-20261116T233901-7abe1a78	2026-11-16T23:58:46Z
+lane:arch5:shillinq:next-shillinq-r11	skipped: shillinq lane stopped by the coordinator (22:47); r10 result is #3135 GREEN	session-20261116T224609-c0ad2be4	2026-11-16T23:58:59Z
