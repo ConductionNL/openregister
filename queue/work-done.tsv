@@ -16435,3 +16435,4 @@ merge:learniq:1901:4c7512c3	cloud tree of 1 learniq PRs: merged=0 red=1 fail=0 s
 merge:pipelinq:3835:dfaa7ec0	merge3 tree of 1 pipelinq PRs: merged=0 red=1 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-16T14:26:46Z
 review:integriq:2711:6f3fdc05	GREEN: dev-only playwright bump, vitest 2387/2387 pass	session-20261116T142703-f07e9998	2026-11-16T14:28:58Z
 review:humaniq:1095:ac05e3a9	GREEN: dev-only psalm bump, suite 4405 OK	session-20261116T142710-649b1d69	2026-11-16T14:29:06Z
+review:integriq:3564:da7832e5	BLOCK: new openregister calls use removed named-arg API (main); suite no new failures	session-20261116T142700-f4d651ea	2026-11-16T14:30:37Z
