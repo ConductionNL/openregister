@@ -17435,3 +17435,4 @@ build:larpinq:forms-registration-is-checked-at-binding	partial: PR #1074 builds 
 cover:dossiq:069ee2d6m9d1b:ea81adeb	stacked on #6203 (open-PR budget): lib/Service/Zgw 98.7% -> 99.9%, +29 tests	session-20261116T184907-cd59fdf4	2026-11-16T19:37:13Z
 review:decidiq:2170:80617c37	RED: 2 vitest failures in simpleMeetingPage.spec.js (widget counts not updated); PHP suite green	session-20261116T193350-bd20edd7	2026-11-16T19:37:38Z
 cover:decidiq:a5f973bbm9cda:f545d745	deferred: decidiq has 48 open PRs	session-20261116T193350-bd20edd7	2026-11-16T19:38:10Z
+lane:arch5:hermiq:next-hermiq-r1	PR #1810 opened (estimate 3.77-3.82 -> 3.79-3.83, suite green); hermiq merge lock held by another merger, GREEN verdict recorded; next-hermiq-r2 queued	session-20261116T191704-9a63be87	2026-11-16T19:38:41Z
