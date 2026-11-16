@@ -15451,3 +15451,4 @@ review:hermiq:1193:7d49a897	GREEN: sass bump, vitest 1526 pass, prod build ok	se
 review:hermiq:1133:6fd08d09	GREEN: stylelint 0 errors, vitest 1526 OK	session-20261116T062140-6a300781	2026-11-16T06:32:49Z
 merge:planninq:1070:d400a92b	merge8 tree of 12 planninq PRs: merged=3 red=6 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge8-20261115T170007-37538273	2026-11-16T06:32:55Z
 fix:learniq:2551:dad91491	development merged in, pushed 3b2c2a67; residual append-conflict only vs unmerged 2549	session-20261116T062050-add210c3	2026-11-16T06:32:59Z
+merge:planninq:725:3333abed	merge8 tree of 12 planninq PRs: merged=3 red=6 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge8-20261115T170007-37538273	2026-11-16T06:33:13Z
