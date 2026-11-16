@@ -14513,3 +14513,4 @@ stackiq	1930	9a43150cd9dda108dd4e990c92a0111e20b2542f	GREEN	worker-25:review	imp
 integriq	3649	bd9eaae6119e3b61ec891904fd1757ff228e399a	GREEN	worker-55:review	builds form-submission-registration-targets per its specs (ZGW/StUF-ZDS document legs, files read as calling app account, admin-only dry run); unit 9597 vs baseline 9535, no new failures (5 inherited); 4 touched vitest specs pass
 integriq	3059	4bb36a6bc436d992b2b565e72bed42cea5b16c1d	RED	worker-47:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
 integriq	2994	a1ae6e95cef3fbef6c2527a20dd0176d88b05ff7	REVERIFY	worker-47:merge	verdict sha is not the head: head is 672207a470cba6d332f1df141ce039272fc4624f
+stackiq	1992	6d5c12d7da6c42f6e7984bf3e02c8fd1fb2de00b	GREEN	worker-25	3718 tests, baseline 0 failures, 0 new failures; SPDX lines in a test stub only
