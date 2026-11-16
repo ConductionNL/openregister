@@ -79,6 +79,29 @@ class RuleColumns {
 	private const PROPERTY_KEY = '/^[A-Za-z0-9][A-Za-z0-9_-]*$/D';
 
 	/**
+	 * Dutch/English synonym pairs for RBAC rule properties.
+	 *
+	 * A handful of Woo-domain schemas still declare these properties in Dutch
+	 * while their `authorization.read` rules (and OpenCatalogi's own
+	 * canonical Publication/Document/WooBatch schemas) reference the English
+	 * name. {@see effectiveKey()} falls back to the schema's own declared
+	 * synonym rather than blindly converting a name the schema does not
+	 * actually carry a column for.
+	 *
+	 * @var array<string, string>
+	 */
+	private const PROPERTY_SYNONYMS = [
+		'publicationDate' => 'publicatiedatum',
+		'publicatiedatum' => 'publicationDate',
+		'depublicationDate' => 'depublicatiedatum',
+		'depublicatiedatum' => 'depublicationDate',
+		'decisionLetter' => 'besluit',
+		'besluit' => 'decisionLetter',
+		'inventoryList' => 'inventarislijst',
+		'inventarislijst' => 'inventoryList',
+	];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param Schema|null $schema The schema whose table is read; without one only metadata columns are known.
@@ -100,12 +123,41 @@ class RuleColumns {
 	 * @spec openspec/specs/row-field-level-security/spec.md
 	 */
 	public function columnOf(string $key): string {
-		$name = (new RecordMetadataConditions())->columnKey(key: $key);
+		$name = (new RecordMetadataConditions())->columnKey(key: $this->effectiveKey(key: $key));
 		$name = strtolower((string)preg_replace('/([a-z0-9])([A-Z])/', '$1_$2', $name));
 		$name = (string)preg_replace('/[^a-z0-9_]+/', '_', $name);
 
 		return rtrim((string)preg_replace('/_+/', '_', $name), '_');
 	}//end columnOf()
+
+	/**
+	 * The key whose column this one actually renders to.
+	 *
+	 * A handful of Woo-domain schemas still declare a property in Dutch while
+	 * their `authorization.read` rules reference the English name, or the
+	 * reverse. Falls back to the schema's own declared synonym rather than
+	 * blindly converting a name the schema does not carry a column for.
+	 *
+	 * @param string $key The `match` key as written in the rule.
+	 *
+	 * @return string $key unchanged, or its synonym when the schema declares
+	 *                that one instead.
+	 */
+	private function effectiveKey(string $key): string {
+		if ($this->schema === null
+			|| $this->namesMetadata(key: $key) === true
+			|| $this->isDeclaredLiteral(key: $key) === true
+		) {
+			return $key;
+		}
+
+		$synonym = (self::PROPERTY_SYNONYMS[$key] ?? null);
+		if ($synonym !== null && $this->isDeclaredLiteral(key: $synonym) === true) {
+			return $synonym;
+		}
+
+		return $key;
+	}//end effectiveKey()
 
 	/**
 	 * Whether every key of a clause names a column of this table.
@@ -177,16 +229,30 @@ class RuleColumns {
 	}//end namesMetadata()
 
 	/**
-	 * Whether the schema declares this key as a property the table has a column for.
+	 * Whether the schema declares this key, or its synonym, as a property the table has a column for.
 	 *
 	 * @param string $key The `match` key.
 	 *
 	 * @return bool True when it does.
 	 */
 	private function isDeclared(string $key): bool {
+		return $this->isDeclaredLiteral(key: $this->effectiveKey(key: $key));
+	}//end isDeclared()
+
+	/**
+	 * Whether the schema declares this EXACT key as a property the table has a column for.
+	 *
+	 * No synonym fallback — {@see effectiveKey()} is the one place that resolves a synonym,
+	 * so it must consult this literal check rather than {@see isDeclared()} to avoid recursion.
+	 *
+	 * @param string $key The key as written, not yet resolved to a synonym.
+	 *
+	 * @return bool True when it does.
+	 */
+	private function isDeclaredLiteral(string $key): bool {
 		return in_array($key, self::NOT_COLUMNS, true) === false
 			&& is_array(($this->schema?->getProperties()[$key] ?? null)) === true;
-	}//end isDeclared()
+	}//end isDeclaredLiteral()
 
 	/**
 	 * The metadata columns of this table, the schema's linked types included.

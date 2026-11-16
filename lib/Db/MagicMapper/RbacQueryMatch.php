@@ -92,7 +92,7 @@ final class RbacQueryMatch {
 	public function crossOrganisationBranch(RuleColumns $columns, array $block): mixed {
 		$condition = $this->impossible();
 		if ($columns->admits(match: $block) === true) {
-			$condition = $this->matchConditions(block: $block);
+			$condition = $this->matchConditions(block: $block, columns: $columns);
 		}
 
 		return $condition;
@@ -101,16 +101,20 @@ final class RbacQueryMatch {
 	/**
 	 * Compile a match block; every condition applies.
 	 *
-	 * @param array<string, mixed> $block The match conditions.
+	 * @param array<string, mixed> $block   The match conditions.
+	 * @param RuleColumns|null     $columns The schema-bound columns a `match` key may name, so a key written
+	 *                                      in one language resolves to the column the schema actually has
+	 *                                      when it declares the property in the other. Null falls back to
+	 *                                      an unbound RuleColumns (metadata keys only).
 	 *
 	 * @return mixed The expression, or null when no condition could be built.
 	 */
-	public function matchConditions(array $block): mixed {
+	public function matchConditions(array $block, ?RuleColumns $columns = null): mixed {
 		if ($this->sql->matcher->namesUnknownMetadata(match: $block) === true) {
 			return $this->impossible();
 		}
 
-		$conditions = $this->propertyConditions(block: $block);
+		$conditions = $this->propertyConditions(block: $block, columns: $columns);
 		if ($conditions === []) {
 			$this->sql->dialect->logger->debug(
 				message: '[MagicRbacHandler] No valid match conditions built',
@@ -129,13 +133,15 @@ final class RbacQueryMatch {
 	 * rather than null, which would drop it from the AND and leak rows the find
 	 * path denies (#1953).
 	 *
-	 * @param string $property The property (camelCase or a metadata key).
-	 * @param mixed  $value    The value as written in the rule.
+	 * @param string           $property The property (camelCase or a metadata key).
+	 * @param mixed            $value    The value as written in the rule.
+	 * @param RuleColumns|null $columns  The schema-bound columns a `match` key may name. Null falls back to
+	 *                                   an unbound RuleColumns (metadata keys only).
 	 *
 	 * @return mixed The expression, or null for a value that is no condition.
 	 */
-	public function propertyCondition(string $property, mixed $value): mixed {
-		$columnName = (new RuleColumns())->columnOf(key: $property);
+	public function propertyCondition(string $property, mixed $value, ?RuleColumns $columns = null): mixed {
+		$columnName = ($columns ?? new RuleColumns())->columnOf(key: $property);
 		$resolved = $this->sql->matcher->resolveDynamicValue(value: $value);
 		if ($value !== $resolved && $resolved === null) {
 			return $this->impossible();
@@ -170,14 +176,16 @@ final class RbacQueryMatch {
 	/**
 	 * The condition of every property of a match block, in order.
 	 *
-	 * @param array<string, mixed> $block The match conditions.
+	 * @param array<string, mixed> $block   The match conditions.
+	 * @param RuleColumns|null     $columns The schema-bound columns a `match` key may name. Null falls back
+	 *                                      to an unbound RuleColumns (metadata keys only).
 	 *
 	 * @return array<int, mixed> The conditions that could be built.
 	 */
-	private function propertyConditions(array $block): array {
+	private function propertyConditions(array $block, ?RuleColumns $columns = null): array {
 		$conditions = [];
 		foreach ($block as $property => $value) {
-			$condition = $this->propertyCondition(property: $property, value: $value);
+			$condition = $this->propertyCondition(property: $property, value: $value, columns: $columns);
 			if ($condition !== null) {
 				$conditions[] = $condition;
 			}
