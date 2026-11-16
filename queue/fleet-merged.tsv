@@ -3909,3 +3909,4 @@ shillinq	1912	a7d98b523c8c9952e0731ec9f7dd99c883030cc8	SKIP	worker-45	GATE UNMEA
 shillinq	1991	29abf7fb303a9a25601637bfbbaecaeb9a1feae7	SKIP	worker-45	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
 shillinq	2048	f88b17a7a69df6279ca38720aee89560b62d975f	SKIP	worker-45	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
 shillinq	2224	ff4aa606e92e5e1b481b9d57db877beb814a2c4e	SKIP	worker-45	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
+planninq	871	c207058ef15da9886b349f626675653529593ab3	MERGED	merge8	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.66 holds at 3.77
