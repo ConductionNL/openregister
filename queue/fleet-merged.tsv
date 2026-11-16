@@ -3858,3 +3858,7 @@ launchpad	1235	fe672232fedcfa4801d0f4ede0e8e2e3fec2a58d	RED	worker-12	GATE RED c
 opencatalogi	2407	15ee026e9e5cc880f1ef5812343e2da79e65c3d1	SKIP	worker-13	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
 opencatalogi	2655	05605d932ec889bd630e9916ac9e044664837e19	SKIP	worker-13	no APPROVE review at this head
 opencatalogi	2679	22b67cf7a8a1538fe76e60f3fd0a713b896ffc06	SKIP	worker-13	no APPROVE review at this head
+decidiq	1468	7dc751fb076903e2e43ec5e7338bc901791d14a5	SKIP	worker-01	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
+decidiq	1469	09383bbcc1479f735f6f91b06b9eab2bc002c9b9	SKIP	worker-01	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
+decidiq	1474	08a18331e7494f87957cc48a01384d4bdd132036	SKIP	worker-01	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
+decidiq	1767	ef20753cf5af14ce526904d1a06b54c59bfb59fc	SKIP	worker-01	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
