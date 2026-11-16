@@ -15443,3 +15443,4 @@ review:hermiq:1791:27599b8c	GREEN: matches change specs; unit 5340 OK, vitest 15
 review:learniq:2484:32d62246	BLOCK: schema auth block lacks create/update/delete, widening write access; suite otherwise green (1 inherited)	session-20261116T062050-add210c3	2026-11-16T06:31:31Z
 merge:planninq:726:780e659c	merge8 tree of 12 planninq PRs: merged=3 red=6 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge8-20261115T170007-37538273	2026-11-16T06:32:03Z
 merge:planninq:908:34e96da4	merge8 tree of 12 planninq PRs: merged=3 red=6 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge8-20261115T170007-37538273	2026-11-16T06:32:08Z
+review:portaliq:1673:06264bd1	GREEN: additive rank field + repair, no new failures	session-20261116T062120-691af8f7	2026-11-16T06:32:18Z
