@@ -17868,6 +17868,7 @@ fix:shillinq:3110:cca3fd23	sbom already current (regen-sbom --check passes on he
 cover:pipelinq:7f9dc8e6m3dbb:0f859653	already done: lib/Flow/*.php at 100% lines (4 classes, 132/132) on development; nothing to add	session-20261116T212114-cc948c71	2026-11-16T21:23:24Z
 merge:opencatalogi:2752:3339ead3	cloud tree of 1 opencatalogi PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T211645-8f77eb91	2026-11-16T21:23:26Z
 cover:launchpad:fb10c50fmf487:d8ac3ddd	deferred: launchpad has 45 open PRs	session-20261116T211128-4ec7d28f	2026-11-16T21:23:20Z
+cover:launchpad:fb10c50fmf487:33ae6285	deferred: launchpad has 45 open PRs	session-20261116T211128-4ec7d28f	2026-11-16T21:23:38Z
 verify:buildiq:1672:42cabbe3	GREEN 1672,1679; CONFLICT 1683 (AutomationCompilerService vs 1672)	session-20261116T211521-a6f938c5	2026-11-16T21:23:44Z
 cover:dossiq:069ee2d6m9d1b:6fbba20d	added 7 tests to PR #6203 (dossiq over 40 open PRs); Starter dir stmts now fully covered; suite 18829->18836 tests, failures 19 baseline unchanged	session-20261116T211553-db0d2c78	2026-11-16T21:23:53Z
 review:shillinq:3077:6307fa1f	GREEN: unit 12358/0 failures, phpstan, eslint, vitest clean	session-20261116T211640-2352b56a	2026-11-16T21:24:18Z
@@ -17881,5 +17882,6 @@ fix:hermiq:1795:69b741d5	merged development in (clean); new head efce9000; REVER
 merge:dossiq:6613:58181149	cloud tree of 1 dossiq PRs: none; conflict 1, lint 0, red 0, moved 0, done 0	session-20261116T211650-654dd569	2026-11-16T21:25:39Z
 cover:pipelinq:7f9dc8e6m3dbb:197c84b8	already done: lib/Adapter/*.php at 100% lines (11 files, 76/76) on development; nothing to add	session-20261116T212114-cc948c71	2026-11-16T21:25:55Z
 fix:hermiq:1750:a0e29d18	conflict resolved, pushed ec9bd2f6; REVERIFY queued (merge lock held)	session-20261116T211529-39ccc7ff	2026-11-16T21:25:54Z
+cover:decidiq:a5f973bbm9cda:d528dcf0	deferred: decidiq has 45 open PRs	session-20261116T212057-3d2ff8ce	2026-11-16T21:26:00Z
 build:integriq:platform-connector-extension-kit:c5	already done: every code task ticked on PR #3589; only e2e/live verification left (not cloud-buildable)	session-20261116T211529-39ccc7ff	2026-11-16T21:26:27Z
 review:shillinq:1899:acc6426f	GREEN: no blockers; PHPUnit OK, one inherited vitest red	session-20261116T211641-8431b36d	2026-11-16T21:26:41Z
