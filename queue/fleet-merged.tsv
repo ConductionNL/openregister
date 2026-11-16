@@ -3942,3 +3942,5 @@ portaliq	1769	91f4b0df6c650ba48d9f0aaf4a3559074fd97b13	RED	merge3	GATE RED sbom:
 portaliq	1848	cd1757915089a65b8cb1e22c1f149b0f2a984332	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.10
 portaliq	1982	ebea533f0f3f8c061e63c23de231ae5193517228	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
 portaliq	2349	b92b6364b5ba81896e5557cd7c616f864672f87a	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
+stackiq	1168	04f38d3ae4a4d17b142dbafb97d2a81126d6568c	RED	worker-27	GATE RED checker floor: spdxheaders stars: 5 -> 4
+stackiq	1297	f6f898a1ce156bb7902c6cbdc55ca55df63daf3a	RED	worker-27	GATE RED checker floor: spdxheaders stars: 5 -> 4
