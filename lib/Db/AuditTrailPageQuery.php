@@ -11,7 +11,9 @@
  * descending" are the same order, and the primary key is the index.
  *
  * The six filters are the ones the audit page offers: actor, period, action,
- * register, schema and object, plus full text on the change summary. A filter
+ * register, schema and object, plus full text on the change summary. The
+ * tool id, and a prefix of the action or the tool id, filter the assistant
+ * tool calls an app lists. A filter
  * value that is empty is no filter; a filter that is set is always applied,
  * never silently dropped, because a dropped filter answers the whole trail
  * with a 200 and reads as a search that matched everything.
@@ -58,6 +60,22 @@ class AuditTrailPageQuery implements AuditTrailPageQueryInterface {
 		'register' => 'register',
 		'schema' => 'schema',
 		'object' => 'object_uuid',
+		'tool' => 'tool_id',
+	];
+
+	/**
+	 * The prefix filters this query understands, and the column each reads.
+	 *
+	 * A prefix filter keeps the rows whose column starts with the value, e.g.
+	 * `actionPrefix=mcp.` for every assistant tool call and `toolPrefix=stackiq.`
+	 * for the tools of one app. The value is matched literally: `%` and `_` in it
+	 * are not wildcards.
+	 *
+	 * @var array<string, string>
+	 */
+	public const PREFIX_COLUMNS = [
+		'actionPrefix' => 'action',
+		'toolPrefix' => 'tool_id',
 	];
 
 	/**
@@ -191,8 +209,38 @@ class AuditTrailPageQuery implements AuditTrailPageQueryInterface {
 			$this->applyListFilter(qb: $qb, term: new AuditTrailFilterTerm(field: $column, value: ($filters[$key] ?? null)));
 		}
 
+		foreach (self::PREFIX_COLUMNS as $key => $column) {
+			$this->applyPrefixFilter(qb: $qb, column: $column, prefix: ($filters[$key] ?? null));
+		}
+
 		$this->applyPeriod(qb: $qb, filters: $filters);
 	}//end applyFilters()
+
+	/**
+	 * One prefix filter; an empty or non-string value is no filter.
+	 *
+	 * @param IQueryBuilder $qb     The query.
+	 * @param string        $column The column.
+	 * @param mixed         $prefix The prefix the column must start with.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/audit-log-page/specs/audit-trail-immutable/spec.md#requirement-an-instance-wide-audit-list-with-filters
+	 */
+	private function applyPrefixFilter(IQueryBuilder $qb, string $column, mixed $prefix): void {
+		if (is_scalar($prefix) === false) {
+			return;
+		}
+
+		$prefix = trim((string)$prefix);
+		if ($prefix === '') {
+			return;
+		}
+
+		$qb->andWhere(
+			$qb->expr()->like($column, $qb->createNamedParameter($this->db->escapeLikeParameter($prefix) . '%'))
+		);
+	}//end applyPrefixFilter()
 
 	/**
 	 * The `from` and `to` bounds on the creation moment; a blank bound is no filter.
