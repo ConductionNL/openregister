@@ -15700,3 +15700,4 @@ fix:launchpad:756:e5da8a84	inherited: plain development 1475bdce already fails t
 fix:planninq:933:6f703f97	floor restored (complexity 4.88, interfacing 4.75), pushed 91b55b70; REVERIFY queued	session-20261116T075936-d83d6c1e	2026-11-16T08:06:39Z
 merge:planninq:871:0290b084	cloud tree of 1 planninq PRs: none; conflict 0, lint 0, red 0, moved 0, done 1	session-20261116T075936-d83d6c1e	2026-11-16T08:07:38Z
 review:launchpad:763:68f98712	GREEN: vitest 5 bump, 2578/2578 tests pass merged with dev	session-20261116T080016-01e1a0d7	2026-11-16T08:08:10Z
+review:stackiq:1924:f5164c8d	GREEN: matches change specs; no new failures (inherited: 1 phpunit, 1 vitest)	session-20261116T080103-dd70aeff	2026-11-16T08:08:18Z
