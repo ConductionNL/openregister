@@ -17995,6 +17995,7 @@ cover:pipelinq:7f9dc8e6m3dbb:0a24f15f	already done: lib/Service/Letter at 100% l
 cover:launchpad:fb10c50fmf487:b67d52c3	deferred: launchpad has 46 open PRs	session-20261116T212719-d025d113	2026-11-16T21:51:26Z
 cover:pipelinq:7f9dc8e6m3dbb:6ff6c9d5	deferred: pipelinq has 43 open PRs	session-20261116T214553-9fb39259	2026-11-16T21:51:34Z
 verify:planninq:1207:5b8e86d3	GREEN 1207; 1243 tests, 0 new failures	session-20261116T214624-beb72d49	2026-11-16T21:52:00Z
+cover:decidiq:a5f973bbm9cda:6f346b68	deferred: decidiq has 44 open PRs	session-20261116T211529-39ccc7ff	2026-11-16T21:52:25Z
 build:opencatalogi:woo-review-surface:c4	PR #2678 head a10a8ae6: built 1.3, 1.4, 2.1, 4.1, 5.1, 5.2, 5.4; 2.2 and 3.3 UI built (e2e left); left 3.4 live and 5.3 strict; suite no new failures	session-20261116T211645-8f77eb91	2026-11-16T21:52:23Z
 lane:arch5:launchpad:next-launchpad-r3:c4	PR #1247, GREEN (tree 4494 tests, 0 new failures; review and merge left to a merge task per the brief)	session-20261116T212048-3752a879	2026-11-16T21:52:20Z
 review:shillinq:3078:767508fe	GREEN: unit 12392/0 fail, vitest 9/9, lint clean	session-20261116T214640-6a01c0c6	2026-11-16T21:52:39Z
@@ -18008,3 +18009,4 @@ review:openregister:10598:d5ee9f8d	APPROVE: spec/tasks only, no code	session-202
 review:shillinq:1900:3f647361	GREEN: 12360 unit tests OK merged with development; phpmd.xml conflicts with development	session-20261116T214602-f1d20ac7	2026-11-16T21:54:10Z
 fix:versioniq:751:d4a52b7c	failed: permission: review+land of #751 refused; conflict fixed and pushed, new head c7c576b4, REVERIFY recorded	session-20261116T213150-99e9143b	2026-11-16T21:54:42Z
 verify:learniq:2570:da43ca7d	GREEN #2570 (6906 tests, no new failures)	session-20261116T214732-e08c2cfa	2026-11-16T21:55:03Z
+verify:thematiq:1686:75f2448e	GREEN 1686 (2881 tests, 0 new failures)	session-20261116T214739-8ff46d14	2026-11-16T21:55:29Z
