@@ -199,3 +199,4 @@ shillinq	2226	e54eecafafea22f9eb9a4791ace828cb5e9830b2	APPROVE	worker-16	Quick; 
 pipelinq	3885	6b8029c1c0ce49d9a97aa91a0f30f0be27f4476e	APPROVE	worker-27	Standard; no blockers; saveObject/deleteObject/erase calls match openregister main (ObjectSaveOptions/ObjectDeletion/ErasureRequest), same register, schema, rbac, multitenancy, permanent flags
 pipelinq	3887	17b6026c5b66fcb53bfc9ce3bc6cb3e80a42c509	APPROVE	worker-27	Thorough; no blockers; new interfaces each aliased to the same concrete class (ExportSinkRegistry alias to its registered factory service), interface method names/params match named-arg call sites; type-hint only refactor
 shillinq	2230	62ff796165624dd3a7cb0a10c95e8f1bcc712aaa	APPROVE	worker-16	Quick; no blockers; @babel/core patch bump (dev) with lock and sbom, tree suite green
+shillinq	2766	4d51285b749a43e73a8ab6060e699b9e46003461	APPROVE	worker-16	Quick; no blockers; phpstan dev bump in lock with sbom, tree suite green
