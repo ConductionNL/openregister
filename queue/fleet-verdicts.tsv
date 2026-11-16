@@ -14847,3 +14847,4 @@ learniq	1881	a0896acdbc0c57ad4b6fac04f3f0d56bd59c89bd	GREEN	worker-09:review	int
 hermiq	1187	415fb0238e6625fe4d8401b5cf2e03b85a5c4e8d	REVERIFY	worker-01	merged development in; dev-only bump, regen-sbom unchanged/current so no sbom diff is possible; merge_gate sbom() false RED (same as #1174), needs gate fix; new head 0e261189edce91dd7853b2e7e02fb58999048351, verify it
 portaliq	2349	e7812cc2231a27fa071df300fa8477ffb36e9a79	RED	worker-48:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
 portaliq	2530	23908dc9409b67edbb7c1748002e6f9859115f48	RED	worker-48:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+portaliq	2531	23d566859cc3dba12f726946b8081029f38b618b	CONFLICT	worker-48:merge	conflicts with development; files: composer.lock package-lock.json package.json sbom.cdx.json 
