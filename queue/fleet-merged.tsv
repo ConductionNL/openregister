@@ -4803,4 +4803,5 @@ hermiq	1750	ec9bd2f685487749c8745112577fa94a77a6734b	RED	worker-25	GATE RED floo
 thematiq	1686	bf2b7d5eaebd738c133d8e56d8781d2c33635cda	MERGED	worker-15	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.15
 versioniq	756	1b99dcb20ab396a0b3ce3b88937e9e56c86cc506	MERGED	worker-43	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.97 holds at 4.26
 versioniq	759	f4c83864c8d8ea20135b5aabca8bf5c4807de192	MERGED	worker-43	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.97 holds at 4.27
+learniq	2521	a3328ae41eeefd78e64c99c525be0b47ab1e0455	MERGED	worker-10	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 3.99
 keepiq	1863	9a7c1da8e9b5ffccdf0f9aeda7a254cb3e64846c	MERGED	worker-46	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.58 holds at 3.65
