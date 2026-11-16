@@ -14015,3 +14015,4 @@ pipelinq	2557	74ee842a603c3a10940a0a193154d00418abe78a	RED	merge3:merge-gate	GAT
 pipelinq	3083	c1e2e782afa038ade39fd007e8dc6523515461d7	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 pipelinq	3092	f8d049f34e69ece75f6b5915bae3db471efaee4e	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 pipelinq	3883	e27a1a725e4225bb7c5c07dc56793ca1bf3f207e	RED	merge3:merge-gate	GATE RED sbom: composer.lock, package-lock.json changed without sbom.cdx.json
+shillinq	1958	98ce92e545cdd6092fe131653b75add6effe2c1d	REVERIFY	worker-51	moved the SPDX tag of lib/Service/BudgetGridScenarioOverlay.php into the first 30 lines (merge gate reproduced spdxheaders 5->4; that file was the only new uncovered one); docblock only; new head 55f82d52277eede6df1c34287254996742aff7c6, verify it
