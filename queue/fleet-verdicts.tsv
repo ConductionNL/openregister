@@ -14215,3 +14215,4 @@ filinq	1355	1ed49fc431d3180365afb6b981791604eea7f243	RED	worker-11:merge-gate	GA
 filinq	2094	a2f8cc99002a05e5716d0949e45af50b7d556634	CONFLICT	worker-11:merge	merges clean on development alone; files: lib/Settings/filinq_mock_register.json lib/Settings/filinq_register.json 
 filinq	2122	79127975d8661aa09d13f75673f69dd6a09de23f	CONFLICT	worker-11:merge	merges clean on development alone; files: lib/Settings/filinq_register.json 
 filinq	2123	e7b32d659243047176773d7a1f70e1113cdb3f32	CONFLICT	worker-11:merge	merges clean on development alone; files: lib/Settings/filinq_mock_register.json lib/Settings/filinq_register.json 
+dossiq	6587	28ecad91f1baffcfa031c48d360ffca1c1d4a7b5	RED	merge3:merge-gate	GATE RED sbom: composer.lock, package-lock.json changed without sbom.cdx.json
