@@ -531,4 +531,6 @@ humaniq	684	036f7e9ffb9a36fce46245fcd1b17c73680556ff	APPROVE	worker-52	Quick; no
 humaniq	686	fe1cbc0ae582ec29fbb26fc246d74dbf397480b5	APPROVE	worker-52	Quick; no blockers; dependency bump with regenerated sbom, PHP suite 4405 green on tree, webpack build compiles, test:js 230/231 (1 inherited from development)
 shillinq	3109	95bf71e1b5b49d1ade835e3ae9eb2b94df7af954	APPROVE	worker-20	Quick; no blockers; adds SPDX lines to a test stub only, gate failures all inherited
 shillinq	2226	5f2a77239a689c087689c3e8d91fcfd2041a1eaa	APPROVE	worker-20	Quick; no blockers; pinia 4.0.3 to 4.1.0 minor bump, lock and sbom regenerated consistently, stub SPDX lines; gate failures inherited
+learniq	1882	334e6e479def3699df5e52bbcc4e4d89ce9c8c25	APPROVE	worker-34	Standard; no blockers; display labels for booking fields + l10n + tests, gate runner unavailable so checklist by hand
 shillinq	2098	91bd5616fcf72747bc4072cca1dfcfc94ca22761	APPROVE	worker-20	Standard; no blockers; admin-only FX import status moves from a routed page to an admin settings tab over the same admin-gated endpoint, keys match the controller; concern: null lastRunAt relies on the textMap empty-string entry
+learniq	2559	a2575752594d239c5295bf466bb71213811b122c	APPROVE	worker-34	Quick; no blockers; dev-dependency bump with regenerated sbom
