@@ -4200,6 +4200,13 @@ integriq	3589	604f71b58f00c5374d10fbc294fa81af37cfabe5	SKIP	worker-47	GATE UNMEA
 integriq	3595	60111a1cbeeab82e205393bd750ca75566d963aa	SKIP	worker-47	GATE UNMEASURED head moved to 6e9939f840
 hermiq	1801	b8e31c29c0755366e44d0de7ddd7cee5f6d4be87	SKIP	worker-42	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 hermiq	1802	5e2885e3e660cb042b21292e305f27b2d9a26093	SKIP	worker-42	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
+opencatalogi	1888	3c646648f528b3809be689a76e9dacb02ccb4ec4	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.49
+opencatalogi	1893	c984555798eba603920305a449a1da12ff8fe5b7	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.49
+opencatalogi	1894	81ec0aebb96ac0ea55f9e0fd74b189b396df7ab8	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.49
+opencatalogi	2407	15ee026e9e5cc880f1ef5812343e2da79e65c3d1	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.49
+opencatalogi	2643	adb68bca14ad1480f2417bd01e5b64aff2e74f1b	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.49
+opencatalogi	2670	7cd469401f9de40a9237b2ce3798107fe7bff49d	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.49
+opencatalogi	2679	b5f77a604845e645f7654394f4541d202c272ce5	RED	merge3	GATE RED checker floor: maintainability stars: 5 -> 4
 buildiq	1583	3352b16d251c55584a8fcdee0b745910841283cb	RED	worker-41	GATE RED floor: unit_complexity: 3.32 -> 3.30
 shillinq	1908	ca21609bb71603fe45c7d58dd33216df70aee655	RED	worker-58	GATE RED checker floor: spdxheaders stars: 5 -> 4
 stackiq	1992	6d5c12d7da6c42f6e7984bf3e02c8fd1fb2de00b	SKIP	worker-35	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
