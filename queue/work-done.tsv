@@ -17423,4 +17423,5 @@ cover:larpinq:c4471360:dfaef732	PR #1072: Notifier 3 tests, lib/Notification 93.
 cover:larpinq:c4471360:34763eb4	PR #1073: +4 middleware tests, suite 1054->1058, 0 failures	session-20261116T192254-fe50fb9b	2026-11-16T19:32:19Z
 fix:stackiq:1978:edde87e6	merged #1978 at 76744e83bf9b874a6986dbb0b063ffc8ea7b3d93	session-20261116T192122-0fac4997	2026-11-16T19:33:13Z
 fix:opencatalogi:2682:4e12e44e	stale	feeder	2026-11-16T19:26:50Z
+cover:keepiq:c967a31fm902f:0d67c1f3	PR #1853: +5 tests SiemSinkRequest (dir already 100% line-covered; thin tests strengthened), suite 5367->5372 OK	session-20261116T192132-006e7c93	2026-11-16T19:35:28Z
 build:shillinq:spend-analytics-ui	already built: on development via #1143, every code task ticked; only the live Playwright task remains (needs a deployment)	session-20261116T193315-3e9a027b	2026-11-16T19:35:12Z
