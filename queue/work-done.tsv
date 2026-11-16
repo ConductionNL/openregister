@@ -17987,9 +17987,11 @@ cover:decidiq:a5f973bbm9cda:dfaef732	deferred: decidiq has 44 open PRs	session-2
 review:learniq:2521:a3328ae4	GREEN: build matches change specs; PHP 6965/1 inherited, JS 9 inherited	session-20261116T214541-6b344533	2026-11-16T21:50:39Z
 review:hermiq:1750:ec9bd2f6	GREEN #1750 at ec9bd2f6: PHPUnit 5414 ok, vitest 1561 ok; phpstan type note FileScopeResolver:292	session-20261116T211553-db0d2c78	2026-11-16T21:50:50Z
 review:hermiq:1791:1747024b	GREEN: in-spec build, 5438 unit tests + 97 vitest green	session-20261116T214541-d7f19722	2026-11-16T21:51:01Z
+build:versioniq:releases-minimum-age:c4	built: PR #707 head 53beddbc; merged development (new run planner) with the age planner feeding it, built 2.3 (plan job+store), 3.1 (plan in /api/policies, exception endpoints, openapi), 3.2 (settings, PolicySelector, overview), 3.3 (en/nl); left 3.4 e2e and 4.1 close-out (not code). Unit-only 2192 with 2 inherited golden failures; vitest 3097 green	session-20261116T212336-79038316	2026-11-16T21:51:10Z
 review:launchpad:1235:906e0ad0	stale	session-20261116T202633-f7fb0e3a	2026-11-16T21:51:10Z
 cover:launchpad:fb10c50fmf487:d39f9857	deferred: launchpad has 46 open PRs	session-20261116T212719-d025d113	2026-11-16T21:51:12Z
 cover:pipelinq:7f9dc8e6m3dbb:0a24f15f	already done: lib/Service/Letter at 100% lines (164/164) on development 6b2c80436; no PR	session-20261116T214700-0702980b	2026-11-16T21:51:26Z
 cover:launchpad:fb10c50fmf487:b67d52c3	deferred: launchpad has 46 open PRs	session-20261116T212719-d025d113	2026-11-16T21:51:26Z
 cover:pipelinq:7f9dc8e6m3dbb:6ff6c9d5	deferred: pipelinq has 43 open PRs	session-20261116T214553-9fb39259	2026-11-16T21:51:34Z
 verify:planninq:1207:5b8e86d3	GREEN 1207; 1243 tests, 0 new failures	session-20261116T214624-beb72d49	2026-11-16T21:52:00Z
+lane:arch5:launchpad:next-launchpad-r3:c4	PR #1247, GREEN (tree 4494 tests, 0 new failures; review and merge left to a merge task per the brief)	session-20261116T212048-3752a879	2026-11-16T21:52:20Z
