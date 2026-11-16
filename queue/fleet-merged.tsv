@@ -4293,3 +4293,12 @@ humaniq	686	fe1cbc0ae582ec29fbb26fc246d74dbf397480b5	SKIP	worker-27	GATE UNMEASU
 hermiq	1135	0d097997db1a2b53afae0ba11817aff5667f2f08	SKIP	worker-10	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 keepiq	1499	88c1cad153a7733153a2335d9ef1fc3abdcf8aaa	SKIP	worker-30	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 hermiq	1167	dae65138d4911e944cdd0e955e0226a9ac641cce	SKIP	worker-10	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
+decidiq	1465	c16cd40a576d75aeda154a94b4c66265f5a79c7e	RED	merge3	GATE RED absolute floor: decidiq maintainability 3.77 after merge is below its floor 3.78
+decidiq	1467	dfb19ea0e2beff3a28cb376c7bc29ced93c70234	RED	merge3	GATE RED absolute floor: decidiq maintainability 3.77 after merge is below its floor 3.78
+decidiq	1472	92d144283d53fb5446e36d055326c802a9d73dbe	RED	merge3	GATE RED absolute floor: decidiq maintainability 3.77 after merge is below its floor 3.78
+decidiq	1473	fbdc77e40ce26b62e5d8e01c082907767f885f48	RED	merge3	GATE RED absolute floor: decidiq maintainability 3.77 after merge is below its floor 3.78
+decidiq	1692	faa2a2eb94e5996ace0de2e05bc550c8824894f3	RED	merge3	GATE RED absolute floor: decidiq maintainability 3.77 after merge is below its floor 3.78
+decidiq	1738	dabfcc9222a3ef5a0403f3e34014445adb503bf6	RED	merge3	GATE RED absolute floor: decidiq maintainability 3.77 after merge is below its floor 3.78
+decidiq	2149	acad13767619d3c32607d26b948e73a7a36daa35	RED	merge3	GATE RED absolute floor: decidiq maintainability 3.76 after merge is below its floor 3.78
+decidiq	2191	29114ea549b1df7741db17358e85829c10be8c82	RED	merge3	GATE RED absolute floor: decidiq maintainability 3.77 after merge is below its floor 3.78
+decidiq	2207	4cc6ec944a9c332488078dfd95666982ed716c9a	RED	merge3	GATE RED absolute floor: decidiq maintainability 3.76 after merge is below its floor 3.78
