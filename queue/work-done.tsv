@@ -17359,3 +17359,4 @@ merge:learniq:2557:d1a26106	merge3 tree of 2 learniq PRs: none; conflict 2, lint
 build:portaliq:media-usage-count:r2	already done: T01-T03 on development (#1647: MediaUsage, MediaUsageJob, usedOn, pill test); only T04, a live check, is left	session-20261116T184831-8be58c40	2026-11-16T19:21:31Z
 cover:decidiq:a5f973bbm9cda:8ed5443b	failed: lib/Kernel/Contracts/*.php is interfaces only (0 executable statements, nothing to cover); also deferred: decidiq has 48 open PRs	session-20261116T192132-006e7c93	2026-11-16T19:22:35Z
 fix:learniq:2557:3fe186b0	conflict resolved, pushed 572f9432; not landed: psalm 7.5 does not install under config.platform php 8.3 (needs >=8.3.16)	session-20261116T192046-9440725d	2026-11-16T19:22:37Z
+build:portaliq:mijn-taken-lists-contributed-tasks:r2	already done: T1-T2 on development (fix(site) 2026-10-16, contributedTasks.js + tasks-page tests); only T3, a live check, is left	session-20261116T184831-8be58c40	2026-11-16T19:22:43Z
