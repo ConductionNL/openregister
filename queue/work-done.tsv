@@ -17337,3 +17337,4 @@ build:pipelinq:opt-out-before-send:r3	already done: every code task ticked on de
 build:pipelinq:marketing-block-editor:r3	nothing to build: every code task is ticked; only 3.3's live-send rendering check in mail clients is open	session-20261116T184841-a3bc3002	2026-11-16T19:18:21Z
 build:pipelinq:a-contact-question-is-required-and-dated:r3	already done: every code task ticked on development; only 1.3 (live check) is open	session-20261116T181151-999832c6	2026-11-16T19:18:29Z
 review:opencatalogi:2686:84ac3f44	GREEN: no new failures (5920 vs baseline 5893, same 80 inherited); concerns noted	session-20261116T191156-bbdb7add	2026-11-16T19:18:49Z
+measure:humaniq:20261116h18	php 95.77% (pcov, 26211/27370); js none (no vitest/jest)	session-20261116T184921-a7624794	2026-11-16T19:19:04Z
