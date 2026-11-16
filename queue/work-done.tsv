@@ -18408,6 +18408,7 @@ verify:hermiq:1763:959522d3	CONFLICT #1763 (9 files)	session-20261116T224246-d9b
 lane:arch5:learniq:next-learniq-r6:c3	PR #2580, GREEN (r7: php dup 3.30 -> 3.32); learniq stopped by coordinator, no further round queued	session-20261116T220647-b92c8f52	2026-11-16T23:40:25Z
 verify:launchpad:1246:09cffd9d	stale	feeder	2026-11-16T23:37:23Z
 verify:hermiq:1760:f84a6f07	CONFLICT: info.xml, l10n, hermiq_register.json, openapi.json	session-20261116T233003-c7bea420	2026-11-16T23:40:32Z
+verify:humaniq:1148:f2562361	CONFLICT #1148 (l10n, hr-timesheet manifest)	session-20261116T233427-cfe22922	2026-11-16T23:40:48Z
 build:learniq:exam-registration-and-certificate-issue:c2	PR #2579 (quality/build-exam-registration-and-certificate-issue): T1-T6 built and ticked; suite 6998 tests, 2 inherited failures (baseline 6966/2)	session-20261116T230843-e8244832	2026-11-16T23:41:11Z
 verify:humaniq:670:40bebbca	CONFLICT #670 (sbom.cdx.json vs development)	session-20261116T233800-0f135937	2026-11-16T23:41:06Z
 verify:hermiq:1794:e6b137d8	CONFLICT #1794	session-20261116T232923-e93e6b40	2026-11-16T23:41:47Z
