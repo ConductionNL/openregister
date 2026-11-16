@@ -14226,3 +14226,4 @@ dossiq	5266	2cd5ee932a79779a717f6f0071fcaa89f3c2531f	REVERIFY	merge3	head moved 
 dossiq	5338	4d53d9bb81b7509b25749cbb9a751100c91e616c	REVERIFY	merge3	head moved since the verdict (was 4924e28da77fe70cbc4717ee9ce03ca31c2b2289, 4924e28d:CONFLICT,4924e28d:REVERIFY); verify the new head
 dossiq	5396	cc232d59d722611002ea5e7e1096bab19bbdfc34	REVERIFY	merge3	head moved since the verdict (was 861d4d0ae94c2884fa5de7c4df9274a64ae551d9, 861d4d0a:CONFLICT,861d4d0a:REVERIFY); verify the new head
 hermiq	1808	d92c1c64c29a1a3d559e0d6e3f10da062039597d	GREEN	worker-38:lane	bundle of 9 dependabot updates; phpunit same 193 failing names as development, phpstan 1=1, build ok, vitest 1526 ok, lint 0 errors both, sbom check ok
+shillinq	3111	96abe4abfb509aa4c32c2210a765797e13c601d5	GREEN	worker-57:lane	name check vs main: 2 real breaks fixed (FxRateImportJob, HorizonRollingJob saveObject to ObjectSaveOptions); unit 12225 tests 0 failures (dev 12225, 0); php -l, phpcs, phpstan clean
