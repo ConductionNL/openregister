@@ -18389,3 +18389,20 @@ verify:dossiq:3894:beb380ce	CONFLICT #3894 (sbom.cdx.json)	session-20261116T2329
 review:filinq:2123:8c586cdc	GREEN: unit 7053/0 fail (base 6960), vitest 787 pass	session-20261116T232911-3dffa1ae	2026-11-16T23:36:09Z
 verify:filinq:2098:9ecdad94	CONFLICT #2098 (l10n en/nl)	session-20261116T232844-9c7f5cce	2026-11-16T23:36:16Z
 verify:hermiq:1578:4d2d6d1f	CONFLICT #1578 (composer.lock + sbom)	session-20261116T224246-d9bde508	2026-11-16T23:36:38Z
+verify:filinq:2090:e60e1c92	CONFLICT #2090 (lib/Settings/filinq_register.json)	session-20261116T233427-cfe22922	2026-11-16T23:36:51Z
+verify:filinq:2099:fcbb80d1	CONFLICT #2099 (4 files vs development)	session-20261116T232852-594dae77	2026-11-16T23:37:01Z
+verify:filinq:2087:71fe4d96	CONFLICT: lib/Settings/filinq_register.json	session-20261116T233003-c7bea420	2026-11-16T23:37:10Z
+verify:filinq:2107:b72e7114	CONFLICT #2107 (l10n, register json, openapi.json conflict with development)	session-20261116T232944-146e39d7	2026-11-16T23:37:18Z
+verify:filinq:2079:4f149b77	CONFLICT: tests/unit/Settings/SchemaAuthorizationCoverageTest.php vs development	session-20261116T232912-634ff2e8	2026-11-16T23:37:28Z
+verify:dossiq:6353:f0653576	CONFLICT #6353 (NotesController, NotePush, NoteEnvelope modified on development)	session-20261116T232912-d58d1a81	2026-11-16T23:37:46Z
+verify:humaniq:1143:9cdcc864	CONFLICT #1143 (l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json )	session-20261116T232923-46913d93	2026-11-16T23:37:53Z
+verify:learniq:2578:d2cb7b4e	GREEN #2578	session-20261116T232519-f84cca9a	2026-11-16T23:38:03Z
+verify:humaniq:1139:4ca3cd5e	CONFLICT #1139 (l10n en.js/nl.js vs development)	session-20261116T232852-594dae77	2026-11-16T23:38:13Z
+merge:learniq:2578:d2cb7b4e	failed: prep exit 2, composer lock needs vimeo/psalm 7.5 (php >=8.3.16), container php 8.3.6; nothing landed	session-20261116T232912-634ff2e8	2026-11-16T23:38:20Z
+verify:filinq:2078:d8dd2bca	CONFLICT: tests/unit/Settings/DocumentProductionSchemaTest.php vs development	session-20261116T232925-45c70e73	2026-11-16T23:38:28Z
+verify:hermiq:1757:59cadfdd	CONFLICT #1757 (l10n catalogues, EngineSwitchedOffTest)	session-20261116T232912-d58d1a81	2026-11-16T23:38:39Z
+verify:filinq:2091:fe554cc9	CONFLICT #2091	session-20261116T232918-5354fd88	2026-11-16T23:38:49Z
+verify:filinq:2113:51b5285f	CONFLICT: #2113 vs development in CHANGELOG.md, filinq_register.json, ConsentUpdateFlowTest.php	session-20261116T232911-3dffa1ae	2026-11-16T23:39:03Z
+verify:hermiq:1763:959522d3	CONFLICT #1763 (9 files)	session-20261116T224246-d9bde508	2026-11-16T23:39:28Z
+verify:launchpad:1246:09cffd9d	stale	feeder	2026-11-16T23:37:23Z
+verify:hermiq:1760:f84a6f07	CONFLICT: info.xml, l10n, hermiq_register.json, openapi.json	session-20261116T233003-c7bea420	2026-11-16T23:40:32Z
