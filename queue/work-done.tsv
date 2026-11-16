@@ -17102,3 +17102,4 @@ verify:filinq:2146:e3601822	filinq #2146 GREEN (6889 tests, 0 new failures)	sess
 cover:decidiq:a5f973bbm0262:05630945	deferred: decidiq has 52 open PRs	session-20261116T173227-3f62e794	2026-11-16T18:24:56Z
 cover:decidiq:a5f973bbm0262:34763eb4	deferred: decidiq has 52 open PRs	session-20261116T173227-3f62e794	2026-11-16T18:25:02Z
 cover:decidiq:a5f973bbm0262:882bd950	deferred: decidiq has 52 open PRs	session-20261116T173227-3f62e794	2026-11-16T18:25:21Z
+build:learniq:participant-portal	deferred: learniq has 62 open PRs	session-20261116T165351-3ccaad0e	2026-11-16T18:25:41Z
