@@ -17236,18 +17236,23 @@ review:dossiq:6203:f6392408	GREEN: tests only, suite 18414 OK on merged tree	ses
 build:decidiq:one-consultation-schema:r3	already done: every code task in tasks.md is ticked and on development; only 5.2 e2e (needs live instance) left	session-20261116T184919-ae590ea9	2026-11-16T18:55:53Z
 build:learniq:participant-portal:r3	already done: every code task ticked on development (d84b379, #1763); only T4 e2e left	session-20261116T184858-b0d9d60e	2026-11-16T18:55:49Z
 verify:decidiq:2227:ed9602aa	GREEN 2227, GREEN 2228; tree 4638 tests, 0 new failures	session-20261116T184836-f6622adb	2026-11-16T18:55:50Z
+cover:launchpad:fb10c50f:d39f9857	deferred: launchpad has 44 open PRs	session-20261116T184945-c098409e	2026-11-16T18:56:01Z
 cover:pipelinq:7f9dc8e6m3dbb:f545d745	already done: every lib/Repair class has tests on development (incl. d477c25f0); remaining line gaps need a coverage driver, none installable here; pipelinq has ~45 open PRs, no new PR	session-20261116T184838-1279a0d5	2026-11-16T18:56:13Z
 cover:launchpad:fb10c50f:33ae6285	deferred: launchpad has 44 open PRs	session-20261116T184655-77bda400	2026-11-16T18:56:20Z
 cover:launchpad:fb10c50f:34763eb4	deferred: launchpad has 44 open PRs	session-20261116T185304-a3eb3adc	2026-11-16T18:56:22Z
 fix:integriq:3671:4b0e1b0a	fixed spdxheaders (2 stubs lacked SPDX in first 30 lines); pushed cb905dcf; merge lock held, REVERIFY queued	session-20261116T184910-72b8278a	2026-11-16T18:56:22Z
+cover:launchpad:fb10c50f:f91e7417	deferred: launchpad has 44 open PRs	session-20261116T184846-301eb7a8	2026-11-16T18:56:51Z
 cover:launchpad:fb10c50f:05630945	deferred: launchpad has 44 open PRs	session-20261116T184836-f6622adb	2026-11-16T18:57:00Z
 cover:launchpad:fb10c50f:dfaef732	deferred: launchpad has 44 open PRs	session-20261116T184901-5d8e5c9a	2026-11-16T18:56:39Z
 cover:launchpad:fb10c50f:1b97f731	deferred: launchpad has 44 open PRs (earlier cover PR #1152 for this target already merged)	session-20261116T181517-93723df6	2026-11-16T18:56:48Z
 cover:launchpad:fb10c50f:aae6d66c	deferred: launchpad has 44 open PRs	session-20261116T184858-b0d9d60e	2026-11-16T18:56:47Z
 cover:launchpad:fb10c50f:34f5c300	deferred: launchpad has 44 open PRs	session-20261116T185304-a3eb3adc	2026-11-16T18:56:47Z
 review:integriq:3649:9b271f27	GREEN: no new failures, 62 new unit tests, 58 vitest pass	session-20261116T184924-e8902580	2026-11-16T18:57:00Z
+build:opencatalogi:federation-connection-last-success	already done: code built on development (bf7763e8); 2.1/2.2 left only for their live e2e run	session-20261116T173306-f68895a7	2026-11-16T18:57:07Z
 cover:launchpad:fb10c50f:9d3a1784	deferred: launchpad has 44 open PRs	session-20261116T184910-72b8278a	2026-11-16T18:57:11Z
 cover:launchpad:fb10c50f:f545d745	deferred: launchpad has 44 open PRs	session-20261116T185304-a3eb3adc	2026-11-16T18:57:12Z
+cover:launchpad:fb10c50f:33952d4b	deferred: launchpad has 44 open PRs	session-20261116T184852-c0730778	2026-11-16T18:57:44Z
+merge:larpinq:1050:27621a13	cloud tree of 1 larpinq PRs: merged=0 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0 (gate: testcoderatio warn -> fail)	session-20261116T184916-3075661b	2026-11-16T18:57:41Z
 cover:launchpad:fb10c50f:7505aeb4	deferred: launchpad has 44 open PRs	session-20261116T184655-77bda400	2026-11-16T18:57:30Z
 cover:launchpad:fb10c50f:60c2c265	deferred: launchpad has 44 open PRs	session-20261116T184858-b0d9d60e	2026-11-16T18:57:53Z
 cover:launchpad:fb10c50f:be0dcca9	deferred: launchpad has 44 open PRs	session-20261116T185304-a3eb3adc	2026-11-16T18:57:18Z
@@ -17255,6 +17260,7 @@ measure:decidiq:20261116h18	php 94.13% js 98.45% at 1bf4171e	session-20261116T18
 merge:learniq:1167:5572f9ff	cloud tree of 4 learniq PRs: merged=2 red=0 fail=0 skip=0; conflict 2, lint 0, red 0, moved 0, done 0	session-20261116T184833-adbb8426	2026-11-16T18:57:50Z
 review:shillinq:2991:7d526afc	GREEN: unit 12296 OK, vitest 92 passed	session-20261116T184852-d42365eb	2026-11-16T18:57:58Z
 fix:filinq:2122:8da97635	merged development in, clean; new head e57f317b; REVERIFY queued (merge lock held elsewhere)	session-20261116T185100-d2f0c6eb	2026-11-16T18:58:08Z
+cover:stackiq:9ac19b3amdf03:2861e5ef	deferred: stackiq has 42 open PRs	session-20261116T184217-f2c5e14b	2026-11-16T18:58:44Z
 merge:opencatalogi:2655:e2dba5ce	cloud tree of 3 opencatalogi PRs: none; conflict 2, lint 0, red 1, moved 0, done 0	session-20261116T184943-10cc032d	2026-11-16T18:58:26Z
 cover:stackiq:9ac19b3amdf03:d528dcf0	deferred: stackiq has 42 open PRs	session-20261116T181429-b5d49a13	2026-11-16T18:58:48Z
 cover:launchpad:fb10c50f:d3522ea6	deferred: launchpad has 44 open PRs	session-20261116T184852-d42365eb	2026-11-16T18:58:42Z
@@ -17262,6 +17268,8 @@ cover:launchpad:fb10c50f:0891e5b5	deferred: launchpad has 44 open PRs	session-20
 cover:launchpad:fb10c50f:882bd950	deferred: launchpad has 44 open PRs	session-20261116T184924-e8902580	2026-11-16T18:58:53Z
 measure:launchpad:20261116h18	php 94.94%, js 96.2% at 6a3f3239	session-20261116T182720-9950372f	2026-11-16T18:58:54Z
 fix:opencatalogi:2686:75f5b243	merged development in, new head 84ac3f44cc; merge lock held by another merger, REVERIFY queued	session-20261116T184833-adbb8426	2026-11-16T18:58:58Z
+build:opencatalogi:operations-public-api-cache-headers	already done: every code task is on development; only 3.2 (live e2e run) is left	session-20261116T184924-e8902580	2026-11-16T18:59:46Z
+cover:stackiq:9ac19b3amdf03:8225bf5e	deferred: stackiq has 42 open PRs	session-20261116T185304-a3eb3adc	2026-11-16T18:59:22Z
 build:launchpad:launchpad-manifest-tier-3	already built: every code task in tasks.md is ticked and on development (router, registry, CnAppRoot, AdminSettingsRedirect); only the live E2E task is left	session-20261116T184838-1279a0d5	2026-11-16T18:59:09Z
 cover:pipelinq:7f9dc8e6m3dbb:34f5c300	added to open cover PR #3659 (45 open PRs): @uses metadata on 18 service tests; risky 84->12, lib/Service/*.php 90.88->92.89%	session-20261116T182240-4aa65022	2026-11-16T18:59:41Z
 cover:stackiq:9ac19b3amdf03:59826f43	deferred: stackiq has 42 open PRs	session-20261116T184912-ef98c646	2026-11-16T18:59:13Z
@@ -17269,10 +17277,18 @@ cover:stackiq:9ac19b3amdf03:17d367ab	deferred: stackiq has 42 open PRs	session-2
 fix:opencatalogi:2696:8fcdf471	fixed jest specs, pushed 0d0512a6; merge lock busy, REVERIFY queued	session-20261116T184852-b8356331	2026-11-16T18:59:43Z
 cover:stackiq:9ac19b3amdf03:aae6d66c	deferred: stackiq has 42 open PRs (earlier cover PR #1746 for this target already merged)	session-20261116T181517-93723df6	2026-11-16T18:59:51Z
 fix:opencatalogi:2699:64dd55f6	merged development in, new head 3dfb66bdc2; merge lock held by another merger, REVERIFY queued	session-20261116T184833-adbb8426	2026-11-16T18:59:51Z
+cover:dossiq:069ee2d6m9d1b:1b97f731	dossiq has 41 open PRs: added 29 tests for 4 untested lib/Listener classes to open PR #6203 (299f90c); suite 18414->18443, 19 inherited failures unchanged	session-20261116T184901-b88952b2	2026-11-16T19:00:34Z
 fix:filinq:2094:ff0c7f80	merged #2094 at fc7a98369b7f2cb91cfd259568597d9c493900bd	session-20261116T184345-1b09dc94	2026-11-16T18:59:58Z
 cover:stackiq:9ac19b3amdf03:216a9a0a	deferred: stackiq has 42 open PRs	session-20261116T184852-d42365eb	2026-11-16T19:00:12Z
 cover:stackiq:9ac19b3amdf03:05630945	deferred: stackiq has 42 open PRs	session-20261116T184919-ae590ea9	2026-11-16T19:00:21Z
+cover:openregister:7350e3efm9dc5:d0c80d11	added 5 test files (39 tests: DictionaryExpansion, SearchTokenStream, HistoryNarrowing, LeafReset, DescriptorFold) to open PR #10595 (188 open PRs, no new PR); Search/ShippedBaseline suites green	session-20261116T184842-6fa5fc5d	2026-11-16T19:00:50Z
 build:planninq:board-live-updates	PR #1202: tasks 1.1, 1.2 built (13 vitest tests, suite 3565->3578); 1.3 e2e, 2.1 validate and 2.2 archive left	session-20261116T173242-1dd97d52	2026-11-16T19:00:41Z
+cover:dossiq:069ee2d6m9d1b:34f5c300	added 6 classes/50 tests (lib/Service) to open PR #6203 (dossiq over 40 open PRs); suite 18414->18464, failures 19 = baseline	session-20261116T184854-da8d1f1e	2026-11-16T19:02:27Z
 cover:dossiq:069ee2d6m9d1b:f545d745	added 29 Repair edge tests (8 classes) to open cover PR #6203 (app over PR budget); lib/Repair 94.93->96.49%, suite 18414->18443 tests, same 19 inherited failures	session-20261116T184842-ffa7b3eb	2026-11-16T19:01:56Z
 fix:versioniq:723:0aa4f351	floors restored (overall 5.00, dup 5.17, unit_complexity 4.66 vs base 4.65), development merged in; new head 22fd2bc2, REVERIFY queued (merge lock held elsewhere)	session-20261116T184902-3ba300c9	2026-11-16T19:02:20Z
+cover:pipelinq:7f9dc8e6m3dbb:1b97f731	added 21 listener tests (8 classes, Listener 97.71->99.18%) to open PR #3659 (over budget: 45 open); suite 9063 OK	session-20261116T184852-80c4ebdf	2026-11-16T19:02:54Z
+measure:openregister:20261116h18	php 95.13% (pcov, tests/Unit/Architecture excluded: times out under coverage), js 93.15%	session-20261116T174709-5787ce39	2026-11-16T19:02:32Z
 fix:keepiq:1793:b87d8b92	fixed: conflict resolved and secret-scan finding allowlisted, new head 3fae302f, APPROVE recorded; not landed (gate UNMEASURED: ADR ruleset fetch, then lock held by another merger); REVERIFY queued	session-20261116T173311-8d6b3275	2026-11-16T19:02:53Z
+fix:stackiq:1931:3faf7c6d	merged #1931 at f40072a7dde67e002ef2d523a58a0432257b81c9	session-20261116T184928-c82468e8	2026-11-16T19:05:05Z
+cover:pipelinq:7f9dc8e6m3dbb:60c2c265	pushed 36 controller tests (7 classes) to open PR #3659 (pipelinq over budget, 45 open PRs); suite 9042->9078, 0 failures	session-20261116T184944-4db9bf64	2026-11-16T19:05:33Z
+merge:versioniq:691:6c1777e2	merge3 tree of 5 versioniq PRs: merged=3 red=1 fail=0 skip=0; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-16T19:05:56Z
