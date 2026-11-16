@@ -142,3 +142,4 @@ pipelinq	3092	f041615e2cce52415f7c71cc60df53271a377f88	APPROVE	worker-47	Quick; 
 shillinq	2259	614a5c5a2c43f3647a83a4556528ce74ea0046f3	APPROVE	worker-22	Standard; no blockers; export request recorded on the register audit trail via the API present on openregister main, export refused when it cannot be recorded
 launchpad	757	2ba3b33db46c061dc3c61817ad415623b01adc1a	APPROVE	worker-30	Quick (dev dependency bump); no blockers; ts-eslint parser minor, vitest 2578 OK on tree
 launchpad	1234	6a94a1fa7ca29a5267bfc77210f29d21bd36c68e	APPROVE	worker-30	Thorough (size; lockfile only); no blockers; package.json unchanged, npm audit --omit=dev 0, vitest 2578 and unit 4461 OK on tree
+launchpad	755	f41902ffc1787ffe4a7d70ba97ae5a49187f10dc	APPROVE	worker-09	Quick; no blockers; dev-only vitest 4->5 bump, vitest suite 2578/2578 green on tree, PHP suite unchanged
