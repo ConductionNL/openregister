@@ -17541,3 +17541,4 @@ build:opencatalogi:operations-public-api-cache-headers	build	opencatalogi	develo
 build:learniq:participant-portal:r3	build	learniq	development	participant-portal	change=participant-portal;open=1	2026-11-16T18:50:03Z
 build:decidiq:one-consultation-schema:r3	build	decidiq	development	one-consultation-schema	change=one-consultation-schema;open=1	2026-11-16T18:50:03Z
 build:buildiq:forms-live-values-and-checks:r3	build	buildiq	development	forms-live-values-and-checks	change=forms-live-values-and-checks;open=2	2026-11-16T18:50:03Z
+fix:versioniq:721:bc63b636	fix	versioniq	development	721	sha=bc63b63642280456458fe8760474fe1937cafa8a;verdict=CONFLICT;branch=quality/build-sources-gitlab-forge;reason=merges clean on development alone, files: openapi.json 	2026-11-16T18:48:48Z
