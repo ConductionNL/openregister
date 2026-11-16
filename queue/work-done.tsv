@@ -16646,3 +16646,4 @@ review:portaliq:1767:47038abd	GREEN	session-20261116T144202-f2b26030	2026-11-16T
 review:decidiq:2207:12b85479	GREEN: implements change tasks 6.x; unit 4633 OK, phpstan/phpcs clean	session-20261116T153259-1f82a352	2026-11-16T15:39:22Z
 review:stackiq:1954:3afda7d6	GREEN: per spec, suite OK on PR+development	session-20261116T144734-1dc150d8	2026-11-16T15:39:36Z
 review:integriq:3049:f122cee2	GREEN: OR main deleteObject migration, no new failures	session-20261116T150749-2f742a8d	2026-11-16T15:39:53Z
+review:integriq:3596:5124b212	GREEN integriq #3596: 0 new failures (5 inherited), vitest ok, phpstan clean	session-20261116T150930-eac38835	2026-11-16T15:40:20Z
