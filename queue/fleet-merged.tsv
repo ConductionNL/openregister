@@ -4661,3 +4661,4 @@ integriq	2924	500b126369a6ed627489af45ef717b0a6b6db364	RED	worker-50	GATE RED ab
 integriq	2994	672207a470cba6d332f1df141ce039272fc4624f	MERGED	worker-50	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
 integriq	3047	75eb55fe9d3cf3f0fef516fd0c0dd6a2ac43b912	MERGED	worker-50	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
 integriq	3574	538c9e9b698c603c89e9b0170b63111b23b946bd	RED	worker-50	GATE RED absolute floor: integriq maintainability 3.55 after merge is below its floor 3.56
+integriq	3649	9b271f27a945bbc79cf8ea2f8bf1c695445a8659	MERGED	worker-50	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
