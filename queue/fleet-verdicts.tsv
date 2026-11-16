@@ -14877,3 +14877,4 @@ hermiq	1750	4d8f973f08b7152c743689d19471e35ec36a43ff	CONFLICT	worker-53:merge	me
 hermiq	1754	69e02cc70605b287770a0f70358	REVERIFY	worker-53:merge	verdict sha is not the head: head is 69e02cc70605b287770a0f70358780f4a4861b6e
 learniq	1167	b9644fb4e9c377845c07d5fc7711b21cc1e3ce3a	REVERIFY	worker-52	floor restored: split 4 long units (ExamplePortalProvisioner, ExampleSetDates, ReportCardPublishHandler), development 3.98 -> 3.99, suite 6868 with only the inherited he.json generator failure; new head 2c125d9d5b87d633f53d9f8f8b96f8a909fc72d5, verify it
 buildiq	1652	fd2e894ab2488b523b31ce2263c461c60518bbb2	RED	worker-16:merge-gate	GATE RED floor: unit_complexity: 3.32 -> 3.30
+integriq	3671	4b0e1b0a423662d5834cee85bf86311246344660	GREEN	worker-20	unit 9535 tests; baseline 5 failures (JobsController x2, CallService x2, SyncEntryGolden); new failures none; openregister main API migration checked call by call against main
