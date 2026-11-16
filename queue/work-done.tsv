@@ -15571,3 +15571,4 @@ review:stackiq:1931:42bba8a9	GREEN: no new failures, specs-conformant build	sess
 merge:humaniq:872:8c0b2018	failed: merge gate cannot measure humaniq in the cloud env (ADR ruleset host refused by proxy; apt gitleaks 8.16 lacks dir); same as merge:humaniq:606 skip=5	session-20261116T063134-3a4fc8af	2026-11-16T07:01:29Z
 merge:humaniq:684:4f9ce225	failed: merge gate cannot measure humaniq in the cloud env (ADR ruleset host refused by proxy); see merge:humaniq:606	session-20261116T063134-3a4fc8af	2026-11-16T07:01:46Z
 fix:hermiq:1167:9bf6ab11	sbom regenerated, development merged; new head dae65138	session-20261116T062050-3a7e109c	2026-11-16T07:01:44Z
+review:stackiq:1435:81fb6bd4	GREEN: behaviour kept on main, suite OK	session-20261116T062050-add210c3	2026-11-16T07:02:10Z
