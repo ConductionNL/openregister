@@ -15531,3 +15531,4 @@ fix:planninq:871:95bfabe1	sbom regenerated, development merged; new head c207058
 fix:buildiq:1641:1cc1383a	merged development cleanly, pushed b6868cd6b6f9eec39772064f4979ffcdb1432599, REVERIFY	session-20261116T062050-7d5ce0d6	2026-11-16T06:51:29Z
 merge:hermiq:1174:0c97b899	failed: permission (merge gate checker floor cannot measure secretscanning/adrvalidator on this host: gitleaks missing, its install refused)	session-20261116T063608-d33f86e6	2026-11-16T06:51:40Z
 fix:buildiq:820:a6bd63eb	failed: sbom gate unsatisfiable - dev-only @vitejs/plugin-vue lock bump; regen-sbom (--omit dev) leaves sbom.cdx.json unchanged, but merge_gate.sbom requires the file in the diff; needs a dev-only-lock exemption in the gate	session-20261116T062120-691af8f7	2026-11-16T06:51:36Z
+fix:planninq:910:59fb2d6b	sbom false positive (dev-only); merged development, new head 8ffad303, REVERIFY queued	session-20261116T062120-7c38c5f1	2026-11-16T06:51:53Z
