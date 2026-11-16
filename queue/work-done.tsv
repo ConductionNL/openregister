@@ -16808,3 +16808,4 @@ fix:opencatalogi:2679:0e72dcc6	conflict resolved, pushed 3b4372c2; merge lock bu
 merge:decidiq:1467:7c46616f	unmeasured: static.developer.overheid.nl (proxy 403 from this session); 5 APPROVE recorded, #2178 REQUEST_CHANGES (unregistered manifest icons)	session-20261116T170950-d0890faf	2026-11-16T17:25:43Z
 fix:opencatalogi:2682:d8b519df	floor restored (sig-floor PASS), pushed 4e12e44e9; not landed: merge lock held by another merger, REVERIFY queued	session-20261116T170324-19e96cf4	2026-11-16T17:25:39Z
 fix:hermiq:1736:476d3761	development merged in clean, no new failures; new head 4200349d, REVERIFY queued (hermiq merge lock held elsewhere)	session-20261116T170138-65b3b637	2026-11-16T17:25:56Z
+fix:hermiq:1788:4b1ae86b	conflict resolved (registry.js, both widgets kept), new head ce467188; merge lock held elsewhere, REVERIFY queued	session-20261116T165247-ed439eb0	2026-11-16T17:26:05Z
