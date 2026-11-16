@@ -16014,3 +16014,4 @@ review:pipelinq:2969:23b177e5	GREEN: frontend phone search; vitest 1 inherited f
 lane:ormig:integriq:migrate	PR #3671 opened at 18d443b4, suite = development baseline; merge lock busy, GREEN verdict queued for merge	session-20261116T084851-92549055	2026-11-16T09:20:30Z
 review:portaliq:1767:171143de	GREEN: dev-dependency bump, build ok, node specs 2696/2702 pass, 4 failures inherited from development	session-20261116T091541-9e19ce49	2026-11-16T09:20:51Z
 review:portaliq:2349:e7812cc2	GREEN: lock-only bump, suite and phpstan equal to baseline; sbom not regenerated (covered by bundle #2531)	session-20261116T084851-6e832488	2026-11-16T09:21:07Z
+fix:shillinq:2071:85bf3df1	inherited SPDX floor; restored stub header, pushed 75f4741b0; merge lock busy, REVERIFY queued	session-20261116T084459-8070a613	2026-11-16T09:21:22Z
