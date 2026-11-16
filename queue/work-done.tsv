@@ -18345,3 +18345,4 @@ verify:buildiq:1643:5839e564	CONFLICT: l10n/en.json, l10n/nl.json vs development
 verify:decidiq:2199:9e47941f	2199 CONFLICT	session-20261116T230531-f9095b0f	2026-11-16T23:26:17Z
 verify:buildiq:1651:45931abe	1651 CONFLICT	session-20261116T224608-d6967eb8	2026-11-16T23:26:36Z
 verify:buildiq:1618:12cdfa46	CONFLICT #1618 (l10n + DetailPageEditor)	session-20261116T224246-d9bde508	2026-11-16T23:26:52Z
+verify:buildiq:1590:6b4f185d	CONFLICT #1590 (l10n, openapi.json, icons.js, VersionHistory.vue)	session-20261116T232519-f84cca9a	2026-11-16T23:27:09Z
