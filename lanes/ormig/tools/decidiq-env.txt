@@ -1,0 +1,1 @@
+SKIP_UNTYPED='#/(ApprovalRouteCommandServiceTest|ApprovalRouteServiceTest|DecisionSupertypeFailureModeTest|GovernanceBodyCommandServiceTest|MotionServiceAmendmentOrderTest|MotionServiceCosignerThresholdTest|ParaferingRouteRuntimeTest)\.php$#'

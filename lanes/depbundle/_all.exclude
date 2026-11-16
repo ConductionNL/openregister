@@ -1,0 +1,1 @@
+@nextcloud/vue	9.13/9.14 break the vitest suites in node (dossiq: unknown file extension .css from dist/assets; pipelinq: bundled p-queue TypeError on node:events); needs a vitest config change in its own PR
