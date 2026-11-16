@@ -15426,3 +15426,4 @@ verify:filinq:2139:b981d5af	already on development: PR head is an ancestor of or
 review:hermiq:1174:296b7354	GREEN: ocp bump, 0 new failures (192 inherited from development)	session-20261116T062121-edb2d73b	2026-11-16T06:28:17Z
 review:hermiq:1307:1007dac6	GREEN: lock+sbom only, unit 5291 OK	session-20261116T062544-335bf148	2026-11-16T06:28:32Z
 review:hermiq:1187:415fb023	GREEN: dev-dep bump only, vitest 1526 pass, playwright config loads	session-20261116T062120-7c38c5f1	2026-11-16T06:28:47Z
+review:filinq:2122:d654b8fc	GREEN: matches grondslagen-read-from-dossiq specs; unit 6829/0 fail, phpstan, vitest, jest clean	session-20261116T062117-388e9de2	2026-11-16T06:29:23Z
