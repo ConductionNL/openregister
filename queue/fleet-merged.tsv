@@ -4409,3 +4409,4 @@ larpinq	1060	b45d1e9be24990e3f8d521dc0eb15642226040e8	SKIP	worker-34	GATE UNMEAS
 keepiq	1791	123b7f2512968c472ee9f71652d23dd883b908e4	SKIP	worker-12	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 keepiq	1792	5d484110eef783bb32a8ca647a51e7e8f42101a9	SKIP	worker-12	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 integriq	2671	f4218e170982307bdf1ebe71fe738453a8155f5e	SKIP	worker-04	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
+integriq	2711	6f3fdc050e0380cd7dfe4f122026010313ba5a23	RED	worker-04	GATE RED sbom: package-lock.json changed without sbom.cdx.json
