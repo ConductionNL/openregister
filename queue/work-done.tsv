@@ -16133,6 +16133,7 @@ fix:shillinq:2098:93d83382	fixed spdxheaders floor (stub header restored); new h
 merge:learniq:2507:f21cb143	cloud tree of 1 learniq PRs: merged=0 red=0 fail=0 skip=1; conflict 0, lint 0, red 0, moved 0, done 0 (REQUEST_CHANGES: demo data for new schemas)	session-20261116T101013-986398f9	2026-11-16T10:25:28Z
 merge:opencatalogi:1888:681fe39d	unmeasured: api.osv.dev (probe connect_rejected; gate's opensourcehealth floor needs it); nothing built, local lander takes it	session-20261116T101239-227210a0	2026-11-16T10:25:35Z
 fix:shillinq:3000:69030639	no change needed: clean on development, tree-only conflict; REVERIFY queued	session-20261116T101745-e986474c	2026-11-16T10:25:57Z
+fix:shillinq:1899:3859758c	fixed: SPDX header on VatReturnChecks, pushed 311621f9; remaining spdx drop inherited from development (#2071 fixes)	session-20261116T101206-d1581575	2026-11-16T10:26:14Z
 fix:shillinq:1908:ca21609b	inherited: plain development (949b5f43d) already reads spdxheaders 5 -> 4 (1 of 3980 source files lacks an SPDX header); PR only bumps @vue/test-utils + sbom, nothing to fix on the branch	session-20261116T101916-4045770b	2026-11-16T10:26:34Z
 merge:portaliq:1666:4c60d041	unmeasured: static.developer.overheid.nl (gate probe on #1666; tree 7 IN, 1767 CONFLICT, 2530 MOVED; nothing landed)	session-20261116T101220-07929334	2026-11-16T10:26:23Z
 fix:launchpad:785:085c96eb	floor restored (module_coupling 4.73), pushed cfc3d84d; REVERIFY queued	session-20261116T101208-a62d0f70	2026-11-16T10:26:53Z
