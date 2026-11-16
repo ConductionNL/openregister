@@ -17502,3 +17502,4 @@ cover:learniq:e6498ddd:81b1241f	already covered: lib/Portal/*.php measures 99.15
 cover:keepiq:c967a31fm902f:js0023cfc7	PR #1854: +20 vitest specs, src/dialogs 93.8%->96.8% stmts; suite 6902->6922 pass (3 inherited HealthReportView fails)	session-20261116T192132-006e7c93	2026-11-16T19:51:05Z
 review:learniq:1882:cfff5ab1	GREEN: labels only; 1 inherited failure (HigherEducationExampleSetTest)	session-20261116T193315-3e9a027b	2026-11-16T19:51:44Z
 fix:humaniq:662:f0ddf8e5	merged #662 at f0ddf8e5865ef5e7cecb30c3b8fd324396a2ffc8 (sbom already current: dev-only lock change)	session-20261116T194621-b8f6108e	2026-11-16T19:52:23Z
+fix:humaniq:606:999cc286	stale	feeder	2026-11-16T19:47:15Z
