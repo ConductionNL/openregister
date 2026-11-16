@@ -88,7 +88,8 @@ final class MapperWiring {
 				eventDispatcher: $eventDispatcher,
 				validator: $validator,
 				logger: $container->get('Psr\Log\LoggerInterface'),
-				objectActions: static fn (): ObjectActionValidatorInterface => $container->get(ObjectActionValidatorInterface::class)
+				objectActions: static fn (): ObjectActionValidatorInterface => $container->get(ObjectActionValidatorInterface::class),
+				cacheFactory: $container->get('OCP\ICacheFactory')
 			)
 		);
 	}//end schemaMapper()

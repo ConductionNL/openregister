@@ -168,10 +168,25 @@ that number is read, so "done" is a measurement rather than an opinion.
       outcomes and cache keys for every case). The combined builder is gone
       from `RegisterMapper` too. Only the `SELECT *` narrowing remains.
 
-- [ ] **Task 4 — cross-request cache.**
+- [x] **Task 4 — cross-request cache.**
       APCu layer keyed on `schema.id + schema.updated`, so a cold worker does
       not repay the whole cost. Invalidated by the existing
       `clearFindCache()` mutation hook, extended to also drop the APCu entry.
+
+      BUILT (2026-11-16, c6): `SchemaRowCache` over the host-local memory
+      cache (`ICacheFactory::createLocal('openregister_schema_rows')`, APCu
+      where configured). With it, `find()`'s identifier arms select only
+      `id, uuid, slug, title, application, updated` (the columns that pick and
+      name the row); the stored row then comes from the cache under
+      `row:<id>:<updated>`, or from one read by primary key that is stored
+      for the next request. It caches the stored ROW, not the composed
+      schema: composition pulls in parents whose stamps are not in the key,
+      so it still runs per request. `clearFindCache()`, `update()` and
+      `delete()` drop every entry of the id; entries expire after 300 s; a
+      row without an `updated` stamp is never cached; a host without a local
+      cache reads whole rows exactly as before. Pinned in
+      `SchemaRowCacheTest` (7) and `SchemaMapperRowCacheTest` (6). The
+      saving on a cold worker is a live measurement (task 11).
 
 ## Reference resolution — the 4-second query
 

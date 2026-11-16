@@ -30,6 +30,7 @@ use Closure;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionValidatorInterface;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandlerInterface;
 use OCP\EventDispatcher\IEventDispatcher;
+use OCP\ICacheFactory;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -45,12 +46,14 @@ final readonly class SchemaMapperServices {
 	 * @param PropertyValidatorHandlerInterface           $validator       Schema property validator for validation.
 	 * @param LoggerInterface                             $logger          Structured logger (surfaces unknown annotation keys).
 	 * @param ObjectActionValidatorInterface|Closure|null $objectActions   Verifies declared actions; a Closure defers it to first use.
+	 * @param ICacheFactory|null                          $cacheFactory    Builds the cross-request row cache; null reads full rows every time.
 	 */
 	public function __construct(
 		public IEventDispatcher $eventDispatcher,
 		public PropertyValidatorHandlerInterface $validator,
 		public LoggerInterface $logger,
 		public ObjectActionValidatorInterface|Closure|null $objectActions = null,
+		public ?ICacheFactory $cacheFactory = null,
 	) {
 	}//end __construct()
 }//end class

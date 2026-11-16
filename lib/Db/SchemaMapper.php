@@ -51,6 +51,7 @@ use OCA\OpenRegister\Db\SchemaMapper\SchemaComposition;
 use OCA\OpenRegister\Db\SchemaMapper\SchemaDefaults;
 use OCA\OpenRegister\Db\SchemaMapper\SchemaLookup;
 use OCA\OpenRegister\Db\SchemaMapper\SchemaMapperServices;
+use OCA\OpenRegister\Db\SchemaMapper\SchemaRowCache;
 use OCA\OpenRegister\Db\SchemaMapper\SchemaReadTrace;
 use OCA\OpenRegister\Db\SchemaMapper\SchemaReferenceSearch;
 use OCA\OpenRegister\Db\SchemaMapper\SchemaRegisterReads;
@@ -158,6 +159,13 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 */
 	private array $findCache = [];
 
+	/**
+	 * Cross-request cache of stored rows, keyed on id and `updated` stamp.
+	 *
+	 * @var SchemaRowCache
+	 */
+	private readonly SchemaRowCache $rowCache;
+
 	// Note: $appConfig is provided by MultiTenancyTrait (protected ?IAppConfig $appConfig=null)
 	// We assign it in the constructor to make it available to the trait methods.
 
@@ -263,6 +271,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 		$this->validator          = $services->validator;
 		$this->logger             = $services->logger;
 		$this->objectActions      = $services->objectActions;
+		$this->rowCache           = new SchemaRowCache(cacheFactory: $services->cacheFactory);
 
 		// Assign appConfig to trait's protected property.
 		$this->appConfig = $appConfig;
@@ -372,15 +381,70 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 * @spec openspec/changes/object-write-sub-500ms/tasks.md
 	 */
 	private function identifierRows(SchemaLookup $lookup): array {
+		// With a row cache the arms read only the columns that pick and name the
+		// row; the stored row itself then comes from the cache or one read by id.
+		$columns = ['*'];
+		if ($this->rowCache->isAvailable() === true) {
+			$columns = SchemaRowCache::PROBE_COLUMNS;
+		}
+
 		foreach (self::identifierArms(id: $lookup->id) as $arm) {
-			$rows = $this->armRows(arm: $arm, id: $lookup->id, multitenancy: $lookup->multitenancy);
-			if ($rows !== []) {
+			$rows = $this->armRows(arm: $arm, id: $lookup->id, multitenancy: $lookup->multitenancy, columns: $columns);
+			if ($rows === []) {
+				continue;
+			}
+
+			if ($columns === ['*']) {
 				return $rows;
 			}
+
+			$stored = $this->storedRowOf(probe: $rows[0]);
+			if ($stored === null) {
+				return [];
+			}
+
+			$rows[0] = $stored;
+			return $rows;
 		}
 
 		return [];
 	}//end identifierRows()
+
+	/**
+	 * The full stored row a probe row picked, from the row cache or one read by primary key.
+	 *
+	 * The probe already applied the organisation filter, so the read by its own
+	 * id needs none.
+	 *
+	 * @param array<string, mixed> $probe The probe row.
+	 *
+	 * @return array<string, mixed>|null The stored row, or null when it is gone.
+	 *
+	 * @spec openspec/changes/object-write-sub-500ms/tasks.md
+	 */
+	private function storedRowOf(array $probe): ?array {
+		$cached = $this->rowCache->get(probe: $probe);
+		if ($cached !== null) {
+			return $cached;
+		}
+
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from('openregister_schemas')
+			->where($qb->expr()->eq('id', $qb->createNamedParameter(value: (int)$probe['id'], type: IQueryBuilder::PARAM_INT)))
+			->setMaxResults(1);
+
+		$result = $qb->executeQuery();
+		$row    = $result->fetch();
+		$result->closeCursor();
+
+		if (is_array($row) === false) {
+			return null;
+		}
+
+		$this->rowCache->put(row: $row);
+		return $row;
+	}//end storedRowOf()
 
 	/**
 	 * The columns an identifier is matched against, in preference order.
@@ -407,13 +471,14 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 * @param string     $arm          `id`, `uuid` or `slug`.
 	 * @param int|string $id           The identifier.
 	 * @param bool       $multitenancy Whether the organisation filter applies.
+	 * @param array<int, string> $columns The columns to read, `*` for the whole row.
 	 *
 	 * @return array<int, array<string, mixed>>
 	 *
 	 * @spec openspec/changes/object-write-sub-500ms/tasks.md
 	 */
-	private function armRows(string $arm, string|int $id, bool $multitenancy): array {
-		$qb = $this->armQuery(arm: $arm, id: $id);
+	private function armRows(string $arm, string|int $id, bool $multitenancy, array $columns = ['*']): array {
+		$qb = $this->armQuery(arm: $arm, id: $id, columns: $columns);
 		$this->filterByOrganisation(qb: $qb, multitenancy: $multitenancy);
 		$qb->setMaxResults(2);
 
@@ -429,16 +494,17 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 *
 	 * Shared by find() and findInIds() so both match an identifier the same way.
 	 *
-	 * @param string     $arm `id`, `uuid` or `slug`.
-	 * @param int|string $id  The identifier.
+	 * @param string             $arm     `id`, `uuid` or `slug`.
+	 * @param int|string         $id      The identifier.
+	 * @param array<int, string> $columns The columns to read, `*` for the whole row.
 	 *
 	 * @return IQueryBuilder The query, without the organisation filter.
 	 *
 	 * @spec openspec/changes/object-write-sub-500ms/tasks.md
 	 */
-	private function armQuery(string $arm, string|int $id): IQueryBuilder {
+	private function armQuery(string $arm, string|int $id, array $columns = ['*']): IQueryBuilder {
 		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
+		$qb->select(...$columns)
 			->from('openregister_schemas');
 
 		$qb->where(match ($arm) {
@@ -869,13 +935,15 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 * cache entry after a mutation, so the next find() call re-reads
 	 * from the database. Clears every cache key that referenced the
 	 * given schema (by id, uuid, slug) across both RBAC/multi-tenancy
-	 * flag combinations.
+	 * flag combinations, and every cross-request cached row of it.
 	 *
 	 * @param int $schemaId The schema ID to drop from the find cache.
 	 *
 	 * @return void
 	 */
 	public function clearFindCache(int $schemaId): void {
+		$this->rowCache->forget(schemaId: $schemaId);
+
 		// Find every cache key whose value points at this schema ID and unset.
 		foreach (array_keys($this->findCache) as $key) {
 			$cached = $this->findCache[$key];
@@ -1491,6 +1559,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 		$oldSchema = $this->storedRow(entity: $entity);
 
 		$entity = parent::update(entity: $this->preparedOver(old: $oldSchema, schema: $entity));
+		$this->rowCache->forget(schemaId: (int)$entity->getId());
 		$this->announceUpdate(old: $oldSchema, new: $entity);
 
 		return $entity;
@@ -1742,6 +1811,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 
 		// Proceed with deletion.
 		$result = parent::delete(entity: $entity);
+		$this->rowCache->forget(schemaId: (int)$entity->getId());
 
 		// Dispatch deletion event.
 		$this->eventDispatcher->dispatchTyped(
