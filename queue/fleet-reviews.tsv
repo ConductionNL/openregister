@@ -658,3 +658,4 @@ shillinq	2096	a1c73fc3585457496a4d304afb02eaf6c25b0008	APPROVE	worker-53	Standar
 keepiq	1826	f651073d16de79ef8b3ab98a860803672418e882	APPROVE	worker-21	Strict; no blockers (version read, write responses, conflict bodies and attachments of a privileged copy now gated, with tests); concerns: none open, GDPR export of the holder's own rows left as is, gate-116 setup-only (ajv) and the PR does not touch connections.json
 buildiq	1641	59f9dd1034102e9f4ab218325552abbca89182a7	APPROVE	worker-40	Thorough; no blockers; index lists rule sets through the scoped reader, app evaluation gated by a callableBy allowlist that fails closed and runs as dry run
 buildiq	1677	2cb752c8fbf50b2b6665099052fdaa13d50db18e	APPROVE	worker-40	Standard; no blockers; frontend form page wrapper, server re-evaluates on save
+filinq	2149	794a93d4f8fbeb90285529ad07cf9c24c1a1e06b	APPROVE	worker-44	Quick; no blockers; docs only, describes the dossier-management-ui wish set
