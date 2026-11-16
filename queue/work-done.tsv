@@ -16981,3 +16981,4 @@ cover:keepiq:c967a31fmba5a:f545d745	no PR: lib/Repair/*.php already at 98.6% (10
 review:openregister:10597:9dcbb7e2	APPROVE: publiccode.yml metadata only	session-20261116T173227-109a6e00	2026-11-16T17:54:09Z
 merge:versioniq:691:86c1cc56	failed: cm_tree prep exit 2: no vendor/bin/phpunit after composer-cloud	session-20261116T173240-b63ad758	2026-11-16T17:54:15Z
 review:filinq:2072:5c869835	GREEN: unit 6912/0 failures on PR+development (baseline 6878/0), phpstan clean	session-20261116T173342-1d8a0fb9	2026-11-16T17:54:34Z
+fix:hermiq:1795:fdc2c517	fixed: floor restored to 3.77 at e06004f (REVERIFY queued; not landed, gitdocumentatie.logius.nl blocked)	session-20261116T165351-3ccaad0e	2026-11-16T17:54:56Z
