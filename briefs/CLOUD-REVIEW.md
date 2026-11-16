@@ -50,7 +50,9 @@ blocker in Strict and as a concern in the other modes.
 blocker. These gate failures force REQUEST_CHANGES in every mode: route-auth, no-admin-IDOR,
 unsafe-auth-resolver, semantic-auth, initial-state, admin-router, nc-input-labels, modal-isolation,
 public-monitoring, img-alt, semantic-controls. A failure only on lines the PR did not touch is inherited: note
-it, it does not block. When the runner cannot run (setup error), do the checklist in section 4 by hand.
+it, it does not block (check with the gate's log: it names file:line). A gate that reports its own setup
+("vendored schema could not be loaded", "ajv not resolvable", "gate misconfiguration") did not run: no finding,
+judge that area by hand. When the runner cannot run at all, do the checklist in section 4 by hand.
 
 ## 4. Analysis
 
