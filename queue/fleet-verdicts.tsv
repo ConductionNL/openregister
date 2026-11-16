@@ -14416,6 +14416,17 @@ stackiq	1978	315e616b2d61a4366c9527185a4c1dfeab77a8f0	REVERIFY	worker-47	moved t
 shillinq	3055	faf02682118d7f626db6c613f33227f837889737	RED	worker-16:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
 shillinq	3062	92f7ebcabee910b133253367fa8bd61c59485c77	REVERIFY	worker-16:merge	verdict sha is not the head: head is faaae73e234727476b1a3a73e75779e41d5d05a1
 shillinq	3080	5b6628bedaef904a02c0e1f497655def4909ac35	REVERIFY	worker-16:merge	verdict sha is not the head: head is cb96e451755a868ae8ce0e556a51cea3dd856dab
+integriq	2716	98572e4167aca01ea05fda93a4d015ea9f674d6a	CONFLICT	merge3	merges clean on development alone; files: package-lock.json package.json sbom.cdx.json 
+integriq	2994	a1ae6e95cef3fbef6c2527a20dd0176d88b05ff7	CONFLICT	merge3	merges clean on development alone; files: package-lock.json package.json 
+integriq	3049	5e51514f056fa810ea3e7e2acd3b4e6e6ddf4215	CONFLICT	merge3	merges clean on development alone; files: lib/Service/SynchronizationService.php tests/bootstrap.php 
+integriq	3050	8c85da90fed1634ee6a16085003aed7d344d3bb7	CONFLICT	merge3	merges clean on development alone; files: lib/Service/SynchronizationService.php tests/bootstrap.php 
+integriq	3051	80f07d8ccee7fae6345c764563687c9c0f8c227e	CONFLICT	merge3	merges clean on development alone; files: tests/bootstrap.php 
+integriq	3593	f34b8147e42798037f31af830b5d514cb455b32e	CONFLICT	merge3	merges clean on development alone; files: tests/bootstrap.php 
+integriq	3596	2efdcccdd8a9d80667d7a88d4ddfa9aebfcf3ad8	CONFLICT	merge3	merges clean on development alone; files: tests/Unit/Service/CatalogRegistrySeedGoldenTest.php 
+integriq	3638	7466fd09d3366a2278bd751a6b10e20e0f7f41e5	CONFLICT	merge3	merges clean on development alone; files: tests/Unit/Service/CatalogRegistrySeedGoldenTest.php 
+integriq	3649	977d1a6a3fc1dbbf511e4dcba0e2bb7c4b4b59ea	CONFLICT	merge3	merges clean on development alone; files: l10n/en.json l10n/nl.json 
+integriq	3669	04075d461b1bc7703cea98fe27b0e7abfac64558	CONFLICT	merge3	merges clean on development alone; files: composer.lock 
+integriq	3670	ecc30716f6cdaa27854ad597b14b592252099816	CONFLICT	merge3	merges clean on development alone; files: package-lock.json package.json sbom.cdx.json 
 versioniq	721	2524b722d51434a114c0f942019fae2eb306a81b	RED	worker-14:merge-gate	GATE RED floor: unit_complexity: 4.63 -> 4.61; module_coupling: 5.23 -> 5.20
 shillinq	1991	29abf7fb303a9a25601637bfbbaecaeb9a1feae7	REVERIFY	worker-45	spdxheaders red is inherited from development (stub header dropped by 0d688ca2f), fixed in #3112; no change to this branch; new head 29abf7fb303a9a25601637bfbbaecaeb9a1feae7, verify it after #3112
 dossiq	6590	e05ebf369ae06f6003bbbc058625dfd8e78b491a	GREEN	worker-51	unit 18335 tests on tree (baseline 18317, 0 failures), 0 new; calls match openregister main signatures, rbac flags and behaviour kept
