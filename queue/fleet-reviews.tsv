@@ -40,3 +40,4 @@ versioniq	707	9729dcff80bab36770e43b15864969807474727f	REQUEST_CHANGES	worker-50
 launchpad	756	e5da8a8442e3254be403a4d29fe3cb21312df78c	APPROVE	worker-12	Quick; no blockers; dev-only dependency bump with sbom regen; tree suite 4461 no new failures
 launchpad	880	3c07107533c5035ff96566d9aa97a6c5c78aa5e3	APPROVE	worker-12	Quick; no blockers; dev-only dependency bump with sbom regen; tree suite 4461 no new failures
 launchpad	977	4ec996d31439daed99af546858b9614b2ca4a159	APPROVE	worker-12	Quick; no blockers; dev-only dependency bump with sbom regen; tree suite 4461 no new failures
+stackiq	1168	04f38d3ae4a4d17b142dbafb97d2a81126d6568c	APPROVE	worker-23	Quick; no blockers; twig minor bump with regenerated sbom, tree adds no failures
