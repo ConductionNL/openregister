@@ -15065,3 +15065,4 @@ decidiq	2178	a58bcd586a8ac83591dc7f04c81fc3cea4998a86	REVERIFY	worker-11	registe
 humaniq	684	036f7e9ffb9a36fce46245fcd1b17c73680556ff	RED	worker-52:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
 buildiq	1091	0a8185a0dee7e695b01a176d292da46757fc47ba	GREEN	worker-48:review	devDependency bump only (@vitest/coverage-v8 + vitest 5.1.0 in lock, sbom versions); merged with development: vitest 4719/4719 pass, coverage run ok; no PHP touched
 decidiq	2222	c48b29b22a9114e3d924a26c8c2f287883188572	RED	merge3:merge-gate	GATE RED absolute floor: decidiq maintainability 3.77 after merge is below its floor 3.78
+larpinq	1060	b45d1e9be24990e3f8d521dc0eb15642226040e8	GREEN	worker-09:review	same verdict as the earlier row of this sha, rewritten with tab separators: build of admin-staff-roles-and-invites matches its specs; merged with development units 1057 OK, vitest 639 OK, phpstan/phpcs clean
