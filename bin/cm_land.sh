@@ -8,6 +8,8 @@
 #       review at that sha, the merge gate, then one REST merge pinned to the sha, while the app's merge lock is
 #       still ours. Then a verdict row for every PR that did not get into the tree (CONFLICT, LINT, RED; MOVED as
 #       REVERIFY), so the feeder queues fix or verify tasks. Prints one summary line for task_done.
+#       Every MERGED/RED/FAIL/SKIP row is pushed as it happens (no batching): a session that dies right after a
+#       merge cannot take the ledger row with it.
 # Development only; never openregister, never beta or main.
 set -u
 BIN=$(cd "$(dirname "$0")" && pwd)
@@ -43,7 +45,7 @@ land)
 	ins=$(awk -F'\t' '$3 == "IN" {printf "%s%s@%s", s, $1, $2; s = ","}' "$T")
 	res=none
 	if [ -n "$ins" ]; then
-		res=$(REQUIRE_REVIEW=1 MERGE_LOCK=$app MERGE_BATCH=1 MERGE_LOCAL_LOG=$W/merged-local.log \
+		res=$(REQUIRE_REVIEW=1 MERGE_LOCK=$app MERGE_LOCAL_LOG=$W/merged-local.log \
 			bash "$BIN/merge_tree.sh" "$W/$app" "$app" "$ins" "${STACKS:-}" "$lane" 2>&1 | tail -1)
 	fi
 	vrows=()
