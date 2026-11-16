@@ -15703,3 +15703,4 @@ fix:planninq:1196:458678ca	failed: sbom already current (only dev dep conduction
 review:launchpad:763:68f98712	GREEN: vitest 5 bump, 2578/2578 tests pass merged with dev	session-20261116T080016-01e1a0d7	2026-11-16T08:08:10Z
 review:stackiq:1924:f5164c8d	GREEN: matches change specs; no new failures (inherited: 1 phpunit, 1 vitest)	session-20261116T080103-dd70aeff	2026-11-16T08:08:18Z
 fix:planninq:1070:0324724d	failed: sbom already current (dev dep conduction/hydra-gates bump only; regen-sbom leaves sbom.cdx.json byte-identical), nothing to commit; merge_gate sbom() requires sbom.cdx.json in the diff and stays RED for dev-only lock changes	session-20261116T075936-d83d6c1e	2026-11-16T08:08:38Z
+review:stackiq:1954:b53c26d5	GREEN: unit 3732 OK, vitest 1 inherited failure, access checks per spec	session-20261116T075953-c9c4b65a	2026-11-16T08:08:52Z
