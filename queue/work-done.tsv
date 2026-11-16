@@ -16183,3 +16183,4 @@ merge:stackiq:1989:9bfe8cc8	cloud tree of 1 stackiq PRs: merged=0 red=1 fail=0 s
 merge:humaniq:606:2c571902	unmeasured: static.developer.overheid.nl (6 IN approved, 2 conflict, 1 moved; none landed)	session-20261116T102639-f9f23dec	2026-11-16T10:41:11Z
 merge:hermiq:1135:0f2fc4bb	unmeasured: static.developer.overheid.nl (APPROVE recorded for #1135, #1801, #1802; tree green 5322)	session-20261116T100825-9860772f	2026-11-16T10:41:56Z
 merge:decidiq:2170:7fd90fb1	unmeasured: static.developer.overheid.nl (3 PRs reviewed APPROVE, tree green 4655 tests, 0 new failures)	session-20261116T101250-8aeb7975	2026-11-16T10:42:36Z
+lane:arch5:stackiq:next-stackiq:c4	partial: not started, #1990/#1991 not landed yet (stackiq merge gate red on development: tests/Stubs/Contract/ObjectServiceInterface.php lacks SPDX lines); requeued as :c5	session-20261116T103618-2f6d69a7	2026-11-16T10:42:52Z
