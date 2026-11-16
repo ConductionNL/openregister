@@ -16448,3 +16448,4 @@ review:integriq:2671:f4218e17	GREEN: dev-tooling bump, unit suite identical to d
 review:larpinq:1060:701044e6	GREEN: matches change specs; phpunit 1055/0 fail, vitest 639 pass	session-20261116T143136-ae6d04cb	2026-11-16T14:34:22Z
 review:integriq:3628:58bae4ec	GREEN: build per spec, no new failures (9597 tests, 5 inherited)	session-20261116T142644-e92c7bef	2026-11-16T14:34:33Z
 review:integriq:3574:538c9e9b	GREEN: no new failures (9566 tests, baseline reds inherited), behaviour matches change specs	session-20261116T142815-db93bef4	2026-11-16T14:34:42Z
+review:integriq:3612:27e3d6e6	GREEN integriq#3612: spec-conform, no new failures (9554 tests, 5 inherited)	session-20261116T142951-88449a68	2026-11-16T14:35:00Z
