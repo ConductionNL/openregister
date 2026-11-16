@@ -17695,11 +17695,16 @@ review:hermiq:1795:4db38b5f	stale	session-20261116T202154-fbc59c50	2026-11-16T20
 cover:pipelinq:7f9dc8e6m3dbb:8f8dca30	added 5 tests (lib/Service/Export edge branches) to open cover PR #3602 (app over PR budget, 44 open); suite 9151/0 failures	session-20261116T202142-f327703a	2026-11-16T20:35:33Z
 fix:keepiq:1826:f651073d	fixed floor: merged development, interfacing 3.33->3.32 (PASS), refactor to value objects; suite 5499 OK; new head 18633225; REVERIFY (lock held elsewhere)	session-20261116T200543-e8f76f14	2026-11-16T20:35:45Z
 review:opencatalogi:2696:cdc6289d	GREEN: no new failures; merge gate floors RED noted	session-20261116T201644-3ef8cda3	2026-11-16T20:36:10Z
+cover:keepiq:c967a31fm902f:34763eb4	already done: lib/Middleware/*.php 100% lines (224/224), 71 tests; earlier -1/-2 PRs merged; no PR	session-20261116T200543-e8f76f14	2026-11-16T20:36:26Z
 fix:shillinq:3055:8918b6e6	conflicts resolved and actions moved to the context signature, pushed 3c4a7efd; merge lock held elsewhere, REVERIFY queued	session-20261116T194104-8906f18f	2026-11-16T20:36:43Z
 fix:hermiq:1735:33b209c9	conflict resolved, pushed 42dffb64; REVERIFY queued (no end-to-end landing)	session-20261116T202154-fbc59c50	2026-11-16T20:36:58Z
+cover:pipelinq:7f9dc8e6m3dbb:d641aea9	added 15 tests (2 files new, 8 extended) for lib/Service/Marketing to open PR #3602 (pipelinq over 40 open PRs); Marketing 2537->2556/2564; suite 9144->9159 no new failures	session-20261116T202207-14e523c0	2026-11-16T20:37:03Z
 review:learniq:2507:e2e4770e	stale: already merged into development (c44c6f38)	session-20261116T203632-17bf60c7	2026-11-16T20:37:09Z
 verify:hermiq:1808:b331dd92	GREEN #1808 (unit OK 5374, vitest OK 1540)	session-20261116T201953-a718bf5e	2026-11-16T20:37:38Z
 merge:opencatalogi:2699:8d531e14	cloud tree of 1 opencatalogi PRs: none; conflict 1, lint 0, red 0, moved 0, done 0	session-20261116T201644-3ef8cda3	2026-11-16T20:38:00Z
 measure:stackiq:20261116h20	php 88.69%, js 95.07% at 00516ba	session-20261116T203029-cbd53de3	2026-11-16T20:38:19Z
 review:shillinq:2997:08a59a1f	stale	session-20261116T194104-8906f18f	2026-11-16T20:38:30Z
+build:dossiq:capability-rows-say-the-whole-capability:c8	partial: PR #6613 rows 10.1 (KPI gauge preset on the Dashboard) and 10.4 (dwell-time heatmap, view=heatmap), left: 1.9 task panel, 1.12 needs structured action proposals, 1.16 case documents as mail attachments (send path takes the sender's own file paths), 1.24 offline inspection, 2.19 twelve widget kinds; provider rows to their apps	session-20261116T202108-f101ad43	2026-11-16T20:38:28Z
 fix:filinq:2072:21673d4a	fixed BLOCK on #2072 (sweep org-scoped again), pushed 68c796a1; lock busy, REVERIFY queued	session-20261116T202104-9ad6a286	2026-11-16T20:38:30Z
+lane:arch5:shillinq:next-shillinq-r3	PR #3124 opened (4.12-4.16 -> 4.13-4.18), GREEN verdict queued; merge lock held elsewhere; next round queued	session-20261116T201628-7b6853de	2026-11-16T20:39:07Z
+verify:learniq:2567:908b4487	GREEN #2567 (6902 tests, 0 new failures)	session-20261116T200545-32ab46ec	2026-11-16T20:39:14Z
