@@ -16300,3 +16300,4 @@ review:launchpad:785:cfc3d84d	GREEN: unit 4491 OK, vitest 1058 pass, phpstan cle
 merge:opencatalogi:1888:4f51a0aa	unmeasured: static.developer.overheid.nl (4 approved PRs 1888 1893 1894 2407 skipped at the gate; 2643 2670 RED, 2655 2673 CONFLICT, 2679 MOVED)	session-20261116T110144-2dffa885	2026-11-16T11:14:58Z
 build:dossiq:stuf-provider-through-integriq	already done: all code tasks ticked on development; the open task removes the provider forwarders at the next release (release task, left)	session-20261116T110121-4578b190	2026-11-16T11:15:20Z
 build:dossiq:inbound-mail-filters	already done: all code tasks ticked on development; 8.4 is an e2e run	session-20261116T110121-4578b190	2026-11-16T11:15:38Z
+build:dossiq:party-contact-moments-board-lines	already done: every code task on development; only 1 live/e2e task(s) left	session-20261116T105426-4e0b8984	2026-11-16T11:15:39Z
