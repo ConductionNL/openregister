@@ -18214,4 +18214,5 @@ verify:dossiq:6617:efa216b4	GREEN 6617, GREEN 6618	session-20261116T222948-81ec1
 review:pipelinq:3602:3f5ffded	GREEN: tests only, 9218 unit tests pass on PR+development	session-20261116T224625-4fd1a21f	2026-11-16T22:49:04Z
 cover:keepiq:c967a31fmaddd:dfaef732	no change: lib/Notification 415/417; the 2 uncovered lines are the no-renderer fallbacks, unreachable since every mapped subject renders (pinned by an existing test)	session-20261116T220905-333eed09	2026-11-16T22:48:58Z
 cover:pipelinq:7f9dc8e6m3dbb:11fc5f4e	already covered: lib/Service/Document/ 121/123 lines locally (98%); the 2 left are tempnam/ZipArchive::open failure branches; no PR	session-20261116T224529-30de497c	2026-11-16T22:49:01Z
+cover:pipelinq:7f9dc8e6m3dbb:95a79563	added SchemaLifecycleGraphLookupOrderTest (6 tests) to open PR #3602 (over PR budget: 43 open); suite 9218->9224, no new failures	session-20261116T224521-2bf04f6e	2026-11-16T22:49:22Z
 cover:pipelinq:7f9dc8e6m3dbb:f3231970	deferred: pipelinq has 43 open PRs	session-20261116T224625-4fd1a21f	2026-11-16T22:49:40Z
