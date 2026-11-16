@@ -1,7 +1,7 @@
 # Tasks: Production Observability
 
 - [ ] Implement: Prometheus Metrics Endpoint
-- [ ] Implement: Standard Application Metrics
+- [x] Implement: Standard Application Metrics
 - [ ] Implement: Register, Schema, and Object Count Metrics
 - [ ] Implement: CRUD Operation Counters
 - [x] Implement: Search Performance Metrics
@@ -12,7 +12,7 @@
 - [ ] Implement: BIO2 Audit Logging Compliance
 - [ ] Implement: Database Connection Monitoring
 - [ ] Implement: Alerting Threshold Configuration
-- [ ] Implement: Metrics Storage Strategy
+- [x] Implement: Metrics Storage Strategy
 - [ ] Implement: Performance Baseline Metrics
 - [ ] Implement: Nextcloud Dashboard Integration
 
@@ -143,3 +143,41 @@ a whole number means no threshold, and a growth that cannot be read publishes no
 alert. "Alerting Threshold Configuration" stays unticked: the error-rate and response-time
 thresholds and their admin notifications are not built.
 
+**Seventh pass, 2026-11-16: request counters, request duration histogram and error counter.**
+"Standard Application Metrics" and "Metrics Storage Strategy" are ticked.
+`Middleware\RequestMetricsMiddleware` (the last app-scoped middleware, so its afterException
+sees an exception before another middleware turns it into a response) records every answered
+OpenRegister request by method, route and final status, with the time since
+`REQUEST_TIME_FLOAT`, and counts exceptions as `database` (Nextcloud or Doctrine database
+exceptions and `DatabaseConstraintException`, also as a previous exception), `validation` (a
+class name ending in `ValidationException`) or `other`, then rethrows them. Recording never fails
+a request.
+
+A request costs APCu atomic increments only (`Service\Observability\ApcuCounters`,
+`RequestMetricsRecorder`), never a database write. Every 60 seconds one request of the PHP
+process pool wins an APCu marker (`apcu_add` with a 60 s TTL) and flushes: each counter is taken
+out with an atomic subtract, so increments that race with the flush stay for the next one, and
+added to a cumulative row per label set in `openregister_metrics`
+(`RequestMetricsStore`; migration `Version1Date20261116230000` adds the nullable bigint columns
+`sample_count` and `sample_sum_ms`). A row the database refuses is put back into APCu. The flush
+runs inside a web request instead of a cron job on purpose: APCu memory belongs to the PHP-FPM
+pool, so a job run from the CLI cron would see none of it. A flush stamps `created_at`, so the
+existing 90-day retention cleanup (`LogCleanUpTask` → `cleanOldMetrics()`, logged at INFO)
+only removes a label set that saw no traffic for 90 days, and the table grows with the number of
+label sets, not of requests. Without APCu nothing is recorded and the three families read zero.
+
+`Service\Observability\RequestMetricsProvider` joins `OpenRegisterMetricsProvider` and publishes
+`requests_total{method,endpoint,status}`, the `request_duration_seconds{method,endpoint}`
+histogram with the 0.01 … 10.0 s bounds and `errors_total{type}` (database, validation and other
+always present), in three grouped queries. `endpoint` is the route's URL template from
+`appinfo/routes.php` (`Service\Observability\RouteTemplates`, keyed like Nextcloud's route
+names), so it has one value per route instead of one per object id; the `/api/v1/` aliases keep
+their own template. Counts lag by at most one flush interval.
+
+**Left after the seventh pass.** Alerting: the error-rate and p95 response-time thresholds and
+their admin notifications can now be computed from these rows, but the rows are cumulative, so a
+5-minute window needs a periodic snapshot of them (a background job comparing totals) that is
+not built. Structured logging (request-id carrier), BIO2 audit re-verification, the
+query-duration histogram and slow-query counter, cache hit/miss and import progress
+instrumentation, the dashboard widget and serverinfo section, and an admin settings field for
+`metrics_api_token` / `metrics_allowed_ips` remain open.

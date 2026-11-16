@@ -4257,3 +4257,10 @@ Migration/Version1Date20261114190000.php,,Migration,,,,,Platform
 Service/Observability/DatabaseHealthMetricsProvider.php,,Service,,,,,Integrations
 Service/Observability/StorageGrowthMetricsProvider.php,,Service,,,,,Integrations
 Service/Observability/OpenRegisterHealthChecks.php,,Service,,,,,Integrations
+Service/Observability/ApcuCounters.php,,Service,,,,,Integrations
+Service/Observability/RequestMetricsStore.php,,Service,,,,,Integrations
+Service/Observability/RequestMetricsRecorder.php,,Service,,,,,Integrations
+Service/Observability/RequestMetricsProvider.php,,Service,,,,,Integrations
+Service/Observability/RouteTemplates.php,,Service,,,,,Integrations
+Middleware/RequestMetricsMiddleware.php,,Middleware,,,,,Platform
+Migration/Version1Date20261116230000.php,,Migration,,,,,Platform

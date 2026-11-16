@@ -33,7 +33,7 @@ use OCA\OpenRegister\AppHost\Observability\MetricSample;
 use OCA\OpenRegister\Service\Task\TaskMetricsProviderInterface;
 
 /**
- * Joins the task, webhook and search metrics under OpenRegister's provider alias.
+ * Joins the task, webhook, search, storage and request metrics under OpenRegister's provider alias.
  *
  * @spec openspec/changes/production-observability
  */
@@ -48,6 +48,7 @@ final class OpenRegisterMetricsProvider implements IMetricsProvider {
 	 * @param WebhookDurationMetricsProvider $durations The webhook delivery latency histogram.
 	 * @param DatabaseHealthMetricsProvider  $database  The database connection health gauge.
 	 * @param StorageGrowthMetricsProvider   $storage   The storage growth threshold.
+	 * @param RequestMetricsProvider         $requests  The request, request duration and error metrics.
 	 */
 	public function __construct(
 		private readonly TaskMetricsProviderInterface $tasks,
@@ -56,11 +57,15 @@ final class OpenRegisterMetricsProvider implements IMetricsProvider {
 		private readonly WebhookDurationMetricsProvider $durations,
 		private readonly DatabaseHealthMetricsProvider $database,
 		private readonly StorageGrowthMetricsProvider $storage,
+		private readonly RequestMetricsProvider $requests,
 	) {
 	}//end __construct()
 
 	/**
-	 * The samples of every joined provider: tasks, webhook retries, search, webhook durations, database health, then storage growth.
+	 * The samples of every joined provider, in order.
+	 *
+	 * Tasks, webhook retries, search, webhook durations, database health,
+	 * storage growth, then requests and errors.
 	 *
 	 * @return array<int, MetricSample>
 	 *
@@ -74,6 +79,7 @@ final class OpenRegisterMetricsProvider implements IMetricsProvider {
 			...$this->durations->metrics(),
 			...$this->database->metrics(),
 			...$this->storage->metrics(),
+			...$this->requests->metrics(),
 		];
 	}//end metrics()
 }//end class
