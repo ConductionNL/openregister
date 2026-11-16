@@ -15204,3 +15204,4 @@ shillinq	3055	8918b6e658d4dbb560bb98a98b5a464cf516ba7c	GREEN	worker-01:review	Th
 learniq	2557	3fe186b0e65f5134d7d024165f423b6f5aa4469c	GREEN	worker-43	PHP unit 6868 tests, baseline 1 failure (HigherEducationExampleSetTest, inherited), new 0; JS node --test 1383, 9 inherited, new 0; dev-dep psalm bump + SBOM + stub header, no behaviour change
 filinq	2094	7be3348d41cf88e9b402e4741381294ce12f0cbc	RED	worker-03:merge-gate	GATE RED checker floor: adrvalidator: pass -> warn; adrvalidator stars: 5 -> 3; score: 100 -> 97
 decidiq	2227	ef576d1f6daadaf87ea9b598e7d2300a7342a1de	GREEN	worker-21	unit 4638 tests on tree, baseline 4624 OK, 0 new failures; helper extraction, same responses and object calls
+learniq	2559	307b93039061bdfac0af3334ec66ff80fbbff0e8	CONFLICT	worker-43	conflicts in the tree after 2557 on tests/Stubs/Contract/ObjectServiceInterface.php (SPDX header); merges clean on development alone
