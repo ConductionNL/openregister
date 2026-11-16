@@ -15861,6 +15861,7 @@ review:stackiq:1435:8d2e5a8e	failed: self-review - worker-16 pushed this head (8
 fix:pipelinq:3152:6f459260	conflict resolved, pushed 29e9143d; REVERIFY recorded (merge lock held elsewhere)	session-20261116T082121-c1741fb9	2026-11-16T08:43:35Z
 merge:dossiq:4149:a683c610	merge3 tree of 22 dossiq PRs: merged=8 red=5 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 9	merge3-20261113T213425-c36bcd5f	2026-11-16T08:43:40Z
 review:shillinq:2083:16d6ee15	BLOCK: receipt confirm silently drops the editable photoUri field; suite 12234, 1 inherited error	session-20261116T074147-edb7c708	2026-11-16T08:43:50Z
+review:filinq:2103:cface20c	stale	feeder	2026-11-16T08:42:17Z
 merge:dossiq:5266:89a46723	merge3 tree of 22 dossiq PRs: merged=8 red=5 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 9	merge3-20261113T213425-c36bcd5f	2026-11-16T08:44:04Z
 merge:dossiq:3203:32077bba	merge3 tree of 22 dossiq PRs: merged=8 red=5 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 9	merge3-20261113T213425-c36bcd5f	2026-11-16T08:44:37Z
 fix:pipelinq:3083:c1e2e782	failed: unfixable by sbom regen - jsdom is a devDependency, regen-sbom (--omit dev) leaves sbom.cdx.json unchanged, so the gate's 'lockfile changed without sbom.cdx.json' can never pass for this dependabot PR; leave it to the deps bundle (quality/deps-bundle-20261115 / pipelinq #3882); nothing pushed	session-20261116T082121-c1741fb9	2026-11-16T08:44:33Z
