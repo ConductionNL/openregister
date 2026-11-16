@@ -173,3 +173,4 @@ portaliq	663	6dc142e054f417065f264200584adb1c807aa348	REQUEST_CHANGES	worker-57	
 portaliq	1765	582e2f298cff75a9d11555480aad9098b4d9cca6	APPROVE	worker-57	Quick; no blockers; @babel/runtime 8.0.7->8.1.0 with lock and sbom regenerated
 portaliq	1768	73711bf061a935d6c5b8923175690cefe42d08f4	APPROVE	worker-57	Quick; no blockers; dev dependency sass ^1.106.1 (lock 1.108.2), sbom regenerated
 launchpad	753	26ce5b2bb96d848f20002dc92a63cdd0704f77f2	APPROVE	worker-40	Quick (dependency bump); no blockers; vue 3.5.42->3.5.44 with lockfile and sbom; tree phpunit 4485 0 new, vitest 2586 pass
+launchpad	1234	6a94a1fa7ca29a5267bfc77210f29d21bd36c68e	APPROVE	worker-40	Quick (lockfile only); no blockers; package.json unchanged, lockfile dedupe and sbom regen; tree phpunit 4485 0 new, vitest 2586 pass
