@@ -18217,6 +18217,7 @@ cover:pipelinq:7f9dc8e6m3dbb:11fc5f4e	already covered: lib/Service/Document/ 121
 cover:launchpad:fb10c50fm88bd:34f5c300	deferred: launchpad has 45 open PRs	session-20261116T224647-cce07511	2026-11-16T22:49:34Z
 cover:pipelinq:7f9dc8e6m3dbb:95a79563	added SchemaLifecycleGraphLookupOrderTest (6 tests) to open PR #3602 (over PR budget: 43 open); suite 9218->9224, no new failures	session-20261116T224521-2bf04f6e	2026-11-16T22:49:22Z
 cover:pipelinq:7f9dc8e6m3dbb:f3231970	deferred: pipelinq has 43 open PRs	session-20261116T224625-4fd1a21f	2026-11-16T22:49:40Z
+cover:buildiq:70b3e29eme3dd:e372e6ff	deferred: buildiq has 50 open PRs	session-20261116T224608-d6967eb8	2026-11-16T22:49:51Z
 cover:launchpad:fb10c50fm88bd:60c2c265	deferred: launchpad has 45 open PRs	session-20261116T224625-4fd1a21f	2026-11-16T22:49:55Z
 cover:dossiq:069ee2d6m9d1b:0f859653	already covered: lib/Flow/*.php misses are 7 lines, all unreachable defensive branches (typed gateway, validated config, double settings read)	session-20261116T222948-81ec1395	2026-11-16T22:49:53Z
 cover:launchpad:fb10c50fm88bd:d3522ea6	deferred: launchpad has 45 open PRs	session-20261116T224521-2bf04f6e	2026-11-16T22:50:17Z
