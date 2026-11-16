@@ -17328,3 +17328,4 @@ build:pipelinq:simple-contact-dashboard:r3	already done: every code task ticked 
 build:pipelinq:question-text-is-required-on-the-portal:r3	already done: T1 on development (PortalQuestionActions requiredFields question/message, tested); only live task T2 left	session-20261116T184852-b8356331	2026-11-16T19:17:21Z
 build:pipelinq:first-time-setup:r3	already done: every code task ticked on development; only the live pass is open	session-20261116T181151-999832c6	2026-11-16T19:17:24Z
 build:pipelinq:tickets-list-by-party:r3	already done: every code task ticked on development; only 1.3 (live check) is open	session-20261116T181151-999832c6	2026-11-16T19:17:38Z
+cover:pipelinq:7f9dc8e6m3dbb:8f2b650b	already covered: lib/Service/Competitor/*.php measures 98.58% (633 stmts, 9 uncovered) on development with its 111 tests, none risky; no PR	session-20261116T184841-a3bc3002	2026-11-16T19:17:50Z
