@@ -17392,6 +17392,7 @@ fix:buildiq:1641:bb9b55d3	conflict resolved (l10n/en.js), pushed 59f9dd1; merge 
 cover:buildiq:70b3e29em9bad:8ed5443b	deferred: buildiq has 54 open PRs	session-20261116T192645-5f5cd9b9	2026-11-16T19:27:43Z
 cover:buildiq:70b3e29em9bad:f84921d5	deferred: buildiq has 54 open PRs (note: 4 Mcp/Handler tests are risky for lack of @uses AppOrganisationGuard; adding it lifts lib/Mcp/Handler 91.9%->99.65%)	session-20261116T184831-8be58c40	2026-11-16T19:27:44Z
 fix:hermiq:1750:4656eeb3	conflict resolved, new head 5b31e8f3; merge lock busy, REVERIFY queued	session-20261116T192142-66caeb8e	2026-11-16T19:28:06Z
+build:buildiq:decision-tables-live-in-openregister	already done: all code tasks merged in #1100 (2026-10-12); only the live occ upgrade check is left	session-20261116T184831-8be58c40	2026-11-16T19:28:27Z
 cover:launchpad:fb10c50fmf487:34f5c300	deferred: launchpad has 44 open PRs	session-20261116T192104-d9eeae3f	2026-11-16T19:28:36Z
 fix:versioniq:691:ed265e00	failed: floor needs a redesign beyond a fix: the patch-policy audit adds an 11th/12th consumer to AuditLogger, AuditSubject and AuditedVersions (fan-in >10, coupling 5.25->5.15), and interfacing 4.35->4.23 comes from many new 3+ parameter units; development merged in at 478f595cafa579f00febfd06880adc294612e8a0	session-20261116T184833-adbb8426	2026-11-16T19:28:33Z
 fix:opencatalogi:2655:21d93581	merged #2655 at eecf91309acb9a06e7fc66bc1bcc0c01e7a00cf9 (merged development in resolving conflicts, bumped version for the repair step; the reported reds do not reproduce on development)	session-20261116T191409-74b1bedd	2026-11-16T19:28:59Z
@@ -17399,4 +17400,5 @@ fix:buildiq:1620:afacfca7	conflict resolved, pushed 9cf97ff7; merge lock held el
 build:learniq:learner-grade-read-follows-visible-from	already built: T1 on development since 0aa6bd8 (5 Nov); only live task T2 left	session-20261116T192824-ee4fb14b	2026-11-16T19:29:06Z
 review:opencatalogi:2696:0d0512a6	GREEN: no new PHP failures, phpstan clean; conflicts with development (no block)	session-20261116T191156-bbdb7add	2026-11-16T19:29:30Z
 fix:buildiq:1672:8c29bf33	conflict resolved, pushed 23675f9b; suite 3377, only inherited ExportZipGoldenTest red; REVERIFY queued	session-20261116T191704-9a63be87	2026-11-16T19:30:12Z
+cover:keepiq:c967a31fm902f:dfaef732	PR #1852: NotificationRegistrar 2 tests; KeepiqNotifier 99.5% (2 unreachable lines); suite 5367->5369 green	session-20261116T191448-870933e4	2026-11-16T19:30:22Z
 fix:hermiq:1754:b6dc1f4e	conflict resolved, pushed 3e57e4dc; merge lock held elsewhere, REVERIFY queued	session-20261116T192325-bb4c31dd	2026-11-16T19:30:34Z
