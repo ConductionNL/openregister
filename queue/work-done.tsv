@@ -18303,3 +18303,4 @@ cover:decidiq:a5f973bbm56fe:d528dcf0	added 5 dashboard widget tests to open PR #
 verify:launchpad:1250:fda0f69e	GREEN #1250 (tests only; 4523 OK vs baseline 4509)	session-20261116T230901-8ff4eedc	2026-11-16T23:13:00Z
 cover:pipelinq:7f9dc8e6m3dbb:8c6788f4	already covered: lib/Service/Gdpr 100% lines (68/68) at 4b94f5c9; no PR	session-20261116T230919-55edd149	2026-11-16T23:13:19Z
 cover:dossiq:069ee2d6m9d1b:efa2b75e	added 3 Routing tests to open cover PR #6619 (b9b28fb; over 40 open PRs); Routing suite 113->116 green	session-20261116T230914-91266698	2026-11-16T23:13:09Z
+measure:pipelinq:20261116h22	php 95.15% js 95.29% (pcov; vitest 2 failing tests pre-existing)	session-20261116T230116-3c4ab97b	2026-11-16T23:14:15Z
