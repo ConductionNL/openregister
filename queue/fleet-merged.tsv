@@ -4607,4 +4607,5 @@ versioniq	691	ed265e00f936a4cd03193e2caceb769dc33e3d83	RED	merge3	GATE RED floor
 versioniq	711	052268bfdb66670183b89287e26285169f6e5fd9	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.97 holds at 4.04
 versioniq	725	b54e382d2163653db839916be9217d3ce4c24bac	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.97 holds at 4.05
 versioniq	738	001e5515422fab3a291488c691066cc4b0df3461	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.97 holds at 4.05
+decidiq	2170	8ede76a3788b7bf174d1eaf4ca42a7591d7e0f7b	RED	worker-16	GATE RED absolute floor: decidiq maintainability 3.76 after merge is below its floor 3.78
 shillinq	1899	040e84a6688a8492f5564b985c3fb974a41ea77b	SKIP	worker-08	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
