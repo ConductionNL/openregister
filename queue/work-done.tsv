@@ -18390,3 +18390,4 @@ verify:filinq:2098:9ecdad94	CONFLICT #2098 (l10n en/nl)	session-20261116T232844-
 verify:hermiq:1578:4d2d6d1f	CONFLICT #1578 (composer.lock + sbom)	session-20261116T224246-d9bde508	2026-11-16T23:36:38Z
 verify:filinq:2090:e60e1c92	CONFLICT #2090 (lib/Settings/filinq_register.json)	session-20261116T233427-cfe22922	2026-11-16T23:36:51Z
 verify:filinq:2099:fcbb80d1	CONFLICT #2099 (4 files vs development)	session-20261116T232852-594dae77	2026-11-16T23:37:01Z
+verify:filinq:2087:71fe4d96	CONFLICT: lib/Settings/filinq_register.json	session-20261116T233003-c7bea420	2026-11-16T23:37:10Z
