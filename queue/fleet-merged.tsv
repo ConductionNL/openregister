@@ -4228,3 +4228,4 @@ learniq	1167	b9644fb4e9c377845c07d5fc7711b21cc1e3ce3a	SKIP	worker-46	GATE UNMEAS
 larpinq	1060	535a2221d2513e56df74cbe225c0a7b8bc8f7578	RED	worker-41	GATE RED checker floor: testcoderatio: warn -> fail; testcoderatio stars: 3 -> 2
 integriq	2744	53deb98f7cdb1b6780f15f48e92d1825829d8513	RED	worker-47	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 keepiq	1716	5a6aebc10a49fca22476eb937f790a2b57ee378a	RED	worker-19	GATE RED checker floor: secretscanning: pass -> fail; secretscanning stars: 5 -> 1
+hermiq	1736	476d376136c4944d883adf005e654081f12d330e	SKIP	worker-07	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
