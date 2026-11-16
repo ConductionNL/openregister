@@ -14958,3 +14958,7 @@ buildiq	1624	ae655c59311e2bf849dcd94f4243fc84f440070d	RED	worker-39:merge	adds u
 stackiq	1931	f5df0ce845a98a12e7b26184bb0b3deeacf3fef8	GREEN	worker-16:review	build of landscape-owner-attestation matches its specs; round start and answer checks fail closed; unit 3751 tests OK on PR head, vitest ownerAttestation 13/13; note: conflicts with current development in lib/Settings/*_register.json
 hermiq	1308	fa7ea701a64176b2a3305fb904268630c5f568eb	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
 hermiq	1795	fdc2c517220656bac17530d30d674fd346d80010	RED	merge3:merge-gate	GATE RED absolute floor: hermiq maintainability 3.76 after merge is below its floor 3.77
+hermiq	1754	69e02cc70605b287770a0f70358780f4a4861b6e	CONFLICT	merge3	merges clean on development alone; files: tests/Unit/Mcp/HermiqToolProviderTest.php 
+hermiq	1756	1435f079d583e686b6e7ec8e72ce6afffc294aa8	CONFLICT	merge3	merges clean on development alone; files: tests/Unit/Mcp/HermiqToolProviderTest.php 
+hermiq	1788	4b1ae86bee2c04b094c9cb095a83c09c2d88eaef	CONFLICT	merge3	merges clean on development alone; files: src/registry.js 
+hermiq	1807	36283a373892b12aa856fdc7b1b4420cdec74781	CONFLICT	merge3	conflicts with development; files: composer.lock 
