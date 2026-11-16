@@ -3796,3 +3796,8 @@ thematiq	1117	2427508a3106eb9c72d567060d7d6beaeab72430	RED	worker-17	GATE RED sb
 launchpad	653	7dd62332f078073df03444ab4c6c6b1f2c66f246	RED	worker-12	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 launchpad	763	ac59f2930cb25b439f9fdffbe39af0aa2b8b0f7e	RED	worker-12	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 launchpad	832	5cb157b3a864251534d0e0eea939fb8029de3108	RED	worker-12	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+launchpad	755	7e918f87d18e313d38cf536b22ef077d2faaca26	RED	worker-12	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+launchpad	757	674cfd98d8006ae4c69b2e9bf9b14cdeec3e15bb	RED	worker-12	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+launchpad	761	ca2815b851deb1969d5b23ac0c29185819391d2e	SKIP	worker-12	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
+launchpad	819	c5c80a07dc500fcc4e5064cd5126241a9f4bf32a	SKIP	worker-12	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
+launchpad	1098	08b6144744978ee052f69f5452afa076f8d9d101	SKIP	worker-12	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
