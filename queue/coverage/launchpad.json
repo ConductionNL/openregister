@@ -1,16 +1,16 @@
 {
  "app": "launchpad",
- "commit": "6a3f32399e91fd28ef93a2bbabcc3de20aeb10a0",
- "measured_at": "2026-11-16T18:58:16Z",
+ "commit": "cb5f9428fcae4a6e08334bbd223fda5378b4e303",
+ "measured_at": "2026-11-16T22:36:03Z",
  "php": {
   "tool": "pcov",
-  "pct": 94.94,
-  "statements": 24454,
-  "covered": 23217,
+  "pct": 94.97,
+  "statements": 24498,
+  "covered": 23266,
   "dirs": {
    "lib/Activity/": [
-    337,
-    333
+    341,
+    337
    ],
    "lib/Activity/Settings/": [
     22,
@@ -77,8 +77,8 @@
     202
    ],
    "lib/Service/": [
-    12655,
-    11849
+    12695,
+    11894
    ],
    "lib/Service/CalculatedFields/": [
     406,
@@ -115,9 +115,9 @@
   }
  },
  "js": {
-  "pct": 96.2,
+  "pct": 96.17,
   "statements": 9115,
-  "covered": 8769,
+  "covered": 8766,
   "dirs": {
    "src/": [
     53,
@@ -129,7 +129,7 @@
    ],
    "src/components/Announcements/": [
     61,
-    59
+    56
    ],
    "src/components/Widgets/": [
     238,
