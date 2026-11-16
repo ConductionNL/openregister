@@ -17809,3 +17809,4 @@ cover:pipelinq:7f9dc8e6m3dbb:b96c059a	added 5 tests (SearchConsole 288/299 -> 29
 cover:stackiq:9ac19b3am2187:692f8a78	already done: lib/Service/Contactpersoon/ measured 207/207 (100%) at 00516ba7	session-20261116T205645-edca2f78	2026-11-16T21:02:14Z
 review:hermiq:1795:69b741d5	GREEN 1795: no new failures, owner checks fail closed	session-20261113T213325-fbdd5614	2026-11-16T21:02:25Z
 cover:stackiq:9ac19b3am2187:efa2a923	no change: lib/EventListener 1053/1062 (99.2%) at 00516ba7; 6 missed lines are unreachable null guards (non-nullable event getters), 1 a TypeError return already tested, 1 class_exists skip needing process isolation, 1 logger-failure catch; no PR worth opening	session-20261116T205732-a5f08498	2026-11-16T21:03:01Z
+cover:stackiq:9ac19b3am2187:59f569b2	already covered: lib/Service/Settings/*.php at 1271/1273 statements (99.8%) on development 00516ba7; no PR	session-20261116T204203-b8dccc50	2026-11-16T21:02:50Z
