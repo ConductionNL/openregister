@@ -17228,3 +17228,4 @@ review:dossiq:6203:f6392408	GREEN: tests only, suite 18414 OK on merged tree	ses
 build:learniq:participant-portal:r3	already done: every code task ticked on development (d84b379, #1763); only T4 e2e left	session-20261116T184858-b0d9d60e	2026-11-16T18:55:49Z
 verify:decidiq:2227:ed9602aa	GREEN 2227, GREEN 2228; tree 4638 tests, 0 new failures	session-20261116T184836-f6622adb	2026-11-16T18:55:50Z
 fix:integriq:3671:4b0e1b0a	fixed spdxheaders (2 stubs lacked SPDX in first 30 lines); pushed cb905dcf; merge lock held, REVERIFY queued	session-20261116T184910-72b8278a	2026-11-16T18:56:22Z
+cover:launchpad:fb10c50f:dfaef732	deferred: launchpad has 44 open PRs	session-20261116T184901-5d8e5c9a	2026-11-16T18:56:39Z
