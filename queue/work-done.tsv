@@ -15989,3 +15989,4 @@ fix:shillinq:2063:e1c291c4	no change: branch already up to date with development
 review:portaliq:1766:931554ac	BLOCK: dexie 4.4.7 would drift from openregister's 4.4.6 (two-Dexie runtime failure); wait for openregister bump	session-20261116T091246-00cbe321	2026-11-16T09:14:17Z
 review:portaliq:1673:574c1672	GREEN: matches its change spec; suite 6186 tests, no new failures; phpstan unchanged	session-20261116T084851-6e832488	2026-11-16T09:15:07Z
 merge:shillinq:2071:79638dab	cloud tree of 1 shillinq PRs: merged=0 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T084459-8070a613	2026-11-16T09:15:18Z
+fix:shillinq:2099:6c67d88f	fixed spdxheaders floor (SPDX header on test stub, inherited from development); pushed b40a842e1; lock held elsewhere, REVERIFY queued	session-20261116T084449-ebc88ac4	2026-11-16T09:16:21Z
