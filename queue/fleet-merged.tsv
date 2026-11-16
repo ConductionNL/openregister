@@ -3891,3 +3891,6 @@ learniq	1158	5ca84f75a09a2fdef007102586c11c0982f88dfc	RED	worker-15	GATE RED che
 learniq	1162	59935569e666c89964655c0288c4729a788558da	RED	worker-15	GATE RED checker floor: spdxheaders stars: 5 -> 4
 learniq	2127	68efea31c565ca8b2506f50814b1ab554a25b7b9	RED	worker-15	GATE RED checker floor: spdxheaders stars: 5 -> 4
 opencatalogi	2673	9b9531032c82409ec13b1844b2e8390e047c42df	SKIP	worker-13	no APPROVE review at this head
+larpinq	960	659b6749ae8b0a7d1b55bdf6d58fad66b1b393e0	RED	worker-23	GATE RED sbom: composer.lock changed without sbom.cdx.json
+larpinq	961	06d9f9ca3929251feb0616338f90bd38bf5c196d	RED	worker-23	GATE RED sbom: composer.lock changed without sbom.cdx.json
+larpinq	1050	f7fb4695da92f783c2b95985f82b173605c67536	SKIP	worker-23	no APPROVE review at this head
