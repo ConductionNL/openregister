@@ -17357,6 +17357,7 @@ build:portaliq:site-article-page-follows-the-board:r2	already done: code tasks 1
 build:portaliq:demo-sign-in-beside-the-account:r2	already done: T01-T05 are on development (fix(sign-in) 2026-10-14, residentsOf/offeredResidents, inloggen-met-account, tests); only T06, a live check on a demo instance, is left	session-20261116T184831-8be58c40	2026-11-16T19:21:04Z
 verify:shillinq:3110:67424089	GREEN 3110 (phpunit 12231/0, vitest 1 inherited failure)	session-20261116T185100-d2f0c6eb	2026-11-16T19:21:11Z
 build:portaliq:portal-federated-search:r2	already done: every code task ticked on development; only a live-instance test is open	session-20261116T181151-999832c6	2026-11-16T19:21:15Z
+merge:learniq:2557:d1a26106	merge3 tree of 2 learniq PRs: none; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-16T19:21:33Z
 cover:decidiq:a5f973bbm9cda:34f5c300	deferred: decidiq has 48 open PRs	session-20261116T185100-d2f0c6eb	2026-11-16T19:22:24Z
 build:portaliq:portal-acts-for-its-organisation:r2	already done: every code task ticked on development; only T06 (live dry run) is open	session-20261116T181151-999832c6	2026-11-16T19:21:36Z
 build:portaliq:nextcloud-account-registration:r2	already done: T01-T04 ticked; only live round trip T05 left (needs tenant + mail)	session-20261116T191856-c437ae89	2026-11-16T19:21:50Z
@@ -17437,3 +17438,4 @@ review:decidiq:2170:80617c37	RED: 2 vitest failures in simpleMeetingPage.spec.js
 cover:decidiq:a5f973bbm9cda:f545d745	deferred: decidiq has 48 open PRs	session-20261116T193350-bd20edd7	2026-11-16T19:38:10Z
 merge:integriq:2671:f442cc4e	cloud tree of 7 integriq PRs: merged=5 red=2 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T190656-a33397e6	2026-11-16T19:38:35Z
 lane:arch5:hermiq:next-hermiq-r1	PR #1810 opened (estimate 3.77-3.82 -> 3.79-3.83, suite green); hermiq merge lock held by another merger, GREEN verdict recorded; next-hermiq-r2 queued	session-20261116T191704-9a63be87	2026-11-16T19:38:41Z
+merge:opencatalogi:2686:4fd9583f	cloud tree of 2 opencatalogi PRs: none; conflict 2, lint 0, red 0, moved 0, done 0	session-20261116T190918-81e43f73	2026-11-16T19:38:53Z
