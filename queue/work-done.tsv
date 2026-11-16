@@ -16212,6 +16212,7 @@ merge:decidiq:1465:c3a8f464	unmeasured: static.developer.overheid.nl (7 PRs revi
 review:integriq:3638:3d602f6b	GREEN: 9592 tests, no failures beyond baseline	session-20261116T104954-a428a9fd	2026-11-16T10:55:36Z
 review:larpinq:1050:5f2419c4	GREEN: larpinq #1050 matches change specs; unit 999 ok, vitest 608 ok	session-20261116T105426-4e0b8984	2026-11-16T10:57:09Z
 review:shillinq:2092:71d6e19e	GREEN #2092: orphan deletion, suites match baseline	session-20261116T104018-e4b2d192	2026-11-16T10:57:23Z
+merge:versioniq:739:de0fc8a3	failed: prep exit 2, versioniq development has no phpunit in require-dev (no vendor/bin/phpunit), unit suite cannot run	session-20261116T105633-0d9ecf47	2026-11-16T10:57:53Z
 review:planninq:933:86d76c41	GREEN: phpunit 1232 ok, vitest 3565 ok, lint clean	session-20261116T105550-e90eeee3	2026-11-16T10:58:13Z
 review:integriq:2994:672207a4	GREEN: dev-only sass bump, vitest 2387/2387 pass	session-20261116T105625-05822e4f	2026-11-16T10:58:33Z
 review:portaliq:1768:a2fd2704	GREEN: sass dev bump; site build size-limit error inherited from development	session-20261116T102639-f9f23dec	2026-11-16T10:58:44Z
