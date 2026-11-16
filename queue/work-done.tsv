@@ -15837,3 +15837,4 @@ fix:versioniq:736:91246664	fixed blockers (dump->dumpTables, @spec on 7 methods)
 review:filinq:2103:abcbf7f1	stale	session-20261116T081426-24e3a1d6	2026-11-16T08:39:26Z
 lane:ormig:filinq:leftover	PR #2141 opened (1 real break fixed: replaceWords); merge lock busy, GREEN verdict queued	session-20261116T082637-06597b03	2026-11-16T08:39:22Z
 merge:launchpad:653:6596444b	cloud tree of 4 launchpad PRs: merged=0 red=2 fail=0 skip=0; conflict 2, lint 0, red 0, moved 0, done 0	session-20261116T081705-6c8f795b	2026-11-16T08:39:42Z
+fix:larpinq:1060:11a6a4ea	gate-7 fixed, pushed 9f9d2d55ae; reviewed APPROVE; land skipped (merge gate checker floor unmeasured), REVERIFY recorded	session-20261116T081647-1fba2b50	2026-11-16T08:40:05Z
