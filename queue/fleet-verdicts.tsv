@@ -15912,6 +15912,7 @@ humaniq	1139	181389a647ba547cc989314075d21fd374263a8b	CONFLICT	worker-45	conflic
 learniq	2578	1ce84f5b7b6b7f2cde5febf91d9cb2fb62431aad	GREEN	worker-17	unit 6974 tests on tree; baseline 6966 with 1 inherited failure (HigherEducationExampleSetTest he.json out of date); 0 new failures; private-method refactor, behaviour kept
 humaniq	1143	67a2f379f4280d46ca916efc4d6b915827dc567f	CONFLICT	worker-34	merge with development conflicts in l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
 hermiq	1751	1d2fbb880b1eec80ceee0a3a15a42e42bbbb6a5b	CONFLICT	worker-52	conflicts with development bbead49a; files: l10n/en.js l10n/en.json lib/Settings/hermiq_register.json ; baseline 5463 tests 0 failures
+humaniq	1148	3bc5cb169ca881148b3da46289c09cedb10edbdb	CONFLICT	worker-23	conflicts with development in l10n/en.js, en.json, nl.js, nl.json, src/manifest.d/hr-timesheet.json; suite not run
 hermiq	1760	440cf2e9d2cd1a94d89bdd25448aa67be433ec8d	CONFLICT	worker-43	conflicts with development in appinfo/info.xml, l10n/*, lib/Settings/hermiq_register.json, openapi.json
 filinq	2141	d980f90d4ce78bd5a27004221e0eaad88cd1b166	GREEN	worker-35	unit 6960 tests, baseline 6960 OK (6 skipped), new failures 0; replaceWords migrated to main's WordReplacementRequest, same arguments
 hermiq	1757	c5c53ee833f45f7b3fe0a3bd183382bd7dc1ff9e	CONFLICT	worker-06	conflicts with development in l10n/en.js, en.json, nl.js, nl.json and tests/Unit/Service/Engine/EngineSwitchedOffTest.php; not tested
