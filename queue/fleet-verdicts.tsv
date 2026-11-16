@@ -14124,3 +14124,4 @@ decidiq	2191	29114ea549b1df7741db17358e85829c10be8c82	GREEN	worker-25:review	man
 launchpad	757	2ba3b33db46c061dc3c61817ad415623b01adc1a	RED	worker-30:merge-gate	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
 decidiq	2170	d54fcb2999d1b0aedf619035ca041cab3063118e	GREEN	worker-34:review	implements live-room-conference-system-link per its spec; message create limited to sync group, apply guarded chair/secretary fail-closed; unit 4655 OK (base 4624), phpstan 0, vitest touched 41 pass; concerns: message list capped at 50 rows, a message created already 'applied' is never applied
 shillinq	1900	4eb4258f0a4e2971ae8669c219c0739a097b9f52	RED	worker-22:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
+shillinq	2072	794dec2a01cc38a274a3d45633ab11b445e982e4	RED	worker-22:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
