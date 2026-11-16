@@ -4607,3 +4607,4 @@ decidiq	2170	8ede76a3788b7bf174d1eaf4ca42a7591d7e0f7b	RED	worker-16	GATE RED abs
 shillinq	1899	040e84a6688a8492f5564b985c3fb974a41ea77b	SKIP	worker-08	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
 shillinq	2093	223f0cbe9550deaa3cf354df508127ec21961d27	SKIP	worker-08	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
 filinq	2094	7be3348d41cf88e9b402e4741381294ce12f0cbc	RED	worker-03	GATE RED checker floor: adrvalidator: pass -> warn; adrvalidator stars: 5 -> 3; score: 100 -> 97
+learniq	1167	2c125d9d5b87d633f53d9f8f8b96f8a909fc72d5	MERGED	worker-23	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 3.99
