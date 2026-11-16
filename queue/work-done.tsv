@@ -16705,3 +16705,4 @@ merge:keepiq:1716:f636bcc5	unmeasured: static.developer.overheid.nl (3 IN approv
 merge:integriq:2671:c6baac7c	unmeasured: static.developer.overheid.nl (8 PRs reviewed APPROVE; 2711 RED sbom; 3612 REVERIFY; 7 skipped, none merged)	session-20261116T154313-4e4790ab	2026-11-16T16:07:05Z
 cover:pipelinq:7f9dc8e6m8519:js754ae7a9	PR #3889: client sections, components 95.73→97.35%, 11 tests	session-20261113T204551-fafe539e	2026-11-16T16:09:16Z
 cover:pipelinq:7f9dc8e6m8519:60c2c265	PR #3890: controllers 93.62→95.33%, 7 @uses fixes + 16 tests	session-20261113T204551-fafe539e	2026-11-16T16:16:46Z
+cover:pipelinq:7f9dc8e6m8519:f545d745	PR #3891: repair 93.41→97.57%, nested-trait @uses fixes 7 risky tests	session-20261113T204551-fafe539e	2026-11-16T16:20:04Z
