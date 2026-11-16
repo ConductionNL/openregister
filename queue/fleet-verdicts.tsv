@@ -13802,3 +13802,4 @@ buildiq	1651	e765d7defef743214c8b1a95ec54e0f7cee07fa5	GREEN	worker-25:review	imp
 stackiq	1435	81fb6bd471562d78ea02224fdc7b0574cc6a9082	GREEN	worker-34:review	Search calls pass ids/uses as SearchOptions when the installed ObjectService takes options, else the same named args as before (openregister main still does); dropped deleted:false equals main's default. Merged with development: phpunit 3722 OK (2 warnings), phpstan clean
 versioniq	500	890378b335a6437a175c190f8627fdc91ddc4733	RED	worker-50:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 versioniq	503	2d7f74a1bcc195a9c6630723fd089cfb3b9fff77	RED	worker-50:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+versioniq	709	fa10e6b8bcb41285c242a55b95e57317cc6e0c5b	CONFLICT	worker-50:merge	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Service/AutoUpdate/AutoUpdatePlanner.php 
