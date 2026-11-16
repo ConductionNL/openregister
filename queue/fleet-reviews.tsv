@@ -332,3 +332,4 @@ shillinq	1908	ca21609bb71603fe45c7d58dd33216df70aee655	APPROVE	worker-58	Quick; 
 shillinq	1991	29abf7fb303a9a25601637bfbbaecaeb9a1feae7	APPROVE	worker-58	Quick; no blockers; dev dependency patch bump prettier with regenerated SBOM
 shillinq	2224	ff4aa606e92e5e1b481b9d57db877beb814a2c4e	APPROVE	worker-58	Quick; no blockers; dev dependency patch bump hydra-gates with regenerated SBOM
 buildiq	1583	3352b16d251c55584a8fcdee0b745910841283cb	APPROVE	worker-41	Thorough; no blockers (schema-property-titles now PASS after the titles commit; form check runs only when fields are declared, no-form approval and chain unchanged); concerns: inherited gate fails outside the diff (ControllerRegistrar container lookups, 3 manifest nl keys), gates 53/116 did not run 
+stackiq	1992	6d5c12d7da6c42f6e7984bf3e02c8fd1fb2de00b	APPROVE	worker-35	Quick; no blockers; SPDX lines on a test stub only, gate failures inherited (spec anchor on an existing line, ServiceFactories:327)
