@@ -16887,6 +16887,8 @@ review:shillinq:3078:33420e1f	GREEN: unit 12278 tests 0 failures, vitest 9/9, es
 build:portaliq:write-record-names-the-mandate	already done: every code task ticked on development; open tasks are live checks only, left	session-20261116T170823-40772b73	2026-11-16T17:40:55Z
 build:portaliq:staff-revoke-one-session	already done: T01,T02 on development since #1647; only T03 (live check) left	session-20261116T173306-f68895a7	2026-11-16T17:41:26Z
 fix:learniq:2507:82c09d5c	unmeasured: static.developer.overheid.nl (fixed interfacing floor + SPDX stub header; new head f29e84b71d, APPROVE recorded, REVERIFY queued)	session-20261116T171010-393e4bc2	2026-11-16T17:41:23Z
+build:portaliq:site-school-blocks	already done: every code task is ticked and on development; only live tasks T8 and T12 are left	session-20261116T173227-3f62e794	2026-11-16T17:41:54Z
 build:portaliq:site-shared-page-blocks	already done: only live/e2e tasks left (2)	session-20261116T172806-3ef5ead7	2026-11-16T17:41:40Z
 build:portaliq:zuiddrecht-resident-pages-match-the-boards	already done: only live/e2e tasks left (1)	session-20261116T172806-3ef5ead7	2026-11-16T17:42:02Z
 build:portaliq:site-location-map	no code left: T01-T02 built on development; open T03 needs a live instance	session-20261116T173306-d04a65dc	2026-11-16T17:42:07Z
+build:portaliq:steps-as-bars	already done: tasks 1-3 on development; task 4 is cross-repo learniq + live check	session-20261116T173306-f68895a7	2026-11-16T17:42:10Z
