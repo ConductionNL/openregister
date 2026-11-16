@@ -4344,3 +4344,6 @@ hermiq	1189	4990197f996880aaa0b623dab850d64ee4bed3be	MERGED	merge3	GATE OK sbom,
 versioniq	711	dc3fffc4091930880b05adf9f0e76b6a2caf5c4a	RED	worker-03	GATE RED floor: unit_complexity: 4.63 -> 4.60; unit_interfacing: 4.26 -> 4.22
 versioniq	717	8419af1d7c38c7852aa8354f89ad55a4a3ace8c4	SKIP	worker-03	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 learniq	2558	374f52e94024e697970fc9676362d55fe16c7236	SKIP	worker-37	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
+stackiq	1924	ef9a11b21b086cefec24cca4f5f1e7e31f4b1426	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.05
+stackiq	1954	34c6f73a6edec4ca5d54daff2b80273be29cdf68	RED	merge3	GATE RED checker floor: adrvalidator: pass -> warn; adrvalidator stars: 5 -> 3; score: 100 -> 97
+stackiq	1978	17efb7880705315a03b1690ba0a2da374e593432	RED	merge3	GATE RED checker floor: adrvalidator: pass -> fail; adrvalidator stars: 5 -> 1; score: 100 -> 93
