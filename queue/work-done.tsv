@@ -16429,3 +16429,4 @@ merge:shillinq:1900:a137629c	unmeasured: static.developer.overheid.nl (#1900 app
 merge:keepiq:1496:1d9f3e0e	cloud tree of 4 keepiq PRs: merged=0 red=1 fail=0 skip=3; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T105613-dddf963a	2026-11-16T11:56:33Z
 merge:learniq:1881:0b4c2939	cloud tree of 4 learniq PRs: merged=0 red=3 fail=0 skip=1; red = spdxheaders 5->4 inherited from development (fixed by #2126), #2126 unmeasured: static.developer.overheid.nl	session-20261116T105426-4e0b8984	2026-11-16T11:58:25Z
 merge:keepiq:1815:8fc09f92	cloud tree of 1 keepiq PRs: merged=0 red=0 fail=0 skip=1; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T105613-dddf963a	2026-11-16T12:04:17Z
+merge:learniq:2166:f1322682	cloud tree of 1 learniq PRs: merged=0 red=1 fail=0 skip=0; red = spdxheaders 5->4 inherited from development (fixed by #2126, itself unmeasured)	session-20261116T105426-4e0b8984	2026-11-16T12:05:04Z
