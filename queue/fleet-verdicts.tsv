@@ -14933,3 +14933,5 @@ keepiq	1826	07082bd96f2591fbed1b8b9703c9fc1567fbfe88	CONFLICT	worker-12:merge	me
 integriq	2711	6f3fdc050e0380cd7dfe4f122026010313ba5a23	RED	worker-04:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 integriq	3612	27e3d6e61355bf4be3b71fc33e7	REVERIFY	worker-04:merge	verdict sha is not the head: head is 27e3d6e61355bf4be3b71fc33e70ade810f9272b
 filinq	2072	b8b9f6800f906dd852f09e77db9deca981ab652a	BLOCK	worker-47:review	review: Strict (RBAC/multitenancy flags); blocker: BackfillDefaultOrganisation writes OpenRegister object tables with raw SQL UPDATE, while design D6 table says the backfill writes via ObjectService under the seam (bypasses OR's API, audit trail and caches; fleet rule data through OR APIs); concerns: hydra 
+filinq	2094	5c76485b6dd48744e1a425fead48426399bea491	CONFLICT	worker-47:merge	merges clean on development alone; files: lib/Settings/filinq_mock_register.json lib/Settings/filinq_register.json 
+filinq	2123	f0a61512c5f191666db3e67afbfa9bf0183a4dfc	CONFLICT	worker-47:merge	merges clean on development alone; files: lib/Settings/filinq_register.json 
