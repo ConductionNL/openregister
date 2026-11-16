@@ -15857,3 +15857,4 @@ lane:depbundle:stackiq:bundle	failed: permission: self-review and land of own PR
 fix:pipelinq:2501:ca4bf396	merged development in cleanly, pushed 58a531d9; merge lock held elsewhere, REVERIFY queued	session-20261116T075942-394736ff	2026-11-16T08:42:27Z
 fix:stackiq:1297:f6f898a1	inherited: spdx stars 5->4 comes from development (tests/Stubs/Contract/ObjectServiceInterface.php has no SPDX header there); #1435 head 8d2e5a8e carries that fix; no change to this PR	session-20261116T080103-dd70aeff	2026-11-16T08:43:04Z
 merge:dossiq:3298:0099e58d	merge3 tree of 22 dossiq PRs: merged=8 red=5 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 9	merge3-20261113T213425-c36bcd5f	2026-11-16T08:43:21Z
+review:stackiq:1435:8d2e5a8e	failed: self-review - worker-16 pushed this head (8d2e5a8e); needs a different reviewer	session-20261116T080103-dd70aeff	2026-11-16T08:43:15Z
