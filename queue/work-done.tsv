@@ -17635,3 +17635,4 @@ review:shillinq:1900:7f46ac64	GREEN: shillinq #1900, unit 12272 OK (baseline 122
 merge:versioniq:722:79e3e090	cloud tree of 2 versioniq PRs: merged=1 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T200545-32ab46ec	2026-11-16T20:25:35Z
 verify:versioniq:747:b7301314	GREEN #747 (deps only; 2 env-only golden failures)	session-20261116T202128-6be5fc02	2026-11-16T20:25:46Z
 review:hermiq:1579:d717a45b	BLOCK: lock not installable (platform php 8.3 vs psalm 7.5 needs ~8.3.16)	session-20261116T202154-fbc59c50	2026-11-16T20:26:04Z
+fix:shillinq:1899:040e84a6	fixed conflict + test API drift, pushed 65bdef77; merge lock held elsewhere, REVERIFY queued	session-20261116T201445-8cab6741	2026-11-16T20:26:34Z
