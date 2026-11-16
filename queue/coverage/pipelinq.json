@@ -1,12 +1,12 @@
 {
  "app": "pipelinq",
- "commit": "6d48d6dca64645d21ea492627407a99f727c7cdd",
- "measured_at": "2026-11-16T18:36:34Z",
+ "commit": "4b94f5c957f8c7156f278b36805aee4515a876d2",
+ "measured_at": "2026-11-16T23:14:00Z",
  "php": {
   "tool": "pcov",
-  "pct": 93.43,
-  "statements": 61865,
-  "covered": 57802,
+  "pct": 95.15,
+  "statements": 62286,
+  "covered": 59264,
   "dirs": {
    "lib/Activity/": [
     68,
@@ -26,15 +26,15 @@
    ],
    "lib/BackgroundJob/": [
     1572,
-    1361
+    1571
    ],
    "lib/Command/": [
     427,
     427
    ],
    "lib/Controller/": [
-    8368,
-    7981
+    8430,
+    8138
    ],
    "lib/Controller/Support/": [
     70,
@@ -74,7 +74,7 @@
    ],
    "lib/Listener/": [
     1838,
-    1796
+    1823
    ],
    "lib/Listener/Support/": [
     48,
@@ -113,8 +113,8 @@
     5
    ],
    "lib/Service/": [
-    30953,
-    28129
+    31097,
+    28890
    ],
    "lib/Service/Access/": [
     97,
@@ -134,7 +134,7 @@
    ],
    "lib/Service/Calls/": [
     204,
-    189
+    195
    ],
    "lib/Service/Competitor/": [
     633,
@@ -144,9 +144,13 @@
     68,
     68
    ],
+   "lib/Service/ContactReport/": [
+    87,
+    14
+   ],
    "lib/Service/Cti/": [
     116,
-    68
+    116
    ],
    "lib/Service/Cti/Adapter/": [
     243,
@@ -160,6 +164,10 @@
     527,
     490
    ],
+   "lib/Service/Document/": [
+    123,
+    121
+   ],
    "lib/Service/Egress/": [
     124,
     78
@@ -169,8 +177,8 @@
     72
    ],
    "lib/Service/Export/": [
-    1287,
-    1261
+    1289,
+    1273
    ],
    "lib/Service/External/Berichtenbox/": [
     48,
@@ -214,7 +222,7 @@
    ],
    "lib/Service/Marketing/": [
     2564,
-    2444
+    2545
    ],
    "lib/Service/Marketing/Transport/": [
     318,
@@ -286,7 +294,7 @@
    ],
    "lib/Service/Social/": [
     862,
-    785
+    787
    ],
    "lib/Service/Social/Support/": [
     3,
@@ -305,8 +313,8 @@
     94
    ],
    "lib/Service/WebForm/": [
-    484,
-    481
+    487,
+    484
    ],
    "lib/Service/Worklist/": [
     127,
@@ -335,21 +343,21 @@
   }
  },
  "js": {
-  "pct": 95.72,
-  "statements": 18337,
-  "covered": 17552,
+  "pct": 95.29,
+  "statements": 18395,
+  "covered": 17528,
   "dirs": {
    "src/": [
-    118,
+    197,
     115
+   ],
+   "src/assets/scss/": [
+    0,
+    0
    ],
    "src/components/": [
     1486,
     1447
-   ],
-   "src/components/CapabilityComparison/": [
-    25,
-    23
    ],
    "src/components/admin/": [
     479,
@@ -397,7 +405,7 @@
    ],
    "src/components/rapportage/": [
     137,
-    136
+    135
    ],
    "src/components/satisfaction/": [
     71,
@@ -588,7 +596,7 @@
     175
    ],
    "src/views/settings/": [
-    1342,
+    1346,
     1309
    ],
    "src/views/social/": [
