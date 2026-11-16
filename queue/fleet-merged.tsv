@@ -3915,3 +3915,9 @@ shillinq	1958	98ce92e545cdd6092fe131653b75add6effe2c1d	RED	worker-45	GATE RED ch
 shillinq	3105	364f54d39befb54daae657f3e3bb5adf1fb6469a	RED	worker-45	GATE RED checker floor: spdxheaders stars: 5 -> 4
 launchpad	1238	135d0cb858ece2234e6e208f2f2b37f69d11dc1a	SKIP	worker-07	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
 launchpad	1238	135d0cb858ece2234e6e208f2f2b37f69d11dc1a	RED	worker-07	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+stackiq	1168	04f38d3ae4a4d17b142dbafb97d2a81126d6568c	SKIP	worker-16	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
+stackiq	1297	f6f898a1ce156bb7902c6cbdc55ca55df63daf3a	SKIP	worker-16	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
+stackiq	1435	81fb6bd471562d78ea02224fdc7b0574cc6a9082	RED	worker-16	GATE RED checker floor: spdxheaders stars: 5 -> 4
+stackiq	1931	42bba8a9c3f33af822ee56a73844d3398278ef8b	SKIP	worker-16	no APPROVE review at this head
+stackiq	1965	db980e34d066f3521ea46508230669f301337ee8	SKIP	worker-16	no APPROVE review at this head
+stackiq	1978	0e16289a82d0c3f5edcf4674448e72031b372f93	RED	worker-16	GATE RED floor: unit_interfacing: 4.72 -> 4.68
