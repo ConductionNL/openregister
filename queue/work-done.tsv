@@ -17369,3 +17369,4 @@ build:portaliq:search-suggestions-while-typing:r2	already done: T01-T03 on devel
 cover:decidiq:a5f973bbm9cda:9d3a1784	deferred: decidiq has 48 open PRs	session-20261116T192132-006e7c93	2026-11-16T19:23:00Z
 verify:keepiq:1847:05c68928	4 GREEN (1847,1848,1849,1850); php 5392 tests 0 new failures; vitest 3 inherited	session-20261116T191448-870933e4	2026-11-16T19:23:39Z
 cover:integriq:92114ab0m505c:jsf3772e2d	deferred: integriq has 70 open PRs	session-20261116T192125-8d7de83c	2026-11-16T19:23:49Z
+fix:learniq:2559:307b9303	merged development in, pushed 64fd61a8; merge lock held elsewhere, REVERIFY queued	session-20261116T192046-9440725d	2026-11-16T19:24:42Z
