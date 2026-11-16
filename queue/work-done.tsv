@@ -15495,3 +15495,4 @@ fix:stackiq:1959:9c86f22a	fixed: migrated scenario find to ObjectFindOptions; ne
 fix:planninq:1068:40deb423	failed: nothing to fix - regen-sbom.sh --check passes and regen leaves sbom.cdx.json unchanged (phpstan 2.3.5 is dev-only, omitted from the SBOM); the gate's lockfile-without-sbom name rule is a false red for dev-only bumps, needs a lane decision	session-20261116T062117-388e9de2	2026-11-16T06:44:00Z
 fix:decidiq:2178:f3f4328f	fixed eslint errors; new head 32c05171, REVERIFY	session-20261116T062544-335bf148	2026-11-16T06:44:06Z
 verify:keepiq:1828:b313725c	GREEN: 5260 OK, baseline same	session-20261116T062140-6a300781	2026-11-16T06:44:17Z
+review:shillinq:3078:db907ca5	GREEN: spec-conform, suites green beyond 1 inherited vitest	session-20261116T062050-add210c3	2026-11-16T06:44:37Z
