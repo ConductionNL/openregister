@@ -16370,3 +16370,4 @@ fix:integriq:3595:60111a1c	fixed floor (3.55->3.56) by moving 2 services beside 
 fix:thematiq:1290:7ea88173	failed: sbom gate false positive: dev-only bump, regen-sbom --check says sbom.cdx.json is current and regenerating changes nothing, so the PR cannot add it to its diff; merge_gate.py should accept regen-sbom --check passing	session-20261116T105625-05822e4f	2026-11-16T11:24:59Z
 fix:hermiq:1578:c7adfb00	no change needed: merges clean on development; REVERIFY queued (lock held elsewhere)	session-20261116T105712-260c30d3	2026-11-16T11:24:56Z
 fix:integriq:3047:261ea2e5	fixed: SPDX header on new stub, pushed 75eb55fe; REVERIFY queued (merge lock held elsewhere)	session-20261116T105334-a341eb02	2026-11-16T11:25:14Z
+merge:keepiq:1497:6b1efefa	unmeasured: static.developer.overheid.nl (1500); 1497 RED sbom: composer.lock changed without sbom.cdx.json	session-20261116T101039-34d7071f	2026-11-16T11:25:44Z
