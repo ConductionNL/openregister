@@ -15433,3 +15433,4 @@ review:hermiq:1195:7d667839	GREEN: vitest 1526 passed, eslint 0 errors	session-2
 fix:decidiq:2222:2e518c37	fixed RED: mocked @nextcloud/axios in connectionRegistry spec; vitest green; new head 10e2178a	session-20261116T062120-691af8f7	2026-11-16T06:30:02Z
 fix:shillinq:2411:871a57e5	failed: PR only switches to SettingsPlacement/SectionAppearance/AdminFormServices, still absent on openregister main 3800106b (only on its cloud/vox-generic-settings branch); nothing to fix in shillinq until that lands	session-20261116T062050-3a7e109c	2026-11-16T06:30:10Z
 review:dossiq:6203:5bb98561	GREEN: tests only, all pass	session-20261116T062126-9d7735e0	2026-11-16T06:30:32Z
+review:hermiq:1735:ca2c7585	RED: ListenerRegistrarTest expected listener list not updated for FlowRunTerminalListener	session-20261116T062140-6a300781	2026-11-16T06:30:41Z
