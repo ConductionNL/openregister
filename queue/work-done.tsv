@@ -18242,3 +18242,4 @@ verify:keepiq:1868:1dac05d4	3 GREEN (1868, 1870, 1871); tree 5618 tests OK	sessi
 fix:opencatalogi:2678:a10a8ae6	fixed floor: unit_complexity restored to 4.87 (PASS) at 5c3be416; REVERIFY queued (merge lock busy)	session-20261116T221523-34c05d70	2026-11-16T22:54:45Z
 fix:versioniq:754:5ca8b99b	CONFLICT resolved, pushed 668f7591; lock busy, REVERIFY queued	session-20261116T224530-1f167ca0	2026-11-16T22:55:02Z
 fix:versioniq:715:bc2d7a7a	conflict resolved, pushed 37497a7e; merge lock held elsewhere, REVERIFY queued	session-20261116T224559-4d911472	2026-11-16T22:55:32Z
+fix:versioniq:707:53beddbc	conflict resolved, pushed db83c5cf; not landed: merge gate RED on floors (unit_interfacing 4.59->4.20)	session-20261116T224315-f5aa3af9	2026-11-16T22:55:51Z
