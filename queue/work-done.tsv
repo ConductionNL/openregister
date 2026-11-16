@@ -18425,3 +18425,4 @@ verify:integriq:3557:9bf75dd1	CONFLICT #3557	session-20261116T232918-5354fd88	20
 verify:integriq:3550:13bae0ed	CONFLICT #3550 (l10n + AdminSettings.vue vs development)	session-20261116T233834-fbe601d1	2026-11-16T23:45:12Z
 verify:larpinq:1056:85518065	CONFLICT #1056 (routes.php, l10n catalogues)	session-20261116T232912-d58d1a81	2026-11-16T23:45:23Z
 verify:filinq:2106:48eff116	CONFLICT #2106 (SigningService.php, filinq_register.json)	session-20261116T233011-100ff0c6	2026-11-16T23:45:42Z
+verify:humaniq:1147:50dd2ee9	CONFLICT #1147 (l10n, PayrollRunService and its tests)	session-20261116T232033-3ca59164	2026-11-16T23:46:02Z
