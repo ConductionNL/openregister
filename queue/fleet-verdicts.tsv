@@ -15922,3 +15922,4 @@ hermiq	1749	a51b87f192e6edb58f677a624658dcca38def5b4	CONFLICT	worker-47	conflict
 humaniq	1142	5bcc930d755704bf968a6a8c668e8e7636643a7c	CONFLICT	worker-38	conflicts with development (9d5661de) in l10n/en.js, en.json, nl.js, nl.json, register.d/hr-leave.json, manifest.d/00-templates.json, hours-process-redesign.json, manifest.effective.json, manifest-canonical.json; not tested
 humaniq	670	404bf31cb757d644e62c90ffdf08de1a76c009d8	CONFLICT	worker-28	conflict in sbom.cdx.json with development 9d5661de; baseline 4411 tests OK, 1 skipped; tree not run
 hermiq	1794	97a61ef1f8c212a30d231ab9df7c34b874c3600a	CONFLICT	worker-11	conflicts with development in l10n, HermiqToolProvider, FacadeToolInvoker, openapi.json, AdminRoot.vue and tests; suite not run
+integriq	3618	e9d117fd8fe69bbba563f07fd9bb2a0b1b621f02	CONFLICT	worker-43	conflicts with development in l10n/en.js, l10n/nl.js
