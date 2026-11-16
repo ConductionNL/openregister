@@ -15874,3 +15874,4 @@ decidiq	2195	81009fc4d05837e575159da0df533c6ff336abf5	CONFLICT	worker-13	conflic
 hermiq	1741	dd035123e2cce781159c50399fa9d412db09d3f8	CONFLICT	worker-49	conflicts with development (lib/Controller/RunNowController.php lib/Mcp/HermiqToolProvider.php tests/Unit/Mcp/HermiqToolProviderTest.php)
 decidiq	2189	9db1906ee298ab726374467d139771ee65803b76	CONFLICT	worker-26	conflicts with development in lib/Service/MeetingPackageService.php lib/Settings/profiles/municipality.json ; tests not run
 filinq	2085	432c7b61c70dd584e71f805269fa45a3506da207	CONFLICT	worker-58	conflicts with development in tests/unit/Settings/SchemaAuthorizationCoverageTest.php; baseline 6960 tests OK (6 skipped), tree not run
+filinq	2089	f10c1eaaf5bc31141767006595c82c2101a64425	CONFLICT	worker-27	baseline 6960 tests 0 failures; conflicts with development in l10n/en.js,en.json,nl.js,nl.json, lib/Settings/filinq_register.json, openapi.json
