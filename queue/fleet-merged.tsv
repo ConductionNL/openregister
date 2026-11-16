@@ -3828,3 +3828,8 @@ stackiq	1168	04f38d3ae4a4d17b142dbafb97d2a81126d6568c	SKIP	worker-23	GATE UNMEAS
 stackiq	1297	f6f898a1ce156bb7902c6cbdc55ca55df63daf3a	SKIP	worker-23	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
 stackiq	1988	084061aa2765cef73b46e59c4e2a5149b5db4232	RED	worker-23	GATE RED sbom: composer.lock changed without sbom.cdx.json
 thematiq	1365	39f057e7817920c340d55e29be4587cb04702941	SKIP	worker-17	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator, secretscanning; this is not a pass
+learniq	1167	61811d4d8a8ea24ea9173de09dbf224a753fa79c	RED	worker-15	GATE RED checker floor: spdxheaders stars: 5 -> 4
+learniq	1169	6f8c6510da541700251fc85ad25a279db0a224bf	RED	worker-15	GATE RED checker floor: spdxheaders stars: 5 -> 4
+learniq	1727	185949881fbbf0dbfdf3524a4f4cbb9378b38ebc	RED	worker-15	GATE RED checker floor: spdxheaders stars: 5 -> 4
+learniq	1903	a21f3b3be7a0738457716ac64ebcb0934364ae10	RED	worker-15	GATE RED checker floor: spdxheaders stars: 5 -> 4
+learniq	2126	4e6551e419cd72ffe5671223bb8b1976ed8f7538	RED	worker-15	GATE RED checker floor: spdxheaders stars: 5 -> 4
