@@ -18001,3 +18001,4 @@ review:shillinq:3078:767508fe	GREEN: unit 12392/0 fail, vitest 9/9, lint clean	s
 cover:decidiq:a5f973bbm9cda:882bd950	deferred: decidiq has 44 open PRs	session-20261116T212048-3752a879	2026-11-16T21:52:54Z
 review:launchpad:1229:c3db56ed	BLOCK: dashboard subject of a tabular render not scoped to the export creator (REQ-SCH-002); tests green (unit 4568, vitest 393)	session-20261116T212742-68ee361e	2026-11-16T21:52:57Z
 cover:decidiq:a5f973bbm9cda:59826f43	deferred: decidiq has 44 open PRs	session-20261116T212048-3752a879	2026-11-16T21:53:14Z
+review:openregister:10598:d5ee9f8d	APPROVE: spec/tasks only, no code	session-20261116T215131-4f02c975	2026-11-16T21:53:49Z
