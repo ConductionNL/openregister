@@ -15995,3 +15995,4 @@ verify:portaliq:2531:d946b89b	stale	feeder	2026-11-16T09:15:21Z
 review:portaliq:663:6dc142e0	GREEN: opt-in, default keeps behaviour; no new failures; phpstan unchanged	session-20261116T084851-6e832488	2026-11-16T09:17:18Z
 lane:depbundle:dossiq:bundle	opened #6591, 7 updates, verified; merge lock busy, GREEN queued for merge	session-20261116T084528-6b5f71dd	2026-11-16T09:17:26Z
 review:portaliq:1765:582e2f29	GREEN: build ok, specs no new failures (1 inherited)	session-20261116T091246-00cbe321	2026-11-16T09:17:47Z
+review:portaliq:1997:46fd8f94	GREEN: same flags via BulkSaveOptions, stubs match main, no new unit failures (16 inherited)	session-20261116T091521-a6030cec	2026-11-16T09:18:00Z
