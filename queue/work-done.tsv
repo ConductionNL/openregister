@@ -15886,3 +15886,4 @@ review:learniq:2126:c3504350	GREEN: dependency bump only, phpstan clean, 1 inher
 review:filinq:2103:cface20c	stale	session-20261116T081426-24e3a1d6	2026-11-16T08:51:34Z
 fix:pipelinq:3092:f8d049f3	sbom regenerated, pushed f041615e; APPROVE recorded; land skipped (gate UNMEASURED: checker did not measure adrvalidator)	session-20261116T081618-2145ecb3	2026-11-16T08:51:35Z
 review:launchpad:785:085c96eb	GREEN: phpunit 4485 ok, vitest 2586 ok, no behaviour regressions	session-20261116T084356-f50aa190	2026-11-16T08:51:48Z
+review:larpinq:1053:1a318455	BLOCK: new find() call uses register:/schema: named args gone on openregister main; suite 1002 OK	session-20261116T084455-5dfa31c7	2026-11-16T08:52:11Z
