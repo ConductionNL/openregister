@@ -16797,3 +16797,4 @@ fix:opencatalogi:2686:74309a26	merged development in, pushed 75f5b243; merge loc
 fix:hermiq:1754:69e02cc7	conflict resolved, pushed b6dc1f4e; suite green; lock held elsewhere, REVERIFY queued	session-20261116T171845-853781f4	2026-11-16T17:22:13Z
 review:learniq:1167:2c125d9d	GREEN: dev bump + behaviour-preserving refactor; suite 6868, 1 inherited failure	session-20261116T171217-846c0c15	2026-11-16T17:22:32Z
 verify:pipelinq:3889:0061b762	GREEN 3889,3890,3891,3892; unit 9020/0 new; vitest 1 inherited fail	session-20261116T171008-17ad9db7	2026-11-16T17:23:09Z
+merge:buildiq:1583:8186b2d8	unmeasured: static.developer.overheid.nl	session-20261116T170659-0fa9b365	2026-11-16T17:23:17Z
