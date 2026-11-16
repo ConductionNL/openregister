@@ -17012,6 +17012,7 @@ fix:hermiq:1187:0e261189	failed: dev-only lockfile bump (@playwright/test); rege
 review:hermiq:1754:b6dc1f4e	GREEN: unit 5388 pass, touched vitest 31 pass	session-20261116T173227-109a6e00	2026-11-16T17:58:46Z
 fix:versioniq:721:e012b413	CONFLICT resolved (l10n union, js rebuilt); new head bc63b63642, REVERIFY queued; 2 golden-test failures inherited from development	session-20261116T171010-393e4bc2	2026-11-16T17:58:57Z
 fix:hermiq:1808:d92c1c64	conflict resolved (sbom regenerated), pushed f027dd39; REVERIFY queued (merge off on this account)	session-20261116T173342-1d8a0fb9	2026-11-16T17:59:10Z
+merge:learniq:1882:c3c364ab	cloud tree of 5 learniq PRs: merged=0 red=1 fail=0 skip=1; conflict 2, lint 0, red 0, moved 1, done 0	session-20261116T173306-f68895a7	2026-11-16T17:59:48Z
 build:shillinq:adopt-connection-registry:r2	already built: every code task ticked on development; 5.1 needs integriq on the CI instance (e2e), left open	session-20261116T175344-2379cd1f	2026-11-16T17:59:49Z
 cover:stackiq:9ac19b3amf894:be0dcca9	deferred: stackiq has 46 open PRs	session-20261116T173342-1d8a0fb9	2026-11-16T17:59:37Z
 cover:stackiq:9ac19b3amf894:59f569b2	deferred: stackiq has 46 open PRs	session-20261116T173227-109a6e00	2026-11-16T17:59:35Z
