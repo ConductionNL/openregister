@@ -18048,6 +18048,7 @@ review:integriq:3638:3b0efc92	GREEN: unit 9654 vs 9597 baseline, no new failures
 review:launchpad:1235:92f8baab	GREEN: phpunit 4506 ok, vitest 1148 ok, phpstan clean; openapi.json conflict with development	session-20261116T220411-e35751c0	2026-11-16T22:07:59Z
 build:integriq:idp-broker-yivi-route:c2	failed: depends on portal-idp-broker-config, still not on development (PR #3638 reviewed GREEN, awaiting merge); task 4 still waits on Ruben's floor decision	session-20261116T220159-21deb2e5	2026-11-16T22:08:08Z
 review:pipelinq:3602:8427cc8b	GREEN: tests only, 9203 tests 0 failures	session-20261116T220647-b92c8f52	2026-11-16T22:08:37Z
+cover:keepiq:c967a31fm902f:jsd48eb217	PR #1867: 30 tests, store lines 93.80% -> 95.55%, suite 7153 (3 inherited HealthReportView failures)	session-20261116T214640-6a01c0c6	2026-11-16T22:09:48Z
 lane:arch5:buildiq:next-buildiq-r6	PR #1688, GREEN (estimate 4.01-4.07, dev 3.91-3.98; carries r5 #1687)	session-20261116T215102-33996dc2	2026-11-16T22:09:26Z
 fix:launchpad:1229:c3db56ed	fixed: dashboard subject scoped to createdBy, pushed b9834840; lock held elsewhere, REVERIFY queued	session-20261116T220411-e35751c0	2026-11-16T22:09:52Z
 verify:integriq:3680:691f7a7a	GREEN #3680: 9603 tests, no new failures	session-20261116T220159-21deb2e5	2026-11-16T22:10:18Z
