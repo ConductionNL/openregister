@@ -20,3 +20,4 @@ launchpad	832	5cb157b3a864251534d0e0eea939fb8029de3108	APPROVE	worker-12	Quick; 
 launchpad	755	7e918f87d18e313d38cf536b22ef077d2faaca26	APPROVE	worker-12	Quick; no blockers; dev-only vitest family to 5.0.2 (vitest 5 suite 2578 passed in an earlier tree); php tree no new failures
 launchpad	757	674cfd98d8006ae4c69b2e9bf9b14cdeec3e15bb	APPROVE	worker-12	Quick; no blockers; dev-only @typescript-eslint/parser minor bump
 launchpad	761	ca2815b851deb1969d5b23ac0c29185819391d2e	APPROVE	worker-12	Quick; no blockers; dev-only vitest family to 5.0.2 with sbom regen; duplicates #755/#763
+launchpad	819	c5c80a07dc500fcc4e5064cd5126241a9f4bf32a	APPROVE	worker-12	Quick; no blockers; dev-only phpmd 3.0.0 major; tool ruleset compatibility not exercised by the unit suite
