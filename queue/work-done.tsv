@@ -16062,3 +16062,4 @@ fix:filinq:2141:d980f90d	inherited/environmental: opensourcehealth drop is api.o
 lane:arch5:pipelinq:next-pipelinq	PR #3887 open (estimate 4.48-4.49 -> 4.50-4.51, goal met); merge lock held elsewhere, GREEN verdict queued for merge	session-20261116T091519-51eaae8b	2026-11-16T09:30:53Z
 fix:dossiq:6590:1ff7ee00	conflict resolved, pushed e05ebf36; merge lock held elsewhere, REVERIFY queued	session-20261116T092826-3efb332e	2026-11-16T09:31:05Z
 review:dossiq:5266:2cd5ee93	GREEN: vitest 40/40, php suite no new failures	session-20261116T091532-d81a601b	2026-11-16T09:31:35Z
+gap:learniq:opensourcehealth:20de5357	PR #2562: eslint 10.15 takes minimatch 11.0.8, prod npm audit 0 (was 3 moderate), sbom regenerated; node tests 9 fails inherited	session-20261116T091613-0f6d95fe	2026-11-16T09:31:51Z
