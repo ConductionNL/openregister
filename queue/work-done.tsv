@@ -16818,3 +16818,4 @@ build:portaliq:admin-dialogs-board-look	already done: only 1.4 (live comparison 
 build:portaliq:demo-sign-in-beside-the-account	deferred: portaliq has 62 open PRs	session-20261116T171035-683856c3	2026-11-16T17:30:07Z
 merge:opencatalogi:2415:35811d3c	unmeasured: static.developer.overheid.nl (2699, 2725 approved, not landed; 2415 2541 2673 2701 already on development)	session-20261116T171507-41a673e9	2026-11-16T17:30:21Z
 build:portaliq:attached-form-confirmation-drops-cancel	deferred: portaliq has 62 open PRs	session-20261116T171035-683856c3	2026-11-16T17:30:33Z
+merge:keepiq:1716:33734fff	stale	feeder	2026-11-16T17:17:15Z
