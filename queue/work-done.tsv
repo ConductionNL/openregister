@@ -16989,3 +16989,4 @@ fix:hermiq:1795:fdc2c517	fixed: floor restored to 3.77 at e06004f (REVERIFY queu
 cover:openregister:7350e3efm9dc5:60c2c265	pushed 59bd8e7 to #10587 (open-PR cap: 188): 5 new controller test files, 43 tests, 4 risky tests fixed; lib/Controller/*.php 95.93->96.57% in the controller suite, 10300 tests green	session-20261116T173207-e7bfa399	2026-11-16T17:55:08Z
 review:decidiq:2178:d8c9d162	GREEN: phpunit 4666 OK, vitest 2872 passed on the PR merged with development	session-20261116T174323-ba3ec1dc	2026-11-16T17:55:31Z
 fix:versioniq:738:f3f7da6d	conflict resolved, pushed 001e5515; not landed (merge gate host unreachable here), REVERIFY queued	session-20261116T172806-3ef5ead7	2026-11-16T17:56:02Z
+review:hermiq:1736:4200349d	GREEN #1736 (0 new failures; dev baseline 167E/26F inherited)	session-20261116T173308-9a80cd8d	2026-11-16T17:56:20Z
