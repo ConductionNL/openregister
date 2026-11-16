@@ -4665,3 +4665,4 @@ integriq	3649	9b271f27a945bbc79cf8ea2f8bf1c695445a8659	MERGED	worker-50	GATE OK 
 larpinq	1050	e8d7437e5c73dab94dfb6ea341e978a36fe90d8c	RED	worker-44	GATE RED floor: duplication: 5.17 -> 5.15
 humaniq	606	999cc2866e6aa8b58b9b76ea5c11fa01becb1b6a	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.47 holds at 3.47
 humaniq	662	f0ddf8e5865ef5e7cecb30c3b8fd324396a2ffc8	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
+shillinq	3108	5565f98d2c7e00a4b1ea7984d82972cc5a95f05f	MERGED	worker-53	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.03
