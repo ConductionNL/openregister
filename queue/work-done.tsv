@@ -18016,3 +18016,4 @@ fix:shillinq:3055:3c4a7efd	conflict resolved, pushed a4da7e8d; suite green; merg
 cover:dossiq:069ee2d6m9d1b:7593a315	added 4 tests (Relation: SubjectLinkRule, RoleLinkDefinitionReader) to open PR #6203 at 94882a3 (dossiq over open-PR budget: 41); Relation dir lines uncovered 5 -> 1; suite 18836->18840, baseline 19 failures unchanged	session-20261116T214802-5ec3bf72	2026-11-16T21:56:00Z
 lane:arch5:shillinq:next-shillinq-r7:c2	PR #3129, GREEN	session-20261116T212057-3d2ff8ce	2026-11-16T21:56:10Z
 verify:shillinq:3124:f8aa8118	RED #3124: ContainerResolvableConstructorsTest::testEveryRequiredInAppInterfaceDependencyIsRegistered	session-20261116T214737-0a18c2dc	2026-11-16T21:56:24Z
+fix:shillinq:2997:bc640379	conflict resolved, new head adca596c; REVERIFY queued	session-20261116T212719-d025d113	2026-11-16T21:57:04Z
