@@ -18230,3 +18230,4 @@ fix:buildiq:1650:c0d47084	merged #1650 at 247fb033a6dc290af308dfab2399e2961b1ef8
 fix:filinq:2072:65ad1d32	fixed fail-open, pushed 8a0992cbb74f2b7df9dbc9e29159077ce5307e05; REVERIFY recorded	session-20261116T221549-588bbbce	2026-11-16T22:51:35Z
 cover:pipelinq:7f9dc8e6m3dbb:bd5b1257	added to PR #3602 (over PR budget, 43 open): ContactMoments + ReportCalendar tests, 13 tests, ContactReport 87/87 lines; suite 9136 -> 9149, 0 failures	session-20261116T224529-30de497c	2026-11-16T22:52:07Z
 fix:launchpad:1223:e2a4d5a1	conflict resolved, pushed 430e98a0; merge lock busy, REVERIFY queued	session-20261116T224647-cce07511	2026-11-16T22:52:18Z
+cover:launchpad:fb10c50fm88bd:33952d4b	PR #1250: CalculatedFields 89.41% -> 98.52%, 14 tests	session-20261113T213325-5a151438	2026-11-16T22:52:56Z
