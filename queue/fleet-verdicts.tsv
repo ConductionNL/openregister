@@ -15857,4 +15857,5 @@ decidiq	2193	03fef7f11207c7492d4a975306397dbcd79b1e66	CONFLICT	worker-53	conflic
 buildiq	1626	cac162dc488f54c56c692b9ae276f0558bc9fe53	CONFLICT	worker-12	conflicts with development, files: l10n/nl.js l10n/nl.json tests/stubs/openregister-stubs.php 
 buildiq	1632	c06b2a4f61038870ae1dfbc682a651ae808af05d	CONFLICT	worker-56	conflicts with development in l10n/en.js, en.json, nl.js, nl.json, src/builder.js, ApplicationDetailActions.vue, AppSettingsModal.vue
 buildiq	1590	0761fb37549017029643fd57e42ca59a23a7c37e	CONFLICT	worker-17	conflicts with development in l10n/en.js,en.json,nl.js,nl.json, openapi.json, src/icons.js, src/views/VersionHistory.vue; baseline 3456 tests 0 failures
+buildiq	1623	e24b334fa50134345d8c9bba3cba2b0477f89521	CONFLICT	worker-13	conflicts with development in l10n/en.js, en.json, nl.js, nl.json, FieldEditor.vue and the FieldEditorConversion golden snapshot; no tests run
 buildiq	1597	b4d6685f15a88f33cd1f90edad134ba6de802e91	CONFLICT	worker-17	conflicts with development in l10n/en.js,en.json,nl.js,nl.json; baseline 3456 tests 0 failures
