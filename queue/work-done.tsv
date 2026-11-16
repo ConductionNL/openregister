@@ -16066,3 +16066,4 @@ review:dossiq:5266:2cd5ee93	GREEN: vitest 40/40, php suite no new failures	sessi
 gap:learniq:opensourcehealth:20de5357	PR #2562: eslint 10.15 takes minimatch 11.0.8, prod npm audit 0 (was 3 moderate), sbom regenerated; node tests 9 fails inherited	session-20261116T091613-0f6d95fe	2026-11-16T09:31:51Z
 merge:portaliq:1673:e981be5a	cloud tree of 1 portaliq PRs: merged=0 red=0 fail=0 skip=1 (APPROVE recorded; gate unmeasured: static.developer.overheid.nl unreachable)	session-20261116T091541-9e19ce49	2026-11-16T09:31:49Z
 review:dossiq:3203:2c689dc9	GREEN: dependency bump, vitest and build same as baseline	session-20261116T091210-012bb190	2026-11-16T09:31:52Z
+review:shillinq:2072:04fc7224	GREEN: access tightened as titled, suite 12231/0; concern noted on ownerless invoices	session-20261116T085359-7eb6c05c	2026-11-16T09:32:34Z
