@@ -17482,5 +17482,8 @@ merge:integriq:3671:a1fc0d47	cloud tree of 1 integriq PRs: merged=1 red=0 fail=0
 cover:learniq:e6498ddd:jsea7197ec	deferred: learniq has 60 open PRs	session-20261116T192824-ee4fb14b	2026-11-16T19:46:34Z
 cover:pipelinq:7f9dc8e6m3dbb:38e80a9f	already done: lib/Command/*.php is 100% (427/427 stmts) on development 601862a8; no PR	session-20261116T193642-e39387da	2026-11-16T19:46:30Z
 cover:learniq:e6498ddd:jsdec3d422	deferred: learniq has 60 open PRs	session-20261116T192325-bb4c31dd	2026-11-16T19:46:22Z
+build:integriq:open-formulieren-submits-into-its-case	PR #3675: tasks 1.1-1.3 and the drain of 1.4 built with tests; 1.4 staging removal waits for zero pending live, 1.5 (DSO) needs a decision on which mapping is checked	session-20261116T184833-adbb8426	2026-11-16T19:46:58Z
+cover:learniq:e6498ddd:60c2c265	deferred: learniq has 60 open PRs	session-20261116T192325-bb4c31dd	2026-11-16T19:46:45Z
 fix:larpinq:1050:d2d372bb	merged #1050 at 7cfec2447da9e1e2aec0580423be39e9779c3204 (tests restored testcoderatio 73.8->75.4%; shared SKILL_FIELDS restored duplication 5.15->5.17)	session-20261116T192645-5f5cd9b9	2026-11-16T19:46:49Z
 cover:learniq:e6498ddd:8ed5443b	deferred: learniq has 60 open PRs	session-20261116T192824-ee4fb14b	2026-11-16T19:47:08Z
+cover:learniq:e6498ddd:js4829b6aa	deferred: learniq has 60 open PRs	session-20261116T192127-f26e2e56	2026-11-16T19:47:18Z
