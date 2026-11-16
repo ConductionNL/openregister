@@ -1,0 +1,11 @@
+tests/Unit/Service/OpenMaterial/OpenMaterialSearchCourseTest.php find id,_extend,files,register,schema,_rbac,_multitenancy,_render,_audit
+tests/Unit/BackgroundJob/SchoolAdviesVoorlopigRodJobTest.php saveObject object,extend,register,schema,uuid,_rbac,_multitenancy,silent,_validation,uploadedFiles,currentUser,failIfExists
+tests/Unit/Controller/RolloverControllerCrossTenantTest.php saveObject object,extend,register,schema,uuid,_rbac,_multitenancy,silent,_validation,uploadedFiles,currentUser,failIfExists
+tests/Unit/Controller/ExchangeControllersTest.php saveObject object,extend,register,schema,uuid,_rbac,_multitenancy,silent,_validation,uploadedFiles,currentUser,failIfExists
+tests/Unit/Service/AssessmentScoringServiceTest.php saveObject object,extend,register,schema,uuid,_rbac,_multitenancy,silent,_validation,uploadedFiles,currentUser,failIfExists
+tests/Unit/Service/SegmentServiceTest.php saveObject object,extend,register,schema,uuid,_rbac,_multitenancy,silent,_validation,uploadedFiles,currentUser,failIfExists
+tests/Unit/Service/CoursePackage/CoursePackageImportReporterTest.php saveObject object,extend,register,schema,uuid,_rbac,_multitenancy,silent,_validation,uploadedFiles,currentUser,failIfExists
+tests/Unit/Listener/LearningPlanEvaluationHandlerTest.php saveObject object,extend,register,schema,uuid,_rbac,_multitenancy,silent,_validation,uploadedFiles,currentUser,failIfExists
+tests/Unit/Listener/CredentialRenewalSkipsTest.php saveObject object,extend,register,schema,uuid,_rbac,_multitenancy,silent,_validation,uploadedFiles,currentUser,failIfExists
+tests/Unit/Listener/CohortGroupProvisioningFailuresTest.php saveObject object,extend,register,schema,uuid,_rbac,_multitenancy,silent,_validation,uploadedFiles,currentUser,failIfExists
+tests/Unit/Service/CoursePackage/CoursePackageObjectWriterTest.php deleteObject uuid,register,schema,_rbac,_multitenancy,_retentionSweep,currentUser,permanent
