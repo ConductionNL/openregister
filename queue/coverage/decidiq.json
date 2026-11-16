@@ -1,12 +1,12 @@
 {
  "app": "decidiq",
- "commit": "1bf4171e2b5cd4c7f220ca4bf47cb21994f5ca3a",
- "measured_at": "2026-11-16T18:55:27Z",
+ "commit": "aaedbb438dc1c9b8f92d0ac4ba84b8b79f67e510",
+ "measured_at": "2026-11-16T22:18:41Z",
  "php": {
   "tool": "pcov",
-  "pct": 94.13,
-  "statements": 29029,
-  "covered": 27324,
+  "pct": 91.43,
+  "statements": 29715,
+  "covered": 27168,
   "dirs": {
    "lib/Activity/": [
     79,
@@ -21,16 +21,16 @@
     37
    ],
    "lib/BackgroundJob/": [
-    653,
-    624
+    669,
+    640
    ],
    "lib/Command/": [
     106,
     105
    ],
    "lib/Controller/": [
-    3282,
-    3226
+    3312,
+    3200
    ],
    "lib/Dashboard/": [
     65,
@@ -41,7 +41,7 @@
     145
    ],
    "lib/Exception/": [
-    20,
+    22,
     20
    ],
    "lib/Flow/": [
@@ -61,12 +61,12 @@
     256
    ],
    "lib/Listener/": [
-    1588,
-    1582
+    1749,
+    1720
    ],
    "lib/Listener/Registrar/": [
-    126,
-    126
+    151,
+    151
    ],
    "lib/Mcp/": [
     534,
@@ -89,8 +89,8 @@
     246
    ],
    "lib/Repair/": [
-    807,
-    807
+    818,
+    818
    ],
    "lib/Search/": [
     58,
@@ -101,8 +101,8 @@
     5
    ],
    "lib/Service/": [
-    19364,
-    17787
+    19789,
+    17580
    ],
    "lib/Service/Feed/": [
     31,
@@ -112,13 +112,17 @@
     74,
     74
    ],
+   "lib/Service/GoverningDocument/": [
+    39,
+    38
+   ],
    "lib/Service/Ori/": [
     581,
     580
    ],
    "lib/Service/Records/": [
-    402,
-    402
+    379,
+    251
    ],
    "lib/Service/Registrar/": [
     26,
@@ -139,13 +143,13 @@
   }
  },
  "js": {
-  "pct": 98.45,
-  "statements": 3359,
-  "covered": 3307,
+  "pct": 98.39,
+  "statements": 3604,
+  "covered": 3546,
   "dirs": {
    "src/": [
-    95,
-    95
+    96,
+    96
    ],
    "src/assets/": [
     0,
@@ -172,8 +176,8 @@
     2
    ],
    "src/dialogs/": [
-    6,
-    6
+    43,
+    42
    ],
    "src/integrations/": [
     385,
@@ -184,8 +188,8 @@
     18
    ],
    "src/services/": [
-    335,
-    335
+    384,
+    380
    ],
    "src/store/": [
     10,
@@ -196,8 +200,8 @@
     72
    ],
    "src/utils/": [
-    1966,
-    1952
+    2124,
+    2109
    ],
    "src/views/dashboard/widgets/": [
     103,
