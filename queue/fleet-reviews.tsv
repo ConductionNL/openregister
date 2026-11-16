@@ -594,3 +594,4 @@ opencatalogi	2725	defb7b6a9822f96bb369f99795f0945912eb4242	APPROVE	worker-09	Tho
 integriq	2671	f4218e170982307bdf1ebe71fe738453a8155f5e	APPROVE	worker-14	Quick; no blockers; dev-only phpmd 2 to 3 bump, baseline rule names match phpmd 3.0.0's classes, sbom regenerated
 buildiq	1673	df130f4fc2e3b198ff2e9f7688906c3232cdf919	APPROVE	worker-50	Quick; no blockers; patch/minor dev-dependency and composer bumps, lock consistent, npm ci + vitest 4719/4719 green, unit tree adds no failures
 integriq	2716	6edb6eeaafff98e0aa865e39475b0c55f4f9ce02	APPROVE	worker-14	Quick; no blockers; vue patch bump with sbom
+integriq	2994	672207a470cba6d332f1df141ce039272fc4624f	APPROVE	worker-14	Quick; no blockers; dev sass minor bump with sbom
