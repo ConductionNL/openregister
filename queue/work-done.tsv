@@ -18315,3 +18315,4 @@ cover:dossiq:069ee2d6m9d1b:6ecc72bb	already done: lib/Service/Workflow/*.php 695
 fix:opencatalogi:2756:d7a2df60	pushed a362a4ec: errorReport limited to its moderator groups; REVERIFY queued (floor RED still open, not landed)	session-20261116T230245-c73891ff	2026-11-16T23:16:34Z
 merge:keepiq:1868:1dac05d4	cloud tree of 3 keepiq PRs: merged=3 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T225839-a25271aa	2026-11-16T23:16:45Z
 review:opencatalogi:2674:05957a6e	GREEN: 0 new failures (78 inherited), access checks hold; 2 non-blocking concerns	session-20261116T230818-aebff84c	2026-11-16T23:16:51Z
+fix:hermiq:1781:bf818a9a	conflict resolved, pushed dd5b5dad, 0 new failures; REVERIFY queued (merge lock busy)	session-20261116T214640-6a01c0c6	2026-11-16T23:17:05Z
