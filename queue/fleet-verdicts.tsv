@@ -15033,3 +15033,7 @@ filinq	2072	b8b9f6800f906dd852f09e77db9deca981ab652a	REVERIFY	worker-04	review b
 learniq	2507	82c09d5c716109211a75b18f4ee74400420f3198	RED	worker-26:merge-gate	GATE RED floor: unit_interfacing: 3.12 -> 3.10
 opencatalogi	2682	d8b519df4b336de03cd62c4570efec60d5744b95	REVERIFY	worker-50	merged development in; restored php component_independence (controller/listener/drafter meet through 3 small Contract types; sig-floor gate PASS), idor exemptions name the drafter's per-object guard, @spec tags on the draft widget; unit suite 0 new failures, one-PR tree on development 9b249c679 adds 0, vitest 1164/1164; merge lock held elsewhere, not landed; new head 4e12e44e97a1ee7e636708f9ec65a4962916d02c, verify it
 stackiq	1978	723683e2cea093c598e8bbdad9e0de104feb46ed	CONFLICT	worker-57:merge	merges clean on development alone; files: openapi.json 
+versioniq	721	e012b413d507020a480b55b79d9e2014ba2d59ba	CONFLICT	merge3	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+versioniq	723	332a8036e3d25abd39c9c1c24d0f99f9589c4c79	CONFLICT	merge3	conflicts with development; files: src/App.vue 
+versioniq	725	bd0db7f78fc7f06f9ded92a916114f67b4a546f0	CONFLICT	merge3	conflicts with development; files: src/App.vue src/utils/updateBatch.ts tests/unit/Service/Advisory/NextcloudAdvisoryFeedTest.php 
+versioniq	738	f3f7da6d169b73e4fde2fc64bbc78a43994842cd	CONFLICT	merge3	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
