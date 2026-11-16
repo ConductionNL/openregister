@@ -17791,14 +17791,18 @@ cover:keepiq:c967a31fm902f:d39f9857	no change: lib/Support/*.php already 100% li
 verify:hermiq:1810:c59e4681	GREEN 1810,1811 (5374 tests, 0 new failures)	session-20261116T205635-df8941f2	2026-11-16T20:59:36Z
 review:pipelinq:3602:14b07f5c	GREEN: tests only; 9171 tests, 0 failures on merged tree	session-20261116T205720-a5d1eee3	2026-11-16T20:59:51Z
 verify:portaliq:2533:223d2a04	GREEN #2533 (6215 tests, 16 inherited errors, 0 new)	session-20261116T205106-0bf9dbd0	2026-11-16T20:59:58Z
+cover:pipelinq:7f9dc8e6m3dbb:e372e6ff	stacked on #3602 (pipelinq over PR budget, 43 open): +10 tests for lib/Event (Expense/TimeEntry approved, PortalRequestSubmitted, LandingPage positional), suite 9171->9181 green	session-20261116T205614-f09d5844	2026-11-16T21:00:15Z
 review:learniq:2549:fe0077f4	GREEN: build within spec; PHP 6942 tests 1 inherited failure; JS failures inherited	session-20261116T205143-decc0cbd	2026-11-16T21:00:11Z
 cover:launchpad:fb10c50fmf487:f91e7417	deferred: launchpad has 44 open PRs	session-20261116T205210-7a1fa9ff	2026-11-16T21:00:30Z
 cover:keepiq:c967a31fm902f:882bd950	no change: lib/Search/*.php already 100% (32/32) per measure and rerun at b80d2fdc	session-20261116T205732-a5f08498	2026-11-16T21:00:28Z
 review:hermiq:1735:42dffb64	GREEN: unit 5423 OK (baseline 5374), vitest 21 pass	session-20261116T205530-bfd0de31	2026-11-16T21:00:35Z
 review:keepiq:1826:18633225	GREEN: suite 5503 OK on PR+development, vitest 17/17, gate fails closed, routes owner-checked	session-20261116T202918-5671af16	2026-11-16T21:00:45Z
+merge:keepiq:1857:f5fa80be	cloud tree of 1 keepiq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T203539-f268bd6b	2026-11-16T21:01:15Z
 cover:launchpad:fb10c50fmf487:882bd950	deferred: launchpad has 44 open PRs	session-20261116T205530-bfd0de31	2026-11-16T21:01:23Z
 cover:launchpad:fb10c50fmf487:9d3a1784	deferred: launchpad has 44 open PRs	session-20261116T205210-7a1fa9ff	2026-11-16T21:01:18Z
 cover:pipelinq:7f9dc8e6m3dbb:910f9247	already done: no uncovered statements left in the six dirs (suite 9171 ok)	session-20261116T194104-8906f18f	2026-11-16T21:01:10Z
 review:hermiq:1754:90999c3d	GREEN #1754 (5422 unit + 31 vitest, no failures)	session-20261116T205635-df8941f2	2026-11-16T21:01:29Z
 cover:pipelinq:7f9dc8e6m3dbb:a215617b	added IntegrationRegistrarTest (2 tests) to open cover PR #3602 (pipelinq has 43 open PRs); lib/Integration now 100% lines; unit suite 9173 tests, 0 failures	session-20261116T205217-2b48a08c	2026-11-16T21:01:51Z
 merge:hermiq:1808:b331dd92	cloud tree of 1 hermiq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T205728-3b03d115	2026-11-16T21:01:51Z
+cover:stackiq:9ac19b3am2187:692f8a78	already done: lib/Service/Contactpersoon/ measured 207/207 (100%) at 00516ba7	session-20261116T205645-edca2f78	2026-11-16T21:02:14Z
+review:hermiq:1795:69b741d5	GREEN 1795: no new failures, owner checks fail closed	session-20261113T213325-fbdd5614	2026-11-16T21:02:25Z
