@@ -1,0 +1,1 @@
+@nextcloud/vue	9.14.1 breaks the vitest suite: its bundled p-queue calls node:events setMaxListeners on a non-EventEmitter (TypeError in 29 spec files)
