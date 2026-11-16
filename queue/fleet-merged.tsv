@@ -4778,4 +4778,5 @@ stackiq	2001	b444c6f0684e4e7448b9357336b1ec84a518ec52	MERGED	worker-54	GATE OK s
 launchpad	1244	4b69a0271a2fc6d035d5d89ed3195f7e3998c657	MERGED	worker-33	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.65 holds at 3.72
 stackiq	2002	ff096b820beb42309602b3ca2265cb01134b46ad	MERGED	worker-54	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.19
 stackiq	2003	b30706bd7f0b6b085b38494b688b8ef27372d92b	MERGED	worker-54	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.19
+buildiq	1672	cb2126a7b075f04ec603389d9f83773b9e0b68f9	MERGED	worker-18	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.91 holds at 3.91
 stackiq	2004	3abacc55decaf583bc9497566ae9c6da6f5fba99	MERGED	worker-54	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.19
