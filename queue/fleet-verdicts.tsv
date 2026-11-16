@@ -14093,3 +14093,4 @@ portaliq	1767	886f4fa12807f11078cca7aaa6a8be328f3acfb8	CONFLICT	merge3	merges cl
 portaliq	1856	9258525b0b4ce843d77b5260d39d86ba86aaf5cb	CONFLICT	merge3	conflicts with development; files: l10n/en.js l10n/en.json l10n/en_US.js l10n/en_US.json l10n/nl.js l10n/nl.json lib/Controller/PortalIntakeController.php lib/Kernel/Contracts/MailTemplateRendererInterface.php lib/Settings/portaliq_reg
 portaliq	1997	3d645d7e06d6bb4f6bf82fdab64623453437a5cf	CONFLICT	merge3	conflicts with development; files: lib/Service/Traffic/TrafficEventStore.php 
 portaliq	2530	55e242b95cdf4371d672f9d81cd3458c467fb3ab	CONFLICT	merge3	merges clean on development alone; files: composer.lock 
+versioniq	739	8a1c4395a1f3bf31e9ce8be4a6cb5f7b0cb77fbf	GREEN	worker-43:lane	dep bundle (8 updates, sbom regenerated); phpunit 1957 tests 2 inherited failures = development; vitest 3012 pass both; build ok; lint 0 errors both
