@@ -13821,3 +13821,8 @@ hermiq	1189	25278c92c0002e624372022a6acede30b7ecdeb9	REVERIFY	worker-14	webpack 
 portaliq	1354	84f30a141f0eb4ba2c9fe1321745dc811282a1a5	REVERIFY	worker-18	merged development in; sbom.cdx.json regenerated with bin/regen-sbom.sh (921 components); new head ba4c68851cd1c2cefa197ffe20cd43653205890e, verify it
 opencatalogi	2701	59468b61e1b8145b2d834a4e8e6fb5b16bac5eee	GREEN	worker-53:review	implements catalogs CAT-001/002 (CORS on 503, 404 for unknown catalogue), auth attributes added; unit 5755 on PR+development with openregister main: 31 errors 75 failures, all inherited from development, none new
 stackiq	1988	084061aa2765cef73b46e59c4e2a5149b5db4232	RED	worker-23:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+learniq	1167	61811d4d8a8ea24ea9173de09dbf224a753fa79c	RED	worker-15:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
+learniq	1169	6f8c6510da541700251fc85ad25a279db0a224bf	RED	worker-15:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
+learniq	1727	185949881fbbf0dbfdf3524a4f4cbb9378b38ebc	RED	worker-15:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
+learniq	1903	a21f3b3be7a0738457716ac64ebcb0934364ae10	RED	worker-15:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
+learniq	2126	4e6551e419cd72ffe5671223bb8b1976ed8f7538	RED	worker-15:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
