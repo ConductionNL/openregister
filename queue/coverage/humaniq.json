@@ -1,12 +1,12 @@
 {
  "app": "humaniq",
- "commit": "95550648a60a60d42dd0a851c53b72fa00924336",
- "measured_at": "2026-11-13T19:04:40Z",
+ "commit": "272d2e532ec1b268e3b7fc1d0006d1e422174f12",
+ "measured_at": "2026-11-16T19:18:46Z",
  "php": {
   "tool": "pcov",
-  "pct": 96.12,
-  "statements": 25882,
-  "covered": 24879,
+  "pct": 95.77,
+  "statements": 27370,
+  "covered": 26211,
   "dirs": {
    "lib/BackgroundJob/": [
     201,
@@ -17,24 +17,24 @@
     976
    ],
    "lib/Controller/": [
-    2068,
-    1869
+    2219,
+    2033
    ],
    "lib/Event/": [
     58,
     58
    ],
    "lib/Flow/": [
-    239,
-    228
+    241,
+    230
    ],
    "lib/Lifecycle/": [
-    314,
-    314
+    362,
+    360
    ],
    "lib/Listener/": [
-    1290,
-    1214
+    1431,
+    1348
    ],
    "lib/Middleware/": [
     59,
@@ -42,15 +42,15 @@
    ],
    "lib/Middleware/Support/": [
     60,
-    53
+    55
    ],
    "lib/Notification/": [
     34,
-    33
+    34
    ],
    "lib/Payroll/": [
-    769,
-    732
+    927,
+    883
    ],
    "lib/Payroll/Dsl/": [
     497,
@@ -64,29 +64,41 @@
     419,
     419
    ],
+   "lib/Payroll/Pension/": [
+    19,
+    19
+   ],
    "lib/Portal/": [
     271,
     271
    ],
    "lib/Repair/": [
-    589,
-    583
+    604,
+    594
    ],
    "lib/Sections/": [
     5,
-    0
+    5
    ],
    "lib/Service/": [
-    14949,
-    14317
+    15714,
+    14932
+   ],
+   "lib/Service/Connection/": [
+    28,
+    26
+   ],
+   "lib/Service/Setup/": [
+    151,
+    146
    ],
    "lib/Settings/": [
     22,
     21
    ],
    "lib/Standards/": [
-    295,
-    291
+    305,
+    301
    ],
    "lib/Standards/Checks/": [
     2365,
