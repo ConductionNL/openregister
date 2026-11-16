@@ -14940,3 +14940,8 @@ buildiq	1672	8130284789a8757ad622970f76ae77dbc5b02418	RED	worker-50:merge-gate	G
 buildiq	1091	13bc446b3ff8a04f2e70a612adc51a37c801a382	RED	worker-39:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 buildiq	1094	2ea9dbb488b0e4ebb832485f152e1c96842c72c2	RED	worker-39:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 shillinq	3108	aa5b2da3082bd35970e8279798ef59a076f2c0df	REVERIFY	worker-04	merged development (composer.lock plugin-api-version conflict kept at 2.11.0), regenerated sbom.cdx.json (633 components, --check current); merge lock held by another merger; new head 5565f98d2c7e00a4b1ea7984d82972cc5a95f05f, verify it
+buildiq	1608	53c9f80a0c85d0fe37e69a30bd5184ad91216c0f	CONFLICT	worker-39:merge	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Mcp/Handler/AbstractToolHandler.php 
+buildiq	1649	f58cb410a64d62d983f57214df21f8d82c6b3b53	CONFLICT	worker-39:merge	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+buildiq	1651	e765d7defef743214c8b1a95ec54e0f7cee07fa5	CONFLICT	worker-39:merge	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+buildiq	1654	ac924f1b60c5efd99287762b607a3b9a06109f76	CONFLICT	worker-39:merge	merges clean on development alone; files: docs/Technical/index.md l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Controller/ApplicationsController.php lib/Controller/DashboardController.php src/modals/AppSettingsModal.vue tests/modals/Ap
+buildiq	1624	ae655c59311e2bf849dcd94f4243fc84f440070d	RED	worker-39:merge	adds unit failure(s) with the PRs before it in the tree: AppOrganisationGuardCoverageTest::testNoNewReaderSkipsTheDecision
