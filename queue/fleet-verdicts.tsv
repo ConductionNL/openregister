@@ -15901,6 +15901,7 @@ filinq	2098	ee9aee9cbe8b6c6c0a521d32cd3021c6fd4b3875	CONFLICT	worker-14	conflict
 filinq	2124	5e42335d1e29a3e766b0ba6f1598a6e09e960777	CONFLICT	worker-21	merge conflict with origin/development in webpack.config.js; suite not run
 filinq	2114	78a005c251fc9ce1db35ba012ea58f6d6ef2b57c	CONFLICT	worker-58	conflicts with development in l10n/en.js,nl.js,en.json,nl.json, filinq_register.json, filinq_mock_register.json, openapi.json
 portaliq	2448	160e1aed97cc47f853a6e0fdb792b61785450e2d	RED	merge3:merge-gate	GATE RED floor: duplication: 4.35 -> 4.33; unit_complexity: 4.57 -> 4.54
+filinq	2091	72c1df1540cdfb1054b2eb6bc498611efc0415ab	CONFLICT	worker-07	conflicts with development (l10n en/nl, lib/Settings/filinq_register.json, Settings.vue, settings-page golden); baseline 6960 OK
 dossiq	3894	8ed2662d166b8bee07c9b1aec92ee7de29dc08cb	CONFLICT	worker-11	sbom.cdx.json conflicts with development; baseline unit 18363 tests, 1 error (StatusEntryRequirementsGuardTest, inherited); PR suite not run
 dossiq	6353	60a451ec2178d0c85abe001143ac09af72767f80	CONFLICT	worker-06	conflicts with development in NotesController.php, NotePush.php, NoteEnvelope.php, NoteEnvelopeTest.php (modify/delete); baseline unit 18363 tests 16 failures; tree not tested
 filinq	2090	923c98e033f7a781763895ce2a83eca95d902a0f	CONFLICT	worker-23	conflict in lib/Settings/filinq_register.json against development; baseline 6960 tests OK
