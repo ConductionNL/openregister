@@ -16503,3 +16503,4 @@ fix:thematiq:1291:ac416a6a	failed: sbom already current (@conduction/nextcloud-v
 fix:opencatalogi:2701:59468b61	conflict resolved (tasks.md), pushed 23a62678; REVERIFY queued	session-20261116T142651-57b203fe	2026-11-16T14:51:56Z
 fix:learniq:1901:152da34c	RED inherited (stub without SPDX); restored rating, pushed e9591096; lock busy, REVERIFY queued	session-20261116T142859-fa64ab70	2026-11-16T14:52:09Z
 fix:learniq:2562:2eb28548	added missing SPDX line (inherited spdxheaders floor red), pushed 2e394133; lock held elsewhere, REVERIFY queued	session-20261116T142951-88449a68	2026-11-16T14:52:21Z
+fix:learniq:2555:c1c2b81a	sbom regenerated; new head df653e98; REVERIFY (lock held)	session-20261116T144202-f2b26030	2026-11-16T14:52:29Z
