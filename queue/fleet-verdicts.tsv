@@ -14302,3 +14302,4 @@ shillinq	1899	3859758c38929cc8611f88cfdb14871dfd333549	RED	worker-49:merge-gate	
 stackiq	1924	f5164c8d7b2f04e1f06272ad5dd21436e2232d39	RED	worker-19:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
 dossiq	6593	063f50b3ac2c3fea4dd798661b83d44440f46d69	GREEN	worker-18:lane	development merged in; unit 18317 tests 0 failures; phpstan 2 = development; SAME-PHPCS; SAME-PHPMD; no-admin-idor 86 = 86; estimate 4.40-4.43 -> 4.41-4.43
 stackiq	1978	315e616b2d61a4366c9527185a4c1dfeab77a8f0	RED	worker-19:merge-gate	GATE RED floor: unit_interfacing: 4.72 -> 4.69
+stackiq	1930	e29285ec856ff1804b5a98923ff0153fd1686c37	CONFLICT	worker-19:merge	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Settings/softwarecatalogus_register.json 
