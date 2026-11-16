@@ -15927,3 +15927,4 @@ review:opencatalogi:2643:adb68bca	GREEN: spec-conform, 0 new failures (106 inher
 fix:filinq:2088:bb28f1bd	fixed version, property docs, component independence and complexity floor; pushed 421aab4e; REVERIFY (not landed: cloud merge gate reds on opensourcehealth for development too)	session-20261116T081426-24e3a1d6	2026-11-16T08:59:23Z
 review:pipelinq:3092:f041615e	GREEN: vitest 5343/5344, 1 inherited failure, test-only adaptations	session-20261116T084553-52c183b0	2026-11-16T08:59:32Z
 fix:portaliq:1769:91f4b0df	sbom regenerated, dev merged; new head 1f21b5e3; merge lock held elsewhere, REVERIFY queued	session-20261116T084812-63bd4ecc	2026-11-16T08:59:40Z
+fix:portaliq:1764:b3d8a23e	sbom regenerated, pushed a878ea03; merge lock busy, REVERIFY recorded	session-20261116T081618-2145ecb3	2026-11-16T08:59:48Z
