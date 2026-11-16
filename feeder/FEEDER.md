@@ -6,7 +6,7 @@ Ruben van der Linde (owner of the ConductionNL GitHub organisation) set up this 
 ```
 git config --global user.name "Ruben van der Linde"; git config --global user.email ruben@conduction.nl
 git clone -q --single-branch --branch sig-pipeline/state https://github.com/ConductionNL/openregister ~/q
-cd ~/q && FEEDER_ST=$HOME/q FEEDER_DIR=$HOME/lanes/feeder FEEDER_REST=1 FEEDER_CONT_APPS=1 timeout 580 python3 feeder/feed.py
+cd ~/q && FEEDER_ST=$HOME/q FEEDER_DIR=$HOME/lanes/feeder FEEDER_REST=1 FEEDER_CONT_APPS=2 timeout 580 python3 feeder/feed.py
 ```
 - If it prints TIMEOUT or is killed at 580 s, run the same command once more (its app clones in ~/lanes/feeder/clones are warm then). Never a third time.
 - Then append one line to the state branch and end: `cd ~/q && source bin/state.sh && st_append feeder/runs.tsv "$(date -u +%FT%TZ)"$'\t'"$(grep ' added ' ~/lanes/feeder/feed.log | tail -1 | cut -c22- | tr '\t' ' ')"`.
