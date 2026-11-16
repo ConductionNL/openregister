@@ -13909,3 +13909,5 @@ opencatalogi	2670	eed46219e9cfb33b3d3a6d40373bee0b46f3fe10	BLOCK	worker-13:revie
 planninq	908	d3be65702cebbde17585b38168c1b3b9353a9712	RED	worker-12:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 planninq	918	6289a59743741d162f71a87526216d4697bc1247	RED	worker-12:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
 planninq	933	6f703f97ef60607a57d16ca90675442a8ed0010c	RED	worker-12:merge-gate	GATE RED floor: unit_complexity: 4.88 -> 4.86; unit_interfacing: 4.75 -> 4.73
+decidiq	1944	e77db8b00ce2a82766bf02c072f0c5311acf5ecf	CONFLICT	worker-01:merge	conflicts with development; files: lib/BackgroundJob/ConfidentialityLiftBySweep.php lib/BackgroundJob/ConvertPaperToPdfJob.php lib/BackgroundJob/TranscriptRetentionJob.php lib/Controller/ApiController.php lib/Controller/MinutesCorrecti
+decidiq	1946	f24405883827e15035dfaec404fd85537bc7d203	CONFLICT	worker-01:merge	conflicts with development; files: lib/Service/AgendaService.php lib/Service/CitizenAdviceService.php lib/Service/CommitmentProgressService.php lib/Service/CurrentAgendaItemService.php lib/Service/RegisterObjectStore.php tests/Stubs/Co
