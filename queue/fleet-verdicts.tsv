@@ -15998,3 +15998,4 @@ opencatalogi	2671	0c44bbf10fb1c4a0f4fb9bd5d0461e341b0ab4a6	CONFLICT	worker-41	co
 pipelinq	3734	666ee86dcb20de55614ce24760c926e76f6b160a	CONFLICT	worker-26	conflicts with development in l10n en/nl, SmsAdapter.php, WhatsAppAdapter.php; tests not run
 opencatalogi	2685	607939f5803eb0395c8c899fa6fe078934470793	CONFLICT	worker-41	conflicts with development in l10n (4), SitemapDocumentMapper, SitemapService, tasks.md; tree not run
 portaliq	2417	5cad603093b2ac37262b3e10054d4f69245dbe5e	CONFLICT	worker-58	conflicts with development in l10n (4), package.json, PageGridEditor.vue, SiteEditMode.vue, PageLayoutDesigner.vue
+portaliq	2450	aead78dde8b0da5abf176dc2b3911de1c851d105	CONFLICT	worker-35	baseline 6217 tests, 16 errors inherited; conflicts with development in lib/Settings/portaliq_register.json, package.json, tests/Unit/Settings/PortaliqRegisterConfigTest.php, tests/example-site.spec.mjs
