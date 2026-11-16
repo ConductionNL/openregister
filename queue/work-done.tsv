@@ -17005,6 +17005,7 @@ build:shillinq:spend-analytics-ui:r2	already built: 17 tasks ticked on developme
 review:filinq:2122:8da97635	GREEN: build matches change specs; unit 6910 OK, vitest touched 20/20	session-20261116T173211-a3411be5	2026-11-16T17:58:18Z
 cover:stackiq:9ac19b3amf894:f4b2f7af	deferred: stackiq has 46 open PRs	session-20261116T173207-e7bfa399	2026-11-16T17:58:28Z
 verify:pipelinq:3894:9807d239	GREEN #3894: 9030 tests, 0 new failures	session-20261116T173713-4d98e280	2026-11-16T17:58:29Z
+fix:hermiq:1187:0e261189	failed: dev-only lockfile bump (@playwright/test); regen-sbom leaves sbom.cdx.json unchanged (855 components, --omit dev), so the gate rule 'lockfile changed without sbom.cdx.json' cannot be met; needs a gate exception for dev-only lock changes	session-20261116T174709-5787ce39	2026-11-16T17:58:41Z
 review:hermiq:1754:b6dc1f4e	GREEN: unit 5388 pass, touched vitest 31 pass	session-20261116T173227-109a6e00	2026-11-16T17:58:46Z
 fix:versioniq:721:e012b413	CONFLICT resolved (l10n union, js rebuilt); new head bc63b63642, REVERIFY queued; 2 golden-test failures inherited from development	session-20261116T171010-393e4bc2	2026-11-16T17:58:57Z
 fix:hermiq:1808:d92c1c64	conflict resolved (sbom regenerated), pushed f027dd39; REVERIFY queued (merge off on this account)	session-20261116T173342-1d8a0fb9	2026-11-16T17:59:10Z
@@ -17014,3 +17015,4 @@ cover:stackiq:9ac19b3amf894:f545d745	deferred: stackiq has 46 open PRs	session-2
 review:hermiq:1150:9ed6a46b	RED: 5 vitest failures in admin-root and llm-provider-modal specs	session-20261116T165351-3ccaad0e	2026-11-16T18:00:02Z
 cover:stackiq:9ac19b3amf894:c2bb21fa	deferred: stackiq has 46 open PRs	session-20261116T173207-e7bfa399	2026-11-16T18:00:21Z
 fix:stackiq:1978:723683e2	development merged in clean, pushed edde87e6; REVERIFY queued	session-20261116T171035-683856c3	2026-11-16T18:00:23Z
+fix:opencatalogi:2655:31c2efe2	conflicts resolved, touched tests green; REVERIFY at 21d93581 (merge lock held elsewhere)	session-20261116T173254-f6972957	2026-11-16T18:00:48Z
