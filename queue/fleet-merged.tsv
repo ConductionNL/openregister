@@ -4689,3 +4689,4 @@ buildiq	1677	2cb752c8fbf50b2b6665099052fdaa13d50db18e	MERGED	worker-40	GATE OK s
 decidiq	1767	1582903c267265c964b1af5bddd432f6f7e882bf	MERGED	worker-50	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.78 holds at 3.80
 opencatalogi	2686	3a20ca3d3789c2a9563cc215bf9fdb1fb3f2471a	RED	worker-22	GATE RED floor: unit_interfacing: 4.83 -> 4.81
 integriq	2924	58d5ba348a658ef8cdd6b3a8540e4af59cd7c7d2	MERGED	worker-51	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.57
+keepiq	1793	3fae302fa968c26da94766b29990c71ac2919396	MERGED	worker-35	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.58 holds at 3.59
