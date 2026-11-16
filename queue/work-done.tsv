@@ -17824,3 +17824,4 @@ cover:dossiq:069ee2d6m9d1b:a97b9ee7	added PaymentScheduleRaiser tests (10, 76/76
 lane:arch5:versioniq:next-versioniq-r1	failed: permission: recording an APPROVE for my own PR versioniq#751 (head d4a52b7) was refused; PR open and unreviewed; estimate 4.06-4.24 -> 4.23-4.34, merge tree 0 new failures	session-20261116T202207-14e523c0	2026-11-16T21:04:47Z
 cover:stackiq:9ac19b3am2187:f545d745	PR #2001: ClearDisallowedDependentValues 87.9->100%, 8 tests; suite 3822->3830, 1 inherited failure	session-20261116T205530-bfd0de31	2026-11-16T21:05:09Z
 cover:stackiq:9ac19b3am2187:4168ade6	PR #2002: 21 tests for CatalogExportGate and SimpleXlsxWriter (the other classes in the dirs already had tests); suite 3822 -> 3843 OK	session-20261116T205143-decc0cbd	2026-11-16T21:05:49Z
+cover:stackiq:9ac19b3am2187:be0dcca9	PR #2003: lib/Mcp 88.7% -> 99.5% (4 tests + @uses fix), suite 3822 -> 3826 OK	session-20261113T213325-fbdd5614	2026-11-16T21:06:13Z
