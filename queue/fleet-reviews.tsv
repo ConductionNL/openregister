@@ -451,3 +451,4 @@ shillinq	2259	48de59f1a9e0bf8ffba75343ff03148754ed469c	APPROVE	worker-21	Standar
 shillinq	2766	f2fbe5f86ef66d6f9a5bc299a102efd9fff88640	APPROVE	worker-21	Quick; no blockers; phpstan 2.2.16 to 2.3.5 dev bump, sbom regenerated
 shillinq	3055	6be8ada8c89f3a422809578a18d8f757d46c1d2a	APPROVE	worker-21	Thorough; no blockers; builds public-sector-council-and-auditor-statements per its tasks; new endpoints NoAdminRequired with session plus administration checks masked as 404; modal in src/modals; gate failures all inherited
 integriq	3050	ba946f8e3a5e7aeab450672f945a97ee9e98de62	APPROVE	worker-15	Thorough; no blockers; 3 saveObjects calls moved to openregister main BulkSaveOptions with identical flags, stubs match main signatures, SPDX headers added to new test files, tree adds no test failures
+opencatalogi	2415	f57435cd4bed261f5a3a21a7066af9160fc83d79	APPROVE	worker-48	Quick; no blockers; renderEntity call moved to RenderSelection, matches openregister main signature
