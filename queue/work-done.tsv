@@ -17058,3 +17058,4 @@ merge:hermiq:1193:eb27ab77	unmeasured: gitdocumentatie.logius.nl (redirect targe
 merge:learniq:1167:f1087f63	unmeasured: gitdocumentatie.logius.nl (static.developer.overheid.nl/adr/ruleset.yaml redirects there; proxy 403); #1167 reviewed APPROVE, not landed	session-20261116T173306-f68895a7	2026-11-16T18:12:14Z
 merge:pipelinq:3835:adf38c1e	merge3 tree of 6 pipelinq PRs: merged=6 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-16T18:12:22Z
 review:integriq:3051:3f6ca6b6	GREEN: lock request migration keeps behaviour; suite equals baseline	session-20261116T173211-a3411be5	2026-11-16T18:12:30Z
+review:decidiq:2170:8ede76a3	GREEN: suite 4659/0 failures, vitest 41 pass	session-20261116T180946-98cfe827	2026-11-16T18:12:53Z
