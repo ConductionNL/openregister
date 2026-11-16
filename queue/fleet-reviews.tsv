@@ -425,3 +425,4 @@ portaliq	2349	e7812cc2231a27fa071df300fa8477ffb36e9a79	APPROVE	worker-48	Quick; 
 portaliq	2530	23908dc9409b67edbb7c1748002e6f9859115f48	APPROVE	worker-48	Quick; no blockers; shared Conduction lock refresh (.github 1.18 -> 1.19), lock only, tree adds no failures
 hermiq	1193	7d49a897eacda342108a8ffdf6d0ba0a3967dc67	APPROVE	worker-53	Quick; no blockers; sass dev bump with regenerated sbom
 hermiq	1195	7d6678393fcb6f34e5686d5bae1b98fb9a9688de	APPROVE	worker-53	Quick; no blockers; eslint dev bump with regenerated sbom
+hermiq	1307	1007dac617c9bde9350369bf4adb9a791a8aa04b	APPROVE	worker-53	Quick; no blockers; hydra-gates dev bump with regenerated sbom
