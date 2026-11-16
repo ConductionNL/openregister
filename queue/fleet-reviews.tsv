@@ -265,3 +265,4 @@ decidiq	1465	c16cd40a576d75aeda154a94b4c66265f5a79c7e	APPROVE	worker-40	Quick; n
 versioniq	497	39a7db062ea18ada87559c730217cdc521657235	APPROVE	worker-14	Quick; no blockers; dev dependency bump nextcloud/openapi-extractor 1.9.0->1.9.1 in vendor-bin with lock/sbom; tree unit suite equals baseline, vitest 3022 passed
 versioniq	501	451c8f5901c5ec4277fdccbd82e4349166c89e9f	APPROVE	worker-14	Quick; no blockers; dev dependency bump eslint 10.9.1->10.11.0 with lock/sbom; tree unit suite equals baseline, vitest 3022 passed
 decidiq	1467	dfb19ea0e2beff3a28cb376c7bc29ced93c70234	APPROVE	worker-40	Quick; no blockers; dev-only @vitest/coverage-v8 patch bump with sbom
+decidiq	1472	92d144283d53fb5446e36d055326c802a9d73dbe	APPROVE	worker-40	Quick; no blockers; sass minor bump with sbom
