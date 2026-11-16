@@ -18416,6 +18416,7 @@ verify:hermiq:1794:e6b137d8	CONFLICT #1794	session-20261116T232923-e93e6b40	2026
 merge:pipelinq:3602:a4bb937b	merge3 tree of 1 pipelinq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-16T23:41:42Z
 verify:hermiq:1740:a42b5b75	CONFLICT #1740 (l10n, register, openapi)	session-20261116T230934-9ee320cf	2026-11-16T23:42:02Z
 verify:filinq:2112:a9282c63	CONFLICT #2112 (register json, openapi.json)	session-20261116T232844-9c7f5cce	2026-11-16T23:42:13Z
+verify:integriq:3618:02dee7b9	CONFLICT: l10n/en.js, l10n/nl.js	session-20261116T233003-c7bea420	2026-11-16T23:42:22Z
 verify:hermiq:1749:adcb7c52	CONFLICT: lib/Controller/SessionController.php vs development	session-20261116T232959-6ccea9dc	2026-11-16T23:42:32Z
 verify:learniq:1883:09e73c39	CONFLICT #1883	session-20261116T232519-f84cca9a	2026-11-16T23:42:52Z
 verify:hermiq:1795:9fd6a345	CONFLICT #1795 (info.xml, openapi.json, agent-form-payload golden)	session-20261116T232912-d58d1a81	2026-11-16T23:43:22Z
@@ -18432,3 +18433,5 @@ verify:integriq:3601:c832d6a2	CONFLICT #3601 (l10n, docs, golden test vs develop
 verify:learniq:2537:016b101a	CONFLICT #2537	session-20261116T232519-f84cca9a	2026-11-16T23:47:12Z
 verify:integriq:3602:0cceb739	CONFLICT #3602 (8 files vs development)	session-20261116T234052-0f8466c3	2026-11-16T23:47:26Z
 verify:humaniq:1134:f7bfa5d1	CONFLICT 1134 (17 files vs development)	session-20261116T232406-b9eb038c	2026-11-16T23:47:42Z
+verify:hermiq:1758:eaa4208b	CONFLICT #1758 (lib/Settings/hermiq_register.json)	session-20261116T232944-146e39d7	2026-11-16T23:48:11Z
+verify:integriq:3632:b12445a3	CONFLICT #3632	session-20261116T232923-e93e6b40	2026-11-16T23:48:23Z
