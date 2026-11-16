@@ -188,3 +188,4 @@ shillinq	2048	f88b17a7a69df6279ca38720aee89560b62d975f	APPROVE	worker-33	Quick; 
 shillinq	2224	ff4aa606e92e5e1b481b9d57db877beb814a2c4e	APPROVE	worker-33	Quick; no blockers; dev-only hydra-gates minor bump with lock and sbom
 shillinq	3109	95bf71e1b5b49d1ade835e3ae9eb2b94df7af954	APPROVE	worker-33	Quick; no blockers; comment-only SPDX header on one test stub, restores the spdxheaders floor
 shillinq	2070	29369cd1e5f54228d28f425cda326d85923bff8f	REQUEST_CHANGES	worker-33	Strict; blockers: (1) a release through the new endpoint by a user outside admin/controller/treasurer is still vetoed by the existing PaymentBlockReleaseListener and surfaces as a 500 'could not be saved' instead of a refusal, so the bookkeeper release the PR states is not delivered; reconcile with 
+hermiq	1133	6fd08d09db1ca26724058d9c83bec7eb477cfec5	APPROVE	worker-29	Quick; no blockers; stylelint minor bump + sbom regen
