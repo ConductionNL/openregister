@@ -16841,3 +16841,4 @@ review:shillinq:3088:21646560	stale	session-20261116T165351-3ccaad0e	2026-11-16T
 build:portaliq:instance-loopback-self-calls	already done: only live/e2e tasks left (1)	session-20261116T172806-3ef5ead7	2026-11-16T17:33:02Z
 build:portaliq:mandated-case-offers-no-writes	already done: code task T1 ticked on development; T2 is a live check, left	session-20261116T170823-40772b73	2026-11-16T17:33:26Z
 build:portaliq:hero-aside	already done: only live/e2e tasks left (1)	session-20261116T172806-3ef5ead7	2026-11-16T17:33:57Z
+build:portaliq:action-forward-survives-a-slow-answer	already done: code tasks 1.1-2.2 ticked on development; 3.1 is a live check, left	session-20261116T170823-40772b73	2026-11-16T17:34:07Z
