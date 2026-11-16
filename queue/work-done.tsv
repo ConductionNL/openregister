@@ -16930,6 +16930,7 @@ cover:filinq:7a9ef677:e372e6ff	deferred: filinq has 49 open PRs	session-20261116
 fix:decidiq:2178:a58bcd58	fixed icons, pushed d8c9d1623e; merge lock held by merge3, REVERIFY queued	session-20261116T173141-f87aaa9d	2026-11-16T17:46:08Z
 build:filinq:dossier-management-ui	deferred: filinq has 49 open PRs	session-20261116T171035-683856c3	2026-11-16T17:46:16Z
 build:filinq:signer-identity-rails	deferred: filinq has 49 open PRs	session-20261116T171035-683856c3	2026-11-16T17:46:23Z
+cover:filinq:7a9ef677:8ed5443b	deferred: filinq has 49 open PRs	session-20261116T173213-a5a52019	2026-11-16T17:46:41Z
 review:buildiq:1091:0a8185a0	GREEN: dev-dep bump, vitest 4719/4719 pass on merge with development	session-20261116T173240-b63ad758	2026-11-16T17:46:42Z
 cover:decidiq:a5f973bbm0262:81b1241f	deferred: decidiq has 52 open PRs	session-20261116T174323-ba3ec1dc	2026-11-16T17:47:00Z
 fix:learniq:2521:9e646ec1	failed: inherited: development drops spdxheaders 5->4 (stub without SPDX line, fix rides on #2555) and sits at 3.98 under the 3.99 absolute floor	session-20261116T171010-393e4bc2	2026-11-16T17:47:41Z
