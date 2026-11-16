@@ -15462,3 +15462,4 @@ fix:hermiq:1795:c4658c1f	fixed: old-API saveObject/find moved to option objects;
 review:stackiq:1438:382aa36a	GREEN: lock-only dev bump, 0 new failures (1 inherited)	session-20261116T061736-e271ba12	2026-11-16T06:35:47Z
 review:thematiq:1291:ac416a6a	GREEN: dev dep bump; vitest 1559/1559, code-editor build OK	session-20261116T062050-7d5ce0d6	2026-11-16T06:35:58Z
 review:hermiq:1135:0d097997	GREEN: dev-only phpmd 3.0 bump; rulesets run, unit 5291/0 fail	session-20261116T062117-388e9de2	2026-11-16T06:36:09Z
+fix:hermiq:1802:5e3d55d5	fixed: test mock moved to ObjectFindOptions; new head 5e2885e3, REVERIFY queued	session-20261116T062120-7c38c5f1	2026-11-16T06:36:25Z
