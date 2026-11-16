@@ -16833,3 +16833,4 @@ build:portaliq:operate-pages-per-portal-and-client	deferred: portaliq has 62 ope
 build:portaliq:example-resident-zuiddrecht	deferred: portaliq has 62 open PRs	session-20261116T171035-683856c3	2026-11-16T17:32:14Z
 build:portaliq:form-binding-settings-page	deferred: portaliq has 62 open PRs	session-20261116T171035-683856c3	2026-11-16T17:32:21Z
 build:portaliq:close-portaliq-register-to-staff	already done: only live/e2e tasks left (1)	session-20261116T172806-3ef5ead7	2026-11-16T17:32:34Z
+build:portaliq:own-contacts-and-invitations	already done: only live/e2e tasks left (1)	session-20261116T172806-3ef5ead7	2026-11-16T17:32:41Z
