@@ -16133,3 +16133,4 @@ fix:shillinq:2098:93d83382	fixed spdxheaders floor (stub header restored); new h
 merge:learniq:2507:f21cb143	cloud tree of 1 learniq PRs: merged=0 red=0 fail=0 skip=1; conflict 0, lint 0, red 0, moved 0, done 0 (REQUEST_CHANGES: demo data for new schemas)	session-20261116T101013-986398f9	2026-11-16T10:25:28Z
 merge:opencatalogi:1888:681fe39d	unmeasured: api.osv.dev (probe connect_rejected; gate's opensourcehealth floor needs it); nothing built, local lander takes it	session-20261116T101239-227210a0	2026-11-16T10:25:35Z
 fix:shillinq:3000:69030639	no change needed: clean on development, tree-only conflict; REVERIFY queued	session-20261116T101745-e986474c	2026-11-16T10:25:57Z
+fix:shillinq:1908:ca21609b	inherited: plain development (949b5f43d) already reads spdxheaders 5 -> 4 (1 of 3980 source files lacks an SPDX header); PR only bumps @vue/test-utils + sbom, nothing to fix on the branch	session-20261116T101916-4045770b	2026-11-16T10:26:34Z
