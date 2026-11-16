@@ -16339,4 +16339,5 @@ build:dossiq:woo-requests-gather-documents-from-sources	already done: code tasks
 build:dossiq:termijn-notices-send	already done: code tasks 1.1-1.3 ticked and on development (f6ec1e4a5, #3334); only live check 1.4 left	session-20261116T105620-b2654149	2026-11-16T11:19:01Z
 build:dossiq:task-list-states-in-task-words	already done: config and vitest on development; only live check 1.3 left	session-20261116T105712-260c30d3	2026-11-16T11:18:58Z
 fix:hermiq:1760:440cf2e9	no change: branch up to date with development and merges clean alone; conflict only with a tree sibling; REVERIFY queued	session-20261116T104807-0149ceda	2026-11-16T11:19:46Z
+fix:learniq:2507:1fad4deb	fixed demo-data blocker, pushed 82c09d5c71; merge lock held by another merger, REVERIFY queued	session-20261116T101101-e7e34372	2026-11-16T11:19:56Z
 fix:integriq:2744:53deb98f	no change: sbom already current at head; REVERIFY queued	session-20261116T105625-9a95dd96	2026-11-16T11:20:45Z
