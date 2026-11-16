@@ -16247,6 +16247,7 @@ build:dossiq:bsn-reveal-logged	already done: code tasks 1.1-1.2 landed on develo
 verify:stackiq:1992:2410c201	GREEN #1992: 3718 tests, 0 new failures	session-20261116T105620-b2654149	2026-11-16T11:05:29Z
 build:dossiq:archive-stage-opens-case-archive	already done: every code task ticked and its vitest config check holds on development; only live check 1.2 left	session-20261116T110055-454b71dd	2026-11-16T11:05:37Z
 fix:shillinq:2766:4d51285b	merged development, restored stub SPDX header (drop inherited from development, same as #1912), pushed f2fbe5f8; REVERIFY queued	session-20261116T102639-f9f23dec	2026-11-16T11:05:38Z
+build:dossiq:case-files-list-columns	already built: every code task ticked on development (feature commit 2026-10-30); only live task 6 left	session-20261116T105654-c357c45f	2026-11-16T11:06:24Z
 merge:thematiq:1303:4df2ccb4	unmeasured: static.developer.overheid.nl (1303, 1677 reviewed APPROVE, tree clean, skipped at gate; 1365 CONFLICT)	session-20261116T101101-e7e34372	2026-11-16T11:06:20Z
 merge:learniq:2551:ae9ac49b	cloud tree of 5 learniq PRs: merged=0 red=0 fail=0 skip=5; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T103605-722bf416	2026-11-16T11:06:06Z
 build:dossiq:creating-into-deliberation-runs-the-panel-check	already done: all code tasks ticked and on development (DeliberationStartGuard on ObjectCreatingEvent); only live task 1 left	session-20261116T105606-edb14de6	2026-11-16T11:05:44Z
