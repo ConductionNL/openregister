@@ -17378,10 +17378,12 @@ cover:integriq:92114ab0m505c:js0d617ff5	deferred: integriq has 70 open PRs	sessi
 cover:integriq:92114ab0m505c:jsf3772e2d	deferred: integriq has 70 open PRs	session-20261116T192125-8d7de83c	2026-11-16T19:23:49Z
 cover:humaniq:a18a13fb:be6d0ab9	already done: lib/Payroll/Pension/ (PensionBase) measures 100% (19/19 statements) on development with the existing PensionBaseTest; no PR	session-20261116T191704-9a63be87	2026-11-16T19:24:43Z
 fix:learniq:2559:307b9303	merged development in, pushed 64fd61a8; merge lock held elsewhere, REVERIFY queued	session-20261116T192046-9440725d	2026-11-16T19:24:42Z
+build:integriq:rule-editor-a11y-i18n-hardening:r2	already done: development carries every code task (t() wraps and Remove property aria-labels in EditRule.vue, tasks.md ticked; only the manual screen-reader check 3.2 is open)	session-20261116T192202-7c713c59	2026-11-16T19:24:49Z
 cover:buildiq:70b3e29em9bad:34f5c300	deferred: buildiq has 54 open PRs	session-20261116T191856-c437ae89	2026-11-16T19:25:16Z
 merge:stackiq:1996:ca667bfa	cloud tree of 1 stackiq PRs: none; conflict 1, lint 0, red 0, moved 0, done 0	session-20261116T192122-0fac4997	2026-11-16T19:24:55Z
 fix:learniq:1881:df81c10b	fixed CONFLICT, pushed 57e4a54a; lock held elsewhere, REVERIFY queued	session-20261116T192127-f26e2e56	2026-11-16T19:25:17Z
 verify:integriq:3671:a1fc0d47	GREEN #3671; 9535 tests, no new failures (1 flaky inherited)	session-20261116T184841-a3bc3002	2026-11-16T19:25:26Z
+cover:buildiq:70b3e29em9bad:f545d745	deferred: buildiq has 54 open PRs	session-20261116T192254-fe50fb9b	2026-11-16T19:25:57Z
 fix:learniq:2562:9bda8314	conflict resolved, pushed 7726a54c; merge lock held elsewhere, REVERIFY queued	session-20261116T192046-9440725d	2026-11-16T19:26:09Z
 cover:buildiq:70b3e29em9bad:60c2c265	deferred: buildiq has 54 open PRs	session-20261116T192157-ecf15b7a	2026-11-16T19:26:43Z
 cover:humaniq:a18a13fb:f91e7417	PR #1169: ConnectionReporter 26/28 -> 28/28, +2 tests, suite 4405 -> 4407 green	session-20261116T191704-9a63be87	2026-11-16T19:26:38Z
@@ -17391,7 +17393,14 @@ fix:buildiq:1641:bb9b55d3	conflict resolved (l10n/en.js), pushed 59f9dd1; merge 
 cover:buildiq:70b3e29em9bad:8ed5443b	deferred: buildiq has 54 open PRs	session-20261116T192645-5f5cd9b9	2026-11-16T19:27:43Z
 cover:buildiq:70b3e29em9bad:f84921d5	deferred: buildiq has 54 open PRs (note: 4 Mcp/Handler tests are risky for lack of @uses AppOrganisationGuard; adding it lifts lib/Mcp/Handler 91.9%->99.65%)	session-20261116T184831-8be58c40	2026-11-16T19:27:44Z
 fix:hermiq:1750:4656eeb3	conflict resolved, new head 5b31e8f3; merge lock busy, REVERIFY queued	session-20261116T192142-66caeb8e	2026-11-16T19:28:06Z
+build:buildiq:decision-tables-live-in-openregister	already done: all code tasks merged in #1100 (2026-10-12); only the live occ upgrade check is left	session-20261116T184831-8be58c40	2026-11-16T19:28:27Z
 cover:launchpad:fb10c50fmf487:34f5c300	deferred: launchpad has 44 open PRs	session-20261116T192104-d9eeae3f	2026-11-16T19:28:36Z
 fix:versioniq:691:ed265e00	failed: floor needs a redesign beyond a fix: the patch-policy audit adds an 11th/12th consumer to AuditLogger, AuditSubject and AuditedVersions (fan-in >10, coupling 5.25->5.15), and interfacing 4.35->4.23 comes from many new 3+ parameter units; development merged in at 478f595cafa579f00febfd06880adc294612e8a0	session-20261116T184833-adbb8426	2026-11-16T19:28:33Z
 fix:opencatalogi:2655:21d93581	merged #2655 at eecf91309acb9a06e7fc66bc1bcc0c01e7a00cf9 (merged development in resolving conflicts, bumped version for the repair step; the reported reds do not reproduce on development)	session-20261116T191409-74b1bedd	2026-11-16T19:28:59Z
 fix:buildiq:1620:afacfca7	conflict resolved, pushed 9cf97ff7; merge lock held elsewhere, REVERIFY queued	session-20261116T190918-81e43f73	2026-11-16T19:28:55Z
+build:learniq:learner-grade-read-follows-visible-from	already built: T1 on development since 0aa6bd8 (5 Nov); only live task T2 left	session-20261116T192824-ee4fb14b	2026-11-16T19:29:06Z
+review:opencatalogi:2696:0d0512a6	GREEN: no new PHP failures, phpstan clean; conflicts with development (no block)	session-20261116T191156-bbdb7add	2026-11-16T19:29:30Z
+fix:buildiq:1672:8c29bf33	conflict resolved, pushed 23675f9b; suite 3377, only inherited ExportZipGoldenTest red; REVERIFY queued	session-20261116T191704-9a63be87	2026-11-16T19:30:12Z
+cover:keepiq:c967a31fm902f:dfaef732	PR #1852: NotificationRegistrar 2 tests; KeepiqNotifier 99.5% (2 unreachable lines); suite 5367->5369 green	session-20261116T191448-870933e4	2026-11-16T19:30:22Z
+fix:hermiq:1754:b6dc1f4e	conflict resolved, pushed 3e57e4dc; merge lock held elsewhere, REVERIFY queued	session-20261116T192325-bb4c31dd	2026-11-16T19:30:34Z
+merge:shillinq:2098:3286165d	cloud tree of 6 shillinq PRs: merged=6 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T191103-1ba6d222	2026-11-16T19:30:47Z
