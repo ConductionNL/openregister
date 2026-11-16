@@ -3836,3 +3836,6 @@ learniq	2126	4e6551e419cd72ffe5671223bb8b1976ed8f7538	RED	worker-15	GATE RED che
 versioniq	505	aeceef74a654df9ff29acf01994dd6bb8cbe10c2	SKIP	worker-50	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
 versioniq	725	c21158724c57858896fee8e8b6a247070aec5026	SKIP	worker-50	no APPROVE review at this head
 versioniq	732	edb0233ba6169cf4419f02b6bed018d9f56875ee	SKIP	worker-50	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
+versioniq	505	aeceef74a654df9ff29acf01994dd6bb8cbe10c2	SKIP	worker-50	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator, secretscanning; this is not a pass
+versioniq	725	c21158724c57858896fee8e8b6a247070aec5026	SKIP	worker-50	no APPROVE review at this head
+versioniq	732	edb0233ba6169cf4419f02b6bed018d9f56875ee	SKIP	worker-50	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator, secretscanning; this is not a pass
