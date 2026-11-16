@@ -167,6 +167,12 @@ that number is read, so "done" is a measurement rather than an opinion.
       (6 tests) and the re-recorded `register-mapper-find-golden.json` (same
       outcomes and cache keys for every case). The combined builder is gone
       from `RegisterMapper` too. Only the `SELECT *` narrowing remains.
+      2026-11-16 (c7): with the task 4 row cache, the id-set-scoped reads
+      (`findInIds()`, `findBySlugInIds()`) select only the probe columns too
+      and complete the row from the cache or one read by primary key, the way
+      `find()` does; without a local cache they read whole rows as before.
+      Pinned in `SchemaMapperScopedRowCacheTest` (6). Still open: the bulk
+      reads (`findMultiple*`, `findAll`) and which callers need metadata only.
 
 - [x] **Task 4 — cross-request cache.**
       APCu layer keyed on `schema.id + schema.updated`, so a cold worker does

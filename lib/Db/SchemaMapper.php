@@ -812,14 +812,66 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 		$this->readTrace()->record(method: 'findBySlugInIds');
 
 		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
+		$qb->select(...$this->scopedReadColumns())
 			->from('openregister_schemas')
 			->where($this->slugEquals(qb: $qb, slug: $slug))
 			->andWhere($this->idIn(qb: $qb, ids: $ids))
 			->setMaxResults(1);
 
-		return $this->firstResolved(qb: $qb);
+		return $this->firstStoredResolved(qb: $qb);
 	}//end findBySlugInIds()
+
+	/**
+	 * The columns an id-set-scoped lookup selects.
+	 *
+	 * With a row cache only the probe columns; the stored row then comes from
+	 * the cache or one read by primary key, as in find(). Without one the whole row.
+	 *
+	 * @return array<int, string>
+	 *
+	 * @spec openspec/changes/object-write-sub-500ms/tasks.md
+	 */
+	private function scopedReadColumns(): array {
+		if ($this->rowCache->isAvailable() === true) {
+			return SchemaRowCache::PROBE_COLUMNS;
+		}
+
+		return ['*'];
+	}//end scopedReadColumns()
+
+	/**
+	 * The first row of a query as a resolved schema, completing a probe row from the row cache.
+	 *
+	 * A query that selected the whole row resolves it directly. A probe row is
+	 * completed by {@see storedRowOf()}; when the row is gone between probe and
+	 * read the lookup matched nothing.
+	 *
+	 * @param IQueryBuilder $qb The query, selecting {@see scopedReadColumns()}.
+	 *
+	 * @return Schema|null The schema, null when the query matched nothing.
+	 *
+	 * @spec openspec/changes/object-write-sub-500ms/tasks.md
+	 */
+	private function firstStoredResolved(IQueryBuilder $qb): ?Schema {
+		if ($this->rowCache->isAvailable() === false) {
+			return $this->firstResolved(qb: $qb);
+		}
+
+		$result = $qb->executeQuery();
+		$probe  = $result->fetch();
+		$result->closeCursor();
+
+		if (is_array($probe) === false) {
+			return null;
+		}
+
+		$row = $this->storedRowOf(probe: $probe);
+		if ($row === null) {
+			return null;
+		}
+
+		return $this->composition()->resolve(schema: Schema::fromRow($row));
+	}//end firstStoredResolved()
 
 	/**
 	 * The match of the id column against a list.
@@ -882,11 +934,11 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 		// one column per query (id for a numeric identifier, then uuid, then
 		// slug), the first arm with a hit wins.
 		foreach (self::identifierArms(id: (string)$id) as $arm) {
-			$qb = $this->armQuery(arm: $arm, id: (string)$id);
+			$qb = $this->armQuery(arm: $arm, id: (string)$id, columns: $this->scopedReadColumns());
 			$qb->andWhere($this->idIn(qb: $qb, ids: $ids));
 			$qb->setMaxResults(1);
 
-			$schema = $this->firstResolved(qb: $qb);
+			$schema = $this->firstStoredResolved(qb: $qb);
 			if ($schema !== null) {
 				return $schema;
 			}
