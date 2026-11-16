@@ -18249,3 +18249,6 @@ build4:openregister:production-observability:c7	partial: pushed to PR #10537 (he
 fix:versioniq:755:fd86702a	merged #755 at 01df198d9ef13b3fdddd6b6027b14059c8576ec9	session-20261116T224608-d6967eb8	2026-11-16T22:58:25Z
 fix:stackiq:1973:c80d3c07	merged #1973 at fe9e8676d9605d1b10f00d28fa172fff606e09b2	session-20261116T222948-81ec1395	2026-11-16T22:58:28Z
 build:filinq:specify-capability-rows:c6	partial: PR #2123 head 8c586cdc, merged development (registrar test counts fixed), built 3.2 (personal data report page + GET api/reports/personal-data; OR side openregister#10602 findFileIdsWithEntities) and 2.3 backend (DocumentActionAudit into OR audit trail, edit/delete/share listener, GET api/documents/{fileId}/audit); PHP 7053 green, vitest 801 green; left 2.3 opened/downloaded/versioned/ano	session-20261116T222416-013d48d6	2026-11-16T22:59:04Z
+review:buildiq:1650:99ec8e95	stale	feeder	2026-11-16T22:57:20Z
+verify:buildiq:1689:afb398fa	stale	feeder	2026-11-16T22:57:20Z
+verify:decidiq:2236:6816e71e	stale	feeder	2026-11-16T22:57:20Z
