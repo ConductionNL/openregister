@@ -4350,3 +4350,4 @@ stackiq	1954	34c6f73a6edec4ca5d54daff2b80273be29cdf68	RED	merge3	GATE RED checke
 stackiq	1978	17efb7880705315a03b1690ba0a2da374e593432	RED	merge3	GATE RED checker floor: adrvalidator: pass -> fail; adrvalidator stars: 5 -> 1; score: 100 -> 93
 planninq	933	86d76c4199ab32cd2aeec13baab6b11384feb0c4	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.66 holds at 3.79
 planninq	1198	f4370679900c3aded15e653a6ebd0521c8fc79dd	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.66 holds at 3.79
+decidiq	2170	8002c6debd436efc4fcfa7624811d81b9eef9d75	SKIP	worker-26	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
