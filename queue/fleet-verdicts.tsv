@@ -15089,3 +15089,4 @@ dossiq	3203	628c5ad89e18ab9a292678e1e53cdf057cf8ecec	GREEN	worker-37	retry after
 dossiq	6591	4c31717dbaf75fe13fd3110fbc1b2c638490d6cf	GREEN	worker-37	retry after allowlist fix: tree 18300 tests = baseline, 0 new failures; land UNMEASURED (python CONNECT 403)
 hermiq	1807	ef10bb17e505bfdba7d044769ee5f36d1b4dd79e	GREEN	worker-57	phpunit 5340 base 5340, 0 new failures; vitest 1535 pass; shared lock refresh only (nextcloud-vue 2.181.0, composer dep v1.19.0, SBOM)
 stackiq	1931	f5df0ce845a98a12e7b26184bb0b3deeacf3fef8	REVERIFY	worker-16	merged development in, kept both sides' new schemas (attestation + complianceDocument) and mock objects, register 2.5.11; unit suite 3758 OK; new head 3faf7c6dda272b4b0a830bd193bce48098ad33c6, verify it
+pipelinq	3894	79dda5b9905f3a95a0462e89eff19ac7527c85bb	GREEN	worker-03	unit 9030 run (baseline 9000, 0 failures), 0 new failures; implements kcc-report-top-occupancy-forecast-export per its specs
