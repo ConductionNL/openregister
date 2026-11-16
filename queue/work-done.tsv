@@ -16442,4 +16442,5 @@ review:integriq:3589:58d8983d	RED: registration-order fixture misses the new Con
 review:learniq:1882:334e6e47	GREEN: additive field labels; suite 6869 tests, 1 inherited failure	session-20261116T142859-fa64ab70	2026-11-16T14:32:45Z
 review:integriq:3047:75eb55fe	GREEN	session-20261116T142700-f4d651ea	2026-11-16T14:33:09Z
 review:integriq:3595:6e9939f8	GREEN: suite 9557, 4 inherited failures, no new	session-20261116T142931-c6a20eeb	2026-11-16T14:33:52Z
+review:buildiq:1652:fd2e894a	GREEN: unit 3346 (1 inherited ExportZipGolden), vitest 4736 pass	session-20261116T142616-2623e37a	2026-11-16T14:34:06Z
 review:integriq:2671:f4218e17	GREEN: dev-tooling bump, unit suite identical to development, phpmd no worse	session-20261116T142651-57b203fe	2026-11-16T14:34:02Z
