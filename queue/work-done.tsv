@@ -17809,3 +17809,4 @@ cover:pipelinq:7f9dc8e6m3dbb:b96c059a	added 5 tests (SearchConsole 288/299 -> 29
 cover:stackiq:9ac19b3am2187:692f8a78	already done: lib/Service/Contactpersoon/ measured 207/207 (100%) at 00516ba7	session-20261116T205645-edca2f78	2026-11-16T21:02:14Z
 review:hermiq:1795:69b741d5	GREEN 1795: no new failures, owner checks fail closed	session-20261113T213325-fbdd5614	2026-11-16T21:02:25Z
 merge:dossiq:6612:f3319c2a	merge3 tree of 1 dossiq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-16T21:02:48Z
+cover:stackiq:9ac19b3am2187:59f569b2	already covered: lib/Service/Settings/*.php at 1271/1273 statements (99.8%) on development 00516ba7; no PR	session-20261116T204203-b8dccc50	2026-11-16T21:02:50Z
