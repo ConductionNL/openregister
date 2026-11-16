@@ -16232,6 +16232,7 @@ review:shillinq:2048:0e551132	GREEN: ocp dev-dep bump, no behaviour change, 1222
 review:integriq:3051:8f6b6de3	GREEN: suite 9535 tests, no failures beyond development baseline	session-20261116T105334-a341eb02	2026-11-16T11:03:01Z
 review:shillinq:1904:e4417595	GREEN: tooling-only bump, 12225 unit tests pass on merged tree	session-20261116T105637-494def63	2026-11-16T11:03:14Z
 build:dossiq:ai-activity-rows-and-download	already done: task 1.1 on development (8b5f08c8), only live check 1.2 left (not code)	session-20261116T105613-dddf963a	2026-11-16T11:03:31Z
+merge:decidiq:2223:172d5cc5	unmeasured: static.developer.overheid.nl (#2223 reviewed APPROVE, tree green, 0 new failures)	session-20261116T101250-8aeb7975	2026-11-16T11:04:00Z
 build:dossiq:a-handling-team-opens-its-unclaimed-cases	already done: every code task ticked and on development (494a561d0); only live task 3.1 left	session-20261116T105648-edfb89ae	2026-11-16T11:03:52Z
 review:stackiq:1930:9a43150c	GREEN: suite 3736 tests 0 failures on merge with development	session-20261116T105620-b2654149	2026-11-16T11:04:02Z
 build:dossiq:brp-client-retired	already done: every code task ticked and on development (PersonRelationReader, BRP client removed); only the live pass is left	session-20261116T105613-dddf963a	2026-11-16T11:04:23Z
@@ -16241,5 +16242,25 @@ build:dossiq:bsn-reveal-logged	already done: code tasks 1.1-1.2 landed on develo
 verify:stackiq:1992:2410c201	GREEN #1992: 3718 tests, 0 new failures	session-20261116T105620-b2654149	2026-11-16T11:05:29Z
 fix:shillinq:2766:4d51285b	merged development, restored stub SPDX header (drop inherited from development, same as #1912), pushed f2fbe5f8; REVERIFY queued	session-20261116T102639-f9f23dec	2026-11-16T11:05:38Z
 merge:thematiq:1303:4df2ccb4	unmeasured: static.developer.overheid.nl (1303, 1677 reviewed APPROVE, tree clean, skipped at gate; 1365 CONFLICT)	session-20261116T101101-e7e34372	2026-11-16T11:06:20Z
+build:dossiq:creating-into-deliberation-runs-the-panel-check	already done: all code tasks ticked and on development (DeliberationStartGuard on ObjectCreatingEvent); only live task 1 left	session-20261116T105606-edb14de6	2026-11-16T11:05:44Z
+build:dossiq:contact-birth-longdate-social-history-stacked	already done: code tasks ticked and on development (c9857cc34); only measurement task left	session-20261116T105648-edfb89ae	2026-11-16T11:06:32Z
+build:dossiq:contact-reachability	already built: tasks 1.1-1.2 ticked and on development (7759e7dc1, PersonReachability + controller + tests); only live task 1.3 left	session-20261116T105637-494def63	2026-11-16T11:05:59Z
 build:dossiq:case-type-status-field-lists-as-config	already done: tasks 1.1-1.3 on development; 1.4 is e2e selectors after the library release	session-20261116T105613-dddf963a	2026-11-16T11:06:27Z
 verify:shillinq:3112:499678b6	GREEN #3112 (12225 tests, 0 new failures)	session-20261116T105640-5b7e5974	2026-11-16T11:06:28Z
+build:dossiq:archiving-recompute-once	already done: code tasks 1.1,1.3-1.6 on development; only live task 1.2 left	session-20261116T105426-4e0b8984	2026-11-16T11:06:43Z
+build:dossiq:contact-persons-tab-in-actions	already done: 1.1-1.2 on development; 1.3 is a live check	session-20261116T105613-dddf963a	2026-11-16T11:06:49Z
+review:integriq:3649:bd9eaae6	GREEN: no new failures (9597 tests, 5 inherited), touched vitest pass	session-20261116T105651-a587f79b	2026-11-16T11:06:53Z
+review:integriq:3050:a397a9f1	GREEN: 9535 tests, 5 inherited failures, none new	session-20261116T105550-e90eeee3	2026-11-16T11:07:07Z
+build:dossiq:document-access-exception	already done: every code task ticked and on development; only live check 6.1 left	session-20261116T105648-edfb89ae	2026-11-16T11:07:33Z
+build:dossiq:bsn-exact-lookup	already built: tasks 1.1-1.2 ticked and on development (68c5138b5, PersonLookupController/PersonNumberLookup + tests + picker sources); only live task 1.3 left	session-20261116T105637-494def63	2026-11-16T11:07:27Z
+verify:integriq:3669:d5f7719d	GREEN 3669,3670: lock/dep refresh, no new failures	session-20261116T105625-05822e4f	2026-11-16T11:07:22Z
+review:stackiq:1924:ef9a11b2	GREEN: build matches change specs; unit 3725 green, vitest 5/5	session-20261116T105633-0d9ecf47	2026-11-16T11:07:40Z
+verify:dossiq:6591:5682e1f4	6591 CONFLICT with development; baseline 18282 tests green	session-20261116T110121-4578b190	2026-11-16T11:08:24Z
+build:dossiq:contact-side-cards-from-moments	already built: tasks 1.1-1.2 on development (25f321add, test + manifest + l10n); only live task 1.3 left	session-20261116T105334-a341eb02	2026-11-16T11:08:34Z
+review:integriq:3593:8dad155c	GREEN: no new failures (9608 tests, 5 inherited), vitest/eslint/phpcs clean	session-20261116T105621-38c42ea6	2026-11-16T11:08:34Z
+build:dossiq:mandated-case-steps-read-unscoped	already done: code tasks 1.1-1.2 ticked and on development (fix(portal) 2026-10-16); 1.3 is live	session-20261116T110121-4578b190	2026-11-16T11:08:38Z
+build:dossiq:hours-card-board-look	already built: code tasks 1.1/1.2 on development (feat(case-page) 2026-10-23); only live check 2.1 left	session-20261116T105550-e90eeee3	2026-11-16T11:08:45Z
+fix:shillinq:2230:62ff7961	merged development, restored stub SPDX header (inherited drop), pushed a06c8804; REVERIFY queued	session-20261116T102639-f9f23dec	2026-11-16T11:08:47Z
+build:dossiq:objects-index-like-cases	already done: 1.1 on development (fix(objects) 2026-10-23); 2.1 is live	session-20261116T110121-4578b190	2026-11-16T11:08:54Z
+build:dossiq:lists-let-the-reader-choose-columns	already built: spec-only change, 1.1-1.2 ticked; only e2e task 1.3 left	session-20261116T105637-494def63	2026-11-16T11:08:52Z
+build:dossiq:guards-refuse-when-unsure	already built: all code tasks 1.1-6.3 ticked and on development (e7824552f, fc36f808b, 779eab330); only live 7.1 left	session-20261116T105334-a341eb02	2026-11-16T11:09:42Z
