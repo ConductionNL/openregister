@@ -4009,3 +4009,4 @@ portaliq	663	6dc142e054f417065f264200584adb1c807aa348	SKIP	worker-57	no APPROVE 
 shillinq	2098	93d83382d296a2cfda1bed9d43188bd4d9961678	RED	worker-49	GATE RED checker floor: spdxheaders stars: 5 -> 4
 portaliq	1765	582e2f298cff75a9d11555480aad9098b4d9cca6	SKIP	worker-57	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 shillinq	2249	b619f48667d363243a7640cc06e3e957f6060462	RED	worker-49	GATE RED checker floor: spdxheaders stars: 5 -> 4
+portaliq	1768	73711bf061a935d6c5b8923175690cefe42d08f4	RED	worker-57	GATE RED sbom: package-lock.json changed without sbom.cdx.json
