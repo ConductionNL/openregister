@@ -16397,3 +16397,4 @@ fix:stackiq:1931:75fc2149	blockers fixed, pushed f5df0ce8; merge lock held elsew
 fix:integriq:3564:34a49284	fixed: floor restored to 3.56, pushed da7832e5; merge lock held elsewhere, REVERIFY queued	session-20261116T105648-edfb89ae	2026-11-16T11:31:32Z
 fix:keepiq:1793:0c57f525	fixed: floor restored (unit_complexity 4.40); new head 3b29e6ab, REVERIFY queued (merge lock held elsewhere)	session-20261116T112058-ef6ff806	2026-11-16T11:31:55Z
 fix:opencatalogi:2723:28b856d8	no fix needed: green vs baseline with openregister main beside; RED was missing openregister in the tree env; REVERIFY queued (merge lock held elsewhere)	session-20261116T105654-c357c45f	2026-11-16T11:32:27Z
+merge:shillinq:1904:1d3433cd	cloud tree of 9 shillinq PRs: merged=0 red=3 fail=0 skip=1; conflict 0, lint 0, red 0, moved 5, done 0	session-20261116T104018-e4b2d192	2026-11-16T11:33:15Z
