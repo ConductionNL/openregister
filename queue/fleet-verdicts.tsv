@@ -14385,3 +14385,4 @@ integriq	3589	604f71b58f00c5374d10fbc294fa81af37cfabe5	RED	merge3:merge-gate	GAT
 integriq	3595	60111a1cbeeab82e205393bd750ca75566d963aa	RED	merge3:merge-gate	GATE RED absolute floor: integriq maintainability 3.55 after merge is below its floor 3.56
 integriq	3612	0000c17621f3afaa620e370875472d46df3b84d1	RED	merge3:merge-gate	GATE RED absolute floor: integriq maintainability 3.55 after merge is below its floor 3.56
 integriq	3628	858c7a5daf994cdee85d2208d40103edcf6f52cd	RED	merge3:merge-gate	GATE RED absolute floor: integriq maintainability 3.54 after merge is below its floor 3.56
+shillinq	2098	93d83382d296a2cfda1bed9d43188bd4d9961678	REVERIFY	worker-24	restored the SPDX header on tests/stubs/OpenRegister/Contract/ObjectServiceInterface.php (dropped on development by the main-API migration), the only uncovered source file; merge lock held elsewhere; new head 91bd5616fcf72747bc4072cca1dfcfc94ca22761, verify it
