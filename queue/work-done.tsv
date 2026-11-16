@@ -16872,3 +16872,4 @@ build:portaliq:portal-host-root-redirect	already done: every code task ticked on
 build:portaliq:site-matches-the-zuiddrecht-boards	already done: every code task ticked on development; open tasks are live checks only, left	session-20261116T170823-40772b73	2026-11-16T17:39:22Z
 build:portaliq:site-home-follows-the-school-boards	already done: every code task ticked on development; open tasks are live checks only, left	session-20261116T170823-40772b73	2026-11-16T17:39:28Z
 build:portaliq:site-links-the-theme-bridge	already done: every code task ticked on development; open tasks are live checks only, left	session-20261116T170823-40772b73	2026-11-16T17:39:42Z
+merge:integriq:2671:37a34ead	unmeasured: static.developer.overheid.nl (proxy 403; env allowlist has typo overherheid); 7 IN reviewed APPROVE, 3051 gate RED spdxheaders 5->4, 3049 CONFLICT, 3589 MOVED; nothing merged	session-20261116T170518-9fa71e6e	2026-11-16T17:40:07Z
