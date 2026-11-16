@@ -17967,3 +17967,4 @@ build:versioniq:inventory-lifecycle-signals:c4	partial: #711 had merged; new PR 
 merge:versioniq:753:65da9b1e	cloud tree of 1 versioniq PRs: none; conflict 1, lint 0, red 0, moved 0, done 0	session-20261116T213150-99e9143b	2026-11-16T21:46:11Z
 lane:arch5:learniq:next-learniq-r3	partial: branch quality/arch5-learniq-r3 pushed with one verified batch (interfacing 2.45->2.47, estimate 4.05-4.08); PR, more levers and tree verify queued as :c2	session-20261116T212103-7252de0b	2026-11-16T21:46:16Z
 lane:arch5:buildiq:next-buildiq-r4	PR #1686, GREEN (estimate 3.97-4.03 -> 3.99-4.05; r5 queued)	session-20261116T212156-27d8410f	2026-11-16T21:46:29Z
+lane:arch5:launchpad:next-launchpad-r3:c3	partial: PR launchpad#1247 open at 08798f3e (31 Kernel contracts, estimate 3.71-3.82 -> 3.76-3.86, verified); landing left (queued :c4) because recording a review of this worker's own PR was refused by a permission check	session-20261116T202633-f7fb0e3a	2026-11-16T21:46:44Z
