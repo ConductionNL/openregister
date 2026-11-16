@@ -15875,3 +15875,4 @@ fix:launchpad:653:e8ad33b0	failed: inherited: plain development 1475bdce fails i
 review:opencatalogi:2655:f3ddd327	GREEN: no new failures (5792 tests vs 5750 baseline), matches its change's specs	session-20261116T084401-bf65ba54	2026-11-16T08:48:55Z
 review:versioniq:503:7514a922	GREEN: vitest 3012/3012 pass, vite build ok on merged tree	session-20261116T084459-8070a613	2026-11-16T08:49:07Z
 review:opencatalogi:2673:55afbbab	RED: ServiceRegistrarGoldenTest needs the new alias recorded; otherwise in line with the change spec	session-20261116T082353-191a2dc3	2026-11-16T08:49:20Z
+fix:pipelinq:3883:e27a1a72	sbom regenerated, pushed e0b01647; REVERIFY recorded (merge lock held elsewhere)	session-20261116T082121-c1741fb9	2026-11-16T08:49:57Z
