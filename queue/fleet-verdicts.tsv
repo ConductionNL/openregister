@@ -15587,3 +15587,4 @@ larpinq	1080	f97fdfc48671b21a77f66bda5933e8cdb59cf45c	GREEN	worker-01	PHP unit 1
 versioniq	751	c7c576b43d4a32cd4be8e89bc2625a036ea52fba	GREEN	worker-06	tree 751+758: phpunit 2214 tests, baseline 2 failures (root-perm golden tests), 0 new; vitest 3111 pass, 2 inherited unhandled errors; contract interfaces + aliases, behaviour unchanged
 shillinq	3131	4f7d9938dcc0000725e3515727ba905c70e0de87	GREEN	worker-14	tree 12388 tests (baseline 12381), 0 new failures; phpstan 0; phpcs/phpmd SAME; estimate 4.11-4.15 -> 4.12-4.16
 versioniq	754	5ca8b99b475400320ca2a92ae7ead2e1d903f31a	CONFLICT	worker-06	conflicts with development in openapi.json (and l10n en/nl when stacked)
+versioniq	758	9aed161de920fe1253fe5078e4c7f39743fc2791	GREEN	worker-06	tree 751+758: phpunit 2214 tests, baseline 2 failures, 0 new; vitest 3111 pass; builds autoupdate-run-batching per its change, admin + password checks on new route
