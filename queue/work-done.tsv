@@ -18037,3 +18037,4 @@ cover:dossiq:069ee2d6m9d1b:b7fd3ec4	added 13 tests to open PR #6203 (dossiq over
 fix:dossiq:6613:073611ae	merged #6613 at ee20850459 (conflict resolved: kept CaseStatusRecords and DwellHeatmap)	session-20261116T214828-87eb0908	2026-11-16T22:01:06Z
 fix:buildiq:1683:4ed47e29	merged development in, pushed f4629c1e; merge lock held elsewhere, REVERIFY queued	session-20261116T214417-663bc13a	2026-11-16T22:01:10Z
 merge:keepiq:1826:1d5a39c0	merge3 tree of 4 keepiq PRs: merged=3 red=0 fail=0 skip=0; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-16T22:01:58Z
+fix:filinq:2072:268b3e0d	failed: permission (landing review of own commit refused); fix pushed as 65ad1d32, REVERIFY queued	session-20261116T211553-db0d2c78	2026-11-16T22:02:03Z
