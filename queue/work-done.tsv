@@ -17624,3 +17624,4 @@ review:opencatalogi:2699:d316a20b	GREEN: no new failures (75F/4E inherited), gat
 verify:decidiq:2231:73887f32	GREEN 2231	session-20261116T195130-dbadc12c	2026-11-16T20:23:22Z
 verify:planninq:1204:d4ce0b47	planninq #1204 GREEN (deps pin; phpunit 1232 ok, vitest 3578 ok)	session-20261116T202104-9ad6a286	2026-11-16T20:23:33Z
 build4:openregister:cross-app-semantic-references:c7	partial: nothing left to build in code; PR #10549 (4.1, 6.x) open, 4.3 needs a live instance, 5.x lives in nextcloud-vue	session-20261116T202229-ea7e3aab	2026-11-16T20:23:37Z
+cover:decidiq:a5f973bbm9cda:98083bbf	deferred: decidiq has 47 open PRs	session-20261116T195130-dbadc12c	2026-11-16T20:23:56Z
