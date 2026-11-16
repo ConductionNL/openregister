@@ -17915,9 +17915,11 @@ build:buildiq:logic-automation-actions-that-run:c5	partial: PR #1648 head 6c5827
 build:larpinq:forms-registration-is-checked-at-binding:c2	partial: 1.2 left; needs openregister first: no lib/Contract for form submit, and FormSubmitService::submit() writes a fresh submit with FormWriteContext(subject) i.e. under the submitter's RBAC (FormSubmitService.php:308); an in-process app-authority submit (flag on FormSubmitter/FormWriteContext, never settable from the HTTP controller) plus a contract is the missing piece; larpinq FormSubmissio	session-20261116T204203-b8dccc50	2026-11-16T21:31:20Z
 cover:stackiq:9ac19b3am2187:d528dcf0	already done: lib/Dashboard/ConceptOrganisatiesWidget.php at 100% lines (12/12) on current tests; no PR	session-20261116T205700-b760902d	2026-11-16T21:31:14Z
 fix:buildiq:1620:ad45ffb6	merged #1620 at 8d224ba2a210be1ddf84887f4f6fd6f8895b78b4 (re-recorded registration golden; ExportZipGoldenTest inherited)	session-20261116T212546-8f77b091	2026-11-16T21:31:31Z
+measure:integriq:20261116h20	php 95.29% js 94.87% (9597 PHP tests: 2 errors, 2 failures inherited)	session-20261116T211640-2352b56a	2026-11-16T21:32:01Z
 cover:keepiq:c967a31fm902f:ca1d90c4	already done: lib/Attribute/*.php 100% lines (5/5), exercised by the VaultKeyProof middleware suites; no PR	session-20261116T200543-e8f76f14	2026-11-16T21:32:17Z
 verify:stackiq:2000:a76a4319	6 GREEN (2000-2005), tree 3901 tests, 0 new failures	session-20261116T212636-b8ecff83	2026-11-16T21:32:34Z
 verify:integriq:3678:534ee436	GREEN #3678 (9597 tests, no new failures, phpstan clean)	session-20261116T212336-79038316	2026-11-16T21:32:45Z
 verify:keepiq:1861:ea80913b	3 GREEN (1861,1862,1863); no new failures	session-20261116T212048-3752a879	2026-11-16T21:33:09Z
 fix:learniq:1882:cfff5ab1	merged #1882 at af18b8c34cb305149e9af6c01163260572ddac35	session-20261116T212020-285af434	2026-11-16T21:33:34Z
+gap:openregister:atomic-object-claim:1	deferred: openregister has 189 open PRs (related branch exists: build/run-scoped-object-locking)	session-20261116T212048-3752a879	2026-11-16T21:33:53Z
 verify:shillinq:3126:b2719320	GREEN #3126 (12345 tests, no new failures)	session-20261116T211700-abd020e0	2026-11-16T21:33:51Z
