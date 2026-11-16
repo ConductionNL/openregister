@@ -1,7 +1,7 @@
 <?php
 
 /**
- * With a local memory cache, SchemaMapper::findInIds() and findBySlugInIds() probe narrow columns
+ * With a local memory cache, SchemaMapper::findInIds(), findBySlugInIds() and findMultipleOptimized() probe narrow columns
  * and take the stored row from the cross-request row cache, as find() does.
  *
  * @category  Test
@@ -144,6 +144,52 @@ class SchemaMapperScopedRowCacheTest extends TestCase {
 		self::assertSame('The stored row', $mapper->findBySlugInIds('seven', [7])?->getDescription());
 		self::assertSame(['#1 select(*)', '#2 select(*)'], $this->selects());
 		self::assertSame(2, $this->executions());
+	}
+
+	public function testFindMultipleOptimizedReadsOnlyTheRowsTheCacheLacks(): void {
+		$other  = ['id' => 9, 'uuid' => 'uuid-nine', 'slug' => 'nine', 'title' => 'Nine', 'application' => null, 'updated' => '2026-11-16 09:00:00'];
+		$this->store->values['row:7:2026-11-16 10:00:00'] = self::ROW;
+		$this->queuedRows = [[self::PROBE, $other], [$other + ['description' => 'Nine stored']]];
+
+		$schemas = $this->makeMapper()->findMultipleOptimized([7, 9]);
+
+		self::assertSame([7, 9], array_keys($schemas));
+		self::assertSame('The stored row', $schemas[7]->getDescription());
+		self::assertSame('Nine stored', $schemas[9]->getDescription());
+		self::assertSame([self::NARROW, '#2 select(*)'], $this->selects());
+		self::assertContains('#2 param :p2 = [9], 101', $this->queryLog);
+		self::assertArrayHasKey('row:9:2026-11-16 09:00:00', $this->store->values);
+		self::assertSame(2, $this->executions());
+	}
+
+	public function testFindMultipleOptimizedWithEveryRowCachedIsOneNarrowQuery(): void {
+		$this->store->values['row:7:2026-11-16 10:00:00'] = self::ROW;
+		$this->queuedRows = [[self::PROBE]];
+
+		$schemas = $this->makeMapper()->findMultipleOptimized([7, 8]);
+
+		self::assertSame([7], array_keys($schemas));
+		self::assertSame([self::NARROW], $this->selects());
+		self::assertSame(1, $this->executions());
+	}
+
+	public function testFindMultipleOptimizedLeavesOutARowGoneBetweenProbeAndRead(): void {
+		$this->queuedRows = [[self::PROBE], []];
+
+		self::assertSame([], $this->makeMapper()->findMultipleOptimized([7]));
+		self::assertSame([], $this->store->values);
+	}
+
+	public function testWithoutALocalCacheFindMultipleOptimizedIsOneWholeRowQuery(): void {
+		$factory = $this->createMock(ICacheFactory::class);
+		$factory->method('isLocalCacheAvailable')->willReturn(false);
+		$this->queuedRows = [[self::ROW]];
+
+		$schemas = $this->makeMapper(factory: $factory)->findMultipleOptimized([7]);
+
+		self::assertSame('The stored row', $schemas[7]->getDescription());
+		self::assertSame(['#1 select(*)'], $this->selects());
+		self::assertSame(1, $this->executions());
 	}
 
 	/**

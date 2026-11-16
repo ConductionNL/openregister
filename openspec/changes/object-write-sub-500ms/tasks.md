@@ -171,8 +171,11 @@ that number is read, so "done" is a measurement rather than an opinion.
       (`findInIds()`, `findBySlugInIds()`) select only the probe columns too
       and complete the row from the cache or one read by primary key, the way
       `find()` does; without a local cache they read whole rows as before.
-      Pinned in `SchemaMapperScopedRowCacheTest` (6). Still open: the bulk
-      reads (`findMultiple*`, `findAll`) and which callers need metadata only.
+      The bulk `findMultipleOptimized()` probes its id chunk narrowly too,
+      takes the rows the cache holds and reads only the rest, in one query
+      (`findMultiple()` already goes through `find()`). Pinned in
+      `SchemaMapperScopedRowCacheTest` (10). Still open: `findAll()` /
+      `findBySlug()` listings and which callers need metadata only.
 
 - [x] **Task 4 — cross-request cache.**
       APCu layer keyed on `schema.id + schema.updated`, so a cold worker does

@@ -1089,6 +1089,10 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 * @return array<int|string, Schema>
 	 */
 	private function schemasWithIds(array $ids): array {
+		if ($this->rowCache->isAvailable() === true) {
+			return $this->cachedSchemasWithIds(ids: $ids);
+		}
+
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from('openregister_schemas')
@@ -1098,6 +1102,86 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 
 		return $this->fetchSchemas(qb: $qb);
 	}//end schemasWithIds()
+
+	/**
+	 * The schemas with the given ids, keyed by id, unresolved, completed from the row cache.
+	 *
+	 * One narrow probe of the id set picks the rows and their stamps; the rows
+	 * the cache holds under that id and stamp are taken from it, and only the
+	 * rest are read whole, in one query, and stored for the next request. The
+	 * result keeps the probe's row order; a row gone between probe and read is
+	 * left out, as an id that matched nothing always was.
+	 *
+	 * @param array<int, mixed> $ids The ids, at most MAX_IN_LIST_SIZE.
+	 *
+	 * @return array<int|string, Schema>
+	 *
+	 * @spec openspec/changes/object-write-sub-500ms/tasks.md
+	 */
+	private function cachedSchemasWithIds(array $ids): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select(...SchemaRowCache::PROBE_COLUMNS)
+			->from('openregister_schemas')
+			->where(
+				$qb->expr()->in('id', $qb->createNamedParameter($ids, IQueryBuilder::PARAM_INT_ARRAY))
+			);
+
+		$result = $qb->executeQuery();
+		$rows   = [];
+		$misses = [];
+		while (($probe = $result->fetch()) !== false) {
+			$rows[$probe['id']] = $this->rowCache->get(probe: $probe);
+			if ($rows[$probe['id']] === null) {
+				$misses[] = (int)$probe['id'];
+			}
+		}
+
+		$result->closeCursor();
+
+		foreach ($this->storedRowsWithIds(ids: $misses) as $id => $row) {
+			$rows[$id] = $row;
+		}
+
+		$schemas = [];
+		foreach ($rows as $id => $row) {
+			if ($row !== null) {
+				$schemas[$id] = Schema::fromRow($row);
+			}
+		}
+
+		return $schemas;
+	}//end cachedSchemasWithIds()
+
+	/**
+	 * The whole stored rows with the given ids, keyed by id, each stored in the row cache.
+	 *
+	 * @param array<int, int> $ids The ids; none reads nothing.
+	 *
+	 * @return array<int|string, array<string, mixed>>
+	 *
+	 * @spec openspec/changes/object-write-sub-500ms/tasks.md
+	 */
+	private function storedRowsWithIds(array $ids): array {
+		if ($ids === []) {
+			return [];
+		}
+
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from('openregister_schemas')
+			->where($this->idIn(qb: $qb, ids: $ids));
+
+		$result = $qb->executeQuery();
+		$rows   = [];
+		while (($row = $result->fetch()) !== false) {
+			$this->rowCache->put(row: $row);
+			$rows[$row['id']] = $row;
+		}
+
+		$result->closeCursor();
+
+		return $rows;
+	}//end storedRowsWithIds()
 
 	/**
 	 * Finds schemas by slug
