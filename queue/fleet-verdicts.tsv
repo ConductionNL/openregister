@@ -15668,3 +15668,4 @@ buildiq	1608	09ddceb4e2b51804e124259fe3076570d3a4e69d	BLOCK	worker-56:review	rev
 buildiq	1689	5149b0a3862c2ed9d18630d837f1b6bd5231459b	CONFLICT	worker-05	baseline 3456 tests 0 failures; merge with development conflicts in l10n/en.js en.json nl.js nl.json
 versioniq	758	9aed161de920fe1253fe5078e4c7f39743fc2791	REVERIFY	worker-12	resolved the AutoUpdateJob conflict, added license tags and split 3 complex units; maintainability floor still drops at the new head (overall 5.07->5.05, unit_complexity 4.79->4.74, unit_interfacing 4.59->4.57), so it needs a floor fix before it can land; new head 7be209fae0deeec3aa2a193a3b14e3288f75b2e4, verify it
 versioniq	715	37497a7ed42c399a93097825eddb2cf9a2f3d769	CONFLICT	worker-56:review	conflicts with development in src/App.vue; not reviewed on a merged tree
+versioniq	754	668f7591890c8b3d5772e0b576a44e268cadbec3	CONFLICT	worker-12	conflicts with development after #755 landed; baseline 2171 tests, 2 inherited failures
