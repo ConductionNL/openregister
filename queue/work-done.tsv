@@ -15564,3 +15564,4 @@ fix:buildiq:1620:42a0d795	fixed: merged development in; new head ff3f376b, REVER
 review:planninq:933:6f703f97	GREEN	session-20261116T063608-d33f86e6	2026-11-16T06:59:55Z
 review:hermiq:1802:5e2885e3	GREEN: tests only, suite green	session-20261116T062050-3a7e109c	2026-11-16T07:00:09Z
 review:hermiq:1795:fdc2c517	GREEN: phpunit 5312 OK, vitest 1532 OK, phpstan clean	session-20261116T062140-6a300781	2026-11-16T07:00:24Z
+review:planninq:930:3db13fea	BLOCK: unspecified behaviour change + deleted spec-named tests; suites green	session-20261116T062050-add210c3	2026-11-16T07:00:32Z
