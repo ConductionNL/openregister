@@ -13926,3 +13926,6 @@ opencatalogi	2665	fbbdb9b4979ec70fcf42d330b65402fe8dd25534	CONFLICT	worker-13:me
 planninq	1196	458678cafcd02325f85d10c61f1a19d493c49e74	RED	worker-12:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
 hermiq	1807	a3d16b99cc2d5df80d3d37eb026b6547ef9fb5b2	CONFLICT	worker-08:merge	merges clean on development alone; files: composer.lock 
 larpinq	1050	f7fb4695da92f783c2b95985f82b173605c67536	BLOCK	worker-23:review	review: Thorough; blockers: spec-coverage gate fails on 8 added methods in src/services/rulebook.js and src/views/Rulebook.vue; the Rulebook is a new custom page (custom pages 1 -> 2) with no _note saying why it has no typed archetype; concerns: pool budget logic matches REQ-RRS-002, tests added
+learniq	1158	5ca84f75a09a2fdef007102586c11c0982f88dfc	RED	worker-15:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
+learniq	1162	59935569e666c89964655c0288c4729a788558da	RED	worker-15:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
+learniq	2127	68efea31c565ca8b2506f50814b1ab554a25b7b9	RED	worker-15:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
