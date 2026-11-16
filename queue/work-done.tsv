@@ -18123,3 +18123,4 @@ review:launchpad:1229:b9834840	BLOCK: vault source read ignores the creator's ac
 lane:arch5:shillinq:next-shillinq-r9	skipped: coordinator stop, shillinq rounds gain about +0.01 each since r3 (4.12-4.16); revisit with a structural lever	coordinator	2026-11-16T22:24:48Z
 build:filinq:document-sanitization:c8	partial: unchanged since c6; 3.5/4.2 seal halves still wait for document-waarmerk-certification 4.1 (open #2124, unmerged); rest built in open #2126	session-20261116T222416-013d48d6	2026-11-16T22:25:10Z
 merge:planninq:1207:5b8e86d3	merge3 tree of 1 planninq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-16T22:25:10Z
+review:buildiq:1648:a87fb3d8	RED: 5 new failures merged with development (old openregister find/saveObject named args vs migrated stubs), plus l10n conflict	session-20261116T222156-bd715f7e	2026-11-16T22:25:38Z
