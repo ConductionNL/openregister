@@ -15878,3 +15878,4 @@ review:decidiq:2191:29114ea5	GREEN: spec-conform UI wiring; vitest 2847 pass, ma
 review:decidiq:2170:d54fcb29	GREEN #2170 at d54fcb29: matches spec, suite 4655 OK, phpstan 0, vitest pass	session-20261116T083020-e59421bc	2026-11-16T08:47:27Z
 merge:launchpad:757:5ad5cb17	cloud tree of 4 launchpad PRs: merged=0 red=1 fail=0 skip=1; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T081705-6c8f795b	2026-11-16T08:47:36Z
 fix:pipelinq:3882:b1c037ef	no change needed: contains development, tree-only composer.lock conflict; REVERIFY recorded (merge lock held elsewhere)	session-20261116T082121-c1741fb9	2026-11-16T08:47:40Z
+review:stackiq:1978:315e616b	GREEN: unit 3739 ok (baseline 3718), vitest 12 ok, phpstan clean	session-20261116T084437-2e80ba88	2026-11-16T08:48:24Z
