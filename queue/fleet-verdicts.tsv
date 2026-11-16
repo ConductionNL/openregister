@@ -13942,3 +13942,4 @@ larpinq	830	794bac00bff45bdce041a07528da37426b2650dc	CONFLICT	worker-23:merge	co
 keepiq	1828	08437392c0e81cd95adac94cd9a3d3bf4c1b4162	RED	worker-21:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
 larpinq	877	0d04ecfc809c8f114723a77614d7ef4cddf938ef	RED	worker-23:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
 shillinq	2997	5788e1ce9f8b8c48fefdb048497a3f9d1bd8dca7	RED	worker-11:merge-gate	GATE RED floor: unit_size: 4.41 -> 4.39; unit_complexity: 4.94 -> 4.92; unit_interfacing: 2.76 -> 2.74
+shillinq	3078	db907ca5ddb5588d0e74b60c458ed9d98223ac83	CONFLICT	worker-11:merge	merges clean on development alone; files: appinfo/info.xml 
