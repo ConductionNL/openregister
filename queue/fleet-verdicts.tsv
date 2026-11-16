@@ -14622,3 +14622,4 @@ opencatalogi	2673	6dd0d2004c69bde1f857f3eb5a75cbc57bd5c033	REVERIFY	worker-22	me
 integriq	2744	53deb98f7cdb1b6780f15f48e92d1825829d8513	RED	worker-47:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 learniq	1881	fffa1128975dd927184ddcba8f85d13b5bf86997	RED	worker-46:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
 integriq	2746	ff5f2df859dc0664166676b1e4a688ca9dcf5daf	RED	worker-47:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+integriq	3057	2fbd882db4b90477039aeb267982241373c712f0	RED	worker-47:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
