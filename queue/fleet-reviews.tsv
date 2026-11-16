@@ -706,3 +706,4 @@ buildiq	1672	23675f9b919ac36ba1fa0d61ce234362b1e2d407	APPROVE	worker-12	Thorough
 learniq	2562	7726a54cc67ec9a8c40f7c44e8fea0cf725b9fd2	APPROVE	worker-46	Quick; no blockers; lockfile minimatch advisory fix under eslint plus SBOM
 dossiq	5398	0574972c864d76681209aa9163ca32450a6fa810	APPROVE	worker-14	Quick; no blockers; dev-only psalm 5->7.5 bump plus composer platform pin 8.3.16, no lib/src changes, sbom unchanged (dev deps omitted), tree suite 18300 tests no new failures
 shillinq	3121	31c97d4e7639634edb1c347f972cab31c192882d	APPROVE	worker-03	Thorough; no blockers; type-hint move to Kernel contracts, every new interface implemented and bound, constants unchanged; gate-24/66 failures are on untouched lines
+portaliq	2531	77439a5aba09fb92d6f763555de81efaf2e99e6c	APPROVE	worker-23	Quick (dependency bundle); no blockers; dev-only bumps (sass 1.106.1, phpstan 2.3.5, hydra-gates 1.19.0), tree adds no unit failures, merge gate OK
