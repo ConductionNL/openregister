@@ -18065,3 +18065,4 @@ cover:buildiq:70b3e29eme3dd:1b97f731	deferred: buildiq has 54 open PRs	session-2
 review:filinq:2072:65ad1d32	GREEN: unit 7054 OK on merge with development (baseline 6960 OK)	session-20261116T220950-f845cd73	2026-11-16T22:12:24Z
 cover:pipelinq:7f9dc8e6m3dbb:bc26df70	already covered: lib/Service/Labels at 100% statements (pcov, 17 tests with @covers/@uses); no tests added	session-20261116T220647-b92c8f52	2026-11-16T22:12:35Z
 review:launchpad:1230:bb0ec0bb	GREEN #1230 (4564 php ok, 92 vitest ok; openapi.json conflicts with development)	session-20261116T220858-93068d3c	2026-11-16T22:12:41Z
+cover:launchpad:fb10c50fmf487:e372e6ff	deferred: launchpad has 46 open PRs	session-20261116T220858-93068d3c	2026-11-16T22:13:22Z
