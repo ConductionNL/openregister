@@ -16957,3 +16957,4 @@ cover:buildiq:70b3e29em3841:a215617b	deferred: buildiq has 56 open PRs	session-2
 fix:integriq:3051:5649956b	fixed spdx floor: SPDX headers on 3 new stubs, pushed 3f6ca6b6; merge lock held elsewhere, REVERIFY queued	session-20261116T173211-a3411be5	2026-11-16T17:50:45Z
 cover:buildiq:70b3e29em3841:f545d745	deferred: buildiq has 56 open PRs	session-20261116T173103-d3bed8f8	2026-11-16T17:50:41Z
 cover:buildiq:70b3e29em3841:1b97f731	deferred: buildiq has 56 open PRs	session-20261116T173103-d3bed8f8	2026-11-16T17:50:51Z
+fix:integriq:3049:f122cee2	development merged in, touched tests green; REVERIFY at 129bee96 (merge lock held elsewhere)	session-20261116T173254-f6972957	2026-11-16T17:51:25Z
