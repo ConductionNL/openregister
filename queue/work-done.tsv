@@ -17062,3 +17062,4 @@ review:decidiq:2170:8ede76a3	GREEN: suite 4659/0 failures, vitest 41 pass	sessio
 build:learniq:portal-certificates	already done: T1-T5 on development; T6 is an e2e run on the proof instance	session-20261116T173306-f68895a7	2026-11-16T18:12:59Z
 fix:versioniq:722:a03bd1c7	unmeasured: static.developer.overheid.nl (floor fixed and pushed, new head c6a909c, APPROVE recorded, REVERIFY queued)	session-20261116T174709-5787ce39	2026-11-16T18:13:52Z
 review:versioniq:725:b54e382d	GREEN: per change specs; unit 1986, 2 inherited failures, none new; vitest 52 passed	session-20261116T181151-999832c6	2026-11-16T18:14:23Z
+review:integriq:3049:129bee96	GREEN: ObjectDeletion migration keeps behaviour; suite equals baseline	session-20261116T173211-a3411be5	2026-11-16T18:14:35Z
