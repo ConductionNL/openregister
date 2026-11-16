@@ -4601,3 +4601,4 @@ integriq	3047	75eb55fe9d3cf3f0fef516fd0c0dd6a2ac43b912	SKIP	worker-14	GATE UNMEA
 buildiq	1091	0a8185a0dee7e695b01a176d292da46757fc47ba	MERGED	worker-55	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.91 holds at 3.91
 integriq	3574	538c9e9b698c603c89e9b0170b63111b23b946bd	SKIP	worker-14	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
 buildiq	1583	cb1e01bf5bb8b6fa92d5ef01b0765ee06f7300e7	MERGED	worker-55	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.91 holds at 3.91
+buildiq	1596	1e0a4baa0fc45422fef22a990189036758d6d2d4	MERGED	worker-55	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.91 holds at 3.91
