@@ -17989,3 +17989,4 @@ review:hermiq:1791:1747024b	GREEN: in-spec build, 5438 unit tests + 97 vitest gr
 review:launchpad:1235:906e0ad0	stale	session-20261116T202633-f7fb0e3a	2026-11-16T21:51:10Z
 cover:launchpad:fb10c50fmf487:d39f9857	deferred: launchpad has 46 open PRs	session-20261116T212719-d025d113	2026-11-16T21:51:12Z
 cover:launchpad:fb10c50fmf487:b67d52c3	deferred: launchpad has 46 open PRs	session-20261116T212719-d025d113	2026-11-16T21:51:26Z
+verify:humaniq:1173:67065b8a	failed: this worker authored PR #1173 in this session (its own review was refused by a permission check); needs a verify by another worker	session-20261116T202633-f7fb0e3a	2026-11-16T21:51:46Z
