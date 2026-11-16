@@ -15940,6 +15940,7 @@ shillinq	2997	94a7046f39056afefe7f97508b449787fed0f493	CONFLICT	merge3	conflicts
 integriq	2650	6bf97c5a81bb69737d66deeb8323a1141a817133	CONFLICT	worker-02	baseline 9603 tests (2E/3F inherited); conflicts with development in appinfo/info.xml composer.lock l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/AppInfo/Application.php lib/Service/SynchronizationService.php
 learniq	2537	1f3f874a78efd8a8826808ced66f96d563db16d7	CONFLICT	worker-17	conflicts with development in appinfo/routes.php, l10n/en.json, l10n/nl.json, tests/Unit/Portal/golden/PortalManifests.json
 larpinq	1056	641d4f010fe2b690fd4928ccbacec198633df311	CONFLICT	worker-06	conflicts with development in appinfo/routes.php and the l10n catalogues; not tested
+integriq	3632	b8b6d7add35658f7a1a83ce7390e83d15a273c75	CONFLICT	worker-11	conflicts with development in tests/Unit/Service/CatalogRegistrySeedGoldenTest.php; suite not run
 integriq	3601	be3e4259ac257c0fa3cd07f418850dd15d366231	CONFLICT	worker-36	conflicts with development in docs/features/README.md, l10n/en.js, en.json, nl.js, nl.json, tests/Unit/Service/CatalogRegistrySeedGoldenTest.php; suite not run
 integriq	3561	a24572ec8783f55290b104524696faf13e85dde8	CONFLICT	worker-23	conflicts with development in l10n en/nl, ProductSubscriptionsController.php, EndpointService.php, ApiProductDetail.vue; suite not run
 filinq	2072	8a0992cbb74f2b7df9dbc9e29159077ce5307e05	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 4.47 -> 4.40
