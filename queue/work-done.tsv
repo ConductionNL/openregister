@@ -15441,3 +15441,4 @@ verify:pipelinq:3882:5e672c7f	stale	feeder	2026-11-16T06:30:11Z
 fix:hermiq:1801:1c7ed669	fixed test expectation for ObjectFindOptions; pushed b8e31c29, REVERIFY recorded	session-20261116T062050-7d5ce0d6	2026-11-16T06:31:08Z
 review:hermiq:1791:27599b8c	GREEN: matches change specs; unit 5340 OK, vitest 1548 OK	session-20261116T062544-335bf148	2026-11-16T06:31:21Z
 review:learniq:2484:32d62246	BLOCK: schema auth block lacks create/update/delete, widening write access; suite otherwise green (1 inherited)	session-20261116T062050-add210c3	2026-11-16T06:31:31Z
+merge:planninq:726:780e659c	merge8 tree of 12 planninq PRs: merged=3 red=6 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge8-20261115T170007-37538273	2026-11-16T06:32:03Z
