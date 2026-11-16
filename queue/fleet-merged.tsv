@@ -4719,3 +4719,4 @@ humaniq	1169	a923fe593ee46a2b9cc5f9d5a14a00853e478ebb	SKIP	worker-57	GATE UNMEAS
 buildiq	1641	848d47f23922be4e4d3443d404a07ae1b8f4bd38	MERGED	worker-24	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.91 holds at 3.91
 humaniq	1168	5ca7de0c7f217ee13df2098c98dba11a73482c4c	MERGED	worker-57	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.47 holds at 3.47
 shillinq	2991	8db8659fb75b2c8ef554ce907391c9df3d51ed74	MERGED	worker-12	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.05
+humaniq	1169	a923fe593ee46a2b9cc5f9d5a14a00853e478ebb	MERGED	worker-57	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.47 holds at 3.47
