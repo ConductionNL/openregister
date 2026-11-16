@@ -3964,3 +3964,4 @@ dossiq	5281	9801961452b5cb0695ec0805fbdf9a8e7b036525	MERGED	merge3	GATE OK sbom,
 dossiq	5397	7ff72b326425d92996261dd963ddb2a0e16985c7	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
 dossiq	6109	aa8d7473a4173ae11147877ebcf64c07a998c393	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.33
 shillinq	1900	4eb4258f0a4e2971ae8669c219c0739a097b9f52	RED	worker-22	GATE RED checker floor: spdxheaders stars: 5 -> 4
+pipelinq	3092	f041615e2cce52415f7c71cc60df53271a377f88	SKIP	worker-47	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
