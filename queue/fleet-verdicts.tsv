@@ -15196,3 +15196,4 @@ dossiq	5398	1ba53a1748240a7b08c3dbd60bab7990145868b9	RED	worker-21:review	compos
 decidiq	2170	8ede76a3788b7bf174d1eaf4ca42a7591d7e0f7b	RED	worker-16:merge-gate	GATE RED absolute floor: decidiq maintainability 3.76 after merge is below its floor 3.78
 pipelinq	3659	d796a259022717db8670ad305e1cfdbc7c368d5c	GREEN	worker-56:review	tests only (14 test files, no lib/src change); merged with development: 9042 tests pass vs baseline 9032, no new failures
 stackiq	1978	edde87e6895196c71ef0a7ed464be0c8455a1cfe	CONFLICT	worker-40:merge	conflicts with development; files: openapi.json 
+stackiq	1996	66a3bdf85100d06da1aaf07f1e2431b1cc7d0f3f	GREEN	worker-11	unit 3768 tests, baseline 0 failures, 0 new failures; behaviour-preserving refactor (contract interface + log helpers)
