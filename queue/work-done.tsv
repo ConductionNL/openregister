@@ -17060,3 +17060,4 @@ merge:pipelinq:3835:adf38c1e	merge3 tree of 6 pipelinq PRs: merged=6 red=0 fail=
 review:integriq:3051:3f6ca6b6	GREEN: lock request migration keeps behaviour; suite equals baseline	session-20261116T173211-a3411be5	2026-11-16T18:12:30Z
 review:decidiq:2170:8ede76a3	GREEN: suite 4659/0 failures, vitest 41 pass	session-20261116T180946-98cfe827	2026-11-16T18:12:53Z
 build:learniq:portal-certificates	already done: T1-T5 on development; T6 is an e2e run on the proof instance	session-20261116T173306-f68895a7	2026-11-16T18:12:59Z
+fix:versioniq:722:a03bd1c7	unmeasured: static.developer.overheid.nl (floor fixed and pushed, new head c6a909c, APPROVE recorded, REVERIFY queued)	session-20261116T174709-5787ce39	2026-11-16T18:13:52Z
