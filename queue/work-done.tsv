@@ -17285,3 +17285,4 @@ cover:pipelinq:7f9dc8e6m3dbb:1b97f731	added 21 listener tests (8 classes, Listen
 measure:openregister:20261116h18	php 95.13% (pcov, tests/Unit/Architecture excluded: times out under coverage), js 93.15%	session-20261116T174709-5787ce39	2026-11-16T19:02:32Z
 fix:keepiq:1793:b87d8b92	fixed: conflict resolved and secret-scan finding allowlisted, new head 3fae302f, APPROVE recorded; not landed (gate UNMEASURED: ADR ruleset fetch, then lock held by another merger); REVERIFY queued	session-20261116T173311-8d6b3275	2026-11-16T19:02:53Z
 fix:stackiq:1931:3faf7c6d	merged #1931 at f40072a7dde67e002ef2d523a58a0432257b81c9	session-20261116T184928-c82468e8	2026-11-16T19:05:05Z
+cover:pipelinq:7f9dc8e6m3dbb:60c2c265	pushed 36 controller tests (7 classes) to open PR #3659 (pipelinq over budget, 45 open PRs); suite 9042->9078, 0 failures	session-20261116T184944-4db9bf64	2026-11-16T19:05:33Z
