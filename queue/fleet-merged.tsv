@@ -4430,3 +4430,8 @@ decidiq	2170	8002c6debd436efc4fcfa7624811d81b9eef9d75	RED	merge3	GATE RED absolu
 decidiq	2222	c48b29b22a9114e3d924a26c8c2f287883188572	SKIP	merge3	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
 decidiq	2223	34982cb60fb5a9dacbdc943059a5690fdc7854cf	RED	merge3	GATE RED absolute floor: decidiq maintainability 3.77 after merge is below its floor 3.78
 buildiq	1596	1e0a4baa0fc45422fef22a990189036758d6d2d4	SKIP	worker-39	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
+hermiq	1308	fa7ea701a64176b2a3305fb904268630c5f568eb	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
+hermiq	1739	5a3ceaf410344e30e2744d79a65442e6775688e3	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.77 holds at 3.78
+hermiq	1795	fdc2c517220656bac17530d30d674fd346d80010	RED	merge3	GATE RED absolute floor: hermiq maintainability 3.76 after merge is below its floor 3.77
+hermiq	1801	b8e31c29c0755366e44d0de7ddd7cee5f6d4be87	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.77 holds at 3.78
+hermiq	1802	5e2885e3e660cb042b21292e305f27b2d9a26093	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.77 holds at 3.78
