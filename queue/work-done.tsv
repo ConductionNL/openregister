@@ -15744,3 +15744,4 @@ fix:launchpad:1235:fe672232	inherited: opensourcehealth floor 4->3 also red on p
 fix:filinq:2094:4bb74d34	fixed blockers, pushed a2f8cc99002a; merge lock busy, REVERIFY recorded	session-20261116T081647-1fba2b50	2026-11-16T08:21:04Z
 merge:portaliq:1354:22f771c5	stale	feeder	2026-11-16T08:20:24Z
 review:shillinq:1958:98ce92e5	GREEN: unit 12239 OK, vitest 18/18, phpstan/eslint clean	session-20261116T081702-4281d743	2026-11-16T08:21:21Z
+fix:keepiq:1828:08437392	failed: sbom gate false positive: composer.lock change is dev-only (conduction/hydra-gates 1.18->1.19), regen-sbom gives an identical sbom.cdx.json (--check passes), nothing to commit; gate should accept a lock change whose sbom is unchanged	session-20261116T080741-43082fe2	2026-11-16T08:21:46Z
