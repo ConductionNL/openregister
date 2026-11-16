@@ -16047,3 +16047,4 @@ fix:shillinq:1900:4eb4258f	SPDX floor: moved VatReturnChecks SPDX tag into first
 verify:portaliq:2531:26c63d51	GREEN #2531: no new unit failures, build same as baseline	session-20261116T091521-a6030cec	2026-11-16T09:27:11Z
 merge:larpinq:1050:a5d0b0fe	cloud tree of 3 larpinq PRs: merged=0 red=2 fail=0 skip=1; 1050 RED floor unit_interfacing 4.77->4.75, 1066 RED sbom not in diff, 1060 SKIP gate unmeasured (adrvalidator host unreachable)	session-20261116T075942-394736ff	2026-11-16T09:27:29Z
 verify:planninq:1198:4ef22590	GREEN #1198: phpunit 1222/0 new failures, vitest 3566 passed	session-20261116T092435-e1a408a7	2026-11-16T09:27:27Z
+review:portaliq:1764:a878ea03	GREEN: ts-eslint parser dev bump, lint ok, unit errors inherited	session-20261116T091528-eef53ce7	2026-11-16T09:27:38Z
