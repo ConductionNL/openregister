@@ -3885,3 +3885,5 @@ opencatalogi	2643	7bc2433945f732c8cf0072d2f18554f8d29f2799	SKIP	worker-13	no APP
 opencatalogi	2670	eed46219e9cfb33b3d3a6d40373bee0b46f3fe10	SKIP	worker-13	no APPROVE review at this head
 filinq	2094	4bb74d349673ed91712f3e90839a8c258e6f3b7e	SKIP	worker-23	no APPROVE review at this head
 planninq	1196	458678cafcd02325f85d10c61f1a19d493c49e74	RED	worker-12	GATE RED sbom: composer.lock changed without sbom.cdx.json
+hermiq	1135	0d097997db1a2b53afae0ba11817aff5667f2f08	SKIP	worker-08	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
+hermiq	1801	b8e31c29c0755366e44d0de7ddd7cee5f6d4be87	SKIP	worker-08	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator, secretscanning; this is not a pass
