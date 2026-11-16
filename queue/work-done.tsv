@@ -17836,3 +17836,4 @@ merge:shillinq:1899:ba056b75	merge3 tree of 4 shillinq PRs: merged=0 red=3 fail=
 cover:stackiq:9ac19b3am2187:34f5c300	PR #2005: fixed metadata of 11 risky ArchiMate export tests + 10 new tests; stackiq PHP 88.69% -> 91.85%	session-20261116T210116-54911634	2026-11-16T21:08:20Z
 lane:arch5:launchpad:next-launchpad-r1	failed: permission: cm_land.sh land refused; PR #1243 opened (+0.01, 3.70-3.81), verified green, APPROVE recorded, GREEN verdict left for a merge task, round 2 queued	session-20261116T202918-5671af16	2026-11-16T21:09:32Z
 lane:arch5:opencatalogi:next-opencatalogi-r1	PR #2752 opened (4.52-4.54 -> 4.57-4.58), GREEN verdict queued; merge lock held by another merger	session-20261116T205720-a5d1eee3	2026-11-16T21:09:36Z
+lane:arch5:planninq:next-planninq-r1	PR #1206 opened (3.78-3.99 -> 4.06-4.21), GREEN verdict; not landed: recording a review of my own PR is refused by the permission check	session-20261116T194104-8906f18f	2026-11-16T21:09:51Z
