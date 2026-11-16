@@ -16561,3 +16561,4 @@ fix:decidiq:2149:acad1376	inherited: development alone reads 3.77 below the 3.78
 fix:decidiq:2207:4cc6ec94	partly fixed: complexity restored, tree 3.76 vs dev 3.77; floor 3.78 inherited (development 3.77); REVERIFY 12b85479	session-20261116T142700-f4d651ea	2026-11-16T15:11:47Z
 review:opencatalogi:2696:08865a78	GREEN: no new failures (5849 vs 5806 tests), vitest 1170 pass	session-20261116T143636-9ede3f74	2026-11-16T15:12:03Z
 review:decidiq:2170:8002c6de	GREEN: unit 4655 OK vs baseline 4624, phpstan/vitest/eslint clean	session-20261116T150917-ab25a304	2026-11-16T15:12:15Z
+review:opencatalogi:2679:0e72dcc6	GREEN: no new failures, behaviour per change specs	session-20261116T150148-cf8c9aec	2026-11-16T15:12:36Z
