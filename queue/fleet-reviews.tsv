@@ -339,3 +339,4 @@ decidiq	1468	7dc751fb076903e2e43ec5e7338bc901791d14a5	APPROVE	worker-55	Quick; n
 hermiq	1808	d92c1c64c29a1a3d559e0d6e3f10da062039597d	APPROVE	worker-38	Quick; no blockers; dependency bundle (composer minor/patch, eslint/sass/stylelint/playwright dev), same composer package set, sbom regenerated, tree 5291 tests OK
 integriq	3671	18d443b4f429398d1ffefc8657304b1b56a5c625	APPROVE	worker-47	Thorough; no blockers; mechanical move to openregister main object API, _rbac/_multitenancy flags and register/schema targets identical per file, signatures checked on main; tree suite equal to baseline
 decidiq	1469	09383bbcc1479f735f6f91b06b9eab2bc002c9b9	APPROVE	worker-55	Quick; no blockers; dependency bump with lockfile and regenerated sbom only, tree suite green
+decidiq	1470	d4e9a56bd03ff9b791d94f382e91a9560de24a53	APPROVE	worker-55	Quick; no blockers; dependency bump with lockfile and regenerated sbom only, tree suite green
