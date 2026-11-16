@@ -16889,10 +16889,12 @@ review:shillinq:3078:33420e1f	GREEN: unit 12278 tests 0 failures, vitest 9/9, es
 verify:buildiq:1672:26841644	GREEN #1672 (3333 tests, 0 new failures)	session-20261116T173308-9a80cd8d	2026-11-16T17:40:51Z
 build:portaliq:portal-theme-application	already done: code built on development (8 Oct); left only an info.xml dependency decision and browser/e2e tasks	session-20261116T173311-8d6b3275	2026-11-16T17:40:44Z
 build:portaliq:write-record-names-the-mandate	already done: every code task ticked on development; open tasks are live checks only, left	session-20261116T170823-40772b73	2026-11-16T17:40:55Z
+build:portaliq:portal-public-catalogue	already done: every code task ticked and on development (4dee3e54d); only T5 live check left, needs a live instance	session-20261116T173211-a3411be5	2026-11-16T17:41:02Z
 review:openregister:10596:1cde2635	APPROVE: test docblock only, ExampleSet suite same as main	session-20261116T171507-41a673e9	2026-11-16T17:41:04Z
 build:portaliq:resident-on-example-set	already done: every code task ticked on development; open tasks are live checks only, left	session-20261116T170823-40772b73	2026-11-16T17:41:01Z
 build:portaliq:staff-revoke-one-session	already done: T01,T02 on development since #1647; only T03 (live check) left	session-20261116T173306-f68895a7	2026-11-16T17:41:26Z
 fix:learniq:2507:82c09d5c	unmeasured: static.developer.overheid.nl (fixed interfacing floor + SPDX stub header; new head f29e84b71d, APPROVE recorded, REVERIFY queued)	session-20261116T171010-393e4bc2	2026-11-16T17:41:23Z
+build:portaliq:site-dates-in-content-language	already done: every code task ticked, built in #1374; only the live check (task 4) is left	session-20261116T173713-4d98e280	2026-11-16T17:41:57Z
 build:portaliq:submission-records-its-action-title	already done: code tasks 1.1-1.3 built on development (2 Nov); only live task 1.4 left	session-20261116T173256-6277a58c	2026-11-16T17:41:57Z
 build:portaliq:staff-resend-an-invitation	already built: T01-T03 ticked and on development; only T04 live check left	session-20261116T170545-a4f14b83	2026-11-16T17:41:33Z
 build:portaliq:site-school-blocks	already done: every code task is ticked and on development; only live tasks T8 and T12 are left	session-20261116T173227-3f62e794	2026-11-16T17:41:54Z
@@ -16904,6 +16906,8 @@ build:shillinq:budget-grid-view	already done: built on development in #961; only
 fix:learniq:2556:489b7f4d	failed: inherited: development itself drops spdxheaders 5->4 (tests/Stubs/Contract/ObjectServiceInterface.php has no SPDX line); the header fix rides on learniq #2507 head f29e84b71d	session-20261116T171010-393e4bc2	2026-11-16T17:42:42Z
 cover:filinq:7a9ef677:aae6d66c	deferred: filinq has 49 open PRs	session-20261116T174053-4a550291	2026-11-16T17:42:58Z
 build:shillinq:tax-vat-number-check	already done: built on development 2026-10-02 (route vat-number-checks, FoldCustomerVatId, e2e spec); only 3.2 live e2e run left	session-20261116T173217-7353a3fb	2026-11-16T17:42:55Z
+cover:filinq:7a9ef677:34f5c300	deferred: filinq has 49 open PRs	session-20261116T174053-4a550291	2026-11-16T17:43:19Z
+build:shillinq:integration-config-to-openconnector	already done: built on development 2026-08-20 (REQ-ICO-001..007); only the live e2e run is left unchecked	session-20261116T173217-7353a3fb	2026-11-16T17:43:18Z
 build:filinq:anonymise-prohibition-consent-guard	deferred: filinq has 49 open PRs	session-20261116T171035-683856c3	2026-11-16T17:43:03Z
 build:shillinq:billable-period-becomes-an-invoice	already done: 1.1-1.4 built on development (10 Oct); only 1.5 live pass left	session-20261116T173311-8d6b3275	2026-11-16T17:43:14Z
 review:openregister:10595:8cc9923c	APPROVE: tests only, 8 new tests green, required suites green	session-20261116T173213-a5a52019	2026-11-16T17:43:20Z
@@ -16911,15 +16915,39 @@ review:keepiq:1826:95a54b11	GREEN: keepiq #1826, unit 5408/0 fail, vitest 99 pas
 cover:filinq:7a9ef677:1174c39d	deferred: filinq has 49 open PRs	session-20261116T173213-a5a52019	2026-11-16T17:43:46Z
 build:shillinq:setup-wizard-english	already built: T01-T10,T12-T13 ticked on development (fix(i18n) 2026-08-19); only T11 left, a live e2e run	session-20261116T173808-386fe9e9	2026-11-16T17:43:36Z
 review:shillinq:2230:e61ebeb7	GREEN: babel dev-dep bump, vitest 3030/3031 (1 inherited failure)	session-20261116T173342-1d8a0fb9	2026-11-16T17:43:49Z
+build:shillinq:assets-method-change-and-reserve	already done: code tasks built on development; only 4.1 Playwright run left (needs a live instance)	session-20261116T173311-8d6b3275	2026-11-16T17:44:04Z
 build:shillinq:sales-usage-billing	deferred: shillinq has 81 open PRs	session-20261116T172806-3ef5ead7	2026-11-16T17:44:03Z
 build:shillinq:public-sector-quarterly-returns	deferred: shillinq has 81 open PRs	session-20261116T172806-3ef5ead7	2026-11-16T17:44:11Z
+cover:filinq:7a9ef677:e2d2df0f	deferred: filinq has 49 open PRs	session-20261116T173254-f6972957	2026-11-16T17:44:35Z
 review:shillinq:2099:ea7e61ea	GREEN (vitest 1 inherited failure)	session-20261116T165351-3ccaad0e	2026-11-16T17:44:21Z
 fix:learniq:2555:df653e98	fixed inherited SPDX drop (stub header) + merged development; new head 20db188505, REVERIFY queued (merge lock held elsewhere)	session-20261116T171010-393e4bc2	2026-11-16T17:44:42Z
 build:shillinq:budget-known-costs	already done: built on development in #967; only the e2e run (not code) is left	session-20261116T173227-3f62e794	2026-11-16T17:44:55Z
 review:keepiq:1816:c999bfc2	GREEN keepiq#1816: phpunit 5337 OK, vitest 4680 OK, matches change specs	session-20261116T173246-2dce7fd2	2026-11-16T17:44:52Z
+build:filinq:generate-document-runs-directly-on-an-object	already done: code tasks on development since f2c547c; only live task 1.5 is left	session-20261116T173227-3f62e794	2026-11-16T17:45:41Z
 build:filinq:anonymisation-batch-output-folder-layout	already built: every code task ticked on development (ecccc66ac, 517095251); only live Newman/smoke tasks 11 and 13 remain, not code	session-20261116T174323-ba3ec1dc	2026-11-16T17:45:00Z
 merge:buildiq:1596:0a6a854e	unmeasured: static.developer.overheid.nl (node fetch in checker-floor cannot reach it; curl can); 1596 and 1673 reviewed APPROVE, tree green, nothing landed	session-20261116T173103-d3bed8f8	2026-11-16T17:45:52Z
+cover:filinq:7a9ef677:75721ab3	deferred: filinq has 49 open PRs	session-20261116T173808-386fe9e9	2026-11-16T17:45:58Z
+fix:learniq:1901:e9591096	failed: inherited: plain development c960466e8 already measures 3.98 against learniq's absolute floor 3.99; every learniq merge is RED on it until development is raised	session-20261116T171010-393e4bc2	2026-11-16T17:46:03Z
+cover:filinq:7a9ef677:e372e6ff	deferred: filinq has 49 open PRs	session-20261116T174323-ba3ec1dc	2026-11-16T17:45:58Z
 fix:decidiq:2178:a58bcd58	fixed icons, pushed d8c9d1623e; merge lock held by merge3, REVERIFY queued	session-20261116T173141-f87aaa9d	2026-11-16T17:46:08Z
 build:filinq:dossier-management-ui	deferred: filinq has 49 open PRs	session-20261116T171035-683856c3	2026-11-16T17:46:16Z
 cover:buildiq:70b3e29em3841:8ed5443b	deferred: buildiq has 56 open PRs	session-20261116T173308-9a80cd8d	2026-11-16T17:46:24Z
 build:filinq:signer-identity-rails	deferred: filinq has 49 open PRs	session-20261116T171035-683856c3	2026-11-16T17:46:23Z
+cover:filinq:7a9ef677:8ed5443b	deferred: filinq has 49 open PRs	session-20261116T173213-a5a52019	2026-11-16T17:46:41Z
+review:buildiq:1091:0a8185a0	GREEN: dev-dep bump, vitest 4719/4719 pass on merge with development	session-20261116T173240-b63ad758	2026-11-16T17:46:42Z
+fix:learniq:2166:5e708c03	failed: inherited: plain development measures 3.98 (range 3.98-4.01) below floor 3.99 too; the PR changes no property rating, nothing to fix on the branch	session-20261116T173256-6277a58c	2026-11-16T17:47:09Z
+cover:decidiq:a5f973bbm0262:81b1241f	deferred: decidiq has 52 open PRs	session-20261116T174323-ba3ec1dc	2026-11-16T17:47:00Z
+fix:hermiq:1308:fa7ea701	failed: dev-only phpstan bump; regen-sbom --check says sbom.cdx.json is current (855 components) after merging development, so the gate's 'lock changed without sbom.cdx.json' rule cannot be met honestly; needs a gate exemption for dev-only lock changes	session-20261116T173227-3f62e794	2026-11-16T17:47:45Z
+cover:buildiq:70b3e29em3841:d33a91b0	deferred: buildiq has 56 open PRs	session-20261116T173240-b63ad758	2026-11-16T17:47:49Z
+fix:learniq:2521:9e646ec1	failed: inherited: development drops spdxheaders 5->4 (stub without SPDX line, fix rides on #2555) and sits at 3.98 under the 3.99 absolute floor	session-20261116T171010-393e4bc2	2026-11-16T17:47:41Z
+cover:decidiq:a5f973bbm0262:98083bbf	deferred: decidiq has 52 open PRs	session-20261116T173254-f6972957	2026-11-16T17:47:34Z
+cover:decidiq:a5f973bbm0262:568ec52a	deferred: decidiq has 52 open PRs	session-20261116T173211-a3411be5	2026-11-16T17:47:56Z
+fix:filinq:2094:5c76485b	unmeasured: static.developer.overheid.nl (fixed and approved at ff0c7f80, REVERIFY queued)	session-20261116T170555-ecf14af5	2026-11-16T17:48:04Z
+cover:buildiq:70b3e29em3841:34f5c300	deferred: buildiq has 56 open PRs	session-20261116T173103-d3bed8f8	2026-11-16T17:48:48Z
+cover:decidiq:a5f973bbm0262:f545d745	deferred: decidiq has 52 open PRs	session-20261116T173211-a3411be5	2026-11-16T17:48:26Z
+cover:decidiq:a5f973bbm0262:60c2c265	deferred: decidiq has 52 open PRs	session-20261116T170555-ecf14af5	2026-11-16T17:48:35Z
+cover:decidiq:a5f973bbm0262:9d3a1784	deferred: decidiq has 52 open PRs	session-20261116T173254-f6972957	2026-11-16T17:48:30Z
+cover:decidiq:a5f973bbm0262:0f859653	deferred: decidiq has 52 open PRs	session-20261116T173254-f6972957	2026-11-16T17:49:05Z
+cover:integriq:92114ab0m6759:efa2a923	deferred: integriq has 70 open PRs	session-20261116T173254-f6972957	2026-11-16T17:49:19Z
+cover:integriq:92114ab0m6759:6daf52ad	deferred: integriq has 70 open PRs	session-20261116T173211-a3411be5	2026-11-16T17:49:40Z
+	deferred: buildiq has 56 open PRs	session-20261116T173103-d3bed8f8	2026-11-16T17:50:28Z
