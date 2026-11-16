@@ -15828,3 +15828,5 @@ fix:shillinq:3078:db907ca5	not landed: branch fixed to 3eccef84 (2 gate findings
 fix:pipelinq:2187:fd65c00e	failed: not fixable in the PR: phpmd is a dev dependency, regen-sbom.sh (--omit=dev) leaves sbom.cdx.json byte-identical, so the gate's 'lock changed without sbom' rule cannot be met; needs a gate exemption for dev-only lock changes	session-20261116T081618-2145ecb3	2026-11-16T08:37:18Z
 merge:pipelinq:3152:af64dd36	merge3 tree of 10 pipelinq PRs: merged=0 red=5 fail=0 skip=0; conflict 5, lint 0, moved 0; fix rows 5	merge3-20261113T213425-c36bcd5f	2026-11-16T08:37:54Z
 merge:pipelinq:2458:5ab3834c	merge3 tree of 10 pipelinq PRs: merged=0 red=5 fail=0 skip=0; conflict 5, lint 0, moved 0; fix rows 5	merge3-20261113T213425-c36bcd5f	2026-11-16T08:37:58Z
+merge:pipelinq:3092:4c81d9bd	merge3 tree of 10 pipelinq PRs: merged=0 red=5 fail=0 skip=0; conflict 5, lint 0, moved 0; fix rows 5	merge3-20261113T213425-c36bcd5f	2026-11-16T08:38:02Z
+merge:pipelinq:2187:43648dc7	merge3 tree of 10 pipelinq PRs: merged=0 red=5 fail=0 skip=0; conflict 5, lint 0, moved 0; fix rows 5	merge3-20261113T213425-c36bcd5f	2026-11-16T08:38:17Z
