@@ -8,7 +8,7 @@
 - [ ] Implement: Verify Side Effects with Mock Expectations
 - [ ] Implement: Test All Service Classes with Full Branch Coverage (~175 source files)
   - Progress (not complete): direct tests for `DependentValuePairCheck`, `RuleFlag`, `ValidationVerdict`, `Dmn\RuleMatch`, `DeploymentOrigin`, `Flow\Nodes\DecisionTablePlan`, `ShippedBaseline\LeafReset`, `AnnotatedProperties`, `Aggregation\JoinedColumnProjection`, `File\FolderAccessDenial`, `Integration\Providers\EmailListPaging` (37 tests, each file break-checked).
-  - Progress (not complete): `Notifications\NotificationDigestValidator`, `Mcp\Chat\RetrievedSource`, `Integration\PropertyReferenceValidationTrait`, `Files\File\ChunkMatchRun`, `Notifications\Controller\Support\QueryText`, `Import\MappingErrorRow`, `Archival\RetentionScanCriteria` (25 tests, each file break-checked).
+  - Progress (not complete): `Notifications\NotificationDigestValidator`, `Mcp\Chat\RetrievedSource`, `Integration\PropertyReferenceValidationTrait`, `Files\File\ChunkMatchRun`, `Notifications\Controller\Support\QueryText`, `Import\MappingErrorRow`, `Archival\RetentionScanCriteria`, `RegisterSlugProbe`, `ObjectSource\DefensiveGetters`, `Notifications\Controller\Support\NotificationRequestTrait` (38 tests, each file break-checked).
 - [ ] Implement: Test All Controller Classes with CRUD and Error Handling (~46 root + 12 Settings)
 - [ ] Implement: Test All Db Entities and Mapper Handlers with Full Field Coverage (~65 source files)
   - Progress (not complete): `MagicMapper\StatisticsPairFilter` (5 tests).
