@@ -3773,3 +3773,7 @@ buildiq	1249	0997f504b0eac297c5df04973323bef6894adb7e	RED	merge8	GATE RED sbom: 
 buildiq	1256	342dece0d678059a47b5743de2303db5fabfe837	RED	merge8	GATE RED sbom: composer.lock changed without sbom.cdx.json
 buildiq	1596	33a8b51d6ee0f8da44eece4449f064758c5bb69a	RED	merge8	GATE RED absolute floor: buildiq maintainability 3.90 after merge is below its floor 3.91
 buildiq	1669	af64f23a49cdaa33a32b421c3b38f7d7eb47a898	MERGED	merge8	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.91 holds at 3.91
+pipelinq	2187	fd65c00e86140ac77446493773e44549967c3fa3	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
+pipelinq	2557	74ee842a603c3a10940a0a193154d00418abe78a	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
+pipelinq	3083	c1e2e782afa038ade39fd007e8dc6523515461d7	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+pipelinq	3092	f8d049f34e69ece75f6b5915bae3db471efaee4e	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
