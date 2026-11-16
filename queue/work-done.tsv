@@ -16759,8 +16759,10 @@ build:pipelinq:pos-stock-moved-event:r2	already built: every code task ticked an
 fix:shillinq:2230:a06c8804	merged development in, sbom current, vitest inherited-only failure; new head e61ebeb7, REVERIFY queued (merge lock busy)	session-20261116T170601-1695d108	2026-11-16T17:13:17Z
 build:pipelinq:simple-ticket-page:r2	already built: every code task ticked and present on development; only the live check (3.1) remains	session-20261116T171010-393e4bc2	2026-11-16T17:13:30Z
 build:pipelinq:filter-menu-owner-and-street:r2	deferred: pipelinq has 50 open PRs	session-20261116T170138-65b3b637	2026-11-16T17:13:59Z
+build:pipelinq:contact-moments-keep-draft:r2	already done: code tasks ticked and on development; only Playwright 1.3 verify and live 1.6 left	session-20261116T165653-a1481a13	2026-11-16T17:14:07Z
 build:pipelinq:tickets-list-by-party:r2	deferred: pipelinq has 50 open PRs	session-20261116T170138-65b3b637	2026-11-16T17:14:06Z
 build:pipelinq:recurring-revenue-runrate-widget:r2	deferred: pipelinq has 50 open PRs	session-20261116T170138-65b3b637	2026-11-16T17:14:12Z
+build:pipelinq:questions-about-a-citizen-dossier:r2	already built: every code task is on development and ticked; only 6.1 (live) remains	session-20261116T171008-5daa9ed6	2026-11-16T17:14:18Z
 build:pipelinq:question-text-is-required-on-the-portal:r2	deferred: pipelinq has 50 open PRs	session-20261116T170138-65b3b637	2026-11-16T17:14:19Z
 build:pipelinq:a-contact-question-is-required-and-dated:r2	deferred: pipelinq has 50 open PRs	session-20261116T170138-65b3b637	2026-11-16T17:14:25Z
 fix:buildiq:1091:13bc446b	sbom regenerated, pushed 0a8185a0; not landed (merge gate cannot measure here); REVERIFY queued	session-20261116T164354-a7d53f16	2026-11-16T17:14:31Z
@@ -16771,3 +16773,7 @@ fix:opencatalogi:2696:08865a78	merged development in (clean), pushed a67460be2; 
 build:pipelinq:first-time-setup:r2	deferred: pipelinq has 50 open PRs	session-20261116T170138-65b3b637	2026-11-16T17:15:23Z
 build:pipelinq:marketing-block-editor:r2	deferred: pipelinq has 50 open PRs	session-20261116T170138-65b3b637	2026-11-16T17:15:29Z
 build:pipelinq:opt-out-before-send:r2	deferred: pipelinq has 50 open PRs	session-20261116T170138-65b3b637	2026-11-16T17:15:36Z
+build:pipelinq:only-the-drawn-pipelines:r2	already built: tasks 1.1-1.2 ticked and present on development; only the live check 1.3 remains	session-20261116T171010-393e4bc2	2026-11-16T17:16:08Z
+fix:shillinq:3078:c1655bb8	merged development in, new head 33420e1f; merge lock held elsewhere, REVERIFY queued	session-20261116T165247-ed439eb0	2026-11-16T17:16:05Z
+review:larpinq:1060:b45d1e9b	GREEN: units 1057 OK, vitest 639 OK	session-20261116T170555-ecf14af5	2026-11-16T17:16:25Z
+review:integriq:3638:3f3dacbb	GREEN: per change specs; 9592 tests, no new failures (5 inherited)	session-20261116T170557-1cef7e8d	2026-11-16T17:16:54Z
