@@ -16521,3 +16521,4 @@ fix:shillinq:1900:338f0839	merged development in clean, suite 12246 OK; new head
 fix:keepiq:1826:98fff903	fixed spec-coverage (6 methods tagged), merged development; pushed 07082bd9; REVERIFY queued	session-20261116T143136-ae6d04cb	2026-11-16T15:00:06Z
 fix:keepiq:1829:d00cfb44	failed: composer.lock conflict because development already merged the phpseclib 4.0.3 bump separately; needs the bundle's lock regenerated from current development (deps-bundle lane), not a hand merge	session-20261116T143136-ae6d04cb	2026-11-16T15:00:59Z
 merge:versioniq:497:ac489d35	unmeasured: static.developer.overheid.nl (and api.osv.dev) refused by this session's proxy; 711 RED floor (unit_complexity/interfacing), 497/501/717 APPROVE but SKIP; 500/502/504/505/506 CONFLICT	session-20261116T144734-1dc150d8	2026-11-16T15:01:20Z
+fix:versioniq:508:4df37973	obsolete: plugin-vue 6.0.9 already on development via #739; closed	session-20261116T144734-1dc150d8	2026-11-16T15:01:57Z
