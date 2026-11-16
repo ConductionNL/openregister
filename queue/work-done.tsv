@@ -18459,3 +18459,4 @@ verify:learniq:2497:761f1e58	CONFLICT #2497	session-20261116T232519-f84cca9a	202
 verify:larpinq:1049:27909f21	CONFLICT: l10n catalogues conflict with development	session-20261116T233627-44605965	2026-11-16T23:53:12Z
 verify:launchpad:1217:5c919618	CONFLICT #1217 (TileUpdaterTest)	session-20261116T233901-7abe1a78	2026-11-16T23:53:22Z
 verify:learniq:2519:1030cfd4	CONFLICT #2519	session-20261116T232519-f84cca9a	2026-11-16T23:53:33Z
+verify:learniq:2534:1f1adc23	CONFLICT #2534 with development	session-20261116T232948-9d2e8ce2	2026-11-16T23:53:42Z
