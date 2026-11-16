@@ -18200,6 +18200,7 @@ fix:shillinq:1900:3f647361	conflict resolved, new head 65225988b; merge lock hel
 cover:decidiq:a5f973bbm56fe:be0dcca9	deferred: decidiq has 45 open PRs	session-20261116T222655-da719429	2026-11-16T22:46:48Z
 cover:decidiq:a5f973bbm56fe:34f5c300	deferred: decidiq has 45 open PRs	session-20261116T221523-34c05d70	2026-11-16T22:47:09Z
 cover:decidiq:a5f973bbm56fe:e372e6ff	deferred: decidiq has 45 open PRs	session-20261116T222655-da719429	2026-11-16T22:47:08Z
+cover:decidiq:a5f973bbm56fe:7556941f	deferred: decidiq has 45 open PRs	session-20261116T224621-39328066	2026-11-16T22:47:25Z
 cover:decidiq:a5f973bbm56fe:9d3a1784	deferred: decidiq has 45 open PRs	session-20261116T222655-da719429	2026-11-16T22:47:20Z
 cover:decidiq:a5f973bbm56fe:f545d745	deferred: decidiq has 45 open PRs	session-20261116T221523-34c05d70	2026-11-16T22:47:33Z
 review:shillinq:2997:b01baecf	GREEN: 12494 tests 0 failures, vitest 11/11, phpstan/eslint clean	session-20261116T221549-588bbbce	2026-11-16T22:47:35Z
@@ -18213,3 +18214,4 @@ review:pipelinq:3602:3f5ffded	GREEN: tests only, 9218 unit tests pass on PR+deve
 cover:keepiq:c967a31fmaddd:dfaef732	no change: lib/Notification 415/417; the 2 uncovered lines are the no-renderer fallbacks, unreachable since every mapped subject renders (pinned by an existing test)	session-20261116T220905-333eed09	2026-11-16T22:48:58Z
 cover:pipelinq:7f9dc8e6m3dbb:11fc5f4e	already covered: lib/Service/Document/ 121/123 lines locally (98%); the 2 left are tempnam/ZipArchive::open failure branches; no PR	session-20261116T224529-30de497c	2026-11-16T22:49:01Z
 cover:launchpad:fb10c50fm88bd:34f5c300	deferred: launchpad has 45 open PRs	session-20261116T224647-cce07511	2026-11-16T22:49:34Z
+cover:pipelinq:7f9dc8e6m3dbb:f3231970	deferred: pipelinq has 43 open PRs	session-20261116T224625-4fd1a21f	2026-11-16T22:49:40Z
