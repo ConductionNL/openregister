@@ -1,24 +1,24 @@
 {
  "app": "learniq",
- "commit": "6daee8f0653ae5728dd742b532365f3002c2ca2f",
- "measured_at": "2026-11-13T19:21:57Z",
+ "commit": "386ba62c85aba2c2cea755f5fdffb1f1ad03bb9c",
+ "measured_at": "2026-11-16T19:45:50Z",
  "php": {
   "tool": "pcov",
-  "pct": 95.57,
-  "statements": 37660,
-  "covered": 35991,
+  "pct": 95.51,
+  "statements": 40225,
+  "covered": 38418,
   "dirs": {
    "lib/AppInfo/": [
     26,
     26
    ],
    "lib/AppInfo/Registrar/": [
-    511,
-    458
+    42,
+    0
    ],
    "lib/BackgroundJob/": [
-    740,
-    726
+    810,
+    793
    ],
    "lib/Bpv/": [
     0,
@@ -29,8 +29,8 @@
     235
    ],
    "lib/Controller/": [
-    3682,
-    3499
+    3846,
+    3661
    ],
    "lib/Event/": [
     10,
@@ -41,20 +41,32 @@
     18
    ],
    "lib/Grading/": [
-    235,
-    227
+    275,
+    269
+   ],
+   "lib/Kernel/": [
+    0,
+    0
+   ],
+   "lib/Kernel/Contracts/": [
+    0,
+    0
    ],
    "lib/Lifecycle/": [
-    2751,
-    2628
+    2816,
+    2688
    ],
    "lib/Lifecycle/Action/": [
-    146,
-    138
+    153,
+    153
    ],
    "lib/Listener/": [
-    6090,
-    5806
+    6506,
+    6208
+   ],
+   "lib/Listener/Registrar/": [
+    493,
+    482
    ],
    "lib/Mcp/": [
     1,
@@ -69,16 +81,16 @@
     0
    ],
    "lib/Portal/": [
-    2957,
-    2933
+    3057,
+    3031
    ],
    "lib/Proctoring/": [
-    76,
+    78,
     76
    ],
    "lib/Repair/": [
-    1565,
-    1522
+    1576,
+    1533
    ],
    "lib/Repair/Support/": [
     52,
@@ -89,76 +101,84 @@
     0
    ],
    "lib/Service/": [
-    12540,
-    11804
+    13086,
+    12248
    ],
    "lib/Service/Accessibility/": [
     141,
     136
    ],
    "lib/Service/Attendance/": [
-    694,
-    666
+    872,
+    839
    ],
    "lib/Service/Calendar/": [
     13,
     13
    ],
    "lib/Service/Catalogue/": [
-    222,
-    211
+    238,
+    234
    ],
    "lib/Service/CheckIn/": [
-    157,
-    149
+    165,
+    161
    ],
    "lib/Service/Course/": [
-    237,
-    229
+    244,
+    236
    ],
    "lib/Service/CoursePackage/": [
-    842,
-    836
+    1041,
+    1021
    ],
    "lib/Service/CourseStore/": [
     156,
     148
    ],
    "lib/Service/Enrolment/": [
-    44,
-    44
+    43,
+    43
    ],
    "lib/Service/Grading/": [
     73,
     73
    ],
    "lib/Service/LessonOnboarding/": [
-    726,
-    707
+    729,
+    710
    ],
    "lib/Service/OpenMaterial/": [
-    224,
-    213
+    227,
+    221
    ],
    "lib/Service/Portal/": [
-    1390,
-    1325
+    1558,
+    1490
    ],
    "lib/Service/Programme/": [
-    59,
-    59
+    64,
+    64
+   ],
+   "lib/Service/Pupil/": [
+    298,
+    294
+   ],
+   "lib/Service/SchoolActivity/": [
+    202,
+    188
    ],
    "lib/Service/Settings/": [
     11,
     11
    ],
    "lib/Service/Signing/": [
-    136,
-    133
+    151,
+    151
    ],
    "lib/Service/WorkGroup/": [
-    111,
-    110
+    120,
+    120
    ],
    "lib/Settings/": [
     0,
@@ -169,12 +189,12 @@
     13
    ],
    "lib/Support/": [
-    75,
-    71
+    81,
+    81
    ],
    "lib/Timetabling/": [
-    529,
-    514
+    533,
+    516
    ],
    "lib/Timetabling/Source/": [
     147,
@@ -183,13 +203,13 @@
   }
  },
  "js": {
-  "pct": 99.79,
-  "statements": 13690,
-  "covered": 13661,
+  "pct": 99.8,
+  "statements": 14179,
+  "covered": 14150,
   "dirs": {
    "src/": [
-    1147,
-    1147
+    1166,
+    1166
    ],
    "src/api/": [
     233,
@@ -200,8 +220,8 @@
     908
    ],
    "src/services/": [
-    505,
-    502
+    626,
+    623
    ],
    "src/store/": [
     26,
@@ -212,8 +232,8 @@
     196
    ],
    "src/utils/": [
-    10675,
-    10675
+    11024,
+    11024
    ]
   }
  }
