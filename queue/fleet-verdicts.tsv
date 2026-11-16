@@ -13705,3 +13705,6 @@ pipelinq	3883	e27a1a725e4225bb7c5c07dc56793ca1bf3f207e	GREEN	worker-56	unit 8987
 shillinq	3078	db907ca5ddb5588d0e74b60c458ed9d98223ac83	GREEN	worker-34:review	Implements bookings-messages-and-embedding per its specs (mailer channel, SMS job, widget CORS per key, repeat modal); key guard unchanged. Merged with development: phpunit 12272 OK, phpstan clean, vitest 3055 pass + 1 inherited fail (dunningNextRun, red on development)
 stackiq	1297	f6f898a1ce156bb7902c6cbdc55ca55df63daf3a	GREEN	worker-24:review	dev-dep bump phpmd 2.15->3.0 (composer.json/lock/sbom); phpunit 3718, 1 inherited failure (CmdbImportProfileOverviewGoldenTest), 0 new; composer phpmd red on development already (102 lines) and 92 lines with 3.0 (fewer, positional-args deprecation notice only)
 launchpad	753	d16aabc36feeed32b92d557a943abd47e48c054a	RED	worker-12:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+launchpad	758	96b9325253ca72dc817735695e63364ebf7a5a45	CONFLICT	worker-12:merge	merges clean on development alone; files: package-lock.json 
+launchpad	760	77add31235ef88f837a3f5bf089fdf18003862b4	CONFLICT	worker-12:merge	merges clean on development alone; files: package-lock.json 
+launchpad	1223	65b428f7d63ef7022e4c3748dcb028f109cd18d7	REVERIFY	worker-12:merge	verdict sha is not the head: head is 6e8cfb5e9629971bda71e39160afc383308598d0
