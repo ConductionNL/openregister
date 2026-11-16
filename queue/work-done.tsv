@@ -17693,6 +17693,7 @@ build4:openregister:rules-compose-read-transitions-and-time:c6	partial: PR #1052
 fix:hermiq:1750:a6a7d9f3	fixed floor (unit_complexity restored, suite OK 5414); pushed a0e29d18, REVERIFY queued	session-20261116T201953-a718bf5e	2026-11-16T20:35:08Z
 review:hermiq:1795:4db38b5f	stale	session-20261116T202154-fbc59c50	2026-11-16T20:35:23Z
 cover:pipelinq:7f9dc8e6m3dbb:8f8dca30	added 5 tests (lib/Service/Export edge branches) to open cover PR #3602 (app over PR budget, 44 open); suite 9151/0 failures	session-20261116T202142-f327703a	2026-11-16T20:35:33Z
+cover:openregister:7350e3efm9dc5:ad523ef3	added to PR #10587 (open-PR budget): 14 risky tests fixed, 20 new tests (AuditSink, TokenResolver, OfficialsSource); dir suites green, Edepot 14 errors inherited	session-20261116T181447-534b3ff8	2026-11-16T20:36:21Z
 fix:keepiq:1826:f651073d	fixed floor: merged development, interfacing 3.33->3.32 (PASS), refactor to value objects; suite 5499 OK; new head 18633225; REVERIFY (lock held elsewhere)	session-20261116T200543-e8f76f14	2026-11-16T20:35:45Z
 review:opencatalogi:2696:cdc6289d	GREEN: no new failures; merge gate floors RED noted	session-20261116T201644-3ef8cda3	2026-11-16T20:36:10Z
 cover:keepiq:c967a31fm902f:34763eb4	already done: lib/Middleware/*.php 100% lines (224/224), 71 tests; earlier -1/-2 PRs merged; no PR	session-20261116T200543-e8f76f14	2026-11-16T20:36:26Z
@@ -17711,4 +17712,7 @@ lane:arch5:shillinq:next-shillinq-r3	PR #3124 opened (4.12-4.16 -> 4.13-4.18), G
 verify:learniq:2567:908b4487	GREEN #2567 (6902 tests, 0 new failures)	session-20261116T200545-32ab46ec	2026-11-16T20:39:14Z
 cover:keepiq:c967a31fm902f:05630945	already done: lib/Middleware/Support 54/59 lines; the 5 left are loop bodies over the empty WITHOUT_SUCCESSOR/RENAMED constants, unreachable from tests; no PR	session-20261116T200543-e8f76f14	2026-11-16T20:39:32Z
 cover:pipelinq:7f9dc8e6m3dbb:a13d1ab7	added 3 tests to open PR #3602 (open-PR count over 40); lib/Service/WebForm 476/479 -> 100% lines; suite 9153 -> 9156 tests, no failures	session-20261116T202128-6be5fc02	2026-11-16T20:39:52Z
+cover:buildiq:70b3e29em9bad:baa54041	deferred: buildiq has 51 open PRs	session-20261116T200545-32ab46ec	2026-11-16T20:39:50Z
 verify:dossiq:6612:e228317a	6612 GREEN; 6613 skipped (head moved to 073611ae)	session-20261116T203542-d21e7ade	2026-11-16T20:40:02Z
+cover:openregister:7350e3efm9dc5:ad523ef3	added 5 tests (SettingsDraftGate +4, TokenResolver +1) to open cover PR #10587 at ffe054ad; OfficialsSource/TokenResolver failure paths were already pushed there by another worker; openregister over PR budget (188)	session-20261116T200628-a3f8f9fc	2026-11-16T20:40:15Z
+fix:hermiq:1754:3e57e4dc	fixed review blockers; pushed 90999c3d, REVERIFY queued	session-20261116T201953-a718bf5e	2026-11-16T20:40:35Z
