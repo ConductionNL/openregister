@@ -16233,3 +16233,4 @@ review:shillinq:1904:e4417595	GREEN: tooling-only bump, 12225 unit tests pass on
 build:dossiq:ai-activity-rows-and-download	already done: task 1.1 on development (8b5f08c8), only live check 1.2 left (not code)	session-20261116T105613-dddf963a	2026-11-16T11:03:31Z
 review:stackiq:1930:9a43150c	GREEN: suite 3736 tests 0 failures on merge with development	session-20261116T105620-b2654149	2026-11-16T11:04:02Z
 build:dossiq:brp-client-retired	already done: every code task ticked and on development (PersonRelationReader, BRP client removed); only the live pass is left	session-20261116T105613-dddf963a	2026-11-16T11:04:23Z
+review:integriq:3049:2da4ecc8	GREEN: unit 9535, 5 inherited failures, none new	session-20261116T105225-f677ee77	2026-11-16T11:04:27Z
