@@ -15398,3 +15398,4 @@ review:decidiq:1470:d4e9a56b	GREEN: router bump, vitest 2847 pass, 0 fail	sessio
 review:decidiq:1472:92d14428	GREEN: sass bump, vitest 2847 pass, 0 fail	session-20261116T061736-e271ba12	2026-11-16T06:20:19Z
 review:decidiq:1465:c16cd40a	GREEN: vitest 2847 passed on merge with development	session-20261116T062109-81fc252e	2026-11-16T06:22:35Z
 verify:decidiq:2222:f6fffea1	RED: vitest connectionRegistry.spec.js fails to load with nextcloud-vue 2.181 (window undefined)	session-20261116T061736-e271ba12	2026-11-16T06:22:46Z
+review:shillinq:2099:6c67d88f	GREEN: UI refactor to fields section, token-preserve kept; vitest 1 inherited red	session-20261116T062050-3a7e109c	2026-11-16T06:22:52Z
