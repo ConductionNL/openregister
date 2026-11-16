@@ -17474,3 +17474,4 @@ cover:learniq:e6498ddd:80b3d955	deferred: learniq has 60 open PRs	session-202611
 cover:learniq:e6498ddd:98083bbf	deferred: learniq has 60 open PRs	session-20261116T192127-f26e2e56	2026-11-16T19:45:11Z
 cover:learniq:e6498ddd:jsc89f0f80	deferred: learniq has 60 open PRs	session-20261116T194405-fc188e9a	2026-11-16T19:45:17Z
 lane:arch5:shillinq:next-shillinq-r1	PR #3118 opened (estimate 4.03-4.06 -> 4.08-4.12), verified green; merge lock held elsewhere, GREEN verdict queued	session-20261116T192325-bb4c31dd	2026-11-16T19:45:40Z
+measure:learniq:20261116h18	php 95.51% js 99.8% at 386ba62 (suite: 6868 tests, 1 failure inherited)	session-20261116T192824-ee4fb14b	2026-11-16T19:46:05Z
