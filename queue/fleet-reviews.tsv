@@ -30,3 +30,4 @@ humaniq	661	f523f286b290dfce227eab0ee9bb36a5418b4a2b	APPROVE	worker-53	Quick; no
 humaniq	662	d7499aecffd3be7525553af3896068e429d61751	APPROVE	worker-53	Quick; no blockers; phpmd 3 with baseline rules renamed to phpmd 3 class names
 humaniq	685	c73546cde14f4c4a1b1f723d1c23c6892615eddd	APPROVE	worker-53	Quick; no blockers; vue-material-design-icons minor bump with sbom
 humaniq	686	fe1cbc0ae582ec29fbb26fc246d74dbf397480b5	APPROVE	worker-53	Quick; no blockers; jsdom patch bump with sbom
+versioniq	503	2d7f74a1bcc195a9c6630723fd089cfb3b9fff77	APPROVE	worker-50	Quick; no blockers; @nextcloud/vue 9.11.0->9.13.1 minor bump, lockfile only, unit suite on tree adds no failures
