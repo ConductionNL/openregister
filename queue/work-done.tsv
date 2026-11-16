@@ -17022,3 +17022,4 @@ fix:opencatalogi:2655:31c2efe2	conflicts resolved, touched tests green; REVERIFY
 fix:versioniq:725:bd0db7f7	resolved conflict, pushed b54e382d; REVERIFY queued (end-to-end skipped: cm_tree prep cannot build versioniq vendor phpunit)	session-20261116T173240-b63ad758	2026-11-16T18:01:19Z
 review:opencatalogi:2686:75f5b243	GREEN: no new failures (5855 tests, 80 inherited), jest 41 pass	session-20261116T175012-b6f120c8	2026-11-16T18:01:59Z
 merge:portaliq:1767:595cdc26	unmeasured: static.developer.overheid.nl	session-20261116T173306-d04a65dc	2026-11-16T18:01:37Z
+review:shillinq:3088:e27bd632	GREEN: 12250 tests OK on PR merged with development	session-20261116T173310-7d288d7d	2026-11-16T18:02:15Z
