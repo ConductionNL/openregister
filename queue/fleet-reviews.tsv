@@ -182,3 +182,4 @@ dossiq	4887	5b3dec5ca972c54ea21728550536d15500e0eb20	REQUEST_CHANGES	worker-30	S
 shillinq	1904	cc11db135048c9dc26794b32c82a3d2b674a6ad9	APPROVE	worker-33	Quick; no blockers; dev-only phpmd 2->3 major bump with lock and sbom, phpmd ruleset compatibility left to the merge gate
 shillinq	1908	ca21609bb71603fe45c7d58dd33216df70aee655	APPROVE	worker-33	Quick; no blockers; dev-only @vue/test-utils patch bump with sbom
 shillinq	1912	a7d98b523c8c9952e0731ec9f7dd99c883030cc8	APPROVE	worker-33	Quick; no blockers; dev-only stylelint minor bump with sbom
+shillinq	1958	55f82d52277eede6df1c34287254996742aff7c6	APPROVE	worker-33	Thorough; no blockers; scenario overlay is read-only and scoped to the guarded administration (other ids 404), task field copied on save with fail-soft lookup; concerns: account lookup by number is not administration-scoped and leaves the shared object service scope set (existing pattern), Playwrigh
