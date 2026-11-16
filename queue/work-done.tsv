@@ -15411,3 +15411,4 @@ fix:shillinq:2070:fbb82225	fixed: save migrated to ObjectSaveOptions, tests gree
 review:decidiq:1767:ef20753c	GREEN: ocp bump, 4624 unit tests pass	session-20261116T062121-edb2d73b	2026-11-16T06:25:13Z
 review:decidiq:1474:08a18331	GREEN: vitest 2847 passed, eslint 0 errors	session-20261116T062109-81fc252e	2026-11-16T06:25:20Z
 review:filinq:2121:f6845146	GREEN: unit 6825 OK, vitest manifest 5/5; matches change specs	session-20261116T062050-7d5ce0d6	2026-11-16T06:25:31Z
+review:decidiq:2178:f3f4328f	BLOCK: tests green, 5 eslint errors in SpeakingRequestDeadlineCell.vue	session-20261116T061736-e271ba12	2026-11-16T06:26:00Z
