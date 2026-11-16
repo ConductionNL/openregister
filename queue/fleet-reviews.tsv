@@ -336,3 +336,4 @@ stackiq	1992	6d5c12d7da6c42f6e7984bf3e02c8fd1fb2de00b	APPROVE	worker-35	Quick; n
 stackiq	1990	e0356aabe966bb4bc3cdc58fd21da3a06d63f078	APPROVE	worker-35	Standard; no blockers; two Kernel contracts bound by alias, callers typed to them, factory unchanged, behaviour preserved; gate failures inherited
 stackiq	1991	31e2224c5b0f2e1105b1556e2ef7efc3d06f9474	APPROVE	worker-35	Standard; no blockers; registeredBy step moved verbatim into one support class with tests, group list and role group defaults deduplicated, behaviour preserved; gate failures inherited
 decidiq	1468	7dc751fb076903e2e43ec5e7338bc901791d14a5	APPROVE	worker-55	Quick; no blockers; dependency bump with lockfile and regenerated sbom only, tree suite green
+hermiq	1808	d92c1c64c29a1a3d559e0d6e3f10da062039597d	APPROVE	worker-38	Quick; no blockers; dependency bundle (composer minor/patch, eslint/sass/stylelint/playwright dev), same composer package set, sbom regenerated, tree 5291 tests OK
