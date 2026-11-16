@@ -16957,3 +16957,4 @@ fix:integriq:3051:5649956b	fixed spdx floor: SPDX headers on 3 new stubs, pushed
 cover:buildiq:70b3e29em3841:f545d745	deferred: buildiq has 56 open PRs	session-20261116T173103-d3bed8f8	2026-11-16T17:50:41Z
 cover:buildiq:70b3e29em3841:1b97f731	deferred: buildiq has 56 open PRs	session-20261116T173103-d3bed8f8	2026-11-16T17:50:51Z
 fix:decidiq:2170:8002c6de	failed: pushed 8ede76a378 (ObjectRows helper, listener clones removed, ratchet 0 dup fragments; RoomSystem tests 37 OK) but absolute floor stays RED: plain development measures 3.77 with the cloud estimator (floor 3.78), PR 3.76 via component independence 2.47->2.42; needs a floor decision or a wider refactor	session-20261116T173141-f87aaa9d	2026-11-16T17:51:23Z
+fix:integriq:3049:f122cee2	development merged in, touched tests green; REVERIFY at 129bee96 (merge lock held elsewhere)	session-20261116T173254-f6972957	2026-11-16T17:51:25Z
