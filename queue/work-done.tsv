@@ -17116,6 +17116,7 @@ cover:decidiq:a5f973bbm0262:c76ae287	deferred: decidiq has 53 open PRs	session-2
 build:decidiq:bodies-director-remuneration	already built: tasks 1-3 implemented on development (117-mandate-remuneration.json, MandateRemunerationRegisterTest, manifest widgets); only live Newman/Playwright halves left	session-20261116T182514-f3633b18	2026-11-16T18:27:02Z
 cover:stackiq:9ac19b3amdf03:007dc1d0	deferred: stackiq has 41 open PRs	session-20261116T181151-999832c6	2026-11-16T18:26:53Z
 review:larpinq:1050:d2d372bb	GREEN: per spec; phpunit 1016 OK, vitest 608 passed	session-20261116T174053-4a550291	2026-11-16T18:26:59Z
+cover:dossiq:069ee2d6madb6:d2a82d9f	pushed 2 tests to #6203 (dossiq at 41 open PRs); lib/Service/Termijn 99.7% (was measured 92.85), suite 18359 tests, 19 failures = baseline	session-20261116T181848-3b93f553	2026-11-16T18:27:33Z
 build:decidiq:participation-citizen-advisory-vote-on-motions	already done: only live/e2e tasks left (2)	session-20261116T172806-3ef5ead7	2026-11-16T18:27:11Z
 cover:integriq:92114ab0m1db0:jsf3772e2d	deferred: integriq has 70 open PRs	session-20261116T174053-4a550291	2026-11-16T18:27:36Z
 cover:buildiq:70b3e29em3841:f91e7417	deferred: buildiq has 56 open PRs	session-20261116T181603-6d014baf	2026-11-16T18:27:22Z
