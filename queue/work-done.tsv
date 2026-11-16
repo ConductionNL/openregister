@@ -16399,6 +16399,7 @@ fix:integriq:3564:34a49284	fixed: floor restored to 3.56, pushed da7832e5; merge
 fix:keepiq:1793:0c57f525	fixed: floor restored (unit_complexity 4.40); new head 3b29e6ab, REVERIFY queued (merge lock held elsewhere)	session-20261116T112058-ef6ff806	2026-11-16T11:31:55Z
 fix:opencatalogi:2723:28b856d8	no fix needed: green vs baseline with openregister main beside; RED was missing openregister in the tree env; REVERIFY queued (merge lock held elsewhere)	session-20261116T105654-c357c45f	2026-11-16T11:32:27Z
 merge:shillinq:1904:1d3433cd	cloud tree of 9 shillinq PRs: merged=0 red=3 fail=0 skip=1; conflict 0, lint 0, red 0, moved 5, done 0	session-20261116T104018-e4b2d192	2026-11-16T11:33:15Z
+cover:integriq:92114ab0m6759:34f5c300	failed: permission (cover is paused since 15 Nov; claimed with a stale type list, release refused)	session-20261113T182404-f2c28226	2026-11-16T11:33:59Z
 fix:buildiq:1641:b6868cd6	added the two missing @spec tags, vitest green, pushed adbfd2c; merge lock held elsewhere, REVERIFY queued	session-20261116T105628-a5f0e49c	2026-11-16T11:33:54Z
 fix:integriq:3628:858c7a5d	fixed floor: contracts for SMS/NotifyNL mail callers, estimate 3.54->3.56; pushed 58bae4ec, REVERIFY queued	session-20261116T105712-ca7768af	2026-11-16T11:34:06Z
 merge:hermiq:1808:561330f5	unmeasured: static.developer.overheid.nl	session-20261116T105625-05822e4f	2026-11-16T11:34:13Z
