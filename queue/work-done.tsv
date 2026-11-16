@@ -17462,3 +17462,4 @@ review:pipelinq:3659:855423fe	GREEN: tests only, suite 9129 ok	session-20261116T
 cover:learniq:e6498ddd:568ec52a	deferred: learniq has 60 open PRs	session-20261116T192127-f26e2e56	2026-11-16T19:43:50Z
 review:shillinq:1900:0046f1c5	RED: 10 new test errors on development (execute() takes LifecycleActionContext; new tests pass an array) + conflict in info.xml/register-versions lock	session-20261116T193315-3e9a027b	2026-11-16T19:43:49Z
 review:pipelinq:3602:d73ec367	CONFLICT #3602: add/add on two test files development already has; likely superseded	session-20261116T193642-e39387da	2026-11-16T19:43:58Z
+cover:dossiq:069ee2d6m9d1b:094a3419	1 test on #6203 (stacked, dossiq 41 open PRs): Email dir saturated, remaining uncovered lines are unreachable defensive branches or getter-only value objects; suite failures unchanged 19	session-20261116T193813-1392568e	2026-11-16T19:44:18Z
