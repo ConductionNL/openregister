@@ -15498,5 +15498,6 @@ stackiq	2000	7cf40a444328d854821fd3b11378a970f51fcff8	GREEN	worker-35	tree of 6:
 stackiq	2001	b444c6f0684e4e7448b9357336b1ec84a518ec52	GREEN	worker-35	tree of 6: 3901 tests, baseline 3822 with 0 failures, new failures 0; tests only
 stackiq	2002	ff096b820beb42309602b3ca2265cb01134b46ad	GREEN	worker-35	tree of 6: 3901 tests, baseline 3822 with 0 failures, new failures 0; tests only
 stackiq	2003	b30706bd7f0b6b085b38494b688b8ef27372d92b	GREEN	worker-35	tree of 6: 3901 tests, baseline 3822 with 0 failures, new failures 0; tests only
+integriq	3679	b2e512040dc2d2b309be90cae059398e9c3c7674	GREEN	worker-15	one-PR tree: 9597 tests, baseline 2 errors 3 failures, new failures 0; phpstan 0; phpcs/phpmd/no-admin-idor same as development; includes r1
 stackiq	2004	3abacc55decaf583bc9497566ae9c6da6f5fba99	GREEN	worker-35	tree of 6: 3901 tests, baseline 3822 with 0 failures, new failures 0; tests only
 stackiq	2005	d037535241d8a2bd88bf460c043dd0adb24ea646	GREEN	worker-35	tree of 6: 3901 tests, baseline 3822 with 0 failures, new failures 0; tests only
