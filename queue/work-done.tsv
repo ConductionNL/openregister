@@ -16886,3 +16886,4 @@ review:shillinq:3078:33420e1f	GREEN: unit 12278 tests 0 failures, vitest 9/9, es
 build:portaliq:write-record-names-the-mandate	already done: every code task ticked on development; open tasks are live checks only, left	session-20261116T170823-40772b73	2026-11-16T17:40:55Z
 build:portaliq:staff-revoke-one-session	already done: T01,T02 on development since #1647; only T03 (live check) left	session-20261116T173306-f68895a7	2026-11-16T17:41:26Z
 fix:learniq:2507:82c09d5c	unmeasured: static.developer.overheid.nl (fixed interfacing floor + SPDX stub header; new head f29e84b71d, APPROVE recorded, REVERIFY queued)	session-20261116T171010-393e4bc2	2026-11-16T17:41:23Z
+build:portaliq:site-dates-in-content-language	already done: every code task ticked, built in #1374; only the live check (task 4) is left	session-20261116T173713-4d98e280	2026-11-16T17:41:57Z
