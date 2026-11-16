@@ -13802,3 +13802,4 @@ stackiq	1435	81fb6bd471562d78ea02224fdc7b0574cc6a9082	GREEN	worker-34:review	Sea
 planninq	910	8ffad303a3ef8d12d0c4ead400a9600042839f92	BLOCK	worker-22:review	sbom: composer.lock changed without sbom.cdx.json (run bin/regen-sbom.sh); otherwise fine: phpmd 3.0.0 runs with phpmd.xml (rule mix shifts: MissingImport 2->5, CouplingBetweenObjects 3->4, ShortVariable/ExcessiveParameterList gone), unit 1222 tests same as baseline, no new failures
 versioniq	500	890378b335a6437a175c190f8627fdc91ddc4733	RED	worker-50:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 versioniq	503	2d7f74a1bcc195a9c6630723fd089cfb3b9fff77	RED	worker-50:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+versioniq	709	fa10e6b8bcb41285c242a55b95e57317cc6e0c5b	CONFLICT	worker-50:merge	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Service/AutoUpdate/AutoUpdatePlanner.php 
