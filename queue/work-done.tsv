@@ -15663,3 +15663,4 @@ merge:learniq:2549:3521fac6	cloud tree of 1 learniq PRs: merged=0 red=1 fail=0 s
 merge:larpinq:1065:1b4e8491	failed: cloud merge gate cannot measure (adrvalidator: static.developer.overheid.nl blocked by the cloud network; secretscanning: gitleaks not installed); 306 cloud SKIP rows with the same cause	session-20261116T071508-90e506e7	2026-11-16T07:25:30Z
 merge:decidiq:1691:8ce4b4d3	cloud tree of 6 decidiq PRs: merged=0 red=0 fail=0 skip=3; conflict 2, lint 0, red 0, moved 0, done 1	session-20261116T070226-5d062725	2026-11-16T07:26:47Z
 merge:planninq:871:76fb554b	cloud tree of 4 planninq PRs: merged=0 red=3 fail=0 skip=1; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T064118-a5aff8df	2026-11-16T07:26:54Z
+merge:filinq:2094:08cb8d5a	cloud tree of 5 filinq PRs: merged=0 red=0 fail=0 skip=1; conflict 4, lint 0, red 0, moved 0, done 0	session-20261116T065640-54a747b9	2026-11-16T07:27:32Z
