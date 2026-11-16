@@ -17776,6 +17776,7 @@ merge:versioniq:691:2c31a00d	cloud tree of 1 versioniq PRs: none; conflict 1, li
 cover:keepiq:c967a31fm902f:34f5c300	PR #1862: 18 tests over 5 services + metadata fix for 19 risky tests; Service/*.php 90.29->91.29%, app 94.60->95.13%; suite 5420, 0 failures	session-20261116T200543-e8f76f14	2026-11-16T20:57:20Z
 review:filinq:2072:68c796a1	stale	session-20261116T205635-1c5a7977	2026-11-16T20:57:27Z
 review:shillinq:2997:bc640379	GREEN (conflicts with development: info.xml, l10n, lock fixture)	session-20261116T205210-7a1fa9ff	2026-11-16T20:57:33Z
+cover:decidiq:a5f973bbm9cda:d39f9857	deferred: decidiq has 45 open PRs	session-20261116T205635-1c5a7977	2026-11-16T20:58:00Z
 cover:pipelinq:7f9dc8e6m3dbb:59b6b07f	already covered: lib/Service/Cti/Adapter/ measures 100% lines (283/283) with pcov on development 6d09711; no tests needed	session-20261116T205604-8f53bc7b	2026-11-16T20:57:55Z
 review:learniq:2521:70435b29	RED: EmployerBookingFactsTest::testTheSeededBookingsAgreeWithTheServer (seed bookings 7 vs 4); 1 inherited failure	session-20261116T205351-e92d06a8	2026-11-16T20:57:57Z
 fix:buildiq:1672:23675f9b	floor restored (p-1 3.9067), pushed 4980cad7; REVERIFY queued	session-20261116T202154-fbc59c50	2026-11-16T20:58:15Z
