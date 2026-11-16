@@ -18268,3 +18268,4 @@ review:stackiq:1973:fe9e8676	already merged at fe9e8676 (reviewed in the fix tas
 merge:stackiq:1941:3f343149	cloud tree of 1 stackiq PRs: none; conflict 1, lint 0, red 0, moved 0, done 0	session-20261116T230245-c73891ff	2026-11-16T23:04:34Z
 review:shillinq:1900:65225988	GREEN: reverse-charge pair per task 1.2; unit 12450/0 failures on merge with development (l10n/phpmd conflict needs resolving)	session-20261116T225839-a25271aa	2026-11-16T23:05:31Z
 review:openregister:10599:088c26fd	APPROVE: vocabulary gains columns/totals/addFrom modifiers; Architecture/Rules/Controller/Contract/Schemas green merged with main	session-20261116T222109-41a45b55	2026-11-16T23:06:01Z
+merge:buildiq:1608:977b9dff	cloud tree of 1 buildiq PRs: merged=0 red=0 fail=0 skip=1; REQUEST_CHANGES: code-write rule only on saveManifest, version update path unchecked (exception-translation note is inherited)	session-20261116T225636-8e1a844d	2026-11-16T23:06:34Z
