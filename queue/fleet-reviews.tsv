@@ -63,3 +63,4 @@ opencatalogi	2407	15ee026e9e5cc880f1ef5812343e2da79e65c3d1	APPROVE	worker-13	Qui
 decidiq	1468	7dc751fb076903e2e43ec5e7338bc901791d14a5	APPROVE	worker-01	Quick; no blockers; dependency bump webpack 5.110.3->5.111.1 with regenerated sbom, tree suite 4624 OK
 decidiq	1469	09383bbcc1479f735f6f91b06b9eab2bc002c9b9	APPROVE	worker-01	Quick; no blockers; dependency bump vue 3.5.42->3.5.43 with regenerated sbom, tree suite 4624 OK
 decidiq	1474	08a18331e7494f87957cc48a01384d4bdd132036	APPROVE	worker-01	Quick; no blockers; dependency bump @typescript-eslint/parser 8.69.0->8.70.1 with regenerated sbom, tree suite 4624 OK
+decidiq	1767	ef20753cf5af14ce526904d1a06b54c59bfb59fc	APPROVE	worker-01	Quick; no blockers; dependency bump nextcloud/ocp 35.0.1->35.0.2 (dev) with regenerated sbom, tree suite 4624 OK
