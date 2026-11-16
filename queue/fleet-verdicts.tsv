@@ -14618,3 +14618,4 @@ larpinq	1060	9f9d2d55aed2135114719c89293197e464127587	CONFLICT	merge3	merges cle
 keepiq	1826	98fff903417a33f0777030490c73f07dacbc752f	BLOCK	worker-19:review	review: Strict; blocker: spec-coverage gate FAIL on added lines, 6 methods of src/components/PrivilegedAccessPanel.vue lack @spec (run, secretId, startApproval, stateLabel, url, windowText); not reviewed further
 larpinq	1060	535a2221d2513e56df74cbe225c0a7b8bc8f7578	RED	worker-41:merge-gate	GATE RED checker floor: testcoderatio: warn -> fail; testcoderatio stars: 3 -> 2
 keepiq	1716	5a6aebc10a49fca22476eb937f790a2b57ee378a	RED	worker-19:merge-gate	GATE RED checker floor: secretscanning: pass -> fail; secretscanning stars: 5 -> 1
+integriq	2744	53deb98f7cdb1b6780f15f48e92d1825829d8513	RED	worker-47:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
