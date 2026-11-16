@@ -15261,3 +15261,133 @@ review:opencatalogi:2671:8b5765d7	BLOCK: old OpenRegister named args in new swee
 review:integriq:3137:b5352821	BLOCK: needs openregister #9824 value objects absent on main; suite no new failures	session-20261115T220050-f9da932e	2026-11-15T22:09:04Z
 review:integriq:3595:60111a1c	GREEN: 9557 tests, 0 new failures over baseline (5 inherited)	session-20261115T220037-4fd37272	2026-11-15T22:09:11Z
 review:opencatalogi:2415:93e2a8a1	GREEN: RenderSelection adaptation, errors 31->4	session-20261115T211111-34885d99	2026-11-15T22:09:20Z
+verify:integriq:3638:ac281490	GREEN 3638: 9592 tests, 0 new failures	session-20261115T220011-f1302da8	2026-11-15T22:09:35Z
+review:launchpad:1223:6e8cfb5e	GREEN: build matches change specs, suites green	session-20261115T220047-d6737933	2026-11-15T22:09:44Z
+review:launchpad:1109:29e3f8d8	GREEN: constant renames, values unchanged, suite green	session-20261115T213112-78aba834	2026-11-15T22:09:52Z
+verify:decidiq:2207:19061678	GREEN: 2207	session-20261115T203012-30a1abde	2026-11-15T22:10:04Z
+review:opencatalogi:2682:e88dc4b8	RED: drafter uses pre-main find/saveObject args; 13 new tests fail with OR main	session-20261115T213156-1ffcf961	2026-11-15T22:10:19Z
+review:integriq:3574:65269c9d	GREEN: per spec, refactors equivalent, no new failures	session-20261115T213134-4b0d2823	2026-11-15T22:10:32Z
+review:opencatalogi:2669:8c31eee0	GREEN: MCP adoption per spec, no new failures	session-20261115T211111-34885d99	2026-11-15T22:10:39Z
+review:buildiq:1583:83cecfc6	GREEN	session-20261115T202932-d1067ee4	2026-11-15T22:10:46Z
+review:integriq:3596:2efdcccd	GREEN: no new failures (5 inherited), vitest OK	session-20261115T220032-9e5549d1	2026-11-15T22:10:58Z
+verify:integriq:3649:14cb20dc	GREEN 3649: phpunit 9597 no new failures, vitest 2403 passed	session-20261115T220036-9d15b9ea	2026-11-15T22:11:13Z
+verify:hermiq:1795:66e63980	RED x3: 1795 fatal (old OR saveObject API), 1801 1 new failure, 1802 3 new failures	session-20261115T220050-f9da932e	2026-11-15T22:11:28Z
+fix:decidiq:1738:c12b8c5d	sbom regenerated; new head dabfcc92	session-20261115T203012-30a1abde	2026-11-15T22:11:47Z
+review:opencatalogi:2541:84647e95	GREEN: repair step, no new failures	session-20261115T211111-34885d99	2026-11-15T22:11:59Z
+verify:versioniq:735:b888ea4b	735 GREEN, 736 GREEN; 0 new failures (2 inherited golden), vitest green	session-20261115T220037-4fd37272	2026-11-15T22:12:13Z
+verify:opencatalogi:2701:1918cebf	RED: 2701 breaks CatalogueSharedPublicationTest::testAnUnknownCatalogueListsNothing (unknown catalogue now 404)	session-20261115T213156-1ffcf961	2026-11-15T22:12:20Z
+verify:buildiq:1652:6d8da72a	both CONFLICT (l10n/en.js, en.json vs development 013580c7)	session-20261115T220036-e665285d	2026-11-15T22:12:34Z
+review:opencatalogi:2679:467db25a	stale	session-20261115T213156-1ffcf961	2026-11-15T22:12:42Z
+fix:dossiq:6203:f6f40df6	fixed: test double matches main find(); Portal 209 OK; new head 5bb98561	session-20261115T213134-4b0d2823	2026-11-15T22:12:44Z
+review:stackiq:1928:36057a15	GREEN: per change spec, suite 3723 tests OK	session-20261115T220036-9d15b9ea	2026-11-15T22:12:52Z
+review:launchpad:1229:348b5e3e	GREEN: spec build, unit 4538 OK, vitest 2608 OK	session-20261115T213110-6b33145c	2026-11-15T22:13:05Z
+review:opencatalogi:2687:a52c913a	GREEN: matches change specs, 0 new failures	session-20261115T220011-f1302da8	2026-11-15T22:13:19Z
+review:launchpad:1212:b82c095c	GREEN: spec-conform, guarded routes, all suites green	session-20261115T213122-e023a81e	2026-11-15T22:13:28Z
+verify:launchpad:1230:f3af8fe8	GREEN x3 (1230,1234,1235); no new failures	session-20261115T213112-78aba834	2026-11-15T22:13:51Z
+verify:opencatalogi:2696:9e469c95	2723 GREEN; 2696 BLOCK, 2699 BLOCK (old OpenRegister named args)	session-20261115T213107-505dc338	2026-11-15T22:14:03Z
+review:launchpad:786:f38de567	GREEN: PHP 4487 OK, vitest 2598 OK	session-20261115T220025-8d429838	2026-11-15T22:14:14Z
+review:opencatalogi:2686:e3e8f093	GREEN: CORS per spec, no new failures (stacked on #2670)	session-20261115T211111-34885d99	2026-11-15T22:14:23Z
+verify:keepiq:1816:d774eb3b	GREEN 1816, GREEN 1826; no new failures	session-20261115T213100-e547b457	2026-11-15T22:14:37Z
+fix:decidiq:1470:9e304842	dev merged + sbom; only clashes with stale #1471; new head d4e9a56b	session-20261115T203012-30a1abde	2026-11-15T22:14:44Z
+review:opencatalogi:1893:c9845557	GREEN: openspec docs only	session-20261115T220032-9e5549d1	2026-11-15T22:14:56Z
+verify:buildiq:1651:130637a9	GREEN 1651	session-20261115T213122-46f7fafb	2026-11-15T22:15:09Z
+review:buildiq:1620:42a0d795	GREEN: per spec, no new failures	session-20261115T220021-7060b99c	2026-11-15T22:15:16Z
+review:stackiq:1931:ff2b9697	RED: new OR calls use named args removed on openregister main, 8 new test errors	session-20261115T220011-f1302da8	2026-11-15T22:15:24Z
+fix:versioniq:723:2e4c0e66	fixed: failedAt kept apart from checkedAt; pushed 332a8036, REVERIFY	session-20261115T220037-4fd37272	2026-11-15T22:15:38Z
+fix:hermiq:1133:05c6caa3	sbom regenerated, development merged; new head 6fd08d09 REVERIFY	session-20261115T220050-f9da932e	2026-11-15T22:15:47Z
+fix:portaliq:1353:c8141de2	phpmd 3 findings cleared, new head dc6ca37d	session-20261115T202932-d1067ee4	2026-11-15T22:16:02Z
+review:planninq:1037:e8b53d51	GREEN: copy-only rename, all checks pass	session-20261115T213122-e023a81e	2026-11-15T22:16:10Z
+review:stackiq:1435:f9cb4c74	RED: bootstrap-unit autoload prefix order shadows Kernel\Contracts\Value stubs (1074 test errors/failures); fix = move new Kernel\ entry after the Value entry, then suite is green	session-20261115T221310-15626e3a	2026-11-15T22:16:17Z
+review:launchpad:763:ac59f293	GREEN: vitest 5 group bump, 2578/2578 tests pass	session-20261115T213101-2fb56005	2026-11-15T22:16:31Z
+review:integriq:3628:858c7a5d	GREEN: implements change specs, no new failures	session-20261115T220134-9124a7d0	2026-11-15T22:16:39Z
+fix:filinq:2072:6cc6d816	failed: merged development (5 conflicts resolved: main API, no bypass flags; unit 6829 OK), pushed head ec607dc3. Rest needs a decision: dropping the seam from PolicyMatchService::loadRules would give ordinary users' anonymisation zero prohibitions (schemas grant read to policy admins only); backfill via ObjectService needs OR to accept an organisation write on update. No objection sweep exists (2	session-20261115T213156-1ffcf961	2026-11-15T22:16:49Z
+verify:larpinq:1060:d9ee27f2	1060 GREEN	session-20261115T213107-505dc338	2026-11-15T22:16:51Z
+fix:filinq:2088:7e328ebd	fixed: ObjectFindOptions in GenerationSourceObject; new head bd2b4649, REVERIFY recorded	session-20261115T211111-34885d99	2026-11-15T22:17:02Z
+fix:decidiq:1692:afd2e246	conflict resolved, pushed faa2a2eb, REVERIFY	session-20261115T220021-7060b99c	2026-11-15T22:17:09Z
+review:stackiq:1924:62eff96d	GREEN: phpunit OK, vitest only inherited failure	session-20261115T220025-8d429838	2026-11-15T22:17:16Z
+verify:learniq:2549:433de304	2549 GREEN, 2551 CONFLICT (l10n with 2549)	session-20261115T220047-d6737933	2026-11-15T22:17:29Z
+fix:dossiq:4887:e60cd452	fixed: test expectations for new listener and default; no new failures; new head f530c6e6	session-20261115T213134-4b0d2823	2026-11-15T22:17:46Z
+review:launchpad:1106:fc1084ce	GREEN: transitive npm refresh, tests+build pass, fewer advisories	session-20261115T213144-ab42ee6a	2026-11-15T22:17:55Z
+fix:stackiq:1417:d2903140	CONFLICT resolved, pushed 603fa7bc, REVERIFY	session-20261115T220011-f1302da8	2026-11-15T22:18:07Z
+fix:dossiq:4886:8a2f03f5	stale	session-20261115T213134-4b0d2823	2026-11-15T22:18:12Z
+fix:filinq:2103:b21f6f3b	fixed: OR main save API + development merged; new head b650ff7b	session-20261115T213100-e547b457	2026-11-15T22:18:17Z
+fix:dossiq:3936:916d1651	fixed: test uses SigningConclusion, merged development (delete/modify resolved to deletion); pushed 692e66a3	session-20261115T213110-6b33145c	2026-11-15T22:18:28Z
+fix:decidiq:1467:26c28394	sbom regenerated, development merged in; new head dfb19ea0e2beff3a28cb376c7bc29ced93c70234	session-20261115T213101-2fb56005	2026-11-15T22:18:38Z
+fix:portaliq:1666:eb3191d2	validator counts band entries; new head ddf36df0	session-20261115T202932-d1067ee4	2026-11-15T22:18:49Z
+fix:filinq:2094:68947c99	fixed: BridgeService on main object API; suite green; pushed 4bb74d34, REVERIFY	session-20261115T220037-4fd37272	2026-11-15T22:18:59Z
+fix:stackiq:1437:3de46f6b	failed: nothing to fix; phpstan is dev-only so regen-sbom leaves sbom.cdx.json unchanged and --check passes (806 components) on the branch merged with development; the merge gate requires sbom.cdx.json in the diff whenever composer.lock changes, so a dev-only bump can never satisfy it; gate needs to accept a current sbom	session-20261115T220011-f1302da8	2026-11-15T22:19:08Z
+fix:stackiq:1438:23ea35dd	merged development; sbom current (dev-only bump leaves it unchanged), REVERIFY recorded	session-20261115T220025-8d429838	2026-11-15T22:19:09Z
+fix:filinq:2114:1694e39c	fixed: migrated 2 repositories to OR main options objects, suite green; head 78a005c2	session-20261115T213112-78aba834	2026-11-15T22:19:13Z
+fix:hermiq:1785:9d543e2c	conflict resolved, delegated run store moved to OR main API; suite green; new head 8d6ac93b REVERIFY	session-20261115T220050-f9da932e	2026-11-15T22:19:27Z
+fix:decidiq:2178:5867902a	migrated 2 calls to options API, unit 4666 OK, pushed f3f4328f, REVERIFY	session-20261115T220021-7060b99c	2026-11-15T22:19:41Z
+fix:stackiq:1941:40710dd9	conflict resolved + main-API migration of new code; new head 3f74a899, REVERIFY recorded	session-20261115T220036-9d15b9ea	2026-11-15T22:19:55Z
+review:opencatalogi:2673:9b953103	GREEN: no new failures vs development, jest OK	session-20261115T220032-9e5549d1	2026-11-15T22:20:02Z
+fix:decidiq:1465:840ea3b6	sbom regenerated, development merged in; new head c16cd40a576d75aeda154a94b4c66265f5a79c7e	session-20261115T213101-2fb56005	2026-11-15T22:20:13Z
+fix:decidiq:1472:a40d36e1	sbom regenerated after merging development; head 92d14428, REVERIFY	session-20261115T220134-9124a7d0	2026-11-15T22:20:23Z
+fix:decidiq:1948:fbc94193	failed: sbom.cdx.json already current (regen-sbom --check passes, 629 components); hydra-gates is a dev dependency, omitted from the SBOM, so regen gives no diff; the gate's lock-without-sbom rule is a false positive for dev-only bumps	session-20261115T220021-7060b99c	2026-11-15T22:20:40Z
+verify:stackiq:1954:b7430a74	GREEN 1954,1973,1975; RED 1959 (3 LandscapeComparisonServiceTest errors); CONFLICT 1965,1978	session-20261115T221310-15626e3a	2026-11-15T22:20:52Z
+fix:decidiq:1473:4549406a	fixed: sbom regenerated, pushed fbdc77e4	session-20261115T213110-6b33145c	2026-11-15T22:20:59Z
+fix:filinq:2123:e76e9dab	fixed: conflict resolved, new OR calls on main API; new head 3f385b11	session-20261115T213100-e547b457	2026-11-15T22:21:10Z
+fix:hermiq:1308:ed66fcbf	failed: sbom gate cannot be met honestly - bump is dev-only (phpstan, omitted by --omit=dev); regen-sbom --check passes and a from-scratch regen is byte-identical, so sbom.cdx.json has nothing to change; gate needs to accept --check OK without a diff	session-20261115T220036-9d15b9ea	2026-11-15T22:21:16Z
+fix:stackiq:1168:2d1a29df	sbom regenerated, pushed 04f38d3ae4a4d17b142dbafb97d2a81126d6568c, REVERIFY	session-20261115T220011-f1302da8	2026-11-15T22:21:19Z
+fix:decidiq:1767:3e9af0ff	sbom regenerated; new head ef20753c	session-20261115T203012-30a1abde	2026-11-15T22:21:28Z
+fix:decidiq:1941:4df452c6	obsolete: all commits already on development via quality/ormig-decidiq; closed with comment	session-20261115T213101-2fb56005	2026-11-15T22:21:35Z
+review:opencatalogi:1894:81ec0aeb	GREEN: openspec-only tick sweep, merges cleanly	session-20261115T220036-e665285d	2026-11-15T22:21:48Z
+fix:filinq:1828:0e6a9fe3	fixed: Server::get replaced by container logger; phpcs 0 errors, 6798 OK; head f7b90817	session-20261115T213156-1ffcf961	2026-11-15T22:22:06Z
+fix:learniq:2521:be3bc639	fixed: saveObject calls migrated to OR main API, tests aligned, pushed 25bda59e; REVERIFY recorded	session-20261115T213122-e023a81e	2026-11-15T22:22:15Z
+fix:hermiq:1195:6284aad0	sbom regenerated after merging development; new head 7d667839, REVERIFY queued	session-20261115T221310-15626e3a	2026-11-15T22:22:22Z
+fix:stackiq:1297:7bd31324	merged development, regenerated sbom, REVERIFY recorded	session-20261115T220025-8d429838	2026-11-15T22:22:31Z
+fix:decidiq:1468:dabc7105	fixed: sbom regenerated; REVERIFY at 7dc751fb	session-20261115T213107-505dc338	2026-11-15T22:22:43Z
+fix:hermiq:1189:9c7d6a51	fixed: sbom regenerated; new head 25278c92	session-20261115T213100-e547b457	2026-11-15T22:22:53Z
+fix:hermiq:1307:81668700	sbom regenerated, pushed 1007dac617c9bde9350369bf4adb9a791a8aa04b, REVERIFY	session-20261115T220011-f1302da8	2026-11-15T22:23:03Z
+fix:filinq:2122:e0f7a647	fixed: ObjectSaveOptions in RepointWooGrounds; new head d654b8fc, REVERIFY recorded	session-20261115T211111-34885d99	2026-11-15T22:23:12Z
+fix:dossiq:5397:e528f075	failed: nothing to fix: dev-only phpstan bump; regen-sbom.sh --check on PR+development passes (sbom current, 633 components, dev deps omitted), so no honest sbom.cdx.json change exists. The name-only sbom gate needs an exception for --check-clean dev-only lock changes.	session-20261115T213156-1ffcf961	2026-11-15T22:23:25Z
+fix:hermiq:1188:b9df0394	sbom regenerated, development merged in; new head 97593dc8ffffbb6783bfaaca2bcdb450ca9ff291	session-20261115T213101-2fb56005	2026-11-15T22:23:26Z
+fix:decidiq:1469:bee189d6	fixed: sbom regenerated; pushed 09383bbc, REVERIFY	session-20261115T220037-4fd37272	2026-11-15T22:23:34Z
+review:versioniq:699:66927161	GREEN: no new failures (unit-only config), vitest green	session-20261115T213122-46f7fafb	2026-11-15T22:23:47Z
+fix:decidiq:1474:bbce152d	fixed: merged development, sbom regenerated; new head 08a18331	session-20261115T213134-4b0d2823	2026-11-15T22:24:02Z
+fix:thematiq:1288:34db28e5	failed: sbom gate cannot be met honestly - prettier is a dev dependency, regen-sbom (omit dev) output is byte-identical and --check passes; the gate needs a path exemption for dev-only lockfile changes	session-20261115T220037-4fd37272	2026-11-15T22:24:12Z
+fix:hermiq:1187:f2d30166	sbom regenerated, pushed, REVERIFY	session-20261115T220011-f1302da8	2026-11-15T22:24:09Z
+fix:dossiq:3199:4b5da277	stale	session-20261115T213156-1ffcf961	2026-11-15T22:24:21Z
+fix:hermiq:1135:988cfbc8	sbom regenerated, development merged; new head 0d097997 REVERIFY	session-20261115T220050-f9da932e	2026-11-15T22:24:16Z
+fix:hermiq:1750:70078246	updated dev test to the change's retrievalScope record; REVERIFY recorded	session-20261115T220025-8d429838	2026-11-15T22:24:36Z
+fix:thematiq:1287:622c0c48	failed: nothing to fix; @playwright/test is dev-only so regen-sbom leaves sbom.cdx.json unchanged and --check passes on the branch merged with development; the gate requires sbom.cdx.json in the diff whenever a lockfile changes, which a dev-only bump cannot satisfy	session-20261115T220011-f1302da8	2026-11-15T22:24:45Z
+fix:hermiq:1175:ca7f829c	sbom regenerated; new head 42637555	session-20261115T203012-30a1abde	2026-11-15T22:24:45Z
+fix:filinq:2121:7021db61	fixed: migrated 3 classes to OR main options objects, suite green; head f6845146	session-20261115T213112-78aba834	2026-11-15T22:24:52Z
+fix:thematiq:1070:42206255	failed: sbom gate cannot be met honestly - only @conduction/nextcloud-vue (dev: true) moves in package-lock; regen-sbom output byte-identical, --check passes; needs a gate exemption for dev-only lockfile changes	session-20261115T220037-4fd37272	2026-11-15T22:24:58Z
+fix:thematiq:1126:b0b0a98c	merged development in cleanly, vitest green; new head 5620b7cb, REVERIFY	session-20261115T220036-e665285d	2026-11-15T22:25:00Z
+fix:learniq:1901:07332d28	conflict resolved (imports), pushed 152da34c; REVERIFY recorded	session-20261115T213122-e023a81e	2026-11-15T22:25:14Z
+fix:decidiq:2149:25a0bf97	migrated new calls to main's options API; head acad1376, REVERIFY	session-20261115T220134-9124a7d0	2026-11-15T22:25:25Z
+fix:hermiq:1754:90d73dbf	fixed: OR main API in ComputerTargetService; new head 69e02cc7	session-20261115T213100-e547b457	2026-11-15T22:25:43Z
+fix:hermiq:1174:e5834a5e	fixed: sbom regenerated, pushed 296b7354	session-20261115T213110-6b33145c	2026-11-15T22:25:50Z
+fix:thematiq:1286:9f97aee6	failed: nothing to fix; vitest is dev-only so regen-sbom leaves sbom.cdx.json unchanged and --check passes on the branch merged with development; the gate requires sbom.cdx.json in the diff whenever a lockfile changes, which a dev-only bump cannot satisfy	session-20261115T220011-f1302da8	2026-11-15T22:25:56Z
+fix:hermiq:1193:67714a4e	sbom regenerated, development merged; new head 7d49a897 REVERIFY	session-20261115T220050-f9da932e	2026-11-15T22:26:00Z
+fix:dossiq:3197:4bd6d2ba	stale: PR already merged, branch deleted	session-20261115T213134-4b0d2823	2026-11-15T22:26:08Z
+fix:thematiq:1292:f21993f3	merged development, vitest green, pushed 1c6de772, REVERIFY	session-20261115T220021-7060b99c	2026-11-15T22:26:17Z
+fix:thematiq:1557:b3ab646d	failed: dev-only phpstan bump; regen-sbom.sh --check says sbom.cdx.json already current after merging development (phpstan omitted as dev), so the gate's lock-changed-without-sbom rule cannot be met by a real change; needs a gate exemption for unchanged SBOMs, nothing pushed	session-20261115T220036-e665285d	2026-11-15T22:26:25Z
+fix:shillinq:3055:aa654dd7	stale	session-20261115T220050-f9da932e	2026-11-15T22:26:24Z
+fix:thematiq:1291:3fac1aca	fixed: development merged in; REVERIFY at ac416a6a	session-20261115T213107-505dc338	2026-11-15T22:26:24Z
+fix:portaliq:1673:73721356	saveObject moved to ObjectSaveOptions; new head 06264bd1	session-20261115T202932-d1067ee4	2026-11-15T22:26:37Z
+fix:thematiq:1289:2557e0ba	no change needed: sbom already current (dev-only bump), regen --check passes	session-20261115T211111-34885d99	2026-11-15T22:26:46Z
+fix:thematiq:1293:09458d15	merged development, tests and build green, REVERIFY recorded	session-20261115T220025-8d429838	2026-11-15T22:27:01Z
+fix:thematiq:1290:f560b357	dev merged; conflict is with sibling dependabot PRs only	session-20261115T203012-30a1abde	2026-11-15T22:27:11Z
+fix:thematiq:1558:4e04b3da	sbom current (dev-only bump, recipe omits dev); merged development, head 756f3b85, REVERIFY	session-20261115T220134-9124a7d0	2026-11-15T22:27:22Z
+fix:shillinq:2766:64b9e198	stale	session-20261115T220025-8d429838	2026-11-15T22:27:33Z
+fix:learniq:2484:13aa1fe4	conflict resolved, pushed 32d62246, REVERIFY	session-20261115T220047-d6737933	2026-11-15T22:27:34Z
+fix:thematiq:1124:c6a62f1f	no change needed: sbom current (dev-only bump), regen --check passes	session-20261115T213100-e547b457	2026-11-15T22:28:04Z
+fix:shillinq:2048:202ec0a0	stale	session-20261115T220025-8d429838	2026-11-15T22:28:21Z
+fix:hermiq:1578:816bbdb1	sbom regenerated after merging development; new head c7adfb00, REVERIFY	session-20261115T220032-9e5549d1	2026-11-15T22:28:19Z
+fix:hermiq:1735:ca8e4b6f	migrated new OR calls to main's option objects, 23 errors gone; ListenerRegistrarTest red on development too (inherited); new head ca2c7585	session-20261115T221310-15626e3a	2026-11-15T22:28:31Z
+fix:hermiq:1791:4f9f1e85	fixed: 14 failures were removed-API calls in new answer-cache code; migrated, suite green; new head 27599b8c5a2c5b86c951dad96611964b4003096c	session-20261115T213101-2fb56005	2026-11-15T22:28:49Z
+fix:learniq:2507:59e5c491	fixed: old saveObject args moved to main API; new head 334d2575	session-20261115T213144-ab42ee6a	2026-11-15T22:29:25Z
+fix:hermiq:1760:ce2326e7	fixed: main-API migration of new workspace/build code; suite 5380 OK; new head 440cf2e9, REVERIFY recorded	session-20261115T220036-9d15b9ea	2026-11-15T22:29:37Z
+fix:shillinq:1908:1862245f	stale	session-20261115T213144-ab42ee6a	2026-11-15T22:29:53Z
+review:dossiq:2705:643da12e	GREEN (empty): head already contained in development	session-20261115T213122-e023a81e	2026-11-15T22:29:55Z
+fix:thematiq:1556:ff5f73bc	merged development; sbom cannot change (dev-only dep), suite matches baseline; head 7acb440b	session-20261115T213112-78aba834	2026-11-15T22:30:06Z
+fix:filinq:1304:4ad5da28	stale	session-20261115T213112-78aba834	2026-11-15T22:31:11Z
+fix:filinq:1963:4c695442	stale	session-20261115T231107-e5524f86	2026-11-15T23:11:35Z
+fix:filinq:1828:63118b3c	stale	session-20261115T231107-e5524f86	2026-11-15T23:11:56Z
+fix:humaniq:670:57c2b21c	stale	session-20261115T231107-e5524f86	2026-11-15T23:12:13Z
+fix:buildiq:1596:ba6566ea	stale	session-20261115T231107-e5524f86	2026-11-15T23:12:32Z
+review:dossiq:3201:1fedc9a2	already done: PR head 1fedc9a2 is already in origin/development	session-20261115T231107-e5524f86	2026-11-15T23:12:58Z
+fix:versioniq:691:c3a11b62	stale	session-20261115T231107-e5524f86	2026-11-15T23:13:13Z
