@@ -17834,3 +17834,4 @@ lane:arch5:buildiq:next-buildiq-r1:c2	failed: permission: recording an APPROVE r
 verify:integriq:3675:189bdd6e	GREEN 3675 (unit 9614, 0 new failures)	session-20261116T205217-2b48a08c	2026-11-16T21:07:38Z
 merge:shillinq:1899:ba056b75	merge3 tree of 4 shillinq PRs: merged=0 red=3 fail=0 skip=0; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-16T21:08:03Z
 cover:stackiq:9ac19b3am2187:34f5c300	PR #2005: fixed metadata of 11 risky ArchiMate export tests + 10 new tests; stackiq PHP 88.69% -> 91.85%	session-20261116T210116-54911634	2026-11-16T21:08:20Z
+lane:arch5:opencatalogi:next-opencatalogi-r1	PR #2752 opened (4.52-4.54 -> 4.57-4.58), GREEN verdict queued; merge lock held by another merger	session-20261116T205720-a5d1eee3	2026-11-16T21:09:36Z
