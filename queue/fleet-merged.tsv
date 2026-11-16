@@ -4027,3 +4027,4 @@ shillinq	2048	f88b17a7a69df6279ca38720aee89560b62d975f	RED	worker-33	GATE RED ch
 shillinq	2224	ff4aa606e92e5e1b481b9d57db877beb814a2c4e	RED	worker-33	GATE RED checker floor: spdxheaders stars: 5 -> 4
 shillinq	3109	95bf71e1b5b49d1ade835e3ae9eb2b94df7af954	SKIP	worker-33	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 shillinq	2070	29369cd1e5f54228d28f425cda326d85923bff8f	SKIP	worker-33	no APPROVE review at this head
+learniq	1882	ff0cebbf373a84986b0174e333013e3503af7dd1	RED	worker-33	GATE RED checker floor: spdxheaders stars: 5 -> 4
