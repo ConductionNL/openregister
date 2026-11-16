@@ -3793,3 +3793,5 @@ hermiq	1293	38013b9c66979f974a60e5b5c2fecf48c323ee46	SKIP	worker-22	GATE UNMEASU
 hermiq	1534	b7a7d45bfa93bc796ed10723ca14602299d17d9d	SKIP	worker-22	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator, secretscanning; this is not a pass
 hermiq	1739	5cf3f827da61c88ed80a91cc9d749136f3e970fe	SKIP	worker-22	no APPROVE review at this head
 thematiq	1117	2427508a3106eb9c72d567060d7d6beaeab72430	RED	worker-17	GATE RED sbom: composer.lock changed without sbom.cdx.json
+launchpad	653	7dd62332f078073df03444ab4c6c6b1f2c66f246	RED	worker-12	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+launchpad	763	ac59f2930cb25b439f9fdffbe39af0aa2b8b0f7e	RED	worker-12	GATE RED sbom: package-lock.json changed without sbom.cdx.json
