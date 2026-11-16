@@ -15339,3 +15339,4 @@ larpinq	1073	c3a2bf43b3476f9f1b05f2f65fe5a70493f7187a	GREEN	worker-17	1119 tests
 larpinq	1074	0a276a6c4b7c7f20a101b296be5e65620ae86a52	GREEN	worker-17	1119 tests (baseline 1095, 0 failures), 0 new failures; build matches change specs, validator API matches openregister main
 keepiq	1852	d2699a90a616df3fa29d27bd9ca10e4ba500b213	GREEN	worker-52	unit 5374 on tree (baseline 5367, 0 fail); tests only, no new failures
 keepiq	1853	a523f5b408d71ea94110831e7034cc688ac02123	GREEN	worker-52	unit 5374 on tree (baseline 5367, 0 fail); tests only, no new failures
+dossiq	5398	0574972c864d76681209aa9163ca32450a6fa810	GREEN	worker-23:review	dev-only bump (psalm 5.26->7.5 + transitive dev deps, php-parser 5, webmozart/assert 2); prod packages unchanged; unit 18300 tests same 13 failing cases as development baseline; note psalm 7.5 needs PHP>=8.3.16 (platform pin raised), psalm itself not run here (PHP 8.3.6)
