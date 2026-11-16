@@ -16037,7 +16037,9 @@ verify:pipelinq:3883:136ed65c	#3883 CONFLICT, #3885 GREEN (9000 tests, 0 new fai
 fix:dossiq:3894:8ed2662d	sbom already current at head 8ed2662d; no change pushed; merge lock busy, REVERIFY queued	session-20261116T092014-a47177ca	2026-11-16T09:24:37Z
 fix:launchpad:757:2ba3b33d	inherited: plain development also reads opensourcehealth pass->warn 4->3 vs its checker floor (api.osv.dev unreachable from cloud sessions); nothing to fix in the PR	session-20261116T084459-8070a613	2026-11-16T09:25:01Z
 fix:opencatalogi:2673:55afbbab	fixed RED: golden re-recorded, pushed 6dd0d200; lock held elsewhere, REVERIFY queued	session-20261116T091834-4216158d	2026-11-16T09:24:59Z
+fix:launchpad:755:f41902ff	failed: RED inherited - development's committed sbom.cdx.json is stale since fe89bd35 (webdav minimatch ^11 override adds @isaacs/nonrecursive-glob-match to prod); regen-sbom --check fails on plain development, PR's sbom is correct; needs an sbom refresh on development, not a change to #755	session-20261116T091802-9e032a61	2026-11-16T09:25:27Z
 fix:filinq:2123:e7b32d65	conflict resolved, pushed 821f64bb; merge lock busy, REVERIFY queued	session-20261116T092158-aeab11ae	2026-11-16T09:25:20Z
+gap:stackiq:opensourcehealth:8cbefb79	failed: not fixable as one app PR: the WARN comes from Activity (52% of 648 mostly transitive production deps idle >1y) and Freshness; raising it needs replacing upstream packages, not a bump; open dependabot updates go through the deps bundle lane	session-20261116T084851-6e832488	2026-11-16T09:25:47Z
 merge:planninq:1198:4ef22590	cloud tree of 1 planninq PRs: merged=0 red=0 fail=0 skip=1; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T091613-0f6d95fe	2026-11-16T09:25:58Z
 merge:portaliq:1997:3ac8d909	cloud tree of 1 portaliq PRs: merged=0 red=0 fail=0 skip=1 (gate unmeasured: static.developer.overheid.nl unreachable)	session-20261116T091541-9e19ce49	2026-11-16T09:26:12Z
 fix:filinq:2094:a2f8cc99	conflict resolved, pushed 6498e5a9, unit 6885 OK; merge lock held elsewhere, REVERIFY queued	session-20261116T091324-bb324ce0	2026-11-16T09:26:09Z
@@ -16050,3 +16052,19 @@ review:portaliq:1764:a878ea03	GREEN: ts-eslint parser dev bump, lint ok, unit er
 fix:larpinq:1053:1a318455	fixed: find via ObjectFindOptions, pushed c3e9d427; merge lock busy, REVERIFY queued	session-20261116T092539-dc11f615	2026-11-16T09:27:54Z
 fix:dossiq:3936:692e66a3	fixed floor (unit_interfacing 3.37 -> 3.39), pushed 073e564b; merge lock held elsewhere, REVERIFY queued	session-20261116T091549-b399a636	2026-11-16T09:28:13Z
 review:portaliq:1666:760e34a9	GREEN: comment-only diff, manifest lint unchanged vs development	session-20261116T091246-00cbe321	2026-11-16T09:28:23Z
+gap:decidiq:opensourcehealth:95458f4b	already done: development 279e8a5c rates 4 stars (401 npm deps; licence 5, management 5, freshness 3, activity 2; no OSV advisory matches a production dep per the OSV npm dump, api.osv.dev blocked here)	session-20261116T091756-9df6b5a8	2026-11-16T09:28:57Z
+verify:larpinq:1065:46d4c1bf	GREEN 1065: no new failures, vitest 597 pass	session-20261116T084851-92549055	2026-11-16T09:28:53Z
+review:shillinq:2099:b40a842e	GREEN #2099 (behaviour equal; suites at baseline)	session-20261116T084449-ebc88ac4	2026-11-16T09:29:03Z
+lane:arch5:dossiq:next-dossiq	partial: branch quality/arch5-dossiq-r1 at 3a547880b2 (2 refactors, 4.40-4.43 -> 4.41-4.43, suite 0 failures, gates same); PR waits for #6589; continuation :c2 queued	session-20261116T090836-f2cf24a5	2026-11-16T09:29:10Z
+review:versioniq:725:bd0db7f7	GREEN: only inherited failures, vitest 3058 pass; note it includes #717	session-20261116T084459-8070a613	2026-11-16T09:29:13Z
+fix:stackiq:1931:8e3de7ae	fixed BLOCK: 7 icons registered, pushed 75fc2149; lock held elsewhere, REVERIFY queued	session-20261116T091834-4216158d	2026-11-16T09:29:36Z
+verify:pipelinq:3883:85bd794e	3883 GREEN; 3885 skipped (head moved to 6b8029c1)	session-20261116T091721-aaaa75bd	2026-11-16T09:30:17Z
+fix:filinq:2141:d980f90d	inherited/environmental: opensourcehealth drop is api.osv.dev unreachable, not the PR; no change, REVERIFY queued	session-20261116T092158-aeab11ae	2026-11-16T09:30:36Z
+lane:arch5:pipelinq:next-pipelinq	PR #3887 open (estimate 4.48-4.49 -> 4.50-4.51, goal met); merge lock held elsewhere, GREEN verdict queued for merge	session-20261116T091519-51eaae8b	2026-11-16T09:30:53Z
+fix:dossiq:6590:1ff7ee00	conflict resolved, pushed e05ebf36; merge lock held elsewhere, REVERIFY queued	session-20261116T092826-3efb332e	2026-11-16T09:31:05Z
+review:dossiq:5266:2cd5ee93	GREEN: vitest 40/40, php suite no new failures	session-20261116T091532-d81a601b	2026-11-16T09:31:35Z
+gap:learniq:opensourcehealth:20de5357	PR #2562: eslint 10.15 takes minimatch 11.0.8, prod npm audit 0 (was 3 moderate), sbom regenerated; node tests 9 fails inherited	session-20261116T091613-0f6d95fe	2026-11-16T09:31:51Z
+merge:portaliq:1673:e981be5a	cloud tree of 1 portaliq PRs: merged=0 red=0 fail=0 skip=1 (APPROVE recorded; gate unmeasured: static.developer.overheid.nl unreachable)	session-20261116T091541-9e19ce49	2026-11-16T09:31:49Z
+review:dossiq:3203:2c689dc9	GREEN: dependency bump, vitest and build same as baseline	session-20261116T091210-012bb190	2026-11-16T09:31:52Z
+review:shillinq:2072:04fc7224	GREEN: access tightened as titled, suite 12231/0; concern noted on ownerless invoices	session-20261116T085359-7eb6c05c	2026-11-16T09:32:34Z
+measure:stackiq:20261116h08	php 88.93% js 97.04% at 0cdd4afa (1 vitest failure: facets.spec FACET_DIMENSIONS)	session-20261116T092539-dc11f615	2026-11-16T09:32:53Z
