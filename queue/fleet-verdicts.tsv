@@ -15836,3 +15836,4 @@ integriq	3638	3b0efc92b56e18ea477a6bd8246aae86721c0e09	REVERIFY	worker-12	merged
 opencatalogi	2756	a362a4ec22bbc023bb7044a021f46a6903f28bca	GREEN	worker-31	build publication-detail-for-the-portal per its specs; unit 6041 tests, baseline 6017 with 103 inherited failures, 0 new; vitest 1165 pass; php -l clean
 hermiq	1735	370656f7d3ae7927609cf995aa861241df9740cc	RED	worker-49:merge-gate	GATE RED checker floor: adrvalidator: pass -> warn; adrvalidator stars: 5 -> 3; score: 100 -> 97
 versioniq	758	7be209fae0deeec3aa2a193a3b14e3288f75b2e4	GREEN	worker-12	unit 2214 tests vs baseline 2171, 2 inherited golden failures, no new; vitest 3136 pass; note: maintainability floor still dropped at this head when last measured
+shillinq	3135	543f595d7c6ba853fea9c8e44a3ce2d1c2a1df07	GREEN	worker-52	one-PR tree on 1fb758e51: 12460 tests, baseline 0 failures, new failures 0; phpstan 0, phpcs/phpmd same, idor same; estimate 4.09-4.13 -> 4.12-4.16
