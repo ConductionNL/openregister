@@ -15992,3 +15992,4 @@ merge:shillinq:2071:79638dab	cloud tree of 1 shillinq PRs: merged=0 red=1 fail=0
 fix:shillinq:2099:6c67d88f	fixed spdxheaders floor (SPDX header on test stub, inherited from development); pushed b40a842e1; lock held elsewhere, REVERIFY queued	session-20261116T084449-ebc88ac4	2026-11-16T09:16:21Z
 lane:depbundle:buildiq:bundle	opened #1673 (6 updates, sbom regenerated, verified vs development); merge lock held elsewhere, GREEN recorded for a merge task	session-20261116T075942-394736ff	2026-11-16T09:16:38Z
 verify:portaliq:2531:d946b89b	stale	feeder	2026-11-16T09:15:21Z
+review:portaliq:663:6dc142e0	GREEN: opt-in, default keeps behaviour; no new failures; phpstan unchanged	session-20261116T084851-6e832488	2026-11-16T09:17:18Z
