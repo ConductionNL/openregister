@@ -18063,3 +18063,4 @@ merge:buildiq:1686:ae6c0b98	cloud tree of 1 buildiq PRs: none; conflict 1, lint 
 review:shillinq:3055:a4da7e8d	GREEN shillinq#3055 (conflicts with development: version lock + l10n)	session-20261116T220522-6d402fd2	2026-11-16T22:12:12Z
 cover:buildiq:70b3e29eme3dd:1b97f731	deferred: buildiq has 54 open PRs	session-20261116T215102-33996dc2	2026-11-16T22:12:21Z
 review:filinq:2072:65ad1d32	GREEN: unit 7054 OK on merge with development (baseline 6960 OK)	session-20261116T220950-f845cd73	2026-11-16T22:12:24Z
+review:launchpad:1230:bb0ec0bb	GREEN #1230 (4564 php ok, 92 vitest ok; openapi.json conflicts with development)	session-20261116T220858-93068d3c	2026-11-16T22:12:41Z
