@@ -16709,3 +16709,4 @@ cover:pipelinq:7f9dc8e6m8519:f545d745	PR #3891: repair 93.41→97.57%, nested-tr
 merge:filinq:2072:2a0f9f65	cloud tree of 3 filinq PRs: merged=0 red=0 fail=0 skip=1; conflict 2, lint 0, red 0, moved 0, done 0	session-20261116T161939-73ecac50	2026-11-16T16:22:49Z
 cover:pipelinq:7f9dc8e6m8519:1b97f731	PR #3892: listeners 82.75→95.22%, metadata fixes + 4 tests	session-20261113T204551-fafe539e	2026-11-16T16:23:27Z
 merge:filinq:2122:b4033955	cloud tree of 1 filinq PRs: merged=0 red=0 fail=0 skip=1; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T161939-73ecac50	2026-11-16T16:24:49Z
+merge:dossiq:3203:439df883	unmeasured: static.developer.overheid.nl (dossiq #3203 APPROVE recorded at 628c5ad89e; 6203 excluded: never merged)	session-20261116T161639-0d250ee2	2026-11-16T16:33:08Z
