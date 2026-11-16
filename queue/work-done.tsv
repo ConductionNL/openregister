@@ -16142,3 +16142,4 @@ merge:decidiq:2222:f93662ae	cloud tree of 1 decidiq PRs: merged=0 red=1 fail=0 s
 fix:shillinq:2048:f88b17a7	fixed: spdx header on test stub (inherited floor drop), new head 0e551132; REVERIFY queued (merge lock busy)	session-20261116T101004-34dc3e61	2026-11-16T10:28:09Z
 fix:pipelinq:3835:ceb76db3	fixed: article store on main's object API, pushed 48e31f72; merge lock held elsewhere, REVERIFY queued	session-20261116T102204-b7990ddc	2026-11-16T10:28:19Z
 fix:shillinq:2070:29369cd1	fixed review blockers (veto answered 403, release texts corrected, 4 tests); merge lock held elsewhere, REVERIFY at 756a08e8e8	session-20261116T101530-34aec2a4	2026-11-16T10:28:29Z
+fix:stackiq:1924:f5164c8d	fixed: SPDX header on the inherited test stub restores 5 stars; pushed ef9a11b2; merge lock held elsewhere, REVERIFY queued	session-20261116T102343-48a31bcc	2026-11-16T10:28:36Z
