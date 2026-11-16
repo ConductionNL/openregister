@@ -15555,3 +15555,4 @@ fix:opencatalogi:2671:8b5765d7	fixed: OR main API migration in sweep/rewrite/sho
 review:buildiq:1583:df8986ae	GREEN: matches change spec, no new failures	session-20261116T062120-7c38c5f1	2026-11-16T06:57:08Z
 review:buildiq:1256:2fc80cec	GREEN: lock-only; suite same as baseline (1 inherited failure)	session-20261116T062140-6a300781	2026-11-16T06:57:16Z
 review:planninq:871:c207058e	GREEN	session-20261116T063608-d33f86e6	2026-11-16T06:57:28Z
+fix:buildiq:1596:33a8b51d	floor restored to 3.91 by splitting guard; pushed 1e0a4baa, REVERIFY	session-20261116T062050-7d5ce0d6	2026-11-16T06:58:00Z
