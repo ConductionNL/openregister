@@ -13940,3 +13940,4 @@ opencatalogi	2725	ef1e2d8475f88d2aafc7c59528f9cd43f521d2db	CONFLICT	worker-13:me
 decidiq	2170	a39ae47e0e86ca10f951d3e74debd495976c3a4c	RED	worker-01:merge	adds unit failure(s) with the PRs before it in the tree: RoomSystemFeedTest::testAClosedRoundSendsItsTotalsWithTheCurrentItem RoomSystemFeedTest::testANewSpeechSendsTheSpeakersListInOrder RoomSystemFeedTest::testAPublishedAgendaSendsItsItemsInOrder RoomSyst
 larpinq	830	794bac00bff45bdce041a07528da37426b2650dc	CONFLICT	worker-23:merge	conflicts with development; files: composer.lock 
 keepiq	1828	08437392c0e81cd95adac94cd9a3d3bf4c1b4162	RED	worker-21:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+larpinq	877	0d04ecfc809c8f114723a77614d7ef4cddf938ef	RED	worker-23:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
