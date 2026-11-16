@@ -17821,3 +17821,4 @@ cover:stackiq:9ac19b3am2187:407c4b68	already done: lib/Service/Registration/Serv
 cover:stackiq:9ac19b3am2187:38e80a9f	no change: lib/Command/*.php already 287/287 (100%) per measure at 00516ba7	session-20261116T205732-a5f08498	2026-11-16T21:03:58Z
 cover:dossiq:069ee2d6m9d1b:a97b9ee7	added PaymentScheduleRaiser tests (10, 76/76 stmts) to open PR #6203 (dossiq has 41 open PRs); suite failures 19=baseline	session-20261116T205807-72522ea4	2026-11-16T21:04:41Z
 lane:arch5:versioniq:next-versioniq-r1	failed: permission: recording an APPROVE for my own PR versioniq#751 (head d4a52b7) was refused; PR open and unreviewed; estimate 4.06-4.24 -> 4.23-4.34, merge tree 0 new failures	session-20261116T202207-14e523c0	2026-11-16T21:04:47Z
+cover:stackiq:9ac19b3am2187:f545d745	PR #2001: ClearDisallowedDependentValues 87.9->100%, 8 tests; suite 3822->3830, 1 inherited failure	session-20261116T205530-bfd0de31	2026-11-16T21:05:09Z
