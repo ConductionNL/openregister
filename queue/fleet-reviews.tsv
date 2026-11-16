@@ -83,3 +83,4 @@ decidiq	1950	e876f7cecae4332eb0a07df3b2effe4dd9b06afb	APPROVE	worker-01	Quick; n
 decidiq	2191	58233c56976149d9693c08a2fd992b99c2e6e0c1	REQUEST_CHANGES	worker-01	Thorough; blocker: the two Implementation widgets added to MotionDetail and DecisionDetail in src/manifest.json use icon ProgressCheck, which neither the shared icon registry nor src/icons.js holds, so they render the default icon (detail-page-discipline gate); register the icon or use a registered 
 planninq	871	c207058ef15da9886b349f626675653529593ab3	APPROVE	worker-12	Quick; no blockers; dev-only eslint 10.12.0 with sbom regen
 planninq	908	d3be65702cebbde17585b38168c1b3b9353a9712	APPROVE	worker-12	Quick; no blockers; dev-only @playwright/test bump, dev flags restored in lock
+planninq	918	6289a59743741d162f71a87526216d4697bc1247	APPROVE	worker-12	Quick; no blockers; dev-only nextcloud/ocp 35.0.2 stubs
