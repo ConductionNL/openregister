@@ -17973,6 +17973,7 @@ review:buildiq:1648:2d3b24d7	RED: new failure AppOrganisationGuardCoverageTest::
 build:launchpad:dashboards-and-who-may-see-them:c5	built 2.2 (manifest report gallery), 3.3 and 4.2 (status-report and activity-report widgets) on PR #1223 head e2a4d5a1; every code task ticked; vitest 2627 and phpunit 4575 green; left: section 9 handover (not code)	session-20261116T212048-3752a879	2026-11-16T21:48:21Z
 review:hermiq:1781:cb8171de	stale	session-20261116T214741-cce55d5f	2026-11-16T21:48:15Z
 review:hermiq:1795:efce9000	GREEN #1795 at efce9000: PHPUnit 5395 ok, vitest 1546 ok, phpstan clean	session-20261116T211553-db0d2c78	2026-11-16T21:48:18Z
+measure:openregister:20261116h20	php 95.01% (pcov, 231223 stmts; unit suite in 9 chunks merged, tests/Unit/Architecture left out: exceeds the 600s window under pcov), js 93.15% (jest, 8582 tests) at 3800106bd5c9	session-20261116T202522-6af34c50	2026-11-16T21:49:02Z
 cover:launchpad:fb10c50fmf487:59826f43	deferred: launchpad has 47 open PRs	session-20261116T212048-3752a879	2026-11-16T21:49:02Z
 review:pipelinq:3602:ea5eea45	GREEN: tests only, suite 9194 tests 0 failures merged with development	session-20261116T214553-9fb39259	2026-11-16T21:49:02Z
 verify:opencatalogi:2755:cbe5dd86	GREEN 2755 (tasks.md tick, claim checked)	session-20261116T214739-8ff46d14	2026-11-16T21:49:34Z
