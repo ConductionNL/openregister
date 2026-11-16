@@ -16162,3 +16162,4 @@ merge:larpinq:1060:a9bd04d4	unmeasured: static.developer.overheid.nl (reviews re
 fix:integriq:3049:5e51514f	merged development in, pushed 2da4ecc8; merge lock busy, REVERIFY queued	session-20261116T103230-dd6d4c71	2026-11-16T10:34:48Z
 fix:integriq:3593:f34b8147	merged development in; new head 8dad155c, REVERIFY queued (merge lock held elsewhere)	session-20261116T103223-3619169e	2026-11-16T10:34:59Z
 merge:thematiq:1682:54a159c0	cloud tree of 1 thematiq PRs: merged=0 red=1 fail=0 skip=0 (gate sbom RED although regen-sbom --check says current: dev-only bumps leave the SBOM unchanged, gate demands the file in the diff)	session-20261116T101101-e7e34372	2026-11-16T10:35:34Z
+fix:integriq:2716:98572e41	conflict resolved, pushed 6edb6eea; merge lock held elsewhere, REVERIFY queued	session-20261116T103023-366232b4	2026-11-16T10:35:35Z
