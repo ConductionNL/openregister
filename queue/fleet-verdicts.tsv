@@ -14876,3 +14876,4 @@ hermiq	1736	476d376136c4944d883adf005e654081f12d330e	CONFLICT	worker-53:merge	me
 hermiq	1750	4d8f973f08b7152c743689d19471e35ec36a43ff	CONFLICT	worker-53:merge	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Settings/hermiq_register.json src/views/AdminRoot.vue src/views/Chat.vue 
 hermiq	1754	69e02cc70605b287770a0f70358	REVERIFY	worker-53:merge	verdict sha is not the head: head is 69e02cc70605b287770a0f70358780f4a4861b6e
 buildiq	1652	fd2e894ab2488b523b31ce2263c461c60518bbb2	RED	worker-16:merge-gate	GATE RED floor: unit_complexity: 3.32 -> 3.30
+integriq	3671	4b0e1b0a423662d5834cee85bf86311246344660	GREEN	worker-20	unit 9535 tests; baseline 5 failures (JobsController x2, CallService x2, SyncEntryGolden); new failures none; openregister main API migration checked call by call against main
