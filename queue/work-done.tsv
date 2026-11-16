@@ -18099,3 +18099,4 @@ fix:versioniq:753:6f871076	conflict resolved, pushed f4103ca1; REVERIFY queued (
 verify:versioniq:751:180f25fc	751 GREEN, 754 CONFLICT, 758 GREEN; 0 new failures	session-20261116T220813-c25016f1	2026-11-16T22:19:39Z
 review:hermiq:1781:bf818a9a	GREEN: spec-conform; 5342 phpunit + 1548 vitest pass at head; conflicts with development (l10n, register version)	session-20261116T221523-34c05d70	2026-11-16T22:19:54Z
 fix:shillinq:3124:b3f4591a	fixed: scan test reads alias map; new head f16c855b, REVERIFY (merge lock held elsewhere)	session-20261116T220522-6d402fd2	2026-11-16T22:20:12Z
+fix:keepiq:1863:0a71ceb1	merged #1863 at 9a7c1da8e9b5ffccdf0f9aeda7a254cb3e64846c (conflict resolved: privileged_access.* whitelist carried into AuditMetadataPolicy)	session-20261116T214640-6a01c0c6	2026-11-16T22:20:30Z
