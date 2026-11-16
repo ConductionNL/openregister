@@ -421,3 +421,5 @@ larpinq	1060	701044e668f5b0522fb7bf5d2b4223773dcf9bc6	REQUEST_CHANGES	worker-52	
 opencatalogi	2415	f57435cd4bed261f5a3a21a7066af9160fc83d79	APPROVE	worker-47	Quick; no blockers; renderEntity call matches openregister main RenderSelection signature, only caller migrated, tests adapted
 opencatalogi	2541	131ce0fa2c470dbe80bfc84563ed1235afce4730	APPROVE	worker-47	Strict; no blockers; repair step uses main's find/ObjectFindOptions/releaseToSystem/runAsSystem as declared, idempotent, inert on older OpenRegister; schema keys match the unowned writers
 opencatalogi	2673	61f25128c9c36b5ca1d7519327d3ffbd942c0c46	APPROVE	worker-47	Thorough; no blockers; implements publications-unpublished-overview DSH-011; endpoint logged-in only, rows from RBAC-on search, files only of readable publications; FileMapper calls exist on main
+portaliq	2349	e7812cc2231a27fa071df300fa8477ffb36e9a79	APPROVE	worker-48	Quick; no blockers; dev dependency phpstan 2.3.1 -> 2.3.5, lock only, tree adds no failures
+portaliq	2530	23908dc9409b67edbb7c1748002e6f9859115f48	APPROVE	worker-48	Quick; no blockers; shared Conduction lock refresh (.github 1.18 -> 1.19), lock only, tree adds no failures
