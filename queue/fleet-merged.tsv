@@ -4435,3 +4435,4 @@ hermiq	1739	5a3ceaf410344e30e2744d79a65442e6775688e3	MERGED	merge3	GATE OK sbom,
 hermiq	1795	fdc2c517220656bac17530d30d674fd346d80010	RED	merge3	GATE RED absolute floor: hermiq maintainability 3.76 after merge is below its floor 3.77
 hermiq	1801	b8e31c29c0755366e44d0de7ddd7cee5f6d4be87	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.77 holds at 3.78
 hermiq	1802	5e2885e3e660cb042b21292e305f27b2d9a26093	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.77 holds at 3.78
+buildiq	1673	df130f4fc2e3b198ff2e9f7688906c3232cdf919	SKIP	worker-39	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
