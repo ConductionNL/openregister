@@ -17359,6 +17359,7 @@ build:portaliq:portal-federated-search:r2	already done: every code task ticked o
 merge:learniq:2557:d1a26106	merge3 tree of 2 learniq PRs: none; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-16T19:21:33Z
 fix:opencatalogi:2725:defb7b6a	already merged: #2725 landed on development as 7eaf8724, nothing to fix	session-20261116T191156-bbdb7add	2026-11-16T19:22:10Z
 build:portaliq:media-usage-count:r2	already done: T01-T03 on development (#1647: MediaUsage, MediaUsageJob, usedOn, pill test); only T04, a live check, is left	session-20261116T184831-8be58c40	2026-11-16T19:21:31Z
+cover:integriq:92114ab0m505c:js0023cfc7	deferred: integriq has 70 open PRs	session-20261116T192202-7c713c59	2026-11-16T19:22:37Z
 build:portaliq:example-resident-zuiddrecht:r2	already built: tasks 1-5 ticked (#1227), installer since superseded by resident-on-example-set (53be7ab1b); only task 6 live check left, not code	session-20261116T192127-f26e2e56	2026-11-16T19:22:39Z
 build:portaliq:contact-question-form-names-its-action:r2	already done: T1 on development; T2 is a live check	session-20261116T191704-9a63be87	2026-11-16T19:22:34Z
 cover:decidiq:a5f973bbm9cda:8ed5443b	failed: lib/Kernel/Contracts/*.php is interfaces only (0 executable statements, nothing to cover); also deferred: decidiq has 48 open PRs	session-20261116T192132-006e7c93	2026-11-16T19:22:35Z
