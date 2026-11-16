@@ -17363,3 +17363,4 @@ fix:learniq:2557:3fe186b0	conflict resolved, pushed 572f9432; not landed: psalm 
 build:portaliq:mijn-taken-lists-contributed-tasks:r2	already done: T1-T2 on development (fix(site) 2026-10-16, contributedTasks.js + tasks-page tests); only T3, a live check, is left	session-20261116T184831-8be58c40	2026-11-16T19:22:43Z
 cover:decidiq:a5f973bbm9cda:9d3a1784	deferred: decidiq has 48 open PRs	session-20261116T192132-006e7c93	2026-11-16T19:23:00Z
 verify:keepiq:1847:05c68928	4 GREEN (1847,1848,1849,1850); php 5392 tests 0 new failures; vitest 3 inherited	session-20261116T191448-870933e4	2026-11-16T19:23:39Z
+cover:integriq:92114ab0m505c:jsf3772e2d	deferred: integriq has 70 open PRs	session-20261116T192125-8d7de83c	2026-11-16T19:23:49Z
