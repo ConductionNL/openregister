@@ -85,6 +85,7 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionReaders
  * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionSources
  * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionStorage
+ * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\ExtractionCeiling
  */
 class ExtractFileEntityTypesTest extends TestCase {
 

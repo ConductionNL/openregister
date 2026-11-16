@@ -39,7 +39,7 @@ The export route SHALL be reachable without a session. An anonymous caller SHALL
 - **GIVEN** the public schema `besluit`
 - **WHEN** an anonymous visitor asks for `format=pdf`
 - **THEN** the response is 406 naming `csv`, `tsv`, `json` and `xml`
-- @e2e exclude {specified only; task 2.2 covers it in tests/newman/openregister-public-export.postman_collection.json}
+- @e2e exclude {specified only; task 2.2 covers it in tests/integration/openregister-public-export.postman_collection.json}
 
 ### Requirement: A public export is paged and rate limited
 

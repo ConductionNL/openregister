@@ -36,6 +36,7 @@ use OCA\OpenRegister\Controller\Support\WebhooksControllerServices;
 use OCA\OpenRegister\Controller\Support\WebhookLogQuery;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\Webhook;
+use OCA\OpenRegister\Event\AppWebhookEvents;
 use OCA\OpenRegister\Db\WebhookLog;
 use OCA\OpenRegister\Db\WebhookLogMapperInterface;
 use OCA\OpenRegister\Db\WebhookMapperInterface;
@@ -1030,15 +1031,17 @@ class WebhooksController extends Controller {
 	 * @NoAdminRequired
 	 *
 	 * @NoCSRFRequired
-	 * @no-admin-idor-exempt No per-object resource: returns the static catalogue of available webhook event-type definitions
-	 *   (identical for every install); no tenant data.
+	 * @no-admin-idor-exempt No per-object resource: returns the catalogue of available webhook event-type definitions
+	 *   (the built-in ones plus those the installed apps declare); no tenant data.
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md
+	 * @spec openspec/changes/connect-document-webhooks/specs/app-declared-webhook-events/spec.md#requirement-the-event-catalogue-lists-declared-events
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function events(): JSONResponse {
-		$events = self::EVENT_CATALOGUE;
+		// Built-in events first, then the events other apps declared.
+		$events = array_merge(self::EVENT_CATALOGUE, AppWebhookEvents::catalogue());
 
 		return new JSONResponse(
 			data: [
