@@ -16811,3 +16811,4 @@ fix:hermiq:1736:476d3761	development merged in clean, no new failures; new head 
 fix:hermiq:1788:4b1ae86b	conflict resolved (registry.js, both widgets kept), new head ce467188; merge lock held elsewhere, REVERIFY queued	session-20261116T165247-ed439eb0	2026-11-16T17:26:05Z
 fix:hermiq:1807:36283a37	conflict resolved, pushed ef10bb1; merge lock held elsewhere, REVERIFY queued	session-20261116T171008-5daa9ed6	2026-11-16T17:26:15Z
 build:portaliq:calendar-timetable-display	already done: T1,T2,T4 ticked on development; only T3 (live check, needs live instance) left	session-20261116T172806-3ef5ead7	2026-11-16T17:29:00Z
+merge:hermiq:1187:5b9c4371	unmeasured: static.developer.overheid.nl (proxy 403 in this session); 5 IN approved, #1187 RED sbom, 1735/1807/1808 CONFLICT	session-20261116T171035-683856c3	2026-11-16T17:29:14Z
