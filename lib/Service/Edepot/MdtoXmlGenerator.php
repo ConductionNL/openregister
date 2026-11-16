@@ -158,12 +158,16 @@ class MdtoXmlGenerator {
 	 * @param MdtoDocumentWriter $writer The XML primitives.
 	 * @param MdtoBestandGenerator $bestandGenerator Builder of a file's own document.
 	 * @param MdtoPreconditions $preconditions What must hold before a document is worth writing.
+	 * @param MdtoContainment|null $containment The records a record contains and is part of; none when null.
 	 */
 	public function __construct(
 		private readonly MdtoValueSources $sources,
 		private readonly MdtoDocumentWriter $writer,
 		private readonly MdtoBestandGenerator $bestandGenerator,
 		private readonly MdtoPreconditions $preconditions,
+		// Optional and last so existing callers keep working; the container
+		// always passes it. Without it a document carries no containment.
+		private readonly ?MdtoContainment $containment = null,
 	) {
 	}//end __construct()
 
@@ -195,6 +199,7 @@ class MdtoXmlGenerator {
 		$this->addRating(run: $run);
 		$this->addRetentionPeriod(run: $run);
 		$this->addInformatiecategorie(run: $run);
+		$this->addContainment(run: $run);
 		$this->addRepresentations(parent: $root, files: $files);
 		$this->addArchiefvormer(parent: $root);
 		$this->addParties(run: $run);
@@ -562,6 +567,43 @@ class MdtoXmlGenerator {
 			)
 		);
 	}//end addArchiefvormer()
+
+	/**
+	 * Add `isOnderdeelVan` for each record this one is part of, then
+	 * `bevatOnderdeel` for each record it contains.
+	 *
+	 * Containment is declared on the containing record's schema; a record
+	 * whose schemas declare none gets neither element, exactly as before.
+	 * The XSD puts both after `informatiecategorie` and before
+	 * `heeftRepresentatie`.
+	 *
+	 * @param InformatieobjectRun $run The document being written: its element, object and facts.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/archival-conformance/tasks.md#task-1.3
+	 */
+	private function addContainment(InformatieobjectRun $run): void {
+		if ($this->containment === null) {
+			return;
+		}
+
+		foreach ($this->containment->wholesOf(object: $run->object) as $whole) {
+			$this->writer->verwijzing(
+				parent: $run->root,
+				name: 'isOnderdeelVan',
+				verwijzing: new MdtoVerwijzing(naam: $whole['name'], kenmerk: $whole['id'], bron: 'OpenRegister')
+			);
+		}
+
+		foreach ($this->containment->partsOf(object: $run->object) as $part) {
+			$this->writer->verwijzing(
+				parent: $run->root,
+				name: 'bevatOnderdeel',
+				verwijzing: new MdtoVerwijzing(naam: $part['name'], kenmerk: $part['id'], bron: 'OpenRegister')
+			);
+		}
+	}//end addContainment()
 
 	/**
 	 * Add one `betrokkene` per party the schema's archival block names.

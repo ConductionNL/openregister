@@ -23,12 +23,14 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use Exception;
+use InvalidArgumentException;
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\DatabaseServerProfile;
 use OCA\OpenRegister\Controller\Support\HybridSearchDiagnostics;
 use OCA\OpenRegister\Controller\Support\SettingsControllerServices;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCA\OpenRegister\Search\Service\Search\SearchIndexMaintenanceInterface;
+use OCA\OpenRegister\Service\Settings\SearchBackendHandler;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
@@ -328,6 +330,39 @@ class SettingsController extends Controller {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
 		}
 	}//end getSearchBackend()
+
+	/**
+	 * Change the search backend settings: whether object search ignores accents.
+	 *
+	 * Takes `accentInsensitive` as a boolean. Enabling it where the database
+	 * cannot fold accents answers 400 naming the reason. Administrators only,
+	 * as every other settings write.
+	 *
+	 * @return JSONResponse 200 with the backend configuration, 400 on a refused or malformed value.
+	 *
+	 * @psalm-return JSONResponse<200|400|500, array, array<never, never>>
+	 *
+	 * @spec openspec/changes/search-accent-insensitive/specs/zoeken-filteren/spec.md#requirement-accent-folding-is-visible-to-administrators-and-can-be-bypassed
+	 */
+	public function updateSearchBackend(): JSONResponse {
+		$value = $this->request->getParam(key: 'accentInsensitive');
+		if (is_bool($value) === false && in_array($value, ['true', 'false', '1', '0'], true) === false) {
+			return new JSONResponse(data: ['error' => 'accentInsensitive must be true or false.'], statusCode: 400);
+		}
+
+		$enabled = ($value === true || $value === 'true' || $value === '1');
+
+		try {
+			$handler = $this->container->get(SearchBackendHandler::class);
+			$handler->setAccentInsensitive(enabled: $enabled);
+			return new JSONResponse(data: $handler->getSearchBackendConfig());
+		} catch (InvalidArgumentException $e) {
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
+		} catch (Exception $e) {
+			$this->logger->error('Search backend settings could not be stored', ['exception' => $e->getMessage()]);
+			return new JSONResponse(data: ['error' => 'The search settings could not be stored.'], statusCode: 500);
+		}
+	}//end updateSearchBackend()
 
 	/**
 	 * Read the state of the indexes behind object search.

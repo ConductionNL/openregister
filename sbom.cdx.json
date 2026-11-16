@@ -6380,6 +6380,74 @@
     },
     {
       "type": "library",
+      "name": "react-dom",
+      "group": "@floating-ui",
+      "version": "2.1.9",
+      "bom-ref": "openregister@1.0.0|@floating-ui/react-dom@2.1.9",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/%40floating-ui/react-dom@2.1.9",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/@floating-ui/react-dom/-/react-dom-2.1.9.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "2438c41460a9226c43080ec924abe203433df91b6625d8f49bf35553920c8012be026668b80410efffb618b1f41975d8d18330f685cf07c84a75b3d883940b62"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/@floating-ui/react-dom"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "react",
+      "group": "@floating-ui",
+      "version": "0.26.28",
+      "bom-ref": "openregister@1.0.0|@floating-ui/react@0.26.28",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/%40floating-ui/react@0.26.28",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/@floating-ui/react/-/react-0.26.28.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "c8e450bae02d5698918e932175cd30263d3a6fd2458eb605e2aa7dea3fbebf6341a5b8ba484185edda27509dd332279ead0eaa56402fd6d82becbe2be6ba13ab"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/@floating-ui/react"
+        }
+      ]
+    },
+    {
+      "type": "library",
       "name": "utils",
       "group": "@floating-ui",
       "version": "0.2.12",
@@ -6409,6 +6477,244 @@
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@floating-ui/utils"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "plugin-doc-explorer",
+      "group": "@graphiql",
+      "version": "0.4.4",
+      "bom-ref": "openregister@1.0.0|@graphiql/plugin-doc-explorer@0.4.4",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/%40graphiql/plugin-doc-explorer@0.4.4",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/@graphiql/plugin-doc-explorer/-/plugin-doc-explorer-0.4.4.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "37e0158782858d7f28a195178f78c13e6cfcaec85733490897ebd5e938b2420319b464a93e88489f635d49873cba44666447cccd84fd82a2f0e38e3a497cf597"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/@graphiql/plugin-doc-explorer"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "plugin-history",
+      "group": "@graphiql",
+      "version": "0.4.4",
+      "bom-ref": "openregister@1.0.0|@graphiql/plugin-history@0.4.4",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/%40graphiql/plugin-history@0.4.4",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/@graphiql/plugin-history/-/plugin-history-0.4.4.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "bdb52af262a652c12784bba963e9987ab59b452ec5a02b058d18924fe426266206cd1e959ac22b99e176bcb2adc31fb3b4e0aa7051988d9df5a084ce44193e68"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/@graphiql/plugin-history"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "react",
+      "group": "@graphiql",
+      "version": "0.39.1",
+      "bom-ref": "openregister@1.0.0|@graphiql/react@0.39.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/%40graphiql/react@0.39.1",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/@graphiql/react/-/react-0.39.1.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "86d0f7596f3e1215de1447d4701b18fadf944f401ba9edd5e00a80faa480152c4bd80707dfb21dd56c20b7450b143611c2f95fefbc4d8610eb5b08de6de4a248"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/@graphiql/react"
+        }
+      ],
+      "components": [
+        {
+          "type": "library",
+          "name": "jsonc-parser",
+          "version": "3.3.1",
+          "bom-ref": "openregister@1.0.0|@graphiql/react@0.39.1|jsonc-parser@3.3.1",
+          "licenses": [
+            {
+              "license": {
+                "id": "MIT"
+              }
+            }
+          ],
+          "purl": "pkg:npm/jsonc-parser@3.3.1",
+          "externalReferences": [
+            {
+              "url": "https://registry.npmjs.org/jsonc-parser/-/jsonc-parser-3.3.1.tgz",
+              "type": "distribution",
+              "hashes": [
+                {
+                  "alg": "SHA-512",
+                  "content": "1d4807eb92b27a3ad414fbc714f6ea398d2bb058a9dc1a39c1be2782f762d44a426165100c2e55f98ee6670b3e0cb92be0cfffcd02686a7bb548ffbcec3bf5a1"
+                }
+              ],
+              "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+            }
+          ],
+          "properties": [
+            {
+              "name": "cdx:npm:package:path",
+              "value": "node_modules/@graphiql/react/node_modules/jsonc-parser"
+            }
+          ]
+        },
+        {
+          "type": "library",
+          "name": "react-compiler-runtime",
+          "version": "19.1.0-rc.3",
+          "bom-ref": "openregister@1.0.0|@graphiql/react@0.39.1|react-compiler-runtime@19.1.0-rc.3",
+          "licenses": [
+            {
+              "license": {
+                "id": "MIT"
+              }
+            }
+          ],
+          "purl": "pkg:npm/react-compiler-runtime@19.1.0-rc.3",
+          "externalReferences": [
+            {
+              "url": "https://registry.npmjs.org/react-compiler-runtime/-/react-compiler-runtime-19.1.0-rc.3.tgz",
+              "type": "distribution",
+              "hashes": [
+                {
+                  "alg": "SHA-512",
+                  "content": "0acb28832b365d9bba4aac51757db177c71001fe7b041bc56cb1019486bbef5eb59678a76ca527fc4a9b79c09eed6ddea8341f837ac8a0ec33131ce00a1ee1fe"
+                }
+              ],
+              "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+            }
+          ],
+          "properties": [
+            {
+              "name": "cdx:npm:package:path",
+              "value": "node_modules/@graphiql/react/node_modules/react-compiler-runtime"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "toolkit",
+      "group": "@graphiql",
+      "version": "0.12.1",
+      "bom-ref": "openregister@1.0.0|@graphiql/toolkit@0.12.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/%40graphiql/toolkit@0.12.1",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/@graphiql/toolkit/-/toolkit-0.12.1.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "3ae1d5508bcf2fb9f3dee01d1bd7b2679719c7cec91fe5cc38789782fddfa1865604f5bc14d30653215f9713fbd2386fedb5fd50fc98991b13209f864a52b43d"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/@graphiql/toolkit"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "react",
+      "group": "@headlessui",
+      "version": "2.2.10",
+      "bom-ref": "openregister@1.0.0|@headlessui/react@2.2.10",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/%40headlessui/react@2.2.10",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/@headlessui/react/-/react-2.2.10.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "e6954b34af70969c53513cbd1a981b5ff49d71187e1c19cf92d8ccdb06e22d31f8a7ed843c704ed5aa12af2502b8a50822d74358ef484e58542fc52750dfe820"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/@headlessui/react"
         }
       ]
     },
@@ -6599,6 +6905,108 @@
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@humanwhocodes/retry"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "date",
+      "group": "@internationalized",
+      "version": "3.12.4",
+      "bom-ref": "openregister@1.0.0|@internationalized/date@3.12.4",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:npm/%40internationalized/date@3.12.4",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/@internationalized/date/-/date-3.12.4.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "3357449f87355351ec4a569547cba966d4aabd7ad39070dfbf5f07d35b82489ca354b0f19c1477f2ffdf33179c9a5c17291e22f4779972681000f13a03e68625"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/@internationalized/date"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "number",
+      "group": "@internationalized",
+      "version": "3.6.9",
+      "bom-ref": "openregister@1.0.0|@internationalized/number@3.6.9",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:npm/%40internationalized/number@3.6.9",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/@internationalized/number/-/number-3.6.9.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "1a05b2d9c68effe855f6c4ffa024d6187bdb8e624c3d3f64917ce82912e7904abb69d821851ed4a6b86f63db17aca7eba7735c0df845e904075d1d4a7d06c1f2"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/@internationalized/number"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "string",
+      "group": "@internationalized",
+      "version": "3.2.10",
+      "bom-ref": "openregister@1.0.0|@internationalized/string@3.2.10",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:npm/%40internationalized/string@3.2.10",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/@internationalized/string/-/string-3.2.10.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "3c3c7afffbc74a94671dfc6a32ab68d75cd0be1b1a53be0ede62afd85ff47a270665c97d34b8d098695b1f3fcbb09879b4b2a9e00e0bed9553ccdd7f326313bc"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/@internationalized/string"
         }
       ]
     },
@@ -7291,6 +7699,40 @@
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@microsoft/fetch-event-source"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "push-pull-async-iterable-iterator",
+      "group": "@n1ru4l",
+      "version": "3.2.0",
+      "bom-ref": "openregister@1.0.0|@n1ru4l/push-pull-async-iterable-iterator@3.2.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/%40n1ru4l/push-pull-async-iterable-iterator@3.2.0",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/@n1ru4l/push-pull-async-iterable-iterator/-/push-pull-async-iterable-iterator-3.2.0.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "ddf90a8f6e64123b1f39b2fa22528f0251d83eafe8630524910d37cec4d38838c3eef83f4718dd88b782c9daadc4764fd0982c5cbdc3fd7e68024306cee529fd"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/@n1ru4l/push-pull-async-iterable-iterator"
         }
       ]
     },
@@ -8163,6 +8605,1094 @@
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@nodelib/fs.walk"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "primitive",
+      "group": "@radix-ui",
+      "version": "1.2.0",
+      "bom-ref": "openregister@1.0.0|@radix-ui/primitive@1.2.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/%40radix-ui/primitive@1.2.0",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/@radix-ui/primitive/-/primitive-1.2.0.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "280058f9530844f24bf95cb3bffdf7e451215d70ffc43bfc04c6f5925e3cfda5c964c1f42ed1c24f1e606b9467c5a10fde7647b664cb7f53fdbda9e6157e3a6f"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/@radix-ui/primitive"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "react-arrow",
+      "group": "@radix-ui",
+      "version": "1.1.17",
+      "bom-ref": "openregister@1.0.0|@radix-ui/react-arrow@1.1.17",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/%40radix-ui/react-arrow@1.1.17",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/@radix-ui/react-arrow/-/react-arrow-1.1.17.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "ebb8e3715bf18d70824ad9d35b767e33b8e668532e311eccd898290f31f8c3b25246b8a49b38637d880fff4f4409bf27ef0867b2087589f27e21ef7aa848fea5"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/@radix-ui/react-arrow"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "react-collection",
+      "group": "@radix-ui",
+      "version": "1.2.0",
+      "bom-ref": "openregister@1.0.0|@radix-ui/react-collection@1.2.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/%40radix-ui/react-collection@1.2.0",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/@radix-ui/react-collection/-/react-collection-1.2.0.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "fb2890cea71ced2cbbff9b348eb3028e93d1141df9dfc54dad73d67532d9844fd209f804c2ce1a23a94758dfefbdc9f28479dd44e581cea9aa078401ac84d9f5"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/@radix-ui/react-collection"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "react-compose-refs",
+      "group": "@radix-ui",
+      "version": "1.1.5",
+      "bom-ref": "openregister@1.0.0|@radix-ui/react-compose-refs@1.1.5",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/%40radix-ui/react-compose-refs@1.1.5",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/@radix-ui/react-compose-refs/-/react-compose-refs-1.1.5.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "fb8f0f6c001bab77627632716be39a598d99c2000ab0d8911b27872accdb959310fa472977da40693d7570c9061227b4bec3a2dd075e4c4e9de457b71a7eb590"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/@radix-ui/react-compose-refs"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "react-context",
+      "group": "@radix-ui",
+      "version": "1.3.0",
+      "bom-ref": "openregister@1.0.0|@radix-ui/react-context@1.3.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/%40radix-ui/react-context@1.3.0",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/@radix-ui/react-context/-/react-context-1.3.0.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "bf901812870c21291b27ed5f4d7cd9a6216fecd46bdc3d968986cb20a7fe164989f1590fe9de74dde5769f7e0c16eb2c1d7635a5ca2adf27c98901fbedd73832"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/@radix-ui/react-context"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "react-dialog",
+      "group": "@radix-ui",
+      "version": "1.3.1",
+      "bom-ref": "openregister@1.0.0|@radix-ui/react-dialog@1.3.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/%40radix-ui/react-dialog@1.3.1",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/@radix-ui/react-dialog/-/react-dialog-1.3.1.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "fb4138aaf553c23016adaf6c12127ef414ecbc7134d33914b8dc3554687b4be19cd7775f624f92d4f55075c8560e3f976078406a2ed9ec8a735d50c21ac0e996"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/@radix-ui/react-dialog"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "react-direction",
+      "group": "@radix-ui",
+      "version": "1.2.0",
+      "bom-ref": "openregister@1.0.0|@radix-ui/react-direction@1.2.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/%40radix-ui/react-direction@1.2.0",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/@radix-ui/react-direction/-/react-direction-1.2.0.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "16d440e766bfafe2ca4ad153fa778b526fbcbd27bbc1bce46d0186794f22c458b00bc354d7812fa2af404c40aa2f77866dc533251e1fc9f0382a42bfaba75faa"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/@radix-ui/react-direction"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "react-dismissable-layer",
+      "group": "@radix-ui",
+      "version": "1.2.1",
+      "bom-ref": "openregister@1.0.0|@radix-ui/react-dismissable-layer@1.2.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/%40radix-ui/react-dismissable-layer@1.2.1",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/@radix-ui/react-dismissable-layer/-/react-dismissable-layer-1.2.1.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "2887c3700b31fa8572945678c6bc952aeb0952b2cb8534267e7256e24c24e0a9b99b2be11c2ae3d38867596502d7aebec43e031dd1fcb501b2970617d61ebe3e"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/@radix-ui/react-dismissable-layer"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "react-dropdown-menu",
+      "group": "@radix-ui",
+      "version": "2.2.1",
+      "bom-ref": "openregister@1.0.0|@radix-ui/react-dropdown-menu@2.2.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/%40radix-ui/react-dropdown-menu@2.2.1",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/@radix-ui/react-dropdown-menu/-/react-dropdown-menu-2.2.1.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "5ec1dc9981b601caa7bd3aab3975d670cae1aae10896ab9c8b3b831f5315fea3115be0e776904232f35e4d15cec6a986d47e63f3d33ff88d3fdf865d77ecc371"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/@radix-ui/react-dropdown-menu"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "react-focus-guards",
+      "group": "@radix-ui",
+      "version": "1.2.0",
+      "bom-ref": "openregister@1.0.0|@radix-ui/react-focus-guards@1.2.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/%40radix-ui/react-focus-guards@1.2.0",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/@radix-ui/react-focus-guards/-/react-focus-guards-1.2.0.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "30f9b94748911940eb0e73cdc662c192ff97ee93785cacedf8c6d6244b8942c1f73451f8a26adba57a6e73260208a4d2b7e9dafd9c46844590ad64d9d36f3970"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/@radix-ui/react-focus-guards"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "react-focus-scope",
+      "group": "@radix-ui",
+      "version": "1.3.1",
+      "bom-ref": "openregister@1.0.0|@radix-ui/react-focus-scope@1.3.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/%40radix-ui/react-focus-scope@1.3.1",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/@radix-ui/react-focus-scope/-/react-focus-scope-1.3.1.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "ba078c85b5ede32e52d93d469c8a9b58328437deb63c3c275f57cdd1e28e3a07f97fadc38769a7f05d455324a5816d2217a1a256c445df60f3b832164d4c9026"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/@radix-ui/react-focus-scope"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "react-id",
+      "group": "@radix-ui",
+      "version": "1.1.4",
+      "bom-ref": "openregister@1.0.0|@radix-ui/react-id@1.1.4",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/%40radix-ui/react-id@1.1.4",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/@radix-ui/react-id/-/react-id-1.1.4.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "4cc429da5940f91627ec97239eb327cfbc0de29715b6d3d99d1668e763cb42ca0b54accd955c1478799f78f81381196e5c5be50f7183e60e4c3955532423b4a8"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/@radix-ui/react-id"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "react-menu",
+      "group": "@radix-ui",
+      "version": "2.2.1",
+      "bom-ref": "openregister@1.0.0|@radix-ui/react-menu@2.2.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/%40radix-ui/react-menu@2.2.1",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/@radix-ui/react-menu/-/react-menu-2.2.1.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "1b7e01b14f744818f97e8629cfca50aaafd0d0395fcb297a2a2b5611f4705c2d10bdfc2158d0304b8f4358fdbead12748b0bf6d19d90c7b4a4f93d376c6a3924"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/@radix-ui/react-menu"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "react-popper",
+      "group": "@radix-ui",
+      "version": "1.4.0",
+      "bom-ref": "openregister@1.0.0|@radix-ui/react-popper@1.4.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/%40radix-ui/react-popper@1.4.0",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/@radix-ui/react-popper/-/react-popper-1.4.0.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "c82591bcb786bfd3f3dfe79fc07a863e9ef4999e7aaf791f220415179e8e8f66806b8b8ffd36fe204e7dc0d71cfbbe7cadcb6a6c22b1e0b6caf0823fafb067d1"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/@radix-ui/react-popper"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "react-portal",
+      "group": "@radix-ui",
+      "version": "1.2.0",
+      "bom-ref": "openregister@1.0.0|@radix-ui/react-portal@1.2.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/%40radix-ui/react-portal@1.2.0",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/@radix-ui/react-portal/-/react-portal-1.2.0.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "4ad5fbc579da454e3556f16d326f73961546cfc5c5e869965935dfb6441a63eb6a5646ecfd1f54980a7998bcc71daa64e6133d44c650bceff7bacc883ff838da"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/@radix-ui/react-portal"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "react-presence",
+      "group": "@radix-ui",
+      "version": "1.1.11",
+      "bom-ref": "openregister@1.0.0|@radix-ui/react-presence@1.1.11",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/%40radix-ui/react-presence@1.1.11",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/@radix-ui/react-presence/-/react-presence-1.1.11.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "67bfdab6591a6f7e99f219be57ccd873bf6bd16fad88e075a34b6e9f5072f7827269d91e90b426b440270523fd5ca5c1350b12b684ad4b8fa05f5d09a52e5a90"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/@radix-ui/react-presence"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "react-primitive",
+      "group": "@radix-ui",
+      "version": "2.2.0",
+      "bom-ref": "openregister@1.0.0|@radix-ui/react-primitive@2.2.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/%40radix-ui/react-primitive@2.2.0",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/@radix-ui/react-primitive/-/react-primitive-2.2.0.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "1c24d23cc36abf9e50934217e207896e9c976b39aaba57229b0bb28f14e42a2dbdbfe4196c6d99868f419db06ae184b63c5f8a94d6f6097a0bcfaeae5266e592"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/@radix-ui/react-primitive"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "react-roving-focus",
+      "group": "@radix-ui",
+      "version": "1.2.1",
+      "bom-ref": "openregister@1.0.0|@radix-ui/react-roving-focus@1.2.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/%40radix-ui/react-roving-focus@1.2.1",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/@radix-ui/react-roving-focus/-/react-roving-focus-1.2.1.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "530ada391cd551e10f31c9613b5a74bf3d2a23e4db7432cef62f8588eaa12721cac1da42442724f72544b1c52700c2330a2b8da106bc0f803d6c8a4e3d71ade9"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/@radix-ui/react-roving-focus"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "react-slot",
+      "group": "@radix-ui",
+      "version": "1.5.0",
+      "bom-ref": "openregister@1.0.0|@radix-ui/react-slot@1.5.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/%40radix-ui/react-slot@1.5.0",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/@radix-ui/react-slot/-/react-slot-1.5.0.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "b7261df5d74f5c0cac01b75b0fd798c60c29092bfa7f73e772a55234a405491e6570954bcf771bfe900d0e862b2e21c1a57bfbb24a2bb725201945ac62e3cf15"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/@radix-ui/react-slot"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "react-tooltip",
+      "group": "@radix-ui",
+      "version": "1.4.1",
+      "bom-ref": "openregister@1.0.0|@radix-ui/react-tooltip@1.4.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/%40radix-ui/react-tooltip@1.4.1",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/@radix-ui/react-tooltip/-/react-tooltip-1.4.1.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "3712c519216d67bf3355f7283a14f0475c70aa8e6ac75261f0fc3a14c67d31c09aa9f473cfbfe02116a1b363b2e5794f810fbc42451c29b379074538e09fe40a"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/@radix-ui/react-tooltip"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "react-use-callback-ref",
+      "group": "@radix-ui",
+      "version": "1.1.5",
+      "bom-ref": "openregister@1.0.0|@radix-ui/react-use-callback-ref@1.1.5",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/%40radix-ui/react-use-callback-ref@1.1.5",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/@radix-ui/react-use-callback-ref/-/react-use-callback-ref-1.1.5.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "6391817f834a7800e85c8d607a232532e3285114f793d322cf3cca8466ff9b9e47f786868a0674d4f22992fb0eea530bd77040e976005d227a8336bbbd39f99f"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/@radix-ui/react-use-callback-ref"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "react-use-controllable-state",
+      "group": "@radix-ui",
+      "version": "1.3.0",
+      "bom-ref": "openregister@1.0.0|@radix-ui/react-use-controllable-state@1.3.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/%40radix-ui/react-use-controllable-state@1.3.0",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/@radix-ui/react-use-controllable-state/-/react-use-controllable-state-1.3.0.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "4c070123b6f0da58d809bbf8fb3b9349deb3202bbca51b7a483376bc9fd9d3a2b631787a23d59815efc0f68be5143b51e475471a6e620f10e80019bffbe75b2a"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/@radix-ui/react-use-controllable-state"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "react-use-effect-event",
+      "group": "@radix-ui",
+      "version": "0.0.5",
+      "bom-ref": "openregister@1.0.0|@radix-ui/react-use-effect-event@0.0.5",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/%40radix-ui/react-use-effect-event@0.0.5",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/@radix-ui/react-use-effect-event/-/react-use-effect-event-0.0.5.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "edcb2114bf07192ffb1c48871fef642fd1c1c29dac6bdc97d7c2a7c1e93a2985a65f033ba5e80c82d6b6017310288fabab72677d28fdc7cc18a85313746d4982"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/@radix-ui/react-use-effect-event"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "react-use-is-hydrated",
+      "group": "@radix-ui",
+      "version": "0.1.3",
+      "bom-ref": "openregister@1.0.0|@radix-ui/react-use-is-hydrated@0.1.3",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/%40radix-ui/react-use-is-hydrated@0.1.3",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/@radix-ui/react-use-is-hydrated/-/react-use-is-hydrated-0.1.3.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "ba63bf689fbcd82a4e9e10d95136c82c241fee453f8348affa81acfd0f23c3b2248560736843f8b00dbaf0f8450094c57ad6f0a7720273a92da48e13aadc5c23"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/@radix-ui/react-use-is-hydrated"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "react-use-layout-effect",
+      "group": "@radix-ui",
+      "version": "1.1.4",
+      "bom-ref": "openregister@1.0.0|@radix-ui/react-use-layout-effect@1.1.4",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/%40radix-ui/react-use-layout-effect@1.1.4",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/@radix-ui/react-use-layout-effect/-/react-use-layout-effect-1.1.4.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "2b6d03911914c039f11183013dc83763abe82e4132e69e50426b336602e780a2a20bb773051fda12e2b7c35aa5c762560d4347e8596e6a161d811dc13fe41b63"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/@radix-ui/react-use-layout-effect"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "react-use-rect",
+      "group": "@radix-ui",
+      "version": "1.1.4",
+      "bom-ref": "openregister@1.0.0|@radix-ui/react-use-rect@1.1.4",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/%40radix-ui/react-use-rect@1.1.4",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/@radix-ui/react-use-rect/-/react-use-rect-1.1.4.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "71238287a2659267e32f235c2e2bb69c1e2ffa79be76467e4392875a4feca28e14ed92e211014a1caf7f626b411e37c211a538dc804a40e738fee26609a8824d"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/@radix-ui/react-use-rect"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "react-use-size",
+      "group": "@radix-ui",
+      "version": "1.1.5",
+      "bom-ref": "openregister@1.0.0|@radix-ui/react-use-size@1.1.5",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/%40radix-ui/react-use-size@1.1.5",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/@radix-ui/react-use-size/-/react-use-size-1.1.5.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "57531c0d090c1b3822bf0a9dbbbbbde803ecee88b426f8fd2d3ce0ab7596ac366ac56740a94f72667650aa4e4e8b318547c6da75443066cae56a8ecc3a559838"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/@radix-ui/react-use-size"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "react-visually-hidden",
+      "group": "@radix-ui",
+      "version": "1.2.13",
+      "bom-ref": "openregister@1.0.0|@radix-ui/react-visually-hidden@1.2.13",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/%40radix-ui/react-visually-hidden@1.2.13",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/@radix-ui/react-visually-hidden/-/react-visually-hidden-1.2.13.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "7de8a388dd683e4e2b724e2ef439bdb6c538993e96a7da1e10485acf559412cd55baa2dff31cec146f9093eb96aba4e7307f4ef9644409183435fb723fd13817"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/@radix-ui/react-visually-hidden"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "rect",
+      "group": "@radix-ui",
+      "version": "1.1.3",
+      "bom-ref": "openregister@1.0.0|@radix-ui/rect@1.1.3",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/%40radix-ui/rect@1.1.3",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/@radix-ui/rect/-/rect-1.1.3.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "26dc9947e9aa80189b4e8f3179adc1e99466cd988cfd879506d5246aceb332e5e30257c81485b6160a9e33d78bcaf11a617ebabebe8324c2bee14e8b5742a137"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/@radix-ui/rect"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "focus",
+      "group": "@react-aria",
+      "version": "3.22.1",
+      "bom-ref": "openregister@1.0.0|@react-aria/focus@3.22.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:npm/%40react-aria/focus@3.22.1",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/@react-aria/focus/-/focus-3.22.1.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "08fc6d932ac18bf1d86393f7944ff9eec43aa9f6b494df04e794ce9bcf47d24346bf494ab7eff4ccfee558447306346be48c4156b417e20144a3004de762cf68"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/@react-aria/focus"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "interactions",
+      "group": "@react-aria",
+      "version": "3.28.1",
+      "bom-ref": "openregister@1.0.0|@react-aria/interactions@3.28.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:npm/%40react-aria/interactions@3.28.1",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/@react-aria/interactions/-/interactions-3.28.1.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "06a6fe1eb0f92393074b648a06121262aa36496f18d9d7f3805fd8d65209abbc6a2f185ea3dbf3c4f1841e1cfe5f392019fa2a109c7c03a6b70bbba2a92dc758"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/@react-aria/interactions"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "shared",
+      "group": "@react-types",
+      "version": "3.37.0",
+      "bom-ref": "openregister@1.0.0|@react-types/shared@3.37.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:npm/%40react-types/shared@3.37.0",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/@react-types/shared/-/shared-3.37.0.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "54d959ba27eee2d1ddc563df1efa0c7cab0703d9154c21a476ebf9bca5537629e6f301c524d872541e51cc83224458f4ab744aa026cfebcbb6cdaa014a216e7a"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/@react-types/shared"
         }
       ]
     },
@@ -9423,6 +10953,108 @@
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@svgdotjs/svg.select.js"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "helpers",
+      "group": "@swc",
+      "version": "0.5.24",
+      "bom-ref": "openregister@1.0.0|@swc/helpers@0.5.24",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:npm/%40swc/helpers@0.5.24",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/@swc/helpers/-/helpers-0.5.24.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "ead717a38900f078063bb01599ac01e7b4588bfa6204f6151d570ee9d5e35fe499c3c1a81e68b6eb6b29e2fd876b690d3fd0b1f38a9e8b6ef24fe7e34b597182"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/@swc/helpers"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "react-virtual",
+      "group": "@tanstack",
+      "version": "3.14.26",
+      "bom-ref": "openregister@1.0.0|@tanstack/react-virtual@3.14.26",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/%40tanstack/react-virtual@3.14.26",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/@tanstack/react-virtual/-/react-virtual-3.14.26.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "1d40e57ecad81fa928e711f9e8beb631c97fbb34fe00654d30716e0cda8324c75959cd4041ada879528d52f67f4560594384d8b7241eac5acdbcb9e9dfd87ae4"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/@tanstack/react-virtual"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "virtual-core",
+      "group": "@tanstack",
+      "version": "3.19.11",
+      "bom-ref": "openregister@1.0.0|@tanstack/virtual-core@3.19.11",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/%40tanstack/virtual-core@3.19.11",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/@tanstack/virtual-core/-/virtual-core-3.19.11.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "ff98876f444706f8fc0e2e7d143b38112366e398e5b37dda6408b8cdc7155d98dcffa66fc103fa9f3118793eb07978d37fd13afefae9d89858591c8ef993f5dc"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/@tanstack/virtual-core"
         }
       ]
     },
@@ -12482,6 +14114,39 @@
     },
     {
       "type": "library",
+      "name": "aria-hidden",
+      "version": "1.2.6",
+      "bom-ref": "openregister@1.0.0|aria-hidden@1.2.6",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/aria-hidden@1.2.6",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/aria-hidden/-/aria-hidden-1.2.6.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "8a4dd9802f5d63f95855533ef8e212b1a6037a0d6d6f456d3f9b8bde8ba1d64a0639a50c0cfa5b1487a2e099058a659414f9fdd2c6cc34c5d000854e96760a24"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/aria-hidden"
+        }
+      ]
+    },
+    {
+      "type": "library",
       "name": "ast-kit",
       "version": "2.2.0",
       "bom-ref": "openregister@1.0.0|ast-kit@2.2.0",
@@ -13582,6 +15247,39 @@
     },
     {
       "type": "library",
+      "name": "clsx",
+      "version": "1.2.1",
+      "bom-ref": "openregister@1.0.0|clsx@1.2.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/clsx@1.2.1",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/clsx/-/clsx-1.2.1.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "11c47aaf96bc6e3ea9bb7c9cb1afc4fdc2951ae4e064965db325181ce92c1bf50722229f8f1cd1c58269c9507061a41e3af8216a5f5f71ce0f89d960cee80042"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/clsx"
+        }
+      ]
+    },
+    {
+      "type": "library",
       "name": "codemirror",
       "version": "6.0.2",
       "bom-ref": "openregister@1.0.0|codemirror@6.0.2",
@@ -14544,6 +16242,39 @@
     },
     {
       "type": "library",
+      "name": "debounce-promise",
+      "version": "3.1.2",
+      "bom-ref": "openregister@1.0.0|debounce-promise@3.1.2",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/debounce-promise@3.1.2",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/debounce-promise/-/debounce-promise-3.1.2.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "ad91dc80191b61abc1783f5e8fab0fe7a5df1b9ddde75083e1d9dac3df3d617fe767f6497e0471ffd78f2a64cd8948b242f8789adacca12dce0165beca862da6"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/debounce-promise"
+        }
+      ]
+    },
+    {
+      "type": "library",
       "name": "debounce",
       "version": "3.0.0",
       "bom-ref": "openregister@1.0.0|debounce@3.0.0",
@@ -14741,6 +16472,39 @@
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/dequal"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "detect-node-es",
+      "version": "1.1.0",
+      "bom-ref": "openregister@1.0.0|detect-node-es@1.1.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/detect-node-es@1.1.0",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/detect-node-es/-/detect-node-es-1.1.0.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "ca9766254fd36c16f2d83c626eebfb64b5b706cd5012633b9c78c400d7e88492ef1345d5ba38ac9f5a8f25c67183ea83b9cb2bf9b3fa7cb0f5acf4b702127b11"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/detect-node-es"
         }
       ]
     },
@@ -17050,6 +18814,39 @@
     },
     {
       "type": "library",
+      "name": "framer-motion",
+      "version": "13.5.1",
+      "bom-ref": "openregister@1.0.0|framer-motion@13.5.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/framer-motion@13.5.1",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/framer-motion/-/framer-motion-13.5.1.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "1de58e69e1c3de4c9348810c4fafa7c3b7c19f8b1a21fc7169b6720084dbc9c025e31af5933189288bc6b7f3968214a5bc803da939d9d734c67a51c07ba4bc0c"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/framer-motion"
+        }
+      ]
+    },
+    {
+      "type": "library",
       "name": "fsevents",
       "version": "2.3.3",
       "bom-ref": "openregister@1.0.0|fsevents@2.3.3",
@@ -17191,6 +18988,39 @@
     },
     {
       "type": "library",
+      "name": "get-nonce",
+      "version": "1.0.1",
+      "bom-ref": "openregister@1.0.0|get-nonce@1.0.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/get-nonce@1.0.1",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/get-nonce/-/get-nonce-1.0.1.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "1498584680da89ab5f12450af072a589c9aeff7486143e75ab78ad2831a8493cac4090677ce7315391b19e113513ab2807be8c6d3d0c06d9ca26e5f2031fbde9"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/get-nonce"
+        }
+      ]
+    },
+    {
+      "type": "library",
       "name": "get-proto",
       "version": "1.0.1",
       "bom-ref": "openregister@1.0.0|get-proto@1.0.1",
@@ -17219,6 +19049,39 @@
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/get-proto"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "get-value",
+      "version": "4.1.0",
+      "bom-ref": "openregister@1.0.0|get-value@4.1.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/get-value@4.1.0",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/get-value/-/get-value-4.1.0.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "98a8eb2fbdd5c42522c62d107bd3ae7ab0d5926fb8ef915e370339cd9a632ba4cafdaedfaaffdd188eef91182f5a4cb0d7143d165fb02ae39480f904e9a601df"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/get-value"
         }
       ]
     },
@@ -17476,6 +19339,105 @@
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/graceful-fs"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "graphiql",
+      "version": "5.4.0",
+      "bom-ref": "openregister@1.0.0|graphiql@5.4.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/graphiql@5.4.0",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/graphiql/-/graphiql-5.4.0.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "f309aff13d4aaaf2969bbef0b378649dc8a8fdd4a45a582bb2579ee8606088dda1ff1d0b40d0e7e23806d8e18f5a2b2cfc6979187c87ef891f7aa0e37025d646"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/graphiql"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "graphql-language-service",
+      "version": "5.7.0",
+      "bom-ref": "openregister@1.0.0|graphql-language-service@5.7.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/graphql-language-service@5.7.0",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/graphql-language-service/-/graphql-language-service-5.7.0.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "e66c036fd1f21f131c3bd4422cb89e83aac2d6ef57289296845baf6991498b76eba10643cf57dc14d966f7a50232b22023a312b1bf51c30a8a2a9dac64e67d1b"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/graphql-language-service"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "graphql",
+      "version": "16.15.0",
+      "bom-ref": "openregister@1.0.0|graphql@16.15.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/graphql@16.15.0",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/graphql/-/graphql-16.15.0.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "df6933f4579ca210e20bfb607158b09d15ccec71415533e25bba473be0e290a388e4a8e153f8cd50b391797b2b16ab7658061b13dc455ec4df7c9c3a8933bcab"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/graphql"
         }
       ]
     },
@@ -18133,6 +20095,43 @@
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/ignore"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "immer",
+      "version": "9.0.21",
+      "bom-ref": "openregister@1.0.0|immer@9.0.21",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/immer@9.0.21",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/immer/-/immer-9.0.21.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "6dce0d047a8ea927d15bb3ce3241dde752ef0a569e317a66f1dc747bca04d863916eae5a44aec1c65e05cb354b746b4b9af2ca2fb0530c11b9002426e075a34c"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/immer"
         }
       ]
     },
@@ -18848,6 +20847,39 @@
     },
     {
       "type": "library",
+      "name": "is-primitive",
+      "version": "3.0.1",
+      "bom-ref": "openregister@1.0.0|is-primitive@3.0.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/is-primitive@3.0.1",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/is-primitive/-/is-primitive-3.0.1.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "1a58d1c615af9423517d9c8e4621fbec5c1d17019c30eeb6d28dfb10e602d0e45676af9660d56a5b4c3626ecdec3833e2fcd65ebf412dede609248a1c91aaff7"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/is-primitive"
+        }
+      ]
+    },
+    {
+      "type": "library",
       "name": "is-retry-allowed",
       "version": "2.2.0",
       "bom-ref": "openregister@1.0.0|is-retry-allowed@2.2.0",
@@ -18984,6 +21016,39 @@
     },
     {
       "type": "library",
+      "name": "isobject",
+      "version": "3.0.1",
+      "bom-ref": "openregister@1.0.0|isobject@3.0.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/isobject@3.0.1",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/isobject/-/isobject-3.0.1.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "5a107dcc292eec41938ff1d0411cf969440451ea10647d9b59c96d444acea72989e1ba1813ac0bf536ebdb792b44f499f82e73a8d4ab4b0f8273bb196786fbbe"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/isobject"
+        }
+      ]
+    },
+    {
+      "type": "library",
       "name": "js-tokens",
       "version": "4.0.0",
       "bom-ref": "openregister@1.0.0|js-tokens@4.0.0",
@@ -19009,10 +21074,6 @@
         }
       ],
       "properties": [
-        {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/js-tokens"
@@ -19412,6 +21473,39 @@
     },
     {
       "type": "library",
+      "name": "linkify-it",
+      "version": "6.1.0",
+      "bom-ref": "openregister@1.0.0|linkify-it@6.1.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/linkify-it@6.1.0",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/linkify-it/-/linkify-it-6.1.0.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "c09fd3c294834cb7a90ab42861660813120a83965c85ec76367e729369859c1fba3ed7641edc8bc7be3699df5cb118e33a71a42884bf46b6d8ee5f03ea04fd57"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/linkify-it"
+        }
+      ]
+    },
+    {
+      "type": "library",
       "name": "linkifyjs",
       "version": "4.3.3",
       "bom-ref": "openregister@1.0.0|linkifyjs@4.3.3",
@@ -19618,6 +21712,39 @@
     },
     {
       "type": "library",
+      "name": "loose-envify",
+      "version": "1.4.0",
+      "bom-ref": "openregister@1.0.0|loose-envify@1.4.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/loose-envify@1.4.0",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/loose-envify/-/loose-envify-1.4.0.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "972bb13c6aff59f86b95e9b608bfd472751cd7372a280226043cee918ed8e45ff242235d928ebe7d12debe5c351e03324b0edfeb5d54218e34f04b71452a0add"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/loose-envify"
+        }
+      ]
+    },
+    {
+      "type": "library",
       "name": "lowlight",
       "version": "3.3.0",
       "bom-ref": "openregister@1.0.0|lowlight@3.3.0",
@@ -19712,6 +21839,107 @@
             {
               "name": "cdx:npm:package:path",
               "value": "node_modules/magic-string-ast/node_modules/magic-string"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "markdown-it",
+      "version": "15.0.3",
+      "bom-ref": "openregister@1.0.0|markdown-it@15.0.3",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/markdown-it@15.0.3",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/markdown-it/-/markdown-it-15.0.3.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "f80cfb3a3cf78911aef0a60cbc9eb1561bebc4fdde13ebc4b495fbe4ec3cf17069710355ff49465f96729c82017ed444a380c2da3b2f78030369e96d9a6f10bd"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/markdown-it"
+        }
+      ],
+      "components": [
+        {
+          "type": "library",
+          "name": "argparse",
+          "version": "3.0.4",
+          "bom-ref": "openregister@1.0.0|markdown-it@15.0.3|argparse@3.0.4",
+          "licenses": [
+            {
+              "license": {
+                "id": "PSF-2.0"
+              }
+            }
+          ],
+          "purl": "pkg:npm/argparse@3.0.4",
+          "externalReferences": [
+            {
+              "url": "https://registry.npmjs.org/argparse/-/argparse-3.0.4.tgz",
+              "type": "distribution",
+              "hashes": [
+                {
+                  "alg": "SHA-512",
+                  "content": "7f058add9ab6da5e172498f1e667011c68a4224fa126a3bedf674f9b426eafbfabb46e71d6c70e8d27dd4fd64a7961cfa6cc9afe5d071cae2d0c8981913aedbc"
+                }
+              ],
+              "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+            }
+          ],
+          "properties": [
+            {
+              "name": "cdx:npm:package:path",
+              "value": "node_modules/markdown-it/node_modules/argparse"
+            }
+          ]
+        },
+        {
+          "type": "library",
+          "name": "entities",
+          "version": "8.1.0",
+          "bom-ref": "openregister@1.0.0|markdown-it@15.0.3|entities@8.1.0",
+          "licenses": [
+            {
+              "license": {
+                "id": "BSD-2-Clause"
+              }
+            }
+          ],
+          "purl": "pkg:npm/entities@8.1.0",
+          "externalReferences": [
+            {
+              "url": "https://registry.npmjs.org/entities/-/entities-8.1.0.tgz",
+              "type": "distribution",
+              "hashes": [
+                {
+                  "alg": "SHA-512",
+                  "content": "9312fb9ac21f7d2ba1f5a68500c0fbaf1008b9344c00731e06d8075b6c94756c3bdf664d87831e86417681d8efb5d9a29246883fd6c50c324e3e5b2f9bb6afac"
+                }
+              ],
+              "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+            }
+          ],
+          "properties": [
+            {
+              "name": "cdx:npm:package:path",
+              "value": "node_modules/markdown-it/node_modules/entities"
             }
           ]
         }
@@ -20286,6 +22514,39 @@
     },
     {
       "type": "library",
+      "name": "mdurl",
+      "version": "2.1.0",
+      "bom-ref": "openregister@1.0.0|mdurl@2.1.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/mdurl@2.1.0",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/mdurl/-/mdurl-2.1.0.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "d7e1c168ec74ce2fdd41686df2b36ff4c61ff6aaa9a8bfe4c48d215c8994e98e78ef333a4a78bc05089bb7b89f80c718b50838d5aa3722f77a72748cf3a8a7a6"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/mdurl"
+        }
+      ]
+    },
+    {
+      "type": "library",
       "name": "meow",
       "version": "14.1.0",
       "bom-ref": "openregister@1.0.0|meow@14.1.0",
@@ -20392,6 +22653,39 @@
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/merge2"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "meros",
+      "version": "1.3.2",
+      "bom-ref": "openregister@1.0.0|meros@1.3.2",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/meros@1.3.2",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/meros/-/meros-1.3.2.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "4379a86cf6ef131ed76f08670b5275afad3ee47e8467235c71dcd2cf47867b1251c28b94b536713d544676a2adc65a43f3849c2b8fad20695d92a0ed08a748d0"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/meros"
         }
       ]
     },
@@ -21440,6 +23734,138 @@
     },
     {
       "type": "library",
+      "name": "monaco-editor",
+      "version": "0.52.2",
+      "bom-ref": "openregister@1.0.0|monaco-editor@0.52.2",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/monaco-editor@0.52.2",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/monaco-editor/-/monaco-editor-0.52.2.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "18441611999f90e18b75ddd72bcaf2adf5b3dc020ff18ca655788f1c475ec2b52aee6874aab2ab7c72cd09771b07ab139cc2e7399df3b5288a71c885524209c1"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/monaco-editor"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "monaco-graphql",
+      "version": "1.9.0",
+      "bom-ref": "openregister@1.0.0|monaco-graphql@1.9.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/monaco-graphql@1.9.0",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/monaco-graphql/-/monaco-graphql-1.9.0.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "cc82b801b83b2a927a1349e2b3be7092da50eaf8034ca384330b6ba9ada6308bfb0fe4369f8d9cafbe4b0ae59f3b5e38c6a6d38f1c9abfb31b236562232eaadf"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/monaco-graphql"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "motion-dom",
+      "version": "13.5.1",
+      "bom-ref": "openregister@1.0.0|motion-dom@13.5.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/motion-dom@13.5.1",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/motion-dom/-/motion-dom-13.5.1.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "ffb095083db4333d4aa1b92da2ba5d82fa30574578d49ed4c6a13ea964b71a4489aab46be5fb7ed91968398b442affb0bc1a7725a48505c961c6de236bca2f1e"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/motion-dom"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "motion-utils",
+      "version": "13.5.0",
+      "bom-ref": "openregister@1.0.0|motion-utils@13.5.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/motion-utils@13.5.0",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/motion-utils/-/motion-utils-13.5.0.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "1ea7bfb2a8c82a588f660f2c56358091dc920cf24d21e287f9eb95903386f2b8b70d4514ed98e77661ec1aa10fcf6887a62c95695e48db68a0b8230753685ef9"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/motion-utils"
+        }
+      ]
+    },
+    {
+      "type": "library",
       "name": "ms",
       "version": "2.1.3",
       "bom-ref": "openregister@1.0.0|ms@2.1.3",
@@ -21818,6 +24244,39 @@
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/nth-check"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "nullthrows",
+      "version": "1.1.1",
+      "bom-ref": "openregister@1.0.0|nullthrows@1.1.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/nullthrows@1.1.1",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/nullthrows/-/nullthrows-1.1.1.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "daf3cf122f99ed6a8c2f68d961d74321fcb90ea6f4af67f37b6cd3c4d3649d9685a551d4de6141dd1f8359e256195c7479cbedb521a525323e586fbc6787035b"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/nullthrows"
         }
       ]
     },
@@ -22415,6 +24874,39 @@
     },
     {
       "type": "library",
+      "name": "picomatch-browser",
+      "version": "2.2.6",
+      "bom-ref": "openregister@1.0.0|picomatch-browser@2.2.6",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/picomatch-browser@2.2.6",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/picomatch-browser/-/picomatch-browser-2.2.6.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "d32a6c390b7d0f87b7873895f0ee1e943f6e374cff8ed5047f1551b4d68002d5c8c94c7d9bf4b394ed36d22f1834bd9a2ff13a6e53afbc741c8a7e87665172ff"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/picomatch-browser"
+        }
+      ]
+    },
+    {
+      "type": "library",
       "name": "picomatch",
       "version": "2.3.2",
       "bom-ref": "openregister@1.0.0|picomatch@2.3.2",
@@ -22886,6 +25378,39 @@
     },
     {
       "type": "library",
+      "name": "prettier",
+      "version": "3.9.9",
+      "bom-ref": "openregister@1.0.0|prettier@3.9.9",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/prettier@3.9.9",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/prettier/-/prettier-3.9.9.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "67f0891c891dba33bf3ad37b9d75228b445fdd54f9491ba18c103cd97beed978415205f79e13faed3d0b1dc7817502dec7b38e1464e8c7e439620f09936422be"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/prettier"
+        }
+      ]
+    },
+    {
+      "type": "library",
       "name": "property-information",
       "version": "7.2.0",
       "bom-ref": "openregister@1.0.0|property-information@7.2.0",
@@ -23216,6 +25741,39 @@
     },
     {
       "type": "library",
+      "name": "punycode.js",
+      "version": "2.3.1",
+      "bom-ref": "openregister@1.0.0|punycode.js@2.3.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/punycode.js@2.3.1",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/punycode.js/-/punycode.js-2.3.1.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "bb11481d4d189476210d0b55e11f49e9ae7648bc76f010a34fee227a1ec819b83054958efa49b8df5738c9195111402c026b7fb8c8d05324073443dfd0cdfd08"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/punycode.js"
+        }
+      ]
+    },
+    {
+      "type": "library",
       "name": "punycode",
       "version": "2.3.1",
       "bom-ref": "openregister@1.0.0|punycode@2.3.1",
@@ -23427,6 +25985,305 @@
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/queue-microtask"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "react-aria",
+      "version": "3.53.1",
+      "bom-ref": "openregister@1.0.0|react-aria@3.53.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:npm/react-aria@3.53.1",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/react-aria/-/react-aria-3.53.1.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "762922b323a325ddc3d9f16b2035a6556cea88bcf907ce86cd9bf5cf1b3bc48e1d55cd09233ff559ae76236d2062f54bd965de157972818b257bf41c38c86d72"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/react-aria"
+        }
+      ],
+      "components": [
+        {
+          "type": "library",
+          "name": "clsx",
+          "version": "2.1.1",
+          "bom-ref": "openregister@1.0.0|react-aria@3.53.1|clsx@2.1.1",
+          "licenses": [
+            {
+              "license": {
+                "id": "MIT"
+              }
+            }
+          ],
+          "purl": "pkg:npm/clsx@2.1.1",
+          "externalReferences": [
+            {
+              "url": "https://registry.npmjs.org/clsx/-/clsx-2.1.1.tgz",
+              "type": "distribution",
+              "hashes": [
+                {
+                  "alg": "SHA-512",
+                  "content": "7989b441606d52b0566561b4777f3a386030d7a67df793e2395a3607b6e35926c779d1a5e5ed1959aabae6438681448d7ac1080e407d2126d383f24af5d84264"
+                }
+              ],
+              "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+            }
+          ],
+          "properties": [
+            {
+              "name": "cdx:npm:package:path",
+              "value": "node_modules/react-aria/node_modules/clsx"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "react-compiler-runtime",
+      "version": "19.1.0-rc.1",
+      "bom-ref": "openregister@1.0.0|react-compiler-runtime@19.1.0-rc.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/react-compiler-runtime@19.1.0-rc.1",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/react-compiler-runtime/-/react-compiler-runtime-19.1.0-rc.1.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "c02b7a83e71187c837d904f5f3ff5b95f407cb01a362efb816511cdc25b59b1de93f1633659975cbe56dab14609ca2810852c8194631a20e23e2bb39612f3a87"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/react-compiler-runtime"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "react-dom",
+      "version": "18.3.1",
+      "bom-ref": "openregister@1.0.0|react-dom@18.3.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/react-dom@18.3.1",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/react-dom/-/react-dom-18.3.1.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "e66e2740aa7ead945bd3d2cd1f9f463380714e1f76e75ff295b2886e97bb4e91b17c9fbd92fe812e42c15c88e3b296e06e720136a948db7b519d3593d2c9d423"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/react-dom"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "react-remove-scroll-bar",
+      "version": "2.3.8",
+      "bom-ref": "openregister@1.0.0|react-remove-scroll-bar@2.3.8",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/react-remove-scroll-bar@2.3.8",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/react-remove-scroll-bar/-/react-remove-scroll-bar-2.3.8.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "f6bfb28bdfa6814df700a723e886d3f684423bbf16ae24a3eadfdc17c0d605927d68e18f393103bdd503cf51702a29bb4175b0987aad7479d125f840c441b8e9"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/react-remove-scroll-bar"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "react-remove-scroll",
+      "version": "2.7.2",
+      "bom-ref": "openregister@1.0.0|react-remove-scroll@2.7.2",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/react-remove-scroll@2.7.2",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/react-remove-scroll/-/react-remove-scroll-2.7.2.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "22a6fd3630824ede877febce74d21919d4e21f5412aabdbb1ff124f6cbff6bdee07ee788ff9875b37c918b59e783331468e393a229f9748d5d5ca757885faed1"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/react-remove-scroll"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "react-stately",
+      "version": "3.51.0",
+      "bom-ref": "openregister@1.0.0|react-stately@3.51.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:npm/react-stately@3.51.0",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/react-stately/-/react-stately-3.51.0.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "6097269005eed973903fdee13bfab3fdc0b7aaff649e2de8561c019715abdf9f011de3c9529635e57c0bdd849130ac58b78124b253ea033d752518ab31f00d1b"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/react-stately"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "react-style-singleton",
+      "version": "2.2.3",
+      "bom-ref": "openregister@1.0.0|react-style-singleton@2.2.3",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/react-style-singleton@2.2.3",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/react-style-singleton/-/react-style-singleton-2.2.3.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "6fa8d2bf1bd59f2a6d0222e36e458b13f94e9d1e257d3b43025f9e502ed1672f9041673ac11cc8576084eb106e3260f1736a888a1b430990f934f38597b7d105"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/react-style-singleton"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "react",
+      "version": "18.3.1",
+      "bom-ref": "openregister@1.0.0|react@18.3.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/react@18.3.1",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/react/-/react-18.3.1.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "c12fa1020252851d0a844bcf240adfb8f54dd7e1f3d6dd18ea7e632eb1906e46f8bab80f13fd11bdefb590c075bffa16807826e1621c57e8bb176a53563fb689"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/react"
         }
       ]
     },
@@ -23939,6 +26796,39 @@
     },
     {
       "type": "library",
+      "name": "scheduler",
+      "version": "0.23.2",
+      "bom-ref": "openregister@1.0.0|scheduler@0.23.2",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/scheduler@0.23.2",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/scheduler/-/scheduler-0.23.2.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "50e4a1b0fc33ecdacc52a851eadd215a315dbaf3b36edbfbb680c7d7f848adf44d2030679c159dd02c094c6bd3a67815966c0609d3fdfd997fb55ac3a9cb98cd"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/scheduler"
+        }
+      ]
+    },
+    {
+      "type": "library",
       "name": "schema-utils",
       "version": "4.3.3",
       "bom-ref": "openregister@1.0.0|schema-utils@4.3.3",
@@ -24043,6 +26933,74 @@
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/scule"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "set-value",
+      "version": "4.1.0",
+      "bom-ref": "openregister@1.0.0|set-value@4.1.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/set-value@4.1.0",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/set-value/-/set-value-4.1.0.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "cd3120e072f447056ba9c5acdf3b45fb1d6f9317e6d253fe3104053e23094ca55c781c04574039ebd3aef25f486101bc8ce65d315235846b1cd2d99e0f6a3f2f"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/set-value"
+        }
+      ],
+      "components": [
+        {
+          "type": "library",
+          "name": "is-plain-object",
+          "version": "2.0.4",
+          "bom-ref": "openregister@1.0.0|set-value@4.1.0|is-plain-object@2.0.4",
+          "licenses": [
+            {
+              "license": {
+                "id": "MIT"
+              }
+            }
+          ],
+          "purl": "pkg:npm/is-plain-object@2.0.4",
+          "externalReferences": [
+            {
+              "url": "https://registry.npmjs.org/is-plain-object/-/is-plain-object-2.0.4.tgz",
+              "type": "distribution",
+              "hashes": [
+                {
+                  "alg": "SHA-512",
+                  "content": "8793e98179168ad737f0104c61ac1360c5891c564956706ab85139ef11698c1f29245885ea067e6d4f96c88ff2a9788547999d2ec81835a3def2e6a8e94bfd3a"
+                }
+              ],
+              "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+            }
+          ],
+          "properties": [
+            {
+              "name": "cdx:npm:package:path",
+              "value": "node_modules/set-value/node_modules/is-plain-object"
+            }
+          ]
         }
       ]
     },
@@ -26236,6 +29194,39 @@
     },
     {
       "type": "library",
+      "name": "tslib",
+      "version": "2.8.1",
+      "bom-ref": "openregister@1.0.0|tslib@2.8.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "0BSD"
+          }
+        }
+      ],
+      "purl": "pkg:npm/tslib@2.8.1",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/tslib/-/tslib-2.8.1.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "a0916ef781d06fe29576e49440bef09e99aa9df98bb0e03f9c087a6fa107d30084a0ad3f98f79753a737c0a0d5f373243ae1cf447b525ca294f7d2016b34bfdb"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/tslib"
+        }
+      ]
+    },
+    {
+      "type": "library",
       "name": "type-check",
       "version": "0.4.0",
       "bom-ref": "openregister@1.0.0|type-check@0.4.0",
@@ -26338,6 +29329,39 @@
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/typescript"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "uc.micro",
+      "version": "3.0.0",
+      "bom-ref": "openregister@1.0.0|uc.micro@3.0.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/uc.micro@3.0.0",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/uc.micro/-/uc.micro-3.0.0.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "5373e9a449257a84e721f8bc068cccc77ca3bb7a9cfcbe92c2a5a8d92c3ee783d7f8f5f4abd23eaf5526e470a6a83ee7f550d7e7fbf7bd01ff02303a75e0ddb7"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/uc.micro"
         }
       ]
     },
@@ -26990,6 +30014,105 @@
     },
     {
       "type": "library",
+      "name": "use-callback-ref",
+      "version": "1.3.3",
+      "bom-ref": "openregister@1.0.0|use-callback-ref@1.3.3",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/use-callback-ref@1.3.3",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/use-callback-ref/-/use-callback-ref-1.3.3.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "8d02f79519e871a16dbb7574d094e8633ff8424356b30c628c368254d6518914cedc74032ec76ed59b66214bd5e323e9fabbd69b98f4cb44c6fd2eb572e8a34e"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/use-callback-ref"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "use-sidecar",
+      "version": "1.1.3",
+      "bom-ref": "openregister@1.0.0|use-sidecar@1.1.3",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/use-sidecar@1.1.3",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/use-sidecar/-/use-sidecar-1.1.3.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "15e770d1a66f921ca7a0f625039597acc080326fa7496759b7a973250ece93c4ba43e56c1e61e94569dd55127c05ed196e47cf7392d1607fb95ebcd770478b45"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/use-sidecar"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "use-sync-external-store",
+      "version": "1.7.0",
+      "bom-ref": "openregister@1.0.0|use-sync-external-store@1.7.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/use-sync-external-store@1.7.0",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/use-sync-external-store/-/use-sync-external-store-1.7.0.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "e8bf847a280731085d6883cd20550ac1f5894b058543c8096c9d832ceb39b0321e813c11f5f471be7337b9c8872a3219845cfe280bf67a6856311bc398c718f0"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/use-sync-external-store"
+        }
+      ]
+    },
+    {
+      "type": "library",
       "name": "util-deprecate",
       "version": "1.0.2",
       "bom-ref": "openregister@1.0.0|util-deprecate@1.0.2",
@@ -27088,6 +30211,39 @@
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/vfile"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "vscode-languageserver-types",
+      "version": "3.18.5",
+      "bom-ref": "openregister@1.0.0|vscode-languageserver-types@3.18.5",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/vscode-languageserver-types@3.18.5",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/vscode-languageserver-types/-/vscode-languageserver-types-3.18.5.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "90f77af8940dcf71cc26f8ca96a5311114a5647027b65fda1a9b24ec89b0221d1ec0328372380013255261c88f88e243ddfb5b2bd22b7e2a9479364b49b0a2cf"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/vscode-languageserver-types"
         }
       ]
     },
@@ -28167,6 +31323,39 @@
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/zod"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "zustand",
+      "version": "5.1.0",
+      "bom-ref": "openregister@1.0.0|zustand@5.1.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/zustand@5.1.0",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/zustand/-/zustand-5.1.0.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "72225994fe3c3353d341b550abcd421951711d32e964dac58caab08ed094df8016b974d94ff8eb177a7df9f23ce027f579208c2daa71a81cbf48d4dfc0e06ea8"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/zustand"
         }
       ]
     },

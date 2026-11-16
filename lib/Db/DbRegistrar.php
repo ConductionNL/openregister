@@ -119,6 +119,8 @@ final class DbRegistrar {
 		ImportPreviewFinderInterface::class => ImportPreviewMapper::class,
 		ImportPreviewMapperInterface::class => ImportPreviewMapper::class,
 		ImportPreviewRowMapperInterface::class => ImportPreviewRowMapper::class,
+		QualityAuditMapperInterface::class => QualityAuditMapper::class,
+		QualityAuditRunMapperInterface::class => QualityAuditRunMapper::class,
 		OrganisationScopeResolverInterface::class => MagicOrganizationHandler::class,
 		SchemaRunMapperInterface::class => SchemaRunMapper::class,
 		SchemaRunStoreInterface::class => SchemaRunMapper::class,
