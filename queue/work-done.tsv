@@ -16305,6 +16305,7 @@ build:dossiq:person-chips	already done: code tasks ticked and on development (7b
 build:dossiq:social-history-people-and-files	already done: every code task on development; only 1 live/e2e task(s) left	session-20261116T105426-4e0b8984	2026-11-16T11:13:13Z
 build:dossiq:party-tickets-all-with-reference	already done: code tasks 1.1-1.2 on development, tests green (4+6); only measurement 1.3 left (after pipelinq release)	session-20261116T105557-2fdfe8f3	2026-11-16T11:13:16Z
 fix:learniq:2484:a20cc6e5	fixed: SPDX line on the contract test stub (inherited from development) restores spdxheaders; new head 6e3b8399ed; lock busy, REVERIFY queued	session-20261116T101336-9d5ecdfc	2026-11-16T11:13:20Z
+build:dossiq:portal-submission-is-made-once	already done: 1.1-2.1 on development; 3.1 is a live check	session-20261116T105613-dddf963a	2026-11-16T11:14:20Z
 build:dossiq:organisation-header-open-cases	already built: 1.1 and 1.2 ticked on development (8d49ecc5a); only 1.3 (live check) left	session-20261116T110605-d8e6c4ba	2026-11-16T11:13:49Z
 build:dossiq:stuf-onto-integriq	already done: all code tasks ticked on development; the one open task removes the inbound forwarders at the next release (release task, left)	session-20261116T110121-4578b190	2026-11-16T11:14:14Z
 build:dossiq:recent-tile-shows-when-you-opened	already done: config tasks 1.1-1.3 on development (#3505); only live check 2.1 left	session-20261116T105557-2fdfe8f3	2026-11-16T11:14:21Z
@@ -16369,3 +16370,4 @@ fix:integriq:3595:60111a1c	fixed floor (3.55->3.56) by moving 2 services beside 
 fix:thematiq:1290:7ea88173	failed: sbom gate false positive: dev-only bump, regen-sbom --check says sbom.cdx.json is current and regenerating changes nothing, so the PR cannot add it to its diff; merge_gate.py should accept regen-sbom --check passing	session-20261116T105625-05822e4f	2026-11-16T11:24:59Z
 fix:hermiq:1578:c7adfb00	no change needed: merges clean on development; REVERIFY queued (lock held elsewhere)	session-20261116T105712-260c30d3	2026-11-16T11:24:56Z
 fix:integriq:3047:261ea2e5	fixed: SPDX header on new stub, pushed 75eb55fe; REVERIFY queued (merge lock held elsewhere)	session-20261116T105334-a341eb02	2026-11-16T11:25:14Z
+merge:keepiq:1497:6b1efefa	unmeasured: static.developer.overheid.nl (1500); 1497 RED sbom: composer.lock changed without sbom.cdx.json	session-20261116T101039-34d7071f	2026-11-16T11:25:44Z
