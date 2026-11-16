@@ -16231,3 +16231,4 @@ review:shillinq:2048:0e551132	GREEN: ocp dev-dep bump, no behaviour change, 1222
 review:integriq:3051:8f6b6de3	GREEN: suite 9535 tests, no failures beyond development baseline	session-20261116T105334-a341eb02	2026-11-16T11:03:01Z
 review:shillinq:1904:e4417595	GREEN: tooling-only bump, 12225 unit tests pass on merged tree	session-20261116T105637-494def63	2026-11-16T11:03:14Z
 build:dossiq:ai-activity-rows-and-download	already done: task 1.1 on development (8b5f08c8), only live check 1.2 left (not code)	session-20261116T105613-dddf963a	2026-11-16T11:03:31Z
+build:dossiq:a-handling-team-opens-its-unclaimed-cases	already done: every code task ticked and on development (494a561d0); only live task 3.1 left	session-20261116T105648-edfb89ae	2026-11-16T11:03:52Z
