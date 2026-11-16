@@ -1035,6 +1035,8 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 *
 	 * @return AuditAggregationServiceInterface|null The service, or null.
 	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) AuditTrailCollaborators is the factory that builds the service from the app config.
+	 *
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	private function windowAggregation(): AuditAggregationServiceInterface|null {
@@ -1352,6 +1354,8 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 * @param ObjectEntity $objectEntity The entity the row describes.
 	 *
 	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) SystemOperationContext is the request-scoped frame a system operation opens.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
