@@ -16441,3 +16441,4 @@ review:keepiq:1793:3b29e6ab	GREEN: matches change specs; vitest 3 inherited fail
 review:integriq:3589:58d8983d	RED: registration-order fixture misses the new ConnectorExtensionsInterface alias; 1 new failure	session-20261116T142648-57a38408	2026-11-16T14:32:26Z
 review:learniq:1882:334e6e47	GREEN: additive field labels; suite 6869 tests, 1 inherited failure	session-20261116T142859-fa64ab70	2026-11-16T14:32:45Z
 review:integriq:3047:75eb55fe	GREEN	session-20261116T142700-f4d651ea	2026-11-16T14:33:09Z
+merge:portaliq:663:e6ccd188	merge3 tree of 9 portaliq PRs: merged=7 red=1 fail=0 skip=0; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-16T14:33:21Z
