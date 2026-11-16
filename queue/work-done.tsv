@@ -17350,3 +17350,4 @@ build:pipelinq:pipelinq-open-client-on-contactmoment:r3	PR #3899: re-declared in
 build:portaliq:admin-rights-page:r2	already done: code tasks ticked on development; only live check T03 left	session-20261116T184852-b8356331	2026-11-16T19:20:20Z
 merge:opencatalogi:2679:823ce981	cloud tree of 1 opencatalogi PRs: none; conflict 1, lint 0, red 0, moved 0, done 0	session-20261116T191156-bbdb7add	2026-11-16T19:20:38Z
 build:portaliq:portal-headless-content-api:r2	already done: all code tasks ticked; only the live 429/conformance walk left (needs running instance)	session-20261116T191856-c437ae89	2026-11-16T19:20:44Z
+build:portaliq:site-article-page-follows-the-board:r2	already done: code tasks 1-5 ticked; only live check task 6 left (needs instance)	session-20261116T191856-c437ae89	2026-11-16T19:21:11Z
