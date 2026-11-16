@@ -4772,3 +4772,4 @@ decidiq	2188	85770afec0b5a38d4a492ee28e897f35b431f801	MERGED	worker-19	GATE OK s
 buildiq	1620	8d224ba2a210be1ddf84887f4f6fd6f8895b78b4	MERGED	worker-17	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.91 holds at 3.91
 hermiq	1754	6096bd3720698bcfc96b6fdfd0bacddb0447873e	RED	worker-12	GATE RED floor: unit_complexity: 4.56 -> 4.52; unit_interfacing: 2.57 -> 2.55
 learniq	1882	af18b8c34cb305149e9af6c01163260572ddac35	MERGED	worker-48	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 3.99
+versioniq	722	ed29af36302fffbdf007bc907b928a9b2446c26f	MERGED	worker-52	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.97 holds at 4.05
