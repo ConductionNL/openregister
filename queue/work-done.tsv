@@ -16172,3 +16172,4 @@ fix:integriq:3051:80f07d8c	merged development (clean), pushed 8f6b6de36c; REVERI
 fix:integriq:3649:977d1a6a	conflict fixed: strings moved off catalogue tail, development merged; pushed bd9eaae6; merge lock held elsewhere, REVERIFY queued	session-20261116T102146-6ef93c1e	2026-11-16T10:37:11Z
 fix:integriq:3050:8c85da90	CONFLICT resolved (merged development, clean); new head a397a9f1, no new failures; lock held elsewhere, REVERIFY queued	session-20261116T101239-227210a0	2026-11-16T10:37:22Z
 fix:integriq:3596:2efdcccd	merged development in; touched tests green; new head 25615492, REVERIFY queued (lock held elsewhere)	session-20261116T101035-b42d3ee7	2026-11-16T10:37:32Z
+fix:integriq:3669:04075d46	fixed: merged development, sbom regenerated, pushed a2e27ca8; REVERIFY queued (lock held elsewhere)	session-20261116T101558-c6863013	2026-11-16T10:37:41Z
