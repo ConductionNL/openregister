@@ -15588,3 +15588,4 @@ fix:shillinq:2096:8af31d73	fixed: stale vitest updated to the new endpoint; new 
 fix:portaliq:1354:84f30a14	sbom regenerated, development merged; new head ba4c6885	session-20261116T062050-3a7e109c	2026-11-16T07:05:11Z
 fix:hermiq:1189:25278c92	fixed: pinia alias to exports entry; build compiles, vitest 1526 OK; new head 4990197f	session-20261116T062140-6a300781	2026-11-16T07:05:27Z
 review:opencatalogi:2701:59468b61	GREEN: no new failures (106 inherited)	session-20261116T063134-3a4fc8af	2026-11-16T07:05:47Z
+merge:stackiq:1168:e1fbf779	cloud tree of 3 stackiq PRs: merged=0 red=1 fail=0 skip=2; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T065640-54a747b9	2026-11-16T07:05:59Z
