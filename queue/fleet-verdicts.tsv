@@ -13749,3 +13749,5 @@ buildiq	1641	1cc1383aef71bc17edcf86590829b20909fb2657	REVERIFY	worker-56	merged 
 shillinq	2086	692ec2a981d39b19a730f216e60c83f3b3786d16	REVERIFY	worker-14	ReportScheduleService moved to ObjectSaveOptions/ObjectIdentifier::findScoped/ObjectPatch (clears the 6 controller tests and the direct-find scan), both new routes documented in openapi.json; unit 12233 OK, phpcs/phpstan clean; new head bda4253ea12989f83fad32449a9c981e81007e41, verify it
 launchpad	653	7dd62332f078073df03444ab4c6c6b1f2c66f246	RED	worker-12:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 launchpad	763	ac59f2930cb25b439f9fdffbe39af0aa2b8b0f7e	RED	worker-12:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+launchpad	786	d521057863b88e62bc4b6252a752c4082963ccfe	REVERIFY	worker-12:merge	verdict sha is not the head: head is f38de5677b75323e5f6dffb20b4f39284cce4528
+launchpad	1235	5447328b2d80008ddcd0d674c30fc6e75df0bce5	REVERIFY	worker-12:merge	verdict sha is not the head: head is fe672232fedcfa4801d0f4ede0e8e2e3fec2a58d
