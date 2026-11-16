@@ -15374,3 +15374,5 @@ decidiq	2231	1fd72d0ddf391c812eb24cde3f816f6604ebb77b	GREEN	worker-22	unit suite
 opencatalogi	2699	d316a20bfb3c8b09ae3027427d3398924236b32e	GREEN	worker-39:review	Thorough; builds instance-staging-mode per its specs; admin-only endpoints, gate holds before sending and fails closed; unit 5976 tests, 75F/4E same as development baseline, no new failures; jest 6/6; gates: only inherited failures
 planninq	1204	26c3d2ded381bb04d3bf7ab473f3bd312336a817	GREEN	worker-40	phpunit 1232 tests, baseline 0 failures, no PHP changed; vitest 3578 passed; dep pin dedupes dompurify to 3.4.17
 portaliq	2535	6a993a850869c49ed3247d5cd57d10a4ec43e5b5	GREEN	worker-18	unit 6190 tests, baseline 16 errors (6189), new failures 0; structural contracts refactor, constants/aliases preserved, phpstan no new
+portaliq	2531	cc495ec942f7ff42194adc085de1b2afbccfebb6	RED	merge3:merge-gate	GATE RED sbom: composer.lock, package-lock.json changed without sbom.cdx.json
+portaliq	2533	93c376694e767704e5e9736028aefb5d9f159aad	RED	merge3:merge-gate	GATE RED floor: duplication: 4.36 -> 4.32
