@@ -15987,3 +15987,4 @@ lane:depbundle:portaliq:bundle	failed: permission: recording the cm_land.sh revi
 lane:depbundle:hermiq:bundle	opened #1808 (9 updates; pinia 4 and icons 5.4 left out); merge lock held elsewhere, GREEN verdict queued for a merge task	session-20261116T084437-2e80ba88	2026-11-16T09:13:44Z
 fix:shillinq:2063:e1c291c4	no change: branch already up to date with development and merges clean alone; conflict is a sibling's version bump in the tree; REVERIFY queued	session-20261116T085359-7eb6c05c	2026-11-16T09:14:08Z
 review:portaliq:1766:931554ac	BLOCK: dexie 4.4.7 would drift from openregister's 4.4.6 (two-Dexie runtime failure); wait for openregister bump	session-20261116T091246-00cbe321	2026-11-16T09:14:17Z
+review:portaliq:1673:574c1672	GREEN: matches its change spec; suite 6186 tests, no new failures; phpstan unchanged	session-20261116T084851-6e832488	2026-11-16T09:15:07Z
