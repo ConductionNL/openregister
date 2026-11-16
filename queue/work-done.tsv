@@ -15621,3 +15621,4 @@ fix:thematiq:1117:2427508a	failed: regen-sbom.sh leaves sbom.cdx.json unchanged 
 merge:launchpad:786:d9466327	cloud tree of 9 launchpad PRs: merged=0 red=2 fail=0 skip=0; conflict 4, lint 0, red 0, moved 1, done 0	session-20261116T064118-a5aff8df	2026-11-16T07:12:12Z
 review:shillinq:2991:4a34a03e	GREEN: unit 12290 OK, 1 inherited vitest failure; matches change specs	session-20261116T062050-7d5ce0d6	2026-11-16T07:12:33Z
 fix:launchpad:758:96b93252	merged development in (clean), pushed a042a574; REVERIFY recorded	session-20261116T063608-d33f86e6	2026-11-16T07:12:48Z
+fix:launchpad:757:674cfd98	sbom regenerated; pushed 2ba3b33d	session-20261116T062117-388e9de2	2026-11-16T07:12:57Z
