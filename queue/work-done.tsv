@@ -16461,3 +16461,4 @@ review:shillinq:2766:f2fbe5f8	GREEN: phpstan bump, suite OK 12225, phpstan clean
 review:filinq:2072:b8b9f680	GREEN: phpunit 6910 OK, no new failures	session-20261116T142648-57a38408	2026-11-16T14:39:43Z
 review:dossiq:3203:628c5ad8	GREEN	session-20261116T142700-f4d651ea	2026-11-16T14:40:00Z
 review:learniq:1883:de89b902	GREEN learniq#1883: spec-conform, no new failures (1 inherited)	session-20261116T142951-88449a68	2026-11-16T14:40:11Z
+review:opencatalogi:2673:61f25128	GREEN: build matches change specs; unit no new failures (5811 tests); jest 50/50	session-20261116T142651-57b203fe	2026-11-16T14:40:27Z
