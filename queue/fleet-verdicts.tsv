@@ -14931,3 +14931,4 @@ learniq	2557	29ed293d939e8ad8b9034e28293bbf0cd74affbf	GREEN	worker-03	unit 6868 
 larpinq	1060	701044e668f5b0522fb7bf5d2b4223773dcf9bc6	REVERIFY	worker-34	redeem race fixed: exclusive lock on the token hash around the redeem in the endpoint (409 while held), floor restored (unit_interfacing 4.76), tree 1057 OK no new failures, APPROVE recorded at b45d1e9b; merge gate unmeasured (static.developer.overheid.nl unreachable); new head b45d1e9be24990e3f8d521dc0eb15642226040e8, verify it
 keepiq	1826	07082bd96f2591fbed1b8b9703c9fc1567fbfe88	CONFLICT	worker-12:merge	merges clean on development alone; files: appinfo/info.xml openapi.json 
 integriq	2711	6f3fdc050e0380cd7dfe4f122026010313ba5a23	RED	worker-04:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+integriq	3612	27e3d6e61355bf4be3b71fc33e7	REVERIFY	worker-04:merge	verdict sha is not the head: head is 27e3d6e61355bf4be3b71fc33e70ade810f9272b
