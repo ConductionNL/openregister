@@ -16843,12 +16843,22 @@ review:shillinq:3088:21646560	stale	session-20261116T165351-3ccaad0e	2026-11-16T
 build:portaliq:instance-loopback-self-calls	already done: only live/e2e tasks left (1)	session-20261116T172806-3ef5ead7	2026-11-16T17:33:02Z
 build:portaliq:mandated-case-offers-no-writes	already done: code task T1 ticked on development; T2 is a live check, left	session-20261116T170823-40772b73	2026-11-16T17:33:26Z
 build:portaliq:hero-aside	already done: only live/e2e tasks left (1)	session-20261116T172806-3ef5ead7	2026-11-16T17:33:57Z
+build:shillinq:adopt-connection-registry	deferred: shillinq has 81 open PRs	session-20261116T165351-3ccaad0e	2026-11-16T17:34:30Z
 build:portaliq:action-forward-survives-a-slow-answer	already done: code tasks 1.1-2.2 ticked on development; 3.1 is a live check, left	session-20261116T170823-40772b73	2026-11-16T17:34:07Z
 merge:versioniq:691:68bfdd77	failed: prep exit 2: versioniq development has no phpunit in require-dev (no vendor/bin/phpunit)	session-20261116T173227-109a6e00	2026-11-16T17:35:10Z
 build:portaliq:operate-roles-for-content-and-actions	already done: every code task ticked on development; T01 is a live check, left	session-20261116T170823-40772b73	2026-11-16T17:34:46Z
 cover:dossiq:069ee2d6madb6:e7fd1c43	stale: lib/Service/Intake/ no longer exists on development	session-20261116T173254-f6972957	2026-11-16T17:35:25Z
+cover:dossiq:069ee2d6madb6:js0023cfc7	deferred: dossiq has 43 open PRs	session-20261116T173306-d04a65dc	2026-11-16T17:35:41Z
 cover:dossiq:069ee2d6madb6:ea81adeb	deferred: dossiq has 43 open PRs	session-20261116T173227-3f62e794	2026-11-16T17:35:11Z
 review:hermiq:1756:6c5bc380	GREEN: 5348 tests OK on PR merged with development	session-20261116T173310-7d288d7d	2026-11-16T17:35:45Z
 build:portaliq:mijn-taken-lists-contributed-tasks	deferred: portaliq has 62 open PRs	session-20261116T171035-683856c3	2026-11-16T17:35:55Z
 build:portaliq:contact-question-form-reads-dutch	deferred: portaliq has 62 open PRs	session-20261116T171035-683856c3	2026-11-16T17:36:03Z
+build:portaliq:portal-federated-search	deferred: portaliq has 62 open PRs	session-20261116T171035-683856c3	2026-11-16T17:36:10Z
 cover:dossiq:069ee2d6madb6:34f5c300	deferred: dossiq has 43 open PRs	session-20261116T173227-3f62e794	2026-11-16T17:36:21Z
+build:portaliq:portal-headless-content-api	deferred: portaliq has 62 open PRs	session-20261116T171035-683856c3	2026-11-16T17:36:37Z
+build:portaliq:search-suggestions-while-typing	deferred: portaliq has 62 open PRs	session-20261116T171035-683856c3	2026-11-16T17:36:47Z
+build:portaliq:portal-acts-for-its-organisation	deferred: portaliq has 62 open PRs	session-20261116T171035-683856c3	2026-11-16T17:36:54Z
+build:portaliq:media-usage-count	deferred: portaliq has 62 open PRs	session-20261116T171035-683856c3	2026-11-16T17:37:07Z
+build:portaliq:collection-column-labels	deferred: portaliq has 62 open PRs	session-20261116T171035-683856c3	2026-11-16T17:37:14Z
+build:shillinq:receivables-automatic-dunning	deferred: shillinq has 81 open PRs	session-20261116T165351-3ccaad0e	2026-11-16T17:37:42Z
+build:portaliq:resident-pages-live-round-3	already done: every code task ticked and on development (fix(site): resident pages after live round 3, 14 Oct); only 5.1 live check left	session-20261116T173311-8d6b3275	2026-11-16T17:37:56Z
