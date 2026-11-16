@@ -17155,3 +17155,4 @@ cover:stackiq:9ac19b3amdf03:59f569b2	deferred: stackiq has 41 open PRs	session-2
 cover:stackiq:9ac19b3amdf03:208b4d5f	deferred: stackiq has 41 open PRs	session-20261116T173227-3f62e794	2026-11-16T18:32:47Z
 cover:stackiq:9ac19b3amdf03:9d3a1784	deferred: stackiq has 41 open PRs	session-20261116T173227-3f62e794	2026-11-16T18:32:54Z
 fix:humaniq:662:d7499aec	conflict resolved, new head f0ddf8e5865e; merge lock held elsewhere, REVERIFY queued	session-20261116T181711-7fa8bcf4	2026-11-16T18:32:57Z
+cover:pipelinq:7f9dc8e6m8519:a3bb9eeb	added to #3659 (budget): PasswordResetService 71->100%, PortalAccountService 70->100%, +3 tests; also re-pushed the Export batch (lost push race); suite 9042 OK	session-20261116T173240-b63ad758	2026-11-16T18:34:25Z
