@@ -3408,3 +3408,4 @@ To https://github.; per-PR merges
 2026-11-15T17:25:33Z integrator-20261111T115842-a749432d MERGED-TREE c48110eef0: 6 PRs, main now 3800106bd5 = tested tree
 2026-11-16T11:08:02Z session-20261116T105640-5b7e5974 worker-51 wind-down: released unstarted fix:dossiq:3203 (row left open)
 2026-11-16T16:42:42Z session-20261116T163610-906ae6be worker-50 handed back merge:buildiq:1091:23716f96 unworked: static.developer.overheid.nl blocked (proxy 403) in this session, merges cannot be measured here
+2026-11-16T22:02:38Z session-20261116T211553-db0d2c78 worker-27 handed back review:filinq:2072:65ad1d32 (head includes its own fix commit; needs an independent reviewer)
