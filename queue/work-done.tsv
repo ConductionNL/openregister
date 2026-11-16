@@ -18083,3 +18083,4 @@ cover:buildiq:70b3e29eme3dd:f545d745	deferred: buildiq has 54 open PRs	session-2
 cover:buildiq:70b3e29eme3dd:1106b038	deferred: buildiq has 54 open PRs	session-20261116T220858-93068d3c	2026-11-16T22:14:52Z
 cover:buildiq:70b3e29eme3dd:38e80a9f	deferred: buildiq has 54 open PRs	session-20261116T220858-93068d3c	2026-11-16T22:15:08Z
 review:buildiq:1608:fc0354ba	CONFLICT with development (l10n, AbstractToolHandler); verdict recorded	session-20261116T220914-2d1f0dd9	2026-11-16T22:15:22Z
+verify:planninq:1206:109d196e	already merged: #1206 is on development (e397c673)	session-20261116T221004-b3e0abd6	2026-11-16T22:15:55Z
