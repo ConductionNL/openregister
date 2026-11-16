@@ -99,3 +99,4 @@ learniq	1158	5ca84f75a09a2fdef007102586c11c0982f88dfc	APPROVE	worker-15	Quick; n
 learniq	1162	59935569e666c89964655c0288c4729a788558da	APPROVE	worker-15	Quick; no blockers; marked patch bump + sbom, tree clean
 learniq	2127	68efea31c565ca8b2506f50814b1ab554a25b7b9	APPROVE	worker-15	Quick; no blockers; hydra-gates dev-dep minor bump + sbom, tree clean
 larpinq	960	659b6749ae8b0a7d1b55bdf6d58fad66b1b393e0	APPROVE	worker-23	Quick; no blockers; dev-only phpstan lock bump, tree adds no failures
+larpinq	961	06d9f9ca3929251feb0616338f90bd38bf5c196d	APPROVE	worker-23	Quick; no blockers; dev-only hydra-gates lock bump
