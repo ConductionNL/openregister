@@ -17400,3 +17400,4 @@ build:learniq:learner-grade-read-follows-visible-from	already built: T1 on devel
 review:opencatalogi:2696:0d0512a6	GREEN: no new PHP failures, phpstan clean; conflicts with development (no block)	session-20261116T191156-bbdb7add	2026-11-16T19:29:30Z
 fix:buildiq:1672:8c29bf33	conflict resolved, pushed 23675f9b; suite 3377, only inherited ExportZipGoldenTest red; REVERIFY queued	session-20261116T191704-9a63be87	2026-11-16T19:30:12Z
 fix:hermiq:1754:b6dc1f4e	conflict resolved, pushed 3e57e4dc; merge lock held elsewhere, REVERIFY queued	session-20261116T192325-bb4c31dd	2026-11-16T19:30:34Z
+fix:humaniq:1164:8c712c86	merged #1164 at d6e3f06686ecdc75a4797451f379feb485d62f56	session-20261116T184921-a7624794	2026-11-16T19:30:43Z
