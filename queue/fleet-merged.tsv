@@ -4551,3 +4551,4 @@ hermiq	1195	7d6678393fcb6f34e5686d5bae1b98fb9a9688de	SKIP	worker-11	GATE UNMEASU
 integriq	3671	4b0e1b0a423662d5834cee85bf86311246344660	RED	worker-14	GATE RED checker floor: spdxheaders stars: 5 -> 4
 dossiq	3203	628c5ad89e18ab9a292678e1e53cdf057cf8ecec	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.40
 dossiq	6591	4c31717dbaf75fe13fd3110fbc1b2c638490d6cf	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.40
+hermiq	1293	38013b9c66979f974a60e5b5c2fecf48c323ee46	SKIP	worker-11	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
