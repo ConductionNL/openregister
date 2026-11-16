@@ -1,7 +1,7 @@
 {
  "app": "stackiq",
- "commit": "fdfb7bd8d76f11a67195ebc8ac05f84dec04dce3",
- "measured_at": "2026-11-16T15:07:32Z",
+ "commit": "4e7ff878eeb416dbb9accd0a896c1d99447af2a0",
+ "measured_at": "2026-11-16T17:53:31Z",
  "php": {
   "tool": "pcov",
   "pct": 88.93,
@@ -127,12 +127,12 @@
   }
  },
  "js": {
-  "pct": 97.04,
-  "statements": 9740,
+  "pct": 96.31,
+  "statements": 9814,
   "covered": 9452,
   "dirs": {
    "src/": [
-    92,
+    94,
     90
    ],
    "src/assets/": [
@@ -203,6 +203,10 @@
     50,
     50
    ],
+   "src/manifest.d/": [
+    42,
+    0
+   ],
    "src/modals/": [
     368,
     362
@@ -215,6 +219,14 @@
     58,
     58
    ],
+   "src/sidebars/": [
+    1,
+    0
+   ],
+   "src/sidebars/dashboard/": [
+    6,
+    0
+   ],
    "src/sidebars/directory/": [
     85,
     78
@@ -223,8 +235,12 @@
     26,
     20
    ],
+   "src/store/": [
+    5,
+    0
+   ],
    "src/store/modules/": [
-    856,
+    857,
     838
    ],
    "src/store/plugins/": [
@@ -247,6 +263,10 @@
     52,
     52
    ],
+   "src/views/flows/": [
+    1,
+    0
+   ],
    "src/views/organisaties/": [
     264,
     254
@@ -258,6 +278,10 @@
    "src/views/settings/sections/": [
     1498,
     1476
+   ],
+   "src/views/suites/": [
+    16,
+    0
    ],
    "src/views/widgets/": [
     26,
