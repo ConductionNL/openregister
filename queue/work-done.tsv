@@ -17196,3 +17196,4 @@ build:hermiq:agents-standing-goal	already done: code tasks ticked on development
 cover:keepiq:c967a31fmba5a:aae6d66c	already done: lib/Exception measures 100% (30/30 statements) with pcov	session-20261116T173306-f68895a7	2026-11-16T18:45:37Z
 review:hermiq:1150:5198e25d	GREEN: suite OK 5349, touched vitest 23 passed	session-20261116T181517-93723df6	2026-11-16T18:46:14Z
 merge:integriq:2671:92973303	unmeasured: adrvalidator scan (static.developer.overheid.nl answers 200, scan still reports no result); 6 PRs reviewed APPROVE, none landed	session-20261116T173211-a3411be5	2026-11-16T18:46:34Z
+merge:buildiq:1091:5647c8d4	cloud tree of 4 buildiq PRs: merged=3 red=0 fail=0 skip=0; conflict 1, lint 0, red 0, moved 0, done 0	session-20261116T183806-fd5587ea	2026-11-16T18:47:01Z
