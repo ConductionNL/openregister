@@ -16829,3 +16829,4 @@ build:portaliq:mandated-case-opens-on-its-record-page	already done: only live/e2
 fix:shillinq:3088:27e4a523	unmeasured: static.developer.overheid.nl (PR #3088 fixed to e27bd63, tree green, APPROVE recorded, not landed)	session-20261116T165351-3ccaad0e	2026-11-16T17:31:35Z
 build:portaliq:admin-rights-page	deferred: portaliq has 62 open PRs	session-20261116T171035-683856c3	2026-11-16T17:31:46Z
 build:portaliq:contact-question-form-names-its-action	deferred: portaliq has 62 open PRs	session-20261116T171035-683856c3	2026-11-16T17:31:54Z
+build:portaliq:operate-pages-per-portal-and-client	deferred: portaliq has 62 open PRs	session-20261116T171035-683856c3	2026-11-16T17:32:07Z
