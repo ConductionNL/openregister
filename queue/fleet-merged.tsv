@@ -3914,3 +3914,4 @@ launchpad	1238	8be8c1decce989324547048dd4f85ba4ac786595	RED	worker-07	GATE RED s
 shillinq	1958	98ce92e545cdd6092fe131653b75add6effe2c1d	RED	worker-45	GATE RED checker floor: spdxheaders stars: 5 -> 4
 shillinq	3105	364f54d39befb54daae657f3e3bb5adf1fb6469a	RED	worker-45	GATE RED checker floor: spdxheaders stars: 5 -> 4
 launchpad	1238	135d0cb858ece2234e6e208f2f2b37f69d11dc1a	SKIP	worker-07	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
+launchpad	1238	135d0cb858ece2234e6e208f2f2b37f69d11dc1a	RED	worker-07	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
