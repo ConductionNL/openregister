@@ -18392,3 +18392,4 @@ verify:filinq:2090:e60e1c92	CONFLICT #2090 (lib/Settings/filinq_register.json)	s
 verify:filinq:2099:fcbb80d1	CONFLICT #2099 (4 files vs development)	session-20261116T232852-594dae77	2026-11-16T23:37:01Z
 verify:filinq:2087:71fe4d96	CONFLICT: lib/Settings/filinq_register.json	session-20261116T233003-c7bea420	2026-11-16T23:37:10Z
 verify:filinq:2107:b72e7114	CONFLICT #2107 (l10n, register json, openapi.json conflict with development)	session-20261116T232944-146e39d7	2026-11-16T23:37:18Z
+verify:filinq:2079:4f149b77	CONFLICT: tests/unit/Settings/SchemaAuthorizationCoverageTest.php vs development	session-20261116T232912-634ff2e8	2026-11-16T23:37:28Z
