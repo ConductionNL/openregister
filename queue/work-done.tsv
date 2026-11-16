@@ -17333,3 +17333,4 @@ cover:pipelinq:7f9dc8e6m3dbb:8f2b650b	already covered: lib/Service/Competitor/*.
 build:pipelinq:filter-menu-owner-and-street:r3	already done: every code task ticked on development; only 1.4 (live check after a nextcloud-vue release) is open	session-20261116T181151-999832c6	2026-11-16T19:17:58Z
 fix:versioniq:721:bc63b636	merged #721 at b48214583a	session-20261116T184833-adbb8426	2026-11-16T19:18:14Z
 build:pipelinq:opt-out-before-send:r3	already done: every code task ticked on development; only live check 8.1 left	session-20261116T184852-b8356331	2026-11-16T19:18:28Z
+build:pipelinq:marketing-block-editor:r3	nothing to build: every code task is ticked; only 3.3's live-send rendering check in mail clients is open	session-20261116T184841-a3bc3002	2026-11-16T19:18:21Z
