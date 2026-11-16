@@ -17220,6 +17220,7 @@ review:shillinq:3055:8918b6e6	GREEN: 12267 unit tests OK, vitest 12/12, administ
 build:integriq:zgw-connectors-for-dossiq	already built: every code task in tasks.md ticked on development; only the live e2e test (Task 4 Test) left, needs a live instance	session-20261116T184846-301eb7a8	2026-11-16T18:53:22Z
 merge:stackiq:1978:c1561c85	cloud tree of 1 stackiq PRs: none; conflict 1, lint 0, red 0, moved 0, done 0	session-20261116T184928-c82468e8	2026-11-16T18:53:18Z
 fix:learniq:2507:f29e84b7	merged development in, clean; merge lock held elsewhere, REVERIFY at c5edc819	session-20261116T184945-c098409e	2026-11-16T18:53:19Z
+fix:learniq:1882:334e6e47	inherited: plain development already reads maintainability 3.98 (range 3.98-4.01) below the 3.99 floor; PR #1882 merged reads the same 3.98, it adds no drop; nothing to fix on the branch	session-20261116T184912-ef98c646	2026-11-16T18:53:52Z
 cover:launchpad:fb10c50f:38e80a9f	deferred: launchpad has 44 open PRs	session-20261116T184901-5d8e5c9a	2026-11-16T18:54:08Z
 review:versioniq:722:c6a909c2	GREEN; conflicts with development (InstanceSettings, NextcloudAdvisoryFeedTest), needs a merge before landing	session-20261116T184902-3ba300c9	2026-11-16T18:54:05Z
 build:integriq:registry-bindings-speak-the-registry-api	already done: code tasks on development (#2665); only the live pass with credentials left	session-20261116T173306-f68895a7	2026-11-16T18:54:32Z
@@ -17232,6 +17233,7 @@ review:dossiq:6203:f6392408	GREEN: tests only, suite 18414 OK on merged tree	ses
 build:decidiq:one-consultation-schema:r3	already done: every code task in tasks.md is ticked and on development; only 5.2 e2e (needs live instance) left	session-20261116T184919-ae590ea9	2026-11-16T18:55:53Z
 build:learniq:participant-portal:r3	already done: every code task ticked on development (d84b379, #1763); only T4 e2e left	session-20261116T184858-b0d9d60e	2026-11-16T18:55:49Z
 verify:decidiq:2227:ed9602aa	GREEN 2227, GREEN 2228; tree 4638 tests, 0 new failures	session-20261116T184836-f6622adb	2026-11-16T18:55:50Z
+cover:pipelinq:7f9dc8e6m3dbb:f545d745	already done: every lib/Repair class has tests on development (incl. d477c25f0); remaining line gaps need a coverage driver, none installable here; pipelinq has ~45 open PRs, no new PR	session-20261116T184838-1279a0d5	2026-11-16T18:56:13Z
 cover:launchpad:fb10c50f:33ae6285	deferred: launchpad has 44 open PRs	session-20261116T184655-77bda400	2026-11-16T18:56:20Z
 cover:launchpad:fb10c50f:34763eb4	deferred: launchpad has 44 open PRs	session-20261116T185304-a3eb3adc	2026-11-16T18:56:22Z
 fix:integriq:3671:4b0e1b0a	fixed spdxheaders (2 stubs lacked SPDX in first 30 lines); pushed cb905dcf; merge lock held, REVERIFY queued	session-20261116T184910-72b8278a	2026-11-16T18:56:22Z
@@ -17239,7 +17241,10 @@ cover:launchpad:fb10c50f:aae6d66c	deferred: launchpad has 44 open PRs	session-20
 cover:launchpad:fb10c50f:34f5c300	deferred: launchpad has 44 open PRs	session-20261116T185304-a3eb3adc	2026-11-16T18:56:47Z
 review:integriq:3649:9b271f27	GREEN: no new failures, 62 new unit tests, 58 vitest pass	session-20261116T184924-e8902580	2026-11-16T18:57:00Z
 cover:launchpad:fb10c50f:f545d745	deferred: launchpad has 44 open PRs	session-20261116T185304-a3eb3adc	2026-11-16T18:57:12Z
+cover:launchpad:fb10c50f:be0dcca9	deferred: launchpad has 44 open PRs	session-20261116T185304-a3eb3adc	2026-11-16T18:57:18Z
 measure:decidiq:20261116h18	php 94.13% js 98.45% at 1bf4171e	session-20261116T184217-f2c5e14b	2026-11-16T18:57:16Z
 merge:learniq:1167:5572f9ff	cloud tree of 4 learniq PRs: merged=2 red=0 fail=0 skip=0; conflict 2, lint 0, red 0, moved 0, done 0	session-20261116T184833-adbb8426	2026-11-16T18:57:50Z
 review:shillinq:2991:7d526afc	GREEN: unit 12296 OK, vitest 92 passed	session-20261116T184852-d42365eb	2026-11-16T18:57:58Z
 fix:filinq:2122:8da97635	merged development in, clean; new head e57f317b; REVERIFY queued (merge lock held elsewhere)	session-20261116T185100-d2f0c6eb	2026-11-16T18:58:08Z
+cover:launchpad:fb10c50f:0891e5b5	deferred: launchpad has 44 open PRs	session-20261116T184924-e8902580	2026-11-16T18:58:33Z
+fix:opencatalogi:2686:75f5b243	merged development in, new head 84ac3f44cc; merge lock held by another merger, REVERIFY queued	session-20261116T184833-adbb8426	2026-11-16T18:58:58Z
