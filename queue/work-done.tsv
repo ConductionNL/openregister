@@ -16849,3 +16849,4 @@ build:portaliq:operate-roles-for-content-and-actions	already done: every code ta
 review:hermiq:1756:6c5bc380	GREEN: 5348 tests OK on PR merged with development	session-20261116T173310-7d288d7d	2026-11-16T17:35:45Z
 build:portaliq:mijn-taken-lists-contributed-tasks	deferred: portaliq has 62 open PRs	session-20261116T171035-683856c3	2026-11-16T17:35:55Z
 build:portaliq:contact-question-form-reads-dutch	deferred: portaliq has 62 open PRs	session-20261116T171035-683856c3	2026-11-16T17:36:03Z
+build:portaliq:portal-federated-search	deferred: portaliq has 62 open PRs	session-20261116T171035-683856c3	2026-11-16T17:36:10Z
