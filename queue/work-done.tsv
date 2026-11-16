@@ -15638,3 +15638,4 @@ review:buildiq:1596:1e0a4baa	GREEN: build PR, org guard fail-closed, no new fail
 merge:keepiq:1496:6d260ef8	failed: keepiq development fails its own checker floor in the cloud env (opensourcehealth 4->3, proxy refuses api.osv.dev); see merge:keepiq:1499	session-20261116T063134-3a4fc8af	2026-11-16T07:16:03Z
 fix:launchpad:653:7dd62332	fixed: sbom regenerated; new head e8ad33b0, REVERIFY recorded	session-20261116T062109-81fc252e	2026-11-16T07:16:17Z
 merge:stackiq:1417:8898ed2b	cloud tree of 3 stackiq PRs: merged=0 red=2 fail=0 skip=1; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T065640-54a747b9	2026-11-16T07:16:31Z
+fix:stackiq:1954:8ec8ab71	floor restored (floor_check PASS), suite OK, pushed b53c26d5	session-20261116T062050-add210c3	2026-11-16T07:16:43Z
