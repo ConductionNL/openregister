@@ -17356,6 +17356,7 @@ build:portaliq:demo-sign-in-beside-the-account:r2	already done: T01-T05 are on d
 verify:shillinq:3110:67424089	GREEN 3110 (phpunit 12231/0, vitest 1 inherited failure)	session-20261116T185100-d2f0c6eb	2026-11-16T19:21:11Z
 build:portaliq:portal-federated-search:r2	already done: every code task ticked on development; only a live-instance test is open	session-20261116T181151-999832c6	2026-11-16T19:21:15Z
 build:portaliq:media-usage-count:r2	already done: T01-T03 on development (#1647: MediaUsage, MediaUsageJob, usedOn, pill test); only T04, a live check, is left	session-20261116T184831-8be58c40	2026-11-16T19:21:31Z
+build:portaliq:contact-question-form-names-its-action:r2	already done: T1 on development; T2 is a live check	session-20261116T191704-9a63be87	2026-11-16T19:22:34Z
 cover:decidiq:a5f973bbm9cda:8ed5443b	failed: lib/Kernel/Contracts/*.php is interfaces only (0 executable statements, nothing to cover); also deferred: decidiq has 48 open PRs	session-20261116T192132-006e7c93	2026-11-16T19:22:35Z
 fix:learniq:2557:3fe186b0	conflict resolved, pushed 572f9432; not landed: psalm 7.5 does not install under config.platform php 8.3 (needs >=8.3.16)	session-20261116T192046-9440725d	2026-11-16T19:22:37Z
 build:portaliq:mijn-taken-lists-contributed-tasks:r2	already done: T1-T2 on development (fix(site) 2026-10-16, contributedTasks.js + tasks-page tests); only T3, a live check, is left	session-20261116T184831-8be58c40	2026-11-16T19:22:43Z
