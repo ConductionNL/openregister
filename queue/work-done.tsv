@@ -17101,6 +17101,7 @@ cover:openregister:7350e3efm9dc5:34f5c300	deferred: openregister has 188 open PR
 cover:buildiq:70b3e29em3841:390adfb9	deferred: buildiq has 56 open PRs	session-20261116T181429-b5d49a13	2026-11-16T18:23:49Z
 fix:hermiq:1756:6c5bc380	fixed the review blocker, pushed d3c836c0f3; hermiq merge lock held elsewhere, REVERIFY queued	session-20261116T173141-f87aaa9d	2026-11-16T18:23:47Z
 verify:filinq:2146:e3601822	filinq #2146 GREEN (6889 tests, 0 new failures)	session-20261116T182126-f8ae2f13	2026-11-16T18:24:07Z
+build:decidiq:one-consultation-schema	deferred: decidiq has 52 open PRs	session-20261116T173141-f87aaa9d	2026-11-16T18:24:36Z
 fix:decidiq:2222:c48b29b2	failed: inherited: origin/development alone measures 3.77 (range 3.77-3.81) below the decidiq floor 3.78; the PR touches only locks, sbom and a test spec, so every decidiq merge stays RED until development regains 0.01	session-20261116T172806-3ef5ead7	2026-11-16T18:24:44Z
 cover:decidiq:a5f973bbm0262:05630945	deferred: decidiq has 52 open PRs	session-20261116T173227-3f62e794	2026-11-16T18:24:56Z
 cover:decidiq:a5f973bbm0262:34763eb4	deferred: decidiq has 52 open PRs	session-20261116T173227-3f62e794	2026-11-16T18:25:02Z
