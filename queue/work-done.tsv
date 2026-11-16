@@ -17379,6 +17379,7 @@ cover:integriq:92114ab0m505c:js0d617ff5	deferred: integriq has 70 open PRs	sessi
 cover:integriq:92114ab0m505c:jsf3772e2d	deferred: integriq has 70 open PRs	session-20261116T192125-8d7de83c	2026-11-16T19:23:49Z
 cover:humaniq:a18a13fb:be6d0ab9	already done: lib/Payroll/Pension/ (PensionBase) measures 100% (19/19 statements) on development with the existing PensionBaseTest; no PR	session-20261116T191704-9a63be87	2026-11-16T19:24:43Z
 fix:learniq:2559:307b9303	merged development in, pushed 64fd61a8; merge lock held elsewhere, REVERIFY queued	session-20261116T192046-9440725d	2026-11-16T19:24:42Z
+build:integriq:rule-editor-a11y-i18n-hardening:r2	already done: development carries every code task (t() wraps and Remove property aria-labels in EditRule.vue, tasks.md ticked; only the manual screen-reader check 3.2 is open)	session-20261116T192202-7c713c59	2026-11-16T19:24:49Z
 cover:buildiq:70b3e29em9bad:34f5c300	deferred: buildiq has 54 open PRs	session-20261116T191856-c437ae89	2026-11-16T19:25:16Z
 merge:stackiq:1996:ca667bfa	cloud tree of 1 stackiq PRs: none; conflict 1, lint 0, red 0, moved 0, done 0	session-20261116T192122-0fac4997	2026-11-16T19:24:55Z
 fix:learniq:1881:df81c10b	fixed CONFLICT, pushed 57e4a54a; lock held elsewhere, REVERIFY queued	session-20261116T192127-f26e2e56	2026-11-16T19:25:17Z
