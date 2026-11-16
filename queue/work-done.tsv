@@ -16393,3 +16393,4 @@ fix:versioniq:691:eca00de3	fixed: @spec tags, spec gate 0, new head ed265e00; la
 fix:opencatalogi:2415:93e2a8a1	fixed spdx header, pushed f57435cd; merge lock held elsewhere, REVERIFY queued	session-20261116T110149-e3ed0e9a	2026-11-16T11:30:45Z
 fix:versioniq:721:2524b722	floor restored on #721 (unit_complexity 4.66, module_coupling 5.22 vs 4.63/5.23), pushed e012b41; not landed: cloud prep lacks vendor/bin/phpunit for versioniq; REVERIFY queued	session-20261116T101039-34d7071f	2026-11-16T11:31:06Z
 fix:stackiq:1931:75fc2149	blockers fixed, pushed f5df0ce8; merge lock held elsewhere, REVERIFY queued	session-20261116T105620-b2654149	2026-11-16T11:31:21Z
+fix:integriq:3564:34a49284	fixed: floor restored to 3.56, pushed da7832e5; merge lock held elsewhere, REVERIFY queued	session-20261116T105648-edfb89ae	2026-11-16T11:31:32Z
