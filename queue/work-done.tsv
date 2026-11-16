@@ -18157,3 +18157,4 @@ gap:learniq:installable-psalm7:1	deferred: learniq has 57 open PRs	session-20261
 build:buildiq:ai-llm-steps-and-computed-fields:c2	failed: still blocked on logic-automation-actions-that-run (#1648, not on development); this task fixed #1648 (dev merged, main object API, 0 failures) at 696ebfc5 and queued REVERIFY, rebuild after it lands	session-20261116T221330-514f14d5	2026-11-16T22:31:36Z
 cover:dossiq:069ee2d6m9d1b:b5212816	PR #6618: 2 tests (WorkingClock fallback, CaseStatusRecords untimed order); suite 18330, 1 inherited error	session-20261116T222132-964f3fa2	2026-11-16T22:32:26Z
 fix:buildiq:1608:fc0354ba	conflict resolved, pushed 09ddceb4; merge lock held elsewhere, REVERIFY queued	session-20261116T222959-c3198356	2026-11-16T22:32:28Z
+merge:shillinq:1900:b9859e77	merge3 tree of 3 shillinq PRs: merged=2 red=0 fail=0 skip=0; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-16T22:34:33Z
