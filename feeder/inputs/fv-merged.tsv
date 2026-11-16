@@ -1,0 +1,12 @@
+hermiq	1584	RED	d8e968c6a84e0c414a147894b5f87b3c8e3be1b6	checker floor: adrvalidator: warn -> fail
+launchpad	1106	RED	379ed362a8602c2cc372333770e6503a615453fd	checker floor: secretscanning: pass -> fail
+learniq	2418	RED	66bff88472562e9dfab3fad30d3d6eaf470e1ebd	checker floor: adrvalidator: warn -> fail
+buildiq	1445	RED	b639bf561301333c124705a1ba46cfa476015021	checker floor: adrvalidator: warn -> fail
+planninq	1131	RED	4b8eae2ef3bcd27cd735d0240b9064b88824a5c7	checker floor: adrvalidator: warn -> fail; score: 93 -> 90
+thematiq	1660	RED	29d2f8f752354a21e785d3549b52ecdb722d711a	checker floor: adrvalidator: warn -> fail; score: 77 -> 74
+shillinq	2798	RED	0c5a2c5e0f83367c91e5dad9e061c97c10a42c02	checker floor: adrvalidator: warn -> fail
+humaniq	1094	RED	77832e4d8369f59b17dadd1107884681f3427d5a	checker floor: adrvalidator: warn -> fail; score: 93 -> 90
+launchpad	1109	RED	c9075734883c11bb9c5297fbda1a7761da702f4d	checker floor: secretscanning: pass -> fail
+decidiq	2098	RED	4c96686d6809aaa436ce2b7738d8c7811d2d1263	sbom: package-lock.json changed without sbom.cdx.json
+dossiq	6203	RED	31cc59e43fa01c880e78ebc0b94c6e4a727344e3	checker floor: secretscanning: pass -> fail
+dossiq	6203	RED	31cc59e43fa01c880e78ebc0b94c6e4a727344e3	checker floor: secretscanning: pass -> fail
