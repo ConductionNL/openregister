@@ -14617,3 +14617,4 @@ buildiq	1583	df8986ae74fb916058d55d798144fb1f99177038	REVERIFY	worker-41	added t
 larpinq	1060	9f9d2d55aed2135114719c89293197e464127587	CONFLICT	merge3	merges clean on development alone; files: tests/unit/Service/SettingsServiceTest.php 
 keepiq	1826	98fff903417a33f0777030490c73f07dacbc752f	BLOCK	worker-19:review	review: Strict; blocker: spec-coverage gate FAIL on added lines, 6 methods of src/components/PrivilegedAccessPanel.vue lack @spec (run, secretId, startApproval, stateLabel, url, windowText); not reviewed further
 larpinq	1060	535a2221d2513e56df74cbe225c0a7b8bc8f7578	RED	worker-41:merge-gate	GATE RED checker floor: testcoderatio: warn -> fail; testcoderatio stars: 3 -> 2
+opencatalogi	2673	6dd0d2004c69bde1f857f3eb5a75cbc57bd5c033	REVERIFY	worker-22	merged development in (tasks.md conflict, kept both edits); unit suite no new failures vs development; new head 61f25128c9c36b5ca1d7519327d3ffbd942c0c46, verify it
