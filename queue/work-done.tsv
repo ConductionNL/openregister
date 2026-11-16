@@ -15915,6 +15915,7 @@ fix:portaliq:1673:06264bd1	merged development, manifest l10n conflict resolved k
 fix:portaliq:1768:5560c998	sbom regenerated, pushed 73711bf0; lock busy, REVERIFY queued	session-20261116T084536-1bd0bd69	2026-11-16T08:56:25Z
 review:opencatalogi:1888:3c646648	GREEN: no new failures (5762 tests, 106 inherited); behaviour matches the archived specs	session-20261116T084906-c933b95f	2026-11-16T08:56:43Z
 fix:launchpad:760:091c4dbf	no conflict on development alone; REVERIFY at same head (landing blocked by inherited checker floor)	session-20261116T081705-6c8f795b	2026-11-16T08:57:01Z
+lane:ormig:hermiq:leftover	closed #1324 and #1319 as obsolete (development already matches main's searchObjectsPaginated/processMessage); namecheck: 0 real BREAKs, no names PR needed	session-20261116T084847-50980336	2026-11-16T08:57:12Z
 fix:shillinq:3078:3eccef84	fixed: unit_interfacing drop (appointmentsAnswer payload) and inherited spdx stub header, pushed c1655bb8; lock held elsewhere, REVERIFY recorded	session-20261116T083044-10866b36	2026-11-16T08:57:16Z
 fix:portaliq:2530:55e242b9	development merged in, clean; new head 23908dc9, REVERIFY queued (merge lock busy)	session-20261116T084700-3a1a7351	2026-11-16T08:57:24Z
 review:versioniq:736:40fa5a89	GREEN: unit 1987 tests, only 2 inherited failures; vitest 3022 pass	session-20261116T084459-8070a613	2026-11-16T08:57:31Z
@@ -15940,3 +15941,8 @@ review:buildiq:1620:7c13e441	GREEN: build PR matches change specs; suite green b
 fix:larpinq:1065:936a9601	fixed sbom, pushed b4cd6229; not landed: merge gate checker_floor unmeasured (SKIP), REVERIFY queued	session-20261116T084455-5dfa31c7	2026-11-16T09:02:38Z
 review:learniq:1167:b9644fb4	GREEN: sass devDep bump, no new failures, build passes	session-20261116T084922-9fc29e74	2026-11-16T09:02:46Z
 lane:depbundle:launchpad:bundle	opened #1239 (8 updates), merge lock held by another merger: left GREEN for a merge task	session-20261116T084356-f50aa190	2026-11-16T09:02:59Z
+fix:portaliq:1666:ddf36df0	conflict resolved, pushed 760e34a9; REVERIFY recorded (merge lock held elsewhere)	session-20261116T085141-f326990f	2026-11-16T09:03:16Z
+lane:ormig:pipelinq:leftover	failed: permission: recording the APPROVE review / land of #3885 was refused. Done: #3885 opened (CallMirror save/delete + AVG erase on main's API, 8987 tests 0 new failures, head 6b8029c1c); #3152 GREEN verdict (another worker had merged dev in); #3271/#3258 left open, they wait on open openregister #9818/#9817 and main still takes the old form	session-20261116T084110-0c4bcd9c	2026-11-16T09:03:30Z
+fix:portaliq:1982:ebea533f	sbom current at head (regen-sbom --check ok); lock held elsewhere, REVERIFY queued	session-20261116T084401-2bd440a4	2026-11-16T09:03:43Z
+merge:launchpad:755:b15cdcdd	cloud tree of 1 launchpad PRs: merged=0 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T084554-ed039664	2026-11-16T09:04:01Z
+lane:depbundle:larpinq:bundle	opened #1066 (3 updates, verified); merge lock held elsewhere, GREEN verdict queued	session-20261116T083627-a5dc872b	2026-11-16T09:04:17Z
