@@ -701,4 +701,5 @@ versioniq	747	8da04998d00c69464de0c2353adf90a19f327d90	APPROVE	worker-21	Quick; 
 learniq	1881	57e4a54a930da5eae3da28757ba52f6ed85db2ec	APPROVE	worker-46	Standard; no blockers; implements past-course-days-drop-off: upcoming follows last course day, hourly job re-derives, tests added
 learniq	2557	572f94324c877a9dd48b0657cf3d3b88563c6c90	APPROVE	worker-46	Quick; no blockers; dev-only psalm 5->7.5 bump, lock consistent; psalm 7 may report new findings in the score step
 learniq	2559	64fd61a80179557f884440e26b650fd61bb8122b	APPROVE	worker-46	Quick; no blockers; dev-only webpack-dev-server 6.1.0
+buildiq	1672	23675f9b919ac36ba1fa0d61ce234362b1e2d407	APPROVE	worker-12	Thorough; no blockers; openregister main object API migration: _rbac/_multitenancy flags preserved per file (11/11), find/save/delete/lock/unlock targets and advisory flags carried into the option objects matching main's signatures, test assertions 17 removed/17 added, tree suite 3409 with the 1 bas
 learniq	2562	7726a54cc67ec9a8c40f7c44e8fea0cf725b9fd2	APPROVE	worker-46	Quick; no blockers; lockfile minimatch advisory fix under eslint plus SBOM
