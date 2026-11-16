@@ -17236,6 +17236,7 @@ cover:pipelinq:7f9dc8e6m3dbb:f545d745	already done: every lib/Repair class has t
 cover:launchpad:fb10c50f:33ae6285	deferred: launchpad has 44 open PRs	session-20261116T184655-77bda400	2026-11-16T18:56:20Z
 cover:launchpad:fb10c50f:34763eb4	deferred: launchpad has 44 open PRs	session-20261116T185304-a3eb3adc	2026-11-16T18:56:22Z
 fix:integriq:3671:4b0e1b0a	fixed spdxheaders (2 stubs lacked SPDX in first 30 lines); pushed cb905dcf; merge lock held, REVERIFY queued	session-20261116T184910-72b8278a	2026-11-16T18:56:22Z
+cover:launchpad:fb10c50f:1b97f731	deferred: launchpad has 44 open PRs (earlier cover PR #1152 for this target already merged)	session-20261116T181517-93723df6	2026-11-16T18:56:48Z
 cover:launchpad:fb10c50f:aae6d66c	deferred: launchpad has 44 open PRs	session-20261116T184858-b0d9d60e	2026-11-16T18:56:47Z
 cover:launchpad:fb10c50f:34f5c300	deferred: launchpad has 44 open PRs	session-20261116T185304-a3eb3adc	2026-11-16T18:56:47Z
 review:integriq:3649:9b271f27	GREEN: no new failures, 62 new unit tests, 58 vitest pass	session-20261116T184924-e8902580	2026-11-16T18:57:00Z
@@ -17246,5 +17247,10 @@ measure:decidiq:20261116h18	php 94.13% js 98.45% at 1bf4171e	session-20261116T18
 merge:learniq:1167:5572f9ff	cloud tree of 4 learniq PRs: merged=2 red=0 fail=0 skip=0; conflict 2, lint 0, red 0, moved 0, done 0	session-20261116T184833-adbb8426	2026-11-16T18:57:50Z
 review:shillinq:2991:7d526afc	GREEN: unit 12296 OK, vitest 92 passed	session-20261116T184852-d42365eb	2026-11-16T18:57:58Z
 fix:filinq:2122:8da97635	merged development in, clean; new head e57f317b; REVERIFY queued (merge lock held elsewhere)	session-20261116T185100-d2f0c6eb	2026-11-16T18:58:08Z
+cover:launchpad:fb10c50f:d3522ea6	deferred: launchpad has 44 open PRs	session-20261116T184852-d42365eb	2026-11-16T18:58:42Z
 cover:launchpad:fb10c50f:0891e5b5	deferred: launchpad has 44 open PRs	session-20261116T184924-e8902580	2026-11-16T18:58:33Z
+cover:launchpad:fb10c50f:882bd950	deferred: launchpad has 44 open PRs	session-20261116T184924-e8902580	2026-11-16T18:58:53Z
+measure:launchpad:20261116h18	php 94.94%, js 96.2% at 6a3f3239	session-20261116T182720-9950372f	2026-11-16T18:58:54Z
 fix:opencatalogi:2686:75f5b243	merged development in, new head 84ac3f44cc; merge lock held by another merger, REVERIFY queued	session-20261116T184833-adbb8426	2026-11-16T18:58:58Z
+fix:opencatalogi:2696:8fcdf471	fixed jest specs, pushed 0d0512a6; merge lock busy, REVERIFY queued	session-20261116T184852-b8356331	2026-11-16T18:59:43Z
+fix:opencatalogi:2699:64dd55f6	merged development in, new head 3dfb66bdc2; merge lock held by another merger, REVERIFY queued	session-20261116T184833-adbb8426	2026-11-16T18:59:51Z
