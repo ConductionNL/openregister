@@ -17405,4 +17405,5 @@ cover:keepiq:c967a31fm902f:2c3e981f	already done: lib/Service/ShareSync/ 100% li
 cover:keepiq:c967a31fm902f:dfaef732	PR #1852: NotificationRegistrar 2 tests; KeepiqNotifier 99.5% (2 unreachable lines); suite 5367->5369 green	session-20261116T191448-870933e4	2026-11-16T19:30:22Z
 fix:hermiq:1754:b6dc1f4e	conflict resolved, pushed 3e57e4dc; merge lock held elsewhere, REVERIFY queued	session-20261116T192325-bb4c31dd	2026-11-16T19:30:34Z
 merge:shillinq:2098:3286165d	cloud tree of 6 shillinq PRs: merged=6 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T191103-1ba6d222	2026-11-16T19:30:47Z
+build:keepiq:clients-extension-firefox-and-safari-builds	no code left: 1.2 needs a macOS runner and Apple identity, 2.1 is verified by a workflow run (.github/workflows/browser-extension.yml already builds chromium/firefox/safari); no PR	session-20261116T191448-870933e4	2026-11-16T19:31:12Z
 fix:hermiq:1735:ce935d59	conflict resolved, new head 33b209c9; merge lock busy, REVERIFY queued	session-20261116T192142-66caeb8e	2026-11-16T19:31:12Z
