@@ -3870,3 +3870,4 @@ launchpad	785	91bd14a0c96181818b7b5c9405c8098dd9e28904	RED	worker-12	GATE RED fl
 filinq	2072	ec607dc3215ac306c4ccbc98744800d52f49334a	SKIP	worker-23	no APPROVE review at this head
 larpinq	1060	11a6a4eac7c3cc7f699331c7d33d607e07c5b2e4	SKIP	worker-38	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator, secretscanning; this is not a pass
 planninq	1070	0324724d24fe6d0db28116a01a3102143ea1dcb2	RED	worker-12	GATE RED sbom: composer.lock changed without sbom.cdx.json
+learniq	2549	8928cf92a03db606cdde9650a94cdce1e587261c	RED	worker-15	GATE RED floor: unit_complexity: 4.38 -> 4.36; unit_interfacing: 3.12 -> 3.09
