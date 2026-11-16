@@ -17628,3 +17628,4 @@ cover:decidiq:a5f973bbm9cda:98083bbf	deferred: decidiq has 47 open PRs	session-2
 verify:portaliq:2535:74c44cfc	GREEN #2535 (no new failures, 16 baseline errors)	session-20261116T202128-6be5fc02	2026-11-16T20:23:58Z
 cover:dossiq:069ee2d6m9d1b:33af3743	no change: lib/Service/Bezwaar/*.php already measures 99.7% (1559/1564 lines, pcov, suite 18752 tests, 19 inherited failures), above target 95; the 5 left are a readonly ctor and the decision-app-absent branch, unreachable while the bootstrap loads the event stubs	session-20261116T201835-c2c94090	2026-11-16T20:24:11Z
 review:pipelinq:3602:150e1963	GREEN: tests only, suite 9144 tests 0 failures	session-20261116T202142-f327703a	2026-11-16T20:24:45Z
+cover:dossiq:069ee2d6m9d1b:b6fccd13	no change: lib/Service/Access/*.php already measures 98.70% (1219/1235 lines, pcov on current dossiq), above target 95	session-20261116T201835-c2c94090	2026-11-16T20:24:54Z
