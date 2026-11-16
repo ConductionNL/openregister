@@ -118,3 +118,4 @@ shillinq	3105	364f54d39befb54daae657f3e3bb5adf1fb6469a	APPROVE	worker-45	Quick (
 launchpad	1238	8be8c1decce989324547048dd4f85ba4ac786595	APPROVE	worker-07	Quick; no blockers; composer.lock only: conduction/hydra-gates v1.18.0->v1.19.0 (dev tooling), plugin-api-version metadata; tree unit suite 4461 OK, no new failures
 stackiq	1168	04f38d3ae4a4d17b142dbafb97d2a81126d6568c	APPROVE	worker-16	Quick; no blockers; twig bump with matching sbom, composer advisories are inherited symfony ones
 stackiq	1297	f6f898a1ce156bb7902c6cbdc55ca55df63daf3a	APPROVE	worker-16	Quick; no blockers; dev-only phpmd 3 bump with sbom, advisories inherited from development
+stackiq	1435	81fb6bd471562d78ea02224fdc7b0574cc6a9082	APPROVE	worker-16	Standard; no blockers; search selection adapter keeps the same query, dropped deleted:false equals the default
