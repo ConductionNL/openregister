@@ -16046,3 +16046,4 @@ fix:filinq:2072:a07d41bd	fixed blocker, pushed 6c719f2c; REVERIFY queued (merge 
 fix:dossiq:6587:28ecad91	fixed: sbom regenerated, new head b11faca9; merge lock held elsewhere, REVERIFY queued	session-20261116T084437-2e80ba88	2026-11-16T09:26:25Z
 fix:shillinq:1900:4eb4258f	SPDX floor: moved VatReturnChecks SPDX tag into first lines and restored stub tag (inherited from #3106); pushed 338f0839c; REVERIFY queued	session-20261116T085359-7eb6c05c	2026-11-16T09:27:03Z
 verify:portaliq:2531:26c63d51	GREEN #2531: no new unit failures, build same as baseline	session-20261116T091521-a6030cec	2026-11-16T09:27:11Z
+verify:planninq:1198:4ef22590	GREEN #1198: phpunit 1222/0 new failures, vitest 3566 passed	session-20261116T092435-e1a408a7	2026-11-16T09:27:27Z
