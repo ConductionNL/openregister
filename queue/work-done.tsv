@@ -15881,3 +15881,4 @@ review:versioniq:721:2524b722	GREEN: versioniq #721 behaviour per spec, no new u
 review:shillinq:2997:675a3aef	GREEN: build matches its specs, access checks per administration, suite 12284 with 1 inherited error	session-20261116T074147-edb7c708	2026-11-16T08:50:44Z
 review:opencatalogi:2679:b5f77a60	GREEN: 0 new failures (106 baseline), 39 new tests pass, phpcs/phpstan clean	session-20261116T084531-ff1efb6c	2026-11-16T08:50:58Z
 fix:pipelinq:2969:17a6a9c4	conflict resolved (l10n, both sides kept), pushed 23b177e505cb1a2a906213fd0df439c94e592b94; REVERIFY	session-20261116T081426-24e3a1d6	2026-11-16T08:51:05Z
+review:learniq:2126:c3504350	GREEN: dependency bump only, phpstan clean, 1 inherited unit failure	session-20261116T084553-d7ab8477	2026-11-16T08:51:24Z
