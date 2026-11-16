@@ -17985,3 +17985,4 @@ merge:launchpad:1106:0c550d07	cloud tree of 3 launchpad PRs: merged=1 red=0 fail
 review:learniq:2521:a3328ae4	GREEN: build matches change specs; PHP 6965/1 inherited, JS 9 inherited	session-20261116T214541-6b344533	2026-11-16T21:50:39Z
 review:hermiq:1750:ec9bd2f6	GREEN #1750 at ec9bd2f6: PHPUnit 5414 ok, vitest 1561 ok; phpstan type note FileScopeResolver:292	session-20261116T211553-db0d2c78	2026-11-16T21:50:50Z
 review:hermiq:1791:1747024b	GREEN: in-spec build, 5438 unit tests + 97 vitest green	session-20261116T214541-d7f19722	2026-11-16T21:51:01Z
+cover:launchpad:fb10c50fmf487:d39f9857	deferred: launchpad has 46 open PRs	session-20261116T212719-d025d113	2026-11-16T21:51:12Z
