@@ -18478,3 +18478,4 @@ verify:launchpad:1239:91355d38	CONFLICT #1239 (package-lock.json, sbom.cdx.json)
 verify:integriq:3582:1a80d4e9	CONFLICT: routes.php, l10n, openapi.json, src/* vs development	session-20261116T232959-6ccea9dc	2026-11-16T23:56:53Z
 verify:integriq:3631:b8cfb722	CONFLICT #3631 (l10n)	session-20261116T232923-e93e6b40	2026-11-16T23:57:05Z
 verify:launchpad:760:381968d2	CONFLICT 760 (package-lock.json, sbom.cdx.json)	session-20261116T232406-b9eb038c	2026-11-16T23:57:21Z
+verify:opencatalogi:2683:b7fb1366	CONFLICT #2683 (l10n, tasks.md)	session-20261116T233901-7abe1a78	2026-11-16T23:57:29Z
