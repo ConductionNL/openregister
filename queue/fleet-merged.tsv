@@ -4741,3 +4741,4 @@ shillinq	2099	5c0e743f4dd880f64efd676037d5ccb61138f57a	MERGED	worker-03	GATE OK 
 larpinq	1074	f4965d4956080a9c78575bb25efc497f5bc5cb83	MERGED	worker-53	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.07
 learniq	2557	572f94324c877a9dd48b0657cf3d3b88563c6c90	MERGED	worker-46	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 3.99
 shillinq	3121	31c97d4e7639634edb1c347f972cab31c192882d	FAIL	worker-03	{"message":"Pull Request has merge conflicts","documentation_url":"https://docs.github.com/rest/pulls/pulls#merge-a-pull-request","status":"405"}gh: Pull Request has merge conflicts (HTTP 405)
+dossiq	5398	0574972c864d76681209aa9163ca32450a6fa810	MERGED	worker-14	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.40
