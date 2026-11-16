@@ -15876,6 +15876,7 @@ decidiq	2224	6d7dfdcffadf85e7bf13eda87f64e3652300a102	CONFLICT	worker-45	package
 decidiq	2195	81009fc4d05837e575159da0df533c6ff336abf5	CONFLICT	worker-13	conflicts with development in src/manifest.json and tests/vitest/simpleDecisionPage.spec.js; no tests run
 hermiq	1741	dd035123e2cce781159c50399fa9d412db09d3f8	CONFLICT	worker-49	conflicts with development (lib/Controller/RunNowController.php lib/Mcp/HermiqToolProvider.php tests/Unit/Mcp/HermiqToolProviderTest.php)
 decidiq	2189	9db1906ee298ab726374467d139771ee65803b76	CONFLICT	worker-26	conflicts with development in lib/Service/MeetingPackageService.php lib/Settings/profiles/municipality.json ; tests not run
+filinq	2083	917afeaa9dda2341ebe7ba85ab45f7c8ad29111c	CONFLICT	worker-34	merge with development conflicts in tests/unit/EventListener/ListenerRegistrarTest.php; baseline 6960 tests OK (6 skipped)
 decidiq	2175	84afe008aba96ab7b47f73879b66f3394a0a3d4d	CONFLICT	worker-21	merge conflict with origin/development in tests/vitest/simpleMeetingPage.spec.js; baseline 4761 tests green
 decidiq	2205	9c878baf6585a4e5d7036e6c07e0450a982483ae	CONFLICT	worker-13	conflicts with development in l10n (4), municipality.json, openapi.json, manifest.json, menu-layout.simple.json, registry.js and two vitest specs; no tests run
 filinq	2085	432c7b61c70dd584e71f805269fa45a3506da207	CONFLICT	worker-58	conflicts with development in tests/unit/Settings/SchemaAuthorizationCoverageTest.php; baseline 6960 tests OK (6 skipped), tree not run
