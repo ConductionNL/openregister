@@ -15797,3 +15797,4 @@ fix:opencatalogi:2674:52a7e65f	no change: merges clean on development 0f496962, 
 fix:versioniq:503:2d7f74a1	sbom regenerated, pushed 7514a922; REVERIFY (merge lock busy)	session-20261116T075953-c9c4b65a	2026-11-16T08:30:24Z
 fix:versioniq:721:a9a532f3	spec tags fixed (gate-16 PASS), pushed 2524b722; REVERIFY queued	session-20261116T075936-d83d6c1e	2026-11-16T08:30:34Z
 review:filinq:2088:bb28f1bd	BLOCK: version not raised, 5 untitled properties, component_independence below floor	session-20261116T081640-cbf74452	2026-11-16T08:30:58Z
+fix:opencatalogi:2673:9b953103	restored maintainability (split overview service behind contract); pushed 55afbbab; merge lock held elsewhere, REVERIFY recorded	session-20261116T081702-4281d743	2026-11-16T08:31:17Z
