@@ -3980,3 +3980,4 @@ filinq	2072	a07d41bdd0452ef712eccff125357b5240903950	SKIP	worker-11	no APPROVE r
 dossiq	6587	28ecad91f1baffcfa031c48d360ffca1c1d4a7b5	RED	merge3	GATE RED sbom: composer.lock, package-lock.json changed without sbom.cdx.json
 filinq	2103	cd98f739abe89a4b485b9a757fd5591eab514203	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.08
 shillinq	2071	85bf3df1b10c36b4280f8d233ea8bae5a618cabe	RED	worker-20	GATE RED checker floor: spdxheaders stars: 5 -> 4
+dossiq	6589	503c16af9c34bd2cbc05af877894edd0cbe33060	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.40
