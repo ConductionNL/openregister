@@ -3987,3 +3987,4 @@ larpinq	1050	48b3482056d327adc9cacc32b33304388ccbb6f5	RED	worker-28	GATE RED flo
 larpinq	1060	9f9d2d55aed2135114719c89293197e464127587	SKIP	worker-28	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 larpinq	1066	93d7998b3878e3386aa5cdb296bfd4f215c153d5	RED	worker-28	GATE RED sbom: composer.lock changed without sbom.cdx.json
 portaliq	1673	574c16721291bca11b190df5e3c8aae8be782c38	SKIP	worker-50	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
+launchpad	753	26ce5b2bb96d848f20002dc92a63cdd0704f77f2	SKIP	worker-02	GATE UNMEASURED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3 while api.osv.dev is unreachable from this session
