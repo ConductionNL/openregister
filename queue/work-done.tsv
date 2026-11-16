@@ -16762,6 +16762,7 @@ build:pipelinq:filter-menu-owner-and-street:r2	deferred: pipelinq has 50 open PR
 build:pipelinq:contact-moments-keep-draft:r2	already done: code tasks ticked and on development; only Playwright 1.3 verify and live 1.6 left	session-20261116T165653-a1481a13	2026-11-16T17:14:07Z
 build:pipelinq:tickets-list-by-party:r2	deferred: pipelinq has 50 open PRs	session-20261116T170138-65b3b637	2026-11-16T17:14:06Z
 build:pipelinq:recurring-revenue-runrate-widget:r2	deferred: pipelinq has 50 open PRs	session-20261116T170138-65b3b637	2026-11-16T17:14:12Z
+build:pipelinq:questions-about-a-citizen-dossier:r2	already built: every code task is on development and ticked; only 6.1 (live) remains	session-20261116T171008-5daa9ed6	2026-11-16T17:14:18Z
 build:pipelinq:question-text-is-required-on-the-portal:r2	deferred: pipelinq has 50 open PRs	session-20261116T170138-65b3b637	2026-11-16T17:14:19Z
 build:pipelinq:a-contact-question-is-required-and-dated:r2	deferred: pipelinq has 50 open PRs	session-20261116T170138-65b3b637	2026-11-16T17:14:25Z
 fix:buildiq:1091:13bc446b	sbom regenerated, pushed 0a8185a0; not landed (merge gate cannot measure here); REVERIFY queued	session-20261116T164354-a7d53f16	2026-11-16T17:14:31Z
