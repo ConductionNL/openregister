@@ -16507,3 +16507,4 @@ fix:learniq:2555:c1c2b81a	sbom regenerated; new head df653e98; REVERIFY (lock he
 fix:shillinq:2071:75f4741b	development merged in, new head abd73b77, REVERIFY queued (end-to-end skipped: gate host unreachable)	session-20261116T142703-f07e9998	2026-11-16T14:52:56Z
 fix:thematiq:1292:1c6de772	failed: sbom already current (vite is a devDependency, regen-sbom --check passes); gate needs sbom.cdx.json in the diff, nothing real to change	session-20261116T143136-ae6d04cb	2026-11-16T14:53:10Z
 fix:hermiq:1739:103d88e1	fixed ratchet blocker; pushed 5a3ceaf4; REVERIFY queued (landing skipped: merge gate host blocked)	session-20261116T142714-8127c132	2026-11-16T14:53:16Z
+review:shillinq:2230:a06c8804	GREEN: babel patch bump, suites green beyond 1 inherited vitest failure	session-20261116T142710-649b1d69	2026-11-16T14:53:31Z
