@@ -15773,3 +15773,4 @@ fix:stackiq:1959:fe24e23b	no change needed: up to date with development, merges 
 fix:opencatalogi:1888:e9655f0d	conflict resolved, pushed 3c646648; REVERIFY (merge lock busy)	session-20261116T075953-c9c4b65a	2026-11-16T08:26:25Z
 merge:launchpad:753:5d3c05ef	cloud tree of 1 launchpad PRs: merged=0 red=0 fail=0 skip=1; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T081705-6c8f795b	2026-11-16T08:26:32Z
 fix:opencatalogi:1889:a5e55a55	inherited: plain development (0f496962) already fails its own .checker-floor.json (opensourcehealth 4->3 stars, freshness/activity drift of deps); PR touches no dependency file; needs a floor refresh on development, not a PR fix	session-20261116T081618-2145ecb3	2026-11-16T08:26:39Z
+review:filinq:1355:1ed49fc4	GREEN: dev-only phpmd 3 bump, unit 6798 OK, phpmd gate exit unchanged	session-20261116T081640-cbf74452	2026-11-16T08:26:39Z
