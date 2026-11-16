@@ -15541,3 +15541,4 @@ fix:planninq:1070:e52ec55b	sbom already current (dev-only bump); merged developm
 fix:buildiq:1608:08f7f4d3	fixed CONFLICT: merged development, kept both l10n key sets; new head 53c9f80a	session-20261116T062120-691af8f7	2026-11-16T06:53:31Z
 fix:buildiq:1262:a0a4f287	RED not reproducible on branch+current development; named tests pass, 1 inherited failure; REVERIFY recorded	session-20261116T062117-388e9de2	2026-11-16T06:53:59Z
 merge:launchpad:832:2474456e	cloud tree of 1 launchpad PRs: merged=0 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T064118-a5aff8df	2026-11-16T06:54:26Z
+fix:opencatalogi:2701:88eb3297	fixed: stale test updated to the spec's 404; new head 59468b61	session-20261116T062123-fa6fb6b0	2026-11-16T06:54:24Z
