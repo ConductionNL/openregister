@@ -18365,3 +18365,4 @@ verify:buildiq:1262:92cd509b	CONFLICT: lock call sites vs development	session-20
 verify:decidiq:2195:0dfa2458	CONFLICT #2195 (manifest + spec)	session-20261116T224246-d9bde508	2026-11-16T23:31:26Z
 verify:buildiq:1654:1a1c94ae	1654 CONFLICT	session-20261116T224608-d6967eb8	2026-11-16T23:31:46Z
 verify:filinq:2085:28951e3f	CONFLICT #2085 (SchemaAuthorizationCoverageTest.php)	session-20261116T232951-07569878	2026-11-16T23:32:01Z
+verify:decidiq:2205:d0038fbc	CONFLICT #2205 (11 files)	session-20261116T224246-d9bde508	2026-11-16T23:32:19Z
