@@ -16238,3 +16238,4 @@ build:dossiq:a-file-written-without-a-user-is-projected-as-the-system	already do
 review:integriq:3049:2da4ecc8	GREEN: unit 9535, 5 inherited failures, none new	session-20261116T105225-f677ee77	2026-11-16T11:04:27Z
 verify:stackiq:1992:2410c201	GREEN #1992: 3718 tests, 0 new failures	session-20261116T105620-b2654149	2026-11-16T11:05:29Z
 fix:shillinq:2766:4d51285b	merged development, restored stub SPDX header (drop inherited from development, same as #1912), pushed f2fbe5f8; REVERIFY queued	session-20261116T102639-f9f23dec	2026-11-16T11:05:38Z
+merge:learniq:2551:ae9ac49b	cloud tree of 5 learniq PRs: merged=0 red=0 fail=0 skip=5; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T103605-722bf416	2026-11-16T11:06:06Z
