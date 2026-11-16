@@ -17988,3 +17988,4 @@ review:hermiq:1750:ec9bd2f6	GREEN #1750 at ec9bd2f6: PHPUnit 5414 ok, vitest 156
 review:hermiq:1791:1747024b	GREEN: in-spec build, 5438 unit tests + 97 vitest green	session-20261116T214541-d7f19722	2026-11-16T21:51:01Z
 build:versioniq:releases-minimum-age:c4	built: PR #707 head 53beddbc; merged development (new run planner) with the age planner feeding it, built 2.3 (plan job+store), 3.1 (plan in /api/policies, exception endpoints, openapi), 3.2 (settings, PolicySelector, overview), 3.3 (en/nl); left 3.4 e2e and 4.1 close-out (not code). Unit-only 2192 with 2 inherited golden failures; vitest 3097 green	session-20261116T212336-79038316	2026-11-16T21:51:10Z
 cover:launchpad:fb10c50fmf487:d39f9857	deferred: launchpad has 46 open PRs	session-20261116T212719-d025d113	2026-11-16T21:51:12Z
+cover:launchpad:fb10c50fmf487:b67d52c3	deferred: launchpad has 46 open PRs	session-20261116T212719-d025d113	2026-11-16T21:51:26Z
