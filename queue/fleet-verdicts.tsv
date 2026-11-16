@@ -14038,3 +14038,4 @@ dossiq	6587	28ecad91f1baffcfa031c48d360ffca1c1d4a7b5	GREEN	worker-05	phpunit 182
 opencatalogi	2652	2348aeca1bad551e3e485ff6910acc05812c7e8c	REVERIFY	worker-58	branch already contains origin/development; l10n conflict is with another PR in the tree only, nothing to fix on the branch; merge lock held by another merger; new head 2348aeca1bad551e3e485ff6910acc05812c7e8c, verify it
 stackiq	1168	04f38d3ae4a4d17b142dbafb97d2a81126d6568c	RED	worker-27:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
 stackiq	1297	f6f898a1ce156bb7902c6cbdc55ca55df63daf3a	RED	worker-27:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
+versioniq	503	2d7f74a1bcc195a9c6630723fd089cfb3b9fff77	REVERIFY	worker-44	regenerated sbom.cdx.json for the @nextcloud/vue 9.13.1 lock with bin/regen-sbom.sh; merge lock busy; new head 7514a922e63c6e6fe2e22b1f05971ca7ee537ce0, verify it
