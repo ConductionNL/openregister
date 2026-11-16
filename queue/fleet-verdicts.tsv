@@ -15038,3 +15038,4 @@ versioniq	721	e012b413d507020a480b55b79d9e2014ba2d59ba	CONFLICT	merge3	conflicts
 versioniq	723	332a8036e3d25abd39c9c1c24d0f99f9589c4c79	CONFLICT	merge3	conflicts with development; files: src/App.vue 
 versioniq	725	bd0db7f78fc7f06f9ded92a916114f67b4a546f0	CONFLICT	merge3	conflicts with development; files: src/App.vue src/utils/updateBatch.ts tests/unit/Service/Advisory/NextcloudAdvisoryFeedTest.php 
 versioniq	738	f3f7da6d169b73e4fde2fc64bbc78a43994842cd	CONFLICT	merge3	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+humaniq	1164	73689a5c14d96133ee6b263874b8bbf12f49dd44	CONFLICT	merge3	merges clean on development alone; files: composer.lock 
