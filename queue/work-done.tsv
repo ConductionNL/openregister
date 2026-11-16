@@ -18164,3 +18164,4 @@ build:decidiq:the-decision-as-a-walked-process:c7	partial: PR #2235 at dd4b29b47
 merge:buildiq:1650:0b00614c	cloud tree of 2 buildiq PRs: merged=0 red=0 fail=1 skip=0; conflict 1 (#1650); #1688 approved but GitHub refused: merge conflicts (criss-cross bases)	session-20261116T221527-63df1734	2026-11-16T22:35:27Z
 merge:stackiq:1941:7e79214f	failed: permission (review and land after my own fix commit on #1941 refused); #1941 REVERIFY at c6e6242e, #1973 CONFLICT in src/views/FacetedCatalogIndexView.vue	session-20261116T222156-bd715f7e	2026-11-16T22:35:26Z
 measure:launchpad:20261116h22	php 94.97% js 96.17% at cb5f942	session-20261116T222946-50eaa2eb	2026-11-16T22:36:31Z
+fix:hermiq:1750:ec9bd2f6	merged #1750 at caba9fa0ec708cb3f2e0e16ad6eeec1e98b389c0 (restored unit_interfacing floor, declared openapi tag for the adr ruleset)	session-20261116T220858-93068d3c	2026-11-16T22:36:38Z
