@@ -390,3 +390,4 @@ hermiq	1167	dae65138d4911e944cdd0e955e0226a9ac641cce	APPROVE	worker-10	Quick; no
 hermiq	1174	296b735486520bafd8c45b024c2bc40d06515c4b	APPROVE	worker-10	Quick; no blockers; no concerns
 hermiq	1175	42637555c30a617e2512d88fcac2b0a205657ddc	APPROVE	worker-10	Quick; no blockers; no concerns
 hermiq	1187	415fb0238e6625fe4d8401b5cf2e03b85a5c4e8d	APPROVE	worker-10	Quick; no blockers; no concerns
+hermiq	1188	97593dc8ffffbb6783bfaaca2bcdb450ca9ff291	APPROVE	worker-10	Quick; no blockers; @nextcloud/vue minor bump; vitest 1526 green on the tree
