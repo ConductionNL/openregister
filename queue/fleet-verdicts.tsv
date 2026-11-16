@@ -14407,3 +14407,5 @@ shillinq	2070	29369cd1e5f54228d28f425cda326d85923bff8f	REVERIFY	worker-10	releas
 shillinq	2766	4d51285b749a43e73a8ab6060e699b9e46003461	RED	worker-16:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
 pipelinq	3835	ceb76db390ef456648f7e99882f1c17e45cdb196	REVERIFY	worker-17	merged development in; PortaliqArticleStore find/create use ObjectFindOptions/ObjectSaveOptions, test double on main's signature; unit 9012 OK; new head 48e31f725f73f45f869ba91ca526b70f86427bd8, verify it
 shillinq	3055	faf02682118d7f626db6c613f33227f837889737	RED	worker-16:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
+shillinq	3062	92f7ebcabee910b133253367fa8bd61c59485c77	REVERIFY	worker-16:merge	verdict sha is not the head: head is faaae73e234727476b1a3a73e75779e41d5d05a1
+shillinq	3080	5b6628bedaef904a02c0e1f497655def4909ac35	REVERIFY	worker-16:merge	verdict sha is not the head: head is cb96e451755a868ae8ce0e556a51cea3dd856dab
