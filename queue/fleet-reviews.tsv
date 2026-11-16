@@ -436,3 +436,4 @@ humaniq	662	d7499aecffd3be7525553af3896068e429d61751	APPROVE	worker-58	Quick; no
 humaniq	667	c3822863e74efaa1f7512786743723ab486e70f2	APPROVE	worker-58	Quick; no blockers; marked 18.0->18.1 minor + sbom; tree unit 4405 ok = baseline, test:js 1 inherited manifest-export failure untouched by the PR
 humaniq	669	88ae160d9c7abbc76321f26a411c6125cc34b28d	APPROVE	worker-58	Quick; no blockers; vue-router 5.3->5.4 minor + sbom; tree unit 4405 ok = baseline, test:js 1 inherited manifest-export failure untouched by the PR
 humaniq	684	036f7e9ffb9a36fce46245fcd1b17c73680556ff	APPROVE	worker-58	Quick; no blockers; nextcloud/ocp 35.0.0->35.0.2 dev stubs + sbom; tree unit 4405 ok = baseline, test:js 1 inherited manifest-export failure untouched by the PR
+humaniq	686	fe1cbc0ae582ec29fbb26fc246d74dbf397480b5	APPROVE	worker-58	Quick; no blockers; jsdom 30.0->30.1 dev dep + sbom; tree unit 4405 ok = baseline, test:js 1 inherited manifest-export failure untouched by the PR
