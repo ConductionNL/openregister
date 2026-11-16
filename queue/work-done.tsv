@@ -18035,3 +18035,4 @@ fix:hermiq:1735:42dffb64	failed: permission (review record refused; fix pushed, 
 lane:arch5:shillinq:next-shillinq-r8	partial: nothing built; context too low for a full round after a build task; requeued as :c2 with the DBAController plan	session-20261116T212353-0c92a0b1	2026-11-16T21:59:59Z
 cover:dossiq:069ee2d6m9d1b:b7fd3ec4	added 13 tests to open PR #6203 (dossiq over 40 open PRs); lib/Service/Beschikking 96.0% -> 97.9%, suite failures unchanged (19 inherited)	session-20261116T214802-7ef7ea3b	2026-11-16T22:00:21Z
 fix:dossiq:6613:073611ae	merged #6613 at ee20850459 (conflict resolved: kept CaseStatusRecords and DwellHeatmap)	session-20261116T214828-87eb0908	2026-11-16T22:01:06Z
+fix:buildiq:1683:4ed47e29	merged development in, pushed f4629c1e; merge lock held elsewhere, REVERIFY queued	session-20261116T214417-663bc13a	2026-11-16T22:01:10Z
