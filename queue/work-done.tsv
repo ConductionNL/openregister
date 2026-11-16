@@ -16206,3 +16206,4 @@ merge:versioniq:500:7be9d1e8	unmeasured: static.developer.overheid.nl (redirect 
 fix:humaniq:1095:340163fd	sbom regenerated, pushed ac05e3a9; REVERIFY queued (gate host unreachable for end-to-end)	session-20261116T102639-f9f23dec	2026-11-16T10:51:37Z
 merge:humaniq:606:1e004741	unmeasured: static.developer.overheid.nl (same PRs already approved at these shas by worker-26/worker-22; gate host unreachable, not rebuilt)	session-20261116T102639-f9f23dec	2026-11-16T10:51:52Z
 fix:humaniq:685:c73546cd	no change: clean on development, conflict was in-tree only	session-20261116T102639-f9f23dec	2026-11-16T10:52:12Z
+merge:shillinq:2096:f50ba1ec	cloud tree of 2 shillinq PRs: merged=0 red=2 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T104018-e4b2d192	2026-11-16T10:53:33Z
