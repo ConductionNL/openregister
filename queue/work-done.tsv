@@ -16501,3 +16501,4 @@ fix:keepiq:1496:ab293916	failed: dev-only hydra-gates bump; regen-sbom leaves sb
 fix:shillinq:2096:7effe6f8	spdx floor restored by merging development (5/5); new head a1c73fc3, REVERIFY queued	session-20261116T142931-c6a20eeb	2026-11-16T14:51:45Z
 fix:thematiq:1291:ac416a6a	failed: sbom already current (@conduction/nextcloud-vue is a devDependency here, regen-sbom --check passes); gate needs sbom.cdx.json in the diff, nothing real to change	session-20261116T143136-ae6d04cb	2026-11-16T14:51:55Z
 fix:opencatalogi:2701:59468b61	conflict resolved (tasks.md), pushed 23a62678; REVERIFY queued	session-20261116T142651-57b203fe	2026-11-16T14:51:56Z
+fix:learniq:1901:152da34c	RED inherited (stub without SPDX); restored rating, pushed e9591096; lock busy, REVERIFY queued	session-20261116T142859-fa64ab70	2026-11-16T14:52:09Z
