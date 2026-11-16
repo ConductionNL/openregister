@@ -16054,5 +16054,6 @@ fix:dossiq:3936:692e66a3	fixed floor (unit_interfacing 3.37 -> 3.39), pushed 073
 gap:decidiq:opensourcehealth:95458f4b	already done: development 279e8a5c rates 4 stars (401 npm deps; licence 5, management 5, freshness 3, activity 2; no OSV advisory matches a production dep per the OSV npm dump, api.osv.dev blocked here)	session-20261116T091756-9df6b5a8	2026-11-16T09:28:57Z
 verify:larpinq:1065:46d4c1bf	GREEN 1065: no new failures, vitest 597 pass	session-20261116T084851-92549055	2026-11-16T09:28:53Z
 review:shillinq:2099:b40a842e	GREEN #2099 (behaviour equal; suites at baseline)	session-20261116T084449-ebc88ac4	2026-11-16T09:29:03Z
+lane:arch5:dossiq:next-dossiq	partial: branch quality/arch5-dossiq-r1 at 3a547880b2 (2 refactors, 4.40-4.43 -> 4.41-4.43, suite 0 failures, gates same); PR waits for #6589; continuation :c2 queued	session-20261116T090836-f2cf24a5	2026-11-16T09:29:10Z
 review:versioniq:725:bd0db7f7	GREEN: only inherited failures, vitest 3058 pass; note it includes #717	session-20261116T084459-8070a613	2026-11-16T09:29:13Z
 fix:stackiq:1931:8e3de7ae	fixed BLOCK: 7 icons registered, pushed 75fc2149; lock held elsewhere, REVERIFY queued	session-20261116T091834-4216158d	2026-11-16T09:29:36Z
