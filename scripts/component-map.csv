@@ -780,6 +780,7 @@ Db/MagicMapper/MagicUpsertChunkRun.php,78,Db,Service,Service/Db/MagicMapper/Magi
 Db/MagicMapper/MultiSchemaSearch.php,32,Db,Service,Service/Db/MagicMapper/MultiSchemaSearch.php,0,,Core
 Db/MagicMapper/NestedPathFilter.php,154,Db,Service,Service/Db/MagicMapper/NestedPathFilter.php,0,,Core
 Db/MagicMapper/ObjectEventDeferral.php,27,Db,Service,Service/Db/MagicMapper/ObjectEventDeferral.php,0,,Core
+Db/MagicMapper/JsonArrayContainment.php,130,Db,Service,Service/Db/MagicMapper/JsonArrayContainment.php,0,,Core
 Db/MagicMapper/ObjectFieldFilter.php,16,Db,Service,Service/Db/MagicMapper/ObjectFieldFilter.php,0,,Core
 Db/MagicMapper/OrganisationScopeCondition.php,40,Db,Service,Service/Db/MagicMapper/OrganisationScopeCondition.php,0,,Core
 Db/MagicMapper/OrganisationScopeMembership.php,19,Db,Service,Service/Db/MagicMapper/OrganisationScopeMembership.php,0,,Core
