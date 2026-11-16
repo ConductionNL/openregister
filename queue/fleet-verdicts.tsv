@@ -15600,3 +15600,4 @@ buildiq	1648	a87fb3d8257496e792d6dc03a0248678fa9d1712	RED	worker-06:review	merge
 launchpad	1223	e2a4d5a1dfdbe432130d366a1678636db46d9b3c	CONFLICT	worker-31:merge	conflicts with development; files: lib/Service/PersonalLayerService.php openapi.json 
 launchpad	1230	bb0ec0bb14ddaeb1edf17415fe63b705f48ddc0b	CONFLICT	worker-31:merge	conflicts with development; files: openapi.json 
 launchpad	1235	92f8baab021a9b08ee21197b73ad7d8c1831561b	CONFLICT	worker-31:merge	conflicts with development; files: openapi.json 
+opencatalogi	2756	d7a2df601f100243b235b392858ee8fd16eaf3f6	GREEN	worker-49	phpunit 6040 tests, baseline 103 failing (11E/92F inherited), no new failures; vitest 1165 passed; build of publication-detail-for-the-portal per its specs, public reads fail closed
