@@ -16179,3 +16179,4 @@ merge:learniq:2484:db790a8b	cloud tree of 1 learniq PRs: merged=0 red=1 fail=0 s
 lane:arch5:stackiq:next-stackiq:c2	PR stackiq#1991 opened (GREEN, 4.05-4.09 -> 4.06-4.11); landing left to a merge task; round 3 queued	session-20261116T100945-f01894e6	2026-11-16T10:39:49Z
 merge:shillinq:2258:728a374c	unmeasured: static.developer.overheid.nl (and api.osv.dev) unreachable; tree 2258,2991,3109 IN suite green, 2997/3080/3088 CONFLICT; #3109 APPROVE restores the SPDX header behind every shillinq spdxheaders 5->4 RED	session-20261116T101009-db475c09	2026-11-16T10:40:19Z
 lane:arch5:stackiq:next-stackiq:c3	partial: not started, round 3 waits for #1990 and #1991 to land (brief); requeued as :c4 with the Vue ViewObject lead	session-20261116T100945-f01894e6	2026-11-16T10:40:41Z
+merge:stackiq:1989:9bfe8cc8	cloud tree of 1 stackiq PRs: merged=0 red=1 fail=0 skip=0 (gate: spdxheaders stars 5 -> 4)	session-20261116T103618-2f6d69a7	2026-11-16T10:41:14Z
