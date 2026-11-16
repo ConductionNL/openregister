@@ -16575,3 +16575,4 @@ fix:stackiq:1965:29a743e1	BLOCK fixed: connections scoped to the organisation, t
 review:filinq:2122:f4330506	GREEN filinq #2122: unit 6909 ok (baseline 6878), vitest/jest ok, phpstan clean	session-20261116T150930-eac38835	2026-11-16T15:15:27Z
 fix:portaliq:1768:a2fd2704	failed: sbom already current (sass is a devDependency, regen-sbom leaves it unchanged); gate needs sbom.cdx.json in the diff, nothing real to change	session-20261116T143136-ae6d04cb	2026-11-16T15:15:31Z
 review:shillinq:2093:223f0cbe	GREEN: suite 12231 OK, vitest 3/3	session-20261116T142931-c6a20eeb	2026-11-16T15:15:40Z
+merge:larpinq:1060:0c1f71b1	cloud tree of 1 larpinq PRs: merged=0 red=0 fail=0 skip=1; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T145220-87e5504e	2026-11-16T15:16:03Z
