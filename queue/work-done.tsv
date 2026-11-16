@@ -18301,3 +18301,4 @@ build:hermiq:tools-agent-workspace-and-installed-tools:c6	partial: blocked, PR #
 cover:decidiq:a5f973bbm56fe:fa6ed6d4	added 6 tests (GoverningDocumentRelease, RssDocument) to open PR #2236 (decidiq over 40 open PRs); suite 4757->4764 green	session-20261116T230844-086fb689	2026-11-16T23:12:33Z
 cover:decidiq:a5f973bbm56fe:d528dcf0	added 5 dashboard widget tests to open PR #2236 (decidiq over 40 open PRs); suite 4769 green	session-20261116T230902-ab1707de	2026-11-16T23:12:59Z
 verify:launchpad:1250:fda0f69e	GREEN #1250 (tests only; 4523 OK vs baseline 4509)	session-20261116T230901-8ff4eedc	2026-11-16T23:13:00Z
+cover:dossiq:069ee2d6m9d1b:efa2b75e	added 3 Routing tests to open cover PR #6619 (b9b28fb; over 40 open PRs); Routing suite 113->116 green	session-20261116T230914-91266698	2026-11-16T23:13:09Z
