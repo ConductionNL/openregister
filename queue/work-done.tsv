@@ -17716,6 +17716,7 @@ cover:pipelinq:7f9dc8e6m3dbb:a13d1ab7	added 3 tests to open PR #3602 (open-PR co
 cover:keepiq:c967a31fm902f:9b457b26	already done: lib/Service/Flow 100% lines (34/34), 9-test dedicated suite; -1 PR merged; no PR	session-20261116T200543-e8f76f14	2026-11-16T20:40:01Z
 cover:buildiq:70b3e29em9bad:baa54041	deferred: buildiq has 51 open PRs	session-20261116T200545-32ab46ec	2026-11-16T20:39:50Z
 verify:dossiq:6612:e228317a	6612 GREEN; 6613 skipped (head moved to 073611ae)	session-20261116T203542-d21e7ade	2026-11-16T20:40:02Z
+merge:portaliq:2535:74c44cfc	cloud tree of 1 portaliq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T203539-f268bd6b	2026-11-16T20:40:24Z
 cover:openregister:7350e3efm9dc5:ad523ef3	added 5 tests (SettingsDraftGate +4, TokenResolver +1) to open cover PR #10587 at ffe054ad; OfficialsSource/TokenResolver failure paths were already pushed there by another worker; openregister over PR budget (188)	session-20261116T200628-a3f8f9fc	2026-11-16T20:40:15Z
 fix:hermiq:1754:3e57e4dc	fixed review blockers; pushed 90999c3d, REVERIFY queued	session-20261116T201953-a718bf5e	2026-11-16T20:40:35Z
 cover:buildiq:70b3e29em9bad:716923f8	deferred: buildiq has 51 open PRs	session-20261116T200545-32ab46ec	2026-11-16T20:40:50Z
