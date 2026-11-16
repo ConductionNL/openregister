@@ -15160,3 +15160,4 @@ learniq	2559	a2575752594d239c5295bf466bb71213811b122c	REVERIFY	worker-07	merged 
 learniq	1882	334e6e479def3699df5e52bbcc4e4d89ce9c8c25	RED	worker-47:merge-gate	GATE RED absolute floor: learniq maintainability 3.98 after merge is below its floor 3.99
 shillinq	3055	6be8ada8c89f3a422809578a18d8f757d46c1d2a	REVERIFY	worker-03	merged origin/development in (clean; lock-file conflict was with other tree PRs only); merge lock held by another merger; new head 8918b6e658d4dbb560bb98a98b5a464cf516ba7c, verify it
 learniq	2555	20db188505a8fb4c07a56b7a897ef199cd9e164a	RED	worker-47:merge-gate	GATE RED absolute floor: learniq maintainability 3.98 after merge is below its floor 3.99
+learniq	2507	f29e84b71d4cb3e541070995f5539d1bedf72311	CONFLICT	worker-47:merge	merges clean on development alone; files: tests/Unit/Portal/golden/PortalManifests.json 
