@@ -16634,3 +16634,4 @@ fix:integriq:3638:3d602f6b	fixed: independence floor restored (91.44% vs base 91
 merge:humaniq:872:a5fbcf32	unmeasured: static.developer.overheid.nl (proxy 403 in this session; lock released before building)	session-20261116T150930-eac38835	2026-11-16T15:34:29Z
 review:decidiq:1767:1582903c	GREEN: unit 4625 OK (baseline 4624), phpstan clean; phpcs inline-IF note	session-20261116T153259-1f82a352	2026-11-16T15:34:49Z
 fix:integriq:3050:a397a9f1	unmeasured: static.developer.overheid.nl (SPDX fix pushed, new head ba946f8e, APPROVE recorded, tree green)	session-20261116T152057-2c4d4a8b	2026-11-16T15:35:09Z
+merge:integriq:3612:7c880450	unmeasured: static.developer.overheid.nl (proxy 403 from this session; gate cannot measure, lock released before building)	session-20261116T152057-2c4d4a8b	2026-11-16T15:35:36Z
