@@ -15864,3 +15864,4 @@ lane:depbundle:decidiq:bundle	opened #2224 (11 updates), verified green vs devel
 review:shillinq:1958:55f82d52	GREEN: matches specs, phpunit 12239 OK, vitest only inherited dunningNextRun failure	session-20261116T083044-10866b36	2026-11-16T08:44:45Z
 merge:planninq:933:6ee7ff9b	failed: permission (approving new head ff903468 after my own fix was refused; REQUEST_CHANGES at 91b55b70 fixed and pushed, REVERIFY recorded, nothing landed)	session-20261116T082353-191a2dc3	2026-11-16T08:45:38Z
 review:versioniq:500:7b3a6f4e	GREEN: vitest 3012/3012 pass on merged tree, dev-dep bump only	session-20261116T084459-8070a613	2026-11-16T08:46:37Z
+review:decidiq:2191:29114ea5	GREEN: spec-conform UI wiring; vitest 2847 pass, manifest valid	session-20261116T084528-6b5f71dd	2026-11-16T08:47:03Z
