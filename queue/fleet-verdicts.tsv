@@ -13878,3 +13878,4 @@ stackiq	1954	8ec8ab7148eb45c264f52f32289e01d1582b2b87	REVERIFY	worker-34	floors:
 stackiq	1417	603fa7bc772b26911bf07fedbd31ca5ff45303ee	RED	worker-23:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
 stackiq	1438	382aa36aab68ee72bcc38e311b8dcd92b0c081f4	RED	worker-23:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
 dossiq	6587	c8fd1135ed3c10355d902a8709fe5ab87baec688	REVERIFY	worker-18	nextcloudVue276.spec reads every CnCredentials chunk (bundle renamed vue2.js->2.vue.js); tests/schemas/app-manifest-v2.schema.json re-vendored from installed 2.186.0; vitest 7188 tests, 2 failures = development baseline (capabilityComparison, caseSearchDeclarations); manifest validates; new head 28ecad91f1baffcfa031c48d360ffca1c1d4a7b5, verify it
+filinq	1355	307201af88f5c0325eee2abd29c42f2bcedc072c	CONFLICT	worker-23:merge	conflicts with development; files: composer.lock sbom.cdx.json 
