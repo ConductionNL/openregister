@@ -16608,3 +16608,4 @@ fix:hermiq:1187:415fb023	failed: gate false RED - dev-only lock bump leaves sbom
 fix:versioniq:506:cf0ff5ad	closed #506 as obsolete: development already has vue 3.5.43	session-20261116T150938-2294e41a	2026-11-16T15:24:03Z
 review:learniq:1881:a0896acd	GREEN: intended spec'd fix; 6871 tests, 1 inherited failure	session-20261116T151753-162a5bdd	2026-11-16T15:23:57Z
 verify:shillinq:3110:74ba81c9	3110 GREEN, 3111 GREEN; unit 12231 OK; vitest 1 inherited fail	session-20261116T151016-54cee2b8	2026-11-16T15:24:39Z
+fix:integriq:3593:8dad155c	no change needed: merges clean on development alone; REVERIFY queued (merge lock held elsewhere)	session-20261116T151753-162a5bdd	2026-11-16T15:24:47Z
