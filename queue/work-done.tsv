@@ -18025,3 +18025,4 @@ merge:buildiq:1672:84dacbd1	cloud tree of 4 buildiq PRs: merged=2 red=0 fail=0 s
 review:dossiq:6203:700a2276	GREEN: tests only; 18836 unit tests, 1 inherited error; vitest 13/13	session-20261116T214700-0702980b	2026-11-16T21:58:04Z
 fix:planninq:1206:f0e5ce61	merged #1206 at adadcc7feebc3199e3ad29ffef75fd4aaec98258 (duplication 4.62 -> 4.65 via shared result-reader trait)	session-20261116T214624-beb72d49	2026-11-16T21:58:29Z
 review:buildiq:1650:c0d47084	GREEN: buildiq #1650 matches its change, 4818/4818 vitest on PR+dev; needs development merged in (conflicts in en.js, fieldTypes.js)	session-20261116T214156-ac589fdb	2026-11-16T21:58:37Z
+verify:versioniq:754:7da035af	755 GREEN; 754 skipped (head moved 70e9dc9 -> 5ca8b99)	session-20261116T212719-33567982	2026-11-16T21:58:56Z
