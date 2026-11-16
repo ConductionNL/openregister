@@ -15291,3 +15291,4 @@ hermiq	1810	797e940a32ce0bb7e10f537a5ddd9cfe9fc2e6e7	GREEN	worker-11:lane	unit 5
 filinq	2072	21673d4a61e750e6140c2d51963aea02823103fd	GREEN	worker-48:review	builds multi-tenant-hardening as its specs ask: bypass flags removed, cross-organisation rule loads through a logged system seam, schema grants match the groups the endpoints already admit; merged with development 6962 tests pass (base 6926), phpstan clean
 pipelinq	3899	2cee6e72c38a93417229e942bbfd2fa1d2291e10	GREEN	worker-13	unit 9069 run (baseline 9062 OK), 0 new failures; implements openspec change pipelinq-open-client-on-contactmoment
 larpinq	1050	e8d7437e5c73dab94dfb6ea341e978a36fe90d8c	RED	worker-44:merge-gate	GATE RED floor: duplication: 5.17 -> 5.15
+humaniq	662	f0ddf8e5865ef5e7cecb30c3b8fd324396a2ffc8	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
