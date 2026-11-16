@@ -14461,3 +14461,4 @@ learniq	2521	25bda59ee416ecde7132d5e9e915bfbaed16806a	BLOCK	worker-24:review	rev
 thematiq	1291	ac416a6a0e4f40b3e5c1706953e37c5d5546aa6d	RED	worker-46:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 thematiq	1292	1c6de77205aea0e02fe0ff817f09d1390297dc51	RED	worker-46:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 learniq	2555	c1c2b81a76c4e4e35ee2dfe51f9c0556733547d9	RED	worker-24:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+stackiq	1992	6d5c12d7da6c42f6e7984bf3e02c8fd1fb2de00b	REVERIFY	worker-49:lane	new PR: SPDX lines on tests/Stubs/Contract/ObjectServiceInterface.php (development's spdxheaders reads under its floor, which turns every stackiq merge gate RED); verify it, then land with #1990 #1991
