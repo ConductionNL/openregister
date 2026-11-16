@@ -17230,6 +17230,7 @@ build:integriq:observability-opentelemetry-export	already done: every code task 
 review:opencatalogi:2679:16fe088f	GREEN: no new failures (5869 tests, baseline 80 inherited)	session-20261116T184852-b8356331	2026-11-16T18:55:04Z
 fix:learniq:2555:20db1885	inherited: development c960466e alone measures 3.98 < floor 3.99; PR touches only composer.lock, sbom and a test stub	session-20261116T184945-c098409e	2026-11-16T18:55:18Z
 review:dossiq:6203:f6392408	GREEN: tests only, suite 18414 OK on merged tree	session-20261116T184655-77bda400	2026-11-16T18:55:17Z
+build:decidiq:one-consultation-schema:r3	already done: every code task in tasks.md is ticked and on development; only 5.2 e2e (needs live instance) left	session-20261116T184919-ae590ea9	2026-11-16T18:55:53Z
 build:learniq:participant-portal:r3	already done: every code task ticked on development (d84b379, #1763); only T4 e2e left	session-20261116T184858-b0d9d60e	2026-11-16T18:55:49Z
 verify:decidiq:2227:ed9602aa	GREEN 2227, GREEN 2228; tree 4638 tests, 0 new failures	session-20261116T184836-f6622adb	2026-11-16T18:55:50Z
 cover:pipelinq:7f9dc8e6m3dbb:f545d745	already done: every lib/Repair class has tests on development (incl. d477c25f0); remaining line gaps need a coverage driver, none installable here; pipelinq has ~45 open PRs, no new PR	session-20261116T184838-1279a0d5	2026-11-16T18:56:13Z
@@ -17246,6 +17247,7 @@ measure:decidiq:20261116h18	php 94.13% js 98.45% at 1bf4171e	session-20261116T18
 merge:learniq:1167:5572f9ff	cloud tree of 4 learniq PRs: merged=2 red=0 fail=0 skip=0; conflict 2, lint 0, red 0, moved 0, done 0	session-20261116T184833-adbb8426	2026-11-16T18:57:50Z
 review:shillinq:2991:7d526afc	GREEN: unit 12296 OK, vitest 92 passed	session-20261116T184852-d42365eb	2026-11-16T18:57:58Z
 fix:filinq:2122:8da97635	merged development in, clean; new head e57f317b; REVERIFY queued (merge lock held elsewhere)	session-20261116T185100-d2f0c6eb	2026-11-16T18:58:08Z
+cover:launchpad:fb10c50f:d3522ea6	deferred: launchpad has 44 open PRs	session-20261116T184852-d42365eb	2026-11-16T18:58:42Z
 cover:launchpad:fb10c50f:0891e5b5	deferred: launchpad has 44 open PRs	session-20261116T184924-e8902580	2026-11-16T18:58:33Z
 cover:launchpad:fb10c50f:882bd950	deferred: launchpad has 44 open PRs	session-20261116T184924-e8902580	2026-11-16T18:58:53Z
 measure:launchpad:20261116h18	php 94.94%, js 96.2% at 6a3f3239	session-20261116T182720-9950372f	2026-11-16T18:58:54Z
