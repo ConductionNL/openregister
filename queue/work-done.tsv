@@ -17596,3 +17596,5 @@ cover:dossiq:069ee2d6m9d1b:23f6b1f1	stacked on #6203 (open-PR budget): lib/Servi
 review:versioniq:691:478f595c	RED: openapi.json reduced to 1 path, new VersionedRoutesTest failure; 2 inherited failures	session-20261116T195727-d280a0c4	2026-11-16T20:12:34Z
 review:dossiq:6203:6d74c876	stale	session-20261116T201246-bf4b9e2d	2026-11-16T20:13:21Z
 verify:integriq:3675:9b0468f4	CONFLICT #3675 (tests/stubs ObjectService.php)	session-20261116T200628-a3f8f9fc	2026-11-16T20:13:27Z
+review:filinq:2122:ce5fbe9e	stale	feeder	2026-11-16T20:13:04Z
+review:opencatalogi:2686:3a20ca3d	stale	feeder	2026-11-16T20:13:04Z
