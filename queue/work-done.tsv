@@ -16318,6 +16318,7 @@ build:dossiq:task-case-card-handler-name	already done: code tasks 1.1-1.2 ticked
 build:dossiq:report-card-handler-name	already done: tasks 1.1-1.2 on development; only live check 1.3 left	session-20261116T105557-2fdfe8f3	2026-11-16T11:15:13Z
 build:dossiq:organisations-count-pills	already done: 1.1/1.2 on development since 50897f91d (test + manifest zeroAs/purple/widths); only 1.3 live check left, not a code task	session-20261116T105712-ca7768af	2026-11-16T11:15:13Z
 build:dossiq:stuf-provider-through-integriq	already done: all code tasks ticked on development; the open task removes the provider forwarders at the next release (release task, left)	session-20261116T110121-4578b190	2026-11-16T11:15:20Z
+fix:decidiq:2222:10e2178a	sbom regenerated, pushed c48b29b2; REVERIFY queued (merge gate unmeasurable here)	session-20261116T101250-8aeb7975	2026-11-16T11:15:35Z
 build:dossiq:inbound-mail-filters	already done: all code tasks ticked on development; 8.4 is an e2e run	session-20261116T110121-4578b190	2026-11-16T11:15:38Z
 build:dossiq:party-contact-moments-board-lines	already done: every code task on development; only 1 live/e2e task(s) left	session-20261116T105426-4e0b8984	2026-11-16T11:15:39Z
 merge:dossiq:3199:fd0c8fba	merge3 tree of 6 dossiq PRs: merged=6 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-16T11:16:12Z
@@ -16345,6 +16346,7 @@ build:dossiq:task-list-pooled-handler	already done: config, nl key and vitest on
 build:dossiq:task-list-sorts-by-deadline	already done: code tasks ticked and on development; 1.3 is a live check	session-20261116T110114-f035d055	2026-11-16T11:18:35Z
 build:dossiq:task-side-history-in-words	already done: tasks 1.1-1.2 on development; only live check 1.3 left	session-20261116T105557-2fdfe8f3	2026-11-16T11:18:44Z
 merge:filinq:2072:a0472251	merge3 tree of 5 filinq PRs: merged=1 red=0 fail=0 skip=0; conflict 4, lint 0, moved 0; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-16T11:18:46Z
+merge:pipelinq:2969:239b2172	merge3 tree of 3 pipelinq PRs: merged=3 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-16T11:19:04Z
 build:dossiq:woo-requests-gather-documents-from-sources	already done: code tasks 1.1-3.1 ticked with controller, service, dialog and tests on development; only e2e run 3.2 left	session-20261116T110055-454b71dd	2026-11-16T11:19:11Z
 build:dossiq:termijn-notices-send	already done: code tasks 1.1-1.3 ticked and on development (f6ec1e4a5, #3334); only live check 1.4 left	session-20261116T105620-b2654149	2026-11-16T11:19:01Z
 build:dossiq:task-list-states-in-task-words	already done: config and vitest on development; only live check 1.3 left	session-20261116T105712-260c30d3	2026-11-16T11:18:58Z
@@ -16398,3 +16400,14 @@ fix:stackiq:1931:75fc2149	blockers fixed, pushed f5df0ce8; merge lock held elsew
 fix:integriq:3564:34a49284	fixed: floor restored to 3.56, pushed da7832e5; merge lock held elsewhere, REVERIFY queued	session-20261116T105648-edfb89ae	2026-11-16T11:31:32Z
 fix:keepiq:1793:0c57f525	fixed: floor restored (unit_complexity 4.40); new head 3b29e6ab, REVERIFY queued (merge lock held elsewhere)	session-20261116T112058-ef6ff806	2026-11-16T11:31:55Z
 fix:opencatalogi:2723:28b856d8	no fix needed: green vs baseline with openregister main beside; RED was missing openregister in the tree env; REVERIFY queued (merge lock held elsewhere)	session-20261116T105654-c357c45f	2026-11-16T11:32:27Z
+merge:shillinq:1904:1d3433cd	cloud tree of 9 shillinq PRs: merged=0 red=3 fail=0 skip=1; conflict 0, lint 0, red 0, moved 5, done 0	session-20261116T104018-e4b2d192	2026-11-16T11:33:15Z
+cover:integriq:92114ab0m6759:34f5c300	failed: permission (cover is paused since 15 Nov; claimed with a stale type list, release refused)	session-20261113T182404-f2c28226	2026-11-16T11:33:59Z
+fix:buildiq:1641:b6868cd6	added the two missing @spec tags, vitest green, pushed adbfd2c; merge lock held elsewhere, REVERIFY queued	session-20261116T105628-a5f0e49c	2026-11-16T11:33:54Z
+fix:integriq:3628:858c7a5d	fixed floor: contracts for SMS/NotifyNL mail callers, estimate 3.54->3.56; pushed 58bae4ec, REVERIFY queued	session-20261116T105712-ca7768af	2026-11-16T11:34:06Z
+merge:hermiq:1808:561330f5	unmeasured: static.developer.overheid.nl	session-20261116T105625-05822e4f	2026-11-16T11:34:13Z
+merge:integriq:3671:30723070	cloud tree of 1 integriq PRs: merged=0 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T104954-a428a9fd	2026-11-16T11:34:53Z
+lane:arch5:stackiq:next-stackiq:c7	partial: round 3 not started; tree #1992+#1990+#1991 built green (3724 tests, 0 new) and APPROVE reviews recorded, but nothing landed: #1992 merge gate unmeasured: static.developer.overheid.nl; #1990/#1991 red until #1992 lands; requeued as :c8	session-20261116T105659-4edb3184	2026-11-16T11:35:11Z
+fix:integriq:3574:65269c9d	failed: floor raised 3.54->3.55, still below 3.56 after 45 min; pushed 538c9e9b, REVERIFY queued	session-20261116T105625-9a95dd96	2026-11-16T11:35:33Z
+lane:arch5:stackiq:next-stackiq:c8	failed: blocked: prerequisite #1992 cannot land from the cloud: merge gate unmeasured: static.developer.overheid.nl redirects to gitdocumentatie.logius.nl, which this environment's proxy refuses (403); reviews for #1990-#1992 are recorded APPROVE; requeue next-stackiq once that host is allowed or #1992 lands locally	session-20261116T105659-4edb3184	2026-11-16T11:35:49Z
+fix:integriq:3589:604f71b5	absolute floor restored (3.54 -> 3.56) at 58d8983d; REVERIFY queued (merge lock held elsewhere)	session-20261116T110605-d8e6c4ba	2026-11-16T11:36:38Z
+fix:buildiq:1583:df8986ae	unmeasured: static.developer.overheid.nl (fixed titles + complexity floor, new head cb1e01bf, APPROVE recorded, REVERIFY queued)	session-20261116T105426-4e0b8984	2026-11-16T11:37:19Z
