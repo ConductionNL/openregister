@@ -16904,3 +16904,4 @@ review:keepiq:1826:95a54b11	GREEN: keepiq #1826, unit 5408/0 fail, vitest 99 pas
 review:shillinq:2230:e61ebeb7	GREEN: babel dev-dep bump, vitest 3030/3031 (1 inherited failure)	session-20261116T173342-1d8a0fb9	2026-11-16T17:43:49Z
 build:shillinq:assets-method-change-and-reserve	already done: code tasks built on development; only 4.1 Playwright run left (needs a live instance)	session-20261116T173311-8d6b3275	2026-11-16T17:44:04Z
 build:shillinq:sales-usage-billing	deferred: shillinq has 81 open PRs	session-20261116T172806-3ef5ead7	2026-11-16T17:44:03Z
+build:shillinq:public-sector-quarterly-returns	deferred: shillinq has 81 open PRs	session-20261116T172806-3ef5ead7	2026-11-16T17:44:11Z
