@@ -17657,3 +17657,4 @@ build:decidiq:the-decision-as-a-walked-process:c6	partial: no change this run (w
 cover:dossiq:069ee2d6m9d1b:6a58479a	added 2 tests (CaseRecordAccess read/write success, JsonEncodedStringProperties unencodable value) to open cover PR #6203 at 1c2e722f; dossiq over PR budget (42); suite 19 inherited failures before/after	session-20261116T200628-a3f8f9fc	2026-11-16T20:29:37Z
 cover:buildiq:70b3e29em9bad:6891a8ac	deferred: buildiq has 51 open PRs	session-20261116T195844-88f5f001	2026-11-16T20:29:17Z
 cover:buildiq:70b3e29em9bad:f91e7417	deferred: buildiq has 51 open PRs	session-20261116T195844-88f5f001	2026-11-16T20:29:40Z
+cover:buildiq:70b3e29em9bad:34763eb4	deferred: buildiq has 51 open PRs	session-20261116T195844-88f5f001	2026-11-16T20:30:12Z
