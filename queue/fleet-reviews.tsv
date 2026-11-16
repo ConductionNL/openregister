@@ -274,3 +274,4 @@ decidiq	2149	acad13767619d3c32607d26b948e73a7a36daa35	APPROVE	worker-40	Thorough
 versioniq	504	918e8ff34bf4ea3f610ff396051718276fc9c7c8	APPROVE	worker-14	Quick; no blockers; dev dependency bump stylelint 17.14.1->17.15.0 with lock/sbom; tree unit suite equals baseline, vitest 3022 passed
 versioniq	505	aeceef74a654df9ff29acf01994dd6bb8cbe10c2	APPROVE	worker-14	Quick; no blockers; dev dependency bump @vue/test-utils 2.5.0->2.5.1 with lock/sbom; tree unit suite equals baseline, vitest 3022 passed
 versioniq	506	cf0ff5adda7079a02c3358ac8c403d4211cfdef6	APPROVE	worker-14	Quick; no blockers; dev dependency bump vue 3.5.42->3.5.43 with lock/sbom; tree unit suite equals baseline, vitest 3022 passed
+versioniq	507	63401e4577e3a8006d41144430399f8f3f1f5187	APPROVE	worker-14	Quick; no blockers; dev dependency bump vitest 4.1.11->5.0.3 with lock/sbom; tree unit suite equals baseline, vitest 3022 passed
