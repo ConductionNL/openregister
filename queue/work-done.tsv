@@ -16648,3 +16648,4 @@ review:stackiq:1954:3afda7d6	GREEN: per spec, suite OK on PR+development	session
 review:integriq:3049:f122cee2	GREEN: OR main deleteObject migration, no new failures	session-20261116T150749-2f742a8d	2026-11-16T15:39:53Z
 build:pipelinq:close-pipelinq-register-to-staff	deferred: pipelinq has 46 open PRs	session-20261116T150749-2f742a8d	2026-11-16T15:40:18Z
 review:integriq:3596:5124b212	GREEN integriq #3596: 0 new failures (5 inherited), vitest ok, phpstan clean	session-20261116T150930-eac38835	2026-11-16T15:40:20Z
+build:pipelinq:question-text-is-required-on-the-portal	deferred: pipelinq has 46 open PRs	session-20261116T150749-2f742a8d	2026-11-16T15:40:38Z
