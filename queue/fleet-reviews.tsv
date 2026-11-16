@@ -33,3 +33,4 @@ humaniq	686	fe1cbc0ae582ec29fbb26fc246d74dbf397480b5	APPROVE	worker-53	Quick; no
 versioniq	503	2d7f74a1bcc195a9c6630723fd089cfb3b9fff77	APPROVE	worker-50	Quick; no blockers; @nextcloud/vue 9.11.0->9.13.1 minor bump, lockfile only, unit suite on tree adds no failures
 learniq	1167	61811d4d8a8ea24ea9173de09dbf224a753fa79c	APPROVE	worker-15	Quick; no blockers; dev-dep sass bump + regenerated sbom, tree suite adds no failures
 learniq	1169	6f8c6510da541700251fc85ad25a279db0a224bf	APPROVE	worker-15	Quick; no blockers; dev-dep webpack patch bump + sbom, tree suite clean
+learniq	1727	185949881fbbf0dbfdf3524a4f4cbb9378b38ebc	APPROVE	worker-15	Quick; no blockers; sabre/vobject 5 is dev-only (used in tests only), php ^8.2 fits app ^8.3, ICS tests pass in tree
