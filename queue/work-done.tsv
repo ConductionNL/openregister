@@ -15744,9 +15744,18 @@ fix:launchpad:1235:fe672232	inherited: opensourcehealth floor 4->3 also red on p
 fix:filinq:2094:4bb74d34	fixed blockers, pushed a2f8cc99002a; merge lock busy, REVERIFY recorded	session-20261116T081647-1fba2b50	2026-11-16T08:21:04Z
 merge:portaliq:1354:22f771c5	stale	feeder	2026-11-16T08:20:24Z
 review:shillinq:1958:98ce92e5	GREEN: unit 12239 OK, vitest 18/18, phpstan/eslint clean	session-20261116T081702-4281d743	2026-11-16T08:21:21Z
+fix:keepiq:1828:08437392	failed: sbom gate false positive: composer.lock change is dev-only (conduction/hydra-gates 1.18->1.19), regen-sbom gives an identical sbom.cdx.json (--check passes), nothing to commit; gate should accept a lock change whose sbom is unchanged	session-20261116T080741-43082fe2	2026-11-16T08:21:46Z
 review:launchpad:757:2ba3b33d	GREEN: ts-eslint parser minor bump, tests+lint same as baseline	session-20261116T080016-01e1a0d7	2026-11-16T08:21:43Z
 review:planninq:933:91b55b70	GREEN: unit 1231 OK, vitest 3565 OK, lint/phpstan clean; access checks preserved	session-20261116T081649-ec7372ec	2026-11-16T08:21:51Z
 fix:learniq:2126:4e6551e4	fixed: development's new test stub lacked an SPDX header (inherited); merged development, added the header, pushed c3504350; REVERIFY queued (merge lock held elsewhere)	session-20261116T080031-6bfb8cef	2026-11-16T08:22:02Z
+fix:learniq:1727:18594988	inherited: plain development 2398190339 fails the same checker floor (spdxheaders stars 5 -> 4) without the PR; no change to the branch, the floor needs fixing on development	session-20261116T081707-5872785d	2026-11-16T08:22:06Z
 fix:learniq:2549:8928cf92	fixed floor (complexity+interfacing back within tolerance), pushed 6aa40c9b; merge lock held elsewhere, REVERIFY queued	session-20261116T075942-394736ff	2026-11-16T08:22:12Z
 fix:shillinq:3062:faaae73e	no change needed: branch already contains development and merges clean; tree-only conflict; REVERIFY recorded (merge lock held elsewhere)	session-20261116T082121-c1741fb9	2026-11-16T08:22:20Z
 fix:stackiq:1941:3f74a899	failed: permission (fix pushed as 4a5ff433; end-to-end review/land refused; REVERIFY row written)	session-20261116T080103-dd70aeff	2026-11-16T08:22:35Z
+review:shillinq:2096:7effe6f8	GREEN: phpunit 12229 OK, vitest touched 31 OK	session-20261116T075936-d83d6c1e	2026-11-16T08:22:47Z
+fix:learniq:1162:59935569	inherited: plain development 2398190339 fails the same checker floor (spdxheaders stars 5 -> 4); PR only touches package.json, package-lock.json, sbom.cdx.json; no change to the branch	session-20261116T081707-5872785d	2026-11-16T08:23:12Z
+merge:launchpad:1106:e597c9bc	failed: #1234 APPROVE, tree green, but merge gate UNMEASURED (checker_floor did not measure adrvalidator, secretscanning in cloud; regen-sbom needs COMPOSER_ALLOW_SUPERUSER=1 as root); nothing landed	session-20261116T081522-a0a03964	2026-11-16T08:23:12Z
+verify:hermiq:1807:e03b5038	GREEN #1807: unit 5291 OK (baseline same), vitest 1526 OK	session-20261116T081705-6c8f795b	2026-11-16T08:23:18Z
+fix:shillinq:2083:fc181f39	conflict resolved, pushed 16d6ee15; REVERIFY (merge lock busy)	session-20261116T075953-c9c4b65a	2026-11-16T08:23:26Z
+fix:learniq:2507:334d2575	raised info.xml version, pushed 1fad4deb; merge lock busy, REVERIFY recorded	session-20261116T081618-2145ecb3	2026-11-16T08:23:41Z
+fix:learniq:1881:a1be2d79	fixed RED (test mock to ObjectSaveOptions), merge lock held elsewhere -> REVERIFY at fffa1128	session-20261116T081640-cbf74452	2026-11-16T08:23:57Z
