@@ -18379,6 +18379,7 @@ verify:filinq:2059:fa0efc47	CONFLICT #2059 (l10n/nl.json, register json, mock re
 verify:decidiq:2154:a35c4716	CONFLICT: #2154 conflicts with development (l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Listener/Registrar/SaveGuardSubscriptions.php lib/Settings/profiles/municipality.json src/manifest.json )	session-20261113T214350-9762e143	2026-11-16T23:34:05Z
 verify:decidiq:2192:d2bbe131	CONFLICT #2192 (openapi.json src/manifest.json src/menu-layout.simple.json src/registry.js )	session-20261116T232623-066b53c9	2026-11-16T23:34:18Z
 verify:filinq:2093:285e2249	CONFLICT #2093 (tests/jest/golden/settings-page.json)	session-20261116T232918-5354fd88	2026-11-16T23:34:27Z
+verify:filinq:2114:a2eb1b13	CONFLICT #2114 (l10n, register json, openapi.json)	session-20261116T232951-07569878	2026-11-16T23:34:41Z
 verify:filinq:2089:c9a9387b	CONFLICT #2089 (l10n, filinq_register.json, openapi.json vs development)	session-20261116T232948-9d2e8ce2	2026-11-16T23:34:44Z
 verify:filinq:2096:6fa2761b	CONFLICT: ObjectEventRegistrar, register json, 2 tests	session-20261116T231848-eaef2e51	2026-11-16T23:34:59Z
 verify:hermiq:1719:70a033b0	CONFLICT #1719 (13 files)	session-20261116T230934-9ee320cf	2026-11-16T23:35:17Z
@@ -18437,3 +18438,15 @@ verify:humaniq:1134:f7bfa5d1	CONFLICT 1134 (17 files vs development)	session-202
 verify:hermiq:1758:eaa4208b	CONFLICT #1758 (lib/Settings/hermiq_register.json)	session-20261116T232944-146e39d7	2026-11-16T23:48:11Z
 verify:integriq:3632:b12445a3	CONFLICT #3632	session-20261116T232923-e93e6b40	2026-11-16T23:48:23Z
 verify:learniq:2509:20f288bf	#2509 CONFLICT (l10n, register, portal golden, HourPlanRegisterTest)	session-20261116T230843-e8244832	2026-11-16T23:48:50Z
+verify:larpinq:1045:a4b18be9	CONFLICT #1045 (11 files)	session-20261116T232033-3ca59164	2026-11-16T23:49:05Z
+verify:launchpad:1209:086ef975	1209 CONFLICT	session-20261116T230531-f9095b0f	2026-11-16T23:49:16Z
+verify:learniq:2182:07a86edd	failed: learniq development not installable here (locked vimeo/psalm 7.5 needs php >=8.3.16, container php 8.3.6)	session-20261116T233921-33ab4c87	2026-11-16T23:49:29Z
+verify:hermiq:1755:b730ea34	CONFLICT #1755 (tests/Unit/Service/ScheduleServiceTest.php)	session-20261116T233901-7abe1a78	2026-11-16T23:49:23Z
+verify:learniq:2533:bc10459d	#2533 CONFLICT (learniq_register.json)	session-20261116T230843-e8244832	2026-11-16T23:49:32Z
+verify:learniq:2524:272b43ee	CONFLICT #2524	session-20261116T232519-f84cca9a	2026-11-16T23:49:52Z
+review:integriq:3638:6ec56940	RED: CatalogRegistrySeedGoldenTest::testCollectIsUnchanged (golden hash not updated for new catalog entry)	session-20261116T232911-3dffa1ae	2026-11-16T23:50:04Z
+verify:integriq:3545:7fac08d5	CONFLICT: l10n/en.js,en.json,nl.js,nl.json vs development	session-20261116T232925-45c70e73	2026-11-16T23:50:32Z
+verify:launchpad:885:64e2e764	CONFLICT #885 (src/views/Views.vue)	session-20261116T232944-146e39d7	2026-11-16T23:50:43Z
+verify:launchpad:761:3f39b409	CONFLICT #761	session-20261116T233901-7abe1a78	2026-11-16T23:50:57Z
+verify:larpinq:1055:5b0a89f1	CONFLICT: l10n catalogues vs development	session-20261116T233900-0eb43466	2026-11-16T23:51:05Z
+verify:humaniq:687:3fe05074	CONFLICT: package.json, package-lock.json vs development	session-20261116T232912-634ff2e8	2026-11-16T23:51:31Z
