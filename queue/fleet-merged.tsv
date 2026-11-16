@@ -4200,3 +4200,4 @@ integriq	3589	604f71b58f00c5374d10fbc294fa81af37cfabe5	SKIP	worker-47	GATE UNMEA
 integriq	3595	60111a1cbeeab82e205393bd750ca75566d963aa	SKIP	worker-47	GATE UNMEASURED head moved to 6e9939f840
 hermiq	1801	b8e31c29c0755366e44d0de7ddd7cee5f6d4be87	SKIP	worker-42	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 hermiq	1802	5e2885e3e660cb042b21292e305f27b2d9a26093	SKIP	worker-42	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
+buildiq	1583	3352b16d251c55584a8fcdee0b745910841283cb	RED	worker-41	GATE RED floor: unit_complexity: 3.32 -> 3.30
