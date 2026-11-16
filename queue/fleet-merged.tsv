@@ -4540,3 +4540,8 @@ opencatalogi	2725	defb7b6a9822f96bb369f99795f0945912eb4242	SKIP	worker-07	GATE U
 integriq	3649	ceff4454ac2f491bc536f457614275d18f70ce13	RED	worker-14	GATE RED floor: unit_complexity: 3.90 -> 3.88
 integriq	3669	a2e27ca84e0633f568c5b8396dd55abb2257a12c	SKIP	worker-14	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 hermiq	1193	7d49a897eacda342108a8ffdf6d0ba0a3967dc67	SKIP	worker-11	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
+stackiq	1930	854ac3890668907bb82b345710b2ffc75ebb8c00	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.05
+stackiq	1954	3afda7d673093d1c6d13f3a4211d31d34e98c5f7	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.04
+stackiq	1965	dae73f1f93573f35c1f3c4c7854ba70d1268e5c2	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.04
+stackiq	1990	fb7faba8e594609ab0595cd9d59b48a314ab19c7	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.16
+stackiq	1991	eae67fd41291aadfec62cd5d47ee72c2e1e40e67	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.17
