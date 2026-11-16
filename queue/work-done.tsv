@@ -15413,3 +15413,4 @@ review:decidiq:1474:08a18331	GREEN: vitest 2847 passed, eslint 0 errors	session-
 review:filinq:2121:f6845146	GREEN: unit 6825 OK, vitest manifest 5/5; matches change specs	session-20261116T062050-7d5ce0d6	2026-11-16T06:25:31Z
 fix:shillinq:2095:be509293	failed: BLOCK is the PR's stated intent (additive sourceNote/message keys, tests of deleted components removed; earlier head reviewed GREEN); no code fix without reverting the PR, needs owner decision	session-20261116T062050-3a7e109c	2026-11-16T06:25:54Z
 review:decidiq:2178:f3f4328f	BLOCK: tests green, 5 eslint errors in SpeakingRequestDeadlineCell.vue	session-20261116T061736-e271ba12	2026-11-16T06:26:00Z
+review:filinq:2094:4bb74d34	GREEN: matches zgw-document-bridge specs; unit 6832/0 fail, phpstan, jest 578/578 clean	session-20261116T062117-388e9de2	2026-11-16T06:26:31Z
