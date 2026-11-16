@@ -17778,3 +17778,4 @@ cover:pipelinq:7f9dc8e6m3dbb:59b6b07f	already covered: lib/Service/Cti/Adapter/ 
 review:learniq:2521:70435b29	RED: EmployerBookingFactsTest::testTheSeededBookingsAgreeWithTheServer (seed bookings 7 vs 4); 1 inherited failure	session-20261116T205351-e92d06a8	2026-11-16T20:57:57Z
 fix:buildiq:1672:23675f9b	floor restored (p-1 3.9067), pushed 4980cad7; REVERIFY queued	session-20261116T202154-fbc59c50	2026-11-16T20:58:15Z
 cover:buildiq:70b3e29em9bad:390adfb9	deferred: buildiq has 51 open PRs	session-20261116T202154-fbc59c50	2026-11-16T20:58:28Z
+review:shillinq:3055:3c4a7efd	GREEN (conflicts with development on info.xml version + register lock; needs a merge before landing)	session-20261116T202633-f7fb0e3a	2026-11-16T20:58:28Z
