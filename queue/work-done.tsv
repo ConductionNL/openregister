@@ -16045,3 +16045,4 @@ fix:filinq:2072:a07d41bd	fixed blocker, pushed 6c719f2c; REVERIFY queued (merge 
 fix:dossiq:6587:28ecad91	fixed: sbom regenerated, new head b11faca9; merge lock held elsewhere, REVERIFY queued	session-20261116T084437-2e80ba88	2026-11-16T09:26:25Z
 fix:shillinq:1900:4eb4258f	SPDX floor: moved VatReturnChecks SPDX tag into first lines and restored stub tag (inherited from #3106); pushed 338f0839c; REVERIFY queued	session-20261116T085359-7eb6c05c	2026-11-16T09:27:03Z
 verify:portaliq:2531:26c63d51	GREEN #2531: no new unit failures, build same as baseline	session-20261116T091521-a6030cec	2026-11-16T09:27:11Z
+merge:larpinq:1050:a5d0b0fe	cloud tree of 3 larpinq PRs: merged=0 red=2 fail=0 skip=1; 1050 RED floor unit_interfacing 4.77->4.75, 1066 RED sbom not in diff, 1060 SKIP gate unmeasured (adrvalidator host unreachable)	session-20261116T075942-394736ff	2026-11-16T09:27:29Z
