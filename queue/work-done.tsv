@@ -16510,3 +16510,4 @@ fix:hermiq:1739:103d88e1	fixed ratchet blocker; pushed 5a3ceaf4; REVERIFY queued
 review:shillinq:2230:a06c8804	GREEN: babel patch bump, suites green beyond 1 inherited vitest failure	session-20261116T142710-649b1d69	2026-11-16T14:53:31Z
 fix:decidiq:1468:7dc751fb	inherited: decidiq development 279e8a5c itself measures maintainability 3.77 < floor 3.78; PR only bumps webpack (package.json/lock/sbom), nothing to fix on the branch	session-20261116T145220-87e5504e	2026-11-16T14:53:42Z
 merge:shillinq:1899:dfdaa342	merge3 tree of 9 shillinq PRs: merged=4 red=2 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-16T14:53:51Z
+fix:decidiq:1950:e876f7ce	inherited: decidiq development 279e8a5c itself measures maintainability 3.77 < floor 3.78; PR only touches composer.lock/sbom, nothing to fix on the branch	session-20261116T145220-87e5504e	2026-11-16T14:54:18Z
