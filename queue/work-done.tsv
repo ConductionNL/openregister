@@ -17034,3 +17034,4 @@ merge:shillinq:2098:ca22f911	unmeasured: static.developer.overheid.nl (proxy 403
 fix:versioniq:723:332a8036	conflict resolved, pushed 0aa4f351; not landed (merge gate host unreachable here), REVERIFY queued	session-20261116T172806-3ef5ead7	2026-11-16T18:03:50Z
 fix:hermiq:1735:80b67d82	conflict resolved, pushed ce935d59; merge lock held elsewhere, REVERIFY queued	session-20261116T173308-9a80cd8d	2026-11-16T18:04:05Z
 fix:larpinq:1050:f3c30b43	fixed REQ-RRS-004 blocker, pushed d2d372bb; not landed (merge gate host developer.overheid.nl blocked), REVERIFY queued	session-20261116T170823-40772b73	2026-11-16T18:04:24Z
+fix:buildiq:1620:7c13e441	fixed: @spec on 7 methods, spec-coverage PASS; new head afacfca7d5, REVERIFY queued (end-to-end skipped: merge gate unmeasured here)	session-20261116T173103-d3bed8f8	2026-11-16T18:05:04Z
