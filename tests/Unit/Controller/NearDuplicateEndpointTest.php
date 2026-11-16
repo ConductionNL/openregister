@@ -91,6 +91,7 @@ use Psr\Log\NullLogger;
  * @uses   \OCA\OpenRegister\Db\SchemaCatalog
  * @uses   \OCA\OpenRegister\Service\Quality\TextSignature
  * @uses   \OCA\OpenRegister\Db\TextSignature
+ * @uses \OCA\OpenRegister\Service\RegisterScopedSchemaResolver
  */
 final class NearDuplicateEndpointTest extends TestCase {
 
