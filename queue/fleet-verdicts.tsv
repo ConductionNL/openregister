@@ -14773,3 +14773,8 @@ hermiq	1135	0d097997db1a2b53afae0ba11817aff5667f2f08	RED	merge3:merge-gate	GATE 
 hermiq	1174	296b735486520bafd8c45b024c2bc40d06515c4b	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
 hermiq	1187	415fb0238e6625fe4d8401b5cf2e03b85a5c4e8d	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 hermiq	1150	9f31a6df5bd51ee8f40135390b5d8bb07ddb8e3d	CONFLICT	merge3	conflicts with development; files: lib/Service/ContextAgentInteractionService.php 
+versioniq	500	7b3a6f4e58ba2d42099bcbd7ced8dd1e3299196e	CONFLICT	worker-03:merge	conflicts with development; files: package-lock.json package.json 
+versioniq	502	c6d0467e61059cf8e5a0263c5f728008a7ee6c67	CONFLICT	worker-03:merge	conflicts with development; files: package-lock.json package.json 
+versioniq	504	918e8ff34bf4ea3f610ff396051718276fc9c7c8	CONFLICT	worker-03:merge	conflicts with development; files: package-lock.json package.json 
+versioniq	505	aeceef74a654df9ff29acf01994dd6bb8cbe10c2	CONFLICT	worker-03:merge	conflicts with development; files: package-lock.json package.json 
+versioniq	506	cf0ff5adda7079a02c3358ac8c403d4211cfdef6	CONFLICT	worker-03:merge	conflicts with development; files: package-lock.json sbom.cdx.json 
