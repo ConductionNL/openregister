@@ -16600,3 +16600,4 @@ review:shillinq:2071:abd73b77	GREEN	session-20261116T144202-f2b26030	2026-11-16T
 fix:hermiq:1150:9f31a6df	conflict resolved (first-turn handling + main find API); suite 5300 OK; new head e594ec91, REVERIFY	session-20261116T144734-1dc150d8	2026-11-16T15:21:07Z
 fix:versioniq:502:c6d0467e	obsolete: development already has @typescript-eslint/parser 8.71.0; closed with a comment	session-20261116T144202-f2b26030	2026-11-16T15:21:34Z
 review:keepiq:1792:5d484110	GREEN: specs met, no new failures (3 inherited vitest)	session-20261116T151005-df77eb85	2026-11-16T15:21:33Z
+fix:versioniq:504:918e8ff3	obsolete: development already has stylelint 17.15.0; closed with a comment	session-20261116T144202-f2b26030	2026-11-16T15:22:20Z
