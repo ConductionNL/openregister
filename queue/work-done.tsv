@@ -16483,3 +16483,4 @@ merge:decidiq:1465:dbc78157	merge3 tree of 9 decidiq PRs: merged=0 red=9 fail=0 
 fix:shillinq:3110:a0ee6bc0	merged development in, new head e7c788adcc; REVERIFY queued (merge lock held elsewhere)	session-20261116T142616-2623e37a	2026-11-16T14:47:56Z
 merge:hermiq:1133:4cac2462	unmeasured: gitdocumentatie.logius.nl (static.developer.overheid.nl redirects there; proxy refuses it); 7 PRs approved, merged 0; 1150 CONFLICT, 1189 MOVED	session-20261116T142714-8127c132	2026-11-16T14:47:52Z
 fix:learniq:2166:a323b0c1	fixed spdx (header missing on development's ObjectServiceInterface stub); new head 5e708c03; REVERIFY (lock held)	session-20261116T144202-f2b26030	2026-11-16T14:48:12Z
+fix:opencatalogi:2679:b5f77a60	fixed: maintainability back to 5 stars (checker 4.51), pushed 0e72dcc6; REVERIFY queued (gate unmeasured here: static.developer.overheid.nl)	session-20261116T142651-57b203fe	2026-11-16T14:48:42Z
