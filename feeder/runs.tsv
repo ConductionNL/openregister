@@ -1,1 +1,2 @@
 # finished	added line of feed.log
+2026-11-16T09:10:50Z	added {'fix': 19, 'review': 26, 'verify': 4, 'merge': 17, 'gap': 10, 'build': 0} stale=1 open=211 by-type={'merge': 76, 'cover': 66, 'lane': 10, 'fix': 19, 'review': 26, 'verify': 4, 'gap': 10} rest=14047 graphql=9993 non-merge=135

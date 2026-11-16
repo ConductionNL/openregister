@@ -106,11 +106,25 @@ def mergeable_branch(p):
     return ((p.get("author") or {}).get("login") or "") in MERGE_AUTHORS
 
 
-def _rest_lines(path, jq):
-    r = run(["gh", "api", "--paginate", path, "--jq", jq])
-    if r.returncode:
-        raise RuntimeError(f"rest {path}: {(r.stderr or r.stdout).strip()[:300]}")
-    return [json.loads(x) for x in r.stdout.splitlines() if x.strip()]
+def _rest_lines(path, jq, per_page=100):
+    """Every item of a REST list endpoint, one JSON object per jq output line. Pages are requested by number
+    on the owner/repo path: gh --paginate follows GitHub's next links, which name the repository by numeric
+    id (/repositories/<id>/...), and the cloud session proxy refuses those."""
+    out, page = [], 1
+    sep = "&" if "?" in path else "?"
+    while True:
+        r = run(["gh", "api", f"{path}{sep}page={page}", "--jq", f"length, ({jq})"])
+        if r.returncode:
+            raise RuntimeError(f"rest {path} page {page}: {(r.stderr or r.stdout).strip()[:300]}")
+        lines = [x for x in r.stdout.splitlines() if x.strip()]
+        if not lines:
+            break
+        n = int(lines[0])
+        out.extend(json.loads(x) for x in lines[1:])
+        if n < per_page or page >= 50:
+            break
+        page += 1
+    return out
 
 
 # The GraphQL shape of a PR, built from the REST pulls list. REST names the dependabot app "dependabot[bot]",

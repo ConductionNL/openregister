@@ -15857,14 +15857,25 @@ review:filinq:2103:abcbf7f1	stale	feeder	2026-11-16T08:36:15Z
 lane:depbundle:stackiq:bundle	failed: permission: self-review and land of own PR refused earlier this session; bundle PR #1989 open (4 updates, verified equal to development), REVERIFY row written	session-20261116T080103-dd70aeff	2026-11-16T08:42:20Z
 fix:pipelinq:2501:ca4bf396	merged development in cleanly, pushed 58a531d9; merge lock held elsewhere, REVERIFY queued	session-20261116T075942-394736ff	2026-11-16T08:42:27Z
 fix:stackiq:1297:f6f898a1	inherited: spdx stars 5->4 comes from development (tests/Stubs/Contract/ObjectServiceInterface.php has no SPDX header there); #1435 head 8d2e5a8e carries that fix; no change to this PR	session-20261116T080103-dd70aeff	2026-11-16T08:43:04Z
+merge:dossiq:3298:0099e58d	merge3 tree of 22 dossiq PRs: merged=8 red=5 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 9	merge3-20261113T213425-c36bcd5f	2026-11-16T08:43:21Z
 review:stackiq:1435:8d2e5a8e	failed: self-review - worker-16 pushed this head (8d2e5a8e); needs a different reviewer	session-20261116T080103-dd70aeff	2026-11-16T08:43:15Z
 fix:pipelinq:3152:6f459260	conflict resolved, pushed 29e9143d; REVERIFY recorded (merge lock held elsewhere)	session-20261116T082121-c1741fb9	2026-11-16T08:43:35Z
+merge:dossiq:4149:a683c610	merge3 tree of 22 dossiq PRs: merged=8 red=5 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 9	merge3-20261113T213425-c36bcd5f	2026-11-16T08:43:40Z
 review:shillinq:2083:16d6ee15	BLOCK: receipt confirm silently drops the editable photoUri field; suite 12234, 1 inherited error	session-20261116T074147-edb7c708	2026-11-16T08:43:50Z
+review:filinq:2103:cface20c	stale	feeder	2026-11-16T08:42:17Z
+merge:dossiq:5266:89a46723	merge3 tree of 22 dossiq PRs: merged=8 red=5 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 9	merge3-20261113T213425-c36bcd5f	2026-11-16T08:44:04Z
+merge:dossiq:3203:32077bba	merge3 tree of 22 dossiq PRs: merged=8 red=5 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 9	merge3-20261113T213425-c36bcd5f	2026-11-16T08:44:37Z
 fix:pipelinq:3083:c1e2e782	failed: unfixable by sbom regen - jsdom is a devDependency, regen-sbom (--omit dev) leaves sbom.cdx.json unchanged, so the gate's 'lockfile changed without sbom.cdx.json' can never pass for this dependabot PR; leave it to the deps bundle (quality/deps-bundle-20261115 / pipelinq #3882); nothing pushed	session-20261116T082121-c1741fb9	2026-11-16T08:44:33Z
 lane:depbundle:decidiq:bundle	opened #2224 (11 updates), verified green vs development; merge lock held by another merger, GREEN verdict queued for merge	session-20261116T083020-e59421bc	2026-11-16T08:44:37Z
 review:shillinq:1958:55f82d52	GREEN: matches specs, phpunit 12239 OK, vitest only inherited dunningNextRun failure	session-20261116T083044-10866b36	2026-11-16T08:44:45Z
+merge:dossiq:2705:411106d6	merge3 tree of 22 dossiq PRs: merged=8 red=5 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 9	merge3-20261113T213425-c36bcd5f	2026-11-16T08:45:03Z
+merge:dossiq:3197:73cb696b	merge3 tree of 22 dossiq PRs: merged=8 red=5 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 9	merge3-20261113T213425-c36bcd5f	2026-11-16T08:45:15Z
+merge:dossiq:3297:7b19cd34	merge3 tree of 22 dossiq PRs: merged=8 red=5 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 9	merge3-20261113T213425-c36bcd5f	2026-11-16T08:45:32Z
+merge:dossiq:2902:0adcacd1	merge3 tree of 22 dossiq PRs: merged=8 red=5 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 9	merge3-20261113T213425-c36bcd5f	2026-11-16T08:45:44Z
 review:stackiq:1931:8e3de7ae	BLOCK: unregistered manifest icons, missing info.xml version bump, no demo data for new schemas, component_independence floor lost	session-20261116T080103-dd70aeff	2026-11-16T08:45:29Z
 merge:planninq:933:6ee7ff9b	failed: permission (approving new head ff903468 after my own fix was refused; REQUEST_CHANGES at 91b55b70 fixed and pushed, REVERIFY recorded, nothing landed)	session-20261116T082353-191a2dc3	2026-11-16T08:45:38Z
+merge:dossiq:3936:6f5fe348	merge3 tree of 22 dossiq PRs: merged=8 red=5 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 9	merge3-20261113T213425-c36bcd5f	2026-11-16T08:45:54Z
+merge:dossiq:6203:112b4841	merge3 tree of 22 dossiq PRs: merged=8 red=5 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 9	merge3-20261113T213425-c36bcd5f	2026-11-16T08:46:08Z
 review:versioniq:500:7b3a6f4e	GREEN: vitest 3012/3012 pass on merged tree, dev-dep bump only	session-20261116T084459-8070a613	2026-11-16T08:46:37Z
 review:decidiq:2191:29114ea5	GREEN: spec-conform UI wiring; vitest 2847 pass, manifest valid	session-20261116T084528-6b5f71dd	2026-11-16T08:47:03Z
 review:decidiq:2170:d54fcb29	GREEN #2170 at d54fcb29: matches spec, suite 4655 OK, phpstan 0, vitest pass	session-20261116T083020-e59421bc	2026-11-16T08:47:27Z
@@ -15892,6 +15903,7 @@ review:filinq:2103:cface20c	stale	session-20261116T081426-24e3a1d6	2026-11-16T08
 fix:pipelinq:3092:f8d049f3	sbom regenerated, pushed f041615e; APPROVE recorded; land skipped (gate UNMEASURED: checker did not measure adrvalidator)	session-20261116T081618-2145ecb3	2026-11-16T08:51:35Z
 review:launchpad:785:085c96eb	GREEN: phpunit 4485 ok, vitest 2586 ok, no behaviour regressions	session-20261116T084356-f50aa190	2026-11-16T08:51:48Z
 review:larpinq:1053:1a318455	BLOCK: new find() call uses register:/schema: named args gone on openregister main; suite 1002 OK	session-20261116T084455-5dfa31c7	2026-11-16T08:52:11Z
+lane:feeder:dossiq:once	failed: feed.py REST pagination of openregister open PRs refused by proxy (numeric-id repositories/{id} next-page path, HTTP 403); nothing added	session-20261116T084553-d7ab8477	2026-11-16T08:52:38Z
 merge:shillinq:2086:6e72623c	failed: development itself fails the checker floor (spdxheaders 5->4, test stub header lost in 0d688ca2f); fix pending on quality/gap-spdx-stub-header 95bf71e1b, every PR would gate RED until it lands	session-20261116T082955-f4213879	2026-11-16T08:52:29Z
 review:opencatalogi:2725:80cedf65	GREEN: 0 new failures (+24 tests), matches change specs	session-20261116T084700-3a1a7351	2026-11-16T08:52:41Z
 lane:arch5:pipelinq:pipelinq-k	PR pipelinq #3884 opened at 72197b6e (already contained development); verified green; estimate 4.38-4.40 -> 4.48-4.49 (still under 4.5: next-pipelinq after it lands); merge lock held elsewhere, GREEN verdict queued	session-20261116T081522-a0a03964	2026-11-16T08:52:55Z
@@ -15923,6 +15935,7 @@ fix:portaliq:1765:065fabf8	sbom regenerated, pushed 582e2f29; merge lock held, R
 review:learniq:1881:fffa1128	GREEN: suite 6871, 1 inherited failure, none new	session-20261116T084600-33f35544	2026-11-16T08:57:57Z
 review:filinq:2103:cd98f739	GREEN: matches change specs, gates clean, unit 6851 OK	session-20261116T080103-dd70aeff	2026-11-16T08:58:05Z
 fix:launchpad:763:68f98712	no change needed: branch up to date with development, package conflict tree-only; REVERIFY recorded (merge lock busy)	session-20261116T082353-191a2dc3	2026-11-16T08:58:25Z
+merge:filinq:2141:c652c6bc	cloud tree of 1 filinq PRs: merged=0 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T081647-1fba2b50	2026-11-16T08:58:52Z
 lane:ormig:planninq:leftover	already done: namecheck on development 71f40a13 has no BREAK (9 REVIEW-positional already on main forms or ZipArchive), check.py's 3 rows are self-calls to a private find() that uses ObjectFindOptions; no PR needed	session-20261116T084906-c933b95f	2026-11-16T08:58:50Z
 fix:portaliq:2349:b92b6364	merged development in, sbom current, phpstan unchanged vs 2.3.1; new head e7812cc2, REVERIFY queued (merge lock held)	session-20261116T084920-18fd4376	2026-11-16T08:58:57Z
 review:opencatalogi:2643:adb68bca	GREEN: spec-conform, 0 new failures (106 inherited), jest 74/74	session-20261116T084755-b37f1e99	2026-11-16T08:59:08Z
@@ -15952,3 +15965,18 @@ lane:depbundle:larpinq:bundle	opened #1066 (3 updates, verified); merge lock hel
 fix:portaliq:1767:886f4fa1	merged development in, pushed 171143de; merge lock held elsewhere, REVERIFY queued	session-20261116T084902-22557114	2026-11-16T09:04:35Z
 lane:ormig:humaniq:leftover	#872 updated to a3d94bb2, verified green, GREEN queued for merge (lock busy); namecheck: no other real BREAK (rest are humaniq-internal calls), no names PR needed	session-20261116T084700-3a1a7351	2026-11-16T09:05:02Z
 lane:arch5:dossiq:dossiq-round5	PR #6589 opened at 503c16af9c (estimate 4.33-4.35 -> 4.40-4.43), verified GREEN; merge lock held elsewhere, GREEN row queued	session-20261116T083029-d99abe70	2026-11-16T09:05:10Z
+merge:portaliq:1353:9fd6c65a	merge3 tree of 0 portaliq PRs: nothing; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-16T09:06:49Z
+lane:depbundle:integriq:bundle	PR #3670 opened (9 npm updates); merge lock held elsewhere, GREEN recorded for a merge task	session-20261116T082121-c1741fb9	2026-11-16T09:06:53Z
+fix:dossiq:3203:cd98b031	conflict resolved, pushed 2c689dc95; merge lock held elsewhere, REVERIFY queued	session-20261116T084957-4e2b0583	2026-11-16T09:07:03Z
+lane:depbundle:humaniq:bundle	opened #1164 (9 updates), verified GREEN; merge lock held by another merger, GREEN verdict queued for a merge task	session-20261116T084920-18fd4376	2026-11-16T09:07:12Z
+lane:ormig:buildiq:migrate	PR #1672 opened at 8130284789a8, verified (main beside: 2 inherited failures; stubs only = development); merge lock held elsewhere, GREEN verdict recorded	session-20261116T084850-3eaccefe	2026-11-16T09:07:31Z
+merge:shillinq:2099:f73647ee	cloud tree of 1 shillinq PRs: merged=0 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T084459-8070a613	2026-11-16T09:07:43Z
+lane:depbundle:keepiq:bundle	opened #1829 (4 updates), verified green; merge lock held elsewhere, GREEN recorded for a merge task	session-20261116T083044-10866b36	2026-11-16T09:08:14Z
+lane:depbundle:thematiq:bundle	opened #1682 (9 updates), verified; merge lock held by another merger, GREEN verdict queued for merge	session-20261116T084755-b37f1e99	2026-11-16T09:09:10Z
+lane:depbundle:planninq:bundle	failed: permission: cm_land.sh land refused; PR #1198 open, APPROVE recorded, GREEN verdict queued	session-20261116T082637-06597b03	2026-11-16T09:09:24Z
+lane:ormig:dossiq:leftover	PR #6590 opened (ormig2 + #5338, suite 18309/0 like development); merge lock held elsewhere, GREEN verdict queued; #5338 and #5365 closed with pointers; namecheck: all real BREAKs fixed in #6590, rest false positives	session-20261116T084434-57e47bd3	2026-11-16T09:10:07Z
+merge:filinq:1355:615b34c8	cloud tree of 5 filinq PRs: merged=0 red=1 fail=0 skip=1; conflict 3, lint 0, red 0, moved 0, done 0	session-20261116T081647-1fba2b50	2026-11-16T09:09:57Z
+merge:shillinq:2093:ac9a8fa0	stale	feeder	2026-11-16T09:09:14Z
+lane:feeder:dossiq:once2	added {'fix': 19, 'review': 26, 'verify': 4, 'merge': 17, 'gap': 10, 'build': 0} stale=1 open=211 by-type={'merge': 76, 'cover': 66, 'lane': 10, 'fix': 19, 'review': 26, 'verify': 4, 'gap': 10} rest=1	session-20261116T090836-f2cf24a5	2026-11-16T09:10:56Z
+merge:dossiq:6587:dab3e303	merge3 tree of 1 dossiq PRs: merged=0 red=1 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-16T09:11:51Z
+lane:depbundle:shillinq:bundle	opened #3110, 7 updates (gridstack 14 left out: peer range); merge lock held elsewhere, GREEN verdict queued for a merge task	session-20261116T084449-ebc88ac4	2026-11-16T09:12:00Z
