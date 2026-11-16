@@ -16039,3 +16039,7 @@ fix:launchpad:757:2ba3b33d	inherited: plain development also reads opensourcehea
 fix:opencatalogi:2673:55afbbab	fixed RED: golden re-recorded, pushed 6dd0d200; lock held elsewhere, REVERIFY queued	session-20261116T091834-4216158d	2026-11-16T09:24:59Z
 fix:filinq:2123:e7b32d65	conflict resolved, pushed 821f64bb; merge lock busy, REVERIFY queued	session-20261116T092158-aeab11ae	2026-11-16T09:25:20Z
 fix:filinq:1355:1ed49fc4	failed: unfixable by branch change - phpmd is a dev dependency so sbom.cdx.json is correctly unchanged (regen-sbom --check current, 711 comps); merge_gate.py sbom() requires sbom in the diff for any lock change; gate needs a fix	session-20261116T092014-a47177ca	2026-11-16T09:25:39Z
+merge:planninq:1198:4ef22590	cloud tree of 1 planninq PRs: merged=0 red=0 fail=0 skip=1; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T091613-0f6d95fe	2026-11-16T09:25:58Z
+fix:filinq:2094:a2f8cc99	conflict resolved, pushed 6498e5a9, unit 6885 OK; merge lock held elsewhere, REVERIFY queued	session-20261116T091324-bb324ce0	2026-11-16T09:26:09Z
+fix:filinq:2072:a07d41bd	fixed blocker, pushed 6c719f2c; REVERIFY queued (merge lock held elsewhere)	session-20261116T092246-6d8c52bf	2026-11-16T09:26:18Z
+fix:dossiq:6587:28ecad91	fixed: sbom regenerated, new head b11faca9; merge lock held elsewhere, REVERIFY queued	session-20261116T084437-2e80ba88	2026-11-16T09:26:25Z
