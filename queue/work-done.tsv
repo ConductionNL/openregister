@@ -17189,4 +17189,5 @@ review:hermiq:1756:d3c836c0	GREEN: suite OK 5349 tests, access checks fail close
 cover:keepiq:c967a31fmba5a:js3f3bfe56	PR #1848: +23 tests (main.js 0->100%, App.vue 66->71%; src/* lines 53.6->79.2%); suite 6894 pass / 3 inherited fails	session-20261116T182240-4aa65022	2026-11-16T18:42:55Z
 review:humaniq:606:999cc286	GREEN: twig bump, suite 4405 OK on merge with development, sbom current	session-20261116T173242-1dd97d52	2026-11-16T18:42:59Z
 build:hermiq:agents-plain-language-builder	already done: every code task ticked on development; the 2 open tasks need the live instance (live chat, Newman run)	session-20261116T181517-93723df6	2026-11-16T18:43:12Z
+build:hermiq:cli-runner-text-turn-dispatch	already done: every code task ticked on development; the one open task is live verification	session-20261116T181517-93723df6	2026-11-16T18:43:45Z
 cover:keepiq:c967a31fmba5a:jsd48eb217	PR #1849: 5 store specs, 40 tests; store/modules lines 89.95->93.80%; suite 6914 tests, 3 inherited failures	session-20261116T182720-9950372f	2026-11-16T18:43:45Z
