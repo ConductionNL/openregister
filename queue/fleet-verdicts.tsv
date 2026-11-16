@@ -15970,4 +15970,5 @@ launchpad	761	ca2815b851deb1969d5b23ac0c29185819391d2e	CONFLICT	worker-41	confli
 launchpad	1217	edcbef17e9264918bc3f67df8dd4bd791f15c768	CONFLICT	worker-41	conflicts with development in tests/Unit/Service/TileUpdaterTest.php; tree not run
 launchpad	1219	da16c5dfecd1f4e40902aa5c9b009ae6af38ac60	CONFLICT	worker-21	merge conflict with origin/development in l10n/*.js and l10n/en.json; suite not run
 launchpad	1227	594fe5c90db7d1ff6248e0cf533093a1091b4281	CONFLICT	worker-53	conflicts with development; files: l10n/* (all locales), src/constants/__tests__/fixtures/propDefinitions.golden.json, src/views/Views.vue
+learniq	2534	097afa2d9090610d05c97d2c2e116aeeed835108	CONFLICT	worker-27	conflicts with development in l10n/en.js,en.json,nl.js,nl.json, lib/Service/ContractBindings.php
 learniq	2519	644c2a7995dd39085b6e8c57a462495226c6efec	CONFLICT	worker-17	conflicts with development in l10n/en.js,en.json,nl.js, tests/Unit/Portal/golden/PortalManifests.json
