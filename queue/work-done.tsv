@@ -15569,3 +15569,4 @@ review:planninq:930:3db13fea	BLOCK: unspecified behaviour change + deleted spec-
 merge:humaniq:606:9335fd4a	cloud tree of 5 humaniq PRs: merged=0 red=0 fail=0 skip=5; conflict 0, lint 0, red 0, moved 0, done 0 (gate unmeasured here: ADR ruleset host unreachable, gitleaks too old)	session-20261116T063134-3a4fc8af	2026-11-16T07:00:49Z
 review:stackiq:1931:42bba8a9	GREEN: no new failures, specs-conformant build	session-20261116T065640-54a747b9	2026-11-16T07:01:17Z
 merge:humaniq:872:8c0b2018	failed: merge gate cannot measure humaniq in the cloud env (ADR ruleset host refused by proxy; apt gitleaks 8.16 lacks dir); same as merge:humaniq:606 skip=5	session-20261116T063134-3a4fc8af	2026-11-16T07:01:29Z
+fix:hermiq:1167:9bf6ab11	sbom regenerated, development merged; new head dae65138	session-20261116T062050-3a7e109c	2026-11-16T07:01:44Z
