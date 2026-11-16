@@ -15646,4 +15646,5 @@ merge:versioniq:738:50ada5e5	cloud tree of 1 versioniq PRs: merged=0 red=0 fail=
 measure:integriq:20261116h06	php 95.29% (pcov), js 94.89% at d9d474f0	session-20261116T061736-e271ba12	2026-11-16T07:18:09Z
 merge:filinq:1355:77246e3e	cloud tree of 2 filinq PRs: merged=0 red=0 fail=0 skip=1; conflict 1, lint 0, red 0, moved 0, done 0 (1962 closed upstream, not reviewed)	session-20261116T065640-54a747b9	2026-11-16T07:18:56Z
 fix:dossiq:6587:c8fd1135	fixed: 2 vitest specs follow nextcloud-vue 2.181; new head 28ecad91	session-20261116T062050-3a7e109c	2026-11-16T07:19:03Z
+measure:stackiq:20261116h06	php 88.93% (pcov), js 96.35% at 0cdd4afa	session-20261116T062117-388e9de2	2026-11-16T07:19:49Z
 merge:shillinq:1899:ad1c159e	cloud tree of 9 shillinq PRs: none; conflict 2, lint 0, red 0, moved 7, done 0	session-20261116T071324-07369689	2026-11-16T07:19:33Z
