@@ -4684,3 +4684,4 @@ filinq	2072	21673d4a61e750e6140c2d51963aea02823103fd	SKIP	worker-44	no APPROVE r
 hermiq	1750	a6a7d9f3a66bddd4b9031da49d80cb02bb8de890	RED	worker-26	GATE RED floor: unit_complexity: 4.51 -> 4.46
 filinq	2149	794a93d4f8fbeb90285529ad07cf9c24c1a1e06b	MERGED	worker-44	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.06
 buildiq	1677	2cb752c8fbf50b2b6665099052fdaa13d50db18e	MERGED	worker-40	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.91 holds at 3.91
+decidiq	1767	1582903c267265c964b1af5bddd432f6f7e882bf	MERGED	worker-50	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.78 holds at 3.80
