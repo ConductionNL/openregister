@@ -17855,3 +17855,4 @@ review:versioniq:691:57ab5aa2	stale	feeder	2026-11-16T21:17:16Z
 lane:arch5:larpinq:next-larpinq-r2	PR #1078, GREEN (4.17-4.32 -> 4.26-4.39, includes #1077)	session-20261116T204203-b8dccc50	2026-11-16T21:19:29Z
 cover:dossiq:069ee2d6m9d1b:8b886c00	already done: lib/Service/People/*.php 1018/1019 measured; the one uncovered line is PersonReachability's \OCP\Server::get container fallback, not unit-testable	session-20261116T211650-654dd569	2026-11-16T21:19:51Z
 cover:pipelinq:7f9dc8e6m3dbb:85f7d10b	already covered: target dirs at 66/67 stmts (98.5%) on development; only LoyaltyPurchase ctor uncovered (value object, no getter-only test); no PR	session-20261116T211631-e825058a	2026-11-16T21:20:16Z
+lane:arch5:buildiq:next-buildiq-r2	PR #1684, GREEN (estimate 3.92-3.98 -> 3.93-3.99, includes r1 #1683; still under 4.5)	session-20261116T210639-4564b5ec	2026-11-16T21:20:27Z
