@@ -16782,3 +16782,5 @@ fix:hermiq:1756:1435f079	conflict resolved, pushed 6c5bc38; merge lock held else
 review:keepiq:1793:b87d8b92	GREEN: keepiq #1793 implements its change; vitest only 3 inherited reds, extension suite green	session-20261116T170526-86f54433	2026-11-16T17:17:28Z
 fix:learniq:2484:6e3b8399	nothing to fix: branch contains development; tree-only conflict on the ObjectServiceInterface stub, REVERIFY queued	session-20261116T165653-a1481a13	2026-11-16T17:17:38Z
 fix:learniq:2549:3c970465	nothing to fix: branch contains development; tree-only conflict, REVERIFY queued	session-20261116T165653-a1481a13	2026-11-16T17:18:41Z
+merge:pipelinq:3883:3221b143	cloud tree of 1 pipelinq PRs: merged=0 red=0 fail=0 skip=1; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T170518-c83d80fe	2026-11-16T17:18:58Z
+fix:learniq:2558:374f52e9	fixed CONFLICT: dropped unrelated stub hunk, new head e67cf928; lock held elsewhere, REVERIFY queued	session-20261116T170557-1cef7e8d	2026-11-16T17:19:07Z
