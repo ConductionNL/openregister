@@ -4139,3 +4139,4 @@ versioniq	691	eca00de334c5e77d1c39e55199d03edf2bb99dd5	SKIP	worker-14	no APPROVE
 decidiq	1473	fbdc77e40ce26b62e5d8e01c082907767f885f48	SKIP	worker-40	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 shillinq	2096	7effe6f879623dc80a398d368a54663c20be23e0	RED	worker-58	GATE RED checker floor: spdxheaders stars: 5 -> 4
 decidiq	1692	faa2a2eb94e5996ace0de2e05bc550c8824894f3	SKIP	worker-40	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
+shillinq	3108	aa5b2da3082bd35970e8279798ef59a076f2c0df	RED	worker-58	GATE RED sbom: composer.lock, package-lock.json changed without sbom.cdx.json
