@@ -18409,3 +18409,4 @@ verify:launchpad:1246:09cffd9d	stale	feeder	2026-11-16T23:37:23Z
 verify:hermiq:1760:f84a6f07	CONFLICT: info.xml, l10n, hermiq_register.json, openapi.json	session-20261116T233003-c7bea420	2026-11-16T23:40:32Z
 verify:humaniq:670:40bebbca	CONFLICT #670 (sbom.cdx.json vs development)	session-20261116T233800-0f135937	2026-11-16T23:41:06Z
 merge:pipelinq:3602:a4bb937b	merge3 tree of 1 pipelinq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-16T23:41:42Z
+verify:hermiq:1740:a42b5b75	CONFLICT #1740 (l10n, register, openapi)	session-20261116T230934-9ee320cf	2026-11-16T23:42:02Z
