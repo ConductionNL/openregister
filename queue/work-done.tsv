@@ -18412,3 +18412,4 @@ verify:filinq:2105:2bb11d8f	CONFLICT: #2105 conflicts with development (l10n, re
 verify:hermiq:1740:a42b5b75	CONFLICT #1740 (l10n, register, openapi)	session-20261116T230934-9ee320cf	2026-11-16T23:42:02Z
 verify:filinq:2112:a9282c63	CONFLICT #2112 (register json, openapi.json)	session-20261116T232844-9c7f5cce	2026-11-16T23:42:13Z
 verify:hermiq:1749:adcb7c52	CONFLICT: lib/Controller/SessionController.php vs development	session-20261116T232959-6ccea9dc	2026-11-16T23:42:32Z
+verify:learniq:1883:09e73c39	CONFLICT #1883	session-20261116T232519-f84cca9a	2026-11-16T23:42:52Z
