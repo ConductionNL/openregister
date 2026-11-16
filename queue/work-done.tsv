@@ -16889,6 +16889,7 @@ review:shillinq:3078:33420e1f	GREEN: unit 12278 tests 0 failures, vitest 9/9, es
 verify:buildiq:1672:26841644	GREEN #1672 (3333 tests, 0 new failures)	session-20261116T173308-9a80cd8d	2026-11-16T17:40:51Z
 build:portaliq:portal-theme-application	already done: code built on development (8 Oct); left only an info.xml dependency decision and browser/e2e tasks	session-20261116T173311-8d6b3275	2026-11-16T17:40:44Z
 build:portaliq:write-record-names-the-mandate	already done: every code task ticked on development; open tasks are live checks only, left	session-20261116T170823-40772b73	2026-11-16T17:40:55Z
+review:openregister:10596:1cde2635	APPROVE: test docblock only, ExampleSet suite same as main	session-20261116T171507-41a673e9	2026-11-16T17:41:04Z
 build:portaliq:resident-on-example-set	already done: every code task ticked on development; open tasks are live checks only, left	session-20261116T170823-40772b73	2026-11-16T17:41:01Z
 build:portaliq:staff-revoke-one-session	already done: T01,T02 on development since #1647; only T03 (live check) left	session-20261116T173306-f68895a7	2026-11-16T17:41:26Z
 fix:learniq:2507:82c09d5c	unmeasured: static.developer.overheid.nl (fixed interfacing floor + SPDX stub header; new head f29e84b71d, APPROVE recorded, REVERIFY queued)	session-20261116T171010-393e4bc2	2026-11-16T17:41:23Z
