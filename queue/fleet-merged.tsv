@@ -3985,3 +3985,4 @@ pipelinq	3152	29e9143da84178245bbb5d01735472c600e85c60	MERGED	merge3	GATE OK sbo
 pipelinq	3882	b1c037ef63161d2bf43df8dfff5b0e4ffb6c60b2	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.38
 pipelinq	3884	72197b6efa3c090590d2a646c7dff108aded3e4c	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.48
 dossiq	6589	503c16af9c34bd2cbc05af877894edd0cbe33060	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.40
+planninq	1198	f4370679900c3aded15e653a6ebd0521c8fc79dd	SKIP	worker-29	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
