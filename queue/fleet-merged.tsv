@@ -3782,3 +3782,10 @@ stackiq	1924	62eff96df63034daba7133a32d5d71748aa7b0cb	RED	worker-53	GATE RED che
 stackiq	1954	8ec8ab7148eb45c264f52f32289e01d1582b2b87	RED	worker-53	GATE RED floor: unit_interfacing: 4.72 -> 4.70
 stackiq	1973	a944108885b24551a5044812231490fe52d142ca	RED	worker-53	GATE RED checker floor: spdxheaders stars: 5 -> 4
 stackiq	1975	a2ac07938baaf124dcffeabb8e0dee04800b4786	RED	worker-53	GATE RED checker floor: spdxheaders stars: 5 -> 4
+portaliq	1229	a2bd58a243559017238c34449a1cf079c2acb5af	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.11
+portaliq	1354	84f30a141f0eb4ba2c9fe1321745dc811282a1a5	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+portaliq	1657	6705de8474198e5fc8de69b76c6663f50ec9f173	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.11
+portaliq	1659	14ee493687347da3a9da9b27e85e73ccd0938ccf	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.11
+portaliq	1670	8ef03e9f6f255a7cec4c55eff8657a438d8a8932	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.11
+portaliq	1680	1c24f617f10e0e309a8be6a26b0301709ad33eed	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.11
+portaliq	1681	4f75ff2065177fa6602b8bf996953b0e3383174a	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.11
