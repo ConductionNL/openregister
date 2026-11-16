@@ -4218,3 +4218,4 @@ stackiq	1991	31e2224c5b0f2e1105b1556e2ef7efc3d06f9474	RED	worker-35	GATE RED che
 hermiq	1808	d92c1c64c29a1a3d559e0d6e3f10da062039597d	SKIP	worker-38	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 hermiq	1808	d92c1c64c29a1a3d559e0d6e3f10da062039597d	SKIP	worker-38	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 integriq	3671	18d443b4f429398d1ffefc8657304b1b56a5c625	RED	worker-47	GATE RED floor: duplication: 3.81 -> 3.75; unit_size: 3.58 -> 3.56
+buildiq	1583	cb1e01bf5bb8b6fa92d5ef01b0765ee06f7300e7	SKIP	worker-41	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
