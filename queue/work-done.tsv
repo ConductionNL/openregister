@@ -15866,4 +15866,5 @@ merge:planninq:933:6ee7ff9b	failed: permission (approving new head ff903468 afte
 review:versioniq:500:7b3a6f4e	GREEN: vitest 3012/3012 pass on merged tree, dev-dep bump only	session-20261116T084459-8070a613	2026-11-16T08:46:37Z
 review:decidiq:2191:29114ea5	GREEN: spec-conform UI wiring; vitest 2847 pass, manifest valid	session-20261116T084528-6b5f71dd	2026-11-16T08:47:03Z
 review:decidiq:2170:d54fcb29	GREEN #2170 at d54fcb29: matches spec, suite 4655 OK, phpstan 0, vitest pass	session-20261116T083020-e59421bc	2026-11-16T08:47:27Z
+merge:launchpad:757:5ad5cb17	cloud tree of 4 launchpad PRs: merged=0 red=1 fail=0 skip=1; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T081705-6c8f795b	2026-11-16T08:47:36Z
 fix:pipelinq:3882:b1c037ef	no change needed: contains development, tree-only composer.lock conflict; REVERIFY recorded (merge lock held elsewhere)	session-20261116T082121-c1741fb9	2026-11-16T08:47:40Z
