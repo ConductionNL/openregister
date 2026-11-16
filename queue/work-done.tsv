@@ -17158,5 +17158,6 @@ cover:stackiq:9ac19b3amdf03:208b4d5f	deferred: stackiq has 41 open PRs	session-2
 cover:stackiq:9ac19b3amdf03:9d3a1784	deferred: stackiq has 41 open PRs	session-20261116T173227-3f62e794	2026-11-16T18:32:54Z
 fix:humaniq:662:d7499aec	conflict resolved, new head f0ddf8e5865e; merge lock held elsewhere, REVERIFY queued	session-20261116T181711-7fa8bcf4	2026-11-16T18:32:57Z
 cover:stackiq:9ac19b3amdf03:34f5c300	deferred: stackiq has 41 open PRs	session-20261116T182920-4ab2369a	2026-11-16T18:33:02Z
+cover:pipelinq:7f9dc8e6m8519:a3bb9eeb	added to #3659 (budget): PasswordResetService 71->100%, PortalAccountService 70->100%, +3 tests; also re-pushed the Export batch (lost push race); suite 9042 OK	session-20261116T173240-b63ad758	2026-11-16T18:34:25Z
 cover:openregister:7350e3efm9dc5:fa416b31	added to open PR #10587 (budget: 188 open PRs): risky metadata fixed in 17 test classes (67 risky -> 0); lib/Search/Service uncovered 192->122 lines	session-20261116T173213-356ea2aa	2026-11-16T18:33:45Z
 fix:shillinq:2991:84a86ec5	fixed blockers, pushed 7d526afc; merge lock held elsewhere, REVERIFY queued	session-20261116T182254-5f17ae21	2026-11-16T18:33:19Z
