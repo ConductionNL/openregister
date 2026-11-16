@@ -15924,3 +15924,14 @@ review:filinq:2103:cd98f739	GREEN: matches change specs, gates clean, unit 6851 
 fix:launchpad:763:68f98712	no change needed: branch up to date with development, package conflict tree-only; REVERIFY recorded (merge lock busy)	session-20261116T082353-191a2dc3	2026-11-16T08:58:25Z
 fix:portaliq:2349:b92b6364	merged development in, sbom current, phpstan unchanged vs 2.3.1; new head e7812cc2, REVERIFY queued (merge lock held)	session-20261116T084920-18fd4376	2026-11-16T08:58:57Z
 review:opencatalogi:2643:adb68bca	GREEN: spec-conform, 0 new failures (106 inherited), jest 74/74	session-20261116T084755-b37f1e99	2026-11-16T08:59:08Z
+fix:filinq:2088:bb28f1bd	fixed version, property docs, component independence and complexity floor; pushed 421aab4e; REVERIFY (not landed: cloud merge gate reds on opensourcehealth for development too)	session-20261116T081426-24e3a1d6	2026-11-16T08:59:23Z
+review:pipelinq:3092:f041615e	GREEN: vitest 5343/5344, 1 inherited failure, test-only adaptations	session-20261116T084553-52c183b0	2026-11-16T08:59:32Z
+fix:portaliq:1769:91f4b0df	sbom regenerated, dev merged; new head 1f21b5e3; merge lock held elsewhere, REVERIFY queued	session-20261116T084812-63bd4ecc	2026-11-16T08:59:40Z
+fix:portaliq:1764:b3d8a23e	sbom regenerated, pushed a878ea03; merge lock busy, REVERIFY recorded	session-20261116T081618-2145ecb3	2026-11-16T08:59:48Z
+fix:portaliq:663:7709e801	conflict resolved, pushed 6dc142e0; merge lock busy, REVERIFY queued	session-20261116T085112-b61e5d15	2026-11-16T09:00:04Z
+review:larpinq:1060:9f9d2d55	GREEN: larpinq #1060 at 9f9d2d5, unit 1025 ok, vitest 627 ok, no blockers	session-20261116T084858-bfae751a	2026-11-16T09:00:19Z
+fix:portaliq:1997:3d645d7e	conflict fixed, pushed 46fd8f94; APPROVE recorded; not landed: merge gate unmeasured (checker floor), REVERIFY queued	session-20261116T084531-ff1efb6c	2026-11-16T09:00:30Z
+fix:dossiq:3955:0024f360	conflicts resolved, pushed 051bc7d2; suite OK 18298; merge lock held elsewhere, REVERIFY queued	session-20261116T081522-a0a03964	2026-11-16T09:00:40Z
+lane:ormig:opencatalogi:leftover	done: #2418 closed (obsolete, development matches main); #2415 GREEN (fixes 27 inherited failures), #2737 opened for the one namecheck BREAK, GREEN; both await a merge task (lock held elsewhere)	session-20261116T084401-bf65ba54	2026-11-16T09:00:54Z
+fix:dossiq:3957:b44c6a4f	conflict resolved, pushed 3a1d1a08; merge lock held elsewhere, REVERIFY queued	session-20261116T084709-9ade0b9b	2026-11-16T09:01:17Z
+fix:dossiq:5266:db2ab4a5	conflict resolved (both cards kept), pushed 2cd5ee93, touched tests green; merge lock held elsewhere, REVERIFY written	session-20261116T074147-edb7c708	2026-11-16T09:01:34Z

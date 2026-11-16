@@ -3971,3 +3971,6 @@ pipelinq	3092	f041615e2cce52415f7c71cc60df53271a377f88	SKIP	worker-47	GATE UNMEA
 shillinq	2072	794dec2a01cc38a274a3d45633ab11b445e982e4	RED	worker-22	GATE RED checker floor: spdxheaders stars: 5 -> 4
 shillinq	2259	614a5c5a2c43f3647a83a4556528ce74ea0046f3	RED	worker-22	GATE RED checker floor: spdxheaders stars: 5 -> 4
 filinq	2141	d980f90d4ce78bd5a27004221e0eaad88cd1b166	RED	worker-11	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+launchpad	755	f41902ffc1787ffe4a7d70ba97ae5a49187f10dc	RED	worker-09	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+portaliq	1997	46fd8f94d573383ea70b908b05bcaba3b33882cd	SKIP	worker-32	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
+larpinq	1065	b4cd6229bc8a4c76e19474e9d716e4c5b905e373	SKIP	worker-17	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
