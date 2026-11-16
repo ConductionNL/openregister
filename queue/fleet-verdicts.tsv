@@ -14458,3 +14458,4 @@ thematiq	1290	7ea88173002bf91ab287816948c9f546a334f6b0	RED	worker-46:merge-gate	
 humaniq	687	f6b6a0aa4d02b84def34ef30b96fe8c44f383ced	CONFLICT	worker-26:merge	merges clean on development alone; files: package-lock.json package.json 
 humaniq	872	deea55b1b0665552ac70ac4ac4003d970eb42f9a	REVERIFY	worker-26:merge	verdict sha is not the head: head is a3d94bb2dd2fdb56d8db5354fe8b51a30e1fb477
 learniq	2521	25bda59ee416ecde7132d5e9e915bfbaed16806a	BLOCK	worker-24:review	review: Strict; PR-added gate failures: gate-16 CourseDayPartsWidget.vue handler/pending lack @spec; gate-26 CourseDayPartsWidget.vue has no visual baseline or @visual exclude; gate-51 13 new Cohort.dayStatusMove/dayStatusLog and Session.parts properties lack title+description; gate-68 new CourseDays index 
+thematiq	1291	ac416a6a0e4f40b3e5c1706953e37c5d5546aa6d	RED	worker-46:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
