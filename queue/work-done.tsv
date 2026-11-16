@@ -16751,3 +16751,4 @@ review:integriq:3564:0c8819d0	GREEN: spec-conform build, no new failures; concer
 build:pipelinq:pos-psp-keys-via-broker:r2	already done: every code task is ticked and on development; only Playwright task 7.2 left	session-20261116T165653-a1481a13	2026-11-16T17:11:40Z
 fix:buildiq:1672:81302847	fixed spdx: header added to the new stub, pushed 33d5106e; checker floor not measurable here (static.developer.overheid.nl blocked); REVERIFY queued	session-20261116T164354-a7d53f16	2026-11-16T17:12:05Z
 build:pipelinq:avg-consume-or-workflow:r2	deferred: pipelinq has 50 open PRs	session-20261116T170138-65b3b637	2026-11-16T17:12:21Z
+build:pipelinq:segment-last-contact-signal:r2	already done: code tasks 1.1-1.2 ticked and on development; only live task 1.3 left	session-20261116T165653-a1481a13	2026-11-16T17:12:42Z
