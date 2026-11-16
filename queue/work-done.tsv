@@ -15576,3 +15576,4 @@ review:buildiq:1651:e765d7de	GREEN: matches logic-shared-flows-and-automations s
 merge:versioniq:500:595b6cab	cloud tree of 4 versioniq PRs: merged=0 red=2 fail=0 skip=1; conflict 1, lint 0, red 0, moved 0, done 0	session-20261116T064721-c9a0b5c9	2026-11-16T07:02:37Z
 review:planninq:910:8ffad303	BLOCK (sbom not regenerated)	session-20261116T063608-d33f86e6	2026-11-16T07:02:44Z
 merge:launchpad:756:b2709c96	cloud tree of 4 launchpad PRs: merged=0 red=3 fail=0 skip=0; conflict 1, lint 0, red 0, moved 0, done 0	session-20261116T064118-a5aff8df	2026-11-16T07:03:08Z
+fix:hermiq:1739:5cf3f827	failed: @spec tags on headline()/noteType() added (head 103d88e1); custom-widget ratchet 22->23 remains: needs a decision to retire a widget or a built-in slot widget for chat health	session-20261116T062050-3a7e109c	2026-11-16T07:03:15Z
