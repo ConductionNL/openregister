@@ -16032,3 +16032,4 @@ gap:opencatalogi:opensourcehealth:df0e3230	failed: rating is driven by upstream 
 fix:shillinq:2083:16d6ee15	fixed: photo read-only on draft review + test; SPDX stub header; pushed 0ee980aef; merge lock busy, REVERIFY queued	session-20261116T084459-8070a613	2026-11-16T09:23:59Z
 fix:filinq:2122:79127975	conflict resolved, pushed d829d52a; merge lock held elsewhere, REVERIFY queued	session-20261116T091324-bb324ce0	2026-11-16T09:24:08Z
 verify:pipelinq:3883:136ed65c	#3883 CONFLICT, #3885 GREEN (9000 tests, 0 new failures)	session-20261116T091756-9df6b5a8	2026-11-16T09:24:21Z
+fix:dossiq:3894:8ed2662d	sbom already current at head 8ed2662d; no change pushed; merge lock busy, REVERIFY queued	session-20261116T092014-a47177ca	2026-11-16T09:24:37Z
