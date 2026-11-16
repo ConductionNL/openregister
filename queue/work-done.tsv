@@ -15597,3 +15597,4 @@ review:buildiq:1094:2ea9dbb4	GREEN: prettier bump, vitest 4719 pass, format resu
 review:decidiq:2178:32c05171	GREEN: decidiq #2178 reviewed, unit 4666 OK, vitest pass; concerns noted	session-20261116T070226-5d062725	2026-11-16T07:07:29Z
 review:buildiq:1608:53c9f80a	GREEN: matches change specs, tests green beyond 1 inherited failure	session-20261116T062109-81fc252e	2026-11-16T07:07:53Z
 review:stackiq:1978:0e16289a	GREEN: no new failures, specs-conformant build	session-20261116T065640-54a747b9	2026-11-16T07:08:03Z
+fix:stackiq:1973:a9441088	failed: spdxheaders scorer not available in cloud; reuse lint shows no new header gap vs development (new PHP/js/vue files carry SPDX + @license/@copyright). stackiq 1975 shows the same 5->4 drop, so the cause is likely development or the scorer, not this PR; needs a local checker run	session-20261116T062050-add210c3	2026-11-16T07:08:09Z
