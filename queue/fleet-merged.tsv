@@ -4081,6 +4081,7 @@ larpinq	1065	b4cd6229bc8a4c76e19474e9d716e4c5b905e373	SKIP	worker-32	GATE UNMEAS
 shillinq	2230	62ff796165624dd3a7cb0a10c95e8f1bcc712aaa	RED	worker-16	GATE RED checker floor: spdxheaders stars: 5 -> 4
 humaniq	1164	73689a5c14d96133ee6b263874b8bbf12f49dd44	SKIP	worker-22	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 shillinq	2766	4d51285b749a43e73a8ab6060e699b9e46003461	RED	worker-16	GATE RED checker floor: spdxheaders stars: 5 -> 4
+stackiq	1954	9c3e8a905908495c25c672a2c4bda2eb0f70c6c5	RED	worker-11	GATE RED checker floor: spdxheaders stars: 5 -> 4
 shillinq	3055	faf02682118d7f626db6c613f33227f837889737	RED	worker-16	GATE RED checker floor: spdxheaders stars: 5 -> 4
 dossiq	3199	53d908abc135941903fee153cb5996d2272b1e75	SKIP	worker-55	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 versioniq	500	7b3a6f4e58ba2d42099bcbd7ced8dd1e3299196e	SKIP	worker-14	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
