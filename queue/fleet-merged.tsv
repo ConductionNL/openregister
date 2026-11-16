@@ -4679,5 +4679,6 @@ stackiq	1996	4df183ac3a213a1175198c8cd83acf1c54dc0a01	MERGED	worker-03	GATE OK s
 shillinq	2093	223f0cbe9550deaa3cf354df508127ec21961d27	MERGED	worker-53	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.03
 keepiq	1826	f651073d16de79ef8b3ab98a860803672418e882	RED	worker-21	GATE RED floor: unit_interfacing: 3.32 -> 3.30
 shillinq	2096	a1c73fc3585457496a4d304afb02eaf6c25b0008	MERGED	worker-53	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.02
+buildiq	1641	59f9dd1034102e9f4ab218325552abbca89182a7	RED	worker-40	GATE RED absolute floor: buildiq maintainability 3.86 after merge is below its floor 3.91
 filinq	2072	21673d4a61e750e6140c2d51963aea02823103fd	SKIP	worker-44	no APPROVE review at this head
 hermiq	1750	a6a7d9f3a66bddd4b9031da49d80cb02bb8de890	RED	worker-26	GATE RED floor: unit_complexity: 4.51 -> 4.46
