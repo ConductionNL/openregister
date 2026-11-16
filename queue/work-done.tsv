@@ -16882,3 +16882,4 @@ build:portaliq:site-callouts-steps-and-tables-follow-the-boards	already built: t
 review:shillinq:3078:33420e1f	GREEN: unit 12278 tests 0 failures, vitest 9/9, eslint clean	session-20261116T173217-7353a3fb	2026-11-16T17:40:31Z
 verify:buildiq:1672:26841644	GREEN #1672 (3333 tests, 0 new failures)	session-20261116T173308-9a80cd8d	2026-11-16T17:40:51Z
 build:portaliq:write-record-names-the-mandate	already done: every code task ticked on development; open tasks are live checks only, left	session-20261116T170823-40772b73	2026-11-16T17:40:55Z
+fix:learniq:2507:82c09d5c	unmeasured: static.developer.overheid.nl (fixed interfacing floor + SPDX stub header; new head f29e84b71d, APPROVE recorded, REVERIFY queued)	session-20261116T171010-393e4bc2	2026-11-16T17:41:23Z
