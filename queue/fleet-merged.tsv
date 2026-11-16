@@ -4182,3 +4182,4 @@ shillinq	3110	a0ee6bc0a0cab83e9f4998a81594f802cfe4ab3c	RED	worker-58	GATE RED ch
 pipelinq	2969	23b177e505cb1a2a906213fd0df439c94e592b94	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.48
 pipelinq	3885	6b8029c1c0ce49d9a97aa91a0f30f0be27f4476e	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.48
 pipelinq	3887	17b6026c5b66fcb53bfc9ce3bc6cb3e80a42c509	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.50
+shillinq	3111	96abe4abfb509aa4c32c2210a765797e13c601d5	RED	worker-58	GATE RED checker floor: spdxheaders stars: 5 -> 4
