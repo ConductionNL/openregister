@@ -16,3 +16,4 @@ hermiq	1739	5cf3f827da61c88ed80a91cc9d749136f3e970fe	REQUEST_CHANGES	worker-22	S
 thematiq	1117	2427508a3106eb9c72d567060d7d6beaeab72430	APPROVE	worker-17	Quick (dev-dep bump phpmd 2->3 + 2 suppress docblocks + 1 behaviour-preserving refactor); no blockers; composer-audit advisories identical to development (inherited), phpmd 3 clean via composer phpmd, tree suite 0 new failures
 launchpad	653	7dd62332f078073df03444ab4c6c6b1f2c66f246	APPROVE	worker-12	Quick; no blockers; dev-only @nextcloud/babel-config 2.0.0 bump; tree php suite 4461 no new failures, vitest 2578 passed
 launchpad	763	ac59f2930cb25b439f9fdffbe39af0aa2b8b0f7e	APPROVE	worker-12	Quick; no blockers; dev-only vitest/coverage-v8/ui 5.0.2; tree php suite no new failures, vitest 5 run 2578 passed
+launchpad	832	5cb157b3a864251534d0e0eea939fb8029de3108	APPROVE	worker-12	Quick; no blockers; openspec tasks.md ticks and archive moves only, no code; tree suite no new failures
