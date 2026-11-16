@@ -16480,3 +16480,4 @@ merge:keepiq:1499:97590ce8	unmeasured: static.developer.overheid.nl (land: merge
 merge:thematiq:1303:9660e5b3	cloud tree of 2 thematiq PRs: merged=0 red=0 fail=0 skip=2; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T143136-ae6d04cb	2026-11-16T14:46:45Z
 fix:learniq:2549:6aa40c9b	fixed spdx (inherited stub header); REVERIFY new head 3c970465	session-20261116T142700-f4d651ea	2026-11-16T14:46:58Z
 merge:decidiq:1465:dbc78157	merge3 tree of 9 decidiq PRs: merged=0 red=9 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-16T14:47:23Z
+merge:hermiq:1133:4cac2462	unmeasured: gitdocumentatie.logius.nl (static.developer.overheid.nl redirects there; proxy refuses it); 7 PRs approved, merged 0; 1150 CONFLICT, 1189 MOVED	session-20261116T142714-8127c132	2026-11-16T14:47:52Z
