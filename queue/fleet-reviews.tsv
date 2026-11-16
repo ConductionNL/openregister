@@ -267,3 +267,5 @@ versioniq	501	451c8f5901c5ec4277fdccbd82e4349166c89e9f	APPROVE	worker-14	Quick; 
 decidiq	1467	dfb19ea0e2beff3a28cb376c7bc29ced93c70234	APPROVE	worker-40	Quick; no blockers; dev-only @vitest/coverage-v8 patch bump with sbom
 decidiq	1472	92d144283d53fb5446e36d055326c802a9d73dbe	APPROVE	worker-40	Quick; no blockers; sass minor bump with sbom
 decidiq	1473	fbdc77e40ce26b62e5d8e01c082907767f885f48	APPROVE	worker-40	Quick; no blockers; marked patch bump with sbom
+decidiq	1692	faa2a2eb94e5996ace0de2e05bc550c8824894f3	APPROVE	worker-40	Standard; no blockers; openspec-only verify-and-tick and archive sweep, no code touched
+decidiq	1738	dabfcc9222a3ef5a0403f3e34014445adb503bf6	APPROVE	worker-40	Quick; no blockers; dev-only phpmd 2 to 3 with sbom; unit tree green
