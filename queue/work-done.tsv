@@ -15994,3 +15994,4 @@ lane:depbundle:buildiq:bundle	opened #1673 (6 updates, sbom regenerated, verifie
 verify:portaliq:2531:d946b89b	stale	feeder	2026-11-16T09:15:21Z
 review:portaliq:663:6dc142e0	GREEN: opt-in, default keeps behaviour; no new failures; phpstan unchanged	session-20261116T084851-6e832488	2026-11-16T09:17:18Z
 lane:depbundle:dossiq:bundle	opened #6591, 7 updates, verified; merge lock busy, GREEN queued for merge	session-20261116T084528-6b5f71dd	2026-11-16T09:17:26Z
+fix:portaliq:1766:931554ac	failed: not fixable in portaliq: the BLOCK waits for openregister to move dexie to 4.4.7; also dexie 4.4.7 fails scripts/check-single-dexie.js (no version literal matched, postbuild:admin), so the guard's VERSION_PATTERNS need updating when it does	session-20261116T084851-6e832488	2026-11-16T09:17:50Z
