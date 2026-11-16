@@ -16744,3 +16744,4 @@ fix:shillinq:2099:b40a842e	merged development in, new head ea7e61ea; merge lock 
 verify:portaliq:2531:c19fc384	GREEN #2531	session-20261116T170659-0fa9b365	2026-11-16T17:09:43Z
 fix:keepiq:1826:07082bd9	merged development in (clean); pushed 95a54b11, REVERIFY queued	session-20261116T165653-a1481a13	2026-11-16T17:09:57Z
 build:pipelinq:close-pipelinq-register-to-staff:r2	already done: every code task (1.1-1.3) is ticked and on development; only live task 2.1 left	session-20261116T165653-a1481a13	2026-11-16T17:10:27Z
+review:shillinq:2991:84a86ec5	GREEN: build per change specs; phpunit 12296 ok, touched vitest 92 ok	session-20261116T170601-1695d108	2026-11-16T17:10:41Z
