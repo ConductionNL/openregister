@@ -16607,6 +16607,7 @@ fix:versioniq:505:aeceef74	obsolete: development already has @vue/test-utils 2.5
 fix:hermiq:1187:415fb023	failed: gate false RED - dev-only lock bump leaves sbom unchanged; branch updated to 0e261189	session-20261116T150749-2f742a8d	2026-11-16T15:23:31Z
 fix:versioniq:506:cf0ff5ad	closed #506 as obsolete: development already has vue 3.5.43	session-20261116T150938-2294e41a	2026-11-16T15:24:03Z
 review:learniq:1881:a0896acd	GREEN: intended spec'd fix; 6871 tests, 1 inherited failure	session-20261116T151753-162a5bdd	2026-11-16T15:23:57Z
+merge:portaliq:2349:2d13e87c	cloud tree of 3 portaliq PRs: merged=0 red=2 fail=0 skip=0; conflict 1, lint 0, red 0, moved 0, done 0	session-20261116T143636-9ede3f74	2026-11-16T15:24:30Z
 verify:shillinq:3110:74ba81c9	3110 GREEN, 3111 GREEN; unit 12231 OK; vitest 1 inherited fail	session-20261116T151016-54cee2b8	2026-11-16T15:24:39Z
 fix:integriq:3593:8dad155c	no change needed: merges clean on development alone; REVERIFY queued (merge lock held elsewhere)	session-20261116T151753-162a5bdd	2026-11-16T15:24:47Z
 fix:learniq:2557:52a96cea	unmeasured: static.developer.overheid.nl (pushed SPDX header fix for inherited floor drop; new head 29ed293d, APPROVE recorded)	session-20261116T150849-786441a0	2026-11-16T15:25:10Z
