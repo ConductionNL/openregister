@@ -75,6 +75,7 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\Credential\CredentialPrincipals
  * @uses \OCA\OpenRegister\Service\Credential\CredentialSources
  * @uses \OCA\OpenRegister\Service\WriteCause
+ * @uses \OCA\OpenRegister\Service\Credential\OutsideCustody
  */
 class CredentialBrokerActsForOrganisationMemberTest extends TestCase {
 	private const UUID = '11111111-2222-3333-4444-555555555555';

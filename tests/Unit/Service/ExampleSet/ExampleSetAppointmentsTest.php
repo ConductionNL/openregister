@@ -132,6 +132,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetDateValue
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRunSlot
  * @uses \OCA\OpenRegister\Service\Task\TaskImport
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 class ExampleSetAppointmentsTest extends ExampleSetTestCase {
 	/**
