@@ -17135,6 +17135,7 @@ cover:integriq:92114ab0m1db0:js0023cfc7	deferred: integriq has 70 open PRs	sessi
 cover:integriq:92114ab0m1db0:js0d617ff5	deferred: integriq has 70 open PRs	session-20261116T174053-4a550291	2026-11-16T18:28:51Z
 cover:decidiq:a5f973bbm0262:7505aeb4	deferred: decidiq has 53 open PRs	session-20261116T173306-f68895a7	2026-11-16T18:29:06Z
 fix:learniq:2557:29ed293d	fixed conflict with #1881 (stub header aligned); new head 3fe186b0, REVERIFY queued (merge lock held)	session-20261116T181418-c3cd424d	2026-11-16T18:29:08Z
+review:buildiq:1641:bb9b55d3	GREEN: matches the change spec; no new unit failures (ExportZipGoldenTest inherited); vitest 6/6	session-20261116T173306-d04a65dc	2026-11-16T18:29:14Z
 cover:buildiq:70b3e29em3841:d528dcf0	deferred: buildiq has 56 open PRs	session-20261116T181603-6d014baf	2026-11-16T18:29:19Z
 fix:learniq:2559:a2575752	fixed: SPDX header on inherited stub; new head 307b9303, REVERIFY (merge lock held elsewhere)	session-20261116T182126-f8ae2f13	2026-11-16T18:29:44Z
 merge:shillinq:2099:c89ccf6b	unmeasured: merge gate checker_floor could not measure adrvalidator (#2099 SKIP); #2230 RED sbom; #3110 CONFLICT; nothing landed, 6 reviews APPROVE recorded	session-20261116T173308-9a80cd8d	2026-11-16T18:30:40Z
