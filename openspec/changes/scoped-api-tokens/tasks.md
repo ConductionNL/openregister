@@ -42,10 +42,31 @@
 - [x] 1.1b The validator: no verbs at all, `manage`, an unknown verb, a verb
       the issuer lacks, no end date, an end date in the past, a
       present-but-empty scope axis, a non-positive rate limit.
-- [ ] 1.1c The personal token store. A Nextcloud app password is not an
+- [x] 1.1c The personal token store. A Nextcloud app password is not an
       OpenRegister row, so a grant on one needs either a table of our own keyed
       by token id or an upstream hook; the Consumer half is the one the row's
       supplier scenario is about and it is done.
+      - Done without a table: `PersonalTokenGrantStore` keeps the grant as a
+        user value of the token's OWNER keyed by token id (so a grant is only
+        read from its owner's namespace), with the issuer, the moment of issue
+        and every renewal. Present but unreadable binds a grant that permits
+        nothing. `PersonalTokenGrantBinder`, run by the global
+        `PersonalTokenGrantMiddleware`, follows the session's `app_password` to
+        the token, binds its grant as `app-password:<id>` (so `whoami` and
+        `actorVia` name it) and counts the call against the grant's rate limit
+        (429 naming the limit, with `Retry-After`). A token that cannot be
+        resolved permits nothing; a request a Consumer already bound is left
+        alone. `GET|PUT|DELETE /api/tokens/{tokenId}/grant`
+        (`PersonalTokenGrantsController`) issues, reads and lifts a grant on the
+        caller's own token through `TokenGrantValidator` (422 naming why), from
+        an interactive sign-in only: a request opened with a token is refused
+        403, so a narrowed token cannot lift its own ceiling. Tests:
+        `tests/Unit/Service/Rbac/PersonalTokenGrantStoreTest.php` (8),
+        `PersonalTokenGrantBinderTest.php` (7),
+        `tests/Unit/Middleware/PersonalTokenGrantMiddlewareTest.php` (4),
+        `tests/Unit/Controller/PersonalTokenGrantsControllerTest.php` (11).
+      - Left: the lapse warning (`TokenGrantLapseJob`) reads Consumers only;
+        personal grants are not yet enumerated for it.
 - [x] 1.1d The `match` row condition is carried and returned but not yet
       evaluated: it belongs in the conditional-scope evaluator beside the other
       rules, which is task 2.1's SQL half.
@@ -114,7 +135,8 @@
 - [ ] C40.2b The notification that carries the warning, and the recorded
       renewal.
       - Done, the notification half: `TokenGrantLapseJob` (daily, registered in `appinfo/info.xml`) reads each Consumer's grant and, when `TokenGrantValidator::lapsesSoon()` holds, notifies the user the Consumer acts as with subject `token_grant_lapsing` (the token's name, the end date and the days left), replacing the previous warning for the same token rather than stacking one per day. A lapsed grant, one without an end date, a Consumer without a user or with a deleted user gets nothing. `AccessSubjectRenderer` renders the subject. Tests: `tests/Unit/BackgroundJob/TokenGrantLapseJobTest.php` (5), `NotifierTest::testPrepareTokenGrantLapsing`.
-      - Left: the recorded renewal (actor and new end date), which needs the grant editor (3.1) to carry a renewal act; personal tokens follow once 1.1c gives them a grant.
+      - Done for personal tokens: `PersonalTokenGrantStore::write()` records every changed end date as a renewal (`by`, `at`, `from`, `expiresAt`, the last 20 kept), returned by `GET /api/tokens/{tokenId}/grant`.
+      - Left: the recorded renewal on a Consumer's grant, which needs the grant editor (3.1) to carry a renewal act.
       - Not applicable to C40.5's remainder: OpenRegister flows have no outbound HTTP step, so only webhooks carry an outbound destination here.
 - [x] C40.4a The limit is carried on the grant and validated as a positive
       number of calls per minute.
@@ -129,7 +151,7 @@
         status 429, message and details naming the limit, the window and the
         retry delay) before the request acts as the Consumer's user. No
         distributed memcache: nothing is counted or refused. Personal tokens
-        follow once 1.1c gives them a grant. Tests:
+        are counted the same way by `PersonalTokenGrantBinder` (1.1c). Tests:
         `tests/Unit/Service/Rbac/TokenGrantRateLimiterTest.php` (6).
 - [x] C40.5 An administered outbound allowlist checked at save (D-C40-3).
       - Done for webhooks: `OutboundAllowlist` reads the app setting `outboundAllowlist` (a JSON array of hosts, or one per line or comma; `*.example.nl` admits subdomains only). `WebhooksController::create()` and `update()` (when `url` is sent) refuse a destination outside it with 422 naming the field, the host and the allowlist, before anything is saved. Unset or empty: every destination is admitted, as today. Set but unreadable: refused. Tests: `tests/Unit/Service/Outbound/OutboundAllowlistTest.php` (8), `tests/Unit/Controller/WebhooksControllerAllowlistTest.php` (5). Left: flow HTTP steps (automations) are not checked yet, and the setting has no admin page field yet (it is set with `occ config:app:set openregister outboundAllowlist`).

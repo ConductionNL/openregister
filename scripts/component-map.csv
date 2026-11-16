@@ -4253,3 +4253,8 @@ Service/Outbound/OutboundAllowlist.php,,Service,,,,,Integrations
 Controller/Settings/TranslationSettingsController.php,,Controller,,,,,Configuration
 Db/SchemaMapper/DiscardedAnnotations.php,,Db,,,,,Core
 Service/Configuration/SeedReferenceResolver.php,,Service,,,,,Configuration
+Controller/PersonalTokenGrantsController.php,,Controller,Access,Access/Controller/PersonalTokenGrantsController.php,0,,Core
+Controller/Support/PersonalTokenGrantsServices.php,,Controller,Access,Access/Controller/Support/PersonalTokenGrantsServices.php,0,,Core
+Middleware/PersonalTokenGrantMiddleware.php,,Middleware,Access,Access/Middleware/PersonalTokenGrantMiddleware.php,0,,Core
+Service/Rbac/PersonalTokenGrantBinder.php,,Service,Access,Access/Service/Rbac/PersonalTokenGrantBinder.php,0,,Core
+Service/Rbac/PersonalTokenGrantStore.php,,Service,Access,Access/Service/Rbac/PersonalTokenGrantStore.php,0,,Core

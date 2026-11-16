@@ -156,6 +156,12 @@ final class MiddlewareWiring {
 		// read and list responses (schema-breaking-change-notice).
 		$context->registerMiddleware(\OCA\OpenRegister\Middleware\SchemaChangeHeaderMiddleware::class);
 
+		// Binds the grant of the personal API token (app password) that opened
+		// the request, and refuses a call over its rate limit (scoped-api-tokens
+		// 1.1c). Global, because a token reaches OpenRegister's objects through
+		// other apps' controllers too, and the ceiling must hold there as well.
+		$context->registerMiddleware(PersonalTokenGrantMiddleware::class, global: true);
+
 		// An anonymous caller gets no user ids in a record's `@self`. Global, because
 		// other apps answer public requests with OpenRegister's records too.
 		$context->registerMiddleware(AnonymousEnvelopeMiddleware::class, global: true);
