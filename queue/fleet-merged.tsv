@@ -4850,6 +4850,7 @@ keepiq	1871	6308066bd3e3db5258363087bd6b5eac02ea3f5b	MERGED	worker-05	GATE OK sb
 decidiq	2235	dd4b29b474d580437ec01d83251b525301860e2b	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.78 holds at 3.84
 launchpad	1246	5e0ab643e3e4e1e8cc08b9907c95b653b18b3ca6	MERGED	worker-53	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.65 holds at 3.79
 hermiq	1735	370656f7d3ae7927609cf995aa861241df9740cc	RED	worker-49	GATE RED checker floor: adrvalidator: pass -> warn; adrvalidator stars: 5 -> 3; score: 100 -> 97
+portaliq	2448	160e1aed97cc47f853a6e0fdb792b61785450e2d	RED	merge3	GATE RED floor: duplication: 4.35 -> 4.33; unit_complexity: 4.57 -> 4.54
 hermiq	1735	6449c4e37032efe1eff81f46ee6698b0dcf90fb1	MERGED	worker-49	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.77 holds at 3.82
 opencatalogi	2674	05957a6ee795832ad4d79c271017fc59067ebb17	RED	worker-31	GATE RED floor: overall: 4.89 -> 4.87; unit_size: 4.66 -> 4.64; unit_complexity: 4.88 -> 4.85; module_coupling: 5.44 -> 5.41
 filinq	2072	8a0992cbb74f2b7df9dbc9e29159077ce5307e05	RED	worker-08	GATE RED floor: unit_complexity: 4.47 -> 4.40
