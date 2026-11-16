@@ -16843,3 +16843,4 @@ build:portaliq:mandated-case-offers-no-writes	already done: code task T1 ticked 
 build:portaliq:hero-aside	already done: only live/e2e tasks left (1)	session-20261116T172806-3ef5ead7	2026-11-16T17:33:57Z
 build:portaliq:action-forward-survives-a-slow-answer	already done: code tasks 1.1-2.2 ticked on development; 3.1 is a live check, left	session-20261116T170823-40772b73	2026-11-16T17:34:07Z
 build:portaliq:operate-roles-for-content-and-actions	already done: every code task ticked on development; T01 is a live check, left	session-20261116T170823-40772b73	2026-11-16T17:34:46Z
+build:portaliq:receipt-date-reads-in-the-portals-language	already done: code task ticked on development; 1.2 is a live check, left	session-20261116T170823-40772b73	2026-11-16T17:35:18Z
