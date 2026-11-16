@@ -14518,6 +14518,7 @@ shillinq	2766	4d51285b749a43e73a8ab6060e699b9e46003461	REVERIFY	worker-26	merged
 stackiq	1992	6d5c12d7da6c42f6e7984bf3e02c8fd1fb2de00b	GREEN	worker-25	3718 tests, baseline 0 failures, 0 new failures; SPDX lines in a test stub only
 shillinq	3112	43d820967368195dcf4ba2fbf07d8493c5ed236b	GREEN	worker-51	unit 12225 tests, baseline 0 failures, new failures 0; comment-only header change
 stackiq	1990	e0356aabe966bb4bc3cdc58fd21da3a06d63f078	RED	worker-07:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
+stackiq	1924	ef9a11b21b086cefec24cca4f5f1e7e31f4b1426	GREEN	worker-57:review	build of sharing-compliance-documents per its specs: complianceDocument schema with audience read rules (public/government/named via $contains, publisher org reads and edits own), manifest pages, tests; unit 3718->3725 no new failures, new vitest spec 5/5, eslint clean
 stackiq	1991	31e2224c5b0f2e1105b1556e2ef7efc3d06f9474	RED	worker-07:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
 integriq	3669	a2e27ca84e0633f568c5b8396dd55abb2257a12c	GREEN	worker-38	phpunit 9535 tests, baseline 3F/2E, no new failures; vitest 2387/2387
 integriq	3670	d4f5bcc83b7208371d998e46641f53b3703480ef	GREEN	worker-38	phpunit 9535 tests, baseline 3F/2E, no new failures; vitest 2387/2387
