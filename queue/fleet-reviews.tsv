@@ -267,3 +267,5 @@ versioniq	501	451c8f5901c5ec4277fdccbd82e4349166c89e9f	APPROVE	worker-14	Quick; 
 versioniq	502	c6d0467e61059cf8e5a0263c5f728008a7ee6c67	APPROVE	worker-14	Quick; no blockers; dev dependency bump @typescript-eslint/parser 8.68->8.71 with lock/sbom; tree unit suite equals baseline, vitest 3022 passed
 decidiq	1467	dfb19ea0e2beff3a28cb376c7bc29ced93c70234	APPROVE	worker-40	Quick; no blockers; dev-only @vitest/coverage-v8 patch bump with sbom
 decidiq	1472	92d144283d53fb5446e36d055326c802a9d73dbe	APPROVE	worker-40	Quick; no blockers; sass minor bump with sbom
+decidiq	1473	fbdc77e40ce26b62e5d8e01c082907767f885f48	APPROVE	worker-40	Quick; no blockers; marked patch bump with sbom
+decidiq	1692	faa2a2eb94e5996ace0de2e05bc550c8824894f3	APPROVE	worker-40	Standard; no blockers; openspec-only verify-and-tick and archive sweep, no code touched
