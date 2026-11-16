@@ -4441,3 +4441,9 @@ opencatalogi	2541	131ce0fa2c470dbe80bfc84563ed1235afce4730	MERGED	merge3	GATE OK
 opencatalogi	2673	61f25128c9c36b5ca1d7519327d3ffbd942c0c46	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.50
 opencatalogi	2682	d8b519df4b336de03cd62c4570efec60d5744b95	RED	merge3	GATE RED checker floor: maintainability stars: 5 -> 4
 opencatalogi	2701	23a626784478f5462e87c580939ca21bf9b1b896	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.50
+learniq	1881	a0896acdbc0c57ad4b6fac04f3f0d56bd59c89bd	RED	merge3	GATE RED absolute floor: learniq maintainability 3.96 after merge is below its floor 3.99
+learniq	1901	e959109637b3fae8a7eb4d5b704274d2005a4bfc	RED	merge3	GATE RED absolute floor: learniq maintainability 3.98 after merge is below its floor 3.99
+learniq	2166	5e708c03b21527b11d964eac32ec5d62d984da40	RED	merge3	GATE RED absolute floor: learniq maintainability 3.98 after merge is below its floor 3.99
+learniq	2521	9e646ec13b847eb3dff5f62b6c67361a5df6c0ac	RED	merge3	GATE RED checker floor: spdxheaders stars: 5 -> 4
+learniq	2555	df653e98026a269a36f529b6052fe46694c246d3	RED	merge3	GATE RED checker floor: spdxheaders stars: 5 -> 4
+learniq	2556	489b7f4d5721f51aa0332db8b74ec0f3ab3b0fed	RED	merge3	GATE RED checker floor: spdxheaders stars: 5 -> 4
