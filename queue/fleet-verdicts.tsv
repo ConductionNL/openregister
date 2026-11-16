@@ -14554,3 +14554,4 @@ learniq	2507	1fad4deb581e9eb4a228d7fa0a5e7ac7e5ae3cce	REVERIFY	worker-46	added 3
 hermiq\t1760\t440cf2e9d2cd1a94d89bdd25448aa67be433ec8d\tREVERIFY\tworker-52\tbranch already contains development and merges clean alone; the conflict is with a sibling PR of the tree, nothing to resolve on the branch; end-to-end skipped (merge gate host unreachable here); new head 440cf2e9d2cd1a94d89bdd25448aa67be433ec8d, verify it
 keepiq	1497	2b0710543667991b1ee7fc988e0d48840735e484	RED	worker-37:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
 learniq	1883	b958696628bfdb6a748cfabc44b519cd91dae052	RED	worker-14:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
+integriq	2924	81032a2e25be20a55d65581e9c199af938b2368c	RED	worker-47:merge-gate	GATE RED floor: unit_interfacing: 1.93 -> 1.91
