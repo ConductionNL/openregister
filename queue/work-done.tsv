@@ -16613,3 +16613,4 @@ fix:integriq:3593:8dad155c	no change needed: merges clean on development alone; 
 fix:learniq:2557:52a96cea	unmeasured: static.developer.overheid.nl (pushed SPDX header fix for inherited floor drop; new head 29ed293d, APPROVE recorded)	session-20261116T150849-786441a0	2026-11-16T15:25:10Z
 fix:integriq:3049:2da4ecc8	fixed spdx headers, pushed f122cee2; merge lock busy, REVERIFY queued	session-20261116T152348-7a1549ed	2026-11-16T15:25:22Z
 merge:keepiq:1793:6f3b8ec8	cloud tree of 1 keepiq PRs: none; conflict 1, lint 0, red 0, moved 0, done 0	session-20261116T150915-6a97321b	2026-11-16T15:25:37Z
+fix:integriq:3589:58d8983d	fixed fixture, pushed 6a7f1b92; REVERIFY queued (merge lock held elsewhere)	session-20261116T152353-0e485b21	2026-11-16T15:25:58Z
