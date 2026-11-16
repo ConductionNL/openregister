@@ -14661,3 +14661,4 @@ learniq	2166	a323b0c1d43a49a4a740a714d4434d6cefffb39f	RED	worker-41:merge-gate	G
 learniq	2562	2eb2854823e74f85d225bd55a0d5bcd60c157395	RED	worker-41:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
 learniq	1901	152da34cc2608eb2586c6085a6073ee9f3e4a744	RED	worker-41:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
 pipelinq	3835	48e31f725f73f45f869ba91ca526b70f86427bd8	RED	merge3:merge-gate	GATE RED floor: unit_size: 4.57 -> 4.55
+integriq	2711	6f3fdc050e0380cd7dfe4f122026010313ba5a23	GREEN	worker-45:review	devDependency bump @playwright/test 1.63.0->1.64.1 (package.json+lock only, no runtime code); npm ci ok, vitest 182 files/2387 tests pass on PR merged with development
