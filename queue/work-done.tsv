@@ -17488,6 +17488,7 @@ cover:learniq:e6498ddd:60c2c265	deferred: learniq has 60 open PRs	session-202611
 fix:larpinq:1050:d2d372bb	merged #1050 at 7cfec2447da9e1e2aec0580423be39e9779c3204 (tests restored testcoderatio 73.8->75.4%; shared SKILL_FIELDS restored duplication 5.15->5.17)	session-20261116T192645-5f5cd9b9	2026-11-16T19:46:49Z
 cover:learniq:e6498ddd:js4829b6aa	deferred: learniq has 60 open PRs	session-20261116T192127-f26e2e56	2026-11-16T19:47:18Z
 cover:learniq:e6498ddd:js0023cfc7	deferred: learniq has 60 open PRs	session-20261116T193642-e39387da	2026-11-16T19:47:22Z
+cover:learniq:e6498ddd:1b97f731	deferred: learniq has 60 open PRs	session-20261116T192325-bb4c31dd	2026-11-16T19:47:32Z
 cover:learniq:e6498ddd:b86497d7	deferred: learniq has 60 open PRs	session-20261116T184833-adbb8426	2026-11-16T19:47:51Z
 cover:launchpad:fb10c50fmf487:33952d4b	deferred: launchpad has 44 open PRs	session-20261116T194719-57db1c57	2026-11-16T19:47:56Z
 review:learniq:1881:57e4a54a	GREEN: intended fix per its spec; 6871 tests, 1 inherited failure, 0 new	session-20261116T192133-e3734874	2026-11-16T19:47:53Z
