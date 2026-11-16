@@ -4044,6 +4044,27 @@ launchpad	1234	6a94a1fa7ca29a5267bfc77210f29d21bd36c68e	SKIP	worker-05	GATE UNME
 pipelinq	2969	23b177e505cb1a2a906213fd0df439c94e592b94	SKIP	worker-27	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 opencatalogi	2407	15ee026e9e5cc880f1ef5812343e2da79e65c3d1	SKIP	worker-42	GATE UNMEASURED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3 while api.osv.dev is unreachable from this session
 decidiq	2207	4cc6ec944a9c332488078dfd95666982ed716c9a	SKIP	worker-40	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
+integriq	2560	a80037a88ff1cb6279e524ac871277f81fee33ec	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
+integriq	2562	7e5a871234c9dbbd83d95e4155a02d6dd5b53694	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
+integriq	2563	fdcc21d81a25d6d45f57fb0df27c3deb14e36d84	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
+integriq	2671	3e5c293bccd965b0586f268395ce86bfbb21b974	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
+integriq	2710	4de6b79ea0b354bbb160cf3116ea8fc8e86fa4a5	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
+integriq	2711	b46c56feef596d6aeef7e07e9c28ab9230f901df	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+integriq	2714	ebda35bbefc683b03dce3f7a3ee6d600dd0f1d48	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
+integriq	2744	53deb98f7cdb1b6780f15f48e92d1825829d8513	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+integriq	2746	ff5f2df859dc0664166676b1e4a688ca9dcf5daf	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+integriq	2924	81032a2e25be20a55d65581e9c199af938b2368c	RED	merge3	GATE RED floor: unit_interfacing: 1.93 -> 1.91
+integriq	2992	301b5d1e5cbe44a507e14d947a2a667b4a38ba4a	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
+integriq	3047	261ea2e51572de7eea587257a403b5236d99e86b	RED	merge3	GATE RED checker floor: spdxheaders stars: 5 -> 4
+integriq	3057	2fbd882db4b90477039aeb267982241373c712f0	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
+integriq	3058	46cc2fb4c9654185e5fa9c3b9d1ae4646541cb77	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
+integriq	3059	4bb36a6bc436d992b2b565e72bed42cea5b16c1d	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
+integriq	3564	34a4928487285db2a4a00c8db8821183b554f797	RED	merge3	GATE RED absolute floor: integriq maintainability 3.55 after merge is below its floor 3.56
+integriq	3574	65269c9d780b25ea93f59787282d50a6c5cfc4bc	RED	merge3	GATE RED absolute floor: integriq maintainability 3.54 after merge is below its floor 3.56
+integriq	3589	604f71b58f00c5374d10fbc294fa81af37cfabe5	RED	merge3	GATE RED absolute floor: integriq maintainability 3.54 after merge is below its floor 3.56
+integriq	3595	60111a1cbeeab82e205393bd750ca75566d963aa	RED	merge3	GATE RED absolute floor: integriq maintainability 3.55 after merge is below its floor 3.56
+integriq	3612	0000c17621f3afaa620e370875472d46df3b84d1	RED	merge3	GATE RED absolute floor: integriq maintainability 3.55 after merge is below its floor 3.56
+integriq	3628	858c7a5daf994cdee85d2208d40103edcf6f52cd	RED	merge3	GATE RED absolute floor: integriq maintainability 3.54 after merge is below its floor 3.56
 opencatalogi	2415	93e2a8a1e052b7b13d1a4d996eab9a78d74552e5	RED	worker-42	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3; spdxheaders stars: 5 -> 4
 opencatalogi	2541	84647e954f52b0c0cf95f7e0241258877ce820e8	SKIP	worker-42	no APPROVE review at this head
 pipelinq	3885	6b8029c1c0ce49d9a97aa91a0f30f0be27f4476e	SKIP	worker-27	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
