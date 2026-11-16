@@ -17179,4 +17179,5 @@ cover:keepiq:c967a31fmba5a:11ebfefd	already done: lib/Backup/*.php at 99.6% line
 measure:pipelinq:20261116h18	php 93.43% js 95.72% (1 vitest failure on development: myWorkPage.spec.js)	session-20261116T181504-15a4396b	2026-11-16T18:37:03Z
 fix:keepiq:1826:95a54b11	conflict resolved (version lines); new head e606b09f, REVERIFY queued (merge lock held)	session-20261116T181418-c3cd424d	2026-11-16T18:38:06Z
 fix:buildiq:1673:df130f4f	unmeasured: adrvalidator (static.developer.overheid.nl redirects to gitdocumentatie.logius.nl); no conflict vs development, tree green, APPROVE recorded	session-20261116T181429-b5d49a13	2026-11-16T18:39:10Z
+merge:hermiq:1736:df7f3996	unmeasured: gitdocumentatie.logius.nl (403 from the site; adrvalidator NO RESULT). 3 IN reviewed APPROVE (1736,1788,1807), merged 0, skip 3; 1750+1754 CONFLICT on lib/Settings/hermiq_register.json	session-20261116T181517-93723df6	2026-11-16T18:39:47Z
 merge:humaniq:610:f4c33517	cloud tree of 5 humaniq PRs: merged=5 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T173242-1dd97d52	2026-11-16T18:39:47Z
