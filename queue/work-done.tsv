@@ -18418,4 +18418,5 @@ verify:learniq:1883:09e73c39	CONFLICT #1883	session-20261116T232519-f84cca9a	202
 verify:hermiq:1795:9fd6a345	CONFLICT #1795 (info.xml, openapi.json, agent-form-payload golden)	session-20261116T232912-d58d1a81	2026-11-16T23:43:22Z
 verify:hermiq:1762:38c2be62	CONFLICT #1762 (l10n + actions.seed.json vs development)	session-20261116T233834-fbe601d1	2026-11-16T23:43:42Z
 verify:integriq:3569:c3185e0b	CONFLICT #3569 (l10n, mock register, seed golden test)	session-20261116T232844-9c7f5cce	2026-11-16T23:44:02Z
+verify:larpinq:1042:13507d26	CONFLICT #1042 (l10n catalogues, userLanguage.js add/add)	session-20261116T232912-d58d1a81	2026-11-16T23:44:16Z
 merge:shillinq:1900:4fd05b97	merge3 tree of 2 shillinq PRs: none; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-16T23:44:27Z
