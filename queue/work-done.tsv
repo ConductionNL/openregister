@@ -17458,3 +17458,4 @@ review:hermiq:1750:5b31e8f3	GREEN: 5407 tests green on the tree; spec-conformant
 verify:filinq:2149:7a908f9a	GREEN #2149 (docs only); 6926 tests, 0 new failures	session-20261116T192133-e3734874	2026-11-16T19:42:51Z
 fix:decidiq:2228:0abc6d2c	merged #2228 at 0fe237ed088554296db5e3b40d1b8055f8c3de06	session-20261116T193350-bd20edd7	2026-11-16T19:43:12Z
 review:buildiq:1641:59f9dd10	GREEN: no new failures (3396 tests, 1 inherited), vitest 6/6	session-20261116T192127-f26e2e56	2026-11-16T19:43:19Z
+review:pipelinq:3659:855423fe	GREEN: tests only, suite 9129 ok	session-20261116T194104-8906f18f	2026-11-16T19:43:27Z
