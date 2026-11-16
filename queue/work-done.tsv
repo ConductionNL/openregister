@@ -18232,3 +18232,4 @@ cover:pipelinq:7f9dc8e6m3dbb:bd5b1257	added to PR #3602 (over PR budget, 43 open
 fix:launchpad:1223:e2a4d5a1	conflict resolved, pushed 430e98a0; merge lock busy, REVERIFY queued	session-20261116T224647-cce07511	2026-11-16T22:52:18Z
 fix:launchpad:1230:bb0ec0bb	conflict resolved, pushed b2fce999 (suite green); lock held elsewhere, REVERIFY queued	session-20261116T224521-2bf04f6e	2026-11-16T22:52:32Z
 cover:launchpad:fb10c50fm88bd:33952d4b	PR #1250: CalculatedFields 89.41% -> 98.52%, 14 tests	session-20261113T213325-5a151438	2026-11-16T22:52:56Z
+cover:keepiq:c967a31fmaddd:0d67c1f3	already done: lib/Service/Siem/ fully covered (193/193 statements, local pcov run agrees), no PR	session-20261116T222655-da719429	2026-11-16T22:53:33Z
