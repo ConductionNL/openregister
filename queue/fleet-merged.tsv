@@ -3792,3 +3792,4 @@ portaliq	1681	4f75ff2065177fa6602b8bf996953b0e3383174a	MERGED	merge3	GATE OK sbo
 hermiq	1293	38013b9c66979f974a60e5b5c2fecf48c323ee46	SKIP	worker-22	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator, secretscanning; this is not a pass
 hermiq	1534	b7a7d45bfa93bc796ed10723ca14602299d17d9d	SKIP	worker-22	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator, secretscanning; this is not a pass
 hermiq	1739	5cf3f827da61c88ed80a91cc9d749136f3e970fe	SKIP	worker-22	no APPROVE review at this head
+thematiq	1117	2427508a3106eb9c72d567060d7d6beaeab72430	RED	worker-17	GATE RED sbom: composer.lock changed without sbom.cdx.json
