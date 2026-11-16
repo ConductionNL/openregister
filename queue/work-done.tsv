@@ -17378,3 +17378,4 @@ cover:buildiq:70b3e29em9bad:34f5c300	deferred: buildiq has 54 open PRs	session-2
 fix:learniq:1881:df81c10b	fixed CONFLICT, pushed 57e4a54a; lock held elsewhere, REVERIFY queued	session-20261116T192127-f26e2e56	2026-11-16T19:25:17Z
 verify:integriq:3671:a1fc0d47	GREEN #3671; 9535 tests, no new failures (1 flaky inherited)	session-20261116T184841-a3bc3002	2026-11-16T19:25:26Z
 fix:learniq:2562:9bda8314	conflict resolved, pushed 7726a54c; merge lock held elsewhere, REVERIFY queued	session-20261116T192046-9440725d	2026-11-16T19:26:09Z
+fix:decidiq:2170:8ede76a3	floor restored: merged development (conflicts resolved), tree measures 3.80 >= 3.78; new head 80617c37	session-20261113T212411-bd385ec2	2026-11-16T19:26:36Z
