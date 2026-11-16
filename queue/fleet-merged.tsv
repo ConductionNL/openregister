@@ -4785,3 +4785,4 @@ buildiq	1672	cb2126a7b075f04ec603389d9f83773b9e0b68f9	MERGED	worker-18	GATE OK s
 stackiq	2004	3abacc55decaf583bc9497566ae9c6da6f5fba99	MERGED	worker-54	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.19
 stackiq	2005	d037535241d8a2bd88bf460c043dd0adb24ea646	MERGED	worker-54	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.19
 buildiq	1679	7b472152e989bf242565d99193a7ce0f7f71d80f	MERGED	worker-18	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.91 holds at 3.91
+planninq	1206	adadcc7feebc3199e3ad29ffef75fd4aaec98258	MERGED	worker-49	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.66 holds at 4.07
