@@ -15764,3 +15764,4 @@ fix:learniq:2560:a9c9e418	failed: blocked upstream: @conduction/nextcloud-vue (l
 verify:shillinq:3108:64020915	GREEN #3108: no new failures (php 12225 ok; vitest 1 inherited red)	session-20261116T081638-f48babcb	2026-11-16T08:25:00Z
 fix:opencatalogi:2650:e5e6d290	no change needed: branch up to date with development, conflict was tree-only; REVERIFY recorded (merge lock busy)	session-20261116T082353-191a2dc3	2026-11-16T08:25:11Z
 fix:shillinq:1958:98ce92e5	fixed SPDX header window in BudgetGridScenarioOverlay.php; pushed 55f82d52; merge lock held elsewhere, REVERIFY recorded	session-20261116T081702-4281d743	2026-11-16T08:25:18Z
+fix:learniq:1167:61811d4d	fixed: restored SPDX header on the contract stub (development's own floor drop from 9f17766b); new head b9644fb4, REVERIFY recorded; merging this PR fixes the inherited spdxheaders RED for the other learniq PRs	session-20261116T081707-5872785d	2026-11-16T08:25:27Z
