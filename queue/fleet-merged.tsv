@@ -4436,3 +4436,8 @@ hermiq	1795	fdc2c517220656bac17530d30d674fd346d80010	RED	merge3	GATE RED absolut
 hermiq	1801	b8e31c29c0755366e44d0de7ddd7cee5f6d4be87	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.77 holds at 3.78
 hermiq	1802	5e2885e3e660cb042b21292e305f27b2d9a26093	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.77 holds at 3.78
 buildiq	1673	df130f4fc2e3b198ff2e9f7688906c3232cdf919	SKIP	worker-39	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
+opencatalogi	2415	f57435cd4bed261f5a3a21a7066af9160fc83d79	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.50
+opencatalogi	2541	131ce0fa2c470dbe80bfc84563ed1235afce4730	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.50
+opencatalogi	2673	61f25128c9c36b5ca1d7519327d3ffbd942c0c46	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.50
+opencatalogi	2682	d8b519df4b336de03cd62c4570efec60d5744b95	RED	merge3	GATE RED checker floor: maintainability stars: 5 -> 4
+opencatalogi	2701	23a626784478f5462e87c580939ca21bf9b1b896	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.50
