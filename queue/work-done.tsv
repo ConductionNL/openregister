@@ -16735,3 +16735,4 @@ fix:integriq:2711:6f3fdc05	failed: dev-only @playwright/test bump; regen-sbom le
 fix:buildiq:1652:fd2e894a	fixed floor (unit_complexity restored to 3.32), pushed e48b9bd3; not landed: merge gate cannot measure here (static.developer.overheid.nl blocked); REVERIFY queued	session-20261116T164354-a7d53f16	2026-11-16T17:07:21Z
 merge:learniq:1881:314e7099	merge3 tree of 9 learniq PRs: merged=0 red=6 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-16T17:07:53Z
 review:shillinq:3088:7509fad1	GREEN: 12250 tests, 0 failures	session-20261116T165247-ed439eb0	2026-11-16T17:08:11Z
+fix:buildiq:1624:ae655c59	failed: RED only with unmerged #1596 (its guard coverage test flags the new 'built-app' reader in lib/Service/AgentPlanService.php); green on development; fix after #1596 lands: route that reader through AppOrganisationGuard	session-20261116T164354-a7d53f16	2026-11-16T17:08:32Z
