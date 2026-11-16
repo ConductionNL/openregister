@@ -15443,13 +15443,18 @@ review:hermiq:1791:27599b8c	GREEN: matches change specs; unit 5340 OK, vitest 15
 review:learniq:2484:32d62246	BLOCK: schema auth block lacks create/update/delete, widening write access; suite otherwise green (1 inherited)	session-20261116T062050-add210c3	2026-11-16T06:31:31Z
 merge:planninq:726:780e659c	merge8 tree of 12 planninq PRs: merged=3 red=6 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge8-20261115T170007-37538273	2026-11-16T06:32:03Z
 merge:planninq:908:34e96da4	merge8 tree of 12 planninq PRs: merged=3 red=6 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge8-20261115T170007-37538273	2026-11-16T06:32:08Z
+merge:planninq:910:bd2e43e5	merge8 tree of 12 planninq PRs: merged=3 red=6 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge8-20261115T170007-37538273	2026-11-16T06:32:14Z
 review:portaliq:1673:06264bd1	GREEN: additive rank field + repair, no new failures	session-20261116T062120-691af8f7	2026-11-16T06:32:18Z
+merge:planninq:871:21d6bce4	merge8 tree of 12 planninq PRs: merged=3 red=6 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge8-20261115T170007-37538273	2026-11-16T06:32:33Z
 review:portaliq:1666:ddf36df0	GREEN: manifest band layout, tests unchanged vs development	session-20261116T062126-9d7735e0	2026-11-16T06:32:30Z
 review:hermiq:1193:7d49a897	GREEN: sass bump, vitest 1526 pass, prod build ok	session-20261116T062120-7c38c5f1	2026-11-16T06:32:41Z
 review:hermiq:1133:6fd08d09	GREEN: stylelint 0 errors, vitest 1526 OK	session-20261116T062140-6a300781	2026-11-16T06:32:49Z
+merge:planninq:1070:d400a92b	merge8 tree of 12 planninq PRs: merged=3 red=6 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge8-20261115T170007-37538273	2026-11-16T06:32:55Z
 fix:learniq:2551:dad91491	development merged in, pushed 3b2c2a67; residual append-conflict only vs unmerged 2549	session-20261116T062050-add210c3	2026-11-16T06:32:59Z
+merge:planninq:725:3333abed	merge8 tree of 12 planninq PRs: merged=3 red=6 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge8-20261115T170007-37538273	2026-11-16T06:33:13Z
 review:hermiq:1578:c7adfb00	GREEN: lock+sbom, unit 5291 OK with llphant 1.0.10	session-20261116T062544-335bf148	2026-11-16T06:33:13Z
 review:hermiq:1785:8d6ac93b	GREEN: matches delegation-runs-in-parallel specs; unit 5315/0 fail, phpstan, vitest clean	session-20261116T062117-388e9de2	2026-11-16T06:33:21Z
+merge:planninq:1037:394d480f	merge8 tree of 12 planninq PRs: merged=3 red=6 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge8-20261115T170007-37538273	2026-11-16T06:33:35Z
 review:hermiq:1750:005a39ab	GREEN: phpunit 5331 OK, vitest 1545 pass	session-20261116T061736-e271ba12	2026-11-16T06:33:33Z
 review:portaliq:1353:dc6ca37d	GREEN: phpmd 3 bump, annotation-only lib changes, no new failures	session-20261116T062120-691af8f7	2026-11-16T06:33:44Z
 review:hermiq:1760:440cf2e9	GREEN: unit 5380 OK, vitest 1537/1537; matches change specs	session-20261116T062050-7d5ce0d6	2026-11-16T06:33:51Z
