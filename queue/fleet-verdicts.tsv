@@ -14371,3 +14371,17 @@ buildiq	1583	df8986ae74fb916058d55d798144fb1f99177038	BLOCK	worker-04:review	rev
 buildiq	1641	b6868cd6b6f9eec39772064f4979ffcdb1432599	BLOCK	worker-04:review	review: Strict; spec-coverage gate fails on methods this PR adds: RuleSetCallersDialog.vue mounted and RuleSetsPage.vue onSaved lack @spec; PHP (listener, evaluateForApp, scoped index) matches the change specs, no other blockers
 buildiq	1652	2b887096e99104c20abaf165361ab630a1c40eb1	BLOCK	worker-04:review	review: Strict; spec-coverage gate fails on 12 methods this PR adds without @spec (SqlQueryDialog.vue canPreview/created/database/previewColumns/previewRows, StartFromDatabase.vue chosen/complete/enabled/loadTables/register/writable, CreateApplicationWizard.vue defaults); PHP reader/validation fine
 shillinq	2093	cc5e1a5ebb84ed6bccdcf622b871b1d90d97b930	REVERIFY	worker-07	updated GoodsReceiptNoteIntegrationTest to the PR's built-in detail page (form stays custom, detail is type=detail over GoodsReceiptNote); unit suite 12225 tests OK; merge lock held elsewhere; new head c70fbea88caaded2000d9255977989e3476c49b4, verify it
+integriq	2671	3e5c293bccd965b0586f268395ce86bfbb21b974	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+integriq	2711	b46c56feef596d6aeef7e07e9c28ab9230f901df	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+integriq	2744	53deb98f7cdb1b6780f15f48e92d1825829d8513	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+integriq	2746	ff5f2df859dc0664166676b1e4a688ca9dcf5daf	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+integriq	2924	81032a2e25be20a55d65581e9c199af938b2368c	RED	merge3:merge-gate	GATE RED floor: unit_interfacing: 1.93 -> 1.91
+integriq	3047	261ea2e51572de7eea587257a403b5236d99e86b	RED	merge3:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
+integriq	3057	2fbd882db4b90477039aeb267982241373c712f0	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+integriq	3059	4bb36a6bc436d992b2b565e72bed42cea5b16c1d	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+integriq	3564	34a4928487285db2a4a00c8db8821183b554f797	RED	merge3:merge-gate	GATE RED absolute floor: integriq maintainability 3.55 after merge is below its floor 3.56
+integriq	3574	65269c9d780b25ea93f59787282d50a6c5cfc4bc	RED	merge3:merge-gate	GATE RED absolute floor: integriq maintainability 3.54 after merge is below its floor 3.56
+integriq	3589	604f71b58f00c5374d10fbc294fa81af37cfabe5	RED	merge3:merge-gate	GATE RED absolute floor: integriq maintainability 3.54 after merge is below its floor 3.56
+integriq	3595	60111a1cbeeab82e205393bd750ca75566d963aa	RED	merge3:merge-gate	GATE RED absolute floor: integriq maintainability 3.55 after merge is below its floor 3.56
+integriq	3612	0000c17621f3afaa620e370875472d46df3b84d1	RED	merge3:merge-gate	GATE RED absolute floor: integriq maintainability 3.55 after merge is below its floor 3.56
+integriq	3628	858c7a5daf994cdee85d2208d40103edcf6f52cd	RED	merge3:merge-gate	GATE RED absolute floor: integriq maintainability 3.54 after merge is below its floor 3.56
