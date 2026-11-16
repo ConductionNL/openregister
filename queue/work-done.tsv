@@ -17831,3 +17831,4 @@ lane:arch5:integriq:next-integriq-r1	failed: permission: recording the review of
 cover:stackiq:9ac19b3am2187:c2bb21fa	added to PR #2001 (stackiq 43 open PRs): 2 tests, lib/Service/Stackiq lines 98.7->99.1% (remaining lines unreachable); no new failures	session-20261116T203539-f268bd6b	2026-11-16T21:06:52Z
 lane:arch5:buildiq:next-buildiq-r1:c2	failed: permission: recording an APPROVE review of my own PR #1683 (buildiq, head 4ed47e29, estimate 3.91-3.97 -> 3.92-3.98, tree adds no failures) was refused; PR left open for an independent review	session-20261116T205351-e92d06a8	2026-11-16T21:07:15Z
 verify:integriq:3675:189bdd6e	GREEN 3675 (unit 9614, 0 new failures)	session-20261116T205217-2b48a08c	2026-11-16T21:07:38Z
+merge:shillinq:1899:ba056b75	merge3 tree of 4 shillinq PRs: merged=0 red=3 fail=0 skip=0; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-16T21:08:03Z
