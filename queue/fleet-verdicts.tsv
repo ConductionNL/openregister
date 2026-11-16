@@ -15649,3 +15649,4 @@ versioniq	707	db83c5cf235112b7fa39103a2cf4487a8df3c4d9	RED	worker-03:merge-gate	
 launchpad	1229	b98348402374a1ff4e1d93587b936d9982cc4ca3	REVERIFY	worker-23	fixed the BLOCK: vault source now used only when the export creator owns it or is an admin, else unknown and never called; tests added, unit suite 4571 tests 0 failures; new head e2a9039295bd560fcaa30116c8bdce5b6e508678, verify it
 keepiq	1868	e69d0ac52344ce388c685ebf74a84d4cf795c3ad	GREEN	worker-54	tree 5618 tests OK, baseline 5545 OK, new failures 0; tests only
 keepiq	1870	2f3435f5868e0a6450eb6f074c6c0a297a19bef1	GREEN	worker-54	tree 5618 tests OK, baseline 5545 OK, new failures 0; tests only
+keepiq	1871	6308066bd3e3db5258363087bd6b5eac02ea3f5b	GREEN	worker-54	tree 5618 tests OK, baseline 5545 OK, new failures 0; tests only
