@@ -15585,3 +15585,4 @@ fix:stackiq:1930:4b692e5a	conflicts resolved, suite OK, pushed	session-20261116T
 fix:hermiq:1781:44761fd9	nothing to fix yet: branch already contains development; it conflicts with sibling PR #1751 (l10n and hermiq_register.json), resolve after one of them lands	session-20261116T062050-3a7e109c	2026-11-16T07:04:34Z
 review:buildiq:1654:ac924f1b	GREEN: 0 new failures, vitest 4768 pass	session-20261116T061736-e271ba12	2026-11-16T07:04:50Z
 fix:shillinq:2096:8af31d73	fixed: stale vitest updated to the new endpoint; new head 7effe6f8	session-20261116T062123-fa6fb6b0	2026-11-16T07:04:59Z
+fix:portaliq:1354:84f30a14	sbom regenerated, development merged; new head ba4c6885	session-20261116T062050-3a7e109c	2026-11-16T07:05:11Z
