@@ -15191,3 +15191,4 @@ shillinq	2997	cd7db0f04876b5986b6590a8bef6e32fd03597d5	GREEN	worker-01:review	Th
 shillinq	3110	e7c788adccce2ed082b36e9cb7188d80a1f52787	REVERIFY	worker-01	merged development in (clean; the conflict was with another PR's lockfiles in the tree); new head 8babcbcbc90f29eaa127ac7949ce978cafd15ffc, verify it
 buildiq	1620	afacfca7d54af03a8c939a19050b19f5873d8bcb	CONFLICT	worker-55:merge	conflicts with development; files: l10n/en.js l10n/en.json 
 buildiq	1641	bb9b55d3a06eb97c33a171bc36ff813af78d9c01	CONFLICT	worker-55:merge	conflicts with development; files: l10n/en.js 
+dossiq	5398	1ba53a1748240a7b08c3dbd60bab7990145868b9	RED	worker-21:review	composer install fails on the PR merged with development: psalm 7.5.0 needs php ~8.3.16 but composer.json config.platform.php is 8.3 (=8.3.0); platform pin must be raised (e.g. 8.3.16) for this bump; unit suite not runnable; no production code changed
