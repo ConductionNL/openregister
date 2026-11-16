@@ -17130,3 +17130,4 @@ cover:integriq:92114ab0m1db0:js0d617ff5	deferred: integriq has 70 open PRs	sessi
 fix:learniq:2557:29ed293d	fixed conflict with #1881 (stub header aligned); new head 3fe186b0, REVERIFY queued (merge lock held)	session-20261116T181418-c3cd424d	2026-11-16T18:29:08Z
 cover:buildiq:70b3e29em3841:d528dcf0	deferred: buildiq has 56 open PRs	session-20261116T181603-6d014baf	2026-11-16T18:29:19Z
 fix:learniq:2559:a2575752	fixed: SPDX header on inherited stub; new head 307b9303, REVERIFY (merge lock held elsewhere)	session-20261116T182126-f8ae2f13	2026-11-16T18:29:44Z
+cover:stackiq:9ac19b3amdf03:f4b2f7af	deferred: stackiq has 41 open PRs	session-20261116T173256-6277a58c	2026-11-16T18:30:40Z
