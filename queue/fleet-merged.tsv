@@ -4728,3 +4728,4 @@ opencatalogi	2696	cdc6289daa81ea492ed3725cca855f4f7dea0139	RED	worker-39	GATE RE
 learniq	2507	e2e4770e3dfae716ee2246e428418284784277e3	MERGED	worker-51	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 3.99
 planninq	1204	26c3d2ded381bb04d3bf7ab473f3bd312336a817	MERGED	worker-44	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.66 holds at 3.78
 portaliq	2535	6a993a850869c49ed3247d5cd57d10a4ec43e5b5	MERGED	worker-29	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.17
+keepiq	1854	8036325c834c43bd8ed2c3bcc42ac966bc46f293	MERGED	worker-53	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.58 holds at 3.59
