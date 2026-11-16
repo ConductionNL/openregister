@@ -15871,6 +15871,7 @@ filinq	2072	8a0992cbb74f2b7df9dbc9e29159077ce5307e05	RED	worker-08:merge-gate	GA
 decidiq	2174	5c8c3d7d679af0b29a876067180194222aa2c1ea	CONFLICT	worker-53	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Settings/profiles/municipality.json
 decidiq	2190	be028a48a40c64d2480c24c4a2b2b3c308c932df	CONFLICT	worker-26	conflicts with development in l10n/*, OndermandaatGuardService.php, profiles/municipality.json, manifest.json, OndermandaatGuardListenerTest.php; tests not run
 dossiq	6619	b9b28fb1ea7cc53d2baa7368db5ccdea01a5a754	GREEN	worker-30	unit 18400 tests on tree (baseline 18363, 16 inherited failures), 0 new failures; tests only
+decidiq	2224	6d7dfdcffadf85e7bf13eda87f64e3652300a102	CONFLICT	worker-45	package.json conflicts with origin/development af5cbdee (dependency bundle vs newer dev); baseline 4761 tests 0 failures; not run on tree
 decidiq	2195	81009fc4d05837e575159da0df533c6ff336abf5	CONFLICT	worker-13	conflicts with development in src/manifest.json and tests/vitest/simpleDecisionPage.spec.js; no tests run
 hermiq	1741	dd035123e2cce781159c50399fa9d412db09d3f8	CONFLICT	worker-49	conflicts with development (lib/Controller/RunNowController.php lib/Mcp/HermiqToolProvider.php tests/Unit/Mcp/HermiqToolProviderTest.php)
 decidiq	2189	9db1906ee298ab726374467d139771ee65803b76	CONFLICT	worker-26	conflicts with development in lib/Service/MeetingPackageService.php lib/Settings/profiles/municipality.json ; tests not run
