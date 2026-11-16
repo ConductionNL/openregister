@@ -14938,3 +14938,4 @@ filinq	2123	f0a61512c5f191666db3e67afbfa9bf0183a4dfc	CONFLICT	worker-47:merge	me
 filinq	2122	f433050689ccf79d3250db99593b8fcc758fa1d0	BLOCK	worker-47:review	review: Strict (new route, write guard); blocker: BaseRefusalGroundGuard compares ObjectEntity::getSchema() to the slug 'base', but OpenRegister stores the numeric schema id there (SaveObject setSchema((string)schemaId)), so the guard never fires on a live instance; resolve id to slug as ContractNoticeDeadl
 buildiq	1672	8130284789a8757ad622970f76ae77dbc5b02418	RED	worker-50:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
 buildiq	1091	13bc446b3ff8a04f2e70a612adc51a37c801a382	RED	worker-39:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+buildiq	1094	2ea9dbb488b0e4ebb832485f152e1c96842c72c2	RED	worker-39:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
