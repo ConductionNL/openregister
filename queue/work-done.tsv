@@ -16332,6 +16332,7 @@ build:dossiq:stuf-writes-through-integriq	already done: every code task ticked, 
 build:dossiq:party-history-link	already done: 1.1/1.2 on development (23 Oct); only 1.3 live remains	session-20261116T104807-0149ceda	2026-11-16T11:17:09Z
 build:dossiq:party-dates-longdate	already done: every code task on development; only 1 live/e2e task(s) left	session-20261116T105426-4e0b8984	2026-11-16T11:17:15Z
 build:dossiq:task-list-titles-wrap	already done: every code task on development; only 1 live/e2e task(s) left	session-20261116T105426-4e0b8984	2026-11-16T11:17:22Z
+build:dossiq:unified-search-opens-every-hit-in-dossiq	already done: every code task on development; only 2 live/e2e task(s) left	session-20261116T105426-4e0b8984	2026-11-16T11:17:29Z
 build:dossiq:starter-content-and-templates	already built: every dossiq code task ticked on development; 7.2 partial by design (task, note and approval surfaces live in nextcloud-vue/openregister, lane L1 per decision 156)	session-20261116T105334-a341eb02	2026-11-16T11:17:43Z
 build:dossiq:penalty-is-a-stored-calculation	already done: code tasks ticked and on development; 1.4 is live after openregister#4571	session-20261116T110114-f035d055	2026-11-16T11:17:34Z
 build:dossiq:task-list-subject-links-its-case	already built: 1.1-1.2 on development; only live 1.3 left (needs openregister feat/task-subject-identifier)	session-20261116T105334-a341eb02	2026-11-16T11:18:17Z
@@ -16348,6 +16349,7 @@ build:dossiq:task-list-states-in-task-words	already done: config and vitest on d
 fix:hermiq:1760:440cf2e9	no change: branch up to date with development and merges clean alone; conflict only with a tree sibling; REVERIFY queued	session-20261116T104807-0149ceda	2026-11-16T11:19:46Z
 fix:learniq:2507:1fad4deb	fixed demo-data blocker, pushed 82c09d5c71; merge lock held by another merger, REVERIFY queued	session-20261116T101101-e7e34372	2026-11-16T11:19:56Z
 fix:integriq:2744:53deb98f	no change: sbom already current at head; REVERIFY queued	session-20261116T105625-9a95dd96	2026-11-16T11:20:45Z
+fix:hermiq:1791:27599b8c	no change needed: branch up to date with development and merges clean; REVERIFY queued (merge lock held elsewhere)	session-20261116T105659-4edb3184	2026-11-16T11:21:19Z
 fix:pipelinq:2501:58a531d9	failed: sbom gate false positive: lock change is dev-only (symfony/yaml, symfony/http-foundation in packages-dev), regen-sbom from scratch is byte-identical and --check is current; merge_gate sbom() needs to accept a current sbom when only dev packages moved	session-20261116T110114-f035d055	2026-11-16T11:21:34Z
 fix:integriq:3059:4bb36a6b	failed: gate cannot pass - phpstan is a dev-only dependency, so after merging development the regenerated sbom.cdx.json is byte-identical to development's (regen-sbom --check current, 691 components) and the diff holds only composer.lock; merge_gate.py sbom() needs to accept an unchanged-but-current sbom	session-20261116T105550-e90eeee3	2026-11-16T11:21:15Z
 fix:hermiq:1785:8d6ac93b	no change: branch up to date with development and merges clean alone; conflict only with a tree sibling; REVERIFY queued	session-20261116T104807-0149ceda	2026-11-16T11:21:34Z
@@ -16361,3 +16363,7 @@ fix:integriq:3057:2fbd882d	failed: no fix possible: hydra-gates is a dev-only de
 fix:thematiq:1126:5620b7cb	failed: sbom gate false positive: jsdom is a devDependency, regen-sbom leaves sbom.cdx.json unchanged and --check current; merge_gate sbom() needs to accept a current sbom when only dev packages moved	session-20261116T110114-f035d055	2026-11-16T11:23:29Z
 fix:filinq:2094:6498e5a9	conflict resolved, pushed 5c76485b; merge lock held elsewhere, REVERIFY queued	session-20261116T105620-b2654149	2026-11-16T11:23:47Z
 fix:learniq:1882:ff0cebbf	fixed: SPDX header on inherited stub, new head 334e6e47; merge lock held elsewhere, REVERIFY queued	session-20261116T105625-05822e4f	2026-11-16T11:24:05Z
+fix:integriq:3595:60111a1c	fixed floor (3.55->3.56) by moving 2 services beside their listeners; pushed 6e9939f; merge lock held by another merger, REVERIFY queued	session-20261116T105628-a5f0e49c	2026-11-16T11:24:35Z
+fix:thematiq:1290:7ea88173	failed: sbom gate false positive: dev-only bump, regen-sbom --check says sbom.cdx.json is current and regenerating changes nothing, so the PR cannot add it to its diff; merge_gate.py should accept regen-sbom --check passing	session-20261116T105625-05822e4f	2026-11-16T11:24:59Z
+fix:hermiq:1578:c7adfb00	no change needed: merges clean on development; REVERIFY queued (lock held elsewhere)	session-20261116T105712-260c30d3	2026-11-16T11:24:56Z
+fix:integriq:3047:261ea2e5	fixed: SPDX header on new stub, pushed 75eb55fe; REVERIFY queued (merge lock held elsewhere)	session-20261116T105334-a341eb02	2026-11-16T11:25:14Z
