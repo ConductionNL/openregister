@@ -16491,3 +16491,4 @@ merge:integriq:2716:bdcca480	unmeasured: static.developer.overheid.nl (merged=0;
 fix:learniq:2556:8dedbada	sbom regenerated; new head 489b7f4d; REVERIFY (lock held)	session-20261116T144202-f2b26030	2026-11-16T14:49:31Z
 fix:learniq:2551:86a3e2d4	fixed blocker; REVERIFY new head 87132cc4	session-20261116T142700-f4d651ea	2026-11-16T14:50:00Z
 fix:shillinq:2093:c70fbea8	fixed: administrationId payload on both GRN actions + manifest budget; new head 223f0cbe95, REVERIFY queued (merge lock held elsewhere)	session-20261116T142616-2623e37a	2026-11-16T14:50:11Z
+fix:learniq:2561:65d65e78	RED inherited from development (stub without SPDX); restored rating, pushed 7b697917; lock busy, REVERIFY queued	session-20261116T142859-fa64ab70	2026-11-16T14:50:19Z
