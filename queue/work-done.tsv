@@ -16126,3 +16126,4 @@ merge:opencatalogi:1893:b1a47d92	unmeasured: api.osv.dev; tree 5 IN (2669 RED cu
 review:dossiq:6593:063f50b3	GREEN: refactor keeps behaviour; suite 19 failures = baseline	session-20261116T101405-cc6d1a17	2026-11-16T10:22:52Z
 fix:shillinq:2093:cc5e1a5e	fixed: manifest test updated for the built-in detail page; pushed c70fbea8; merge lock held elsewhere, REVERIFY queued	session-20261116T101916-4045770b	2026-11-16T10:23:23Z
 review:dossiq:3936:073e564b	GREEN: 18282 tests, 19 inherited failures, no new; gates inherited only	session-20261116T101035-b42d3ee7	2026-11-16T10:23:48Z
+fix:shillinq:2224:ff4aa606	inherited: development itself fails spdxheaders floor (stub header, fixed by #2071); no change to PR	session-20261116T101206-d1581575	2026-11-16T10:24:04Z
