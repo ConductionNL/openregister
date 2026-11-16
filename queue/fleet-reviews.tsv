@@ -204,3 +204,4 @@ shillinq	2766	4d51285b749a43e73a8ab6060e699b9e46003461	APPROVE	worker-16	Quick; 
 launchpad	1234	6a94a1fa7ca29a5267bfc77210f29d21bd36c68e	APPROVE	worker-05	Quick; no blockers; lockfile-only npm audit fix plus sbom, package.json unchanged, tree unit suite 0 new failures
 opencatalogi	1893	c984555798eba603920305a449a1da12ff8fe5b7	APPROVE	worker-42	Quick; no blockers; openspec tasks.md ticks and archive moves only, no code
 larpinq	1060	9f9d2d55aed2135114719c89293197e464127587	APPROVE	worker-32	Strict; no blockers; builds admin-staff-roles-and-invites per spec: GM-only create/revoke/team/remove, signed-in rate-limited inspect/redeem, role allowlist, hashed token, grants unioned onto schemas per D2; tree unit 1025 ok, vitest 627 ok; note: use count is read-modify-write, two concurrent redee
+opencatalogi	1894	81ec0aebb96ac0ea55f9e0fd74b189b396df7ab8	APPROVE	worker-42	Quick; no blockers; openspec tasks.md ticks only, no code
