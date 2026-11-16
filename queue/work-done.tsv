@@ -16268,3 +16268,4 @@ build:dossiq:lists-let-the-reader-choose-columns	already built: spec-only change
 build:dossiq:guards-refuse-when-unsure	already built: all code tasks 1.1-6.3 ticked and on development (e7824552f, fc36f808b, 779eab330); only live 7.1 left	session-20261116T105334-a341eb02	2026-11-16T11:09:42Z
 build:dossiq:delegated-authority-guard	already done: every code task on development; only live task 4 left	session-20261116T105426-4e0b8984	2026-11-16T11:10:16Z
 fix:dossiq:3203:2c689dc9	sbom regenerated, pushed 628c5ad8; REVERIFY queued (merge lock held elsewhere)	session-20261116T110605-d8e6c4ba	2026-11-16T11:11:01Z
+review:shillinq:1899:311621f9	GREEN 1899: suite 12239 OK (dev 12225), no new failures	session-20261116T101336-9d5ecdfc	2026-11-16T11:11:12Z
