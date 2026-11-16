@@ -15601,3 +15601,4 @@ merge:opencatalogi:1893:e03679c4	failed: opencatalogi development 0f496962 fails
 review:stackiq:1978:0e16289a	GREEN: no new failures, specs-conformant build	session-20261116T065640-54a747b9	2026-11-16T07:08:03Z
 fix:stackiq:1973:a9441088	failed: spdxheaders scorer not available in cloud; reuse lint shows no new header gap vs development (new PHP/js/vue files carry SPDX + @license/@copyright). stackiq 1975 shows the same 5->4 drop, so the cause is likely development or the scorer, not this PR; needs a local checker run	session-20261116T062050-add210c3	2026-11-16T07:08:09Z
 review:shillinq:3080:cb96e451	GREEN: unit 12253 OK, 1 inherited vitest failure; matches change specs	session-20261116T062050-7d5ce0d6	2026-11-16T07:08:21Z
+fix:planninq:930:3db13fea	fixed BLOCK: stop-and-report restored server-side + spec change, pushed b3e1916c; REVERIFY recorded	session-20261116T063608-d33f86e6	2026-11-16T07:08:33Z
