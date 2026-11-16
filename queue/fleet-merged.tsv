@@ -4636,3 +4636,4 @@ decidiq	2178	d8c9d1623ecddbb069f60c014e021f7eb50f6d13	MERGED	merge3	GATE OK sbom
 decidiq	2203	25c89067fe5543733a63e852b78c2fe8305fbaed	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.78 holds at 3.79
 decidiq	2207	12b854793b911a1de6aed09fa8c7e434d58e0735	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.78 holds at 3.78
 decidiq	2227	ef576d1f6daadaf87ea9b598e7d2300a7342a1de	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.78 holds at 3.80
+versioniq	721	b48214583a9c86d6d1701e2a4ced73b3009b6836	MERGED	worker-23	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.97 holds at 4.06
