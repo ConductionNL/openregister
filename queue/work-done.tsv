@@ -17775,3 +17775,7 @@ cover:decidiq:a5f973bbm9cda:7505aeb4	deferred: decidiq has 45 open PRs	session-2
 merge:versioniq:691:2c31a00d	cloud tree of 1 versioniq PRs: none; conflict 1, lint 0, red 0, moved 0, done 0	session-20261116T205217-2b48a08c	2026-11-16T20:57:00Z
 review:filinq:2072:68c796a1	stale	session-20261116T205635-1c5a7977	2026-11-16T20:57:27Z
 review:shillinq:2997:bc640379	GREEN (conflicts with development: info.xml, l10n, lock fixture)	session-20261116T205210-7a1fa9ff	2026-11-16T20:57:33Z
+cover:pipelinq:7f9dc8e6m3dbb:59b6b07f	already covered: lib/Service/Cti/Adapter/ measures 100% lines (283/283) with pcov on development 6d09711; no tests needed	session-20261116T205604-8f53bc7b	2026-11-16T20:57:55Z
+review:learniq:2521:70435b29	RED: EmployerBookingFactsTest::testTheSeededBookingsAgreeWithTheServer (seed bookings 7 vs 4); 1 inherited failure	session-20261116T205351-e92d06a8	2026-11-16T20:57:57Z
+fix:buildiq:1672:23675f9b	floor restored (p-1 3.9067), pushed 4980cad7; REVERIFY queued	session-20261116T202154-fbc59c50	2026-11-16T20:58:15Z
+review:shillinq:3055:3c4a7efd	GREEN (conflicts with development on info.xml version + register lock; needs a merge before landing)	session-20261116T202633-f7fb0e3a	2026-11-16T20:58:28Z
