@@ -1,0 +1,8 @@
+tests/Unit/Service/AiServiceAuditLoggingCompletenessTest.php saveObject register,schema,object
+tests/Unit/Service/WooPublicationServiceTest.php saveObject object,extend,register,schema,uuid
+tests/Unit/Service/HearingServiceTest.php patchObject objectId,data,register,schema
+tests/Unit/Service/Deelzaak/CaseObjectReaderTest.php find id,register,schema
+tests/Unit/Controller/RoutingControllerContractTest.php find id,register,schema
+tests/Unit/Service/DecisionDocument/CaseDecisionLinkTest.php patchObject objectId,data,register,schema
+tests/Unit/Service/Vth/LhsRecommendationStoreTest.php find id,register,schema
+tests/Unit/Service/Vth/LhsRecommendationStoreTest.php saveObject register,schema,object
