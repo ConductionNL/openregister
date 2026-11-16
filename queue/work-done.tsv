@@ -17401,6 +17401,7 @@ fix:opencatalogi:2655:21d93581	merged #2655 at eecf91309acb9a06e7fc66bc1bcc0c01e
 fix:buildiq:1620:afacfca7	conflict resolved, pushed 9cf97ff7; merge lock held elsewhere, REVERIFY queued	session-20261116T190918-81e43f73	2026-11-16T19:28:55Z
 build:learniq:learner-grade-read-follows-visible-from	already built: T1 on development since 0aa6bd8 (5 Nov); only live task T2 left	session-20261116T192824-ee4fb14b	2026-11-16T19:29:06Z
 review:opencatalogi:2696:0d0512a6	GREEN: no new PHP failures, phpstan clean; conflicts with development (no block)	session-20261116T191156-bbdb7add	2026-11-16T19:29:30Z
+build:learniq:board-dialog-inputs-and-row-names	already built: code tasks T1 and T2 are ticked and on development (7aa43ab4); only T3 (live check) is left, not a code task	session-20261116T191156-bbdb7add	2026-11-16T19:30:06Z
 fix:opencatalogi:2682:4e12e44e	already merged: #2682 is merged into development, nothing to fix	session-20261116T191409-74b1bedd	2026-11-16T19:29:42Z
 fix:buildiq:1672:8c29bf33	conflict resolved, pushed 23675f9b; suite 3377, only inherited ExportZipGoldenTest red; REVERIFY queued	session-20261116T191704-9a63be87	2026-11-16T19:30:12Z
 cover:keepiq:c967a31fm902f:2c3e981f	already done: lib/Service/ShareSync/ 100% line coverage (174/174) at 4c5e079b	session-20261116T192104-d9eeae3f	2026-11-16T19:30:38Z
@@ -17409,3 +17410,4 @@ fix:hermiq:1754:b6dc1f4e	conflict resolved, pushed 3e57e4dc; merge lock held els
 merge:shillinq:2098:3286165d	cloud tree of 6 shillinq PRs: merged=6 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T191103-1ba6d222	2026-11-16T19:30:47Z
 build:keepiq:clients-extension-firefox-and-safari-builds	no code left: 1.2 needs a macOS runner and Apple identity, 2.1 is verified by a workflow run (.github/workflows/browser-extension.yml already builds chromium/firefox/safari); no PR	session-20261116T191448-870933e4	2026-11-16T19:31:12Z
 fix:hermiq:1735:ce935d59	conflict resolved, new head 33b209c9; merge lock busy, REVERIFY queued	session-20261116T192142-66caeb8e	2026-11-16T19:31:12Z
+cover:larpinq:c4471360:dfaef732	PR #1072: Notifier 3 tests, lib/Notification 93.75%->100%, suite 1057->1060 green	session-20261116T184831-8be58c40	2026-11-16T19:31:49Z
