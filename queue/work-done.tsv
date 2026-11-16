@@ -18153,3 +18153,4 @@ cover:buildiq:70b3e29eme3dd:aae6d66c	deferred: buildiq has 49 open PRs	session-2
 cover:buildiq:70b3e29eme3dd:9d3a1784	deferred: buildiq has 49 open PRs	session-20261116T222954-929c895c	2026-11-16T22:30:56Z
 fix:buildiq:1686:4d547e0f	stale: #1686 already merged at 4d547e0f before the fix landed; nothing to do	session-20261116T221527-63df1734	2026-11-16T22:31:03Z
 fix:launchpad:1247:08798f3e	merged #1247 at ccd5cdeece92e0a41cd7f8b9b915c60b41e978d1	session-20261116T222151-b1142d60	2026-11-16T22:31:20Z
+gap:learniq:installable-psalm7:1	deferred: learniq has 57 open PRs	session-20261116T222954-929c895c	2026-11-16T22:31:25Z
