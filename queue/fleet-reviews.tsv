@@ -426,3 +426,4 @@ portaliq	2530	23908dc9409b67edbb7c1748002e6f9859115f48	APPROVE	worker-48	Quick; 
 humaniq	606	647da215609758b6eb51cbe1182861a618182015	APPROVE	worker-58	Quick; no blockers; twig 3.29->3.30 dev dep + sbom; tree unit 4405 ok = baseline, test:js 1 inherited manifest-export failure untouched by the PR
 hermiq	1193	7d49a897eacda342108a8ffdf6d0ba0a3967dc67	APPROVE	worker-53	Quick; no blockers; sass dev bump with regenerated sbom
 hermiq	1195	7d6678393fcb6f34e5686d5bae1b98fb9a9688de	APPROVE	worker-53	Quick; no blockers; eslint dev bump with regenerated sbom
+hermiq	1307	1007dac617c9bde9350369bf4adb9a791a8aa04b	APPROVE	worker-53	Quick; no blockers; hydra-gates dev bump with regenerated sbom
