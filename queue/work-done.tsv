@@ -17112,3 +17112,4 @@ cover:decidiq:a5f973bbm0262:c76ae287	deferred: decidiq has 53 open PRs	session-2
 review:larpinq:1050:d2d372bb	GREEN: per spec; phpunit 1016 OK, vitest 608 passed	session-20261116T174053-4a550291	2026-11-16T18:26:59Z
 cover:integriq:92114ab0m1db0:jsf3772e2d	deferred: integriq has 70 open PRs	session-20261116T174053-4a550291	2026-11-16T18:27:36Z
 fix:shillinq:2997:37951348	merged development in, new head cd7db0f0; REVERIFY queued (merge lock held elsewhere)	session-20261116T182218-e80be6aa	2026-11-16T18:27:37Z
+build:decidiq:live-public-livestream	already done: every code task on development; only live/Newman/e2e checks open	session-20261116T173306-f68895a7	2026-11-16T18:27:42Z
