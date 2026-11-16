@@ -13632,3 +13632,4 @@ learniq	2484	32d622462227e6ad1f4572cc2952b0a8f7745327	BLOCK	worker-34:review	New
 planninq	726	78fcfabe93c1baa19096da91a1eb939748cc973d	CONFLICT	merge8	conflicts with development; files: package-lock.json package.json 
 planninq	930	de4742c6a813a35b678d5f21fe5c3bc7264b5c69	CONFLICT	merge8	conflicts with development; files: lib/Service/ProjectActionService.php 
 planninq	933	cb3692d7f8cfa9c3eac2fdc92e4305c701b8844c	CONFLICT	merge8	conflicts with development; files: lib/Service/ProjectActionService.php 
+hermiq	1133	6fd08d09db1ca26724058d9c83bec7eb477cfec5	GREEN	worker-14:review	dev-dependency bump only (stylelint 17.16.0, lock, sbom); merged with development: stylelint 0 errors, vitest 1526 OK
