@@ -16914,15 +16914,19 @@ review:shillinq:2230:e61ebeb7	GREEN: babel dev-dep bump, vitest 3030/3031 (1 inh
 build:shillinq:assets-method-change-and-reserve	already done: code tasks built on development; only 4.1 Playwright run left (needs a live instance)	session-20261116T173311-8d6b3275	2026-11-16T17:44:04Z
 build:shillinq:sales-usage-billing	deferred: shillinq has 81 open PRs	session-20261116T172806-3ef5ead7	2026-11-16T17:44:03Z
 build:shillinq:public-sector-quarterly-returns	deferred: shillinq has 81 open PRs	session-20261116T172806-3ef5ead7	2026-11-16T17:44:11Z
+cover:filinq:7a9ef677:e2d2df0f	deferred: filinq has 49 open PRs	session-20261116T173254-f6972957	2026-11-16T17:44:35Z
 review:shillinq:2099:ea7e61ea	GREEN (vitest 1 inherited failure)	session-20261116T165351-3ccaad0e	2026-11-16T17:44:21Z
 fix:learniq:2555:df653e98	fixed inherited SPDX drop (stub header) + merged development; new head 20db188505, REVERIFY queued (merge lock held elsewhere)	session-20261116T171010-393e4bc2	2026-11-16T17:44:42Z
 build:shillinq:budget-known-costs	already done: built on development in #967; only the e2e run (not code) is left	session-20261116T173227-3f62e794	2026-11-16T17:44:55Z
 review:keepiq:1816:c999bfc2	GREEN keepiq#1816: phpunit 5337 OK, vitest 4680 OK, matches change specs	session-20261116T173246-2dce7fd2	2026-11-16T17:44:52Z
+build:filinq:generate-document-runs-directly-on-an-object	already done: code tasks on development since f2c547c; only live task 1.5 is left	session-20261116T173227-3f62e794	2026-11-16T17:45:41Z
 build:filinq:anonymisation-batch-output-folder-layout	already built: every code task ticked on development (ecccc66ac, 517095251); only live Newman/smoke tasks 11 and 13 remain, not code	session-20261116T174323-ba3ec1dc	2026-11-16T17:45:00Z
 merge:buildiq:1596:0a6a854e	unmeasured: static.developer.overheid.nl (node fetch in checker-floor cannot reach it; curl can); 1596 and 1673 reviewed APPROVE, tree green, nothing landed	session-20261116T173103-d3bed8f8	2026-11-16T17:45:52Z
+fix:learniq:1901:e9591096	failed: inherited: plain development c960466e8 already measures 3.98 against learniq's absolute floor 3.99; every learniq merge is RED on it until development is raised	session-20261116T171010-393e4bc2	2026-11-16T17:46:03Z
 cover:filinq:7a9ef677:e372e6ff	deferred: filinq has 49 open PRs	session-20261116T174323-ba3ec1dc	2026-11-16T17:45:58Z
 fix:decidiq:2178:a58bcd58	fixed icons, pushed d8c9d1623e; merge lock held by merge3, REVERIFY queued	session-20261116T173141-f87aaa9d	2026-11-16T17:46:08Z
 build:filinq:dossier-management-ui	deferred: filinq has 49 open PRs	session-20261116T171035-683856c3	2026-11-16T17:46:16Z
 build:filinq:signer-identity-rails	deferred: filinq has 49 open PRs	session-20261116T171035-683856c3	2026-11-16T17:46:23Z
 cover:filinq:7a9ef677:8ed5443b	deferred: filinq has 49 open PRs	session-20261116T173213-a5a52019	2026-11-16T17:46:41Z
 review:buildiq:1091:0a8185a0	GREEN: dev-dep bump, vitest 4719/4719 pass on merge with development	session-20261116T173240-b63ad758	2026-11-16T17:46:42Z
+cover:decidiq:a5f973bbm0262:81b1241f	deferred: decidiq has 52 open PRs	session-20261116T174323-ba3ec1dc	2026-11-16T17:47:00Z
