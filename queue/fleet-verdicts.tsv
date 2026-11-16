@@ -15107,5 +15107,8 @@ versioniq	725	bd0db7f78fc7f06f9ded92a916114f67b4a546f0	REVERIFY	worker-48	merged
 buildiq	1620	7c13e441ea94c953a6fe1ac993a2bfd52ac31de8	REVERIFY	worker-39	added @spec tags to the 7 named methods, spec-coverage gate PASS, vitest 4757 pass, lint unchanged; new head afacfca7d54af03a8c939a19050b19f5873d8bcb, verify it
 learniq	2555	20db188505a8fb4c07a56b7a897ef199cd9e164a	GREEN	worker-42	phpunit-unit 6868 tests, baseline 1 failure (HigherEducationExampleSetTest::testTheFileIsWhatTheGeneratorProduces), new failures 0; node tests 1383, 9 inherited
 shillinq	3088	e27bd6329f98217f15c1b5e5b6ba3a1c9b954ed6	GREEN	worker-04:review	implements sales-webshop-orders 2.2-2.5/3.1/4.1 per its spec (VAT route, settle, credit note, pages); no access change; unit 12250 OK on PR+development vs 12231 OK on development. Concern: reverse-charge order with VAT-inclusive prices fails the total check and is refused (fails closed)
+shillinq	2997	37951348f0f13d190aba2d2a06e07f2fb697ef2c	CONFLICT	worker-20:merge	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json tests/fixtures/register-versions.lock.json 
+shillinq	3055	6be8ada8c89f3a422809578a18d8f757d46c1d2a	CONFLICT	worker-20:merge	merges clean on development alone; files: tests/fixtures/register-versions.lock.json 
+shillinq	3110	e7c788adccce2ed082b36e9cb71	REVERIFY	worker-20:merge	verdict sha is not the head: head is e7c788adccce2ed082b36e9cb7188d80a1f52787
 buildiq	1672	33d5106ec52a3de3ee909fdaf2f0997649340176	CONFLICT	worker-09:merge	merges clean on development alone; files: lib/Controller/ApplicationsController.php 
 buildiq	1673	df130f4fc2e3b198ff2e9f7688906c3232cdf919	CONFLICT	worker-09:merge	merges clean on development alone; files: package-lock.json package.json 
