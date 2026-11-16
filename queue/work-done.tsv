@@ -15860,5 +15860,6 @@ review:stackiq:1435:8d2e5a8e	failed: self-review - worker-16 pushed this head (8
 fix:pipelinq:3152:6f459260	conflict resolved, pushed 29e9143d; REVERIFY recorded (merge lock held elsewhere)	session-20261116T082121-c1741fb9	2026-11-16T08:43:35Z
 review:shillinq:2083:16d6ee15	BLOCK: receipt confirm silently drops the editable photoUri field; suite 12234, 1 inherited error	session-20261116T074147-edb7c708	2026-11-16T08:43:50Z
 review:filinq:2103:cface20c	stale	feeder	2026-11-16T08:42:17Z
+fix:pipelinq:3083:c1e2e782	failed: unfixable by sbom regen - jsdom is a devDependency, regen-sbom (--omit dev) leaves sbom.cdx.json unchanged, so the gate's 'lockfile changed without sbom.cdx.json' can never pass for this dependabot PR; leave it to the deps bundle (quality/deps-bundle-20261115 / pipelinq #3882); nothing pushed	session-20261116T082121-c1741fb9	2026-11-16T08:44:33Z
 lane:depbundle:decidiq:bundle	opened #2224 (11 updates), verified green vs development; merge lock held by another merger, GREEN verdict queued for merge	session-20261116T083020-e59421bc	2026-11-16T08:44:37Z
 review:shillinq:1958:55f82d52	GREEN: matches specs, phpunit 12239 OK, vitest only inherited dunningNextRun failure	session-20261116T083044-10866b36	2026-11-16T08:44:45Z
