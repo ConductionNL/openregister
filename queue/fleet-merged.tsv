@@ -4472,3 +4472,4 @@ decidiq	2203	25c89067fe5543733a63e852b78c2fe8305fbaed	SKIP	worker-31	GATE UNMEAS
 buildiq	1583	cb1e01bf5bb8b6fa92d5ef01b0765ee06f7300e7	SKIP	worker-02	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 buildiq	1620	7c13e441ea94c953a6fe1ac993a2bfd52ac31de8	SKIP	worker-02	no APPROVE review at this head
 decidiq	2207	12b854793b911a1de6aed09fa8c7e434d58e0735	SKIP	worker-31	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
+stackiq	1965	dae73f1f93573f35c1f3c4c7854ba70d1268e5c2	SKIP	worker-57	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
