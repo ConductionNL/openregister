@@ -3795,3 +3795,4 @@ hermiq	1739	5cf3f827da61c88ed80a91cc9d749136f3e970fe	SKIP	worker-22	no APPROVE r
 thematiq	1117	2427508a3106eb9c72d567060d7d6beaeab72430	RED	worker-17	GATE RED sbom: composer.lock changed without sbom.cdx.json
 launchpad	653	7dd62332f078073df03444ab4c6c6b1f2c66f246	RED	worker-12	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 launchpad	763	ac59f2930cb25b439f9fdffbe39af0aa2b8b0f7e	RED	worker-12	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+launchpad	832	5cb157b3a864251534d0e0eea939fb8029de3108	RED	worker-12	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
