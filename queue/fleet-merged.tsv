@@ -3777,3 +3777,4 @@ pipelinq	2187	fd65c00e86140ac77446493773e44549967c3fa3	RED	merge3	GATE RED sbom:
 pipelinq	2557	74ee842a603c3a10940a0a193154d00418abe78a	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
 pipelinq	3083	c1e2e782afa038ade39fd007e8dc6523515461d7	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 pipelinq	3092	f8d049f34e69ece75f6b5915bae3db471efaee4e	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+hermiq	1167	9bf6ab112ffdb0243b935c2a21e551a19df05fe1	RED	worker-22	GATE RED sbom: package-lock.json changed without sbom.cdx.json
