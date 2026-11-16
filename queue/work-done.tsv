@@ -18030,3 +18030,4 @@ cover:dossiq:069ee2d6m9d1b:47ac7936	deferred PR budget (41 open): added 3 regist
 verify:versioniq:754:7da035af	755 GREEN; 754 skipped (head moved 70e9dc9 -> 5ca8b99)	session-20261116T212719-33567982	2026-11-16T21:58:56Z
 lane:arch5:buildiq:next-buildiq-r5	PR #1687, GREEN (php complexity 2.21 -> 2.26, floor PASS; r6 queued)	session-20261116T212156-27d8410f	2026-11-16T21:59:14Z
 fix:hermiq:1735:42dffb64	failed: permission (review record refused; fix pushed, new head 3d8280ac, REVERIFY queued)	session-20261116T214741-cce55d5f	2026-11-16T21:59:48Z
+lane:arch5:shillinq:next-shillinq-r8	partial: nothing built; context too low for a full round after a build task; requeued as :c2 with the DBAController plan	session-20261116T212353-0c92a0b1	2026-11-16T21:59:59Z
