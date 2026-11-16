@@ -16205,3 +16205,4 @@ merge:versioniq:691:8888a29f	unmeasured: static.developer.overheid.nl (redirects
 merge:versioniq:500:7be9d1e8	unmeasured: static.developer.overheid.nl (redirect host gitdocumentatie.logius.nl refused by proxy); lock released	session-20261116T101336-9d5ecdfc	2026-11-16T10:51:26Z
 fix:humaniq:1095:340163fd	sbom regenerated, pushed ac05e3a9; REVERIFY queued (gate host unreachable for end-to-end)	session-20261116T102639-f9f23dec	2026-11-16T10:51:37Z
 merge:humaniq:606:1e004741	unmeasured: static.developer.overheid.nl (same PRs already approved at these shas by worker-26/worker-22; gate host unreachable, not rebuilt)	session-20261116T102639-f9f23dec	2026-11-16T10:51:52Z
+fix:humaniq:685:c73546cd	no change: clean on development, conflict was in-tree only	session-20261116T102639-f9f23dec	2026-11-16T10:52:12Z
