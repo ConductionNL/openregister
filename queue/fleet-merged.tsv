@@ -4819,3 +4819,4 @@ filinq	2072	65ad1d322dab66bd2f2f685d6023e5fcc2ea810c	SKIP	worker-54	no APPROVE r
 buildiq	1688	3c662c0d682f9a25d6cca4eec8cae116432de825	FAIL	worker-57	{"message":"Pull Request has merge conflicts","documentation_url":"https://docs.github.com/rest/pulls/pulls#merge-a-pull-request","status":"405"}gh: Pull Request has merge conflicts (HTTP 405)
 versioniq	756	1b99dcb20ab396a0b3ce3b88937e9e56c86cc506	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.97 holds at 4.27
 versioniq	759	f4c83864c8d8ea20135b5aabca8bf5c4807de192	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.97 holds at 4.27
+hermiq	1750	caba9fa0ec708cb3f2e0e16ad6eeec1e98b389c0	MERGED	worker-12	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.77 holds at 3.84
