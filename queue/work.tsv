@@ -16159,3 +16159,18 @@ fix:launchpad:1238:135d0cb8	fix	launchpad	development	1238	sha=135d0cb858ece2234
 verify:hermiq:1807:e03b5038	verify	hermiq	development	merge	prs=1807@36283a373892b12aa856fdc7b1b4420cdec74781	2026-11-16T08:15:22Z
 merge:hermiq:1167:8572c5be	merge	hermiq	development	development	prs=1167@dae65138d4911e944cdd0e955e0226a9ac641cce	2026-11-16T08:15:22Z
 merge:launchpad:753:5d3c05ef	merge	launchpad	development	development	prs=753@26ce5b2bb96d848f20002dc92a63cdd0704f77f2	2026-11-16T08:15:22Z
+fix:stackiq:1435:81fb6bd4	fix	stackiq	development	1435	sha=81fb6bd471562d78ea02224fdc7b0574cc6a9082;verdict=RED;branch=fix/or-surface-search-options;reason=GATE RED checker floor: spdxheaders stars: 5 -> 4	2026-11-16T08:20:24Z
+fix:stackiq:1959:fe24e23b	fix	stackiq	development	1959	sha=fe24e23b6c69c5bd04762183e2bc4aead326686d;verdict=CONFLICT;branch=quality/build-architecture-future-state-scenarios;reason=merges clean on development alone, files: appinfo/routes.php openapi.json	2026-11-16T08:20:24Z
+fix:stackiq:1978:0e16289a	fix	stackiq	development	1978	sha=0e16289a82d0c3f5edcf4674448e72031b372f93;verdict=RED;branch=quality/build-architecture-views-to-office-documents-2;reason=GATE RED floor: unit_interfacing: 4.72 -> 4.68	2026-11-16T08:20:24Z
+review:stackiq:1941:4a5ff433	review	stackiq	development	1941	sha=4a5ff4334d4e5c9675400638435705a6ee1b8fc5;branch=quality/build-operations-record-reconciliation;title=feat(stackiq): build operations-record-reconciliation	2026-11-16T08:20:24Z
+review:filinq:1355:1ed49fc4	review	filinq	development	1355	sha=1ed49fc431d3180365afb6b981791604eea7f243;branch=dependabot/composer/development/phpmd/phpmd-3.0.0;title=chore(deps-dev): bump phpmd/phpmd from 2.15.0 to 3.0.0	2026-11-16T08:20:24Z
+review:filinq:2072:a07d41bd	review	filinq	development	2072	sha=a07d41bdd0452ef712eccff125357b5240903950;branch=quality/build-multi-tenant-hardening;title=feat(filinq): build multi-tenant-hardening	2026-11-16T08:20:24Z
+review:filinq:2088:bb28f1bd	review	filinq	development	2088	sha=bb28f1bd5b727b2ac11bbed56060781be05be808;branch=quality/build-template-library-leaf;title=feat(filinq): build template-library-leaf	2026-11-16T08:20:24Z
+review:filinq:2094:a2f8cc99	review	filinq	development	2094	sha=a2f8cc99002a05e5716d0949e45af50b7d556634;branch=quality/build-zgw-document-bridge;title=feat(filinq): build zgw-document-bridge	2026-11-16T08:20:24Z
+review:filinq:2103:1a1abdb4	review	filinq	development	2103	sha=1a1abdb4e88dc397a5ea40f9af573c80758c7932;branch=quality/build-signature-verification-portal;title=feat(filinq): build signature-verification-portal	2026-11-16T08:20:24Z
+review:filinq:2122:79127975	review	filinq	development	2122	sha=79127975d8661aa09d13f75673f69dd6a09de23f;branch=quality/build-grondslagen-read-from-dossiq-c2;title=feat(filinq): build grondslagen-read-from-dossiq	2026-11-16T08:20:24Z
+review:filinq:2123:e7b32d65	review	filinq	development	2123	sha=e7b32d659243047176773d7a1f70e1113cdb3f32;branch=quality/build-specify-capability-rows;title=feat(filinq): build specify-capability-rows	2026-11-16T08:20:24Z
+merge:stackiq:1168:a6ec246a	merge	stackiq	development	development	prs=1168@04f38d3ae4a4d17b142dbafb97d2a81126d6568c,1297@f6f898a1ce156bb7902c6cbdc55ca55df63daf3a	2026-11-16T08:20:24Z
+merge:hermiq:1189:62df0391	merge	hermiq	development	development	prs=1189@4990197f996880aaa0b623dab850d64ee4bed3be,1739@103d88e1dcaf83fab76c8bff7c042ffc6011ff37	2026-11-16T08:20:24Z
+merge:shillinq:2070:611eded7	merge	shillinq	development	development	prs=2070@29369cd1e5f54228d28f425cda326d85923bff8f	2026-11-16T08:20:24Z
+merge:launchpad:755:b15cdcdd	merge	launchpad	development	development	prs=755@f41902ffc1787ffe4a7d70ba97ae5a49187f10dc	2026-11-16T08:20:24Z
