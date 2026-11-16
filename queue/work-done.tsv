@@ -17635,3 +17635,4 @@ merge:versioniq:722:79e3e090	cloud tree of 2 versioniq PRs: merged=1 red=1 fail=
 verify:versioniq:747:b7301314	GREEN #747 (deps only; 2 env-only golden failures)	session-20261116T202128-6be5fc02	2026-11-16T20:25:46Z
 review:hermiq:1579:d717a45b	BLOCK: lock not installable (platform php 8.3 vs psalm 7.5 needs ~8.3.16)	session-20261116T202154-fbc59c50	2026-11-16T20:26:04Z
 build:pipelinq:marketing-articles-move-to-portaliq:c5	done: no code tasks left on PR #3835 (head c550a2ad); 4.2 waits on live repair report, 5.1/5.2 live/release checks	session-20261116T202128-6be5fc02	2026-11-16T20:26:19Z
+fix:shillinq:1899:040e84a6	fixed conflict + test API drift, pushed 65bdef77; merge lock held elsewhere, REVERIFY queued	session-20261116T201445-8cab6741	2026-11-16T20:26:34Z
