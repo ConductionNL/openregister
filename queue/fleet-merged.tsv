@@ -4091,3 +4091,4 @@ buildiq	1583	df8986ae74fb916058d55d798144fb1f99177038	SKIP	worker-04	no APPROVE 
 buildiq	1641	b6868cd6b6f9eec39772064f4979ffcdb1432599	SKIP	worker-04	no APPROVE review at this head
 buildiq	1652	2b887096e99104c20abaf165361ab630a1c40eb1	SKIP	worker-04	no APPROVE review at this head
 buildiq	1249	e01a3111488d17974ac20b492fdd9e5593f8cd37	RED	worker-04	GATE RED sbom: composer.lock changed without sbom.cdx.json
+thematiq	1682	3f39ef0d0f1d79e5bf27de397c577993924fcf7e	RED	worker-46	GATE RED sbom: composer.lock, package-lock.json changed without sbom.cdx.json
