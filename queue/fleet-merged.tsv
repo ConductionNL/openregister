@@ -4637,6 +4637,14 @@ decidiq	2203	25c89067fe5543733a63e852b78c2fe8305fbaed	MERGED	merge3	GATE OK sbom
 decidiq	2207	12b854793b911a1de6aed09fa8c7e434d58e0735	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.78 holds at 3.78
 decidiq	2227	ef576d1f6daadaf87ea9b598e7d2300a7342a1de	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.78 holds at 3.80
 versioniq	721	b48214583a9c86d6d1701e2a4ced73b3009b6836	MERGED	worker-23	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.97 holds at 4.06
+hermiq	1150	5198e25d6c9bad18abe4696fe79df3b8fa167348	RED	merge3	GATE RED floor: overall: 4.16 -> 4.14; unit_size: 3.85 -> 3.83; unit_complexity: 4.52 -> 4.45; unit_interfacing: 2.50 -> 2.48; module_coupling: 5.05 -> 5.03
+hermiq	1193	7d49a897eacda342108a8ffdf6d0ba0a3967dc67	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.77 holds at 3.78
+hermiq	1195	7d6678393fcb6f34e5686d5bae1b98fb9a9688de	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.77 holds at 3.78
+hermiq	1293	38013b9c66979f974a60e5b5c2fecf48c323ee46	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.77 holds at 3.78
+hermiq	1534	b7a7d45bfa93bc796ed10723ca14602299d17d9d	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.77 holds at 3.78
+hermiq	1736	4200349d04e91a9455eba9e107da1996430105ed	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.77 holds at 3.78
+hermiq	1756	d3c836c0f37583812e3c94710cf2f969fc2125e2	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.77 holds at 3.77
+hermiq	1788	ce4671888f6536433ed4fec0c655aaf53763ce65	RED	merge3	GATE RED checker floor: adrvalidator: pass -> warn; adrvalidator stars: 5 -> 3; score: 100 -> 97
 shillinq	2098	91bd5616fcf72747bc4072cca1dfcfc94ca22761	MERGED	worker-51	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.05
 shillinq	2226	5f2a77239a689c087689c3e8d91fcfd2041a1eaa	MERGED	worker-51	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.05
 shillinq	2258	3651ee9db119d80a90d13640a5b4d8c82aab8951	MERGED	worker-51	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.05
