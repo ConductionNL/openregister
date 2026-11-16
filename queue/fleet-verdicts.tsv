@@ -13929,3 +13929,4 @@ larpinq	1050	f7fb4695da92f783c2b95985f82b173605c67536	BLOCK	worker-23:review	rev
 learniq	1158	5ca84f75a09a2fdef007102586c11c0982f88dfc	RED	worker-15:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
 learniq	1162	59935569e666c89964655c0288c4729a788558da	RED	worker-15:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
 learniq	2127	68efea31c565ca8b2506f50814b1ab554a25b7b9	RED	worker-15:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
+opencatalogi	2673	9b9531032c82409ec13b1844b2e8390e047c42df	BLOCK	worker-13:review	review: Thorough; floors: merge gate checker floor maintainability stars 5->4 with this PR, restore the rating (opensourcehealth drop is inherited from development); tree adds no unit failures
