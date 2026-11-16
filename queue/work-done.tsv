@@ -17976,3 +17976,25 @@ review:hermiq:1795:efce9000	GREEN #1795 at efce9000: PHPUnit 5395 ok, vitest 154
 measure:openregister:20261116h20	php 95.01% (pcov, 231223 stmts; unit suite in 9 chunks merged, tests/Unit/Architecture left out: exceeds the 600s window under pcov), js 93.15% (jest, 8582 tests) at 3800106bd5c9	session-20261116T202522-6af34c50	2026-11-16T21:49:02Z
 cover:launchpad:fb10c50fmf487:59826f43	deferred: launchpad has 47 open PRs	session-20261116T212048-3752a879	2026-11-16T21:49:02Z
 review:pipelinq:3602:ea5eea45	GREEN: tests only, suite 9194 tests 0 failures merged with development	session-20261116T214553-9fb39259	2026-11-16T21:49:02Z
+verify:opencatalogi:2755:cbe5dd86	GREEN 2755 (tasks.md tick, claim checked)	session-20261116T214739-8ff46d14	2026-11-16T21:49:34Z
+build:opencatalogi:woo-metadata-suggestions:c4	PR #2674 head 03f3adb8: built 3.1 Hermiq client+endpoint, 4.1 accept/reject, 4.2 widget, 5.1 docs+l10n, 6.1 single lawful value, 6.2 label; PHP 5800 tests no new failures; left 6.3 process, 6.4/6.5 gated D10, e2e specs (browser)	session-20261116T211529-39ccc7ff	2026-11-16T21:49:55Z
+build:launchpad:drill-down-cross-widget-filter:c6	PR #1235 at 92f8baab: tasks 8,11,12,13,16,30,31,33,34 done (+10 code); left 7 (blocked on nextcloud-vue chart selection event; 32 toast strings with it), 9 config-UI half, profiling 10/35, e2e 22-29	session-20261116T212719-d025d113	2026-11-16T21:49:44Z
+cover:pipelinq:7f9dc8e6m3dbb:2ea9e4f7	deferred: pipelinq has 43 open PRs	session-20261116T214553-9fb39259	2026-11-16T21:49:39Z
+review:opencatalogi:2678:9d1090cf	stale	session-20261116T214739-8ff46d14	2026-11-16T21:49:56Z
+cover:pipelinq:7f9dc8e6m3dbb:e19add4c	deferred: pipelinq has 43 open PRs	session-20261116T214553-9fb39259	2026-11-16T21:50:19Z
+cover:launchpad:fb10c50fmf487:34763eb4	deferred: launchpad has 46 open PRs	session-20261116T212719-d025d113	2026-11-16T21:50:36Z
+merge:launchpad:1106:0c550d07	cloud tree of 3 launchpad PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T202633-f7fb0e3a	2026-11-16T21:50:32Z
+cover:decidiq:a5f973bbm9cda:dfaef732	deferred: decidiq has 44 open PRs	session-20261116T211529-39ccc7ff	2026-11-16T21:50:38Z
+review:learniq:2521:a3328ae4	GREEN: build matches change specs; PHP 6965/1 inherited, JS 9 inherited	session-20261116T214541-6b344533	2026-11-16T21:50:39Z
+review:hermiq:1750:ec9bd2f6	GREEN #1750 at ec9bd2f6: PHPUnit 5414 ok, vitest 1561 ok; phpstan type note FileScopeResolver:292	session-20261116T211553-db0d2c78	2026-11-16T21:50:50Z
+review:hermiq:1791:1747024b	GREEN: in-spec build, 5438 unit tests + 97 vitest green	session-20261116T214541-d7f19722	2026-11-16T21:51:01Z
+build:versioniq:releases-minimum-age:c4	built: PR #707 head 53beddbc; merged development (new run planner) with the age planner feeding it, built 2.3 (plan job+store), 3.1 (plan in /api/policies, exception endpoints, openapi), 3.2 (settings, PolicySelector, overview), 3.3 (en/nl); left 3.4 e2e and 4.1 close-out (not code). Unit-only 2192 with 2 inherited golden failures; vitest 3097 green	session-20261116T212336-79038316	2026-11-16T21:51:10Z
+review:launchpad:1235:906e0ad0	stale	session-20261116T202633-f7fb0e3a	2026-11-16T21:51:10Z
+cover:launchpad:fb10c50fmf487:d39f9857	deferred: launchpad has 46 open PRs	session-20261116T212719-d025d113	2026-11-16T21:51:12Z
+cover:pipelinq:7f9dc8e6m3dbb:0a24f15f	already done: lib/Service/Letter at 100% lines (164/164) on development 6b2c80436; no PR	session-20261116T214700-0702980b	2026-11-16T21:51:26Z
+cover:launchpad:fb10c50fmf487:b67d52c3	deferred: launchpad has 46 open PRs	session-20261116T212719-d025d113	2026-11-16T21:51:26Z
+cover:pipelinq:7f9dc8e6m3dbb:6ff6c9d5	deferred: pipelinq has 43 open PRs	session-20261116T214553-9fb39259	2026-11-16T21:51:34Z
+verify:planninq:1207:5b8e86d3	GREEN 1207; 1243 tests, 0 new failures	session-20261116T214624-beb72d49	2026-11-16T21:52:00Z
+lane:arch5:launchpad:next-launchpad-r3:c4	PR #1247, GREEN (tree 4494 tests, 0 new failures; review and merge left to a merge task per the brief)	session-20261116T212048-3752a879	2026-11-16T21:52:20Z
+review:shillinq:3078:767508fe	GREEN: unit 12392/0 fail, vitest 9/9, lint clean	session-20261116T214640-6a01c0c6	2026-11-16T21:52:39Z
+review:launchpad:1229:c3db56ed	BLOCK: dashboard subject of a tabular render not scoped to the export creator (REQ-SCH-002); tests green (unit 4568, vitest 393)	session-20261116T212742-68ee361e	2026-11-16T21:52:57Z
