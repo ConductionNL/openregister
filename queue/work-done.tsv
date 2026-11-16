@@ -18116,3 +18116,4 @@ verify:buildiq:1684:39b624d5	1685 moved (merged at 54a96aae); 1684 obsolete (con
 cover:keepiq:c967a31fmaddd:60c2c265	PR #1868: 33 tests, 7 controllers, lib/Controller 96.99->99.58%	session-20261116T221511-75761e32	2026-11-16T22:22:46Z
 review:hermiq:1735:3d8280ac	GREEN #1735 (5423 php ok, 21 vitest ok, clean merge)	session-20261116T220858-93068d3c	2026-11-16T22:22:54Z
 review:shillinq:1899:fd17f119	GREEN shillinq#1899	session-20261116T220522-6d402fd2	2026-11-16T22:23:47Z
+build:learniq:capability-rows-say-what-they-do:c8	failed: learniq development not installable since 70286e485 (psalm 7.5.0 needs php>=8.3.16, composer.json config.platform.php=8.3), no unit suite can run; row left for after that is fixed	session-20261116T222156-bd715f7e	2026-11-16T22:23:52Z
