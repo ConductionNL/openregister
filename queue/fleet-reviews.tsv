@@ -685,3 +685,4 @@ hermiq	1754	3e57e4dc5dca23365cc4d9c37e484e3bbfae0e01	REQUEST_CHANGES	worker-23	S
 keepiq	1852	d2699a90a616df3fa29d27bd9ca10e4ba500b213	APPROVE	worker-35	Quick; no blockers; tests only, real assertions
 keepiq	1853	a523f5b408d71ea94110831e7034cc688ac02123	APPROVE	worker-35	Quick; no blockers; tests only, real assertions
 humaniq	1168	5ca7de0c7f217ee13df2098c98dba11a73482c4c	APPROVE	worker-57	Quick; no blockers; tests only, assert real outcomes (patch list, exception message, failure list)
+humaniq	1169	a923fe593ee46a2b9cc5f9d5a14a00853e478ebb	APPROVE	worker-57	Quick; no blockers; tests only, cover non-event class and resolver null path
