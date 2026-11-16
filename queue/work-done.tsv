@@ -18400,3 +18400,5 @@ verify:humaniq:1139:4ca3cd5e	CONFLICT #1139 (l10n en.js/nl.js vs development)	se
 merge:learniq:2578:d2cb7b4e	failed: prep exit 2, composer lock needs vimeo/psalm 7.5 (php >=8.3.16), container php 8.3.6; nothing landed	session-20261116T232912-634ff2e8	2026-11-16T23:38:20Z
 verify:filinq:2078:d8dd2bca	CONFLICT: tests/unit/Settings/DocumentProductionSchemaTest.php vs development	session-20261116T232925-45c70e73	2026-11-16T23:38:28Z
 verify:hermiq:1757:59cadfdd	CONFLICT #1757 (l10n catalogues, EngineSwitchedOffTest)	session-20261116T232912-d58d1a81	2026-11-16T23:38:39Z
+verify:filinq:2091:fe554cc9	CONFLICT #2091	session-20261116T232918-5354fd88	2026-11-16T23:38:49Z
+verify:filinq:2113:51b5285f	CONFLICT: #2113 vs development in CHANGELOG.md, filinq_register.json, ConsentUpdateFlowTest.php	session-20261116T232911-3dffa1ae	2026-11-16T23:39:03Z
