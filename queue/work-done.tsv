@@ -17383,19 +17383,38 @@ cover:buildiq:70b3e29em9bad:34f5c300	deferred: buildiq has 54 open PRs	session-2
 merge:stackiq:1996:ca667bfa	cloud tree of 1 stackiq PRs: none; conflict 1, lint 0, red 0, moved 0, done 0	session-20261116T192122-0fac4997	2026-11-16T19:24:55Z
 fix:learniq:1881:df81c10b	fixed CONFLICT, pushed 57e4a54a; lock held elsewhere, REVERIFY queued	session-20261116T192127-f26e2e56	2026-11-16T19:25:17Z
 verify:integriq:3671:a1fc0d47	GREEN #3671; 9535 tests, no new failures (1 flaky inherited)	session-20261116T184841-a3bc3002	2026-11-16T19:25:26Z
+cover:buildiq:70b3e29em9bad:f545d745	deferred: buildiq has 54 open PRs	session-20261116T192254-fe50fb9b	2026-11-16T19:25:57Z
 fix:learniq:2562:9bda8314	conflict resolved, pushed 7726a54c; merge lock held elsewhere, REVERIFY queued	session-20261116T192046-9440725d	2026-11-16T19:26:09Z
+cover:buildiq:70b3e29em9bad:60c2c265	deferred: buildiq has 54 open PRs	session-20261116T192157-ecf15b7a	2026-11-16T19:26:43Z
 cover:humaniq:a18a13fb:f91e7417	PR #1169: ConnectionReporter 26/28 -> 28/28, +2 tests, suite 4405 -> 4407 green	session-20261116T191704-9a63be87	2026-11-16T19:26:38Z
 cover:humaniq:a18a13fb:7ed71db5	PR humaniq#1168: Setup 2 classes to 100% statements, +4 tests, suite 4405->4409 OK	session-20261116T184852-b8356331	2026-11-16T19:26:24Z
 fix:decidiq:2170:8ede76a3	floor restored: merged development (conflicts resolved), tree measures 3.80 >= 3.78; new head 80617c37	session-20261113T212411-bd385ec2	2026-11-16T19:26:36Z
 fix:buildiq:1641:bb9b55d3	conflict resolved (l10n/en.js), pushed 59f9dd1; merge lock held elsewhere, REVERIFY queued	session-20261116T184831-8be58c40	2026-11-16T19:26:50Z
+measure:larpinq:20261116h18	php 96.99%, js 97.23% at 8142072a	session-20261116T192046-9440725d	2026-11-16T19:27:59Z
+cover:launchpad:fb10c50fmf487:d3522ea6	deferred: launchpad has 44 open PRs	session-20261116T181151-999832c6	2026-11-16T19:27:22Z
+cover:launchpad:fb10c50fmf487:60c2c265	deferred: launchpad has 44 open PRs	session-20261116T184852-b8356331	2026-11-16T19:27:21Z
 cover:buildiq:70b3e29em9bad:8ed5443b	deferred: buildiq has 54 open PRs	session-20261116T192645-5f5cd9b9	2026-11-16T19:27:43Z
 cover:buildiq:70b3e29em9bad:f84921d5	deferred: buildiq has 54 open PRs (note: 4 Mcp/Handler tests are risky for lack of @uses AppOrganisationGuard; adding it lifts lib/Mcp/Handler 91.9%->99.65%)	session-20261116T184831-8be58c40	2026-11-16T19:27:44Z
 fix:hermiq:1750:4656eeb3	conflict resolved, new head 5b31e8f3; merge lock busy, REVERIFY queued	session-20261116T192142-66caeb8e	2026-11-16T19:28:06Z
+build:integriq:dso-attachments-on-the-request	already done: every code task ticked on development; only 4.1 (live proof, blocked on intake identity) remains, not buildable in code	session-20261113T213320-1f5acbff	2026-11-16T19:28:22Z
+build:buildiq:decision-tables-live-in-openregister	already done: all code tasks merged in #1100 (2026-10-12); only the live occ upgrade check is left	session-20261116T184831-8be58c40	2026-11-16T19:28:27Z
 cover:launchpad:fb10c50fmf487:34f5c300	deferred: launchpad has 44 open PRs	session-20261116T192104-d9eeae3f	2026-11-16T19:28:36Z
 fix:versioniq:691:ed265e00	failed: floor needs a redesign beyond a fix: the patch-policy audit adds an 11th/12th consumer to AuditLogger, AuditSubject and AuditedVersions (fan-in >10, coupling 5.25->5.15), and interfacing 4.35->4.23 comes from many new 3+ parameter units; development merged in at 478f595cafa579f00febfd06880adc294612e8a0	session-20261116T184833-adbb8426	2026-11-16T19:28:33Z
 fix:opencatalogi:2655:21d93581	merged #2655 at eecf91309acb9a06e7fc66bc1bcc0c01e7a00cf9 (merged development in resolving conflicts, bumped version for the repair step; the reported reds do not reproduce on development)	session-20261116T191409-74b1bedd	2026-11-16T19:28:59Z
 fix:buildiq:1620:afacfca7	conflict resolved, pushed 9cf97ff7; merge lock held elsewhere, REVERIFY queued	session-20261116T190918-81e43f73	2026-11-16T19:28:55Z
+cover:larpinq:c4471360:38e80a9f	already done: lib/Command/UniqueHoldersCheck.php at 100% lines/methods (5 tests, merged 13 Nov); nothing thin left, no PR	session-20261116T192100-0e84fa7e	2026-11-16T19:29:20Z
 build:learniq:learner-grade-read-follows-visible-from	already built: T1 on development since 0aa6bd8 (5 Nov); only live task T2 left	session-20261116T192824-ee4fb14b	2026-11-16T19:29:06Z
 review:opencatalogi:2696:0d0512a6	GREEN: no new PHP failures, phpstan clean; conflicts with development (no block)	session-20261116T191156-bbdb7add	2026-11-16T19:29:30Z
+build:learniq:board-dialog-inputs-and-row-names	already built: code tasks T1 and T2 are ticked and on development (7aa43ab4); only T3 (live check) is left, not a code task	session-20261116T191156-bbdb7add	2026-11-16T19:30:06Z
+fix:opencatalogi:2682:4e12e44e	already merged: #2682 is merged into development, nothing to fix	session-20261116T191409-74b1bedd	2026-11-16T19:29:42Z
 fix:buildiq:1672:8c29bf33	conflict resolved, pushed 23675f9b; suite 3377, only inherited ExportZipGoldenTest red; REVERIFY queued	session-20261116T191704-9a63be87	2026-11-16T19:30:12Z
 build:humaniq:time-non-project-activities	stale: branch quality/build-time-non-project-activities already has tasks 1.1-2.3 built	session-20261113T204539-e70be1ed	2026-11-16T19:33:34Z
+cover:keepiq:c967a31fm902f:2c3e981f	already done: lib/Service/ShareSync/ 100% line coverage (174/174) at 4c5e079b	session-20261116T192104-d9eeae3f	2026-11-16T19:30:38Z
+cover:keepiq:c967a31fm902f:dfaef732	PR #1852: NotificationRegistrar 2 tests; KeepiqNotifier 99.5% (2 unreachable lines); suite 5367->5369 green	session-20261116T191448-870933e4	2026-11-16T19:30:22Z
+fix:hermiq:1754:b6dc1f4e	conflict resolved, pushed 3e57e4dc; merge lock held elsewhere, REVERIFY queued	session-20261116T192325-bb4c31dd	2026-11-16T19:30:34Z
+merge:shillinq:2098:3286165d	cloud tree of 6 shillinq PRs: merged=6 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T191103-1ba6d222	2026-11-16T19:30:47Z
+build:keepiq:clients-extension-firefox-and-safari-builds	no code left: 1.2 needs a macOS runner and Apple identity, 2.1 is verified by a workflow run (.github/workflows/browser-extension.yml already builds chromium/firefox/safari); no PR	session-20261116T191448-870933e4	2026-11-16T19:31:12Z
+fix:hermiq:1735:ce935d59	conflict resolved, new head 33b209c9; merge lock busy, REVERIFY queued	session-20261116T192142-66caeb8e	2026-11-16T19:31:12Z
+cover:larpinq:c4471360:dfaef732	PR #1072: Notifier 3 tests, lib/Notification 93.75%->100%, suite 1057->1060 green	session-20261116T184831-8be58c40	2026-11-16T19:31:49Z
+cover:larpinq:c4471360:34763eb4	PR #1073: +4 middleware tests, suite 1054->1058, 0 failures	session-20261116T192254-fe50fb9b	2026-11-16T19:32:19Z
+fix:stackiq:1978:edde87e6	merged #1978 at 76744e83bf9b874a6986dbb0b063ffc8ea7b3d93	session-20261116T192122-0fac4997	2026-11-16T19:33:13Z
