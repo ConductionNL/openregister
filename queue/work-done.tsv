@@ -17767,3 +17767,4 @@ review:shillinq:3077:9f1a0989	stale	session-20261116T205210-7a1fa9ff	2026-11-16T
 cover:decidiq:a5f973bbm9cda:38e80a9f	deferred: decidiq has 45 open PRs	session-20261116T204203-b8dccc50	2026-11-16T20:52:50Z
 build4:openregister:flow-object-attribution:c6	PR #10491 merged main in and finished 8.1 (documented phpmd suppressions; phpmd/phpcs/phpstan/eslint clean on the change's files), pushed 132d21bb; every code task ticked, only 1.1 live occ on MySQL/PostgreSQL left	session-20261116T202918-5671af16	2026-11-16T20:53:37Z
 cover:keepiq:c967a31fm902f:js3f3bfe56	PR #1861: App.vue shell slots/boot, 17 tests; src/* lines 79.2->97.0%; suite 3 inherited failures unchanged	session-20261116T203539-f268bd6b	2026-11-16T20:53:57Z
+review:buildiq:1620:ad45ffb6	RED: ApplicationRegisterTest golden lacks new alias	session-20261116T202154-fbc59c50	2026-11-16T20:54:27Z
