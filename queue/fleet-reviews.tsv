@@ -464,3 +464,4 @@ keepiq	1792	5d484110eef783bb32a8ca647a51e7e8f42101a9	APPROVE	worker-12	Strict (m
 larpinq	1060	b45d1e9be24990e3f8d521dc0eb15642226040e8	APPROVE	worker-34	Strict; no blockers (GM-only create/revoke/team/removeMember fail closed, inspect/redeem by token hash only and rate limited, invite schema GM-only, redeem serialised by an exclusive lock on the token hash around the read and write, 409 while held); concerns: inherited demo-data gap on historyEntry,
 integriq	2671	f4218e170982307bdf1ebe71fe738453a8155f5e	APPROVE	worker-04	Quick; no blockers; dev dependency phpmd 2->3, baseline rule names renamed to phpmd 3 classes, sbom regenerated
 integriq	2711	6f3fdc050e0380cd7dfe4f122026010313ba5a23	APPROVE	worker-04	Quick; no blockers; dev dependency @playwright/test bump, package.json/lock only
+integriq	2716	6edb6eeaafff98e0aa865e39475b0c55f4f9ce02	APPROVE	worker-04	Quick; no blockers; vue 3.5.42->3.5.44 patch bump with sbom; vitest 2349 pass on tree
