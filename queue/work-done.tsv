@@ -17702,3 +17702,4 @@ verify:hermiq:1808:b331dd92	GREEN #1808 (unit OK 5374, vitest OK 1540)	session-2
 merge:opencatalogi:2699:8d531e14	cloud tree of 1 opencatalogi PRs: none; conflict 1, lint 0, red 0, moved 0, done 0	session-20261116T201644-3ef8cda3	2026-11-16T20:38:00Z
 measure:stackiq:20261116h20	php 88.69%, js 95.07% at 00516ba	session-20261116T203029-cbd53de3	2026-11-16T20:38:19Z
 review:shillinq:2997:08a59a1f	stale	session-20261116T194104-8906f18f	2026-11-16T20:38:30Z
+fix:filinq:2072:21673d4a	fixed BLOCK on #2072 (sweep org-scoped again), pushed 68c796a1; lock busy, REVERIFY queued	session-20261116T202104-9ad6a286	2026-11-16T20:38:30Z
