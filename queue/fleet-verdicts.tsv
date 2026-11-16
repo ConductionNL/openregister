@@ -15903,6 +15903,7 @@ filinq	2114	78a005c251fc9ce1db35ba012ea58f6d6ef2b57c	CONFLICT	worker-58	conflict
 portaliq	2448	160e1aed97cc47f853a6e0fdb792b61785450e2d	RED	merge3:merge-gate	GATE RED floor: duplication: 4.35 -> 4.33; unit_complexity: 4.57 -> 4.54
 filinq	2091	72c1df1540cdfb1054b2eb6bc498611efc0415ab	CONFLICT	worker-07	conflicts with development (l10n en/nl, lib/Settings/filinq_register.json, Settings.vue, settings-page golden); baseline 6960 OK
 dossiq	3894	8ed2662d166b8bee07c9b1aec92ee7de29dc08cb	CONFLICT	worker-11	sbom.cdx.json conflicts with development; baseline unit 18363 tests, 1 error (StatusEntryRequirementsGuardTest, inherited); PR suite not run
+hermiq	1738	441006a018a20c8d20c4f77b68276a0dd0ba20c0	CONFLICT	worker-31	conflicts with development in l10n en/nl js+json, SessionController, Engine FacadeToolInvoker/ResponseGenerationHandler/ToolLoop/ToolSurfaceRun, hermiq_register.json, Chat.vue; baseline 5461 tests
 dossiq	6353	60a451ec2178d0c85abe001143ac09af72767f80	CONFLICT	worker-06	conflicts with development in NotesController.php, NotePush.php, NoteEnvelope.php, NoteEnvelopeTest.php (modify/delete); baseline unit 18363 tests 16 failures; tree not tested
 filinq	2090	923c98e033f7a781763895ce2a83eca95d902a0f	CONFLICT	worker-23	conflict in lib/Settings/filinq_register.json against development; baseline 6960 tests OK
 hermiq	1578	c7adfb0008435059ecda8b9aae4cdc57df32832a	CONFLICT	worker-13	conflicts with development in composer.lock and sbom.cdx.json (dependency bump; regenerate lock + sbom on the merged base); no tests run
