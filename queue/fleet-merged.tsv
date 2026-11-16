@@ -4851,3 +4851,4 @@ decidiq	2235	dd4b29b474d580437ec01d83251b525301860e2b	MERGED	merge3	GATE OK sbom
 launchpad	1246	5e0ab643e3e4e1e8cc08b9907c95b653b18b3ca6	MERGED	worker-53	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.65 holds at 3.79
 hermiq	1735	370656f7d3ae7927609cf995aa861241df9740cc	RED	worker-49	GATE RED checker floor: adrvalidator: pass -> warn; adrvalidator stars: 5 -> 3; score: 100 -> 97
 portaliq	2448	160e1aed97cc47f853a6e0fdb792b61785450e2d	RED	merge3	GATE RED floor: duplication: 4.35 -> 4.33; unit_complexity: 4.57 -> 4.54
+hermiq	1735	6449c4e37032efe1eff81f46ee6698b0dcf90fb1	MERGED	worker-49	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.77 holds at 3.82
