@@ -17872,3 +17872,4 @@ verify:buildiq:1672:42cabbe3	GREEN 1672,1679; CONFLICT 1683 (AutomationCompilerS
 cover:dossiq:069ee2d6m9d1b:6fbba20d	added 7 tests to PR #6203 (dossiq over 40 open PRs); Starter dir stmts now fully covered; suite 18829->18836 tests, failures 19 baseline unchanged	session-20261116T211553-db0d2c78	2026-11-16T21:23:53Z
 review:shillinq:3077:6307fa1f	GREEN: unit 12358/0 failures, phpstan, eslint, vitest clean	session-20261116T211640-2352b56a	2026-11-16T21:24:18Z
 review:pipelinq:3602:94dde2ef	GREEN: tests only, +52 tests, suite 9188 OK vs baseline 9136	session-20261116T211631-e825058a	2026-11-16T21:24:42Z
+build:hermiq:tools-agent-workspace-and-installed-tools:c5	partial: blocked; PR #1760 head 440cf2e9. Tasks 2/4/5 extend RunCodeTool/CodeSandboxToolDescriptors/exapp code-sandbox, still only on open quality/build-tools-code-sandbox (97a61ef1, not on development); resume after it merges	session-20261116T212336-79038316	2026-11-16T21:24:47Z
