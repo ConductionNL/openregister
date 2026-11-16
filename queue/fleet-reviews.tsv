@@ -305,3 +305,4 @@ shillinq	2259	48de59f1a9e0bf8ffba75343ff03148754ed469c	APPROVE	worker-58	Standar
 opencatalogi	1888	3c646648f528b3809be689a76e9dacb02ccb4ec4	APPROVE	worker-11	Thorough; no blockers; build PR per its change specs: feed reads as anonymous via CatalogueFeedReader (fails closed to empty without runAsAnonymous), unknown catalogue 404, notices limited to the catalogue's boards; AtomFeedServiceInterface::entries drops the rules param, only in-repo caller updated
 opencatalogi	1893	c984555798eba603920305a449a1da12ff8fe5b7	APPROVE	worker-11	Quick; no blockers; openspec tasks.md ticks and archive moves only, no code
 opencatalogi	1894	81ec0aebb96ac0ea55f9e0fd74b189b396df7ab8	APPROVE	worker-11	Quick; no blockers; openspec tasks.md ticks and archive moves only, no code
+opencatalogi	2407	15ee026e9e5cc880f1ef5812343e2da79e65c3d1	APPROVE	worker-11	Quick; no blockers; lock-only refresh of shared packages plus regenerated sbom; tree suite adds no failures
