@@ -15792,3 +15792,4 @@ fix:opencatalogi:2652:2348aeca	no change needed: branch up to date with developm
 verify:dossiq:6587:dab3e303	GREEN dossiq#6587: 0 new PHP failures (16 baseline), 2 inherited vitest failures	session-20261116T081720-9a06ad30	2026-11-16T08:29:13Z
 fix:opencatalogi:2678:05397e9f	no change needed: branch up to date with development, merges clean; REVERIFY recorded (merge lock held elsewhere)	session-20261116T081638-f48babcb	2026-11-16T08:29:38Z
 review:stackiq:1941:4a5ff433	failed: self-review - worker-16 pushed this head (4a5ff433); needs a different reviewer	session-20261116T080103-dd70aeff	2026-11-16T08:29:59Z
+fix:opencatalogi:2674:52a7e65f	no change: merges clean on development 0f496962, conflict was tree-only; REVERIFY recorded	session-20261116T080001-22af8490	2026-11-16T08:30:06Z
