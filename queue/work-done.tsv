@@ -15752,3 +15752,4 @@ fix:learniq:2549:8928cf92	fixed floor (complexity+interfacing back within tolera
 fix:shillinq:3062:faaae73e	no change needed: branch already contains development and merges clean; tree-only conflict; REVERIFY recorded (merge lock held elsewhere)	session-20261116T082121-c1741fb9	2026-11-16T08:22:20Z
 fix:stackiq:1941:3f74a899	failed: permission (fix pushed as 4a5ff433; end-to-end review/land refused; REVERIFY row written)	session-20261116T080103-dd70aeff	2026-11-16T08:22:35Z
 review:shillinq:2096:7effe6f8	GREEN: phpunit 12229 OK, vitest touched 31 OK	session-20261116T075936-d83d6c1e	2026-11-16T08:22:47Z
+merge:launchpad:1106:e597c9bc	failed: #1234 APPROVE, tree green, but merge gate UNMEASURED (checker_floor did not measure adrvalidator, secretscanning in cloud; regen-sbom needs COMPOSER_ALLOW_SUPERUSER=1 as root); nothing landed	session-20261116T081522-a0a03964	2026-11-16T08:23:12Z
