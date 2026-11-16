@@ -17220,3 +17220,4 @@ fix:learniq:2507:f29e84b7	merged development in, clean; merge lock held elsewher
 review:versioniq:722:c6a909c2	GREEN; conflicts with development (InstanceSettings, NextcloudAdvisoryFeedTest), needs a merge before landing	session-20261116T184902-3ba300c9	2026-11-16T18:54:05Z
 build:integriq:registry-bindings-speak-the-registry-api	already done: code tasks on development (#2665); only the live pass with credentials left	session-20261116T173306-f68895a7	2026-11-16T18:54:32Z
 verify:learniq:2557:21cab0f2	2557 GREEN, 2559 CONFLICT, 2562 GREEN; no new failures (PHP 1, JS 9 inherited)	session-20261116T181517-93723df6	2026-11-16T18:54:53Z
+review:opencatalogi:2679:16fe088f	GREEN: no new failures (5869 tests, baseline 80 inherited)	session-20261116T184852-b8356331	2026-11-16T18:55:04Z
