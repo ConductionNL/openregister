@@ -4753,3 +4753,4 @@ hermiq	1808	d3f1ce0e343f352081371b2c5012964c0ab5ef93	MERGED	worker-39	GATE OK sb
 shillinq	3078	55887f01749383a56f6ae36d6f00302277b879e5	RED	merge3	GATE RED checker floor: adrvalidator: pass -> fail; adrvalidator stars: 5 -> 1; score: 100 -> 93
 shillinq	3110	cca3fd23bdfcaf08b914978343921a1bfc362fcb	RED	merge3	GATE RED sbom: composer.lock, package-lock.json changed without sbom.cdx.json
 shillinq	3124	cab1145aa76fc5208af087d4862854c52d891d9d	RED	merge3	GATE RED floor: unit_size: 4.39 -> 4.37
+hermiq	1808	d3f1ce0e343f352081371b2c5012964c0ab5ef93	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.77 holds at 3.77
