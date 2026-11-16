@@ -16604,3 +16604,4 @@ review:keepiq:1792:5d484110	GREEN: specs met, no new failures (3 inherited vites
 fix:hermiq:1135:0d097997	failed: sbom gate wants sbom.cdx.json in the diff, but phpmd is dev-only: with development merged in, the regenerated sbom equals development's (regen-sbom --check current); needs a gate exemption for dev-only lock changes	session-20261116T144734-1dc150d8	2026-11-16T15:22:02Z
 fix:versioniq:504:918e8ff3	obsolete: development already has stylelint 17.15.0; closed with a comment	session-20261116T144202-f2b26030	2026-11-16T15:22:20Z
 fix:versioniq:505:aeceef74	obsolete: development already has @vue/test-utils 2.5.1; closed with a comment	session-20261116T144202-f2b26030	2026-11-16T15:22:49Z
+fix:hermiq:1187:415fb023	failed: gate false RED - dev-only lock bump leaves sbom unchanged; branch updated to 0e261189	session-20261116T150749-2f742a8d	2026-11-16T15:23:31Z
