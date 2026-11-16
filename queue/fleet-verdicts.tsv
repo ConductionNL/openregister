@@ -15285,4 +15285,6 @@ decidiq	2170	80617c3777f2a16f84f8ee5a966bb46cfa7f1713	RED	worker-58:review	vites
 dossiq	5398	1ba53a1748240a7b08c3dbd60bab7990145868b9	REVERIFY	worker-43	raised config.platform.php to 8.3.16 and refreshed composer.lock (platform-overrides + content-hash only, Ruben-approved lock commit); unit suite 18300 tests, same 16 failures as development; new head 0574972c864d76681209aa9163ca32450a6fa810, verify it
 decidiq	1767	1582903c267265c964b1af5bddd432f6f7e882bf	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
 decidiq	2228	0abc6d2ce3f0e6b6289f09f140c8953558cf17dd	CONFLICT	merge3	merges clean on development alone; files: lib/Settings/profiles/association.json 
+opencatalogi	2686	84ac3f44ccfadafde8561479017d418e5d68f55e	CONFLICT	worker-40:merge	conflicts with development; files: docs/features/README.md 
+opencatalogi	2699	3dfb66bdc2108871cd6fa54b176db1fbb248c366	CONFLICT	worker-40:merge	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
 hermiq	1810	797e940a32ce0bb7e10f537a5ddd9cfe9fc2e6e7	GREEN	worker-11:lane	unit 5367 tests 0 failures (same as development, openregister main beside); phpstan 1 = development; phpcs/phpmd same per file; estimate 3.77-3.82 -> 3.79-3.83
