@@ -17081,3 +17081,4 @@ cover:dossiq:069ee2d6madb6:8fea83ca	deferred: dossiq has 41 open PRs	session-202
 fix:hermiq:1150:9ed6a46b	fixed: specs follow the Nextcloud AI default, pushed 5198e25d6c; hermiq merge lock held elsewhere, REVERIFY queued	session-20261116T173141-f87aaa9d	2026-11-16T18:20:39Z
 review:hermiq:1735:ce935d59	GREEN: hermiq#1735 unit 5389 OK, vitest OK; gate notes: schema titles, demo data, spec tags	session-20261116T181447-534b3ff8	2026-11-16T18:21:02Z
 review:stackiq:1931:3faf7c6d	CONFLICT: register version/changelog and contract counts conflict with development; code per specs otherwise	session-20261116T181151-999832c6	2026-11-16T18:21:23Z
+cover:buildiq:70b3e29em3841:34763eb4	deferred: buildiq has 56 open PRs	session-20261116T181429-b5d49a13	2026-11-16T18:21:31Z
