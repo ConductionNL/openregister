@@ -103,6 +103,36 @@ class RelativeTimeEvaluation {
 	}//end holds()
 
 	/**
+	 * The one indexed comparison a condition compiles to now, for objects of one organisation.
+	 *
+	 * The same calendar resolution and the same clock as {@see holds()}, so the
+	 * objects a sweep selects with this comparison are the objects for which
+	 * `holds()` answers true (task 3.3b). Objects of different organisations can
+	 * count in different calendars, so one comparison covers one organisation.
+	 *
+	 * @param mixed       $node         The `$age` node.
+	 * @param string|null $organisation The organisation whose calendar applies, or null for the named or default calendar.
+	 *
+	 * @return array{property: string, operator: string, value: string}|null The comparison, or null when the node is not a `$age` node.
+	 *
+	 * @throws ConditionRefusedException When the condition or its calendar cannot be read.
+	 *
+	 * @spec openspec/changes/rules-compose-read-transitions-and-time/specs/flow-engine/spec.md
+	 */
+	public function comparisonFor(mixed $node, ?string $organisation = null): ?array {
+		if ($this->condition->isRelativeTime(node: $node) === false) {
+			return null;
+		}
+
+		$moment = new RelativeTimeMoment(
+			now: $this->clock->getDateTime(),
+			calendar: $this->calendarFor(node: $node, organisation: $organisation)
+		);
+
+		return $this->condition->compile(node: $node, moment: $moment);
+	}//end comparisonFor()
+
+	/**
 	 * Why a relative-time condition may not be saved, or null when it may.
 	 *
 	 * At save there is no object and so no organisation: the calendar checked

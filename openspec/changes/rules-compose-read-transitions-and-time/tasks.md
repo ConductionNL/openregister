@@ -126,7 +126,7 @@
       one comparison. The PHP verdict applies the SAME compiled comparison, and
       a test asserts the two agree across three dates, because a sweep selects
       by query and a save evaluates in PHP.
-- [ ] 3.3b Handing it to `MagicRbacHandler`'s query builder in the sweep
+- [x] 3.3b Handing it to `MagicRbacHandler`'s query builder in the sweep
       itself. The shape the builder needs is what `compile()` returns; joining
       it in is the sweep's change, not this one.
       (15 Nov, still open: design question 3 proposes a TimedJob per schema
@@ -135,6 +135,19 @@
       with no request actor, and objects of different organisations compile
       to different thresholds; both need building with the transition engine,
       not beside it.)
+      (16 Nov, design question 3 decided: the selection is built here, the
+      firing is not. `Service/Rules/RelativeTimeSweep` hands the compiled
+      comparison to the object search as one operator filter
+      (`<property> lte|gt <instant in UTC>`), scoped to register, schema and
+      ONE organisation (`IS NULL` for objects without one), because each
+      organisation counts in its own calendar; the access flags are the
+      caller's. `RelativeTimeEvaluation::comparisonFor()` compiles with the
+      same clock and calendar resolution as `holds()`, and
+      `RelativeTimeSweepTest` (7) asserts the query and the PHP verdict agree
+      on both sides of the threshold. Applying an `autoWhen` to the due
+      objects runs through the transition engine with a system actor and a
+      once-per-object record; that belongs to the timed-transition change,
+      not to this one.)
 - [x] 3.4 Refused at save AND at evaluation, by the same check: `compile()`
       runs `refusalFor()` every time, so a condition stored before the
       validator existed meets the refusal at the moment it would otherwise have
