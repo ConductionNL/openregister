@@ -4045,6 +4045,7 @@ launchpad	1234	6a94a1fa7ca29a5267bfc77210f29d21bd36c68e	SKIP	worker-05	GATE UNME
 pipelinq	2969	23b177e505cb1a2a906213fd0df439c94e592b94	SKIP	worker-27	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 opencatalogi	2407	15ee026e9e5cc880f1ef5812343e2da79e65c3d1	SKIP	worker-42	GATE UNMEASURED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3 while api.osv.dev is unreachable from this session
 decidiq	2207	4cc6ec944a9c332488078dfd95666982ed716c9a	SKIP	worker-40	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
+shillinq	2226	e54eecafafea22f9eb9a4791ace828cb5e9830b2	RED	worker-16	GATE RED checker floor: spdxheaders stars: 5 -> 4
 integriq	2560	a80037a88ff1cb6279e524ac871277f81fee33ec	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
 integriq	2562	7e5a871234c9dbbd83d95e4155a02d6dd5b53694	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
 integriq	2563	fdcc21d81a25d6d45f57fb0df27c3deb14e36d84	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
