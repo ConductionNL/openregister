@@ -16546,3 +16546,4 @@ fix:decidiq:1692:faa2a2eb	inherited: decidiq development itself measures maintai
 fix:decidiq:2178:32c05171	fixed spec-coverage + demo data for the 2 added schemas; new head a58bcd58; REVERIFY	session-20261116T144202-f2b26030	2026-11-16T15:07:47Z
 measure:stackiq:20261116h14	php 88.93% js 97.04% (1 failing vitest: facets.spec FACET_DIMENSIONS)	session-20261116T150148-cf8c9aec	2026-11-16T15:07:55Z
 review:decidiq:1469:6a270550	stale	session-20261116T144202-f2b26030	2026-11-16T15:08:22Z
+fix:stackiq:1991:31e2224c	spdx floor: merged development, 100% SPDX, suite OK; new head eae67fd4, REVERIFY	session-20261116T144734-1dc150d8	2026-11-16T15:08:32Z
