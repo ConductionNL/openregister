@@ -16240,4 +16240,5 @@ review:integriq:3049:2da4ecc8	GREEN: unit 9535, 5 inherited failures, none new	s
 build:dossiq:bsn-reveal-logged	already done: code tasks 1.1-1.2 landed on development (e655667d3, a20a81e0c); only live task 1.3 left	session-20261116T105426-4e0b8984	2026-11-16T11:05:06Z
 verify:stackiq:1992:2410c201	GREEN #1992: 3718 tests, 0 new failures	session-20261116T105620-b2654149	2026-11-16T11:05:29Z
 fix:shillinq:2766:4d51285b	merged development, restored stub SPDX header (drop inherited from development, same as #1912), pushed f2fbe5f8; REVERIFY queued	session-20261116T102639-f9f23dec	2026-11-16T11:05:38Z
+build:dossiq:case-type-status-field-lists-as-config	already done: tasks 1.1-1.3 on development; 1.4 is e2e selectors after the library release	session-20261116T105613-dddf963a	2026-11-16T11:06:27Z
 verify:shillinq:3112:499678b6	GREEN #3112 (12225 tests, 0 new failures)	session-20261116T105640-5b7e5974	2026-11-16T11:06:28Z
