@@ -17511,3 +17511,4 @@ verify:learniq:2557:0e7d2b71	3 GREEN (2557, 2559, 2562): no new PHP or JS failur
 merge:opencatalogi:2696:1c565281	cloud tree of 1 opencatalogi PRs: none; conflict 1, lint 0, red 0, moved 0, done 0	session-20261116T195130-dbadc12c	2026-11-16T19:54:41Z
 merge:planninq:1202:d7e7e9ea	merge3 tree of 1 planninq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-16T19:54:17Z
 cover:dossiq:069ee2d6m9d1b:39189253	stacked on #6203 (open-PR budget): lib/Service/Transitions 99.6% -> 99.9%, +8 tests	session-20261116T184907-cd59fdf4	2026-11-16T19:54:58Z
+review:hermiq:1735:33b209c9	GREEN (openapi.json conflicts with current development)	session-20261116T194719-57db1c57	2026-11-16T19:55:32Z
