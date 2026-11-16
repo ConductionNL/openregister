@@ -17434,3 +17434,4 @@ build:portaliq:operate-pages-per-portal-and-client:r2	PR #2533: T03 and T05 buil
 build:larpinq:forms-registration-is-checked-at-binding	partial: PR #1074 builds 1.1 (binding check); 1.2 left: OpenRegister submit service writes under player RBAC, registration create is game-master only, needs an app-authority submit in OpenRegister	session-20261116T190918-81e43f73	2026-11-16T19:36:06Z
 cover:dossiq:069ee2d6m9d1b:ea81adeb	stacked on #6203 (open-PR budget): lib/Service/Zgw 98.7% -> 99.9%, +29 tests	session-20261116T184907-cd59fdf4	2026-11-16T19:37:13Z
 review:decidiq:2170:80617c37	RED: 2 vitest failures in simpleMeetingPage.spec.js (widget counts not updated); PHP suite green	session-20261116T193350-bd20edd7	2026-11-16T19:37:38Z
+merge:hermiq:1150:e61da6b9	merge3 tree of 9 hermiq PRs: merged=6 red=2 fail=0 skip=0; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-16T19:38:18Z
