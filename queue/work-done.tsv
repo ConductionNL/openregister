@@ -17105,6 +17105,7 @@ verify:filinq:2146:e3601822	filinq #2146 GREEN (6889 tests, 0 new failures)	sess
 build:decidiq:one-consultation-schema	deferred: decidiq has 52 open PRs	session-20261116T173141-f87aaa9d	2026-11-16T18:24:36Z
 fix:decidiq:2222:c48b29b2	failed: inherited: origin/development alone measures 3.77 (range 3.77-3.81) below the decidiq floor 3.78; the PR touches only locks, sbom and a test spec, so every decidiq merge stays RED until development regains 0.01	session-20261116T172806-3ef5ead7	2026-11-16T18:24:44Z
 cover:decidiq:a5f973bbm0262:05630945	deferred: decidiq has 52 open PRs	session-20261116T173227-3f62e794	2026-11-16T18:24:56Z
+cover:pipelinq:7f9dc8e6m8519:9d3a1784	added to open PR #3659 (pipelinq 45 open PRs): 13 risky BackgroundJob tests fixed, FollowUpReminderJob/BrpRetentionJob/FullExportJob coverage restored (+184 stmts); suite 9037 OK	session-20261116T173103-d3bed8f8	2026-11-16T18:25:04Z
 cover:decidiq:a5f973bbm0262:34763eb4	deferred: decidiq has 52 open PRs	session-20261116T173227-3f62e794	2026-11-16T18:25:02Z
 cover:decidiq:a5f973bbm0262:882bd950	deferred: decidiq has 52 open PRs	session-20261116T173227-3f62e794	2026-11-16T18:25:21Z
 cover:decidiq:a5f973bbm0262:d39f9857	deferred: decidiq has 52 open PRs	session-20261116T173227-3f62e794	2026-11-16T18:25:27Z
