@@ -15947,3 +15947,4 @@ integriq	3601	be3e4259ac257c0fa3cd07f418850dd15d366231	CONFLICT	worker-36	confli
 integriq	3561	a24572ec8783f55290b104524696faf13e85dde8	CONFLICT	worker-23	conflicts with development in l10n en/nl, ProductSubscriptionsController.php, EndpointService.php, ApiProductDetail.vue; suite not run
 filinq	2072	8a0992cbb74f2b7df9dbc9e29159077ce5307e05	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 4.47 -> 4.40
 integriq	3602	d7d08f57901fafda6ce1fd2a9b77f112e8910a30	CONFLICT	worker-39	conflicts with development in l10n/en.js,en.json,nl.js,nl.json, lib/Service/SettingsService.php, SettingsServiceInterface.php, src/views/admin/AdminSettings.vue, tests/Unit/Service/SettingsServiceTest.php; baseline 9603 tests, 2E/3F inherited
+launchpad	1210	7f9c64f6f96ecf0ea0e1babd72dde9da23d46c6e	CONFLICT	worker-56	conflicts with development in info.xml, l10n/nl.js, PageController, PageSettingsSources, AdminSettingKey, InitialStateBuilder, loadInitialState.js
