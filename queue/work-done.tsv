@@ -17398,3 +17398,4 @@ fix:buildiq:1620:afacfca7	conflict resolved, pushed 9cf97ff7; merge lock held el
 build:learniq:learner-grade-read-follows-visible-from	already built: T1 on development since 0aa6bd8 (5 Nov); only live task T2 left	session-20261116T192824-ee4fb14b	2026-11-16T19:29:06Z
 review:opencatalogi:2696:0d0512a6	GREEN: no new PHP failures, phpstan clean; conflicts with development (no block)	session-20261116T191156-bbdb7add	2026-11-16T19:29:30Z
 fix:buildiq:1672:8c29bf33	conflict resolved, pushed 23675f9b; suite 3377, only inherited ExportZipGoldenTest red; REVERIFY queued	session-20261116T191704-9a63be87	2026-11-16T19:30:12Z
+build:humaniq:time-non-project-activities	stale: branch quality/build-time-non-project-activities already has tasks 1.1-2.3 built	session-20261113T204539-e70be1ed	2026-11-16T19:33:34Z
