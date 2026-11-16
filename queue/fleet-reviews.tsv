@@ -278,3 +278,4 @@ versioniq	505	aeceef74a654df9ff29acf01994dd6bb8cbe10c2	APPROVE	worker-14	Quick; 
 versioniq	506	cf0ff5adda7079a02c3358ac8c403d4211cfdef6	APPROVE	worker-14	Quick; no blockers; dev dependency bump vue 3.5.42->3.5.43 with lock/sbom; tree unit suite equals baseline, vitest 3022 passed
 versioniq	507	63401e4577e3a8006d41144430399f8f3f1f5187	APPROVE	worker-14	Quick; no blockers; dev dependency bump vitest 4.1.11->5.0.3 with lock/sbom; tree unit suite equals baseline, vitest 3022 passed
 learniq	2555	c1c2b81a76c4e4e35ee2dfe51f9c0556733547d9	APPROVE	worker-24	Quick; no blockers; dev-only composer.lock bump (conduction/hydra-gates v1.18.0 -> v1.19.0)
+humaniq	667	c3822863e74efaa1f7512786743723ab486e70f2	APPROVE	worker-26	Quick; no blockers; marked minor bump, lock+sbom
