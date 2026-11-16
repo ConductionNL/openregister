@@ -17522,3 +17522,19 @@ measure:decidiq:20261116h18	measure	decidiq	development	queue/coverage/decidiq.j
 measure:integriq:20261116h18	measure	integriq	development	queue/coverage/integriq.json	why=slices need per-directory coverage	2026-11-16T17:38:27Z
 measure:keepiq:20261116h18	measure	keepiq	development	queue/coverage/keepiq.json	why=slices need per-directory coverage	2026-11-16T18:38:01Z
 measure:launchpad:20261116h18	measure	launchpad	development	queue/coverage/launchpad.json	why=slices need per-directory coverage	2026-11-16T18:38:01Z
+build:hermiq:agents-plain-language-builder	build	hermiq	development	agents-plain-language-builder	change=agents-plain-language-builder;open=2	2026-11-16T18:41:00Z
+build:hermiq:agents-standing-goal	build	hermiq	development	agents-standing-goal	change=agents-standing-goal;open=2	2026-11-16T18:41:00Z
+build:hermiq:cli-runner-text-turn-dispatch	build	hermiq	development	cli-runner-text-turn-dispatch	change=cli-runner-text-turn-dispatch;open=1	2026-11-16T18:41:00Z
+build:integriq:dso-intake-through-an-integriq-connection	build	integriq	development	dso-intake-through-an-integriq-connection	change=dso-intake-through-an-integriq-connection;open=1	2026-11-16T18:41:00Z
+build:integriq:observability-opentelemetry-export	build	integriq	development	observability-opentelemetry-export	change=observability-opentelemetry-export;open=1	2026-11-16T18:41:00Z
+build:integriq:openformulieren-intake-through-an-integriq-connection	build	integriq	development	openformulieren-intake-through-an-integriq-connection	change=openformulieren-intake-through-an-integriq-connection;open=1	2026-11-16T18:41:00Z
+build:integriq:registry-bindings-speak-the-registry-api	build	integriq	development	registry-bindings-speak-the-registry-api	change=registry-bindings-speak-the-registry-api;open=1	2026-11-16T18:41:00Z
+build:integriq:rule-editor-a11y-i18n-hardening	build	integriq	development	rule-editor-a11y-i18n-hardening	change=rule-editor-a11y-i18n-hardening;open=1	2026-11-16T18:41:00Z
+build:integriq:zgw-connectors-for-dossiq	build	integriq	development	zgw-connectors-for-dossiq	change=zgw-connectors-for-dossiq;open=1	2026-11-16T18:41:00Z
+build:planninq:board-live-updates	build	planninq	development	board-live-updates	change=board-live-updates;open=2	2026-11-16T18:41:00Z
+build:buildiq:apps-copy-app-and-page	build	buildiq	development	apps-copy-app-and-page	change=apps-copy-app-and-page;open=1	2026-11-16T18:41:00Z
+build:buildiq:forms-live-values-and-checks	build	buildiq	development	forms-live-values-and-checks	change=forms-live-values-and-checks;open=2	2026-11-16T18:41:00Z
+build:buildiq:reuse-gallery-categories-and-form-library	build	buildiq	development	reuse-gallery-categories-and-form-library	change=reuse-gallery-categories-and-form-library;open=1	2026-11-16T18:41:00Z
+build:launchpad:launchpad-manifest-tier-3	build	launchpad	development	launchpad-manifest-tier-3	change=launchpad-manifest-tier-3;open=1	2026-11-16T18:41:00Z
+build:opencatalogi:federation-connection-last-success	build	opencatalogi	development	federation-connection-last-success	change=federation-connection-last-success;open=2	2026-11-16T18:41:00Z
+build:opencatalogi:operations-public-api-cache-headers	build	opencatalogi	development	operations-public-api-cache-headers	change=operations-public-api-cache-headers;open=1	2026-11-16T18:41:00Z
