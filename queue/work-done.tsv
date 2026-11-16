@@ -18455,6 +18455,7 @@ verify:larpinq:1055:5b0a89f1	CONFLICT: l10n catalogues vs development	session-20
 verify:humaniq:687:3fe05074	CONFLICT: package.json, package-lock.json vs development	session-20261116T232912-634ff2e8	2026-11-16T23:51:31Z
 verify:launchpad:1219:95f8a0fb	CONFLICT #1219 (l10n catalogues)	session-20261116T232918-35016340	2026-11-16T23:51:52Z
 verify:integriq:3572:346f03e1	CONFLICT #3572 (l10n, openapi.json)	session-20261116T233929-170accb7	2026-11-16T23:52:03Z
+verify:learniq:2561:02e7271c	failed: learniq development not installable here (locked vimeo/psalm 7.5 needs php >=8.3.16, container php 8.3.6)	session-20261116T233921-33ab4c87	2026-11-16T23:52:15Z
 verify:integriq:3585:65c80612	CONFLICT: #3585 conflicts with development (routes, l10n, payments controller/service, actions seed, openapi)	session-20261113T214350-9762e143	2026-11-16T23:52:19Z
 verify:integriq:2650:d3c85c9c	CONFLICT #2650 (8 files vs development)	session-20261116T233933-3050c00d	2026-11-16T23:52:31Z
 verify:integriq:3600:cada744c	CONFLICT #3600 (l10n, AdminSettings.vue, seed golden test)	session-20261116T230934-9ee320cf	2026-11-16T23:52:42Z
@@ -18473,3 +18474,7 @@ verify:launchpad:1218:a8711f00	CONFLICT #1218 (l10n, admin settings, tile code)	
 verify:opencatalogi:2706:03bd33eb	CONFLICT: #2706 vs development in l10n, PublicationsController, manifest, PublishedTableServiceTest	session-20261116T232911-3dffa1ae	2026-11-16T23:55:33Z
 verify:opencatalogi:2654:98398fa4	CONFLICT #2654 (DcatService, l10n, tasks.md)	session-20261116T233901-7abe1a78	2026-11-16T23:55:46Z
 verify:learniq:2518:1c67710b	CONFLICT: learniq_register.json, OpenLearningMaterialRegisterTest.php vs development	session-20261116T232925-45c70e73	2026-11-16T23:56:17Z
+verify:learniq:2523:470fe891	CONFLICT #2523 (portal, register, l10n)	session-20261116T232623-066b53c9	2026-11-16T23:56:30Z
+verify:launchpad:1239:91355d38	CONFLICT #1239 (package-lock.json, sbom.cdx.json)	session-20261116T232918-35016340	2026-11-16T23:56:42Z
+verify:integriq:3582:1a80d4e9	CONFLICT: routes.php, l10n, openapi.json, src/* vs development	session-20261116T232959-6ccea9dc	2026-11-16T23:56:53Z
+verify:integriq:3631:b8cfb722	CONFLICT #3631 (l10n)	session-20261116T232923-e93e6b40	2026-11-16T23:57:05Z
