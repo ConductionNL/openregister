@@ -16484,3 +16484,4 @@ fix:shillinq:3110:a0ee6bc0	merged development in, new head e7c788adcc; REVERIFY 
 merge:hermiq:1133:4cac2462	unmeasured: gitdocumentatie.logius.nl (static.developer.overheid.nl redirects there; proxy refuses it); 7 PRs approved, merged 0; 1150 CONFLICT, 1189 MOVED	session-20261116T142714-8127c132	2026-11-16T14:47:52Z
 fix:learniq:2166:a323b0c1	fixed spdx (header missing on development's ObjectServiceInterface stub); new head 5e708c03; REVERIFY (lock held)	session-20261116T144202-f2b26030	2026-11-16T14:48:12Z
 fix:opencatalogi:2679:b5f77a60	fixed: maintainability back to 5 stars (checker 4.51), pushed 0e72dcc6; REVERIFY queued (gate unmeasured here: static.developer.overheid.nl)	session-20261116T142651-57b203fe	2026-11-16T14:48:42Z
+fix:integriq:3671:18d443b4	fixed floor (duplication 3.87, unit_size 3.58); pushed 4b0e1b0a; lock held elsewhere, REVERIFY queued	session-20261116T142815-db93bef4	2026-11-16T14:49:07Z
