@@ -17771,3 +17771,4 @@ review:buildiq:1620:ad45ffb6	RED: ApplicationRegisterTest golden lacks new alias
 review:versioniq:722:276692bd	GREEN: build PR matches change specs; unit 2099 (2 inherited fails), vitest 3092 pass	session-20261116T205217-2b48a08c	2026-11-16T20:55:29Z
 lane:arch5:shillinq:next-shillinq-r4	PR #3125 opened (r4, contains #3124): estimate 4.05-4.09 -> 4.11-4.15, suite 0 failures; GREEN verdict recorded, merge lock held elsewhere; r5 queued	session-20261116T203338-4b40ff15	2026-11-16T20:56:32Z
 merge:decidiq:2188:8bbd5004	cloud tree of 1 decidiq PRs: merged=0 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T204203-b8dccc50	2026-11-16T20:56:36Z
+cover:decidiq:a5f973bbm9cda:7505aeb4	deferred: decidiq has 45 open PRs	session-20261116T204203-b8dccc50	2026-11-16T20:56:51Z
