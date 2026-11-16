@@ -16310,11 +16310,14 @@ build:dossiq:organisations-count-pills	already done: 1.1/1.2 on development sinc
 build:dossiq:stuf-provider-through-integriq	already done: all code tasks ticked on development; the open task removes the provider forwarders at the next release (release task, left)	session-20261116T110121-4578b190	2026-11-16T11:15:20Z
 build:dossiq:inbound-mail-filters	already done: all code tasks ticked on development; 8.4 is an e2e run	session-20261116T110121-4578b190	2026-11-16T11:15:38Z
 build:dossiq:party-contact-moments-board-lines	already done: every code task on development; only 1 live/e2e task(s) left	session-20261116T105426-4e0b8984	2026-11-16T11:15:39Z
+build:dossiq:suspend-return-date	already done: code tasks 1.1 and 1.3 on development; only live check 1.2 left	session-20261116T105557-2fdfe8f3	2026-11-16T11:16:20Z
 build:dossiq:portal-case-list-declarations	already done: every code task ticked and on development (64 tests OK); only live check 2.2 left	session-20261116T105712-260c30d3	2026-11-16T11:16:06Z
 build:dossiq:task-holds-up-next-status	already done: every code task on development; only 1 live/e2e task(s) left	session-20261116T105426-4e0b8984	2026-11-16T11:15:47Z
 build:dossiq:task-description-in-side-card	already done: code tasks ticked on development; 1.3 is live	session-20261116T110121-4578b190	2026-11-16T11:16:22Z
 fix:shillinq:3055:faf02682	merged development, restored stub SPDX header (inherited drop), pushed 6be8ada8; REVERIFY queued	session-20261116T102639-f9f23dec	2026-11-16T11:17:01Z
+build:dossiq:stuf-writes-through-integriq	already done: every code task ticked, ConnectedSystemCaseWriter and the listener hand-off are on development; only the live pass is left	session-20261116T110055-454b71dd	2026-11-16T11:17:13Z
 build:dossiq:party-history-link	already done: 1.1/1.2 on development (23 Oct); only 1.3 live remains	session-20261116T104807-0149ceda	2026-11-16T11:17:09Z
 build:dossiq:party-dates-longdate	already done: every code task on development; only 1 live/e2e task(s) left	session-20261116T105426-4e0b8984	2026-11-16T11:17:15Z
 build:dossiq:task-list-titles-wrap	already done: every code task on development; only 1 live/e2e task(s) left	session-20261116T105426-4e0b8984	2026-11-16T11:17:22Z
+build:dossiq:starter-content-and-templates	already built: every dossiq code task ticked on development; 7.2 partial by design (task, note and approval surfaces live in nextcloud-vue/openregister, lane L1 per decision 156)	session-20261116T105334-a341eb02	2026-11-16T11:17:43Z
 build:dossiq:penalty-is-a-stored-calculation	already done: code tasks ticked and on development; 1.4 is live after openregister#4571	session-20261116T110114-f035d055	2026-11-16T11:17:34Z
