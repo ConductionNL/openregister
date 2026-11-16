@@ -4758,3 +4758,4 @@ opencatalogi	2699	41285ef5a7aa544260c78c2fca08e31d869a71a1	RED	worker-56	GATE RE
 opencatalogi	2699	7d569fb821f74f1c15c600c7aafd41fc090616b9	MERGED	worker-56	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.52
 versioniq	691	57ab5aa2b834e43ba9363e5c0cb379f70d1fb470	MERGED	worker-57	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.97 holds at 4.05
 planninq	1206	f0e5ce61d0efff7fdc5d51e1a38d004910a7c074	RED	merge3	GATE RED floor: duplication: 4.64 -> 4.62
+portaliq	2533	4857818f6b8c625a07d0d283a7b99ffae2088068	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.16
