@@ -671,3 +671,4 @@ keepiq	1848	23964ca2122e652ef1895c1e5a80d176a4e23509	APPROVE	worker-35	Thorough;
 keepiq	1849	cf3a1104f97f43ce25baf84a32edd898048df612	APPROVE	worker-35	Thorough; no blockers; tests only (1090 lines), vitest green on the tree
 keepiq	1850	1f2799e85b11e66233d06c743047a18645861fe2	APPROVE	worker-35	Quick; no blockers; tests only, middleware refusals asserted
 opencatalogi	2686	236353513df15c93c69f6700c335f658e14a545f	APPROVE	worker-22	Strict; no blockers; concerns: none - credentials false, Vary Origin, origins validated server-side, default * keeps prior behaviour, optional collaborators now from the container to hold the interfacing floor; gate-82/gate-119 failures inherited (files not in PR)
+buildiq	1620	9cf97ff767fed5c9b84d911ccf97fe77a08b4162	APPROVE	worker-24	Thorough; no blockers; build of form-dutch-field-formats per spec, gates pass, unit tree adds no failures
