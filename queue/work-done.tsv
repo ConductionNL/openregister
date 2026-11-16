@@ -15778,3 +15778,5 @@ review:filinq:1355:1ed49fc4	GREEN: dev-only phpmd 3 bump, unit 6798 OK, phpmd ga
 fix:opencatalogi:2677:b9314794	no change: branch already contains development and merges clean; conflict only against sibling PRs in a tree; REVERIFY recorded for a one-PR tree; lock held elsewhere	session-20261116T081707-5872785d	2026-11-16T08:26:52Z
 merge:larpinq:1060:9c72be28	cloud tree of 2 larpinq PRs: merged=0 red=1 fail=0 skip=1; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T081647-1fba2b50	2026-11-16T08:27:09Z
 review:filinq:2122:79127975	GREEN: phpunit 6829 pass (base 6798), vitest 769, jest 570	session-20261116T080741-43082fe2	2026-11-16T08:27:23Z
+review:filinq:2103:1a1abdb4	stale	session-20261116T082637-06597b03	2026-11-16T08:27:33Z
+fix:buildiq:1620:ff3f376b	fixed import order, pushed 7c13e441; merge lock held elsewhere, REVERIFY queued	session-20261116T075942-394736ff	2026-11-16T08:27:53Z
