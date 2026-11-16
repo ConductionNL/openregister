@@ -14866,3 +14866,4 @@ learniq	2559	a2575752594d239c5295bf466bb71213811b122c	GREEN	worker-55	webpack-de
 learniq	2561	7b6979179db71891d5308368ab4494d0ba6e88f3	CONFLICT	worker-55	conflicts with the tree (development + 2551..2559): composer.lock tests/Stubs/Contract/ObjectServiceInterface.php
 learniq	2562	2e394133b08a5a4c16c85b0fbf7e41c0c6783011	GREEN	worker-55	lockfile + SBOM, SPDX header on test stub; phpunit 6888 tests, baseline 2 failures (HigherEducationExampleSetTest, StubSignatureParityTest), new 0; node js-unit 1399, baseline 9 fails, new 0; webpack build ok
 hermiq	1307	1007dac617c9bde9350369bf4adb9a791a8aa04b	RED	worker-53:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+keepiq	1791	123b7f2512968c472ee9f71652d23dd883b908e4	GREEN	worker-33:review	matches crypto-recovery-kit specs; owner-only endpoints, rate-limited fetch, audited; PHP unit 5317 ok, vitest 6685 ok + 3 inherited HealthReportView fails
