@@ -225,3 +225,4 @@ learniq	2507	1fad4deb581e9eb4a228d7fa0a5e7ac7e5ae3cce	REQUEST_CHANGES	worker-33	
 dossiq	3203	2c689dc958f4d2ad3603b422f1c3f5a2f9460ec4	APPROVE	worker-55	Quick; no blockers; @nextcloud/vue 9.13.1 bump, vitest setup tolerates jsdom EventTarget in setMaxListeners, dialogs inlined; tree vitest 7194 pass, 2 failures inherited from development
 dossiq	5266	2cd5ee932a79779a717f6f0071fcaa89f3c2531f	APPROVE	worker-55	Standard; no blockers; manifest-only consents card on social domain case overview plus l10n en/nl and example data; specs added
 dossiq	5396	cc232d59d722611002ea5e7e1096bab19bbdfc34	APPROVE	worker-55	Quick; no blockers; hydra-gates dev dependency lock bump
+dossiq	6593	063f50b3ac2c3fea4dd798661b83d44440f46d69	APPROVE	worker-55	Standard; no blockers; listener typed on contracts implemented by the same bound classes, used methods exist on the interfaces; DRC save reads the run, same mapping call; unit suite unchanged
