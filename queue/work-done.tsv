@@ -16208,3 +16208,4 @@ merge:humaniq:606:1e004741	unmeasured: static.developer.overheid.nl (same PRs al
 fix:humaniq:685:c73546cd	no change: clean on development, conflict was in-tree only	session-20261116T102639-f9f23dec	2026-11-16T10:52:12Z
 merge:shillinq:2096:f50ba1ec	cloud tree of 2 shillinq PRs: merged=0 red=2 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T104018-e4b2d192	2026-11-16T10:53:33Z
 review:pipelinq:3835:48e31f72	GREEN: unit 9012 OK, vitest 104 pass	session-20261116T105225-f677ee77	2026-11-16T10:55:10Z
+merge:decidiq:1465:c3a8f464	unmeasured: static.developer.overheid.nl (7 PRs reviewed APPROVE, tree green 4688 tests, 0 new failures)	session-20261116T101250-8aeb7975	2026-11-16T10:55:27Z
