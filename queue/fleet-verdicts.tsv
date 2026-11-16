@@ -15047,3 +15047,5 @@ integriq	3051	5649956bcbad2c739503fb4a9c936c1883e6aa5f	RED	worker-21:merge-gate	
 filinq	2094	f51b260988d1d7a17fa73d16587d54dcdf1ebd9c	RED	worker-09:merge-gate	GATE RED floor: module_coupling: 5.32 -> 5.26
 shillinq	3088	27e4a52332905486e0881edfdac2fa1f723fa220	REVERIFY	worker-36	merged development in (clean), registered Storefront icons, split complex helpers to restore unit_complexity floor (floor PASS locally, tree 12250 tests 0 new failures, review APPROVE); merge gate UNMEASURED (static.developer.overheid.nl unreachable); new head e27bd6329f98217f15c1b5e5b6ba3a1c9b954ed6, verify it
 learniq	2507	57440a16f271d9f331852896523bfd34db1eaf07	RED	worker-26:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
+integriq	3049	f122cee2e43a751cb616f888569f53754f431e19	CONFLICT	worker-21:merge	merges clean on development alone; files: lib/Service/SynchronizationService.php tests/bootstrap.php 
+integriq	3589	6a7f1b92db78983ccb11eee4e54	REVERIFY	worker-21:merge	verdict sha is not the head: head is 6a7f1b92db78983ccb11eee4e547aa1776752d6e
