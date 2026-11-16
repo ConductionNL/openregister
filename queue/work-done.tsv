@@ -17475,10 +17475,15 @@ cover:pipelinq:7f9dc8e6m3dbb:568ec52a	already covered: lib/Lifecycle/*.php measu
 cover:learniq:e6498ddd:80b3d955	deferred: learniq has 60 open PRs	session-20261116T192127-f26e2e56	2026-11-16T19:45:04Z
 cover:learniq:e6498ddd:98083bbf	deferred: learniq has 60 open PRs	session-20261116T192127-f26e2e56	2026-11-16T19:45:11Z
 cover:learniq:e6498ddd:34f5c300	deferred: learniq has 60 open PRs	session-20261116T193350-bd20edd7	2026-11-16T19:45:34Z
+cover:learniq:e6498ddd:95d5249b	deferred: learniq has 60 open PRs	session-20261116T192127-f26e2e56	2026-11-16T19:45:17Z
 cover:learniq:e6498ddd:jsc89f0f80	deferred: learniq has 60 open PRs	session-20261116T194405-fc188e9a	2026-11-16T19:45:17Z
 lane:arch5:shillinq:next-shillinq-r1	PR #3118 opened (estimate 4.03-4.06 -> 4.08-4.12), verified green; merge lock held elsewhere, GREEN verdict queued	session-20261116T192325-bb4c31dd	2026-11-16T19:45:40Z
 measure:learniq:20261116h18	php 95.51% js 99.8% at 386ba62 (suite: 6868 tests, 1 failure inherited)	session-20261116T192824-ee4fb14b	2026-11-16T19:46:05Z
+merge:integriq:3671:a1fc0d47	cloud tree of 1 integriq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T190656-a33397e6	2026-11-16T19:46:41Z
 cover:learniq:e6498ddd:jsea7197ec	deferred: learniq has 60 open PRs	session-20261116T192824-ee4fb14b	2026-11-16T19:46:34Z
 cover:pipelinq:7f9dc8e6m3dbb:38e80a9f	already done: lib/Command/*.php is 100% (427/427 stmts) on development 601862a8; no PR	session-20261116T193642-e39387da	2026-11-16T19:46:30Z
 cover:learniq:e6498ddd:jsdec3d422	deferred: learniq has 60 open PRs	session-20261116T192325-bb4c31dd	2026-11-16T19:46:22Z
+build:integriq:open-formulieren-submits-into-its-case	PR #3675: tasks 1.1-1.3 and the drain of 1.4 built with tests; 1.4 staging removal waits for zero pending live, 1.5 (DSO) needs a decision on which mapping is checked	session-20261116T184833-adbb8426	2026-11-16T19:46:58Z
+cover:learniq:e6498ddd:60c2c265	deferred: learniq has 60 open PRs	session-20261116T192325-bb4c31dd	2026-11-16T19:46:45Z
 fix:larpinq:1050:d2d372bb	merged #1050 at 7cfec2447da9e1e2aec0580423be39e9779c3204 (tests restored testcoderatio 73.8->75.4%; shared SKILL_FIELDS restored duplication 5.15->5.17)	session-20261116T192645-5f5cd9b9	2026-11-16T19:46:49Z
+cover:learniq:e6498ddd:js4829b6aa	deferred: learniq has 60 open PRs	session-20261116T192127-f26e2e56	2026-11-16T19:47:18Z
