@@ -3778,3 +3778,7 @@ launchpad	753	d16aabc36feeed32b92d557a943abd47e48c054a	RED	worker-12	GATE RED sb
 launchpad	756	e5da8a8442e3254be403a4d29fe3cb21312df78c	SKIP	worker-12	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
 launchpad	880	3c07107533c5035ff96566d9aa97a6c5c78aa5e3	SKIP	worker-12	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
 launchpad	977	4ec996d31439daed99af546858b9614b2ca4a159	SKIP	worker-12	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
+stackiq	1924	62eff96df63034daba7133a32d5d71748aa7b0cb	RED	worker-53	GATE RED checker floor: spdxheaders stars: 5 -> 4
+stackiq	1954	8ec8ab7148eb45c264f52f32289e01d1582b2b87	RED	worker-53	GATE RED floor: unit_interfacing: 4.72 -> 4.70
+stackiq	1973	a944108885b24551a5044812231490fe52d142ca	RED	worker-53	GATE RED checker floor: spdxheaders stars: 5 -> 4
+stackiq	1975	a2ac07938baaf124dcffeabb8e0dee04800b4786	RED	worker-53	GATE RED checker floor: spdxheaders stars: 5 -> 4
