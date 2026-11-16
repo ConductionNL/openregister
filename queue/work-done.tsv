@@ -16907,6 +16907,7 @@ build:shillinq:billable-period-becomes-an-invoice	already done: 1.1-1.4 built on
 review:openregister:10595:8cc9923c	APPROVE: tests only, 8 new tests green, required suites green	session-20261116T173213-a5a52019	2026-11-16T17:43:20Z
 review:keepiq:1826:95a54b11	GREEN: keepiq #1826, unit 5408/0 fail, vitest 99 pass; version-line conflict with development	session-20261116T173313-424dff86	2026-11-16T17:43:27Z
 cover:filinq:7a9ef677:1174c39d	deferred: filinq has 49 open PRs	session-20261116T173213-a5a52019	2026-11-16T17:43:46Z
+build:shillinq:setup-wizard-english	already built: T01-T10,T12-T13 ticked on development (fix(i18n) 2026-08-19); only T11 left, a live e2e run	session-20261116T173808-386fe9e9	2026-11-16T17:43:36Z
 review:shillinq:2230:e61ebeb7	GREEN: babel dev-dep bump, vitest 3030/3031 (1 inherited failure)	session-20261116T173342-1d8a0fb9	2026-11-16T17:43:49Z
 build:shillinq:sales-usage-billing	deferred: shillinq has 81 open PRs	session-20261116T172806-3ef5ead7	2026-11-16T17:44:03Z
 build:shillinq:public-sector-quarterly-returns	deferred: shillinq has 81 open PRs	session-20261116T172806-3ef5ead7	2026-11-16T17:44:11Z
