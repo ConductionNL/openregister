@@ -16536,3 +16536,4 @@ fix:decidiq:2170:d54fcb29	unmeasured: static.developer.overheid.nl (fixed demo-d
 fix:keepiq:1791:dc388493	fixed spec-coverage (4 methods tagged), merged development; pushed 123b7f25; REVERIFY queued	session-20261116T143136-ae6d04cb	2026-11-16T15:04:56Z
 fix:stackiq:1930:9a43150c	conflict resolved (l10n union, register 2.6.0 + 2.5.10 changelog); suite 3743 OK; new head 854ac389, REVERIFY (end-to-end skipped: merge gate hosts refused here)	session-20261116T144734-1dc150d8	2026-11-16T15:05:48Z
 merge:launchpad:753:ae33cf29	merge3 tree of 3 launchpad PRs: merged=3 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-16T15:06:03Z
+fix:decidiq:2203:14dc6807	fixed @spec coverage; REVERIFY new head 25c89067	session-20261116T142700-f4d651ea	2026-11-16T15:06:22Z
