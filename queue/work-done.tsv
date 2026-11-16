@@ -16512,3 +16512,4 @@ fix:decidiq:1468:7dc751fb	inherited: decidiq development 279e8a5c itself measure
 merge:shillinq:1899:dfdaa342	merge3 tree of 9 shillinq PRs: merged=4 red=2 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-16T14:53:51Z
 fix:decidiq:1950:e876f7ce	inherited: decidiq development 279e8a5c itself measures maintainability 3.77 < floor 3.78; PR only touches composer.lock/sbom, nothing to fix on the branch	session-20261116T145220-87e5504e	2026-11-16T14:54:18Z
 verify:decidiq:2222:c280270c	GREEN 2222	session-20261116T144202-f2b26030	2026-11-16T14:54:42Z
+fix:keepiq:1792:af22b4ea	fixed secretscanning (test seed allowlisted like its sibling spec); pushed 5d484110; REVERIFY queued	session-20261116T143136-ae6d04cb	2026-11-16T14:55:01Z
