@@ -4698,3 +4698,4 @@ keepiq	1850	1f2799e85b11e66233d06c743047a18645861fe2	MERGED	worker-35	GATE OK sb
 opencatalogi	2679	e65a0507a2c33fbdd7b07efc50596a96abea9d23	MERGED	worker-22	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.52
 buildiq	1620	9cf97ff767fed5c9b84d911ccf97fe77a08b4162	RED	worker-24	GATE RED absolute floor: buildiq maintainability 3.90 after merge is below its floor 3.91
 shillinq	3118	7ea0a195521799178b89cafce2db173a0ab26e48	MERGED	worker-12	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.08
+filinq	2150	8993aa18291455c9dd3fcf44458753464f906706	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.09
