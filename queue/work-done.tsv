@@ -18434,7 +18434,9 @@ verify:filinq:2106:48eff116	CONFLICT #2106 (SigningService.php, filinq_register.
 verify:humaniq:1147:50dd2ee9	CONFLICT #1147 (l10n, PayrollRunService and its tests)	session-20261116T232033-3ca59164	2026-11-16T23:46:02Z
 verify:integriq:3601:c832d6a2	CONFLICT #3601 (l10n, docs, golden test vs development)	session-20261116T233834-fbe601d1	2026-11-16T23:46:15Z
 verify:learniq:2537:016b101a	CONFLICT #2537	session-20261116T232519-f84cca9a	2026-11-16T23:47:12Z
+verify:integriq:3602:0cceb739	CONFLICT #3602 (8 files vs development)	session-20261116T234052-0f8466c3	2026-11-16T23:47:26Z
 verify:humaniq:1134:f7bfa5d1	CONFLICT 1134 (17 files vs development)	session-20261116T232406-b9eb038c	2026-11-16T23:47:42Z
+verify:filinq:2095:c1e10296	CONFLICT: info.xml, l10n, registers, Settings.vue	session-20261116T231848-eaef2e51	2026-11-16T23:48:17Z
 verify:hermiq:1758:eaa4208b	CONFLICT #1758 (lib/Settings/hermiq_register.json)	session-20261116T232944-146e39d7	2026-11-16T23:48:11Z
 verify:integriq:3632:b12445a3	CONFLICT #3632	session-20261116T232923-e93e6b40	2026-11-16T23:48:23Z
 verify:learniq:2509:20f288bf	#2509 CONFLICT (l10n, register, portal golden, HourPlanRegisterTest)	session-20261116T230843-e8244832	2026-11-16T23:48:50Z
@@ -18454,3 +18456,12 @@ verify:humaniq:687:3fe05074	CONFLICT: package.json, package-lock.json vs develop
 verify:launchpad:1219:95f8a0fb	CONFLICT #1219 (l10n catalogues)	session-20261116T232918-35016340	2026-11-16T23:51:52Z
 verify:integriq:3572:346f03e1	CONFLICT #3572 (l10n, openapi.json)	session-20261116T233929-170accb7	2026-11-16T23:52:03Z
 verify:integriq:3585:65c80612	CONFLICT: #3585 conflicts with development (routes, l10n, payments controller/service, actions seed, openapi)	session-20261113T214350-9762e143	2026-11-16T23:52:19Z
+verify:integriq:2650:d3c85c9c	CONFLICT #2650 (8 files vs development)	session-20261116T233933-3050c00d	2026-11-16T23:52:31Z
+verify:integriq:3600:cada744c	CONFLICT #3600 (l10n, AdminSettings.vue, seed golden test)	session-20261116T230934-9ee320cf	2026-11-16T23:52:42Z
+verify:learniq:2497:761f1e58	CONFLICT #2497	session-20261116T232519-f84cca9a	2026-11-16T23:52:54Z
+verify:larpinq:1049:27909f21	CONFLICT: l10n catalogues conflict with development	session-20261116T233627-44605965	2026-11-16T23:53:12Z
+verify:launchpad:1217:5c919618	CONFLICT #1217 (TileUpdaterTest)	session-20261116T233901-7abe1a78	2026-11-16T23:53:22Z
+verify:learniq:2534:1f1adc23	CONFLICT #2534 with development	session-20261116T232948-9d2e8ce2	2026-11-16T23:53:42Z
+verify:launchpad:1210:e32eb30e	CONFLICT: info.xml, l10n/nl.js, 5 source files	session-20261116T231848-eaef2e51	2026-11-16T23:54:02Z
+verify:launchpad:763:f090ef57	CONFLICT #763 (package-lock.json)	session-20261116T232944-146e39d7	2026-11-16T23:54:12Z
+verify:launchpad:819:17ca42bb	GREEN: unit 4516/0 new failures; phpmd 3 more findings noted	session-20261116T232911-3dffa1ae	2026-11-16T23:54:22Z
