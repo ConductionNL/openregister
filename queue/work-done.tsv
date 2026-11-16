@@ -16892,3 +16892,4 @@ build:portaliq:site-school-blocks	already done: every code task is ticked and on
 build:portaliq:site-shared-page-blocks	already done: only live/e2e tasks left (2)	session-20261116T172806-3ef5ead7	2026-11-16T17:41:40Z
 build:portaliq:zuiddrecht-resident-pages-match-the-boards	already done: only live/e2e tasks left (1)	session-20261116T172806-3ef5ead7	2026-11-16T17:42:02Z
 build:portaliq:steps-as-bars	already done: tasks 1-3 on development; task 4 is cross-repo learniq + live check	session-20261116T173306-f68895a7	2026-11-16T17:42:10Z
+fix:learniq:2556:489b7f4d	failed: inherited: development itself drops spdxheaders 5->4 (tests/Stubs/Contract/ObjectServiceInterface.php has no SPDX line); the header fix rides on learniq #2507 head f29e84b71d	session-20261116T171010-393e4bc2	2026-11-16T17:42:42Z
