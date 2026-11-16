@@ -17202,12 +17202,14 @@ merge:filinq:2146:e3601822	cloud tree of 1 filinq PRs: merged=1 red=0 fail=0 ski
 build:buildiq:forms-live-values-and-checks	deferred: buildiq has 53 open PRs	session-20261116T183806-fd5587ea	2026-11-16T18:47:53Z
 measure:buildiq:20261116h18	php 92.67% js 95.85% at b5702f9b	session-20261116T181429-b5d49a13	2026-11-16T18:48:26Z
 fix:shillinq:3110:e7c788ad	merged development in, new head 8babcbcb; merge lock held elsewhere, REVERIFY queued	session-20261116T184217-f2c5e14b	2026-11-16T18:48:34Z
+review:keepiq:1793:e5fa9df6	stale	session-20261116T184858-b0d9d60e	2026-11-16T18:49:30Z
 merge:buildiq:1620:f352c445	cloud tree of 2 buildiq PRs: none; conflict 2, lint 0, red 0, moved 0, done 0	session-20261116T183806-fd5587ea	2026-11-16T18:50:39Z
 review:keepiq:1826:e606b09f	BLOCK: version read path of a privileged copy ungated; suite 5422 OK	session-20261116T173306-f68895a7	2026-11-16T18:50:23Z
 review:pipelinq:3659:d796a259	GREEN: tests only, 9042 pass (baseline 9032), no new failures	session-20261116T184838-1279a0d5	2026-11-16T18:51:18Z
 review:dossiq:5398:1ba53a17	RED: lock uninstallable, psalm 7.5 needs php>=8.3.16 vs platform pin 8.3	session-20261116T184836-f6622adb	2026-11-16T18:49:53Z
 build:buildiq:reuse-gallery-categories-and-form-library	already built: every code task ticked and present on development; only T08 (Playwright, needs a live stack) left	session-20261116T181429-b5d49a13	2026-11-16T18:49:51Z
 measure:keepiq:20261116h18	php 94.27% js 94.09% @92ee17d6	session-20261116T182240-4aa65022	2026-11-16T18:50:31Z
+merge:decidiq:2170:4e5fcd00	cloud tree of 1 decidiq PRs: merged=0 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T173242-1dd97d52	2026-11-16T18:51:46Z
 verify:stackiq:1996:ca667bfa	GREEN 1996	session-20261116T184852-c0730778	2026-11-16T18:51:57Z
 verify:buildiq:1672:96932e00	CONFLICT: #1672 conflicts with development in lib/Controller/ApplicationsController.php	session-20261116T184842-6fa5fc5d	2026-11-16T18:52:21Z
 cover:keepiq:c967a31fmba5a:34763eb4	PR #1850: JwtAuthMiddleware +4 tests and coverage metadata; lib/Middleware/*.php already 224/224 lines; suite 5337->5341, 0 failures	session-20261116T182720-9950372f	2026-11-16T18:52:36Z
@@ -17220,3 +17222,7 @@ review:versioniq:722:c6a909c2	GREEN; conflicts with development (InstanceSetting
 build:integriq:rule-editor-a11y-i18n-hardening	deferred: integriq has 70 open PRs	session-20261116T183806-fd5587ea	2026-11-16T18:54:49Z
 build:integriq:registry-bindings-speak-the-registry-api	already done: code tasks on development (#2665); only the live pass with credentials left	session-20261116T173306-f68895a7	2026-11-16T18:54:32Z
 verify:learniq:2557:21cab0f2	2557 GREEN, 2559 CONFLICT, 2562 GREEN; no new failures (PHP 1, JS 9 inherited)	session-20261116T181517-93723df6	2026-11-16T18:54:53Z
+review:opencatalogi:2679:16fe088f	GREEN: no new failures (5869 tests, baseline 80 inherited)	session-20261116T184852-b8356331	2026-11-16T18:55:04Z
+fix:learniq:2555:20db1885	inherited: development c960466e alone measures 3.98 < floor 3.99; PR touches only composer.lock, sbom and a test stub	session-20261116T184945-c098409e	2026-11-16T18:55:18Z
+review:dossiq:6203:f6392408	GREEN: tests only, suite 18414 OK on merged tree	session-20261116T184655-77bda400	2026-11-16T18:55:17Z
+verify:decidiq:2227:ed9602aa	GREEN 2227, GREEN 2228; tree 4638 tests, 0 new failures	session-20261116T184836-f6622adb	2026-11-16T18:55:50Z
