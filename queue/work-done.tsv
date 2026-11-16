@@ -16272,6 +16272,7 @@ review:integriq:3593:8dad155c	GREEN: no new failures (9608 tests, 5 inherited), 
 build:dossiq:mandated-case-steps-read-unscoped	already done: code tasks 1.1-1.2 ticked and on development (fix(portal) 2026-10-16); 1.3 is live	session-20261116T110121-4578b190	2026-11-16T11:08:38Z
 build:dossiq:hours-card-board-look	already built: code tasks 1.1/1.2 on development (feat(case-page) 2026-10-23); only live check 2.1 left	session-20261116T105550-e90eeee3	2026-11-16T11:08:45Z
 fix:shillinq:2230:62ff7961	merged development, restored stub SPDX header (inherited drop), pushed a06c8804; REVERIFY queued	session-20261116T102639-f9f23dec	2026-11-16T11:08:47Z
+build:dossiq:history-note-card	already done: every code task ticked on development (composer separate/only, readsToggle, visibilityLabel, vitest); only the live check is left	session-20261116T105625-05822e4f	2026-11-16T11:08:53Z
 build:dossiq:objects-index-like-cases	already done: 1.1 on development (fix(objects) 2026-10-23); 2.1 is live	session-20261116T110121-4578b190	2026-11-16T11:08:54Z
 build:dossiq:lists-let-the-reader-choose-columns	already built: spec-only change, 1.1-1.2 ticked; only e2e task 1.3 left	session-20261116T105637-494def63	2026-11-16T11:08:52Z
 build:dossiq:contacts-list-columns-as-drawn	already done: 1.1-1.2 ticked, spec on development; 1.3 is live	session-20261116T110121-4578b190	2026-11-16T11:09:40Z
@@ -16321,6 +16322,7 @@ build:dossiq:party-dates-longdate	already done: every code task on development; 
 build:dossiq:task-list-titles-wrap	already done: every code task on development; only 1 live/e2e task(s) left	session-20261116T105426-4e0b8984	2026-11-16T11:17:22Z
 build:dossiq:starter-content-and-templates	already built: every dossiq code task ticked on development; 7.2 partial by design (task, note and approval surfaces live in nextcloud-vue/openregister, lane L1 per decision 156)	session-20261116T105334-a341eb02	2026-11-16T11:17:43Z
 build:dossiq:penalty-is-a-stored-calculation	already done: code tasks ticked and on development; 1.4 is live after openregister#4571	session-20261116T110114-f035d055	2026-11-16T11:17:34Z
+build:dossiq:the-support-note-can-be-switched-off	already done: 1.1-1.3 on development (15 Oct); only 1.4 live remains	session-20261116T104807-0149ceda	2026-11-16T11:18:26Z
 build:dossiq:task-list-pooled-handler	already done: config, nl key and vitest on development; only live check 1.3 left	session-20261116T105712-260c30d3	2026-11-16T11:18:14Z
 build:dossiq:task-list-sorts-by-deadline	already done: code tasks ticked and on development; 1.3 is a live check	session-20261116T110114-f035d055	2026-11-16T11:18:35Z
 merge:filinq:2072:a0472251	merge3 tree of 5 filinq PRs: merged=1 red=0 fail=0 skip=0; conflict 4, lint 0, moved 0; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-16T11:18:46Z
