@@ -3349,3 +3349,4 @@
 10593 dfebdc4c53def56e7b9546e90a5e240eb8e356b6 APPROVE Tests only (4 jest specs, 24 tests, 42 assertions); merged with main, modals/organisation and modals/schema 46 suites 603 tests pass; eslint clean; no production code changed.
 10596 1cde2635e6265050db2b4866df05866028bebfae APPROVE Test-only: removes one invalid @uses line (anonymous class name with NUL byte); no production code. ExampleSet suite on PR merged with main equals main (2 inherited process-isolation errors).
 10595 8cc9923cc8da8e8169d0e8dfeacb5db3e04877e2 APPROVE tests only (2 new files, 8 tests green); Architecture, Rules, Controller, Contract suites green merged with main
+10597 9dcbb7e2bafc2cc4c860f908de68e0088bf26eab APPROVE publiccode.yml metadata only: maintenance type contract with a contractor entry (name, until, email, website) and one description line per language; YAML parses, no code or tests touched
