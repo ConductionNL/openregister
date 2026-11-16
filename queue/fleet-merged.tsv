@@ -4188,3 +4188,4 @@ shillinq	3111	96abe4abfb509aa4c32c2210a765797e13c601d5	RED	worker-58	GATE RED ch
 integriq	2924	81032a2e25be20a55d65581e9c199af938b2368c	RED	worker-47	GATE RED floor: unit_interfacing: 1.93 -> 1.91
 keepiq	1497	2b0710543667991b1ee7fc988e0d48840735e484	RED	worker-37	GATE RED sbom: composer.lock changed without sbom.cdx.json
 decidiq	2203	14dc68070ac11502fc0ca03de58869b820f8905a	SKIP	worker-27	no APPROVE review at this head
+learniq	1883	b958696628bfdb6a748cfabc44b519cd91dae052	RED	worker-14	GATE RED checker floor: spdxheaders stars: 5 -> 4
