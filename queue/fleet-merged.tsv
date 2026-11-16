@@ -4626,3 +4626,4 @@ keepiq	1845	f296786e117a8d5196cea62f34ccf4322f700e32	MERGED	worker-53	GATE OK sb
 opencatalogi	2682	4e12e44e97a1ee7e636708f9ec65a4962916d02c	MERGED	worker-09	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.51
 opencatalogi	2725	defb7b6a9822f96bb369f99795f0945912eb4242	MERGED	worker-09	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.51
 versioniq	721	9113809ee4dcdcce38fc0338cef5c8d7f64be063	RED	worker-23	GATE RED floor: module_coupling: 5.25 -> 5.23
+humaniq	606	999cc2866e6aa8b58b9b76ea5c11fa01becb1b6a	RED	worker-33	GATE RED sbom: composer.lock changed without sbom.cdx.json
