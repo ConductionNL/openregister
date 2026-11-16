@@ -18056,3 +18056,4 @@ review:stackiq:1941:60d39b71	GREEN #1941 at 60d39b71: no new failures (inherited
 review:versioniq:715:bc2d7a7a	GREEN; unit 2185/2 inherited failures, vitest 24 pass; conflicts with development in 6 files	session-20261116T220813-c25016f1	2026-11-16T22:10:45Z
 merge:launchpad:1106:41f88108	cloud tree of 3 launchpad PRs: none; conflict 1, lint 0, red 0, moved 0, done 0	session-20261116T220845-a0bf4665	2026-11-16T22:11:03Z
 cover:pipelinq:7f9dc8e6m3dbb:d528dcf0	added DashboardRegistrarTest (2 tests) to open PR #3602 (43 open PRs, over budget); suite 9203->9205, 0 failures	session-20261116T220647-b92c8f52	2026-11-16T22:11:16Z
+verify:buildiq:1683:f45eca7a	1683 CONFLICT, 1687 CONFLICT (both carried, resolved, by #1688)	session-20261116T215102-33996dc2	2026-11-16T22:11:32Z
