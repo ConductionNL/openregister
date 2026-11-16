@@ -18482,3 +18482,5 @@ verify:integriq:3631:b8cfb722	CONFLICT #3631 (l10n)	session-20261116T232923-e93e
 verify:launchpad:760:381968d2	CONFLICT 760 (package-lock.json, sbom.cdx.json)	session-20261116T232406-b9eb038c	2026-11-16T23:57:21Z
 verify:opencatalogi:2683:b7fb1366	CONFLICT #2683 (l10n, tasks.md)	session-20261116T233901-7abe1a78	2026-11-16T23:57:29Z
 verify:pipelinq:3718:0a80e9c1	CONFLICT #3718 (DealUpdatedListener, ForecastDealService, l10n)	session-20261116T232623-066b53c9	2026-11-16T23:57:46Z
+verify:opencatalogi:2671:78e38071	CONFLICT #2671 (10 files)	session-20261116T233901-7abe1a78	2026-11-16T23:58:02Z
+verify:launchpad:1216:f8adb1a6	CONFLICT #1216 (15 files; change may already be on development)	session-20261116T232951-07569878	2026-11-16T23:58:13Z
