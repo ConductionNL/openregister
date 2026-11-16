@@ -17627,3 +17627,4 @@ build4:openregister:cross-app-semantic-references:c7	partial: nothing left to bu
 cover:decidiq:a5f973bbm9cda:98083bbf	deferred: decidiq has 47 open PRs	session-20261116T195130-dbadc12c	2026-11-16T20:23:56Z
 verify:portaliq:2535:74c44cfc	GREEN #2535 (no new failures, 16 baseline errors)	session-20261116T202128-6be5fc02	2026-11-16T20:23:58Z
 verify:learniq:2567:56734df7	stale: #2567 head moved to 046431f2c	session-20261116T202147-7121aee7	2026-11-16T20:24:09Z
+cover:dossiq:069ee2d6m9d1b:33af3743	no change: lib/Service/Bezwaar/*.php already measures 99.7% (1559/1564 lines, pcov, suite 18752 tests, 19 inherited failures), above target 95; the 5 left are a readonly ctor and the decision-app-absent branch, unreachable while the bootstrap loads the event stubs	session-20261116T201835-c2c94090	2026-11-16T20:24:11Z
