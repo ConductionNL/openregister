@@ -463,7 +463,6 @@
   <violation rule="PHPMD\Rule\Controversial\Superglobals" file="lib/Service/WritePhaseProbe.php" method="elapsedMs"/>
   <violation rule="PHPMD\Rule\CleanCode\ErrorControlOperator" file="lib/Service/WritePhaseProbe.php" method="flush"/>
   <violation rule="PHPMD\Rule\CleanCode\ErrorControlOperator" file="lib/Service/WritePhaseProbe.php" method="opcacheSegment"/>
-  <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Service/CaseTypeAuthorizationService.php"/>
   <violation rule="PHPMD\Rule\UnusedFormalParameter" file="lib/WorkflowEngine/RegisterObjectEntity.php"/>
   <violation rule="PHPMD\Rule\Design\CouplingBetweenObjects" file="lib/WorkflowEngine/RunFlowOperation.php"/>
   <violation rule="PHPMD\Rule\UnusedFormalParameter" file="lib/WorkflowEngine/RunFlowOperation.php"/>

@@ -122,6 +122,7 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Service\Object\SafeguardRejection
  * @uses \OCA\OpenRegister\Service\Rbac\McpScope
  * @uses \OCA\OpenRegister\Service\Rbac\MaskedWrite
+ * @uses \OCA\OpenRegister\Service\Rbac\UndecidablePosture
  */
 class SaveObjectsDeletedRowBoundaryTest extends TestCase {
 

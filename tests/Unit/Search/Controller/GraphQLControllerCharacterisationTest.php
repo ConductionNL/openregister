@@ -1,13 +1,13 @@
 <?php
 
 /**
- * Characterisation tests for GraphQLController::execute() and the GraphiQL page.
+ * Characterisation tests for GraphQLController::execute().
  *
  * Pins the HTTP contract of POST /api/graphql: the 400 for a body without a
  * query, the 200 for data (even with partial errors), the 400 for errors only,
- * and the 429 with a Retry-After header for a rate-limited query. Also pins the
- * GraphiQL HTML byte for byte, so the page cannot drift when the method that
- * builds it is restructured.
+ * and the 429 with a Retry-After header for a rate-limited query. The explorer
+ * page is a bundled template since api-explorer-in-the-app; its contract is in
+ * tests/Unit/Controller/GraphQLControllerExplorerTest.php.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -30,18 +30,13 @@ namespace OCA\OpenRegister\Tests\Unit\Search\Controller;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 // phpcs:disable Squiz.Commenting.VariableComment.Missing -- stream wrapper protocol fields.
 
-use OC\Security\CSP\ContentSecurityPolicyNonceManager;
-use OC\Security\CSRF\CsrfToken;
-use OC\Security\CSRF\CsrfTokenManager;
 use OCA\OpenRegister\Search\Controller\GraphQLController;
 use OCA\OpenRegister\Search\Controller\Support\GraphQLControllerServices;
 use OCA\OpenRegister\Search\Service\GraphQL\GraphQLService;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
-use OCP\IURLGenerator;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
-use ReflectionMethod;
 
 /**
  * Serves a fixed string as php://input while it is registered.
@@ -76,25 +71,16 @@ final class GraphQLInputStream {
 class GraphQLControllerCharacterisationTest extends TestCase {
 	private GraphQLService&MockObject $graphQLService;
 
-	private IURLGenerator&MockObject $urlGenerator;
-
 	private GraphQLController $controller;
 
 	protected function setUp(): void {
 		parent::setUp();
 
 		$this->graphQLService = $this->createMock(GraphQLService::class);
-		$this->urlGenerator = $this->createMock(IURLGenerator::class);
-		$nonceManager = $this->createMock(ContentSecurityPolicyNonceManager::class);
-		$nonceManager->method('getNonce')->willReturn('nonce-1');
-		$token = $this->createMock(CsrfToken::class);
-		$token->method('getEncryptedValue')->willReturn('token-1');
-		$csrfManager = $this->createMock(CsrfTokenManager::class);
-		$csrfManager->method('getToken')->willReturn($token);
 
 		$this->controller = new GraphQLController(
 			$this->createMock(IRequest::class),
-			new GraphQLControllerServices($this->graphQLService, $this->urlGenerator, $nonceManager, $csrfManager)
+			new GraphQLControllerServices($this->graphQLService)
 		);
 	}
 
@@ -213,68 +199,5 @@ class GraphQLControllerCharacterisationTest extends TestCase {
 
 		$this->assertSame(429, $response->getStatus());
 		$this->assertSame('60', $response->getHeaders()['Retry-After']);
-	}
-
-	private function graphiQlHtml(): string {
-		return (new ReflectionMethod(GraphQLController::class, 'getGraphiQLHtml'))->invoke($this->controller);
-	}
-
-	public function testTheGraphiQlPageIsPinnedByteForByte(): void {
-		$this->urlGenerator->method('linkToRoute')->willReturn('/index.php/apps/openregister/api/graphql');
-
-		$this->assertSame(self::expectedHtml(endpoint: '/index.php/apps/openregister/api/graphql'), $this->graphiQlHtml());
-	}
-
-	public function testTheGraphiQlEndpointGainsIndexPhpWhenTheRouteLacksIt(): void {
-		$this->urlGenerator->method('linkToRoute')->willReturn('/apps/openregister/api/graphql');
-
-		$this->assertSame(self::expectedHtml(endpoint: '/index.php/apps/openregister/api/graphql'), $this->graphiQlHtml());
-	}
-
-	private static function expectedHtml(string $endpoint): string {
-		return <<<HTML
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8" />
-    <title>OpenRegister GraphQL Explorer</title>
-    <style nonce="nonce-1">
-        body { height: 100vh; margin: 0; overflow: hidden; }
-        #graphiql { height: 100vh; }
-    </style>
-    <link rel="stylesheet" href="https://unpkg.com/graphiql@3.9.0/graphiql.min.css"
-            integrity="sha384-QMux00XgRtwRLSYIY3kw2rj1ovk5AuuliAchk+HSQbqdbGFnz9GYuqIlOqxhwCE2"
-            crossorigin="anonymous" />
-</head>
-<body>
-    <div id="graphiql">Loading...</div>
-    <script nonce="nonce-1" src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"
-            integrity="sha384-DGyLxAyjq0f9SPpVevD6IgztCFlnMF6oW/XQGmfe+IsZ8TqEiDrcHkMLKI6fiB/Z"
-            crossorigin="anonymous"></script>
-    <script nonce="nonce-1" src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"
-            integrity="sha384-gTGxhz21lVGYNMcdJOyq01Edg0jhn/c22nsx0kyqP0TxaV5WVdsSH1fSDUf5YJj1"
-            crossorigin="anonymous"></script>
-    <script nonce="nonce-1" src="https://unpkg.com/graphiql@3.9.0/graphiql.min.js"
-            integrity="sha384-8NGfVj4CVlqHajlZj+bPJT4thxPMHMJYn7DWK2CvtopLd02E7qsPHazniBYvVjOO"
-            crossorigin="anonymous"></script>
-    <script nonce="nonce-1">
-        const fetcher = GraphiQL.createFetcher({
-            url: '{$endpoint}',
-            headers: {
-                'requesttoken': 'token-1',
-            },
-        });
-
-        const root = ReactDOM.createRoot(document.getElementById('graphiql'));
-        root.render(
-            React.createElement(GraphiQL, {
-                fetcher: fetcher,
-                defaultEditorToolsVisibility: true,
-            })
-        );
-    </script>
-</body>
-</html>
-HTML;
 	}
 }

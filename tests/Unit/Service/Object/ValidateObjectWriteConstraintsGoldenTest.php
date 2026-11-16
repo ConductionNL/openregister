@@ -45,6 +45,9 @@ use OCA\OpenRegister\Service\Object\WriteConstraintCheck;
  * @uses \OCA\OpenRegister\Service\Object\ValidationLookups
  * @uses \OCA\OpenRegister\Service\Object\ValidationSchemaSource
  * @uses \OCA\OpenRegister\Service\Object\WriteConstraintCheck
+ * @uses \OCA\OpenRegister\Service\Object\UniqueFieldScope
+ * @uses \OCA\OpenRegister\Service\OrganisationContext
+ * @uses \OCA\OpenRegister\Service\SystemOperationContext
  */
 class ValidateObjectWriteConstraintsGoldenTest extends TestCase {
 

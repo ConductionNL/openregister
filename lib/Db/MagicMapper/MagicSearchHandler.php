@@ -79,6 +79,7 @@ use OCP\DB\QueryBuilder\ICompositeExpression;
 use OCP\DB\QueryBuilder\IParameter;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\DB\QueryBuilder\IQueryFunction;
+use OCP\IAppConfig;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 
@@ -356,6 +357,8 @@ class MagicSearchHandler {
 	 *                                                        leave them out
 	 * @param ExplicitRevealInterface|null $explicitReveal The request's reveal state; a filter or sort on an explicit-reveal
 	 *                                            property is refused unless the code is trusted
+	 * @param IAppConfig|null $appConfig Holds the administrator's accent folding choice; without it
+	 *                                   accents are folded wherever the database can
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) All parameters are DI-injected dependencies
 	 */
@@ -370,6 +373,7 @@ class MagicSearchHandler {
 		private readonly ?LanguageServiceInterface $languageService = null,
 		private readonly ?MagicMetadataColumnHealer $metadataColumns = null,
 		private readonly ?ExplicitRevealInterface $explicitReveal = null,
+		private readonly ?IAppConfig $appConfig = null,
 	) {
 		$this->termParser = SearchGrammar::termParser();
 		$this->termCompiler = SearchGrammar::termCompiler();
@@ -395,15 +399,17 @@ class MagicSearchHandler {
 	 * The accent folding of a search, or null for the historical comparison.
 	 *
 	 * Folded when the platform can fold (PostgreSQL with `openregister_fold()`,
-	 * MariaDB and MySQL through their accent-insensitive collation) and the
-	 * request did not ask `_accents=exact`. Null otherwise, and when the check
-	 * itself fails, so every caller keeps the SQL it has always produced.
+	 * MariaDB and MySQL through their accent-insensitive collation), the
+	 * administrator has not switched it off, and the request did not ask
+	 * `_accents=exact`. Null otherwise, and when the check itself fails, so
+	 * every caller keeps the SQL it has always produced.
 	 *
 	 * @param array<string, mixed> $query The search query.
 	 *
 	 * @return SearchFolding|null The folding, or null for the exact comparison.
 	 *
 	 * @spec openspec/changes/search-accent-insensitive/specs/zoeken-filteren/spec.md
+	 * @spec openspec/changes/search-accent-insensitive/specs/zoeken-filteren/spec.md#requirement-accent-folding-is-visible-to-administrators-and-can-be-bypassed
 	 */
 	public function searchFolding(array $query): ?SearchFolding {
 		if (SearchFolding::requestsExact(value: ($query['_accents'] ?? null)) === true) {
@@ -411,6 +417,15 @@ class MagicSearchHandler {
 		}
 
 		try {
+			$wanted = true;
+			if ($this->appConfig !== null) {
+				$wanted = (new AccentFoldingSetting(appConfig: $this->appConfig))->enabled();
+			}
+
+			if ($wanted === false) {
+				return null;
+			}
+
 			$this->unaccentProbe ??= new MagicUnaccentProbe(db: $this->db, logger: $this->logger);
 			$folding = $this->unaccentProbe->folding(wanted: true);
 		} catch (\Throwable $e) {
@@ -512,12 +527,20 @@ class MagicSearchHandler {
 
 		// Add relevance score column when fuzzy search is enabled.
 		// This allows us to return the similarity score as a percentage in @self.relevance.
+		$folding = null;
+		if ($searchTerm !== null) {
+			$folding = $this->searchFolding(query: $query);
+		}
+
 		if ($fuzzyEnabled === true && $searchTerm !== null) {
 			$searchTermParam = $queryBuilder->createNamedParameter($searchTerm);
+			$score = "similarity(t._name::text, {$searchTermParam})";
+			if ($folding !== null) {
+				$score = $folding->score(textExpression: 't._name::text', quotedLiteral: (string)$searchTermParam);
+			}
+
 			$queryBuilder->addSelect(
-				$queryBuilder->createFunction(
-					'ROUND(similarity(t._name::text, ' . "{$searchTermParam}) * 100)::integer AS _relevance"
-				)
+				$queryBuilder->createFunction('ROUND(' . $score . ' * 100)::integer AS _relevance')
 			);
 		}
 
@@ -525,6 +548,7 @@ class MagicSearchHandler {
 		// indexes for ORDER BY … LIMIT instead of sorting the full result set.
 		$sort = new SortRequest(order: $order, schema: $schema);
 		$sort->searchTerm = $searchTerm;
+		$sort->folding = $folding;
 		$sort->recentViews = ($query['_recentViews'] ?? null);
 		$sort->dateTimeColumns = $tableSearch->dateTimeColumns;
 		$sort->sortLanguages = $this->sortLanguageChain(register: $register);
@@ -5161,6 +5185,7 @@ class MagicSearchHandler {
 	 * @return IQueryFunction|null The expression, or null without a search term or pg_trgm.
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-multi-field-sorting-with-metadata-and-relevance-support
+	 * @spec openspec/changes/search-accent-insensitive/specs/zoeken-filteren/spec.md#requirement-object-search-ignores-accents-where-the-database-supports-it
 	 */
 	private function relevanceSortExpression(IQueryBuilder $qb, SortRequest $sort): ?IQueryFunction {
 		if ($sort->searchTerm === null || $this->hasPgTrgmExtension() === false) {
@@ -5169,6 +5194,10 @@ class MagicSearchHandler {
 
 		// Nextcloud's QueryBuilder.addOrderBy() accepts expressions through createFunction().
 		$paramName = $qb->createNamedParameter($sort->searchTerm);
+		if ($sort->folding !== null) {
+			return $qb->createFunction($sort->folding->score(textExpression: 't._name::text', quotedLiteral: (string)$paramName));
+		}
+
 		return $qb->createFunction("similarity(t._name::text, {$paramName})");
 	}//end relevanceSortExpression()
 

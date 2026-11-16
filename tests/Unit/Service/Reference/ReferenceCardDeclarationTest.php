@@ -31,6 +31,8 @@ use PHPUnit\Framework\TestCase;
  *
  * @covers \OCA\OpenRegister\Service\Reference\ReferenceCardDeclaration
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses   \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses   \OCA\OpenRegister\Db\Schema\ConfigurationValidator
  */
 final class ReferenceCardDeclarationTest extends TestCase {
 

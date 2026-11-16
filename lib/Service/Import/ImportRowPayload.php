@@ -157,6 +157,24 @@ final class ImportRowPayload {
 	}//end batchKeyOf()
 
 	/**
+	 * The id a payload names, as a string, or null when it names none.
+	 *
+	 * @param array<string, mixed> $object The payload.
+	 *
+	 * @return string|null The id.
+	 *
+	 * @spec openspec/changes/runs-recorded-and-causes-named/specs/data-import-export/spec.md#requirement-an-import-leaves-a-durable-record-with-an-outcome-per-row-req-rcn-005
+	 */
+	public static function idOf(array $object): ?string {
+		$id = self::objectId(object: $object);
+		if (is_string($id) === false || $id === '') {
+			return null;
+		}
+
+		return $id;
+	}//end idOf()
+
+	/**
 	 * The id an object names, in any of the shapes a payload carries it.
 	 *
 	 * @param array<string, mixed> $object The object.

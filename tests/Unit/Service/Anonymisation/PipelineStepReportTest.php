@@ -65,6 +65,9 @@ use ReflectionClass;
  * @uses \OCA\OpenRegister\Files\Service\File\DocxTextReplacer
  * @uses \OCA\OpenRegister\Files\Service\File\SanitizationRevisionCounts
  * @uses \OCA\OpenRegister\Files\Service\File\SanitizationStructureCounts
+ * @uses   \OCA\OpenRegister\Files\Service\File\MaskForm
+ * @uses   \OCA\OpenRegister\Files\Service\File\PlaceholderText
+ * @uses   \OCA\OpenRegister\Service\File\OfficeMediaBurner
  */
 final class PipelineStepReportTest extends TestCase {
 	private const DOCX = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';

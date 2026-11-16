@@ -6,8 +6,8 @@ The findings marked DONE or RESOLVED in proposal.md are built. These tasks are w
 
 - [x] 1.1 D2: the generator reports every MDTO-required element it fills with a default (`MdtoXmlGenerator::collectMdtoRequiredElementGaps()`, through `assertTransferPreconditions()`), and the XSD test holds the output to MDTO-XML 1.0.1.
 - [x] 1.2 D1: emit `betrokkene` from a schema-declared party property. Verify: XSD test with a record that names a party.
-- [ ] 1.3 D1: a schema declares which relation expresses containment, and the export emits `isOnderdeelVan` and `bevatOnderdeel` from it. Verify: XSD test on a parent record with two children.
+- [x] 1.3 D1: a schema declares which relation expresses containment, and the export emits `isOnderdeelVan` and `bevatOnderdeel` from it. Verify: XSD test on a parent record with two children.
 
 ## 2. Docs
 
-- [x] 2.1 `docs/` states which MDTO elements the export carries and which it leaves out. Built in `docs/features/archiving.md`, "Which MDTO elements the export carries"; it lists `isOnderdeelVan` and `bevatOnderdeel` as left out until 1.3 is built.
+- [x] 2.1 `docs/` states which MDTO elements the export carries and which it leaves out. Built in `docs/features/archiving.md`, "Which MDTO elements the export carries"; it now lists `isOnderdeelVan` and `bevatOnderdeel` as carried, from `x-openregister-archival.containment`.

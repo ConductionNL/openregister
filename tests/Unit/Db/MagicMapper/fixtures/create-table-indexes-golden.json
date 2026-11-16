@@ -46,6 +46,12 @@
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_trgm_idx ON oc_openregister_table_1_2 USING GIN (_name gin_trgm_ops)"
         },
         {
+            "prepare": "SELECT COUNT(*) FROM pg_proc WHERE proname = 'openregister_fold'"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_foldgin_idx ON oc_openregister_table_1_2 USING GIN ((openregister_fold(_name::text)) gin_trgm_ops)"
+        },
+        {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_object_rel_idx ON oc_openregister_table_1_2 (\"related_object\")"
         },
         {
@@ -70,6 +76,9 @@
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_searchable_name_trgm_idx ON oc_openregister_table_1_2 USING GIN (\"searchable_name\" gin_trgm_ops)"
         },
         {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_searchable_name_foldgin_idx ON oc_openregister_table_1_2 USING GIN ((openregister_fold(\"searchable_name\"::text)) gin_trgm_ops)"
+        },
+        {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_searchable_name_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"searchable_name\" AS TEXT)))"
         },
         {
@@ -77,6 +86,9 @@
         },
         {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_trgm_idx ON oc_openregister_table_1_2 USING GIN (\"both_flags\" gin_trgm_ops)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_foldgin_idx ON oc_openregister_table_1_2 USING GIN ((openregister_fold(\"both_flags\"::text)) gin_trgm_ops)"
         },
         {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"both_flags\" AS TEXT)))"
@@ -174,6 +186,12 @@
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_trgm_idx ON oc_openregister_table_1_2 USING GIN (_name gin_trgm_ops)"
         },
         {
+            "prepare": "SELECT COUNT(*) FROM pg_proc WHERE proname = 'openregister_fold'"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_foldgin_idx ON oc_openregister_table_1_2 USING GIN ((openregister_fold(_name::text)) gin_trgm_ops)"
+        },
+        {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_object_rel_idx ON oc_openregister_table_1_2 (\"related_object\")"
         },
         {
@@ -198,6 +216,9 @@
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_searchable_name_trgm_idx ON oc_openregister_table_1_2 USING GIN (\"searchable_name\" gin_trgm_ops)"
         },
         {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_searchable_name_foldgin_idx ON oc_openregister_table_1_2 USING GIN ((openregister_fold(\"searchable_name\"::text)) gin_trgm_ops)"
+        },
+        {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_searchable_name_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"searchable_name\" AS TEXT)))"
         },
         {
@@ -205,6 +226,9 @@
         },
         {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_trgm_idx ON oc_openregister_table_1_2 USING GIN (\"both_flags\" gin_trgm_ops)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_foldgin_idx ON oc_openregister_table_1_2 USING GIN ((openregister_fold(\"both_flags\"::text)) gin_trgm_ops)"
         },
         {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"both_flags\" AS TEXT)))"
@@ -299,6 +323,12 @@
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_trgm_idx ON oc_openregister_table_1_2 USING GIN (_name gin_trgm_ops)"
         },
         {
+            "prepare": "SELECT COUNT(*) FROM pg_proc WHERE proname = 'openregister_fold'"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_foldgin_idx ON oc_openregister_table_1_2 USING GIN ((openregister_fold(_name::text)) gin_trgm_ops)"
+        },
+        {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_object_rel_idx ON oc_openregister_table_1_2 (\"related_object\")"
         },
         {
@@ -323,6 +353,9 @@
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_searchable_name_trgm_idx ON oc_openregister_table_1_2 USING GIN (\"searchable_name\" gin_trgm_ops)"
         },
         {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_searchable_name_foldgin_idx ON oc_openregister_table_1_2 USING GIN ((openregister_fold(\"searchable_name\"::text)) gin_trgm_ops)"
+        },
+        {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_searchable_name_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"searchable_name\" AS TEXT)))"
         },
         {
@@ -330,6 +363,9 @@
         },
         {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_trgm_idx ON oc_openregister_table_1_2 USING GIN (\"both_flags\" gin_trgm_ops)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_foldgin_idx ON oc_openregister_table_1_2 USING GIN ((openregister_fold(\"both_flags\"::text)) gin_trgm_ops)"
         },
         {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"both_flags\" AS TEXT)))"
@@ -424,6 +460,12 @@
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_trgm_idx ON oc_openregister_table_1_2 USING GIN (_name gin_trgm_ops)"
         },
         {
+            "prepare": "SELECT COUNT(*) FROM pg_proc WHERE proname = 'openregister_fold'"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_foldgin_idx ON oc_openregister_table_1_2 USING GIN ((openregister_fold(_name::text)) gin_trgm_ops)"
+        },
+        {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_object_rel_idx ON oc_openregister_table_1_2 (\"related_object\")"
         },
         {
@@ -448,6 +490,9 @@
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_searchable_name_trgm_idx ON oc_openregister_table_1_2 USING GIN (\"searchable_name\" gin_trgm_ops)"
         },
         {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_searchable_name_foldgin_idx ON oc_openregister_table_1_2 USING GIN ((openregister_fold(\"searchable_name\"::text)) gin_trgm_ops)"
+        },
+        {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_searchable_name_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"searchable_name\" AS TEXT)))"
         },
         {
@@ -455,6 +500,9 @@
         },
         {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_trgm_idx ON oc_openregister_table_1_2 USING GIN (\"both_flags\" gin_trgm_ops)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_foldgin_idx ON oc_openregister_table_1_2 USING GIN ((openregister_fold(\"both_flags\"::text)) gin_trgm_ops)"
         },
         {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"both_flags\" AS TEXT)))"
@@ -546,6 +594,12 @@
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_trgm_idx ON oc_openregister_table_1_2 USING GIN (_name gin_trgm_ops)"
         },
         {
+            "prepare": "SELECT COUNT(*) FROM pg_proc WHERE proname = 'openregister_fold'"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_foldgin_idx ON oc_openregister_table_1_2 USING GIN ((openregister_fold(_name::text)) gin_trgm_ops)"
+        },
+        {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_object_rel_idx ON oc_openregister_table_1_2 (\"related_object\")"
         },
         {
@@ -579,6 +633,9 @@
             }
         },
         {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_searchable_name_foldgin_idx ON oc_openregister_table_1_2 USING GIN ((openregister_fold(\"searchable_name\"::text)) gin_trgm_ops)"
+        },
+        {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_searchable_name_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"searchable_name\" AS TEXT)))"
         },
         {
@@ -586,6 +643,9 @@
         },
         {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_trgm_idx ON oc_openregister_table_1_2 USING GIN (\"both_flags\" gin_trgm_ops)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_foldgin_idx ON oc_openregister_table_1_2 USING GIN ((openregister_fold(\"both_flags\"::text)) gin_trgm_ops)"
         },
         {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"both_flags\" AS TEXT)))"
@@ -690,6 +750,12 @@
             }
         },
         {
+            "prepare": "SELECT COUNT(*) FROM pg_proc WHERE proname = 'openregister_fold'"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_foldgin_idx ON oc_openregister_table_1_2 USING GIN ((openregister_fold(_name::text)) gin_trgm_ops)"
+        },
+        {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_object_rel_idx ON oc_openregister_table_1_2 (\"related_object\")"
         },
         {
@@ -723,6 +789,9 @@
             }
         },
         {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_searchable_name_foldgin_idx ON oc_openregister_table_1_2 USING GIN ((openregister_fold(\"searchable_name\"::text)) gin_trgm_ops)"
+        },
+        {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_searchable_name_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"searchable_name\" AS TEXT)))"
         },
         {
@@ -730,6 +799,9 @@
         },
         {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_trgm_idx ON oc_openregister_table_1_2 USING GIN (\"both_flags\" gin_trgm_ops)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_foldgin_idx ON oc_openregister_table_1_2 USING GIN ((openregister_fold(\"both_flags\"::text)) gin_trgm_ops)"
         },
         {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"both_flags\" AS TEXT)))"
@@ -826,6 +898,12 @@
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_trgm_idx ON oc_openregister_table_1_2 USING GIN (_name gin_trgm_ops)"
         },
         {
+            "prepare": "SELECT COUNT(*) FROM pg_proc WHERE proname = 'openregister_fold'"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_foldgin_idx ON oc_openregister_table_1_2 USING GIN ((openregister_fold(_name::text)) gin_trgm_ops)"
+        },
+        {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_object_rel_idx ON oc_openregister_table_1_2 (\"related_object\")"
         },
         {
@@ -850,6 +928,9 @@
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_searchable_name_trgm_idx ON oc_openregister_table_1_2 USING GIN (\"searchable_name\" gin_trgm_ops)"
         },
         {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_searchable_name_foldgin_idx ON oc_openregister_table_1_2 USING GIN ((openregister_fold(\"searchable_name\"::text)) gin_trgm_ops)"
+        },
+        {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_searchable_name_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"searchable_name\" AS TEXT)))"
         },
         {
@@ -857,6 +938,9 @@
         },
         {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_trgm_idx ON oc_openregister_table_1_2 USING GIN (\"both_flags\" gin_trgm_ops)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_foldgin_idx ON oc_openregister_table_1_2 USING GIN ((openregister_fold(\"both_flags\"::text)) gin_trgm_ops)"
         },
         {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"both_flags\" AS TEXT)))"
@@ -1042,6 +1126,12 @@
         },
         {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_trgm_idx ON oc_openregister_table_1_2 USING GIN (_name gin_trgm_ops)"
+        },
+        {
+            "prepare": "SELECT COUNT(*) FROM pg_proc WHERE proname = 'openregister_fold'"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_foldgin_idx ON oc_openregister_table_1_2 USING GIN ((openregister_fold(_name::text)) gin_trgm_ops)"
         },
         {
             "log": "debug",
