@@ -18314,3 +18314,4 @@ cover:launchpad:fb10c50fm88bd:aae6d66c	added PlainExceptionContractsTest (9 test
 cover:dossiq:069ee2d6m9d1b:6ecc72bb	already done: lib/Service/Workflow/*.php 695/696 stmts covered (pcov, 18860 tests, 1 inherited error); the 1 left (WorkflowDefinitionRepository::idsOf null-row skip, l.650) is unreachable, normaliseObjectRows yields arrays only; no PR	session-20261116T230601-2d2f3f2b	2026-11-16T23:15:46Z
 fix:opencatalogi:2756:d7a2df60	pushed a362a4ec: errorReport limited to its moderator groups; REVERIFY queued (floor RED still open, not landed)	session-20261116T230245-c73891ff	2026-11-16T23:16:34Z
 review:opencatalogi:2674:05957a6e	GREEN: 0 new failures (78 inherited), access checks hold; 2 non-blocking concerns	session-20261116T230818-aebff84c	2026-11-16T23:16:51Z
+fix:hermiq:1781:bf818a9a	conflict resolved, pushed dd5b5dad, 0 new failures; REVERIFY queued (merge lock busy)	session-20261116T214640-6a01c0c6	2026-11-16T23:17:05Z
