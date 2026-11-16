@@ -15480,3 +15480,5 @@ review:thematiq:1293:70f30610	GREEN: webpack bump, vitest 1559 pass, build ok	se
 verify:learniq:2555:2527a223	2555 GREEN (lock refresh, no new failures)	session-20261116T062050-add210c3	2026-11-16T06:38:49Z
 merge:stackiq:1930:c2fb6e9a	cloud tree of 1 stackiq PRs: none; conflict 1, lint 0, red 0, moved 0, done 0	session-20261116T063134-3a4fc8af	2026-11-16T06:39:08Z
 review:thematiq:1292:1c6de772	GREEN: vite patch bump, vitest 1559 pass	session-20261116T062120-691af8f7	2026-11-16T06:39:23Z
+verify:integriq:3669:0209cf2b	GREEN 3669: no new failures (baseline 5 inherited), vitest 2387 passed	session-20261116T062109-81fc252e	2026-11-16T06:39:53Z
+merge:hermiq:1167:1101ee8c	cloud tree of 4 hermiq PRs: merged=0 red=1 fail=0 skip=0; conflict 2, lint 0, red 0, moved 1, done 0	session-20261116T063608-d33f86e6	2026-11-16T06:40:14Z
