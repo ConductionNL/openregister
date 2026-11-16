@@ -13645,3 +13645,8 @@ hermiq	1760	440cf2e9d2cd1a94d89bdd25448aa67be433ec8d	GREEN	worker-56:review	impl
 portaliq	1353	dc6ca37da68657461ec6ee5cdda5d90d471c6312	GREEN	worker-37:review	Dev-only phpmd 3 bump plus phpmd script syntax, SuppressWarnings docblocks and imported SensitiveParameter (same attribute); no behaviour change; php -l clean; unit 6178 tests, same 16 inherited errors as baseline; phpmd analyze runs
 portaliq	2530	55e242b95cdf4371d672f9d81cd3458c467fb3ab	GREEN	worker-20	unit 6178 tests; baseline 16 errors on development; new failures 0 (composer.lock only: hydra-gates v1.18.0 -> v1.19.0)
 shillinq	2997	a355f8db8dce97a3433ca0ec4d279d51ee389f78	REVERIFY	worker-18	3 Cbcr save() helpers pass uuid via ObjectSaveOptions; BackfillGroupEntityCbcFields patches via ObjectPatch(target) ; phpstan/phpcs clean on touched files; unit suite 12284 tests, 0 failures (was 17); new head d7b6bce1714de3f3a4d9262af6d073cdd8d74dc5, verify it
+buildiq	820	a6bd63eb2f68837d7f3fe2f2263f6ae8dc5c7a9e	RED	merge8:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+buildiq	1114	9381ce974c70d039e0864ef92e7887b77b95824e	RED	merge8:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+buildiq	1249	0997f504b0eac297c5df04973323bef6894adb7e	RED	merge8:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+buildiq	1256	342dece0d678059a47b5743de2303db5fabfe837	RED	merge8:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+buildiq	1596	33a8b51d6ee0f8da44eece4449f064758c5bb69a	RED	merge8:merge-gate	GATE RED absolute floor: buildiq maintainability 3.90 after merge is below its floor 3.91
