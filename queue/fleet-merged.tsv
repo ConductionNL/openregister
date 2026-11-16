@@ -4222,3 +4222,4 @@ buildiq	1583	cb1e01bf5bb8b6fa92d5ef01b0765ee06f7300e7	SKIP	worker-41	GATE UNMEAS
 versioniq	739	8a1c4395a1f3bf31e9ce8be4a6cb5f7b0cb77fbf	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.97 holds at 4.03
 larpinq	1053	c3e9d42774ab4defd00e396838edbd0f54622831	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.05
 larpinq	1065	b4cd6229bc8a4c76e19474e9d716e4c5b905e373	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.05
+decidiq	1468	7dc751fb076903e2e43ec5e7338bc901791d14a5	SKIP	worker-55	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
