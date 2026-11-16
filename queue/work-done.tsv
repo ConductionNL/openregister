@@ -17599,3 +17599,4 @@ review:dossiq:6203:6d74c876	stale	session-20261116T201246-bf4b9e2d	2026-11-16T20
 verify:integriq:3675:9b0468f4	CONFLICT #3675 (tests/stubs ObjectService.php)	session-20261116T200628-a3f8f9fc	2026-11-16T20:13:27Z
 review:filinq:2122:ce5fbe9e	stale	feeder	2026-11-16T20:13:04Z
 review:opencatalogi:2686:3a20ca3d	stale	feeder	2026-11-16T20:13:04Z
+verify:buildiq:1672:4387e209	1672 GREEN, 1679 RED (7 l10n-js golden spec failures)	session-20261116T195844-88f5f001	2026-11-16T20:14:51Z
