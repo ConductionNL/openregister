@@ -4179,6 +4179,7 @@ larpinq	1065	b4cd6229bc8a4c76e19474e9d716e4c5b905e373	SKIP	worker-48	GATE UNMEAS
 opencatalogi	2407	15ee026e9e5cc880f1ef5812343e2da79e65c3d1	SKIP	worker-11	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 shillinq	2259	48de59f1a9e0bf8ffba75343ff03148754ed469c	SKIP	worker-58	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 shillinq	3110	a0ee6bc0a0cab83e9f4998a81594f802cfe4ab3c	RED	worker-58	GATE RED checker floor: spdxheaders stars: 5 -> 4
+decidiq	2191	29114ea549b1df7741db17358e85829c10be8c82	SKIP	worker-27	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 pipelinq	2969	23b177e505cb1a2a906213fd0df439c94e592b94	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.48
 pipelinq	3885	6b8029c1c0ce49d9a97aa91a0f30f0be27f4476e	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.48
 pipelinq	3887	17b6026c5b66fcb53bfc9ce3bc6cb3e80a42c509	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.50
