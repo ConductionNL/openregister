@@ -1,0 +1,10 @@
+{
+    "config": {
+        "allow-plugins": {
+            "cyclonedx/cyclonedx-php-composer": true
+        }
+    },
+    "require": {
+        "cyclonedx/cyclonedx-php-composer": "6.2.0"
+    }
+}

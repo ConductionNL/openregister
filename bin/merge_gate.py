@@ -61,8 +61,54 @@ def estimator_checkout():
     subprocess.run(["rm", "-rf", tmp])
 
 
-def run(cmd, cwd=None):
-    return subprocess.run(cmd, cwd=cwd, capture_output=True, text=True)
+def run(cmd, cwd=None, env=None):
+    return subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, env=env)
+
+
+GITLEAKS_VERSION = "8.30.0"  # the version the local runners scan with
+
+
+def ensure_gitleaks():
+    """Put gitleaks on PATH for the checker's secretscanning criterion; a cloud session has none.
+
+    Installs the release binary into the gate cache once. Without it the criterion reads
+    "not measured" and the gate is UNMEASURED, so a failed download changes nothing."""
+    import shutil
+    if shutil.which("gitleaks") or os.path.isfile("/usr/local/bin/gitleaks"):
+        return
+    bindir = os.path.join(CACHE, "bin")
+    exe = os.path.join(bindir, "gitleaks")
+    if not os.path.isfile(exe):
+        os.makedirs(bindir, exist_ok=True)
+        url = (f"https://github.com/gitleaks/gitleaks/releases/download/v{GITLEAKS_VERSION}/"
+               f"gitleaks_{GITLEAKS_VERSION}_linux_x64.tar.gz")
+        tmp = f"{exe}.{os.getpid()}.tgz"
+        if run(["curl", "-fsSL", "-o", tmp, url]).returncode == 0 and \
+                run(["tar", "-xzf", tmp, "-C", bindir, "gitleaks"]).returncode == 0:
+            os.chmod(exe, 0o755)
+        subprocess.run(["rm", "-f", tmp])
+    if os.path.isfile(exe):
+        os.environ["PATH"] = bindir + os.pathsep + os.environ.get("PATH", "")
+
+
+def canonical_origin(url):
+    """https://github.com/<owner>/<repo> for an origin URL, also when a session's git proxy serves it
+    (e.g. http://proxy@127.0.0.1:port/git/<owner>/<repo>): the checker names the repository after it."""
+    parts = [x for x in url.rstrip("/").split("/") if x]
+    if "://" not in url and not url.startswith("git@") or len(parts) < 2:
+        return url
+    owner, repo = parts[-2].split(":")[-1], parts[-1]
+    repo = repo[:-4] if repo.endswith(".git") else repo
+    return f"https://github.com/{owner}/{repo}"
+
+
+def scan_env(d, want):
+    """Environment for the checker: without the user and system git config when an insteadOf rule
+    rewrites the origin URL away from github.com (git remote get-url expands insteadOf)."""
+    got = git(d, "remote", "get-url", "origin").stdout.strip()
+    if not want or got == want:
+        return None
+    return {**os.environ, "GIT_CONFIG_GLOBAL": "/dev/null", "GIT_CONFIG_NOSYSTEM": "1"}
 
 
 def git(cwd, *a):
@@ -160,8 +206,8 @@ def sbom(head, base):
     return "UNMEASURED", f"regen-sbom exit {p.returncode}: {last}"
 
 
-def checker(tool, head, base):
-    p = run([sys.executable, tool, "compare", head, "--base-ref", base])
+def checker(tool, head, base, env=None):
+    p = run([sys.executable, tool, "compare", head, "--base-ref", base], env=env)
     lines, last = tail(p)
     if p.returncode in (0, 3, 4):
         return "OK", last
@@ -247,6 +293,8 @@ def main():
     if not floor_tool or not checker_tool:
         return "UNMEASURED", "floor_check.py or checker_floor.py not available"
     url = git(c, "remote", "get-url", "origin").stdout.strip()
+    url = canonical_origin(url) if url else url
+    ensure_gitleaks()
     app = os.path.basename(url or c)
     app = app[:-4] if app.endswith(".git") else app
     with tempfile.TemporaryDirectory(prefix="merge-gate-") as tmp:
@@ -275,7 +323,7 @@ def main():
         # Maintainability is compared on the head alone against its merge base, which is
         # measured once per branch point and cached; the base moves after every merge.
         checks = (("floor", lambda: floor(floor_tool, head, base)), ("sbom", lambda: sbom(tree, base)),
-                  ("checker", lambda: checker(checker_tool, tree, base)), ("absolute", lambda: absolute(tree, app)))
+                  ("checker", lambda: checker(checker_tool, tree, base, scan_env(tree, url))), ("absolute", lambda: absolute(tree, app)))
         from concurrent.futures import ThreadPoolExecutor
         with ThreadPoolExecutor(max_workers=len(checks)) as pool:
             futures = [pool.submit(timed, name, check) for name, check in checks]

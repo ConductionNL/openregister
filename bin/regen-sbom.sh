@@ -61,6 +61,8 @@ while [ $# -gt 0 ]; do
 done
 
 die() { echo "[regen-sbom] ERROR: $*" >&2; exit 3; }
+# Composer disables plugins (CycloneDX is one) when it runs as root without this; cloud sessions run as root.
+export COMPOSER_ALLOW_SUPERUSER=1
 
 APP="$(cd "$APP" 2>/dev/null && pwd)" || die "no such directory"
 command -v jq >/dev/null || die "jq is not installed"
@@ -79,6 +81,14 @@ composer_home() {
     local home="$CACHE/composer-${ver}"
     if [ ! -d "$home/vendor/cyclonedx/cyclonedx-php-composer" ]; then
         mkdir -p "$home" || return 1
+        # A prepared composer.json + composer.lock for this plugin version (config/cyclonedx-<ver>/ on the
+        # state branch) installs through composer-cloud.sh, which needs neither packagist nor GitHub zipballs.
+        local pre; pre="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/config/cyclonedx-${ver}"
+        if [ -f "$pre/composer.lock" ] && [ -f "$(dirname "${BASH_SOURCE[0]}")/composer-cloud.sh" ]; then
+            cp "$pre/composer.json" "$pre/composer.lock" "$home/" \
+                && bash "$(dirname "${BASH_SOURCE[0]}")/composer-cloud.sh" "$home" >&2 \
+                && [ -d "$home/vendor/cyclonedx/cyclonedx-php-composer" ] && { echo "$home"; return 0; }
+        fi
         COMPOSER_HOME="$home" composer global config --no-interaction allow-plugins.cyclonedx/cyclonedx-php-composer true >/dev/null 2>&1 || return 1
         COMPOSER_HOME="$home" composer global require --quiet --no-interaction "cyclonedx/cyclonedx-php-composer:${ver#v}" >&2 \
             || COMPOSER_HOME="$home" composer global require --quiet --no-interaction --prefer-source "cyclonedx/cyclonedx-php-composer:${ver#v}" >&2 \
