@@ -15846,3 +15846,4 @@ fix:opencatalogi:2679:22b67cf7	maintainability stars restored, pushed b5f77a60; 
 fix:pipelinq:2557:74ee842a	failed: dev-only bump (nextcloud/ocp require-dev); regen-sbom leaves sbom.cdx.json unchanged (654 components), so the gate's 'lockfile changed without sbom.cdx.json' rule cannot be met; needs a gate exemption for dev-only lock changes	session-20261116T081522-a0a03964	2026-11-16T08:41:12Z
 merge:portaliq:1670:3d66c280	merge3 tree of 18 portaliq PRs: merged=3 red=8 fail=0 skip=0; conflict 7, lint 0, moved 0; fix rows 7	merge3-20261113T213425-c36bcd5f	2026-11-16T08:41:23Z
 merge:portaliq:1071:ccdff193	merge3 tree of 18 portaliq PRs: merged=3 red=8 fail=0 skip=0; conflict 7, lint 0, moved 0; fix rows 7	merge3-20261113T213425-c36bcd5f	2026-11-16T08:41:28Z
+merge:portaliq:1682:635674e4	merge3 tree of 18 portaliq PRs: merged=3 red=8 fail=0 skip=0; conflict 7, lint 0, moved 0; fix rows 7	merge3-20261113T213425-c36bcd5f	2026-11-16T08:41:41Z
