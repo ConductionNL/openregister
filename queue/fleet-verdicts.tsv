@@ -13827,3 +13827,5 @@ learniq	1727	185949881fbbf0dbfdf3524a4f4cbb9378b38ebc	RED	worker-15:merge-gate	G
 learniq	1903	a21f3b3be7a0738457716ac64ebcb0934364ae10	RED	worker-15:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
 learniq	2126	4e6551e419cd72ffe5671223bb8b1976ed8f7538	RED	worker-15:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
 buildiq	1094	2ea9dbb488b0e4ebb832485f152e1c96842c72c2	GREEN	worker-09:review	dev-dep bump prettier (lock resolves 3.10.1); no PHP/src change; vitest 4719/4719 pass; prettier --check on src flags the same 86 files under 3.9.6 and 3.10.1; eslint unchanged
+learniq	2134	908f17acf4f0b22ffe01331782a0cfd4f2123db0	CONFLICT	worker-15:merge	conflicts with development; files: lib/BackgroundJob/EngagementSignalJob.php lib/BackgroundJob/EnrolmentProgressRollupJob.php lib/BackgroundJob/LearnerEngagementRollupJob.php lib/BackgroundJob/LtiAgsScorePollJob.php lib/BackgroundJob/S
+learniq	1881	a1be2d792575e64f3438f0b7add628b8233e50b2	RED	worker-15:merge	adds unit failure(s) with the PRs before it in the tree: PastCourseDaysJobTest::testYesterdaysCourseDayIsNoLongerComing
