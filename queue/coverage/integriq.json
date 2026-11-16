@@ -1,7 +1,7 @@
 {
  "app": "integriq",
- "commit": "d9d474f0f4cc722cd8e37fc20093f9be6e739cf2",
- "measured_at": "2026-11-16T07:17:53Z",
+ "commit": "2e38bb2ba8980ec60937814e22d1e809ad60fa8d",
+ "measured_at": "2026-11-16T18:50:37Z",
  "php": {
   "tool": "pcov",
   "pct": 95.29,
