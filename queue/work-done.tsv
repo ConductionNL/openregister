@@ -17025,3 +17025,4 @@ fix:versioniq:725:bd0db7f7	resolved conflict, pushed b54e382d; REVERIFY queued (
 merge:portaliq:1767:595cdc26	unmeasured: static.developer.overheid.nl	session-20261116T173306-d04a65dc	2026-11-16T18:01:37Z
 review:shillinq:3088:e27bd632	GREEN: 12250 tests OK on PR merged with development	session-20261116T173310-7d288d7d	2026-11-16T18:02:15Z
 review:filinq:2094:ff0c7f80	GREEN: unit 6915 pass, jest 592 pass	session-20261116T175243-a5e4d922	2026-11-16T18:02:33Z
+cover:keepiq:c967a31fmba5a:d3522ea6	PR #1844: 13 tests for 6 lib/Db classes, lib/Db lines 3229->3270 of 3273, suite 5323->5336 OK	session-20261116T173256-6277a58c	2026-11-16T18:03:04Z
