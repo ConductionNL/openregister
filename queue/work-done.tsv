@@ -16145,6 +16145,7 @@ fix:pipelinq:3835:ceb76db3	fixed: article store on main's object API, pushed 48e
 fix:shillinq:2070:29369cd1	fixed review blockers (veto answered 403, release texts corrected, 4 tests); merge lock held elsewhere, REVERIFY at 756a08e8e8	session-20261116T101530-34aec2a4	2026-11-16T10:28:29Z
 fix:stackiq:1924:f5164c8d	fixed: SPDX header on the inherited test stub restores 5 stars; pushed ef9a11b2; merge lock held elsewhere, REVERIFY queued	session-20261116T102343-48a31bcc	2026-11-16T10:28:36Z
 merge:opencatalogi:2682:7babb44b	unmeasured: api.osv.dev (probe connect_rejected); nothing built, local lander takes it	session-20261116T101239-227210a0	2026-11-16T10:28:55Z
+merge:shillinq:2226:c463b707	cloud tree of 7 shillinq PRs: merged=0 red=4 fail=0 skip=1; conflict 0, lint 0, red 0, moved 2, done 0	session-20261116T101009-db475c09	2026-11-16T10:29:43Z
 merge:opencatalogi:1888:7fff7b2e	unmeasured: api.osv.dev (probe connect_rejected); nothing built, local lander takes it	session-20261116T101239-227210a0	2026-11-16T10:29:59Z
 fix:shillinq:1991:29abf7fb	inherited: development reads spdx 4 stars; root fix opened as #3112	session-20261116T101745-e986474c	2026-11-16T10:30:09Z
 merge:buildiq:1256:689ba24c	cloud tree of 4 buildiq PRs: merged=0 red=1 fail=0 skip=3; conflict 0, lint 0, red 0, moved 0, done 0 (1256 gate RED sbom; 1583/1641/1652 REQUEST_CHANGES on gate findings)	session-20261116T101258-04edb59b	2026-11-16T10:30:36Z
