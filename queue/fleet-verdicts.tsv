@@ -15039,4 +15039,7 @@ versioniq	723	332a8036e3d25abd39c9c1c24d0f99f9589c4c79	CONFLICT	merge3	conflicts
 versioniq	725	bd0db7f78fc7f06f9ded92a916114f67b4a546f0	CONFLICT	merge3	conflicts with development; files: src/App.vue src/utils/updateBatch.ts tests/unit/Service/Advisory/NextcloudAdvisoryFeedTest.php 
 versioniq	738	f3f7da6d169b73e4fde2fc64bbc78a43994842cd	CONFLICT	merge3	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
 humaniq	1164	73689a5c14d96133ee6b263874b8bbf12f49dd44	CONFLICT	merge3	merges clean on development alone; files: composer.lock 
+hermiq	1735	80b67d8252b18d63d70f5f77b427c7fa70b431c9	CONFLICT	worker-25:merge	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json tests/Unit/Mcp/HermiqToolProviderTest.php 
+hermiq	1807	36283a373892b12aa856fdc7b1b4420cdec74781	CONFLICT	worker-25:merge	conflicts with development; files: composer.lock 
+hermiq	1808	d92c1c64c29a1a3d559e0d6e3f10da062039597d	CONFLICT	worker-25:merge	conflicts with development; files: sbom.cdx.json 
 stackiq	1978	723683e2cea093c598e8bbdad9e0de104feb46ed	CONFLICT	worker-57:merge	merges clean on development alone; files: openapi.json 
