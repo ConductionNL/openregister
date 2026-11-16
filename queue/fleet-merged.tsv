@@ -3821,3 +3821,6 @@ learniq	1169	6f8c6510da541700251fc85ad25a279db0a224bf	SKIP	worker-15	GATE UNMEAS
 learniq	1727	185949881fbbf0dbfdf3524a4f4cbb9378b38ebc	SKIP	worker-15	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
 learniq	1903	a21f3b3be7a0738457716ac64ebcb0934364ae10	SKIP	worker-15	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
 learniq	2126	4e6551e419cd72ffe5671223bb8b1976ed8f7538	SKIP	worker-15	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
+launchpad	756	e5da8a8442e3254be403a4d29fe3cb21312df78c	RED	worker-12	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+launchpad	880	3c07107533c5035ff96566d9aa97a6c5c78aa5e3	RED	worker-12	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+launchpad	977	4ec996d31439daed99af546858b9614b2ca4a159	RED	worker-12	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
