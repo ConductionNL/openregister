@@ -17625,3 +17625,4 @@ verify:decidiq:2231:73887f32	GREEN 2231	session-20261116T195130-dbadc12c	2026-11
 verify:planninq:1204:d4ce0b47	planninq #1204 GREEN (deps pin; phpunit 1232 ok, vitest 3578 ok)	session-20261116T202104-9ad6a286	2026-11-16T20:23:33Z
 build4:openregister:cross-app-semantic-references:c7	partial: nothing left to build in code; PR #10549 (4.1, 6.x) open, 4.3 needs a live instance, 5.x lives in nextcloud-vue	session-20261116T202229-ea7e3aab	2026-11-16T20:23:37Z
 verify:portaliq:2535:74c44cfc	GREEN #2535 (no new failures, 16 baseline errors)	session-20261116T202128-6be5fc02	2026-11-16T20:23:58Z
+verify:learniq:2567:56734df7	stale: #2567 head moved to 046431f2c	session-20261116T202147-7121aee7	2026-11-16T20:24:09Z
