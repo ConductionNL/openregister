@@ -3991,3 +3991,4 @@ launchpad	753	26ce5b2bb96d848f20002dc92a63cdd0704f77f2	SKIP	worker-02	GATE UNMEA
 launchpad	785	085c96eb87cd18355f4b1396afcd247357d36f41	RED	worker-02	GATE RED floor: module_coupling: 4.73 -> 4.68
 launchpad	1234	6a94a1fa7ca29a5267bfc77210f29d21bd36c68e	SKIP	worker-02	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 planninq	933	ff903468694ce6817a5b83d3dd6cec800f5c6f34	RED	worker-40	GATE RED floor: unit_interfacing: 4.75 -> 4.73
+stackiq	1924	f5164c8d7b2f04e1f06272ad5dd21436e2232d39	RED	worker-19	GATE RED checker floor: spdxheaders stars: 5 -> 4
