@@ -174,13 +174,23 @@
       mandatory control.
 - [x] 4.3a A warning saves, and its message is evaluated and written to the
       rule run log.
-- [ ] 4.3b RETURNING it with the response. The save events carry `setErrors()`
+- [x] 4.3b RETURNING it with the response. The save events carry `setErrors()`
       and nothing else — there is no warnings channel on a save response to put
       it in. Recorded rather than dropped while the channel is missing, and
       named here rather than left to look like a feature.
       (15 Nov, still open: the channel has to reach every save path — API,
       import, bulk — through `WriteVetoState`, which is a change to the save
       response of its own.)
+      (16 Nov: built beside the event rather than on it, so no event or
+      published signature changed. A write that a `warn` validation lets
+      through hands each warning, naming its object, to the request's
+      `SaveWarningsInterface`; `SaveWarningsMiddleware` puts them on every
+      successful response of that request as `OpenRegister-Warnings: <JSON>`
+      and, on a single-object body, as `@self.warnings`, so create, update,
+      patch, import and bulk all carry them. A refused write keeps them in its
+      422 body only; a request with no warnings answers as before. The
+      collector keeps at most 100 between drains, for background saves.
+      `SaveWarningsTest` (6), `SaveWarningsMiddlewareTest` (5).)
 - [x] 4.4 Two new assertions in `RuleEvaluationPointTest`: the listener is
       subscribed to both events, and it records its verdict. The validation is
       also a kind in `RuleVocabulary` (order 4, ahead of flows, which moved to

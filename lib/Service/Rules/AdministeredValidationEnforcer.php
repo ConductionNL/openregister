@@ -48,12 +48,14 @@ class AdministeredValidationEnforcer implements AdministeredValidationEnforcerIn
 	 * @param AdministeredValidationChecks $checks The declared checks, the named-condition vocabulary and the caller's language.
 	 * @param AdministeredValidationRunLog $runLog Records what a validation decided.
 	 * @param LoggerInterface $logger The logger.
+	 * @param SaveWarningsInterface|null $saveWarnings The request's save warnings, which the response carries (task 4.3b).
 	 */
 	public function __construct(
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly AdministeredValidationChecks $checks,
 		private readonly AdministeredValidationRunLog $runLog,
 		private readonly LoggerInterface $logger,
+		private readonly ?SaveWarningsInterface $saveWarnings=null,
 	) {
 	}//end __construct()
 
@@ -97,6 +99,13 @@ class AdministeredValidationEnforcer implements AdministeredValidationEnforcerIn
 		$outcome = $this->evaluate(write: $write, document: $document);
 		$this->recordOutcome(write: $write, outcome: $outcome, document: $document);
 		if ($outcome['refusals'] === []) {
+			// The write proceeds: its warnings travel to the response beside
+			// the event, which carries errors only. A refused write carries
+			// them in its refusal instead.
+			foreach ($outcome['warnings'] as $warning) {
+				$this->saveWarnings?->add(object: $write->object->getUuid(), warning: $warning);
+			}
+
 			return null;
 		}
 
@@ -171,13 +180,9 @@ class AdministeredValidationEnforcer implements AdministeredValidationEnforcerIn
 	 */
 	private function recordOutcome(ValidatedWrite $write, array $outcome, array $document): void {
 		foreach ($outcome['warnings'] as $warning) {
-			// 🔑 RECORDED, NOT RETURNED — and that is a gap, not a decision.
-			// The spec says a warning saves AND returns its message, and the
-			// save events carry `setErrors()` and nothing else: there is no
-			// warnings channel on a save response to put it in. Writing it to
-			// the run log keeps the evaluation honest and visible while the
-			// channel is missing, and `tasks.md` names the missing half rather
-			// than letting a silent drop look like a feature.
+			// Recorded AND returned: the run log keeps the evaluation
+			// visible after the fact, and `refusalOfWrite()` hands the
+			// warning to the response through `SaveWarningsInterface`.
 			$this->runLog->recordWarning(write: $write, entry: $warning, decidedBy: $this->decidedBy(write: $write, entry: $warning, document: $document));
 		}
 

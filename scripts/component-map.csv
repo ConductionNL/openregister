@@ -4252,3 +4252,6 @@ Service/Configuration/SeedReferenceResolver.php,,Service,,,,,Configuration
 Service/Rules/NamedConditionScope.php,,Service,,,,,Processes
 Service/Rules/RelativeTimeEvaluation.php,,Service,,,,,Processes
 Db/SchemaMapper/RelativeTimeCalendarCheck.php,,Db,,,,,Core
+Middleware/SaveWarningsMiddleware.php,,Middleware,,,,,Platform
+Service/Rules/SaveWarnings.php,,Service,,,,,Processes
+Service/Rules/SaveWarningsInterface.php,,Service,,,,,Processes

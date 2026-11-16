@@ -617,6 +617,7 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\Sharing\AccessLinkMintGuardInterface::class => \OCA\OpenRegister\Service\Sharing\AccessLinkMintGuard::class,
 		\OCA\OpenRegister\Service\Sharing\AccessLinkServiceInterface::class => \OCA\OpenRegister\Service\Sharing\AccessLinkService::class,
 		AdministeredValidationEnforcerInterface::class => AdministeredValidationEnforcer::class,
+		\OCA\OpenRegister\Service\Rules\SaveWarningsInterface::class => \OCA\OpenRegister\Service\Rules\SaveWarnings::class,
 		AggregateReferenceResolverInterface::class => AggregateReferenceResolver::class,
 		AggregationRunnerInterface::class => AggregationRunner::class,
 		ActivityFilterServiceInterface::class => ActivityFilterService::class,
