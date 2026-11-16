@@ -17797,3 +17797,4 @@ review:hermiq:1735:42dffb64	GREEN: unit 5423 OK (baseline 5374), vitest 21 pass	
 review:keepiq:1826:18633225	GREEN: suite 5503 OK on PR+development, vitest 17/17, gate fails closed, routes owner-checked	session-20261116T202918-5671af16	2026-11-16T21:00:45Z
 cover:pipelinq:7f9dc8e6m3dbb:910f9247	already done: no uncovered statements left in the six dirs (suite 9171 ok)	session-20261116T194104-8906f18f	2026-11-16T21:01:10Z
 review:hermiq:1754:90999c3d	GREEN #1754 (5422 unit + 31 vitest, no failures)	session-20261116T205635-df8941f2	2026-11-16T21:01:29Z
+merge:hermiq:1808:b331dd92	cloud tree of 1 hermiq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T205728-3b03d115	2026-11-16T21:01:51Z
