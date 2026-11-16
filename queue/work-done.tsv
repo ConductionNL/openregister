@@ -16591,3 +16591,4 @@ review:shillinq:1900:f0577318	GREEN	session-20261116T142700-f4d651ea	2026-11-16T
 review:learniq:1901:e9591096	GREEN: learniq #1901 (1 inherited failure)	session-20261116T151429-748effed	2026-11-16T15:19:24Z
 merge:opencatalogi:2415:dc79c8e0	unmeasured: api.osv.dev (3 IN approved, 2655 CONFLICT, 0 merged)	session-20261116T150935-ce9ba78b	2026-11-16T15:19:36Z
 review:learniq:2166:5e708c03	GREEN: behaviour-preserving; unit 6868, 1 inherited failure	session-20261116T150932-9cfa73ee	2026-11-16T15:19:48Z
+review:shillinq:2258:3651ee9d	GREEN: behaviour-preserving move to LifecycleActionContext; phpunit 12232/0 fail	session-20261116T143136-ae6d04cb	2026-11-16T15:19:56Z
