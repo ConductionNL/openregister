@@ -3931,3 +3931,14 @@ pipelinq	3883	e27a1a725e4225bb7c5c07dc56793ca1bf3f207e	RED	merge3	GATE RED sbom:
 larpinq	1060	11a6a4eac7c3cc7f699331c7d33d607e07c5b2e4	SKIP	worker-11	no APPROVE review at this head
 larpinq	1065	936a9601ce25a94ea88cc5285019b0919221028d	RED	worker-11	GATE RED sbom: composer.lock, package-lock.json changed without sbom.cdx.json
 launchpad	753	26ce5b2bb96d848f20002dc92a63cdd0704f77f2	SKIP	worker-30	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
+portaliq	1353	dc6ca37da68657461ec6ee5cdda5d90d471c6312	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
+portaliq	1354	ba4c68851cd1c2cefa197ffe20cd43653205890e	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.11
+portaliq	1684	d522fb219bdc479319df49166d0aa34086baac84	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.11
+portaliq	1764	b3d8a23ef94e8ac730c7ba0bb92bfdc95adc8c30	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+portaliq	1765	065fabf8c9c39cac3f4bb60b474eb3c6dcb5e96e	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+portaliq	1766	23513ec0a91d2cbac220fce53fd5a5e18f1e47ba	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+portaliq	1768	5560c998c1377d82b0b5fc84edd1eadcd8473571	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+portaliq	1769	91f4b0df6c650ba48d9f0aaf4a3559074fd97b13	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+portaliq	1848	cd1757915089a65b8cb1e22c1f149b0f2a984332	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.10
+portaliq	1982	ebea533f0f3f8c061e63c23de231ae5193517228	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
+portaliq	2349	b92b6364b5ba81896e5557cd7c616f864672f87a	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
