@@ -14276,3 +14276,4 @@ filinq	2072	a07d41bdd0452ef712eccff125357b5240903950	REVERIFY	worker-43	granted 
 portaliq	2531	23d566859cc3dba12f726946b8081029f38b618b	GREEN	worker-09	unit 6183 tests, baseline 16 errors, no new failures; no JS unit script, npm run build same as development (site asset-size limit errors inherited)
 planninq	1198	f4370679900c3aded15e653a6ebd0521c8fc79dd	GREEN	worker-40	phpunit 1222 tests, baseline 0 failures, 0 new; vitest 3566 passed; deps/lockfile bundle only
 larpinq	1066	93d7998b3878e3386aa5cdb296bfd4f215c153d5	RED	worker-28:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+dossiq	5266	2cd5ee932a79779a717f6f0071fcaa89f3c2531f	GREEN	worker-56:review	config-only consents card on the case overview, schema already has recipientParties, example data and nl strings added; vitest touched specs 40/40; PHP unit 18317 tests, same 19 failures as plain development (need a sibling openregister checkout), none new
