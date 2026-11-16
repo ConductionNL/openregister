@@ -17556,6 +17556,7 @@ lane:arch5:filinq:next-filinq-r1	PR #2150 opened (4.06-4.14 -> 4.09-4.18), GREEN
 cover:buildiq:70b3e29em9bad:d39f9857	deferred: buildiq has 53 open PRs	session-20261116T200139-9f494e52	2026-11-16T20:05:12Z
 review:buildiq:1620:9cf97ff7	GREEN: 0 new failures (3409 tests), vitest 49 passed	session-20261116T194731-f9ebdd55	2026-11-16T20:05:13Z
 cover:buildiq:70b3e29em9bad:a215617b	deferred: buildiq has 53 open PRs	session-20261116T200354-a4252cff	2026-11-16T20:05:30Z
+cover:dossiq:069ee2d6m9d1b:8fea83ca	pushed e3dfcbe to open PR #6203 (dossiq over 40 open PRs): 36 tests, 5 classes in lib/Service/CaseType, dir coverage 94.3->99.6%, suite 18706->18742 tests, 19 inherited failures, none new	session-20261116T195754-2de00ec0	2026-11-16T20:05:42Z
 cover:buildiq:70b3e29em9bad:9d3a1784	deferred: buildiq has 53 open PRs	session-20261116T200354-a4252cff	2026-11-16T20:05:36Z
 lane:arch5:filinq:next-filinq-r2	deferred: waits for #2150 (r1) to land; measured remaining levers are small (private 3+ parameter methods 2947 loc mostly real data, PHP duplication mostly OpenRegister calls, ctor signatures fixed); requeue next-filinq after #2150 merges	session-20261116T194712-13a51568	2026-11-16T20:05:59Z
 review:versioniq:722:dbd7dee7	GREEN: per change specs; 2092 unit tests, 2 inherited failures, vitest 37/37	session-20261116T195727-d280a0c4	2026-11-16T20:06:00Z
