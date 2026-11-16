@@ -15917,3 +15917,4 @@ filinq	2141	d980f90d4ce78bd5a27004221e0eaad88cd1b166	GREEN	worker-35	unit 6960 t
 hermiq	1757	c5c53ee833f45f7b3fe0a3bd183382bd7dc1ff9e	CONFLICT	worker-06	conflicts with development in l10n/en.js, en.json, nl.js, nl.json and tests/Unit/Service/Engine/EngineSwitchedOffTest.php; not tested
 integriq	3557	363b07c68d1510ce1585c2cf859ad2707bc46e33	CONFLICT	worker-07	conflicts with development (appinfo/routes.php, l10n en/nl, openapi.json); not tested
 humaniq	1142	5bcc930d755704bf968a6a8c668e8e7636643a7c	CONFLICT	worker-38	conflicts with development (9d5661de) in l10n/en.js, en.json, nl.js, nl.json, register.d/hr-leave.json, manifest.d/00-templates.json, hours-process-redesign.json, manifest.effective.json, manifest-canonical.json; not tested
+humaniq	670	404bf31cb757d644e62c90ffdf08de1a76c009d8	CONFLICT	worker-28	conflict in sbom.cdx.json with development 9d5661de; baseline 4411 tests OK, 1 skipped; tree not run
