@@ -17245,6 +17245,7 @@ cover:launchpad:fb10c50f:34f5c300	deferred: launchpad has 44 open PRs	session-20
 review:integriq:3649:9b271f27	GREEN: no new failures, 62 new unit tests, 58 vitest pass	session-20261116T184924-e8902580	2026-11-16T18:57:00Z
 cover:launchpad:fb10c50f:f545d745	deferred: launchpad has 44 open PRs	session-20261116T185304-a3eb3adc	2026-11-16T18:57:12Z
 merge:larpinq:1050:27621a13	cloud tree of 1 larpinq PRs: merged=0 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0 (gate: testcoderatio warn -> fail)	session-20261116T184916-3075661b	2026-11-16T18:57:41Z
+cover:launchpad:fb10c50f:7505aeb4	deferred: launchpad has 44 open PRs	session-20261116T184655-77bda400	2026-11-16T18:57:30Z
 cover:launchpad:fb10c50f:60c2c265	deferred: launchpad has 44 open PRs	session-20261116T184858-b0d9d60e	2026-11-16T18:57:53Z
 cover:launchpad:fb10c50f:be0dcca9	deferred: launchpad has 44 open PRs	session-20261116T185304-a3eb3adc	2026-11-16T18:57:18Z
 measure:decidiq:20261116h18	php 94.13% js 98.45% at 1bf4171e	session-20261116T184217-f2c5e14b	2026-11-16T18:57:16Z
