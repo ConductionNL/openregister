@@ -18403,6 +18403,7 @@ verify:hermiq:1757:59cadfdd	CONFLICT #1757 (l10n catalogues, EngineSwitchedOffTe
 verify:learniq:2502:bdbd6462	failed: composer install impossible here, learniq lock needs vimeo/psalm 7.5 (php >=8.3.16), container php 8.3.6	session-20261116T232912-634ff2e8	2026-11-16T23:38:58Z
 verify:filinq:2091:fe554cc9	CONFLICT #2091	session-20261116T232918-5354fd88	2026-11-16T23:38:49Z
 verify:filinq:2113:51b5285f	CONFLICT: #2113 vs development in CHANGELOG.md, filinq_register.json, ConsentUpdateFlowTest.php	session-20261116T232911-3dffa1ae	2026-11-16T23:39:03Z
+verify:hermiq:1738:0d2920d5	CONFLICT 1738: 11 files conflict with development	session-20261116T230931-e5ee8bcb	2026-11-16T23:39:39Z
 verify:humaniq:1142:9666a5ef	CONFLICT: #1142 vs development in l10n, hr-leave register, manifest files	session-20261116T232911-3dffa1ae	2026-11-16T23:40:06Z
 verify:hermiq:1763:959522d3	CONFLICT #1763 (9 files)	session-20261116T224246-d9bde508	2026-11-16T23:39:28Z
 verify:launchpad:1246:09cffd9d	stale	feeder	2026-11-16T23:37:23Z
@@ -18410,6 +18411,7 @@ verify:hermiq:1760:f84a6f07	CONFLICT: info.xml, l10n, hermiq_register.json, open
 verify:humaniq:1148:f2562361	CONFLICT #1148 (l10n, hr-timesheet manifest)	session-20261116T233427-cfe22922	2026-11-16T23:40:48Z
 build:learniq:exam-registration-and-certificate-issue:c2	PR #2579 (quality/build-exam-registration-and-certificate-issue): T1-T6 built and ticked; suite 6998 tests, 2 inherited failures (baseline 6966/2)	session-20261116T230843-e8244832	2026-11-16T23:41:11Z
 verify:humaniq:670:40bebbca	CONFLICT #670 (sbom.cdx.json vs development)	session-20261116T233800-0f135937	2026-11-16T23:41:06Z
+verify:filinq:2105:2bb11d8f	CONFLICT: #2105 conflicts with development (l10n, registers, openapi.json, DocumentProductionSchemaTest)	session-20261113T214350-9762e143	2026-11-16T23:41:27Z
 verify:hermiq:1794:e6b137d8	CONFLICT #1794	session-20261116T232923-e93e6b40	2026-11-16T23:41:47Z
 merge:pipelinq:3602:a4bb937b	merge3 tree of 1 pipelinq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-16T23:41:42Z
 verify:hermiq:1740:a42b5b75	CONFLICT #1740 (l10n, register, openapi)	session-20261116T230934-9ee320cf	2026-11-16T23:42:02Z
@@ -18427,3 +18429,4 @@ verify:larpinq:1056:85518065	CONFLICT #1056 (routes.php, l10n catalogues)	sessio
 verify:filinq:2106:48eff116	CONFLICT #2106 (SigningService.php, filinq_register.json)	session-20261116T233011-100ff0c6	2026-11-16T23:45:42Z
 verify:humaniq:1147:50dd2ee9	CONFLICT #1147 (l10n, PayrollRunService and its tests)	session-20261116T232033-3ca59164	2026-11-16T23:46:02Z
 verify:integriq:3601:c832d6a2	CONFLICT #3601 (l10n, docs, golden test vs development)	session-20261116T233834-fbe601d1	2026-11-16T23:46:15Z
+verify:learniq:2537:016b101a	CONFLICT #2537	session-20261116T232519-f84cca9a	2026-11-16T23:47:12Z
