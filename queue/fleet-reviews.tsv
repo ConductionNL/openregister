@@ -27,3 +27,5 @@ thematiq	1677	ad0dd3b79a1e6abfd5d6c936f121fbe770b01fba	APPROVE	worker-17	Thoroug
 humaniq	606	647da215609758b6eb51cbe1182861a618182015	APPROVE	worker-53	Quick; no blockers; composer.lock minor bumps (twig) with regenerated sbom
 humaniq	661	f523f286b290dfce227eab0ee9bb36a5418b4a2b	APPROVE	worker-53	Quick; no blockers; babel 7->8 major and webpack-vue-config bump; concern: frontend build not exercised in this review
 humaniq	662	d7499aecffd3be7525553af3896068e429d61751	APPROVE	worker-53	Quick; no blockers; phpmd 3 with baseline rules renamed to phpmd 3 class names
+humaniq	685	c73546cde14f4c4a1b1f723d1c23c6892615eddd	APPROVE	worker-53	Quick; no blockers; vue-material-design-icons minor bump with sbom
+humaniq	686	fe1cbc0ae582ec29fbb26fc246d74dbf397480b5	APPROVE	worker-53	Quick; no blockers; jsdom patch bump with sbom
