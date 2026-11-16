@@ -3950,3 +3950,16 @@ larpinq	1053	1a318455a6c9ec04db103a7218bdea6fc0b0d890	SKIP	worker-11	GATE UNMEAS
 launchpad	653	e8ad33b0e8cc3a33b0f4bff70c3a14da6a5cccbd	RED	worker-30	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
 larpinq	1060	9f9d2d55aed2135114719c89293197e464127587	SKIP	worker-11	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
 launchpad	758	a042a574d1d19f7a871f4ad05aa5abeee44e47d0	RED	worker-30	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+dossiq	2902	8a0f3ca6db81105c166f273446e885e3ebaeb177	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.34
+dossiq	3196	bdbdd4b2343ec19de2c5d6e0a3681a4a8c517857	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+dossiq	3204	d7bb586bffd1cb01090c7916b294152acd4e8bfe	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.34
+dossiq	3297	cecaeb8511b183ef4ecf5b0a0e9fddb504ea1ac7	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.34
+dossiq	3298	1caea4a0fee92aa7ba2ae09030a30a45da0295fa	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.34
+dossiq	3894	8ed2662d166b8bee07c9b1aec92ee7de29dc08cb	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
+dossiq	3936	692e66a391f55db71cf44174d6c026c8d74035e6	RED	merge3	GATE RED floor: unit_interfacing: 3.39 -> 3.37
+dossiq	4112	f460035edaa27b2a373b5284621c6a9b2551f321	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
+dossiq	4149	e758cb15274cf720dae33230ed95b248f9c21a2b	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.33
+dossiq	4870	75e95061e423f118010493ed6b58ce42e8248480	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.33
+dossiq	5281	9801961452b5cb0695ec0805fbdf9a8e7b036525	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.33
+dossiq	5397	7ff72b326425d92996261dd963ddb2a0e16985c7	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
+dossiq	6109	aa8d7473a4173ae11147877ebcf64c07a998c393	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.33

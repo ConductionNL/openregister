@@ -14097,3 +14097,8 @@ versioniq	739	8a1c4395a1f3bf31e9ce8be4a6cb5f7b0cb77fbf	GREEN	worker-43:lane	dep 
 stackiq	1989	45dbd96288cca2c93a2162055fe2c65597c4ed55	REVERIFY	worker-16:lane	dependency bundle opened by this worker (4 updates: @vueuse/core 15, twig 3.30, phpstan 2.3.5, hydra-gates 1.19; sbom regenerated); unit/phpstan/build/vitest/lint equal to development; needs an independent review before landing; new head 45dbd96288cca2c93a2162055fe2c65597c4ed55, verify it
 pipelinq	2501	ca4bf396c0dff715566fe9c093916a203257b037	REVERIFY	worker-28	merged origin/development in (clean); diff vs development is composer.lock only, sbom check current; merge lock held elsewhere; new head 58a531d903d7a54e9307f3b5a220a6c2ee33186a, verify it
 planninq	933	91b55b70440260df4cdf97021f2f1c98bef962fa	BLOCK	worker-58:review	review: Strict; removeColumn moves every card before the guarded delete and does not check the last-done-column rule itself, so a refused delete leaves the cards moved and answers 500 instead of the documented 409 (grep -n done lib/Service/BoardOrderService.php: only doneStatus); no other blockers; gates 64
+dossiq	3196	bdbdd4b2343ec19de2c5d6e0a3681a4a8c517857	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+dossiq	3894	8ed2662d166b8bee07c9b1aec92ee7de29dc08cb	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+dossiq	3936	692e66a391f55db71cf44174d6c026c8d74035e6	RED	merge3:merge-gate	GATE RED floor: unit_interfacing: 3.39 -> 3.37
+dossiq	4112	f460035edaa27b2a373b5284621c6a9b2551f321	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+dossiq	5397	7ff72b326425d92996261dd963ddb2a0e16985c7	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
