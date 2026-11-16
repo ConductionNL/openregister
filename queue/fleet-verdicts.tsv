@@ -15896,3 +15896,4 @@ filinq	2098	ee9aee9cbe8b6c6c0a521d32cd3021c6fd4b3875	CONFLICT	worker-14	conflict
 filinq	2124	5e42335d1e29a3e766b0ba6f1598a6e09e960777	CONFLICT	worker-21	merge conflict with origin/development in webpack.config.js; suite not run
 filinq	2114	78a005c251fc9ce1db35ba012ea58f6d6ef2b57c	CONFLICT	worker-58	conflicts with development in l10n/en.js,nl.js,en.json,nl.json, filinq_register.json, filinq_mock_register.json, openapi.json
 dossiq	3894	8ed2662d166b8bee07c9b1aec92ee7de29dc08cb	CONFLICT	worker-11	sbom.cdx.json conflicts with development; baseline unit 18363 tests, 1 error (StatusEntryRequirementsGuardTest, inherited); PR suite not run
+hermiq	1738	441006a018a20c8d20c4f77b68276a0dd0ba20c0	CONFLICT	worker-31	conflicts with development in l10n en/nl js+json, SessionController, Engine FacadeToolInvoker/ResponseGenerationHandler/ToolLoop/ToolSurfaceRun, hermiq_register.json, Chat.vue; baseline 5461 tests
