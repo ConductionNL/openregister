@@ -15759,3 +15759,4 @@ verify:hermiq:1807:e03b5038	GREEN #1807: unit 5291 OK (baseline same), vitest 15
 fix:shillinq:2083:fc181f39	conflict resolved, pushed 16d6ee15; REVERIFY (merge lock busy)	session-20261116T075953-c9c4b65a	2026-11-16T08:23:26Z
 fix:learniq:2507:334d2575	raised info.xml version, pushed 1fad4deb; merge lock busy, REVERIFY recorded	session-20261116T081618-2145ecb3	2026-11-16T08:23:41Z
 fix:learniq:1881:a1be2d79	fixed RED (test mock to ObjectSaveOptions), merge lock held elsewhere -> REVERIFY at fffa1128	session-20261116T081640-cbf74452	2026-11-16T08:23:57Z
+fix:learniq:2560:a9c9e418	failed: blocked upstream: @conduction/nextcloud-vue (latest 2.181.0) peers gridstack ^12||^13; gridstack 14 needs a library release first	session-20261116T081618-2145ecb3	2026-11-16T08:24:12Z
