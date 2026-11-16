@@ -15508,6 +15508,7 @@ verify:larpinq:1065:1b4e8491	GREEN: no new PHP or vitest failures	session-202611
 verify:planninq:1196:345eb8c3	GREEN 1196: unit 1222 OK	session-20261116T062544-335bf148	2026-11-16T06:46:57Z
 review:shillinq:2096:8af31d73	RED: 2 ImportWizardCoverage vitest tests still expect the old PATCH	session-20261116T062126-9d7735e0	2026-11-16T06:47:12Z
 fix:hermiq:1735:ca2c7585	fixed: registrar test expects FlowRunTerminalListener; new head 80b67d82, REVERIFY recorded	session-20261116T062109-81fc252e	2026-11-16T06:47:19Z
+merge:stackiq:1924:b6607297	cloud tree of 5 stackiq PRs: merged=0 red=4 fail=0 skip=0; conflict 1, lint 0, red 0, moved 0, done 0	session-20261116T063134-3a4fc8af	2026-11-16T06:47:57Z
 fix:shillinq:3080:f73df8d1	fixed: save migrated to ObjectSaveOptions, suite 12253 green; new head cb96e451	session-20261116T062050-3a7e109c	2026-11-16T06:47:55Z
 fix:shillinq:2991:adf6174a	fixed: saveObject uuid -> ObjectSaveOptions, suite green, pushed 4a34a03e	session-20261116T062050-add210c3	2026-11-16T06:48:09Z
 verify:launchpad:1238:41c15e2e	GREEN 1238: 4461 tests OK	session-20261116T062109-81fc252e	2026-11-16T06:48:22Z
