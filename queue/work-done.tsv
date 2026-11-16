@@ -15463,16 +15463,24 @@ verify:portaliq:2530:8664f141	GREEN 2530: lock refresh, no new failures	session-
 review:hermiq:1175:42637555	GREEN: 5291 tests OK	session-20261116T062109-81fc252e	2026-11-16T06:34:27Z
 review:learniq:1901:152da34c	GREEN: matches its spec, suite green beyond 1 inherited	session-20261116T062050-add210c3	2026-11-16T06:35:09Z
 verify:hermiq:1807:2db42155	GREEN 1807: unit 5291 OK, vitest 1526 OK	session-20261116T062544-335bf148	2026-11-16T06:35:19Z
+merge:buildiq:1092:1d26377a	merge8 tree of 20 buildiq PRs: merged=4 red=5 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 11	merge8-20261115T170007-37538273	2026-11-16T06:35:34Z
 fix:hermiq:1795:c4658c1f	fixed: old-API saveObject/find moved to option objects; suite 5312 OK; new head fdc2c517	session-20261116T062140-6a300781	2026-11-16T06:35:40Z
+merge:buildiq:820:b9a96f24	merge8 tree of 20 buildiq PRs: merged=4 red=5 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 11	merge8-20261115T170007-37538273	2026-11-16T06:35:50Z
 review:stackiq:1438:382aa36a	GREEN: lock-only dev bump, 0 new failures (1 inherited)	session-20261116T061736-e271ba12	2026-11-16T06:35:47Z
 review:thematiq:1291:ac416a6a	GREEN: dev dep bump; vitest 1559/1559, code-editor build OK	session-20261116T062050-7d5ce0d6	2026-11-16T06:35:58Z
 review:hermiq:1135:0d097997	GREEN: dev-only phpmd 3.0 bump; rulesets run, unit 5291/0 fail	session-20261116T062117-388e9de2	2026-11-16T06:36:09Z
+merge:buildiq:1090:1978f005	merge8 tree of 20 buildiq PRs: merged=4 red=5 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 11	merge8-20261115T170007-37538273	2026-11-16T06:36:14Z
 fix:hermiq:1802:5e3d55d5	fixed: test mock moved to ObjectFindOptions; new head 5e2885e3, REVERIFY queued	session-20261116T062120-7c38c5f1	2026-11-16T06:36:25Z
+merge:buildiq:1093:0f79663b	merge8 tree of 20 buildiq PRs: merged=4 red=5 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 11	merge8-20261115T170007-37538273	2026-11-16T06:36:43Z
 review:thematiq:1126:5620b7cb	GREEN: jsdom dev bump, vitest 1559 OK	session-20261116T062544-335bf148	2026-11-16T06:36:54Z
+merge:buildiq:1262:bfb22cff	merge8 tree of 20 buildiq PRs: merged=4 red=5 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 11	merge8-20261115T170007-37538273	2026-11-16T06:37:04Z
 review:hermiq:1189:25278c92	RED: pinia 4 breaks production webpack build (cannot resolve 'pinia'); tests pass	session-20261116T062121-edb2d73b	2026-11-16T06:37:05Z
+merge:buildiq:1596:198cd09b	merge8 tree of 20 buildiq PRs: merged=4 red=5 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 11	merge8-20261115T170007-37538273	2026-11-16T06:37:17Z
 review:stackiq:1941:3f74a899	GREEN: PHP unit 3742 OK, phpstan clean, vitest 1 inherited failure	session-20261116T063134-3a4fc8af	2026-11-16T06:37:27Z
 review:shillinq:2070:b00d1ffe	BLOCK: tightens block/release permissions beyond spec (payment.block matrix + four-eyes); tests green	session-20261116T062050-3a7e109c	2026-11-16T06:37:37Z
+merge:buildiq:1624:d2e95ae7	merge8 tree of 20 buildiq PRs: merged=4 red=5 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 11	merge8-20261115T170007-37538273	2026-11-16T06:37:43Z
 fix:stackiq:1435:f9cb4c74	fixed stub autoload order; suite 3722, only inherited golden failure; new head 81fb6bd4	session-20261116T061736-e271ba12	2026-11-16T06:37:47Z
+merge:buildiq:1256:622a97b6	merge8 tree of 20 buildiq PRs: merged=4 red=5 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 11	merge8-20261115T170007-37538273	2026-11-16T06:38:01Z
 review:learniq:2521:25bda59e	GREEN: course-days build matches spec, no new failures	session-20261116T062126-9d7735e0	2026-11-16T06:38:09Z
 review:hermiq:1801:b8e31c29	GREEN: tests only, 8 new tests pass, 0 new failures	session-20261116T062121-edb2d73b	2026-11-16T06:38:21Z
 review:thematiq:1558:756f3b85	GREEN: lock-only bump; 1 inherited failure (root-perms test)	session-20261116T062050-7d5ce0d6	2026-11-16T06:38:28Z
