@@ -16384,3 +16384,4 @@ fix:filinq:2123:821f64bb	conflict resolved, pushed f0a61512c5f191666db3e67afbfa9
 fix:learniq:1883:9da73589	unmeasured: static.developer.overheid.nl; merged development in, SPDX fix for inherited floor, APPROVE at de89b9020b, REVERIFY queued	session-20261116T101336-9d5ecdfc	2026-11-16T11:28:06Z
 fix:opencatalogi:2541:84647e95	fixed: version bump pushed (131ce0fa2c), suite at baseline; merge lock held elsewhere, REVERIFY queued	session-20261116T110144-2dffa885	2026-11-16T11:28:38Z
 fix:buildiq:1652:2b887096	@spec tags added to 12 methods; new head fd2e894a, REVERIFY queued (merge lock held elsewhere)	session-20261116T105651-a587f79b	2026-11-16T11:28:50Z
+merge:decidiq:2170:3c4f6658	unmeasured: static.developer.overheid.nl, api.osv.dev (tree 5 IN green; reviews: APPROVE 2191 2207 2224, REQUEST_CHANGES 2170 2203; nothing landed)	session-20261116T105225-f677ee77	2026-11-16T11:28:58Z
