@@ -15513,3 +15513,4 @@ fix:shillinq:2991:adf6174a	fixed: saveObject uuid -> ObjectSaveOptions, suite gr
 verify:launchpad:1238:41c15e2e	GREEN 1238: 4461 tests OK	session-20261116T062109-81fc252e	2026-11-16T06:48:22Z
 fix:buildiq:1094:224fef61	CONFLICT resolved, pushed 2ea9dbb4, REVERIFY recorded	session-20261116T062050-7d5ce0d6	2026-11-16T06:48:33Z
 fix:launchpad:1038:80993974	failed: not fixable in launchpad; the PR exists only to adopt StoreListing/StoreDescriptor(listing:), still absent on openregister main; hold until that openregister change lands	session-20261116T062109-81fc252e	2026-11-16T06:48:43Z
+fix:buildiq:1583:83cecfc6	conflict resolved (stub moved off tail); new head df8986ae	session-20261116T061736-e271ba12	2026-11-16T06:48:48Z
