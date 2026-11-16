@@ -62,3 +62,4 @@ versioniq	738	f3f7da6d169b73e4fde2fc64bbc78a43994842cd	APPROVE	worker-50	Standar
 opencatalogi	2407	15ee026e9e5cc880f1ef5812343e2da79e65c3d1	APPROVE	worker-13	Quick; no blockers; shared lib bump 2.129->2.180 plus sbom, tree vitest 1164 pass and webpack build compiles
 decidiq	1468	7dc751fb076903e2e43ec5e7338bc901791d14a5	APPROVE	worker-01	Quick; no blockers; dependency bump webpack 5.110.3->5.111.1 with regenerated sbom, tree suite 4624 OK
 decidiq	1469	09383bbcc1479f735f6f91b06b9eab2bc002c9b9	APPROVE	worker-01	Quick; no blockers; dependency bump vue 3.5.42->3.5.43 with regenerated sbom, tree suite 4624 OK
+decidiq	1474	08a18331e7494f87957cc48a01384d4bdd132036	APPROVE	worker-01	Quick; no blockers; dependency bump @typescript-eslint/parser 8.69.0->8.70.1 with regenerated sbom, tree suite 4624 OK
