@@ -14126,3 +14126,4 @@ decidiq	2170	d54fcb2999d1b0aedf619035ca041cab3063118e	GREEN	worker-34:review	imp
 shillinq	1900	4eb4258f0a4e2971ae8669c219c0739a097b9f52	RED	worker-22:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
 shillinq	2072	794dec2a01cc38a274a3d45633ab11b445e982e4	RED	worker-22:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
 stackiq	1978	315e616b2d61a4366c9527185a4c1dfeab77a8f0	GREEN	worker-38:review	build PR matches change specs (REQ-AVO-002/003); route 503 before view read, view read with RBAC, 404 otherwise; unit 3739 ok vs baseline 3718 ok (+21 new, 0 new failures); vitest viewExport 12 ok; phpstan clean on changed lib
+pipelinq	3883	e27a1a725e4225bb7c5c07dc56793ca1bf3f207e	REVERIFY	worker-43	regenerated sbom.cdx.json from the refreshed locks (regen-sbom --check current); merge lock held elsewhere; new head e0b01647f733385e21f48c61dbdf0f007356a81e, verify it
