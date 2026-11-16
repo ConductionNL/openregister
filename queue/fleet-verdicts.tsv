@@ -14461,3 +14461,4 @@ humaniq	686	fe1cbc0ae582ec29fbb26fc246d74dbf3974	REVERIFY	worker-26:merge	verdic
 stackiq	1989	45dbd96288cca2c93a2162055fe2c65597c4ed55	RED	worker-35:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
 dossiq	5396	cc232d59d722611002ea5e7e1096bab19bbdfc34	RED	worker-55:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
 buildiq	1249	e01a3111488d17974ac20b492fdd9e5593f8cd37	RED	worker-04:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+versioniq	691	eca00de334c5e77d1c39e55199d03edf2bb99dd5	BLOCK	worker-14:review	review: Strict; blocker: spec-coverage gate fails on four new public methods without @spec tags (PlanRun rowOf/hold/holds, PatchPolicy toArray); otherwise matches autoupdate-security-first, touched tests green
