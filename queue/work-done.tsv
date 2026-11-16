@@ -16864,3 +16864,4 @@ build:portaliq:collection-column-labels	deferred: portaliq has 62 open PRs	sessi
 build:shillinq:receivables-automatic-dunning	deferred: shillinq has 81 open PRs	session-20261116T165351-3ccaad0e	2026-11-16T17:37:42Z
 build:portaliq:resident-pages-live-round-3	already done: every code task ticked and on development (fix(site): resident pages after live round 3, 14 Oct); only 5.1 live check left	session-20261116T173311-8d6b3275	2026-11-16T17:37:56Z
 cover:dossiq:069ee2d6madb6:60c2c265	deferred: dossiq has 43 open PRs	session-20261116T173227-3f62e794	2026-11-16T17:38:41Z
+build:portaliq:portal-notices-as-drawn	already done: every code task ticked on development; open tasks are live checks only, left	session-20261116T170823-40772b73	2026-11-16T17:38:59Z
