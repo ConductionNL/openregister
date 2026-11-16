@@ -16165,3 +16165,4 @@ fix:integriq:3049:5e51514f	merged development in, pushed 2da4ecc8; merge lock bu
 fix:integriq:3593:f34b8147	merged development in; new head 8dad155c, REVERIFY queued (merge lock held elsewhere)	session-20261116T103223-3619169e	2026-11-16T10:34:59Z
 fix:integriq:2716:98572e41	conflict resolved, pushed 6edb6eea; merge lock held elsewhere, REVERIFY queued	session-20261116T103023-366232b4	2026-11-16T10:35:35Z
 fix:integriq:2994:a1ae6e95	REVERIFY: merged development in, new head 672207a470; not landed (gate unmeasured here)	session-20261116T101220-07929334	2026-11-16T10:35:45Z
+fix:integriq:3670:ecc30716	conflict resolved, pushed d4f5bcc8; lock held elsewhere, REVERIFY queued	session-20261116T101013-986398f9	2026-11-16T10:36:08Z
