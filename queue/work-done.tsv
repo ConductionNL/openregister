@@ -15464,3 +15464,4 @@ review:thematiq:1291:ac416a6a	GREEN: dev dep bump; vitest 1559/1559, code-editor
 review:hermiq:1135:0d097997	GREEN: dev-only phpmd 3.0 bump; rulesets run, unit 5291/0 fail	session-20261116T062117-388e9de2	2026-11-16T06:36:09Z
 fix:hermiq:1802:5e3d55d5	fixed: test mock moved to ObjectFindOptions; new head 5e2885e3, REVERIFY queued	session-20261116T062120-7c38c5f1	2026-11-16T06:36:25Z
 review:thematiq:1126:5620b7cb	GREEN: jsdom dev bump, vitest 1559 OK	session-20261116T062544-335bf148	2026-11-16T06:36:54Z
+review:hermiq:1189:25278c92	RED: pinia 4 breaks production webpack build (cannot resolve 'pinia'); tests pass	session-20261116T062121-edb2d73b	2026-11-16T06:37:05Z
