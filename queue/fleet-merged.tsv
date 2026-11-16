@@ -4268,3 +4268,11 @@ learniq	2166	a323b0c1d43a49a4a740a714d4434d6cefffb39f	RED	worker-41	GATE RED che
 learniq	2562	2eb2854823e74f85d225bd55a0d5bcd60c157395	RED	worker-41	GATE RED checker floor: spdxheaders stars: 5 -> 4
 learniq	1901	152da34cc2608eb2586c6085a6073ee9f3e4a744	RED	worker-41	GATE RED checker floor: spdxheaders stars: 5 -> 4
 pipelinq	3835	48e31f725f73f45f869ba91ca526b70f86427bd8	RED	merge3	GATE RED floor: unit_size: 4.57 -> 4.55
+portaliq	663	07e3f56bbc5538651b5629c0420a070c3bbe861f	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.10
+portaliq	1666	760e34a93c943316331c1122791a4528a2c41ca1	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.10
+portaliq	1673	574c16721291bca11b190df5e3c8aae8be782c38	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.10
+portaliq	1764	a878ea0391406b189dc7d883ebfc889915f759de	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.10
+portaliq	1765	582e2f298cff75a9d11555480aad9098b4d9cca6	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.10
+portaliq	1768	a2fd270418a9cfad661506f120d7c091ac104b00	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+portaliq	1769	1f21b5e33a009631cbab7e6a0a41c30b9d57e03a	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.10
+portaliq	1997	46fd8f94d573383ea70b908b05bcaba3b33882cd	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.10
