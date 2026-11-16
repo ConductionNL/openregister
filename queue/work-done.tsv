@@ -16113,3 +16113,4 @@ review:stackiq:1931:75fc2149	BLOCK: info.xml version not raised for register bum
 fix:shillinq:1904:cc11db13	inherited RED from development (ORMIG dropped an SPDX header); header restored on the branch, merge lock held elsewhere, REVERIFY at e44175957e	session-20261116T101530-34aec2a4	2026-11-16T10:19:20Z
 fix:larpinq:1050:48b34820	fixed floor: unit_interfacing 4.75 -> 4.78; new head 5f2419c4, REVERIFY queued (lock held)	session-20261116T101200-ccfd103b	2026-11-16T10:19:27Z
 fix:portaliq:663:6dc142e0	fixed: raised info.xml version for the register bump; pushed 07e3f56bbc, REVERIFY queued (land step paused)	session-20261116T100945-f01894e6	2026-11-16T10:19:41Z
+merge:launchpad:753:e9885abf	unmeasured: api.osv.dev, static.developer.overheid.nl (753, 1234 APPROVE recorded; 1106, 1109 EXCL never merged)	session-20261116T101208-a62d0f70	2026-11-16T10:20:06Z
