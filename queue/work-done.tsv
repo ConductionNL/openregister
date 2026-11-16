@@ -18306,3 +18306,4 @@ cover:dossiq:069ee2d6m9d1b:efa2b75e	added 3 Routing tests to open cover PR #6619
 measure:pipelinq:20261116h22	php 95.15% js 95.29% (pcov; vitest 2 failing tests pre-existing)	session-20261116T230116-3c4ab97b	2026-11-16T23:14:15Z
 merge:hermiq:1764:b1627de7	cloud tree of 1 hermiq PRs: none; conflict 1, lint 0, red 0, moved 0, done 0	session-20261116T224626-461b0546	2026-11-16T23:13:55Z
 merge:decidiq:2235:e01c3390	cloud tree of 1 decidiq PRs: merged=0 red=0 fail=0 skip=1 (#2235 REQUEST_CHANGES: repair step without version bump)	session-20261116T230927-c680b0de	2026-11-16T23:14:25Z
+review:launchpad:1223:430e98a0	BLOCK: tests green; gates 7/51/55/101 fail on added lines; openapi.json conflict	session-20261116T224621-39328066	2026-11-16T23:14:30Z
