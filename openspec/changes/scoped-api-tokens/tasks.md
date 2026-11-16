@@ -123,6 +123,20 @@
 ## 3. Surfaces
 
 - [ ] 3.1 Grant editor with object preview on the personal token page and the Consumer admin page.
+      - Not built, and blocked on a decision rather than on code. Found
+        while building 1.1c: the account page's "API Tokens" section
+        (`src/views/account/sections/TokensSection.vue`, `/api/user/me/tokens`,
+        `UserService::issueApiToken()`) issues OpenRegister's OWN tokens into
+        the `api_tokens` user value, and no authentication path in `lib/`
+        accepts them, so a grant on one would narrow nothing. The tokens that
+        do authenticate are Nextcloud app passwords, which 1.1c binds by their
+        numeric Nextcloud token id (`/api/tokens/{tokenId}/grant`); OCP offers
+        no way to list a user's app passwords, so the editor needs either the
+        section to issue app passwords instead or the user to name the token
+        id. OpenRegister's frontend also has no Consumer admin page to host the
+        Consumer half (`/api/consumers` has no view in `src/`). Decide which
+        token the account page manages, then build the editor over the
+        existing endpoints.
 
 ## 4. Tests
 
