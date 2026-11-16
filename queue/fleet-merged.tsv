@@ -4842,3 +4842,4 @@ buildiq	1608	09ddceb4e2b51804e124259fe3076570d3a4e69d	SKIP	worker-56	no APPROVE 
 launchpad	1235	bb3459a53c1b068f59360186b8ad6d9615a536ed	MERGED	worker-06	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.65 holds at 3.78
 dossiq	6617	df25ce85aa64a0d466efbc553ef6e4df5420a745	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.40
 dossiq	6618	6d0b67644685e431358c8174e8b64329c59a9e01	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.40
+shillinq	3132	70205a2485dfdc3abde9a2cd9e6a3e4db4fb217f	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.09
