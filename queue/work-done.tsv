@@ -16851,6 +16851,7 @@ build:portaliq:receipt-date-reads-in-the-portals-language	already done: code tas
 cover:dossiq:069ee2d6madb6:js0023cfc7	deferred: dossiq has 43 open PRs	session-20261116T173306-d04a65dc	2026-11-16T17:35:41Z
 cover:dossiq:069ee2d6madb6:ea81adeb	deferred: dossiq has 43 open PRs	session-20261116T173227-3f62e794	2026-11-16T17:35:11Z
 review:hermiq:1756:6c5bc380	GREEN: 5348 tests OK on PR merged with development	session-20261116T173310-7d288d7d	2026-11-16T17:35:45Z
+build:portaliq:hero-links-follow-the-site-address	already built: T1,T2 ticked and on development (fix(site) 2026-10-16); only T3 live check left, not a code task	session-20261116T170545-a4f14b83	2026-11-16T17:36:00Z
 build:portaliq:mijn-taken-lists-contributed-tasks	deferred: portaliq has 62 open PRs	session-20261116T171035-683856c3	2026-11-16T17:35:55Z
 build:portaliq:contact-question-form-reads-dutch	deferred: portaliq has 62 open PRs	session-20261116T171035-683856c3	2026-11-16T17:36:03Z
 build:portaliq:portal-federated-search	deferred: portaliq has 62 open PRs	session-20261116T171035-683856c3	2026-11-16T17:36:10Z
@@ -16864,4 +16865,24 @@ build:portaliq:collection-column-labels	deferred: portaliq has 62 open PRs	sessi
 build:portaliq:site-article-page-follows-the-board	deferred: portaliq has 62 open PRs	session-20261116T171035-683856c3	2026-11-16T17:37:21Z
 build:shillinq:receivables-automatic-dunning	deferred: shillinq has 81 open PRs	session-20261116T165351-3ccaad0e	2026-11-16T17:37:42Z
 build:portaliq:resident-pages-live-round-3	already done: every code task ticked and on development (fix(site): resident pages after live round 3, 14 Oct); only 5.1 live check left	session-20261116T173311-8d6b3275	2026-11-16T17:37:56Z
+cover:dossiq:069ee2d6madb6:8ed5443b	deferred: dossiq has 43 open PRs	session-20261116T173306-d04a65dc	2026-11-16T17:38:27Z
 cover:dossiq:069ee2d6madb6:60c2c265	deferred: dossiq has 43 open PRs	session-20261116T173227-3f62e794	2026-11-16T17:38:41Z
+build:portaliq:portal-notices-as-drawn	already done: every code task ticked on development; open tasks are live checks only, left	session-20261116T170823-40772b73	2026-11-16T17:38:59Z
+build:portaliq:row-action-carries-files	already done: every code task (1.1-2.2) is on development since 11bf486; only live task 3.1 is left	session-20261116T173227-3f62e794	2026-11-16T17:39:06Z
+build:portaliq:resident-lands-on-the-portal	already done: every code task ticked on development; open tasks are live checks only, left	session-20261116T170823-40772b73	2026-11-16T17:39:06Z
+build:portaliq:portal-host-root-redirect	already done: every code task ticked on development; open tasks are live checks only, left	session-20261116T170823-40772b73	2026-11-16T17:39:12Z
+build:portaliq:site-matches-the-zuiddrecht-boards	already done: every code task ticked on development; open tasks are live checks only, left	session-20261116T170823-40772b73	2026-11-16T17:39:22Z
+build:portaliq:public-faq-and-product-finder	already done: T01-T07 built on development (8 Oct); only T08 live check left	session-20261116T173311-8d6b3275	2026-11-16T17:39:31Z
+merge:stackiq:1931:17ea89e6	cloud tree of 1 stackiq PRs: none; conflict 1, lint 0, red 0, moved 0, done 0	session-20261116T173256-6277a58c	2026-11-16T17:39:31Z
+build:portaliq:site-home-follows-the-school-boards	already done: every code task ticked on development; open tasks are live checks only, left	session-20261116T170823-40772b73	2026-11-16T17:39:28Z
+build:portaliq:site-catalogue-follows-the-school-boards	already built: tasks 1-4 ticked and on development (#1424); only task 5 live check left	session-20261116T170545-a4f14b83	2026-11-16T17:39:47Z
+build:portaliq:site-links-the-theme-bridge	already done: every code task ticked on development; open tasks are live checks only, left	session-20261116T170823-40772b73	2026-11-16T17:39:42Z
+build:portaliq:mail-templates-admin-screen	no code left: T01-T06 already built on development (Oct 8); open T07/T08 need a live instance and Playwright	session-20261116T173306-d04a65dc	2026-11-16T17:40:23Z
+build:portaliq:update-row-action-condition	already done: every code task ticked on development; open tasks are live checks only, left	session-20261116T170823-40772b73	2026-11-16T17:39:52Z
+merge:opencatalogi:2655:bc7e84a2	cloud tree of 1 opencatalogi PRs: none; conflict 1, lint 0, red 0, moved 0, done 0	session-20261116T173211-a3411be5	2026-11-16T17:40:22Z
+merge:portaliq:2531:c19fc384	cloud tree of 1 portaliq PRs: merged=0 red=0 fail=0 skip=1; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T172806-3ef5ead7	2026-11-16T17:40:11Z
+build:portaliq:site-breadcrumb-follows-the-school-boards	already done: all code tasks built on development (#1425); only live check task 6 left	session-20261116T173256-6277a58c	2026-11-16T17:40:23Z
+build:portaliq:site-callouts-steps-and-tables-follow-the-boards	already built: tasks 1-4 ticked and on development; only task 5 live check left	session-20261116T170545-a4f14b83	2026-11-16T17:40:29Z
+review:shillinq:3078:33420e1f	GREEN: unit 12278 tests 0 failures, vitest 9/9, eslint clean	session-20261116T173217-7353a3fb	2026-11-16T17:40:31Z
+build:portaliq:write-record-names-the-mandate	already done: every code task ticked on development; open tasks are live checks only, left	session-20261116T170823-40772b73	2026-11-16T17:40:55Z
+fix:learniq:2507:82c09d5c	unmeasured: static.developer.overheid.nl (fixed interfacing floor + SPDX stub header; new head f29e84b71d, APPROVE recorded, REVERIFY queued)	session-20261116T171010-393e4bc2	2026-11-16T17:41:23Z
