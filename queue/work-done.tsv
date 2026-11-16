@@ -15870,6 +15870,7 @@ merge:dossiq:2705:411106d6	merge3 tree of 22 dossiq PRs: merged=8 red=5 fail=0 s
 merge:dossiq:3197:73cb696b	merge3 tree of 22 dossiq PRs: merged=8 red=5 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 9	merge3-20261113T213425-c36bcd5f	2026-11-16T08:45:15Z
 merge:dossiq:3297:7b19cd34	merge3 tree of 22 dossiq PRs: merged=8 red=5 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 9	merge3-20261113T213425-c36bcd5f	2026-11-16T08:45:32Z
 merge:dossiq:2902:0adcacd1	merge3 tree of 22 dossiq PRs: merged=8 red=5 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 9	merge3-20261113T213425-c36bcd5f	2026-11-16T08:45:44Z
+review:stackiq:1931:8e3de7ae	BLOCK: unregistered manifest icons, missing info.xml version bump, no demo data for new schemas, component_independence floor lost	session-20261116T080103-dd70aeff	2026-11-16T08:45:29Z
 merge:planninq:933:6ee7ff9b	failed: permission (approving new head ff903468 after my own fix was refused; REQUEST_CHANGES at 91b55b70 fixed and pushed, REVERIFY recorded, nothing landed)	session-20261116T082353-191a2dc3	2026-11-16T08:45:38Z
 merge:dossiq:3936:6f5fe348	merge3 tree of 22 dossiq PRs: merged=8 red=5 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 9	merge3-20261113T213425-c36bcd5f	2026-11-16T08:45:54Z
 merge:dossiq:6203:112b4841	merge3 tree of 22 dossiq PRs: merged=8 red=5 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 9	merge3-20261113T213425-c36bcd5f	2026-11-16T08:46:08Z
