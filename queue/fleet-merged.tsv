@@ -4816,3 +4816,4 @@ hermiq	1750	a0d94c86f801a08c9356d53624d591db1cb47423	RED	worker-12	GATE RED chec
 shillinq	3078	767508fe9a4431fc89048b783bbd50747463008a	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.11
 shillinq	3129	3cb6c81387bbcb54b6ed57c618bbaf0d7f2ff1cd	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.11
 filinq	2072	65ad1d322dab66bd2f2f685d6023e5fcc2ea810c	SKIP	worker-54	no APPROVE review at this head
+buildiq	1688	3c662c0d682f9a25d6cca4eec8cae116432de825	FAIL	worker-57	{"message":"Pull Request has merge conflicts","documentation_url":"https://docs.github.com/rest/pulls/pulls#merge-a-pull-request","status":"405"}gh: Pull Request has merge conflicts (HTTP 405)
