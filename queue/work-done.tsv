@@ -17371,6 +17371,7 @@ build:portaliq:mijn-taken-lists-contributed-tasks:r2	already done: T1-T2 on deve
 merge:versioniq:722:cd704eab	cloud tree of 1 versioniq PRs: none; conflict 1, lint 0, red 0, moved 0, done 0	session-20261116T184833-adbb8426	2026-11-16T19:23:01Z
 build:portaliq:search-suggestions-while-typing:r2	already done: T01-T03 on development (feat 2026-10-08: SearchSuggestions.vue + spec); only T04, Playwright/live check, is left	session-20261116T184831-8be58c40	2026-11-16T19:23:11Z
 cover:decidiq:a5f973bbm9cda:9d3a1784	deferred: decidiq has 48 open PRs	session-20261116T192132-006e7c93	2026-11-16T19:23:00Z
+cover:decidiq:a5f973bbm9cda:60c2c265	deferred: decidiq has 48 open PRs	session-20261116T192132-006e7c93	2026-11-16T19:23:23Z
 build:integriq:rule-editor-a11y-i18n-hardening:r3	already built: all code tasks on development (EditRule.vue t() wraps + aria-labels, l10n key in all locales); only 3.2 live screen-reader check left	session-20261116T192157-ecf15b7a	2026-11-16T19:23:36Z
 verify:keepiq:1847:05c68928	4 GREEN (1847,1848,1849,1850); php 5392 tests 0 new failures; vitest 3 inherited	session-20261116T191448-870933e4	2026-11-16T19:23:39Z
 cover:buildiq:70b3e29em9bad:1b97f731	deferred: buildiq has 54 open PRs	session-20261116T192104-d9eeae3f	2026-11-16T19:24:25Z
