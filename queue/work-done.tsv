@@ -16283,3 +16283,4 @@ fix:shillinq:2226:e54eecaf	merged development, restored stub SPDX header (inheri
 review:shillinq:1958:6f600fec	GREEN: unit 12239/0 fail, vitest 18/18	session-20261116T105647-12c2216a	2026-11-16T11:12:12Z
 build:dossiq:organisation-contact-persons	already done: every code task ticked and on development (98f36e1be); only live task 3.4 left	session-20261116T105648-edfb89ae	2026-11-16T11:12:41Z
 build:dossiq:social-people-stacked	already done: every code task on development; only 1 live/e2e task(s) left	session-20261116T105426-4e0b8984	2026-11-16T11:13:05Z
+fix:learniq:2484:a20cc6e5	fixed: SPDX line on the contract test stub (inherited from development) restores spdxheaders; new head 6e3b8399ed; lock busy, REVERIFY queued	session-20261116T101336-9d5ecdfc	2026-11-16T11:13:20Z
