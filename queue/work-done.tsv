@@ -17730,5 +17730,6 @@ fix:integriq:3675:0063a218	conflict resolved, pushed 8263d5471c; suite = develop
 verify:keepiq:1857:f5fa80be	GREEN #1857 (tests only; 5417 tests, 0 new failures)	session-20261116T203535-6145165c	2026-11-16T20:42:21Z
 merge:keepiq:1854:fccd7153	cloud tree of 3 keepiq PRs: merged=3 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T184852-b8356331	2026-11-16T20:42:34Z
 fix:filinq:2122:d9cac23f	merged #2122 at 33fe19d956dc8619f531e1529a2596c45a4acc61	session-20261116T201445-8cab6741	2026-11-16T20:42:41Z
+merge:pipelinq:3602:ba5589f7	cloud tree of 2 pipelinq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 1, done 0	session-20261116T202142-f327703a	2026-11-16T20:43:23Z
 cover:buildiq:70b3e29em9bad:e372e6ff	deferred: buildiq has 51 open PRs	session-20261116T202128-6be5fc02	2026-11-16T20:43:21Z
 fix:buildiq:1620:9cf97ff7	fixed floor (3.90->3.91) at ad45ffb6; buildiq merge lock held elsewhere, REVERIFY queued	session-20261116T200628-a3f8f9fc	2026-11-16T20:43:48Z
