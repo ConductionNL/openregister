@@ -575,3 +575,4 @@ shillinq	2230	e61ebeb74ed4a80eb62e889cf2269607a8e4cf30	APPROVE	worker-35	Quick; 
 shillinq	3078	33420e1face4172be5851323f53a2febef4b20ae	APPROVE	worker-35	Strict; no blockers; build of bookings-messages-and-embedding 1.1-1.5 as specced, CORS exact-origin and admin-gated; or-abstraction and parity failures inherited
 shillinq	3108	5565f98d2c7e00a4b1ea7984d82972cc5a95f05f	APPROVE	worker-35	Quick; no blockers; lock refresh, composer advisories inherited from development
 shillinq	3111	bfad3169ce3d468738ac4039e17ab2d4b5bccb59	APPROVE	worker-35	Quick; no blockers; two saves moved to main's ObjectSaveOptions, same register/schema/uuid
+humaniq	661	f523f286b290dfce227eab0ee9bb36a5418b4a2b	APPROVE	worker-16	Quick; no blockers; dependency bump with regenerated sbom, PHP suite 4405 green on tree, webpack build compiles, test:js 230/231 (1 inherited from development)
