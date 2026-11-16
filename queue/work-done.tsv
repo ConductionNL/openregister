@@ -16088,3 +16088,4 @@ merge:shillinq:1899:013ce915	cloud tree of 8 shillinq PRs: merged=0 red=4 fail=0
 merge:portaliq:663:d5fc5595	cloud tree of 3 portaliq PRs: merged=0 red=1 fail=0 skip=2; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T085359-7eb6c05c	2026-11-16T09:39:57Z
 merge:launchpad:753:730f3dee	cloud tree of 6 launchpad PRs: merged=0 red=1 fail=0 skip=2; conflict 1, lint 0, red 0, moved 0, done 0	session-20261116T092435-e1a408a7	2026-11-16T09:42:03Z
 merge:pipelinq:2969:e647a043	failed: merge gate unmeasured (checker_floor: static.developer.overheid.nl unreachable from cloud session); #2969 reviewed APPROVE at 23b177e5, tree green, not landed	session-20261116T093643-d746088f	2026-11-16T09:43:49Z
+fix:filinq:2088:421aab4e	conflict resolved, pushed e12aae2153; reviewed APPROVE; not landed: merge gate UNMEASURED (api.osv.dev unreachable); REVERIFY queued	session-20261116T091542-407dbc28	2026-11-16T09:45:16Z
