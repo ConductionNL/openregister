@@ -16381,3 +16381,4 @@ fix:integriq:3612:0000c176	fixed floor (3.55 -> 3.56), pushed 27e3d6e6; merge lo
 fix:integriq:2924:81032a2e	fixed floor: unit_interfacing 1.91 -> 1.92 (6 JS helpers take option objects); pushed 500b1263; merge lock held elsewhere, REVERIFY queued	session-20261116T110055-454b71dd	2026-11-16T11:27:21Z
 fix:filinq:2122:d829d52a	conflict resolved, pushed 1bbeef44; not landed: review REQUEST_CHANGES (procedure-named files, sig floor, version bump, @spec)	session-20261116T105557-2fdfe8f3	2026-11-16T11:27:33Z
 fix:filinq:2123:821f64bb	conflict resolved, pushed f0a61512c5f191666db3e67afbfa9bf0183a4dfc; REVERIFY queued (filinq merge gate is unmeasured here)	session-20261116T101101-e7e34372	2026-11-16T11:27:54Z
+fix:learniq:1883:9da73589	unmeasured: static.developer.overheid.nl; merged development in, SPDX fix for inherited floor, APPROVE at de89b9020b, REVERIFY queued	session-20261116T101336-9d5ecdfc	2026-11-16T11:28:06Z
