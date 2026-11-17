@@ -20505,6 +20505,7 @@ cover:decidiq:a5f973bbmfcd5:7556941f	already done: lib/Service/Ori 580/581 lines
 fix:hermiq:1781:11f91da4	fixed: raised app version; merge lock held elsewhere, REVERIFY at a56a9450	session-20261117T111714-cd94760b	2026-11-17T12:09:22Z
 fix:launchpad:1261:07612654	fixed #1261: explicit RBAC/multitenancy on schema read + 2 tests, pushed f23c46deef; REVERIFY queued	session-20261117T115011-195ffbc6	2026-11-17T12:09:43Z
 merge:humaniq:1184:54f5f41a	cloud tree of 1 humaniq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T113142-3e3cc1d3	2026-11-17T12:09:51Z
+merge:learniq:2551:3f23ab7e	cloud tree of 2 learniq PRs: merged=0 red=1 fail=0 skip=0; conflict 1, lint 0, red 0, moved 0, done 0	session-20261117T113901-5c9d981d	2026-11-17T12:10:07Z
 merge:hermiq:1760:b25a0ffe	cloud tree of 1 hermiq PRs: none; conflict 1, lint 0, red 0, moved 0, done 0	session-20261117T115540-1ba6ee8c	2026-11-17T12:10:11Z
 review:integriq:3612:a0f66b1a	GREEN: 0 new failures (9861 tests, 5 inherited), matches spec	session-20261117T120335-b942e878	2026-11-17T12:10:40Z
 fix:planninq:1217:f6120234	merged #1217 at 6ab21439 (merged development in, regenerated sbom)	session-20261117T111351-f79c232f	2026-11-17T12:10:59Z
