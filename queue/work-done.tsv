@@ -20654,3 +20654,4 @@ verify:integriq:2718:21805a33	CONFLICT #2718 (lib/Flow nodes, tests, package fil
 verify:opencatalogi:2368:791b0b69	CONFLICT #2368 (PublicationService.php)	session-20261117T125302-a32fc8d7	2026-11-17T12:56:33Z
 verify:versioniq:768:07f73891	GREEN #768	session-20261117T124257-115d3113	2026-11-17T12:56:47Z
 verify:dossiq:3548:4deb67eb	GREEN #3548: no-op merge, tree identical to development	session-20261117T124337-ec94f242	2026-11-17T12:57:01Z
+verify:larpinq:718:be7e57e1	GREEN #718 (no-op merge, tree equals development)	session-20261117T124352-d2047f0c	2026-11-17T12:57:22Z
