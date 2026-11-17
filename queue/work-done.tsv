@@ -18780,3 +18780,4 @@ fix:filinq:2114:78a005c2:v4	conflict resolved, pushed 93be4fcb; merge lock held 
 fix:shillinq:2986:79a81b92:v3	conflict resolved, pushed 91a7c5b6; REVERIFY (merge lock held elsewhere)	session-20261117T004718-f6df305c	2026-11-17T01:08:33Z
 fix:decidiq:2177:b9836c20:v3	conflict resolved + main API migration, pushed 0b1b1e4a; merge lock busy, REVERIFY queued	session-20261117T005208-5aaffa6c	2026-11-17T01:08:47Z
 fix:decidiq:2199:68646faa:v4	fixed: merged development in; head 1ea0b090a1db; unit/vitest green; merge lock held elsewhere, REVERIFY queued	session-20261117T004659-8fcf94f0	2026-11-17T01:08:55Z
+fix:shillinq:3080:cb96e451:v4	conflict resolved, pushed 995925eb; suite green; lock held elsewhere, REVERIFY queued	session-20261117T004721-b30387a5	2026-11-17T01:09:22Z
