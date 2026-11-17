@@ -21421,3 +21421,4 @@ build:filinq:intake-mailbox-archive-import:b2	already building: quality/build-in
 verify:pipelinq:2010:706c19df	GREEN #2010 (tree-identical to development)	session-20261117T141120-684bff04	2026-11-17T15:03:29Z
 build:filinq:migrate-signing-to-or-tasks:b2	already building: quality/build-migrate-signing-to-or-tasks exists	session-20261117T135414-614629b0	2026-11-17T15:03:25Z
 build:filinq:document-editing-tools:b2	already done: only 3.3 open, a portability run against a live Euro-Office instance; no PR	session-20261117T135414-614629b0	2026-11-17T15:03:44Z
+build:dossiq:unread-state-on-the-case:b2	PR #6666 (1.2b message read/unread marks; 3.1b per-case-type narrowing listener) + openregister PR #10614 (ObjectReadStatePropertiesEvent, base main); all code tasks ticked; vitest 2 inherited fails, phpunit 19 inherited fails, none new	session-20261117T135029-424a7669	2026-11-17T15:05:06Z
