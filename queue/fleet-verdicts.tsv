@@ -19092,3 +19092,8 @@ filinq	2106	029581eec1ef1f99c466ee3803c0e86cd4420752	REVERIFY	worker-57:merge	co
 filinq	2107	07113f957523ddcead4a92ba49746f86e0fb017b	REVERIFY	worker-57:merge	conflicts only with an earlier PR of the merge tree: merges clean on development alone; files: appinfo/info.xml l10n/en.js l10n/en.json lib/Settings/filinq_register.json 
 filinq	2120	fbc97be252a3a73eb3a875e6c66c0e852fbb4474	REVERIFY	worker-57:merge	conflicts only with an earlier PR of the merge tree: merges clean on development alone; files: lib/Settings/filinq_register.json tests/unit/EventListener/ListenerRegistrarTest.php tests/vitest/manifestFragments.spec.js 
 humaniq	1193	829b764e323a274ba57e333785af7a0f74180cb7	REVERIFY	worker-37:merge	head moved to fe5e457cc9 during land, verify it
+shillinq	2975	df2c1919f83aaa6d08cdd7450b2fa5b887107595	CONFLICT	worker-39:merge	conflicts with development; files: appinfo/info.xml tests/fixtures/register-versions.lock.json 
+shillinq	3004	5df6f499708856e17023a59e678ef7fc306c2a25	CONFLICT	worker-39:merge	conflicts with development; files: tests/fixtures/register-versions.lock.json 
+shillinq	3006	7ffe1e970520509233b98ecc30b4c917813b736d	CONFLICT	worker-39:merge	conflicts with development; files: appinfo/info.xml l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json tests/fixtures/register-versions.lock.json 
+shillinq	3007	7ed685a659eec5bbacebf71a406f4a9d35e680a7	CONFLICT	worker-39:merge	conflicts with development; files: tests/fixtures/register-versions.lock.json 
+shillinq	3064	169d4186cff1f43a2a4ebafceb04cf818202013f	CONFLICT	worker-39:merge	conflicts with development; files: tests/fixtures/register-versions.lock.json 
