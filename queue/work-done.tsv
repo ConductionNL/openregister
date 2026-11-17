@@ -20132,3 +20132,4 @@ review:integriq:3582:5de17aa9	GREEN: 0 new failures (9749 tests, 5 inherited); l
 fix:portaliq:2449:05704f30	fixed adrvalidator drop (missing global tag publication-report); new head 9deb3d4f; merge lock held elsewhere, REVERIFY queued	session-20261117T093516-d01add77	2026-11-17T09:39:12Z
 fix:learniq:2577:ba818095	conflict resolved, new head 3de16ebd, REVERIFY queued	session-20261117T092632-101520de	2026-11-17T09:39:35Z
 fix:launchpad:1210:15576749	fixed floor: module_coupling restored 4.74; new head fcd51164e, REVERIFY queued (merge lock held elsewhere)	session-20261117T093438-e680e079	2026-11-17T09:40:28Z
+fix:shillinq:2997:10c8efba	merged #2997 at 4b1b64a6fde1b52e00b26dc50d93bf5e1d22a68b	session-20261117T084846-a0137765	2026-11-17T09:40:48Z
