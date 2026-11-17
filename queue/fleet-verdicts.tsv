@@ -18828,4 +18828,5 @@ integriq	3721	30322060ec71f82562694e63d3031528bae94ec2	GREEN	worker-35	unit 9911
 integriq	3722	82a48e0e2dc1b77f0c802bd9e556a0e3eaa38768	GREEN	worker-35	unit 9911 tests on 9-PR tree, baseline 5 inherited failures, new failures 0; vitest 2389 passed; tests/spec files only
 filinq	2113	374ff86db69b9fcb8d0e55beeae136482b38672f	GREEN	worker-19	phpunit 7296 ok (baseline 7288 ok, 0 new failures); no JS touched; build hermiq-ai-tooling per change specs
 filinq	2191	377356bf2f306d95ea02377504a7b19877cf41cb	GREEN	worker-51	build image-redaction per its specs; phpunit 7288 baseline OK -> 7350 OK, no new failures; vitest 857 passed; new endpoints resolve the file in the caller folder (404 otherwise)
+hermiq	1851	b966db2c68a14f9afb14d3f3420a29c429ecf9d3	GREEN	worker-20	alone on development: unit 5754 0 failures (baseline 5736 0); diff read earlier, build session-entity-links per spec
 hermiq	1847	4b35bf029a1ae7308503d63ef3b7d87dd2e68235	GREEN	worker-44	phpunit 5734 on tree, baseline 199 errors+failures inherited, none new; e2e/Newman spec files and tasks notes only
