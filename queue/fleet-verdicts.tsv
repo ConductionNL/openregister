@@ -19355,3 +19355,4 @@ pipelinq	3960	c710eaaf826b130042556b9bbbf31600e70fa2b3	BLOCK	worker-37	unit 9292
 versioniq	692	f611aea1fbe0680e0104782b13effcf7b0d02d99	GREEN	worker-56	phpunit unit-only 2553 tests (baseline 2501, 2 inherited golden failures, 0 new); vitest 3248 passed; build of autoupdate-default-and-config-file matches its specs
 integriq	3613	dd360a604314022901564e1d9ed3936260dff032	REVERIFY	worker-40:merge	conflicts only with an earlier PR of the merge tree: merges clean on development alone; files: openapi.json tests/postman/integriq.postman_collection.json
 integriq	3708	41ada0a60a58b5bf9827e860d97f5a9c4eee0a3b	REVERIFY	worker-40:merge	verdict sha is not the head: head is 41ada0a60a58b5bf9827e860d97f5a9c4eee0a3b
+portaliq	2586	1fd306ff31f60936a9820c610606bed3f63ec380	GREEN	worker-54	phpunit-unit 6324, 16 errors = baseline 16 (same tests); woo-bundle-routes spec passes; example-site spec fails on plain development too (inherited); new failures 0
