@@ -19079,3 +19079,4 @@ review:filinq:2121:bc7ef6b2	GREEN: suite 6996/0 fail on PR+dev; register.json de
 review:integriq:3561:fbf5b6de	CONFLICT (l10n only); behaviour clean, unit only inherited failures	session-20261117T004708-53deec56	2026-11-17T02:13:35Z
 review:learniq:2524:03298d02	RED #2524: PortalFieldWordsTest (roster-sync source lacks portal word)	session-20261117T020252-b4828a7d	2026-11-17T02:13:53Z
 review:hermiq:1762:d2151c56	GREEN: hermiq #1762, no new failures	session-20261117T020211-438428f3	2026-11-17T02:14:03Z
+review:hermiq:1760:37f096be	CONFLICT: info.xml, hermiq_register.json conflict with development; recorded for a fix	session-20261117T020332-dda1b5ce	2026-11-17T02:14:17Z
