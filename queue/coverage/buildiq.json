@@ -1,12 +1,12 @@
 {
  "app": "buildiq",
- "commit": "c67be0b61dbb90b7a4a33158cb026d32931ea066",
- "measured_at": "2026-11-16T21:36:49Z",
+ "commit": "dbb36656fc901d4fe94ea2f9dfdc1f43af371869",
+ "measured_at": "2026-11-17T09:03:31Z",
  "php": {
   "tool": "pcov",
-  "pct": 91.66,
-  "statements": 22643,
-  "covered": 20754,
+  "pct": 91.61,
+  "statements": 23093,
+  "covered": 21156,
   "dirs": {
    "lib/": [
     11,
@@ -17,16 +17,16 @@
     26
    ],
    "lib/BackgroundJob/": [
-    250,
-    249
+    262,
+    261
    ],
    "lib/Command/": [
-    532,
-    522
+    533,
+    523
    ],
    "lib/Controller/": [
-    3734,
-    3491
+    3786,
+    3543
    ],
    "lib/Dashboard/": [
     39,
@@ -41,8 +41,8 @@
     64
    ],
    "lib/Integration/": [
-    250,
-    245
+    248,
+    237
    ],
    "lib/Kernel/": [
     0,
@@ -57,20 +57,20 @@
     60
    ],
    "lib/Lifecycle/": [
-    99,
-    98
+    101,
+    100
    ],
    "lib/Listener/": [
-    763,
-    758
+    786,
+    781
    ],
    "lib/Mcp/": [
     39,
     39
    ],
    "lib/Mcp/Handler/": [
-    849,
-    808
+    851,
+    810
    ],
    "lib/Middleware/": [
     60,
@@ -81,8 +81,8 @@
     55
    ],
    "lib/Repair/": [
-    932,
-    929
+    935,
+    932
    ],
    "lib/Resources/template/": [
     3,
@@ -153,16 +153,16 @@
     0
    ],
    "lib/Service/": [
-    13009,
-    11606
+    13349,
+    11906
    ],
    "lib/Service/Automation/": [
     66,
     65
    ],
    "lib/Service/Branch/": [
-    222,
-    211
+    234,
+    223
    ],
    "lib/Service/Connection/": [
     171,
@@ -177,8 +177,8 @@
     56
    ],
    "lib/Service/Dashboard/": [
-    141,
-    141
+    142,
+    142
    ],
    "lib/Service/GitHub/": [
     62,
@@ -189,23 +189,23 @@
     22
    ],
    "lib/Support/": [
-    265,
-    263
+    269,
+    265
    ]
   }
  },
  "js": {
-  "pct": 95.72,
-  "statements": 16659,
-  "covered": 15946,
+  "pct": 95.5,
+  "statements": 17272,
+  "covered": 16494,
   "dirs": {
    "src/": [
-    188,
-    186
+    199,
+    189
    ],
    "src/components/": [
-    745,
-    708
+    807,
+    745
    ],
    "src/components/agents/": [
     36,
@@ -228,24 +228,24 @@
     61
    ],
    "src/components/journey-editor/": [
-    162,
-    143
+    212,
+    188
    ],
    "src/components/page-editor/": [
-    1835,
-    1711
+    1882,
+    1755
    ],
    "src/components/page-editor/fields/": [
-    2012,
-    1887
+    2154,
+    2024
    ],
    "src/components/runtime/": [
     453,
     437
    ],
    "src/components/schema-editor/": [
-    1024,
-    980
+    1095,
+    1039
    ],
    "src/components/store/": [
     138,
@@ -284,20 +284,20 @@
     258
    ],
    "src/modals/": [
-    795,
-    778
+    797,
+    779
    ],
    "src/router/": [
     1,
     1
    ],
    "src/services/": [
-    1794,
-    1770
+    1934,
+    1906
    ],
    "src/services/manifestValidation/": [
-    548,
-    546
+    587,
+    584
    ],
    "src/store/": [
     50,
@@ -308,12 +308,12 @@
     52
    ],
    "src/utils/": [
-    102,
-    102
+    129,
+    129
    ],
    "src/views/": [
-    1731,
-    1647
+    1753,
+    1668
    ],
    "src/views/settings/": [
     46,
