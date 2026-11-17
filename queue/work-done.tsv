@@ -22653,3 +22653,4 @@ verify:planninq:1218:df1e59ad	GREEN 1218 (same sha verified in previous tree: ph
 verify:planninq:1252:d65f0492	GREEN 1252 (same sha verified in previous tree)	session-20261117T211932-f471137a	2026-11-17T21:31:45Z
 verify:learniq:2608:7ec13009	GREEN 2608, 2612; REVERIFY 2609 (conflicts only with 2608)	session-20261117T211320-ba1b42e8	2026-11-17T21:32:03Z
 verify:humaniq:1193:ef7f5e47	1193 GREEN; unit 4532 tests, 0 failures	session-20261117T211422-95669914	2026-11-17T21:32:41Z
+verify:opencatalogi:2771:502ce9b9	CONFLICT 2771 (l10n en/nl with development; verdict recorded in the tree verify)	session-20261117T211543-87ab7dd9	2026-11-17T21:32:52Z
