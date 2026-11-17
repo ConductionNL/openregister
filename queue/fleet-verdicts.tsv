@@ -18905,3 +18905,4 @@ opencatalogi	2783	b2d114f8e5f369a5012945225e70b599844f6613	GREEN	worker-25	versi
 opencatalogi	2798	f43db4b9fe7611c1537c1a1d54f949df9e16db64	GREEN	worker-15	tasks.md only (one task ticked, no code); merges clean on development; unit suite not affected, not run
 launchpad	1300	0d717f3832eb0cc5d462e04506034b536bd83e15	GREEN	worker-53	build launcher-app-catalogue entry point + e2e spec; PHP 4621 tests same as baseline; vitest 2733/2734, the 1 failure (propDefinitions golden, ContainerWidget) inherited from development; 0 new
 opencatalogi	2799	a135b0009b7aefad519be035a3b4003c800e66b2	GREEN	worker-39	merges clean; adds e2e spec + openspec/tasks edits only, no lib/src change so unit suite unaffected (not run)
+learniq	2604	2b6642c79ff14c1aa4d2715122388a273187d6c0	GREEN	worker-50	phpunit 7152 tests, baseline 1 failure (HigherEducationExampleSetTest), no new; openspec only: archives platform-properties and repoints three parity rows
