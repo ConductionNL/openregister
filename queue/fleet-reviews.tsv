@@ -1463,6 +1463,7 @@ humaniq	1196	e0e2cffa27f96e5529594607b47493629041cb13	APPROVE	worker-22	Quick; n
 humaniq	1197	a28aaa28605b810450a87a2c0ed4f9a2cfa22fa4	APPROVE	worker-22	Standard; no blockers; e2e journey spec only
 humaniq	1198	ada533a81007f708bdfe9eb24a2ba5a6a2041daa	APPROVE	worker-22	Thorough; no blockers; admin audit section reads OpenRegister audit API (server-side access), text-rendered, test updated for new ctor arg
 humaniq	1193	ef7f5e47529d295f00f4a5b05b2aa464576bc3ba	REQUEST_CHANGES	worker-22	Strict; TimesheetReopenGuard reads a null PayrollRun lookup as allow, and findObjectData returns null on any exception, so a read error lets a paid timesheet reopen (fail-open; tell a missing run from a failed read); ReviewSignOffStampListener create path clears only sign-off fields, so a client-sen
+keepiq	1897	cb062e6781152a50caa312836a625237c407fa7c	APPROVE	worker-26	Quick; no blockers; openspec archive and @spec path updates only, no code lines changed
 buildiq	1734	666e0ef94dbb48dd31d6c384ca7470201645bef1	APPROVE	worker-24	Standard; no blockers; e2e spec only plus task tick, not run (no live stack)
 buildiq	1735	9eb8e4fea018329c6cb0e546e24f8d71953f518a	APPROVE	worker-24	Standard; no blockers; manifest download flags per change T02, e2e spec waits on nextcloud-vue T01
 buildiq	1736	30abdfe4088bc57135d17f12eb7cd0236492ae89	APPROVE	worker-24	Strict; no blockers; org scope added before admin bypass in agents runs and export submit, fails closed without guard, lookup error path still ends in 422; tests cover deny/allow
