@@ -1483,3 +1483,4 @@ learniq	2595	5aa1fd02d4e2d7f9e3d0168e0d07e36042b38b03	APPROVE	worker-17	Standard
 planninq	1247	1a42908edf32546f4d27dfc8c1b8aec9935bd950	APPROVE	worker-41	Quick; none; e2e spec only, non-admin contexts with empty storage state
 planninq	1248	36d5dc19e1277c9823e4512f8072ca92540206a6	APPROVE	worker-41	Quick; none; axe e2e spec and postman collection only, base_url variable, no stored secrets
 planninq	1252	d65f04922fee972a0c53a84c02b54d6a5eed02ff	APPROVE	worker-41	Quick; none; e2e spec only, non-admin member with empty storage state
+learniq	2519	26cb0ee872e5d3bba79683e7c5d8bf1c83e0942b	APPROVE	worker-17	Thorough; no blockers; removeEarlierPdfs deletes any 'Rapport *.pdf' on the card, not only files tagged report-card-pdf; filesDownload exposes every file on a published card to guardians, not only the PDF
