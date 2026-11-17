@@ -21856,3 +21856,4 @@ build:integriq:sources-sftp-adapter:b2	already building: quality/build-sources-s
 build:integriq:sandboxed-tenant-scripts:b2	not built: design work first; design.md is 'recorded, not designed' (runtime, contract, limits, who may write, approval) and tasks 2-3 depend on it; no spec file is named	session-20261117T152630-80f67c9b	2026-11-17T16:00:47Z
 build:buildiq:lifecycle-release-test-gate:b2	already building: quality/build-lifecycle-release-test-gate 	session-20261117T135414-614629b0	2026-11-17T16:01:43Z
 build:buildiq:openbuild-nc-color-variables:b2	already building: quality/build-openbuild-nc-color-variables 	session-20261117T135414-614629b0	2026-11-17T16:01:51Z
+build:buildiq:openbuild-connector-widget-runtime:b2	already done: code tasks on development (a8756c43); left 3.4 upstream nextcloud-vue item and 4.1-4.4 Playwright (live)	session-20261117T124637-3e909745	2026-11-17T16:02:33Z
