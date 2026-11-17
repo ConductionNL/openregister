@@ -19284,6 +19284,7 @@ fix:stackiq:1942:200de863	fixed BLOCK (conflicts, SPDX headers, version bump), p
 fix:shillinq:3065:ba9580f8	fixed: merged development, regenerated scoped pages, new head 38e2ed5d, REVERIFY	session-20261117T025204-e27953f1	2026-11-17T02:57:04Z
 verify:launchpad:1230:8f89ce42	GREEN #1230: 4620 tests OK, vitest 2731/2731	session-20261117T020142-15890c05	2026-11-17T02:57:13Z
 fix:integriq:3679:b2e51204	merged #3679 at 2a910fa696365757f5e6a63f04de9620865484e8	session-20261117T024200-4ed5487e	2026-11-17T02:57:24Z
+merge:buildiq:1590:51852b71	cloud tree of 9 buildiq PRs: merged=1 red=0 fail=0 skip=0; conflict 7, lint 0, red 0, moved 1, done 0	session-20261117T020320-19c7f7ca	2026-11-17T02:57:44Z
 fix:shillinq:3000:5eb9600a	fixed at 210bb637 (relatedCollections, validate-manifest PASS); merge lock held elsewhere, REVERIFY queued	session-20261117T020252-b4828a7d	2026-11-17T02:57:51Z
 fix:filinq:2089:b14f4be3	merged development into the branch, register info v8.65.0 (this line's entry over development's v8.64.0 woo-metadata-worklist); unit 7024 OK, 6 skipped; new head c81f7860, REVERIFY appended	session-20261113T214350-9762e143	2026-11-17T02:58:01Z
 fix:filinq:2105:7e8ef21d	conflict resolved (register v8.65.0), pushed 0d907f7f; merge lock held elsewhere, REVERIFY queued	session-20261117T020244-328833fb	2026-11-17T02:58:29Z
@@ -19295,6 +19296,19 @@ fix:filinq:2124:8f7d55a4	fixed RED (OR options API), pushed 216f959b; REVERIFY q
 fix:launchpad:819:c5c80a07:v8	fixed: merged development, sbom current, pushed ff71d979; REVERIFY (merge lock held)	session-20261117T020142-15890c05	2026-11-17T02:59:56Z
 fix:integriq:3574:606ffc5d	conflict resolved, pushed 56c6b5c2; merge lock held elsewhere, REVERIFY queued	session-20261117T025311-e27d60f7	2026-11-17T03:00:14Z
 fix:filinq:2107:70189485	conflict resolved, pushed 17d900b8 (register 8.65.0), unit 7020 OK; lock held elsewhere, REVERIFY queued	session-20261117T025357-44509a8b	2026-11-17T03:00:26Z
+merge:stackiq:1928:d3a9dc39:r	cloud tree of 7 stackiq PRs: merged=3 red=0 fail=0 skip=1; conflict 3, lint 0, red 0, moved 0, done 0	session-20261117T020319-9833efe0	2026-11-17T03:00:49Z
 fix:filinq:2112:ac62393f	fixed: merged development, golden re-recorded, new head dc4b7d6c, REVERIFY	session-20261117T025204-e27953f1	2026-11-17T03:00:51Z
 merge:larpinq:1043:27e52903	cloud tree of 4 larpinq PRs: merged=1 red=1 fail=0 skip=0; conflict 2, lint 0, red 0, moved 0, done 0	session-20261117T025134-80cc4d3c	2026-11-17T03:01:07Z
 fix:shillinq:2983:1f5c0426	fixed: merged development, regenerated scoped pages + register lock, pushed ad375f2d; merge lock busy, REVERIFY queued	session-20261117T025031-1b32b183	2026-11-17T03:01:12Z
+fix:filinq:2113:9e76e544	conflict resolved; REVERIFY at 36d16af002 (merge lock held by another merger)	session-20261117T020358-1a8df617	2026-11-17T03:01:22Z
+fix:integriq:3678:31eb3920	obsolete: #3678 already merged (head is in development; SPDX fix landed via #3679)	session-20261117T025311-e27d60f7	2026-11-17T03:01:29Z
+fix:decidiq:2154:7aa3f202	fixed objectCount, unit 4821 OK; REVERIFY at 6fc49611 (merge lock busy)	session-20261117T025205-24fff43b	2026-11-17T03:01:44Z
+fix:filinq:2086:fe4bcf08:v3	stale	session-20261117T025204-e27953f1	2026-11-17T03:01:29Z
+fix:decidiq:2199:1ea0b090	conflict resolved (manifest ids), spec counts updated, pushed 207cf34b; merge lock held elsewhere, REVERIFY queued	session-20261117T021723-9d734048	2026-11-17T03:01:59Z
+fix:learniq:2579:9a422773	maintainability findings fixed + demo data; new head 65b68bcb, REVERIFY (merge lock held elsewhere)	session-20261117T003945-3aa9cc05	2026-11-17T03:02:16Z
+fix:hermiq:1791:1747024b:v4	fixed conflicts, new head 86d27476e06000ce1db24e3054218ed1faf1235e; REVERIFY (merge lock held elsewhere)	session-20261117T020353-b50811a6	2026-11-17T03:02:38Z
+fix:filinq:2130:e568a447	OcrTextLayerService refuses to rewrite a final, signed or anonymised PDF through DocumentGuard (SKIP_PROTECTED), spec scenario added, 2 mutation-checked tests; unit 6981 OK; head 90159872, REVERIFY appended	session-20261113T214350-9762e143	2026-11-17T03:02:53Z
+fix:filinq:2086:285091d5	fixed, pushed b75633fb (dev merged, @spec, descriptions); lock busy, REVERIFY queued	session-20261117T025103-7e9d03fe	2026-11-17T03:03:05Z
+fix:decidiq:2189:2a5bced2	conflict resolved, pushed aff8b82e (objectCount 255), unit 4831 OK; lock held elsewhere, REVERIFY queued	session-20261117T025357-44509a8b	2026-11-17T03:03:17Z
+fix:decidiq:2205:ecb1c1cc	fixed: conflict resolved, pushed 0ebb671c; REVERIFY (merge lock held)	session-20261117T020142-15890c05	2026-11-17T03:03:31Z
+fix:pipelinq:3734:ed9bd0c7	failed: permission (review record refused after fix pushed; new head fd1741d78, REVERIFY row written)	session-20261117T025227-6f9f4849	2026-11-17T03:03:41Z
