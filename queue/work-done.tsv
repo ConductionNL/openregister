@@ -18522,3 +18522,4 @@ merge:learniq:2578:a3daf75a	failed: prep exit 2: composer install refused (vimeo
 verify:shillinq:1958:c4416ca3	1958 CONFLICT	session-20261116T230531-f9095b0f	2026-11-17T00:06:23Z
 verify:shillinq:3007:c7d7174e	CONFLICT: #3007 conflicts with development (info.xml, routes, l10n, EInvoiceService, IntegriqCloudEventListener, openapi, lock file)	session-20261113T214350-9762e143	2026-11-17T00:06:31Z
 verify:shillinq:2083:00f08036	CONFLICT #2083 (l10n)	session-20261116T233929-170accb7	2026-11-17T00:06:47Z
+verify:portaliq:2451:82b242ea	CONFLICT #2451 (l10n, manifest.json)	session-20261116T232951-07569878	2026-11-17T00:06:57Z
