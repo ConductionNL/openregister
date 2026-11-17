@@ -5035,3 +5035,4 @@ hermiq	1741	d8e7284d38b15fe8334cde5259203dbbf11f0f3f	RED	merge3	GATE RED floor: 
 hermiq	1749	8dfea2dc9a60856af054ed3c0304682653b0b63d	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.77 holds at 3.79
 hermiq	1757	5857cce396efeb6810438a3a1f28c5b6462db48f	RED	merge3	GATE RED checker floor: adrvalidator: pass -> warn; adrvalidator stars: 5 -> 3; score: 100 -> 97
 hermiq	1762	20443b51a261b115b668b2a58a09f249b936bc1b	RED	merge3	GATE RED checker floor: adrvalidator: pass -> warn; adrvalidator stars: 5 -> 3; score: 100 -> 97
+decidiq	2251	0ed475e33cbb588dda158bc53a43c6b0bed603a7	SKIP	worker-29	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
