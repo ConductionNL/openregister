@@ -19855,3 +19855,4 @@ review:integriq:2650:e2326510	CONFLICT: composer.lock conflicts with development
 review:larpinq:1049:6a27cf94	GREEN: phpunit 1137 OK, vitest 716 pass	session-20261117T080920-ed540db0	2026-11-17T08:11:50Z
 review:hermiq:1754:bf0cc3bd	BLOCK: new phpstan error, interface param order (runId vs conversationId); tests green	session-20261117T080453-34aa4034	2026-11-17T08:12:22Z
 review:launchpad:1210:15576749	GREEN: launchpad #1210, unit 4628 OK, vitest 2696 OK	session-20261117T080436-bf0369a8	2026-11-17T08:12:55Z
+review:learniq:2523:19efbc3c	GREEN: 7032 tests, only the inherited failure; js same as development	session-20261117T075401-a3415363	2026-11-17T08:13:10Z
