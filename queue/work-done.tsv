@@ -20240,3 +20240,4 @@ fix:filinq:2079:1b7aa3aa	no change: bundling resolves when #2069 lands first (re
 merge:dossiq:6203:bc5eb8ad	nothing landed: dossiq #6203 is on the never-merge exclusion list of cm_tree.sh	session-20261117T092802-9d33e8f7	2026-11-17T10:10:22Z
 fix:shillinq:3007:4b9a3466	fixed: conflict merged, floor restored to 4.00, gate OK at 8f36129b; REVERIFY queued	session-20261117T091244-7c1a3c79	2026-11-17T10:10:32Z
 fix:stackiq:2022:dd6d4b11	sbom regenerated, pushed a08934f7; REVERIFY queued (merge lock held elsewhere)	session-20261117T100057-7775ee42	2026-11-17T10:10:42Z
+review:hermiq:1751:2d383135	GREEN: matches change specs; no new failures (198 inherited)	session-20261117T095701-9003708e	2026-11-17T10:11:08Z
