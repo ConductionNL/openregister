@@ -19550,3 +19550,4 @@ fix:shillinq:3080:995925eb	conflict resolved, pushed 6a2e8035e2; REVERIFY queued
 merge:shillinq:2086:56610a02	merge3 tree of 7 shillinq PRs: merged=1 red=1 fail=0 skip=0; conflict 5, lint 0, moved 0; fix rows 5	merge3-20261113T213425-c36bcd5f	2026-11-17T06:28:08Z
 fix:buildiq:1654:37e70c18	conflict resolved, pushed 8cbe077a4; suite green; REVERIFY recorded (end-to-end land skipped: permission refused earlier)	session-20261117T061917-57640b81	2026-11-17T06:28:22Z
 fix:decidiq:2177:0b1b1e4a	floor restored (PASS), pushed 7c45ed60; REVERIFY queued	session-20261117T055853-7ddd3cb3	2026-11-17T06:28:38Z
+fix:shillinq:3048:455711f8	conflict resolved, new head fa8eacaf, REVERIFY (merge lock held)	session-20261117T061732-40387d12	2026-11-17T06:29:13Z
