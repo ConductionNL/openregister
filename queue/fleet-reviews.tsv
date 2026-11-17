@@ -883,3 +883,4 @@ humaniq	1139	3c0dc9a8fc49f0e2d3d2dcb8600ebf57374df54a	APPROVE	worker-50	Standard
 larpinq	1059	064564f8eebf0763f2d68215c6289a261f3c882d	APPROVE	worker-30	Quick (docs only: CHANGELOG + tasks.md); no blockers; none
 launchpad	760	3d286e79d2e2e88b035d84491e595b061600b514	APPROVE	worker-54	Quick; no blockers; dev-dependency patch bump, sbom regenerated, tree PHP and vitest suites green
 opencatalogi	2722	8f7ea1f5190ab3e63079bf7e3b3d461e30808d08	REQUEST_CHANGES	worker-53	Thorough; spec-coverage gate FAIL on added src/services/wooBatches.js::createWooBatch (missing @spec tag); otherwise change-scoped
+opencatalogi	2723	ba525e6af54ba825e76cc5e35a83be1986df5e2d	APPROVE	worker-53	Thorough; no blockers; withdrawal kept as file labels per attachments-are-files, other labels kept, failures answer 500 by step; concern: uses openregister internal FileService/FileMapper via container
