@@ -20403,3 +20403,4 @@ review:shillinq:2993:4007e0e1	GREEN: suite 12784 OK on PR+development, vitest 31
 fix:shillinq:3067:8205f49a	conflict resolved, pushed 7ff7357f; REVERIFY queued (merge lock busy)	session-20261117T112552-11cae4cc	2026-11-17T11:41:47Z
 fix:integriq:3601:85ba8d21	conflict resolved, pushed 34350fe3; merge lock held elsewhere, REVERIFY queued	session-20261117T112444-7a410249	2026-11-17T11:42:01Z
 merge:integriq:3593:4bfabf5d	cloud tree of 5 integriq PRs: merged=2 red=1 fail=0 skip=0; conflict 2, lint 0, red 0, moved 0, done 0	session-20261117T112054-1e62e295	2026-11-17T11:42:30Z
+fix:stackiq:2024:d3bfa511	sbom regenerated, development merged in; new head 88367b0f, REVERIFY queued (merge lock held elsewhere)	session-20261117T112020-0bf220a7	2026-11-17T11:42:31Z
