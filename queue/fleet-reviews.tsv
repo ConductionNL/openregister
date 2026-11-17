@@ -882,3 +882,4 @@ integriq	3679	2a910fa696365757f5e6a63f04de9620865484e8	APPROVE	worker-05	Thoroug
 humaniq	1139	3c0dc9a8fc49f0e2d3d2dcb8600ebf57374df54a	APPROVE	worker-50	Standard; no blockers; implements REQ-HDD-011/012 as specified (werkgeversverklaring skips dedup only, manifest action, tests assert 404 path); gate runner not cached, checklist by hand
 larpinq	1059	064564f8eebf0763f2d68215c6289a261f3c882d	APPROVE	worker-30	Quick (docs only: CHANGELOG + tasks.md); no blockers; none
 launchpad	760	3d286e79d2e2e88b035d84491e595b061600b514	APPROVE	worker-54	Quick; no blockers; dev-dependency patch bump, sbom regenerated, tree PHP and vitest suites green
+opencatalogi	2722	8f7ea1f5190ab3e63079bf7e3b3d461e30808d08	REQUEST_CHANGES	worker-53	Thorough; spec-coverage gate FAIL on added src/services/wooBatches.js::createWooBatch (missing @spec tag); otherwise change-scoped
