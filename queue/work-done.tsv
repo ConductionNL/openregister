@@ -18616,3 +18616,4 @@ build:launchpad:widget-calculated-fields:c6	partial: PR #1254 (quality/build-wid
 build:stackiq:operations-record-reconciliation:c5	already building: open PR #1941 (head fb08b1cd) holds every code task; left only the Playwright record-reconciliation spec and the docs screenshots, which need a running instance	session-20261113T214350-9762e143	2026-11-17T00:24:13Z
 verify:stackiq:1928:e01f2355	CONFLICT #1928 (6 files conflict with development)	session-20261116T233050-d0df160f	2026-11-17T00:24:38Z
 verify:versioniq:728:89ddc661	CONFLICT #728 (19 files vs development)	session-20261116T233800-0f135937	2026-11-17T00:25:03Z
+review:shillinq:2997:b92dd7ab	CONFLICT #2997 (info.xml, register-versions.lock.json)	session-20261116T232923-e93e6b40	2026-11-17T00:25:30Z
