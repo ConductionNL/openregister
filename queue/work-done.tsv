@@ -22368,9 +22368,11 @@ verify:stackiq:2040:6e1004c5	GREEN #2040: tests only, unit 4079/0 failures	sessi
 verify:dossiq:6665:d62c780d	GREEN 6665; 0 new failures (19 php + 2 vitest inherited)	session-20261117T185932-75c4578d	2026-11-17T19:54:45Z
 verify:portaliq:2586:d48314a9	CONFLICT portaliq #2586 (package.json vs development)	session-20261117T190434-a73c29f6	2026-11-17T19:54:41Z
 verify:stackiq:2055:15b8f4c3	GREEN	session-20261117T190242-7c82bed8	2026-11-17T19:54:57Z
+merge:portaliq:2574:e3c5bacf	merge3 tree of 12 portaliq PRs: merged=10 red=0 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-17T19:55:09Z
 verify:stackiq:2052:ec35d2a9	1 GREEN (2052); e2e spec only	session-20261117T190140-44e48bc5	2026-11-17T19:55:07Z
 verify:portaliq:2569:f3caa0a6	RED: #2569 breaks 6 tests in row-confirm-outcomes-steps.spec.mjs	session-20261117T185500-00963134	2026-11-17T19:55:18Z
 verify:stackiq:2058:b7990b91	GREEN 2058; unit 4071 OK, no new failures	session-20261117T185359-d68263c5	2026-11-17T19:55:26Z
+merge:portaliq:2494:ceb74273	merge3 tree of 12 portaliq PRs: merged=10 red=0 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-17T19:55:32Z
 verify:stackiq:2049:c79327a0	GREEN #2049 (vitest 2942, no new failures)	session-20261117T190320-1db054ae	2026-11-17T19:55:45Z
 verify:stackiq:1946:1a1d2ce9	GREEN #1946 (4135 PHP tests, 0 new failures)	session-20261117T185935-593e017f	2026-11-17T19:55:54Z
 verify:opencatalogi:2786:077a0049	GREEN #2786 (6390 tests, 0 new failures; inherited reds only)	session-20261117T190359-60e4fde5	2026-11-17T19:56:09Z
