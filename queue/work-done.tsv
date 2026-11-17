@@ -21560,3 +21560,4 @@ build:decidiq:decisions-leaf-speaks-the-hosts-words:b2	already done: 1.1-1.2 on 
 build:decidiq:agenda-item-phase-is-declared:b2	already building: branch quality/build-agenda-item-phase-is-declared exists	session-20261117T134347-d0294040	2026-11-17T15:20:00Z
 build:decidiq:document-annotations:b2	already building: quality/build-document-annotations exists	session-20261117T135414-614629b0	2026-11-17T15:20:08Z
 build:decidiq:document-approval-chain-leaf:b2	already done: only the screenshots task is open, captured by a journeydoc run on a live instance	session-20261117T124010-7774729d	2026-11-17T15:20:09Z
+build:decidiq:example-set-zuiddrecht:b2	already done: open 2.2/2.3 are install checks on a live instance; no PR	session-20261117T135414-614629b0	2026-11-17T15:21:19Z
