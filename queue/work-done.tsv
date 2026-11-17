@@ -18939,3 +18939,4 @@ fix:opencatalogi:2671:0c44bbf1:v4	merged #2671 at 272f5fcd0e4d456f4bdf27b8e23a81
 fix:stackiq:1959:fe24e23b:v4	conflict resolved, pushed 61653b66; merge lock held elsewhere, REVERIFY recorded	session-20261117T004626-d23ae300	2026-11-17T01:39:38Z
 verify:humaniq:1146:35e75e13	stale	session-20261117T005226-366998de	2026-11-17T01:39:43Z
 fix:opencatalogi:2652:2348aeca:v4	fixed CONFLICT, pushed 541cb28a7; merge lock held elsewhere, REVERIFY queued	session-20261117T004638-e72c1040	2026-11-17T01:39:52Z
+fix:opencatalogi:2685:607939f5:v4	conflict resolved, pushed 36175982; REVERIFY queued (merge lock held)	session-20261117T004705-084072e6	2026-11-17T01:40:16Z
