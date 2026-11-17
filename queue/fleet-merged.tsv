@@ -5806,3 +5806,4 @@ thematiq	1723	f6aae08d113aa98b5a8129910468602b07e598e8	RED	merge3	GATE RED sbom:
 thematiq	1724	bee24dc0a0b313ee6429de1edec32a5449244f66	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 thematiq	1725	f7a10dc12ca1b7982050d7bf7fb649d8684d2882	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
 thematiq	1726	ebe538c8dc4ba9e635c349fc608093ec09646cb6	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+stackiq	1963	d255f3be7e27c59c7c424d2717cc537c3a207a16	SKIP	worker-20	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
