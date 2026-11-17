@@ -21683,3 +21683,4 @@ build:hermiq:skill-install-idempotency:b2	already building: quality/build-skill-
 build:hermiq:skills-curator-merges-duplicates:b2	PR #1845: e2e spec for approve/reject merge scenarios + reasoned exclude for the curator-run one; code was already on development	session-20261117T145912-e9f6485a	2026-11-17T15:35:29Z
 build:buildiq:apps-unified-search-deep-links:b2	nothing to build: 3.2 is a live check on the dev instance; 4.1 (flip to built, archive) follows it	session-20261117T133433-906519d6	2026-11-17T15:35:25Z
 build:humaniq:payroll-engine-port-from-shillinq:b2	blocked on decisions: 0.1 needs Ruben answers to O1/O2/O3 (design.md lists them as open), and every code task 1.1-4.1 builds on those choices; nothing built	session-20261117T134242-51ff9d48	2026-11-17T15:35:27Z
+build:buildiq:lifecycle-import-app-and-cli:b2	nothing to build: only the Playwright import-app spec is open (needs a live instance)	session-20261117T133433-906519d6	2026-11-17T15:36:04Z
