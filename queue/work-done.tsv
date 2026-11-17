@@ -18518,3 +18518,20 @@ verify:shillinq:3052:10940568	CONFLICT #3052	session-20261116T233929-170accb7	20
 verify:opencatalogi:2680:66ae4f4f	CONFLICT: #2680 vs development in docs, l10n, SitemapDocumentMapper	session-20261116T232911-3dffa1ae	2026-11-17T00:05:20Z
 verify:shillinq:2983:55242378	CONFLICT #2983 (info.xml, GLLineResultStampListener, manifest, l10n)	session-20261116T232623-066b53c9	2026-11-17T00:05:29Z
 verify:learniq:2551:ca8152ea	CONFLICT #2551 (l10n, committed .pyc)	session-20261116T232944-146e39d7	2026-11-17T00:05:41Z
+verify:opencatalogi:2722:4a2f2fb8	CONFLICT #2722 (3 files vs development)	session-20261116T233933-3050c00d	2026-11-17T00:06:07Z
+merge:learniq:2578:a3daf75a	failed: prep exit 2: composer install refused (vimeo/psalm 7.5.0 needs php ~8.3.16, session has 8.3.6), no vendor/bin/phpunit	session-20261116T232944-146e39d7	2026-11-17T00:06:22Z
+verify:shillinq:1958:c4416ca3	1958 CONFLICT	session-20261116T230531-f9095b0f	2026-11-17T00:06:23Z
+verify:shillinq:3007:c7d7174e	CONFLICT: #3007 conflicts with development (info.xml, routes, l10n, EInvoiceService, IntegriqCloudEventListener, openapi, lock file)	session-20261113T214350-9762e143	2026-11-17T00:06:31Z
+verify:portaliq:2451:82b242ea	CONFLICT #2451 (l10n, manifest.json)	session-20261116T232951-07569878	2026-11-17T00:06:57Z
+verify:shillinq:2998:531a457a	CONFLICT: info.xml, l10n, Application.php, register-versions.lock.json	session-20261116T224609-c0ad2be4	2026-11-17T00:07:05Z
+verify:shillinq:3003:2b498a1a	CONFLICT #3003 (9 files vs development)	session-20261116T233834-fbe601d1	2026-11-17T00:07:18Z
+verify:shillinq:3006:5843d4fb	CONFLICT #3006 (info.xml, QuickDraftInvoiceService, manifest, l10n)	session-20261116T232623-066b53c9	2026-11-17T00:07:29Z
+verify:portaliq:2494:762e3478	CONFLICT #2494 (CitizenWriteActionFinder.php, package.json)	session-20261116T233921-33ab4c87	2026-11-17T00:07:41Z
+verify:shillinq:2100:025dc860	CONFLICT #2100 (8 files vs development)	session-20261116T233933-3050c00d	2026-11-17T00:07:51Z
+verify:shillinq:3000:120cfc49	CONFLICT: CHANGELOG/info.xml/l10n vs development	session-20261116T233900-0eb43466	2026-11-17T00:08:04Z
+verify:shillinq:3004:f5e1344d	CONFLICT #3004 (15 files vs development)	session-20261116T233901-7abe1a78	2026-11-17T00:08:12Z
+verify:shillinq:3002:cb0febcb	CONFLICT #3002 (openapi.json)	session-20261116T232033-3ca59164	2026-11-17T00:08:24Z
+verify:shillinq:3005:155acc0f	CONFLICT: #3005 conflicts with development (l10n, manifest.d.shell.json, adminRootCoverage spec)	session-20261113T214350-9762e143	2026-11-17T00:08:32Z
+verify:shillinq:3064:334cea16	CONFLICT #3064 (10 files)	session-20261116T232923-46913d93	2026-11-17T00:08:42Z
+verify:hermiq:1728:4a375b99	CONFLICT: 6 files conflict with development (l10n, hermiq_register.json, openapi.json)	session-20261116T232834-a3ef1c86	2026-11-17T00:08:59Z
+fix:learniq:2577:15fc4a90	fixed menu order tie; pushed 5bf20572; REVERIFY (end to end skipped: learniq composer prep fails on php 8.3.6)	session-20261116T232944-146e39d7	2026-11-17T00:09:16Z
