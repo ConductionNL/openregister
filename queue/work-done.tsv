@@ -20073,3 +20073,4 @@ gap:integriq:sync-runs-as-configured-user:1	deferred: integriq has 52 open PRs	s
 gap:humaniq:hr-group-approves-leave:1	PR #1183: HR step of leave approval now humaniq-hr or admin (HumaniqRoles::isHr), test added, suite 4477->4478 OK	session-20261117T081247-63811e04	2026-11-17T09:17:48Z
 merge:buildiq:1590:46db436a	cloud tree of 1 buildiq PRs: merged=1 (#1649 at d3b7755f after adding @spec tags and story field titles) red=0 fail=0; 1590 1632 1643 CONFLICT (l10n)	session-20261117T083929-9c5fceb9	2026-11-17T09:18:29Z
 merge:shillinq:2070:56e1c3a4	cloud tree of 5 shillinq PRs: merged=2 red=0 fail=0 skip=0; conflict 3, lint 0, red 0, moved 0, done 0	session-20261117T084846-a0137765	2026-11-17T09:19:00Z
+merge:buildiq:1597:b695ee93	stale	feeder	2026-11-17T09:18:10Z
