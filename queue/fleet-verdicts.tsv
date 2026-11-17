@@ -18437,3 +18437,4 @@ shillinq	2993	4007e0e10d11421496990f8e9c4a906ff16900c9	REVERIFY	worker-52	merged
 integriq	3708	c779eda2dcfcb360af97ace928862a126f0f8b2d	RED	worker-08:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 integriq	3710	8618c31d0bf78ae3b11dde0270d6bd52d7200e8d	RED	worker-08:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 integriq	3711	dd118ae9f781f7bf22d90735e52	REVERIFY	worker-08:merge	verdict sha is not the head: head is dd118ae9f781f7bf22d90735e52321741fb6be80
+learniq	2497	35dd044ed98e7ee88b691975c9d1495fc21093b1	CONFLICT	worker-17:merge	conflicts with development; files: lib/Settings/learniq_register.json 
