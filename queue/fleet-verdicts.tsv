@@ -16712,3 +16712,4 @@ portaliq	2446	478f986ee7cff544223b5becaf2c7eb7188e33f6	CONFLICT	worker-42:merge	
 portaliq	2450	5c9fe090314431963f17652a8492bff99c8f7b4b	CONFLICT	worker-42:merge	conflicts with development; files: package.json 
 portaliq	2493	733b81a3500f6d3d1d635490e08695c60df3f279	CONFLICT	worker-42:merge	conflicts with development; files: package.json 
 portaliq	2494	b99070c9ab1e77a31de8de16652870a2571993c9	CONFLICT	worker-42:merge	conflicts with development; files: package.json 
+portaliq	2452	92f4642837c420acf0bbd6a60afff85740452268	GREEN	worker-29:review	Implements submission-row-actions per its spec: staff-only register-again (admin or staff group, reads as caller), proof-field write guard, formBinding field. Merged with development: 6245 tests, 16 errors identical to development; node specs submission-row-actions/row-action/example-site 50/50.
