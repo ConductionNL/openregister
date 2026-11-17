@@ -19987,3 +19987,4 @@ cover:openregister:7350e3efm18f8:jsaba0d069	deferred: openregister has 185 open 
 review:hermiq:1755:9cc6d8bf	GREEN (conflicts with development)	session-20261117T081138-8732f141	2026-11-17T08:53:38Z
 review:versioniq:700:128a76e4	GREEN: versioniq#700, unit 2287 with 2 inherited failures, vitest 6 passed	session-20261117T084229-c4fc3f9c	2026-11-17T08:54:09Z
 review:buildiq:1651:144da0d4	GREEN: no blockers; 1 inherited unit failure; l10n conflicts with development	session-20261117T084819-7b38da2a	2026-11-17T08:54:23Z
+fix:versioniq:709:482317ee	fixed headers and spec tags, pushed 87f7ff42; lock held elsewhere, REVERIFY	session-20261117T084835-4ff9a661	2026-11-17T08:54:50Z
