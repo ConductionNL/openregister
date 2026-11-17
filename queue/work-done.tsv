@@ -23002,3 +23002,4 @@ merge:stackiq:1966:45c796fa	unmeasured: static.developer.overheid.nl (proxy CONN
 fix:thematiq:1729:0112b5b6	merged development in, pushed f449e3fe, green; REVERIFY queued (merge gate host blocked)	session-20261117T221004-2cfd9e4c	2026-11-17T23:19:46Z
 merge:hermiq:1760:dda91748	unmeasured: static.developer.overheid.nl (1760 gate RED unit_complexity 4.55->4.53; 1845-1848,1850 approved, gate unmeasured; 1844 done, 1853 moved)	session-20261117T224758-9d8160e4	2026-11-17T23:20:22Z
 merge:hermiq:1719:632a017b	unmeasured: static.developer.overheid.nl (proxy 403 in this session; not attempted)	session-20261117T224758-9d8160e4	2026-11-17T23:20:54Z
+fix:integriq:3731:d1f6f297	failed: permission (review/land of own commits refused); floor fixed and pushed, new head 2efe2d2e2 queued as REVERIFY	session-20261117T224527-52625ba1	2026-11-17T23:20:51Z
