@@ -20788,3 +20788,4 @@ merge:integriq:3711:139bcdf3	cloud tree of 1 integriq PRs: merged=0 red=1 fail=0
 fix:filinq:2069:b67ef532	conflict resolved, new head ac2fa7c7 (REVERIFY; merge lock held elsewhere)	session-20261117T121049-5b84d45a	2026-11-17T13:32:09Z
 fix:filinq:2093:33690cef	conflict resolved, pushed 3c87cf77; merge lock held elsewhere, REVERIFY queued	session-20261117T124010-7774729d	2026-11-17T13:32:19Z
 fix:buildiq:1654:a9ea9841	merged #1654 at 3042ea20134b2dbc3e077c7832b6216dc18c667b (unit_complexity restored 3.37->3.43 by splitting new units; @spec tags added)	session-20261117T125719-a348e067	2026-11-17T13:33:05Z
+merge:decidiq:2265:7804fbbe	cloud tree of 6 decidiq PRs: merged=5 red=0 fail=0 skip=0; conflict 1, lint 0, red 0, moved 0, done 0	session-20261117T123418-5f98fc94	2026-11-17T13:35:45Z
