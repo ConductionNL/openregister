@@ -20007,6 +20007,7 @@ merge:larpinq:1043:53f3f771	cloud tree of 6 larpinq PRs: merged=1 red=1 fail=0 s
 cover:dossiq:069ee2d6m9d1b:3641032a	failed: permission (installing a coverage driver was refused; no pcov/xdebug to find the uncovered lines of lib/Service/Pipelinq at 94.26%)	session-20261117T083929-9c5fceb9	2026-11-17T08:59:27Z
 merge:thematiq:1365:d68cd124	cloud tree of 1 thematiq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T084906-3448b9ad	2026-11-17T08:59:14Z
 fix:filinq:2085:7276c4b5	conflict resolved, pushed 38d24886; unit 7143 OK; merge lock held elsewhere, REVERIFY queued	session-20261117T084019-84d2c33c	2026-11-17T08:59:23Z
+fix:filinq:2086:ebd288b0	fixed CONFLICT #2086, new head 4b3e56c0 (lock held elsewhere, REVERIFY queued)	session-20261117T084845-60bc4ee0	2026-11-17T08:59:59Z
 review:shillinq:3080:f7c6e71c	GREEN: phpunit 12641/0 failures, vitest touched 36 passed, phpstan clean	session-20261117T081254-2b2b5b50	2026-11-17T09:00:09Z
 cover:launchpad:fb10c50fm88bd:882bd950	already covered: lib/Search 202/202 statements (pcov on development), no thin class left; launchpad has 42 open PRs	session-20261117T084643-d8b33e95	2026-11-17T09:00:18Z
 review:shillinq:2997:10c8efba	BLOCK: repair step unregistered in info.xml, 2 manifest icons unregistered; suite 12695/0 failures	session-20261117T084851-7a832684	2026-11-17T09:00:34Z
