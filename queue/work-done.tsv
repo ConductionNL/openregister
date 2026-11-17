@@ -20798,3 +20798,4 @@ fix:filinq:2113:ee71f67d	conflict resolved, new head 374ff86d (REVERIFY; merge l
 merge:buildiq:1643:51980914	cloud tree of 6 buildiq PRs: merged=5 red=0 fail=0 skip=0; conflict 1, lint 0, red 0, moved 0, done 0	session-20261117T133308-c6d52416	2026-11-17T13:39:13Z
 fix:filinq:2116:6e4312c8	conflict resolved, pushed 9d997186; REVERIFY queued (merge lock busy)	session-20261117T125716-5aa18045	2026-11-17T13:39:52Z
 review:filinq:2069:ac2fa7c7	GREEN: unit 7322 OK, spec-conform	session-20261117T133035-588aec38	2026-11-17T13:40:06Z
+fix:filinq:2112:62f4e41c	conflict resolved, pushed 4a6629c6; merge lock held elsewhere, REVERIFY queued	session-20261117T132743-10cec9d3	2026-11-17T13:40:22Z
