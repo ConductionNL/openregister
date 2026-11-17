@@ -19056,3 +19056,4 @@ review:filinq:2090:fc2072b1	GREEN: spec seed + tests, suite 6973 OK; version-lin
 review:hermiq:1740:9e13a128	BLOCK: department switch fails open on read errors; conflicts with development	session-20261117T004644-d9c68b8f	2026-11-17T02:08:40Z
 review:filinq:2106:6f753abc	GREEN: 6996 tests 0 new failures; register description conflict	session-20261117T015854-c76e8b72	2026-11-17T02:08:48Z
 review:filinq:2113:9e76e544	CONFLICT: register info.description conflicts with development; code matches the change	session-20261117T020223-01f01255	2026-11-17T02:08:58Z
+review:filinq:2112:ac62393f	RED: jest Settings golden x2 fail (golden not re-recorded); PHP green; register version conflict	session-20261117T004133-c974afac	2026-11-17T02:09:09Z
