@@ -1247,6 +1247,7 @@ filinq	2178	a0aa27caab61cf16a72133ffef43eb1ac4c98ffe	APPROVE	worker-48	Quick (te
 filinq	2179	fe61fa8190c782e8e6e0568c8d078ce3ef6cdd49	APPROVE	worker-48	Standard; no blockers; lib change is doc tags only, one nl string, e2e spec added
 filinq	2180	6cd5e86ffab43fd4ee6c0242f32056d724e26036	APPROVE	worker-48	Quick (tests only); no blockers; e2e spec not run here
 filinq	2181	7ce08a512c146195e9c7c946dbc7e9e267449432	APPROVE	worker-48	Standard; no blockers; download logging is optional, nullable and cannot fail the download; unit tests added
+integriq	3714	b9668573e7033e4950efd58082ccf86566f9ca9a	APPROVE	worker-52	Strict (developer-group access, ownership checks); no blockers; no concerns: every portal route checks the developer group then ownership before reading or writing and answers 404 for others' objects, admin settings behind AuthorizedAdminSetting, admin subscribe behaviour kept through the shared ser
 shillinq	3168	54788ddd120149a5ebb608b316c8f824cc8bd987	APPROVE	worker-33	Quick; no blockers; tasks.md tick only, claim backed by existing catalogue test
 shillinq	3169	c6c22900eba0ec6038e87c1e7aaa26e0d2f15f5a	APPROVE	worker-33	Quick; no blockers; e2e spec only, base URL from env, task left unticked until run
 shillinq	3170	a106dd9be7f6d0a3337e59128d867fa6d48a449a	APPROVE	worker-33	Quick; no blockers; manifest moves ChartOfAccounts detail tabs from sidebarProps to sidebar.enabled, same shape as other pages
