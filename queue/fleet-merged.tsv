@@ -4974,3 +4974,4 @@ learniq	2537	b93181df666579edd62352cfd7cac6c1c148f493	MERGED	worker-35	GATE OK s
 launchpad	1209	fde5af3ee8a493b0cf220637ea3e54eff915d66b	MERGED	worker-54	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.65 holds at 3.79
 versioniq	710	aaf9fc30c62544e5a2a1955db6be664966a3186d	RED	worker-33	GATE RED floor: unit_complexity: 4.79 -> 4.77; unit_interfacing: 4.57 -> 4.54
 filinq	2123	39d2de9351ff7d5f3a401c9a9d2d7da8123dd9fb	RED	worker-51	GATE RED floor: unit_interfacing: 2.84 -> 2.81; module_coupling: 5.32 -> 5.28
+integriq	2650	54f2db42bbc78ba42bc0fb239d88b7e694b619b1	SKIP	worker-05	no APPROVE review at this head
