@@ -20729,3 +20729,4 @@ fix:stackiq:1966:46114bbf	conflict resolved, pushed d202ad57, REVERIFY recorded 
 verify:shillinq:2191:6135d3d4	GREEN #2191 (no-op merge, tree equals development; 12779 tests)	session-20261117T123632-d3b91db3	2026-11-17T13:13:23Z
 verify:shillinq:1597:dbb88378	GREEN #1597 (beta sync, empty diff vs development, 12779 tests)	session-20261117T124621-35d7386d	2026-11-17T13:13:38Z
 verify:planninq:1218:3bb9d8d2	GREEN #1218: vitest 3589 pass, = baseline	session-20261117T125151-bf6843dc	2026-11-17T13:13:48Z
+fix:portaliq:2560:ad2c1e34	fixed role=alert + merge conflict, pushed 9791e493; REVERIFY queued	session-20261117T124618-509d3d7a	2026-11-17T13:13:59Z
