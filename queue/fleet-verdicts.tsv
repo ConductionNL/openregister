@@ -16113,3 +16113,4 @@ versioniq	754	668f7591890c8b3d5772e0b576a44e268cadbec3	REVERIFY	worker-54	merged
 versioniq	503	7514a922e63c6e6fe2e22b1f05971ca7ee537ce0	CONFLICT	worker-05	package.json, package-lock.json, sbom.cdx.json conflict with origin/development (other dependency bumps landed); not tested
 filinq	2086	fe4bcf088455dba29cd81fe5163aa3fdafe7a7a6	CONFLICT	worker-40	conflicts with development in appinfo/info.xml, l10n/en.js, l10n/en.json, l10n/nl.js, l10n/nl.json, lib/Settings/filinq_register.json; baseline 6960 tests OK (6 skipped)
 stackiq	1941	fb08b1cd8788a46a4dee05436ab70f93d75f62f0	RED	worker-15:merge-gate	GATE RED floor: unit_interfacing: 4.72 -> 4.64
+shillinq	3135	543f595d7c6ba853fea9c8e44a3ce2d1c2a1df07	REVERIFY	worker-08:merge	conflicts only with an earlier PR of the merge tree: merges clean on development alone; files: tests/Unit/Service/ContractRegistrarTest.php tests/Unit/Service/ServiceRegistrarTest.php 
