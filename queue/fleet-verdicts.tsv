@@ -19245,6 +19245,11 @@ opencatalogi	2804	731661e8db83a4a1956f6fe2f8482bd86b4a0de0	RED	worker-09	unit 64
 integriq	3707	ccad9acae4b6653c4cc1ed113c913381c40f0c38	GREEN	worker-25	unit 9910 tests; baseline 4 failing; tree 5, the extra SynchronizationSynchronizeEntryGoldenTest fails alone on plain development too (order-dependent, inherited); no new failures. Basic-auth now sends the real credentials, fixing the bug the old test documented; guzzle stays on 7
 opencatalogi	2771	502ce9b90ab9cfb622904e055d6d14d2b3ad2fdd	CONFLICT	worker-09	conflicts with origin/development
 opencatalogi	2803	182028e8f50085dad6352c07ec0abb07a4eb807b	REVERIFY	worker-09	conflicts only with an earlier PR of the verify tree
+versioniq	699	8f1d1ff048bb20975c695589af85c6733c1b5df4	CONFLICT	worker-11:merge	conflicts with development; files: lib/Controller/ApiController.php openapi.json src/App.vue 
+versioniq	726	2348a5fc126e383e38bfaf88de7e91f0ebfd4564	REVERIFY	worker-11:merge	conflicts only with an earlier PR of the merge tree: merges clean on development alone; files: appinfo/info.xml 
+versioniq	797	c57c48555761cf2212f669c177b61cc63d932ea9	REVERIFY	worker-11:merge	conflicts only with an earlier PR of the merge tree: merges clean on development alone; files: tests/e2e/advisories.spec.ts tests/e2e/fixtures/forge/server.mjs 
+versioniq	798	91fdceff9606e38c08294f9f188caa4b1c92289f	REVERIFY	worker-11:merge	conflicts only with an earlier PR of the merge tree: merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+versioniq	799	9d0b17e161aabdb3641874366fbf88fc9343996c	CONFLICT	worker-11:merge	conflicts with development; files: appinfo/info.xml l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Controller/ApiController.php lib/Service/Api/ReportCollaborators.php 
 planninq	1218	df1e59ad2a22c23d46fe16a4c228b5b2a66e72e2	GREEN	worker-36	same sha verified minutes earlier on development 17e6169e: phpunit 1253 ok (= baseline), vitest 3589 passed; deps bump + sbom only
 opencatalogi	2805	b5832c88ee2a159946d2f6880ba534de439fb504	REVERIFY	worker-09	conflicts only with an earlier PR of the verify tree
 opencatalogi	2806	c32247ec0843cd01d478d2d0970444b6954ce5e2	REVERIFY	worker-09	conflicts only with an earlier PR of the verify tree
