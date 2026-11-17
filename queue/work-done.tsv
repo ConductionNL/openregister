@@ -19186,3 +19186,4 @@ review:learniq:2486:384efb33	GREEN; conflicts with development in golden PortalM
 review:versioniq:700:67179d1c	GREEN; SbomControllerTest needs the server (env-only errors)	session-20261117T004133-c974afac	2026-11-17T02:34:26Z
 fix:shillinq:3002:64f4bc01	fixed AppIdentity import, suite green; new head 0d472796, REVERIFY (merge lock busy)	session-20261117T021616-30ab3d21	2026-11-17T02:34:46Z
 review:stackiq:1928:fccc382c	GREEN: per spec, suite green, merges clean	session-20261117T020537-9e43f62e	2026-11-17T02:34:58Z
+review:stackiq:1942:200de863	BLOCK: conflicts, SPDX headers stripped from l10n js, repair step without version bump	session-20261117T020210-893a9346	2026-11-17T02:35:11Z
