@@ -19251,3 +19251,4 @@ fix:hermiq:1749:9219f3b4	fixed: spec tag added, development merged; REVERIFY at 
 fix:dossiq:4887:58a39c94	fixed maintainability findings (0 left), pushed 3f70eb10; REVERIFY queued (merge lock held elsewhere)	session-20261117T020329-e21299e8	2026-11-17T02:48:23Z
 verify:versioniq:754:987f294b	CONFLICT with development after #716	session-20261117T004644-d9c68b8f	2026-11-17T02:48:36Z
 fix:hermiq:1760:37f096be	fixed conflict, new head 2a9d1408d8daae1110a6912375084361e3e252f4; REVERIFY (merge lock held elsewhere)	session-20261117T020353-b50811a6	2026-11-17T02:48:46Z
+merge:integriq:3049:c69ff6a7	cloud tree of 4 integriq PRs: merged=1 red=0 fail=0 skip=0; conflict 3, lint 0, red 0, moved 0, done 0	session-20261117T024200-4ed5487e	2026-11-17T02:49:01Z
