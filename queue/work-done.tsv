@@ -19105,3 +19105,4 @@ review:hermiq:1757:becc16d7	GREEN: unit 5578 OK, vitest 36 OK	session-20261117T0
 review:buildiq:1590:2c97afef	GREEN: 1 inherited failure; conflicts with development in l10n	session-20261117T020255-329d248b	2026-11-17T02:18:57Z
 review:shillinq:2993:9a8d6e12	GREEN: matches change specs; unit 12525 OK; one concern (Peppol availability without integriq)	session-20261117T020309-da756b72	2026-11-17T02:19:05Z
 review:shillinq:2986:91a7c5b6	BLOCK: repair step BackfillAdministrationJurisdiction not registered in info.xml; suite green 12523/0	session-20261117T020257-09bbf84c	2026-11-17T02:19:25Z
+review:filinq:2089:b14f4be3	GREEN; conflicts with development in filinq_register.json, CONFLICT row added	session-20261117T020142-25e0bfeb	2026-11-17T02:19:32Z
