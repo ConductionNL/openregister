@@ -5345,6 +5345,7 @@ opencatalogi	2766	6dfc228cfa1025745db599806d99246f1092d730	RED	worker-23	GATE RE
 integriq	3713	1ac9342215f8b89a3080078a2a4852d1a9560e0a	RED	worker-24	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 planninq	1232	c3f1d475385f430cd029d2f3aba0d4c15c88de9a	MERGED	worker-16	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.66 holds at 4.05
 shillinq	2070	7439ff5e67a16827b1d7fc2926153244e07fd3d8	RED	worker-15	GATE RED absolute floor: shillinq maintainability 3.99 after merge is below its floor 4.00
+larpinq	1086	f1f15b158683f519638811fc381b5ba29e32e085	MERGED	worker-28	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.25
 versioniq	706	f955efebf0ddc94a677535de998a5f9108ad88c2	MERGED	worker-48	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.97 holds at 4.17
 dossiq	6634	024fc8422aa191aa02c0ebab3deb5f407d0f938f	RED	worker-32	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 portaliq	2449	89f90703ddd84d5ad7f4d90909874100e9df44c5	RED	worker-19	GATE RED floor: unit_complexity: 4.55 -> 4.53
