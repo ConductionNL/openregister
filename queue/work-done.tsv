@@ -19216,3 +19216,5 @@ cover:stackiq:9ac19b3am039e:34763eb4	nothing to add: lib/Middleware/*.php alread
 review:larpinq:1047:6ce2027d	GREEN: matches spec, PHPUnit 1135 and vitest 687 green on head; l10n conflict with development	session-20261117T020257-09bbf84c	2026-11-17T02:40:54Z
 verify:dossiq:6623:e585d965	GREEN #6623 (tests only; 0 new failures, 19 inherited)	session-20261117T021616-30ab3d21	2026-11-17T02:41:04Z
 review:versioniq:701:a3461ebb	GREEN; l10n conflict noted	session-20261117T004133-c974afac	2026-11-17T02:41:15Z
+fix:larpinq:1045:aac5b194	floor fixed at 8cf728ec (overall 5.05->5.06); not landed: review blocks on gate-68 duplicate index pages	session-20261117T020257-fb35dc98	2026-11-17T02:41:27Z
+review:versioniq:698:0a06ee17	CONFLICT: l10n en/nl conflict with development	session-20261117T020332-dda1b5ce	2026-11-17T02:41:41Z
