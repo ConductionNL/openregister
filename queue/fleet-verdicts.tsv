@@ -19631,3 +19631,4 @@ versioniq	799	9d0b17e161aabdb3641874366fbf88fc9343996c	REVERIFY	worker-08	merged
 opencatalogi	2650	35c5e9bce49ddf60b196b9ca52987e901d45418f	RED	merge3:merge-gate	GATE RED floor: unit_size: 4.65 -> 4.63; unit_interfacing: 4.77 -> 4.72
 opencatalogi	2654	9f9bab832954e3ffc97ae84fddde4d93e18b8d47	RED	merge3:merge-gate	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
 versioniq	726	2348a5fc126e383e38bfaf88de7e91f0ebfd4564	REVERIFY	worker-32	merged development in, info.xml conflict resolved keeping both background jobs; unit suite 2589 tests, 2 golden failures inherited from development; new head 0758c4e2271e7b21709cd78a64e6e5d9703fac9d, verify it
+opencatalogi	2786	bad229c1dd55cc6287d340918e1eef18369ed6de	REVERIFY	merge3	head moved since the verdict (was 0400a8ec86c2189b86e7c585072173cd04a4ded9, 0400a8ec:GREEN,0400a8ec:GREEN); verify the new head
