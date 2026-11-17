@@ -17910,3 +17910,5 @@ integriq	2650	92ce810e56694132aa8b44baf46924ee5131b8ac	CONFLICT	worker-42	confli
 integriq	3557	76fedb7692b4926331f34ded71da033c24863dc8	CONFLICT	worker-42	conflicts with development; files: l10n/en.json l10n/nl.json 
 learniq	2509	9a57b9430234952760eb416f122aa3fd1df5d6e3	RED	worker-15:merge-gate	GATE RED floor: unit_interfacing: 3.61 -> 3.59
 filinq	2120	f16ae4383298db46c2802d3b1410d6d1c8606c1c	REVERIFY	worker-24	merged development in: register v8.68.0 keeps both sides' schemas; phpunit 7175 OK, vitest 819 + jest 603 pass; new head 34cc4cd42cfc6222f7638fb33b269692215ff4c4, verify it
+integriq	3582	5de17aa99bc46cef55c831e651674dde6d6444ce	CONFLICT	worker-42	conflicts with development; files: l10n/en.json l10n/nl.json 
+integriq	3601	85ba8d219307ca77e28a435da8f393e50646c364	CONFLICT	worker-42	conflicts with development; files: tests/Unit/Service/CatalogRegistrySeedGoldenTest.php 
