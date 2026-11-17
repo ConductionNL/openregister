@@ -19119,3 +19119,4 @@ review:buildiq:1619:3d592e85	GREEN: vitest 4865/0 fail on PR+dev, frontend only	
 review:integriq:3572:5ea14816	GREEN: 9684 tests, 5 inherited failures/errors	session-20261117T020142-15890c05	2026-11-17T02:21:49Z
 review:larpinq:1049:8083d2b9	GREEN: PHPUnit 1124 OK, vitest 697 OK on merge with development	session-20261117T020257-fb35dc98	2026-11-17T02:22:00Z
 review:learniq:2538:fe4a0798	RED: on development merge 2 new failures (nl labels Next lesson ends, Places left) + en.json/golden conflicts	session-20261117T020926-7d1643a8	2026-11-17T02:22:07Z
+review:shillinq:3005:fb23e9fd	GREEN: PHP 12526 OK vs 12500, vitest only inherited dunningNextRun failure, spec-conform	session-20261117T020244-328833fb	2026-11-17T02:22:18Z
