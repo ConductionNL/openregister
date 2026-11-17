@@ -75,6 +75,7 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 		'passwords'       => [],
 		'types'           => [],
 		'dropped'         => [],
+		'skipped'         => [],
 		'left'            => [],
 		'missing'         => [],
 		'lost'            => [],
@@ -148,7 +149,13 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 			$this->checkFragment(run: $run, fragment: $fragment);
 		}
 
-		return ['refusals' => $run->refusals, 'checked' => $run->checked, 'checkedChanges' => $run->checkedChanges, 'registers' => $ready['registers']];
+		return [
+			'refusals'       => $run->refusals,
+			'skipped'        => $run->skipped,
+			'checked'        => $run->checked,
+			'checkedChanges' => $run->checkedChanges,
+			'registers'      => $ready['registers'],
+		];
 	}//end checked()
 
 	/**
@@ -201,6 +208,13 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 			object: $object,
 			scope: new ExampleSetResolveScope(context: $run->objectContext(), planned: $run->planned)
 		);
+		if (($resolved['skippable'] ?? false) === true) {
+			// An optional entry whose lookup found nothing (its app is not
+			// installed, or the row is not there) is left out, not refused.
+			$run->skipped[] = $this->objectWhere(run: $run, object: $object).': '.$resolved['refusal'];
+			return;
+		}
+
 		if ($resolved['refusal'] !== '') {
 			$run->refusals[] = $this->objectWhere(run: $run, object: $object).': '.$resolved['refusal'];
 			$run->objects[$object['key']] = $this->standIn(name: $run->fragment['app'].'/'.$object['key'], data: []);
@@ -523,6 +537,11 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	 */
 	private function createObject(ExampleSetInstallRun $run, array $object): void {
 		$resolved = $this->resolve(object: $object, scope: new ExampleSetResolveScope(context: $run->objectContext()));
+		if (($resolved['skippable'] ?? false) === true) {
+			$run->report['skipped'][] = $run->fragment['file'].': object "'.$object['key'].'": '.$resolved['refusal'];
+			return;
+		}
+
 		$made     = ['id' => '', 'error' => $resolved['refusal']];
 		if ($resolved['refusal'] === '') {
 			$made = $this->objects->store->create(
@@ -882,8 +901,15 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	 * @param ExampleSetResolveScope $scope  The context (`cast`, `objects`, `today`) and the objects a check declared
 	 *                                       earlier, for lookups.
 	 *
-	 * @return array{data: array<string, mixed>, sent: array<string, mixed>, refusal: string, owner?: string|null} The
-	 *         filled data, what to send and the declared owner, or why it cannot be filled.
+	 * An object marked `optional: true` whose lookup finds nothing, because the
+	 * app that holds the row is not installed or the row is not there, comes
+	 * back `skippable`: the caller leaves it out with a note instead of
+	 * refusing the set. Every other refusal stands, optional or not.
+	 *
+	 * @return array{data: array<string, mixed>, sent: array<string, mixed>, refusal: string, owner?: string|null, skippable?: bool}
+	 *         The filled data, what to send and the declared owner, or why it cannot be filled.
+	 *
+	 * @spec openspec/specs/example-sets/spec.md
 	 */
 	private function resolve(array $object, ExampleSetResolveScope $scope): array {
 		$context = $scope->context;
@@ -893,7 +919,12 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 			$lookup['register'] ??= (string) $object['register'];
 			$found  = $this->lookedUp(scope: new ExampleSetResolveScope(context: $context, planned: $scope->planned), lookup: $lookup);
 			if ($found['id'] === '') {
-				return ['data' => [], 'sent' => [], 'refusal' => 'lookup "'.$name.'" found '.$found['reason']];
+				return [
+					'data'      => [],
+					'sent'      => [],
+					'refusal'   => 'lookup "'.$name.'" found '.$found['reason'],
+					'skippable' => (($object['optional'] ?? false) === true && $found['missing'] === true),
+				];
 			}
 
 			$context['lookups'][(string) $name] = $found['id'];
@@ -923,7 +954,7 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	 *                                       declared earlier.
 	 * @param array<string, mixed>   $lookup `register` (the object's own unless it names another), `schema` and `where`.
 	 *
-	 * @return array{id: string, reason: string}
+	 * @return array{id: string, reason: string, missing: bool} `missing` is true only when nothing matched.
 	 */
 	private function lookedUp(ExampleSetResolveScope $scope, array $lookup): array {
 		$gaps   = [];
@@ -934,29 +965,33 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 		$schema = (string) ($lookup['schema'] ?? '');
 		$from   = (string) $lookup['register'];
 		if ($gaps !== []) {
-			return ['id' => '', 'reason' => 'an unresolvable '.implode(', ', array_unique($gaps))];
+			return ['id' => '', 'reason' => 'an unresolvable '.implode(', ', array_unique($gaps)), 'missing' => false];
 		}
 
 		if ($where === [] || $schema === '') {
-			return ['id' => '', 'reason' => 'nothing: a lookup needs a schema and a where'];
+			return ['id' => '', 'reason' => 'nothing: a lookup needs a schema and a where', 'missing' => false];
 		}
 
 		$rows = $this->objects->store->rowsMatching(table: new RegisterSchemaRef(register: $from, schema: $schema), where: $where);
 		if (count($rows) > 1) {
-			return ['id' => '', 'reason' => count($rows).' '.$from.' '.$schema.' rows with '.$this->asWords(where: $where).'; a lookup needs exactly one'];
+			return [
+				'id'      => '',
+				'reason'  => count($rows).' '.$from.' '.$schema.' rows with '.$this->asWords(where: $where).'; a lookup needs exactly one',
+				'missing' => false,
+			];
 		}
 
 		if ($rows !== []) {
-			return ['id' => $this->objects->store->idOf(row: $rows[0]), 'reason' => ''];
+			return ['id' => $this->objects->store->idOf(row: $rows[0]), 'reason' => '', 'missing' => false];
 		}
 
 		$planned = array_filter($scope->planned, static fn (array $object): bool => $object['register'] === $from && $object['schema'] === $schema);
 		$id      = $this->plannedMatch(planned: $planned, where: $where);
 		if ($id !== '') {
-			return ['id' => $id, 'reason' => ''];
+			return ['id' => $id, 'reason' => '', 'missing' => false];
 		}
 
-		return ['id' => '', 'reason' => 'no '.$from.' '.$schema.' with '.$this->asWords(where: $where)];
+		return ['id' => '', 'reason' => 'no '.$from.' '.$schema.' with '.$this->asWords(where: $where), 'missing' => true];
 	}//end lookedUp()
 
 	/**

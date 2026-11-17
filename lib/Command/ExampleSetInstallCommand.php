@@ -232,6 +232,9 @@ class ExampleSetInstallCommand extends Command {
 	 */
 	private function reportCheck(array $result, OutputInterface $output): int {
 		$this->printChecked(result: $result, output: $output);
+		foreach (($result['skipped'] ?? []) as $line) {
+			$output->writeln('<comment>Skipped (optional): '.$line.'</comment>');
+		}
 
 		if ($result['refusals'] !== []) {
 			$this->printRefusals(refusals: $result['refusals'], output: $output);
@@ -391,6 +394,10 @@ class ExampleSetInstallCommand extends Command {
 	private function printOutstanding(array $report, OutputInterface $output): void {
 		foreach ($report['left'] as $line) {
 			$output->writeln('Left as it is: '.$line);
+		}
+
+		foreach (($report['skipped'] ?? []) as $line) {
+			$output->writeln('<comment>Skipped (optional): '.$line.'</comment>');
 		}
 
 		$problems = ['Not written: ' => $report['dropped'], 'Not on the instance: ' => $report['missing'], 'Written but not kept: ' => $report['lost']];
