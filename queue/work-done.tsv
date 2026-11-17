@@ -18849,3 +18849,5 @@ fix:learniq:2551:87132cc4:v4	conflict resolved, pushed 2291ead0; failures inheri
 fix:humaniq:1139:181389a6:v3	conflict resolved (l10n js regenerated), pushed 3c0dc9a8, unit green; lock held elsewhere, REVERIFY queued	session-20261117T004133-c974afac	2026-11-17T01:21:30Z
 review:filinq:2091:ea6afdbf	GREEN: per change spec; checks green; re-conflicts with newest development in register info (both v8.64.0, next merge must bump to v8.65.0)	session-20261113T214350-9762e143	2026-11-17T01:21:45Z
 review:shillinq:2063:a4866d28	GREEN: 12512 unit tests pass merged with development, phpstan clean	session-20261117T004638-e26e8c33	2026-11-17T01:21:55Z
+review:shillinq:2070:0b1fb6a9	GREEN: unit 12513 OK, vitest 32 OK	session-20261117T004908-b4bcfe9b	2026-11-17T01:22:10Z
+review:portaliq:2442:0b8acd48	GREEN; manifest-only T07 page, suite errors inherited	session-20261117T005933-5e669a88	2026-11-17T01:22:21Z
