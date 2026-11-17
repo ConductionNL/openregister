@@ -18961,3 +18961,4 @@ opencatalogi	2803	65ea61668234c6c3fad883589e6ad63ee7a9295b	GREEN	worker-33	PHP u
 portaliq	2446	ddd3af7bb46c5eb110c52a89c6226e8eb885fa47	CONFLICT	worker-51	conflicts with development in package.json
 pipelinq	3940	dc52e0b2b8856fddf8aa30084f905c5f26819f5b	GREEN	worker-05	unit 9282 OK (= baseline), 0 new; vitest 5325 passed, 3 files/2 tests red also on development (inherited); forecast-slip-reason 3.2/4.2 per spec; nit: movementRows docblock now sits above slipColumns
 portaliq	2578	ecda0995fde017ac8deb6fa1e5162d5706e02426	GREEN	worker-51	e2e spec, e2e seed fixture and tasks.md only (public-site-meets-wcag-aa); no app code or unit tests touched
+portaliq	2561	bcf76253ccf58567619fb37d1dcf687f8d171f5b	GREEN	worker-40	JS only; node --test 2777 both, 5 inherited failures, 0 new; PHP unchanged; build PR judged against its change
