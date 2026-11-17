@@ -19096,3 +19096,4 @@ review:hermiq:1738:29ad770b	GREEN: unit 5540 OK on merge with development; regis
 review:buildiq:1626:77575f40	GREEN: 1 inherited failure; conflicts with development in l10n/nl.*	session-20261117T020255-329d248b	2026-11-17T02:17:16Z
 review:shillinq:3064:4ce547cf	RED: 3 new failures on PR+development (PostingGuardsThroughAdapterTest x2 constructor arg 6, LifecycleActionSignatureTest action count 27->28)	session-20261117T020244-328833fb	2026-11-17T02:17:40Z
 review:integriq:3582:e824c737	CONFLICT (l10n only); behaviour clean, unit only inherited failures, vitest pass	session-20261117T004708-53deec56	2026-11-17T02:17:49Z
+review:integriq:3545:9367d2e7	CONFLICT: l10n en/nl .js/.json conflict with development	session-20261117T020332-dda1b5ce	2026-11-17T02:18:03Z
