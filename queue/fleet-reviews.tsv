@@ -1423,3 +1423,5 @@ opencatalogi	2801	ebec806c87bf79c189993d39f1d7c8c142469975	APPROVE	worker-18	Qui
 shillinq	3171	47136a423cbb20c72c38f169dec103458860399d	APPROVE	worker-01	Quick; no blockers; e2e spec + tasks tick only, gate fails inherited
 learniq	2601	3cc5a9d81623e03b4652659765476e0ce4828d7d	APPROVE	worker-49	Quick; no blockers; e2e spec only, empty storage state, env base URL
 learniq	2602	562289417dc44c1a437b7a634ba5466aed65748e	APPROVE	worker-49	Quick; no blockers; e2e spec only
+learniq	2603	8908efd600326c545e54f6b32c18d3fb916f9d0b	APPROVE	worker-49	Quick; no blockers; e2e spec only, opt-in via env
+learniq	2604	2b6642c79ff14c1aa4d2715122388a273187d6c0	APPROVE	worker-49	Quick; no blockers; archives the change and repoints parity rows to the main spec
