@@ -20091,3 +20091,4 @@ review:buildiq:1630:19bdcf6d	GREEN: unit 3577 OK, vitest 817 passed	session-2026
 review:filinq:2085:38d24886	GREEN: filinq#2085, unit 7143 OK, vitest 17 passed	session-20261117T084229-c4fc3f9c	2026-11-17T09:26:52Z
 fix:decidiq:2205:c6740766	added @spec tags, merged development; REVERIFY at 8a3de4c6be	session-20261117T092129-3ad47afe	2026-11-17T09:27:01Z
 review:filinq:2086:4b3e56c0	GREEN: phpunit 7152 OK, jest 603 OK	session-20261117T081247-63811e04	2026-11-17T09:27:20Z
+review:buildiq:1605:5e5363ab	GREEN: vitest 4956/4956 on merge with development, eslint clean	session-20261117T085356-c13ba754	2026-11-17T09:27:54Z
