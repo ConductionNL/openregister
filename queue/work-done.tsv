@@ -21579,5 +21579,6 @@ build:decidiq:generic-audit-statement:b2	already built: 1.1-1.10 on development,
 build:decidiq:member-onboarding:b2	already building: quality/build-member-onboarding exists (open PR #2173)	session-20261117T135029-424a7669	2026-11-17T15:22:10Z
 build:decidiq:followup-implementation-progress:b2	already building: quality/build-followup-implementation-progress and -2 exist	session-20261117T135414-614629b0	2026-11-17T15:22:11Z
 build:decidiq:leaf-integrations:b2	already building: quality/build-leaf-integrations(-c2) exist	session-20261117T132743-10cec9d3	2026-11-17T15:21:37Z
+build:decidiq:platform-baseline-on-nextcloud:b2	already building: quality/build-platform-baseline-on-nextcloud exists	session-20261117T135414-614629b0	2026-11-17T15:23:05Z
 build:buildiq:decision-tables-live-in-openregister:b2	already built: the one open task is a live occ upgrade check after openregister#4572; no spec files named	session-20261117T141351-c4de67df	2026-11-17T15:23:07Z
 build:decidiq:integrity-disclosures-in-plain-words:b2	already done in code: only 5.2 E2E is open (needs the live instance)	session-20261117T135029-424a7669	2026-11-17T15:23:24Z
