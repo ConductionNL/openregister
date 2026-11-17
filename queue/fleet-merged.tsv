@@ -5611,3 +5611,4 @@ pipelinq	3938	4fba4462df4e6d46af2d3e3387ae3b4a1116d563	MERGED	merge3	GATE OK sbo
 pipelinq	3939	102496ca468edbe701971dc14bfb0ae65256190a	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.48
 pipelinq	3941	7a5fdb889bdcc51620835761870140c957593c6c	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.48
 filinq	2189	8dae478c820dd889cdbf31b017949dc08bfc7fee	SKIP	worker-10	GATE UNMEASURED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3 while api.osv.dev is unreachable from this session
+larpinq	1054	fcbf9d480640b792f8cf6424130c4668c4ae8aa4	RED	worker-51	GATE RED floor: overall: 5.04 -> 4.97; duplication: 5.17 -> 5.11; unit_size: 4.77 -> 4.72; unit_complexity: 4.91 -> 4.84; unit_interfacing: 4.75 -> 4.43
