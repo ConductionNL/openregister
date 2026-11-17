@@ -20430,3 +20430,4 @@ merge:integriq:3550:568c4991	cloud tree of 2 integriq PRs: merged=0 red=0 fail=0
 merge:stackiq:1938:43aa5ab1	cloud tree of 1 stackiq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T112020-0bf220a7	2026-11-17T11:48:43Z
 review:filinq:2078:604e2328	GREEN	session-20261117T113521-7cb5fa64	2026-11-17T11:48:51Z
 review:integriq:3582:a26852d2	GREEN: no new failures (inherited only), vitest 31/31	session-20261117T111401-f300ca25	2026-11-17T11:49:02Z
+fix:integriq:3574:40a5ceb4	fixed: component independence back to base level (sig-floor PASS); merge lock held elsewhere, REVERIFY at daecacd9	session-20261117T112106-1814b74b	2026-11-17T11:49:26Z
