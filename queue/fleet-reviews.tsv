@@ -991,3 +991,4 @@ decidiq	2205	c6740766600e6ddf741cc7a79eaaf17611e15981	REQUEST_CHANGES	worker-24	
 larpinq	1043	03f6b920a26ecff333adc85188cb5c043995a685	APPROVE	worker-33	Thorough; no blockers; XP history reads the audit trail after the RBAC object read, read-only, empty on error
 decidiq	2224	ece2d16c9b532327a6bc2d9d1fa0bc0bfcc37b4e	APPROVE	worker-24	Quick; no blockers; minor/patch bumps, tree suite green
 decidiq	2249	b46f792f7f876aade74a1dcd64c651d0ef2743ba	APPROVE	worker-24	Quick; no blockers; dev patch bump plus sbom
+decidiq	2251	0ed475e33cbb588dda158bc53a43c6b0bed603a7	APPROVE	worker-24	Quick; no blockers; prettier minor bump
