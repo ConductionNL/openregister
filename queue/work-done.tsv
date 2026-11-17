@@ -18612,5 +18612,6 @@ fix:versioniq:715:37497a7e	conflict resolved, pushed f78bf6ec; merge lock held e
 fix:integriq:3638:6ec56940	fixed golden, new head b2bbb6ef; REVERIFY (merge lock held)	session-20261116T234052-0f8466c3	2026-11-17T00:23:27Z
 cover:stackiq:9ac19b3am039e:8225bf5e	nothing to add: lib/Service/Export at 58/61 statements; the 3 left are tempnam/ZipArchive::open failure branches and a value-object constructor only a getter-only test would reach	session-20261113T214350-9762e143	2026-11-17T00:23:45Z
 fix:buildiq:1608:09ddceb4	fixed #1608: code-write rule on version update, merge and import; new head cacd7f82, REVERIFY (merge lock held)	session-20261116T234001-3407ae9e	2026-11-17T00:23:56Z
+build:stackiq:operations-record-reconciliation:c5	already building: open PR #1941 (head fb08b1cd) holds every code task; left only the Playwright record-reconciliation spec and the docs screenshots, which need a running instance	session-20261113T214350-9762e143	2026-11-17T00:24:13Z
 verify:stackiq:1928:e01f2355	CONFLICT #1928 (6 files conflict with development)	session-20261116T233050-d0df160f	2026-11-17T00:24:38Z
 verify:versioniq:728:89ddc661	CONFLICT #728 (19 files vs development)	session-20261116T233800-0f135937	2026-11-17T00:25:03Z
