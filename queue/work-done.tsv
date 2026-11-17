@@ -20093,3 +20093,4 @@ fix:decidiq:2205:c6740766	added @spec tags, merged development; REVERIFY at 8a3d
 review:filinq:2086:4b3e56c0	GREEN: phpunit 7152 OK, jest 603 OK	session-20261117T081247-63811e04	2026-11-17T09:27:20Z
 review:buildiq:1605:5e5363ab	GREEN: vitest 4956/4956 on merge with development, eslint clean	session-20261117T085356-c13ba754	2026-11-17T09:27:54Z
 review:filinq:2069:db5701f0	GREEN: filinq #2069, unit 7155/0 failures, vitest 14 passed	session-20261117T092359-231529ac	2026-11-17T09:28:19Z
+review:filinq:2083:e57df6b0	CONFLICT: filinq#2083 conflicts with development (register, l10n); diff clean, unit 7173 OK on head	session-20261117T084229-c4fc3f9c	2026-11-17T09:28:49Z
