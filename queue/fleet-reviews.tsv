@@ -1512,3 +1512,4 @@ buildiq	1709	e329cf1746b8b2c6a15b3d436c66bf3d67d5fb62	APPROVE	worker-08	Quick (t
 decidiq	2149	3ccfbfcfc456c5da74508481e6602f2a82bcfab3	APPROVE	worker-33	Thorough; no blockers; builds document-accessibility-check per its specs: scan endpoint checks session, RBAC read on the source and that the file belongs to it, gate fails closed on scan errors; concern: any publisher may override with a reason, the spec says an authorised user
 decidiq	2280	f341db5555b2782cffa8c059027a79d397c42c35	APPROVE	worker-33	Quick; no blockers; e2e spec and tasks.md note only
 decidiq	2283	e9a802fd9e1a29d7531dd6061c07fb0d66139593	APPROVE	worker-33	Quick; no blockers; e2e spec with fresh accounts and empty storage state, tasks.md note only
+decidiq	2284	75bf16e4978932fd693798e5513fda961c651b66	APPROVE	worker-33	Quick; no blockers; e2e spec and tasks.md note only
