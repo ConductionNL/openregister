@@ -18933,6 +18933,7 @@ pipelinq	3938	4fba4462df4e6d46af2d3e3387ae3b4a1116d563	GREEN	worker-49	unit 9282
 launchpad	1308	bfec71733c179801b4fa38c2b36ad7cc1ebd221f	GREEN	worker-01	unit 4621 run (baseline 4621, 0 failures), 0 new failures; release version bump only
 opencatalogi	2805	727a5427f7b9d5c7ff2981b5fb5049cf9b47482e	GREEN	worker-16	PHPUnit 6364->6384 tests, baseline 103 fail/err inherited, 0 new; jest settings 178 pass; vitest 8 fails inherited (mainEntry.spec, red on development); implements woo-value-lists-on-the-concept-register
 portaliq	2563	182ef6645d64423f4c541874e38e95734db13af9	GREEN	worker-40	tasks.md only, no code; unit 6324 on tree, 16 errors inherited (code identical to development), 0 new
+opencatalogi	2793	d14f5f969a4c92d42409f8c9a2b0ebe0c6d49eab	GREEN	worker-56	phpunit 6365 run (baseline 6364, 103 inherited failures/errors), 0 new failures; php -l clean; build of download-service (IL10N on DownloadService error messages, docs, tasks)
 portaliq	2566	3ec0f45991b0b758d08ddff651a968ddd819dad7	GREEN	worker-41	tasks.md tick only (T4), merges clean; claim checked: learniq development has ParentDocumentsPage with two eachRecord blocks and its test; no code changed, suite not affected
 pipelinq	3937	77a25a62c5a28d2eeeb25cc35fba960d94b959de	GREEN	worker-49	unit 9285 (baseline 9282), 0 new failures; register membership additions per change
 portaliq	2579	df1bfc402b7652facf47819ec22a83d590bd098c	CONFLICT	worker-51	conflicts with development in package.json
