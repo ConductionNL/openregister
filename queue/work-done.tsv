@@ -20240,3 +20240,4 @@ merge:dossiq:6203:bc5eb8ad	nothing landed: dossiq #6203 is on the never-merge ex
 fix:shillinq:3007:4b9a3466	fixed: conflict merged, floor restored to 4.00, gate OK at 8f36129b; REVERIFY queued	session-20261117T091244-7c1a3c79	2026-11-17T10:10:32Z
 fix:stackiq:2022:dd6d4b11	sbom regenerated, pushed a08934f7; REVERIFY queued (merge lock held elsewhere)	session-20261117T100057-7775ee42	2026-11-17T10:10:42Z
 review:hermiq:1751:2d383135	GREEN: matches change specs; no new failures (198 inherited)	session-20261117T095701-9003708e	2026-11-17T10:11:08Z
+gap:openregister:atomic-object-claim:2	PR #10609 to main: lockIn and advisory locks via one conditional UPDATE, session-less ObjectService::claimObject(LockRequest, ownerId); 5 new test files, lock/Db/Object/Rbac/Controller/Contract suites green	session-20261117T081247-63811e04	2026-11-17T10:11:45Z
