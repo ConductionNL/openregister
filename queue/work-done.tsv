@@ -20116,3 +20116,6 @@ review:integriq:3574:40a5ceb4	GREEN: no new failures (phpunit 9744, 5 inherited;
 fix:hermiq:1826:716bb0a6	merged development in, floor passes, unit green; REVERIFY at cc8a06e5 (merge lock held elsewhere)	session-20261117T092223-98298a84	2026-11-17T09:34:14Z
 merge:integriq:3545:b54c1c54	cloud tree of 1 integriq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T092728-1cb45a42	2026-11-17T09:34:43Z
 review:stackiq:1966:60592396	GREEN: unit 4034 OK, vitest 1 inherited failure	session-20261117T092810-d097e665	2026-11-17T09:34:42Z
+review:dossiq:6203:e600f5a9	GREEN: tests only, suite adds no failures	session-20261117T092753-6c6fb28e	2026-11-17T09:35:01Z
+review:integriq:2650:92ce810e	GREEN: 0 new failures (9736 vs 9713 tests, 5 inherited)	session-20261117T092700-641a7a7c	2026-11-17T09:35:09Z
+fix:integriq:3596:d81a6a11	conflict resolved (seed golden hash); new head e4864f09, REVERIFY	session-20261117T092706-95ac9736	2026-11-17T09:35:17Z
