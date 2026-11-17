@@ -1490,3 +1490,4 @@ portaliq	2587	c972ccc36c2ad633d56605e064450690a8e395ff	APPROVE	worker-57	Strict 
 shillinq	2993	fe6cd88070866d92bf5fb15d0e6e0c4db213a317	APPROVE	worker-18	Thorough; no blockers; dispatch-channels reports Peppol available whenever the integriq adapter is bound (the Log adapter check no longer matches), a send without integriq records a failed dispatch instead
 shillinq	3160	28ae1c746191e9ad45e1c70698bed38f1ec8205e	APPROVE	worker-18	Quick; no blockers; docs only (publiccode.yml, README)
 shillinq	3164	7ae11281542796cf1f363da0d6e8b887f42798ab	APPROVE	worker-18	Strict; no blockers; both endpoints admin-only via AuthorizedAdminSetting, values validated before any write; no concerns
+shillinq	3165	f382c52bee07fa3220e9d1c29f9151d4e4db7414	APPROVE	worker-18	Standard; no blockers; fill map follows the renderer's string-path contract per the updated design; house number no longer filled, as the design states
