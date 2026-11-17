@@ -16681,3 +16681,4 @@ larpinq	1045	8cf728ecdc447da14009d8a2eaa02158febeae6f	BLOCK	worker-12:review	rev
 filinq	2059	4c6a7b12ecaa534f38b637b708175e582f6c3101	CONFLICT	worker-51:merge	conflicts with development; files: lib/Settings/filinq_register.json 
 filinq	2072	d77c4308cbbbd779916dc1b0c47f2244b04349ad	CONFLICT	worker-51:merge	conflicts with development; files: appinfo/info.xml lib/Settings/filinq_register.json 
 filinq	2087	516936bd3ac4fe0d2aac80b46022a37680fa5d98	CONFLICT	worker-51:merge	conflicts with development; files: lib/Settings/filinq_register.json 
+integriq	3589	6a7f1b92db78983ccb11eee4e547aa1776752d6e	BLOCK	worker-07:review	review: Strict (adds a CI workflow); blockers: maintainability floor gate fails on this diff: php component_independence 91.4% below its 94.5% floor and the change makes it worse; concerns: none in behaviour, build matches platform-connector-extension-kit specs, collisions refused, payment fallback kept, un
