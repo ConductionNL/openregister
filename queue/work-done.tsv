@@ -22849,3 +22849,4 @@ review:portaliq:2446:e217a1c6	GREEN: 0 new failures, spec-conform endpoint	sessi
 merge:versioniq:685:7ac6211f	unmeasured: static.developer.overheid.nl (merged=0 skip=4; 783 conflict -> REVERIFY)	session-20261117T213101-157fb562	2026-11-17T22:29:42Z
 review:openregister:10624:e133e097	BLOCK: stylelint 18 crashes loading the shared config; peers exclude v18	session-20261117T222443-557d8a6c	2026-11-17T22:30:07Z
 build:hermiq:instant-talk:b2:c3	partial: PR #1853 head ab8d6778 ticks 7.1 and 7.2 (PR 5785 tests vs development 5736, 0 failures); left 7.3 live Talk checks (needs an instance), 7.4 openspec strict warnings (preamble, two long requirements) and the hydra gates run; phpcs/phpstan/psalm clean	session-20261117T211422-95669914	2026-11-17T22:30:27Z
+review:openregister:10635:df149781	APPROVE #10635 (@pinia/testing dev bump, peer satisfied, unused in code)	session-20261117T212735-2b6c91a0	2026-11-17T22:31:03Z
