@@ -21790,3 +21790,4 @@ build:integriq:kcc-cti-adapter:b2	already building: quality/build-kcc-cti-adapte
 verify:planninq:1239:69aace58	6 GREEN (1239-1244); phpunit 1281 ok, vitest 3594 ok	session-20261117T154518-15877fa8	2026-11-17T15:51:47Z
 verify:opencatalogi:2788:c6bb5f88	GREEN 2788 2789 2790 2791; no new failures with openregister main beside (unit 6336 vs 6364 baseline, -28 = removed MCP provider tests)	session-20261117T135520-9a524c6b	2026-11-17T15:52:01Z
 build:integriq:connectors-sharepoint-publication-intake:b2	PR #3717: wrote tests/e2e/sharepoint-publications.spec.ts (5 tests); code tasks already on development; e2e not run (no live instance), tenant verification skipped (external system)	session-20261117T153758-50f72bdf	2026-11-17T15:52:32Z
+verify:shillinq:3166:4b1d9f24	8 GREEN (3166-3173); 3174 skipped: no pull head on GitHub; unit/vitest no new failures	session-20261117T151214-35ff5eaa	2026-11-17T15:52:28Z
