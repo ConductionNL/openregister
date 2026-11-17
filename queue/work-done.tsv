@@ -22146,3 +22146,4 @@ verify:buildiq:1727:4916d3fd	GREEN 1727 (same head as tree verify this session)	
 verify:buildiq:1710:9b6b9e95	GREEN 1710 (3683 tests, 0 new failures)	session-20261117T190316-ad3f71cf	2026-11-17T19:06:18Z
 review:versioniq:735:6cc6a20f	CONFLICT with development (8 files); behaviour per specs, PR head suite 0 new failures	session-20261117T185932-75c4578d	2026-11-17T19:06:31Z
 verify:versioniq:797:fbc6bc26	797 GREEN, 798 GREEN, 799 REVERIFY (conflicts only with #798)	session-20261117T185710-40ec955c	2026-11-17T19:07:18Z
+verify:buildiq:1728:666fa517	GREEN 1728 (e2e spec + tasks.md only)	session-20261117T185359-d68263c5	2026-11-17T19:07:41Z
