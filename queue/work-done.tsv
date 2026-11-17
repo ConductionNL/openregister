@@ -18932,3 +18932,4 @@ fix:launchpad:1219:da16c5df:v5	conflict resolved, pushed 08b864a2; merge lock he
 fix:opencatalogi:2756:a362a4ec	fixed CONFLICT, pushed a7e29de035dd75ca97938b295b2ca25314d90e99; merge lock busy, REVERIFY queued	session-20261117T005217-ad04a5d2	2026-11-17T01:38:42Z
 fix:opencatalogi:2651:c5411594:v3	conflict resolved, pushed 91263dc8; merge lock held elsewhere, REVERIFY queued	session-20261117T005226-366998de	2026-11-17T01:38:50Z
 fix:opencatalogi:2680:5c8f25a1:v3	fixed conflict on #2680, new head 7b795492; REVERIFY queued (merge lock held)	session-20261117T005237-d93074af	2026-11-17T01:39:02Z
+fix:opencatalogi:2671:0c44bbf1:v4	merged #2671 at 272f5fcd0e4d456f4bdf27b8e23a81004f67abb8	session-20261117T005212-998cc343	2026-11-17T01:39:13Z
