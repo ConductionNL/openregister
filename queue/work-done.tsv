@@ -20703,6 +20703,7 @@ fix:integriq:3701:69d057ce	fixed #3701: restored publiccode.yml layer declaratio
 verify:thematiq:1167:dcea2bc0	GREEN #1167 (empty merge, already on development)	session-20261117T124634-577ba792	2026-11-17T13:06:37Z
 merge:opencatalogi:2677:a1602fb7	cloud tree of 2 opencatalogi PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 1, moved 0, done 0	session-20261117T125302-a32fc8d7	2026-11-17T13:06:52Z
 fix:stackiq:2030:99dcfdad	failed: permission (self review+land refused); fixed and pushed b0c1fc68, REVERIFY recorded	session-20261117T124128-c2e9515e	2026-11-17T13:06:58Z
+fix:buildiq:1651:d68265fc	conflict resolved (l10n union, js regenerated), @spec tags added; land RED on maintainability floor (unit_complexity 3.42->3.40, unit_interfacing 3.53->3.51), RED verdict at a0b41b07 queued	session-20261117T123026-260cb3a6	2026-11-17T13:07:21Z
 verify:planninq:1054:57acc898	GREEN #1054 (config-only floor json; unit 1253 ok)	session-20261117T125035-43d1124d	2026-11-17T13:07:31Z
 verify:portaliq:2449:ae33c0d7	CONFLICT #2449: package.json, PortaliqRegisterConfigTest.php, example-site.spec.mjs	session-20261117T124737-01fc7db5	2026-11-17T13:07:45Z
 verify:portaliq:1364:8a7a486b	GREEN #1364 (empty diff vs development)	session-20261117T125719-a348e067	2026-11-17T13:07:56Z
@@ -20716,3 +20717,21 @@ verify:portaliq:1910:248307eb	CONFLICT: #1910 conflicts with development in 19 f
 fix:hermiq:1760:0b27b76c	conflict resolved, pushed c503263f; merge lock held elsewhere, REVERIFY queued	session-20261117T124646-693ace9a	2026-11-17T13:10:08Z
 fix:launchpad:1267:d42ca665	merged #1267 at 9d79d281f3fc412df609b569b852ab6ed4da90df (restored publiccode layer entry)	session-20261117T124554-64bd7521	2026-11-17T13:10:20Z
 verify:planninq:1234:7ad1d2bb	GREEN #1234 (1253 tests, 0 new failures)	session-20261117T123430-0d454909	2026-11-17T13:10:23Z
+verify:stackiq:1267:2a8a72b0	GREEN #1267 (no diff vs development; 4050 tests, 1 inherited, 0 new)	session-20261117T124719-b38d0fe3	2026-11-17T13:10:37Z
+verify:launchpad:770:1a3220ab	GREEN #770 (no-op merge, 0 new failures)	session-20261117T125013-3e49a85f	2026-11-17T13:10:54Z
+fix:integriq:3582:a26852d2	fixed floor (unit_size 3.58, unit_complexity 3.90 held); pushed 06833e61; REVERIFY (merge lock held)	session-20261117T124624-f509cbbb	2026-11-17T13:11:01Z
+fix:learniq:2551:7d11c48b	conflict resolved, pushed f185e0a0; merge lock held elsewhere, REVERIFY queued	session-20261117T124010-7774729d	2026-11-17T13:11:16Z
+verify:thematiq:1715:266d57c4	GREEN #1715 (openapi docs; 2900 tests, 1 inherited)	session-20261117T124634-577ba792	2026-11-17T13:11:38Z
+verify:portaliq:658:e8518393	GREEN #658 (empty diff vs development)	session-20261117T125719-a348e067	2026-11-17T13:11:55Z
+verify:portaliq:2558:062b0853	GREEN portaliq#2558 (version-only bump; 0 new failures, 16 inherited errors)	session-20261117T124709-e3830444	2026-11-17T13:12:17Z
+verify:planninq:1232:c3f1d475	GREEN #1232 (e2e spec label update)	session-20261117T125716-5aa18045	2026-11-17T13:12:28Z
+fix:opencatalogi:2770:72042976	fixed #2770: publiccode test fixture frozen, pushed f134b8f7; REVERIFY queued (merge lock held elsewhere)	session-20261117T124803-fa9e5cee	2026-11-17T13:12:39Z
+fix:stackiq:1966:46114bbf	conflict resolved, pushed d202ad57, REVERIFY recorded (end-to-end skipped: self land refused earlier)	session-20261117T124128-c2e9515e	2026-11-17T13:12:54Z
+fix:planninq:1231:a50e49c3	merged #1231 at b038b5610549a1158583fe4f9f91a795be9267a8	session-20261117T124544-f8740317	2026-11-17T13:13:20Z
+verify:shillinq:2191:6135d3d4	GREEN #2191 (no-op merge, tree equals development; 12779 tests)	session-20261117T123632-d3b91db3	2026-11-17T13:13:23Z
+verify:planninq:1218:3bb9d8d2	GREEN #1218: vitest 3589 pass, = baseline	session-20261117T125151-bf6843dc	2026-11-17T13:13:48Z
+fix:portaliq:2560:ad2c1e34	fixed role=alert + merge conflict, pushed 9791e493; REVERIFY queued	session-20261117T124618-509d3d7a	2026-11-17T13:13:59Z
+fix:filinq:2120:34cc4cd4	resolved conflict, new head fbc97be2; REVERIFY queued (merge lock held elsewhere)	session-20261117T124639-0485e5ab	2026-11-17T13:14:10Z
+fix:integriq:2650:a234a7dc	fixed floor: unit_complexity 3.91 >= 3.90; pushed c1e85c0b; merge lock held elsewhere, REVERIFY queued	session-20261117T124628-9de56351	2026-11-17T13:14:23Z
+fix:portaliq:2559:7c124998	failed: permission (fix pushed as 25603561, REVERIFY queued; review/land step refused)	session-20261117T124737-01fc7db5	2026-11-17T13:14:35Z
+verify:learniq:2590:bcc12c33	GREEN #2590 (version bump; no new failures)	session-20261117T124634-01105f98	2026-11-17T13:14:47Z
