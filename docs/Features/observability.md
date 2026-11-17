@@ -46,7 +46,8 @@ Returns Prometheus text-exposition format (Content-Type `text/plain; version=0.0
 | `openregister_up` | gauge | 1 if the app is healthy and serving requests. |
 | `openregister_registers_total` | gauge | Number of register entities. |
 | `openregister_schemas_total` | gauge | Number of schema entities. |
-| `openregister_objects_total{register, schema}` | gauge | Number of objects per (register, schema) pair. |
+| `openregister_objects_total{register, schema}` | gauge | Live (not soft-deleted) objects per register and schema id, counted in the per-schema object tables plus the legacy object table; a pair with no objects, or whose register or schema is gone, is not published. |
+| `openregister_objects_{created,updated,deleted,read}_total{register, schema}` | counter | Object operations recorded in the audit trail, per register and schema id. Stored in the database, so they survive restarts. |
 | `openregister_search_requests_total{type}` | counter | Search requests served, by search type (`keyword`, `semantic`, `hybrid`). |
 | `openregister_search_duration_seconds{type}` | histogram | Search duration, buckets 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0 s; searches recorded without a duration count as requests only. |
 | `openregister_embeddings_generated_total{status}` | counter | Embedding generations by outcome (`success`, `failure`; every non-success status is a failure). |

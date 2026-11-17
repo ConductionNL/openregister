@@ -2,8 +2,8 @@
 
 - [ ] Implement: Prometheus Metrics Endpoint
 - [x] Implement: Standard Application Metrics
-- [ ] Implement: Register, Schema, and Object Count Metrics
-- [ ] Implement: CRUD Operation Counters
+- [x] Implement: Register, Schema, and Object Count Metrics
+- [x] Implement: CRUD Operation Counters
 - [x] Implement: Search Performance Metrics
 - [x] Implement: Webhook Delivery Monitoring
 - [x] Implement: Health Check Endpoint
@@ -181,3 +181,18 @@ not built. Structured logging (request-id carrier), BIO2 audit re-verification, 
 query-duration histogram and slow-query counter, cache hit/miss and import progress
 instrumentation, the dashboard widget and serverinfo section, and an admin settings field for
 `metrics_api_token` / `metrics_allowed_ips` remain open.
+
+**Eighth pass, 2026-11-17: object counts from the object tables, CRUD counters per register and
+schema.** "Register, Schema, and Object Count Metrics" and "CRUD Operation Counters" are ticked.
+`objects_total{register,schema}` was a `tableCount` of the legacy `openregister_objects` blob
+table, so every object stored in a per-schema table since the move was missing from it. It now
+comes from `Service\Observability\ObjectCountMetricsProvider`, which joins
+`OpenRegisterMetricsProvider`: it lists the `openregister_table_<register>_<schema>` tables, counts
+their rows without a `_deleted` marker in `UNION ALL` batches of 100, adds the legacy rows whose
+`deleted` is null, and leaves out a table whose register or schema no longer exists and a pair
+with no objects. A soft delete therefore lowers the gauge (scenario "Object counts update after
+CRUD operations"). A count that fails publishes no samples, with a warning, never a false zero.
+`objects_created_total`, `objects_updated_total`, `objects_deleted_total` and
+`objects_read_total` are now grouped by the audit trail's `register` and `schema`; they are read
+from the audit trail table, so they survive a restart. Label values are the numeric ids, as
+documented for `objects_total` since the AppHost adoption; the spec's examples use names.
