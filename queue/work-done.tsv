@@ -19195,6 +19195,7 @@ review:versioniq:719:c727229b	GREEN: versioniq #719 (openapi.json conflict with 
 review:stackiq:1939:4b930687	BLOCK: manifest conflict with development; new calls use the old openregister object API	session-20261117T021015-602d1924	2026-11-17T02:35:54Z
 verify:launchpad:1239:cc16cd1e	GREEN #1239: PHPUnit 4539, vitest 2652, no new failures	session-20261117T020257-09bbf84c	2026-11-17T02:36:00Z
 review:versioniq:729:e24515d1	CONFLICT with development (7 files); head alone has only the 2 inherited failures	session-20261117T021137-dd174ad0	2026-11-17T02:36:15Z
+review:launchpad:1219:08b864a2	GREEN: phpunit 4553 OK, vitest 2667 pass on merge with development	session-20261117T021723-9d734048	2026-11-17T02:36:41Z
 fix:learniq:2579:2200408f	floor restored at 9a422773 (interfacing 3.13, PASS); not landed: review REQUEST_CHANGES (gate findings on added lines, no demo data)	session-20261117T020252-b4828a7d	2026-11-17T02:36:40Z
 verify:decidiq:2224:1c5c51d1	GREEN 2224: unit 4795 OK, vitest 2912 pass, no new failures	session-20261117T021636-02f2b960	2026-11-17T02:36:49Z
 verify:versioniq:758:ca5314c3	CONFLICT: l10n files conflict with development	session-20261117T020537-9e43f62e	2026-11-17T02:37:09Z
@@ -19240,6 +19241,7 @@ fix:hermiq:1794:19bcd689	merged #1794 at 58725be9b04edb729c72faf541cd06e9553151b
 review:buildiq:1597:91ec5c6d	GREEN: suites green beyond 1 inherited failure; l10n append conflict with development	session-20261117T020320-19c7f7ca	2026-11-17T02:45:19Z
 merge:filinq:2059:92e471f0	cloud tree of 3 filinq PRs: none; conflict 3, lint 0, red 0, moved 0, done 0	session-20261117T020416-cc0fb378	2026-11-17T02:45:39Z
 merge:portaliq:2417:5ba1e02d	cloud tree of 6 portaliq PRs: merged=1 red=0 fail=0 skip=0; conflict 5, lint 0, red 0, moved 0, done 0	session-20261117T020227-9e68ed24	2026-11-17T02:45:37Z
+fix:shillinq:2086:3e9decdf	conflict resolved, pushed ca69b7ea; merge lock held elsewhere, REVERIFY queued	session-20261117T020244-328833fb	2026-11-17T02:46:09Z
 review:hermiq:1794:58725be9	GREEN: 5520 unit tests pass on PR+development, vitest and exapp tests pass	session-20261117T020353-b50811a6	2026-11-17T02:46:15Z
 review:portaliq:2452:92f46428	GREEN: 6245 tests, 16 inherited errors; node specs 50/50	session-20261117T020142-15890c05	2026-11-17T02:46:23Z
 fix:buildiq:1608:d0285584	fixed floor unit_complexity 3.43->3.48; pushed ae635677; REVERIFY (merge lock held)	session-20261117T020211-438428f3	2026-11-17T02:46:30Z
@@ -19247,8 +19249,38 @@ fix:portaliq:2530:23908dc9:v5	closed #2530 as obsolete: development already has 
 fix:integriq:3545:9367d2e7	fixed CONFLICT #3545, new head 76605dd4; REVERIFY (merge lock held elsewhere)	session-20261117T015705-50845751	2026-11-17T02:46:53Z
 fix:versioniq:716:11823d08	merged #716 at 18278571595a8fd4b569687a5185f7b34db37b72	session-20261117T004644-d9c68b8f	2026-11-17T02:47:39Z
 merge:filinq:2091:eb54bd43	cloud tree of 2 filinq PRs: none; conflict 2, lint 0, red 0, moved 0, done 0	session-20261117T020416-cc0fb378	2026-11-17T02:47:50Z
+merge:learniq:2567:908b4487	cloud tree of 1 learniq PRs: none; conflict 0, lint 0, red 0, moved 0, done 1	session-20261117T020231-8c38940a	2026-11-17T02:48:03Z
 review:openregister:10605:e74d899c	APPROVE: additive optional-entry skip, tests green	session-20261117T020408-6b9de5cf	2026-11-17T02:48:05Z
 fix:hermiq:1749:9219f3b4	fixed: spec tag added, development merged; REVERIFY at 8dfea2dc9a (merge lock held by another merger)	session-20261117T020358-1a8df617	2026-11-17T02:48:12Z
 fix:dossiq:4887:58a39c94	fixed maintainability findings (0 left), pushed 3f70eb10; REVERIFY queued (merge lock held elsewhere)	session-20261117T020329-e21299e8	2026-11-17T02:48:23Z
 verify:versioniq:754:987f294b	CONFLICT with development after #716	session-20261117T004644-d9c68b8f	2026-11-17T02:48:36Z
+review:opencatalogi:2706:01d5443c	already merged into development (252b4222); no review needed	session-20261117T020408-6b9de5cf	2026-11-17T02:48:44Z
 fix:hermiq:1760:37f096be	fixed conflict, new head 2a9d1408d8daae1110a6912375084361e3e252f4; REVERIFY (merge lock held elsewhere)	session-20261117T020353-b50811a6	2026-11-17T02:48:46Z
+merge:integriq:3049:c69ff6a7	cloud tree of 4 integriq PRs: merged=1 red=0 fail=0 skip=0; conflict 3, lint 0, red 0, moved 0, done 0	session-20261117T024200-4ed5487e	2026-11-17T02:49:01Z
+review:portaliq:2492:5231f578	GREEN: 6258 tests, 16 inherited errors	session-20261117T020142-15890c05	2026-11-17T02:49:08Z
+fix:versioniq:715:f78bf6ec	floor restored (PASS); pushed 160a3e87; merge lock held elsewhere, REVERIFY queued	session-20261117T020319-9833efe0	2026-11-17T02:49:47Z
+review:filinq:2069:367131c4	GREEN: 7009 unit OK, vitest OK, phpstan clean	session-20261117T024701-e2fa255c	2026-11-17T02:50:04Z
+merge:portaliq:2451:c57c123f	cloud tree of 1 portaliq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T020227-9e68ed24	2026-11-17T02:50:34Z
+verify:dossiq:3955:66d75ab8	CONFLICT: 3955 conflicts with development in 4 files	session-20261117T020329-e21299e8	2026-11-17T02:50:46Z
+merge:decidiq:2239:c474f6d4	cloud tree of 1 decidiq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T021723-9d734048	2026-11-17T02:50:58Z
+fix:hermiq:1751:36c34dcf	fixed conflict, new head 73163d7d386c831af30dcaddf6fdaff65a1390b1; REVERIFY (merge lock held elsewhere)	session-20261117T020353-b50811a6	2026-11-17T02:51:07Z
+fix:stackiq:1933:99e5e172	fixed RED (test expectation), pushed 60a38fa8; REVERIFY queued, merge lock held elsewhere	session-20261117T020322-58ced631	2026-11-17T02:51:56Z
+fix:hermiq:1758:d5151101	conflict resolved; REVERIFY at 7278524b78 (merge lock held by another merger)	session-20261117T020358-1a8df617	2026-11-17T02:52:46Z
+merge:hermiq:1496:053264b1	cloud tree of 9 hermiq PRs: merged=1 red=0 fail=0 skip=1; conflict 6, lint 0, red 0, moved 1, done 0	session-20261117T024430-b5e75bd7	2026-11-17T02:53:07Z
+verify:buildiq:1648:4c269521	CONFLICT: l10n/nl.json vs development	session-20261117T025134-c7910d2d	2026-11-17T02:53:23Z
+gap:portaliq:public-bundle-budget:1	PR #2556: site entry 453,578 -> 440,960 B (limit 441,344) without raising the budget; cosign route, theme case counts and isClosedCase split into small modules, claim invitation loaded on demand like mandate/contact; build:site and build:traffic pass	session-20261113T214350-9762e143	2026-11-17T02:53:56Z
+verify:dossiq:3957:8e3f5a35	CONFLICT: 3 files conflict with development	session-20261117T020227-9e68ed24	2026-11-17T02:53:37Z
+fix:shillinq:2998:722918d0	fixed: manifest shell regenerated, new head 5dd30f17, REVERIFY (merge lock held elsewhere)	session-20261117T025204-e27953f1	2026-11-17T02:53:45Z
+fix:shillinq:3110:cca3fd23:v6	development merged in, sbom check current; REVERIFY at e8ca71f4 (merge lock busy)	session-20261117T025205-24fff43b	2026-11-17T02:53:56Z
+review:shillinq:1900:f9ee4f19	GREEN: suite 12565 tests, 0 failures; implements task 1.2	session-20261117T024744-80ee8539	2026-11-17T02:54:29Z
+merge:shillinq:1958:11de5d62	cloud tree of 9 shillinq PRs: merged=2 red=0 fail=0 skip=0; conflict 6, lint 0, red 0, moved 0, done 1	session-20261117T020252-b4828a7d	2026-11-17T02:55:00Z
+fix:shillinq:3052:e4fd4565	fixed: scoped page index regenerated, development merged, pushed 474a6bf6; merge lock held elsewhere, REVERIFY queued	session-20261117T020244-328833fb	2026-11-17T02:54:54Z
+merge:versioniq:503:8110f443	cloud tree of 5 versioniq PRs: merged=1 red=0 fail=0 skip=0; conflict 3, lint 0, red 1, moved 0, done 0	session-20261117T004644-d9c68b8f	2026-11-17T02:55:12Z
+fix:buildiq:1630:01c116f5	fixed enum + merged development; new head ee26301e; merge lock held elsewhere, REVERIFY	session-20261117T025134-c7910d2d	2026-11-17T02:55:20Z
+verify:shillinq:3135:8ec1385f	CONFLICT #3135 (2 test files vs development)	session-20261117T024846-230b807c	2026-11-17T02:55:40Z
+review:shillinq:3002:0d472796	GREEN: statements per spec, suite clean	session-20261117T020329-e21299e8	2026-11-17T02:56:13Z
+fix:decidiq:2171:867b712e	fixed RED (spec counts) + conflicts, pushed 853b82a5; merge lock held elsewhere, REVERIFY queued	session-20261117T021723-9d734048	2026-11-17T02:56:32Z
+fix:filinq:2099:20f41844	conflict resolved, pushed acbeee3a (register 8.65.0), unit 6992 OK; lock held elsewhere, REVERIFY queued	session-20261117T025357-44509a8b	2026-11-17T02:56:43Z
+fix:stackiq:1942:200de863	fixed BLOCK (conflicts, SPDX headers, version bump), pushed aad1987d; REVERIFY queued	session-20261117T020322-58ced631	2026-11-17T02:56:56Z
+fix:shillinq:3065:ba9580f8	fixed: merged development, regenerated scoped pages, new head 38e2ed5d, REVERIFY	session-20261117T025204-e27953f1	2026-11-17T02:57:04Z
+verify:launchpad:1230:8f89ce42	GREEN #1230: 4620 tests OK, vitest 2731/2731	session-20261117T020142-15890c05	2026-11-17T02:57:13Z
