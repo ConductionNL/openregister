@@ -20554,4 +20554,5 @@ cover:buildiq:70b3e29em2454:f545d745	already done: lib/Repair classes at 98-100%
 measure:stackiq:20261117h12	php 92.55 % js 95.94% at 25962f2c	session-20261117T110646-831a671b	2026-11-17T12:18:59Z
 fix:buildiq:1643:3bf75b8a	conflict resolved, pushed d0645acc; REVERIFY (merge lock held elsewhere)	session-20261117T121700-929975cb	2026-11-17T12:19:18Z
 merge:opencatalogi:2683:de316a9c	cloud tree of 2 opencatalogi PRs: merged=0 red=0 fail=0 skip=1; conflict 0, lint 0, red 1, moved 0, done 0	session-20261117T120834-820bb574	2026-11-17T12:19:49Z
+cover:decidiq:a5f973bbmfcd5:1b97f731	PR #2266: lib/Listener 91.9% -> 98.0% (@uses on 6 risky tests), suite 4951 ok	session-20261117T112432-6eb8ecae	2026-11-17T12:20:38Z
 cover:buildiq:70b3e29em2454:d39f9857	already done: lib/Support/*.php at 98.2% lines on development e4700fc7 (target 95; 6 uncovered lines in ApplicationStories, FormPageConfig, WidgetIdAllocator)	session-20261117T113142-3e3cc1d3	2026-11-17T12:20:32Z
