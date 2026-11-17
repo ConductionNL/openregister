@@ -19077,3 +19077,4 @@ versioniq	692	96800420d9df09f61c55ff8510dbb0ab80c2a269	CONFLICT	worker-22	confli
 versioniq	698	ee38e0b72ee16970a4538db390dba458699d7063	CONFLICT	worker-22	conflicts with development; files: tests/e2e/cli.spec.ts
 decidiq	2149	c4919c09bcf229e7e35047308d66f1d9f91c0053	RED	worker-45:merge-gate	GATE RED checker floor: secretscanning: pass -> fail; secretscanning stars: 5 -> 1
 shillinq	3174	661acc9bb6e651f0397c5be7907fadfc8f4a50af	REVERIFY	worker-04	build round 2 added the e2e spec for task 2.1 (tests + openspec notes only); new head 3dfee71ebce89aa659c0cf9fe97e8ffe935b0564, verify it
+opencatalogi	2771	d77146524af31547e5c83a50f60cff581dec7c86	CONFLICT	worker-17	fix resolved locally (l10n union, unit suite no new failures) but push refused: repo not in this cloud session's authorized set; still needs the fix
