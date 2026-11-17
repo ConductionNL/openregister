@@ -19325,3 +19325,4 @@ fix:decidiq:2173:1ef930fb:v3	conflicts resolved (controller split, json unions, 
 merge:opencatalogi:2650:a2386a82	cloud tree of 9 opencatalogi PRs: merged=2 red=0 fail=0 skip=1; conflict 5, lint 0, red 0, moved 1, done 0	session-20261117T020408-6b9de5cf	2026-11-17T03:06:49Z
 fix:shillinq:2986:91a7c5b6	fixed: repair step registered, pushed c200c996; REVERIFY queued (merge lock busy)	session-20261117T020227-9e68ed24	2026-11-17T03:06:51Z
 fix:filinq:2079:d658c1dd	failed: conflicts and 5 of 6 blockers fixed at 27589b09, php component independence floor still 93.9% < 94.5%; REVERIFY recorded	session-20261117T025216-0d44bb8d	2026-11-17T03:07:07Z
+fix:opencatalogi:2684:d8aa1341	fixed: theme show tests, pushed d59bbd9f; REVERIFY (merge lock held)	session-20261117T020142-15890c05	2026-11-17T03:07:16Z
