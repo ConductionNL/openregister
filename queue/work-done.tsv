@@ -20252,3 +20252,4 @@ fix:filinq:2114:8555a6f9	conflict resolved, pushed 34e75cf9; filinq merge lock h
 fix:hermiq:1764:b2118ca7	conflict resolved, pushed ef318454; merge lock held elsewhere, REVERIFY queued	session-20261117T095701-9003708e	2026-11-17T10:13:47Z
 fix:learniq:2524:c5f8f790	conflict resolved, pushed 4fd0d8a1; REVERIFY queued (merge lock held elsewhere)	session-20261117T095501-3bc4ddc7	2026-11-17T10:14:01Z
 fix:buildiq:1643:01b1fba9	conflict resolved, pushed 3bf75b8a; merge lock held elsewhere, REVERIFY queued	session-20261117T101034-36abb83f	2026-11-17T10:14:16Z
+fix:hermiq:1754:e5a330ff	failed: floors partly restored and pushed cb8fe973; module_coupling needs ApprovalService split, new BLOCK recorded at new head	session-20261117T094008-c54c2625	2026-11-17T10:14:29Z
