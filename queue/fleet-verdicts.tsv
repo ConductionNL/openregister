@@ -18338,6 +18338,7 @@ launchpad	1217	7283f62c39d4b8397cc6a45523632a26fadf09ad	REVERIFY	worker-20:merge
 pipelinq	1990	6a928a21095b131e29032c417d0e2e886fec1cc0	GREEN	worker-51	merged tree identical to development b99fd659 (zero file diff, history-only beta sync); suite unchanged by construction, no new failures
 versioniq	771	3de848dcdcea309c9a238b78758f0da34d2f6e61	GREEN	worker-16	version bump only (info.xml, openapi.json); no PHP/JS touched; baseline 2421 tests, 2 golden failures, new failures 0
 pipelinq	2284	aef4e838e1627b099c18360c32d4fba6ec3831fe	GREEN	worker-52	merged tree identical to development (sync PR adds no content); no tests needed, 0 new failures
+versioniq	685	aadbc2526fe04760a59accfad26904c4fb19c0cb	CONFLICT	worker-16	conflicts with development, files: tests/unit/Settings/ConnectionsDeclarationTest.php
 integriq	2152	b149b10fd341de51ebb2c851b9fda81dbabf4518	GREEN	worker-46	unit 9839 tests, baseline 2 errors 2 failures, new failures 0; merge commit with no change against development
 opencatalogi	1857	82668b5d869517933f46b9ce30535f4486c37da0	GREEN	worker-57	beta back-merge that changes no file on development (tree identical to base); no tests needed beyond baseline
 opencatalogi	2769	0c4a78f746a745c0379a06e1d75546f9b012e222	GREEN	worker-37	version bump only (info.xml, openapi.json); no code changed, suite = baseline
