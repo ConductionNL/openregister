@@ -22767,3 +22767,4 @@ merge:planninq:1238:3df56601	unmeasured: api.osv.dev; cloud tree of 6 planninq P
 fix:shillinq:3007:7ed685a6	conflict fixed, new head 357ddc9b pushed, REVERIFY recorded (not landed: own push is not self-reviewed)	session-20261117T204330-02b728bd	2026-11-17T21:58:27Z
 fix:opencatalogi:2674:8afba882	conflicts resolved, pushed c6d01be6; REVERIFY queued	session-20261117T213146-716f8927	2026-11-17T21:58:36Z
 fix:planninq:1244:b4d018dd	unmeasured: api.osv.dev; PR changes no package or composer manifest, so the opensourcehealth drop is not from its diff; needs a session that reaches api.osv.dev	session-20261117T204330-02b728bd	2026-11-17T21:58:54Z
+verify:versioniq:800:156569fd	GREEN 800 (version bump only; unit suite needs server bootstrap, not run)	session-20261117T211910-eb4216c0	2026-11-17T21:59:02Z
