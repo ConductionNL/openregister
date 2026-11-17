@@ -20898,3 +20898,4 @@ cover:buildiq:70b3e29em2454:a215617b	PR #1712: lib/Integration 89.96% -> 97.99% 
 fix:buildiq:1651:a0b41b07	fixed floor drop + merged development; REVERIFY at 02c8e568	session-20261117T133433-906519d6	2026-11-17T14:01:20Z
 fix:stackiq:2028:4f87d399	golden re-recorded, pushed 9d9add83; only inherited facets.spec failure; REVERIFY	session-20261117T134404-362023fb	2026-11-17T14:02:06Z
 fix:integriq:3704:ef91827a	sbom regenerated, pushed f13fbbdb; merge lock held elsewhere, REVERIFY queued	session-20261117T124010-7774729d	2026-11-17T14:02:29Z
+merge:larpinq:1086:407c2f23	cloud tree of 2 larpinq PRs: merged=2 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T134441-beae3c0d	2026-11-17T14:02:47Z
