@@ -18905,6 +18905,7 @@ fix:buildiq:1649:f58cb410:v5	conflict resolved + stories test helper fixed, push
 fix:buildiq:1630:d47a3654:v3	conflicts resolved and floor kept, pushed 01c116f5; REVERIFY recorded (merge lock held elsewhere)	session-20261117T005242-9db4df06	2026-11-17T01:32:29Z
 fix:integriq:3593:8dad155c:v4	fixed CONFLICT, pushed 75b7c54; merge lock held elsewhere, REVERIFY queued	session-20261117T004701-f6094f02	2026-11-17T01:32:37Z
 fix:launchpad:1212:b82c095c:v4	fixed CONFLICT, pushed 06d37ac41f3224591c48ed069704137ec2f57b54; merge lock busy, REVERIFY queued	session-20261117T005217-ad04a5d2	2026-11-17T01:32:45Z
+review:shillinq:3002:64f4bc01	RED: wrong AppIdentity namespace after development moved it to Kernel; 5 controller test errors	session-20261117T004724-21eb694a	2026-11-17T01:33:11Z
 fix:buildiq:1089:322d7e65:v4	closed #1089 as obsolete: development already locks vitest 5.1.0	session-20261117T003652-c6487e72	2026-11-17T01:33:00Z
 verify:decidiq:2162:b34c6472	stale	session-20261117T004701-f6094f02	2026-11-17T01:33:13Z
 review:shillinq:3006:bc86e171	GREEN: suite 12484 green, vitest 37 green	session-20261117T005237-d93074af	2026-11-17T01:33:18Z
@@ -18917,3 +18918,9 @@ verify:decidiq:2173:518cf792	2173 CONFLICT (src/menu-layout.simple.json)	session
 fix:integriq:3601:be3e4259:v3	conflict resolved, pushed fc46c8d9; merge lock busy, REVERIFY queued	session-20261117T004655-1a901c92	2026-11-17T01:34:33Z
 fix:launchpad:761:ca2815b8:v4	conflict resolved, pushed fb9c34bd; merge lock held by another merger, REVERIFY queued	session-20261117T005304-6fca2823	2026-11-17T01:35:27Z
 fix:buildiq:1619:e0722b68:v3	conflict resolved, pushed 3d592e85; merge lock held elsewhere, REVERIFY queued	session-20261117T004756-036f1d35	2026-11-17T01:35:35Z
+merge:buildiq:1608:754a2e84	cloud tree of 1 buildiq PRs: merged=0 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T004644-5138fb50	2026-11-17T01:36:03Z
+fix:opencatalogi:2683:9def1ff8:v3	fixed CONFLICT, pushed 783543f7c3ddf46f3c87957bf2ca6b6b6c890e22; merge lock busy, REVERIFY queued	session-20261117T005217-ad04a5d2	2026-11-17T01:36:15Z
+fix:launchpad:1210:7f9c64f6:v3	conflict resolved; new head 6f168e0b, REVERIFY (merge lock held elsewhere)	session-20261117T003945-3aa9cc05	2026-11-17T01:36:25Z
+fix:launchpad:1217:edcbef17:v3	conflict resolved, pushed faab5f5c; phpunit+vitest green; merge lock held elsewhere, REVERIFY queued	session-20261117T004609-b5037037	2026-11-17T01:36:35Z
+merge:dossiq:3954:e90d8848	cloud tree of 6 dossiq PRs: merged=2 red=0 fail=0 skip=1; conflict 2, lint 0, red 0, moved 0, done 0	session-20261117T004626-d23ae300	2026-11-17T01:36:59Z
+fix:buildiq:1654:ac924f1b:v5	conflict resolved, pushed 37e70c18; suite green; lock held elsewhere, REVERIFY queued	session-20261117T004721-b30387a5	2026-11-17T01:37:06Z
