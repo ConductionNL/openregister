@@ -17647,3 +17647,4 @@ learniq	2551	2291ead020fce5c55371b1b42498302d42d2bcfc	REVERIFY	worker-32	merged 
 stackiq	2025	820ddd39fcc967bdb6dc528cddcfb206e955f86a	GREEN	worker-23	phpunit 4019 0 failures (baseline 4019/0); vitest 2891 pass, 1 inherited facets.spec failure; webpack build ok
 stackiq	2026	176656140c5a9e0070bb25f530a974f19be299f3	GREEN	worker-23	phpunit 4019 0 failures (baseline 4019/0); vitest 2891 pass, 1 inherited facets.spec failure; webpack build ok
 stackiq	2027	5e7aec4583a018e1b857b6b2830ad30c21d30b40	GREEN	worker-23	phpunit 4019 0 failures (baseline 4019/0); vitest 2891 pass, 1 inherited facets.spec failure; webpack build ok
+stackiq	2028	4411b0dd52432c279a633bbc22e911faa8d479a0	REVERIFY	worker-23	conflicts only with an earlier PR of the verify tree
