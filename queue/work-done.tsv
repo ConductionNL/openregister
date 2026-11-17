@@ -18507,3 +18507,4 @@ verify:pipelinq:3743:d1e2bf9d	CONFLICT #3743 (l10n, SettingsLoadService, manifes
 verify:opencatalogi:2244:f25f1179	GREEN #2244 (no new failures, 78 inherited)	session-20261116T233857-32c64615	2026-11-17T00:03:11Z
 verify:shillinq:2081:07764b3f	CONFLICT #2081 (l10n)	session-20261116T233929-170accb7	2026-11-17T00:03:20Z
 verify:shillinq:2993:bd16cc97	CONFLICT #2993	session-20261116T233627-44605965	2026-11-17T00:03:58Z
+verify:portaliq:2492:073b891c	CONFLICT #2492 (tests/example-site.spec.mjs vs development)	session-20261116T233800-0f135937	2026-11-17T00:03:49Z
