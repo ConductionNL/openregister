@@ -1,0 +1,2069 @@
+From ba49835799995841aa4035d900ef8cc1eb7d3dd9 Mon Sep 17 00:00:00 2001
+From: Ruben van der Linde <ruben@conduction.nl>
+Date: Tue, 17 Nov 2026 22:45:51 +0000
+Subject: [PATCH] feat(decidiq): build embargo-geheimhouding [skip ci]
+
+Impose, ratify and dissolve confidentiality restrictions through
+ConfidentialityRestrictionService: authority over the imposing body
+checked first, an active ground required, the target's existing
+classifier driven, ratifiable grounds placed on the body's next
+scheduled meeting, and dissolution returning the target to its
+non-public default without publishing it.
+
+Assisted-by: ClaudeCode:claude-opus-5-5
+---
+ appinfo/routes.php                            |   6 +
+ .../ConfidentialityRestrictionController.php  | 146 +++++
+ ...identialityRestrictionRefusedException.php |  57 ++
+ .../ConfidentialityRestrictionService.php     | 510 ++++++++++++++++++
+ lib/Service/RatificationAgendaPlacement.php   | 195 +++++++
+ lib/Service/RestrictionTargetClassifier.php   | 150 ++++++
+ openapi.json                                  | 190 +++++++
+ .../changes/embargo-geheimhouding/tasks.md    |  15 +-
+ ...nfidentialityRestrictionControllerTest.php |  99 ++++
+ .../ConfidentialityRestrictionServiceTest.php | 420 +++++++++++++++
+ .../RatificationAgendaPlacementTest.php       | 141 +++++
+ 11 files changed, 1923 insertions(+), 6 deletions(-)
+ create mode 100644 lib/Controller/ConfidentialityRestrictionController.php
+ create mode 100644 lib/Exception/ConfidentialityRestrictionRefusedException.php
+ create mode 100644 lib/Service/ConfidentialityRestrictionService.php
+ create mode 100644 lib/Service/RatificationAgendaPlacement.php
+ create mode 100644 lib/Service/RestrictionTargetClassifier.php
+ create mode 100644 tests/Unit/Controller/ConfidentialityRestrictionControllerTest.php
+ create mode 100644 tests/Unit/Service/ConfidentialityRestrictionServiceTest.php
+ create mode 100644 tests/Unit/Service/RatificationAgendaPlacementTest.php
+
+diff --git a/appinfo/routes.php b/appinfo/routes.php
+index 58043161f..d45c2dd59 100644
+--- a/appinfo/routes.php
++++ b/appinfo/routes.php
+@@ -200,6 +200,12 @@ $extra = [
+         ['name' => 'mandateSubstitution#endSubstitution', 'url' => '/api/meetings/{meetingId}/substitutions/{id}/end', 'verb' => 'POST'],
+         // agenda-office-files-to-pdf (age-17): queue a new conversion of a paper whose conversion failed.
+         ['name' => 'paperConversion#convert', 'url' => '/api/papers/{schema}/{objectId}/{fileId}/convert', 'verb' => 'POST'],
++        // Confidentiality restrictions (embargo-geheimhouding REQ-EMB-001/003/004): impose, ratify, dissolve; reads stay on the OR object API.
++        // @spec openspec/changes/embargo-geheimhouding/specs/embargo-geheimhouding/spec.md#requirement-req-emb-001-geheimhouding-record-with-structured-legal-ground
++        ['name' => 'confidentialityRestriction#impose',   'url' => '/api/confidentiality-restrictions/{scope}/{target}', 'verb' => 'POST'],
++        ['name' => 'confidentialityRestriction#ratify',   'url' => '/api/confidentiality-restrictions/{id}/ratify',          'verb' => 'POST'],
++        ['name' => 'confidentialityRestriction#dissolve', 'url' => '/api/confidentiality-restrictions/{id}/dissolve',        'verb' => 'POST'],
++
+         // agenda-ai-paper-summaries (REQ-APS-002/003): ask for an AI summary or comparison of a paper; is a provider installed.
+         ['name' => 'paperSummary#create',       'url' => '/api/agenda-items/{id}/paper-summaries', 'verb' => 'POST'],
+         ['name' => 'paperSummary#availability', 'url' => '/api/paper-summaries/availability',      'verb' => 'GET'],
+diff --git a/lib/Controller/ConfidentialityRestrictionController.php b/lib/Controller/ConfidentialityRestrictionController.php
+new file mode 100644
+index 000000000..b45dc9c90
+--- /dev/null
++++ b/lib/Controller/ConfidentialityRestrictionController.php
+@@ -0,0 +1,146 @@
++<?php
++
++/**
++ * Decidiq Confidentiality Restriction Controller
++ *
++ * The impose, ratify and dissolve actions on a confidentiality restriction.
++ * Reading and listing restrictions stays on the OpenRegister object API.
++ *
++ * @category Controller
++ * @package  OCA\Decidiq\Controller
++ *
++ * @author    Conduction Development Team <info@conduction.nl>
++ * @copyright 2026 Conduction B.V.
++ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
++ *
++ * @link https://conduction.nl
++ *
++ * @spec openspec/changes/embargo-geheimhouding/specs/embargo-geheimhouding/spec.md#requirement-req-emb-001-geheimhouding-record-with-structured-legal-ground
++ *
++ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
++ * SPDX-License-Identifier: EUPL-1.2
++ */
++
++declare(strict_types=1);
++
++namespace OCA\Decidiq\Controller;
++
++use OCA\Decidiq\Exception\ConfidentialityRestrictionRefusedException;
++use OCA\Decidiq\Kernel\AppIdentity;
++use OCA\Decidiq\Service\ConfidentialityRestrictionService;
++use OCP\AppFramework\Controller;
++use OCP\AppFramework\Http;
++use OCP\AppFramework\Http\Attribute\NoAdminRequired;
++use OCP\AppFramework\Http\JSONResponse;
++use OCP\IRequest;
++
++/**
++ * Impose, ratify and dissolve confidentiality restrictions.
++ *
++ * Access control: per-object guard in ConfidentialityRestrictionService for
++ * every action: 401 when anonymous, 403 unless the caller is an
++ * administrator or holds the chair scope of the imposing body.
++ *
++ * @spec openspec/changes/embargo-geheimhouding/specs/embargo-geheimhouding/spec.md#requirement-req-emb-001-geheimhouding-record-with-structured-legal-ground
++ */
++class ConfidentialityRestrictionController extends Controller {
++
++	/**
++	 * Constructor.
++	 *
++	 * @param IRequest                          $request      The request.
++	 * @param ConfidentialityRestrictionService $restrictions Checks and performs the actions.
++	 *
++	 * @spec openspec/changes/embargo-geheimhouding/specs/embargo-geheimhouding/spec.md#requirement-req-emb-001-geheimhouding-record-with-structured-legal-ground
++	 */
++	public function __construct(
++		IRequest $request,
++		private readonly ConfidentialityRestrictionService $restrictions,
++	) {
++		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
++	}//end __construct()
++
++	/**
++	 * Impose a restriction.
++	 *
++	 * POST /api/confidentiality-restrictions/{scope}/{target}
++	 * Body: { ground, imposedBy, imposedByBody, ratificationDeadline? }
++	 *
++	 * @param string $scope  `document`, `item` or `decision`.
++	 * @param string $target The uuid of the object to restrict.
++	 *
++	 * @return JSONResponse 201 the restriction; 401, 403, 404 or 422 with a message.
++	 *
++	 * @spec openspec/changes/embargo-geheimhouding/specs/embargo-geheimhouding/spec.md#requirement-req-emb-001-geheimhouding-record-with-structured-legal-ground
++	 */
++	#[NoAdminRequired]
++	public function impose(string $scope, string $target): JSONResponse {
++		$input = ['scope' => $scope, 'target' => $target];
++		foreach (['ground', 'imposedBy', 'imposedByBody', 'ratificationDeadline'] as $key) {
++			$input[$key] = (string)$this->request->getParam($key, '');
++		}
++
++		return $this->answer(action: fn (): array => $this->restrictions->impose(input: $input), status: Http::STATUS_CREATED);
++	}//end impose()
++
++	/**
++	 * Ratify a restriction on the confirming body's decision.
++	 *
++	 * POST /api/confidentiality-restrictions/{id}/ratify
++	 * Body: { decision }
++	 *
++	 * @param string $id The restriction.
++	 *
++	 * @return JSONResponse 200 the restriction; 401, 403, 404, 409 or 422 with a message.
++	 *
++	 * @spec openspec/changes/embargo-geheimhouding/specs/embargo-geheimhouding/spec.md#requirement-req-emb-003-bekrachtiging-workflow-with-fail-visible-overdue-flag
++	 */
++	#[NoAdminRequired]
++	public function ratify(string $id): JSONResponse {
++		$decision = (string)$this->request->getParam('decision', '');
++
++		return $this->answer(action: fn (): array => $this->restrictions->ratify(restrictionId: $id, decisionId: $decision), status: Http::STATUS_OK);
++	}//end ratify()
++
++	/**
++	 * Dissolve a restriction on a dissolution decision.
++	 *
++	 * POST /api/confidentiality-restrictions/{id}/dissolve
++	 * Body: { decision, conditions? }
++	 *
++	 * @param string $id The restriction.
++	 *
++	 * @return JSONResponse 200 the restriction; 401, 403, 404, 409 or 422 with a message.
++	 *
++	 * @spec openspec/changes/embargo-geheimhouding/specs/embargo-geheimhouding/spec.md#requirement-req-emb-004-opheffing-workflow-routing-into-the-normal-publication-machinery
++	 */
++	#[NoAdminRequired]
++	public function dissolve(string $id): JSONResponse {
++		$decision   = (string)$this->request->getParam('decision', '');
++		$conditions = $this->request->getParam('conditions');
++		if (is_string($conditions) === false) {
++			$conditions = null;
++		}
++
++		return $this->answer(
++			action: fn (): array => $this->restrictions->dissolve(restrictionId: $id, decisionId: $decision, conditions: $conditions),
++			status: Http::STATUS_OK
++		);
++	}//end dissolve()
++
++	/**
++	 * Run an action and answer with its result or its refusal.
++	 *
++	 * @param callable $action The action, returning the restriction.
++	 * @param int      $status The status on success.
++	 *
++	 * @return JSONResponse
++	 */
++	private function answer(callable $action, int $status): JSONResponse {
++		try {
++			return new JSONResponse($action(), $status);
++		} catch (ConfidentialityRestrictionRefusedException $e) {
++			return new JSONResponse(['message' => $e->getMessage()], $e->getStatus());
++		}
++	}//end answer()
++}//end class
+diff --git a/lib/Exception/ConfidentialityRestrictionRefusedException.php b/lib/Exception/ConfidentialityRestrictionRefusedException.php
+new file mode 100644
+index 000000000..a8d6bfc65
+--- /dev/null
++++ b/lib/Exception/ConfidentialityRestrictionRefusedException.php
+@@ -0,0 +1,57 @@
++<?php
++
++/**
++ * Decidiq Confidentiality Restriction Refused Exception
++ *
++ * An impose, ratify or dissolve request on a confidentiality restriction that
++ * cannot go ahead, with the HTTP status to answer.
++ *
++ * @category Exception
++ * @package  OCA\Decidiq\Exception
++ *
++ * @author    Conduction Development Team <info@conduction.nl>
++ * @copyright 2026 Conduction B.V.
++ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
++ *
++ * @link https://conduction.nl
++ *
++ * @spec openspec/changes/embargo-geheimhouding/specs/embargo-geheimhouding/spec.md#requirement-req-emb-001-geheimhouding-record-with-structured-legal-ground
++ *
++ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
++ * SPDX-License-Identifier: EUPL-1.2
++ */
++
++declare(strict_types=1);
++
++namespace OCA\Decidiq\Exception;
++
++/**
++ * A confidentiality restriction request that was refused.
++ *
++ * @spec openspec/changes/embargo-geheimhouding/specs/embargo-geheimhouding/spec.md#requirement-req-emb-001-geheimhouding-record-with-structured-legal-ground
++ */
++class ConfidentialityRestrictionRefusedException extends \RuntimeException {
++
++	/**
++	 * Constructor.
++	 *
++	 * @param string $message The reason, shown to the clerk.
++	 * @param int    $status  The HTTP status to answer.
++	 *
++	 * @spec openspec/changes/embargo-geheimhouding/specs/embargo-geheimhouding/spec.md#requirement-req-emb-001-geheimhouding-record-with-structured-legal-ground
++	 */
++	public function __construct(string $message, private readonly int $status=403) {
++		parent::__construct(message: $message);
++	}//end __construct()
++
++	/**
++	 * The HTTP status to answer.
++	 *
++	 * @return int The status.
++	 *
++	 * @spec openspec/changes/embargo-geheimhouding/specs/embargo-geheimhouding/spec.md#requirement-req-emb-001-geheimhouding-record-with-structured-legal-ground
++	 */
++	public function getStatus(): int {
++		return $this->status;
++	}//end getStatus()
++}//end class
+diff --git a/lib/Service/ConfidentialityRestrictionService.php b/lib/Service/ConfidentialityRestrictionService.php
+new file mode 100644
+index 000000000..1cb451c14
+--- /dev/null
++++ b/lib/Service/ConfidentialityRestrictionService.php
+@@ -0,0 +1,510 @@
++<?php
++
++/**
++ * Decidiq Confidentiality Restriction Service
++ *
++ * Imposes, ratifies and dissolves confidentiality restrictions. Each action
++ * checks the caller's authority over the imposing body first, needs a
++ * structured ground, drives the target's existing classifier and, for a
++ * ground that must be ratified, puts the restriction on the confirming
++ * body's next agenda. Dissolving never publishes: the target returns to its
++ * non-public default and the normal publish flow takes it from there.
++ *
++ * @category Service
++ * @package  OCA\Decidiq\Service
++ *
++ * @author    Conduction Development Team <info@conduction.nl>
++ * @copyright 2026 Conduction B.V.
++ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
++ *
++ * @link https://conduction.nl
++ *
++ * @spec openspec/changes/embargo-geheimhouding/specs/embargo-geheimhouding/spec.md#requirement-req-emb-001-geheimhouding-record-with-structured-legal-ground
++ *
++ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
++ * SPDX-License-Identifier: EUPL-1.2
++ */
++
++declare(strict_types=1);
++
++namespace OCA\Decidiq\Service;
++
++use DateTimeInterface;
++use OCA\Decidiq\Exception\ConfidentialityRestrictionRefusedException;
++use OCA\Decidiq\Kernel\Contracts\GovernanceScopeGuardInterface;
++use OCA\Decidiq\Listener\EntityPayloadReader;
++use OCA\OpenRegister\Contract\ObjectServiceInterface;
++use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
++use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
++use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
++use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
++use OCP\AppFramework\Http;
++use OCP\AppFramework\Utility\ITimeFactory;
++use OCP\IGroupManager;
++use OCP\IUserSession;
++
++/**
++ * The impose, ratify and dissolve actions on a confidentiality restriction.
++ *
++ * @spec openspec/changes/embargo-geheimhouding/specs/embargo-geheimhouding/spec.md#requirement-req-emb-001-geheimhouding-record-with-structured-legal-ground
++ */
++class ConfidentialityRestrictionService {
++
++	/**
++	 * The restriction schema slug.
++	 *
++	 * @var string
++	 */
++	public const SCHEMA = 'confidentiality-restriction';
++
++	/**
++	 * The ground schema slug.
++	 *
++	 * @var string
++	 */
++	public const GROUND_SCHEMA = 'confidentiality-ground';
++
++	/**
++	 * The organs that can impose a restriction.
++	 *
++	 * @var list<string>
++	 */
++	public const ORGANS = ['body', 'chair', 'executive-board'];
++
++	/**
++	 * Constructor.
++	 *
++	 * @param ObjectServiceInterface        $objectService The OpenRegister object service.
++	 * @param IUserSession                  $userSession   The caller.
++	 * @param IGroupManager                 $groupManager  Tells administrators apart.
++	 * @param GovernanceScopeGuardInterface $scopeGuard    Tells who holds the chair scope of a body.
++	 * @param RestrictionTargetClassifier   $classifier    Drives the target's classifier.
++	 * @param RatificationAgendaPlacement   $placement     Puts a restriction on the next agenda.
++	 * @param ITimeFactory                  $time          The clock.
++	 *
++	 * @spec openspec/changes/embargo-geheimhouding/specs/embargo-geheimhouding/spec.md#requirement-req-emb-001-geheimhouding-record-with-structured-legal-ground
++	 */
++	public function __construct(
++		private readonly ObjectServiceInterface $objectService,
++		private readonly IUserSession $userSession,
++		private readonly IGroupManager $groupManager,
++		private readonly GovernanceScopeGuardInterface $scopeGuard,
++		private readonly RestrictionTargetClassifier $classifier,
++		private readonly RatificationAgendaPlacement $placement,
++		private readonly ITimeFactory $time,
++	) {
++	}//end __construct()
++
++	/**
++	 * Impose a restriction on a document, an agenda item or a decision.
++	 *
++	 * Input: `scope`, `target`, `ground`, `imposedBy`, `imposedByBody`, and
++	 * optionally `ratificationDeadline` to override the meeting date.
++	 *
++	 * @param array<string, mixed> $input The request body.
++	 *
++	 * @return array<string, mixed> The stored restriction.
++	 *
++	 * @throws ConfidentialityRestrictionRefusedException 401, 403, 404 or 422 when it cannot be imposed.
++	 *
++	 * @spec openspec/changes/embargo-geheimhouding/specs/embargo-geheimhouding/spec.md#requirement-req-emb-001-geheimhouding-record-with-structured-legal-ground
++	 */
++	public function impose(array $input): array {
++		$bodyId = (string)($input['imposedByBody'] ?? '');
++		$this->assertAuthority(bodyId: $bodyId);
++
++		$scope = (string)($input['scope'] ?? '');
++		$organ = (string)($input['imposedBy'] ?? '');
++		$known = isset(RestrictionTargetClassifier::TARGET_SCHEMAS[$scope]);
++		if ($known === false || in_array($organ, self::ORGANS, true) === false) {
++			throw new ConfidentialityRestrictionRefusedException(
++				message: 'Give a scope of document, item or decision and the organ that imposes the restriction.',
++				status: Http::STATUS_UNPROCESSABLE_ENTITY
++			);
++		}
++
++		$targetId = (string)($input['target'] ?? '');
++		$ground   = $this->activeGround(groundId: (string)($input['ground'] ?? ''));
++		$this->assertReadableTarget(scope: $scope, targetId: $targetId);
++
++		$restriction = $this->create(
++			data: [
++				'scope' => $scope,
++				RestrictionTargetClassifier::TARGET_FIELDS[$scope] => $targetId,
++				'ground' => (string)$ground['id'],
++				'imposedBy' => $organ,
++				'imposedByBody' => $bodyId,
++				'imposedAt' => $this->now(),
++				'lifecycle' => 'imposed',
++			]
++		);
++		$this->classifier->close(scope: $scope, targetId: $targetId);
++
++		if ($this->requiresRatification(ground: $ground) === true) {
++			$restriction = $this->scheduleRatification(restriction: $restriction, ground: $ground, deadline: (string)($input['ratificationDeadline'] ?? ''));
++		}
++
++		return $restriction;
++	}//end impose()
++
++	/**
++	 * Record the confirming body's ratification decision.
++	 *
++	 * @param string $restrictionId The restriction's uuid.
++	 * @param string $decisionId    The ratification decision's uuid.
++	 *
++	 * @return array<string, mixed> The ratified restriction.
++	 *
++	 * @throws ConfidentialityRestrictionRefusedException 401, 403, 404, 409 or 422 when it cannot be ratified.
++	 *
++	 * @spec openspec/changes/embargo-geheimhouding/specs/embargo-geheimhouding/spec.md#requirement-req-emb-003-bekrachtiging-workflow-with-fail-visible-overdue-flag
++	 */
++	public function ratify(string $restrictionId, string $decisionId): array {
++		$restriction = $this->authorisedRestriction(restrictionId: $restrictionId);
++		$ground      = $this->ground(groundId: (string)($restriction['ground'] ?? ''));
++		if ($this->requiresRatification(ground: $ground) === false) {
++			throw new ConfidentialityRestrictionRefusedException(
++				message: 'The ground of this restriction needs no ratification.',
++				status: Http::STATUS_CONFLICT
++			);
++		}
++
++		if (($restriction['lifecycle'] ?? '') !== 'imposed') {
++			throw new ConfidentialityRestrictionRefusedException(
++				message: 'Only an imposed restriction can be ratified.',
++				status: Http::STATUS_CONFLICT
++			);
++		}
++
++		$this->assertDecision(decisionId: $decisionId);
++
++		return $this->patch(
++			restrictionId: $restrictionId,
++			data: ['lifecycle' => 'ratified', 'ratificationDecision' => $decisionId, 'ratificationDate' => $this->now()]
++		);
++	}//end ratify()
++
++	/**
++	 * Dissolve a restriction on a dissolution decision; the target becomes eligible, never public.
++	 *
++	 * @param string      $restrictionId The restriction's uuid.
++	 * @param string      $decisionId    The dissolution decision's uuid.
++	 * @param string|null $conditions    Optional conditions attached to the dissolution.
++	 *
++	 * @return array<string, mixed> The dissolved restriction.
++	 *
++	 * @throws ConfidentialityRestrictionRefusedException 401, 403, 404, 409 or 422 when it cannot be dissolved.
++	 *
++	 * @spec openspec/changes/embargo-geheimhouding/specs/embargo-geheimhouding/spec.md#requirement-req-emb-004-opheffing-workflow-routing-into-the-normal-publication-machinery
++	 */
++	public function dissolve(string $restrictionId, string $decisionId, ?string $conditions=null): array {
++		$restriction = $this->authorisedRestriction(restrictionId: $restrictionId);
++		$this->assertDissolvable(restriction: $restriction);
++		$this->assertDecision(decisionId: $decisionId);
++
++		$data = ['lifecycle' => 'dissolved', 'dissolutionDecision' => $decisionId, 'liftingDate' => $this->now()];
++		if ($conditions !== null && trim($conditions) !== '') {
++			$data['liftingConditions'] = trim($conditions);
++		}
++
++		$dissolved = $this->patch(restrictionId: $restrictionId, data: $data);
++		$scope     = (string)($restriction['scope'] ?? '');
++		$this->classifier->reopen(scope: $scope, targetId: $this->targetOf(restriction: $restriction));
++
++		return $dissolved;
++	}//end dissolve()
++
++	/**
++	 * Refuse a dissolution from a terminal state, or a direct one where the ground needs ratification first.
++	 *
++	 * @param array<string, mixed> $restriction The restriction.
++	 *
++	 * @return void
++	 *
++	 * @throws ConfidentialityRestrictionRefusedException 409 when it cannot be dissolved now.
++	 */
++	private function assertDissolvable(array $restriction): void {
++		$state = (string)($restriction['lifecycle'] ?? '');
++		if (in_array($state, ['imposed', 'ratified'], true) === false) {
++			throw new ConfidentialityRestrictionRefusedException(message: 'This restriction is already dissolved.', status: Http::STATUS_CONFLICT);
++		}
++
++		$ground = $this->ground(groundId: (string)($restriction['ground'] ?? ''));
++		if ($state === 'imposed' && $this->requiresRatification(ground: $ground) === true) {
++			throw new ConfidentialityRestrictionRefusedException(
++				message: 'The ground of this restriction needs ratification before it can be dissolved.',
++				status: Http::STATUS_CONFLICT
++			);
++		}
++	}//end assertDissolvable()
++
++	/**
++	 * Place a restriction for ratification and record the deadline and the agenda item.
++	 *
++	 * @param array<string, mixed> $restriction The stored restriction.
++	 * @param array<string, mixed> $ground      Its ground.
++	 * @param string               $deadline    A deadline the clerk gave, or ''.
++	 *
++	 * @return array<string, mixed> The restriction with its ratification fields.
++	 */
++	private function scheduleRatification(array $restriction, array $ground, string $deadline): array {
++		$placed = $this->placement->place(
++			restrictionId: (string)$restriction['id'],
++			bodyId: (string)$restriction['imposedByBody'],
++			title: 'Ratification of confidentiality: '.(string)($ground['name'] ?? '')
++		);
++
++		$data = [];
++		if ($placed !== null) {
++			$data['ratificationAgendaItem'] = $placed['agendaItem'];
++			$data['ratificationDeadline']   = $placed['meetingDate'];
++		}
++
++		if (trim($deadline) !== '') {
++			$data['ratificationDeadline'] = trim($deadline);
++		}
++
++		if ($data === []) {
++			return $restriction;
++		}
++
++		return $this->patch(restrictionId: (string)$restriction['id'], data: $data);
++	}//end scheduleRatification()
++
++	/**
++	 * Admin, or the chair scope of the imposing body; otherwise refused.
++	 *
++	 * @param string $bodyId The imposing body's uuid.
++	 *
++	 * @return void
++	 *
++	 * @throws ConfidentialityRestrictionRefusedException 401 without a user, 403 without authority.
++	 */
++	private function assertAuthority(string $bodyId): void {
++		$user = $this->userSession->getUser();
++		if ($user === null) {
++			throw new ConfidentialityRestrictionRefusedException(message: 'Authentication required.', status: Http::STATUS_UNAUTHORIZED);
++		}
++
++		$uid = $user->getUID();
++		if ($this->groupManager->isAdmin($uid) === true) {
++			return;
++		}
++
++		if ($this->scopeGuard->isInBodyScope(userId: $uid, bodyId: $bodyId, scope: 'chair') === false) {
++			throw new ConfidentialityRestrictionRefusedException(
++				message: 'You may not impose, ratify or dissolve restrictions for this body.',
++				status: Http::STATUS_FORBIDDEN
++			);
++		}
++	}//end assertAuthority()
++
++	/**
++	 * The restriction, once the caller's authority over its body is checked.
++	 *
++	 * @param string $restrictionId The restriction's uuid.
++	 *
++	 * @return array<string, mixed>
++	 *
++	 * @throws ConfidentialityRestrictionRefusedException 401, 403 or 404.
++	 */
++	private function authorisedRestriction(string $restrictionId): array {
++		if ($this->userSession->getUser() === null) {
++			throw new ConfidentialityRestrictionRefusedException(message: 'Authentication required.', status: Http::STATUS_UNAUTHORIZED);
++		}
++
++		$restriction = $this->load(id: $restrictionId, schema: self::SCHEMA, rbac: false);
++		if ($restriction === null) {
++			throw new ConfidentialityRestrictionRefusedException(message: 'The restriction does not exist.', status: Http::STATUS_NOT_FOUND);
++		}
++
++		$this->assertAuthority(bodyId: (string)($restriction['imposedByBody'] ?? ''));
++
++		return $restriction;
++	}//end authorisedRestriction()
++
++	/**
++	 * A ground that can be chosen for a new restriction.
++	 *
++	 * @param string $groundId The ground's uuid.
++	 *
++	 * @return array<string, mixed>
++	 *
++	 * @throws ConfidentialityRestrictionRefusedException 422 when there is no such active ground.
++	 */
++	private function activeGround(string $groundId): array {
++		$ground = $this->load(id: $groundId, schema: self::GROUND_SCHEMA, rbac: false);
++		if ($ground === null || ($ground['active'] ?? true) === false) {
++			throw new ConfidentialityRestrictionRefusedException(
++				message: 'Choose an active ground for the restriction.',
++				status: Http::STATUS_UNPROCESSABLE_ENTITY
++			);
++		}
++
++		$ground['id'] = (string)($ground['id'] ?? $groundId);
++
++		return $ground;
++	}//end activeGround()
++
++	/**
++	 * A restriction's ground, active or not; [] when it cannot be found.
++	 *
++	 * @param string $groundId The ground's uuid.
++	 *
++	 * @return array<string, mixed>
++	 */
++	private function ground(string $groundId): array {
++		return ($this->load(id: $groundId, schema: self::GROUND_SCHEMA, rbac: false) ?? []);
++	}//end ground()
++
++	/**
++	 * Whether a ground needs ratification; a ground that cannot be read counts as needing it.
++	 *
++	 * @param array<string, mixed> $ground The ground.
++	 *
++	 * @return bool
++	 */
++	private function requiresRatification(array $ground): bool {
++		if ($ground === []) {
++			return true;
++		}
++
++		return ($ground['requiresRatification'] ?? false) === true;
++	}//end requiresRatification()
++
++	/**
++	 * Refuse a target the caller cannot read.
++	 *
++	 * @param string $scope    The restriction scope.
++	 * @param string $targetId The target's uuid.
++	 *
++	 * @return void
++	 *
++	 * @throws ConfidentialityRestrictionRefusedException 404 when the caller cannot read it.
++	 */
++	private function assertReadableTarget(string $scope, string $targetId): void {
++		$target = null;
++		if ($targetId !== '') {
++			$target = $this->load(id: $targetId, schema: RestrictionTargetClassifier::TARGET_SCHEMAS[$scope], rbac: true);
++		}
++
++		if ($target === null) {
++			throw new ConfidentialityRestrictionRefusedException(message: 'The object to restrict does not exist.', status: Http::STATUS_NOT_FOUND);
++		}
++	}//end assertReadableTarget()
++
++	/**
++	 * Refuse a decision reference that does not resolve.
++	 *
++	 * @param string $decisionId The decision's uuid.
++	 *
++	 * @return void
++	 *
++	 * @throws ConfidentialityRestrictionRefusedException 422 when it does not exist.
++	 */
++	private function assertDecision(string $decisionId): void {
++		if ($decisionId === '' || $this->load(id: $decisionId, schema: 'decision', rbac: false) === null) {
++			throw new ConfidentialityRestrictionRefusedException(
++				message: 'Link the decision this is based on.',
++				status: Http::STATUS_UNPROCESSABLE_ENTITY
++			);
++		}
++	}//end assertDecision()
++
++	/**
++	 * The target uuid a restriction points at.
++	 *
++	 * @param array<string, mixed> $restriction The restriction.
++	 *
++	 * @return string
++	 */
++	private function targetOf(array $restriction): string {
++		$field = (RestrictionTargetClassifier::TARGET_FIELDS[(string)($restriction['scope'] ?? '')] ?? '');
++		if ($field === '') {
++			return '';
++		}
++
++		return (string)($restriction[$field] ?? '');
++	}//end targetOf()
++
++	/**
++	 * Create a restriction as the system, once the caller's authority is checked.
++	 *
++	 * @param array<string, mixed> $data The restriction.
++	 *
++	 * @return array<string, mixed>
++	 */
++	private function create(array $data): array {
++		$entity = $this->objectService->saveObject(
++			object: $data,
++			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: 'decidiq', schema: self::SCHEMA)),
++			_rbac: false,
++			_multitenancy: false
++		);
++
++		return ['id' => (string)$entity->getUuid()] + (new EntityPayloadReader())->payloadOf(entity: $entity) + $data;
++	}//end create()
++
++	/**
++	 * Patch a restriction as the system, carrying every other field.
++	 *
++	 * @param string               $restrictionId The restriction's uuid.
++	 * @param array<string, mixed> $data          The fields to set.
++	 *
++	 * @return array<string, mixed>
++	 */
++	private function patch(string $restrictionId, array $data): array {
++		$entity = $this->objectService->patchObject(
++			patch: new ObjectPatch(
++				objectId: $restrictionId,
++				data: $data,
++				target: new ObjectFindTarget(register: 'decidiq', schema: self::SCHEMA)
++			),
++			_rbac: false,
++			_multitenancy: false
++		);
++
++		return ['id' => $restrictionId] + (new EntityPayloadReader())->payloadOf(entity: $entity);
++	}//end patch()
++
++	/**
++	 * An object's data, or null when it does not exist or cannot be read.
++	 *
++	 * @param string $id     The uuid.
++	 * @param string $schema The schema slug.
++	 * @param bool   $rbac   Whether the caller's read rights apply.
++	 *
++	 * @return array<string, mixed>|null
++	 */
++	private function load(string $id, string $schema, bool $rbac): ?array {
++		if ($id === '') {
++			return null;
++		}
++
++		try {
++			$entity = $this->objectService->find(
++				id: $id,
++				options: new ObjectFindOptions(register: 'decidiq', schema: $schema),
++				_rbac: $rbac,
++				_multitenancy: $rbac
++			);
++		} catch (\Throwable) {
++			return null;
++		}
++
++		if ($entity === null) {
++			return null;
++		}
++
++		return (new EntityPayloadReader())->payloadOf(entity: $entity);
++	}//end load()
++
++	/**
++	 * The current time as ISO 8601.
++	 *
++	 * @return string
++	 */
++	private function now(): string {
++		return $this->time->getDateTime()->format(DateTimeInterface::ATOM);
++	}//end now()
++}//end class
+diff --git a/lib/Service/RatificationAgendaPlacement.php b/lib/Service/RatificationAgendaPlacement.php
+new file mode 100644
+index 000000000..864e55f49
+--- /dev/null
++++ b/lib/Service/RatificationAgendaPlacement.php
+@@ -0,0 +1,195 @@
++<?php
++
++/**
++ * Decidiq Ratification Agenda Placement
++ *
++ * Puts a confidentiality restriction that must be ratified on the agenda of
++ * the confirming body's next scheduled meeting, and tells the deadline that
++ * meeting sets.
++ *
++ * @category Service
++ * @package  OCA\Decidiq\Service
++ *
++ * @author    Conduction Development Team <info@conduction.nl>
++ * @copyright 2026 Conduction B.V.
++ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
++ *
++ * @link https://conduction.nl
++ *
++ * @spec openspec/changes/embargo-geheimhouding/specs/embargo-geheimhouding/spec.md#requirement-req-emb-003-bekrachtiging-workflow-with-fail-visible-overdue-flag
++ *
++ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
++ * SPDX-License-Identifier: EUPL-1.2
++ */
++
++declare(strict_types=1);
++
++namespace OCA\Decidiq\Service;
++
++use DateTimeImmutable;
++use DateTimeInterface;
++use OCA\Decidiq\Listener\EntityPayloadReader;
++use OCA\OpenRegister\Contract\ObjectServiceInterface;
++use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
++use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
++use OCP\AppFramework\Utility\ITimeFactory;
++
++/**
++ * Finds the next meeting of a body and places a ratification item on it.
++ *
++ * @spec openspec/changes/embargo-geheimhouding/specs/embargo-geheimhouding/spec.md#requirement-req-emb-003-bekrachtiging-workflow-with-fail-visible-overdue-flag
++ */
++class RatificationAgendaPlacement {
++
++	/**
++	 * The most meetings or items read for one placement.
++	 *
++	 * @var integer
++	 */
++	private const LIMIT = 500;
++
++	/**
++	 * Constructor.
++	 *
++	 * @param ObjectServiceInterface $objectService Reads meetings and items, writes the item.
++	 * @param ITimeFactory           $time          The clock.
++	 *
++	 * @spec openspec/changes/embargo-geheimhouding/specs/embargo-geheimhouding/spec.md#requirement-req-emb-003-bekrachtiging-workflow-with-fail-visible-overdue-flag
++	 */
++	public function __construct(
++		private readonly ObjectServiceInterface $objectService,
++		private readonly ITimeFactory $time,
++	) {
++	}//end __construct()
++
++	/**
++	 * Place the restriction on the body's next scheduled meeting.
++	 *
++	 * @param string $restrictionId The restriction's uuid.
++	 * @param string $bodyId        The confirming body's uuid.
++	 * @param string $title         The agenda item's title.
++	 *
++	 * @return array{agendaItem: string, meeting: string, meetingDate: string}|null The placement, or null when the body has no scheduled meeting ahead.
++	 *
++	 * @spec openspec/changes/embargo-geheimhouding/specs/embargo-geheimhouding/spec.md#requirement-req-emb-003-bekrachtiging-workflow-with-fail-visible-overdue-flag
++	 */
++	public function place(string $restrictionId, string $bodyId, string $title): ?array {
++		$meeting = $this->nextMeeting(bodyId: $bodyId);
++		if ($meeting === null) {
++			return null;
++		}
++
++		$item = $this->objectService->saveObject(
++			object: [
++				'title' => $title,
++				'itemType' => 'decision',
++				'orderNumber' => ($this->itemCount(meetingId: $meeting['id']) + 1),
++				'meeting' => $meeting['id'],
++				'description' => 'Ratification of confidentiality restriction '.$restrictionId,
++				'confidentiality' => 'confidential',
++				'public' => false,
++			],
++			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: 'decidiq', schema: 'agenda-item')),
++			_rbac: false,
++			_multitenancy: false
++		);
++
++		return [
++			'agendaItem' => (string)$item->getUuid(),
++			'meeting' => $meeting['id'],
++			'meetingDate' => $meeting['date'],
++		];
++	}//end place()
++
++	/**
++	 * The body's earliest scheduled meeting from now on, or null.
++	 *
++	 * @param string $bodyId The body's uuid.
++	 *
++	 * @return array{id: string, date: string}|null
++	 *
++	 * @spec openspec/changes/embargo-geheimhouding/specs/embargo-geheimhouding/spec.md#requirement-req-emb-003-bekrachtiging-workflow-with-fail-visible-overdue-flag
++	 */
++	public function nextMeeting(string $bodyId): ?array {
++		if ($bodyId === '') {
++			return null;
++		}
++
++		$meetings = $this->objectService->findAll(
++			config: [
++				'filters' => ['register' => 'decidiq', 'schema' => 'meeting', 'governanceBody' => $bodyId, 'lifecycle' => 'scheduled'],
++				'limit' => self::LIMIT,
++			],
++			_rbac: false,
++			_multitenancy: false
++		);
++
++		$now  = $this->time->getDateTime()->getTimestamp();
++		$next = null;
++		foreach ($meetings as $meeting) {
++			$candidate = $this->candidate(meeting: $meeting, now: $now);
++			if ($candidate !== null && ($next === null || $candidate['at'] < $next['at'])) {
++				$next = $candidate;
++			}
++		}
++
++		if ($next === null) {
++			return null;
++		}
++
++		return ['id' => $next['id'], 'date' => $next['date']];
++	}//end nextMeeting()
++
++	/**
++	 * A meeting that is still ahead, with its time, or null.
++	 *
++	 * @param object $meeting The meeting entity.
++	 * @param int    $now     The current timestamp.
++	 *
++	 * @return array{id: string, date: string, at: int}|null
++	 */
++	private function candidate(object $meeting, int $now): ?array {
++		$data = (new EntityPayloadReader())->payloadOf(entity: $meeting);
++		$date = (string)($data['scheduledDate'] ?? '');
++		$id   = (string)($data['id'] ?? '');
++		if ($id === '' && method_exists($meeting, 'getUuid') === true) {
++			$id = (string)$meeting->getUuid();
++		}
++
++		if ($date === '' || $id === '') {
++			return null;
++		}
++
++		try {
++			$at = (new DateTimeImmutable($date))->getTimestamp();
++		} catch (\Exception) {
++			return null;
++		}
++
++		if ($at < $now) {
++			return null;
++		}
++
++		return ['id' => $id, 'date' => (new DateTimeImmutable($date))->format(DateTimeInterface::ATOM), 'at' => $at];
++	}//end candidate()
++
++	/**
++	 * How many agenda items a meeting has.
++	 *
++	 * @param string $meetingId The meeting's uuid.
++	 *
++	 * @return int
++	 */
++	private function itemCount(string $meetingId): int {
++		return count(
++			$this->objectService->findAll(
++				config: [
++					'filters' => ['register' => 'decidiq', 'schema' => 'agenda-item', 'meeting' => $meetingId],
++					'limit' => self::LIMIT,
++				],
++				_rbac: false,
++				_multitenancy: false
++			)
++		);
++	}//end itemCount()
++}//end class
+diff --git a/lib/Service/RestrictionTargetClassifier.php b/lib/Service/RestrictionTargetClassifier.php
+new file mode 100644
+index 000000000..290a87201
+--- /dev/null
++++ b/lib/Service/RestrictionTargetClassifier.php
+@@ -0,0 +1,150 @@
++<?php
++
++/**
++ * Decidiq Restriction Target Classifier
++ *
++ * Drives the existing confidentiality classifier of the object a
++ * confidentiality restriction targets: closed while the restriction is
++ * active, back to its non-public default once it is dissolved. It never makes
++ * a target public; publishing stays the publish flow's job.
++ *
++ * @category Service
++ * @package  OCA\Decidiq\Service
++ *
++ * @author    Conduction Development Team <info@conduction.nl>
++ * @copyright 2026 Conduction B.V.
++ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
++ *
++ * @link https://conduction.nl
++ *
++ * @spec openspec/changes/embargo-geheimhouding/specs/embargo-geheimhouding/spec.md#requirement-req-emb-001-geheimhouding-record-with-structured-legal-ground
++ *
++ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
++ * SPDX-License-Identifier: EUPL-1.2
++ */
++
++declare(strict_types=1);
++
++namespace OCA\Decidiq\Service;
++
++use OCA\OpenRegister\Contract\ObjectServiceInterface;
++use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
++use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
++
++/**
++ * Sets and resets the classifier fields of a restriction's target.
++ *
++ * @spec openspec/changes/embargo-geheimhouding/specs/embargo-geheimhouding/spec.md#requirement-req-emb-001-geheimhouding-record-with-structured-legal-ground
++ */
++class RestrictionTargetClassifier {
++
++	/**
++	 * The schema slug of each scope's target.
++	 *
++	 * @var array<string, string>
++	 */
++	public const TARGET_SCHEMAS = [
++		'document' => 'digital-document',
++		'item' => 'agenda-item',
++		'decision' => 'decision',
++	];
++
++	/**
++	 * The restriction field holding each scope's target reference.
++	 *
++	 * @var array<string, string>
++	 */
++	public const TARGET_FIELDS = [
++		'document' => 'targetDocument',
++		'item' => 'targetAgendaItem',
++		'decision' => 'targetDecision',
++	];
++
++	/**
++	 * The fields set on a target while a restriction on it is active.
++	 *
++	 * @var array<string, array<string, mixed>>
++	 */
++	private const CLOSED = [
++		'document' => ['public' => false],
++		'item' => ['confidentiality' => 'confidential', 'public' => false],
++		'decision' => ['isPublished' => 'confidential'],
++	];
++
++	/**
++	 * The fields set on a target once its restriction is dissolved: the
++	 * non-public default, never public. A document keeps `public: false`.
++	 *
++	 * @var array<string, array<string, mixed>>
++	 */
++	private const REOPENED = [
++		'document' => [],
++		'item' => ['confidentiality' => 'internal'],
++		'decision' => ['isPublished' => 'internal'],
++	];
++
++	/**
++	 * Constructor.
++	 *
++	 * @param ObjectServiceInterface $objectService Writes the target's classifier.
++	 *
++	 * @spec openspec/changes/embargo-geheimhouding/specs/embargo-geheimhouding/spec.md#requirement-req-emb-001-geheimhouding-record-with-structured-legal-ground
++	 */
++	public function __construct(
++		private readonly ObjectServiceInterface $objectService,
++	) {
++	}//end __construct()
++
++	/**
++	 * Close the target of an active restriction.
++	 *
++	 * @param string $scope    `document`, `item` or `decision`.
++	 * @param string $targetId The target's uuid.
++	 *
++	 * @return void
++	 *
++	 * @spec openspec/changes/embargo-geheimhouding/specs/embargo-geheimhouding/spec.md#requirement-req-emb-001-geheimhouding-record-with-structured-legal-ground
++	 */
++	public function close(string $scope, string $targetId): void {
++		$this->patch(scope: $scope, targetId: $targetId, fields: (self::CLOSED[$scope] ?? []));
++	}//end close()
++
++	/**
++	 * Return the target of a dissolved restriction to its non-public default.
++	 *
++	 * @param string $scope    `document`, `item` or `decision`.
++	 * @param string $targetId The target's uuid.
++	 *
++	 * @return void
++	 *
++	 * @spec openspec/changes/embargo-geheimhouding/specs/embargo-geheimhouding/spec.md#requirement-req-emb-004-opheffing-workflow-routing-into-the-normal-publication-machinery
++	 */
++	public function reopen(string $scope, string $targetId): void {
++		$this->patch(scope: $scope, targetId: $targetId, fields: (self::REOPENED[$scope] ?? []));
++	}//end reopen()
++
++	/**
++	 * Patch the target's fields as the system, carrying every other field.
++	 *
++	 * @param string               $scope    The restriction scope.
++	 * @param string               $targetId The target's uuid.
++	 * @param array<string, mixed> $fields   The fields to set.
++	 *
++	 * @return void
++	 */
++	private function patch(string $scope, string $targetId, array $fields): void {
++		if ($fields === [] || isset(self::TARGET_SCHEMAS[$scope]) === false || $targetId === '') {
++			return;
++		}
++
++		$this->objectService->patchObject(
++			patch: new ObjectPatch(
++				objectId: $targetId,
++				data: $fields,
++				target: new ObjectFindTarget(register: 'decidiq', schema: self::TARGET_SCHEMAS[$scope])
++			),
++			_rbac: false,
++			_multitenancy: false
++		);
++	}//end patch()
++}//end class
+diff --git a/openapi.json b/openapi.json
+index bda7bbb3e..792bc707f 100644
+--- a/openapi.json
++++ b/openapi.json
+@@ -266,6 +266,10 @@
+         {
+             "name": "theme",
+             "description": "The staff timeline of a theme page."
++        },
++        {
++            "name": "confidentiality-restriction",
++            "description": "Impose, ratify and dissolve confidentiality restrictions."
+         }
+     ],
+     "paths": {
+@@ -464,6 +468,192 @@
+                 }
+             }
+         },
++        "/confidentiality-restrictions/{scope}/{target}": {
++            "post": {
++                "operationId": "confidentiality-restriction-impose",
++                "summary": "Impose a confidentiality restriction",
++                "description": "Impose a confidentiality restriction on a document, an agenda item or a decision, on an active ground. Closes the target's existing classifier; a ground that must be ratified puts the restriction on the imposing body's next scheduled meeting. Access control: per-object guard in ConfidentialityRestrictionService: 401 when anonymous, 403 unless the caller is an administrator or holds the chair scope of the imposing body. Needs a signed-in Nextcloud user.",
++                "tags": [
++                    "confidentiality-restriction"
++                ],
++                "parameters": [
++                    {
++                        "name": "scope",
++                        "in": "path",
++                        "required": true,
++                        "description": "document, item or decision.",
++                        "schema": {
++                            "type": "string"
++                        }
++                    },
++                    {
++                        "name": "target",
++                        "in": "path",
++                        "required": true,
++                        "description": "The uuid of the object to restrict.",
++                        "schema": {
++                            "type": "string"
++                        }
++                    }
++                ],
++                "requestBody": {
++                    "required": true,
++                    "content": {
++                        "application/json": {
++                            "schema": {
++                                "type": "object",
++                                "properties": {
++                                    "ground": {
++                                        "description": "The uuid of the confidentiality ground."
++                                    },
++                                    "imposedBy": {
++                                        "description": "The organ: body, chair or executive-board."
++                                    },
++                                    "imposedByBody": {
++                                        "description": "The uuid of the imposing governance body."
++                                    },
++                                    "ratificationDeadline": {
++                                        "description": "Optional deadline overriding the meeting date."
++                                    }
++                                },
++                                "additionalProperties": false
++                            }
++                        }
++                    }
++                },
++                "responses": {
++                    "201": {
++                        "description": "The request succeeded.",
++                        "headers": {
++                            "API-Version": {
++                                "$ref": "#/components/headers/API-Version"
++                            }
++                        },
++                        "content": {
++                            "application/json": {
++                                "schema": {}
++                            }
++                        }
++                    },
++                    "401": {
++                        "$ref": "#/components/responses/Problem401"
++                    }
++                }
++            }
++        },
++        "/confidentiality-restrictions/{id}/ratify": {
++            "post": {
++                "operationId": "confidentiality-restriction-ratify",
++                "summary": "Ratify a confidentiality restriction",
++                "description": "Record the confirming body's ratification decision; 409 when the ground needs no ratification. Access control: per-object guard in ConfidentialityRestrictionService: 401 when anonymous, 403 unless the caller is an administrator or holds the chair scope of the imposing body. Needs a signed-in Nextcloud user.",
++                "tags": [
++                    "confidentiality-restriction"
++                ],
++                "parameters": [
++                    {
++                        "name": "id",
++                        "in": "path",
++                        "required": true,
++                        "description": "The restriction.",
++                        "schema": {
++                            "type": "string"
++                        }
++                    }
++                ],
++                "requestBody": {
++                    "required": true,
++                    "content": {
++                        "application/json": {
++                            "schema": {
++                                "type": "object",
++                                "properties": {
++                                    "decision": {
++                                        "description": "The uuid of the ratification decision."
++                                    }
++                                },
++                                "additionalProperties": false
++                            }
++                        }
++                    }
++                },
++                "responses": {
++                    "200": {
++                        "description": "The request succeeded.",
++                        "headers": {
++                            "API-Version": {
++                                "$ref": "#/components/headers/API-Version"
++                            }
++                        },
++                        "content": {
++                            "application/json": {
++                                "schema": {}
++                            }
++                        }
++                    },
++                    "401": {
++                        "$ref": "#/components/responses/Problem401"
++                    }
++                }
++            }
++        },
++        "/confidentiality-restrictions/{id}/dissolve": {
++            "post": {
++                "operationId": "confidentiality-restriction-dissolve",
++                "summary": "Dissolve a confidentiality restriction",
++                "description": "Dissolve a restriction on a dissolution decision. The target returns to its non-public default and is never published automatically. Access control: per-object guard in ConfidentialityRestrictionService: 401 when anonymous, 403 unless the caller is an administrator or holds the chair scope of the imposing body. Needs a signed-in Nextcloud user.",
++                "tags": [
++                    "confidentiality-restriction"
++                ],
++                "parameters": [
++                    {
++                        "name": "id",
++                        "in": "path",
++                        "required": true,
++                        "description": "The restriction.",
++                        "schema": {
++                            "type": "string"
++                        }
++                    }
++                ],
++                "requestBody": {
++                    "required": true,
++                    "content": {
++                        "application/json": {
++                            "schema": {
++                                "type": "object",
++                                "properties": {
++                                    "decision": {
++                                        "description": "The uuid of the dissolution decision."
++                                    },
++                                    "conditions": {
++                                        "description": "Optional conditions attached to the dissolution."
++                                    }
++                                },
++                                "additionalProperties": false
++                            }
++                        }
++                    }
++                },
++                "responses": {
++                    "200": {
++                        "description": "The request succeeded.",
++                        "headers": {
++                            "API-Version": {
++                                "$ref": "#/components/headers/API-Version"
++                            }
++                        },
++                        "content": {
++                            "application/json": {
++                                "schema": {}
++                            }
++                        }
++                    },
++                    "401": {
++                        "$ref": "#/components/responses/Problem401"
++                    }
++                }
++            }
++        },
+         "/agenda-items/{id}/paper-summaries": {
+             "post": {
+                 "operationId": "paper-summary-create",
+diff --git a/openspec/changes/embargo-geheimhouding/tasks.md b/openspec/changes/embargo-geheimhouding/tasks.md
+index 8736ecae1..3d55499fc 100644
+--- a/openspec/changes/embargo-geheimhouding/tasks.md
++++ b/openspec/changes/embargo-geheimhouding/tasks.md
+@@ -28,8 +28,9 @@
+   - GIVEN a griffie user WHEN a geheimhouding is imposed on an AgendaItem/Decision/DigitalDocument THEN the record stores ground, imposedBy, imposedAt, scope + target UUID, and the target's EXISTING classifier is driven (`confidentiality: confidential` / `isPublished: "confidential"`), carrying ALL other target fields forward (PUT-semantic save)
+   - GIVEN a user without organ authority WHEN impose/bekrachtig/opheffen is called THEN 403 (per-object guard in the method body)
+   - GIVEN no resolvable ground WHEN impose is called THEN it is refused — no geheimhouding without a structured ground
+-- [ ] Implement
+-- [ ] Test
++- **progress (17 Nov, round 2)**: built as `ConfidentialityRestrictionService::impose()` behind `POST /api/confidentiality-restrictions/{scope}/{target}` (`ConfidentialityRestrictionController`). The caller must be an administrator or hold the chair scope of the imposing body (403 otherwise, 401 anonymous), the ground must be an active `confidentiality-ground` (422), and the target must be readable by the caller (404). The target's existing classifier is patched as the system through `RestrictionTargetClassifier`, carrying every other field: decision `isPublished: confidential`, agenda item `confidentiality: confidential` (and `public: false`), document `public: false`. Covered by `tests/Unit/Service/ConfidentialityRestrictionServiceTest.php` and `tests/Unit/Controller/ConfidentialityRestrictionControllerTest.php`.
++- [x] Implement
++- [x] Test
+ 
+ ### Task 4: Bekrachtiging workflow — agenda placement, besluit link, fail-visible overdue
+ - **spec_ref**: `openspec/changes/embargo-geheimhouding/specs/embargo-geheimhouding/spec.md#requirement-req-emb-003-bekrachtiging-workflow-with-fail-visible-overdue-flag`
+@@ -38,8 +39,9 @@
+   - GIVEN a ground with `requiresBekrachtiging: true` WHEN the geheimhouding is imposed THEN an AgendaItem referencing it is created on the confirming body's next scheduled meeting and `bekrachtigingDeadline` defaults to that meeting's date (manually overridable)
+   - GIVEN a linked bekrachtigingsbesluit Decision WHEN bekrachtig is called THEN state becomes `bekrachtigd` with besluit UUID + timestamp; WHEN the ground needs no bekrachtiging THEN 409
+   - GIVEN a passed deadline without besluit WHEN the register is viewed THEN the geheimhouding is flagged overdue, its state remains `opgelegd`, and the target remains confidential (never auto-lift)
+-- [ ] Implement
+-- [ ] Test
++- **progress (17 Nov, round 2)**: a ground with `requiresRatification` puts the restriction on the imposing body's next `scheduled` meeting (`RatificationAgendaPlacement`: a confidential, non-public `decision` item, last in order) and sets `ratificationDeadline` to that meeting's date unless the clerk gives one. `POST /api/confidentiality-restrictions/{id}/ratify` links the decision and moves `imposed` to `ratified`; 409 when the ground needs no ratification or the state is not `imposed`. Nothing ever lifts automatically; the overdue flag stays the register view's. Covered by `tests/Unit/Service/RatificationAgendaPlacementTest.php` and the service test.
++- [x] Implement
++- [x] Test
+ 
+ ### Task 5: Opheffing workflow — besluit + conditions, eligibility restored, never auto-public
+ - **spec_ref**: `openspec/changes/embargo-geheimhouding/specs/embargo-geheimhouding/spec.md#requirement-req-emb-004-opheffing-workflow-routing-into-the-normal-publication-machinery`
+@@ -47,8 +49,9 @@
+ - **acceptance_criteria**:
+   - GIVEN an opheffingsbesluit by the imposing/confirming body WHEN opheffen is called THEN state becomes `opgeheven` storing besluit UUID, date, and optional conditions, and the target classifier returns to its non-public default (`internal`), audit-trailed
+   - GIVEN an opgeheven geheimhouding WHEN no griffie member has run the publish flow THEN the target appears on no public surface; WHEN the normal publish flow runs THEN it accepts the target
+-- [ ] Implement
+-- [ ] Test
++- **progress (17 Nov, round 2)**: `POST /api/confidentiality-restrictions/{id}/dissolve` records the dissolution decision, the lifting date and optional conditions; a ground that needs ratification cannot be dissolved straight from `imposed` (409, also when its ground cannot be read). The target goes back to its non-public default (decision and item `internal`, a document stays `public: false`), so it is eligible again and only the normal publish flow publishes it.
++- [x] Implement
++- [x] Test
+ 
+ ### Task 6: EmbargoReleaseJob + publication guard
+ - **spec_ref**: `openspec/changes/embargo-geheimhouding/specs/embargo-geheimhouding/spec.md#requirement-req-emb-005-member-facing-embargo-with-scheduled-timed-release`
+diff --git a/tests/Unit/Controller/ConfidentialityRestrictionControllerTest.php b/tests/Unit/Controller/ConfidentialityRestrictionControllerTest.php
+new file mode 100644
+index 000000000..a3407b75c
+--- /dev/null
++++ b/tests/Unit/Controller/ConfidentialityRestrictionControllerTest.php
+@@ -0,0 +1,99 @@
++<?php
++
++/**
++ * Unit tests for ConfidentialityRestrictionController.
++ *
++ * @category Tests
++ * @package  OCA\Decidiq\Tests\Unit\Controller
++ *
++ * @author    Conduction Development Team <info@conduction.nl>
++ * @copyright 2026 Conduction B.V.
++ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
++ *
++ * @link https://conduction.nl
++ *
++ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
++ * SPDX-License-Identifier: EUPL-1.2
++ */
++
++declare(strict_types=1);
++
++namespace OCA\Decidiq\Tests\Unit\Controller;
++
++use OCA\Decidiq\Controller\ConfidentialityRestrictionController;
++use OCA\Decidiq\Exception\ConfidentialityRestrictionRefusedException;
++use OCA\Decidiq\Service\ConfidentialityRestrictionService;
++use OCP\IRequest;
++use PHPUnit\Framework\TestCase;
++
++/**
++ * The controller passes the body through and answers the service's refusals.
++ */
++class ConfidentialityRestrictionControllerTest extends TestCase {
++
++	/**
++	 * A request answering these parameters.
++	 *
++	 * @param array<string, mixed> $params The parameters.
++	 *
++	 * @return IRequest
++	 */
++	private function request(array $params): IRequest {
++		$request = $this->createMock(IRequest::class);
++		$request->method('getParam')->willReturnCallback(fn (string $key, mixed $default=null): mixed => ($params[$key] ?? $default));
++		return $request;
++	}//end request()
++
++	/**
++	 * Impose takes scope and target from the path, the rest from the body, and answers 201 with the restriction.
++	 *
++	 * @return void
++	 */
++	public function testImposeAnswers201WithTheRestriction(): void {
++		$service = $this->createMock(ConfidentialityRestrictionService::class);
++		$service->expects(self::once())->method('impose')
++			->with(['scope' => 'item', 'target' => 'item-1', 'ground' => 'g-1', 'imposedBy' => 'body', 'imposedByBody' => 'body-1', 'ratificationDeadline' => ''])
++			->willReturn(['id' => 'r-1', 'lifecycle' => 'imposed']);
++
++		$controller = new ConfidentialityRestrictionController(
++			request: $this->request(['scope' => 'decision', 'target' => 'dec-9', 'ground' => 'g-1', 'imposedBy' => 'body', 'imposedByBody' => 'body-1', 'other' => 'x']),
++			restrictions: $service
++		);
++		$response = $controller->impose(scope: 'item', target: 'item-1');
++
++		self::assertSame(201, $response->getStatus());
++		self::assertSame(['id' => 'r-1', 'lifecycle' => 'imposed'], $response->getData());
++	}//end testImposeAnswers201WithTheRestriction()
++
++	/**
++	 * A refusal answers its status and message.
++	 *
++	 * @return void
++	 */
++	public function testARefusalAnswersItsStatus(): void {
++		$service = $this->createMock(ConfidentialityRestrictionService::class);
++		$service->method('ratify')->willThrowException(new ConfidentialityRestrictionRefusedException(message: 'No ratification needed.', status: 409));
++
++		$response = (new ConfidentialityRestrictionController(request: $this->request(['decision' => 'd-1']), restrictions: $service))->ratify(id: 'r-1');
++
++		self::assertSame(409, $response->getStatus());
++		self::assertSame(['message' => 'No ratification needed.'], $response->getData());
++	}//end testARefusalAnswersItsStatus()
++
++	/**
++	 * Dissolve passes the decision and the conditions; non-string conditions are dropped.
++	 *
++	 * @return void
++	 */
++	public function testDissolvePassesDecisionAndConditions(): void {
++		$service = $this->createMock(ConfidentialityRestrictionService::class);
++		$service->expects(self::exactly(2))->method('dissolve')
++			->willReturnCallback(fn (string $restrictionId, string $decisionId, ?string $conditions=null): array => [$restrictionId, $decisionId, $conditions]);
++
++		$withText = (new ConfidentialityRestrictionController(request: $this->request(['decision' => 'd-1', 'conditions' => 'after signing']), restrictions: $service))->dissolve(id: 'r-1');
++		$withList = (new ConfidentialityRestrictionController(request: $this->request(['decision' => 'd-1', 'conditions' => ['x']]), restrictions: $service))->dissolve(id: 'r-1');
++
++		self::assertSame(['r-1', 'd-1', 'after signing'], $withText->getData());
++		self::assertSame(['r-1', 'd-1', null], $withList->getData());
++	}//end testDissolvePassesDecisionAndConditions()
++}//end class
+diff --git a/tests/Unit/Service/ConfidentialityRestrictionServiceTest.php b/tests/Unit/Service/ConfidentialityRestrictionServiceTest.php
+new file mode 100644
+index 000000000..77b63bfda
+--- /dev/null
++++ b/tests/Unit/Service/ConfidentialityRestrictionServiceTest.php
+@@ -0,0 +1,420 @@
++<?php
++
++/**
++ * Unit tests for ConfidentialityRestrictionService.
++ *
++ * @category Tests
++ * @package  OCA\Decidiq\Tests\Unit\Service
++ *
++ * @author    Conduction Development Team <info@conduction.nl>
++ * @copyright 2026 Conduction B.V.
++ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
++ *
++ * @link https://conduction.nl
++ *
++ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
++ * SPDX-License-Identifier: EUPL-1.2
++ */
++
++declare(strict_types=1);
++
++namespace OCA\Decidiq\Tests\Unit\Service;
++
++use DateTime;
++use OCA\Decidiq\Exception\ConfidentialityRestrictionRefusedException;
++use OCA\Decidiq\Kernel\Contracts\GovernanceScopeGuardInterface;
++use OCA\Decidiq\Service\ConfidentialityRestrictionService;
++use OCA\Decidiq\Service\RatificationAgendaPlacement;
++use OCA\Decidiq\Service\RestrictionTargetClassifier;
++use OCA\OpenRegister\Contract\ObjectServiceInterface;
++use OCA\OpenRegister\Db\ObjectEntity;
++use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
++use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
++use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
++use OCP\AppFramework\Utility\ITimeFactory;
++use OCP\IGroupManager;
++use OCP\IUser;
++use OCP\IUserSession;
++use PHPUnit\Framework\MockObject\MockObject;
++use PHPUnit\Framework\TestCase;
++
++/**
++ * Impose, ratify and dissolve: authority, ground, classifier and placement.
++ */
++class ConfidentialityRestrictionServiceTest extends TestCase {
++
++	/**
++	 * Objects by uuid, as stored: [schema, payload].
++	 *
++	 * @var array<string, array{0: string, 1: array<string, mixed>}>
++	 */
++	private array $objects = [];
++
++	/**
++	 * The `_rbac` flag of each find, by uuid.
++	 *
++	 * @var array<string, bool>
++	 */
++	private array $findRbac = [];
++
++	/**
++	 * Saved objects: [schema, payload].
++	 *
++	 * @var list<array{0: string, 1: array<string, mixed>}>
++	 */
++	private array $saved = [];
++
++	/**
++	 * Patches: [schema, uuid, data].
++	 *
++	 * @var list<array{0: string, 1: string, 2: array<string, mixed>}>
++	 */
++	private array $patches = [];
++
++	/**
++	 * Whether the caller is an administrator.
++	 *
++	 * @var boolean
++	 */
++	private bool $admin = false;
++
++	/**
++	 * Whether the caller holds the chair scope of the body.
++	 *
++	 * @var boolean
++	 */
++	private bool $chair = true;
++
++	/**
++	 * The caller, or null when anonymous.
++	 *
++	 * @var string|null
++	 */
++	private ?string $uid = 'griffier';
++
++	/**
++	 * The placement double.
++	 *
++	 * @var RatificationAgendaPlacement&MockObject
++	 */
++	private RatificationAgendaPlacement&MockObject $placement;
++
++	/**
++	 * Seed the grounds, the targets and a decision.
++	 *
++	 * @return void
++	 */
++	protected function setUp(): void {
++		$this->objects = [
++			'g-ratify' => ['confidentiality-ground', ['name' => 'Municipal act 87', 'requiresRatification' => true, 'active' => true]],
++			'g-plain' => ['confidentiality-ground', ['name' => 'Information act 5.1', 'requiresRatification' => false, 'active' => true]],
++			'g-off' => ['confidentiality-ground', ['name' => 'Retired', 'requiresRatification' => false, 'active' => false]],
++			'dec-1' => ['decision', ['title' => 'A decision', 'isPublished' => 'internal']],
++			'item-1' => ['agenda-item', ['title' => 'An item', 'confidentiality' => 'internal']],
++			'doc-1' => ['digital-document', ['name' => 'A paper']],
++		];
++		$this->placement = $this->createMock(RatificationAgendaPlacement::class);
++	}//end setUp()
++
++	/**
++	 * The service under test, over the recording object service.
++	 *
++	 * @return ConfidentialityRestrictionService
++	 */
++	private function service(): ConfidentialityRestrictionService {
++		$objects = $this->createMock(ObjectServiceInterface::class);
++		$objects->method('find')->willReturnCallback(
++			function (int|string $id, ?ObjectFindOptions $options=null, bool $_rbac=true, bool $_multitenancy=true): ?ObjectEntity {
++				$this->findRbac[(string)$id] = $_rbac;
++				if (isset($this->objects[(string)$id]) === false || $this->objects[(string)$id][0] !== $options?->schema) {
++					return null;
++				}
++
++				return $this->entity(uuid: (string)$id, payload: $this->objects[(string)$id][1]);
++			}
++		);
++		$objects->method('saveObject')->willReturnCallback(
++			function (array $object, ObjectSaveOptions $options=new ObjectSaveOptions(), bool $_rbac=true, bool $_multitenancy=true): ObjectEntity {
++				$this->saved[] = [(string)$options->target->schema, $object];
++				$uuid = 'r-'.count($this->saved);
++				$this->objects[$uuid] = [(string)$options->target->schema, $object];
++				return $this->entity(uuid: $uuid, payload: $object);
++			}
++		);
++		$objects->method('patchObject')->willReturnCallback(
++			function (ObjectPatch $patch, bool $_rbac=true, bool $_multitenancy=true): ObjectEntity {
++				$this->patches[] = [(string)$patch->target->schema, $patch->objectId, $patch->data];
++				$current = ($this->objects[$patch->objectId][1] ?? []);
++				$this->objects[$patch->objectId][1] = array_merge($current, $patch->data);
++				return $this->entity(uuid: $patch->objectId, payload: $this->objects[$patch->objectId][1]);
++			}
++		);
++
++		$session = $this->createMock(IUserSession::class);
++		$user    = null;
++		if ($this->uid !== null) {
++			$user = $this->createMock(IUser::class);
++			$user->method('getUID')->willReturn($this->uid);
++		}
++
++		$session->method('getUser')->willReturn($user);
++		$groups = $this->createMock(IGroupManager::class);
++		$groups->method('isAdmin')->willReturnCallback(fn (): bool => $this->admin);
++		$scope = $this->createMock(GovernanceScopeGuardInterface::class);
++		$scope->method('isInBodyScope')->willReturnCallback(fn (string $userId, string $bodyId, string $scope): bool => $this->chair && $bodyId === 'body-1' && $scope === 'chair');
++		$time = $this->createMock(ITimeFactory::class);
++		$time->method('getDateTime')->willReturn(new DateTime('2026-11-17T10:00:00+00:00'));
++
++		return new ConfidentialityRestrictionService(
++			objectService: $objects,
++			userSession: $session,
++			groupManager: $groups,
++			scopeGuard: $scope,
++			classifier: new RestrictionTargetClassifier(objectService: $objects),
++			placement: $this->placement,
++			time: $time
++		);
++	}//end service()
++
++	/**
++	 * An entity with a uuid and a payload.
++	 *
++	 * @param string               $uuid    The uuid.
++	 * @param array<string, mixed> $payload The payload.
++	 *
++	 * @return ObjectEntity
++	 */
++	private function entity(string $uuid, array $payload): ObjectEntity {
++		$entity = new ObjectEntity();
++		$entity->setUuid($uuid);
++		$entity->setObject($payload);
++		return $entity;
++	}//end entity()
++
++	/**
++	 * A valid impose body.
++	 *
++	 * @param array<string, string> $overrides Fields to change.
++	 *
++	 * @return array<string, string>
++	 */
++	private function input(array $overrides=[]): array {
++		return $overrides + ['scope' => 'decision', 'target' => 'dec-1', 'ground' => 'g-plain', 'imposedBy' => 'executive-board', 'imposedByBody' => 'body-1'];
++	}//end input()
++
++	/**
++	 * The status a refused call answers.
++	 *
++	 * @param callable $call The call.
++	 *
++	 * @return int
++	 */
++	private function refusal(callable $call): int {
++		try {
++			$call();
++		} catch (ConfidentialityRestrictionRefusedException $e) {
++			return $e->getStatus();
++		}
++
++		self::fail('The call was not refused.');
++	}//end refusal()
++
++	/**
++	 * Imposing on a decision stores the restriction and closes the decision.
++	 *
++	 * @return void
++	 */
++	public function testImposeOnADecisionStoresTheRecordAndClosesTheDecision(): void {
++		$this->placement->expects(self::never())->method('place');
++
++		$restriction = $this->service()->impose(input: $this->input());
++
++		self::assertSame('r-1', $restriction['id']);
++		self::assertSame(
++			['scope' => 'decision', 'targetDecision' => 'dec-1', 'ground' => 'g-plain', 'imposedBy' => 'executive-board', 'imposedByBody' => 'body-1', 'imposedAt' => '2026-11-17T10:00:00+00:00', 'lifecycle' => 'imposed'],
++			$this->saved[0][1]
++		);
++		self::assertSame('confidentiality-restriction', $this->saved[0][0]);
++		self::assertSame([['decision', 'dec-1', ['isPublished' => 'confidential']]], $this->patches);
++		self::assertSame(['title' => 'A decision', 'isPublished' => 'confidential'], $this->objects['dec-1'][1]);
++		self::assertTrue($this->findRbac['dec-1'], 'The target is read with the caller\'s rights.');
++	}//end testImposeOnADecisionStoresTheRecordAndClosesTheDecision()
++
++	/**
++	 * Imposing on an agenda item drives its existing confidentiality enum.
++	 *
++	 * @return void
++	 */
++	public function testImposeOnAnItemSetsItsConfidentialityToConfidential(): void {
++		$this->service()->impose(input: $this->input(['scope' => 'item', 'target' => 'item-1']));
++
++		self::assertSame('item-1', $this->saved[0][1]['targetAgendaItem']);
++		self::assertSame([['agenda-item', 'item-1', ['confidentiality' => 'confidential', 'public' => false]]], $this->patches);
++	}//end testImposeOnAnItemSetsItsConfidentialityToConfidential()
++
++	/**
++	 * A ground that must be ratified puts the restriction on the next agenda, with that meeting's date as deadline.
++	 *
++	 * @return void
++	 */
++	public function testARatifiableGroundIsPlacedOnTheNextAgenda(): void {
++		$this->placement->expects(self::once())->method('place')
++			->with('r-1', 'body-1', 'Ratification of confidentiality: Municipal act 87')
++			->willReturn(['agendaItem' => 'ai-9', 'meeting' => 'm-3', 'meetingDate' => '2026-12-01T19:30:00+00:00']);
++
++		$restriction = $this->service()->impose(input: $this->input(['ground' => 'g-ratify', 'scope' => 'document', 'target' => 'doc-1']));
++
++		self::assertSame('ai-9', $restriction['ratificationAgendaItem']);
++		self::assertSame('2026-12-01T19:30:00+00:00', $restriction['ratificationDeadline']);
++		self::assertSame('imposed', $restriction['lifecycle']);
++		self::assertSame(['digital-document', 'doc-1', ['public' => false]], $this->patches[0]);
++	}//end testARatifiableGroundIsPlacedOnTheNextAgenda()
++
++	/**
++	 * A deadline the clerk gives overrides the meeting date.
++	 *
++	 * @return void
++	 */
++	public function testAGivenDeadlineOverridesTheMeetingDate(): void {
++		$this->placement->method('place')->willReturn(['agendaItem' => 'ai-9', 'meeting' => 'm-3', 'meetingDate' => '2026-12-01T19:30:00+00:00']);
++
++		$restriction = $this->service()->impose(input: $this->input(['ground' => 'g-ratify', 'ratificationDeadline' => '2026-12-15']));
++
++		self::assertSame('2026-12-15', $restriction['ratificationDeadline']);
++	}//end testAGivenDeadlineOverridesTheMeetingDate()
++
++	/**
++	 * Without the chair scope of the body, or anonymous, nothing is written.
++	 *
++	 * @return void
++	 */
++	public function testACallerWithoutAuthorityIsRefusedAndNothingIsWritten(): void {
++		$this->chair = false;
++		self::assertSame(403, $this->refusal(fn () => $this->service()->impose(input: $this->input())));
++
++		$this->uid = null;
++		self::assertSame(401, $this->refusal(fn () => $this->service()->impose(input: $this->input())));
++
++		self::assertSame([], $this->saved);
++		self::assertSame([], $this->patches);
++	}//end testACallerWithoutAuthorityIsRefusedAndNothingIsWritten()
++
++	/**
++	 * An administrator may act for any body.
++	 *
++	 * @return void
++	 */
++	public function testAnAdministratorMayImposeForAnyBody(): void {
++		$this->chair = false;
++		$this->admin = true;
++
++		$restriction = $this->service()->impose(input: $this->input(['imposedByBody' => 'body-2']));
++
++		self::assertSame('body-2', $restriction['imposedByBody']);
++	}//end testAnAdministratorMayImposeForAnyBody()
++
++	/**
++	 * No restriction without an active structured ground, or with an unknown target.
++	 *
++	 * @return void
++	 */
++	public function testAMissingOrInactiveGroundOrTargetIsRefused(): void {
++		self::assertSame(422, $this->refusal(fn () => $this->service()->impose(input: $this->input(['ground' => '']))));
++		self::assertSame(422, $this->refusal(fn () => $this->service()->impose(input: $this->input(['ground' => 'g-off']))));
++		self::assertSame(422, $this->refusal(fn () => $this->service()->impose(input: $this->input(['scope' => 'meeting']))));
++		self::assertSame(404, $this->refusal(fn () => $this->service()->impose(input: $this->input(['target' => 'dec-unknown']))));
++		self::assertSame([], $this->saved);
++	}//end testAMissingOrInactiveGroundOrTargetIsRefused()
++
++	/**
++	 * Ratifying links the decision and moves the lifecycle on.
++	 *
++	 * @return void
++	 */
++	public function testRatifyLinksTheDecisionAndMovesToRatified(): void {
++		$this->objects['r-7'] = ['confidentiality-restriction', ['scope' => 'decision', 'targetDecision' => 'dec-1', 'ground' => 'g-ratify', 'imposedByBody' => 'body-1', 'lifecycle' => 'imposed']];
++
++		$restriction = $this->service()->ratify(restrictionId: 'r-7', decisionId: 'dec-1');
++
++		self::assertSame('ratified', $restriction['lifecycle']);
++		self::assertSame('dec-1', $restriction['ratificationDecision']);
++		self::assertSame('2026-11-17T10:00:00+00:00', $restriction['ratificationDate']);
++	}//end testRatifyLinksTheDecisionAndMovesToRatified()
++
++	/**
++	 * A ground without ratification answers 409; an unknown decision 422; an unknown restriction 404.
++	 *
++	 * @return void
++	 */
++	public function testRatifyRefusals(): void {
++		$this->objects['r-7'] = ['confidentiality-restriction', ['scope' => 'decision', 'targetDecision' => 'dec-1', 'ground' => 'g-plain', 'imposedByBody' => 'body-1', 'lifecycle' => 'imposed']];
++		$this->objects['r-8'] = ['confidentiality-restriction', ['scope' => 'decision', 'targetDecision' => 'dec-1', 'ground' => 'g-ratify', 'imposedByBody' => 'body-1', 'lifecycle' => 'imposed']];
++
++		self::assertSame(409, $this->refusal(fn () => $this->service()->ratify(restrictionId: 'r-7', decisionId: 'dec-1')));
++		self::assertSame(422, $this->refusal(fn () => $this->service()->ratify(restrictionId: 'r-8', decisionId: 'dec-unknown')));
++		self::assertSame(404, $this->refusal(fn () => $this->service()->ratify(restrictionId: 'r-unknown', decisionId: 'dec-1')));
++		self::assertSame([], $this->patches);
++	}//end testRatifyRefusals()
++
++	/**
++	 * Dissolving records the decision and conditions and returns the decision to internal, never public.
++	 *
++	 * @return void
++	 */
++	public function testDissolveRecordsTheDecisionAndReturnsTheTargetToInternal(): void {
++		$this->objects['r-7'] = ['confidentiality-restriction', ['scope' => 'decision', 'targetDecision' => 'dec-1', 'ground' => 'g-ratify', 'imposedByBody' => 'body-1', 'lifecycle' => 'ratified']];
++		$this->objects['dec-1'][1]['isPublished'] = 'confidential';
++
++		$restriction = $this->service()->dissolve(restrictionId: 'r-7', decisionId: 'dec-1', conditions: ' after the contract is signed ');
++
++		self::assertSame('dissolved', $restriction['lifecycle']);
++		self::assertSame('dec-1', $restriction['dissolutionDecision']);
++		self::assertSame('after the contract is signed', $restriction['liftingConditions']);
++		self::assertSame('2026-11-17T10:00:00+00:00', $restriction['liftingDate']);
++		self::assertSame('internal', $this->objects['dec-1'][1]['isPublished']);
++	}//end testDissolveRecordsTheDecisionAndReturnsTheTargetToInternal()
++
++	/**
++	 * Dissolving a document leaves it closed: the publish flow opens it.
++	 *
++	 * @return void
++	 */
++	public function testDissolvingADocumentDoesNotPublishIt(): void {
++		$this->objects['r-7'] = ['confidentiality-restriction', ['scope' => 'document', 'targetDocument' => 'doc-1', 'ground' => 'g-plain', 'imposedByBody' => 'body-1', 'lifecycle' => 'imposed']];
++		$this->objects['doc-1'][1]['public'] = false;
++
++		$this->service()->dissolve(restrictionId: 'r-7', decisionId: 'dec-1');
++
++		self::assertFalse($this->objects['doc-1'][1]['public']);
++		self::assertSame([['confidentiality-restriction', 'r-7', ['lifecycle' => 'dissolved', 'dissolutionDecision' => 'dec-1', 'liftingDate' => '2026-11-17T10:00:00+00:00']]], $this->patches);
++	}//end testDissolvingADocumentDoesNotPublishIt()
++
++	/**
++	 * A ground that needs ratification cannot be dissolved straight from imposed, nor a dissolved one again.
++	 *
++	 * @return void
++	 */
++	public function testDissolveRefusesADirectLiftAndATerminalState(): void {
++		$this->objects['r-7'] = ['confidentiality-restriction', ['scope' => 'decision', 'targetDecision' => 'dec-1', 'ground' => 'g-ratify', 'imposedByBody' => 'body-1', 'lifecycle' => 'imposed']];
++		$this->objects['r-8'] = ['confidentiality-restriction', ['scope' => 'decision', 'targetDecision' => 'dec-1', 'ground' => 'g-plain', 'imposedByBody' => 'body-1', 'lifecycle' => 'dissolved']];
++		$this->objects['r-9'] = ['confidentiality-restriction', ['scope' => 'decision', 'targetDecision' => 'dec-1', 'ground' => 'g-gone', 'imposedByBody' => 'body-1', 'lifecycle' => 'imposed']];
++
++		self::assertSame(409, $this->refusal(fn () => $this->service()->dissolve(restrictionId: 'r-7', decisionId: 'dec-1')));
++		self::assertSame(409, $this->refusal(fn () => $this->service()->dissolve(restrictionId: 'r-8', decisionId: 'dec-1')));
++		self::assertSame(409, $this->refusal(fn () => $this->service()->dissolve(restrictionId: 'r-9', decisionId: 'dec-1')), 'An unreadable ground keeps the restriction.');
++		self::assertSame([], $this->patches);
++	}//end testDissolveRefusesADirectLiftAndATerminalState()
++
++	/**
++	 * Without authority over the imposing body, ratify and dissolve are refused.
++	 *
++	 * @return void
++	 */
++	public function testRatifyAndDissolveCheckTheImposingBody(): void {
++		$this->objects['r-7'] = ['confidentiality-restriction', ['scope' => 'decision', 'targetDecision' => 'dec-1', 'ground' => 'g-ratify', 'imposedByBody' => 'body-2', 'lifecycle' => 'ratified']];
++
++		self::assertSame(403, $this->refusal(fn () => $this->service()->ratify(restrictionId: 'r-7', decisionId: 'dec-1')));
++		self::assertSame(403, $this->refusal(fn () => $this->service()->dissolve(restrictionId: 'r-7', decisionId: 'dec-1')));
++		self::assertSame([], $this->patches);
++	}//end testRatifyAndDissolveCheckTheImposingBody()
++}//end class
+diff --git a/tests/Unit/Service/RatificationAgendaPlacementTest.php b/tests/Unit/Service/RatificationAgendaPlacementTest.php
+new file mode 100644
+index 000000000..2c305f4b3
+--- /dev/null
++++ b/tests/Unit/Service/RatificationAgendaPlacementTest.php
+@@ -0,0 +1,141 @@
++<?php
++
++/**
++ * Unit tests for RatificationAgendaPlacement.
++ *
++ * @category Tests
++ * @package  OCA\Decidiq\Tests\Unit\Service
++ *
++ * @author    Conduction Development Team <info@conduction.nl>
++ * @copyright 2026 Conduction B.V.
++ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
++ *
++ * @link https://conduction.nl
++ *
++ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
++ * SPDX-License-Identifier: EUPL-1.2
++ */
++
++declare(strict_types=1);
++
++namespace OCA\Decidiq\Tests\Unit\Service;
++
++use DateTime;
++use OCA\Decidiq\Service\RatificationAgendaPlacement;
++use OCA\OpenRegister\Contract\ObjectServiceInterface;
++use OCA\OpenRegister\Db\ObjectEntity;
++use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
++use OCP\AppFramework\Utility\ITimeFactory;
++use PHPUnit\Framework\TestCase;
++
++/**
++ * The next scheduled meeting of a body, and the ratification item on it.
++ */
++class RatificationAgendaPlacementTest extends TestCase {
++
++	/**
++	 * Saved objects: [schema, payload, rbac].
++	 *
++	 * @var list<array{0: string, 1: array<string, mixed>, 2: bool}>
++	 */
++	private array $saved = [];
++
++	/**
++	 * The filters of each findAll call.
++	 *
++	 * @var list<array<string, mixed>>
++	 */
++	private array $queries = [];
++
++	/**
++	 * A placement over these meetings, with two items on every meeting.
++	 *
++	 * @param list<array<string, mixed>> $meetings The meetings the query returns.
++	 *
++	 * @return RatificationAgendaPlacement
++	 */
++	private function placement(array $meetings): RatificationAgendaPlacement {
++		$objects = $this->createMock(ObjectServiceInterface::class);
++		$objects->method('findAll')->willReturnCallback(
++			function (array $config=[], bool $_rbac=true, bool $_multitenancy=true) use ($meetings): array {
++				$this->queries[] = $config['filters'];
++				$rows = [['title' => 'One'], ['title' => 'Two']];
++				if ($config['filters']['schema'] === 'meeting') {
++					$rows = $meetings;
++				}
++
++				return array_map(
++					function (array $row): ObjectEntity {
++						$entity = new ObjectEntity();
++						$entity->setObject($row);
++						return $entity;
++					},
++					$rows
++				);
++			}
++		);
++		$objects->method('saveObject')->willReturnCallback(
++			function (array $object, ObjectSaveOptions $options=new ObjectSaveOptions(), bool $_rbac=true, bool $_multitenancy=true): ObjectEntity {
++				$this->saved[] = [(string)$options->target->schema, $object, $_rbac];
++				$entity = new ObjectEntity();
++				$entity->setUuid('ai-new');
++				$entity->setObject($object);
++				return $entity;
++			}
++		);
++
++		$time = $this->createMock(ITimeFactory::class);
++		$time->method('getDateTime')->willReturn(new DateTime('2026-11-17T10:00:00+00:00'));
++
++		return new RatificationAgendaPlacement(objectService: $objects, time: $time);
++	}//end placement()
++
++	/**
++	 * The earliest meeting still ahead wins; past and undated meetings are skipped.
++	 *
++	 * @return void
++	 */
++	public function testTheEarliestMeetingAheadIsChosen(): void {
++		$placement = $this->placement(
++			[
++				['id' => 'm-past', 'scheduledDate' => '2026-11-01T19:30:00+00:00'],
++				['id' => 'm-late', 'scheduledDate' => '2027-01-10T19:30:00+00:00'],
++				['id' => 'm-next', 'scheduledDate' => '2026-12-01T19:30:00+00:00'],
++				['id' => 'm-undated'],
++			]
++		);
++
++		self::assertSame(['id' => 'm-next', 'date' => '2026-12-01T19:30:00+00:00'], $placement->nextMeeting(bodyId: 'body-1'));
++		self::assertSame(['register' => 'decidiq', 'schema' => 'meeting', 'governanceBody' => 'body-1', 'lifecycle' => 'scheduled'], $this->queries[0]);
++	}//end testTheEarliestMeetingAheadIsChosen()
++
++	/**
++	 * The item lands last on that meeting, confidential and not public.
++	 *
++	 * @return void
++	 */
++	public function testThePlacedItemIsLastAndConfidential(): void {
++		$placed = $this->placement([['id' => 'm-next', 'scheduledDate' => '2026-12-01T19:30:00+00:00']])
++			->place(restrictionId: 'r-1', bodyId: 'body-1', title: 'Ratification');
++
++		self::assertSame(['agendaItem' => 'ai-new', 'meeting' => 'm-next', 'meetingDate' => '2026-12-01T19:30:00+00:00'], $placed);
++		self::assertSame('agenda-item', $this->saved[0][0]);
++		self::assertSame(
++			['title' => 'Ratification', 'itemType' => 'decision', 'orderNumber' => 3, 'meeting' => 'm-next', 'description' => 'Ratification of confidentiality restriction r-1', 'confidentiality' => 'confidential', 'public' => false],
++			$this->saved[0][1]
++		);
++	}//end testThePlacedItemIsLastAndConfidential()
++
++	/**
++	 * Without a meeting ahead, or without a body, nothing is placed.
++	 *
++	 * @return void
++	 */
++	public function testNoMeetingAheadPlacesNothing(): void {
++		$placement = $this->placement([['id' => 'm-past', 'scheduledDate' => '2026-01-01']]);
++
++		self::assertNull($placement->place(restrictionId: 'r-1', bodyId: 'body-1', title: 'Ratification'));
++		self::assertNull($placement->nextMeeting(bodyId: ''));
++		self::assertSame([], $this->saved);
++	}//end testNoMeetingAheadPlacesNothing()
++}//end class
+-- 
+2.43.0
+
