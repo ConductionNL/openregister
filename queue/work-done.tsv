@@ -21662,3 +21662,4 @@ build:hermiq:skill-source-identity-schema:b2	already built: task 1 (sourceUrl, s
 build:hermiq:reuse-scheduled-bias-evals:b2	already building: quality/build-reuse-scheduled-bias-evals 	session-20261117T135414-614629b0	2026-11-17T15:32:47Z
 build:hermiq:tools-custom-tools-without-code:b2	already building: quality/build-tools-custom-tools-without-code 	session-20261117T135414-614629b0	2026-11-17T15:32:55Z
 build:hermiq:hermiq-seed-hydra-flows:b2	partial: nothing built, worker context nearly full; all 7 tasks left (vendor the ten hydra/flows definitions, seeding repair step, disabled+ownerless, idempotent, preflight, surface failures, fix 4 flow dialects); needs ConductionNL/hydra flows	session-20261117T134951-9fef99ce	2026-11-17T15:33:12Z
+build:hermiq:tools-agent-workspace-and-installed-tools:b2	already building: quality/build-tools-agent-workspace-and-installed-tools 	session-20261117T135414-614629b0	2026-11-17T15:33:22Z
