@@ -20768,3 +20768,4 @@ verify:stackiq:2028:4f87d399	RED #2028: catalogPanelsGolden.spec.js 3 tests (ico
 verify:learniq:2524:e082152e	GREEN #2524 (7137 tests, 1 inherited failure, 0 new)	session-20261117T123430-0d454909	2026-11-17T13:23:07Z
 verify:shillinq:1958:4334b560	BLOCK (merge drops SeedHelpArticles repair step from info.xml)	session-20261117T124618-509d3d7a	2026-11-17T13:23:21Z
 merge:versioniq:700:887fc017	cloud tree of 3 versioniq PRs: merged=1 red=0 fail=0 skip=1; conflict 1, lint 0, red 0, moved 0, done 0	session-20261117T124634-01105f98	2026-11-17T13:23:46Z
+gap:launchpad:installable-psalm7:1	opened launchpad#1292: platform php 8.3.16 (lock: overrides+hash only); install and unit suite (4621) OK; psalm 7 not run, container PHP 8.3.6 < 8.3.16	session-20261117T114019-426872f0	2026-11-17T13:25:00Z
