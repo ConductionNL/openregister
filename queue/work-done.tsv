@@ -20025,3 +20025,4 @@ cover:launchpad:fb10c50fm88bd:f91e7417	already covered: lib/Service/Connection/ 
 fix:filinq:2095:120f4482	conflict resolved, pushed 99be8379; merge lock held elsewhere, REVERIFY queued	session-20261117T085227-a13dc102	2026-11-17T09:02:55Z
 verify:stackiq:2024:7feac5a7	4 GREEN (2024-2027), 2028 REVERIFY (lockfile conflict within tree)	session-20261117T084023-906a5a8e	2026-11-17T09:03:35Z
 fix:integriq:2650:e2326510	conflict resolved, pushed 92ce810e, REVERIFY queued	session-20261117T085014-6c3c5506	2026-11-17T09:03:48Z
+fix:learniq:2551:2291ead0	fixed: register/app version raised, spec tags added, development merged; new head a86b68dc, REVERIFY queued (merge lock held elsewhere)	session-20261117T085350-7b102f7f	2026-11-17T09:04:00Z
