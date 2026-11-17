@@ -18590,3 +18590,4 @@ verify:versioniq:726:421a4538	CONFLICT #726 (13 files vs development)	session-20
 verify:versioniq:727:5b0591e7	CONFLICT #727 (14 files vs development)	session-20261116T233901-7abe1a78	2026-11-17T00:19:15Z
 fix:shillinq:2086:bda4253e:v4	fixed @spec tags; new head 3e9decdf, REVERIFY (merge lock busy)	session-20261116T233900-0eb43466	2026-11-17T00:19:26Z
 verify:filinq:2086:c846f108	filinq #2086 CONFLICT (info.xml, l10n, filinq_register.json)	session-20261116T233009-d8b07fcf	2026-11-17T00:05:30Z
+verify:versioniq:503:c2757498	CONFLICT: #503 package files conflict with development	session-20261116T233923-d48b13fa	2026-11-17T00:19:50Z
