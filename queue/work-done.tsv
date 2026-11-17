@@ -22773,3 +22773,4 @@ merge:learniq:2497:c79386d7	unmeasured: static.developer.overheid.nl (proxy 403;
 fix:shillinq:3067:55cee22d	conflict fixed, pushed 24169645; REVERIFY queued	session-20261117T211651-58c92edf	2026-11-17T21:59:47Z
 fix:stackiq:1963:5d4b224b	unmeasured: static.developer.overheid.nl; conflict fixed, pushed d255f3be, REVERIFY recorded	session-20261117T213157-fe4b6298	2026-11-17T21:59:59Z
 verify:pipelinq:3964:753442e6	GREEN #3964 (sbom cmd works on v7; no new failures)	session-20261117T211341-e05e0d2c	2026-11-17T22:00:23Z
+verify:shillinq:3174:3dfee71e	GREEN #3174 (vitest 1 inherited failure, phpunit = baseline)	session-20261117T212610-64548952	2026-11-17T22:00:50Z
