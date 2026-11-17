@@ -21731,3 +21731,4 @@ review:filinq:2093:71ddff39	GREEN: unit 7317 OK, vitest/jest pass, access checks
 verify:humaniq:1193:1d3bba27	GREEN 1193, GREEN 1194; tree 4517 OK, baseline 4509 OK	session-20261117T132743-10cec9d3	2026-11-17T15:41:12Z
 build:humaniq:time-non-project-activities:b2	PR #1196: wrote time-non-project-activities.spec.ts (scenarios 1-2, non-admin) and an @e2e exclude for scenario 3; 3.1 left open for the live week	session-20261117T134242-51ff9d48	2026-11-17T15:41:58Z
 review:decidiq:2174:218e06dd	CONFLICT (l10n + municipality profile); code reviewed clean, suite 4854 OK on head	session-20261117T134556-243db2c5	2026-11-17T15:41:56Z
+build:humaniq:hours-leaf-loads-on-a-consuming-page:b2	PR #1197: tests/e2e/hours-leaf-on-a-host-page.spec.ts (book an hour on a dossiq case, total moves, entry carries host type/ref); left 5.3/6.x/7.x (live runs, other repos)	session-20261117T145912-e9f6485a	2026-11-17T15:42:12Z
