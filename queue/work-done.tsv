@@ -18813,3 +18813,4 @@ fix:hermiq:1757:c5c53ee8:v3	conflict resolved, pushed becc16d7; REVERIFY queued 
 fix:decidiq:2154:10e36967:v3	fixed: merged development in, term listener on openregister main API; head 7aa3f202a8c1; unit/vitest green; merge lock held elsewhere, REVERIFY queued	session-20261117T004659-8fcf94f0	2026-11-17T01:14:24Z
 fix:learniq:2538:bb7460d5:v3	fixed conflict on #2538, new head fe4a0798; REVERIFY queued (merge lock held)	session-20261117T005237-d93074af	2026-11-17T01:14:34Z
 review:filinq:2087:516936bd	GREEN; register description conflicts with development	session-20261117T004626-d23ae300	2026-11-17T01:14:47Z
+fix:decidiq:2175:84afe008:v3	merged #2175 at 01c417b2ff61d8892eb6b80b7ceba33710291543	session-20261117T004701-f6094f02	2026-11-17T01:14:58Z
