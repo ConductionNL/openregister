@@ -19602,4 +19602,29 @@ fix:decidiq:2173:6e5001e5	conflict resolved, pushed 0ef71c12; lock busy, REVERIF
 merge:pipelinq:3734:69aca4e2	unmeasured: static.developer.overheid.nl (pushed fix 9499f0c6, APPROVE recorded at it)	session-20261117T063100-87feca45	2026-11-17T06:40:31Z
 fix:filinq:2078:d89b93ac	conflict resolved, pushed 17892e17; merge lock held by another merger, REVERIFY queued	session-20261117T063127-b908dd01	2026-11-17T06:40:47Z
 cover:decidiq:a5f973bbm56fe:6f346b68	deferred: decidiq has 44 open PRs	session-20261117T062917-0fb3a5d4	2026-11-17T06:41:06Z
+gap:decidiq:null-save-sweep:1	deferred: decidiq has 44 open PRs	session-20261117T063048-0c413ea5	2026-11-17T06:41:08Z
 fix:buildiq:1632:3f019d31	conflict resolved, pushed 339aedb1; REVERIFY (merge gate host blocked)	session-20261117T055834-d932e117	2026-11-17T06:41:11Z
+fix:shillinq:2975:3c5425e6	conflict resolved, pushed a5e402e5; suite green; REVERIFY (merge lock held elsewhere)	session-20261117T063118-c67285ab	2026-11-17T06:41:19Z
+fix:filinq:2083:5da73869	fixed CONFLICT, pushed a6bf5b36; unit 7173 OK; REVERIFY queued (merge lock held elsewhere)	session-20261117T061802-b42f2669	2026-11-17T06:41:26Z
+fix:shillinq:3065:38e2ed5d	conflict resolved, pushed 90fba01; REVERIFY (merge lock busy)	session-20261117T061824-01d4fad5	2026-11-17T06:41:47Z
+fix:buildiq:1630:ee26301e	conflict resolved, pushed fd159d9c7; vitest green; REVERIFY recorded	session-20261117T061917-57640b81	2026-11-17T06:42:05Z
+fix:filinq:2121:bc7ef6b2	fixed CONFLICT, pushed 06812be1; merge lock held elsewhere, REVERIFY queued	session-20261117T055905-03eea4d3	2026-11-17T06:42:13Z
+fix:filinq:2099:acbeee3a	conflict resolved, pushed 51b673de; merge lock busy, REVERIFY queued	session-20261117T063846-e8410bfe	2026-11-17T06:42:24Z
+fix:shillinq:3000:210bb637	conflict resolved, pushed a62150be; REVERIFY recorded	session-20261117T060006-72dfb87c	2026-11-17T06:42:36Z
+build:buildiq:forms-multi-product-request:c6	already done: #1650 merged; only T06 (nextcloud-vue widget, outside buildiq) and T07 (e2e) remain unchecked, no code task left	session-20261117T061917-57640b81	2026-11-17T06:42:55Z
+fix:filinq:2116:748154e2	conflict resolved, pushed b8017fb6; merge lock held elsewhere, REVERIFY queued	session-20261117T063046-d755315d	2026-11-17T06:42:54Z
+fix:filinq:2126:2630cf28	conflict resolved, pushed d4e66904; suites green; lock held elsewhere, REVERIFY queued	session-20261117T063032-e9a993e2	2026-11-17T06:43:08Z
+fix:filinq:2079:27589b09	conflict resolved, pushed b23f1426; suite green; REVERIFY queued (merge lock held elsewhere)	session-20261117T063708-4c9ceddc	2026-11-17T06:43:20Z
+fix:decidiq:2224:8ca7020a	blocker fixed (gridstack ^12.6.0), pushed ece2d16c; REVERIFY queued	session-20261117T055853-7ddd3cb3	2026-11-17T06:43:31Z
+fix:filinq:2106:6f753abc	conflict resolved, pushed 9446957e; merge lock held by another merger, REVERIFY queued	session-20261117T063127-b908dd01	2026-11-17T06:43:43Z
+fix:learniq:2534:b906144a	unmeasured: static.developer.overheid.nl (conflict fixed, pushed 6beffdd06, APPROVE recorded, not landed)	session-20261117T055908-62351962	2026-11-17T06:43:54Z
+fix:filinq:2107:17d900b8	conflict resolved, pushed 0bc2f69d; REVERIFY queued	session-20261117T063100-87feca45	2026-11-17T06:44:08Z
+fix:filinq:2085:51341efd	fixed CONFLICT, pushed 7276c4b5; unit 7120 OK; REVERIFY queued (merge lock held elsewhere)	session-20261117T061802-b42f2669	2026-11-17T06:44:34Z
+fix:filinq:2113:36d16af0	conflict resolved, pushed c8fcb4bf; suite green; lock held elsewhere, REVERIFY queued	session-20261117T063032-e9a993e2	2026-11-17T06:44:45Z
+fix:filinq:2095:5342f5c8	conflict resolved, pushed 120f4482; merge lock busy, REVERIFY queued	session-20261117T063846-e8410bfe	2026-11-17T06:44:52Z
+verify:learniq:2579:7fa1ff3b	GREEN #2579 (no new failures)	session-20261117T062935-1aa25581	2026-11-17T06:45:06Z
+fix:filinq:2096:f6e8d167	fixed CONFLICT, pushed fc3e734c; merge lock held elsewhere, REVERIFY queued	session-20261117T055905-03eea4d3	2026-11-17T06:45:17Z
+fix:integriq:3587:ee8b0de8	conflict resolved, pushed da087c42; REVERIFY queued	session-20261117T063100-87feca45	2026-11-17T06:45:25Z
+fix:learniq:2549:7f653fda	fixed floor (unit_interfacing back to 3.36), new head 670bd0cc; merge lock held elsewhere, REVERIFY queued	session-20261117T055844-3d508d2a	2026-11-17T06:45:50Z
+fix:humaniq:1147:240e3169	conflict resolved, pushed 811c369e; REVERIFY queued	session-20261117T055853-7ddd3cb3	2026-11-17T06:45:58Z
+fix:portaliq:2493:dcdeaf2e	fixed 3 RED tests (bearer resolver type); new head 76051e0b, REVERIFY queued	session-20261117T055928-ffb37dd3	2026-11-17T06:46:08Z
