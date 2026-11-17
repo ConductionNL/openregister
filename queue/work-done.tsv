@@ -18796,6 +18796,7 @@ fix:decidiq:2224:6d7dfdcf:v4	fixed conflict, pushed 8ca7020a; merge lock busy, R
 fix:hermiq:1578:c7adfb00:v4	obsolete: development already has llphant 1.0.10; closed #1578	session-20261117T004705-084072e6	2026-11-17T01:11:16Z
 fix:learniq:2523:6236bc6d:v3	conflict resolved, pushed 3742dedc; merge lock held elsewhere, REVERIFY recorded	session-20261117T004626-d23ae300	2026-11-17T01:11:23Z
 fix:hermiq:1740:26c96d0f:v3	conflicts resolved, old-API calls migrated, new head 9e13a128, no new failures; merge lock held elsewhere, REVERIFY queued	session-20261117T004714-8c7f98bc	2026-11-17T01:11:35Z
+fix:hermiq:1751:1d2fbb88:v4	conflict resolved, pushed 36c34dcf; REVERIFY recorded (merge lock held elsewhere)	session-20261117T005242-9db4df06	2026-11-17T01:11:45Z
 fix:filinq:2116:29aaca50:v3	fixed CONFLICT #2116, new head 748154e2; REVERIFY (merge lock held elsewhere)	session-20261117T004616-c7acc36d	2026-11-17T01:11:53Z
 review:filinq:2102:65d3f572	stale	session-20261117T004616-c7acc36d	2026-11-17T01:12:15Z
 build:filinq:specify-capability-rows:c7	partial: pushed 06d3cf49 to PR #2123: task 2.3 now writes versioned (restoreVersion) and anonymised (recordAnonymizationLink) into the document trail, 4 tests, unit 7055 OK; left opened/downloaded/signed (no single filinq hook), activity tab, 3.3 portal accept action, Playwright checks	session-20261113T214350-9762e143	2026-11-17T01:12:26Z
