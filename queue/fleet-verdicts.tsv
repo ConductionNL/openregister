@@ -16027,3 +16027,4 @@ pipelinq	3743	871e47d54f19aad16fb7eeac1f4d38f79b61e6af	CONFLICT	worker-14	confli
 shillinq	1965	38aa9e98d92064163730059c45e299b358346b33	CONFLICT	worker-36	conflicts with development in appinfo/info.xml, tests/fixtures/register-versions.lock.json; suite not run
 shillinq	2983	ccfb277757d8bd739a309823a6d51433be48392f	CONFLICT	worker-26	conflicts with development in appinfo/info.xml, l10n en/nl, GLLineResultStampListener.php, manifest.d.shell.json, manifestActions.js, register-versions.lock.json; tests not run
 shillinq	3052	8bc55c9d539b9d42ccadb4abce35ea1cf308f63a	CONFLICT	worker-03	conflicts with development in appinfo/info.xml, l10n (4), lib/Service/ContractRegistrar.php, tests/fixtures/register-versions.lock.json
+shillinq	3002	6f0aa114932de9971cf99f6d79b20557d3e9215a	CONFLICT	worker-08	conflicts with development in openapi.json only; baseline 12460 tests 0 failures
