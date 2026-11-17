@@ -22706,3 +22706,4 @@ verify:launchpad:1210:e8abd64f	GREEN #1210 (unit 4706 OK; vitest 1 inherited fai
 fix:filinq:2182:af614fee	fixed: curl auth example no longer trips the secret scan; pushed eb336b2b, REVERIFY queued (merge lock held elsewhere)	session-20261117T211329-58121c09	2026-11-17T21:45:42Z
 verify:opencatalogi:2803:182028e8	GREEN #2803: 0 new failures (php 78, js 8 inherited)	session-20261117T213146-716f8927	2026-11-17T21:45:55Z
 verify:keepiq:1900:28274ec8	GREEN #1900 (vitest 3 inherited failures, 0 new)	session-20261117T213124-9bd98896	2026-11-17T21:46:06Z
+verify:opencatalogi:2654:9f9bab83	GREEN 2654: 0 new unit failures	session-20261117T211543-87ab7dd9	2026-11-17T21:46:19Z
