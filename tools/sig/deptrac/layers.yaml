@@ -1,0 +1,47 @@
+# SPDX-FileCopyrightText: 2026 Conduction <info@conduction.nl>
+# SPDX-License-Identifier: EUPL-1.2
+#
+# The layering of lib/ as deptrac rules: an entry point may use services, persistence and shared
+# types; a service may use persistence and shared types; persistence may use shared types; shared
+# types use nothing in lib/. References inside one layer are always allowed.
+#
+# A file's layer is the first directory below lib/ with a layer name, the same rule as
+# tools/sig/analyse_dependencies.py (ROLES): lib/Files/Controller/X.php is an entry point,
+# lib/Controller/Support/X.php is an entry point too. The optional first segment of each pattern
+# is a feature directory (Files, Search, Notifications, ...), never a layer directory.
+# lib/AppInfo (the bootstrap) and directories without a layer name are in no layer.
+#
+# Run through tools/sig/deptrac.sh, which points `paths` at the lib/ to analyse.
+deptrac:
+  paths:
+    - ./lib
+  exclude_files:
+    - '#/lib/Migration/#'
+  layers:
+    - name: EntryPoint
+      collectors:
+        - type: directory
+          value: 'lib/((?!(Controller|Command|Listener|BackgroundJob|Repair|Middleware|Settings|Sections|Dashboard|Capabilities|Service|Db|Event|Exception|Kernel|Contract|Dto|Support|Formats|AppInfo)/)[^/]+/)?(Controller|Command|Listener|BackgroundJob|Repair|Middleware|Settings|Sections|Dashboard|Capabilities)/'
+    - name: Service
+      collectors:
+        - type: directory
+          value: 'lib/((?!(Controller|Command|Listener|BackgroundJob|Repair|Middleware|Settings|Sections|Dashboard|Capabilities|Service|Db|Event|Exception|Kernel|Contract|Dto|Support|Formats|AppInfo)/)[^/]+/)?Service/'
+    - name: Persistence
+      collectors:
+        - type: directory
+          value: 'lib/((?!(Controller|Command|Listener|BackgroundJob|Repair|Middleware|Settings|Sections|Dashboard|Capabilities|Service|Db|Event|Exception|Kernel|Contract|Dto|Support|Formats|AppInfo)/)[^/]+/)?Db/'
+    - name: SharedType
+      collectors:
+        - type: directory
+          value: 'lib/((?!(Controller|Command|Listener|BackgroundJob|Repair|Middleware|Settings|Sections|Dashboard|Capabilities|Service|Db|Event|Exception|Kernel|Contract|Dto|Support|Formats|AppInfo)/)[^/]+/)?(Event|Exception|Kernel|Contract|Dto|Support|Formats)/'
+  ruleset:
+    EntryPoint:
+      - Service
+      - Persistence
+      - SharedType
+    Service:
+      - Persistence
+      - SharedType
+    Persistence:
+      - SharedType
+    SharedType: ~

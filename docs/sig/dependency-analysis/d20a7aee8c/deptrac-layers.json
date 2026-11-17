@@ -1,0 +1,69 @@
+{
+ "by_layers": [
+  {
+   "class_pairs": 238,
+   "examples": [
+    "OCA\\OpenRegister\\Db\\ApplicationMapper -> OCA\\OpenRegister\\Service\\AnonymousEvaluationContext",
+    "OCA\\OpenRegister\\Db\\ApplicationMapper -> OCA\\OpenRegister\\Service\\DeclaredRow",
+    "OCA\\OpenRegister\\Db\\ApplicationMapper -> OCA\\OpenRegister\\Service\\SharedMasterDataServiceInterface"
+   ],
+   "layers": "Persistence -> Service",
+   "occurrences": 530
+  },
+  {
+   "class_pairs": 81,
+   "examples": [
+    "OCA\\OpenRegister\\ContextChat\\Support\\ContentProviderSources -> OCA\\OpenRegister\\Db\\MagicMapperInterface",
+    "OCA\\OpenRegister\\ContextChat\\Support\\ContentProviderSources -> OCA\\OpenRegister\\Db\\RegisterMapperInterface",
+    "OCA\\OpenRegister\\ContextChat\\Support\\ContentProviderSources -> OCA\\OpenRegister\\Db\\SchemaCatalogInterface"
+   ],
+   "layers": "SharedType -> Persistence",
+   "occurrences": 450
+  },
+  {
+   "class_pairs": 12,
+   "examples": [
+    "OCA\\OpenRegister\\Contacts\\Support\\ContactsMenuSources -> OCA\\OpenRegister\\Service\\DeepLinkResolverInterface",
+    "OCA\\OpenRegister\\ContextChat\\Support\\ContentProviderLinks -> OCA\\OpenRegister\\Service\\DeepLinkResolverInterface",
+    "OCA\\OpenRegister\\Dto\\BulkSaveOutcome -> OCA\\OpenRegister\\Service\\Object\\BatchOperationStatusInterface"
+   ],
+   "layers": "SharedType -> Service",
+   "occurrences": 38
+  },
+  {
+   "class_pairs": 21,
+   "examples": [
+    "OCA\\OpenRegister\\Notifications\\Service\\Notification\\NcNotificationSender -> OCA\\OpenRegister\\Notifications\\BackgroundJob\\WebPushDispatchJob",
+    "OCA\\OpenRegister\\Service\\Archival\\DestructionService -> OCA\\OpenRegister\\BackgroundJob\\DestructionExecutionJobInterface",
+    "OCA\\OpenRegister\\Service\\Archival\\LegalHoldService -> OCA\\OpenRegister\\BackgroundJob\\JobHandles"
+   ],
+   "layers": "Service -> EntryPoint",
+   "occurrences": 34
+  },
+  {
+   "class_pairs": 1,
+   "examples": [
+    "OCA\\OpenRegister\\Event\\ObjectEventSubscription -> OCA\\OpenRegister\\Listener\\ListenerClassesInterface"
+   ],
+   "layers": "SharedType -> EntryPoint",
+   "occurrences": 2
+  },
+  {
+   "class_pairs": 1,
+   "examples": [
+    "OCA\\OpenRegister\\Db\\MagicMapper -> OCA\\OpenRegister\\BackgroundJob\\JobHandles"
+   ],
+   "layers": "Persistence -> EntryPoint",
+   "occurrences": 1
+  }
+ ],
+ "class_pairs": 354,
+ "report": {
+  "Allowed": 28906,
+  "Errors": 0,
+  "Skipped violations": 0,
+  "Uncovered": 28285,
+  "Violations": 1055,
+  "Warnings": 0
+ }
+}
