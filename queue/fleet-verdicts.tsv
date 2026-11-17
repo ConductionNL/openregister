@@ -18807,3 +18807,4 @@ opencatalogi	2799	a135b0009b7aefad519be035a3b4003c800e66b2	GREEN	worker-31	phpun
 filinq	2185	3ebe59da9070e5dedafce84112113ed789bcbc83	GREEN	worker-17	unit 7288 tests baseline 0 failures, tree 0 new; docs + env-gated integration probe only (skips without NC_BASE_URL); matches mcp-generation-tools tasks 2.2/2.4
 opencatalogi	2800	7d8c1d3f5f83cdb66a61ba4d82d9107fb1d2fcc0	GREEN	worker-31	phpunit 6389 tests on tree, baseline 6364 with 103 inherited failures/errors, 0 new; vitest 8 inherited mainEntry failures, 0 new
 integriq	3716	43ef05b0d145df97b9e8edf21579396cbcaa3bf4	GREEN	worker-35	unit 9911 tests on 9-PR tree, baseline 5 inherited failures, new failures 0; vitest 2389 passed; tests/spec files only
+integriq	3717	96bd05d41bb90238ee55bcc169ce52de19f4ea10	GREEN	worker-35	unit 9911 tests on 9-PR tree, baseline 5 inherited failures, new failures 0; vitest 2389 passed; tests/spec files only
