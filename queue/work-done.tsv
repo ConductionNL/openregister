@@ -18994,3 +18994,4 @@ fix:thematiq:1365:39f057e7:v4	conflict resolved, pushed 214b4a2d, no failures be
 fix:versioniq:729:a4722246:v3	fixed CONFLICT, pushed e24515d; merge lock held elsewhere, REVERIFY queued	session-20261117T004701-f6094f02	2026-11-17T01:49:57Z
 verify:integriq:3593:e603a8cc	stale	session-20261117T004733-c48c61a2	2026-11-17T01:50:31Z
 fix:larpinq:1043:b1b57382:v3	conflict resolved, pushed 09d10d17; REVERIFY queued (merge lock held)	session-20261117T004705-084072e6	2026-11-17T01:50:33Z
+fix:opencatalogi:2706:bad7090e:v3	conflict resolved + 3 review blockers fixed (pushed cbea0d0c); land: merged=0 red=1 (GATE RED floor: unit_size 4.66->4.64, unit_interfacing 4.79->4.71)	session-20261117T004133-c974afac	2026-11-17T01:51:11Z
