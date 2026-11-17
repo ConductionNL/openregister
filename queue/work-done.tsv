@@ -19159,3 +19159,4 @@ review:versioniq:716:11823d08	GREEN: unit 2215, only the 2 failures inherited fr
 review:larpinq:1059:064564f8	GREEN: docs only; PHPUnit 1120 OK	session-20261117T020257-fb35dc98	2026-11-17T02:29:09Z
 review:shillinq:3009:042aebda	GREEN: PHP 12527 OK, vitest only inherited dunningNextRun failure	session-20261117T020227-9e68ed24	2026-11-17T02:29:19Z
 review:shillinq:3007:097d4460	GREEN: unit 12537 OK, vitest 16 OK, phpstan clean	session-20261117T021137-dd174ad0	2026-11-17T02:29:32Z
+review:opencatalogi:2683:783543f7	GREEN: no new unit failures, phpstan clean, merges clean	session-20261117T020212-3e3772fe	2026-11-17T02:29:46Z
