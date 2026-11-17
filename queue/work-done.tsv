@@ -22394,3 +22394,5 @@ verify:stackiq:2060:089ca175	GREEN 2060; vitest no new failures (1 inherited)	se
 verify:shillinq:3178:7c8cd864	GREEN 3178; no new failures	session-20261117T185927-e9838dc9	2026-11-17T20:01:30Z
 verify:shillinq:3163:00685f93	GREEN 3163 (12796 tests, 0 new failures)	session-20261117T190316-ad3f71cf	2026-11-17T20:01:51Z
 verify:versioniq:798:91fdceff	GREEN	session-20261117T190242-7c82bed8	2026-11-17T20:02:03Z
+verify:versioniq:797:c57c4855	GREEN 797 (e2e + fixture only)	session-20261117T185359-d68263c5	2026-11-17T20:02:16Z
+verify:stackiq:2063:2062779c	GREEN #2063 (4081 tests, no new failures)	session-20261117T190320-1db054ae	2026-11-17T20:02:26Z
