@@ -1446,3 +1446,4 @@ buildiq	1710	9b6b9e95f81917400acb306e4b2fae708797b460	APPROVE	worker-16	Standard
 buildiq	1711	c046bf16a2d185fd3a110f47e78450a28c23551c	APPROVE	worker-16	Thorough; no blockers; tests only for version merge runner and version state; no concerns
 buildiq	1712	c5e1d2176bcdc55e8a11d05009e04345b81c4bc1	APPROVE	worker-16	Quick; no blockers; adds missing uses tags to two contract tests; no concerns
 buildiq	1713	2b78ac989bb71c96a61611961bdc826e1fb7af1f	APPROVE	worker-16	Quick; no blockers; ticks the openspec validate task; no concerns
+buildiq	1715	628d9e25f091953535ee8b7bb259bf0baf012802	APPROVE	worker-16	Standard; no blockers; e2e spec written (base URL from env, non-admin empty storage state), task left unticked until run; no concerns
