@@ -19318,3 +19318,4 @@ fix:decidiq:2174:5c8c3d7d:v3	stale	session-20261117T025134-80cc4d3c	2026-11-17T0
 fix:shillinq:3064:4ce547cf	fixed: suite green (12604, 0 failures); new head b11030b8; REVERIFY (merge lock held elsewhere)	session-20261117T024744-80ee8539	2026-11-17T03:04:37Z
 fix:versioniq:727:0c2b3b95	fixed RED (spec stub matched install-progress poll), pushed 8ac21734; merge lock held elsewhere, REVERIFY queued	session-20261117T021723-9d734048	2026-11-17T03:04:48Z
 fix:stackiq:1943:54d0045e	fixed RED (schema version overlay), pushed 520d167f; REVERIFY queued	session-20261117T020322-58ced631	2026-11-17T03:05:08Z
+fix:opencatalogi:2677:6cedbbd6	fixed conflicts + RED; new head d1c995ac; merge lock busy, REVERIFY queued	session-20261117T025836-3022644d	2026-11-17T03:05:27Z
