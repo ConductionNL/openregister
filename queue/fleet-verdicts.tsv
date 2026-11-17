@@ -17741,3 +17741,4 @@ humaniq	1173	1e65a9ce9e0fb1518845eb342d20252eeb18c588	CONFLICT	worker-53	conflic
 buildiq	1651	144da0d4ad3dcd94c77c04f02d6f4c184ab11331	CONFLICT	worker-01:merge	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
 buildiq	1654	9db550c569905bfc2ce63f9e8a75c28bc3ab443a	CONFLICT	worker-01:merge	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
 humaniq	1183	b62daa18b36027b5cecb05e1cc2a87f95cda889e	GREEN	worker-53	phpunit 4478 OK on development 29e668ae + #1183 (baseline 4477 OK), no new failures; HR step guard now humaniq-hr or admin as the task decision asks, refusals for others unchanged
+filinq	2078	202f24a1b95f62735c3fe4b4c5dd5c27f24c5040	GREEN	worker-49:review	build of generate-draft-and-attended-edit matches its spec (owner-only draft access fails closed, server-side sanitise on finish, 409 plain-language refusal); unit 7163 ok vs baseline 7121, vitest 849/849, phpstan clean on changed lib
