@@ -4914,3 +4914,4 @@ humaniq	1148	9a856f88c9dce85c98afbf612a33d936cb7629bc	MERGED	worker-48	GATE OK s
 dossiq	3954	da335f80b5145f0ab6614441d0df7733bb21f378	MERGED	worker-31	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.40
 dossiq	4887	58a39c9498213c22f563f483de985843f35b02fd	SKIP	worker-31	no APPROVE review at this head
 dossiq	5396	3792d79590f43efa92041c214bc2a87db4ad7fac	MERGED	worker-31	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.40
+versioniq	716	11823d08643bb31a001dc6515bdb823fbc1f93bb	RED	worker-36	GATE RED floor: overall: 5.07 -> 5.05; unit_complexity: 4.79 -> 4.75; unit_interfacing: 4.59 -> 4.56
