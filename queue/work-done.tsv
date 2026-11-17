@@ -20722,3 +20722,4 @@ fix:integriq:3582:a26852d2	fixed floor (unit_size 3.58, unit_complexity 3.90 hel
 fix:learniq:2551:7d11c48b	conflict resolved, pushed f185e0a0; merge lock held elsewhere, REVERIFY queued	session-20261117T124010-7774729d	2026-11-17T13:11:16Z
 verify:thematiq:1715:266d57c4	GREEN #1715 (openapi docs; 2900 tests, 1 inherited)	session-20261117T124634-577ba792	2026-11-17T13:11:38Z
 verify:portaliq:658:e8518393	GREEN #658 (empty diff vs development)	session-20261117T125719-a348e067	2026-11-17T13:11:55Z
+verify:portaliq:2558:062b0853	GREEN portaliq#2558 (version-only bump; 0 new failures, 16 inherited errors)	session-20261117T124709-e3830444	2026-11-17T13:12:17Z
