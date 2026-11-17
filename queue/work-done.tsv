@@ -20371,3 +20371,4 @@ fix:shillinq:3080:f7c6e71c	conflict resolved, pushed 7700441; lock held elsewher
 fix:stackiq:2025:820ddd39	sbom regenerated, pushed 93f4ebf0; merge lock busy, REVERIFY recorded	session-20261117T112147-4fea037e	2026-11-17T11:35:05Z
 fix:dossiq:6639:368fd436	fixed sbom; new head ced2397f, REVERIFY queued (merge lock held elsewhere)	session-20261117T113223-317e505a	2026-11-17T11:35:15Z
 fix:dossiq:6638:89db4fd0	sbom regenerated, pushed 501374d6; merge lock held elsewhere, REVERIFY	session-20261117T112441-e34e64a5	2026-11-17T11:35:24Z
+fix:shillinq:1958:cf3cb19a	conflict resolved; new head 6c4f9eed, REVERIFY queued	session-20261117T111554-d575c862	2026-11-17T11:35:43Z
