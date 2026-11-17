@@ -19579,3 +19579,4 @@ shillinq	3168	54788ddd120149a5ebb608b316c	REVERIFY	worker-18:merge	verdict sha i
 shillinq	3177	5532f690d1505daaad5262061a155d718ece151d	GREEN	worker-52	unit 12796->12821 run, baseline 0, 0 new; vitest 3099 run, 1 failure inherited (dunningNextRun, red on development); build of reporting-cash-flow-statement, existing statement figures unchanged
 opencatalogi	2766	ba8f0a6796e491568169ff7ef6f413125355a409	CONFLICT	merge3	merges clean on development alone; files: openapi.json tests/Unit/Service/SettingsObjectTypeConfigurationTest.php 
 stackiq	1946	1a1d2ce9e03cc8c6717b5d5aef326ce87780ea98	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+shillinq	3064	c475704891294ea0c4506f377ac133a4624eb1a4	RED	worker-32:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
