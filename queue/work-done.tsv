@@ -18772,3 +18772,4 @@ fix:shillinq:3007:f7e43c4d:v3	conflict resolved, pushed 097d4460; REVERIFY (merg
 fix:decidiq:2195:81009fc4:v3	conflict resolved (manifest + spec, both sides kept); vitest green; pushed ebc6d9d5; REVERIFY queued (merge lock held elsewhere)	session-20261117T004651-e86f3253	2026-11-17T01:07:17Z
 fix:shillinq:3004:effacbb9:v4	fixed CONFLICT, pushed cd7ea57d6a32b96a3917ca2ba0ce42f9f232af9e; merge lock busy, REVERIFY queued	session-20261117T005217-ad04a5d2	2026-11-17T01:07:26Z
 fix:filinq:2105:2929a64c:v4	conflict resolved, pushed 7e8ef21d; REVERIFY queued (merge lock held elsewhere)	session-20261117T004656-5d4b3c4e	2026-11-17T01:07:36Z
+fix:learniq:2577:5bf20572	RED was inherited (he.json check fails on plain development); merged development in, pushed d1fcf9c0; lock held elsewhere, REVERIFY queued	session-20261117T004735-ba0cb916	2026-11-17T01:07:44Z
