@@ -5222,6 +5222,7 @@ launchpad	1212	e9a6da1780c304bd55ae5e14d3e6ab69531f664d	MERGED	worker-39	GATE OK
 filinq	2124	e25a43e2a9c0c32a978b66ad3b8e6a646abb09d3	SKIP	worker-35	no APPROVE review at this head
 learniq	2536	8a991bd13dec308f5b6a1faadd811b3778e9c434	RED	worker-02	GATE RED floor: unit_interfacing: 3.61 -> 3.59
 learniq	2536	f4b1d98ed85d00ee5f87366cc8ab3076a0ad6741	MERGED	worker-02	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 4.09
+dossiq	6634	9e5c5ebab145ab07294e3e31eab79f95f0236793	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 larpinq	1043	aaa4e47172f5197d969e7c92c792daf70fe80b5b	MERGED	worker-45	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.25
 decidiq	2171	6b39135c61bbc1d3689590e259b0ae222a8a08e2	SKIP	worker-44	no APPROVE review at this head
 launchpad	1099	68a939c50526992d016a472eb33b00e7be785ac0	MERGED	worker-38	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.65 holds at 3.78
@@ -5234,6 +5235,7 @@ hermiq	1826	cc8a06e5bb5bd2097691c1c23087b7d422e678c6	MERGED	worker-33	GATE OK sb
 integriq	3595	68404f18be7b1140d16aca29d59cc645db59b8d3	MERGED	worker-13	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.60
 integriq	3613	83ce7d7b340c38300b2ba8935c9dc56770b53196	RED	worker-13	GATE RED checker floor: adrvalidator: pass -> fail; adrvalidator stars: 5 -> 1; score: 100 -> 93
 integriq	3628	0e0f7320e9fcaed6c032c5f90f1a5c14957d626e	MERGED	worker-13	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.60
+dossiq	6634	9e5c5ebab145ab07294e3e31eab79f95f0236793	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 stackiq	2023	aca220c5205e97f4e4f826304901ed492b5331c7	MERGED	worker-11	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.13
 shillinq	2998	3d7ad4c71842a350651ebb0687a5fb8232ea7c99	MERGED	worker-46	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.00
 versioniq	709	9a092579fe35082f7bf63ebcda2b2bc537645326	RED	worker-37	GATE RED floor: unit_interfacing: 4.63 -> 4.61
@@ -5246,6 +5248,7 @@ hermiq	1719	0b2ffe7a03dc76e2f3e1b383208fc4361e4e8611	RED	worker-33	GATE RED floo
 hermiq	1762	c10940e1d8ed054b47d71beb2a2294a5d7f87f01	MERGED	worker-33	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.77 holds at 3.78
 shillinq	2086	e8381a8cadeb487f0fddd7340467bc2cebb4ca51	MERGED	worker-46	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.00
 stackiq	1943	61ef25c28535107a6191128eea1d7ee611b28ce7	MERGED	worker-28	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.10
+dossiq	6634	9e5c5ebab145ab07294e3e31eab79f95f0236793	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 decidiq	2263	1961fa6f38aead9bff6396771efeac3486344c64	MERGED	worker-07	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.78 holds at 3.80
 hermiq	1833	6a516e7878f5c1cbad3111ca5bb12c4b1203e40b	RED	worker-33	GATE RED checker floor: fivelayer: pass -> warn; fivelayer stars: 5 -> 3; score: 100 -> 97
 launchpad	1261	07612654d13d0593a4c978e6cead9d1ca9bc77ea	SKIP	worker-24	no APPROVE review at this head
