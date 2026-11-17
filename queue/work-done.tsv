@@ -21455,4 +21455,5 @@ build:filinq:zgw-document-bridge:b2	already building: quality/build-zgw-document
 build:filinq:work-document-notes:b2	already building: quality/build-work-document-notes exists	session-20261117T135414-614629b0	2026-11-17T15:07:21Z
 build:filinq:templates-house-style-from-thematiq:b2	already building: quality/build-templates-house-style-from-thematiq exists (3 builds on development); open is a live two-token-set run, a TTF/OTF font from thematiq (decision there) and a docs screenshot	session-20261117T135029-424a7669	2026-11-17T15:07:30Z
 build:learniq:attendance-roll-call:b2	nothing to build: only 1.7 (live check) is unchecked	session-20261117T123418-5f98fc94	2026-11-17T15:07:52Z
+build:filinq:woo-metadata-worklist:b2	already done: code tasks on development (898cbd6b); left screenshots (live) and the coverage measurement (3.2)	session-20261117T124637-3e909745	2026-11-17T15:08:13Z
 build:filinq:template-library-leaf:b2	already building: quality/build-template-library-leaf exists (3 builds on development); open: e2e 3.2, docs screenshots 3.3, dossiq hand-over 3.4	session-20261117T135029-424a7669	2026-11-17T15:08:15Z
