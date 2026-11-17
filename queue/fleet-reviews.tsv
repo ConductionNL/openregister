@@ -1301,3 +1301,4 @@ shillinq	3167	f264bb7ba79a07690b1dee49ba132418f3d71db0	APPROVE	worker-39	Quick; 
 buildiq	1716	f3a173de86c01c3d3ee317b89282af504b62139b	APPROVE	worker-31	Quick; none; tasks.md tick only
 buildiq	1717	e829fe43c9a5cef45899fc7b358e8344c41b504b	APPROVE	worker-31	Quick; none; spec text moved into a scenario and a task tick, no code
 humaniq	1194	a639d953b334d494ceed96e96b07df6e04fa15a4	APPROVE	worker-37	Quick; no blockers; spec-only @e2e exclude notes
+hermiq	1841	0311fb9ceefe4857e14433ee2cec82848d01e244	APPROVE	worker-09	Quick; no blockers; Newman folder added, fixtures exist, valid JSON, not run live
