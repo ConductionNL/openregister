@@ -22272,3 +22272,4 @@ verify:humaniq:1192:3ca961bd	GREEN: 1192 (+25 tests, no new failures)	session-20
 verify:larpinq:1049:eb8c9f5f	GREEN larpinq#1049 (php 1260 OK, vitest 749 OK)	session-20261117T190302-4e3d4569	2026-11-17T19:36:45Z
 verify:keepiq:1900:a6ccac84	GREEN 1900 alone	session-20261117T185927-e9838dc9	2026-11-17T19:36:57Z
 verify:learniq:2594:259feb56	GREEN 2594; e2e/tasks only, unit green	session-20261117T185419-c23c5946	2026-11-17T19:37:06Z
+verify:integriq:3729:0be54156	3729 GREEN	session-20261117T185710-40ec955c	2026-11-17T19:37:19Z
