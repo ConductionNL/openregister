@@ -19186,6 +19186,7 @@ review:launchpad:763:b75dc631	GREEN: vitest 5 bump, 2652/2652 tests, coverage wo
 review:versioniq:727:0c2b3b95	RED: 3 vitest failures in App.rangeAndSkip.spec.ts after merging development	session-20261117T004644-d9c68b8f	2026-11-17T02:33:57Z
 review:learniq:2486:384efb33	GREEN; conflicts with development in golden PortalManifests.json	session-20261117T020358-1a8df617	2026-11-17T02:34:12Z
 review:versioniq:700:67179d1c	GREEN; SbomControllerTest needs the server (env-only errors)	session-20261117T004133-c974afac	2026-11-17T02:34:26Z
+verify:shillinq:3048:e020f449	stale	feeder	2026-11-17T02:17:46Z
 fix:shillinq:3002:64f4bc01	fixed AppIdentity import, suite green; new head 0d472796, REVERIFY (merge lock busy)	session-20261117T021616-30ab3d21	2026-11-17T02:34:46Z
 review:stackiq:1928:fccc382c	GREEN: per spec, suite green, merges clean	session-20261117T020537-9e43f62e	2026-11-17T02:34:58Z
 review:stackiq:1942:200de863	BLOCK: conflicts, SPDX headers stripped from l10n js, repair step without version bump	session-20261117T020210-893a9346	2026-11-17T02:35:11Z
@@ -19355,5 +19356,7 @@ fix:learniq:2524:03298d02	fixed RED, new head 77f1c40bb5a4740d9d3f0343dd2024d38c
 fix:larpinq:1045:8cf728ec	gate-68 fixed at a40d7b26, APPROVE; not merged: merge gate RED testcoderatio 75.6->73.6% (3->2 stars)	session-20261117T025357-44509a8b	2026-11-17T03:14:31Z
 merge:integriq:3675:189bdd6e	cloud tree of 1 integriq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T024200-4ed5487e	2026-11-17T03:15:22Z
 build4:openregister:scoped-api-tokens:c7	partial: PR #10514 head 9e2df373 - merged main (27 commits, clean; Rbac 1308, Db 5845, Middleware 259, Object 4822, Controller 10274 all OK). Nothing buildable left without a decision or an instance: 3.1 needs a decision on which token the account page manages (app password vs own api_tokens) and a Consumer admin view; 4.1, 4.2b and W.1 need a running instance; C40.7 is a handover	session-20261113T214350-9762e143	2026-11-17T03:15:15Z
+fix:integriq:3678:31eb3920	stale	feeder	2026-11-17T02:57:26Z
+fix:integriq:3678:31eb3920	stale	feeder	2026-11-17T02:57:26Z
 fix:stackiq:1939:4b930687	merged #1939 at 6f56332279ddf2bc015019d39d801104e240e38d	session-20261117T020319-9833efe0	2026-11-17T03:16:14Z
 merge:decidiq:2148:5f43974d	cloud tree of 9 decidiq PRs: merged=2 red=2 fail=0 skip=1; conflict 3, lint 0, red 0, moved 1, done 0	session-20261117T025203-5b6184a8	2026-11-17T03:18:04Z
