@@ -20003,3 +20003,4 @@ fix:filinq:2078:17892e17	conflict resolved, pushed 202f24a1; merge lock held els
 fix:filinq:2090:0bf796a1	conflict resolved, pushed ca7adf6f; REVERIFY (merge lock held elsewhere)	session-20261117T085454-4852403b	2026-11-17T08:57:52Z
 review:shillinq:3067:8205f49a	GREEN: suite 12629 tests 0 failures	session-20261117T084807-e8ebf79d	2026-11-17T08:58:11Z
 cover:stackiq:9ac19b3am039e:4d89782c	deferred: stackiq has 43 open PRs	session-20261117T085406-d0ed30f2	2026-11-17T08:58:24Z
+fix:integriq:3564:6d065ca0	fixed, pushed e2164fe1; REVERIFY queued	session-20261117T081138-8732f141	2026-11-17T08:58:46Z
