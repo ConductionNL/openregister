@@ -17027,3 +17027,8 @@ decidiq	2174	bd55e20ccf3b43d353f25dbdfa06559d22c7dc93	CONFLICT	worker-46:merge	c
 decidiq	2190	4d90c497473996365e0cb4eee1b84062d285255d	CONFLICT	worker-46:merge	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Settings/profiles/municipality.json src/manifest.json tests/vitest/simpleDecisionPage.spec.js 
 decidiq	2195	ebc6d9d54e01c779de13acd4b3b	REVERIFY	worker-46:merge	verdict sha is not the head: head is ebc6d9d54e01c779de13acd4b3b086e4f83c1306
 launchpad	1230	accf03ed658d829b8ce2609822cd42c4c137b5b7	RED	merge3:merge-gate	GATE RED floor: overall: 4.61 -> 4.59; unit_complexity: 4.76 -> 4.68; unit_interfacing: 3.83 -> 3.77; module_coupling: 4.75 -> 4.73
+launchpad	1217	faab5f5c332a8213a5160890b6c7b52d8f7ee33e	CONFLICT	merge3	conflicts with development; files: appinfo/info.xml 
+launchpad	1218	d81a4a576b0cb12b3e8f775e4549f745a0ca8730	CONFLICT	merge3	conflicts with development; files: lib/Controller/AdminController.php lib/Controller/PageController.php lib/Db/AdminSetting.php lib/Db/AdminSettingKey.php lib/Service/AdminSettingsService.php lib/Service/InitialStateBuilder.php src/uti
+launchpad	1219	08b864a2c7a278c8fd55b5e708b1671e29c0dbb4	CONFLICT	merge3	conflicts with development; files: l10n/en.js l10n/en.json 
+launchpad	1227	a4a6474a31a40420e8fd5be44ae1a91c495de6c2	CONFLICT	merge3	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+launchpad	1239	1b2f911c9a030db31f0aba03ecab18b8b02c2482	CONFLICT	merge3	conflicts with development; files: package-lock.json package.json 
