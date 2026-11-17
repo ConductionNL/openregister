@@ -19515,3 +19515,4 @@ review:portaliq:2493:dcdeaf2e	RED; 3 new failures after merging development (Sig
 review:portaliq:2494:f4dc3626	GREEN: unit 6292 (16 inherited errors, as baseline), spec 5/5	session-20261117T060006-72dfb87c	2026-11-17T06:18:47Z
 review:portaliq:2450:8e4653e1	GREEN (test-file conflicts noted)	session-20261117T042937-c444c626	2026-11-17T06:19:13Z
 review:launchpad:819:ff71d979	GREEN: unit 4563 OK; phpmd 3 reports 81 vs 68 on a ruleset already red on development	session-20261117T055928-ffb37dd3	2026-11-17T06:19:34Z
+verify:learniq:2577:b9c231f2	GREEN 2577; REVERIFY 2579 (conflicts only with 2577)	session-20261117T055908-62351962	2026-11-17T06:20:07Z
