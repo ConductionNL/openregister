@@ -22859,3 +22859,4 @@ review:openregister:10628:53413768	APPROVE: workflow-only action bump, inputs co
 verify:planninq:1243:6a5a7f34	GREEN #1243 (unit 1281/0 fail, baseline 1253/0)	session-20261117T223214-1034c7a7	2026-11-17T22:34:33Z
 review:stackiq:1963:d255f3be	GREEN: 0 new failures (phpunit, vitest)	session-20261117T222048-3a9e0119	2026-11-17T22:34:53Z
 merge:buildiq:1643:ea4282d8	unmeasured: static.developer.overheid.nl (8 PRs reviewed APPROVE, tree 3736 tests 0 new failures; 1648 conflict-only-with-tree -> REVERIFY)	session-20261117T221508-a8f16e82	2026-11-17T22:35:06Z
+review:openregister:10637:8174f3ce	APPROVE: php-dot-notation minor bump, touched-class suites green	session-20261117T221832-434567de	2026-11-17T22:35:03Z
