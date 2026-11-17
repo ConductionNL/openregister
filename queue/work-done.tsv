@@ -20175,3 +20175,4 @@ gap:integriq:sync-runs-as-configured-user:2	deferred: integriq has 51 open PRs	s
 review:hermiq:1763:3a6a20d7	stale	session-20261117T094008-c54c2625	2026-11-17T09:53:46Z
 review:opencatalogi:2652:57796521	stale	session-20261117T093950-8ae04963	2026-11-17T09:54:33Z
 gap:integriq:replay-writes-linked-call-log:2	deferred: integriq has 51 open PRs	session-20261117T093335-9904a269	2026-11-17T09:54:28Z
+review:filinq:2114:8555a6f9	CONFLICT: does not merge with development (settings + register files); fix task to merge development in	session-20261117T095448-b3732e9b	2026-11-17T09:55:43Z
