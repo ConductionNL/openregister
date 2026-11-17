@@ -19179,3 +19179,4 @@ review:opencatalogi:2722:8f7ea1f5	GREEN: per spec, no new failures, merges clean
 review:stackiq:1963:c8580463	GREEN: phpunit 3978 OK, vitest 1 inherited failure	session-20261117T020238-79f03bb8	2026-11-17T02:33:03Z
 review:versioniq:692:d988f8cb	GREEN: unit 2244 (2 inherited failures), vitest 44 OK	session-20261117T021137-dd174ad0	2026-11-17T02:33:11Z
 review:opencatalogi:2650:fef15211	GREEN: no new failures (6167 unit tests, 103 inherited)	session-20261117T021557-4653e902	2026-11-17T02:33:20Z
+review:launchpad:1209:fde5af3e	GREEN: PHPUnit 4555 OK, vitest 1455/1455	session-20261117T020142-15890c05	2026-11-17T02:33:31Z
