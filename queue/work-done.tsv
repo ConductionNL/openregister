@@ -20491,3 +20491,4 @@ review:opencatalogi:2650:6678e3ea	BLOCK #2650: uses/used answers skip the public
 review:hermiq:1754:26e47c9c	BLOCK: app <version> not raised with register 0.63.0; unit 5683/0	session-20261117T111714-cd94760b	2026-11-17T12:06:33Z
 verify:stackiq:2024:8a3849ea	GREEN #2024, GREEN #2027 (vitest only inherited facets.spec failure)	session-20261117T110646-831a671b	2026-11-17T12:06:53Z
 review:decidiq:2171:fa36c329	GREEN: decidiq #2171 fa36c329 (phpunit 4968 OK; 1 inherited vitest snapshot failure)	session-20261117T115612-9783d86e	2026-11-17T12:07:07Z
+review:shillinq:3067:7ff7357f	GREEN: unit 12775 OK; newer development conflicts again (l10n, lock)	session-20261117T112552-11cae4cc	2026-11-17T12:07:15Z
