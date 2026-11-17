@@ -19543,3 +19543,5 @@ opencatalogi	2795	9844e9a09589c8fb5eb3275c484e4adb67f6bb38	RED	merge3:merge-gate
 opencatalogi	2796	7d78014c5c048a8b9ec158b0573d341fb0dfbe97	RED	merge3:merge-gate	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
 opencatalogi	2797	73c7291c61fbe1ac6ed7f6f4bb7f1da3b265956d	RED	merge3:merge-gate	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
 learniq	2524	defae59897776df65fca752cdd26e7ebdc87d32d	REVERIFY	worker-17	conflicts only with an earlier PR of the verify tree (l10n, portal golden); verify it alone
+learniq	2602	562289417dc44c1a437b7a634ba5466aed65748e	REVERIFY	worker-17	head moved from the queued sha; verify it at this head
+launchpad	1210	e8abd64f0f489548b4d5b6568405b796b32914dc	BLOCK	worker-35:review	review: Strict (admin-only access check); blocker: spec-coverage gate fails on an added line (src/views/Views.vue activeDashboard.customCss watcher handler has no @spec); concerns: none in the access checks (custom CSS refused for non-admins on both write paths), gate-116 did not run
