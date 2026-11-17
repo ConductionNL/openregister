@@ -1,0 +1,660 @@
+From 38ff42202fd0ee74def858065b2bf504509e1059 Mon Sep 17 00:00:00 2001
+From: Ruben van der Linde <ruben@conduction.nl>
+Date: Tue, 17 Nov 2026 23:12:06 +0000
+Subject: [PATCH] feat(opencatalogi): build
+ opencatalogi-delegate-broadcast-to-or-webhooks [skip ci]
+
+Tasks 1-3: enqueueBroadcast() hands each broadcast to OpenRegister's
+WebhookService::triggerWebhookForEvent() through one shared per-target
+webhook for opencatalogi.federation.broadcast, created on first use and
+idempotent under a lost race, and answers `enqueued`. Without per-target
+delivery on OpenRegister it logs a deprecation and the legacy loop delivers.
+
+Assisted-by: ClaudeCode:claude-opus-5-5
+---
+ lib/Service/Broadcast/BroadcastWebhook.php    | 162 ++++++++++++++++++
+ lib/Service/BroadcastService.php              |  92 +++++++++-
+ .../tasks.md                                  |  12 +-
+ .../Broadcast/BroadcastWebhookFakes.php       |  82 +++++++++
+ .../Broadcast/BroadcastWebhookTest.php        | 110 ++++++++++++
+ tests/Unit/Service/BroadcastServiceTest.php   |  81 +++++++++
+ 6 files changed, 524 insertions(+), 15 deletions(-)
+ create mode 100644 lib/Service/Broadcast/BroadcastWebhook.php
+ create mode 100644 tests/Unit/Service/Broadcast/BroadcastWebhookFakes.php
+ create mode 100644 tests/Unit/Service/Broadcast/BroadcastWebhookTest.php
+
+diff --git a/lib/Service/Broadcast/BroadcastWebhook.php b/lib/Service/Broadcast/BroadcastWebhook.php
+new file mode 100644
+index 00000000..851d6a86
+--- /dev/null
++++ b/lib/Service/Broadcast/BroadcastWebhook.php
+@@ -0,0 +1,162 @@
++<?php
++
++/**
++ * Hands one federation broadcast to OpenRegister's webhook delivery.
++ *
++ * @category Service
++ * @package  OCA\OpenCatalogi\Service\Broadcast
++ *
++ * @author    Conduction Development Team <info@conduction.nl>
++ * @copyright 2026 Conduction B.V.
++ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
++ *
++ * SPDX-License-Identifier: EUPL-1.2
++ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
++ *
++ * @version GIT: <git_id>
++ *
++ * @link https://www.OpenCatalogi.nl
++ *
++ * @spec openspec/changes/opencatalogi-delegate-broadcast-to-or-webhooks/specs/federation/spec.md#requirement-broadcast-delegates-to-or-webhooks-fed-or-001
++ */
++
++declare(strict_types=1);
++
++namespace OCA\OpenCatalogi\Service\Broadcast;
++
++use Throwable;
++
++/**
++ * BroadcastWebhook Class.
++ *
++ * Owns the one shared per-target Webhook row for the broadcast event and
++ * enqueues each broadcast through OpenRegister's
++ * `WebhookService::triggerWebhookForEvent()`, so delivery, retries and the dead
++ * letter are OpenRegister's. The row is created on first use, once.
++ *
++ * @spec openspec/specs/federation/spec.md
++ */
++final class BroadcastWebhook {
++	/**
++	 * The event every broadcast is sent as.
++	 */
++	public const EVENT = 'opencatalogi.federation.broadcast';
++
++	/**
++	 * The OpenRegister webhook configuration key that names the URL per delivery.
++	 */
++	private const PER_TARGET_KEY = 'deliverPerTarget';
++
++	/**
++	 * Build the adapter.
++	 *
++	 * @param object $webhookService OpenRegister's WebhookService.
++	 * @param object $webhookMapper  OpenRegister's WebhookMapper.
++	 */
++	public function __construct(
++		private readonly object $webhookService,
++		private readonly object $webhookMapper,
++	) {
++	}//end __construct()
++
++	/**
++	 * Whether this OpenRegister can deliver a broadcast per target.
++	 *
++	 * @return bool True when its WebhookService has triggerWebhookForEvent().
++	 *
++	 * @spec openspec/changes/opencatalogi-delegate-broadcast-to-or-webhooks/specs/federation/spec.md#requirement-broadcast-delegates-to-or-webhooks-fed-or-001
++	 */
++	public function isSupported(): bool {
++		return method_exists($this->webhookService, 'triggerWebhookForEvent') === true
++			&& method_exists($this->webhookMapper, 'findForEvent') === true
++			&& method_exists($this->webhookMapper, 'createFromArray') === true;
++	}//end isSupported()
++
++	/**
++	 * Enqueue one broadcast to one peer.
++	 *
++	 * @param string $url          The peer to tell.
++	 * @param string $directoryUrl This directory's URL.
++	 * @param string $source       The app sending it.
++	 * @param string $version      The app version, sent in the User-Agent.
++	 *
++	 * @return int The deliveries enqueued: 1, or 0 when OpenRegister took none.
++	 *
++	 * @spec openspec/changes/opencatalogi-delegate-broadcast-to-or-webhooks/specs/federation/spec.md#requirement-broadcast-delegates-to-or-webhooks-fed-or-001
++	 */
++	public function enqueue(string $url, string $directoryUrl, string $source, string $version): int {
++		$this->ensureRow(version: $version);
++
++		return (int) $this->webhookService->triggerWebhookForEvent(
++			eventName: self::EVENT,
++			payload: [
++				'directory' => $directoryUrl,
++				'timestamp' => (new \DateTime())->format('c'),
++				'source' => $source,
++			],
++			url: $url
++		);
++	}//end enqueue()
++
++	/**
++	 * Create the shared per-target broadcast webhook when none exists.
++	 *
++	 * A second caller that lost a race with the first re-reads the rows instead
++	 * of creating a duplicate.
++	 *
++	 * @param string $version The app version, sent in the User-Agent.
++	 *
++	 * @return void
++	 *
++	 * @throws Throwable When the row cannot be created and still does not exist.
++	 *
++	 * @spec openspec/changes/opencatalogi-delegate-broadcast-to-or-webhooks/specs/federation/spec.md#requirement-broadcast-delegates-to-or-webhooks-fed-or-001
++	 */
++	public function ensureRow(string $version): void {
++		if ($this->hasRow() === true) {
++			return;
++		}
++
++		try {
++			$this->webhookMapper->createFromArray(
++				[
++					'name' => 'OpenCatalogi federation broadcast',
++					// Never posted to: a per-target webhook names its URL per delivery.
++					'url' => 'https://localhost/opencatalogi-federation-broadcast',
++					'method' => 'POST',
++					'events' => [self::EVENT],
++					'headers' => ['User-Agent' => 'OpenCatalogi-Broadcast/' . $version],
++					'enabled' => true,
++					'retryPolicy' => 'exponential',
++					'maxRetries' => 3,
++					'timeout' => 30,
++					'configuration' => [self::PER_TARGET_KEY => true],
++				]
++			);
++		} catch (Throwable $e) {
++			if ($this->hasRow() === false) {
++				throw $e;
++			}
++		}
++	}//end ensureRow()
++
++	/**
++	 * Whether a per-target webhook for the broadcast event exists.
++	 *
++	 * Reads the rows each time: another request may have created one meanwhile.
++	 *
++	 * @return bool True when one does.
++	 *
++	 * @phpstan-impure
++	 */
++	private function hasRow(): bool {
++		foreach ($this->webhookMapper->findForEvent(self::EVENT) as $webhook) {
++			$configuration = $webhook->getConfigurationArray();
++			if (($configuration[self::PER_TARGET_KEY] ?? false) === true) {
++				return true;
++			}
++		}
++
++		return false;
++	}//end hasRow()
++}//end class
+diff --git a/lib/Service/BroadcastService.php b/lib/Service/BroadcastService.php
+index 712a20ad..4056a65f 100644
+--- a/lib/Service/BroadcastService.php
++++ b/lib/Service/BroadcastService.php
+@@ -34,6 +34,7 @@ use InvalidArgumentException;
+ use OCA\OpenCatalogi\Contract\BroadcastServiceInterface;
+ use OCA\OpenCatalogi\Service\Broadcast\BroadcastAttempt;
+ use OCA\OpenCatalogi\Service\Broadcast\BroadcastResult;
++use OCA\OpenCatalogi\Service\Broadcast\BroadcastWebhook;
+ use OCA\OpenCatalogi\Service\Connection\ConnectionReporter;
+ use OCA\OpenCatalogi\Service\Federation\FederationHostPolicy;
+ use OCA\OpenCatalogi\Service\Federation\OutboundUrlGuard;
+@@ -77,6 +78,13 @@ class BroadcastService implements BroadcastServiceInterface {
+ 	 */
+ 	private Client $client;
+ 
++	/**
++	 * The OpenRegister broadcast webhook adapter, built on first use.
++	 *
++	 * @var BroadcastWebhook|null
++	 */
++	private ?BroadcastWebhook $broadcastWebhook = null;
++
+ 	/**
+ 	 * Parses, resolves and classifies outbound URLs.
+ 	 *
+@@ -637,15 +645,16 @@ class BroadcastService implements BroadcastServiceInterface {
+ 	 * Send a broadcast to a single target and report the outcome as a
+ 	 * {@see BroadcastResult} instead of a bare boolean.
+ 	 *
+-	 * This is the adapter phase of FED-OR-001 (design.md "Phase 1 — Adapter
+-	 * method, no behaviour change yet"): the SSRF pre-flight guard
+-	 * (assertSafeOutboundUrl) already runs before anything is dispatched, but
+-	 * delivery itself still goes through the synchronous sendBroadcastRequest()
+-	 * retry loop. {@see BroadcastService::broadcast()} delegates each target to
+-	 * this method. Wiring this to OR's WebhookService (design.md Phase 2) is
+-	 * deliberately not done here — it depends on confirming
+-	 * WebhookService::triggerWebhookForEvent's signature against
+-	 * OpenRegister's development HEAD, which this change could not verify.
++	 * The SSRF pre-flight guard (assertSafeOutboundUrl) runs first. Then, when
++	 * OpenRegister can deliver per target, the broadcast is handed to
++	 * `WebhookService::triggerWebhookForEvent()` through the shared
++	 * `opencatalogi.federation.broadcast` webhook (created on first use) and
++	 * the result is `enqueued`: delivery, retries and the dead letter are
++	 * OpenRegister's. Without it (no OpenRegister, an OpenRegister without
++	 * per-target delivery, or a refusal) a deprecation warning is logged and
++	 * the synchronous sendBroadcastRequest() retry loop delivers it, for the
++	 * transition only. {@see BroadcastService::broadcast()} delegates each
++	 * target to this method.
+ 	 *
+ 	 * @param string $url The target URL to broadcast to.
+ 	 * @param string $directoryUrl The URL of this directory to include in the broadcast.
+@@ -661,6 +670,10 @@ class BroadcastService implements BroadcastServiceInterface {
+ 		// "pre-flight SSRF guard short-circuits before delegation".
+ 		$this->assertSafeOutboundUrl(url: $url);
+ 
++		if ($this->enqueueThroughOpenRegister(url: $url, directoryUrl: $directoryUrl) === true) {
++			return new BroadcastResult(url: $url, status: BroadcastResult::STATUS_ENQUEUED);
++		}
++
+ 		$delivered = $this->sendBroadcastRequest(url: $url, directoryUrl: $directoryUrl);
+ 
+ 		$status = BroadcastResult::STATUS_FAILED;
+@@ -674,6 +687,67 @@ class BroadcastService implements BroadcastServiceInterface {
+ 		);
+ 	}//end enqueueBroadcast()
+ 
++	/**
++	 * Hand a broadcast to OpenRegister's webhook delivery.
++	 *
++	 * @param string $url          The peer to tell.
++	 * @param string $directoryUrl This directory's URL.
++	 *
++	 * @return bool True when OpenRegister enqueued it; false (deprecation logged) to use the legacy path.
++	 *
++	 * @spec openspec/changes/opencatalogi-delegate-broadcast-to-or-webhooks/specs/federation/spec.md#requirement-broadcast-delegates-to-or-webhooks-fed-or-001
++	 */
++	private function enqueueThroughOpenRegister(string $url, string $directoryUrl): bool {
++		$webhook = $this->broadcastWebhook();
++		try {
++			if ($webhook !== null
++				&& $webhook->enqueue(url: $url, directoryUrl: $directoryUrl, source: $this->appName, version: $this->getAppVersion()) > 0
++			) {
++				return true;
++			}
++		} catch (\Throwable $e) {
++			$this->logger->warning('OpenRegister did not take the broadcast to ' . $url . ': ' . $e->getMessage());
++		}
++
++		$this->logger->warning(
++			'Deprecated: broadcasting to ' . $url . ' through the built-in retry loop because OpenRegister '
++			. 'per-target webhook delivery is not available. Update OpenRegister; this path will be removed.'
++		);
++		return false;
++	}//end enqueueThroughOpenRegister()
++
++	/**
++	 * The OpenRegister broadcast webhook adapter, or null when OpenRegister cannot deliver per target.
++	 *
++	 * @return BroadcastWebhook|null The adapter.
++	 */
++	private function broadcastWebhook(): ?BroadcastWebhook {
++		if ($this->broadcastWebhook !== null) {
++			return $this->broadcastWebhook;
++		}
++
++		$installed = $this->appManager->getInstalledApps();
++		if (is_array($installed) === false || in_array(needle: 'openregister', haystack: $installed) === false) {
++			return null;
++		}
++
++		try {
++			$webhook = new BroadcastWebhook(
++				webhookService: $this->container->get('OCA\OpenRegister\Service\WebhookService'),
++				webhookMapper: $this->container->get('OCA\OpenRegister\Db\WebhookMapper')
++			);
++		} catch (ContainerExceptionInterface|NotFoundExceptionInterface $e) {
++			return null;
++		}
++
++		if ($webhook->isSupported() === false) {
++			return null;
++		}
++
++		$this->broadcastWebhook = $webhook;
++		return $webhook;
++	}//end broadcastWebhook()
++
+ 	/**
+ 	 * Check whether a host is on the dev-only local-federation allowlist.
+ 	 *
+diff --git a/openspec/changes/opencatalogi-delegate-broadcast-to-or-webhooks/tasks.md b/openspec/changes/opencatalogi-delegate-broadcast-to-or-webhooks/tasks.md
+index c10d7574..7373f747 100644
+--- a/openspec/changes/opencatalogi-delegate-broadcast-to-or-webhooks/tasks.md
++++ b/openspec/changes/opencatalogi-delegate-broadcast-to-or-webhooks/tasks.md
+@@ -9,8 +9,8 @@
+   - GIVEN a call to `enqueueBroadcast($url, $directoryUrl)` WHEN OR is installed THEN `BroadcastResult` with status `enqueued` is returned
+   - GIVEN a call to `enqueueBroadcast($url, $directoryUrl)` WHEN OR is absent THEN a deprecation warning is logged and the legacy sync path is used (transition only)
+   - GIVEN the new adapter THEN the existing `broadcast()` public method's `array<string,bool>` return remains usable for legacy callers
+-- [ ] Implement (partial: enqueueBroadcast adapter and BroadcastResult exist but return delivered/failed through the legacy sync path, never enqueued; OR WebhookService not wired)
+-- [ ] Test
++- [x] Implement (`enqueueBroadcast()` returns `enqueued` when OpenRegister delivers per target; otherwise it logs a deprecation warning and the legacy sync path delivers; `broadcast()` keeps its `array<string,bool>` return)
++- [x] Test (`BroadcastServiceTest::testEnqueueBroadcastHandsTheBroadcastToOpenRegisterWebhooks`, `::testEnqueueBroadcastWithoutPerTargetDeliveryLogsADeprecationAndDeliversDirectly`, `::testEnqueueBroadcastFallsBackWhenOpenRegisterQueuesNothing`)
+ 
+ ### Task 2: Wire enqueueBroadcast to OR's WebhookService::triggerWebhookForEvent
+ - **spec_ref**: `openspec/changes/opencatalogi-delegate-broadcast-to-or-webhooks/specs/federation/spec.md#requirement-broadcast-delegates-to-or-webhooks-fed-or-001`
+@@ -19,8 +19,8 @@
+   - GIVEN `enqueueBroadcast($url, $directoryUrl)` is called WHEN OR is installed THEN `WebhookService::triggerWebhookForEvent('opencatalogi.federation.broadcast', payload, $url)` is called exactly once
+   - GIVEN the call THEN payload contains `{directory, timestamp, source}` matching today's POST body
+   - GIVEN the call THEN the `User-Agent` is forwarded as `OpenCatalogi-Broadcast/<version>` (preserved from legacy path)
+-- [ ] Implement
+-- [ ] Test
++- [x] Implement (`Service/Broadcast/BroadcastWebhook::enqueue()`; OpenRegister's per-target delivery is built in openregister PR #10644, change `webhook-per-delivery-target`; the services are read from the container, so `Application.php` needs no change; the User-Agent travels as a header on the webhook row)
++- [x] Test (`BroadcastWebhookTest::testEnqueueCallsTriggerWebhookForEventOnceWithTodaysBody`, `::testSupportNeedsPerTargetDeliveryOnOpenRegister`)
+ 
+ ### Task 3: Lazy-create the shared "opencatalogi.federation.broadcast" Webhook row
+ - **spec_ref**: `openspec/changes/opencatalogi-delegate-broadcast-to-or-webhooks/specs/federation/spec.md#requirement-broadcast-delegates-to-or-webhooks-fed-or-001`
+@@ -29,8 +29,8 @@
+   - GIVEN no Webhook row exists for event `opencatalogi.federation.broadcast` WHEN `enqueueBroadcast` is first called THEN one is created with the configured retry policy and persisted
+   - GIVEN the row already exists THEN no duplicate is created
+   - GIVEN concurrent first-calls THEN row creation is idempotent (catch unique constraint, re-query)
+-- [ ] Implement
+-- [ ] Test
++- [x] Implement (`BroadcastWebhook::ensureRow()`: a per-target webhook for the event, `exponential` retry, 3 retries, 30 s timeout)
++- [x] Test (`BroadcastWebhookTest::testTheFirstCallCreatesOnePerTargetRowWithTheUserAgentAndRetryPolicy`, `::testAnExistingRowIsNotDuplicated`, `::testAnOrdinaryWebhookOnTheEventIsNotMistakenForTheRow`, `::testALostCreateRaceReReadsInsteadOfFailing`, `::testACreateRefusalWithNoRowIsRaised`)
+ 
+ ### Task 4: Retain pre-flight SSRF guard + allowlist before delegation
+ - **spec_ref**: `openspec/changes/opencatalogi-delegate-broadcast-to-or-webhooks/specs/federation/spec.md#requirement-broadcast-pre-flight-ssrf-guard-fed-or-001`
+diff --git a/tests/Unit/Service/Broadcast/BroadcastWebhookFakes.php b/tests/Unit/Service/Broadcast/BroadcastWebhookFakes.php
+new file mode 100644
+index 00000000..2ce5edef
+--- /dev/null
++++ b/tests/Unit/Service/Broadcast/BroadcastWebhookFakes.php
+@@ -0,0 +1,82 @@
++<?php
++
++/**
++ * Stand-ins for OpenRegister's WebhookService and WebhookMapper in broadcast tests.
++ *
++ * @category Test
++ * @package  OCA\OpenCatalogi\Tests\Unit\Service\Broadcast
++ *
++ * @author    Conduction Development Team <info@conduction.nl>
++ * @copyright 2026 Conduction B.V.
++ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
++ *
++ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
++ * SPDX-License-Identifier: EUPL-1.2
++ *
++ * @link https://www.OpenCatalogi.nl
++ */
++
++declare(strict_types=1);
++
++namespace OCA\OpenCatalogi\Tests\Unit\Service\Broadcast;
++
++/**
++ * Records every triggerWebhookForEvent() call and answers a fixed count.
++ */
++final class FakeWebhookService {
++	/** @var list<array{eventName: string, payload: array, url: string}> */
++	public array $calls = [];
++
++	public function __construct(public int $answer = 1) {
++	}
++
++	public function triggerWebhookForEvent(string $eventName, array $payload, string $url): int {
++		$this->calls[] = ['eventName' => $eventName, 'payload' => $payload, 'url' => $url];
++		return $this->answer;
++	}
++}
++
++/**
++ * Holds webhook rows in memory; can refuse the first create the way a lost race does.
++ */
++final class FakeWebhookMapper {
++	/** @var list<FakeWebhookRow> */
++	public array $rows = [];
++
++	/** @var list<array> */
++	public array $created = [];
++
++	public function __construct(public bool $refuseCreate = false, public bool $rowAppearsOnRefusal = false) {
++	}
++
++	public function findForEvent(string $eventClass): array {
++		return array_values(array_filter($this->rows, fn (FakeWebhookRow $row): bool => in_array($eventClass, $row->events, true)));
++	}
++
++	public function createFromArray(array $data): FakeWebhookRow {
++		if ($this->refuseCreate === true) {
++			if ($this->rowAppearsOnRefusal === true) {
++				$this->rows[] = new FakeWebhookRow(events: $data['events'], configuration: $data['configuration']);
++			}
++
++			throw new \RuntimeException('duplicate key');
++		}
++
++		$this->created[] = $data;
++		$row = new FakeWebhookRow(events: $data['events'], configuration: $data['configuration']);
++		$this->rows[] = $row;
++		return $row;
++	}
++}
++
++/**
++ * One webhook row: its events and configuration.
++ */
++final class FakeWebhookRow {
++	public function __construct(public array $events, public array $configuration = []) {
++	}
++
++	public function getConfigurationArray(): array {
++		return $this->configuration;
++	}
++}
+diff --git a/tests/Unit/Service/Broadcast/BroadcastWebhookTest.php b/tests/Unit/Service/Broadcast/BroadcastWebhookTest.php
+new file mode 100644
+index 00000000..e0f56094
+--- /dev/null
++++ b/tests/Unit/Service/Broadcast/BroadcastWebhookTest.php
+@@ -0,0 +1,110 @@
++<?php
++
++/**
++ * Unit tests for BroadcastWebhook.
++ *
++ * @category Test
++ * @package  OCA\OpenCatalogi\Tests\Unit\Service\Broadcast
++ *
++ * @author    Conduction Development Team <info@conduction.nl>
++ * @copyright 2026 Conduction B.V.
++ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
++ *
++ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
++ * SPDX-License-Identifier: EUPL-1.2
++ *
++ * @link https://www.OpenCatalogi.nl
++ */
++
++declare(strict_types=1);
++
++namespace OCA\OpenCatalogi\Tests\Unit\Service\Broadcast;
++
++require_once __DIR__ . '/BroadcastWebhookFakes.php';
++
++use OCA\OpenCatalogi\Service\Broadcast\BroadcastWebhook;
++use PHPUnit\Framework\TestCase;
++
++/**
++ * @covers \OCA\OpenCatalogi\Service\Broadcast\BroadcastWebhook
++ *
++ * @spec openspec/changes/opencatalogi-delegate-broadcast-to-or-webhooks/specs/federation/spec.md#requirement-broadcast-delegates-to-or-webhooks-fed-or-001
++ */
++class BroadcastWebhookTest extends TestCase {
++
++	public function testEnqueueCallsTriggerWebhookForEventOnceWithTodaysBody(): void {
++		$service = new FakeWebhookService();
++		$webhook = new BroadcastWebhook(webhookService: $service, webhookMapper: new FakeWebhookMapper());
++
++		$queued = $webhook->enqueue(url: 'https://peer.example/api/directory', directoryUrl: 'https://self.example/api/directory', source: 'opencatalogi', version: '1.2.3');
++
++		$this->assertSame(1, $queued);
++		$this->assertCount(1, $service->calls);
++		$call = $service->calls[0];
++		$this->assertSame('opencatalogi.federation.broadcast', $call['eventName']);
++		$this->assertSame('https://peer.example/api/directory', $call['url']);
++		$this->assertSame(['directory', 'timestamp', 'source'], array_keys($call['payload']));
++		$this->assertSame('https://self.example/api/directory', $call['payload']['directory']);
++		$this->assertSame('opencatalogi', $call['payload']['source']);
++		$this->assertNotFalse(\DateTime::createFromFormat(\DateTimeInterface::ATOM, $call['payload']['timestamp']));
++	}
++
++	public function testTheFirstCallCreatesOnePerTargetRowWithTheUserAgentAndRetryPolicy(): void {
++		$mapper = new FakeWebhookMapper();
++		$webhook = new BroadcastWebhook(webhookService: new FakeWebhookService(), webhookMapper: $mapper);
++
++		$webhook->enqueue(url: 'https://a.example/', directoryUrl: 'https://self.example/', source: 'opencatalogi', version: '1.2.3');
++		$webhook->enqueue(url: 'https://b.example/', directoryUrl: 'https://self.example/', source: 'opencatalogi', version: '1.2.3');
++
++		$this->assertCount(1, $mapper->created);
++		$row = $mapper->created[0];
++		$this->assertSame(['opencatalogi.federation.broadcast'], $row['events']);
++		$this->assertSame(['deliverPerTarget' => true], $row['configuration']);
++		$this->assertSame(['User-Agent' => 'OpenCatalogi-Broadcast/1.2.3'], $row['headers']);
++		$this->assertSame('POST', $row['method']);
++		$this->assertSame('exponential', $row['retryPolicy']);
++		$this->assertSame(3, $row['maxRetries']);
++		$this->assertTrue($row['enabled']);
++	}
++
++	public function testAnExistingRowIsNotDuplicated(): void {
++		$mapper = new FakeWebhookMapper();
++		$mapper->rows[] = new FakeWebhookRow(events: ['opencatalogi.federation.broadcast'], configuration: ['deliverPerTarget' => true]);
++
++		(new BroadcastWebhook(webhookService: new FakeWebhookService(), webhookMapper: $mapper))->ensureRow(version: '1');
++
++		$this->assertSame([], $mapper->created);
++	}
++
++	public function testAnOrdinaryWebhookOnTheEventIsNotMistakenForTheRow(): void {
++		$mapper = new FakeWebhookMapper();
++		$mapper->rows[] = new FakeWebhookRow(events: ['opencatalogi.federation.broadcast']);
++
++		(new BroadcastWebhook(webhookService: new FakeWebhookService(), webhookMapper: $mapper))->ensureRow(version: '1');
++
++		$this->assertCount(1, $mapper->created);
++	}
++
++	public function testALostCreateRaceReReadsInsteadOfFailing(): void {
++		$mapper = new FakeWebhookMapper(refuseCreate: true, rowAppearsOnRefusal: true);
++
++		(new BroadcastWebhook(webhookService: new FakeWebhookService(), webhookMapper: $mapper))->ensureRow(version: '1');
++
++		$this->assertCount(1, $mapper->rows);
++	}
++
++	public function testACreateRefusalWithNoRowIsRaised(): void {
++		$webhook = new BroadcastWebhook(webhookService: new FakeWebhookService(), webhookMapper: new FakeWebhookMapper(refuseCreate: true));
++
++		$this->expectException(\RuntimeException::class);
++		$this->expectExceptionMessage('duplicate key');
++
++		$webhook->ensureRow(version: '1');
++	}
++
++	public function testSupportNeedsPerTargetDeliveryOnOpenRegister(): void {
++		$this->assertTrue((new BroadcastWebhook(webhookService: new FakeWebhookService(), webhookMapper: new FakeWebhookMapper()))->isSupported());
++		$this->assertFalse((new BroadcastWebhook(webhookService: new \stdClass(), webhookMapper: new FakeWebhookMapper()))->isSupported());
++		$this->assertFalse((new BroadcastWebhook(webhookService: new FakeWebhookService(), webhookMapper: new \stdClass()))->isSupported());
++	}
++}
+diff --git a/tests/Unit/Service/BroadcastServiceTest.php b/tests/Unit/Service/BroadcastServiceTest.php
+index abce251f..f11bb818 100644
+--- a/tests/Unit/Service/BroadcastServiceTest.php
++++ b/tests/Unit/Service/BroadcastServiceTest.php
+@@ -915,6 +915,87 @@ class BroadcastServiceTest extends \PHPUnit\Framework\TestCase {
+ 
+ 	}//end testEnqueueBroadcastReturnsFailedOnDeliveryFailure()
+ 
++	/**
++	 * FED-OR-001: with per-target delivery on OpenRegister the broadcast is handed to
++	 * WebhookService::triggerWebhookForEvent() once and nothing is posted here.
++	 *
++	 * @return void
++	 */
++	public function testEnqueueBroadcastHandsTheBroadcastToOpenRegisterWebhooks(): void {
++		require_once __DIR__ . '/Broadcast/BroadcastWebhookFakes.php';
++		$service = new \OCA\OpenCatalogi\Tests\Unit\Service\Broadcast\FakeWebhookService();
++		$mapper = new \OCA\OpenCatalogi\Tests\Unit\Service\Broadcast\FakeWebhookMapper();
++		$this->appManagerMock->method('getInstalledApps')->willReturn(['openregister']);
++		$this->appManagerMock->method('getAppInfo')->willReturn(['version' => '2.0.0']);
++		$this->containerMock->method('get')->willReturnMap(
++			[
++				['OCA\OpenRegister\Service\WebhookService', $service],
++				['OCA\OpenRegister\Db\WebhookMapper', $mapper],
++			]
++		);
++		$this->clientMock->expects($this->never())->method('post');
++
++		$result = $this->broadcastService->enqueueBroadcast('https://203.0.113.10/directory', 'https://self.example.com/api/directory');
++
++		$this->assertSame(BroadcastResult::STATUS_ENQUEUED, $result->status);
++		$this->assertTrue($result->isSuccessful());
++		$this->assertCount(1, $service->calls);
++		$this->assertSame('https://203.0.113.10/directory', $service->calls[0]['url']);
++		$this->assertSame('https://self.example.com/api/directory', $service->calls[0]['payload']['directory']);
++		$this->assertSame('opencatalogi', $service->calls[0]['payload']['source']);
++		$this->assertSame(['User-Agent' => 'OpenCatalogi-Broadcast/2.0.0'], $mapper->created[0]['headers']);
++
++	}//end testEnqueueBroadcastHandsTheBroadcastToOpenRegisterWebhooks()
++
++	/**
++	 * FED-OR-001 transition: an OpenRegister without per-target delivery logs a
++	 * deprecation and the legacy path delivers.
++	 *
++	 * @return void
++	 */
++	public function testEnqueueBroadcastWithoutPerTargetDeliveryLogsADeprecationAndDeliversDirectly(): void {
++		$this->appManagerMock->method('getInstalledApps')->willReturn(['openregister']);
++		$this->appManagerMock->method('getAppInfo')->willReturn(['version' => '2.0.0']);
++		$this->containerMock->method('get')->willReturn(new \stdClass());
++		$this->clientMock->expects($this->once())->method('post')->willReturn(new Response(200));
++		$warnings = [];
++		$this->loggerMock->method('warning')->willReturnCallback(
++			function (string $message) use (&$warnings): void {
++				$warnings[] = $message;
++			}
++		);
++
++		$result = $this->broadcastService->enqueueBroadcast('https://203.0.113.10/directory', 'https://self.example.com/api/directory');
++
++		$this->assertSame(BroadcastResult::STATUS_DELIVERED, $result->status);
++		$this->assertCount(1, array_filter($warnings, fn (string $w): bool => str_starts_with($w, 'Deprecated: broadcasting to https://203.0.113.10/directory')));
++
++	}//end testEnqueueBroadcastWithoutPerTargetDeliveryLogsADeprecationAndDeliversDirectly()
++
++	/**
++	 * FED-OR-001: when OpenRegister refuses (no row could be made, nothing queued)
++	 * the broadcast still goes out through the legacy path.
++	 *
++	 * @return void
++	 */
++	public function testEnqueueBroadcastFallsBackWhenOpenRegisterQueuesNothing(): void {
++		require_once __DIR__ . '/Broadcast/BroadcastWebhookFakes.php';
++		$this->appManagerMock->method('getInstalledApps')->willReturn(['openregister']);
++		$this->appManagerMock->method('getAppInfo')->willReturn(['version' => '2.0.0']);
++		$this->containerMock->method('get')->willReturnMap(
++			[
++				['OCA\OpenRegister\Service\WebhookService', new \OCA\OpenCatalogi\Tests\Unit\Service\Broadcast\FakeWebhookService(answer: 0)],
++				['OCA\OpenRegister\Db\WebhookMapper', new \OCA\OpenCatalogi\Tests\Unit\Service\Broadcast\FakeWebhookMapper()],
++			]
++		);
++		$this->clientMock->expects($this->once())->method('post')->willReturn(new Response(200));
++
++		$result = $this->broadcastService->enqueueBroadcast('https://203.0.113.10/directory', 'https://self.example.com/api/directory');
++
++		$this->assertSame(BroadcastResult::STATUS_DELIVERED, $result->status);
++
++	}//end testEnqueueBroadcastFallsBackWhenOpenRegisterQueuesNothing()
++
+ 	/**
+ 	 * Test enqueueBroadcast rejects an unsafe URL before any delivery is attempted.
+ 	 */
+-- 
+2.43.0
+
