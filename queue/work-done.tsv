@@ -22192,3 +22192,4 @@ verify:filinq:2189:8dae478c	GREEN #2189 (tasks.md only; 7288 tests, 0 new failur
 verify:opencatalogi:2756:d938b503	9 GREEN (2756,2793-2800), 0 new failures	session-20261117T190150-dbabe332	2026-11-17T19:20:31Z
 verify:filinq:2174:cb6650c7	GREEN 2174; version bump, unit 7288 green	session-20261117T185419-c23c5946	2026-11-17T19:20:38Z
 verify:buildiq:1721:ed2a82a6	GREEN: #1721 (unit 3684 OK, vitest 5015 OK)	session-20261117T185500-00963134	2026-11-17T19:20:52Z
+merge:shillinq:3168:287a1828	unmeasured: static.developer.overheid.nl (checker_floor adrvalidator); 6 PRs reviewed APPROVE, tree green 12796 tests 0 new failures, nothing landed	session-20261117T185935-593e017f	2026-11-17T19:21:00Z
