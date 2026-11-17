@@ -1436,3 +1436,7 @@ pipelinq	3957	c41f8c7bb0c46c193ac14678df33d50e6575cf66	APPROVE	worker-10	Quick; 
 pipelinq	3958	40777e1a6daa8b3657c9b154a9bd7a43b09873d5	APPROVE	worker-10	Quick; no blockers; psalm major bump is dev tooling only, psalm run not exercised in the merge tree
 pipelinq	3959	7fbcf4eeb298c017699d213a1802d595cb200595	APPROVE	worker-10	Quick; no blockers; eslint minor bump
 pipelinq	3962	63a9f87023847f1f04506dfaff982afa3de38e94	APPROVE	worker-10	Quick; no blockers; dompurify patch bump
+pipelinq	3963	e0b88c16e1c5e43d0827e293701b09a4c5a0c8d2	APPROVE	worker-10	Quick; no blockers; password-confirmation minor bump
+pipelinq	3964	753442e626996f44d05bcc37231b0aba15c257be	APPROVE	worker-10	Quick; no blockers; cyclonedx-npm major bump, dev tooling, no script in repo pins its CLI flags
+pipelinq	3965	080c179868dab388890597bce399aace1a8c7ecd	APPROVE	worker-10	Quick; no blockers; vue-router patch bump
+pipelinq	3966	a7266ea55cd3b7630b581cb54ee6cb04bf9912dd	APPROVE	worker-10	Quick; no blockers; e2e spec and tasks.md only, helpers it imports exist, non-admin empty-storage context, base URL from env
