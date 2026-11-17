@@ -19649,3 +19649,4 @@ fix:integriq:2650:54f2db42	blockers fixed, pushed e2326510; REVERIFY queued	sess
 fix:learniq:2536:31b84d24	conflict resolved (new head 3f0c2d08, tree 0 new failures); review REQUEST_CHANGES: app-version bump, duplicate index page, unregistered icon, schema titles, nl keys	session-20261117T061732-40387d12	2026-11-17T06:50:44Z
 fix:learniq:2519:7bff990d	fixed CONFLICT, new head d768aa77; merge lock held elsewhere, REVERIFY queued	session-20261117T055844-3d508d2a	2026-11-17T06:50:50Z
 gap:hermiq:engine-on-by-default:1	PR hermiq#1826: install-only repair step sets engine.enabled=true when unset, 3 tests	session-20261117T063846-e8410bfe	2026-11-17T06:51:14Z
+fix:hermiq:1751:73163d7d	BLOCK fixed (gate-46) + conflict resolved, pushed 79bb5690; REVERIFY recorded	session-20261117T060006-72dfb87c	2026-11-17T06:51:20Z
