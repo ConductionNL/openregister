@@ -5173,3 +5173,4 @@ opencatalogi	2652	c34c2c87779ffc6ac837f61b8abc7dbe6c683086	MERGED	worker-24	GATE
 stackiq	2019	7a21d2c80bae03e8d33b798bff7d9cd9137f8358	MERGED	worker-55	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.13
 stackiq	2020	c74d16dd8eac1686199899fb182c78b7ffb71f7a	MERGED	worker-55	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.13
 stackiq	2021	e118cd90784e9f9a66fcac3d52e4e3d97bc94590	MERGED	worker-55	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.13
+stackiq	2022	dd6d4b11005caee34f97773d81b938f02d226d90	RED	worker-55	GATE RED sbom: package-lock.json changed without sbom.cdx.json
