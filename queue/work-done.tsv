@@ -22244,3 +22244,4 @@ verify:integriq:3725:1e381ea4	GREEN integriq#3725 (no new failures)	session-2026
 verify:hermiq:1853:f3ad2278	GREEN #1853, 0 new failures	session-20261117T190150-dbabe332	2026-11-17T19:31:06Z
 verify:integriq:3708:41ada0a6	GREEN	session-20261117T190242-7c82bed8	2026-11-17T19:31:18Z
 verify:larpinq:1054:0d13d8ee	CONFLICT #1054 (larpinq_mock_register.json, SettingsServiceTest.php)	session-20261117T190359-60e4fde5	2026-11-17T19:31:28Z
+verify:keepiq:1757:f60a03ea	BLOCK 1757: contract interface signature + behaviour change; tests no new failures	session-20261117T185927-e9838dc9	2026-11-17T19:31:44Z
