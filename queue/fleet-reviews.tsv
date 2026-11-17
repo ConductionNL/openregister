@@ -1331,6 +1331,7 @@ decidiq	2276	b77ffaa99a83ac211a8cff55b080ccb1f773fd62	APPROVE	worker-42	Quick (e
 decidiq	2277	b03780e5e71f9c9a7d94f5ad1d658e3f438c2cb4	APPROVE	worker-42	Quick (Newman collection only); no blockers; base URL overridden by run-all env vars
 decidiq	2278	d120be3ea5c86aa6aa74b4081c7a6da1b31d2921	APPROVE	worker-42	Quick (e2e spec only); no blockers; boxes left open until run live
 versioniq	780	f23cd299e03ed19ed07fe50aa787b4b212d26b17	APPROVE	worker-11	Quick; no blockers; e2e spec only for advisories-triage
+humaniq	1191	b875c583d9c11a753090974efd8cc0d409a3eac8	APPROVE	worker-20	Quick (e2e spec only); no blockers; not run against an instance
 launchpad	1306	060171415ec0321c8968a4087ce146a20f0714d7	APPROVE	worker-05	Standard; no blockers; e2e spec, tasks.md and parity rows only, base URL and user from env
 launchpad	1295	8e839b5210cfdfcca1ed2fcad366db008d7a4c2c	APPROVE	worker-05	Standard; no blockers; More menu gets an Add widget entry that opens the existing widget picker, custom widget entry kept under its own id; de string added
 launchpad	1218	981059667af30b6907fafe7e0e9be698f74a9e73	REQUEST_CHANGES	worker-05	Thorough; blocker: content.internalUrl is checked by assertValidInternalUrl only on the update path (TileUpdater::applyTileUpdates), the create path TileUpdater::applyTileConfig (PlacementService:169) stores content unchecked and TileWidget renders it as the link on the office network; validate it o
