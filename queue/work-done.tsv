@@ -19841,3 +19841,4 @@ merge:decidiq:2154:b2036323	unmeasured: static.developer.overheid.nl, api.osv.de
 review:larpinq:1043:03f6b920	GREEN: unit 1124 OK, vitest 702 pass	session-20261117T080442-9c9fe2f8	2026-11-17T08:07:27Z
 review:learniq:2486:2a7fcc37	GREEN: 7020 tests, only the inherited failure; phpstan clean	session-20261117T075401-a3415363	2026-11-17T08:07:35Z
 review:decidiq:2171:6d1d07d3	GREEN: decidiq #2171, unit 4856 OK, vitest 1 inherited fail	session-20261117T080436-bf0369a8	2026-11-17T08:07:44Z
+review:humaniq:1142:7f00cdb5	GREEN: humaniq #1142, suites pass, failures inherited	session-20261117T080341-5411c3bd	2026-11-17T08:07:55Z
