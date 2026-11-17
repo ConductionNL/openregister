@@ -4884,3 +4884,4 @@ dossiq	3894	586519b90f512275cd9e689b9d449594ab1b9ca2	MERGED	worker-32	GATE OK sb
 planninq	1068	40deb423f1222b7b1faa5b7624b9c58ff150df52	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.66 holds at 4.07
 launchpad	819	c5c80a07dc500fcc4e5064cd5126241a9f4bf32a	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
 pipelinq	3718	6a2a609c3a7165bacdca1905705aa3700ae0d4e4	MERGED	worker-47	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.50
+learniq	2578	1ce84f5b7b6b7f2cde5febf91d9cb2fb62431aad	MERGED	worker-28	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 4.08
