@@ -17725,3 +17725,4 @@ launchpad	1230	6b1639375549a6855f988d1057c8f037693a2b5e	REVERIFY	worker-54:merge
 launchpad	1259	6f4f57218d4e500886628dac4245	REVERIFY	worker-54:merge	verdict sha is not the head: head is 6f4f57218d4e500886628dac4245d6957c3c4c94
 hermiq	1719	72b13e057cd8760ca6ba6be4ed1847b2628d75ca	CONFLICT	worker-02:merge	conflicts with development; files: appinfo/info.xml lib/Settings/hermiq_register.json openapi.json
 buildiq	1590	48018867ad12c934cd00670dd4cf28b852419081	CONFLICT	worker-01	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json
+buildiq	1632	339aedb1d07b4dd8111025b717142a04ef8b063c	CONFLICT	worker-01	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json
