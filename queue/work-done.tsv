@@ -19716,3 +19716,119 @@ review:shillinq:2998:d4457281	BLOCK: seed repair step not registered in info.xml
 merge:buildiq:1651:621f68f6	cloud tree of 1 buildiq PRs: merged=0 red=0 fail=0 skip=1; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T063127-b908dd01	2026-11-17T07:05:30Z
 review:filinq:2113:c8fcb4bf	GREEN: unit 7098->7106, 0 failures	session-20261117T065443-facc0d23	2026-11-17T07:05:32Z
 verify:decidiq:2224:1cc6f145	2224 GREEN, 2253 GREEN; unit OK, 1 inherited vitest fail	session-20261117T065448-ceb2e7e7	2026-11-17T07:05:54Z
+review:shillinq:3007:b7c9a065	stale	session-20261117T065443-facc0d23	2026-11-17T07:06:09Z
+review:hermiq:1795:a0df53ce	GREEN: unit 5564 OK, vitest 1616 OK, phpstan clean	session-20261117T065619-e5275297	2026-11-17T07:06:04Z
+fix:decidiq:2254:16b684f6	failed: gridstack 14 is outside the peer range of @conduction/nextcloud-vue (latest 2.181.0 still ^12||^13); needs the library to widen it first	session-20261117T065448-ceb2e7e7	2026-11-17T07:06:15Z
+fix:hermiq:1763:685f9669	merged development in clean, pushed 6defd651 (suite 5605 OK); REVERIFY queued	session-20261117T062856-12839ec9	2026-11-17T07:06:15Z
+review:buildiq:1618:088b083a	GREEN: vitest 4880/4880 on PR+development, l10n OK	session-20261117T065410-e9ad9bdf	2026-11-17T07:06:27Z
+review:filinq:2107:0bc2f69d	BLOCK filinq#2107: label lookup before readability check in preflight/shareBundle; tests green	session-20261117T065609-89f8b9cf	2026-11-17T07:06:38Z
+review:learniq:2509:2500f767	GREEN: 7003 tests, 1 inherited failure	session-20261117T061732-40387d12	2026-11-17T07:07:00Z
+fix:filinq:2112:dc4b7d6c	conflict resolved, pushed c5d832c9; REVERIFY queued (merge lock held elsewhere)	session-20261117T065537-5000a36a	2026-11-17T07:07:23Z
+review:filinq:2126:d4e66904	GREEN: 7129 tests, 0 failures (baseline 7098/0)	session-20261117T065524-8fc65d3f	2026-11-17T07:07:33Z
+review:buildiq:1602:b2a6e893	GREEN: vitest 4873/4873 on PR+development, matches change specs	session-20261117T065408-6d600eff	2026-11-17T07:07:48Z
+fix:filinq:2124:216f959b	conflict resolved, pushed 0922105d; merge lock held elsewhere, REVERIFY queued	session-20261117T065500-f63bc812	2026-11-17T07:08:00Z
+review:buildiq:1607:0a33c019	GREEN: spec-conform, vitest 4869 passed, no new lint	session-20261117T065527-44da8271	2026-11-17T07:08:12Z
+review:filinq:2086:ebd288b0	GREEN: merges clean, 7129 unit + 812 vitest OK	session-20261117T055834-d932e117	2026-11-17T07:08:23Z
+fix:decidiq:2189:aff8b82e	conflict resolved, pushed 7818e0c2; merge lock held elsewhere, REVERIFY queued	session-20261117T065448-ceb2e7e7	2026-11-17T07:08:35Z
+review:filinq:2116:b8017fb6	GREEN: unit 7173 OK, jest+vitest 25 OK, phpstan/eslint clean	session-20261117T070159-36e67801	2026-11-17T07:08:47Z
+build:hermiq:tools-browser-and-computer-use:c8	PR #1754 at bf0cc3bd: tasks 1-3 (browser) built on the landed code sandbox; every code task ticked; left: live/e2e verification only	session-20261117T063046-d755315d	2026-11-17T07:09:06Z
+review:filinq:2121:06812be1	BLOCK: register version without app version bump, component_independence floor	session-20261117T063032-e9a993e2	2026-11-17T07:09:02Z
+review:learniq:2536:3f0c2d08	BLOCK #2536: tests baseline, 5 gate findings on PR lines	session-20261117T062935-1aa25581	2026-11-17T07:09:24Z
+fix:shillinq:3110:e8ca71f4	sbom current (dev-only lock changes); merged development, REVERIFY new head 1e1e9564	session-20261117T065524-8fc65d3f	2026-11-17T07:09:35Z
+fix:hermiq:1755:b5d33f2f	conflict resolved, @spec tags added, approved at ec7a9ede; merge gate RED on floors (unit_size 3.86->3.83, unit_complexity 4.56->4.52, module_coupling 5.09->5.04), not landed	session-20261117T063048-0c413ea5	2026-11-17T07:09:53Z
+review:shillinq:3004:0e70c6a3	CONFLICT with development (7 files); fix task follows	session-20261117T063100-87feca45	2026-11-17T07:09:49Z
+fix:decidiq:2171:853b82a5	conflict resolved, pushed 6d1d07d3; merge lock held elsewhere, REVERIFY queued	session-20261117T065448-ceb2e7e7	2026-11-17T07:10:02Z
+review:shillinq:3048:fa8eacaf	CONFLICT with development (info.xml, action-count test, versions lock); head alone unit 12610 OK, diff clean	session-20261117T063708-4c9ceddc	2026-11-17T07:10:12Z
+review:shillinq:3000:a62150be	GREEN: phpunit 12658 OK, phpstan clean	session-20261117T065426-e0b4a950	2026-11-17T07:10:22Z
+fix:decidiq:2249:3d2d6c42	unmeasured: static.developer.overheid.nl (sbom regenerated, pushed b46f792f)	session-20261117T065308-bd0379c5	2026-11-17T07:10:42Z
+review:filinq:2095:120f4482	GREEN; no new failures	session-20261117T055844-3d508d2a	2026-11-17T07:10:52Z
+review:shillinq:2975:a5e402e5	GREEN: suites pass, 1 inherited vitest red	session-20261117T070217-3743d696	2026-11-17T07:11:12Z
+fix:filinq:2072:79221249	conflict resolved (register 8.67.0), new head 88f031dc, REVERIFY queued	session-20261117T055928-ffb37dd3	2026-11-17T07:11:15Z
+fix:launchpad:1227:a4a6474a	conflict resolved, pushed 144eba89; REVERIFY queued (not landed: gate hosts unreachable here)	session-20261117T055908-62351962	2026-11-17T07:11:37Z
+review:shillinq:3011:dd50b990	CONFLICT with development (info.xml, register-versions lock)	session-20261117T063100-87feca45	2026-11-17T07:11:46Z
+cover:launchpad:fb10c50fm88bd:a1252b57	PR #1258: 2 ArchiveParser tests, suite 4563->4565 OK	session-20261117T065500-f63bc812	2026-11-17T07:11:58Z
+fix:shillinq:2071:c9fb8008	restored BookCapturesCommand registration, pushed 6ef01f6f; REVERIFY	session-20261117T055834-d932e117	2026-11-17T07:11:54Z
+fix:shillinq:3064:b11030b8	conflict resolved, pushed e4c2b4532; REVERIFY recorded	session-20261117T063021-b217a961	2026-11-17T07:12:04Z
+review:buildiq:1626:230c8f81	GREEN: phpunit 3481 OK on merge with development (baseline 3476)	session-20261117T065457-ee5ddcd1	2026-11-17T07:12:15Z
+review:shillinq:2086:9fa2a6b9	GREEN: unit 12621 green, vitest 24 green, phpstan clean	session-20261117T070105-e962857c	2026-11-17T07:12:16Z
+review:shillinq:3067:57c917aa	BLOCK: manifest labels without nl keys	session-20261117T063127-b908dd01	2026-11-17T07:12:29Z
+cover:launchpad:fb10c50fm88bd:f545d745	no PR: lib/Repair has 315/333 lines covered by existing tests; the 18 left are missing/unreadable/malformed-seed branches on a fixed __DIR__ seed path and a glob() false, reachable only by changing production code (injectable path), which cover may not do	session-20261117T063048-0c413ea5	2026-11-17T07:12:47Z
+fix:shillinq:2083:ca162c3e	fixed RED (characterisation tests updated to the single-write contract), pushed 32c8fb4a; lock held elsewhere, REVERIFY queued	session-20261117T055905-03eea4d3	2026-11-17T07:12:41Z
+review:filinq:2059:7a6dae82	GREEN: config-only build per spec, suite 7104 OK	session-20261117T065546-dd6e246e	2026-11-17T07:13:11Z
+review:decidiq:2177:7c45ed60	GREEN: unit 4911 OK, vitest 53 OK	session-20261117T065410-18e3a1a1	2026-11-17T07:13:28Z
+merge:learniq:2524:8e0b94db	cloud tree of 2 learniq PRs: merged=0 red=0 fail=0 skip=1; conflict 1, lint 0, red 0, moved 0, done 0	session-20261117T061824-01d4fad5	2026-11-17T07:13:54Z
+review:pipelinq:3734:9499f0c6	GREEN: unit 9271/9271 on PR+development, matches change specs	session-20261117T065408-6d600eff	2026-11-17T07:14:01Z
+fix:shillinq:2070:0210f86b	conflict resolved, pushed a52f769a; REVERIFY queued (merge lock held elsewhere)	session-20261117T065410-e9ad9bdf	2026-11-17T07:14:15Z
+review:buildiq:1608:b1698085	GREEN	session-20261117T055853-7ddd3cb3	2026-11-17T07:14:23Z
+review:decidiq:2173:0ef71c12	BLOCK: group provisioning takes unrestricted group names from editable body data; tests green	session-20261117T063112-55331435	2026-11-17T07:14:39Z
+review:shillinq:3080:6a2e8035	CONFLICT with development (info.xml, registrar count tests, versions lock); head alone unit 12610 OK, diff clean	session-20261117T063708-4c9ceddc	2026-11-17T07:14:53Z
+cover:launchpad:fb10c50fm88bd:7505aeb4	PR #1259: DebounceHelper 41/41 lines, +6 tests, suite 4563->4569 green	session-20261117T062935-1aa25581	2026-11-17T07:15:11Z
+fix:launchpad:1219:08b864a2	conflict resolved, pushed ca7a79d2; merge lock held by another merger, REVERIFY queued	session-20261117T063127-b908dd01	2026-11-17T07:15:18Z
+review:buildiq:1605:2848f1e2	GREEN: vitest 4882 passed on merge with development	session-20261117T065459-2cd0c351	2026-11-17T07:15:25Z
+fix:launchpad:819:ff71d979	no change: sbom check passes on head and tree (dev-only bump); REVERIFY queued	session-20261117T055908-62351962	2026-11-17T07:15:37Z
+cover:launchpad:fb10c50fm88bd:6d5c7d3c	PR #1260: 7 tests for JoseEncoding/JwtSigningService edge cases, Embed uncovered lines 8 -> 1; suite 4563 -> 4570, 0 failures	session-20261117T063048-0c413ea5	2026-11-17T07:15:55Z
+review:shillinq:2993:cf43d96e	GREEN: unit 12638 OK, vitest 1 inherited red, phpstan clean	session-20261117T065619-e5275297	2026-11-17T07:15:47Z
+review:learniq:2534:6beffdd0	GREEN: unit 7016 (baseline 6998), only the 2 inherited failures; node 12 pass	session-20261117T061802-b42f2669	2026-11-17T07:15:58Z
+review:shillinq:2986:34de7944	GREEN shillinq#2986: matches specs; 12636 tests, 0 new failures	session-20261117T065609-89f8b9cf	2026-11-17T07:16:09Z
+fix:integriq:3626:7c1c0ef3	unmeasured: static.developer.overheid.nl; conflict fixed, new head 7c8ff8cb03, APPROVE recorded, REVERIFY queued	session-20261117T064936-821ba2a3	2026-11-17T07:16:17Z
+fix:opencatalogi:2756:a7e29de0	conflict resolved, new head b1e917d5, REVERIFY queued	session-20261117T055928-ffb37dd3	2026-11-17T07:16:27Z
+fix:launchpad:1217:faab5f5c	conflict resolved, pushed 56684b15; REVERIFY queued (merge lock held elsewhere)	session-20261117T065537-5000a36a	2026-11-17T07:16:41Z
+verify:dossiq:6628:02172125	6628 GREEN, 6629 GREEN, 6630 BLOCK (behaviour change outside a build commit)	session-20261117T063021-b217a961	2026-11-17T07:17:13Z
+review:shillinq:3062:2d73a4e6	GREEN: unit 12634 OK (baseline 12613), vitest 16/16	session-20261117T060006-72dfb87c	2026-11-17T07:17:27Z
+fix:versioniq:758:0dfd34ac	conflict resolved, pushed 7a728e33; REVERIFY queued	session-20261117T055853-7ddd3cb3	2026-11-17T07:17:39Z
+fix:opencatalogi:2684:d59bbd9f	fixed RED (golden re-recorded), pushed 0f1cbda6; lock held elsewhere, REVERIFY queued	session-20261117T055905-03eea4d3	2026-11-17T07:18:11Z
+fix:portaliq:2417:b8acf329	unmeasured: static.developer.overheid.nl (fix pushed, new head 5a89d39e01, APPROVE recorded)	session-20261117T070159-36e67801	2026-11-17T07:18:27Z
+build:larpinq:forms-registration-is-checked-at-binding:c3	partial: 1.2 and 2.1 left, nothing new pushed (worker context nearly full). Needed first in openregister main: an in-process app-authority submit, e.g. an authority flag on FormSubmitter carried into FormWriteContext so rbac() is false for that write, settable only from PHP (FormSubmitController never sets it), exposed through a lib/Contract interface; then larpinq FormSubmissionListener submits t	session-20261117T063048-0c413ea5	2026-11-17T07:18:43Z
+fix:shillinq:2983:ad375f2d	conflict resolved, pushed ff39cb27 (phpunit 12650 OK); merge lock held elsewhere, REVERIFY queued	session-20261117T065426-e0b4a950	2026-11-17T07:18:40Z
+fix:launchpad:1218:d81a4a57	conflict resolved, pushed 2d2e11df; merge lock busy, REVERIFY queued	session-20261117T070335-73c86ca7	2026-11-17T07:18:55Z
+fix:versioniq:726:c5419f20	conflicts fixed and pushed, new head 6bf08276; REVERIFY queued (api.osv.dev blocked, not landed)	session-20261117T063112-55331435	2026-11-17T07:19:10Z
+fix:opencatalogi:2677:d1c995ac	blocker fixed, pushed 635c5d4a; REVERIFY queued	session-20261117T063100-87feca45	2026-11-17T07:19:25Z
+review:learniq:2519:d768aa77	GREEN: 7010 tests, 1 inherited failure	session-20261117T061732-40387d12	2026-11-17T07:19:39Z
+fix:versioniq:686:ae19578c	conflict resolved, pushed 6799e34; REVERIFY (merge lock busy)	session-20261117T061824-01d4fad5	2026-11-17T07:19:51Z
+fix:opencatalogi:2652:541cb28a	version bumped, pushed eb4bae0a; merge lock held elsewhere, REVERIFY queued	session-20261117T070105-e962857c	2026-11-17T07:19:59Z
+fix:opencatalogi:2665:1e4b30ce	conflict resolved, pushed 106da853; merge lock held elsewhere, REVERIFY queued	session-20261117T065546-dd6e246e	2026-11-17T07:20:10Z
+fix:opencatalogi:2654:8d972568	conflict resolved, new head cc1b236e, REVERIFY queued	session-20261117T055928-ffb37dd3	2026-11-17T07:20:24Z
+build:versioniq:releases-version-facts:c5	partial: nothing buildable; 2.3 waits for RemoteInstanceReader (install-multi-instance-promotion 2.2, open in #735, not on development); 4.4 e2e and 5.1 close left; PR #755 open at 01df198	session-20261117T061824-01d4fad5	2026-11-17T07:20:40Z
+verify:pipelinq:3929:e2751f91	BLOCK #3929: widens start/reject access (tests green, 9262/9262)	session-20261117T065408-6d600eff	2026-11-17T07:20:39Z
+merge:versioniq:700:77beb781	cloud tree of 3 versioniq PRs: merged=0 red=1 fail=0 skip=1; conflict 1, lint 0, red 0, moved 0, done 0	session-20261117T065451-f004b6e0	2026-11-17T07:20:59Z
+merge:decidiq:2162:a1d87ca0	cloud tree of 3 decidiq PRs: merged=0 red=0 fail=0 skip=1; conflict 2, lint 0, red 0, moved 0, done 0	session-20261117T065524-8fc65d3f	2026-11-17T07:21:01Z
+build:opencatalogi:catalogs:c6	partial: PR #2765 (orphaned SPDX commit of #2755 + widget on CnWidgetEmptyState). Left: CatalogModal/ViewCatalogi Cn rewrites (need browser check; dependent schema picker has no CnFormDialog equivalent) and task 10 seed (would ship fictional catalogs to every install; needs a decision)	session-20261117T063021-b217a961	2026-11-17T07:21:23Z
+review:portaliq:2493:76051e0b	GREEN	session-20261117T063032-e9a993e2	2026-11-17T07:21:13Z
+fix:versioniq:709:861187fb	conflict resolved, pushed 482317ee; REVERIFY queued (merge lock held elsewhere)	session-20261117T063708-4c9ceddc	2026-11-17T07:21:25Z
+review:shillinq:3065:90fba016	GREEN: tests green (1 inherited vitest red), gates only inherited findings	session-20261117T065729-57200508	2026-11-17T07:21:40Z
+fix:stackiq:1942:aad1987d	conflict resolved, pushed 9623d967; merge lock busy, REVERIFY queued; 3 inherited reds	session-20261117T063846-e8410bfe	2026-11-17T07:21:47Z
+review:shillinq:3005:fb9ac5c4	GREEN: unit 12639 OK, touched vitest 36 OK	session-20261117T063046-d755315d	2026-11-17T07:21:57Z
+fix:opencatalogi:2683:783543f7	conflict resolved, pushed b9a9bc9f; REVERIFY (merge gate host unreachable)	session-20261117T065308-bd0379c5	2026-11-17T07:22:06Z
+build:versioniq:inventory-lifecycle-signals:c5	PR #754 head 8d9ac96: merged development (l10n union, openapi JSON merge), built endOfSupport stamp in the sweep (AppStoreSource::supportedMajors + LifecycleSignals::endOfSupport, 10 tests); unit 2255->2265, same 2 inherited golden failures; vitest 3177 pass. Code tasks complete; left: 3.2 e2e and 4.1 matrix/archive need a live instance	session-20261117T065609-89f8b9cf	2026-11-17T07:22:23Z
+fix:larpinq:1043:09d10d17	conflict resolved, pushed 03f6b920; REVERIFY queued	session-20261117T063100-87feca45	2026-11-17T07:22:20Z
+review:shillinq:3009:0bd3c949	GREEN: spec-conform, PHPUnit 12640 OK, vitest red inherited only	session-20261117T065527-44da8271	2026-11-17T07:22:34Z
+build:launchpad:widget-calculated-fields:c7	partial: PR #1261 (quality/build-widget-calculated-fields) built 23, 24, 25, 29, 37 (server AST check, PHP type checker with 60-case client parity fixture, 400 envelopes, cross-source downgrade), phpunit 4563->4673 OK. Left: 26-28 materialise as x-openregister-calculations (AST dialect translation), 32, 19, 20, 35, 39-41, 48, 49, 52, 53	session-20261117T065448-ceb2e7e7	2026-11-17T07:23:12Z
+review:portaliq:2449:05704f30	GREEN: portaliq#2449 no new failures, node specs 11/11	session-20261117T065829-ba4e0772	2026-11-17T07:22:53Z
+fix:versioniq:715:160a3e87	conflict resolved, pushed 4657c9dc; REVERIFY queued	session-20261117T055853-7ddd3cb3	2026-11-17T07:23:06Z
+fix:larpinq:1049:8083d2b9	fixed: test code ratio back to 3 stars (75.05%), new head 6a27cf9497, REVERIFY queued; land skipped: static.developer.overheid.nl unreachable	session-20261117T064936-821ba2a3	2026-11-17T07:23:16Z
+fix:versioniq:729:624afbb6	conflict resolved, pushed 48ad9ca09c; REVERIFY queued (2 inherited golden reds)	session-20261117T070159-36e67801	2026-11-17T07:23:31Z
+fix:opencatalogi:2722:8f7ea1f5	fixed BLOCK (@spec tag), new head 6007a1fe; merge lock held elsewhere, REVERIFY queued	session-20261117T055844-3d508d2a	2026-11-17T07:23:51Z
+fix:opencatalogi:2680:7b795492	conflict resolved, pushed 2286260f; merge lock held elsewhere, REVERIFY	session-20261117T065443-facc0d23	2026-11-17T07:24:18Z
+fix:stackiq:1946:644c7833	conflict resolved, pushed 79f3a2dd (phpunit OK, vitest only inherited facets failure); lock held elsewhere, REVERIFY queued	session-20261117T065426-e0b4a950	2026-11-17T07:24:43Z
+fix:opencatalogi:2650:fef15211	unmeasured: api.osv.dev (conflict fixed, floor restored, new head e518db3d, APPROVE recorded, tree 0 new failures)	session-20261117T062917-0fb3a5d4	2026-11-17T07:25:02Z
+fix:stackiq:1938:1b19373e	conflict resolved and @spec fixed, head 08b568aa; approved, merge gate RED on floors (unit_complexity 3.73->3.71, unit_interfacing 4.71->4.68), not landed	session-20261117T063127-b908dd01	2026-11-17T07:25:09Z
+fix:launchpad:1239:1b2f911c	conflict resolved, pushed a96d699c; merge lock held elsewhere, REVERIFY queued	session-20261117T065500-f63bc812	2026-11-17T07:25:12Z
+build4:openregister:production-observability:c8	partial: pushed to PR #10537 (head 79d10cefa): objects_total from magic tables, CRUD counters per register/schema, cache hit/miss, import job progress, error-rate and p95 alert thresholds with admin notifications, structured request/error log entries, admin dashboard widget; ticked Register/Schema/Object counts, CRUD counters, Performance Baseline, Alerting; +45 tests, suite no new failures vs mai	session-20261117T061734-31f6d58b	2026-11-17T07:25:41Z
+fix:opencatalogi:2651:742ec126	fixed component independence and demo data, pushed e7467c2a; REVERIFY	session-20261117T055834-d932e117	2026-11-17T07:25:39Z
+fix:filinq:2105:0d907f7f	conflict resolved (template 1.8.0, register 8.67.0), pushed 6c1363a4 with icon/app-version/@spec fixes; suite 7196 OK; not landed: REQUEST_CHANGES for the component_independence floor	session-20261117T063118-c67285ab	2026-11-17T07:25:34Z
+fix:versioniq:692:613c5671	floor restored (floor_check PASS), pushed 596a62c5; unit same 2 inherited failures; REVERIFY queued (merge lock held elsewhere)	session-20261117T061802-b42f2669	2026-11-17T07:26:02Z
+fix:stackiq:1966:a2a8084a	conflict resolved, pushed 07fea94b; REVERIFY queued	session-20261117T065459-2cd0c351	2026-11-17T07:26:24Z
+fix:stackiq:1933:60a38fa8	conflict resolved, pushed 4ab6e187; REVERIFY recorded	session-20261117T060006-72dfb87c	2026-11-17T07:26:37Z
+fix:larpinq:1056:10fc7079	blockers fixed, pushed cc58f17b; merge lock busy, REVERIFY queued	session-20261117T070335-73c86ca7	2026-11-17T07:26:52Z
+fix:larpinq:1045:a40d7b26	test code ratio restored to 75.11% (3 stars), pushed 73c4570d; REVERIFY queued (not landed: gate hosts unreachable here)	session-20261117T055908-62351962	2026-11-17T07:27:10Z
+fix:larpinq:1047:6ce2027d	unmeasured: static.developer.overheid.nl (conflict fixed at 398465ad, APPROVE recorded, not landed)	session-20261117T065537-5000a36a	2026-11-17T07:27:20Z
+build:launchpad:embedded-analytics:c7	built tasks 37 (EN+NL catalogue, 115 strings) and 38 (lint clean, admin spec stubs Embeds tab: 22 unhandled rejections gone; vitest 2731 OK) on PR #1230, head 6b163937; left, not code: 12 axe-core build step (new dependency + rendering harness), 19/24 dist+publish, 35 e2e, 39 audit, 40 widget-cog Embed entry needs nextcloud-vue	session-20261117T065410-18e3a1a1	2026-11-17T07:27:52Z
+fix:shillinq:3007:097d4460	unmeasured: static.developer.overheid.nl (conflict fixed, new head 4b9a3466, APPROVE recorded, REVERIFY queued)	session-20261117T055927-bd949843	2026-11-17T07:27:36Z
+fix:versioniq:701:a3461ebb	conflict resolved, pushed 8845d766; REVERIFY queued (merge lock held elsewhere)	session-20261117T065410-e9ad9bdf	2026-11-17T07:28:07Z
+fix:versioniq:735:1bdf2b19	conflicts fixed and pushed, new head f5849ebe; REVERIFY queued (api.osv.dev blocked, not landed)	session-20261117T063112-55331435	2026-11-17T07:28:15Z
+fix:thematiq:1365:214b4a2d	unmeasured: static.developer.overheid.nl (conflict fixed, new head 5371f4c1, approved, not landed)	session-20261117T061732-40387d12	2026-11-17T07:28:59Z
+build:larpinq:registration-payments-through-shillinq:c5	built 6.1 on PR #1055 at 674a0c8e; every code task ticked, 4.2 e2e left (needs a live shillinq)	session-20261117T070105-e962857c	2026-11-17T07:31:03Z
+build:opencatalogi:dataset-views-on-the-public-page:c3	partial: PR #2766 builds 1.1,1.2,2.1-2.3,5.1,6.3 (schema, service, public+editor routes, data shaping, docs; suite no new failures); left 3.1/3.2 editor dialog and view list (src/modals/DatasetViewDialog.vue over the new editor routes), 4.x portaliq, 6.1/6.2	session-20261117T055905-03eea4d3	2026-11-17T07:32:36Z
+merge:shillinq:1958:9e9ac0d3	cloud tree of 2 shillinq PRs: none; conflict 2, lint 0, red 0, moved 0, done 0	session-20261117T070217-3743d696	2026-11-17T07:34:12Z
+build4:openregister:scoped-api-tokens:c8	built: PR #10514 head 6f799d1a - 3.1 grant editor decided and built (app passwords named by pasting once, preview via the enforcing permission handler, admin Consumers page), C40.2b Consumer renewal, Consumer grant validated under authorizationConfiguration; 25 strings in 36 locales; suites = main baseline. Left only instance/e2e/hand-over tasks (4.1, 4.2b, W.1, C40.7, V.x)	session-20261117T062151-8cc59109	2026-11-17T07:37:22Z
+merge:shillinq:2997:55e7a1d4	cloud tree of 1 shillinq PRs: none; conflict 1, lint 0, red 0, moved 0, done 0	session-20261117T070217-3743d696	2026-11-17T07:39:03Z
