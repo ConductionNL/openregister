@@ -20117,3 +20117,4 @@ fix:hermiq:1826:716bb0a6	merged development in, floor passes, unit green; REVERI
 review:stackiq:1966:60592396	GREEN: unit 4034 OK, vitest 1 inherited failure	session-20261117T092810-d097e665	2026-11-17T09:34:42Z
 review:dossiq:6203:e600f5a9	GREEN: tests only, suite adds no failures	session-20261117T092753-6c6fb28e	2026-11-17T09:35:01Z
 review:integriq:2650:92ce810e	GREEN: 0 new failures (9736 vs 9713 tests, 5 inherited)	session-20261117T092700-641a7a7c	2026-11-17T09:35:09Z
+fix:integriq:3596:d81a6a11	conflict resolved (seed golden hash); new head e4864f09, REVERIFY	session-20261117T092706-95ac9736	2026-11-17T09:35:17Z
