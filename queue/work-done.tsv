@@ -18503,3 +18503,4 @@ verify:opencatalogi:2669:b4b95352	GREEN #2669	session-20261116T233627-44605965	2
 verify:portaliq:2449:1d8ee702	CONFLICT #2449 (l10n, controller, listener registrar, register json)	session-20261116T232918-35016340	2026-11-17T00:02:12Z
 verify:learniq:2486:875af95b	CONFLICT #2486 (ExcuseApprovalHandler, portal tests)	session-20261116T232033-3ca59164	2026-11-17T00:02:32Z
 verify:portaliq:2446:9a320c2f	RED #2446: 3 new ContributionControllerTest errors, message() calls PortalSessionService::trustSatisfies without import after development moved it to SessionTrust	session-20261116T233921-33ab4c87	2026-11-17T00:02:43Z
+verify:pipelinq:3743:d1e2bf9d	CONFLICT #3743 (l10n, SettingsLoadService, manifest)	session-20261116T232844-9c7f5cce	2026-11-17T00:03:02Z
