@@ -18758,3 +18758,4 @@ decidiq	2286	15cd21f4e0f1341b9e6d64d85bbeb4aeb735378c	GREEN	worker-01	unit 5031 
 dossiq	6644	2c3300bc4c89ae20b45cd4b9e7a9844b8d1b6352	GREEN	worker-23	tasks.md tick only (2.1 code verified on development 5641ce1e7); unit 18398 tests, 19 failures all inherited (no code changed)
 hermiq	1848	65d35bc5c91cb52e899ac03cd9fd06cc301f8aa5	GREEN	worker-20	unit 5736 baseline 0 fail, tree 5736 0 new failures; tests-only (Playwright spec, Newman folder, tasks.md notes)
 dossiq	6649	c3066e42670a7916aef041452d6efdc4f3d501c9	GREEN	worker-53	tasks.md tick only; unit suite 18398 tests, baseline 19 failures inherited, 0 new
+portaliq	2581	a16c6b8acc30ffc5695451390622f9e12613586d	GREEN	worker-32	unit 6339 tests on tree, baseline 6324 with 16 inherited errors (openregister classes absent), new failures 0; no JS unit script, markdown-block node test passes; e2e spec only
