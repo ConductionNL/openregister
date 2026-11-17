@@ -22698,3 +22698,4 @@ verify:opencatalogi:2806:c32247ec	GREEN opencatalogi #2806 (inherited failures o
 fix:portaliq:2589:7076e2d0	conflict resolved, pushed 8f568eda; REVERIFY (merge lock held elsewhere)	session-20261117T211932-f471137a	2026-11-17T21:44:16Z
 verify:larpinq:1104:072740aa	GREEN #1104 (e2e spec only)	session-20261117T211341-e05e0d2c	2026-11-17T21:44:31Z
 verify:integriq:2650:ecac209c	GREEN #2650: 9933 tests, no new failures	session-20261117T211412-45e1aeb8	2026-11-17T21:44:41Z
+fix:integriq:3557:7d1abff4	failed: permission (git push to ConductionNL/integriq refused by the session git proxy; fix ready: add development's 110 en / 31 nl js-only keys to en.json/nl.json and rebuild with l10n:build, test:l10n passes)	session-20261117T211359-bea33e3d	2026-11-17T21:45:00Z
