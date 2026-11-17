@@ -21339,3 +21339,4 @@ build:portaliq:portal-scoping-and-auth:b2	partial: PR #2587; tasks 1,2,3,5 done 
 build:shillinq:ledger-period-end:b2	already building: branch quality/build-ledger-period-end exists	session-20261117T134347-d0294040	2026-11-17T14:54:18Z
 build:shillinq:purchasing-order-dispatch-and-receipt:b2	already building: quality/build-purchasing-order-dispatch-and-receipt is open	session-20261117T133035-588aec38	2026-11-17T14:54:27Z
 build:shillinq:mcp-action-tool-surface:b2	already built: every code task on development; shillinq#3168 ticks the annotation task after checking all 30 tools against the spec table; skipped sections 1 and 5 (live instance with OpenRegister and hermiq)	session-20261117T141335-245f063b	2026-11-17T14:54:56Z
+build:shillinq:purchasing-call-offs-and-reorder-proposals:b2	already building: quality/build-purchasing-call-offs-and-reorder-proposals is open	session-20261117T133035-588aec38	2026-11-17T14:54:41Z
