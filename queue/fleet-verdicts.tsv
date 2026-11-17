@@ -17847,3 +17847,4 @@ launchpad	1217	56684b15f12724e19991268ccdd0e71b49c19a31	REVERIFY	worker-20	added
 dossiq	6634	0b5b116732836f000a335e3707009602b5d40af2	GREEN	worker-29	dev-dep bump stylelint 18, no PHP change; vitest 7211 tests, baseline 2 failed (capabilityComparison, caseSearchDeclarations), new 0; stylelint 0 errors
 dossiq	6640	f6770616edd0130f7864c19a2783f56d50286180	GREEN	worker-29	dep bump gridstack 14, no PHP change; vitest 7211 tests on tree, baseline 2 failed, new 0
 integriq	3613	b7dee7b62b8ed180650cb0ebb52503251bc25f17	RED	worker-42:merge-gate	GATE RED floor: unit_complexity: 3.90 -> 3.88
+dossiq	6635	4ef9f4fadc74464a3b12a9948d62d0b876a6a989	RED	worker-02:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
