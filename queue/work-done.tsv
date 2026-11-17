@@ -19890,3 +19890,4 @@ review:versioniq:729:48ad9ca0	RED: golden fixtures selected/external-release-ins
 fix:shillinq:1958:204d8ba8	conflict resolved, pushed cf3cb19a; REVERIFY queued	session-20261117T081501-4929e5cc	2026-11-17T08:21:05Z
 review:thematiq:1365:5371f4c1	GREEN: additive token pair, no new failures	session-20261117T081503-d7471efc	2026-11-17T08:21:17Z
 review:launchpad:1227:144eba89	GREEN: build matches change specs; phpunit 4573 ok, vitest 2679 ok	session-20261117T081204-71167548	2026-11-17T08:21:28Z
+review:opencatalogi:2683:b9a9bc9f	RED: 1 new failure (ApplicationTest assumes openregister absent)	session-20261117T081138-8732f141	2026-11-17T08:21:38Z
