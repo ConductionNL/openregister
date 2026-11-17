@@ -18970,3 +18970,4 @@ fix:opencatalogi:2723:28b856d8:v4	fixed: pushed ba525e6a (tasks.md conflict), RE
 fix:versioniq:698:bbaa7d8c:v3	conflict resolved, pushed 0a06ee17; 2 inherited failures; merge lock held elsewhere, REVERIFY queued	session-20261117T004609-b5037037	2026-11-17T01:45:14Z
 fix:larpinq:1059:33374bf7:v3	conflict resolved, pushed 064564f8; REVERIFY queued (merge lock held elsewhere)	session-20261117T004640-1b533885	2026-11-17T01:45:30Z
 fix:versioniq:726:d1f35455:v3	13 conflicts resolved, new head c5419f20; lock busy, REVERIFY queued	session-20261117T004723-694d6e7e	2026-11-17T01:45:57Z
+fix:opencatalogi:2674:4ec49fd3	fixed conflict, pushed 3ea2cbc2d; merge lock busy, REVERIFY recorded	session-20261117T004435-9e7fb02f	2026-11-17T01:46:05Z
