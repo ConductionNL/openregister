@@ -20687,8 +20687,29 @@ verify:pipelinq:2284:aef4e838	GREEN #2284 (no-op merge: tree identical to develo
 verify:learniq:1862:8239bdab	GREEN #1862 (sync merge, no file changes)	session-20261117T124010-7774729d	2026-11-17T13:03:34Z
 merge:hermiq:1738:d155e746	cloud tree of 1 hermiq PRs: merged=0 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T124646-693ace9a	2026-11-17T13:03:51Z
 verify:pipelinq:2309:9fdbddb4	GREEN #2309: no net diff vs development	session-20261117T125151-bf6843dc	2026-11-17T13:04:03Z
+verify:integriq:2719:c44e802f	BLOCK: auth header lookup behaviour change; no new failures	session-20261117T121046-ffb3fcc9	2026-11-17T13:04:19Z
 verify:pipelinq:2330:7c2e1706	GREEN #2330: no-op merge, tree identical to development	session-20261117T130049-95d0a2ec	2026-11-17T13:04:18Z
 verify:learniq:2509:4853fbe3	GREEN 2509 (7129 tests, no new failures)	session-20261117T124809-d8aae7cd	2026-11-17T13:04:31Z
 review:openregister:10611:66f2304c	APPROVE #10611	session-20261117T124639-0485e5ab	2026-11-17T13:04:39Z
 verify:integriq:3702:e6c3a1b8	GREEN #3702	session-20261117T123701-2c29f729	2026-11-17T13:04:42Z
 verify:planninq:869:6ffcb32c	GREEN 869	session-20261117T124544-f8740317	2026-11-17T13:04:55Z
+verify:integriq:3713:1ac93422	GREEN #3713 (dev-dep bump, no new failures, vitest green)	session-20261117T124526-11739f5d	2026-11-17T13:05:03Z
+verify:pipelinq:2292:250dc1f2	GREEN #2292 (empty diff vs development, content already present)	session-20261117T125719-a348e067	2026-11-17T13:05:19Z
+verify:pipelinq:2381:eb3aba20	2381 GREEN (no content change vs development; 0 new failures)	session-20261117T123418-5f98fc94	2026-11-17T13:05:30Z
+verify:larpinq:1086:f1f15b15	GREEN #1086 (build per spec, 1236 tests, no new failures)	session-20261117T124621-35d7386d	2026-11-17T13:05:45Z
+verify:pipelinq:2419:63962c24	GREEN #2419: zero file diff vs development (history-only beta sync)	session-20261117T124737-01fc7db5	2026-11-17T13:06:00Z
+verify:planninq:1215:707e853b	RED #1215: gridstack 14 conflicts with nextcloud-vue peer range, npm ci fails	session-20261117T125151-bf6843dc	2026-11-17T13:06:12Z
+fix:integriq:3701:69d057ce	fixed #3701: restored publiccode.yml layer declaration, new head 4816b22c; lock busy, REVERIFY queued	session-20261117T124647-f1a70460	2026-11-17T13:06:20Z
+verify:thematiq:1167:dcea2bc0	GREEN #1167 (empty merge, already on development)	session-20261117T124634-577ba792	2026-11-17T13:06:37Z
+merge:opencatalogi:2677:a1602fb7	cloud tree of 2 opencatalogi PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 1, moved 0, done 0	session-20261117T125302-a32fc8d7	2026-11-17T13:06:52Z
+fix:stackiq:2030:99dcfdad	failed: permission (self review+land refused); fixed and pushed b0c1fc68, REVERIFY recorded	session-20261117T124128-c2e9515e	2026-11-17T13:06:58Z
+verify:planninq:1054:57acc898	GREEN #1054 (config-only floor json; unit 1253 ok)	session-20261117T125035-43d1124d	2026-11-17T13:07:31Z
+verify:portaliq:2449:ae33c0d7	CONFLICT #2449: package.json, PortaliqRegisterConfigTest.php, example-site.spec.mjs	session-20261117T124737-01fc7db5	2026-11-17T13:07:45Z
+verify:portaliq:1364:8a7a486b	GREEN #1364 (empty diff vs development)	session-20261117T125719-a348e067	2026-11-17T13:07:56Z
+verify:thematiq:1716:af83f772	GREEN #1716 (version bump only)	session-20261117T124634-577ba792	2026-11-17T13:08:10Z
+verify:pipelinq:2417:727efa5a	GREEN #2417 (no-op merge, tree equals development)	session-20261117T123632-d3b91db3	2026-11-17T13:08:24Z
+verify:pipelinq:3931:c6e77ad0	GREEN #3931 (version bump; 10 related test files pass)	session-20261117T125716-5aa18045	2026-11-17T13:08:36Z
+fix:integriq:3601:34350fe3	conflict resolved, pushed 691712f5; REVERIFY queued	session-20261117T124618-509d3d7a	2026-11-17T13:08:47Z
+verify:launchpad:1261:f23c46de	GREEN #1261 (phpunit 4779 OK, vitest golden failure inherited)	session-20261117T124637-3e909745	2026-11-17T13:09:07Z
+verify:pipelinq:1931:94e5fc38	GREEN #1931 (merge adds no changes to development)	session-20261117T124628-bb853259	2026-11-17T13:09:22Z
+verify:portaliq:1910:248307eb	CONFLICT: #1910 conflicts with development in 19 files	session-20261117T124559-fffd8ca8	2026-11-17T13:09:38Z
