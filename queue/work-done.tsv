@@ -21574,3 +21574,4 @@ build:decidiq:interests-and-integrity:b2	already done: tasks 1-6 on development 
 build:decidiq:member-onboarding:b2	already building: quality/build-member-onboarding exists (open PR #2173)	session-20261117T135029-424a7669	2026-11-17T15:22:10Z
 build:decidiq:followup-implementation-progress:b2	already building: quality/build-followup-implementation-progress and -2 exist	session-20261117T135414-614629b0	2026-11-17T15:22:11Z
 build:decidiq:leaf-integrations:b2	already building: quality/build-leaf-integrations(-c2) exist	session-20261117T132743-10cec9d3	2026-11-17T15:21:37Z
+build:decidiq:platform-baseline-on-nextcloud:b2	already building: quality/build-platform-baseline-on-nextcloud exists	session-20261117T135414-614629b0	2026-11-17T15:23:05Z
