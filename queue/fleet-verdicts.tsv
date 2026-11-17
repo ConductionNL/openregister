@@ -18796,6 +18796,7 @@ pipelinq	3946	633106e5ce5d34520df6e3801898478fcca78d26	REVERIFY	worker-30	confli
 dossiq	6642	dcd42889d10247bf15a7678d1ab0326f6ca37950	GREEN	worker-44	phpunit 18398 on tree, baseline 19 failures inherited, none new; tasks.md tick only, the code it names is on development
 dossiq	6660	9f09443de66fb27222359ed58556cfdc9f42c592	GREEN	worker-40	unit 18422 on tree vs 18398 baseline, 1 inherited error, 0 new; vitest 7224, 2 inherited failures, 0 new; build PR judged against its change
 filinq	2116	9d997186126b5adbd734b7ddccc1af725b0dac7f	GREEN	worker-46	unit baseline 7288 OK, tree 7363 OK, 0 new failures; vitest 869 passed; build of tmlo-mdto-metadata per its specs, export/transfer admin or policy-group gated
+dossiq	6661	a6b5bd94aa1fc40b7ca325fb7e67ef05af3ba48f	GREEN	worker-40	unit 18422 on tree vs 18398 baseline, 1 inherited error, 0 new; vitest 7224, 2 inherited failures, 0 new; build PR judged against its change
 opencatalogi	2793	d14f5f969a4c92d42409f8c9a2b0ebe0c6d49eab	GREEN	worker-31	phpunit 6389 tests on tree, baseline 6364 with 103 inherited failures/errors, 0 new; vitest 8 inherited mainEntry failures, 0 new
 opencatalogi	2794	85f20bb85c5a19d6e66aea0b7267df306933caac	GREEN	worker-31	phpunit 6389 tests on tree, baseline 6364 with 103 inherited failures/errors, 0 new; vitest 8 inherited mainEntry failures, 0 new
 opencatalogi	2795	9844e9a09589c8fb5eb3275c484e4adb67f6bb38	GREEN	worker-31	phpunit 6389 tests on tree, baseline 6364 with 103 inherited failures/errors, 0 new; vitest 8 inherited mainEntry failures, 0 new
