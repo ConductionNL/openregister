@@ -19863,3 +19863,4 @@ review:integriq:3564:6d065ca0	BLOCK: publish guard refuses all activations until
 review:larpinq:1045:73c4570d	GREEN: unit 1217 OK, vitest 725 OK, phpstan clean	session-20261117T081100-57828e7e	2026-11-17T08:14:55Z
 review:opencatalogi:2684:0f1cbda6	GREEN: 0 new failures (6207 tests, baseline 78 inherited)	session-20261117T081154-c3187d32	2026-11-17T08:15:07Z
 review:opencatalogi:2680:2286260f	GREEN: no new failures, behaviour matches change specs	session-20261117T081117-f29e8a89	2026-11-17T08:15:17Z
+review:integriq:3613:b7a00be9	GREEN: spec-conformant build, no new failures	session-20261117T080541-d8abe4ad	2026-11-17T08:15:46Z
