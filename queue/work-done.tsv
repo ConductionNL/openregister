@@ -20526,3 +20526,4 @@ cover:dossiq:069ee2d6m9d1b:9951e799	deferred: dossiq has 42 open PRs	session-202
 verify:versioniq:770:2d93a058	770 GREEN	session-20261117T121049-5b84d45a	2026-11-17T12:14:55Z
 review:versioniq:700:563a324a	GREEN: 2410 tests, 2 inherited failures, no new	session-20261117T121050-a5ee25f2	2026-11-17T12:15:05Z
 fix:integriq:3564:d45b5057	fixed: demo objects added for both schemas; pushed d0095e30, REVERIFY queued (merge lock held elsewhere)	session-20261117T120335-b942e878	2026-11-17T12:15:28Z
+cover:buildiq:70b3e29em2454:8ed5443b	failed: lib/Kernel/Contracts/*.php holds only interfaces, no executable logic to cover	session-20261117T121046-ffb3fcc9	2026-11-17T12:15:39Z
