@@ -21587,4 +21587,5 @@ build:decidiq:platform-baseline-on-nextcloud:b2	already building: quality/build-
 build:buildiq:decision-tables-live-in-openregister:b2	already built: the one open task is a live occ upgrade check after openregister#4572; no spec files named	session-20261117T141351-c4de67df	2026-11-17T15:23:07Z
 build:decidiq:one-consultation-schema:b2	already done: built on development in 1fec71f94 (#1163) and e80eea9ae; only e2e 5.2 left	session-20261117T140734-4d108840	2026-11-17T15:23:13Z
 build:decidiq:integrity-disclosures-in-plain-words:b2	already done in code: only 5.2 E2E is open (needs the live instance)	session-20261117T135029-424a7669	2026-11-17T15:23:24Z
+build:decidiq:delegated-authority-check:b2	already done: built on development (eac32354); only item 3, marked as a follow-up change, is left	session-20261117T141120-684bff04	2026-11-17T15:23:56Z
 build:decidiq:live-room-conference-system-link:b2	already done: build merged; the three open Test items are Newman and Playwright runs on a live instance, unit tests are in	session-20261117T124010-7774729d	2026-11-17T15:23:47Z
