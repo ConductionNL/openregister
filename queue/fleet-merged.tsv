@@ -5191,3 +5191,4 @@ opencatalogi	2665	16ac2bab62195fd2d8ce728161b28db9e28ec22c	MERGED	worker-08	GATE
 dossiq	6636	ec703426ebee6d770f11e7035231e62cad09bab6	MERGED	worker-02	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
 learniq	2523	3f4bf7183dd6cf757c044ccbf72a2119a09158ed	MERGED	worker-15	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 4.10
 shillinq	3005	fb9ac5c41d5b2499c55a3b19960791ea75317e36	MERGED	worker-17	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.00
+dossiq	6637	b73c09106cab3ce39f127bc4cb34793daa79f2b1	RED	worker-02	GATE RED sbom: package-lock.json changed without sbom.cdx.json
