@@ -19725,3 +19725,18 @@ review:learniq:2509:2500f767	GREEN: 7003 tests, 1 inherited failure	session-2026
 fix:filinq:2112:dc4b7d6c	conflict resolved, pushed c5d832c9; REVERIFY queued (merge lock held elsewhere)	session-20261117T065537-5000a36a	2026-11-17T07:07:23Z
 review:filinq:2126:d4e66904	GREEN: 7129 tests, 0 failures (baseline 7098/0)	session-20261117T065524-8fc65d3f	2026-11-17T07:07:33Z
 review:buildiq:1602:b2a6e893	GREEN: vitest 4873/4873 on PR+development, matches change specs	session-20261117T065408-6d600eff	2026-11-17T07:07:48Z
+fix:filinq:2124:216f959b	conflict resolved, pushed 0922105d; merge lock held elsewhere, REVERIFY queued	session-20261117T065500-f63bc812	2026-11-17T07:08:00Z
+review:buildiq:1607:0a33c019	GREEN: spec-conform, vitest 4869 passed, no new lint	session-20261117T065527-44da8271	2026-11-17T07:08:12Z
+review:filinq:2086:ebd288b0	GREEN: merges clean, 7129 unit + 812 vitest OK	session-20261117T055834-d932e117	2026-11-17T07:08:23Z
+fix:decidiq:2189:aff8b82e	conflict resolved, pushed 7818e0c2; merge lock held elsewhere, REVERIFY queued	session-20261117T065448-ceb2e7e7	2026-11-17T07:08:35Z
+review:filinq:2116:b8017fb6	GREEN: unit 7173 OK, jest+vitest 25 OK, phpstan/eslint clean	session-20261117T070159-36e67801	2026-11-17T07:08:47Z
+build:hermiq:tools-browser-and-computer-use:c8	PR #1754 at bf0cc3bd: tasks 1-3 (browser) built on the landed code sandbox; every code task ticked; left: live/e2e verification only	session-20261117T063046-d755315d	2026-11-17T07:09:06Z
+review:filinq:2121:06812be1	BLOCK: register version without app version bump, component_independence floor	session-20261117T063032-e9a993e2	2026-11-17T07:09:02Z
+review:learniq:2536:3f0c2d08	BLOCK #2536: tests baseline, 5 gate findings on PR lines	session-20261117T062935-1aa25581	2026-11-17T07:09:24Z
+fix:shillinq:3110:e8ca71f4	sbom current (dev-only lock changes); merged development, REVERIFY new head 1e1e9564	session-20261117T065524-8fc65d3f	2026-11-17T07:09:35Z
+review:shillinq:3004:0e70c6a3	CONFLICT with development (7 files); fix task follows	session-20261117T063100-87feca45	2026-11-17T07:09:49Z
+fix:decidiq:2171:853b82a5	conflict resolved, pushed 6d1d07d3; merge lock held elsewhere, REVERIFY queued	session-20261117T065448-ceb2e7e7	2026-11-17T07:10:02Z
+review:shillinq:3048:fa8eacaf	CONFLICT with development (info.xml, action-count test, versions lock); head alone unit 12610 OK, diff clean	session-20261117T063708-4c9ceddc	2026-11-17T07:10:12Z
+review:shillinq:3000:a62150be	GREEN: phpunit 12658 OK, phpstan clean	session-20261117T065426-e0b4a950	2026-11-17T07:10:22Z
+fix:decidiq:2249:3d2d6c42	unmeasured: static.developer.overheid.nl (sbom regenerated, pushed b46f792f)	session-20261117T065308-bd0379c5	2026-11-17T07:10:42Z
+review:filinq:2095:120f4482	GREEN; no new failures	session-20261117T055844-3d508d2a	2026-11-17T07:10:52Z
