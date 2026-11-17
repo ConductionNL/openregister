@@ -1196,3 +1196,4 @@ shillinq	2063	2caa7618a5e31022da03cd4e75f9c36d88fba783	APPROVE	worker-15	Thoroug
 stackiq	1435	8d2e5a8e97cee6b5dc7bc84ac39aa1433deb6f46	APPROVE	worker-34	Standard; no blockers; adapter falls back to ids/uses (+deleted=false) on openregister main where search takes no options, dropped deleted:false equals the default; gate runner not cached, checklist by hand
 hermiq	1833	0071295fe2a53c30c193f263069b2a3a427d3028	APPROVE	worker-10	Quick; no blockers; docs/publiccode only, referenced images and roadmap exist
 decidiq	2265	ffa942f8660df89c6f8a7412d5a35dda5cca9f04	APPROVE	worker-03	Quick; no blockers; tests only, helper gains optional logger, existing cases kept
+decidiq	2266	2faec0d533cdf4d9d6fc7549ec92083d94044d6a	APPROVE	worker-03	Quick; no blockers; @uses metadata only
