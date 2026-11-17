@@ -18856,3 +18856,4 @@ merge:filinq:2069:c8a059e6	cloud tree of 1 filinq PRs: none; conflict 1, lint 0,
 review:shillinq:1965:1ff93738	GREEN; additive register fragment, 12496 tests OK	session-20261117T004626-d23ae300	2026-11-17T01:22:49Z
 review:portaliq:2417:3783fdfb	GREEN (conflicts with development in l10n/nl.json)	session-20261117T004655-cf1f2f80	2026-11-17T01:23:07Z
 review:portaliq:2452:e50c3f86	BLOCK: StaffSubmissionReader uses the removed find() named arguments; suite no new failures	session-20261117T004756-036f1d35	2026-11-17T01:23:21Z
+fix:hermiq:1741:dd035123:v3	fixed conflict and two broken tool reads, pushed b210624d; merge lock busy, REVERIFY recorded	session-20261117T004435-9e7fb02f	2026-11-17T01:23:29Z
