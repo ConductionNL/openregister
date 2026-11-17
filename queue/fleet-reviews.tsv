@@ -1317,3 +1317,4 @@ decidiq	2190	c75776f4b165c3c91393004da18d1e0bd17fbcbb	APPROVE	worker-42	Strict (
 stackiq	2037	8a0066197aac4f12cf1bcc598837fd35f50ac334	APPROVE	worker-32	Quick; no blockers; tests only, real assertions
 stackiq	2039	77e11bc633dd6fe75dcc19f5a3aa8e5f91a05251	APPROVE	worker-32	Standard; no blockers; tests only, error paths asserted
 stackiq	2040	6e1004c570bccf73fa23089dda2dc0afdccc0795	APPROVE	worker-32	Thorough; no blockers; tests only, SettingsService covered
+stackiq	2044	49090a5b56bfe50d456671a5d323a4c75238b521	APPROVE	worker-32	Quick; no blockers; e2e spec with env base URL, test boxes left open
