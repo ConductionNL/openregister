@@ -19168,3 +19168,4 @@ review:buildiq:1607:e892c54e	GREEN (vitest 4822 pass; conflicts with development
 review:opencatalogi:2674:3ea2cbc2	BLOCK: floored component independence worse (93.5->92.8); otherwise clean	session-20261117T020210-893a9346	2026-11-17T02:30:57Z
 review:stackiq:1943:54d0045e	RED: usage schema version clash with development overlay, manifest conflict	session-20261117T015854-c76e8b72	2026-11-17T02:31:08Z
 verify:opencatalogi:2756:80b2e0ad	GREEN #2756: no new failures, vitest 1165 OK	session-20261117T020617-81e5b086	2026-11-17T02:31:19Z
+review:opencatalogi:2665:1e4b30ce	GREEN: no new failures (PHP 6154, vitest 1174); needs a development merge (additive conflicts in settings keys)	session-20261117T020926-7d1643a8	2026-11-17T02:31:27Z
