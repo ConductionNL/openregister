@@ -65,6 +65,11 @@ class RequestMetricsStore {
 	public const METRIC_ERROR = 'http_error';
 
 	/**
+	 * The metric type of a cache lookup row (entity type: cache, status: hit or miss).
+	 */
+	public const METRIC_CACHE = 'cache_lookup';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IDBConnection $db   The database connection.
@@ -185,6 +190,29 @@ class RequestMetricsStore {
 
 		return $totals;
 	}//end errorTotals()
+
+	/**
+	 * The cache lookup totals: per cache, its hits and misses.
+	 *
+	 * @return array<string, array{hit: int, miss: int}>
+	 *
+	 * @spec openspec/changes/production-observability/specs/production-observability/spec.md#requirement-performance-baseline-metrics
+	 */
+	public function cacheTotals(): array {
+		$totals = [];
+		foreach ($this->grouped(metricType: self::METRIC_CACHE) as $row) {
+			$cache   = (string) ($row['entity_type'] ?? '');
+			$outcome = (string) ($row['status'] ?? '');
+			if ($outcome !== 'hit' && $outcome !== 'miss') {
+				continue;
+			}
+
+			$totals[$cache] ??= ['hit' => 0, 'miss' => 0];
+			$totals[$cache][$outcome] += (int) ($row['total'] ?? 0);
+		}
+
+		return $totals;
+	}//end cacheTotals()
 
 	/**
 	 * The rows of one metric type summed per label set (normally one row each).

@@ -22,6 +22,7 @@ use DateTime;
 use OCA\OpenRegister\AppHost\Observability\MetricSample;
 use OCA\OpenRegister\Db\WebhookLogMapperInterface;
 use OCA\OpenRegister\Search\Service\SearchMetricsReader;
+use OCA\OpenRegister\Service\Observability\CacheMetricsProvider;
 use OCA\OpenRegister\Service\Observability\DatabaseHealthMetricsProvider;
 use OCA\OpenRegister\Service\Observability\ObjectCountMetricsProvider;
 use OCA\OpenRegister\Service\Observability\OpenRegisterMetricsProvider;
@@ -49,7 +50,7 @@ use Psr\Log\LoggerInterface;
 final class OpenRegisterMetricsProviderTest extends TestCase {
 
 	/**
-	 * Every joined family is published once: tasks, webhook retries, search, webhook durations, database health, storage growth, requests and errors, then object counts.
+	 * Every joined family is published once: tasks, webhook retries, search, webhook durations, database health, storage growth, requests and errors, object counts, then cache hits and misses.
 	 *
 	 * @return void
 	 */
@@ -83,6 +84,10 @@ final class OpenRegisterMetricsProviderTest extends TestCase {
 		$objects = $this->createMock(ObjectCountMetricsProvider::class);
 		$objects->expects($this->once())->method('metrics')->willReturn([$total]);
 
+		$hits   = new MetricSample(name: 'cache_hits_total', type: 'counter', help: 'h', samples: [['labels' => ['cache' => 'name'], 'value' => 1]]);
+		$caches = $this->createMock(CacheMetricsProvider::class);
+		$caches->expects($this->once())->method('metrics')->willReturn([$hits]);
+
 		$metrics = (new OpenRegisterMetricsProvider(
 			tasks: $tasks,
 			webhooks: new WebhookRetryMetricsProvider(logs: $logs, time: $time),
@@ -91,15 +96,17 @@ final class OpenRegisterMetricsProviderTest extends TestCase {
 			database: new DatabaseHealthMetricsProvider(db: $db, time: $time, logger: $this->createMock(LoggerInterface::class)),
 			storage: $storage,
 			requests: $requests,
-			objects: $objects
+			objects: $objects,
+			caches: $caches
 		))->metrics();
 
 		$this->assertSame(
-			['tasks_overdue_total', 'webhook_retry_queue_depth', 'search_requests_total', 'search_duration_seconds', 'embeddings_generated_total', 'webhook_delivery_duration_seconds', 'db_connection_healthy', 'storage_growth_exceeded', 'errors_total', 'objects_total'],
+			['tasks_overdue_total', 'webhook_retry_queue_depth', 'search_requests_total', 'search_duration_seconds', 'embeddings_generated_total', 'webhook_delivery_duration_seconds', 'db_connection_healthy', 'storage_growth_exceeded', 'errors_total', 'objects_total', 'cache_hits_total'],
 			array_map(static fn (MetricSample $m): string => $m->name, $metrics)
 		);
 		$this->assertSame($overdue, $metrics[0]);
 		$this->assertSame([['labels' => [], 'value' => 5]], $metrics[1]->samples);
 		$this->assertSame($total, $metrics[9]);
+		$this->assertSame($hits, $metrics[10]);
 	}//end testPublishesTheTaskThenTheWebhookGauges()
 }//end class

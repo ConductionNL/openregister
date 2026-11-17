@@ -196,3 +196,15 @@ CRUD operations"). A count that fails publishes no samples, with a warning, neve
 `objects_read_total` are now grouped by the audit trail's `register` and `schema`; they are read
 from the audit trail table, so they survive a restart. Label values are the numeric ids, as
 documented for `objects_total` since the AppHost adoption; the spec's examples use names.
+
+**Eighth pass, continued: cache hit ratio.** Scenario "Cache hit ratio" of "Performance Baseline
+Metrics" is built. `Service\Object\CacheHandler` counts every object lookup (`getObject()`) and
+object-name lookup (single and bulk) as a hit or a miss through
+`RequestMetricsRecorder::recordCacheLookup()`, given to it on `CacheHandlerRuntime`; a bulk lookup
+counts its hits and misses once each. The counts take the same APCu path and 60-second
+request-driven flush as the request counters (rows of metric type `cache_lookup` in
+`openregister_metrics`), and counting never fails a lookup. `Service\Observability\CacheMetricsProvider`
+joins `OpenRegisterMetricsProvider` and publishes `cache_hits_total{cache}` and
+`cache_misses_total{cache}`, with `object` and `name` always present. "Performance Baseline
+Metrics" stays unticked: import job progress (`import_objects_processed_total{job_id}`,
+`import_duration_seconds{job_id}`) is not built.

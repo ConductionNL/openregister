@@ -126,6 +126,26 @@ class RequestMetricsRecorder {
 	}//end recordError()
 
 	/**
+	 * Count cache lookups of one cache as hits or misses.
+	 *
+	 * @param string $cache The cache (`object`, `name`).
+	 * @param bool   $hit   Whether the lookups were answered from the cache.
+	 * @param int    $count The number of lookups, at least 1.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/production-observability/specs/production-observability/spec.md#requirement-performance-baseline-metrics
+	 */
+	public function recordCacheLookup(string $cache, bool $hit, int $count=1): void {
+		$outcome = 'miss';
+		if ($hit === true) {
+			$outcome = 'hit';
+		}
+
+		$this->apcu->increment(key: self::PREFIX.'c|'.self::clean(value: $cache).'|'.$outcome, amount: $count);
+	}//end recordCacheLookup()
+
+	/**
 	 * Flush when this request wins the 60-second marker; the number of rows written, 0 otherwise.
 	 *
 	 * @return int
@@ -228,6 +248,15 @@ class RequestMetricsRecorder {
 			if ($kind === 'b' && count($parts) === 3) {
 				$rows['b|'.implode('|', $parts)] = [
 					...self::row(metricType: RequestMetricsStore::METRIC_BUCKET, entityType: $parts[0], entityId: $parts[1], status: $parts[2]),
+					'count' => $value,
+					'keys' => [$key => $value],
+				];
+				continue;
+			}
+
+			if ($kind === 'c' && count($parts) === 2) {
+				$rows['c|'.implode('|', $parts)] = [
+					...self::row(metricType: RequestMetricsStore::METRIC_CACHE, entityType: $parts[0], entityId: '', status: $parts[1]),
 					'count' => $value,
 					'keys' => [$key => $value],
 				];

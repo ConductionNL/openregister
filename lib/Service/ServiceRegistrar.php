@@ -356,7 +356,8 @@ final class ServiceRegistrar {
 				runtime: new CacheHandlerRuntime(
 					logger: $container->get('Psr\Log\LoggerInterface'),
 					cacheFactory: $container->get('OCP\ICacheFactory'),
-					container: $container
+					container: $container,
+					metrics: $container->get(\OCA\OpenRegister\Service\Observability\RequestMetricsRecorder::class)
 				),
 				nameScope: new CacheNameScopeSources(
 					userSession: $container->get('OCP\IUserSession')

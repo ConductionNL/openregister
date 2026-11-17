@@ -92,6 +92,19 @@ final class RequestMetricsRecorderTest extends TestCase {
 	}//end testRecordErrorIncrementsItsType()
 
 	/**
+	 * A cache lookup increments its cache's hit or miss counter by the number of lookups.
+	 *
+	 * @return void
+	 */
+	public function testRecordCacheLookupIncrementsItsCacheAndOutcome(): void {
+		$recorder = $this->recorder(apcu: $this->apcu());
+		$recorder->recordCacheLookup(cache: 'object', hit: true);
+		$recorder->recordCacheLookup(cache: 'name', hit: false, count: 3);
+
+		$this->assertSame([['openregister_reqm:c|object|hit', 1], ['openregister_reqm:c|name|miss', 3]], $this->increments);
+	}//end testRecordCacheLookupIncrementsItsCacheAndOutcome()
+
+	/**
 	 * Each duration lands in the smallest bound it does not exceed, above 10 s in `inf`.
 	 *
 	 * @return void
@@ -105,7 +118,7 @@ final class RequestMetricsRecorderTest extends TestCase {
 	}//end testBucketOf()
 
 	/**
-	 * A flush subtracts each taken value and writes one row per label set: request, bucket, error.
+	 * A flush subtracts each taken value and writes one row per label set: request, bucket, error, cache.
 	 *
 	 * @return void
 	 */
@@ -116,6 +129,8 @@ final class RequestMetricsRecorderTest extends TestCase {
 			'openregister_reqm:b|GET|objects.index|100' => 4,
 			'openregister_reqm:b|GET|objects.index|inf' => 1,
 			'openregister_reqm:e|validation' => 2,
+			'openregister_reqm:c|object|hit' => 6,
+			'openregister_reqm:c|name' => 8,
 			'openregister_reqm:x|garbage' => 9,
 		];
 		$apcu       = $this->apcu(entries: $taken);
@@ -134,7 +149,7 @@ final class RequestMetricsRecorderTest extends TestCase {
 			}
 		);
 
-		$this->assertSame(4, $this->recorder(apcu: $apcu, store: $store)->flush());
+		$this->assertSame(5, $this->recorder(apcu: $apcu, store: $store)->flush());
 		$this->assertSame($taken, $subtracted);
 		$this->assertSame(
 			[
@@ -142,6 +157,7 @@ final class RequestMetricsRecorderTest extends TestCase {
 				['http_request_bucket', 'GET', 'objects.index', '100', 4, 0],
 				['http_request_bucket', 'GET', 'objects.index', 'inf', 1, 0],
 				['http_error', 'validation', '', '', 2, 0],
+				['cache_lookup', 'object', '', 'hit', 6, 0],
 			],
 			$rows
 		);

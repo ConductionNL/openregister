@@ -114,6 +114,26 @@ final class RequestMetricsStoreTest extends TestCase {
 	}//end testTotalsAreGroupedAndTyped()
 
 	/**
+	 * Cache rows are read per cache as hits and misses; a row of another outcome is ignored.
+	 *
+	 * @return void
+	 */
+	public function testCacheTotalsArePerCacheAndOutcome(): void {
+		$rows = [
+			['entity_type' => 'object', 'entity_id' => '', 'status' => 'hit', 'total' => '9', 'sum_ms' => null],
+			['entity_type' => 'object', 'entity_id' => '', 'status' => 'miss', 'total' => '3', 'sum_ms' => null],
+			['entity_type' => 'name', 'entity_id' => '', 'status' => 'miss', 'total' => '2', 'sum_ms' => null],
+			['entity_type' => 'name', 'entity_id' => '', 'status' => 'odd', 'total' => '5', 'sum_ms' => null],
+		];
+
+		$this->assertSame(
+			['object' => ['hit' => 9, 'miss' => 3], 'name' => ['hit' => 0, 'miss' => 2]],
+			$this->store(rows: $rows)->cacheTotals()
+		);
+		$this->assertSame(['cache_lookup'], $this->bound);
+	}//end testCacheTotalsArePerCacheAndOutcome()
+
+	/**
 	 * A store over a recording query builder.
 	 *
 	 * @param int                              $updated The rows the UPDATE reports.
