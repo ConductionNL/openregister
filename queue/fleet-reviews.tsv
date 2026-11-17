@@ -1016,3 +1016,5 @@ versioniq	754	8d9ac96cc209dd84dcc24262a8b60c820ba7b70f	APPROVE	worker-29	Strict;
 integriq	3632	e95b6afde798230eae72196128f9d88b93946c09	APPROVE	worker-03	Standard; no blockers; seeded mock-mode smtp-mail source with a reserved .invalid host and its catalog category, tests pin the shape
 integriq	3670	90ebc507034147bc5bca04a174ced7397bfcb9c5	APPROVE	worker-03	Quick; no blockers; npm patch/minor bumps only, composer.lock unchanged, tree suite adds no failures
 shillinq	3065	ed6ad66267419b8069ec13f433b46b122c49208a	APPROVE	worker-43	Thorough; no blockers (3 new JS helpers lacked @spec, tagged in ed6ad662); concerns: findAll reads capped at 500 rows for projects/invoices/assignments, recognisedRate not cleared when an assignment loses its rate
+decidiq	2154	6fc49611cd252c8bdc22cdf54c5631780f3f0b3c	APPROVE	worker-24	Thorough; no blockers; builds objection-advisory-committee per its specs, gates clean on changed lines (icon gate failure inherited)
+decidiq	2162	a11708136c625a38e8ac005dd7a8f94b249c2033	APPROVE	worker-24	Thorough; no blockers; report reads as the caller, reserved filter keys stripped; gates clean
