@@ -18595,3 +18595,4 @@ decidiq	2282	62cb71dc73585922a4abc7ed581296def299f459	GREEN	worker-48	tree of 9 
 decidiq	2283	e9a802fd9e1a29d7531dd6061c07fb0d66139593	GREEN	worker-48	tree of 9 on development 161ca15e: unit 5032 OK (baseline 5020 OK), vitest 3006 passed, 1 failed (meetingSessionsGolden, inherited: fails on development), no new failures; diff per its change's specs
 decidiq	2284	75bf16e4978932fd693798e5513fda961c651b66	GREEN	worker-48	tree of 9 on development 161ca15e: unit 5032 OK (baseline 5020 OK), vitest 3006 passed, 1 failed (meetingSessionsGolden, inherited: fails on development), no new failures; diff per its change's specs
 versioniq	782	8ad2f3ba98693fc3e7ee1aa6891642f1ab5deb80	CONFLICT	worker-58	conflicts with development in tests/e2e/auto-update.spec.ts, jobs.spec.ts and tests/e2e/fixtures/forge/*
+versioniq	783	69cf88e72c64b23c104faf803d31d6ee982197f5	CONFLICT	worker-58	conflicts with development in tests/e2e/jobs.spec.ts
