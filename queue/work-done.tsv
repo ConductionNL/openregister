@@ -22632,3 +22632,4 @@ review:integriq:3593:fea237c7	RED: filePickupConfigFields.spec.js fails (mock la
 verify:buildiq:1713:2b78ac98	GREEN 1713 (tasks.md only)	session-20261117T211651-58c92edf	2026-11-17T21:25:29Z
 verify:filinq:2130:45c816db	GREEN #2130 (phpunit 7350 OK, vitest 866 OK)	session-20261117T211520-d88a421d	2026-11-17T21:25:45Z
 review:opencatalogi:2654:9f9bab83	GREEN: suite 6387 tests no new failures, gates inherited only; concerns: withdrawn cap 1000, translations	session-20261117T211352-b8b9fdbb	2026-11-17T21:25:55Z
+verify:shillinq:3174:e4e32b13	GREEN 3174,3175; REVERIFY 3176,3177 (conflict with earlier tree PR)	session-20261117T211359-b7379586	2026-11-17T21:26:25Z
