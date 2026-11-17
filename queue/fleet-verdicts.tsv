@@ -17580,3 +17580,5 @@ shillinq	3000	a62150beee539c2c69dc5a50acdf9c92a9c53536	REVERIFY	worker-50:merge	
 shillinq	3009	0bd3c949070fbebfe4b6abee69dd12542169e5a5	REVERIFY	worker-50:merge	conflicts only with an earlier PR of the merge tree: merges clean on development alone; files: appinfo/info.xml l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json tests/fixtures/register-versions.lock.json 
 shillinq	3062	2d73a4e6dee800bee65895273488b7d517a8495b	REVERIFY	worker-50:merge	conflicts only with an earlier PR of the merge tree: merges clean on development alone; files: appinfo/info.xml tests/fixtures/register-versions.lock.json 
 shillinq	3065	90fba0161b3503ec097ae1f7f9f	REVERIFY	worker-50:merge	verdict sha is not the head: head is 90fba0161b3503ec097ae1f7f9f6d479f668b1b4
+hermiq	1781	e762af7360348f048700585666d3beb0131a6715	CONFLICT	merge3	merges clean on development alone; files: appinfo/info.xml l10n/nl.js lib/Settings/hermiq_register.json 
+hermiq	1795	a0df53ce946f98d53a9cacc98119d0c2edd203a3	CONFLICT	merge3	merges clean on development alone; files: appinfo/info.xml 
