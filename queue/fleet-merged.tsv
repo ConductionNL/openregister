@@ -4878,3 +4878,4 @@ hermiq	1764	a477a56c311b1a13150d9f71bcd3088ea1661e94	RED	worker-13	GATE RED floo
 filinq	2141	d980f90d4ce78bd5a27004221e0eaad88cd1b166	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.10
 portaliq	1982	ebea533f0f3f8c061e63c23de231ae5193517228	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.16
 thematiq	1124	c6a62f1f5b4a45a1285a0dcb7f634f9d956c6268	MERGED	worker-49	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.15
+portaliq	2445	824a489a394a69575fc8f9c9018febe76e65b3a5	MERGED	worker-29	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.16
