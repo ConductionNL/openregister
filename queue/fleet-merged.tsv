@@ -5426,3 +5426,4 @@ opencatalogi	2770	f134b8f7dabb094897970e0f20bd6313ef5fa5dc	SKIP	worker-17	GATE U
 learniq	2524	ba4cca6e055f21daccf499e56ac25f265d269dce	RED	worker-20	GATE RED checker floor: spdxheaders stars: 5 -> 4
 opencatalogi	2788	512b97ff719a6a61529b87c9e5f5e0d7eabd65ec	SKIP	worker-17	GATE UNMEASURED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3 while api.osv.dev is unreachable from this session
 opencatalogi	2789	e54e7b57d6586bb81a80b16195aa0471d62384b4	SKIP	worker-17	no APPROVE review at this head
+learniq	2595	5aa1fd02d4e2d7f9e3d0168e0d07e36042b38b03	SKIP	worker-20	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
