@@ -21852,3 +21852,4 @@ build:integriq:rule-editor-a11y-i18n-hardening:b2	already built: tasks 1.x-2.x o
 build:integriq:sandboxed-tenant-scripts:b2	not built: design work first; design.md is 'recorded, not designed' (runtime, contract, limits, who may write, approval) and tasks 2-3 depend on it; no spec file is named	session-20261117T152630-80f67c9b	2026-11-17T16:00:47Z
 build:buildiq:lifecycle-release-test-gate:b2	already building: quality/build-lifecycle-release-test-gate 	session-20261117T135414-614629b0	2026-11-17T16:01:43Z
 build:buildiq:openbuild-nc-color-variables:b2	already building: quality/build-openbuild-nc-color-variables 	session-20261117T135414-614629b0	2026-11-17T16:01:51Z
+build:integriq:zgw-connectors-for-dossiq:b2	PR #3726: tests/e2e/zgw-set-install.spec.ts (bind zaken, Dutch 409 for a second set); code already on development; Task 4 Test unticked until a live run	session-20261117T145912-e9f6485a	2026-11-17T16:02:14Z
