@@ -21332,4 +21332,5 @@ build:buildiq:ai-smart-paste-into-forms:b2	PR buildiq#1715: e2e spec tests/e2e/f
 build:shillinq:budget-grid-view:b2	already done: every code task ticked on development (ec7de1ef7); only the Playwright e2e run is open (live pass recorded 0961603fd)	session-20261117T123632-d3b91db3	2026-11-17T14:54:06Z
 build:shillinq:public-sector-task-field-allocation:b2	already done: build merged on development (14 Nov); 4.2 live	session-20261117T133035-588aec38	2026-11-17T14:54:05Z
 build:shillinq:platform-administration-import:b2	already built: every code task is on development and tests/e2e/platform-administration-import.spec.ts exists; 3.2 left open: it needs a live run, which stops at mapping review until there is an MKB-chart seed or a fixture mapping	session-20261117T144928-abf29960	2026-11-17T14:53:34Z
+build:shillinq:ledger-period-end:b2	already building: branch quality/build-ledger-period-end exists	session-20261117T134347-d0294040	2026-11-17T14:54:18Z
 build:shillinq:purchasing-order-dispatch-and-receipt:b2	already building: quality/build-purchasing-order-dispatch-and-receipt is open	session-20261117T133035-588aec38	2026-11-17T14:54:27Z
