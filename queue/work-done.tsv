@@ -18954,3 +18954,4 @@ fix:stackiq:1946:1b85feb2:v3	conflict resolved + main API, pushed 644c7833; REVE
 fix:keepiq:1829:d00cfb44:v5	merged #1829 at f14d3a1536981686b8b778bb02ceb2bcb8f4b385	session-20261117T004616-c7acc36d	2026-11-17T01:42:01Z
 fix:stackiq:1963:61fae429:v3	conflict resolved, new head c8580463, unit suite green; merge lock held elsewhere, REVERIFY queued	session-20261117T005434-ea6146cc	2026-11-17T01:42:22Z
 fix:buildiq:1628:5ecf09c2:v3	merged #1628 at 6e72df365dcc781f7cafb42f4286245b94f89331	session-20261117T004716-5a617a43	2026-11-17T01:42:29Z
+fix:buildiq:1605:a2943842:v4	conflict resolved, pushed b350a916; REVERIFY (merge lock held elsewhere)	session-20261117T004650-c3ae7bda	2026-11-17T01:42:36Z
