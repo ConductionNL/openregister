@@ -1287,3 +1287,4 @@ decidiq	2278	d120be3ea5c86aa6aa74b4081c7a6da1b31d2921	APPROVE	worker-45	Quick; n
 decidiq	2279	9029034a754b55ffbb5afc179985738e6927cc62	APPROVE	worker-45	Quick; no blockers; e2e spec + tasks.md only
 decidiq	2280	f341db5555b2782cffa8c059027a79d397c42c35	APPROVE	worker-45	Quick; no blockers; e2e spec + tasks.md only; seeds as admin like the existing tests in that file
 decidiq	2190	c75776f4b165c3c91393004da18d1e0bd17fbcbb	APPROVE	worker-45	Thorough; no blockers; guard now also runs on authority-delegation (was only the old slug), parent read still fails closed, party check per REQ-DMR-001; concern: rows saved before without parties now refuse on update
+filinq	2182	af614fee7742906a70da9c30346e9eb6541d7740	APPROVE	worker-57	Thorough (generated openapi copy); no blockers; hydra gates clean; docs and a coverage test only, task notes explain the unbuilt extractor tasks
