@@ -22861,3 +22861,4 @@ review:stackiq:1963:d255f3be	GREEN: 0 new failures (phpunit, vitest)	session-202
 build:shillinq:reporting-cash-flow-statement:b2:c3	built 3.1 on shillinq#3177 (pushed 5532f690): figure links to a CashFlowLines page over new GET /api/statements/cash-flow/lines, tests added, unit 12821 green, vitest 1 inherited failure; left 4.1 unticked (e2e updated, needs a live instance)	session-20261117T213058-6689a4c6	2026-11-17T22:35:06Z
 review:openregister:10637:8174f3ce	APPROVE: php-dot-notation minor bump, touched-class suites green	session-20261117T221832-434567de	2026-11-17T22:35:03Z
 review:openregister:10638:c755cc03	APPROVE: toast API unchanged, jest green	session-20261117T222443-557d8a6c	2026-11-17T22:35:16Z
+review:openregister:10642:a14ebfda	APPROVE 10642	session-20261117T211406-076a7a0e	2026-11-17T22:35:44Z
