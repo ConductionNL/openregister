@@ -20037,3 +20037,4 @@ measure:buildiq:20261117h08	php 91.61% js 95.5%	session-20261117T084819-7b38da2a
 fix:integriq:3582:ec13862c	conflict resolved, pushed 5de17aa9; REVERIFY queued	session-20261117T081138-8732f141	2026-11-17T09:05:16Z
 fix:filinq:2079:b23f1426	conflict resolved, pushed 1b7aa3aa; REVERIFY queued (merge lock held elsewhere)	session-20261117T083927-e76b77af	2026-11-17T09:05:41Z
 fix:stackiq:1966:07fea94b	fixed: test pinned to 1.5.12, suite green; new head 60592396, REVERIFY queued	session-20261117T084807-e8ebf79d	2026-11-17T09:06:08Z
+fix:hermiq:1795:a0df53ce	merged #1795 at 139b265b31f4e19c7031fbbd1a9088407bef3202 (info.xml conflict resolved; php duplication floor restored with a shared seed lookup and folder helper)	session-20261117T081247-63811e04	2026-11-17T09:07:08Z
