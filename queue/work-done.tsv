@@ -20391,3 +20391,4 @@ review:shillinq:3064:e0f4cc42	GREEN: unit 12799 OK (baseline 12759 OK), phpstan 
 fix:stackiq:2027:5e7aec45	sbom regenerated, pushed 170f69ae; merge lock held elsewhere, REVERIFY queued	session-20261117T110646-831a671b	2026-11-17T11:38:37Z
 fix:shillinq:3048:73fa0019	conflict resolved, pushed 4c867fcf; merge lock held elsewhere, REVERIFY queued	session-20261117T112455-9371c914	2026-11-17T11:38:46Z
 review:shillinq:3007:8f36129b	GREEN: spec-conform build, unit 12796/0 failures, phpstan clean	session-20261117T112130-c21e05cd	2026-11-17T11:39:12Z
+fix:stackiq:1942:f000f6c2	conflict resolved, pushed 90499893; merge lock busy, REVERIFY recorded	session-20261117T112147-4fea037e	2026-11-17T11:39:36Z
