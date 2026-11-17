@@ -19638,6 +19638,7 @@ fix:buildiq:1608:ae635677	conflict resolved, pushed b1698085; REVERIFY (merge ga
 merge:decidiq:2154:ee145254	unmeasured: static.developer.overheid.nl (reviews recorded: 5 APPROVE, #2254 REQUEST_CHANGES gridstack peer range; #2249 gate RED sbom; #2171,#2189 CONFLICT)	session-20261117T063021-b217a961	2026-11-17T06:48:21Z
 fix:hermiq:1758:7278524b	blockers fixed, pushed 9fd79088; merge lock held by another merger, REVERIFY queued	session-20261117T063127-b908dd01	2026-11-17T06:48:30Z
 fix:humaniq:1134:2d975a3c	conflict resolved, pushed cfbe5201; REVERIFY queued	session-20261117T055853-7ddd3cb3	2026-11-17T06:48:53Z
+gap:dossiq:cases-are-archival-no-delete:1	PR #6630: delete endpoint always 403 cases_are_archival, Deleted cases page+menu removed, change cases-are-archival-no-delete (REQ-CM-90, REQ-CRW-01 removed), old changes superseded; restore/destroy API kept for pre-existing deletions	session-20261117T061948-27a46e65	2026-11-17T06:49:01Z
 fix:hermiq:1764:7265b61e	conflict resolved, pushed f9abfe44; merge lock busy, REVERIFY queued	session-20261117T063846-e8410bfe	2026-11-17T06:49:02Z
 fix:filinq:2093:4fc207ba	unmeasured: api.osv.dev; conflicts fixed and pushed, new head 8d7793cd, approved, REVERIFY queued	session-20261117T063112-55331435	2026-11-17T06:49:22Z
 merge:portaliq:2417:1b98d0f2	cloud tree of 5 portaliq PRs: merged=0 red=0 fail=0 skip=1; conflict 4, lint 0, red 0, moved 0, done 0	session-20261117T063032-e9a993e2	2026-11-17T06:49:34Z
