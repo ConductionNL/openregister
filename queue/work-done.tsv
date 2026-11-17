@@ -20653,6 +20653,7 @@ verify:keepiq:1757:3a8af510	CONFLICT: #1757 conflicts with development in 10 fil
 verify:integriq:2718:21805a33	CONFLICT #2718 (lib/Flow nodes, tests, package files vs development)	session-20261117T124621-35d7386d	2026-11-17T12:56:18Z
 verify:opencatalogi:2368:791b0b69	CONFLICT #2368 (PublicationService.php)	session-20261117T125302-a32fc8d7	2026-11-17T12:56:33Z
 verify:versioniq:768:07f73891	GREEN #768	session-20261117T124257-115d3113	2026-11-17T12:56:47Z
+verify:dossiq:3548:4deb67eb	GREEN #3548: no-op merge, tree identical to development	session-20261117T124337-ec94f242	2026-11-17T12:57:01Z
 verify:larpinq:718:be7e57e1	GREEN #718 (no-op merge, tree equals development)	session-20261117T124352-d2047f0c	2026-11-17T12:57:22Z
 verify:opencatalogi:1853:25c66e05	GREEN: back-merge, no file change against development	session-20261117T112106-1814b74b	2026-11-17T12:57:37Z
 verify:dossiq:6640:e0213826	BLOCK #6640 (gridstack 14 outside library peer range; tests: 0 new failures)	session-20261117T124010-7774729d	2026-11-17T12:57:48Z
