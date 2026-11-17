@@ -5031,3 +5031,7 @@ decidiq	2154	6fc49611cd252c8bdc22cdf54c5631780f3f0b3c	SKIP	worker-29	GATE UNMEAS
 decidiq	2195	ebc6d9d54e01c779de13acd4b3b086e4f83c1306	SKIP	worker-29	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 pipelinq	3734	9499f0c680f5399969ef9b362f04090d172f17a1	SKIP	worker-30	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 decidiq	2249	3d2d6c428cf0ad3d1f1c8252b6e856b7ac653a50	RED	worker-29	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+hermiq	1741	d8e7284d38b15fe8334cde5259203dbbf11f0f3f	RED	merge3	GATE RED floor: unit_interfacing: 2.57 -> 2.53
+hermiq	1749	8dfea2dc9a60856af054ed3c0304682653b0b63d	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.77 holds at 3.79
+hermiq	1757	5857cce396efeb6810438a3a1f28c5b6462db48f	RED	merge3	GATE RED checker floor: adrvalidator: pass -> warn; adrvalidator stars: 5 -> 3; score: 100 -> 97
+hermiq	1762	20443b51a261b115b668b2a58a09f249b936bc1b	RED	merge3	GATE RED checker floor: adrvalidator: pass -> warn; adrvalidator stars: 5 -> 3; score: 100 -> 97
