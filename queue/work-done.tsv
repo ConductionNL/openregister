@@ -20534,3 +20534,6 @@ fix:filinq:2069:08c42f1e	fixed BLOCK: bumped intakeDefaultRule 1.1.0 + app versi
 review:shillinq:3011:87ae5ea8	GREEN; conflicts with development in l10n and register lock fixture	session-20261117T120806-7b4cac02	2026-11-17T12:16:07Z
 review:openregister:10610:f0556597	APPROVE: lockfile-only, npm 11 ci clean	session-20261117T112444-7a410249	2026-11-17T12:16:15Z
 review:shillinq:3048:4c867fcf	GREEN (phpunit 12787 ok); conflicts with current development on version files	session-20261117T112432-6eb8ecae	2026-11-17T12:16:25Z
+fix:integriq:3593:5718bcca	conflict resolved, new head 975e519b; merge lock held elsewhere, REVERIFY queued	session-20261117T120218-38f2a955	2026-11-17T12:16:46Z
+review:stackiq:1942:90499893	GREEN: no new failures (4067 tests, 1 inherited), matches change specs; info.xml version conflicts with development	session-20261117T121314-91021944	2026-11-17T12:16:57Z
+cover:integriq:92114ab0m17d5:jsf3772e2d	deferred: integriq has 58 open PRs	session-20261117T112444-7a410249	2026-11-17T12:17:06Z
