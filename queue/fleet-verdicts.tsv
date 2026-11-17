@@ -17850,3 +17850,4 @@ integriq	3613	b7dee7b62b8ed180650cb0ebb52503251bc25f17	RED	worker-42:merge-gate	
 dossiq	6635	4ef9f4fadc74464a3b12a9948d62d0b876a6a989	RED	worker-02:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 opencatalogi	2665	c01ead53615d98144c900f739999b9417688d111	BLOCK	worker-08:review	review: Thorough; PublicationDetail layout: pub-languages cell overlaps pub-plain-summary and pub-calendar and reuses id 15 (detail-page-discipline); fixing on the branch
 portaliq	2450	260942b5015d0e7d3bdd9c2068b0ee17037d615d	CONFLICT	merge3	conflicts with development; files: package.json 
+shillinq	2086	9fa2a6b954fba0207b06f0ef6a065b9c5323a8f7	RED	worker-17:merge-gate	GATE RED checker floor: adrvalidator: pass -> warn; adrvalidator stars: 5 -> 3; score: 100 -> 97
