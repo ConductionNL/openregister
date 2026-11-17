@@ -20124,3 +20124,4 @@ review:buildiq:1618:f57d6d53	GREEN: vitest 4954/4954 on merge, eslint clean, spe
 verify:stackiq:2028:9d3a15de	RED #2028: catalogPanelsGolden 3 new failures (icon svg golden), facets inherited	session-20261117T091057-940845f2	2026-11-17T09:36:34Z
 merge:learniq:2509:5f5010df	cloud tree of 3 learniq PRs: merged=0 red=0 fail=0 skip=1; conflict 2, lint 0, red 0, moved 0, done 0	session-20261117T085356-c13ba754	2026-11-17T09:37:04Z
 review:hermiq:1781:74d1013f	GREEN: unit 5633 OK; only a golden-fixture merge conflict with development	session-20261117T093219-f1a53dc3	2026-11-17T09:37:19Z
+fix:integriq:3602:a1c8c62e	conflict resolved, pushed 9599302b; merge lock held elsewhere, REVERIFY queued	session-20261117T092259-e563d8e2	2026-11-17T09:37:52Z
