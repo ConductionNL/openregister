@@ -22841,3 +22841,4 @@ review:openregister:10641:f14b3333	BLOCK: npm ci ERESOLVE peer conflict with @ne
 fix:pipelinq:3961:6eff78b5	failed: permission (push refused). Fix ready, not pushed: @conduction/nextcloud-vue nests @nextcloud/dialogs 7.6.0, so tests/vitest/eventAddAttendee.spec.js must also vi.mock ../../node_modules/@conduction/nextcloud-vue/node_modules/@nextcloud/dialogs/dist/index.mjs; with it the suite has only the 3 baseline failures	session-20261117T213056-2ba36933	2026-11-17T22:25:35Z
 review:openregister:10633:db93889e	APPROVE: opis/json-schema patch bump, 2520 validation tests green	session-20261117T221428-ca31c1a7	2026-11-17T22:25:32Z
 review:openregister:10623:d8f427f0	APPROVE: CI-only actions/cache bump, sha-pinned, inputs unchanged	session-20261117T222415-2187d868	2026-11-17T22:26:01Z
+review:opencatalogi:2674:c6d01be6	GREEN: no new failures (phpunit 0 new of 6425, vitest 0 new)	session-20261117T222048-3a9e0119	2026-11-17T22:26:29Z
