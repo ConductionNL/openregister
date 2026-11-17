@@ -18472,6 +18472,7 @@ verify:launchpad:819:17ca42bb	GREEN: unit 4516/0 new failures; phpmd 3 more find
 verify:integriq:3613:efe7fa58	CONFLICT #3613 (openapi.json vs development)	session-20261116T233800-0f135937	2026-11-16T23:54:58Z
 verify:opencatalogi:2684:e4f04e41	CONFLICT #2684 (12 files)	session-20261116T233901-7abe1a78	2026-11-16T23:54:37Z
 verify:keepiq:1829:9b528e45	CONFLICT: #1829 composer.lock conflicts with development	session-20261116T233923-d48b13fa	2026-11-16T23:54:56Z
+verify:keepiq:1787:b185b6e6	CONFLICT: l10n catalogues + src/export/serializer.js vs development	session-20261116T233950-36926120	2026-11-16T23:55:02Z
 verify:launchpad:1218:a8711f00	CONFLICT #1218 (l10n, admin settings, tile code)	session-20261116T232623-066b53c9	2026-11-16T23:55:20Z
 verify:opencatalogi:2706:03bd33eb	CONFLICT: #2706 vs development in l10n, PublicationsController, manifest, PublishedTableServiceTest	session-20261116T232911-3dffa1ae	2026-11-16T23:55:33Z
 verify:opencatalogi:2654:98398fa4	CONFLICT #2654 (DcatService, l10n, tasks.md)	session-20261116T233901-7abe1a78	2026-11-16T23:55:46Z
@@ -18612,3 +18613,4 @@ fix:integriq:3638:6ec56940	fixed golden, new head b2bbb6ef; REVERIFY (merge lock
 cover:stackiq:9ac19b3am039e:8225bf5e	nothing to add: lib/Service/Export at 58/61 statements; the 3 left are tempnam/ZipArchive::open failure branches and a value-object constructor only a getter-only test would reach	session-20261113T214350-9762e143	2026-11-17T00:23:45Z
 fix:buildiq:1608:09ddceb4	fixed #1608: code-write rule on version update, merge and import; new head cacd7f82, REVERIFY (merge lock held)	session-20261116T234001-3407ae9e	2026-11-17T00:23:56Z
 verify:stackiq:1928:e01f2355	CONFLICT #1928 (6 files conflict with development)	session-20261116T233050-d0df160f	2026-11-17T00:24:38Z
+verify:versioniq:728:89ddc661	CONFLICT #728 (19 files vs development)	session-20261116T233800-0f135937	2026-11-17T00:25:03Z
