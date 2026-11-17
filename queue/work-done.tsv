@@ -22398,3 +22398,4 @@ verify:shillinq:3163:00685f93	GREEN 3163 (12796 tests, 0 new failures)	session-2
 verify:versioniq:798:91fdceff	GREEN	session-20261117T190242-7c82bed8	2026-11-17T20:02:03Z
 verify:versioniq:797:c57c4855	GREEN 797 (e2e + fixture only)	session-20261117T185359-d68263c5	2026-11-17T20:02:16Z
 verify:stackiq:2063:2062779c	GREEN #2063 (4081 tests, no new failures)	session-20261117T190320-1db054ae	2026-11-17T20:02:26Z
+merge:launchpad:1106:07908920	unmeasured: api.osv.dev, static.developer.overheid.nl (connect_rejected by this session's proxy); 1302-1305 reviewed APPROVE, nothing landed; 1106,1109 EXCL never merged	session-20261117T185853-76335694	2026-11-17T20:02:34Z
