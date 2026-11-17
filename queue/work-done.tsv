@@ -20513,4 +20513,5 @@ review:integriq:3601:34350fe3	CONFLICT #3601 (tests/Unit/Service/CatalogRegistry
 fix:integriq:3613:83ce7d7b	fixed adrvalidator (API-Version header on 3 responses), gate OK; REVERIFY at 549ed1063e (merge lock held)	session-20261117T113840-498fade3	2026-11-17T12:12:28Z
 fix:hermiq:1833:6a516e78	fixed: restored supports entry; merge lock held elsewhere, REVERIFY at 0071295f	session-20261117T111714-cd94760b	2026-11-17T12:12:38Z
 merge:stackiq:1966:69f9282f	cloud tree of 5 stackiq PRs: merged=3 red=1 fail=0 skip=0; conflict 1, lint 0, red 0, moved 0, done 0	session-20261117T110646-831a671b	2026-11-17T12:13:01Z
+merge:thematiq:1713:55fd5f49	cloud tree of 1 thematiq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T114019-426872f0	2026-11-17T12:13:07Z
 merge:versioniq:706:891fd555	cloud tree of 1 versioniq PRs: none; conflict 1, lint 0, red 0, moved 0, done 0	session-20261117T121049-5b84d45a	2026-11-17T12:13:18Z
