@@ -1543,3 +1543,4 @@ stackiq	2051	ea4af972eb77b68a49a8fcfd1bb61bf4df92f6d5	APPROVE	worker-20	Quick; n
 stackiq	2052	ec35d2a9f576277a147ebd0bffd5328adde26b3c	APPROVE	worker-20	Quick; no blockers; e2e spec only, skips when demo data absent
 stackiq	2053	74b55e349cced07a684be697dab598b7cb268ea3	APPROVE	worker-20	Quick; no blockers; e2e spec only
 stackiq	2054	73e60e3f28793ad0781a6cbe39ec3e2594b01d05	APPROVE	worker-20	Thorough; no blockers; e2e spec and Newman cases only, valid JSON, credentials via variables
+hermiq	1845	84f28a112420767ebcf2b90cc1e5b72faa4a377b	APPROVE	worker-12	Quick; no blockers; e2e spec only, env base URL, empty storage state
