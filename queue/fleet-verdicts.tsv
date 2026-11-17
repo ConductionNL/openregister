@@ -18276,6 +18276,7 @@ stackiq	1435	8d2e5a8e97cee6b5dc7bc84ac39aa1433deb6f46	GREEN	worker-14	unit 4054 
 buildiq	1706	21011791647b7460e89fbb45d36fa731d58a9d14	GREEN	worker-41	unit 3579 tests OK on tree, baseline 3578 OK; 0 new failures; tests-only
 dossiq	3106	2e1244492cdfac558fe97a5c37b9b027ad47f1d4	CONFLICT	worker-55	conflicts with development in sbom.cdx.json (regenerate sbom after merging development); baseline 18392 tests, 1 inherited error
 buildiq	1704	41c7345c858e3069d66f4d489f4dcecaac45a0f4	GREEN	worker-15	unit 3578 tests, baseline 0 failures (7 skipped), new failures 0; test coverage metadata only
+dossiq	3548	4deb67eb0657b057f54c2806539c45438dfcc3d7	GREEN	worker-11	merge onto development yields a tree identical to development (no-op beta sync); no code change, suite not rerun, no new failures possible
 filinq	1081	2601000baf2f7733dce710d5c18e953d5aab621b	GREEN	worker-49	merges clean and leaves the development tree unchanged (empty content diff, history sync only); tree identical to baseline 7288 OK, no new failures
 buildiq	1242	41af2f95cf4662dbc51bbe9349de2bac2db4e7c5	GREEN	worker-03	unit 3578 tests run, baseline 3578 green, 0 new failures; quality floor metadata only
 stackiq	1028	665e6e656cc60a5758ae9ba4331264c79d90029e	GREEN	worker-14	merge into development changes no files (beta sync, history only); suite unchanged vs baseline 4050 ok
@@ -18303,12 +18304,15 @@ thematiq	1139	c7061e8be2d58ee463bc015ea562e434993cc8bb	CONFLICT	worker-50	token-
 hermiq	867	76c9978a57e6e78646e93f8f83e4a8f98a7141a0	GREEN	worker-07	5617 unit tests, baseline 0 failures, 0 new; merge adds no file changes vs development (beta sync already contained)
 launchpad	759	3f179d5b27c3072baa60549b8656cd80ef5c587e	CONFLICT	worker-20	conflicts with development in package-lock.json; baseline unit 4621 OK
 integriq	2720	7f6df619bcf696e15e8adea822963863ea34b052	CONFLICT	worker-08	conflicts with development in lib/Controller/SetupController.php, lib/Repair/InitializeRegister.php, lib/Repair/SyncConnectionDeclarations.php, 2 register.d json, 3 tests
+versioniq	768	07f73891964c8b96e003a728914e0c7b1c0b3982	GREEN	worker-16	config-only (quality floor json); unit 2421 tests, baseline 2 golden failures, new failures 0
 launchpad	1272	932d2d7c4edffaa60ecd53ea524ab50f0baa2ae4	GREEN	worker-12	version bump only (info.xml, openapi.json); unit 4621 tests, baseline 0 failures, new failures 0
 buildiq	1643	d0645acc033655e32d345dfdc3d19e64a05a567d	GREEN	worker-15	unit 3594 tests (baseline 3578, 0 failures), new failures 0; vitest 4976 passed; build of logic-automation-run-log, matches the change's specs
 learniq	1655	970b741a1168127494cf946c81d86c3b1147acb3	GREEN	worker-17	merge is a no-op: merged tree identical to development's (all content already on development); no tests needed, no new failures
 hermiq	1719	d2352914530959591eaf31c5ea8ea41c94ca6b79	GREEN	worker-47	build chat-translate-a-recording matches its spec; refactors keep behaviour; unit 5653 tests (baseline 5615, 172E/26F inherited), new failures 0; vitest 1634 passed
 launchpad	628	7ce60794924a774915dfec084c803ddddf04e02b	GREEN	worker-37	merge into development yields a tree identical to development (beta sync already present); no diff, suite = baseline
 integriq	1985	6e4c92f5a867f924633f527c3d41ff4024cffa90	GREEN	worker-03	merge adds no file changes to development (tree identical); baseline 9839 tests with 4 inherited failures/errors, 0 new
+opencatalogi	2368	791b0b69d2cfe63c49ddca20eec5857b8fbc1a0b	CONFLICT	worker-48	lib/Service/PublicationService.php conflicts with development (file restructured on development); no tests run
+integriq	2718	21805a3377c7314edd320b3786a2a6fb45c31dcc	CONFLICT	worker-58	conflicts with development in lib/Flow/{ContractMatchNode,ContractSweepNode,SourcePaginateNode}.php, their tests, package.json/lock; baseline 9839 tests, 5 inherited failures
 integriq	2641	13e92f3043e4a39df09d50dfa6bf2bab741d5460	GREEN	worker-34	release sync merge; merged tree identical to development (no file changes), suite unaffected
 larpinq	1087	bdae89b3e4ce2caecb66642ff6983d5e9331ad1a	GREEN	worker-25	unit 1228 tests (20 skipped), baseline 1228 OK, new failures 0; version bump only
 pipelinq	1921	4145f4efd4552709dab10cb921c6f7660d1ebc34	GREEN	worker-56	merge onto development is a no-op (tree identical to development b99fd65); no tests needed, no new failures
