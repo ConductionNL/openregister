@@ -22829,6 +22829,7 @@ review:openregister:10630:56e67fcf	APPROVE: dev-only vue-eslint-parser patch bum
 review:buildiq:1632:712402e5	GREEN: unit 3680/0 failures, vitest 88 passed, lint clean	session-20261117T221508-a8f16e82	2026-11-17T22:20:59Z
 fix:thematiq:1719:740e1349	fixed review blocker (read-only build job + artifact), pushed 4d45b1a8d1; REVERIFY queued; not landed (merge gate host unreachable)	session-20261117T212735-2b6c91a0	2026-11-17T22:21:14Z
 review:openregister:10626:01fe2e08	APPROVE: CI action bump only, no code change	session-20261117T221923-343449c6	2026-11-17T22:21:20Z
+merge:integriq:2650:72b337d0	unmeasured: static.developer.overheid.nl (proxy refuses CONNECT from this session)	session-20261117T211406-076a7a0e	2026-11-17T22:21:29Z
 review:versioniq:719:81e7123b	GREEN #719 (no new failures; inherited 2 golden PHP failures)	session-20261117T213101-157fb562	2026-11-17T22:21:43Z
 review:openregister:10629:784ab3dd	APPROVE: dev-only @types/node patch bump	session-20261117T221428-ca31c1a7	2026-11-17T22:21:52Z
 review:openregister:10634:5ccd2ee2	APPROVE: dev-only phpstan patch bump	session-20261117T221832-434567de	2026-11-17T22:22:11Z
