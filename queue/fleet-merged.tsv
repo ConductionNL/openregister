@@ -5829,3 +5829,4 @@ stackiq	2053	74b55e349cced07a684be697dab598b7cb268ea3	SKIP	worker-20	GATE UNMEAS
 opencatalogi	2650	35c5e9bce49ddf60b196b9ca52987e901d45418f	RED	merge3	GATE RED floor: unit_size: 4.65 -> 4.63; unit_interfacing: 4.77 -> 4.72
 opencatalogi	2654	9f9bab832954e3ffc97ae84fddde4d93e18b8d47	RED	merge3	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
 versioniq	797	143afcb4ffcf0569817678268c44918fcd9241bd	SKIP	worker-46	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
+stackiq	2054	73e60e3f28793ad0781a6cbe39ec3e2594b01d05	SKIP	worker-20	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
