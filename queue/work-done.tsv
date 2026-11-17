@@ -19520,3 +19520,4 @@ review:opencatalogi:2674:a019453a	GREEN: no new failures; IDOR gate hits guarded
 review:opencatalogi:2651:742ec126	GREEN	session-20261117T042937-c444c626	2026-11-17T06:20:30Z
 review:versioniq:692:613c5671	GREEN: unit 2294 (baseline 2242), only the 2 inherited golden failures; vitest 49 pass	session-20261117T061802-b42f2669	2026-11-17T06:20:42Z
 review:stackiq:1943:520d167f	GREEN; conflicts with development	session-20261117T055844-3d508d2a	2026-11-17T06:20:53Z
+fix:decidiq:2190:4d90c497	conflict resolved, pushed ddd00bbe; unit green; REVERIFY queued	session-20261117T055853-7ddd3cb3	2026-11-17T06:21:01Z
