@@ -20818,6 +20818,7 @@ review:launchpad:1210:8d323e7c	GREEN: unit 4695 ok, vitest 1 inherited fail, php
 verify:shillinq:3160:2410d601	GREEN #3160 (docs only)	session-20261117T125716-5aa18045	2026-11-17T13:45:12Z
 review:stackiq:1966:d202ad57	GREEN: unit 4058 OK, vitest 1 inherited red	session-20261117T132538-ac3b9ef5	2026-11-17T13:45:34Z
 verify:launchpad:1292:95972e9e	GREEN 1292 (4621 tests, no new failures)	session-20261117T134242-51ff9d48	2026-11-17T13:45:42Z
+cover:launchpad:fb10c50fm88bd:d39f9857	already done: lib/Support/FleetAppId.php 46/46 statements, 9/9 methods covered at f4930fbc7 (suite 4621 tests OK); no PR	session-20261117T133303-ca20630d	2026-11-17T13:46:05Z
 cover:openregister:7350e3efm4377:js5794e9fc	deferred: openregister has 185 open PRs	session-20261117T134504-7f453fd6	2026-11-17T13:45:57Z
 cover:openregister:7350e3efm4377:js0b5eefce	deferred: openregister has 185 open PRs	session-20261117T134504-7f453fd6	2026-11-17T13:46:22Z
 fix:dossiq:4886:19293aa0	merged #4886 at 1bf38b2df71b75bd37ad94efe2e4ca400393f1cf	session-20261117T124637-3e909745	2026-11-17T13:46:22Z
