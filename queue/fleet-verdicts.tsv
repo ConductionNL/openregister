@@ -18728,4 +18728,5 @@ versioniq	798	91fdceff9606e38c08294f9f188caa4b1c92289f	GREEN	worker-44	phpunit 2
 versioniq	799	9d0b17e161aabdb3641874366fbf88fc9343996c	REVERIFY	worker-44	conflicts only with an earlier PR of the verify tree (l10n/*, src/App.vue vs #798)
 portaliq	2579	df1bfc402b7652facf47819ec22a83d590bd098c	CONFLICT	worker-32	package.json conflicts with development
 portaliq	2580	9c288ce1119aa41d64c1f1e9220fcd7bd60a841a	GREEN	worker-32	unit 6339 tests on tree, baseline 6324 with 16 inherited errors (openregister classes absent), new failures 0; no JS unit script, markdown-block node test passes; e2e spec + en_US strings, per change
+buildiq	1729	9f91a88bb139c28be30fed9312d8ab4e55de996c	GREEN	worker-21	unit 3676 tests OK (baseline 3676 OK), no new failures; e2e spec + tasks.md only, matches lifecycle-git-branches T06/T08
 buildiq	1731	73ee9a5e9c349c9df92d21ac0d456cf0dbbb708c	GREEN	worker-10	unit 3676 tests baseline 0 failures; PR adds only an e2e Playwright spec and a tasks.md note (no PHP/unit-JS change); new failures 0
