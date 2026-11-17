@@ -19775,3 +19775,4 @@ verify:dossiq:6628:02172125	6628 GREEN, 6629 GREEN, 6630 BLOCK (behaviour change
 review:shillinq:3062:2d73a4e6	GREEN: unit 12634 OK (baseline 12613), vitest 16/16	session-20261117T060006-72dfb87c	2026-11-17T07:17:27Z
 fix:versioniq:758:0dfd34ac	conflict resolved, pushed 7a728e33; REVERIFY queued	session-20261117T055853-7ddd3cb3	2026-11-17T07:17:39Z
 fix:opencatalogi:2684:d59bbd9f	fixed RED (golden re-recorded), pushed 0f1cbda6; lock held elsewhere, REVERIFY queued	session-20261117T055905-03eea4d3	2026-11-17T07:18:11Z
+fix:portaliq:2417:b8acf329	unmeasured: static.developer.overheid.nl (fix pushed, new head 5a89d39e01, APPROVE recorded)	session-20261117T070159-36e67801	2026-11-17T07:18:27Z
