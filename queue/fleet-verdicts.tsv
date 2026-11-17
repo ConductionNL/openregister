@@ -19064,3 +19064,4 @@ shillinq	1958	5bdb3bb14869d3a8e96be0e5c6c859da9aabaf04	CONFLICT	worker-21	confli
 shillinq	3179	7b95f4f0e690def8326bac1ce7c4ddffd7e3c02e	GREEN	worker-11	build of public-sector-grant-accountability; escalation now also needs a recovery amount and the threshold is configurable, as REQ-EUF-007 asks; merges clean; unit 12821 vs 12796 baseline, 0 failures; vitest 3095 pass, 1 inherited (dunningNextRun)
 versioniq	780	f23cd299e03ed19ed07fe50aa787b4b212d26b17	GREEN	worker-30	e2e spec only (tests/e2e/advisories.spec.ts), eslint clean, playwright lists 9 tests; phpunit.xml needs a Nextcloud server bootstrap (not runnable here, same on development); no production code changed
 versioniq	692	96800420d9df09f61c55ff8510dbb0ab80c2a269	CONFLICT	worker-22	conflicts with development; files: tests/e2e/cli.spec.ts tests/e2e/jobs.spec.ts
+versioniq	698	ee38e0b72ee16970a4538db390dba458699d7063	CONFLICT	worker-22	conflicts with development; files: tests/e2e/cli.spec.ts
