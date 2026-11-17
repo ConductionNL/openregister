@@ -22909,3 +22909,4 @@ fix:filinq:2186:9bbf0ae1	added the missing @spec tags, pushed ee96503d; merge lo
 fix:filinq:2124:089581db	conflict resolved, pushed 487f5a15; unit 7387 OK; lock held elsewhere, REVERIFY queued	session-20261117T221428-ca31c1a7	2026-11-17T22:46:32Z
 fix:humaniq:1192:3ca961bd	pushed demo-data fix, new head f7a30cef09; REVERIFY queued (no end-to-end: gate hosts unreachable)	session-20261117T222626-5de57cc1	2026-11-17T22:46:51Z
 merge:larpinq:1049:67aa219b	unmeasured: static.developer.overheid.nl (blocked by this session's proxy, 403; not built, lock released)	session-20261117T223303-c1d113c1	2026-11-17T22:46:57Z
+verify:keepiq:1895:4a0033d9	GREEN #1895 (0 new failures)	session-20261117T223347-77301f38	2026-11-17T22:47:00Z
