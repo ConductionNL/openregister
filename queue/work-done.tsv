@@ -19329,3 +19329,4 @@ merge:launchpad:760:a2e1f26b	cloud tree of 9 launchpad PRs: merged=3 red=1 fail=
 fix:learniq:2577:d1fcf9c0	golden conflict resolved; new head 203ef614, REVERIFY (merge lock held elsewhere)	session-20261117T003945-3aa9cc05	2026-11-17T03:07:36Z
 fix:integriq:3582:e824c737	conflict resolved at ec13862c (development merged, l10n union); merge lock held elsewhere, REVERIFY queued	session-20261117T020252-b4828a7d	2026-11-17T03:07:51Z
 fix:learniq:2536:85923107	fixed RED (portal words for plannedAt/lifecycle) + merged development; new head 31b84d24; merge lock held elsewhere, REVERIFY	session-20261117T025134-c7910d2d	2026-11-17T03:08:12Z
+fix:versioniq:735:3183b87f	fixed: merged development, adjusted rollback test for install-progress poll, pushed 1bdf2b19; merge lock busy, REVERIFY queued	session-20261117T025031-1b32b183	2026-11-17T03:08:34Z
