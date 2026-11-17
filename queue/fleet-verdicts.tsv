@@ -19026,3 +19026,4 @@ opencatalogi	2789	e54e7b57d6586bb81a80b16195aa0471d62384b4	BLOCK	worker-17:revie
 planninq	1243	1232090dac9319612d10800ec0ee36d8355be177	RED	worker-43:merge-gate	GATE RED floor: unit_complexity: 4.86 -> 4.83; unit_interfacing: 4.78 -> 4.76
 stackiq	2062	a7823ce7adea7831886624260e8c1bee0da56f6c	GREEN	worker-51	build sharing-compliance-documents: read-only calculated expiry fields + 90-day quick filter, schema 0.2.0; phpunit baseline 4055 (1 failure) -> 4056 OK; vitest 2939 passed, 1 inherited fail (facets.spec FACET_DIMENSIONS, red on development)
 stackiq	2064	015b601239ca0c563a7e5e97346cb9e0bd4f3493	GREEN	worker-24	release version bump only (info.xml, openapi.json), both parse; no code or tests changed
+versioniq	796	a6d4dd3821c0f4e58449492b9a36842209677718	GREEN	worker-51	release version bump only (info.xml, openapi.json); no code
