@@ -21100,3 +21100,4 @@ build:pipelinq:brp-monitor-moves-to-integriq:b2	already building: quality/build-
 build:pipelinq:marketing-block-editor:b2	already done: code tasks on development (40ce70b94); 3.3 doc written, only the live mail-client check left	session-20261117T134355-826c5a0b	2026-11-17T14:28:27Z
 build:opencatalogi:capability-rows-verify-scenarios:b2	already building: PR #2722 open on quality/build-capability-rows-verify-scenarios-c3	session-20261117T133804-84492b74	2026-11-17T14:27:53Z
 build:opencatalogi:dataset-views-on-the-public-page:b2	already building: PR #2766 open (fixed this session, head ba8f0a67 queued REVERIFY)	session-20261117T133804-84492b74	2026-11-17T14:28:43Z
+build:dossiq:task-forms-keep-a-draft:b2	PR #6661: wrote tests/e2e/task-form-draft.spec.ts (both REQ-TM-DRAFT-01 scenarios, non-admin), ticked 4; code tasks already on development; skipped 6 (live pass)	session-20261117T134242-51ff9d48	2026-11-17T14:29:26Z
