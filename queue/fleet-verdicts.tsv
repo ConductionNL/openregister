@@ -19038,6 +19038,7 @@ versioniq	796	a6d4dd3821c0f4e58449492b9a36842209677718	GREEN	worker-51	release v
 decidiq	2285	eeb91b118b1c241df162e0f00bdce238c0111d68	GREEN	worker-12	unit 5020 tests, baseline 5020 OK, 0 new failures; e2e spec + openspec only
 versioniq	798	91fdceff9606e38c08294f9f188caa4b1c92289f	GREEN	worker-51	a11y fix: version Select button stays in tab order (opacity instead of visibility), aria-label + en/nl string; vitest 3237 passed; no PHP touched
 learniq	2524	ba4cca6e055f21daccf499e56ac25f265d269dce	RED	worker-20:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
+thematiq	1728	3eb4a9137a95f5f9be9b6dd452335b01d93ecdf0	RED	worker-24	npm ci fails ERESOLVE on the tree: stylelint 18.0.0 conflicts with peerOptional stylelint ^17.9.1 of @conduction/nextcloud-vue 2.173.0; npm ci passes on development; hold until nextcloud-vue accepts stylelint 18
 stackiq	2063	2062779c621b297142aa744c90a6e028ae8f44f6	GREEN	worker-57	phpunit 4081 on tree vs 4055 baseline (1 inherited failure); vitest 2944, 1 inherited facets failure; new failures: none; build of architecture-assistant-drafted-views, within spec
 versioniq	797	c57c48555761cf2212f669c177b61cc63d932ea9	GREEN	worker-22	e2e spec + forge fixture + tasks.md note only; no PHP or unit JS touched, unit suite unaffected
 thematiq	1719	740e1349e57122fb6902c14777368c21f0bfaa15	GREEN	worker-07	adds 3 token sets + sync of generated upstream themes; phpunit-unit 2933 (baseline 2900, 1 inherited failure MigrateOverrideValueTypesTest), token-sets 437 OK, vitest 1576 OK, 0 new failures
