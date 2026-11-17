@@ -18569,3 +18569,4 @@ verify:stackiq:1944:5799c03a	CONFLICT: l10n, ArchiMateImportExport.vue	session-2
 fix:shillinq:2997:94a7046f	conflicts resolved, pushed b92dd7ab (suite 12542 no failures); REVERIFY queued	session-20261116T224609-c0ad2be4	2026-11-17T00:15:08Z
 verify:stackiq:1966:a26f64d6	CONFLICT #1966	session-20261116T233627-44605965	2026-11-17T00:15:21Z
 verify:versioniq:698:6f6e7231	CONFLICT #698 (info.xml, l10n, AutoUpdateJob, InstallVersion, AuditLogger, openapi.json, App.vue)	session-20261116T234703-e9cebd4b	2026-11-17T00:15:33Z
+fix:shillinq:1991:29abf7fb:v4	no change: gate OK on rerun, REVERIFY (merge lock busy)	session-20261116T233834-fbe601d1	2026-11-17T00:15:46Z
