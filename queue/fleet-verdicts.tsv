@@ -17981,3 +17981,4 @@ buildiq	1632	53f9828c77abc18f43df01026a60295949962302	REVERIFY	worker-56:merge	c
 dossiq	6640	f6770616edd0130f7864c19a2783f56d50286180	RED	worker-08:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 launchpad	1212	d9d12e6f087dc1a6d42e4918693a7cef10b8a07f	RED	worker-39:merge-gate	GATE RED checker floor: adrvalidator: pass -> warn; adrvalidator stars: 5 -> 3; score: 100 -> 97
 filinq	2124	0922105deb1ab1505d7749331ec67e1ece86a643	REVERIFY	worker-35	merged development in; controllers reach waarmerk/evidence services via Kernel contracts (independence 94.12% vs base 94.08%, coupling/entanglement back to base), @spec on 13 Vue methods, @visual exclude on SigningEvidenceCard; one-PR tree 7304 OK, 0 new failures; new head e25a43e2a9c0c32a978b66ad3b8e6a646abb09d3, verify it
+learniq	2536	8a991bd13dec308f5b6a1faadd811b3778e9c434	RED	worker-02:merge-gate	GATE RED floor: unit_interfacing: 3.61 -> 3.59
