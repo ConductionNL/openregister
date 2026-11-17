@@ -20169,3 +20169,4 @@ merge:planninq:1213:e614e585	[exited with code 0]	session-20261117T081254-2b2b5b
 fix:launchpad:1217:56684b15	failed: permission (self-review/land refused); fixed blockers, new head 365b7069c, REVERIFY queued	session-20261117T093438-e680e079	2026-11-17T09:50:35Z
 fix:opencatalogi:2651:e7467c2a	floor restored, pushed cc6fe4e150; merge lock held elsewhere, REVERIFY queued	session-20261117T093904-44ff7b5f	2026-11-17T09:50:59Z
 verify:dossiq:6634:1de2e2bc	GREEN 6634, GREEN 6640	session-20261117T092753-6c6fb28e	2026-11-17T09:51:49Z
+gap:learniq:installable-psalm7:2	deferred: learniq has 48 open PRs	session-20261117T083929-9c5fceb9	2026-11-17T09:52:21Z
