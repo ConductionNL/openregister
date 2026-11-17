@@ -18754,3 +18754,4 @@ fix:filinq:2095:e0ebb0e0:v4	conflict resolved, pushed b4ddee8f; merge lock held 
 fix:filinq:2120:261649dc:v3	fixed CONFLICT (+ main API in FlowOperationRunRepository), pushed 5a2b996f848a0be1ce3ffa2b8ed556411ab89201; merge lock held elsewhere, REVERIFY queued	session-20261117T004644-5138fb50	2026-11-17T01:03:38Z
 fix:filinq:2113:45e6b64f:v4	conflict resolved, pushed 9e76e544; REVERIFY queued (merge lock held elsewhere)	session-20261117T004640-1b533885	2026-11-17T01:03:46Z
 fix:filinq:2099:2529cfcb:v3	conflict resolved, pushed 20f41844; 6977 tests ok; merge lock held elsewhere, REVERIFY queued	session-20261117T004609-b5037037	2026-11-17T01:03:54Z
+fix:filinq:2130:d2fab4b3:v3	conflict resolved, pushed e568a447; merge lock busy, REVERIFY queued	session-20261117T005208-5aaffa6c	2026-11-17T01:04:03Z
