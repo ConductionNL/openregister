@@ -18818,3 +18818,4 @@ fix:hermiq:1781:256eb1a5	floor restored, pushed 90b585c6; REVERIFY queued (merge
 review:portaliq:2492:8fe88049	BLOCK: StaffObjectStore uses removed openregister named args	session-20261117T004655-cf1f2f80	2026-11-17T01:15:21Z
 fix:hermiq:1496:2271f36d:v4	conflict resolved, pushed 2946df2b; merge lock held elsewhere, REVERIFY queued	session-20261117T004724-21eb694a	2026-11-17T01:15:32Z
 fix:hermiq:1760:440cf2e9:v4	conflict resolved, pushed 37f096be; REVERIFY (merge lock held elsewhere)	session-20261117T004650-c3ae7bda	2026-11-17T01:15:39Z
+fix:hermiq:1785:8d6ac93b:v4	merged #1785 at 9b7a63871826d581abb70d4da3bd1f56bec380e0	session-20261117T005212-998cc343	2026-11-17T01:15:47Z
