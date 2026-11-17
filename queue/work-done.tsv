@@ -21588,3 +21588,4 @@ build:decidiq:one-consultation-schema:b2	already done: built on development in 1
 build:decidiq:integrity-disclosures-in-plain-words:b2	already done in code: only 5.2 E2E is open (needs the live instance)	session-20261117T135029-424a7669	2026-11-17T15:23:24Z
 build:decidiq:delegated-authority-check:b2	already done: built on development (eac32354); only item 3, marked as a follow-up change, is left	session-20261117T141120-684bff04	2026-11-17T15:23:56Z
 build:decidiq:live-room-conference-system-link:b2	already done: build merged; the three open Test items are Newman and Playwright runs on a live instance, unit tests are in	session-20261117T124010-7774729d	2026-11-17T15:23:47Z
+build:decidiq:publication-theme-pages:b2	already done: code tasks on development (f80ac253); only a Playwright test left (live)	session-20261117T124637-3e909745	2026-11-17T15:24:45Z
