@@ -18875,3 +18875,4 @@ fix:integriq:3602:d7d08f57:v3	resolved conflict and wired the error sink store, 
 review:dossiq:6353:ea97ffc3	GREEN: removal per change spec, no new failures	session-20261117T003945-3aa9cc05	2026-11-17T01:26:33Z
 merge:versioniq:715:24a3aad9	cloud tree of 2 versioniq PRs: merged=0 red=1 fail=0 skip=0; conflict 1, lint 0, red 0, moved 0, done 0	session-20261117T011615-71ab0b2c	2026-11-17T01:27:05Z
 build:hermiq:tools-agent-workspace-and-installed-tools:c7	partial: still blocked, PR #1760 head 440cf2e9; tasks 2/4/5 extend RunCodeTool, CodeSandboxToolDescriptors and exapp code-sandbox, which are only on open quality/build-tools-code-sandbox (97a61ef1, not on development)	session-20261116T230934-9ee320cf	2026-11-17T01:27:02Z
+review:portaliq:2493:733b81a3	GREEN; conflicts with development in package.json	session-20261117T004640-1b533885	2026-11-17T01:27:09Z
