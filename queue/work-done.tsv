@@ -20006,3 +20006,4 @@ fix:integriq:3564:6d065ca0	fixed, pushed e2164fe1; REVERIFY queued	session-20261
 merge:larpinq:1043:53f3f771	cloud tree of 6 larpinq PRs: merged=1 red=1 fail=0 skip=0; conflict 4, lint 0, red 0, moved 0, done 0	session-20261117T084927-57ebccdf	2026-11-17T08:59:02Z
 merge:thematiq:1365:d68cd124	cloud tree of 1 thematiq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T084906-3448b9ad	2026-11-17T08:59:14Z
 fix:filinq:2085:7276c4b5	conflict resolved, pushed 38d24886; unit 7143 OK; merge lock held elsewhere, REVERIFY queued	session-20261117T084019-84d2c33c	2026-11-17T08:59:23Z
+cover:launchpad:fb10c50fm88bd:9d3a1784	already done: lib/BackgroundJob 144/144 statements covered at b5f1634f (29 tests); the app's 94.97% gap lies in other dirs	session-20261117T085454-4852403b	2026-11-17T08:59:48Z
