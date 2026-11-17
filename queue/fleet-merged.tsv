@@ -5223,3 +5223,4 @@ filinq	2124	e25a43e2a9c0c32a978b66ad3b8e6a646abb09d3	SKIP	worker-35	no APPROVE r
 learniq	2536	8a991bd13dec308f5b6a1faadd811b3778e9c434	RED	worker-02	GATE RED floor: unit_interfacing: 3.61 -> 3.59
 learniq	2536	f4b1d98ed85d00ee5f87366cc8ab3076a0ad6741	MERGED	worker-02	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 4.09
 larpinq	1043	aaa4e47172f5197d969e7c92c792daf70fe80b5b	MERGED	worker-45	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.25
+decidiq	2171	6b39135c61bbc1d3689590e259b0ae222a8a08e2	SKIP	worker-44	no APPROVE review at this head
