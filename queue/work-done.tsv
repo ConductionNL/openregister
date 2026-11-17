@@ -21025,3 +21025,4 @@ build:portaliq:card-status-today:b2	already built: tasks 1-3 on development (Car
 build:dossiq:task-list-deadline-tones:b2	already done: 1.1-1.2 on development (03c7676e2); only 1.3 live left	session-20261117T124637-3e909745	2026-11-17T14:20:45Z
 build:dossiq:recent-tile-shows-when-you-opened:b2	already done: config tasks 1.1-1.3 on development (0199c033c); only live check 2.1 left	session-20261117T134355-826c5a0b	2026-11-17T14:20:29Z
 build:dossiq:document-access-exception:b2	partial: #6654 adds the 6.1 live check as tests/e2e/document-access-exception.spec.ts (8 tests); every code task already on development; 6.1 left unticked until run on a live rig	session-20261117T141518-05f12270	2026-11-17T14:21:19Z
+build:dossiq:task-case-card-handler-name:b2	already done: built on development in 8ef4b5eda3; only live task 1.3 left	session-20261117T140734-4d108840	2026-11-17T14:21:10Z
