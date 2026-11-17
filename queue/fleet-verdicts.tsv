@@ -18230,6 +18230,8 @@ portaliq	2449	9deb3d4f2deb010b7ea34b74852e1097e97d29d0	REVERIFY	worker-40	merged
 dossiq	6641	b6ff98475dbbe33f6a24897d8a726f57e1db537d	RED	worker-03:merge-gate	GATE RED checker floor: fivelayer: pass -> warn; fivelayer stars: 5 -> 3; score: 100 -> 97
 portaliq	2559	7c12499872f3aafc79a76b979d9dde5a96010667	BLOCK	worker-04:review	review: Quick; blocker: removes the Common Ground supports entry from publiccode.yml (grep -c '^supports' = 0 at head), which drops the fivelayer rating at the merge gate; restore it
 decidiq	2173	050c1776c5d62774a872639305fb99d7dd436431	RED	merge3:merge-gate	GATE RED checker floor: adrvalidator: pass -> warn; adrvalidator stars: 5 -> 3; score: 100 -> 97
+decidiq	2171	6b39135c61bbc1d3689590e259b0ae222a8a08e2	REVERIFY	merge3	verdict sha is not the head: head is fa36c3295f3f8513f3785f747380bde58a763cf2
+decidiq	2205	8a3de4c6be1208375b0e3243a96a4b8db2ed80eb	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json openapi.json src/manifest.json 
 shillinq	3160	1013c8e612b10949e022ce7791fa7648456cc109	RED	worker-22:merge-gate	GATE RED checker floor: fivelayer: pass -> warn; fivelayer stars: 5 -> 3; score: 100 -> 97
 shillinq	2063	fd491fcd6b6b07adf72f93e19c4189838247e45f	CONFLICT	worker-22:merge	conflicts with development; files: tests/fixtures/register-versions.lock.json 
 shillinq	2975	f616ab858e5f8837baed3f9a6cf95008a88cbe38	CONFLICT	worker-22:merge	conflicts with development; files: appinfo/info.xml tests/fixtures/register-versions.lock.json 
