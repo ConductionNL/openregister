@@ -21566,6 +21566,7 @@ build:decidiq:agenda-paper-watermark:b2	already building (quality/build-agenda-p
 build:decidiq:council-calendar-meeting-type-in-the-readers-language:b2	already done: only live 1.3 left (67db5e5e)	session-20261117T132743-10cec9d3	2026-11-17T15:20:44Z
 build:decidiq:document-annotations:b2	already building: quality/build-document-annotations exists	session-20261117T135414-614629b0	2026-11-17T15:20:08Z
 build:decidiq:document-approval-chain-leaf:b2	already done: only the screenshots task is open, captured by a journeydoc run on a live instance	session-20261117T124010-7774729d	2026-11-17T15:20:09Z
+build:decidiq:fold-regulations-into-governing-documents:b2	already built: 1.1-5.1 on development; the 5.2 e2e exists (tests/e2e/spec-coverage/register-detail-widgets.spec.ts, @e2e on requirement-existing-regulations-are-carried-across, the seeded regulation on the generic GoverningDocumentDetail); only the live run is left	session-20261117T141518-05f12270	2026-11-17T15:21:18Z
 build:decidiq:example-set-zuiddrecht:b2	already done: open 2.2/2.3 are install checks on a live instance; no PR	session-20261117T135414-614629b0	2026-11-17T15:21:19Z
 build:decidiq:interests-and-integrity:b2	already done: tasks 1-6 on development (fragment 62 etc., #2146 at 47325aada incl. task 5 KPI + compliance panel; tasks.md boxes 1-5 not ticked); only task 7 e2e (browser) left	session-20261117T133303-ca20630d	2026-11-17T15:21:17Z
 build:decidiq:leaf-integrations:b2	already building: quality/build-leaf-integrations(-c2) exist	session-20261117T132743-10cec9d3	2026-11-17T15:21:37Z
