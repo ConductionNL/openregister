@@ -22687,6 +22687,7 @@ verify:integriq:3593:fea237c7	RED 3593: filePickupConfigFields.spec.js mock lack
 verify:stackiq:2055:b1a3020f	GREEN 2055, GREEN 2058; phpunit 4105 ok, vitest 1 inherited failure	session-20261117T213157-fe4b6298	2026-11-17T21:42:00Z
 verify:larpinq:1102:ea6bdb50	GREEN 1102	session-20261117T211406-076a7a0e	2026-11-17T21:42:10Z
 verify:opencatalogi:2805:b5832c88	GREEN #2805: no new PHP or JS failures (inherited 103 PHP, 8 vitest)	session-20261117T211352-b8b9fdbb	2026-11-17T21:42:29Z
+merge:filinq:2112:7bac4ab5	unmeasured: api.osv.dev (4 approved skipped; 4 CONFLICT, 2186 MOVED)	session-20261117T210827-f273f058	2026-11-17T21:42:46Z
 verify:opencatalogi:2804:731661e8	RED #2804: SettingsObjectTypeConfigurationTest slug count 31->32 after new woo_pipeline_incident_schema	session-20261117T213139-4c29297d	2026-11-17T21:42:49Z
 verify:pipelinq:3952:6243a86d	CONFLICT: l10n en/nl js+json conflict with development	session-20261117T213212-f60cff91	2026-11-17T21:42:59Z
 verify:pipelinq:3934:6ba01209	CONFLICT: #3934 l10n en/nl js+json conflict with development	session-20261117T211328-24b3dcac	2026-11-17T21:43:10Z
