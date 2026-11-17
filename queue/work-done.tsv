@@ -21786,3 +21786,4 @@ verify:versioniq:781:2ca1f7ab	CONFLICT 781,782,783 (e2e specs vs development); G
 build:integriq:decidesk-ris-import-go-investigation:b2	failed: no code task buildable: status needs-api-investigation; the proposal forbids building the GO Source/Mapping until the API is investigated against a real GO instance	session-20261117T125716-5aa18045	2026-11-17T15:50:53Z
 build:buildiq:form-dutch-field-formats:b2	partial: PR #1723 adds e2e spec form-dutch-formats.spec.ts (written, not run live) and openspec validate --strict green (T07); T05 needs a live run	session-20261117T153230-a4b1eff6	2026-11-17T15:50:55Z
 merge:portaliq:2569:33bf3b9a	cloud tree of 2 portaliq PRs: merged=1 red=0 fail=0 skip=1; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T140734-4d108840	2026-11-17T15:50:57Z
+verify:planninq:1239:69aace58	6 GREEN (1239-1244); phpunit 1281 ok, vitest 3594 ok	session-20261117T154518-15877fa8	2026-11-17T15:51:47Z
