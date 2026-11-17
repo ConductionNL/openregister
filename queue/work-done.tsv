@@ -20626,3 +20626,4 @@ verify:thematiq:1553:da1b1562	GREEN #1553 (floor json only; 2900 tests, 1 inheri
 verify:dossiq:3490:74c43e35	GREEN #3490: empty diff vs development	session-20261117T124618-77238b95	2026-11-17T12:49:55Z
 verify:dossiq:3722:c279ac6c	GREEN #3722 (no-op tree; 19 inherited failures, 0 new)	session-20261117T123430-0d454909	2026-11-17T12:50:17Z
 verify:dossiq:4886:19293aa0	CONFLICT: l10n/en.js l10n/nl.js with development	session-20261117T112106-1814b74b	2026-11-17T12:50:28Z
+verify:decidiq:2265:ffa942f8	2265 GREEN	session-20261117T121049-5b84d45a	2026-11-17T12:50:38Z
