@@ -22676,3 +22676,17 @@ verify:launchpad:1305:93c89134	GREEN #1305 (e2e specs for e2e-coverage-programme
 verify:portaliq:2563:dcdb7ece	GREEN 2563, 2564, 2586, 2587 (no new failures; 16 inherited errors)	session-20261117T211932-f471137a	2026-11-17T21:38:02Z
 verify:shillinq:3177:605a77de	GREEN 3177: unit 12813 OK, no new failures	session-20261117T211359-b7379586	2026-11-17T21:38:31Z
 verify:filinq:2099:8280fbd4	GREEN 2099: unit 7346 ok, baseline 7329 ok, 0 new failures	session-20261117T211410-42e4af89	2026-11-17T21:39:23Z
+verify:pipelinq:3934:e2446410	4 GREEN (3957 3958 3959 3960 dep bumps), 5 CONFLICT on l10n (3934 3945 3946 3951 3952); no new failures	session-20261117T212735-2b6c91a0	2026-11-17T21:39:39Z
+verify:opencatalogi:2650:35c5e9bc	GREEN #2650: 0 new failures (php 78 and js 8 inherited)	session-20261117T213146-716f8927	2026-11-17T21:39:54Z
+verify:versioniq:728:82369cc5	CONFLICT: appinfo/info.xml with development (trivial); tests green once resolved	session-20261117T211433-35a96960	2026-11-17T21:40:23Z
+verify:larpinq:1056:3d583251	GREEN 1056: phpunit 1272 OK (base 1243), vitest 739 OK, 0 new failures	session-20261117T211611-151c4a14	2026-11-17T21:40:32Z
+verify:decidiq:2282:f3a3dab1	2282 GREEN; 2286 REVERIFY (l10n conflict with 2282 only)	session-20261117T211315-f96d97db	2026-11-17T21:40:44Z
+verify:larpinq:1112:3faffe76	GREEN #1112: unit 1243 -> 1245, 0 new failures	session-20261117T213154-bb97695e	2026-11-17T21:40:53Z
+merge:stackiq:2045:5c9c04c6	unmeasured: static.developer.overheid.nl (proxy 403; merge gate cannot measure, nothing landed)	session-20261117T211437-e305ed6d	2026-11-17T21:41:37Z
+verify:integriq:3593:fea237c7	RED 3593: filePickupConfigFields.spec.js mock lacks NcCheckboxRadioSwitch; PHP no new failures	session-20261117T211359-bea33e3d	2026-11-17T21:41:39Z
+verify:stackiq:2055:b1a3020f	GREEN 2055, GREEN 2058; phpunit 4105 ok, vitest 1 inherited failure	session-20261117T213157-fe4b6298	2026-11-17T21:42:00Z
+verify:larpinq:1102:ea6bdb50	GREEN 1102	session-20261117T211406-076a7a0e	2026-11-17T21:42:10Z
+verify:opencatalogi:2805:b5832c88	GREEN #2805: no new PHP or JS failures (inherited 103 PHP, 8 vitest)	session-20261117T211352-b8b9fdbb	2026-11-17T21:42:29Z
+verify:opencatalogi:2804:731661e8	RED #2804: SettingsObjectTypeConfigurationTest slug count 31->32 after new woo_pipeline_incident_schema	session-20261117T213139-4c29297d	2026-11-17T21:42:49Z
+verify:pipelinq:3952:6243a86d	CONFLICT: l10n en/nl js+json conflict with development	session-20261117T213212-f60cff91	2026-11-17T21:42:59Z
+verify:pipelinq:3934:6ba01209	CONFLICT: #3934 l10n en/nl js+json conflict with development	session-20261117T211328-24b3dcac	2026-11-17T21:43:10Z
