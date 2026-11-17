@@ -5020,3 +5020,5 @@ portaliq	2556	1654c4f94f56354239ce29f09859702e40578306	MERGED	merge3	GATE OK sbo
 integriq	3545	76605dd41334c821c1ceb47c5ffe0aa9fb627147	SKIP	worker-02	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 dossiq	4887	3f70eb104a322d326f46506283b605e51bca07c7	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
 dossiq	6623	488a8c99c98a77e810a9e6c70beddc4999543d8b	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
+shillinq	3052	474a6bf67e28073655d97619caf0786dfb06b967	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.05
+shillinq	3110	e8ca71f43e333b8d56e891cd551b4ee5341f373e	RED	merge3	GATE RED sbom: composer.lock, package-lock.json changed without sbom.cdx.json
