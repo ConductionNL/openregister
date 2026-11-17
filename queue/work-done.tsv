@@ -19948,4 +19948,5 @@ verify:planninq:1213:e9c74b18	5 GREEN (1213,1214,1216,1217,1219), RED 1215 (grid
 fix:stackiq:1938:08b568aa	unmeasured: static.developer.overheid.nl (floor restored, pushed 903d38eb, APPROVE recorded, REVERIFY queued)	session-20261117T080442-23d3643f	2026-11-17T08:36:58Z
 fix:filinq:2083:a6bf5b36	fixed, pushed e57df6b0; floor PASS, unit 7173 OK; REVERIFY (unmeasured: api.osv.dev)	session-20261117T081319-17d49a97	2026-11-17T08:37:06Z
 fix:shillinq:3004:0e70c6a3	conflict resolved, new head 04b7af8a, REVERIFY (merge lock held elsewhere)	session-20261117T081327-bdafbf12	2026-11-17T08:37:21Z
+fix:humaniq:1134:cfbe5201	fixed gate-123 (unit_interfacing 15.8% -> under the limit, 4507 tests green), pushed 69b3282e; merge gate still RED on the maintainability floor (unit_size 4.47->4.44, complexity 3.52->3.48, interfacing 3.68->3.66), RED verdict recorded for a follow-up fix	session-20261117T082106-2acc8483	2026-11-17T08:38:12Z
 merge:dossiq:6203:ab88a5ae	merge3 tree of 2 dossiq PRs: fatal: remote error: upload-pack: not our ref 6c923b78f26ada1989477d77b90516e502616102; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-17T08:38:12Z
