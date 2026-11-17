@@ -19302,3 +19302,4 @@ hermiq	1763	561fdd1e123258292b81d0bd69d16ae4db4ba76c	CONFLICT	worker-48:merge	co
 hermiq	1843	45ed8874b7086bd4025662de7d1606b75a2b59a9	CONFLICT	worker-48:merge	conflicts with development; files: tests/integration/hermiq.postman_collection.json 
 hermiq	1849	599ab2bf863fc652db45cd05a25b1a74eb760c49	CONFLICT	worker-48:merge	conflicts with development; files: tests/integration/hermiq.postman_collection.json 
 hermiq	1850	c9dacafd2a9b91c0cb908137cd3	REVERIFY	worker-48:merge	verdict sha is not the head: head is c9dacafd2a9b91c0cb908137cd3b2116117e49d3
+stackiq	2055	5f39aed8383d439fb47be09bbaefaf6c62bcd509	GREEN	worker-08	phpunit 4105 (baseline 4055, 0 new failures); vitest 2966, 1 failure inherited from development (facets.spec FACET_DIMENSIONS); build of shared-usage-visible-to-participants per its specs
