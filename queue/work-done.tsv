@@ -19265,3 +19265,4 @@ verify:dossiq:3955:66d75ab8	CONFLICT: 3955 conflicts with development in 4 files
 merge:decidiq:2239:c474f6d4	cloud tree of 1 decidiq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T021723-9d734048	2026-11-17T02:50:58Z
 fix:hermiq:1751:36c34dcf	fixed conflict, new head 73163d7d386c831af30dcaddf6fdaff65a1390b1; REVERIFY (merge lock held elsewhere)	session-20261117T020353-b50811a6	2026-11-17T02:51:07Z
 fix:stackiq:1933:99e5e172	fixed RED (test expectation), pushed 60a38fa8; REVERIFY queued, merge lock held elsewhere	session-20261117T020322-58ced631	2026-11-17T02:51:56Z
+fix:hermiq:1758:d5151101	conflict resolved; REVERIFY at 7278524b78 (merge lock held by another merger)	session-20261117T020358-1a8df617	2026-11-17T02:52:46Z
