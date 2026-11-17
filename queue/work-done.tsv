@@ -22312,6 +22312,7 @@ verify:opencatalogi:2795:9844e9a0	GREEN opencatalogi#2795 (0 new failures; Newma
 verify:opencatalogi:2793:d14f5f96	GREEN #2793 (6365 tests, 0 new failures)	session-20261117T191558-f6f135b1	2026-11-17T19:44:07Z
 verify:thematiq:1721:9c6152f2	GREEN 1721-1726; RED 1727 (needs stylelint 18 from #1728); REVERIFY 1728,1729	session-20261117T190443-6578d505	2026-11-17T19:44:37Z
 verify:larpinq:1056:f075a857	CONFLICT larpinq#1056 (l10n + Settings* vs development)	session-20261117T190626-5c7fccb4	2026-11-17T19:44:49Z
+verify:thematiq:1721:b57b4ab9	GREEN already recorded at this sha (first PR of tree verify:thematiq:1721:9c6152f2, no new failures)	session-20261117T190443-6578d505	2026-11-17T19:45:16Z
 verify:integriq:3721:30322060	GREEN integriq#3721 (e2e + Newman only; 9910 tests, 4 inherited, 0 new)	session-20261117T190556-ce2c6374	2026-11-17T19:45:08Z
 verify:portaliq:2590:9bc1d978	GREEN (version bump)	session-20261117T190242-7c82bed8	2026-11-17T19:45:11Z
 verify:learniq:2497:48225cf9	GREEN #2497: 0 new PHP or JS failures	session-20261117T185732-534997e2	2026-11-17T19:45:21Z
@@ -22332,7 +22333,20 @@ verify:portaliq:2587:664b8ca8	GREEN #2587 (6339 tests, 16 inherited errors, 0 ne
 verify:pipelinq:3956:88c728b0	GREEN #3956 (version bump), 0 new failures	session-20261117T190150-dbabe332	2026-11-17T19:48:33Z
 verify:planninq:1245:18c0e02a	GREEN planninq#1245 (1262 tests, 0 new failures)	session-20261117T190507-82f8fe51	2026-11-17T19:48:46Z
 verify:launchpad:1306:06017141	GREEN #1306: tests-only/docs; 0 new failures; note development lockfile out of sync	session-20261117T185853-76335694	2026-11-17T19:49:09Z
+verify:integriq:3732:38f15f61	3732 GREEN; phpunit 9948, 5 inherited, 0 new; vitest 2397 passed	session-20261117T190353-7aae74e9	2026-11-17T19:49:23Z
 verify:planninq:1247:1a42908e	GREEN: 1247 (e2e spec only, suite green)	session-20261117T185625-a1e67f54	2026-11-17T19:49:25Z
 verify:shillinq:3175:4bddf073	GREEN shillinq#3175: vitest 3107, 0 new failures (1 inherited)	session-20261117T185556-5276d56d	2026-11-17T19:49:42Z
 verify:dossiq:6645:97e25b54	GREEN dossiq#6645: docs-only, 19 inherited failures, 0 new	session-20261117T190454-1cb9b69e	2026-11-17T19:49:46Z
 verify:portaliq:2582:628f5a09	GREEN portaliq#2582 (node tests: no new failures)	session-20261117T190302-4e3d4569	2026-11-17T19:49:50Z
+verify:opencatalogi:2797:73c7291c	GREEN opencatalogi#2797 (e2e spec only; 0 new failures over inherited 92F/11E)	session-20261117T190048-3d066fd0	2026-11-17T19:49:59Z
+verify:pipelinq:3935:fafc28c7	3935 GREEN	session-20261117T185710-40ec955c	2026-11-17T19:50:16Z
+verify:learniq:2611:2234eaed	GREEN 2611; version bump only, 2 inherited failures, 0 new	session-20261117T190115-a0afcf82	2026-11-17T19:50:36Z
+verify:opencatalogi:2766:ba8f0a67	GREEN #2766 (6386 tests, no new failures)	session-20261117T190320-1db054ae	2026-11-17T19:50:47Z
+verify:portaliq:2562:1c32d7f1	GREEN #2562: tasks.md only, 0 new failures	session-20261117T185732-534997e2	2026-11-17T19:51:10Z
+verify:planninq:1249:bb31b0e9	GREEN #1249 (version bump)	session-20261117T190418-7494049c	2026-11-17T19:51:24Z
+verify:stackiq:1963:5d4b224b	CONFLICT #1963 (l10n catalogues)	session-20261117T190357-55034d4a	2026-11-17T19:51:31Z
+verify:planninq:1250:70dfe254	GREEN #1250: specs only, unit 1253/0 failures	session-20261117T185903-e132ac1e	2026-11-17T19:51:43Z
+verify:pipelinq:3936:a7892151	GREEN #3936 (tasks.md only; cited files exist)	session-20261117T190632-f0412d81	2026-11-17T19:52:06Z
+verify:planninq:1246:64caa7ce	GREEN 1246: unit 1254 OK, vitest 3593 pass	session-20261117T185725-f66ae098	2026-11-17T19:52:21Z
+verify:portaliq:2561:bcf76253	1 GREEN (2561); node tests 0 new failures	session-20261117T190140-44e48bc5	2026-11-17T19:52:28Z
+verify:stackiq:2045:711ef7f7	GREEN #2045 (e2e spec only)	session-20261117T190357-55034d4a	2026-11-17T19:52:42Z
