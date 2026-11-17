@@ -21892,3 +21892,4 @@ build:buildiq:page-designer-live-preview-pane:b2	already done: preview pane on d
 build:buildiq:screen-overrides-as-a-patch-with-fall-through:b2	already building: quality/build-screen-overrides-as-a-patch-with-fall-through exists	session-20261117T123418-5f98fc94	2026-11-17T16:05:36Z
 build:buildiq:pages-index-calendar-and-manual-order:b2	already building: quality/build-pages-index-calendar-and-manual-order 	session-20261117T135414-614629b0	2026-11-17T16:05:57Z
 build:buildiq:pages-chart-widget-authoring:b2	PR #1730: tests/e2e/page-chart.spec.ts written (T03 unticked until a live run), T05 openspec validate --strict passes	session-20261117T145912-e9f6485a	2026-11-17T16:06:38Z
+build:buildiq:schedules-editor-flow-migration:b2	failed: blocked by its own gate 3.1 — openregister flow-sync-decomposition has 0 of 46 tasks done on main; the change is planning-only until then	session-20261117T123418-5f98fc94	2026-11-17T16:07:12Z
