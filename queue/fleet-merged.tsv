@@ -5490,3 +5490,4 @@ launchpad	1302	09ecd17e49e59a4703fc9b314bb8c999bdec131c	RED	merge3	GATE RED chec
 launchpad	1303	60be52920a1235ec7ac675d5b34cf527facbccf5	RED	merge3	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
 launchpad	1304	952ebaa8fac367fe3ecd38d502ea5783d9d96f6f	RED	merge3	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
 stackiq	1942	9b4a8fa20ae7f1997da78b1cc75beb9d9c76726f	SKIP	worker-32	no APPROVE review at this head
+buildiq	1648	616837279746c70653f0f41163c0dd6efd73fa7e	SKIP	worker-50	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
