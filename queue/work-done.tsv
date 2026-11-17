@@ -20280,3 +20280,4 @@ review:filinq:2112:c5d832c9	GREEN; unit 7142 ok; conflicts with development in r
 fix:shillinq:2983:7c48c94a	failed: duplicate-index-pages needs a placement decision (no fitting index for a menu preset); conflict resolved and pushed at aac6fcf6	session-20261117T091244-7c1a3c79	2026-11-17T10:19:59Z
 fix:planninq:1213:ac9d7c73	merged #1213 at c2abc37ca14aa3af0c650b8259bbe30e07e0f3a6	session-20261117T095701-9003708e	2026-11-17T10:20:15Z
 review:shillinq:3007:f72b21a0	GREEN: 12796 unit tests, 0 new failures; phpstan/phpcs clean	session-20261117T095952-54058ec1	2026-11-17T10:20:42Z
+merge:learniq:2551:e53819f7	cloud tree of 1 learniq PRs: none; conflict 1, lint 0, red 0, moved 0, done 0	session-20261117T100902-3acfb4af	2026-11-17T10:20:55Z
