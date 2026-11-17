@@ -1061,3 +1061,5 @@ stackiq	2020	c74d16dd8eac1686199899fb182c78b7ffb71f7a	APPROVE	worker-55	Strict (
 stackiq	2021	e118cd90784e9f9a66fcac3d52e4e3d97bc94590	APPROVE	worker-55	Quick (dev dependency lock bump nextcloud/ocp 35.0.2->35.0.3); no blockers; tree suite adds no failures
 stackiq	2022	dd6d4b11005caee34f97773d81b938f02d226d90	APPROVE	worker-55	Quick (dev dependency bump eslint 10.15.0); no blockers; none
 humaniq	1146	f77f2a1deac4f525c5494180b523aed5a816cb51	APPROVE	worker-56	Thorough; no blockers; implements time-entry-approval-state as specced, client approvalState overwritten, carry-down under internal marker skips the stamp listener, gate failures only in untouched files; concern: one extra parent read per entry write
+dossiq	6632	fcbf5d9195f4e82945d8003498904569c8b65b4e	APPROVE	worker-02	Quick; no blockers; dependency bump only (lockfile + manifest), PHP suite and vitest add no failures (2 vitest reds inherited from development)
+dossiq	6633	13ff4c499e0170aa482af59d3ec31bbba90c7a6e	APPROVE	worker-02	Quick; no blockers; dependency bump only (lockfile + manifest), PHP suite and vitest add no failures (2 vitest reds inherited from development)
