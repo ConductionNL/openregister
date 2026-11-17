@@ -18743,3 +18743,4 @@ buildiq	1726	5727e007884aa326eae962f524c9d932e87798c9	GREEN	worker-21	unit 3676 
 decidiq	2274	4160473e9683f4824a024b2a1be9ca45af4810b3	GREEN	worker-01	unit 5029 run (baseline 5020, 0 failures), 0 new failures; tests only
 decidiq	2275	a2504982a57dd3baef7b32f736efdd4c91c5b798	GREEN	worker-14	unit 5020 baseline 0 failures; tree 5028 tests 0 failures; tests only
 hermiq	1852	734376163c5c6515d092ee9d381c6d537078095a	GREEN	worker-20	unit 5736 baseline 0 fail; tree 5800 tests 0 new failures; vitest 1659 passed; build vector-rag per spec
+hermiq	1853	f3ad22784fa06fff189170b5a3d39912e8054157	GREEN	worker-20	unit 5736 baseline 0 fail; tree 5800 tests 0 new failures; vitest 1659 passed; build instant-talk per spec
