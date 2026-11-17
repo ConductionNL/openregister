@@ -19787,3 +19787,4 @@ fix:opencatalogi:2665:1e4b30ce	conflict resolved, pushed 106da853; merge lock he
 fix:opencatalogi:2654:8d972568	conflict resolved, new head cc1b236e, REVERIFY queued	session-20261117T055928-ffb37dd3	2026-11-17T07:20:24Z
 build:versioniq:releases-version-facts:c5	partial: nothing buildable; 2.3 waits for RemoteInstanceReader (install-multi-instance-promotion 2.2, open in #735, not on development); 4.4 e2e and 5.1 close left; PR #755 open at 01df198	session-20261117T061824-01d4fad5	2026-11-17T07:20:40Z
 verify:pipelinq:3929:e2751f91	BLOCK #3929: widens start/reject access (tests green, 9262/9262)	session-20261117T065408-6d600eff	2026-11-17T07:20:39Z
+merge:decidiq:2162:a1d87ca0	cloud tree of 3 decidiq PRs: merged=0 red=0 fail=0 skip=1; conflict 2, lint 0, red 0, moved 0, done 0	session-20261117T065524-8fc65d3f	2026-11-17T07:21:01Z
