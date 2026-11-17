@@ -19345,3 +19345,4 @@ merge:pipelinq:3743:87ab1e10	cloud tree of 1 pipelinq PRs: merged=1 red=0 fail=0
 fix:hermiq:1740:9e13a128	fixed and pushed, not landed: merge gate RED on checker floor adrvalidator pass->warn; REVERIFY at c07c4ebe78	session-20261117T024430-b5e75bd7	2026-11-17T03:11:45Z
 fix:versioniq:758:328a3fa5	conflict resolved, pushed 0dfd34ac; merge lock held elsewhere, REVERIFY recorded	session-20261117T025224-5b756ade	2026-11-17T03:11:55Z
 fix:integriq:3613:b4fef9cf	blockers fixed (write-only hash, jwks rate limit, 23 tests); REVERIFY at 599c7742 (merge lock busy)	session-20261117T025205-24fff43b	2026-11-17T03:12:13Z
+fix:learniq:2538:fe4a0798	fixed: development merged, Dutch labels added; REVERIFY at 0b1eaa819c (merge lock held by another merger)	session-20261117T020358-1a8df617	2026-11-17T03:12:23Z
