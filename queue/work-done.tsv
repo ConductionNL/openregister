@@ -22014,3 +22014,4 @@ build:stackiq:architecture-views-editor:b2	round 2: code on development; PR #204
 build:stackiq:connections-diagram-and-graph-export:b2	already building: quality/build-connections-diagram-and-graph-export exists; left blocked on a nextcloud-vue CnIndexPage view mode, plus a live screenshot	session-20261117T134441-beae3c0d	2026-11-17T16:20:22Z
 build:stackiq:landscape-completeness-score:b2	already building: quality/build-landscape-completeness-score exists; groups 2, 4, 5 open there	session-20261117T140734-4d108840	2026-11-17T16:20:15Z
 build:stackiq:landscape-owner-attestation:b2	already building: branch quality/build-landscape-owner-attestation exists	session-20261117T134347-d0294040	2026-11-17T16:20:33Z
+build:stackiq:insight-knowledge-base:b2	already building: branch quality/build-insight-knowledge-base exists	session-20261117T134347-d0294040	2026-11-17T16:21:31Z
