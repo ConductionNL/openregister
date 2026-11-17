@@ -19818,3 +19818,4 @@ fix:stackiq:1933:60a38fa8	conflict resolved, pushed 4ab6e187; REVERIFY recorded	
 fix:larpinq:1056:10fc7079	blockers fixed, pushed cc58f17b; merge lock busy, REVERIFY queued	session-20261117T070335-73c86ca7	2026-11-17T07:26:52Z
 fix:larpinq:1045:a40d7b26	test code ratio restored to 75.11% (3 stars), pushed 73c4570d; REVERIFY queued (not landed: gate hosts unreachable here)	session-20261117T055908-62351962	2026-11-17T07:27:10Z
 fix:larpinq:1047:6ce2027d	unmeasured: static.developer.overheid.nl (conflict fixed at 398465ad, APPROVE recorded, not landed)	session-20261117T065537-5000a36a	2026-11-17T07:27:20Z
+fix:shillinq:3007:097d4460	unmeasured: static.developer.overheid.nl (conflict fixed, new head 4b9a3466, APPROVE recorded, REVERIFY queued)	session-20261117T055927-bd949843	2026-11-17T07:27:36Z
