@@ -18896,3 +18896,5 @@ fix:integriq:3590:c8a86e41:v3	conflict resolved, pushed 0e8a2713; REVERIFY (merg
 fix:integriq:3582:02740663:v3	resolved conflict, pushed e824c737; merge lock held elsewhere, REVERIFY	session-20261117T005212-998cc343	2026-11-17T01:30:34Z
 fix:buildiq:1618:53cd30c6:v3	fixed: conflicts resolved, vitest 4833 pass; lock held elsewhere, REVERIFY at 34282120	session-20261117T003652-c6487e72	2026-11-17T01:31:00Z
 fix:integriq:2650:6bf97c5a:v3	conflict resolved + main API migration, pushed 54f2db42; merge lock busy, REVERIFY queued	session-20261117T005208-5aaffa6c	2026-11-17T01:31:11Z
+fix:planninq:1168:8c796e13:v3	merged #1168 at 2030d1fdb8e95f4ef06c22c81319aff304cc693e	session-20261117T004908-b4bcfe9b	2026-11-17T01:31:23Z
+fix:hermiq:1794:97a61ef1:v3	conflict fixed, pushed 19bcd689; review APPROVE; merge gate RED floor unit_complexity 4.58->4.56, not landed	session-20261117T004650-4097ce5f	2026-11-17T01:31:26Z
