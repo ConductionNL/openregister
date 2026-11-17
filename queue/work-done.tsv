@@ -22474,3 +22474,4 @@ build:hermiq:session-entity-links:b2:c2	failed: no hermiq code task left; open t
 merge:buildiq:1632:ce0aa0e4	cloud tree of 4 buildiq PRs: merged=0 red=0 fail=0 skip=3; conflict 1, lint 0, red 0, moved 0, done 0	session-20261117T190150-dbabe332	2026-11-17T20:16:00Z
 merge:learniq:2524:a5178729	unmeasured: static.developer.overheid.nl; cloud tree of 5 learniq PRs: merged=0 red=1 (2524 spdxheaders 5->4) skip=3 unmeasured, conflict 1 (2551)	session-20261117T190115-a0afcf82	2026-11-17T20:16:11Z
 fix:filinq:2124:e25a43e2	fixed #2124: version bump + floor restored (PASS), new head 089581db; REVERIFY queued	session-20261117T190308-4c99e05c	2026-11-17T20:16:17Z
+fix:opencatalogi:2771:d7714652	failed: permission (git proxy refused push to opencatalogi: repo not in session's authorized set)	session-20261117T190048-3d066fd0	2026-11-17T20:16:26Z
