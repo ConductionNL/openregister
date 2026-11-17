@@ -18540,6 +18540,7 @@ verify:shillinq:3005:155acc0f	CONFLICT: #3005 conflicts with development (l10n, 
 verify:shillinq:3064:334cea16	CONFLICT #3064 (10 files)	session-20261116T232923-46913d93	2026-11-17T00:08:42Z
 verify:hermiq:1728:4a375b99	CONFLICT: 6 files conflict with development (l10n, hermiq_register.json, openapi.json)	session-20261116T232834-a3ef1c86	2026-11-17T00:08:59Z
 fix:learniq:2577:15fc4a90	fixed menu order tie; pushed 5bf20572; REVERIFY (end to end skipped: learniq composer prep fails on php 8.3.6)	session-20261116T232944-146e39d7	2026-11-17T00:09:16Z
+verify:hermiq:1785:3cc1bb7c	CONFLICT #1785 (lib/Settings/hermiq_register.json)	session-20261116T233939-9a6702d9	2026-11-17T00:09:25Z
 verify:shillinq:3008:1f4ba84a	CONFLICT #3008 (7 files conflict with development)	session-20261116T233050-d0df160f	2026-11-17T00:09:27Z
 verify:learniq:2579:b356ecaa	failed: composer-cloud refuses learniq's lock on this session's php 8.3.6 (vimeo/psalm 7.5.0 needs ~8.3.16); no unit suite	session-20261116T232944-146e39d7	2026-11-17T00:09:45Z
 verify:stackiq:1963:0202df86	CONFLICT: 6 files vs development	session-20261116T232912-634ff2e8	2026-11-17T00:09:38Z
