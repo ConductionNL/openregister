@@ -19984,4 +19984,5 @@ verify:pipelinq:3929:7e1c56ee	GREEN #3929 (9280 tests, 0 new failures)	session-2
 review:shillinq:2998:5215acfa	GREEN: additive build of platform-help-agent; unit suite 12625 tests, no new failures	session-20261117T084657-70a14b78	2026-11-17T08:53:05Z
 review:shillinq:3011:3989b7d8	GREEN: suite 12629 OK, vitest 7/7	session-20261117T084736-592032f2	2026-11-17T08:53:28Z
 fix:hermiq:1828:c436e957	failed: BLOCK needs an openspec change or owner sign-off for widening Agent create to every signed-in user, not a code fix; also conflicts with development (info.xml, hermiq_register.json version 0.62.0 taken)	session-20261117T083929-9c5fceb9	2026-11-17T08:53:36Z
+cover:openregister:7350e3efm18f8:jsaba0d069	deferred: openregister has 185 open PRs	session-20261117T085227-a13dc102	2026-11-17T08:53:33Z
 review:hermiq:1755:9cc6d8bf	GREEN (conflicts with development)	session-20261117T081138-8732f141	2026-11-17T08:53:38Z
