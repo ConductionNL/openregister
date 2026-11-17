@@ -113,6 +113,16 @@ occ config:app:set openregister response_time_p95_alert_ms --value=3000
 
 The `RequestAlertJob` background job judges the request thresholds every five minutes over the requests answered since its previous run. When a condition starts, every member of the `admin` group gets one Nextcloud notification; no second one follows until a window has been below the threshold again. A window without requests keeps the previous outcome.
 
+## Request log entries
+
+Every answered OpenRegister request writes one INFO entry to the Nextcloud log with the context
+fields `request_id`, `user`, `method`, `path`, `status_code`, `duration_ms`, `register` and
+`schema`. `request_id` equals the `reqId` Nextcloud writes on every entry of the same request, so
+a log platform can group them. A database failure writes an ERROR entry with `error_type`,
+`error_message` (quoted values masked as `?`), `stack_trace` (without arguments) and
+`context.register`, `context.schema`, `context.action`. Request bodies and query values are
+never logged. INFO entries are only kept when the Nextcloud `loglevel` is 1 or lower.
+
 ## Audit logging
 
 Object writes are recorded in `oc_openregister_audit_trails` (with full before/after diffs) and surface via the standard `oc_activity` stream. See [Versioning and Audit](versioning-and-audit.md) for the audit-trail data shape and `Activity Provider` for the activity-stream integration.

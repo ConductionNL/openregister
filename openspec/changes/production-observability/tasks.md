@@ -235,3 +235,19 @@ threshold. `Service\Observability\RequestAlertMetricsProvider` joins `OpenRegist
 and publishes the stored outcomes as `error_rate_exceeded` and `response_time_exceeded`; a scrape
 never judges a window itself. An admin settings field for the thresholds is not built; they are set
 with `occ config:app:set openregister <key> --value=<n>`.
+
+**Eighth pass, continued: structured request and error log entries.** Scenarios "Structured log
+for API request", "Structured log for error with stack trace" and "Request correlation across log
+entries" are built in `Middleware\RequestMetricsMiddleware`. Every answered OpenRegister request
+writes one INFO entry, `[OpenRegister] {method} {path} answered {status_code} in {duration_ms} ms`,
+with the context fields `request_id`, `user`, `method`, `path` (without the query string),
+`status_code`, `duration_ms`, `register` and `schema` (the route parameters, at most 64
+characters). `request_id` is Nextcloud's request id, which Nextcloud also writes as `reqId` on
+every other entry of the same request, so validation, save, audit and webhook entries correlate
+with it. A database failure (the `database` error type) writes an ERROR entry with
+`error_type` (the exception class), `error_message` (with every quoted literal replaced by `?`,
+because a database message can quote the refused row's values), `stack_trace` (frames without
+arguments) and `context` {`register`, `schema`, `action`}. Nothing is taken from the request body
+or query values. Writing an entry never fails a request. "Structured Logging" stays unticked:
+scenario "Sensitive data exclusion from logs" asks that no log call anywhere logs object data,
+and the existing debug and warning calls across the code base have not been audited for that.

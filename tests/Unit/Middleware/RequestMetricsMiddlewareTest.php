@@ -29,6 +29,8 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IRequest;
+use OCP\IUser;
+use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -133,18 +135,140 @@ final class RequestMetricsMiddlewareTest extends TestCase {
 	}//end testErrorTypeOf()
 
 	/**
+	 * Every answered request writes one INFO entry with the structured request fields and no query values.
+	 *
+	 * @return void
+	 */
+	public function testAnAnsweredRequestIsLoggedWithItsStructuredFields(): void {
+		$_SERVER['REQUEST_TIME_FLOAT'] = 1000.0;
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('alice');
+		$session = $this->createMock(IUserSession::class);
+		$session->method('getUser')->willReturn($user);
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->once())->method('info')->with(
+			'[OpenRegister] {method} {path} answered {status_code} in {duration_ms} ms',
+			[
+				'request_id' => 'req-42',
+				'user' => 'alice',
+				'method' => 'GET',
+				'path' => '/index.php/apps/openregister/api/objects/zaken/meldingen',
+				'register' => 'zaken',
+				'schema' => 'meldingen',
+				'status_code' => 201,
+				'duration_ms' => 250,
+			]
+		);
+
+		$this->middleware(
+			recorder: $this->createMock(RequestMetricsRecorder::class),
+			route: 'openregister.objects.create',
+			logger: $logger,
+			params: ['register' => 'zaken', 'schema' => 'meldingen', 'bsn' => '123456789'],
+			session: $session
+		)->afterController($this->createMock(Controller::class), 'create', new JSONResponse([], 201));
+	}//end testAnAnsweredRequestIsLoggedWithItsStructuredFields()
+
+	/**
+	 * Without a session the user is null, and a non-scalar register parameter is left out.
+	 *
+	 * @return void
+	 */
+	public function testAnAnonymousRequestHasNoUser(): void {
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->once())->method('info')->with(
+			$this->anything(),
+			$this->callback(static fn (array $context): bool => $context['user'] === null && $context['register'] === null && $context['schema'] === null)
+		);
+
+		$this->middleware(recorder: $this->createMock(RequestMetricsRecorder::class), route: null, logger: $logger, params: ['register' => ['x']])
+			->afterController($this->createMock(Controller::class), 'x', new JSONResponse([]));
+	}//end testAnAnonymousRequestHasNoUser()
+
+	/**
+	 * A database failure is logged at ERROR with its type, a message without quoted values, a trace without arguments and the action.
+	 *
+	 * @return void
+	 */
+	public function testADatabaseFailureIsLoggedWithoutTheValuesItQuotes(): void {
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->once())->method('error')->with(
+			'[OpenRegister] {method} {path} failed: {error_type}',
+			$this->callback(
+				function (array $context): bool {
+					$this->assertSame('req-42', $context['request_id']);
+					$this->assertSame(\OCP\DB\Exception::class, $context['error_type']);
+					$this->assertSame("Duplicate entry '?' for key \"?\"", $context['error_message']);
+					$this->assertStringContainsString('->testADatabaseFailureIsLoggedWithoutTheValuesItQuotes()', $context['stack_trace']);
+					$this->assertSame(['register' => 'zaken', 'schema' => 'meldingen', 'action' => 'objects.create'], $context['context']);
+					$this->assertArrayNotHasKey('exception', $context);
+					return true;
+				}
+			)
+		);
+		$exception = new \OCP\DB\Exception("Duplicate entry '123456789' for key \"bsn\"");
+
+		try {
+			$this->middleware(
+				recorder: $this->createMock(RequestMetricsRecorder::class),
+				route: 'openregister.objects.create',
+				logger: $logger,
+				params: ['register' => 'zaken', 'schema' => 'meldingen']
+			)->afterException($this->createMock(Controller::class), 'create', $exception);
+			$this->fail('The exception was not rethrown.');
+		} catch (\OCP\DB\Exception $caught) {
+			$this->assertSame($exception, $caught);
+		}
+	}//end testADatabaseFailureIsLoggedWithoutTheValuesItQuotes()
+
+	/**
+	 * A validation failure is counted but not logged as an error.
+	 *
+	 * @return void
+	 */
+	public function testAValidationFailureIsNotLoggedAsAnError(): void {
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->never())->method('error');
+
+		$this->expectException(ValidationException::class);
+		$this->middleware(recorder: $this->createMock(RequestMetricsRecorder::class), route: null, logger: $logger)
+			->afterException($this->createMock(Controller::class), 'x', new ValidationException('bad'));
+	}//end testAValidationFailureIsNotLoggedAsAnError()
+
+	/**
+	 * Quoted literals in either quote style are masked, escaped quotes included.
+	 *
+	 * @return void
+	 */
+	public function testWithoutLiterals(): void {
+		$this->assertSame("value '?' and \"?\" kept", RequestMetricsMiddleware::withoutLiterals(message: "value 'it\\'s 9' and \"a\" kept"));
+		$this->assertSame('no quotes', RequestMetricsMiddleware::withoutLiterals(message: 'no quotes'));
+	}//end testWithoutLiterals()
+
+	/**
 	 * The middleware under test, with a clock at 1000.25 seconds.
 	 *
 	 * @param RequestMetricsRecorder $recorder The recorder.
 	 * @param string|null            $route    The `_route` parameter.
 	 * @param LoggerInterface|null   $logger   The logger.
+	 * @param array<string, mixed>   $params   Other request parameters.
+	 * @param IUserSession|null      $session  The session.
 	 *
 	 * @return RequestMetricsMiddleware
 	 */
-	private function middleware(RequestMetricsRecorder $recorder, ?string $route, ?LoggerInterface $logger = null): RequestMetricsMiddleware {
+	private function middleware(
+		RequestMetricsRecorder $recorder,
+		?string $route,
+		?LoggerInterface $logger = null,
+		array $params = [],
+		?IUserSession $session = null,
+	): RequestMetricsMiddleware {
+		$params = ['_route' => $route, ...$params];
 		$request = $this->createMock(IRequest::class);
 		$request->method('getMethod')->willReturn('GET');
-		$request->method('getParam')->with('_route')->willReturn($route);
+		$request->method('getParam')->willReturnCallback(static fn (string $key): mixed => ($params[$key] ?? null));
+		$request->method('getId')->willReturn('req-42');
+		$request->method('getRequestUri')->willReturn('/index.php/apps/openregister/api/objects/zaken/meldingen?bsn=123456789');
 		$time = $this->createMock(ITimeFactory::class);
 		$time->method('now')->willReturn(new DateTimeImmutable('@1000.25'));
 
@@ -152,7 +276,8 @@ final class RequestMetricsMiddlewareTest extends TestCase {
 			request: $request,
 			recorder: $recorder,
 			time: $time,
-			logger: $logger ?? $this->createMock(LoggerInterface::class)
+			logger: $logger ?? $this->createMock(LoggerInterface::class),
+			session: $session
 		);
 	}//end middleware()
 }//end class
