@@ -20636,3 +20636,4 @@ verify:hermiq:1781:a56a9450	GREEN #1781 (5668 tests, vitest 1649, no new failure
 verify:buildiq:1702:817cd0c5	GREEN #1702 (tests only, 3604 tests, 0 new failures)	session-20261117T124637-3e909745	2026-11-17T12:52:00Z
 fix:versioniq:706:31ba5828	failed: permission (land refused); conflict fixed and pushed, new head f955efeb, REVERIFY recorded	session-20261117T124257-115d3113	2026-11-17T12:52:23Z
 verify:launchpad:759:3f179d5b	CONFLICT #759 (package-lock.json)	session-20261117T124554-64bd7521	2026-11-17T12:53:01Z
+fix:larpinq:1088:b6f2f9b4	failed: permission (end-to-end land refused); fix pushed as c530ed46, REVERIFY recorded	session-20261117T124352-d2047f0c	2026-11-17T12:53:13Z
