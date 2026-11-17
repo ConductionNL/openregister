@@ -21527,3 +21527,4 @@ build:learniq:certificate-verification-and-key-rotation:b2	partial: PR #2601 add
 build:learniq:simple-today-dashboard:b2	already done: tasks 1-3 ticked on development; the 3 open lines are listed under 'Not in this change'	session-20261117T134304-10008ffd	2026-11-17T15:16:11Z
 build:learniq:timetabling-student-choice-placement:b2	already done: only live 1.10, e2e 2.1b and archive 3.2 left	session-20261117T132743-10cec9d3	2026-11-17T15:16:19Z
 build:learniq:school-activities-staff-side:b2	already building: quality/build-school-activities-staff-side exists	session-20261117T132743-10cec9d3	2026-11-17T15:17:02Z
+build:learniq:report-card-pdf-to-guardians:b2	PR #2519 updated (143f271a): e2e tests/e2e/report-card-pdf.spec.ts written (3.1, not run live); 1.1-2.3 already on branch; 1.3/3.2 are archive-time close-out	session-20261117T145748-1419d209	2026-11-17T15:17:39Z
