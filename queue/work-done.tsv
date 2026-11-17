@@ -22479,3 +22479,4 @@ fix:filinq:2124:e25a43e2	fixed #2124: version bump + floor restored (PASS), new 
 fix:opencatalogi:2771:d7714652	failed: permission (git proxy refused push to opencatalogi: repo not in session's authorized set)	session-20261117T190048-3d066fd0	2026-11-17T20:16:26Z
 fix:decidiq:2174:218e06dd	conflict resolved, pushed 53ff0981; merge lock held elsewhere, REVERIFY queued	session-20261117T190556-ce2c6374	2026-11-17T20:16:38Z
 verify:thematiq:1726:ebe538c8	GREEN #1726 (vitest 1571 pass, dev-dep only)	session-20261117T191558-f6f135b1	2026-11-17T20:16:55Z
+fix:filinq:2173:a7b20c84	fixed: restored publiccode.yml supports entry; new head 6bce70eb0, REVERIFY queued (merge lock busy)	session-20261117T190026-7c82e6b3	2026-11-17T20:17:08Z
