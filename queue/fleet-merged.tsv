@@ -4897,3 +4897,4 @@ shillinq	1900	7c67b53846a791a3e762d24ded38e17fec205a03	RED	merge3	GATE RED check
 shillinq	3110	cca3fd23bdfcaf08b914978343921a1bfc362fcb	RED	merge3	GATE RED sbom: composer.lock, package-lock.json changed without sbom.cdx.json
 humaniq	1143	ef2689eaa85a742a010784b01fbf356e5952989b	MERGED	worker-52	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.47 holds at 3.47
 portaliq	2448	8388e6653c4cdd47d3a268e694e7269c192b9612	MERGED	worker-07	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.16
+learniq	1883	88ce2f2bd933e45c14f811fcf7001883ff74c3fd	MERGED	worker-16	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 4.08
