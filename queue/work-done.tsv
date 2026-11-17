@@ -19190,6 +19190,7 @@ review:stackiq:1928:fccc382c	GREEN: per spec, suite green, merges clean	session-
 review:stackiq:1942:200de863	BLOCK: conflicts, SPDX headers stripped from l10n js, repair step without version bump	session-20261117T020210-893a9346	2026-11-17T02:35:11Z
 review:stackiq:1944:a796a511	GREEN: vitest only inherited facets failure, l10n gate OK	session-20261117T020227-9e68ed24	2026-11-17T02:35:30Z
 review:versioniq:719:c727229b	GREEN: versioniq #719 (openapi.json conflict with development noted)	session-20261117T021649-387ee607	2026-11-17T02:35:39Z
+review:stackiq:1939:4b930687	BLOCK: manifest conflict with development; new calls use the old openregister object API	session-20261117T021015-602d1924	2026-11-17T02:35:54Z
 verify:launchpad:1239:cc16cd1e	GREEN #1239: PHPUnit 4539, vitest 2652, no new failures	session-20261117T020257-09bbf84c	2026-11-17T02:36:00Z
 review:versioniq:729:e24515d1	CONFLICT with development (7 files); head alone has only the 2 inherited failures	session-20261117T021137-dd174ad0	2026-11-17T02:36:15Z
 review:launchpad:1219:08b864a2	GREEN: phpunit 4553 OK, vitest 2667 pass on merge with development	session-20261117T021723-9d734048	2026-11-17T02:36:41Z
