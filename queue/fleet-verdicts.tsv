@@ -19090,3 +19090,4 @@ filinq	2099	d001e396ae71da53ebef1327d1928b5c2ab66a7e	REVERIFY	worker-57:merge	co
 filinq	2106	029581eec1ef1f99c466ee3803c0e86cd4420752	REVERIFY	worker-57:merge	conflicts only with an earlier PR of the merge tree: merges clean on development alone; files: lib/Settings/filinq_register.json 
 filinq	2107	07113f957523ddcead4a92ba49746f86e0fb017b	REVERIFY	worker-57:merge	conflicts only with an earlier PR of the merge tree: merges clean on development alone; files: appinfo/info.xml l10n/en.js l10n/en.json lib/Settings/filinq_register.json 
 filinq	2120	fbc97be252a3a73eb3a875e6c66c0e852fbb4474	REVERIFY	worker-57:merge	conflicts only with an earlier PR of the merge tree: merges clean on development alone; files: lib/Settings/filinq_register.json tests/unit/EventListener/ListenerRegistrarTest.php tests/vitest/manifestFragments.spec.js 
+humaniq	1193	829b764e323a274ba57e333785af7a0f74180cb7	REVERIFY	worker-37:merge	head moved to fe5e457cc9 during land, verify it
