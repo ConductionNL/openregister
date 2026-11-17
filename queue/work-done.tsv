@@ -20873,3 +20873,4 @@ cover:decidiq:a5f973bbmfcd5:c76ae287	opened decidiq#2275: 8 tests for lib/Servic
 fix:integriq:3705:06350cfb	sbom regenerated, pushed cd33fb75; merge lock held elsewhere, REVERIFY queued	session-20261117T133629-e10185c0	2026-11-17T13:57:05Z
 cover:buildiq:70b3e29em2454:6818da73	PR #1709: 22 tests for 7 Kernel value objects; suite 3676 -> 3698, 0 failures	session-20261117T135414-614629b0	2026-11-17T13:57:33Z
 measure:integriq:20261117h12	php 95.17% js 94.36%	session-20261117T134304-10008ffd	2026-11-17T13:57:26Z
+cover:buildiq:70b3e29em2454:34763eb4	already done: lib/Middleware/*.php at 100% lines (60/60, 13/13 methods) on development 465f72e4; no PR	session-20261117T135528-a58cdfc6	2026-11-17T13:58:01Z
