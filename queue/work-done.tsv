@@ -21788,3 +21788,4 @@ build:integriq:decidesk-ris-import-go-investigation:b2	failed: no code task buil
 build:buildiq:form-dutch-field-formats:b2	partial: PR #1723 adds e2e spec form-dutch-formats.spec.ts (written, not run live) and openspec validate --strict green (T07); T05 needs a live run	session-20261117T153230-a4b1eff6	2026-11-17T15:50:55Z
 merge:portaliq:2569:33bf3b9a	cloud tree of 2 portaliq PRs: merged=1 red=0 fail=0 skip=1; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T140734-4d108840	2026-11-17T15:50:57Z
 verify:planninq:1239:69aace58	6 GREEN (1239-1244); phpunit 1281 ok, vitest 3594 ok	session-20261117T154518-15877fa8	2026-11-17T15:51:47Z
+verify:opencatalogi:2788:c6bb5f88	GREEN 2788 2789 2790 2791; no new failures with openregister main beside (unit 6336 vs 6364 baseline, -28 = removed MCP provider tests)	session-20261117T135520-9a524c6b	2026-11-17T15:52:01Z
