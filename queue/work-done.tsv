@@ -18902,3 +18902,4 @@ fix:hermiq:1794:97a61ef1:v3	conflict fixed, pushed 19bcd689; review APPROVE; mer
 fix:integriq:3600:fe200724:v3	conflict resolved + test doubles fixed, pushed 0056da4f; no new failures; lock held elsewhere, REVERIFY queued	session-20261117T005216-77516966	2026-11-17T01:31:47Z
 fix:buildiq:1649:f58cb410:v5	conflict resolved + stories test helper fixed, pushed 039cc4ad, tests green; lock held elsewhere, REVERIFY queued	session-20261117T004133-c974afac	2026-11-17T01:32:13Z
 fix:buildiq:1630:d47a3654:v3	conflicts resolved and floor kept, pushed 01c116f5; REVERIFY recorded (merge lock held elsewhere)	session-20261117T005242-9db4df06	2026-11-17T01:32:29Z
+fix:integriq:3593:8dad155c:v4	fixed CONFLICT, pushed 75b7c54; merge lock held elsewhere, REVERIFY queued	session-20261117T004701-f6094f02	2026-11-17T01:32:37Z
