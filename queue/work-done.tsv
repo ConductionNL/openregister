@@ -22521,3 +22521,4 @@ fix:planninq:1218:3bb9d8d2	fixed: sbom regenerated on #1218, new head df1e59ad; 
 fix:integriq:3713:1ac93422	sbom regenerated #3713, new head 7c19b1408e; REVERIFY queued	session-20261117T190308-4c99e05c	2026-11-17T20:23:31Z
 fix:integriq:3707:cac00a86	fixed: guzzle kept on core-provided ^7, basic-auth fix kept; pushed ccad9acae, REVERIFY queued (not landed end to end)	session-20261117T190250-54b1be06	2026-11-17T20:23:50Z
 fix:integriq:2650:c1e85c0b	fixed: conflict resolved, routes renamed; pushed ecac209ce; REVERIFY queued (merge gate host unreachable, not landed)	session-20261117T190318-dafab159	2026-11-17T20:24:00Z
+build:stackiq:bound-unbounded-searchobjects-scans:b2:c2	partial: unchanged, only the Psalm part of 5.3 is left and it cannot run in the cloud (Psalm requires PHP >= 8.3.16, apt offers only 8.3.6, Psalm has no override); every code task is in #2047; needs a local run of composer psalm	session-20261117T190714-0b708ca6	2026-11-17T20:24:11Z
