@@ -22237,3 +22237,4 @@ verify:keepiq:1898:2d4d0257	GREEN #1898 (tasks.md only; cited tests exist)	sessi
 verify:hermiq:1849:599ab2bf	1 GREEN (1849); no new failures	session-20261117T190249-b0f6275f	2026-11-17T19:29:49Z
 verify:integriq:3715:86b85286	GREEN integriq #3715 (Newman collection only; baseline 2E/2F inherited)	session-20261117T190434-a73c29f6	2026-11-17T19:29:57Z
 verify:learniq:2606:79bec0a6	GREEN #2606 (no new failures)	session-20261117T190418-7494049c	2026-11-17T19:30:09Z
+verify:dossiq:6659:565a618a	GREEN 6659 (e2e only; 0 new failures, 19 inherited)	session-20261117T185828-a5f2758a	2026-11-17T19:30:19Z
