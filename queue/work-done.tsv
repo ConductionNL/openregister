@@ -18545,3 +18545,4 @@ verify:portaliq:2445:407c9cee	CONFLICT #2445 (l10n catalogues)	session-20261116T
 verify:shillinq:3080:75a66e92	CONFLICT: #3080 vs development in CHANGELOG, info.xml, l10n, ContractRegistrar, registrar tests, register-versions lock	session-20261116T232911-3dffa1ae	2026-11-17T00:10:25Z
 verify:stackiq:1942:b6663ebb	CONFLICT #1942	session-20261116T233627-44605965	2026-11-17T00:10:36Z
 verify:stackiq:1943:d8082b64	CONFLICT #1943 (l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Settings/softwarecatalogus_register.json src/customComponents.js )	session-20261116T233921-33ab4c87	2026-11-17T00:10:47Z
+verify:larpinq:1047:12939d94	CONFLICT #1047 (l10n + objectTabs golden fixture vs development)	session-20261116T234703-e9cebd4b	2026-11-17T00:11:04Z
