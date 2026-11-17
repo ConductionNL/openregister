@@ -5068,3 +5068,4 @@ hermiq	1758	9fd79088cf0706e3368f7b1048a640a6d7d3152b	SKIP	worker-14	GATE UNMEASU
 dossiq	6628	36145c145a3b1808e632374f11b74cdc564b2e5b	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
 dossiq	6629	9850f8e5cd083cc3e5cf0ad4e491fbe7057c90b9	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
 buildiq	1597	2a5d5c23c4e32ed0e06dec824275f109665091aa	SKIP	worker-03	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
+buildiq	1602	b2a6e8931b7f5b55133804139c2d271e4c3791e2	SKIP	worker-03	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
