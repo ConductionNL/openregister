@@ -17496,3 +17496,8 @@ versioniq	715	4657c9dc5b37efa8a7bd846f72268f35cf6d2d73	GREEN	worker-22:review	bu
 launchpad	885	de52aba38267a7937dbd0d7d8816a55c4a17a381	GREEN	worker-28:review	implements its own openspec change lpvandaag-start-page (Meer menu keeps the cog's gates, template v5 with 8 widgets, test expectations follow the template); phpunit 4563 ok (baseline 4563), vitest 2695 ok (baseline 2671), eslint clean, l10n parity output unchanged vs development
 humaniq	1146	7c1dfd1e57a79b724c3a31adc29fecfca9a8ab09	REVERIFY	worker-55	module_coupling floor restored (4.32 -> 4.34, floor_check PASS) by registering TimesheetEntryStateListener in one call in Application.php; php -l, phpcs, phpstan clean, AppInfo tests OK; merge lock held elsewhere; new head f77f2a1deac4f525c5494180b523aed5a816cb51, verify it
 integriq	3550	a14372dd463b5fa11e7c2fe7fb0df5b2b288ced9	RED	worker-16:merge-gate	GATE RED floor: module_coupling: 5.04 -> 4.98
+learniq	2509	afdcf4ef726377d15fef2606ac4addf52781f222	REVERIFY	worker-35:merge	verdict sha is not the head: head is 2500f76794984fd0e6de436a69fd37945c85d3af
+learniq	2519	7bff990d23143d60902e6056bb530a52de11aa45	REVERIFY	worker-35:merge	verdict sha is not the head: head is d768aa7772efa77b763f812b0bc703f8f5d4a297
+learniq	2532	cb3bbe248e057e13d3c79ceb01d1ef05d7986d52	CONFLICT	worker-35:merge	conflicts with development; files: lib/Settings/learniq_register.json 
+learniq	2533	33d6f4e39da10dd1f64ab21988f6162314aa10bc	CONFLICT	worker-35:merge	conflicts with development; files: lib/Settings/learniq_register.json 
+learniq	2534	b906144a86561231ce30a6583671111e90548766	REVERIFY	worker-35:merge	verdict sha is not the head: head is 6beffdd065c45b3c4302ddfaf36f502d76d7bfd8
