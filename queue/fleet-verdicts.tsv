@@ -18536,3 +18536,4 @@ learniq	2524	e082152efbec3936630363bfcc6b43783c2365fc	CONFLICT	worker-49	conflic
 versioniq	700	563a324a25e1b6846a4fe0f1c0a71937dbc6ad4b	REVERIFY	worker-29	merged development in, kept both InstallerService optional params (sbomArchive, channels); unit suite 2466 tests, 2 failures inherited from development (install golden tests); new head b95e71ea94b5c0625b36e87877e859a12350d54f, verify it
 portaliq	2449	89f90703ddd84d5ad7f4d90909874100e9df44c5	RED	worker-19:merge-gate	GATE RED floor: unit_complexity: 4.55 -> 4.53
 dossiq	6634	024fc8422aa191aa02c0ebab3deb5f407d0f938f	RED	worker-32:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+portaliq	2560	9791e4931e657febefebd06ca485ef09e37d8094	GREEN	worker-33	feat build dataset-views-on-the-public-page, public site read-only views, no PHP change; unit 6313 on tree, baseline 16 errors inherited, 0 new; node --test dataset-views+publication-detail 13 pass
