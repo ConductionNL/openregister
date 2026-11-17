@@ -20042,5 +20042,6 @@ fix:stackiq:1966:07fea94b	fixed: test pinned to 1.5.12, suite green; new head 60
 merge:opencatalogi:2650:32c20388	cloud tree of 5 opencatalogi PRs: merged=1 red=1 fail=0 skip=1; conflict 2, lint 0, red 0, moved 0, done 0	session-20261117T084720-67842b83	2026-11-17T09:06:53Z
 fix:hermiq:1795:a0df53ce	merged #1795 at 139b265b31f4e19c7031fbbd1a9088407bef3202 (info.xml conflict resolved; php duplication floor restored with a shared seed lookup and folder helper)	session-20261117T081247-63811e04	2026-11-17T09:07:08Z
 merge:stackiq:1933:dd3f1de2	cloud tree of 4 stackiq PRs: merged=2 red=0 fail=0 skip=0; conflict 2, lint 0, red 0, moved 0, done 0	session-20261117T084948-f35bd67b	2026-11-17T09:06:38Z
+cover:dossiq:069ee2d6m9d1b:c97e6ec3	added AssignedCasesSourceTest (10 tests) to open cover PR #6203 (dossiq has 44 open PRs); Source dir ~100% lines; suite 18930->18940, 19 inherited failures	session-20261117T084726-4d3c0dd8	2026-11-17T09:07:42Z
 merge:shillinq:3065:606bc8ab	cloud tree of 1 shillinq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T084846-a0137765	2026-11-17T09:07:38Z
 fix:stackiq:1942:9623d967	fixed RED (binding counts); pushed f000f6c2; merge lock held elsewhere, REVERIFY recorded	session-20261117T084906-fb469281	2026-11-17T09:07:52Z
