@@ -20203,3 +20203,4 @@ fix:portaliq:2450:260942b5	conflict resolved, pushed be5bbb37; REVERIFY queued (
 review:learniq:2486:973f96e7	GREEN: spec-conformant, 0 new failures (1 inherited)	session-20261117T095501-3bc4ddc7	2026-11-17T10:00:50Z
 merge:versioniq:729:470068c5	no complete base and tree suite: not landed	session-20261117T092700-641a7a7c	2026-11-17T10:01:09Z
 merge:dossiq:6632:179fa99f	cloud tree of 7 dossiq PRs: merged=3 (6632,6633,6636) red=4 (6635,6637,6638,6639 sbom gate) fail=0 skip=0; first land cut at 10 min, resumed for the last two	session-20261117T092802-9d33e8f7	2026-11-17T10:02:15Z
+review:integriq:3593:5718bcca	GREEN: no new failures (9786 tests, 5 inherited), vitest 2395 pass	session-20261117T094207-9b025024	2026-11-17T10:02:16Z
