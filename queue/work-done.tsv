@@ -19368,5 +19368,6 @@ merge:learniq:2486:9f600fbd	cloud tree of 9 learniq PRs: merged=1 red=0 fail=0 s
 review:filinq:2113:36d16af0	GREEN: unit 6979 -> 6987, 0 failures	session-20261117T031850-8a9a8f98	2026-11-17T03:21:25Z
 review:integriq:3545:76605dd4	GREEN: l10n-only, strings complete; tasks.md note on en.js inaccurate	session-20261117T032038-9668112c	2026-11-17T03:21:41Z
 review:learniq:2537:b93181df	already merged: head b93181df is on development	session-20261117T020353-b50811a6	2026-11-17T03:22:05Z
+fix:filinq:2123:06d3cf49	merged #2123 at bb0d49c3f8201f782665b19c1aa074a188b27d58	session-20261117T020416-cc0fb378	2026-11-17T03:22:36Z
 review:filinq:2123:a2e8c23e	stale	session-20261117T032146-7c837cf0	2026-11-17T03:22:34Z
 fix:filinq:2059:4c6a7b12	conflict resolved, pushed 9ead1961; merge lock busy, REVERIFY queued	session-20261117T031850-8a9a8f98	2026-11-17T03:23:05Z
