@@ -17664,3 +17664,10 @@ integriq	3631	905f2fc3c11173b27459887a027c88ffb562f07f	REVERIFY	worker-03:merge	
 integriq	3633	109ddb59cb44e81e0e89bab020c847a6b60e839d	REVERIFY	worker-03:merge	conflicts only with an earlier PR of the merge tree: merges clean on development alone; files: src/modals/v2/SourceFormFields.vue 
 integriq	3574	56c6b5c2a7a5e1b94a88c662502b72401db26c33	REVERIFY	worker-26	fixed duplication floor: shared AllowlistEditor component + allowlistEditor mixin for both admin allowlists (floor_check PASS 3.89->3.88, vitest 2380/2380, eslint clean); merge lock held elsewhere; new head 40a5ceb41fceb176e4a0c3354668586cf570c8b8, verify it
 versioniq	686	6799e346c3de5db336709e5fb2f61df3b944cf62	RED	worker-29:merge-gate	GATE RED floor: overall: 5.07 -> 5.05; unit_complexity: 4.79 -> 4.77; unit_interfacing: 4.57 -> 4.45
+buildiq	1605	2848f1e25ea733e48fba1ec20a23168937019526	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+buildiq	1607	0a33c019456e3dd065a515ca0ff5d168d992b49e	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+buildiq	1608	b1698085411321a7ccd4c3385941cf393de14306	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js src/components/page-editor/DetailPageEditor.vue 
+buildiq	1618	088b083a05a5b0e1945e2be8ff6a73719d0f1c41	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+buildiq	1626	230c8f815793b9508a6b263546a01410094bdabc	CONFLICT	merge3	merges clean on development alone; files: l10n/nl.js l10n/nl.json 
+buildiq	1630	fd159d9c77f828752cacef83c6c49afa05e8d911	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+buildiq	1632	339aedb1d07b4dd8111025b717142a04ef8b063c	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
