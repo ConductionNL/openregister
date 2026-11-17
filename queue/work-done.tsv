@@ -21367,3 +21367,4 @@ build:shillinq:setup-wizard-english:b2	already done: built on development in 4cf
 build:shillinq:sales-invoice-issue-controls:b2	already building: quality/build-sales-invoice-issue-controls exists	session-20261117T134355-826c5a0b	2026-11-17T14:57:20Z
 build:shillinq:receivables-object-request-settlement:b2	already done: built on development (86e66d78c..a50432583); left 2.3 live check and 5.2 cross-app notice to larpinq	session-20261117T140734-4d108840	2026-11-17T14:57:28Z
 build:shillinq:sales-usage-billing:b2	already done: only 3.2 (Playwright on a live instance) left	session-20261117T135520-9a524c6b	2026-11-17T14:58:02Z
+build:shillinq:receivables-object-request-refund-and-credit:b2	already done: built on development (cc88a580e..c7f4c1a1a); left 3.2 Playwright and 5.2 cross-app notice	session-20261117T140734-4d108840	2026-11-17T14:57:58Z
