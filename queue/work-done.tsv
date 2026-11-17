@@ -20608,3 +20608,4 @@ verify:filinq:2172:3c8384ee	GREEN: version bump, unit 7288 OK	session-20261117T1
 verify:buildiq:1704:41c7345c	GREEN #1704 (3578 tests, 0 new failures)	session-20261117T123632-d3b91db3	2026-11-17T12:44:53Z
 verify:dossiq:3106:2e124449	CONFLICT #3106 (sbom.cdx.json)	session-20261117T123701-2c29f729	2026-11-17T12:45:01Z
 verify:keepiq:1892:06b6dba3	GREEN #1892: release version bump only	session-20261117T123146-498cbe48	2026-11-17T12:45:13Z
+verify:filinq:2093:33690cef	CONFLICT: lib/Settings/filinq_register.json (development moved after the fix)	session-20261117T114019-426872f0	2026-11-17T12:45:24Z
