@@ -22520,3 +22520,4 @@ build:opencatalogi:harvest-conflict-policies:b2:c2	partial: blocked, nothing new
 build:buildiq:logic-automation-actions-that-run:b2:c7	already built: T01-T09, T11, T12 ticked on PR #1648 (development merged in), tests/e2e/automations-flow-backend.spec.ts exists; T10 only needs a live Playwright run	session-20261117T185732-534997e2	2026-11-17T20:22:46Z
 fix:integriq:3564:d0095e30	fixed demo data + nl.json keys, pushed 7f70763f; REVERIFY queued (merge gate host blocked)	session-20261117T185927-e9838dc9	2026-11-17T20:22:47Z
 fix:planninq:1218:3bb9d8d2	fixed: sbom regenerated on #1218, new head df1e59ad; REVERIFY queued (end-to-end skipped: api.osv.dev unreachable)	session-20261117T185625-a1e67f54	2026-11-17T20:23:14Z
+fix:integriq:3713:1ac93422	sbom regenerated #3713, new head 7c19b1408e; REVERIFY queued	session-20261117T190308-4c99e05c	2026-11-17T20:23:31Z
