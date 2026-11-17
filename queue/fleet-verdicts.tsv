@@ -19361,3 +19361,4 @@ integriq	3714	b02f1d04d14117d274784434443fed8841cc64fd	GREEN	worker-18	unit 9966
 integriq	3725	dcad683aedefbf7e58df9f170d5d78a8082a7e48	REVERIFY	worker-18	conflicts only with an earlier PR of the verify tree
 integriq	3733	674a28d71cab8deeadf7cccb92321ec6235cd80f	REVERIFY	worker-18	conflicts only with an earlier PR of the verify tree
 integriq	3734	12b2f75d18535b79f67f6655da4a1148ff95ac96	GREEN	worker-18	unit 9966 tests on tree, baseline 9910 with 5 inherited failures (JobsControllerTest x2, CallServiceTest x2, SynchronizationSynchronizeEntryGoldenTest), 0 new; vitest 2395/2395; build native-data-gathering-provider: connector register fragments + contract tests
+portaliq	2564	ea302ce1b6aff026d97d4e95ffc9c485dc676281	GREEN	worker-21	unit 6324 tests (baseline 6324, 16 inherited errors), no new failures; eslint clean on new e2e spec; spec text restructured into scenarios, tasks ticked
