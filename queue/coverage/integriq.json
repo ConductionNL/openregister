@@ -1,12 +1,12 @@
 {
  "app": "integriq",
- "commit": "0dd96b03ab4521b74dd0423e06093f9831b0988d",
- "measured_at": "2026-11-17T09:04:19Z",
+ "commit": "f79927c0df480ebfec9120e559075ee0792504d1",
+ "measured_at": "2026-11-17T13:56:52Z",
  "php": {
   "tool": "pcov",
-  "pct": 95.21,
-  "statements": 70526,
-  "covered": 67147,
+  "pct": 95.17,
+  "statements": 72241,
+  "covered": 68753,
   "dirs": {
    "lib/Adapters/": [
     182,
@@ -65,8 +65,8 @@
     2
    ],
    "lib/AppInfo/": [
-    203,
-    143
+    204,
+    144
    ],
    "lib/Auth/": [
     13,
@@ -81,8 +81,8 @@
     216
    ],
    "lib/BackgroundJob/": [
-    1024,
-    1016
+    1082,
+    1073
    ],
    "lib/BackgroundJob/ExchangeRate/": [
     142,
@@ -113,8 +113,8 @@
     274
    ],
    "lib/Controller/": [
-    6965,
-    6620
+    7080,
+    6733
    ],
    "lib/Db/": [
     187,
@@ -125,12 +125,12 @@
     600
    ],
    "lib/Event/": [
-    507,
-    487
+    541,
+    520
    ],
    "lib/EventListener/": [
-    1623,
-    1495
+    1903,
+    1755
    ],
    "lib/Exception/": [
     63,
@@ -172,6 +172,10 @@
     17,
     17
    ],
+   "lib/Listener/": [
+    45,
+    45
+   ],
    "lib/Mcp/": [
     152,
     145
@@ -189,20 +193,24 @@
     123
    ],
    "lib/Observability/": [
-    224,
-    223
+    227,
+    226
+   ],
+   "lib/Observability/Errors/": [
+    249,
+    245
    ],
    "lib/Observability/Otel/": [
-    276,
-    276
+    369,
+    367
    ],
    "lib/Outbound/": [
-    570,
-    563
+    585,
+    577
    ],
    "lib/Outbound/Call/": [
-    691,
-    663
+    704,
+    676
    ],
    "lib/Outbound/Identity/": [
     1248,
@@ -237,8 +245,8 @@
     7
    ],
    "lib/Service/": [
-    23485,
-    21476
+    23906,
+    21883
    ],
    "lib/Service/Adapter/": [
     48,
@@ -319,6 +327,10 @@
    "lib/Service/Exchange/": [
     962,
     958
+   ],
+   "lib/Service/Format/": [
+    149,
+    109
    ],
    "lib/Service/Forms/": [
     162,
@@ -449,16 +461,16 @@
     50
    ],
    "lib/Service/Security/": [
-    1043,
-    1019
+    1150,
+    1122
    ],
    "lib/Service/ServiceFetch/": [
     243,
     224
    ],
    "lib/Service/Sms/": [
-    424,
-    404
+    548,
+    511
    ],
    "lib/Service/Stuf/": [
     135,
@@ -525,8 +537,8 @@
     17
    ],
    "lib/Twig/": [
-    140,
-    129
+    148,
+    134
    ],
    "lib/Util/": [
     8,
@@ -539,9 +551,9 @@
   }
  },
  "js": {
-  "pct": 94.38,
-  "statements": 8414,
-  "covered": 7941,
+  "pct": 94.36,
+  "statements": 8542,
+  "covered": 8060,
   "dirs": {
    "src/": [
     94,
@@ -555,6 +567,10 @@
     36,
     31
    ],
+   "src/components/admin/": [
+    16,
+    14
+   ],
    "src/components/callLog/": [
     62,
     55
@@ -564,8 +580,8 @@
     31
    ],
    "src/components/mapping/": [
-    240,
-    237
+    244,
+    241
    ],
    "src/components/regression/": [
     57,
@@ -584,8 +600,8 @@
     51
    ],
    "src/mixins/": [
-    263,
-    263
+    280,
+    278
    ],
    "src/modals/": [
     250,
@@ -632,16 +648,16 @@
     22
    ],
    "src/modals/v2/": [
-    1928,
-    1865
+    1993,
+    1927
    ],
    "src/store/": [
     31,
     31
    ],
    "src/views/ApiProducts/": [
-    192,
-    162
+    211,
+    179
    ],
    "src/views/Approvals/": [
     103,
@@ -676,12 +692,12 @@
     414
    ],
    "src/views/Synchronization/": [
-    938,
-    917
+    952,
+    931
    ],
    "src/views/admin/": [
-    800,
-    748
+    793,
+    741
    ],
    "src/views/wrappers/": [
     220,
