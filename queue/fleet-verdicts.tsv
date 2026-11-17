@@ -16435,3 +16435,4 @@ versioniq	710	52c774ecfd9a20f10ec6deee5d0736f7383c3308	REVERIFY	worker-36	merged
 launchpad	1227	594fe5c90db7d1ff6248e0cf533093a1091b4281	REVERIFY	worker-39	merged development in: l10n both sides in all locales (22 doubled keys dropped), Views.vue imports both, golden regenerated; vitest 2660 pass, parity failure inherited from development; new head a4a6474a31a40420e8fd5be44ae1a91c495de6c2, verify it
 larpinq	1059	33374bf7b3507394b31220c9b88c49aec8b5c979	REVERIFY	worker-11	merged development in, kept both Unreleased CHANGELOG entries (docs-only PR: CHANGELOG and tasks.md); merge lock held by another merger; new head 064564f8eebf0763f2d68215c6289a261f3c882d, verify it
 stackiq	1937	53bbb64a58e178ee4616c53220567a0102eaac89	RED	worker-33:merge-gate	GATE RED floor: unit_interfacing: 4.71 -> 4.68
+versioniq	703	6665c28103129bccbfc61854d3e03f4e18f8d880	RED	worker-35:merge-gate	GATE RED floor: unit_complexity: 4.79 -> 4.77
