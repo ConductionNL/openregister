@@ -19118,3 +19118,4 @@ review:learniq:2518:59333b49	GREEN: metadata only, 0 new failures, checks pass	s
 review:opencatalogi:2677:6cedbbd6	RED: MiddlewareRegistrarTest new failure; test-file conflict with development	session-20261117T020207-847c18e7	2026-11-17T02:21:22Z
 review:buildiq:1619:3d592e85	GREEN: vitest 4865/0 fail on PR+dev, frontend only	session-20261117T020231-8c38940a	2026-11-17T02:21:35Z
 review:integriq:3572:5ea14816	GREEN: 9684 tests, 5 inherited failures/errors	session-20261117T020142-15890c05	2026-11-17T02:21:49Z
+review:larpinq:1049:8083d2b9	GREEN: PHPUnit 1124 OK, vitest 697 OK on merge with development	session-20261117T020257-fb35dc98	2026-11-17T02:22:00Z
