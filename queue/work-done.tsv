@@ -19865,3 +19865,4 @@ review:opencatalogi:2684:0f1cbda6	GREEN: 0 new failures (6207 tests, baseline 78
 review:opencatalogi:2680:2286260f	GREEN: no new failures, behaviour matches change specs	session-20261117T081117-f29e8a89	2026-11-17T08:15:17Z
 review:integriq:3613:b7a00be9	GREEN: spec-conformant build, no new failures	session-20261117T080541-d8abe4ad	2026-11-17T08:15:46Z
 review:integriq:3631:905f2fc3	GREEN: unit 9781 tests, no new failures beyond an order-dependent golden test that also fails on development; vitest 24 pass	session-20261117T080442-23d3643f	2026-11-17T08:16:00Z
+review:opencatalogi:2651:e7467c2a	GREEN: 6214 tests, no new failures over 78 inherited	session-20261117T081153-b2625937	2026-11-17T08:16:12Z
