@@ -19484,3 +19484,4 @@ pipelinq	3934	6ba01209ecd5625e0ddf012ef749484450241fb1	REVERIFY	worker-41	merged
 pipelinq	3963	e0b88c16e1c5e43d0827e293701b09a4c5a0c8d2	RED	worker-10:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 shillinq	3007	357ddc9bfc997d00bdf3c730ebdcf4afcaea3cd2	GREEN	worker-29:review	build sales-einvoice-exchange: outbound hand-off to integriq as the change's design asks (replaced tests cover it), new reject endpoint checks the administration first; phpunit dev 12796 OK, merged 12833 OK; touched vitest 16/16
 dossiq	6659	7c7be56443aeb3a89787e941ed3e97fbc3c0b146	GREEN	worker-52	unit 18402 run, baseline 1 error (StatusEntryRequirementsGuardTest), 0 new; e2e spec + config only, matches procedures-are-configuration-dossiq
+dossiq	6663	c2277813b81e6b2bae7e5450f38a1ab099b680be	RED	worker-42:merge-gate	GATE RED floor: unit_interfacing: 3.49 -> 3.47
