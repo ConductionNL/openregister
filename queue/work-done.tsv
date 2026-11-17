@@ -18565,3 +18565,4 @@ verify:versioniq:692:b2f536ae	CONFLICT #692 (13 files vs development)	session-20
 verify:stackiq:1959:24c8fc95	CONFLICT #1959 (4 files conflict with development)	session-20261116T233050-d0df160f	2026-11-17T00:14:22Z
 verify:versioniq:701:4168c0e0	CONFLICT #701	session-20261116T232519-f84cca9a	2026-11-17T00:14:31Z
 verify:shillinq:3110:2cd8b5c1	GREEN #3110 (no new failures; 1 vitest failure inherited)	session-20261116T232623-066b53c9	2026-11-17T00:14:42Z
+verify:stackiq:1944:5799c03a	CONFLICT: l10n, ArchiMateImportExport.vue	session-20261116T231848-eaef2e51	2026-11-17T00:14:56Z
