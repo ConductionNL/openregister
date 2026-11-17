@@ -19070,3 +19070,29 @@ review:filinq:2078:31d63323	CONFLICT: build matches change, PHP+JS suites green 
 review:humaniq:1146:3a8cc16b	GREEN: unit 4475, 0 new failures; l10n + golden fixture conflicts with development	session-20261117T015705-50845751	2026-11-17T02:11:35Z
 review:filinq:2123:06d3cf49	CONFLICT: merge with development conflicts in 4 files; head alone green 7055 OK	session-20261117T020238-79f03bb8	2026-11-17T02:11:50Z
 review:hermiq:1755:a55ceb60	GREEN: suite 5544/vitest 1606 green on merge with development; register version conflict needs a bump	session-20261117T020320-19c7f7ca	2026-11-17T02:11:55Z
+review:filinq:2093:4fc207ba	GREEN: PHP 6998 OK vs 6969, jest/vitest OK, spec-conform; register description line conflicts with development	session-20261117T020244-328833fb	2026-11-17T02:12:05Z
+review:humaniq:1147:240e3169	GREEN: suite 4472 OK on PR+development; l10n conflicts with development	session-20261117T020617-81e5b086	2026-11-17T02:12:13Z
+review:hermiq:1781:90b585c6	GREEN: suite 5538 OK, vitest 47 OK; version-line conflict with development	session-20261117T020348-42793e58	2026-11-17T02:12:31Z
+review:humaniq:1139:3c0dc9a8	GREEN: unit 4460, 0 new failures	session-20261117T015705-50845751	2026-11-17T02:12:49Z
+review:hermiq:1749:9219f3b4	BLOCK: Chat.vue beforeUnmount changed without @spec (gate-16); rest clean, unit 5499 OK	session-20261117T020309-da756b72	2026-11-17T02:12:57Z
+review:hermiq:1763:0ba5d841	GREEN: 5549 unit tests pass on PR+development, 26 vitest pass	session-20261117T020353-b50811a6	2026-11-17T02:13:06Z
+review:filinq:2121:bc7ef6b2	GREEN: suite 6996/0 fail on PR+dev; register.json description conflict with development	session-20261117T020231-8c38940a	2026-11-17T02:13:21Z
+review:integriq:3561:fbf5b6de	CONFLICT (l10n only); behaviour clean, unit only inherited failures	session-20261117T004708-53deec56	2026-11-17T02:13:35Z
+review:learniq:2524:03298d02	RED #2524: PortalFieldWordsTest (roster-sync source lacks portal word)	session-20261117T020252-b4828a7d	2026-11-17T02:13:53Z
+review:hermiq:1762:d2151c56	GREEN: hermiq #1762, no new failures	session-20261117T020211-438428f3	2026-11-17T02:14:03Z
+review:hermiq:1760:37f096be	CONFLICT: info.xml, hermiq_register.json conflict with development; recorded for a fix	session-20261117T020332-dda1b5ce	2026-11-17T02:14:17Z
+review:learniq:2509:afdcf4ef	GREEN: matches spec; 1 inherited failure; conflicts with development in golden manifest	session-20261117T020324-9d49c3ef	2026-11-17T02:14:29Z
+review:learniq:2536:85923107	RED: 2 new failures merged with development (Planned Moment label), golden conflict	session-20261117T015854-c76e8b72	2026-11-17T02:14:43Z
+review:hermiq:1741:b210624d	GREEN: 5502 tests, 0 failures, matches change specs	session-20261117T020255-329d248b	2026-11-17T02:14:52Z
+review:humaniq:1134:2d975a3c	GREEN: unit 4503, 0 new failures; test-const conflict with development	session-20261117T015705-50845751	2026-11-17T02:15:01Z
+review:learniq:2551:2291ead0	GREEN: 7001 tests, 1 inherited failure; js 140/140	session-20261117T020142-15890c05	2026-11-17T02:15:15Z
+review:learniq:2537:0831c23e	BLOCK: re-saving a day drops its photoRef; conflicts with development (golden manifests)	session-20261117T020210-893a9346	2026-11-17T02:15:30Z
+review:buildiq:1643:c4bd2510	GREEN: 1 inherited unit failure, 14 vitest pass; l10n conflict with development	session-20261117T020353-b50811a6	2026-11-17T02:15:41Z
+review:learniq:2534:b906144a	GREEN: change-scoped build, no new failures (1 inherited)	session-20261117T020408-6b9de5cf	2026-11-17T02:15:51Z
+review:buildiq:1651:4514f95f	RED: 11 new unit failures (old openregister object API in new wrapper service/controller; AppOrganisationGuard coverage test)	session-20261117T021251-11de9231	2026-11-17T02:16:09Z
+review:learniq:2519:7bff990d	GREEN: per spec, no new failures; golden-file conflict with development	session-20261117T020537-9e43f62e	2026-11-17T02:16:24Z
+review:learniq:2533:33d6f4e3	GREEN: matches open-learning-material 2.4; 6991 tests, 1 inherited failure	session-20261117T020223-01f01255	2026-11-17T02:16:33Z
+review:humaniq:1142:dc634057	GREEN: PHP 4456 OK, JS no new failures; l10n conflicts with development	session-20261117T020617-81e5b086	2026-11-17T02:16:46Z
+review:hermiq:1738:29ad770b	GREEN: unit 5540 OK on merge with development; register version conflict needs a fix	session-20261117T020339-3b9e42aa	2026-11-17T02:17:01Z
+review:buildiq:1626:77575f40	GREEN: 1 inherited failure; conflicts with development in l10n/nl.*	session-20261117T020255-329d248b	2026-11-17T02:17:16Z
+review:shillinq:3064:4ce547cf	RED: 3 new failures on PR+development (PostingGuardsThroughAdapterTest x2 constructor arg 6, LifecycleActionSignatureTest action count 27->28)	session-20261117T020244-328833fb	2026-11-17T02:17:40Z
