@@ -5195,3 +5195,4 @@ dossiq	6637	b73c09106cab3ce39f127bc4cb34793daa79f2b1	RED	worker-02	GATE RED sbom
 planninq	1218	fc16da26f4d59be4ee6db2ae872717ec6377dc8f	RED	worker-13	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 versioniq	754	09e903d37e8c8bd99785cadf2f06bb610974b3e2	MERGED	worker-30	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.97 holds at 4.21
 dossiq	6638	89db4fd0d58bce432e1040de4cddd4b86226f366	RED	worker-02	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+dossiq	6639	368fd4368419b8eefecb076c704e3ab1271153d6	RED	worker-02	GATE RED sbom: package-lock.json changed without sbom.cdx.json
