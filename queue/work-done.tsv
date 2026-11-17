@@ -20027,3 +20027,4 @@ fix:filinq:2095:120f4482	conflict resolved, pushed 99be8379; merge lock held els
 fix:integriq:2650:e2326510	conflict resolved, pushed 92ce810e, REVERIFY queued	session-20261117T085014-6c3c5506	2026-11-17T09:03:48Z
 fix:learniq:2551:2291ead0	fixed: register/app version raised, spec tags added, development merged; new head a86b68dc, REVERIFY queued (merge lock held elsewhere)	session-20261117T085350-7b102f7f	2026-11-17T09:04:00Z
 merge:portaliq:2417:23035054	cloud tree of 1 portaliq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T085020-faa595ea	2026-11-17T09:04:18Z
+fix:opencatalogi:2683:b9a9bc9f	fixed #2683, new head 7b81beb8 (merge lock held elsewhere, REVERIFY queued)	session-20261117T084753-0ae58c51	2026-11-17T09:04:36Z
