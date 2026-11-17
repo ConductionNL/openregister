@@ -22210,3 +22210,4 @@ verify:filinq:2175:3022acfd	GREEN: 2175 (openspec docs only, suite green)	sessio
 verify:dossiq:6646:eb19f73d	GREEN #6646 (tasks.md tick, seed confirmed in portaliq; no new failures)	session-20261117T190448-9c35d7c4	2026-11-17T19:24:11Z
 verify:dossiq:6663:7ad8d465	GREEN #6663 (0 new failures)	session-20261117T190353-db371595	2026-11-17T19:24:22Z
 verify:hermiq:1846:5032dbe4	GREEN 1846; tasks.md only, ticks confirmed on development	session-20261117T190115-a0afcf82	2026-11-17T19:24:34Z
+verify:dossiq:6647:57eb1cc0	GREEN #6647 (tasks.md only)	session-20261117T190540-b0615094	2026-11-17T19:24:48Z
