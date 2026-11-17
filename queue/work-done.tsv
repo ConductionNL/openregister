@@ -19346,3 +19346,4 @@ fix:hermiq:1740:9e13a128	fixed and pushed, not landed: merge gate RED on checker
 fix:versioniq:758:328a3fa5	conflict resolved, pushed 0dfd34ac; merge lock held elsewhere, REVERIFY recorded	session-20261117T025224-5b756ade	2026-11-17T03:11:55Z
 fix:integriq:3613:b4fef9cf	blockers fixed (write-only hash, jwks rate limit, 23 tests); REVERIFY at 599c7742 (merge lock busy)	session-20261117T025205-24fff43b	2026-11-17T03:12:13Z
 fix:hermiq:1719:fa2696b2:v3	stale	session-20261117T031134-129380a1	2026-11-17T03:12:22Z
+fix:learniq:2538:fe4a0798	fixed: development merged, Dutch labels added; REVERIFY at 0b1eaa819c (merge lock held by another merger)	session-20261117T020358-1a8df617	2026-11-17T03:12:23Z
