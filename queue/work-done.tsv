@@ -18524,6 +18524,7 @@ verify:opencatalogi:2722:4a2f2fb8	CONFLICT #2722 (3 files vs development)	sessio
 merge:learniq:2578:a3daf75a	failed: prep exit 2: composer install refused (vimeo/psalm 7.5.0 needs php ~8.3.16, session has 8.3.6), no vendor/bin/phpunit	session-20261116T232944-146e39d7	2026-11-17T00:06:22Z
 verify:shillinq:1958:c4416ca3	1958 CONFLICT	session-20261116T230531-f9095b0f	2026-11-17T00:06:23Z
 verify:shillinq:3007:c7d7174e	CONFLICT: #3007 conflicts with development (info.xml, routes, l10n, EInvoiceService, IntegriqCloudEventListener, openapi, lock file)	session-20261113T214350-9762e143	2026-11-17T00:06:31Z
+verify:shillinq:2083:00f08036	CONFLICT #2083 (l10n)	session-20261116T233929-170accb7	2026-11-17T00:06:47Z
 verify:portaliq:2451:82b242ea	CONFLICT #2451 (l10n, manifest.json)	session-20261116T232951-07569878	2026-11-17T00:06:57Z
 verify:shillinq:2998:531a457a	CONFLICT: info.xml, l10n, Application.php, register-versions.lock.json	session-20261116T224609-c0ad2be4	2026-11-17T00:07:05Z
 verify:shillinq:3003:2b498a1a	CONFLICT #3003 (9 files vs development)	session-20261116T233834-fbe601d1	2026-11-17T00:07:18Z
@@ -18555,3 +18556,14 @@ verify:thematiq:1365:b4ce049c	CONFLICT #1365 (l10n catalogues, goldens, shell-ca
 verify:stackiq:1933:dbb7a4f3	CONFLICT #1933 (l10n, registrar, mock register, manifest)	session-20261116T233427-cfe22922	2026-11-17T00:12:21Z
 verify:thematiq:1680:c87a6a9a	CONFLICT #1680 (l10n catalogues)	session-20261116T232918-35016340	2026-11-17T00:12:33Z
 fix:shillinq:1900:65225988	conflict resolved, pushed 7c67b538; merge lock busy, REVERIFY queued	session-20261116T233933-3050c00d	2026-11-17T00:12:44Z
+verify:stackiq:1938:8966c7c6	CONFLICT: l10n, registers, icons.js	session-20261116T231848-eaef2e51	2026-11-17T00:13:03Z
+verify:stackiq:1937:4a21c5d7	CONFLICT #1937 (l10n, mock register, openapi, customComponents)	session-20261116T233427-cfe22922	2026-11-17T00:13:15Z
+verify:versioniq:700:d3d6421a	CONFLICT #700 (4 files vs development)	session-20261116T233901-7abe1a78	2026-11-17T00:13:25Z
+verify:opencatalogi:2652:018cf71d	CONFLICT #2652 (5 files vs development)	session-20261116T234052-0f8466c3	2026-11-17T00:13:37Z
+verify:shillinq:3067:c2dffe48	CONFLICT #3067 (register-versions.lock.json vs development)	session-20261116T233800-0f135937	2026-11-17T00:13:49Z
+verify:versioniq:709:819acb73	CONFLICT #709	session-20261116T232519-f84cca9a	2026-11-17T00:13:58Z
+verify:versioniq:692:b2f536ae	CONFLICT #692 (13 files vs development)	session-20261116T233011-100ff0c6	2026-11-17T00:14:09Z
+verify:stackiq:1959:24c8fc95	CONFLICT #1959 (4 files conflict with development)	session-20261116T233050-d0df160f	2026-11-17T00:14:22Z
+verify:versioniq:701:4168c0e0	CONFLICT #701	session-20261116T232519-f84cca9a	2026-11-17T00:14:31Z
+verify:shillinq:3110:2cd8b5c1	GREEN #3110 (no new failures; 1 vitest failure inherited)	session-20261116T232623-066b53c9	2026-11-17T00:14:42Z
+verify:stackiq:1944:5799c03a	CONFLICT: l10n, ArchiMateImportExport.vue	session-20261116T231848-eaef2e51	2026-11-17T00:14:56Z
