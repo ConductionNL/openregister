@@ -20508,3 +20508,4 @@ review:integriq:3612:a0f66b1a	GREEN: 0 new failures (9861 tests, 5 inherited), m
 verify:opencatalogi:2766:29579c9f	GREEN #2766 (no new failures)	session-20261117T114001-07512b39	2026-11-17T12:10:54Z
 cover:launchpad:fb10c50fm88bd:59826f43	no PR: lib/Settings/ already 55/55 covered, all 4 classes have behaviour tests (LaunchPadAdminTest, LaunchPadAdminSectionTest); nothing thin to add	session-20261117T115011-195ffbc6	2026-11-17T12:10:56Z
 review:versioniq:729:ea732a80	GREEN: matches change specs; unit 2427 tests, 2 inherited failures; vitest 3208 pass	session-20261117T120635-25da0b5a	2026-11-17T12:11:03Z
+fix:learniq:2509:56cfb0f8	conflict resolved, pushed 4853fbe3; REVERIFY (merge lock held elsewhere)	session-20261117T112106-1814b74b	2026-11-17T12:11:45Z
