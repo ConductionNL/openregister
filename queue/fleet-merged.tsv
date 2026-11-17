@@ -4937,3 +4937,4 @@ integriq	3679	b2e512040dc2d2b309be90cae059398e9c3c7674	RED	worker-01	GATE RED ch
 launchpad	1223	bf24d56ac95ae4241d818535158a709b9f749aa9	RED	worker-57	GATE RED floor: overall: 4.61 -> 4.58; unit_size: 4.00 -> 3.98; unit_complexity: 4.76 -> 4.73; unit_interfacing: 3.83 -> 3.70; module_coupling: 4.75 -> 4.73
 shillinq	2081	42e3cf9c4613a3acf8534812d7fc0ab54b45ece6	MERGED	worker-14	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.09
 pipelinq	3734	ed9bd0c7cc31d9f32f99412f575db8753900de88	RED	worker-32	GATE RED floor: unit_interfacing: 4.18 -> 4.16
+launchpad	1254	c191ec40d082c5e409046f69d439a335363eb505	MERGED	worker-57	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.65 holds at 3.79
