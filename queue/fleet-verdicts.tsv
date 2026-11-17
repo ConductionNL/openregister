@@ -16080,3 +16080,4 @@ stackiq	1937	3a8099f95106c17a3b33f6aac7f8c847f6fbf9b8	CONFLICT	worker-23	conflic
 stackiq	1944	25fa2c20ed0031ac0278d3a787cffa3eca2f16bc	CONFLICT	worker-56	conflicts with development in l10n (4) and ArchiMateImportExport.vue
 shillinq	3110	cca3fd23bdfcaf08b914978343921a1bfc362fcb	GREEN	worker-26	PHP unit 12460 tests OK on baseline and tree (vendor rebuilt from the new lock); vitest 3031 tests, 1 failure dunningNextRun.spec.js inherited from development; no new failures; lockfile and devDependency bumps only
 versioniq	701	ccfb01ba8e00eaa2d30b264aaa91448565430726	CONFLICT	worker-17	conflicts with development in l10n catalogues, lib/Service/InstallerService.php, src/App.vue, InstallerServiceAppListTest and its golden fixture
+versioniq	706	61f814deacd206e3d6961c1fd96706fb4e5899b2	CONFLICT	worker-28	conflicts with development 1fd5cc08 in l10n/en.js, en.json, nl.js, nl.json, lib/Command/InstallVersion.php, src/App.vue, src/utils/migrationSafety.spec.ts; tree not run
