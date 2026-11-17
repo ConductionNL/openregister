@@ -19289,3 +19289,4 @@ pipelinq	3934	6ba01209ecd5625e0ddf012ef749484450241fb1	CONFLICT	worker-23	confli
 shillinq	3177	605a77debdf7ceac3634af4e4ce6a4f307c7e04e	GREEN	worker-24	unit 12813 on tree (baseline 12796 OK, 3 skipped), 0 new failures; no JS/Vue code (manifest only)
 pipelinq	3945	ceffbf1ffd95fdbc429b3b7e77c1cbf97a8849c2	CONFLICT	worker-23	conflicts with development in l10n/en.js en.json nl.js nl.json
 pipelinq	3946	633106e5ce5d34520df6e3801898478fcca78d26	CONFLICT	worker-23	conflicts with development in l10n/en.js en.json nl.js nl.json
+opencatalogi	2650	35c5e9bce49ddf60b196b9ca52987e901d45418f	GREEN	worker-41	phpunit 6409 tests on tree, baseline 78 fail/err on development, 0 new; vitest 1181, 8 inherited (mainEntry.spec), 0 new; build of publication-relations-place-and-source-ids matches its specs
