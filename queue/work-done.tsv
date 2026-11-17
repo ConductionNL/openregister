@@ -20191,3 +20191,4 @@ review:filinq:2093:b98f5937	GREEN: unit 7150 OK (baseline 7121), vitest/jest pas
 review:integriq:3612:7ac38eeb	BLOCK: floors (component_independence worse); code per spec, merged suite same as development	session-20261117T083929-9c5fceb9	2026-11-17T09:58:36Z
 fix:versioniq:700:128a76e4	ADR floor fixed; pushed 89648f84d9; REVERIFY queued (merge lock held elsewhere)	session-20261117T085512-6b57566b	2026-11-17T09:58:50Z
 merge:opencatalogi:2683:e3377ab9	cloud tree of 1 opencatalogi PRs: none; conflict 1, lint 0, red 0, moved 0, done 0	session-20261117T092815-eca173a1	2026-11-17T09:59:06Z
+review:decidiq:2205:8a3de4c6	GREEN: per spec; 4958 unit tests OK; one concern noted	session-20261117T095422-114b47a9	2026-11-17T09:59:18Z
