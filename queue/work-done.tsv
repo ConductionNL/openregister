@@ -20342,3 +20342,4 @@ merge:larpinq:1043:ae8ebf38	cloud tree of 1 larpinq PRs: merged=1 red=0 fail=0 s
 review:learniq:2524:4fd0d8a1	GREEN #2524; conflicts with development in learniq_register.json (register version clash)	session-20261117T112106-5d9693a9	2026-11-17T11:28:58Z
 gap:stackiq:publiccode-logo-and-fields:1	PR #2030; logo yes; store link yes in publiccode, README skipped (already links the App Store); added landingURL, platforms web, intendedAudience, dependsOn, screenshots, features nl+en, availableLanguages; removed non-standard supports; skipped softwareVersion/releaseDate (App Store unreachable), roadmap, usedBy (no source)	session-20261117T112147-4fea037e	2026-11-17T11:29:30Z
 review:filinq:2124:e25a43e2	GREEN #2124	session-20261117T111613-c4d98a73	2026-11-17T11:29:29Z
+gap:thematiq:publiccode-logo-and-fields:1	failed: permission (running publiccode-parser to validate was refused; nothing pushed)	session-20261117T112130-c21e05cd	2026-11-17T11:29:35Z
