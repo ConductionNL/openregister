@@ -22735,3 +22735,4 @@ verify:portaliq:2564:ea302ce1	GREEN #2564: 6324 tests, no new failures	session-2
 fix:launchpad:1303:60be5292	failed: permission (git push to ConductionNL/launchpad refused by the session git proxy)	session-20261117T211359-bea33e3d	2026-11-17T21:51:59Z
 verify:dossiq:6663:c2277813	GREEN #6663: 0 new php/js failures (inherited: 1 php error, 2 vitest)	session-20261117T213139-f6154590	2026-11-17T21:51:59Z
 fix:decidiq:2149:c4919c09	unmeasured: static.developer.overheid.nl (fix pushed, new head 3ccfbfcf, APPROVE recorded)	session-20261117T211315-f96d97db	2026-11-17T21:52:18Z
+verify:stackiq:2028:9d9add83	GREEN #2028 (merge gate still needs sbom regenerated)	session-20261117T211437-e305ed6d	2026-11-17T21:52:29Z
