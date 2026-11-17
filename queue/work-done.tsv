@@ -20265,3 +20265,4 @@ fix:filinq:2113:c8fcb4bf	fixed conflict, pushed ee71f67d; merge lock busy, REVER
 fix:buildiq:1651:144da0d4	conflict resolved, pushed d68265fca1; merge lock held elsewhere, REVERIFY queued	session-20261117T093904-44ff7b5f	2026-11-17T10:16:28Z
 fix:hermiq:1719:72b13e05	conflict resolved, pushed 0b2ffe7a; REVERIFY queued (merge lock held elsewhere)	session-20261117T100929-3dc54181	2026-11-17T10:16:39Z
 fix:filinq:2107:11172a4b	conflict resolved, pushed af5c1387; merge lock held elsewhere, REVERIFY queued	session-20261117T101047-61b4b05d	2026-11-17T10:16:54Z
+fix:filinq:2126:d4e66904	conflict resolved, pushed 7a17d80f; lock busy, REVERIFY queued	session-20261117T100711-68dc61ca	2026-11-17T10:17:03Z
