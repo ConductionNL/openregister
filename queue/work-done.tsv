@@ -21739,6 +21739,7 @@ review:decidiq:2190:c75776f4	GREEN: unit 5038 OK, phpstan/vitest clean	session-2
 review:filinq:2093:71ddff39	GREEN: unit 7317 OK, vitest/jest pass, access checks hold	session-20261117T145748-1419d209	2026-11-17T15:40:40Z
 build:humaniq:documents-employer-statement-from-the-contract:b2	PR #1195: 3.1 @spec REQ-HDD-011 + e2e spec (4 scenarios; filinq-dependent two skip by shape); suite 4509 green; left 0.1 (filinq dep), 3.2 live check; e2e not run	session-20261117T152617-5bc1e1b2	2026-11-17T15:40:59Z
 verify:humaniq:1193:1d3bba27	GREEN 1193, GREEN 1194; tree 4517 OK, baseline 4509 OK	session-20261117T132743-10cec9d3	2026-11-17T15:41:12Z
+build:opencatalogi:inspection-period-rolls-on-the-calendar:b2	already built: every code task (1.1-2.2) and named test is on development; no e2e spec named (all scenarios @e2e exclude); 2.3 live done; 3.2-3.4 are gate/PR process steps of the merged build	session-20261117T154007-0f5288e8	2026-11-17T15:41:32Z
 build:integriq:adapter-configuration-screens:b2	already building (quality/build-adapter-configuration-screens and -c2 exist)	session-20261117T125716-5aa18045	2026-11-17T15:41:26Z
 build:humaniq:time-non-project-activities:b2	PR #1196: wrote time-non-project-activities.spec.ts (scenarios 1-2, non-admin) and an @e2e exclude for scenario 3; 3.1 left open for the live week	session-20261117T134242-51ff9d48	2026-11-17T15:41:58Z
 review:decidiq:2174:218e06dd	CONFLICT (l10n + municipality profile); code reviewed clean, suite 4854 OK on head	session-20261117T134556-243db2c5	2026-11-17T15:41:56Z
