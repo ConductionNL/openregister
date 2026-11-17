@@ -1,0 +1,235 @@
+From 6fdc34686e6ad1971adc8321deb999f2a1e0912e Mon Sep 17 00:00:00 2001
+From: Ruben van der Linde <ruben@conduction.nl>
+Date: Tue, 17 Nov 2026 20:23:28 +0000
+Subject: [PATCH] refactor(hermiq): check project keys in the kernel, not
+ through MemoryService [skip ci]
+
+SessionController called the static MemoryService::isProjectKey(), the
+only direct use of MemoryService from outside the Service component. That
+exposed the whole class across components and dropped the overall
+maintainability estimate to 3.75, below the app's floor of 3.77.
+
+The rule now lives in Kernel\ProjectKey::isValid(); MemoryService keeps
+isProjectKey() and delegates to it, so behaviour is unchanged. The merged
+tree measures 3.77 again. Adds ProjectKeyTest and the UsesClass metadata
+for the two tests that now run the helper.
+
+Assisted-by: ClaudeCode:claude-opus-5-5
+---
+ lib/Controller/SessionController.php          |  4 +-
+ lib/Kernel/ProjectKey.php                     | 48 +++++++++++++++
+ lib/Service/MemoryService.php                 |  3 +-
+ .../SessionControllerProjectTest.php          |  2 +
+ tests/Unit/Kernel/ProjectKeyTest.php          | 58 +++++++++++++++++++
+ .../Unit/Service/MemoryProjectScopesTest.php  |  2 +
+ 6 files changed, 114 insertions(+), 3 deletions(-)
+ create mode 100644 lib/Kernel/ProjectKey.php
+ create mode 100644 tests/Unit/Kernel/ProjectKeyTest.php
+
+diff --git a/lib/Controller/SessionController.php b/lib/Controller/SessionController.php
+index a799c045..c0c8a353 100644
+--- a/lib/Controller/SessionController.php
++++ b/lib/Controller/SessionController.php
+@@ -48,10 +48,10 @@ use OCA\Hermiq\Kernel\Contracts\MemoryServiceInterface;
+ use OCA\Hermiq\Kernel\Contracts\SessionPendingApprovalsInterface;
+ use OCA\Hermiq\Kernel\Contracts\SessionShareServiceInterface;
+ use OCA\Hermiq\Kernel\Contracts\TalkSessionRoomInterface;
++use OCA\Hermiq\Kernel\ProjectKey;
+ use OCA\Hermiq\Service\Chat\SessionCollaborators;
+ use OCA\Hermiq\Service\Chat\SessionSubject;
+ use OCA\Hermiq\Service\Engine\SanitizesForSaveTrait;
+-use OCA\Hermiq\Service\MemoryService;
+ use OCA\Hermiq\Service\SessionSearchService;
+ use OCA\Hermiq\Service\SessionShareService;
+ use OCA\Hermiq\Service\Talk\ConversationParticipation;
+@@ -732,7 +732,7 @@ class SessionController extends Controller {
+ 			$key = self::projectKeyFromName(name: $name);
+ 		}
+ 
+-		if (MemoryService::isProjectKey(key: $key) === false) {
++		if (ProjectKey::isValid(key: $key) === false) {
+ 			return false;
+ 		}
+ 
+diff --git a/lib/Kernel/ProjectKey.php b/lib/Kernel/ProjectKey.php
+new file mode 100644
+index 00000000..98e63dd7
+--- /dev/null
++++ b/lib/Kernel/ProjectKey.php
+@@ -0,0 +1,48 @@
++<?php
++
++/**
++ * Hermiq ProjectKey
++ *
++ * The well-formedness rule of a memory project key, in the Kernel so a
++ * controller can check a requested key without depending on MemoryService.
++ *
++ * @category Kernel
++ * @package  OCA\Hermiq\Kernel
++ *
++ * @author    Conduction Development Team <info@conduction.nl>
++ * @copyright 2026 Conduction B.V.
++ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
++ *
++ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
++ * SPDX-License-Identifier: EUPL-1.2
++ *
++ * @version GIT: <git-id>
++ *
++ * @link https://conduction.nl
++ */
++
++declare(strict_types=1);
++
++namespace OCA\Hermiq\Kernel;
++
++/**
++ * The project key rule shared by MemoryService and SessionController.
++ *
++ * @spec exclude Structural helper; the requirement is tagged on isValid().
++ */
++final class ProjectKey {
++
++	/**
++	 * Whether a value is a well-formed project key: a short lower-case slug, as
++	 * the Memory schema's `projectKey` pattern declares.
++	 *
++	 * @param string $key The candidate key.
++	 *
++	 * @return bool True when it is one.
++	 *
++	 * @spec openspec/changes/memory-project-scopes/specs/agent-memory/spec.md#requirement-an-agent-has-one-shared-memory-and-a-memory-per-project-req-pmem-001
++	 */
++	public static function isValid(string $key): bool {
++		return preg_match('/^[a-z0-9][a-z0-9-]{0,63}$/', $key) === 1;
++	}//end isValid()
++}//end class
+diff --git a/lib/Service/MemoryService.php b/lib/Service/MemoryService.php
+index 1d6c3838..67de963a 100644
+--- a/lib/Service/MemoryService.php
++++ b/lib/Service/MemoryService.php
+@@ -37,6 +37,7 @@ namespace OCA\Hermiq\Service;
+ use DateTimeImmutable;
+ use DateTimeZone;
+ use OCA\Hermiq\Kernel\Contracts\MemoryServiceInterface;
++use OCA\Hermiq\Kernel\ProjectKey;
+ use OCA\Hermiq\Service\Memory\MemoryEntryRef;
+ use OCA\OpenRegister\Db\ObjectEntity;
+ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+@@ -214,7 +215,7 @@ class MemoryService implements MemoryServiceInterface {
+ 	 * @spec openspec/changes/memory-project-scopes/specs/agent-memory/spec.md#requirement-an-agent-has-one-shared-memory-and-a-memory-per-project-req-pmem-001
+ 	 */
+ 	public static function isProjectKey(string $key): bool {
+-		return preg_match('/^[a-z0-9][a-z0-9-]{0,63}$/', $key) === 1;
++		return ProjectKey::isValid(key: $key);
+ 	}//end isProjectKey()
+ 
+ 	/**
+diff --git a/tests/Unit/Controller/SessionControllerProjectTest.php b/tests/Unit/Controller/SessionControllerProjectTest.php
+index a5861e5c..3816daa3 100644
+--- a/tests/Unit/Controller/SessionControllerProjectTest.php
++++ b/tests/Unit/Controller/SessionControllerProjectTest.php
+@@ -24,6 +24,7 @@ namespace OCA\Hermiq\Tests\Unit\Controller;
+ 
+ use OCA\Hermiq\Controller\SessionController;
+ use OCA\Hermiq\Kernel\Contracts\MemoryServiceInterface;
++use OCA\Hermiq\Kernel\ProjectKey;
+ use OCA\Hermiq\Service\AgentAccessService;
+ use OCA\Hermiq\Service\Chat\SessionCollaborators;
+ use OCA\Hermiq\Service\Chat\SessionPendingApprovals;
+@@ -52,6 +53,7 @@ use Psr\Log\LoggerInterface;
+ #[UsesClass(SessionCollaborators::class)]
+ #[UsesClass(SessionSubject::class)]
+ #[UsesClass(MemoryService::class)]
++#[UsesClass(ProjectKey::class)]
+ #[UsesClass(ConversationParticipation::class)]
+ class SessionControllerProjectTest extends TestCase {
+ 
+diff --git a/tests/Unit/Kernel/ProjectKeyTest.php b/tests/Unit/Kernel/ProjectKeyTest.php
+new file mode 100644
+index 00000000..65add8f5
+--- /dev/null
++++ b/tests/Unit/Kernel/ProjectKeyTest.php
+@@ -0,0 +1,58 @@
++<?php
++
++/**
++ * Unit tests for the project key rule.
++ *
++ * @category Test
++ * @package  OCA\Hermiq\Tests\Unit\Kernel
++ *
++ * @author    Conduction Development Team <info@conduction.nl>
++ * @copyright 2026 Conduction B.V.
++ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
++ *
++ * SPDX-License-Identifier: EUPL-1.2
++ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
++ *
++ * @link https://conduction.nl
++ *
++ * @spec openspec/changes/memory-project-scopes/specs/agent-memory/spec.md#requirement-an-agent-has-one-shared-memory-and-a-memory-per-project-req-pmem-001
++ */
++
++declare(strict_types=1);
++
++namespace OCA\Hermiq\Tests\Unit\Kernel;
++
++use OCA\Hermiq\Kernel\ProjectKey;
++use PHPUnit\Framework\Attributes\CoversClass;
++use PHPUnit\Framework\TestCase;
++
++/**
++ * A project key is a lower-case slug of at most 64 characters.
++ */
++#[CoversClass(ProjectKey::class)]
++class ProjectKeyTest extends TestCase {
++
++	/**
++	 * Slugs of one to 64 lower-case letters, digits and inner hyphens pass.
++	 *
++	 * @return void
++	 */
++	public function testASlugIsAProjectKey(): void {
++		$this->assertTrue(condition: ProjectKey::isValid(key: 'omgevingsvisie-2040'));
++		$this->assertTrue(condition: ProjectKey::isValid(key: 'a'));
++		$this->assertTrue(condition: ProjectKey::isValid(key: str_repeat(string: 'a', times: 64)));
++	}//end testASlugIsAProjectKey()
++
++	/**
++	 * Empty, leading-hyphen, upper-case, slashed and over-long keys are refused.
++	 *
++	 * @return void
++	 */
++	public function testAnythingElseIsRefused(): void {
++		$this->assertFalse(condition: ProjectKey::isValid(key: ''));
++		$this->assertFalse(condition: ProjectKey::isValid(key: '-start'));
++		$this->assertFalse(condition: ProjectKey::isValid(key: 'Hoofd'));
++		$this->assertFalse(condition: ProjectKey::isValid(key: 'a/b'));
++		$this->assertFalse(condition: ProjectKey::isValid(key: str_repeat(string: 'a', times: 65)));
++	}//end testAnythingElseIsRefused()
++}//end class
+diff --git a/tests/Unit/Service/MemoryProjectScopesTest.php b/tests/Unit/Service/MemoryProjectScopesTest.php
+index 01351b98..5049c2cb 100644
+--- a/tests/Unit/Service/MemoryProjectScopesTest.php
++++ b/tests/Unit/Service/MemoryProjectScopesTest.php
+@@ -27,6 +27,7 @@ declare(strict_types=1);
+ 
+ namespace OCA\Hermiq\Tests\Unit\Service;
+ 
++use OCA\Hermiq\Kernel\ProjectKey;
+ use OCA\Hermiq\Service\Memory\MemoryEntryRef;
+ use OCA\Hermiq\Service\MemoryLookup;
+ use OCA\Hermiq\Service\MemoryService;
+@@ -48,6 +49,7 @@ use PHPUnit\Framework\TestCase;
+ #[UsesClass(MemoryLookup::class)]
+ #[UsesClass(RedactionService::class)]
+ #[UsesClass(MemoryEntryRef::class)]
++#[UsesClass(ProjectKey::class)]
+ class MemoryProjectScopesTest extends TestCase {
+ 
+ 	/**
+-- 
+2.43.0
+
