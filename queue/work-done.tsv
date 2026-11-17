@@ -18487,6 +18487,7 @@ verify:launchpad:1216:f8adb1a6	CONFLICT #1216 (15 files; change may already be o
 verify:learniq:2538:ba86b4ad	CONFLICT #2538 (4 files conflict with development)	session-20261116T233050-d0df160f	2026-11-16T23:58:29Z
 verify:launchpad:1227:40a50cad	1227 CONFLICT	session-20261116T230531-f9095b0f	2026-11-16T23:58:33Z
 verify:opencatalogi:2685:434bb906	CONFLICT #2685 (Sitemap*, l10n)	session-20261116T233901-7abe1a78	2026-11-16T23:58:46Z
+verify:pipelinq:3734:ac27e96e	CONFLICT #3734 (SmsAdapter, WhatsAppAdapter, l10n)	session-20261116T232623-066b53c9	2026-11-16T23:58:56Z
 lane:arch5:shillinq:next-shillinq-r11	skipped: shillinq lane stopped by the coordinator (22:47); r10 result is #3135 GREEN	session-20261116T224609-c0ad2be4	2026-11-16T23:58:59Z
 verify:portaliq:2442:659856a4	CONFLICT #2442 (tests/shared-plans.spec.mjs vs development)	session-20261116T233800-0f135937	2026-11-16T23:59:12Z
 verify:portaliq:2417:ef1fa4da	CONFLICT #2417 (l10n, package.json, editor vue files)	session-20261116T232951-07569878	2026-11-16T23:59:21Z
@@ -18497,7 +18498,23 @@ verify:portaliq:2450:88eab3c5	CONFLICT #2450 (4 files conflict with development)
 verify:portaliq:2500:d606ba9e	CONFLICT #2500 (tests/example-site.spec.mjs vs development)	session-20261116T233800-0f135937	2026-11-17T00:00:22Z
 verify:learniq:2532:5a74c54d	CONFLICT #2532	session-20261116T232519-f84cca9a	2026-11-17T00:00:37Z
 verify:shillinq:2063:be07bd2e	CONFLICT #2063 (info.xml, register-versions.lock)	session-20261116T233901-7abe1a78	2026-11-17T00:01:23Z
+verify:integriq:3590:48c0729a	CONFLICT #3590 (l10n, register json)	session-20261116T232844-9c7f5cce	2026-11-17T00:01:31Z
 verify:planninq:1168:f3f9b1f3	CONFLICT: l10n/* and objectListenerTable.golden.json vs development	session-20261116T232959-6ccea9dc	2026-11-17T00:01:32Z
 verify:shillinq:1965:55b7f9e7	CONFLICT #1965 (info.xml, register-versions.lock.json vs development)	session-20261116T233834-fbe601d1	2026-11-17T00:01:52Z
 verify:opencatalogi:2669:b4b95352	GREEN #2669	session-20261116T233627-44605965	2026-11-17T00:02:02Z
 verify:portaliq:2449:1d8ee702	CONFLICT #2449 (l10n, controller, listener registrar, register json)	session-20261116T232918-35016340	2026-11-17T00:02:12Z
+verify:learniq:2486:875af95b	CONFLICT #2486 (ExcuseApprovalHandler, portal tests)	session-20261116T232033-3ca59164	2026-11-17T00:02:32Z
+verify:portaliq:2446:9a320c2f	RED #2446: 3 new ContributionControllerTest errors, message() calls PortalSessionService::trustSatisfies without import after development moved it to SessionTrust	session-20261116T233921-33ab4c87	2026-11-17T00:02:43Z
+verify:pipelinq:3743:d1e2bf9d	CONFLICT #3743 (l10n, SettingsLoadService, manifest)	session-20261116T232844-9c7f5cce	2026-11-17T00:03:02Z
+verify:opencatalogi:2244:f25f1179	GREEN #2244 (no new failures, 78 inherited)	session-20261116T233857-32c64615	2026-11-17T00:03:11Z
+verify:shillinq:2081:07764b3f	CONFLICT #2081 (l10n)	session-20261116T233929-170accb7	2026-11-17T00:03:20Z
+verify:shillinq:2993:bd16cc97	CONFLICT #2993	session-20261116T233627-44605965	2026-11-17T00:03:58Z
+verify:opencatalogi:2677:3ad6bc5b	CONFLICT #2677 (12 files)	session-20261116T230934-9ee320cf	2026-11-17T00:03:37Z
+verify:portaliq:2492:073b891c	CONFLICT #2492 (tests/example-site.spec.mjs vs development)	session-20261116T233800-0f135937	2026-11-17T00:03:49Z
+verify:integriq:3633:e8cfc0d1	CONFLICT #3633 (l10n/en.js, l10n/nl.js)	session-20261116T233011-100ff0c6	2026-11-17T00:04:14Z
+verify:portaliq:2284:a8a7fcd0	CONFLICT #2284 (7 lib files)	session-20261116T232923-46913d93	2026-11-17T00:04:23Z
+verify:portaliq:2493:f9355756	CONFLICT 2493 (package.json)	session-20261116T232406-b9eb038c	2026-11-17T00:04:56Z
+verify:shillinq:3052:10940568	CONFLICT #3052	session-20261116T233929-170accb7	2026-11-17T00:05:09Z
+verify:opencatalogi:2680:66ae4f4f	CONFLICT: #2680 vs development in docs, l10n, SitemapDocumentMapper	session-20261116T232911-3dffa1ae	2026-11-17T00:05:20Z
+verify:shillinq:2983:55242378	CONFLICT #2983 (info.xml, GLLineResultStampListener, manifest, l10n)	session-20261116T232623-066b53c9	2026-11-17T00:05:29Z
+verify:learniq:2551:ca8152ea	CONFLICT #2551 (l10n, committed .pyc)	session-20261116T232944-146e39d7	2026-11-17T00:05:41Z
