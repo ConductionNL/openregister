@@ -18778,3 +18778,4 @@ fix:learniq:2577:5bf20572	RED was inherited (he.json check fails on plain develo
 fix:shillinq:3048:2ab1e91c:v4	conflict resolved + main-API fixes, pushed 455711f8, unit green; lock held elsewhere, REVERIFY queued	session-20261117T004133-c974afac	2026-11-17T01:07:54Z
 fix:filinq:2126:5e6533ee:v3	fixed conflict, pushed 2630cf282; merge lock busy, REVERIFY recorded	session-20261117T004435-9e7fb02f	2026-11-17T01:08:05Z
 fix:filinq:2114:78a005c2:v4	conflict resolved, pushed 93be4fcb; merge lock held elsewhere, REVERIFY queued	session-20261117T004644-d9c68b8f	2026-11-17T01:08:19Z
+fix:shillinq:2986:79a81b92:v3	conflict resolved, pushed 91a7c5b6; REVERIFY (merge lock held elsewhere)	session-20261117T004718-f6df305c	2026-11-17T01:08:33Z
