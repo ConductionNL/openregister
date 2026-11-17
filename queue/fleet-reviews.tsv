@@ -1315,6 +1315,7 @@ launchpad	1298	c874c6ad5b2e7c88a07d5ac2a92feb874cb52782	APPROVE	worker-05	Quick;
 buildiq	1711	c046bf16a2d185fd3a110f47e78450a28c23551c	APPROVE	worker-50	Quick; no blockers; tests only
 stackiq	1966	b74dfc9fbfa739b5090aef81bcb83d4f2d68fa75	APPROVE	worker-32	Thorough; no blockers; build of architecture-data-model-and-ggm per specs, schema props, editors via OpenRegister API, NcSelect inputLabel, CSS vars
 stackiq	2028	9d9add83116540ecee19b9cfe128025267881839	APPROVE	worker-32	Quick; no blockers; dependency bump with golden re-recorded
+filinq	2175	3022acfde582e99ab204ee27a72a988027232fcc	APPROVE	worker-22	Quick; no blockers; openspec change docs only
 decidiq	2190	c75776f4b165c3c91393004da18d1e0bd17fbcbb	APPROVE	worker-42	Strict (public read rule); no blockers; read rule narrows to published and not depublished per REQ-DMR-005, party check per REQ-DMR-001 fails closed, parent lookup on both schema slugs
 stackiq	2037	8a0066197aac4f12cf1bcc598837fd35f50ac334	APPROVE	worker-32	Quick; no blockers; tests only, real assertions
 stackiq	2039	77e11bc633dd6fe75dcc19f5a3aa8e5f91a05251	APPROVE	worker-32	Standard; no blockers; tests only, error paths asserted
