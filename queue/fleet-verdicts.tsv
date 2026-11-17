@@ -18900,3 +18900,4 @@ integriq	3724	27c092d3b3737a865c0dfccd46a6f125a7129cd5	GREEN	worker-38	unit 9910
 learniq	2594	259feb56de2bd786055277d5a9b39371d1cecb1c	GREEN	worker-26	unit suite on tree green (no PHP/JS-unit change), new failures 0; e2e spec + tasks.md note only, imports reorganised, no assertion removed
 opencatalogi	2783	b2d114f8e5f369a5012945225e70b599844f6613	GREEN	worker-25	version bump in info.xml and openapi.json only; no code, suite not rerun
 launchpad	1218	981059667af30b6907fafe7e0e9be698f74a9e73	GREEN	worker-51	build launcher-tile-internal-address per its specs; phpunit 4621 baseline OK -> 4630 OK; vitest 2746 passed, 1 inherited fail (propDefinitions.golden, red on development too); note: development package-lock out of sync (npm ci fails, inherited)
+opencatalogi	2799	a135b0009b7aefad519be035a3b4003c800e66b2	GREEN	worker-39	merges clean; adds e2e spec + openspec/tasks edits only, no lib/src change so unit suite unaffected (not run)
