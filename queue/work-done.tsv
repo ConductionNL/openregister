@@ -19129,3 +19129,4 @@ review:integriq:3633:f549382c	GREEN: no new failures (9677 unit tests, 5 inherit
 verify:shillinq:3048:e020f449	stale	session-20261117T020244-328833fb	2026-11-17T02:23:20Z
 review:shillinq:3065:ba9580f8	RED: administrationScopedIndex vitest, generated index stale	session-20261117T015854-c76e8b72	2026-11-17T02:23:29Z
 review:integriq:3593:75b7c54d	GREEN: no new PHP failures (5 inherited), vitest 2390 OK; conflicts with development (SynchronizationService properties, l10n)	session-20261117T020617-81e5b086	2026-11-17T02:23:40Z
+review:launchpad:760:3d286e79	GREEN; range-only devDependency bump, vitest 2652 pass	session-20261117T020142-25e0bfeb	2026-11-17T02:23:51Z
