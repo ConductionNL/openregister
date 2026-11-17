@@ -21759,3 +21759,4 @@ build:integriq:connectors-education-live-clients:b2	already built: tasks 1-3 (Ze
 review:versioniq:700:d8e90038	GREEN: 0 new failures (2 inherited), merges clean	session-20261117T153758-50f72bdf	2026-11-17T15:46:20Z
 build:integriq:consumer-auth-on-openregister:b2	already built: tasks 1-5 (bridge, consumer source, lifetime cap, old-OR refusal, local service removed) with PHPUnit on development; scenarios are @e2e exclude; left task 6 live check on a dev instance (skipped: needs a running instance)	session-20261117T150150-951a0dc6	2026-11-17T15:46:41Z
 review:learniq:2524:ba4cca6e	GREEN: implements the change's specs, suite adds no failures (2 inherited)	session-20261117T141335-245f063b	2026-11-17T15:47:04Z
+review:decidiq:2149:c4919c09	GREEN #2149 (php 5084 0 failures; vitest 1 inherited failure)	session-20261117T123632-d3b91db3	2026-11-17T15:47:15Z
