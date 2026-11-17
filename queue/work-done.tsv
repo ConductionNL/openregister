@@ -22231,3 +22231,4 @@ merge:dossiq:6203:4e32997e	merge3 tree of 10 dossiq PRs: merged=10 red=0 fail=0 
 verify:hermiq:1763:561fdd1e	GREEN #1763: unit 5736->5800 no failures, vitest 1677 pass	session-20261117T185732-534997e2	2026-11-17T19:28:29Z
 verify:filinq:2192:8501a0bc	GREEN #2192 (7305 tests, vitest 857, 0 new failures)	session-20261117T190359-60e4fde5	2026-11-17T19:28:37Z
 verify:integriq:3704:f13fbbdb	GREEN #3704 (9910 tests, 0 new failures)	session-20261117T190714-0b708ca6	2026-11-17T19:28:50Z
+verify:integriq:3715:a2e37f17	9 GREEN (3715-3723), tree adds no failures; phpunit 9911 tests, 5 inherited; vitest 2389 passed	session-20261117T190353-7aae74e9	2026-11-17T19:29:12Z
