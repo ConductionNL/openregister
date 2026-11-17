@@ -21542,3 +21542,4 @@ build:decidiq:capability-rows-get-requirements:b2	already built: tasks 3.3 and 4
 build:learniq:site-external-assessor-portal-design:b2	partial: learniq#2603 writes the T7 spec tests/e2e/mbo-assessor-flows.spec.ts (4 flows); T1-T6 on development; T7 run pending a portaliq instance	session-20261117T141518-05f12270	2026-11-17T15:17:52Z
 build:decidiq:configurable-types-domain-model:b2	already building: quality/build-configurable-types-domain-model(-c4) exist	session-20261117T132743-10cec9d3	2026-11-17T15:18:10Z
 build:decidiq:decisions-card-board-look:b2	already done: only 1.2 open, a live check; no PR	session-20261117T135414-614629b0	2026-11-17T15:19:19Z
+build:decidiq:confidentiality-term-and-lapse:b2	already building: quality/build-confidentiality-term-and-lapse exists; only a live e2e left	session-20261117T132743-10cec9d3	2026-11-17T15:18:50Z
