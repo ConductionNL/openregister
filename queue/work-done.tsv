@@ -20703,3 +20703,4 @@ merge:opencatalogi:2677:a1602fb7	cloud tree of 2 opencatalogi PRs: merged=1 red=
 fix:stackiq:2030:99dcfdad	failed: permission (self review+land refused); fixed and pushed b0c1fc68, REVERIFY recorded	session-20261117T124128-c2e9515e	2026-11-17T13:06:58Z
 fix:buildiq:1651:d68265fc	conflict resolved (l10n union, js regenerated), @spec tags added; land RED on maintainability floor (unit_complexity 3.42->3.40, unit_interfacing 3.53->3.51), RED verdict at a0b41b07 queued	session-20261117T123026-260cb3a6	2026-11-17T13:07:21Z
 verify:planninq:1054:57acc898	GREEN #1054 (config-only floor json; unit 1253 ok)	session-20261117T125035-43d1124d	2026-11-17T13:07:31Z
+verify:portaliq:2449:ae33c0d7	CONFLICT #2449: package.json, PortaliqRegisterConfigTest.php, example-site.spec.mjs	session-20261117T124737-01fc7db5	2026-11-17T13:07:45Z
