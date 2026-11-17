@@ -22299,3 +22299,5 @@ verify:opencatalogi:2802:4020ac22	GREEN 2802 (tooling + tasks only)	session-2026
 verify:launchpad:1307:4016f478	GREEN #1307, 0 new failures	session-20261117T190150-dbabe332	2026-11-17T19:42:07Z
 verify:opencatalogi:2804:cd845147	GREEN opencatalogi#2804 (no new failures)	session-20261117T190302-4e3d4569	2026-11-17T19:42:30Z
 verify:opencatalogi:2805:727a5427	GREEN opencatalogi#2805 (6384 tests, 0 new failures)	session-20261117T190507-82f8fe51	2026-11-17T19:42:43Z
+verify:pipelinq:3934:a3a21127	GREEN (e2e spec only)	session-20261117T190242-7c82bed8	2026-11-17T19:42:50Z
+verify:launchpad:1308:bfec7173	GREEN #1308 (4621 tests, 0 new failures)	session-20261117T190250-54b1be06	2026-11-17T19:43:00Z
