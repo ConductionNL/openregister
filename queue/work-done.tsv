@@ -22158,3 +22158,4 @@ verify:buildiq:1726:5727e007	GREEN #1726 (e2e spec + parity row; unit 3676 OK, n
 review:stackiq:1963:5d4b224b	GREEN: per change design; unit 3952 OK, vitest 7/7; l10n conflicts with development	session-20261117T190443-6578d505	2026-11-17T19:10:37Z
 verify:buildiq:1722:9c7c8cfc	GREEN: 1722 (tests only, +6 tests, no new failures)	session-20261117T185625-a1e67f54	2026-11-17T19:10:51Z
 verify:buildiq:1732:8f7ab5e8	GREEN buildiq#1732 (unit 3676 OK, no new failures)	session-20261117T190302-4e3d4569	2026-11-17T19:11:01Z
+verify:decidiq:2275:a2504982	GREEN decidiq#2275 (tests only; 5028 tests, 0 new failures)	session-20261117T190556-ce2c6374	2026-11-17T19:11:22Z
