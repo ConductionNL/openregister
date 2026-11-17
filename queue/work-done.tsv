@@ -19093,3 +19093,4 @@ review:learniq:2519:7bff990d	GREEN: per spec, no new failures; golden-file confl
 review:learniq:2533:33d6f4e3	GREEN: matches open-learning-material 2.4; 6991 tests, 1 inherited failure	session-20261117T020223-01f01255	2026-11-17T02:16:33Z
 review:humaniq:1142:dc634057	GREEN: PHP 4456 OK, JS no new failures; l10n conflicts with development	session-20261117T020617-81e5b086	2026-11-17T02:16:46Z
 review:hermiq:1738:29ad770b	GREEN: unit 5540 OK on merge with development; register version conflict needs a fix	session-20261117T020339-3b9e42aa	2026-11-17T02:17:01Z
+review:buildiq:1626:77575f40	GREEN: 1 inherited failure; conflicts with development in l10n/nl.*	session-20261117T020255-329d248b	2026-11-17T02:17:16Z
