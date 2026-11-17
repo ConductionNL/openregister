@@ -5299,3 +5299,4 @@ learniq	2589	241404be95b288b1abd5a2da268f098d513e533f	MERGED	worker-17	GATE OK s
 buildiq	1701	6183315e3d9928c24a7a60efb4b0aaa99d529590	MERGED	worker-10	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.91 holds at 3.94
 hermiq	1754	1a5852e797be3689f5f2f7e90ce77944cb53d2eb	MERGED	worker-22	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.77 holds at 3.77
 integriq	3574	daecacd949c49a2ccaaeb6c3087ab83eee15516d	MERGED	worker-08	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.60
+integriq	3612	a0f66b1a4495f5377e1e81309f41f0c12c7a3be2	SKIP	worker-08	no APPROVE review at this head
