@@ -18631,3 +18631,5 @@ fix:integriq:2744:53deb98f:v4	merged #2744 at 1aa7d916d2b9142e7caa6da52d0a61fcc2
 verify:integriq:3626:2afb29b4	CONFLICT: l10n, manifest.json, registry.js	session-20261116T233003-c7bea420	2026-11-17T00:27:08Z
 fix:buildiq:1648:26919cc4	fixed floor, pushed 0f576fb7; REVERIFY (merge lock held)	session-20261116T233923-d48b13fa	2026-11-17T00:27:40Z
 review:stackiq:1941:fb08b1cd	GREEN #1941	session-20261116T232918-35016340	2026-11-17T00:27:56Z
+build:stackiq:architecture-shared-usage-on-views:c5	already building: branch head 38861a18 has every code task; left Playwright e2e and the docs screenshot (live instance) and the demo seed, which a static descriptor cannot express (own vs shared depends on the installing organisation)	session-20261113T214350-9762e143	2026-11-17T00:28:23Z
+review:shillinq:1900:7c67b538	GREEN #1900	session-20261116T232844-9c7f5cce	2026-11-17T00:28:36Z
