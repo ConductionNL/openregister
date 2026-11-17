@@ -19805,3 +19805,4 @@ fix:larpinq:1049:8083d2b9	fixed: test code ratio back to 3 stars (75.05%), new h
 fix:versioniq:729:624afbb6	conflict resolved, pushed 48ad9ca09c; REVERIFY queued (2 inherited golden reds)	session-20261117T070159-36e67801	2026-11-17T07:23:31Z
 fix:opencatalogi:2722:8f7ea1f5	fixed BLOCK (@spec tag), new head 6007a1fe; merge lock held elsewhere, REVERIFY queued	session-20261117T055844-3d508d2a	2026-11-17T07:23:51Z
 fix:opencatalogi:2680:7b795492	conflict resolved, pushed 2286260f; merge lock held elsewhere, REVERIFY	session-20261117T065443-facc0d23	2026-11-17T07:24:18Z
+fix:stackiq:1946:644c7833	conflict resolved, pushed 79f3a2dd (phpunit OK, vitest only inherited facets failure); lock held elsewhere, REVERIFY queued	session-20261117T065426-e0b4a950	2026-11-17T07:24:43Z
