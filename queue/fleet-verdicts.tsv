@@ -18661,3 +18661,4 @@ learniq	2602	562289417dc44c1a437b7a634ba5466aed65748e	GREEN	worker-21	unit 7157 
 learniq	2603	8908efd600326c545e54f6b32c18d3fb916f9d0b	GREEN	worker-21	unit 7157 tests on tree (baseline 7152, 1 inherited failure HigherEducationExampleSetTest), new failures 0; js-unit 1418, 8 inherited failures, new 0; e2e spec and tasks.md only
 pipelinq	3949	c8bc859bee3d53cf8d7b41d63dc2ab72013323d8	GREEN	worker-55	tests 9345 (baseline 9280 green), vitest 5329 pass / 2 inherited fails, no new failures
 pipelinq	3950	deaebf3043e5ffac9b208a8de84f55252894e932	GREEN	worker-55	tests 9345 (baseline 9280 green), vitest 5329 pass / 2 inherited fails, no new failures
+pipelinq	3951	3f91729e747b42aa473b8f2e393252eb895f2728	REVERIFY	worker-55	conflicts only with an earlier PR of the verify tree
