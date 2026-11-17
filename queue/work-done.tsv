@@ -20070,3 +20070,4 @@ merge:hermiq:1719:8c1db3fb	no complete base and tree suite: not landed	session-2
 merge:launchpad:885:ab84839c	cloud tree of 9 launchpad PRs: merged=3 red=0 fail=0 skip=2; conflict 3, lint 0, red 0, moved 1, done 0	session-20261117T083938-f8f3a0e7	2026-11-17T09:17:16Z
 gap:integriq:replay-writes-linked-call-log:1	deferred: integriq has 52 open PRs	session-20261117T085953-a014f5d5	2026-11-17T09:17:25Z
 gap:integriq:sync-runs-as-configured-user:1	deferred: integriq has 52 open PRs	session-20261117T084826-97c66fce	2026-11-17T09:17:23Z
+gap:humaniq:hr-group-approves-leave:1	PR #1183: HR step of leave approval now humaniq-hr or admin (HumaniqRoles::isHr), test added, suite 4477->4478 OK	session-20261117T081247-63811e04	2026-11-17T09:17:48Z
