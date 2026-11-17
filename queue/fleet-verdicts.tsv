@@ -18439,3 +18439,4 @@ integriq	3710	8618c31d0bf78ae3b11dde0270d6bd52d7200e8d	RED	worker-08:merge-gate	
 integriq	3711	dd118ae9f781f7bf22d90735e52	REVERIFY	worker-08:merge	verdict sha is not the head: head is dd118ae9f781f7bf22d90735e52321741fb6be80
 learniq	2497	35dd044ed98e7ee88b691975c9d1495fc21093b1	CONFLICT	worker-17:merge	conflicts with development; files: lib/Settings/learniq_register.json 
 shillinq	2063	2caa7618a5e31022da03cd4e75f9c36d88fba783	RED	worker-15:merge-gate	GATE RED absolute floor: shillinq maintainability 3.99 after merge is below its floor 4.00
+stackiq	2030	b0c1fc68fb3bcc0625bf10c611b7a61d11f0f5f5	GREEN	worker-36	docs only (publiccode.yml valid YAML, layer supports entry kept, logo and screenshots present); unit 4050 OK on tree, baseline 4050 OK, new failures 0
