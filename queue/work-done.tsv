@@ -22660,6 +22660,7 @@ verify:opencatalogi:2771:502ce9b9	CONFLICT 2771 (l10n en/nl with development; ve
 verify:decidiq:2282:f00027e0	GREEN 2282 (unit 5047, 0 new failures)	session-20261117T211315-f96d97db	2026-11-17T21:33:03Z
 merge:buildiq:1732:75f444e7	unmeasured: static.developer.overheid.nl (proxy 403 in this session); nothing built or landed	session-20261117T211611-151c4a14	2026-11-17T21:33:19Z
 verify:hermiq:1855:54a9e416	GREEN #1855 (version bump, no new failures)	session-20261117T213035-1b926cd2	2026-11-17T21:33:37Z
+verify:buildiq:1643:f8d38be6	GREEN #1643 (3692 PHP, 5025 JS, 0 new failures)	session-20261117T211607-9073788f	2026-11-17T21:33:54Z
 verify:integriq:3734:12b2f75d	GREEN 3734: no new failures	session-20261117T211359-bea33e3d	2026-11-17T21:34:13Z
 verify:hermiq:1760:9fd70f20	GREEN 1760	session-20261117T211406-076a7a0e	2026-11-17T21:34:53Z
 merge:stackiq:1942:d6104197	unmeasured: static.developer.overheid.nl; cloud tree of 9 stackiq PRs: merged=0 red=1 (2028 sbom) skip=6; 1942 REQUEST_CHANGES (repair step unregistered); conflict 1, moved 1	session-20261117T211437-e305ed6d	2026-11-17T21:35:00Z
@@ -22690,3 +22691,4 @@ verify:opencatalogi:2805:b5832c88	GREEN #2805: no new PHP or JS failures (inheri
 verify:opencatalogi:2804:731661e8	RED #2804: SettingsObjectTypeConfigurationTest slug count 31->32 after new woo_pipeline_incident_schema	session-20261117T213139-4c29297d	2026-11-17T21:42:49Z
 verify:pipelinq:3952:6243a86d	CONFLICT: l10n en/nl js+json conflict with development	session-20261117T213212-f60cff91	2026-11-17T21:42:59Z
 verify:pipelinq:3934:6ba01209	CONFLICT: #3934 l10n en/nl js+json conflict with development	session-20261117T211328-24b3dcac	2026-11-17T21:43:10Z
+fix:hermiq:1719:fdc4de5b	conflict resolved, pushed 257411d7; REVERIFY queued (merge lock held elsewhere)	session-20261117T213058-6689a4c6	2026-11-17T21:43:29Z
