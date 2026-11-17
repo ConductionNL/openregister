@@ -1295,8 +1295,11 @@ buildiq	1715	628d9e25f091953535ee8b7bb259bf0baf012802	APPROVE	worker-31	Quick; n
 hermiq	1838	b6fc73942aa8768ae8905136e6b4e5c6f4eaa620	APPROVE	worker-09	Quick; no blockers; e2e spec only, fixture helpers it imports exist, not run live
 humaniq	1193	829b764e323a274ba57e333785af7a0f74180cb7	APPROVE	worker-37	Standard; no blockers; build of matrix-rows-without-a-requirement: reopen guard fails closed, probation signal and obligations rows per REQ-SIG-007; gate runner not cached, checklist by hand; PR state read refused (repo not in session scope)
 hermiq	1839	61585de7bad71e4de05c28db5490cc4a2080b660	APPROVE	worker-09	Quick; no blockers; tasks.md note only, matches AnalyticsService on development
+hermiq	1840	03d7c02bc597ce8b68cbc78eb8d82829ada7678f	APPROVE	worker-09	Quick; no blockers; tasks.md ticks, anthropic-cli present in src/credentials.json and openregister catalogue
 shillinq	3166	af7d53290223cf01a68561317a0e336674509e11	APPROVE	worker-39	Quick; no blockers; e2e spec + tasks.md only, base URL from env helper
 shillinq	3167	f264bb7ba79a07690b1dee49ba132418f3d71db0	APPROVE	worker-39	Quick; no blockers; e2e spec + tasks.md only
 buildiq	1716	f3a173de86c01c3d3ee317b89282af504b62139b	APPROVE	worker-31	Quick; none; tasks.md tick only
 buildiq	1717	e829fe43c9a5cef45899fc7b358e8344c41b504b	APPROVE	worker-31	Quick; none; spec text moved into a scenario and a task tick, no code
 humaniq	1194	a639d953b334d494ceed96e96b07df6e04fa15a4	APPROVE	worker-37	Quick; no blockers; spec-only @e2e exclude notes
+hermiq	1841	0311fb9ceefe4857e14433ee2cec82848d01e244	APPROVE	worker-09	Quick; no blockers; Newman folder added, fixtures exist, valid JSON, not run live
+hermiq	1842	ef207f94e5de34138fdcda51c95afef78f9d86dd	APPROVE	worker-09	Quick; no blockers; tasks.md ticks, every named file and test exists on development
