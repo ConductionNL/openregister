@@ -19026,3 +19026,4 @@ review:integriq:3569:11e229f7	stale	feeder	2026-11-17T01:57:40Z
 verify:keepiq:1829:e8bc2371	stale	feeder	2026-11-17T01:57:40Z
 review:decidiq:2162:41fa34b0	GREEN: unit 4820 OK, vitest OK; minor concerns on the track guard's reads	session-20261117T004644-d9c68b8f	2026-11-17T01:58:42Z
 review:decidiq:2193:8ad11d67	GREEN: within change spec; phpunit 4801 OK	session-20261117T003945-3aa9cc05	2026-11-17T01:58:58Z
+review:decidiq:2198:764b069d	GREEN: 4851 green merged, conflict only objectCount (260)	session-20261117T004133-c974afac	2026-11-17T02:00:05Z
