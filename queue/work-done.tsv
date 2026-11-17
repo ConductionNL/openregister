@@ -20476,4 +20476,5 @@ review:learniq:2551:7d11c48b	GREEN: no new PHP or JS failures, matches spec; con
 fix:launchpad:1210:fcd51164	conflict resolved, pushed 748b8e0b; merge lock held elsewhere, REVERIFY queued	session-20261117T112432-6eb8ecae	2026-11-17T12:00:07Z
 verify:humaniq:1184:54f5f41a	GREEN #1184	session-20261117T113142-3e3cc1d3	2026-11-17T12:00:44Z
 merge:dossiq:6203:b7db5fe4	merge3 tree of 1 dossiq PRs: merged=0 red=1 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-17T12:01:30Z
+merge:planninq:1217:4421f900	cloud tree of 2 planninq PRs: merged=1 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T111351-f79c232f	2026-11-17T12:01:26Z
 fix:buildiq:1590:d570d17d	spec tags added, pushed ca570ceb; land RED on maintainability floor (unit_complexity 3.42->3.39)	session-20261117T112054-1e62e295	2026-11-17T12:01:37Z
