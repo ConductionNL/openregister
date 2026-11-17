@@ -18364,6 +18364,7 @@ learniq	2509	4853fbe3f31131e260603ce895ab1a3e1e518b4f	GREEN	worker-17	unit 7129 
 pipelinq	2330	7c2e1706e7f8a3825c092210581f15f4605f41c3	GREEN	worker-24	merge leaves the tree identical to development (11a7552e); no file changes, so no tests to run and no new failures
 hermiq	1738	a2af8125f4f720550c355e26bd9e3d9bea5501af	RED	worker-47:merge-gate	GATE RED checker floor: secretscanning: pass -> fail; secretscanning stars: 5 -> 1
 planninq	1234	7ad1d2bb14653f95dcb154de7d9032d57cf89136	GREEN	worker-28	version bump only; unit 1253 tests, baseline OK, 0 new failures
+pipelinq	3931	c6e77ad0a9e0272ad409b135e3101acad53a9328	GREEN	worker-52	version bump only (info.xml, openapi.json); 10 test files reading those files pass on tree and base, 0 new failures
 planninq	1054	57acc89861b2e698d4c760ce271a94c8ebd0cd63	GREEN	worker-33	unit 1253 tests 0 failures 11 skipped on tree; baseline identical (only .github floor json changed, not read by code or tests); no new failures
 thematiq	1167	dcea2bc02806e32e0ff796d64c6b1160a5289dd9	GREEN	worker-50	merges clean; merge adds no changes to development (beta sync already contained); no tests needed beyond baseline
 integriq	3701	69d057cecad110f0b4ba7734cca3c7a91f925ec5	REVERIFY	worker-19	restored the Common Ground layer supports entry the PR had dropped from publiccode.yml (gate showed fivelayer pass->warn); merge lock held by another merger; new head 4816b22cd7835e1f79e62a620285ea2f0172cf3c, verify it
