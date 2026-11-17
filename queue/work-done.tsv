@@ -22646,3 +22646,4 @@ verify:decidiq:2286:62b9a482	GREEN 2286 (unit 5034, 0 new failures)	session-2026
 verify:integriq:3564:7f70763f	GREEN 3564: no new failures, vitest 2401 pass	session-20261117T211359-bea33e3d	2026-11-17T21:29:18Z
 verify:opencatalogi:2771:3154c910	GREEN 2786; RED 2804; CONFLICT 2771; REVERIFY 2803,2805,2806	session-20261117T211543-87ab7dd9	2026-11-17T21:29:55Z
 verify:humaniq:1193:00b10aa6	GREEN 1193, GREEN 1198; phpunit 4532 OK, js fails inherited (13)	session-20261117T211910-eb4216c0	2026-11-17T21:30:12Z
+verify:integriq:3707:ccad9aca	GREEN #3707: no new failures (golden test red on plain development too)	session-20261117T211412-45e1aeb8	2026-11-17T21:30:41Z
