@@ -19925,3 +19925,4 @@ merge:humaniq:1147:e0390ab6	cloud tree of 1 humaniq PRs: merged=0 red=1 fail=0 s
 fix:filinq:2107:0bc2f69d	BLOCK fixed, pushed 11172a4b; REVERIFY recorded (merge lock held elsewhere)	session-20261117T081746-d55c4d0c	2026-11-17T08:29:44Z
 review:versioniq:701:8845d766	GREEN: per change, no new failures	session-20261117T081258-8ec427f2	2026-11-17T08:29:59Z
 review:launchpad:885:de52aba3	GREEN: phpunit 4563 ok, vitest 2695 ok, no new failures	session-20261117T080453-34aa4034	2026-11-17T08:30:27Z
+merge:filinq:2059:579ca20b	unmeasured: api.osv.dev (2059 APPROVE, gate SKIP; 7 CONFLICT, 2098 MOVED)	session-20261117T081227-7932bc83	2026-11-17T08:30:35Z
