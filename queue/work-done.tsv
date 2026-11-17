@@ -21751,6 +21751,7 @@ build:hermiq:session-entity-links:b2	partial: opened #1851 with the backend (lin
 build:integriq:call-log-without-bodies:b2	already built: every code task on development, no e2e spec files named; skipped the live pass	session-20261117T134242-51ff9d48	2026-11-17T15:42:37Z
 build:integriq:automation-integration-regression-tests:b2	already building (quality/build-automation-integration-regression-tests exists; only live Playwright checks left)	session-20261117T125716-5aa18045	2026-11-17T15:43:06Z
 review:versioniq:698:ee38e0b7	GREEN #698 (no new failures; conflicts with development in tests/e2e/cli.spec.ts)	session-20261117T124621-35d7386d	2026-11-17T15:43:02Z
+build:buildiq:app-delta-override:b2	already building (quality/build-app-delta-override open at f384f332, 2 commits ahead of development)	session-20261117T133433-906519d6	2026-11-17T15:43:10Z
 verify:launchpad:1302:7d116ba9	GREEN 1302, 1303, 1304, 1305; tree 4621 OK = baseline	session-20261117T132743-10cec9d3	2026-11-17T15:43:29Z
 review:versioniq:692:96800420	GREEN: 0 new failures (2 inherited), e2e conflict with development noted	session-20261117T153758-50f72bdf	2026-11-17T15:43:40Z
 build:integriq:allowlisted-expression-sources:b2	failed: no code task buildable: task 4 redaction call has no caller in integriq (lands with openregister#4169's evaluator and the execution-trace recorder); task 6 test is e2e on a live instance	session-20261117T125716-5aa18045	2026-11-17T15:43:59Z
@@ -21890,3 +21891,4 @@ build:buildiq:operate-organisation-scoped-apps:b2	partial: not started (worker c
 build:buildiq:page-designer-live-preview-pane:b2	already done: preview pane on development; only live-instance checks 4.1 and 4.3 left	session-20261117T133303-ca20630d	2026-11-17T16:06:00Z
 build:buildiq:screen-overrides-as-a-patch-with-fall-through:b2	already building: quality/build-screen-overrides-as-a-patch-with-fall-through exists	session-20261117T123418-5f98fc94	2026-11-17T16:05:36Z
 build:buildiq:pages-index-calendar-and-manual-order:b2	already building: quality/build-pages-index-calendar-and-manual-order 	session-20261117T135414-614629b0	2026-11-17T16:05:57Z
+build:buildiq:pages-chart-widget-authoring:b2	PR #1730: tests/e2e/page-chart.spec.ts written (T03 unticked until a live run), T05 openspec validate --strict passes	session-20261117T145912-e9f6485a	2026-11-17T16:06:38Z
