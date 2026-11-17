@@ -20021,16 +20021,35 @@ cover:dossiq:069ee2d6m9d1b:ceb285b8	added 4 tests (Publication: CasePublicationS
 cover:stackiq:9ac19b3am039e:216a9a0a	deferred: stackiq has 43 open PRs	session-20261117T083929-9c5fceb9	2026-11-17T09:00:51Z
 fix:integriq:3557:89d30cbe	conflict resolved, pushed 76fedb76; lock held elsewhere, REVERIFY	session-20261117T084835-4ff9a661	2026-11-17T09:00:53Z
 verify:learniq:2577:4e6c5569	CONFLICT #2577 (tests/unit-js/structureProfile.test.mjs)	session-20261117T084918-0b033747	2026-11-17T09:01:03Z
+fix:launchpad:1212:06d37ac4	stale	session-20261117T084851-7a832684	2026-11-17T09:01:18Z
 fix:opencatalogi:2677:635c5d4a	fixed RED (handover param moved after fieldMapper), pushed 1abdb829; merge lock held elsewhere, REVERIFY queued	session-20261117T085351-e8fe3bf3	2026-11-17T09:01:42Z
 fix:shillinq:2983:ff39cb27	fixed icon, demo data, API tag, SPDX; new head 7c48c94a, REVERIFY (merge lock held elsewhere)	session-20261117T081327-bdafbf12	2026-11-17T09:02:00Z
+merge:learniq:2486:d620e389	cloud tree of 3 learniq PRs: merged=1 red=0 fail=0 skip=0; conflict 2, lint 0, red 0, moved 0, done 0	session-20261117T084810-0ce0ad74	2026-11-17T09:02:31Z
 fix:integriq:3550:a14372dd	floor restored (module_coupling 5.04), pushed 7acdaf52; lock busy, REVERIFY queued	session-20261117T085453-9eac8242	2026-11-17T09:02:31Z
 cover:launchpad:fb10c50fm88bd:be0dcca9	added 4 tests for lib/Mcp/McpDashboardTools.php to PR #1260 (launchpad over open-PR budget, 42); lib/Mcp 100%, suite 4563->4567 green	session-20261117T080445-fa502475	2026-11-17T09:02:45Z
 cover:launchpad:fb10c50fm88bd:f91e7417	already covered: lib/Service/Connection/ 172/172 statements (pcov, development); no PR (launchpad has 42 open PRs)	session-20261117T084835-4ff9a661	2026-11-17T09:02:44Z
 fix:filinq:2095:120f4482	conflict resolved, pushed 99be8379; merge lock held elsewhere, REVERIFY queued	session-20261117T085227-a13dc102	2026-11-17T09:02:55Z
+verify:stackiq:2024:7feac5a7	4 GREEN (2024-2027), 2028 REVERIFY (lockfile conflict within tree)	session-20261117T084023-906a5a8e	2026-11-17T09:03:35Z
 fix:integriq:2650:e2326510	conflict resolved, pushed 92ce810e, REVERIFY queued	session-20261117T085014-6c3c5506	2026-11-17T09:03:48Z
 fix:learniq:2551:2291ead0	fixed: register/app version raised, spec tags added, development merged; new head a86b68dc, REVERIFY queued (merge lock held elsewhere)	session-20261117T085350-7b102f7f	2026-11-17T09:04:00Z
 merge:portaliq:2417:23035054	cloud tree of 1 portaliq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T085020-faa595ea	2026-11-17T09:04:18Z
 fix:opencatalogi:2683:b9a9bc9f	fixed #2683, new head 7b81beb8 (merge lock held elsewhere, REVERIFY queued)	session-20261117T084753-0ae58c51	2026-11-17T09:04:36Z
+review:learniq:2536:ce31ee2c	GREEN; conflicts with development in l10n and structureProfile.test.mjs (page count 354)	session-20261117T084925-b2c594cc	2026-11-17T09:04:46Z
+measure:buildiq:20261117h08	php 91.61% js 95.5%	session-20261117T084819-7b38da2a	2026-11-17T09:05:14Z
 fix:integriq:3582:ec13862c	conflict resolved, pushed 5de17aa9; REVERIFY queued	session-20261117T081138-8732f141	2026-11-17T09:05:16Z
+measure:integriq:20261117h08	php 95.21% (pcov), js 94.38%	session-20261117T084927-57ebccdf	2026-11-17T09:05:25Z
 fix:filinq:2079:b23f1426	conflict resolved, pushed 1b7aa3aa; REVERIFY queued (merge lock held elsewhere)	session-20261117T083927-e76b77af	2026-11-17T09:05:41Z
 fix:stackiq:1966:07fea94b	fixed: test pinned to 1.5.12, suite green; new head 60592396, REVERIFY queued	session-20261117T084807-e8ebf79d	2026-11-17T09:06:08Z
+merge:opencatalogi:2650:32c20388	cloud tree of 5 opencatalogi PRs: merged=1 red=1 fail=0 skip=1; conflict 2, lint 0, red 0, moved 0, done 0	session-20261117T084720-67842b83	2026-11-17T09:06:53Z
+fix:hermiq:1795:a0df53ce	merged #1795 at 139b265b31f4e19c7031fbbd1a9088407bef3202 (info.xml conflict resolved; php duplication floor restored with a shared seed lookup and folder helper)	session-20261117T081247-63811e04	2026-11-17T09:07:08Z
+merge:stackiq:1933:dd3f1de2	cloud tree of 4 stackiq PRs: merged=2 red=0 fail=0 skip=0; conflict 2, lint 0, red 0, moved 0, done 0	session-20261117T084948-f35bd67b	2026-11-17T09:06:38Z
+cover:dossiq:069ee2d6m9d1b:c97e6ec3	added AssignedCasesSourceTest (10 tests) to open cover PR #6203 (dossiq has 44 open PRs); Source dir ~100% lines; suite 18930->18940, 19 inherited failures	session-20261117T084726-4d3c0dd8	2026-11-17T09:07:42Z
+merge:shillinq:3065:606bc8ab	cloud tree of 1 shillinq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T084846-a0137765	2026-11-17T09:07:38Z
+merge:launchpad:1106:8be6a2fa	merged 0: 1210 RED at merge gate (floor module_coupling 4.74 -> 4.68); 1219 REQUEST_CHANGES (no @spec on 7 new modal methods); 1106,1109 excluded (never merged); land step hit the 590s call timeout after recording 1210	session-20261117T083938-f8f3a0e7	2026-11-17T09:07:55Z
+fix:stackiq:1942:9623d967	fixed RED (binding counts); pushed f000f6c2; merge lock held elsewhere, REVERIFY recorded	session-20261117T084906-fb469281	2026-11-17T09:07:52Z
+fix:humaniq:1147:811c369e	merged #1147 at 468abb9267 (floor restored by splitting lineage units; schema titles, demo-data exclusion, registered icon)	session-20261117T083450-d3af0287	2026-11-17T09:08:23Z
+merge:integriq:3545:c510ab64	cloud tree of 7 integriq PRs: merged=3 red=0 fail=0 skip=2; conflict 2, lint 0, red 0, moved 0, done 0	session-20261117T084826-97c66fce	2026-11-17T09:08:16Z
+fix:integriq:3574:56c6b5c2	fixed duplication floor; pushed 40a5ceb41f; REVERIFY queued (merge lock held elsewhere)	session-20261117T085512-6b57566b	2026-11-17T09:09:17Z
+merge:versioniq:686:a1506c56	cloud tree of 7 versioniq PRs: merged=1 red=2 fail=0 skip=0; conflict 4, lint 0, red 0, moved 0, done 0	session-20261117T085001-185db726	2026-11-17T09:10:00Z
+merge:decidiq:2154:5d2d266f	cloud tree of 8 decidiq PRs: merged=3 red=0 fail=0 skip=0; conflict 5, lint 0, red 0, moved 0, done 0 (2205 left out: sha truncated in row, already REQUEST_CHANGES)	session-20261117T084727-10682198	2026-11-17T09:10:45Z
+fix:integriq:3601:823e2117	fixed BLOCK (floor restored, demo data 3/3); new head 85ba8d21, REVERIFY queued	session-20261117T084736-592032f2	2026-11-17T09:11:17Z

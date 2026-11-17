@@ -5099,6 +5099,8 @@ learniq	2514	832a73769edf025c083d2dbea25f6a6dc6c391b1	MERGED	worker-35	GATE OK s
 learniq	2534	6beffdd065c45b3c4302ddfaf36f502d76d7bfd8	MERGED	worker-35	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 4.08
 learniq	2549	670bd0cc179c07599c3fc0ae1430a3183b931a29	MERGED	worker-35	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 4.08
 humaniq	1142	7f00cdb5f00e0424ba9245b7084a71c67adf2084	MERGED	worker-47	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.47 holds at 3.47
+buildiq	1597	2a5d5c23c4e32ed0e06dec824275f109665091aa	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.91 holds at 3.99
+buildiq	1602	b2a6e8931b7f5b55133804139c2d271e4c3791e2	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.91 holds at 3.99
 filinq	2059	7a6dae82691aa82d3c3d7942c255d09bb026cb79	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.06
 filinq	2098	cf30de81619fff53d614f9f1456eb39a7e8a4c05	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.06
 decidiq	2205	c6740766600e6ddf741cc7a79eaaf17611e15981	SKIP	worker-24	no APPROVE review at this head
@@ -5113,12 +5115,25 @@ decidiq	2251	0ed475e33cbb588dda158bc53a43c6b0bed603a7	MERGED	worker-24	GATE OK s
 opencatalogi	2650	e518db3d4ba09e41b85d9dbf215290fbd24057eb	SKIP	worker-19	no APPROVE review at this head
 larpinq	1045	73c4570d7e6a3d214f834ce934c86d4df7b4579c	MERGED	worker-33	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.25
 decidiq	2252	8ede89d50aa29803f8ecaee6001a6961a5492da9	MERGED	worker-24	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.78 holds at 3.83
+buildiq	1597	2a5d5c23c4e32ed0e06dec824275f109665091aa	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.91 holds at 3.99
+buildiq	1602	b2a6e8931b7f5b55133804139c2d271e4c3791e2	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.91 holds at 3.99
 opencatalogi	2665	106da8530ac7a95c453ceb9d64328d7fd03cec44	RED	worker-19	GATE RED floor: overall: 4.87 -> 4.84; unit_size: 4.66 -> 4.64; unit_complexity: 4.85 -> 4.83; unit_interfacing: 4.73 -> 4.53
 decidiq	2253	bd32087871f8d23258331464e6e6c9491d8b8168	MERGED	worker-24	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.78 holds at 3.83
 opencatalogi	2765	e71096de5e9f48489a6b65d6e63e71c3d1dbf7c8	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.52
 portaliq	2417	5a89d39e01388c3a9324898a1c52f13f296ec643	MERGED	worker-55	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.04
 stackiq	1933	4ab6e187b899ba72d006eeed7df4ed78821ab1fd	MERGED	worker-02	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.13
+versioniq	686	6799e346c3de5db336709e5fb2f61df3b944cf62	RED	worker-29	GATE RED floor: overall: 5.07 -> 5.05; unit_complexity: 4.79 -> 4.77; unit_interfacing: 4.57 -> 4.45
 integriq	3545	76605dd41334c821c1ceb47c5ffe0aa9fb627147	SKIP	worker-03	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure secretscanning; this is not a pass
 stackiq	1944	a82cd19ef1ca26b8084f3dec4bb8275694b47b54	MERGED	worker-02	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.13
 integriq	3561	6974829429263b35461bff07cc98e206677ca0d6	MERGED	worker-03	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.61
 integriq	3628	c2938095f3f912e377bcf2692f504d3e17e7e701	SKIP	worker-03	no APPROVE review at this head
+humaniq	1147	468abb9267e6006a0ad2b69fb85f3b42943f053c	MERGED	worker-45	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.47 holds at 3.47
+integriq	3632	e95b6afde798230eae72196128f9d88b93946c09	MERGED	worker-03	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.61
+shillinq	3065	ed6ad66267419b8069ec13f433b46b122c49208a	MERGED	worker-43	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.04
+integriq	3670	90ebc507034147bc5bca04a174ced7397bfcb9c5	MERGED	worker-03	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.61
+decidiq	2154	6fc49611cd252c8bdc22cdf54c5631780f3f0b3c	MERGED	worker-24	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.78 holds at 3.82
+versioniq	701	8845d766a2122bdbccd77d5dda5a0029834e9917	MERGED	worker-29	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.97 holds at 4.24
+versioniq	754	8d9ac96cc209dd84dcc24262a8b60c820ba7b70f	RED	worker-29	GATE RED floor: overall: 5.07 -> 5.05; duplication: 5.19 -> 5.17; unit_interfacing: 4.57 -> 4.48
+decidiq	2162	a11708136c625a38e8ac005dd7a8f94b249c2033	MERGED	worker-24	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.78 holds at 3.81
+decidiq	2177	7c45ed6086ab3bd9a987ae7f98eab7e09e1e87c8	MERGED	worker-24	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.78 holds at 3.80
+opencatalogi	2651	e7467c2ae155bfb37a2c8a4cae688105b33ed3c3	RED	worker-19	GATE RED floor: unit_size: 4.66 -> 4.64; unit_interfacing: 4.73 -> 4.67; module_coupling: 5.44 -> 5.41
