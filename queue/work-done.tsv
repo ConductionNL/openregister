@@ -19522,3 +19522,4 @@ review:versioniq:692:613c5671	GREEN: unit 2294 (baseline 2242), only the 2 inher
 review:stackiq:1943:520d167f	GREEN; conflicts with development	session-20261117T055844-3d508d2a	2026-11-17T06:20:53Z
 fix:decidiq:2190:4d90c497	conflict resolved, pushed ddd00bbe; unit green; REVERIFY queued	session-20261117T055853-7ddd3cb3	2026-11-17T06:21:01Z
 review:pipelinq:3734:fd1741d7	GREEN: suite 9270 OK, spec-conformant	session-20261117T061843-4cd9296c	2026-11-17T06:21:13Z
+review:opencatalogi:2677:d1c995ac	BLOCK: repair step without version move	session-20261117T042937-c444c626	2026-11-17T06:21:26Z
