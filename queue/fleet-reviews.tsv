@@ -1516,3 +1516,4 @@ decidiq	2284	75bf16e4978932fd693798e5513fda961c651b66	APPROVE	worker-33	Quick; n
 decidiq	2285	eeb91b118b1c241df162e0f00bdce238c0111d68	APPROVE	worker-33	Thorough (569 added lines, tests only); no blockers; e2e spec per scenario, two reason-bearing e2e excludes for cron-driven rappels
 buildiq	1710	9b6b9e95f81917400acb306e4b2fae708797b460	APPROVE	worker-08	Quick (tests only); no blockers; assertions on real behaviour, no skipped or assertion-free tests
 buildiq	1711	c046bf16a2d185fd3a110f47e78450a28c23551c	APPROVE	worker-08	Quick (tests only); no blockers; assertions on real behaviour, no skipped or assertion-free tests
+buildiq	1712	c5e1d2176bcdc55e8a11d05009e04345b81c4bc1	APPROVE	worker-08	Quick (tests only); no blockers; assertions on real behaviour, no skipped or assertion-free tests
