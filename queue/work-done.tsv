@@ -19054,3 +19054,4 @@ review:filinq:2130:e568a447	BLOCK: OCR text layer rewrites final documents outsi
 review:filinq:2116:748154e2	GREEN #2116 (unit 7035 OK; conflicts with development in filinq_register.json)	session-20261117T020252-b4828a7d	2026-11-17T02:08:18Z
 review:filinq:2090:fc2072b1	GREEN: spec seed + tests, suite 6973 OK; version-line conflict with development	session-20261117T020348-42793e58	2026-11-17T02:08:30Z
 review:hermiq:1740:9e13a128	BLOCK: department switch fails open on read errors; conflicts with development	session-20261117T004644-d9c68b8f	2026-11-17T02:08:40Z
+review:filinq:2106:6f753abc	GREEN: 6996 tests 0 new failures; register description conflict	session-20261117T015854-c76e8b72	2026-11-17T02:08:48Z
