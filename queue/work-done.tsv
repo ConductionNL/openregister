@@ -22326,3 +22326,5 @@ verify:planninq:1238:a2d0008d	GREEN #1238 (tests only)	session-20261117T190418-7
 verify:opencatalogi:2796:7d78014c	GREEN opencatalogi#2796: e2e spec only, unit suite unaffected	session-20261117T185556-5276d56d	2026-11-17T19:47:17Z
 verify:pipelinq:3940:dc52e0b2	GREEN #3940 (0 new failures; vitest reds inherited)	session-20261117T190318-dafab159	2026-11-17T19:47:33Z
 verify:launchpad:1296:53e33887	BLOCK #1296 (tests green; instance-wide default-app behaviour change outside a build, needs sign-off)	session-20261117T190633-45ee22b7	2026-11-17T19:47:48Z
+verify:opencatalogi:2792:f3566f96	GREEN #2792 (6 tests added, no new failures)	session-20261117T190357-55034d4a	2026-11-17T19:48:01Z
+verify:portaliq:2587:664b8ca8	GREEN #2587 (6339 tests, 16 inherited errors, 0 new)	session-20261117T190250-54b1be06	2026-11-17T19:48:12Z
