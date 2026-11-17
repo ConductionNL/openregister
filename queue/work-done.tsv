@@ -21107,3 +21107,4 @@ build:pipelinq:marketing-articles-move-to-portaliq:b2	already done: code tasks o
 build:pipelinq:platform-record-lock:b2	already building: quality/build-platform-record-lock(-c2) exist; open tasks 2.4/3.2 are Playwright/e2e	session-20261117T134355-826c5a0b	2026-11-17T14:28:56Z
 build:opencatalogi:dataset-views-on-the-public-page:b2	already building: PR #2766 open (fixed this session, head ba8f0a67 queued REVERIFY)	session-20261117T133804-84492b74	2026-11-17T14:28:43Z
 build:pipelinq:my-work-roadmap:b2	already building: quality/build-my-work-roadmap exists (19 tasks still open on development)	session-20261117T134355-826c5a0b	2026-11-17T14:29:39Z
+build:opencatalogi:dashboard-consume-or-aggregations:b2	nothing left in code: built in #2640 (merged); open items are struck (not possible), blocked on the attachment schema decision, superseded by publications-unpublished-overview, or live passes	session-20261117T133804-84492b74	2026-11-17T14:29:23Z
