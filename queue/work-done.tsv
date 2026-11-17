@@ -22871,3 +22871,4 @@ review:shillinq:3064:c4757048	GREEN: suite 12836 OK (baseline 12796), matches ch
 review:shillinq:3080:9c446227	GREEN: Thorough, no blockers; 12824 unit tests 0 failures; one concern on claim state not re-checked at generate	session-20261117T223208-cb40bd07	2026-11-17T22:37:25Z
 review:openregister:10639:5dfaf78c	APPROVE: lock-only patch/minor bumps, review suites green on the PR merged with main	session-20261117T222415-2187d868	2026-11-17T22:37:20Z
 build:dossiq:case-access-card-lists-team-and-group-grants:b2:c3	partial: PR #6648 head 7529b2ea unchanged, merges clean, its test passes (3 tests); left 4.2 team row (product decision on handling.teams), 4.3 live pixel pass; the PR touches no JS, so the vitest failures are not its own	session-20261117T211422-95669914	2026-11-17T22:38:07Z
+fix:pipelinq:3934:6ba01209	conflict resolved, pushed c444dc92; merge lock held elsewhere, REVERIFY queued	session-20261117T221832-434567de	2026-11-17T22:38:14Z
