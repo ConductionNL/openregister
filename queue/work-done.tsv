@@ -22608,3 +22608,4 @@ verify:filinq:2112:4a6629c6	CONFLICT: tests/vitest/manifestFragments.spec.js vs 
 review:filinq:2121:760729f0	BLOCK: scan filing target not checked against the setter's write rights	session-20261117T204330-02b728bd	2026-11-17T21:18:17Z
 review:shillinq:2993:fe6cd880	GREEN: unit 12821 OK, vitest 31 OK, phpstan/eslint clean	session-20261117T211359-b7379586	2026-11-17T21:18:29Z
 review:shillinq:3006:35f75790	GREEN: unit 12800 OK, vitest 37/37	session-20261117T211406-076a7a0e	2026-11-17T21:18:38Z
+review:versioniq:728:82369cc5	GREEN: unit 2590, no new failures; vitest 22 ok; info.xml conflict trivial	session-20261117T211433-35a96960	2026-11-17T21:18:52Z
