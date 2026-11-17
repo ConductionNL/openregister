@@ -16035,6 +16035,7 @@ shillinq	2081	5c4b6e15884f9ade7eb22f959d12f708da02d2c9	CONFLICT	worker-03	confli
 pipelinq	3743	871e47d54f19aad16fb7eeac1f4d38f79b61e6af	CONFLICT	worker-14	conflicts with development in l10n en/nl, lib/Service/SettingsLoadService.php, src/manifest.json, tests/vitest/structureProfile.spec.js; suite not run
 shillinq	1965	38aa9e98d92064163730059c45e299b358346b33	CONFLICT	worker-36	conflicts with development in appinfo/info.xml, tests/fixtures/register-versions.lock.json; suite not run
 shillinq	2071	abd73b77c8b814e4c2e54f23d0453faa2f433b0c	CONFLICT	worker-47	conflicts with development in appinfo/info.xml and tests/fixtures/register-versions.lock.json
+shillinq	3067	0f4f123e40e2a88185e96805121467a7969b3b6a	CONFLICT	worker-28	conflict in tests/fixtures/register-versions.lock.json with development fa3292ae; tree not run
 opencatalogi	2652	2348aeca1bad551e3e485ff6910acc05812c7e8c	CONFLICT	worker-39	conflicts with development in l10n/en.js,en.json,nl.js,nl.json and lib/Service/ServiceRegistrar.php; suite not run
 portaliq	2445	45374ce5e6564b77ca1e325dfc5118b33c695d89	CONFLICT	worker-21	merge conflict with origin/development in l10n/en,en_US,nl (.js/.json); suite not run
 shillinq	3064	0cade1527ef105a80543a2f958c4a957ab92be6f	CONFLICT	worker-34	merge with development conflicts in 10 files incl. appinfo/info.xml, l10n, ListenerRegistrar.php, InvoiceGenerationService.php, openapi.json, manifest.d.shell.json
