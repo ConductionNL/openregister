@@ -20308,3 +20308,4 @@ measure:buildiq:20261117h08	measure	buildiq	development	queue/coverage/buildiq.j
 measure:decidiq:20261117h08	measure	decidiq	development	queue/coverage/decidiq.json	why=slices need per-directory coverage	2026-11-17T08:34:10Z
 measure:integriq:20261117h08	measure	integriq	development	queue/coverage/integriq.json	why=slices need per-directory coverage	2026-11-17T07:34:53Z
 measure:keepiq:20261117h08	measure	keepiq	development	queue/coverage/keepiq.json	why=slices need per-directory coverage	2026-11-17T08:34:10Z
+fix:portaliq:2493:76051e0b	fix	portaliq	development	2493	sha=76051e0b3b058ecacdda25df3598bcac0de237a9;verdict=CONFLICT;branch=quality/build-capability-rows-without-a-requirement;reason=merges clean on development alone, files: package.json 	2026-11-17T08:09:43Z
