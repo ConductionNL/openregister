@@ -19048,3 +19048,4 @@ review:filinq:2079:d658c1dd	BLOCK: floor lost (component independence), missing 
 review:hermiq:1751:36c34dcf	CONFLICT with development in lib/Settings/hermiq_register.json; verdict recorded for a fix	session-20261117T020131-42b6d5a2	2026-11-17T02:07:05Z
 review:filinq:2126:2630cf28	GREEN; head conflicts with development in filinq_register.json	session-20261117T020233-6aa2851d	2026-11-17T02:07:18Z
 review:filinq:2120:5a2b996f	GREEN: 7023 unit ok, phpstan clean; register json conflicts with development (version line)	session-20261117T020212-3e3772fe	2026-11-17T02:07:32Z
+review:decidiq:2189:2a5bced2	CONFLICT (municipality.json); behaviour reviewed, no blocker	session-20261117T003945-3aa9cc05	2026-11-17T02:07:46Z
