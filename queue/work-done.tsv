@@ -19928,3 +19928,4 @@ review:launchpad:885:de52aba3	GREEN: phpunit 4563 ok, vitest 2695 ok, no new fai
 merge:filinq:2059:579ca20b	unmeasured: api.osv.dev (2059 APPROVE, gate SKIP; 7 CONFLICT, 2098 MOVED)	session-20261117T081227-7932bc83	2026-11-17T08:30:35Z
 fix:versioniq:706:2a838675	fixed floor (5.07->5.08 PASS), pushed 7403373; merge lock held by another merger, REVERIFY queued	session-20261117T080505-a1a86f91	2026-11-17T08:30:46Z
 fix:learniq:2536:3f0c2d08	fixed blockers, new head ce31ee2c; merge lock held by another merger, REVERIFY recorded	session-20261117T081859-4e242060	2026-11-17T08:30:54Z
+fix:learniq:2524:77f1c40b	conflict resolved, pushed c5f8f790e; merge lock held elsewhere, REVERIFY queued	session-20261117T080436-bf0369a8	2026-11-17T08:31:02Z
