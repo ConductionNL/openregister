@@ -19116,3 +19116,4 @@ review:buildiq:1632:3f019d31	GREEN: 1 inherited PHP failure, vitest 110 OK; conf
 review:learniq:2518:59333b49	GREEN: metadata only, 0 new failures, checks pass	session-20261117T004133-c974afac	2026-11-17T02:21:15Z
 review:opencatalogi:2677:6cedbbd6	RED: MiddlewareRegistrarTest new failure; test-file conflict with development	session-20261117T020207-847c18e7	2026-11-17T02:21:22Z
 review:buildiq:1619:3d592e85	GREEN: vitest 4865/0 fail on PR+dev, frontend only	session-20261117T020231-8c38940a	2026-11-17T02:21:35Z
+review:integriq:3572:5ea14816	GREEN: 9684 tests, 5 inherited failures/errors	session-20261117T020142-15890c05	2026-11-17T02:21:49Z
