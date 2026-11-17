@@ -4995,3 +4995,4 @@ filinq	2123	bb0d49c3f8201f782665b19c1aa074a188b27d58	MERGED	worker-51	GATE OK sb
 filinq	2091	508232a5f0100a8686e34fc5738e9d877ef14dee	MERGED	worker-51	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.06
 decidiq	2148	d72478092caef7d784f6faa93fbfefc4c30a3263	MERGED	worker-36	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.78 holds at 3.83
 decidiq	2162	41fa34b09570aea997963a15fb5da440e27a168f	RED	worker-36	GATE RED floor: duplication: 3.82 -> 3.80
+learniq	2549	7f653fdab592ada02ab70101b39a8efac9931b94	RED	worker-16	GATE RED floor: unit_interfacing: 3.36 -> 3.34
