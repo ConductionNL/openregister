@@ -18688,3 +18688,4 @@ merge:portaliq:1982:02749cc6:r	merge3 tree of 1 portaliq PRs: merged=1 red=0 fai
 verify:portaliq:2530:dcf33d3e	CONFLICT #2530 (composer.lock vs development)	session-20261117T004616-c7acc36d	2026-11-17T00:47:55Z
 review:buildiq:1648:0f576fb7	GREEN: within change specs; phpunit 3517 OK, vitest 4834 OK	session-20261117T003945-3aa9cc05	2026-11-17T00:48:18Z
 fix:portaliq:2500:211dedaa:v3	obsolete: #2500 already on development, closed	session-20261117T004616-c7acc36d	2026-11-17T00:48:49Z
+fix:portaliq:2494:01e731ef:v3	conflict resolved, pushed b99070c9; merge lock held elsewhere, REVERIFY queued	session-20261117T004716-5a617a43	2026-11-17T00:49:48Z
