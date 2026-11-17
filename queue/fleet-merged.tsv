@@ -5118,4 +5118,5 @@ decidiq	2253	bd32087871f8d23258331464e6e6c9491d8b8168	MERGED	worker-24	GATE OK s
 opencatalogi	2765	e71096de5e9f48489a6b65d6e63e71c3d1dbf7c8	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.52
 portaliq	2417	5a89d39e01388c3a9324898a1c52f13f296ec643	MERGED	worker-55	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.04
 stackiq	1933	4ab6e187b899ba72d006eeed7df4ed78821ab1fd	MERGED	worker-02	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.13
+integriq	3545	76605dd41334c821c1ceb47c5ffe0aa9fb627147	SKIP	worker-03	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure secretscanning; this is not a pass
 stackiq	1944	a82cd19ef1ca26b8084f3dec4bb8275694b47b54	MERGED	worker-02	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.13
