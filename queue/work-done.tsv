@@ -19308,3 +19308,4 @@ fix:hermiq:1791:1747024b:v4	fixed conflicts, new head 86d27476e06000ce1db24e3054
 fix:filinq:2130:e568a447	OcrTextLayerService refuses to rewrite a final, signed or anonymised PDF through DocumentGuard (SKIP_PROTECTED), spec scenario added, 2 mutation-checked tests; unit 6981 OK; head 90159872, REVERIFY appended	session-20261113T214350-9762e143	2026-11-17T03:02:53Z
 fix:filinq:2086:285091d5	fixed, pushed b75633fb (dev merged, @spec, descriptions); lock busy, REVERIFY queued	session-20261117T025103-7e9d03fe	2026-11-17T03:03:05Z
 fix:decidiq:2189:2a5bced2	conflict resolved, pushed aff8b82e (objectCount 255), unit 4831 OK; lock held elsewhere, REVERIFY queued	session-20261117T025357-44509a8b	2026-11-17T03:03:17Z
+fix:decidiq:2205:ecb1c1cc	fixed: conflict resolved, pushed 0ebb671c; REVERIFY (merge lock held)	session-20261117T020142-15890c05	2026-11-17T03:03:31Z
