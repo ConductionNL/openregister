@@ -19177,6 +19177,7 @@ merge:pipelinq:3734:5098e811	cloud tree of 1 pipelinq PRs: merged=0 red=1 fail=0
 merge:integriq:3574:6886a39a	cloud tree of 1 integriq PRs: none; conflict 1, lint 0, red 0, moved 0, done 0	session-20261117T021325-9fd6cbed	2026-11-17T02:32:20Z
 review:launchpad:1217:faab5f5c	GREEN: 4548 unit tests OK on PR+development, vitest 2069 pass, static checks clean	session-20261117T020416-cc0fb378	2026-11-17T02:32:33Z
 review:opencatalogi:2722:8f7ea1f5	GREEN: per spec, no new failures, merges clean	session-20261117T021636-02f2b960	2026-11-17T02:32:46Z
+review:buildiq:1630:01c116f5	BLOCK: ApplicationVersion.deviceFeatures enum narrowed to camera; drops 3 en.json keys	session-20261117T020319-9833efe0	2026-11-17T02:33:01Z
 review:stackiq:1963:c8580463	GREEN: phpunit 3978 OK, vitest 1 inherited failure	session-20261117T020238-79f03bb8	2026-11-17T02:33:03Z
 review:versioniq:692:d988f8cb	GREEN: unit 2244 (2 inherited failures), vitest 44 OK	session-20261117T021137-dd174ad0	2026-11-17T02:33:11Z
 review:opencatalogi:2650:fef15211	GREEN: no new failures (6167 unit tests, 103 inherited)	session-20261117T021557-4653e902	2026-11-17T02:33:20Z
