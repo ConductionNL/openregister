@@ -1453,3 +1453,4 @@ versioniq	692	f611aea1fbe0680e0104782b13effcf7b0d02d99	APPROVE	worker-13	Thoroug
 versioniq	780	f23cd299e03ed19ed07fe50aa787b4b212d26b17	APPROVE	worker-13	Quick; no blockers; e2e spec only, empty storage state, base URL from env
 versioniq	782	432619ef7eda9022b783162e50bbe4f17f3f92bc	APPROVE	worker-13	Quick; no blockers; e2e specs and fixture bootstrap loop, same per-app steps
 portaliq	2585	047ea7f203051ca4121b9fbb4fe5d368a8652f63	APPROVE	worker-45	Quick; no blockers; tests only (e2e spec + tasks note), anonymous empty-state context, base URL from env
+portaliq	2588	84f2d5629cfc4fe24215612ddab667deaedf1bc2	APPROVE	worker-45	Strict; no blockers; new GET shared-blocks/{id}/pages: page-editor check first (403), block read with user RBAC (404), pages limited to block's organisation portals, published body only, no-store; 2 new test classes; tree 0 new failures; gate runner not cached, checklist by hand
