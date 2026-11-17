@@ -18286,3 +18286,4 @@ larpinq	1088	b6f2f9b48fd84e4b68a1cefdf77af3ad41f94ec1	REVERIFY	worker-25	restore
 humaniq	860	8e1a6e8a5513e80ba0796bb2acef1135b8107b16	GREEN	worker-19	4509 tests run, baseline 4509 ok/1 skipped, no new failures; config-only quality floor change
 humaniq	1190	27f4e9816e988888fa4607eb9373eb2223988dc2	GREEN	worker-58	4509 tests, baseline 0 failures, 0 new failures; version bump only
 integriq	2969	a2ea40ef8e5015d9bd298a950bfe4e9779fe0be9	CONFLICT	worker-29	conflicts with development in appinfo/info.xml, lib/Settings/integriq_mock_register.json, openapi.json; no tests run
+thematiq	1553	da1b1562f97c6ffdba6a0fb70694ffd3f192edba	GREEN	worker-50	unit 2900 tests, 1 failure (MigrateOverrideValueTypesTest::testUnwritableDirectoryDoesNotThrow, root-writable dir, inherited: PR changes only .github/sig-floor.json); no new failures; floor raised only
