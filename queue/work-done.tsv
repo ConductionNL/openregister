@@ -20890,6 +20890,7 @@ fix:integriq:3703:80544b3c	sbom regenerated, pushed e877128e; lock busy, REVERIF
 merge:versioniq:706:bfd14e87	cloud tree of 1 versioniq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T134347-d0294040	2026-11-17T13:59:20Z
 cover:buildiq:70b3e29em2454:aae6d66c	already done: lib/Exception/*.php 64/64 statements covered on development (suite 3676 tests OK)	session-20261117T134024-07d6c268	2026-11-17T13:59:14Z
 fix:versioniq:700:563a324a	conflict resolved, pushed b95e71ea; merge lock busy, REVERIFY queued	session-20261117T135611-7a4e2ddc	2026-11-17T13:59:32Z
+cover:buildiq:70b3e29em2454:b4c67ee3	PR #1710: 7 tests for VirtualAppCredentialRegistrar; Icon/Offline already covered; suite 3676 -> 3683, 0 failures	session-20261117T135414-614629b0	2026-11-17T13:59:53Z
 merge:thematiq:1715:3a226323	cloud tree of 1 thematiq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T133303-ca20630d	2026-11-17T13:59:39Z
 review:shillinq:3064:169d4186	3064 GREEN	session-20261117T121049-5b84d45a	2026-11-17T14:00:17Z
 cover:buildiq:70b3e29em2454:13d51e6a	PR #1711: 15 tests for VersionMergeRunner and VersionState (suite 3676 -> 3691, 0 failures)	session-20261117T133629-e10185c0	2026-11-17T14:00:51Z
