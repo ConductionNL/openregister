@@ -19241,3 +19241,4 @@ planninq	1252	d65f04922fee972a0c53a84c02b54d6a5eed02ff	GREEN	worker-36	phpunit 1
 learniq	2519	26cb0ee872e5d3bba79683e7c5d8bf1c83e0942b	GREEN	worker-49	unit 7164 tests on tree over development 79a307ec3, baseline 7152 with 1 inherited failure (HigherEducationExampleSet), no new failures; php -l and phpstan clean; implements report-card-pdf-to-guardians
 opencatalogi	2804	731661e8db83a4a1956f6fe2f8482bd86b4a0de0	RED	worker-09	unit 6422 on tree vs base 6373 (78 inherited failures, openregister main beside); new failure SettingsObjectTypeConfigurationTest::testMissingSlugsAndTheRegisterAreLookedUpAndTheOrganisationIsResolved (expected 31 object types, got 32 after the added mock register type)
 opencatalogi	2771	502ce9b90ab9cfb622904e055d6d14d2b3ad2fdd	CONFLICT	worker-09	conflicts with origin/development
+opencatalogi	2803	182028e8f50085dad6352c07ec0abb07a4eb807b	REVERIFY	worker-09	conflicts only with an earlier PR of the verify tree
