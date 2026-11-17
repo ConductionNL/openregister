@@ -21014,6 +21014,7 @@ build:dossiq:objects-index-like-cases:b2	already done: code task 1.1 on developm
 build:dossiq:parties-and-contact-moments-consume-pipelinq:b2	already done: every code task ticked on development; only 9.4 live pass left	session-20261117T124637-3e909745	2026-11-17T14:18:04Z
 build:dossiq:penalty-is-a-stored-calculation:b2	already done: only live task 1.4 left	session-20261117T132743-10cec9d3	2026-11-17T14:17:52Z
 build:dossiq:portal-conversation-live-pass:b2	already done: all 4 open tasks are live/e2e passes on a running instance with portaliq (and closing the row after them); no code left; no PR	session-20261117T135414-614629b0	2026-11-17T14:18:15Z
+build:dossiq:retire-cmmn-caseplanstate:b2	already building: quality/build-retire-cmmn-caseplanstate exists (ba2ceef0da, on development); open tasks are 3.2 (gated on drain report, own PR), 5.3 e2e and 6.x quality, no code task left	session-20261117T135029-424a7669	2026-11-17T14:18:50Z
 build:dossiq:party-overview-card-order:b2	already done: 1.1-1.2 on development; only 1.3 live check left	session-20261117T133303-ca20630d	2026-11-17T14:18:34Z
 build:dossiq:status-type-phase:b2	already done: code tasks on development (123f12a60, 1b1f57ccd); only the operational re-import on existing installs is left	session-20261117T134355-826c5a0b	2026-11-17T14:18:53Z
 build:dossiq:social-history-people-and-files:b2	already done: 1.1 and 1.2 on development; only 1.3 (a live board measurement) left, not a code task	session-20261117T134304-10008ffd	2026-11-17T14:18:33Z
