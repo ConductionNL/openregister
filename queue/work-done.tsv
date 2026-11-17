@@ -19446,3 +19446,4 @@ fix:portaliq:2446:478f986e	conflict resolved + static-call fix, new head 14bb079
 fix:hermiq:1741:b210624d	conflict resolved, pushed d8e7284d38; REVERIFY queued	session-20261117T042937-c444c626	2026-11-17T05:48:06Z
 fix:portaliq:2494:b99070c9	conflict resolved, new head f4dc3626, REVERIFY queued	session-20261117T052912-fd9cd3d6	2026-11-17T05:49:31Z
 fix:portaliq:2450:5c9fe090	conflict resolved + static-call fix, new head 8e4653e1, REVERIFY queued	session-20261117T052912-fd9cd3d6	2026-11-17T05:50:58Z
+fix:stackiq:1944:a796a511	BLOCK fixed (@spec tags), development merged, pushed a82cd19ef1; REVERIFY queued	session-20261117T042937-c444c626	2026-11-17T05:52:09Z
