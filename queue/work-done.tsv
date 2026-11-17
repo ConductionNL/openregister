@@ -18578,3 +18578,4 @@ verify:stackiq:1939:b579ce6b	CONFLICT: #1939 conflicts with development (l10n, r
 verify:thematiq:1124:0cb71e37	GREEN: unit 2881, 0 new failures; vitest 1561 pass; eslint clean	session-20261116T232911-3dffa1ae	2026-11-17T00:16:25Z
 verify:versioniq:735:58324c56	CONFLICT #735 (info.xml, l10n, instance settings, controller)	session-20261116T232918-35016340	2026-11-17T00:16:54Z
 fix:stackiq:1989:45dbd962:v3	RED not reproducible: gate OK on current development; REVERIFY queued (merge lock held)	session-20261116T232912-634ff2e8	2026-11-17T00:17:16Z
+verify:stackiq:1946:27edf2f7	CONFLICT #1946 (info.xml, l10n, GroupHandler, RelativeDemoDates)	session-20261116T233427-cfe22922	2026-11-17T00:17:27Z
