@@ -19331,3 +19331,4 @@ fix:integriq:3582:e824c737	conflict resolved at ec13862c (development merged, l1
 fix:learniq:2536:85923107	fixed RED (portal words for plannedAt/lifecycle) + merged development; new head 31b84d24; merge lock held elsewhere, REVERIFY	session-20261117T025134-c7910d2d	2026-11-17T03:08:12Z
 fix:versioniq:735:3183b87f	fixed: merged development, adjusted rollback test for install-progress poll, pushed 1bdf2b19; merge lock busy, REVERIFY queued	session-20261117T025031-1b32b183	2026-11-17T03:08:34Z
 review:larpinq:1056:10fc7079	BLOCK: gates 51/55/101 fail on PR-added schema/manifest lines; code and tests fine	session-20261117T020309-da756b72	2026-11-17T03:08:55Z
+fix:integriq:3631:5de3ac5f	fixed, pushed 36311b4c; REVERIFY (merge lock held)	session-20261117T024701-e2fa255c	2026-11-17T03:08:44Z
