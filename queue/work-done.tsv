@@ -20856,4 +20856,5 @@ fix:versioniq:729:ea732a80	pushed @spec tags, gate-16 green; REVERIFY at 497abe1
 fix:hermiq:1781:a56a9450	merged #1781 at 6b45e373bba2ccb19851caeb6ae9adf8e2edc15b	session-20261117T132823-a99794a3	2026-11-17T13:53:31Z
 review:shillinq:2993:39b07fb3	BLOCK: repair step added without info.xml version bump; unit suite green (12804), vitest 31 pass	session-20261117T134327-bbccf916	2026-11-17T13:53:42Z
 verify:opencatalogi:2770:71864641	GREEN #2770; 0 new failures	session-20261117T134951-9fef99ce	2026-11-17T13:54:10Z
+cover:dossiq:069ee2d6m9d1b:cdc59513	already done: lib/Service/Inspection/ at 100% statement coverage on development 21f141bd21 (pcov, 46 tests green), target 95; row from Aug looks stale	session-20261117T133105-0c327c7d	2026-11-17T13:53:53Z
 cover:decidiq:a5f973bbmfcd5:38e80a9f	already done: lib/Command/*.php at 100% lines (106/106) on development 161ca15ec, 17 tests	session-20261117T135029-424a7669	2026-11-17T13:53:56Z
