@@ -22954,3 +22954,4 @@ build:planninq:projects-public-share:b2:c2	partial: PR #1251 at 8d0bb478, built 
 fix:opencatalogi:2792:f3566f96	not reproducible: test green with openregister main beside, no failures beyond development; merged development, REVERIFY queued	session-20261117T224524-cade3737	2026-11-17T22:56:25Z
 merge:planninq:1243:6a5a7f34	unmeasured: api.osv.dev (proxy 403 from this session; not built or landed)	session-20261117T221832-434567de	2026-11-17T22:56:51Z
 review:decidiq:2198:ccf87abb	stale	session-20261117T221832-434567de	2026-11-17T22:57:14Z
+fix:decidiq:2174:53ff0981	conflict resolved, pushed 8825e17a07; unit 5075 OK; end-to-end skipped (merge gate host blocked)	session-20261117T222443-557d8a6c	2026-11-17T22:57:27Z
