@@ -18685,3 +18685,4 @@ cover:dossiq:069ee2d6m9d1b:f0c02922	deferred: dossiq has 41 open PRs	session-202
 cover:dossiq:069ee2d6m9d1b:330d99ea	deferred: dossiq has 41 open PRs	session-20261116T230934-9ee320cf	2026-11-17T00:46:03Z
 review:dossiq:3955:66d20622	GREEN: rename only, 0 new failures (19 inherited), phpcs clean	session-20261117T004133-c974afac	2026-11-17T00:46:13Z
 merge:portaliq:1982:02749cc6:r	merge3 tree of 1 portaliq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-17T00:46:29Z
+verify:portaliq:2530:dcf33d3e	CONFLICT #2530 (composer.lock vs development)	session-20261117T004616-c7acc36d	2026-11-17T00:47:55Z
