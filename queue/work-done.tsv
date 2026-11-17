@@ -19103,3 +19103,4 @@ review:shillinq:3067:6f2e1f12	GREEN: suite 12516 OK vs baseline 12500, matches c
 review:shillinq:3062:fbfbd1da	GREEN: phpunit 12521 ok, vitest 1 inherited failure	session-20261117T020207-847c18e7	2026-11-17T02:18:33Z
 review:hermiq:1757:becc16d7	GREEN: unit 5578 OK, vitest 36 OK	session-20261117T020131-42b6d5a2	2026-11-17T02:18:45Z
 review:buildiq:1590:2c97afef	GREEN: 1 inherited failure; conflicts with development in l10n	session-20261117T020255-329d248b	2026-11-17T02:18:57Z
+review:shillinq:2993:9a8d6e12	GREEN: matches change specs; unit 12525 OK; one concern (Peppol availability without integriq)	session-20261117T020309-da756b72	2026-11-17T02:19:05Z
