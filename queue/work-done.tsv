@@ -22221,3 +22221,5 @@ verify:keepiq:1897:cb062e67	GREEN 1897 (archive, comment-only code changes)	sess
 verify:dossiq:6659:66f38a59	9 GREEN (6659-6666,6668); unit +24 tests 0 new failures; vitest 0 new failures	session-20261117T190140-44e48bc5	2026-11-17T19:27:01Z
 verify:dossiq:6643:0d24d1c5	GREEN #6643 (tasks.md only; baseline 1 inherited error)	session-20261117T190632-f0412d81	2026-11-17T19:27:10Z
 verify:integriq:3716:43ef05b0	GREEN integriq#3716 (e2e spec only; inherited unit reds)	session-20261117T190302-4e3d4569	2026-11-17T19:27:19Z
+verify:integriq:3703:e877128e	GREEN integriq#3703: 9910 tests, 0 new failures	session-20261117T185556-5276d56d	2026-11-17T19:27:30Z
+verify:humaniq:1191:b875c583	GREEN: 1191 (e2e spec only, suite green)	session-20261117T185625-a1e67f54	2026-11-17T19:27:38Z
