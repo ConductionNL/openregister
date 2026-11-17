@@ -5254,3 +5254,4 @@ hermiq	1833	6a516e7878f5c1cbad3111ca5bb12c4b1203e40b	RED	worker-33	GATE RED chec
 launchpad	1261	07612654d13d0593a4c978e6cead9d1ca9bc77ea	SKIP	worker-24	no APPROVE review at this head
 planninq	1217	f6120234f8623d11059dd154f7dcc77e9391f407	RED	worker-19	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 buildiq	1590	ca570cebe8fe3a8df3efa073bd3caa992de44476	RED	worker-13	GATE RED floor: unit_complexity: 3.42 -> 3.39; unit_interfacing: 3.53 -> 3.50
+planninq	1219	f6938d700bab732be5c59ee221bd8737791cf53d	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.66 holds at 4.05
