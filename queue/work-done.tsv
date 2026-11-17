@@ -22839,3 +22839,4 @@ review:versioniq:729:073d6c6c	GREEN #729 (no new failures)	session-20261117T2131
 review:openregister:10621:07810fff	APPROVE #10621 (eslint dev bump, lint output unchanged vs main)	session-20261117T212735-2b6c91a0	2026-11-17T22:24:40Z
 review:openregister:10641:f14b3333	BLOCK: npm ci ERESOLVE peer conflict with @nextcloud/stylelint-config and stylelint 17	session-20261117T221832-434567de	2026-11-17T22:25:12Z
 fix:pipelinq:3961:6eff78b5	failed: permission (push refused). Fix ready, not pushed: @conduction/nextcloud-vue nests @nextcloud/dialogs 7.6.0, so tests/vitest/eventAddAttendee.spec.js must also vi.mock ../../node_modules/@conduction/nextcloud-vue/node_modules/@nextcloud/dialogs/dist/index.mjs; with it the suite has only the 3 baseline failures	session-20261117T213056-2ba36933	2026-11-17T22:25:35Z
+review:openregister:10633:db93889e	APPROVE: opis/json-schema patch bump, 2520 validation tests green	session-20261117T221428-ca31c1a7	2026-11-17T22:25:32Z
