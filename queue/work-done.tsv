@@ -20695,3 +20695,4 @@ verify:planninq:869:6ffcb32c	GREEN 869	session-20261117T124544-f8740317	2026-11-
 verify:integriq:3713:1ac93422	GREEN #3713 (dev-dep bump, no new failures, vitest green)	session-20261117T124526-11739f5d	2026-11-17T13:05:03Z
 verify:pipelinq:2292:250dc1f2	GREEN #2292 (empty diff vs development, content already present)	session-20261117T125719-a348e067	2026-11-17T13:05:19Z
 verify:pipelinq:2381:eb3aba20	2381 GREEN (no content change vs development; 0 new failures)	session-20261117T123418-5f98fc94	2026-11-17T13:05:30Z
+verify:larpinq:1086:f1f15b15	GREEN #1086 (build per spec, 1236 tests, no new failures)	session-20261117T124621-35d7386d	2026-11-17T13:05:45Z
