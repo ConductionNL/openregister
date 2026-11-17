@@ -21316,3 +21316,4 @@ build:shillinq:inventory-receipt-cost-layers:b2	already building: branch quality
 build:shillinq:ledger-group-close:b2	already building: quality/build-ledger-group-close is open	session-20261117T133035-588aec38	2026-11-17T14:51:55Z
 build:shillinq:ledger-journal-line-dimensions:b2	already building: branch quality/build-ledger-journal-line-dimensions exists	session-20261117T134347-d0294040	2026-11-17T14:52:11Z
 build:shillinq:inventory-pos-decrement:b2	already done: code tasks on development (fc91fe45); only the two-app live check is left	session-20261117T133035-588aec38	2026-11-17T14:52:18Z
+build:shillinq:leges-at-intake:b2	failed: nothing buildable; 1.2 BbvTaakveld column waits on Q-shillinq-2 (no Account task field), 2.2 blocked on an ADR amendment and portaliq#617, 4.2 is e2e/docs	session-20261117T134347-d0294040	2026-11-17T14:52:57Z
