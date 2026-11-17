@@ -22837,3 +22837,4 @@ review:hermiq:1719:257411d7	GREEN; unit 5774 tests 0 failures, vitest 15 pass	se
 merge:shillinq:3171:650478b0	unmeasured: static.developer.overheid.nl (4 PRs approved, none landed; 3179 REVERIFY)	session-20261117T213058-6689a4c6	2026-11-17T22:24:21Z
 review:versioniq:729:073d6c6c	GREEN #729 (no new failures)	session-20261117T213101-157fb562	2026-11-17T22:24:33Z
 review:openregister:10621:07810fff	APPROVE #10621 (eslint dev bump, lint output unchanged vs main)	session-20261117T212735-2b6c91a0	2026-11-17T22:24:40Z
+review:openregister:10641:f14b3333	BLOCK: npm ci ERESOLVE peer conflict with @nextcloud/stylelint-config and stylelint 17	session-20261117T221832-434567de	2026-11-17T22:25:12Z
