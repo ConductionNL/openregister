@@ -1385,3 +1385,4 @@ keepiq	1899	abebdd6ffa781653cb3cdfbbfdac6d7c181fbded	APPROVE	worker-31	Strict; n
 keepiq	1901	f9f7976788c4b0b79cfd7a58bceadaf67c54401f	APPROVE	worker-31	Strict; no blockers; print/QR gated on master password re-entry and reveal guard, hidden for use-only; inherited vitest reds in HealthReportView.controls (also red on development); gate runner absent, checked by hand
 buildiq	1715	628d9e25f091953535ee8b7bb259bf0baf012802	APPROVE	worker-02	Quick; no blockers; e2e spec only, base URL from env, non-admin empty storage state
 buildiq	1716	f3a173de86c01c3d3ee317b89282af504b62139b	APPROVE	worker-02	Quick; no blockers; tasks.md tick only
+buildiq	1717	e829fe43c9a5cef45899fc7b358e8344c41b504b	APPROVE	worker-02	Quick; no blockers; spec wording and tasks tick only
