@@ -1284,3 +1284,4 @@ learniq	2597	bfba3423788080c7d26b5ce143c4ee3d883ada0c	APPROVE	worker-20	Quick; n
 decidiq	2276	b77ffaa99a83ac211a8cff55b080ccb1f773fd62	APPROVE	worker-45	Quick; no blockers; e2e spec + tasks.md only
 decidiq	2277	b03780e5e71f9c9a7d94f5ad1d658e3f438c2cb4	APPROVE	worker-45	Thorough (size); no blockers; Newman collection + tasks.md only; default baseUrl localhost like the other collections, overridable
 decidiq	2278	d120be3ea5c86aa6aa74b4081c7a6da1b31d2921	APPROVE	worker-45	Quick; no blockers; e2e spec + tasks.md only
+decidiq	2279	9029034a754b55ffbb5afc179985738e6927cc62	APPROVE	worker-45	Quick; no blockers; e2e spec + tasks.md only
