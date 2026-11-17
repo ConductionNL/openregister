@@ -20456,3 +20456,4 @@ review:integriq:3557:5f4da252	GREEN: feeds build matches specs; unit same failur
 verify:opencatalogi:2770:b9922ed9	GREEN #2770 (docs only, no new failures)	session-20261117T114001-07512b39	2026-11-17T11:54:24Z
 fix:opencatalogi:2766:c697ce65	fixed: test count for tableView, development merged; new head bc3b8cdd, REVERIFY (merge lock held elsewhere)	session-20261117T114623-ffd9d484	2026-11-17T11:54:36Z
 fix:opencatalogi:2650:4abde043	conflict resolved, pushed 6678e3ea; REVERIFY queued	session-20261117T113521-7cb5fa64	2026-11-17T11:54:44Z
+fix:learniq:2486:973f96e7	conflict resolved, new head 9b989f6b; merge lock held elsewhere, REVERIFY queued	session-20261117T111959-ea58bfcd	2026-11-17T11:54:57Z
