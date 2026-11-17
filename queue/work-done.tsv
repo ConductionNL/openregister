@@ -21027,6 +21027,7 @@ build:dossiq:starter-content-and-templates:b2	already done in dossiq: only 7.2 o
 build:dossiq:stuf-provider-through-integriq:b2	already done: only a next-release removal task left	session-20261117T132743-10cec9d3	2026-11-17T14:19:21Z
 build:dossiq:social-domain-consent-and-safeguards:b2	already building: quality/build-social-domain-consent-and-safeguards-2..5 exist	session-20261117T135414-614629b0	2026-11-17T14:19:11Z
 build:dossiq:resident-start-points-have-a-page:b2	already built: 1.1 and 2.1 on development with tests, no e2e spec files named; skipped 3.1 (live check on an upgraded instance)	session-20261117T134242-51ff9d48	2026-11-17T14:19:01Z
+build:dossiq:social-people-stacked:b2	already done: 1.1-1.2 on development; only 1.3 (measurement) left	session-20261117T135520-9a524c6b	2026-11-17T14:20:12Z
 build:dossiq:task-description-in-side-card:b2	already done: code tasks 1.1/1.2 ticked on development; only 1.3 (live check) left	session-20261117T125716-5aa18045	2026-11-17T14:20:12Z
 build:dossiq:complaints-are-a-case-type:b2	PR #6651: 1.4 Newman term collection; 2.3 blocked (SessionService held dark until bezwaar package), 3.2 waits a release, 4.x browser/live	session-20261117T134951-9fef99ce	2026-11-17T14:20:14Z
 build:dossiq:suspend-return-date:b2	already done: only 1.2 open, a live check after the library lands; no code left; no PR	session-20261117T135414-614629b0	2026-11-17T14:20:08Z
