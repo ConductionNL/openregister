@@ -18430,3 +18430,4 @@ shillinq	1958	4334b5609f948efda6860f14ac3cd2bdeba629d5	BLOCK	worker-34	PHP 12793
 learniq	2524	e082152efbec3936630363bfcc6b43783c2365fc	GREEN	worker-28	build of enrolment-sync-classes-from-student-administration, matches its specs; unit 7123->7137 tests, baseline 1 failure (HigherEducationExampleSetTest he.json out of date) inherited, 0 new
 stackiq	1942	90499893ae69fbd119963f98aa95c8df7f7229b3	CONFLICT	worker-29:merge	conflicts with development; files: appinfo/info.xml 
 integriq	3704	ef91827a9deb643222e2c4ece7853589b5dbcd5a	RED	worker-08:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+versioniq	700	563a324a25e1b6846a4fe0f1c0a71937dbc6ad4b	CONFLICT	worker-43:merge	conflicts with development; files: lib/Service/InstallerService.php 
