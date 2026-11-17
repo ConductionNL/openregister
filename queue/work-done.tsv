@@ -18901,3 +18901,4 @@ fix:planninq:1168:8c796e13:v3	merged #1168 at 2030d1fdb8e95f4ef06c22c81319aff304
 fix:hermiq:1794:97a61ef1:v3	conflict fixed, pushed 19bcd689; review APPROVE; merge gate RED floor unit_complexity 4.58->4.56, not landed	session-20261117T004650-4097ce5f	2026-11-17T01:31:26Z
 fix:integriq:3600:fe200724:v3	conflict resolved + test doubles fixed, pushed 0056da4f; no new failures; lock held elsewhere, REVERIFY queued	session-20261117T005216-77516966	2026-11-17T01:31:47Z
 fix:buildiq:1649:f58cb410:v5	conflict resolved + stories test helper fixed, pushed 039cc4ad, tests green; lock held elsewhere, REVERIFY queued	session-20261117T004133-c974afac	2026-11-17T01:32:13Z
+fix:buildiq:1630:d47a3654:v3	conflicts resolved and floor kept, pushed 01c116f5; REVERIFY recorded (merge lock held elsewhere)	session-20261117T005242-9db4df06	2026-11-17T01:32:29Z
