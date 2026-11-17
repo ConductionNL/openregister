@@ -22279,6 +22279,7 @@ verify:integriq:3582:963fe34c	GREEN 3582 (phpunit 9946, 0 new failures; vitest 2
 verify:integriq:3720:b1dbefe4	GREEN integriq#3720: e2e spec only, unit suite unaffected	session-20261117T185556-5276d56d	2026-11-17T19:37:37Z
 verify:opencatalogi:2799:a135b000	GREEN 2799 (e2e spec + docs only)	session-20261117T185927-e9838dc9	2026-11-17T19:37:48Z
 verify:integriq:3712:3f2d9585	GREEN 3712; vitest all pass	session-20261117T185757-f5106521	2026-11-17T19:38:03Z
+verify:hermiq:1854:d890a013	GREEN #1854 (5767 PHP tests, 1659 vitest, 0 new failures)	session-20261117T185935-593e017f	2026-11-17T19:38:13Z
 verify:launchpad:1300:0d717f38	GREEN #1300 (0 new failures)	session-20261117T190353-db371595	2026-11-17T19:38:12Z
 verify:opencatalogi:2798:f43db4b9	GREEN #2798 (tasks.md only)	session-20261117T190357-55034d4a	2026-11-17T19:38:21Z
 verify:integriq:3710:49c6e016	GREEN #3710 (vitest 2389 pass, build ok, deps-only)	session-20261117T191558-f6f135b1	2026-11-17T19:38:35Z
@@ -22299,3 +22300,26 @@ verify:planninq:1248:36d5dc19	GREEN #1248 (tests only, suite green)	session-2026
 verify:opencatalogi:2802:4020ac22	GREEN 2802 (tooling + tasks only)	session-20261117T185927-e9838dc9	2026-11-17T19:41:57Z
 verify:launchpad:1307:4016f478	GREEN #1307, 0 new failures	session-20261117T190150-dbabe332	2026-11-17T19:42:07Z
 verify:opencatalogi:2804:cd845147	GREEN opencatalogi#2804 (no new failures)	session-20261117T190302-4e3d4569	2026-11-17T19:42:30Z
+verify:opencatalogi:2805:727a5427	GREEN opencatalogi#2805 (6384 tests, 0 new failures)	session-20261117T190507-82f8fe51	2026-11-17T19:42:43Z
+verify:pipelinq:3934:a3a21127	GREEN (e2e spec only)	session-20261117T190242-7c82bed8	2026-11-17T19:42:50Z
+verify:launchpad:1308:bfec7173	GREEN #1308 (4621 tests, 0 new failures)	session-20261117T190250-54b1be06	2026-11-17T19:43:00Z
+verify:portaliq:2566:3ec0f459	GREEN: #2566 docs-only tick, claim checked on learniq	session-20261117T185500-00963134	2026-11-17T19:43:10Z
+verify:portaliq:2579:df1bfc40	CONFLICT: package.json	session-20261117T190242-7c82bed8	2026-11-17T19:43:25Z
+verify:integriq:3728:18126925	GREEN integriq #3728 (0 new php failures, vitest green)	session-20261117T190434-a73c29f6	2026-11-17T19:43:35Z
+verify:pipelinq:3937:77a25a62	GREEN 3937 (9285 tests, 0 new failures)	session-20261117T190316-ad3f71cf	2026-11-17T19:43:43Z
+verify:opencatalogi:2795:9844e9a0	GREEN opencatalogi#2795 (0 new failures; Newman collection only)	session-20261117T190026-7c82e6b3	2026-11-17T19:43:53Z
+verify:opencatalogi:2793:d14f5f96	GREEN #2793 (6365 tests, 0 new failures)	session-20261117T191558-f6f135b1	2026-11-17T19:44:07Z
+verify:thematiq:1721:9c6152f2	GREEN 1721-1726; RED 1727 (needs stylelint 18 from #1728); REVERIFY 1728,1729	session-20261117T190443-6578d505	2026-11-17T19:44:37Z
+verify:larpinq:1056:f075a857	CONFLICT larpinq#1056 (l10n + Settings* vs development)	session-20261117T190626-5c7fccb4	2026-11-17T19:44:49Z
+verify:integriq:3721:30322060	GREEN integriq#3721 (e2e + Newman only; 9910 tests, 4 inherited, 0 new)	session-20261117T190556-ce2c6374	2026-11-17T19:45:08Z
+verify:portaliq:2590:9bc1d978	GREEN (version bump)	session-20261117T190242-7c82bed8	2026-11-17T19:45:11Z
+verify:learniq:2497:48225cf9	GREEN #2497: 0 new PHP or JS failures	session-20261117T185732-534997e2	2026-11-17T19:45:21Z
+verify:portaliq:2563:182ef664	1 GREEN (2563); tasks.md only	session-20261117T190140-44e48bc5	2026-11-17T19:45:28Z
+verify:portaliq:2589:7076e2d0	CONFLICT 2589 (package.json vs development)	session-20261117T190316-ad3f71cf	2026-11-17T19:45:48Z
+verify:pipelinq:3939:102496ca	GREEN 3939; 0 new failures	session-20261117T185757-f5106521	2026-11-17T19:46:00Z
+verify:portaliq:2446:ddd3af7b	CONFLICT: package.json	session-20261117T190242-7c82bed8	2026-11-17T19:46:10Z
+verify:learniq:2607:4327ccd2	GREEN 2607; unit 7156, 0 new failures (1 inherited)	session-20261117T185419-c23c5946	2026-11-17T19:46:25Z
+verify:pipelinq:3952:724737b6	GREEN 3952; no new failures	session-20261117T185927-e9838dc9	2026-11-17T19:46:45Z
+verify:portaliq:2578:ecda0995	GREEN (e2e only)	session-20261117T190242-7c82bed8	2026-11-17T19:46:55Z
+verify:planninq:1238:a2d0008d	GREEN #1238 (tests only)	session-20261117T190418-7494049c	2026-11-17T19:47:05Z
+verify:opencatalogi:2796:7d78014c	GREEN opencatalogi#2796: e2e spec only, unit suite unaffected	session-20261117T185556-5276d56d	2026-11-17T19:47:17Z
