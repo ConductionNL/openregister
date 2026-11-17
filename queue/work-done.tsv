@@ -20850,3 +20850,4 @@ fix:hermiq:1719:d2352914	conflict resolved, pushed fdc4de5b; merge lock held els
 cover:decidiq:a5f973bbmfcd5:aae6d66c	PR #2273: 5 tests, exception refusals; suite 5020->5025 OK	session-20261117T134504-7f453fd6	2026-11-17T13:52:17Z
 fix:shillinq:3080:77004414	conflict resolved, pushed ed5b393d; REVERIFY queued (merge lock busy)	session-20261117T125716-5aa18045	2026-11-17T13:52:27Z
 review:integriq:3601:691712f5	GREEN: no new failures, phpstan clean	session-20261117T134304-10008ffd	2026-11-17T13:52:44Z
+fix:versioniq:729:ea732a80	pushed @spec tags, gate-16 green; REVERIFY at 497abe19 (end-to-end merge skipped: own PR)	session-20261117T134258-58728df3	2026-11-17T13:53:12Z
