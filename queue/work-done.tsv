@@ -22004,3 +22004,4 @@ build:stackiq:i18n-wrap-hardcoded-object-modal-strings:b2	already building: qual
 build:stackiq:landscape-application-components:b2	already building: quality/build-landscape-application-components exists; open items need a running instance (Playwright, screenshot)	session-20261117T134441-beae3c0d	2026-11-17T16:19:52Z
 build:stackiq:connections-derived-dependencies:b2	already building: branch quality/build-connections-derived-dependencies exists	session-20261117T134347-d0294040	2026-11-17T16:20:02Z
 build:stackiq:landscape-services-and-module-versions:b2	already built: tasks 1-2 and their named tests are on development; task 3 (matrix rows citing the merged specs) waits for the archive, no e2e file named	session-20261117T151214-35ff5eaa	2026-11-17T16:20:18Z
+build:stackiq:landscape-completeness-score:b2	already building: quality/build-landscape-completeness-score exists; groups 2, 4, 5 open there	session-20261117T140734-4d108840	2026-11-17T16:20:15Z
