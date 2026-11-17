@@ -1273,3 +1273,4 @@ planninq	1242	58b41fbc798b19b69a7a8106b7f903124cc231cf	APPROVE	worker-43	Standar
 planninq	1243	1232090dac9319612d10800ec0ee36d8355be177	APPROVE	worker-43	Strict; no blockers; IMAP client without a new dependency (documented deviation from task 2.1), TLS verifies peer, STARTTLS failure aborts, password kept out of messages; tree unit suite and vitest green
 planninq	1244	b4d018dd002711bfd8fc95a9a2a917507f0201b8	APPROVE	worker-43	Quick; no blockers; e2e spec and tasks.md notes only
 integriq	3701	4816b22cd7835e1f79e62a620285ea2f0172cf3c	APPROVE	worker-35	Quick; no blockers; publiccode softwareVersion 0.2.22 lags appinfo 0.4.x
+learniq	2524	ba4cca6e055f21daccf499e56ac25f265d269dce	APPROVE	worker-20	Thorough; no blockers; guard skips source fields absent from the saved object (fine if updates merge), register change additive only
