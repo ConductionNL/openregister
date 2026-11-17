@@ -20250,3 +20250,4 @@ fix:integriq:3550:7acdaf52	floor restored (php component independence 92.82%->93
 fix:filinq:2087:6547dafe	conflict resolved, pushed 46364ded; lock busy, REVERIFY queued	session-20261117T100711-68dc61ca	2026-11-17T10:13:10Z
 fix:filinq:2114:8555a6f9	conflict resolved, pushed 34e75cf9; filinq merge lock held elsewhere, REVERIFY queued	session-20261117T100903-26d78736	2026-11-17T10:13:40Z
 fix:hermiq:1764:b2118ca7	conflict resolved, pushed ef318454; merge lock held elsewhere, REVERIFY queued	session-20261117T095701-9003708e	2026-11-17T10:13:47Z
+fix:learniq:2524:c5f8f790	conflict resolved, pushed 4fd0d8a1; REVERIFY queued (merge lock held elsewhere)	session-20261117T095501-3bc4ddc7	2026-11-17T10:14:01Z
