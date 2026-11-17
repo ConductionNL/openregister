@@ -19169,3 +19169,4 @@ review:opencatalogi:2674:3ea2cbc2	BLOCK: floored component independence worse (9
 review:stackiq:1943:54d0045e	RED: usage schema version clash with development overlay, manifest conflict	session-20261117T015854-c76e8b72	2026-11-17T02:31:08Z
 verify:opencatalogi:2756:80b2e0ad	GREEN #2756: no new failures, vitest 1165 OK	session-20261117T020617-81e5b086	2026-11-17T02:31:19Z
 review:opencatalogi:2665:1e4b30ce	GREEN: no new failures (PHP 6154, vitest 1174); needs a development merge (additive conflicts in settings keys)	session-20261117T020926-7d1643a8	2026-11-17T02:31:27Z
+merge:launchpad:1223:6c93e239	cloud tree of 3 launchpad PRs: merged=1 red=1 fail=0 skip=0; conflict 1, lint 0, red 0, moved 0, done 0	session-20261117T021649-387ee607	2026-11-17T02:31:46Z
