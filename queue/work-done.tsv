@@ -21802,3 +21802,4 @@ build:integriq:idp-broker-yivi-route:b2	failed: blocked: tasks.md says build aft
 review:buildiq:1632:ba29c96c	GREEN: builds experience-multilingual-apps as specified; phpunit 3680 OK, vitest 4928 OK; conflicts with development in l10n and 3 Vue files	session-20261117T151651-9c0f11a5	2026-11-17T15:52:46Z
 build:integriq:gateway-upstream-routing:b2	already building (quality/build-gateway-upstream-routing exists)	session-20261117T125716-5aa18045	2026-11-17T15:53:27Z
 review:openregister:10614:70f24420	APPROVE 10614 70f24420	session-20261117T154039-5ee392b5	2026-11-17T15:54:13Z
+build:opencatalogi:harvest-conflict-policies:b2	partial: PR #2792 f3566f9 ConflictPolicy + ConflictRulesCompiler (tested against OR's DMN validator/evaluator) + e2e spec file; left 1.1 modal, 1.2 call site, 2.1-2.3, 4.1 blocked on harvest-feed-intake (1/16) and openregister app-harvest-fetchers-and-flow-node sync-record routes (0/22)	session-20261117T144034-fe545a90	2026-11-17T15:54:42Z
