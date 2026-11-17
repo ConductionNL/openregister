@@ -22830,3 +22830,4 @@ fix:thematiq:1719:740e1349	fixed review blocker (read-only build job + artifact)
 review:openregister:10626:01fe2e08	APPROVE: CI action bump only, no code change	session-20261117T221923-343449c6	2026-11-17T22:21:20Z
 review:versioniq:719:81e7123b	GREEN #719 (no new failures; inherited 2 golden PHP failures)	session-20261117T213101-157fb562	2026-11-17T22:21:43Z
 review:openregister:10629:784ab3dd	APPROVE: dev-only @types/node patch bump	session-20261117T221428-ca31c1a7	2026-11-17T22:21:52Z
+review:openregister:10634:5ccd2ee2	APPROVE: dev-only phpstan patch bump	session-20261117T221832-434567de	2026-11-17T22:22:11Z
