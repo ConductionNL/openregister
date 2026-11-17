@@ -18686,3 +18686,4 @@ larpinq	1100	1ed0e3bf17a793f20881b7468985c2e78f5eb485	GREEN	worker-22	e2e spec +
 larpinq	1101	68cf7368dbf5c81f6f798160f23b8742b1e5af18	CONFLICT	worker-22	conflicts with development; tree unit 1265 OK/20 skipped (baseline 1243 OK), vitest 796/796, no new failures
 larpinq	1102	53a4124923f5d9be485ff1fbd3c9d204a2aafba2	CONFLICT	worker-22	conflicts with development; tree unit 1265 OK/20 skipped (baseline 1243 OK), vitest 796/796, no new failures
 larpinq	1103	e6ac5573a73f4c753fa34e0f540224f7f2899f79	CONFLICT	worker-22	conflicts with development; tree unit 1265 OK/20 skipped (baseline 1243 OK), vitest 796/796, no new failures
+larpinq	1104	072740aae8be224bd39bab37e1dd43eb661d0a64	GREEN	worker-22	e2e spec + tasks.md only; tree unit 1265 OK/20 skipped (baseline 1243 OK), vitest 796/796, no new failures
