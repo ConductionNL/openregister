@@ -20378,3 +20378,4 @@ verify:launchpad:1261:25166f47	GREEN #1261: phpunit 4777 OK (baseline 4621), vit
 fix:learniq:2497:d7ffe7d9	conflict resolved, pushed 35dd044e; merge lock held elsewhere, REVERIFY queued	session-20261117T112034-c2650a4c	2026-11-17T11:36:39Z
 fix:shillinq:2063:6601069c	conflict resolved, pushed fd491fcd; merge lock held elsewhere, REVERIFY queued	session-20261117T113142-3e3cc1d3	2026-11-17T11:36:56Z
 fix:integriq:3582:5de17aa9	conflict resolved (l10n key union), pushed a26852d2; REVERIFY queued	session-20261117T111401-f300ca25	2026-11-17T11:37:07Z
+fix:stackiq:1966:60592396	spec tags added, pushed 46114bbf; merge lock held elsewhere, REVERIFY queued	session-20261117T110646-831a671b	2026-11-17T11:37:22Z
