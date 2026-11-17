@@ -19597,3 +19597,4 @@ fix:learniq:2538:0b1eaa81	fixed CONFLICT, new head 2f586250; merge lock held els
 fix:filinq:2114:93be4fcb	conflict resolved, pushed bafd9b56; suites green; lock held elsewhere, REVERIFY queued	session-20261117T063032-e9a993e2	2026-11-17T06:39:31Z
 fix:filinq:2090:fc2072b1	conflict resolved, pushed 0bf796a1; REVERIFY queued (merge lock held elsewhere)	session-20261117T063708-4c9ceddc	2026-11-17T06:39:57Z
 fix:portaliq:2449:3a70eb8a	unmeasured: static.developer.overheid.nl (conflict fixed, new head 05704f30, APPROVE recorded)	session-20261117T055928-ffb37dd3	2026-11-17T06:40:08Z
+fix:decidiq:2173:6e5001e5	conflict resolved, pushed 0ef71c12; lock busy, REVERIFY queued	session-20261117T063048-0c413ea5	2026-11-17T06:40:20Z
