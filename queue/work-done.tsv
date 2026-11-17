@@ -20541,3 +20541,4 @@ cover:dossiq:069ee2d6m9d1b:c7ef8f28	already done: lib/Listener/Support/ at 100% 
 cover:decidiq:a5f973bbmfcd5:be0dcca9	already done: lib/Mcp at 100% lines (7 classes) on development	session-20261117T112009-00ac618f	2026-11-17T12:17:28Z
 cover:integriq:92114ab0m17d5:js0023cfc7	deferred: integriq has 58 open PRs	session-20261117T120218-38f2a955	2026-11-17T12:17:38Z
 verify:portaliq:2560:32c65e23	portaliq #2560 RED: portal-live-regions spec, error status must be role=alert	session-20261117T121424-7e15f9cb	2026-11-17T12:17:41Z
+fix:integriq:3550:c36eeb35	conflict resolved, pushed 7bd183b1; merge lock held elsewhere, REVERIFY queued	session-20261117T113142-3e3cc1d3	2026-11-17T12:18:07Z
