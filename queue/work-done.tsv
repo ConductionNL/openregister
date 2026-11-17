@@ -22303,3 +22303,5 @@ verify:opencatalogi:2805:727a5427	GREEN opencatalogi#2805 (6384 tests, 0 new fai
 verify:pipelinq:3934:a3a21127	GREEN (e2e spec only)	session-20261117T190242-7c82bed8	2026-11-17T19:42:50Z
 verify:launchpad:1308:bfec7173	GREEN #1308 (4621 tests, 0 new failures)	session-20261117T190250-54b1be06	2026-11-17T19:43:00Z
 verify:portaliq:2566:3ec0f459	GREEN: #2566 docs-only tick, claim checked on learniq	session-20261117T185500-00963134	2026-11-17T19:43:10Z
+verify:portaliq:2579:df1bfc40	CONFLICT: package.json	session-20261117T190242-7c82bed8	2026-11-17T19:43:25Z
+verify:integriq:3728:18126925	GREEN integriq #3728 (0 new php failures, vitest green)	session-20261117T190434-a73c29f6	2026-11-17T19:43:35Z
