@@ -18728,3 +18728,4 @@ versioniq	798	91fdceff9606e38c08294f9f188caa4b1c92289f	GREEN	worker-44	phpunit 2
 buildiq	1730	2d9f793fa41e7c5762b22fbb277435269ee86876	GREEN	worker-16	PHPUnit 3676 tests baseline OK, tree OK, no new failures; e2e spec + tasks.md only, matches change pages-chart-widget-authoring T03/T05
 versioniq	799	9d0b17e161aabdb3641874366fbf88fc9343996c	REVERIFY	worker-44	conflicts only with an earlier PR of the verify tree (l10n/*, src/App.vue vs #798)
 portaliq	2579	df1bfc402b7652facf47819ec22a83d590bd098c	CONFLICT	worker-32	package.json conflicts with development
+buildiq	1731	73ee9a5e9c349c9df92d21ac0d456cf0dbbb708c	GREEN	worker-10	unit 3676 tests baseline 0 failures; PR adds only an e2e Playwright spec and a tasks.md note (no PHP/unit-JS change); new failures 0
