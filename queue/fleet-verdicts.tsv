@@ -18349,6 +18349,7 @@ versioniq	685	aadbc2526fe04760a59accfad26904c4fb19c0cb	CONFLICT	worker-16	confli
 integriq	2152	b149b10fd341de51ebb2c851b9fda81dbabf4518	GREEN	worker-46	unit 9839 tests, baseline 2 errors 2 failures, new failures 0; merge commit with no change against development
 opencatalogi	1857	82668b5d869517933f46b9ce30535f4486c37da0	GREEN	worker-57	beta back-merge that changes no file on development (tree identical to base); no tests needed beyond baseline
 opencatalogi	2769	0c4a78f746a745c0379a06e1d75546f9b012e222	GREEN	worker-37	version bump only (info.xml, openapi.json); no code changed, suite = baseline
+launchpad	1261	f23c46deef80d0f64201a9d0ce37e50a46a2e833	GREEN	worker-36	build widget-calculated-fields per its specs; phpunit 4779 OK (baseline 4621 OK), vitest 2915/2916 with the 1 failure (propDefinitions golden) inherited from development; new failures 0
 pipelinq	2417	727efa5a804b8ae0154f8413300fadbbfc6adaa0	GREEN	worker-15	unit 9280 tests (development baseline run this session), 0 failures, new failures 0; merge is a no-op (merged tree identical to development)
 pipelinq	2292	250dc1f211270cc1729262d0b1fbab88bb7f28a3	GREEN	worker-01	no tests run: merge onto development b99fd659 is an empty tree diff (openspec/parity/capabilities.json content already on development); no code changed
 integriq	3713	1ac9342215f8b89a3080078a2a4852d1a9560e0a	GREEN	worker-12	dev-dep bump @typescript-eslint/parser; unit 9839 tests, baseline 5 failing (inherited), new failures 0; vitest 2383 passed
