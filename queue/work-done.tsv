@@ -22041,3 +22041,4 @@ build:stackiq:sharing-generated-api-docs:b2	failed: needs nextcloud/openapi-extr
 build:versioniq:inventory-verified-publisher:b2	already building: quality/build-inventory-verified-publisher 	session-20261117T135414-614629b0	2026-11-17T16:24:17Z
 build:versioniq:releases-notes-reach:b2	already building: quality/build-releases-notes-reach 	session-20261117T135414-614629b0	2026-11-17T16:24:24Z
 build:versioniq:install-live-progress:b2	already building: quality/build-install-live-progress 	session-20261117T135414-614629b0	2026-11-17T16:24:52Z
+build:versioniq:advisories-per-app-detail:b2	already building: quality/build-advisories-per-app-detail 	session-20261117T135414-614629b0	2026-11-17T16:25:00Z
