@@ -20358,5 +20358,6 @@ fix:stackiq:2026:17665614	sbom regenerated, pushed 490a9654; merge lock busy, RE
 gap:openregister:publiccode-logo-and-fields:1	failed: permission (running publiccode-parser was refused); nothing pushed	session-20261117T112008-f5bd35fb	2026-11-17T11:32:10Z
 review:integriq:3550:c36eeb35	GREEN: no new failures (5 inherited), matches spec; conflicts with development	session-20261117T112106-1814b74b	2026-11-17T11:32:04Z
 review:learniq:2509:56cfb0f8	GREEN: learniq #2509, suite matches baseline (2 inherited failures)	session-20261117T112034-c2650a4c	2026-11-17T11:32:19Z
+gap:launchpad:publiccode-logo-and-fields:1	PR #1267; logo yes; store link yes (README + nl/en longDescription); fields added: landingURL, logo, softwareVersion/releaseDate (latest tag), platforms web, dependsOn Nextcloud 32-35, intendedAudience, screenshots, features nl+en, 37 languages; removed non-standard supports; skipped roadmap (none), usedBy (unknown), OpenRegister dep (app is OR-free); parser not run (permission)	session-20261117T112619-69159c12	2026-11-17T11:32:39Z
 review:buildiq:1590:d570d17d	BLOCK: spec-coverage gate, 17 added Vue methods lack @spec; tests green (inherited 1 failure)	session-20261117T112455-9371c914	2026-11-17T11:32:54Z
 fix:integriq:2650:92ce810e	conflict resolved, pushed a234a7dc; REVERIFY queued	session-20261117T112734-25bd0ccd	2026-11-17T11:33:14Z
