@@ -22641,3 +22641,4 @@ verify:filinq:2173:6bce70eb	GREEN #2173	session-20261117T204330-02b728bd	2026-11
 verify:learniq:2612:2ee740f1	GREEN learniq #2612 (1 inherited failure, none new)	session-20261117T211320-ba1b42e8	2026-11-17T21:28:11Z
 verify:filinq:2190:31521cfa	2190 GREEN alone; unit 7336 tests, 0 failures	session-20261117T211422-95669914	2026-11-17T21:28:21Z
 verify:learniq:2524:defae598	GREEN 2524: suite 7166, no new failures	session-20261117T211425-939d7fb0	2026-11-17T21:28:35Z
+verify:planninq:1218:87ce9bdc	GREEN 1218, GREEN 1252 (phpunit 1253 ok, vitest 3589 passed)	session-20261117T211932-f471137a	2026-11-17T21:29:00Z
