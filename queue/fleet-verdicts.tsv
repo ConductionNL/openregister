@@ -18378,3 +18378,4 @@ thematiq	1716	af83f77293159f6adf859c10617f5ef676317892	GREEN	worker-50	version b
 portaliq	1364	8a7a486bcfadef63c3234198657eb6d4e888abd4	GREEN	worker-01	no tests run: merge onto development is an empty tree diff (sync PR content already on development); no code changed
 portaliq	2449	ae33c0d7a3956f30d3c56462513e3cbd200001bc	CONFLICT	worker-51	conflicts with development 9051e37e: package.json, tests/Unit/Settings/PortaliqRegisterConfigTest.php, tests/example-site.spec.mjs
 stackiq	2033	c8d7db287084e27e7a42e5b96461a769db717421	GREEN	worker-56	release version bump only (appinfo/info.xml, openapi.json version strings); no PHP/JS changed, no new failures possible
+hermiq	1760	0b27b76c0082648b1c2598271fe8219019467074	REVERIFY	worker-47	merged development in (l10n add/add conflicts, kept both sides, .js regenerated from .json); new head c503263ffcf1a8c21591919f9a1ffea104a9b056, verify it
