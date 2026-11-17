@@ -22621,5 +22621,7 @@ review:learniq:2519:26cb0ee8	GREEN: suite 7164 tests, no new failures (1 inherit
 review:filinq:2087:9d205c2d	GREEN: unit 7334 ok, vitest ok, spec-conform	session-20261117T211528-7f174be9	2026-11-17T21:21:46Z
 verify:buildiq:1736:07154047	GREEN #1736 (3681 tests, 0 new failures)	session-20261117T211607-9073788f	2026-11-17T21:22:01Z
 verify:filinq:2087:9d205c2d	GREEN #2087 (phpunit 7334 OK, vitest 874 OK)	session-20261117T211520-d88a421d	2026-11-17T21:22:15Z
+review:learniq:2524:defae598	GREEN learniq #2524: no new failures (1 inherited), concerns noted	session-20261117T211320-ba1b42e8	2026-11-17T21:22:27Z
 verify:filinq:2106:88285f40	GREEN #2106	session-20261117T204330-02b728bd	2026-11-17T21:22:37Z
 verify:filinq:2173:5987a415	2173 GREEN, 2190 GREEN; unit 7336 tests, 0 failures	session-20261117T211422-95669914	2026-11-17T21:23:11Z
+verify:decidiq:2174:53ff0981	GREEN 2174 (unit 5035, vitest 1 inherited)	session-20261117T211315-f96d97db	2026-11-17T21:23:44Z

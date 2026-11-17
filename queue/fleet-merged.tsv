@@ -5494,3 +5494,4 @@ stackiq	1966	b74dfc9fbfa739b5090aef81bcb83d4f2d68fa75	SKIP	worker-32	GATE UNMEAS
 versioniq	685	0b94d417a96af5e4d71e532fdde7a90d7dd009fe	SKIP	worker-11	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 decidiq	2190	c75776f4b165c3c91393004da18d1e0bd17fbcbb	SKIP	worker-42	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 stackiq	2028	9d9add83116540ecee19b9cfe128025267881839	RED	worker-32	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+launchpad	1218	981059667af30b6907fafe7e0e9be698f74a9e73	SKIP	worker-05	no APPROVE review at this head
