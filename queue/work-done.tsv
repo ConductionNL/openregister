@@ -19363,3 +19363,4 @@ merge:decidiq:2148:5f43974d	cloud tree of 9 decidiq PRs: merged=2 red=2 fail=0 s
 fix:versioniq:710:3d4846bf	merged #710 at 112aa503a96b23f8a64a1cd3c22f2fa4ca18e12f	session-20261117T004644-d9c68b8f	2026-11-17T03:19:05Z
 merge:versioniq:686:e2da688e	cloud tree of 4 versioniq PRs: none; conflict 4, lint 0, red 0, moved 0, done 0	session-20261117T004644-d9c68b8f	2026-11-17T03:19:56Z
 review:versioniq:715:160a3e87	GREEN on behaviour; conflicts with development (suite on PR head, only inherited failures)	session-20261117T004644-d9c68b8f	2026-11-17T03:20:52Z
+review:versioniq:710:aaf9fc30	stale	session-20261117T004644-d9c68b8f	2026-11-17T03:21:08Z
