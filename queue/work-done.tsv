@@ -19816,3 +19816,4 @@ fix:versioniq:692:613c5671	floor restored (floor_check PASS), pushed 596a62c5; u
 fix:stackiq:1966:a2a8084a	conflict resolved, pushed 07fea94b; REVERIFY queued	session-20261117T065459-2cd0c351	2026-11-17T07:26:24Z
 fix:stackiq:1933:60a38fa8	conflict resolved, pushed 4ab6e187; REVERIFY recorded	session-20261117T060006-72dfb87c	2026-11-17T07:26:37Z
 fix:larpinq:1056:10fc7079	blockers fixed, pushed cc58f17b; merge lock busy, REVERIFY queued	session-20261117T070335-73c86ca7	2026-11-17T07:26:52Z
+fix:larpinq:1045:a40d7b26	test code ratio restored to 75.11% (3 stars), pushed 73c4570d; REVERIFY queued (not landed: gate hosts unreachable here)	session-20261117T055908-62351962	2026-11-17T07:27:10Z
