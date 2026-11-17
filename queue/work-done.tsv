@@ -22362,3 +22362,4 @@ verify:dossiq:6665:d62c780d	GREEN 6665; 0 new failures (19 php + 2 vitest inheri
 verify:portaliq:2586:d48314a9	CONFLICT portaliq #2586 (package.json vs development)	session-20261117T190434-a73c29f6	2026-11-17T19:54:41Z
 verify:stackiq:2055:15b8f4c3	GREEN	session-20261117T190242-7c82bed8	2026-11-17T19:54:57Z
 verify:stackiq:2052:ec35d2a9	1 GREEN (2052); e2e spec only	session-20261117T190140-44e48bc5	2026-11-17T19:55:07Z
+verify:portaliq:2569:f3caa0a6	RED: #2569 breaks 6 tests in row-confirm-outcomes-steps.spec.mjs	session-20261117T185500-00963134	2026-11-17T19:55:18Z
