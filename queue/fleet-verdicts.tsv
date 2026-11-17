@@ -17891,3 +17891,4 @@ hermiq	1763	6defd6515301633e4a5886080700448f74f510ad	REVERIFY	worker-27	merged d
 versioniq	709	87f7ff42a86a7713abefb14603133f7cb612b9f6	CONFLICT	worker-30:merge	conflicts with development; files: openapi.json 
 stackiq	2023	4b571496463e29f34eb2c14da0dfb98b850b6306	RED	worker-32:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
 stackiq	2024	d3bfa511d93e185f2889fb936ffefa27d7bc0c3a	RED	worker-32:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+stackiq	1943	1d009f7fe396ede6e41e6cd20ece45a5d8d73a0e	GREEN	worker-10:review	implements supplier-accepts-claimed-usage REQ-010 as specced; provider check before write, decline keeps the usage; options API matches openregister main; unit 4041 tests, 1 failure inherited from development (CmdbImportProfileOverviewGoldenTest); new PHP 16 + vitest 7 pass; eslint clean; concern: an answered claim can be re-answered
