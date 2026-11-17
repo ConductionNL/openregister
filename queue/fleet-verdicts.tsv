@@ -19344,3 +19344,4 @@ stackiq	2055	5f39aed8383d439fb47be09bbaefaf6c62bcd509	GREEN	worker-32	phpunit 40
 keepiq	1900	28274ec8585891650cb35c0a1a772d97dcb7ec9e	GREEN	worker-13	php unit 5619 tests baseline=tree (no PHP changed); vitest 7176, 3 failures inherited from development (HealthReportView.controls); l10n gate 7 misses inherited; diff matches change specs
 opencatalogi	2808	71772fd94472b92db6adb32387d393bef0a8e081	GREEN	worker-22	version bump only; unit 6373 run, baseline 92F/11E, new failures 0
 portaliq	2563	d61a42f30abd0bc96838a0358c6bbcda4e914e81	GREEN	worker-21	unit 6324 tests (baseline 6324, 16 inherited errors), no new failures; no test:unit script, eslint clean on new e2e spec; e2e spec + tasks per change
+keepiq	1895	62f8ad55d1465cd37278267e216271844ce3c8a8	REVERIFY	worker-43	regenerated sbom.cdx.json for ramsey/uuid 4.10.0 (regen-sbom --check passes); merge lock held elsewhere; new head 7cf24009dd2947c103212c09ea126275e51b8cd4, verify it
