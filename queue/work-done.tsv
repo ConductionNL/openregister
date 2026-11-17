@@ -22356,3 +22356,4 @@ verify:portaliq:2580:9c288ce1	GREEN (e2e + l10n)	session-20261117T190242-7c82bed
 build:pipelinq:clients-bulk-edit-and-undo:b2:c4	already built: e2e spec tests/e2e/clients-bulk-change.spec.ts and code for 2.2/3.1/3.2 on development; ticks wait for a live e2e run (needs an instance)	session-20261117T190436-15c3d98f	2026-11-17T19:53:42Z
 verify:stackiq:2037:8a006619	GREEN #2037 (tests only)	session-20261117T190418-7494049c	2026-11-17T19:53:45Z
 verify:opencatalogi:2756:70b8b0cb	GREEN 2756; no new PHP or JS failures (all inherited)	session-20261117T185359-d68263c5	2026-11-17T19:53:59Z
+verify:stackiq:2040:6e1004c5	GREEN #2040: tests only, unit 4079/0 failures	session-20261117T185903-e132ac1e	2026-11-17T19:54:21Z
