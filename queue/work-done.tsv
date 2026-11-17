@@ -22238,3 +22238,4 @@ verify:integriq:3715:86b85286	GREEN integriq #3715 (Newman collection only; base
 verify:learniq:2606:79bec0a6	GREEN #2606 (no new failures)	session-20261117T190418-7494049c	2026-11-17T19:30:09Z
 verify:dossiq:6659:565a618a	GREEN 6659 (e2e only; 0 new failures, 19 inherited)	session-20261117T185828-a5f2758a	2026-11-17T19:30:19Z
 verify:dossiq:6661:a6b5bd94	GREEN dossiq#6661 (e2e spec + tasks tick; no new failures)	session-20261117T190626-5c7fccb4	2026-11-17T19:30:44Z
+verify:integriq:3725:1e381ea4	GREEN integriq#3725 (no new failures)	session-20261117T190302-4e3d4569	2026-11-17T19:30:56Z
