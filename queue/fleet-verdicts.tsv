@@ -16034,6 +16034,8 @@ portaliq	2492	0067a042060f65936a833e23d0b84d2b08a307f4	CONFLICT	worker-28	confli
 shillinq	2081	5c4b6e15884f9ade7eb22f959d12f708da02d2c9	CONFLICT	worker-03	conflicts with development in l10n/en.js, en.json, nl.js, nl.json
 pipelinq	3743	871e47d54f19aad16fb7eeac1f4d38f79b61e6af	CONFLICT	worker-14	conflicts with development in l10n en/nl, lib/Service/SettingsLoadService.php, src/manifest.json, tests/vitest/structureProfile.spec.js; suite not run
 shillinq	1965	38aa9e98d92064163730059c45e299b358346b33	CONFLICT	worker-36	conflicts with development in appinfo/info.xml, tests/fixtures/register-versions.lock.json; suite not run
+shillinq	3067	0f4f123e40e2a88185e96805121467a7969b3b6a	CONFLICT	worker-28	conflict in tests/fixtures/register-versions.lock.json with development fa3292ae; tree not run
+opencatalogi	2652	2348aeca1bad551e3e485ff6910acc05812c7e8c	CONFLICT	worker-39	conflicts with development in l10n/en.js,en.json,nl.js,nl.json and lib/Service/ServiceRegistrar.php; suite not run
 portaliq	2445	45374ce5e6564b77ca1e325dfc5118b33c695d89	CONFLICT	worker-21	merge conflict with origin/development in l10n/en,en_US,nl (.js/.json); suite not run
 shillinq	3064	0cade1527ef105a80543a2f958c4a957ab92be6f	CONFLICT	worker-34	merge with development conflicts in 10 files incl. appinfo/info.xml, l10n, ListenerRegistrar.php, InvoiceGenerationService.php, openapi.json, manifest.d.shell.json
 shillinq	3004	effacbb9439be9f0cbc6ed231cd687e6baf98952	CONFLICT	worker-41	conflicts with development in 15 files (info.xml, l10n, VATReturnController, IcpService, SettingsService, ...); tree not run
@@ -16065,4 +16067,10 @@ learniq	2577	15fc4a90544190851896affac4e02d9aed5c9516	REVERIFY	worker-22	fixed m
 thematiq	1680	31fb4f82491973605e3b9fd0fb721096311bc020	CONFLICT	worker-21	merge conflict with origin/development in l10n/*.js and l10n/*.json; suite not run
 stackiq	1933	96e3bd2b7c6cb1d33b873cb9fa56294750efe779	CONFLICT	worker-23	conflicts with development in l10n en/nl, ListenerRegistrar.php, stackiq_mock_register.json, src/manifest.json; suite not run
 stackiq	1942	7d2c0d3f7c687acb0e1883d507e2793d4d176e41	CONFLICT	worker-29	conflicts with origin/development in l10n en/nl and src/manifest.json
+versioniq	692	e6c0112aa92f18e9c630612f4c193c3a6450775f	CONFLICT	worker-24	conflicts with development in 13 files (info.xml, l10n, AutoUpdateJob, ApiController, AuditLogger, AutoUpdateStores, App.vue, AutoUpdateOverview, ApiTest)
+versioniq	709	fa10e6b8bcb41285c242a55b95e57317cc6e0c5b	CONFLICT	worker-17	conflicts with development in appinfo/info.xml, l10n catalogues, lib/Service/InstallerService.php, openapi.json, src/App.vue
+stackiq	1938	a321d1cf4c5061bf8bdcf2ddbaac19096addcbff	CONFLICT	worker-56	conflicts with development in l10n (4), softwarecatalogus_register.json, stackiq_mock_register.json, src/icons.js
+shillinq	1900	65225988bf5200218c0eb4b807e3dbeb19f0df7d	REVERIFY	worker-02	merged development in (l10n and phpmd.xml conflicts: development already held the same entries, took its side, no branch key lost); unit suite 12461 OK; new head 7c67b53846a791a3e762d24ded38e17fec205a03, verify it
 thematiq	1365	39f057e7817920c340d55e29be4587cb04702941	CONFLICT	worker-58	conflicts with development in all l10n catalogues, docs/reference/shell-catalogue.json and four golden fixtures
+versioniq	700	d6286a7e2588e38f731888bbfe3211cf63217d4a	CONFLICT	worker-41	conflicts with plain development in 4 files: appinfo/info.xml lib/Db/AuditEntryMapper.php openapi.json src/App.vue ; tree not run
+stackiq	1937	3a8099f95106c17a3b33f6aac7f8c847f6fbf9b8	CONFLICT	worker-23	conflicts with development in l10n en/nl, stackiq_mock_register.json, openapi.json, src/customComponents.js; suite not run
