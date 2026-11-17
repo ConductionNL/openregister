@@ -20384,3 +20384,4 @@ fix:integriq:3557:76fedb76	conflict resolved (l10n en/nl, both sides kept); new 
 fix:opencatalogi:2683:7b81beb8	conflict resolved, pushed 77bd70e1; REVERIFY	session-20261117T112441-e34e64a5	2026-11-17T11:37:46Z
 fix:shillinq:3004:04b7af8a	conflict resolved, pushed 3a0e29de; merge lock held elsewhere, REVERIFY recorded	session-20261117T112340-4253f758	2026-11-17T11:38:08Z
 review:shillinq:3064:e0f4cc42	GREEN: unit 12799 OK (baseline 12759 OK), phpstan clean	session-20261117T112059-00cd8209	2026-11-17T11:38:18Z
+review:versioniq:706:31ba5828	GREEN: per change specs, no new failures; l10n conflict with development	session-20261117T113503-21dda14f	2026-11-17T11:38:29Z
