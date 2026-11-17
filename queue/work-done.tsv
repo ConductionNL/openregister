@@ -20681,3 +20681,4 @@ verify:keepiq:1478:4bcaa207	GREEN #1478	session-20261117T124640-352399b3	2026-11
 verify:keepiq:693:56996158	GREEN: #693 tree identical to development, 5619 tests green	session-20261117T124559-fffd8ca8	2026-11-17T13:02:01Z
 verify:integriq:2152:b149b10f	2152 GREEN (no diff against development)	session-20261117T121049-5b84d45a	2026-11-17T13:02:22Z
 verify:versioniq:685:aadbc252	CONFLICT #685	session-20261117T124257-115d3113	2026-11-17T13:02:38Z
+verify:opencatalogi:1991:e9c69dce	RED #1991: new vitest failure catalogObjectDetailPage Attachments widget test (type integration vs publication-attachments on development)	session-20261117T124803-fa9e5cee	2026-11-17T13:02:50Z
