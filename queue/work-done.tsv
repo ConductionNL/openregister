@@ -22716,3 +22716,4 @@ verify:larpinq:1099:b7a0ceb7	GREEN #1099: unit 1243/0 new failures; dev-only psa
 verify:stackiq:2055:5f39aed8	GREEN #2055 (0 new php failures; 1 vitest failure inherited)	session-20261117T211437-e305ed6d	2026-11-17T21:47:58Z
 merge:humaniq:1191:7c8b795c	unmeasured: static.developer.overheid.nl (proxy refuses it in this session); reviews: 1191,1194-1197 APPROVE, 1192 REQUEST_CHANGES (new schema lacks demo data); merged=0 skip=6	session-20261117T211535-4eae9738	2026-11-17T21:48:06Z
 verify:opencatalogi:2786:0400a8ec	GREEN #2786: no new unit or vitest failures; admin-only endpoints per spec	session-20261117T213139-4c29297d	2026-11-17T21:48:32Z
+verify:shillinq:3048:9fbb86c2	GREEN 3048: unit 12824 OK, vitest only inherited failure	session-20261117T211359-b7379586	2026-11-17T21:48:55Z
