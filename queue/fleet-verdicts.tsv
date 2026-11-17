@@ -18906,6 +18906,7 @@ launchpad	1295	8e839b5210cfdfcca1ed2fcad366db008d7a4c2c	GREEN	worker-06	phpunit 
 pipelinq	3952	724737b6aa5dba076f7d938b823c2377c86bdc3e	REVERIFY	worker-30	conflicts only with an earlier PR of the verify tree (#3943, l10n files)
 learniq	2594	259feb56de2bd786055277d5a9b39371d1cecb1c	GREEN	worker-26	unit suite on tree green (no PHP/JS-unit change), new failures 0; e2e spec + tasks.md note only, imports reorganised, no assertion removed
 opencatalogi	2783	b2d114f8e5f369a5012945225e70b599844f6613	GREEN	worker-25	version bump in info.xml and openapi.json only; no code, suite not rerun
+opencatalogi	2800	7d8c1d3f5f83cdb66a61ba4d82d9107fb1d2fcc0	GREEN	worker-25	build change; no-assistant note per spec REQ-PPL-002; vitest 1181 (8 inherited mainEntry failures, none new); jest widget spec 5/5; eslint clean; no PHP changed
 opencatalogi	2798	f43db4b9fe7611c1537c1a1d54f949df9e16db64	GREEN	worker-15	tasks.md only (one task ticked, no code); merges clean on development; unit suite not affected, not run
 launchpad	1300	0d717f3832eb0cc5d462e04506034b536bd83e15	GREEN	worker-53	build launcher-app-catalogue entry point + e2e spec; PHP 4621 tests same as baseline; vitest 2733/2734, the 1 failure (propDefinitions golden, ContainerWidget) inherited from development; 0 new
 opencatalogi	2799	a135b0009b7aefad519be035a3b4003c800e66b2	GREEN	worker-39	merges clean; adds e2e spec + openspec/tasks edits only, no lib/src change so unit suite unaffected (not run)
