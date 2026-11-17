@@ -18923,6 +18923,7 @@ merge:buildiq:1608:754a2e84	cloud tree of 1 buildiq PRs: merged=0 red=1 fail=0 s
 fix:opencatalogi:2683:9def1ff8:v3	fixed CONFLICT, pushed 783543f7c3ddf46f3c87957bf2ca6b6b6c890e22; merge lock busy, REVERIFY queued	session-20261117T005217-ad04a5d2	2026-11-17T01:36:15Z
 fix:launchpad:1210:7f9c64f6:v3	conflict resolved; new head 6f168e0b, REVERIFY (merge lock held elsewhere)	session-20261117T003945-3aa9cc05	2026-11-17T01:36:25Z
 fix:launchpad:1217:edcbef17:v3	conflict resolved, pushed faab5f5c; phpunit+vitest green; merge lock held elsewhere, REVERIFY queued	session-20261117T004609-b5037037	2026-11-17T01:36:35Z
+verify:filinq:2130:9e0cab71	stale	session-20261117T004756-036f1d35	2026-11-17T01:37:03Z
 merge:dossiq:3954:e90d8848	cloud tree of 6 dossiq PRs: merged=2 red=0 fail=0 skip=1; conflict 2, lint 0, red 0, moved 0, done 0	session-20261117T004626-d23ae300	2026-11-17T01:36:59Z
 fix:buildiq:1654:ac924f1b:v5	conflict resolved, pushed 37e70c18; suite green; lock held elsewhere, REVERIFY queued	session-20261117T004721-b30387a5	2026-11-17T01:37:06Z
 fix:integriq:3545:c1939271:v4	l10n conflict resolved; suite failures inherited from development; pushed 9367d2e7; REVERIFY queued (merge lock held elsewhere)	session-20261117T004651-e86f3253	2026-11-17T01:37:23Z
@@ -18932,3 +18933,4 @@ fix:launchpad:1219:da16c5df:v5	conflict resolved, pushed 08b864a2; merge lock he
 fix:opencatalogi:2756:a362a4ec	fixed CONFLICT, pushed a7e29de035dd75ca97938b295b2ca25314d90e99; merge lock busy, REVERIFY queued	session-20261117T005217-ad04a5d2	2026-11-17T01:38:42Z
 fix:opencatalogi:2651:c5411594:v3	conflict resolved, pushed 91263dc8; merge lock held elsewhere, REVERIFY queued	session-20261117T005226-366998de	2026-11-17T01:38:50Z
 fix:opencatalogi:2680:5c8f25a1:v3	fixed conflict on #2680, new head 7b795492; REVERIFY queued (merge lock held)	session-20261117T005237-d93074af	2026-11-17T01:39:02Z
+fix:opencatalogi:2671:0c44bbf1:v4	merged #2671 at 272f5fcd0e4d456f4bdf27b8e23a81004f67abb8	session-20261117T005212-998cc343	2026-11-17T01:39:13Z
