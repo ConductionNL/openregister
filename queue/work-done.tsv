@@ -19668,3 +19668,4 @@ review:humaniq:1146:ee884a53	stale	session-20261117T055853-7ddd3cb3	2026-11-17T0
 fix:integriq:3564:5748b0ef	guard covers create; pushed 6d065ca0; lock held elsewhere, REVERIFY queued	session-20261117T063032-e9a993e2	2026-11-17T06:55:27Z
 review:filinq:2093:8d7793cd	RED: jest Settings.golden.spec.js 2 failures (golden not re-recorded); PHP/vitest green	session-20261117T063118-c67285ab	2026-11-17T06:55:38Z
 review:learniq:2514:832a7376	GREEN learniq#2514	session-20261117T061824-01d4fad5	2026-11-17T06:55:48Z
+review:decidiq:2199:fb256f06	GREEN: unit 4866 OK, vitest 43 OK	session-20261117T065308-bd0379c5	2026-11-17T06:55:59Z
