@@ -20214,3 +20214,4 @@ merge:versioniq:709:160c49f8	cloud tree of 1 versioniq PRs: none; conflict 1, li
 review:shillinq:2975:d0bcdce6	BLOCK: deferral endpoint posts journals without the posting-rights check; conflicts with development	session-20261117T093922-7676ffcc	2026-11-17T10:04:31Z
 fix:filinq:2121:a5b31115	conflict resolved, pushed 69607770; REVERIFY queued	session-20261117T095426-fa057cee	2026-11-17T10:04:39Z
 review:stackiq:1943:1d009f7f	GREEN: suite 4041 tests, 1 inherited failure, no new	session-20261117T100057-7775ee42	2026-11-17T10:04:52Z
+fix:versioniq:706:74033735	conflict resolved; pushed 31ba582805; REVERIFY queued (merge lock held elsewhere)	session-20261117T085512-6b57566b	2026-11-17T10:05:02Z
