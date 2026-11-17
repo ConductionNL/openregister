@@ -22739,6 +22739,8 @@ verify:dossiq:6663:c2277813	GREEN #6663: 0 new php/js failures (inherited: 1 php
 fix:decidiq:2149:c4919c09	unmeasured: static.developer.overheid.nl (fix pushed, new head 3ccfbfcf, APPROVE recorded)	session-20261117T211315-f96d97db	2026-11-17T21:52:18Z
 verify:stackiq:2028:9d9add83	GREEN #2028 (merge gate still needs sbom regenerated)	session-20261117T211437-e305ed6d	2026-11-17T21:52:29Z
 verify:portaliq:2586:1fd306ff	GREEN 2586; unit 6324 with 16 inherited errors, no new failures	session-20261117T211910-eb4216c0	2026-11-17T21:52:48Z
+merge:integriq:3708:aeee8046	unmeasured: static.developer.overheid.nl (unreachable from this session; nothing built or landed)	session-20261117T211657-3a85bb14	2026-11-17T21:53:09Z
 fix:planninq:1239:0328f934	inherited: opensourcehealth rates dependencies; PR changes only tasks.md and an e2e spec, no lock or manifest, so the drop is on development too (not re-measurable here: api.osv.dev blocked)	session-20261117T211315-f96d97db	2026-11-17T21:53:17Z
 verify:portaliq:2591:a322f371	GREEN #2591	session-20261117T204330-02b728bd	2026-11-17T21:53:18Z
 fix:portaliq:2569:f3caa0a6	fixed RED (test stub), pushed 642cb15e; REVERIFY (merge lock held elsewhere)	session-20261117T211932-f471137a	2026-11-17T21:53:33Z
+fix:planninq:1240:4bfda41d	inherited: opensourcehealth rates dependencies; PR changes only tasks.md and a vitest spec, no lock or manifest, so the drop is on development too (not re-measurable here: api.osv.dev blocked)	session-20261117T211315-f96d97db	2026-11-17T21:53:46Z
