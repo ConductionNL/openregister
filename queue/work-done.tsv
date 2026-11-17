@@ -22321,3 +22321,4 @@ verify:learniq:2607:4327ccd2	GREEN 2607; unit 7156, 0 new failures (1 inherited)
 verify:opencatalogi:2803:65ea6166	GREEN #2803 (0 new failures; PHP and vitest reds inherited)	session-20261117T185935-593e017f	2026-11-17T19:46:43Z
 verify:pipelinq:3952:724737b6	GREEN 3952; no new failures	session-20261117T185927-e9838dc9	2026-11-17T19:46:45Z
 verify:portaliq:2578:ecda0995	GREEN (e2e only)	session-20261117T190242-7c82bed8	2026-11-17T19:46:55Z
+verify:planninq:1238:a2d0008d	GREEN #1238 (tests only)	session-20261117T190418-7494049c	2026-11-17T19:47:05Z
