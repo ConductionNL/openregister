@@ -19332,6 +19332,8 @@ fix:learniq:2536:85923107	fixed RED (portal words for plannedAt/lifecycle) + mer
 fix:versioniq:735:3183b87f	fixed: merged development, adjusted rollback test for install-progress poll, pushed 1bdf2b19; merge lock busy, REVERIFY queued	session-20261117T025031-1b32b183	2026-11-17T03:08:34Z
 fix:integriq:3631:5de3ac5f	fixed, pushed 36311b4c; REVERIFY (merge lock held)	session-20261117T024701-e2fa255c	2026-11-17T03:08:44Z
 fix:integriq:3618:c0bf242e	fixed: conflict resolved, new head 04df7b2f, REVERIFY	session-20261117T025204-e27953f1	2026-11-17T03:09:09Z
+fix:integriq:3557:0b9792b0	fixed BLOCK #3557 (version, schema titles, l10n, complexity floor PASS), new head 89d30cbe; REVERIFY (merge lock held elsewhere)	session-20261117T015705-50845751	2026-11-17T03:09:32Z
 fix:opencatalogi:2651:91263dc8	fixed: merged development, RED test updated; new head 742ec126, REVERIFY queued (merge lock held)	session-20261117T025923-8f07a6b1	2026-11-17T03:09:46Z
 fix:versioniq:729:e24515d1	conflict resolved, pushed 624afbb6; REVERIFY queued (merge lock busy)	session-20261117T020320-19c7f7ca	2026-11-17T03:09:57Z
 fix:opencatalogi:2669:8c31eee0:v5	floor restored (unit_size 4.63 vs 4.64), pushed 605008f3; lock held elsewhere, REVERIFY queued	session-20261117T025046-9901510e	2026-11-17T03:10:20Z
+fix:opencatalogi:2674:3ea2cbc2	independence restored: MetadataSuggestionDecisionsInterface + MetadataSuggestionQueue/Interface, 3.19 -> 3.31 (= development), entanglement 5.45, overall = development; 2 mutation-checked tests; head a019453a, REVERIFY appended	session-20261113T214350-9762e143	2026-11-17T03:11:01Z
