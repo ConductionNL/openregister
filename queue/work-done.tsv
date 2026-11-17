@@ -20586,3 +20586,4 @@ merge:shillinq:2063:0c4e4117	cloud tree of 7 shillinq PRs: merged=0 red=2 fail=0
 cover:decidiq:a5f973bbmfcd5:34f5c300	opened #2268 (@uses metadata, Service 89.09->92.39%) and #2270 (6 classes, +31 tests); suite 4951->4982 green	session-20261117T121348-2ad62e18	2026-11-17T12:30:32Z
 merge:portaliq:2450:8bedaa9c	cloud tree of 2 portaliq PRs: merged=1 red=0 fail=0 skip=1; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T113901-5c9d981d	2026-11-17T12:30:24Z
 fix:filinq:2093:b98f5937	conflict resolved, pushed 33690cef; merge lock held by another merger, REVERIFY queued	session-20261117T114019-426872f0	2026-11-17T12:35:50Z
+fix:decidiq:2205:8a3de4c6	merged #2205 at 215fbd9a17ce32a87f4da366b81cf6f490fb3c3e	session-20261117T112106-1814b74b	2026-11-17T12:36:44Z
