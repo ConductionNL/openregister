@@ -18519,3 +18519,4 @@ integriq	3709	4cb85bb991cb2af12526621fe2212abe4b6e95af	RED	worker-24:merge-gate	
 dossiq	6641	44c7fefaffc94aba53bbc070cd5972fc0818436a	GREEN	worker-11	publiccode.yml only (valid yaml, refs exist); unit 18398 tests, baseline 19 failures, 0 new
 planninq	1218	3bb9d8d2ab2644e3b22cdb1144eb07f0a9df1e21	RED	worker-16:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 integriq	3713	1ac9342215f8b89a3080078a2a4852d1a9560e0a	RED	worker-24:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+integriq	3593	975e519b6d9ee71fe6b1479ea6fc50cb4dfb9a9f	CONFLICT	worker-24:merge	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Service/ServiceBindings.php 
