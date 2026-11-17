@@ -16943,3 +16943,4 @@ hermiq	1791	86d27476e06000ce1db24e3054218ed1faf1235e	GREEN	worker-27:review	impl
 stackiq	1938	1b19373e2243179e2ec662bb1ab623d48f48be85	CONFLICT	worker-21:merge	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Settings/softwarecatalogus_register.json src/customComponents.js src/manifest.d/usages.json 
 stackiq	1946	644c7833d77586f665fbdbc54dcd21c72e2084df	CONFLICT	worker-21:merge	conflicts with development; files: docs/features/README.md l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
 decidiq	2162	41fa34b09570aea997963a15fb5da440e27a168f	RED	worker-36:merge-gate	GATE RED floor: duplication: 3.82 -> 3.80
+larpinq	1054	72b83a79fa967b5bcf2945c13ef370ede0a68812	RED	worker-40:merge-gate	GATE RED floor: overall: 5.06 -> 4.99; duplication: 5.17 -> 5.11; unit_size: 4.76 -> 4.71; unit_complexity: 4.91 -> 4.84; unit_interfacing: 4.78 -> 4.50
