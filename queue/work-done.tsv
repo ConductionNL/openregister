@@ -18891,3 +18891,4 @@ fix:buildiq:1651:e765d7de:v5	conflict resolved, pushed 4514f95f; lock held elsew
 build4:openregister:object-write-at-instance-floor:c8	partial: not started in this pass (worker context too low for the core mapper work); PR #10520 (branch -3, head 087462fb) unchanged, tasks 1-4 and 6-19 still open as left by c7	session-20261116T230934-9ee320cf	2026-11-17T01:29:52Z
 fix:integriq:3550:b2995130:v3	fixed CONFLICT #3550, new head 268ca022; REVERIFY (merge lock held elsewhere)	session-20261117T004616-c7acc36d	2026-11-17T01:29:54Z
 fix:integriq:3585:54c3167e:v5	conflict resolved, pushed 027d5ca5; merge lock held elsewhere, REVERIFY queued	session-20261117T005226-366998de	2026-11-17T01:30:03Z
+merge:stackiq:2008:aa8543e9	cloud tree of 3 stackiq PRs: merged=3 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T004644-d9c68b8f	2026-11-17T01:30:23Z
