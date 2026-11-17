@@ -22799,3 +22799,4 @@ fix:buildiq:1632:ba29c96c	fixed CONFLICT #1632, new head 712402e5; merge lock he
 merge:filinq:2186:87d1157e	unmeasured: api.osv.dev (cloud tree of 6 filinq PRs: merged=0 skip=4, conflict 2; 2186/2188 REQUEST_CHANGES on gate findings)	session-20261117T211329-58121c09	2026-11-17T22:04:41Z
 fix:dossiq:6659:565a618a	conflict resolved, new head 7c7be56443; REVERIFY queued (gate host unreachable, not landed)	session-20261117T211437-e305ed6d	2026-11-17T22:05:02Z
 verify:pipelinq:3959:7fbcf4ee	GREEN 3959: dev eslint bump, vitest 0 new failures (3 inherited)	session-20261117T211611-151c4a14	2026-11-17T22:05:10Z
+merge:decidiq:2279:9fce5b35	unmeasured: static.developer.overheid.nl (proxy 403); merged=0 skip=6 conflict 1 (2287); reviews APPROVE recorded at head	session-20261117T211320-ba1b42e8	2026-11-17T22:06:19Z
