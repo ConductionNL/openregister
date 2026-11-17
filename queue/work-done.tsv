@@ -19898,6 +19898,7 @@ review:stackiq:1966:07fea94b	RED: 1 new phpunit failure (usage version pin in Ba
 fix:hermiq:1757:5857cce3	failed: permission (running the ADR ruleset from npm was refused; static.developer.overheid.nl blocked here, adrvalidator unmeasurable)	session-20261117T081203-88d20425	2026-11-17T08:23:10Z
 fix:shillinq:3067:57c917aa	fixed l10n keys, new head 8205f49a; merge lock held elsewhere, REVERIFY	session-20261117T081941-dbad7940	2026-11-17T08:23:06Z
 review:opencatalogi:2665:106da853	GREEN: no new failures (inherited 11E/92F php, 8 vitest)	session-20261117T080442-9c9fe2f8	2026-11-17T08:23:16Z
+review:shillinq:2983:ff39cb27	BLOCK: 12650 tests OK; 3 gate findings on PR lines (unregistered icon, no ClearingGroup demo data, duplicate index pages)	session-20261117T081319-17d49a97	2026-11-17T08:23:35Z
 review:shillinq:2071:6ef01f6f	GREEN: 12618 tests, 0 failures	session-20261117T081221-9bb52a5f	2026-11-17T08:23:38Z
 fix:shillinq:2998:d4457281	fixed: SeedHelpArticles registered, pushed 5215acfa; merge lock held elsewhere, REVERIFY queued	session-20261117T081204-71167548	2026-11-17T08:23:50Z
 review:versioniq:735:f5849ebe	GREEN: per change specs, no new failures (2 inherited golden reds)	session-20261117T081258-8ec427f2	2026-11-17T08:24:00Z
