@@ -18916,3 +18916,4 @@ fix:humaniq:1148:3bc5cb16:v3	merged #1148 at 9a856f88c9dce85c98afbf612a33d936cb7
 verify:decidiq:2173:518cf792	2173 CONFLICT (src/menu-layout.simple.json)	session-20261117T004650-4097ce5f	2026-11-17T01:34:19Z
 fix:integriq:3601:be3e4259:v3	conflict resolved, pushed fc46c8d9; merge lock busy, REVERIFY queued	session-20261117T004655-1a901c92	2026-11-17T01:34:33Z
 fix:hermiq:1763:36a77c20:v3	conflict resolved + RestoreRunner on main API, pushed 0ba5d841; REVERIFY queued (merge lock held)	session-20261117T004705-084072e6	2026-11-17T01:35:27Z
+fix:launchpad:761:ca2815b8:v4	conflict resolved, pushed fb9c34bd; merge lock held by another merger, REVERIFY queued	session-20261117T005304-6fca2823	2026-11-17T01:35:27Z
