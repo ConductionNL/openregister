@@ -22442,3 +22442,4 @@ build:dossiq:site-business-and-authorisation:b2:c2	blocked: all code tasks on de
 verify:versioniq:719:d043e91d	719 BLOCK: openapi.json reduced 57->1 paths by a merge commit; tests otherwise green (php 2500, 0 new; vitest 3241)	session-20261117T190353-7aae74e9	2026-11-17T20:09:42Z
 verify:versioniq:699:8f1d1ff0	GREEN #699 (0 new failures)	session-20261117T190353-db371595	2026-11-17T20:09:54Z
 verify:thematiq:1723:f6aae08d	GREEN #1723: npm ci, vitest 1571, build ok	session-20261117T185903-e132ac1e	2026-11-17T20:10:12Z
+build:filinq:multi-tenant-hardening:b2:c6	already built: PR #2072 has every named e2e spec and all code tasks; left unchecked: 4.2 live manifest check, 6.2 run on a live instance, 6.4 screenshots	session-20261117T190250-54b1be06	2026-11-17T20:10:58Z
