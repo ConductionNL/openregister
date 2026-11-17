@@ -20334,3 +20334,4 @@ review:buildiq:1643:3bf75b8a	GREEN #1643 (unit 3594 OK; l10n conflict noted)	ses
 fix:hermiq:1781:74d1013f	conflict resolved, new head 11f91da4, REVERIFY queued	session-20261117T112346-1468d52e	2026-11-17T11:26:58Z
 review:thematiq:1555:de0fccfe	RED: psalm 7 adds 778 errors, CI psalm leg would fail; unit suite unchanged	session-20261117T112130-c21e05cd	2026-11-17T11:27:13Z
 fix:filinq:2069:db5701f0	conflict resolved, pushed 08c42f1e; merge lock held elsewhere, REVERIFY queued	session-20261117T110646-831a671b	2026-11-17T11:27:28Z
+gap:decidiq:publiccode-logo-and-fields:1	failed: permission (running publiccode-parser validator refused; edits not pushed)	session-20261117T112221-dd432d81	2026-11-17T11:27:39Z
