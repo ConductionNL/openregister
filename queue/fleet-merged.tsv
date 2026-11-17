@@ -5799,6 +5799,7 @@ opencatalogi	2674	c6d01be66cd42b890d76ceb430114cd02e9223de	SKIP	worker-46	no APP
 opencatalogi	2797	73c7291c61fbe1ac6ed7f6f4bb7f1da3b265956d	SKIP	worker-46	GATE UNMEASURED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3 while api.osv.dev is unreachable from this session
 dossiq	6668	1395d5e68c106240715cd719a08bf8d2652f8bf5	SKIP	worker-42	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 opencatalogi	2798	f43db4b9fe7611c1537c1a1d54f949df9e16db64	SKIP	worker-46	GATE UNMEASURED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3 while api.osv.dev is unreachable from this session
+shillinq	3170	a106dd9be7f6d0a3337e59128d867fa6d48a449a	SKIP	worker-32	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 thematiq	1714	a6daab39dc7b0e3915d3a9ea7279bf98a9ae5cf2	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.15
 thematiq	1721	b57b4ab90b6e9cd73b7a08ae3f63864fc2e778d5	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
 thematiq	1722	f409740840de20ce047e4abde179bd59e0a9d729	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
