@@ -21166,3 +21166,5 @@ cover:openregister:7350e3efm4377:js7af948c9	cover	openregister	main	test/coverag
 cover:openregister:7350e3efm4377:js0b5eefce	cover	openregister	main	test/coverage-js-0b5eefce	lang=js;dirs=src/modals/object/;focus=uncovered;weight=300;coverage=94.21;target=95.0	2026-11-17T12:44:36Z
 cover:openregister:7350e3efm4377:js5794e9fc	cover	openregister	main	test/coverage-js-5794e9fc	lang=js;dirs=src/views/settings/;focus=uncovered;weight=129;coverage=94.21;target=95.0	2026-11-17T12:47:27Z
 measure:integriq:20261117h12	measure	integriq	development	queue/coverage/integriq.json	why=slices need per-directory coverage	2026-11-17T12:37:00Z
+review:filinq:2087:372d6e90	review	filinq	development	2087	sha=372d6e9037744d4278cb377e1d1f0a3acae534fc;branch=quality/build-scan-intake-with-separator-sheets;title=feat(filinq): build scan-intake-with-separator-sheets	2026-11-17T13:37:22Z
+review:filinq:2099:d001e396	review	filinq	development	2099	sha=d001e396ae71da53ebef1327d1928b5c2ab66a7e;branch=quality/build-woo-request-workflow;title=feat(filinq): build woo-request-workflow	2026-11-17T13:37:22Z
