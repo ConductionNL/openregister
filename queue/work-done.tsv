@@ -20562,6 +20562,7 @@ merge:opencatalogi:2683:de316a9c	cloud tree of 2 opencatalogi PRs: merged=0 red=
 cover:decidiq:a5f973bbmfcd5:1b97f731	PR #2266: lib/Listener 91.9% -> 98.0% (@uses on 6 risky tests), suite 4951 ok	session-20261117T112432-6eb8ecae	2026-11-17T12:20:38Z
 cover:buildiq:70b3e29em2454:d39f9857	already done: lib/Support/*.php at 98.2% lines on development e4700fc7 (target 95; 6 uncovered lines in ApplicationStories, FormPageConfig, WidgetIdAllocator)	session-20261117T113142-3e3cc1d3	2026-11-17T12:20:32Z
 merge:integriq:2650:e275cd00	cloud tree of 4 integriq PRs: merged=0 red=3 fail=0 skip=0; conflict 1, lint 0, red 0, moved 0, done 0	session-20261117T111757-a0ed5e74	2026-11-17T12:21:37Z
+cover:buildiq:70b3e29em2454:1b97f731	already done: lib/Listener/*.php at 99.4% (789/794 stmts) on development, above 95 target; branches -1..-4 merged	session-20261117T120335-b942e878	2026-11-17T12:21:51Z
 cover:decidiq:a5f973bbmfcd5:f545d745	PR #2267: FillDecisionDecidingBody 5 tests (53/63 -> 62/63 lines with its own test); suite 4951 -> 4956 OK; rest of lib/Repair already 100%	session-20261117T112444-7a410249	2026-11-17T12:21:53Z
 fix:larpinq:1086:46f1ee9a	floor fixed, pushed f1f15b15; merge lock held elsewhere, REVERIFY queued	session-20261117T110646-831a671b	2026-11-17T12:21:56Z
 fix:versioniq:709:9a092579	merged #709 at 15263d7c05a007f23ae4464332a1db12ae29c2a2 (unit_interfacing restored 4.61->4.64 by narrowing two channel helpers)	session-20261117T120635-25da0b5a	2026-11-17T12:22:03Z
