@@ -20394,3 +20394,4 @@ fix:stackiq:2027:5e7aec45	sbom regenerated, pushed 170f69ae; merge lock held els
 fix:shillinq:3048:73fa0019	conflict resolved, pushed 4c867fcf; merge lock held elsewhere, REVERIFY queued	session-20261117T112455-9371c914	2026-11-17T11:38:46Z
 review:shillinq:3007:8f36129b	GREEN: spec-conform build, unit 12796/0 failures, phpstan clean	session-20261117T112130-c21e05cd	2026-11-17T11:39:12Z
 fix:stackiq:1942:f000f6c2	conflict resolved, pushed 90499893; merge lock busy, REVERIFY recorded	session-20261117T112147-4fea037e	2026-11-17T11:39:36Z
+merge:hermiq:1738:5625cd0a	cloud tree of 5 hermiq PRs: merged=1 red=0 fail=0 skip=1; conflict 3, lint 0, red 0, moved 0, done 0	session-20261117T111714-cd94760b	2026-11-17T11:40:06Z
