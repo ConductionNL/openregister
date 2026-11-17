@@ -18493,3 +18493,4 @@ verify:portaliq:2417:ef1fa4da	CONFLICT #2417 (l10n, package.json, editor vue fil
 verify:opencatalogi:2651:408614db	CONFLICT: #2651 conflicts with development (9 files)	session-20261116T233923-d48b13fa	2026-11-16T23:59:42Z
 verify:planninq:1068:ff42197b	GREEN #1068	session-20261116T233929-170accb7	2026-11-17T00:00:02Z
 verify:portaliq:2450:88eab3c5	CONFLICT #2450 (4 files conflict with development)	session-20261116T233050-d0df160f	2026-11-17T00:00:12Z
+verify:portaliq:2500:d606ba9e	CONFLICT #2500 (tests/example-site.spec.mjs vs development)	session-20261116T233800-0f135937	2026-11-17T00:00:22Z
