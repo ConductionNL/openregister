@@ -20521,9 +20521,11 @@ merge:versioniq:706:891fd555	cloud tree of 1 versioniq PRs: none; conflict 1, li
 cover:dossiq:069ee2d6m9d1b:afe29cfd	deferred: dossiq has 42 open PRs (only open cover PR #6203 is excluded from merge trees, not stacked onto)	session-20261117T112947-12b56cd8	2026-11-17T12:13:39Z
 review:opencatalogi:2677:ec6e4301	GREEN #2677 (no new failures; one minor robustness concern noted)	session-20261117T114001-07512b39	2026-11-17T12:13:49Z
 fix:shillinq:2983:aac6fcf6	conflict resolved, pushed 501b81a9; merge lock held elsewhere, REVERIFY queued	session-20261117T112444-7a410249	2026-11-17T12:13:57Z
+cover:dossiq:069ee2d6m9d1b:67b69054	deferred: dossiq has 42 open PRs	session-20261117T112947-12b56cd8	2026-11-17T12:14:10Z
 review:buildiq:1590:ca570ceb	GREEN: unit 3621 OK, phpstan clean, specs matched	session-20261117T121046-ffb3fcc9	2026-11-17T12:14:20Z
 review:integriq:3574:daecacd9	GREEN: built to spec, no new failures (4 inherited)	session-20261117T120218-38f2a955	2026-11-17T12:14:32Z
 cover:dossiq:069ee2d6m9d1b:9951e799	deferred: dossiq has 42 open PRs	session-20261117T112106-1814b74b	2026-11-17T12:14:57Z
 verify:versioniq:770:2d93a058	770 GREEN	session-20261117T121049-5b84d45a	2026-11-17T12:14:55Z
 review:versioniq:700:563a324a	GREEN: 2410 tests, 2 inherited failures, no new	session-20261117T121050-a5ee25f2	2026-11-17T12:15:05Z
 fix:integriq:3564:d45b5057	fixed: demo objects added for both schemas; pushed d0095e30, REVERIFY queued (merge lock held elsewhere)	session-20261117T120335-b942e878	2026-11-17T12:15:28Z
+review:opencatalogi:2654:7717f5da	BLOCK floors: component_independence 93.5->92.8; behaviour ok, 0 new test failures	session-20261117T120834-820bb574	2026-11-17T12:15:40Z
