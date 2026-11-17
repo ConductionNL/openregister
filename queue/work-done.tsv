@@ -19502,3 +19502,4 @@ review:integriq:3550:a14372dd	GREEN	session-20261117T042937-c444c626	2026-11-17T
 merge:hermiq:1749:9b570313	unmeasured: static.developer.overheid.nl (1749 APPROVE skipped by gate; 1758 REQUEST_CHANGES; 1760,1791 REVERIFY)	session-20261117T060006-72dfb87c	2026-11-17T06:14:18Z
 review:integriq:3612:a2e78b15	GREEN: no blockers, no new test failures (5 inherited)	session-20261117T055927-bd949843	2026-11-17T06:14:29Z
 merge:decidiq:2171:77a6ed4e	unmeasured: static.developer.overheid.nl (proxy 403 from this session; not attempted)	session-20261117T055853-7ddd3cb3	2026-11-17T06:14:51Z
+verify:integriq:3670:6b37cf33	GREEN 3670	session-20261117T055834-d932e117	2026-11-17T06:16:04Z
