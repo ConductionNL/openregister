@@ -20842,6 +20842,7 @@ fix:integriq:3711:dd118ae9	fixed sbom, pushed 42694816; merge lock held elsewher
 review:shillinq:2975:df2c1919	GREEN: unit 12832 ok (baseline 12779), phpstan clean, vitest 47 ok, gates clean on the diff	session-20261117T133308-c6d52416	2026-11-17T13:50:17Z
 fix:stackiq:1942:90499893	conflict resolved, pushed 9b4a8fa2; merge lock held elsewhere, REVERIFY	session-20261117T134404-362023fb	2026-11-17T13:50:53Z
 fix:learniq:2497:35dd044e	conflict resolved, pushed 48225cf9; merge lock held elsewhere, REVERIFY queued	session-20261117T124010-7774729d	2026-11-17T13:51:06Z
+cover:stackiq:9ac19b3am209e:4d89782c	PR #2037: EntryReferences 5 tests, lib/Service/EntryType 52/55 -> 55/55	session-20261117T132538-ac3b9ef5	2026-11-17T13:51:26Z
 fix:integriq:3710:8618c31d	sbom regenerated, new head 49c6e016; REVERIFY (merge lock held elsewhere)	session-20261117T134024-07d6c268	2026-11-17T13:51:23Z
 cover:decidiq:a5f973bbmfcd5:dfaef732	already done: lib/Notification/Notifier.php at 100% lines (53/53) on development; earlier -1 branch merged	session-20261117T134242-51ff9d48	2026-11-17T13:51:45Z
 verify:keepiq:1894:db62a428	GREEN 1894,1895,1896 (5619 tests, no new failures)	session-20261117T133629-e10185c0	2026-11-17T13:51:44Z
@@ -20850,4 +20851,8 @@ cover:decidiq:a5f973bbmfcd5:aae6d66c	PR #2273: 5 tests, exception refusals; suit
 fix:shillinq:3080:77004414	conflict resolved, pushed ed5b393d; REVERIFY queued (merge lock busy)	session-20261117T125716-5aa18045	2026-11-17T13:52:27Z
 review:integriq:3601:691712f5	GREEN: no new failures, phpstan clean	session-20261117T134304-10008ffd	2026-11-17T13:52:44Z
 cover:decidiq:a5f973bbmfcd5:0f859653	already done: lib/Flow/*.php at 100% lines (185/185) on development; -1/-2 branches merged	session-20261117T134242-51ff9d48	2026-11-17T13:53:04Z
+merge:launchpad:1106:7c0af468	cloud tree of 3 launchpad PRs: merged=0 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T134525-c871bd14	2026-11-17T13:53:14Z
 fix:versioniq:729:ea732a80	pushed @spec tags, gate-16 green; REVERIFY at 497abe19 (end-to-end merge skipped: own PR)	session-20261117T134258-58728df3	2026-11-17T13:53:12Z
+fix:hermiq:1781:a56a9450	merged #1781 at 6b45e373bba2ccb19851caeb6ae9adf8e2edc15b	session-20261117T132823-a99794a3	2026-11-17T13:53:31Z
+review:shillinq:2993:39b07fb3	BLOCK: repair step added without info.xml version bump; unit suite green (12804), vitest 31 pass	session-20261117T134327-bbccf916	2026-11-17T13:53:42Z
+cover:decidiq:a5f973bbmfcd5:38e80a9f	already done: lib/Command/*.php at 100% lines (106/106) on development 161ca15ec, 17 tests	session-20261117T135029-424a7669	2026-11-17T13:53:56Z
