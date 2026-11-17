@@ -17978,3 +17978,4 @@ buildiq	1618	f57d6d53728d305fff8467fa1c43df5dc7e9f5dc	REVERIFY	worker-56:merge	c
 buildiq	1626	3826ea7c282dc954f2be28fc9ea7a2311de818e7	REVERIFY	worker-56:merge	conflicts only with an earlier PR of the merge tree: merges clean on development alone; files: l10n/nl.js l10n/nl.json 
 buildiq	1630	19bdcf6d6302775d5355cf40f4f17a414b0adb63	REVERIFY	worker-56:merge	conflicts only with an earlier PR of the merge tree: merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json src/composables/useManifestValidator.js 
 buildiq	1632	53f9828c77abc18f43df01026a60295949962302	REVERIFY	worker-56:merge	conflicts only with an earlier PR of the merge tree: merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+dossiq	6640	f6770616edd0130f7864c19a2783f56d50286180	RED	worker-08:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
