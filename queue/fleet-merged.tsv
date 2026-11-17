@@ -5461,3 +5461,11 @@ opencatalogi	2788	512b97ff719a6a61529b87c9e5f5e0d7eabd65ec	MERGED	merge3	GATE OK
 opencatalogi	2789	e54e7b57d6586bb81a80b16195aa0471d62384b4	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.51
 opencatalogi	2790	21c42f386e7b0aa61553d87ff8662e6fe9e172b1	RED	merge3	GATE RED floor: unit_size: 4.64 -> 4.62; unit_interfacing: 4.77 -> 4.73
 opencatalogi	2791	7aecc1453b3880ce055bcbaca09a13beb95a02e3	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.51
+filinq	2069	ac2fa7c734e5737f6808e0ef9a2d2d3956ca4aa2	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.03
+filinq	2176	098a782ed239122525bac74cd4fff4db45bc3ac7	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.03
+filinq	2177	437ce3f40aeabb7966d280f22bc438c51f01606d	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.03
+filinq	2178	a0aa27caab61cf16a72133ffef43eb1ac4c98ffe	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.03
+filinq	2179	fe61fa8190c782e8e6e0568c8d078ce3ef6cdd49	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.03
+filinq	2180	6cd5e86ffab43fd4ee6c0242f32056d724e26036	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.03
+filinq	2181	7ce08a512c146195e9c7c946dbc7e9e267449432	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.03
+filinq	2182	af614fee7742906a70da9c30346e9eb6541d7740	RED	merge3	GATE RED checker floor: secretscanning: pass -> fail; secretscanning stars: 5 -> 1
