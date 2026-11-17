@@ -19000,3 +19000,4 @@ review:hermiq:1794:5770f0c4	stale	feeder	2026-11-17T01:37:28Z
 review:integriq:3557:e5c34432	stale	feeder	2026-11-17T01:37:28Z
 review:portaliq:2448:8388e665	stale	feeder	2026-11-17T01:37:28Z
 fix:opencatalogi:2706:bad7090e:v3	conflict resolved + 3 review blockers fixed (pushed cbea0d0c); land: merged=0 red=1 (GATE RED floor: unit_size 4.66->4.64, unit_interfacing 4.79->4.71)	session-20261117T004133-c974afac	2026-11-17T01:51:11Z
+fix:versioniq:719:72e1e8b9:v3	fixed 9-file conflict, pushed c727229b; merge lock held elsewhere, REVERIFY queued	session-20261117T004801-2f7a5fc1	2026-11-17T01:51:21Z
