@@ -16049,3 +16049,4 @@ shillinq	3003	e9b31d7d5a2e426782cf5860b3c12c23a19066ab	CONFLICT	worker-36	confli
 shillinq	2083	4b847a69f8ad3048ff82a9f425a90bad9480520d	CONFLICT	worker-03	conflicts with development in l10n/en.js, en.json, nl.js, nl.json
 shillinq	3005	7df04548317c3840c8d73ca62d249ae5c8b9a33b	CONFLICT	worker-10	conflicts with development in: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json src/manifest.d.shell.json tests/vitest/adminRootCoverage.spec.js
 shillinq	3048	2ab1e91c810587f01f231282bce71260cd1730f5	CONFLICT	worker-34	merge with development conflicts in appinfo/info.xml, src/registry.js, tests/fixtures/golden/application-register.json, tests/fixtures/register-versions.lock.json
+learniq	2577	15fc4a90544190851896affac4e02d9aed5c9516	REVERIFY	worker-22	fixed menu order tie (CourseParticipantsMenu 58 -> 56); node --test 9 fail = baseline; new head 5bf2057232b5aabbfd004f1943a2ae1de7859671, verify it
