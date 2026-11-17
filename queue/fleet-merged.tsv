@@ -5203,3 +5203,4 @@ stackiq	2024	d3bfa511d93e185f2889fb936ffefa27d7bc0c3a	RED	worker-32	GATE RED sbo
 stackiq	2025	820ddd39fcc967bdb6dc528cddcfb206e955f86a	RED	worker-32	GATE RED sbom: composer.lock changed without sbom.cdx.json
 stackiq	2026	176656140c5a9e0070bb25f530a974f19be299f3	RED	worker-32	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 learniq	2509	9a57b9430234952760eb416f122aa3fd1df5d6e3	RED	worker-15	GATE RED floor: unit_interfacing: 3.61 -> 3.59
+humaniq	1183	b62daa18b36027b5cecb05e1cc2a87f95cda889e	MERGED	worker-52	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.47 holds at 3.47
