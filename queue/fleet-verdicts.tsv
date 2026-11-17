@@ -18020,3 +18020,5 @@ decidiq	2171	6b39135c61bbc1d3689590e259b0ae222a8a08e2	BLOCK	worker-44:review	rev
 decidiq	2173	050c1776c5d62774a872639305fb99d7dd436431	REVERIFY	worker-44:merge	conflicts only with an earlier PR of the merge tree: merges clean on development alone; files: src/manifest.json 
 decidiq	2205	8a3de4c6be1208375b0e3243a96a4b8db2ed80eb	REVERIFY	worker-44:merge	conflicts only with an earlier PR of the merge tree: merges clean on development alone; files: lib/Settings/profiles/municipality.json src/manifest.json 
 integriq	3550	c36eeb35edf6b7d460156449b7abc81b0a2919d0	GREEN	worker-57:review	build per spec REQ-PDM-001 (masking in logged copies only, admin-only settings routes, replay refused on masked request); unit 9726 tests, same 5 inherited failures as development, none new; conflicts with development in l10n, BodyRedactor.php, AdminSettings.vue so tested on PR head
+launchpad	1210	fcd51164e3351ae1fe6f7a11a04d9db65e7e8a8f	CONFLICT	worker-38:merge	conflicts with development; files: appinfo/info.xml src/views/Views.vue 
+launchpad	1217	365b7069cdf8dd17c14d4c518c34b0ed1243def6	CONFLICT	worker-38:merge	conflicts with development; files: appinfo/info.xml 
