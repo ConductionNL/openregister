@@ -22921,4 +22921,5 @@ build:decidiq:embargo-geheimhouding:b2:c3	failed: permission: git push to Conduc
 fix:opencatalogi:2802:4020ac22	conflict resolved, pushed 8b3d0496; REVERIFY queued	session-20261117T224524-cade3737	2026-11-17T22:48:28Z
 build:opencatalogi:harvest-conflict-policies:b2:c3	blocked: unchanged since c2; PR #2792 untouched. 1.1/1.2 need harvest-feed-intake (no branch), 2.1-2.3 need openregister sync-records routes that exist only on unmerged build/app-harvest-fetchers-and-flow-node (e768054, 14 Nov), not on main; 4.1 follows the screens	session-20261117T224455-1fcf623d	2026-11-17T22:48:37Z
 merge:humaniq:1191:fcfada2f	unmeasured: static.developer.overheid.nl (merge gate checker floor NO RESULT; 6 APPROVE recorded, 1193 REQUEST_CHANGES -> BLOCK; nothing landed)	session-20261117T223255-8eaf1688	2026-11-17T22:49:16Z
+fix:opencatalogi:2804:731661e8	fixed test count for new schema slug; pushed e3eb6104; merge lock busy, REVERIFY queued	session-20261117T224514-f279fa1b	2026-11-17T22:50:09Z
 fix:filinq:2113:374ff86d	CONFLICT resolved, pushed e86b2786; merge lock held by another merger, REVERIFY recorded	session-20261117T223224-549dfbd7	2026-11-17T22:49:50Z
