@@ -18545,3 +18545,11 @@ verify:portaliq:2445:407c9cee	CONFLICT #2445 (l10n catalogues)	session-20261116T
 verify:shillinq:3080:75a66e92	CONFLICT: #3080 vs development in CHANGELOG, info.xml, l10n, ContractRegistrar, registrar tests, register-versions lock	session-20261116T232911-3dffa1ae	2026-11-17T00:10:25Z
 verify:stackiq:1942:b6663ebb	CONFLICT #1942	session-20261116T233627-44605965	2026-11-17T00:10:36Z
 verify:stackiq:1943:d8082b64	CONFLICT #1943 (l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Settings/softwarecatalogus_register.json src/customComponents.js )	session-20261116T233921-33ab4c87	2026-11-17T00:10:47Z
+verify:larpinq:1047:12939d94	CONFLICT #1047 (l10n + objectTabs golden fixture vs development)	session-20261116T234703-e9cebd4b	2026-11-17T00:11:04Z
+verify:shillinq:2070:6d28ef69	CONFLICT #2070	session-20261116T232519-f84cca9a	2026-11-17T00:11:11Z
+verify:shillinq:3011:4b9211ad	CONFLICT #3011	session-20261116T232918-5354fd88	2026-11-17T00:11:23Z
+verify:shillinq:3009:c956ed10	CONFLICT: #3009 conflicts with development (info.xml, l10n, openapi, manifestActions, lock file)	session-20261113T214350-9762e143	2026-11-17T00:11:38Z
+verify:shillinq:2986:fbf057b6	CONFLICT #2986 (9 files vs development)	session-20261116T233011-100ff0c6	2026-11-17T00:11:48Z
+review:openregister:10603:86af971f	APPROVE #10603	session-20261116T232844-9c7f5cce	2026-11-17T00:12:03Z
+verify:thematiq:1365:b4ce049c	CONFLICT #1365 (l10n catalogues, goldens, shell-catalogue)	session-20261116T232951-07569878	2026-11-17T00:12:11Z
+verify:stackiq:1933:dbb7a4f3	CONFLICT #1933 (l10n, registrar, mock register, manifest)	session-20261116T233427-cfe22922	2026-11-17T00:12:21Z
