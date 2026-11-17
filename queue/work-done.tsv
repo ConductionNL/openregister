@@ -22352,6 +22352,7 @@ verify:portaliq:2561:bcf76253	1 GREEN (2561); node tests 0 new failures	session-
 verify:stackiq:2045:711ef7f7	GREEN #2045 (e2e spec only)	session-20261117T190357-55034d4a	2026-11-17T19:52:42Z
 verify:pipelinq:3941:7a5fdb88	GREEN #3941 (no new failures)	session-20261117T190540-b0615094	2026-11-17T19:52:55Z
 verify:keepiq:1830:eb9f48ae	GREEN: keepiq #1830	session-20261117T185937-87a1822c	2026-11-17T19:53:12Z
+verify:opencatalogi:2806:75fba833	GREEN #2806 (0 new failures with openregister main beside)	session-20261117T190308-4c99e05c	2026-11-17T19:53:25Z
 verify:portaliq:2580:9c288ce1	GREEN (e2e + l10n)	session-20261117T190242-7c82bed8	2026-11-17T19:53:27Z
 build:pipelinq:clients-bulk-edit-and-undo:b2:c4	already built: e2e spec tests/e2e/clients-bulk-change.spec.ts and code for 2.2/3.1/3.2 on development; ticks wait for a live e2e run (needs an instance)	session-20261117T190436-15c3d98f	2026-11-17T19:53:42Z
 verify:stackiq:2037:8a006619	GREEN #2037 (tests only)	session-20261117T190418-7494049c	2026-11-17T19:53:45Z
@@ -22398,3 +22399,4 @@ verify:versioniq:798:91fdceff	GREEN	session-20261117T190242-7c82bed8	2026-11-17T
 verify:versioniq:797:c57c4855	GREEN 797 (e2e + fixture only)	session-20261117T185359-d68263c5	2026-11-17T20:02:16Z
 verify:stackiq:2063:2062779c	GREEN #2063 (4081 tests, no new failures)	session-20261117T190320-1db054ae	2026-11-17T20:02:26Z
 merge:launchpad:1106:07908920	unmeasured: api.osv.dev, static.developer.overheid.nl (connect_rejected by this session's proxy); 1302-1305 reviewed APPROVE, nothing landed; 1106,1109 EXCL never merged	session-20261117T185853-76335694	2026-11-17T20:02:34Z
+verify:stackiq:2039:77e11bc6	GREEN #2039 (tests only)	session-20261117T190418-7494049c	2026-11-17T20:02:46Z
