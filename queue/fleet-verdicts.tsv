@@ -19249,6 +19249,7 @@ versioniq	726	2348a5fc126e383e38bfaf88de7e91f0ebfd4564	REVERIFY	worker-11:merge	
 versioniq	797	c57c48555761cf2212f669c177b61cc63d932ea9	REVERIFY	worker-11:merge	conflicts only with an earlier PR of the merge tree: merges clean on development alone; files: tests/e2e/advisories.spec.ts tests/e2e/fixtures/forge/server.mjs 
 versioniq	798	91fdceff9606e38c08294f9f188caa4b1c92289f	REVERIFY	worker-11:merge	conflicts only with an earlier PR of the merge tree: merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
 versioniq	799	9d0b17e161aabdb3641874366fbf88fc9343996c	CONFLICT	worker-11:merge	conflicts with development; files: appinfo/info.xml l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Controller/ApiController.php lib/Service/Api/ReportCollaborators.php 
+planninq	1218	df1e59ad2a22c23d46fe16a4c228b5b2a66e72e2	GREEN	worker-36	same sha verified minutes earlier on development 17e6169e: phpunit 1253 ok (= baseline), vitest 3589 passed; deps bump + sbom only
 opencatalogi	2805	b5832c88ee2a159946d2f6880ba534de439fb504	REVERIFY	worker-09	conflicts only with an earlier PR of the verify tree
 opencatalogi	2806	c32247ec0843cd01d478d2d0970444b6954ce5e2	REVERIFY	worker-09	conflicts only with an earlier PR of the verify tree
 filinq	2072	5199bdf2bbd03910e404fd7b79e0d6c2fea567ce	GREEN	worker-30	phpunit 7423 OK (baseline 7329 OK), vitest 866 passed, no new failures; build of multi-tenant-hardening, access paths fail closed per its specs
