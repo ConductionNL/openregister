@@ -18793,7 +18793,10 @@ fix:filinq:2107:19e55eb6:v3	fixed conflict + options-API migration, pushed 70189
 fix:learniq:2509:ca90dcaa:v3	conflict resolved, new head afdcf4ef, unit suite green but inherited he.json generator drift; merge lock held elsewhere, REVERIFY queued	session-20261117T005434-ea6146cc	2026-11-17T01:10:57Z
 fix:humaniq:685:c73546cd:v4	obsolete: development already has vue-material-design-icons 5.4.0 (73689a5c); closed #685	session-20261117T004651-172e3db6	2026-11-17T01:11:10Z
 fix:decidiq:2224:6d7dfdcf:v4	fixed conflict, pushed 8ca7020a; merge lock busy, REVERIFY queued	session-20261117T004650-4097ce5f	2026-11-17T01:11:08Z
+fix:hermiq:1578:c7adfb00:v4	obsolete: development already has llphant 1.0.10; closed #1578	session-20261117T004705-084072e6	2026-11-17T01:11:16Z
 fix:learniq:2523:6236bc6d:v3	conflict resolved, pushed 3742dedc; merge lock held elsewhere, REVERIFY recorded	session-20261117T004626-d23ae300	2026-11-17T01:11:23Z
 fix:hermiq:1740:26c96d0f:v3	conflicts resolved, old-API calls migrated, new head 9e13a128, no new failures; merge lock held elsewhere, REVERIFY queued	session-20261117T004714-8c7f98bc	2026-11-17T01:11:35Z
 fix:hermiq:1751:1d2fbb88:v4	conflict resolved, pushed 36c34dcf; REVERIFY recorded (merge lock held elsewhere)	session-20261117T005242-9db4df06	2026-11-17T01:11:45Z
 fix:filinq:2116:29aaca50:v3	fixed CONFLICT #2116, new head 748154e2; REVERIFY (merge lock held elsewhere)	session-20261117T004616-c7acc36d	2026-11-17T01:11:53Z
+fix:learniq:2497:c85c5913:v3	fixed: conflicts + ObjectFindOptions migration, suite 6998 / 2 inherited; lock held elsewhere, REVERIFY at a6d36cf2	session-20261117T003652-c6487e72	2026-11-17T01:12:17Z
+fix:decidiq:2148:2bf0e346:v3	conflicts resolved + main API migration, pushed d7247809, suite 4792 green; lock held elsewhere, REVERIFY queued	session-20261117T004735-ba0cb916	2026-11-17T01:12:25Z
