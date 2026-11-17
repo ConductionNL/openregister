@@ -19034,3 +19034,4 @@ versioniq	796	a6d4dd3821c0f4e58449492b9a36842209677718	GREEN	worker-51	release v
 decidiq	2285	eeb91b118b1c241df162e0f00bdce238c0111d68	GREEN	worker-12	unit 5020 tests, baseline 5020 OK, 0 new failures; e2e spec + openspec only
 versioniq	798	91fdceff9606e38c08294f9f188caa4b1c92289f	GREEN	worker-51	a11y fix: version Select button stays in tab order (opacity instead of visibility), aria-label + en/nl string; vitest 3237 passed; no PHP touched
 learniq	2524	ba4cca6e055f21daccf499e56ac25f265d269dce	RED	worker-20:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
+versioniq	797	c57c48555761cf2212f669c177b61cc63d932ea9	GREEN	worker-22	e2e spec + forge fixture + tasks.md note only; no PHP or unit JS touched, unit suite unaffected
