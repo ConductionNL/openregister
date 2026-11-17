@@ -22779,6 +22779,7 @@ merge:learniq:2497:c79386d7	unmeasured: static.developer.overheid.nl (proxy 403;
 fix:shillinq:3067:55cee22d	conflict fixed, pushed 24169645; REVERIFY queued	session-20261117T211651-58c92edf	2026-11-17T21:59:47Z
 fix:stackiq:1963:5d4b224b	unmeasured: static.developer.overheid.nl; conflict fixed, pushed d255f3be, REVERIFY recorded	session-20261117T213157-fe4b6298	2026-11-17T21:59:59Z
 verify:pipelinq:3964:753442e6	GREEN #3964 (sbom cmd works on v7; no new failures)	session-20261117T211341-e05e0d2c	2026-11-17T22:00:23Z
+verify:shillinq:3174:3dfee71e	GREEN #3174 (vitest 1 inherited failure, phpunit = baseline)	session-20261117T212610-64548952	2026-11-17T22:00:50Z
 fix:planninq:1242:58b41fbc	unmeasured: api.osv.dev (opensourcehealth drop is network-bound; PR changes no dependencies), REVERIFY queued	session-20261117T211412-45e1aeb8	2026-11-17T22:01:24Z
 fix:buildiq:1608:10685d4e	failed: permission; git push to ConductionNL/buildiq refused by the session proxy (repo not in authorized set). Conflict resolved locally (keep page-code and offline-apps sides, SettingsServicePageCodeTest tolerates 2nd bool read), not pushed	session-20261117T213139-4c29297d	2026-11-17T22:01:45Z
 fix:shillinq:3064:169d4186	CONFLICT resolved, pushed c4757048; REVERIFY queued (merge lock held elsewhere)	session-20261117T211520-d88a421d	2026-11-17T22:01:48Z
