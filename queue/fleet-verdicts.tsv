@@ -19172,3 +19172,4 @@ versioniq	698	52f9a1d57c68ad7a4850b3d601f1db3279731fff	RED	worker-09:merge-gate	
 launchpad	1302	09ecd17e49e59a4703fc9b314bb8c999bdec131c	RED	merge3:merge-gate	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
 launchpad	1303	60be52920a1235ec7ac675d5b34cf527facbccf5	RED	merge3:merge-gate	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
 launchpad	1304	952ebaa8fac367fe3ecd38d502ea5783d9d96f6f	RED	merge3:merge-gate	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+launchpad	1305	7ddb8299e5959348a6260a9afb29985c058ec3f1	REVERIFY	merge3	verdict sha is not the head: head is 93c891348ec0af3d6a8a9a1ddd7ac3d96196f0e5
