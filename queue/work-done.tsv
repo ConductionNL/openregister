@@ -22883,3 +22883,4 @@ merge:portaliq:2582:112dba55	unmeasured: static.developer.overheid.nl (and api.o
 verify:dossiq:6659:1406f352	GREEN #6659 (e2e only, 0 new failures)	session-20261117T223347-77301f38	2026-11-17T22:39:49Z
 review:shillinq:3007:357ddc9b	GREEN #3007 (unit 12833 OK, no new failures)	session-20261117T213056-2ba36933	2026-11-17T22:39:57Z
 review:shillinq:1958:2f747686	GREEN: no new failures (12810 tests), phpstan clean, behaviour per specs	session-20261117T223234-66fa6b77	2026-11-17T22:40:12Z
+review:shillinq:3067:24169645	GREEN: suite 12812 OK vs baseline 12796, phpstan clean	session-20261117T223148-4e97a38d	2026-11-17T22:40:35Z
