@@ -18795,6 +18795,7 @@ dossiq	6660	9f09443de66fb27222359ed58556cfdc9f42c592	GREEN	worker-10	phpunit 183
 hermiq	1719	fdc4de5bed00786565c5c461bb511b38a1828d6d	CONFLICT	worker-47	conflicts with development in lib/Settings/hermiq_register.json; baseline 5736 tests OK; not run on tree
 pipelinq	3945	ceffbf1ffd95fdbc429b3b7e77c1cbf97a8849c2	REVERIFY	worker-30	conflicts only with an earlier PR of the verify tree (#3943, l10n files)
 pipelinq	3946	633106e5ce5d34520df6e3801898478fcca78d26	REVERIFY	worker-30	conflicts only with an earlier PR of the verify tree (#3943, l10n files)
+pipelinq	3951	3f91729e747b42aa473b8f2e393252eb895f2728	REVERIFY	worker-30	conflicts only with an earlier PR of the verify tree (#3943, l10n files)
 dossiq	6659	565a618a74e1407233ed8b1363bf412763f216c3	GREEN	worker-06	unit 18398 tests on tree, baseline 19 failures (inherited, Access/CaseTypeRights*), new failures 0; e2e spec and playwright config only
 dossiq	6642	dcd42889d10247bf15a7678d1ab0326f6ca37950	GREEN	worker-44	phpunit 18398 on tree, baseline 19 failures inherited, none new; tasks.md tick only, the code it names is on development
 dossiq	6660	9f09443de66fb27222359ed58556cfdc9f42c592	GREEN	worker-40	unit 18422 on tree vs 18398 baseline, 1 inherited error, 0 new; vitest 7224, 2 inherited failures, 0 new; build PR judged against its change
@@ -18902,6 +18903,7 @@ larpinq	1049	eb8c9f5fcde502b5e286633b918fe448a8275e57	GREEN	worker-23	unit 1260 
 larpinq	1101	68cf7368dbf5c81f6f798160f23b8742b1e5af18	CONFLICT	worker-15	conflicts with development: change archived as 2026-11-17-communication-help-desk and tests/e2e/help-desk.spec.ts already on development (add/add); likely obsolete
 integriq	3724	27c092d3b3737a865c0dfccd46a6f125a7129cd5	GREEN	worker-38	unit 9910 tests, baseline 2 errors 3 failures, 0 new; e2e spec files and tasks.md notes only, no production code
 larpinq	1104	072740aae8be224bd39bab37e1dd43eb661d0a64	GREEN	worker-32	unit 1243 tests, baseline 0 failures, new failures 0; vitest 730 passed; e2e spec + tasks.md only, per change
+pipelinq	3952	724737b6aa5dba076f7d938b823c2377c86bdc3e	REVERIFY	worker-30	conflicts only with an earlier PR of the verify tree (#3943, l10n files)
 learniq	2594	259feb56de2bd786055277d5a9b39371d1cecb1c	GREEN	worker-26	unit suite on tree green (no PHP/JS-unit change), new failures 0; e2e spec + tasks.md note only, imports reorganised, no assertion removed
 opencatalogi	2783	b2d114f8e5f369a5012945225e70b599844f6613	GREEN	worker-25	version bump in info.xml and openapi.json only; no code, suite not rerun
 opencatalogi	2798	f43db4b9fe7611c1537c1a1d54f949df9e16db64	GREEN	worker-15	tasks.md only (one task ticked, no code); merges clean on development; unit suite not affected, not run
