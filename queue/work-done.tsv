@@ -22730,6 +22730,7 @@ fix:portaliq:2446:ddd3af7b	conflict resolved, pushed e217a1c6; REVERIFY (merge l
 verify:pipelinq:3961:6eff78b5	RED 3961: eventAddAttendee spec fails with @nextcloud/dialogs 8	session-20261117T211425-939d7fb0	2026-11-17T21:49:31Z
 verify:portaliq:2587:c972ccc3	GREEN 2587	session-20261117T211406-076a7a0e	2026-11-17T21:49:55Z
 merge:integriq:3582:034e6fe7	unmeasured: static.developer.overheid.nl; tree 7 IN adds no failures, 6 APPROVE, #3585 REQUEST_CHANGES, nothing merged; 3613/3708 REVERIFY	session-20261117T211657-3a85bb14	2026-11-17T21:50:16Z
+fix:thematiq:1727:057fa453	failed: blocked upstream; stylelint-config-standard 41 needs stylelint ^18, but @conduction/nextcloud-vue (latest 2.181.0) peers stylelint ^17.9.1, so #1727 and #1728 both ERESOLVE until nextcloud-vue widens its peer range	session-20261117T213139-4c29297d	2026-11-17T21:50:32Z
 verify:versioniq:692:f611aea1	GREEN #692 (unit 2553/2 inherited, vitest 3248 ok)	session-20261117T213633-a50f98af	2026-11-17T21:50:39Z
 verify:pipelinq:3960:c710eaaf	BLOCK #3960: gridstack 14 outside nextcloud-vue peer range; tests 0 new failures	session-20261117T213154-bb97695e	2026-11-17T21:50:48Z
 verify:integriq:3707:5840f407	GREEN 3707,3713,3714,3734; REVERIFY 3725,3733 (conflict with earlier tree PR)	session-20261117T211651-58c92edf	2026-11-17T21:51:20Z
@@ -22762,3 +22763,4 @@ fix:integriq:3705:cd33fb75	fixed RED: pinia alias to dist entry, build green; ne
 fix:keepiq:1895:62f8ad55	sbom regenerated, pushed 7cf24009; lock held elsewhere, REVERIFY queued	session-20261117T213124-9bd98896	2026-11-17T21:56:57Z
 fix:versioniq:729:497abe19	conflict resolved, pushed 073d6c6c; REVERIFY queued; land skipped (gate host blocked)	session-20261117T211433-35a96960	2026-11-17T21:57:16Z
 verify:pipelinq:3963:e0b88c16	GREEN #3963 (vitest reds inherited)	session-20261117T211535-4eae9738	2026-11-17T21:57:37Z
+verify:pipelinq:3965:080c1798	GREEN 3965: vitest only baseline failures	session-20261117T211425-939d7fb0	2026-11-17T21:58:04Z
