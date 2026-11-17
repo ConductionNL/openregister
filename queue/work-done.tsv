@@ -18507,9 +18507,16 @@ verify:portaliq:2446:9a320c2f	RED #2446: 3 new ContributionControllerTest errors
 verify:pipelinq:3743:d1e2bf9d	CONFLICT #3743 (l10n, SettingsLoadService, manifest)	session-20261116T232844-9c7f5cce	2026-11-17T00:03:02Z
 verify:opencatalogi:2244:f25f1179	GREEN #2244 (no new failures, 78 inherited)	session-20261116T233857-32c64615	2026-11-17T00:03:11Z
 verify:shillinq:2081:07764b3f	CONFLICT #2081 (l10n)	session-20261116T233929-170accb7	2026-11-17T00:03:20Z
+verify:shillinq:2993:bd16cc97	CONFLICT #2993	session-20261116T233627-44605965	2026-11-17T00:03:58Z
 verify:opencatalogi:2677:3ad6bc5b	CONFLICT #2677 (12 files)	session-20261116T230934-9ee320cf	2026-11-17T00:03:37Z
 verify:portaliq:2492:073b891c	CONFLICT #2492 (tests/example-site.spec.mjs vs development)	session-20261116T233800-0f135937	2026-11-17T00:03:49Z
 verify:integriq:3633:e8cfc0d1	CONFLICT #3633 (l10n/en.js, l10n/nl.js)	session-20261116T233011-100ff0c6	2026-11-17T00:04:14Z
 verify:portaliq:2284:a8a7fcd0	CONFLICT #2284 (7 lib files)	session-20261116T232923-46913d93	2026-11-17T00:04:23Z
 verify:portaliq:2493:f9355756	CONFLICT 2493 (package.json)	session-20261116T232406-b9eb038c	2026-11-17T00:04:56Z
 verify:shillinq:3052:10940568	CONFLICT #3052	session-20261116T233929-170accb7	2026-11-17T00:05:09Z
+verify:opencatalogi:2680:66ae4f4f	CONFLICT: #2680 vs development in docs, l10n, SitemapDocumentMapper	session-20261116T232911-3dffa1ae	2026-11-17T00:05:20Z
+verify:shillinq:2983:55242378	CONFLICT #2983 (info.xml, GLLineResultStampListener, manifest, l10n)	session-20261116T232623-066b53c9	2026-11-17T00:05:29Z
+verify:learniq:2551:ca8152ea	CONFLICT #2551 (l10n, committed .pyc)	session-20261116T232944-146e39d7	2026-11-17T00:05:41Z
+verify:opencatalogi:2722:4a2f2fb8	CONFLICT #2722 (3 files vs development)	session-20261116T233933-3050c00d	2026-11-17T00:06:07Z
+verify:shillinq:1958:c4416ca3	1958 CONFLICT	session-20261116T230531-f9095b0f	2026-11-17T00:06:23Z
+verify:shillinq:3007:c7d7174e	CONFLICT: #3007 conflicts with development (info.xml, routes, l10n, EInvoiceService, IntegriqCloudEventListener, openapi, lock file)	session-20261113T214350-9762e143	2026-11-17T00:06:31Z
