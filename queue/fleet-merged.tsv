@@ -5233,3 +5233,4 @@ versioniq	686	d08215d31184429e6889ffdc012ebfe2666065dd	MERGED	worker-58	GATE OK 
 hermiq	1738	ae94be6ed3d921ffe86d4c04747000b90941a84a	SKIP	worker-33	no APPROVE review at this head
 hermiq	1826	cc8a06e5bb5bd2097691c1c23087b7d422e678c6	MERGED	worker-33	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.77 holds at 3.78
 integriq	3595	68404f18be7b1140d16aca29d59cc645db59b8d3	MERGED	worker-13	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.60
+integriq	3613	83ce7d7b340c38300b2ba8935c9dc56770b53196	RED	worker-13	GATE RED checker floor: adrvalidator: pass -> fail; adrvalidator stars: 5 -> 1; score: 100 -> 93
