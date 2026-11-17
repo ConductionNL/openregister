@@ -22851,3 +22851,4 @@ review:openregister:10624:e133e097	BLOCK: stylelint 18 crashes loading the share
 build:hermiq:instant-talk:b2:c3	partial: PR #1853 head ab8d6778 ticks 7.1 and 7.2 (PR 5785 tests vs development 5736, 0 failures); left 7.3 live Talk checks (needs an instance), 7.4 openspec strict warnings (preamble, two long requirements) and the hydra gates run; phpcs/phpstan/psalm clean	session-20261117T211422-95669914	2026-11-17T22:30:27Z
 review:openregister:10635:df149781	APPROVE #10635 (@pinia/testing dev bump, peer satisfied, unused in code)	session-20261117T212735-2b6c91a0	2026-11-17T22:31:03Z
 review:openregister:10636:cad623d3	BLOCK: psalm 7.6.0 crashes on lib/ (psalm 5 on main completes)	session-20261117T221428-ca31c1a7	2026-11-17T22:31:11Z
+fix:hermiq:1851:b966db2c	BLOCK fixed (link item descriptions), pushed 267e4360; REVERIFY queued (end to end skipped: merge gate host unreachable)	session-20261117T211422-95669914	2026-11-17T22:31:54Z
