@@ -22814,3 +22814,4 @@ merge:pipelinq:3935:cba98368	merge3 tree of 9 pipelinq PRs: merged=6 red=0 fail=
 merge:buildiq:1715:ed36450e	unmeasured: static.developer.overheid.nl (merged=0 skip=7; 1721 CONFLICT, 1723 MOVED)	session-20261117T211607-9073788f	2026-11-17T22:11:32Z
 fix:pipelinq:3954:ba6a3d35	conflict fixed, pushed 778f1212; REVERIFY queued	session-20261117T211651-58c92edf	2026-11-17T22:11:57Z
 fix:pipelinq:3940:dc52e0b2	resolved l10n conflicts with development, pushed 2e6c53c6; REVERIFY queued (no end-to-end: gate hosts blocked)	session-20261117T213139-f6154590	2026-11-17T22:12:39Z
+fix:versioniq:698:52f9a1d5	failed: permission (recording a review of a PR with my own commits was refused); floor fix pushed at 6755c46d, floor_check PASS, REVERIFY queued	session-20261117T213101-157fb562	2026-11-17T22:13:26Z
