@@ -19255,3 +19255,6 @@ opencatalogi	2806	c32247ec0843cd01d478d2d0970444b6954ce5e2	REVERIFY	worker-09	co
 filinq	2072	5199bdf2bbd03910e404fd7b79e0d6c2fea567ce	GREEN	worker-30	phpunit 7423 OK (baseline 7329 OK), vitest 866 passed, no new failures; build of multi-tenant-hardening, access paths fail closed per its specs
 humaniq	1198	ada533a81007f708bdfe9eb24a2ba5a6a2041daa	GREEN	worker-54	phpunit 4532 OK on tree (baseline 4509 OK); node test:js 13 fails = baseline 13; new failures 0; build of record-history-on-every-detail-page per its specs
 planninq	1252	d65f04922fee972a0c53a84c02b54d6a5eed02ff	GREEN	worker-36	same sha verified minutes earlier on development 17e6169e: phpunit 1253 ok (= baseline), vitest 3589 passed; e2e spec + tasks.md note only
+buildiq	1630	285ac6f0971889105f2dbd12d6e5111710aaf0b2	CONFLICT	worker-50:merge	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Controller/ControllerRegistrar.php src/composables/useManifestValidator.js
+buildiq	1651	c1a3ad84f420d8cac16d29a8b2d018d08e83a9cd	REVERIFY	worker-50:merge	conflicts only with an earlier PR of the merge tree: tests/stubs/openregister-stubs.php
+buildiq	1715	628d9e25f091953535ee8b7bb25	REVERIFY	worker-50:merge	verdict sha truncated in task row; head is 628d9e25f091953535ee8b7bb259bf0baf012802
