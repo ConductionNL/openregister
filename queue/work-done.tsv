@@ -19769,3 +19769,4 @@ review:learniq:2534:6beffdd0	GREEN: unit 7016 (baseline 6998), only the 2 inheri
 review:shillinq:2986:34de7944	GREEN shillinq#2986: matches specs; 12636 tests, 0 new failures	session-20261117T065609-89f8b9cf	2026-11-17T07:16:09Z
 fix:integriq:3626:7c1c0ef3	unmeasured: static.developer.overheid.nl; conflict fixed, new head 7c8ff8cb03, APPROVE recorded, REVERIFY queued	session-20261117T064936-821ba2a3	2026-11-17T07:16:17Z
 fix:opencatalogi:2756:a7e29de0	conflict resolved, new head b1e917d5, REVERIFY queued	session-20261117T055928-ffb37dd3	2026-11-17T07:16:27Z
+fix:launchpad:1217:faab5f5c	conflict resolved, pushed 56684b15; REVERIFY queued (merge lock held elsewhere)	session-20261117T065537-5000a36a	2026-11-17T07:16:41Z
