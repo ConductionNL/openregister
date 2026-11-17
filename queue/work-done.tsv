@@ -21728,3 +21728,4 @@ verify:hermiq:1838:2d9e82f5	GREEN 1838,1839,1840,1841,1842 (no new failures; doc
 review:decidiq:2190:c75776f4	GREEN: unit 5038 OK, phpstan/vitest clean	session-20261117T151214-35ff5eaa	2026-11-17T15:40:21Z
 review:filinq:2093:71ddff39	GREEN: unit 7317 OK, vitest/jest pass, access checks hold	session-20261117T145748-1419d209	2026-11-17T15:40:40Z
 verify:humaniq:1193:1d3bba27	GREEN 1193, GREEN 1194; tree 4517 OK, baseline 4509 OK	session-20261117T132743-10cec9d3	2026-11-17T15:41:12Z
+build:opencatalogi:inspection-period-rolls-on-the-calendar:b2	already built: every code task (1.1-2.2) and named test is on development; no e2e spec named (all scenarios @e2e exclude); 2.3 live done; 3.2-3.4 are gate/PR process steps of the merged build	session-20261117T154007-0f5288e8	2026-11-17T15:41:32Z
