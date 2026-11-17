@@ -20945,3 +20945,4 @@ build:dossiq:case-views-shared-with-a-team:b2	failed: blocked - task 2 needs a g
 build:dossiq:contact-birth-longdate-social-history-stacked:b2	already done: tasks 1.1-1.2 on development (c9857cc3); 1.3 is a measurement, left	session-20261117T133035-588aec38	2026-11-17T14:10:18Z
 build:dossiq:deleted-cases-read-the-case-table:b2	already done: tasks 1.1, 1.2, 2.1 ticked and on development (da8e4c46c, b43cd3329); only live check 3.1 left (needs a running instance)	session-20261117T133303-ca20630d	2026-11-17T14:11:03Z
 build:dossiq:contact-persons-tab-in-actions:b2	already done: code tasks 1.1-1.2 on development; only 1.3 (live check) left	session-20261117T124621-35d7386d	2026-11-17T14:11:20Z
+build:dossiq:competitor-parity-2026-09:b2	failed: no code tasks - umbrella change, each box ticks when the named change is archived (those are built under their own change rows)	session-20261117T134504-7f453fd6	2026-11-17T14:11:47Z
