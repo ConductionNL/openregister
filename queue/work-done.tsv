@@ -22865,3 +22865,4 @@ review:openregister:10638:c755cc03	APPROVE: toast API unchanged, jest green	sess
 review:openregister:10642:a14ebfda	APPROVE 10642	session-20261117T211406-076a7a0e	2026-11-17T22:35:44Z
 fix:hermiq:1849:599ab2bf	CONFLICT resolved, pushed b2a8aa0f; REVERIFY queued (end to end skipped: merge gate host unreachable)	session-20261117T211422-95669914	2026-11-17T22:35:52Z
 review:decidiq:2149:3ccfbfcf	GREEN: unit 5124 pass, phpstan clean, 1 inherited vitest red; concern rectify not gated; PR state not readable (no API access to decidiq)	session-20261117T223201-5d2e7fcf	2026-11-17T22:36:11Z
+build:pipelinq:ticket-handover-history:b2:c4	already built: every code task ticked in PR #3966 and the named e2e spec exists; left: 2.5 live run, handover note needs a ticket schema field + assign UI (design decision)	session-20261117T211406-076a7a0e	2026-11-17T22:36:26Z
