@@ -18313,3 +18313,4 @@ opencatalogi	2368	791b0b69d2cfe63c49ddca20eec5857b8fbc1a0b	CONFLICT	worker-48	li
 integriq	2641	13e92f3043e4a39df09d50dfa6bf2bab741d5460	GREEN	worker-34	release sync merge; merged tree identical to development (no file changes), suite unaffected
 larpinq	1087	bdae89b3e4ce2caecb66642ff6983d5e9331ad1a	GREEN	worker-25	unit 1228 tests (20 skipped), baseline 1228 OK, new failures 0; version bump only
 pipelinq	1921	4145f4efd4552709dab10cb921c6f7660d1ebc34	GREEN	worker-56	merge onto development is a no-op (tree identical to development b99fd65); no tests needed, no new failures
+keepiq	1757	3a8af510f12c703bc020688b5c39a2d813954941	CONFLICT	worker-35	baseline 5619 tests green; conflicts with origin/development in 10 files (src/cxf/cxf.js, AdditionalFieldsEditor.vue, SecretDetailSidebar.vue, additionalFields.js, their specs, archived tasks.md)
