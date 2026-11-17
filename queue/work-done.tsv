@@ -18787,3 +18787,4 @@ fix:learniq:2534:097afa2d:v3	conflict resolved + branch test fixed, pushed b9061
 fix:learniq:2486:b690ac62:v4	conflict resolved, pushed 384efb33, suite green beyond inherited he.json; merge lock held elsewhere, REVERIFY queued	session-20261117T004716-5a617a43	2026-11-17T01:09:52Z
 fix:learniq:2533:adbae3b0:v3	conflict resolved + main API migration, pushed 33d6f4e3; merge lock busy, REVERIFY queued	session-20261117T004651-172e3db6	2026-11-17T01:10:07Z
 fix:decidiq:2192:5deb2820:v3	fixed CONFLICT (+ options API in ConsultationResponseDocumentService), pushed aa5f1bbafca0e6a2babdc9ab6c4ddb477ea8b185; merge lock held elsewhere, REVERIFY queued	session-20261117T004644-5138fb50	2026-11-17T01:10:18Z
+fix:learniq:2565:64d9b428:v5	conflict resolved, pushed f47cb73f; 1 inherited failure; merge lock held elsewhere, REVERIFY queued	session-20261117T004609-b5037037	2026-11-17T01:10:28Z
