@@ -21708,3 +21708,8 @@ build:humaniq:configuration-store:b2	partial: nothing pushed. Left 1.1, 1.2, 2.1
 build:hermiq:chat-fork-and-share-link:b2	PR #1849: Playwright session-fork-and-share spec + Newman fork outcomes; code already on development; live runs left	session-20261117T151214-35ff5eaa	2026-11-17T15:37:09Z
 build:humaniq:setup-wizard-six-steps:b2	already building: quality/build-setup-wizard-six-steps exists	session-20261117T132743-10cec9d3	2026-11-17T15:37:01Z
 build:humaniq:payroll-reservation-payouts:b2	already building: quality/build-payroll-reservation-payouts exists	session-20261117T132743-10cec9d3	2026-11-17T15:37:45Z
+fix:learniq:2524:e082152e	stale	feeder	2026-11-17T15:34:01Z
+fix:filinq:2072:b9a113b8	stale	feeder	2026-11-17T15:34:01Z
+review:shillinq:3048:4dfa4261	stale	feeder	2026-11-17T15:34:01Z
+review:filinq:2107:7fd0b6e1	stale	feeder	2026-11-17T15:34:01Z
+review:versioniq:700:b95e71ea	stale	feeder	2026-11-17T15:34:01Z
