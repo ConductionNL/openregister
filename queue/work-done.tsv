@@ -22618,3 +22618,4 @@ verify:decidiq:2287:39b59d2a	GREEN 2287 (unit 5020, 0 new failures)	session-2026
 review:filinq:2072:5199bdf2	GREEN: unit 7423 ok, vitest 866 ok, behaviour per multi-tenant-hardening specs	session-20261117T211410-42e4af89	2026-11-17T21:20:46Z
 verify:filinq:2093:f46e9fd2	GREEN: phpunit 7358 OK (baseline 7329), vitest 873 OK	session-20261117T211329-58121c09	2026-11-17T21:21:10Z
 review:learniq:2519:26cb0ee8	GREEN: suite 7164 tests, no new failures (1 inherited), phpstan clean	session-20261117T211425-939d7fb0	2026-11-17T21:21:33Z
+review:filinq:2087:9d205c2d	GREEN: unit 7334 ok, vitest ok, spec-conform	session-20261117T211528-7f174be9	2026-11-17T21:21:46Z
