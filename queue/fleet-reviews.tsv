@@ -1459,3 +1459,4 @@ humaniq	1191	b875c583d9c11a753090974efd8cc0d409a3eac8	APPROVE	worker-22	Quick; n
 humaniq	1194	a639d953b334d494ceed96e96b07df6e04fa15a4	APPROVE	worker-22	Quick; no blockers; spec text only, reason-bearing e2e excludes
 humaniq	1195	b3d7f5c67972ee5a3c42c2606bf6067353bd6eb9	APPROVE	worker-22	Standard; no blockers; @spec docblock tags plus e2e spec, no behaviour change
 humaniq	1196	e0e2cffa27f96e5529594607b47493629041cb13	APPROVE	worker-22	Quick; no blockers; e2e spec and spec annotations, task left unticked honestly
+humaniq	1197	a28aaa28605b810450a87a2c0ed4f9a2cfa22fa4	APPROVE	worker-22	Standard; no blockers; e2e journey spec only
