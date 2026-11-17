@@ -5202,3 +5202,4 @@ planninq	1216	45902e2e3c022b09c9b7f4349c086a71ac905884	MERGED	worker-13	GATE OK 
 stackiq	2024	d3bfa511d93e185f2889fb936ffefa27d7bc0c3a	RED	worker-32	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 stackiq	2025	820ddd39fcc967bdb6dc528cddcfb206e955f86a	RED	worker-32	GATE RED sbom: composer.lock changed without sbom.cdx.json
 stackiq	2026	176656140c5a9e0070bb25f530a974f19be299f3	RED	worker-32	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+learniq	2509	9a57b9430234952760eb416f122aa3fd1df5d6e3	RED	worker-15	GATE RED floor: unit_interfacing: 3.61 -> 3.59
