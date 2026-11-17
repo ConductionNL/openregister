@@ -18022,3 +18022,4 @@ decidiq	2173	050c1776c5d62774a872639305fb99d7dd436431	REVERIFY	worker-44:merge	c
 decidiq	2205	8a3de4c6be1208375b0e3243a96a4b8db2ed80eb	REVERIFY	worker-44:merge	conflicts only with an earlier PR of the merge tree: merges clean on development alone; files: lib/Settings/profiles/municipality.json src/manifest.json 
 launchpad	1210	fcd51164e3351ae1fe6f7a11a04d9db65e7e8a8f	CONFLICT	worker-38:merge	conflicts with development; files: appinfo/info.xml src/views/Views.vue 
 launchpad	1217	365b7069cdf8dd17c14d4c518c34b0ed1243def6	CONFLICT	worker-38:merge	conflicts with development; files: appinfo/info.xml 
+shillinq	3064	e0f4cc425ee7a30f248d80974e0c3615675ac897	GREEN	worker-49:review	build of sales-invoice-issue-controls matches its specs (number series at issue, number lock, four-eyes approval, fail-closed); unit 12799 tests OK vs baseline 12759 OK, no new failures; phpstan clean on changed lib files
