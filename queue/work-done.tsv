@@ -20742,6 +20742,7 @@ fix:opencatalogi:2650:6678e3ea	fixed: public source identifiers filtered in uses
 fix:shillinq:3007:8f36129b	conflict resolved, pushed 7ed685a6; REVERIFY (merge lock held elsewhere)	session-20261117T130049-95d0a2ec	2026-11-17T13:15:23Z
 verify:stackiq:2033:c8d7db28	GREEN #2033 (version bump only)	session-20261117T124628-bb853259	2026-11-17T13:16:04Z
 fix:learniq:2589:e5a5454a	merged #2589 at 241404be95b288b1abd5a2da268f098d513e533f (restored the five-layer supports entry)	session-20261117T124809-d8aae7cd	2026-11-17T13:16:26Z
+verify:dossiq:3440:911163c7	GREEN #3440 (no-op tree, 0 new failures)	session-20261117T124326-d41be1c2	2026-11-17T13:16:40Z
 fix:buildiq:1701:67dece1f	merged #1701 at 6183315e3d9928c24a7a60efb4b0aaa99d529590	session-20261117T123026-260cb3a6	2026-11-17T13:16:42Z
 fix:shillinq:3160:1013c8e6	fixed: restored publiccode supports layer entry, gate OK; new head 28ae1c74, REVERIFY queued	session-20261117T124637-3e909745	2026-11-17T13:16:45Z
 merge:filinq:2087:f47db02d	merge3 tree of 8 filinq PRs: none; conflict 8, lint 0, moved 0; fix rows 8	merge3-20261113T213425-c36bcd5f	2026-11-17T13:17:11Z
