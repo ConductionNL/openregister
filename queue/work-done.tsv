@@ -20466,3 +20466,4 @@ build:opencatalogi:dataset-views-on-the-public-page:c5	code tasks done: 4.1/4.2 
 verify:learniq:2577:c0760a5f	2577 GREEN (already on development), 2589 GREEN	session-20261117T113901-5c9d981d	2026-11-17T11:56:58Z
 merge:shillinq:2070:99da95a5	cloud tree of 3 shillinq PRs: merged=1 red=0 fail=0 skip=0; conflict 2, lint 0, red 0, moved 0, done 0	session-20261117T112242-9a598ddf	2026-11-17T11:57:12Z
 review:integriq:2650:a234a7dc	GREEN: 0 new failures on 9862 unit tests, phpstan clean, vitest 6/6	session-20261117T114019-426872f0	2026-11-17T11:57:48Z
+review:shillinq:3004:3a0e29de	GREEN on PR head (12825 tests, 0 failures); conflicts with development now (l10n, register-versions.lock)	session-20261117T112444-7a410249	2026-11-17T11:58:39Z
