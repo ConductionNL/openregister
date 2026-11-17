@@ -22681,3 +22681,4 @@ verify:versioniq:728:82369cc5	CONFLICT: appinfo/info.xml with development (trivi
 verify:larpinq:1056:3d583251	GREEN 1056: phpunit 1272 OK (base 1243), vitest 739 OK, 0 new failures	session-20261117T211611-151c4a14	2026-11-17T21:40:32Z
 verify:decidiq:2282:f3a3dab1	2282 GREEN; 2286 REVERIFY (l10n conflict with 2282 only)	session-20261117T211315-f96d97db	2026-11-17T21:40:44Z
 verify:larpinq:1112:3faffe76	GREEN #1112: unit 1243 -> 1245, 0 new failures	session-20261117T213154-bb97695e	2026-11-17T21:40:53Z
+merge:stackiq:2045:5c9c04c6	unmeasured: static.developer.overheid.nl (proxy 403; merge gate cannot measure, nothing landed)	session-20261117T211437-e305ed6d	2026-11-17T21:41:37Z
