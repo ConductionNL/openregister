@@ -5297,6 +5297,7 @@ launchpad	1267	9d79d281f3fc412df609b569b852ab6ed4da90df	MERGED	worker-20	GATE OK
 planninq	1231	b038b5610549a1158583fe4f9f91a795be9267a8	MERGED	worker-54	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.66 holds at 4.05
 learniq	2589	241404be95b288b1abd5a2da268f098d513e533f	MERGED	worker-17	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 4.09
 buildiq	1701	6183315e3d9928c24a7a60efb4b0aaa99d529590	MERGED	worker-10	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.91 holds at 3.94
+hermiq	1754	1a5852e797be3689f5f2f7e90ce77944cb53d2eb	MERGED	worker-22	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.77 holds at 3.77
 pipelinq	3932	b68d98558ef0ca9c770e0950081777dd4103c596	MERGED	worker-31	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.49
 integriq	3574	daecacd949c49a2ccaaeb6c3087ab83eee15516d	MERGED	worker-08	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.60
 integriq	3612	a0f66b1a4495f5377e1e81309f41f0c12c7a3be2	SKIP	worker-08	no APPROVE review at this head
