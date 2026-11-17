@@ -19101,3 +19101,4 @@ review:integriq:3545:9367d2e7	CONFLICT: l10n en/nl .js/.json conflict with devel
 review:shillinq:3052:e4fd4565	RED: administrationScopedIndex.spec.js (index not regenerated); phpunit clean; no behaviour blocker	session-20261117T020329-e21299e8	2026-11-17T02:18:17Z
 review:shillinq:3067:6f2e1f12	GREEN: suite 12516 OK vs baseline 12500, matches change	session-20261117T020227-9e68ed24	2026-11-17T02:18:24Z
 review:shillinq:3062:fbfbd1da	GREEN: phpunit 12521 ok, vitest 1 inherited failure	session-20261117T020207-847c18e7	2026-11-17T02:18:33Z
+review:hermiq:1757:becc16d7	GREEN: unit 5578 OK, vitest 36 OK	session-20261117T020131-42b6d5a2	2026-11-17T02:18:45Z
