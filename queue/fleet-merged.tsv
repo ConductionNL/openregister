@@ -5097,3 +5097,4 @@ learniq	2509	2500f76794984fd0e6de436a69fd37945c85d3af	SKIP	worker-35	GATE UNMEAS
 hermiq	1758	9fd79088cf0706e3368f7b1048a640a6d7d3152b	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.77 holds at 3.79
 learniq	2514	832a73769edf025c083d2dbea25f6a6dc6c391b1	MERGED	worker-35	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 4.08
 learniq	2534	6beffdd065c45b3c4302ddfaf36f502d76d7bfd8	MERGED	worker-35	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 4.08
+learniq	2549	670bd0cc179c07599c3fc0ae1430a3183b931a29	MERGED	worker-35	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 4.08
