@@ -819,3 +819,4 @@ versioniq	715	f78bf6ec7fe496be81970d63b041950456dea081	APPROVE	worker-36	Strict;
 stackiq	2008	f4283fd2b011b22e1db321a12037e0a4238a2759	APPROVE	worker-33	Quick; no blockers; tests only, OrganizationSyncService entity users with exact save/log assertions
 stackiq	2009	4f69815ca694c8ced85d99cdeb69efda4734d748	APPROVE	worker-33	Quick; no blockers; tests only; concern: second class (stream wrapper) declared in the test file
 stackiq	2011	839dbbe5f8e4ae95cce6838b2a1744c9534ff136	APPROVE	worker-33	Quick; no blockers; tests only, backfill skip paths with exact collaborator calls
+planninq	1168	b5c8c647c23e1927a17643001314aec7d2de05c2	APPROVE	worker-41	Thorough; no blockers; implements project-events-in-activity as its spec asks (activity listener bound to project schema, provider/filter subjects, l10n for 36 locales); concern: an update event without an old object reports every member as added
