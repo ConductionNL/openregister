@@ -22939,3 +22939,4 @@ fix:stackiq:1942:9b4a8fa2	BLOCK fixed (repair step registered + test), pushed 40
 merge:portaliq:2563:dcdb7ece	unmeasured: static.developer.overheid.nl, api.osv.dev (proxy refused); tree of 4 clean (0 new failures), APPROVE recorded for #2563 #2564 #2587, #2586 head moved to 2f262445 (not reviewed), nothing landed	session-20261117T223848-41a890d6	2026-11-17T22:52:22Z
 fix:launchpad:1218:98105966	fixed create-path address check, pushed 1d9132cf; merge lock busy, REVERIFY queued	session-20261117T224743-cba18a3a	2026-11-17T22:52:28Z
 merge:planninq:1218:193d0edb	unmeasured: api.osv.dev (6 PRs reviewed APPROVE, tree green: unit 1254, vitest 3593; merged=0 skip=6)	session-20261117T221832-434567de	2026-11-17T22:52:38Z
+verify:integriq:3705:478bf59c	GREEN #3705 (php 9910, 2E/3F inherited; vitest 2389 pass; build ok)	session-20261117T223214-1034c7a7	2026-11-17T22:53:14Z
