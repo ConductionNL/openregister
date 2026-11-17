@@ -18551,4 +18551,5 @@ integriq	3613	549ed1063eb59c61382015eacaf88a41d36c7a1b	GREEN	worker-53	builds ac
 portaliq	2569	1b0151d7f1ec1ad636ae5d82ddadda25f42df406	GREEN	worker-40	build case-actions-row-inputs-and-conditions round 2: node schema-form+row-inputs 30/30 (24 before), check:specs 1 failure inherited (notices.spec on development too), no PHP changed
 pipelinq	3947	97b7a3617d8a09231ade320985bae52a437362b9	GREEN	worker-51	vitest 5293 run, baseline 2 failed+1 file (myWorkPage, notificationLabels, reportSectionPeriod), new failures 0
 shillinq	3048	4dfa4261ed2abcae2c3484b1d033f5562ea26075	REVERIFY	worker-56	added tests/e2e/expenses-category-mapping.spec.ts (tests only); new head fa893f7b03a17eeaa949bc16ed6df63fe53cafe5, verify it
+keepiq	1830	5c88a35dbd09417d6bf7ec2f8f9a792ab317e99c	REVERIFY	worker-34	head moved to eb9f48ae5dedbdec685b61be1e6932f2c2bb0e23 before verify; verify the new head
 portaliq	2584	dbf6cf80bc1e7d9b9ec9ea1237a926336d2176a1	GREEN	worker-40	build portal-cms-admin-ui round 2: unit suite with openregister main 6321 tests (dev 6313), same 5 errors+3 failures inherited, 0 new; phpcs clean on new lib files
