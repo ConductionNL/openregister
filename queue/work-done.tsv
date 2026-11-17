@@ -21504,6 +21504,7 @@ build:learniq:guardian-reports-and-documents:b2	already done: only open task T6 
 build:learniq:governance-four-eyes-on-approved-data:b2	already done: open tasks 2.1b (live Playwright on a deployed instance) and 3.2 (archive, waits on 2.1b); no code task left	session-20261117T134441-beae3c0d	2026-11-17T15:11:59Z
 build:learniq:grade-scale-set-by-the-school:b2	already done: 1.1-2.1 on development (6e6db722); only 3.1, the archive and matrix step, is left	session-20261117T141120-684bff04	2026-11-17T15:11:58Z
 build:learniq:invite-a-trainer-and-an-assessor:b2	already built: T1-T3 on development; the two portal journeys exist (tests/e2e/trainer-flows.spec.ts, assessor-flows.spec.ts); T4 is the live run on an instance	session-20261117T141518-05f12270	2026-11-17T15:11:32Z
+build:learniq:learner-grade-read-follows-visible-from:b2	already done: T1 on development (0aa6bd878); only live check T2 left	session-20261117T133303-ca20630d	2026-11-17T15:12:23Z
 build:learniq:parent-row-actions-only-where-they-apply:b2	already done: T1-T2 on development (397e4cc8); T3 live	session-20261117T133035-588aec38	2026-11-17T15:13:00Z
 build:learniq:participant-portal:b2	already done: built in #1763 (d84b3797); only T4, an e2e task, is left	session-20261117T141120-684bff04	2026-11-17T15:13:01Z
 build:learniq:example-portal-install-steps:b2	nothing to build: only T3 (live sign-in after spin-up) is unchecked	session-20261117T123418-5f98fc94	2026-11-17T15:12:04Z
