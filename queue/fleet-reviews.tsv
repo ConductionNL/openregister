@@ -1240,3 +1240,5 @@ buildiq	1718	56e7faf39d616a8090eb63a8426131ae67e763f5	APPROVE	worker-47	Quick; n
 buildiq	1719	7653a33d583d1867e34be5ee228c5344ab9943f5	APPROVE	worker-47	Thorough (gate runner absent, checklist by hand); no blockers; ranked retrieval searches as caller and keeps only the agent's own file ids, falls back to whole files; global top-50 may miss the agent's files (falls back)
 buildiq	1720	b381c76e51c6407ce503784b63007dee43070ee0	APPROVE	worker-47	Quick; no blockers; tasks.md tick only
 filinq	2121	fb55b7205722abe59242d2e6ed53fbe8ad43cd80	APPROVE	worker-48	Strict (RBAC bypass in scan filing); no blockers; the bypass in PaperOriginalFiling is scoped to the original a printed separator names and recorded in authorization-decisions.md; new controller routes keep RBAC on; uses main options API
+filinq	2176	098a782ed239122525bac74cd4fff4db45bc3ac7	APPROVE	worker-48	Quick (docs only); no blockers; none
+filinq	2177	437ce3f40aeabb7966d280f22bc438c51f01606d	APPROVE	worker-48	Quick (tests only); no blockers; Newman collection not run here
