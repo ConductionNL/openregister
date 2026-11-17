@@ -19528,3 +19528,4 @@ review:shillinq:2063:ba502d7d	GREEN: 12598 tests, 0 failures	session-20261117T06
 review:portaliq:2446:14bb0792	GREEN: unit 6296 (16 inherited errors), page specs 38/38	session-20261117T060006-72dfb87c	2026-11-17T06:22:09Z
 verify:versioniq:758:de042167	CONFLICT: l10n en/nl js+json conflict with development	session-20261117T061802-b42f2669	2026-11-17T06:22:21Z
 review:stackiq:1944:a82cd19e	GREEN: i18n wrap matches change; no new test failures	session-20261117T055927-bd949843	2026-11-17T06:22:29Z
+merge:stackiq:1933:1deaf47e	cloud tree of 2 stackiq PRs: none; conflict 2, lint 0, red 0, moved 0, done 0	session-20261117T055844-3d508d2a	2026-11-17T06:22:43Z
