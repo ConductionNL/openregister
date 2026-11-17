@@ -19299,6 +19299,7 @@ merge:stackiq:1928:d3a9dc39:r	cloud tree of 7 stackiq PRs: merged=3 red=0 fail=0
 fix:filinq:2112:ac62393f	fixed: merged development, golden re-recorded, new head dc4b7d6c, REVERIFY	session-20261117T025204-e27953f1	2026-11-17T03:00:51Z
 fix:shillinq:2983:1f5c0426	fixed: merged development, regenerated scoped pages + register lock, pushed ad375f2d; merge lock busy, REVERIFY queued	session-20261117T025031-1b32b183	2026-11-17T03:01:12Z
 fix:filinq:2113:9e76e544	conflict resolved; REVERIFY at 36d16af002 (merge lock held by another merger)	session-20261117T020358-1a8df617	2026-11-17T03:01:22Z
+fix:integriq:3678:31eb3920	obsolete: #3678 already merged (head is in development; SPDX fix landed via #3679)	session-20261117T025311-e27d60f7	2026-11-17T03:01:29Z
 fix:decidiq:2154:7aa3f202	fixed objectCount, unit 4821 OK; REVERIFY at 6fc49611 (merge lock busy)	session-20261117T025205-24fff43b	2026-11-17T03:01:44Z
 fix:filinq:2086:fe4bcf08:v3	stale	session-20261117T025204-e27953f1	2026-11-17T03:01:29Z
 fix:decidiq:2199:1ea0b090	conflict resolved (manifest ids), spec counts updated, pushed 207cf34b; merge lock held elsewhere, REVERIFY queued	session-20261117T021723-9d734048	2026-11-17T03:01:59Z
