@@ -19065,3 +19065,4 @@ review:filinq:2105:7e8ef21d	CONFLICT: register description conflicts with develo
 review:hermiq:1496:2946df2b	GREEN: pure move, 0 new failures (5492 tests, baseline 198); @uses ChatDriverGates missing in ProviderFactory tests	session-20261117T020332-dda1b5ce	2026-11-17T02:10:28Z
 review:filinq:2124:8f7d55a4	RED: 8 new failures (old OpenRegister named args in WaarmerkStore/SigningEvidenceService, certify test)	session-20261117T020207-847c18e7	2026-11-17T02:10:53Z
 review:hermiq:1764:7265b61e	GREEN on behaviour; conflicts with development in the register (suite on PR head 5506 OK)	session-20261117T004644-d9c68b8f	2026-11-17T02:11:10Z
+review:learniq:2532:cb3bbe24	GREEN: suite 6983 tests, 1 inherited failure	session-20261117T020142-15890c05	2026-11-17T02:11:18Z
