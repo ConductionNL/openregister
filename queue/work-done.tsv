@@ -20895,3 +20895,4 @@ fix:portaliq:2449:ae33c0d7	conflict resolved (register both sides at 0.123.0 -> 
 verify:portaliq:2559:2ea3e34a	GREEN 2559, GREEN 2560; unit 6313 tree, 16 inherited errors, 0 new	session-20261117T133105-0c327c7d	2026-11-17T14:00:56Z
 merge:learniq:2509:5a6ff778	cloud tree of 1 learniq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0 (2524 CONFLICT recorded; 2509 merged at fe456800 after a swap-order fix)	session-20261117T133035-588aec38	2026-11-17T14:00:48Z
 fix:buildiq:1651:a0b41b07	fixed floor drop + merged development; REVERIFY at 02c8e568	session-20261117T133433-906519d6	2026-11-17T14:01:20Z
+fix:stackiq:2028:4f87d399	golden re-recorded, pushed 9d9add83; only inherited facets.spec failure; REVERIFY	session-20261117T134404-362023fb	2026-11-17T14:02:06Z
