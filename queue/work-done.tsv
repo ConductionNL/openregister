@@ -22912,3 +22912,5 @@ merge:larpinq:1049:67aa219b	unmeasured: static.developer.overheid.nl (blocked by
 verify:keepiq:1895:4a0033d9	GREEN #1895 (0 new failures)	session-20261117T223347-77301f38	2026-11-17T22:47:00Z
 fix:filinq:2116:9d997186	conflict resolved, pushed f4aa7a1d (unit 7404 OK); REVERIFY queued	session-20261117T223300-24d20109	2026-11-17T22:47:11Z
 fix:filinq:2192:8501a0bc	conflict resolved, pushed d9bcc0c9; merge lock held elsewhere, REVERIFY recorded	session-20261117T223234-66fa6b77	2026-11-17T22:47:21Z
+fix:larpinq:1054:fcbf9d48	failed: permission (git push to ConductionNL/larpinq refused by the session git proxy: repo not in authorized set)	session-20261117T223303-c1d113c1	2026-11-17T22:47:53Z
+build:humaniq:record-history-on-every-detail-page:b2:c5	built in PR #1198 (head ada533a8, Playwright spec written); only live tasks left (4.1 live run, 4.2 live check); waits on verify and merge of #1198	session-20261117T222626-5de57cc1	2026-11-17T22:47:43Z
