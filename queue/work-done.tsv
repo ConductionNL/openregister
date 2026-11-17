@@ -19462,3 +19462,4 @@ review:filinq:2105:0d907f7f	GREEN; conflicts with development after #2091	sessio
 review:filinq:2087:ec729a4e	CONFLICT: l10n en/nl and filinq_register.json vs development	session-20261117T055908-62351962	2026-11-17T06:02:10Z
 review:filinq:2086:b75633fb	CONFLICT: register version line conflicts with development; head alone 7006 tests OK, code consistent with change	session-20261117T055834-d932e117	2026-11-17T06:02:22Z
 review:hermiq:1741:d8e7284d	GREEN: 5542 tests OK (baseline 5527), phpstan clean	session-20261117T060006-72dfb87c	2026-11-17T06:02:37Z
+review:filinq:2078:d89b93ac	CONFLICT: l10n en/nl and filinq_register.json vs development	session-20261117T055908-62351962	2026-11-17T06:02:48Z
