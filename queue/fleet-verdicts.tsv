@@ -16744,3 +16744,4 @@ hermiq	1755	a55ceb60322495a7021b81fb5bd3b7225fc5bac7	CONFLICT	worker-20:merge	co
 hermiq	1757	becc16d78d8b6e59c2f62c2e22c8686e5d9479e6	CONFLICT	worker-20:merge	conflicts with development; files: l10n/nl.json 
 hermiq	1763	0ba5d84110ee954d980ff9ec614ede0e79dd6d49	CONFLICT	worker-20:merge	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json src/views/AdminRoot.vue tests/vitest/admin-root.spec.js 
 hermiq	1764	7265b61ec2891e4f0e4ec384549	REVERIFY	worker-20:merge	verdict sha is not the head: head is 7265b61ec2891e4f0e4ec3845496e039eb629059
+shillinq	2998	722918d0650a20424ffb7e48fe01e85f56cc50c6	REVERIFY	worker-55	regenerated src/manifest.d.shell.json, check:manifest-shell PASS; merge lock held elsewhere; new head 5dd30f17ccd38596168c81eb6121b2615ec5b331, verify it
