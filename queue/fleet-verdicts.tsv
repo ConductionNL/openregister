@@ -19482,3 +19482,4 @@ opencatalogi	2794	85f20bb85c5a19d6e66aea0b7267df306933caac	RED	merge3:merge-gate
 opencatalogi	2795	9844e9a09589c8fb5eb3275c484e4adb67f6bb38	RED	merge3:merge-gate	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
 opencatalogi	2796	7d78014c5c048a8b9ec158b0573d341fb0dfbe97	RED	merge3:merge-gate	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
 opencatalogi	2797	73c7291c61fbe1ac6ed7f6f4bb7f1da3b265956d	RED	merge3:merge-gate	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+pipelinq	3963	e0b88c16e1c5e43d0827e293701b09a4c5a0c8d2	RED	worker-10:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
