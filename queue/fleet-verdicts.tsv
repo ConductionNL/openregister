@@ -18829,3 +18829,4 @@ filinq	2113	374ff86db69b9fcb8d0e55beeae136482b38672f	GREEN	worker-19	phpunit 729
 filinq	2191	377356bf2f306d95ea02377504a7b19877cf41cb	GREEN	worker-51	build image-redaction per its specs; phpunit 7288 baseline OK -> 7350 OK, no new failures; vitest 857 passed; new endpoints resolve the file in the caller folder (404 otherwise)
 hermiq	1851	b966db2c68a14f9afb14d3f3420a29c429ecf9d3	GREEN	worker-20	alone on development: unit 5754 0 failures (baseline 5736 0); diff read earlier, build session-entity-links per spec
 hermiq	1847	4b35bf029a1ae7308503d63ef3b7d87dd2e68235	GREEN	worker-44	phpunit 5734 on tree, baseline 199 errors+failures inherited, none new; e2e/Newman spec files and tasks notes only
+integriq	3706	ab3bf6992aee8bb79e816bf558522f618d594e91	GREEN	worker-51	dev-dep bump @babel/preset-env 7.29.14 + sbom; npm ci ok, vitest 2389 passed; no PHP touched
