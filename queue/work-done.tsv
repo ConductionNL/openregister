@@ -20450,3 +20450,4 @@ review:filinq:2069:08c42f1e	BLOCK: intakeDefaultRule schema changed without vers
 review:filinq:2090:c34cbf17	GREEN: seed template + test, suite 7250 OK	session-20261117T114914-3f64e1b2	2026-11-17T11:53:17Z
 verify:thematiq:1713:b4ab4302	1713 GREEN; 1714 REVERIFY (conflicts only with #1713)	session-20261117T114638-d8047dd3	2026-11-17T11:53:33Z
 fix:stackiq:1943:1d009f7f	merged #1943 at 61ef25c28535107a6191128eea1d7ee611b28ce7	session-20261117T110646-831a671b	2026-11-17T11:53:51Z
+merge:learniq:2509:678d0509	cloud tree of 2 learniq PRs: none; conflict 2, lint 0, red 0, moved 0, done 0	session-20261117T112432-6eb8ecae	2026-11-17T11:53:55Z
