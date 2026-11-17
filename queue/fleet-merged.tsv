@@ -5136,3 +5136,4 @@ versioniq	701	8845d766a2122bdbccd77d5dda5a0029834e9917	MERGED	worker-29	GATE OK 
 versioniq	754	8d9ac96cc209dd84dcc24262a8b60c820ba7b70f	RED	worker-29	GATE RED floor: overall: 5.07 -> 5.05; duplication: 5.19 -> 5.17; unit_interfacing: 4.57 -> 4.48
 decidiq	2162	a11708136c625a38e8ac005dd7a8f94b249c2033	MERGED	worker-24	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.78 holds at 3.81
 decidiq	2177	7c45ed6086ab3bd9a987ae7f98eab7e09e1e87c8	MERGED	worker-24	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.78 holds at 3.80
+opencatalogi	2651	e7467c2ae155bfb37a2c8a4cae688105b33ed3c3	RED	worker-19	GATE RED floor: unit_size: 4.66 -> 4.64; unit_interfacing: 4.73 -> 4.67; module_coupling: 5.44 -> 5.41
