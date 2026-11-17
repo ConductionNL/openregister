@@ -19261,3 +19261,4 @@ buildiq	1630	285ac6f0971889105f2dbd12d6e5111710aaf0b2	CONFLICT	worker-50:merge	c
 buildiq	1651	c1a3ad84f420d8cac16d29a8b2d018d08e83a9cd	REVERIFY	worker-50:merge	conflicts only with an earlier PR of the merge tree: tests/stubs/openregister-stubs.php
 buildiq	1715	628d9e25f091953535ee8b7bb25	REVERIFY	worker-50:merge	verdict sha truncated in task row; head is 628d9e25f091953535ee8b7bb259bf0baf012802
 learniq	2609	c89b130edd06be28324a4af9a4215838ca91ef49	REVERIFY	worker-04	conflicts only with an earlier PR of the verify tree (l10n catalogues vs #2608)
+learniq	2612	2ee740f1c00542d494eea6628579fc69bb43768e	GREEN	worker-04	tree 2608+2612: unit 7164 tests, baseline 7152 with 1 failure (inherited), new failures none
