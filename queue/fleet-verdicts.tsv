@@ -18763,3 +18763,5 @@ portaliq	2583	d8b97f3d2f59b320429f65f08684bf9f10a34084	CONFLICT	worker-32	packag
 portaliq	2585	047ea7f203051ca4121b9fbb4fe5d368a8652f63	GREEN	worker-32	unit 6339 tests on tree, baseline 6324 with 16 inherited errors (openregister classes absent), new failures 0; no JS unit script, markdown-block node test passes; e2e spec only
 portaliq	2586	d48314a985599ff8b6ed00246dba8cf43321e1ba	CONFLICT	worker-32	package.json conflicts with development
 portaliq	2587	664b8ca8575ae2f35befab13dda8dba4deb03d63	GREEN	worker-32	unit 6339 tests on tree, baseline 6324 with 16 inherited errors (openregister classes absent), new failures 0; no JS unit script, markdown-block node test passes; portal-bound sessions and domain re-check per change, access only tightened
+pipelinq	3942	2b241c62d46f0e5695fcbda73b385b9d2b9c4aed	RED	merge3:merge-gate	GATE RED floor: duplication: 4.30 -> 4.28
+pipelinq	3950	deaebf3043e5ffac9b208a8de84f55252894e932	RED	merge3:merge-gate	GATE RED floor: overall: 4.83 -> 4.81; unit_interfacing: 4.18 -> 4.10; module_coupling: 5.34 -> 5.28
