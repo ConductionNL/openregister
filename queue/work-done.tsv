@@ -21749,3 +21749,4 @@ build:filinq:image-redaction:b2	partial: PR #2191 (head 377356bf); done 1.1 1.2 
 review:filinq:2107:07113f95	GREEN: unit 7334 OK, vitest/jest pass, access checks hold	session-20261117T145748-1419d209	2026-11-17T15:44:02Z
 build:buildiq:github-app-repo-format:b2	partial: PR #1722 adds task 6.5 schema round-trip test (6 tests); 7.1 left: composer-audit fails on inherited symfony advisories in the lockfile, other named gates pass	session-20261117T153230-a4b1eff6	2026-11-17T15:44:37Z
 review:filinq:2130:151267ee	2130 GREEN (spec-conform; conflicts with development, needs a merge)	session-20261117T123418-5f98fc94	2026-11-17T15:44:25Z
+verify:decidiq:2276:60dd9c2f	9 GREEN (2276-2284); unit 5032 OK vs baseline 5020, vitest 1 inherited failure; 2284's sha was cut short in the row, its full head 75bf16e4978932fd693798e5513fda961c651b66 matched the prefix	session-20261117T134347-d0294040	2026-11-17T15:45:23Z
