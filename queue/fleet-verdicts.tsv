@@ -18722,3 +18722,4 @@ buildiq	1727	4916d3fd0aee276364b2ec147ef6e723807f88ca	GREEN	worker-26	same head 
 planninq	1248	36d5dc19e1277c9823e4512f8072ca92540206a6	GREEN	worker-22	e2e + postman collection only; tree unit 1254 OK/11 skipped (baseline 1253), vitest 3593/3593, no new failures
 planninq	1250	70dfe254912eeaa8aeb0a5a52fbb7c735485ff4e	REVERIFY	worker-22	conflicts only with an earlier PR of the verify tree (postman collection)
 versioniq	798	91fdceff9606e38c08294f9f188caa4b1c92289f	GREEN	worker-44	phpunit 2456 on tree, baseline 2, none new; vitest 3237 passed (2 inherited unhandled errors); CSS/aria keyboard reachability fix + spec
+stackiq	1963	5d4b224b8a597d13518bc49c1b7eaeaa96eb7211	GREEN	worker-37:review	implements operations-sync-status-and-progress per its design (D5 permissions initial state, sync page); unit 3952 OK, vitest 7/7, eslint clean; note: l10n tails conflict with current development
