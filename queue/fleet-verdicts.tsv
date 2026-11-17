@@ -18737,6 +18737,7 @@ stackiq	2044	49090a5b56bfe50d456671a5d323a4c75238b521	GREEN	worker-24	e2e spec +
 buildiq	1733	5a81786cd2a83eff34410a9bc6f04cc56d92c83a	GREEN	worker-15	unit 3676 tests baseline OK, tree OK, 0 new failures; e2e spec + tasks.md only (vitest excludes tests/e2e), matches the change's T04 e2e
 buildiq	1729	9f91a88bb139c28be30fed9312d8ab4e55de996c	GREEN	worker-21	unit 3676 tests OK (baseline 3676 OK), no new failures; e2e spec + tasks.md only, matches lifecycle-git-branches T06/T08
 buildiq	1731	73ee9a5e9c349c9df92d21ac0d456cf0dbbb708c	GREEN	worker-10	unit 3676 tests baseline 0 failures; PR adds only an e2e Playwright spec and a tasks.md note (no PHP/unit-JS change); new failures 0
+buildiq	1708	e03d2fbec0834604d7a50fcd45634a44b63ba4ed	GREEN	worker-44	phpunit 3676 on tree, baseline 3676 OK, no new failures; version bump in info.xml and openapi.json only
 buildiq	1723	7cd3ca1a58d36f87240a6eaa104d10f70d2327a3	GREEN	worker-14	unit 3676 tests, baseline 0 failures, 0 new; PR adds only an e2e spec and openspec text/tasks for form-dutch-field-formats
 stackiq	2045	711ef7f734af2625f6eb46f45c0b2d8e7ec7b45c	GREEN	worker-24	e2e spec + tasks only; unit 4064 tests 0 failures on tree (baseline 4055); vitest 2941 pass, 1 failure inherited from development (facets.spec FACET_DIMENSIONS)
 filinq	2121	fb55b7205722abe59242d2e6ed53fbe8ad43cd80	RED	worker-48:merge-gate	GATE RED floor: unit_complexity: 4.49 -> 4.47
