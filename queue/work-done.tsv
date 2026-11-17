@@ -19153,6 +19153,7 @@ review:launchpad:885:1143e3af	GREEN: gates preserved, vitest 2676 and PHPUnit 45
 fix:shillinq:1900:7c67b538	fixed duplicate openapi path; pushed f9ee4f1; merge lock held elsewhere, REVERIFY queued	session-20261117T015854-c76e8b72	2026-11-17T02:27:51Z
 review:shillinq:2983:1f5c0426	RED: administrationScopedPages.json not regenerated (vitest administrationScopedIndex); phpunit green	session-20261117T020238-79f03bb8	2026-11-17T02:27:59Z
 review:opencatalogi:2685:36175982	GREEN: no new failures (1 flaky unrelated), merges clean; overlaps #2680	session-20261117T020617-81e5b086	2026-11-17T02:28:13Z
+merge:shillinq:2081:c1af2733	cloud tree of 1 shillinq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T020146-60d3aeb8	2026-11-17T02:28:26Z
 review:buildiq:1649:039cc4ad	GREEN: 1 inherited failure, vitest 104 OK, merges clean	session-20261117T020255-329d248b	2026-11-17T02:28:23Z
 review:buildiq:1602:795c2893	GREEN: vitest 4846 pass on merge with development, no PHP touched	session-20261117T020322-58ced631	2026-11-17T02:28:40Z
 review:opencatalogi:2684:d8aa1341	RED: 3 new ThemesControllerTest::testShow* errors with openregister main beside	session-20261117T021015-602d1924	2026-11-17T02:28:48Z
