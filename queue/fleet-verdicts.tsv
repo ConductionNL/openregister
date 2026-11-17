@@ -19298,6 +19298,7 @@ integriq	3593	fea237c705413d5c3381dd5224fbfbefaec250af	RED	worker-52	PHP unit 99
 decidiq	2282	f00027e0e741ca2b0f99ebb6864d1e9c6aef1fdd	GREEN	worker-19	tree 2282+2286: unit 5047 pass (baseline 5020), 0 new; vitest 1 inherited fail
 versioniq	728	82369cc548014101b0a89827f4be3e89a0b59fa8	CONFLICT	worker-11	conflicts with development in appinfo/info.xml commands list (ExportSbom vs AutoUpdate, keep both); with it resolved: unit 2590 tests, baseline 2 inherited golden failures, no new; vitest 22 passed
 portaliq	2587	c972ccc36c2ad633d56605e064450690a8e395ff	GREEN	worker-36	phpunit tree 6352 tests, 16 errors = baseline 6324/16 inherited (ChangeProposals*, RegisterProposalLeaves*, ContractRegistrar), no new failures; build portal-scoping-and-auth per spec, checks stricter (fail closed), none weakened
+integriq	3733	674a28d71cab8deeadf7cccb92321ec6235cd80f	GREEN	worker-44	unit 9913 run, baseline 9910 with 2 errors/3 failures inherited, no new failures; tests, fixtures and tasks only
 pipelinq	3934	6ba01209ecd5625e0ddf012ef749484450241fb1	CONFLICT	worker-23	conflicts with development in l10n/en.js en.json nl.js nl.json
 shillinq	3177	605a77debdf7ceac3634af4e4ce6a4f307c7e04e	GREEN	worker-24	unit 12813 on tree (baseline 12796 OK, 3 skipped), 0 new failures; no JS/Vue code (manifest only)
 pipelinq	3945	ceffbf1ffd95fdbc429b3b7e77c1cbf97a8849c2	CONFLICT	worker-23	conflicts with development in l10n/en.js en.json nl.js nl.json
