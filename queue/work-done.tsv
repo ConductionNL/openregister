@@ -20825,6 +20825,7 @@ fix:dossiq:4886:19293aa0	merged #4886 at 1bf38b2df71b75bd37ad94efe2e4ca400393f1c
 review:dossiq:4886:1bf38b2d	GREEN: no new failures (19 inherited), additive term pick per spec	session-20261117T134021-b819d2e3	2026-11-17T13:46:49Z
 verify:planninq:1236:b9e947ed	GREEN #1236 (1253 tests, 0 new failures)	session-20261117T134446-8ca3801e	2026-11-17T13:47:01Z
 review:learniq:2551:f185e0a0	GREEN #2551 (per specs; failures inherited)	session-20261117T124010-7774729d	2026-11-17T13:47:22Z
+cover:launchpad:fb10c50fm88bd:05630945	no PR: lib/Middleware/Support is 55/60 lines covered; the 5 left run only when the empty WITHOUT_SUCCESSOR/RENAMED constants have entries (read via private self:: calls), unreachable without changing lib/	session-20261117T114019-426872f0	2026-11-17T13:47:36Z
 cover:launchpad:fb10c50fm88bd:b67d52c3	already done: lib/Job/*.php at 100% lines (48/48) on development ec73a83, no PR needed	session-20261117T134242-51ff9d48	2026-11-17T13:47:38Z
 review:hermiq:1760:c503263f	BLOCK: AgentBuild schema lacks demo data or reason; conflicts with development	session-20261117T132743-10cec9d3	2026-11-17T13:47:47Z
 verify:stackiq:2034:19da058c	GREEN #2034 (4054 tests, 0 new failures)	session-20261117T134404-362023fb	2026-11-17T13:47:57Z
@@ -20833,4 +20834,8 @@ fix:shillinq:1958:4334b560	fixed info.xml repair steps; new head 5bdb3bb1, REVER
 review:shillinq:3004:5df6f499	GREEN: unit 12845 OK (dev 12779), vitest 19/19, eslint clean	session-20261117T133025-beace6fb	2026-11-17T13:48:40Z
 review:shillinq:3007:7ed685a6	GREEN: unit suite 12816 OK, behaviour matches change specs	session-20261117T134347-d0294040	2026-11-17T13:48:53Z
 cover:dossiq:069ee2d6m9d1b:52aafbe5	already done: lib/Service/Vth/ at 100% statement coverage on development 21f141bd21 (pcov, 128 Lhs tests green), target 95	session-20261117T133105-0c327c7d	2026-11-17T13:49:14Z
+review:integriq:2650:c1e85c0b	BLOCK: gate-14 snake_case route names on 2 new routes + ServiceBindings conflict with development; tests clean (no new failures)	session-20261117T134024-07d6c268	2026-11-17T13:49:17Z
 cover:openregister:7350e3efm4377:js7af948c9	deferred: openregister has 185 open PRs	session-20261117T134504-7f453fd6	2026-11-17T13:49:17Z
+cover:launchpad:fb10c50fm88bd:34763eb4	PR #1298: ApiContractMiddleware 58/59 -> 59/59 lines, 1 test, suite 4621 -> 4622 OK	session-20261117T134242-51ff9d48	2026-11-17T13:49:51Z
+fix:integriq:3711:dd118ae9	fixed sbom, pushed 42694816; merge lock held elsewhere, REVERIFY queued	session-20261117T124621-35d7386d	2026-11-17T13:50:06Z
+review:shillinq:2975:df2c1919	GREEN: unit 12832 ok (baseline 12779), phpstan clean, vitest 47 ok, gates clean on the diff	session-20261117T133308-c6d52416	2026-11-17T13:50:17Z
