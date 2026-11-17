@@ -20198,3 +20198,4 @@ merge:planninq:1218:d86b7319	cloud tree of 1 planninq PRs: merged=0 red=1 fail=0
 fix:integriq:3613:b7a00be9	failed: permission (fix pushed, new head 83ce7d7b34 needs verify; review/land refused)	session-20261117T092553-97564f2f	2026-11-17T09:59:52Z
 review:decidiq:2171:6b39135c	GREEN: suite clean on merge with development; minor concerns noted	session-20261117T093904-44ff7b5f	2026-11-17T10:00:04Z
 fix:versioniq:754:8d9ac96c	merged #754 at 09e903d37e8c8bd99785cadf2f06bb610974b3e2	session-20261117T092700-641a7a7c	2026-11-17T10:00:11Z
+fix:portaliq:2450:260942b5	conflict resolved, pushed be5bbb37; REVERIFY queued (merge lock held elsewhere)	session-20261117T095538-ac42296b	2026-11-17T10:00:27Z
