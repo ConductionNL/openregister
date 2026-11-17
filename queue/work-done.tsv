@@ -22594,3 +22594,4 @@ fix:versioniq:698:ee38e0b7	conflict resolved (keep both: snapshot+sbom/channel),
 fix:filinq:2107:07113f95	unmeasured: api.osv.dev; conflict fixed, new head f00845e0 pushed, REVERIFY recorded; ledger review refused by permission check (own commits)	session-20261117T204330-02b728bd	2026-11-17T21:01:57Z
 gap:larpinq:attendance-history-by-owner:1	PR #1112: player history reads characters by ownerUid (ocName fallback for players without an account); unit + e2e	session-20261117T204330-02b728bd	2026-11-17T21:05:36Z
 merge:larpinq:1049:3171805b	unmeasured: static.developer.overheid.nl (tree 1049,1099,1100,1104 IN with 0 new failures; 1105 conflicts only with an earlier PR of the tree)	session-20261117T204330-02b728bd	2026-11-17T21:07:03Z
+review:larpinq:1056:3d583251	GREEN: no blockers; concerns eslint import order, per-batch recipient recompute	session-20261117T204330-02b728bd	2026-11-17T21:09:11Z
