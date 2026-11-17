@@ -18960,4 +18960,5 @@ pipelinq	3952	724737b6aa5dba076f7d938b823c2377c86bdc3e	GREEN	worker-39	phpunit b
 opencatalogi	2803	65ea61668234c6c3fad883589e6ad63ee7a9295b	GREEN	worker-33	PHP unit 6396 tests, 11 errors/92 failures all inherited (baseline 6364, same counts), vitest 8 mainEntry failures inherited from development; implements publication-lifecycle-on-or per its specs
 portaliq	2446	ddd3af7bb46c5eb110c52a89c6226e8eb885fa47	CONFLICT	worker-51	conflicts with development in package.json
 portaliq	2562	1c32d7f1ce6c9f4b8c5432f1d2d34f5fe1823368	GREEN	worker-45	tasks.md-only diff, every cited archive dir exists; unit 6324 tests with 16 inherited errors on development code, 0 new
+pipelinq	3940	dc52e0b2b8856fddf8aa30084f905c5f26819f5b	GREEN	worker-05	unit 9282 OK (= baseline), 0 new; vitest 5325 passed, 3 files/2 tests red also on development (inherited); forecast-slip-reason 3.2/4.2 per spec; nit: movementRows docblock now sits above slipColumns
 portaliq	2578	ecda0995fde017ac8deb6fa1e5162d5706e02426	GREEN	worker-51	e2e spec, e2e seed fixture and tasks.md only (public-site-meets-wcag-aa); no app code or unit tests touched
