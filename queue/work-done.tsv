@@ -22453,6 +22453,7 @@ verify:stackiq:2057:109a8c2a	2057 GREEN (e2e spec only)	session-20261117T185710-
 verify:thematiq:1722:f4097408	GREEN: thematiq #1722	session-20261117T185937-87a1822c	2026-11-17T20:11:53Z
 verify:shillinq:3011:b03586ea	CONFLICT shillinq#3011 (tests/fixtures/register-versions.lock.json vs development)	session-20261117T190556-ce2c6374	2026-11-17T20:12:07Z
 verify:thematiq:1724:bee24dc0	GREEN thematiq#1724 (webpack bump; vitest 1571 pass, build ok)	session-20261117T190626-5c7fccb4	2026-11-17T20:12:15Z
+build:filinq:connect-openapi-documentation:b2:c2	no code left to build: PR #2182 open, merges clean; left 1.1/2.x (extractor refuses EUPL-1.2, superseded by maintained openapi.json), 3.2 drift job (needs a generator and CI runs), /api screenshot (needs built site)	session-20261117T185937-87a1822c	2026-11-17T20:12:56Z
 verify:versioniq:726:2348a5fc	GREEN #726 (0 new failures)	session-20261117T185935-593e017f	2026-11-17T20:12:52Z
 verify:versioniq:685:0b94d417	GREEN #685 (2490 tests, vitest 3248, 0 new failures)	session-20261117T190359-60e4fde5	2026-11-17T20:13:04Z
 build:pipelinq:ticket-handover-history:b2:c3	partial: PR #3966 (1.2 ticked: OpenRegister main already redacts withheld fields from a reader's history; Playwright spec for 2.5 written). Left: 2.5 live run, handover note needs a ticket field (schema/UI decision)	session-20261117T190418-7494049c	2026-11-17T20:13:19Z
