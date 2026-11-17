@@ -18687,3 +18687,4 @@ review:dossiq:3955:66d20622	GREEN: rename only, 0 new failures (19 inherited), p
 merge:portaliq:1982:02749cc6:r	merge3 tree of 1 portaliq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-17T00:46:29Z
 verify:portaliq:2530:dcf33d3e	CONFLICT #2530 (composer.lock vs development)	session-20261117T004616-c7acc36d	2026-11-17T00:47:55Z
 review:buildiq:1648:0f576fb7	GREEN: within change specs; phpunit 3517 OK, vitest 4834 OK	session-20261117T003945-3aa9cc05	2026-11-17T00:48:18Z
+fix:portaliq:2500:211dedaa:v3	obsolete: #2500 already on development, closed	session-20261117T004616-c7acc36d	2026-11-17T00:48:49Z
