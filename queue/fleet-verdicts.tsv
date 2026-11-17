@@ -19235,3 +19235,4 @@ learniq	2524	defae59897776df65fca752cdd26e7ebdc87d32d	GREEN	worker-49	unit 7166 
 filinq	2173	6bce70eb0c412e2bc6eaa1d778075d1f8f776f04	GREEN	worker-38	publiccode.yml only (parses, referenced images exist); no code changed, unit baseline 7329 OK unchanged, 0 new failures
 filinq	2124	089581db204973bbe9a2c97d92587144ea4cc9e0	CONFLICT	worker-30	conflicts with development in lib/Settings/filinq_register.json
 planninq	1252	d65f04922fee972a0c53a84c02b54d6a5eed02ff	GREEN	worker-36	phpunit 1253 ok (baseline same), vitest 3589 passed on tree; e2e spec + tasks.md note for task-description-images; no new failures
+learniq	2519	26cb0ee872e5d3bba79683e7c5d8bf1c83e0942b	GREEN	worker-49	unit 7164 tests on tree over development 79a307ec3, baseline 7152 with 1 inherited failure (HigherEducationExampleSet), no new failures; php -l and phpstan clean; implements report-card-pdf-to-guardians
