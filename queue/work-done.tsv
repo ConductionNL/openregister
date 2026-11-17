@@ -19267,3 +19267,4 @@ fix:stackiq:1933:99e5e172	fixed RED (test expectation), pushed 60a38fa8; REVERIF
 fix:hermiq:1758:d5151101	conflict resolved; REVERIFY at 7278524b78 (merge lock held by another merger)	session-20261117T020358-1a8df617	2026-11-17T02:52:46Z
 verify:buildiq:1648:4c269521	CONFLICT: l10n/nl.json vs development	session-20261117T025134-c7910d2d	2026-11-17T02:53:23Z
 verify:dossiq:3957:8e3f5a35	CONFLICT: 3 files conflict with development	session-20261117T020227-9e68ed24	2026-11-17T02:53:37Z
+fix:shillinq:2998:722918d0	fixed: manifest shell regenerated, new head 5dd30f17, REVERIFY (merge lock held elsewhere)	session-20261117T025204-e27953f1	2026-11-17T02:53:45Z
