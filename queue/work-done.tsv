@@ -22425,3 +22425,4 @@ verify:stackiq:1966:b74dfc9f	1 GREEN (1966); unit +4 tests, vitest 0 new failure
 verify:shillinq:3174:661acc9b	GREEN #3174 (0 new failures; pull/3174/head ref missing on remote, verified from branch at same sha)	session-20261117T190333-2bf83f45	2026-11-17T20:06:21Z
 verify:shillinq:1958:5bdb3bb1	CONFLICT #1958 (appinfo/info.xml vs development)	session-20261117T190448-9c35d7c4	2026-11-17T20:07:22Z
 fix:shillinq:3048:fa893f7b	fixed: conflicts resolved and administrationScopedPages regenerated; pushed 9fbb86c2; REVERIFY queued (merge lock held)	session-20261117T190150-dbabe332	2026-11-17T20:07:32Z
+merge:versioniq:692:72818c9c	failed: permission: GitHub API refused for versioniq in this session (HTTP 403, repo access not enabled); tree built clean (700,784 IN, 0 new failures; 692,698 CONFLICT), nothing landed	session-20261117T185359-d68263c5	2026-11-17T20:07:40Z
