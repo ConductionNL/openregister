@@ -18700,3 +18700,4 @@ fix:portaliq:2451:5377377c:v3	conflict resolved, pushed f157947e; merge lock hel
 fix:portaliq:2452:061df660:v3	conflicts resolved, pushed e50c3f86; merge lock held elsewhere, REVERIFY queued	session-20261117T004735-ba0cb916	2026-11-17T00:52:04Z
 merge:thematiq:1124:7f8cab4f:r	cloud tree of 2 thematiq PRs: merged=2 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T230934-9ee320cf	2026-11-17T00:52:29Z
 fix:portaliq:2492:0067a042:v3	conflict resolved, new head 8fe88049; lock busy, REVERIFY queued	session-20261117T004723-694d6e7e	2026-11-17T00:52:27Z
+fix:pipelinq:3734:666ee86d:v3	conflict resolved, pushed ed9bd0c7; REVERIFY (merge lock held elsewhere)	session-20261117T004718-f6df305c	2026-11-17T00:52:37Z
