@@ -19542,3 +19542,4 @@ review:versioniq:706:2a838675	GREEN: matches change specs; merges clean; suite =
 merge:versioniq:715:f48ec840	cloud tree of 1 versioniq PRs: none; conflict 1, lint 0, red 0, moved 0, done 0	session-20261117T055928-ffb37dd3	2026-11-17T06:25:47Z
 fix:shillinq:3011:168bacf3	conflict resolved, new head dd50b990, REVERIFY (merge lock held)	session-20261117T061732-40387d12	2026-11-17T06:25:54Z
 build:shillinq:tax-cbcr-and-pillar2-returns:c8	partial: blocked, www.oecd.org still refused by the egress proxy (403); PR #2997 keeps every code task but 2.1 and the tasks waiting on it (4.1-4.3, 5.1 Generate XML refusal)	session-20261117T061732-40387d12	2026-11-17T06:26:17Z
+fix:integriq:3585:027d5ca5	conflict resolved, pushed 472896a8; REVERIFY (merge gate host blocked)	session-20261117T055834-d932e117	2026-11-17T06:26:44Z
