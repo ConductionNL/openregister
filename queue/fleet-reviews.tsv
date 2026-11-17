@@ -1162,3 +1162,4 @@ versioniq	709	15263d7c05a007f23ae4464332a1db12ae29c2a2	APPROVE	worker-41	Thoroug
 dossiq	6638	501374d688a7f0645ba4ae9af1be076059752579	APPROVE	worker-03	Quick; no blockers; marked minor bump + sbom regen
 dossiq	6639	ced2397f8699fdc0892907696ebf194d1a68bf02	APPROVE	worker-03	Quick; no blockers; vue-eslint-parser bump + sbom regen
 dossiq	6641	b6ff98475dbbe33f6a24897d8a726f57e1db537d	APPROVE	worker-03	Quick; no blockers; publiccode.yml metadata only, referenced images and roadmap exist
+buildiq	1654	a9ea9841fe8591e532717d7ef26f2988c5e39ea2	APPROVE	worker-55	Thorough; no blockers; built to the change specs: offline worker 404 unless instance setting on, app permitted and manifest declares offline, fails closed on error; touch icon needs a session like the existing icon routes; new constructor params are trailing/named; tree 3617 tests 0 new failures
