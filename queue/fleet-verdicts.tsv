@@ -19209,3 +19209,4 @@ learniq	2519	26cb0ee872e5d3bba79683e7c5d8bf1c83e0942b	GREEN	worker-49:review	imp
 filinq	2087	9d205c2d34ce58dbd2753858625267abd4156870	GREEN	worker-30	phpunit 7334 OK (baseline 7329 OK), vitest 874 passed, no new failures; build of scan-intake-with-separator-sheets per its spec
 filinq	2173	6bce70eb0c412e2bc6eaa1d778075d1f8f776f04	GREEN	worker-14	publiccode.yml metadata only; unit 7336 tests on tree, baseline 7329 green, no new failures
 stackiq	2028	9d9add83116540ecee19b9cfe128025267881839	RED	worker-32:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+filinq	2190	31521cfa124aa71c4f036a2e0b32a52ffc9387cc	GREEN	worker-14	build pdfua-verapdf-matterhorn: fixtures, recorded reports, e2e spec, PdfUaFixturesTest (+7 tests); unit 7336 tests, no failures
