@@ -19136,3 +19136,4 @@ review:pipelinq:3743:4a743d55	GREEN; vitest reds inherited from development	sess
 review:learniq:2514:3f5207d1	GREEN #2514 (inherited failures only; golden conflict with development)	session-20261117T020252-b4828a7d	2026-11-17T02:24:40Z
 review:integriq:3618:c0bf242e	CONFLICT: l10n en/nl conflict with development; code matches the change	session-20261117T020223-01f01255	2026-11-17T02:24:54Z
 review:shillinq:3000:5eb9600a	RED: manifest validation fails on the PR's relatedLists page config; PHP unit 12545 OK	session-20261117T004644-d9c68b8f	2026-11-17T02:25:05Z
+review:shillinq:3011:168bacf3	GREEN: change-scoped build, suite green	session-20261117T020408-6b9de5cf	2026-11-17T02:25:20Z
