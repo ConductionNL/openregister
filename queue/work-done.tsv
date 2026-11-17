@@ -19876,3 +19876,4 @@ review:versioniq:692:596a62c5	GREEN: spec-conform, no new failures (2 inherited 
 review:filinq:2124:0922105d	GREEN: unit 7155 OK, vitest 802, jest 617, phpstan clean	session-20261117T081100-57828e7e	2026-11-17T08:18:14Z
 review:opencatalogi:2722:6007a1fe	GREEN: 0 new failures (6192 tests, baseline 74F/4E inherited)	session-20261117T081227-7932bc83	2026-11-17T08:18:27Z
 fix:pipelinq:3929:4a76f69c	fixed: guard now judges the stored assignee; widening is Ruben's 17 Nov decision; new head ff1ff046, REVERIFY queued	session-20261117T081046-cceefea9	2026-11-17T08:18:38Z
+review:launchpad:1218:2d2e11df	GREEN: launchpad #1218, unit 4572 OK, vitest 2684 OK	session-20261117T080436-bf0369a8	2026-11-17T08:18:52Z
