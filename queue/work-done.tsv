@@ -22853,3 +22853,4 @@ review:openregister:10635:df149781	APPROVE #10635 (@pinia/testing dev bump, peer
 review:openregister:10636:cad623d3	BLOCK: psalm 7.6.0 crashes on lib/ (psalm 5 on main completes)	session-20261117T221428-ca31c1a7	2026-11-17T22:31:11Z
 fix:hermiq:1851:b966db2c	BLOCK fixed (link item descriptions), pushed 267e4360; REVERIFY queued (end to end skipped: merge gate host unreachable)	session-20261117T211422-95669914	2026-11-17T22:31:54Z
 verify:pipelinq:3940:4053bc64	GREEN 3940, 3942; REVERIFY 3943, 3954 (conflict only with earlier tree PRs); unit 9323 OK, no new failures	session-20261117T213056-2ba36933	2026-11-17T22:32:38Z
+fix:hermiq:1763:561fdd1e	CONFLICT resolved, pushed bff0c5dd; REVERIFY queued (end to end skipped: merge gate host unreachable)	session-20261117T211422-95669914	2026-11-17T22:33:09Z
