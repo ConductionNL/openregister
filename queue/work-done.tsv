@@ -19536,3 +19536,4 @@ review:shillinq:1958:204d8ba8	GREEN	session-20261117T042937-c444c626	2026-11-17T
 merge:portaliq:2449:2162cc6c	merge3 tree of 2 portaliq PRs: merged=1 red=0 fail=0 skip=0; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-17T06:24:04Z
 review:versioniq:735:1bdf2b19	GREEN: matches change specs; suite = baseline; conflicts with development (needs merge)	session-20261117T062151-8cc59109	2026-11-17T06:24:24Z
 review:versioniq:727:8ac21734	GREEN: unit 2269, 2 inherited failures, none new; vitest 3170 OK	session-20261117T055928-ffb37dd3	2026-11-17T06:24:40Z
+review:versioniq:700:ee56187d	GREEN: unit 2287 (baseline 2242), only the 2 inherited golden failures	session-20261117T061802-b42f2669	2026-11-17T06:24:57Z
