@@ -17567,3 +17567,4 @@ planninq	1217	fa5c4f9ae6ae9d07a6becdca46f7a84f3f9d411a	GREEN	worker-26	phpunit 1
 planninq	1218	fc16da26f4d59be4ee6db2ae872717ec6377dc8f	REVERIFY	worker-26	conflicts only with an earlier PR of the verify tree
 planninq	1219	1d36a519712598e1196967b233046fb100733b92	GREEN	worker-26	phpunit 1253 OK (baseline 1253 OK), vitest 3581 passed (baseline 3581), webpack build OK, new failures none; patch bump
 stackiq	1938	08b568aa0bebcc56245555764e42c8caa21c5f32	REVERIFY	worker-34	split the technology lifecycle and EOL stamper units (floor PASS: unit_complexity 3.74, unit_interfacing 4.71 vs base 3.73/4.71), bounded the component search via SearchBounds; tree 4028 tests 0 new failures; APPROVE recorded; land UNMEASURED; new head 903d38ebb1408ac2b76caf4e3df4eff0c96c40e4, verify it
+humaniq	1134	69b3282e1e9d096c75b3e688ecbf57c9653e5060	RED	worker-47:merge-gate	GATE RED floor: unit_size: 4.47 -> 4.44; unit_complexity: 3.52 -> 3.48; unit_interfacing: 3.68 -> 3.66
