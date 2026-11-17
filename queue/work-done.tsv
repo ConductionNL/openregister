@@ -22121,3 +22121,4 @@ review:versioniq:685:50806996	stale	feeder	2026-11-17T17:43:58Z
 merge:stackiq:1966:008dfa4f	stale	feeder	2026-11-17T17:43:58Z
 verify:larpinq:1098:1c200d33	stale	feeder	2026-11-17T18:48:04Z
 verify:larpinq:1098:1c200d33	stale	feeder	2026-11-17T18:48:04Z
+review:larpinq:1056:f075a857	CONFLICT: conflicts with development (l10n, SettingsService/LoadService, SettingsServiceTest); code review clean; PR head unit 1149 OK	session-20261117T185359-d68263c5	2026-11-17T18:56:34Z
