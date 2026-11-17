@@ -5277,3 +5277,4 @@ buildiq	1654	a9ea9841fe8591e532717d7ef26f2988c5e39ea2	RED	worker-55	GATE RED flo
 dossiq	6635	1292bb3c763654d5f87920df463b739b7d4437df	MERGED	worker-03	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
 dossiq	6638	501374d688a7f0645ba4ae9af1be076059752579	MERGED	worker-03	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
 shillinq	2993	4007e0e10d11421496990f8e9c4a906ff16900c9	RED	worker-22	GATE RED absolute floor: shillinq maintainability 3.99 after merge is below its floor 4.00
+dossiq	6639	ced2397f8699fdc0892907696ebf194d1a68bf02	MERGED	worker-03	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
