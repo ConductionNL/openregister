@@ -22356,3 +22356,4 @@ verify:portaliq:2580:9c288ce1	GREEN (e2e + l10n)	session-20261117T190242-7c82bed
 verify:stackiq:2037:8a006619	GREEN #2037 (tests only)	session-20261117T190418-7494049c	2026-11-17T19:53:45Z
 verify:opencatalogi:2756:70b8b0cb	GREEN 2756; no new PHP or JS failures (all inherited)	session-20261117T185359-d68263c5	2026-11-17T19:53:59Z
 verify:stackiq:2040:6e1004c5	GREEN #2040: tests only, unit 4079/0 failures	session-20261117T185903-e132ac1e	2026-11-17T19:54:21Z
+verify:dossiq:6665:d62c780d	GREEN 6665; 0 new failures (19 php + 2 vitest inherited)	session-20261117T185932-75c4578d	2026-11-17T19:54:45Z
