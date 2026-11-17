@@ -20355,5 +20355,6 @@ fix:filinq:2105:2a7c3169	conflicts resolved (9 files, both sides kept), 7344 tes
 review:filinq:2126:7a17d80f	GREEN: unit 7277 OK on merge with development; register header conflict noted	session-20261117T112552-11cae4cc	2026-11-17T11:31:45Z
 gap:planninq:publiccode-logo-and-fields:1	PR #1231; logo yes; store link skipped (not published); added landingURL, roadmap, logo, dependsOn, intendedAudience, documentation, screenshots, time-tracking category, 10 features nl+en, 37 languages; version to tag v0.1.4; platforms web; removed non-standard supports; usedBy skipped (unknown); parser clean	session-20261117T112923-34cf7006	2026-11-17T11:31:59Z
 fix:stackiq:2026:17665614	sbom regenerated, pushed 490a9654; merge lock busy, REVERIFY recorded	session-20261117T112147-4fea037e	2026-11-17T11:31:54Z
+gap:openregister:publiccode-logo-and-fields:1	failed: permission (running publiccode-parser was refused); nothing pushed	session-20261117T112008-f5bd35fb	2026-11-17T11:32:10Z
 review:integriq:3550:c36eeb35	GREEN: no new failures (5 inherited), matches spec; conflicts with development	session-20261117T112106-1814b74b	2026-11-17T11:32:04Z
 review:learniq:2509:56cfb0f8	GREEN: learniq #2509, suite matches baseline (2 inherited failures)	session-20261117T112034-c2650a4c	2026-11-17T11:32:19Z
