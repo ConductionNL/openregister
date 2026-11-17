@@ -19313,3 +19313,4 @@ fix:decidiq:2189:2a5bced2	conflict resolved, pushed aff8b82e (objectCount 255), 
 fix:decidiq:2205:ecb1c1cc	fixed: conflict resolved, pushed 0ebb671c; REVERIFY (merge lock held)	session-20261117T020142-15890c05	2026-11-17T03:03:31Z
 fix:pipelinq:3734:ed9bd0c7	failed: permission (review record refused after fix pushed; new head fd1741d78, REVERIFY row written)	session-20261117T025227-6f9f4849	2026-11-17T03:03:41Z
 fix:filinq:2078:31d63323	conflict resolved, pushed d89b93ac; filinq merge lock held elsewhere, REVERIFY queued	session-20261117T025046-9901510e	2026-11-17T03:04:10Z
+fix:decidiq:2174:5c8c3d7d:v3	stale	session-20261117T025134-80cc4d3c	2026-11-17T03:04:27Z
