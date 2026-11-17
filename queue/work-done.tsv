@@ -20162,3 +20162,4 @@ build:opencatalogi:dataset-views-on-the-public-page:c4	partial: pushed c697ce65 
 fix:hermiq:1740:7ac6294b	conflict resolved, pushed c6bf622f; merge lock held elsewhere, REVERIFY queued	session-20261117T092359-231529ac	2026-11-17T09:48:31Z
 fix:larpinq:1043:03f6b920	fixed: gate OK at aaa4e471 (development merged, XP history test added); REVERIFY queued	session-20261117T091244-7c1a3c79	2026-11-17T09:48:49Z
 merge:opencatalogi:2766:a2ccc6cc	cloud tree of 1 opencatalogi PRs: merged=0 red=0 fail=0 skip=1 (head moved to c697ce65 during land); tree green only with openregister main beside	session-20261117T084727-10682198	2026-11-17T09:49:12Z
+fix:opencatalogi:2654:cc1b236e	fixed maintainability floor (interfacing 4.75, coupling 5.43 vs base 4.73/5.44, PASS); new head 3703a084; merge lock held elsewhere, REVERIFY queued	session-20261117T093516-d01add77	2026-11-17T09:49:26Z
