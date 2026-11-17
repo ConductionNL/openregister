@@ -5159,3 +5159,4 @@ hermiq	1741	7b6013eefb2cc3a31a9b242e340708e2c1d24ba8	MERGED	worker-50	GATE OK sb
 versioniq	700	128a76e40590f6986a27cfb6f8067b3c807e4246	RED	worker-58	GATE RED checker floor: adrvalidator: warn -> fail; adrvalidator stars: 3 -> 1; score: 97 -> 93
 integriq	3545	76605dd41334c821c1ceb47c5ffe0aa9fb627147	MERGED	worker-33	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.61
 learniq	2509	2500f76794984fd0e6de436a69fd37945c85d3af	SKIP	worker-15	no APPROVE review at this head
+launchpad	1212	dc706ee15e7c98a5d79e6386fd3a226f481661a7	RED	worker-54	GATE RED floor: duplication: 4.66 -> 4.64; module_coupling: 4.74 -> 4.70
