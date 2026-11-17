@@ -20773,3 +20773,4 @@ gap:planninq:installable-psalm7:1	PR #1236 (platform php 8.3.16, lock hash only;
 gap:stackiq:installable-psalm7:1	PR #2034: platform php 8.3.16, lock hash/overrides only; install ok, unit 4050 ok; psalm not run (session php 8.3.6)	session-20261117T124128-c2e9515e	2026-11-17T13:25:22Z
 fix:shillinq:2993:4007e0e1	fixed floor (3.99->4.00), pushed 39b07fb3; REVERIFY queued (merge lock busy)	session-20261117T125716-5aa18045	2026-11-17T13:25:24Z
 merge:integriq:3574:e462a601	cloud tree of 9 integriq PRs: merged=1 red=6 fail=0 skip=1; conflict 0, lint 0, red 0, moved 1, done 0	session-20261117T124618-77238b95	2026-11-17T13:26:57Z
+merge:learniq:2486:43088474	cloud tree of 2 learniq PRs: merged=1 red=0 fail=0 skip=0; conflict 1, lint 0, red 0, moved 0, done 0	session-20261117T124809-d8aae7cd	2026-11-17T13:27:27Z
