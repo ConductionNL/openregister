@@ -22485,3 +22485,4 @@ build:learniq:certificate-verification-and-key-rotation:b2:c4	already built: cod
 verify:thematiq:1726:ebe538c8	GREEN #1726 (vitest 1571 pass, dev-dep only)	session-20261117T191558-f6f135b1	2026-11-17T20:16:55Z
 fix:filinq:2173:a7b20c84	fixed: restored publiccode.yml supports entry; new head 6bce70eb0, REVERIFY queued (merge lock busy)	session-20261117T190026-7c82e6b3	2026-11-17T20:17:08Z
 verify:versioniq:780:f23cd299	GREEN #780 (e2e spec only)	session-20261117T190436-15c3d98f	2026-11-17T20:17:33Z
+build:integriq:connectors-course-marketplace:b2:c2	blocked: e2e spec written on integriq#3716; Task 6 form half held by build decision 57 (open question 7 of platform-connector-set-sharing); the one-collection run needs a reachable mock catalogue and a live instance; nothing buildable left	session-20261117T190302-4e3d4569	2026-11-17T20:17:51Z
