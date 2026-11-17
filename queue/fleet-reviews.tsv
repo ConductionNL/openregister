@@ -1381,3 +1381,4 @@ opencatalogi	2795	9844e9a09589c8fb5eb3275c484e4adb67f6bb38	APPROVE	worker-46	Qui
 opencatalogi	2796	7d78014c5c048a8b9ec158b0573d341fb0dfbe97	APPROVE	worker-46	Quick; no blockers; e2e spec only, refuses shared instances and restores production mode
 thematiq	1719	740e1349e57122fb6902c14777368c21f0bfaa15	REQUEST_CHANGES	worker-14	Strict (CI workflow); blocker: the new step runs the upstream theme builds inside the job that holds write permissions; build them in a separate read-only job and pass the token files on as an artifact; rest of the diff fine
 keepiq	1898	2d4d0257353ba497c0c94affef2fedeabcee86dc	APPROVE	worker-31	Quick; no blockers; tasks.md note only
+keepiq	1899	abebdd6ffa781653cb3cdfbbfdac6d7c181fbded	APPROVE	worker-31	Strict; no blockers; listener answers only application-owned, untrashed secrets minted for integriq and the acting org, lookup failure denies; new table follows keepiq's own-table convention and is in the backup registry
