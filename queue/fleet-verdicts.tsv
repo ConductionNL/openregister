@@ -17055,3 +17055,4 @@ decidiq	2198	764b069dea1468a00f0764bffa9390b2231d92d8	CONFLICT	worker-46:merge	c
 buildiq	1649	039cc4aded0ba4e006fecebce588825dbc03a868	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 3.45 -> 3.39
 buildiq	1597	91ec5c6dbe0d7e078a9d3782205392a7f13a1892	CONFLICT	merge3	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
 buildiq	1654	37e70c182b0d1503467cd1f9e3cfc5d39bdd56f7	CONFLICT	merge3	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json tests/Unit/Controller/DashboardControllerTest.php 
+integriq	3633	109ddb59cb44e81e0e89bab020c847a6b60e839d	GREEN	worker-14:review	build sources-per-user-oauth per its change: a per-user source without a connected account answers the connect prompt; other paths unchanged. Merged with development clean: unit 9705, 2 errors + 3 failures all inherited (same on development, 9701); vitest 2381 passed.
