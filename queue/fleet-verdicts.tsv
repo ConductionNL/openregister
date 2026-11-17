@@ -18754,6 +18754,7 @@ decidiq	2275	a2504982a57dd3baef7b32f736efdd4c91c5b798	GREEN	worker-14	unit 5020 
 hermiq	1852	734376163c5c6515d092ee9d381c6d537078095a	GREEN	worker-20	unit 5736 baseline 0 fail; tree 5800 tests 0 new failures; vitest 1659 passed; build vector-rag per spec
 hermiq	1853	f3ad22784fa06fff189170b5a3d39912e8054157	GREEN	worker-20	unit 5736 baseline 0 fail; tree 5800 tests 0 new failures; vitest 1659 passed; build instant-talk per spec
 hermiq	1854	d890a013df656c18a3ff7146d19b4e764bbd0f5c	REVERIFY	worker-20	conflicts only with an earlier PR of the verify tree
+keepiq	1899	abebdd6ffa781653cb3cdfbbfdac6d7c181fbded	GREEN	worker-39	phpunit tree 5631 ok, no new failures; matches change connection-certificate-expiry-for-integriq
 decidiq	2286	15cd21f4e0f1341b9e6d64d85bbeb4aeb735378c	GREEN	worker-01	unit 5031 run (baseline 5020, 0 failures), 0 new failures; build embargo-geheimhouding per spec; JS change is l10n data only, vitest not run
 dossiq	6644	2c3300bc4c89ae20b45cd4b9e7a9844b8d1b6352	GREEN	worker-23	tasks.md tick only (2.1 code verified on development 5641ce1e7); unit 18398 tests, 19 failures all inherited (no code changed)
 hermiq	1848	65d35bc5c91cb52e899ac03cd9fd06cc301f8aa5	GREEN	worker-20	unit 5736 baseline 0 fail, tree 5736 0 new failures; tests-only (Playwright spec, Newman folder, tasks.md notes)
@@ -18767,3 +18768,4 @@ portaliq	2585	047ea7f203051ca4121b9fbb4fe5d368a8652f63	GREEN	worker-32	unit 6339
 portaliq	2586	d48314a985599ff8b6ed00246dba8cf43321e1ba	CONFLICT	worker-32	package.json conflicts with development
 portaliq	2587	664b8ca8575ae2f35befab13dda8dba4deb03d63	GREEN	worker-32	unit 6339 tests on tree, baseline 6324 with 16 inherited errors (openregister classes absent), new failures 0; no JS unit script, markdown-block node test passes; portal-bound sessions and domain re-check per change, access only tightened
 buildiq	1648	616837279746c70653f0f41163c0dd6efd73fa7e	GREEN	worker-15	unit 3737 OK on tree (baseline 3676 OK), vitest 5027/5027, 0 new failures; build of logic-automation-actions-that-run, new run/manual routes keep role checks
+keepiq	1900	a6ccac84767665a898692a9826befe197f56bcea	GREEN	worker-39	vitest 7173 pass, 3 inherited reds only; frontend-only build of portability-export-choice-and-restore-fidelity
