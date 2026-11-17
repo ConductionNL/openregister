@@ -1404,3 +1404,5 @@ decidiq	2284	75bf16e4978932fd693798e5513fda961c651b66	APPROVE	worker-04	Quick; n
 decidiq	2285	eeb91b118b1c241df162e0f00bdce238c0111d68	APPROVE	worker-04	Quick; no blockers; tests only (e2e/newman spec files for its change, tasks.md ticks)
 buildiq	1722	9c7c8cfc7b3c10467efbe2b02ebf84adc7af41c7	APPROVE	worker-02	Quick; no blockers; tests only plus tasks tick
 stackiq	1963	d255f3be7e27c59c7c424d2717cc537c3a207a16	APPROVE	worker-08	Strict; no blockers; admin-permission menu entries now show for admins via initial state (server still guards), l10n merge is a key union
+thematiq	1724	bee24dc0a0b313ee6429de1edec32a5449244f66	APPROVE	worker-14	Quick; no blockers; webpack minor bump
+thematiq	1725	f7a10dc12ca1b7982050d7bf7fb649d8684d2882	APPROVE	worker-14	Quick; no blockers; dev dependency minor bump
