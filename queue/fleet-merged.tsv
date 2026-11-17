@@ -4922,3 +4922,4 @@ versioniq	703	6665c28103129bccbfc61854d3e03f4e18f8d880	RED	worker-35	GATE RED fl
 stackiq	1937	53bbb64a58e178ee4616c53220567a0102eaac89	RED	worker-33	GATE RED floor: unit_interfacing: 4.71 -> 4.68
 larpinq	1042	e65ec64ada34202731658db1d4ee75fbdcd8693c	MERGED	worker-17	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.25
 versioniq	703	7caed88d2cea748045f2f39e4e1bbdbf07ab550e	RED	worker-35	GATE RED checker floor: secretscanning: pass -> fail; secretscanning stars: 5 -> 1
+opencatalogi	2706	cbea0d0ce437b1bde18a39ba77dbb8a433b29d26	RED	worker-30	GATE RED floor: unit_size: 4.66 -> 4.64; unit_interfacing: 4.79 -> 4.71
