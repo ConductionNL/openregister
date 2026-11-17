@@ -20635,8 +20635,12 @@ verify:buildiq:1703:39097174	GREEN #1703 (unit 3580 OK, baseline 3578)	session-2
 verify:hermiq:1781:a56a9450	GREEN #1781 (5668 tests, vitest 1649, no new failures)	session-20261117T124526-11739f5d	2026-11-17T12:51:49Z
 verify:buildiq:1702:817cd0c5	GREEN #1702 (tests only, 3604 tests, 0 new failures)	session-20261117T124637-3e909745	2026-11-17T12:52:00Z
 fix:versioniq:706:31ba5828	failed: permission (land refused); conflict fixed and pushed, new head f955efeb, REVERIFY recorded	session-20261117T124257-115d3113	2026-11-17T12:52:23Z
+verify:integriq:2720:7f6df619	CONFLICT #2720 with development (8 files)	session-20261117T124618-77238b95	2026-11-17T12:52:51Z
 verify:launchpad:759:3f179d5b	CONFLICT #759 (package-lock.json)	session-20261117T124554-64bd7521	2026-11-17T12:53:01Z
 fix:larpinq:1088:b6f2f9b4	failed: permission (end-to-end land refused); fix pushed as c530ed46, REVERIFY recorded	session-20261117T124352-d2047f0c	2026-11-17T12:53:13Z
 verify:hermiq:867:76c9978a	GREEN #867 (no diff vs development; 5617 tests, 0 new failures)	session-20261117T124719-b38d0fe3	2026-11-17T12:53:28Z
 verify:integriq:1985:6e4c92f5	1985 GREEN (no content change vs development; 0 new failures)	session-20261117T123418-5f98fc94	2026-11-17T12:53:36Z
 verify:launchpad:628:7ce60794	GREEN #628: no net diff vs development	session-20261117T125151-bf6843dc	2026-11-17T12:53:46Z
+verify:dossiq:3193:ac67d68f	CONFLICT (sbom.cdx.json)	session-20261117T124618-509d3d7a	2026-11-17T12:54:00Z
+verify:keepiq:1227:9b9a8a09	GREEN #1227 (no-op merge: tree identical to development)	session-20261117T124640-352399b3	2026-11-17T12:54:12Z
+verify:hermiq:1719:d2352914	hermiq #1719 GREEN	session-20261117T124646-693ace9a	2026-11-17T12:54:31Z
