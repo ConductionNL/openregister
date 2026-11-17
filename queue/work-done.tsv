@@ -19655,3 +19655,4 @@ fix:buildiq:1602:795c2893	conflict resolved, pushed b2a6e8931; suite green; REVE
 fix:hermiq:1740:c07c4ebe	blocker fixed, pushed 7ac6294b; merge lock held by another merger, REVERIFY queued	session-20261117T063127-b908dd01	2026-11-17T06:51:52Z
 fix:learniq:2523:3742dedc	fixed blockers + conflicts, pushed 19efbc3; REVERIFY (merge lock busy)	session-20261117T061824-01d4fad5	2026-11-17T06:52:03Z
 fix:integriq:3613:599c7742	fixed BLOCK, pushed b7a00be90; REVERIFY recorded (merge gate host blocked)	session-20261117T063021-b217a961	2026-11-17T06:52:14Z
+fix:learniq:2486:384efb33	conflict resolved, pushed 2a7fcc37; merge lock held elsewhere, REVERIFY queued	session-20261117T062935-1aa25581	2026-11-17T06:52:40Z
