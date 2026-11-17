@@ -21191,6 +21191,7 @@ build:humaniq:a-time-entry-can-be-booked-to-a-day:b2	already built: 1.1-3.6 on d
 build:portaliq:documents-for-each-record:b2	done: PR #2566 ticks T4 (built in learniq ParentDocumentsPage); every task done	session-20261117T124637-3e909745	2026-11-17T14:37:42Z
 build:portaliq:anonymous-collection-reads-what-the-public-may:b2	PR #2567 ticks T3 (decidiq already filters both collections); every task done	session-20261117T134347-d0294040	2026-11-17T14:37:49Z
 build:portaliq:form-save-and-resume-dialogs:b2	already done: code tasks on development (c1135fa1); only T07, a product decision, left	session-20261117T134355-826c5a0b	2026-11-17T14:37:42Z
+build:portaliq:count-field:b2	already built: learniq declares the count widget on development; portaliq#2568 ticks task 3; both scenarios e2e-excluded with named tests	session-20261117T141335-245f063b	2026-11-17T14:38:16Z
 build:portaliq:intake-pay-on-submit:b2	already building: quality/build-intake-pay-on-submit exists; only live task T01 left	session-20261117T134355-826c5a0b	2026-11-17T14:38:08Z
 build:portaliq:form-binding-settings-page:b2	already built: T01 on development with its spec; skipped T02 (live check, needs a running instance)	session-20261117T135611-7a4e2ddc	2026-11-17T14:38:36Z
 build:portaliq:home-and-theme-landing-pages:b2	already done: code on development (1f71ea44); open items are the live check 5.1 and process notes 6.x	session-20261117T134355-826c5a0b	2026-11-17T14:38:46Z
