@@ -5694,4 +5694,10 @@ opencatalogi	2794	85f20bb85c5a19d6e66aea0b7267df306933caac	RED	merge3	GATE RED s
 opencatalogi	2795	9844e9a09589c8fb5eb3275c484e4adb67f6bb38	RED	merge3	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
 opencatalogi	2796	7d78014c5c048a8b9ec158b0573d341fb0dfbe97	RED	merge3	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
 opencatalogi	2797	73c7291c61fbe1ac6ed7f6f4bb7f1da3b265956d	RED	merge3	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+hermiq	1844	d7a813226d915460b4d5e346be1e3fee9eeae692	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.77 holds at 3.77
+hermiq	1845	84f28a112420767ebcf2b90cc1e5b72faa4a377b	SKIP	merge3	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
+hermiq	1846	5032dbe476b08e7c18c9b11969ca737daa6a3249	RED	merge3	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+hermiq	1847	4b35bf029a1ae7308503d63ef3b7d87dd2e68235	RED	merge3	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+hermiq	1848	65d35bc5c91cb52e899ac03cd9fd06cc301f8aa5	RED	merge3	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+hermiq	1850	c9dacafd2a9b91c0cb908137cd3b2116117e49d3	RED	merge3	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
 pipelinq	3959	7fbcf4eeb298c017699d213a1802d595cb200595	RED	worker-10	GATE RED sbom: package-lock.json changed without sbom.cdx.json
