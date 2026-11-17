@@ -1,0 +1,1230 @@
+From 1923980a17ea0d6c063f13db3cd99c913c97b209 Mon Sep 17 00:00:00 2001
+From: Ruben van der Linde <ruben@conduction.nl>
+Date: Tue, 17 Nov 2026 20:23:19 +0000
+Subject: [PATCH] feat(humaniq): build configuration-store [skip ci]
+
+The Sjablonen setup step (REQ-FTS-007) and the store routes the Marketplace
+page (REQ-FTS-006) calls: store#search and store#install, bound to
+OpenRegister's GenericStoreController through the guarded
+Bootstrap::aliasStoreController call, so humaniq holds no store code.
+SetupTemplates lists and installs the step's sets through that same
+controller; SetupController reports the step, records "No templates" as an
+answer and installs the picked sets, keeping the step open when one fails.
+
+Assisted-by: ClaudeCode:claude-opus-5-5
+---
+ appinfo/routes.php                            |   6 +
+ l10n/en.js                                    |   6 +-
+ l10n/en.json                                  |   6 +-
+ l10n/nl.js                                    |   6 +-
+ l10n/nl.json                                  |   6 +-
+ lib/AppInfo/Application.php                   |   9 +
+ lib/Controller/SetupController.php            | 165 ++++++++++-
+ lib/Service/Setup/SetupTemplates.php          | 265 ++++++++++++++++++
+ openapi.json                                  |  77 +++++
+ openspec/changes/configuration-store/tasks.md |   4 +-
+ phpstan.neon                                  |   2 +
+ psalm.xml                                     |   2 +
+ src/manifest.effective.json                   |  11 +
+ src/manifest.json                             |  11 +
+ tests/Unit/Controller/SetupControllerTest.php | 153 ++++++++++
+ .../Unit/Service/Setup/SetupTemplatesTest.php | 230 +++++++++++++++
+ 16 files changed, 952 insertions(+), 7 deletions(-)
+ create mode 100644 lib/Service/Setup/SetupTemplates.php
+ create mode 100644 tests/Unit/Service/Setup/SetupTemplatesTest.php
+
+diff --git a/appinfo/routes.php b/appinfo/routes.php
+index 13c0d74f..93a0aa05 100644
+--- a/appinfo/routes.php
++++ b/appinfo/routes.php
+@@ -20,6 +20,12 @@ return \OCA\Humaniq\Middleware\Support\ApiPathAliases::withVersionedAliases([
+         ['name' => 'setup#status',    'url' => '/api/setup/status',            'verb' => 'GET'],
+         ['name' => 'setup#saveConfig', 'url' => '/api/setup/config',            'verb' => 'POST'],
+         ['name' => 'setup#runAction', 'url' => '/api/setup/action/{actionId}', 'verb' => 'POST', 'requirements' => ['actionId' => '[a-z0-9\\-]+']],
++        // configuration-store (REQ-FTS-006): the Marketplace page's store plane. humaniq writes no
++        // store code: Application::register() aliases Controller\StoreController at OpenRegister's
++        // GenericStoreController, which owns search (signed in) and install (admin) and answers
++        // not_configured without a network call when no registry is set.
++        ['name' => 'store#search', 'url' => '/api/store/items', 'verb' => 'GET'],
++        ['name' => 'store#install', 'url' => '/api/store/items/{slug}/install', 'verb' => 'POST', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+         // allowed-expense-categories: which categories employees may claim (read: signed-in users, save: admin).
+         ['name' => 'expenseCategory#index', 'url' => '/api/expense-categories', 'verb' => 'GET'],
+         ['name' => 'expenseCategory#update', 'url' => '/api/expense-categories', 'verb' => 'PUT'],
+diff --git a/l10n/en.js b/l10n/en.js
+index 2e90176e..f1bfca5e 100644
+--- a/l10n/en.js
++++ b/l10n/en.js
+@@ -4033,7 +4033,11 @@ OC.L10N.register(
+         "Whether HR may read this response on its own: true only when it was released in a batch of at least the survey's minimum group size. The results count every response either way.": "Whether HR may read this response on its own: true only when it was released in a batch of at least the survey's minimum group size. The results count every response either way.",
+         "Approval state": "Approval state",
+         "Where the timesheet of these hours is in the approval process.": "Where the timesheet of these hours is in the approval process.",
+-        "When the timesheet of these hours was approved.": "When the timesheet of these hours was approved."
++        "When the timesheet of these hours was approved.": "When the timesheet of these hours was approved.",
++        "Templates": "Templates",
++        "Install ready-made HR configurations that other organisations published, such as a leave policy or a review cycle. Pick the ones you want and continue, or pick \"No templates\". You can install more later from the Marketplace.": "Install ready-made HR configurations that other organisations published, such as a leave policy or a review cycle. Pick the ones you want and continue, or pick \"No templates\". You can install more later from the Marketplace.",
++        "No templates": "No templates",
++        "Start without a published configuration. You can install one later from the Marketplace.": "Start without a published configuration. You can install one later from the Marketplace."
+     },
+     "nplurals=2; plural=(n != 1);"
+ )
+diff --git a/l10n/en.json b/l10n/en.json
+index e4429b98..d1381c90 100644
+--- a/l10n/en.json
++++ b/l10n/en.json
+@@ -4032,7 +4032,11 @@
+         "Whether HR may read this response on its own: true only when it was released in a batch of at least the survey's minimum group size. The results count every response either way.": "Whether HR may read this response on its own: true only when it was released in a batch of at least the survey's minimum group size. The results count every response either way.",
+         "Approval state": "Approval state",
+         "Where the timesheet of these hours is in the approval process.": "Where the timesheet of these hours is in the approval process.",
+-        "When the timesheet of these hours was approved.": "When the timesheet of these hours was approved."
++        "When the timesheet of these hours was approved.": "When the timesheet of these hours was approved.",
++        "Templates": "Templates",
++        "Install ready-made HR configurations that other organisations published, such as a leave policy or a review cycle. Pick the ones you want and continue, or pick \"No templates\". You can install more later from the Marketplace.": "Install ready-made HR configurations that other organisations published, such as a leave policy or a review cycle. Pick the ones you want and continue, or pick \"No templates\". You can install more later from the Marketplace.",
++        "No templates": "No templates",
++        "Start without a published configuration. You can install one later from the Marketplace.": "Start without a published configuration. You can install one later from the Marketplace."
+     },
+     "pluralForm": "nplurals=2; plural=(n != 1);"
+ }
+diff --git a/l10n/nl.js b/l10n/nl.js
+index e2e762d5..96980585 100644
+--- a/l10n/nl.js
++++ b/l10n/nl.js
+@@ -4033,7 +4033,11 @@ OC.L10N.register(
+         "Whether HR may read this response on its own: true only when it was released in a batch of at least the survey's minimum group size. The results count every response either way.": "Of HR dit antwoord afzonderlijk mag lezen: alleen als het is vrijgegeven in een groep van ten minste de minimale groepsgrootte van de enquête. De uitslag telt elk antwoord hoe dan ook mee.",
+         "Approval state": "Goedkeuringsstatus",
+         "Where the timesheet of these hours is in the approval process.": "Waar de urenstaat van deze uren in het goedkeuringsproces staat.",
+-        "When the timesheet of these hours was approved.": "Wanneer de urenstaat van deze uren is goedgekeurd."
++        "When the timesheet of these hours was approved.": "Wanneer de urenstaat van deze uren is goedgekeurd.",
++        "Templates": "Sjablonen",
++        "Install ready-made HR configurations that other organisations published, such as a leave policy or a review cycle. Pick the ones you want and continue, or pick \"No templates\". You can install more later from the Marketplace.": "Installeer kant-en-klare HR-inrichtingen die andere organisaties hebben gepubliceerd, zoals een verlofregeling of een beoordelingscyclus. Kies de sjablonen die u wilt en ga verder, of kies \"Geen sjablonen\". Later kunt u er meer installeren via de Marktplaats.",
++        "No templates": "Geen sjablonen",
++        "Start without a published configuration. You can install one later from the Marketplace.": "Begin zonder gepubliceerde inrichting. U kunt er later een installeren via de Marktplaats."
+     },
+     "nplurals=2; plural=(n != 1);"
+ )
+diff --git a/l10n/nl.json b/l10n/nl.json
+index df2504ec..ed958166 100644
+--- a/l10n/nl.json
++++ b/l10n/nl.json
+@@ -4032,7 +4032,11 @@
+         "Whether HR may read this response on its own: true only when it was released in a batch of at least the survey's minimum group size. The results count every response either way.": "Of HR dit antwoord afzonderlijk mag lezen: alleen als het is vrijgegeven in een groep van ten minste de minimale groepsgrootte van de enquête. De uitslag telt elk antwoord hoe dan ook mee.",
+         "Approval state": "Goedkeuringsstatus",
+         "Where the timesheet of these hours is in the approval process.": "Waar de urenstaat van deze uren in het goedkeuringsproces staat.",
+-        "When the timesheet of these hours was approved.": "Wanneer de urenstaat van deze uren is goedgekeurd."
++        "When the timesheet of these hours was approved.": "Wanneer de urenstaat van deze uren is goedgekeurd.",
++        "Templates": "Sjablonen",
++        "Install ready-made HR configurations that other organisations published, such as a leave policy or a review cycle. Pick the ones you want and continue, or pick \"No templates\". You can install more later from the Marketplace.": "Installeer kant-en-klare HR-inrichtingen die andere organisaties hebben gepubliceerd, zoals een verlofregeling of een beoordelingscyclus. Kies de sjablonen die u wilt en ga verder, of kies \"Geen sjablonen\". Later kunt u er meer installeren via de Marktplaats.",
++        "No templates": "Geen sjablonen",
++        "Start without a published configuration. You can install one later from the Marketplace.": "Begin zonder gepubliceerde inrichting. U kunt er later een installeren via de Marktplaats."
+     },
+     "pluralForm": "nplurals=2; plural=(n != 1);"
+ }
+diff --git a/lib/AppInfo/Application.php b/lib/AppInfo/Application.php
+index 1ddd1211..073dcec3 100644
+--- a/lib/AppInfo/Application.php
++++ b/lib/AppInfo/Application.php
+@@ -107,6 +107,7 @@ use OCA\Humaniq\Service\TaxTableSetService;
+ use OCA\Humaniq\Service\InternalWriteMarker;
+ use OCA\Humaniq\Service\JurisdictionPackService;
+ use OCA\Humaniq\Service\RosterCheckService;
++use OCA\OpenRegister\AppHost\Bootstrap;
+ use OCA\OpenRegister\Event\ObjectCreatedEvent;
+ use OCA\OpenRegister\Event\ObjectCreatingEvent;
+ use OCA\OpenRegister\Event\ObjectDeletedEvent;
+@@ -163,6 +164,14 @@ class Application extends App implements IBootstrap {
+ 		// reverse order, so it sees the final response of every other middleware.
+ 		$context->registerMiddleware(class: ApiContractMiddleware::class);
+ 
++		// configuration-store (REQ-FTS-006): bind Controller\StoreController,
++		// which humaniq does not ship, to OpenRegister's GenericStoreController,
++		// so the store#search and store#install routes resolve. Guarded: without
++		// OpenRegister the routes stay unbound rather than breaking the boot.
++		if (class_exists(Bootstrap::class) === true) {
++			Bootstrap::aliasStoreController(context: $context, appId: self::APP_ID, controllerNs: 'OCA\\Humaniq\\Controller');
++		}
++
+ 		// self-service-mobile (design.md D1): link the web manifest from the
+ 		// head of humaniq's own pages, so a phone browser offers to install Mijn HR.
+ 		$context->registerEventListener(
+diff --git a/lib/Controller/SetupController.php b/lib/Controller/SetupController.php
+index df00bec4..2b8f2f7f 100644
+--- a/lib/Controller/SetupController.php
++++ b/lib/Controller/SetupController.php
+@@ -42,6 +42,7 @@ use OCP\IRequest;
+ use OCP\IUserSession;
+ use OCA\Humaniq\Service\Setup\SetupAdministrations;
+ use OCA\Humaniq\Service\Setup\SetupHealthCheck;
++use OCA\Humaniq\Service\Setup\SetupTemplates;
+ use Psr\Log\LoggerInterface;
+ 
+ /**
+@@ -85,6 +86,23 @@ class SetupController extends Controller {
+ 	 */
+ 	private const DATASET_KEY = 'demo_dataset';
+ 
++	/**
++	 * App-config key holding the Sjablonen step's answer: the picked set
++	 * slugs as a JSON list, `["none"]` for "no templates". Empty means the
++	 * question is still open (configuration-store REQ-FTS-007).
++	 *
++	 * @var string
++	 */
++	private const TEMPLATES_KEY = 'setup_templates';
++
++	/**
++	 * App-config key holding the sets the Sjablonen step installed, as a
++	 * JSON list of `{id, name}`, so a reopened wizard still names them.
++	 *
++	 * @var string
++	 */
++	private const TEMPLATES_INSTALLED_KEY = 'setup_templates_installed';
++
+ 	/**
+ 	 * Constructor.
+ 	 *
+@@ -95,6 +113,7 @@ class SetupController extends Controller {
+ 	 * @param SetupAdministrations $setupAdministrations Creates the Administraties step's administrations and writes the working mode.
+ 	 * @param IUserSession    $userSession     The administrator running the wizard.
+ 	 * @param SetupHealthCheck $healthCheck    The Klaar step's health check.
++	 * @param SetupTemplates|null $templates   The Sjablonen step's sets; null offers none.
+ 	 *
+ 	 * @return void
+ 	 */
+@@ -106,6 +125,7 @@ class SetupController extends Controller {
+ 		private readonly SetupAdministrations $setupAdministrations,
+ 		private readonly IUserSession $userSession,
+ 		private readonly SetupHealthCheck $healthCheck,
++		private readonly ?SetupTemplates $templates = null,
+ 	) {
+ 		parent::__construct(appName: Application::APP_ID, request: $request);
+ 
+@@ -140,6 +160,8 @@ class SetupController extends Controller {
+ 
+ 		$picked = $this->appConfig->getValueString(Application::APP_ID, self::DATASET_KEY, '');
+ 
++		$templatesAnswered = $this->appConfig->getValueString(Application::APP_ID, self::TEMPLATES_KEY, '') !== '';
++
+ 		return new JSONResponse(
+ 			data: [
+ 				'version'   => self::SETUP_VERSION,
+@@ -147,11 +169,14 @@ class SetupController extends Controller {
+ 				// The choice step declares `optionsSource: datasets` and no
+ 				// options of its own, so this list IS the card set.
+ 				'datasets'  => $this->demoDataService->listChoices(),
++				// The Sjablonen step declares `optionsSource: templates`.
++				'templates' => $this->templateChoices(answered: $templatesAnswered),
+ 				'steps'     => [
+ 					'welcome'        => ['done' => true],
+ 					// Exactly the ids of `manifest.setup.steps`: a step the
+ 					// server never reports stays open and reopens the wizard.
+ 					'demo-data'      => ['done' => ($demoDecided === true || $picked !== '')],
++					'templates'      => ['done' => $templatesAnswered],
+ 					'done'           => ['done' => true],
+ 				],
+ 				// The Klaar step's health check: what the import left, whether
+@@ -222,7 +247,7 @@ class SetupController extends Controller {
+ 	 */
+ 	#[AuthorizedAdminSetting(HumaniqAdmin::class)]
+ 	public function saveConfig(): JSONResponse {
+-		$refused = $this->refuseStoredChoices();
++		$refused = $this->refuseStoredChoices() ?? $this->installTemplates();
+ 		if ($refused !== null) {
+ 			return $refused;
+ 		}
+@@ -395,6 +420,144 @@ class SetupController extends Controller {
+ 		return new JSONResponse(data: ['success' => true, 'message' => count($keys) . ' administration(s) ready.', 'administrations' => $keys]);
+ 	}//end createAdministrations()
+ 
++	/**
++	 * The Sjablonen step's cards. While the step is open they come from the
++	 * store (one search, no network call without a registry); once answered
++	 * they are the sets it installed plus "no templates", so the setup gate's
++	 * status read on every page does not search a registry again.
++	 *
++	 * @param bool $answered Whether the step has its answer.
++	 *
++	 * @return list<array<string, string>>
++	 *
++	 * @spec openspec/changes/configuration-store/specs/first-time-setup/spec.md#requirement-the-setup-wizard-shall-offer-a-sjablonen-step-that-installs-chosen-sets-req-fts-007
++	 */
++	private function templateChoices(bool $answered): array {
++		if ($this->templates === null) {
++			return [];
++		}
++
++		if ($answered === false) {
++			return $this->templates->listChoices();
++		}
++
++		$installed = json_decode($this->appConfig->getValueString(Application::APP_ID, self::TEMPLATES_INSTALLED_KEY, '[]'), true);
++		if (is_array($installed) === false) {
++			$installed = [];
++		}
++
++		$choices = array_values(array_filter($installed, static fn (mixed $entry): bool => is_array($entry) === true && isset($entry['id'], $entry['name']) === true));
++		$choices[] = ['id' => SetupTemplates::NONE, 'name' => 'No templates'];
++
++		return $choices;
++	}//end templateChoices()
++
++	/**
++	 * Install the sets a posted Sjablonen answer picked, or null when nothing was posted and all installed.
++	 *
++	 * An unknown slug is refused before anything is installed or stored. A
++	 * set that does not install leaves the answer unstored, so the step stays
++	 * open and the wizard names the set; the sets that did install are kept
++	 * and named in the summary.
++	 *
++	 * @return JSONResponse|null 400 for an unknown set, 502 when a set did not install, else null.
++	 *
++	 * @spec openspec/changes/configuration-store/specs/first-time-setup/spec.md#scenario-picked-templates-show-in-the-summary
++	 */
++	private function installTemplates(): ?JSONResponse {
++		$posted = $this->request->getParam(self::TEMPLATES_KEY);
++		if ($posted === null) {
++			return null;
++		}
++
++		$ids = self::templateIds(posted: $posted);
++		if ($ids === null || $ids === [] || $this->templates === null) {
++			return new JSONResponse(
++				data: ['success' => false, 'message' => 'Pick a template, or "No templates".'],
++				statusCode: Http::STATUS_BAD_REQUEST,
++			);
++		}
++
++		$unknown = $this->templates->unknown(ids: $ids);
++		if ($unknown !== []) {
++			return new JSONResponse(
++				data: ['success' => false, 'message' => 'No template is called "' . $unknown[0] . '".'],
++				statusCode: Http::STATUS_BAD_REQUEST,
++			);
++		}
++
++		$names  = array_column($this->templates->listChoices(), 'name', 'id');
++		$report = $this->templates->install(ids: $ids);
++		$this->recordInstalledTemplates(installed: $report['installed'], names: $names);
++
++		if ($report['failed'] !== []) {
++			return new JSONResponse(
++				data: ['success' => false, 'message' => 'These templates could not be installed: ' . implode(', ', $report['failed']) . '.'],
++				statusCode: Http::STATUS_BAD_GATEWAY,
++			);
++		}
++
++		return null;
++	}//end installTemplates()
++
++	/**
++	 * Add the sets that installed to the recorded list, each once.
++	 *
++	 * @param list<string>          $installed The slugs that installed.
++	 * @param array<string, string> $names     The cards' names by slug.
++	 *
++	 * @return void
++	 *
++	 * @spec openspec/changes/configuration-store/specs/first-time-setup/spec.md#scenario-picked-templates-show-in-the-summary
++	 */
++	private function recordInstalledTemplates(array $installed, array $names): void {
++		if ($installed === []) {
++			return;
++		}
++
++		$recorded = json_decode($this->appConfig->getValueString(Application::APP_ID, self::TEMPLATES_INSTALLED_KEY, '[]'), true);
++		if (is_array($recorded) === false) {
++			$recorded = [];
++		}
++
++		$byId = array_column(array_filter($recorded, 'is_array'), null, 'id');
++		foreach ($installed as $id) {
++			$byId[$id] = ['id' => $id, 'name' => (string)($names[$id] ?? $id)];
++		}
++
++		$this->appConfig->setValueString(Application::APP_ID, self::TEMPLATES_INSTALLED_KEY, (string)json_encode(array_values($byId)));
++	}//end recordInstalledTemplates()
++
++	/**
++	 * A posted Sjablonen answer as a list of slugs, or null when it is not one.
++	 *
++	 * @param mixed $posted A slug or a list of slugs.
++	 *
++	 * @return list<string>|null
++	 *
++	 * @spec openspec/changes/configuration-store/specs/first-time-setup/spec.md#requirement-the-setup-wizard-shall-offer-a-sjablonen-step-that-installs-chosen-sets-req-fts-007
++	 */
++	private static function templateIds(mixed $posted): ?array {
++		if (is_string($posted) === true) {
++			$posted = [$posted];
++		}
++
++		if (is_array($posted) === false) {
++			return null;
++		}
++
++		$ids = [];
++		foreach ($posted as $id) {
++			if (is_string($id) === false) {
++				return null;
++			}
++
++			$ids[] = $id;
++		}
++
++		return array_values(array_unique($ids));
++	}//end templateIds()
++
+ 	/**
+ 	 * Act on the dataset a card's Load button posted as `dataset`, or on the
+ 	 * stored pick when nothing is posted.
+diff --git a/lib/Service/Setup/SetupTemplates.php b/lib/Service/Setup/SetupTemplates.php
+new file mode 100644
+index 00000000..23fa81c7
+--- /dev/null
++++ b/lib/Service/Setup/SetupTemplates.php
+@@ -0,0 +1,265 @@
++<?php
++
++/**
++ * Humaniq SetupTemplates
++ *
++ * The setup wizard's Sjablonen step (configuration-store REQ-FTS-007): the
++ * configuration sets the Marketplace page offers, as wizard cards, and the
++ * install of the sets an administrator picked. It holds no store code of its
++ * own (design.md D1): both the list and the install go through
++ * `Controller\StoreController`, which Application::register() aliases at
++ * OpenRegister's GenericStoreController, so the step and the Marketplace page
++ * share one search and one install path, the same registry configuration and
++ * the same admin-only install posture. With no registry configured that
++ * controller answers `not_configured` without a network call and the step
++ * lists humaniq's own items only (D3).
++ *
++ * @category Service
++ * @package  OCA\Humaniq\Service\Setup
++ *
++ * @author    Conduction Development Team <info@conduction.nl>
++ * @copyright 2026 Conduction B.V.
++ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
++ *
++ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
++ * SPDX-License-Identifier: EUPL-1.2
++ *
++ * @link https://conduction.nl
++ *
++ * @spec openspec/changes/configuration-store/specs/first-time-setup/spec.md
++ */
++
++declare(strict_types=1);
++
++namespace OCA\Humaniq\Service\Setup;
++
++use OCP\AppFramework\Http\JSONResponse;
++use Psr\Container\ContainerInterface;
++use Psr\Log\LoggerInterface;
++use Throwable;
++
++/**
++ * Lists and installs the Sjablonen step's configuration sets through the store plane.
++ *
++ * @spec openspec/changes/configuration-store/specs/first-time-setup/spec.md
++ */
++class SetupTemplates {
++
++	/**
++	 * The card that answers the step with "no templates", like the demo-data
++	 * step's "none": picking it records the step as dealt with.
++	 */
++	public const NONE = 'none';
++
++	/**
++	 * The store controller the routes alias, resolved lazily: it exists only
++	 * while OpenRegister is installed and enabled.
++	 */
++	private const STORE_CONTROLLER = 'OCA\\Humaniq\\Controller\\StoreController';
++
++	/**
++	 * Constructor.
++	 *
++	 * @param ContainerInterface $container Resolves the aliased store controller.
++	 * @param LoggerInterface    $logger    Records a store that could not be reached.
++	 *
++	 * @spec openspec/changes/configuration-store/specs/first-time-setup/spec.md
++	 */
++	public function __construct(
++		private readonly ContainerInterface $container,
++		private readonly LoggerInterface $logger,
++	) {
++	}//end __construct()
++
++	/**
++	 * The step's cards: humaniq's built-in items and the sets the trusted
++	 * registries publish, each once by slug, then the "no templates" card.
++	 *
++	 * @return list<array{id: string, name: string, description: string}>
++	 *
++	 * @spec openspec/changes/configuration-store/specs/first-time-setup/spec.md#requirement-the-setup-wizard-shall-offer-a-sjablonen-step-that-installs-chosen-sets-req-fts-007
++	 */
++	public function listChoices(): array {
++		$choices = [];
++		$data    = $this->searchData();
++		foreach (['builtIn', 'cards'] as $list) {
++			$entries = $data[$list] ?? [];
++			if (is_array($entries) === false) {
++				continue;
++			}
++
++			foreach ($entries as $entry) {
++				$choice = self::choice(entry: $entry);
++				if ($choice !== null && isset($choices[$choice['id']]) === false) {
++					$choices[$choice['id']] = $choice;
++				}
++			}
++		}
++
++		$choices[self::NONE] = [
++			'id'          => self::NONE,
++			'name'        => 'No templates',
++			'description' => 'Start without a published configuration. You can install one later from the Marketplace.',
++		];
++
++		return array_values($choices);
++	}//end listChoices()
++
++	/**
++	 * The ids among the given ones that are not a card of the step, in order.
++	 *
++	 * @param list<string> $ids The picked ids.
++	 *
++	 * @return list<string>
++	 *
++	 * @spec openspec/changes/configuration-store/specs/first-time-setup/spec.md#requirement-the-setup-wizard-shall-offer-a-sjablonen-step-that-installs-chosen-sets-req-fts-007
++	 */
++	public function unknown(array $ids): array {
++		$known = array_column($this->listChoices(), 'id');
++
++		return array_values(array_filter($ids, static fn (string $id): bool => in_array($id, $known, true) === false));
++	}//end unknown()
++
++	/**
++	 * Install the picked sets through the store, one by one, and report which
++	 * landed and which did not. "none" installs nothing.
++	 *
++	 * @param list<string> $ids The picked set slugs.
++	 *
++	 * @return array{installed: list<string>, failed: list<string>}
++	 *
++	 * @spec openspec/changes/configuration-store/specs/first-time-setup/spec.md#scenario-picked-templates-show-in-the-summary
++	 */
++	public function install(array $ids): array {
++		$report = ['installed' => [], 'failed' => []];
++		foreach ($ids as $id) {
++			if ($id === self::NONE) {
++				continue;
++			}
++
++			$key = 'failed';
++			if ($this->installOne(slug: $id) === true) {
++				$key = 'installed';
++			}
++
++			$report[$key][] = $id;
++		}
++
++		return $report;
++	}//end install()
++
++	/**
++	 * Install one set through the store controller; false when it refused or failed.
++	 *
++	 * @param string $slug The set slug.
++	 *
++	 * @return bool
++	 *
++	 * @spec openspec/changes/configuration-store/specs/first-time-setup/spec.md#scenario-picked-templates-show-in-the-summary
++	 */
++	private function installOne(string $slug): bool {
++		$store = $this->store();
++		if ($store === null || method_exists($store, 'install') === false) {
++			return false;
++		}
++
++		try {
++			$response = $store->install(slug: $slug);
++		} catch (Throwable $e) {
++			$this->logger->error('Setup: installing template ' . $slug . ' failed: ' . $e::class);
++			return false;
++		}
++
++		if (($response instanceof JSONResponse) === false || $response->getStatus() >= 400) {
++			return false;
++		}
++
++		$data = $response->getData();
++
++		return is_array($data) === true && ($data['success'] ?? true) !== false;
++	}//end installOne()
++
++	/**
++	 * The store search's response body, or an empty one when there is no store or it failed.
++	 *
++	 * @return array<string, mixed>
++	 *
++	 * @spec openspec/changes/configuration-store/specs/first-time-setup/spec.md#scenario-no-registry-means-no-outside-call
++	 */
++	private function searchData(): array {
++		$store = $this->store();
++		if ($store === null || method_exists($store, 'search') === false) {
++			return [];
++		}
++
++		try {
++			$response = $store->search();
++		} catch (Throwable $e) {
++			$this->logger->warning('Setup: the template store could not be searched: ' . $e::class);
++			return [];
++		}
++
++		if (($response instanceof JSONResponse) === false) {
++			return [];
++		}
++
++		$data = $response->getData();
++		if (is_array($data) === false) {
++			return [];
++		}
++
++		return $data;
++	}//end searchData()
++
++	/**
++	 * The aliased store controller, or null when OpenRegister does not provide it.
++	 *
++	 * @return object|null
++	 *
++	 * @spec openspec/changes/configuration-store/specs/first-time-setup/spec.md
++	 */
++	private function store(): ?object {
++		try {
++			$store = $this->container->get(self::STORE_CONTROLLER);
++		} catch (Throwable $e) {
++			return null;
++		}
++
++		if (is_object($store) === false) {
++			return null;
++		}
++
++		return $store;
++	}//end store()
++
++	/**
++	 * One store entry as a wizard card, or null when it has no usable slug.
++	 *
++	 * @param mixed $entry A store card or built-in item.
++	 *
++	 * @return array{id: string, name: string, description: string}|null
++	 *
++	 * @spec openspec/changes/configuration-store/specs/first-time-setup/spec.md
++	 */
++	private static function choice(mixed $entry): ?array {
++		if (is_array($entry) === false) {
++			return null;
++		}
++
++		$slug = trim((string)($entry['slug'] ?? ($entry['id'] ?? '')));
++		if ($slug === '' || $slug === self::NONE || preg_match('/^[a-z0-9][a-z0-9-]*[a-z0-9]$/', $slug) !== 1) {
++			return null;
++		}
++
++		$name = trim((string)($entry['title'] ?? ($entry['name'] ?? '')));
++		if ($name === '') {
++			$name = $slug;
++		}
++
++		return [
++			'id'          => $slug,
++			'name'        => $name,
++			'description' => trim((string)($entry['description'] ?? '')),
++		];
++	}//end choice()
++}//end class
+diff --git a/openapi.json b/openapi.json
+index b68ea8ac..edb3d18f 100644
+--- a/openapi.json
++++ b/openapi.json
+@@ -238,6 +238,10 @@
+         {
+             "name": "uwv-notification",
+             "description": "Generates the 42-week notification for a sickness case."
++        },
++        {
++            "name": "store",
++            "description": "The Marketplace: configuration sets installed through OpenRegister's store plane."
+         }
+     ],
+     "paths": {
+@@ -5202,6 +5206,79 @@
+                     }
+                 }
+             }
++        },
++        "/store/items": {
++            "get": {
++                "description": "The Marketplace page's store search, served by OpenRegister's store plane (GenericStoreController): the configuration sets the trusted registries publish for humaniq, plus humaniq's own built-in items. With no registry configured it answers outcome not_configured with the built-in items and makes no network call. Needs a signed-in user.",
++                "operationId": "store-search",
++                "responses": {
++                    "200": {
++                        "content": {
++                            "application/json": {
++                                "schema": {}
++                            }
++                        },
++                        "description": "The request succeeded.",
++                        "headers": {
++                            "API-Version": {
++                                "$ref": "#/components/headers/API-Version"
++                            }
++                        }
++                    },
++                    "401": {
++                        "$ref": "#/components/responses/Problem401"
++                    }
++                },
++                "summary": "Search the configuration sets the Marketplace offers",
++                "tags": [
++                    "store"
++                ]
++            }
++        },
++        "/store/items/{slug}/install": {
++            "post": {
++                "description": "Install one configuration set through OpenRegister's store plane (GenericStoreController), which applies its registers, schemas, flows and objects. Needs an administrator.",
++                "operationId": "store-install",
++                "parameters": [
++                    {
++                        "name": "slug",
++                        "in": "path",
++                        "required": true,
++                        "schema": {
++                            "type": "string",
++                            "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$"
++                        }
++                    }
++                ],
++                "responses": {
++                    "200": {
++                        "content": {
++                            "application/json": {
++                                "schema": {}
++                            }
++                        },
++                        "description": "The request succeeded.",
++                        "headers": {
++                            "API-Version": {
++                                "$ref": "#/components/headers/API-Version"
++                            }
++                        }
++                    },
++                    "400": {
++                        "$ref": "#/components/responses/Problem400"
++                    },
++                    "403": {
++                        "$ref": "#/components/responses/Problem403"
++                    },
++                    "404": {
++                        "$ref": "#/components/responses/Problem404"
++                    }
++                },
++                "summary": "Install a configuration set from the Marketplace",
++                "tags": [
++                    "store"
++                ]
++            }
+         }
+     },
+     "components": {
+diff --git a/openspec/changes/configuration-store/tasks.md b/openspec/changes/configuration-store/tasks.md
+index 88c3a6a2..e4441118 100644
+--- a/openspec/changes/configuration-store/tasks.md
++++ b/openspec/changes/configuration-store/tasks.md
+@@ -1,9 +1,9 @@
+ ## 1. Setup step
+ 
+-- [ ] 1.1 Add a `templates` step (cards choice, optional) to the `setup` block in
++- [x] 1.1 Add a `templates` step (cards choice, optional) to the `setup` block in
+       `src/manifest.json`, its options from OpenRegister's store listing for app `humaniq`, and
+       the installed set names in the `done` summary. Verify: `npm run check:manifest` exits 0.
+-- [ ] 1.2 Report the step in `SetupController::status()` and record a skip as an answer. Verify:
++- [x] 1.2 Report the step in `SetupController::status()` and record a skip as an answer. Verify:
+       unit tests for not answered, skipped and installed.
+ 
+ ## 2. Verification
+diff --git a/phpstan.neon b/phpstan.neon
+index 3dff0bcc..2260d30b 100644
+--- a/phpstan.neon
++++ b/phpstan.neon
+@@ -23,6 +23,8 @@ parameters:
+     scanFiles:
+         - tests/stubs/OpenRegisterLifecycleStub.php
+         - tests/stubs/OpenRegisterLifecycleTransitionStub.php
++        # OpenRegister's AppHost composition root, for the guarded store-controller alias.
++        - vendor/conduction/hydra-gates/hydra-gates/stubs/openregister-apphost-bootstrap.stub.php
+ 
+     excludePaths:
+         # These classes implement an OpenRegister interface that only exists at
+diff --git a/psalm.xml b/psalm.xml
+index e46b8635..9b63c617 100644
+--- a/psalm.xml
++++ b/psalm.xml
+@@ -22,6 +22,8 @@
+         <!-- OpenRegister's working calendar contract (Flow\Timer), the same stub the tests load;
+              it mirrors the public shape WorkingCalendarReader calls. -->
+         <file name="tests/stubs/OpenRegisterWorkingCalendarStub.php" />
++        <!-- OpenRegister's AppHost composition root, for the guarded store-controller alias. -->
++        <file name="vendor/conduction/hydra-gates/hydra-gates/stubs/openregister-apphost-bootstrap.stub.php" />
+     </stubs>
+     <issueHandlers>
+         <UndefinedDocblockClass errorLevel="suppress"/>
+diff --git a/src/manifest.effective.json b/src/manifest.effective.json
+index 5fa636df..2c034f44 100644
+--- a/src/manifest.effective.json
++++ b/src/manifest.effective.json
+@@ -20816,6 +20816,17 @@
+ 				"title": "Load example data?",
+ 				"type": "choice"
+ 			},
++			{
++				"body": "Install ready-made HR configurations that other organisations published, such as a leave policy or a review cycle. Pick the ones you want and continue, or pick \"No templates\". You can install more later from the Marketplace.",
++				"configKey": "setup_templates",
++				"display": "cards",
++				"id": "templates",
++				"multiple": true,
++				"optionsSource": "templates",
++				"required": false,
++				"title": "Templates",
++				"type": "choice"
++			},
+ 			{
+ 				"body": "That's it. Open Employees to see your people, or reopen this setup anytime from the app's … menu.",
+ 				"healthCheck": true,
+diff --git a/src/manifest.json b/src/manifest.json
+index a1cc84fd..5d4ea4a6 100644
+--- a/src/manifest.json
++++ b/src/manifest.json
+@@ -26,6 +26,17 @@
+ 				"title": "Load example data?",
+ 				"body": "Example data fills the employee lists, contracts and dashboards so you can see the app working straight away. Each card has its own Load button. Pick \"None\" on a production install."
+ 			},
++			{
++				"id": "templates",
++				"type": "choice",
++				"display": "cards",
++				"multiple": true,
++				"optionsSource": "templates",
++				"configKey": "setup_templates",
++				"required": false,
++				"title": "Templates",
++				"body": "Install ready-made HR configurations that other organisations published, such as a leave policy or a review cycle. Pick the ones you want and continue, or pick \"No templates\". You can install more later from the Marketplace."
++			},
+ 			{
+ 				"id": "done",
+ 				"type": "summary",
+diff --git a/tests/Unit/Controller/SetupControllerTest.php b/tests/Unit/Controller/SetupControllerTest.php
+index e5a97275..5ca9e836 100644
+--- a/tests/Unit/Controller/SetupControllerTest.php
++++ b/tests/Unit/Controller/SetupControllerTest.php
+@@ -503,4 +503,157 @@ class SetupControllerTest extends TestCase {
+ 		$this->assertTrue($res->getData()['success']);
+ 		$this->assertSame(['working_mode' => 'dga_single_person', 'default_language' => 'en'], $written);
+ 	}
++
++	/**
++	 * configuration-store REQ-FTS-007: the Sjablonen step is reported and
++	 * open until answered, and its cards come from the store.
++	 */
++	public function testTheTemplatesStepIsOpenUntilAnsweredAndListsTheStore(): void {
++		$this->appConfig->method('getValueString')->willReturn('');
++		$templates = $this->createMock(\OCA\Humaniq\Service\Setup\SetupTemplates::class);
++		$templates->expects($this->once())->method('listChoices')->willReturn([
++			['id' => 'leave-policy-basic', 'name' => 'Basic leave policy', 'description' => ''],
++			['id' => 'none', 'name' => 'No templates', 'description' => ''],
++		]);
++
++		$data = $this->templatesWizard([], $templates)->status()->getData();
++
++		$this->assertFalse($data['steps']['templates']['done']);
++		$this->assertSame(['leave-policy-basic', 'none'], array_column($data['templates'], 'id'));
++	}
++
++	/**
++	 * "A skipped step stays closed": once answered the step reads done and
++	 * the status no longer searches the store, naming the sets it installed.
++	 */
++	public function testAnAnsweredTemplatesStepStaysClosedWithoutSearchingAgain(): void {
++		$this->appConfig->method('getValueString')->willReturnCallback(
++			static fn (string $app, string $key, string $default = ''): string => match ($key) {
++				'setup_templates' => '["leave-policy-basic"]',
++				'setup_templates_installed' => '[{"id":"leave-policy-basic","name":"Basic leave policy"}]',
++				default => $default,
++			}
++		);
++		$templates = $this->createMock(\OCA\Humaniq\Service\Setup\SetupTemplates::class);
++		$templates->expects($this->never())->method('listChoices');
++
++		$data = $this->templatesWizard([], $templates)->status()->getData();
++
++		$this->assertTrue($data['steps']['templates']['done']);
++		$this->assertSame(['Basic leave policy', 'No templates'], array_column($data['templates'], 'name'));
++	}
++
++	/**
++	 * Skipping is an answer: "none" installs nothing and is stored, so the step closes.
++	 */
++	public function testPickingNoTemplatesIsStoredAndInstallsNothing(): void {
++		$templates = $this->createMock(\OCA\Humaniq\Service\Setup\SetupTemplates::class);
++		$templates->method('unknown')->willReturn([]);
++		$templates->method('listChoices')->willReturn([['id' => 'none', 'name' => 'No templates', 'description' => '']]);
++		$templates->expects($this->once())->method('install')->with(['none'])->willReturn(['installed' => [], 'failed' => []]);
++		$written = $this->recordWrites();
++
++		$res = $this->templatesWizard(['setup_templates' => ['none']], $templates)->saveConfig();
++
++		$this->assertTrue($res->getData()['success']);
++		$this->assertSame(['setup_templates' => '["none"]'], $written->values);
++	}
++
++	/**
++	 * "Picked templates show in the summary": the picks install through the
++	 * store and are recorded with their names, then the answer is stored.
++	 */
++	public function testPickedTemplatesAreInstalledAndRecordedByName(): void {
++		$templates = $this->createMock(\OCA\Humaniq\Service\Setup\SetupTemplates::class);
++		$templates->method('unknown')->willReturn([]);
++		$templates->method('listChoices')->willReturn([
++			['id' => 'leave-policy-basic', 'name' => 'Basic leave policy', 'description' => ''],
++			['id' => 'review-cycle', 'name' => 'Yearly review cycle', 'description' => ''],
++		]);
++		$templates->expects($this->once())->method('install')->with(['leave-policy-basic', 'review-cycle'])
++			->willReturn(['installed' => ['leave-policy-basic', 'review-cycle'], 'failed' => []]);
++		$written = $this->recordWrites();
++
++		$res = $this->templatesWizard(['setup_templates' => ['leave-policy-basic', 'review-cycle']], $templates)->saveConfig();
++
++		$this->assertTrue($res->getData()['success']);
++		$this->assertSame(
++			'[{"id":"leave-policy-basic","name":"Basic leave policy"},{"id":"review-cycle","name":"Yearly review cycle"}]',
++			$written->values['setup_templates_installed']
++		);
++		$this->assertSame('["leave-policy-basic","review-cycle"]', $written->values['setup_templates']);
++	}
++
++	/**
++	 * A set that did not install leaves the answer unstored, so the step
++	 * stays open; the set that did install is still recorded.
++	 */
++	public function testAFailedInstallLeavesTheTemplatesStepOpen(): void {
++		$templates = $this->createMock(\OCA\Humaniq\Service\Setup\SetupTemplates::class);
++		$templates->method('unknown')->willReturn([]);
++		$templates->method('listChoices')->willReturn([['id' => 'leave-policy-basic', 'name' => 'Basic leave policy', 'description' => '']]);
++		$templates->method('install')->willReturn(['installed' => ['leave-policy-basic'], 'failed' => ['review-cycle']]);
++		$written = $this->recordWrites();
++
++		$res = $this->templatesWizard(['setup_templates' => ['leave-policy-basic', 'review-cycle']], $templates)->saveConfig();
++
++		$this->assertSame(502, $res->getStatus());
++		$this->assertStringContainsString('review-cycle', $res->getData()['message']);
++		$this->assertArrayNotHasKey('setup_templates', $written->values);
++		$this->assertSame('[{"id":"leave-policy-basic","name":"Basic leave policy"}]', $written->values['setup_templates_installed']);
++	}
++
++	/**
++	 * An unknown set, an empty pick or a non-list is refused before anything installs or is stored.
++	 */
++	public function testAnUnknownOrMalformedTemplatePickIsRefused(): void {
++		$templates = $this->createMock(\OCA\Humaniq\Service\Setup\SetupTemplates::class);
++		$templates->method('unknown')->willReturnCallback(static fn (array $ids): array => array_values(array_diff($ids, ['review-cycle'])));
++		$templates->expects($this->never())->method('install');
++		$this->appConfig->expects($this->never())->method('setValueString');
++
++		$unknown = $this->templatesWizard(['setup_templates' => ['review-cycle', 'made-up']], $templates)->saveConfig();
++		$this->assertSame(400, $unknown->getStatus());
++		$this->assertStringContainsString('made-up', $unknown->getData()['message']);
++		$this->assertSame(400, $this->templatesWizard(['setup_templates' => []], $templates)->saveConfig()->getStatus());
++		$this->assertSame(400, $this->templatesWizard(['setup_templates' => [['nested']]], $templates)->saveConfig()->getStatus());
++		$this->assertSame(400, $this->templatesWizard(['setup_templates' => 7], $templates)->saveConfig()->getStatus());
++	}
++
++	/**
++	 * A controller with the given posted body and Sjablonen service.
++	 *
++	 * @param array<string, mixed>                       $params    The posted body.
++	 * @param \OCA\Humaniq\Service\Setup\SetupTemplates $templates The Sjablonen service.
++	 *
++	 * @return SetupController
++	 */
++	private function templatesWizard(array $params, \OCA\Humaniq\Service\Setup\SetupTemplates $templates): SetupController {
++		$request = $this->createMock(IRequest::class);
++		$request->method('getParam')->willReturnCallback(static fn (string $key) => ($params[$key] ?? null));
++		$request->method('getParams')->willReturn($params);
++
++		return new SetupController($request, $this->appConfig, $this->logger, $this->demoData, $this->createMock(\OCA\Humaniq\Service\Setup\SetupAdministrations::class), $this->createMock(\OCP\IUserSession::class), $this->createMock(SetupHealthCheck::class), $templates);
++	}
++
++	/**
++	 * Record every app-config write, answering reads with what was written.
++	 *
++	 * @return object `values` holds the writes by key.
++	 */
++	private function recordWrites(): object {
++		$written = new \stdClass();
++		$written->values = [];
++		$this->appConfig->method('setValueString')->willReturnCallback(
++			static function (string $app, string $key, string $value) use ($written): bool {
++				$written->values[$key] = $value;
++				return true;
++			}
++		);
++		$this->appConfig->method('getValueString')->willReturnCallback(
++			static fn (string $app, string $key, string $default = ''): string => (string)($written->values[$key] ?? $default)
++		);
++
++		return $written;
++	}
+ }
+diff --git a/tests/Unit/Service/Setup/SetupTemplatesTest.php b/tests/Unit/Service/Setup/SetupTemplatesTest.php
+new file mode 100644
+index 00000000..8026b0fb
+--- /dev/null
++++ b/tests/Unit/Service/Setup/SetupTemplatesTest.php
+@@ -0,0 +1,230 @@
++<?php
++
++/**
++ * Unit tests for SetupTemplates (configuration-store, REQ-FTS-006 and REQ-FTS-007).
++ *
++ * The store controller is a small fake with the two methods the routes reach
++ * on OpenRegister's GenericStoreController, `search()` and `install(slug:)`:
++ * the tests show which cards the Sjablonen step offers and what an install
++ * reports, without OpenRegister.
++ *
++ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
++ * SPDX-License-Identifier: EUPL-1.2
++ *
++ * @spec openspec/changes/configuration-store/specs/first-time-setup/spec.md
++ */
++
++declare(strict_types=1);
++
++namespace OCA\Humaniq\Tests\Unit\Service\Setup;
++
++use OCA\Humaniq\Service\Setup\SetupTemplates;
++use OCP\AppFramework\Http\JSONResponse;
++use PHPUnit\Framework\Attributes\CoversClass;
++use PHPUnit\Framework\TestCase;
++use Psr\Container\ContainerInterface;
++use Psr\Log\LoggerInterface;
++use RuntimeException;
++
++/**
++ * The Sjablonen step's cards and installs, through the store plane.
++ */
++#[CoversClass(SetupTemplates::class)]
++class SetupTemplatesTest extends TestCase {
++
++	/**
++	 * Built-in items and published cards become one card each, then "No templates".
++	 *
++	 * @return void
++	 */
++	public function testTheCardsAreTheStoresItemsThenNone(): void {
++		$store = $this->store(search: [
++			'outcome' => 'ok',
++			'builtIn' => [['slug' => 'leave-policy-basic', 'title' => 'Basic leave policy', 'description' => 'Statutory leave only.']],
++			'cards'   => [
++				['slug' => 'review-cycle', 'title' => 'Yearly review cycle'],
++				['slug' => 'leave-policy-basic', 'title' => 'Same slug again'],
++				['slug' => 'Not A Slug', 'title' => 'Refused'],
++				'not an entry',
++			],
++		]);
++
++		$choices = $this->templates(store: $store)->listChoices();
++
++		$this->assertSame(['leave-policy-basic', 'review-cycle', 'none'], array_column($choices, 'id'));
++		$this->assertSame('Basic leave policy', $choices[0]['name']);
++		$this->assertSame('Statutory leave only.', $choices[0]['description']);
++		$this->assertSame('Yearly review cycle', $choices[1]['name']);
++		$this->assertSame('', $choices[1]['description']);
++		$this->assertSame('No templates', $choices[2]['name']);
++	}//end testTheCardsAreTheStoresItemsThenNone()
++
++	/**
++	 * With no registry the store answers not_configured with the built-in
++	 * items only, and so does the step.
++	 *
++	 * @return void
++	 */
++	public function testWithNoRegistryOnlyTheOwnItemsAreOffered(): void {
++		$store = $this->store(search: [
++			'outcome' => 'not_configured',
++			'cards'   => [],
++			'builtIn' => [['slug' => 'leave-policy-basic', 'title' => 'Basic leave policy']],
++		]);
++
++		$this->assertSame(['leave-policy-basic', 'none'], array_column($this->templates(store: $store)->listChoices(), 'id'));
++		$this->assertSame(1, $store->searches);
++	}//end testWithNoRegistryOnlyTheOwnItemsAreOffered()
++
++	/**
++	 * Without OpenRegister there is no store, and the step can still be answered with a no.
++	 *
++	 * @return void
++	 */
++	public function testWithoutAStoreOnlyNoneIsOffered(): void {
++		$container = $this->createMock(ContainerInterface::class);
++		$container->method('get')->willThrowException(new RuntimeException('no such service'));
++
++		$templates = new SetupTemplates(container: $container, logger: $this->createMock(LoggerInterface::class));
++
++		$this->assertSame(['none'], array_column($templates->listChoices(), 'id'));
++		$this->assertSame(['installed' => [], 'failed' => ['review-cycle']], $templates->install(ids: ['review-cycle']));
++	}//end testWithoutAStoreOnlyNoneIsOffered()
++
++	/**
++	 * A search that throws is logged and leaves the "No templates" card.
++	 *
++	 * @return void
++	 */
++	public function testAFailingSearchIsLoggedAndOffersNone(): void {
++		$store = $this->store(search: new RuntimeException('registry down'));
++		$logger = $this->createMock(LoggerInterface::class);
++		$logger->expects($this->once())->method('warning')->with($this->stringContains('could not be searched'));
++
++		$templates = new SetupTemplates(container: $this->container(store: $store), logger: $logger);
++
++		$this->assertSame(['none'], array_column($templates->listChoices(), 'id'));
++	}//end testAFailingSearchIsLoggedAndOffersNone()
++
++	/**
++	 * Unknown ids are named in the order given; known ones and "none" are not.
++	 *
++	 * @return void
++	 */
++	public function testUnknownNamesOnlyIdsThatAreNoCard(): void {
++		$store = $this->store(search: ['cards' => [['slug' => 'review-cycle', 'title' => 'Yearly review cycle']]]);
++
++		$this->assertSame(['made-up', 'other'], $this->templates(store: $store)->unknown(ids: ['made-up', 'review-cycle', 'none', 'other']));
++	}//end testUnknownNamesOnlyIdsThatAreNoCard()
++
++	/**
++	 * Each picked set goes through the store's install, "none" installs
++	 * nothing, and a refusal, a failure report or a throw counts as failed.
++	 *
++	 * @return void
++	 */
++	public function testInstallGoesThroughTheStoreAndReportsEachSet(): void {
++		$logger = $this->createMock(LoggerInterface::class);
++		$logger->expects($this->once())->method('error')->with($this->stringContains('broken-set'));
++		$store = $this->store(search: [], installs: [
++			'leave-policy-basic' => new JSONResponse(['success' => true]),
++			'review-cycle'       => new JSONResponse(['installed' => 3]),
++			'refused-set'        => new JSONResponse(['success' => false, 'message' => 'Installing a store item requires an administrator.'], 403),
++			'unresolved-set'     => new JSONResponse(['success' => false], 404),
++			'failed-set'         => new JSONResponse(['success' => false]),
++			'broken-set'         => new RuntimeException('boom'),
++		]);
++
++		$templates = new SetupTemplates(container: $this->container(store: $store), logger: $logger);
++		$report = $templates->install(ids: ['none', 'leave-policy-basic', 'review-cycle', 'refused-set', 'unresolved-set', 'failed-set', 'broken-set']);
++
++		$this->assertSame(['leave-policy-basic', 'review-cycle'], $report['installed']);
++		$this->assertSame(['refused-set', 'unresolved-set', 'failed-set', 'broken-set'], $report['failed']);
++		$this->assertSame(['leave-policy-basic', 'review-cycle', 'refused-set', 'unresolved-set', 'failed-set', 'broken-set'], $store->installed);
++	}//end testInstallGoesThroughTheStoreAndReportsEachSet()
++
++	/**
++	 * The service under test over the given fake store.
++	 *
++	 * @param object $store The fake store controller.
++	 *
++	 * @return SetupTemplates
++	 */
++	private function templates(object $store): SetupTemplates {
++		return new SetupTemplates(container: $this->container(store: $store), logger: $this->createMock(LoggerInterface::class));
++	}//end templates()
++
++	/**
++	 * A container that hands out the fake store under the aliased controller name.
++	 *
++	 * @param object $store The fake store controller.
++	 *
++	 * @return ContainerInterface
++	 */
++	private function container(object $store): ContainerInterface {
++		$container = $this->createMock(ContainerInterface::class);
++		$container->method('get')->with('OCA\\Humaniq\\Controller\\StoreController')->willReturn($store);
++
++		return $container;
++	}//end container()
++
++	/**
++	 * A fake store controller: search answers the given body (or throws it),
++	 * install answers per slug (or throws) and records the slugs it was asked.
++	 *
++	 * @param array<string, mixed>|RuntimeException          $search   The search body.
++	 * @param array<string, JSONResponse|RuntimeException> $installs The install answers by slug.
++	 *
++	 * @return object
++	 */
++	private function store(array|RuntimeException $search, array $installs = []): object {
++		return new class($search, $installs) {
++			/**
++			 * @var int
++			 */
++			public int $searches = 0;
++
++			/**
++			 * @var list<string>
++			 */
++			public array $installed = [];
++
++			/**
++			 * @param array<string, mixed>|RuntimeException          $search   The search body.
++			 * @param array<string, JSONResponse|RuntimeException> $installs The install answers.
++			 */
++			public function __construct(
++				private readonly array|RuntimeException $search,
++				private readonly array $installs,
++			) {
++			}
++
++			/**
++			 * @return JSONResponse
++			 */
++			public function search(): JSONResponse {
++				$this->searches++;
++				if ($this->search instanceof RuntimeException) {
++					throw $this->search;
++				}
++
++				return new JSONResponse($this->search);
++			}
++
++			/**
++			 * @param string $slug The set slug.
++			 *
++			 * @return JSONResponse
++			 */
++			public function install(string $slug): JSONResponse {
++				$this->installed[] = $slug;
++				$answer = $this->installs[$slug] ?? new JSONResponse(['success' => false], 404);
++				if ($answer instanceof RuntimeException) {
++					throw $answer;
++				}
++
++				return $answer;
++			}
++		};
++	}//end store()
++}//end class
+-- 
+2.43.0
+
