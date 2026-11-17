@@ -21194,3 +21194,4 @@ build:portaliq:form-save-and-resume-dialogs:b2	already done: code tasks on devel
 build:portaliq:count-field:b2	already built: learniq declares the count widget on development; portaliq#2568 ticks task 3; both scenarios e2e-excluded with named tests	session-20261117T141335-245f063b	2026-11-17T14:38:16Z
 build:portaliq:intake-pay-on-submit:b2	already building: quality/build-intake-pay-on-submit exists; only live task T01 left	session-20261117T134355-826c5a0b	2026-11-17T14:38:08Z
 build:portaliq:form-binding-settings-page:b2	already built: T01 on development with its spec; skipped T02 (live check, needs a running instance)	session-20261117T135611-7a4e2ddc	2026-11-17T14:38:36Z
+build:portaliq:instance-loopback-self-calls:b2	already built: T1-T4 on development; skipped T5 (live check on a running instance after merge); no e2e specs named	session-20261117T135611-7a4e2ddc	2026-11-17T14:39:00Z
