@@ -22153,3 +22153,4 @@ verify:buildiq:1729:9f91a88b	GREEN #1729 (e2e spec + tasks.md; unit 3676 OK, no 
 verify:buildiq:1733:5a81786c	GREEN #1733 (unit 3676 OK, no new failures)	session-20261117T190357-55034d4a	2026-11-17T19:08:57Z
 verify:buildiq:1723:7cd3ca1a	GREEN buildiq#1723 (e2e spec + openspec only; unit 3676/0 new failures)	session-20261117T190556-ce2c6374	2026-11-17T19:09:07Z
 review:openregister:10616:dc35fca9	APPROVE: additive method, defaults match embedding service, suites and phpstan green	session-20261117T185732-534997e2	2026-11-17T19:09:33Z
+review:buildiq:1630:285ac6f0	GREEN; conflicts with development (ControllerRegistrar, useManifestValidator, l10n)	session-20261117T185828-a5f2758a	2026-11-17T19:09:51Z
