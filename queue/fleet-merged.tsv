@@ -5030,3 +5030,4 @@ portaliq	2449	05704f30dee8e5d91bbef447d0ba00814a4da05c	SKIP	worker-14	GATE UNMEA
 decidiq	2154	6fc49611cd252c8bdc22cdf54c5631780f3f0b3c	SKIP	worker-29	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 decidiq	2195	ebc6d9d54e01c779de13acd4b3b086e4f83c1306	SKIP	worker-29	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 pipelinq	3734	9499f0c680f5399969ef9b362f04090d172f17a1	SKIP	worker-30	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
+decidiq	2249	3d2d6c428cf0ad3d1f1c8252b6e856b7ac653a50	RED	worker-29	GATE RED sbom: package-lock.json changed without sbom.cdx.json
