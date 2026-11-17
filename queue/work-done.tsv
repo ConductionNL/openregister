@@ -20826,3 +20826,4 @@ review:learniq:2551:f185e0a0	GREEN #2551 (per specs; failures inherited)	session
 cover:launchpad:fb10c50fm88bd:b67d52c3	already done: lib/Job/*.php at 100% lines (48/48) on development ec73a83, no PR needed	session-20261117T134242-51ff9d48	2026-11-17T13:47:38Z
 review:hermiq:1760:c503263f	BLOCK: AgentBuild schema lacks demo data or reason; conflicts with development	session-20261117T132743-10cec9d3	2026-11-17T13:47:47Z
 verify:stackiq:2034:19da058c	GREEN #2034 (4054 tests, 0 new failures)	session-20261117T134404-362023fb	2026-11-17T13:47:57Z
+cover:stackiq:9ac19b3am209e:f545d745	already done: lib/Repair/*.php measured 1281/1282 lines (99.9%) on development, target 95	session-20261117T132538-ac3b9ef5	2026-11-17T13:48:14Z
