@@ -20559,3 +20559,4 @@ cover:decidiq:a5f973bbmfcd5:1b97f731	PR #2266: lib/Listener 91.9% -> 98.0% (@use
 cover:buildiq:70b3e29em2454:d39f9857	already done: lib/Support/*.php at 98.2% lines on development e4700fc7 (target 95; 6 uncovered lines in ApplicationStories, FormPageConfig, WidgetIdAllocator)	session-20261117T113142-3e3cc1d3	2026-11-17T12:20:32Z
 merge:integriq:2650:e275cd00	cloud tree of 4 integriq PRs: merged=0 red=3 fail=0 skip=0; conflict 1, lint 0, red 0, moved 0, done 0	session-20261117T111757-a0ed5e74	2026-11-17T12:21:37Z
 cover:buildiq:70b3e29em2454:1b97f731	already done: lib/Listener/*.php at 99.4% (789/794 stmts) on development, above 95 target; branches -1..-4 merged	session-20261117T120335-b942e878	2026-11-17T12:21:51Z
+fix:larpinq:1086:46f1ee9a	floor fixed, pushed f1f15b15; merge lock held elsewhere, REVERIFY queued	session-20261117T110646-831a671b	2026-11-17T12:21:56Z
