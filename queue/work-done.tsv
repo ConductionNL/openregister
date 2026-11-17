@@ -20936,3 +20936,4 @@ build:dossiq:case-search-declares-its-fields:b2	already built: code tasks on dev
 build:dossiq:beschikking-chain-on-the-case:b2	failed: nothing buildable; tasks 2.1-2.2 wait on the approved board DqZaakBesluiten chain (decision 162), 1.1 is the board itself, 2.3 is e2e; no backend change in the change	session-20261117T134347-d0294040	2026-11-17T14:09:30Z
 build:dossiq:a-handling-team-opens-its-unclaimed-cases:b2	already done: tasks 1.1-2.1 on development (494a561d); 3.1 is a live check, left	session-20261117T133035-588aec38	2026-11-17T14:09:36Z
 build:dossiq:a-verdict-marks-its-document-in-scope:b2	already done: all code tasks (1.1-1.3) on development since 4da9c294c; only live task 1.4 left	session-20261117T134355-826c5a0b	2026-11-17T14:09:38Z
+build:dossiq:case-type-rights-by-role:b2	already done: tasks 1.1-1.4 on development (a27ae285); only 2.1 (a decision for Ruben, not code) left	session-20261117T124010-7774729d	2026-11-17T14:10:51Z
