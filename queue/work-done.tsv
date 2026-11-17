@@ -19256,3 +19256,4 @@ review:opencatalogi:2706:01d5443c	already merged into development (252b4222); no
 fix:hermiq:1760:37f096be	fixed conflict, new head 2a9d1408d8daae1110a6912375084361e3e252f4; REVERIFY (merge lock held elsewhere)	session-20261117T020353-b50811a6	2026-11-17T02:48:46Z
 merge:integriq:3049:c69ff6a7	cloud tree of 4 integriq PRs: merged=1 red=0 fail=0 skip=0; conflict 3, lint 0, red 0, moved 0, done 0	session-20261117T024200-4ed5487e	2026-11-17T02:49:01Z
 review:portaliq:2492:5231f578	GREEN: 6258 tests, 16 inherited errors	session-20261117T020142-15890c05	2026-11-17T02:49:08Z
+fix:versioniq:715:f78bf6ec	floor restored (PASS); pushed 160a3e87; merge lock held elsewhere, REVERIFY queued	session-20261117T020319-9833efe0	2026-11-17T02:49:47Z
