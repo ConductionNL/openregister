@@ -19578,3 +19578,4 @@ merge:filinq:2072:a1b6751e	cloud tree of 4 filinq PRs: none; conflict 4, lint 0,
 gap:shillinq:tabs-onto-boards:1	deferred: shillinq has 55 open PRs; the open gap PRs (#2798 OpenAPI doc, #2796 config constants) are unrelated, and the decision asks for one PR per page area	session-20261117T061732-40387d12	2026-11-17T06:35:06Z
 fix:shillinq:2986:c200c996	conflict resolved, pushed 34de794; REVERIFY (merge lock busy)	session-20261117T061824-01d4fad5	2026-11-17T06:35:20Z
 review:decidiq:2162:a1170813	GREEN: unit 4839->4864 no new failures, vitest 6/6, phpstan clean	session-20261117T062917-0fb3a5d4	2026-11-17T06:35:38Z
+review:shillinq:2071:c9fb8008	BLOCK: drops BookCapturesCommand registration from info.xml; suite green	session-20261117T063118-c67285ab	2026-11-17T06:35:46Z
