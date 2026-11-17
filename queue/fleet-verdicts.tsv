@@ -19005,6 +19005,7 @@ pipelinq	3941	7a5fdb889bdcc51620835761870140c957593c6c	GREEN	worker-25	build cha
 stackiq	2045	711ef7f734af2625f6eb46f45c0b2d8e7ec7b45c	GREEN	worker-15	e2e spec + tasks.md note only (vitest/jest exclude tests/e2e); merges clean; no unit-run file changed
 planninq	1246	64caa7ce8e8fec9974544ab87ac0ff8ccd473dc5	GREEN	worker-13	build projects-templates-shared-workflow round 2: task.estimateSize + t-shirt estimates and e2e specs, per the change's specs; unit 1254 OK (baseline 1253 OK), vitest 3593 pass, no new failures
 stackiq	2048	3df81eba42bc8409a9466601d3a6e1d32fab9deb	GREEN	worker-45	unit baseline 4055 (1 inherited: CmdbImportProfileOverviewGoldenTest), tree 4064, 0 new; php -l clean; anonymous published-only listing is what anonymous-aanbod-listing-is-published-only asks for, rate-limited, @self/_ keys stripped
+thematiq	1720	7eeab9fa1380f09cb80d2a88b07122afeddbc2db	GREEN	worker-37	release version bump only; phpunit 2900, 1 inherited failure (MigrateOverrideValueTypesTest), 0 new
 stackiq	2051	ea4af972eb77b68a49a8fcfd1bb61bf4df92f6d5	GREEN	worker-15	two e2e specs + tasks.md note only (vitest/jest exclude tests/e2e); merges clean; no unit-run file changed
 stackiq	2040	6e1004c570bccf73fa23089dda2dc0afdccc0795	GREEN	worker-24	tests only, no production code; 24 new tests 68 assertions pass; unit 4079 tests 0 failures on tree (baseline 4055)
 stackiq	2037	8a0066197aac4f12cf1bcc598837fd35f50ac334	GREEN	worker-50	phpunit 4060 tests (baseline 4055), no failures, same 2 warnings as baseline; tests only: EntryReferencesTest, 5 tests with exact assertions
