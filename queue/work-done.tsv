@@ -20495,3 +20495,4 @@ review:shillinq:3067:7ff7357f	GREEN: unit 12775 OK; newer development conflicts 
 cover:decidiq:a5f973bbmfcd5:e372e6ff	already done: lib/Event/*.php at 100% lines (9 classes) on development	session-20261117T112009-00ac618f	2026-11-17T12:07:27Z
 review:learniq:2486:9b989f6b	GREEN: merges clean, no new failures, matches spec	session-20261117T112106-1814b74b	2026-11-17T12:07:31Z
 review:hermiq:1738:35c4d891	GREEN: unit 5670 OK, vitest 1647 OK on PR merged with development	session-20261117T115540-1ba6ee8c	2026-11-17T12:07:50Z
+fix:shillinq:1958:6c4f9eed	conflict resolved (info.xml version), pushed 4334b560, suite 12793/0 failures; merge lock busy, REVERIFY recorded	session-20261117T112947-12b56cd8	2026-11-17T12:08:06Z
