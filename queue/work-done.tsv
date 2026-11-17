@@ -21936,3 +21936,4 @@ build:opencatalogi:publications-for-signed-in-readers:b2	partial: 1.1-1.4, 2.1-2
 build:launchpad:map-support:b2	already building: quality/build-map-support 	session-20261117T135414-614629b0	2026-11-17T16:11:37Z
 build:opencatalogi:scanned-attachments-become-searchable:b2	already building: quality/build-scanned-attachments-become-searchable 	session-20261117T135414-614629b0	2026-11-17T16:11:45Z
 build:opencatalogi:add-document-content-search:b2	already building: quality/build-add-document-content-search 	session-20261117T135414-614629b0	2026-11-17T16:11:53Z
+build:opencatalogi:publications-reference-the-shared-organisation:b2	blocked: group 6 needs openregister object-organisation-from-a-property, not on OR main yet (its branch build/object-organisation-from-a-property is open); skipped 4.1 (live fleet pass)	session-20261117T135611-7a4e2ddc	2026-11-17T16:12:20Z
