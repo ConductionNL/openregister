@@ -20320,3 +20320,4 @@ verify:portaliq:2559:1498c922	GREEN #2559	session-20261117T111401-3cc65eba	2026-
 review:filinq:2113:ee71f67d	GREEN: unit 7254/0 fail on PR+development; register json conflicts with development	session-20261117T112008-f5bd35fb	2026-11-17T11:22:55Z
 review:filinq:2112:62f4e41c	GREEN; register header conflicts with development, version-pinned schema test must move with it	session-20261117T110646-831a671b	2026-11-17T11:23:20Z
 review:buildiq:1654:20cc2aa0	GREEN #1654 (unit 3617 OK; l10n conflict with development noted)	session-20261117T112020-0bf220a7	2026-11-17T11:23:39Z
+fix:filinq:2090:ca7adf6f	conflict resolved (register header v8.71.0), 7250 tests green; new head c34cbf17, REVERIFY queued (merge lock busy)	session-20261117T111351-f79c232f	2026-11-17T11:23:50Z
