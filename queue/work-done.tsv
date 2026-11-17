@@ -19771,3 +19771,4 @@ fix:opencatalogi:2756:a7e29de0	conflict resolved, new head b1e917d5, REVERIFY qu
 fix:launchpad:1217:faab5f5c	conflict resolved, pushed 56684b15; REVERIFY queued (merge lock held elsewhere)	session-20261117T065537-5000a36a	2026-11-17T07:16:41Z
 verify:dossiq:6628:02172125	6628 GREEN, 6629 GREEN, 6630 BLOCK (behaviour change outside a build commit)	session-20261117T063021-b217a961	2026-11-17T07:17:13Z
 review:shillinq:3062:2d73a4e6	GREEN: unit 12634 OK (baseline 12613), vitest 16/16	session-20261117T060006-72dfb87c	2026-11-17T07:17:27Z
+fix:versioniq:758:0dfd34ac	conflict resolved, pushed 7a728e33; REVERIFY queued	session-20261117T055853-7ddd3cb3	2026-11-17T07:17:39Z
