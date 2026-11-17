@@ -22446,3 +22446,4 @@ verify:thematiq:1723:f6aae08d	GREEN #1723: npm ci, vitest 1571, build ok	session
 verify:thematiq:1729:0112b5b6	GREEN #1729: vitest 1571 pass, lint clean	session-20261117T185853-76335694	2026-11-17T20:11:01Z
 build:shillinq:sales-quick-draft-from-any-page:b2:c2	partial: pushed to PR #3174 tests/e2e/sales-quick-draft-from-any-page.spec.ts (3 scenarios tagged, eslint + playwright --list clean); left 1.1 (needs a nextcloud-vue app-level open-modal action), 2.1 live run	session-20261117T190333-2bf83f45	2026-11-17T20:11:17Z
 build:decidiq:insight-decisions-report-by-period-and-body:b2:c3	already built: code tasks 1-5 on development, Newman collection on development, e2e tests/e2e/decisions-report-cut.spec.ts in open PR #2278 (awaits verify); left only live runs (Newman, Playwright) that need an instance	session-20261117T190714-0b708ca6	2026-11-17T20:11:38Z
+verify:stackiq:2057:109a8c2a	2057 GREEN (e2e spec only)	session-20261117T185710-40ec955c	2026-11-17T20:11:35Z
