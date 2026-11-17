@@ -22019,3 +22019,4 @@ build:stackiq:adopt-integration-leaves:b2	built: PR #2045 adds the Playwright sp
 build:stackiq:landscape-owner-attestation:b2	already building: branch quality/build-landscape-owner-attestation exists	session-20261117T134347-d0294040	2026-11-17T16:20:33Z
 build:stackiq:insight-supplier-facet:b2	already building (quality/build-insight-supplier-facet exists)	session-20261117T125716-5aa18045	2026-11-17T16:21:39Z
 build:stackiq:supplier-accepts-claimed-usage:b2	already building: quality/build-supplier-accepts-claimed-usage 	session-20261117T135414-614629b0	2026-11-17T16:21:39Z
+build:stackiq:the-review-moderation-overlay-names-the-wrong-schema:b2	already done: code tasks built; open 3.1 live import check and 3.2 a data operation (prune), both explicitly not covered; no PR	session-20261117T135414-614629b0	2026-11-17T16:22:12Z
