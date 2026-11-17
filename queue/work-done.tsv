@@ -18493,3 +18493,4 @@ verify:opencatalogi:2651:408614db	CONFLICT: #2651 conflicts with development (9 
 verify:planninq:1068:ff42197b	GREEN #1068	session-20261116T233929-170accb7	2026-11-17T00:00:02Z
 verify:portaliq:2450:88eab3c5	CONFLICT #2450 (4 files conflict with development)	session-20261116T233050-d0df160f	2026-11-17T00:00:12Z
 verify:portaliq:2500:d606ba9e	CONFLICT #2500 (tests/example-site.spec.mjs vs development)	session-20261116T233800-0f135937	2026-11-17T00:00:22Z
+verify:learniq:2536:f83be629	CONFLICT: #2536 conflicts with development on its own (routes, l10n, ContractBindings, register json)	session-20261116T220647-b92c8f52	2026-11-17T00:00:30Z
