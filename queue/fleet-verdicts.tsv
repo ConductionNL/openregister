@@ -16938,3 +16938,4 @@ stackiq	1942	aad1987d0d52e37f8cd8348ddde62f642abaa602	GREEN	worker-25:review	bui
 hermiq	1791	86d27476e06000ce1db24e3054218ed1faf1235e	GREEN	worker-27:review	implements models-prompt-and-answer-cache per its specs; cache keyed and re-checked per organisation, clear route checks canUserModifyAgent; PHPUnit 5591 OK merged with development, vitest 1610 OK, eslint 0 errors
 stackiq	1938	1b19373e2243179e2ec662bb1ab623d48f48be85	CONFLICT	worker-21:merge	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Settings/softwarecatalogus_register.json src/customComponents.js src/manifest.d/usages.json 
 stackiq	1946	644c7833d77586f665fbdbc54dcd21c72e2084df	CONFLICT	worker-21:merge	conflicts with development; files: docs/features/README.md l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+decidiq	2162	41fa34b09570aea997963a15fb5da440e27a168f	RED	worker-36:merge-gate	GATE RED floor: duplication: 3.82 -> 3.80
