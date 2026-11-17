@@ -22991,3 +22991,4 @@ merge:opencatalogi:2674:1e047400	unmeasured: api.osv.dev; 5 APPROVE (2797-2801) 
 merge:opencatalogi:2650:15d48630	unmeasured: api.osv.dev (unreachable from this session, merge gate cannot measure opencatalogi; nothing built or landed)	session-20261117T224553-00070e1c	2026-11-17T23:14:32Z
 merge:shillinq:3064:e69edc42	unmeasured: static.developer.overheid.nl and api.osv.dev refused by this session's proxy; 7 PRs reviewed APPROVE (tree green, 12836 tests, 0 new failures), nothing landed; 3080 CONFLICT, 3174 MOVED	session-20261117T224407-42014acc	2026-11-17T23:15:00Z
 fix:launchpad:1300:0d717f38	merged development in clean, pushed 00d3700a29; REVERIFY queued (landing skipped: gate host unreachable)	session-20261117T223208-cb40bd07	2026-11-17T23:15:28Z
+merge:dossiq:6659:5b23d217	unmeasured: static.developer.overheid.nl (7 PRs approved, gate could not measure adrvalidator; 6659 MOVED)	session-20261117T222912-c82d042f	2026-11-17T23:16:06Z
