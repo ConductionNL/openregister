@@ -19806,3 +19806,4 @@ fix:opencatalogi:2722:8f7ea1f5	fixed BLOCK (@spec tag), new head 6007a1fe; merge
 fix:opencatalogi:2680:7b795492	conflict resolved, pushed 2286260f; merge lock held elsewhere, REVERIFY	session-20261117T065443-facc0d23	2026-11-17T07:24:18Z
 fix:stackiq:1946:644c7833	conflict resolved, pushed 79f3a2dd (phpunit OK, vitest only inherited facets failure); lock held elsewhere, REVERIFY queued	session-20261117T065426-e0b4a950	2026-11-17T07:24:43Z
 fix:opencatalogi:2650:fef15211	unmeasured: api.osv.dev (conflict fixed, floor restored, new head e518db3d, APPROVE recorded, tree 0 new failures)	session-20261117T062917-0fb3a5d4	2026-11-17T07:25:02Z
+fix:stackiq:1938:1b19373e	conflict resolved and @spec fixed, head 08b568aa; approved, merge gate RED on floors (unit_complexity 3.73->3.71, unit_interfacing 4.71->4.68), not landed	session-20261117T063127-b908dd01	2026-11-17T07:25:09Z
