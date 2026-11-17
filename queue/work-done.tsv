@@ -22695,6 +22695,7 @@ verify:pipelinq:3934:6ba01209	CONFLICT: #3934 l10n en/nl js+json conflict with d
 fix:hermiq:1719:fdc4de5b	conflict resolved, pushed 257411d7; REVERIFY queued (merge lock held elsewhere)	session-20261117T213058-6689a4c6	2026-11-17T21:43:29Z
 verify:dossiq:6648:ddfe2aae	GREEN #6648, #6663 (no new failures; 19 phpunit + 2 vitest inherited)	session-20261117T211520-d88a421d	2026-11-17T21:43:49Z
 verify:opencatalogi:2806:c32247ec	GREEN opencatalogi #2806 (inherited failures only)	session-20261117T211320-ba1b42e8	2026-11-17T21:43:59Z
+merge:shillinq:3160:6aca1aa9	unmeasured: static.developer.overheid.nl (8 PRs reviewed APPROVE, tree green 12806 tests; 3171 MOVED; nothing landed)	session-20261117T211359-8e262d16	2026-11-17T21:44:09Z
 fix:portaliq:2589:7076e2d0	conflict resolved, pushed 8f568eda; REVERIFY (merge lock held elsewhere)	session-20261117T211932-f471137a	2026-11-17T21:44:16Z
 verify:larpinq:1104:072740aa	GREEN #1104 (e2e spec only)	session-20261117T211341-e05e0d2c	2026-11-17T21:44:31Z
 verify:integriq:2650:ecac209c	GREEN #2650: 9933 tests, no new failures	session-20261117T211412-45e1aeb8	2026-11-17T21:44:41Z
@@ -22715,3 +22716,4 @@ verify:larpinq:1099:b7a0ceb7	GREEN #1099: unit 1243/0 new failures; dev-only psa
 verify:stackiq:2055:5f39aed8	GREEN #2055 (0 new php failures; 1 vitest failure inherited)	session-20261117T211437-e305ed6d	2026-11-17T21:47:58Z
 merge:humaniq:1191:7c8b795c	unmeasured: static.developer.overheid.nl (proxy refuses it in this session); reviews: 1191,1194-1197 APPROVE, 1192 REQUEST_CHANGES (new schema lacks demo data); merged=0 skip=6	session-20261117T211535-4eae9738	2026-11-17T21:48:06Z
 verify:opencatalogi:2786:0400a8ec	GREEN #2786: no new unit or vitest failures; admin-only endpoints per spec	session-20261117T213139-4c29297d	2026-11-17T21:48:32Z
+verify:shillinq:3048:9fbb86c2	GREEN 3048: unit 12824 OK, vitest only inherited failure	session-20261117T211359-b7379586	2026-11-17T21:48:55Z
