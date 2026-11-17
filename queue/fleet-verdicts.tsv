@@ -18990,3 +18990,4 @@ shillinq	3175	4bddf0737ff2e934d841dba7d62f7c09c256799c	GREEN	worker-52	builds re
 dossiq	6645	97e25b5469678818ef81feec00981d38ea5acfa1	GREEN	worker-28	tasks.md only; phpunit 18399 tests, 19 failures all inherited from development baseline (PR changes no code), 0 new; claimed seed package and tests exist on development
 pipelinq	3942	2b241c62d46f0e5695fcbda73b385b9d2b9c4aed	RED	merge3:merge-gate	GATE RED floor: duplication: 4.30 -> 4.28
 pipelinq	3950	deaebf3043e5ffac9b208a8de84f55252894e932	RED	merge3:merge-gate	GATE RED floor: overall: 4.83 -> 4.81; unit_interfacing: 4.18 -> 4.10; module_coupling: 5.34 -> 5.28
+planninq	1246	64caa7ce8e8fec9974544ab87ac0ff8ccd473dc5	GREEN	worker-13	build projects-templates-shared-workflow round 2: task.estimateSize + t-shirt estimates and e2e specs, per the change's specs; unit 1254 OK (baseline 1253 OK), vitest 3593 pass, no new failures
