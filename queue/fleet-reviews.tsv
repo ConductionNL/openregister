@@ -1182,3 +1182,4 @@ integriq	3705	06350cfbac4bae6a1c87014c0cbf9a40afbcd51f	APPROVE	worker-08	Quick; 
 pipelinq	3932	b68d98558ef0ca9c770e0950081777dd4103c596	APPROVE	worker-31	Standard; no blockers; docs/metadata only (publiccode.yml, README); NC 32-35, languages, logo and screenshots match the repo; supports entry restored; softwareVersion 0.5.14 is a manual value to keep current
 learniq	2589	241404be95b288b1abd5a2da268f098d513e533f	APPROVE	worker-17	Standard; no blockers; docs/metadata only, referenced logo/screenshots/roadmap exist, languages match l10n, NC range matches info.xml; softwareVersion 0.3.12-beta differs from info.xml 0.3.9-beta
 buildiq	1701	6183315e3d9928c24a7a60efb4b0aaa99d529590	APPROVE	worker-10	Standard; no blockers (supports entry restored); concerns: none, metadata matches info.xml, l10n and img
+integriq	3706	aac3e778be191eff90b4f66e7e267466d9ac795d	APPROVE	worker-08	Quick; no blockers; babel preset-env patch, vitest pass
