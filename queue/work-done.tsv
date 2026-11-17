@@ -19556,3 +19556,4 @@ review:shillinq:2997:b635f045	GREEN: unit 12664 OK (baseline 12582), vitest 11/1
 fix:decidiq:2199:207cf34b	conflict resolved, pushed fb256f06; REVERIFY queued	session-20261117T055853-7ddd3cb3	2026-11-17T06:29:48Z
 review:shillinq:3064:b11030b8	CONFLICT: openapi.json conflicts with development; code otherwise clean, phpstan green	session-20261117T055905-03eea4d3	2026-11-17T06:30:02Z
 review:learniq:2524:77f1c40b	GREEN; conflicts with development	session-20261117T055844-3d508d2a	2026-11-17T06:30:10Z
+review:shillinq:2983:ad375f2d	CONFLICT: openapi.json, register-versions.lock.json conflict with development	session-20261117T061802-b42f2669	2026-11-17T06:30:21Z
