@@ -18838,3 +18838,4 @@ fix:decidiq:2162:75db4256:v3	conflict resolved, pushed 41fa34b0; merge lock held
 review:shillinq:3003:a0eb3c15	GREEN: merges clean, suite 12530 OK, behaviour per change specs	session-20261117T004721-b30387a5	2026-11-17T01:19:03Z
 review:filinq:2098:377c6050	GREEN; conflicts with development in SettingsService.php/Settings.vue (keep-both)	session-20261117T005212-998cc343	2026-11-17T01:19:17Z
 fix:hermiq:1758:2fa884c5:v3	conflict resolved + OR save API fixed, pushed d5151101; no new failures vs development; lock held elsewhere, REVERIFY queued	session-20261117T005216-77516966	2026-11-17T01:19:33Z
+fix:decidiq:2205:9c878baf:v3	conflict resolved, pushed ecb1c1cc; REVERIFY (merge lock held elsewhere)	session-20261117T004718-f6df305c	2026-11-17T01:19:50Z
