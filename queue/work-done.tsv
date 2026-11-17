@@ -19704,3 +19704,5 @@ review:buildiq:1632:339aedb1	GREEN: phpunit 3480 OK, vitest 4914 pass, phpstan c
 review:filinq:2098:cf30de81	GREEN: unit 7115 OK, phpstan clean, jest/vitest pass	session-20261117T065537-5000a36a	2026-11-17T07:03:13Z
 fix:hermiq:1738:10d3c28c	fixed CONFLICT, pushed 461c70b6; unit 5596 OK; REVERIFY queued (merge lock held elsewhere)	session-20261117T061802-b42f2669	2026-11-17T07:03:25Z
 review:filinq:2096:fc3e734c	BLOCK: write guard schema-id check, register version without app version bump, component_independence floor	session-20261117T063032-e9a993e2	2026-11-17T07:03:35Z
+fix:launchpad:1223:646b3ff9	failed: floor refactor exceeds the fix cap (3 ratings still drop); conflict with development resolved and pushed 68e3fcf5, RED recorded with the levers	session-20261117T055908-62351962	2026-11-17T07:03:45Z
+fix:integriq:3632:6bc3018b	conflict resolved, pushed e95b6afde; REVERIFY recorded	session-20261117T063021-b217a961	2026-11-17T07:03:55Z
