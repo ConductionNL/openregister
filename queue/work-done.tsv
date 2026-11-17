@@ -18549,6 +18549,7 @@ verify:shillinq:3008:1f4ba84a	CONFLICT #3008 (7 files conflict with development)
 verify:learniq:2579:b356ecaa	failed: composer-cloud refuses learniq's lock on this session's php 8.3.6 (vimeo/psalm 7.5.0 needs ~8.3.16); no unit suite	session-20261116T232944-146e39d7	2026-11-17T00:09:45Z
 verify:stackiq:1963:0202df86	CONFLICT: 6 files vs development	session-20261116T232912-634ff2e8	2026-11-17T00:09:38Z
 verify:shillinq:3065:4335294e	CONFLICT #3065 (info.xml, InvoiceGenerationService, openapi, registry.js)	session-20261116T232951-07569878	2026-11-17T00:09:54Z
+verify:portaliq:2452:dd54af47	CONFLICT: 9 files vs development (l10n, ListenerRegistrar, register json, package.json, tests)	session-20261116T232925-45c70e73	2026-11-17T00:10:05Z
 verify:portaliq:2445:407c9cee	CONFLICT #2445 (l10n catalogues)	session-20261116T232918-35016340	2026-11-17T00:10:04Z
 verify:shillinq:3080:75a66e92	CONFLICT: #3080 vs development in CHANGELOG, info.xml, l10n, ContractRegistrar, registrar tests, register-versions lock	session-20261116T232911-3dffa1ae	2026-11-17T00:10:25Z
 verify:stackiq:1942:b6663ebb	CONFLICT #1942	session-20261116T233627-44605965	2026-11-17T00:10:36Z
@@ -18652,3 +18653,4 @@ fix:stackiq:1941:c6e6242e	merged #1941 at 92fdaeeb94f12877f88fbbf4acef9cdf928d21
 cover:stackiq:9ac19b3am039e:60c2c265	PR #2009: getBulkUserInfo answer/limit/failure via php://input stream wrapper, 3 tests, +29 stmts; suite 3912->3915 OK	session-20261113T214350-9762e143	2026-11-17T00:32:12Z
 build:opencatalogi:dcat-catalogue-completion:c5	failed: blocked, no code task buildable: 1.x licence sources unreachable from the cloud (publications.europa.eu, op.europa.eu, data.overheid.nl, waardelijsten.dcat-ap-donl.nl: no connection); 3.2 needs a new composer library and a worker may not commit composer.lock; 6.2 switch already in CatalogModal, only its e2e open; PR #2643 head adb68bca unchanged	session-20261116T230843-e8244832	2026-11-17T00:31:42Z
 fix:hermiq:1781:dd5b5dad	conflict fixed + gate fixes pushed 256eb1a5; review APPROVE; not landed: merge gate floor red (module_coupling 5.08 -> 4.97)	session-20261116T233939-9a6702d9	2026-11-17T00:32:24Z
+fix:launchpad:1223:430e98a0	launchpad #1223 fixed (gates 7/51/55/101, conflict), pushed bf24d56a; REVERIFY (merge lock held elsewhere)	session-20261116T233009-d8b07fcf	2026-11-17T00:30:25Z
