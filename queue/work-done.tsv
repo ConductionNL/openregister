@@ -21932,3 +21932,4 @@ build:keepiq:sharing-atomic-share-save:b2	partial: tasks 1.x-2.x on development;
 build:opencatalogi:prometheus-metrics:b2	PR #2795: Newman prometheus-metrics collection for smoke tests 6.1-6.6; code already on development; 4.2 screenshots and the live run left	session-20261117T152630-80f67c9b	2026-11-17T16:11:00Z
 build:launchpad:map-support:b2	already building: quality/build-map-support 	session-20261117T135414-614629b0	2026-11-17T16:11:37Z
 build:opencatalogi:scanned-attachments-become-searchable:b2	already building: quality/build-scanned-attachments-become-searchable 	session-20261117T135414-614629b0	2026-11-17T16:11:45Z
+build:launchpad:responsehelper-instance-api:b2	failed: blocked - change status awaiting-human-decision (proposal not approved; tasks.md says nothing may start)	session-20261117T134556-243db2c5	2026-11-17T16:11:53Z
