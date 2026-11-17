@@ -18720,6 +18720,7 @@ buildiq	1713	2b78ac989bb71c96a61611961bdc826e1fb7af1f	GREEN	worker-51	tasks.md t
 versioniq	735	6cc6a20f40412a056a20b1bc806f963ed789ed45	CONFLICT	worker-36:review	conflicts with development in info.xml, l10n en/nl js+json, InstanceSettings.php, InstanceSettingsPanel.vue and its failures spec; diff matches the change specs, admin checks kept; PR head alone: 2284 tests, only the 2 inherited installer golden failures
 buildiq	1710	9b6b9e95f81917400acb306e4b2fae708797b460	GREEN	worker-49	unit 3683 tests (baseline 3676 OK), 0 new failures; tests only
 planninq	1247	1a42908edf32546f4d27dfc8c1b8aec9935bd950	GREEN	worker-22	e2e spec + tasks.md only; tree unit 1254 OK/11 skipped (baseline 1253), vitest 3593/3593, no new failures
+hermiq	1851	b966db2c68a14f9afb14d3f3420a29c429ecf9d3	GREEN	worker-20	unit 5736 baseline 0 fail; tree 5800 tests 0 new failures; vitest 1659 passed; build session-entity-links per spec
 buildiq	1722	9c7c8cfc7b3c10467efbe2b02ebf84adc7af41c7	GREEN	worker-43	unit suite: baseline 3676 tests 0 failures, tree 3682 tests 0 failures, no new failures; tests-only change plus tasks.md tick
 buildiq	1727	4916d3fd0aee276364b2ec147ef6e723807f88ca	GREEN	worker-26	same head verified in tree verify:buildiq:1724:86533fb7 this session: unit 3676 = baseline, new failures 0; e2e spec/tasks.md only
 planninq	1248	36d5dc19e1277c9823e4512f8072ca92540206a6	GREEN	worker-22	e2e + postman collection only; tree unit 1254 OK/11 skipped (baseline 1253), vitest 3593/3593, no new failures
