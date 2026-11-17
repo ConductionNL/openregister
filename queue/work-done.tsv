@@ -19235,3 +19235,4 @@ merge:learniq:2573:230fcd36	stale	feeder	2026-11-17T02:39:41Z
 review:thematiq:1365:214b4a2d	GREEN: 1 inherited unit failure; l10n conflict with development	session-20261117T020353-b50811a6	2026-11-17T02:44:08Z
 fix:portaliq:2492:8fe88049	fixed: StaffObjectStore on main's object API, pushed 5231f578; REVERIFY (merge lock held)	session-20261117T020142-15890c05	2026-11-17T02:44:24Z
 merge:dossiq:6203:94c30d6f	merge3 tree of 1 dossiq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-17T02:44:58Z
+fix:hermiq:1794:19bcd689	merged #1794 at 58725be9b04edb729c72faf541cd06e9553151bd	session-20261117T020358-1a8df617	2026-11-17T02:45:15Z
