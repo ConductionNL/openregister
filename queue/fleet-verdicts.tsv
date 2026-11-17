@@ -19600,3 +19600,4 @@ planninq	1247	1a42908edf32546f4d27dfc8c1b8aec9935bd950	RED	merge3:merge-gate	GAT
 planninq	1248	36d5dc19e1277c9823e4512f8072ca92540206a6	RED	merge3:merge-gate	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
 planninq	1245	18c0e02a3227b4aff7590139b12f700887b1d098	REVERIFY	merge3	verdict sha is not the head: head is bdab0519cda410700fd9b3a044acb9bca392cb56
 planninq	1250	70dfe254912eeaa8aeb0a5a52fbb7c735485ff4e	CONFLICT	merge3	merges clean on development alone; files: tests/integration/planninq.postman_collection.json 
+opencatalogi	2674	c6d01be66cd42b890d76ceb430114cd02e9223de	BLOCK	worker-46:review	review: Thorough; gate-7 no-admin-idor fails on the 4 new MetadataSuggestionController methods (the access check is in MetadataSuggestionDecisions, one hop deeper than the gate follows: call a require*/authorize* guard from the controller), floor gate: php component_independence worse than base; concerns: n
