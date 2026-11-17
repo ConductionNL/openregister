@@ -16707,3 +16707,8 @@ integriq	3638	3f3dacbb8b95f17c15dd3e3908e666f4c15b89a1	REVERIFY	worker-07:merge	
 integriq	3649	ceff4454ac2f491bc536f457614	REVERIFY	worker-07:merge	verdict sha is not the head: head is 9b271f27a945bbc79cf8ea2f8bf1c695445a8659
 integriq	3612	27e3d6e61355bf4be3b71fc33e70ade810f9272b	RED	worker-07:merge	adds unit failure(s) with the PRs before it in the tree: ConnectionHandoverServiceTest::testASourceWithoutOrganisationNeverMints ConnectionHandoverServiceTest::testAValueAlreadySetIsKeptAndReportedAsAConflict ConnectionHandoverServiceTest::testAVerifyMismat
 learniq	2549	fe0077f42633b782920daf65b7c645ed4ad3fe6f	CONFLICT	worker-35:merge	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json tests/unit-js/structureProfile.test.mjs 
+portaliq	2417	3783fdfbcff54fa66e3f7cf47988a178fcb8844d	CONFLICT	worker-42:merge	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json package.json 
+portaliq	2446	478f986ee7cff544223b5becaf2c7eb7188e33f6	CONFLICT	worker-42:merge	conflicts with development; files: package.json 
+portaliq	2450	5c9fe090314431963f17652a8492bff99c8f7b4b	CONFLICT	worker-42:merge	conflicts with development; files: package.json 
+portaliq	2493	733b81a3500f6d3d1d635490e08695c60df3f279	CONFLICT	worker-42:merge	conflicts with development; files: package.json 
+portaliq	2494	b99070c9ab1e77a31de8de16652870a2571993c9	CONFLICT	worker-42:merge	conflicts with development; files: package.json 
