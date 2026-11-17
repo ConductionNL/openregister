@@ -18599,3 +18599,4 @@ decidiq	2284	75bf16e4978932fd693798e5513fda961c651b66	GREEN	worker-48	tree of 9 
 filinq	2176	098a782ed239122525bac74cd4fff4db45bc3ac7	GREEN	worker-36	docs and tasks only; unit 7298 OK on the 9-PR tree, baseline 7288 OK, new failures 0; vitest 857/857
 versioniq	782	8ad2f3ba98693fc3e7ee1aa6891642f1ab5deb80	CONFLICT	worker-58	conflicts with development in tests/e2e/auto-update.spec.ts, jobs.spec.ts and tests/e2e/fixtures/forge/*
 versioniq	783	69cf88e72c64b23c104faf803d31d6ee982197f5	CONFLICT	worker-58	conflicts with development in tests/e2e/jobs.spec.ts
+learniq	2596	7ff99e0704ef8eafd7681a2b6936ec425d72eae0	GREEN	worker-21	unit 7157 tests on tree (baseline 7152, 1 inherited failure HigherEducationExampleSetTest), new failures 0; js-unit 1418, 8 inherited failures, new 0; e2e spec and tasks.md only
