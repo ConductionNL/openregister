@@ -16466,3 +16466,4 @@ versioniq	758	7be209fae0deeec3aa2a193a3b14e3288f75b2e4	REVERIFY	worker-32	split 
 versioniq	703	7caed88d2cea748045f2f39e4e1bbdbf07ab550e	RED	worker-35:merge-gate	GATE RED checker floor: secretscanning: pass -> fail; secretscanning stars: 5 -> 1
 opencatalogi	2706	cbea0d0ce437b1bde18a39ba77dbb8a433b29d26	RED	worker-30:merge-gate	GATE RED floor: unit_size: 4.66 -> 4.64; unit_interfacing: 4.79 -> 4.71
 stackiq	1937	ae736e94939b1e32bad9fa8bb70a100c5a69a6dc	RED	worker-33:merge-gate	GATE RED checker floor: adrvalidator: pass -> warn; adrvalidator stars: 5 -> 3; spdxheaders stars: 5 -> 4; score: 100 -> 97
+launchpad	819	c5c80a07dc500fcc4e5064cd5126241a9f4bf32a	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
