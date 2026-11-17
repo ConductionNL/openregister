@@ -22707,6 +22707,7 @@ verify:portaliq:2564:9fbc2d81	stale	session-20261117T211932-f471137a	2026-11-17T
 verify:launchpad:1305:1358f946	GREEN 1305, GREEN 1307; tree 4684 OK, baseline 4621	session-20261117T211353-2c595f41	2026-11-17T21:45:00Z
 verify:dossiq:6648:7529b2ea	GREEN #6648: 18405 tests, no new failures	session-20261117T213149-40fbaeee	2026-11-17T21:45:08Z
 verify:launchpad:1210:e8abd64f	GREEN #1210 (unit 4706 OK; vitest 1 inherited failure)	session-20261117T213056-2ba36933	2026-11-17T21:45:25Z
+merge:hermiq:1763:38dae663	unmeasured: static.developer.overheid.nl (5 IN approved and green, 0 merged; 3 conflict, 1 moved)	session-20261117T212610-64548952	2026-11-17T21:45:35Z
 fix:filinq:2182:af614fee	fixed: curl auth example no longer trips the secret scan; pushed eb336b2b, REVERIFY queued (merge lock held elsewhere)	session-20261117T211329-58121c09	2026-11-17T21:45:42Z
 verify:opencatalogi:2803:182028e8	GREEN #2803: 0 new failures (php 78, js 8 inherited)	session-20261117T213146-716f8927	2026-11-17T21:45:55Z
 verify:keepiq:1900:28274ec8	GREEN #1900 (vitest 3 inherited failures, 0 new)	session-20261117T213124-9bd98896	2026-11-17T21:46:06Z
