@@ -19024,3 +19024,4 @@ review:stackiq:1937:f217cef5	stale	feeder	2026-11-17T01:57:40Z
 review:buildiq:1628:6e72df36	stale	feeder	2026-11-17T01:57:40Z
 review:integriq:3569:11e229f7	stale	feeder	2026-11-17T01:57:40Z
 verify:keepiq:1829:e8bc2371	stale	feeder	2026-11-17T01:57:40Z
+review:decidiq:2162:41fa34b0	GREEN: unit 4820 OK, vitest OK; minor concerns on the track guard's reads	session-20261117T004644-d9c68b8f	2026-11-17T01:58:42Z
