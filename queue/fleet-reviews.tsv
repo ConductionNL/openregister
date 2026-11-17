@@ -1280,3 +1280,4 @@ learniq	2596	7ff99e0704ef8eafd7681a2b6936ec425d72eae0	APPROVE	worker-20	Quick; n
 opencatalogi	2788	512b97ff719a6a61529b87c9e5f5e0d7eabd65ec	APPROVE	worker-17	Standard; no blockers; https-only outbound broadcast outside the dev allowlist as the change's task 4 asks, tests cover both sides
 opencatalogi	2791	7aecc1453b3880ce055bcbaca09a13beb95a02e3	APPROVE	worker-17	Standard; no blockers; CORS headers on listing show incl. 404/503 per DIR-008, origin from allowlist; l10n checker ignores icon-name attribute
 opencatalogi	2789	e54e7b57d6586bb81a80b16195aa0471d62384b4	REQUEST_CHANGES	worker-17	Standard; blocker: new phpstan error, CatalogiController::$registers is now only written (property.onlyWritten, lib/Controller/CatalogiController.php:70) after getObjectService() was removed; concern: class docblock left with a bare blank line
+learniq	2597	bfba3423788080c7d26b5ce143c4ee3d883ada0c	APPROVE	worker-20	Quick; no blockers; e2e spec only, data-conditional skip
