@@ -1024,3 +1024,4 @@ opencatalogi	2654	cc1b236e35126d915cddfc20c3bed390f9134311	APPROVE	worker-19	Tho
 hermiq	1826	716bb0a65d60fc0fef26888ae8a0cc3a81dd6dfc	APPROVE	worker-02	Standard; no blockers; install-only repair step sets engine flag only when unset, existing installs unchanged; gate-23 finding inherited
 hermiq	1827	68eb06cffbe4bc36f4a885026318fafb53a883c0	APPROVE	worker-02	Quick; no blockers; appendToBody false on five pickers, spec passes; gate-23 and manifest-l10n findings inherited
 launchpad	885	de52aba38267a7937dbd0d7d8816a55c4a17a381	APPROVE	worker-54	Thorough; no blockers; OR-tenant gate finding inherited from development; cog actions moved into the Meer menu with their specs
+launchpad	1239	a96d699ce183217eb2fa7174db370e251cb33d7d	APPROVE	worker-54	Quick; no blockers; concern: composer audit advisories on symfony config/filesystem/yaml are inherited, this bundle does not lift them
