@@ -20403,3 +20403,4 @@ review:buildiq:1651:d68265fc	GREEN: build PR per spec; suites green on merge wit
 review:shillinq:2993:4007e0e1	GREEN: suite 12784 OK on PR+development, vitest 31 OK, static checks clean	session-20261117T111554-d575c862	2026-11-17T11:41:18Z
 fix:shillinq:3067:8205f49a	conflict resolved, pushed 7ff7357f; REVERIFY queued (merge lock busy)	session-20261117T112552-11cae4cc	2026-11-17T11:41:47Z
 fix:integriq:3601:85ba8d21	conflict resolved, pushed 34350fe3; merge lock held elsewhere, REVERIFY queued	session-20261117T112444-7a410249	2026-11-17T11:42:01Z
+fix:stackiq:2024:d3bfa511	sbom regenerated, development merged in; new head 88367b0f, REVERIFY queued (merge lock held elsewhere)	session-20261117T112020-0bf220a7	2026-11-17T11:42:31Z
