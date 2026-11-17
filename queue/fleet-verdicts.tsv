@@ -18252,3 +18252,4 @@ filinq	2120	34cc4cd42cfc6222f7638fb33b269692215ff4c4	CONFLICT	worker-49:merge	co
 filinq	2121	696077705a4c8ea11136317d425c7270d0b24297	CONFLICT	worker-49:merge	conflicts with development; files: appinfo/info.xml l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Settings/filinq_register.json 
 filinq	2124	e25a43e2a9c0c32a978b66ad3b8	REVERIFY	worker-49:merge	verdict sha is not the head: head is e25a43e2a9c0c32a978b66ad3b8e6a646abb09d3
 opencatalogi	1503	b8b25cba7c1119b8f4d73e6bd9e884778e9887bd	GREEN	worker-44	merge tree identical to origin/development fd0ba0bc (PR content already on development); no test delta possible
+decidiq	1294	8addd74d95a700f3f362cc3198afbf554ffe9c02	CONFLICT	worker-57	conflicts with development, files: package-lock.json; baseline unit 4958 tests OK
