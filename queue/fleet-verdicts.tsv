@@ -19224,3 +19224,4 @@ shillinq	3174	3dfee71ebce89aa659c0cf9fe97e8ffe935b0564	GREEN	worker-24	unit 1281
 shillinq	3175	24b91d1799ac083e4677e8dac3e22d4615248cb6	GREEN	worker-24	unit 12818 on tree (baseline 12796 OK, 3 skipped), 0 new failures; vitest 3125 with 1 failure inherited from development (dunningNextRun.spec.js)
 shillinq	3176	10a4916c433eb36a1b895bd83e51810f410b3d12	REVERIFY	worker-24	conflicts only with an earlier PR of the verify tree
 shillinq	3177	605a77debdf7ceac3634af4e4ce6a4f307c7e04e	REVERIFY	worker-24	conflicts only with an earlier PR of the verify tree
+filinq	2124	089581db204973bbe9a2c97d92587144ea4cc9e0	CONFLICT	worker-30	conflicts with development in lib/Settings/filinq_register.json
