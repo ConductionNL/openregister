@@ -16713,3 +16713,4 @@ portaliq	2446	478f986ee7cff544223b5becaf2c7eb7188e33f6	CONFLICT	worker-42:merge	
 portaliq	2450	5c9fe090314431963f17652a8492bff99c8f7b4b	CONFLICT	worker-42:merge	conflicts with development; files: package.json 
 portaliq	2493	733b81a3500f6d3d1d635490e08695c60df3f279	CONFLICT	worker-42:merge	conflicts with development; files: package.json 
 portaliq	2494	b99070c9ab1e77a31de8de16652870a2571993c9	CONFLICT	worker-42:merge	conflicts with development; files: package.json 
+buildiq	1608	d02855844e4413fa5006debaa9cab9bd31975d52	REVERIFY	worker-38	fixed the unit_complexity floor (3.45->3.43 now 3.48, PASS) by splitting the new code-on-pages units, no behaviour change, unit 3495 unchanged, vitest 1452 passed; merge lock held by another merger; new head ae635677aaa135157f9fb93e82354cac7183e05e, verify it
