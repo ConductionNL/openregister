@@ -18835,3 +18835,4 @@ hermiq	1847	4b35bf029a1ae7308503d63ef3b7d87dd2e68235	GREEN	worker-44	phpunit 573
 keepiq	1897	cb062e6781152a50caa312836a625237c407fa7c	GREEN	worker-39	openspec archive; code changes are @spec path comments only; 15 touched vitest files 152 pass
 hermiq	1837	37735cabaf825916a86c15478841c02ede545c01	GREEN	worker-13	release version bump only (info.xml, openapi.json); unit 5736 OK on tree, no PHP/JS changed, no new failures
 dossiq	6662	e845dfbaec252189a9bca20af70b3d3fedf2a4a6	GREEN	worker-40	unit 18422 on tree vs 18398 baseline, 1 inherited error, 0 new; vitest 7224, 2 inherited failures, 0 new; build PR judged against its change
+dossiq	6663	7ad8d4657778d1082dea10da61309ea37d382dd0	GREEN	worker-40	unit 18422 on tree vs 18398 baseline, 1 inherited error, 0 new; vitest 7224, 2 inherited failures, 0 new; build PR judged against its change
