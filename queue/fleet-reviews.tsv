@@ -1349,3 +1349,4 @@ integriq	3612	e27499b1856ba5d6d1a57ae5520018815b6ac2c9	APPROVE	worker-40	Strict;
 integriq	3701	4816b22cd7835e1f79e62a620285ea2f0172cf3c	APPROVE	worker-40	Quick; no blockers; publiccode.yml and README only, referenced images exist, Common Ground entry kept
 integriq	3703	e877128e20b84e54175d4bfa3784353eb4378378	APPROVE	worker-40	Quick; no blockers; composer.lock patch bump plus regenerated sbom
 integriq	3704	f13fbbdb7a9a50c6b41410d7de50b3c522fa187a	APPROVE	worker-40	Quick; no blockers; dev dependency patch bump plus regenerated sbom
+integriq	3706	ab3bf6992aee8bb79e816bf558522f618d594e91	APPROVE	worker-40	Quick; no blockers; dev dependency bump plus lock and sbom
