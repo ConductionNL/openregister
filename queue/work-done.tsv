@@ -22751,6 +22751,7 @@ merge:keepiq:1897:2314af37	unmeasured: api.osv.dev (proxy 403); 4 APPROVE record
 fix:planninq:1241:257fbd02	inherited: opensourcehealth rates dependencies; PR changes only tasks.md and an e2e spec, no lock or manifest, so the drop is on development too (not re-measurable here: api.osv.dev blocked)	session-20261117T211315-f96d97db	2026-11-17T21:54:25Z
 fix:portaliq:2579:df1bfc40	conflict resolved, pushed a1421e2b; REVERIFY queued (merge lock held elsewhere)	session-20261117T211406-076a7a0e	2026-11-17T21:54:26Z
 verify:stackiq:2058:a507ee1f	GREEN 2058: unit 4077 ok, 0 new failures; vitest facets red inherited	session-20261117T211410-42e4af89	2026-11-17T21:54:41Z
+fix:pipelinq:3950:deaebf30	failed: permission (local temp commit with git hooks disabled was refused; nothing pushed). Floor reproduced 4.83->4.81; thinning the MCP tool methods into a helper class got interfacing 4.15 and coupling 5.30 locally, not yet back to base	session-20261117T213212-f60cff91	2026-11-17T21:55:03Z
 verify:pipelinq:3966:a7266ea5	GREEN #3966 (e2e spec + tasks.md only)	session-20261117T212735-2b6c91a0	2026-11-17T21:55:05Z
 verify:versioniq:783:9296e1ce	GREEN 783: e2e specs only, eslint clean	session-20261117T211359-bea33e3d	2026-11-17T21:55:04Z
 verify:shillinq:2993:fe6cd880	GREEN #2993 (12821 unit, vitest 1 inherited failure)	session-20261117T213058-6689a4c6	2026-11-17T21:55:12Z
