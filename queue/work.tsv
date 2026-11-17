@@ -20838,3 +20838,4 @@ cover:launchpad:fb10c50fm88bd:59826f43	cover	launchpad	development	quality/test-
 measure:openregister:20261117h12	measure	openregister	main	queue/coverage/openregister.json	why=slices need per-directory coverage	2026-11-17T12:01:20Z
 measure:stackiq:20261117h12	measure	stackiq	development	queue/coverage/stackiq.json	why=slices need per-directory coverage	2026-11-17T08:01:53Z
 review:openregister:10610:f0556597	review	openregister	main	10610	sha=f0556597457ca1105e4723c9fe207287fcbc5d2b;last_approved=;title=fix(openregister): resync package-lock.json for npm 11	2026-11-17T12:01:28Z
+fix:decidiq:2205:8a3de4c6	fix	decidiq	development	2205	sha=8a3de4c6be1208375b0e3243a96a4b8db2ed80eb;verdict=CONFLICT;branch=quality/build-publication-theme-pages-c3;reason=merges clean on development alone, files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json openapi.json src/manifest.json 	2026-11-17T12:27:21Z
