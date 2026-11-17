@@ -19267,3 +19267,5 @@ learniq	2612	2ee740f1c00542d494eea6628579fc69bb43768e	GREEN	worker-04	tree 2608+
 integriq	3734	12b2f75d18535b79f67f6655da4a1148ff95ac96	GREEN	worker-52	unit 9928 on tree vs baseline 9910 (2E/3F inherited), no new failures; seed fragments only, all disabled, golden hashes updated for the new seeds; JSON and php -l clean
 buildiq	1643	f8d38be6806298702a3a6c0ba4d0928cd0ee5588	GREEN	worker-02	unit 3692 tests (baseline 3676 OK), 0 new failures; vitest 5025 passed; build of logic-automation-run-log, run log failures swallowed
 hermiq	1855	54a9e4164604d1cebfde99b5b6f2752dac3dcc31	GREEN	worker-46	unit 5734 tests, baseline 173E/26F, no new failures; version bump only
+decidiq	2198	3e20b7266cef8619d09ee2af4a3cbf98c722fc22	CONFLICT	worker-42:merge	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Settings/profiles/municipality.json src/manifest.json tests/vitest/simpleDecisionPage.spec.js 
+decidiq	2279	9029034a754b55ffbb5afc17998	REVERIFY	worker-42:merge	verdict sha is not the head: head is 9029034a754b55ffbb5afc179985738e6927cc62
