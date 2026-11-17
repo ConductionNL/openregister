@@ -4984,3 +4984,4 @@ larpinq	1045	a40d7b26c43f24fadd5d5d4cdce5d773543062bc	RED	worker-32	GATE RED che
 decidiq	2148	d72478092caef7d784f6faa93fbfefc4c30a3263	SKIP	worker-47	no APPROVE review at this head
 decidiq	2162	41fa34b09570aea997963a15fb5da440e27a168f	RED	worker-47	GATE RED floor: duplication: 3.82 -> 3.80
 integriq	3675	8263d5471ccee753028f79a6a45128cd8acac5a4	MERGED	worker-05	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.61
+decidiq	2177	0b1b1e4a47ed0c5e195d1a6974ec0c67257003aa	RED	worker-47	GATE RED floor: duplication: 3.82 -> 3.80; unit_complexity: 4.02 -> 3.96
