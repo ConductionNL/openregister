@@ -1371,3 +1371,4 @@ planninq	1247	1a42908edf32546f4d27dfc8c1b8aec9935bd950	APPROVE	worker-53	Quick; 
 planninq	1248	36d5dc19e1277c9823e4512f8072ca92540206a6	APPROVE	worker-53	Quick; no blockers; axe e2e spec and postman collection only
 learniq	2497	48225cf9d50c702289f26ffb5e21fd07629ec941	APPROVE	worker-39	Thorough; no blockers; PDF route reads with rbac off then allows holder, hr, compliance-officers only (404 otherwise, as Europass); render fail soft; concern: file read by node id is instance-wide, ref writable only by hr/compliance
 learniq	2595	5aa1fd02d4e2d7f9e3d0168e0d07e36042b38b03	APPROVE	worker-39	Standard; no blockers; seen POST reads the report with caller rights (find rbac default on), stamps only a listed teacher on a submitted report, lifecycle untouched; controller test added; nl strings present
+keepiq	1897	cb062e6781152a50caa312836a625237c407fa7c	APPROVE	worker-31	Quick; no blockers; archive of vault-login-totp-codes, @spec path updates only in src/tests
