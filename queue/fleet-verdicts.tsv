@@ -18237,3 +18237,4 @@ shillinq	2975	f616ab858e5f8837baed3f9a6cf95008a88cbe38	CONFLICT	worker-22:merge	
 shillinq	3004	3a0e29de258e9f510c17c3a8f7e360b2d1a53e56	CONFLICT	worker-22:merge	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json tests/fixtures/register-versions.lock.json 
 shillinq	3007	8f36129bb9d534751313db9bab92859082da1721	CONFLICT	worker-22:merge	conflicts with development; files: CHANGELOG.md l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json tests/Unit/Service/ServiceRegistrarTest.php tests/fixtures/register-versions.lock.json 
 shillinq	3064	e0f4cc425ee7a30f248d80974e0c3615675ac897	CONFLICT	worker-22:merge	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json tests/fixtures/register-versions.lock.json 
+versioniq	700	89648f84d9c360c8b761a752556a643981eeca15	REVERIFY	merge3	verdict sha is not the head: head is 563a324a25e1b6846a4fe0f1c0a71937dbc6ad4b
