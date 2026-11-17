@@ -21586,3 +21586,4 @@ build:buildiq:decision-tables-live-in-openregister:b2	already built: the one ope
 build:decidiq:one-consultation-schema:b2	already done: built on development in 1fec71f94 (#1163) and e80eea9ae; only e2e 5.2 left	session-20261117T140734-4d108840	2026-11-17T15:23:13Z
 build:decidiq:integrity-disclosures-in-plain-words:b2	already done in code: only 5.2 E2E is open (needs the live instance)	session-20261117T135029-424a7669	2026-11-17T15:23:24Z
 build:decidiq:portal-citizen-contribution-live-pass:b2	failed: live-only change: both tasks are a Playwright run against a live instance with portaliq and the fixes it finds; nothing to build here	session-20261117T133303-ca20630d	2026-11-17T15:24:02Z
+build:decidiq:live-room-conference-system-link:b2	already done: build merged; the three open Test items are Newman and Playwright runs on a live instance, unit tests are in	session-20261117T124010-7774729d	2026-11-17T15:23:47Z
