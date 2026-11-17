@@ -18551,3 +18551,4 @@ verify:shillinq:3009:c956ed10	CONFLICT: #3009 conflicts with development (info.x
 verify:shillinq:2986:fbf057b6	CONFLICT #2986 (9 files vs development)	session-20261116T233011-100ff0c6	2026-11-17T00:11:48Z
 verify:humaniq:685:23b29790	CONFLICT #685 (package.json/lock vs development)	session-20261116T232852-594dae77	2026-11-17T00:12:06Z
 review:openregister:10603:86af971f	APPROVE #10603	session-20261116T232844-9c7f5cce	2026-11-17T00:12:03Z
+verify:thematiq:1365:b4ce049c	CONFLICT #1365 (l10n catalogues, goldens, shell-catalogue)	session-20261116T232951-07569878	2026-11-17T00:12:11Z
