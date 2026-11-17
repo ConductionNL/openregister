@@ -18811,6 +18811,7 @@ filinq	2186	9bbf0ae16146dab80c0b1bc57ab5d57f6fd7bf69	GREEN	worker-22	build edit-
 filinq	2174	cb6650c7ab7ec341179061d3a82022a2119cfc16	GREEN	worker-26	unit 7288 on tree = baseline (0 failures), new failures 0; version bump in info.xml/openapi.json only
 opencatalogi	2796	7d78014c5c048a8b9ec158b0573d341fb0dfbe97	GREEN	worker-31	phpunit 6389 tests on tree, baseline 6364 with 103 inherited failures/errors, 0 new; vitest 8 inherited mainEntry failures, 0 new
 opencatalogi	2797	73c7291c61fbe1ac6ed7f6f4bb7f1da3b265956d	GREEN	worker-31	phpunit 6389 tests on tree, baseline 6364 with 103 inherited failures/errors, 0 new; vitest 8 inherited mainEntry failures, 0 new
+keepiq	1899	abebdd6ffa781653cb3cdfbbfdac6d7c181fbded	GREEN	worker-39	alone on development: phpunit 5631 ok (baseline 5619 ok), no new failures, PHP-only
 opencatalogi	2798	f43db4b9fe7611c1537c1a1d54f949df9e16db64	GREEN	worker-31	phpunit 6389 tests on tree, baseline 6364 with 103 inherited failures/errors, 0 new; vitest 8 inherited mainEntry failures, 0 new
 dossiq	6663	7ad8d4657778d1082dea10da61309ea37d382dd0	GREEN	worker-53	build inspection-checklists-onto-task per its spec; unit 18421 tests (baseline 18398), 19 inherited failures, 0 new; php -l clean
 dossiq	6646	eb19f73d3dfe4c5313e6aa76ef6c339c953b85c5	GREEN	worker-21	tasks.md tick only (1.4 seed confirmed on portaliq development zuiddrecht.json); unit 18399, 19 failures inherited, none new
@@ -18825,4 +18826,5 @@ integriq	3718	63ae9b35cd2d3779df06f01175c97a5c2b4d541a	GREEN	worker-35	unit 9911
 integriq	3719	47ed6f87082f05301751bb769f32c01be8626b43	GREEN	worker-35	unit 9911 tests on 9-PR tree, baseline 5 inherited failures, new failures 0; vitest 2389 passed; tests/spec files only
 integriq	3720	b1dbefe4cf5b1d11bb1f5c42da4f5706bf7472b2	GREEN	worker-35	unit 9911 tests on 9-PR tree, baseline 5 inherited failures, new failures 0; vitest 2389 passed; tests/spec files only
 integriq	3721	30322060ec71f82562694e63d3031528bae94ec2	GREEN	worker-35	unit 9911 tests on 9-PR tree, baseline 5 inherited failures, new failures 0; vitest 2389 passed; tests/spec files only
+filinq	2113	374ff86db69b9fcb8d0e55beeae136482b38672f	GREEN	worker-19	phpunit 7296 ok (baseline 7288 ok, 0 new failures); no JS touched; build hermiq-ai-tooling per change specs
 filinq	2191	377356bf2f306d95ea02377504a7b19877cf41cb	GREEN	worker-51	build image-redaction per its specs; phpunit 7288 baseline OK -> 7350 OK, no new failures; vitest 857 passed; new endpoints resolve the file in the caller folder (404 otherwise)
