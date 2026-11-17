@@ -21382,3 +21382,4 @@ build:shillinq:receivables-sepa-direct-debit:b2	partial: wrote tests/e2e/receiva
 build:learniq:compliance-assign-from-hr-roles:b2	already built: every code task on development, no e2e spec files named; left 5.1 (integriq issue for AFAS/humaniq source templates, cross-app), 6.1 live, 6.2 archive	session-20261117T141347-c536bb61	2026-11-17T14:58:59Z
 build:shillinq:tax-cbcr-and-pillar2-returns:b2	already building (branch quality/build-tax-cbcr-and-pillar2-returns exists, builds landed 16 Nov)	session-20261117T121049-5b84d45a	2026-11-17T14:58:55Z
 build:shillinq:tax-vat-return-from-books:b2	already building: quality/build-tax-vat-return-from-books and -c2 exist on origin	session-20261117T134441-beae3c0d	2026-11-17T14:58:42Z
+build:filinq:anonymise-prohibition-consent-guard:b2	already done: only 6.2 (manual smoke) left	session-20261117T135520-9a524c6b	2026-11-17T15:00:00Z
