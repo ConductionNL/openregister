@@ -18515,3 +18515,4 @@ versioniq	729	ea732a804e6cd6a8b2c3838050cbdbf46e259a21	REVERIFY	worker-57	added 
 launchpad	1261	f23c46deef80d0f64201a9d0ce37e50a46a2e833	RED	worker-22:merge-gate	GATE RED floor: overall: 4.61 -> 4.58; unit_size: 4.00 -> 3.97; unit_complexity: 4.73 -> 4.68; unit_interfacing: 3.85 -> 3.72
 opencatalogi	2766	6dfc228cfa1025745db599806d99246f1092d730	RED	worker-23:merge-gate	GATE RED floor: overall: 4.88 -> 4.86; unit_interfacing: 4.77 -> 4.70
 shillinq	3048	4c867fcf1ab612c0718bfca115f94a0dc650dedf	REVERIFY	worker-27	merged development in: kept both post-migration steps, app version 0.5.7-unstable.20261117150000 with a new register lock entry; unit suite 12807 OK; new head 4dfa4261ed2abcae2c3484b1d033f5562ea26075, verify it
+integriq	3709	4cb85bb991cb2af12526621fe2212abe4b6e95af	RED	worker-24:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
