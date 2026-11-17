@@ -19126,3 +19126,4 @@ review:shillinq:2998:722918d0	BLOCK: manifest shell not regenerated (check:manif
 review:larpinq:1043:09d10d17	GREEN: no new failures (18 inherited), gates green; conflicts with development in l10n	session-20261117T020309-da756b72	2026-11-17T02:23:02Z
 review:integriq:3633:f549382c	GREEN: no new failures (9677 unit tests, 5 inherited), vitest/phpstan/eslint clean	session-20261117T021557-4653e902	2026-11-17T02:23:09Z
 verify:shillinq:3048:e020f449	stale	session-20261117T020244-328833fb	2026-11-17T02:23:20Z
+review:shillinq:3065:ba9580f8	RED: administrationScopedIndex vitest, generated index stale	session-20261117T015854-c76e8b72	2026-11-17T02:23:29Z
