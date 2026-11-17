@@ -305,7 +305,9 @@ class FormSubmitService implements FormSubmitServiceInterface {
 
 		$this->validateAll(plans: $plans);
 
-		return [$this->writeAll(plans: $plans, context: new FormWriteContext(subject: $submission->subject)), null];
+		$context = new FormWriteContext(subject: $submission->subject, appAuthority: $submission->appAuthority);
+
+		return [$this->writeAll(plans: $plans, context: $context), null];
 	}//end writeOrPromote()
 
 	/**

@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Form;
 
+use OCA\OpenRegister\Service\Form\FormSubmission;
 use OCA\OpenRegister\Service\Form\FormSubmitter;
 use OCA\OpenRegister\Service\Object\DraftOwner;
 use OCP\IUser;
@@ -30,7 +31,15 @@ class FormSubmitterTest extends TestCase {
 		$this->assertSame('', $submitter->scope);
 		$this->assertNull($submitter->draftId);
 		$this->assertNull($submitter->owner);
+		$this->assertFalse($submitter->appAuthority);
 	}//end testAnAnonymousSubmitterHasNoSubjectScopeDraftOrOwner()
+
+	public function testAnAppAuthoritySubmitterCarriesItIntoTheSubmission(): void {
+		$submission = new FormSubmission(writes: [], payload: [], submitter: new FormSubmitter(appAuthority: true));
+
+		$this->assertTrue($submission->appAuthority);
+		$this->assertFalse((new FormSubmission(writes: [], payload: []))->appAuthority);
+	}//end testAnAppAuthoritySubmitterCarriesItIntoTheSubmission()
 
 	public function testItKeepsWhatItIsGiven(): void {
 		$user  = $this->createMock(IUser::class);

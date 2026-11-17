@@ -36,7 +36,8 @@ use OCP\IUser;
  * authorised by DraftFinder::own() before the write. Only a draft save and
  * the one promotion of an owned draft hand an owner in, so a scoped write is
  * always a draft or that promotion; a fresh submit never carries an owner
- * and stays under RBAC.
+ * and stays under RBAC, unless an in-process app submits it with its own
+ * authority (FormSubmitter::$appAuthority), which the HTTP path never sets.
  *
  * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-submit-must-create-the-destination-in-one-request-and-return-its-reference
  */
@@ -50,12 +51,15 @@ final readonly class FormWriteContext {
 	 * @param string|null     $uuid    The object to update (a draft), for a single write.
 	 * @param DraftOwner|null $owner   A draft's owner; a scope value is stamped on create, and
 	 *                                 authorises every write of its own draft.
+	 * @param bool            $appAuthority Whether an in-process app vouches for a fresh submit;
+	 *                                      its writes then skip RBAC.
 	 */
 	public function __construct(
 		public ?IUser $subject,
 		public ?string $status = null,
 		public ?string $uuid = null,
 		public ?DraftOwner $owner = null,
+		public bool $appAuthority = false,
 	) {
 	}//end __construct()
 
@@ -71,12 +75,12 @@ final readonly class FormWriteContext {
 	/**
 	 * Whether the save asks RBAC.
 	 *
-	 * @return bool False only for a scope-value owner.
+	 * @return bool False for a scope-value owner or an in-process app's authority.
 	 *
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-submit-must-create-the-destination-in-one-request-and-return-its-reference
 	 */
 	public function rbac(): bool {
-		return $this->isScoped() === false;
+		return $this->appAuthority === false && $this->isScoped() === false;
 	}//end rbac()
 
 	/**

@@ -57,4 +57,18 @@ class FormWriteContextTest extends TestCase {
 		$this->assertFalse($context->rbac());
 		$this->assertNull($context->explicitOwner());
 	}//end testAScopedUpdateSkipsRbacAndStampsNothing()
+
+	public function testAnAppAuthorityWriteSkipsRbacAndKeepsTheUser(): void {
+		$user = $this->createMock(IUser::class);
+		$context = new FormWriteContext(subject: $user, appAuthority: true);
+
+		$this->assertFalse($context->rbac());
+		$this->assertFalse($context->isScoped());
+		$this->assertFalse($context->unowned());
+		$this->assertNull($context->explicitOwner());
+	}//end testAnAppAuthorityWriteSkipsRbacAndKeepsTheUser()
+
+	public function testAWriteIsUnderRbacWithoutAppAuthority(): void {
+		$this->assertFalse((new FormWriteContext(subject: null))->appAuthority);
+	}//end testAWriteIsUnderRbacWithoutAppAuthority()
 }//end class

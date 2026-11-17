@@ -265,6 +265,25 @@ class FormSubmitServiceAccessGoldenTest extends TestCase {
 		$this->assertSame([['save', 'case', null, true, true, 'alice', false, null, null]], $this->callsOf('save'));
 	}//end testASignedInSubmitSavesUnderRbacAsTheUser()
 
+	public function testAnAppAuthoritySubmitSavesWithoutRbacAsTheUser(): void {
+		$this->service->submit(submission: new FormSubmission(writes: [array_merge(['register' => 'reg', 'schema' => 'case'], ['mapping' => null])], payload: ['title' => 'a'], submitter: new FormSubmitter(subject: $this->user, appAuthority: true)));
+
+		$this->assertSame([['save', 'case', null, false, true, 'alice', false, null, null]], $this->callsOf('save'));
+	}//end testAnAppAuthoritySubmitSavesWithoutRbacAsTheUser()
+
+	public function testAnAppAuthorityDraftSaveStaysUnderRbac(): void {
+		$this->service->saveDraft(submission: new FormSubmission(writes: [array_merge(['register' => 'reg', 'schema' => 'case'], ['mapping' => null])], payload: [], submitter: new FormSubmitter(subject: $this->user, appAuthority: true)));
+
+		$this->assertSame([['save', 'case', null, true, true, 'alice', false, null, 'draft']], $this->callsOf('save'));
+	}//end testAnAppAuthorityDraftSaveStaysUnderRbac()
+
+	public function testAnAppAuthorityPromotionStaysUnderRbac(): void {
+		$this->storeDraft(uuid: 'd-1', owner: 'alice');
+		$this->service->submit(submission: new FormSubmission(writes: [array_merge(['register' => 'reg', 'schema' => 'case'], ['mapping' => null])], payload: [], submitter: new FormSubmitter(subject: $this->user, draftId: 'd-1', appAuthority: true)));
+
+		$this->assertSame([['save', 'case', 'd-1', true, true, 'alice', false, null, 'active']], $this->callsOf('save'));
+	}//end testAnAppAuthorityPromotionStaysUnderRbac()
+
 	public function testAUsersNewDraftSavesUnderRbac(): void {
 		$this->service->saveDraft(submission: new FormSubmission(writes: [array_merge(['register' => 'reg', 'schema' => 'case'], ['mapping' => null])], payload: [], submitter: new FormSubmitter(subject: $this->user)));
 

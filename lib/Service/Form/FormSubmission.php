@@ -75,6 +75,13 @@ final readonly class FormSubmission {
 	public ?DraftOwner $owner;
 
 	/**
+	 * Whether an in-process app vouches for this fresh submit (no RBAC on its writes).
+	 *
+	 * @var boolean
+	 */
+	public bool $appAuthority;
+
+	/**
 	 * Bundle the request.
 	 *
 	 * @param array<int, array<string, mixed>> $writes    The writes, in order: `{ register, schema, mapping?, as? }`.
@@ -90,6 +97,7 @@ final readonly class FormSubmission {
 		$this->scope   = $submitter->scope;
 		$this->draftId = $submitter->draftId;
 		$this->owner   = $submitter->owner;
+		$this->appAuthority = $submitter->appAuthority;
 	}//end __construct()
 
 	/**
