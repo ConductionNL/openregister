@@ -1321,3 +1321,4 @@ stackiq	2040	6e1004c570bccf73fa23089dda2dc0afdccc0795	APPROVE	worker-32	Thorough
 stackiq	2044	49090a5b56bfe50d456671a5d323a4c75238b521	APPROVE	worker-32	Quick; no blockers; e2e spec with env base URL, test boxes left open
 buildiq	1712	c5e1d2176bcdc55e8a11d05009e04345b81c4bc1	APPROVE	worker-50	Quick; no blockers; @uses metadata only
 buildiq	1713	2b78ac989bb71c96a61611961bdc826e1fb7af1f	APPROVE	worker-50	Quick; no blockers; tasks.md tick for openspec validate
+decidiq	2273	5f949a8f4377ba477bf5bdc2cdfa840f823984f7	APPROVE	worker-42	Quick (tests only); no blockers; 5 tests with real assertions
