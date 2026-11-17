@@ -22769,3 +22769,4 @@ fix:opencatalogi:2674:8afba882	conflicts resolved, pushed c6d01be6; REVERIFY que
 fix:planninq:1244:b4d018dd	unmeasured: api.osv.dev; PR changes no package or composer manifest, so the opensourcehealth drop is not from its diff; needs a session that reaches api.osv.dev	session-20261117T204330-02b728bd	2026-11-17T21:58:54Z
 verify:versioniq:800:156569fd	GREEN 800 (version bump only; unit suite needs server bootstrap, not run)	session-20261117T211910-eb4216c0	2026-11-17T21:59:02Z
 fix:shillinq:3011:b03586ea	conflict resolved (app version moved, lock recorded), pushed 16e445fd; REVERIFY	session-20261117T211932-f471137a	2026-11-17T21:59:17Z
+merge:learniq:2497:c79386d7	unmeasured: static.developer.overheid.nl (proxy 403; api.osv.dev too); 0 merged; 2497 RED gate floor unit_interfacing 3.62->3.60; 2594 SKIP unmeasured; 2595-2600 not attempted, all approved; 2599/2601 REVERIFY	session-20261117T212030-318f1287	2026-11-17T21:59:37Z
