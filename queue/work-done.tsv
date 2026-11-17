@@ -18537,7 +18537,16 @@ verify:shillinq:3064:334cea16	CONFLICT #3064 (10 files)	session-20261116T232923-
 verify:hermiq:1728:4a375b99	CONFLICT: 6 files conflict with development (l10n, hermiq_register.json, openapi.json)	session-20261116T232834-a3ef1c86	2026-11-17T00:08:59Z
 fix:learniq:2577:15fc4a90	fixed menu order tie; pushed 5bf20572; REVERIFY (end to end skipped: learniq composer prep fails on php 8.3.6)	session-20261116T232944-146e39d7	2026-11-17T00:09:16Z
 verify:shillinq:3008:1f4ba84a	CONFLICT #3008 (7 files conflict with development)	session-20261116T233050-d0df160f	2026-11-17T00:09:27Z
+verify:learniq:2579:b356ecaa	failed: composer-cloud refuses learniq's lock on this session's php 8.3.6 (vimeo/psalm 7.5.0 needs ~8.3.16); no unit suite	session-20261116T232944-146e39d7	2026-11-17T00:09:45Z
 verify:stackiq:1963:0202df86	CONFLICT: 6 files vs development	session-20261116T232912-634ff2e8	2026-11-17T00:09:38Z
 verify:shillinq:3065:4335294e	CONFLICT #3065 (info.xml, InvoiceGenerationService, openapi, registry.js)	session-20261116T232951-07569878	2026-11-17T00:09:54Z
 verify:portaliq:2452:dd54af47	CONFLICT: 9 files vs development (l10n, ListenerRegistrar, register json, package.json, tests)	session-20261116T232925-45c70e73	2026-11-17T00:10:05Z
 verify:portaliq:2445:407c9cee	CONFLICT #2445 (l10n catalogues)	session-20261116T232918-35016340	2026-11-17T00:10:04Z
+verify:shillinq:3080:75a66e92	CONFLICT: #3080 vs development in CHANGELOG, info.xml, l10n, ContractRegistrar, registrar tests, register-versions lock	session-20261116T232911-3dffa1ae	2026-11-17T00:10:25Z
+verify:stackiq:1942:b6663ebb	CONFLICT #1942	session-20261116T233627-44605965	2026-11-17T00:10:36Z
+verify:stackiq:1943:d8082b64	CONFLICT #1943 (l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Settings/softwarecatalogus_register.json src/customComponents.js )	session-20261116T233921-33ab4c87	2026-11-17T00:10:47Z
+verify:larpinq:1047:12939d94	CONFLICT #1047 (l10n + objectTabs golden fixture vs development)	session-20261116T234703-e9cebd4b	2026-11-17T00:11:04Z
+verify:shillinq:2070:6d28ef69	CONFLICT #2070	session-20261116T232519-f84cca9a	2026-11-17T00:11:11Z
+verify:shillinq:3011:4b9211ad	CONFLICT #3011	session-20261116T232918-5354fd88	2026-11-17T00:11:23Z
+verify:shillinq:3009:c956ed10	CONFLICT: #3009 conflicts with development (info.xml, l10n, openapi, manifestActions, lock file)	session-20261113T214350-9762e143	2026-11-17T00:11:38Z
+verify:shillinq:2986:fbf057b6	CONFLICT #2986 (9 files vs development)	session-20261116T233011-100ff0c6	2026-11-17T00:11:48Z
