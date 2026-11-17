@@ -21679,3 +21679,4 @@ build:hermiq:memory-knowledge-bases:b2	PR #1843: Newman KB upload (owner/non-own
 build:hermiq:tools-code-sandbox:b2	already building: branch quality/build-tools-code-sandbox exists	session-20261117T124621-35d7386d	2026-11-17T15:34:45Z
 build:hermiq:skill-install-idempotency:b2	already building: quality/build-skill-install-idempotency exists; open tasks are live DB cleanup, live re-install, Playwright and the PR checks	session-20261117T134441-beae3c0d	2026-11-17T15:34:25Z
 build:humaniq:payroll-engine-port-from-shillinq:b2	blocked on decisions: 0.1 needs Ruben answers to O1/O2/O3 (design.md lists them as open), and every code task 1.1-4.1 builds on those choices; nothing built	session-20261117T134242-51ff9d48	2026-11-17T15:35:27Z
+build:humaniq:payroll-run-as-a-flow:b2	already done: only section 7 staged follow-ups left, deliberately unchecked per design D7	session-20261117T132743-10cec9d3	2026-11-17T15:35:33Z
