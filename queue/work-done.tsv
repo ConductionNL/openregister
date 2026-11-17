@@ -18517,6 +18517,7 @@ verify:opencatalogi:2677:3ad6bc5b	CONFLICT #2677 (12 files)	session-20261116T230
 verify:portaliq:2492:073b891c	CONFLICT #2492 (tests/example-site.spec.mjs vs development)	session-20261116T233800-0f135937	2026-11-17T00:03:49Z
 verify:integriq:3633:e8cfc0d1	CONFLICT #3633 (l10n/en.js, l10n/nl.js)	session-20261116T233011-100ff0c6	2026-11-17T00:04:14Z
 verify:portaliq:2284:a8a7fcd0	CONFLICT #2284 (7 lib files)	session-20261116T232923-46913d93	2026-11-17T00:04:23Z
+verify:learniq:2565:bcb03b46	#2565 CONFLICT (5 files)	session-20261116T230843-e8244832	2026-11-17T00:04:27Z
 verify:portaliq:2493:f9355756	CONFLICT 2493 (package.json)	session-20261116T232406-b9eb038c	2026-11-17T00:04:56Z
 verify:shillinq:3052:10940568	CONFLICT #3052	session-20261116T233929-170accb7	2026-11-17T00:05:09Z
 verify:opencatalogi:2723:7517c90f	CONFLICT: tasks.md only	session-20261116T231848-eaef2e51	2026-11-17T00:05:18Z
@@ -18641,3 +18642,4 @@ verify:learniq:2577:3e179100	RED #2577: HigherEducationExampleSetTest::testTheFi
 cover:stackiq:9ac19b3am039e:be0dcca9	nothing to add: lib/Mcp at 407/409 statements (one each in McpWriteTools and StackiqToolProvider)	session-20261113T214350-9762e143	2026-11-17T00:29:37Z
 review:shillinq:2086:3e9decdf	GREEN #2086 (conflicts with development in l10n/openapi.json)	session-20261116T232033-3ca59164	2026-11-17T00:29:40Z
 fix:filinq:2069:2a5b02d0:v3	fixed: floor holds (unit_complexity 4.49), merged development, pushed 8a61e4fd; REVERIFY queued (merge lock held)	session-20261116T232912-634ff2e8	2026-11-17T00:29:59Z
+merge:dossiq:6203:f1f3d3ca	cloud tree of 2 dossiq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T233834-fbe601d1	2026-11-17T00:30:07Z
