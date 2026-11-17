@@ -22771,3 +22771,4 @@ merge:opencatalogi:2756:4dd9f226	unmeasured: api.osv.dev (merged=0; 2756 gate RE
 fix:shillinq:3011:b03586ea	conflict resolved (app version moved, lock recorded), pushed 16e445fd; REVERIFY	session-20261117T211932-f471137a	2026-11-17T21:59:17Z
 merge:learniq:2497:c79386d7	unmeasured: static.developer.overheid.nl (proxy 403; api.osv.dev too); 0 merged; 2497 RED gate floor unit_interfacing 3.62->3.60; 2594 SKIP unmeasured; 2595-2600 not attempted, all approved; 2599/2601 REVERIFY	session-20261117T212030-318f1287	2026-11-17T21:59:37Z
 fix:shillinq:3067:55cee22d	conflict fixed, pushed 24169645; REVERIFY queued	session-20261117T211651-58c92edf	2026-11-17T21:59:47Z
+fix:stackiq:1963:5d4b224b	unmeasured: static.developer.overheid.nl; conflict fixed, pushed d255f3be, REVERIFY recorded	session-20261117T213157-fe4b6298	2026-11-17T21:59:59Z
