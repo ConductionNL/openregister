@@ -19508,3 +19508,4 @@ review:portaliq:2417:b8acf329	GREEN: new spec 10/10, eslint clean; notices.spec 
 review:opencatalogi:2684:d59bbd9f	RED: 3 new RegisterPlumbingGoldenTest data sets for ThemesController::publications (stale find() shape)	session-20261117T055905-03eea4d3	2026-11-17T06:16:43Z
 review:integriq:3596:d81a6a11	GREEN: unit 9724, 5 inherited failures, none new; vitest 2379 OK	session-20261117T055928-ffb37dd3	2026-11-17T06:16:58Z
 review:integriq:3574:56c6b5c2	GREEN; no new failures vs baseline	session-20261117T055844-3d508d2a	2026-11-17T06:17:07Z
+review:portaliq:2452:200449a7	GREEN (test-file conflicts noted)	session-20261117T042937-c444c626	2026-11-17T06:17:45Z
