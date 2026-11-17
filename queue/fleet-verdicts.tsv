@@ -19467,3 +19467,4 @@ hermiq	1763	561fdd1e123258292b81d0bd69d16ae4db4ba76c	REVERIFY	worker-14	merged d
 buildiq	1648	616837279746c70653f0f41163c0dd6efd73fa7e	REVERIFY	worker-16:merge	conflicts only with an earlier PR of the merge tree: merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
 decidiq	2174	53ff0981bdaf85d442d69b55c838822ea2087305	CONFLICT	worker-44:merge	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Settings/profiles/municipality.json tests/newman/run-all.sh 
 decidiq	2279	9029034a754b55ffbb5afc17998	REVERIFY	worker-44:merge	verdict sha is not the head: head is 9029034a754b55ffbb5afc179985738e6927cc62
+pipelinq	3959	7fbcf4eeb298c017699d213a1802d595cb200595	RED	worker-10:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
