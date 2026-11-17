@@ -21744,3 +21744,4 @@ review:versioniq:698:ee38e0b7	GREEN #698 (no new failures; conflicts with develo
 verify:launchpad:1302:7d116ba9	GREEN 1302, 1303, 1304, 1305; tree 4621 OK = baseline	session-20261117T132743-10cec9d3	2026-11-17T15:43:29Z
 review:versioniq:692:96800420	GREEN: 0 new failures (2 inherited), e2e conflict with development noted	session-20261117T153758-50f72bdf	2026-11-17T15:43:40Z
 review:filinq:2107:07113f95	GREEN: unit 7334 OK, vitest/jest pass, access checks hold	session-20261117T145748-1419d209	2026-11-17T15:44:02Z
+build:buildiq:github-app-repo-format:b2	partial: PR #1722 adds task 6.5 schema round-trip test (6 tests); 7.1 left: composer-audit fails on inherited symfony advisories in the lockfile, other named gates pass	session-20261117T153230-a4b1eff6	2026-11-17T15:44:37Z
