@@ -19617,3 +19617,6 @@ launchpad	1298	c874c6ad5b2e7c88a07d5ac2a92feb874cb52782	RED	merge3:merge-gate	GA
 launchpad	1306	060171415ec0321c8968a4087ce146a20f0714d7	RED	merge3:merge-gate	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
 launchpad	1218	981059667af30b6907fafe7e0e9be698f74a9e73	REVERIFY	merge3	verdict sha is not the head: head is 1d9132cfbb9f66b8592307016ece8a897798d265
 launchpad	1300	0d717f3832eb0cc5d462e04506034b536bd83e15	CONFLICT	merge3	merges clean on development alone; files: src/components/Workspace/__tests__/DashboardMoreMenu.spec.js 
+opencatalogi	2790	573c8f891fb6c4b65783e73b6c8b74ac04c496a1	CONFLICT	worker-46:merge	conflicts with development; files: docs/features/README.md 
+opencatalogi	2803	182028e8f50085dad6352c07ec0abb07a4eb807b	REVERIFY	worker-46:merge	conflicts only with an earlier PR of the merge tree: merges clean on development alone; files: lib/Settings/opencatalogi_mock_register.json 
+opencatalogi	2805	b5832c88ee2a159946d2f6880ba	REVERIFY	worker-46:merge	verdict sha is not the head: head is b5832c88ee2a159946d2f6880ba534de439fb504
