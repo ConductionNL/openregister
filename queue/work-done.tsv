@@ -22672,4 +22672,5 @@ verify:integriq:3713:7c19b140	GREEN integriq#3713 (vitest 2389 pass, lint unchan
 merge:versioniq:685:43b103f5	unmeasured: static.developer.overheid.nl (685, 780 approved, gate UNMEASURED; 699 726 797 798 799 CONFLICT)	session-20261117T211433-35a96960	2026-11-17T21:36:56Z
 merge:launchpad:1106:11fe39e3	unmeasured: api.osv.dev (merged=0 skip=4; 1218 REQUEST_CHANGES, 1300 conflict->REVERIFY, 1106/1109 EXCL)	session-20261117T211353-2c595f41	2026-11-17T21:37:00Z
 verify:hermiq:1853:06c2bb55	GREEN #1853 (5785 tests, 0 new failures)	session-20261117T213058-6689a4c6	2026-11-17T21:37:10Z
+verify:learniq:2609:c89b130e	GREEN learniq #2609 (inherited failures only)	session-20261117T211320-ba1b42e8	2026-11-17T21:37:35Z
 verify:launchpad:1305:93c89134	GREEN #1305 (e2e specs for e2e-coverage-programme 3.18/3.19; unit 4621 OK, no new failures)	session-20261117T213056-2ba36933	2026-11-17T21:37:50Z
