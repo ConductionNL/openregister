@@ -5193,3 +5193,4 @@ learniq	2523	3f4bf7183dd6cf757c044ccbf72a2119a09158ed	MERGED	worker-15	GATE OK s
 shillinq	3005	fb9ac5c41d5b2499c55a3b19960791ea75317e36	MERGED	worker-17	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.00
 dossiq	6637	b73c09106cab3ce39f127bc4cb34793daa79f2b1	RED	worker-02	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 planninq	1218	fc16da26f4d59be4ee6db2ae872717ec6377dc8f	RED	worker-13	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+dossiq	6638	89db4fd0d58bce432e1040de4cddd4b86226f366	RED	worker-02	GATE RED sbom: package-lock.json changed without sbom.cdx.json
