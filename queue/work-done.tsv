@@ -18487,6 +18487,7 @@ verify:launchpad:1216:f8adb1a6	CONFLICT #1216 (15 files; change may already be o
 verify:learniq:2538:ba86b4ad	CONFLICT #2538 (4 files conflict with development)	session-20261116T233050-d0df160f	2026-11-16T23:58:29Z
 verify:launchpad:1227:40a50cad	1227 CONFLICT	session-20261116T230531-f9095b0f	2026-11-16T23:58:33Z
 verify:opencatalogi:2685:434bb906	CONFLICT #2685 (Sitemap*, l10n)	session-20261116T233901-7abe1a78	2026-11-16T23:58:46Z
+lane:arch5:shillinq:next-shillinq-r11	skipped: shillinq lane stopped by the coordinator (22:47); r10 result is #3135 GREEN	session-20261116T224609-c0ad2be4	2026-11-16T23:58:59Z
 verify:portaliq:2442:659856a4	CONFLICT #2442 (tests/shared-plans.spec.mjs vs development)	session-20261116T233800-0f135937	2026-11-16T23:59:12Z
 verify:portaliq:2417:ef1fa4da	CONFLICT #2417 (l10n, package.json, editor vue files)	session-20261116T232951-07569878	2026-11-16T23:59:21Z
 verify:opencatalogi:2651:408614db	CONFLICT: #2651 conflicts with development (9 files)	session-20261116T233923-d48b13fa	2026-11-16T23:59:42Z
@@ -18494,3 +18495,9 @@ verify:planninq:1068:ff42197b	GREEN #1068	session-20261116T233929-170accb7	2026-
 verify:portaliq:2450:88eab3c5	CONFLICT #2450 (4 files conflict with development)	session-20261116T233050-d0df160f	2026-11-17T00:00:12Z
 verify:portaliq:2500:d606ba9e	CONFLICT #2500 (tests/example-site.spec.mjs vs development)	session-20261116T233800-0f135937	2026-11-17T00:00:22Z
 verify:learniq:2532:5a74c54d	CONFLICT #2532	session-20261116T232519-f84cca9a	2026-11-17T00:00:37Z
+verify:shillinq:2063:be07bd2e	CONFLICT #2063 (info.xml, register-versions.lock)	session-20261116T233901-7abe1a78	2026-11-17T00:01:23Z
+verify:planninq:1168:f3f9b1f3	CONFLICT: l10n/* and objectListenerTable.golden.json vs development	session-20261116T232959-6ccea9dc	2026-11-17T00:01:32Z
+verify:shillinq:1965:55b7f9e7	CONFLICT #1965 (info.xml, register-versions.lock.json vs development)	session-20261116T233834-fbe601d1	2026-11-17T00:01:52Z
+verify:opencatalogi:2669:b4b95352	GREEN #2669	session-20261116T233627-44605965	2026-11-17T00:02:02Z
+verify:portaliq:2449:1d8ee702	CONFLICT #2449 (l10n, controller, listener registrar, register json)	session-20261116T232918-35016340	2026-11-17T00:02:12Z
+verify:learniq:2486:875af95b	CONFLICT #2486 (ExcuseApprovalHandler, portal tests)	session-20261116T232033-3ca59164	2026-11-17T00:02:32Z
