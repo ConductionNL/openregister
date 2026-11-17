@@ -19287,3 +19287,4 @@ fix:integriq:3679:b2e51204	merged #3679 at 2a910fa696365757f5e6a63f04de962086548
 fix:shillinq:3000:5eb9600a	fixed at 210bb637 (relatedCollections, validate-manifest PASS); merge lock held elsewhere, REVERIFY queued	session-20261117T020252-b4828a7d	2026-11-17T02:57:51Z
 fix:filinq:2089:b14f4be3	merged development into the branch, register info v8.65.0 (this line's entry over development's v8.64.0 woo-metadata-worklist); unit 7024 OK, 6 skipped; new head c81f7860, REVERIFY appended	session-20261113T214350-9762e143	2026-11-17T02:58:01Z
 fix:filinq:2105:7e8ef21d	conflict resolved (register v8.65.0), pushed 0d907f7f; merge lock held elsewhere, REVERIFY queued	session-20261117T020244-328833fb	2026-11-17T02:58:29Z
+fix:filinq:2095:b4ddee8f	fixed, pushed 5342f5c8; REVERIFY (merge lock held)	session-20261117T024701-e2fa255c	2026-11-17T02:58:39Z
