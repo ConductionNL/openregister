@@ -18553,3 +18553,5 @@ verify:shillinq:2986:fbf057b6	CONFLICT #2986 (9 files vs development)	session-20
 review:openregister:10603:86af971f	APPROVE #10603	session-20261116T232844-9c7f5cce	2026-11-17T00:12:03Z
 verify:thematiq:1365:b4ce049c	CONFLICT #1365 (l10n catalogues, goldens, shell-catalogue)	session-20261116T232951-07569878	2026-11-17T00:12:11Z
 verify:stackiq:1933:dbb7a4f3	CONFLICT #1933 (l10n, registrar, mock register, manifest)	session-20261116T233427-cfe22922	2026-11-17T00:12:21Z
+verify:thematiq:1680:c87a6a9a	CONFLICT #1680 (l10n catalogues)	session-20261116T232918-35016340	2026-11-17T00:12:33Z
+fix:shillinq:1900:65225988	conflict resolved, pushed 7c67b538; merge lock busy, REVERIFY queued	session-20261116T233933-3050c00d	2026-11-17T00:12:44Z
