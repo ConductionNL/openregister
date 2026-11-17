@@ -20782,3 +20782,4 @@ verify:larpinq:1088:9768d339	GREEN #1088 (docs only)	session-20261117T125716-5aa
 merge:stackiq:1435:d33db4bf	cloud tree of 1 stackiq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T124618-509d3d7a	2026-11-17T13:29:51Z
 fix:launchpad:1210:748b8e0b	version raised, pushed 8d323e7c; REVERIFY queued	session-20261117T124326-d41be1c2	2026-11-17T13:30:05Z
 review:versioniq:706:f955efeb	GREEN #706 (2456 php tests, 2 inherited failures; vitest 3232)	session-20261117T123632-d3b91db3	2026-11-17T13:31:11Z
+merge:hermiq:1719:4295ed6b	cloud tree of 3 hermiq PRs: merged=1 red=0 fail=0 skip=0; conflict 2, lint 0, red 0, moved 0, done 0	session-20261117T132743-10cec9d3	2026-11-17T13:31:33Z
