@@ -4862,3 +4862,4 @@ versioniq	758	7be209fae0deeec3aa2a193a3b14e3288f75b2e4	RED	worker-29	GATE RED fl
 stackiq	1941	fb08b1cd8788a46a4dee05436ab70f93d75f62f0	RED	worker-15	GATE RED floor: unit_interfacing: 4.72 -> 4.64
 decidiq	2236	4393817765911bbbfec341ea0e8d7349ffe086c6	MERGED	worker-03	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.78 holds at 3.84
 shillinq	3055	915da0afde98ca6f6dc0bbfbc74e5c180958a258	MERGED	worker-08	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.09
+launchpad	1250	c372ff3ec206cab9c931f12f5d4eb5896578be00	MERGED	worker-11	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.65 holds at 3.79
