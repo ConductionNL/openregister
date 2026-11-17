@@ -19315,6 +19315,7 @@ hermiq	1763	561fdd1e123258292b81d0bd69d16ae4db4ba76c	CONFLICT	worker-48:merge	co
 hermiq	1843	45ed8874b7086bd4025662de7d1606b75a2b59a9	CONFLICT	worker-48:merge	conflicts with development; files: tests/integration/hermiq.postman_collection.json 
 hermiq	1849	599ab2bf863fc652db45cd05a25b1a74eb760c49	CONFLICT	worker-48:merge	conflicts with development; files: tests/integration/hermiq.postman_collection.json 
 hermiq	1850	c9dacafd2a9b91c0cb908137cd3	REVERIFY	worker-48:merge	verdict sha is not the head: head is c9dacafd2a9b91c0cb908137cd3b2116117e49d3
+larpinq	1104	072740aae8be224bd39bab37e1dd43eb661d0a64	GREEN	worker-07	adds only an e2e spec (BASE_URL, empty storage state) and ticks tasks.md; PHP unit 1243 on tree, failures inherited and unstable between runs on identical code (baseline 43E/5F, tree 13E/5F), no lib change
 stackiq	2055	5f39aed8383d439fb47be09bbaefaf6c62bcd509	GREEN	worker-08	phpunit 4105 (baseline 4055, 0 new failures); vitest 2966, 1 failure inherited from development (facets.spec FACET_DIMENSIONS); build of shared-usage-visible-to-participants per its specs
 decidiq	2286	62b9a48215c112bd9dece76e06b8073d424f20a8	REVERIFY	worker-19	conflicts only with an earlier PR of the verify tree (l10n en/nl after 2282)
 versioniq	782	432619ef7eda9022b783162e50bbe4f17f3f92bc	GREEN	worker-11	e2e specs and fixture helpers only (autoupdate-run-batching), helper defaults kept; unit 2501 tests, baseline 2 inherited golden failures, no new
