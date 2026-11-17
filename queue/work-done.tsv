@@ -21809,3 +21809,4 @@ build:integriq:native-data-gathering-provider:b2	partial: nothing built this rou
 build:integriq:connections-declare-data-residency:b2	PR #3719: route-name wiring test + tests/e2e/data-residency.spec.ts (menu, dialog, EU only verdict, refusal); suite unchanged beyond +1 test (inherited 2E/3F)	session-20261117T150150-951a0dc6	2026-11-17T15:53:45Z
 build:integriq:gateway-upstream-routing:b2	already building (quality/build-gateway-upstream-routing exists)	session-20261117T125716-5aa18045	2026-11-17T15:53:27Z
 review:openregister:10614:70f24420	APPROVE 10614 70f24420	session-20261117T154039-5ee392b5	2026-11-17T15:54:13Z
+build:integriq:form-submission-registration-targets:b2	already building: quality/build-form-submission-registration-targets exists and the build landed (5ed615c9d); open boxes are postman/e2e tests and the StUF-ZDS XSD check	session-20261117T123632-d3b91db3	2026-11-17T15:55:39Z
