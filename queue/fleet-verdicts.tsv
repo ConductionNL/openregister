@@ -18993,6 +18993,7 @@ portaliq	2562	1c32d7f1ce6c9f4b8c5432f1d2d34f5fe1823368	GREEN	worker-45	tasks.md-
 planninq	1245	18c0e02a3227b4aff7590139b12f700887b1d098	GREEN	worker-16	PHPUnit 1253 baseline OK, tree 1262 OK, 0 new failures; implements retention-on-planninq-records 1.1 (partial, noted in tasks.md)
 pipelinq	3940	dc52e0b2b8856fddf8aa30084f905c5f26819f5b	GREEN	worker-05	unit 9282 OK (= baseline), 0 new; vitest 5325 passed, 3 files/2 tests red also on development (inherited); forecast-slip-reason 3.2/4.2 per spec; nit: movementRows docblock now sits above slipColumns
 portaliq	2578	ecda0995fde017ac8deb6fa1e5162d5706e02426	GREEN	worker-51	e2e spec, e2e seed fixture and tasks.md only (public-site-meets-wcag-aa); no app code or unit tests touched
+portaliq	2581	a16c6b8acc30ffc5695451390622f9e12613586d	GREEN	worker-56	e2e spec only (tests/e2e, 4 Playwright tests list and load, eslint clean, base URL from env); no PHP or production JS changed, app has no JS unit script; 0 new failures
 portaliq	2567	28bd0f0f57686d7497a9e9f33607f200a0fb12e4	GREEN	worker-01	unit 6324 run (baseline 6324, 16 inherited errors), 0 new failures; tasks.md tick only
 portaliq	2586	d48314a985599ff8b6ed00246dba8cf43321e1ba	CONFLICT	worker-10	conflicts with development in package.json (check:specs script line); baseline phpunit 6324 tests, 16 errors inherited
 portaliq	2580	9c288ce1119aa41d64c1f1e9220fcd7bd60a841a	GREEN	worker-51	e2e spec, en_US strings (parse ok) and tasks.md only (resident-identity-in-forms); no app code
@@ -19049,3 +19050,4 @@ versioniq	797	c57c48555761cf2212f669c177b61cc63d932ea9	GREEN	worker-22	e2e spec 
 thematiq	1719	740e1349e57122fb6902c14777368c21f0bfaa15	GREEN	worker-07	adds 3 token sets + sync of generated upstream themes; phpunit-unit 2933 (baseline 2900, 1 inherited failure MigrateOverrideValueTypesTest), token-sets 437 OK, vitest 1576 OK, 0 new failures
 versioniq	729	497abe19ff268ce16525a80c4f175e57d1a81499	CONFLICT	worker-22	conflicts with development
 stackiq	2061	6ab602c46d48b7cee3466e36e021e8be6512ce4c	GREEN	worker-33	PHP unit 4055 OK (baseline 4055 OK), vitest 2946 with 1 facets failure inherited from development; frontend overlay for architecture-shared-usage-on-views, CSS variables only
+versioniq	778	6d4ae19da3ebba4c3bd873497531706d8b7ab3c4	GREEN	worker-22	quality floor file raised (two checks added, new measured commit); config only, no code or tests touched
