@@ -18380,3 +18380,4 @@ portaliq	1364	8a7a486bcfadef63c3234198657eb6d4e888abd4	GREEN	worker-01	no tests 
 portaliq	2449	ae33c0d7a3956f30d3c56462513e3cbd200001bc	CONFLICT	worker-51	conflicts with development 9051e37e: package.json, tests/Unit/Settings/PortaliqRegisterConfigTest.php, tests/example-site.spec.mjs
 hermiq	1760	0b27b76c0082648b1c2598271fe8219019467074	REVERIFY	worker-47	merged development in (l10n add/add conflicts, kept both sides, .js regenerated from .json); new head c503263ffcf1a8c21591919f9a1ffea104a9b056, verify it
 planninq	1218	3bb9d8d2ab2644e3b22cdb1144eb07f0a9df1e21	GREEN	worker-37	dep bump @nextcloud/vue 9.14.1 (minor); npm ci ok; vitest 3589/3589 on tree, baseline 3589/3589, no new failures
+stackiq	1267	2a8a72b0c3cfe86415395e048b85242124eea710	GREEN	worker-07	4050 unit tests, baseline 1 failure (inherited), 0 new; merge adds no file changes vs development (beta sync already contained)
