@@ -21098,3 +21098,4 @@ build:portaliq:case-outcome-on-the-case-page:b2	pushed to #2494 (c493c65): devel
 build:pipelinq:brp-monitor-moves-to-integriq:b2	already building: quality/build-brp-monitor-moves-to-integriq and -c2 exist	session-20261117T135414-614629b0	2026-11-17T14:28:23Z
 build:pipelinq:marketing-block-editor:b2	already done: code tasks on development (40ce70b94); 3.3 doc written, only the live mail-client check left	session-20261117T134355-826c5a0b	2026-11-17T14:28:27Z
 build:opencatalogi:capability-rows-verify-scenarios:b2	already building: PR #2722 open on quality/build-capability-rows-verify-scenarios-c3	session-20261117T133804-84492b74	2026-11-17T14:27:53Z
+build:pipelinq:pipeline-lead-rotation:b2	already building: quality/build-pipeline-lead-rotation and -c2 exist	session-20261117T135414-614629b0	2026-11-17T14:29:05Z
