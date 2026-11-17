@@ -19131,3 +19131,4 @@ review:shillinq:3065:ba9580f8	RED: administrationScopedIndex vitest, generated i
 review:integriq:3593:75b7c54d	GREEN: no new PHP failures (5 inherited), vitest 2390 OK; conflicts with development (SynchronizationService properties, l10n)	session-20261117T020617-81e5b086	2026-11-17T02:23:40Z
 review:launchpad:760:3d286e79	GREEN; range-only devDependency bump, vitest 2652 pass	session-20261117T020142-25e0bfeb	2026-11-17T02:23:51Z
 review:integriq:3631:5de3ac5f	BLOCK: cache key does not include the caller for every auth type; conflicts with development	session-20261117T020142-15890c05	2026-11-17T02:23:59Z
+review:integriq:3585:027d5ca5	GREEN: matches spec; failures inherited; conflicts with development in l10n	session-20261117T020324-9d49c3ef	2026-11-17T02:24:11Z
