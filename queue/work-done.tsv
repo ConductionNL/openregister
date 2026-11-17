@@ -20549,3 +20549,4 @@ verify:thematiq:1714:4e9ea861	CONFLICT #1714 (scripts/sync-upstream-tokens.mjs)	
 cover:buildiq:70b3e29em2454:f545d745	already done: lib/Repair classes at 98-100%; the 3 open lines are two getName getters and an unreachable null check (RegisterMapper::find never returns null), no test added	session-20261117T112009-00ac618f	2026-11-17T12:19:03Z
 measure:stackiq:20261117h12	php 92.55 % js 95.94% at 25962f2c	session-20261117T110646-831a671b	2026-11-17T12:18:59Z
 fix:buildiq:1643:3bf75b8a	conflict resolved, pushed d0645acc; REVERIFY (merge lock held elsewhere)	session-20261117T121700-929975cb	2026-11-17T12:19:18Z
+merge:larpinq:1088:62ce209c	cloud tree of 1 larpinq PRs: merged=0 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T112054-1e62e295	2026-11-17T12:19:51Z
