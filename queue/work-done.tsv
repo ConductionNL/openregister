@@ -21277,5 +21277,6 @@ build:pipelinq:lead-win-probability-recency:b2	PR #3949: 7 of 10 tasks (1.x alre
 build:portaliq:search-names-only-a-foreign-source:b2	already done: code tasks on development (459d5b30); 2.1 live	session-20261117T133035-588aec38	2026-11-17T14:47:36Z
 build:portaliq:site-links-the-theme-bridge:b2	already done: T1, T2, T4 and T5 on development (6623f47a); only T3 left, a live check	session-20261117T123632-d3b91db3	2026-11-17T14:47:28Z
 build:shillinq:financial-documents-on-any-object:b2	PR #3166: e2e spec tests/e2e/financial-documents-on-any-object.spec.ts (4.1); strings already green; 4.1 run left (live)	session-20261117T141406-0a386201	2026-11-17T14:48:21Z
+build:portaliq:the-account-names-the-audience-and-the-company:b2	already done: tasks 1-3 on development (a6ec4ac0); task 4 is done in learniq (EmployerPortalInvitation writes organisationName, employer-portal-audience ticked); only the tick in portaliq tasks.md is stale	session-20261117T133035-588aec38	2026-11-17T14:48:08Z
 build:portaliq:receipt-date-reads-in-the-portals-language:b2	already done: 1.1 on development (0d03976e); only 1.2 left, a live check	session-20261117T123632-d3b91db3	2026-11-17T14:48:00Z
 build:portaliq:submission-records-its-action-title:b2	already done: only open task 1.4 is a live check, no code task left	session-20261117T134441-beae3c0d	2026-11-17T14:48:19Z
