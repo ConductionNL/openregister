@@ -18864,3 +18864,4 @@ learniq	2606	79bec0a6b13a375c6bdac5c3f52b04ffda07e438	GREEN	worker-50	phpunit 71
 integriq	3723	8a4e2be1aba2ef0cfd90695cee9359a4544bd93b	GREEN	worker-35	unit 9911 tests on 9-PR tree, baseline 5 inherited failures, new failures 0; vitest 2389 passed; tests/spec files only
 integriq	3708	41ada0a60a58b5bf9827e860d97f5a9c4eee0a3b	GREEN	worker-51	dev-dep bump sass 1.108.2 + sbom; npm ci ok, vitest 2389 passed; no PHP touched
 integriq	3725	1e381ea4d391d91dd282afe9ba5f7b79beb1bf1f	GREEN	worker-23	unit 9940 tests (baseline 9910), 2 errors + 3 failures identical to baseline, no new; graphql endpoint policy per change gateway-graphql-and-streaming-protocols
+integriq	3730	129afd210f56db4bb58b1eb095994ec2216d3345	GREEN	worker-24	tests and e2e specs only for change retire-integriq-flow-schema; unit 9911 tests, 4 failures/errors all inherited (baseline 9910 with 5), 0 new; FlowGraphMigrationServiceTest 5 pass
