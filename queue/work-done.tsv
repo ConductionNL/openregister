@@ -21738,3 +21738,4 @@ review:decidiq:2174:218e06dd	CONFLICT (l10n + municipality profile); code review
 build:humaniq:hours-leaf-loads-on-a-consuming-page:b2	PR #1197: tests/e2e/hours-leaf-on-a-host-page.spec.ts (book an hour on a dossiq case, total moves, entry carries host type/ref); left 5.3/6.x/7.x (live runs, other repos)	session-20261117T145912-e9f6485a	2026-11-17T15:42:12Z
 review:filinq:2072:f3b90da8	GREEN #2072 (7382 OK, access fails closed); conflicts with development on the register version	session-20261117T124637-3e909745	2026-11-17T15:42:09Z
 review:learniq:2519:143f271a	BLOCK: manifest transitions list hides the other ReportCard lifecycle actions; golden-file conflict with development	session-20261117T152630-80f67c9b	2026-11-17T15:42:27Z
+review:versioniq:698:ee38e0b7	GREEN #698 (no new failures; conflicts with development in tests/e2e/cli.spec.ts)	session-20261117T124621-35d7386d	2026-11-17T15:43:02Z
