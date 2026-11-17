@@ -19244,3 +19244,4 @@ opencatalogi	2771	502ce9b90ab9cfb622904e055d6d14d2b3ad2fdd	CONFLICT	worker-09	co
 opencatalogi	2803	182028e8f50085dad6352c07ec0abb07a4eb807b	REVERIFY	worker-09	conflicts only with an earlier PR of the verify tree
 opencatalogi	2805	b5832c88ee2a159946d2f6880ba534de439fb504	REVERIFY	worker-09	conflicts only with an earlier PR of the verify tree
 opencatalogi	2806	c32247ec0843cd01d478d2d0970444b6954ce5e2	REVERIFY	worker-09	conflicts only with an earlier PR of the verify tree
+humaniq	1193	ef7f5e47529d295f00f4a5b05b2aa464576bc3ba	GREEN	worker-14	build matrix-rows-without-a-requirement per its specs (sign-off guard fails closed, reopen guard, cycle budget endpoint behind the cycle guard); unit 4532 tests, baseline 4509 green, no new failures
