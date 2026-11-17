@@ -19019,3 +19019,8 @@ merge:launchpad:819:9983e3d6:r	merge3 tree of 1 launchpad PRs: merged=0 red=1 fa
 merge:shillinq:1900:aca810c3:r	merge3 tree of 3 shillinq PRs: merged=0 red=2 fail=0 skip=0; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-17T01:57:06Z
 fix:versioniq:700:d6286a7e:v3	conflicts resolved, pushed 67179d1c; not landed: SbomControllerTest needs server-only Symfony classes, REVERIFY queued	session-20261117T004133-c974afac	2026-11-17T01:57:23Z
 review:decidiq:2195:ebc6d9d5	GREEN: within change specs; phpunit 4795 OK, vitest 2922 OK	session-20261117T003945-3aa9cc05	2026-11-17T01:57:55Z
+verify:portaliq:1982:d7309cc2	stale	feeder	2026-11-17T01:57:40Z
+review:stackiq:1937:f217cef5	stale	feeder	2026-11-17T01:57:40Z
+review:buildiq:1628:6e72df36	stale	feeder	2026-11-17T01:57:40Z
+review:integriq:3569:11e229f7	stale	feeder	2026-11-17T01:57:40Z
+verify:keepiq:1829:e8bc2371	stale	feeder	2026-11-17T01:57:40Z
