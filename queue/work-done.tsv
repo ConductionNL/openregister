@@ -19111,3 +19111,4 @@ review:shillinq:3004:cd7ea57d	GREEN: suite 12566 OK on merge with development; s
 review:integriq:2650:54f2db42	GREEN: build per spec, 4 inherited failures, no new	session-20261117T021325-9fd6cbed	2026-11-17T02:20:14Z
 review:integriq:3557:0b9792b0	BLOCK: repair step without version bump, nl key missing, schema titles, floor worse	session-20261117T020210-893a9346	2026-11-17T02:20:28Z
 review:integriq:3600:0056da4f	BLOCK: bundles unmerged #3596 and #3574 builds; conflicts with development	session-20261117T020348-42793e58	2026-11-17T02:20:40Z
+review:shillinq:3080:995925eb	GREEN; conflicts with development in invoice-from-time-and-expense.json	session-20261117T020146-60d3aeb8	2026-11-17T02:20:50Z
