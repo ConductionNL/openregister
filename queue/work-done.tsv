@@ -19709,3 +19709,4 @@ fix:integriq:3632:6bc3018b	conflict resolved, pushed e95b6afde; REVERIFY recorde
 review:filinq:2079:b23f1426	GREEN: filinq #2079, unit 7193 pass, vitest 805 pass, no new failures	session-20261117T065451-f004b6e0	2026-11-17T07:04:06Z
 review:filinq:2120:f16ae438	GREEN: merges clean, 7152 unit + 806 vitest OK	session-20261117T055834-d932e117	2026-11-17T07:04:24Z
 review:filinq:2087:df162fcf	BLOCK: register version moved without app version (gate-120); tests green	session-20261117T055905-03eea4d3	2026-11-17T07:04:38Z
+review:filinq:2106:9446957e	GREEN: unit 7125 OK (baseline 7098), vitest 12/12	session-20261117T060006-72dfb87c	2026-11-17T07:04:51Z
