@@ -18593,6 +18593,7 @@ verify:filinq:2086:c846f108	filinq #2086 CONFLICT (info.xml, l10n, filinq_regist
 verify:versioniq:503:c2757498	CONFLICT: #503 package files conflict with development	session-20261116T233923-d48b13fa	2026-11-17T00:19:50Z
 fix:versioniq:754:668f7591	conflict resolved, pushed 822b041b; merge lock held elsewhere, REVERIFY queued	session-20261116T234703-e9cebd4b	2026-11-17T00:20:00Z
 fix:portaliq:2530:23908dc9:v3	no change needed: sbom --check current at head (dev-only lock change); REVERIFY queued	session-20261116T232406-b9eb038c	2026-11-17T00:20:22Z
+merge:decidiq:2236:f824c814	cloud tree of 1 decidiq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T233929-170accb7	2026-11-17T00:20:36Z
 verify:versioniq:710:a0b3f51c	CONFLICT #710 (16 files vs development)	session-20261116T233933-3050c00d	2026-11-17T00:20:33Z
 verify:learniq:2579:b0a9fa79	GREEN #2579	session-20261116T232948-9d2e8ce2	2026-11-17T00:20:42Z
 verify:versioniq:716:696aeaa9	CONFLICT #716 (AutoUpdateJob, ApiController, App.vue)	session-20261116T232623-066b53c9	2026-11-17T00:21:07Z
