@@ -29,12 +29,14 @@ use OCA\OpenRegister\Db\ConsumerMapperInterface;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogueInterface;
 use OCA\OpenRegister\Service\Rbac\TokenGrant;
 use OCA\OpenRegister\Service\Rbac\TokenGrantIssue;
+use OCA\OpenRegister\Service\Rbac\TokenGrantRenewals;
 use OCA\OpenRegister\Service\Rbac\TokenGrantValidator;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IL10N;
 use OCP\IRequest;
+use OCP\IUserSession;
 
 /**
  * Provides REST API endpoints for managing API consumers.
@@ -73,6 +75,13 @@ class ConsumersController extends Controller {
 	private readonly PermissionCatalogueInterface $catalogue;
 
 	/**
+	 * Who is changing a consumer, for the recorded renewal.
+	 *
+	 * @var IUserSession|null
+	 */
+	private readonly ?IUserSession $userSession;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IRequest                    $request  The request object
@@ -87,6 +96,7 @@ class ConsumersController extends Controller {
 		$this->l10n = $services->l10n;
 		$this->grantValidator = $services->grantValidator;
 		$this->catalogue = $services->catalogue;
+		$this->userSession = $services->userSession;
 	}//end __construct()
 
 	/**
@@ -178,6 +188,7 @@ class ConsumersController extends Controller {
 			}
 
 			$data['updated'] = new DateTime();
+			$data = $this->withRecordedRenewal(id: $id, data: $data);
 
 			$consumer = $this->consumerMapper->updateFromArray($id, $data);
 
@@ -199,20 +210,66 @@ class ConsumersController extends Controller {
 	 * @return string|null The reason, or null when there is no grant or it may be saved.
 	 */
 	private function grantRefusal(array $data): ?string {
-		$configuration = ($data['configuration'] ?? null);
-		if (is_array($configuration) === false || array_key_exists(TokenGrant::KEY, $configuration) === false) {
-			return null;
+		// The grant is enforced from `authorizationConfiguration` (the column the
+		// authorization service hands to the grant source); `configuration` is
+		// the older spelling and is still checked so neither key skips the validator.
+		foreach (['authorizationConfiguration', 'configuration'] as $key) {
+			$configuration = ($data[$key] ?? null);
+			if (is_array($configuration) === false || array_key_exists(TokenGrant::KEY, $configuration) === false) {
+				continue;
+			}
+
+			$grant = $configuration[TokenGrant::KEY];
+			if (is_array($grant) === false) {
+				return 'a grant must be an object';
+			}
+
+			$refusal = $this->grantValidator->refusalFor(
+				issue: new TokenGrantIssue(grant: $grant, issuerVerbs: $this->catalogue->verbs(), now: new DateTimeImmutable())
+			);
+			if ($refusal !== null) {
+				return $refusal;
+			}
 		}
 
-		$grant = $configuration[TokenGrant::KEY];
-		if (is_array($grant) === false) {
-			return 'a grant must be an object';
-		}
-
-		return $this->grantValidator->refusalFor(
-			issue: new TokenGrantIssue(grant: $grant, issuerVerbs: $this->catalogue->verbs(), now: new DateTimeImmutable())
-		);
+		return null;
 	}//end grantRefusal()
+
+	/**
+	 * The submitted consumer with the renewal of its grant recorded.
+	 *
+	 * A changed end date on the grant in `authorizationConfiguration` appends
+	 * one renewal (actor, moment, old and new end date) to the renewals the
+	 * stored consumer carries; a submission without that grant is unchanged.
+	 *
+	 * @param int                  $id   The consumer being updated.
+	 * @param array<string, mixed> $data The submitted consumer.
+	 *
+	 * @return array<string, mixed> The consumer to store.
+	 *
+	 * @throws DoesNotExistException When the consumer does not exist.
+	 *
+	 * @spec openspec/changes/scoped-api-tokens/specs/auth-system/spec.md#requirement-a-token-carries-a-required-end-date-and-is-warned-before-it-lapses-req-sat-003
+	 */
+	private function withRecordedRenewal(int $id, array $data): array {
+		$configuration = ($data['authorizationConfiguration'] ?? null);
+		if (is_array($configuration) === false || is_array(($configuration[TokenGrant::KEY] ?? null)) === false) {
+			return $data;
+		}
+
+		$stored = $this->consumerMapper->find($id)->getAuthorizationConfiguration();
+
+		$configuration[TokenGrantRenewals::KEY] = TokenGrantRenewals::after(
+			previousGrant: ($stored[TokenGrant::KEY] ?? null),
+			grant: $configuration[TokenGrant::KEY],
+			renewals: ($stored[TokenGrantRenewals::KEY] ?? []),
+			actor: (string) $this->userSession?->getUser()?->getUID(),
+			at: (new DateTimeImmutable())->format(DATE_ATOM)
+		);
+		$data['authorizationConfiguration'] = $configuration;
+
+		return $data;
+	}//end withRecordedRenewal()
 
 	/**
 	 * Delete a consumer.
