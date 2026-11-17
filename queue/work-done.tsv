@@ -18731,3 +18731,4 @@ fix:filinq:2087:c17b34e0:v3	conflict resolved, pushed 516936bd; merge lock busy,
 fix:filinq:2090:923c98e0:v3	conflict resolved (register v8.64.0), new head 3efde703, unit green; merge lock held elsewhere, REVERIFY queued	session-20261117T004714-8c7f98bc	2026-11-17T00:59:19Z
 fix:shillinq:2975:b4abe00a:v3	conflict resolved, pushed 3c5425e6; REVERIFY queued (merge lock held elsewhere)	session-20261117T004640-1b533885	2026-11-17T00:59:26Z
 fix:filinq:2078:515468bf:v3	fixed CONFLICT #2078 (+ main API for its new calls), new head 31d63323; REVERIFY (merge lock held elsewhere)	session-20261117T004616-c7acc36d	2026-11-17T00:59:33Z
+fix:filinq:2079:eb1a5b1d:v4	fixed conflict, pushed d658c1dd6; merge lock busy, REVERIFY recorded	session-20261117T004435-9e7fb02f	2026-11-17T00:59:42Z
