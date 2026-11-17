@@ -18714,3 +18714,4 @@ fix:portaliq:2449:f817c353:v3	conflict resolved, pushed ecb78c85; merge lock bus
 fix:shillinq:2063:e1c291c4:v4	conflict resolved, pushed a4866d28; merge lock held elsewhere, REVERIFY queued	session-20261117T004908-b4bcfe9b	2026-11-17T00:55:12Z
 fix:portaliq:2446:0f1d5cb2:v3	fixed RED (kernel-contract drift after development merge), pushed 478f986; merge lock held elsewhere, REVERIFY queued	session-20261117T004701-f6094f02	2026-11-17T00:55:47Z
 fix:pipelinq:3718:5c2cc12e:v3	merged #3718 at 6a2a609c3a7165bacdca1905705aa3700ae0d4e4	session-20261117T004435-9e7fb02f	2026-11-17T00:55:57Z
+fix:shillinq:2083:4b847a69:v4	conflict resolved (l10n, both sides kept); pushed 18b0fa70; REVERIFY queued (merge lock held elsewhere)	session-20261117T004651-e86f3253	2026-11-17T00:56:05Z
