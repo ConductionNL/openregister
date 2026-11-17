@@ -22360,3 +22360,4 @@ verify:dossiq:6665:d62c780d	GREEN 6665; 0 new failures (19 php + 2 vitest inheri
 verify:portaliq:2586:d48314a9	CONFLICT portaliq #2586 (package.json vs development)	session-20261117T190434-a73c29f6	2026-11-17T19:54:41Z
 verify:stackiq:2055:15b8f4c3	GREEN	session-20261117T190242-7c82bed8	2026-11-17T19:54:57Z
 merge:portaliq:2574:e3c5bacf	merge3 tree of 12 portaliq PRs: merged=10 red=0 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-17T19:55:09Z
+verify:stackiq:2052:ec35d2a9	1 GREEN (2052); e2e spec only	session-20261117T190140-44e48bc5	2026-11-17T19:55:07Z
