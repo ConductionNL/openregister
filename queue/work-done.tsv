@@ -18558,3 +18558,5 @@ verify:stackiq:1938:8966c7c6	CONFLICT: l10n, registers, icons.js	session-2026111
 verify:stackiq:1937:4a21c5d7	CONFLICT #1937 (l10n, mock register, openapi, customComponents)	session-20261116T233427-cfe22922	2026-11-17T00:13:15Z
 verify:versioniq:700:d3d6421a	CONFLICT #700 (4 files vs development)	session-20261116T233901-7abe1a78	2026-11-17T00:13:25Z
 verify:opencatalogi:2652:018cf71d	CONFLICT #2652 (5 files vs development)	session-20261116T234052-0f8466c3	2026-11-17T00:13:37Z
+verify:shillinq:3067:c2dffe48	CONFLICT #3067 (register-versions.lock.json vs development)	session-20261116T233800-0f135937	2026-11-17T00:13:49Z
+verify:versioniq:709:819acb73	CONFLICT #709	session-20261116T232519-f84cca9a	2026-11-17T00:13:58Z
