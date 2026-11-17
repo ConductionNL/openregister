@@ -19458,3 +19458,4 @@ review:decidiq:2189:aff8b82e	GREEN: unit 4858 OK, vitest OK, phpstan clean	sessi
 review:integriq:3564:5748b0ef	BLOCK: publish guard skips products created as active	session-20261117T042937-c444c626	2026-11-17T06:01:22Z
 review:filinq:2079:27589b09	CONFLICT: conflicts with development in info.xml, filinq_register.json, ListenerRegistrarTest.php	session-20261117T055908-62351962	2026-11-17T06:01:35Z
 review:decidiq:2205:0ebb671c	CONFLICT with development (l10n, registry.js); no behaviour concerns	session-20261117T055853-7ddd3cb3	2026-11-17T06:01:51Z
+review:filinq:2105:0d907f7f	GREEN; conflicts with development after #2091	session-20261117T055844-3d508d2a	2026-11-17T06:02:02Z
