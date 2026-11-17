@@ -2552,6 +2552,7 @@ Service/Integration/CallSignature.php,17,Service,Integrations,Integrations/Servi
 Service/Integration/ConnectorRequestTrait.php,44,Service,Integrations,Integrations/Service/Integration/ConnectorRequestTrait.php,0,,Integrations
 Service/Integration/ContactCasesPanel.php,59,Service,Integrations,Integrations/Service/Integration/ContactCasesPanel.php,0,,Integrations
 Service/Integration/ContactCasesResolver.php,71,Service,Integrations,Integrations/Service/Integration/ContactCasesResolver.php,0,,Integrations
+Service/Integration/DeclaresListExtraKeys.php,13,Service,Integrations,Integrations/Service/Integration/DeclaresListExtraKeys.php,0,,Integrations
 Service/Integration/ExternalIntegrationRouter.php,465,Service,Integrations,Integrations/Service/Integration/ExternalIntegrationRouter.php,0,19,Integrations
 Service/Integration/ExternalIntegrationRouterInterface.php,10,Service,Integrations,Integrations/Service/Integration/ExternalIntegrationRouterInterface.php,0,,Integrations
 Service/Integration/ExternalRegisterDegrade.php,70,Service,Integrations,Integrations/Service/Integration/ExternalRegisterDegrade.php,0,,Integrations
