@@ -1315,6 +1315,7 @@ launchpad	1298	c874c6ad5b2e7c88a07d5ac2a92feb874cb52782	APPROVE	worker-05	Quick;
 buildiq	1711	c046bf16a2d185fd3a110f47e78450a28c23551c	APPROVE	worker-50	Quick; no blockers; tests only
 stackiq	1966	b74dfc9fbfa739b5090aef81bcb83d4f2d68fa75	APPROVE	worker-32	Thorough; no blockers; build of architecture-data-model-and-ggm per specs, schema props, editors via OpenRegister API, NcSelect inputLabel, CSS vars
 stackiq	2028	9d9add83116540ecee19b9cfe128025267881839	APPROVE	worker-32	Quick; no blockers; dependency bump with golden re-recorded
+filinq	2175	3022acfde582e99ab204ee27a72a988027232fcc	APPROVE	worker-22	Quick; no blockers; openspec change docs only
 decidiq	2190	c75776f4b165c3c91393004da18d1e0bd17fbcbb	APPROVE	worker-42	Strict (public read rule); no blockers; read rule narrows to published and not depublished per REQ-DMR-005, party check per REQ-DMR-001 fails closed, parent lookup on both schema slugs
 stackiq	2037	8a0066197aac4f12cf1bcc598837fd35f50ac334	APPROVE	worker-32	Quick; no blockers; tests only, real assertions
 stackiq	2039	77e11bc633dd6fe75dcc19f5a3aa8e5f91a05251	APPROVE	worker-32	Standard; no blockers; tests only, error paths asserted
@@ -1330,6 +1331,7 @@ decidiq	2276	b77ffaa99a83ac211a8cff55b080ccb1f773fd62	APPROVE	worker-42	Quick (e
 decidiq	2277	b03780e5e71f9c9a7d94f5ad1d658e3f438c2cb4	APPROVE	worker-42	Quick (Newman collection only); no blockers; base URL overridden by run-all env vars
 decidiq	2278	d120be3ea5c86aa6aa74b4081c7a6da1b31d2921	APPROVE	worker-42	Quick (e2e spec only); no blockers; boxes left open until run live
 versioniq	780	f23cd299e03ed19ed07fe50aa787b4b212d26b17	APPROVE	worker-11	Quick; no blockers; e2e spec only for advisories-triage
+humaniq	1191	b875c583d9c11a753090974efd8cc0d409a3eac8	APPROVE	worker-20	Quick (e2e spec only); no blockers; not run against an instance
 launchpad	1306	060171415ec0321c8968a4087ce146a20f0714d7	APPROVE	worker-05	Standard; no blockers; e2e spec, tasks.md and parity rows only, base URL and user from env
 launchpad	1295	8e839b5210cfdfcca1ed2fcad366db008d7a4c2c	APPROVE	worker-05	Standard; no blockers; More menu gets an Add widget entry that opens the existing widget picker, custom widget entry kept under its own id; de string added
 launchpad	1218	981059667af30b6907fafe7e0e9be698f74a9e73	REQUEST_CHANGES	worker-05	Thorough; blocker: content.internalUrl is checked by assertValidInternalUrl only on the update path (TileUpdater::applyTileUpdates), the create path TileUpdater::applyTileConfig (PlacementService:169) stores content unchecked and TileWidget renders it as the link on the office network; validate it o
