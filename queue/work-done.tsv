@@ -22475,3 +22475,4 @@ merge:buildiq:1632:ce0aa0e4	cloud tree of 4 buildiq PRs: merged=0 red=0 fail=0 s
 merge:learniq:2524:a5178729	unmeasured: static.developer.overheid.nl; cloud tree of 5 learniq PRs: merged=0 red=1 (2524 spdxheaders 5->4) skip=3 unmeasured, conflict 1 (2551)	session-20261117T190115-a0afcf82	2026-11-17T20:16:11Z
 fix:filinq:2124:e25a43e2	fixed #2124: version bump + floor restored (PASS), new head 089581db; REVERIFY queued	session-20261117T190308-4c99e05c	2026-11-17T20:16:17Z
 fix:opencatalogi:2771:d7714652	failed: permission (git proxy refused push to opencatalogi: repo not in session's authorized set)	session-20261117T190048-3d066fd0	2026-11-17T20:16:26Z
+fix:decidiq:2174:218e06dd	conflict resolved, pushed 53ff0981; merge lock held elsewhere, REVERIFY queued	session-20261117T190556-ce2c6374	2026-11-17T20:16:38Z
