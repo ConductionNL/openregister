@@ -1159,3 +1159,5 @@ opencatalogi	2683	77bd70e15f690f5b09ff5b6b11c6215b728e809f	REQUEST_CHANGES	worke
 dossiq	6635	1292bb3c763654d5f87920df463b739b7d4437df	APPROVE	worker-03	Quick; no blockers; vite patch bump + sbom regen, tree adds no failures
 versioniq	709	15263d7c05a007f23ae4464332a1db12ae29c2a2	APPROVE	worker-41	Thorough; no blockers; hydra gates pass, channel endpoints admin-checked first and password-confirmed with audit, planner/availability honour onChannel per spec; tree adds 0 failures (2 inherited golden failures); 4 tasks left unchecked per PR body
 dossiq	6638	501374d688a7f0645ba4ae9af1be076059752579	APPROVE	worker-03	Quick; no blockers; marked minor bump + sbom regen
+dossiq	6639	ced2397f8699fdc0892907696ebf194d1a68bf02	APPROVE	worker-03	Quick; no blockers; vue-eslint-parser bump + sbom regen
+dossiq	6641	b6ff98475dbbe33f6a24897d8a726f57e1db537d	APPROVE	worker-03	Quick; no blockers; publiccode.yml metadata only, referenced images and roadmap exist
