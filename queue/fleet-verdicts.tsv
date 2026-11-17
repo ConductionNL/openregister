@@ -18516,3 +18516,4 @@ launchpad	1261	f23c46deef80d0f64201a9d0ce37e50a46a2e833	RED	worker-22:merge-gate
 opencatalogi	2766	6dfc228cfa1025745db599806d99246f1092d730	RED	worker-23:merge-gate	GATE RED floor: overall: 4.88 -> 4.86; unit_interfacing: 4.77 -> 4.70
 opencatalogi	2770	f134b8f7dabb094897970e0f20bd6313ef5fa5dc	GREEN	worker-14	unit 6354 tests, baseline 92F/11E, 0 new failures; docs/publiccode metadata, test fixture is exact frozen copy
 integriq	3709	4cb85bb991cb2af12526621fe2212abe4b6e95af	RED	worker-24:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+planninq	1218	3bb9d8d2ab2644e3b22cdb1144eb07f0a9df1e21	RED	worker-16:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
