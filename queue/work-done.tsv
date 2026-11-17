@@ -19185,3 +19185,4 @@ review:launchpad:763:b75dc631	GREEN: vitest 5 bump, 2652/2652 tests, coverage wo
 review:versioniq:727:0c2b3b95	RED: 3 vitest failures in App.rangeAndSkip.spec.ts after merging development	session-20261117T004644-d9c68b8f	2026-11-17T02:33:57Z
 review:learniq:2486:384efb33	GREEN; conflicts with development in golden PortalManifests.json	session-20261117T020358-1a8df617	2026-11-17T02:34:12Z
 review:versioniq:700:67179d1c	GREEN; SbomControllerTest needs the server (env-only errors)	session-20261117T004133-c974afac	2026-11-17T02:34:26Z
+fix:shillinq:3002:64f4bc01	fixed AppIdentity import, suite green; new head 0d472796, REVERIFY (merge lock busy)	session-20261117T021616-30ab3d21	2026-11-17T02:34:46Z
