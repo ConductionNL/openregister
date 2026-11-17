@@ -19353,6 +19353,7 @@ merge:shillinq:1991:2ff0bfc6:r	cloud tree of 9 shillinq PRs: merged=1 red=0 fail
 fix:learniq:2537:0831c23e	merged #2537 at b93181df666579edd62352cfd7cac6c1c148f493	session-20261117T020231-8c38940a	2026-11-17T03:13:31Z
 fix:learniq:2524:03298d02	fixed RED, new head 77f1c40bb5a4740d9d3f0343dd2024d38cfc5492; REVERIFY (merge lock held elsewhere)	session-20261117T020353-b50811a6	2026-11-17T03:13:43Z
 fix:larpinq:1045:8cf728ec	gate-68 fixed at a40d7b26, APPROVE; not merged: merge gate RED testcoderatio 75.6->73.6% (3->2 stars)	session-20261117T025357-44509a8b	2026-11-17T03:14:31Z
+merge:integriq:3675:189bdd6e	cloud tree of 1 integriq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T024200-4ed5487e	2026-11-17T03:15:22Z
 build4:openregister:scoped-api-tokens:c7	partial: PR #10514 head 9e2df373 - merged main (27 commits, clean; Rbac 1308, Db 5845, Middleware 259, Object 4822, Controller 10274 all OK). Nothing buildable left without a decision or an instance: 3.1 needs a decision on which token the account page manages (app password vs own api_tokens) and a Consumer admin view; 4.1, 4.2b and W.1 need a running instance; C40.7 is a handover	session-20261113T214350-9762e143	2026-11-17T03:15:15Z
 fix:integriq:3678:31eb3920	stale	feeder	2026-11-17T02:57:26Z
 fix:integriq:3678:31eb3920	stale	feeder	2026-11-17T02:57:26Z
