@@ -4944,3 +4944,4 @@ portaliq	2284	1944b9f366f25b7b0fc274e7718b0a7f4aa060d5	MERGED	worker-42	GATE OK 
 opencatalogi	2706	01d5443c6fbf879b64893bb2dca81cc6d722f7e2	MERGED	worker-52	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.52
 dossiq	6353	ea97ffc3a95ba75a0f585fa36a4fa842b8b27931	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.40
 integriq	3589	6a7f1b92db78983ccb11eee4e547aa1776752d6e	SKIP	worker-07	no APPROVE review at this head
+hermiq	1794	58725be9b04edb729c72faf541cd06e9553151bd	MERGED	worker-15	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.77 holds at 3.80
