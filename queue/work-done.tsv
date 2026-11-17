@@ -19194,6 +19194,7 @@ review:versioniq:719:c727229b	GREEN: versioniq #719 (openapi.json conflict with 
 review:stackiq:1939:4b930687	BLOCK: manifest conflict with development; new calls use the old openregister object API	session-20261117T021015-602d1924	2026-11-17T02:35:54Z
 verify:launchpad:1239:cc16cd1e	GREEN #1239: PHPUnit 4539, vitest 2652, no new failures	session-20261117T020257-09bbf84c	2026-11-17T02:36:00Z
 review:versioniq:729:e24515d1	CONFLICT with development (7 files); head alone has only the 2 inherited failures	session-20261117T021137-dd174ad0	2026-11-17T02:36:15Z
+review:launchpad:1219:08b864a2	GREEN: phpunit 4553 OK, vitest 2667 pass on merge with development	session-20261117T021723-9d734048	2026-11-17T02:36:41Z
 fix:learniq:2579:2200408f	floor restored at 9a422773 (interfacing 3.13, PASS); not landed: review REQUEST_CHANGES (gate findings on added lines, no demo data)	session-20261117T020252-b4828a7d	2026-11-17T02:36:40Z
 verify:decidiq:2224:1c5c51d1	GREEN 2224: unit 4795 OK, vitest 2912 pass, no new failures	session-20261117T021636-02f2b960	2026-11-17T02:36:49Z
 verify:versioniq:758:ca5314c3	CONFLICT: l10n files conflict with development	session-20261117T020537-9e43f62e	2026-11-17T02:37:09Z
