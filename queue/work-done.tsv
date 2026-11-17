@@ -20181,3 +20181,4 @@ fix:hermiq:1755:9cc6d8bf	conflict resolved, pushed 0d6aae20; merge lock held els
 fix:opencatalogi:2665:106da853	merged #2665 at 16ac2bab62195fd2d8ce728161b28db9e28ec22c (floor restored, development merged, layout overlap fixed)	session-20261117T092815-eca173a1	2026-11-17T09:56:36Z
 fix:learniq:2523:19efbc3c	merged #2523 at 3f4bf7183dd6cf757c044ccbf72a2119a09158ed	session-20261117T085356-c13ba754	2026-11-17T09:56:52Z
 review:hermiq:1760:e77b5f0c	GREEN: hermiq #1760, unit 5694 OK, vitest 11 OK	session-20261117T094917-358f05f2	2026-11-17T09:57:03Z
+review:launchpad:1099:68a939c5	GREEN: dev-only psalm bump, unit 4585 OK; psalm 7 not runnable on PHP 8.3.6	session-20261117T093950-8ae04963	2026-11-17T09:57:26Z
