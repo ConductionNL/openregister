@@ -4978,5 +4978,6 @@ integriq	2650	54f2db42bbc78ba42bc0fb239d88b7e694b619b1	SKIP	worker-05	no APPROVE
 integriq	3572	5ea148163d14c597c8dc94128c33a2d46705fd6d	MERGED	worker-05	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.63
 shillinq	1991	29abf7fb303a9a25601637bfbbaecaeb9a1feae7	MERGED	worker-25	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.06
 hermiq	1740	7fab2d272a0a57a268b18424d79279efa4f48799	RED	worker-20	GATE RED floor: unit_complexity: 4.56 -> 4.54
+stackiq	1939	78d33e98a828a485f2e7aaa1824658b036b4f0ec	RED	worker-28	GATE RED floor: unit_interfacing: 4.71 -> 4.67
 pipelinq	3743	4a743d552e5afefd172ca39ba138484e79b1411c	MERGED	worker-40	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.49
 larpinq	1045	a40d7b26c43f24fadd5d5d4cdce5d773543062bc	RED	worker-32	GATE RED checker floor: testcoderatio: warn -> fail; testcoderatio stars: 3 -> 2
