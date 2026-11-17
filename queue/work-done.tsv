@@ -22784,6 +22784,7 @@ fix:stackiq:1963:5d4b224b	unmeasured: static.developer.overheid.nl; conflict fix
 verify:pipelinq:3964:753442e6	GREEN #3964 (sbom cmd works on v7; no new failures)	session-20261117T211341-e05e0d2c	2026-11-17T22:00:23Z
 verify:shillinq:3174:3dfee71e	GREEN #3174 (vitest 1 inherited failure, phpunit = baseline)	session-20261117T212610-64548952	2026-11-17T22:00:50Z
 fix:planninq:1242:58b41fbc	unmeasured: api.osv.dev (opensourcehealth drop is network-bound; PR changes no dependencies), REVERIFY queued	session-20261117T211412-45e1aeb8	2026-11-17T22:01:24Z
+fix:buildiq:1608:10685d4e	failed: permission; git push to ConductionNL/buildiq refused by the session proxy (repo not in authorized set). Conflict resolved locally (keep page-code and offline-apps sides, SettingsServicePageCodeTest tolerates 2nd bool read), not pushed	session-20261117T213139-4c29297d	2026-11-17T22:01:45Z
 fix:shillinq:3064:169d4186	CONFLICT resolved, pushed c4757048; REVERIFY queued (merge lock held elsewhere)	session-20261117T211520-d88a421d	2026-11-17T22:01:48Z
 fix:pipelinq:3942:2b241c62	fixed floor (unit_interfacing restored) + merged development; new head c054de2a, REVERIFY queued (merge lock busy)	session-20261117T213154-bb97695e	2026-11-17T22:01:58Z
 fix:shillinq:1958:5bdb3bb1	conflict fixed, new head 2f747686, REVERIFY queued	session-20261117T211535-4eae9738	2026-11-17T22:02:39Z
@@ -22802,3 +22803,14 @@ fix:dossiq:6659:565a618a	conflict resolved, new head 7c7be56443; REVERIFY queued
 verify:pipelinq:3959:7fbcf4ee	GREEN 3959: dev eslint bump, vitest 0 new failures (3 inherited)	session-20261117T211611-151c4a14	2026-11-17T22:05:10Z
 merge:decidiq:2279:9fce5b35	unmeasured: static.developer.overheid.nl (proxy 403); merged=0 skip=6 conflict 1 (2287); reviews APPROVE recorded at head	session-20261117T211320-ba1b42e8	2026-11-17T22:06:19Z
 fix:planninq:1243:1232090d	fixed floor (complexity 4.86, php interfacing back to dev); pushed c1be8cd6; REVERIFY queued (merge gate hosts blocked)	session-20261117T211315-f96d97db	2026-11-17T22:07:11Z
+verify:pipelinq:3957:c41f8c7b	GREEN #3957 (vitest 0 new failures; 3 inherited failing files)	session-20261117T211657-3a85bb14	2026-11-17T22:07:25Z
+fix:shillinq:3004:5df6f499	conflict resolved, pushed fa8a07cf; REVERIFY queued (merge gate hosts blocked in this session)	session-20261117T211542-5413f208	2026-11-17T22:08:09Z
+merge:thematiq:1714:1199abc8	unmeasured: static.developer.overheid.nl (merge gate checker floor); nothing landed; 7 APPROVE, 1719 REQUEST_CHANGES, 1729 MOVED (task row sha was truncated)	session-20261117T211422-95669914	2026-11-17T22:08:37Z
+merge:opencatalogi:2797:d9522187	unmeasured: api.osv.dev (5 IN approved, 0 merged; 2802 CONFLICT)	session-20261117T211651-58c92edf	2026-11-17T22:09:25Z
+merge:hermiq:1850:f1c8b182	unmeasured: static.developer.overheid.nl (1850 APPROVE, not landed; 1851 REQUEST_CHANGES gate 51; 1852/1854 CONFLICT only with tree, REVERIFY)	session-20261117T213139-f6154590	2026-11-17T22:09:32Z
+merge:integriq:3729:9f2477d1	unmeasured: static.developer.overheid.nl; cloud tree of 4 integriq PRs: merged=0 red=1 (3731 unit_complexity floor) skip=2 conflict=1 (land ran twice by mistake, duplicate ledger rows)	session-20261117T211406-076a7a0e	2026-11-17T22:09:35Z
+verify:portaliq:2591:a322f371	stale	feeder	2026-11-17T21:38:30Z
+merge:pipelinq:3935:cba98368	merge3 tree of 9 pipelinq PRs: merged=6 red=0 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-17T22:10:20Z
+merge:buildiq:1715:ed36450e	unmeasured: static.developer.overheid.nl (merged=0 skip=7; 1721 CONFLICT, 1723 MOVED)	session-20261117T211607-9073788f	2026-11-17T22:11:32Z
+fix:pipelinq:3954:ba6a3d35	conflict fixed, pushed 778f1212; REVERIFY queued	session-20261117T211651-58c92edf	2026-11-17T22:11:57Z
+fix:pipelinq:3940:dc52e0b2	resolved l10n conflicts with development, pushed 2e6c53c6; REVERIFY queued (no end-to-end: gate hosts blocked)	session-20261117T213139-f6154590	2026-11-17T22:12:39Z
