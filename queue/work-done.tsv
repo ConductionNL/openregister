@@ -21587,5 +21587,6 @@ build:buildiq:decision-tables-live-in-openregister:b2	already built: the one ope
 build:decidiq:one-consultation-schema:b2	already done: built on development in 1fec71f94 (#1163) and e80eea9ae; only e2e 5.2 left	session-20261117T140734-4d108840	2026-11-17T15:23:13Z
 build:decidiq:integrity-disclosures-in-plain-words:b2	already done in code: only 5.2 E2E is open (needs the live instance)	session-20261117T135029-424a7669	2026-11-17T15:23:24Z
 build:planninq:tasks-create-by-email:b2	PR #1243: built 2.1 (dependency-free IMAP client, MIME parser, connector; 28 PHPUnit tests, suite 1253->1281 green) and the mail-intake e2e; 2.4 unticked until a test mail server exists	session-20261117T141458-ec2a4394	2026-11-17T15:23:48Z
+build:decidiq:participation-citizen-advisory-vote-on-motions:b2	already done in code: open items are two Newman runs needing the live instance (one with portaliq)	session-20261117T135029-424a7669	2026-11-17T15:23:55Z
 build:decidiq:delegated-authority-check:b2	already done: built on development (eac32354); only item 3, marked as a follow-up change, is left	session-20261117T141120-684bff04	2026-11-17T15:23:56Z
 build:decidiq:live-room-conference-system-link:b2	already done: build merged; the three open Test items are Newman and Playwright runs on a live instance, unit tests are in	session-20261117T124010-7774729d	2026-11-17T15:23:47Z
