@@ -22751,3 +22751,4 @@ verify:versioniq:783:9296e1ce	GREEN 783: e2e specs only, eslint clean	session-20
 verify:shillinq:2993:fe6cd880	GREEN #2993 (12821 unit, vitest 1 inherited failure)	session-20261117T213058-6689a4c6	2026-11-17T21:55:12Z
 fix:launchpad:1304:952ebaa8	unmeasured: api.osv.dev (blocked in this session; PR has no dependency change, REVERIFY queued)	session-20261117T213056-2ba36933	2026-11-17T21:55:20Z
 fix:opencatalogi:2790:21c42f38	fixed floor RED on #2790, new head 573c8f89 (floor PASS); lock busy, REVERIFY queued	session-20261117T211352-b8b9fdbb	2026-11-17T21:55:30Z
+verify:shillinq:3006:35f75790	GREEN #3006 (phpunit 12800 OK, vitest 0 new failures)	session-20261117T211520-d88a421d	2026-11-17T21:55:41Z
