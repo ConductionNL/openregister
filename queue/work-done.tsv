@@ -19712,3 +19712,4 @@ review:filinq:2120:f16ae438	GREEN: merges clean, 7152 unit + 806 vitest OK	sessi
 review:filinq:2087:df162fcf	BLOCK: register version moved without app version (gate-120); tests green	session-20261117T055905-03eea4d3	2026-11-17T07:04:38Z
 review:filinq:2106:9446957e	GREEN: unit 7125 OK (baseline 7098), vitest 12/12	session-20261117T060006-72dfb87c	2026-11-17T07:04:51Z
 review:filinq:2114:bafd9b56	BLOCK: register version without app version bump; component-independence floor 94.5->94.2; tests green	session-20261117T065729-57200508	2026-11-17T07:05:03Z
+review:shillinq:2998:d4457281	BLOCK: seed repair step not registered in info.xml	session-20261117T063021-b217a961	2026-11-17T07:05:15Z
