@@ -19947,3 +19947,4 @@ verify:stackiq:2016:31fc36e3	9 GREEN (2016-2024 dependency bumps), no new failur
 verify:planninq:1213:e9c74b18	5 GREEN (1213,1214,1216,1217,1219), RED 1215 (gridstack peer conflict), REVERIFY 1218	session-20261117T081117-f29e8a89	2026-11-17T08:36:43Z
 fix:stackiq:1938:08b568aa	unmeasured: static.developer.overheid.nl (floor restored, pushed 903d38eb, APPROVE recorded, REVERIFY queued)	session-20261117T080442-23d3643f	2026-11-17T08:36:58Z
 fix:filinq:2083:a6bf5b36	fixed, pushed e57df6b0; floor PASS, unit 7173 OK; REVERIFY (unmeasured: api.osv.dev)	session-20261117T081319-17d49a97	2026-11-17T08:37:06Z
+fix:shillinq:3004:0e70c6a3	conflict resolved, new head 04b7af8a, REVERIFY (merge lock held elsewhere)	session-20261117T081327-bdafbf12	2026-11-17T08:37:21Z
