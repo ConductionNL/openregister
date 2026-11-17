@@ -19567,3 +19567,4 @@ fix:decidiq:2198:764b069d	conflict resolved, pushed 82d9b784; REVERIFY queued	se
 merge:versioniq:692:d2a02848	cloud tree of 5 versioniq PRs: merged=0 red=1 fail=0 skip=0; conflict 4, lint 0, red 0, moved 0, done 0	session-20261117T062856-12839ec9	2026-11-17T06:33:13Z
 merge:stackiq:1943:4de79505	failed: cull: no PR reproduces the failures; the tree is not landed	session-20261117T063112-55331435	2026-11-17T06:33:03Z
 fix:shillinq:2993:9a8d6e12	conflict resolved, pushed cf43d96e6a; REVERIFY queued	session-20261117T042937-c444c626	2026-11-17T06:33:11Z
+fix:learniq:2509:afdcf4ef	fixed CONFLICT, new head 2500f767; merge lock held elsewhere, REVERIFY queued	session-20261117T055844-3d508d2a	2026-11-17T06:33:26Z
