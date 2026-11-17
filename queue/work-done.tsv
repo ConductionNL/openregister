@@ -22924,3 +22924,4 @@ build:opencatalogi:harvest-conflict-policies:b2:c3	blocked: unchanged since c2; 
 merge:humaniq:1191:fcfada2f	unmeasured: static.developer.overheid.nl (merge gate checker floor NO RESULT; 6 APPROVE recorded, 1193 REQUEST_CHANGES -> BLOCK; nothing landed)	session-20261117T223255-8eaf1688	2026-11-17T22:49:16Z
 fix:opencatalogi:2804:731661e8	fixed test count for new schema slug; pushed e3eb6104; merge lock busy, REVERIFY queued	session-20261117T224514-f279fa1b	2026-11-17T22:50:09Z
 fix:filinq:2113:374ff86d	CONFLICT resolved, pushed e86b2786; merge lock held by another merger, REVERIFY recorded	session-20261117T223224-549dfbd7	2026-11-17T22:49:50Z
+merge:pipelinq:3957:745201ec	unmeasured: static.developer.overheid.nl; gate RED sbom on 3959 3962 3963 3965; 3957 3958 3964 3966 skipped unmeasured; merged 0 (repaired corrupt jscpd gate cache first)	session-20261117T221004-2cfd9e4c	2026-11-17T22:50:22Z
