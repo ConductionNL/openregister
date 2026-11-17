@@ -18131,3 +18131,4 @@ dossiq	6639	ced2397f8699fdc0892907696ebf194d1a68bf02	GREEN	worker-48	PHP unit 18
 dossiq	6641	b6ff98475dbbe33f6a24897d8a726f57e1db537d	GREEN	worker-48	PHP unit 18392 (19 failures = baseline, 0 new); vitest 7211 (2 inherited failures, 0 new); publiccode.yml metadata only
 launchpad	1217	365b7069cdf8dd17c14d4c518c34b0ed1243def6	REVERIFY	worker-14	merged development in, info.xml version conflict resolved to development's; unit 4633 OK, touched vitest 79 OK, eslint clean; new head 7283f62c39d4b8397cc6a45523632a26fadf09ad, verify it
 learniq	2577	981856abaafa0866c2b358887e8b36225f7a5b33	GREEN	worker-04	already merged on development (50e3f06f), no diff left; unit 7123 run, baseline 1 failure (HigherEducationExampleSetTest), no new failures
+learniq	2589	e5a5454a3b27ecb50ba8ab74c34d8140b6c7770d	GREEN	worker-04	docs only (README, publiccode.yml); unit 7123 run, baseline 1 failure (HigherEducationExampleSetTest), no new failures
