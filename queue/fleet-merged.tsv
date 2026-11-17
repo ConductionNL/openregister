@@ -5220,3 +5220,4 @@ dossiq	6640	f6770616edd0130f7864c19a2783f56d50286180	RED	worker-08	GATE RED sbom
 launchpad	1212	d9d12e6f087dc1a6d42e4918693a7cef10b8a07f	RED	worker-39	GATE RED checker floor: adrvalidator: pass -> warn; adrvalidator stars: 5 -> 3; score: 100 -> 97
 launchpad	1212	e9a6da1780c304bd55ae5e14d3e6ab69531f664d	MERGED	worker-39	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.65 holds at 3.78
 filinq	2124	e25a43e2a9c0c32a978b66ad3b8e6a646abb09d3	SKIP	worker-35	no APPROVE review at this head
+learniq	2536	8a991bd13dec308f5b6a1faadd811b3778e9c434	RED	worker-02	GATE RED floor: unit_interfacing: 3.61 -> 3.59
