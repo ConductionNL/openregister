@@ -16028,3 +16028,4 @@ pipelinq	3743	871e47d54f19aad16fb7eeac1f4d38f79b61e6af	CONFLICT	worker-14	confli
 shillinq	1965	38aa9e98d92064163730059c45e299b358346b33	CONFLICT	worker-36	conflicts with development in appinfo/info.xml, tests/fixtures/register-versions.lock.json; suite not run
 shillinq	2983	ccfb277757d8bd739a309823a6d51433be48392f	CONFLICT	worker-26	conflicts with development in appinfo/info.xml, l10n en/nl, GLLineResultStampListener.php, manifest.d.shell.json, manifestActions.js, register-versions.lock.json; tests not run
 shillinq	3052	8bc55c9d539b9d42ccadb4abce35ea1cf308f63a	CONFLICT	worker-03	conflicts with development in appinfo/info.xml, l10n (4), lib/Service/ContractRegistrar.php, tests/fixtures/register-versions.lock.json
+opencatalogi	2756	a362a4ec22bbc023bb7044a021f46a6903f28bca	CONFLICT	worker-49:merge	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
