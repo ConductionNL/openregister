@@ -19498,3 +19498,4 @@ review:integriq:3633:109ddb59	GREEN: unit 9705, 5 inherited failures, none new; 
 review:integriq:3631:36311b4c	CONFLICT: l10n conflicts with development; head alone adds no failures (inherited 5); carries access-consumer-credentials too	session-20261117T055834-d932e117	2026-11-17T06:13:13Z
 review:opencatalogi:2669:605008f3	GREEN: no new failures (78 inherited); concern: independence floor drop, register version not bumped	session-20261117T055905-03eea4d3	2026-11-17T06:13:36Z
 merge:decidiq:2195:fb5a97f5	unmeasured: static.developer.overheid.nl (cloud tree of 3 decidiq PRs: merged=0 red=0 fail=0 skip=2; conflict 1, lint 0, red 0, moved 0, done 0)	session-20261117T055853-7ddd3cb3	2026-11-17T06:14:00Z
+review:integriq:3550:a14372dd	GREEN	session-20261117T042937-c444c626	2026-11-17T06:14:09Z
