@@ -22265,3 +22265,4 @@ verify:integriq:3711:42694816	GREEN #3711: vitest 2389 pass, no PHP change	sessi
 verify:learniq:2609:85f54492	GREEN #2609 (no new failures)	session-20261117T190418-7494049c	2026-11-17T19:35:05Z
 verify:larpinq:1101:68cf7368	CONFLICT #1101 (change archived, e2e spec already on development)	session-20261117T190357-55034d4a	2026-11-17T19:35:13Z
 verify:opencatalogi:2783:b2d114f8	GREEN #2783 (version bump)	session-20261117T190540-b0615094	2026-11-17T19:35:27Z
+verify:larpinq:1100:1ed0e3bf	GREEN #1100 (e2e spec only; 1243 tests, 0 new failures)	session-20261117T190359-60e4fde5	2026-11-17T19:35:38Z
