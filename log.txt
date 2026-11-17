@@ -3423,3 +3423,4 @@ To https://github.com/ConductionNL/openregister
  ! [re; per-PR merges
 2026-11-17T03:16:22Z integrator-20261111T115842-a749432d MERGED-TREE 5b4587a1ae: 1 PRs, main now 28ff9cf60d = tested tree
 2026-11-17T06:22:10Z worker-02 merge:integriq:3545:e65d7f65 unmeasured: static.developer.overheid.nl (proxy 403 from this session)
+2026-11-17T12:26:31Z integrator-20261111T115842-a749432d GREEN tree 270876e45d on dev 28ff9cf60d prs 3 front=skip: Tests: 62520, Assertions: 218661, Errors: 3, Failures: 3, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24.
