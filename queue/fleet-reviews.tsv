@@ -1340,3 +1340,4 @@ filinq	2183	fb25a98a385e31605573510e1f28367b920a420b	APPROVE	worker-22	Quick; no
 filinq	2184	6da46b71eaef66c39d938d3bfecaf1d756918363	APPROVE	worker-22	Standard; no blockers; e2e helpers moved verbatim to _mcp.ts, new no-office-suite e2e spec skips when a suite is present; tests only
 filinq	2185	3ebe59da9070e5dedafce84112113ed789bcbc83	APPROVE	worker-22	Standard; no blockers; integration MCP surface probe skips without NC_BASE_URL, docs page; no production code
 humaniq	1195	b3d7f5c67972ee5a3c42c2606bf6067353bd6eb9	APPROVE	worker-20	Quick (@spec docblocks + e2e spec); no blockers; gate-23/66 fails are inherited (files untouched)
+humaniq	1196	e0e2cffa27f96e5529594607b47493629041cb13	APPROVE	worker-20	Quick (e2e spec + spec/tasks text); no blockers; non-admin context from empty storage state
