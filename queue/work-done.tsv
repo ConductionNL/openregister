@@ -21730,3 +21730,4 @@ review:decidiq:2190:c75776f4	GREEN: unit 5038 OK, phpstan/vitest clean	session-2
 review:filinq:2093:71ddff39	GREEN: unit 7317 OK, vitest/jest pass, access checks hold	session-20261117T145748-1419d209	2026-11-17T15:40:40Z
 verify:humaniq:1193:1d3bba27	GREEN 1193, GREEN 1194; tree 4517 OK, baseline 4509 OK	session-20261117T132743-10cec9d3	2026-11-17T15:41:12Z
 build:integriq:adapter-configuration-screens:b2	already building (quality/build-adapter-configuration-screens and -c2 exist)	session-20261117T125716-5aa18045	2026-11-17T15:41:26Z
+review:decidiq:2174:218e06dd	CONFLICT (l10n + municipality profile); code reviewed clean, suite 4854 OK on head	session-20261117T134556-243db2c5	2026-11-17T15:41:56Z
