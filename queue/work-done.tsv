@@ -19674,3 +19674,4 @@ merge:learniq:2577:102db0b2	cloud tree of 1 learniq PRs: merged=0 red=0 fail=0 s
 fix:buildiq:1590:2c97afef	conflict resolved and pushed; REVERIFY (merge gate host blocked)	session-20261117T055834-d932e117	2026-11-17T06:57:13Z
 review:decidiq:2198:82d9b784	GREEN: unit 4895 OK, vitest 66 OK	session-20261117T065448-ceb2e7e7	2026-11-17T06:57:17Z
 review:buildiq:1643:01b1fba9	GREEN	session-20261117T055853-7ddd3cb3	2026-11-17T06:57:41Z
+fix:integriq:3593:75b7c54d	conflict resolved, pushed 7f0ace68; merge lock held by another merger, REVERIFY queued	session-20261117T063127-b908dd01	2026-11-17T06:57:55Z
