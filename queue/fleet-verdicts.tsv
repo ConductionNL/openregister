@@ -18310,6 +18310,7 @@ hermiq	1719	d2352914530959591eaf31c5ea8ea41c94ca6b79	GREEN	worker-47	build chat-
 launchpad	628	7ce60794924a774915dfec084c803ddddf04e02b	GREEN	worker-37	merge into development yields a tree identical to development (beta sync already present); no diff, suite = baseline
 integriq	1985	6e4c92f5a867f924633f527c3d41ff4024cffa90	GREEN	worker-03	merge adds no file changes to development (tree identical); baseline 9839 tests with 4 inherited failures/errors, 0 new
 keepiq	1203	d60b0db01521195d0fde6b27a3b3b1161134a2ba	GREEN	worker-32	merge into development adds no file changes (tree identical to development); baseline unchanged, 0 new failures
+opencatalogi	2368	791b0b69d2cfe63c49ddca20eec5857b8fbc1a0b	CONFLICT	worker-48	lib/Service/PublicationService.php conflicts with development (file restructured on development); no tests run
 integriq	2718	21805a3377c7314edd320b3786a2a6fb45c31dcc	CONFLICT	worker-58	conflicts with development in lib/Flow/{ContractMatchNode,ContractSweepNode,SourcePaginateNode}.php, their tests, package.json/lock; baseline 9839 tests, 5 inherited failures
 integriq	2641	13e92f3043e4a39df09d50dfa6bf2bab741d5460	GREEN	worker-34	release sync merge; merged tree identical to development (no file changes), suite unaffected
 larpinq	1087	bdae89b3e4ce2caecb66642ff6983d5e9331ad1a	GREEN	worker-25	unit 1228 tests (20 skipped), baseline 1228 OK, new failures 0; version bump only
