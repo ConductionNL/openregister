@@ -20840,6 +20840,7 @@ cover:openregister:7350e3efm4377:js7af948c9	deferred: openregister has 185 open 
 cover:dossiq:069ee2d6m9d1b:5ebe3eb6	already done: lib/Service/Mcp/ at 100% lines (8 classes, 251 lines) under pcov, CreateTaskRun has no logic	session-20261117T124637-3e909745	2026-11-17T13:49:41Z
 cover:launchpad:fb10c50fm88bd:34763eb4	PR #1298: ApiContractMiddleware 58/59 -> 59/59 lines, 1 test, suite 4621 -> 4622 OK	session-20261117T134242-51ff9d48	2026-11-17T13:49:51Z
 fix:integriq:3711:dd118ae9	fixed sbom, pushed 42694816; merge lock held elsewhere, REVERIFY queued	session-20261117T124621-35d7386d	2026-11-17T13:50:06Z
+cover:dossiq:069ee2d6m9d1b:4c817077	already done: lib/Service/Notification/ at 100% lines (377/377) on development 21f141bd2; earlier -1/-2 branches merged	session-20261117T134355-826c5a0b	2026-11-17T13:50:14Z
 review:shillinq:2975:df2c1919	GREEN: unit 12832 ok (baseline 12779), phpstan clean, vitest 47 ok, gates clean on the diff	session-20261117T133308-c6d52416	2026-11-17T13:50:17Z
 fix:stackiq:1942:90499893	conflict resolved, pushed 9b4a8fa2; merge lock held elsewhere, REVERIFY	session-20261117T134404-362023fb	2026-11-17T13:50:53Z
 fix:learniq:2497:35dd044e	conflict resolved, pushed 48225cf9; merge lock held elsewhere, REVERIFY queued	session-20261117T124010-7774729d	2026-11-17T13:51:06Z
@@ -20851,6 +20852,7 @@ fix:hermiq:1719:d2352914	conflict resolved, pushed fdc4de5b; merge lock held els
 cover:decidiq:a5f973bbmfcd5:aae6d66c	PR #2273: 5 tests, exception refusals; suite 5020->5025 OK	session-20261117T134504-7f453fd6	2026-11-17T13:52:17Z
 fix:shillinq:3080:77004414	conflict resolved, pushed ed5b393d; REVERIFY queued (merge lock busy)	session-20261117T125716-5aa18045	2026-11-17T13:52:27Z
 review:integriq:3601:691712f5	GREEN: no new failures, phpstan clean	session-20261117T134304-10008ffd	2026-11-17T13:52:44Z
+cover:decidiq:a5f973bbmfcd5:0f859653	already done: lib/Flow/*.php at 100% lines (185/185) on development; -1/-2 branches merged	session-20261117T134242-51ff9d48	2026-11-17T13:53:04Z
 merge:launchpad:1106:7c0af468	cloud tree of 3 launchpad PRs: merged=0 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T134525-c871bd14	2026-11-17T13:53:14Z
 fix:versioniq:729:ea732a80	pushed @spec tags, gate-16 green; REVERIFY at 497abe19 (end-to-end merge skipped: own PR)	session-20261117T134258-58728df3	2026-11-17T13:53:12Z
 fix:hermiq:1781:a56a9450	merged #1781 at 6b45e373bba2ccb19851caeb6ae9adf8e2edc15b	session-20261117T132823-a99794a3	2026-11-17T13:53:31Z
@@ -20858,6 +20860,14 @@ review:shillinq:2993:39b07fb3	BLOCK: repair step added without info.xml version 
 verify:opencatalogi:2770:71864641	GREEN #2770; 0 new failures	session-20261117T134951-9fef99ce	2026-11-17T13:54:10Z
 cover:dossiq:069ee2d6m9d1b:cdc59513	already done: lib/Service/Inspection/ at 100% statement coverage on development 21f141bd21 (pcov, 46 tests green), target 95; row from Aug looks stale	session-20261117T133105-0c327c7d	2026-11-17T13:53:53Z
 cover:decidiq:a5f973bbmfcd5:38e80a9f	already done: lib/Command/*.php at 100% lines (106/106) on development 161ca15ec, 17 tests	session-20261117T135029-424a7669	2026-11-17T13:53:56Z
+merge:integriq:3550:0fd65065	cloud tree of 5 integriq PRs: merged=1 red=2 fail=0 skip=1; conflict 1, lint 0, red 0, moved 0, done 0	session-20261117T133833-7d87fd3d	2026-11-17T13:55:13Z
 fix:shillinq:3048:4c867fcf	conflict resolved, new head 4dfa4261, REVERIFY (merge lock held elsewhere)	session-20261117T134556-243db2c5	2026-11-17T13:55:15Z
 cover:buildiq:70b3e29em2454:9d3a1784	already done: lib/BackgroundJob/*.php at 264/265 statements (99.6%) after merged -1/-2 PRs; only the glob()===false guard uncovered	session-20261117T134327-bbccf916	2026-11-17T13:55:30Z
 fix:shillinq:3011:87ae5ea8	conflict resolved, pushed b03586ea8; REVERIFY queued (merge lock held elsewhere)	session-20261117T134347-d0294040	2026-11-17T13:55:38Z
+fix:shillinq:3067:7ff7357f	conflict resolved, pushed 55cee22d; unit 12795 OK; merge lock held elsewhere, REVERIFY queued	session-20261117T133025-beace6fb	2026-11-17T13:55:49Z
+fix:integriq:3708:c779eda2	sbom regenerated, pushed 41ada0a6; merge lock held elsewhere, REVERIFY queued	session-20261117T124010-7774729d	2026-11-17T13:56:04Z
+cover:decidiq:a5f973bbmfcd5:d528dcf0	already done: lib/Dashboard/*.php at 100% lines (65/65, 13/13 methods) on development 161ca15e; no PR	session-20261117T134525-c871bd14	2026-11-17T13:56:40Z
+fix:integriq:3712:81bc3606	snapshots re-recorded + sbom, vitest green, new head 3f2d9585; REVERIFY (merge lock held elsewhere)	session-20261117T134024-07d6c268	2026-11-17T13:56:41Z
+cover:decidiq:a5f973bbmfcd5:c76ae287	opened decidiq#2275: 8 tests for lib/Service/Forms (suite 5020->5028 OK)	session-20261117T135342-03791034	2026-11-17T13:56:56Z
+fix:integriq:3705:06350cfb	sbom regenerated, pushed cd33fb75; merge lock held elsewhere, REVERIFY queued	session-20261117T133629-e10185c0	2026-11-17T13:57:05Z
+measure:integriq:20261117h12	php 95.17% js 94.36%	session-20261117T134304-10008ffd	2026-11-17T13:57:26Z
