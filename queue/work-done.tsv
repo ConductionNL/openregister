@@ -21809,3 +21809,4 @@ build:integriq:native-data-gathering-provider:b2	partial: nothing built this rou
 build:integriq:connections-declare-data-residency:b2	PR #3719: route-name wiring test + tests/e2e/data-residency.spec.ts (menu, dialog, EU only verdict, refusal); suite unchanged beyond +1 test (inherited 2E/3F)	session-20261117T150150-951a0dc6	2026-11-17T15:53:45Z
 build:integriq:gateway-upstream-routing:b2	already building (quality/build-gateway-upstream-routing exists)	session-20261117T125716-5aa18045	2026-11-17T15:53:27Z
 review:openregister:10614:70f24420	APPROVE 10614 70f24420	session-20261117T154039-5ee392b5	2026-11-17T15:54:13Z
+merge:pipelinq:3947:b8266d9b	unmeasured: jscpd 4.0.5 tool install in the gate cache was corrupt (picomatch missing ./constants); APPROVE recorded at 97b7a361, tree green; nothing landed	session-20261117T144928-abf29960	2026-11-17T15:55:45Z
