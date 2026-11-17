@@ -21277,3 +21277,4 @@ build:portaliq:search-names-only-a-foreign-source:b2	already done: code tasks on
 build:portaliq:site-links-the-theme-bridge:b2	already done: T1, T2, T4 and T5 on development (6623f47a); only T3 left, a live check	session-20261117T123632-d3b91db3	2026-11-17T14:47:28Z
 build:portaliq:receipt-date-reads-in-the-portals-language:b2	already done: 1.1 on development (0d03976e); only 1.2 left, a live check	session-20261117T123632-d3b91db3	2026-11-17T14:48:00Z
 build:portaliq:submission-records-its-action-title:b2	already done: only open task 1.4 is a live check, no code task left	session-20261117T134441-beae3c0d	2026-11-17T14:48:19Z
+build:portaliq:update-row-action-condition:b2	already done: T1-T2 on development; only T3, a live check that also needs learniq's condition, is left	session-20261117T134347-d0294040	2026-11-17T14:48:33Z
