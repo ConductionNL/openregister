@@ -19579,3 +19579,4 @@ gap:shillinq:tabs-onto-boards:1	deferred: shillinq has 55 open PRs; the open gap
 fix:shillinq:2986:c200c996	conflict resolved, pushed 34de794; REVERIFY (merge lock busy)	session-20261117T061824-01d4fad5	2026-11-17T06:35:20Z
 review:decidiq:2162:a1170813	GREEN: unit 4839->4864 no new failures, vitest 6/6, phpstan clean	session-20261117T062917-0fb3a5d4	2026-11-17T06:35:38Z
 review:shillinq:2071:c9fb8008	BLOCK: drops BookCapturesCommand registration from info.xml; suite green	session-20261117T063118-c67285ab	2026-11-17T06:35:46Z
+fix:shillinq:2998:5dd30f17	fixed CONFLICT, pushed d4457281; merge lock held elsewhere, REVERIFY queued	session-20261117T055905-03eea4d3	2026-11-17T06:35:54Z
