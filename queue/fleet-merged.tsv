@@ -5288,3 +5288,4 @@ versioniq	686	d08215d31184429e6889ffdc012ebfe2666065dd	MERGED	merge3	GATE OK sbo
 opencatalogi	2651	cc6fe4e150a2104a3e07587b125aa11b8df8754b	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.51
 larpinq	1043	aaa4e47172f5197d969e7c92c792daf70fe80b5b	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.25
 decidiq	2205	215fbd9a17ce32a87f4da366b81cf6f490fb3c3e	MERGED	worker-57	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.78 holds at 3.80
+filinq	2078	604e2328cb60d8ea62de21bec909c1c0d27cd6b7	MERGED	worker-49	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.05
