@@ -19473,3 +19473,4 @@ review:hermiq:1740:c07c4ebe	BLOCK: evidence download route needs @NoCSRFRequired
 review:decidiq:2199:207cf34b	CONFLICT: nl l10n conflicts with development; head alone 4833 tests OK, code consistent with change	session-20261117T055834-d932e117	2026-11-17T06:04:50Z
 merge:filinq:2089:527423e3	cloud tree of 4 filinq PRs: none; conflict 4, lint 0, red 0, moved 0, done 0	session-20261117T055908-62351962	2026-11-17T06:04:57Z
 review:filinq:2112:dc4b7d6c	GREEN on PR head (conflicts with development in registers/openapi): unit 7019 OK, vitest 788 OK	session-20261117T055928-ffb37dd3	2026-11-17T06:05:30Z
+review:decidiq:2173:6e5001e5	CONFLICT: l10n, manifest.json, menu-layout vs development	session-20261117T055908-62351962	2026-11-17T06:05:38Z
