@@ -18582,3 +18582,4 @@ verify:stackiq:1946:27edf2f7	CONFLICT #1946 (info.xml, l10n, GroupHandler, Relat
 verify:versioniq:706:c2e9f92c	CONFLICT #706 (7 files vs development)	session-20261116T233800-0f135937	2026-11-17T00:17:38Z
 verify:versioniq:719:76429fba	CONFLICT #719 (9 files vs development)	session-20261116T233011-100ff0c6	2026-11-17T00:17:50Z
 merge:hermiq:1781:9cce08b5	cloud tree of 1 hermiq PRs: none; conflict 1, lint 0, red 0, moved 0, done 0	session-20261116T232834-a3ef1c86	2026-11-17T00:18:15Z
+verify:shillinq:3062:80044585	CONFLICT #3062 (register-versions.lock.json)	session-20261116T233857-32c64615	2026-11-17T00:18:26Z
