@@ -4955,5 +4955,7 @@ hermiq	1496	2946df2b735c87ec9d5706bb44d0de6e5cec4db3	MERGED	worker-20	GATE OK sb
 hermiq	1762	d2151c567bef9e9137bc2c427d7194c9462d6b82	SKIP	worker-20	no APPROVE review at this head
 shillinq	1965	1ff93738ecebc58a2d168da4c05d9fc841bab576	MERGED	worker-43	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.06
 shillinq	2100	03360cce41f525820c57f2e5b708d984efbd0cc7	MERGED	worker-43	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.06
+stackiq	1928	fccc382c79fd95450b33790f34e74af2131efa83	MERGED	worker-28	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.16
 integriq	3679	2a910fa696365757f5e6a63f04de9620865484e8	MERGED	worker-05	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.63
 buildiq	1619	3d592e85252e30873d1574ab993cc9841a35a21a	MERGED	worker-17	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.91 holds at 3.99
+stackiq	1944	a796a511b719eec60192ecd7b44a0b3427066e0d	SKIP	worker-28	no APPROVE review at this head
