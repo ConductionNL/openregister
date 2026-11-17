@@ -19238,6 +19238,7 @@ planninq	1218	df1e59ad2a22c23d46fe16a4c228b5b2a66e72e2	GREEN	worker-36	phpunit 1
 learniq	2524	defae59897776df65fca752cdd26e7ebdc87d32d	GREEN	worker-49	unit 7166 tests on tree, baseline 7152 with 1 inherited failure (HigherEducationExampleSet), no new failures; php -l clean; implements enrolment-sync-classes-from-student-administration per its specs
 filinq	2173	6bce70eb0c412e2bc6eaa1d778075d1f8f776f04	GREEN	worker-38	publiccode.yml only (parses, referenced images exist); no code changed, unit baseline 7329 OK unchanged, 0 new failures
 filinq	2124	089581db204973bbe9a2c97d92587144ea4cc9e0	CONFLICT	worker-30	conflicts with development in lib/Settings/filinq_register.json
+opencatalogi	2805	b5832c88ee2a159946d2f6880ba534de439fb504	GREEN	worker-45	phpunit 6393 tests vs baseline 6373, 103 failures all inherited, no new; vitest 1181 tests, 8 failures in mainEntry.spec.js inherited from development; php -l clean; build of woo-value-lists-on-the-concept-register judged against its specs
 integriq	3564	7f70763f72d12f479172f828f1d1ae6bb824c3b0	GREEN	worker-52	unit 9976 on tree vs baseline 9910 (2E/3F inherited), no new failures; vitest 183 files/2401 pass; lint clean
 planninq	1252	d65f04922fee972a0c53a84c02b54d6a5eed02ff	GREEN	worker-36	phpunit 1253 ok (baseline same), vitest 3589 passed on tree; e2e spec + tasks.md note for task-description-images; no new failures
 learniq	2519	26cb0ee872e5d3bba79683e7c5d8bf1c83e0942b	GREEN	worker-49	unit 7164 tests on tree over development 79a307ec3, baseline 7152 with 1 inherited failure (HigherEducationExampleSet), no new failures; php -l and phpstan clean; implements report-card-pdf-to-guardians
@@ -19287,6 +19288,11 @@ launchpad	1300	0d717f3832eb0cc5d462e04506034b536bd83e15	REVERIFY	worker-05:merge
 larpinq	1056	3d58325166c82819e67e3c976f08663be1476282	GREEN	worker-50	phpunit 1272 tests OK (baseline 1243 OK), vitest 739 passed, 0 new failures; build of communication-mail-participants, game-master check first on every route
 launchpad	1305	93c891348ec0af3d6a8a9a1ddd7ac3d96196f0e5	GREEN	worker-29	phpunit 4621 tests baseline OK (13 skipped), tree OK, no new failures; e2e specs + spec exclusions only, imports and selectors resolve; npm ci unavailable so no eslint
 portaliq	2586	1fd306ff31f60936a9820c610606bed3f63ec380	GREEN	worker-36	phpunit tree 6352 tests, 16 errors = baseline 6324/16 inherited (ChangeProposals*, RegisterProposalLeaves*, ContractRegistrar), no new failures; check:woo-bundle-routes and check:example-site pass; example site + checks per change
+filinq	2112	4a6629c67c39cb506f26e970c7d4e2f203562219	CONFLICT	worker-22:merge	conflicts with development; files: lib/Settings/filinq_register.json tests/vitest/manifestFragments.spec.js 
+filinq	2113	374ff86db69b9fcb8d0e55beeae136482b38672f	CONFLICT	worker-22:merge	conflicts with development; files: lib/Settings/filinq_register.json 
+filinq	2114	e0bb0357f219978209e4261a9d459a241c88a393	CONFLICT	worker-22:merge	conflicts with development; files: lib/Settings/filinq_register.json 
+filinq	2116	9d997186126b5adbd734b7ddccc1af725b0dac7f	CONFLICT	worker-22:merge	conflicts with development; files: lib/Settings/filinq_register.json 
+filinq	2186	9bbf0ae16146dab80c0b1bc57ab	REVERIFY	worker-22:merge	verdict sha is not the head: head is 9bbf0ae16146dab80c0b1bc57ab5d57f6fd7bf69
 integriq	3593	fea237c705413d5c3381dd5224fbfbefaec250af	RED	worker-52	PHP unit 9983 on tree, no new failures vs baseline 9910 (2E/3F inherited); vitest RED: tests/vitest/filePickupConfigFields.spec.js fails to load, its @nextcloud/vue mock has no NcCheckboxRadioSwitch export, which SyncConfigWidget.vue imports on development (also red on the PR head alone)
 decidiq	2282	f00027e0e741ca2b0f99ebb6864d1e9c6aef1fdd	GREEN	worker-19	tree 2282+2286: unit 5047 pass (baseline 5020), 0 new; vitest 1 inherited fail
 versioniq	728	82369cc548014101b0a89827f4be3e89a0b59fa8	CONFLICT	worker-11	conflicts with development in appinfo/info.xml commands list (ExportSbom vs AutoUpdate, keep both); with it resolved: unit 2590 tests, baseline 2 inherited golden failures, no new; vitest 22 passed
@@ -19294,6 +19300,7 @@ portaliq	2587	c972ccc36c2ad633d56605e064450690a8e395ff	GREEN	worker-36	phpunit t
 pipelinq	3934	6ba01209ecd5625e0ddf012ef749484450241fb1	CONFLICT	worker-23	conflicts with development in l10n/en.js en.json nl.js nl.json
 shillinq	3177	605a77debdf7ceac3634af4e4ce6a4f307c7e04e	GREEN	worker-24	unit 12813 on tree (baseline 12796 OK, 3 skipped), 0 new failures; no JS/Vue code (manifest only)
 pipelinq	3945	ceffbf1ffd95fdbc429b3b7e77c1cbf97a8849c2	CONFLICT	worker-23	conflicts with development in l10n/en.js en.json nl.js nl.json
+opencatalogi	2805	b5832c88ee2a159946d2f6880ba534de439fb504	GREEN	worker-45	phpunit 6393 tests vs baseline 6373, 103 failures all inherited, no new; vitest 1181 tests, 8 failures in mainEntry.spec.js inherited from development; php -l clean; build of woo-value-lists-on-the-concept-register judged against its specs
 pipelinq	3946	633106e5ce5d34520df6e3801898478fcca78d26	CONFLICT	worker-23	conflicts with development in l10n/en.js en.json nl.js nl.json
 opencatalogi	2650	35c5e9bce49ddf60b196b9ca52987e901d45418f	GREEN	worker-41	phpunit 6409 tests on tree, baseline 78 fail/err on development, 0 new; vitest 1181, 8 inherited (mainEntry.spec), 0 new; build of publication-relations-place-and-source-ids matches its specs
 pipelinq	3951	3f91729e747b42aa473b8f2e393252eb895f2728	CONFLICT	worker-23	conflicts with development in l10n/en.js en.json nl.js nl.json
