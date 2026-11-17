@@ -327,6 +327,7 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'settings#getSearchBackend', 'url' => '/api/settings/search-backend', 'verb' => 'GET'],
         ['name' => 'settings#updateSearchBackend', 'url' => '/api/settings/search-backend', 'verb' => 'PATCH'],
         ['name' => 'settings#getSearchIndexStatus', 'url' => '/api/settings/search-index', 'verb' => 'GET'],
+        ['name' => 'settings#queueSearchIndexRun', 'url' => '/api/settings/search-index/run', 'verb' => 'POST'],
         // The last report of the operator's seed directory (administrator only).
         ['name' => 'Settings\SeedReport#show', 'url' => '/api/settings/seed', 'verb' => 'GET'],
         ['name' => 'Settings\TranslationSettings#show', 'url' => '/api/settings/translation', 'verb' => 'GET'],
