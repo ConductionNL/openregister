@@ -20843,3 +20843,4 @@ fix:learniq:2497:35dd044e	conflict resolved, pushed 48225cf9; merge lock held el
 cover:stackiq:9ac19b3am209e:4d89782c	PR #2037: EntryReferences 5 tests, lib/Service/EntryType 52/55 -> 55/55	session-20261117T132538-ac3b9ef5	2026-11-17T13:51:26Z
 fix:integriq:3710:8618c31d	sbom regenerated, new head 49c6e016; REVERIFY (merge lock held elsewhere)	session-20261117T134024-07d6c268	2026-11-17T13:51:23Z
 verify:keepiq:1894:db62a428	GREEN 1894,1895,1896 (5619 tests, no new failures)	session-20261117T133629-e10185c0	2026-11-17T13:51:44Z
+fix:hermiq:1719:d2352914	conflict resolved, pushed fdc4de5b; merge lock held elsewhere, REVERIFY queued	session-20261117T132743-10cec9d3	2026-11-17T13:51:55Z
