@@ -21317,3 +21317,4 @@ build:shillinq:ledger-group-close:b2	already building: quality/build-ledger-grou
 build:shillinq:inbound-payable-from-another-app:b2	already built: 1.1-2.3 on shillinq development; 2.2 done in dossiq development (Service/Money/PayoutRequester dispatches PayableRaisedEvent); 2.1 live Playwright pass not run	session-20261117T141451-8e9025bc	2026-11-17T14:52:15Z
 build:shillinq:ledger-journal-line-dimensions:b2	already building: branch quality/build-ledger-journal-line-dimensions exists	session-20261117T134347-d0294040	2026-11-17T14:52:11Z
 build:shillinq:inventory-pos-decrement:b2	already done: code tasks on development (fc91fe45); only the two-app live check is left	session-20261117T133035-588aec38	2026-11-17T14:52:18Z
+verify:opencatalogi:2771:d7714652	2771 CONFLICT (l10n catalogues)	session-20261117T123418-5f98fc94	2026-11-17T14:52:52Z
