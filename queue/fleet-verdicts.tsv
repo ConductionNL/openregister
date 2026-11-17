@@ -19034,3 +19034,4 @@ versioniq	796	a6d4dd3821c0f4e58449492b9a36842209677718	GREEN	worker-51	release v
 versioniq	798	91fdceff9606e38c08294f9f188caa4b1c92289f	GREEN	worker-51	a11y fix: version Select button stays in tab order (opacity instead of visibility), aria-label + en/nl string; vitest 3237 passed; no PHP touched
 learniq	2524	ba4cca6e055f21daccf499e56ac25f265d269dce	RED	worker-20:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
 shillinq	3164	7ae11281542796cf1f363da0d6e8b887f42798ab	GREEN	worker-06	Implements case-payment-requests REQ-SOPR-002 admin mapping (admin-only endpoints). phpunit tree 12805 OK, baseline 12796 OK, new failures 0; vitest 3097, 1 failure inherited (dunningNextRun). Concern: admin field labels are not wrapped in t()
+versioniq	797	c57c48555761cf2212f669c177b61cc63d932ea9	GREEN	worker-22	e2e spec + forge fixture + tasks.md note only; no PHP or unit JS touched, unit suite unaffected
