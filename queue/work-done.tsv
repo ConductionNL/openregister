@@ -20581,3 +20581,4 @@ fix:buildiq:1654:20cc2aa0	conflict resolved (new head a9ea9841); tree green and 
 fix:hermiq:1719:0b2ffe7a	failed: permission (fix pushed as d2352914, floor PASS, tree green; land step refused; REVERIFY queued)	session-20261117T115540-1ba6ee8c	2026-11-17T12:25:24Z
 merge:pipelinq:3932:9464f1f0	cloud tree of 1 pipelinq PRs: merged=0 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T121043-c729b742	2026-11-17T12:28:00Z
 fix:portaliq:2449:9deb3d4f	conflict resolved, pushed ae33c0d7a; REVERIFY (merge lock held elsewhere)	session-20261117T120834-820bb574	2026-11-17T12:28:15Z
+merge:dossiq:6635:66f3b871	cloud tree of 4 dossiq PRs: merged=3 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T121050-a5ee25f2	2026-11-17T12:28:37Z

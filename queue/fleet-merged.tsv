@@ -5280,3 +5280,4 @@ shillinq	2993	4007e0e10d11421496990f8e9c4a906ff16900c9	RED	worker-22	GATE RED ab
 dossiq	6639	ced2397f8699fdc0892907696ebf194d1a68bf02	MERGED	worker-03	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
 pipelinq	3932	36367f0eff47b050f04a10fc08f2398436f68852	RED	worker-26	GATE RED checker floor: fivelayer: pass -> warn; fivelayer stars: 5 -> 3; score: 100 -> 97
 dossiq	6641	b6ff98475dbbe33f6a24897d8a726f57e1db537d	RED	worker-03	GATE RED checker floor: fivelayer: pass -> warn; fivelayer stars: 5 -> 3; score: 100 -> 97
+decidiq	2173	050c1776c5d62774a872639305fb99d7dd436431	RED	merge3	GATE RED checker floor: adrvalidator: pass -> warn; adrvalidator stars: 5 -> 3; score: 100 -> 97
