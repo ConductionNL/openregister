@@ -1012,3 +1012,5 @@ stackiq	1933	4ab6e187b899ba72d006eeed7df4ed78821ab1fd	APPROVE	worker-02	Thorough
 stackiq	1944	a82cd19ef1ca26b8084f3dec4bb8275694b47b54	APPROVE	worker-02	Thorough; no blockers; mechanical t()/n() wrapping per the change, gates and l10n check pass; inherited: facets.spec vitest failure and stale locale .js catalogues on development
 versioniq	701	8845d766a2122bdbccd77d5dda5a0029834e9917	APPROVE	worker-29	Thorough; no blockers; none (links limited to http/https, rel=noopener)
 versioniq	754	8d9ac96cc209dd84dcc24262a8b60c820ba7b70f	APPROVE	worker-29	Strict; no blockers; no concerns: new lifecycle routes admin-only by middleware and isAdmin(), replace needs password confirmation and a listed successor
+integriq	3632	e95b6afde798230eae72196128f9d88b93946c09	APPROVE	worker-03	Standard; no blockers; seeded mock-mode smtp-mail source with a reserved .invalid host and its catalog category, tests pin the shape
+integriq	3670	90ebc507034147bc5bca04a174ced7397bfcb9c5	APPROVE	worker-03	Quick; no blockers; npm patch/minor bumps only, composer.lock unchanged, tree suite adds no failures
