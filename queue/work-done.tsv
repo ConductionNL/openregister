@@ -21700,5 +21700,6 @@ build:hermiq:structured-tool-grants:b2	already done: ToolGrantCodec/ToolGrantSet
 build:humaniq:payroll-wage-tax-remittance-shillinq:b2	already building: branch exists; only live 3.4 left	session-20261117T132743-10cec9d3	2026-11-17T15:36:15Z
 build:hermiq:chat-session-search-and-bulk-delete:b2	PR #1848: Playwright session-search-and-bulk.spec.ts and Newman search/bulk folder written; code already on development; live runs left	session-20261117T152630-80f67c9b	2026-11-17T15:36:45Z
 build:humaniq:rules-onto-or-decision-tables:b2	already done: only section 6 staged retirement left, deliberately unchecked (6.1 needs a live audit run first)	session-20261117T132743-10cec9d3	2026-11-17T15:36:36Z
+build:hermiq:chat-fork-and-share-link:b2	PR #1849: Playwright session-fork-and-share spec + Newman fork outcomes; code already on development; live runs left	session-20261117T151214-35ff5eaa	2026-11-17T15:37:09Z
 build:humaniq:setup-wizard-six-steps:b2	already building: quality/build-setup-wizard-six-steps exists	session-20261117T132743-10cec9d3	2026-11-17T15:37:01Z
 build:humaniq:payroll-reservation-payouts:b2	already building: quality/build-payroll-reservation-payouts exists	session-20261117T132743-10cec9d3	2026-11-17T15:37:45Z
