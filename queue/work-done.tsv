@@ -19760,3 +19760,4 @@ fix:shillinq:2070:0210f86b	conflict resolved, pushed a52f769a; REVERIFY queued (
 review:buildiq:1608:b1698085	GREEN	session-20261117T055853-7ddd3cb3	2026-11-17T07:14:23Z
 review:decidiq:2173:0ef71c12	BLOCK: group provisioning takes unrestricted group names from editable body data; tests green	session-20261117T063112-55331435	2026-11-17T07:14:39Z
 review:shillinq:3080:6a2e8035	CONFLICT with development (info.xml, registrar count tests, versions lock); head alone unit 12610 OK, diff clean	session-20261117T063708-4c9ceddc	2026-11-17T07:14:53Z
+cover:launchpad:fb10c50fm88bd:7505aeb4	PR #1259: DebounceHelper 41/41 lines, +6 tests, suite 4563->4569 green	session-20261117T062935-1aa25581	2026-11-17T07:15:11Z
