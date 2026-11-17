@@ -21558,3 +21558,4 @@ build:decidiq:decision-types-as-configuration:b2	already done: only 4.1 left, bl
 build:decidiq:decisions-leaf-speaks-the-hosts-words:b2	already done: 1.1-1.2 on development (#1819); only 1.3 live left	session-20261117T124637-3e909745	2026-11-17T15:19:57Z
 build:decidiq:agenda-item-phase-is-declared:b2	already building: branch quality/build-agenda-item-phase-is-declared exists	session-20261117T134347-d0294040	2026-11-17T15:20:00Z
 build:decidiq:agenda-paper-watermark:b2	already building (quality/build-agenda-paper-watermark and -c2 exist)	session-20261117T134556-243db2c5	2026-11-17T15:20:54Z
+build:decidiq:document-approval-chain-leaf:b2	already done: only the screenshots task is open, captured by a journeydoc run on a live instance	session-20261117T124010-7774729d	2026-11-17T15:20:09Z
