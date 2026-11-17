@@ -1,12 +1,12 @@
 {
  "app": "keepiq",
- "commit": "9b2f12dbc750fb862a70d346232e0dc7d79c4b9c",
- "measured_at": "2026-11-16T21:37:39Z",
+ "commit": "3cfe33f055ac815ca1e95614812b458919e4b1e9",
+ "measured_at": "2026-11-17T09:14:59Z",
  "php": {
   "tool": "pcov",
-  "pct": 94.69,
-  "statements": 25755,
-  "covered": 24387,
+  "pct": 96.01,
+  "statements": 26281,
+  "covered": 25233,
   "dirs": {
    "lib/AppInfo/": [
     27,
@@ -29,12 +29,12 @@
     181
    ],
    "lib/Controller/": [
-    4210,
-    4186
+    4281,
+    4266
    ],
    "lib/Db/": [
-    3273,
-    3273
+    3382,
+    3382
    ],
    "lib/Event/": [
     43,
@@ -45,7 +45,7 @@
     19
    ],
    "lib/Exception/": [
-    30,
+    31,
     30
    ],
    "lib/Federation/": [
@@ -77,8 +77,8 @@
     54
    ],
    "lib/Notification/": [
-    397,
-    395
+    419,
+    417
    ],
    "lib/Repair/": [
     1051,
@@ -93,8 +93,8 @@
     5
    ],
    "lib/Service/": [
-    13573,
-    12255
+    13600,
+    12596
    ],
    "lib/Service/Connection/": [
     150,
@@ -104,8 +104,12 @@
     34,
     34
    ],
+   "lib/Service/PrivilegedAccess/": [
+    294,
+    294
+   ],
    "lib/Service/ShareSave/": [
-    399,
+    401,
     399
    ],
    "lib/Service/ShareSync/": [
@@ -131,17 +135,13 @@
   }
  },
  "js": {
-  "pct": 96.06,
-  "statements": 14127,
-  "covered": 13571,
+  "pct": 96.9,
+  "statements": 14289,
+  "covered": 13846,
   "dirs": {
    "src/": [
     171,
-    136
-   ],
-   "src/assets/": [
-    0,
-    0
+    166
    ],
    "src/bootstrap/": [
     33,
@@ -156,8 +156,8 @@
     107
    ],
    "src/components/": [
-    1748,
-    1715
+    1822,
+    1787
    ],
    "src/components/KeepiqAppNav/": [
     146,
@@ -166,10 +166,6 @@
    "src/components/application/": [
     92,
     80
-   ],
-   "src/components/dashboard/": [
-    17,
-    0
    ],
    "src/components/import/": [
     17,
@@ -200,19 +196,19 @@
     231
    ],
    "src/dialogs/": [
-    1777,
-    1721
+    1874,
+    1806
    ],
    "src/export/": [
-    204,
-    201
+    211,
+    208
    ],
    "src/generator/": [
     258,
     256
    ],
    "src/health/": [
-    270,
+    259,
     257
    ],
    "src/import/": [
@@ -222,10 +218,6 @@
    "src/import/parsers/": [
     275,
     266
-   ],
-   "src/manifest.d/": [
-    0,
-    0
    ],
    "src/migration/": [
     142,
@@ -277,15 +269,15 @@
    ],
    "src/store/modules/": [
     3301,
-    3088
+    3148
    ],
    "src/totp/": [
     187,
     187
    ],
    "src/utils/": [
-    359,
-    341
+    380,
+    362
    ],
    "src/views/": [
     955,
@@ -296,7 +288,7 @@
     1
    ],
    "src/views/settings/": [
-    24,
+    15,
     15
    ]
   }
