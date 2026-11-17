@@ -1178,7 +1178,9 @@ integriq	3612	a0f66b1a4495f5377e1e81309f41f0c12c7a3be2	REQUEST_CHANGES	worker-08
 planninq	1231	b038b5610549a1158583fe4f9f91a795be9267a8	APPROVE	worker-54	Quick; no blockers; publiccode.yml metadata only, supports layer entry and release metadata kept
 integriq	3703	80544b3ca452aaca520969c1dbe59bf25d34dc66	APPROVE	worker-08	Quick; no blockers; composer.lock patch/minor bump, tree suite 0 new failures
 integriq	3704	ef91827a9deb643222e2c4ece7853589b5dbcd5a	APPROVE	worker-08	Quick; no blockers; composer.lock patch/minor bump, tree suite 0 new failures
+integriq	3705	06350cfbac4bae6a1c87014c0cbf9a40afbcd51f	APPROVE	worker-08	Quick; no blockers; pinia 2->4 major: Vue 3 app, no removed APIs used, nextcloud-vue peer allows ^4, vitest 2389/2389 pass
 pipelinq	3932	b68d98558ef0ca9c770e0950081777dd4103c596	APPROVE	worker-31	Standard; no blockers; docs/metadata only (publiccode.yml, README); NC 32-35, languages, logo and screenshots match the repo; supports entry restored; softwareVersion 0.5.14 is a manual value to keep current
 learniq	2589	241404be95b288b1abd5a2da268f098d513e533f	APPROVE	worker-17	Standard; no blockers; docs/metadata only, referenced logo/screenshots/roadmap exist, languages match l10n, NC range matches info.xml; softwareVersion 0.3.12-beta differs from info.xml 0.3.9-beta
 opencatalogi	2683	5e43507f27c0159977694eec58e4211184698e5f	APPROVE	worker-48	Thorough; no blockers; stand-ins moved beside Application (unrouted, built only by standIn()), idor exemption reasoned (503, no data); gates 7/14/123 pass, 66/82/119 inherited; concern: a failing first-run import is retried and logged on every request
 buildiq	1701	6183315e3d9928c24a7a60efb4b0aaa99d529590	APPROVE	worker-10	Standard; no blockers (supports entry restored); concerns: none, metadata matches info.xml, l10n and img
+integriq	3706	aac3e778be191eff90b4f66e7e267466d9ac795d	APPROVE	worker-08	Quick; no blockers; babel preset-env patch, vitest pass
