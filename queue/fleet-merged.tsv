@@ -5103,3 +5103,4 @@ buildiq	1597	2a5d5c23c4e32ed0e06dec824275f109665091aa	MERGED	merge3	GATE OK sbom
 buildiq	1602	b2a6e8931b7f5b55133804139c2d271e4c3791e2	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.91 holds at 3.99
 filinq	2059	7a6dae82691aa82d3c3d7942c255d09bb026cb79	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.06
 filinq	2098	cf30de81619fff53d614f9f1456eb39a7e8a4c05	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.06
+decidiq	2205	c6740766600e6ddf741cc7a79eaaf17611e15981	SKIP	worker-24	no APPROVE review at this head
