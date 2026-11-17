@@ -19123,3 +19123,4 @@ review:learniq:2538:fe4a0798	RED: on development merge 2 new failures (nl labels
 review:shillinq:3005:fb23e9fd	GREEN: PHP 12526 OK vs 12500, vitest only inherited dunningNextRun failure, spec-conform	session-20261117T020244-328833fb	2026-11-17T02:22:18Z
 review:launchpad:1212:06d37ac4	GREEN: launchpad #1212, unit 4564 OK, vitest 332 pass	session-20261117T021649-387ee607	2026-11-17T02:22:32Z
 review:launchpad:1210:6f168e0b	GREEN: 4604 unit tests OK on PR+development, vitest 201 pass, static checks clean	session-20261117T020416-cc0fb378	2026-11-17T02:22:43Z
+review:shillinq:2998:722918d0	BLOCK: manifest shell not regenerated (check:manifest-shell fails); unit suite green	session-20261117T021616-30ab3d21	2026-11-17T02:22:50Z
