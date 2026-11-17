@@ -20611,3 +20611,4 @@ verify:keepiq:1892:06b6dba3	GREEN #1892: release version bump only	session-20261
 verify:filinq:2093:33690cef	CONFLICT: lib/Settings/filinq_register.json (development moved after the fix)	session-20261117T114019-426872f0	2026-11-17T12:45:24Z
 verify:stackiq:1028:665e6e65	GREEN #1028 (empty tree diff, history-only beta sync)	session-20261117T124128-c2e9515e	2026-11-17T12:45:34Z
 verify:decidiq:2268:535af69a	GREEN #2268 (4958 tests, 0 new failures)	session-20261117T123430-0d454909	2026-11-17T12:45:51Z
+verify:keepiq:830:2d73be92	GREEN #830: main sync merge, empty tree diff vs development	session-20261117T123146-498cbe48	2026-11-17T12:46:25Z
