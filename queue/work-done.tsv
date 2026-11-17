@@ -20531,3 +20531,4 @@ fix:integriq:3564:d45b5057	fixed: demo objects added for both schemas; pushed d0
 review:opencatalogi:2654:7717f5da	BLOCK floors: component_independence 93.5->92.8; behaviour ok, 0 new test failures	session-20261117T120834-820bb574	2026-11-17T12:15:40Z
 fix:filinq:2069:08c42f1e	fixed BLOCK: bumped intakeDefaultRule 1.1.0 + app version, unit 7280 OK; pushed b67ef532; merge lock busy, REVERIFY queued	session-20261117T121311-1734385f	2026-11-17T12:15:57Z
 review:shillinq:3011:87ae5ea8	GREEN; conflicts with development in l10n and register lock fixture	session-20261117T120806-7b4cac02	2026-11-17T12:16:07Z
+review:openregister:10610:f0556597	APPROVE: lockfile-only, npm 11 ci clean	session-20261117T112444-7a410249	2026-11-17T12:16:15Z
