@@ -20079,3 +20079,4 @@ verify:humaniq:1173:cd3ec72e	1183 GREEN; 1173 CONFLICT (TimeEntryStampListener.p
 merge:buildiq:1651:7ac065b0	cloud tree of 2 buildiq PRs: none; conflict 2 (l10n)	session-20261117T083929-9c5fceb9	2026-11-17T09:22:53Z
 review:filinq:2078:202f24a1	GREEN: unit 7163 no new failures, vitest 849 pass	session-20261117T091244-7c1a3c79	2026-11-17T09:23:05Z
 review:buildiq:1608:3cd5c177	GREEN: unit 3612 OK, vitest 856 passed; 2 new methods lack @spec	session-20261117T084727-10682198	2026-11-17T09:23:34Z
+gap:humaniq:survey-responses-anonymous:1	PR humaniq#1184: answers held unowned, released hourly in shuffled batches (release-day date), HR reads only readable rows; unit 4486 OK	session-20261117T084229-c4fc3f9c	2026-11-17T09:23:41Z
