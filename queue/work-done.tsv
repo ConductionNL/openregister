@@ -22819,3 +22819,4 @@ fix:versioniq:698:52f9a1d5	failed: permission (recording a review of a PR with m
 merge:pipelinq:3954:641ba9a4	cloud tree of 1 pipelinq PRs: none; conflict 0, lint 0, red 0, moved 1, done 0	session-20261117T213056-2ba36933	2026-11-17T22:13:57Z
 fix:pipelinq:3943:ca8a7004	conflict resolved, pushed 2c67bc7f; merge lock held by another merger, REVERIFY queued	session-20261117T221004-2cfd9e4c	2026-11-17T22:14:05Z
 merge:thematiq:1729:f660a0ab	unmeasured: static.developer.overheid.nl (checker_floor adrvalidator NO RESULT); #1729 reviewed APPROVE, not landed	session-20261117T212735-2b6c91a0	2026-11-17T22:15:47Z
+merge:learniq:2601:e464d44e	unmeasured: static.developer.overheid.nl (proxy 403); 7 PRs reviewed APPROVE, tree adds no failures, merged=0 skip=7	session-20261117T211425-939d7fb0	2026-11-17T22:16:58Z
