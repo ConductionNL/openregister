@@ -5147,3 +5147,4 @@ launchpad	1239	a96d699ce183217eb2fa7174db370e251cb33d7d	MERGED	worker-54	GATE OK
 integriq	3593	7f0ace687fea88321444394a7f222eab9c25255b	SKIP	worker-03	no APPROVE review at this head
 integriq	3612	a2e78b151c7a681e23c58a524301ab722c366252	SKIP	worker-03	no APPROVE review at this head
 integriq	3613	b7a00be902ea53005c8eb64da56e3215eade3682	SKIP	worker-03	no APPROVE review at this head
+launchpad	1258	8f138e3fa54509349bf5a40c6f8a2d8bdb937034	MERGED	worker-54	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.65 holds at 3.79
