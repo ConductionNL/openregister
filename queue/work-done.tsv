@@ -22329,3 +22329,4 @@ verify:pipelinq:3940:dc52e0b2	GREEN #3940 (0 new failures; vitest reds inherited
 verify:launchpad:1296:53e33887	BLOCK #1296 (tests green; instance-wide default-app behaviour change outside a build, needs sign-off)	session-20261117T190633-45ee22b7	2026-11-17T19:47:48Z
 verify:opencatalogi:2792:f3566f96	GREEN #2792 (6 tests added, no new failures)	session-20261117T190357-55034d4a	2026-11-17T19:48:01Z
 verify:portaliq:2587:664b8ca8	GREEN #2587 (6339 tests, 16 inherited errors, 0 new)	session-20261117T190250-54b1be06	2026-11-17T19:48:12Z
+verify:pipelinq:3956:88c728b0	GREEN #3956 (version bump), 0 new failures	session-20261117T190150-dbabe332	2026-11-17T19:48:33Z
