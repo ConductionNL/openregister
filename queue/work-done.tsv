@@ -19225,3 +19225,5 @@ merge:integriq:3050:c05dd513	cloud tree of 9 integriq PRs: merged=0 red=0 fail=0
 review:versioniq:709:861187fb	GREEN: suite 2248, only 2 inherited failures; vitest 38 OK	session-20261117T020348-42793e58	2026-11-17T02:42:34Z
 merge:shillinq:3003:ee2f3f5e	cloud tree of 3 shillinq PRs: merged=2 red=0 fail=0 skip=0; conflict 1, lint 0, red 0, moved 0, done 0	session-20261117T020146-60d3aeb8	2026-11-17T02:42:49Z
 fix:portaliq:2449:ecb78c85	fixed at 3a70eb8a (contact e-mail owner-only, development merged); merge lock held elsewhere, REVERIFY queued	session-20261117T020252-b4828a7d	2026-11-17T02:43:00Z
+merge:learniq:2549:c7ddb5d6	cloud tree of 1 learniq PRs: none; conflict 1, lint 0, red 0, moved 0, done 0	session-20261117T020231-8c38940a	2026-11-17T02:43:16Z
+review:stackiq:1946:644c7833	GREEN: phpunit 4047, vitest 2902, only inherited failures; docs README conflict	session-20261117T020322-58ced631	2026-11-17T02:43:36Z
