@@ -1409,3 +1409,4 @@ thematiq	1725	f7a10dc12ca1b7982050d7bf7fb649d8684d2882	APPROVE	worker-14	Quick; 
 thematiq	1726	ebe538c8dc4ba9e635c349fc608093ec09646cb6	APPROVE	worker-14	Quick; no blockers; dev dependency minor bump
 filinq	2189	8dae478c820dd889cdbf31b017949dc08bfc7fee	APPROVE	worker-10	Quick; no blockers; tasks.md only, ticks 7.2 with the dossiq counterpart reference
 integriq	3730	129afd210f56db4bb58b1eb095994ec2216d3345	APPROVE	worker-58	Quick (tests only: unit idempotency test + e2e specs); no blockers; e2e left unticked until run live
+versioniq	735	3c9040104be324b72d47be58967808da6c5e7027	APPROVE	worker-43	Strict (stores remote admin app passwords); no blockers; gate runner absent, checklist done by hand: admin check first on refresh/promotionPlan/promote, promote password-confirmed, expected sha refuses differing forge digest, passwords never returned; concern: saving a connection now reads its manif
