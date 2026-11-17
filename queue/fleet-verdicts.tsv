@@ -18731,3 +18731,4 @@ buildiq	1648	616837279746c70653f0f41163c0dd6efd73fa7e	GREEN	worker-13:review	Bui
 buildiq	1733	5a81786cd2a83eff34410a9bc6f04cc56d92c83a	GREEN	worker-15	unit 3676 tests baseline OK, tree OK, 0 new failures; e2e spec + tasks.md only (vitest excludes tests/e2e), matches the change's T04 e2e
 buildiq	1729	9f91a88bb139c28be30fed9312d8ab4e55de996c	GREEN	worker-21	unit 3676 tests OK (baseline 3676 OK), no new failures; e2e spec + tasks.md only, matches lifecycle-git-branches T06/T08
 buildiq	1731	73ee9a5e9c349c9df92d21ac0d456cf0dbbb708c	GREEN	worker-10	unit 3676 tests baseline 0 failures; PR adds only an e2e Playwright spec and a tasks.md note (no PHP/unit-JS change); new failures 0
+buildiq	1723	7cd3ca1a58d36f87240a6eaa104d10f70d2327a3	GREEN	worker-14	unit 3676 tests, baseline 0 failures, 0 new; PR adds only an e2e spec and openspec text/tasks for form-dutch-field-formats
