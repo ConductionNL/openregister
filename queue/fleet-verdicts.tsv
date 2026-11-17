@@ -18441,3 +18441,4 @@ integriq	3704	ef91827a9deb643222e2c4ece7853589b5dbcd5a	RED	worker-08:merge-gate	
 versioniq	700	563a324a25e1b6846a4fe0f1c0a71937dbc6ad4b	CONFLICT	worker-43:merge	conflicts with development; files: lib/Service/InstallerService.php 
 integriq	3705	06350cfbac4bae6a1c87014c0cbf9a40afbcd51f	RED	worker-08:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 integriq	3706	aac3e778be191eff90b4f66e7e267466d9ac795d	RED	worker-08:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+shillinq	2993	4007e0e10d11421496990f8e9c4a906ff16900c9	REVERIFY	worker-52	merged development in; split 7 new/changed units (behaviour unchanged) so the absolute floor holds: estimator 3.9953 (4.00) vs 3.9941 before; phpcs/phpstan/22 related unit files/AppInfo/vitest green; merge lock held elsewhere; new head 39b07fb3b386b79243c0aa0dc67020df100f0f0e, verify it
