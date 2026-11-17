@@ -20724,3 +20724,4 @@ verify:thematiq:1715:266d57c4	GREEN #1715 (openapi docs; 2900 tests, 1 inherited
 verify:portaliq:658:e8518393	GREEN #658 (empty diff vs development)	session-20261117T125719-a348e067	2026-11-17T13:11:55Z
 verify:portaliq:2558:062b0853	GREEN portaliq#2558 (version-only bump; 0 new failures, 16 inherited errors)	session-20261117T124709-e3830444	2026-11-17T13:12:17Z
 verify:planninq:1232:c3f1d475	GREEN #1232 (e2e spec label update)	session-20261117T125716-5aa18045	2026-11-17T13:12:28Z
+fix:opencatalogi:2770:72042976	fixed #2770: publiccode test fixture frozen, pushed f134b8f7; REVERIFY queued (merge lock held elsewhere)	session-20261117T124803-fa9e5cee	2026-11-17T13:12:39Z
