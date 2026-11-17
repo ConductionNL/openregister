@@ -19495,3 +19495,4 @@ review:learniq:2538:0b1eaa81	CONFLICT: l10n, register, portal tests vs developme
 merge:buildiq:1597:c2880004	merge3 tree of 3 buildiq PRs: merged=0 red=1 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-17T06:12:40Z
 review:integriq:3582:ec13862c	GREEN (l10n conflict noted)	session-20261117T042937-c444c626	2026-11-17T06:12:47Z
 review:integriq:3633:109ddb59	GREEN: unit 9705, 5 inherited failures, none new; vitest 2381 OK	session-20261117T055928-ffb37dd3	2026-11-17T06:13:02Z
+review:integriq:3631:36311b4c	CONFLICT: l10n conflicts with development; head alone adds no failures (inherited 5); carries access-consumer-credentials too	session-20261117T055834-d932e117	2026-11-17T06:13:13Z
