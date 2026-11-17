@@ -22282,3 +22282,5 @@ verify:launchpad:1300:0d717f38	GREEN #1300 (0 new failures)	session-20261117T190
 verify:opencatalogi:2798:f43db4b9	GREEN #2798 (tasks.md only)	session-20261117T190357-55034d4a	2026-11-17T19:38:21Z
 verify:integriq:3710:49c6e016	GREEN #3710 (vitest 2389 pass, build ok, deps-only)	session-20261117T191558-f6f135b1	2026-11-17T19:38:35Z
 verify:pipelinq:3943:d9e81afb	1 GREEN (#3943), 5 REVERIFY (l10n conflicts only with #3943)	session-20261117T190436-15c3d98f	2026-11-17T19:39:14Z
+verify:opencatalogi:2787:362419ba	GREEN 2787 (tests only)	session-20261117T185927-e9838dc9	2026-11-17T19:39:25Z
+verify:opencatalogi:2800:7d8c1d3f	GREEN #2800 (no new failures)	session-20261117T190540-b0615094	2026-11-17T19:39:34Z
