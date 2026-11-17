@@ -19241,3 +19241,8 @@ planninq	1252	d65f04922fee972a0c53a84c02b54d6a5eed02ff	GREEN	worker-36	phpunit 1
 opencatalogi	2804	731661e8db83a4a1956f6fe2f8482bd86b4a0de0	RED	worker-09	unit 6422 on tree vs base 6373 (78 inherited failures, openregister main beside); new failure SettingsObjectTypeConfigurationTest::testMissingSlugsAndTheRegisterAreLookedUpAndTheOrganisationIsResolved (expected 31 object types, got 32 after the added mock register type)
 opencatalogi	2771	502ce9b90ab9cfb622904e055d6d14d2b3ad2fdd	CONFLICT	worker-09	conflicts with origin/development
 opencatalogi	2803	182028e8f50085dad6352c07ec0abb07a4eb807b	REVERIFY	worker-09	conflicts only with an earlier PR of the verify tree
+versioniq	699	8f1d1ff048bb20975c695589af85c6733c1b5df4	CONFLICT	worker-11:merge	conflicts with development; files: lib/Controller/ApiController.php openapi.json src/App.vue 
+versioniq	726	2348a5fc126e383e38bfaf88de7e91f0ebfd4564	REVERIFY	worker-11:merge	conflicts only with an earlier PR of the merge tree: merges clean on development alone; files: appinfo/info.xml 
+versioniq	797	c57c48555761cf2212f669c177b61cc63d932ea9	REVERIFY	worker-11:merge	conflicts only with an earlier PR of the merge tree: merges clean on development alone; files: tests/e2e/advisories.spec.ts tests/e2e/fixtures/forge/server.mjs 
+versioniq	798	91fdceff9606e38c08294f9f188caa4b1c92289f	REVERIFY	worker-11:merge	conflicts only with an earlier PR of the merge tree: merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+versioniq	799	9d0b17e161aabdb3641874366fbf88fc9343996c	CONFLICT	worker-11:merge	conflicts with development; files: appinfo/info.xml l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Controller/ApiController.php lib/Service/Api/ReportCollaborators.php 
