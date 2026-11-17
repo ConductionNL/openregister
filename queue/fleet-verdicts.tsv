@@ -18865,3 +18865,4 @@ integriq	3723	8a4e2be1aba2ef0cfd90695cee9359a4544bd93b	GREEN	worker-35	unit 9911
 larpinq	1054	0d13d8ee69b0515a32590bd7b6943f5bfc98dbb3	CONFLICT	worker-07	conflicts with development in lib/Settings/larpinq_mock_register.json and tests/unit/Service/SettingsServiceTest.php; baseline 1243 tests OK
 integriq	3708	41ada0a60a58b5bf9827e860d97f5a9c4eee0a3b	GREEN	worker-51	dev-dep bump sass 1.108.2 + sbom; npm ci ok, vitest 2389 passed; no PHP touched
 integriq	3725	1e381ea4d391d91dd282afe9ba5f7b79beb1bf1f	GREEN	worker-23	unit 9940 tests (baseline 9910), 2 errors + 3 failures identical to baseline, no new; graphql endpoint policy per change gateway-graphql-and-streaming-protocols
+larpinq	1103	e6ac5573a73f4c753fa34e0f540224f7f2899f79	CONFLICT	worker-18	add/add conflict on tests/e2e/qr-checkin.spec.ts: development already carries a live-run version (b7573fe5); likely obsolete
