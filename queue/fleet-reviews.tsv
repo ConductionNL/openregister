@@ -1287,3 +1287,4 @@ shillinq	3160	28ae1c746191e9ad45e1c70698bed38f1ec8205e	APPROVE	worker-39	Quick; 
 decidiq	2278	d120be3ea5c86aa6aa74b4081c7a6da1b31d2921	APPROVE	worker-45	Quick; no blockers; e2e spec + tasks.md only
 decidiq	2279	9029034a754b55ffbb5afc179985738e6927cc62	APPROVE	worker-45	Quick; no blockers; e2e spec + tasks.md only
 decidiq	2280	f341db5555b2782cffa8c059027a79d397c42c35	APPROVE	worker-45	Quick; no blockers; e2e spec + tasks.md only; seeds as admin like the existing tests in that file
+decidiq	2190	c75776f4b165c3c91393004da18d1e0bd17fbcbb	APPROVE	worker-45	Thorough; no blockers; guard now also runs on authority-delegation (was only the old slug), parent read still fails closed, party check per REQ-DMR-001; concern: rows saved before without parties now refuse on update
