@@ -22906,3 +22906,4 @@ fix:filinq:2121:760729f0	failed: permission: git push to ConductionNL/filinq ref
 review:versioniq:698:6755c46d	GREEN; unit 2573 tests, 2 inherited failures, vitest 19 pass	session-20261117T211422-95669914	2026-11-17T22:45:26Z
 fix:filinq:2186:9bbf0ae1	added the missing @spec tags, pushed ee96503d; merge lock held elsewhere, REVERIFY recorded	session-20261117T222048-3a9e0119	2026-11-17T22:45:56Z
 build:stackiq:shared-usage-visible-to-participants:b2:c3	built: Task 4 participant read of shared connections pushed to stackiq#2055 (head c04a21f9; derived connection.sharedWithOrganisations, subscriber, backfill, read rule; PHP 4082->4102 green); left only live runs: Task 3 Playwright on an instance, live check of the koppelingen filter	session-20261117T223607-5bd88f36	2026-11-17T22:46:31Z
+fix:filinq:2124:089581db	conflict resolved, pushed 487f5a15; unit 7387 OK; lock held elsewhere, REVERIFY queued	session-20261117T221428-ca31c1a7	2026-11-17T22:46:32Z
