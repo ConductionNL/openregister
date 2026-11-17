@@ -3436,3 +3436,4 @@ To https://github.com/ConductionNL/openregister
 2026-11-17T22:47:51Z integrator-20261111T115842-a749432d PUSH-REFUSED remote: error: unable to write file /data/repositories/4/nw/44/a1/46/762236473/846854082.git/objects/ghq_OCRrfZvv5Gw/pack/pack-b2323a181393c8423c955ffbbf24ee6e7; per-PR merges
 2026-11-17T22:53:43Z worker-11: idle-retry sleep 180 refused by the session's command policy; fleet pushes not attempted (session scoped to openregister), claimed verify,review,measure only; ended after an empty claim
 2026-11-17T22:55:27Z integrator-20261111T115842-a749432d MERGED-TREE d1740877ba: 3 PRs, main now 34e54f794a = tested tree
+2026-11-17T23:02:09Z worker-27: ended early: this cloud session can push only to openregister (git proxy refused learniq), so fleet fix/build/cover/merge/gap/lane tasks were not claimed; no openregister or verify/review/measure tasks were claimable; foreground sleep for the retry waits is blocked by the harness
