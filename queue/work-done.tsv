@@ -19057,6 +19057,7 @@ review:hermiq:1740:9e13a128	BLOCK: department switch fails open on read errors; 
 review:filinq:2106:6f753abc	GREEN: 6996 tests 0 new failures; register description conflict	session-20261117T015854-c76e8b72	2026-11-17T02:08:48Z
 review:filinq:2113:9e76e544	CONFLICT: register info.description conflicts with development; code matches the change	session-20261117T020223-01f01255	2026-11-17T02:08:58Z
 review:filinq:2112:ac62393f	RED: jest Settings golden x2 fail (golden not re-recorded); PHP green; register version conflict	session-20261117T004133-c974afac	2026-11-17T02:09:09Z
+build4:openregister:unit-test-coverage:c8	partial: pushed 3bf14653 to PR #10527: direct tests for TextFolder (6) and EmptyValues (7), mutation-checked; Architecture OK; found EmptyValues treats a property flagged required only on itself as optional (getSchemaObject drops the flag), pinned, validator still refuses	session-20261113T214350-9762e143	2026-11-17T02:09:31Z
 review:hermiq:1758:d5151101	CONFLICT with development in lib/Settings/hermiq_register.json; verdict recorded for a fix	session-20261117T020131-42b6d5a2	2026-11-17T02:09:20Z
 review:filinq:2085:51341efd	GREEN; conflicts with development in filinq_register.json	session-20261117T020146-60d3aeb8	2026-11-17T02:09:33Z
 review:filinq:2086:285091d5	BLOCK: missing @spec on 15 JS methods, 6 schema descriptions; conflicts with development	session-20261117T020210-893a9346	2026-11-17T02:09:48Z
