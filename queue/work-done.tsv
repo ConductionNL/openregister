@@ -19290,3 +19290,4 @@ fix:filinq:2105:7e8ef21d	conflict resolved (register v8.65.0), pushed 0d907f7f; 
 fix:filinq:2095:b4ddee8f	fixed, pushed 5342f5c8; REVERIFY (merge lock held)	session-20261117T024701-e2fa255c	2026-11-17T02:58:39Z
 fix:buildiq:1651:4514f95f	fixed RED (main object API + org guard) and merged development; new head a201e3b3; merge lock held elsewhere, REVERIFY	session-20261117T025134-c7910d2d	2026-11-17T02:58:54Z
 fix:integriq:3600:0056da4f	failed: #3600 carries merges of #3596 and #3574 in its history; removing them needs a force-push (not allowed) or merge reverts that would undo those PRs when they land; it can land once #3596 and #3574 are on development, or be rebuilt on a fresh branch when new PRs are allowed	session-20261117T020252-b4828a7d	2026-11-17T02:58:59Z
+review:shillinq:2086:ca69b7ea	GREEN: unit 12572 OK on PR+development, vitest/phpstan/eslint clean; conflicts in routes.php/l10n are additive	session-20261117T025205-24fff43b	2026-11-17T02:59:29Z
