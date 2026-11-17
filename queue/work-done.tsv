@@ -20121,3 +20121,4 @@ review:integriq:2650:92ce810e	GREEN: 0 new failures (9736 vs 9713 tests, 5 inher
 fix:integriq:3596:d81a6a11	conflict resolved (seed golden hash); new head e4864f09, REVERIFY	session-20261117T092706-95ac9736	2026-11-17T09:35:17Z
 fix:filinq:2093:43815020	failed: permission (end-to-end land refused); conflict fixed and pushed, new head b98f5937, REVERIFY queued	session-20261117T091244-7c1a3c79	2026-11-17T09:35:53Z
 review:buildiq:1618:f57d6d53	GREEN: vitest 4954/4954 on merge, eslint clean, spec-conformant	session-20261117T085512-6b57566b	2026-11-17T09:36:06Z
+verify:stackiq:2028:9d3a15de	RED #2028: catalogPanelsGolden 3 new failures (icon svg golden), facets inherited	session-20261117T091057-940845f2	2026-11-17T09:36:34Z
