@@ -23001,3 +23001,4 @@ build:opencatalogi:woo-national-output-assurance:b2:c4	PR #2804 at 6cc44669: bui
 merge:stackiq:1966:45c796fa	unmeasured: static.developer.overheid.nl (proxy CONNECT 403 from this session; merge gate cannot measure); not built or landed	session-20261117T221428-ca31c1a7	2026-11-17T23:18:12Z
 fix:thematiq:1729:0112b5b6	merged development in, pushed f449e3fe, green; REVERIFY queued (merge gate host blocked)	session-20261117T221004-2cfd9e4c	2026-11-17T23:19:46Z
 merge:hermiq:1760:dda91748	unmeasured: static.developer.overheid.nl (1760 gate RED unit_complexity 4.55->4.53; 1845-1848,1850 approved, gate unmeasured; 1844 done, 1853 moved)	session-20261117T224758-9d8160e4	2026-11-17T23:20:22Z
+fix:integriq:3731:d1f6f297	failed: permission (review/land of own commits refused); floor fixed and pushed, new head 2efe2d2e2 queued as REVERIFY	session-20261117T224527-52625ba1	2026-11-17T23:20:51Z
