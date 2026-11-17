@@ -20382,5 +20382,6 @@ fix:integriq:3582:5de17aa9	conflict resolved (l10n key union), pushed a26852d2; 
 fix:stackiq:1966:60592396	spec tags added, pushed 46114bbf; merge lock held elsewhere, REVERIFY queued	session-20261117T110646-831a671b	2026-11-17T11:37:22Z
 fix:integriq:3557:76fedb76	conflict resolved (l10n en/nl, both sides kept); new head 5f4da252ab, merge lock held elsewhere: REVERIFY	session-20261117T112619-69159c12	2026-11-17T11:37:32Z
 fix:opencatalogi:2683:7b81beb8	conflict resolved, pushed 77bd70e1; REVERIFY	session-20261117T112441-e34e64a5	2026-11-17T11:37:46Z
+build:versioniq:releases-version-facts:c7	partial: nothing buildable, 2.3 still waits for RemoteInstanceReader (#735 open at f5849eb, not on development), 4.4 e2e and 5.1 close left, PR #755 open at 01df198	session-20261117T112619-69159c12	2026-11-17T11:38:06Z
 fix:shillinq:3004:04b7af8a	conflict resolved, pushed 3a0e29de; merge lock held elsewhere, REVERIFY recorded	session-20261117T112340-4253f758	2026-11-17T11:38:08Z
 review:shillinq:3064:e0f4cc42	GREEN: unit 12799 OK (baseline 12759 OK), phpstan clean	session-20261117T112059-00cd8209	2026-11-17T11:38:18Z
