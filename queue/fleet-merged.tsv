@@ -5472,3 +5472,5 @@ filinq	2182	af614fee7742906a70da9c30346e9eb6541d7740	RED	merge3	GATE RED checker
 keepiq	1894	f9aa4181f647ef727731915a0d3c8605514d38ff	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
 keepiq	1895	62f8ad55d1465cd37278267e216271844ce3c8a8	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
 keepiq	1896	1fa9aa0df493350abd562af449965661b898570a	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
+versioniq	700	d8e90038481e22ee8b54fa0e2a5fe9d31cae34cc	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.97 holds at 4.16
+versioniq	784	54525d8711b1c4e419fce2761bad4ba561e39810	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.97 holds at 4.16
