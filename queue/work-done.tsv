@@ -20510,3 +20510,4 @@ cover:launchpad:fb10c50fm88bd:59826f43	no PR: lib/Settings/ already 55/55 covere
 review:versioniq:729:ea732a80	GREEN: matches change specs; unit 2427 tests, 2 inherited failures; vitest 3208 pass	session-20261117T120635-25da0b5a	2026-11-17T12:11:03Z
 fix:learniq:2509:56cfb0f8	conflict resolved, pushed 4853fbe3; REVERIFY (merge lock held elsewhere)	session-20261117T112106-1814b74b	2026-11-17T12:11:45Z
 review:integriq:3601:34350fe3	CONFLICT #3601 (tests/Unit/Service/CatalogRegistrySeedGoldenTest.php)	session-20261117T113142-3e3cc1d3	2026-11-17T12:12:14Z
+fix:integriq:3613:83ce7d7b	fixed adrvalidator (API-Version header on 3 responses), gate OK; REVERIFY at 549ed1063e (merge lock held)	session-20261117T113840-498fade3	2026-11-17T12:12:28Z
