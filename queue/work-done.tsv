@@ -19896,4 +19896,15 @@ fix:dossiq:6630:d26712f8	REVERIFY: BLOCK was the owner-requested archival behavi
 review:shillinq:2070:a52f769a	GREEN: unit 12630/0 failures, vitest 32 pass	session-20261117T081327-bdafbf12	2026-11-17T08:22:25Z
 verify:opencatalogi:2756:87cd5e9a	GREEN 2756,2765; REVERIFY 2766 (conflicts only with 2756); 0 new failures	session-20261117T081134-9a158237	2026-11-17T08:22:42Z
 review:stackiq:1966:07fea94b	RED: 1 new phpunit failure (usage version pin in BaselineClassificationDeclarationTest); rest matches specs	session-20261117T081247-63811e04	2026-11-17T08:22:54Z
+fix:hermiq:1757:5857cce3	failed: permission (running the ADR ruleset from npm was refused; static.developer.overheid.nl blocked here, adrvalidator unmeasurable)	session-20261117T081203-88d20425	2026-11-17T08:23:10Z
 fix:shillinq:3067:57c917aa	fixed l10n keys, new head 8205f49a; merge lock held elsewhere, REVERIFY	session-20261117T081941-dbad7940	2026-11-17T08:23:06Z
+review:opencatalogi:2665:106da853	GREEN: no new failures (inherited 11E/92F php, 8 vitest)	session-20261117T080442-9c9fe2f8	2026-11-17T08:23:16Z
+review:shillinq:2983:ff39cb27	BLOCK: 12650 tests OK; 3 gate findings on PR lines (unregistered icon, no ClearingGroup demo data, duplicate index pages)	session-20261117T081319-17d49a97	2026-11-17T08:23:35Z
+review:shillinq:2071:6ef01f6f	GREEN: 12618 tests, 0 failures	session-20261117T081221-9bb52a5f	2026-11-17T08:23:38Z
+fix:shillinq:2998:d4457281	fixed: SeedHelpArticles registered, pushed 5215acfa; merge lock held elsewhere, REVERIFY queued	session-20261117T081204-71167548	2026-11-17T08:23:50Z
+review:versioniq:735:f5849ebe	GREEN: per change specs, no new failures (2 inherited golden reds)	session-20261117T081258-8ec427f2	2026-11-17T08:24:00Z
+review:stackiq:1942:9623d967	RED: 2 binding-count tests fail with the new contract alias	session-20261117T082106-2acc8483	2026-11-17T08:24:34Z
+review:versioniq:726:6bf08276	GREEN: per spec, no new failures	session-20261117T081719-6746d738	2026-11-17T08:24:46Z
+fix:shillinq:3011:dd50b990	conflict resolved, pushed 3989b7d8; REVERIFY queued	session-20261117T081501-4929e5cc	2026-11-17T08:25:04Z
+review:stackiq:1946:79f3a2dd	GREEN: 0 new failures (PHP 4092, vitest 2908; baseline reds inherited)	session-20261117T081154-c3187d32	2026-11-17T08:25:14Z
+verify:versioniq:754:cad32981	754 GREEN, 758 REVERIFY (l10n conflict with 754 only)	session-20261117T080436-64bee6d7	2026-11-17T08:25:30Z
