@@ -18873,3 +18873,4 @@ fix:hermiq:1795:efce9000:v4	fixed CONFLICT, pushed 78cb835e; merge lock held els
 fix:integriq:3557:363b07c6:v3	conflict resolved + OR main API fix, pushed 0b9792b0; 5 inherited failures; merge lock held elsewhere, REVERIFY queued	session-20261117T004609-b5037037	2026-11-17T01:25:55Z
 fix:integriq:3602:d7d08f57:v3	resolved conflict and wired the error sink store, pushed 9b919801; merge lock held elsewhere, REVERIFY	session-20261117T005212-998cc343	2026-11-17T01:26:07Z
 review:dossiq:6353:ea97ffc3	GREEN: removal per change spec, no new failures	session-20261117T003945-3aa9cc05	2026-11-17T01:26:33Z
+build:hermiq:tools-agent-workspace-and-installed-tools:c7	partial: still blocked, PR #1760 head 440cf2e9; tasks 2/4/5 extend RunCodeTool, CodeSandboxToolDescriptors and exapp code-sandbox, which are only on open quality/build-tools-code-sandbox (97a61ef1, not on development)	session-20261116T230934-9ee320cf	2026-11-17T01:27:02Z
