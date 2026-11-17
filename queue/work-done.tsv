@@ -22826,3 +22826,4 @@ review:openregister:10622:d498ab65	APPROVE: CI-only setup-node pin bump, no code
 review:openregister:10625:77e25041	APPROVE: CI-only upload-artifact pin bump, same sha as scorecard.yml	session-20261117T221428-ca31c1a7	2026-11-17T22:20:08Z
 review:openregister:10630:56e67fcf	APPROVE: dev-only vue-eslint-parser patch bump	session-20261117T221832-434567de	2026-11-17T22:20:33Z
 review:buildiq:1632:712402e5	GREEN: unit 3680/0 failures, vitest 88 passed, lint clean	session-20261117T221508-a8f16e82	2026-11-17T22:20:59Z
+fix:thematiq:1719:740e1349	fixed review blocker (read-only build job + artifact), pushed 4d45b1a8d1; REVERIFY queued; not landed (merge gate host unreachable)	session-20261117T212735-2b6c91a0	2026-11-17T22:21:14Z
