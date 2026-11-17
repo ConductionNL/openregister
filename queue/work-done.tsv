@@ -22679,6 +22679,7 @@ verify:portaliq:2563:dcdb7ece	GREEN 2563, 2564, 2586, 2587 (no new failures; 16 
 verify:shillinq:3177:605a77de	GREEN 3177: unit 12813 OK, no new failures	session-20261117T211359-b7379586	2026-11-17T21:38:31Z
 verify:pipelinq:3934:e2446410	4 GREEN (3957 3958 3959 3960 dep bumps), 5 CONFLICT on l10n (3934 3945 3946 3951 3952); no new failures	session-20261117T212735-2b6c91a0	2026-11-17T21:39:39Z
 verify:opencatalogi:2650:35c5e9bc	GREEN #2650: 0 new failures (php 78 and js 8 inherited)	session-20261117T213146-716f8927	2026-11-17T21:39:54Z
+verify:integriq:3725:dcad683a	GREEN #3725	session-20261117T204330-02b728bd	2026-11-17T21:40:08Z
 verify:versioniq:728:82369cc5	CONFLICT: appinfo/info.xml with development (trivial); tests green once resolved	session-20261117T211433-35a96960	2026-11-17T21:40:23Z
 verify:larpinq:1056:3d583251	GREEN 1056: phpunit 1272 OK (base 1243), vitest 739 OK, 0 new failures	session-20261117T211611-151c4a14	2026-11-17T21:40:32Z
 verify:decidiq:2282:f3a3dab1	2282 GREEN; 2286 REVERIFY (l10n conflict with 2282 only)	session-20261117T211315-f96d97db	2026-11-17T21:40:44Z
