@@ -16810,3 +16810,4 @@ humaniq	1134	2d975a3c2f76e00e2ed18e7e27278102c2ae9c19	CONFLICT	worker-50:merge	c
 humaniq	1142	dc634057d13cf3fc5d05cb03e752235542633ad0	CONFLICT	worker-50:merge	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
 humaniq	1146	3a8cc16b979ec5aa62f4a882c32ee39794d8d642	CONFLICT	worker-50:merge	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json tests/fixtures/golden/hours-register-gateway-collaborators.json 
 humaniq	1147	240e31697328f20394f40d4d270b79715772cd09	CONFLICT	worker-50:merge	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+versioniq	710	aaf9fc30c62544e5a2a1955db6be664966a3186d	RED	worker-33:merge-gate	GATE RED floor: unit_complexity: 4.79 -> 4.77; unit_interfacing: 4.57 -> 4.54
