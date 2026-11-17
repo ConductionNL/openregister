@@ -18749,3 +18749,4 @@ cover:dossiq:069ee2d6m9d1b:b12f5203	PR #6623: RecordFieldShape json/number/dateT
 fix:filinq:2091:72c1df15:v3	CONFLICT resolved: development merged into #2091 keeping both sides; checks green; new head ea6afdbf	session-20261113T214350-9762e143	2026-11-17T01:02:42Z
 fix:shillinq:3067:0f4f123e:v3	conflict resolved, new head 6f2e1f12, unit suite green; merge lock held elsewhere, REVERIFY queued	session-20261117T005434-ea6146cc	2026-11-17T01:02:52Z
 fix:filinq:2083:917afeaa:v3	fixed: conflicts resolved + ObjectSaveOptions migration, suite 7035 OK; merge lock held by another merger, REVERIFY at 5da73869	session-20261117T003652-c6487e72	2026-11-17T01:03:02Z
+fix:learniq:2514:2e2444ab:v4	conflict resolved, pushed 3f5207d1; merge lock held elsewhere, REVERIFY queued	session-20261117T004735-ba0cb916	2026-11-17T01:03:09Z
