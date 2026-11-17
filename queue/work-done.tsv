@@ -18703,3 +18703,4 @@ fix:portaliq:2492:0067a042:v3	conflict resolved, new head 8fe88049; lock busy, R
 fix:pipelinq:3734:666ee86d:v3	conflict resolved, pushed ed9bd0c7; REVERIFY (merge lock held elsewhere)	session-20261117T004718-f6df305c	2026-11-17T00:52:37Z
 fix:portaliq:2450:aead78dd:v3	conflict resolved, pushed 5c9fe090; lock held elsewhere, REVERIFY queued	session-20261117T004133-c974afac	2026-11-17T00:52:59Z
 fix:dossiq:3894:8ed2662d:v4	merged #3894 at 586519b90f512275cd9e689b9d449594ab1b9ca2	session-20261117T003652-c6487e72	2026-11-17T00:53:26Z
+fix:portaliq:2493:1cf3c736:v4	fixed CONFLICT #2493, new head 733b81a3; REVERIFY (merge lock held elsewhere)	session-20261117T004616-c7acc36d	2026-11-17T00:53:35Z
