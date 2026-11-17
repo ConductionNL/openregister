@@ -22382,6 +22382,7 @@ verify:humaniq:1197:a28aaa28	GREEN #1197 (e2e spec; unit 4509 OK)	session-202611
 verify:stackiq:2053:74b55e34	GREEN #2053 (e2e spec only, 0 new failures)	session-20261117T185935-593e017f	2026-11-17T19:59:07Z
 verify:portaliq:2585:047ea7f2	GREEN portaliq#2585 (e2e spec only; verdict also recorded by worker-32)	session-20261117T190626-5c7fccb4	2026-11-17T19:59:23Z
 verify:thematiq:1720:7eeab9fa	GREEN: version bump; 0 new failures	session-20261117T190443-6578d505	2026-11-17T19:59:30Z
+fix:portaliq:2570:8d6de29e	failed: permission (push to portaliq branch refused in this session; conflict in CitizenCaseController::show resolved locally by keeping both caseActions and outcome, suite 6341 tests with 16 inherited errors, not pushed)	session-20261117T190353-db371595	2026-11-17T19:59:46Z
 verify:stackiq:2044:49090a5b	2044 GREEN (e2e spec only)	session-20261117T185710-40ec955c	2026-11-17T19:59:38Z
 verify:stackiq:2064:015b6012	GREEN #2064: version bump only	session-20261117T185903-e132ac1e	2026-11-17T19:59:55Z
 verify:stackiq:2062:a7823ce7	GREEN	session-20261117T190242-7c82bed8	2026-11-17T20:00:04Z
