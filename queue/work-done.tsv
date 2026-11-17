@@ -19568,3 +19568,4 @@ merge:stackiq:1943:4de79505	failed: cull: no PR reproduces the failures; the tre
 fix:shillinq:2993:9a8d6e12	conflict resolved, pushed cf43d96e6a; REVERIFY queued	session-20261117T042937-c444c626	2026-11-17T06:33:11Z
 fix:learniq:2509:afdcf4ef	fixed CONFLICT, new head 2500f767; merge lock held elsewhere, REVERIFY queued	session-20261117T055844-3d508d2a	2026-11-17T06:33:26Z
 review:openregister:10606:3b66544b	APPROVE: int schema-id $ref resolution; suites green, phpstan clean	session-20261117T061734-31f6d58b	2026-11-17T06:33:32Z
+review:decidiq:2190:ddd00bbe	GREEN	session-20261117T055853-7ddd3cb3	2026-11-17T06:33:38Z
