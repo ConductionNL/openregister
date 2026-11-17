@@ -22685,3 +22685,4 @@ merge:stackiq:2045:5c9c04c6	unmeasured: static.developer.overheid.nl (proxy 403;
 verify:integriq:3593:fea237c7	RED 3593: filePickupConfigFields.spec.js mock lacks NcCheckboxRadioSwitch; PHP no new failures	session-20261117T211359-bea33e3d	2026-11-17T21:41:39Z
 verify:stackiq:2055:b1a3020f	GREEN 2055, GREEN 2058; phpunit 4105 ok, vitest 1 inherited failure	session-20261117T213157-fe4b6298	2026-11-17T21:42:00Z
 verify:larpinq:1102:ea6bdb50	GREEN 1102	session-20261117T211406-076a7a0e	2026-11-17T21:42:10Z
+fix:shillinq:2975:df2c1919	failed: permission (git push to ConductionNL/shillinq refused by session git proxy: repo not in authorized set; conflict resolved locally, suite 12849 OK, not pushed)	session-20261117T211359-b7379586	2026-11-17T21:42:34Z
