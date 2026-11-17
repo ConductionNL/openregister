@@ -20406,3 +20406,4 @@ fix:shillinq:3067:8205f49a	conflict resolved, pushed 7ff7357f; REVERIFY queued (
 fix:integriq:3601:85ba8d21	conflict resolved, pushed 34350fe3; merge lock held elsewhere, REVERIFY queued	session-20261117T112444-7a410249	2026-11-17T11:42:01Z
 fix:stackiq:2024:d3bfa511	sbom regenerated, development merged in; new head 88367b0f, REVERIFY queued (merge lock held elsewhere)	session-20261117T112020-0bf220a7	2026-11-17T11:42:31Z
 fix:versioniq:729:91f511d2	conflict resolved, pushed ea732a80; REVERIFY queued	session-20261117T113521-7cb5fa64	2026-11-17T11:42:52Z
+fix:hermiq:1754:cb8fe973	floor restored (floor_check PASS), new head 26e47c9c, REVERIFY queued	session-20261117T112346-1468d52e	2026-11-17T11:43:03Z
