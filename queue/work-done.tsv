@@ -19294,3 +19294,4 @@ fix:integriq:3600:0056da4f	failed: #3600 carries merges of #3596 and #3574 in it
 review:shillinq:2086:ca69b7ea	GREEN: unit 12572 OK on PR+development, vitest/phpstan/eslint clean; conflicts in routes.php/l10n are additive	session-20261117T025205-24fff43b	2026-11-17T02:59:29Z
 fix:filinq:2124:8f7d55a4	fixed RED (OR options API), pushed 216f959b; REVERIFY queued (merge lock held elsewhere)	session-20261117T020329-e21299e8	2026-11-17T02:59:42Z
 fix:launchpad:819:c5c80a07:v8	fixed: merged development, sbom current, pushed ff71d979; REVERIFY (merge lock held)	session-20261117T020142-15890c05	2026-11-17T02:59:56Z
+fix:integriq:3574:606ffc5d	conflict resolved, pushed 56c6b5c2; merge lock held elsewhere, REVERIFY queued	session-20261117T025311-e27d60f7	2026-11-17T03:00:14Z
