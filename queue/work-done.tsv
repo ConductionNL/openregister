@@ -22699,5 +22699,17 @@ fix:portaliq:2589:7076e2d0	conflict resolved, pushed 8f568eda; REVERIFY (merge l
 verify:larpinq:1104:072740aa	GREEN #1104 (e2e spec only)	session-20261117T211341-e05e0d2c	2026-11-17T21:44:31Z
 verify:integriq:2650:ecac209c	GREEN #2650: 9933 tests, no new failures	session-20261117T211412-45e1aeb8	2026-11-17T21:44:41Z
 build:opencatalogi:publication-lifecycle-on-or-draft-purge:b2:c2	failed: still waits on publication-lifecycle-on-or (no firstReleasedAt in lib on development; its branch quality/build-publication-lifecycle-on-or is still open)	session-20261117T211320-ba1b42e8	2026-11-17T21:44:59Z
+fix:integriq:3557:7d1abff4	failed: permission (git push to ConductionNL/integriq refused by the session git proxy; fix ready: add development's 110 en / 31 nl js-only keys to en.json/nl.json and rebuild with l10n:build, test:l10n passes)	session-20261117T211359-bea33e3d	2026-11-17T21:45:00Z
+verify:portaliq:2564:9fbc2d81	stale	session-20261117T211932-f471137a	2026-11-17T21:44:59Z
 verify:launchpad:1305:1358f946	GREEN 1305, GREEN 1307; tree 4684 OK, baseline 4621	session-20261117T211353-2c595f41	2026-11-17T21:45:00Z
 verify:dossiq:6648:7529b2ea	GREEN #6648: 18405 tests, no new failures	session-20261117T213149-40fbaeee	2026-11-17T21:45:08Z
+verify:launchpad:1210:e8abd64f	GREEN #1210 (unit 4706 OK; vitest 1 inherited failure)	session-20261117T213056-2ba36933	2026-11-17T21:45:25Z
+fix:filinq:2182:af614fee	fixed: curl auth example no longer trips the secret scan; pushed eb336b2b, REVERIFY queued (merge lock held elsewhere)	session-20261117T211329-58121c09	2026-11-17T21:45:42Z
+verify:opencatalogi:2803:182028e8	GREEN #2803: 0 new failures (php 78, js 8 inherited)	session-20261117T213146-716f8927	2026-11-17T21:45:55Z
+verify:keepiq:1900:28274ec8	GREEN #1900 (vitest 3 inherited failures, 0 new)	session-20261117T213124-9bd98896	2026-11-17T21:46:06Z
+verify:opencatalogi:2654:9f9bab83	GREEN 2654: 0 new unit failures	session-20261117T211543-87ab7dd9	2026-11-17T21:46:19Z
+verify:integriq:3733:674a28d7	GREEN 3733 (9913 tests, inherited 5 reds, none new)	session-20261117T211556-63ae11ab	2026-11-17T21:46:33Z
+build:opencatalogi:publication-schedule-guards:b2:c2	failed: still blocked on publication-lifecycle-on-or (#2803 verified GREEN at 182028e8, merge pending; tasks.md requires it on development first)	session-20261117T213146-716f8927	2026-11-17T21:46:43Z
+verify:larpinq:1111:54e40dde	GREEN 1111 (release version bump); unit 1243 OK = baseline	session-20261117T211910-eb4216c0	2026-11-17T21:46:48Z
+verify:opencatalogi:2808:71772fd9	GREEN; version bump, no new failures (baseline 92F/11E)	session-20261117T210827-f273f058	2026-11-17T21:47:06Z
+verify:larpinq:1099:b7a0ceb7	GREEN #1099: unit 1243/0 new failures; dev-only psalm bump	session-20261117T213052-c1bc9d10	2026-11-17T21:47:32Z
