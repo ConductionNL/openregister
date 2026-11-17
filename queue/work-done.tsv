@@ -19108,3 +19108,4 @@ review:filinq:2089:b14f4be3	GREEN; conflicts with development in filinq_register
 review:shillinq:3048:455711f8	GREEN: 12528 unit tests OK on PR+development, vitest 43 pass, phpstan clean	session-20261117T020416-cc0fb378	2026-11-17T02:19:44Z
 review:hermiq:1795:78cb835e	GREEN: no new unit failures (198 inherited), vitest 1588 ok; info.xml version conflicts with development	session-20261117T020212-3e3772fe	2026-11-17T02:19:52Z
 review:shillinq:3004:cd7ea57d	GREEN: suite 12566 OK on merge with development; stacked on #2986	session-20261117T020257-fb35dc98	2026-11-17T02:20:03Z
+review:integriq:2650:54f2db42	GREEN: build per spec, 4 inherited failures, no new	session-20261117T021325-9fd6cbed	2026-11-17T02:20:14Z
