@@ -19230,5 +19230,6 @@ buildiq	1736	30abdfe4088bc57135d17f12eb7cd0236492ae89	GREEN	worker-18	build oper
 shillinq	3175	24b91d1799ac083e4677e8dac3e22d4615248cb6	GREEN	worker-24	unit 12818 on tree (baseline 12796 OK, 3 skipped), 0 new failures; vitest 3125 with 1 failure inherited from development (dunningNextRun.spec.js)
 shillinq	3176	10a4916c433eb36a1b895bd83e51810f410b3d12	REVERIFY	worker-24	conflicts only with an earlier PR of the verify tree
 shillinq	3177	605a77debdf7ceac3634af4e4ce6a4f307c7e04e	REVERIFY	worker-24	conflicts only with an earlier PR of the verify tree
+learniq	2524	defae59897776df65fca752cdd26e7ebdc87d32d	GREEN	worker-49	unit 7166 tests on tree, baseline 7152 with 1 inherited failure (HigherEducationExampleSet), no new failures; php -l clean; implements enrolment-sync-classes-from-student-administration per its specs
 filinq	2173	6bce70eb0c412e2bc6eaa1d778075d1f8f776f04	GREEN	worker-38	publiccode.yml only (parses, referenced images exist); no code changed, unit baseline 7329 OK unchanged, 0 new failures
 filinq	2124	089581db204973bbe9a2c97d92587144ea4cc9e0	CONFLICT	worker-30	conflicts with development in lib/Settings/filinq_register.json
