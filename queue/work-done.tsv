@@ -19732,3 +19732,4 @@ review:filinq:2116:b8017fb6	GREEN: unit 7173 OK, jest+vitest 25 OK, phpstan/esli
 review:filinq:2121:06812be1	BLOCK: register version without app version bump, component_independence floor	session-20261117T063032-e9a993e2	2026-11-17T07:09:02Z
 review:learniq:2536:3f0c2d08	BLOCK #2536: tests baseline, 5 gate findings on PR lines	session-20261117T062935-1aa25581	2026-11-17T07:09:24Z
 fix:shillinq:3110:e8ca71f4	sbom current (dev-only lock changes); merged development, REVERIFY new head 1e1e9564	session-20261117T065524-8fc65d3f	2026-11-17T07:09:35Z
+review:shillinq:3004:0e70c6a3	CONFLICT with development (7 files); fix task follows	session-20261117T063100-87feca45	2026-11-17T07:09:49Z
