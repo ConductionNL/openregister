@@ -22400,6 +22400,7 @@ verify:shillinq:3165:f382c52b	GREEN shillinq#3165 (unit 12797 OK)	session-202611
 verify:stackiq:2060:089ca175	GREEN 2060; vitest no new failures (1 inherited)	session-20261117T185359-d68263c5	2026-11-17T20:01:14Z
 fix:portaliq:2449:89f90703	failed: permission (git push to ConductionNL/portaliq refused by session git proxy; local merge of development resolving package.json conflict passes the floor: unit_complexity 4.54->4.53 within tolerance)	session-20261117T190626-5c7fccb4	2026-11-17T20:01:39Z
 verify:shillinq:3178:7c8cd864	GREEN 3178; no new failures	session-20261117T185927-e9838dc9	2026-11-17T20:01:30Z
+build:pipelinq:forecast-slip-reason:b2:c3	failed: permission (git push to ConductionNL/pipelinq refused by the session proxy: repo not in authorized set); task 3.1 was built and green locally (LeadCloseDate card + SlipReasonModal, vitest +14, no new failures) but not pushed; 3.1 and 5.1 still left	session-20261117T190632-f0412d81	2026-11-17T20:02:07Z
 verify:shillinq:3163:00685f93	GREEN 3163 (12796 tests, 0 new failures)	session-20261117T190316-ad3f71cf	2026-11-17T20:01:51Z
 verify:versioniq:798:91fdceff	GREEN	session-20261117T190242-7c82bed8	2026-11-17T20:02:03Z
 verify:versioniq:797:c57c4855	GREEN 797 (e2e + fixture only)	session-20261117T185359-d68263c5	2026-11-17T20:02:16Z
