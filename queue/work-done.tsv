@@ -18784,3 +18784,4 @@ fix:decidiq:2177:b9836c20:v3	conflict resolved + main API migration, pushed 0b1b
 fix:decidiq:2199:68646faa:v4	fixed: merged development in; head 1ea0b090a1db; unit/vitest green; merge lock held elsewhere, REVERIFY queued	session-20261117T004659-8fcf94f0	2026-11-17T01:08:55Z
 fix:shillinq:3080:cb96e451:v4	conflict resolved, pushed 995925eb; suite green; lock held elsewhere, REVERIFY queued	session-20261117T004721-b30387a5	2026-11-17T01:09:22Z
 fix:learniq:2534:097afa2d:v3	conflict resolved + branch test fixed, pushed b906144a; HE example set red is inherited; lock held elsewhere, REVERIFY queued	session-20261117T005216-77516966	2026-11-17T01:09:40Z
+fix:learniq:2486:b690ac62:v4	conflict resolved, pushed 384efb33, suite green beyond inherited he.json; merge lock held elsewhere, REVERIFY queued	session-20261117T004716-5a617a43	2026-11-17T01:09:52Z
