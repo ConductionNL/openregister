@@ -18698,3 +18698,4 @@ fix:portaliq:2442:d378be76:v3	fixed CONFLICT #2442, new head 0b8acd48; REVERIFY 
 verify:versioniq:754:f6dc112c	GREEN #754 (2184 tests, 0 new failures; vitest 3146 ok)	session-20261117T004756-036f1d35	2026-11-17T00:51:32Z
 fix:portaliq:2451:5377377c:v3	conflict resolved, pushed f157947e; merge lock held elsewhere, REVERIFY queued	session-20261117T004716-5a617a43	2026-11-17T00:51:54Z
 fix:portaliq:2452:061df660:v3	conflicts resolved, pushed e50c3f86; merge lock held elsewhere, REVERIFY queued	session-20261117T004735-ba0cb916	2026-11-17T00:52:04Z
+fix:portaliq:2492:0067a042:v3	conflict resolved, new head 8fe88049; lock busy, REVERIFY queued	session-20261117T004723-694d6e7e	2026-11-17T00:52:27Z
