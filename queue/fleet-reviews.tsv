@@ -1179,4 +1179,5 @@ planninq	1231	b038b5610549a1158583fe4f9f91a795be9267a8	APPROVE	worker-54	Quick; 
 integriq	3703	80544b3ca452aaca520969c1dbe59bf25d34dc66	APPROVE	worker-08	Quick; no blockers; composer.lock patch/minor bump, tree suite 0 new failures
 integriq	3704	ef91827a9deb643222e2c4ece7853589b5dbcd5a	APPROVE	worker-08	Quick; no blockers; composer.lock patch/minor bump, tree suite 0 new failures
 integriq	3705	06350cfbac4bae6a1c87014c0cbf9a40afbcd51f	APPROVE	worker-08	Quick; no blockers; pinia 2->4 major: Vue 3 app, no removed APIs used, nextcloud-vue peer allows ^4, vitest 2389/2389 pass
+pipelinq	3932	b68d98558ef0ca9c770e0950081777dd4103c596	APPROVE	worker-31	Standard; no blockers; docs/metadata only (publiccode.yml, README); NC 32-35, languages, logo and screenshots match the repo; supports entry restored; softwareVersion 0.5.14 is a manual value to keep current
 learniq	2589	241404be95b288b1abd5a2da268f098d513e533f	APPROVE	worker-17	Standard; no blockers; docs/metadata only, referenced logo/screenshots/roadmap exist, languages match l10n, NC range matches info.xml; softwareVersion 0.3.12-beta differs from info.xml 0.3.9-beta
