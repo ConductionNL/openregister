@@ -5704,3 +5704,5 @@ pipelinq	3959	7fbcf4eeb298c017699d213a1802d595cb200595	RED	worker-10	GATE RED sb
 pipelinq	3962	63a9f87023847f1f04506dfaff982afa3de38e94	RED	worker-10	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 dossiq	6648	7529b2ea4013536685ce136e33d7505543856146	SKIP	worker-42	no APPROVE review at this head
 pipelinq	3963	e0b88c16e1c5e43d0827e293701b09a4c5a0c8d2	RED	worker-10	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+humaniq	1191	b875c583d9c11a753090974efd8cc0d409a3eac8	SKIP	worker-22	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
+humaniq	1193	ef7f5e47529d295f00f4a5b05b2aa464576bc3ba	SKIP	worker-22	no APPROVE review at this head
