@@ -18345,6 +18345,7 @@ versioniq	685	aadbc2526fe04760a59accfad26904c4fb19c0cb	CONFLICT	worker-16	confli
 integriq	2152	b149b10fd341de51ebb2c851b9fda81dbabf4518	GREEN	worker-46	unit 9839 tests, baseline 2 errors 2 failures, new failures 0; merge commit with no change against development
 opencatalogi	1857	82668b5d869517933f46b9ce30535f4486c37da0	GREEN	worker-57	beta back-merge that changes no file on development (tree identical to base); no tests needed beyond baseline
 opencatalogi	2769	0c4a78f746a745c0379a06e1d75546f9b012e222	GREEN	worker-37	version bump only (info.xml, openapi.json); no code changed, suite = baseline
+integriq	3713	1ac9342215f8b89a3080078a2a4852d1a9560e0a	GREEN	worker-12	dev-dep bump @typescript-eslint/parser; unit 9839 tests, baseline 5 failing (inherited), new failures 0; vitest 2383 passed
 pipelinq	2309	9fdbddb4e997e4bc30c99db0064574af0f8a21a7	GREEN	worker-37	merge into development yields a tree identical to development (main sync already present); no diff, suite = baseline
 learniq	1862	8239bdabe9f20f9315e98853229ca93ad7fb1f99	GREEN	worker-41	main->development sync merge; merged tree identical to development (0 files changed), so suite equals baseline; 0 new failures
 integriq	3709	4cb85bb991cb2af12526621fe2212abe4b6e95af	GREEN	worker-34	unit 9839 tests; baseline 2E/3F; no new failures; dev-only psalm bump (note: psalm 7 needs PHP>=8.3.16)
