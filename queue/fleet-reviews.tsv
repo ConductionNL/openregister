@@ -1268,3 +1268,5 @@ launchpad	1304	952ebaa8fac367fe3ecd38d502ea5783d9d96f6f	APPROVE	worker-55	Quick 
 launchpad	1305	7ddb8299e5959348a6260a9afb29985c058ec3f1	APPROVE	worker-55	Quick (tests only: e2e specs + tasks.md notes; 1305 also drops the spec's e2e-exclude lines its new spec now covers); no blockers; gate runner not cached, checked by hand, no lib/src change
 planninq	1239	0328f9343f333547a0ee8ca4cca8f363278347ba	APPROVE	worker-43	Quick; no blockers; e2e spec and tasks.md notes only
 planninq	1240	4bfda41dc6111bc5b2c3fabdc110b066f9a9be3b	APPROVE	worker-43	Quick; no blockers; vitest spec and tasks.md tick only
+planninq	1241	257fbd0219f28a47e4da100bf6abd78298a5ea47	APPROVE	worker-43	Quick; no blockers; e2e spec and tasks.md notes only
+planninq	1242	58b41fbc798b19b69a7a8106b7f903124cc231cf	APPROVE	worker-43	Standard; no blockers; restores the spec'd time-by-project widget (task 2.5) in src/manifest.json and adds e2e specs
