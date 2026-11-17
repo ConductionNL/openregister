@@ -19222,3 +19222,4 @@ humaniq	1192	3ca961bd39275bf3bb69cd3b39f481eff6653277	BLOCK	worker-20:review	rev
 shillinq	3174	3dfee71ebce89aa659c0cf9fe97e8ffe935b0564	GREEN	worker-24	unit 12818 on tree (baseline 12796 OK, 3 skipped), 0 new failures; vitest 3125 with 1 failure inherited from development (dunningNextRun.spec.js)
 buildiq	1736	30abdfe4088bc57135d17f12eb7cd0236492ae89	GREEN	worker-18	build operate-organisation-scoped-apps T04 slice: organisation guard before roles in AgentsController and ExportsController as REQ-BQOS-002 asks; unit 3681 tests 0 failures on development+PR, php -l clean
 shillinq	3175	24b91d1799ac083e4677e8dac3e22d4615248cb6	GREEN	worker-24	unit 12818 on tree (baseline 12796 OK, 3 skipped), 0 new failures; vitest 3125 with 1 failure inherited from development (dunningNextRun.spec.js)
+shillinq	3176	10a4916c433eb36a1b895bd83e51810f410b3d12	REVERIFY	worker-24	conflicts only with an earlier PR of the verify tree
