@@ -5381,3 +5381,13 @@ integriq	3714	b9668573e7033e4950efd58082ccf86566f9ca9a	SKIP	worker-52	GATE UNMEA
 learniq	2600	3dd1b33d30e301887b5e829946f9b3224f874ddd	SKIP	worker-04	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 learniq	2601	3cc5a9d81623e03b4652659765476e0ce4828d7d	SKIP	worker-04	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 learniq	2602	562289417dc44c1a437b7a634ba5466aed65748e	SKIP	worker-04	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
+dossiq	6641	44c7fefaffc94aba53bbc070cd5972fc0818436a	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
+dossiq	6650	312ccd57fbd434c3cec00ea6fa75ec61eedec997	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
+dossiq	6651	2c646be09ad6a516c5a62a09348104d6d203d291	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
+dossiq	6652	c30773c8aaa3ad29ed0a2e1135cbb6ed30422aa5	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
+dossiq	6653	23b6836416daa03a9b00107548f574bd6acfa783	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
+dossiq	6654	9734161b4c03c62f26191177815ebac46faf564d	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
+dossiq	6655	0ba448431940d284ce49d4953e333ff08b3f05e1	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
+dossiq	6656	f2ca794bb37cc7b42cb881aa4c52844f864a2064	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
+dossiq	6657	395229a33df02e72823aa7df0de43c3ac12211d1	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
+dossiq	6658	1eb1a6a3a2861cf635879e481faec46f137ecb4b	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
