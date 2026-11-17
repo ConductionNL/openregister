@@ -20582,3 +20582,4 @@ merge:pipelinq:3932:9464f1f0	cloud tree of 1 pipelinq PRs: merged=0 red=1 fail=0
 fix:portaliq:2449:9deb3d4f	conflict resolved, pushed ae33c0d7a; REVERIFY (merge lock held elsewhere)	session-20261117T120834-820bb574	2026-11-17T12:28:15Z
 merge:dossiq:6635:66f3b871	cloud tree of 4 dossiq PRs: merged=3 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T121050-a5ee25f2	2026-11-17T12:28:37Z
 merge:shillinq:2063:0c4e4117	cloud tree of 7 shillinq PRs: merged=0 red=2 fail=0 skip=0; conflict 5, lint 0, red 0, moved 0, done 0	session-20261117T112552-11cae4cc	2026-11-17T12:29:51Z
+merge:portaliq:2450:8bedaa9c	cloud tree of 2 portaliq PRs: merged=1 red=0 fail=0 skip=1; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T113901-5c9d981d	2026-11-17T12:30:24Z
