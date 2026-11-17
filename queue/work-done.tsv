@@ -18810,3 +18810,4 @@ fix:learniq:2536:a9efa896:v3	conflict resolved, migrated new saveObject calls; n
 fix:learniq:2519:644c2a79:v3	conflict resolved, pushed 7bff990d; merge lock busy, REVERIFY queued	session-20261117T005933-5e669a88	2026-11-17T01:13:43Z
 fix:humaniq:1147:ab5b6092:v3	conflict resolved and migrated to development's API, pushed 240e3169, suite green; merge lock held elsewhere, REVERIFY queued	session-20261117T004716-5a617a43	2026-11-17T01:13:54Z
 fix:hermiq:1757:c5c53ee8:v3	conflict resolved, pushed becc16d7; REVERIFY queued (merge lock held elsewhere)	session-20261117T004656-5d4b3c4e	2026-11-17T01:14:08Z
+fix:decidiq:2154:10e36967:v3	fixed: merged development in, term listener on openregister main API; head 7aa3f202a8c1; unit/vitest green; merge lock held elsewhere, REVERIFY queued	session-20261117T004659-8fcf94f0	2026-11-17T01:14:24Z
