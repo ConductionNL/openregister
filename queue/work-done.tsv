@@ -22813,3 +22813,4 @@ merge:integriq:3729:9f2477d1	unmeasured: static.developer.overheid.nl; cloud tre
 verify:portaliq:2591:a322f371	stale	feeder	2026-11-17T21:38:30Z
 merge:pipelinq:3935:cba98368	merge3 tree of 9 pipelinq PRs: merged=6 red=0 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-17T22:10:20Z
 merge:buildiq:1715:ed36450e	unmeasured: static.developer.overheid.nl (merged=0 skip=7; 1721 CONFLICT, 1723 MOVED)	session-20261117T211607-9073788f	2026-11-17T22:11:32Z
+fix:pipelinq:3954:ba6a3d35	conflict fixed, pushed 778f1212; REVERIFY queued	session-20261117T211651-58c92edf	2026-11-17T22:11:57Z
