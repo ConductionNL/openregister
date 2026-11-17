@@ -19249,3 +19249,4 @@ versioniq	798	91fdceff9606e38c08294f9f188caa4b1c92289f	REVERIFY	worker-11:merge	
 versioniq	799	9d0b17e161aabdb3641874366fbf88fc9343996c	CONFLICT	worker-11:merge	conflicts with development; files: appinfo/info.xml l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Controller/ApiController.php lib/Service/Api/ReportCollaborators.php 
 opencatalogi	2805	b5832c88ee2a159946d2f6880ba534de439fb504	REVERIFY	worker-09	conflicts only with an earlier PR of the verify tree
 opencatalogi	2806	c32247ec0843cd01d478d2d0970444b6954ce5e2	REVERIFY	worker-09	conflicts only with an earlier PR of the verify tree
+humaniq	1198	ada533a81007f708bdfe9eb24a2ba5a6a2041daa	GREEN	worker-54	phpunit 4532 OK on tree (baseline 4509 OK); node test:js 13 fails = baseline 13; new failures 0; build of record-history-on-every-detail-page per its specs
