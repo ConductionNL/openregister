@@ -18496,3 +18496,4 @@ verify:portaliq:2450:88eab3c5	CONFLICT #2450 (4 files conflict with development)
 verify:portaliq:2500:d606ba9e	CONFLICT #2500 (tests/example-site.spec.mjs vs development)	session-20261116T233800-0f135937	2026-11-17T00:00:22Z
 verify:learniq:2532:5a74c54d	CONFLICT #2532	session-20261116T232519-f84cca9a	2026-11-17T00:00:37Z
 verify:shillinq:2063:be07bd2e	CONFLICT #2063 (info.xml, register-versions.lock)	session-20261116T233901-7abe1a78	2026-11-17T00:01:23Z
+verify:integriq:3590:48c0729a	CONFLICT #3590 (l10n, register json)	session-20261116T232844-9c7f5cce	2026-11-17T00:01:31Z
