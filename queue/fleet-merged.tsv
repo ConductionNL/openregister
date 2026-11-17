@@ -5115,6 +5115,7 @@ larpinq	1045	73c4570d7e6a3d214f834ce934c86d4df7b4579c	MERGED	worker-33	GATE OK s
 decidiq	2252	8ede89d50aa29803f8ecaee6001a6961a5492da9	MERGED	worker-24	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.78 holds at 3.83
 opencatalogi	2665	106da8530ac7a95c453ceb9d64328d7fd03cec44	RED	worker-19	GATE RED floor: overall: 4.87 -> 4.84; unit_size: 4.66 -> 4.64; unit_complexity: 4.85 -> 4.83; unit_interfacing: 4.73 -> 4.53
 decidiq	2253	bd32087871f8d23258331464e6e6c9491d8b8168	MERGED	worker-24	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.78 holds at 3.83
+opencatalogi	2765	e71096de5e9f48489a6b65d6e63e71c3d1dbf7c8	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.52
 portaliq	2417	5a89d39e01388c3a9324898a1c52f13f296ec643	MERGED	worker-55	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.04
 stackiq	1933	4ab6e187b899ba72d006eeed7df4ed78821ab1fd	MERGED	worker-02	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.13
 integriq	3545	76605dd41334c821c1ceb47c5ffe0aa9fb627147	SKIP	worker-03	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure secretscanning; this is not a pass
