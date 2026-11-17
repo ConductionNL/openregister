@@ -20500,3 +20500,4 @@ fix:learniq:2524:4fd0d8a1	resolved register conflict (0.58.0, Enrolment 0.7.0), 
 fix:shillinq:2070:770f20c3	conflict resolved, pushed 7439ff5e; merge lock held elsewhere, REVERIFY queued	session-20261117T112444-7a410249	2026-11-17T12:08:42Z
 review:launchpad:1217:7283f62c	GREEN: unit 4633 OK, vitest 2752 OK	session-20261117T115541-a0785606	2026-11-17T12:08:58Z
 fix:hermiq:1781:11f91da4	fixed: raised app version; merge lock held elsewhere, REVERIFY at a56a9450	session-20261117T111714-cd94760b	2026-11-17T12:09:22Z
+fix:launchpad:1261:07612654	fixed #1261: explicit RBAC/multitenancy on schema read + 2 tests, pushed f23c46deef; REVERIFY queued	session-20261117T115011-195ffbc6	2026-11-17T12:09:43Z
