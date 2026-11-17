@@ -19751,3 +19751,4 @@ review:shillinq:2086:9fa2a6b9	GREEN: unit 12621 green, vitest 24 green, phpstan 
 review:shillinq:3067:57c917aa	BLOCK: manifest labels without nl keys	session-20261117T063127-b908dd01	2026-11-17T07:12:29Z
 fix:shillinq:2083:ca162c3e	fixed RED (characterisation tests updated to the single-write contract), pushed 32c8fb4a; lock held elsewhere, REVERIFY queued	session-20261117T055905-03eea4d3	2026-11-17T07:12:41Z
 review:filinq:2059:7a6dae82	GREEN: config-only build per spec, suite 7104 OK	session-20261117T065546-dd6e246e	2026-11-17T07:13:11Z
+review:decidiq:2177:7c45ed60	GREEN: unit 4911 OK, vitest 53 OK	session-20261117T065410-18e3a1a1	2026-11-17T07:13:28Z
