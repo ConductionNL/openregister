@@ -22126,3 +22126,4 @@ review:launchpad:1210:4dcc742f	BLOCK: launchpad #1210 sanitiser leaves sibling-c
 review:buildiq:1651:c1a3ad84	GREEN: buildiq #1651 implements its change; phpunit 3699 OK, vitest 57 OK	session-20261117T185500-00963134	2026-11-17T18:57:34Z
 verify:larpinq:1100:4b8f08cd	GREEN 1100,1104,1105; CONFLICT 1101,1102,1103 (with development); tree unit 1265 OK, vitest 796 OK	session-20261117T185359-d68263c5	2026-11-17T18:58:53Z
 verify:launchpad:1306:bd67eb8e	GREEN 1306, GREEN 1307; unit 4671 tests, 0 new failures	session-20261117T185419-c23c5946	2026-11-17T18:59:30Z
+review:versioniq:719:d043e91d	RED: openapi.json truncated (all paths lost), VersionedRoutesTest fails; rest of diff per spec	session-20261117T185710-40ec955c	2026-11-17T18:59:42Z
