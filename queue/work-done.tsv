@@ -21031,3 +21031,4 @@ build:dossiq:recent-tile-shows-when-you-opened:b2	already done: config tasks 1.1
 build:dossiq:task-case-card-handler-name:b2	already done: built on development in 8ef4b5eda3; only live task 1.3 left	session-20261117T140734-4d108840	2026-11-17T14:21:10Z
 build:dossiq:supplier-portal-reads-its-collections:b2	already building: quality/build-supplier-portal-reads-its-collections exists; open tasks are archive-time spec amend, live pass, parity row after it	session-20261117T135414-614629b0	2026-11-17T14:21:33Z
 build:dossiq:task-list-pooled-handler:b2	already done: only live task 1.3 left	session-20261117T132743-10cec9d3	2026-11-17T14:21:51Z
+build:dossiq:the-support-note-can-be-switched-off:b2	already done: only 1.4 open, a live check on the demo instance; no code left; no PR	session-20261117T135414-614629b0	2026-11-17T14:22:02Z
