@@ -122,7 +122,7 @@
 
 ## 3. Surfaces
 
-- [ ] 3.1 Grant editor with object preview on the personal token page and the Consumer admin page.
+- [x] 3.1 Grant editor with object preview on the personal token page and the Consumer admin page.
       - Not built, and blocked on a decision rather than on code. Found
         while building 1.1c: the account page's "API Tokens" section
         (`src/views/account/sections/TokensSection.vue`, `/api/user/me/tokens`,
@@ -153,6 +153,23 @@
         Consumer half edits the grant in `authorizationConfiguration` over
         `/api/consumers`. Tests: `PersonalTokenGrantsEditorTest` (10),
         `TokenGrantPreviewTest` (5).
+      - Done, the page: `src/components/tokens/TokenGrantEditor.vue` (verbs
+        without `manage`, registers, schemas, row condition, required end
+        date, calls per minute, the preview table) over
+        `src/services/tokenGrant.js`; on the account page a "Scoped app
+        passwords" block in `TokensSection.vue` with
+        `src/modals/account/TokenGrantModal.vue` (paste once, edit, remove,
+        preview); an admin "Consumers" page (`src/views/consumers/ConsumersIndex.vue`,
+        manifest page `consumers`, menu entry under Integration) with
+        `src/modals/consumers/ConsumerGrantModal.vue`, which edits the grant
+        and lists its renewals. 25 new strings in all 36 locales. Tests:
+        `tokenGrant.spec.js` (9), `TokenGrantEditor.spec.js` (7),
+        `TokenGrantModal.spec.js` (6), `ConsumerGrantModal.spec.js` (5),
+        `ConsumersIndex.spec.js` (3), `TokensSection.spec.js` (+4).
+      - Not on the Consumer page: the object preview. A Consumer acts as its
+        own user, so a preview answered with the administrator's rights would
+        show the wrong holder; asking it as the Consumer's user needs a
+        second identity in the request and is left for 4.2b's instance run.
 
 ## 4. Tests
 
@@ -170,7 +187,7 @@
       "no end date" and "never expires" are the same string and opposite
       facts.
 - [x] C40.2a `lapsesSoon()` answers who should be warned.
-- [ ] C40.2b The notification that carries the warning, and the recorded
+- [x] C40.2b The notification that carries the warning, and the recorded
       renewal.
       - Done, the notification half: `TokenGrantLapseJob` (daily, registered in `appinfo/info.xml`) reads each Consumer's grant and, when `TokenGrantValidator::lapsesSoon()` holds, notifies the user the Consumer acts as with subject `token_grant_lapsing` (the token's name, the end date and the days left), replacing the previous warning for the same token rather than stacking one per day. A lapsed grant, one without an end date, a Consumer without a user or with a deleted user gets nothing. `AccessSubjectRenderer` renders the subject. Tests: `tests/Unit/BackgroundJob/TokenGrantLapseJobTest.php` (5), `NotifierTest::testPrepareTokenGrantLapsing`.
       - Done for personal tokens: `PersonalTokenGrantStore::write()` records every changed end date as a renewal (`by`, `at`, `from`, `expiresAt`, the last 20 kept), returned by `GET /api/tokens/{tokenId}/grant`.

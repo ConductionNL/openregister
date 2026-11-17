@@ -36,6 +36,7 @@ import FileTreeOutline from 'vue-material-design-icons/FileTreeOutline.vue'
 import Gavel from 'vue-material-design-icons/Gavel.vue'
 import History from 'vue-material-design-icons/History.vue'
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
+import KeyChainVariant from 'vue-material-design-icons/KeyChainVariant.vue'
 import Magnify from 'vue-material-design-icons/Magnify.vue'
 import MagnifyPlus from 'vue-material-design-icons/MagnifyPlus.vue'
 import MapMarkerPath from 'vue-material-design-icons/MapMarkerPath.vue'
@@ -80,6 +81,7 @@ export default {
 	Gavel,
 	History,
 	InformationOutline,
+	KeyChainVariant,
 	Magnify,
 	MagnifyPlus,
 	MapMarkerPath,

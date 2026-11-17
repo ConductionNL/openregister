@@ -28,6 +28,7 @@ jest.mock('./views/deleted/DeletedIndex.vue', () => ({ __esModule: true, default
 jest.mock('./views/logs/AuditTrailIndex.vue', () => ({ __esModule: true, default: { name: 'AuditTrailIndex' } }))
 jest.mock('./views/logs/SearchTrailIndex.vue', () => ({ __esModule: true, default: { name: 'SearchTrailIndex' } }))
 jest.mock('./views/webhooks/WebhooksIndex.vue', () => ({ __esModule: true, default: { name: 'WebhooksIndex' } }))
+jest.mock('./views/consumers/ConsumersIndex.vue', () => ({ __esModule: true, default: { name: 'ConsumersIndex' } }))
 jest.mock('./views/flows/FlowDetailSidebar.vue', () => ({ __esModule: true, default: { name: 'FlowDetailSidebar' } }))
 jest.mock('./views/webhooks/WebhookLogsIndex.vue', () => ({ __esModule: true, default: { name: 'WebhookLogsIndex' } }))
 jest.mock('./views/agents/AgentsIndex.vue', () => ({ __esModule: true, default: { name: 'AgentsIndex' } }))
@@ -68,6 +69,7 @@ const EXPECTED = [
 	['AuditTrailIndex', 'AuditTrailIndex'],
 	['SearchTrailIndex', 'SearchTrailIndex'],
 	['WebhooksIndex', 'WebhooksIndex'],
+	['ConsumersIndex', 'ConsumersIndex'],
 	['FlowDetailSidebar', 'FlowDetailSidebar'],
 	['WebhookLogsIndex', 'WebhookLogsIndex'],
 	['AgentsIndex', 'AgentsIndex'],
