@@ -19141,3 +19141,5 @@ review:integriq:3613:b4fef9cf	BLOCK: secret hash field not write-only, untested 
 review:shillinq:2975:3c5425e6	GREEN: unit 12551 OK (baseline 12500), touched vitest 47 passed	session-20261117T021015-602d1924	2026-11-17T02:25:41Z
 review:buildiq:1618:34282120	GREEN: buildiq #1618 (nl.json conflicts with development)	session-20261117T020211-438428f3	2026-11-17T02:25:53Z
 review:opencatalogi:2680:7b795492	GREEN: no new failures (103 inherited), merges clean	session-20261117T020617-81e5b086	2026-11-17T02:26:03Z
+review:integriq:3590:0e8a2713	GREEN: unit failures inherited (same 5 on development), vitest OK	session-20261117T020131-42b6d5a2	2026-11-17T02:26:13Z
+review:integriq:3601:fc46c8d9	GREEN: per spec, no new failures; conflicts with development (l10n, seed golden hashes)	session-20261117T021636-02f2b960	2026-11-17T02:26:26Z
