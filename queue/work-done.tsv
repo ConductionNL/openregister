@@ -22251,3 +22251,4 @@ verify:integriq:3731:d1f6f297	GREEN 3731; unit 9937, 0 new failures (5 inherited
 verify:integriq:3730:129afd21	GREEN #3730: 0 new unit failures, tests only	session-20261117T185903-e132ac1e	2026-11-17T19:32:47Z
 verify:hermiq:1844:d7a81322	GREEN #1844 (no new failures; baseline 199 inherited)	session-20261117T190357-55034d4a	2026-11-17T19:33:03Z
 verify:larpinq:1102:53a41249	GREEN larpinq#1102 (e2e only)	session-20261117T190302-4e3d4569	2026-11-17T19:33:14Z
+verify:integriq:3612:e27499b1	GREEN #3612 (9933 tests, no new failures)	session-20261117T190320-1db054ae	2026-11-17T19:33:23Z
