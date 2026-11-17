@@ -3432,3 +3432,4 @@ To https://github.com/ConductionNL/openregister
 2026-11-17T20:25:20Z session-20261117T185710-40ec955c worker-44 released build:planninq:retention-on-planninq-records:b2:c2 unworked: this session cannot push to fleet repos (git proxy: repo not in authorized set); claiming verify,review,measure only
 2026-11-17T22:02:42Z worker-37: idle-retry sleep 180 refused by the session's command policy (foreground sleep blocked); ended after an empty claim without the 3 waits
 2026-11-17T22:17:47Z integrator-20261111T115842-a749432d RED tree 7c99179a5a prs 4 front=skip: Tests: 62546, Assertions: 218747, Errors: 3, Failures: 4, Deprecations: 4, PHPUnit Depreca; first failures: Unit\Event\ObjectEventProxyEveryEventTest::testProviderCoversEveryObjectEventClass
+2026-11-17T22:26:15Z session-20261117T213056-2ba36933 worker-29 handed back fix:pipelinq:3934:6ba01209 unstarted: pushes to fleet repos are refused by this session's permission check; claiming verify,review,measure only
