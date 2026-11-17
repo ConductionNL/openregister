@@ -20886,3 +20886,4 @@ fix:integriq:3706:aac3e778	fixed: sbom regenerated, pushed ab3bf699; merge lock 
 fix:integriq:3703:80544b3c	sbom regenerated, pushed e877128e; lock busy, REVERIFY queued	session-20261117T135451-cd30812d	2026-11-17T13:59:06Z
 fix:versioniq:700:563a324a	conflict resolved, pushed b95e71ea; merge lock busy, REVERIFY queued	session-20261117T135611-7a4e2ddc	2026-11-17T13:59:32Z
 review:shillinq:3064:169d4186	3064 GREEN	session-20261117T121049-5b84d45a	2026-11-17T14:00:17Z
+cover:buildiq:70b3e29em2454:13d51e6a	PR #1711: 15 tests for VersionMergeRunner and VersionState (suite 3676 -> 3691, 0 failures)	session-20261117T133629-e10185c0	2026-11-17T14:00:51Z
