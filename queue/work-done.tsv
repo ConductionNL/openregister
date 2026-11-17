@@ -19581,3 +19581,4 @@ review:decidiq:2162:a1170813	GREEN: unit 4839->4864 no new failures, vitest 6/6,
 review:shillinq:2071:c9fb8008	BLOCK: drops BookCapturesCommand registration from info.xml; suite green	session-20261117T063118-c67285ab	2026-11-17T06:35:46Z
 fix:shillinq:2998:5dd30f17	fixed CONFLICT, pushed d4457281; merge lock held elsewhere, REVERIFY queued	session-20261117T055905-03eea4d3	2026-11-17T06:35:54Z
 fix:decidiq:2253:ffa607bd	stylelint runs again, pushed bd320878; REVERIFY queued	session-20261117T055853-7ddd3cb3	2026-11-17T06:36:02Z
+fix:shillinq:3062:fbfbd1da	fixed CONFLICT, pushed 2d73a4e6; unit 12634 OK; REVERIFY queued (merge lock held elsewhere)	session-20261117T061802-b42f2669	2026-11-17T06:36:09Z
