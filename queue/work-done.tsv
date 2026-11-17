@@ -19727,3 +19727,4 @@ review:buildiq:1602:b2a6e893	GREEN: vitest 4873/4873 on PR+development, matches 
 fix:filinq:2124:216f959b	conflict resolved, pushed 0922105d; merge lock held elsewhere, REVERIFY queued	session-20261117T065500-f63bc812	2026-11-17T07:08:00Z
 review:buildiq:1607:0a33c019	GREEN: spec-conform, vitest 4869 passed, no new lint	session-20261117T065527-44da8271	2026-11-17T07:08:12Z
 review:filinq:2086:ebd288b0	GREEN: merges clean, 7129 unit + 812 vitest OK	session-20261117T055834-d932e117	2026-11-17T07:08:23Z
+fix:decidiq:2189:aff8b82e	conflict resolved, pushed 7818e0c2; merge lock held elsewhere, REVERIFY queued	session-20261117T065448-ceb2e7e7	2026-11-17T07:08:35Z
