@@ -21576,3 +21576,4 @@ build:decidiq:member-onboarding:b2	already building: quality/build-member-onboar
 build:decidiq:followup-implementation-progress:b2	already building: quality/build-followup-implementation-progress and -2 exist	session-20261117T135414-614629b0	2026-11-17T15:22:11Z
 build:decidiq:leaf-integrations:b2	already building: quality/build-leaf-integrations(-c2) exist	session-20261117T132743-10cec9d3	2026-11-17T15:21:37Z
 build:buildiq:decision-tables-live-in-openregister:b2	already built: the one open task is a live occ upgrade check after openregister#4572; no spec files named	session-20261117T141351-c4de67df	2026-11-17T15:23:07Z
+build:decidiq:one-consultation-schema:b2	already done: built on development in 1fec71f94 (#1163) and e80eea9ae; only e2e 5.2 left	session-20261117T140734-4d108840	2026-11-17T15:23:13Z
