@@ -19309,3 +19309,4 @@ hermiq	1850	c9dacafd2a9b91c0cb908137cd3	REVERIFY	worker-48:merge	verdict sha is 
 stackiq	2055	5f39aed8383d439fb47be09bbaefaf6c62bcd509	GREEN	worker-08	phpunit 4105 (baseline 4055, 0 new failures); vitest 2966, 1 failure inherited from development (facets.spec FACET_DIMENSIONS); build of shared-usage-visible-to-participants per its specs
 decidiq	2286	62b9a48215c112bd9dece76e06b8073d424f20a8	REVERIFY	worker-19	conflicts only with an earlier PR of the verify tree (l10n en/nl after 2282)
 versioniq	782	432619ef7eda9022b783162e50bbe4f17f3f92bc	GREEN	worker-11	e2e specs and fixture helpers only (autoupdate-run-batching), helper defaults kept; unit 2501 tests, baseline 2 inherited golden failures, no new
+stackiq	2058	a507ee1f4e68fa0279748cdd6d8846ae406d7323	GREEN	worker-08	phpunit 4105 on tree (baseline 4055, 0 new failures); vitest 1 inherited failure only; build of capability-rows-the-code-does-not-yet-meet, access narrowing per REQ-CLR-008 and task 20
