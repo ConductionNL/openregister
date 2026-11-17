@@ -21004,4 +21004,5 @@ build:dossiq:party-history-link:b2	already done: 1.1/1.2 on development; only 1.
 build:dossiq:penalty-is-a-stored-calculation:b2	already done: only live task 1.4 left	session-20261117T132743-10cec9d3	2026-11-17T14:17:52Z
 build:dossiq:portal-conversation-live-pass:b2	already done: all 4 open tasks are live/e2e passes on a running instance with portaliq (and closing the row after them); no code left; no PR	session-20261117T135414-614629b0	2026-11-17T14:18:15Z
 build:dossiq:retire-cmmn-caseplanstate:b2	already building: quality/build-retire-cmmn-caseplanstate exists (ba2ceef0da, on development); open tasks are 3.2 (gated on drain report, own PR), 5.3 e2e and 6.x quality, no code task left	session-20261117T135029-424a7669	2026-11-17T14:18:50Z
+build:dossiq:stuf-onto-integriq:b2	already done: only a next-release removal task left	session-20261117T132743-10cec9d3	2026-11-17T14:18:50Z
 build:dossiq:starter-content-and-templates:b2	already done in dossiq: only 7.2 open, its remaining three surfaces live in nextcloud-vue/openregister and lane L1 builds them (decision 156); no dossiq code left; no PR	session-20261117T135414-614629b0	2026-11-17T14:18:40Z
