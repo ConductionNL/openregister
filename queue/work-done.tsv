@@ -19564,4 +19564,5 @@ review:buildiq:1643:37e0b59c	stale	session-20261117T063127-b908dd01	2026-11-17T0
 merge:buildiq:1608:c201e308	merge3 tree of 2 buildiq PRs: none; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-17T06:32:15Z
 fix:buildiq:1618:34282120	conflict resolved, pushed 088b083a0; vitest green; REVERIFY recorded	session-20261117T061917-57640b81	2026-11-17T06:32:29Z
 fix:decidiq:2198:764b069d	conflict resolved, pushed 82d9b784; REVERIFY queued	session-20261117T055853-7ddd3cb3	2026-11-17T06:32:41Z
+merge:stackiq:1943:4de79505	failed: cull: no PR reproduces the failures; the tree is not landed	session-20261117T063112-55331435	2026-11-17T06:33:03Z
 fix:shillinq:2993:9a8d6e12	conflict resolved, pushed cf43d96e6a; REVERIFY queued	session-20261117T042937-c444c626	2026-11-17T06:33:11Z
