@@ -21539,6 +21539,7 @@ build:shillinq:reporting-cash-flow-statement:b2	partial: PR #3177 builds 1.1, 2.
 build:learniq:regulation-assign-by-audience:b2	already done: T1-T2 on development; only T3 (live dialog check) left, not a code task	session-20261117T134304-10008ffd	2026-11-17T15:16:35Z
 build:learniq:student-portal-reads-like-the-boards:b2	nothing to build: only T4 (live check) is unchecked	session-20261117T123418-5f98fc94	2026-11-17T15:16:30Z
 build:learniq:timetabling-student-choice-placement:b2	already done: only live 1.10, e2e 2.1b and archive 3.2 left	session-20261117T132743-10cec9d3	2026-11-17T15:16:19Z
+build:learniq:site-pupil-portal-design:b2	already done: built on development (e9eecf6c); only T8, an e2e task, is left	session-20261117T141120-684bff04	2026-11-17T15:17:22Z
 build:learniq:timetabling-online-lesson-link:b2	nothing to build: open 1.10 live check (needs planninq contract v2), 2.1b Playwright, 3.2 archive after verify; no PR	session-20261117T134951-9fef99ce	2026-11-17T15:16:52Z
 build:learniq:platform-properties:b2	already building (quality/build-platform-properties exists; only the archive step left)	session-20261117T125716-5aa18045	2026-11-17T15:17:20Z
 build:learniq:vo-timetable-every-school-day:b2	already built: T1 on development; skipped T2 (live proof run)	session-20261117T135611-7a4e2ddc	2026-11-17T15:17:11Z
@@ -21567,8 +21568,16 @@ build:decidiq:agenda-paper-watermark:b2	already building (quality/build-agenda-p
 build:decidiq:council-calendar-meeting-type-in-the-readers-language:b2	already done: only live 1.3 left (67db5e5e)	session-20261117T132743-10cec9d3	2026-11-17T15:20:44Z
 build:decidiq:document-annotations:b2	already building: quality/build-document-annotations exists	session-20261117T135414-614629b0	2026-11-17T15:20:08Z
 build:decidiq:document-approval-chain-leaf:b2	already done: only the screenshots task is open, captured by a journeydoc run on a live instance	session-20261117T124010-7774729d	2026-11-17T15:20:09Z
+build:decidiq:goals-linked-to-decisions:b2	already done: builds merged (incl. -c2); vitest for the widgets is in; left the Playwright test on a live instance and the Related-tab total, which the shared tabs widget cannot count across four schemas	session-20261117T124010-7774729d	2026-11-17T15:21:29Z
+build:buildiq:forms-fee-on-submit:b2	already built: no spec files named, every buildiq code task on development; skipped T05 (portaliq provider half, another app), T07 (live portal check), T08 (archive after T05/T07)	session-20261117T141351-c4de67df	2026-11-17T15:21:26Z
 build:decidiq:fold-regulations-into-governing-documents:b2	already built: 1.1-5.1 on development; the 5.2 e2e exists (tests/e2e/spec-coverage/register-detail-widgets.spec.ts, @e2e on requirement-existing-regulations-are-carried-across, the seeded regulation on the generic GoverningDocumentDetail); only the live run is left	session-20261117T141518-05f12270	2026-11-17T15:21:18Z
 build:decidiq:example-set-zuiddrecht:b2	already done: open 2.2/2.3 are install checks on a live instance; no PR	session-20261117T135414-614629b0	2026-11-17T15:21:19Z
 build:decidiq:interests-and-integrity:b2	already done: tasks 1-6 on development (fragment 62 etc., #2146 at 47325aada incl. task 5 KPI + compliance panel; tasks.md boxes 1-5 not ticked); only task 7 e2e (browser) left	session-20261117T133303-ca20630d	2026-11-17T15:21:17Z
 build:decidiq:ori-adoption:b2	already building: quality/build-ori-adoption exists	session-20261117T123418-5f98fc94	2026-11-17T15:22:07Z
+build:decidiq:agenda-item-confidential-papers:b2	PR #2276: e2e tests/e2e/confidential-agenda-item.spec.ts for built scenarios; tasks 1 (read rules need OR evaluator test + body on item), 2 rest (waits on 1), 5 (view log belongs in OR read audit) left	session-20261117T145748-1419d209	2026-11-17T15:21:45Z
+build:decidiq:generic-audit-statement:b2	already built: 1.1-1.10 on development, no spec file named; 1.11 is the live-instance check	session-20261117T141518-05f12270	2026-11-17T15:22:33Z
+build:decidiq:member-onboarding:b2	already building: quality/build-member-onboarding exists (open PR #2173)	session-20261117T135029-424a7669	2026-11-17T15:22:10Z
+build:decidiq:followup-implementation-progress:b2	already building: quality/build-followup-implementation-progress and -2 exist	session-20261117T135414-614629b0	2026-11-17T15:22:11Z
 build:decidiq:leaf-integrations:b2	already building: quality/build-leaf-integrations(-c2) exist	session-20261117T132743-10cec9d3	2026-11-17T15:21:37Z
+build:buildiq:decision-tables-live-in-openregister:b2	already built: the one open task is a live occ upgrade check after openregister#4572; no spec files named	session-20261117T141351-c4de67df	2026-11-17T15:23:07Z
+build:decidiq:integrity-disclosures-in-plain-words:b2	already done in code: only 5.2 E2E is open (needs the live instance)	session-20261117T135029-424a7669	2026-11-17T15:23:24Z
