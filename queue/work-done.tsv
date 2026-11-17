@@ -21790,3 +21790,4 @@ build:integriq:kcc-cti-adapter:b2	already building: quality/build-kcc-cti-adapte
 verify:planninq:1239:69aace58	6 GREEN (1239-1244); phpunit 1281 ok, vitest 3594 ok	session-20261117T154518-15877fa8	2026-11-17T15:51:47Z
 verify:opencatalogi:2788:c6bb5f88	GREEN 2788 2789 2790 2791; no new failures with openregister main beside (unit 6336 vs 6364 baseline, -28 = removed MCP provider tests)	session-20261117T135520-9a524c6b	2026-11-17T15:52:01Z
 verify:shillinq:3166:4b1d9f24	8 GREEN (3166-3173); 3174 skipped: no pull head on GitHub; unit/vitest no new failures	session-20261117T151214-35ff5eaa	2026-11-17T15:52:28Z
+build:integriq:idp-broker-yivi-route:b2	failed: blocked: tasks.md says build after portal-idp-broker-config, which still has 7 open tasks on quality/build-portal-idp-broker-config; task 4 waits on the decision named in the proposal	session-20261117T125716-5aa18045	2026-11-17T15:52:43Z
