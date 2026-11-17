@@ -18725,3 +18725,4 @@ portaliq	2578	ecda0995fde017ac8deb6fa1e5162d5706e02426	GREEN	worker-32	unit 6339
 versioniq	798	91fdceff9606e38c08294f9f188caa4b1c92289f	GREEN	worker-44	phpunit 2456 on tree, baseline 2, none new; vitest 3237 passed (2 inherited unhandled errors); CSS/aria keyboard reachability fix + spec
 versioniq	799	9d0b17e161aabdb3641874366fbf88fc9343996c	REVERIFY	worker-44	conflicts only with an earlier PR of the verify tree (l10n/*, src/App.vue vs #798)
 portaliq	2579	df1bfc402b7652facf47819ec22a83d590bd098c	CONFLICT	worker-32	package.json conflicts with development
+opencatalogi	2756	70b8b0cb8de57fabae21fef0562dfe82dda9fab2	GREEN	worker-31	phpunit 6389 tests on tree, baseline 6364 with 103 inherited failures/errors, 0 new; vitest 8 inherited mainEntry failures, 0 new
