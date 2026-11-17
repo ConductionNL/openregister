@@ -22133,3 +22133,4 @@ verify:buildiq:1724:86533fb7	GREEN 1724-1732 (9 PRs); unit 3676, 0 new failures	
 review:larpinq:1049:eb8c9f5f	GREEN: config-only, matches specs; merged unit 1260 OK, vitest 749 OK	session-20261117T185359-d68263c5	2026-11-17T19:02:08Z
 review:buildiq:1608:10685d4e	BLOCK: code-write rule missing on version create; conflicts with development (4 files); unit suite green on head	session-20261117T185625-a1e67f54	2026-11-17T19:02:16Z
 review:stackiq:1946:1a1d2ce9	GREEN: unit 4135/0 fail (base 4055), vitest 23 pass; concern: SPDX header dropped from locale files	session-20261117T185903-e132ac1e	2026-11-17T19:02:30Z
+review:opencatalogi:2674:8afba882	GREEN; 0 new failures; conflicts with development in 5 files	session-20261117T185757-f5106521	2026-11-17T19:02:39Z
