@@ -22320,3 +22320,4 @@ verify:pipelinq:3939:102496ca	GREEN 3939; 0 new failures	session-20261117T185757
 verify:portaliq:2446:ddd3af7b	CONFLICT: package.json	session-20261117T190242-7c82bed8	2026-11-17T19:46:10Z
 verify:learniq:2607:4327ccd2	GREEN 2607; unit 7156, 0 new failures (1 inherited)	session-20261117T185419-c23c5946	2026-11-17T19:46:25Z
 verify:pipelinq:3952:724737b6	GREEN 3952; no new failures	session-20261117T185927-e9838dc9	2026-11-17T19:46:45Z
+verify:portaliq:2578:ecda0995	GREEN (e2e only)	session-20261117T190242-7c82bed8	2026-11-17T19:46:55Z
