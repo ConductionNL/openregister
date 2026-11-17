@@ -19612,3 +19612,6 @@ thematiq	1725	f7a10dc12ca1b7982050d7bf7fb649d8684d2882	RED	merge3:merge-gate	GAT
 thematiq	1726	ebe538c8dc4ba9e635c349fc608093ec09646cb6	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 thematiq	1719	740e1349e57122fb6902c14777368c21f0bfaa15	REVERIFY	merge3	verdict sha is not the head: head is 4d45b1a8d11d32bda41e8a6cd6e92bed8095dca2
 thematiq	1729	0112b5b6724ea05ac9e72421dcf80f7df166f86b	CONFLICT	merge3	merges clean on development alone; files: package-lock.json package.json 
+launchpad	1295	8e839b5210cfdfcca1ed2fcad366db008d7a4c2c	RED	merge3:merge-gate	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+launchpad	1298	c874c6ad5b2e7c88a07d5ac2a92feb874cb52782	RED	merge3:merge-gate	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+launchpad	1306	060171415ec0321c8968a4087ce146a20f0714d7	RED	merge3:merge-gate	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
