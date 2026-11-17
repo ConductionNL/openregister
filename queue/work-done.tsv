@@ -20350,3 +20350,4 @@ review:filinq:2120:34cc4cd4	GREEN: phpunit 7300, vitest 827, jest 603, 0 failure
 fix:shillinq:2975:d0bcdce6	fixed: posting-rights check + development merged; new head f616ab85, REVERIFY queued	session-20261117T111554-d575c862	2026-11-17T11:30:35Z
 verify:larpinq:1086:22f57376	GREEN #1086 (1225 tests, 0 new failures)	session-20261117T112500-ee7a6502	2026-11-17T11:30:50Z
 fix:learniq:2551:a86b68dc	conflict resolved, new head 7d11c48b; merge lock held elsewhere, REVERIFY queued	session-20261117T111959-ea58bfcd	2026-11-17T11:31:02Z
+review:integriq:3564:d45b5057	GREEN: no new failures (9819 tests, 5 inherited), phpstan/vitest/eslint clean	session-20261117T112444-7a410249	2026-11-17T11:31:19Z
