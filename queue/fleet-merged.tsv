@@ -4899,3 +4899,4 @@ humaniq	1143	ef2689eaa85a742a010784b01fbf356e5952989b	MERGED	worker-52	GATE OK s
 portaliq	2448	8388e6653c4cdd47d3a268e694e7269c192b9612	MERGED	worker-07	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.16
 stackiq	2008	f4283fd2b011b22e1db321a12037e0a4238a2759	MERGED	worker-33	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.19
 learniq	1883	88ce2f2bd933e45c14f811fcf7001883ff74c3fd	MERGED	worker-16	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 4.08
+versioniq	715	f78bf6ec7fe496be81970d63b041950456dea081	RED	worker-36	GATE RED floor: overall: 5.07 -> 5.01; unit_size: 4.85 -> 4.82; unit_complexity: 4.79 -> 4.73; unit_interfacing: 4.59 -> 4.24
