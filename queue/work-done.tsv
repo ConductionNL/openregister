@@ -19414,3 +19414,4 @@ fix:integriq:3595:6e9939f8	conflict resolved, pushed bdc0132a0a; REVERIFY queued
 fix:integriq:3628:58bae4ec	conflict resolved, pushed d1d59a18fc; REVERIFY queued (merge lock held elsewhere)	session-20261117T042937-c444c626	2026-11-17T04:44:01Z
 fix:integriq:3596:5124b212	conflict resolved, pushed d81a6a118e; REVERIFY queued (merge lock held elsewhere)	session-20261117T042937-c444c626	2026-11-17T04:48:15Z
 fix:integriq:3050:ba946f8e	obsolete: development already bulk-saves via BulkSaveOptions with equal flags; closed #3050	session-20261117T042937-c444c626	2026-11-17T04:49:38Z
+fix:integriq:3670:d4f5bcc8	unmeasured: static.developer.overheid.nl (fixed and pushed 90ebc50703, APPROVE recorded, not landed)	session-20261117T042937-c444c626	2026-11-17T04:57:26Z
