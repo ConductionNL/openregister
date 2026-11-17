@@ -19697,3 +19697,4 @@ review:buildiq:1649:50616cd8	GREEN: no new failures (3561 tests, 1 inherited), s
 review:filinq:2099:51b673de	GREEN: unit 7115 OK merged with development	session-20261117T063708-4c9ceddc	2026-11-17T07:01:40Z
 review:learniq:2549:670bd0cc	GREEN learniq#2549	session-20261117T061824-01d4fad5	2026-11-17T07:01:57Z
 review:hermiq:1781:e762af73	GREEN: no new failures (5594 vs 5543 tests), gate failures inherited	session-20261117T063112-55331435	2026-11-17T07:02:07Z
+review:hermiq:1758:9fd79088	GREEN: hermiq#1758 unit 5557/0 fail, phpstan clean	session-20261117T065829-ba4e0772	2026-11-17T07:02:15Z
