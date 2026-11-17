@@ -1387,3 +1387,4 @@ decidiq	2149	3ccfbfcfc456c5da74508481e6602f2a82bcfab3	APPROVE	worker-19	Thorough
 buildiq	1715	628d9e25f091953535ee8b7bb259bf0baf012802	APPROVE	worker-02	Quick; no blockers; e2e spec only, base URL from env, non-admin empty storage state
 buildiq	1716	f3a173de86c01c3d3ee317b89282af504b62139b	APPROVE	worker-02	Quick; no blockers; tasks.md tick only
 thematiq	1721	b57b4ab90b6e9cd73b7a08ae3f63864fc2e778d5	APPROVE	worker-14	Quick; no blockers; dev-only psalm major bump, php ^8.3 satisfied
+thematiq	1722	f409740840de20ce047e4abde179bd59e0a9d729	APPROVE	worker-14	Quick; no blockers; dev dependency patch bump
