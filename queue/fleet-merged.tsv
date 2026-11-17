@@ -5650,3 +5650,4 @@ filinq	2175	3022acfde582e99ab204ee27a72a988027232fcc	MERGED	merge3	GATE OK sbom,
 filinq	2183	fb25a98a385e31605573510e1f28367b920a420b	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.03
 filinq	2184	6da46b71eaef66c39d938d3bfecaf1d756918363	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.03
 filinq	2185	3ebe59da9070e5dedafce84112113ed789bcbc83	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.03
+shillinq	3171	47136a423cbb20c72c38f169dec103458860399d	SKIP	worker-01	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
