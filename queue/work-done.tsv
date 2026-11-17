@@ -22276,3 +22276,4 @@ verify:learniq:2594:259feb56	GREEN 2594; e2e/tasks only, unit green	session-2026
 verify:integriq:3729:0be54156	3729 GREEN	session-20261117T185710-40ec955c	2026-11-17T19:37:19Z
 verify:integriq:3582:963fe34c	GREEN 3582 (phpunit 9946, 0 new failures; vitest 2397)	session-20261117T190316-ad3f71cf	2026-11-17T19:37:27Z
 verify:integriq:3720:b1dbefe4	GREEN integriq#3720: e2e spec only, unit suite unaffected	session-20261117T185556-5276d56d	2026-11-17T19:37:37Z
+verify:opencatalogi:2799:a135b000	GREEN 2799 (e2e spec + docs only)	session-20261117T185927-e9838dc9	2026-11-17T19:37:48Z
