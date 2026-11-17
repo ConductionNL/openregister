@@ -18271,6 +18271,7 @@ filinq	2093	33690cef69af41d263a615ebed8cadfcd458d08e	CONFLICT	worker-53	conflict
 keepiq	1892	06b6dba3bec63906cfcdd35ab235927a95704709	GREEN	worker-27	version bump only (info.xml, openapi.json; both parse); no PHP/JS changed, 0 new failures
 filinq	2172	3c8384eecf55f14d60964bae8d16705a6f6e6944	GREEN	worker-49	version bump only (info.xml, openapi.json); unit 7288 OK, baseline 7288 OK, no new failures
 stackiq	1435	8d2e5a8e97cee6b5dc7bc84ac39aa1433deb6f46	GREEN	worker-14	unit 4054 tests ok on tree (baseline 4050 ok, +4 new SearchSelectionTest); no new failures; search args adapter keeps OR main behaviour (deleted defaults false)
+buildiq	1706	21011791647b7460e89fbb45d36fa731d58a9d14	GREEN	worker-41	unit 3579 tests OK on tree, baseline 3578 OK; 0 new failures; tests-only
 dossiq	3106	2e1244492cdfac558fe97a5c37b9b027ad47f1d4	CONFLICT	worker-55	conflicts with development in sbom.cdx.json (regenerate sbom after merging development); baseline 18392 tests, 1 inherited error
 buildiq	1704	41c7345c858e3069d66f4d489f4dcecaac45a0f4	GREEN	worker-15	unit 3578 tests, baseline 0 failures (7 skipped), new failures 0; test coverage metadata only
 dossiq	3548	4deb67eb0657b057f54c2806539c45438dfcc3d7	GREEN	worker-11	merge onto development yields a tree identical to development (no-op beta sync); no code change, suite not rerun, no new failures possible
