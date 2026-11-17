@@ -22235,6 +22235,7 @@ verify:integriq:3706:ab3bf699	GREEN	session-20261117T190242-7c82bed8	2026-11-17T
 verify:keepiq:1898:2d4d0257	GREEN #1898 (tasks.md only; cited tests exist)	session-20261117T190632-f0412d81	2026-11-17T19:29:35Z
 verify:hermiq:1849:599ab2bf	1 GREEN (1849); no new failures	session-20261117T190249-b0f6275f	2026-11-17T19:29:49Z
 verify:integriq:3715:86b85286	GREEN integriq #3715 (Newman collection only; baseline 2E/2F inherited)	session-20261117T190434-a73c29f6	2026-11-17T19:29:57Z
+merge:learniq:2598:835f8b4e	unmeasured: static.developer.overheid.nl (also api.osv.dev) refused by this session's egress proxy; 5 PRs green tree + APPROVE recorded, nothing landed	session-20261117T190333-2bf83f45	2026-11-17T19:30:06Z
 verify:learniq:2606:79bec0a6	GREEN #2606 (no new failures)	session-20261117T190418-7494049c	2026-11-17T19:30:09Z
 verify:dossiq:6659:565a618a	GREEN 6659 (e2e only; 0 new failures, 19 inherited)	session-20261117T185828-a5f2758a	2026-11-17T19:30:19Z
 merge:filinq:2121:b4bde39a	unmeasured: api.osv.dev; cloud tree of 9 filinq PRs: merged=0 red=1 fail=0 skip=6; conflict 1, moved 1; reviews APPROVE recorded for 7	session-20261117T190308-4c99e05c	2026-11-17T19:30:38Z
@@ -22330,3 +22331,4 @@ verify:opencatalogi:2792:f3566f96	GREEN #2792 (6 tests added, no new failures)	s
 verify:portaliq:2587:664b8ca8	GREEN #2587 (6339 tests, 16 inherited errors, 0 new)	session-20261117T190250-54b1be06	2026-11-17T19:48:12Z
 verify:pipelinq:3956:88c728b0	GREEN #3956 (version bump), 0 new failures	session-20261117T190150-dbabe332	2026-11-17T19:48:33Z
 verify:planninq:1245:18c0e02a	GREEN planninq#1245 (1262 tests, 0 new failures)	session-20261117T190507-82f8fe51	2026-11-17T19:48:46Z
+verify:launchpad:1306:06017141	GREEN #1306: tests-only/docs; 0 new failures; note development lockfile out of sync	session-20261117T185853-76335694	2026-11-17T19:49:09Z
