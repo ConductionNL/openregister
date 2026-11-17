@@ -80,7 +80,9 @@ class PersonalTokenGrantsControllerTest extends TestCase {
 		$session->method('getUser')->willReturn($user);
 
 		$request = $this->createMock(IRequest::class);
-		$request->method('getParam')->with('grant')->willReturn($grantParam);
+		$request->method('getParam')->willReturnCallback(
+			static fn (string $key, $default = null) => ($key === 'grant' ? $grantParam : $default)
+		);
 
 		$config = $this->createMock(IConfig::class);
 		$config->method('getUserValue')->willReturnCallback(

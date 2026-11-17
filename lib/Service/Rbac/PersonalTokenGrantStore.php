@@ -138,12 +138,13 @@ class PersonalTokenGrantStore {
 	 * @param array             $grant   The validated grant.
 	 * @param string            $actor   Who issues or renews it.
 	 * @param DateTimeInterface $now     The moment of the act.
+	 * @param string|null       $label   The token's name as its owner knows it, or null to keep the stored one.
 	 *
 	 * @return array<string, mixed> The stored record.
 	 *
 	 * @spec openspec/changes/scoped-api-tokens/specs/auth-system/spec.md#requirement-a-token-carries-a-required-end-date-and-is-warned-before-it-lapses-req-sat-003
 	 */
-	public function write(string $uid, string $tokenId, array $grant, string $actor, DateTimeInterface $now): array {
+	public function write(string $uid, string $tokenId, array $grant, string $actor, DateTimeInterface $now, ?string $label = null): array {
 		$at       = $now->format(DateTimeInterface::ATOM);
 		$previous = $this->read(uid: $uid, tokenId: $tokenId);
 		$record   = ['grant' => $grant, 'issuedBy' => $actor, 'issuedAt' => $at, 'renewals' => []];
@@ -159,6 +160,14 @@ class PersonalTokenGrantStore {
 				$record['renewals'][] = ['by' => $actor, 'at' => $at, 'from' => $oldEnd, 'expiresAt' => $newEnd];
 				$record['renewals']   = array_slice($record['renewals'], -self::MAX_RENEWALS);
 			}
+		}
+
+		if ($label === null && is_string(($previous['label'] ?? null)) === true) {
+			$label = $previous['label'];
+		}
+
+		if ($label !== null && $label !== '') {
+			$record['label'] = $label;
 		}
 
 		$this->config->setUserValue($uid, Application::APP_ID, self::key(tokenId: $tokenId), (string) json_encode($record));

@@ -137,6 +137,22 @@
         Consumer half (`/api/consumers` has no view in `src/`). Decide which
         token the account page manages, then build the editor over the
         existing endpoints.
+      - Decided (17 Nov): the personal editor manages grants on Nextcloud
+        app passwords, the tokens that authenticate; the section's own
+        `api_tokens` stay as they are. Because OCP lists no app passwords,
+        the owner names one by pasting it once: `POST
+        /api/tokens/grants/resolve` resolves it through
+        `IProvider::getToken()` to its id and name, never stores or returns
+        it, and answers the same 404 for another account's password as for
+        an unknown one. `GET /api/tokens/grants` lists the caller's granted
+        tokens with a `label` kept on the record. `POST
+        /api/tokens/grants/preview` answers, per row verb the caller holds on
+        one readable object, whether the token keeps it
+        (`TokenGrantPreview`, through the same permission handler that
+        enforces, with the request's own grant restored afterwards). The
+        Consumer half edits the grant in `authorizationConfiguration` over
+        `/api/consumers`. Tests: `PersonalTokenGrantsEditorTest` (10),
+        `TokenGrantPreviewTest` (5).
 
 ## 4. Tests
 

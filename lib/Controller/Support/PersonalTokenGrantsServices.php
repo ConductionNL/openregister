@@ -22,11 +22,15 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
+use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Service\Rbac\AccessReviewGateInterface;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogueInterface;
 use OCA\OpenRegister\Service\Rbac\PersonalTokenGrantBinder;
 use OCA\OpenRegister\Service\Rbac\PersonalTokenGrantStore;
+use OCA\OpenRegister\Service\Rbac\TokenGrantPreview;
 use OCA\OpenRegister\Service\Rbac\TokenGrantSource;
 use OCA\OpenRegister\Service\Rbac\TokenGrantValidator;
+use OCP\Authentication\Token\IProvider as ITokenProvider;
 
 /**
  * The collaborators of PersonalTokenGrantsController, wired by DI autowiring.
@@ -42,6 +46,10 @@ final class PersonalTokenGrantsServices {
 	 * @param TokenGrantSource             $source    The grant a Consumer bound for this request.
 	 * @param TokenGrantValidator          $validator Refuses a grant that cannot be issued.
 	 * @param PermissionCatalogueInterface $catalogue The verbs this instance knows.
+	 * @param ITokenProvider|null           $tokenProvider Resolves an app password its owner pastes into the editor.
+	 * @param AccessReviewGateInterface|null $gate        Reads the object a preview is asked about, as the caller.
+	 * @param SchemaMapperInterface|null   $schemas   The schema of that object.
+	 * @param TokenGrantPreview|null       $preview   Answers the preview.
 	 */
 	public function __construct(
 		public readonly PersonalTokenGrantStore $store,
@@ -49,6 +57,10 @@ final class PersonalTokenGrantsServices {
 		public readonly TokenGrantSource $source,
 		public readonly TokenGrantValidator $validator,
 		public readonly PermissionCatalogueInterface $catalogue,
+		public readonly ?ITokenProvider $tokenProvider = null,
+		public readonly ?AccessReviewGateInterface $gate = null,
+		public readonly ?SchemaMapperInterface $schemas = null,
+		public readonly ?TokenGrantPreview $preview = null,
 	) {
 	}//end __construct()
 }//end class

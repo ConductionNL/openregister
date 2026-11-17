@@ -4284,6 +4284,7 @@ Service/Rbac/PersonalTokenGrantBinder.php,,Service,Access,Access/Service/Rbac/Pe
 Service/Rbac/PersonalTokenGrantStore.php,,Service,Access,Access/Service/Rbac/PersonalTokenGrantStore.php,0,,Core
 Listener/PersonalTokenGrantRevokedListener.php,,Listener,Access,Access/Listener/PersonalTokenGrantRevokedListener.php,0,,Core
 Service/Rbac/TokenGrantRenewals.php,,Service,Access,Access/Service/Rbac/TokenGrantRenewals.php,0,,Core
+Service/Rbac/TokenGrantPreview.php,,Service,Access,Access/Service/Rbac/TokenGrantPreview.php,0,,Core
 Service/Archival/DestructionListConflictRefresh.php,160,Service,Compliance,Compliance/Service/Archival/DestructionListConflictRefresh.php,0,,Compliance
 Service/Archival/LinkConflictsNotAcknowledgedException.php,75,Service,Compliance,Compliance/Service/Archival/LinkConflictsNotAcknowledgedException.php,0,,Compliance
 Migration/Version1Date20261114120000.php,,Migration,,,,,Platform

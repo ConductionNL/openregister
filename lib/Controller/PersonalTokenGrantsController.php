@@ -36,6 +36,8 @@ namespace OCA\OpenRegister\Controller;
 use DateTimeImmutable;
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\PersonalTokenGrantsServices;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Rbac\PersonalTokenGrantStore;
 use OCA\OpenRegister\Service\Rbac\TokenGrant;
 use OCA\OpenRegister\Service\Rbac\TokenGrantIssue;
@@ -47,7 +49,9 @@ use OCP\IRequest;
 use OCP\IUserSession;
 
 /**
- * GET, PUT and DELETE /api/tokens/{tokenId}/grant.
+ * GET, PUT and DELETE /api/tokens/{tokenId}/grant; GET /api/tokens/grants,
+ * POST /api/tokens/grants/resolve and POST /api/tokens/grants/preview for the
+ * grant editor on the account page.
  *
  * @spec openspec/changes/scoped-api-tokens/specs/auth-system/spec.md
  */
@@ -128,7 +132,15 @@ class PersonalTokenGrantsController extends Controller {
 			return self::refusal(status: Http::STATUS_UNPROCESSABLE_ENTITY, message: $refusal);
 		}
 
-		$record = $this->services->store->write(uid: $uid, tokenId: $tokenId, grant: $grant, actor: $uid, now: $now);
+		$label  = $this->request->getParam('label');
+		$record = $this->services->store->write(
+			uid: $uid,
+			tokenId: $tokenId,
+			grant: $grant,
+			actor: $uid,
+			now: $now,
+			label: self::labelOf(label: $label)
+		);
 
 		return new JSONResponse(data: self::describe(tokenId: $tokenId, record: $record));
 	}//end update()
@@ -157,6 +169,186 @@ class PersonalTokenGrantsController extends Controller {
 
 		return new JSONResponse(data: ['tokenId' => $tokenId, 'grant' => null]);
 	}//end destroy()
+
+	/**
+	 * The caller's own tokens that carry a grant.
+	 *
+	 * @return JSONResponse `{results: [{tokenId, label, actorVia, grant, readable, issuedBy, issuedAt, renewals}]}`; 401 without a user.
+	 *
+	 * @spec openspec/changes/scoped-api-tokens/specs/auth-system/spec.md#requirement-a-token-or-consumer-may-carry-a-grant-narrower-than-its-user
+	 */
+	#[NoAdminRequired]
+	public function index(): JSONResponse {
+		$uid = $this->uid();
+		if ($uid === null) {
+			return self::refusal(status: Http::STATUS_UNAUTHORIZED, message: 'not-logged-in');
+		}
+
+		$results = [];
+		foreach ($this->services->store->all() as $entry) {
+			if ($entry['uid'] !== $uid) {
+				continue;
+			}
+
+			$record = $this->services->store->read(uid: $uid, tokenId: $entry['tokenId']);
+			if ($record !== null) {
+				$results[] = self::describe(tokenId: $entry['tokenId'], record: $record);
+			}
+		}
+
+		return new JSONResponse(data: ['results' => $results]);
+	}//end index()
+
+	/**
+	 * Name one of the caller's app passwords by the password itself.
+	 *
+	 * Nextcloud offers apps no list of a user's app passwords, so the editor
+	 * asks the owner to paste the password once. It is resolved to the token
+	 * id and name and never stored or returned. A password that is not a
+	 * token, or is somebody else's, answers the same 404, so the endpoint
+	 * cannot be used to probe other accounts' tokens.
+	 *
+	 * @return JSONResponse `{tokenId, name, grant}`; 401, 403, 404 or 422 when refused.
+	 *
+	 * @spec openspec/changes/scoped-api-tokens/specs/auth-system/spec.md#requirement-a-token-or-consumer-may-carry-a-grant-narrower-than-its-user
+	 */
+	#[NoAdminRequired]
+	public function resolve(): JSONResponse {
+		$uid = $this->uid();
+		if ($uid === null) {
+			return self::refusal(status: Http::STATUS_UNAUTHORIZED, message: 'not-logged-in');
+		}
+
+		if ($this->isTokenCaller() === true) {
+			return self::refusal(status: Http::STATUS_FORBIDDEN, message: 'A token grant can only be changed from an interactive sign-in');
+		}
+
+		$password = $this->request->getParam('password');
+		if (is_string($password) === false || trim($password) === '') {
+			return self::refusal(status: Http::STATUS_UNPROCESSABLE_ENTITY, message: 'an app password is required');
+		}
+
+		try {
+			$token = $this->services->tokenProvider?->getToken(trim($password));
+		} catch (\Throwable $unknown) {
+			$token = null;
+		}
+
+		if ($token === null || $token->getUID() !== $uid) {
+			return self::refusal(status: Http::STATUS_NOT_FOUND, message: 'This is not one of your app passwords');
+		}
+
+		$tokenId = (string) $token->getId();
+		$record  = $this->services->store->read(uid: $uid, tokenId: $tokenId);
+
+		$described = null;
+		if ($record !== null) {
+			$described = self::describe(tokenId: $tokenId, record: $record);
+		}
+
+		return new JSONResponse(
+			data: [
+				'tokenId' => $tokenId,
+				'name'    => $token->getName(),
+				'grant'   => $described,
+			]
+		);
+	}//end resolve()
+
+	/**
+	 * What a grant would let its token do on one object the caller can read.
+	 *
+	 * Per row verb the caller holds on the object, whether the token would hold
+	 * it too, answered by the same permission check that enforces a request.
+	 * Nothing is stored. An object the caller cannot read answers 404.
+	 *
+	 * @return JSONResponse `{verbs: [{verb, holder, token}], expired, empty}`; 401, 404 or 422 when refused.
+	 *
+	 * @spec openspec/changes/scoped-api-tokens/specs/auth-system/spec.md#requirement-a-token-or-consumer-may-carry-a-grant-narrower-than-its-user
+	 */
+	#[NoAdminRequired]
+	public function preview(): JSONResponse {
+		if ($this->uid() === null) {
+			return self::refusal(status: Http::STATUS_UNAUTHORIZED, message: 'not-logged-in');
+		}
+
+		$grant = TokenGrant::fromStored(stored: $this->request->getParam(TokenGrant::KEY));
+		$ref   = $this->objectRef();
+		if ($grant === null || $ref === null) {
+			return self::refusal(status: Http::STATUS_UNPROCESSABLE_ENTITY, message: 'a grant, a register, a schema and an object are required');
+		}
+
+		$object = $this->readableObject(ref: $ref);
+		if ($object === null || $this->services->schemas === null || $this->services->preview === null) {
+			return self::refusal(status: Http::STATUS_NOT_FOUND, message: 'Object not found');
+		}
+
+		try {
+			$schema = $this->services->schemas->find((string) $object->getSchema());
+		} catch (\Throwable $unreadable) {
+			return self::refusal(status: Http::STATUS_NOT_FOUND, message: 'Object not found');
+		}
+
+		return new JSONResponse(
+			data: $this->services->preview->preview(grant: $grant, schema: $schema, object: $object, now: new DateTimeImmutable())
+		);
+	}//end preview()
+
+	/**
+	 * The object the preview is asked about, from the request.
+	 *
+	 * @return ObjectRef|null The reference, or null when a part is missing.
+	 */
+	private function objectRef(): ?ObjectRef {
+		$parts = [];
+		foreach (['register', 'schema', 'object'] as $name) {
+			$value = $this->request->getParam($name);
+			if (is_string($value) === false && is_int($value) === false) {
+				return null;
+			}
+
+			$value = trim((string) $value);
+			if ($value === '') {
+				return null;
+			}
+
+			$parts[$name] = $value;
+		}
+
+		return new ObjectRef(register: $parts['register'], schema: $parts['schema'], id: $parts['object']);
+	}//end objectRef()
+
+	/**
+	 * The object, when the caller may read it; read with no grant bound so the
+	 * preview is asked of the caller's own rights.
+	 *
+	 * @param ObjectRef $ref The object asked about.
+	 *
+	 * @return ObjectEntity|null The object, or null.
+	 */
+	private function readableObject(ObjectRef $ref): ?ObjectEntity {
+		$gate = $this->services->gate;
+		if ($gate === null) {
+			return null;
+		}
+
+		return $this->services->source->runWithoutGrant(fn (): ?ObjectEntity => $gate->resolve(ref: $ref));
+	}//end readableObject()
+
+	/**
+	 * A token label as stored and shown: trimmed, at most 200 characters, or null.
+	 *
+	 * @param mixed $label The submitted or stored label.
+	 *
+	 * @return string|null The label, or null when there is none.
+	 */
+	private static function labelOf(mixed $label): ?string {
+		if (is_string($label) === false || trim($label) === '') {
+			return null;
+		}
+
+		return mb_substr(trim($label), 0, 200);
+	}//end labelOf()
 
 	/**
 	 * The calling user's uid.
@@ -192,6 +384,7 @@ class PersonalTokenGrantsController extends Controller {
 
 		return [
 			'tokenId'  => $tokenId,
+			'label'    => self::labelOf(label: ($record['label'] ?? null)),
 			'actorVia' => PersonalTokenGrantStore::actorId(tokenId: $tokenId),
 			'grant'    => $grant,
 			'readable' => ($grant !== null),
