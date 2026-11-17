@@ -20015,3 +20015,4 @@ cover:stackiq:9ac19b3am039e:216a9a0a	deferred: stackiq has 43 open PRs	session-2
 fix:integriq:3557:89d30cbe	conflict resolved, pushed 76fedb76; lock held elsewhere, REVERIFY	session-20261117T084835-4ff9a661	2026-11-17T09:00:53Z
 verify:learniq:2577:4e6c5569	CONFLICT #2577 (tests/unit-js/structureProfile.test.mjs)	session-20261117T084918-0b033747	2026-11-17T09:01:03Z
 fix:launchpad:1212:06d37ac4	stale	session-20261117T084851-7a832684	2026-11-17T09:01:18Z
+fix:opencatalogi:2677:635c5d4a	fixed RED (handover param moved after fieldMapper), pushed 1abdb829; merge lock held elsewhere, REVERIFY queued	session-20261117T085351-e8fe3bf3	2026-11-17T09:01:42Z
