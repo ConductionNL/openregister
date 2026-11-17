@@ -19938,3 +19938,4 @@ fix:hermiq:1741:d8e7284d	floor restored (unit_interfacing 2.57), pushed 7b6013ee
 fix:shillinq:3048:fa8eacaf	conflict resolved, pushed 73fa0019; REVERIFY (merge lock busy)	session-20261117T081503-d7471efc	2026-11-17T08:32:52Z
 fix:versioniq:700:ee56187d	unmeasured: static.developer.overheid.nl	session-20261117T080541-d8abe4ad	2026-11-17T08:33:21Z
 merge:integriq:3545:477955b5	unmeasured: static.developer.overheid.nl; cloud tree of 9 integriq PRs: merged=0 red=2 fail=0 skip=2; conflict 4, lint 0, red 0, moved 1, done 0	session-20261117T080411-8da96012	2026-11-17T08:33:37Z
+fix:buildiq:1651:a201e3b3	fixed: wrapper removal checks ownership, pushed 144da0d4; merge lock held elsewhere, REVERIFY queued	session-20261117T081204-71167548	2026-11-17T08:33:44Z
