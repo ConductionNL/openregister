@@ -22337,6 +22337,7 @@ verify:launchpad:1306:06017141	GREEN #1306: tests-only/docs; 0 new failures; not
 verify:integriq:3732:38f15f61	3732 GREEN; phpunit 9948, 5 inherited, 0 new; vitest 2397 passed	session-20261117T190353-7aae74e9	2026-11-17T19:49:23Z
 verify:planninq:1247:1a42908e	GREEN: 1247 (e2e spec only, suite green)	session-20261117T185625-a1e67f54	2026-11-17T19:49:25Z
 verify:shillinq:3175:4bddf073	GREEN shillinq#3175: vitest 3107, 0 new failures (1 inherited)	session-20261117T185556-5276d56d	2026-11-17T19:49:42Z
+verify:dossiq:6645:97e25b54	GREEN dossiq#6645: docs-only, 19 inherited failures, 0 new	session-20261117T190454-1cb9b69e	2026-11-17T19:49:46Z
 verify:portaliq:2582:628f5a09	GREEN portaliq#2582 (node tests: no new failures)	session-20261117T190302-4e3d4569	2026-11-17T19:49:50Z
 verify:opencatalogi:2797:73c7291c	GREEN opencatalogi#2797 (e2e spec only; 0 new failures over inherited 92F/11E)	session-20261117T190048-3d066fd0	2026-11-17T19:49:59Z
 verify:pipelinq:3935:fafc28c7	3935 GREEN	session-20261117T185710-40ec955c	2026-11-17T19:50:16Z
@@ -22439,6 +22440,7 @@ build:dossiq:case-access-card-lists-team-and-group-grants:b2:c2	partial: PR #664
 merge:versioniq:692:72818c9c	failed: permission: GitHub API refused for versioniq in this session (HTTP 403, repo access not enabled); tree built clean (700,784 IN, 0 new failures; 692,698 CONFLICT), nothing landed	session-20261117T185359-d68263c5	2026-11-17T20:07:40Z
 verify:thematiq:1714:a6daab39	GREEN: 0 new failures, vitest 1573/1573	session-20261117T190443-6578d505	2026-11-17T20:08:04Z
 merge:planninq:1239:69aace58	unmeasured: api.osv.dev; cloud tree of 6 planninq PRs: merged=0 red=1 (1243 maintainability floor) fail=0 skip=5	session-20261117T185625-a1e67f54	2026-11-17T20:08:16Z
+verify:stackiq:1942:9b4a8fa2	GREEN stackiq#1942: phpunit 4072 ok, vitest 1 inherited failure, 0 new	session-20261117T190454-1cb9b69e	2026-11-17T20:08:34Z
 build:shillinq:reporting-cash-flow-statement:b2:c2	partial: added tests/e2e/reporting-cash-flow-statement.spec.ts for 4.1 on shillinq#3177 (pushed 605a77de, lint-clean, listed, not run); left: 3.1 figure links wait on LedgerLinesForAccount (reporting-financial-statements 2.3, not built anywhere)	session-20261117T190302-4e3d4569	2026-11-17T20:09:14Z
 build:portaliq:portal-scoping-and-auth:b2:c2	partial: PR #2587 +2 commits (all ways in bind sessions to their portal; PortalAuthConfig fail-closed for sign-in); left: per-portal OIDC provider config, PublicContentGate on PortalAuthConfig needs a decision (would open restricted content on malformed config)	session-20261117T190250-54b1be06	2026-11-17T20:08:58Z
 build:filinq:anonymization-review-workbench:b2:c5	failed: permission (git push to ConductionNL/filinq refused by the session git proxy: repo not in authorized set); nothing built, every unchecked code task still left	session-20261117T185932-75c4578d	2026-11-17T20:09:18Z
@@ -22464,3 +22466,4 @@ verify:versioniq:685:0b94d417	GREEN #685 (2490 tests, vitest 3248, 0 new failure
 build:filinq:generate-store-in-case-system:b2:c4	nothing left to build in code: PR #2179 head fe61fa81 is current with development, phpcs/phpstan/psalm clean on the service, e2e spec eslint clean; left 4.1 (issues in integriq/humaniq, outside this session's repo scope), 4.2 check:l10n-js stale en.js/nl.js inherited from development (l10n:build would drop strings src still uses, not done), 4.3 screenshot and coverage need a live instance/measure 	session-20261117T185710-40ec955c	2026-11-17T20:13:16Z
 verify:versioniq:735:6cc6a20f	CONFLICT versioniq#735 (8 files vs development)	session-20261117T190507-82f8fe51	2026-11-17T20:13:27Z
 build:decidiq:objection-advisory-committee:b2:c3	already built: every code task on development; the named tests/e2e/objection-route.spec.ts is in open PR #2279 (awaits verify); left only the run against an instance with the municipality set	session-20261117T190714-0b708ca6	2026-11-17T20:14:19Z
+verify:thematiq:1725:f7a10dc1	GREEN 1725: dbal lock bump, unit same as baseline	session-20261117T185725-f66ae098	2026-11-17T20:14:54Z
