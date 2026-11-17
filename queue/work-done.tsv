@@ -22892,3 +22892,4 @@ merge:buildiq:1734:e06928e5	unmeasured: static.developer.overheid.nl (3 PRs gree
 build:portaliq:retire-the-vendored-woo-bundle:b2:c3	built task 4 on PR #2586 at 2f262445 (/woo paths redirect to the authored site behind bundled_site_portal_woo; 57 tests, 0 new failures); left: task 1 needs the real register volumes, task 5 a live run, task 6 the municipality's sign-off	session-20261117T222048-3a9e0119	2026-11-17T22:42:30Z
 merge:filinq:2072:80a4e903	cloud tree of 9 filinq PRs: merged=0 red=0 fail=0 skip=1 (#2072 REQUEST_CHANGES: backfill repair step not registered); conflict 7, moved 1	session-20261117T223426-4a15e7fb	2026-11-17T22:42:37Z
 fix:pipelinq:3952:6243a86d	conflict resolved, pushed 3ad1de77; REVERIFY queued	session-20261117T211406-076a7a0e	2026-11-17T22:42:36Z
+verify:portaliq:2569:0ae5a2be	GREEN 2569, 2579; REVERIFY 2583, 2589; unit 6339, 16 inherited errors, no new failures	session-20261117T213056-2ba36933	2026-11-17T22:43:09Z
