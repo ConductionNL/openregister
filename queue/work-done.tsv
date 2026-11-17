@@ -19432,3 +19432,4 @@ fix:launchpad:885:2efbf863:v4	stale	session-20261117T042937-c444c626	2026-11-17T
 fix:launchpad:763:68f98712:v4	stale	session-20261117T042937-c444c626	2026-11-17T05:27:35Z
 fix:launchpad:760:091c4dbf:v4	stale	session-20261117T042937-c444c626	2026-11-17T05:27:50Z
 fix:learniq:2549:fe0077f4	stale	session-20261117T042937-c444c626	2026-11-17T05:28:11Z
+review:learniq:2523:3742dedc	BLOCK: register change without version move, unregistered icon, conflicts with development	session-20261117T042937-c444c626	2026-11-17T05:33:54Z
