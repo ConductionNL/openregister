@@ -1364,3 +1364,5 @@ shillinq	3167	f264bb7ba79a07690b1dee49ba132418f3d71db0	APPROVE	worker-15	Quick; 
 shillinq	3168	54788ddd120149a5ebb608b316c8f824cc8bd987	APPROVE	worker-15	Quick; no blockers; tasks.md tick only
 shillinq	3169	c6c22900eba0ec6038e87c1e7aaa26e0d2f15f5a	APPROVE	worker-15	Quick; no blockers; e2e spec with non-admin empty storage context
 shillinq	3170	a106dd9be7f6d0a3337e59128d867fa6d48a449a	APPROVE	worker-15	Quick; no blockers; manifest sidebar shape fix, manifest tests green in tree
+planninq	1245	18c0e02a3227b4aff7590139b12f700887b1d098	APPROVE	worker-53	Standard; no blockers; ProjectClosureListener stamps/clears closedAt on pre-save events as the change asks, archive blocks per spec; tree unit suite adds no failures
+planninq	1246	64caa7ce8e8fec9974544ab87ac0ff8ccd473dc5	APPROVE	worker-53	Standard; no blockers; task.estimateSize and t-shirt scale per change; vitest 3593 passed on tree; concern: task schema 0.14.0 bump shared with #1245
