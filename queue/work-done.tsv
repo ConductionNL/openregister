@@ -20089,3 +20089,4 @@ verify:launchpad:1260:b47c186a	GREEN 1260: tests only, 4582 OK vs 4571 baseline	
 review:filinq:2095:99be8379	GREEN: unit 7144 OK, no new failures, jest OK	session-20261117T091057-940845f2	2026-11-17T09:26:13Z
 review:buildiq:1630:19bdcf6d	GREEN: unit 3577 OK, vitest 817 passed	session-20261117T084727-10682198	2026-11-17T09:26:22Z
 review:filinq:2085:38d24886	GREEN: filinq#2085, unit 7143 OK, vitest 17 passed	session-20261117T084229-c4fc3f9c	2026-11-17T09:26:52Z
+fix:decidiq:2205:c6740766	added @spec tags, merged development; REVERIFY at 8a3de4c6be	session-20261117T092129-3ad47afe	2026-11-17T09:27:01Z
