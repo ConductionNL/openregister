@@ -18427,3 +18427,4 @@ shillinq	3004	3a0e29de258e9f510c17c3a8f7e360b2d1a53e56	REVERIFY	worker-07	merged
 integriq	3703	80544b3ca452aaca520969c1dbe59bf25d34dc66	RED	worker-08:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
 shillinq	2983	501b81a941cedc198f566dd363cf53855efeaf59	GREEN	worker-54	phpunit 12816 ok (baseline 12779 ok), no new; vitest 3096, 1 inherited failure (dunningNextRun, red on development); build ledger-open-item-clearing, access checks per administration
 stackiq	1942	90499893ae69fbd119963f98aa95c8df7f7229b3	CONFLICT	worker-29:merge	conflicts with development; files: appinfo/info.xml 
+integriq	3704	ef91827a9deb643222e2c4ece7853589b5dbcd5a	RED	worker-08:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
