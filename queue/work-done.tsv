@@ -21419,3 +21419,4 @@ build:filinq:intake-mailbox-archive-import:b2	already building: quality/build-in
 verify:pipelinq:2010:706c19df	GREEN #2010 (tree-identical to development)	session-20261117T141120-684bff04	2026-11-17T15:03:29Z
 build:filinq:migrate-signing-to-or-tasks:b2	already building: quality/build-migrate-signing-to-or-tasks exists	session-20261117T135414-614629b0	2026-11-17T15:03:25Z
 build:filinq:document-editing-tools:b2	already done: only 3.3 open, a portability run against a live Euro-Office instance; no PR	session-20261117T135414-614629b0	2026-11-17T15:03:44Z
+build:launchpad:cleanup-category-boolean-getter-name:b2	failed: change is raised for human decision (proposal.md: NOT APPROVED, NOT STARTED; spec amendment must land first), nothing buildable	session-20261117T141447-14eaee7a	2026-11-17T15:04:26Z
