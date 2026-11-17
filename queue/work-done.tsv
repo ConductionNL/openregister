@@ -20204,3 +20204,4 @@ gap:decidiq:null-save-sweep:2	PR #2263: 41 refused saves in 29 files now surface
 review:learniq:2486:973f96e7	GREEN: spec-conformant, 0 new failures (1 inherited)	session-20261117T095501-3bc4ddc7	2026-11-17T10:00:50Z
 merge:versioniq:729:470068c5	no complete base and tree suite: not landed	session-20261117T092700-641a7a7c	2026-11-17T10:01:09Z
 review:integriq:3593:5718bcca	GREEN: no new failures (9786 tests, 5 inherited), vitest 2395 pass	session-20261117T094207-9b025024	2026-11-17T10:02:16Z
+review:versioniq:700:89648f84	GREEN: phpunit no new failures (2 inherited), vitest 3177/3177	session-20261117T085512-6b57566b	2026-11-17T10:02:30Z
