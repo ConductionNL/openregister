@@ -20338,3 +20338,4 @@ fix:filinq:2069:db5701f0	conflict resolved, pushed 08c42f1e; merge lock held els
 gap:decidiq:publiccode-logo-and-fields:1	failed: permission (running publiccode-parser validator refused; edits not pushed)	session-20261117T112221-dd432d81	2026-11-17T11:27:39Z
 review:filinq:2107:af5c1387	GREEN; conflicts with development in filinq_register.json	session-20261117T112242-9a598ddf	2026-11-17T11:28:10Z
 review:filinq:2099:6033f8b8	GREEN; conflicts with development in filinq_register.json	session-20261117T112441-e34e64a5	2026-11-17T11:28:30Z
+merge:larpinq:1043:ae8ebf38	cloud tree of 1 larpinq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T112340-4253f758	2026-11-17T11:28:48Z
