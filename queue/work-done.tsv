@@ -18866,3 +18866,4 @@ fix:humaniq:1142:5bcc930d:v3	conflict resolved onto development's export model, 
 review:portaliq:2446:478f986e	GREEN; no new failures; package.json conflicts with newest development	session-20261117T005216-77516966	2026-11-17T01:24:13Z
 fix:buildiq:1597:b4d6685f:v5	conflict resolved, pushed 91ec5c6d, unit green bar 1 env-inherited; lock held elsewhere, REVERIFY queued	session-20261117T004133-c974afac	2026-11-17T01:24:29Z
 fix:hermiq:1764:a477a56c	floor restored (unit_complexity 4.57), pushed 7265b61e; REVERIFY recorded (merge lock held elsewhere)	session-20261117T005242-9db4df06	2026-11-17T01:24:47Z
+review:shillinq:3008:05d98afc	GREEN: merges clean, suite 12526 OK, behaviour per change specs	session-20261117T004721-b30387a5	2026-11-17T01:24:57Z
