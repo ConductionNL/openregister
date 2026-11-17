@@ -5601,3 +5601,4 @@ buildiq	1718	56e7faf39d616a8090eb63a8426131ae67e763f5	SKIP	worker-02	GATE UNMEAS
 integriq	3729	0be54156bcea0a7c1efa8d808756750920fa8749	SKIP	worker-58	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 integriq	3730	129afd210f56db4bb58b1eb095994ec2216d3345	SKIP	worker-58	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 thematiq	1723	f6aae08d113aa98b5a8129910468602b07e598e8	SKIP	worker-14	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
+integriq	3731	d1f6f2979cd52bb09500599fce18732c3238ee04	RED	worker-58	GATE RED floor: unit_complexity: 3.89 -> 3.87
