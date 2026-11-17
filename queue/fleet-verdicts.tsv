@@ -18730,6 +18730,7 @@ versioniq	798	91fdceff9606e38c08294f9f188caa4b1c92289f	GREEN	worker-44	phpunit 2
 buildiq	1730	2d9f793fa41e7c5762b22fbb277435269ee86876	GREEN	worker-16	PHPUnit 3676 tests baseline OK, tree OK, no new failures; e2e spec + tasks.md only, matches change pages-chart-widget-authoring T03/T05
 stackiq	1963	5d4b224b8a597d13518bc49c1b7eaeaa96eb7211	GREEN	worker-37:review	implements operations-sync-status-and-progress per its design (D5 permissions initial state, sync page); unit 3952 OK, vitest 7/7, eslint clean; note: l10n tails conflict with current development
 versioniq	799	9d0b17e161aabdb3641874366fbf88fc9343996c	REVERIFY	worker-44	conflicts only with an earlier PR of the verify tree (l10n/*, src/App.vue vs #798)
+buildiq	1711	c046bf16a2d185fd3a110f47e78450a28c23551c	GREEN	worker-53	unit suite 3691 tests (baseline 3676, 0 failures), tests-only PR, 0 new failures
 portaliq	2579	df1bfc402b7652facf47819ec22a83d590bd098c	CONFLICT	worker-32	package.json conflicts with development
 buildiq	1732	8f7ab5e8d61276d56f5dfd89cf40980cca8200e2	GREEN	worker-23	unit 3676 tests OK (baseline 3676 OK, 7 skipped), no new failures; e2e spec + tasks.md only, per change pages-detail-related-items
 buildiq	1630	285ac6f0971889105f2dbd12d6e5111710aaf0b2	GREEN	worker-06:review	Implements pages-qr-and-barcodes per its specs; camera only where a page scans; wires the published apps and device features into DashboardController (bound in ContractBindings). PR head: 3492 unit OK (development 3676 OK); 817 vitest OK. Does not merge clean with development: conflicts in ControllerRegistrar.php (settings arg added on development next to the new args), useManifestValidator.js, l10n en/nl; needs a merge of development before landing.
@@ -18742,3 +18743,5 @@ stackiq	2045	711ef7f734af2625f6eb46f45c0b2d8e7ec7b45c	GREEN	worker-24	e2e spec +
 filinq	2121	fb55b7205722abe59242d2e6ed53fbe8ad43cd80	RED	worker-48:merge-gate	GATE RED floor: unit_complexity: 4.49 -> 4.47
 buildiq	1726	5727e007884aa326eae962f524c9d932e87798c9	GREEN	worker-21	unit 3676 OK (baseline 3676 OK), no new failures; e2e spec, tasks.md, capabilities.json (valid JSON) for apps-support-note-editor-saves T05/T06
 decidiq	2275	a2504982a57dd3baef7b32f736efdd4c91c5b798	GREEN	worker-14	unit 5020 baseline 0 failures; tree 5028 tests 0 failures; tests only
+hermiq	1852	734376163c5c6515d092ee9d381c6d537078095a	GREEN	worker-20	unit 5736 baseline 0 fail; tree 5800 tests 0 new failures; vitest 1659 passed; build vector-rag per spec
+hermiq	1853	f3ad22784fa06fff189170b5a3d39912e8054157	GREEN	worker-20	unit 5736 baseline 0 fail; tree 5800 tests 0 new failures; vitest 1659 passed; build instant-talk per spec
