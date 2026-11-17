@@ -22688,6 +22688,7 @@ merge:stackiq:2045:5c9c04c6	unmeasured: static.developer.overheid.nl (proxy 403;
 verify:integriq:3593:fea237c7	RED 3593: filePickupConfigFields.spec.js mock lacks NcCheckboxRadioSwitch; PHP no new failures	session-20261117T211359-bea33e3d	2026-11-17T21:41:39Z
 verify:stackiq:2055:b1a3020f	GREEN 2055, GREEN 2058; phpunit 4105 ok, vitest 1 inherited failure	session-20261117T213157-fe4b6298	2026-11-17T21:42:00Z
 verify:larpinq:1102:ea6bdb50	GREEN 1102	session-20261117T211406-076a7a0e	2026-11-17T21:42:10Z
+merge:decidiq:2190:fd231bd1	unmeasured: static.developer.overheid.nl (7 PRs reviewed APPROVE, tree green 5060 tests; 2198 CONFLICT, 2279 MOVED)	session-20261117T211542-5413f208	2026-11-17T21:42:18Z
 fix:shillinq:2975:df2c1919	failed: permission (git push to ConductionNL/shillinq refused by session git proxy: repo not in authorized set; conflict resolved locally, suite 12849 OK, not pushed)	session-20261117T211359-b7379586	2026-11-17T21:42:34Z
 verify:opencatalogi:2805:b5832c88	GREEN #2805: no new PHP or JS failures (inherited 103 PHP, 8 vitest)	session-20261117T211352-b8b9fdbb	2026-11-17T21:42:29Z
 merge:filinq:2112:7bac4ab5	unmeasured: api.osv.dev (4 approved skipped; 4 CONFLICT, 2186 MOVED)	session-20261117T210827-f273f058	2026-11-17T21:42:46Z
