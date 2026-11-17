@@ -20687,6 +20687,7 @@ verify:pipelinq:2284:aef4e838	GREEN #2284 (no-op merge: tree identical to develo
 verify:learniq:1862:8239bdab	GREEN #1862 (sync merge, no file changes)	session-20261117T124010-7774729d	2026-11-17T13:03:34Z
 merge:hermiq:1738:d155e746	cloud tree of 1 hermiq PRs: merged=0 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T124646-693ace9a	2026-11-17T13:03:51Z
 verify:pipelinq:2309:9fdbddb4	GREEN #2309: no net diff vs development	session-20261117T125151-bf6843dc	2026-11-17T13:04:03Z
+verify:integriq:2719:c44e802f	BLOCK: auth header lookup behaviour change; no new failures	session-20261117T121046-ffb3fcc9	2026-11-17T13:04:19Z
 verify:pipelinq:2330:7c2e1706	GREEN #2330: no-op merge, tree identical to development	session-20261117T130049-95d0a2ec	2026-11-17T13:04:18Z
 verify:learniq:2509:4853fbe3	GREEN 2509 (7129 tests, no new failures)	session-20261117T124809-d8aae7cd	2026-11-17T13:04:31Z
 verify:integriq:3702:e6c3a1b8	GREEN #3702	session-20261117T123701-2c29f729	2026-11-17T13:04:42Z
