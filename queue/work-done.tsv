@@ -19035,3 +19035,4 @@ review:decidiq:2148:d7247809	GREEN: unit 4803 OK, vitest 11 OK, manifest valid	s
 review:decidiq:2190:4d90c497	GREEN: 4813 green merged, conflict only objectCount (257)	session-20261117T004133-c974afac	2026-11-17T02:02:05Z
 review:decidiq:2174:bd55e20c	GREEN: unit 4810, 0 new failures; objectCount conflict (258) with development	session-20261117T015705-50845751	2026-11-17T02:03:09Z
 review:filinq:2095:b4ddee8f	BLOCK: checksum compare needs a session user, nightly/occ scans flag every final document as changed; conflicts with development	session-20261117T020142-15890c05	2026-11-17T02:03:48Z
+review:decidiq:2177:0b1b1e4a	GREEN: unit 4867 OK, vitest 53 OK, phpstan clean	session-20261117T020131-42b6d5a2	2026-11-17T02:04:07Z
