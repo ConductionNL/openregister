@@ -20307,3 +20307,4 @@ gap:hermiq:publiccode-logo-and-fields:1	PR #1833; logo yes; store link yes (READ
 review:filinq:2106:58e1b34d	GREEN: unit 7273/0 fail on PR+dev; register version line conflicts with development	session-20261117T110646-831a671b	2026-11-17T11:18:45Z
 review:hermiq:1764:ef318454	GREEN: 5644 unit tests pass on PR+development, vitest 9/9	session-20261117T111401-f300ca25	2026-11-17T11:18:57Z
 review:filinq:2087:46364ded	GREEN #2087 (conflicts with development: register version, info.xml, l10n)	session-20261117T111613-c4d98a73	2026-11-17T11:19:33Z
+review:portaliq:2450:be5bbb37	GREEN: no new failures, behaviour matches the change specs	session-20261117T111401-3cc65eba	2026-11-17T11:19:45Z
