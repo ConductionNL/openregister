@@ -19911,3 +19911,5 @@ verify:versioniq:754:cad32981	754 GREEN, 758 REVERIFY (l10n conflict with 754 on
 verify:launchpad:1239:a6147333	5 GREEN (1239,1258,1259,1260,1261); no new failures	session-20261117T081117-f29e8a89	2026-11-17T08:25:57Z
 fix:shillinq:2997:b635f045	conflict resolved, pushed 10c8efba; REVERIFY recorded (merge lock held by another merger)	session-20261117T081746-d55c4d0c	2026-11-17T08:26:06Z
 fix:portaliq:2450:8e4653e1	conflict resolved, pushed 260942b5; REVERIFY	session-20261117T081313-9f5953d9	2026-11-17T08:26:21Z
+review:versioniq:715:4657c9dc	GREEN: versioniq #715, 2 inherited golden failures, vitest 3171 OK	session-20261117T080436-bf0369a8	2026-11-17T08:26:29Z
+review:launchpad:1212:e80930e9	GREEN: phpunit 4588 OK, vitest 2691 OK	session-20261117T080304-46e8fe42	2026-11-17T08:26:39Z
