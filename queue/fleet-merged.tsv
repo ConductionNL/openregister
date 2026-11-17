@@ -5260,3 +5260,4 @@ planninq	1231	a50e49c38a670e914b6d0f39c645fedfef486ae5	RED	worker-19	GATE RED ch
 launchpad	1267	d42ca665d89795a714ef27ffcde068e8ab1ad198	RED	worker-02	GATE RED checker floor: fivelayer: pass -> warn; fivelayer stars: 5 -> 3; score: 100 -> 97
 planninq	1217	6ab214393634d13f52ff5a3a36d35219325e97f1	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.66 holds at 4.05
 learniq	2589	e5a5454a3b27ecb50ba8ab74c34d8140b6c7770d	RED	worker-04	GATE RED checker floor: fivelayer: pass -> warn; fivelayer stars: 5 -> 3; score: 100 -> 97
+stackiq	2022	a08934f72ca968249e20d92ba2a14f16ddf3c3ea	MERGED	worker-28	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.10
