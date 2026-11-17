@@ -20514,3 +20514,4 @@ fix:integriq:3613:83ce7d7b	fixed adrvalidator (API-Version header on 3 responses
 fix:hermiq:1833:6a516e78	fixed: restored supports entry; merge lock held elsewhere, REVERIFY at 0071295f	session-20261117T111714-cd94760b	2026-11-17T12:12:38Z
 merge:stackiq:1966:69f9282f	cloud tree of 5 stackiq PRs: merged=3 red=1 fail=0 skip=0; conflict 1, lint 0, red 0, moved 0, done 0	session-20261117T110646-831a671b	2026-11-17T12:13:01Z
 merge:versioniq:706:891fd555	cloud tree of 1 versioniq PRs: none; conflict 1, lint 0, red 0, moved 0, done 0	session-20261117T121049-5b84d45a	2026-11-17T12:13:18Z
+cover:dossiq:069ee2d6m9d1b:afe29cfd	deferred: dossiq has 42 open PRs (only open cover PR #6203 is excluded from merge trees, not stacked onto)	session-20261117T112947-12b56cd8	2026-11-17T12:13:39Z
