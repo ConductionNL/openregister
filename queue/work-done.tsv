@@ -19391,3 +19391,4 @@ fix:filinq:2098:377c6050	conflict resolved, golden re-recorded; new head 071c086
 review:filinq:2099:acbeee3a	GREEN (conflicts with development; template schema version must move to 1.8.0 on resolution)	session-20261117T032146-7c837cf0	2026-11-17T03:28:50Z
 fix:hermiq:1738:29ad770b	conflict resolved, pushed 10d3c28c; register 0.62.0; unit 5580 OK; REVERIFY (merge lock held elsewhere)	session-20261117T032312-77fce7f4	2026-11-17T03:29:02Z
 review:decidiq:2171:853b82a5	GREEN: unit 4842 OK, vitest 62 OK	session-20261117T032650-4ad2164b	2026-11-17T03:29:09Z
+merge:hermiq:1496:d73975f7	cloud tree of 8 hermiq PRs: none; conflict 6, lint 0, red 0, moved 1, done 1	session-20261117T032224-b88169ea	2026-11-17T03:29:21Z
