@@ -1146,3 +1146,4 @@ stackiq	2022	a08934f72ca968249e20d92ba2a14f16ddf3c3ea	APPROVE	worker-28	Quick; n
 stackiq	2025	93f4ebf09d8540babcec8d0d3f2f70f77f5bedd1	APPROVE	worker-28	Quick; no blockers; php-dot-notation minor bump with regenerated sbom, tree suite unchanged
 stackiq	2026	490a9654ff42ca3a847e1bf34698f6799a8e2144	APPROVE	worker-28	Quick; no blockers; vue-router patch bump with regenerated sbom
 stackiq	2030	99dcfdad615c023f57481ee6cea79922b36fc604	APPROVE	worker-28	Standard; no blockers; publiccode.yml metadata only, referenced logo and screenshots exist, YAML parses, languages match l10n/
+humaniq	1184	b003db7e33208f7745947a59972629cd3b640134	APPROVE	worker-20	Strict; no blockers (new SurveyResponseHold lacked a demo-data declaration, fixed in b003db7e); gate fails 23/66/101 on untouched files are inherited, 53/116 did not run; schema read narrowed, system-owned writes only inside the checked reply path
