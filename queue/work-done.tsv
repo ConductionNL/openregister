@@ -22255,3 +22255,5 @@ verify:integriq:3612:e27499b1	GREEN #3612 (9933 tests, no new failures)	session-
 verify:integriq:3717:96bd05d4	GREEN 3717; tests-only, 0 new failures (baseline 3F/2E inherited)	session-20261117T190115-a0afcf82	2026-11-17T19:33:31Z
 verify:integriq:3718:63ae9b35	GREEN #3718: tasks.md only, 0 new failures (5 inherited)	session-20261117T185732-534997e2	2026-11-17T19:33:43Z
 verify:integriq:3719:47ed6f87	GREEN #3719 (tests only, no new failures)	session-20261117T190540-b0615094	2026-11-17T19:33:58Z
+verify:integriq:3723:8a4e2be1	1 GREEN (3723); e2e spec only, unit 0 new failures	session-20261117T190140-44e48bc5	2026-11-17T19:34:09Z
+verify:larpinq:1103:e6ac5573	CONFLICT larpinq#1103 (spec already on development via b7573fe5)	session-20261117T190626-5c7fccb4	2026-11-17T19:34:21Z
