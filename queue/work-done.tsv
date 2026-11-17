@@ -18814,3 +18814,4 @@ fix:decidiq:2154:10e36967:v3	fixed: merged development in, term listener on open
 fix:learniq:2538:bb7460d5:v3	fixed conflict on #2538, new head fe4a0798; REVERIFY queued (merge lock held)	session-20261117T005237-d93074af	2026-11-17T01:14:34Z
 review:filinq:2087:516936bd	GREEN; register description conflicts with development	session-20261117T004626-d23ae300	2026-11-17T01:14:47Z
 fix:decidiq:2171:a9fe23d9:v3	fixed CONFLICT, pushed 867b712eb246730bd16543eb06158b69c38d570a; merge lock busy, REVERIFY queued	session-20261117T005217-ad04a5d2	2026-11-17T01:15:01Z
+fix:hermiq:1781:256eb1a5	floor restored, pushed 90b585c6; REVERIFY queued (merge lock held elsewhere)	session-20261117T004640-1b533885	2026-11-17T01:15:09Z
