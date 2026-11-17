@@ -18974,3 +18974,4 @@ fix:opencatalogi:2674:4ec49fd3	fixed conflict, pushed 3ea2cbc2d; merge lock busy
 fix:larpinq:1042:72685514:v3	merged #1042 at e65ec64ada34202731658db1d4ee75fbdcd8693c	session-20261117T005212-998cc343	2026-11-17T01:46:31Z
 fix:opencatalogi:2684:8f4a54a3:v3	conflicts resolved, test fake on main API, pushed d8aa13414a; merge lock held elsewhere, REVERIFY queued	session-20261117T004733-c48c61a2	2026-11-17T01:46:41Z
 verify:integriq:3587:d66850b0	stale	session-20261117T004638-e26e8c33	2026-11-17T01:46:58Z
+fix:stackiq:1944:25fa2c20:v3	fixed CONFLICT, pushed a796a511; merge lock held elsewhere, REVERIFY queued	session-20261117T004638-e72c1040	2026-11-17T01:46:53Z
