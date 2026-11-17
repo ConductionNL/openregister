@@ -22961,6 +22961,7 @@ fix:decidiq:2174:53ff0981	conflict resolved, pushed 8825e17a07; unit 5075 OK; en
 fix:humaniq:1193:ef7f5e47	stale: head moved to 9885fa35 (new build commit 22:51 UTC)	session-20261117T224758-9d8160e4	2026-11-17T22:57:51Z
 verify:hermiq:1843:dd66ff96	3 GREEN (1843, 1851, 1853), 1849 REVERIFY (conflicts only with an earlier PR of the tree); tree 5803 OK vs baseline 5736	session-20261117T223108-25abe84e	2026-11-17T22:57:56Z
 fix:filinq:2191:377356bf	conflict resolved, complexity floor restored; new head 29f92719ce, REVERIFY (builder still pushing, not landed)	session-20261117T223148-4e97a38d	2026-11-17T22:58:38Z
+build:learniq:exam-committee-today-and-keuzedelen:b2:c2	partial: T6 built on learniq#2609 (pushed 8977d252: mbo example set via the generator, no uuid moved, ExamCommitteeExampleSetTest; unit 7201, no new failures); left T3 (committee Today needs today-first-per-school-role T1, unbuilt)	session-20261117T213058-6689a4c6	2026-11-17T22:58:55Z
 review:hermiq:1763:bff0c5dd	GREEN hermiq #1763 (unit 5800 OK, vitest 1677 OK, admin-only routes)	session-20261117T223303-c1d113c1	2026-11-17T22:58:51Z
 merge:filinq:2173:6ed139b8	unmeasured: api.osv.dev (proxy 403 from this session; lock released before building the tree)	session-20261117T223037-5aebbb96	2026-11-17T22:58:57Z
 fix:pipelinq:3962:63a9f870	sbom regenerated, pushed 4a00fe01; REVERIFY recorded (end-to-end skipped: self-review refused by permission check)	session-20261117T223145-5ed35ecc	2026-11-17T22:59:04Z
