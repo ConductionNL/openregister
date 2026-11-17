@@ -1,0 +1,651 @@
+From fb9aa2721472534092f737612550a0d8e157c291 Mon Sep 17 00:00:00 2001
+From: Ruben van der Linde <ruben@conduction.nl>
+Date: Tue, 17 Nov 2026 23:00:55 +0000
+Subject: [PATCH] fix(learniq): keep the certificate PDF from widening the
+ credential units [skip ci]
+
+The PDF render added a seventh constructor parameter to the issuance
+handler and the reissue service and a course parameter to the reissue
+steps, which lowered the unit interfacing rating (3.62 -> 3.60).
+
+- CredentialDocuments holds the Europass issuer and the PDF renderer, so
+  both constructors keep six parameters.
+- The reissue run carries the course, read once per run as before; the
+  PDF step returns only the fields it writes.
+- payload() reads the template slug from the course; the render outcome
+  is written by rendered() / notRendered().
+
+Same calls, same order, same stored fields. Rating back to 3.62.
+
+Assisted-by: ClaudeCode:claude-opus-5-5
+---
+ lib/Listener/CredentialIssuanceHandler.php    | 13 ++-
+ .../CertificatePdfDelegationService.php       | 50 ++++++-----
+ lib/Service/CredentialDocuments.php           | 82 +++++++++++++++++++
+ lib/Service/CredentialReissueRun.php          | 10 ++-
+ lib/Service/CredentialReissueService.php      | 59 ++++++-------
+ .../CredentialIssuanceHandlerTest.php         | 32 ++++----
+ .../CertificatePdfDelegationServiceTest.php   |  3 +-
+ .../Unit/Service/CredentialDocumentsTest.php  | 77 +++++++++++++++++
+ .../Service/CredentialReissueServiceTest.php  |  3 +-
+ 9 files changed, 250 insertions(+), 79 deletions(-)
+ create mode 100644 lib/Service/CredentialDocuments.php
+ create mode 100644 tests/Unit/Service/CredentialDocumentsTest.php
+
+diff --git a/lib/Listener/CredentialIssuanceHandler.php b/lib/Listener/CredentialIssuanceHandler.php
+index 380f4d4a6..87ce27624 100644
+--- a/lib/Listener/CredentialIssuanceHandler.php
++++ b/lib/Listener/CredentialIssuanceHandler.php
+@@ -41,11 +41,10 @@ declare(strict_types=1);
+ namespace OCA\Learniq\Listener;
+ 
+ use DateTimeImmutable;
+-use OCA\Learniq\Kernel\Contracts\CertificatePdfDelegationServiceInterface;
+ use OCA\Learniq\Kernel\Contracts\CredentialSigningServiceInterface;
+-use OCA\Learniq\Kernel\Contracts\EuropassIssuerInterface;
+ use OCA\Learniq\Kernel\Contracts\LearnerRefResolverInterface;
+ use OCA\Learniq\Kernel\Contracts\ListenerSchemaResolverInterface;
++use OCA\Learniq\Service\CredentialDocuments;
+ use OCA\OpenRegister\Event\ObjectTransitionedEvent;
+ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+@@ -76,10 +75,9 @@ class CredentialIssuanceHandler implements IEventListener {
+ 	 * @param ObjectService $objectService Reads Course and School, writes Credential via OpenRegister.
+ 	 * @param CredentialSigningServiceInterface $signingService Signs the credential before it is saved.
+ 	 * @param LoggerInterface $logger Records a credential that could not be signed.
+-	 * @param EuropassIssuerInterface $europass Adds the signed Europass form.
++	 * @param CredentialDocuments $documents Adds the signed Europass form and prints the certificate PDF, fail soft.
+ 	 * @param LearnerRefResolverInterface $profiles Finds the learner's LearnerProfile in the enrolment's tenant.
+ 	 * @param ListenerSchemaResolverInterface $schemas Resolves the transition event's register and schema ids to slugs.
+-	 * @param CertificatePdfDelegationServiceInterface $certificatePdf Prints the signed certificate on the course's template, fail soft.
+ 	 *
+ 	 * @return void
+ 	 */
+@@ -87,10 +85,9 @@ class CredentialIssuanceHandler implements IEventListener {
+ 		private readonly ObjectService $objectService,
+ 		private readonly CredentialSigningServiceInterface $signingService,
+ 		private readonly LoggerInterface $logger,
+-		private readonly EuropassIssuerInterface $europass,
++		private readonly CredentialDocuments $documents,
+ 		private readonly LearnerRefResolverInterface $profiles,
+ 		private readonly ListenerSchemaResolverInterface $schemas,
+-		private readonly CertificatePdfDelegationServiceInterface $certificatePdf,
+ 	) {
+ 	}//end __construct()
+ 
+@@ -243,8 +240,8 @@ class CredentialIssuanceHandler implements IEventListener {
+ 
+ 		// The Europass form (credentials-europass-edci-export), signed with the
+ 		// same key, for a certificate, diploma or microcredential.
+-		$signed = $this->europass->withEuropass(credential: $signed);
+-		$signed = $this->certificatePdf->render(credential: $signed, course: $course);
++		$signed = $this->documents->withEuropass(credential: $signed);
++		$signed = $this->documents->withPdf(credential: $signed, course: $course);
+ 		$credentialId = (string)$signed['id'];
+ 		unset($signed['id']);
+ 
+diff --git a/lib/Service/CertificatePdfDelegationService.php b/lib/Service/CertificatePdfDelegationService.php
+index 7ac0bb478..31d2c0b57 100644
+--- a/lib/Service/CertificatePdfDelegationService.php
++++ b/lib/Service/CertificatePdfDelegationService.php
+@@ -104,30 +104,25 @@ class CertificatePdfDelegationService implements CertificatePdfDelegationService
+ 
+ 		$unavailable = $this->unavailableReason();
+ 		if ($unavailable !== null) {
+-			return $this->outcome(credential: $credential, status: 'unavailable', ref: null, error: $unavailable);
++			return self::notRendered(credential: $credential, status: 'unavailable', error: $unavailable);
+ 		}
+ 
+ 		try {
+ 			$withCopies = $this->withCopies(credential: $credential);
+-			$ref        = $this->callRender(payload: self::payload(credential: $withCopies, course: $course, slug: $slug));
++			$ref        = $this->callRender(payload: self::payload(credential: $withCopies, course: $course));
+ 		} catch (Throwable $exception) {
+ 			$this->logger->warning(
+ 				'[CertificatePdfDelegationService] Rendering the PDF of a certificate failed: {msg}',
+ 				['msg' => $exception->getMessage()]
+ 			);
+-			return $this->outcome(
+-				credential: $credential,
+-				status: 'failed',
+-				ref: null,
+-				error: 'filinq render error: ' . $exception->getMessage()
+-			);
++			return self::notRendered(credential: $credential, status: 'failed', error: 'filinq render error: ' . $exception->getMessage());
+ 		}
+ 
+ 		if ($ref === null) {
+-			return $this->outcome(credential: $credential, status: 'failed', ref: null, error: 'filinq answered without a document reference');
++			return self::notRendered(credential: $credential, status: 'failed', error: 'filinq answered without a document reference');
+ 		}
+ 
+-		return $this->outcome(credential: $credential, status: 'rendered', ref: $ref, error: null);
++		return self::rendered(credential: $credential, ref: $ref);
+ 	}//end render()
+ 
+ 	/**
+@@ -137,14 +132,14 @@ class CertificatePdfDelegationService implements CertificatePdfDelegationService
+ 	 * checked against the signed record.
+ 	 *
+ 	 * @param array<string,mixed> $credential The Credential.
+-	 * @param array<string,mixed> $course     The Course.
+-	 * @param string              $slug       The template slug.
++	 * @param array<string,mixed> $course     The Course; its `certificateTemplateSlug` names the template.
+ 	 *
+ 	 * @return array<string,mixed>
+ 	 *
+ 	 * @spec openspec/changes/credentials-certificate-pdf/specs/certification/spec.md#scenario-every-pdf-shows-how-to-check-it
+ 	 */
+-	public static function payload(array $credential, array $course, string $slug): array {
++	public static function payload(array $credential, array $course): array {
++		$slug            = trim((string)($course['certificateTemplateSlug'] ?? ''));
+ 		$verificationUrl = self::stringOrNull(value: ($credential['verificationUrl'] ?? null));
+ 		$courseName      = (self::stringOrNull(value: ($credential['courseName'] ?? null))
+ 			?? self::stringOrNull(value: ($course['title'] ?? ($course['name'] ?? null))));
+@@ -251,24 +246,37 @@ class CertificatePdfDelegationService implements CertificatePdfDelegationService
+ 	}//end callRender()
+ 
+ 	/**
+-	 * The credential with a render outcome written onto it.
++	 * The credential with a successful render written onto it.
++	 *
++	 * @param array<string,mixed> $credential The Credential.
++	 * @param string              $ref        The document reference.
++	 *
++	 * @return array<string,mixed>
++	 */
++	private static function rendered(array $credential, string $ref): array {
++		$credential['pdfRenderStatus'] = 'rendered';
++		$credential['pdfRenderError']  = null;
++		$credential['pdfDocumentRef']  = $ref;
++
++		return $credential;
++	}//end rendered()
++
++	/**
++	 * The credential with a render that did not happen written onto it; a
++	 * document reference it already carries is left as it is.
+ 	 *
+ 	 * @param array<string,mixed> $credential The Credential.
+ 	 * @param string              $status     The render status.
+-	 * @param string|null         $ref        The document reference, when rendered.
+-	 * @param string|null         $error      The reason, when not.
++	 * @param string              $error      The reason.
+ 	 *
+ 	 * @return array<string,mixed>
+ 	 */
+-	private function outcome(array $credential, string $status, ?string $ref, ?string $error): array {
++	private static function notRendered(array $credential, string $status, string $error): array {
+ 		$credential['pdfRenderStatus'] = $status;
+ 		$credential['pdfRenderError']  = $error;
+-		if ($status === 'rendered') {
+-			$credential['pdfDocumentRef'] = $ref;
+-		}
+ 
+ 		return $credential;
+-	}//end outcome()
++	}//end notRendered()
+ 
+ 	/**
+ 	 * A non-blank string, or null.
+diff --git a/lib/Service/CredentialDocuments.php b/lib/Service/CredentialDocuments.php
+new file mode 100644
+index 000000000..42eaae652
+--- /dev/null
++++ b/lib/Service/CredentialDocuments.php
+@@ -0,0 +1,82 @@
++<?php
++
++/**
++ * Learniq Credential Documents
++ *
++ * The documents a signed credential carries besides its Open Badges payload:
++ * the signed Europass form and the certificate PDF printed on the course's
++ * template. Issuing and reissuing both attach the two in the same order, so
++ * they share this one collaborator.
++ *
++ * @category Service
++ * @package  OCA\Learniq\Service
++ *
++ * @author    Conduction Development Team <dev@conduction.nl>
++ * @copyright 2026 Conduction B.V.
++ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
++ *
++ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
++ * SPDX-License-Identifier: EUPL-1.2
++ *
++ * @version GIT: <git-id>
++ *
++ * @link https://conduction.nl
++ *
++ * @spec openspec/changes/credentials-certificate-pdf/specs/certification/spec.md#requirement-issuing-a-certificate-renders-its-pdf-fail-soft
++ */
++
++declare(strict_types=1);
++
++namespace OCA\Learniq\Service;
++
++use OCA\Learniq\Kernel\Contracts\CertificatePdfDelegationServiceInterface;
++use OCA\Learniq\Kernel\Contracts\EuropassIssuerInterface;
++
++/**
++ * Attaches the Europass form and the rendered PDF to a signed credential.
++ *
++ * @spec openspec/changes/credentials-certificate-pdf/specs/certification/spec.md#requirement-issuing-a-certificate-renders-its-pdf-fail-soft
++ */
++class CredentialDocuments {
++
++	/**
++	 * Constructor.
++	 *
++	 * @param EuropassIssuerInterface                  $europass       Adds the signed Europass form.
++	 * @param CertificatePdfDelegationServiceInterface $certificatePdf Prints the certificate on the course's template, fail soft.
++	 *
++	 * @return void
++	 */
++	public function __construct(
++		private readonly EuropassIssuerInterface $europass,
++		private readonly CertificatePdfDelegationServiceInterface $certificatePdf,
++	) {
++	}//end __construct()
++
++	/**
++	 * The credential with its signed Europass form, when its type has one.
++	 *
++	 * @param array<string, mixed> $credential The signed credential.
++	 *
++	 * @return array<string, mixed>
++	 *
++	 * @spec openspec/changes/credentials-certificate-pdf/specs/certification/spec.md#requirement-issuing-a-certificate-renders-its-pdf-fail-soft
++	 */
++	public function withEuropass(array $credential): array {
++		return $this->europass->withEuropass(credential: $credential);
++	}//end withEuropass()
++
++	/**
++	 * The credential with the outcome of printing it on the course's template.
++	 *
++	 * @param array<string, mixed> $credential The signed credential.
++	 * @param array<string, mixed> $course     The course it certifies.
++	 *
++	 * @return array<string, mixed>
++	 *
++	 * @spec openspec/changes/credentials-certificate-pdf/specs/certification/spec.md#requirement-issuing-a-certificate-renders-its-pdf-fail-soft
++	 */
++	public function withPdf(array $credential, array $course): array {
++		return $this->certificatePdf->render(credential: $credential, course: $course);
++	}//end withPdf()
++}//end class
+diff --git a/lib/Service/CredentialReissueRun.php b/lib/Service/CredentialReissueRun.php
+index 32effcc84..4c740e84e 100644
+--- a/lib/Service/CredentialReissueRun.php
++++ b/lib/Service/CredentialReissueRun.php
+@@ -24,8 +24,8 @@ declare(strict_types=1);
+ namespace OCA\Learniq\Service;
+ 
+ /**
+- * One reissue run over a course's credentials: its id and the decision
+- * behind it. Built by CredentialReissueService::run() and handed to the
++ * One reissue run over a course's credentials: its id, the decision
++ * behind it and the course it reissues. Built by CredentialReissueService::run() and handed to the
+  * per-credential steps.
+  *
+  * @spec openspec/specs/certification/spec.md#requirement-a-reissue-keeps-who-and-when-and-records-why
+@@ -35,12 +35,14 @@ final class CredentialReissueRun {
+ 	/**
+ 	 * Constructor.
+ 	 *
+-	 * @param string          $runId    The run id.
+-	 * @param ReissueDecision $decision Who started the run, and why.
++	 * @param string               $runId    The run id.
++	 * @param ReissueDecision      $decision Who started the run, and why.
++	 * @param array<string, mixed> $course   The course, empty when it could not be read.
+ 	 */
+ 	public function __construct(
+ 		public readonly string $runId,
+ 		public readonly ReissueDecision $decision,
++		public readonly array $course = [],
+ 	) {
+ 	}//end __construct()
+ 
+diff --git a/lib/Service/CredentialReissueService.php b/lib/Service/CredentialReissueService.php
+index eacfbad32..0bf0875d5 100644
+--- a/lib/Service/CredentialReissueService.php
++++ b/lib/Service/CredentialReissueService.php
+@@ -42,7 +42,6 @@ namespace OCA\Learniq\Service;
+ use DateTimeImmutable;
+ use DateTimeInterface;
+ use OCA\Learniq\Kernel\AppIdentity;
+-use OCA\Learniq\Kernel\Contracts\CertificatePdfDelegationServiceInterface;
+ use OCA\Learniq\Kernel\Contracts\CredentialReissueServiceInterface;
+ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+ use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
+@@ -94,10 +93,9 @@ class CredentialReissueService implements CredentialReissueServiceInterface {
+ 	 * @param ObjectService            $objects     OpenRegister object access.
+ 	 * @param TransitionEngine         $transitions OpenRegister lifecycle transitions.
+ 	 * @param CredentialSigningService $signer      Rebuilds and signs the Open Badges payload.
+-	 * @param EuropassIssuer           $europass    Rebuilds and signs the Europass form.
++	 * @param CredentialDocuments      $documents   Rebuilds the signed Europass form and prints the PDF again, fail soft.
+ 	 * @param IAppConfig               $config      Holds run summaries.
+ 	 * @param LoggerInterface          $logger      Logs a failed credential.
+-	 * @param CertificatePdfDelegationServiceInterface $certificatePdf Prints the reissued certificate on the course's current template, fail soft.
+ 	 *
+ 	 * @return void
+ 	 */
+@@ -105,10 +103,9 @@ class CredentialReissueService implements CredentialReissueServiceInterface {
+ 		private readonly ObjectService $objects,
+ 		private readonly TransitionEngine $transitions,
+ 		private readonly CredentialSigningService $signer,
+-		private readonly EuropassIssuer $europass,
++		private readonly CredentialDocuments $documents,
+ 		private readonly IAppConfig $config,
+ 		private readonly LoggerInterface $logger,
+-		private readonly CertificatePdfDelegationServiceInterface $certificatePdf,
+ 	) {
+ 	}//end __construct()
+ 
+@@ -165,7 +162,11 @@ class CredentialReissueService implements CredentialReissueServiceInterface {
+ 	 * @spec openspec/specs/certification/spec.md#requirement-a-reissue-keeps-who-and-when-and-records-why
+ 	 */
+ 	public function run(string $courseId, string $runId, string $reason, IUser $actor): array {
+-		$run = new CredentialReissueRun(runId: $runId, decision: new ReissueDecision(actor: $actor, reason: $reason));
++		$run = new CredentialReissueRun(
++			runId: $runId,
++			decision: new ReissueDecision(actor: $actor, reason: $reason),
++			course: $this->course(courseId: $courseId)
++		);
+ 		$totals = $this->reissueAll(courseId: $courseId, run: $run);
+ 
+ 		$this->config->setValueString(
+@@ -187,13 +188,12 @@ class CredentialReissueService implements CredentialReissueServiceInterface {
+ 	 */
+ 	private function reissueAll(string $courseId, CredentialReissueRun $run): array {
+ 		$totals = ['processed' => 0, 'skipped' => 0, 'failed' => 0];
+-		$course = $this->course(courseId: $courseId);
+ 		$offset = 0;
+ 		$more = true;
+ 		while ($more === true) {
+ 			$batch = $this->credentials(courseId: $courseId, page: new CredentialPage(offset: $offset, limit: self::BATCH));
+ 			foreach ($batch as $credential) {
+-				$outcome = $this->reissueOne(credential: $credential, run: $run, course: $course);
++				$outcome = $this->reissueOne(credential: $credential, run: $run);
+ 				$totals[$outcome]++;
+ 			}
+ 
+@@ -210,11 +210,10 @@ class CredentialReissueService implements CredentialReissueServiceInterface {
+ 	 *
+ 	 * @param array<string, mixed> $credential The credential.
+ 	 * @param CredentialReissueRun $run        The run.
+-	 * @param array<string, mixed> $course     The course, empty when it could not be read.
+ 	 *
+ 	 * @return string
+ 	 */
+-	private function reissueOne(array $credential, CredentialReissueRun $run, array $course): string {
++	private function reissueOne(array $credential, CredentialReissueRun $run): string {
+ 		if (($credential['lifecycle'] ?? 'issued') !== 'issued' || ($credential['reissueRunId'] ?? '') === $run->runId) {
+ 			return 'skipped';
+ 		}
+@@ -226,7 +225,7 @@ class CredentialReissueService implements CredentialReissueServiceInterface {
+ 		}
+ 
+ 		try {
+-			$data = $this->rebuilt(credential: $credential, run: $run, course: $course);
++			$data = $this->rebuilt(credential: $credential, run: $run);
+ 			if ($data === null) {
+ 				throw new RuntimeException('the credential could not be signed');
+ 			}
+@@ -253,61 +252,63 @@ class CredentialReissueService implements CredentialReissueServiceInterface {
+ 	 * rendered again from it and replaces the stored one.
+ 	 *
+ 	 * @param array<string, mixed> $credential The credential.
+-	 * @param CredentialReissueRun $run        The run.
+-	 * @param array<string, mixed> $course     The course, empty when it could not be read.
++	 * @param CredentialReissueRun $run        The run, with the course.
+ 	 *
+ 	 * @return array<string, mixed>|null
+ 	 *
+ 	 * @spec openspec/changes/credentials-certificate-pdf/specs/certification/spec.md#requirement-reissuing-renders-the-pdf-again
+ 	 */
+-	private function rebuilt(array $credential, CredentialReissueRun $run, array $course): ?array {
++	private function rebuilt(array $credential, CredentialReissueRun $run): ?array {
+ 		$current = $this->currentCredential(credential: $credential);
+ 		$signed = $this->signer->sign(credential: $current);
+ 		if ($signed === null) {
+ 			return null;
+ 		}
+ 
+-		$signed = $this->europass->withEuropass(credential: $signed);
++		$signed = $this->documents->withEuropass(credential: $signed);
+ 		$data = $this->signedFields(signed: $signed, credential: $credential);
+ 		$data['issuedBy'] = $current['issuedBy'];
+ 		$data['edciPayload'] = $signed['edciPayload'] ?? ($credential['edciPayload'] ?? null);
+ 		$data += $run->historyFields(previousCount: (int)($credential['reissueCount'] ?? 0), now: $this->now());
+ 
+-		return $this->withPdf(signed: $signed, course: $course, data: $this->withWalletNote(credential: $credential, data: $data));
++		return array_merge(
++			$this->withWalletNote(credential: $credential, data: $data),
++			$this->pdfFields(signed: $signed, course: $run->course)
++		);
+ 	}//end rebuilt()
+ 
+ 	/**
+-	 * The transition data with the PDF rendered again on the course's current
+-	 * template. A course without `certificateTemplateSlug` leaves the stored
+-	 * PDF fields alone; a failed render replaces them with its status and
+-	 * reason, so the old document is not offered as the reissued one.
++	 * The PDF fields the reissue writes, rendered again on the course's current
++	 * template. A course without `certificateTemplateSlug` gives none, so the
++	 * stored PDF fields stay; a failed render gives its status and reason and
++	 * no document, so the old document is not offered as the reissued one.
+ 	 *
+ 	 * @param array<string, mixed> $signed The freshly signed credential.
+ 	 * @param array<string, mixed> $course The course.
+-	 * @param array<string, mixed> $data   The transition data so far.
+ 	 *
+ 	 * @return array<string, mixed>
+ 	 *
+ 	 * @spec openspec/changes/credentials-certificate-pdf/specs/certification/spec.md#requirement-reissuing-renders-the-pdf-again
+ 	 */
+-	private function withPdf(array $signed, array $course, array $data): array {
++	private function pdfFields(array $signed, array $course): array {
+ 		if (trim((string)($course['certificateTemplateSlug'] ?? '')) === '') {
+-			return $data;
++			return [];
+ 		}
+ 
+-		$rendered = $this->certificatePdf->render(credential: $signed, course: $course);
++		$rendered = $this->documents->withPdf(credential: $signed, course: $course);
++		$fields   = [];
+ 		foreach (self::PDF_FIELDS as $field) {
+-			$data[$field] = $rendered[$field] ?? null;
++			$fields[$field] = $rendered[$field] ?? null;
+ 		}
+ 
+ 		// The render keeps a document it did not make; the reissued
+ 		// certificate must not point at the one from before the reissue.
+-		if ($data['pdfRenderStatus'] !== 'rendered') {
+-			$data['pdfDocumentRef'] = null;
++		if ($fields['pdfRenderStatus'] !== 'rendered') {
++			$fields['pdfDocumentRef'] = null;
+ 		}
+ 
+-		return $data;
+-	}//end withPdf()
++		return $fields;
++	}//end pdfFields()
+ 
+ 	/**
+ 	 * The course whose certificates are reissued, or an empty array when it
+diff --git a/tests/Unit/Listener/CredentialIssuanceHandlerTest.php b/tests/Unit/Listener/CredentialIssuanceHandlerTest.php
+index b1d974eca..ee6ce56be 100644
+--- a/tests/Unit/Listener/CredentialIssuanceHandlerTest.php
++++ b/tests/Unit/Listener/CredentialIssuanceHandlerTest.php
+@@ -38,6 +38,7 @@ use OCA\Learniq\Service\EdciPayloadBuilder;
+ use OCA\Learniq\Service\EuropassIssuer;
+ use OCA\Learniq\Service\CredentialSigningService;
+ use OCA\Learniq\Service\CertificatePdfDelegationService;
++use OCA\Learniq\Service\CredentialDocuments;
+ use OCA\Learniq\Kernel\Contracts\ReadableCopiesInterface;
+ use OCP\App\IAppManager;
+ use OCP\Http\Client\IClientService;
+@@ -569,22 +570,25 @@ class CredentialIssuanceHandlerTest extends TestCase {
+ 			$arguments[$parameter->getName()] = match (ContractImplementations::concrete($type->getName())) {
+ 				ObjectService::class => $this->objectService(),
+ 				CredentialSigningService::class => $this->signingService(tenantHasKey: $tenantHasKey),
+-				EuropassIssuer::class => new EuropassIssuer(
+-					objects: $this->objectService(),
+-					builder: new EdciPayloadBuilder(),
+-					signer: $this->signingService(tenantHasKey: $tenantHasKey),
+-					config: $this->createStub(IAppConfig::class)
+-				),
+ 				LoggerInterface::class => $this->logger(),
+ 				LearnerRefResolver::class => new LearnerRefResolver(objectService: $this->objectService()),
+-				// The real render service on an instance without filinq: every render is unavailable.
+-				CertificatePdfDelegationService::class => new CertificatePdfDelegationService(
+-					$this->createStub(IClientService::class),
+-					$this->createStub(IURLGenerator::class),
+-					$this->createStub(IAppConfig::class),
+-					$this->createStub(IAppManager::class),
+-					$this->logger(),
+-					$this->createStub(ReadableCopiesInterface::class)
++				// The real Europass issuer, and the real render service on an
++				// instance without filinq: every render is unavailable.
++				CredentialDocuments::class => new CredentialDocuments(
++					europass: new EuropassIssuer(
++						objects: $this->objectService(),
++						builder: new EdciPayloadBuilder(),
++						signer: $this->signingService(tenantHasKey: $tenantHasKey),
++						config: $this->createStub(IAppConfig::class)
++					),
++					certificatePdf: new CertificatePdfDelegationService(
++						$this->createStub(IClientService::class),
++						$this->createStub(IURLGenerator::class),
++						$this->createStub(IAppConfig::class),
++						$this->createStub(IAppManager::class),
++						$this->logger(),
++						$this->createStub(ReadableCopiesInterface::class)
++					)
+ 				),
+ 				ListenerSchemaResolver::class => TransitionScope::resolver(),
+ 				default => $this->createStub($type->getName()),
+diff --git a/tests/Unit/Service/CertificatePdfDelegationServiceTest.php b/tests/Unit/Service/CertificatePdfDelegationServiceTest.php
+index df67faa15..d3776a13c 100644
+--- a/tests/Unit/Service/CertificatePdfDelegationServiceTest.php
++++ b/tests/Unit/Service/CertificatePdfDelegationServiceTest.php
+@@ -255,8 +255,7 @@ class CertificatePdfDelegationServiceTest extends TestCase {
+ 	public function testThePayloadPrintsHowToCheckIt(): void {
+ 		$payload = CertificatePdfDelegationService::payload(
+ 			['verificationUrl' => 'https://learn.example/verify/c-9', 'issuedAt' => '2026-11-01', 'expiresAt' => '', 'learnerName' => ['x']],
+-			['title' => 'BHV'],
+-			'bhv'
++			['title' => 'BHV', 'certificateTemplateSlug' => ' bhv ']
+ 		);
+ 
+ 		$this->assertSame(
+diff --git a/tests/Unit/Service/CredentialDocumentsTest.php b/tests/Unit/Service/CredentialDocumentsTest.php
+new file mode 100644
+index 000000000..f83ef12c6
+--- /dev/null
++++ b/tests/Unit/Service/CredentialDocumentsTest.php
+@@ -0,0 +1,77 @@
++<?php
++
++/**
++ * Unit tests for CredentialDocuments.
++ *
++ * @category  Tests
++ * @package   OCA\Learniq\Tests\Unit\Service
++ * @author    Conduction b.v. <info@conduction.nl>
++ * @copyright 2026 Conduction B.V.
++ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
++ * @link      https://github.com/ConductionNL/learniq
++ *
++ * @spec openspec/changes/credentials-certificate-pdf/specs/certification/spec.md#requirement-issuing-a-certificate-renders-its-pdf-fail-soft
++ */
++
++declare(strict_types=1);
++
++namespace OCA\Learniq\Tests\Unit\Service;
++
++use OCA\Learniq\Kernel\Contracts\CertificatePdfDelegationServiceInterface;
++use OCA\Learniq\Kernel\Contracts\EuropassIssuerInterface;
++use OCA\Learniq\Service\CredentialDocuments;
++use PHPUnit\Framework\Attributes\CoversClass;
++use PHPUnit\Framework\TestCase;
++
++/**
++ * The Europass form and the PDF are each asked of their own service, with the
++ * credential and course unchanged, and the service's answer is returned as is.
++ */
++#[CoversClass(CredentialDocuments::class)]
++class CredentialDocumentsTest extends TestCase {
++
++	/**
++	 * The Europass form comes from the Europass issuer, never from the PDF renderer.
++	 *
++	 * @return void
++	 */
++	public function testTheEuropassFormComesFromTheEuropassIssuer(): void {
++		$credential = ['id' => 'c-1', 'type' => 'certificate'];
++		$europass = $this->createMock(originalClassName: EuropassIssuerInterface::class);
++		$europass->expects($this->once())->method('withEuropass')
++			->with($credential)
++			->willReturn($credential + ['edciPayload' => ['id' => 'urn:uuid:c-1']]);
++		$pdf = $this->createMock(originalClassName: CertificatePdfDelegationServiceInterface::class);
++		$pdf->expects($this->never())->method('render');
++
++		$documents = new CredentialDocuments(europass: $europass, certificatePdf: $pdf);
++
++		self::assertSame(
++			expected: ['id' => 'c-1', 'type' => 'certificate', 'edciPayload' => ['id' => 'urn:uuid:c-1']],
++			actual: $documents->withEuropass(credential: $credential)
++		);
++	}//end testTheEuropassFormComesFromTheEuropassIssuer()
++
++	/**
++	 * The PDF outcome comes from the renderer, with the course it was given.
++	 *
++	 * @return void
++	 */
++	public function testThePdfIsRenderedOnTheGivenCourse(): void {
++		$credential = ['id' => 'c-2'];
++		$course = ['id' => 'k-1', 'certificateTemplateSlug' => 'certificate-a4'];
++		$europass = $this->createMock(originalClassName: EuropassIssuerInterface::class);
++		$europass->expects($this->never())->method('withEuropass');
++		$pdf = $this->createMock(originalClassName: CertificatePdfDelegationServiceInterface::class);
++		$pdf->expects($this->once())->method('render')
++			->with($credential, $course)
++			->willReturn($credential + ['pdfRenderStatus' => 'failed', 'pdfRenderError' => 'unavailable']);
++
++		$documents = new CredentialDocuments(europass: $europass, certificatePdf: $pdf);
++
++		self::assertSame(
++			expected: ['id' => 'c-2', 'pdfRenderStatus' => 'failed', 'pdfRenderError' => 'unavailable'],
++			actual: $documents->withPdf(credential: $credential, course: $course)
++		);
++	}//end testThePdfIsRenderedOnTheGivenCourse()
++}//end class
+diff --git a/tests/Unit/Service/CredentialReissueServiceTest.php b/tests/Unit/Service/CredentialReissueServiceTest.php
+index 2e52ac688..58e861c49 100644
+--- a/tests/Unit/Service/CredentialReissueServiceTest.php
++++ b/tests/Unit/Service/CredentialReissueServiceTest.php
+@@ -24,6 +24,7 @@ declare(strict_types=1);
+ namespace OCA\Learniq\Tests\Unit\Service;
+ 
+ use OCA\Learniq\Kernel\Contracts\CertificatePdfDelegationServiceInterface;
++use OCA\Learniq\Service\CredentialDocuments;
+ use OCA\Learniq\Service\CredentialReissueService;
+ use OCA\Learniq\Service\CredentialSigningService;
+ use OCA\Learniq\Service\EuropassIssuer;
+@@ -180,7 +181,7 @@ class CredentialReissueServiceTest extends TestCase {
+ 			return true;
+ 		});
+ 
+-		return new CredentialReissueService(objects: $objects, transitions: $transitions, signer: $signer, europass: $europass, config: $config, logger: new NullLogger(), certificatePdf: $certificatePdf);
++		return new CredentialReissueService(objects: $objects, transitions: $transitions, signer: $signer, documents: new CredentialDocuments(europass: $europass, certificatePdf: $certificatePdf), config: $config, logger: new NullLogger());
+ 	}//end service()
+ 
+ 	/**
+-- 
+2.43.0
+
