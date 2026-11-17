@@ -2007,8 +2007,35 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-ownership-is-decided-by-one-predicate
 	 */
 	public function acquireLock(IUserSession $userSession, LockTerms $terms=new LockTerms()): bool {
+		return $this->acquireLockAs(ownerId: self::loggedInUid(userSession: $userSession), terms: $terms);
+	}//end acquireLock()
+
+	/**
+	 * Take or extend a lock on the object for an explicit owner, without a session.
+	 *
+	 * The same rules as acquireLock(), for a caller that has no signed-in user:
+	 * a background job or worker names the owner it claims for. This only
+	 * changes the object in memory; MagicMapper::claimObjectEntity() is what
+	 * makes the claim atomic in the table.
+	 *
+	 * @param string    $ownerId The owner the lock is taken for.
+	 * @param LockTerms $terms   Process, duration and holding run
+	 *
+	 * @throws Exception If the owner id is empty or the object is locked by another holder
+	 *
+	 * @return true True if lock was successful
+	 *
+	 * @psalm-suppress PossiblyUnusedReturnValue
+	 *
+	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-ownership-is-decided-by-one-predicate
+	 */
+	public function acquireLockAs(string $ownerId, LockTerms $terms=new LockTerms()): bool {
+		if (trim($ownerId) === '') {
+			throw new Exception('A lock needs an owner');
+		}
+
 		$now = new DateTime();
-		$payload = $terms->payloadFor(userId: self::loggedInUid(userSession: $userSession), now: $now);
+		$payload = $terms->payloadFor(userId: $ownerId, now: $now);
 
 		// If already locked, only the holder may extend it.
 		if ($this->isLocked() === true) {
@@ -2018,7 +2045,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 		$this->setLocked($this->withExpiration(payload: $payload, now: $now));
 
 		return true;
-	}//end acquireLock()
+	}//end acquireLockAs()
 
 	/**
 	 * The payload that extends the current lock for the caller it was built for.
