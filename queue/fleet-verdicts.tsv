@@ -19425,3 +19425,4 @@ versioniq	735	3c9040104be324b72d47be58967808da6c5e7027	RED	worker-43:merge-gate	
 dossiq	6659	565a618a74e1407233ed8b1363bf412763f216c3	REVERIFY	worker-32	merged development in, kept both INSTANCE_MUTATING entries in tests/e2e/playwright.config.ts; end-to-end landing skipped (merge gate host static.developer.overheid.nl unreachable); new head 7c7be56443aeb3a89787e941ed3e97fbc3c0b146, verify it
 decidiq	2287	39b59d2af3ca16d4d23436035ae2f8eeb16e7bdd	REVERIFY	worker-04:merge	conflicts only with an earlier PR of the merge tree: merges clean on development alone; files: tests/newman/run-all.sh 
 integriq	3731	d1f6f2979cd52bb09500599fce18732c3238ee04	RED	worker-58:merge-gate	GATE RED floor: unit_complexity: 3.89 -> 3.87
+integriq	3732	38f15f61e5ec504520b84760daec95287003ea4f	REVERIFY	worker-58:merge	conflicts only with an earlier PR of the merge tree: merges clean on development alone; files: l10n/en.js l10n/nl.js 
