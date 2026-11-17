@@ -5392,3 +5392,4 @@ dossiq	6655	0ba448431940d284ce49d4953e333ff08b3f05e1	MERGED	merge3	GATE OK sbom,
 dossiq	6656	f2ca794bb37cc7b42cb881aa4c52844f864a2064	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
 dossiq	6657	395229a33df02e72823aa7df0de43c3ac12211d1	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
 dossiq	6658	1eb1a6a3a2861cf635879e481faec46f137ecb4b	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
+filinq	2180	6cd5e86ffab43fd4ee6c0242f32056d724e26036	SKIP	worker-48	GATE UNMEASURED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3 while api.osv.dev is unreachable from this session
