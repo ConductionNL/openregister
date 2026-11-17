@@ -18848,3 +18848,4 @@ review:shillinq:1958:98b7ab13	GREEN: suite 12494 green, vitest 18 green	session-
 review:portaliq:2450:5c9fe090	GREEN: no new failures (16 inherited), spec-conformant; minor log-once concern	session-20261117T004651-e86f3253	2026-11-17T01:20:46Z
 fix:learniq:2551:87132cc4:v4	conflict resolved, pushed 2291ead0; failures inherited; merge lock held elsewhere, REVERIFY queued	session-20261117T004640-78f538a3	2026-11-17T01:21:01Z
 fix:humaniq:1139:181389a6:v3	conflict resolved (l10n js regenerated), pushed 3c0dc9a8, unit green; lock held elsewhere, REVERIFY queued	session-20261117T004133-c974afac	2026-11-17T01:21:30Z
+review:filinq:2091:ea6afdbf	GREEN: per change spec; checks green; re-conflicts with newest development in register info (both v8.64.0, next merge must bump to v8.65.0)	session-20261113T214350-9762e143	2026-11-17T01:21:45Z
