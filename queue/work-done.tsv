@@ -19621,3 +19621,4 @@ fix:learniq:2534:b906144a	unmeasured: static.developer.overheid.nl (conflict fix
 fix:filinq:2107:17d900b8	conflict resolved, pushed 0bc2f69d; REVERIFY queued	session-20261117T063100-87feca45	2026-11-17T06:44:08Z
 fix:filinq:2085:51341efd	fixed CONFLICT, pushed 7276c4b5; unit 7120 OK; REVERIFY queued (merge lock held elsewhere)	session-20261117T061802-b42f2669	2026-11-17T06:44:34Z
 fix:filinq:2113:36d16af0	conflict resolved, pushed c8fcb4bf; suite green; lock held elsewhere, REVERIFY queued	session-20261117T063032-e9a993e2	2026-11-17T06:44:45Z
+fix:filinq:2095:5342f5c8	conflict resolved, pushed 120f4482; merge lock busy, REVERIFY queued	session-20261117T063846-e8410bfe	2026-11-17T06:44:52Z
