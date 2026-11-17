@@ -4885,3 +4885,4 @@ launchpad	819	c5c80a07dc500fcc4e5064cd5126241a9f4bf32a	RED	merge3	GATE RED sbom:
 pipelinq	3718	6a2a609c3a7165bacdca1905705aa3700ae0d4e4	MERGED	worker-47	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.50
 shillinq	1900	7c67b53846a791a3e762d24ded38e17fec205a03	RED	merge3	GATE RED checker floor: adrvalidator: pass -> fail; adrvalidator stars: 5 -> 1; score: 100 -> 93
 shillinq	3110	cca3fd23bdfcaf08b914978343921a1bfc362fcb	RED	merge3	GATE RED sbom: composer.lock, package-lock.json changed without sbom.cdx.json
+learniq	2578	1ce84f5b7b6b7f2cde5febf91d9cb2fb62431aad	MERGED	worker-28	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 4.08
