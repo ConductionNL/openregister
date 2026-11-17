@@ -342,4 +342,45 @@ class GeneratedIdentifierDeclarationTest extends TestCase {
 		}
 
 	}//end testTheRefusalIsAVocabularyRefusal()
+
+	/**
+	 * Without `per` a declaration keeps one counter.
+	 *
+	 * @return void
+	 */
+	public function testWithoutPerThereIsOneCounter(): void {
+		$declaration = GeneratedIdentifierDeclaration::fromProperty(property: $this->property());
+
+		$this->assertNull(actual: $declaration?->per());
+
+	}//end testWithoutPerThereIsOneCounter()
+
+	/**
+	 * `per` names the property whose value keeps a counter of its own.
+	 *
+	 * @return void
+	 */
+	public function testPerNamesTheProperty(): void {
+		$declaration = GeneratedIdentifierDeclaration::fromProperty(property: $this->property(overrides: ['per' => ' unit ']));
+
+		$this->assertSame(expected: 'unit', actual: $declaration?->per());
+
+	}//end testPerNamesTheProperty()
+
+	/**
+	 * A `per` that is not a non-empty string is refused, not read as one counter.
+	 *
+	 * @return void
+	 */
+	public function testABlankOrNonStringPerIsRefused(): void {
+		foreach (['', '  ', 7, ['unit'], null] as $per) {
+			try {
+				GeneratedIdentifierDeclaration::fromProperty(property: $this->property(overrides: ['per' => $per]), path: 'number');
+				$this->fail(message: 'per '.json_encode($per).' should have been refused');
+			} catch (GeneratedIdentifierException $refusal) {
+				$this->assertStringContainsString(needle: '.per', haystack: $refusal->getMessage());
+			}
+		}
+
+	}//end testABlankOrNonStringPerIsRefused()
 }//end class

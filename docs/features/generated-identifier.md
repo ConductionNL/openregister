@@ -31,6 +31,10 @@ The first case of 2026 is `Z-2026-00001`. The first case of 2027 is
 | `format` | The value, with placeholders. `{seq:n}` is the number padded to n digits, `{year}` and `{month}` come from the creation time, and everything else is literal |
 | `resetOn` | `never` for one counter for all time, `year` to restart each January. Defaults to `never` |
 | `reserved` | A list of values and `/patterns/` no sequence may issue. Optional. See below |
+| `per` | The name of another property of the same object. Each distinct value of it (a unit, a department) keeps a counter of its own, still restarted by `resetOn`, so two units each start at 1. Objects without a value there share one counter of their own. Optional |
+
+With `per`, two objects in different units can carry the same identifier: it is
+unique together with that property, not on its own.
 
 A number past its padding grows rather than wrapping. The hundred-thousand-first
 case of a five-digit format reads `Z-2026-100001`, not `Z-2026-00001`.

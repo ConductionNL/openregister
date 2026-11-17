@@ -56,6 +56,19 @@ interface GeneratedIdentifierDeclarationInterface {
 	public function sequence(): string;
 
 	/**
+	 * The property whose value keeps a counter of its own, or null for one counter.
+	 *
+	 * With `per: unit`, every distinct value of the object's `unit` draws from
+	 * its own counter, so two units each start at 1 (and, with `resetOn: year`,
+	 * again at 1 each year).
+	 *
+	 * @return string|null The property name.
+	 *
+	 * @spec openspec/changes/generated-identifier/specs/computed-fields/spec.md#requirement-a-property-declares-a-generated-identifier-from-a-sequence-and-a-format
+	 */
+	public function per(): ?string;
+
+	/**
 	 * The period that keys the counter at a given moment.
 	 *
 	 * An empty string for `resetOn: never`, the four-digit year for
