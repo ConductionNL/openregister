@@ -18960,6 +18960,7 @@ pipelinq	3939	102496ca468edbe701971dc14bfb0ae65256190a	GREEN	worker-11	build of 
 thematiq	1727	057fa453a0569e5c526c7ccf37e79c7bdb12518d	RED	worker-37	npm ci ERESOLVE: stylelint-config-standard 41 needs peer stylelint ^18 (bumped only in #1728); land together with #1728
 thematiq	1728	3eb4a9137a95f5f9be9b6dd452335b01d93ecdf0	REVERIFY	worker-37	conflicts only with an earlier PR of the verify tree
 thematiq	1729	0112b5b6724ea05ac9e72421dcf80f7df166f86b	REVERIFY	worker-37	conflicts only with an earlier PR of the verify tree
+portaliq	2587	664b8ca8575ae2f35befab13dda8dba4deb03d63	GREEN	worker-01	unit 6339 run (baseline 6324, 16 inherited errors), 0 new failures; build portal-scoping-and-auth per spec
 portaliq	2589	7076e2d0a11a89d02d7a2be14ba0596bf4d5862a	CONFLICT	worker-49	conflicts with development in package.json; baseline 6324 tests (16 errors inherited)
 learniq	2497	48225cf9d50c702289f26ffb5e21fd07629ec941	GREEN	worker-45	unit baseline 7152 (2 inherited), tree 7176, 0 new; node --test 1418 with 8 inherited failures, same on development; php -l clean; build of credentials-certificate-pdf, download gated to holder/hr/compliance like the Europass route
 pipelinq	3952	724737b6aa5dba076f7d938b823c2377c86bdc3e	GREEN	worker-39	phpunit base 9282 ok, tree 9304 ok; vitest 2 failed+1 file error inherited (myWorkPage, notificationLabels, reportSectionPeriod red on development); build of requests-inbound-to-queue, admin-gated endpoints
