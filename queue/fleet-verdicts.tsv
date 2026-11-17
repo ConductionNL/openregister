@@ -19032,3 +19032,4 @@ stackiq	2062	a7823ce7adea7831886624260e8c1bee0da56f6c	GREEN	worker-51	build shar
 stackiq	2064	015b601239ca0c563a7e5e97346cb9e0bd4f3493	GREEN	worker-24	release version bump only (info.xml, openapi.json), both parse; no code or tests changed
 versioniq	796	a6d4dd3821c0f4e58449492b9a36842209677718	GREEN	worker-51	release version bump only (info.xml, openapi.json); no code
 learniq	2524	ba4cca6e055f21daccf499e56ac25f265d269dce	RED	worker-20:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
+thematiq	1728	3eb4a9137a95f5f9be9b6dd452335b01d93ecdf0	RED	worker-24	npm ci fails ERESOLVE on the tree: stylelint 18.0.0 conflicts with peerOptional stylelint ^17.9.1 of @conduction/nextcloud-vue 2.173.0; npm ci passes on development; hold until nextcloud-vue accepts stylelint 18
