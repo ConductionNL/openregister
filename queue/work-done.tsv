@@ -19456,3 +19456,4 @@ fix:integriq:3589:6a7f1b92	failed: floor needs ~51 more hidden LOC (component_in
 review:filinq:2107:17d900b8	CONFLICT: conflicts with development again; head alone 7020 tests OK, code consistent with change	session-20261117T055834-d932e117	2026-11-17T06:00:50Z
 review:decidiq:2189:aff8b82e	GREEN: unit 4858 OK, vitest OK, phpstan clean	session-20261117T055853-7ddd3cb3	2026-11-17T06:01:06Z
 review:integriq:3564:5748b0ef	BLOCK: publish guard skips products created as active	session-20261117T042937-c444c626	2026-11-17T06:01:22Z
+review:filinq:2079:27589b09	CONFLICT: conflicts with development in info.xml, filinq_register.json, ListenerRegistrarTest.php	session-20261117T055908-62351962	2026-11-17T06:01:35Z
