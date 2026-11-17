@@ -20195,6 +20195,7 @@ merge:opencatalogi:2683:e3377ab9	cloud tree of 1 opencatalogi PRs: none; conflic
 review:decidiq:2205:8a3de4c6	GREEN: per spec; 4958 unit tests OK; one concern noted	session-20261117T095422-114b47a9	2026-11-17T09:59:18Z
 review:integriq:3595:68404f18	GREEN: matches change spec; 9735 tests, no failures beyond baseline	session-20261117T095242-04e7b270	2026-11-17T09:59:28Z
 merge:planninq:1218:d86b7319	cloud tree of 1 planninq PRs: merged=0 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T081254-2b2b5b50	2026-11-17T09:59:44Z
+build:larpinq:forms-registration-is-checked-at-binding:c4	PR larpinq#1086: 1.2 and 2.1 done, all tasks ticked; listener submits with app authority when openregister has it, else the direct write. openregister part pushed on build/forms-registration-is-checked-at-binding (fc806baa), PR deferred: openregister has 185 open PRs	session-20261117T094037-14874ab0	2026-11-17T09:59:56Z
 fix:integriq:3613:b7a00be9	failed: permission (fix pushed, new head 83ce7d7b34 needs verify; review/land refused)	session-20261117T092553-97564f2f	2026-11-17T09:59:52Z
 review:decidiq:2171:6b39135c	GREEN: suite clean on merge with development; minor concerns noted	session-20261117T093904-44ff7b5f	2026-11-17T10:00:04Z
 fix:versioniq:754:8d9ac96c	merged #754 at 09e903d37e8c8bd99785cadf2f06bb610974b3e2	session-20261117T092700-641a7a7c	2026-11-17T10:00:11Z
