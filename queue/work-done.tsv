@@ -19051,3 +19051,4 @@ review:filinq:2120:5a2b996f	GREEN: 7023 unit ok, phpstan clean; register json co
 review:decidiq:2189:2a5bced2	CONFLICT (municipality.json); behaviour reviewed, no blocker	session-20261117T003945-3aa9cc05	2026-11-17T02:07:46Z
 review:hermiq:1719:ba454aad	GREEN: unit 5521 OK on merge with development; conflicts on info.xml/register version need a fix	session-20261117T020339-3b9e42aa	2026-11-17T02:08:01Z
 review:filinq:2130:e568a447	BLOCK: OCR text layer rewrites final documents outside the write guard; conflicts with development	session-20261117T020142-15890c05	2026-11-17T02:08:11Z
+review:filinq:2116:748154e2	GREEN #2116 (unit 7035 OK; conflicts with development in filinq_register.json)	session-20261117T020252-b4828a7d	2026-11-17T02:08:18Z
