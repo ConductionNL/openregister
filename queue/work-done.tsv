@@ -22469,4 +22469,5 @@ build:filinq:generate-store-in-case-system:b2:c4	nothing left to build in code: 
 verify:versioniq:735:6cc6a20f	CONFLICT versioniq#735 (8 files vs development)	session-20261117T190507-82f8fe51	2026-11-17T20:13:27Z
 build:decidiq:objection-advisory-committee:b2:c3	already built: every code task on development; the named tests/e2e/objection-route.spec.ts is in open PR #2279 (awaits verify); left only the run against an instance with the municipality set	session-20261117T190714-0b708ca6	2026-11-17T20:14:19Z
 verify:thematiq:1725:f7a10dc1	GREEN 1725: dbal lock bump, unit same as baseline	session-20261117T185725-f66ae098	2026-11-17T20:14:54Z
+merge:humaniq:1193:1d3bba27	unmeasured: static.developer.overheid.nl (#1194); #1193 head moved to fe5e457cc9, REVERIFY; merged=0	session-20261117T190443-6578d505	2026-11-17T20:15:23Z
 merge:filinq:2069:b862cb1e	cloud tree of 9 filinq PRs: merged=0 red=1 fail=0 skip=1; conflict 7, lint 0, red 0, moved 0, done 0	session-20261117T190320-1db054ae	2026-11-17T20:15:01Z
