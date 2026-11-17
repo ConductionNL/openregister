@@ -18887,6 +18887,7 @@ fix:launchpad:1216:004aa912:v3	obsolete: already built on development via #785 (
 fix:integriq:3572:35bfc428:v3	conflict resolved, pushed 5ea14816; 5 inherited failures; merge lock held elsewhere, REVERIFY queued	session-20261117T004640-78f538a3	2026-11-17T01:28:09Z
 fix:integriq:3632:b8b6d7ad:v3	conflict resolved, pushed 6bc3018b, no failures beyond development's; merge lock held elsewhere, REVERIFY queued	session-20261117T005055-4c5f0209	2026-11-17T01:28:44Z
 fix:integriq:3626:d61b9b39:v3	fixed CONFLICT, pushed 7c1c0ef3; REVERIFY queued (merge lock held elsewhere)	session-20261117T004655-cf1f2f80	2026-11-17T01:29:15Z
+fix:buildiq:1262:a0a4f287:v4	obsolete: development already carries the LockRequest migration; closed #1262	session-20261117T005933-5e669a88	2026-11-17T01:29:25Z
 fix:buildiq:1651:e765d7de:v5	conflict resolved, pushed 4514f95f; lock held elsewhere, REVERIFY queued	session-20261117T004721-b30387a5	2026-11-17T01:29:44Z
 build4:openregister:object-write-at-instance-floor:c8	partial: not started in this pass (worker context too low for the core mapper work); PR #10520 (branch -3, head 087462fb) unchanged, tasks 1-4 and 6-19 still open as left by c7	session-20261116T230934-9ee320cf	2026-11-17T01:29:52Z
 fix:integriq:3550:b2995130:v3	fixed CONFLICT #3550, new head 268ca022; REVERIFY (merge lock held elsewhere)	session-20261117T004616-c7acc36d	2026-11-17T01:29:54Z
@@ -18904,6 +18905,9 @@ fix:buildiq:1649:f58cb410:v5	conflict resolved + stories test helper fixed, push
 fix:buildiq:1630:d47a3654:v3	conflicts resolved and floor kept, pushed 01c116f5; REVERIFY recorded (merge lock held elsewhere)	session-20261117T005242-9db4df06	2026-11-17T01:32:29Z
 fix:integriq:3593:8dad155c:v4	fixed CONFLICT, pushed 75b7c54; merge lock held elsewhere, REVERIFY queued	session-20261117T004701-f6094f02	2026-11-17T01:32:37Z
 fix:launchpad:1212:b82c095c:v4	fixed CONFLICT, pushed 06d37ac41f3224591c48ed069704137ec2f57b54; merge lock busy, REVERIFY queued	session-20261117T005217-ad04a5d2	2026-11-17T01:32:45Z
+review:shillinq:3002:64f4bc01	RED: wrong AppIdentity namespace after development moved it to Kernel; 5 controller test errors	session-20261117T004724-21eb694a	2026-11-17T01:33:11Z
+fix:buildiq:1089:322d7e65:v4	closed #1089 as obsolete: development already locks vitest 5.1.0	session-20261117T003652-c6487e72	2026-11-17T01:33:00Z
+verify:decidiq:2162:b34c6472	stale	session-20261117T004701-f6094f02	2026-11-17T01:33:13Z
 review:shillinq:3006:bc86e171	GREEN: suite 12484 green, vitest 37 green	session-20261117T005237-d93074af	2026-11-17T01:33:18Z
 fix:integriq:3613:0ea6aa0c:v3	conflict resolved + main API migration, pushed b4fef9cf; merge lock busy, REVERIFY queued	session-20261117T004651-172e3db6	2026-11-17T01:33:29Z
 fix:launchpad:1239:793d6033:v4	conflict resolved, pushed 1b2f911c, vitest green, sbom current; merge lock held elsewhere, REVERIFY queued	session-20261117T005055-4c5f0209	2026-11-17T01:33:41Z
@@ -18912,3 +18916,9 @@ fix:buildiq:1626:cac162dc:v3	conflict resolved, pushed 77575f40; REVERIFY queued
 fix:humaniq:1148:3bc5cb16:v3	merged #1148 at 9a856f88c9dce85c98afbf612a33d936cb7629bc	session-20261117T005434-ea6146cc	2026-11-17T01:34:13Z
 verify:decidiq:2173:518cf792	2173 CONFLICT (src/menu-layout.simple.json)	session-20261117T004650-4097ce5f	2026-11-17T01:34:19Z
 fix:integriq:3601:be3e4259:v3	conflict resolved, pushed fc46c8d9; merge lock busy, REVERIFY queued	session-20261117T004655-1a901c92	2026-11-17T01:34:33Z
+fix:launchpad:761:ca2815b8:v4	conflict resolved, pushed fb9c34bd; merge lock held by another merger, REVERIFY queued	session-20261117T005304-6fca2823	2026-11-17T01:35:27Z
+fix:buildiq:1619:e0722b68:v3	conflict resolved, pushed 3d592e85; merge lock held elsewhere, REVERIFY queued	session-20261117T004756-036f1d35	2026-11-17T01:35:35Z
+merge:buildiq:1608:754a2e84	cloud tree of 1 buildiq PRs: merged=0 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T004644-5138fb50	2026-11-17T01:36:03Z
+fix:opencatalogi:2683:9def1ff8:v3	fixed CONFLICT, pushed 783543f7c3ddf46f3c87957bf2ca6b6b6c890e22; merge lock busy, REVERIFY queued	session-20261117T005217-ad04a5d2	2026-11-17T01:36:15Z
+fix:launchpad:1210:7f9c64f6:v3	conflict resolved; new head 6f168e0b, REVERIFY (merge lock held elsewhere)	session-20261117T003945-3aa9cc05	2026-11-17T01:36:25Z
+fix:launchpad:1217:edcbef17:v3	conflict resolved, pushed faab5f5c; phpunit+vitest green; merge lock held elsewhere, REVERIFY queued	session-20261117T004609-b5037037	2026-11-17T01:36:35Z
