@@ -19058,6 +19058,7 @@ versioniq	799	9d0b17e161aabdb3641874366fbf88fc9343996c	GREEN	worker-51	build aud
 thematiq	1719	740e1349e57122fb6902c14777368c21f0bfaa15	GREEN	worker-07	adds 3 token sets + sync of generated upstream themes; phpunit-unit 2933 (baseline 2900, 1 inherited failure MigrateOverrideValueTypesTest), token-sets 437 OK, vitest 1576 OK, 0 new failures
 versioniq	729	497abe19ff268ce16525a80c4f175e57d1a81499	CONFLICT	worker-22	conflicts with development
 stackiq	2061	6ab602c46d48b7cee3466e36e021e8be6512ce4c	GREEN	worker-33	PHP unit 4055 OK (baseline 4055 OK), vitest 2946 with 1 facets failure inherited from development; frontend overlay for architecture-shared-usage-on-views, CSS variables only
+thematiq	1723	f6aae08d113aa98b5a8129910468602b07e598e8	GREEN	worker-24	dependency bump nextcloud-vue 2.173.0 to 2.180.0; npm ci ok, vitest 1571 pass, webpack build ok; no PHP changed
 thematiq	1714	a6daab39dc7b0e3915d3a9ea7279bf98a9ae5cf2	GREEN	worker-37	adds voorne-aan-zee token set, sync reads src/tokens.json; goldens regenerated for the new set; phpunit 2911, 1 inherited failure, 0 new; vitest 1573/1573
 opencatalogi	2650	0a028b8906b0b63c2a0fe78cf337a67687c6ec5c	CONFLICT	worker-17:merge	conflicts with development; files: appinfo/info.xml l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json openapi.json openapi.standards.json tests/Unit/AppInfo/ComponentRegistrarsTest.php 
 opencatalogi	2654	54779849ad727be887b5dd55103d2005a09a2977	CONFLICT	worker-17:merge	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
