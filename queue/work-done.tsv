@@ -22756,3 +22756,4 @@ verify:shillinq:3006:35f75790	GREEN #3006 (phpunit 12800 OK, vitest 0 new failur
 verify:pipelinq:3958:40777e1a	GREEN: unit 9292=9292, no new failures; psalm 7 not runnable on PHP 8.3.6 here	session-20261117T211328-24b3dcac	2026-11-17T21:55:54Z
 fix:keepiq:1894:f9aa4181	no change needed: sbom --check current (dev-only lock change); REVERIFY queued	session-20261117T213101-157fb562	2026-11-17T21:56:19Z
 fix:portaliq:2583:d8b97f3d	fixed CONFLICT #2583, new head 9cdf93db; merge lock held elsewhere, REVERIFY queued	session-20261117T213149-40fbaeee	2026-11-17T21:56:33Z
+fix:integriq:3705:cd33fb75	fixed RED: pinia alias to dist entry, build green; new head 6655913c, REVERIFY queued (merge lock busy)	session-20261117T211412-45e1aeb8	2026-11-17T21:56:46Z
