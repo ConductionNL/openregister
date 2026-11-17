@@ -19747,3 +19747,4 @@ review:shillinq:3011:dd50b990	CONFLICT with development (info.xml, register-vers
 cover:launchpad:fb10c50fm88bd:a1252b57	PR #1258: 2 ArchiveParser tests, suite 4563->4565 OK	session-20261117T065500-f63bc812	2026-11-17T07:11:58Z
 fix:shillinq:2071:c9fb8008	restored BookCapturesCommand registration, pushed 6ef01f6f; REVERIFY	session-20261117T055834-d932e117	2026-11-17T07:11:54Z
 fix:shillinq:3064:b11030b8	conflict resolved, pushed e4c2b4532; REVERIFY recorded	session-20261117T063021-b217a961	2026-11-17T07:12:04Z
+review:shillinq:2086:9fa2a6b9	GREEN: unit 12621 green, vitest 24 green, phpstan clean	session-20261117T070105-e962857c	2026-11-17T07:12:16Z
