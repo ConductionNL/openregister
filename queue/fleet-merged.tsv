@@ -5162,3 +5162,4 @@ versioniq	758	7a728e3355d9b561dfb98b1eb9fa7f47a5585fa3	MERGED	worker-58	GATE OK 
 learniq	2509	2500f76794984fd0e6de436a69fd37945c85d3af	SKIP	worker-15	no APPROVE review at this head
 launchpad	1212	dc706ee15e7c98a5d79e6386fd3a226f481661a7	RED	worker-54	GATE RED floor: duplication: 4.66 -> 4.64; module_coupling: 4.74 -> 4.70
 pipelinq	3929	ddcf760b31df5e52fc42a69a744b97300dbd42cf	MERGED	worker-01	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.49
+planninq	1213	ac9d7c73445082592ca0b8c8edd3e7b4f50aae74	RED	worker-13	GATE RED sbom: package-lock.json changed without sbom.cdx.json
