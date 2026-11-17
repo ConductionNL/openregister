@@ -19382,3 +19382,4 @@ review:filinq:2095:5342f5c8	GREEN: integrity scan matches specs, 6998 unit tests
 review:hermiq:1749:8dfea2dc	GREEN: hermiq #1749 matches its change specs; unit 5539 OK, vitest 93 OK	session-20261117T032312-77fce7f4	2026-11-17T03:26:07Z
 review:shillinq:3052:474a6bf6	GREEN: unit 12595 OK on PR+development, vitest 12 pass	session-20261117T032229-44e2a97c	2026-11-17T03:26:40Z
 merge:hermiq:1781:776334c2	cloud tree of 2 hermiq PRs: none; conflict 2, lint 0, red 0, moved 0, done 0	session-20261117T032224-b88169ea	2026-11-17T03:26:52Z
+fix:filinq:2087:516936bd	conflict resolved, pushed ec729a4e; merge lock held elsewhere, REVERIFY queued	session-20261117T032146-7c837cf0	2026-11-17T03:27:18Z
