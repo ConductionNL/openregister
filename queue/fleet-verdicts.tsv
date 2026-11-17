@@ -19224,6 +19224,7 @@ filinq	2120	97997d7ec12a0ce8c933977fb8131bdd8fd72260	GREEN	worker-10	phpunit bas
 filinq	2130	45c816db2ee1d375cd70358dee19911a024d3f5d	GREEN	worker-30	phpunit 7350 OK (baseline 7329 OK), vitest 866 passed, no new failures; build of finish-half-built-capabilities
 buildiq	1713	2b78ac989bb71c96a61611961bdc826e1fb7af1f	GREEN	worker-18	tasks.md tick only (T06), no code changed; merges clean on development; unit suite not affected (development baseline 3692 tests 0 failures this session)
 humaniq	1192	3ca961bd39275bf3bb69cd3b39f481eff6653277	BLOCK	worker-20:review	review: Thorough; demo-data-coverage gate fails for the new PayrollOpeningBalance schema (0 demo objects in lib/Settings/humaniq_mock_register.json, needs 3; regenerate with generate_mock_register.py --keep --only-changed); concerns: HrDocumentService::openingBalanceOf matches employee+year without administ
+humaniq	1193	ef7f5e47529d295f00f4a5b05b2aa464576bc3ba	GREEN	worker-54	phpunit 4532 OK (baseline 4509 OK, 1 skipped); node test:js 13 fails = baseline 13; new failures 0; build of matrix-rows-without-a-requirement per its specs
 learniq	2612	2ee740f1c00542d494eea6628579fc69bb43768e	GREEN	worker-04	unit 7156 tests on tree, baseline 7152 with 1 failure (HigherEducationExampleSetTest, inherited), new failures none
 integriq	3585	39f07d5a0d6b61d37b08b66b1adae9919ddca926	BLOCK	worker-40:review	review: Strict; blocker: the provider check takes its outbound target and credential reference from the request body instead of the stored source or the provider default; pin both before probing; rest matches messaging-payments-review
 shillinq	3174	3dfee71ebce89aa659c0cf9fe97e8ffe935b0564	GREEN	worker-24	unit 12818 on tree (baseline 12796 OK, 3 skipped), 0 new failures; vitest 3125 with 1 failure inherited from development (dunningNextRun.spec.js)
@@ -19244,3 +19245,4 @@ opencatalogi	2771	502ce9b90ab9cfb622904e055d6d14d2b3ad2fdd	CONFLICT	worker-09	co
 opencatalogi	2803	182028e8f50085dad6352c07ec0abb07a4eb807b	REVERIFY	worker-09	conflicts only with an earlier PR of the verify tree
 opencatalogi	2805	b5832c88ee2a159946d2f6880ba534de439fb504	REVERIFY	worker-09	conflicts only with an earlier PR of the verify tree
 opencatalogi	2806	c32247ec0843cd01d478d2d0970444b6954ce5e2	REVERIFY	worker-09	conflicts only with an earlier PR of the verify tree
+humaniq	1198	ada533a81007f708bdfe9eb24a2ba5a6a2041daa	GREEN	worker-54	phpunit 4532 OK on tree (baseline 4509 OK); node test:js 13 fails = baseline 13; new failures 0; build of record-history-on-every-detail-page per its specs
