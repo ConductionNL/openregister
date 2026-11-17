@@ -19907,3 +19907,5 @@ review:versioniq:726:6bf08276	GREEN: per spec, no new failures	session-20261117T
 fix:shillinq:3011:dd50b990	conflict resolved, pushed 3989b7d8; REVERIFY queued	session-20261117T081501-4929e5cc	2026-11-17T08:25:04Z
 review:stackiq:1946:79f3a2dd	GREEN: 0 new failures (PHP 4092, vitest 2908; baseline reds inherited)	session-20261117T081154-c3187d32	2026-11-17T08:25:14Z
 verify:versioniq:754:cad32981	754 GREEN, 758 REVERIFY (l10n conflict with 754 only)	session-20261117T080436-64bee6d7	2026-11-17T08:25:30Z
+verify:launchpad:1239:a6147333	5 GREEN (1239,1258,1259,1260,1261); no new failures	session-20261117T081117-f29e8a89	2026-11-17T08:25:57Z
+fix:shillinq:2997:b635f045	conflict resolved, pushed 10c8efba; REVERIFY recorded (merge lock held by another merger)	session-20261117T081746-d55c4d0c	2026-11-17T08:26:06Z
