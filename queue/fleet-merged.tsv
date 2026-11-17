@@ -5198,5 +5198,6 @@ dossiq	6638	89db4fd0d58bce432e1040de4cddd4b86226f366	RED	worker-02	GATE RED sbom
 dossiq	6639	368fd4368419b8eefecb076c704e3ab1271153d6	RED	worker-02	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 stackiq	1966	60592396b083c0cc598af1e7680ea3e879ad4aba	SKIP	worker-32	no APPROVE review at this head
 stackiq	2023	4b571496463e29f34eb2c14da0dfb98b850b6306	RED	worker-32	GATE RED sbom: composer.lock changed without sbom.cdx.json
+planninq	1216	45902e2e3c022b09c9b7f4349c086a71ac905884	MERGED	worker-13	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.66 holds at 4.05
 stackiq	2024	d3bfa511d93e185f2889fb936ffefa27d7bc0c3a	RED	worker-32	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 stackiq	2025	820ddd39fcc967bdb6dc528cddcfb206e955f86a	RED	worker-32	GATE RED sbom: composer.lock changed without sbom.cdx.json
