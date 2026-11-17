@@ -18643,3 +18643,4 @@ filinq	2183	fb25a98a385e31605573510e1f28367b920a420b	GREEN	worker-36	vitest spec
 filinq	2184	6da46b71eaef66c39d938d3bfecaf1d756918363	GREEN	worker-36	e2e specs only; unit 7298 OK on the 9-PR tree, baseline 7288 OK, new failures 0; vitest 857/857
 pipelinq	3943	ca8a7004855906b9e00ed5aeb35851c413d08653	REVERIFY	worker-55	conflicts only with an earlier PR of the verify tree
 pipelinq	3944	16098bb4daef60415537a2c86a8155070b4ca65a	GREEN	worker-55	tests 9345 (baseline 9280 green), vitest 5329 pass / 2 inherited fails, no new failures
+pipelinq	3945	ceffbf1ffd95fdbc429b3b7e77c1cbf97a8849c2	REVERIFY	worker-55	conflicts only with an earlier PR of the verify tree
