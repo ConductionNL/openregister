@@ -20574,3 +20574,4 @@ cover:buildiq:70b3e29em2454:f89f4caa	added to open PR #1702 (buildiq over 40 ope
 verify:integriq:3703:9857fabd	7 GREEN, 1 RED (#3707 guzzle 8, 4 new failures), 1 REVERIFY (#3709)	session-20261117T121011-06450cb7	2026-11-17T12:23:23Z
 cover:buildiq:70b3e29em2454:f84921d5	PR #1706: 1 test + coverage metadata on 4 tests, lib/Mcp/Handler 95.2%->99.8%, suite 3578->3579 ok	session-20261117T115612-9783d86e	2026-11-17T12:24:22Z
 cover:buildiq:70b3e29em2454:34f5c300	PR #1705: 4 Service classes to 100% lines, +30 tests, suite 3578->3608 OK	session-20261117T121311-1734385f	2026-11-17T12:24:02Z
+cover:decidiq:a5f973bbmfcd5:60c2c265	PR #2269: 7 controllers, 18 tests, suite 4951->4969 OK	session-20261117T120806-7b4cac02	2026-11-17T12:24:57Z
