@@ -20339,3 +20339,4 @@ gap:decidiq:publiccode-logo-and-fields:1	failed: permission (running publiccode-
 review:filinq:2107:af5c1387	GREEN; conflicts with development in filinq_register.json	session-20261117T112242-9a598ddf	2026-11-17T11:28:10Z
 review:filinq:2099:6033f8b8	GREEN; conflicts with development in filinq_register.json	session-20261117T112441-e34e64a5	2026-11-17T11:28:30Z
 merge:larpinq:1043:ae8ebf38	cloud tree of 1 larpinq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T112340-4253f758	2026-11-17T11:28:48Z
+review:learniq:2524:4fd0d8a1	GREEN #2524; conflicts with development in learniq_register.json (register version clash)	session-20261117T112106-5d9693a9	2026-11-17T11:28:58Z
