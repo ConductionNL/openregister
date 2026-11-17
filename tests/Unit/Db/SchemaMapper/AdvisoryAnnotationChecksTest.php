@@ -52,6 +52,8 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Service\Schemas\SchemaAnnotationValidators
  * @uses   \OCA\OpenRegister\Service\Survivorship\MdmAnnotationChecks
  * @uses   \OCA\OpenRegister\Service\Survivorship\SurvivorshipAnnotationValidator
+ * @uses   \OCA\OpenRegister\Search\Service\Aggregation\AggregationJoinAnnotationValidator
+ * @uses   \OCA\OpenRegister\Search\Service\Aggregation\CrossSchemaAggregationValidator
  */
 final class AdvisoryAnnotationChecksTest extends TestCase {
 	/**

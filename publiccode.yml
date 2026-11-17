@@ -23,6 +23,7 @@ description:
       en laat andere apps bouwen op één gedeelde, op standaarden gebaseerde
       datalaag. OpenRegister is de basis onder apps als OpenCatalogi, Dossiq en
       Pipelinq.
+      Conduction onderhoudt dit component in opdracht van OpenWoo.app.
     features:
       - Registers op basis van JSON Schema
       - Volledige REST API voor objecten
@@ -37,6 +38,7 @@ description:
       registers, and let other apps build on one shared, standards-based data
       layer. OpenRegister powers apps such as OpenCatalogi, Dossiq and
       Pipelinq.
+      Conduction maintains this component on behalf of OpenWoo.app.
     features:
       - Registers based on JSON Schema
       - Full REST API for objects
@@ -54,7 +56,12 @@ localisation:
     - en
 
 maintenance:
-  type: internal
+  type: contract
+  contractors:
+    - name: Conduction B.V.
+      until: "2027-12-31"
+      email: info@conduction.nl
+      website: https://conduction.nl
   contacts:
     - name: Conduction Development Team
       email: info@conduction.nl

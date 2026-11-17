@@ -36,7 +36,7 @@ use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\Attribute\UserRateLimit;
 use OCP\AppFramework\Http\ContentSecurityPolicy;
 use OCP\AppFramework\Http\JSONResponse;
-use OCP\AppFramework\Http\Response;
+use OCP\AppFramework\Http\TemplateResponse;
 use OCP\IRequest;
 
 /**
@@ -49,56 +49,6 @@ use OCP\IRequest;
  */
 class GraphQLController extends Controller {
 
-	/**
-	 * The GraphiQL explorer page. `{nonce}`, `{endpoint}` and `{requestToken}`
-	 * are filled in per request by getGraphiQLHtml().
-	 *
-	 * @var string
-	 */
-	private const EXPLORER_PAGE = <<<'HTML'
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8" />
-    <title>OpenRegister GraphQL Explorer</title>
-    <style nonce="{nonce}">
-        body { height: 100vh; margin: 0; overflow: hidden; }
-        #graphiql { height: 100vh; }
-    </style>
-    <link rel="stylesheet" href="https://unpkg.com/graphiql@3.9.0/graphiql.min.css"
-            integrity="sha384-QMux00XgRtwRLSYIY3kw2rj1ovk5AuuliAchk+HSQbqdbGFnz9GYuqIlOqxhwCE2"
-            crossorigin="anonymous" />
-</head>
-<body>
-    <div id="graphiql">Loading...</div>
-    <script nonce="{nonce}" src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"
-            integrity="sha384-DGyLxAyjq0f9SPpVevD6IgztCFlnMF6oW/XQGmfe+IsZ8TqEiDrcHkMLKI6fiB/Z"
-            crossorigin="anonymous"></script>
-    <script nonce="{nonce}" src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"
-            integrity="sha384-gTGxhz21lVGYNMcdJOyq01Edg0jhn/c22nsx0kyqP0TxaV5WVdsSH1fSDUf5YJj1"
-            crossorigin="anonymous"></script>
-    <script nonce="{nonce}" src="https://unpkg.com/graphiql@3.9.0/graphiql.min.js"
-            integrity="sha384-8NGfVj4CVlqHajlZj+bPJT4thxPMHMJYn7DWK2CvtopLd02E7qsPHazniBYvVjOO"
-            crossorigin="anonymous"></script>
-    <script nonce="{nonce}">
-        const fetcher = GraphiQL.createFetcher({
-            url: '{endpoint}',
-            headers: {
-                'requesttoken': '{requestToken}',
-            },
-        });
-
-        const root = ReactDOM.createRoot(document.getElementById('graphiql'));
-        root.render(
-            React.createElement(GraphiQL, {
-                fetcher: fetcher,
-                defaultEditorToolsVisibility: true,
-            })
-        );
-    </script>
-</body>
-</html>
-HTML;
 	/**
 	 * GraphQLController constructor.
 	 *
@@ -219,117 +169,41 @@ HTML;
 	/**
 	 * Serve the GraphiQL interactive explorer.
 	 *
-	 * @return Response The HTML response with GraphiQL
+	 * The explorer is bundled with the app (`openregister-graphqlExplorer.js`), so the page runs under
+	 * Nextcloud's default policy: no outside script domain, no inline or eval script. Only the editor's
+	 * workers, which the bundle starts from this instance, are allowed explicitly.
 	 *
-	 * @auth admin-only the explorer page loads third-party scripts on this origin, so only an administrator opens it
+	 * @return TemplateResponse The explorer page
+	 *
+	 * @auth admin-only the explorer runs any query the administrator types, so only an administrator opens it
 	 *
 	 * @NoCSRFRequired
-	 * @no-admin-idor-exempt No per-object resource: returns the static GraphiQL explorer HTML page; no data access.
+	 * @no-admin-idor-exempt No per-object resource: returns the explorer page shell; no data access.
 	 *
 	 * @spec openspec/specs/graphql-api/spec.md
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-2
+	 *
+	 * @spec openspec/changes/api-explorer-in-the-app/tasks.md#task-1.2
 	 */
-	public function explorer(): Response {
-		$html = $this->getGraphiQLHtml();
-
-		// Create a response that renders raw HTML.
-		// @psalm-suppress MissingTemplateParam.
-		$response = new class($html) extends Response {
-
-			/**
-			 * The HTML content to render.
-			 *
-			 * @var string
-			 */
-			private string $html;
-
-			/**
-			 * Constructor.
-			 *
-			 * @param string $html The HTML content
-			 */
-			public function __construct(string $html) {
-				parent::__construct();
-				$this->html = $html;
-				// @phpcs:ignore CustomSniffs.Functions.NamedParameters
-				$this->addHeader('Content-Type', 'text/html; charset=utf-8');
-			}//end __construct()
-
-			/**
-			 * Render the HTML body.
-			 *
-			 * @return string The HTML
-			 *
-			 * @spec exclude Framework Response::render() override on an inline anonymous class for the GraphiQL
-			 *              explorer; the explorer route is owned by retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-2.
-			 */
-			public function render(): string {
-				return $this->html;
-			}//end render()
-		};
-
+	public function explorer(): TemplateResponse {
+		$response = new TemplateResponse(appName: Application::APP_ID, templateName: 'graphqlExplorer', params: []);
 		$response->setContentSecurityPolicy($this->explorerPolicy());
 
 		return $response;
 	}//end explorer()
 
 	/**
-	 * The explorer's content security policy, relaxed for the CDN-hosted GraphiQL assets.
+	 * The explorer's content security policy: Nextcloud's default, plus workers from this instance.
 	 *
 	 * @return ContentSecurityPolicy
+	 *
+	 * @spec openspec/changes/api-explorer-in-the-app/tasks.md#task-1.2
 	 */
 	private function explorerPolicy(): ContentSecurityPolicy {
-		// Relax CSP to allow CDN-hosted GraphiQL assets.
 		$csp = new ContentSecurityPolicy();
-		$csp->addAllowedScriptDomain('https://unpkg.com');
-		$csp->addAllowedStyleDomain('https://unpkg.com');
-		$csp->addAllowedFontDomain('https://unpkg.com');
-		$csp->addAllowedConnectDomain('\'self\'');
-		$csp->allowInlineStyle(true);
-		$csp->allowEvalScript(true);
+		$csp->addAllowedWorkerSrcDomain(domain: '\'self\'');
 
 		return $csp;
 	}//end explorerPolicy()
-
-	/**
-	 * Get the GraphiQL HTML page.
-	 *
-	 * Uses the CDN-hosted GraphiQL for simplicity.
-	 *
-	 * @return string The HTML content
-	 */
-	private function getGraphiQLHtml(): string {
-		$endpoint = $this->explorerEndpoint();
-
-		// Get CSP nonce for inline scripts and CSRF request token for auth.
-		$nonce = $this->services->nonceManager->getNonce();
-		$requestToken = $this->services->csrfManager->getToken()->getEncryptedValue();
-
-		return strtr(
-			self::EXPLORER_PAGE,
-			[
-				'{nonce}' => $nonce,
-				'{endpoint}' => $endpoint,
-				'{requestToken}' => $requestToken,
-			]
-		);
-
-	}//end getGraphiQLHtml()
-
-	/**
-	 * The URL the explorer posts queries to, always through /index.php.
-	 *
-	 * @return string
-	 */
-	private function explorerEndpoint(): string {
-		$endpoint = $this->services->urlGenerator->linkToRoute('openregister.graphQL.execute');
-
-		// Ensure /index.php is included for environments without URL rewriting.
-		if (str_contains(haystack: $endpoint, needle: '/index.php') === false) {
-			$endpoint = '/index.php' . $endpoint;
-		}
-
-		return $endpoint;
-	}//end explorerEndpoint()
 }//end class

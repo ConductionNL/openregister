@@ -28,6 +28,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Event\AgentCreatedEvent;
+use OCA\OpenRegister\Event\AppWebhookEvents;
 use OCA\OpenRegister\Event\AgentDeletedEvent;
 use OCA\OpenRegister\Event\AgentUpdatedEvent;
 use OCA\OpenRegister\Event\ApplicationCreatedEvent;
@@ -231,12 +232,15 @@ class WebhookEventListener implements IEventListener {
 	 * Events that carry one entity map to `objectType`, `action` and the
 	 * serialised entity under the objectType key (SNAPSHOT_EVENTS). Object
 	 * create, update and revert events carry more context (objectPayload()).
+	 * An event another app declared through AppWebhookEvents returns its own
+	 * payload.
 	 *
 	 * @param Event $event The event
 	 *
 	 * @return array<string, mixed>|null The event payload or null if not extractable
 	 *
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md#requirement-event-payload-input-must-include-full-context-for-mapping-templates
+	 * @spec openspec/changes/connect-document-webhooks/specs/app-declared-webhook-events/spec.md#requirement-a-declared-event-is-delivered-with-its-own-payload
 	 */
 	private function extractPayload(Event $event): ?array {
 		foreach (self::SNAPSHOT_EVENTS as $class => [$objectType, $action, $getter]) {
@@ -249,7 +253,8 @@ class WebhookEventListener implements IEventListener {
 			}
 		}
 
-		return $this->objectPayload(event: $event);
+		// An event another app declared hands over its own payload.
+		return ($this->objectPayload(event: $event) ?? AppWebhookEvents::payloadOf(event: $event));
 	}//end extractPayload()
 
 	/**
@@ -296,12 +301,40 @@ class WebhookEventListener implements IEventListener {
 	private function statePayload(Event $event): ?array {
 		foreach (self::OBJECT_STATE_EVENTS as $class => [$action, $getter]) {
 			if ($event instanceof $class) {
-				return $this->objectStatePayload(object: $event->{$getter}(), action: $action);
+				$payload = $this->objectStatePayload(object: $event->{$getter}(), action: $action);
+				if ($event instanceof ObjectUpdatedEvent) {
+					$payload = $this->withUpdateStates(payload: $payload, event: $event);
+				}
+
+				return $payload;
 			}
 		}
 
 		return null;
 	}//end statePayload()
+
+	/**
+	 * Add the object before and after an update to its payload.
+	 *
+	 * `newObject` and `oldObject` let a webhook filter on a change rather than
+	 * on a state, such as `{"oldObject.status": "draft", "newObject.status":
+	 * "final"}`, which matches only the update that made the move. `object`
+	 * stays as it was, so existing subscriptions and mappings see the same
+	 * payload. Without an old object `oldObject` is null.
+	 *
+	 * @param array<string, mixed> $payload The update payload.
+	 * @param ObjectUpdatedEvent   $event   The event.
+	 *
+	 * @return array<string, mixed> The payload with both states.
+	 *
+	 * @spec openspec/changes/publication-tells-its-source/specs/webhooks/spec.md#requirement-an-update-payload-carries-the-object-before-and-after
+	 */
+	private function withUpdateStates(array $payload, ObjectUpdatedEvent $event): array {
+		$payload['newObject'] = $payload['object'];
+		$payload['oldObject'] = $event->getOldObject()?->jsonSerialize();
+
+		return $payload;
+	}//end withUpdateStates()
 
 	/**
 	 * Build the payload of an object about to be created.
