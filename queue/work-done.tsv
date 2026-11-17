@@ -18523,6 +18523,7 @@ verify:opencatalogi:2722:4a2f2fb8	CONFLICT #2722 (3 files vs development)	sessio
 merge:learniq:2578:a3daf75a	failed: prep exit 2: composer install refused (vimeo/psalm 7.5.0 needs php ~8.3.16, session has 8.3.6), no vendor/bin/phpunit	session-20261116T232944-146e39d7	2026-11-17T00:06:22Z
 verify:shillinq:1958:c4416ca3	1958 CONFLICT	session-20261116T230531-f9095b0f	2026-11-17T00:06:23Z
 verify:shillinq:3007:c7d7174e	CONFLICT: #3007 conflicts with development (info.xml, routes, l10n, EInvoiceService, IntegriqCloudEventListener, openapi, lock file)	session-20261113T214350-9762e143	2026-11-17T00:06:31Z
+verify:shillinq:2083:00f08036	CONFLICT #2083 (l10n)	session-20261116T233929-170accb7	2026-11-17T00:06:47Z
 verify:portaliq:2451:82b242ea	CONFLICT #2451 (l10n, manifest.json)	session-20261116T232951-07569878	2026-11-17T00:06:57Z
 verify:shillinq:2998:531a457a	CONFLICT: info.xml, l10n, Application.php, register-versions.lock.json	session-20261116T224609-c0ad2be4	2026-11-17T00:07:05Z
 verify:shillinq:3003:2b498a1a	CONFLICT #3003 (9 files vs development)	session-20261116T233834-fbe601d1	2026-11-17T00:07:18Z
