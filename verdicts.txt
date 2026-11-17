@@ -3375,3 +3375,4 @@
 10634 5ccd2ee2905010c54e80e42aa911d11f44fa0c43 APPROVE dev-only lockfile bump of phpstan/phpstan 2.3.5 to 2.3.6; no runtime dependency, lib, test or config change; a patch release may report new findings in the analysis job only
 10629 784ab3dd184c21490a21023dfe8a240a87ab67cc APPROVE dev-only patch bump of @types/node 26.6.4 to 26.6.6; package.json and lockfile entry only, registry-resolved with integrity, no runtime or lib changes
 10626 01fe2e08f462a224d902efa2cd7b10bd3a6b6dce APPROVE CI-only: setup-buildx-action v3 to v4 in container-image workflow, no inputs used, hosted ubuntu-latest runner; no lib, test or frontend change
+10621 07810fff7f827e9f13c1911079448dc8d49f1b1a APPROVE dev-dependency bump eslint 10.11->10.15 only (package.json, lockfile); eslint src gives the same 5 errors as main with 10.11, no new findings; no PHP or runtime code touched
