@@ -22325,3 +22325,4 @@ verify:portaliq:2578:ecda0995	GREEN (e2e only)	session-20261117T190242-7c82bed8	
 verify:planninq:1238:a2d0008d	GREEN #1238 (tests only)	session-20261117T190418-7494049c	2026-11-17T19:47:05Z
 verify:opencatalogi:2796:7d78014c	GREEN opencatalogi#2796: e2e spec only, unit suite unaffected	session-20261117T185556-5276d56d	2026-11-17T19:47:17Z
 verify:pipelinq:3940:dc52e0b2	GREEN #3940 (0 new failures; vitest reds inherited)	session-20261117T190318-dafab159	2026-11-17T19:47:33Z
+verify:launchpad:1296:53e33887	BLOCK #1296 (tests green; instance-wide default-app behaviour change outside a build, needs sign-off)	session-20261117T190633-45ee22b7	2026-11-17T19:47:48Z
