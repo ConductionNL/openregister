@@ -19825,3 +19825,4 @@ build:launchpad:embedded-analytics:c7	built tasks 37 (EN+NL catalogue, 115 strin
 fix:shillinq:3007:097d4460	unmeasured: static.developer.overheid.nl (conflict fixed, new head 4b9a3466, APPROVE recorded, REVERIFY queued)	session-20261117T055927-bd949843	2026-11-17T07:27:36Z
 fix:versioniq:701:a3461ebb	conflict resolved, pushed 8845d766; REVERIFY queued (merge lock held elsewhere)	session-20261117T065410-e9ad9bdf	2026-11-17T07:28:07Z
 fix:versioniq:735:1bdf2b19	conflicts fixed and pushed, new head f5849ebe; REVERIFY queued (api.osv.dev blocked, not landed)	session-20261117T063112-55331435	2026-11-17T07:28:15Z
+fix:thematiq:1365:214b4a2d	unmeasured: static.developer.overheid.nl (conflict fixed, new head 5371f4c1, approved, not landed)	session-20261117T061732-40387d12	2026-11-17T07:28:59Z
