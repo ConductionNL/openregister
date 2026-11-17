@@ -19138,3 +19138,4 @@ review:learniq:2514:3f5207d1	GREEN #2514 (inherited failures only; golden confli
 review:integriq:3618:c0bf242e	CONFLICT: l10n en/nl conflict with development; code matches the change	session-20261117T020223-01f01255	2026-11-17T02:24:54Z
 review:shillinq:3000:5eb9600a	RED: manifest validation fails on the PR's relatedLists page config; PHP unit 12545 OK	session-20261117T004644-d9c68b8f	2026-11-17T02:25:05Z
 review:shillinq:3011:168bacf3	GREEN: change-scoped build, suite green	session-20261117T020408-6b9de5cf	2026-11-17T02:25:20Z
+review:integriq:3613:b4fef9cf	BLOCK: secret hash field not write-only, untested controllers/key service, jwks unthrottled	session-20261117T020210-893a9346	2026-11-17T02:25:31Z
