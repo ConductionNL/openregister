@@ -21195,3 +21195,4 @@ build:portaliq:count-field:b2	already built: learniq declares the count widget o
 build:portaliq:intake-pay-on-submit:b2	already building: quality/build-intake-pay-on-submit exists; only live task T01 left	session-20261117T134355-826c5a0b	2026-11-17T14:38:08Z
 build:portaliq:form-binding-settings-page:b2	already built: T01 on development with its spec; skipped T02 (live check, needs a running instance)	session-20261117T135611-7a4e2ddc	2026-11-17T14:38:36Z
 build:portaliq:home-and-theme-landing-pages:b2	already done: code on development (1f71ea44); open items are the live check 5.1 and process notes 6.x	session-20261117T134355-826c5a0b	2026-11-17T14:38:46Z
+build:portaliq:mail-templates-admin-screen:b2	already done: T01-T06 on development (8b0fd189); T07-T08 need a live instance and Playwright	session-20261117T133035-588aec38	2026-11-17T14:38:59Z
