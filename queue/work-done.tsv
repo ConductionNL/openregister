@@ -22584,3 +22584,4 @@ build:opencatalogi:publication-lifecycle-on-or:b2	built on #2803: 3.2 (publish p
 fix:filinq:2106:029581ee	conflict resolved, pushed 88285f40; REVERIFY queued	session-20261117T185927-e9838dc9	2026-11-17T20:44:24Z
 fix:filinq:2120:fbc97be2	conflict resolved #2120, new head 97997d7ec1; REVERIFY queued	session-20261117T190308-4c99e05c	2026-11-17T20:44:41Z
 fix:filinq:2087:372d6e90	conflict resolved, pushed 9d205c2d; REVERIFY queued	session-20261117T185500-00963134	2026-11-17T20:44:50Z
+fix:filinq:2130:151267ee	CONFLICT fixed on #2130: development merged, suite 7350 green, new head 45c816d; REVERIFY queued	session-20261117T190418-7494049c	2026-11-17T20:45:13Z
