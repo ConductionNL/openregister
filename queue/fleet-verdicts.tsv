@@ -19240,6 +19240,7 @@ filinq	2124	089581db204973bbe9a2c97d92587144ea4cc9e0	CONFLICT	worker-30	conflict
 integriq	3564	7f70763f72d12f479172f828f1d1ae6bb824c3b0	GREEN	worker-52	unit 9976 on tree vs baseline 9910 (2E/3F inherited), no new failures; vitest 183 files/2401 pass; lint clean
 planninq	1252	d65f04922fee972a0c53a84c02b54d6a5eed02ff	GREEN	worker-36	phpunit 1253 ok (baseline same), vitest 3589 passed on tree; e2e spec + tasks.md note for task-description-images; no new failures
 opencatalogi	2804	731661e8db83a4a1956f6fe2f8482bd86b4a0de0	RED	worker-09	unit 6422 on tree vs base 6373 (78 inherited failures, openregister main beside); new failure SettingsObjectTypeConfigurationTest::testMissingSlugsAndTheRegisterAreLookedUpAndTheOrganisationIsResolved (expected 31 object types, got 32 after the added mock register type)
+integriq	3707	ccad9acae4b6653c4cc1ed113c913381c40f0c38	GREEN	worker-25	unit 9910 tests; baseline 4 failing; tree 5, the extra SynchronizationSynchronizeEntryGoldenTest fails alone on plain development too (order-dependent, inherited); no new failures. Basic-auth now sends the real credentials, fixing the bug the old test documented; guzzle stays on 7
 opencatalogi	2771	502ce9b90ab9cfb622904e055d6d14d2b3ad2fdd	CONFLICT	worker-09	conflicts with origin/development
 opencatalogi	2803	182028e8f50085dad6352c07ec0abb07a4eb807b	REVERIFY	worker-09	conflicts only with an earlier PR of the verify tree
 opencatalogi	2805	b5832c88ee2a159946d2f6880ba534de439fb504	REVERIFY	worker-09	conflicts only with an earlier PR of the verify tree
