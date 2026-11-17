@@ -22364,3 +22364,5 @@ verify:stackiq:2052:ec35d2a9	1 GREEN (2052); e2e spec only	session-20261117T1901
 verify:portaliq:2569:f3caa0a6	RED: #2569 breaks 6 tests in row-confirm-outcomes-steps.spec.mjs	session-20261117T185500-00963134	2026-11-17T19:55:18Z
 verify:stackiq:2058:b7990b91	GREEN 2058; unit 4071 OK, no new failures	session-20261117T185359-d68263c5	2026-11-17T19:55:26Z
 merge:portaliq:2494:ceb74273	merge3 tree of 12 portaliq PRs: merged=10 red=0 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-17T19:55:32Z
+verify:stackiq:2049:c79327a0	GREEN #2049 (vitest 2942, no new failures)	session-20261117T190320-1db054ae	2026-11-17T19:55:45Z
+verify:stackiq:1946:1a1d2ce9	GREEN #1946 (4135 PHP tests, 0 new failures)	session-20261117T185935-593e017f	2026-11-17T19:55:54Z
