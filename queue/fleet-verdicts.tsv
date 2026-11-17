@@ -19465,3 +19465,5 @@ pipelinq	3943	2c67bc7f59f8af0d0d9f4a7c108a3dbc21e6301e	REVERIFY	worker-29	confli
 pipelinq	3954	778f1212ff3cd50bed333e4afef105dc9cd7f71b	REVERIFY	worker-29	conflicts only with an earlier PR of the verify tree
 hermiq	1763	561fdd1e123258292b81d0bd69d16ae4db4ba76c	REVERIFY	worker-14	merged development in, resolved the Postman collection by keeping both new top-level folders; unit 5800 tests 0 failures; new head bff0c5dd4f69136e48433718ae0ef67427395a19, verify it
 buildiq	1648	616837279746c70653f0f41163c0dd6efd73fa7e	REVERIFY	worker-16:merge	conflicts only with an earlier PR of the merge tree: merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+decidiq	2174	53ff0981bdaf85d442d69b55c838822ea2087305	CONFLICT	worker-44:merge	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Settings/profiles/municipality.json tests/newman/run-all.sh 
+decidiq	2279	9029034a754b55ffbb5afc17998	REVERIFY	worker-44:merge	verdict sha is not the head: head is 9029034a754b55ffbb5afc179985738e6927cc62
