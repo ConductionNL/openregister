@@ -16067,6 +16067,7 @@ shillinq	3005	7df04548317c3840c8d73ca62d249ae5c8b9a33b	CONFLICT	worker-10	confli
 shillinq	3009	00edad9294d414a3407bf9bf391221edf006496b	CONFLICT	worker-10	conflicts with development in: appinfo/info.xml l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json openapi.json src/manifestActions.js tests/fixtures/register-versions.lock.json
 stackiq	1963	61fae429306c3510d1a20ce48ad29aab5a325dd6	CONFLICT	worker-32	conflicts with development in docs/features/README.md, l10n/en.js, en.json, nl.js, nl.json, src/customComponents.js; PR not tested
 learniq	2577	15fc4a90544190851896affac4e02d9aed5c9516	REVERIFY	worker-22	fixed menu order tie (CourseParticipantsMenu 58 -> 56); node --test 9 fail = baseline; new head 5bf2057232b5aabbfd004f1943a2ae1de7859671, verify it
+shillinq	3062	faaae73e234727476b1a3a73e75779e41d5d05a1	CONFLICT	worker-55	conflicts with development in tests/fixtures/register-versions.lock.json; baseline unit 12460 tests green
 thematiq	1680	31fb4f82491973605e3b9fd0fb721096311bc020	CONFLICT	worker-21	merge conflict with origin/development in l10n/*.js and l10n/*.json; suite not run
 stackiq	1933	96e3bd2b7c6cb1d33b873cb9fa56294750efe779	CONFLICT	worker-23	conflicts with development in l10n en/nl, ListenerRegistrar.php, stackiq_mock_register.json, src/manifest.json; suite not run
 stackiq	1942	7d2c0d3f7c687acb0e1883d507e2793d4d176e41	CONFLICT	worker-29	conflicts with origin/development in l10n en/nl and src/manifest.json
