@@ -19625,3 +19625,4 @@ versioniq	726	2348a5fc126e383e38bfaf88de7e91f0ebfd4564	CONFLICT	merge3	merges cl
 versioniq	797	c57c48555761cf2212f669c177b61cc63d932ea9	CONFLICT	merge3	merges clean on development alone; files: tests/e2e/advisories.spec.ts tests/e2e/fixtures/forge/server.mjs 
 versioniq	798	91fdceff9606e38c08294f9f188caa4b1c92289f	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
 versioniq	799	9d0b17e161aabdb3641874366fbf88fc9343996c	CONFLICT	merge3	conflicts with development; files: appinfo/info.xml l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Controller/ApiController.php lib/Service/Api/ReportCollaborators.php 
+hermiq	1760	9fd70f207febf21198f88b97c31caebf039e3b4f	RED	worker-12:merge-gate	GATE RED floor: unit_complexity: 4.55 -> 4.53
