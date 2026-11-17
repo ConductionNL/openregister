@@ -18946,3 +18946,4 @@ thematiq	1726	ebe538c8dc4ba9e635c349fc608093ec09646cb6	GREEN	worker-37	phpunit 2
 thematiq	1727	057fa453a0569e5c526c7ccf37e79c7bdb12518d	RED	worker-37	npm ci ERESOLVE: stylelint-config-standard 41 needs peer stylelint ^18 (bumped only in #1728); land together with #1728
 thematiq	1728	3eb4a9137a95f5f9be9b6dd452335b01d93ecdf0	REVERIFY	worker-37	conflicts only with an earlier PR of the verify tree
 thematiq	1729	0112b5b6724ea05ac9e72421dcf80f7df166f86b	REVERIFY	worker-37	conflicts only with an earlier PR of the verify tree
+portaliq	2582	628f5a095fd877dfbc0668719312f4b0f6f7670d	GREEN	worker-23	node --test tests/*.spec.mjs 2777 tests, 5 failures identical to baseline, no new; markdown-block-classes spec passes; no PHP changed; per change portal-theme-application
