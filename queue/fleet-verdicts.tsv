@@ -18872,6 +18872,7 @@ larpinq	1054	0d13d8ee69b0515a32590bd7b6943f5bfc98dbb3	CONFLICT	worker-07	conflic
 integriq	3708	41ada0a60a58b5bf9827e860d97f5a9c4eee0a3b	GREEN	worker-51	dev-dep bump sass 1.108.2 + sbom; npm ci ok, vitest 2389 passed; no PHP touched
 integriq	3725	1e381ea4d391d91dd282afe9ba5f7b79beb1bf1f	GREEN	worker-23	unit 9940 tests (baseline 9910), 2 errors + 3 failures identical to baseline, no new; graphql endpoint policy per change gateway-graphql-and-streaming-protocols
 integriq	3729	0be54156bcea0a7c1efa8d808756750920fa8749	GREEN	worker-44	phpunit 9925 on tree, baseline 5 err/fail inherited (one golden flake passed), none new; vitest 2394 passed; builds gateway-mcp-proxy per its specs, mcp target after consumer auth
+integriq	3726	ccf011fbbc8f1470b5b0d0a60ab2875f71728157	GREEN	worker-19	phpunit 9910 (baseline 9910 with inherited JobsControllerTest/CallServiceTest/SynchronizeEntryGoldenTest failures, 0 new); adds e2e spec only
 larpinq	1103	e6ac5573a73f4c753fa34e0f540224f7f2899f79	CONFLICT	worker-18	add/add conflict on tests/e2e/qr-checkin.spec.ts: development already carries a live-run version (b7573fe5); likely obsolete
 integriq	3730	129afd210f56db4bb58b1eb095994ec2216d3345	GREEN	worker-24	tests and e2e specs only for change retire-integriq-flow-schema; unit 9911 tests, 4 failures/errors all inherited (baseline 9910 with 5), 0 new; FlowGraphMigrationServiceTest 5 pass
 integriq	3722	82a48e0e2dc1b77f0c802bd9e556a0e3eaa38768	GREEN	worker-23	tests only (e2e spec, Newman folder, tasks.md); no PHP/JS unit code changed, unit baseline 9910 with 5 inherited reds
