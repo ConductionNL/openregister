@@ -19544,3 +19544,4 @@ fix:shillinq:3011:168bacf3	conflict resolved, new head dd50b990, REVERIFY (merge
 build:shillinq:tax-cbcr-and-pillar2-returns:c8	partial: blocked, www.oecd.org still refused by the egress proxy (403); PR #2997 keeps every code task but 2.1 and the tasks waiting on it (4.1-4.3, 5.1 Generate XML refusal)	session-20261117T061732-40387d12	2026-11-17T06:26:17Z
 fix:integriq:3585:027d5ca5	conflict resolved, pushed 472896a8; REVERIFY (merge gate host blocked)	session-20261117T055834-d932e117	2026-11-17T06:26:44Z
 fix:buildiq:1643:c4bd2510	failed: permission (end-to-end review/land refused); fix pushed, new head 01b1fba98, REVERIFY recorded	session-20261117T061917-57640b81	2026-11-17T06:27:01Z
+merge:dossiq:4887:cd07726c	merge3 tree of 2 dossiq PRs: merged=2 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-17T06:27:15Z
