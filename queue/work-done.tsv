@@ -20921,5 +20921,6 @@ build:dossiq:advice-and-consultation-on-the-case:b2	already done: every code tas
 build:dossiq:admin-data-access:b2	already built: 1.1 on development (92-admin-data-access.json + test), no e2e spec files named; skipped 1.2 and 1.3, they need a group decision (social-domain, privacy-officer)	session-20261117T134242-51ff9d48	2026-11-17T14:07:41Z
 build:dossiq:bsn-exact-lookup:b2	already done: tasks 1.1-1.2 on development (68c5138b5); only 1.3 live check left, not a code task	session-20261117T124637-3e909745	2026-11-17T14:08:06Z
 merge:opencatalogi:2771:9fcb0bfc	cloud tree of 1 opencatalogi PRs: none; conflict 1, lint 0, red 0, moved 0, done 0	session-20261117T135520-9a524c6b	2026-11-17T14:08:15Z
+build:dossiq:assistant-card-board:b2	already done: task 1.1 on development (0baa632c, spec green 4/4); 1.2 is a live check, left	session-20261117T133035-588aec38	2026-11-17T14:08:36Z
 build:dossiq:a-portal-request-names-its-requester:b2	already built: 1.1 and 1.2 on development with tests, no e2e spec files named; skipped 1.3 (live portal check)	session-20261117T134242-51ff9d48	2026-11-17T14:08:25Z
 build:dossiq:case-menu-tabs-carry-icons:b2	already done: code tasks 1.1/1.2 built on development (3c172b70), every case-page overflow tab has a registered icon; only 2.1 live check left	session-20261117T132538-ac3b9ef5	2026-11-17T14:08:59Z
