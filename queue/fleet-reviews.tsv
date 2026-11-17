@@ -1443,3 +1443,4 @@ pipelinq	3966	a7266ea55cd3b7630b581cb54ee6cb04bf9912dd	APPROVE	worker-10	Quick; 
 buildiq	1643	f8d38be6806298702a3a6c0ba4d0928cd0ee5588	APPROVE	worker-16	Thorough; no blockers; implements logic-automation-run-log per its specs, run recording is additive and every recording failure is caught and logged, endpoints pre-exist; concern: automationForRuleSet looks up across organisations (existing pattern)
 buildiq	1709	e329cf1746b8b2c6a15b3d436c66bf3d67d5fb62	APPROVE	worker-16	Thorough; no blockers; tests only, real assertions, covers tags and SPDX present; no concerns
 buildiq	1710	9b6b9e95f81917400acb306e4b2fae708797b460	APPROVE	worker-16	Standard; no blockers; tests only for credential registrar calls and logging; no concerns
+buildiq	1711	c046bf16a2d185fd3a110f47e78450a28c23551c	APPROVE	worker-16	Thorough; no blockers; tests only for version merge runner and version state; no concerns
