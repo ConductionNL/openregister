@@ -19244,3 +19244,5 @@ review:portaliq:2452:92f46428	GREEN: 6245 tests, 16 inherited errors; node specs
 fix:buildiq:1608:d0285584	fixed floor unit_complexity 3.43->3.48; pushed ae635677; REVERIFY (merge lock held)	session-20261117T020211-438428f3	2026-11-17T02:46:30Z
 fix:portaliq:2530:23908dc9:v5	closed #2530 as obsolete: development already has hydra-gates v1.19.0	session-20261117T020227-9e68ed24	2026-11-17T02:46:42Z
 fix:integriq:3545:9367d2e7	fixed CONFLICT #3545, new head 76605dd4; REVERIFY (merge lock held elsewhere)	session-20261117T015705-50845751	2026-11-17T02:46:53Z
+fix:versioniq:716:11823d08	merged #716 at 18278571595a8fd4b569687a5185f7b34db37b72	session-20261117T004644-d9c68b8f	2026-11-17T02:47:39Z
+merge:filinq:2091:eb54bd43	cloud tree of 2 filinq PRs: none; conflict 2, lint 0, red 0, moved 0, done 0	session-20261117T020416-cc0fb378	2026-11-17T02:47:50Z
