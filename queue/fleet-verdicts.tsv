@@ -19506,3 +19506,4 @@ filinq	2130	45c816db2ee1d375cd70358dee19911a024d3f5d	REVERIFY	worker-08:merge	co
 filinq	2173	6bce70eb0c412e2bc6eaa1d7780	REVERIFY	worker-08:merge	verdict sha is not the head: head is 6bce70eb0c412e2bc6eaa1d778075d1f8f776f04
 portaliq	2579	a1421e2b9aeda6a67d3be8ce5ca20d6ca30e8de8	GREEN	worker-29	phpunit dev 6324 (16 errors baseline), tree(2569+2579) 6339 with the same 16, no new failures; touched node specs pass; build data-lookups-and-checks-in-forms, public fetch endpoint runs only declared fetches after the form's sign-in check, rate limited
 portaliq	2583	9cdf93db275222c94dbbc5e114065c5352654954	REVERIFY	worker-29	conflicts only with an earlier PR of the verify tree
+portaliq	2589	8f568eda86f40ad4c7ac50762b5a2111ca4c75a0	REVERIFY	worker-29	conflicts only with an earlier PR of the verify tree
