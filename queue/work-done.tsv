@@ -20279,3 +20279,4 @@ fix:planninq:1219:1d36a519	sbom regenerated, pushed f6938d70; REVERIFY (merge lo
 review:filinq:2112:c5d832c9	GREEN; unit 7142 ok; conflicts with development in register json	session-20261117T100955-1501e947	2026-11-17T10:19:47Z
 fix:shillinq:2983:7c48c94a	failed: duplicate-index-pages needs a placement decision (no fitting index for a menu preset); conflict resolved and pushed at aac6fcf6	session-20261117T091244-7c1a3c79	2026-11-17T10:19:59Z
 fix:planninq:1213:ac9d7c73	merged #1213 at c2abc37ca14aa3af0c650b8259bbe30e07e0f3a6	session-20261117T095701-9003708e	2026-11-17T10:20:15Z
+fix:humaniq:1173:1e65a9ce	merged #1173 at 664ad3c66652fab5a03cc77118e8a867b2bc69da	session-20261117T094037-14874ab0	2026-11-17T10:20:46Z
