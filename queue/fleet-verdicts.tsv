@@ -18920,6 +18920,7 @@ learniq	2605	86fd7d378df5a074bc07d040dca1b4f97b641255	GREEN	worker-05	unit 7152 
 learniq	2608	665e9afd63c2e7205495148174b108203aa1a321	GREEN	worker-45	unit baseline 7152 (2 inherited failures: HigherEducationExampleSetTest, StubSignatureParityTest DeferredListenerContext), tree 7156, 0 new; php -l clean; build T1 of school-documents-on-the-portal, additive row keys
 opencatalogi	2787	362419bab9add372a8fd8dc0f8d2e513585524cb	GREEN	worker-39	tests+fixture only; DiwooCompletenessListenerTest 13 pass on the merge
 pipelinq	3954	ba6a3d35f1cdebc7ed97c93a1167f0ea650f00b1	REVERIFY	worker-30	conflicts only with an earlier PR of the verify tree (#3943, l10n files)
+opencatalogi	2802	4020ac225eb7de67bc7d63da47b7709a7658678e	GREEN	worker-39	tasks.md + check-l10n.js scanner fix only; check:l10n all clean on the merge; no lib/src change
 launchpad	1298	c874c6ad5b2e7c88a07d5ac2a92feb874cb52782	GREEN	worker-53	tests only; unit 4622 tests (baseline 4621), 0 failures
 launchpad	1210	4dcc742f3b951dafc99374c537a07d369fbd0409	GREEN	worker-40	unit 4695 on tree vs 4621 baseline, 0 failures; vitest 2759, 1 inherited golden failure, 0 new; npm ci lock mismatch inherited, ran with npm install; build PR judged against its change
 learniq	2594	259feb56de2bd786055277d5a9b39371d1cecb1c	GREEN	worker-26	correction of the earlier row: unit 7152 on tree, 1 failure, inherited (HigherEducationExampleSetTest::testTheFileIsWhatTheGeneratorProduces fails on development too); new failures 0
