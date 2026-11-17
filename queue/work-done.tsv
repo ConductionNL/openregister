@@ -20416,4 +20416,5 @@ fix:shillinq:3011:3989b7d8	conflicts resolved (l10n union, version bump + lock e
 fix:integriq:3612:7ac38eeb	component independence restored (92.93%), pushed a0f66b1a; REVERIFY queued	session-20261117T111401-f300ca25	2026-11-17T11:44:52Z
 fix:versioniq:700:89648f84	conflict resolved, pushed 563a324a; REVERIFY queued	session-20261117T113521-7cb5fa64	2026-11-17T11:45:11Z
 verify:dossiq:6635:8610b9c7	GREEN #6635 (0 new failures)	session-20261117T112500-ee7a6502	2026-11-17T11:45:27Z
+review:shillinq:2998:3d7ad4c7	already merged: head 3d7ad4c7 is on development (merge 11fcbf6dc); nothing to review	session-20261117T111351-f79c232f	2026-11-17T11:45:37Z
 verify:integriq:3701:25ba89c8	GREEN 3701 (docs only, publiccode valid)	session-20261117T111401-f300ca25	2026-11-17T11:45:42Z
