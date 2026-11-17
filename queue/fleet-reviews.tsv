@@ -1462,3 +1462,4 @@ humaniq	1195	b3d7f5c67972ee5a3c42c2606bf6067353bd6eb9	APPROVE	worker-22	Standard
 humaniq	1196	e0e2cffa27f96e5529594607b47493629041cb13	APPROVE	worker-22	Quick; no blockers; e2e spec and spec annotations, task left unticked honestly
 humaniq	1197	a28aaa28605b810450a87a2c0ed4f9a2cfa22fa4	APPROVE	worker-22	Standard; no blockers; e2e journey spec only
 humaniq	1198	ada533a81007f708bdfe9eb24a2ba5a6a2041daa	APPROVE	worker-22	Thorough; no blockers; admin audit section reads OpenRegister audit API (server-side access), text-rendered, test updated for new ctor arg
+humaniq	1193	ef7f5e47529d295f00f4a5b05b2aa464576bc3ba	REQUEST_CHANGES	worker-22	Strict; TimesheetReopenGuard reads a null PayrollRun lookup as allow, and findObjectData returns null on any exception, so a read error lets a paid timesheet reopen (fail-open; tell a missing run from a failed read); ReviewSignOffStampListener create path clears only sign-off fields, so a client-sen
