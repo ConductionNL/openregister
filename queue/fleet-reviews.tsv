@@ -1471,3 +1471,4 @@ keepiq	1898	2d4d0257353ba497c0c94affef2fedeabcee86dc	APPROVE	worker-26	Quick; no
 keepiq	1899	abebdd6ffa781653cb3cdfbbfdac6d7c181fbded	REQUEST_CHANGES	worker-26	Strict; expiry listener answers for any application-owned secret whose write named consumer integriq: it does not bind the answer to the owning/writing application as the spec scenario (minted by integriq) asks; concern: broker_mints row not removed when the secret is deleted
 keepiq	1900	28274ec8585891650cb35c0a1a772d97dcb7ec9e	APPROVE	worker-26	Thorough; no blockers; scope and omit choices map onto the serializer filters already on development, 105 touched vitest specs pass on the tree
 learniq	2594	259feb56de2bd786055277d5a9b39371d1cecb1c	APPROVE	worker-17	Quick (e2e spec only); no blockers; none
+learniq	2596	7ff99e0704ef8eafd7681a2b6936ec425d72eae0	APPROVE	worker-17	Quick (e2e spec only); no blockers; none
