@@ -19287,3 +19287,4 @@ portaliq	2586	1fd306ff31f60936a9820c610606bed3f63ec380	GREEN	worker-36	phpunit t
 portaliq	2587	c972ccc36c2ad633d56605e064450690a8e395ff	GREEN	worker-36	phpunit tree 6352 tests, 16 errors = baseline 6324/16 inherited (ChangeProposals*, RegisterProposalLeaves*, ContractRegistrar), no new failures; build portal-scoping-and-auth per spec, checks stricter (fail closed), none weakened
 pipelinq	3934	6ba01209ecd5625e0ddf012ef749484450241fb1	CONFLICT	worker-23	conflicts with development in l10n/en.js en.json nl.js nl.json
 shillinq	3177	605a77debdf7ceac3634af4e4ce6a4f307c7e04e	GREEN	worker-24	unit 12813 on tree (baseline 12796 OK, 3 skipped), 0 new failures; no JS/Vue code (manifest only)
+pipelinq	3945	ceffbf1ffd95fdbc429b3b7e77c1cbf97a8849c2	CONFLICT	worker-23	conflicts with development in l10n/en.js en.json nl.js nl.json
