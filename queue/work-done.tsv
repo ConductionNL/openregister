@@ -19281,3 +19281,4 @@ review:shillinq:3002:0d472796	GREEN: statements per spec, suite clean	session-20
 fix:decidiq:2171:867b712e	fixed RED (spec counts) + conflicts, pushed 853b82a5; merge lock held elsewhere, REVERIFY queued	session-20261117T021723-9d734048	2026-11-17T02:56:32Z
 fix:filinq:2099:20f41844	conflict resolved, pushed acbeee3a (register 8.65.0), unit 6992 OK; lock held elsewhere, REVERIFY queued	session-20261117T025357-44509a8b	2026-11-17T02:56:43Z
 fix:stackiq:1942:200de863	fixed BLOCK (conflicts, SPDX headers, version bump), pushed aad1987d; REVERIFY queued	session-20261117T020322-58ced631	2026-11-17T02:56:56Z
+fix:shillinq:3065:ba9580f8	fixed: merged development, regenerated scoped pages, new head 38e2ed5d, REVERIFY	session-20261117T025204-e27953f1	2026-11-17T02:57:04Z
