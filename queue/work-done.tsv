@@ -18501,3 +18501,4 @@ verify:planninq:1168:f3f9b1f3	CONFLICT: l10n/* and objectListenerTable.golden.js
 verify:shillinq:1965:55b7f9e7	CONFLICT #1965 (info.xml, register-versions.lock.json vs development)	session-20261116T233834-fbe601d1	2026-11-17T00:01:52Z
 verify:opencatalogi:2669:b4b95352	GREEN #2669	session-20261116T233627-44605965	2026-11-17T00:02:02Z
 verify:portaliq:2449:1d8ee702	CONFLICT #2449 (l10n, controller, listener registrar, register json)	session-20261116T232918-35016340	2026-11-17T00:02:12Z
+verify:learniq:2486:875af95b	CONFLICT #2486 (ExcuseApprovalHandler, portal tests)	session-20261116T232033-3ca59164	2026-11-17T00:02:32Z
