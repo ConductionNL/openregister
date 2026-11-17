@@ -21624,3 +21624,4 @@ build:buildiq:forms-multi-product-request:b2	nothing to build: T06 is the nextcl
 build:hermiq:chat-how-an-answer-came-about:b2	already building: quality/build-chat-how-an-answer-came-about exists	session-20261117T135414-614629b0	2026-11-17T15:28:20Z
 build:hermiq:agents-plain-language-builder:b2	already built: every code task ticked on development; only the live builder chat test is left	session-20261117T133833-7d87fd3d	2026-11-17T15:28:07Z
 build:hermiq:chat-translate-a-recording:b2	already building: quality/build-chat-translate-a-recording active (last push 17 Nov 13:51)	session-20261117T140734-4d108840	2026-11-17T15:28:52Z
+build:hermiq:agent-data-migration:b2	already built: code tasks done on development (19607e89); 7.2 and D.1 need a live OpenRegister with legacy rows	session-20261117T133833-7d87fd3d	2026-11-17T15:28:43Z
