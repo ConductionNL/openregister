@@ -5611,3 +5611,4 @@ opencatalogi	2798	f43db4b9fe7611c1537c1a1d54f949df9e16db64	SKIP	worker-18	GATE U
 hermiq	1851	b966db2c68a14f9afb14d3f3420a29c429ecf9d3	SKIP	worker-34	no APPROVE review at this head
 opencatalogi	2799	a135b0009b7aefad519be035a3b4003c800e66b2	SKIP	worker-18	GATE UNMEASURED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3 while api.osv.dev is unreachable from this session
 buildiq	1720	b381c76e51c6407ce503784b63007dee43070ee0	SKIP	worker-02	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
+integriq	3730	129afd210f56db4bb58b1eb095994ec2216d3345	SKIP	worker-58	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
