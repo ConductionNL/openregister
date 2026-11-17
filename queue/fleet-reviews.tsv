@@ -1303,4 +1303,5 @@ buildiq	1717	e829fe43c9a5cef45899fc7b358e8344c41b504b	APPROVE	worker-31	Quick; n
 humaniq	1194	a639d953b334d494ceed96e96b07df6e04fa15a4	APPROVE	worker-37	Quick; no blockers; spec-only @e2e exclude notes
 hermiq	1841	0311fb9ceefe4857e14433ee2cec82848d01e244	APPROVE	worker-09	Quick; no blockers; Newman folder added, fixtures exist, valid JSON, not run live
 hermiq	1842	ef207f94e5de34138fdcda51c95afef78f9d86dd	APPROVE	worker-09	Quick; no blockers; tasks.md ticks, every named file and test exists on development
+filinq	2183	fb25a98a385e31605573510e1f28367b920a420b	APPROVE	worker-57	Quick (tests only); no blockers; gates clean; jest spec for the record leaf sidebar host
 buildiq	1651	c1a3ad84f420d8cac16d29a8b2d018d08e83a9cd	APPROVE	worker-24	Strict (permission checks); no blockers; sync is owner-or-admin after org scope and fails closed, sharing is owners-only per REQ-BQSF-003, wrapper delete limited to this app's own wrappers; tree 3699 tests 0 new failures; hydra gate runner not cached, checklist by hand, merge gate at land
