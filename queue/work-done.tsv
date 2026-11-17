@@ -20184,3 +20184,5 @@ fix:learniq:2523:19efbc3c	merged #2523 at 3f4bf7183dd6cf757c044ccbf72a2119a09158
 review:hermiq:1760:e77b5f0c	GREEN: hermiq #1760, unit 5694 OK, vitest 11 OK	session-20261117T094917-358f05f2	2026-11-17T09:57:03Z
 review:launchpad:1099:68a939c5	GREEN: dev-only psalm bump, unit 4585 OK; psalm 7 not runnable on PHP 8.3.6	session-20261117T093950-8ae04963	2026-11-17T09:57:26Z
 merge:shillinq:1958:70c6e595	cloud tree of 9 shillinq PRs: merged=1 red=2 fail=0 skip=0; conflict 5, lint 0, red 0, moved 1, done 0	session-20261117T093922-7676ffcc	2026-11-17T09:57:54Z
+fix:launchpad:1261:f302d160	stale	feeder	2026-11-17T09:57:23Z
+review:shillinq:2997:4b1b64a6	stale	feeder	2026-11-17T09:57:23Z
