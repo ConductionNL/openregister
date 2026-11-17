@@ -21313,3 +21313,4 @@ build:shillinq:fees-payments-and-the-contract-register:b2	failed: nothing builda
 build:learniq:assessment-course-evaluation-answer-page:b2	PR #2597: 1.2b Playwright flow course-evaluation-answering.spec.ts (written, not yet run in CI); 3.2 is the archive step	session-20261117T141347-c536bb61	2026-11-17T14:51:54Z
 build:shillinq:inventory-receipt-cost-layers:b2	already building: branch quality/build-inventory-receipt-cost-layers exists	session-20261117T134347-d0294040	2026-11-17T14:51:39Z
 build:shillinq:ledger-group-close:b2	already building: quality/build-ledger-group-close is open	session-20261117T133035-588aec38	2026-11-17T14:51:55Z
+build:shillinq:inventory-pos-decrement:b2	already done: code tasks on development (fc91fe45); only the two-app live check is left	session-20261117T133035-588aec38	2026-11-17T14:52:18Z
