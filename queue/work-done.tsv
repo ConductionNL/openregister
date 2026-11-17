@@ -18433,6 +18433,7 @@ verify:larpinq:1056:85518065	CONFLICT #1056 (routes.php, l10n catalogues)	sessio
 verify:filinq:2106:48eff116	CONFLICT #2106 (SigningService.php, filinq_register.json)	session-20261116T233011-100ff0c6	2026-11-16T23:45:42Z
 verify:humaniq:1147:50dd2ee9	CONFLICT #1147 (l10n, PayrollRunService and its tests)	session-20261116T232033-3ca59164	2026-11-16T23:46:02Z
 verify:integriq:3601:c832d6a2	CONFLICT #3601 (l10n, docs, golden test vs development)	session-20261116T233834-fbe601d1	2026-11-16T23:46:15Z
+verify:integriq:3561:35474d53	CONFLICT #3561 (l10n, controller, service, vue)	session-20261116T233427-cfe22922	2026-11-16T23:46:36Z
 verify:learniq:2537:016b101a	CONFLICT #2537	session-20261116T232519-f84cca9a	2026-11-16T23:47:12Z
 verify:integriq:3602:0cceb739	CONFLICT #3602 (8 files vs development)	session-20261116T234052-0f8466c3	2026-11-16T23:47:26Z
 verify:humaniq:1134:f7bfa5d1	CONFLICT 1134 (17 files vs development)	session-20261116T232406-b9eb038c	2026-11-16T23:47:42Z
@@ -18535,3 +18536,6 @@ verify:shillinq:3005:155acc0f	CONFLICT: #3005 conflicts with development (l10n, 
 verify:shillinq:3064:334cea16	CONFLICT #3064 (10 files)	session-20261116T232923-46913d93	2026-11-17T00:08:42Z
 verify:hermiq:1728:4a375b99	CONFLICT: 6 files conflict with development (l10n, hermiq_register.json, openapi.json)	session-20261116T232834-a3ef1c86	2026-11-17T00:08:59Z
 fix:learniq:2577:15fc4a90	fixed menu order tie; pushed 5bf20572; REVERIFY (end to end skipped: learniq composer prep fails on php 8.3.6)	session-20261116T232944-146e39d7	2026-11-17T00:09:16Z
+verify:shillinq:3008:1f4ba84a	CONFLICT #3008 (7 files conflict with development)	session-20261116T233050-d0df160f	2026-11-17T00:09:27Z
+verify:stackiq:1963:0202df86	CONFLICT: 6 files vs development	session-20261116T232912-634ff2e8	2026-11-17T00:09:38Z
+verify:shillinq:3065:4335294e	CONFLICT #3065 (info.xml, InvoiceGenerationService, openapi, registry.js)	session-20261116T232951-07569878	2026-11-17T00:09:54Z
