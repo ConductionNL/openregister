@@ -19715,6 +19715,7 @@ review:shillinq:2998:d4457281	BLOCK: seed repair step not registered in info.xml
 merge:buildiq:1651:621f68f6	cloud tree of 1 buildiq PRs: merged=0 red=0 fail=0 skip=1; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T063127-b908dd01	2026-11-17T07:05:30Z
 review:filinq:2113:c8fcb4bf	GREEN: unit 7098->7106, 0 failures	session-20261117T065443-facc0d23	2026-11-17T07:05:32Z
 verify:decidiq:2224:1cc6f145	2224 GREEN, 2253 GREEN; unit OK, 1 inherited vitest fail	session-20261117T065448-ceb2e7e7	2026-11-17T07:05:54Z
+review:shillinq:3007:b7c9a065	stale	session-20261117T065443-facc0d23	2026-11-17T07:06:09Z
 review:hermiq:1795:a0df53ce	GREEN: unit 5564 OK, vitest 1616 OK, phpstan clean	session-20261117T065619-e5275297	2026-11-17T07:06:04Z
 fix:decidiq:2254:16b684f6	failed: gridstack 14 is outside the peer range of @conduction/nextcloud-vue (latest 2.181.0 still ^12||^13); needs the library to widen it first	session-20261117T065448-ceb2e7e7	2026-11-17T07:06:15Z
 fix:hermiq:1763:685f9669	merged development in clean, pushed 6defd651 (suite 5605 OK); REVERIFY queued	session-20261117T062856-12839ec9	2026-11-17T07:06:15Z
@@ -19749,3 +19750,4 @@ fix:shillinq:3064:b11030b8	conflict resolved, pushed e4c2b4532; REVERIFY recorde
 review:buildiq:1626:230c8f81	GREEN: phpunit 3481 OK on merge with development (baseline 3476)	session-20261117T065457-ee5ddcd1	2026-11-17T07:12:15Z
 review:shillinq:2086:9fa2a6b9	GREEN: unit 12621 green, vitest 24 green, phpstan clean	session-20261117T070105-e962857c	2026-11-17T07:12:16Z
 review:shillinq:3067:57c917aa	BLOCK: manifest labels without nl keys	session-20261117T063127-b908dd01	2026-11-17T07:12:29Z
+fix:shillinq:2083:ca162c3e	fixed RED (characterisation tests updated to the single-write contract), pushed 32c8fb4a; lock held elsewhere, REVERIFY queued	session-20261117T055905-03eea4d3	2026-11-17T07:12:41Z
