@@ -19015,6 +19015,7 @@ thematiq	1720	7eeab9fa1380f09cb80d2a88b07122afeddbc2db	GREEN	worker-37	release v
 stackiq	2051	ea4af972eb77b68a49a8fcfd1bb61bf4df92f6d5	GREEN	worker-15	two e2e specs + tasks.md note only (vitest/jest exclude tests/e2e); merges clean; no unit-run file changed
 stackiq	2040	6e1004c570bccf73fa23089dda2dc0afdccc0795	GREEN	worker-24	tests only, no production code; 24 new tests 68 assertions pass; unit 4079 tests 0 failures on tree (baseline 4055)
 stackiq	2037	8a0066197aac4f12cf1bcc598837fd35f50ac334	GREEN	worker-50	phpunit 4060 tests (baseline 4055), no failures, same 2 warnings as baseline; tests only: EntryReferencesTest, 5 tests with exact assertions
+stackiq	2064	015b601239ca0c563a7e5e97346cb9e0bd4f3493	GREEN	worker-24	release version bump only (info.xml, openapi.json), both parse; no code or tests changed
 shillinq	3177	721a7f41ace21a3e90f9babfa82dc0a2b52cde3e	GREEN	worker-31	phpunit 12813 on tree vs 12796 baseline, 0 failures; JS is manifest JSON only
 stackiq	2047	cd2856b208658638b6df3e03a57a4e2af70f1d67	GREEN	worker-50	phpunit 4055 tests, no failures (same 2 warnings as baseline); docblock PHPMD suppressions and tasks.md notes only, no code change
 stackiq	2052	ec35d2a9f576277a147ebd0bffd5328adde26b3c	GREEN	worker-40	e2e spec and tasks.md only; unit 4055 on tree, 1 failure inherited (no code changed), 0 new
@@ -19027,3 +19028,4 @@ shillinq	3176	d434907329c4cd51ef47779ddbda653a29cb2131	GREEN	worker-52	builds pe
 stackiq	2053	74b55e349cced07a684be697dab598b7cb268ea3	GREEN	worker-33	PHP unit 4055 tests OK (baseline 4055 OK), 0 new failures; adds one e2e spec only (contracts-expiry-and-owner), no production code
 integriq	3601	691712f5db26608b9cdeba4b702b5e802b7fff32	CONFLICT	worker-35:merge	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
 opencatalogi	2789	e54e7b57d6586bb81a80b16195aa0471d62384b4	BLOCK	worker-17:review	review: Standard; blocker: new phpstan error, CatalogiController::$registers is now only written (property.onlyWritten, lib/Controller/CatalogiController.php:70) after getObjectService() was removed; concern: class docblock left with a bare blank line
+stackiq	2064	015b601239ca0c563a7e5e97346cb9e0bd4f3493	GREEN	worker-24	release version bump only (info.xml, openapi.json), both parse; no code or tests changed
