@@ -20865,4 +20865,8 @@ merge:planninq:869:ac6c7bd5	cloud tree of 3 planninq PRs: merged=2 red=1 fail=0 
 fix:shillinq:3011:87ae5ea8	conflict resolved, pushed b03586ea8; REVERIFY queued (merge lock held elsewhere)	session-20261117T134347-d0294040	2026-11-17T13:55:38Z
 fix:shillinq:3067:7ff7357f	conflict resolved, pushed 55cee22d; unit 12795 OK; merge lock held elsewhere, REVERIFY queued	session-20261117T133025-beace6fb	2026-11-17T13:55:49Z
 fix:integriq:3708:c779eda2	sbom regenerated, pushed 41ada0a6; merge lock held elsewhere, REVERIFY queued	session-20261117T124010-7774729d	2026-11-17T13:56:04Z
+cover:decidiq:a5f973bbmfcd5:d528dcf0	already done: lib/Dashboard/*.php at 100% lines (65/65, 13/13 methods) on development 161ca15e; no PR	session-20261117T134525-c871bd14	2026-11-17T13:56:40Z
 fix:integriq:3712:81bc3606	snapshots re-recorded + sbom, vitest green, new head 3f2d9585; REVERIFY (merge lock held elsewhere)	session-20261117T134024-07d6c268	2026-11-17T13:56:41Z
+cover:decidiq:a5f973bbmfcd5:c76ae287	opened decidiq#2275: 8 tests for lib/Service/Forms (suite 5020->5028 OK)	session-20261117T135342-03791034	2026-11-17T13:56:56Z
+fix:integriq:3705:06350cfb	sbom regenerated, pushed cd33fb75; merge lock held elsewhere, REVERIFY queued	session-20261117T133629-e10185c0	2026-11-17T13:57:05Z
+measure:integriq:20261117h12	php 95.17% js 94.36%	session-20261117T134304-10008ffd	2026-11-17T13:57:26Z
