@@ -19466,3 +19466,4 @@ review:filinq:2078:d89b93ac	CONFLICT: l10n en/nl and filinq_register.json vs dev
 review:filinq:2072:79221249	GREEN: unit 7192 OK, vitest 801 OK; register description conflicts with development	session-20261117T055928-ffb37dd3	2026-11-17T06:03:01Z
 review:filinq:2130:90159872	CONFLICT: l10n en/nl and filinq_register.json vs development	session-20261117T055908-62351962	2026-11-17T06:03:17Z
 review:filinq:2059:9ead1961	CONFLICT: l10n and register conflict with development; head alone 6985 tests OK, change consistent with spec	session-20261117T055834-d932e117	2026-11-17T06:03:37Z
+merge:portaliq:2452:b61813ab	merge3 tree of 1 portaliq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-17T06:03:50Z
