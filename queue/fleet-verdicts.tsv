@@ -19298,3 +19298,7 @@ pipelinq	3958	40777e1a6daa8b3657c9b154a9bd7a43b09873d5	GREEN	worker-23	dependenc
 larpinq	1112	3faffe76627b2b6657807e9c340e73a09704a48e	GREEN	worker-37	unit 1243 baseline, 1245 on tree, 0 new failures; history now filters characters by the player's ownerUid with ocName fallback, reads stay under OpenRegister access rules; tests added
 pipelinq	3959	7fbcf4eeb298c017699d213a1802d595cb200595	GREEN	worker-23	dependency bump only; phpunit 9292 tree vs 9292 baseline, 0 new; vitest 3 files red inherited from development (myWorkPage, notificationLabels, reportSectionPeriod)
 pipelinq	3960	c710eaaf826b130042556b9bbbf31600e70fa2b3	GREEN	worker-23	dependency bump only; phpunit 9292 tree vs 9292 baseline, 0 new; vitest 3 files red inherited from development (myWorkPage, notificationLabels, reportSectionPeriod)
+hermiq	1763	561fdd1e123258292b81d0bd69d16ae4db4ba76c	CONFLICT	worker-48:merge	conflicts with development; files: tests/integration/hermiq.postman_collection.json 
+hermiq	1843	45ed8874b7086bd4025662de7d1606b75a2b59a9	CONFLICT	worker-48:merge	conflicts with development; files: tests/integration/hermiq.postman_collection.json 
+hermiq	1849	599ab2bf863fc652db45cd05a25b1a74eb760c49	CONFLICT	worker-48:merge	conflicts with development; files: tests/integration/hermiq.postman_collection.json 
+hermiq	1850	c9dacafd2a9b91c0cb908137cd3	REVERIFY	worker-48:merge	verdict sha is not the head: head is c9dacafd2a9b91c0cb908137cd3b2116117e49d3
