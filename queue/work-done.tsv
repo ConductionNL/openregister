@@ -21265,3 +21265,4 @@ build:portaliq:resident-on-example-set:b2	already done: code tasks built on deve
 build:portaliq:resident-pages-live-round-3:b2	already done: built on development in eb860065c; only live task 5.1 left	session-20261117T140734-4d108840	2026-11-17T14:46:28Z
 build:portaliq:site-mandates-the-represented-manage:b2	already building: quality/build-site-mandates-the-represented-manage(-c3) exist; only T0 broker confirmation and e2e left	session-20261117T140734-4d108840	2026-11-17T14:46:44Z
 build:portaliq:site-home-follows-the-school-boards:b2	already done: only task 5 open, a live check; no PR	session-20261117T135414-614629b0	2026-11-17T14:46:58Z
+build:portaliq:site-multi-step-forms:b2	failed: nothing buildable; T8b waits on openregister or-form-and-journey-registry; T9 strict validate fails on long requirement texts (spec rewrite, not code)	session-20261117T134347-d0294040	2026-11-17T14:47:18Z
