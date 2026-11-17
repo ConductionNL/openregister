@@ -1389,3 +1389,4 @@ buildiq	1716	f3a173de86c01c3d3ee317b89282af504b62139b	APPROVE	worker-02	Quick; n
 buildiq	1717	e829fe43c9a5cef45899fc7b358e8344c41b504b	APPROVE	worker-02	Quick; no blockers; spec wording and tasks tick only
 thematiq	1721	b57b4ab90b6e9cd73b7a08ae3f63864fc2e778d5	APPROVE	worker-14	Quick; no blockers; dev-only psalm major bump, php ^8.3 satisfied
 thematiq	1722	f409740840de20ce047e4abde179bd59e0a9d729	APPROVE	worker-14	Quick; no blockers; dev dependency patch bump
+buildiq	1718	56e7faf39d616a8090eb63a8426131ae67e763f5	APPROVE	worker-02	Quick; no blockers; tasks tick and parity matrix re-rating only
