@@ -21721,6 +21721,7 @@ build:humaniq:configuration-store:b2	partial: nothing pushed. Left 1.1, 1.2, 2.1
 build:hermiq:chat-fork-and-share-link:b2	PR #1849: Playwright session-fork-and-share spec + Newman fork outcomes; code already on development; live runs left	session-20261117T151214-35ff5eaa	2026-11-17T15:37:09Z
 build:humaniq:setup-wizard-six-steps:b2	already building: quality/build-setup-wizard-six-steps exists	session-20261117T132743-10cec9d3	2026-11-17T15:37:01Z
 build:humaniq:payroll-reservation-payouts:b2	already building: quality/build-payroll-reservation-payouts exists	session-20261117T132743-10cec9d3	2026-11-17T15:37:45Z
+build:shillinq:public-sector-grant-accountability:b2	PR #3179: all code tasks built (grant settlement + report, SiSa appendix + CSV, EU declaration propose/submit, irregularity threshold); suite 12796 -> 12821 green; live 4.2 left	session-20261117T134355-826c5a0b	2026-11-17T15:39:25Z
 build:hermiq:operations-backup-and-restore:b2	partial: code is on open hermiq#1763 (not yet on development); pushed the missing tests/e2e/spec-coverage/backup-restore.spec.ts and the Newman admin/non-admin folder to it; left: openspec validate, live runs	session-20261117T141335-245f063b	2026-11-17T15:38:19Z
 fix:learniq:2524:e082152e	stale	feeder	2026-11-17T15:34:01Z
 fix:filinq:2072:b9a113b8	stale	feeder	2026-11-17T15:34:01Z
@@ -21745,3 +21746,4 @@ verify:launchpad:1302:7d116ba9	GREEN 1302, 1303, 1304, 1305; tree 4621 OK = base
 review:versioniq:692:96800420	GREEN: 0 new failures (2 inherited), e2e conflict with development noted	session-20261117T153758-50f72bdf	2026-11-17T15:43:40Z
 review:filinq:2107:07113f95	GREEN: unit 7334 OK, vitest/jest pass, access checks hold	session-20261117T145748-1419d209	2026-11-17T15:44:02Z
 build:buildiq:github-app-repo-format:b2	partial: PR #1722 adds task 6.5 schema round-trip test (6 tests); 7.1 left: composer-audit fails on inherited symfony advisories in the lockfile, other named gates pass	session-20261117T153230-a4b1eff6	2026-11-17T15:44:37Z
+review:filinq:2130:151267ee	2130 GREEN (spec-conform; conflicts with development, needs a merge)	session-20261117T123418-5f98fc94	2026-11-17T15:44:25Z
