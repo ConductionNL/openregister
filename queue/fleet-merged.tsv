@@ -5003,3 +5003,4 @@ integriq	3670	90ebc507034147bc5bca04a174ced7397bfcb9c5	SKIP	worker-09	GATE UNMEA
 dossiq	6623	488a8c99c98a77e810a9e6c70beddc4999543d8b	SKIP	worker-31	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 portaliq	2492	5231f578a04925c24af5ab77a7fa432e236bb1ae	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.04
 keepiq	1787	981b9899088a30a47da6ac93355445d90faca57b	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.58 holds at 3.66
+decidiq	2162	41fa34b09570aea997963a15fb5da440e27a168f	RED	worker-46	GATE RED floor: duplication: 3.82 -> 3.80
