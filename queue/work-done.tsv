@@ -19393,3 +19393,4 @@ fix:hermiq:1738:29ad770b	conflict resolved, pushed 10d3c28c; register 0.62.0; un
 review:decidiq:2171:853b82a5	GREEN: unit 4842 OK, vitest 62 OK	session-20261117T032650-4ad2164b	2026-11-17T03:29:09Z
 merge:hermiq:1496:d73975f7	cloud tree of 8 hermiq PRs: none; conflict 6, lint 0, red 0, moved 1, done 1	session-20261117T032224-b88169ea	2026-11-17T03:29:21Z
 review:shillinq:3065:38e2ed5d	GREEN: unit 12588 OK on PR+development, vitest 88 pass	session-20261117T032229-44e2a97c	2026-11-17T03:30:11Z
+fix:filinq:2091:ea6afdbf	merged #2091 at 508232a5f0100a8686e34fc5738e9d877ef14dee	session-20261117T020416-cc0fb378	2026-11-17T03:30:18Z
