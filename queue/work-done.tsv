@@ -19933,3 +19933,4 @@ fix:filinq:2121:06812be1	fixed version bump + contracts for floor; REVERIFY at a
 review:launchpad:1217:56684b15	GREEN: phpunit 4572 ok, vitest 2693 ok	session-20261117T081339-88b643e7	2026-11-17T08:31:26Z
 fix:hermiq:1755:ec7a9ede	unmeasured: static.developer.overheid.nl; floor fixed, pushed 9cc6d8bf, REVERIFY queued	session-20261117T080849-d5ccc219	2026-11-17T08:31:42Z
 fix:filinq:2087:df162fcf	fixed: raised app version; new head 6547dafe, REVERIFY (merge lock held elsewhere)	session-20261117T081646-614489d3	2026-11-17T08:32:05Z
+fix:buildiq:1654:8cbe077a	fixed: settings passed to DashboardController factory + test; new head 9db550c5, REVERIFY queued (merge lock busy)	session-20261117T081719-6746d738	2026-11-17T08:32:14Z
