@@ -22372,6 +22372,7 @@ verify:stackiq:2058:b7990b91	GREEN 2058; unit 4071 OK, no new failures	session-2
 merge:portaliq:2494:ceb74273	merge3 tree of 12 portaliq PRs: merged=10 red=0 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-17T19:55:32Z
 verify:stackiq:2049:c79327a0	GREEN #2049 (vitest 2942, no new failures)	session-20261117T190320-1db054ae	2026-11-17T19:55:45Z
 verify:stackiq:1946:1a1d2ce9	GREEN #1946 (4135 PHP tests, 0 new failures)	session-20261117T185935-593e017f	2026-11-17T19:55:54Z
+verify:opencatalogi:2786:077a0049	GREEN #2786 (6390 tests, 0 new failures; inherited reds only)	session-20261117T190359-60e4fde5	2026-11-17T19:56:09Z
 verify:stackiq:2047:cd2856b2	GREEN #2047 (docblocks only)	session-20261117T190418-7494049c	2026-11-17T19:56:06Z
 verify:portaliq:2567:28bd0f0f	GREEN #2567 (tasks.md only, 0 new failures)	session-20261117T190250-54b1be06	2026-11-17T19:56:21Z
 build:portaliq:intake-conditional-questions-and-drafts:b2:c3	partial: nothing buildable yet; T06-T08 drafts wait on openregister build/or-form-and-journey-registry (run API tasks 2-3 built, not on main) and on a journey reference on the form binding (design open question, buildiq authors it); T08 docs page and unsupported-condition string already on PR #2573	session-20261117T190434-a73c29f6	2026-11-17T19:56:44Z
@@ -22414,3 +22415,4 @@ verify:stackiq:2061:6ab602c4	GREEN #2061 (0 new failures)	session-20261117T18593
 verify:versioniq:729:497abe19	CONFLICT 729 with development	session-20261117T185359-d68263c5	2026-11-17T20:04:36Z
 verify:stackiq:2048:3df81eba	GREEN #2048: 0 new failures (1 inherited)	session-20261117T185732-534997e2	2026-11-17T20:04:45Z
 verify:shillinq:3164:7ae11281	GREEN 3164 (0 new failures)	session-20261117T185828-a5f2758a	2026-11-17T20:05:00Z
+verify:thematiq:1719:740e1349	GREEN #1719 (2933+437 tests, vitest 1576, 0 new failures)	session-20261117T190359-60e4fde5	2026-11-17T20:05:14Z
