@@ -5820,3 +5820,4 @@ opencatalogi	2801	ebec806c87bf79c189993d39f1d7c8c142469975	SKIP	worker-46	GATE U
 stackiq	2050	3aee64db981ba893fb229fcd82feb05137f79174	SKIP	worker-20	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 versioniq	685	0b94d417a96af5e4d71e532fdde7a90d7dd009fe	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.97 holds at 4.16
 versioniq	780	f23cd299e03ed19ed07fe50aa787b4b212d26b17	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.97 holds at 4.16
+hermiq	1760	9fd70f207febf21198f88b97c31caebf039e3b4f	RED	worker-12	GATE RED floor: unit_complexity: 4.55 -> 4.53
