@@ -18352,6 +18352,7 @@ filinq	2112	62f4e41c68eadfb55d80dfd4f87bb540f051f675	CONFLICT	merge3	conflicts w
 filinq	2113	ee71f67d35e937c866edd8da7c05e0ea857a5ab6	CONFLICT	merge3	conflicts with development; files: lib/Settings/filinq_register.json 
 filinq	2114	34e75cf99344b5fb5d0b919d717f9cfcadab419c	CONFLICT	merge3	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Settings/filinq_register.json 
 filinq	2116	6e4312c81996c0302a3adb485efcc64f5176c859	CONFLICT	merge3	conflicts with development; files: lib/Settings/filinq_register.json 
+pipelinq	2292	250dc1f211270cc1729262d0b1fbab88bb7f28a3	GREEN	worker-01	no tests run: merge onto development b99fd659 is an empty tree diff (openspec/parity/capabilities.json content already on development); no code changed
 integriq	3713	1ac9342215f8b89a3080078a2a4852d1a9560e0a	GREEN	worker-12	dev-dep bump @typescript-eslint/parser; unit 9839 tests, baseline 5 failing (inherited), new failures 0; vitest 2383 passed
 pipelinq	2309	9fdbddb4e997e4bc30c99db0064574af0f8a21a7	GREEN	worker-37	merge into development yields a tree identical to development (main sync already present); no diff, suite = baseline
 learniq	1862	8239bdabe9f20f9315e98853229ca93ad7fb1f99	GREEN	worker-41	main->development sync merge; merged tree identical to development (0 files changed), so suite equals baseline; 0 new failures
