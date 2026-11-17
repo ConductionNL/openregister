@@ -3375,3 +3375,4 @@
 10634 5ccd2ee2905010c54e80e42aa911d11f44fa0c43 APPROVE dev-only lockfile bump of phpstan/phpstan 2.3.5 to 2.3.6; no runtime dependency, lib, test or config change; a patch release may report new findings in the analysis job only
 10629 784ab3dd184c21490a21023dfe8a240a87ab67cc APPROVE dev-only patch bump of @types/node 26.6.4 to 26.6.6; package.json and lockfile entry only, registry-resolved with integrity, no runtime or lib changes
 10626 01fe2e08f462a224d902efa2cd7b10bd3a6b6dce APPROVE CI-only: setup-buildx-action v3 to v4 in container-image workflow, no inputs used, hosted ubuntu-latest runner; no lib, test or frontend change
+10633 db93889e2c1c00de997c6ce7c28237825d903335 APPROVE lockfile-only patch bump of opis/json-schema 2.6.1 to 2.6.2; installed on PR merged with main, 2520 validation/schema unit tests pass (0 failures), no lib changes
