@@ -5170,3 +5170,4 @@ stackiq	2017	04903424ba50b3c5c6b96850998d410925f44950	MERGED	worker-55	GATE OK s
 humaniq	1146	f77f2a1deac4f525c5494180b523aed5a816cb51	MERGED	worker-56	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.47 holds at 3.47
 stackiq	2018	1b61e8a5abb37649c67ef9889c42c4ff23df14e1	MERGED	worker-55	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.13
 opencatalogi	2652	c34c2c87779ffc6ac837f61b8abc7dbe6c683086	MERGED	worker-24	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.51
+stackiq	2019	7a21d2c80bae03e8d33b798bff7d9cd9137f8358	MERGED	worker-55	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.13
