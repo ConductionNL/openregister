@@ -19754,3 +19754,4 @@ cover:launchpad:fb10c50fm88bd:f545d745	no PR: lib/Repair has 315/333 lines cover
 fix:shillinq:2083:ca162c3e	fixed RED (characterisation tests updated to the single-write contract), pushed 32c8fb4a; lock held elsewhere, REVERIFY queued	session-20261117T055905-03eea4d3	2026-11-17T07:12:41Z
 review:filinq:2059:7a6dae82	GREEN: config-only build per spec, suite 7104 OK	session-20261117T065546-dd6e246e	2026-11-17T07:13:11Z
 merge:learniq:2524:8e0b94db	cloud tree of 2 learniq PRs: merged=0 red=0 fail=0 skip=1; conflict 1, lint 0, red 0, moved 0, done 0	session-20261117T061824-01d4fad5	2026-11-17T07:13:54Z
+review:pipelinq:3734:9499f0c6	GREEN: unit 9271/9271 on PR+development, matches change specs	session-20261117T065408-6d600eff	2026-11-17T07:14:01Z
