@@ -18733,6 +18733,7 @@ stackiq	1963	5d4b224b8a597d13518bc49c1b7eaeaa96eb7211	GREEN	worker-37:review	imp
 versioniq	799	9d0b17e161aabdb3641874366fbf88fc9343996c	REVERIFY	worker-44	conflicts only with an earlier PR of the verify tree (l10n/*, src/App.vue vs #798)
 buildiq	1711	c046bf16a2d185fd3a110f47e78450a28c23551c	GREEN	worker-53	unit suite 3691 tests (baseline 3676, 0 failures), tests-only PR, 0 new failures
 portaliq	2579	df1bfc402b7652facf47819ec22a83d590bd098c	CONFLICT	worker-32	package.json conflicts with development
+portaliq	2580	9c288ce1119aa41d64c1f1e9220fcd7bd60a841a	GREEN	worker-32	unit 6339 tests on tree, baseline 6324 with 16 inherited errors (openregister classes absent), new failures 0; no JS unit script, markdown-block node test passes; e2e spec + en_US strings, per change
 buildiq	1734	666e0ef94dbb48dd31d6c384ca7470201645bef1	GREEN	worker-26	unit 3676 on tree = baseline (0 failures), new failures 0; e2e spec + tasks.md only; concern: ticks 4.2 before a live run
 decidiq	2272	6ec768222b8ef3a9c384270ec7873118f398b43d	GREEN	worker-36	version bump only (info.xml, openapi.json); tree unit suite 5020 tests OK, 0 failures
 buildiq	1732	8f7ab5e8d61276d56f5dfd89cf40980cca8200e2	GREEN	worker-23	unit 3676 tests OK (baseline 3676 OK, 7 skipped), no new failures; e2e spec + tasks.md only, per change pages-detail-related-items
