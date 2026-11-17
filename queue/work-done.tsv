@@ -20034,6 +20034,7 @@ fix:integriq:2650:e2326510	conflict resolved, pushed 92ce810e, REVERIFY queued	s
 fix:learniq:2551:2291ead0	fixed: register/app version raised, spec tags added, development merged; new head a86b68dc, REVERIFY queued (merge lock held elsewhere)	session-20261117T085350-7b102f7f	2026-11-17T09:04:00Z
 merge:portaliq:2417:23035054	cloud tree of 1 portaliq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T085020-faa595ea	2026-11-17T09:04:18Z
 fix:opencatalogi:2683:b9a9bc9f	fixed #2683, new head 7b81beb8 (merge lock held elsewhere, REVERIFY queued)	session-20261117T084753-0ae58c51	2026-11-17T09:04:36Z
+review:learniq:2536:ce31ee2c	GREEN; conflicts with development in l10n and structureProfile.test.mjs (page count 354)	session-20261117T084925-b2c594cc	2026-11-17T09:04:46Z
 measure:buildiq:20261117h08	php 91.61% js 95.5%	session-20261117T084819-7b38da2a	2026-11-17T09:05:14Z
 fix:integriq:3582:ec13862c	conflict resolved, pushed 5de17aa9; REVERIFY queued	session-20261117T081138-8732f141	2026-11-17T09:05:16Z
 measure:integriq:20261117h08	php 95.21% (pcov), js 94.38%	session-20261117T084927-57ebccdf	2026-11-17T09:05:25Z
