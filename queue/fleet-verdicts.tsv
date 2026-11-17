@@ -17127,3 +17127,4 @@ shillinq	2983	ad375f2d6a8d7a6dbe203f3585c402cdde2a6114	CONFLICT	worker-41:review
 shillinq	2070	0210f86bc6386d55885e01027f0ecabde310a400	CONFLICT	worker-41:review	conflicts with development, files: appinfo/info.xml tests/fixtures/register-versions.lock.json; not reviewable merged with development until resolved
 buildiq	1608	ae635677aaa135157f9fb93e82354cac7183e05e	CONFLICT	merge3	conflicts with development; files: l10n/en.js 
 buildiq	1630	ee26301ee93901f9d65e1063259396f4ac303779	CONFLICT	merge3	conflicts with development; files: src/components/page-editor/IndexPageEditor.vue src/composables/useManifestValidator.js 
+buildiq	1618	34282120f723d73c726729f382dafb448c364224	REVERIFY	worker-12	merged development in (l10n union; IndexPageEditor/PageDesigner keep pages+flows and manualOrder; golden fixture has both keys; 4 missing nl strings added); vitest page-editor+views 1129 passed; new head 088b083a05a5b0e1945e2be8ff6a73719d0f1c41, verify it
