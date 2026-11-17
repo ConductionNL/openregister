@@ -18911,6 +18911,7 @@ keepiq	1900	a6ccac84767665a898692a9826befe197f56bcea	GREEN	worker-39	alone on de
 larpinq	1049	eb8c9f5fcde502b5e286633b918fe448a8275e57	GREEN	worker-23	unit 1260 OK (baseline 1243 OK), vitest 749 passed, JSON/php -l clean; maps schemas, manifest pages, l10n per change worlds-maps
 larpinq	1101	68cf7368dbf5c81f6f798160f23b8742b1e5af18	CONFLICT	worker-15	conflicts with development: change archived as 2026-11-17-communication-help-desk and tests/e2e/help-desk.spec.ts already on development (add/add); likely obsolete
 integriq	3724	27c092d3b3737a865c0dfccd46a6f125a7129cd5	GREEN	worker-38	unit 9910 tests, baseline 2 errors 3 failures, 0 new; e2e spec files and tasks.md notes only, no production code
+larpinq	1104	072740aae8be224bd39bab37e1dd43eb661d0a64	GREEN	worker-32	unit 1243 tests, baseline 0 failures, new failures 0; vitest 730 passed; e2e spec + tasks.md only, per change
 integriq	3728	181269252df39eb8b8616056c26d5d2b1ff1d6fc	GREEN	worker-10	phpunit 9927 on tree vs 9910 baseline, same inherited 2 errors/3 failures, 0 new; vitest 2395/2395; builds platform-action-rights-coverage (object rights seeded at today's posture, admin-gated; l10n reordered +3 keys, none lost)
 pipelinq	3952	724737b6aa5dba076f7d938b823c2377c86bdc3e	REVERIFY	worker-30	conflicts only with an earlier PR of the verify tree (#3943, l10n files)
 learniq	2594	259feb56de2bd786055277d5a9b39371d1cecb1c	GREEN	worker-26	unit suite on tree green (no PHP/JS-unit change), new failures 0; e2e spec + tasks.md note only, imports reorganised, no assertion removed
