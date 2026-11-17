@@ -18304,5 +18304,6 @@ hermiq	867	76c9978a57e6e78646e93f8f83e4a8f98a7141a0	GREEN	worker-07	5617 unit te
 launchpad	759	3f179d5b27c3072baa60549b8656cd80ef5c587e	CONFLICT	worker-20	conflicts with development in package-lock.json; baseline unit 4621 OK
 integriq	2720	7f6df619bcf696e15e8adea822963863ea34b052	CONFLICT	worker-08	conflicts with development in lib/Controller/SetupController.php, lib/Repair/InitializeRegister.php, lib/Repair/SyncConnectionDeclarations.php, 2 register.d json, 3 tests
 buildiq	1643	d0645acc033655e32d345dfdc3d19e64a05a567d	GREEN	worker-15	unit 3594 tests (baseline 3578, 0 failures), new failures 0; vitest 4976 passed; build of logic-automation-run-log, matches the change's specs
+hermiq	1719	d2352914530959591eaf31c5ea8ea41c94ca6b79	GREEN	worker-47	build chat-translate-a-recording matches its spec; refactors keep behaviour; unit 5653 tests (baseline 5615, 172E/26F inherited), new failures 0; vitest 1634 passed
 launchpad	628	7ce60794924a774915dfec084c803ddddf04e02b	GREEN	worker-37	merge into development yields a tree identical to development (beta sync already present); no diff, suite = baseline
 integriq	1985	6e4c92f5a867f924633f527c3d41ff4024cffa90	GREEN	worker-03	merge adds no file changes to development (tree identical); baseline 9839 tests with 4 inherited failures/errors, 0 new
