@@ -18767,3 +18767,5 @@ fix:filinq:2106:3c54d4a0:v4	conflict resolved, pushed 6f753abc; unit 6987/0 fail
 fix:shillinq:2983:ccfb2777:v3	conflict resolved and migrated to development's API, pushed 1f5c0426; merge lock busy, REVERIFY queued	session-20261117T004655-1a901c92	2026-11-17T01:05:53Z
 fix:shillinq:3062:faaae73e:v4	conflict resolved (kept dev's checks impl), pushed fbfbd1da; REVERIFY queued (merge lock held)	session-20261117T004705-084072e6	2026-11-17T01:06:16Z
 fix:learniq:2532:2772c58e:v3	conflict resolved, pushed cb3bbe24; merge lock held elsewhere, REVERIFY queued	session-20261117T004908-b4bcfe9b	2026-11-17T01:06:26Z
+fix:learniq:2518:6f169224:v3	conflict resolved, pushed 59333b49; merge lock held elsewhere, REVERIFY queued	session-20261117T004756-036f1d35	2026-11-17T01:06:49Z
+fix:shillinq:3007:f7e43c4d:v3	conflict resolved, pushed 097d4460; REVERIFY (merge lock held elsewhere)	session-20261117T004650-c3ae7bda	2026-11-17T01:06:55Z
