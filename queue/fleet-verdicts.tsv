@@ -16163,3 +16163,4 @@ buildiq	1689	5149b0a3862c2ed9d18630d837f1b6bd5231459b	REVERIFY	worker-58	merged 
 opencatalogi	2669	8c31eee0b472b465c61cb9093196892e942a8f06	RED	worker-49:merge-gate	GATE RED floor: unit_size: 4.64 -> 4.62
 dossiq	5396	3792d79590f43efa92041c214bc2a87db4ad7fac	GREEN	worker-32:review	no-op: development already locks conduction/hydra-gates v1.19.0 (deps bundle); merge tree identical to development, no code or test change
 opencatalogi	2674	4ec49fd30f5317f6f3a595cabb81e85410787a1d	CONFLICT	worker-49:review	conflicts with development, files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json; not reviewable until merged with development
+stackiq	1989	45dbd96288cca2c93a2162055fe2c65597c4ed55	GREEN	worker-10	dependency bundle (composer.lock, @vueuse/core 15, sbom); PHP unit 3937 OK before and after; vitest 2880/2881, the one failure (facets.spec FACET_DIMENSIONS) also red on development
