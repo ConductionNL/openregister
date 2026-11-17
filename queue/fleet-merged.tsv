@@ -5693,3 +5693,4 @@ hermiq	1847	4b35bf029a1ae7308503d63ef3b7d87dd2e68235	RED	merge3	GATE RED checker
 hermiq	1848	65d35bc5c91cb52e899ac03cd9fd06cc301f8aa5	RED	merge3	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
 hermiq	1850	c9dacafd2a9b91c0cb908137cd3b2116117e49d3	RED	merge3	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
 pipelinq	3959	7fbcf4eeb298c017699d213a1802d595cb200595	RED	worker-10	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+pipelinq	3962	63a9f87023847f1f04506dfaff982afa3de38e94	RED	worker-10	GATE RED sbom: package-lock.json changed without sbom.cdx.json
