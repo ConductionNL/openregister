@@ -5492,3 +5492,4 @@ launchpad	1304	952ebaa8fac367fe3ecd38d502ea5783d9d96f6f	RED	merge3	GATE RED chec
 stackiq	1942	9b4a8fa20ae7f1997da78b1cc75beb9d9c76726f	SKIP	worker-32	no APPROVE review at this head
 stackiq	1966	b74dfc9fbfa739b5090aef81bcb83d4f2d68fa75	SKIP	worker-32	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 versioniq	685	0b94d417a96af5e4d71e532fdde7a90d7dd009fe	SKIP	worker-11	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
+stackiq	2028	9d9add83116540ecee19b9cfe128025267881839	RED	worker-32	GATE RED sbom: package-lock.json changed without sbom.cdx.json
