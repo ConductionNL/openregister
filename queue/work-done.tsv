@@ -22950,3 +22950,4 @@ build:decidiq:approval-routes-on-flow-user-tasks:b2:c3	built: decidiq#2288 @ 4dc
 merge:learniq:2602:78334099	unmeasured: static.developer.overheid.nl (proxy 403 from this session); nothing built or landed	session-20261117T222443-557d8a6c	2026-11-17T22:54:52Z
 fix:integriq:3585:39f07d5a	failed: permission (review/land step refused); fix pushed at 7acc5e96, tree green, REVERIFY recorded	session-20261117T222048-3a9e0119	2026-11-17T22:56:08Z
 fix:opencatalogi:2792:f3566f96	not reproducible: test green with openregister main beside, no failures beyond development; merged development, REVERIFY queued	session-20261117T224524-cade3737	2026-11-17T22:56:25Z
+merge:pipelinq:3940:41bcf7b3	unmeasured: static.developer.overheid.nl (proxy 403 from this session; gate checker_floor cannot measure)	session-20261117T221004-2cfd9e4c	2026-11-17T22:56:38Z
