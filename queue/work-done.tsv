@@ -18549,6 +18549,7 @@ verify:shillinq:3008:1f4ba84a	CONFLICT #3008 (7 files conflict with development)
 verify:learniq:2579:b356ecaa	failed: composer-cloud refuses learniq's lock on this session's php 8.3.6 (vimeo/psalm 7.5.0 needs ~8.3.16); no unit suite	session-20261116T232944-146e39d7	2026-11-17T00:09:45Z
 verify:stackiq:1963:0202df86	CONFLICT: 6 files vs development	session-20261116T232912-634ff2e8	2026-11-17T00:09:38Z
 verify:shillinq:3065:4335294e	CONFLICT #3065 (info.xml, InvoiceGenerationService, openapi, registry.js)	session-20261116T232951-07569878	2026-11-17T00:09:54Z
+verify:portaliq:2452:dd54af47	CONFLICT: 9 files vs development (l10n, ListenerRegistrar, register json, package.json, tests)	session-20261116T232925-45c70e73	2026-11-17T00:10:05Z
 verify:portaliq:2445:407c9cee	CONFLICT #2445 (l10n catalogues)	session-20261116T232918-35016340	2026-11-17T00:10:04Z
 verify:shillinq:3080:75a66e92	CONFLICT: #3080 vs development in CHANGELOG, info.xml, l10n, ContractRegistrar, registrar tests, register-versions lock	session-20261116T232911-3dffa1ae	2026-11-17T00:10:25Z
 verify:stackiq:1942:b6663ebb	CONFLICT #1942	session-20261116T233627-44605965	2026-11-17T00:10:36Z
