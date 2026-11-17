@@ -1371,6 +1371,7 @@ planninq	1247	1a42908edf32546f4d27dfc8c1b8aec9935bd950	APPROVE	worker-53	Quick; 
 planninq	1248	36d5dc19e1277c9823e4512f8072ca92540206a6	APPROVE	worker-53	Quick; no blockers; axe e2e spec and postman collection only
 learniq	2497	48225cf9d50c702289f26ffb5e21fd07629ec941	APPROVE	worker-39	Thorough; no blockers; PDF route reads with rbac off then allows holder, hr, compliance-officers only (404 otherwise, as Europass); render fail soft; concern: file read by node id is instance-wide, ref writable only by hr/compliance
 learniq	2595	5aa1fd02d4e2d7f9e3d0168e0d07e36042b38b03	APPROVE	worker-39	Standard; no blockers; seen POST reads the report with caller rights (find rbac default on), stamps only a listed teacher on a submitted report, lifecycle untouched; controller test added; nl strings present
+keepiq	1897	cb062e6781152a50caa312836a625237c407fa7c	APPROVE	worker-31	Quick; no blockers; archive of vault-login-totp-codes, @spec path updates only in src/tests
 opencatalogi	2756	70b8b0cb8de57fabae21fef0562dfe82dda9fab2	APPROVE	worker-46	Strict; no blockers; new public document and error-report routes read through the catalogue read-rule guard in anonymous scope, fail closed, rate limited; errorReport schema reads limited to admin and moderator groups; phpcs/phpstan hits inherited or trait false positives
 opencatalogi	2787	362419bab9add372a8fd8dc0f8d2e513585524cb	APPROVE	worker-46	Quick; no blockers; tests and fixture only
 opencatalogi	2793	d14f5f969a4c92d42409f8c9a2b0ebe0c6d49eab	APPROVE	worker-46	Standard; no blockers; DownloadService error messages translated via IL10N, all constructors updated, docs and tasks
@@ -1379,3 +1380,14 @@ opencatalogi	2794	85f20bb85c5a19d6e66aea0b7267df306933caac	APPROVE	worker-46	Sta
 opencatalogi	2795	9844e9a09589c8fb5eb3275c484e4adb67f6bb38	APPROVE	worker-46	Quick; no blockers; Newman collection only; concern: default baseUrl localhost:8080 in collection variables
 opencatalogi	2796	7d78014c5c048a8b9ec158b0573d341fb0dfbe97	APPROVE	worker-46	Quick; no blockers; e2e spec only, refuses shared instances and restores production mode
 thematiq	1719	740e1349e57122fb6902c14777368c21f0bfaa15	REQUEST_CHANGES	worker-14	Strict (CI workflow); blocker: the new step runs the upstream theme builds inside the job that holds write permissions; build them in a separate read-only job and pass the token files on as an artifact; rest of the diff fine
+keepiq	1898	2d4d0257353ba497c0c94affef2fedeabcee86dc	APPROVE	worker-31	Quick; no blockers; tasks.md note only
+keepiq	1899	abebdd6ffa781653cb3cdfbbfdac6d7c181fbded	APPROVE	worker-31	Strict; no blockers; listener answers only application-owned, untrashed secrets minted for integriq and the acting org, lookup failure denies; new table follows keepiq's own-table convention and is in the backup registry
+keepiq	1901	f9f7976788c4b0b79cfd7a58bceadaf67c54401f	APPROVE	worker-31	Strict; no blockers; print/QR gated on master password re-entry and reveal guard, hidden for use-only; inherited vitest reds in HealthReportView.controls (also red on development); gate runner absent, checked by hand
+decidiq	2149	3ccfbfcfc456c5da74508481e6602f2a82bcfab3	APPROVE	worker-19	Thorough; no blockers; implements document-accessibility-check per spec (gate server-side before writes, scan endpoint reads source under RBAC), gate runner not cached so section 4 done by hand, unit 5084 pass, vitest 1 inherited fail
+buildiq	1715	628d9e25f091953535ee8b7bb259bf0baf012802	APPROVE	worker-02	Quick; no blockers; e2e spec only, base URL from env, non-admin empty storage state
+buildiq	1716	f3a173de86c01c3d3ee317b89282af504b62139b	APPROVE	worker-02	Quick; no blockers; tasks.md tick only
+buildiq	1717	e829fe43c9a5cef45899fc7b358e8344c41b504b	APPROVE	worker-02	Quick; no blockers; spec wording and tasks tick only
+thematiq	1721	b57b4ab90b6e9cd73b7a08ae3f63864fc2e778d5	APPROVE	worker-14	Quick; no blockers; dev-only psalm major bump, php ^8.3 satisfied
+thematiq	1722	f409740840de20ce047e4abde179bd59e0a9d729	APPROVE	worker-14	Quick; no blockers; dev dependency patch bump
+buildiq	1718	56e7faf39d616a8090eb63a8426131ae67e763f5	APPROVE	worker-02	Quick; no blockers; tasks tick and parity matrix re-rating only
+buildiq	1719	7653a33d583d1867e34be5ee228c5344ab9943f5	APPROVE	worker-02	Thorough; no blockers; vector retrieval falls back to whole files on any failure, knowledge read stays after the role check, filtered to the agent's own file ids; health adds a bool
