@@ -20094,6 +20094,14 @@ review:filinq:2086:4b3e56c0	GREEN: phpunit 7152 OK, jest 603 OK	session-20261117
 review:buildiq:1605:5e5363ab	GREEN: vitest 4956/4956 on merge with development, eslint clean	session-20261117T085356-c13ba754	2026-11-17T09:27:54Z
 review:filinq:2069:db5701f0	GREEN: filinq #2069, unit 7155/0 failures, vitest 14 passed	session-20261117T092359-231529ac	2026-11-17T09:28:19Z
 review:filinq:2083:e57df6b0	CONFLICT: filinq#2083 conflicts with development (register, l10n); diff clean, unit 7173 OK on head	session-20261117T084229-c4fc3f9c	2026-11-17T09:28:49Z
+fix:planninq:1215:00aacabf	failed: upstream-blocked; latest @conduction/nextcloud-vue 2.181.0 still peers gridstack ^12||^13, so gridstack 14 cannot resolve until the library widens its peer range	session-20261117T092903-88d0002f	2026-11-17T09:29:32Z
 review:hermiq:1754:e5a330ff	BLOCK: php duplication floor 5.8->5.9%; tests green (5644 unit, 1630 vitest)	session-20261117T092223-98298a84	2026-11-17T09:29:31Z
 fix:filinq:2114:790aa030	fixed: refused uncheck answers 403; pushed 8555a6f9, REVERIFY (merge lock held elsewhere)	session-20261117T091057-940845f2	2026-11-17T09:29:39Z
 fix:launchpad:1219:ca7a79d2	merged #1219 at eeae6014c756316dd1069a76c51a9c413effa532	session-20261117T083938-f8f3a0e7	2026-11-17T09:29:50Z
+verify:decidiq:2254:0c81a5d8	BLOCK #2254: gridstack 14 outside nextcloud-vue peer range	session-20261117T092129-3ad47afe	2026-11-17T09:29:59Z
+review:opencatalogi:2683:7b81beb8	GREEN: no new failures vs development baseline; floor note recorded	session-20261117T084727-10682198	2026-11-17T09:30:08Z
+review:learniq:2497:d7ffe7d9	GREEN: 7078 tests, 1 inherited failure	session-20261117T092632-101520de	2026-11-17T09:30:16Z
+fix:integriq:3628:c2938095	fixed spec-tag blockers; new head 0e0f7320, REVERIFY (merge lock held elsewhere)	session-20261117T092706-95ac9736	2026-11-17T09:30:30Z
+review:buildiq:1607:7bdbd4b0	GREEN; vitest 4943 OK, PHP suite same as development	session-20261117T083929-9c5fceb9	2026-11-17T09:30:49Z
+review:integriq:3550:7acdaf52	BLOCK: floor php component_independence worsened 93.0->92.8%; tests clean (5 inherited)	session-20261117T091836-c439b8c6	2026-11-17T09:30:58Z
+review:versioniq:729:91f511d2	GREEN: unit 2305, failures=baseline 2 golden (inherited); vitest 21 pass	session-20261117T092815-eca173a1	2026-11-17T09:31:14Z
