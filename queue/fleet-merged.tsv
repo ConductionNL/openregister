@@ -4932,3 +4932,4 @@ integriq	3569	f05930de5301a76e7c6c0bf78fb691731cd5df4f	MERGED	worker-01	GATE OK 
 stackiq	1937	de3abb3c43e0e66c3013e1d38bd09751ee88a37b	MERGED	worker-33	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.16
 thematiq	1124	c6a62f1f5b4a45a1285a0dcb7f634f9d956c6268	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.15
 thematiq	1289	2557e0bad801f3a73a99cfa6f1d2ac0861598309	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.15
+integriq	3678	31eb3920fa952bd5e6e91f7aefaadddb2adc96a8	RED	worker-01	GATE RED checker floor: spdxheaders stars: 5 -> 4
