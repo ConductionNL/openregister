@@ -18838,3 +18838,4 @@ keepiq	1897	cb062e6781152a50caa312836a625237c407fa7c	GREEN	worker-39	openspec ar
 dossiq	6662	e845dfbaec252189a9bca20af70b3d3fedf2a4a6	GREEN	worker-40	unit 18422 on tree vs 18398 baseline, 1 inherited error, 0 new; vitest 7224, 2 inherited failures, 0 new; build PR judged against its change
 dossiq	6663	7ad8d4657778d1082dea10da61309ea37d382dd0	GREEN	worker-40	unit 18422 on tree vs 18398 baseline, 1 inherited error, 0 new; vitest 7224, 2 inherited failures, 0 new; build PR judged against its change
 dossiq	6664	339af5a53f00481f2674650b655a0a5963df7dd4	GREEN	worker-40	unit 18422 on tree vs 18398 baseline, 1 inherited error, 0 new; vitest 7224, 2 inherited failures, 0 new; build PR judged against its change
+dossiq	6665	d62c780df34731fa7d6cab3b8f77f8a362c8a493	GREEN	worker-40	unit 18422 on tree vs 18398 baseline, 1 inherited error, 0 new; vitest 7224, 2 inherited failures, 0 new; build PR judged against its change
