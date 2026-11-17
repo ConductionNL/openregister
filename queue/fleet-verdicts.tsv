@@ -16025,3 +16025,4 @@ shillinq	2081	5c4b6e15884f9ade7eb22f959d12f708da02d2c9	CONFLICT	worker-03	confli
 pipelinq	3743	871e47d54f19aad16fb7eeac1f4d38f79b61e6af	CONFLICT	worker-14	conflicts with development in l10n en/nl, lib/Service/SettingsLoadService.php, src/manifest.json, tests/vitest/structureProfile.spec.js; suite not run
 shillinq	1965	38aa9e98d92064163730059c45e299b358346b33	CONFLICT	worker-36	conflicts with development in appinfo/info.xml, tests/fixtures/register-versions.lock.json; suite not run
 portaliq	2451	5377377c6d044526703808c2f899140524c8baa4	CONFLICT	worker-58	conflicts with development in l10n (4) and src/manifest.json
+shillinq	3052	8bc55c9d539b9d42ccadb4abce35ea1cf308f63a	CONFLICT	worker-03	conflicts with development in appinfo/info.xml, l10n (4), lib/Service/ContractRegistrar.php, tests/fixtures/register-versions.lock.json
