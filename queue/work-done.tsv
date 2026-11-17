@@ -22661,6 +22661,7 @@ merge:buildiq:1732:75f444e7	unmeasured: static.developer.overheid.nl (proxy 403 
 verify:hermiq:1855:54a9e416	GREEN #1855 (version bump, no new failures)	session-20261117T213035-1b926cd2	2026-11-17T21:33:37Z
 verify:integriq:3734:12b2f75d	GREEN 3734: no new failures	session-20261117T211359-bea33e3d	2026-11-17T21:34:13Z
 verify:hermiq:1760:9fd70f20	GREEN 1760	session-20261117T211406-076a7a0e	2026-11-17T21:34:53Z
+merge:stackiq:1942:d6104197	unmeasured: static.developer.overheid.nl; cloud tree of 9 stackiq PRs: merged=0 red=1 (2028 sbom) skip=6; 1942 REQUEST_CHANGES (repair step unregistered); conflict 1, moved 1	session-20261117T211437-e305ed6d	2026-11-17T21:35:00Z
 verify:learniq:2608:b1dde744	GREEN 2608: suite 7160, no new failures	session-20261117T211425-939d7fb0	2026-11-17T21:35:20Z
 verify:integriq:3714:b02f1d04	GREEN #3714 (no new failures)	session-20261117T211341-e05e0d2c	2026-11-17T21:35:38Z
 verify:filinq:2107:f00845e0	GREEN: phpunit 7376 OK (baseline 7329), vitest 876 OK	session-20261117T211329-58121c09	2026-11-17T21:35:49Z
@@ -22670,4 +22671,5 @@ verify:integriq:3713:7c19b140	GREEN integriq#3713 (vitest 2389 pass, lint unchan
 merge:versioniq:685:43b103f5	unmeasured: static.developer.overheid.nl (685, 780 approved, gate UNMEASURED; 699 726 797 798 799 CONFLICT)	session-20261117T211433-35a96960	2026-11-17T21:36:56Z
 merge:launchpad:1106:11fe39e3	unmeasured: api.osv.dev (merged=0 skip=4; 1218 REQUEST_CHANGES, 1300 conflict->REVERIFY, 1106/1109 EXCL)	session-20261117T211353-2c595f41	2026-11-17T21:37:00Z
 verify:hermiq:1853:06c2bb55	GREEN #1853 (5785 tests, 0 new failures)	session-20261117T213058-6689a4c6	2026-11-17T21:37:10Z
+verify:learniq:2609:c89b130e	GREEN learniq #2609 (inherited failures only)	session-20261117T211320-ba1b42e8	2026-11-17T21:37:35Z
 verify:launchpad:1305:93c89134	GREEN #1305 (e2e specs for e2e-coverage-programme 3.18/3.19; unit 4621 OK, no new failures)	session-20261117T213056-2ba36933	2026-11-17T21:37:50Z
