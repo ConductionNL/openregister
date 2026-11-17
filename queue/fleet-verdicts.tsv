@@ -18281,12 +18281,19 @@ buildiq	1242	41af2f95cf4662dbc51bbe9349de2bac2db4e7c5	GREEN	worker-03	unit 3578 
 stackiq	1028	665e6e656cc60a5758ae9ba4331264c79d90029e	GREEN	worker-14	merge into development changes no files (beta sync, history only); suite unchanged vs baseline 4050 ok
 dossiq	3968	e024c870c3d323a901beef540601499e6ba5f127	CONFLICT	worker-57	conflicts with development, files: .procedure-code-baseline.json appinfo/info.xml l10n/* lib/Controller/WOOAssessmentController.php lib/Service/Publication/{CasePublicationState,CatalogTransport,OutcomePublisher}.php lib/Service/TermijnNotificationService.php lib/Service/WooPublication/WooCategoryMapper.php (modify/delete) lib/Settings/dossiq_register.json and 4 tests; baseline unit 18392 tests 19 failures
 keepiq	830	2d73be926b6f2743f5940c00f27817e40b660baa	GREEN	worker-27	merge adds no file change vs development (tree identical to baseline); suite not rerun, 0 new failures
+buildiq	1703	39097174f7442fbb6a56d840419407585745dba1	GREEN	worker-20	unit 3580 tests OK (baseline 3578 OK, +2 new), no new failures; tests-only
+dossiq	3978	5ff801e20874e2a45d668ff6435415b893043e1f	GREEN	worker-53	beta-to-development sync; merges clean and leaves the tree byte-identical to development (0 files changed, only beta ancestry added), so the unit suite is development's own
 dossiq	6631	f4e91e8d2efb57f97b56fc275ff7c536732c4bea	GREEN	worker-55	18392 tests, baseline 1 inherited error, 0 new failures; version bump only
 hermiq	1833	0071295fe2a53c30c193f263069b2a3a427d3028	GREEN	worker-12	docs-only (README, publiccode.yml; yaml valid, referenced images exist); unit 5617 tests, baseline 0 failures, new failures 0
+buildiq	1702	817cd0c551a1ab137628adc06fb3168c9aed7c8f	GREEN	worker-36	tests only; 3604 run (+26), baseline 3578 OK, new failures 0
 dossiq	3722	c279ac6c5c6e3c82c3848fff18e3fd59d1f9db3c	GREEN	worker-28	merge tree identical to development (sync commit, no content change); unit 18392 tests, baseline 19 failures inherited, 0 new
 humaniq	860	8e1a6e8a5513e80ba0796bb2acef1135b8107b16	GREEN	worker-19	4509 tests run, baseline 4509 ok/1 skipped, no new failures; config-only quality floor change
 humaniq	1190	27f4e9816e988888fa4607eb9373eb2223988dc2	GREEN	worker-58	4509 tests, baseline 0 failures, 0 new failures; version bump only
 dossiq	3490	74c43e35ff004875fa77364c93512a14aec7bb9b	GREEN	worker-08	merge into development changes 0 files (tree identical to baseline); suite not rerun, 0 new failures by construction
 integriq	2969	a2ea40ef8e5015d9bd298a950bfe4e9779fe0be9	CONFLICT	worker-29	conflicts with development in appinfo/info.xml, lib/Settings/integriq_mock_register.json, openapi.json; no tests run
+hermiq	1186	9d5d785e561e5cfa8dadb1184d29c0a615fadf9a	GREEN	worker-47	tree identical to development (dompurify 3.4.17 already on development, merge adds no change); unit 5615 tests, baseline 172E/26F, new failures 0
 dossiq	4886	19293aa0422e436fda89d8aaa4c53c2f171e596a	CONFLICT	worker-57	conflicts with development, files: l10n/en.js l10n/nl.js
 thematiq	1553	da1b1562f97c6ffdba6a0fb70694ffd3f192edba	GREEN	worker-50	unit 2900 tests, 1 failure (MigrateOverrideValueTypesTest::testUnwritableDirectoryDoesNotThrow, root-writable dir, inherited: PR changes only .github/sig-floor.json); no new failures; floor raised only
+versioniq	706	31ba5828052881c7b2daf1d9137aa1a65c259470	REVERIFY	worker-16	merged development in, l10n conflicts resolved keeping both sides; unit 2456 tests, 2 golden failures inherited from development; land refused by permission check; new head f955efebf0ddc94a677535de998a5f9108ad88c2, verify it
+hermiq	1781	a56a9450dc3cec2c5d7cc0c3b24739f4c98e1f6a	GREEN	worker-12	build models-several-models-per-turn per its specs; unit 5668 tests (baseline 5617, 0 failures), new failures 0; vitest 1649 passed
+thematiq	1139	c7061e8be2d58ee463bc015ea562e434993cc8bb	CONFLICT	worker-50	token-sets.json conflicts with origin/development (token sync from 10 Oct; development has newer syncs); no tests run
