@@ -19797,3 +19797,4 @@ fix:opencatalogi:2683:783543f7	conflict resolved, pushed b9a9bc9f; REVERIFY (mer
 build:versioniq:inventory-lifecycle-signals:c5	PR #754 head 8d9ac96: merged development (l10n union, openapi JSON merge), built endOfSupport stamp in the sweep (AppStoreSource::supportedMajors + LifecycleSignals::endOfSupport, 10 tests); unit 2255->2265, same 2 inherited golden failures; vitest 3177 pass. Code tasks complete; left: 3.2 e2e and 4.1 matrix/archive need a live instance	session-20261117T065609-89f8b9cf	2026-11-17T07:22:23Z
 fix:larpinq:1043:09d10d17	conflict resolved, pushed 03f6b920; REVERIFY queued	session-20261117T063100-87feca45	2026-11-17T07:22:20Z
 review:shillinq:3009:0bd3c949	GREEN: spec-conform, PHPUnit 12640 OK, vitest red inherited only	session-20261117T065527-44da8271	2026-11-17T07:22:34Z
+fix:versioniq:715:160a3e87	conflict resolved, pushed 4657c9dc; REVERIFY queued	session-20261117T055853-7ddd3cb3	2026-11-17T07:23:06Z
