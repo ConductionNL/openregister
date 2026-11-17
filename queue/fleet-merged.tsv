@@ -5710,3 +5710,4 @@ pipelinq	3964	753442e626996f44d05bcc37231b0aba15c257be	SKIP	worker-10	GATE UNMEA
 humaniq	1194	a639d953b334d494ceed96e96b07df6e04fa15a4	SKIP	worker-22	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 buildiq	1734	666e0ef94dbb48dd31d6c384ca7470201645bef1	SKIP	worker-24	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 humaniq	1195	b3d7f5c67972ee5a3c42c2606bf6067353bd6eb9	SKIP	worker-22	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
+dossiq	6663	c2277813b81e6b2bae7e5450f38a1ab099b680be	RED	worker-42	GATE RED floor: unit_interfacing: 3.49 -> 3.47
