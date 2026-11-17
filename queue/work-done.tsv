@@ -20707,3 +20707,4 @@ verify:portaliq:1364:8a7a486b	GREEN #1364 (empty diff vs development)	session-20
 verify:thematiq:1716:af83f772	GREEN #1716 (version bump only)	session-20261117T124634-577ba792	2026-11-17T13:08:10Z
 verify:pipelinq:2417:727efa5a	GREEN #2417 (no-op merge, tree equals development)	session-20261117T123632-d3b91db3	2026-11-17T13:08:24Z
 verify:pipelinq:3931:c6e77ad0	GREEN #3931 (version bump; 10 related test files pass)	session-20261117T125716-5aa18045	2026-11-17T13:08:36Z
+fix:integriq:3601:34350fe3	conflict resolved, pushed 691712f5; REVERIFY queued	session-20261117T124618-509d3d7a	2026-11-17T13:08:47Z
