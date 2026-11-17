@@ -18977,3 +18977,4 @@ fix:opencatalogi:2684:8f4a54a3:v3	conflicts resolved, test fake on main API, pus
 fix:stackiq:1944:25fa2c20:v3	fixed CONFLICT, pushed a796a511; merge lock held elsewhere, REVERIFY queued	session-20261117T004638-e72c1040	2026-11-17T01:46:53Z
 fix:opencatalogi:2665:fbbdb9b4:v4	conflicts resolved, pushed 1e4b30ce; merge lock busy, REVERIFY queued	session-20261117T005933-5e669a88	2026-11-17T01:47:06Z
 fix:larpinq:1055:3553b217:v3	conflict resolved, pushed 41f14fa8; REVERIFY queued (merge lock held elsewhere)	session-20261117T004656-5d4b3c4e	2026-11-17T01:47:17Z
+fix:versioniq:706:61f814de:v3	fixed CONFLICT, pushed 4a325d74779e21b60f24f620bb9be64e53b70d2b; merge lock held elsewhere, REVERIFY queued	session-20261117T004644-5138fb50	2026-11-17T01:47:39Z
