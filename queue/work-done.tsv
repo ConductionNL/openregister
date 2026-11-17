@@ -19838,3 +19838,4 @@ review:hermiq:1740:7ac6294b	GREEN: unit 5575 OK, vitest 10 OK, phpstan/phpcs cle
 review:decidiq:2189:7818e0c2	GREEN: unit 4864 OK, vitest 14 OK	session-20261117T080304-46e8fe42	2026-11-17T08:05:54Z
 review:hermiq:1760:d0454e30	GREEN: unit 5636 OK, vitest 11 OK, sandbox 25 OK	session-20261117T075956-4a06c0e3	2026-11-17T08:06:20Z
 merge:decidiq:2154:b2036323	unmeasured: static.developer.overheid.nl, api.osv.dev (proxy 403 in this session; lock released before building the tree)	session-20261117T080304-46e8fe42	2026-11-17T08:06:33Z
+review:larpinq:1043:03f6b920	GREEN: unit 1124 OK, vitest 702 pass	session-20261117T080442-9c9fe2f8	2026-11-17T08:07:27Z
