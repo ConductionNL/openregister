@@ -19117,3 +19117,4 @@ review:learniq:2518:59333b49	GREEN: metadata only, 0 new failures, checks pass	s
 review:opencatalogi:2677:6cedbbd6	RED: MiddlewareRegistrarTest new failure; test-file conflict with development	session-20261117T020207-847c18e7	2026-11-17T02:21:22Z
 review:learniq:2497:a6d36cf2	GREEN: within change spec; no new failures	session-20261117T003945-3aa9cc05	2026-11-17T02:21:37Z
 review:buildiq:1619:3d592e85	GREEN: vitest 4865/0 fail on PR+dev, frontend only	session-20261117T020231-8c38940a	2026-11-17T02:21:35Z
+review:integriq:3572:5ea14816	GREEN: 9684 tests, 5 inherited failures/errors	session-20261117T020142-15890c05	2026-11-17T02:21:49Z
