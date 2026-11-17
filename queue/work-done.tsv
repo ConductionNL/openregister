@@ -20346,3 +20346,4 @@ review:filinq:2124:e25a43e2	GREEN #2124	session-20261117T111613-c4d98a73	2026-11
 gap:thematiq:publiccode-logo-and-fields:1	failed: permission (running publiccode-parser to validate was refused; nothing pushed)	session-20261117T112130-c21e05cd	2026-11-17T11:29:35Z
 merge:launchpad:1099:c49104bc	cloud tree of 5 launchpad PRs: merged=1 red=0 fail=0 skip=0; conflict 2, lint 0, red 0, moved 0, done 0	session-20261117T112619-69159c12	2026-11-17T11:29:59Z
 review:filinq:2120:34cc4cd4	GREEN: phpunit 7300, vitest 827, jest 603, 0 failures on PR+development; conflicts in register json and ListenerRegistrarTest	session-20261117T112008-f5bd35fb	2026-11-17T11:30:21Z
+fix:shillinq:2975:d0bcdce6	fixed: posting-rights check + development merged; new head f616ab85, REVERIFY queued	session-20261117T111554-d575c862	2026-11-17T11:30:35Z
