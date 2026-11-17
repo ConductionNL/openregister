@@ -21672,4 +21672,5 @@ build:hermiq:persistent-llm-process:b2	already building: quality/build-persisten
 build:hermiq:models-prompt-and-answer-cache:b2	already building (quality/build-models-prompt-and-answer-cache and -c3 exist)	session-20261117T125716-5aa18045	2026-11-17T15:33:56Z
 build:hermiq:models-provider-connections:b2	already building: quality/build-models-provider-connections 	session-20261117T135414-614629b0	2026-11-17T15:33:55Z
 build:hermiq:tools-deep-research-report:b2	already building: quality/build-tools-deep-research-report quality/build-tools-deep-research-report-2 quality/build-tools-deep-research-report-3 	session-20261117T135414-614629b0	2026-11-17T15:34:02Z
+build:hermiq:tools-code-sandbox:b2	already building: branch quality/build-tools-code-sandbox exists	session-20261117T124621-35d7386d	2026-11-17T15:34:45Z
 build:hermiq:skill-install-idempotency:b2	already building: quality/build-skill-install-idempotency exists; open tasks are live DB cleanup, live re-install, Playwright and the PR checks	session-20261117T134441-beae3c0d	2026-11-17T15:34:25Z
