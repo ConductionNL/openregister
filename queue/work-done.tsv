@@ -22876,3 +22876,4 @@ build:stackiq:bound-unbounded-searchobjects-scans:b2:c3	failed: only the Psalm c
 review:shillinq:3011:16e445fd	GREEN #3011 (no failures)	session-20261117T213101-157fb562	2026-11-17T22:38:42Z
 review:openregister:10643:abc631d8	BLOCK: react-dom 19 without react 19 (peer unmet, graphql explorer breaks)	session-20261117T223224-549dfbd7	2026-11-17T22:38:51Z
 verify:filinq:2182:11fdbaee	GREEN #2182 (unit 7332/0 fail, baseline 7329/0)	session-20261117T223214-1034c7a7	2026-11-17T22:38:58Z
+build:shillinq:sales-quick-draft-from-any-page:b2:c3	failed: blocked on nextcloud-vue: 1.1 needs an app-level open-modal action (nav schema is closed, primaryAction holds New Booking, CnAppNav cannot dispatch open-modal; still so in 2.181.0, the latest); 1.2 and e2e spec already on PR #3174; 2.1 needs a live run	session-20261117T223108-25abe84e	2026-11-17T22:39:18Z
