@@ -5185,4 +5185,7 @@ integriq	3613	b7dee7b62b8ed180650cb0ebb52503251bc25f17	RED	worker-42	GATE RED fl
 dossiq	6635	4ef9f4fadc74464a3b12a9948d62d0b876a6a989	RED	worker-02	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 shillinq	2086	9fa2a6b954fba0207b06f0ef6a065b9c5323a8f7	RED	worker-17	GATE RED checker floor: adrvalidator: pass -> warn; adrvalidator stars: 5 -> 3; score: 100 -> 97
 hermiq	1763	7445b627b630cc12152981dc56399cc8fc45c2bd	RED	worker-27	GATE RED floor: unit_complexity: 4.56 -> 4.53
+shillinq	2993	cf43d96e6a66276d18cb4f3c7399b21c590143a1	RED	worker-17	GATE RED absolute floor: shillinq maintainability 3.99 after merge is below its floor 4.00
 versioniq	754	8a439f2e58c63839aec02a340ba2336879e26bf8	RED	worker-30	GATE RED floor: unit_interfacing: 4.62 -> 4.60
+opencatalogi	2665	16ac2bab62195fd2d8ce728161b28db9e28ec22c	MERGED	worker-08	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.51
+dossiq	6636	ec703426ebee6d770f11e7035231e62cad09bab6	MERGED	worker-02	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
