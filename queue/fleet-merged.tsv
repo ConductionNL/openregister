@@ -5474,3 +5474,8 @@ keepiq	1895	62f8ad55d1465cd37278267e216271844ce3c8a8	RED	merge3	GATE RED sbom: c
 keepiq	1896	1fa9aa0df493350abd562af449965661b898570a	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
 versioniq	700	d8e90038481e22ee8b54fa0e2a5fe9d31cae34cc	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.97 holds at 4.16
 versioniq	784	54525d8711b1c4e419fce2761bad4ba561e39810	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.97 holds at 4.16
+hermiq	1838	b6fc73942aa8768ae8905136e6b4e5c6f4eaa620	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.77 holds at 3.77
+hermiq	1839	61585de7bad71e4de05c28db5490cc4a2080b660	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.77 holds at 3.77
+hermiq	1840	03d7c02bc597ce8b68cbc78eb8d82829ada7678f	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.77 holds at 3.77
+hermiq	1841	0311fb9ceefe4857e14433ee2cec82848d01e244	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.77 holds at 3.77
+hermiq	1842	ef207f94e5de34138fdcda51c95afef78f9d86dd	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.77 holds at 3.77
