@@ -19504,3 +19504,11 @@ portaliq	2579	a1421e2b9aeda6a67d3be8ce5ca20d6ca30e8de8	GREEN	worker-29	phpunit d
 portaliq	2583	9cdf93db275222c94dbbc5e114065c5352654954	REVERIFY	worker-29	conflicts only with an earlier PR of the verify tree
 portaliq	2589	8f568eda86f40ad4c7ac50762b5a2111ca4c75a0	REVERIFY	worker-29	conflicts only with an earlier PR of the verify tree
 filinq	2112	4a6629c67c39cb506f26e970c7d4e2f203562219	REVERIFY	worker-13	merged development in: register 8.73.0 (no schema changed on both lines), menu spec keeps IntakeRules and MailArchiveImport; unit 7373 OK, manifestFragments spec OK; new head c6b6ed3aa22c3431a85629112889b02a01d7cd02, verify it
+shillinq	3181	536dc7d723fb69766781e1023e1c85103452999c	GREEN	worker-01	unit 12796 (baseline 12796, 0 failures), 0 new; vitest 3096 on tree, 1 failure inherited from development (dunningNextRun); dependency bump
+shillinq	3182	fa63de194611aebe3c55370f94985600850d6264	GREEN	worker-01	unit 12796 (baseline 12796, 0 failures), 0 new; vitest 3096 on tree, 1 failure inherited from development (dunningNextRun); dependency bump
+shillinq	3183	f83c8ebe747630aeaa6e9bc5fcaca2c7aaa32e76	GREEN	worker-01	unit 12796 (baseline 12796, 0 failures), 0 new; vitest 3096 on tree, 1 failure inherited from development (dunningNextRun); dependency bump
+shillinq	3184	61dccce9a35fa5e49518596a5c73ef44d39ff948	GREEN	worker-01	unit 12796 (baseline 12796, 0 failures), 0 new; vitest 3096 on tree, 1 failure inherited from development (dunningNextRun); dependency bump
+shillinq	3185	60293c296e9ea6a058e011b5660438c1ea3d80df	GREEN	worker-01	unit 12796 (baseline 12796, 0 failures), 0 new; vitest 3096 on tree, 1 failure inherited from development (dunningNextRun); dependency bump
+shillinq	3186	1e092daf7082119086b4d7f8c0d31c2c37573bd3	GREEN	worker-01	unit 12796 (baseline 12796, 0 failures), 0 new; vitest 3096 on tree, 1 failure inherited from development (dunningNextRun); dependency bump
+shillinq	3187	f8d64d9b30c0643d4f9c929fe0912bb04fa17fb2	GREEN	worker-01	unit 12796 (baseline 12796, 0 failures), 0 new; vitest 3096 on tree, 1 failure inherited from development (dunningNextRun); dependency bump
+shillinq	3188	601670a1015363a0aecfe6dd617827c88f280667	REVERIFY	worker-01	conflicts only with an earlier PR of the verify tree
