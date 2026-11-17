@@ -20761,3 +20761,4 @@ fix:opencatalogi:2683:77bd70e1	merged #2683 at 5e43507f27c0159977694eec58e421118
 fix:shillinq:2975:f616ab85	fixed #2975 conflict, pushed df2c1919; REVERIFY queued (merge lock held elsewhere)	session-20261117T124803-fa9e5cee	2026-11-17T13:20:35Z
 fix:opencatalogi:2654:7717f5da	floor restored (independence 93.5%, sig-floor PASS), pushed 54779849; merge lock held elsewhere, REVERIFY queued	session-20261117T124010-7774729d	2026-11-17T13:20:46Z
 verify:shillinq:2983:501b81a9	GREEN 2983	session-20261117T124544-f8740317	2026-11-17T13:21:06Z
+verify:stackiq:2028:4f87d399	RED #2028: catalogPanelsGolden.spec.js 3 tests (icon markup change); php suite 4050 OK	session-20261117T130515-98f45b61	2026-11-17T13:21:42Z
