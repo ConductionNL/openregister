@@ -18634,5 +18634,7 @@ fix:buildiq:1648:26919cc4	fixed floor, pushed 0f576fb7; REVERIFY (merge lock hel
 review:stackiq:1941:fb08b1cd	GREEN #1941	session-20261116T232918-35016340	2026-11-17T00:27:56Z
 build:stackiq:architecture-shared-usage-on-views:c5	already building: branch head 38861a18 has every code task; left Playwright e2e and the docs screenshot (live instance) and the demo seed, which a static descriptor cannot express (own vs shared depends on the installing organisation)	session-20261113T214350-9762e143	2026-11-17T00:28:23Z
 review:shillinq:1900:7c67b538	GREEN #1900	session-20261116T232844-9c7f5cce	2026-11-17T00:28:36Z
+verify:shillinq:2071:f455c68f	CONFLICT: info.xml, register-versions.lock.json vs development	session-20261116T232959-6ccea9dc	2026-11-17T00:28:41Z
 fix:dossiq:3955:051bc7d2:v3	conflict fixed, pushed 66d20622; merge lock held elsewhere, REVERIFY queued	session-20261116T232948-9d2e8ce2	2026-11-17T00:28:47Z
 fix:opencatalogi:2674:05957a6e	floor restored, pushed 4ec49fd3; REVERIFY recorded (merge lock busy)	session-20261116T232852-594dae77	2026-11-17T00:28:58Z
+verify:learniq:2577:3e179100	RED #2577: HigherEducationExampleSetTest::testTheFileIsWhatTheGeneratorProduces	session-20261116T233627-44605965	2026-11-17T00:29:27Z
