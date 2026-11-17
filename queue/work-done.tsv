@@ -21995,3 +21995,4 @@ build:stackiq:cmdb-import-mapping-view:b2	already done: built on development (7f
 build:stackiq:bundle-hygiene-apexcharts-lodash:b2	already done: 85c57ba4 (7 Jul) dropped apexcharts from package.json and scoped both lodash imports; tasks.md was never ticked; the lock's top-level apexcharts is nextcloud-vue's hoisted dependency	session-20261117T125716-5aa18045	2026-11-17T16:17:44Z
 build:stackiq:cmdb-import-archive-reconciliation:b2	already done: only task 7's Playwright run (written, needs an instance) left	session-20261117T135520-9a524c6b	2026-11-17T16:18:43Z
 build:stackiq:adopt-connection-registry:b2	already done: 19 tasks ticked on development; only 6.1 (e2e on a live instance, then archive) left	session-20261117T125716-5aa18045	2026-11-17T16:18:31Z
+build:stackiq:contracts-expiry-warning-fires:b2	already done: code tasks on development (2f7bbbeb); only task 3 live check left	session-20261117T124637-3e909745	2026-11-17T16:19:20Z
