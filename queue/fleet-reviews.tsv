@@ -1420,6 +1420,7 @@ opencatalogi	2798	f43db4b9fe7611c1537c1a1d54f949df9e16db64	APPROVE	worker-18	Qui
 opencatalogi	2799	a135b0009b7aefad519be035a3b4003c800e66b2	APPROVE	worker-18	Standard; no blockers; e2e spec + delta spec front matter removed for openspec validate; no code
 opencatalogi	2800	7d8c1d3f5f83cdb66a61ba4d82d9107fb1d2fcc0	APPROVE	worker-18	Standard; no blockers; widget shows the no-assistant notice the change spec asks for; vitest mainEntry reds inherited from development
 opencatalogi	2801	ebec806c87bf79c189993d39f1d7c8c142469975	APPROVE	worker-18	Quick; no blockers; e2e spec only
+shillinq	3171	47136a423cbb20c72c38f169dec103458860399d	APPROVE	worker-01	Quick; no blockers; e2e spec + tasks tick only, gate fails inherited
 learniq	2601	3cc5a9d81623e03b4652659765476e0ce4828d7d	APPROVE	worker-49	Quick; no blockers; e2e spec only, empty storage state, env base URL
 learniq	2602	562289417dc44c1a437b7a634ba5466aed65748e	APPROVE	worker-49	Quick; no blockers; e2e spec only
 learniq	2603	8908efd600326c545e54f6b32c18d3fb916f9d0b	APPROVE	worker-49	Quick; no blockers; e2e spec only, opt-in via env
