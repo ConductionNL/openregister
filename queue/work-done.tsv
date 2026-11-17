@@ -19634,3 +19634,4 @@ fix:hermiq:1781:90b585c6	conflict resolved, pushed e762af73; REVERIFY recorded	s
 fix:filinq:2098:071c0864	spec tags + docblocks fixed, pushed cf30de81; lock busy, REVERIFY queued	session-20261117T063048-0c413ea5	2026-11-17T06:46:57Z
 fix:filinq:2087:ec729a4e	conflict resolved, pushed df162fcf; merge lock held elsewhere, REVERIFY queued	session-20261117T063046-d755315d	2026-11-17T06:47:17Z
 fix:buildiq:1597:91ec5c6d	conflict resolved, pushed 2a5d5c23c; suite green; REVERIFY recorded	session-20261117T061917-57640b81	2026-11-17T06:47:31Z
+fix:learniq:2514:3f5207d1	conflict resolved, pushed 832a7376; REVERIFY queued (not landed: gate hosts unreachable here)	session-20261117T055908-62351962	2026-11-17T06:47:39Z
