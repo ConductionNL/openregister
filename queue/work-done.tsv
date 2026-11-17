@@ -19945,3 +19945,4 @@ verify:shillinq:3110:eeefdd59	GREEN 3110: phpunit 12613/0 new, vitest 1 inherite
 fix:shillinq:3080:6a2e8035	conflict resolved, unit 12641 OK, new head f7c6e71c; REVERIFY queued (merge lock held)	session-20261117T081243-77ae4827	2026-11-17T08:35:57Z
 verify:stackiq:2016:31fc36e3	9 GREEN (2016-2024 dependency bumps), no new failures	session-20261117T081247-63811e04	2026-11-17T08:36:06Z
 verify:planninq:1213:e9c74b18	5 GREEN (1213,1214,1216,1217,1219), RED 1215 (gridstack peer conflict), REVERIFY 1218	session-20261117T081117-f29e8a89	2026-11-17T08:36:43Z
+fix:stackiq:1938:08b568aa	unmeasured: static.developer.overheid.nl (floor restored, pushed 903d38eb, APPROVE recorded, REVERIFY queued)	session-20261117T080442-23d3643f	2026-11-17T08:36:58Z
