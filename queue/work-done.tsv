@@ -20897,3 +20897,4 @@ merge:learniq:2509:5a6ff778	cloud tree of 1 learniq PRs: merged=1 red=0 fail=0 s
 cover:buildiq:70b3e29em2454:a215617b	PR #1712: lib/Integration 89.96% -> 97.99% (8 risky contract tests fixed via @uses), suite 3676 tests, risky 38->30, no failures	session-20261117T135521-72f236c7	2026-11-17T14:01:18Z
 fix:buildiq:1651:a0b41b07	fixed floor drop + merged development; REVERIFY at 02c8e568	session-20261117T133433-906519d6	2026-11-17T14:01:20Z
 fix:stackiq:2028:4f87d399	golden re-recorded, pushed 9d9add83; only inherited facets.spec failure; REVERIFY	session-20261117T134404-362023fb	2026-11-17T14:02:06Z
+fix:integriq:3704:ef91827a	sbom regenerated, pushed f13fbbdb; merge lock held elsewhere, REVERIFY queued	session-20261117T124010-7774729d	2026-11-17T14:02:29Z
