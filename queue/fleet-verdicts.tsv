@@ -16029,6 +16029,7 @@ portaliq	2417	5cad603093b2ac37262b3e10054d4f69245dbe5e	CONFLICT	worker-58	confli
 portaliq	2450	aead78dde8b0da5abf176dc2b3911de1c851d105	CONFLICT	worker-35	baseline 6217 tests, 16 errors inherited; conflicts with development in lib/Settings/portaliq_register.json, package.json, tests/Unit/Settings/PortaliqRegisterConfigTest.php, tests/example-site.spec.mjs
 planninq	1068	40deb423f1222b7b1faa5b7624b9c58ff150df52	GREEN	worker-03	1243 unit tests, baseline 0 failures, 0 new failures; dev-only phpstan lock bump
 portaliq	2500	211dedaaa53ed03580d110ce2e01528d9a392676	CONFLICT	worker-28	conflict in tests/example-site.spec.mjs with development 064d94f1; tree not run
+shillinq	2070	764ed7a933a1590a324ba39a0de87d0580ae10a4	CONFLICT	worker-17	conflicts with development in appinfo/info.xml, l10n catalogues, tests/fixtures/register-versions.lock.json
 portaliq	2284	f2a7c87078fb5b9bb44383111233e1133d351dbf	CONFLICT	worker-34	merge with development conflicts in 7 files: ContributionController, MessageGuardianController, PortalCollectionDocumentsController, PortalFieldFileController, PortalIntakeController, PortalTimelineController, MessageContactReader
 portaliq	2492	0067a042060f65936a833e23d0b84d2b08a307f4	CONFLICT	worker-28	conflict in tests/example-site.spec.mjs with development 064d94f1; tree not run
 shillinq	2081	5c4b6e15884f9ade7eb22f959d12f708da02d2c9	CONFLICT	worker-03	conflicts with development in l10n/en.js, en.json, nl.js, nl.json
