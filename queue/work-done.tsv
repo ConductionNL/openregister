@@ -19409,3 +19409,4 @@ fix:portaliq:2493:733b81a3	fixed conflict, pushed dcdeaf2e; merge lock held else
 review:shillinq:2998:5dd30f17	GREEN (conflicts with development: l10n and register-versions lock)	session-20261117T032146-7c837cf0	2026-11-17T03:34:48Z
 review:hermiq:1760:2a9d1408	GREEN: phpunit 5616 OK, vitest 1597 OK on PR merged with development	session-20261117T032224-b88169ea	2026-11-17T03:35:14Z
 merge:opencatalogi:2652:682a4d60	cloud tree of 2 opencatalogi PRs: merged=0 red=0 fail=0 skip=1; conflict 1, lint 0, red 0, moved 0, done 0	session-20261117T042937-c444c626	2026-11-17T04:34:02Z
+fix:shillinq:1958:98b7ab13	conflict resolved, pushed 204d8ba891; REVERIFY queued (merge lock held elsewhere)	session-20261117T042937-c444c626	2026-11-17T04:38:07Z
