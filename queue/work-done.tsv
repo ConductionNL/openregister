@@ -21341,3 +21341,4 @@ build:shillinq:ledger-period-end:b2	already building: branch quality/build-ledge
 build:shillinq:purchasing-order-dispatch-and-receipt:b2	already building: quality/build-purchasing-order-dispatch-and-receipt is open	session-20261117T133035-588aec38	2026-11-17T14:54:27Z
 build:shillinq:ledger-multi-administration:b2	partial: wrote tests/e2e/ledger-multi-administration.spec.ts (4 tests) in shillinq#3169, unticked until it runs live; skipped 2.2 (request on nextcloud-vue, external repo)	session-20261117T133105-0c327c7d	2026-11-17T14:55:11Z
 build:shillinq:purchasing-call-offs-and-reorder-proposals:b2	already building: quality/build-purchasing-call-offs-and-reorder-proposals is open	session-20261117T133035-588aec38	2026-11-17T14:54:41Z
+build:shillinq:reporting-data-delivery:b2	already done: code tasks on development (1b383aea); 2.2 is filing an integriq issue, which workers do not do	session-20261117T133035-588aec38	2026-11-17T14:55:18Z
