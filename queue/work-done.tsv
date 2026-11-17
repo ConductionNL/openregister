@@ -21621,5 +21621,6 @@ build:buildiq:experience-multilingual-apps:b2	pushed to PR buildiq#1632 (head ba
 build:hermiq:adopt-connection-registry:b2	already built: every code task and the e2e spec tests/e2e/connections-page.spec.ts are on development; 5.1 left (needs a live instance with integriq synced)	session-20261117T152630-80f67c9b	2026-11-17T15:27:33Z
 build:hermiq:approval-task-convergence:b2	already done: phase 1 (this change) built in d0429336; phases 2-3 are marked 'staged, next change' in tasks.md and design (authority flip rejected for one PR), so not built here	session-20261117T135029-424a7669	2026-11-17T15:27:33Z
 build:buildiq:forms-multi-product-request:b2	nothing to build: T06 is the nextcloud-vue widget half, T07 Playwright after it exists	session-20261117T133433-906519d6	2026-11-17T15:27:20Z
+build:hermiq:chat-how-an-answer-came-about:b2	already building: quality/build-chat-how-an-answer-came-about exists	session-20261117T135414-614629b0	2026-11-17T15:28:20Z
 build:hermiq:agents-plain-language-builder:b2	already built: every code task ticked on development; only the live builder chat test is left	session-20261117T133833-7d87fd3d	2026-11-17T15:28:07Z
 build:hermiq:agent-data-migration:b2	already built: code tasks done on development (19607e89); 7.2 and D.1 need a live OpenRegister with legacy rows	session-20261117T133833-7d87fd3d	2026-11-17T15:28:43Z
