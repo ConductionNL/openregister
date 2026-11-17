@@ -19745,6 +19745,7 @@ review:shillinq:2975:a5e402e5	GREEN: suites pass, 1 inherited vitest red	session
 fix:filinq:2072:79221249	conflict resolved (register 8.67.0), new head 88f031dc, REVERIFY queued	session-20261117T055928-ffb37dd3	2026-11-17T07:11:15Z
 fix:launchpad:1227:a4a6474a	conflict resolved, pushed 144eba89; REVERIFY queued (not landed: gate hosts unreachable here)	session-20261117T055908-62351962	2026-11-17T07:11:37Z
 review:shillinq:3011:dd50b990	CONFLICT with development (info.xml, register-versions lock)	session-20261117T063100-87feca45	2026-11-17T07:11:46Z
+cover:launchpad:fb10c50fm88bd:a1252b57	PR #1258: 2 ArchiveParser tests, suite 4563->4565 OK	session-20261117T065500-f63bc812	2026-11-17T07:11:58Z
 fix:shillinq:2071:c9fb8008	restored BookCapturesCommand registration, pushed 6ef01f6f; REVERIFY	session-20261117T055834-d932e117	2026-11-17T07:11:54Z
 fix:shillinq:3064:b11030b8	conflict resolved, pushed e4c2b4532; REVERIFY recorded	session-20261117T063021-b217a961	2026-11-17T07:12:04Z
 review:shillinq:2086:9fa2a6b9	GREEN: unit 12621 green, vitest 24 green, phpstan clean	session-20261117T070105-e962857c	2026-11-17T07:12:16Z
@@ -19752,3 +19753,4 @@ review:shillinq:3067:57c917aa	BLOCK: manifest labels without nl keys	session-202
 cover:launchpad:fb10c50fm88bd:f545d745	no PR: lib/Repair has 315/333 lines covered by existing tests; the 18 left are missing/unreadable/malformed-seed branches on a fixed __DIR__ seed path and a glob() false, reachable only by changing production code (injectable path), which cover may not do	session-20261117T063048-0c413ea5	2026-11-17T07:12:47Z
 fix:shillinq:2083:ca162c3e	fixed RED (characterisation tests updated to the single-write contract), pushed 32c8fb4a; lock held elsewhere, REVERIFY queued	session-20261117T055905-03eea4d3	2026-11-17T07:12:41Z
 review:filinq:2059:7a6dae82	GREEN: config-only build per spec, suite 7104 OK	session-20261117T065546-dd6e246e	2026-11-17T07:13:11Z
+merge:learniq:2524:8e0b94db	cloud tree of 2 learniq PRs: merged=0 red=0 fail=0 skip=1; conflict 1, lint 0, red 0, moved 0, done 0	session-20261117T061824-01d4fad5	2026-11-17T07:13:54Z
