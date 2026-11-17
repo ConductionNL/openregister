@@ -20230,6 +20230,7 @@ merge:portaliq:2450:f10fbf11	merge3 tree of 1 portaliq PRs: none; conflict 1, li
 fix:planninq:1216:1976ec7c	merged #1216 at 45902e2e3c022b09c9b7f4349c086a71ac905884	session-20261117T081254-2b2b5b50	2026-11-17T10:07:50Z
 merge:hermiq:1781:1f1621c5	cloud tree of 1 hermiq PRs: none; conflict 1, lint 0, red 0, moved 0, done 0	session-20261117T093219-f1a53dc3	2026-11-17T10:07:39Z
 review:versioniq:686:d08215d3	GREEN: 0 new failures (2365 vs 2309 tests, 2 inherited)	session-20261117T092700-641a7a7c	2026-11-17T10:07:58Z
+fix:versioniq:754:8a439f2e	stale: merged #754 at 09e903d3 in this session	session-20261117T092700-641a7a7c	2026-11-17T10:08:15Z
 verify:humaniq:1184:8d045012	CONFLICT: #1184 conflicts with development (info.xml, l10n)	session-20261117T095422-114b47a9	2026-11-17T10:08:12Z
 merge:integriq:2650:91c4f09e	failed: permission (land refused; 3574 REQUEST_CHANGES on component_independence floor; 2650 3557 3582 3601 CONFLICT recorded)	session-20261117T092553-97564f2f	2026-11-17T10:08:32Z
 fix:hermiq:1763:7445b627	stale	session-20261117T093219-f1a53dc3	2026-11-17T10:08:52Z
@@ -20254,3 +20255,4 @@ fix:hermiq:1764:b2118ca7	conflict resolved, pushed ef318454; merge lock held els
 fix:learniq:2524:c5f8f790	conflict resolved, pushed 4fd0d8a1; REVERIFY queued (merge lock held elsewhere)	session-20261117T095501-3bc4ddc7	2026-11-17T10:14:01Z
 fix:buildiq:1643:01b1fba9	conflict resolved, pushed 3bf75b8a; merge lock held elsewhere, REVERIFY queued	session-20261117T101034-36abb83f	2026-11-17T10:14:16Z
 fix:shillinq:2993:cf43d96e	fixed floor: maintainability 3.99 -> 4.00 (dev 4.00); pushed 4007e0e1; REVERIFY queued (merge lock busy)	session-20261117T095242-04e7b270	2026-11-17T10:14:40Z
+review:hermiq:1755:0d6aae20	GREEN: phpunit 5658/5658, vitest 1644/1644	session-20261117T085512-6b57566b	2026-11-17T10:14:50Z
