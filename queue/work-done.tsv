@@ -18833,3 +18833,5 @@ fix:decidiq:2190:be028a48:v3	fixed CONFLICT (+ simple-structure blocks, edge tes
 review:shillinq:2081:42e3cf9c	GREEN	session-20261117T004656-5d4b3c4e	2026-11-17T01:17:51Z
 merge:planninq:1068:b49b0718:r	merge3 tree of 1 planninq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-17T01:17:59Z
 review:portaliq:2451:f157947e	GREEN: spec build, suite 6218 with 16 inherited errors, node spec pass	session-20261117T003652-c6487e72	2026-11-17T01:18:10Z
+review:filinq:2059:4c6a7b12	GREEN #2059 (conflicts with development on register version)	session-20261117T004616-c7acc36d	2026-11-17T01:18:34Z
+fix:decidiq:2162:75db4256:v3	conflict resolved, pushed 41fa34b0; merge lock held elsewhere, REVERIFY queued	session-20261117T005226-366998de	2026-11-17T01:18:49Z
