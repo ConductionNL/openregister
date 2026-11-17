@@ -19720,3 +19720,4 @@ fix:decidiq:2254:16b684f6	failed: gridstack 14 is outside the peer range of @con
 fix:hermiq:1763:685f9669	merged development in clean, pushed 6defd651 (suite 5605 OK); REVERIFY queued	session-20261117T062856-12839ec9	2026-11-17T07:06:15Z
 review:buildiq:1618:088b083a	GREEN: vitest 4880/4880 on PR+development, l10n OK	session-20261117T065410-e9ad9bdf	2026-11-17T07:06:27Z
 review:filinq:2107:0bc2f69d	BLOCK filinq#2107: label lookup before readability check in preflight/shareBundle; tests green	session-20261117T065609-89f8b9cf	2026-11-17T07:06:38Z
+review:learniq:2509:2500f767	GREEN: 7003 tests, 1 inherited failure	session-20261117T061732-40387d12	2026-11-17T07:07:00Z
