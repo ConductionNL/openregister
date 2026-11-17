@@ -18647,3 +18647,4 @@ buildiq	1714	a1e12029119a36854f2a5feb2e5cc8ca612702d9	CONFLICT	worker-12	does no
 pipelinq	3944	16098bb4daef60415537a2c86a8155070b4ca65a	GREEN	worker-55	tests 9345 (baseline 9280 green), vitest 5329 pass / 2 inherited fails, no new failures
 pipelinq	3945	ceffbf1ffd95fdbc429b3b7e77c1cbf97a8849c2	REVERIFY	worker-55	conflicts only with an earlier PR of the verify tree
 pipelinq	3946	633106e5ce5d34520df6e3801898478fcca78d26	REVERIFY	worker-55	conflicts only with an earlier PR of the verify tree
+buildiq	1715	628d9e25f091953535ee8b7bb259bf0baf012802	GREEN	worker-12	unit 3682 on the tree vs 3676 baseline, 1 inherited failure, 0 new; vitest 5013 passed; e2e spec for ai-smart-paste-into-forms plus tasks tick
