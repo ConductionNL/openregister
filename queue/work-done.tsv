@@ -20054,3 +20054,4 @@ merge:versioniq:686:a1506c56	cloud tree of 7 versioniq PRs: merged=1 red=2 fail=
 merge:decidiq:2154:5d2d266f	cloud tree of 8 decidiq PRs: merged=3 red=0 fail=0 skip=0; conflict 5, lint 0, red 0, moved 0, done 0 (2205 left out: sha truncated in row, already REQUEST_CHANGES)	session-20261117T084727-10682198	2026-11-17T09:10:45Z
 fix:integriq:3601:823e2117	fixed BLOCK (floor restored, demo data 3/3); new head 85ba8d21, REVERIFY queued	session-20261117T084736-592032f2	2026-11-17T09:11:17Z
 merge:opencatalogi:2651:3132aebc	cloud tree of 4 opencatalogi PRs: merged=0 red=2 fail=0 skip=0; conflict 2, lint 0, red 0, moved 0, done 0	session-20261117T084720-67842b83	2026-11-17T09:12:05Z
+fix:buildiq:1632:339aedb1	conflict resolved, pushed 53f9828c; merge lock held elsewhere, REVERIFY queued	session-20261117T085356-c13ba754	2026-11-17T09:12:13Z
