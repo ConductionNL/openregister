@@ -22745,6 +22745,7 @@ verify:portaliq:2591:a322f371	GREEN #2591	session-20261117T204330-02b728bd	2026-
 fix:portaliq:2569:f3caa0a6	fixed RED (test stub), pushed 642cb15e; REVERIFY (merge lock held elsewhere)	session-20261117T211932-f471137a	2026-11-17T21:53:33Z
 fix:planninq:1240:4bfda41d	inherited: opensourcehealth rates dependencies; PR changes only tasks.md and a vitest spec, no lock or manifest, so the drop is on development too (not re-measurable here: api.osv.dev blocked)	session-20261117T211315-f96d97db	2026-11-17T21:53:46Z
 fix:launchpad:1302:09ecd17e	unmeasured: api.osv.dev (blocked in this session; PR has no dependency change, REVERIFY queued)	session-20261117T213056-2ba36933	2026-11-17T21:54:12Z
+merge:keepiq:1897:2314af37	unmeasured: api.osv.dev (proxy 403); 4 APPROVE recorded, 1901 gate RED duplication 4.18->4.16	session-20261117T211528-7f174be9	2026-11-17T21:54:20Z
 fix:planninq:1241:257fbd02	inherited: opensourcehealth rates dependencies; PR changes only tasks.md and an e2e spec, no lock or manifest, so the drop is on development too (not re-measurable here: api.osv.dev blocked)	session-20261117T211315-f96d97db	2026-11-17T21:54:25Z
 fix:portaliq:2579:df1bfc40	conflict resolved, pushed a1421e2b; REVERIFY queued (merge lock held elsewhere)	session-20261117T211406-076a7a0e	2026-11-17T21:54:26Z
 verify:versioniq:783:9296e1ce	GREEN 783: e2e specs only, eslint clean	session-20261117T211359-bea33e3d	2026-11-17T21:55:04Z
