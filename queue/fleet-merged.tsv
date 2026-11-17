@@ -5339,3 +5339,4 @@ launchpad	1261	f23c46deef80d0f64201a9d0ce37e50a46a2e833	RED	worker-22	GATE RED f
 integriq	3550	7bd183b1e5f9c205d89161050f3843bf828514cb	MERGED	worker-24	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.59
 integriq	3564	d0095e3002552b32512eeb6fed7b4a07f0169bba	SKIP	worker-24	no APPROVE review at this head
 integriq	3709	4cb85bb991cb2af12526621fe2212abe4b6e95af	RED	worker-24	GATE RED sbom: composer.lock changed without sbom.cdx.json
+opencatalogi	2766	6dfc228cfa1025745db599806d99246f1092d730	RED	worker-23	GATE RED floor: overall: 4.88 -> 4.86; unit_interfacing: 4.77 -> 4.70
