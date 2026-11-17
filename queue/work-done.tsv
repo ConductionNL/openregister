@@ -20033,3 +20033,4 @@ fix:opencatalogi:2683:b9a9bc9f	fixed #2683, new head 7b81beb8 (merge lock held e
 review:learniq:2536:ce31ee2c	GREEN; conflicts with development in l10n and structureProfile.test.mjs (page count 354)	session-20261117T084925-b2c594cc	2026-11-17T09:04:46Z
 fix:integriq:3582:ec13862c	conflict resolved, pushed 5de17aa9; REVERIFY queued	session-20261117T081138-8732f141	2026-11-17T09:05:16Z
 fix:filinq:2079:b23f1426	conflict resolved, pushed 1b7aa3aa; REVERIFY queued (merge lock held elsewhere)	session-20261117T083927-e76b77af	2026-11-17T09:05:41Z
+fix:stackiq:1966:07fea94b	fixed: test pinned to 1.5.12, suite green; new head 60592396, REVERIFY queued	session-20261117T084807-e8ebf79d	2026-11-17T09:06:08Z
