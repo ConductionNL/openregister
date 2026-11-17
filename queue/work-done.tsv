@@ -19040,3 +19040,4 @@ review:filinq:2083:5da73869	GREEN: 7044 tests 0 new failures; conflict on regist
 review:decidiq:2192:aa5f1bba	GREEN: unit 4808 OK, vitest 16 OK	session-20261117T004644-d9c68b8f	2026-11-17T02:04:38Z
 review:filinq:2107:70189485	CONFLICT: register json and l10n conflict with development; code matches the change	session-20261117T020223-01f01255	2026-11-17T02:05:10Z
 review:decidiq:2171:867b712e	RED: simpleMeetingPage.spec.js 2 count assertions on merge with development; conflicts municipality.json, UserSettings.vue	session-20261117T015705-50845751	2026-11-17T02:05:42Z
+review:filinq:2099:20f41844	CONFLICT: matches specs, suite green on head, conflicts with development in register json + features README	session-20261117T020227-9e68ed24	2026-11-17T02:05:56Z
