@@ -20381,3 +20381,4 @@ fix:shillinq:2063:6601069c	conflict resolved, pushed fd491fcd; merge lock held e
 fix:integriq:3582:5de17aa9	conflict resolved (l10n key union), pushed a26852d2; REVERIFY queued	session-20261117T111401-f300ca25	2026-11-17T11:37:07Z
 fix:stackiq:1966:60592396	spec tags added, pushed 46114bbf; merge lock held elsewhere, REVERIFY queued	session-20261117T110646-831a671b	2026-11-17T11:37:22Z
 fix:integriq:3557:76fedb76	conflict resolved (l10n en/nl, both sides kept); new head 5f4da252ab, merge lock held elsewhere: REVERIFY	session-20261117T112619-69159c12	2026-11-17T11:37:32Z
+fix:opencatalogi:2683:7b81beb8	conflict resolved, pushed 77bd70e1; REVERIFY	session-20261117T112441-e34e64a5	2026-11-17T11:37:46Z
