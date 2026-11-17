@@ -22963,3 +22963,4 @@ verify:hermiq:1843:dd66ff96	3 GREEN (1843, 1851, 1853), 1849 REVERIFY (conflicts
 fix:filinq:2191:377356bf	conflict resolved, complexity floor restored; new head 29f92719ce, REVERIFY (builder still pushing, not landed)	session-20261117T223148-4e97a38d	2026-11-17T22:58:38Z
 review:hermiq:1763:bff0c5dd	GREEN hermiq #1763 (unit 5800 OK, vitest 1677 OK, admin-only routes)	session-20261117T223303-c1d113c1	2026-11-17T22:58:51Z
 merge:filinq:2173:6ed139b8	unmeasured: api.osv.dev (proxy 403 from this session; lock released before building the tree)	session-20261117T223037-5aebbb96	2026-11-17T22:58:57Z
+merge:versioniq:685:bfd6e1dd	unmeasured: static.developer.overheid.nl (proxy CONNECT 403; checked before building the tree, nothing landed)	session-20261117T213101-157fb562	2026-11-17T22:59:06Z
