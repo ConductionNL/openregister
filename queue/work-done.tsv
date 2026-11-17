@@ -19547,3 +19547,4 @@ fix:buildiq:1643:c4bd2510	failed: permission (end-to-end review/land refused); f
 merge:dossiq:4887:cd07726c	merge3 tree of 2 dossiq PRs: merged=2 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-17T06:27:15Z
 merge:integriq:3545:b5c9bbae	unmeasured: static.developer.overheid.nl	session-20261117T055834-d932e117	2026-11-17T06:27:25Z
 fix:shillinq:3080:995925eb	conflict resolved, pushed 6a2e8035e2; REVERIFY queued	session-20261117T042937-c444c626	2026-11-17T06:27:32Z
+merge:shillinq:2086:56610a02	merge3 tree of 7 shillinq PRs: merged=1 red=1 fail=0 skip=0; conflict 5, lint 0, moved 0; fix rows 5	merge3-20261113T213425-c36bcd5f	2026-11-17T06:28:08Z
