@@ -19265,4 +19265,5 @@ buildiq	1651	c1a3ad84f420d8cac16d29a8b2d018d08e83a9cd	REVERIFY	worker-50:merge	c
 buildiq	1715	628d9e25f091953535ee8b7bb25	REVERIFY	worker-50:merge	verdict sha truncated in task row; head is 628d9e25f091953535ee8b7bb259bf0baf012802
 learniq	2609	c89b130edd06be28324a4af9a4215838ca91ef49	REVERIFY	worker-04	conflicts only with an earlier PR of the verify tree (l10n catalogues vs #2608)
 learniq	2612	2ee740f1c00542d494eea6628579fc69bb43768e	GREEN	worker-04	tree 2608+2612: unit 7164 tests, baseline 7152 with 1 failure (inherited), new failures none
+buildiq	1643	f8d38be6806298702a3a6c0ba4d0928cd0ee5588	GREEN	worker-02	unit 3692 tests (baseline 3676 OK), 0 new failures; vitest 5025 passed; build of logic-automation-run-log, run log failures swallowed
 hermiq	1855	54a9e4164604d1cebfde99b5b6f2752dac3dcc31	GREEN	worker-46	unit 5734 tests, baseline 173E/26F, no new failures; version bump only
