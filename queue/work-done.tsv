@@ -19685,3 +19685,4 @@ review:hermiq:1764:f9abfe44	BLOCK: app version not raised with register, CustomT
 review:decidiq:2205:c6740766	GREEN: unit 4846 OK, vitest 1 inherited red	session-20261117T065308-bd0379c5	2026-11-17T06:59:32Z
 build:hermiq:tools-agent-workspace-and-installed-tools:c8	partial: task 2 built on PR #1760 (head d0454e30, suite 5636 OK); left: tasks 4 (installer, egress proxy, installTool) and 5 (runInstalledTool), now unblocked since tools-code-sandbox is on development	session-20261117T061802-b42f2669	2026-11-17T06:59:47Z
 review:learniq:2538:2f586250	GREEN: 7024 tests, 1 inherited failure	session-20261117T061732-40387d12	2026-11-17T06:59:44Z
+review:hermiq:1760:02cb1469	stale	session-20261117T061802-b42f2669	2026-11-17T07:00:11Z
