@@ -20050,3 +20050,4 @@ fix:stackiq:1942:9623d967	fixed RED (binding counts); pushed f000f6c2; merge loc
 fix:humaniq:1147:811c369e	merged #1147 at 468abb9267 (floor restored by splitting lineage units; schema titles, demo-data exclusion, registered icon)	session-20261117T083450-d3af0287	2026-11-17T09:08:23Z
 merge:integriq:3545:c510ab64	cloud tree of 7 integriq PRs: merged=3 red=0 fail=0 skip=2; conflict 2, lint 0, red 0, moved 0, done 0	session-20261117T084826-97c66fce	2026-11-17T09:08:16Z
 fix:integriq:3574:56c6b5c2	fixed duplication floor; pushed 40a5ceb41f; REVERIFY queued (merge lock held elsewhere)	session-20261117T085512-6b57566b	2026-11-17T09:09:17Z
+merge:versioniq:686:a1506c56	cloud tree of 7 versioniq PRs: merged=1 red=2 fail=0 skip=0; conflict 4, lint 0, red 0, moved 0, done 0	session-20261117T085001-185db726	2026-11-17T09:10:00Z
