@@ -5718,3 +5718,4 @@ buildiq	1736	30abdfe4088bc57135d17f12eb7cd0236492ae89	SKIP	worker-24	GATE UNMEAS
 pipelinq	3966	a7266ea55cd3b7630b581cb54ee6cb04bf9912dd	SKIP	worker-10	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 humaniq	1197	a28aaa28605b810450a87a2c0ed4f9a2cfa22fa4	SKIP	worker-22	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 filinq	2072	5199bdf2bbd03910e404fd7b79e0d6c2fea567ce	SKIP	worker-08	no APPROVE review at this head
+planninq	1218	df1e59ad2a22c23d46fe16a4c228b5b2a66e72e2	SKIP	worker-41	GATE UNMEASURED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3 while api.osv.dev is unreachable from this session
