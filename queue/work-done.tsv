@@ -18528,3 +18528,4 @@ verify:shillinq:3003:2b498a1a	CONFLICT #3003 (9 files vs development)	session-20
 verify:shillinq:3006:5843d4fb	CONFLICT #3006 (info.xml, QuickDraftInvoiceService, manifest, l10n)	session-20261116T232623-066b53c9	2026-11-17T00:07:29Z
 verify:portaliq:2494:762e3478	CONFLICT #2494 (CitizenWriteActionFinder.php, package.json)	session-20261116T233921-33ab4c87	2026-11-17T00:07:41Z
 verify:shillinq:2100:025dc860	CONFLICT #2100 (8 files vs development)	session-20261116T233933-3050c00d	2026-11-17T00:07:51Z
+verify:shillinq:3000:120cfc49	CONFLICT: CHANGELOG/info.xml/l10n vs development	session-20261116T233900-0eb43466	2026-11-17T00:08:04Z
