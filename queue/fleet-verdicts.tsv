@@ -18598,3 +18598,4 @@ learniq	2595	5aa1fd02d4e2d7f9e3d0168e0d07e36042b38b03	GREEN	worker-21	unit 7157 
 decidiq	2284	75bf16e4978932fd693798e5513fda961c651b66	GREEN	worker-48	tree of 9 on development 161ca15e: unit 5032 OK (baseline 5020 OK), vitest 3006 passed, 1 failed (meetingSessionsGolden, inherited: fails on development), no new failures; diff per its change's specs
 versioniq	782	8ad2f3ba98693fc3e7ee1aa6891642f1ab5deb80	CONFLICT	worker-58	conflicts with development in tests/e2e/auto-update.spec.ts, jobs.spec.ts and tests/e2e/fixtures/forge/*
 versioniq	783	69cf88e72c64b23c104faf803d31d6ee982197f5	CONFLICT	worker-58	conflicts with development in tests/e2e/jobs.spec.ts
+opencatalogi	2788	512b97ff719a6a61529b87c9e5f5e0d7eabd65ec	GREEN	worker-17	unit 6336 on tree vs baseline 6364 (4E/74F, openregister main beside); new failures 0; vitest 1181/8F = baseline; https-only broadcast as the change asks
