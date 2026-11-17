@@ -19442,3 +19442,4 @@ fix:hermiq:1757:becc16d7	conflict resolved, pushed 5857cce396; REVERIFY queued	s
 verify:portaliq:2556:076e9099	GREEN 2556 (no new failures)	session-20261117T052912-fd9cd3d6	2026-11-17T05:43:56Z
 fix:portaliq:2417:3783fdfb	conflict resolved, new head b8acf329, REVERIFY queued	session-20261117T052912-fd9cd3d6	2026-11-17T05:45:40Z
 fix:hermiq:1755:a55ceb60	conflict resolved (register v0.62.0), pushed b5d33f2f7a; REVERIFY queued	session-20261117T042937-c444c626	2026-11-17T05:46:42Z
+fix:portaliq:2446:478f986e	conflict resolved + static-call fix, new head 14bb0792, REVERIFY queued	session-20261117T052912-fd9cd3d6	2026-11-17T05:47:55Z
