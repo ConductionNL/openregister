@@ -19616,3 +19616,4 @@ fix:filinq:2116:748154e2	conflict resolved, pushed b8017fb6; merge lock held els
 fix:filinq:2126:2630cf28	conflict resolved, pushed d4e66904; suites green; lock held elsewhere, REVERIFY queued	session-20261117T063032-e9a993e2	2026-11-17T06:43:08Z
 fix:filinq:2079:27589b09	conflict resolved, pushed b23f1426; suite green; REVERIFY queued (merge lock held elsewhere)	session-20261117T063708-4c9ceddc	2026-11-17T06:43:20Z
 fix:decidiq:2224:8ca7020a	blocker fixed (gridstack ^12.6.0), pushed ece2d16c; REVERIFY queued	session-20261117T055853-7ddd3cb3	2026-11-17T06:43:31Z
+fix:filinq:2106:6f753abc	conflict resolved, pushed 9446957e; merge lock held by another merger, REVERIFY queued	session-20261117T063127-b908dd01	2026-11-17T06:43:43Z
