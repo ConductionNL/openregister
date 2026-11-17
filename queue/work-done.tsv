@@ -19996,3 +19996,13 @@ review:stackiq:1938:903d38eb	GREEN: phpunit 4028/0 failures; vitest 1 inherited 
 review:learniq:2524:c5f8f790	GREEN: suite 7068, 1 inherited failure; golden conflict with development is mechanical	session-20261117T084925-b2c594cc	2026-11-17T08:55:46Z
 cover:dossiq:069ee2d6m9d1b:2eac0685	deferred: dossiq has 44 open PRs	session-20261117T082106-2acc8483	2026-11-17T08:55:57Z
 verify:opencatalogi:2766:a2ccc6cc	GREEN #2766 (0 new failures)	session-20261117T084753-0ae58c51	2026-11-17T08:56:03Z
+review:buildiq:1654:9db550c5	GREEN: phpunit 3515 OK, vitest 4914 OK	session-20261117T084643-d8b33e95	2026-11-17T08:56:14Z
+verify:versioniq:758:73c147bb	GREEN #758 (2285 tests, no new failures)	session-20261117T085014-6c3c5506	2026-11-17T08:56:32Z
+fix:learniq:2497:a6d36cf2	conflict resolved, pushed d7ffe7d9039a; merge lock held elsewhere, REVERIFY queued	session-20261117T080445-fa502475	2026-11-17T08:56:53Z
+review:shillinq:3004:04b7af8a	GREEN: shillinq #3004, unit 12679/0 failures, phpstan clean	session-20261117T083927-e76b77af	2026-11-17T08:57:04Z
+fix:filinq:2078:17892e17	conflict resolved, pushed 202f24a1; merge lock held elsewhere, REVERIFY queued	session-20261117T085227-a13dc102	2026-11-17T08:57:41Z
+fix:filinq:2090:0bf796a1	conflict resolved, pushed ca7adf6f; REVERIFY (merge lock held elsewhere)	session-20261117T085454-4852403b	2026-11-17T08:57:52Z
+review:shillinq:3067:8205f49a	GREEN: suite 12629 tests 0 failures	session-20261117T084807-e8ebf79d	2026-11-17T08:58:11Z
+fix:integriq:3564:6d065ca0	fixed, pushed e2164fe1; REVERIFY queued	session-20261117T081138-8732f141	2026-11-17T08:58:46Z
+merge:larpinq:1043:53f3f771	cloud tree of 6 larpinq PRs: merged=1 red=1 fail=0 skip=0; conflict 4, lint 0, red 0, moved 0, done 0	session-20261117T084927-57ebccdf	2026-11-17T08:59:02Z
+fix:filinq:2085:7276c4b5	conflict resolved, pushed 38d24886; unit 7143 OK; merge lock held elsewhere, REVERIFY queued	session-20261117T084019-84d2c33c	2026-11-17T08:59:23Z
