@@ -18860,3 +18860,4 @@ review:portaliq:2452:e50c3f86	BLOCK: StaffSubmissionReader uses the removed find
 fix:integriq:3561:a24572ec:v3	resolved conflict, pushed fbf5b6de; merge lock held elsewhere, REVERIFY	session-20261117T005212-998cc343	2026-11-17T01:23:33Z
 review:shillinq:2997:40268216	GREEN	session-20261117T004656-5d4b3c4e	2026-11-17T01:23:43Z
 review:portaliq:2494:b99070c9	GREEN: spec build, suite 6221 with 16 inherited errors, node spec 5/5	session-20261117T003652-c6487e72	2026-11-17T01:23:53Z
+fix:humaniq:1142:5bcc930d:v3	conflict resolved onto development's export model, pushed dc634057, suites green beyond inherited; merge lock held elsewhere, REVERIFY queued	session-20261117T004716-5a617a43	2026-11-17T01:24:02Z
