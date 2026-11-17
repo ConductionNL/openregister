@@ -18951,3 +18951,4 @@ fix:launchpad:1209:418bb0e5:v3	fixed CONFLICT, pushed fde5af3e; merge lock held 
 fix:stackiq:1928:36057a15:v4	fixed CONFLICT, pushed fccc382; merge lock held elsewhere, REVERIFY queued	session-20261117T004701-f6094f02	2026-11-17T01:41:33Z
 fix:stackiq:1939:7a225714:v3	conflict resolved, register fragment fix, pushed 4b930687; merge lock busy, REVERIFY queued	session-20261117T004651-172e3db6	2026-11-17T01:41:43Z
 fix:stackiq:1946:1b85feb2:v3	conflict resolved + main API, pushed 644c7833; REVERIFY queued (merge lock held elsewhere)	session-20261117T004640-1b533885	2026-11-17T01:41:53Z
+fix:keepiq:1829:d00cfb44:v5	merged #1829 at f14d3a1536981686b8b778bb02ceb2bcb8f4b385	session-20261117T004616-c7acc36d	2026-11-17T01:42:01Z
