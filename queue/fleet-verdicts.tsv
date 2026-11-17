@@ -18716,6 +18716,7 @@ stackiq	1966	b74dfc9fbfa739b5090aef81bcb83d4f2d68fa75	GREEN	worker-55:review	bui
 planninq	1246	64caa7ce8e8fec9974544ab87ac0ff8ccd473dc5	GREEN	worker-22	t-shirt estimateSize field as the change specs ask; tree unit 1254 OK/11 skipped (baseline 1253), vitest 3593/3593, no new failures
 buildiq	1724	8556ed5ad76ab347c9e8e97dd7635371cce5a6d6	GREEN	worker-26	same head verified in tree verify:buildiq:1724:86533fb7 this session: unit 3676 = baseline, new failures 0; tasks.md only
 buildiq	1630	285ac6f0971889105f2dbd12d6e5111710aaf0b2	CONFLICT	worker-51	conflicts with development in src/composables/useManifestValidator.js (offline validator added on development); baseline 3676 tests OK
+buildiq	1713	2b78ac989bb71c96a61611961bdc826e1fb7af1f	GREEN	worker-51	tasks.md tick only (T06 validate); no code; baseline 3676 OK, no new failures
 versioniq	735	6cc6a20f40412a056a20b1bc806f963ed789ed45	CONFLICT	worker-36:review	conflicts with development in info.xml, l10n en/nl js+json, InstanceSettings.php, InstanceSettingsPanel.vue and its failures spec; diff matches the change specs, admin checks kept; PR head alone: 2284 tests, only the 2 inherited installer golden failures
 buildiq	1710	9b6b9e95f81917400acb306e4b2fae708797b460	GREEN	worker-49	unit 3683 tests (baseline 3676 OK), 0 new failures; tests only
 planninq	1247	1a42908edf32546f4d27dfc8c1b8aec9935bd950	GREEN	worker-22	e2e spec + tasks.md only; tree unit 1254 OK/11 skipped (baseline 1253), vitest 3593/3593, no new failures
