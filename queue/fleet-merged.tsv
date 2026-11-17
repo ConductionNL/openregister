@@ -4892,3 +4892,4 @@ planninq	1068	40deb423f1222b7b1faa5b7624b9c58ff150df52	MERGED	merge3	GATE OK sbo
 decidiq	2175	01c417b2ff61d8892eb6b80b7ceba33710291543	MERGED	worker-24	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.78 holds at 3.84
 hermiq	1785	9b7a63871826d581abb70d4da3bd1f56bec380e0	MERGED	worker-17	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.77 holds at 3.82
 humaniq	1143	ef2689eaa85a742a010784b01fbf356e5952989b	MERGED	worker-52	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.47 holds at 3.47
+portaliq	2448	8388e6653c4cdd47d3a268e694e7269c192b9612	MERGED	worker-07	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.16
