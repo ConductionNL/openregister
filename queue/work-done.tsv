@@ -20838,3 +20838,4 @@ cover:openregister:7350e3efm4377:js7af948c9	deferred: openregister has 185 open 
 cover:launchpad:fb10c50fm88bd:34763eb4	PR #1298: ApiContractMiddleware 58/59 -> 59/59 lines, 1 test, suite 4621 -> 4622 OK	session-20261117T134242-51ff9d48	2026-11-17T13:49:51Z
 fix:integriq:3711:dd118ae9	fixed sbom, pushed 42694816; merge lock held elsewhere, REVERIFY queued	session-20261117T124621-35d7386d	2026-11-17T13:50:06Z
 review:shillinq:2975:df2c1919	GREEN: unit 12832 ok (baseline 12779), phpstan clean, vitest 47 ok, gates clean on the diff	session-20261117T133308-c6d52416	2026-11-17T13:50:17Z
+fix:stackiq:1942:90499893	conflict resolved, pushed 9b4a8fa2; merge lock held elsewhere, REVERIFY	session-20261117T134404-362023fb	2026-11-17T13:50:53Z
