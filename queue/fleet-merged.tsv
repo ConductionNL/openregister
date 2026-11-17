@@ -5295,3 +5295,4 @@ hermiq	1738	a2af8125f4f720550c355e26bd9e3d9bea5501af	RED	worker-47	GATE RED chec
 opencatalogi	2677	ec6e4301d53ac41ca836cafb744377ec21110544	MERGED	worker-48	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.51
 launchpad	1267	9d79d281f3fc412df609b569b852ab6ed4da90df	MERGED	worker-20	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.65 holds at 3.78
 planninq	1231	b038b5610549a1158583fe4f9f91a795be9267a8	MERGED	worker-54	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.66 holds at 4.05
+learniq	2589	241404be95b288b1abd5a2da268f098d513e533f	MERGED	worker-17	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 4.09
