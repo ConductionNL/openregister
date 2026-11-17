@@ -20703,6 +20703,7 @@ fix:integriq:3701:69d057ce	fixed #3701: restored publiccode.yml layer declaratio
 verify:thematiq:1167:dcea2bc0	GREEN #1167 (empty merge, already on development)	session-20261117T124634-577ba792	2026-11-17T13:06:37Z
 merge:opencatalogi:2677:a1602fb7	cloud tree of 2 opencatalogi PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 1, moved 0, done 0	session-20261117T125302-a32fc8d7	2026-11-17T13:06:52Z
 fix:stackiq:2030:99dcfdad	failed: permission (self review+land refused); fixed and pushed b0c1fc68, REVERIFY recorded	session-20261117T124128-c2e9515e	2026-11-17T13:06:58Z
+fix:buildiq:1651:d68265fc	conflict resolved (l10n union, js regenerated), @spec tags added; land RED on maintainability floor (unit_complexity 3.42->3.40, unit_interfacing 3.53->3.51), RED verdict at a0b41b07 queued	session-20261117T123026-260cb3a6	2026-11-17T13:07:21Z
 verify:planninq:1054:57acc898	GREEN #1054 (config-only floor json; unit 1253 ok)	session-20261117T125035-43d1124d	2026-11-17T13:07:31Z
 verify:portaliq:2449:ae33c0d7	CONFLICT #2449: package.json, PortaliqRegisterConfigTest.php, example-site.spec.mjs	session-20261117T124737-01fc7db5	2026-11-17T13:07:45Z
 verify:portaliq:1364:8a7a486b	GREEN #1364 (empty diff vs development)	session-20261117T125719-a348e067	2026-11-17T13:07:56Z
@@ -20715,3 +20716,12 @@ verify:pipelinq:1931:94e5fc38	GREEN #1931 (merge adds no changes to development)
 verify:portaliq:1910:248307eb	CONFLICT: #1910 conflicts with development in 19 files	session-20261117T124559-fffd8ca8	2026-11-17T13:09:38Z
 verify:portaliq:533:d7eecc0f	CONFLICT #533 (appinfo/info.xml)	session-20261117T124647-f1a70460	2026-11-17T13:09:57Z
 fix:hermiq:1760:0b27b76c	conflict resolved, pushed c503263f; merge lock held elsewhere, REVERIFY queued	session-20261117T124646-693ace9a	2026-11-17T13:10:08Z
+verify:planninq:1234:7ad1d2bb	GREEN #1234 (1253 tests, 0 new failures)	session-20261117T123430-0d454909	2026-11-17T13:10:23Z
+verify:stackiq:1267:2a8a72b0	GREEN #1267 (no diff vs development; 4050 tests, 1 inherited, 0 new)	session-20261117T124719-b38d0fe3	2026-11-17T13:10:37Z
+verify:launchpad:770:1a3220ab	GREEN #770 (no-op merge, 0 new failures)	session-20261117T125013-3e49a85f	2026-11-17T13:10:54Z
+fix:integriq:3582:a26852d2	fixed floor (unit_size 3.58, unit_complexity 3.90 held); pushed 06833e61; REVERIFY (merge lock held)	session-20261117T124624-f509cbbb	2026-11-17T13:11:01Z
+fix:learniq:2551:7d11c48b	conflict resolved, pushed f185e0a0; merge lock held elsewhere, REVERIFY queued	session-20261117T124010-7774729d	2026-11-17T13:11:16Z
+verify:thematiq:1715:266d57c4	GREEN #1715 (openapi docs; 2900 tests, 1 inherited)	session-20261117T124634-577ba792	2026-11-17T13:11:38Z
+verify:portaliq:658:e8518393	GREEN #658 (empty diff vs development)	session-20261117T125719-a348e067	2026-11-17T13:11:55Z
+verify:portaliq:2558:062b0853	GREEN portaliq#2558 (version-only bump; 0 new failures, 16 inherited errors)	session-20261117T124709-e3830444	2026-11-17T13:12:17Z
+verify:planninq:1232:c3f1d475	GREEN #1232 (e2e spec label update)	session-20261117T125716-5aa18045	2026-11-17T13:12:28Z
