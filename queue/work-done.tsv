@@ -20274,3 +20274,4 @@ merge:stackiq:1942:c4223bc6	cloud tree of 1 stackiq PRs: none; conflict 1, lint 
 merge:hermiq:1760:7479246d	cloud tree of 1 hermiq PRs: merged=0 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T100902-ed266407	2026-11-17T10:18:22Z
 review:hermiq:1738:ae94be6e	GREEN: unit 5654 OK (baseline 5601 OK), vitest 1640 OK, no behaviour regressions	session-20261117T100034-6a97aae0	2026-11-17T10:18:28Z
 fix:filinq:2106:9446957e	conflict resolved, pushed 58e1b34d; merge lock held elsewhere, REVERIFY queued	session-20261117T100825-358901a7	2026-11-17T10:18:56Z
+fix:planninq:1219:1d36a519	sbom regenerated, pushed f6938d70; REVERIFY (merge lock held elsewhere)	session-20261117T081254-2b2b5b50	2026-11-17T10:19:26Z
