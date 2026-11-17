@@ -19290,3 +19290,4 @@ filinq	2114	e0bb0357f219978209e4261a9d459a241c88a393	CONFLICT	worker-22:merge	co
 filinq	2116	9d997186126b5adbd734b7ddccc1af725b0dac7f	CONFLICT	worker-22:merge	conflicts with development; files: lib/Settings/filinq_register.json 
 filinq	2186	9bbf0ae16146dab80c0b1bc57ab	REVERIFY	worker-22:merge	verdict sha is not the head: head is 9bbf0ae16146dab80c0b1bc57ab5d57f6fd7bf69
 portaliq	2587	c972ccc36c2ad633d56605e064450690a8e395ff	GREEN	worker-36	phpunit tree 6352 tests, 16 errors = baseline 6324/16 inherited (ChangeProposals*, RegisterProposalLeaves*, ContractRegistrar), no new failures; build portal-scoping-and-auth per spec, checks stricter (fail closed), none weakened
+shillinq	3177	605a77debdf7ceac3634af4e4ce6a4f307c7e04e	GREEN	worker-24	unit 12813 on tree (baseline 12796 OK, 3 skipped), 0 new failures; no JS/Vue code (manifest only)
