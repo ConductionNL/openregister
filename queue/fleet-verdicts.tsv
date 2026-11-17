@@ -16008,3 +16008,4 @@ portaliq	2417	5cad603093b2ac37262b3e10054d4f69245dbe5e	CONFLICT	worker-58	confli
 portaliq	2450	aead78dde8b0da5abf176dc2b3911de1c851d105	CONFLICT	worker-35	baseline 6217 tests, 16 errors inherited; conflicts with development in lib/Settings/portaliq_register.json, package.json, tests/Unit/Settings/PortaliqRegisterConfigTest.php, tests/example-site.spec.mjs
 planninq	1068	40deb423f1222b7b1faa5b7624b9c58ff150df52	GREEN	worker-03	1243 unit tests, baseline 0 failures, 0 new failures; dev-only phpstan lock bump
 portaliq	2500	211dedaaa53ed03580d110ce2e01528d9a392676	CONFLICT	worker-28	conflict in tests/example-site.spec.mjs with development 064d94f1; tree not run
+shillinq	1965	38aa9e98d92064163730059c45e299b358346b33	CONFLICT	worker-36	conflicts with development in appinfo/info.xml, tests/fixtures/register-versions.lock.json; suite not run
