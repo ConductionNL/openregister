@@ -20755,3 +20755,4 @@ fix:pipelinq:3932:36367f0e	merged #3932 at b68d98558ef0ca9c770e0950081777dd4103c
 fix:filinq:2121:69607770	conflict resolved, pushed fb55b720; REVERIFY (merge lock held elsewhere)	session-20261117T125035-43d1124d	2026-11-17T13:19:36Z
 fix:shillinq:3004:3a0e29de	conflict resolved, pushed 5df6f499; merge lock held by another merger, REVERIFY queued	session-20261117T124719-b38d0fe3	2026-11-17T13:19:57Z
 fix:hermiq:1754:26e47c9c	merged #1754 at 1a5852e797be3689f5f2f7e90ce77944cb53d2eb (raised app version; restored php duplication floor)	session-20261117T124656-1c0ce655	2026-11-17T13:20:01Z
+fix:dossiq:6641:b6ff9847	failed: permission (end-to-end self-review refused); fix pushed, new head 44c7fef, REVERIFY queued	session-20261117T124337-ec94f242	2026-11-17T13:20:08Z
