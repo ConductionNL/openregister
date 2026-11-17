@@ -5546,18 +5546,47 @@ shillinq	3164	7ae11281542796cf1f363da0d6e8b887f42798ab	SKIP	worker-15	GATE UNMEA
 learniq	2497	48225cf9d50c702289f26ffb5e21fd07629ec941	RED	worker-39	GATE RED floor: unit_interfacing: 3.62 -> 3.60
 hermiq	1848	65d35bc5c91cb52e899ac03cd9fd06cc301f8aa5	SKIP	worker-48	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 planninq	1245	18c0e02a3227b4aff7590139b12f700887b1d098	RED	worker-53	GATE RED floor: duplication: 4.67 -> 4.65
+dossiq	6642	dcd42889d10247bf15a7678d1ab0326f6ca37950	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
+dossiq	6643	0d24d1c52449d037d6611b027579e67248612e82	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
+dossiq	6644	2c3300bc4c89ae20b45cd4b9e7a9844b8d1b6352	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
+dossiq	6645	97e25b5469678818ef81feec00981d38ea5acfa1	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
+dossiq	6646	eb19f73d3dfe4c5313e6aa76ef6c339c953b85c5	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
+dossiq	6647	57eb1cc0cdc646212fd14a280d3be3a5447164ba	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
+dossiq	6649	c3066e42670a7916aef041452d6efdc4f3d501c9	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
 humaniq	1196	e0e2cffa27f96e5529594607b47493629041cb13	SKIP	worker-20	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 opencatalogi	2756	70b8b0cb8de57fabae21fef0562dfe82dda9fab2	RED	worker-46	GATE RED floor: overall: 4.87 -> 4.85; unit_interfacing: 4.77 -> 4.66; module_coupling: 5.44 -> 5.41
 shillinq	3165	f382c52bee07fa3220e9d1c29f9151d4e4db7414	SKIP	worker-15	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 keepiq	1897	cb062e6781152a50caa312836a625237c407fa7c	SKIP	worker-31	GATE UNMEASURED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3 while api.osv.dev is unreachable from this session
 humaniq	1197	a28aaa28605b810450a87a2c0ed4f9a2cfa22fa4	SKIP	worker-20	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
+learniq	2594	259feb56de2bd786055277d5a9b39371d1cecb1c	SKIP	worker-39	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 opencatalogi	2787	362419bab9add372a8fd8dc0f8d2e513585524cb	SKIP	worker-46	GATE UNMEASURED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3 while api.osv.dev is unreachable from this session
 decidiq	2149	3ccfbfcfc456c5da74508481e6602f2a82bcfab3	SKIP	worker-19	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 keepiq	1898	2d4d0257353ba497c0c94affef2fedeabcee86dc	SKIP	worker-31	GATE UNMEASURED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3 while api.osv.dev is unreachable from this session
 opencatalogi	2793	d14f5f969a4c92d42409f8c9a2b0ebe0c6d49eab	SKIP	worker-46	GATE UNMEASURED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3 while api.osv.dev is unreachable from this session
 opencatalogi	2794	85f20bb85c5a19d6e66aea0b7267df306933caac	SKIP	worker-46	GATE UNMEASURED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3 while api.osv.dev is unreachable from this session
 keepiq	1899	abebdd6ffa781653cb3cdfbbfdac6d7c181fbded	SKIP	worker-31	GATE UNMEASURED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3 while api.osv.dev is unreachable from this session
+planninq	1246	64caa7ce8e8fec9974544ab87ac0ff8ccd473dc5	SKIP	worker-53	GATE UNMEASURED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3 while api.osv.dev is unreachable from this session
 opencatalogi	2795	9844e9a09589c8fb5eb3275c484e4adb67f6bb38	SKIP	worker-46	GATE UNMEASURED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3 while api.osv.dev is unreachable from this session
 keepiq	1901	f9f7976788c4b0b79cfd7a58bceadaf67c54401f	RED	worker-31	GATE RED floor: duplication: 4.18 -> 4.16
 decidiq	2279	9029034a754b55ffbb5afc179985738e6927cc62	SKIP	worker-04	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
+opencatalogi	2796	7d78014c5c048a8b9ec158b0573d341fb0dfbe97	SKIP	worker-46	GATE UNMEASURED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3 while api.osv.dev is unreachable from this session
 decidiq	2280	f341db5555b2782cffa8c059027a79d397c42c35	SKIP	worker-04	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
+decidiq	2281	7dd420ed33958ce45f70156a5a798c097cbc461d	SKIP	worker-04	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
+planninq	1247	1a42908edf32546f4d27dfc8c1b8aec9935bd950	SKIP	worker-53	GATE UNMEASURED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3 while api.osv.dev is unreachable from this session
+buildiq	1715	628d9e25f091953535ee8b7bb259bf0baf012802	SKIP	worker-02	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
+filinq	2186	9bbf0ae16146dab80c0b1bc57ab5d57f6fd7bf69	SKIP	worker-10	no APPROVE review at this head
+buildiq	1716	f3a173de86c01c3d3ee317b89282af504b62139b	SKIP	worker-02	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
+planninq	1248	36d5dc19e1277c9823e4512f8072ca92540206a6	SKIP	worker-53	GATE UNMEASURED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3 while api.osv.dev is unreachable from this session
+dossiq	6642	dcd42889d10247bf15a7678d1ab0326f6ca37950	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
+dossiq	6643	0d24d1c52449d037d6611b027579e67248612e82	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
+dossiq	6644	2c3300bc4c89ae20b45cd4b9e7a9844b8d1b6352	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
+dossiq	6645	97e25b5469678818ef81feec00981d38ea5acfa1	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
+dossiq	6646	eb19f73d3dfe4c5313e6aa76ef6c339c953b85c5	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
+dossiq	6647	57eb1cc0cdc646212fd14a280d3be3a5447164ba	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
+dossiq	6649	c3066e42670a7916aef041452d6efdc4f3d501c9	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
+thematiq	1714	a6daab39dc7b0e3915d3a9ea7279bf98a9ae5cf2	SKIP	worker-14	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
+thematiq	1719	740e1349e57122fb6902c14777368c21f0bfaa15	SKIP	worker-14	no APPROVE review at this head
+thematiq	1721	b57b4ab90b6e9cd73b7a08ae3f63864fc2e778d5	SKIP	worker-14	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
+decidiq	2283	e9a802fd9e1a29d7531dd6061c07fb0d66139593	SKIP	worker-04	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
+filinq	2187	2e1be1ea9e86ccdac2ecde346f33a1aaa9b361f3	SKIP	worker-10	GATE UNMEASURED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3 while api.osv.dev is unreachable from this session
+filinq	2188	a7b68fe976f749325f4b8f313e44b59b89381ae2	SKIP	worker-10	no APPROVE review at this head

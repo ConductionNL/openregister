@@ -22730,6 +22730,8 @@ fix:portaliq:2446:ddd3af7b	conflict resolved, pushed e217a1c6; REVERIFY (merge l
 verify:pipelinq:3961:6eff78b5	RED 3961: eventAddAttendee spec fails with @nextcloud/dialogs 8	session-20261117T211425-939d7fb0	2026-11-17T21:49:31Z
 verify:portaliq:2587:c972ccc3	GREEN 2587	session-20261117T211406-076a7a0e	2026-11-17T21:49:55Z
 merge:integriq:3582:034e6fe7	unmeasured: static.developer.overheid.nl; tree 7 IN adds no failures, 6 APPROVE, #3585 REQUEST_CHANGES, nothing merged; 3613/3708 REVERIFY	session-20261117T211657-3a85bb14	2026-11-17T21:50:16Z
+fix:thematiq:1727:057fa453	failed: blocked upstream; stylelint-config-standard 41 needs stylelint ^18, but @conduction/nextcloud-vue (latest 2.181.0) peers stylelint ^17.9.1, so #1727 and #1728 both ERESOLVE until nextcloud-vue widens its peer range	session-20261117T213139-4c29297d	2026-11-17T21:50:32Z
+verify:versioniq:692:f611aea1	GREEN #692 (unit 2553/2 inherited, vitest 3248 ok)	session-20261117T213633-a50f98af	2026-11-17T21:50:39Z
 verify:pipelinq:3960:c710eaaf	BLOCK #3960: gridstack 14 outside nextcloud-vue peer range; tests 0 new failures	session-20261117T213154-bb97695e	2026-11-17T21:50:48Z
 fix:integriq:3601:691712f5	failed: permission (commit of the l10n conflict merge refused because it disabled git hooks; nothing pushed; resolution is append-both of en/nl keys, tree adds no unit failures)	session-20261117T212922-3d1ca36c	2026-11-17T21:51:26Z
 verify:integriq:3707:5840f407	GREEN 3707,3713,3714,3734; REVERIFY 3725,3733 (conflict with earlier tree PR)	session-20261117T211651-58c92edf	2026-11-17T21:51:20Z
@@ -22746,6 +22748,7 @@ verify:portaliq:2591:a322f371	GREEN #2591	session-20261117T204330-02b728bd	2026-
 fix:portaliq:2569:f3caa0a6	fixed RED (test stub), pushed 642cb15e; REVERIFY (merge lock held elsewhere)	session-20261117T211932-f471137a	2026-11-17T21:53:33Z
 fix:planninq:1240:4bfda41d	inherited: opensourcehealth rates dependencies; PR changes only tasks.md and a vitest spec, no lock or manifest, so the drop is on development too (not re-measurable here: api.osv.dev blocked)	session-20261117T211315-f96d97db	2026-11-17T21:53:46Z
 fix:launchpad:1302:09ecd17e	unmeasured: api.osv.dev (blocked in this session; PR has no dependency change, REVERIFY queued)	session-20261117T213056-2ba36933	2026-11-17T21:54:12Z
+merge:keepiq:1897:2314af37	unmeasured: api.osv.dev (proxy 403); 4 APPROVE recorded, 1901 gate RED duplication 4.18->4.16	session-20261117T211528-7f174be9	2026-11-17T21:54:20Z
 fix:planninq:1241:257fbd02	inherited: opensourcehealth rates dependencies; PR changes only tasks.md and an e2e spec, no lock or manifest, so the drop is on development too (not re-measurable here: api.osv.dev blocked)	session-20261117T211315-f96d97db	2026-11-17T21:54:25Z
 fix:portaliq:2579:df1bfc40	conflict resolved, pushed a1421e2b; REVERIFY queued (merge lock held elsewhere)	session-20261117T211406-076a7a0e	2026-11-17T21:54:26Z
 verify:versioniq:783:9296e1ce	GREEN 783: e2e specs only, eslint clean	session-20261117T211359-bea33e3d	2026-11-17T21:55:04Z
@@ -22754,3 +22757,23 @@ fix:launchpad:1304:952ebaa8	unmeasured: api.osv.dev (blocked in this session; PR
 fix:opencatalogi:2790:21c42f38	fixed floor RED on #2790, new head 573c8f89 (floor PASS); lock busy, REVERIFY queued	session-20261117T211352-b8b9fdbb	2026-11-17T21:55:30Z
 verify:shillinq:3006:35f75790	GREEN #3006 (phpunit 12800 OK, vitest 0 new failures)	session-20261117T211520-d88a421d	2026-11-17T21:55:41Z
 verify:pipelinq:3958:40777e1a	GREEN: unit 9292=9292, no new failures; psalm 7 not runnable on PHP 8.3.6 here	session-20261117T211328-24b3dcac	2026-11-17T21:55:54Z
+fix:larpinq:1101:68cf7368	failed: permission (closing obsolete PR #1101 was refused; change archived and help-desk.spec.ts already on development in a newer form, close it by hand)	session-20261117T213056-2ba36933	2026-11-17T21:56:21Z
+fix:keepiq:1894:f9aa4181	no change needed: sbom --check current (dev-only lock change); REVERIFY queued	session-20261117T213101-157fb562	2026-11-17T21:56:19Z
+fix:portaliq:2583:d8b97f3d	fixed CONFLICT #2583, new head 9cdf93db; merge lock held elsewhere, REVERIFY queued	session-20261117T213149-40fbaeee	2026-11-17T21:56:33Z
+fix:integriq:3705:cd33fb75	fixed RED: pinia alias to dist entry, build green; new head 6655913c, REVERIFY queued (merge lock busy)	session-20261117T211412-45e1aeb8	2026-11-17T21:56:46Z
+fix:keepiq:1895:62f8ad55	sbom regenerated, pushed 7cf24009; lock held elsewhere, REVERIFY queued	session-20261117T213124-9bd98896	2026-11-17T21:56:57Z
+fix:versioniq:729:497abe19	conflict resolved, pushed 073d6c6c; REVERIFY queued; land skipped (gate host blocked)	session-20261117T211433-35a96960	2026-11-17T21:57:16Z
+verify:pipelinq:3963:e0b88c16	GREEN #3963 (vitest reds inherited)	session-20261117T211535-4eae9738	2026-11-17T21:57:37Z
+build:buildiq:logic-script-step:b2:c3	failed: still blocked on prerequisites: logic-automation-actions-that-run has 11 of 12 tasks open and openregister main has no code-step runner yet	session-20261117T211556-63ae11ab	2026-11-17T21:57:48Z
+verify:pipelinq:3965:080c1798	GREEN 3965: vitest only baseline failures	session-20261117T211425-939d7fb0	2026-11-17T21:58:04Z
+merge:planninq:1238:3df56601	unmeasured: api.osv.dev; cloud tree of 6 planninq PRs: merged=0 red=1 (1245 duplication floor) skip=4 conflict 1 (1250)	session-20261117T212124-7ed7e4ab	2026-11-17T21:58:30Z
+fix:shillinq:3007:7ed685a6	conflict fixed, new head 357ddc9b pushed, REVERIFY recorded (not landed: own push is not self-reviewed)	session-20261117T204330-02b728bd	2026-11-17T21:58:27Z
+fix:opencatalogi:2674:8afba882	conflicts resolved, pushed c6d01be6; REVERIFY queued	session-20261117T213146-716f8927	2026-11-17T21:58:36Z
+fix:planninq:1244:b4d018dd	unmeasured: api.osv.dev; PR changes no package or composer manifest, so the opensourcehealth drop is not from its diff; needs a session that reaches api.osv.dev	session-20261117T204330-02b728bd	2026-11-17T21:58:54Z
+verify:versioniq:800:156569fd	GREEN 800 (version bump only; unit suite needs server bootstrap, not run)	session-20261117T211910-eb4216c0	2026-11-17T21:59:02Z
+fix:shillinq:3011:b03586ea	conflict resolved (app version moved, lock recorded), pushed 16e445fd; REVERIFY	session-20261117T211932-f471137a	2026-11-17T21:59:17Z
+merge:learniq:2497:c79386d7	unmeasured: static.developer.overheid.nl (proxy 403; api.osv.dev too); 0 merged; 2497 RED gate floor unit_interfacing 3.62->3.60; 2594 SKIP unmeasured; 2595-2600 not attempted, all approved; 2599/2601 REVERIFY	session-20261117T212030-318f1287	2026-11-17T21:59:37Z
+fix:shillinq:3067:55cee22d	conflict fixed, pushed 24169645; REVERIFY queued	session-20261117T211651-58c92edf	2026-11-17T21:59:47Z
+fix:stackiq:1963:5d4b224b	unmeasured: static.developer.overheid.nl; conflict fixed, pushed d255f3be, REVERIFY recorded	session-20261117T213157-fe4b6298	2026-11-17T21:59:59Z
+verify:pipelinq:3964:753442e6	GREEN #3964 (sbom cmd works on v7; no new failures)	session-20261117T211341-e05e0d2c	2026-11-17T22:00:23Z
+fix:planninq:1242:58b41fbc	unmeasured: api.osv.dev (opensourcehealth drop is network-bound; PR changes no dependencies), REVERIFY queued	session-20261117T211412-45e1aeb8	2026-11-17T22:01:24Z
