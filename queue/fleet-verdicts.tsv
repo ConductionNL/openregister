@@ -18156,3 +18156,4 @@ learniq	2497	35dd044ed98e7ee88b691975c9d1495fc21093b1	GREEN	worker-36:review	bui
 decidiq	2171	fa36c3295f3f8513f3785f747380bde58a763cf2	RED	worker-21:merge-gate	GATE RED floor: unit_complexity: 4.04 -> 4.00
 launchpad	1210	748b8e0bda7393e5fdd0ffbcf5a393ed0a43fc78	GREEN	worker-11:review	builds platform-dashboard-theme-and-css per its specs; new admin CSS endpoints admin-only with guard, dashboard CSS admin-only on both write paths, look edits need layout permission; phpunit 4695 ok (base 4621 ok), vitest 2755 ok
 planninq	1231	a50e49c38a670e914b6d0f39c645fedfef486ae5	RED	worker-19:merge-gate	GATE RED checker floor: fivelayer: pass -> warn; fivelayer stars: 5 -> 3; score: 100 -> 97
+launchpad	1267	d42ca665d89795a714ef27ffcde068e8ab1ad198	RED	worker-02:merge-gate	GATE RED checker floor: fivelayer: pass -> warn; fivelayer stars: 5 -> 3; score: 100 -> 97
