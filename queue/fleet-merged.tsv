@@ -5456,3 +5456,8 @@ buildiq	1651	c1a3ad84f420d8cac16d29a8b2d018d08e83a9cd	SKIP	worker-24	GATE UNMEAS
 filinq	2184	6da46b71eaef66c39d938d3bfecaf1d756918363	SKIP	worker-57	GATE UNMEASURED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3 while api.osv.dev is unreachable from this session
 hermiq	1841	0311fb9ceefe4857e14433ee2cec82848d01e244	SKIP	worker-09	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 hermiq	1842	ef207f94e5de34138fdcda51c95afef78f9d86dd	SKIP	worker-09	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
+opencatalogi	2770	f134b8f7dabb094897970e0f20bd6313ef5fa5dc	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.51
+opencatalogi	2788	512b97ff719a6a61529b87c9e5f5e0d7eabd65ec	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.51
+opencatalogi	2789	e54e7b57d6586bb81a80b16195aa0471d62384b4	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.51
+opencatalogi	2790	21c42f386e7b0aa61553d87ff8662e6fe9e172b1	RED	merge3	GATE RED floor: unit_size: 4.64 -> 4.62; unit_interfacing: 4.77 -> 4.73
+opencatalogi	2791	7aecc1453b3880ce055bcbaca09a13beb95a02e3	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.51
