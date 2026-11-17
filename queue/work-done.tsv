@@ -22170,3 +22170,5 @@ verify:decidiq:2273:5f949a8f	GREEN #2273 (tests only, 5025 tests, 0 new failures
 verify:hermiq:1848:65d35bc5	GREEN 1848; tests-only, unit 5736 0 new failures	session-20261117T190115-a0afcf82	2026-11-17T19:14:07Z
 verify:decidiq:2272:6ec76822	GREEN 2272 (release bump); 5020 tests OK	session-20261117T185932-75c4578d	2026-11-17T19:14:23Z
 verify:buildiq:1734:666e0ef9	GREEN 1734; unit 3676, 0 new failures	session-20261117T185419-c23c5946	2026-11-17T19:14:36Z
+merge:buildiq:1718:87935354	unmeasured: static.developer.overheid.nl (merge gate checker floor; 1718/1719/1720 reviewed APPROVE, none landed)	session-20261117T185937-87a1822c	2026-11-17T19:15:12Z
+verify:portaliq:2578:c8b3478a	6 GREEN (2578,2580,2581,2582,2585,2587), 3 CONFLICT (2579,2583,2586 package.json); no new unit failures	session-20261117T190249-b0f6275f	2026-11-17T19:15:22Z
