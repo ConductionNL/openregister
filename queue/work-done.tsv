@@ -22765,3 +22765,4 @@ verify:pipelinq:3963:e0b88c16	GREEN #3963 (vitest reds inherited)	session-202611
 verify:pipelinq:3965:080c1798	GREEN 3965: vitest only baseline failures	session-20261117T211425-939d7fb0	2026-11-17T21:58:04Z
 fix:shillinq:3007:7ed685a6	conflict fixed, new head 357ddc9b pushed, REVERIFY recorded (not landed: own push is not self-reviewed)	session-20261117T204330-02b728bd	2026-11-17T21:58:27Z
 fix:opencatalogi:2674:8afba882	conflicts resolved, pushed c6d01be6; REVERIFY queued	session-20261117T213146-716f8927	2026-11-17T21:58:36Z
+fix:planninq:1244:b4d018dd	unmeasured: api.osv.dev; PR changes no package or composer manifest, so the opensourcehealth drop is not from its diff; needs a session that reaches api.osv.dev	session-20261117T204330-02b728bd	2026-11-17T21:58:54Z
