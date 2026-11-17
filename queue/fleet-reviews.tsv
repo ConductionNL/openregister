@@ -1547,3 +1547,4 @@ hermiq	1845	84f28a112420767ebcf2b90cc1e5b72faa4a377b	APPROVE	worker-12	Quick; no
 hermiq	1846	5032dbe476b08e7c18c9b11969ca737daa6a3249	APPROVE	worker-12	Quick; no blockers; tasks.md ticks match info.xml min-version 32 and VersionFloorGuardTest on development
 hermiq	1847	4b35bf029a1ae7308503d63ef3b7d87dd2e68235	APPROVE	worker-12	Quick; no blockers; Newman + Playwright specs only, JSON valid, non-admin refusals covered
 hermiq	1848	65d35bc5c91cb52e899ac03cd9fd06cc301f8aa5	APPROVE	worker-12	Quick; no blockers; Newman folder + Playwright spec only, JSON valid
+hermiq	1850	c9dacafd2a9b91c0cb908137cd3b2116117e49d3	APPROVE	worker-12	Standard; no blockers; writes always for the session user, 401 without one, 500 without detail; concern: report id not checked against the known report cards
