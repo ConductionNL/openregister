@@ -19764,3 +19764,4 @@ review:shillinq:3080:6a2e8035	CONFLICT with development (info.xml, registrar cou
 fix:launchpad:1219:08b864a2	conflict resolved, pushed ca7a79d2; merge lock held by another merger, REVERIFY queued	session-20261117T063127-b908dd01	2026-11-17T07:15:18Z
 review:buildiq:1605:2848f1e2	GREEN: vitest 4882 passed on merge with development	session-20261117T065459-2cd0c351	2026-11-17T07:15:25Z
 fix:launchpad:819:ff71d979	no change: sbom check passes on head and tree (dev-only bump); REVERIFY queued	session-20261117T055908-62351962	2026-11-17T07:15:37Z
+review:shillinq:2993:cf43d96e	GREEN: unit 12638 OK, vitest 1 inherited red, phpstan clean	session-20261117T065619-e5275297	2026-11-17T07:15:47Z
