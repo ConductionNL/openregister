@@ -20142,3 +20142,4 @@ review:integriq:3564:e2164fe1	CONFLICT: l10n/en.json l10n/nl.json ApiProductDeta
 fix:hermiq:1751:79bb5690	conflict resolved, new head 2d383135, REVERIFY queued	session-20261117T092632-101520de	2026-11-17T09:43:23Z
 review:learniq:2551:a86b68dc	GREEN: build matches change specs; no new unit/JS failures (1 inherited)	session-20261117T093516-e94a430b	2026-11-17T09:42:50Z
 review:openregister:10607:3dcb1ed3	APPROVE 10607	session-20261117T092708-8cee6d46	2026-11-17T09:43:52Z
+fix:stackiq:1943:520d167f	conflict resolved, pushed 1d009f7f, REVERIFY (merge lock held elsewhere)	session-20261117T091057-940845f2	2026-11-17T09:44:00Z
