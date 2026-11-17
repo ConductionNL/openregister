@@ -18260,6 +18260,7 @@ decidiq	2267	475c9d1ce6c0ac23a31e808cfd6638e36c342c51	GREEN	worker-46	unit 4963 
 decidiq	2264	012c0b155e7f1fe246abacdeb8e3ffcacf26ab09	GREEN	worker-41	unit 4958 tests OK on tree (version bump only, info.xml+openapi.json); baseline unchanged; 0 new failures
 filinq	2069	b67ef532d43b45a2b0814ec707f496807e1e533f	CONFLICT	worker-49	conflicts with development in lib/Settings/filinq_register.json; baseline 7288 OK, tree not tested
 keepiq	827	798025c3c32c1480e8ba9be47d1dfde79bfcce63	GREEN	worker-27	merge adds no file change vs development (tree identical to baseline); suite not rerun, 0 new failures
+buildiq	1705	4992a07c7825e60eff3b7ed293282f5bdc9d6da6	GREEN	worker-03	unit 3608 tests run, baseline 3578 green, 0 new failures; tests only
 keepiq	1834	99d177553461b4f57e5567b23c5dcbd937c22d9b	GREEN	worker-27	merge adds no file change vs development (tree identical to baseline); suite not rerun, 0 new failures
 opencatalogi	2299	778ac6a6e33919cd19ead643ecc4f25d894ea646	CONFLICT	worker-44	conflicts with origin/development fd0ba0bc: appinfo/info.xml, appinfo/routes.php, FederationController, PublicationsController, openapi.json, catalogue-staff-access/tasks.md, FederationControllerTest, WithheldOnThePublicReadTest; baseline 6306 tests 92F/11E
 decidiq	2266	2faec0d533cdf4d9d6fc7549ec92083d94044d6a	GREEN	worker-31	unit suite on tree 4958 OK (baseline 4958 OK on e468902e), 0 new failures; @uses metadata only in 6 test files (overlaps #2268 on RoomSystemFeedTest/RoomSystemMessageServiceTest)
