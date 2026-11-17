@@ -21276,3 +21276,4 @@ build:pipelinq:lead-win-probability-recency:b2	PR #3949: 7 of 10 tasks (1.x alre
 build:portaliq:search-names-only-a-foreign-source:b2	already done: code tasks on development (459d5b30); 2.1 live	session-20261117T133035-588aec38	2026-11-17T14:47:36Z
 build:portaliq:site-links-the-theme-bridge:b2	already done: T1, T2, T4 and T5 on development (6623f47a); only T3 left, a live check	session-20261117T123632-d3b91db3	2026-11-17T14:47:28Z
 build:portaliq:submission-records-its-action-title:b2	already done: only open task 1.4 is a live check, no code task left	session-20261117T134441-beae3c0d	2026-11-17T14:48:19Z
+build:portaliq:site-messages-per-record:b2	already done: T1-T3 ticked on development; T4 live check and T5 follow-up (needs a staff screen design) left	session-20261117T125716-5aa18045	2026-11-17T14:48:28Z
