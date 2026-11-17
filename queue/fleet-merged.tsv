@@ -5516,3 +5516,5 @@ portaliq	2578	ecda0995fde017ac8deb6fa1e5162d5706e02426	MERGED	merge3	GATE OK sbo
 portaliq	2580	9c288ce1119aa41d64c1f1e9220fcd7bd60a841a	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.03
 portaliq	2581	a16c6b8acc30ffc5695451390622f9e12613586d	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.03
 portaliq	2582	628f5a095fd877dfbc0668719312f4b0f6f7670d	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.03
+decidiq	2277	b03780e5e71f9c9a7d94f5ad1d658e3f438c2cb4	SKIP	worker-42	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
+versioniq	780	f23cd299e03ed19ed07fe50aa787b4b212d26b17	SKIP	worker-11	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
