@@ -21832,3 +21832,4 @@ verify:buildiq:1714:45f3a2b8	6 GREEN (1715-1720), 1714 CONFLICT; no new unit or 
 build:integriq:outbound-communication-log:b2	already built: every code task on development and tests/e2e/outbound-message-log.spec.ts exists; skipped: 3 Task 8 hand-offs (dossiq case-surface half, C-communication-40 drafts, cluster 14 note) are coordination, not code	session-20261117T152617-5bc1e1b2	2026-11-17T15:58:30Z
 verify:integriq:3714:ed8a40b3	GREEN #3714 (unit: no new failures over the 5 inherited; vitest 2395 ok)	session-20261117T145912-e9f6485a	2026-11-17T15:58:48Z
 build:integriq:sources-per-user-oauth:b2	already building: quality/build-sources-per-user-oauth exists (afc77145f on development); groups 2-3 open there	session-20261117T140734-4d108840	2026-11-17T15:59:23Z
+build:integriq:stuf-provider-writes:b2	already done: tasks 1-5 on development (ce4c0fcfc); only task 6, a live pass, is left	session-20261117T123632-d3b91db3	2026-11-17T15:59:31Z
