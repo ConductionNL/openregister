@@ -19139,3 +19139,6 @@ opencatalogi	2654	54779849ad727be887b5dd55103d2005a09a2977	CONFLICT	merge3	confl
 opencatalogi	2654	54779849ad727be887b5dd55103d2005a09a2977	REVERIFY	worker-50	merged development in, l10n conflicts resolved as the union of both sides (no clashing values), .js rebuilt with build-l10n-js; new head 9f9bab832954e3ffc97ae84fddde4d93e18b8d47, verify it
 filinq	2182	af614fee7742906a70da9c30346e9eb6541d7740	RED	merge3:merge-gate	GATE RED checker floor: secretscanning: pass -> fail; secretscanning stars: 5 -> 1
 opencatalogi	2650	0a028b8906b0b63c2a0fe78cf337a67687c6ec5c	REVERIFY	worker-05	merged development in (version: kept the newer; l10n and registrar test: both sides, test order matched to the registrar); adjusted the source-identifier repair-order test for the step development added; unit 0 new failures vs development (103 inherited); end-to-end skipped (merge gate host unreachable here); new head 35c5e9bce49ddf60b196b9ca52987e901d45418f, verify it
+keepiq	1894	f9aa4181f647ef727731915a0d3c8605514d38ff	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+keepiq	1895	62f8ad55d1465cd37278267e216271844ce3c8a8	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+keepiq	1896	1fa9aa0df493350abd562af449965661b898570a	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
