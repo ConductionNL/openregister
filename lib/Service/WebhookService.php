@@ -596,6 +596,11 @@ class WebhookService {
 				continue;
 			}
 
+			// A per-target webhook has no fixed URL; only triggerWebhookForEvent() names one.
+			if (WebhookDelivery::deliversPerTarget(webhook: $webhook) === true) {
+				continue;
+			}
+
 			try {
 				$this->dispatch->jobList->add(
 					WebhookDeliveryJob::class,
@@ -607,25 +612,91 @@ class WebhookService {
 					]
 				);
 			} catch (Throwable $e) {
-				// Nextcloud refuses a job argument over 4000 characters (32 and 33)
-				// or 32000 (34 and later), and the payload is the whole event. The
-				// refusal must not abort the webhooks after this one, nor surface
-				// as an exception in the listener (where it is only a log line);
-				// this delivery is lost, and the log says which one and why.
-				$this->logger->error(
-					message: '[WebhookService] A webhook delivery could not be enqueued and was not sent',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
+				$this->logEnqueueFailure(webhook: $webhook, eventName: $eventName, payload: $payload, error: $e);
+			}
+		}//end foreach
+	}//end dispatch()
+
+	/**
+	 * Enqueue one delivery of an event to one URL, through every per-target webhook
+	 * subscribed to that event.
+	 *
+	 * A per-target webhook (configuration `deliverPerTarget: true`, no owner) holds the
+	 * event, method, headers, signing secret and retry policy; the caller names the URL
+	 * of each delivery. The delivery runs in WebhookDeliveryJob like any other, is
+	 * logged with this URL, passes the same outbound address checks, and is retried to
+	 * this URL by WebhookRetryJob. Ordinary and owned webhooks are not used.
+	 *
+	 * @param string               $eventName The event name the webhook subscribes to.
+	 * @param array<string, mixed> $payload   The event payload.
+	 * @param string               $url       The URL this delivery goes to.
+	 *
+	 * @return int The number of deliveries enqueued; 0 when no per-target webhook subscribes.
+	 *
+	 * @throws InvalidArgumentException When the URL is empty.
+	 *
+	 * @spec openspec/changes/webhook-per-delivery-target/specs/webhook-payload-mapping/spec.md#requirement-a-per-target-webhook-delivers-to-the-url-each-delivery-names
+	 */
+	public function triggerWebhookForEvent(string $eventName, array $payload, string $url): int {
+		$url = trim($url);
+		if ($url === '') {
+			throw new InvalidArgumentException('triggerWebhookForEvent() needs a target URL.');
+		}
+
+		$queued = 0;
+		foreach ($this->webhooksForEvent(eventName: $eventName) as $webhook) {
+			if (WebhookDelivery::deliversPerTarget(webhook: $webhook) === false) {
+				continue;
+			}
+
+			try {
+				$this->dispatch->jobList->add(
+					WebhookDeliveryJob::class,
+					[
 						'webhook_id' => $webhook->getId(),
-						'event' => $eventName,
-						'payload_length' => strlen((string)json_encode($payload)),
-						'error' => $e->getMessage(),
+						'event_name' => $eventName,
+						'payload' => $payload,
+						'attempt' => 1,
+						'target_url' => $url,
 					]
 				);
+				$queued++;
+			} catch (Throwable $e) {
+				$this->logEnqueueFailure(webhook: $webhook, eventName: $eventName, payload: $payload, error: $e);
 			}
 		}
-	}//end dispatch()
+
+		return $queued;
+	}//end triggerWebhookForEvent()
+
+	/**
+	 * Log a delivery that could not be enqueued.
+	 *
+	 * Nextcloud refuses a job argument over 4000 characters (32 and 33) or 32000
+	 * (34 and later), and the payload is the whole event. The refusal must not abort
+	 * the webhooks after this one, nor surface as an exception in the listener (where
+	 * it is only a log line); this delivery is lost, and the log says which one and why.
+	 *
+	 * @param Webhook              $webhook   The webhook.
+	 * @param string               $eventName The event name.
+	 * @param array<string, mixed> $payload   The event payload.
+	 * @param Throwable            $error     The refusal.
+	 *
+	 * @return void
+	 */
+	private function logEnqueueFailure(Webhook $webhook, string $eventName, array $payload, Throwable $error): void {
+		$this->logger->error(
+			message: '[WebhookService] A webhook delivery could not be enqueued and was not sent',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'webhook_id' => $webhook->getId(),
+				'event' => $eventName,
+				'payload_length' => strlen((string)json_encode($payload)),
+				'error' => $error->getMessage(),
+			]
+		);
+	}//end logEnqueueFailure()
 
 	/**
 	 * Whether an owned webhook would refuse this event anyway: an event it never
@@ -699,6 +770,14 @@ class WebhookService {
 			return false;
 		}
 
+		if (WebhookDelivery::deliversPerTarget(webhook: $webhook) === true && $delivery->targetUrl === null) {
+			$this->logger->debug(
+				message: '[WebhookService] A per-target webhook delivery names no target URL, not sent',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'webhook_id' => $webhook->getId(), 'event' => $eventName]
+			);
+			return false;
+		}
+
 		$delivery = $this->ownerView(delivery: $delivery);
 		if ($delivery === null) {
 			return false;
@@ -707,6 +786,7 @@ class WebhookService {
 		$webhookPayload = $this->buildPayload(delivery: $delivery);
 		$recorder = $this->deliveryRecorder();
 		$webhookLog = $recorder->startDeliveryLog(webhook: $webhook, webhookPayload: $webhookPayload);
+		$webhookLog->setUrl($delivery->url());
 		$webhookLog->setEventClass($eventName);
 		$webhookLog->setAttempt($delivery->attempt);
 		$attempt = new WebhookDeliveryAttempt(webhook: $webhook, log: $webhookLog);
@@ -748,7 +828,8 @@ class WebhookService {
 			webhook: $delivery->webhook,
 			event: $event,
 			attempt: $delivery->attempt,
-			timeoutCapSeconds: $delivery->timeoutCapSeconds
+			timeoutCapSeconds: $delivery->timeoutCapSeconds,
+			targetUrl: $delivery->targetUrl
 		);
 	}//end ownerView()
 
@@ -1058,7 +1139,8 @@ class WebhookService {
 		// SSRF guard: validate the webhook target before issuing the request.
 		// Redirects are re-validated by the per-request on_redirect callback set
 		// in $options below, which honours the same per-hook flag.
-		$this->assertSafeWebhookUri(uri: $webhook->getUrl(), allowPrivate: $allowPrivate);
+		$targetUrl = $delivery->url();
+		$this->assertSafeWebhookUri(uri: $targetUrl, allowPrivate: $allowPrivate);
 
 		$request = new WebhookRequestOptions(webhook: $webhook, timeoutCapSeconds: $delivery->timeoutCapSeconds);
 		$options = ['headers' => $request->headers(payload: $payload)] + $request->timeouts();
@@ -1078,7 +1160,7 @@ class WebhookService {
 
 		$response = $this->client->request(
 			method: $webhook->getMethod(),
-			uri: $webhook->getUrl(),
+			uri: $targetUrl,
 			options: $options
 		);
 

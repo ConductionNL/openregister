@@ -1,0 +1,7 @@
+# Tasks: webhook-per-delivery-target
+
+- [x] 1.1 `WebhookDelivery` carries an optional target URL; `deliversPerTarget()`, `retryTarget()` and `url()` decide where a delivery goes. Verify: `WebhookPerTargetDeliveryTest::testAnOwnedWebhookNeverDeliversPerTarget`, `::testARetryGoesToTheLoggedUrlOnlyForAPerTargetWebhook`.
+- [x] 1.2 `WebhookService::triggerWebhookForEvent()` enqueues per-target deliveries; `dispatch()` skips per-target webhooks. Verify: `::testTriggerEnqueuesOneDeliveryToTheNamedUrlThroughThePerTargetWebhookOnly`, `::testTriggerWithoutAPerTargetWebhookEnqueuesNothing`, `::testTriggerWithAnEmptyUrlIsRefused`, `::testAnEnqueueRefusalIsLoggedAndCountsNothing`, `::testAnOrdinaryDispatchSkipsAPerTargetWebhook`.
+- [x] 1.3 The request, the address checks and the log row use the target URL. Verify: `::testAPerTargetDeliveryIsSentToAndLoggedWithItsOwnUrl`, `::testAPrivateTargetUrlIsRefusedLikeAFixedOne`, `::testAPerTargetDeliveryWithoutAUrlSendsNothing`, `::testAnOrdinaryWebhookIgnoresATargetUrl`.
+- [x] 1.4 `WebhookDeliveryJob` reads `target_url`; `WebhookRetryJob` and the manual retry route retry to the logged URL. Verify: `::testTheDeliveryJobHandsTheQueuedUrlToTheService`, `::testTheRetryJobRetriesAPerTargetDeliveryToItsLoggedUrl`.
+- [x] 2.1 Document `deliverPerTarget` in the webhook docs for administrators and integrators (`docs/Features/webhooks.md`, "Per-Target Webhooks").
