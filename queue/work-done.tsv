@@ -20183,6 +20183,7 @@ fix:opencatalogi:2665:106da853	merged #2665 at 16ac2bab62195fd2d8ce728161b28db9e
 fix:learniq:2523:19efbc3c	merged #2523 at 3f4bf7183dd6cf757c044ccbf72a2119a09158ed	session-20261117T085356-c13ba754	2026-11-17T09:56:52Z
 review:hermiq:1760:e77b5f0c	GREEN: hermiq #1760, unit 5694 OK, vitest 11 OK	session-20261117T094917-358f05f2	2026-11-17T09:57:03Z
 review:launchpad:1099:68a939c5	GREEN: dev-only psalm bump, unit 4585 OK; psalm 7 not runnable on PHP 8.3.6	session-20261117T093950-8ae04963	2026-11-17T09:57:26Z
+merge:shillinq:1958:70c6e595	cloud tree of 9 shillinq PRs: merged=1 red=2 fail=0 skip=0; conflict 5, lint 0, red 0, moved 1, done 0	session-20261117T093922-7676ffcc	2026-11-17T09:57:54Z
 fix:launchpad:1261:f302d160	stale	session-20261117T093950-8ae04963	2026-11-17T09:57:58Z
 fix:launchpad:1261:f302d160	stale	feeder	2026-11-17T09:57:23Z
 review:shillinq:2997:4b1b64a6	stale	feeder	2026-11-17T09:57:23Z
@@ -20196,3 +20197,5 @@ review:integriq:3595:68404f18	GREEN: matches change spec; 9735 tests, no failure
 build:larpinq:forms-registration-is-checked-at-binding:c4	PR larpinq#1086: 1.2 and 2.1 done, all tasks ticked; listener submits with app authority when openregister has it, else the direct write. openregister part pushed on build/forms-registration-is-checked-at-binding (fc806baa), PR deferred: openregister has 185 open PRs	session-20261117T094037-14874ab0	2026-11-17T09:59:56Z
 fix:integriq:3613:b7a00be9	failed: permission (fix pushed, new head 83ce7d7b34 needs verify; review/land refused)	session-20261117T092553-97564f2f	2026-11-17T09:59:52Z
 review:decidiq:2171:6b39135c	GREEN: suite clean on merge with development; minor concerns noted	session-20261117T093904-44ff7b5f	2026-11-17T10:00:04Z
+fix:versioniq:754:8d9ac96c	merged #754 at 09e903d37e8c8bd99785cadf2f06bb610974b3e2	session-20261117T092700-641a7a7c	2026-11-17T10:00:11Z
+fix:portaliq:2450:260942b5	conflict resolved, pushed be5bbb37; REVERIFY queued (merge lock held elsewhere)	session-20261117T095538-ac42296b	2026-11-17T10:00:27Z
