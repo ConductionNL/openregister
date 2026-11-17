@@ -19004,3 +19004,4 @@ fix:opencatalogi:2677:b9314794:v4	conflicts resolved, pushed 6cedbbd6; REVERIFY 
 verify:opencatalogi:2665:97afb48a	stale	session-20261117T004718-f6df305c	2026-11-17T01:53:30Z
 fix:versioniq:735:0ba1d1c9:v4	conflict resolved, new head 3183b87f, unit green but 2 inherited, vitest green; merge lock held elsewhere, REVERIFY queued	session-20261117T005434-ea6146cc	2026-11-17T01:53:52Z
 fix:thematiq:1680:31fb4f82:v4	merged #1680 at c8a9096aef9bc8257792d2db98c8c767f68de173	session-20261117T004650-4097ce5f	2026-11-17T01:54:03Z
+fix:buildiq:1623:e24b334f:v3	merged #1623 at db3406ec72ec05d2760659fa873748f4ff1c0109	session-20261117T004655-cf1f2f80	2026-11-17T01:54:25Z
