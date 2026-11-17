@@ -22965,3 +22965,4 @@ review:hermiq:1763:bff0c5dd	GREEN hermiq #1763 (unit 5800 OK, vitest 1677 OK, ad
 merge:filinq:2173:6ed139b8	unmeasured: api.osv.dev (proxy 403 from this session; lock released before building the tree)	session-20261117T223037-5aebbb96	2026-11-17T22:58:57Z
 fix:pipelinq:3962:63a9f870	sbom regenerated, pushed 4a00fe01; REVERIFY recorded (end-to-end skipped: self-review refused by permission check)	session-20261117T223145-5ed35ecc	2026-11-17T22:59:04Z
 merge:versioniq:685:bfd6e1dd	unmeasured: static.developer.overheid.nl (proxy CONNECT 403; checked before building the tree, nothing landed)	session-20261117T213101-157fb562	2026-11-17T22:59:06Z
+fix:dossiq:6648:7529b2ea	fixed grant row shape, pushed e8520bc3; REVERIFY recorded (end-to-end skipped: self-review is refused)	session-20261117T222048-3a9e0119	2026-11-17T22:59:30Z
