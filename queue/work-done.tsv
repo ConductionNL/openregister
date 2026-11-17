@@ -19106,3 +19106,4 @@ review:shillinq:2993:9a8d6e12	GREEN: matches change specs; unit 12525 OK; one co
 review:shillinq:2986:91a7c5b6	BLOCK: repair step BackfillAdministrationJurisdiction not registered in info.xml; suite green 12523/0	session-20261117T020257-09bbf84c	2026-11-17T02:19:25Z
 review:filinq:2089:b14f4be3	GREEN; conflicts with development in filinq_register.json, CONFLICT row added	session-20261117T020142-25e0bfeb	2026-11-17T02:19:32Z
 review:shillinq:3048:455711f8	GREEN: 12528 unit tests OK on PR+development, vitest 43 pass, phpstan clean	session-20261117T020416-cc0fb378	2026-11-17T02:19:44Z
+review:hermiq:1795:78cb835e	GREEN: no new unit failures (198 inherited), vitest 1588 ok; info.xml version conflicts with development	session-20261117T020212-3e3772fe	2026-11-17T02:19:52Z
