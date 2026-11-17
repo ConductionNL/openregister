@@ -20815,3 +20815,4 @@ review:opencatalogi:2654:54779849	GREEN #2654 (0 new failures; l10n conflicts no
 review:launchpad:1210:8d323e7c	GREEN: unit 4695 ok, vitest 1 inherited fail, phpstan/phpcs clean	session-20261117T133500-c1a9e7b7	2026-11-17T13:44:56Z
 verify:shillinq:3160:2410d601	GREEN #3160 (docs only)	session-20261117T125716-5aa18045	2026-11-17T13:45:12Z
 review:stackiq:1966:d202ad57	GREEN: unit 4058 OK, vitest 1 inherited red	session-20261117T132538-ac3b9ef5	2026-11-17T13:45:34Z
+gap:launchpad:default-app-on-install:1	PR #1296 opened (defaultapp on install + admin toggle, 22 new tests, suite 4643 green)	session-20261117T123418-5f98fc94	2026-11-17T13:45:47Z
