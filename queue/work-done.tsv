@@ -22283,3 +22283,4 @@ verify:integriq:3710:49c6e016	GREEN #3710 (vitest 2389 pass, build ok, deps-only
 verify:pipelinq:3943:d9e81afb	1 GREEN (#3943), 5 REVERIFY (l10n conflicts only with #3943)	session-20261117T190436-15c3d98f	2026-11-17T19:39:14Z
 verify:opencatalogi:2787:362419ba	GREEN 2787 (tests only)	session-20261117T185927-e9838dc9	2026-11-17T19:39:25Z
 verify:opencatalogi:2800:7d8c1d3f	GREEN #2800 (no new failures)	session-20261117T190540-b0615094	2026-11-17T19:39:34Z
+verify:learniq:2608:665e9afd	GREEN #2608: 0 new failures (2 inherited)	session-20261117T185732-534997e2	2026-11-17T19:39:45Z
