@@ -22267,3 +22267,5 @@ verify:larpinq:1100:1ed0e3bf	GREEN #1100 (e2e spec only; 1243 tests, 0 new failu
 verify:humaniq:1195:b3d7f5c6	GREEN humaniq#1195 (tags + e2e spec; unit 4509 green)	session-20261117T190048-3d066fd0	2026-11-17T19:35:52Z
 verify:integriq:3585:39f07d5a	GREEN 3585; no new failures (5 inherited), vitest 2401 OK	session-20261117T185359-d68263c5	2026-11-17T19:36:04Z
 verify:larpinq:1105:768215ba	GREEN #1105 (unit 1265 ok, vitest 796 ok)	session-20261117T190308-4c99e05c	2026-11-17T19:36:22Z
+verify:humaniq:1192:3ca961bd	GREEN: 1192 (+25 tests, no new failures)	session-20261117T185625-a1e67f54	2026-11-17T19:36:35Z
+verify:larpinq:1049:eb8c9f5f	GREEN larpinq#1049 (php 1260 OK, vitest 749 OK)	session-20261117T190302-4e3d4569	2026-11-17T19:36:45Z
