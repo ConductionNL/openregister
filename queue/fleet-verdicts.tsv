@@ -17687,3 +17687,5 @@ integriq	3601	823e21170f16f969f4f708ec759924e7dd6d5bc4	REVERIFY	worker-16	merged
 opencatalogi	2651	e7467c2ae155bfb37a2c8a4cae688105b33ed3c3	RED	worker-19:merge-gate	GATE RED floor: unit_size: 4.66 -> 4.64; unit_interfacing: 4.73 -> 4.67; module_coupling: 5.44 -> 5.41
 hermiq	1826	716bb0a65d60fc0fef26888ae8a0cc3a81dd6dfc	RED	worker-02:merge-gate	GATE RED floor: component_entanglement: 2.87 -> 2.83
 opencatalogi	2654	cc1b236e35126d915cddfc20c3bed390f9134311	RED	worker-19:merge-gate	GATE RED floor: unit_interfacing: 4.73 -> 4.66; module_coupling: 5.44 -> 5.41
+opencatalogi	2680	2286260f1d224f089129614ccb63004ce8971ab8	REVERIFY	worker-19:merge	conflicts only with an earlier PR of the merge tree: merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+opencatalogi	2684	0f1cbda6a44c75d4957429c2251b029c56e1fc7c	REVERIFY	worker-19:merge	conflicts only with an earlier PR of the merge tree: merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Listener/ListenerRegistrar.php tests/Unit/AppInfo/ComponentRegistrarsTest.php 
