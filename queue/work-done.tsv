@@ -21630,3 +21630,4 @@ build:hermiq:ai-oversight-subject-export:b2	already built: 1.1 on hermiq develop
 build:hermiq:agent-data-migration:b2	already built: code tasks done on development (19607e89); 7.2 and D.1 need a live OpenRegister with legacy rows	session-20261117T133833-7d87fd3d	2026-11-17T15:28:43Z
 build:hermiq:flows-hand-off-and-wait:b2	already building: quality/build-flows-hand-off-and-wait exists	session-20261117T135414-614629b0	2026-11-17T15:28:53Z
 build:hermiq:companion-everywhere:b2	already built: code on development (33ca9141); left are bundle build and size measurements, live editor-page checks and a test re-run, none of them code	session-20261117T133833-7d87fd3d	2026-11-17T15:29:16Z
+build:hermiq:agent-authored-marking:b2	already done: 1.1-3.2 on development (#1717, #1779 at c70ede4d); only 4.1 e2e/@e2e coverage left, needs a live browser run	session-20261117T133303-ca20630d	2026-11-17T15:29:38Z
