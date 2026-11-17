@@ -22354,3 +22354,4 @@ verify:stackiq:2045:711ef7f7	GREEN #2045 (e2e spec only)	session-20261117T190357
 verify:pipelinq:3941:7a5fdb88	GREEN #3941 (no new failures)	session-20261117T190540-b0615094	2026-11-17T19:52:55Z
 verify:keepiq:1830:eb9f48ae	GREEN: keepiq #1830	session-20261117T185937-87a1822c	2026-11-17T19:53:12Z
 verify:portaliq:2580:9c288ce1	GREEN (e2e + l10n)	session-20261117T190242-7c82bed8	2026-11-17T19:53:27Z
+verify:humaniq:1196:e0e2cffa	GREEN #1196 (e2e spec + spec tags only, no production code)	session-20261117T185757-639132f6	2026-11-17T19:53:40Z
