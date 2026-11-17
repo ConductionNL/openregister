@@ -5546,6 +5546,13 @@ shillinq	3164	7ae11281542796cf1f363da0d6e8b887f42798ab	SKIP	worker-15	GATE UNMEA
 learniq	2497	48225cf9d50c702289f26ffb5e21fd07629ec941	RED	worker-39	GATE RED floor: unit_interfacing: 3.62 -> 3.60
 hermiq	1848	65d35bc5c91cb52e899ac03cd9fd06cc301f8aa5	SKIP	worker-48	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 planninq	1245	18c0e02a3227b4aff7590139b12f700887b1d098	RED	worker-53	GATE RED floor: duplication: 4.67 -> 4.65
+dossiq	6642	dcd42889d10247bf15a7678d1ab0326f6ca37950	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
+dossiq	6643	0d24d1c52449d037d6611b027579e67248612e82	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
+dossiq	6644	2c3300bc4c89ae20b45cd4b9e7a9844b8d1b6352	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
+dossiq	6645	97e25b5469678818ef81feec00981d38ea5acfa1	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
+dossiq	6646	eb19f73d3dfe4c5313e6aa76ef6c339c953b85c5	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
+dossiq	6647	57eb1cc0cdc646212fd14a280d3be3a5447164ba	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
+dossiq	6649	c3066e42670a7916aef041452d6efdc4f3d501c9	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
 humaniq	1196	e0e2cffa27f96e5529594607b47493629041cb13	SKIP	worker-20	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 opencatalogi	2756	70b8b0cb8de57fabae21fef0562dfe82dda9fab2	RED	worker-46	GATE RED floor: overall: 4.87 -> 4.85; unit_interfacing: 4.77 -> 4.66; module_coupling: 5.44 -> 5.41
 shillinq	3165	f382c52bee07fa3220e9d1c29f9151d4e4db7414	SKIP	worker-15	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
@@ -5570,6 +5577,13 @@ buildiq	1715	628d9e25f091953535ee8b7bb259bf0baf012802	SKIP	worker-02	GATE UNMEAS
 filinq	2186	9bbf0ae16146dab80c0b1bc57ab5d57f6fd7bf69	SKIP	worker-10	no APPROVE review at this head
 buildiq	1716	f3a173de86c01c3d3ee317b89282af504b62139b	SKIP	worker-02	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 planninq	1248	36d5dc19e1277c9823e4512f8072ca92540206a6	SKIP	worker-53	GATE UNMEASURED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3 while api.osv.dev is unreachable from this session
+dossiq	6642	dcd42889d10247bf15a7678d1ab0326f6ca37950	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
+dossiq	6643	0d24d1c52449d037d6611b027579e67248612e82	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
+dossiq	6644	2c3300bc4c89ae20b45cd4b9e7a9844b8d1b6352	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
+dossiq	6645	97e25b5469678818ef81feec00981d38ea5acfa1	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
+dossiq	6646	eb19f73d3dfe4c5313e6aa76ef6c339c953b85c5	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
+dossiq	6647	57eb1cc0cdc646212fd14a280d3be3a5447164ba	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
+dossiq	6649	c3066e42670a7916aef041452d6efdc4f3d501c9	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
 thematiq	1714	a6daab39dc7b0e3915d3a9ea7279bf98a9ae5cf2	SKIP	worker-14	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 thematiq	1719	740e1349e57122fb6902c14777368c21f0bfaa15	SKIP	worker-14	no APPROVE review at this head
 thematiq	1721	b57b4ab90b6e9cd73b7a08ae3f63864fc2e778d5	SKIP	worker-14	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
