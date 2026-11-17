@@ -1251,6 +1251,7 @@ shillinq	3168	54788ddd120149a5ebb608b316c8f824cc8bd987	APPROVE	worker-33	Quick; 
 shillinq	3169	c6c22900eba0ec6038e87c1e7aaa26e0d2f15f5a	APPROVE	worker-33	Quick; no blockers; e2e spec only, base URL from env, task left unticked until run
 shillinq	3170	a106dd9be7f6d0a3337e59128d867fa6d48a449a	APPROVE	worker-33	Quick; no blockers; manifest moves ChartOfAccounts detail tabs from sidebarProps to sidebar.enabled, same shape as other pages
 shillinq	3171	47136a423cbb20c72c38f169dec103458860399d	APPROVE	worker-33	Quick; no blockers; e2e spec only, non-admin context with empty storage state
+learniq	2598	2cd09662b2c6df698224c284c244aa83bd0f77ee	APPROVE	worker-04	Quick (tests only: Playwright e2e spec + tasks/spec notes); no blockers; e2e specs not run live, env-driven base URL and credentials
 shillinq	3172	efb8780416c555bec59db7576bf423b483fda66d	APPROVE	worker-33	Quick; no blockers; e2e spec only, base URL from env
 shillinq	3173	b9ea40e5c850c5d6bdaf6c4a581a9b68d952ef76	APPROVE	worker-33	Quick; no blockers; e2e spec only, relative URLs via config
 decidiq	2282	62cb71dc73585922a4abc7ed581296def299f459	APPROVE	worker-05	Standard; no blockers; schema fields and example data per REQ-PSH-002, register test green
