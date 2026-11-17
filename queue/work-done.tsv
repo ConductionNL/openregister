@@ -18767,3 +18767,4 @@ fix:filinq:2106:3c54d4a0:v4	conflict resolved, pushed 6f753abc; unit 6987/0 fail
 fix:shillinq:2983:ccfb2777:v3	conflict resolved and migrated to development's API, pushed 1f5c0426; merge lock busy, REVERIFY queued	session-20261117T004655-1a901c92	2026-11-17T01:05:53Z
 build:shillinq:tax-cbcr-and-pillar2-returns:c7	partial: blocked, PR #2997 (head 40268216) has every code task but 2.1 (OECD CbC and GIR XSDs: www.oecd.org is refused by this environment's egress proxy and the site needs a browser), 4.1-4.3 and the 5.1 Generate XML refusal wait on 2.1	session-20261116T230934-9ee320cf	2026-11-17T01:06:13Z
 fix:shillinq:3062:faaae73e:v4	conflict resolved (kept dev's checks impl), pushed fbfbd1da; REVERIFY queued (merge lock held)	session-20261117T004705-084072e6	2026-11-17T01:06:16Z
+fix:learniq:2532:2772c58e:v3	conflict resolved, pushed cb3bbe24; merge lock held elsewhere, REVERIFY queued	session-20261117T004908-b4bcfe9b	2026-11-17T01:06:26Z
