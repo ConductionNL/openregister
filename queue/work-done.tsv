@@ -19583,3 +19583,4 @@ fix:shillinq:2998:5dd30f17	fixed CONFLICT, pushed d4457281; merge lock held else
 fix:decidiq:2253:ffa607bd	stylelint runs again, pushed bd320878; REVERIFY queued	session-20261117T055853-7ddd3cb3	2026-11-17T06:36:02Z
 fix:shillinq:3062:fbfbd1da	fixed CONFLICT, pushed 2d73a4e6; unit 12634 OK; REVERIFY queued (merge lock held elsewhere)	session-20261117T061802-b42f2669	2026-11-17T06:36:09Z
 review:decidiq:2174:e59aab77	GREEN: build per spec, unit 4854/0 fail, vitest ok; 7 Vue methods lack @spec tags	session-20261117T063048-0c413ea5	2026-11-17T06:36:19Z
+fix:shillinq:3067:6f2e1f12	conflict resolved, pushed 57c917aa92; REVERIFY queued	session-20261117T042937-c444c626	2026-11-17T06:36:41Z
