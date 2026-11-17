@@ -5120,3 +5120,5 @@ portaliq	2417	5a89d39e01388c3a9324898a1c52f13f296ec643	MERGED	worker-55	GATE OK 
 stackiq	1933	4ab6e187b899ba72d006eeed7df4ed78821ab1fd	MERGED	worker-02	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.13
 integriq	3545	76605dd41334c821c1ceb47c5ffe0aa9fb627147	SKIP	worker-03	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure secretscanning; this is not a pass
 stackiq	1944	a82cd19ef1ca26b8084f3dec4bb8275694b47b54	MERGED	worker-02	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.13
+integriq	3561	6974829429263b35461bff07cc98e206677ca0d6	MERGED	worker-03	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.61
+integriq	3628	c2938095f3f912e377bcf2692f504d3e17e7e701	SKIP	worker-03	no APPROVE review at this head
