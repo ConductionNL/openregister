@@ -17908,4 +17908,5 @@ integriq	3574	40a5ceb41fceb176e4a0c3354668586cf570c8b8	BLOCK	worker-42:review	re
 stackiq	2022	dd6d4b11005caee34f97773d81b938f02d226d90	REVERIFY	worker-10	merged development in, regenerated sbom.cdx.json (check current, 806 components); merge lock held elsewhere; new head a08934f72ca968249e20d92ba2a14f16ddf3c3ea, verify it
 humaniq	1184	faa2ffdf7a4c23b983fc9631e60b0becd567887a	CONFLICT	worker-31	conflicts with development in appinfo/info.xml and l10n/en.js, en.json, nl.js, nl.json; baseline 4496 tests OK
 integriq	2650	92ce810e56694132aa8b44baf46924ee5131b8ac	CONFLICT	worker-42	conflicts with development; files: l10n/en.json l10n/nl.json 
+integriq	3557	76fedb7692b4926331f34ded71da033c24863dc8	CONFLICT	worker-42	conflicts with development; files: l10n/en.json l10n/nl.json 
 learniq	2509	9a57b9430234952760eb416f122aa3fd1df5d6e3	RED	worker-15:merge-gate	GATE RED floor: unit_interfacing: 3.61 -> 3.59
