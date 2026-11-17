@@ -19397,3 +19397,4 @@ fix:filinq:2091:ea6afdbf	merged #2091 at 508232a5f0100a8686e34fc5738e9d877ef14de
 review:stackiq:1933:60a38fa8	GREEN: matches specs, no new failures; conflicts with development	session-20261117T032233-7fc561a9	2026-11-17T03:30:43Z
 review:stackiq:1942:aad1987d	GREEN: unit OK on head; conflicts with development in src/manifest.json	session-20261117T032650-4ad2164b	2026-11-17T03:31:08Z
 review:buildiq:1630:ee26301e	GREEN; conflicts with development (keep-both in 2 frontend files); unit 3480 OK	session-20261117T032508-3e5df4c2	2026-11-17T03:31:18Z
+fix:buildiq:1590:0761fb37:v3	stale	session-20261117T032508-3e5df4c2	2026-11-17T03:31:53Z
