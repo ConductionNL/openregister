@@ -1330,3 +1330,4 @@ decidiq	2276	b77ffaa99a83ac211a8cff55b080ccb1f773fd62	APPROVE	worker-42	Quick (e
 decidiq	2277	b03780e5e71f9c9a7d94f5ad1d658e3f438c2cb4	APPROVE	worker-42	Quick (Newman collection only); no blockers; base URL overridden by run-all env vars
 decidiq	2278	d120be3ea5c86aa6aa74b4081c7a6da1b31d2921	APPROVE	worker-42	Quick (e2e spec only); no blockers; boxes left open until run live
 versioniq	780	f23cd299e03ed19ed07fe50aa787b4b212d26b17	APPROVE	worker-11	Quick; no blockers; e2e spec only for advisories-triage
+launchpad	1306	060171415ec0321c8968a4087ce146a20f0714d7	APPROVE	worker-05	Standard; no blockers; e2e spec, tasks.md and parity rows only, base URL and user from env
