@@ -20237,3 +20237,4 @@ verify:launchpad:1261:bb8601df	stale: #1261 head moved bff4a8b6 -> 07612654	sess
 merge:humaniq:1183:e2af1ca3	cloud tree of 1 humaniq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T094037-14874ab0	2026-11-17T10:09:37Z
 fix:filinq:2079:1b7aa3aa	no change: bundling resolves when #2069 lands first (revert would delete intake); test removal checked, cases moved; REVERIFY recorded	session-20261117T093335-9904a269	2026-11-17T10:10:15Z
 merge:dossiq:6203:bc5eb8ad	nothing landed: dossiq #6203 is on the never-merge exclusion list of cm_tree.sh	session-20261117T092802-9d33e8f7	2026-11-17T10:10:22Z
+fix:shillinq:3007:4b9a3466	fixed: conflict merged, floor restored to 4.00, gate OK at 8f36129b; REVERIFY queued	session-20261117T091244-7c1a3c79	2026-11-17T10:10:32Z
