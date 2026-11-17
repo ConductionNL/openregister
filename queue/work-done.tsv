@@ -20445,3 +20445,4 @@ verify:shillinq:3160:bf332a7a	GREEN #3160: docs only, suite 12771 OK, no new fai
 fix:thematiq:1555:de0fccfe	failed: psalm 7 needs PHP >=8.3.16, this session has 8.3.6; forced run gives 767 findings incl. false UnusedMethod on called methods (e.g. SettingsController::saveBooleanSetting), so the psalm 7 RED cannot be reproduced or fixed here; unit failure is inherited	session-20261117T112106-1814b74b	2026-11-17T11:52:04Z
 verify:larpinq:1088:62ce209c	GREEN: docs only, no new failures	session-20261117T112008-f5bd35fb	2026-11-17T11:52:10Z
 review:shillinq:1958:6c4f9eed	CONFLICT (info.xml version only); merged tree green 12785 tests, vitest 18 passed; no behaviour blocker	session-20261117T111351-f79c232f	2026-11-17T11:52:36Z
+verify:planninq:1231:0248eee9	GREEN: planninq #1231 (metadata only), unit 1253 OK	session-20261117T114001-eb50211c	2026-11-17T11:52:52Z
