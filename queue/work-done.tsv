@@ -20309,4 +20309,5 @@ review:hermiq:1764:ef318454	GREEN: 5644 unit tests pass on PR+development, vites
 review:filinq:2087:46364ded	GREEN #2087 (conflicts with development: register version, info.xml, l10n)	session-20261117T111613-c4d98a73	2026-11-17T11:19:33Z
 review:portaliq:2450:be5bbb37	GREEN: no new failures, behaviour matches the change specs	session-20261117T111401-3cc65eba	2026-11-17T11:19:45Z
 review:hermiq:1719:0b2ffe7a	GREEN: unit 5639/0 fail, vitest 15/15 on merge with development	session-20261117T111714-cd94760b	2026-11-17T11:20:09Z
+fix:filinq:2078:202f24a1	conflict resolved, pushed 604e2328; merge lock held elsewhere, REVERIFY queued	session-20261117T110646-831a671b	2026-11-17T11:20:39Z
 review:shillinq:2086:e8381a8c	GREEN: suite 12767 OK on PR+development, vitest 24 OK, static checks clean	session-20261117T111554-d575c862	2026-11-17T11:20:48Z
