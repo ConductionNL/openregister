@@ -22897,3 +22897,5 @@ verify:portaliq:2569:0ae5a2be	GREEN 2569, 2579; REVERIFY 2583, 2589; unit 6339, 
 verify:shillinq:3181:4374a6c0	GREEN 3181-3187 (7 dependency bumps, 0 new failures); 3188 REVERIFY	session-20261117T213058-6689a4c6	2026-11-17T22:43:26Z
 build:portaliq:intake-conditional-questions-and-drafts:b2:c4	partial: PR #2593 adds the named e2e spec (REQ-ICQ-001/002/004); T04/T05/T08-docs already on development; left T06/T07 and the T08 draft strings, waiting on openregister build/or-form-and-journey-registry (not on main)	session-20261117T222626-5de57cc1	2026-11-17T22:43:38Z
 fix:filinq:2112:4a6629c6	conflict resolved, pushed c6b6ed3a; REVERIFY queued	session-20261117T213101-157fb562	2026-11-17T22:43:39Z
+review:openregister:10632:e9de049d	APPROVE: graphiql 6 compatible, explorer entry builds, spec green	session-20261117T221923-343449c6	2026-11-17T22:44:03Z
+fix:decidiq:2198:3e20b726	conflict fixed, pushed e149db46; end-to-end review step refused by permission check (failed: permission), REVERIFY recorded	session-20261117T223145-5ed35ecc	2026-11-17T22:44:12Z
