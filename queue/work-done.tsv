@@ -20010,6 +20010,7 @@ merge:thematiq:1365:d68cd124	cloud tree of 1 thematiq PRs: merged=1 red=0 fail=0
 fix:filinq:2085:7276c4b5	conflict resolved, pushed 38d24886; unit 7143 OK; merge lock held elsewhere, REVERIFY queued	session-20261117T084019-84d2c33c	2026-11-17T08:59:23Z
 fix:filinq:2086:ebd288b0	fixed CONFLICT #2086, new head 4b3e56c0 (lock held elsewhere, REVERIFY queued)	session-20261117T084845-60bc4ee0	2026-11-17T08:59:59Z
 review:shillinq:3080:f7c6e71c	GREEN: phpunit 12641/0 failures, vitest touched 36 passed, phpstan clean	session-20261117T081254-2b2b5b50	2026-11-17T09:00:09Z
+merge:decidiq:2205:bfeeb582	cloud tree of 6 decidiq PRs: merged=5 red=0 fail=0 skip=1; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T084727-10682198	2026-11-17T09:00:25Z
 measure:decidiq:20261117h08	php 91.94% (pcov); js 98.39% (1 inherited vitest snapshot failure, meetingSessionsGolden)	session-20261117T085409-8fe2c52f	2026-11-17T09:00:28Z
 cover:launchpad:fb10c50fm88bd:882bd950	already covered: lib/Search 202/202 statements (pcov on development), no thin class left; launchpad has 42 open PRs	session-20261117T084643-d8b33e95	2026-11-17T09:00:18Z
 review:shillinq:2997:10c8efba	BLOCK: repair step unregistered in info.xml, 2 manifest icons unregistered; suite 12695/0 failures	session-20261117T084851-7a832684	2026-11-17T09:00:34Z
@@ -20020,3 +20021,4 @@ verify:learniq:2577:4e6c5569	CONFLICT #2577 (tests/unit-js/structureProfile.test
 fix:opencatalogi:2677:635c5d4a	fixed RED (handover param moved after fieldMapper), pushed 1abdb829; merge lock held elsewhere, REVERIFY queued	session-20261117T085351-e8fe3bf3	2026-11-17T09:01:42Z
 fix:shillinq:2983:ff39cb27	fixed icon, demo data, API tag, SPDX; new head 7c48c94a, REVERIFY (merge lock held elsewhere)	session-20261117T081327-bdafbf12	2026-11-17T09:02:00Z
 fix:integriq:3550:a14372dd	floor restored (module_coupling 5.04), pushed 7acdaf52; lock busy, REVERIFY queued	session-20261117T085453-9eac8242	2026-11-17T09:02:31Z
+fix:filinq:2095:120f4482	conflict resolved, pushed 99be8379; merge lock held elsewhere, REVERIFY queued	session-20261117T085227-a13dc102	2026-11-17T09:02:55Z
