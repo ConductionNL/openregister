@@ -22443,6 +22443,7 @@ build:dossiq:site-business-and-authorisation:b2:c2	blocked: all code tasks on de
 verify:versioniq:719:d043e91d	719 BLOCK: openapi.json reduced 57->1 paths by a merge commit; tests otherwise green (php 2500, 0 new; vitest 3241)	session-20261117T190353-7aae74e9	2026-11-17T20:09:42Z
 verify:versioniq:699:8f1d1ff0	GREEN #699 (0 new failures)	session-20261117T190353-db371595	2026-11-17T20:09:54Z
 verify:thematiq:1723:f6aae08d	GREEN #1723: npm ci, vitest 1571, build ok	session-20261117T185903-e132ac1e	2026-11-17T20:10:12Z
+fix:dossiq:6634:024fc842	failed: permission (push to the dependabot branch refused by a permission check; sbom regenerated locally after merging development, 641->582 components, not pushed)	session-20261117T190140-44e48bc5	2026-11-17T20:10:59Z
 verify:thematiq:1729:0112b5b6	GREEN #1729: vitest 1571 pass, lint clean	session-20261117T185853-76335694	2026-11-17T20:11:01Z
 build:shillinq:sales-quick-draft-from-any-page:b2:c2	partial: pushed to PR #3174 tests/e2e/sales-quick-draft-from-any-page.spec.ts (3 scenarios tagged, eslint + playwright --list clean); left 1.1 (needs a nextcloud-vue app-level open-modal action), 2.1 live run	session-20261117T190333-2bf83f45	2026-11-17T20:11:17Z
 build:decidiq:insight-decisions-report-by-period-and-body:b2:c3	already built: code tasks 1-5 on development, Newman collection on development, e2e tests/e2e/decisions-report-cut.spec.ts in open PR #2278 (awaits verify); left only live runs (Newman, Playwright) that need an instance	session-20261117T190714-0b708ca6	2026-11-17T20:11:38Z
