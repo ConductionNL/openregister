@@ -19152,3 +19152,4 @@ review:opencatalogi:2651:91263dc8	RED: SettingsObjectTypeConfigurationTest expec
 review:launchpad:885:1143e3af	GREEN: gates preserved, vitest 2676 and PHPUnit 4539 green	session-20261117T020257-09bbf84c	2026-11-17T02:27:41Z
 fix:shillinq:1900:7c67b538	fixed duplicate openapi path; pushed f9ee4f1; merge lock held elsewhere, REVERIFY queued	session-20261117T015854-c76e8b72	2026-11-17T02:27:51Z
 review:shillinq:2983:1f5c0426	RED: administrationScopedPages.json not regenerated (vitest administrationScopedIndex); phpunit green	session-20261117T020238-79f03bb8	2026-11-17T02:27:59Z
+review:opencatalogi:2685:36175982	GREEN: no new failures (1 flaky unrelated), merges clean; overlaps #2680	session-20261117T020617-81e5b086	2026-11-17T02:28:13Z
