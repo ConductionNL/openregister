@@ -20868,3 +20868,4 @@ cover:decidiq:a5f973bbmfcd5:d528dcf0	already done: lib/Dashboard/*.php at 100% l
 fix:integriq:3712:81bc3606	snapshots re-recorded + sbom, vitest green, new head 3f2d9585; REVERIFY (merge lock held elsewhere)	session-20261117T134024-07d6c268	2026-11-17T13:56:41Z
 fix:integriq:3705:06350cfb	sbom regenerated, pushed cd33fb75; merge lock held elsewhere, REVERIFY queued	session-20261117T133629-e10185c0	2026-11-17T13:57:05Z
 measure:integriq:20261117h12	php 95.17% js 94.36%	session-20261117T134304-10008ffd	2026-11-17T13:57:26Z
+verify:dossiq:6641:c2d5c3a2	GREEN #6641 (publiccode.yml only; 0 new failures over baseline 19)	session-20261117T135015-f9a7106f	2026-11-17T13:57:34Z
