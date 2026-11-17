@@ -4999,3 +4999,4 @@ decidiq	2162	41fa34b09570aea997963a15fb5da440e27a168f	RED	worker-36	GATE RED flo
 learniq	2549	7f653fdab592ada02ab70101b39a8efac9931b94	RED	worker-16	GATE RED floor: unit_interfacing: 3.36 -> 3.34
 decidiq	2177	0b1b1e4a47ed0c5e195d1a6974ec0c67257003aa	RED	worker-36	GATE RED floor: duplication: 3.82 -> 3.80; unit_complexity: 4.02 -> 3.96
 opencatalogi	2652	541cb28a7051fc3f588b7a1645b98594d13b29c6	SKIP	worker-09	no APPROVE review at this head
+integriq	3670	90ebc507034147bc5bca04a174ced7397bfcb9c5	SKIP	worker-09	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
