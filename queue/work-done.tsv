@@ -20258,3 +20258,4 @@ review:hermiq:1755:0d6aae20	GREEN: phpunit 5658/5658, vitest 1644/1644	session-2
 merge:learniq:2497:6e4526fc	cloud tree of 1 learniq PRs: none; conflict 1, lint 0, red 0, moved 0, done 0	session-20261117T100902-3acfb4af	2026-11-17T10:15:08Z
 review:launchpad:1217:365b7069	GREEN: PHP 4597 ok (baseline 4585), vitest 2732 ok	session-20261117T100527-8a82f462	2026-11-17T10:15:14Z
 fix:filinq:2120:f16ae438	conflict resolved, pushed 34cc4cd4; REVERIFY queued	session-20261117T095426-fa057cee	2026-11-17T10:15:23Z
+fix:stackiq:1938:903d38eb	conflict resolved, pushed 252677a6; REVERIFY queued (merge lock held elsewhere)	session-20261117T100057-7775ee42	2026-11-17T10:15:48Z
