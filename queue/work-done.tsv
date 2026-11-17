@@ -18836,3 +18836,4 @@ review:portaliq:2451:f157947e	GREEN: spec build, suite 6218 with 16 inherited er
 review:filinq:2059:4c6a7b12	GREEN #2059 (conflicts with development on register version)	session-20261117T004616-c7acc36d	2026-11-17T01:18:34Z
 fix:decidiq:2162:75db4256:v3	conflict resolved, pushed 41fa34b0; merge lock held elsewhere, REVERIFY queued	session-20261117T005226-366998de	2026-11-17T01:18:49Z
 review:shillinq:3003:a0eb3c15	GREEN: merges clean, suite 12530 OK, behaviour per change specs	session-20261117T004721-b30387a5	2026-11-17T01:19:03Z
+review:filinq:2098:377c6050	GREEN; conflicts with development in SettingsService.php/Settings.vue (keep-both)	session-20261117T005212-998cc343	2026-11-17T01:19:17Z
