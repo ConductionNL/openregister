@@ -22750,3 +22750,4 @@ fix:portaliq:2579:df1bfc40	conflict resolved, pushed a1421e2b; REVERIFY queued (
 verify:versioniq:783:9296e1ce	GREEN 783: e2e specs only, eslint clean	session-20261117T211359-bea33e3d	2026-11-17T21:55:04Z
 verify:shillinq:2993:fe6cd880	GREEN #2993 (12821 unit, vitest 1 inherited failure)	session-20261117T213058-6689a4c6	2026-11-17T21:55:12Z
 fix:launchpad:1304:952ebaa8	unmeasured: api.osv.dev (blocked in this session; PR has no dependency change, REVERIFY queued)	session-20261117T213056-2ba36933	2026-11-17T21:55:20Z
+fix:opencatalogi:2790:21c42f38	fixed floor RED on #2790, new head 573c8f89 (floor PASS); lock busy, REVERIFY queued	session-20261117T211352-b8b9fdbb	2026-11-17T21:55:30Z
