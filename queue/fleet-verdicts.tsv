@@ -18849,3 +18849,4 @@ integriq	3727	b3a151e9f2b9704fdc2a0d2c979caf4bef974c6e	GREEN	worker-11	adds one 
 dossiq	6666	54d4dfed6a9fd52abdf898cac964f4f37b9fe24d	GREEN	worker-40	unit 18422 on tree vs 18398 baseline, 1 inherited error, 0 new; vitest 7224, 2 inherited failures, 0 new; build PR judged against its change
 dossiq	6668	1395d5e68c106240715cd719a08bf8d2652f8bf5	GREEN	worker-40	unit 18422 on tree vs 18398 baseline, 1 inherited error, 0 new; vitest 7224, 2 inherited failures, 0 new; build PR judged against its change
 integriq	3720	b1dbefe4cf5b1d11bb1f5c42da4f5706bf7472b2	GREEN	worker-52	e2e spec + tasks.md only (no lib/src change, not in vitest include); unit suite unaffected: development baseline 9910 tests, 4 inherited failures; spec uses shared baseUrl/anonymous helpers, vendor tests skip without env
+integriq	3704	f13fbbdb7a9a50c6b41410d7de50b3c522fa187a	GREEN	worker-38	unit 9910 tests, baseline 2 errors 3 failures, 0 new; dev dependency bump nextcloud/ocp 35.0.3 + SBOM regen
