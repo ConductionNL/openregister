@@ -5748,3 +5748,4 @@ portaliq	2586	1fd306ff31f60936a9820c610606bed3f63ec380	SKIP	worker-57	no APPROVE
 portaliq	2587	c972ccc36c2ad633d56605e064450690a8e395ff	SKIP	worker-57	GATE UNMEASURED head moved to 15032d52c8
 learniq	2596	7ff99e0704ef8eafd7681a2b6936ec425d72eae0	SKIP	worker-17	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 keepiq	1898	2d4d0257353ba497c0c94affef2fedeabcee86dc	SKIP	worker-26	GATE UNMEASURED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3 while api.osv.dev is unreachable from this session
+keepiq	1899	abebdd6ffa781653cb3cdfbbfdac6d7c181fbded	SKIP	worker-26	no APPROVE review at this head
