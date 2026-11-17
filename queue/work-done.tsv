@@ -20005,5 +20005,10 @@ fix:filinq:2090:0bf796a1	conflict resolved, pushed ca7adf6f; REVERIFY (merge loc
 review:shillinq:3067:8205f49a	GREEN: suite 12629 tests 0 failures	session-20261117T084807-e8ebf79d	2026-11-17T08:58:11Z
 fix:integriq:3564:6d065ca0	fixed, pushed e2164fe1; REVERIFY queued	session-20261117T081138-8732f141	2026-11-17T08:58:46Z
 merge:larpinq:1043:53f3f771	cloud tree of 6 larpinq PRs: merged=1 red=1 fail=0 skip=0; conflict 4, lint 0, red 0, moved 0, done 0	session-20261117T084927-57ebccdf	2026-11-17T08:59:02Z
+cover:dossiq:069ee2d6m9d1b:3641032a	failed: permission (installing a coverage driver was refused; no pcov/xdebug to find the uncovered lines of lib/Service/Pipelinq at 94.26%)	session-20261117T083929-9c5fceb9	2026-11-17T08:59:27Z
 merge:thematiq:1365:d68cd124	cloud tree of 1 thematiq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T084906-3448b9ad	2026-11-17T08:59:14Z
 fix:filinq:2085:7276c4b5	conflict resolved, pushed 38d24886; unit 7143 OK; merge lock held elsewhere, REVERIFY queued	session-20261117T084019-84d2c33c	2026-11-17T08:59:23Z
+review:shillinq:3080:f7c6e71c	GREEN: phpunit 12641/0 failures, vitest touched 36 passed, phpstan clean	session-20261117T081254-2b2b5b50	2026-11-17T09:00:09Z
+review:shillinq:2997:10c8efba	BLOCK: repair step unregistered in info.xml, 2 manifest icons unregistered; suite 12695/0 failures	session-20261117T084851-7a832684	2026-11-17T09:00:34Z
+fix:integriq:3557:89d30cbe	conflict resolved, pushed 76fedb76; lock held elsewhere, REVERIFY	session-20261117T084835-4ff9a661	2026-11-17T09:00:53Z
+verify:learniq:2577:4e6c5569	CONFLICT #2577 (tests/unit-js/structureProfile.test.mjs)	session-20261117T084918-0b033747	2026-11-17T09:01:03Z
