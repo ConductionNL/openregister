@@ -19598,3 +19598,5 @@ planninq	1238	a2d0008dd4f59ba29e63e1d9a0b4fdb0644576b0	RED	merge3:merge-gate	GAT
 planninq	1246	64caa7ce8e8fec9974544ab87ac0ff8ccd473dc5	RED	merge3:merge-gate	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
 planninq	1247	1a42908edf32546f4d27dfc8c1b8aec9935bd950	RED	merge3:merge-gate	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
 planninq	1248	36d5dc19e1277c9823e4512f8072ca92540206a6	RED	merge3:merge-gate	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+planninq	1245	18c0e02a3227b4aff7590139b12f700887b1d098	REVERIFY	merge3	verdict sha is not the head: head is bdab0519cda410700fd9b3a044acb9bca392cb56
+planninq	1250	70dfe254912eeaa8aeb0a5a52fbb7c735485ff4e	CONFLICT	merge3	merges clean on development alone; files: tests/integration/planninq.postman_collection.json 
