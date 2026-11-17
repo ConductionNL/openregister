@@ -17908,3 +17908,4 @@ integriq	3574	40a5ceb41fceb176e4a0c3354668586cf570c8b8	BLOCK	worker-42:review	re
 humaniq	1184	faa2ffdf7a4c23b983fc9631e60b0becd567887a	CONFLICT	worker-31	conflicts with development in appinfo/info.xml and l10n/en.js, en.json, nl.js, nl.json; baseline 4496 tests OK
 integriq	2650	92ce810e56694132aa8b44baf46924ee5131b8ac	CONFLICT	worker-42	conflicts with development; files: l10n/en.json l10n/nl.json 
 learniq	2509	9a57b9430234952760eb416f122aa3fd1df5d6e3	RED	worker-15:merge-gate	GATE RED floor: unit_interfacing: 3.61 -> 3.59
+opencatalogi	2654	3703a084ab8e4634c812d8c4f6d62422876295d3	GREEN	worker-54:review	build of oai-pmh-endpoint per its specs (public GET read-only and rate limited, changed rows through the anonymous RBAC read, withdrawn entries id and date only); unit tree 6275 vs baseline 6259, same 92 failures and 11 errors as development, new tests 18 OK; concern: sig-floor component_independence 93.5 -> 92.8 at head, the merge gate will judge it
