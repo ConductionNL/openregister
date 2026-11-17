@@ -18239,3 +18239,6 @@ shillinq	3004	3a0e29de258e9f510c17c3a8f7e360b2d1a53e56	CONFLICT	worker-22:merge	
 shillinq	3007	8f36129bb9d534751313db9bab92859082da1721	CONFLICT	worker-22:merge	conflicts with development; files: CHANGELOG.md l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json tests/Unit/Service/ServiceRegistrarTest.php tests/fixtures/register-versions.lock.json 
 shillinq	3064	e0f4cc425ee7a30f248d80974e0c3615675ac897	CONFLICT	worker-22:merge	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json tests/fixtures/register-versions.lock.json 
 versioniq	700	89648f84d9c360c8b761a752556a643981eeca15	REVERIFY	merge3	verdict sha is not the head: head is 563a324a25e1b6846a4fe0f1c0a71937dbc6ad4b
+opencatalogi	2650	4abde043e730bc3b9435bd4f27805e5c58e669e2	REVERIFY	merge3	verdict sha is not the head: head is 6678e3ea5ac9df5738d8d5089d33fe88a6fad19b
+opencatalogi	2654	3703a084ab8e4634c812d8c4f6d62422876295d3	REVERIFY	merge3	verdict sha is not the head: head is 7717f5da9c6bf7aad2abe74c9c9fa91500756a3a
+opencatalogi	2766	c697ce65f7824ed3e5ac7a0397aa9750bb5f40a6	REVERIFY	merge3	verdict sha is not the head: head is 61ed15e96caf47caa6bdbb6e95935a300585a639
