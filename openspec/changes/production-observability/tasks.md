@@ -251,3 +251,16 @@ arguments) and `context` {`register`, `schema`, `action`}. Nothing is taken from
 or query values. Writing an entry never fails a request. "Structured Logging" stays unticked:
 scenario "Sensitive data exclusion from logs" asks that no log call anywhere logs object data,
 and the existing debug and warning calls across the code base have not been audited for that.
+
+**Eighth pass, continued: dashboard widget.** Scenario "Dashboard widget shows key metrics" is
+built. `Dashboard\OperationsDashboardWidget` is an `IAPIWidgetV2`, so the Nextcloud dashboard
+renders its items itself and no script ships. It is an `IConditionalWidget` enabled for
+administrators only (the figures cover every register), and `getItemsV2()` answers no items to
+anyone else. It lists total objects (the sum of `ObjectCountMetricsProvider`), total registers,
+total schemas, the server errors (5xx) and the average response time of the last window that
+`RequestAlertJob` judged (`RequestAlertEvaluator::lastWindow()`, which the evaluator now stores
+with each snapshot). A figure that cannot be read is left out. The error item links to the
+OpenRegister admin settings, the others to the OpenRegister dashboard. Backend strings in `en` and
+`nl`. "Nextcloud Dashboard Integration" stays unticked: the admin settings have no monitoring tab
+to open (scenario "Dashboard widget links to detailed metrics" asks for that tab to be active),
+and OpenRegister's health is not yet added to the serverinfo OCS response.

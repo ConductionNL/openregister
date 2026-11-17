@@ -140,6 +140,16 @@ class RequestAlertEvaluator {
 			$outcome['responseTimeExceeded'] = $this->judgeResponseTime(window: $window, minutes: $minutes, wasExceeded: $previous['responseTimeExceeded']);
 		}
 
+		$summary = null;
+		if ($window !== null) {
+			$summary = [
+				'minutes' => max(1, (int) round(($current['at'] - $previous['at']) / 60)),
+				'requests' => $window['requests'],
+				'errors' => $window['errors'],
+				'averageMs' => self::averageMs(window: $window),
+			];
+		}
+
 		if ($window === null) {
 			$outcome = ['errorRateExceeded' => false, 'responseTimeExceeded' => false];
 		}
@@ -147,7 +157,7 @@ class RequestAlertEvaluator {
 		$this->appConfig->setValueString(
 			Application::APP_ID,
 			self::SNAPSHOT_KEY,
-			(string) json_encode([...$current, ...$outcome])
+			(string) json_encode([...$current, ...$outcome, 'lastWindow' => $summary])
 		);
 
 		return $outcome;
@@ -167,6 +177,53 @@ class RequestAlertEvaluator {
 			'responseTimeExceeded' => ($snapshot['responseTimeExceeded'] && $this->threshold(key: self::RESPONSE_TIME_KEY) !== null),
 		];
 	}//end outcomes()
+
+	/**
+	 * The last judged window: its length, requests, 5xx answers and average duration, or null before the second run.
+	 *
+	 * @return array{minutes: int, requests: int, errors: int, averageMs: int|null}|null
+	 *
+	 * @spec openspec/changes/production-observability/specs/production-observability/spec.md#requirement-nextcloud-dashboard-integration
+	 */
+	public function lastWindow(): ?array {
+		$decoded = json_decode($this->appConfig->getValueString(Application::APP_ID, self::SNAPSHOT_KEY, ''), true);
+		$window  = null;
+		if (is_array($decoded) === true) {
+			$window = ($decoded['lastWindow'] ?? null);
+		}
+
+		if (is_array($window) === false) {
+			return null;
+		}
+
+		$average = null;
+		if (is_int($window['averageMs'] ?? null) === true) {
+			$average = $window['averageMs'];
+		}
+
+		return [
+			'minutes' => (int) ($window['minutes'] ?? 0),
+			'requests' => (int) ($window['requests'] ?? 0),
+			'errors' => (int) ($window['errors'] ?? 0),
+			'averageMs' => $average,
+		];
+	}//end lastWindow()
+
+	/**
+	 * The average duration of a window's requests in whole milliseconds, null without timed requests.
+	 *
+	 * @param array{requests: int, errors: int, sumMs: int, buckets: array<string, int>} $window The window.
+	 *
+	 * @return int|null
+	 */
+	private static function averageMs(array $window): ?int {
+		$timed = array_sum($window['buckets']);
+		if ($timed <= 0) {
+			return null;
+		}
+
+		return (int) round($window['sumMs'] / $timed);
+	}//end averageMs()
 
 	/**
 	 * The p95 of a set of non-cumulative bucket counts, in milliseconds, or null without observations.
@@ -203,7 +260,7 @@ class RequestAlertEvaluator {
 	/**
 	 * Judge the error rate of a window, alerting when it starts exceeding.
 	 *
-	 * @param array{requests: int, errors: int, buckets: array<string, int>} $window      The window.
+	 * @param array{requests: int, errors: int, sumMs: int, buckets: array<string, int>} $window      The window.
 	 * @param int                                                            $minutes     Its length.
 	 * @param bool                                                           $wasExceeded The previous outcome.
 	 *
@@ -233,7 +290,7 @@ class RequestAlertEvaluator {
 	/**
 	 * Judge the p95 response time of a window, alerting when it starts exceeding.
 	 *
-	 * @param array{requests: int, errors: int, buckets: array<string, int>} $window      The window.
+	 * @param array{requests: int, errors: int, sumMs: int, buckets: array<string, int>} $window      The window.
 	 * @param int                                                            $minutes     Its length.
 	 * @param bool                                                           $wasExceeded The previous outcome.
 	 *
@@ -263,13 +320,15 @@ class RequestAlertEvaluator {
 	/**
 	 * The totals now: requests, 5xx answers and the duration buckets summed over every route.
 	 *
-	 * @return array{at: int, requests: int, errors: int, buckets: array<string, int>}
+	 * @return array{at: int, requests: int, errors: int, sumMs: int, buckets: array<string, int>}
 	 */
 	private function currentTotals(): array {
 		$requests = 0;
 		$errors   = 0;
+		$sumMs    = 0;
 		foreach ($this->store->requestTotals() as $row) {
 			$requests += $row['count'];
+			$sumMs    += $row['sumMs'];
 			if (str_starts_with($row['status'], '5') === true) {
 				$errors += $row['count'];
 			}
@@ -280,7 +339,7 @@ class RequestAlertEvaluator {
 			$buckets[$row['bucket']] = (($buckets[$row['bucket']] ?? 0) + $row['count']);
 		}
 
-		return ['at' => $this->time->getTime(), 'requests' => $requests, 'errors' => $errors, 'buckets' => $buckets];
+		return ['at' => $this->time->getTime(), 'requests' => $requests, 'errors' => $errors, 'sumMs' => $sumMs, 'buckets' => $buckets];
 	}//end currentTotals()
 
 	/**
@@ -289,9 +348,9 @@ class RequestAlertEvaluator {
 	 * A total that went down (rows removed by the retention cleanup) starts a new baseline.
 	 *
 	 * @param array<string, mixed>                                                      $previous The previous snapshot.
-	 * @param array{at: int, requests: int, errors: int, buckets: array<string, int>} $current  The totals now.
+	 * @param array{at: int, requests: int, errors: int, sumMs: int, buckets: array<string, int>} $current  The totals now.
 	 *
-	 * @return array{requests: int, errors: int, buckets: array<string, int>}|null
+	 * @return array{requests: int, errors: int, sumMs: int, buckets: array<string, int>}|null
 	 */
 	private static function window(array $previous, array $current): ?array {
 		if ($previous['at'] === null || $current['requests'] < $previous['requests'] || $current['errors'] < $previous['errors']) {
@@ -306,6 +365,7 @@ class RequestAlertEvaluator {
 		return [
 			'requests' => ($current['requests'] - $previous['requests']),
 			'errors' => ($current['errors'] - $previous['errors']),
+			'sumMs' => max(0, ($current['sumMs'] - $previous['sumMs'])),
 			'buckets' => $buckets,
 		];
 	}//end window()
@@ -313,12 +373,21 @@ class RequestAlertEvaluator {
 	/**
 	 * The stored snapshot, with `at` null when there is none.
 	 *
-	 * @return array{at: int|null, requests: int, errors: int, buckets: array<string, int>, errorRateExceeded: bool, responseTimeExceeded: bool}
+	 * @return array{at: int|null, requests: int, errors: int, sumMs: int, buckets: array<string, int>,
+	 *     errorRateExceeded: bool, responseTimeExceeded: bool}
 	 */
 	private function snapshot(): array {
 		$decoded = json_decode($this->appConfig->getValueString(Application::APP_ID, self::SNAPSHOT_KEY, ''), true);
 		if (is_array($decoded) === false || is_int($decoded['at'] ?? null) === false) {
-			return ['at' => null, 'requests' => 0, 'errors' => 0, 'buckets' => [], 'errorRateExceeded' => false, 'responseTimeExceeded' => false];
+			return [
+				'at' => null,
+				'requests' => 0,
+				'errors' => 0,
+				'sumMs' => 0,
+				'buckets' => [],
+				'errorRateExceeded' => false,
+				'responseTimeExceeded' => false,
+			];
 		}
 
 		$stored = [];
@@ -335,6 +404,7 @@ class RequestAlertEvaluator {
 			'at' => $decoded['at'],
 			'requests' => (int) ($decoded['requests'] ?? 0),
 			'errors' => (int) ($decoded['errors'] ?? 0),
+			'sumMs' => (int) ($decoded['sumMs'] ?? 0),
 			'buckets' => $buckets,
 			'errorRateExceeded' => (($decoded['errorRateExceeded'] ?? false) === true),
 			'responseTimeExceeded' => (($decoded['responseTimeExceeded'] ?? false) === true),

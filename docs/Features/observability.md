@@ -123,6 +123,12 @@ a log platform can group them. A database failure writes an ERROR entry with `er
 `context.register`, `context.schema`, `context.action`. Request bodies and query values are
 never logged. INFO entries are only kept when the Nextcloud `loglevel` is 1 or lower.
 
+## Dashboard widget
+
+Administrators can add the **OpenRegister operations** widget to their Nextcloud dashboard. It
+shows the total objects, registers and schemas, and the server errors and average response time
+of the last five-minute window judged by `RequestAlertJob`. Other users do not see it.
+
 ## Audit logging
 
 Object writes are recorded in `oc_openregister_audit_trails` (with full before/after diffs) and surface via the standard `oc_activity` stream. See [Versioning and Audit](versioning-and-audit.md) for the audit-trail data shape and `Activity Provider` for the activity-stream integration.

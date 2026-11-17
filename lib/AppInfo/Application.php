@@ -217,6 +217,11 @@ class Application extends App implements IBootstrap {
 		$context->registerDashboardWidget(
 			\OCA\OpenRegister\Dashboard\IntegrationDashboardWidget::class
 		);
+		// Production-observability: the operations figures for administrators,
+		// rendered by the Nextcloud dashboard itself (an API widget, no script).
+		$context->registerDashboardWidget(
+			\OCA\OpenRegister\Dashboard\OperationsDashboardWidget::class
+		);
 		\OCA\OpenRegister\Service\WritePhase::stamp('or.register.out');
 	}//end register()
 

@@ -4271,3 +4271,4 @@ Service/Observability/RequestAlertEvaluator.php,,Service,,,,,Integrations
 Service/Observability/RequestAlertMetricsProvider.php,,Service,,,,,Integrations
 BackgroundJob/RequestAlertJob.php,,BackgroundJob,,,,,Core
 Notification/ObservabilitySubjectRenderer.php,,Notification,,,,,Notifications
+Dashboard/OperationsDashboardWidget.php,,Dashboard,,,,,Platform

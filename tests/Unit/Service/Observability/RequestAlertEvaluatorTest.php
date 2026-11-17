@@ -236,6 +236,27 @@ final class RequestAlertEvaluatorTest extends TestCase {
 		$this->assertTrue($this->evaluator()->evaluate()['errorRateExceeded']);
 	}//end testAFailedDeliveryIsLoggedAndTheOutcomeStands()
 
+	public function testTheLastWindowIsSummarisedForTheDashboard(): void {
+		$this->traffic(requests: 100, errors: 0);
+		$this->assertNull($this->evaluator()->lastWindow());
+		$this->evaluator()->evaluate();
+		$this->assertNull($this->evaluator()->lastWindow());
+
+		$this->now += 300;
+		$this->traffic(requests: 150, errors: 4);
+		$this->evaluator()->evaluate();
+
+		$this->assertSame(['minutes' => 5, 'requests' => 50, 'errors' => 4, 'averageMs' => 10], $this->evaluator()->lastWindow());
+	}//end testTheLastWindowIsSummarisedForTheDashboard()
+
+	public function testAWindowWithoutTimedRequestsHasNoAverage(): void {
+		$this->traffic(requests: 0, errors: 0);
+		$this->evaluator()->evaluate();
+		$this->evaluator()->evaluate();
+
+		$this->assertSame(['minutes' => 1, 'requests' => 0, 'errors' => 0, 'averageMs' => null], $this->evaluator()->lastWindow());
+	}//end testAWindowWithoutTimedRequestsHasNoAverage()
+
 	public function testPercentileMs(): void {
 		$this->assertNull(RequestAlertEvaluator::percentileMs(buckets: []));
 		$this->assertSame(9.5, RequestAlertEvaluator::percentileMs(buckets: ['10' => 10]));
@@ -254,7 +275,7 @@ final class RequestAlertEvaluatorTest extends TestCase {
 	 */
 	private function traffic(int $requests, int $errors, int $slow = 0): void {
 		$this->requests = [
-			['method' => 'GET', 'route' => 'objects.index', 'status' => '200', 'count' => ($requests - $errors), 'sumMs' => 0],
+			['method' => 'GET', 'route' => 'objects.index', 'status' => '200', 'count' => ($requests - $errors), 'sumMs' => (10 * $requests)],
 			['method' => 'GET', 'route' => 'objects.index', 'status' => '503', 'count' => $errors, 'sumMs' => 0],
 		];
 		$this->buckets = [
