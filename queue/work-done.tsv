@@ -18518,3 +18518,4 @@ verify:opencatalogi:2680:66ae4f4f	CONFLICT: #2680 vs development in docs, l10n, 
 verify:shillinq:2983:55242378	CONFLICT #2983 (info.xml, GLLineResultStampListener, manifest, l10n)	session-20261116T232623-066b53c9	2026-11-17T00:05:29Z
 verify:learniq:2551:ca8152ea	CONFLICT #2551 (l10n, committed .pyc)	session-20261116T232944-146e39d7	2026-11-17T00:05:41Z
 verify:opencatalogi:2722:4a2f2fb8	CONFLICT #2722 (3 files vs development)	session-20261116T233933-3050c00d	2026-11-17T00:06:07Z
+merge:learniq:2578:a3daf75a	failed: prep exit 2: composer install refused (vimeo/psalm 7.5.0 needs php ~8.3.16, session has 8.3.6), no vendor/bin/phpunit	session-20261116T232944-146e39d7	2026-11-17T00:06:22Z
