@@ -17510,3 +17510,10 @@ filinq	2086	ebd288b010bbad46650f6eba1d84c885048c3cd6	REVERIFY	worker-05:merge	co
 filinq	2090	0bf796a12b041ed3fde12fdc3427dfa3ffb08f4e	REVERIFY	worker-05:merge	conflicts only with an earlier PR of the merge tree: merges clean on development alone; files: lib/Settings/filinq_register.json 
 filinq	2095	120f44821d857a1402846d3d8af708220037e08c	REVERIFY	worker-05:merge	conflicts only with an earlier PR of the merge tree: merges clean on development alone; files: lib/Settings/filinq_mock_register.json lib/Settings/filinq_register.json 
 filinq	2098	cf30de81619fff53d614f9f1456	REVERIFY	worker-05:merge	verdict sha is not the head: head is cf30de81619fff53d614f9f1456eb39a7e8a4c05
+buildiq	1605	2848f1e25ea733e48fba1ec20a23168937019526	REVERIFY	worker-03:merge	conflicts only with an earlier PR of the merge tree: merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+buildiq	1607	0a33c019456e3dd065a515ca0ff5d168d992b49e	REVERIFY	worker-03:merge	conflicts only with an earlier PR of the merge tree: merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+buildiq	1608	b1698085411321a7ccd4c3385941cf393de14306	REVERIFY	worker-03:merge	conflicts only with an earlier PR of the merge tree: merges clean on development alone; files: l10n/en.js src/components/page-editor/DetailPageEditor.vue 
+buildiq	1618	088b083a05a5b0e1945e2be8ff6a73719d0f1c41	REVERIFY	worker-03:merge	conflicts only with an earlier PR of the merge tree: merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+buildiq	1626	230c8f815793b9508a6b263546a01410094bdabc	REVERIFY	worker-03:merge	conflicts only with an earlier PR of the merge tree: merges clean on development alone; files: l10n/nl.js l10n/nl.json 
+buildiq	1630	fd159d9c77f828752cacef83c6c49afa05e8d911	REVERIFY	worker-03:merge	conflicts only with an earlier PR of the merge tree: merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+buildiq	1632	339aedb1d07b4dd8111025b7171	REVERIFY	worker-03:merge	verdict sha is not the head: head is 339aedb1d07b4dd8111025b717142a04ef8b063c
