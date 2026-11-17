@@ -1347,3 +1347,5 @@ humaniq	1192	3ca961bd39275bf3bb69cd3b39f481eff6653277	REQUEST_CHANGES	worker-20	
 planninq	1238	a2d0008dd4f59ba29e63e1d9a0b4fdb0644576b0	APPROVE	worker-53	Quick; no blockers; e2e spec and tasks note only, runs as a fresh non-admin user
 integriq	3585	39f07d5a0d6b61d37b08b66b1adae9919ddca926	REQUEST_CHANGES	worker-40	Strict; blocker: the provider check takes its outbound target and credential reference from the request body instead of the stored source or the provider default; pin both before probing; rest matches messaging-payments-review
 integriq	3612	e27499b1856ba5d6d1a57ae5520018815b6ac2c9	APPROVE	worker-40	Strict; no blockers; fills empty fields only, secrets minted at organisation scope, verified byte for byte, revoked on verify or save failure, no secret logged; matches brp-connection-monitor-from-pipelinq 3.1
+integriq	3701	4816b22cd7835e1f79e62a620285ea2f0172cf3c	APPROVE	worker-40	Quick; no blockers; publiccode.yml and README only, referenced images exist, Common Ground entry kept
+integriq	3703	e877128e20b84e54175d4bfa3784353eb4378378	APPROVE	worker-40	Quick; no blockers; composer.lock patch bump plus regenerated sbom
