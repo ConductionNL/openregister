@@ -18848,3 +18848,4 @@ dossiq	6665	d62c780df34731fa7d6cab3b8f77f8a362c8a493	GREEN	worker-40	unit 18422 
 integriq	3727	b3a151e9f2b9704fdc2a0d2c979caf4bef974c6e	GREEN	worker-11	adds one Playwright spec and tasks.md notes only; merges clean; no unit or vitest file in scope, so the suite equals development (9910, 5 inherited failures, 0 new)
 dossiq	6666	54d4dfed6a9fd52abdf898cac964f4f37b9fe24d	GREEN	worker-40	unit 18422 on tree vs 18398 baseline, 1 inherited error, 0 new; vitest 7224, 2 inherited failures, 0 new; build PR judged against its change
 dossiq	6668	1395d5e68c106240715cd719a08bf8d2652f8bf5	GREEN	worker-40	unit 18422 on tree vs 18398 baseline, 1 inherited error, 0 new; vitest 7224, 2 inherited failures, 0 new; build PR judged against its change
+integriq	3704	f13fbbdb7a9a50c6b41410d7de50b3c522fa187a	GREEN	worker-38	unit 9910 tests, baseline 2 errors 3 failures, 0 new; dev dependency bump nextcloud/ocp 35.0.3 + SBOM regen
