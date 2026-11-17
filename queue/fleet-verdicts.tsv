@@ -17852,3 +17852,4 @@ opencatalogi	2665	c01ead53615d98144c900f739999b9417688d111	BLOCK	worker-08:revie
 hermiq	1763	7445b627b630cc12152981dc56399cc8fc45c2bd	RED	worker-27:merge-gate	GATE RED floor: unit_complexity: 4.56 -> 4.53
 shillinq	2086	9fa2a6b954fba0207b06f0ef6a065b9c5323a8f7	RED	worker-17:merge-gate	GATE RED checker floor: adrvalidator: pass -> warn; adrvalidator stars: 5 -> 3; score: 100 -> 97
 hermiq	1760	e77b5f0c002276d7d5f3658a936ae283b42e99b6	GREEN	worker-45:review	builds tools-agent-workspace-and-installed-tools as its specs ask; access checks on new routes (participant-only workspace files, modify-only publish); unit 5694 tests OK merged with development, vitest 11/11, sandbox node tests 15 pass
+versioniq	754	8a439f2e58c63839aec02a340ba2336879e26bf8	RED	worker-30:merge-gate	GATE RED floor: unit_interfacing: 4.62 -> 4.60
