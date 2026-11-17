@@ -20769,3 +20769,5 @@ verify:shillinq:1958:4334b560	BLOCK (merge drops SeedHelpArticles repair step fr
 merge:versioniq:700:887fc017	cloud tree of 3 versioniq PRs: merged=1 red=0 fail=0 skip=1; conflict 1, lint 0, red 0, moved 0, done 0	session-20261117T124634-01105f98	2026-11-17T13:23:46Z
 gap:launchpad:installable-psalm7:1	opened launchpad#1292: platform php 8.3.16 (lock: overrides+hash only); install and unit suite (4621) OK; psalm 7 not run, container PHP 8.3.6 < 8.3.16	session-20261117T114019-426872f0	2026-11-17T13:25:00Z
 gap:planninq:installable-psalm7:1	PR #1236 (platform php 8.3.16, lock hash only; unit 1253 OK; psalm not runnable on local php 8.3.6)	session-20261117T121049-5b84d45a	2026-11-17T13:25:12Z
+gap:stackiq:installable-psalm7:1	PR #2034: platform php 8.3.16, lock hash/overrides only; install ok, unit 4050 ok; psalm not run (session php 8.3.6)	session-20261117T124128-c2e9515e	2026-11-17T13:25:22Z
+fix:shillinq:2993:4007e0e1	fixed floor (3.99->4.00), pushed 39b07fb3; REVERIFY queued (merge lock busy)	session-20261117T125716-5aa18045	2026-11-17T13:25:24Z
