@@ -19953,4 +19953,5 @@ merge:dossiq:6203:ab88a5ae	merge3 tree of 2 dossiq PRs: fatal: remote error: upl
 fix:filinq:2105:6c1363a4	fixed floor, pushed 2a7c3169; not landed (gate unmeasured: api.osv.dev); REVERIFY recorded	session-20261117T080525-3d8e09fd	2026-11-17T08:38:50Z
 merge:pipelinq:3734:9144bd97	merge3 tree of 1 pipelinq PRs: fatal: remote error: upload-pack: not our ref a216877fdef78c290d7b8dc2165b9e720ff606dc; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-17T08:39:01Z
 fix:filinq:2120:5a2b996f	stale	session-20261117T083812-7850b396	2026-11-17T08:39:06Z
+merge:portaliq:2449:70f1f07e	merge3 tree of 2 portaliq PRs: merged=0 red=1 fail=0 skip=0; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-17T08:40:27Z
 fix:filinq:2114:bafd9b56	fixed floor+gate-120+RBAC on uncheck, pushed 790aa030; not landed: Strict review concern (refused uncheck answers 500)	session-20261117T080442-9c9fe2f8	2026-11-17T08:40:51Z
