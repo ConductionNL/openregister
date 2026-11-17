@@ -5243,3 +5243,4 @@ stackiq	1938	252677a687905e7288c5f03310ccb198602529c6	MERGED	worker-31	GATE OK s
 larpinq	1086	46f1ee9a3cd151eeec65ac932ab8eaf720f67ec0	RED	worker-24	GATE RED floor: unit_interfacing: 4.77 -> 4.74
 humaniq	1188	015e34532a2a2162269b6e5248b808464d6d28ec	MERGED	worker-20	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.47 holds at 3.59
 hermiq	1719	0b2ffe7a03dc76e2f3e1b383208fc4361e4e8611	RED	worker-33	GATE RED floor: module_coupling: 5.10 -> 5.08
+stackiq	1943	61ef25c28535107a6191128eea1d7ee611b28ce7	MERGED	worker-28	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.10
