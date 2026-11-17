@@ -19213,3 +19213,4 @@ decidiq	2174	53ff0981bdaf85d442d69b55c838822ea2087305	GREEN	worker-19	unit 5035 
 filinq	2173	6bce70eb0c412e2bc6eaa1d778075d1f8f776f04	GREEN	worker-14	publiccode.yml metadata only; unit 7336 tests on tree, baseline 7329 green, no new failures
 stackiq	2028	9d9add83116540ecee19b9cfe128025267881839	RED	worker-32:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 filinq	2190	31521cfa124aa71c4f036a2e0b32a52ffc9387cc	GREEN	worker-14	build pdfua-verapdf-matterhorn: fixtures, recorded reports, e2e spec, PdfUaFixturesTest (+7 tests); unit 7336 tests, no failures
+decidiq	2286	62b9a48215c112bd9dece76e06b8073d424f20a8	GREEN	worker-19	unit 5034 pass (baseline 5020 pass), 0 new; php -l clean; ORI feed withholding matches the change's spec
