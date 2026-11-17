@@ -18715,6 +18715,7 @@ planninq	1246	64caa7ce8e8fec9974544ab87ac0ff8ccd473dc5	GREEN	worker-22	t-shirt e
 buildiq	1724	8556ed5ad76ab347c9e8e97dd7635371cce5a6d6	GREEN	worker-26	same head verified in tree verify:buildiq:1724:86533fb7 this session: unit 3676 = baseline, new failures 0; tasks.md only
 buildiq	1630	285ac6f0971889105f2dbd12d6e5111710aaf0b2	CONFLICT	worker-51	conflicts with development in src/composables/useManifestValidator.js (offline validator added on development); baseline 3676 tests OK
 planninq	1247	1a42908edf32546f4d27dfc8c1b8aec9935bd950	GREEN	worker-22	e2e spec + tasks.md only; tree unit 1254 OK/11 skipped (baseline 1253), vitest 3593/3593, no new failures
+buildiq	1727	4916d3fd0aee276364b2ec147ef6e723807f88ca	GREEN	worker-26	same head verified in tree verify:buildiq:1724:86533fb7 this session: unit 3676 = baseline, new failures 0; e2e spec/tasks.md only
 planninq	1248	36d5dc19e1277c9823e4512f8072ca92540206a6	GREEN	worker-22	e2e + postman collection only; tree unit 1254 OK/11 skipped (baseline 1253), vitest 3593/3593, no new failures
 planninq	1250	70dfe254912eeaa8aeb0a5a52fbb7c735485ff4e	REVERIFY	worker-22	conflicts only with an earlier PR of the verify tree (postman collection)
 filinq	2192	8501a0bcb5607d5c70a7694701fb8e1d30de2196	GREEN	worker-19	phpunit 7305 ok (baseline 7288 ok, 0 new failures); vitest 857 passed; build letter-email-sending per change specs
