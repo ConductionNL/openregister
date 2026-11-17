@@ -20705,3 +20705,4 @@ verify:planninq:1054:57acc898	GREEN #1054 (config-only floor json; unit 1253 ok)
 verify:portaliq:2449:ae33c0d7	CONFLICT #2449: package.json, PortaliqRegisterConfigTest.php, example-site.spec.mjs	session-20261117T124737-01fc7db5	2026-11-17T13:07:45Z
 verify:portaliq:1364:8a7a486b	GREEN #1364 (empty diff vs development)	session-20261117T125719-a348e067	2026-11-17T13:07:56Z
 verify:thematiq:1716:af83f772	GREEN #1716 (version bump only)	session-20261117T124634-577ba792	2026-11-17T13:08:10Z
+verify:pipelinq:2417:727efa5a	GREEN #2417 (no-op merge, tree equals development)	session-20261117T123632-d3b91db3	2026-11-17T13:08:24Z
