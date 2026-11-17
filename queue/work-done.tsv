@@ -18661,3 +18661,4 @@ fix:buildiq:1689:5149b0a3	fixed conflict + options-API migration, pushed c2b2068
 build:decidiq:the-decision-as-a-walked-process:c8	partial: PR #2239 at 336d0e42c builds 4.2 and 4.3 (intake verdict closes the route with ended-at-intake, refusal without ground; suite 4784->4795 OK). Left: 1.3, 2.2-2.3, 3.2-3.3, 4.4 read seam	session-20261116T230531-f9095b0f	2026-11-17T00:34:30Z
 cover:decidiq:a5f973bbm56fe:59826f43	deferred: decidiq has 44 open PRs	session-20261116T230531-f9095b0f	2026-11-17T00:34:54Z
 cover:decidiq:a5f973bbm56fe:882bd950	deferred: decidiq has 44 open PRs	session-20261116T230531-f9095b0f	2026-11-17T00:35:08Z
+cover:stackiq:9ac19b3am039e:8ed5443b	nothing to cover: lib/Kernel/Contracts holds 62 interfaces only, no executable lines	session-20261116T230531-f9095b0f	2026-11-17T00:35:37Z
