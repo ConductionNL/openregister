@@ -18810,6 +18810,7 @@ filinq	2174	cb6650c7ab7ec341179061d3a82022a2119cfc16	GREEN	worker-26	unit 7288 o
 opencatalogi	2796	7d78014c5c048a8b9ec158b0573d341fb0dfbe97	GREEN	worker-31	phpunit 6389 tests on tree, baseline 6364 with 103 inherited failures/errors, 0 new; vitest 8 inherited mainEntry failures, 0 new
 opencatalogi	2797	73c7291c61fbe1ac6ed7f6f4bb7f1da3b265956d	GREEN	worker-31	phpunit 6389 tests on tree, baseline 6364 with 103 inherited failures/errors, 0 new; vitest 8 inherited mainEntry failures, 0 new
 opencatalogi	2798	f43db4b9fe7611c1537c1a1d54f949df9e16db64	GREEN	worker-31	phpunit 6389 tests on tree, baseline 6364 with 103 inherited failures/errors, 0 new; vitest 8 inherited mainEntry failures, 0 new
+dossiq	6646	eb19f73d3dfe4c5313e6aa76ef6c339c953b85c5	GREEN	worker-21	tasks.md tick only (1.4 seed confirmed on portaliq development zuiddrecht.json); unit 18399, 19 failures inherited, none new
 opencatalogi	2799	a135b0009b7aefad519be035a3b4003c800e66b2	GREEN	worker-31	phpunit 6389 tests on tree, baseline 6364 with 103 inherited failures/errors, 0 new; vitest 8 inherited mainEntry failures, 0 new
 filinq	2185	3ebe59da9070e5dedafce84112113ed789bcbc83	GREEN	worker-17	unit 7288 tests baseline 0 failures, tree 0 new; docs + env-gated integration probe only (skips without NC_BASE_URL); matches mcp-generation-tools tasks 2.2/2.4
 opencatalogi	2800	7d8c1d3f5f83cdb66a61ba4d82d9107fb1d2fcc0	GREEN	worker-31	phpunit 6389 tests on tree, baseline 6364 with 103 inherited failures/errors, 0 new; vitest 8 inherited mainEntry failures, 0 new
