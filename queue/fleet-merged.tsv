@@ -5563,3 +5563,4 @@ opencatalogi	2795	9844e9a09589c8fb5eb3275c484e4adb67f6bb38	SKIP	worker-46	GATE U
 keepiq	1901	f9f7976788c4b0b79cfd7a58bceadaf67c54401f	RED	worker-31	GATE RED floor: duplication: 4.18 -> 4.16
 decidiq	2279	9029034a754b55ffbb5afc179985738e6927cc62	SKIP	worker-04	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 decidiq	2280	f341db5555b2782cffa8c059027a79d397c42c35	SKIP	worker-04	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
+buildiq	1715	628d9e25f091953535ee8b7bb259bf0baf012802	SKIP	worker-02	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
