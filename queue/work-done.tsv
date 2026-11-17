@@ -22519,3 +22519,5 @@ build:buildiq:logic-automation-actions-that-run:b2:c7	already built: T01-T09, T1
 fix:integriq:3564:d0095e30	fixed demo data + nl.json keys, pushed 7f70763f; REVERIFY queued (merge gate host blocked)	session-20261117T185927-e9838dc9	2026-11-17T20:22:47Z
 fix:planninq:1218:3bb9d8d2	fixed: sbom regenerated on #1218, new head df1e59ad; REVERIFY queued (end-to-end skipped: api.osv.dev unreachable)	session-20261117T185625-a1e67f54	2026-11-17T20:23:14Z
 fix:integriq:3713:1ac93422	sbom regenerated #3713, new head 7c19b1408e; REVERIFY queued	session-20261117T190308-4c99e05c	2026-11-17T20:23:31Z
+fix:integriq:3707:cac00a86	fixed: guzzle kept on core-provided ^7, basic-auth fix kept; pushed ccad9acae, REVERIFY queued (not landed end to end)	session-20261117T190250-54b1be06	2026-11-17T20:23:50Z
+fix:integriq:2650:c1e85c0b	fixed: conflict resolved, routes renamed; pushed ecac209ce; REVERIFY queued (merge gate host unreachable, not landed)	session-20261117T190318-dafab159	2026-11-17T20:24:00Z
