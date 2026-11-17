@@ -21317,3 +21317,4 @@ build:shillinq:integration-leaves-consume:b2	already built: every code task tick
 build:shillinq:ledger-group-close:b2	already building: quality/build-ledger-group-close is open	session-20261117T133035-588aec38	2026-11-17T14:51:55Z
 build:shillinq:ledger-journal-line-dimensions:b2	already building: branch quality/build-ledger-journal-line-dimensions exists	session-20261117T134347-d0294040	2026-11-17T14:52:11Z
 build:shillinq:inventory-pos-decrement:b2	already done: code tasks on development (fc91fe45); only the two-app live check is left	session-20261117T133035-588aec38	2026-11-17T14:52:18Z
+verify:opencatalogi:2771:d7714652	2771 CONFLICT (l10n catalogues)	session-20261117T123418-5f98fc94	2026-11-17T14:52:52Z
