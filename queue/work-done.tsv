@@ -18648,3 +18648,4 @@ merge:dossiq:6203:f1f3d3ca	cloud tree of 2 dossiq PRs: merged=1 red=0 fail=0 ski
 verify:learniq:2565:bcb03b46	#2565 CONFLICT (5 files)	session-20261116T230843-e8244832	2026-11-17T00:30:34Z
 fix:planninq:930:b3e1916c:v3	merged #930 at 210b9056b490372454da0e500a6a5dfc69480ebf (merged development, link check covers both ends, openapi dup fixed)	session-20261116T232623-066b53c9	2026-11-17T00:30:26Z
 fix:stackiq:1941:c6e6242e	merged #1941 at 92fdaeeb94f12877f88fbbf4acef9cdf928d218e (conflict in FacetedCatalogIndexView.vue resolved, interfacing floor restored by a parameter refactor, SBOM regenerated)	session-20261116T233921-33ab4c87	2026-11-17T00:31:02Z
+cover:stackiq:9ac19b3am039e:60c2c265	PR #2009: getBulkUserInfo answer/limit/failure via php://input stream wrapper, 3 tests, +29 stmts; suite 3912->3915 OK	session-20261113T214350-9762e143	2026-11-17T00:32:12Z
