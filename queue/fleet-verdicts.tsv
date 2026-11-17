@@ -19246,3 +19246,4 @@ versioniq	726	2348a5fc126e383e38bfaf88de7e91f0ebfd4564	REVERIFY	worker-11:merge	
 versioniq	797	c57c48555761cf2212f669c177b61cc63d932ea9	REVERIFY	worker-11:merge	conflicts only with an earlier PR of the merge tree: merges clean on development alone; files: tests/e2e/advisories.spec.ts tests/e2e/fixtures/forge/server.mjs 
 versioniq	798	91fdceff9606e38c08294f9f188caa4b1c92289f	REVERIFY	worker-11:merge	conflicts only with an earlier PR of the merge tree: merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
 versioniq	799	9d0b17e161aabdb3641874366fbf88fc9343996c	CONFLICT	worker-11:merge	conflicts with development; files: appinfo/info.xml l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Controller/ApiController.php lib/Service/Api/ReportCollaborators.php 
+opencatalogi	2805	b5832c88ee2a159946d2f6880ba534de439fb504	REVERIFY	worker-09	conflicts only with an earlier PR of the verify tree
