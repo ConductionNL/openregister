@@ -18599,4 +18599,5 @@ decidiq	2284	75bf16e4978932fd693798e5513fda961c651b66	GREEN	worker-48	tree of 9 
 versioniq	782	8ad2f3ba98693fc3e7ee1aa6891642f1ab5deb80	CONFLICT	worker-58	conflicts with development in tests/e2e/auto-update.spec.ts, jobs.spec.ts and tests/e2e/fixtures/forge/*
 versioniq	783	69cf88e72c64b23c104faf803d31d6ee982197f5	CONFLICT	worker-58	conflicts with development in tests/e2e/jobs.spec.ts
 versioniq	784	54525d8711b1c4e419fce2761bad4ba561e39810	GREEN	worker-58	adds tests/e2e/mcp.spec.ts only; PHP 2456 tests = baseline (2 inherited failures), 0 new
+learniq	2524	ba4cca6e055f21daccf499e56ac25f265d269dce	GREEN	worker-12:review	build of enrolment-sync-classes-from-student-administration: class-roster landing, roster sync and the synced-cohort field guard as the change's specs ask; no access check weakened; unit 7166 on the merge, 2 failures both inherited from development
 learniq	2596	7ff99e0704ef8eafd7681a2b6936ec425d72eae0	GREEN	worker-21	unit 7157 tests on tree (baseline 7152, 1 inherited failure HigherEducationExampleSetTest), new failures 0; js-unit 1418, 8 inherited failures, new 0; e2e spec and tasks.md only
