@@ -19380,3 +19380,4 @@ review:hermiq:1751:73163d7d	BLOCK: gate-46 unresolved @spec in two added test st
 review:shillinq:3000:210bb637	GREEN: manifest fixed; now conflicts with development (l10n, register lock)	session-20261117T004644-d9c68b8f	2026-11-17T03:25:30Z
 review:filinq:2095:5342f5c8	GREEN: integrity scan matches specs, 6998 unit tests OK; conflicts with development in l10n/register json	session-20261117T032233-7fc561a9	2026-11-17T03:25:41Z
 review:hermiq:1749:8dfea2dc	GREEN: hermiq #1749 matches its change specs; unit 5539 OK, vitest 93 OK	session-20261117T032312-77fce7f4	2026-11-17T03:26:07Z
+review:shillinq:3052:474a6bf6	GREEN: unit 12595 OK on PR+development, vitest 12 pass	session-20261117T032229-44e2a97c	2026-11-17T03:26:40Z
