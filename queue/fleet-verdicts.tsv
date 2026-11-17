@@ -19257,6 +19257,7 @@ filinq	2072	5199bdf2bbd03910e404fd7b79e0d6c2fea567ce	GREEN	worker-30	phpunit 742
 humaniq	1198	ada533a81007f708bdfe9eb24a2ba5a6a2041daa	GREEN	worker-54	phpunit 4532 OK on tree (baseline 4509 OK); node test:js 13 fails = baseline 13; new failures 0; build of record-history-on-every-detail-page per its specs
 stackiq	1946	1a1d2ce9e03cc8c6717b5d5aef326ce87780ea98	REVERIFY	worker-32:merge	conflicts only with an earlier PR of the merge tree: merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
 stackiq	2045	711ef7f734af2625f6eb46f45c0	REVERIFY	worker-32:merge	verdict sha is not the head: head is 711ef7f734af2625f6eb46f45c0b2d8e7ec7b45c
+decidiq	2282	f00027e0e741ca2b0f99ebb6864d1e9c6aef1fdd	GREEN	worker-19	unit 5047 pass (baseline 5020 pass), 0 new; vitest 1 inherited fail meetingSessionsGolden (red on development); access check runs before any write
 learniq	2608	b1dde7441095fd9b335dbd3c80e32623626e2100	GREEN	worker-04	tree 2608+2612: unit 7164 tests, baseline 7152 with 1 failure (HigherEducationExampleSetTest, inherited), new failures none
 planninq	1252	d65f04922fee972a0c53a84c02b54d6a5eed02ff	GREEN	worker-36	same sha verified minutes earlier on development 17e6169e: phpunit 1253 ok (= baseline), vitest 3589 passed; e2e spec + tasks.md note only
 buildiq	1630	285ac6f0971889105f2dbd12d6e5111710aaf0b2	CONFLICT	worker-50:merge	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Controller/ControllerRegistrar.php src/composables/useManifestValidator.js
