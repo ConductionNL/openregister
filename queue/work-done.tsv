@@ -19589,6 +19589,7 @@ merge:opencatalogi:2651:5e4d5ad4	cloud tree of 3 opencatalogi PRs: merged=0 red=
 gap:pipelinq:assignee-starts-ticket:1	PR #3929: start/reject now run TicketAssigneeGuard (assignee, sales or admin), unit tested	session-20261117T062856-12839ec9	2026-11-17T06:38:12Z
 fix:filinq:2086:b75633fb	fixed CONFLICT, pushed ebd288b0; merge lock held elsewhere, REVERIFY queued	session-20261117T055905-03eea4d3	2026-11-17T06:38:07Z
 build:decidiq:agenda-item-confidential-papers:c8	failed: blocked, no code change: PR #2188 already merged; task 1 read rules need governanceBody on AgendaItem plus a test through OpenRegister's real RBAC evaluator, which decidiq's unit suite cannot load (and a read block on AgendaItem must restate every write grant); task 2 rest (Alleen voor leden van {orgaan}, Besloten punt) depends on task 1; task 5 needs an OpenRegister read audit on object f	session-20261117T062917-0fb3a5d4	2026-11-17T06:38:23Z
+cover:dossiq:069ee2d6m9d1b:eb8f684c	PR #6629: 9 tests for Reporting edges (ReportService, Calculator, Publisher); suite 19 failures before/after	session-20261117T063046-d755315d	2026-11-17T06:38:35Z
 fix:shillinq:2086:ca69b7ea	conflict resolved, new head 9fa2a6b9, REVERIFY (merge lock held)	session-20261117T061732-40387d12	2026-11-17T06:38:32Z
 fix:decidiq:2205:0ebb671c	conflict resolved, pushed c6740766; REVERIFY queued	session-20261117T055853-7ddd3cb3	2026-11-17T06:38:47Z
 fix:buildiq:1607:e892c54e	conflict resolved, pushed 0a33c019; REVERIFY queued	session-20261117T063011-660205ce	2026-11-17T06:38:54Z
