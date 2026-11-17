@@ -5023,3 +5023,4 @@ dossiq	6623	488a8c99c98a77e810a9e6c70beddc4999543d8b	MERGED	merge3	GATE OK sbom,
 shillinq	3052	474a6bf67e28073655d97619caf0786dfb06b967	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.05
 shillinq	3110	e8ca71f43e333b8d56e891cd551b4ee5341f373e	RED	merge3	GATE RED sbom: composer.lock, package-lock.json changed without sbom.cdx.json
 versioniq	692	613c5671abbf976f87e827f1823d3c2cdc429284	RED	worker-08	GATE RED floor: duplication: 5.19 -> 5.17; unit_size: 4.86 -> 4.84; unit_complexity: 4.79 -> 4.76
+launchpad	819	ff71d97922151c2160ae25f8d13634462096be84	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
