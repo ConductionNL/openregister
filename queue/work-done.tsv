@@ -22241,3 +22241,4 @@ verify:dossiq:6659:565a618a	GREEN 6659 (e2e only; 0 new failures, 19 inherited)	
 verify:dossiq:6661:a6b5bd94	GREEN dossiq#6661 (e2e spec + tasks tick; no new failures)	session-20261117T190626-5c7fccb4	2026-11-17T19:30:44Z
 verify:integriq:3725:1e381ea4	GREEN integriq#3725 (no new failures)	session-20261117T190302-4e3d4569	2026-11-17T19:30:56Z
 verify:hermiq:1853:f3ad2278	GREEN #1853, 0 new failures	session-20261117T190150-dbabe332	2026-11-17T19:31:06Z
+verify:integriq:3708:41ada0a6	GREEN	session-20261117T190242-7c82bed8	2026-11-17T19:31:18Z
