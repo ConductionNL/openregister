@@ -5253,3 +5253,4 @@ decidiq	2263	1961fa6f38aead9bff6396771efeac3486344c64	MERGED	worker-07	GATE OK s
 hermiq	1833	6a516e7878f5c1cbad3111ca5bb12c4b1203e40b	RED	worker-33	GATE RED checker floor: fivelayer: pass -> warn; fivelayer stars: 5 -> 3; score: 100 -> 97
 launchpad	1261	07612654d13d0593a4c978e6cead9d1ca9bc77ea	SKIP	worker-24	no APPROVE review at this head
 planninq	1217	f6120234f8623d11059dd154f7dcc77e9391f407	RED	worker-19	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+buildiq	1590	ca570cebe8fe3a8df3efa073bd3caa992de44476	RED	worker-13	GATE RED floor: unit_complexity: 3.42 -> 3.39; unit_interfacing: 3.53 -> 3.50
