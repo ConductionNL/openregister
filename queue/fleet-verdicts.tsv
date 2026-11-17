@@ -18266,6 +18266,7 @@ keepiq	1834	99d177553461b4f57e5567b23c5dcbd937c22d9b	GREEN	worker-27	merge adds 
 opencatalogi	2299	778ac6a6e33919cd19ead643ecc4f25d894ea646	CONFLICT	worker-44	conflicts with origin/development fd0ba0bc: appinfo/info.xml, appinfo/routes.php, FederationController, PublicationsController, openapi.json, catalogue-staff-access/tasks.md, FederationControllerTest, WithheldOnThePublicReadTest; baseline 6306 tests 92F/11E
 decidiq	2268	535af69aae55ad3026e41e56d9339b493600c063	GREEN	worker-28	unit 4958 tests; baseline 4958 OK; 0 new failures; docblock @uses metadata only
 keepiq	1206	97b3f92691a2bcbf0e84c64e181c5cc0ba4ce32d	GREEN	worker-27	merge adds no file change vs development (tree identical to baseline); suite not rerun, 0 new failures
+filinq	2093	33690cef69af41d263a615ebed8cadfcd458d08e	CONFLICT	worker-53	conflicts with development, files: lib/Settings/filinq_register.json (register info.version/description moved again since the last merge); baseline 7288 tests green
 keepiq	1892	06b6dba3bec63906cfcdd35ab235927a95704709	GREEN	worker-27	version bump only (info.xml, openapi.json; both parse); no PHP/JS changed, 0 new failures
 filinq	2172	3c8384eecf55f14d60964bae8d16705a6f6e6944	GREEN	worker-49	version bump only (info.xml, openapi.json); unit 7288 OK, baseline 7288 OK, no new failures
 stackiq	1435	8d2e5a8e97cee6b5dc7bc84ac39aa1433deb6f46	GREEN	worker-14	unit 4054 tests ok on tree (baseline 4050 ok, +4 new SearchSelectionTest); no new failures; search args adapter keeps OR main behaviour (deleted defaults false)
