@@ -22054,6 +22054,7 @@ build:versioniq:install-manual-upload:b2	already building: quality/build-install
 build:launchpad:scheduled-exports:b2	partial: PR #1307 built tasks 3,5,7,9,21,23,26,38 (suite 4621->4671 green); left task 4 render pipeline (needs data-source + Chromium decision), 6/8/10/11/25 wiring, frontend 12-19, e2e 27-30, gates/docs 31-37	session-20261117T154659-bb8f5779	2026-11-17T16:23:28Z
 build:stackiq:sharing-generated-api-docs:b2	failed: needs nextcloud/openapi-extractor installed under vendor-bin (composer outside composer-cloud.sh, not allowed for a cloud worker) to generate and check openapi.json; tasks 3-4 depend on it	session-20261117T132743-10cec9d3	2026-11-17T16:24:13Z
 build:versioniq:inventory-verified-publisher:b2	already building: quality/build-inventory-verified-publisher 	session-20261117T135414-614629b0	2026-11-17T16:24:17Z
+build:versioniq:pinning-ranges-and-skips:b2	already building (quality/build-pinning-ranges-and-skips exists)	session-20261117T134556-243db2c5	2026-11-17T16:24:42Z
 build:versioniq:releases-notes-reach:b2	already building: quality/build-releases-notes-reach 	session-20261117T135414-614629b0	2026-11-17T16:24:24Z
 build:versioniq:releases-channel-and-prereleases:b2	already done: change archived on development (380ccc6)	session-20261117T132743-10cec9d3	2026-11-17T16:24:55Z
 build:versioniq:install-live-progress:b2	already building: quality/build-install-live-progress 	session-20261117T135414-614629b0	2026-11-17T16:24:52Z
