@@ -1338,3 +1338,4 @@ launchpad	1218	981059667af30b6907fafe7e0e9be698f74a9e73	REQUEST_CHANGES	worker-0
 filinq	2183	fb25a98a385e31605573510e1f28367b920a420b	APPROVE	worker-22	Quick; no blockers; jest spec for RecordLeafSidebar (6 pass) and a partial tasks note
 filinq	2184	6da46b71eaef66c39d938d3bfecaf1d756918363	APPROVE	worker-22	Standard; no blockers; e2e helpers moved verbatim to _mcp.ts, new no-office-suite e2e spec skips when a suite is present; tests only
 filinq	2185	3ebe59da9070e5dedafce84112113ed789bcbc83	APPROVE	worker-22	Standard; no blockers; integration MCP surface probe skips without NC_BASE_URL, docs page; no production code
+shillinq	3160	28ae1c746191e9ad45e1c70698bed38f1ec8205e	APPROVE	worker-15	Quick; no blockers; docs only (publiccode.yml, README), logo file exists
