@@ -17901,3 +17901,4 @@ stackiq	1943	1d009f7fe396ede6e41e6cd20ece45a5d8d73a0e	GREEN	worker-10:review	imp
 stackiq	2025	820ddd39fcc967bdb6dc528cddcfb206e955f86a	RED	worker-32:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
 opencatalogi	2677	1abdb8297ed6480ab332e369b4e22789d31be5f5	CONFLICT	worker-11:merge	conflicts with development; files: appinfo/info.xml openapi.json openapi.standards.json 
 integriq	3574	40a5ceb41fceb176e4a0c3354668586cf570c8b8	BLOCK	worker-42:review	review: Thorough; blocker: sig-floor gate, php component_independence drops from 93.3% to 93.2% at base (already under 94.5%) through this change, restore it (reach the new Format/Lookup helpers through interfaces or keep them inside one component); concerns: none, admin routes carry AuthorizedAdminSetting;
+humaniq	1184	faa2ffdf7a4c23b983fc9631e60b0becd567887a	CONFLICT	worker-31	conflicts with development in appinfo/info.xml and l10n/en.js, en.json, nl.js, nl.json; baseline 4496 tests OK
