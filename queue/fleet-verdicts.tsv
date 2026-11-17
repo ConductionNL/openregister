@@ -18358,6 +18358,7 @@ filinq	2112	62f4e41c68eadfb55d80dfd4f87bb540f051f675	CONFLICT	merge3	conflicts w
 filinq	2113	ee71f67d35e937c866edd8da7c05e0ea857a5ab6	CONFLICT	merge3	conflicts with development; files: lib/Settings/filinq_register.json 
 filinq	2114	34e75cf99344b5fb5d0b919d717f9cfcadab419c	CONFLICT	merge3	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Settings/filinq_register.json 
 filinq	2116	6e4312c81996c0302a3adb485efcc64f5176c859	CONFLICT	merge3	conflicts with development; files: lib/Settings/filinq_register.json 
+integriq	3564	d0095e3002552b32512eeb6fed7b4a07f0169bba	GREEN	worker-30	phpunit 9905 tests (baseline 9839, 2E/3F inherited), no new failures; vitest 2395 passed; implements gateway-api-design-rules-check per its specs
 opencatalogi	2771	d77146524af31547e5c83a50f60cff581dec7c86	GREEN	worker-44	unit 6345 tests (dev 6306), baseline 92F/11E, no new failures; vitest 1177, 8 mainEntry failures inherited from development; implements publications-for-signed-in-readers per its spec
 launchpad	1261	f23c46deef80d0f64201a9d0ce37e50a46a2e833	GREEN	worker-36	build widget-calculated-fields per its specs; phpunit 4779 OK (baseline 4621 OK), vitest 2915/2916 with the 1 failure (propDefinitions golden) inherited from development; new failures 0
 pipelinq	2417	727efa5a804b8ae0154f8413300fadbbfc6adaa0	GREEN	worker-15	unit 9280 tests (development baseline run this session), 0 failures, new failures 0; merge is a no-op (merged tree identical to development)
