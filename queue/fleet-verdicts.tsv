@@ -16066,5 +16066,6 @@ shillinq	3062	faaae73e234727476b1a3a73e75779e41d5d05a1	CONFLICT	worker-55	confli
 thematiq	1680	31fb4f82491973605e3b9fd0fb721096311bc020	CONFLICT	worker-21	merge conflict with origin/development in l10n/*.js and l10n/*.json; suite not run
 stackiq	1933	96e3bd2b7c6cb1d33b873cb9fa56294750efe779	CONFLICT	worker-23	conflicts with development in l10n en/nl, ListenerRegistrar.php, stackiq_mock_register.json, src/manifest.json; suite not run
 stackiq	1942	7d2c0d3f7c687acb0e1883d507e2793d4d176e41	CONFLICT	worker-29	conflicts with origin/development in l10n en/nl and src/manifest.json
+stackiq	1938	a321d1cf4c5061bf8bdcf2ddbaac19096addcbff	CONFLICT	worker-56	conflicts with development in l10n (4), softwarecatalogus_register.json, stackiq_mock_register.json, src/icons.js
 shillinq	1900	65225988bf5200218c0eb4b807e3dbeb19f0df7d	REVERIFY	worker-02	merged development in (l10n and phpmd.xml conflicts: development already held the same entries, took its side, no branch key lost); unit suite 12461 OK; new head 7c67b53846a791a3e762d24ded38e17fec205a03, verify it
 thematiq	1365	39f057e7817920c340d55e29be4587cb04702941	CONFLICT	worker-58	conflicts with development in all l10n catalogues, docs/reference/shell-catalogue.json and four golden fixtures
