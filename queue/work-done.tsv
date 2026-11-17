@@ -21947,6 +21947,7 @@ build:opencatalogi:publications-for-signed-in-readers:b2	partial: 1.1-1.4, 2.1-2
 build:launchpad:map-support:b2	already building: quality/build-map-support 	session-20261117T135414-614629b0	2026-11-17T16:11:37Z
 build:opencatalogi:instance-staging-mode:b2	partial: opencatalogi#2796 writes the named tests/e2e/instance-staging-mode.spec.ts (both named tests); code for 1.2/2.4 on development; left: running it, and 3.2 the live curl check	session-20261117T141518-05f12270	2026-11-17T16:11:50Z
 build:opencatalogi:scanned-attachments-become-searchable:b2	already building: quality/build-scanned-attachments-become-searchable 	session-20261117T135414-614629b0	2026-11-17T16:11:45Z
+build:launchpad:responsehelper-instance-api:b2	failed: blocked - change status awaiting-human-decision (proposal not approved; tasks.md says nothing may start)	session-20261117T134556-243db2c5	2026-11-17T16:11:53Z
 build:launchpad:governance-rest-api-reference:b2	failed: permission (running nextcloud/openapi-extractor on the app for task 1 was refused; branch untouched, PR #1224 still open)	session-20261117T160817-e618f24f	2026-11-17T16:11:59Z
 build:opencatalogi:add-document-content-search:b2	already building: quality/build-add-document-content-search 	session-20261117T135414-614629b0	2026-11-17T16:11:53Z
 build:opencatalogi:publish-from-stackiq:b2	failed: no opencatalogi code task left: 6.1/6.2 are stackiq's (lane sq), 6.3 is openregister's (coordinator), 5.4 is a live check that waits on them	session-20261117T125716-5aa18045	2026-11-17T16:12:37Z
