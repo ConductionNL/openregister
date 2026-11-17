@@ -16111,3 +16111,4 @@ versioniq	754	668f7591890c8b3d5772e0b576a44e268cadbec3	REVERIFY	worker-54	merged
 versioniq	503	7514a922e63c6e6fe2e22b1f05971ca7ee537ce0	CONFLICT	worker-05	package.json, package-lock.json, sbom.cdx.json conflict with origin/development (other dependency bumps landed); not tested
 filinq	2086	fe4bcf088455dba29cd81fe5163aa3fdafe7a7a6	CONFLICT	worker-40	conflicts with development in appinfo/info.xml, l10n/en.js, l10n/en.json, l10n/nl.js, l10n/nl.json, lib/Settings/filinq_register.json; baseline 6960 tests OK (6 skipped)
 stackiq	1941	fb08b1cd8788a46a4dee05436ab70f93d75f62f0	RED	worker-15:merge-gate	GATE RED floor: unit_interfacing: 4.72 -> 4.64
+launchpad	1230	b2fce99975b1ac4e2b7eed0abc072ff4d5d752a9	REVERIFY	worker-30	merged development in, resolved openapi.json (kept both sides' tags), unit 4589 tests OK; merge lock held by another merger; new head accf03ed658d829b8ce2609822cd42c4c137b5b7, verify it
