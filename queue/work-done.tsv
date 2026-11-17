@@ -22162,3 +22162,4 @@ verify:decidiq:2275:a2504982	GREEN decidiq#2275 (tests only; 5028 tests, 0 new f
 verify:buildiq:1711:c046bf16	GREEN #1711 (3691 tests, 0 new failures)	session-20261117T190353-db371595	2026-11-17T19:11:52Z
 verify:decidiq:2274:4160473e	GREEN #2274 (5029 tests, 0 new failures)	session-20261117T190250-54b1be06	2026-11-17T19:12:06Z
 verify:hermiq:1851:a800ca5d	GREEN 1851,1852,1853; REVERIFY 1854 (conflicts only with an earlier PR of the tree); tree 5800 tests 0 new failures, vitest 1659 pass	session-20261117T190115-a0afcf82	2026-11-17T19:12:18Z
+verify:buildiq:1708:e03d2fbe	1708 GREEN (release version bump)	session-20261117T185710-40ec955c	2026-11-17T19:12:41Z
