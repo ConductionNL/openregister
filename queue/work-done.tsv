@@ -22345,3 +22345,4 @@ verify:portaliq:2562:1c32d7f1	GREEN #2562: tasks.md only, 0 new failures	session
 verify:planninq:1249:bb31b0e9	GREEN #1249 (version bump)	session-20261117T190418-7494049c	2026-11-17T19:51:24Z
 verify:stackiq:1963:5d4b224b	CONFLICT #1963 (l10n catalogues)	session-20261117T190357-55034d4a	2026-11-17T19:51:31Z
 verify:planninq:1250:70dfe254	GREEN #1250: specs only, unit 1253/0 failures	session-20261117T185903-e132ac1e	2026-11-17T19:51:43Z
+verify:pipelinq:3936:a7892151	GREEN #3936 (tasks.md only; cited files exist)	session-20261117T190632-f0412d81	2026-11-17T19:52:06Z
