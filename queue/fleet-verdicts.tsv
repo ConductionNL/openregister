@@ -18183,3 +18183,4 @@ opencatalogi	2766	61ed15e96caf47caa6bdbb6e95935a300585a639	GREEN	worker-12	build
 learniq	2509	56cfb0f89fe2624585dfe1380a03415f7ddd95c1	REVERIFY	worker-57	merged development in: kept both ParticipantSitePagesTest tests, re-recorded PortalManifests golden (substitution notice + bring list); unit 7129 tests, only development's HigherEducationExampleSetTest red; merge lock held elsewhere; new head 4853fbe3f31131e260603ce895ab1a3e1e518b4f, verify it
 stackiq	2030	99dcfdad615c023f57481ee6cea79922b36fc604	RED	worker-28:merge-gate	GATE RED checker floor: fivelayer: pass -> warn; fivelayer stars: 5 -> 3; score: 100 -> 97
 stackiq	1966	46114bbf021646f123dbfe2520e0c129381171d5	CONFLICT	worker-28:merge	conflicts with development; files: tests/Unit/Settings/BaselineClassificationDeclarationTest.php 
+versioniq	706	31ba5828052881c7b2daf1d9137aa1a65c259470	CONFLICT	worker-46:merge	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
