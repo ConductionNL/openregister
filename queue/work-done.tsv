@@ -20009,6 +20009,7 @@ merge:thematiq:1365:d68cd124	cloud tree of 1 thematiq PRs: merged=1 red=0 fail=0
 fix:filinq:2085:7276c4b5	conflict resolved, pushed 38d24886; unit 7143 OK; merge lock held elsewhere, REVERIFY queued	session-20261117T084019-84d2c33c	2026-11-17T08:59:23Z
 fix:filinq:2086:ebd288b0	fixed CONFLICT #2086, new head 4b3e56c0 (lock held elsewhere, REVERIFY queued)	session-20261117T084845-60bc4ee0	2026-11-17T08:59:59Z
 review:shillinq:3080:f7c6e71c	GREEN: phpunit 12641/0 failures, vitest touched 36 passed, phpstan clean	session-20261117T081254-2b2b5b50	2026-11-17T09:00:09Z
+cover:launchpad:fb10c50fm88bd:882bd950	already covered: lib/Search 202/202 statements (pcov on development), no thin class left; launchpad has 42 open PRs	session-20261117T084643-d8b33e95	2026-11-17T09:00:18Z
 review:shillinq:2997:10c8efba	BLOCK: repair step unregistered in info.xml, 2 manifest icons unregistered; suite 12695/0 failures	session-20261117T084851-7a832684	2026-11-17T09:00:34Z
 cover:dossiq:069ee2d6m9d1b:ceb285b8	added 4 tests (Publication: CasePublicationState, SourceCollectionReturn) to open PR #6203 (44 open PRs); suite 18930->18934, 19 inherited failures, none new	session-20261117T084657-70a14b78	2026-11-17T09:00:51Z
 fix:integriq:3557:89d30cbe	conflict resolved, pushed 76fedb76; lock held elsewhere, REVERIFY	session-20261117T084835-4ff9a661	2026-11-17T09:00:53Z
