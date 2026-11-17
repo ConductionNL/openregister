@@ -226,4 +226,21 @@ class VectorSearchFacadeTest extends TestCase {
 		$this->assertFalse($this->facade->isAvailable());
 		$this->assertFalse($this->facade->isAvailable());
 	}
+
+	public function testTheEmbeddingModelIdNamesProviderAndModel(): void {
+		$this->settings->method('getLLMSettingsOnly')->willReturnOnConsecutiveCalls(
+			['enabled' => true, 'embeddingProvider' => 'ollama', 'ollamaConfig' => ['model' => 'bge-m3']],
+			['enabled' => true, 'embeddingProvider' => 'ollama', 'ollamaConfig' => ['model' => 'bge-m3']],
+			['enabled' => true, 'embeddingProvider' => 'fireworks', 'fireworksConfig' => ['embeddingModel' => null]],
+			['enabled' => true, 'embeddingProvider' => 'fireworks', 'fireworksConfig' => ['embeddingModel' => null]],
+			['enabled' => true, 'embeddingProvider' => 'openai'],
+			['enabled' => true, 'embeddingProvider' => 'openai'],
+			['enabled' => false, 'embeddingProvider' => 'openai']
+		);
+
+		$this->assertSame('ollama:bge-m3', $this->facade->embeddingModelId());
+		$this->assertSame('fireworks:thenlper/gte-base', $this->facade->embeddingModelId());
+		$this->assertSame('openai:text-embedding-ada-002', $this->facade->embeddingModelId());
+		$this->assertSame('', $this->facade->embeddingModelId());
+	}
 }
