@@ -21567,6 +21567,7 @@ build:decidiq:audit-log-chain-tail-hash:b2	already done (superseded): since eb22
 build:decidiq:decisions-card-board-look:b2	already done: only 1.2 open, a live check; no PR	session-20261117T135414-614629b0	2026-11-17T15:19:19Z
 build:decidiq:bodies-substitute-mandate-swap:b2	already done in code: the one open item is the live Newman start/end run on a seeded meeting; PHPUnit half exists (MandateSubstitutionServiceTest)	session-20261117T135029-424a7669	2026-11-17T15:19:10Z
 build:decidiq:confidentiality-term-and-lapse:b2	already building: quality/build-confidentiality-term-and-lapse exists; only a live e2e left	session-20261117T132743-10cec9d3	2026-11-17T15:18:50Z
+build:decidiq:council-calendar-columns-in-the-readers-language:b2	already built: T1 on development; skipped T2 (live check on the rehearsal instance)	session-20261117T135611-7a4e2ddc	2026-11-17T15:19:41Z
 build:versioniq:admin-mcp-assistant:b2	built: PR #784 adds tests/e2e/mcp.spec.ts (2.1: OpenRegister's McpToolsService discovers the provider and lists five read-only tools for an admin, none without a session); code tasks already on development; 2.1 unticked until CI runs it; 3.1 release task left	session-20261117T141537-492a766f	2026-11-17T15:20:02Z
 build:decidiq:bodies-director-remuneration:b2	already done in code: open items are a Newman (three users) and two Playwright runs, all needing the live instance	session-20261117T135029-424a7669	2026-11-17T15:19:47Z
 build:buildiq:ai-agents-knowledge-and-run-trace:b2	PR buildiq#1719 builds T08 (ranked knowledge passages via OpenRegister VectorSearchFacade, no budget refusal when available); all tasks ticked	session-20261117T141351-c4de67df	2026-11-17T15:19:42Z
@@ -21695,6 +21696,7 @@ build:learniq:content-scorm-package-upload:b2	PR #2600: wrote tests/e2e/content-
 build:hermiq:skills-curator-merges-duplicates:b2	PR #1845: e2e spec for approve/reject merge scenarios + reasoned exclude for the curator-run one; code was already on development	session-20261117T145912-e9f6485a	2026-11-17T15:35:29Z
 build:buildiq:apps-unified-search-deep-links:b2	nothing to build: 3.2 is a live check on the dev instance; 4.1 (flip to built, archive) follows it	session-20261117T133433-906519d6	2026-11-17T15:35:25Z
 build:humaniq:payroll-engine-port-from-shillinq:b2	blocked on decisions: 0.1 needs Ruben answers to O1/O2/O3 (design.md lists them as open), and every code task 1.1-4.1 builds on those choices; nothing built	session-20261117T134242-51ff9d48	2026-11-17T15:35:27Z
+build:humaniq:self-service-policy-assistant:b2	already building: quality/build-self-service-policy-assistant exists (5e825cca on development); 2.2 and e2e 3.1 open	session-20261117T140734-4d108840	2026-11-17T15:36:04Z
 build:hermiq:tools-browser-and-computer-use:b2	PR #1847: e2e spec-coverage/tools-browser-and-computer-use.spec.ts + Newman hermiq-computer-targets collection (tasks 4, 6); code already on development; live machine/sandbox checks left	session-20261117T145748-1419d209	2026-11-17T15:36:06Z
 build:hermiq:raise-nc-minversion-taskprocessing:b2	PR #1846: ticked 1.1 (min-version 32) and 2.1 (VersionFloorGuardTest), both already on development; 3.1 openspec validate left	session-20261117T124621-35d7386d	2026-11-17T15:36:01Z
 build:humaniq:payroll-run-as-a-flow:b2	already done: only section 7 staged follow-ups left, deliberately unchecked per design D7	session-20261117T132743-10cec9d3	2026-11-17T15:35:33Z
@@ -21705,6 +21707,7 @@ build:humaniq:self-service-mobile:b2	not built: 2.2 needs design work, expense.r
 build:humaniq:education-staff-deployment-and-count:b2	already built: all buildable code on development, 4.1 excludes in place; skipped 1.3 (needs the CAO PO primary source), 3.1-3.3 rest (needs the IPTO specification from DUO/OCW)	session-20261117T145912-e9f6485a	2026-11-17T15:36:21Z
 build:hermiq:chat-session-search-and-bulk-delete:b2	PR #1848: Playwright session-search-and-bulk.spec.ts and Newman search/bulk folder written; code already on development; live runs left	session-20261117T152630-80f67c9b	2026-11-17T15:36:45Z
 build:humaniq:rules-onto-or-decision-tables:b2	already done: only section 6 staged retirement left, deliberately unchecked (6.1 needs a live audit run first)	session-20261117T132743-10cec9d3	2026-11-17T15:36:36Z
+build:humaniq:time-entry-approval-state:b2	already done: 1.1, 2.1-2.3 on development (#1146, 497b5f3c); 3.1 live and 3.2 e2e/validate pass left	session-20261117T133303-ca20630d	2026-11-17T15:36:53Z
 build:humaniq:filings-wage-tax-message:b2	nothing to build: only 3.2 (live check) is unchecked	session-20261117T123418-5f98fc94	2026-11-17T15:37:33Z
 build:humaniq:configuration-store:b2	partial: nothing pushed. Left 1.1, 1.2, 2.1. Finding: humaniq has no store endpoint (CnStorePage calls /apps/humaniq/api/store/items, absent from appinfo/routes.php), so the Marketplace page REQ-FTS-006 calls built is not wired; it needs a StoreController over OpenRegister GenericStoreService plus a configuration-set installer (learniq lib/Controller/StoreController.php is the model) before the Sj	session-20261117T135029-424a7669	2026-11-17T15:37:04Z
 build:hermiq:chat-fork-and-share-link:b2	PR #1849: Playwright session-fork-and-share spec + Newman fork outcomes; code already on development; live runs left	session-20261117T151214-35ff5eaa	2026-11-17T15:37:09Z
@@ -21716,5 +21719,8 @@ fix:filinq:2072:b9a113b8	stale	feeder	2026-11-17T15:34:01Z
 review:shillinq:3048:4dfa4261	stale	feeder	2026-11-17T15:34:01Z
 review:filinq:2107:7fd0b6e1	stale	feeder	2026-11-17T15:34:01Z
 review:versioniq:700:b95e71ea	stale	feeder	2026-11-17T15:34:01Z
+build:decidiq:competitor-parity-2026-09:b2:c2	already built: index change with no code or spec-file task; open items build other changes (own rows), hand-offs to dossiq/filinq and lane questions	session-20261117T151651-9c0f11a5	2026-11-17T15:39:07Z
 build:humaniq:reporting-full-list-export:b2	already building: quality/build-reporting-full-list-export(-c2) exist; only e2e tasks 3.1/3.2 unchecked	session-20261117T123418-5f98fc94	2026-11-17T15:39:23Z
 review:decidiq:2198:3e20b726	GREEN: behaviour per specs, unit 4895 OK at head; conflicts with development (7 files) noted	session-20261117T134347-d0294040	2026-11-17T15:39:20Z
+verify:hermiq:1838:2d9e82f5	GREEN 1838,1839,1840,1841,1842 (no new failures; docs/tests only)	session-20261117T124621-35d7386d	2026-11-17T15:40:07Z
+review:decidiq:2190:c75776f4	GREEN: unit 5038 OK, phpstan/vitest clean	session-20261117T151214-35ff5eaa	2026-11-17T15:40:21Z
