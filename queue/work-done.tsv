@@ -20595,3 +20595,4 @@ verify:buildiq:1699:60ba7e1c	GREEN #1699 (version bump; 3578 unit tests, no new 
 verify:decidiq:2267:475c9d1c	2267 GREEN	session-20261117T121049-5b84d45a	2026-11-17T12:41:52Z
 verify:keepiq:827:798025c3	GREEN #827: beta sync merge, empty tree diff vs development	session-20261117T123146-498cbe48	2026-11-17T12:41:59Z
 verify:decidiq:2269:bd3710cb	GREEN #2269 (4958->4976, no new failures)	session-20261117T121348-2ad62e18	2026-11-17T12:42:10Z
+verify:filinq:2069:b67ef532	CONFLICT: lib/Settings/filinq_register.json vs development	session-20261117T121046-ffb3fcc9	2026-11-17T12:42:28Z
