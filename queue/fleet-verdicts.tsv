@@ -18794,6 +18794,7 @@ dossiq	6660	9f09443de66fb27222359ed58556cfdc9f42c592	GREEN	worker-10	phpunit 183
 hermiq	1719	fdc4de5bed00786565c5c461bb511b38a1828d6d	CONFLICT	worker-47	conflicts with development in lib/Settings/hermiq_register.json; baseline 5736 tests OK; not run on tree
 pipelinq	3945	ceffbf1ffd95fdbc429b3b7e77c1cbf97a8849c2	REVERIFY	worker-30	conflicts only with an earlier PR of the verify tree (#3943, l10n files)
 pipelinq	3946	633106e5ce5d34520df6e3801898478fcca78d26	REVERIFY	worker-30	conflicts only with an earlier PR of the verify tree (#3943, l10n files)
+dossiq	6659	565a618a74e1407233ed8b1363bf412763f216c3	GREEN	worker-06	unit 18398 tests on tree, baseline 19 failures (inherited, Access/CaseTypeRights*), new failures 0; e2e spec and playwright config only
 dossiq	6642	dcd42889d10247bf15a7678d1ab0326f6ca37950	GREEN	worker-44	phpunit 18398 on tree, baseline 19 failures inherited, none new; tasks.md tick only, the code it names is on development
 dossiq	6660	9f09443de66fb27222359ed58556cfdc9f42c592	GREEN	worker-40	unit 18422 on tree vs 18398 baseline, 1 inherited error, 0 new; vitest 7224, 2 inherited failures, 0 new; build PR judged against its change
 dossiq	6661	a6b5bd94aa1fc40b7ca325fb7e67ef05af3ba48f	GREEN	worker-40	unit 18422 on tree vs 18398 baseline, 1 inherited error, 0 new; vitest 7224, 2 inherited failures, 0 new; build PR judged against its change
@@ -18808,6 +18809,7 @@ stackiq	2049	c79327a0e856361eeefc08380f98991c4772d770	GREEN	worker-24	copy clear
 stackiq	2050	3aee64db981ba893fb229fcd82feb05137f79174	GREEN	worker-24	e2e spec only; unit 4064 tests 0 failures on tree (baseline 4055); vitest 2941 pass, 1 failure inherited from development (facets.spec FACET_DIMENSIONS)
 stackiq	2051	ea4af972eb77b68a49a8fcfd1bb61bf4df92f6d5	GREEN	worker-24	e2e specs + tasks only; unit 4064 tests 0 failures on tree (baseline 4055); vitest 2941 pass, 1 failure inherited from development (facets.spec FACET_DIMENSIONS)
 stackiq	2052	ec35d2a9f576277a147ebd0bffd5328adde26b3c	GREEN	worker-24	e2e spec + tasks only; unit 4064 tests 0 failures on tree (baseline 4055); vitest 2941 pass, 1 failure inherited from development (facets.spec FACET_DIMENSIONS)
+filinq	2187	2e1be1ea9e86ccdac2ecde346f33a1aaa9b361f3	GREEN	worker-54	unit 7294 run (baseline 7288, 0 failures, 6 skipped both); php -l clean; implements diwoo-documentsoort-to-opencatalogi as specified; mapper calls match openregister main
 dossiq	6668	1395d5e68c106240715cd719a08bf8d2652f8bf5	GREEN	worker-38	unit 18399 tests, baseline 16 failures (sibling/inherited), 0 new; dossiq side of filinq change generated-document-names-its-template-version (task 7.2)
 filinq	2186	9bbf0ae16146dab80c0b1bc57ab5d57f6fd7bf69	GREEN	worker-22	build edit-through-the-open-editor: new editorDelivery service + vitest + e2e, fixture moved to shared file; no PHP touched; vitest 879/879 on tree, no new failures
 filinq	2174	cb6650c7ab7ec341179061d3a82022a2119cfc16	GREEN	worker-26	unit 7288 on tree = baseline (0 failures), new failures 0; version bump in info.xml/openapi.json only
