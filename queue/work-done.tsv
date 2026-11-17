@@ -19061,3 +19061,4 @@ review:hermiq:1758:d5151101	CONFLICT with development in lib/Settings/hermiq_reg
 review:filinq:2085:51341efd	GREEN; conflicts with development in filinq_register.json	session-20261117T020146-60d3aeb8	2026-11-17T02:09:33Z
 review:filinq:2086:285091d5	BLOCK: missing @spec on 15 JS methods, 6 schema descriptions; conflicts with development	session-20261117T020210-893a9346	2026-11-17T02:09:48Z
 review:filinq:2105:7e8ef21d	CONFLICT: register description conflicts with development; code reviewed, no blocker, head suite green	session-20261117T020329-e21299e8	2026-11-17T02:10:02Z
+review:hermiq:1496:2946df2b	GREEN: pure move, 0 new failures (5492 tests, baseline 198); @uses ChatDriverGates missing in ProviderFactory tests	session-20261117T020332-dda1b5ce	2026-11-17T02:10:28Z
