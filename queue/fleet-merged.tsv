@@ -4939,3 +4939,4 @@ shillinq	2081	42e3cf9c4613a3acf8534812d7fc0ab54b45ece6	MERGED	worker-14	GATE OK 
 pipelinq	3734	ed9bd0c7cc31d9f32f99412f575db8753900de88	RED	worker-32	GATE RED floor: unit_interfacing: 4.18 -> 4.16
 launchpad	1254	c191ec40d082c5e409046f69d439a335363eb505	MERGED	worker-57	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.65 holds at 3.79
 shillinq	3003	a0eb3c15a25e4756bcce6eea4fd05b0c38556861	MERGED	worker-14	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.07
+shillinq	3008	05d98afceb58f220136790ff63475f5a79d68765	MERGED	worker-14	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.06
