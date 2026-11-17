@@ -22021,3 +22021,4 @@ build:stackiq:landscape-owner-attestation:b2	already building: branch quality/bu
 build:stackiq:insight-supplier-facet:b2	already building (quality/build-insight-supplier-facet exists)	session-20261117T125716-5aa18045	2026-11-17T16:21:39Z
 build:stackiq:supplier-accepts-claimed-usage:b2	already building: quality/build-supplier-accepts-claimed-usage 	session-20261117T135414-614629b0	2026-11-17T16:21:39Z
 build:stackiq:organisation-parent-hierarchy-rbac-fix:b2	already building (quality/build-organisation-parent-hierarchy-rbac-fix exists)	session-20261117T125716-5aa18045	2026-11-17T16:22:21Z
+build:stackiq:bound-unbounded-searchobjects-scans:b2	partial: stackiq#2047 clears the 11 PHPMD StaticAccess violations the build added (5.3) and records 5.1 as met by the golden tests; left: Psalm (needs PHP >= 8.3.16, container has 8.3.6)	session-20261117T141518-05f12270	2026-11-17T16:21:56Z
