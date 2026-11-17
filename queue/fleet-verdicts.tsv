@@ -18518,3 +18518,4 @@ opencatalogi	2770	f134b8f7dabb094897970e0f20bd6313ef5fa5dc	GREEN	worker-14	unit 
 integriq	3709	4cb85bb991cb2af12526621fe2212abe4b6e95af	RED	worker-24:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
 shillinq	3067	7ff7357f69fc4e3a6ae0fa58ba8e804fc19191c2	REVERIFY	worker-47	merged development in (kept both sides of the l10n additions, recorded the register versions under 0.5.7-unstable.20261117140000); unit 12795 OK; new head 55cee22d35e55bff8e5071d01e7740d6068b26ca, verify it
 planninq	1218	3bb9d8d2ab2644e3b22cdb1144eb07f0a9df1e21	RED	worker-16:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+integriq	3713	1ac9342215f8b89a3080078a2a4852d1a9560e0a	RED	worker-24:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
