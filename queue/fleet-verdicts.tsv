@@ -18257,4 +18257,5 @@ decidiq	1306	e528f697ad325e5b10cf75898ab687871e381fc2	GREEN	worker-15	unit 4958 
 buildiq	1699	60ba7e1c2acf8003e0c68c1ed4ce53879e3f334c	GREEN	worker-10	unit 3578 tests OK (baseline 3578 OK, 7 skipped), no new failures; release version bump in info.xml/openapi.json only, both parse
 decidiq	2269	bd3710cb1f6963f9f519c61b5be2a6ac906c6cdc	GREEN	worker-31	unit suite on tree 4976 OK (baseline 4958 OK on e468902e), 0 new failures; tests-only PR, 7 controller test files, lint clean
 decidiq	2267	475c9d1ce6c0ac23a31e808cfd6638e36c342c51	GREEN	worker-46	unit 4963 tests OK, baseline 4958 OK, new failures 0; tests only
+filinq	2069	b67ef532d43b45a2b0814ec707f496807e1e533f	CONFLICT	worker-49	conflicts with development in lib/Settings/filinq_register.json; baseline 7288 OK, tree not tested
 keepiq	827	798025c3c32c1480e8ba9be47d1dfde79bfcce63	GREEN	worker-27	merge adds no file change vs development (tree identical to baseline); suite not rerun, 0 new failures
