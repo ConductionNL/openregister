@@ -18725,6 +18725,7 @@ buildiq	1722	9c7c8cfc7b3c10467efbe2b02ebf84adc7af41c7	GREEN	worker-43	unit suite
 buildiq	1727	4916d3fd0aee276364b2ec147ef6e723807f88ca	GREEN	worker-26	same head verified in tree verify:buildiq:1724:86533fb7 this session: unit 3676 = baseline, new failures 0; e2e spec/tasks.md only
 planninq	1248	36d5dc19e1277c9823e4512f8072ca92540206a6	GREEN	worker-22	e2e + postman collection only; tree unit 1254 OK/11 skipped (baseline 1253), vitest 3593/3593, no new failures
 planninq	1250	70dfe254912eeaa8aeb0a5a52fbb7c735485ff4e	REVERIFY	worker-22	conflicts only with an earlier PR of the verify tree (postman collection)
+filinq	2192	8501a0bcb5607d5c70a7694701fb8e1d30de2196	GREEN	worker-19	phpunit 7305 ok (baseline 7288 ok, 0 new failures); vitest 857 passed; build letter-email-sending per change specs
 buildiq	1728	666fa51783a7c825cf7218fbb90e1ca4f928bd0a	GREEN	worker-22	e2e spec + tasks.md only; baseline unit 3676 OK/7 skipped, no PHP/unit JS touched, no new failures
 portaliq	2578	ecda0995fde017ac8deb6fa1e5162d5706e02426	GREEN	worker-32	unit 6339 tests on tree, baseline 6324 with 16 inherited errors (openregister classes absent), new failures 0; no JS unit script, markdown-block node test passes; e2e spec + seed only, per change
 versioniq	798	91fdceff9606e38c08294f9f188caa4b1c92289f	GREEN	worker-44	phpunit 2456 on tree, baseline 2, none new; vitest 3237 passed (2 inherited unhandled errors); CSS/aria keyboard reachability fix + spec
