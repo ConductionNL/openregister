@@ -4874,3 +4874,4 @@ buildiq	1689	c2b20681de1c63b75194f1b00f987a45d4e9957d	RED	worker-58	GATE RED flo
 launchpad	1229	58fa47b743caaaf0f1f612a4d6f65aa73e95bc71	RED	worker-02	GATE RED floor: unit_complexity: 4.76 -> 4.72; unit_interfacing: 3.83 -> 3.79
 opencatalogi	2669	8c31eee0b472b465c61cb9093196892e942a8f06	RED	worker-49	GATE RED floor: unit_size: 4.64 -> 4.62
 opencatalogi	2244	9178373d320ba947d116220fe88c0cd71550e833	MERGED	worker-49	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.56
+hermiq	1764	a477a56c311b1a13150d9f71bcd3088ea1661e94	RED	worker-13	GATE RED floor: unit_complexity: 4.58 -> 4.55
