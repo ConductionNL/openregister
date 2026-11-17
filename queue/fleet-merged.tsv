@@ -5601,6 +5601,7 @@ thematiq	1719	740e1349e57122fb6902c14777368c21f0bfaa15	SKIP	worker-14	no APPROVE
 thematiq	1721	b57b4ab90b6e9cd73b7a08ae3f63864fc2e778d5	SKIP	worker-14	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 decidiq	2283	e9a802fd9e1a29d7531dd6061c07fb0d66139593	SKIP	worker-04	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 filinq	2187	2e1be1ea9e86ccdac2ecde346f33a1aaa9b361f3	SKIP	worker-10	GATE UNMEASURED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3 while api.osv.dev is unreachable from this session
+decidiq	2284	75bf16e4978932fd693798e5513fda961c651b66	SKIP	worker-04	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 filinq	2188	a7b68fe976f749325f4b8f313e44b59b89381ae2	SKIP	worker-10	no APPROVE review at this head
 pipelinq	3935	fafc28c7d6da4a56856e08d1affb3a1fbcf45fa4	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.48
 pipelinq	3936	a789215169d3115f6b2ec1bd80cf83769ba6d194	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.48
