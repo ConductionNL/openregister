@@ -20000,3 +20000,4 @@ verify:versioniq:758:73c147bb	GREEN #758 (2285 tests, no new failures)	session-2
 fix:learniq:2497:a6d36cf2	conflict resolved, pushed d7ffe7d9039a; merge lock held elsewhere, REVERIFY queued	session-20261117T080445-fa502475	2026-11-17T08:56:53Z
 review:shillinq:3004:04b7af8a	GREEN: shillinq #3004, unit 12679/0 failures, phpstan clean	session-20261117T083927-e76b77af	2026-11-17T08:57:04Z
 fix:filinq:2078:17892e17	conflict resolved, pushed 202f24a1; merge lock held elsewhere, REVERIFY queued	session-20261117T085227-a13dc102	2026-11-17T08:57:41Z
+fix:filinq:2090:0bf796a1	conflict resolved, pushed ca7adf6f; REVERIFY (merge lock held elsewhere)	session-20261117T085454-4852403b	2026-11-17T08:57:52Z
