@@ -22178,3 +22178,4 @@ verify:hermiq:1845:84f28a11	GREEN 1845; tests-only, unit 5736 0 new failures	ses
 verify:dossiq:6649:c3066e42	GREEN #6649 (docs only, 0 new failures)	session-20261117T190353-db371595	2026-11-17T19:16:18Z
 verify:keepiq:1898:57a976a2	GREEN 1898,1899,1900; REVERIFY 1901 (conflicts only with earlier PR); no new failures	session-20261117T185927-e9838dc9	2026-11-17T19:16:40Z
 verify:dossiq:6662:e845dfba	GREEN #6662 (e2e spec only; 19 inherited failures, none new)	session-20261117T190448-9c35d7c4	2026-11-17T19:16:48Z
+review:buildiq:1648:61683727	GREEN: unit 3737/1 inherited, vitest 5027 pass; 2 minor concerns	session-20261117T185725-f66ae098	2026-11-17T19:17:00Z
