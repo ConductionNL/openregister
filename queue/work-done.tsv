@@ -20270,3 +20270,4 @@ fix:filinq:2126:d4e66904	conflict resolved, pushed 7a17d80f; lock busy, REVERIFY
 review:hermiq:1740:c6bf622f	GREEN: unit 5633 OK on PR+development	session-20261117T093219-f1a53dc3	2026-11-17T10:17:21Z
 fix:dossiq:6635:4ef9f4fa	sbom regenerated, development merged in; new head 1292bb3c, REVERIFY queued (2 vitest failures inherited from development)	session-20261117T100910-d59d6f46	2026-11-17T10:17:35Z
 fix:filinq:2072:88f031dc	conflict resolved, pushed d1d7b517; merge lock held elsewhere, REVERIFY queued	session-20261117T092700-641a7a7c	2026-11-17T10:17:53Z
+merge:stackiq:1942:c4223bc6	cloud tree of 1 stackiq PRs: none; conflict 1, lint 0, red 0, moved 0, done 0	session-20261117T091057-940845f2	2026-11-17T10:18:14Z
