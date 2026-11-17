@@ -18232,3 +18232,8 @@ decidiq	2173	050c1776c5d62774a872639305fb99d7dd436431	RED	merge3:merge-gate	GATE
 decidiq	2171	6b39135c61bbc1d3689590e259b0ae222a8a08e2	REVERIFY	merge3	verdict sha is not the head: head is fa36c3295f3f8513f3785f747380bde58a763cf2
 decidiq	2205	8a3de4c6be1208375b0e3243a96a4b8db2ed80eb	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json openapi.json src/manifest.json 
 shillinq	3160	1013c8e612b10949e022ce7791fa7648456cc109	RED	worker-22:merge-gate	GATE RED checker floor: fivelayer: pass -> warn; fivelayer stars: 5 -> 3; score: 100 -> 97
+shillinq	2063	fd491fcd6b6b07adf72f93e19c4189838247e45f	CONFLICT	worker-22:merge	conflicts with development; files: tests/fixtures/register-versions.lock.json 
+shillinq	2975	f616ab858e5f8837baed3f9a6cf95008a88cbe38	CONFLICT	worker-22:merge	conflicts with development; files: appinfo/info.xml tests/fixtures/register-versions.lock.json 
+shillinq	3004	3a0e29de258e9f510c17c3a8f7e360b2d1a53e56	CONFLICT	worker-22:merge	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json tests/fixtures/register-versions.lock.json 
+shillinq	3007	8f36129bb9d534751313db9bab92859082da1721	CONFLICT	worker-22:merge	conflicts with development; files: CHANGELOG.md l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json tests/Unit/Service/ServiceRegistrarTest.php tests/fixtures/register-versions.lock.json 
+shillinq	3064	e0f4cc425ee7a30f248d80974e0c3615675ac897	CONFLICT	worker-22:merge	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json tests/fixtures/register-versions.lock.json 
