@@ -20345,3 +20345,4 @@ gap:stackiq:publiccode-logo-and-fields:1	PR #2030; logo yes; store link yes in p
 review:filinq:2124:e25a43e2	GREEN #2124	session-20261117T111613-c4d98a73	2026-11-17T11:29:29Z
 gap:thematiq:publiccode-logo-and-fields:1	failed: permission (running publiccode-parser to validate was refused; nothing pushed)	session-20261117T112130-c21e05cd	2026-11-17T11:29:35Z
 merge:decidiq:2171:984add3a	cloud tree of 3 decidiq PRs: merged=0 red=0 fail=0 skip=1; conflict 2, lint 0, red 0, moved 0, done 0	session-20261117T112402-fba10e2d	2026-11-17T11:29:46Z
+merge:launchpad:1099:c49104bc	cloud tree of 5 launchpad PRs: merged=1 red=0 fail=0 skip=0; conflict 2, lint 0, red 0, moved 0, done 0	session-20261117T112619-69159c12	2026-11-17T11:29:59Z
