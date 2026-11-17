@@ -22846,3 +22846,4 @@ fix:hermiq:1843:45ed8874	CONFLICT resolved, pushed d623cf6f; REVERIFY queued (en
 verify:opencatalogi:2790:0f2e476a	GREEN #2790: 0 new failures	session-20261117T222048-3a9e0119	2026-11-17T22:28:16Z
 review:openregister:10627:b3283ac8	APPROVE #10627 (spectral-cli dev patch bump)	session-20261117T212735-2b6c91a0	2026-11-17T22:28:59Z
 review:portaliq:2446:e217a1c6	GREEN: 0 new failures, spec-conform endpoint	session-20261117T222626-5de57cc1	2026-11-17T22:29:07Z
+merge:versioniq:685:7ac6211f	unmeasured: static.developer.overheid.nl (merged=0 skip=4; 783 conflict -> REVERIFY)	session-20261117T213101-157fb562	2026-11-17T22:29:42Z
