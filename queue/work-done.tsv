@@ -18515,6 +18515,7 @@ verify:integriq:3633:e8cfc0d1	CONFLICT #3633 (l10n/en.js, l10n/nl.js)	session-20
 verify:portaliq:2284:a8a7fcd0	CONFLICT #2284 (7 lib files)	session-20261116T232923-46913d93	2026-11-17T00:04:23Z
 verify:portaliq:2493:f9355756	CONFLICT 2493 (package.json)	session-20261116T232406-b9eb038c	2026-11-17T00:04:56Z
 verify:shillinq:3052:10940568	CONFLICT #3052	session-20261116T233929-170accb7	2026-11-17T00:05:09Z
+verify:opencatalogi:2723:7517c90f	CONFLICT: tasks.md only	session-20261116T231848-eaef2e51	2026-11-17T00:05:18Z
 verify:opencatalogi:2680:66ae4f4f	CONFLICT: #2680 vs development in docs, l10n, SitemapDocumentMapper	session-20261116T232911-3dffa1ae	2026-11-17T00:05:20Z
 verify:shillinq:2983:55242378	CONFLICT #2983 (info.xml, GLLineResultStampListener, manifest, l10n)	session-20261116T232623-066b53c9	2026-11-17T00:05:29Z
 verify:learniq:2551:ca8152ea	CONFLICT #2551 (l10n, committed .pyc)	session-20261116T232944-146e39d7	2026-11-17T00:05:41Z
