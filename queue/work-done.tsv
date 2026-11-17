@@ -22235,6 +22235,7 @@ verify:integriq:3706:ab3bf699	GREEN	session-20261117T190242-7c82bed8	2026-11-17T
 verify:keepiq:1898:2d4d0257	GREEN #1898 (tasks.md only; cited tests exist)	session-20261117T190632-f0412d81	2026-11-17T19:29:35Z
 verify:hermiq:1849:599ab2bf	1 GREEN (1849); no new failures	session-20261117T190249-b0f6275f	2026-11-17T19:29:49Z
 verify:integriq:3715:86b85286	GREEN integriq #3715 (Newman collection only; baseline 2E/2F inherited)	session-20261117T190434-a73c29f6	2026-11-17T19:29:57Z
+merge:learniq:2598:835f8b4e	unmeasured: static.developer.overheid.nl (also api.osv.dev) refused by this session's egress proxy; 5 PRs green tree + APPROVE recorded, nothing landed	session-20261117T190333-2bf83f45	2026-11-17T19:30:06Z
 verify:learniq:2606:79bec0a6	GREEN #2606 (no new failures)	session-20261117T190418-7494049c	2026-11-17T19:30:09Z
 verify:dossiq:6659:565a618a	GREEN 6659 (e2e only; 0 new failures, 19 inherited)	session-20261117T185828-a5f2758a	2026-11-17T19:30:19Z
 merge:filinq:2121:b4bde39a	unmeasured: api.osv.dev; cloud tree of 9 filinq PRs: merged=0 red=1 fail=0 skip=6; conflict 1, moved 1; reviews APPROVE recorded for 7	session-20261117T190308-4c99e05c	2026-11-17T19:30:38Z
@@ -22269,6 +22270,7 @@ verify:larpinq:1100:1ed0e3bf	GREEN #1100 (e2e spec only; 1243 tests, 0 new failu
 verify:humaniq:1195:b3d7f5c6	GREEN humaniq#1195 (tags + e2e spec; unit 4509 green)	session-20261117T190048-3d066fd0	2026-11-17T19:35:52Z
 verify:integriq:3585:39f07d5a	GREEN 3585; no new failures (5 inherited), vitest 2401 OK	session-20261117T185359-d68263c5	2026-11-17T19:36:04Z
 verify:larpinq:1105:768215ba	GREEN #1105 (unit 1265 ok, vitest 796 ok)	session-20261117T190308-4c99e05c	2026-11-17T19:36:22Z
+verify:filinq:2116:9d997186	GREEN #2116 (php 7363 ok, vitest 869 ok, 0 new failures)	session-20261117T190633-45ee22b7	2026-11-17T19:36:34Z
 verify:humaniq:1192:3ca961bd	GREEN: 1192 (+25 tests, no new failures)	session-20261117T185625-a1e67f54	2026-11-17T19:36:35Z
 verify:larpinq:1049:eb8c9f5f	GREEN larpinq#1049 (php 1260 OK, vitest 749 OK)	session-20261117T190302-4e3d4569	2026-11-17T19:36:45Z
 verify:keepiq:1900:a6ccac84	GREEN 1900 alone	session-20261117T185927-e9838dc9	2026-11-17T19:36:57Z
@@ -22318,5 +22320,14 @@ verify:portaliq:2589:7076e2d0	CONFLICT 2589 (package.json vs development)	sessio
 verify:pipelinq:3939:102496ca	GREEN 3939; 0 new failures	session-20261117T185757-f5106521	2026-11-17T19:46:00Z
 verify:portaliq:2446:ddd3af7b	CONFLICT: package.json	session-20261117T190242-7c82bed8	2026-11-17T19:46:10Z
 verify:learniq:2607:4327ccd2	GREEN 2607; unit 7156, 0 new failures (1 inherited)	session-20261117T185419-c23c5946	2026-11-17T19:46:25Z
+verify:opencatalogi:2803:65ea6166	GREEN #2803 (0 new failures; PHP and vitest reds inherited)	session-20261117T185935-593e017f	2026-11-17T19:46:43Z
 verify:pipelinq:3952:724737b6	GREEN 3952; no new failures	session-20261117T185927-e9838dc9	2026-11-17T19:46:45Z
 verify:portaliq:2578:ecda0995	GREEN (e2e only)	session-20261117T190242-7c82bed8	2026-11-17T19:46:55Z
+verify:planninq:1238:a2d0008d	GREEN #1238 (tests only)	session-20261117T190418-7494049c	2026-11-17T19:47:05Z
+verify:opencatalogi:2796:7d78014c	GREEN opencatalogi#2796: e2e spec only, unit suite unaffected	session-20261117T185556-5276d56d	2026-11-17T19:47:17Z
+verify:pipelinq:3940:dc52e0b2	GREEN #3940 (0 new failures; vitest reds inherited)	session-20261117T190318-dafab159	2026-11-17T19:47:33Z
+verify:launchpad:1296:53e33887	BLOCK #1296 (tests green; instance-wide default-app behaviour change outside a build, needs sign-off)	session-20261117T190633-45ee22b7	2026-11-17T19:47:48Z
+verify:opencatalogi:2792:f3566f96	GREEN #2792 (6 tests added, no new failures)	session-20261117T190357-55034d4a	2026-11-17T19:48:01Z
+verify:portaliq:2587:664b8ca8	GREEN #2587 (6339 tests, 16 inherited errors, 0 new)	session-20261117T190250-54b1be06	2026-11-17T19:48:12Z
+verify:pipelinq:3956:88c728b0	GREEN #3956 (version bump), 0 new failures	session-20261117T190150-dbabe332	2026-11-17T19:48:33Z
+verify:planninq:1245:18c0e02a	GREEN planninq#1245 (1262 tests, 0 new failures)	session-20261117T190507-82f8fe51	2026-11-17T19:48:46Z
