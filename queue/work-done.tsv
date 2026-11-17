@@ -20633,3 +20633,4 @@ verify:thematiq:1139:c7061e8b	CONFLICT #1139 (token-sets.json vs development)	se
 verify:buildiq:1703:39097174	GREEN #1703 (unit 3580 OK, baseline 3578)	session-20261117T124554-64bd7521	2026-11-17T12:51:38Z
 verify:hermiq:1781:a56a9450	GREEN #1781 (5668 tests, vitest 1649, no new failures)	session-20261117T124526-11739f5d	2026-11-17T12:51:49Z
 verify:buildiq:1702:817cd0c5	GREEN #1702 (tests only, 3604 tests, 0 new failures)	session-20261117T124637-3e909745	2026-11-17T12:52:00Z
+fix:versioniq:706:31ba5828	failed: permission (land refused); conflict fixed and pushed, new head f955efeb, REVERIFY recorded	session-20261117T124257-115d3113	2026-11-17T12:52:23Z
