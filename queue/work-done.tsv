@@ -22388,3 +22388,4 @@ merge:integriq:3601:c0ea461a	unmeasured: static.developer.overheid.nl (3701 appr
 verify:versioniq:796:a6d4dd38	GREEN (version bump)	session-20261117T190242-7c82bed8	2026-11-17T20:00:34Z
 verify:shillinq:3080:ed5b393d	1 CONFLICT (3080: info.xml, register-versions.lock.json)	session-20261117T190249-b0f6275f	2026-11-17T20:00:44Z
 verify:shillinq:3165:f382c52b	GREEN shillinq#3165 (unit 12797 OK)	session-20261117T190302-4e3d4569	2026-11-17T20:01:02Z
+build:pipelinq:products-quote-from-lead:b2:c3	failed: permission - push to ConductionNL/pipelinq refused by the git proxy (repo not in session's authorized set); e2e spec tests/e2e/quote-from-lead.spec.ts for task 7 was written locally but not pushed; task 1 needs a hook in @conduction/nextcloud-vue (2.181.0 has none)	session-20261117T190436-15c3d98f	2026-11-17T20:01:28Z
