@@ -19441,3 +19441,4 @@ pipelinq	3943	ca8a7004855906b9e00ed5aeb35851c413d08653	CONFLICT	merge3	merges cl
 pipelinq	3954	ba6a3d35f1cdebc7ed97c93a1167f0ea650f00b1	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
 buildiq	1721	ed2a82a6eaae9cb761b06a96378b66716313d4c6	REVERIFY	worker-02:merge	conflicts only with an earlier PR of the merge tree: merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
 buildiq	1723	7cd3ca1a58d36f87240a6eaa104	REVERIFY	worker-02:merge	verdict sha is not the head: head is 7cd3ca1a58d36f87240a6eaa104d10f70d2327a3
+pipelinq	3954	ba6a3d35f1cdebc7ed97c93a1167f0ea650f00b1	REVERIFY	worker-18	merged development in; l10n conflict resolved keeping both sides' keys, .js regenerated; test:l10n OK, unit 9316 tests 0 failures; new head 778f1212ff3cd50bed333e4afef105dc9cd7f71b, verify it
