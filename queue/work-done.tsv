@@ -18547,3 +18547,4 @@ verify:stackiq:1942:b6663ebb	CONFLICT #1942	session-20261116T233627-44605965	202
 verify:stackiq:1943:d8082b64	CONFLICT #1943 (l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Settings/softwarecatalogus_register.json src/customComponents.js )	session-20261116T233921-33ab4c87	2026-11-17T00:10:47Z
 verify:larpinq:1047:12939d94	CONFLICT #1047 (l10n + objectTabs golden fixture vs development)	session-20261116T234703-e9cebd4b	2026-11-17T00:11:04Z
 verify:shillinq:2070:6d28ef69	CONFLICT #2070	session-20261116T232519-f84cca9a	2026-11-17T00:11:11Z
+verify:shillinq:3011:4b9211ad	CONFLICT #3011	session-20261116T232918-5354fd88	2026-11-17T00:11:23Z
