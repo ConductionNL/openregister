@@ -20737,3 +20737,4 @@ fix:integriq:2650:a234a7dc	fixed floor: unit_complexity 3.91 >= 3.90; pushed c1e
 fix:portaliq:2559:7c124998	failed: permission (fix pushed as 25603561, REVERIFY queued; review/land step refused)	session-20261117T124737-01fc7db5	2026-11-17T13:14:35Z
 verify:learniq:2590:bcc12c33	GREEN #2590 (version bump; no new failures)	session-20261117T124634-01105f98	2026-11-17T13:14:47Z
 fix:integriq:3707:be86beed	fixed #3707, new head cac00a86, REVERIFY queued (merge lock held elsewhere)	session-20261117T123701-2c29f729	2026-11-17T13:15:00Z
+fix:opencatalogi:2650:6678e3ea	fixed: public source identifiers filtered in uses/used, pushed 0a028b89; REVERIFY (merge lock held elsewhere)	session-20261117T112106-1814b74b	2026-11-17T13:15:55Z
