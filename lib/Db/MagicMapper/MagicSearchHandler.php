@@ -5164,7 +5164,7 @@ class MagicSearchHandler {
 				);
 				// The raw column breaks ties between two values that lower-case
 				// alike, so the order is total and paging stable (REQ-CIO-001).
-				$qb->addOrderBy($column, $direction);
+				$qb->addOrderBy($qb->createFunction($column), $direction);
 				$orderApplied = true;
 			} elseif (($properties[$field] ?? null) !== null) {
 				// Schema property field sorting.
@@ -5182,7 +5182,7 @@ class MagicSearchHandler {
 				// ties for a total, stable order (REQ-CIO-001). A non-string
 				// property keeps its single native order term.
 				if ($this->isTextProperty(propertyConfig: $properties[$field]) === true) {
-					$qb->addOrderBy($qb->getColumnName($columnName, 't'), $direction);
+					$qb->addOrderBy('t.'.$columnName, $direction);
 				}
 
 				$orderApplied = true;
@@ -5470,7 +5470,7 @@ class MagicSearchHandler {
 	private function addMetadataOrder(IQueryBuilder $qb, string $column, string $direction): void {
 		$qb->addOrderBy($this->metadataSortExpression(qb: $qb, column: $column), $direction);
 		if (in_array($column, self::STRING_METADATA_SORT_COLUMNS, true) === true) {
-			$qb->addOrderBy($qb->getColumnName($column, 't'), $direction);
+			$qb->addOrderBy('t.'.$column, $direction);
 		}
 	}//end addMetadataOrder()
 

@@ -277,9 +277,9 @@ class MagicSearchHandlerTranslatableSortTest extends TestCase {
 		$this->assertSame(
 			[
 				['LOWER("t"."_name")', 'ASC'],
-				['"t"."_name"', 'ASC'],
+				['t._name', 'ASC'],
 				['LOWER("t"."_summary")', 'DESC'],
-				['"t"."_summary"', 'DESC'],
+				['t._summary', 'DESC'],
 				['t._created', 'DESC'],
 				['t._updated', 'ASC'],
 				['t._id', 'ASC'],
@@ -307,7 +307,7 @@ class MagicSearchHandlerTranslatableSortTest extends TestCase {
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'applySorting');
 		$method->invoke($this->makeHandler(new PostgreSQLPlatform()), $this->makeQueryBuilder(), $this->sortRequest(['title' => 'asc'], $schema, ['nl']));
 
-		$this->assertSame([['LOWER(CAST("t"."title" AS TEXT))', 'ASC'], ['"t"."title"', 'ASC'], ['t._id', 'ASC']], $this->orderBy);
+		$this->assertSame([['LOWER(CAST("t"."title" AS TEXT))', 'ASC'], ['t.title', 'ASC'], ['t._id', 'ASC']], $this->orderBy);
 	}//end testPostgresLowersTextAfterACastToText()
 
 	public function testPostgresExpressionNeverCastsToJson(): void {
