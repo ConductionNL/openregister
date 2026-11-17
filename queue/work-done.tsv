@@ -20447,6 +20447,7 @@ verify:larpinq:1088:62ce209c	GREEN: docs only, no new failures	session-20261117T
 review:shillinq:1958:6c4f9eed	CONFLICT (info.xml version only); merged tree green 12785 tests, vitest 18 passed; no behaviour blocker	session-20261117T111351-f79c232f	2026-11-17T11:52:36Z
 verify:planninq:1231:0248eee9	GREEN: planninq #1231 (metadata only), unit 1253 OK	session-20261117T114001-eb50211c	2026-11-17T11:52:52Z
 review:filinq:2069:08c42f1e	BLOCK: intakeDefaultRule schema changed without version bump; no app version bump; suites green (7280 / vitest 831)	session-20261117T111757-a0ed5e74	2026-11-17T11:53:08Z
+merge:portaliq:2449:ca071bff	merge3 tree of 1 portaliq PRs: none; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-17T11:53:16Z
 review:filinq:2090:c34cbf17	GREEN: seed template + test, suite 7250 OK	session-20261117T114914-3f64e1b2	2026-11-17T11:53:17Z
 verify:thematiq:1713:b4ab4302	1713 GREEN; 1714 REVERIFY (conflicts only with #1713)	session-20261117T114638-d8047dd3	2026-11-17T11:53:33Z
 fix:stackiq:1943:1d009f7f	merged #1943 at 61ef25c28535107a6191128eea1d7ee611b28ce7	session-20261117T110646-831a671b	2026-11-17T11:53:51Z
