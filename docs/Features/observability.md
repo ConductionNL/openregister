@@ -53,6 +53,8 @@ Returns Prometheus text-exposition format (Content-Type `text/plain; version=0.0
 | `openregister_embeddings_generated_total{status}` | counter | Embedding generations by outcome (`success`, `failure`; every non-success status is a failure). |
 | `openregister_webhook_delivery_duration_seconds` | histogram | Webhook delivery request duration, buckets 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0 s; attempts logged before durations were recorded are left out. |
 | `openregister_cache_hits_total{cache}` / `openregister_cache_misses_total{cache}` | counter | Object (`object`) and object-name (`name`) cache lookups answered from the cache or sent to the database; the hit ratio is `hits / (hits + misses)`. Counted in APCu and flushed with the request metrics, so they lag by at most a minute and stay 0 without APCu. |
+| `openregister_import_objects_processed_total{job_id, phase}` | counter | Rows a running bulk import job has decided (`phase="preview"`) or written, including failed writes (`phase="commit"`); only jobs that are previewing or committing are published. |
+| `openregister_import_duration_seconds{job_id}` | gauge | Seconds since a running bulk import job was created. |
 | `openregister_db_connection_healthy` | gauge | 1 when a `SELECT 1` round-trip succeeds within 5 seconds, else 0 (the slow or failed round-trip is logged as a warning). |
 
 ### Sample output

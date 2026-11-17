@@ -13,7 +13,7 @@
 - [ ] Implement: Database Connection Monitoring
 - [ ] Implement: Alerting Threshold Configuration
 - [x] Implement: Metrics Storage Strategy
-- [ ] Implement: Performance Baseline Metrics
+- [x] Implement: Performance Baseline Metrics
 - [ ] Implement: Nextcloud Dashboard Integration
 
 ## Status, 2026-11-13
@@ -205,6 +205,14 @@ counts its hits and misses once each. The counts take the same APCu path and 60-
 request-driven flush as the request counters (rows of metric type `cache_lookup` in
 `openregister_metrics`), and counting never fails a lookup. `Service\Observability\CacheMetricsProvider`
 joins `OpenRegisterMetricsProvider` and publishes `cache_hits_total{cache}` and
-`cache_misses_total{cache}`, with `object` and `name` always present. "Performance Baseline
-Metrics" stays unticked: import job progress (`import_objects_processed_total{job_id}`,
-`import_duration_seconds{job_id}`) is not built.
+`cache_misses_total{cache}`, with `object` and `name` always present. Import job progress
+is built in the same pass, below.
+
+**Eighth pass, continued: import job progress.** "Performance Baseline Metrics" is ticked. A bulk
+import is an `openregister_import_previews` job that first decides every row (`previewing`,
+progress in `processed`, persisted every 50 rows) and then writes the decisions (`committing`,
+progress in `applied` + `failed`, persisted every batch). `Service\Observability\ImportJobMetricsProvider`
+joins `OpenRegisterMetricsProvider` and publishes, for each job in one of those two states,
+`import_objects_processed_total{job_id,phase}` (`job_id` is the job's uuid, `phase` is `preview` or
+`commit`) and `import_duration_seconds{job_id}` (seconds since the job was created). A finished
+or failed job drops out, so the label set stays as small as the number of running imports.

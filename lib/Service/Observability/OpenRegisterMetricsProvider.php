@@ -33,7 +33,7 @@ use OCA\OpenRegister\AppHost\Observability\MetricSample;
 use OCA\OpenRegister\Service\Task\TaskMetricsProviderInterface;
 
 /**
- * Joins the task, webhook, search, storage, request, object count and cache metrics under OpenRegister's provider alias.
+ * Joins the task, webhook, search, storage, request, object count, cache and import metrics under OpenRegister's provider alias.
  *
  * @spec openspec/changes/production-observability
  */
@@ -51,6 +51,7 @@ final class OpenRegisterMetricsProvider implements IMetricsProvider {
 	 * @param RequestMetricsProvider         $requests  The request, request duration and error metrics.
 	 * @param ObjectCountMetricsProvider     $objects   The live object count per register and schema.
 	 * @param CacheMetricsProvider           $caches    The cache hit and miss counters.
+	 * @param ImportJobMetricsProvider       $imports   The progress of running import jobs.
 	 */
 	public function __construct(
 		private readonly TaskMetricsProviderInterface $tasks,
@@ -62,6 +63,7 @@ final class OpenRegisterMetricsProvider implements IMetricsProvider {
 		private readonly RequestMetricsProvider $requests,
 		private readonly ObjectCountMetricsProvider $objects,
 		private readonly CacheMetricsProvider $caches,
+		private readonly ImportJobMetricsProvider $imports,
 	) {
 	}//end __construct()
 
@@ -69,7 +71,7 @@ final class OpenRegisterMetricsProvider implements IMetricsProvider {
 	 * The samples of every joined provider, in order.
 	 *
 	 * Tasks, webhook retries, search, webhook durations, database health,
-	 * storage growth, requests and errors, object counts, then cache hits and misses.
+	 * storage growth, requests and errors, object counts, cache hits and misses, then import progress.
 	 *
 	 * @return array<int, MetricSample>
 	 *
@@ -86,6 +88,7 @@ final class OpenRegisterMetricsProvider implements IMetricsProvider {
 			...$this->requests->metrics(),
 			...$this->objects->metrics(),
 			...$this->caches->metrics(),
+			...$this->imports->metrics(),
 		];
 	}//end metrics()
 }//end class
