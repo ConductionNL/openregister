@@ -22972,3 +22972,4 @@ fix:dossiq:6648:7529b2ea	fixed grant row shape, pushed e8520bc3; REVERIFY record
 merge:launchpad:1106:a0a5798b	unmeasured: api.osv.dev (merged 0; APPROVE 1295 1298 1306, 1305 moved -> REVERIFY; REQUEST_CHANGES 1210 1307; 1106 1109 EXCL)	session-20261117T224201-c782ebf9	2026-11-17T23:00:16Z
 fix:pipelinq:3959:7fbcf4ee	sbom regenerated, pushed e2f8424e; REVERIFY queued	session-20261117T211406-076a7a0e	2026-11-17T23:00:30Z
 verify:pipelinq:3934:a504bc50	3934 GREEN, 3954 GREEN, 3943 REVERIFY (conflicts only with an earlier PR of the tree); unit 9328 green, vitest failures inherited	session-20261117T224514-f279fa1b	2026-11-17T23:01:15Z
+fix:learniq:2497:48225cf9	failed: permission (push to learniq refused by the git proxy: repo not in this session's authorized set); fix ready as parked/learniq-2497-floor-fix.patch on 48225cf9: unit_interfacing back to 3.62, floor PASS, suite 7171 tests, 1 inherited failure	session-20261117T224543-26dd2e17	2026-11-17T23:01:30Z
