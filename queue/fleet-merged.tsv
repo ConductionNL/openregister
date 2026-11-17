@@ -4948,4 +4948,5 @@ portaliq	2442	0b8acd481347f9f853494b0c68cc38b678891d76	MERGED	worker-42	GATE OK 
 hermiq	1794	58725be9b04edb729c72faf541cd06e9553151bd	MERGED	worker-15	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.77 holds at 3.80
 versioniq	716	18278571595a8fd4b569687a5185f7b34db37b72	MERGED	worker-33	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.97 holds at 4.24
 integriq	3669	a2e27ca84e0633f568c5b8396dd55abb2257a12c	MERGED	worker-05	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.57
+decidiq	2239	336d0e42c7fe60efccb1725b3279ed02f9224b83	MERGED	worker-09	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.78 holds at 3.84
 portaliq	2451	f157947ed82f49284dc7ad99c70b2be8846de659	MERGED	worker-42	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.08
