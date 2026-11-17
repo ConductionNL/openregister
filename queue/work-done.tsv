@@ -18827,3 +18827,4 @@ fix:decidiq:2189:9db1906e:v3	conflict resolved + PaperController on main API, pu
 fix:decidiq:2198:73a76b6a:v3	conflicts resolved + urgency services moved to main object API; unit 4840 OK, vitest green; pushed 764b069d; REVERIFY queued (merge lock held elsewhere)	session-20261117T004651-e86f3253	2026-11-17T01:16:44Z
 fix:hermiq:1755:c4172dcd:v3	conflict resolved + 2 find() calls migrated to main API, pushed a55ceb60; lock held elsewhere, REVERIFY queued	session-20261117T004644-d9c68b8f	2026-11-17T01:16:52Z
 fix:humaniq:1146:497b5f3c:v3	fixed conflict + test signature, pushed 3a8cc16b; merge lock held elsewhere, REVERIFY queued	session-20261117T004801-2f7a5fc1	2026-11-17T01:17:15Z
+fix:decidiq:2193:03fef7f1:v4	conflict resolved, pushed 8ad11d67; merge lock busy, REVERIFY queued	session-20261117T005208-5aaffa6c	2026-11-17T01:17:26Z
