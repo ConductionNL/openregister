@@ -5581,3 +5581,4 @@ dossiq	6645	97e25b5469678818ef81feec00981d38ea5acfa1	MERGED	merge3	GATE OK sbom,
 dossiq	6646	eb19f73d3dfe4c5313e6aa76ef6c339c953b85c5	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
 dossiq	6647	57eb1cc0cdc646212fd14a280d3be3a5447164ba	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
 dossiq	6649	c3066e42670a7916aef041452d6efdc4f3d501c9	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
+thematiq	1714	a6daab39dc7b0e3915d3a9ea7279bf98a9ae5cf2	SKIP	worker-14	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
