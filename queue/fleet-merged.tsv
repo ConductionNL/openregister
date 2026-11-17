@@ -4977,3 +4977,4 @@ filinq	2123	39d2de9351ff7d5f3a401c9a9d2d7da8123dd9fb	RED	worker-51	GATE RED floo
 integriq	2650	54f2db42bbc78ba42bc0fb239d88b7e694b619b1	SKIP	worker-05	no APPROVE review at this head
 integriq	3572	5ea148163d14c597c8dc94128c33a2d46705fd6d	MERGED	worker-05	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.63
 shillinq	1991	29abf7fb303a9a25601637bfbbaecaeb9a1feae7	MERGED	worker-25	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.06
+hermiq	1740	7fab2d272a0a57a268b18424d79279efa4f48799	RED	worker-20	GATE RED floor: unit_complexity: 4.56 -> 4.54
