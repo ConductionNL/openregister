@@ -20426,3 +20426,4 @@ review:stackiq:1966:46114bbf	GREEN #1966	session-20261117T113142-3e3cc1d3	2026-1
 review:hermiq:1760:0b27b76c	GREEN: phpunit 5697, vitest 1631, sandbox 25, 0 failures on PR+development	session-20261117T112008-f5bd35fb	2026-11-17T11:47:11Z
 review:filinq:2095:97c8a004	GREEN: filinq #2095 unit 7269 OK, phpstan clean	session-20261117T114001-eb50211c	2026-11-17T11:47:34Z
 verify:stackiq:2023:c3ff64df	2023 already merged; GREEN 2025, 2026, 2030 (vitest facets failure inherited)	session-20261117T112432-6eb8ecae	2026-11-17T11:48:13Z
+merge:stackiq:1938:43aa5ab1	cloud tree of 1 stackiq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T112020-0bf220a7	2026-11-17T11:48:43Z
