@@ -16012,6 +16012,7 @@ portaliq	2417	5cad603093b2ac37262b3e10054d4f69245dbe5e	CONFLICT	worker-58	confli
 portaliq	2450	aead78dde8b0da5abf176dc2b3911de1c851d105	CONFLICT	worker-35	baseline 6217 tests, 16 errors inherited; conflicts with development in lib/Settings/portaliq_register.json, package.json, tests/Unit/Settings/PortaliqRegisterConfigTest.php, tests/example-site.spec.mjs
 planninq	1068	40deb423f1222b7b1faa5b7624b9c58ff150df52	GREEN	worker-03	1243 unit tests, baseline 0 failures, 0 new failures; dev-only phpstan lock bump
 portaliq	2500	211dedaaa53ed03580d110ce2e01528d9a392676	CONFLICT	worker-28	conflict in tests/example-site.spec.mjs with development 064d94f1; tree not run
+shillinq	2081	5c4b6e15884f9ade7eb22f959d12f708da02d2c9	CONFLICT	worker-03	conflicts with development in l10n/en.js, en.json, nl.js, nl.json
 pipelinq	3743	871e47d54f19aad16fb7eeac1f4d38f79b61e6af	CONFLICT	worker-14	conflicts with development in l10n en/nl, lib/Service/SettingsLoadService.php, src/manifest.json, tests/vitest/structureProfile.spec.js; suite not run
 shillinq	1965	38aa9e98d92064163730059c45e299b358346b33	CONFLICT	worker-36	conflicts with development in appinfo/info.xml, tests/fixtures/register-versions.lock.json; suite not run
 shillinq	2993	92931e59425a497a6a9b8f57db47b47920c7c9e3	CONFLICT	worker-29	conflicts with origin/development in CHANGELOG.md, appinfo/info.xml, l10n en/nl, lib/Listener/PeppolDeliveryStatusListener.php, src/registry.js
