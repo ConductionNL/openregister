@@ -5310,3 +5310,4 @@ versioniq	729	ea732a804e6cd6a8b2c3838050cbdbf46e259a21	SKIP	worker-43	no APPROVE
 versioniq	770	48224de9d3c1e44cdc0a37e08b1cbb381fa8a3df	MERGED	worker-43	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.97 holds at 4.15
 integriq	3705	06350cfbac4bae6a1c87014c0cbf9a40afbcd51f	RED	worker-08	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 integriq	3706	aac3e778be191eff90b4f66e7e267466d9ac795d	RED	worker-08	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+integriq	3708	c779eda2dcfcb360af97ace928862a126f0f8b2d	RED	worker-08	GATE RED sbom: package-lock.json changed without sbom.cdx.json
