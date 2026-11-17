@@ -19749,3 +19749,4 @@ fix:shillinq:2071:c9fb8008	restored BookCapturesCommand registration, pushed 6ef
 fix:shillinq:3064:b11030b8	conflict resolved, pushed e4c2b4532; REVERIFY recorded	session-20261117T063021-b217a961	2026-11-17T07:12:04Z
 review:shillinq:2086:9fa2a6b9	GREEN: unit 12621 green, vitest 24 green, phpstan clean	session-20261117T070105-e962857c	2026-11-17T07:12:16Z
 review:shillinq:3067:57c917aa	BLOCK: manifest labels without nl keys	session-20261117T063127-b908dd01	2026-11-17T07:12:29Z
+fix:shillinq:2083:ca162c3e	fixed RED (characterisation tests updated to the single-write contract), pushed 32c8fb4a; lock held elsewhere, REVERIFY queued	session-20261117T055905-03eea4d3	2026-11-17T07:12:41Z
