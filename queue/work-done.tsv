@@ -19921,3 +19921,4 @@ review:opencatalogi:2677:635c5d4a	RED: WooReadinessServiceTest::testTheReportNam
 fix:hermiq:1764:f9abfe44	fixed, pushed b2118ca7; REVERIFY queued (end-to-end skipped: static.developer.overheid.nl unreachable)	session-20261117T081203-88d20425	2026-11-17T08:28:53Z
 merge:buildiq:1597:cad5b7a1	unmeasured: api.osv.dev, static.developer.overheid.nl (proxy refused); #1597 #1602 reviewed APPROVE, not landed; 6 CONFLICT, 1 MOVED	session-20261117T080452-29d91ff1	2026-11-17T08:29:06Z
 fix:filinq:2096:fc3e734c	fixed #2096 blockers (schema id, app version, independence and complexity floors); REVERIFY at a0ad494f	session-20261117T081626-2ee8364f	2026-11-17T08:29:12Z
+fix:filinq:2107:0bc2f69d	BLOCK fixed, pushed 11172a4b; REVERIFY recorded (merge lock held elsewhere)	session-20261117T081746-d55c4d0c	2026-11-17T08:29:44Z
