@@ -22895,5 +22895,6 @@ merge:filinq:2072:80a4e903	cloud tree of 9 filinq PRs: merged=0 red=0 fail=0 ski
 fix:pipelinq:3952:6243a86d	conflict resolved, pushed 3ad1de77; REVERIFY queued	session-20261117T211406-076a7a0e	2026-11-17T22:42:36Z
 verify:portaliq:2569:0ae5a2be	GREEN 2569, 2579; REVERIFY 2583, 2589; unit 6339, 16 inherited errors, no new failures	session-20261117T213056-2ba36933	2026-11-17T22:43:09Z
 verify:shillinq:3181:4374a6c0	GREEN 3181-3187 (7 dependency bumps, 0 new failures); 3188 REVERIFY	session-20261117T213058-6689a4c6	2026-11-17T22:43:26Z
+build:portaliq:intake-conditional-questions-and-drafts:b2:c4	partial: PR #2593 adds the named e2e spec (REQ-ICQ-001/002/004); T04/T05/T08-docs already on development; left T06/T07 and the T08 draft strings, waiting on openregister build/or-form-and-journey-registry (not on main)	session-20261117T222626-5de57cc1	2026-11-17T22:43:38Z
 fix:filinq:2112:4a6629c6	conflict resolved, pushed c6b6ed3a; REVERIFY queued	session-20261117T213101-157fb562	2026-11-17T22:43:39Z
 fix:filinq:2114:e0bb0357	conflict resolved, pushed eadfebce; merge lock held elsewhere, REVERIFY recorded	session-20261117T223234-66fa6b77	2026-11-17T22:43:57Z
