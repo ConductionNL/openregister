@@ -17026,3 +17026,4 @@ decidiq	2165	79ba6be436fceb356fef7ee782652e807fb4766e	REVERIFY	worker-46:merge	c
 decidiq	2174	bd55e20ccf3b43d353f25dbdfa06559d22c7dc93	CONFLICT	worker-46:merge	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Settings/profiles/municipality.json 
 decidiq	2190	4d90c497473996365e0cb4eee1b84062d285255d	CONFLICT	worker-46:merge	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Settings/profiles/municipality.json src/manifest.json tests/vitest/simpleDecisionPage.spec.js 
 decidiq	2195	ebc6d9d54e01c779de13acd4b3b	REVERIFY	worker-46:merge	verdict sha is not the head: head is ebc6d9d54e01c779de13acd4b3b086e4f83c1306
+launchpad	1230	accf03ed658d829b8ce2609822cd42c4c137b5b7	RED	merge3:merge-gate	GATE RED floor: overall: 4.61 -> 4.59; unit_complexity: 4.76 -> 4.68; unit_interfacing: 3.83 -> 3.77; module_coupling: 4.75 -> 4.73
