@@ -5372,3 +5372,4 @@ portaliq	2576	a80ea3a359641cd093b21e8dfeff1cc1d45eef59	MERGED	merge3	GATE OK sbo
 portaliq	2577	37ba0c5557e0e3b307a0e43c4bc4e28667030ac1	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.03
 filinq	2121	fb55b7205722abe59242d2e6ed53fbe8ad43cd80	RED	worker-48	GATE RED floor: unit_complexity: 4.49 -> 4.47
 filinq	2176	098a782ed239122525bac74cd4fff4db45bc3ac7	SKIP	worker-48	GATE UNMEASURED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3 while api.osv.dev is unreachable from this session
+decidiq	2281	7dd420ed33958ce45f70156a5a798c097cbc461d	SKIP	worker-05	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
