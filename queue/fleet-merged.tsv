@@ -5106,6 +5106,7 @@ larpinq	1043	03f6b920a26ecff333adc85188cb5c043995a685	RED	worker-33	GATE RED flo
 decidiq	2224	ece2d16c9b532327a6bc2d9d1fa0bc0bfcc37b4e	MERGED	worker-24	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.78 holds at 3.83
 decidiq	2249	b46f792f7f876aade74a1dcd64c651d0ef2743ba	MERGED	worker-24	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.78 holds at 3.83
 launchpad	1210	155767491873d320d4681d831d2b28302201d028	RED	worker-54	GATE RED floor: module_coupling: 4.74 -> 4.68
+learniq	2565	f47cb73f1bd81d27dbd82fbe044b26c1b770bb83	MERGED	worker-40	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 4.10
 thematiq	1365	5371f4c1ad503954e72c7d9ba3c40b02a3bfef61	MERGED	worker-17	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.15
 decidiq	2251	0ed475e33cbb588dda158bc53a43c6b0bed603a7	MERGED	worker-24	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.78 holds at 3.83
 opencatalogi	2650	e518db3d4ba09e41b85d9dbf215290fbd24057eb	SKIP	worker-19	no APPROVE review at this head
