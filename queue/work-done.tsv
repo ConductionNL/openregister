@@ -21567,3 +21567,4 @@ build:decidiq:council-calendar-meeting-type-in-the-readers-language:b2	already d
 build:decidiq:document-annotations:b2	already building: quality/build-document-annotations exists	session-20261117T135414-614629b0	2026-11-17T15:20:08Z
 build:decidiq:document-approval-chain-leaf:b2	already done: only the screenshots task is open, captured by a journeydoc run on a live instance	session-20261117T124010-7774729d	2026-11-17T15:20:09Z
 build:decidiq:interests-and-integrity:b2	already done: tasks 1-6 on development (fragment 62 etc., #2146 at 47325aada incl. task 5 KPI + compliance panel; tasks.md boxes 1-5 not ticked); only task 7 e2e (browser) left	session-20261117T133303-ca20630d	2026-11-17T15:21:17Z
+build:decidiq:meeting-pack-board-book:b2	already building: tasks 1-8 built on open PR #2199 (head fb256f06, GREEN review, in the merge pipeline) + filinq #2132; only task 9 e2e/newman left (live instance)	session-20261117T133303-ca20630d	2026-11-17T15:22:01Z
