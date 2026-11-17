@@ -20842,6 +20842,7 @@ fix:integriq:3711:dd118ae9	fixed sbom, pushed 42694816; merge lock held elsewher
 review:shillinq:2975:df2c1919	GREEN: unit 12832 ok (baseline 12779), phpstan clean, vitest 47 ok, gates clean on the diff	session-20261117T133308-c6d52416	2026-11-17T13:50:17Z
 fix:stackiq:1942:90499893	conflict resolved, pushed 9b4a8fa2; merge lock held elsewhere, REVERIFY	session-20261117T134404-362023fb	2026-11-17T13:50:53Z
 fix:learniq:2497:35dd044e	conflict resolved, pushed 48225cf9; merge lock held elsewhere, REVERIFY queued	session-20261117T124010-7774729d	2026-11-17T13:51:06Z
+cover:stackiq:9ac19b3am209e:4d89782c	PR #2037: EntryReferences 5 tests, lib/Service/EntryType 52/55 -> 55/55	session-20261117T132538-ac3b9ef5	2026-11-17T13:51:26Z
 fix:integriq:3710:8618c31d	sbom regenerated, new head 49c6e016; REVERIFY (merge lock held elsewhere)	session-20261117T134024-07d6c268	2026-11-17T13:51:23Z
 cover:decidiq:a5f973bbmfcd5:dfaef732	already done: lib/Notification/Notifier.php at 100% lines (53/53) on development; earlier -1 branch merged	session-20261117T134242-51ff9d48	2026-11-17T13:51:45Z
 verify:keepiq:1894:db62a428	GREEN 1894,1895,1896 (5619 tests, no new failures)	session-20261117T133629-e10185c0	2026-11-17T13:51:44Z
