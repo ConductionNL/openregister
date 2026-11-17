@@ -22262,3 +22262,4 @@ verify:larpinq:1103:e6ac5573	CONFLICT larpinq#1103 (spec already on development 
 verify:integriq:3726:ccf011fb	GREEN integriq#3726 (0 new failures; e2e spec only)	session-20261117T190026-7c82e6b3	2026-11-17T19:34:33Z
 verify:integriq:3724:27c092d3	GREEN #3724 (9910 tests, 0 new failures; e2e specs only)	session-20261117T190714-0b708ca6	2026-11-17T19:34:43Z
 verify:integriq:3711:42694816	GREEN #3711: vitest 2389 pass, no PHP change	session-20261117T185853-76335694	2026-11-17T19:34:51Z
+verify:learniq:2609:85f54492	GREEN #2609 (no new failures)	session-20261117T190418-7494049c	2026-11-17T19:35:05Z
