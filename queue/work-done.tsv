@@ -18518,3 +18518,4 @@ verify:opencatalogi:2680:66ae4f4f	CONFLICT: #2680 vs development in docs, l10n, 
 verify:shillinq:2983:55242378	CONFLICT #2983 (info.xml, GLLineResultStampListener, manifest, l10n)	session-20261116T232623-066b53c9	2026-11-17T00:05:29Z
 verify:learniq:2551:ca8152ea	CONFLICT #2551 (l10n, committed .pyc)	session-20261116T232944-146e39d7	2026-11-17T00:05:41Z
 verify:opencatalogi:2722:4a2f2fb8	CONFLICT #2722 (3 files vs development)	session-20261116T233933-3050c00d	2026-11-17T00:06:07Z
+verify:shillinq:1958:c4416ca3	1958 CONFLICT	session-20261116T230531-f9095b0f	2026-11-17T00:06:23Z
