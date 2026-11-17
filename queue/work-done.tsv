@@ -21267,3 +21267,4 @@ build:portaliq:row-action-carries-files:b2	already built: tasks 1.1-2.2 on devel
 build:portaliq:site-mandates-the-represented-manage:b2	already building: quality/build-site-mandates-the-represented-manage(-c3) exist; only T0 broker confirmation and e2e left	session-20261117T140734-4d108840	2026-11-17T14:46:44Z
 build:portaliq:site-home-follows-the-school-boards:b2	already done: only task 5 open, a live check; no PR	session-20261117T135414-614629b0	2026-11-17T14:46:58Z
 build:pipelinq:lead-win-probability-recency:b2	PR #3949: 7 of 10 tasks (1.x already upstream, 2.1-2.4, 3.1); left 3.2 e2e live run, 3.3 after merge; vitest +26, no new failures	session-20261117T125716-5aa18045	2026-11-17T14:47:11Z
+build:portaliq:public-site-meets-wcag-aa:b2	PR #2578: T01 T02 T04 built (axe on search+publication, keyboard walk, seeded pages); T03/T05 wait on a live run, T06 needs openspec CLI	session-20261117T134355-826c5a0b	2026-11-17T14:47:36Z
