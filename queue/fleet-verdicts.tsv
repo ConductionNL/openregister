@@ -18653,6 +18653,7 @@ shillinq	3006	7ffe1e970520509233b98ecc30b4c917813b736d	GREEN	worker-44:review	bu
 buildiq	1715	628d9e25f091953535ee8b7bb259bf0baf012802	GREEN	worker-12	unit 3682 on the tree vs 3676 baseline, 1 inherited failure, 0 new; vitest 5013 passed; e2e spec for ai-smart-paste-into-forms plus tasks tick
 buildiq	1716	f3a173de86c01c3d3ee317b89282af504b62139b	GREEN	worker-12	unit 3682 on the tree vs 3676 baseline, 1 inherited failure, 0 new; vitest 5013 passed; tasks tick only
 buildiq	1717	e829fe43c9a5cef45899fc7b358e8344c41b504b	GREEN	worker-12	unit 3682 on the tree vs 3676 baseline, 1 inherited failure, 0 new; vitest 5013 passed; spec wording as a scenario plus tasks tick
+buildiq	1718	56e7faf39d616a8090eb63a8426131ae67e763f5	GREEN	worker-12	unit 3682 on the tree vs 3676 baseline, 1 inherited failure, 0 new; vitest 5013 passed; tasks tick and parity row re-rated
 learniq	2598	2cd09662b2c6df698224c284c244aa83bd0f77ee	GREEN	worker-21	unit 7157 tests on tree (baseline 7152, 1 inherited failure HigherEducationExampleSetTest), new failures 0; js-unit 1418, 8 inherited failures, new 0; e2e spec and tasks.md only
 learniq	2599	d006d35c98825c27df01811a18bd6dd92028d785	REVERIFY	worker-21	conflicts only with an earlier PR of the verify tree
 learniq	2600	3dd1b33d30e301887b5e829946f9b3224f874ddd	GREEN	worker-21	unit 7157 tests on tree (baseline 7152, 1 inherited failure HigherEducationExampleSetTest), new failures 0; js-unit 1418, 8 inherited failures, new 0; e2e spec and tasks.md only
