@@ -5469,3 +5469,6 @@ filinq	2179	fe61fa8190c782e8e6e0568c8d078ce3ef6cdd49	MERGED	merge3	GATE OK sbom,
 filinq	2180	6cd5e86ffab43fd4ee6c0242f32056d724e26036	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.03
 filinq	2181	7ce08a512c146195e9c7c946dbc7e9e267449432	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.03
 filinq	2182	af614fee7742906a70da9c30346e9eb6541d7740	RED	merge3	GATE RED checker floor: secretscanning: pass -> fail; secretscanning stars: 5 -> 1
+keepiq	1894	f9aa4181f647ef727731915a0d3c8605514d38ff	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
+keepiq	1895	62f8ad55d1465cd37278267e216271844ce3c8a8	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
+keepiq	1896	1fa9aa0df493350abd562af449965661b898570a	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
