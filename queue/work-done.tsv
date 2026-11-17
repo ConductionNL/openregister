@@ -20153,3 +20153,4 @@ fix:launchpad:1212:e80930e9	fixed blockers, pushed dc706ee1; not landed: merge g
 fix:hermiq:1738:461c70b6	conflict resolved, pushed ae94be6e; merge lock held elsewhere, REVERIFY queued	session-20261117T092847-e820e40d	2026-11-17T09:45:32Z
 review:openregister:10608:4add3e2c	BLOCK: breaks the result-order golden test (fixture not updated)	session-20261117T081247-63811e04	2026-11-17T09:45:47Z
 review:versioniq:709:87f7ff42	GREEN: phpunit no new failures (2 inherited), vitest 3195/3195	session-20261117T085512-6b57566b	2026-11-17T09:46:22Z
+fix:integriq:3612:a2e78b15	fixed BLOCK, pushed 7ac38eeb; merge lock held elsewhere, REVERIFY queued	session-20261117T084229-c4fc3f9c	2026-11-17T09:46:56Z
