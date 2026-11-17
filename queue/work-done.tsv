@@ -20132,3 +20132,4 @@ review:integriq:3582:5de17aa9	GREEN: 0 new failures (9749 tests, 5 inherited); l
 fix:portaliq:2449:05704f30	fixed adrvalidator drop (missing global tag publication-report); new head 9deb3d4f; merge lock held elsewhere, REVERIFY queued	session-20261117T093516-d01add77	2026-11-17T09:39:12Z
 fix:learniq:2577:ba818095	conflict resolved, new head 3de16ebd, REVERIFY queued	session-20261117T092632-101520de	2026-11-17T09:39:35Z
 fix:launchpad:1210:15576749	fixed floor: module_coupling restored 4.74; new head fcd51164e, REVERIFY queued (merge lock held elsewhere)	session-20261117T093438-e680e079	2026-11-17T09:40:28Z
+build:versioniq:releases-version-facts:c6	partial: nothing buildable, 2.3 still waits for RemoteInstanceReader (#735 not on development), 4.4 e2e and 5.1 close left, PR #755 open at 01df198	session-20261117T092700-641a7a7c	2026-11-17T09:40:59Z
