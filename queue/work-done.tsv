@@ -19894,6 +19894,7 @@ review:opencatalogi:2683:b9a9bc9f	RED: 1 new failure (ApplicationTest assumes op
 fix:hermiq:1762:20443b51	fixed adrvalidator warn (undeclared tag), pushed 28760e6b; REVERIFY queued (gate host blocked)	session-20261117T075956-4a06c0e3	2026-11-17T08:21:56Z
 fix:dossiq:6630:d26712f8	REVERIFY: BLOCK was the owner-requested archival behaviour (gap row criterion=ruben-decision); checks green, lock busy, not landed	session-20261117T080713-9f082b97	2026-11-17T08:22:07Z
 review:shillinq:2070:a52f769a	GREEN: unit 12630/0 failures, vitest 32 pass	session-20261117T081327-bdafbf12	2026-11-17T08:22:25Z
+verify:opencatalogi:2756:87cd5e9a	GREEN 2756,2765; REVERIFY 2766 (conflicts only with 2756); 0 new failures	session-20261117T081134-9a158237	2026-11-17T08:22:42Z
 review:stackiq:1966:07fea94b	RED: 1 new phpunit failure (usage version pin in BaselineClassificationDeclarationTest); rest matches specs	session-20261117T081247-63811e04	2026-11-17T08:22:54Z
 fix:hermiq:1757:5857cce3	failed: permission (running the ADR ruleset from npm was refused; static.developer.overheid.nl blocked here, adrvalidator unmeasurable)	session-20261117T081203-88d20425	2026-11-17T08:23:10Z
 fix:shillinq:3067:57c917aa	fixed l10n keys, new head 8205f49a; merge lock held elsewhere, REVERIFY	session-20261117T081941-dbad7940	2026-11-17T08:23:06Z
