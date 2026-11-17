@@ -3372,3 +3372,4 @@
 10622 d498ab65995aafc9f0e0cffc185099fe1f49eb73 APPROVE CI-only: pins actions/setup-node to v7.1.0 by sha in 3 workflows; inputs (node-version, node-version-file, cache npm) still supported; no lib, test or frontend code changed
 10625 77e25041364851dabb5f8d2473dd8b9ba5ba01e1 APPROVE CI-only: pins upload-artifact to the v7.0.2 sha main already uses in scorecard.yml; ubuntu-latest runners, no download-artifact consumers, no lib or test changes
 10630 56e67fcf4c0161be636ac3407351b367978950f3 APPROVE dev-only patch bump of vue-eslint-parser 10.4.1 to 10.4.2 in package.json and lockfile; no dependency tree changes beyond it; no lib, test or frontend source changed
+10626 01fe2e08f462a224d902efa2cd7b10bd3a6b6dce APPROVE CI-only: setup-buildx-action v3 to v4 in container-image workflow, no inputs used, hosted ubuntu-latest runner; no lib, test or frontend change
