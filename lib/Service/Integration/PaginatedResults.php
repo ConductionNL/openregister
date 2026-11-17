@@ -31,6 +31,11 @@ namespace OCA\OpenRegister\Service\Integration;
 final class PaginatedResults {
 
 	/**
+	 * The keys of the envelope itself, which an extra key never replaces.
+	 */
+	private const ENVELOPE_KEYS = ['items', 'results', 'total', 'nextCursor'];
+
+	/**
 	 * The canonical envelope of a raw provider value.
 	 *
 	 * @param mixed $value Raw value returned by a provider or service.
@@ -40,4 +45,39 @@ final class PaginatedResults {
 	public static function envelope(mixed $value): array {
 		return PaginatedResult::fromMixed($value)->toArray();
 	}//end envelope()
+
+	/**
+	 * The declared extra top-level keys of a raw list answer, unchanged.
+	 *
+	 * Only keys named in $declared and present in $value are returned; the
+	 * envelope's own keys (`items`, `results`, `total`, `nextCursor`) never
+	 * are, so a provider cannot override them this way. A non-array value, or
+	 * a flat list of rows, has no extra keys.
+	 *
+	 * @param mixed $value    Raw value returned by a provider's list().
+	 * @param array $declared The key names the provider declares.
+	 *
+	 * @return array<string, mixed> The extra keys with their values, in declared order.
+	 *
+	 * @spec openspec/specs/integration-registry/spec.md#requirement-an-integration-may-declare-extra-top-level-keys-of-its-list-answer
+	 */
+	public static function extras(mixed $value, array $declared): array {
+		if (is_array($value) === false || array_is_list($value) === true) {
+			return [];
+		}
+
+		$extras = [];
+		foreach ($declared as $key) {
+			if (is_string($key) === false
+				|| in_array($key, self::ENVELOPE_KEYS, true) === true
+				|| array_key_exists($key, $value) === false
+			) {
+				continue;
+			}
+
+			$extras[$key] = $value[$key];
+		}
+
+		return $extras;
+	}//end extras()
 }//end class
