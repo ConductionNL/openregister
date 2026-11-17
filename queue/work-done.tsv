@@ -20564,3 +20564,4 @@ merge:integriq:2650:e275cd00	cloud tree of 4 integriq PRs: merged=0 red=3 fail=0
 cover:decidiq:a5f973bbmfcd5:f545d745	PR #2267: FillDecisionDecidingBody 5 tests (53/63 -> 62/63 lines with its own test); suite 4951 -> 4956 OK; rest of lib/Repair already 100%	session-20261117T112444-7a410249	2026-11-17T12:21:53Z
 fix:larpinq:1086:46f1ee9a	floor fixed, pushed f1f15b15; merge lock held elsewhere, REVERIFY queued	session-20261117T110646-831a671b	2026-11-17T12:21:56Z
 fix:versioniq:709:9a092579	merged #709 at 15263d7c05a007f23ae4464332a1db12ae29c2a2 (unit_interfacing restored 4.61->4.64 by narrowing two channel helpers)	session-20261117T120635-25da0b5a	2026-11-17T12:22:03Z
+review:filinq:2072:b9a113b8	GREEN: merges clean, unit and vitest green, access tightened per spec	session-20261117T112106-1814b74b	2026-11-17T12:22:59Z
