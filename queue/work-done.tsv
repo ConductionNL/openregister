@@ -19101,3 +19101,4 @@ review:shillinq:3052:e4fd4565	RED: administrationScopedIndex.spec.js (index not 
 review:shillinq:3067:6f2e1f12	GREEN: suite 12516 OK vs baseline 12500, matches change	session-20261117T020227-9e68ed24	2026-11-17T02:18:24Z
 review:shillinq:3062:fbfbd1da	GREEN: phpunit 12521 ok, vitest 1 inherited failure	session-20261117T020207-847c18e7	2026-11-17T02:18:33Z
 review:hermiq:1757:becc16d7	GREEN: unit 5578 OK, vitest 36 OK	session-20261117T020131-42b6d5a2	2026-11-17T02:18:45Z
+review:buildiq:1590:2c97afef	GREEN: 1 inherited failure; conflicts with development in l10n	session-20261117T020255-329d248b	2026-11-17T02:18:57Z
