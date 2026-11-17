@@ -18770,3 +18770,4 @@ portaliq	2587	664b8ca8575ae2f35befab13dda8dba4deb03d63	GREEN	worker-32	unit 6339
 buildiq	1648	616837279746c70653f0f41163c0dd6efd73fa7e	GREEN	worker-15	unit 3737 OK on tree (baseline 3676 OK), vitest 5027/5027, 0 new failures; build of logic-automation-actions-that-run, new run/manual routes keep role checks
 dossiq	6643	0d24d1c52449d037d6611b027579e67248612e82	GREEN	worker-09	tasks.md tick only (no code); claim checked against lib/Settings/packages and lib/ seeders; baseline 18398 tests 1 error (StatusEntryRequirementsGuardTest, inherited), no new failures
 keepiq	1900	a6ccac84767665a898692a9826befe197f56bcea	GREEN	worker-39	vitest 7173 pass, 3 inherited reds only; frontend-only build of portability-export-choice-and-restore-fidelity
+keepiq	1901	f9f7976788c4b0b79cfd7a58bceadaf67c54401f	REVERIFY	worker-39	conflicts only with an earlier PR of the verify tree
