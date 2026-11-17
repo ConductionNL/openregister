@@ -18748,3 +18748,4 @@ decidiq	2275	a2504982a57dd3baef7b32f736efdd4c91c5b798	GREEN	worker-14	unit 5020 
 hermiq	1852	734376163c5c6515d092ee9d381c6d537078095a	GREEN	worker-20	unit 5736 baseline 0 fail; tree 5800 tests 0 new failures; vitest 1659 passed; build vector-rag per spec
 hermiq	1853	f3ad22784fa06fff189170b5a3d39912e8054157	GREEN	worker-20	unit 5736 baseline 0 fail; tree 5800 tests 0 new failures; vitest 1659 passed; build instant-talk per spec
 hermiq	1854	d890a013df656c18a3ff7146d19b4e764bbd0f5c	REVERIFY	worker-20	conflicts only with an earlier PR of the verify tree
+integriq	3715	86b85286c8b80aa9a5d80d8a1c3ccb9aa6e879d1	GREEN	worker-35	unit 9911 tests on 9-PR tree, baseline 5 inherited failures, new failures 0; vitest 2389 passed; tests/spec files only
