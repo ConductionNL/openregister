@@ -19601,3 +19601,4 @@ fix:portaliq:2449:3a70eb8a	unmeasured: static.developer.overheid.nl (conflict fi
 fix:decidiq:2173:6e5001e5	conflict resolved, pushed 0ef71c12; lock busy, REVERIFY queued	session-20261117T063048-0c413ea5	2026-11-17T06:40:20Z
 merge:pipelinq:3734:69aca4e2	unmeasured: static.developer.overheid.nl (pushed fix 9499f0c6, APPROVE recorded at it)	session-20261117T063100-87feca45	2026-11-17T06:40:31Z
 fix:filinq:2078:d89b93ac	conflict resolved, pushed 17892e17; merge lock held by another merger, REVERIFY queued	session-20261117T063127-b908dd01	2026-11-17T06:40:47Z
+fix:buildiq:1632:3f019d31	conflict resolved, pushed 339aedb1; REVERIFY (merge gate host blocked)	session-20261117T055834-d932e117	2026-11-17T06:41:11Z
