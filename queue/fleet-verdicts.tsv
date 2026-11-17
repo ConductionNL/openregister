@@ -19592,3 +19592,4 @@ hermiq	1763	561fdd1e123258292b81d0bd69d16ae4db4ba76c	CONFLICT	merge3	conflicts w
 hermiq	1843	45ed8874b7086bd4025662de7d1606b75a2b59a9	CONFLICT	merge3	conflicts with development; files: tests/integration/hermiq.postman_collection.json 
 hermiq	1849	599ab2bf863fc652db45cd05a25b1a74eb760c49	CONFLICT	merge3	conflicts with development; files: tests/integration/hermiq.postman_collection.json 
 opencatalogi	2766	ba8f0a6796e491568169ff7ef6f413125355a409	REVERIFY	worker-10	merged development in (clean; earlier conflict was only with another tree PR); unit suite with openregister main beside: 6398 tests, no failures beyond development baseline; merges blocked here (static.developer.overheid.nl 403); new head 589fc8d13039455102d23d8cfd7f9a099256ae10, verify it
+buildiq	1716	f3a173de86c01c3d3ee317b8928	REVERIFY	worker-08:merge	verdict sha is not the head: head is f3a173de86c01c3d3ee317b89282af504b62139b
