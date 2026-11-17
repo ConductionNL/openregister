@@ -20489,3 +20489,4 @@ fix:decidiq:2171:6b39135c	gate blockers fixed and development merged, head fa36c
 merge:planninq:1231:0248eee9	cloud tree of 1 planninq PRs: merged=0 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T111351-f79c232f	2026-11-17T12:05:31Z
 merge:launchpad:1106:9005290f	cloud tree of 3 launchpad PRs: merged=0 red=1 fail=0 skip=0; #1267 gate RED (publiccode supports entry removed: fivelayer floor 5->3)	session-20261117T115011-195ffbc6	2026-11-17T12:06:11Z
 review:opencatalogi:2650:6678e3ea	BLOCK #2650: uses/used answers skip the public sourceIdentifiers filter; suite no new failures	session-20261117T114001-07512b39	2026-11-17T12:06:11Z
+review:hermiq:1754:26e47c9c	BLOCK: app <version> not raised with register 0.63.0; unit 5683/0	session-20261117T111714-cd94760b	2026-11-17T12:06:33Z
