@@ -5010,3 +5010,4 @@ launchpad	1230	accf03ed658d829b8ce2609822cd42c4c137b5b7	RED	merge3	GATE RED floo
 shillinq	1900	f9ee4f19992fd3f3f335991e6a65ab8dbb9f91d8	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.06
 shillinq	3002	0d472796c164363f82d354fe493c5b5d758a0e92	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.05
 decidiq	2195	ebc6d9d54e01c779de13acd4b3b086e4f83c1306	SKIP	worker-46	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
+decidiq	2224	8ca7020a751c27dc36780a376b8646fd1314aed3	SKIP	worker-46	no APPROVE review at this head
