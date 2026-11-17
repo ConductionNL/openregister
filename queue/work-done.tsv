@@ -22788,3 +22788,4 @@ fix:versioniq:719:d043e91d	fixed #719: openapi.json restored + readiness path, p
 fix:keepiq:1896:1fa9aa0d	no change needed: sbom current for dev-only bump; REVERIFY queued	session-20261117T211528-7f174be9	2026-11-17T22:02:59Z
 verify:pipelinq:3962:63a9f870	GREEN; dompurify patch bump, vitest no new failures	session-20261117T210827-f273f058	2026-11-17T22:03:08Z
 verify:shillinq:3176:10a4916c	GREEN #3176: unit 12816 OK, baseline 12796, 0 new failures	session-20261117T211359-8e262d16	2026-11-17T22:03:32Z
+fix:shillinq:3080:ed5b393d	conflict resolved on #3080, new head 9c446227 (12824 tests green); lock busy, REVERIFY queued	session-20261117T211352-b8b9fdbb	2026-11-17T22:04:04Z
