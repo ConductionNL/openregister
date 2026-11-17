@@ -22218,6 +22218,7 @@ verify:hermiq:1847:4b35bf02	1847 GREEN (test specs only)	session-20261117T185710
 verify:hermiq:1851:b966db2c	GREEN 1851; alone 5754 tests 0 failures	session-20261117T190115-a0afcf82	2026-11-17T19:25:49Z
 verify:hermiq:1852:73437616	GREEN #1852: 0 new unit failures (199 inherited), vitest 1659 pass	session-20261117T185903-e132ac1e	2026-11-17T19:26:10Z
 verify:keepiq:1897:cb062e67	GREEN 1897 (archive, comment-only code changes)	session-20261117T185927-e9838dc9	2026-11-17T19:26:25Z
+verify:buildiq:1730:2d9f793f	GREEN buildiq#1730 (3676 tests, 0 new failures)	session-20261117T190507-82f8fe51	2026-11-17T19:27:06Z
 verify:dossiq:6659:66f38a59	9 GREEN (6659-6666,6668); unit +24 tests 0 new failures; vitest 0 new failures	session-20261117T190140-44e48bc5	2026-11-17T19:27:01Z
 verify:dossiq:6643:0d24d1c5	GREEN #6643 (tasks.md only; baseline 1 inherited error)	session-20261117T190632-f0412d81	2026-11-17T19:27:10Z
 verify:integriq:3716:43ef05b0	GREEN integriq#3716 (e2e spec only; inherited unit reds)	session-20261117T190302-4e3d4569	2026-11-17T19:27:19Z
@@ -22253,3 +22254,36 @@ verify:integriq:3730:129afd21	GREEN #3730: 0 new unit failures, tests only	sessi
 verify:hermiq:1844:d7a81322	GREEN #1844 (no new failures; baseline 199 inherited)	session-20261117T190357-55034d4a	2026-11-17T19:33:03Z
 verify:larpinq:1102:53a41249	GREEN larpinq#1102 (e2e only)	session-20261117T190302-4e3d4569	2026-11-17T19:33:14Z
 verify:integriq:3612:e27499b1	GREEN #3612 (9933 tests, no new failures)	session-20261117T190320-1db054ae	2026-11-17T19:33:23Z
+verify:integriq:3717:96bd05d4	GREEN 3717; tests-only, 0 new failures (baseline 3F/2E inherited)	session-20261117T190115-a0afcf82	2026-11-17T19:33:31Z
+verify:integriq:3718:63ae9b35	GREEN #3718: tasks.md only, 0 new failures (5 inherited)	session-20261117T185732-534997e2	2026-11-17T19:33:43Z
+verify:integriq:3719:47ed6f87	GREEN #3719 (tests only, no new failures)	session-20261117T190540-b0615094	2026-11-17T19:33:58Z
+verify:integriq:3723:8a4e2be1	1 GREEN (3723); e2e spec only, unit 0 new failures	session-20261117T190140-44e48bc5	2026-11-17T19:34:09Z
+verify:larpinq:1103:e6ac5573	CONFLICT larpinq#1103 (spec already on development via b7573fe5)	session-20261117T190626-5c7fccb4	2026-11-17T19:34:21Z
+verify:integriq:3726:ccf011fb	GREEN integriq#3726 (0 new failures; e2e spec only)	session-20261117T190026-7c82e6b3	2026-11-17T19:34:33Z
+verify:integriq:3724:27c092d3	GREEN #3724 (9910 tests, 0 new failures; e2e specs only)	session-20261117T190714-0b708ca6	2026-11-17T19:34:43Z
+verify:integriq:3711:42694816	GREEN #3711: vitest 2389 pass, no PHP change	session-20261117T185853-76335694	2026-11-17T19:34:51Z
+verify:learniq:2609:85f54492	GREEN #2609 (no new failures)	session-20261117T190418-7494049c	2026-11-17T19:35:05Z
+verify:larpinq:1101:68cf7368	CONFLICT #1101 (change archived, e2e spec already on development)	session-20261117T190357-55034d4a	2026-11-17T19:35:13Z
+verify:opencatalogi:2783:b2d114f8	GREEN #2783 (version bump)	session-20261117T190540-b0615094	2026-11-17T19:35:27Z
+verify:larpinq:1100:1ed0e3bf	GREEN #1100 (e2e spec only; 1243 tests, 0 new failures)	session-20261117T190359-60e4fde5	2026-11-17T19:35:38Z
+verify:humaniq:1195:b3d7f5c6	GREEN humaniq#1195 (tags + e2e spec; unit 4509 green)	session-20261117T190048-3d066fd0	2026-11-17T19:35:52Z
+verify:integriq:3585:39f07d5a	GREEN 3585; no new failures (5 inherited), vitest 2401 OK	session-20261117T185359-d68263c5	2026-11-17T19:36:04Z
+verify:larpinq:1105:768215ba	GREEN #1105 (unit 1265 ok, vitest 796 ok)	session-20261117T190308-4c99e05c	2026-11-17T19:36:22Z
+verify:humaniq:1192:3ca961bd	GREEN: 1192 (+25 tests, no new failures)	session-20261117T185625-a1e67f54	2026-11-17T19:36:35Z
+verify:larpinq:1049:eb8c9f5f	GREEN larpinq#1049 (php 1260 OK, vitest 749 OK)	session-20261117T190302-4e3d4569	2026-11-17T19:36:45Z
+verify:keepiq:1900:a6ccac84	GREEN 1900 alone	session-20261117T185927-e9838dc9	2026-11-17T19:36:57Z
+verify:learniq:2594:259feb56	GREEN 2594; e2e/tasks only, unit green	session-20261117T185419-c23c5946	2026-11-17T19:37:06Z
+verify:integriq:3729:0be54156	3729 GREEN	session-20261117T185710-40ec955c	2026-11-17T19:37:19Z
+verify:integriq:3582:963fe34c	GREEN 3582 (phpunit 9946, 0 new failures; vitest 2397)	session-20261117T190316-ad3f71cf	2026-11-17T19:37:27Z
+verify:integriq:3720:b1dbefe4	GREEN integriq#3720: e2e spec only, unit suite unaffected	session-20261117T185556-5276d56d	2026-11-17T19:37:37Z
+verify:opencatalogi:2799:a135b000	GREEN 2799 (e2e spec + docs only)	session-20261117T185927-e9838dc9	2026-11-17T19:37:48Z
+verify:integriq:3712:3f2d9585	GREEN 3712; vitest all pass	session-20261117T185757-f5106521	2026-11-17T19:38:03Z
+verify:launchpad:1300:0d717f38	GREEN #1300 (0 new failures)	session-20261117T190353-db371595	2026-11-17T19:38:12Z
+verify:opencatalogi:2798:f43db4b9	GREEN #2798 (tasks.md only)	session-20261117T190357-55034d4a	2026-11-17T19:38:21Z
+verify:integriq:3710:49c6e016	GREEN #3710 (vitest 2389 pass, build ok, deps-only)	session-20261117T191558-f6f135b1	2026-11-17T19:38:35Z
+verify:pipelinq:3943:d9e81afb	1 GREEN (#3943), 5 REVERIFY (l10n conflicts only with #3943)	session-20261117T190436-15c3d98f	2026-11-17T19:39:14Z
+verify:opencatalogi:2787:362419ba	GREEN 2787 (tests only)	session-20261117T185927-e9838dc9	2026-11-17T19:39:25Z
+verify:opencatalogi:2800:7d8c1d3f	GREEN #2800 (no new failures)	session-20261117T190540-b0615094	2026-11-17T19:39:34Z
+verify:learniq:2608:665e9afd	GREEN #2608: 0 new failures (2 inherited)	session-20261117T185732-534997e2	2026-11-17T19:39:45Z
+verify:learniq:2605:86fd7d37	GREEN #2605 (0 new failures; 1 inherited)	session-20261117T190318-dafab159	2026-11-17T19:39:54Z
+verify:learniq:2604:2b6642c7	GREEN #2604 (openspec only)	session-20261117T190418-7494049c	2026-11-17T19:40:03Z
