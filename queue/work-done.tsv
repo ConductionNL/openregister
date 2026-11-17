@@ -21626,3 +21626,4 @@ build:hermiq:chat-how-an-answer-came-about:b2	already building: quality/build-ch
 build:hermiq:agents-plain-language-builder:b2	already built: every code task ticked on development; only the live builder chat test is left	session-20261117T133833-7d87fd3d	2026-11-17T15:28:07Z
 build:hermiq:ai-oversight-subject-export:b2	already built: 1.1 on hermiq development; 1.2 on dossiq development (8b5f08c8b, case-ai-activity export+footnote, widget content.export supports url+group); no e2e specs named; 1.2 box left unticked in tasks.md (built in dossiq)	session-20261117T152617-5bc1e1b2	2026-11-17T15:28:47Z
 build:hermiq:agent-data-migration:b2	already built: code tasks done on development (19607e89); 7.2 and D.1 need a live OpenRegister with legacy rows	session-20261117T133833-7d87fd3d	2026-11-17T15:28:43Z
+build:hermiq:flows-hand-off-and-wait:b2	already building: quality/build-flows-hand-off-and-wait exists	session-20261117T135414-614629b0	2026-11-17T15:28:53Z
