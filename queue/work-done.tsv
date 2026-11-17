@@ -21015,3 +21015,4 @@ build:dossiq:starter-content-and-templates:b2	already done in dossiq: only 7.2 o
 build:dossiq:social-domain-consent-and-safeguards:b2	already building: quality/build-social-domain-consent-and-safeguards-2..5 exist	session-20261117T135414-614629b0	2026-11-17T14:19:11Z
 build:dossiq:resident-start-points-have-a-page:b2	already built: 1.1 and 2.1 on development with tests, no e2e spec files named; skipped 3.1 (live check on an upgraded instance)	session-20261117T134242-51ff9d48	2026-11-17T14:19:01Z
 build:dossiq:portal-submission-is-made-once:b2	already built: tasks 1.1-2.1 and their unit tests on development, no e2e spec named by tasks; 3.1 left (live run on :8080 with portaliq, external system)	session-20261117T141807-e3fb543a	2026-11-17T14:20:07Z
+fix:shillinq:2063:2caa7618	merged #2063 at 1e43203c07ddaee7be207df810b431549d75e4a2 (maintainability floor restored to 4.00)	session-20261117T114019-426872f0	2026-11-17T14:20:13Z
