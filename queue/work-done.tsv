@@ -19248,3 +19248,4 @@ fix:integriq:3545:9367d2e7	fixed CONFLICT #3545, new head 76605dd4; REVERIFY (me
 fix:versioniq:716:11823d08	merged #716 at 18278571595a8fd4b569687a5185f7b34db37b72	session-20261117T004644-d9c68b8f	2026-11-17T02:47:39Z
 merge:filinq:2091:eb54bd43	cloud tree of 2 filinq PRs: none; conflict 2, lint 0, red 0, moved 0, done 0	session-20261117T020416-cc0fb378	2026-11-17T02:47:50Z
 review:openregister:10605:e74d899c	APPROVE: additive optional-entry skip, tests green	session-20261117T020408-6b9de5cf	2026-11-17T02:48:05Z
+fix:hermiq:1749:9219f3b4	fixed: spec tag added, development merged; REVERIFY at 8dfea2dc9a (merge lock held by another merger)	session-20261117T020358-1a8df617	2026-11-17T02:48:12Z
