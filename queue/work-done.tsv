@@ -22781,3 +22781,5 @@ verify:pipelinq:3964:753442e6	GREEN #3964 (sbom cmd works on v7; no new failures
 fix:planninq:1242:58b41fbc	unmeasured: api.osv.dev (opensourcehealth drop is network-bound; PR changes no dependencies), REVERIFY queued	session-20261117T211412-45e1aeb8	2026-11-17T22:01:24Z
 fix:shillinq:3064:169d4186	CONFLICT resolved, pushed c4757048; REVERIFY queued (merge lock held elsewhere)	session-20261117T211520-d88a421d	2026-11-17T22:01:48Z
 fix:pipelinq:3942:2b241c62	fixed floor (unit_interfacing restored) + merged development; new head c054de2a, REVERIFY queued (merge lock busy)	session-20261117T213154-bb97695e	2026-11-17T22:01:58Z
+fix:versioniq:719:d043e91d	fixed #719: openapi.json restored + readiness path, pushed 81e7123b; REVERIFY queued (merge lock held elsewhere)	session-20261117T213633-a50f98af	2026-11-17T22:02:48Z
+fix:keepiq:1896:1fa9aa0d	no change needed: sbom current for dev-only bump; REVERIFY queued	session-20261117T211528-7f174be9	2026-11-17T22:02:59Z
