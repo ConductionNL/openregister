@@ -21780,3 +21780,4 @@ build:versioniq:inventory-app-details-card:b2	already built: the change is archi
 verify:portaliq:2568:c60c52f6	9 GREEN (2568,2570-2577); tree adds no failures over 16 inherited errors	session-20261117T145748-1419d209	2026-11-17T15:49:26Z
 build:integriq:gateway-federated-api-discovery:b2	already building: quality/build-gateway-federated-api-discovery exists	session-20261117T134355-826c5a0b	2026-11-17T15:49:31Z
 build:planninq:retention-on-planninq-records:b2	partial: PR #1245 dates project/task/time-entry retention from a new project closedAt (ProjectClosureListener + archive blocks, 9 tests, suite 1262 green); left: the selectielijst category in 1.1 and the 2.1 Retention admin section; stopped at context limit	session-20261117T141458-ec2a4394	2026-11-17T15:49:51Z
+verify:versioniq:781:2ca1f7ab	CONFLICT 781,782,783 (e2e specs vs development); GREEN 784	session-20261117T124621-35d7386d	2026-11-17T15:50:30Z
