@@ -5686,3 +5686,11 @@ buildiq	1716	f3a173de86c01c3d3ee317b89282af504b62139b	SKIP	worker-16	GATE UNMEAS
 portaliq	2585	047ea7f203051ca4121b9fbb4fe5d368a8652f63	SKIP	worker-45	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 pipelinq	3958	40777e1a6daa8b3657c9b154a9bd7a43b09873d5	SKIP	worker-10	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 portaliq	2588	84f2d5629cfc4fe24215612ddab667deaedf1bc2	SKIP	worker-45	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
+opencatalogi	2756	70b8b0cb8de57fabae21fef0562dfe82dda9fab2	RED	merge3	GATE RED floor: overall: 4.87 -> 4.85; unit_interfacing: 4.77 -> 4.66; module_coupling: 5.44 -> 5.41
+opencatalogi	2787	362419bab9add372a8fd8dc0f8d2e513585524cb	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.51
+opencatalogi	2792	f3566f962c99e53ee1328c3cff95f2f362f50f5b	SKIP	merge3	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
+opencatalogi	2793	d14f5f969a4c92d42409f8c9a2b0ebe0c6d49eab	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.51
+opencatalogi	2794	85f20bb85c5a19d6e66aea0b7267df306933caac	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+opencatalogi	2795	9844e9a09589c8fb5eb3275c484e4adb67f6bb38	RED	merge3	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+opencatalogi	2796	7d78014c5c048a8b9ec158b0573d341fb0dfbe97	RED	merge3	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+opencatalogi	2797	73c7291c61fbe1ac6ed7f6f4bb7f1da3b265956d	RED	merge3	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
