@@ -19290,6 +19290,7 @@ shillinq	3177	605a77debdf7ceac3634af4e4ce6a4f307c7e04e	GREEN	worker-24	unit 1281
 larpinq	1111	54e40ddeda1cb429d8398e3c720399e6a9a019bc	GREEN	worker-54	version bump only (info.xml, openapi.json); phpunit-unit 1243 OK = baseline 1243 OK (20 skipped); new failures 0
 pipelinq	3945	ceffbf1ffd95fdbc429b3b7e77c1cbf97a8849c2	CONFLICT	worker-23	conflicts with development in l10n/en.js en.json nl.js nl.json
 pipelinq	3946	633106e5ce5d34520df6e3801898478fcca78d26	CONFLICT	worker-23	conflicts with development in l10n/en.js en.json nl.js nl.json
+opencatalogi	2650	35c5e9bce49ddf60b196b9ca52987e901d45418f	GREEN	worker-41	phpunit 6409 tests on tree, baseline 78 fail/err on development, 0 new; vitest 1181, 8 inherited (mainEntry.spec), 0 new; build of publication-relations-place-and-source-ids matches its specs
 pipelinq	3951	3f91729e747b42aa473b8f2e393252eb895f2728	CONFLICT	worker-23	conflicts with development in l10n/en.js en.json nl.js nl.json
 pipelinq	3952	6243a86d610860c75285e6b3c4f07f9776b90dad	CONFLICT	worker-23	conflicts with development in l10n/en.js en.json nl.js nl.json
 pipelinq	3957	c41f8c7bb0c46c193ac14678df33d50e6575cf66	GREEN	worker-23	dependency bump only; phpunit 9292 tree vs 9292 baseline, 0 new; vitest 3 files red inherited from development (myWorkPage, notificationLabels, reportSectionPeriod)
