@@ -20500,3 +20500,4 @@ fix:learniq:2524:4fd0d8a1	resolved register conflict (0.58.0, Enrolment 0.7.0), 
 fix:shillinq:2070:770f20c3	conflict resolved, pushed 7439ff5e; merge lock held elsewhere, REVERIFY queued	session-20261117T112444-7a410249	2026-11-17T12:08:42Z
 review:launchpad:1217:7283f62c	GREEN: unit 4633 OK, vitest 2752 OK	session-20261117T115541-a0785606	2026-11-17T12:08:58Z
 cover:decidiq:a5f973bbmfcd5:7556941f	already done: lib/Service/Ori 580/581 lines covered on development 4137e9bf (99.8%, target 95); no PR	session-20261117T115612-9783d86e	2026-11-17T12:09:22Z
+fix:hermiq:1781:11f91da4	fixed: raised app version; merge lock held elsewhere, REVERIFY at a56a9450	session-20261117T111714-cd94760b	2026-11-17T12:09:22Z
