@@ -21330,3 +21330,4 @@ build:shillinq:abstract-order-primitive:b2	nothing buildable: e2e spec tests/e2e
 verify:opencatalogi:2771:d7714652	2771 CONFLICT (l10n catalogues)	session-20261117T123418-5f98fc94	2026-11-17T14:52:52Z
 build:shillinq:public-sector-task-field-allocation:b2	already done: build merged on development (14 Nov); 4.2 live	session-20261117T133035-588aec38	2026-11-17T14:54:05Z
 build:shillinq:platform-administration-import:b2	already built: every code task is on development and tests/e2e/platform-administration-import.spec.ts exists; 3.2 left open: it needs a live run, which stops at mapping review until there is an MKB-chart seed or a fixture mapping	session-20261117T144928-abf29960	2026-11-17T14:53:34Z
+build:shillinq:platform-help-agent:b2	already done: every code task built on development (d5956bb0); only 3.2 live check with hermiq left	session-20261117T132538-ac3b9ef5	2026-11-17T14:54:24Z
