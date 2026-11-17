@@ -20634,3 +20634,4 @@ verify:buildiq:1703:39097174	GREEN #1703 (unit 3580 OK, baseline 3578)	session-2
 verify:hermiq:1781:a56a9450	GREEN #1781 (5668 tests, vitest 1649, no new failures)	session-20261117T124526-11739f5d	2026-11-17T12:51:49Z
 verify:buildiq:1702:817cd0c5	GREEN #1702 (tests only, 3604 tests, 0 new failures)	session-20261117T124637-3e909745	2026-11-17T12:52:00Z
 fix:versioniq:706:31ba5828	failed: permission (land refused); conflict fixed and pushed, new head f955efeb, REVERIFY recorded	session-20261117T124257-115d3113	2026-11-17T12:52:23Z
+verify:integriq:2720:7f6df619	CONFLICT #2720 with development (8 files)	session-20261117T124618-77238b95	2026-11-17T12:52:51Z
