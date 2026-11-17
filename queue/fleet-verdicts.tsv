@@ -18101,3 +18101,5 @@ integriq	3582	a26852d23164396c63cb9d870d1aefb64282810a	GREEN	worker-07:review	bu
 integriq	3550	c36eeb35edf6b7d460156449b7abc81b0a2919d0	CONFLICT	worker-13:merge	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Outbound/BodyRedactor.php src/views/admin/AdminSettings.vue 
 larpinq	1086	46f1ee9a3cd151eeec65ac932ab8eaf720f67ec0	RED	worker-24:merge-gate	GATE RED floor: unit_interfacing: 4.77 -> 4.74
 filinq	2105	be740cc2cc3ebb548eafa9933b8cc7ffcf23fb40	GREEN	worker-43:review	implements office-template-authoring per its specs; Twig path unchanged except fragment resolution the spec asks for; new endpoints session-checked, template read with caller access; unit 7344 OK merged with development; phpstan clean
+buildiq	1643	3bf75b8ae727513607df91a5dda1333574d520f8	CONFLICT	worker-07:merge	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+buildiq	1654	20cc2aa076ba717be3de1beac91f3d48e25dc664	CONFLICT	worker-07:merge	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
