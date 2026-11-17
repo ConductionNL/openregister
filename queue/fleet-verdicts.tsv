@@ -16118,3 +16118,4 @@ filinq	2086	fe4bcf088455dba29cd81fe5163aa3fdafe7a7a6	CONFLICT	worker-40	conflict
 stackiq	1941	fb08b1cd8788a46a4dee05436ab70f93d75f62f0	RED	worker-15:merge-gate	GATE RED floor: unit_interfacing: 4.72 -> 4.64
 versioniq	758	7be209fae0deeec3aa2a193a3b14e3288f75b2e4	RED	worker-29:merge-gate	GATE RED floor: overall: 5.07 -> 5.05; unit_size: 4.85 -> 4.83; unit_complexity: 4.79 -> 4.74; unit_interfacing: 4.59 -> 4.57
 shillinq	3135	543f595d7c6ba853fea9c8e44a3ce2d1c2a1df07	REVERIFY	worker-08:merge	conflicts only with an earlier PR of the merge tree: merges clean on development alone; files: tests/Unit/Service/ContractRegistrarTest.php tests/Unit/Service/ServiceRegistrarTest.php 
+dossiq	5396	cc232d59d722611002ea5e7e1096bab19bbdfc34	REVERIFY	worker-48	merged development in (clean); regen-sbom --check now current (lock change is dev-only, SBOM unchanged, 634 components); merge lock busy; new head 3792d79590f43efa92041c214bc2a87db4ad7fac, verify it
