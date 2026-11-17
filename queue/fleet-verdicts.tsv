@@ -18782,6 +18782,8 @@ dossiq	6662	e845dfbaec252189a9bca20af70b3d3fedf2a4a6	GREEN	worker-21	unit 18398 
 portaliq	2585	047ea7f203051ca4121b9fbb4fe5d368a8652f63	GREEN	worker-32	unit 6339 tests on tree, baseline 6324 with 16 inherited errors (openregister classes absent), new failures 0; no JS unit script, markdown-block node test passes; e2e spec only
 portaliq	2586	d48314a985599ff8b6ed00246dba8cf43321e1ba	CONFLICT	worker-32	package.json conflicts with development
 portaliq	2587	664b8ca8575ae2f35befab13dda8dba4deb03d63	GREEN	worker-32	unit 6339 tests on tree, baseline 6324 with 16 inherited errors (openregister classes absent), new failures 0; no JS unit script, markdown-block node test passes; portal-bound sessions and domain re-check per change, access only tightened
+pipelinq	3942	2b241c62d46f0e5695fcbda73b385b9d2b9c4aed	RED	merge3:merge-gate	GATE RED floor: duplication: 4.30 -> 4.28
+pipelinq	3950	deaebf3043e5ffac9b208a8de84f55252894e932	RED	merge3:merge-gate	GATE RED floor: overall: 4.83 -> 4.81; unit_interfacing: 4.18 -> 4.10; module_coupling: 5.34 -> 5.28
 filinq	2114	e0bb0357f219978209e4261a9d459a241c88a393	GREEN	worker-19	phpunit 7386 ok (baseline 7288 ok, 0 new failures); vitest 879 passed; build anonymization-review-workbench, adds checked gate after existing access checks
 buildiq	1648	616837279746c70653f0f41163c0dd6efd73fa7e	GREEN	worker-15	unit 3737 OK on tree (baseline 3676 OK), vitest 5027/5027, 0 new failures; build of logic-automation-actions-that-run, new run/manual routes keep role checks
 dossiq	6643	0d24d1c52449d037d6611b027579e67248612e82	GREEN	worker-09	tasks.md tick only (no code); claim checked against lib/Settings/packages and lib/ seeders; baseline 18398 tests 1 error (StatusEntryRequirementsGuardTest, inherited), no new failures
@@ -18897,6 +18899,8 @@ larpinq	1103	e6ac5573a73f4c753fa34e0f540224f7f2899f79	CONFLICT	worker-18	add/add
 integriq	3730	129afd210f56db4bb58b1eb095994ec2216d3345	GREEN	worker-24	tests and e2e specs only for change retire-integriq-flow-schema; unit 9911 tests, 4 failures/errors all inherited (baseline 9910 with 5), 0 new; FlowGraphMigrationServiceTest 5 pass
 integriq	3722	82a48e0e2dc1b77f0c802bd9e556a0e3eaa38768	GREEN	worker-23	tests only (e2e spec, Newman folder, tasks.md); no PHP/JS unit code changed, unit baseline 9910 with 5 inherited reds
 keepiq	1757	f60a03eab95913a3e128ce1e56c1741f826486fb	BLOCK	worker-39	tests ok (phpunit 5725 ok, vitest 3 inherited HealthReportView reds); behaviour change in a non-build PR: Kernel/Contracts/SecretRequestServiceInterface params change (array requestedFields to RequestedFields, name/folderId dropped), error payload message removed
+pipelinq	3942	2b241c62d46f0e5695fcbda73b385b9d2b9c4aed	RED	merge3:merge-gate	GATE RED floor: duplication: 4.30 -> 4.28
+pipelinq	3950	deaebf3043e5ffac9b208a8de84f55252894e932	RED	merge3:merge-gate	GATE RED floor: overall: 4.83 -> 4.81; unit_interfacing: 4.18 -> 4.10; module_coupling: 5.34 -> 5.28
 larpinq	1100	1ed0e3bf17a793f20881b7468985c2e78f5eb485	GREEN	worker-07	e2e spec + tasks.md note only; phpunit 1243 OK (= baseline), 0 new failures
 integriq	3723	8a4e2be1aba2ef0cfd90695cee9359a4544bd93b	GREEN	worker-40	unit 9910 both, baseline 2 errors 3 failures inherited, 0 new; e2e spec and tasks.md only, not in vitest include
 integriq	3718	63ae9b35cd2d3779df06f01175c97a5c2b4d541a	GREEN	worker-45	tasks.md-only diff; unit 9910 tests, 5 inherited failures (CallServiceTest x2, JobsControllerTest x2, SynchronizationSynchronizeEntryGoldenTest), 0 new
@@ -19002,6 +19006,8 @@ stackiq	1963	5d4b224b8a597d13518bc49c1b7eaeaa96eb7211	CONFLICT	worker-15	conflic
 planninq	1249	bb31b0e9e9f3c53c50dbfe50a0fe93bc5e53e1eb	GREEN	worker-50	phpunit 1253 tests OK, no failures; release version bump in info.xml and openapi.json only
 shillinq	3175	4bddf0737ff2e934d841dba7d62f7c09c256799c	GREEN	worker-52	builds receivables-provider-payouts task (Take payment modal, qrcode dep, sbom); no PHP change; vitest on tree 3107 tests, 1 failure (dunningNextRun) also red on development, 0 new; eslint clean on touched files; manifests parse
 dossiq	6645	97e25b5469678818ef81feec00981d38ea5acfa1	GREEN	worker-28	tasks.md only; phpunit 18399 tests, 19 failures all inherited from development baseline (PR changes no code), 0 new; claimed seed package and tests exist on development
+pipelinq	3942	2b241c62d46f0e5695fcbda73b385b9d2b9c4aed	RED	merge3:merge-gate	GATE RED floor: duplication: 4.30 -> 4.28
+pipelinq	3950	deaebf3043e5ffac9b208a8de84f55252894e932	RED	merge3:merge-gate	GATE RED floor: overall: 4.83 -> 4.81; unit_interfacing: 4.18 -> 4.10; module_coupling: 5.34 -> 5.28
 stackiq	2028	9d9add83116540ecee19b9cfe128025267881839	GREEN	worker-05	unit 4055 OK (= baseline), 0 new; vitest 2938 passed, facets.spec 1 red also on development (inherited); dependency bump + golden re-record
 shillinq	3178	7c8cd864f281ea388a2a5b6f814fc1601bf623d3	GREEN	worker-39	phpunit base 12796 ok, tree 12799 ok; vitest 1 inherited red (dunningNextRun, red on development); build of budget-known-costs, endpoint gated per administration
 portaliq	2588	84f2d5629cfc4fe24215612ddab667deaedf1bc2	GREEN	worker-16	PHPUnit 6324 baseline (16 errors inherited), tree 6335, 0 new failures; no JS unit script, manifest.json parses; implements site-shared-page-blocks T06, editor-gated endpoint
@@ -19084,6 +19090,8 @@ versioniq	698	ee38e0b72ee16970a4538db390dba458699d7063	CONFLICT	worker-22	confli
 thematiq	1726	ebe538c8dc4ba9e635c349fc608093ec09646cb6	GREEN	worker-56	vitest 1571/1571 baseline and tree, 0 new failures; dev-dep bump only (@vitest/ui 5.1.0), no PHP changed
 versioniq	726	2348a5fc126e383e38bfaf88de7e91f0ebfd4564	GREEN	worker-33	PHP unit 2510 tests, 2 failures inherited (baseline 2456, same 2), vitest 3241 passed; implements install-force-incompatible, force-enable admin-only with password confirmation
 decidiq	2149	c4919c09bcf229e7e35047308d66f1d9f91c0053	RED	worker-45:merge-gate	GATE RED checker floor: secretscanning: pass -> fail; secretscanning stars: 5 -> 1
+pipelinq	3942	2b241c62d46f0e5695fcbda73b385b9d2b9c4aed	RED	merge3:merge-gate	GATE RED floor: duplication: 4.30 -> 4.28
+pipelinq	3950	deaebf3043e5ffac9b208a8de84f55252894e932	RED	merge3:merge-gate	GATE RED floor: overall: 4.83 -> 4.81; unit_interfacing: 4.18 -> 4.10; module_coupling: 5.34 -> 5.28
 shillinq	3174	661acc9bb6e651f0397c5be7907fadfc8f4a50af	REVERIFY	worker-04	build round 2 added the e2e spec for task 2.1 (tests + openspec notes only); new head 3dfee71ebce89aa659c0cf9fe97e8ffe935b0564, verify it
 shillinq	3006	7ffe1e970520509233b98ecc30b4c917813b736d	REVERIFY	worker-21	merged development in (l10n union, app version 0.5.7-unstable.20261117200000, lock records ARInvoice 0.19.0/Receipt 0.2.0); unit 12800 OK, vitest 1 inherited fail (dunningNextRun); new head 35f7579036e051e79c70c3207ad06583d9de9465, verify it
 filinq	2173	a7b20c844918e286697bd71fb7eeb708a5ee5aae	REVERIFY	worker-19	restored the publiccode.yml supports entry (5-lagen-model#service) the fill dropped, which made fivelayer pass->warn; merged development in; merge lock held by another merger; new head 6bce70eb0c412e2bc6eaa1d778075d1f8f776f04, verify it
