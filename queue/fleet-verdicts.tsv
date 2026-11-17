@@ -18689,3 +18689,4 @@ larpinq	1103	e6ac5573a73f4c753fa34e0f540224f7f2899f79	CONFLICT	worker-22	conflic
 larpinq	1104	072740aae8be224bd39bab37e1dd43eb661d0a64	GREEN	worker-22	e2e spec + tasks.md only; tree unit 1265 OK/20 skipped (baseline 1243 OK), vitest 796/796, no new failures
 larpinq	1105	768215bad5f868107f3b278314c2a670c2a14596	GREEN	worker-22	matches change specs (reject/resubmit, GM access answers); owner/GM check before app-authority write; tree unit 1265 OK/20 skipped (baseline 1243 OK), vitest 796/796, no new failures
 launchpad	1306	060171415ec0321c8968a4087ce146a20f0714d7	GREEN	worker-26	unit 4671 on tree (baseline 4621, 0 failures both), new failures 0; e2e spec + tasks/parity only
+launchpad	1307	4016f4789bd866efa5e1d8c4fa193c0b20287ca0	GREEN	worker-26	unit 4671 on tree (baseline 4621, 0 failures), new failures 0; php -l clean; openregister calls match main's object API; janitor registered hourly per REQ-SCH-007
