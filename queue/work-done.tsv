@@ -22698,3 +22698,4 @@ verify:opencatalogi:2806:c32247ec	GREEN opencatalogi #2806 (inherited failures o
 fix:portaliq:2589:7076e2d0	conflict resolved, pushed 8f568eda; REVERIFY (merge lock held elsewhere)	session-20261117T211932-f471137a	2026-11-17T21:44:16Z
 verify:larpinq:1104:072740aa	GREEN #1104 (e2e spec only)	session-20261117T211341-e05e0d2c	2026-11-17T21:44:31Z
 verify:integriq:2650:ecac209c	GREEN #2650: 9933 tests, no new failures	session-20261117T211412-45e1aeb8	2026-11-17T21:44:41Z
+verify:portaliq:2564:9fbc2d81	stale	session-20261117T211932-f471137a	2026-11-17T21:44:59Z
