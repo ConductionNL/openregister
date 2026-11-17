@@ -16872,3 +16872,4 @@ hermiq	1740	9e13a1282a536b7b204859ebd285a790632139c8	REVERIFY	worker-20	fixed th
 stackiq	1939	78d33e98a828a485f2e7aaa1824658b036b4f0ec	RED	worker-28:merge-gate	GATE RED floor: unit_interfacing: 4.71 -> 4.67
 larpinq	1045	a40d7b26c43f24fadd5d5d4cdce5d773543062bc	RED	worker-32:merge-gate	GATE RED checker floor: testcoderatio: warn -> fail; testcoderatio stars: 3 -> 2
 larpinq	1045	8cf728ecdc447da14009d8a2eaa02158febeae6f	REVERIFY	worker-32	gate-68 fixed (Help desk is the help-desk query preset of Help, menu and Dashboard stat open it with _lens=desk), merged development, PHPUnit 1134 OK, vitest 711 OK, reviewed APPROVE; merge gate RED: testcoderatio 75.6% -> 73.6% (3 -> 2 stars), needs ~750 more test code lines (l10n/*.js count as production); new head a40d7b26c43f24fadd5d5d4cdce5d773543062bc, verify it
+decidiq	2162	41fa34b09570aea997963a15fb5da440e27a168f	RED	worker-47:merge-gate	GATE RED floor: duplication: 3.82 -> 3.80
