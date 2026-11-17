@@ -18514,3 +18514,4 @@ verify:integriq:3633:e8cfc0d1	CONFLICT #3633 (l10n/en.js, l10n/nl.js)	session-20
 verify:portaliq:2284:a8a7fcd0	CONFLICT #2284 (7 lib files)	session-20261116T232923-46913d93	2026-11-17T00:04:23Z
 verify:portaliq:2493:f9355756	CONFLICT 2493 (package.json)	session-20261116T232406-b9eb038c	2026-11-17T00:04:56Z
 verify:shillinq:3052:10940568	CONFLICT #3052	session-20261116T233929-170accb7	2026-11-17T00:05:09Z
+verify:opencatalogi:2680:66ae4f4f	CONFLICT: #2680 vs development in docs, l10n, SitemapDocumentMapper	session-20261116T232911-3dffa1ae	2026-11-17T00:05:20Z
