@@ -18984,3 +18984,4 @@ fix:versioniq:727:7ddae9da:v3	14-file conflict resolved onto development's plann
 fix:opencatalogi:2650:e5e6d290:v4	fixed CONFLICT (renamed the branch's duplicate PublicationLinksListener), pushed fef15211005ff15683826f8cb3fe08babcb4c66c; merge lock busy, REVERIFY queued	session-20261117T005217-ad04a5d2	2026-11-17T01:47:54Z
 fix:larpinq:1054:8a1a3523:v3	conflict resolved, pushed 72b83a79; merge lock busy, REVERIFY queued	session-20261117T004651-172e3db6	2026-11-17T01:48:10Z
 fix:stackiq:1966:5c005420:v3	conflict resolved, pushed a2a8084a; merge lock held elsewhere, REVERIFY recorded	session-20261117T004626-d23ae300	2026-11-17T01:48:36Z
+fix:stackiq:1945:6fb762aa:v3	conflict resolved, pushed fe683af7; merge lock held by another merger, REVERIFY queued	session-20261117T005304-6fca2823	2026-11-17T01:48:51Z
