@@ -20171,3 +20171,4 @@ fix:opencatalogi:2651:e7467c2a	floor restored, pushed cc6fe4e150; merge lock hel
 verify:dossiq:6634:1de2e2bc	GREEN 6634, GREEN 6640	session-20261117T092753-6c6fb28e	2026-11-17T09:51:49Z
 gap:shillinq:tabs-onto-boards:2	deferred: shillinq has 51 open PRs (open gap PRs #2796/#2798 are unrelated areas)	session-20261117T091244-7c1a3c79	2026-11-17T09:52:33Z
 gap:learniq:installable-psalm7:2	deferred: learniq has 48 open PRs	session-20261117T083929-9c5fceb9	2026-11-17T09:52:21Z
+gap:integriq:sync-runs-as-configured-user:2	deferred: integriq has 51 open PRs	session-20261117T083929-9c5fceb9	2026-11-17T09:52:47Z
