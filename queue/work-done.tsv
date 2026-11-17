@@ -22778,3 +22778,4 @@ fix:stackiq:1963:5d4b224b	unmeasured: static.developer.overheid.nl; conflict fix
 verify:pipelinq:3964:753442e6	GREEN #3964 (sbom cmd works on v7; no new failures)	session-20261117T211341-e05e0d2c	2026-11-17T22:00:23Z
 verify:shillinq:3174:3dfee71e	GREEN #3174 (vitest 1 inherited failure, phpunit = baseline)	session-20261117T212610-64548952	2026-11-17T22:00:50Z
 fix:planninq:1242:58b41fbc	unmeasured: api.osv.dev (opensourcehealth drop is network-bound; PR changes no dependencies), REVERIFY queued	session-20261117T211412-45e1aeb8	2026-11-17T22:01:24Z
+fix:shillinq:3064:169d4186	CONFLICT resolved, pushed c4757048; REVERIFY queued (merge lock held elsewhere)	session-20261117T211520-d88a421d	2026-11-17T22:01:48Z
