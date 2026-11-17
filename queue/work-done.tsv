@@ -22822,3 +22822,4 @@ merge:learniq:2601:e464d44e	unmeasured: static.developer.overheid.nl (proxy 403)
 merge:dossiq:6203:32dc5f3e	merge3 tree of 8 dossiq PRs: merged=7 red=0 fail=0 skip=0; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-17T22:18:23Z
 merge:integriq:3727:ba590c19	unmeasured: static.developer.overheid.nl (proxy refuses CONNECT from this session; merge gate cannot measure adrvalidator)	session-20261117T211406-076a7a0e	2026-11-17T22:19:21Z
 merge:thematiq:1714:330d56f1	unmeasured: static.developer.overheid.nl (proxy 403 from this session; merge gate checker_floor cannot measure), lock released, nothing landed	session-20261117T212735-2b6c91a0	2026-11-17T22:19:23Z
+review:openregister:10622:d498ab65	APPROVE: CI-only setup-node pin bump, no code changed	session-20261117T221832-434567de	2026-11-17T22:19:44Z
