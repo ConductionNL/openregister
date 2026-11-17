@@ -18775,6 +18775,7 @@ fix:filinq:2102:726c91bb:v4	merged #2102 at 13609993f3f56f327e6b833eaa779a76c1e6
 fix:shillinq:3004:effacbb9:v4	fixed CONFLICT, pushed cd7ea57d6a32b96a3917ca2ba0ce42f9f232af9e; merge lock busy, REVERIFY queued	session-20261117T005217-ad04a5d2	2026-11-17T01:07:26Z
 fix:filinq:2105:2929a64c:v4	conflict resolved, pushed 7e8ef21d; REVERIFY queued (merge lock held elsewhere)	session-20261117T004656-5d4b3c4e	2026-11-17T01:07:36Z
 fix:learniq:2577:5bf20572	RED was inherited (he.json check fails on plain development); merged development in, pushed d1fcf9c0; lock held elsewhere, REVERIFY queued	session-20261117T004735-ba0cb916	2026-11-17T01:07:44Z
+merge:learniq:2578:423f4aa7	cloud tree of 3 learniq PRs: merged=2 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T004724-21eb694a	2026-11-17T01:07:52Z
 fix:shillinq:3048:2ab1e91c:v4	conflict resolved + main-API fixes, pushed 455711f8, unit green; lock held elsewhere, REVERIFY queued	session-20261117T004133-c974afac	2026-11-17T01:07:54Z
 fix:filinq:2126:5e6533ee:v3	fixed conflict, pushed 2630cf282; merge lock busy, REVERIFY recorded	session-20261117T004435-9e7fb02f	2026-11-17T01:08:05Z
 fix:filinq:2114:78a005c2:v4	conflict resolved, pushed 93be4fcb; merge lock held elsewhere, REVERIFY queued	session-20261117T004644-d9c68b8f	2026-11-17T01:08:19Z
