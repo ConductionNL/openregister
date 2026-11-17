@@ -19620,3 +19620,8 @@ launchpad	1300	0d717f3832eb0cc5d462e04506034b536bd83e15	CONFLICT	merge3	merges c
 opencatalogi	2790	573c8f891fb6c4b65783e73b6c8b74ac04c496a1	CONFLICT	worker-46:merge	conflicts with development; files: docs/features/README.md 
 opencatalogi	2803	182028e8f50085dad6352c07ec0abb07a4eb807b	REVERIFY	worker-46:merge	conflicts only with an earlier PR of the merge tree: merges clean on development alone; files: lib/Settings/opencatalogi_mock_register.json 
 opencatalogi	2805	b5832c88ee2a159946d2f6880ba	REVERIFY	worker-46:merge	verdict sha is not the head: head is b5832c88ee2a159946d2f6880ba534de439fb504
+versioniq	699	8f1d1ff048bb20975c695589af85c6733c1b5df4	REVERIFY	merge3	verdict sha is not the head: head is 3d457399640d41191b818227dc3764dd652c8278
+versioniq	726	2348a5fc126e383e38bfaf88de7e91f0ebfd4564	CONFLICT	merge3	merges clean on development alone; files: appinfo/info.xml 
+versioniq	797	c57c48555761cf2212f669c177b61cc63d932ea9	CONFLICT	merge3	merges clean on development alone; files: tests/e2e/advisories.spec.ts tests/e2e/fixtures/forge/server.mjs 
+versioniq	798	91fdceff9606e38c08294f9f188caa4b1c92289f	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+versioniq	799	9d0b17e161aabdb3641874366fbf88fc9343996c	CONFLICT	merge3	conflicts with development; files: appinfo/info.xml l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Controller/ApiController.php lib/Service/Api/ReportCollaborators.php 
