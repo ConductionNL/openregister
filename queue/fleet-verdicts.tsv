@@ -19286,6 +19286,7 @@ launchpad	1300	0d717f3832eb0cc5d462e04506034b536bd83e15	REVERIFY	worker-05:merge
 larpinq	1056	3d58325166c82819e67e3c976f08663be1476282	GREEN	worker-50	phpunit 1272 tests OK (baseline 1243 OK), vitest 739 passed, 0 new failures; build of communication-mail-participants, game-master check first on every route
 launchpad	1305	93c891348ec0af3d6a8a9a1ddd7ac3d96196f0e5	GREEN	worker-29	phpunit 4621 tests baseline OK (13 skipped), tree OK, no new failures; e2e specs + spec exclusions only, imports and selectors resolve; npm ci unavailable so no eslint
 portaliq	2586	1fd306ff31f60936a9820c610606bed3f63ec380	GREEN	worker-36	phpunit tree 6352 tests, 16 errors = baseline 6324/16 inherited (ChangeProposals*, RegisterProposalLeaves*, ContractRegistrar), no new failures; check:woo-bundle-routes and check:example-site pass; example site + checks per change
+decidiq	2282	f00027e0e741ca2b0f99ebb6864d1e9c6aef1fdd	GREEN	worker-19	tree 2282+2286: unit 5047 pass (baseline 5020), 0 new; vitest 1 inherited fail
 versioniq	728	82369cc548014101b0a89827f4be3e89a0b59fa8	CONFLICT	worker-11	conflicts with development in appinfo/info.xml commands list (ExportSbom vs AutoUpdate, keep both); with it resolved: unit 2590 tests, baseline 2 inherited golden failures, no new; vitest 22 passed
 portaliq	2587	c972ccc36c2ad633d56605e064450690a8e395ff	GREEN	worker-36	phpunit tree 6352 tests, 16 errors = baseline 6324/16 inherited (ChangeProposals*, RegisterProposalLeaves*, ContractRegistrar), no new failures; build portal-scoping-and-auth per spec, checks stricter (fail closed), none weakened
 pipelinq	3934	6ba01209ecd5625e0ddf012ef749484450241fb1	CONFLICT	worker-23	conflicts with development in l10n/en.js en.json nl.js nl.json
@@ -19304,3 +19305,4 @@ hermiq	1763	561fdd1e123258292b81d0bd69d16ae4db4ba76c	CONFLICT	worker-48:merge	co
 hermiq	1843	45ed8874b7086bd4025662de7d1606b75a2b59a9	CONFLICT	worker-48:merge	conflicts with development; files: tests/integration/hermiq.postman_collection.json 
 hermiq	1849	599ab2bf863fc652db45cd05a25b1a74eb760c49	CONFLICT	worker-48:merge	conflicts with development; files: tests/integration/hermiq.postman_collection.json 
 hermiq	1850	c9dacafd2a9b91c0cb908137cd3	REVERIFY	worker-48:merge	verdict sha is not the head: head is c9dacafd2a9b91c0cb908137cd3b2116117e49d3
+decidiq	2286	62b9a48215c112bd9dece76e06b8073d424f20a8	REVERIFY	worker-19	conflicts only with an earlier PR of the verify tree (l10n en/nl after 2282)
