@@ -22604,3 +22604,4 @@ review:decidiq:2174:53ff0981	GREEN: unit 5035 pass (baseline 5020), vitest/eslin
 review:filinq:2124:089581db	GREEN: phpunit 7387 OK, vitest 867 OK; register.json conflicts with development	session-20261117T211329-58121c09	2026-11-17T21:16:51Z
 review:versioniq:692:f611aea1	GREEN: per change specs, unit 2553 tests, 2 inherited failures, vitest 52 pass	session-20261117T211422-95669914	2026-11-17T21:17:03Z
 review:launchpad:1210:e8abd64f	GREEN: unit 4706 pass, touched vitest 34 pass	session-20261117T211353-2c595f41	2026-11-17T21:17:14Z
+verify:filinq:2112:4a6629c6	CONFLICT: tests/vitest/manifestFragments.spec.js vs development	session-20261117T211520-d88a421d	2026-11-17T21:17:50Z
