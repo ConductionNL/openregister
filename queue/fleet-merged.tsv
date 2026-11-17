@@ -5182,3 +5182,4 @@ dossiq	6632	fcbf5d9195f4e82945d8003498904569c8b65b4e	MERGED	worker-02	GATE OK sb
 planninq	1219	1d36a519712598e1196967b233046fb100733b92	RED	worker-13	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 dossiq	6633	13ff4c499e0170aa482af59d3ec31bbba90c7a6e	MERGED	worker-02	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
 integriq	3613	b7dee7b62b8ed180650cb0ebb52503251bc25f17	RED	worker-42	GATE RED floor: unit_complexity: 3.90 -> 3.88
+dossiq	6635	4ef9f4fadc74464a3b12a9948d62d0b876a6a989	RED	worker-02	GATE RED sbom: package-lock.json changed without sbom.cdx.json
