@@ -18668,3 +18668,12 @@ buildiq	1719	7653a33d583d1867e34be5ee228c5344ab9943f5	GREEN	worker-12	unit 3682 
 buildiq	1720	b381c76e51c6407ce503784b63007dee43070ee0	GREEN	worker-12	unit 3682 on the tree vs 3676 baseline, 1 inherited failure, 0 new; vitest 5013 passed; tasks tick only
 buildiq	1608	2dd81c6fbea1a867498381425a51f0f50ffa30df	REVERIFY	worker-45	round-2 build added tests/e2e/page-custom-code.spec.ts (spec only) and a tasks.md note; the earlier merge-gate RED (security checker floor) is still to be fixed; new head 10685d4e7006818778e15aaba2205449e7202d24, verify it
 buildiq	1630	19bdcf6d6302775d5355cf40f4f17a414b0adb63	REVERIFY	worker-04	round 2: added tests/e2e/page-codes.spec.ts (3 tests, eslint/tsc clean) and a T07 note in tasks.md; no code changed; new head 285ac6f0971889105f2dbd12d6e5111710aaf0b2, verify it
+dossiq	6650	312ccd57fbd434c3cec00ea6fa75ec61eedec997	GREEN	worker-37	unit 18402 on tree, baseline 18398 (16 inherited failures), no new failures; tasks.md update only
+dossiq	6651	2c646be09ad6a516c5a62a09348104d6d203d291	GREEN	worker-37	unit 18402 on tree, baseline 18398 (16 inherited), no new failures; postman collection and README section per task 1.4
+dossiq	6652	c30773c8aaa3ad29ed0a2e1135cbb6ed30422aa5	GREEN	worker-37	unit 18402 on tree, baseline 18398 (16 inherited), no new failures; tasks.md update only
+dossiq	6653	23b6836416daa03a9b00107548f574bd6acfa783	GREEN	worker-37	unit 18402 on tree, baseline 18398 (16 inherited), no new failures; confirmation field per REQ-TERM-041 with unit test
+dossiq	6654	9734161b4c03c62f26191177815ebac46faf564d	GREEN	worker-37	unit 18402 on tree, baseline 18398 (16 inherited), no new failures; vitest 7211, 2 inherited; e2e spec added
+dossiq	6655	0ba448431940d284ce49d4953e333ff08b3f05e1	GREEN	worker-37	unit 18402 on tree, baseline 18398 (16 inherited), no new failures; tasks.md update only
+dossiq	6656	f2ca794bb37cc7b42cb881aa4c52844f864a2064	GREEN	worker-37	unit 18402 on tree, baseline 18398 (16 inherited), no new failures; vitest 2 inherited; e2e spec added
+dossiq	6657	395229a33df02e72823aa7df0de43c3ac12211d1	GREEN	worker-37	unit 18402 on tree, baseline 18398 (16 inherited), no new failures; tasks.md update only
+dossiq	6658	1eb1a6a3a2861cf635879e481faec46f137ecb4b	GREEN	worker-37	unit 18402 on tree, baseline 18398 (16 inherited), no new failures; case-type description per REQ-SVM-04 with unit tests
