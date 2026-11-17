@@ -1,0 +1,1169 @@
+From 593ab9ba1c68850d68c7025e343de9ab2b782f0c Mon Sep 17 00:00:00 2001
+From: Ruben van der Linde <ruben@conduction.nl>
+Date: Tue, 17 Nov 2026 20:03:15 +0000
+Subject: [PATCH] feat(portaliq): build
+ site-member-voting-record-and-confidential-papers [skip ci]
+
+The public records block renders on the plain page for readers without
+JavaScript: the list with a GET search, a record with its figures, rows,
+links and the way back, and the stale-link sentence. The record id comes
+from ?record= and is kept in the link to the full page.
+
+Assisted-by: ClaudeCode:claude-opus-5-5
+---
+ l10n/en.js                                    |   6 +-
+ l10n/en.json                                  |   6 +-
+ l10n/nl.js                                    |   6 +-
+ l10n/nl.json                                  |   6 +-
+ lib/Controller/PortalPageController.php       |   3 +-
+ .../Contracts/PlainPageRendererInterface.php  |   3 +-
+ lib/Service/Cms/PlainContext.php              |   6 +
+ lib/Service/Cms/PlainPageRenderer.php         |  23 +-
+ lib/Service/Cms/PlainPublicRecords.php        | 326 ++++++++++++++++++
+ lib/Service/SiteShell.php                     |   4 +-
+ .../tasks.md                                  |   2 +-
+ templates/site-plain.php                      |  85 +++++
+ .../PortalPageControllerPlainTest.php         |  50 ++-
+ .../Service/Cms/PlainPageRendererTest.php     |  43 ++-
+ .../Service/Cms/PlainPublicRecordsTest.php    | 237 +++++++++++++
+ 15 files changed, 789 insertions(+), 17 deletions(-)
+ create mode 100644 lib/Service/Cms/PlainPublicRecords.php
+ create mode 100644 tests/Unit/Service/Cms/PlainPublicRecordsTest.php
+
+diff --git a/l10n/en.js b/l10n/en.js
+index 30a8ebbd6..f3e744525 100644
+--- a/l10n/en.js
++++ b/l10n/en.js
+@@ -3472,7 +3472,11 @@ OC.L10N.register(
+         "Summaries are only found when the search term is spelled exactly.": "Summaries are only found when the search term is spelled exactly.",
+         "Text inside documents is found even with a small spelling mistake in the search term.": "Text inside documents is found even with a small spelling mistake in the search term.",
+         "Text inside documents is only found when the search term is spelled exactly.": "Text inside documents is only found when the search term is spelled exactly.",
+-        "Results from other catalogues that carry no score come after the scored results, in the order their catalogue gave them.": "Results from other catalogues that carry no score come after the scored results, in the order their catalogue gave them."
++        "Results from other catalogues that carry no score come after the scored results, in the order their catalogue gave them.": "Results from other catalogues that carry no score come after the scored results, in the order their catalogue gave them.",
++        "Back to the overview": "Back to the overview",
++        "Search for a name": "Search for a name",
++        "No items.": "No items.",
++        "This overview no longer exists.": "This overview no longer exists."
+     },
+     "nplurals=2; plural=(n != 1);"
+ )
+diff --git a/l10n/en.json b/l10n/en.json
+index 485823c1b..ec8618f44 100644
+--- a/l10n/en.json
++++ b/l10n/en.json
+@@ -3492,7 +3492,11 @@
+         "Summaries are only found when the search term is spelled exactly.": "Summaries are only found when the search term is spelled exactly.",
+         "Text inside documents is found even with a small spelling mistake in the search term.": "Text inside documents is found even with a small spelling mistake in the search term.",
+         "Text inside documents is only found when the search term is spelled exactly.": "Text inside documents is only found when the search term is spelled exactly.",
+-        "Results from other catalogues that carry no score come after the scored results, in the order their catalogue gave them.": "Results from other catalogues that carry no score come after the scored results, in the order their catalogue gave them."
++        "Results from other catalogues that carry no score come after the scored results, in the order their catalogue gave them.": "Results from other catalogues that carry no score come after the scored results, in the order their catalogue gave them.",
++        "Back to the overview": "Back to the overview",
++        "Search for a name": "Search for a name",
++        "No items.": "No items.",
++        "This overview no longer exists.": "This overview no longer exists."
+     },
+     "plurals": "",
+     "pluralForm": "nplurals=2; plural=(n != 1);"
+diff --git a/l10n/nl.js b/l10n/nl.js
+index 549be70e8..0a6401384 100644
+--- a/l10n/nl.js
++++ b/l10n/nl.js
+@@ -3632,7 +3632,11 @@ OC.L10N.register(
+         "Summaries are only found when the search term is spelled exactly.": "Samenvattingen worden alleen gevonden als de zoekterm precies goed gespeld is.",
+         "Text inside documents is found even with a small spelling mistake in the search term.": "Tekst in documenten wordt ook gevonden met een kleine spelfout in de zoekterm.",
+         "Text inside documents is only found when the search term is spelled exactly.": "Tekst in documenten wordt alleen gevonden als de zoekterm precies goed gespeld is.",
+-        "Results from other catalogues that carry no score come after the scored results, in the order their catalogue gave them.": "Resultaten uit andere catalogi zonder score komen na de resultaten met een score, in de volgorde die hun catalogus gaf."
++        "Results from other catalogues that carry no score come after the scored results, in the order their catalogue gave them.": "Resultaten uit andere catalogi zonder score komen na de resultaten met een score, in de volgorde die hun catalogus gaf.",
++        "Back to the overview": "Terug naar het overzicht",
++        "Search for a name": "Zoek een naam",
++        "No items.": "Geen items.",
++        "This overview no longer exists.": "Dit overzicht bestaat niet (meer)."
+     },
+     "nplurals=2; plural=(n != 1);"
+ )
+diff --git a/l10n/nl.json b/l10n/nl.json
+index b2383885b..790849bc4 100644
+--- a/l10n/nl.json
++++ b/l10n/nl.json
+@@ -3652,7 +3652,11 @@
+         "Summaries are only found when the search term is spelled exactly.": "Samenvattingen worden alleen gevonden als de zoekterm precies goed gespeld is.",
+         "Text inside documents is found even with a small spelling mistake in the search term.": "Tekst in documenten wordt ook gevonden met een kleine spelfout in de zoekterm.",
+         "Text inside documents is only found when the search term is spelled exactly.": "Tekst in documenten wordt alleen gevonden als de zoekterm precies goed gespeld is.",
+-        "Results from other catalogues that carry no score come after the scored results, in the order their catalogue gave them.": "Resultaten uit andere catalogi zonder score komen na de resultaten met een score, in de volgorde die hun catalogus gaf."
++        "Results from other catalogues that carry no score come after the scored results, in the order their catalogue gave them.": "Resultaten uit andere catalogi zonder score komen na de resultaten met een score, in de volgorde die hun catalogus gaf.",
++        "Back to the overview": "Terug naar het overzicht",
++        "Search for a name": "Zoek een naam",
++        "No items.": "Geen items.",
++        "This overview no longer exists.": "Dit overzicht bestaat niet (meer)."
+     },
+     "plurals": "",
+     "pluralForm": "nplurals=2; plural=(n != 1);"
+diff --git a/lib/Controller/PortalPageController.php b/lib/Controller/PortalPageController.php
+index 5049922cb..6c16a0e92 100644
+--- a/lib/Controller/PortalPageController.php
++++ b/lib/Controller/PortalPageController.php
+@@ -333,7 +333,8 @@ class PortalPageController extends Controller {
+ 				locale: $asked['locale'],
+ 				query: $asked['query'],
+ 				page: $asked['page'],
+-				address: $address
++				address: $address,
++				record: (string)($asked['record'] ?? '')
+ 			);
+ 		}
+ 
+diff --git a/lib/Kernel/Contracts/PlainPageRendererInterface.php b/lib/Kernel/Contracts/PlainPageRendererInterface.php
+index 17d26d293..9d82c7ba3 100644
+--- a/lib/Kernel/Contracts/PlainPageRendererInterface.php
++++ b/lib/Kernel/Contracts/PlainPageRendererInterface.php
+@@ -48,10 +48,11 @@ interface PlainPageRendererInterface {
+ 	 * @param string                    $query   The request's `_search`.
+ 	 * @param int                       $page    The request's `_page`.
+ 	 * @param PlainAddress              $address The addresses of this request.
++	 * @param string                    $record  The request's `record`, for a `publicRecords` block; else ''.
+ 	 *
+ 	 * @return array<string, mixed> `status` (200 or 404), `portalTitle`, `menu`, `title`, `summary`, `blocks`, `fullUrl`.
+ 	 *
+ 	 * @spec openspec/changes/site-honest-without-javascript/tasks.md#2.4
+ 	 */
+-	public function render(?array $portal, string $route, string $locale, string $query, int $page, PlainAddress $address): array;
++	public function render(?array $portal, string $route, string $locale, string $query, int $page, PlainAddress $address, string $record=''): array;
+ }//end interface
+diff --git a/lib/Service/Cms/PlainContext.php b/lib/Service/Cms/PlainContext.php
+index 325400ff1..9b4744266 100644
+--- a/lib/Service/Cms/PlainContext.php
++++ b/lib/Service/Cms/PlainContext.php
+@@ -40,6 +40,7 @@ class PlainContext {
+ 	 * @param PlainAddress $address    The addresses.
+ 	 * @param string       $locale     The document language.
+ 	 * @param list<array{label: string, href: string, items: list<array{label: string, href: string}>}> $menu The main menu as plain links.
++	 * @param string       $record     The request's `record`: the public record a `publicRecords` block opens; else ''.
+ 	 */
+ 	public function __construct(
+ 		public readonly string $route,
+@@ -49,6 +50,7 @@ class PlainContext {
+ 		public readonly PlainAddress $address,
+ 		public readonly string $locale,
+ 		public readonly array $menu = [],
++		public readonly string $record = '',
+ 	) {
+ 	}//end __construct()
+ 
+@@ -69,6 +71,10 @@ class PlainContext {
+ 			$extra['_page'] = (string)$this->page;
+ 		}
+ 
++		if ($this->record !== '') {
++			$extra['record'] = $this->record;
++		}
++
+ 		return $this->address->full(route: $this->route, extra: $extra);
+ 	}//end fullUrl()
+ }//end class
+diff --git a/lib/Service/Cms/PlainPageRenderer.php b/lib/Service/Cms/PlainPageRenderer.php
+index 81a0c1aa5..3676bf87c 100644
+--- a/lib/Service/Cms/PlainPageRenderer.php
++++ b/lib/Service/Cms/PlainPageRenderer.php
+@@ -86,6 +86,7 @@ class PlainPageRenderer implements PlainPageRendererInterface {
+ 	 * @param PlainTextBlocks        $text     The text widgets.
+ 	 * @param PlainPublicationSearch $search   The publication search.
+ 	 * @param PlainPublicationDetail $detail   The publication detail.
++	 * @param PlainPublicRecords|null $records The public records block; without it that block says it needs JavaScript.
+ 	 */
+ 	public function __construct(
+ 		private readonly CmsReader $reader,
+@@ -95,6 +96,7 @@ class PlainPageRenderer implements PlainPageRendererInterface {
+ 		private readonly PlainTextBlocks $text,
+ 		private readonly PlainPublicationSearch $search,
+ 		private readonly PlainPublicationDetail $detail,
++		private readonly ?PlainPublicRecords $records=null,
+ 	) {
+ 	}//end __construct()
+ 
+@@ -107,12 +109,13 @@ class PlainPageRenderer implements PlainPageRendererInterface {
+ 	 * @param string                    $query   The request's `_search`.
+ 	 * @param int                       $page    The request's `_page`.
+ 	 * @param PlainAddress              $address The addresses of this request.
++	 * @param string                    $record  The request's `record`, for a `publicRecords` block; else ''.
+ 	 *
+ 	 * @return array<string, mixed> `status` (200 or 404), `portalTitle`, `menu`, `title`, `summary`, `blocks`, `fullUrl`.
+ 	 *
+ 	 * @spec openspec/changes/site-honest-without-javascript/tasks.md#2.4
+ 	 */
+-	public function render(?array $portal, string $route, string $locale, string $query, int $page, PlainAddress $address): array {
++	public function render(?array $portal, string $route, string $locale, string $query, int $page, PlainAddress $address, string $record=''): array {
+ 		$route = '/' . trim($route, '/');
+ 		$slug = (string)($portal['slug'] ?? '');
+ 		$view = [
+@@ -121,7 +124,7 @@ class PlainPageRenderer implements PlainPageRendererInterface {
+ 			'homeUrl' => $address->plain(route: '/'),
+ 			'menuLabel' => $this->l10n->t('Main menu'),
+ 			'menu' => [],
+-			'fullUrl' => $address->full(route: $route, extra: $this->searchParams(query: $query, page: $page)),
++			'fullUrl' => $address->full(route: $route, extra: $this->searchParams(query: $query, page: $page, record: trim($record))),
+ 			'fullLabel' => $this->l10n->t('Open the full page'),
+ 			'plainNote' => $this->l10n->t('This is the plain version of this page.'),
+ 		];
+@@ -142,7 +145,8 @@ class PlainPageRenderer implements PlainPageRendererInterface {
+ 			page: $page,
+ 			address: $address,
+ 			locale: $locale,
+-			menu: $view['menu']
++			menu: $view['menu'],
++			record: trim($record)
+ 		);
+ 		$blocks = $this->blocks(page: $found, context: $context);
+ 		foreach ($blocks as $block) {
+@@ -297,6 +301,7 @@ class PlainPageRenderer implements PlainPageRendererInterface {
+ 	 * @return array<string, mixed>
+ 	 *
+ 	 * @spec openspec/changes/site-honest-without-javascript/tasks.md#2.4
++	 * @spec openspec/changes/site-member-voting-record-and-confidential-papers/tasks.md#t3
+ 	 */
+ 	public function widget(array $widget, PlainContext $context): array {
+ 		$key = (string)($widget['widgetKey'] ?? '');
+@@ -317,6 +322,7 @@ class PlainPageRenderer implements PlainPageRendererInterface {
+ 				locale: $context->locale
+ 			),
+ 			'publicationDetail' => $this->detailBlock(props: $props, context: $context),
++			'publicRecords' => $this->records?->build(props: $props, context: $context),
+ 			default => null,
+ 		};
+ 
+@@ -392,12 +398,13 @@ class PlainPageRenderer implements PlainPageRendererInterface {
+ 	/**
+ 	 * `_search` and `_page` of an address; page 1 left out.
+ 	 *
+-	 * @param string $query The term.
+-	 * @param int    $page  The page.
++	 * @param string $query  The term.
++	 * @param int    $page   The page.
++	 * @param string $record The public record opened, if any.
+ 	 *
+ 	 * @return array<string, string>
+ 	 */
+-	private function searchParams(string $query, int $page): array {
++	private function searchParams(string $query, int $page, string $record=''): array {
+ 		$params = [];
+ 		if ($query !== '') {
+ 			$params['_search'] = $query;
+@@ -407,6 +414,10 @@ class PlainPageRenderer implements PlainPageRendererInterface {
+ 			$params['_page'] = (string)$page;
+ 		}
+ 
++		if ($record !== '') {
++			$params['record'] = $record;
++		}
++
+ 		return $params;
+ 	}//end searchParams()
+ 
+diff --git a/lib/Service/Cms/PlainPublicRecords.php b/lib/Service/Cms/PlainPublicRecords.php
+new file mode 100644
+index 000000000..e19b76542
+--- /dev/null
++++ b/lib/Service/Cms/PlainPublicRecords.php
+@@ -0,0 +1,326 @@
++<?php
++
++/**
++ * The plain public records block: a contributed list and one of its records.
++ *
++ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
++ * SPDX-License-Identifier: EUPL-1.2
++ *
++ * @category Service
++ * @package  OCA\Portaliq\Service\Cms
++ *
++ * @author    Conduction Development Team <info@conduction.nl>
++ * @copyright 2026 Conduction B.V.
++ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
++ *
++ * @link https://conduction.nl
++ *
++ * @spec openspec/changes/site-member-voting-record-and-confidential-papers/tasks.md#t3
++ */
++
++declare(strict_types=1);
++
++namespace OCA\Portaliq\Service\Cms;
++
++use OCA\Portaliq\Kernel\Contracts\PublicRecordReaderInterface;
++use OCP\IL10N;
++
++/**
++ * The view model of a `publicRecords` widget on the plain page.
++ *
++ * Without `?record=`: a GET search form and the list's entries as links, each
++ * title with its subtitle, narrowed by `_search` on title and subtitle the way
++ * the site block narrows them. With `?record=<id>`: the record's heading, its
++ * subtitle and note, its summary figures, its rows as a table with the link
++ * column pointing at the row's subject, the page's own links and the link back
++ * to the list. An unknown list or record says the overview no longer exists,
++ * the block's own stale-link text. The same reader as the anonymous API reads
++ * the list, so the plain page shows exactly what the site shows.
++ *
++ * @spec openspec/changes/site-member-voting-record-and-confidential-papers/specs/site-council-records/spec.md
++ */
++class PlainPublicRecords {
++
++	/**
++	 * Constructor.
++	 *
++	 * @param PublicRecordReaderInterface $records The contributed lists, read as the anonymous API reads them.
++	 * @param IL10N                       $l10n    The words.
++	 */
++	public function __construct(
++		private readonly PublicRecordReaderInterface $records,
++		private readonly IL10N $l10n,
++	) {
++	}//end __construct()
++
++	/**
++	 * The block, or null when the placement names no list.
++	 *
++	 * @param array<string, mixed> $props   The widget's props (`app`, `list`, `title`, `linkKey`, `backText`, `searchLabel`, `recordHeading`, `links`).
++	 * @param PlainContext         $context The request.
++	 *
++	 * @return array<string, mixed>|null `kind` records, `state` list|record|gone.
++	 *
++	 * @spec openspec/changes/site-member-voting-record-and-confidential-papers/tasks.md#t3
++	 */
++	public function build(array $props, PlainContext $context): ?array {
++		$app = $this->text(value: ($props['app'] ?? ''));
++		$list = $this->text(value: ($props['list'] ?? ''));
++		if ($app === '' || $list === '') {
++			return null;
++		}
++
++		$block = [
++			'kind' => 'records',
++			'title' => $this->text(value: ($props['title'] ?? '')),
++			'backUrl' => $context->address->plain(route: $context->route),
++			'backLabel' => $this->orDefault(value: ($props['backText'] ?? ''), default: $this->l10n->t('Back to the overview')),
++		];
++
++		if ($context->record !== '') {
++			return $block + $this->recordView(props: $props, app: $app, list: $list, context: $context);
++		}
++
++		$entries = $this->records->entries(app: $app, list: $list);
++		if ($entries === null) {
++			return $block + $this->gone();
++		}
++
++		return $block + $this->listView(entries: $entries, props: $props, context: $context);
++	}//end build()
++
++	/**
++	 * The list: the search form and the matching entries as links.
++	 *
++	 * @param array<int, array<string, string>> $entries The list's entries.
++	 * @param array<string, mixed>              $props   The props.
++	 * @param PlainContext                      $context The request.
++	 *
++	 * @return array<string, mixed>
++	 */
++	private function listView(array $entries, array $props, PlainContext $context): array {
++		$needle = mb_strtolower(trim($context->query));
++		$links = [];
++		foreach ($entries as $entry) {
++			$id = $this->text(value: ($entry['id'] ?? ''));
++			$title = $this->text(value: ($entry['title'] ?? ''));
++			$subtitle = $this->text(value: ($entry['subtitle'] ?? ''));
++			if ($id === '' || $title === '') {
++				continue;
++			}
++
++			if ($needle !== '' && str_contains(mb_strtolower($title . ' ' . $subtitle), $needle) === false) {
++				continue;
++			}
++
++			$links[] = [
++				'label' => $title,
++				'description' => $subtitle,
++				'href' => $context->address->plain(route: $context->route, extra: ['record' => $id]),
++			];
++		}
++
++		$empty = '';
++		if ($links === []) {
++			$empty = $this->l10n->t('No items.');
++		}
++
++		return [
++			'state' => 'list',
++			'action' => $context->address->plainBase(),
++			'route' => $context->route,
++			'portal' => $context->address->portalSlug(),
++			'searchLabel' => $this->orDefault(value: ($props['searchLabel'] ?? ''), default: $this->l10n->t('Search for a name')),
++			'submit' => $this->l10n->t('Search'),
++			'query' => $context->query,
++			'links' => $links,
++			'empty' => $empty,
++		];
++	}//end listView()
++
++	/**
++	 * One record: heading, figures, rows and links; gone when the list does not hold it.
++	 *
++	 * @param array<string, mixed> $props   The props.
++	 * @param string               $app     The contributing app.
++	 * @param string               $list    The list id.
++	 * @param PlainContext         $context The request.
++	 *
++	 * @return array<string, mixed>
++	 */
++	private function recordView(array $props, string $app, string $list, PlainContext $context): array {
++		$record = $this->records->record(app: $app, list: $list, id: $context->record);
++		if ($record === null) {
++			return $this->gone();
++		}
++
++		$title = $this->text(value: ($record['title'] ?? ''));
++		$heading = $this->text(value: ($props['recordHeading'] ?? ''));
++		if ($heading === '') {
++			$heading = $title;
++		}
++
++		$columns = [];
++		foreach ((array)($record['columns'] ?? []) as $column) {
++			if (is_array($column) === true && $this->text(value: ($column['key'] ?? '')) !== '') {
++				$columns[] = ['key' => $this->text(value: $column['key']), 'label' => $this->text(value: ($column['label'] ?? $column['key']))];
++			}
++		}
++
++		$empty = '';
++		if ($columns === [] || (array)($record['rows'] ?? []) === []) {
++			$empty = $this->l10n->t('No items.');
++		}
++
++		return [
++			'state' => 'record',
++			'heading' => str_replace('{title}', $title, $heading),
++			'subtitle' => $this->text(value: ($record['subtitle'] ?? '')),
++			'note' => $this->text(value: ($record['note'] ?? '')),
++			'figures' => $this->figures(summary: ($record['summary'] ?? [])),
++			'columns' => $columns,
++			'rows' => $this->rows(
++				rows: ($record['rows'] ?? []),
++				columns: $columns,
++				linkKey: $this->orDefault(value: ($props['linkKey'] ?? ''), default: 'subject'),
++				address: $context->address
++			),
++			'empty' => $empty,
++			'links' => $this->pageLinks(links: ($props['links'] ?? []), address: $context->address),
++		];
++	}//end recordView()
++
++	/**
++	 * The summary cards as label, value and detail.
++	 *
++	 * @param mixed $summary The record's summary.
++	 *
++	 * @return list<array{label: string, value: string, detail: string}>
++	 */
++	private function figures(mixed $summary): array {
++		$figures = [];
++		foreach ((array)$summary as $card) {
++			if (is_array($card) === false || $this->text(value: ($card['label'] ?? '')) === '') {
++				continue;
++			}
++
++			$figures[] = [
++				'label' => $this->text(value: $card['label']),
++				'value' => $this->text(value: ($card['value'] ?? '')),
++				'detail' => $this->text(value: ($card['detail'] ?? '')),
++			];
++		}
++
++		return $figures;
++	}//end figures()
++
++	/**
++	 * The rows as cells in column order; the link column links the row's subject.
++	 *
++	 * @param mixed                                     $rows    The record's rows.
++	 * @param list<array{key: string, label: string}> $columns The columns.
++	 * @param string                                    $linkKey The column that links its subject.
++	 * @param PlainAddress                              $address The addresses.
++	 *
++	 * @return list<list<array{text: string, href: string}>>
++	 */
++	private function rows(mixed $rows, array $columns, string $linkKey, PlainAddress $address): array {
++		$table = [];
++		foreach ((array)$rows as $row) {
++			if (is_array($row) === false) {
++				continue;
++			}
++
++			$subject = '';
++			if (is_string($row['subjectUrl'] ?? null) === true) {
++				$subject = $address->authored(link: $row['subjectUrl']);
++			}
++
++			$cells = [];
++			foreach ($columns as $column) {
++				$href = '';
++				if ($column['key'] === $linkKey) {
++					$href = $subject;
++				}
++
++				$cells[] = ['text' => $this->text(value: ($row[$column['key']] ?? '')), 'href' => $href];
++			}
++
++			$table[] = $cells;
++		}
++
++		return $table;
++	}//end rows()
++
++	/**
++	 * The page's own links under the record: a site route or an http(s) address only.
++	 *
++	 * @param mixed        $links   The `links` prop.
++	 * @param PlainAddress $address The addresses.
++	 *
++	 * @return list<array{label: string, href: string}>
++	 */
++	private function pageLinks(mixed $links, PlainAddress $address): array {
++		$kept = [];
++		foreach ((array)$links as $link) {
++			if (is_array($link) === false) {
++				continue;
++			}
++
++			$label = $this->text(value: ($link['label'] ?? ''));
++			$href = $this->text(value: ($link['href'] ?? ''));
++			if ($label === '' || preg_match('#^(https?://|/(?!/))#i', $href) !== 1) {
++				continue;
++			}
++
++			$kept[] = ['label' => $label, 'href' => $address->authored(link: $href)];
++		}
++
++		return $kept;
++	}//end pageLinks()
++
++	/**
++	 * The stale-link answer: the list or record no longer exists.
++	 *
++	 * @return array{state: string, sentence: string}
++	 */
++	private function gone(): array {
++		return ['state' => 'gone', 'sentence' => $this->l10n->t('This overview no longer exists.')];
++	}//end gone()
++
++	/**
++	 * A prop as text, else the default.
++	 *
++	 * @param mixed  $value   The prop.
++	 * @param string $default The block's own words.
++	 *
++	 * @return string
++	 */
++	private function orDefault(mixed $value, string $default): string {
++		$text = $this->text(value: $value);
++		if ($text === '') {
++			return $default;
++		}
++
++		return $text;
++	}//end orDefault()
++
++	/**
++	 * A scalar as trimmed plain text; anything else ''.
++	 *
++	 * @param mixed $value The value.
++	 *
++	 * @return string
++	 */
++	private function text(mixed $value): string {
++		if (is_int($value) === true || is_float($value) === true) {
++			return (string)$value;
++		}
++
++		if (is_string($value) === false) {
++			return '';
++		}
++
++		return trim(strip_tags($value));
++	}//end text()
++}//end class
+diff --git a/lib/Service/SiteShell.php b/lib/Service/SiteShell.php
+index 6ee5d4dfc..bcef88091 100644
+--- a/lib/Service/SiteShell.php
++++ b/lib/Service/SiteShell.php
+@@ -222,9 +222,10 @@ class SiteShell implements SiteShellInterface {
+ 	 * (`?route=`, else the landing page of the host), the document language,
+ 	 * the slug the request names, and the search term and page number.
+ 	 *
+-	 * @return array{portal: array<string, mixed>|null, route: string, locale: string, slug: string, query: string, page: int}
++	 * @return array{portal: array<string, mixed>|null, route: string, locale: string, slug: string, query: string, page: int, record: string}
+ 	 *
+ 	 * @spec openspec/changes/site-honest-without-javascript/specs/site-without-javascript/spec.md#requirement-the-server-renders-a-plain-version-of-every-public-page-req-shj-002
++	 * @spec openspec/changes/site-member-voting-record-and-confidential-papers/tasks.md#t3
+ 	 */
+ 	public function plainRequest(): array {
+ 		$slug = $this->requestedPortalSlug();
+@@ -246,6 +247,7 @@ class SiteShell implements SiteShellInterface {
+ 			'slug'   => $slug,
+ 			'query'  => $this->stringParam(name: '_search'),
+ 			'page'   => $page,
++			'record' => $this->stringParam(name: 'record'),
+ 		];
+ 	}//end plainRequest()
+ 
+diff --git a/openspec/changes/site-member-voting-record-and-confidential-papers/tasks.md b/openspec/changes/site-member-voting-record-and-confidential-papers/tasks.md
+index 2f82360c5..1f1cbdba4 100644
+--- a/openspec/changes/site-member-voting-record-and-confidential-papers/tasks.md
++++ b/openspec/changes/site-member-voting-record-and-confidential-papers/tasks.md
+@@ -17,7 +17,7 @@ decidiq's half is `decidiq/portal-voting-record-and-confidential-papers`. Tasks
+   - Files: `src/site/components/PublicRecordsBlock.vue`, `src/site/components/WidgetGrid.vue`, the widget palette entry, the page editor's config form (list picker from the anonymous aggregate), the server-side block render for `site-honest-without-javascript`, `l10n/*.json`
+   - Done when: the list, the search, the record with `KpiCards` and `CollectionTable`, the back link and the stale-link text render per design.md D2, with and without JavaScript
+   - Test: `tests/public-records.spec.mjs` (node), then `tests/e2e/site-member-voting-record.spec.ts` against decidiq's seeded council
+-  - Built: `PublicRecordsBlock.vue` (list, search, record, note, back link, stale-link text), its widget registration and palette label, `tests/public-records.spec.mjs`. The summary renders through `KpiCards.vue` and the rows through `CollectionTable.vue` (`recordFigures`, `recordTableCollection` in `src/site/lib/publicRecordsApi.js`; the table's link column takes its address from `hrefField: subjectUrl` and keeps only a site path or http(s)). The page editor picks the list from the anonymous aggregate (`src/editor/recordLists.js`, field kind `recordList` in `pageWidgetCatalogue.js`, `loadRecordLists` in `PageLayoutDesigner.vue`). The record follows the PtStemgedrag board: heading sentence (`recordHeading`), filters on the record's own columns (`filterBy`, applied by `filterButton`), a count line (`countText`), pages (`pageSize`, pager with Vorige and Volgende), and a side card with initials, title, subtitle, the figure cards, the back link and the page's `links` (site route or http(s) only); helpers `recordFilters`, `filteredRows`, `rowsPage`, `initialsOf`, `fillText` in `publicRecordsApi.js`; Zuiddrecht's page "Hoe stemden de raadsleden" sets them (`lib/Settings/sites/zuiddrecht.json`); test `tests/public-records-board.spec.mjs`. The page editor has no fields for these settings yet; they are page configuration. (not run: the server-side render for readers without JavaScript waits on `site-honest-without-javascript`, which has none of its 16 tasks built and no `/site/plain` route; `tests/e2e/site-member-voting-record.spec.ts` is the live pass, decision 139.) Written 17 Nov: `tests/e2e/site-member-voting-record.spec.ts` covers the three e2e scenarios of REQ-SCR-005/006 as an anonymous visitor on the Zuiddrecht page, with decidiq's list and records fixed through page.route in the pinned shapes; not run, needs a live instance.
++  - Built: `PublicRecordsBlock.vue` (list, search, record, note, back link, stale-link text), its widget registration and palette label, `tests/public-records.spec.mjs`. The summary renders through `KpiCards.vue` and the rows through `CollectionTable.vue` (`recordFigures`, `recordTableCollection` in `src/site/lib/publicRecordsApi.js`; the table's link column takes its address from `hrefField: subjectUrl` and keeps only a site path or http(s)). The page editor picks the list from the anonymous aggregate (`src/editor/recordLists.js`, field kind `recordList` in `pageWidgetCatalogue.js`, `loadRecordLists` in `PageLayoutDesigner.vue`). The record follows the PtStemgedrag board: heading sentence (`recordHeading`), filters on the record's own columns (`filterBy`, applied by `filterButton`), a count line (`countText`), pages (`pageSize`, pager with Vorige and Volgende), and a side card with initials, title, subtitle, the figure cards, the back link and the page's `links` (site route or http(s) only); helpers `recordFilters`, `filteredRows`, `rowsPage`, `initialsOf`, `fillText` in `publicRecordsApi.js`; Zuiddrecht's page "Hoe stemden de raadsleden" sets them (`lib/Settings/sites/zuiddrecht.json`); test `tests/public-records-board.spec.mjs`. The page editor has no fields for these settings yet; they are page configuration. Server-side render, 17 Nov: `lib/Service/Cms/PlainPublicRecords.php` renders the block on `/site/plain` (from `site-honest-without-javascript`) through the same `PublicRecordReaderInterface` as the anonymous API: the list as a GET search form (`_search` on title and subtitle) and links that open `?record=<id>`, the record with the page's heading, subtitle, note, figures, the rows as a table with the link column on the row's subject, the page's links (site route or http(s) only) and the back link; a gone list or record says "This overview no longer exists.". `record` is read by `SiteShell::plainRequest()`, carried in `PlainContext` and kept in the link to the full page. The filters and pages of the board stay JavaScript-only. Tests: `PlainPublicRecordsTest`, `PlainPageRendererTest::testAPublicRecordsBlockRendersItsListAndRecord`, `PortalPageControllerPlainTest::testTheRecordParameterOpensAPublicRecord`. (Left unticked for the live pass: `tests/e2e/site-member-voting-record.spec.ts`, decision 139.) Written 17 Nov: `tests/e2e/site-member-voting-record.spec.ts` covers the three e2e scenarios of REQ-SCR-005/006 as an anonymous visitor on the Zuiddrecht page, with decidiq's list and records fixed through page.route in the pinned shapes; not run, needs a live instance.
+ 
+ - [x] **T4**: documents on any listable collection (REQ-SCR-002, REQ-SCR-007)
+   - Files: `lib/Contribution/DocumentsProviderMethod.php`, `lib/Service/CollectionDocuments.php` (extracted), `lib/Service/CitizenCaseDocuments.php`, `lib/Controller/ContributionController.php`, `appinfo/routes.php` (`GET /portal/api/collections/{app}/{collection}/{id}/documents` and `/{documentId}`), `src/site/components/mijn/DocumentsBlock.vue` on the collection detail card
+diff --git a/templates/site-plain.php b/templates/site-plain.php
+index bdebad939..6ee0decc8 100644
+--- a/templates/site-plain.php
++++ b/templates/site-plain.php
+@@ -178,6 +178,91 @@ if ($headTitle === '') {
+             </nav>
+             <?php } ?>
+             <?php } ?>
++            <?php } elseif ($kind === 'records') { ?>
++            <?php $state = (string)($block['state'] ?? ''); ?>
++            <?php if ((string)($block['title'] ?? '') !== '' && $state !== 'record') { ?>
++            <h2 class="utrecht-heading-2"><?php p((string)$block['title']); ?></h2>
++            <?php } ?>
++            <?php if ($state === 'list') { ?>
++            <form method="get" action="<?php p((string)$block['action']); ?>" role="search">
++                <input type="hidden" name="route" value="<?php p((string)$block['route']); ?>">
++                <?php if ((string)($block['portal'] ?? '') !== '') { ?>
++                <input type="hidden" name="portal" value="<?php p((string)$block['portal']); ?>">
++                <?php } ?>
++                <label class="utrecht-form-label" for="pq-plain-records-search"><?php p((string)$block['searchLabel']); ?></label>
++                <input id="pq-plain-records-search" class="utrecht-textbox utrecht-textbox--html-input" type="search" name="_search" value="<?php p((string)$block['query']); ?>">
++                <button type="submit" class="utrecht-button utrecht-button--primary-action" aria-label="<?php p((string)$block['submit']); ?>"><?php p((string)$block['submit']); ?></button>
++            </form>
++            <?php if ((string)($block['empty'] ?? '') !== '') { ?>
++            <p class="utrecht-paragraph" role="status"><?php p((string)$block['empty']); ?></p>
++            <?php } else { ?>
++            <ul class="utrecht-link-list">
++                <?php foreach ((array)$block['links'] as $link) { ?>
++                <li class="utrecht-link-list__item">
++                    <a class="utrecht-link utrecht-link-list__link" href="<?php p((string)$link['href']); ?>" aria-label="<?php p((string)$link['label']); ?>"><?php p((string)$link['label']); ?></a>
++                    <?php if ((string)$link['description'] !== '') { ?>
++                    <span class="utrecht-link-list__description"><?php p((string)$link['description']); ?></span>
++                    <?php } ?>
++                </li>
++                <?php } ?>
++            </ul>
++            <?php } ?>
++            <?php } elseif ($state === 'record') { ?>
++            <h2 class="utrecht-heading-2"><?php p((string)$block['heading']); ?></h2>
++            <?php if ((string)$block['subtitle'] !== '') { ?>
++            <p class="utrecht-paragraph"><?php p((string)$block['subtitle']); ?></p>
++            <?php } ?>
++            <?php if ((string)$block['note'] !== '') { ?>
++            <p class="utrecht-paragraph"><?php p((string)$block['note']); ?></p>
++            <?php } ?>
++            <?php if ((array)$block['figures'] !== []) { ?>
++            <dl class="utrecht-data-list">
++                <?php foreach ((array)$block['figures'] as $figure) { ?>
++                <dt><?php p((string)$figure['label']); ?></dt>
++                <dd><?php p(trim((string)$figure['value'] . ' ' . (string)$figure['detail'])); ?></dd>
++                <?php } ?>
++            </dl>
++            <?php } ?>
++            <?php if ((string)($block['empty'] ?? '') !== '') { ?>
++            <p class="utrecht-paragraph"><?php p((string)$block['empty']); ?></p>
++            <?php } else { ?>
++            <table class="utrecht-table">
++                <thead class="utrecht-table__header">
++                    <tr class="utrecht-table__row">
++                        <?php foreach ((array)$block['columns'] as $column) { ?>
++                        <th class="utrecht-table__header-cell" scope="col"><?php p((string)$column['label']); ?></th>
++                        <?php } ?>
++                    </tr>
++                </thead>
++                <tbody class="utrecht-table__body">
++                    <?php foreach ((array)$block['rows'] as $cells) { ?>
++                    <tr class="utrecht-table__row">
++                        <?php foreach ((array)$cells as $cell) { ?>
++                        <td class="utrecht-table__cell">
++                            <?php if ((string)$cell['href'] !== '') { ?>
++                            <a class="utrecht-link" href="<?php p((string)$cell['href']); ?>" aria-label="<?php p((string)$cell['text']); ?>"><?php p((string)$cell['text']); ?></a>
++                            <?php } else { ?>
++                            <?php p((string)$cell['text']); ?>
++                            <?php } ?>
++                        </td>
++                        <?php } ?>
++                    </tr>
++                    <?php } ?>
++                </tbody>
++            </table>
++            <?php } ?>
++            <?php if ((array)$block['links'] !== []) { ?>
++            <ul class="utrecht-link-list">
++                <?php foreach ((array)$block['links'] as $link) { ?>
++                <li class="utrecht-link-list__item"><a class="utrecht-link utrecht-link-list__link" href="<?php p((string)$link['href']); ?>" aria-label="<?php p((string)$link['label']); ?>"><?php p((string)$link['label']); ?></a></li>
++                <?php } ?>
++            </ul>
++            <?php } ?>
++            <p class="utrecht-paragraph"><a class="utrecht-link" href="<?php p((string)$block['backUrl']); ?>" aria-label="<?php p((string)$block['backLabel']); ?>"><?php p((string)$block['backLabel']); ?></a></p>
++            <?php } else { ?>
++            <p class="utrecht-paragraph" role="status"><?php p((string)$block['sentence']); ?></p>
++            <p class="utrecht-paragraph"><a class="utrecht-link" href="<?php p((string)$block['backUrl']); ?>" aria-label="<?php p((string)$block['backLabel']); ?>"><?php p((string)$block['backLabel']); ?></a></p>
++            <?php } ?>
+             <?php } elseif ($kind === 'publication') { ?>
+             <?php if ((string)($block['state'] ?? '') === 'ok') { ?>
+             <h2 class="utrecht-heading-2"><?php p((string)$block['title']); ?></h2>
+diff --git a/tests/Unit/Controller/PortalPageControllerPlainTest.php b/tests/Unit/Controller/PortalPageControllerPlainTest.php
+index 787dbf4f2..142cc3cd9 100644
+--- a/tests/Unit/Controller/PortalPageControllerPlainTest.php
++++ b/tests/Unit/Controller/PortalPageControllerPlainTest.php
+@@ -29,6 +29,7 @@ declare(strict_types=1);
+ namespace OCA\Portaliq\Tests\Unit\Controller;
+ 
+ use OCA\Portaliq\Controller\PortalPageController;
++use OCA\Portaliq\Kernel\Contracts\PublicRecordReaderInterface;
+ use OCA\Portaliq\Service\Cms\AccessibilityFraming;
+ use OCA\Portaliq\Service\Cms\PlainCategoryNames;
+ use OCA\Portaliq\Service\Cms\PlainDates;
+@@ -37,6 +38,7 @@ use OCA\Portaliq\Service\Cms\PlainPageRenderer;
+ use OCA\Portaliq\Service\Cms\PlainPublicationDetail;
+ use OCA\Portaliq\Service\Cms\PlainPublicationReader;
+ use OCA\Portaliq\Service\Cms\PlainPublicationSearch;
++use OCA\Portaliq\Service\Cms\PlainPublicRecords;
+ use OCA\Portaliq\Service\Cms\PlainTextBlocks;
+ use OCA\Portaliq\Service\Cms\PlainWidgetLabels;
+ use OCA\Portaliq\Service\Cms\SiteHead;
+@@ -65,6 +67,23 @@ class PortalPageControllerPlainTest extends TestCase {
+ 	 */
+ 	private array $pages = [];
+ 
++	/**
++	 * The public records reader double.
++	 *
++	 * @var PublicRecordReaderInterface&\PHPUnit\Framework\MockObject\MockObject
++	 */
++	private PublicRecordReaderInterface $publicRecords;
++
++	/**
++	 * Build the public records reader double.
++	 *
++	 * @return void
++	 */
++	protected function setUp(): void {
++		parent::setUp();
++		$this->publicRecords = $this->createMock(PublicRecordReaderInterface::class);
++	}//end setUp()
++
+ 	/**
+ 	 * Every audience the content read was asked for.
+ 	 *
+@@ -160,6 +179,29 @@ class PortalPageControllerPlainTest extends TestCase {
+ 		$this->assertStringContainsString('<link rel="canonical" href="<?php p($head[\'canonical\']); ?>">', $template);
+ 	}//end testTheCanonicalIsTheSiteAddress()
+ 
++	/**
++	 * `?record=` reaches the public records block: the record opens on the
++	 * plain page, and the link to the full page keeps it.
++	 *
++	 * @return void
++	 *
++	 * @spec openspec/changes/site-member-voting-record-and-confidential-papers/tasks.md#t3
++	 */
++	public function testTheRecordParameterOpensAPublicRecord(): void {
++		$this->pages['/raadsleden'] = [
++			'title' => 'Raadsleden',
++			'body' => ['type' => 'grid', 'widgets' => [['widgetKey' => 'publicRecords', 'props' => ['app' => 'decidiq', 'list' => 'memberVotes']]]],
++		];
++		$this->publicRecords->expects($this->once())->method('record')->with('decidiq', 'memberVotes', 'm1')
++			->willReturn(['title' => 'Anna de Vries', 'summary' => [], 'columns' => [], 'rows' => []]);
++
++		$plain = $this->controller(route: '/raadsleden', portalParam: 'demo', record: 'm1')->plain()->getParams()['plain'];
++
++		$this->assertSame('record', $plain['blocks'][0]['state']);
++		$this->assertSame('Anna de Vries', $plain['blocks'][0]['heading']);
++		$this->assertSame('/index.php/apps/portaliq/site?route=/raadsleden&portal=demo&record=m1', $plain['fullUrl']);
++	}//end testTheRecordParameterOpensAPublicRecord()
++
+ 	/**
+ 	 * The controller over doubles of its boundaries and the real plain page.
+ 	 *
+@@ -167,6 +209,7 @@ class PortalPageControllerPlainTest extends TestCase {
+ 	 * @param string                    $portalParam The `portal` parameter.
+ 	 * @param array<string, mixed>|null $portal      The portal the host resolves to.
+ 	 * @param array<string, string>     $cookies     Cookies the request carries.
++	 * @param string                    $record      The `record` parameter.
+ 	 *
+ 	 * @return PortalPageController
+ 	 */
+@@ -174,13 +217,15 @@ class PortalPageControllerPlainTest extends TestCase {
+ 		string $route = '',
+ 		string $portalParam = '',
+ 		?array $portal = ['slug' => 'demo', 'title' => 'Gemeente Demo'],
+-		array $cookies = []
++		array $cookies = [],
++		string $record = ''
+ 	): PortalPageController {
+ 		$request = $this->createMock(IRequest::class);
+ 		$request->method('getParam')->willReturnCallback(
+ 			static fn (string $key, $default = null) => match ($key) {
+ 				'route' => ($route !== '' ? $route : $default),
+ 				'portal' => ($portalParam !== '' ? $portalParam : $default),
++				'record' => ($record !== '' ? $record : $default),
+ 				default => $default,
+ 			}
+ 		);
+@@ -232,7 +277,8 @@ class PortalPageControllerPlainTest extends TestCase {
+ 			new PlainWidgetLabels(),
+ 			new PlainTextBlocks(new PlainMarkdown()),
+ 			new PlainPublicationSearch($publications, $words, new PlainDates()),
+-			new PlainPublicationDetail($publications, $words, new PlainDates(), new PlainCategoryNames())
++			new PlainPublicationDetail($publications, $words, new PlainDates(), new PlainCategoryNames()),
++			new PlainPublicRecords($this->publicRecords, $words)
+ 		);
+ 
+ 		return new PortalPageController(
+diff --git a/tests/Unit/Service/Cms/PlainPageRendererTest.php b/tests/Unit/Service/Cms/PlainPageRendererTest.php
+index cff66639a..e29267bef 100644
+--- a/tests/Unit/Service/Cms/PlainPageRendererTest.php
++++ b/tests/Unit/Service/Cms/PlainPageRendererTest.php
+@@ -27,6 +27,7 @@ declare(strict_types=1);
+ 
+ namespace OCA\Portaliq\Tests\Unit\Service\Cms;
+ 
++use OCA\Portaliq\Kernel\Contracts\PublicRecordReaderInterface;
+ use OCA\Portaliq\Service\Cms\PlainAddress;
+ use OCA\Portaliq\Service\Cms\PlainCategoryNames;
+ use OCA\Portaliq\Service\Cms\PlainContext;
+@@ -36,6 +37,7 @@ use OCA\Portaliq\Service\Cms\PlainPageRenderer;
+ use OCA\Portaliq\Service\Cms\PlainPublicationDetail;
+ use OCA\Portaliq\Service\Cms\PlainPublicationReader;
+ use OCA\Portaliq\Service\Cms\PlainPublicationSearch;
++use OCA\Portaliq\Service\Cms\PlainPublicRecords;
+ use OCA\Portaliq\Service\Cms\PlainTextBlocks;
+ use OCA\Portaliq\Service\Cms\PlainWidgetLabels;
+ use OCA\Portaliq\Service\CmsReader;
+@@ -54,6 +56,7 @@ use PHPUnit\Framework\TestCase;
+ #[UsesClass(PlainPublicationDetail::class)]
+ #[UsesClass(PlainDates::class)]
+ #[UsesClass(PlainCategoryNames::class)]
++#[UsesClass(PlainPublicRecords::class)]
+ class PlainPageRendererTest extends TestCase {
+ 
+ 	/**
+@@ -70,6 +73,13 @@ class PlainPageRendererTest extends TestCase {
+ 	 */
+ 	private PlainPublicationReader $publications;
+ 
++	/**
++	 * The public records reader, when a test sets one.
++	 *
++	 * @var PublicRecordReaderInterface|null
++	 */
++	private ?PublicRecordReaderInterface $publicRecords = null;
++
+ 	/**
+ 	 * Heading, paragraph, list, link list and markdown render their text in
+ 	 * grid order; links into the site point at the plain version.
+@@ -243,6 +253,36 @@ class PlainPageRendererTest extends TestCase {
+ 		}
+ 	}//end testAMissingPageIsNotFoundAndEveryReadIsAnonymous()
+ 
++	/**
++	 * A public records block renders its list, and with `record` the record,
++	 * with the record kept in the link to the full page; without the block's
++	 * builder it says it needs JavaScript.
++	 *
++	 * @return void
++	 *
++	 * @spec openspec/changes/site-member-voting-record-and-confidential-papers/tasks.md#t3
++	 */
++	public function testAPublicRecordsBlockRendersItsListAndRecord(): void {
++		$page = $this->gridPage(widgets: [['widgetKey' => 'publicRecords', 'props' => ['app' => 'decidiq', 'list' => 'memberVotes']]]);
++
++		$withoutBuilder = $this->renderer(pages: ['/raadsleden' => $page])->render(self::PORTAL, '/raadsleden', 'nl', '', 1, $this->address());
++		$this->assertSame('needsJs', $withoutBuilder['blocks'][0]['kind']);
++
++		$this->publicRecords = $this->createMock(PublicRecordReaderInterface::class);
++		$this->publicRecords->method('entries')->willReturn([['id' => 'm1', 'title' => 'Anna de Vries']]);
++		$this->publicRecords->method('record')->with('decidiq', 'memberVotes', 'm1')->willReturn(['title' => 'Anna de Vries', 'summary' => [], 'columns' => [], 'rows' => []]);
++		$renderer = $this->renderer(pages: ['/raadsleden' => $page]);
++
++		$list = $renderer->render(self::PORTAL, '/raadsleden', 'nl', '', 1, $this->address());
++		$this->assertSame('list', $list['blocks'][0]['state']);
++		$this->assertSame('Anna de Vries', $list['blocks'][0]['links'][0]['label']);
++
++		$record = $renderer->render(self::PORTAL, '/raadsleden', 'nl', '', 1, $this->address(), ' m1 ');
++		$this->assertSame(200, $record['status']);
++		$this->assertSame('record', $record['blocks'][0]['state']);
++		$this->assertSame('Anna de Vries', $record['blocks'][0]['heading']);
++	}//end testAPublicRecordsBlockRendersItsListAndRecord()
++
+ 	/**
+ 	 * A grid page.
+ 	 *
+@@ -310,7 +350,8 @@ class PlainPageRendererTest extends TestCase {
+ 			new PlainWidgetLabels(),
+ 			new PlainTextBlocks(new PlainMarkdown()),
+ 			new PlainPublicationSearch($this->publications, $words, new PlainDates()),
+-			new PlainPublicationDetail($this->publications, $words, new PlainDates(), new PlainCategoryNames())
++			new PlainPublicationDetail($this->publications, $words, new PlainDates(), new PlainCategoryNames()),
++			($this->publicRecords === null ? null : new PlainPublicRecords($this->publicRecords, $words))
+ 		);
+ 	}//end renderer()
+ }//end class
+diff --git a/tests/Unit/Service/Cms/PlainPublicRecordsTest.php b/tests/Unit/Service/Cms/PlainPublicRecordsTest.php
+new file mode 100644
+index 000000000..64118ad41
+--- /dev/null
++++ b/tests/Unit/Service/Cms/PlainPublicRecordsTest.php
+@@ -0,0 +1,237 @@
++<?php
++
++/**
++ * PlainPublicRecords: a contributed list and one of its records on the plain
++ * page, for a reader without JavaScript (site-member-voting-record-and-confidential-papers T3).
++ *
++ * @category Test
++ * @package  OCA\Portaliq\Tests\Unit\Service\Cms
++ *
++ * @author    Conduction Development Team <info@conduction.nl>
++ * @copyright 2026 Conduction B.V.
++ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
++ *
++ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
++ * SPDX-License-Identifier: EUPL-1.2
++ *
++ * @link https://conduction.nl
++ *
++ * @spec openspec/changes/site-member-voting-record-and-confidential-papers/tasks.md#t3
++ *
++ * phpcs:disable CustomSniffs.Functions.NamedParameters
++ */
++
++declare(strict_types=1);
++
++namespace OCA\Portaliq\Tests\Unit\Service\Cms;
++
++use OCA\Portaliq\Kernel\Contracts\PublicRecordReaderInterface;
++use OCA\Portaliq\Service\Cms\PlainAddress;
++use OCA\Portaliq\Service\Cms\PlainContext;
++use OCA\Portaliq\Service\Cms\PlainPublicRecords;
++use PHPUnit\Framework\Attributes\CoversClass;
++use PHPUnit\Framework\Attributes\UsesClass;
++use PHPUnit\Framework\MockObject\MockObject;
++use PHPUnit\Framework\TestCase;
++
++#[CoversClass(PlainPublicRecords::class)]
++#[UsesClass(PlainAddress::class)]
++#[UsesClass(PlainContext::class)]
++class PlainPublicRecordsTest extends TestCase {
++
++	/**
++	 * The reader double.
++	 *
++	 * @var PublicRecordReaderInterface&MockObject
++	 */
++	private PublicRecordReaderInterface $reader;
++
++	/**
++	 * The props of the council's voting record page.
++	 *
++	 * @var array<string, mixed>
++	 */
++	private const PROPS = [
++		'app' => 'decidiq',
++		'list' => 'memberVotes',
++		'searchLabel' => 'Zoek een raadslid',
++		'backText' => 'Alle raadsleden',
++		'recordHeading' => 'Stemgedrag van {title}',
++		'links' => [
++			['label' => 'Over de raad', 'href' => '/raad'],
++			['label' => 'Kwaad', 'href' => 'javascript:alert(1)'],
++			['label' => 'Elders', 'href' => 'https://elders.example/raad'],
++		],
++	];
++
++	/**
++	 * Build the reader double.
++	 *
++	 * @return void
++	 */
++	protected function setUp(): void {
++		$this->reader = $this->createMock(PublicRecordReaderInterface::class);
++	}//end setUp()
++
++	/**
++	 * Without a record: the search form and every entry as a link that opens it.
++	 *
++	 * @return void
++	 */
++	public function testTheListIsASearchFormAndLinksToEachRecord(): void {
++		$this->reader->expects($this->once())->method('entries')->with('decidiq', 'memberVotes')->willReturn([
++			['id' => 'm1', 'title' => 'Anna de Vries', 'subtitle' => 'Partij A'],
++			['id' => 'm2', 'title' => 'Bram Jansen', 'subtitle' => 'Partij B'],
++			['id' => '', 'title' => 'Zonder id'],
++		]);
++		$this->reader->expects($this->never())->method('record');
++
++		$block = $this->records()->build(self::PROPS, $this->context());
++
++		$this->assertSame('records', $block['kind']);
++		$this->assertSame('list', $block['state']);
++		$this->assertSame('/index.php/apps/portaliq/site/plain', $block['action']);
++		$this->assertSame('/raadsleden', $block['route']);
++		$this->assertSame('demo', $block['portal']);
++		$this->assertSame('Zoek een raadslid', $block['searchLabel']);
++		$this->assertSame('Search', $block['submit']);
++		$this->assertSame('', $block['empty']);
++		$this->assertSame([
++			['label' => 'Anna de Vries', 'description' => 'Partij A', 'href' => '/index.php/apps/portaliq/site/plain?route=/raadsleden&portal=demo&record=m1'],
++			['label' => 'Bram Jansen', 'description' => 'Partij B', 'href' => '/index.php/apps/portaliq/site/plain?route=/raadsleden&portal=demo&record=m2'],
++		], $block['links']);
++	}//end testTheListIsASearchFormAndLinksToEachRecord()
++
++	/**
++	 * `_search` narrows the list on title and subtitle, ignoring case; no match says so.
++	 *
++	 * @return void
++	 */
++	public function testTheSearchNarrowsOnTitleAndSubtitle(): void {
++		$this->reader->method('entries')->willReturn([
++			['id' => 'm1', 'title' => 'Anna de Vries', 'subtitle' => 'Partij A'],
++			['id' => 'm2', 'title' => 'Bram Jansen', 'subtitle' => 'Partij B'],
++		]);
++
++		$bySubtitle = $this->records()->build(self::PROPS, $this->context(query: 'partij b'));
++		$this->assertSame(['Bram Jansen'], array_column($bySubtitle['links'], 'label'));
++		$this->assertSame('partij b', $bySubtitle['query']);
++
++		$none = $this->records()->build(self::PROPS, $this->context(query: 'niemand'));
++		$this->assertSame([], $none['links']);
++		$this->assertSame('No items.', $none['empty']);
++	}//end testTheSearchNarrowsOnTitleAndSubtitle()
++
++	/**
++	 * With a record: the heading from the page, the figures, the rows in column
++	 * order with the subject linked to its plain page, the safe page links and
++	 * the link back to the list.
++	 *
++	 * @return void
++	 */
++	public function testARecordShowsItsFiguresRowsAndTheWayBack(): void {
++		$this->reader->expects($this->never())->method('entries');
++		$this->reader->expects($this->once())->method('record')->with('decidiq', 'memberVotes', 'm1')->willReturn([
++			'title' => 'Anna de Vries',
++			'subtitle' => 'Partij A',
++			'summary' => [
++				['label' => 'Aanwezig', 'value' => '92%', 'detail' => 'aan 86 stemmingen'],
++				['label' => '', 'value' => 'zonder label'],
++			],
++			'columns' => [['key' => 'date', 'label' => 'Datum'], ['key' => 'subject', 'label' => 'Onderwerp'], ['key' => 'vote', 'label' => 'Stem']],
++			'rows' => [
++				['date' => '2026-03-01', 'subject' => 'Afvalbeleid', 'vote' => 'Voor', 'subjectUrl' => '/onderwerp/afval'],
++				['date' => '2026-03-08', 'subject' => 'Begroting', 'vote' => 'Tegen'],
++			],
++		]);
++
++		$block = $this->records()->build(self::PROPS, $this->context(record: 'm1'));
++
++		$this->assertSame('record', $block['state']);
++		$this->assertSame('Stemgedrag van Anna de Vries', $block['heading']);
++		$this->assertSame('Partij A', $block['subtitle']);
++		$this->assertSame([['label' => 'Aanwezig', 'value' => '92%', 'detail' => 'aan 86 stemmingen']], $block['figures']);
++		$this->assertSame(['Datum', 'Onderwerp', 'Stem'], array_column($block['columns'], 'label'));
++		$this->assertSame([
++			[
++				['text' => '2026-03-01', 'href' => ''],
++				['text' => 'Afvalbeleid', 'href' => '/index.php/apps/portaliq/site/plain?route=/onderwerp/afval&portal=demo'],
++				['text' => 'Voor', 'href' => ''],
++			],
++			[
++				['text' => '2026-03-08', 'href' => ''],
++				['text' => 'Begroting', 'href' => ''],
++				['text' => 'Tegen', 'href' => ''],
++			],
++		], $block['rows']);
++		$this->assertSame('', $block['empty']);
++		$this->assertSame([
++			['label' => 'Over de raad', 'href' => '/index.php/apps/portaliq/site/plain?route=/raad&portal=demo'],
++			['label' => 'Elders', 'href' => 'https://elders.example/raad'],
++		], $block['links']);
++		$this->assertSame('Alle raadsleden', $block['backLabel']);
++		$this->assertSame('/index.php/apps/portaliq/site/plain?route=/raadsleden&portal=demo', $block['backUrl']);
++	}//end testARecordShowsItsFiguresRowsAndTheWayBack()
++
++	/**
++	 * A record the list does not hold, and a list that is gone, give the
++	 * stale-link sentence and the way back, in the block's own words.
++	 *
++	 * @return void
++	 */
++	public function testAStaleLinkSaysTheOverviewIsGone(): void {
++		$this->reader->method('record')->willReturn(null);
++		$this->reader->method('entries')->willReturn(null);
++		$props = ['app' => 'decidiq', 'list' => 'memberVotes'];
++
++		$record = $this->records()->build($props, $this->context(record: 'weg'));
++		$this->assertSame('gone', $record['state']);
++		$this->assertSame('This overview no longer exists.', $record['sentence']);
++		$this->assertSame('Back to the overview', $record['backLabel']);
++
++		$list = $this->records()->build($props, $this->context());
++		$this->assertSame('gone', $list['state']);
++		$this->assertSame('This overview no longer exists.', $list['sentence']);
++	}//end testAStaleLinkSaysTheOverviewIsGone()
++
++	/**
++	 * A placement that names no app or no list is not a block; the page says it needs JavaScript.
++	 *
++	 * @return void
++	 */
++	public function testAPlacementWithoutAListIsNoBlock(): void {
++		$this->reader->expects($this->never())->method('entries');
++
++		$this->assertNull($this->records()->build(['app' => 'decidiq'], $this->context()));
++		$this->assertNull($this->records()->build(['list' => 'memberVotes', 'app' => ['x']], $this->context()));
++	}//end testAPlacementWithoutAListIsNoBlock()
++
++	/**
++	 * The builder over the reader double.
++	 *
++	 * @return PlainPublicRecords
++	 */
++	private function records(): PlainPublicRecords {
++		return new PlainPublicRecords($this->reader, PlainTestWords::for($this));
++	}//end records()
++
++	/**
++	 * A plain request for the council page of portal `demo`.
++	 *
++	 * @param string $query  The `_search`.
++	 * @param string $record The `record`.
++	 *
++	 * @return PlainContext
++	 */
++	private function context(string $query = '', string $record = ''): PlainContext {
++		return new PlainContext(
++			route: '/raadsleden',
++			routeParam: '',
++			query: $query,
++			page: 1,
++			address: new PlainAddress('/index.php/apps/portaliq/site', 'demo'),
++			locale: 'nl',
++			record: $record
++		);
++	}//end context()
++}//end class
+-- 
+2.43.0
+
