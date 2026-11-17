@@ -20029,6 +20029,7 @@ fix:integriq:3550:a14372dd	floor restored (module_coupling 5.04), pushed 7acdaf5
 cover:launchpad:fb10c50fm88bd:be0dcca9	added 4 tests for lib/Mcp/McpDashboardTools.php to PR #1260 (launchpad over open-PR budget, 42); lib/Mcp 100%, suite 4563->4567 green	session-20261117T080445-fa502475	2026-11-17T09:02:45Z
 cover:launchpad:fb10c50fm88bd:f91e7417	already covered: lib/Service/Connection/ 172/172 statements (pcov, development); no PR (launchpad has 42 open PRs)	session-20261117T084835-4ff9a661	2026-11-17T09:02:44Z
 fix:filinq:2095:120f4482	conflict resolved, pushed 99be8379; merge lock held elsewhere, REVERIFY queued	session-20261117T085227-a13dc102	2026-11-17T09:02:55Z
+verify:stackiq:2024:7feac5a7	4 GREEN (2024-2027), 2028 REVERIFY (lockfile conflict within tree)	session-20261117T084023-906a5a8e	2026-11-17T09:03:35Z
 fix:integriq:2650:e2326510	conflict resolved, pushed 92ce810e, REVERIFY queued	session-20261117T085014-6c3c5506	2026-11-17T09:03:48Z
 fix:learniq:2551:2291ead0	fixed: register/app version raised, spec tags added, development merged; new head a86b68dc, REVERIFY queued (merge lock held elsewhere)	session-20261117T085350-7b102f7f	2026-11-17T09:04:00Z
 merge:portaliq:2417:23035054	cloud tree of 1 portaliq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T085020-faa595ea	2026-11-17T09:04:18Z
@@ -20037,3 +20038,5 @@ measure:buildiq:20261117h08	php 91.61% js 95.5%	session-20261117T084819-7b38da2a
 fix:integriq:3582:ec13862c	conflict resolved, pushed 5de17aa9; REVERIFY queued	session-20261117T081138-8732f141	2026-11-17T09:05:16Z
 fix:filinq:2079:b23f1426	conflict resolved, pushed 1b7aa3aa; REVERIFY queued (merge lock held elsewhere)	session-20261117T083927-e76b77af	2026-11-17T09:05:41Z
 fix:stackiq:1966:07fea94b	fixed: test pinned to 1.5.12, suite green; new head 60592396, REVERIFY queued	session-20261117T084807-e8ebf79d	2026-11-17T09:06:08Z
+merge:stackiq:1933:dd3f1de2	cloud tree of 4 stackiq PRs: merged=2 red=0 fail=0 skip=0; conflict 2, lint 0, red 0, moved 0, done 0	session-20261117T084948-f35bd67b	2026-11-17T09:06:38Z
+merge:shillinq:3065:606bc8ab	cloud tree of 1 shillinq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T084846-a0137765	2026-11-17T09:07:38Z
