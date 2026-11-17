@@ -18961,6 +18961,7 @@ learniq	2607	4327ccd23479ba220db46c6f5ed001cdc5f3dadf	GREEN	worker-26	unit 7156 
 portaliq	2563	182ef6645d64423f4c541874e38e95734db13af9	GREEN	worker-40	tasks.md only, no code; unit 6324 on tree, 16 errors inherited (code identical to development), 0 new
 opencatalogi	2793	d14f5f969a4c92d42409f8c9a2b0ebe0c6d49eab	GREEN	worker-56	phpunit 6365 run (baseline 6364, 103 inherited failures/errors), 0 new failures; php -l clean; build of download-service (IL10N on DownloadService error messages, docs, tasks)
 portaliq	2566	3ec0f45991b0b758d08ddff651a968ddd819dad7	GREEN	worker-41	tasks.md tick only (T4), merges clean; claim checked: learniq development has ParentDocumentsPage with two eachRecord blocks and its test; no code changed, suite not affected
+opencatalogi	2806	75fba83324adb37151288968ffbb6c7a10e29852	GREEN	worker-48	phpunit with openregister main beside: 6392 tests, baseline 74 failures 4 errors inherited, 0 new (without the sibling 15 new tests error on missing openregister classes); admin-setting gates replaced by per-group rights exactly as woo-access-boundary-hardening specifies, fail closed
 pipelinq	3937	77a25a62c5a28d2eeeb25cc35fba960d94b959de	GREEN	worker-49	unit 9285 (baseline 9282), 0 new failures; register membership additions per change
 portaliq	2579	df1bfc402b7652facf47819ec22a83d590bd098c	CONFLICT	worker-51	conflicts with development in package.json
 planninq	1250	70dfe254912eeaa8aeb0a5a52fbb7c735485ff4e	GREEN	worker-24	e2e and postman specs only for change project-data-export; postman JSON valid; unit 1253 tests 0 failures on tree
