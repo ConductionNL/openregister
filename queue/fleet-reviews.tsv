@@ -1324,3 +1324,5 @@ buildiq	1713	2b78ac989bb71c96a61611961bdc826e1fb7af1f	APPROVE	worker-50	Quick; n
 decidiq	2273	5f949a8f4377ba477bf5bdc2cdfa840f823984f7	APPROVE	worker-42	Quick (tests only); no blockers; 5 tests with real assertions
 versioniq	685	0b94d417a96af5e4d71e532fdde7a90d7dd009fe	APPROVE	worker-11	Thorough; no blockers; implements advisories-bundled-libraries per spec: endpoints admin-only and password-confirmed, OSV check off by default, https-only override, outbound client honours allow_local_remote_servers
 decidiq	2274	4160473e9683f4824a024b2a1be9ca45af4810b3	APPROVE	worker-42	Quick (tests only); no blockers; 9 tests with real assertions
+decidiq	2275	a2504982a57dd3baef7b32f736efdd4c91c5b798	APPROVE	worker-42	Quick (tests only); no blockers; 8 tests with real assertions
+decidiq	2276	b77ffaa99a83ac211a8cff55b080ccb1f773fd62	APPROVE	worker-42	Quick (e2e spec only); no blockers; no concerns
