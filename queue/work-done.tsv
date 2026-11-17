@@ -22696,3 +22696,4 @@ fix:hermiq:1719:fdc4de5b	conflict resolved, pushed 257411d7; REVERIFY queued (me
 verify:dossiq:6648:ddfe2aae	GREEN #6648, #6663 (no new failures; 19 phpunit + 2 vitest inherited)	session-20261117T211520-d88a421d	2026-11-17T21:43:49Z
 verify:opencatalogi:2806:c32247ec	GREEN opencatalogi #2806 (inherited failures only)	session-20261117T211320-ba1b42e8	2026-11-17T21:43:59Z
 merge:shillinq:3160:6aca1aa9	unmeasured: static.developer.overheid.nl (8 PRs reviewed APPROVE, tree green 12806 tests; 3171 MOVED; nothing landed)	session-20261117T211359-8e262d16	2026-11-17T21:44:09Z
+fix:portaliq:2589:7076e2d0	conflict resolved, pushed 8f568eda; REVERIFY (merge lock held elsewhere)	session-20261117T211932-f471137a	2026-11-17T21:44:16Z
