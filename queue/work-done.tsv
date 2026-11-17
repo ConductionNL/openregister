@@ -19459,3 +19459,4 @@ review:integriq:3564:5748b0ef	BLOCK: publish guard skips products created as act
 review:filinq:2079:27589b09	CONFLICT: conflicts with development in info.xml, filinq_register.json, ListenerRegistrarTest.php	session-20261117T055908-62351962	2026-11-17T06:01:35Z
 review:decidiq:2205:0ebb671c	CONFLICT with development (l10n, registry.js); no behaviour concerns	session-20261117T055853-7ddd3cb3	2026-11-17T06:01:51Z
 review:filinq:2105:0d907f7f	GREEN; conflicts with development after #2091	session-20261117T055844-3d508d2a	2026-11-17T06:02:02Z
+review:filinq:2087:ec729a4e	CONFLICT: l10n en/nl and filinq_register.json vs development	session-20261117T055908-62351962	2026-11-17T06:02:10Z
