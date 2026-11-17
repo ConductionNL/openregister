@@ -21118,3 +21118,4 @@ build:opencatalogi:federation-connection-last-success:b2	nothing left in code: 2
 build:portaliq:admin-rights-page:b2	already built: T01 (ActionSettingsController::byGroup + route, PHPUnit) and T02 (AdminRights manifest page + menu, tests/admin-rights-page.spec.mjs) on development; left T03 live check	session-20261117T141457-95499900	2026-11-17T14:30:11Z
 build:pipelinq:pos-stock-moved-event:b2	already done: every code task built on development (2026-07-23); only the live end-to-end check with shillinq is left	session-20261117T134347-d0294040	2026-11-17T14:30:22Z
 build:pipelinq:adopt-connection-registry:b2	already built: 1.1-3.4, 4.3, 5.1 on development, e2e spec exists; skipped 4.1 (live run, needs integriq) and 4.2 (follow-up issue, not code)	session-20261117T134242-51ff9d48	2026-11-17T14:30:21Z
+build:pipelinq:platform-properties:b2	already building: branch quality/build-platform-properties exists	session-20261117T134347-d0294040	2026-11-17T14:31:09Z
