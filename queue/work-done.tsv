@@ -20479,3 +20479,4 @@ merge:dossiq:6203:b7db5fe4	merge3 tree of 1 dossiq PRs: merged=0 red=1 fail=0 sk
 merge:planninq:1217:4421f900	cloud tree of 2 planninq PRs: merged=1 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T111351-f79c232f	2026-11-17T12:01:26Z
 fix:buildiq:1590:d570d17d	spec tags added, pushed ca570ceb; land RED on maintainability floor (unit_complexity 3.42->3.39)	session-20261117T112054-1e62e295	2026-11-17T12:01:37Z
 review:shillinq:3080:77004414	GREEN: unit 12799 OK on merge with development; info.xml/lock conflict noted	session-20261117T112552-11cae4cc	2026-11-17T12:02:07Z
+gap:planninq:app-chrome-spec-says-marketplace:1	PR #1232 @c3f1d475: app-chrome spec expects Marketplace; Minutes logged checked only when humaniq is installed; eslint+tsc green, playwright needs live instance; needs verify	session-20261117T111351-f79c232f	2026-11-17T12:03:28Z
