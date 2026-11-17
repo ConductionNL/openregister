@@ -5573,3 +5573,10 @@ decidiq	2280	f341db5555b2782cffa8c059027a79d397c42c35	SKIP	worker-04	GATE UNMEAS
 planninq	1247	1a42908edf32546f4d27dfc8c1b8aec9935bd950	SKIP	worker-53	GATE UNMEASURED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3 while api.osv.dev is unreachable from this session
 buildiq	1715	628d9e25f091953535ee8b7bb259bf0baf012802	SKIP	worker-02	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 planninq	1248	36d5dc19e1277c9823e4512f8072ca92540206a6	SKIP	worker-53	GATE UNMEASURED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3 while api.osv.dev is unreachable from this session
+dossiq	6642	dcd42889d10247bf15a7678d1ab0326f6ca37950	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
+dossiq	6643	0d24d1c52449d037d6611b027579e67248612e82	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
+dossiq	6644	2c3300bc4c89ae20b45cd4b9e7a9844b8d1b6352	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
+dossiq	6645	97e25b5469678818ef81feec00981d38ea5acfa1	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
+dossiq	6646	eb19f73d3dfe4c5313e6aa76ef6c339c953b85c5	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
+dossiq	6647	57eb1cc0cdc646212fd14a280d3be3a5447164ba	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
+dossiq	6649	c3066e42670a7916aef041452d6efdc4f3d501c9	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
