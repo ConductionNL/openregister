@@ -16778,3 +16778,4 @@ buildiq	1618	34282120f723d73c726729f382dafb448c364224	CONFLICT	worker-17:merge	c
 buildiq	1626	77575f40576ea96c633feaedaa11e22538b67ebb	CONFLICT	worker-17:merge	conflicts with development; files: l10n/nl.js l10n/nl.json 
 buildiq	1632	3f019d31f426caa37dc58cb9663a68e76ca39b20	CONFLICT	worker-17:merge	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json src/composables/useManifestValidator.js 
 buildiq	1643	c4bd25103ff54cc768e975c23ee	REVERIFY	worker-17:merge	verdict sha is not the head: head is c4bd25103ff54cc768e975c23eeaad250549fe9e
+filinq	2105	7e8ef21d6856373c67311073b831e4adfbce2e9d	REVERIFY	worker-37	merged development in; filinq_register.json info resolved to v8.65.0 keeping both changelog entries; phpunit 7073 OK, vitest 790 OK, jest 599 OK; new head 0d907f7fbbdb18435ab92d10a698c218ef14ade8, verify it
