@@ -5527,3 +5527,4 @@ humaniq	1192	3ca961bd39275bf3bb69cd3b39f481eff6653277	SKIP	worker-20	no APPROVE 
 decidiq	2278	d120be3ea5c86aa6aa74b4081c7a6da1b31d2921	SKIP	worker-42	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 buildiq	1712	c5e1d2176bcdc55e8a11d05009e04345b81c4bc1	SKIP	worker-50	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 integriq	3585	39f07d5a0d6b61d37b08b66b1adae9919ddca926	SKIP	worker-40	no APPROVE review at this head
+launchpad	1306	060171415ec0321c8968a4087ce146a20f0714d7	SKIP	worker-05	GATE UNMEASURED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3 while api.osv.dev is unreachable from this session
