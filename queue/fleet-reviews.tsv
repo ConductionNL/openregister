@@ -1428,3 +1428,4 @@ learniq	2604	2b6642c79ff14c1aa4d2715122388a273187d6c0	APPROVE	worker-49	Quick; n
 learniq	2605	86fd7d378df5a074bc07d040dca1b4f97b641255	APPROVE	worker-49	Quick; no blockers; e2e spec only
 learniq	2606	79bec0a6b13a375c6bdac5c3f52b04ffda07e438	APPROVE	worker-49	Standard; no blockers; school_year_start per change spec, default 08-01 keeps old behaviour, all schoolYearOf callers updated; gates: only inherited gate-23
 learniq	2607	4327ccd23479ba220db46c6f5ed001cdc5f3dadf	APPROVE	worker-49	Thorough; no blockers; public test schedule exposes only allowlisted fields of periods marked public; concern: author email typo in docblock; gates: inherited gate-23/101, gate-53 did not run (ajv)
+shillinq	3172	efb8780416c555bec59db7576bf423b483fda66d	APPROVE	worker-01	Quick; no blockers; e2e spec + tasks tick only, base URL from env, gate fails inherited
