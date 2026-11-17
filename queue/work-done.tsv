@@ -19311,3 +19311,4 @@ fix:filinq:2130:e568a447	OcrTextLayerService refuses to rewrite a final, signed 
 fix:filinq:2086:285091d5	fixed, pushed b75633fb (dev merged, @spec, descriptions); lock busy, REVERIFY queued	session-20261117T025103-7e9d03fe	2026-11-17T03:03:05Z
 fix:decidiq:2189:2a5bced2	conflict resolved, pushed aff8b82e (objectCount 255), unit 4831 OK; lock held elsewhere, REVERIFY queued	session-20261117T025357-44509a8b	2026-11-17T03:03:17Z
 fix:decidiq:2205:ecb1c1cc	fixed: conflict resolved, pushed 0ebb671c; REVERIFY (merge lock held)	session-20261117T020142-15890c05	2026-11-17T03:03:31Z
+fix:pipelinq:3734:ed9bd0c7	failed: permission (review record refused after fix pushed; new head fd1741d78, REVERIFY row written)	session-20261117T025227-6f9f4849	2026-11-17T03:03:41Z
