@@ -20107,3 +20107,4 @@ review:integriq:3550:7acdaf52	BLOCK: floor php component_independence worsened 9
 review:versioniq:729:91f511d2	GREEN: unit 2305, failures=baseline 2 golden (inherited); vitest 21 pass	session-20261117T092815-eca173a1	2026-11-17T09:31:14Z
 review:integriq:3557:76fedb76	GREEN: integriq#3557, unit 9773 with 5 inherited failures, vitest 89 passed	session-20261117T084229-c4fc3f9c	2026-11-17T09:32:41Z
 review:integriq:3601:85ba8d21	GREEN: no new failures (9755 tests, 5 inherited), phpstan clean; golden-hash conflict with development	session-20261117T092553-97564f2f	2026-11-17T09:32:49Z
+fix:decidiq:2171:6d1d07d3	merged development; REVERIFY at 6b39135c61	session-20261117T092129-3ad47afe	2026-11-17T09:32:59Z
