@@ -5316,3 +5316,4 @@ learniq	2486	9b989f6bfbdeee94fa5fff62f6fb845f08aefc68	MERGED	worker-17	GATE OK s
 shillinq	2063	2caa7618a5e31022da03cd4e75f9c36d88fba783	RED	worker-15	GATE RED absolute floor: shillinq maintainability 3.99 after merge is below its floor 4.00
 stackiq	1435	8d2e5a8e97cee6b5dc7bc84ac39aa1433deb6f46	MERGED	worker-34	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.10
 hermiq	1833	0071295fe2a53c30c193f263069b2a3a427d3028	MERGED	worker-10	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.77 holds at 3.77
+integriq	3711	dd118ae9f781f7bf22d90735e52321741fb6be80	RED	worker-08	GATE RED sbom: package-lock.json changed without sbom.cdx.json
