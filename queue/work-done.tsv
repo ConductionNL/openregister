@@ -20734,3 +20734,4 @@ fix:filinq:2120:34cc4cd4	resolved conflict, new head fbc97be2; REVERIFY queued (
 fix:integriq:2650:a234a7dc	fixed floor: unit_complexity 3.91 >= 3.90; pushed c1e85c0b; merge lock held elsewhere, REVERIFY queued	session-20261117T124628-9de56351	2026-11-17T13:14:23Z
 fix:portaliq:2559:7c124998	failed: permission (fix pushed as 25603561, REVERIFY queued; review/land step refused)	session-20261117T124737-01fc7db5	2026-11-17T13:14:35Z
 verify:learniq:2590:bcc12c33	GREEN #2590 (version bump; no new failures)	session-20261117T124634-01105f98	2026-11-17T13:14:47Z
+fix:integriq:3707:be86beed	fixed #3707, new head cac00a86, REVERIFY queued (merge lock held elsewhere)	session-20261117T123701-2c29f729	2026-11-17T13:15:00Z
