@@ -22220,3 +22220,4 @@ verify:hermiq:1852:73437616	GREEN #1852: 0 new unit failures (199 inherited), vi
 verify:keepiq:1897:cb062e67	GREEN 1897 (archive, comment-only code changes)	session-20261117T185927-e9838dc9	2026-11-17T19:26:25Z
 verify:buildiq:1730:2d9f793f	GREEN buildiq#1730 (3676 tests, 0 new failures)	session-20261117T190507-82f8fe51	2026-11-17T19:27:06Z
 verify:dossiq:6659:66f38a59	9 GREEN (6659-6666,6668); unit +24 tests 0 new failures; vitest 0 new failures	session-20261117T190140-44e48bc5	2026-11-17T19:27:01Z
+verify:dossiq:6643:0d24d1c5	GREEN #6643 (tasks.md only; baseline 1 inherited error)	session-20261117T190632-f0412d81	2026-11-17T19:27:10Z
