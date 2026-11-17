@@ -18609,6 +18609,7 @@ merge:versioniq:758:437c8999	cloud tree of 1 versioniq PRs: merged=0 red=1 fail=
 fix:hermiq:1764:b3921191	conflict resolved, pushed 73544d4e; merge lock held elsewhere, REVERIFY queued	session-20261116T233939-9a6702d9	2026-11-17T00:22:23Z
 fix:dossiq:5396:cc232d59:v3	merged development; sbom check current; new head 3792d795, REVERIFY	session-20261116T233900-0eb43466	2026-11-17T00:22:32Z
 fix:dossiq:4887:5b3dec5c:v3	fixed BLOCK (titles + app version), pushed 58a39c94; REVERIFY queued (merge lock held elsewhere)	session-20261116T232911-3dffa1ae	2026-11-17T00:22:47Z
+verify:stackiq:1945:a2377e75	CONFLICT #1945 (l10n, customComponents, FacetedCatalogIndexView)	session-20261116T232844-9c7f5cce	2026-11-17T00:23:13Z
 fix:hermiq:1764:b3921191	stale	session-20261116T233900-0eb43466	2026-11-17T00:23:13Z
 fix:launchpad:1230:b2fce999	conflict resolved (openapi.json), pushed accf03ed; REVERIFY queued	session-20261116T232406-b9eb038c	2026-11-17T00:23:20Z
 fix:versioniq:715:37497a7e	conflict resolved, pushed f78bf6ec; merge lock held elsewhere, REVERIFY	session-20261116T232918-35016340	2026-11-17T00:23:16Z
