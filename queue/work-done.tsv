@@ -19421,3 +19421,4 @@ review:integriq:3602:9b919801	stale	session-20261117T042937-c444c626	2026-11-17T
 fix:integriq:3049:129bee96	obsolete: development already uses ObjectDeletion at all deleteObject call sites; closed #3049	session-20261117T042937-c444c626	2026-11-17T05:06:05Z
 fix:integriq:3550:268ca022	BLOCK fixed (masked request not replayed) and development merged, pushed a14372dd46; REVERIFY queued	session-20261117T042937-c444c626	2026-11-17T05:10:52Z
 fix:integriq:3051:3f6ca6b6	obsolete: development already uses LockRequest/UnlockRequest with equal values; closed #3051	session-20261117T042937-c444c626	2026-11-17T05:13:06Z
+fix:integriq:3587:d4357ddb:v3	stale	session-20261117T042937-c444c626	2026-11-17T05:13:33Z
