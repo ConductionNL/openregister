@@ -20973,6 +20973,7 @@ build:dossiq:a-request-form-opens-the-case-at-once:b2	already done: every code t
 build:dossiq:delegated-authority-guard:b2	already done: code tasks 1-3 on development (45fa2580); only live task 4 left	session-20261117T132743-10cec9d3	2026-11-17T14:12:31Z
 build:dossiq:inbound-mail-filters:b2	already done: every code task on development; 8.4 is an e2e spec, left	session-20261117T133035-588aec38	2026-11-17T14:12:43Z
 build:dossiq:handler-asks-the-applicant-for-missing-information:b2	already done: built by #6372 (4af893f3a on development); left 1.1 board DqAanvullingVragen (design, decision 162) and 3.2 e2e (live pass)	session-20261117T133303-ca20630d	2026-11-17T14:12:29Z
+build:dossiq:investigation-steps-in-the-case-type:b2	nothing to build: only 2.1 (live check after a package release) is unchecked	session-20261117T123418-5f98fc94	2026-11-17T14:13:29Z
 build:dossiq:colleague-party:b2	PR #6646: task 1.4 ticked; data already seeded by portaliq's Zuiddrecht fragment (collega-lars, Adviseur on woo-fietspad); no code tasks left	session-20261117T135029-424a7669	2026-11-17T14:13:13Z
 build:dossiq:history-note-card:b2	already done: code tasks built on development (2026-10-24); only the live check after the library release is left	session-20261117T134347-d0294040	2026-11-17T14:12:59Z
 build:dossiq:identity-bsn-inline:b2	already done: built on development in b1be8060f6; only measurement task 1.3 left	session-20261117T140734-4d108840	2026-11-17T14:13:02Z
@@ -21269,9 +21270,12 @@ build:portaliq:resident-pages-live-round-3:b2	already done: built on development
 build:portaliq:row-action-carries-files:b2	already built: tasks 1.1-2.2 on development, scenarios e2e-excluded with named tests; skipped 3.1 (live check with dossiq)	session-20261117T141335-245f063b	2026-11-17T14:46:45Z
 build:portaliq:site-mandates-the-represented-manage:b2	already building: quality/build-site-mandates-the-represented-manage(-c3) exist; only T0 broker confirmation and e2e left	session-20261117T140734-4d108840	2026-11-17T14:46:44Z
 build:portaliq:site-home-follows-the-school-boards:b2	already done: only task 5 open, a live check; no PR	session-20261117T135414-614629b0	2026-11-17T14:46:58Z
+build:portaliq:site-multi-step-forms:b2	failed: nothing buildable; T8b waits on openregister or-form-and-journey-registry; T9 strict validate fails on long requirement texts (spec rewrite, not code)	session-20261117T134347-d0294040	2026-11-17T14:47:18Z
 build:portaliq:steps-as-bars:b2	already done in portaliq: only task 4 open, learniq's own declaration (FIX-L) plus a live check; no portaliq code left; no PR	session-20261117T135414-614629b0	2026-11-17T14:47:14Z
 build:portaliq:site-matches-the-zuiddrecht-boards:b2	already done: only 13 (live check + thematiq tokens, coordinator lane) left	session-20261117T135520-9a524c6b	2026-11-17T14:47:16Z
 build:pipelinq:lead-win-probability-recency:b2	PR #3949: 7 of 10 tasks (1.x already upstream, 2.1-2.4, 3.1); left 3.2 e2e live run, 3.3 after merge; vitest +26, no new failures	session-20261117T125716-5aa18045	2026-11-17T14:47:11Z
 build:portaliq:search-names-only-a-foreign-source:b2	already done: code tasks on development (459d5b30); 2.1 live	session-20261117T133035-588aec38	2026-11-17T14:47:36Z
 build:portaliq:site-links-the-theme-bridge:b2	already done: T1, T2, T4 and T5 on development (6623f47a); only T3 left, a live check	session-20261117T123632-d3b91db3	2026-11-17T14:47:28Z
 build:buildiq:ai-copilot-documents-and-code-help:b2	failed: permission (opening the openregister PR for the needed FileTextReaderInterface was refused; branch build/ai-copilot-documents-and-code-help pushed at dbcf1bc3, contract + tests green; buildiq T09 not started)	session-20261117T133433-906519d6	2026-11-17T14:48:36Z
+build:portaliq:receipt-date-reads-in-the-portals-language:b2	already done: 1.1 on development (0d03976e); only 1.2 left, a live check	session-20261117T123632-d3b91db3	2026-11-17T14:48:00Z
+build:portaliq:submission-records-its-action-title:b2	already done: only open task 1.4 is a live check, no code task left	session-20261117T134441-beae3c0d	2026-11-17T14:48:19Z
