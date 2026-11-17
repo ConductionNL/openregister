@@ -5156,3 +5156,4 @@ launchpad	1261	f302d160cb9ed48de57581798da5ad9f57e2e942	RED	worker-54	GATE RED f
 launchpad	1219	eeae6014c756316dd1069a76c51a9c413effa532	MERGED	worker-54	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.65 holds at 3.78
 shillinq	2997	265a9119b1fc39c8ff57763ccf81c9487642db78	RED	worker-43	GATE RED checker floor: secretscanning: pass -> fail; secretscanning stars: 5 -> 1; spdxheaders stars: 5 -> 4
 hermiq	1741	7b6013eefb2cc3a31a9b242e340708e2c1d24ba8	MERGED	worker-50	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.77 holds at 3.78
+integriq	3545	76605dd41334c821c1ceb47c5ffe0aa9fb627147	MERGED	worker-33	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.61
