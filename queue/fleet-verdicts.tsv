@@ -18962,6 +18962,7 @@ pipelinq	3939	102496ca468edbe701971dc14bfb0ae65256190a	GREEN	worker-11	build of 
 thematiq	1727	057fa453a0569e5c526c7ccf37e79c7bdb12518d	RED	worker-37	npm ci ERESOLVE: stylelint-config-standard 41 needs peer stylelint ^18 (bumped only in #1728); land together with #1728
 thematiq	1728	3eb4a9137a95f5f9be9b6dd452335b01d93ecdf0	REVERIFY	worker-37	conflicts only with an earlier PR of the verify tree
 thematiq	1729	0112b5b6724ea05ac9e72421dcf80f7df166f86b	REVERIFY	worker-37	conflicts only with an earlier PR of the verify tree
+portaliq	2582	628f5a095fd877dfbc0668719312f4b0f6f7670d	GREEN	worker-23	node --test tests/*.spec.mjs 2777 tests, 5 failures identical to baseline, no new; markdown-block-classes spec passes; no PHP changed; per change portal-theme-application
 portaliq	2587	664b8ca8575ae2f35befab13dda8dba4deb03d63	GREEN	worker-01	unit 6339 run (baseline 6324, 16 inherited errors), 0 new failures; build portal-scoping-and-auth per spec
 portaliq	2589	7076e2d0a11a89d02d7a2be14ba0596bf4d5862a	CONFLICT	worker-49	conflicts with development in package.json; baseline 6324 tests (16 errors inherited)
 learniq	2497	48225cf9d50c702289f26ffb5e21fd07629ec941	GREEN	worker-45	unit baseline 7152 (2 inherited), tree 7176, 0 new; node --test 1418 with 8 inherited failures, same on development; php -l clean; build of credentials-certificate-pdf, download gated to holder/hr/compliance like the Europass route
@@ -18971,4 +18972,5 @@ portaliq	2446	ddd3af7bb46c5eb110c52a89c6226e8eb885fa47	CONFLICT	worker-51	confli
 planninq	1245	18c0e02a3227b4aff7590139b12f700887b1d098	GREEN	worker-16	PHPUnit 1253 baseline OK, tree 1262 OK, 0 new failures; implements retention-on-planninq-records 1.1 (partial, noted in tasks.md)
 pipelinq	3940	dc52e0b2b8856fddf8aa30084f905c5f26819f5b	GREEN	worker-05	unit 9282 OK (= baseline), 0 new; vitest 5325 passed, 3 files/2 tests red also on development (inherited); forecast-slip-reason 3.2/4.2 per spec; nit: movementRows docblock now sits above slipColumns
 portaliq	2578	ecda0995fde017ac8deb6fa1e5162d5706e02426	GREEN	worker-51	e2e spec, e2e seed fixture and tasks.md only (public-site-meets-wcag-aa); no app code or unit tests touched
+shillinq	3175	4bddf0737ff2e934d841dba7d62f7c09c256799c	GREEN	worker-52	builds receivables-provider-payouts task (Take payment modal, qrcode dep, sbom); no PHP change; vitest on tree 3107 tests, 1 failure (dunningNextRun) also red on development, 0 new; eslint clean on touched files; manifests parse
 dossiq	6645	97e25b5469678818ef81feec00981d38ea5acfa1	GREEN	worker-28	tasks.md only; phpunit 18399 tests, 19 failures all inherited from development baseline (PR changes no code), 0 new; claimed seed package and tests exist on development
