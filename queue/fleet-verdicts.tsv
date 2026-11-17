@@ -17053,3 +17053,5 @@ hermiq	1758	7278524b78cdd023d615aac8da6411e25d8908f3	BLOCK	worker-43:review	revi
 learniq	2538	0b1eaa819c2efb004592a254e5a3a79400fae4c7	CONFLICT	worker-37:review	conflicts with development in l10n/en.json, l10n/nl.json, lib/Settings/learniq_register.json, tests/Unit/Portal/PortalContributionProviderTest.php and the portal golden; PR not tested merged
 decidiq	2198	764b069dea1468a00f0764bffa9390b2231d92d8	CONFLICT	worker-46:merge	conflicts with development; files: lib/Listener/Registrar/SaveGuardSubscriptions.php lib/Settings/profiles/municipality.json src/manifest.json src/menu-layout.simple.json tests/vitest/simpleDecisionPage.spec.js 
 buildiq	1649	039cc4aded0ba4e006fecebce588825dbc03a868	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 3.45 -> 3.39
+buildiq	1597	91ec5c6dbe0d7e078a9d3782205392a7f13a1892	CONFLICT	merge3	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+buildiq	1654	37e70c182b0d1503467cd1f9e3cfc5d39bdd56f7	CONFLICT	merge3	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json tests/Unit/Controller/DashboardControllerTest.php 
