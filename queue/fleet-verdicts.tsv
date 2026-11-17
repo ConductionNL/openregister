@@ -18907,6 +18907,7 @@ keepiq	1900	a6ccac84767665a898692a9826befe197f56bcea	GREEN	worker-39	alone on de
 larpinq	1049	eb8c9f5fcde502b5e286633b918fe448a8275e57	GREEN	worker-23	unit 1260 OK (baseline 1243 OK), vitest 749 passed, JSON/php -l clean; maps schemas, manifest pages, l10n per change worlds-maps
 larpinq	1101	68cf7368dbf5c81f6f798160f23b8742b1e5af18	CONFLICT	worker-15	conflicts with development: change archived as 2026-11-17-communication-help-desk and tests/e2e/help-desk.spec.ts already on development (add/add); likely obsolete
 integriq	3724	27c092d3b3737a865c0dfccd46a6f125a7129cd5	GREEN	worker-38	unit 9910 tests, baseline 2 errors 3 failures, 0 new; e2e spec files and tasks.md notes only, no production code
+larpinq	1104	072740aae8be224bd39bab37e1dd43eb661d0a64	GREEN	worker-32	unit 1243 tests, baseline 0 failures, new failures 0; vitest 730 passed; e2e spec + tasks.md only, per change
 integriq	3728	181269252df39eb8b8616056c26d5d2b1ff1d6fc	GREEN	worker-10	phpunit 9927 on tree vs 9910 baseline, same inherited 2 errors/3 failures, 0 new; vitest 2395/2395; builds platform-action-rights-coverage (object rights seeded at today's posture, admin-gated; l10n reordered +3 keys, none lost)
 pipelinq	3952	724737b6aa5dba076f7d938b823c2377c86bdc3e	REVERIFY	worker-30	conflicts only with an earlier PR of the verify tree (#3943, l10n files)
 learniq	2594	259feb56de2bd786055277d5a9b39371d1cecb1c	GREEN	worker-26	unit suite on tree green (no PHP/JS-unit change), new failures 0; e2e spec + tasks.md note only, imports reorganised, no assertion removed
@@ -18953,3 +18954,4 @@ thematiq	1729	0112b5b6724ea05ac9e72421dcf80f7df166f86b	REVERIFY	worker-37	confli
 portaliq	2589	7076e2d0a11a89d02d7a2be14ba0596bf4d5862a	CONFLICT	worker-49	conflicts with development in package.json; baseline 6324 tests (16 errors inherited)
 learniq	2497	48225cf9d50c702289f26ffb5e21fd07629ec941	GREEN	worker-45	unit baseline 7152 (2 inherited), tree 7176, 0 new; node --test 1418 with 8 inherited failures, same on development; php -l clean; build of credentials-certificate-pdf, download gated to holder/hr/compliance like the Europass route
 pipelinq	3952	724737b6aa5dba076f7d938b823c2377c86bdc3e	GREEN	worker-39	phpunit base 9282 ok, tree 9304 ok; vitest 2 failed+1 file error inherited (myWorkPage, notificationLabels, reportSectionPeriod red on development); build of requests-inbound-to-queue, admin-gated endpoints
+portaliq	2446	ddd3af7bb46c5eb110c52a89c6226e8eb885fa47	CONFLICT	worker-51	conflicts with development in package.json
