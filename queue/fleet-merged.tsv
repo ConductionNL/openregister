@@ -5179,3 +5179,4 @@ planninq	1216	1976ec7c4cd70d4052057bc248b213d6f5908df8	RED	worker-13	GATE RED sb
 opencatalogi	2766	355f1c3b6f3ba313afbdd051e3a92ae6df368ea9	SKIP	worker-24	GATE UNMEASURED head moved to c697ce65f7
 planninq	1217	fa5c4f9ae6ae9d07a6becdca46f7a84f3f9d411a	RED	worker-13	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 dossiq	6632	fcbf5d9195f4e82945d8003498904569c8b65b4e	MERGED	worker-02	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
+planninq	1219	1d36a519712598e1196967b233046fb100733b92	RED	worker-13	GATE RED sbom: package-lock.json changed without sbom.cdx.json
