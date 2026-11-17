@@ -21094,3 +21094,4 @@ build:pipelinq:marketing-mail-templates:b2	already building (quality/build-marke
 build:pipelinq:filter-menu-owner-and-street:b2	already done: only 1.4 open, a live check after a nextcloud-vue release; no PR	session-20261117T135414-614629b0	2026-11-17T14:27:39Z
 build:portaliq:case-outcome-on-the-case-page:b2	pushed to #2494 (c493c65): development merged in, tests/e2e/case-outcome-on-the-case-page.spec.ts written, T07 strict-valid (REQ-COC-002 split); left T05 (dossiq issue, other app) and T06 live run/screenshots	session-20261117T141457-95499900	2026-11-17T14:27:44Z
 build:pipelinq:brp-monitor-moves-to-integriq:b2	already building: quality/build-brp-monitor-moves-to-integriq and -c2 exist	session-20261117T135414-614629b0	2026-11-17T14:28:23Z
+build:opencatalogi:capability-rows-verify-scenarios:b2	already building: PR #2722 open on quality/build-capability-rows-verify-scenarios-c3	session-20261117T133804-84492b74	2026-11-17T14:27:53Z
