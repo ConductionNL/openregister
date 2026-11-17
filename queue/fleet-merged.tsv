@@ -5335,3 +5335,4 @@ launchpad	759	b325d657c1b42d1eb53eb182186015a879aa05f0	MERGED	worker-53	GATE OK 
 filinq	2173	a7b20c844918e286697bd71fb7eeb708a5ee5aae	RED	worker-33	GATE RED checker floor: fivelayer: pass -> warn; fivelayer stars: 5 -> 3; score: 100 -> 97
 planninq	869	6ffcb32c975a1d1ef48ce64825dc3e75ae9fdeea	MERGED	worker-16	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.66 holds at 4.05
 hermiq	1781	6b45e373bba2ccb19851caeb6ae9adf8e2edc15b	MERGED	worker-07	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.77 holds at 3.77
+integriq	3550	7bd183b1e5f9c205d89161050f3843bf828514cb	MERGED	worker-24	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.59
