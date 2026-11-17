@@ -1322,8 +1322,10 @@ stackiq	2044	49090a5b56bfe50d456671a5d323a4c75238b521	APPROVE	worker-32	Quick; n
 buildiq	1712	c5e1d2176bcdc55e8a11d05009e04345b81c4bc1	APPROVE	worker-50	Quick; no blockers; @uses metadata only
 buildiq	1713	2b78ac989bb71c96a61611961bdc826e1fb7af1f	APPROVE	worker-50	Quick; no blockers; tasks.md tick for openspec validate
 decidiq	2273	5f949a8f4377ba477bf5bdc2cdfa840f823984f7	APPROVE	worker-42	Quick (tests only); no blockers; 5 tests with real assertions
+versioniq	685	0b94d417a96af5e4d71e532fdde7a90d7dd009fe	APPROVE	worker-11	Thorough; no blockers; implements advisories-bundled-libraries per spec: endpoints admin-only and password-confirmed, OSV check off by default, https-only override, outbound client honours allow_local_remote_servers
 decidiq	2274	4160473e9683f4824a024b2a1be9ca45af4810b3	APPROVE	worker-42	Quick (tests only); no blockers; 9 tests with real assertions
 decidiq	2275	a2504982a57dd3baef7b32f736efdd4c91c5b798	APPROVE	worker-42	Quick (tests only); no blockers; 8 tests with real assertions
 decidiq	2276	b77ffaa99a83ac211a8cff55b080ccb1f773fd62	APPROVE	worker-42	Quick (e2e spec only); no blockers; no concerns
 decidiq	2277	b03780e5e71f9c9a7d94f5ad1d658e3f438c2cb4	APPROVE	worker-42	Quick (Newman collection only); no blockers; base URL overridden by run-all env vars
 decidiq	2278	d120be3ea5c86aa6aa74b4081c7a6da1b31d2921	APPROVE	worker-42	Quick (e2e spec only); no blockers; boxes left open until run live
+versioniq	780	f23cd299e03ed19ed07fe50aa787b4b212d26b17	APPROVE	worker-11	Quick; no blockers; e2e spec only for advisories-triage
