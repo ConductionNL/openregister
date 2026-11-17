@@ -20865,6 +20865,7 @@ cover:stackiq:9ac19b3am209e:59826f43	already done: lib/Settings/*.php measured 1
 cover:decidiq:a5f973bbmfcd5:568ec52a	PR #2274: 9 tests, lifecycle co-signer threshold + contract bindings; suite 5020->5029 OK	session-20261117T134504-7f453fd6	2026-11-17T13:54:52Z
 merge:integriq:3550:0fd65065	cloud tree of 5 integriq PRs: merged=1 red=2 fail=0 skip=1; conflict 1, lint 0, red 0, moved 0, done 0	session-20261117T133833-7d87fd3d	2026-11-17T13:55:13Z
 fix:shillinq:3048:4c867fcf	conflict resolved, new head 4dfa4261, REVERIFY (merge lock held elsewhere)	session-20261117T134556-243db2c5	2026-11-17T13:55:15Z
+cover:buildiq:70b3e29em2454:9d3a1784	already done: lib/BackgroundJob/*.php at 264/265 statements (99.6%) after merged -1/-2 PRs; only the glob()===false guard uncovered	session-20261117T134327-bbccf916	2026-11-17T13:55:30Z
 merge:planninq:869:ac6c7bd5	cloud tree of 3 planninq PRs: merged=2 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T134446-8ca3801e	2026-11-17T13:55:36Z
 merge:stackiq:2030:2d2b0f24	cloud tree of 1 stackiq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T134622-8cb40214	2026-11-17T13:55:28Z
 fix:shillinq:3011:87ae5ea8	conflict resolved, pushed b03586ea8; REVERIFY queued (merge lock held elsewhere)	session-20261117T134347-d0294040	2026-11-17T13:55:38Z
