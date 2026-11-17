@@ -21558,4 +21558,5 @@ build:buildiq:ai-agents-knowledge-and-run-trace:b2	PR buildiq#1719 builds T08 (r
 build:decidiq:decision-types-as-configuration:b2	already done: only 4.1 left, blocked on the ADR-037 consumer rewrite no open change builds	session-20261117T132743-10cec9d3	2026-11-17T15:19:35Z
 build:decidiq:decisions-leaf-speaks-the-hosts-words:b2	already done: 1.1-1.2 on development (#1819); only 1.3 live left	session-20261117T124637-3e909745	2026-11-17T15:19:57Z
 build:decidiq:agenda-item-phase-is-declared:b2	already building: branch quality/build-agenda-item-phase-is-declared exists	session-20261117T134347-d0294040	2026-11-17T15:20:00Z
+build:decidiq:document-annotations:b2	already building: quality/build-document-annotations exists	session-20261117T135414-614629b0	2026-11-17T15:20:08Z
 build:decidiq:document-approval-chain-leaf:b2	already done: only the screenshots task is open, captured by a journeydoc run on a live instance	session-20261117T124010-7774729d	2026-11-17T15:20:09Z
