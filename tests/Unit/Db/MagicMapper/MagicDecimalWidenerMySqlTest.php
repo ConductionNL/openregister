@@ -94,4 +94,26 @@ class MagicDecimalWidenerMySqlTest extends TestCase {
 			$this->statements
 		);
 	}//end testOnMySqlTheWideningRestatesNotNullAndANumericDefault()
+	public function testAnIntegerColumnBecomesBigintWhenItsPropertyNeedsOne(): void {
+		$current = [
+			'started_at_us' => ['type' => 'integer', 'nullable' => true],
+			'duration_ms' => ['type' => 'integer'],
+			'counted' => ['type' => 'bigint'],
+		];
+		$required = [
+			'started_at_us' => ['name' => 'started_at_us', 'type' => 'bigint'],
+			'duration_ms' => ['name' => 'duration_ms', 'type' => 'integer'],
+			'counted' => ['name' => 'counted', 'type' => 'bigint'],
+		];
+		$sync = new TableStructureSync('openregister_table_1_2', 'oc_openregister_table_1_2', new MagicColumnDrift($current, $required), true);
+
+		$this->assertSame(['started_at_us'], $this->widener()->widen($sync));
+		$this->assertSame(['ALTER TABLE "oc_openregister_table_1_2" ALTER COLUMN "started_at_us" TYPE BIGINT'], $this->statements);
+	}//end testAnIntegerColumnBecomesBigintWhenItsPropertyNeedsOne()
+
+	public function testABigintColumnIsNeverNarrowed(): void {
+		$drift = new MagicColumnDrift(['n' => ['type' => 'bigint']], ['n' => ['name' => 'n', 'type' => 'integer']]);
+
+		$this->assertSame([], $this->widener()->widenings($drift));
+	}//end testABigintColumnIsNeverNarrowed()
 }//end class
