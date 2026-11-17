@@ -19477,3 +19477,4 @@ review:filinq:2112:dc4b7d6c	GREEN on PR head (conflicts with development in regi
 review:decidiq:2173:6e5001e5	CONFLICT: l10n, manifest.json, menu-layout vs development	session-20261117T055908-62351962	2026-11-17T06:05:38Z
 review:hermiq:1738:10d3c28c	GREEN: 5580 PHP + 1606 vitest OK (baseline 5527)	session-20261117T060006-72dfb87c	2026-11-17T06:05:57Z
 review:decidiq:2154:6fc49611	GREEN: merges clean, 4848 tests OK	session-20261117T055834-d932e117	2026-11-17T06:06:12Z
+review:integriq:3561:69748294	GREEN	session-20261117T042937-c444c626	2026-11-17T06:06:28Z
