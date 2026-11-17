@@ -20110,3 +20110,4 @@ review:integriq:3601:85ba8d21	GREEN: no new failures (9755 tests, 5 inherited), 
 fix:decidiq:2171:6d1d07d3	merged development; REVERIFY at 6b39135c61	session-20261117T092129-3ad47afe	2026-11-17T09:32:59Z
 review:buildiq:1632:53f9828c	GREEN: phpunit 3577/0, vitest 4988 passed, phpstan clean	session-20261117T081254-2b2b5b50	2026-11-17T09:33:13Z
 fix:integriq:3593:7f0ace68	fixed missing spec tags; new head 5718bcca, REVERIFY (merge lock held elsewhere)	session-20261117T092706-95ac9736	2026-11-17T09:33:31Z
+fix:learniq:2486:2a7fcc37	conflict resolved, new head 973f96e7, REVERIFY queued	session-20261117T092632-101520de	2026-11-17T09:33:47Z
