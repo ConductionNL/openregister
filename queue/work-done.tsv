@@ -18506,3 +18506,6 @@ verify:portaliq:2446:9a320c2f	RED #2446: 3 new ContributionControllerTest errors
 verify:pipelinq:3743:d1e2bf9d	CONFLICT #3743 (l10n, SettingsLoadService, manifest)	session-20261116T232844-9c7f5cce	2026-11-17T00:03:02Z
 verify:opencatalogi:2244:f25f1179	GREEN #2244 (no new failures, 78 inherited)	session-20261116T233857-32c64615	2026-11-17T00:03:11Z
 verify:shillinq:2081:07764b3f	CONFLICT #2081 (l10n)	session-20261116T233929-170accb7	2026-11-17T00:03:20Z
+verify:opencatalogi:2677:3ad6bc5b	CONFLICT #2677 (12 files)	session-20261116T230934-9ee320cf	2026-11-17T00:03:37Z
+verify:portaliq:2492:073b891c	CONFLICT #2492 (tests/example-site.spec.mjs vs development)	session-20261116T233800-0f135937	2026-11-17T00:03:49Z
+verify:integriq:3633:e8cfc0d1	CONFLICT #3633 (l10n/en.js, l10n/nl.js)	session-20261116T233011-100ff0c6	2026-11-17T00:04:14Z
