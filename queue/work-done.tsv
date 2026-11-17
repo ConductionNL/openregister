@@ -21997,6 +21997,7 @@ build:stackiq:bundle-hygiene-apexcharts-lodash:b2	already done: 85c57ba4 (7 Jul)
 build:stackiq:architecture-reference-component-coverage:b2	already building: quality/build-architecture-reference-component-coverage exists (e2ffb824 on development)	session-20261117T140734-4d108840	2026-11-17T16:18:26Z
 build:stackiq:cmdb-import-archive-reconciliation:b2	already done: only task 7's Playwright run (written, needs an instance) left	session-20261117T135520-9a524c6b	2026-11-17T16:18:43Z
 build:stackiq:adopt-connection-registry:b2	already done: 19 tasks ticked on development; only 6.1 (e2e on a live instance, then archive) left	session-20261117T125716-5aa18045	2026-11-17T16:18:31Z
+build:opencatalogi:woo-metadata-suggestions:b2	pushed the missing e2e spec to PR #2674 (code tasks 1.1-6.2 on the PR); 6.4/6.5 gated, 6.3 verification and live run left	session-20261117T151214-35ff5eaa	2026-11-17T16:19:22Z
 build:stackiq:architecture-process-mapping:b2	already building: branch quality/build-architecture-process-mapping exists	session-20261117T134347-d0294040	2026-11-17T16:19:07Z
 build:stackiq:insight-assistant-answers-and-action-trail:b2	already building: quality/build-insight-assistant-answers-and-action-trail{,-2} exist on origin	session-20261117T134441-beae3c0d	2026-11-17T16:19:28Z
 build:stackiq:contract-approval-ownership-guard:b2	already building: quality/build-contract-approval-ownership-guard exists (2b1f5701 on development); only 4.2 note in the hydra repo left	session-20261117T140734-4d108840	2026-11-17T16:19:32Z
