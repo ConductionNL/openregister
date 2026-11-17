@@ -1517,3 +1517,5 @@ decidiq	2285	eeb91b118b1c241df162e0f00bdce238c0111d68	APPROVE	worker-33	Thorough
 buildiq	1710	9b6b9e95f81917400acb306e4b2fae708797b460	APPROVE	worker-08	Quick (tests only); no blockers; assertions on real behaviour, no skipped or assertion-free tests
 buildiq	1711	c046bf16a2d185fd3a110f47e78450a28c23551c	APPROVE	worker-08	Quick (tests only); no blockers; assertions on real behaviour, no skipped or assertion-free tests
 buildiq	1712	c5e1d2176bcdc55e8a11d05009e04345b81c4bc1	APPROVE	worker-08	Quick (tests only); no blockers; assertions on real behaviour, no skipped or assertion-free tests
+buildiq	1713	2b78ac989bb71c96a61611961bdc826e1fb7af1f	APPROVE	worker-08	Quick (one task tick); no blockers; none
+buildiq	1715	628d9e25f091953535ee8b7bb259bf0baf012802	APPROVE	worker-08	Quick (e2e spec + task note, not run); no blockers; T06 left unticked correctly
