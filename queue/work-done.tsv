@@ -20505,6 +20505,7 @@ fix:launchpad:1261:07612654	fixed #1261: explicit RBAC/multitenancy on schema re
 merge:humaniq:1184:54f5f41a	cloud tree of 1 humaniq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T113142-3e3cc1d3	2026-11-17T12:09:51Z
 merge:hermiq:1760:b25a0ffe	cloud tree of 1 hermiq PRs: none; conflict 1, lint 0, red 0, moved 0, done 0	session-20261117T115540-1ba6ee8c	2026-11-17T12:10:11Z
 review:integriq:3612:a0f66b1a	GREEN: 0 new failures (9861 tests, 5 inherited), matches spec	session-20261117T120335-b942e878	2026-11-17T12:10:40Z
+fix:planninq:1217:f6120234	merged #1217 at 6ab21439 (merged development in, regenerated sbom)	session-20261117T111351-f79c232f	2026-11-17T12:10:59Z
 cover:launchpad:fb10c50fm88bd:d8ac3ddd	already done: lib/Service/Cleanup/ measures 42/42 statements, every class has its own test	session-20261117T115541-a0785606	2026-11-17T12:10:48Z
 verify:opencatalogi:2766:29579c9f	GREEN #2766 (no new failures)	session-20261117T114001-07512b39	2026-11-17T12:10:54Z
 cover:launchpad:fb10c50fm88bd:59826f43	no PR: lib/Settings/ already 55/55 covered, all 4 classes have behaviour tests (LaunchPadAdminTest, LaunchPadAdminSectionTest); nothing thin to add	session-20261117T115011-195ffbc6	2026-11-17T12:10:56Z
@@ -20520,3 +20521,16 @@ merge:versioniq:706:891fd555	cloud tree of 1 versioniq PRs: none; conflict 1, li
 cover:dossiq:069ee2d6m9d1b:afe29cfd	deferred: dossiq has 42 open PRs (only open cover PR #6203 is excluded from merge trees, not stacked onto)	session-20261117T112947-12b56cd8	2026-11-17T12:13:39Z
 review:opencatalogi:2677:ec6e4301	GREEN #2677 (no new failures; one minor robustness concern noted)	session-20261117T114001-07512b39	2026-11-17T12:13:49Z
 fix:shillinq:2983:aac6fcf6	conflict resolved, pushed 501b81a9; merge lock held elsewhere, REVERIFY queued	session-20261117T112444-7a410249	2026-11-17T12:13:57Z
+cover:dossiq:069ee2d6m9d1b:67b69054	deferred: dossiq has 42 open PRs	session-20261117T112947-12b56cd8	2026-11-17T12:14:10Z
+review:buildiq:1590:ca570ceb	GREEN: unit 3621 OK, phpstan clean, specs matched	session-20261117T121046-ffb3fcc9	2026-11-17T12:14:20Z
+review:integriq:3574:daecacd9	GREEN: built to spec, no new failures (4 inherited)	session-20261117T120218-38f2a955	2026-11-17T12:14:32Z
+cover:dossiq:069ee2d6m9d1b:9951e799	deferred: dossiq has 42 open PRs	session-20261117T112106-1814b74b	2026-11-17T12:14:57Z
+verify:versioniq:770:2d93a058	770 GREEN	session-20261117T121049-5b84d45a	2026-11-17T12:14:55Z
+review:versioniq:700:563a324a	GREEN: 2410 tests, 2 inherited failures, no new	session-20261117T121050-a5ee25f2	2026-11-17T12:15:05Z
+cover:decidiq:a5f973bbmfcd5:9d3a1784	PR #2265: 8 tests, lib/BackgroundJob all classes 100% lines; suite 4951 -> 4959 OK	session-20261117T112009-00ac618f	2026-11-17T12:15:30Z
+fix:integriq:3564:d45b5057	fixed: demo objects added for both schemas; pushed d0095e30, REVERIFY queued (merge lock held elsewhere)	session-20261117T120335-b942e878	2026-11-17T12:15:28Z
+review:opencatalogi:2654:7717f5da	BLOCK floors: component_independence 93.5->92.8; behaviour ok, 0 new test failures	session-20261117T120834-820bb574	2026-11-17T12:15:40Z
+fix:filinq:2069:08c42f1e	fixed BLOCK: bumped intakeDefaultRule 1.1.0 + app version, unit 7280 OK; pushed b67ef532; merge lock busy, REVERIFY queued	session-20261117T121311-1734385f	2026-11-17T12:15:57Z
+review:shillinq:3011:87ae5ea8	GREEN; conflicts with development in l10n and register lock fixture	session-20261117T120806-7b4cac02	2026-11-17T12:16:07Z
+review:openregister:10610:f0556597	APPROVE: lockfile-only, npm 11 ci clean	session-20261117T112444-7a410249	2026-11-17T12:16:15Z
+review:shillinq:3048:4c867fcf	GREEN (phpunit 12787 ok); conflicts with current development on version files	session-20261117T112432-6eb8ecae	2026-11-17T12:16:25Z
