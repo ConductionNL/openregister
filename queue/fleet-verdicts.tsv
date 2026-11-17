@@ -16915,4 +16915,6 @@ shillinq	3052	474a6bf67e28073655d97619caf0786dfb06b967	GREEN	worker-56:review	bu
 hermiq	1781	90b585c63c0b17de2ec3cd84b291edbf390a84f8	CONFLICT	worker-48:merge	conflicts with development; files: appinfo/info.xml l10n/en.js l10n/en.json l10n/nl.js lib/Service/Llm/ProviderFactory.php lib/Settings/hermiq_register.json 
 hermiq	1795	78cb835eab6e3d32c8435c11dbb80f157c483080	CONFLICT	worker-48:merge	conflicts with development; files: appinfo/info.xml 
 filinq	2087	516936bd3ac4fe0d2aac80b46022a37680fa5d98	REVERIFY	worker-11	merged development in (l10n keys of both sides kept, register v8.66.0); unit 7087 tests OK; new head ec729a4ef62af70d34e6b37993b4de8b5fe6913d, verify it
+buildiq	1626	77575f40576ea96c633feaedaa11e22538b67ebb	CONFLICT	worker-58:merge	conflicts with development; files: l10n/nl.js l10n/nl.json 
+buildiq	1643	c4bd25103ff54cc768e975c23eeaad250549fe9e	CONFLICT	worker-58:merge	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
 filinq	2072	d77c4308cbbbd779916dc1b0c47f2244b04349ad	REVERIFY	worker-57	merged development in: info.xml took development's version, l10n and register JSONs merged keeping both sides (register 8.66.0 over development's 8.65.0); unit 7176 tests, 0 failures; new head 792212492833d414d847913337c593e5922611c8, verify it
