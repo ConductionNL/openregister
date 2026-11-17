@@ -1432,3 +1432,4 @@ shillinq	3172	efb8780416c555bec59db7576bf423b483fda66d	APPROVE	worker-01	Quick; 
 shillinq	3173	b9ea40e5c850c5d6bdaf6c4a581a9b68d952ef76	APPROVE	worker-01	Quick; no blockers; e2e spec only, gate fails inherited
 shillinq	3178	7c8cd864f281ea388a2a5b6f814fc1601bf623d3	APPROVE	worker-01	Thorough; no blockers; new POST regenerate checks auth then canPostJournalEntry before running, masked 404, modal in src/modals; gate fails inherited, ajv-setup gates judged by hand
 thematiq	1729	0112b5b6724ea05ac9e72421dcf80f7df166f86b	APPROVE	worker-23	Quick; no blockers; dev-dependency bump eslint 10.12->10.15, eslint src clean on the PR head, unit tree adds no failures
+pipelinq	3957	c41f8c7bb0c46c193ac14678df33d50e6575cf66	APPROVE	worker-10	Quick; no blockers; dev dependency patch bump, lock limited to it
