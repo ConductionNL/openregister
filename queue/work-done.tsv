@@ -21631,5 +21631,6 @@ build:hermiq:ai-oversight-subject-export:b2	already built: 1.1 on hermiq develop
 build:hermiq:agent-data-migration:b2	already built: code tasks done on development (19607e89); 7.2 and D.1 need a live OpenRegister with legacy rows	session-20261117T133833-7d87fd3d	2026-11-17T15:28:43Z
 build:hermiq:flows-hand-off-and-wait:b2	already building: quality/build-flows-hand-off-and-wait exists	session-20261117T135414-614629b0	2026-11-17T15:28:53Z
 build:decidiq:voting-written-resolution:b2	round 2: code on development; wrote tests/e2e/workflows/written-resolution.spec.ts (5 tests), PR #2283; Test left unticked until it runs live	session-20261117T151651-9c0f11a5	2026-11-17T15:29:35Z
+build:hermiq:agent-engine-schemas:b2	already done: open 5.2/5.3 are register import and persist checks against a live OpenRegister; no PR	session-20261117T135414-614629b0	2026-11-17T15:29:17Z
 build:hermiq:cli-runner-credential-declaration:b2	PR #1840: tasks 1-2 already met (OR main catalogue + src/credentials.json), ticked; task 3 live left	session-20261117T132743-10cec9d3	2026-11-17T15:29:28Z
 build:hermiq:companion-everywhere:b2	already built: code on development (33ca9141); left are bundle build and size measurements, live editor-page checks and a test re-run, none of them code	session-20261117T133833-7d87fd3d	2026-11-17T15:29:16Z
