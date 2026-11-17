@@ -1215,3 +1215,4 @@ launchpad	759	b325d657c1b42d1eb53eb182186015a879aa05f0	APPROVE	worker-53	Quick (
 planninq	869	6ffcb32c975a1d1ef48ce64825dc3e75ae9fdeea	APPROVE	worker-16	Quick; no blockers; devDependency bump with sbom regenerated
 planninq	1218	3bb9d8d2ab2644e3b22cdb1144eb07f0a9df1e21	APPROVE	worker-16	Quick; no blockers; minor @nextcloud/vue bump, sbom not regenerated in this PR
 integriq	3550	7bd183b1e5f9c205d89161050f3843bf828514cb	APPROVE	worker-24	Thorough; no blockers; admin-only settings endpoints carry AuthorizedAdminSetting, replay refuses masked stored requests, gate fails (throttling, manifest l10n, procedure-code) are inherited from development
+planninq	1232	c3f1d475385f430cd029d2f3aba0d4c15c88de9a	APPROVE	worker-16	Quick; no blockers; e2e spec only, footer label and humaniq-conditional check
