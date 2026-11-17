@@ -18949,3 +18949,4 @@ thematiq	1727	057fa453a0569e5c526c7ccf37e79c7bdb12518d	RED	worker-37	npm ci ERES
 thematiq	1728	3eb4a9137a95f5f9be9b6dd452335b01d93ecdf0	REVERIFY	worker-37	conflicts only with an earlier PR of the verify tree
 thematiq	1729	0112b5b6724ea05ac9e72421dcf80f7df166f86b	REVERIFY	worker-37	conflicts only with an earlier PR of the verify tree
 portaliq	2585	047ea7f203051ca4121b9fbb4fe5d368a8652f63	GREEN	worker-18	merges clean; only adds e2e spec named by the change tasks + tasks note; no PHP/unit-JS touched, unit suite unaffected; imports resolve; anonymous empty storage state
+learniq	2497	48225cf9d50c702289f26ffb5e21fd07629ec941	GREEN	worker-45	unit baseline 7152 (2 inherited), tree 7176, 0 new; node --test 1418 with 8 inherited failures, same on development; php -l clean; build of credentials-certificate-pdf, download gated to holder/hr/compliance like the Europass route
