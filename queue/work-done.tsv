@@ -20455,3 +20455,4 @@ merge:learniq:2509:678d0509	cloud tree of 2 learniq PRs: none; conflict 2, lint 
 review:integriq:3557:5f4da252	GREEN: feeds build matches specs; unit same failures as baseline; vitest green	session-20261117T113840-498fade3	2026-11-17T11:54:09Z
 verify:opencatalogi:2770:b9922ed9	GREEN #2770 (docs only, no new failures)	session-20261117T114001-07512b39	2026-11-17T11:54:24Z
 fix:opencatalogi:2766:c697ce65	fixed: test count for tableView, development merged; new head bc3b8cdd, REVERIFY (merge lock held elsewhere)	session-20261117T114623-ffd9d484	2026-11-17T11:54:36Z
+fix:opencatalogi:2650:4abde043	conflict resolved, pushed 6678e3ea; REVERIFY queued	session-20261117T113521-7cb5fa64	2026-11-17T11:54:44Z
