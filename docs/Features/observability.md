@@ -96,6 +96,23 @@ For time-windowed data (embedding stats, search latency per search type, storage
 
 The metrics retention policy is 90 days by default; the `cleanOldMetrics(int $retentionDays)` cleanup job prunes older rows.
 
+### Alert thresholds
+
+Three thresholds are set as app config values; unset, zero or not a whole number means off.
+
+| Setting | Gauge | When it is 1 |
+|---------|-------|--------------|
+| `error_rate_alert_percent` | `openregister_error_rate_exceeded` | More than this share of the requests in the last window answered with a 5xx status. |
+| `response_time_p95_alert_ms` | `openregister_response_time_exceeded` | The 95th percentile request duration of the last window (interpolated inside its histogram bucket) is over this many milliseconds. |
+| `storage_growth_alert_bytes` | `openregister_storage_growth_exceeded` | The vectors added in the last 24 hours take more than this many bytes. |
+
+```bash
+occ config:app:set openregister error_rate_alert_percent --value=5
+occ config:app:set openregister response_time_p95_alert_ms --value=3000
+```
+
+The `RequestAlertJob` background job judges the request thresholds every five minutes over the requests answered since its previous run. When a condition starts, every member of the `admin` group gets one Nextcloud notification; no second one follows until a window has been below the threshold again. A window without requests keeps the previous outcome.
+
 ## Audit logging
 
 Object writes are recorded in `oc_openregister_audit_trails` (with full before/after diffs) and surface via the standard `oc_activity` stream. See [Versioning and Audit](versioning-and-audit.md) for the audit-trail data shape and `Activity Provider` for the activity-stream integration.

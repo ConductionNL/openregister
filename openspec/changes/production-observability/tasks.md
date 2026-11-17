@@ -11,7 +11,7 @@
 - [ ] Implement: Structured Logging
 - [ ] Implement: BIO2 Audit Logging Compliance
 - [ ] Implement: Database Connection Monitoring
-- [ ] Implement: Alerting Threshold Configuration
+- [x] Implement: Alerting Threshold Configuration
 - [x] Implement: Metrics Storage Strategy
 - [x] Implement: Performance Baseline Metrics
 - [ ] Implement: Nextcloud Dashboard Integration
@@ -216,3 +216,22 @@ joins `OpenRegisterMetricsProvider` and publishes, for each job in one of those 
 `import_objects_processed_total{job_id,phase}` (`job_id` is the job's uuid, `phase` is `preview` or
 `commit`) and `import_duration_seconds{job_id}` (seconds since the job was created). A finished
 or failed job drops out, so the label set stays as small as the number of running imports.
+
+**Eighth pass, continued: error rate and response time thresholds.** "Alerting Threshold
+Configuration" is ticked (its storage growth scenario was built in the sixth pass). The request
+rows are cumulative, so a window is the difference between two snapshots:
+`BackgroundJob\RequestAlertJob` (every 300 seconds, registered in `appinfo/info.xml`) runs
+`Service\Observability\RequestAlertEvaluator`, which reads the request and duration-bucket totals,
+compares them with the snapshot it stored last time (app config `request_alert_snapshot`) and
+judges the window between them. The error rate is the 5xx share of the window's requests, against
+`error_rate_alert_percent`; the p95 response time is interpolated linearly inside the bucket that
+holds the 95th percentile (above 10 s it counts as 10 s), against `response_time_p95_alert_ms`.
+Unset, zero or not a whole number means no threshold. A window without requests keeps the previous
+outcome; totals that went down (retention cleanup) start a new baseline. When a condition starts,
+every `admin` group member gets one notification (subjects `observability_error_rate` and
+`observability_response_time`, rendered by `Notification\ObservabilitySubjectRenderer`, with the
+backend `en` and `nl` strings); no second one follows until a window has been below the
+threshold. `Service\Observability\RequestAlertMetricsProvider` joins `OpenRegisterMetricsProvider`
+and publishes the stored outcomes as `error_rate_exceeded` and `response_time_exceeded`; a scrape
+never judges a window itself. An admin settings field for the thresholds is not built; they are set
+with `occ config:app:set openregister <key> --value=<n>`.

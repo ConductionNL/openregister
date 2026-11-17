@@ -33,7 +33,7 @@ use OCA\OpenRegister\AppHost\Observability\MetricSample;
 use OCA\OpenRegister\Service\Task\TaskMetricsProviderInterface;
 
 /**
- * Joins the task, webhook, search, storage, request, object count, cache and import metrics under OpenRegister's provider alias.
+ * Joins the task, webhook, search, storage, request, object count, cache, import and alert metrics under OpenRegister's provider alias.
  *
  * @spec openspec/changes/production-observability
  */
@@ -52,6 +52,7 @@ final class OpenRegisterMetricsProvider implements IMetricsProvider {
 	 * @param ObjectCountMetricsProvider     $objects   The live object count per register and schema.
 	 * @param CacheMetricsProvider           $caches    The cache hit and miss counters.
 	 * @param ImportJobMetricsProvider       $imports   The progress of running import jobs.
+	 * @param RequestAlertMetricsProvider    $alerts    The error rate and response time alert outcomes.
 	 */
 	public function __construct(
 		private readonly TaskMetricsProviderInterface $tasks,
@@ -64,6 +65,7 @@ final class OpenRegisterMetricsProvider implements IMetricsProvider {
 		private readonly ObjectCountMetricsProvider $objects,
 		private readonly CacheMetricsProvider $caches,
 		private readonly ImportJobMetricsProvider $imports,
+		private readonly RequestAlertMetricsProvider $alerts,
 	) {
 	}//end __construct()
 
@@ -71,7 +73,7 @@ final class OpenRegisterMetricsProvider implements IMetricsProvider {
 	 * The samples of every joined provider, in order.
 	 *
 	 * Tasks, webhook retries, search, webhook durations, database health,
-	 * storage growth, requests and errors, object counts, cache hits and misses, then import progress.
+	 * storage growth, requests and errors, object counts, cache hits and misses, import progress, then the request alerts.
 	 *
 	 * @return array<int, MetricSample>
 	 *
@@ -89,6 +91,7 @@ final class OpenRegisterMetricsProvider implements IMetricsProvider {
 			...$this->objects->metrics(),
 			...$this->caches->metrics(),
 			...$this->imports->metrics(),
+			...$this->alerts->metrics(),
 		];
 	}//end metrics()
 }//end class

@@ -27,6 +27,7 @@ use OCA\OpenRegister\Service\Observability\DatabaseHealthMetricsProvider;
 use OCA\OpenRegister\Service\Observability\ImportJobMetricsProvider;
 use OCA\OpenRegister\Service\Observability\ObjectCountMetricsProvider;
 use OCA\OpenRegister\Service\Observability\OpenRegisterMetricsProvider;
+use OCA\OpenRegister\Service\Observability\RequestAlertMetricsProvider;
 use OCA\OpenRegister\Service\Observability\RequestMetricsProvider;
 use OCA\OpenRegister\Service\Observability\SearchMetricsProvider;
 use OCA\OpenRegister\Service\Observability\StorageGrowthMetricsProvider;
@@ -51,7 +52,7 @@ use Psr\Log\LoggerInterface;
 final class OpenRegisterMetricsProviderTest extends TestCase {
 
 	/**
-	 * Every joined family is published once: tasks, webhook retries, search, webhook durations, database health, storage growth, requests and errors, object counts, cache hits and misses, then import progress.
+	 * Every joined family is published once: tasks, webhook retries, search, webhook durations, database health, storage growth, requests and errors, object counts, cache hits and misses, import progress, then the request alerts.
 	 *
 	 * @return void
 	 */
@@ -93,6 +94,10 @@ final class OpenRegisterMetricsProviderTest extends TestCase {
 		$imports  = $this->createMock(ImportJobMetricsProvider::class);
 		$imports->expects($this->once())->method('metrics')->willReturn([$progress]);
 
+		$alert  = new MetricSample(name: 'error_rate_exceeded', type: 'gauge', help: 'h', samples: [['labels' => [], 'value' => 0]]);
+		$alerts = $this->createMock(RequestAlertMetricsProvider::class);
+		$alerts->expects($this->once())->method('metrics')->willReturn([$alert]);
+
 		$metrics = (new OpenRegisterMetricsProvider(
 			tasks: $tasks,
 			webhooks: new WebhookRetryMetricsProvider(logs: $logs, time: $time),
@@ -103,11 +108,12 @@ final class OpenRegisterMetricsProviderTest extends TestCase {
 			requests: $requests,
 			objects: $objects,
 			caches: $caches,
-			imports: $imports
+			imports: $imports,
+			alerts: $alerts
 		))->metrics();
 
 		$this->assertSame(
-			['tasks_overdue_total', 'webhook_retry_queue_depth', 'search_requests_total', 'search_duration_seconds', 'embeddings_generated_total', 'webhook_delivery_duration_seconds', 'db_connection_healthy', 'storage_growth_exceeded', 'errors_total', 'objects_total', 'cache_hits_total', 'import_duration_seconds'],
+			['tasks_overdue_total', 'webhook_retry_queue_depth', 'search_requests_total', 'search_duration_seconds', 'embeddings_generated_total', 'webhook_delivery_duration_seconds', 'db_connection_healthy', 'storage_growth_exceeded', 'errors_total', 'objects_total', 'cache_hits_total', 'import_duration_seconds', 'error_rate_exceeded'],
 			array_map(static fn (MetricSample $m): string => $m->name, $metrics)
 		);
 		$this->assertSame($overdue, $metrics[0]);
@@ -115,5 +121,6 @@ final class OpenRegisterMetricsProviderTest extends TestCase {
 		$this->assertSame($total, $metrics[9]);
 		$this->assertSame($hits, $metrics[10]);
 		$this->assertSame($progress, $metrics[11]);
+		$this->assertSame($alert, $metrics[12]);
 	}//end testPublishesTheTaskThenTheWebhookGauges()
 }//end class

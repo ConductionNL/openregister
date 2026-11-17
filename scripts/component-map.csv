@@ -4264,3 +4264,10 @@ Service/Observability/RequestMetricsProvider.php,,Service,,,,,Integrations
 Service/Observability/RouteTemplates.php,,Service,,,,,Integrations
 Middleware/RequestMetricsMiddleware.php,,Middleware,,,,,Platform
 Migration/Version1Date20261116230000.php,,Migration,,,,,Platform
+Service/Observability/ObjectCountMetricsProvider.php,,Service,,,,,Integrations
+Service/Observability/CacheMetricsProvider.php,,Service,,,,,Integrations
+Service/Observability/ImportJobMetricsProvider.php,,Service,,,,,Integrations
+Service/Observability/RequestAlertEvaluator.php,,Service,,,,,Integrations
+Service/Observability/RequestAlertMetricsProvider.php,,Service,,,,,Integrations
+BackgroundJob/RequestAlertJob.php,,BackgroundJob,,,,,Core
+Notification/ObservabilitySubjectRenderer.php,,Notification,,,,,Notifications
