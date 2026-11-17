@@ -5806,3 +5806,6 @@ thematiq	1723	f6aae08d113aa98b5a8129910468602b07e598e8	RED	merge3	GATE RED sbom:
 thematiq	1724	bee24dc0a0b313ee6429de1edec32a5449244f66	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 thematiq	1725	f7a10dc12ca1b7982050d7bf7fb649d8684d2882	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
 thematiq	1726	ebe538c8dc4ba9e635c349fc608093ec09646cb6	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+launchpad	1295	8e839b5210cfdfcca1ed2fcad366db008d7a4c2c	RED	merge3	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+launchpad	1298	c874c6ad5b2e7c88a07d5ac2a92feb874cb52782	RED	merge3	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+launchpad	1306	060171415ec0321c8968a4087ce146a20f0714d7	RED	merge3	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
