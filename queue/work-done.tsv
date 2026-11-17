@@ -22176,3 +22176,5 @@ verify:portaliq:2578:c8b3478a	6 GREEN (2578,2580,2581,2582,2585,2587), 3 CONFLIC
 verify:buildiq:1735:9eb8e4fe	GREEN buildiq#1735: phpunit 3676 ok, vitest 5011 passed, no new failures	session-20261117T190454-1cb9b69e	2026-11-17T19:15:34Z
 verify:hermiq:1845:84f28a11	GREEN 1845; tests-only, unit 5736 0 new failures	session-20261117T190115-a0afcf82	2026-11-17T19:15:46Z
 verify:dossiq:6649:c3066e42	GREEN #6649 (docs only, 0 new failures)	session-20261117T190353-db371595	2026-11-17T19:16:18Z
+verify:keepiq:1898:57a976a2	GREEN 1898,1899,1900; REVERIFY 1901 (conflicts only with earlier PR); no new failures	session-20261117T185927-e9838dc9	2026-11-17T19:16:40Z
+verify:dossiq:6662:e845dfba	GREEN #6662 (e2e spec only; 19 inherited failures, none new)	session-20261117T190448-9c35d7c4	2026-11-17T19:16:48Z
