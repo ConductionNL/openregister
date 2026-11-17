@@ -19917,3 +19917,4 @@ fix:shillinq:2063:ba502d7d	conflict resolved, pushed 6601069c; merge lock held e
 fix:humaniq:1146:7c1dfd1e	floor restored, new head f77f2a1d; merge lock held elsewhere, REVERIFY	session-20261117T081941-dbad7940	2026-11-17T08:27:50Z
 merge:learniq:2509:4e8e3e1a	cloud tree of 6 learniq PRs: merged=0 red=0 fail=0 skip=1; conflict 2, lint 0, red 0, moved 3, done 0	session-20261117T080445-fa502475	2026-11-17T08:28:13Z
 review:versioniq:709:482317ee	BLOCK: spdx and spec-coverage gate failures on added files; suite green vs baseline	session-20261117T081313-388ffb60	2026-11-17T08:28:22Z
+review:opencatalogi:2677:635c5d4a	RED: WooReadinessServiceTest::testTheReportNamesTheMappingSource (ctor arg order)	session-20261117T081153-b2625937	2026-11-17T08:28:32Z
