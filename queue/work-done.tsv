@@ -18873,6 +18873,7 @@ fix:hermiq:1795:efce9000:v4	fixed CONFLICT, pushed 78cb835e; merge lock held els
 fix:integriq:3557:363b07c6:v3	conflict resolved + OR main API fix, pushed 0b9792b0; 5 inherited failures; merge lock held elsewhere, REVERIFY queued	session-20261117T004609-b5037037	2026-11-17T01:25:55Z
 fix:integriq:3602:d7d08f57:v3	resolved conflict and wired the error sink store, pushed 9b919801; merge lock held elsewhere, REVERIFY	session-20261117T005212-998cc343	2026-11-17T01:26:07Z
 review:dossiq:6353:ea97ffc3	GREEN: removal per change spec, no new failures	session-20261117T003945-3aa9cc05	2026-11-17T01:26:33Z
+merge:versioniq:715:24a3aad9	cloud tree of 2 versioniq PRs: merged=0 red=1 fail=0 skip=0; conflict 1, lint 0, red 0, moved 0, done 0	session-20261117T011615-71ab0b2c	2026-11-17T01:27:05Z
 fix:learniq:1883:de89b902:v4	merged #1883 at 88ce2f2bd933e45c14f811fcf7001883ff74c3fd	session-20261117T005304-6fca2823	2026-11-17T01:26:41Z
 build:hermiq:tools-agent-workspace-and-installed-tools:c7	partial: still blocked, PR #1760 head 440cf2e9; tasks 2/4/5 extend RunCodeTool, CodeSandboxToolDescriptors and exapp code-sandbox, which are only on open quality/build-tools-code-sandbox (97a61ef1, not on development)	session-20261116T230934-9ee320cf	2026-11-17T01:27:02Z
 review:portaliq:2493:733b81a3	GREEN; conflicts with development in package.json	session-20261117T004640-1b533885	2026-11-17T01:27:09Z
@@ -18887,3 +18888,14 @@ fix:integriq:3572:35bfc428:v3	conflict resolved, pushed 5ea14816; 5 inherited fa
 fix:integriq:3632:b8b6d7ad:v3	conflict resolved, pushed 6bc3018b, no failures beyond development's; merge lock held elsewhere, REVERIFY queued	session-20261117T005055-4c5f0209	2026-11-17T01:28:44Z
 fix:integriq:3626:d61b9b39:v3	fixed CONFLICT, pushed 7c1c0ef3; REVERIFY queued (merge lock held elsewhere)	session-20261117T004655-cf1f2f80	2026-11-17T01:29:15Z
 fix:buildiq:1262:a0a4f287:v4	obsolete: development already carries the LockRequest migration; closed #1262	session-20261117T005933-5e669a88	2026-11-17T01:29:25Z
+fix:buildiq:1651:e765d7de:v5	conflict resolved, pushed 4514f95f; lock held elsewhere, REVERIFY queued	session-20261117T004721-b30387a5	2026-11-17T01:29:44Z
+build4:openregister:object-write-at-instance-floor:c8	partial: not started in this pass (worker context too low for the core mapper work); PR #10520 (branch -3, head 087462fb) unchanged, tasks 1-4 and 6-19 still open as left by c7	session-20261116T230934-9ee320cf	2026-11-17T01:29:52Z
+fix:integriq:3550:b2995130:v3	fixed CONFLICT #3550, new head 268ca022; REVERIFY (merge lock held elsewhere)	session-20261117T004616-c7acc36d	2026-11-17T01:29:54Z
+fix:integriq:3585:54c3167e:v5	conflict resolved, pushed 027d5ca5; merge lock held elsewhere, REVERIFY queued	session-20261117T005226-366998de	2026-11-17T01:30:03Z
+merge:stackiq:2008:aa8543e9	cloud tree of 3 stackiq PRs: merged=3 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T004644-d9c68b8f	2026-11-17T01:30:23Z
+fix:integriq:3590:c8a86e41:v3	conflict resolved, pushed 0e8a2713; REVERIFY (merge lock held elsewhere)	session-20261117T004718-f6df305c	2026-11-17T01:30:22Z
+fix:integriq:3582:02740663:v3	resolved conflict, pushed e824c737; merge lock held elsewhere, REVERIFY	session-20261117T005212-998cc343	2026-11-17T01:30:34Z
+fix:buildiq:1618:53cd30c6:v3	fixed: conflicts resolved, vitest 4833 pass; lock held elsewhere, REVERIFY at 34282120	session-20261117T003652-c6487e72	2026-11-17T01:31:00Z
+fix:integriq:2650:6bf97c5a:v3	conflict resolved + main API migration, pushed 54f2db42; merge lock busy, REVERIFY queued	session-20261117T005208-5aaffa6c	2026-11-17T01:31:11Z
+fix:planninq:1168:8c796e13:v3	merged #1168 at 2030d1fdb8e95f4ef06c22c81319aff304cc693e	session-20261117T004908-b4bcfe9b	2026-11-17T01:31:23Z
+fix:hermiq:1794:97a61ef1:v3	conflict fixed, pushed 19bcd689; review APPROVE; merge gate RED floor unit_complexity 4.58->4.56, not landed	session-20261117T004650-4097ce5f	2026-11-17T01:31:26Z
