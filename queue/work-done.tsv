@@ -19766,3 +19766,4 @@ fix:launchpad:819:ff71d979	no change: sbom check passes on head and tree (dev-on
 cover:launchpad:fb10c50fm88bd:6d5c7d3c	PR #1260: 7 tests for JoseEncoding/JwtSigningService edge cases, Embed uncovered lines 8 -> 1; suite 4563 -> 4570, 0 failures	session-20261117T063048-0c413ea5	2026-11-17T07:15:55Z
 review:shillinq:2993:cf43d96e	GREEN: unit 12638 OK, vitest 1 inherited red, phpstan clean	session-20261117T065619-e5275297	2026-11-17T07:15:47Z
 review:learniq:2534:6beffdd0	GREEN: unit 7016 (baseline 6998), only the 2 inherited failures; node 12 pass	session-20261117T061802-b42f2669	2026-11-17T07:15:58Z
+review:shillinq:2986:34de7944	GREEN shillinq#2986: matches specs; 12636 tests, 0 new failures	session-20261117T065609-89f8b9cf	2026-11-17T07:16:09Z
