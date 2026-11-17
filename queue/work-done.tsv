@@ -18681,3 +18681,4 @@ review:dossiq:3957:436f0f9a	GREEN: spec-backed refactor, suite 18413 with 1 inhe
 merge:filinq:2141:b2c17eb4:r	merge3 tree of 1 filinq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-17T00:45:00Z
 verify:dossiq:6622:18d238d4	GREEN #6622	session-20261116T230934-9ee320cf	2026-11-17T00:45:08Z
 gap:dossiq:zuiddrecht-example-installs:1	deferred: dossiq has 41 open PRs	session-20261116T230934-9ee320cf	2026-11-17T00:45:34Z
+cover:dossiq:069ee2d6m9d1b:f0c02922	deferred: dossiq has 41 open PRs	session-20261116T230934-9ee320cf	2026-11-17T00:45:48Z
