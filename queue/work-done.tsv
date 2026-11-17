@@ -20513,6 +20513,7 @@ cover:launchpad:fb10c50fm88bd:d8ac3ddd	already done: lib/Service/Cleanup/ measur
 verify:opencatalogi:2766:29579c9f	GREEN #2766 (no new failures)	session-20261117T114001-07512b39	2026-11-17T12:10:54Z
 cover:launchpad:fb10c50fm88bd:59826f43	no PR: lib/Settings/ already 55/55 covered, all 4 classes have behaviour tests (LaunchPadAdminTest, LaunchPadAdminSectionTest); nothing thin to add	session-20261117T115011-195ffbc6	2026-11-17T12:10:56Z
 review:versioniq:729:ea732a80	GREEN: matches change specs; unit 2427 tests, 2 inherited failures; vitest 3208 pass	session-20261117T120635-25da0b5a	2026-11-17T12:11:03Z
+cover:launchpad:fb10c50fm88bd:dfaef732	no PR: lib/Notification/ already 94/94 covered; NotifierTest pins exact setter calls per subject, labels, unknown app/subject, deleted dashboard; nothing thin to add	session-20261117T115011-195ffbc6	2026-11-17T12:11:46Z
 fix:learniq:2509:56cfb0f8	conflict resolved, pushed 4853fbe3; REVERIFY (merge lock held elsewhere)	session-20261117T112106-1814b74b	2026-11-17T12:11:45Z
 review:integriq:3601:34350fe3	CONFLICT #3601 (tests/Unit/Service/CatalogRegistrySeedGoldenTest.php)	session-20261117T113142-3e3cc1d3	2026-11-17T12:12:14Z
 fix:integriq:3613:83ce7d7b	fixed adrvalidator (API-Version header on 3 responses), gate OK; REVERIFY at 549ed1063e (merge lock held)	session-20261117T113840-498fade3	2026-11-17T12:12:28Z
@@ -20524,6 +20525,7 @@ merge:versioniq:706:891fd555	cloud tree of 1 versioniq PRs: none; conflict 1, li
 cover:dossiq:069ee2d6m9d1b:afe29cfd	deferred: dossiq has 42 open PRs (only open cover PR #6203 is excluded from merge trees, not stacked onto)	session-20261117T112947-12b56cd8	2026-11-17T12:13:39Z
 review:opencatalogi:2677:ec6e4301	GREEN #2677 (no new failures; one minor robustness concern noted)	session-20261117T114001-07512b39	2026-11-17T12:13:49Z
 fix:shillinq:2983:aac6fcf6	conflict resolved, pushed 501b81a9; merge lock held elsewhere, REVERIFY queued	session-20261117T112444-7a410249	2026-11-17T12:13:57Z
+build:opencatalogi:publications-for-signed-in-readers:c4	partial: PR #2771, tasks 1.1-1.4, 2.1-2.3, 3.1 code, 3.2 built; left: 4.1, 4.2 (portaliq PR), 5.1 openspec validate, 3.1 e2e	session-20261117T114001-eb50211c	2026-11-17T12:14:13Z
 cover:decidiq:a5f973bbmfcd5:8ed5443b	nothing to cover: lib/Kernel/Contracts/*.php is 139 interfaces with no executable lines (no class, enum, trait or method body); no PR	session-20261117T114019-426872f0	2026-11-17T12:14:18Z
 cover:dossiq:069ee2d6m9d1b:67b69054	deferred: dossiq has 42 open PRs	session-20261117T112947-12b56cd8	2026-11-17T12:14:10Z
 review:buildiq:1590:ca570ceb	GREEN: unit 3621 OK, phpstan clean, specs matched	session-20261117T121046-ffb3fcc9	2026-11-17T12:14:20Z
@@ -20560,3 +20562,4 @@ cover:decidiq:a5f973bbmfcd5:1b97f731	PR #2266: lib/Listener 91.9% -> 98.0% (@use
 cover:buildiq:70b3e29em2454:d39f9857	already done: lib/Support/*.php at 98.2% lines on development e4700fc7 (target 95; 6 uncovered lines in ApplicationStories, FormPageConfig, WidgetIdAllocator)	session-20261117T113142-3e3cc1d3	2026-11-17T12:20:32Z
 merge:integriq:2650:e275cd00	cloud tree of 4 integriq PRs: merged=0 red=3 fail=0 skip=0; conflict 1, lint 0, red 0, moved 0, done 0	session-20261117T111757-a0ed5e74	2026-11-17T12:21:37Z
 fix:larpinq:1086:46f1ee9a	floor fixed, pushed f1f15b15; merge lock held elsewhere, REVERIFY queued	session-20261117T110646-831a671b	2026-11-17T12:21:56Z
+fix:versioniq:709:9a092579	merged #709 at 15263d7c05a007f23ae4464332a1db12ae29c2a2 (unit_interfacing restored 4.61->4.64 by narrowing two channel helpers)	session-20261117T120635-25da0b5a	2026-11-17T12:22:03Z
