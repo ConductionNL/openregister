@@ -1310,3 +1310,4 @@ versioniq	698	52f9a1d57c68ad7a4850b3d601f1db3279731fff	APPROVE	worker-09	Thoroug
 buildiq	1648	616837279746c70653f0f41163c0dd6efd73fa7e	APPROVE	worker-50	Strict (RBAC on new routes); no blockers; new manual/run routes check app roles without admin bypass, record read with rbac on; removed compiler tests replaced per change specs (manual and lifecycle now compile to flows); hydra gates not run, checklist by hand
 buildiq	1709	e329cf1746b8b2c6a15b3d436c66bf3d67d5fb62	APPROVE	worker-50	Quick; no blockers; tests only, real assertions on kernel value objects
 buildiq	1710	9b6b9e95f81917400acb306e4b2fae708797b460	APPROVE	worker-50	Quick; no blockers; tests only, exact collaborator calls asserted
+buildiq	1711	c046bf16a2d185fd3a110f47e78450a28c23551c	APPROVE	worker-50	Quick; no blockers; tests only
