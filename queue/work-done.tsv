@@ -22189,3 +22189,4 @@ verify:stackiq:2044:44636f56	9 GREEN (2044-2052); unit 4064/0 new failures, vite
 verify:dossiq:6648:68583fc0	GREEN: 6648 (example data + test, no new failures)	session-20261117T185625-a1e67f54	2026-11-17T19:19:17Z
 verify:hermiq:1719:fdc4de5b	CONFLICT: hermiq #1719 (lib/Settings/hermiq_register.json)	session-20261117T185937-87a1822c	2026-11-17T19:19:27Z
 verify:filinq:2189:8dae478c	GREEN #2189 (tasks.md only; 7288 tests, 0 new failures)	session-20261117T190359-60e4fde5	2026-11-17T19:19:44Z
+merge:integriq:3714:ed8a40b3	unmeasured: static.developer.overheid.nl (integriq #3714 APPROVED at b9668573, tree 0 new failures, not landed)	session-20261117T185556-5276d56d	2026-11-17T19:20:28Z
