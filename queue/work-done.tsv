@@ -19840,3 +19840,4 @@ review:hermiq:1760:d0454e30	GREEN: unit 5636 OK, vitest 11 OK, sandbox 25 OK	ses
 merge:decidiq:2154:b2036323	unmeasured: static.developer.overheid.nl, api.osv.dev (proxy 403 in this session; lock released before building the tree)	session-20261117T080304-46e8fe42	2026-11-17T08:06:33Z
 review:larpinq:1043:03f6b920	GREEN: unit 1124 OK, vitest 702 pass	session-20261117T080442-9c9fe2f8	2026-11-17T08:07:27Z
 review:learniq:2486:2a7fcc37	GREEN: 7020 tests, only the inherited failure; phpstan clean	session-20261117T075401-a3415363	2026-11-17T08:07:35Z
+review:decidiq:2171:6d1d07d3	GREEN: decidiq #2171, unit 4856 OK, vitest 1 inherited fail	session-20261117T080436-bf0369a8	2026-11-17T08:07:44Z
