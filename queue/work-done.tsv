@@ -21211,3 +21211,4 @@ build:portaliq:mandated-case-offers-no-writes:b2	already built: T1 on developmen
 build:portaliq:hero-links-follow-the-site-address:b2	already built: T1 linkAddress + FooterColumns/HeroBlock, T2 authoredLink keeps query in widgets, tests in site-shell-blocks.spec.mjs; scenarios @e2e exclude; left T3 live check	session-20261117T141457-95499900	2026-11-17T14:40:07Z
 build:portaliq:mijn-taken-lists-contributed-tasks:b2	already done: T1-T2 on development (5e9f3fe6, 186e0a13); T3 live	session-20261117T133035-588aec38	2026-11-17T14:40:04Z
 build:portaliq:intake-conditional-questions-and-drafts:b2	partial: PR #2573 ticks T09 (strict validate fixed); T06-T08 wait on openregister or-form-and-journey-registry (not on main)	session-20261117T134347-d0294040	2026-11-17T14:40:43Z
+build:portaliq:portal-headless-content-api:b2	already done: only the live 429/conformance walk is left (needs a running instance)	session-20261117T135520-9a524c6b	2026-11-17T14:40:25Z
