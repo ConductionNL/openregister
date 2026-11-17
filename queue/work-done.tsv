@@ -21634,3 +21634,4 @@ build:hermiq:flows-hand-off-and-wait:b2	already building: quality/build-flows-ha
 build:hermiq:agent-engine-schemas:b2	already done: open 5.2/5.3 are register import and persist checks against a live OpenRegister; no PR	session-20261117T135414-614629b0	2026-11-17T15:29:17Z
 build:hermiq:cli-runner-credential-declaration:b2	PR #1840: tasks 1-2 already met (OR main catalogue + src/credentials.json), ticked; task 3 live left	session-20261117T132743-10cec9d3	2026-11-17T15:29:28Z
 build:hermiq:companion-everywhere:b2	already built: code on development (33ca9141); left are bundle build and size measurements, live editor-page checks and a test re-run, none of them code	session-20261117T133833-7d87fd3d	2026-11-17T15:29:16Z
+build:hermiq:llm-cli-runner-exapp:b2	already building: quality/build-llm-cli-runner-exapp exists; only 3.3 open, a live check needing AppAPI and Docker	session-20261117T135414-614629b0	2026-11-17T15:30:00Z
