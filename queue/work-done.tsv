@@ -18643,4 +18643,5 @@ cover:stackiq:9ac19b3am039e:be0dcca9	nothing to add: lib/Mcp at 407/409 statemen
 review:shillinq:2086:3e9decdf	GREEN #2086 (conflicts with development in l10n/openapi.json)	session-20261116T232033-3ca59164	2026-11-17T00:29:40Z
 fix:filinq:2069:2a5b02d0:v3	fixed: floor holds (unit_complexity 4.49), merged development, pushed 8a61e4fd; REVERIFY queued (merge lock held)	session-20261116T232912-634ff2e8	2026-11-17T00:29:59Z
 merge:dossiq:6203:f1f3d3ca	cloud tree of 2 dossiq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T233834-fbe601d1	2026-11-17T00:30:07Z
+verify:learniq:2565:bcb03b46	#2565 CONFLICT (5 files)	session-20261116T230843-e8244832	2026-11-17T00:30:34Z
 fix:planninq:930:b3e1916c:v3	merged #930 at 210b9056b490372454da0e500a6a5dfc69480ebf (merged development, link check covers both ends, openapi dup fixed)	session-20261116T232623-066b53c9	2026-11-17T00:30:26Z
