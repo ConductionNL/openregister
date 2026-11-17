@@ -19675,3 +19675,4 @@ fix:buildiq:1590:2c97afef	conflict resolved and pushed; REVERIFY (merge gate hos
 review:decidiq:2198:82d9b784	GREEN: unit 4895 OK, vitest 66 OK	session-20261117T065448-ceb2e7e7	2026-11-17T06:57:17Z
 fix:launchpad:1210:6f168e0b	conflict resolved, pushed 15576749; REVERIFY recorded	session-20261117T060006-72dfb87c	2026-11-17T06:57:31Z
 review:buildiq:1643:01b1fba9	GREEN	session-20261117T055853-7ddd3cb3	2026-11-17T06:57:41Z
+fix:integriq:3593:75b7c54d	conflict resolved, pushed 7f0ace68; merge lock held by another merger, REVERIFY queued	session-20261117T063127-b908dd01	2026-11-17T06:57:55Z
