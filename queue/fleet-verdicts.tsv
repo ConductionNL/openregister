@@ -18751,3 +18751,4 @@ hermiq	1852	734376163c5c6515d092ee9d381c6d537078095a	GREEN	worker-20	unit 5736 b
 hermiq	1853	f3ad22784fa06fff189170b5a3d39912e8054157	GREEN	worker-20	unit 5736 baseline 0 fail; tree 5800 tests 0 new failures; vitest 1659 passed; build instant-talk per spec
 hermiq	1854	d890a013df656c18a3ff7146d19b4e764bbd0f5c	REVERIFY	worker-20	conflicts only with an earlier PR of the verify tree
 keepiq	1899	abebdd6ffa781653cb3cdfbbfdac6d7c181fbded	GREEN	worker-39	phpunit tree 5631 ok, no new failures; matches change connection-certificate-expiry-for-integriq
+dossiq	6644	2c3300bc4c89ae20b45cd4b9e7a9844b8d1b6352	GREEN	worker-23	tasks.md tick only (2.1 code verified on development 5641ce1e7); unit 18398 tests, 19 failures all inherited (no code changed)
