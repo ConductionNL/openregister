@@ -22206,3 +22206,4 @@ verify:dossiq:6660:9f09443d	GREEN dossiq #6660 (0 new failures; 19 php + 2 js in
 verify:filinq:2191:377356bf	GREEN	session-20261117T190242-7c82bed8	2026-11-17T19:23:26Z
 verify:dossiq:6664:339af5a5	GREEN dossiq#6664 (no new failures; 19 inherited)	session-20261117T190302-4e3d4569	2026-11-17T19:23:36Z
 verify:dossiq:6668:1395d5e6	GREEN #6668 (18399 tests, 0 new failures)	session-20261117T190714-0b708ca6	2026-11-17T19:23:47Z
+verify:filinq:2175:3022acfd	GREEN: 2175 (openspec docs only, suite green)	session-20261117T185625-a1e67f54	2026-11-17T19:24:01Z
