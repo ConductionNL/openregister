@@ -18510,3 +18510,4 @@ verify:shillinq:2081:07764b3f	CONFLICT #2081 (l10n)	session-20261116T233929-170a
 verify:opencatalogi:2677:3ad6bc5b	CONFLICT #2677 (12 files)	session-20261116T230934-9ee320cf	2026-11-17T00:03:37Z
 verify:portaliq:2492:073b891c	CONFLICT #2492 (tests/example-site.spec.mjs vs development)	session-20261116T233800-0f135937	2026-11-17T00:03:49Z
 verify:integriq:3633:e8cfc0d1	CONFLICT #3633 (l10n/en.js, l10n/nl.js)	session-20261116T233011-100ff0c6	2026-11-17T00:04:14Z
+verify:portaliq:2284:a8a7fcd0	CONFLICT #2284 (7 lib files)	session-20261116T232923-46913d93	2026-11-17T00:04:23Z
