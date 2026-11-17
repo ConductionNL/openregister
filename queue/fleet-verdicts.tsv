@@ -18759,3 +18759,5 @@ dossiq	6644	2c3300bc4c89ae20b45cd4b9e7a9844b8d1b6352	GREEN	worker-23	tasks.md ti
 hermiq	1848	65d35bc5c91cb52e899ac03cd9fd06cc301f8aa5	GREEN	worker-20	unit 5736 baseline 0 fail, tree 5736 0 new failures; tests-only (Playwright spec, Newman folder, tasks.md notes)
 portaliq	2581	a16c6b8acc30ffc5695451390622f9e12613586d	GREEN	worker-32	unit 6339 tests on tree, baseline 6324 with 16 inherited errors (openregister classes absent), new failures 0; no JS unit script, markdown-block node test passes; e2e spec only
 dossiq	6647	57eb1cc0cdc646212fd14a280d3be3a5447164ba	GREEN	worker-25	tasks.md only (no code); tree code identical to development so unit suite not rerun; ticked items checked by grep of tests/e2e
+portaliq	2582	628f5a095fd877dfbc0668719312f4b0f6f7670d	GREEN	worker-32	unit 6339 tests on tree, baseline 6324 with 16 inherited errors (openregister classes absent), new failures 0; no JS unit script, markdown-block node test passes; table classes in MarkdownBlock per change
+portaliq	2583	d8b97f3d2f59b320429f65f08684bf9f10a34084	CONFLICT	worker-32	package.json conflicts with development
