@@ -19746,3 +19746,4 @@ fix:filinq:2072:79221249	conflict resolved (register 8.67.0), new head 88f031dc,
 fix:launchpad:1227:a4a6474a	conflict resolved, pushed 144eba89; REVERIFY queued (not landed: gate hosts unreachable here)	session-20261117T055908-62351962	2026-11-17T07:11:37Z
 review:shillinq:3011:dd50b990	CONFLICT with development (info.xml, register-versions lock)	session-20261117T063100-87feca45	2026-11-17T07:11:46Z
 fix:shillinq:2071:c9fb8008	restored BookCapturesCommand registration, pushed 6ef01f6f; REVERIFY	session-20261117T055834-d932e117	2026-11-17T07:11:54Z
+fix:shillinq:3064:b11030b8	conflict resolved, pushed e4c2b4532; REVERIFY recorded	session-20261117T063021-b217a961	2026-11-17T07:12:04Z
