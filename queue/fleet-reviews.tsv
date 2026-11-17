@@ -1420,6 +1420,7 @@ opencatalogi	2798	f43db4b9fe7611c1537c1a1d54f949df9e16db64	APPROVE	worker-18	Qui
 opencatalogi	2799	a135b0009b7aefad519be035a3b4003c800e66b2	APPROVE	worker-18	Standard; no blockers; e2e spec + delta spec front matter removed for openspec validate; no code
 opencatalogi	2800	7d8c1d3f5f83cdb66a61ba4d82d9107fb1d2fcc0	APPROVE	worker-18	Standard; no blockers; widget shows the no-assistant notice the change spec asks for; vitest mainEntry reds inherited from development
 opencatalogi	2801	ebec806c87bf79c189993d39f1d7c8c142469975	APPROVE	worker-18	Quick; no blockers; e2e spec only
+shillinq	3171	47136a423cbb20c72c38f169dec103458860399d	APPROVE	worker-01	Quick; no blockers; e2e spec + tasks tick only, gate fails inherited
 learniq	2601	3cc5a9d81623e03b4652659765476e0ce4828d7d	APPROVE	worker-49	Quick; no blockers; e2e spec only, empty storage state, env base URL
 learniq	2602	562289417dc44c1a437b7a634ba5466aed65748e	APPROVE	worker-49	Quick; no blockers; e2e spec only
 learniq	2603	8908efd600326c545e54f6b32c18d3fb916f9d0b	APPROVE	worker-49	Quick; no blockers; e2e spec only, opt-in via env
@@ -1427,3 +1428,4 @@ learniq	2604	2b6642c79ff14c1aa4d2715122388a273187d6c0	APPROVE	worker-49	Quick; n
 learniq	2605	86fd7d378df5a074bc07d040dca1b4f97b641255	APPROVE	worker-49	Quick; no blockers; e2e spec only
 learniq	2606	79bec0a6b13a375c6bdac5c3f52b04ffda07e438	APPROVE	worker-49	Standard; no blockers; school_year_start per change spec, default 08-01 keeps old behaviour, all schoolYearOf callers updated; gates: only inherited gate-23
 learniq	2607	4327ccd23479ba220db46c6f5ed001cdc5f3dadf	APPROVE	worker-49	Thorough; no blockers; public test schedule exposes only allowlisted fields of periods marked public; concern: author email typo in docblock; gates: inherited gate-23/101, gate-53 did not run (ajv)
+shillinq	3172	efb8780416c555bec59db7576bf423b483fda66d	APPROVE	worker-01	Quick; no blockers; e2e spec + tasks tick only, base URL from env, gate fails inherited
