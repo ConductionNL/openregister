@@ -19098,3 +19098,4 @@ shillinq	3004	5df6f499708856e17023a59e678ef7fc306c2a25	CONFLICT	worker-39:merge	
 shillinq	3006	7ffe1e970520509233b98ecc30b4c917813b736d	CONFLICT	worker-39:merge	conflicts with development; files: appinfo/info.xml l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json tests/fixtures/register-versions.lock.json 
 shillinq	3007	7ed685a659eec5bbacebf71a406f4a9d35e680a7	CONFLICT	worker-39:merge	conflicts with development; files: tests/fixtures/register-versions.lock.json 
 shillinq	3064	169d4186cff1f43a2a4ebafceb04cf818202013f	CONFLICT	worker-39:merge	conflicts with development; files: tests/fixtures/register-versions.lock.json 
+buildiq	1632	ba29c96cff7b6e41e1c3994648b28cdbfbcc0661	CONFLICT	worker-31:merge	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json src/components/ApplicationDetailActions.vue src/modals/AppSettingsModal.vue src/views/PageDesigner.vue 
