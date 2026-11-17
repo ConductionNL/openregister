@@ -5183,3 +5183,5 @@ planninq	1219	1d36a519712598e1196967b233046fb100733b92	RED	worker-13	GATE RED sb
 dossiq	6633	13ff4c499e0170aa482af59d3ec31bbba90c7a6e	MERGED	worker-02	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
 integriq	3613	b7dee7b62b8ed180650cb0ebb52503251bc25f17	RED	worker-42	GATE RED floor: unit_complexity: 3.90 -> 3.88
 dossiq	6635	4ef9f4fadc74464a3b12a9948d62d0b876a6a989	RED	worker-02	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+shillinq	2086	9fa2a6b954fba0207b06f0ef6a065b9c5323a8f7	RED	worker-17	GATE RED checker floor: adrvalidator: pass -> warn; adrvalidator stars: 5 -> 3; score: 100 -> 97
+hermiq	1763	7445b627b630cc12152981dc56399cc8fc45c2bd	RED	worker-27	GATE RED floor: unit_complexity: 4.56 -> 4.53
