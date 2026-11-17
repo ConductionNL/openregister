@@ -21263,6 +21263,7 @@ build:portaliq:site-dates-in-content-language:b2	already done: code tasks built 
 build:shillinq:expenses-category-mapping:b2	built in open PR #3048 (all code tasks ticked there, not yet merged); added missing e2e spec tests/e2e/expenses-category-mapping.spec.ts for 1.2/3.3, head fa893f7b0	session-20261117T141406-0a386201	2026-11-17T14:46:04Z
 build:portaliq:resident-on-example-set:b2	already done: code tasks built on development (2026-10-13); only 4.2, a live check, is left	session-20261117T134347-d0294040	2026-11-17T14:46:31Z
 build:portaliq:resident-pages-live-round-3:b2	already done: built on development in eb860065c; only live task 5.1 left	session-20261117T140734-4d108840	2026-11-17T14:46:28Z
+build:portaliq:row-action-carries-files:b2	already built: tasks 1.1-2.2 on development, scenarios e2e-excluded with named tests; skipped 3.1 (live check with dossiq)	session-20261117T141335-245f063b	2026-11-17T14:46:45Z
 build:portaliq:site-mandates-the-represented-manage:b2	already building: quality/build-site-mandates-the-represented-manage(-c3) exist; only T0 broker confirmation and e2e left	session-20261117T140734-4d108840	2026-11-17T14:46:44Z
 build:portaliq:site-home-follows-the-school-boards:b2	already done: only task 5 open, a live check; no PR	session-20261117T135414-614629b0	2026-11-17T14:46:58Z
 build:portaliq:site-multi-step-forms:b2	failed: nothing buildable; T8b waits on openregister or-form-and-journey-registry; T9 strict validate fails on long requirement texts (spec rewrite, not code)	session-20261117T134347-d0294040	2026-11-17T14:47:18Z
