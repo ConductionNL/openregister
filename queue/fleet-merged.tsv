@@ -5160,5 +5160,7 @@ versioniq	700	128a76e40590f6986a27cfb6f8067b3c807e4246	RED	worker-58	GATE RED ch
 integriq	3545	76605dd41334c821c1ceb47c5ffe0aa9fb627147	MERGED	worker-33	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.61
 versioniq	758	7a728e3355d9b561dfb98b1eb9fa7f47a5585fa3	MERGED	worker-58	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.97 holds at 4.21
 learniq	2509	2500f76794984fd0e6de436a69fd37945c85d3af	SKIP	worker-15	no APPROVE review at this head
+opencatalogi	2652	5779652190b58d120285393897b1d90ab9583833	RED	worker-24	GATE RED checker floor: secretscanning: pass -> fail; secretscanning stars: 5 -> 1
 launchpad	1212	dc706ee15e7c98a5d79e6386fd3a226f481661a7	RED	worker-54	GATE RED floor: duplication: 4.66 -> 4.64; module_coupling: 4.74 -> 4.70
 pipelinq	3929	ddcf760b31df5e52fc42a69a744b97300dbd42cf	MERGED	worker-01	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.49
+shillinq	2997	4b1b64a6fde1b52e00b26dc50d93bf5e1d22a68b	MERGED	worker-43	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.00
