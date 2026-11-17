@@ -18843,3 +18843,4 @@ fix:humaniq:1143:67a2f379:v3	merged #1143 at ef2689eaa85a742a010784b01fbf356e595
 fix:learniq:2537:1f3f874a:v3	conflict resolved, pushed 0831c23e; merge lock busy, REVERIFY queued	session-20261117T004655-1a901c92	2026-11-17T01:20:04Z
 review:shillinq:2100:03360cce	GREEN #2100 (vitest 3037/3038, 1 inherited)	session-20261117T004701-f6094f02	2026-11-17T01:20:13Z
 fix:humaniq:687:f6b6a0aa:v4	obsolete: development already has sass ^1.105.2 (lock 1.108.2); closed #687	session-20261117T004651-172e3db6	2026-11-17T01:20:30Z
+review:portaliq:2449:ecb78c85	BLOCK: contact e-mail readable beyond the owner (REQ-PER-002); 16 inherited unit errors	session-20261117T004640-1b533885	2026-11-17T01:20:27Z
