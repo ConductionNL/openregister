@@ -22259,3 +22259,4 @@ verify:integriq:3718:63ae9b35	GREEN #3718: tasks.md only, 0 new failures (5 inhe
 verify:integriq:3719:47ed6f87	GREEN #3719 (tests only, no new failures)	session-20261117T190540-b0615094	2026-11-17T19:33:58Z
 verify:integriq:3723:8a4e2be1	1 GREEN (3723); e2e spec only, unit 0 new failures	session-20261117T190140-44e48bc5	2026-11-17T19:34:09Z
 verify:larpinq:1103:e6ac5573	CONFLICT larpinq#1103 (spec already on development via b7573fe5)	session-20261117T190626-5c7fccb4	2026-11-17T19:34:21Z
+verify:integriq:3726:ccf011fb	GREEN integriq#3726 (0 new failures; e2e spec only)	session-20261117T190026-7c82e6b3	2026-11-17T19:34:33Z
