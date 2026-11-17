@@ -19151,3 +19151,5 @@ filinq	2107	07113f957523ddcead4a92ba49746f86e0fb017b	CONFLICT	merge3	merges clea
 filinq	2120	fbc97be252a3a73eb3a875e6c66c0e852fbb4474	CONFLICT	merge3	merges clean on development alone; files: lib/Settings/filinq_register.json tests/unit/EventListener/ListenerRegistrarTest.php tests/vitest/manifestFragments.spec.js 
 filinq	2121	fb55b7205722abe59242d2e6ed53fbe8ad43cd80	CONFLICT	merge3	merges clean on development alone; files: appinfo/info.xml l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Settings/filinq_register.json tests/vitest/manifestFragments.spec.js 
 filinq	2130	151267ee08581cd0a9c8072e7dd347ec20ed512c	CONFLICT	merge3	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Settings/filinq_register.json tests/bootstrap-unit.php 
+versioniq	692	96800420d9df09f61c55ff8510dbb0ab80c2a269	CONFLICT	merge3	conflicts with development; files: tests/e2e/cli.spec.ts tests/e2e/jobs.spec.ts 
+versioniq	698	ee38e0b72ee16970a4538db390dba458699d7063	CONFLICT	merge3	conflicts with development; files: tests/e2e/cli.spec.ts 
