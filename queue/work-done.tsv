@@ -20040,6 +20040,7 @@ fix:integriq:3582:ec13862c	conflict resolved, pushed 5de17aa9; REVERIFY queued	s
 measure:integriq:20261117h08	php 95.21% (pcov), js 94.38%	session-20261117T084927-57ebccdf	2026-11-17T09:05:25Z
 fix:filinq:2079:b23f1426	conflict resolved, pushed 1b7aa3aa; REVERIFY queued (merge lock held elsewhere)	session-20261117T083927-e76b77af	2026-11-17T09:05:41Z
 fix:stackiq:1966:07fea94b	fixed: test pinned to 1.5.12, suite green; new head 60592396, REVERIFY queued	session-20261117T084807-e8ebf79d	2026-11-17T09:06:08Z
+fix:hermiq:1795:a0df53ce	merged #1795 at 139b265b31f4e19c7031fbbd1a9088407bef3202 (info.xml conflict resolved; php duplication floor restored with a shared seed lookup and folder helper)	session-20261117T081247-63811e04	2026-11-17T09:07:08Z
 merge:stackiq:1933:dd3f1de2	cloud tree of 4 stackiq PRs: merged=2 red=0 fail=0 skip=0; conflict 2, lint 0, red 0, moved 0, done 0	session-20261117T084948-f35bd67b	2026-11-17T09:06:38Z
 merge:shillinq:3065:606bc8ab	cloud tree of 1 shillinq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T084846-a0137765	2026-11-17T09:07:38Z
 fix:stackiq:1942:9623d967	fixed RED (binding counts); pushed f000f6c2; merge lock held elsewhere, REVERIFY recorded	session-20261117T084906-fb469281	2026-11-17T09:07:52Z
