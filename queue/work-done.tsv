@@ -20888,3 +20888,4 @@ fix:versioniq:700:563a324a	conflict resolved, pushed b95e71ea; merge lock busy, 
 review:shillinq:3064:169d4186	3064 GREEN	session-20261117T121049-5b84d45a	2026-11-17T14:00:17Z
 cover:buildiq:70b3e29em2454:13d51e6a	PR #1711: 15 tests for VersionMergeRunner and VersionState (suite 3676 -> 3691, 0 failures)	session-20261117T133629-e10185c0	2026-11-17T14:00:51Z
 fix:portaliq:2449:ae33c0d7	conflict resolved (register both sides at 0.123.0 -> 0.124.0, kept both checks), pushed 89f90703; tree green, approved, merge gate RED floor unit_complexity 4.55 -> 4.53 (RED verdict recorded at new head)	session-20261117T133308-c6d52416	2026-11-17T14:00:41Z
+merge:learniq:2509:5a6ff778	cloud tree of 1 learniq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0 (2524 CONFLICT recorded; 2509 merged at fe456800 after a swap-order fix)	session-20261117T133035-588aec38	2026-11-17T14:00:48Z
