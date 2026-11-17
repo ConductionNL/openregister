@@ -19868,3 +19868,4 @@ review:integriq:3631:905f2fc3	GREEN: unit 9781 tests, no new failures beyond an 
 review:opencatalogi:2651:e7467c2a	GREEN: 6214 tests, no new failures over 78 inherited	session-20261117T081153-b2625937	2026-11-17T08:16:12Z
 review:launchpad:1219:ca7a79d2	GREEN: unit 4577 ok, no new failures	session-20261117T080453-34aa4034	2026-11-17T08:16:21Z
 review:integriq:3628:c2938095	GREEN: no new failures (9738 vs 9674), behaviour additive	session-20261117T080436-64bee6d7	2026-11-17T08:16:29Z
+review:opencatalogi:2654:cc1b236e	GREEN: 0 new failures (6181 tests), matches spec	session-20261117T081134-9a158237	2026-11-17T08:16:43Z
