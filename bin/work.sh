@@ -95,7 +95,11 @@ task_claim() {
 		rows=$(_task_rows claimable "$types")
 		[ -n "$rows" ] || { _st_flush; return 1; }
 		# Stay on [app] only while it has a task among the first 64, so workers do not linger on a later app.
-		if [ -n "$app" ]; then
+		# CLAIM_APP_ONLY=1 (per-app builders): only tasks of [app]; none left ends the claim (1).
+		if [ -n "$app" ] && [ -n "${CLAIM_APP_ONLY:-}" ]; then
+			rows=$(printf '%s\n' "$rows" | awk -F'\t' -v a="$app" '$5 == a')
+			[ -n "$rows" ] || { _st_flush; return 1; }
+		elif [ -n "$app" ]; then
 			prows=$(printf '%s\n' "$rows" | head -64 | awk -F'\t' -v a="$app" '$5 == a')
 			[ -n "$prows" ] && rows=$prows
 		fi
