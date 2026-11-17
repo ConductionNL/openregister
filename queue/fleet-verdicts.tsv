@@ -15939,6 +15939,7 @@ humaniq	1146	497b5f3cd401947b42db8e599a4df14793d79bdc	CONFLICT	worker-34	merge w
 hermiq	1755	c4172dcdcbebaa845adbb9e55c068dbf495df7f7	CONFLICT	worker-41	conflict with development in tests/Unit/Service/ScheduleServiceTest.php; baseline 5463 tests green, tree not run
 learniq	1883	de89b9020bc724b0b727247d5b33351065e8d227	CONFLICT	worker-17	conflicts with development in l10n/en.js,en.json,nl.js,nl.json, tests/Stubs/Contract/ObjectServiceInterface.php, tests/Unit/Portal/golden/PortalManifests.json
 hermiq	1794	97a61ef1f8c212a30d231ab9df7c34b874c3600a	CONFLICT	worker-11	conflicts with development in l10n, HermiqToolProvider, FacadeToolInvoker, openapi.json, AdminRoot.vue and tests; suite not run
+hermiq	1785	8d6ac93bec90be23af4a1c9258c6cffc1b95223a	CONFLICT	worker-50	conflicts with origin/development in lib/Settings/hermiq_register.json; baseline 5463 tests green, tree not run
 integriq	3613	0ea6aa0c6c1738ef9db836dd96a9656c5aae5e09	CONFLICT	worker-28	conflict in openapi.json with development a3098245; tree not run
 humaniq	687	f6b6a0aa4d02b84def34ef30b96fe8c44f383ced	CONFLICT	worker-32	conflict with development in package.json, package-lock.json; baseline 4411 tests green, PR not tested
 integriq	3618	e9d117fd8fe69bbba563f07fd9bb2a0b1b621f02	CONFLICT	worker-43	conflicts with development in l10n/en.js, l10n/nl.js
@@ -15993,6 +15994,7 @@ launchpad	1239	793d60336936c8b1bb2989a8c17900a0a7c2457d	CONFLICT	worker-21	merge
 launchpad	819	c5c80a07dc500fcc4e5064cd5126241a9f4bf32a	GREEN	worker-38	dev-dep phpmd 2.15->3.0 + sbom; unit 4516 base -> 4516 tree, 0 new failures; note: phpmd already exits 2 on development, 3.0 reports more findings (text lines 66->81, unusedparams 4->5) and deprecates positional args
 learniq	2534	097afa2d9090610d05c97d2c2e116aeeed835108	CONFLICT	worker-27	conflicts with development in l10n/en.js,en.json,nl.js,nl.json, lib/Service/ContractBindings.php
 learniq	2519	644c2a7995dd39085b6e8c57a462495226c6efec	CONFLICT	worker-17	conflicts with development in l10n/en.js,en.json,nl.js, tests/Unit/Portal/golden/PortalManifests.json
+opencatalogi	2665	fbbdb9b4979ec70fcf42d330b65402fe8dd25534	CONFLICT	worker-32	conflicts with development in 20 files (l10n, Catalogi/FederationController, DcatSerializer, SettingsService, src/main.js, manifest, settings views, their tests); baseline 6066 tests, 103 inherited failures/errors; PR not tested
 learniq	2514	2e2444ab4454d26a110258855a257f891ba0768c	CONFLICT	worker-27	conflicts with development in tests/Unit/Portal/golden/PortalManifests.json
 opencatalogi	2684	8f4a54a3fb21e0dbf759ace3f6058ff85231177d	CONFLICT	worker-41	conflicts with development in 12 files (info.xml, l10n, ThemesController, ListenerRegistrar, PublicationQueryService, openapi, tasks.md); tree not run
 learniq	2532	2772c58e19949ae707acc898bd7fec7a06f7bd6a	CONFLICT	worker-17	conflicts with development in lib/Settings/learniq_register.json
