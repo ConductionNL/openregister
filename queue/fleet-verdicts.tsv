@@ -18787,6 +18787,7 @@ filinq	2188	a7b68fe976f749325f4b8f313e44b59b89381ae2	GREEN	worker-26	unit 7299 o
 keepiq	1900	a6ccac84767665a898692a9826befe197f56bcea	GREEN	worker-39	vitest 7173 pass, 3 inherited reds only; frontend-only build of portability-export-choice-and-restore-fidelity
 dossiq	6659	565a618a74e1407233ed8b1363bf412763f216c3	GREEN	worker-40	unit 18422 on tree vs 18398 baseline, 1 inherited error, 0 new; vitest 7224, 2 inherited failures, 0 new; build PR judged against its change
 keepiq	1901	f9f7976788c4b0b79cfd7a58bceadaf67c54401f	REVERIFY	worker-39	conflicts only with an earlier PR of the verify tree
+integriq	3613	dd360a604314022901564e1d9ed3936260dff032	GREEN	worker-11	unit 9941 on tree vs 9910 on development, 5 inherited failures, 0 new; vitest 183 files / 2395 pass; build of access-oauth-and-token-validation, 401 with challenge on a missing token is what its spec asks
 dossiq	6660	9f09443de66fb27222359ed58556cfdc9f42c592	GREEN	worker-10	phpunit 18385 tests, baseline 19 failures, same 19 on tree, 0 new; vitest 7211, 2 failures inherited from development; removes the duplicate taakveld list as change case-costs-reported-per-iv3-taakveld task 2 asks
 hermiq	1719	fdc4de5bed00786565c5c461bb511b38a1828d6d	CONFLICT	worker-47	conflicts with development in lib/Settings/hermiq_register.json; baseline 5736 tests OK; not run on tree
 pipelinq	3945	ceffbf1ffd95fdbc429b3b7e77c1cbf97a8849c2	REVERIFY	worker-30	conflicts only with an earlier PR of the verify tree (#3943, l10n files)
@@ -18809,6 +18810,7 @@ filinq	2186	9bbf0ae16146dab80c0b1bc57ab5d57f6fd7bf69	GREEN	worker-22	build edit-
 filinq	2174	cb6650c7ab7ec341179061d3a82022a2119cfc16	GREEN	worker-26	unit 7288 on tree = baseline (0 failures), new failures 0; version bump in info.xml/openapi.json only
 opencatalogi	2796	7d78014c5c048a8b9ec158b0573d341fb0dfbe97	GREEN	worker-31	phpunit 6389 tests on tree, baseline 6364 with 103 inherited failures/errors, 0 new; vitest 8 inherited mainEntry failures, 0 new
 opencatalogi	2797	73c7291c61fbe1ac6ed7f6f4bb7f1da3b265956d	GREEN	worker-31	phpunit 6389 tests on tree, baseline 6364 with 103 inherited failures/errors, 0 new; vitest 8 inherited mainEntry failures, 0 new
+keepiq	1899	abebdd6ffa781653cb3cdfbbfdac6d7c181fbded	GREEN	worker-39	alone on development: phpunit 5631 ok (baseline 5619 ok), no new failures, PHP-only
 opencatalogi	2798	f43db4b9fe7611c1537c1a1d54f949df9e16db64	GREEN	worker-31	phpunit 6389 tests on tree, baseline 6364 with 103 inherited failures/errors, 0 new; vitest 8 inherited mainEntry failures, 0 new
 dossiq	6663	7ad8d4657778d1082dea10da61309ea37d382dd0	GREEN	worker-53	build inspection-checklists-onto-task per its spec; unit 18421 tests (baseline 18398), 19 inherited failures, 0 new; php -l clean
 dossiq	6646	eb19f73d3dfe4c5313e6aa76ef6c339c953b85c5	GREEN	worker-21	tasks.md tick only (1.4 seed confirmed on portaliq development zuiddrecht.json); unit 18399, 19 failures inherited, none new
