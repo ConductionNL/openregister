@@ -5308,3 +5308,4 @@ stackiq	2027	170f69ae501e4b6ab42a6e67a3d053b86ecee455	MERGED	worker-29	GATE OK s
 integriq	3704	ef91827a9deb643222e2c4ece7853589b5dbcd5a	RED	worker-08	GATE RED sbom: composer.lock changed without sbom.cdx.json
 versioniq	729	ea732a804e6cd6a8b2c3838050cbdbf46e259a21	SKIP	worker-43	no APPROVE review at this head
 versioniq	770	48224de9d3c1e44cdc0a37e08b1cbb381fa8a3df	MERGED	worker-43	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.97 holds at 4.15
+integriq	3705	06350cfbac4bae6a1c87014c0cbf9a40afbcd51f	RED	worker-08	GATE RED sbom: package-lock.json changed without sbom.cdx.json
