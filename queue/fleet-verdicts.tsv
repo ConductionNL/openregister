@@ -16109,3 +16109,4 @@ versioniq	715	37497a7ed42c399a93097825eddb2cf9a2f3d769	REVERIFY	worker-21	merged
 versioniq	754	668f7591890c8b3d5772e0b576a44e268cadbec3	REVERIFY	worker-54	merged origin/development, resolved src/App.vue conflict keeping both dialogs; phpunit 2184 tests 2 failures (inherited), vitest 3146 passed; new head 822b041bd595962297376931a2d345734ebfc95b, verify it
 versioniq	503	7514a922e63c6e6fe2e22b1f05971ca7ee537ce0	CONFLICT	worker-05	package.json, package-lock.json, sbom.cdx.json conflict with origin/development (other dependency bumps landed); not tested
 filinq	2086	fe4bcf088455dba29cd81fe5163aa3fdafe7a7a6	CONFLICT	worker-40	conflicts with development in appinfo/info.xml, l10n/en.js, l10n/en.json, l10n/nl.js, l10n/nl.json, lib/Settings/filinq_register.json; baseline 6960 tests OK (6 skipped)
+stackiq	1941	fb08b1cd8788a46a4dee05436ab70f93d75f62f0	RED	worker-15:merge-gate	GATE RED floor: unit_interfacing: 4.72 -> 4.64
