@@ -21313,4 +21313,5 @@ build:portaliq:site-nlds-widget-palette:b2	failed: too big for one task (as roun
 build:shillinq:fees-payments-and-the-contract-register:b2	failed: nothing buildable; sections 1-3 and 5-6 built on development, 4.x waits on an integriq batch payment submission capability (none on integriq development), 7.x is handover to other lanes	session-20261117T134347-d0294040	2026-11-17T14:51:01Z
 build:shillinq:inventory-receipt-cost-layers:b2	already building: branch quality/build-inventory-receipt-cost-layers exists	session-20261117T134347-d0294040	2026-11-17T14:51:39Z
 build:shillinq:ledger-group-close:b2	already building: quality/build-ledger-group-close is open	session-20261117T133035-588aec38	2026-11-17T14:51:55Z
+build:shillinq:ledger-journal-line-dimensions:b2	already building: branch quality/build-ledger-journal-line-dimensions exists	session-20261117T134347-d0294040	2026-11-17T14:52:11Z
 build:shillinq:inventory-pos-decrement:b2	already done: code tasks on development (fc91fe45); only the two-app live check is left	session-20261117T133035-588aec38	2026-11-17T14:52:18Z
