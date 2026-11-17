@@ -16439,3 +16439,4 @@ versioniq	726	d1f35455cb6c3ef29edc3819589c85d9b3064795	REVERIFY	worker-14	merged
 larpinq	1059	33374bf7b3507394b31220c9b88c49aec8b5c979	REVERIFY	worker-11	merged development in, kept both Unreleased CHANGELOG entries (docs-only PR: CHANGELOG and tasks.md); merge lock held by another merger; new head 064564f8eebf0763f2d68215c6289a261f3c882d, verify it
 stackiq	1937	53bbb64a58e178ee4616c53220567a0102eaac89	RED	worker-33:merge-gate	GATE RED floor: unit_interfacing: 4.71 -> 4.68
 versioniq	703	6665c28103129bccbfc61854d3e03f4e18f8d880	RED	worker-35:merge-gate	GATE RED floor: unit_complexity: 4.79 -> 4.77
+stackiq	1944	25fa2c20ed0031ac0278d3a787cffa3eca2f16bc	REVERIFY	worker-29	merged development in: MergeObject.vue deleted as on development (its 56 keys removed), ArchiMate conflict kept both, l10n union, n() mock added to development's new modal specs; vitest 2880 pass, 1 inherited facets failure; new head a796a511b719eec60192ecd7b44a0b3427066e0d, verify it
