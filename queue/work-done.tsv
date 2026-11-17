@@ -22810,3 +22810,4 @@ merge:opencatalogi:2797:d9522187	unmeasured: api.osv.dev (5 IN approved, 0 merge
 merge:hermiq:1850:f1c8b182	unmeasured: static.developer.overheid.nl (1850 APPROVE, not landed; 1851 REQUEST_CHANGES gate 51; 1852/1854 CONFLICT only with tree, REVERIFY)	session-20261117T213139-f6154590	2026-11-17T22:09:32Z
 merge:integriq:3729:9f2477d1	unmeasured: static.developer.overheid.nl; cloud tree of 4 integriq PRs: merged=0 red=1 (3731 unit_complexity floor) skip=2 conflict=1 (land ran twice by mistake, duplicate ledger rows)	session-20261117T211406-076a7a0e	2026-11-17T22:09:35Z
 verify:portaliq:2591:a322f371	stale	feeder	2026-11-17T21:38:30Z
+merge:pipelinq:3935:cba98368	merge3 tree of 9 pipelinq PRs: merged=6 red=0 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-17T22:10:20Z
