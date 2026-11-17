@@ -19600,3 +19600,4 @@ fix:filinq:2090:fc2072b1	conflict resolved, pushed 0bf796a1; REVERIFY queued (me
 fix:portaliq:2449:3a70eb8a	unmeasured: static.developer.overheid.nl (conflict fixed, new head 05704f30, APPROVE recorded)	session-20261117T055928-ffb37dd3	2026-11-17T06:40:08Z
 fix:decidiq:2173:6e5001e5	conflict resolved, pushed 0ef71c12; lock busy, REVERIFY queued	session-20261117T063048-0c413ea5	2026-11-17T06:40:20Z
 merge:pipelinq:3734:69aca4e2	unmeasured: static.developer.overheid.nl (pushed fix 9499f0c6, APPROVE recorded at it)	session-20261117T063100-87feca45	2026-11-17T06:40:31Z
+fix:filinq:2078:d89b93ac	conflict resolved, pushed 17892e17; merge lock held by another merger, REVERIFY queued	session-20261117T063127-b908dd01	2026-11-17T06:40:47Z
