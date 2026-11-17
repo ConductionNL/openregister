@@ -20317,3 +20317,4 @@ review:hermiq:1762:c10940e1	GREEN: 5614 unit tests pass on PR+development, vites
 review:filinq:2116:6e4312c8	GREEN #2116 (conflicts with development: register)	session-20261117T111613-c4d98a73	2026-11-17T11:22:05Z
 verify:hermiq:1833:9cdd3e9c	GREEN #1833 (docs only; unit 5601/0)	session-20261117T111714-cd94760b	2026-11-17T11:22:15Z
 verify:portaliq:2559:1498c922	GREEN #2559	session-20261117T111401-3cc65eba	2026-11-17T11:22:25Z
+review:filinq:2113:ee71f67d	GREEN: unit 7254/0 fail on PR+development; register json conflicts with development	session-20261117T112008-f5bd35fb	2026-11-17T11:22:55Z
