@@ -18490,3 +18490,4 @@ shillinq	3160	28ae1c746191e9ad45e1c70698bed38f1ec8205e	GREEN	worker-52	docs only
 stackiq	2034	8458ee1c1c857c2037a4457c76eeb6cab612f699	GREEN	worker-31	unit 4054 tests, baseline 4054 OK (39 skipped), 0 new failures; composer platform pin 8.3->8.3.16 only
 dossiq	4886	1bf38b2df71b75bd37ad94efe2e4ca400393f1cf	GREEN	worker-32:review	additive: case type can pick a second statutory term per REQ-CMP-CT-03; pick after scope, before default; unreadable case type falls back to default; suite 18398 tests, 19 failures all inherited from development, 0 new; touched tests 124 OK
 integriq	3701	4816b22cd7835e1f79e62a620285ea2f0172cf3c	GREEN	worker-50	unit 9843 tests on tree, baseline 2E/3F, no new failures; docs only (publiccode.yml, README), referenced images exist
+planninq	1236	8ebf1897865a6ad7684775e493443017aa4ee190	GREEN	worker-16	unit 1253 tests, baseline 0 failures (11 skipped), new failures 0; composer platform pin only, lock hash consistent
