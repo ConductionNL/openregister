@@ -18243,3 +18243,11 @@ opencatalogi	2650	4abde043e730bc3b9435bd4f27805e5c58e669e2	REVERIFY	merge3	verdi
 opencatalogi	2654	3703a084ab8e4634c812d8c4f6d62422876295d3	REVERIFY	merge3	verdict sha is not the head: head is 7717f5da9c6bf7aad2abe74c9c9fa91500756a3a
 opencatalogi	2766	c697ce65f7824ed3e5ac7a0397aa9750bb5f40a6	REVERIFY	merge3	verdict sha is not the head: head is 61ed15e96caf47caa6bdbb6e95935a300585a639
 filinq	2093	b98f59371a6cf7505147319d082e4ba8ce2e0479	REVERIFY	worker-53	merged development in (register 8.71.0 joins both lines' entries, app version past both); unit 7275 tests green; new head 33690cef69af41d263a615ebed8cadfcd458d08e, verify it
+filinq	2085	54533c183486b2ad61902deb20d68786788d96e7	REVERIFY	worker-49:merge	conflicts only with an earlier PR of the merge tree: merges clean on development alone; files: lib/Settings/filinq_register.json 
+filinq	2086	2b8e54e77b6d862c5f52f4cd3c3523499d002e57	REVERIFY	worker-49:merge	conflicts only with an earlier PR of the merge tree: merges clean on development alone; files: lib/Settings/filinq_register.json 
+filinq	2090	c34cbf17292962b837c5015baeb6a0006ce8ec81	REVERIFY	worker-49:merge	conflicts only with an earlier PR of the merge tree: merges clean on development alone; files: lib/Settings/filinq_register.json 
+filinq	2095	97c8a0044e0b7c7851488b1dc31f4cb22eda5db8	REVERIFY	worker-49:merge	conflicts only with an earlier PR of the merge tree: merges clean on development alone; files: appinfo/info.xml l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Settings/filinq_register.json 
+filinq	2105	be740cc2cc3ebb548eafa9933b8cc7ffcf23fb40	REVERIFY	worker-49:merge	conflicts only with an earlier PR of the merge tree: merges clean on development alone; files: lib/Settings/filinq_register.json tests/unit/Settings/DocumentProductionSchemaTest.php 
+filinq	2120	34cc4cd42cfc6222f7638fb33b269692215ff4c4	CONFLICT	worker-49:merge	conflicts with development; files: lib/Settings/filinq_register.json tests/unit/EventListener/ListenerRegistrarTest.php 
+filinq	2121	696077705a4c8ea11136317d425c7270d0b24297	CONFLICT	worker-49:merge	conflicts with development; files: appinfo/info.xml l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Settings/filinq_register.json 
+filinq	2124	e25a43e2a9c0c32a978b66ad3b8	REVERIFY	worker-49:merge	verdict sha is not the head: head is e25a43e2a9c0c32a978b66ad3b8e6a646abb09d3
