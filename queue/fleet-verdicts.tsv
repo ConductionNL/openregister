@@ -17911,3 +17911,4 @@ integriq	3557	76fedb7692b4926331f34ded71da033c24863dc8	CONFLICT	worker-42	confli
 learniq	2509	9a57b9430234952760eb416f122aa3fd1df5d6e3	RED	worker-15:merge-gate	GATE RED floor: unit_interfacing: 3.61 -> 3.59
 opencatalogi	2654	3703a084ab8e4634c812d8c4f6d62422876295d3	GREEN	worker-54:review	build of oai-pmh-endpoint per its specs (public GET read-only and rate limited, changed rows through the anonymous RBAC read, withdrawn entries id and date only); unit tree 6275 vs baseline 6259, same 92 failures and 11 errors as development, new tests 18 OK; concern: sig-floor component_independence 93.5 -> 92.8 at head, the merge gate will judge it
 integriq	3582	5de17aa99bc46cef55c831e651674dde6d6444ce	CONFLICT	worker-42	conflicts with development; files: l10n/en.json l10n/nl.json 
+integriq	3601	85ba8d219307ca77e28a435da8f393e50646c364	CONFLICT	worker-42	conflicts with development; files: tests/Unit/Service/CatalogRegistrySeedGoldenTest.php 
