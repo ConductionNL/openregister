@@ -18877,3 +18877,4 @@ keepiq	1757	f60a03eab95913a3e128ce1e56c1741f826486fb	BLOCK	worker-39	tests ok (p
 integriq	3612	e27499b1856ba5d6d1a57ae5520018815b6ac2c9	GREEN	worker-57	unit 9933 tests on tree (baseline 9910: 2 errors, 2 failures inherited); new failures: none; build of brp-connection-monitor-from-pipelinq task 3.1, within spec
 larpinq	1102	53a4124923f5d9be485ff1fbd3c9d204a2aafba2	GREEN	worker-23	e2e spec + tasks.md only, imports resolve; no PHP/JS unit code changed
 integriq	3731	d1f6f2979cd52bb09500599fce18732c3238ee04	GREEN	worker-26	unit 9937 on tree (baseline 9910 with 5 inherited failures: CallServiceTest x2, JobsControllerTest x2, SynchronizationSynchronizeEntryGoldenTest), new failures 0; php -l clean; Talk/Teams thread fetch per REQ-DCC-010/011, Teams reads refused without a delegated grant; 6 new tests skip without spreed
+launchpad	1307	4016f4789bd866efa5e1d8c4fa193c0b20287ca0	GREEN	worker-31	phpunit 4671 on tree vs 4621 baseline, 0 failures; no JS touched
