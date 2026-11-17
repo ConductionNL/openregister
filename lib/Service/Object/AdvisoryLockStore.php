@@ -150,7 +150,10 @@ class AdvisoryLockStore {
 
 		$now = new DateTime();
 		$key = $this->key(identifier: $request->identifier);
-		$stored = ($this->db === null) ? $this->configRaw(key: $key) : $this->storedRaw(key: $key);
+		$stored = $this->configRaw(key: $key);
+		if ($this->db !== null) {
+			$stored = $this->storedRaw(key: $key);
+		}
 		$existing = self::decoded(raw: $stored);
 		if ($this->isLive(lock: $existing, now: $now) === true && ($existing['user'] ?? null) !== $ownerId) {
 			return false;
@@ -185,7 +188,11 @@ class AdvisoryLockStore {
 		$raw = $result->fetchOne();
 		$result->closeCursor();
 
-		return is_string($raw) === true ? $raw : null;
+		if (is_string($raw) === false) {
+			return null;
+		}
+
+		return $raw;
 	}//end storedRaw()
 
 	/**
@@ -198,7 +205,11 @@ class AdvisoryLockStore {
 	private function configRaw(string $key): ?string {
 		$raw = $this->appConfig->getValueString('openregister', $key, '');
 
-		return $raw === '' ? null : $raw;
+		if ($raw === '') {
+			return null;
+		}
+
+		return $raw;
 	}//end configRaw()
 
 	/**
@@ -251,7 +262,11 @@ class AdvisoryLockStore {
 
 		$lock = json_decode($raw, true);
 
-		return is_array($lock) === true ? $lock : null;
+		if (is_array($lock) === false) {
+			return null;
+		}
+
+		return $lock;
 	}//end decoded()
 
 	/**

@@ -151,7 +151,7 @@ class LockHandler {
 			return false;
 		}
 
-		$this->stores->runLocks?->record(object: $context['object'], step: new LockRunStep($request->runUuid, $request->nodeId));
+		$this->stores->runLocks?->record(object: $context['object'], step: new LockRunStep(runUuid: $request->runUuid, nodeId: $request->nodeId));
 		$this->stores->auditTrailMapper->createAuditTrail(old: $before, new: $context['object'], action: 'lock');
 		$this->logLocked(after: $context['object'], request: $request);
 

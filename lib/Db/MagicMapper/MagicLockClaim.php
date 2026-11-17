@@ -132,7 +132,8 @@ final class MagicLockClaim {
 			// Unlocked: SQL NULL, or a JSON null or empty value.
 			return match ($platform) {
 				IDBConnection::PLATFORM_POSTGRES => "({$column} IS NULL OR {$column}::jsonb IN ('null'::jsonb, '[]'::jsonb, '{}'::jsonb))",
-				IDBConnection::PLATFORM_MYSQL => "({$column} IS NULL OR CAST({$column} AS JSON) IN (CAST('null' AS JSON), CAST('[]' AS JSON), CAST('{}' AS JSON)))",
+				IDBConnection::PLATFORM_MYSQL => "({$column} IS NULL OR CAST({$column} AS JSON) IN "
+					."(CAST('null' AS JSON), CAST('[]' AS JSON), CAST('{}' AS JSON)))",
 				IDBConnection::PLATFORM_MARIADB => "({$column} IS NULL OR JSON_COMPACT({$column}) IN ('null', '[]', '{}'))",
 				IDBConnection::PLATFORM_SQLITE => "({$column} IS NULL OR json({$column}) IN ('null', '[]', '{}'))",
 				default => "({$column} IS NULL OR {$column} IN ('null', '[]', '{}'))",

@@ -760,6 +760,7 @@ Db/MagicMapper/MagicCrossTableHit.php,21,Db,Service,Service/Db/MagicMapper/Magic
 Db/MagicMapper/MagicCrossTableScan.php,34,Db,Service,Service/Db/MagicMapper/MagicCrossTableScan.php,0,,Core
 Db/MagicMapper/MagicFacetHandler.php,1377,Db,Service,Service/Db/MagicMapper/MagicFacetHandler.php,0,,Core
 Db/MagicMapper/MagicIdentifierProbe.php,16,Db,Service,Service/Db/MagicMapper/MagicIdentifierProbe.php,0,,Core
+Db/MagicMapper/MagicLockClaim.php,60,Db,Service,Service/Db/MagicMapper/MagicLockClaim.php,0,,Core
 Db/MagicMapper/MagicMetadataColumn.php,49,Db,Service,Service/Db/MagicMapper/MagicMetadataColumn.php,0,,Core
 Db/MagicMapper/MagicMetadataColumnHealer.php,206,Db,Service,Service/Db/MagicMapper/MagicMetadataColumnHealer.php,0,,Core
 Db/MagicMapper/MagicMetadataColumns.php,210,Db,Service,Service/Db/MagicMapper/MagicMetadataColumns.php,0,,Core
