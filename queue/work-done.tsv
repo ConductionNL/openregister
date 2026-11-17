@@ -19465,3 +19465,4 @@ review:hermiq:1741:d8e7284d	GREEN: 5542 tests OK (baseline 5527), phpstan clean	
 review:filinq:2078:d89b93ac	CONFLICT: l10n en/nl and filinq_register.json vs development	session-20261117T055908-62351962	2026-11-17T06:02:48Z
 review:filinq:2072:79221249	GREEN: unit 7192 OK, vitest 801 OK; register description conflicts with development	session-20261117T055928-ffb37dd3	2026-11-17T06:03:01Z
 review:filinq:2130:90159872	CONFLICT: l10n en/nl and filinq_register.json vs development	session-20261117T055908-62351962	2026-11-17T06:03:17Z
+review:filinq:2059:9ead1961	CONFLICT: l10n and register conflict with development; head alone 6985 tests OK, change consistent with spec	session-20261117T055834-d932e117	2026-11-17T06:03:37Z
