@@ -20996,3 +20996,4 @@ build:dossiq:package-reinstall-applies-changed-content:b2	already done: tasks 1-
 build:dossiq:case-type-conditional-rules:b2	partial: PR #6650 ticks Task 0 (already on openregister main, Rules tab asks scoped); left: live integration tests of Task 2 and 4	session-20261117T134304-10008ffd	2026-11-17T14:17:02Z
 build:dossiq:overview-cards-per-case-type:b2	already building: quality/build-overview-cards-per-case-type-2 exists; only 1.6b left, which waits on a CnTabsWidget ordering feature in nextcloud-vue	session-20261117T123632-d3b91db3	2026-11-17T14:16:59Z
 build:dossiq:party-history-link:b2	already done: 1.1/1.2 on development; only 1.3 live check left	session-20261117T133303-ca20630d	2026-11-17T14:17:10Z
+build:planninq:task-attachments-from-files:b2	PR #1238: wrote the 1.1 Playwright e2e (code already on development); 1.1 left unticked, the e2e needs a running instance	session-20261117T141458-ec2a4394	2026-11-17T14:18:19Z
