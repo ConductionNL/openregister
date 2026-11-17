@@ -19691,3 +19691,4 @@ review:integriq:3585:472896a8	GREEN (Strict review, no blockers)	session-2026111
 fix:hermiq:1719:d7853a9e	blockers fixed, pushed 72b13e05 (suite 5581 OK); merge lock held elsewhere, REVERIFY queued	session-20261117T062856-12839ec9	2026-11-17T07:00:20Z
 review:buildiq:1654:8cbe077a	BLOCK: DashboardController factory omits settings, offline never offered in production	session-20261117T055834-d932e117	2026-11-17T07:00:35Z
 merge:hermiq:1738:26b23afe	merge3 tree of 7 hermiq PRs: merged=1 red=3 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-17T07:00:51Z
+review:filinq:2083:a6bf5b36	BLOCK: register version without app version bump, component_independence floor, @copyright, @spec	session-20261117T063032-e9a993e2	2026-11-17T07:00:58Z
