@@ -20364,6 +20364,7 @@ gap:launchpad:publiccode-logo-and-fields:1	PR #1267; logo yes; store link yes (R
 review:buildiq:1590:d570d17d	BLOCK: spec-coverage gate, 17 added Vue methods lack @spec; tests green (inherited 1 failure)	session-20261117T112455-9371c914	2026-11-17T11:32:54Z
 fix:integriq:2650:92ce810e	conflict resolved, pushed a234a7dc; REVERIFY queued	session-20261117T112734-25bd0ccd	2026-11-17T11:33:14Z
 verify:planninq:1217:4421f900	GREEN 1217, 1219 (phpunit 1253 ok, vitest 3589 ok)	session-20261117T112432-6eb8ecae	2026-11-17T11:33:41Z
+gap:pipelinq:publiccode-logo-and-fields:1	PR #3932; logo yes; store link yes (README + nl/en longDescription); fields added: landingURL, roadmap, softwareVersion/releaseDate 0.5.14/2026-10-08, platforms web, categories, dependsOn.open, intendedAudience, features nl+en, screenshots, availableLanguages; removed non-standard supports key; usedBy skipped (unknown); App Store API blocked so version from latest tag	session-20261117T112947-12b56cd8	2026-11-17T11:34:10Z
 merge:learniq:2486:523e4432	cloud tree of 1 learniq PRs: none; conflict 1, lint 0, red 0, moved 0, done 0	session-20261117T112515-5c212c7e	2026-11-17T11:33:58Z
 fix:humaniq:1184:faa2ffdf	conflict resolved, pushed deaad7cf, REVERIFY queued	session-20261117T112424-8445787b	2026-11-17T11:34:20Z
 fix:hermiq:1760:e77b5f0c	floor restored (floor_check PASS), pushed 0b27b76c; end-to-end skipped (strict review of 55 files over time cap), REVERIFY queued	session-20261117T111401-f300ca25	2026-11-17T11:34:44Z
