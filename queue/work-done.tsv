@@ -20447,3 +20447,4 @@ verify:larpinq:1088:62ce209c	GREEN: docs only, no new failures	session-20261117T
 review:shillinq:1958:6c4f9eed	CONFLICT (info.xml version only); merged tree green 12785 tests, vitest 18 passed; no behaviour blocker	session-20261117T111351-f79c232f	2026-11-17T11:52:36Z
 verify:planninq:1231:0248eee9	GREEN: planninq #1231 (metadata only), unit 1253 OK	session-20261117T114001-eb50211c	2026-11-17T11:52:52Z
 review:filinq:2069:08c42f1e	BLOCK: intakeDefaultRule schema changed without version bump; no app version bump; suites green (7280 / vitest 831)	session-20261117T111757-a0ed5e74	2026-11-17T11:53:08Z
+review:filinq:2090:c34cbf17	GREEN: seed template + test, suite 7250 OK	session-20261117T114914-3f64e1b2	2026-11-17T11:53:17Z
