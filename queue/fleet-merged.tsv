@@ -5479,3 +5479,9 @@ hermiq	1839	61585de7bad71e4de05c28db5490cc4a2080b660	MERGED	merge3	GATE OK sbom,
 hermiq	1840	03d7c02bc597ce8b68cbc78eb8d82829ada7678f	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.77 holds at 3.77
 hermiq	1841	0311fb9ceefe4857e14433ee2cec82848d01e244	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.77 holds at 3.77
 hermiq	1842	ef207f94e5de34138fdcda51c95afef78f9d86dd	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.77 holds at 3.77
+planninq	1239	0328f9343f333547a0ee8ca4cca8f363278347ba	RED	merge3	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+planninq	1240	4bfda41dc6111bc5b2c3fabdc110b066f9a9be3b	RED	merge3	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+planninq	1241	257fbd0219f28a47e4da100bf6abd78298a5ea47	RED	merge3	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+planninq	1242	58b41fbc798b19b69a7a8106b7f903124cc231cf	RED	merge3	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+planninq	1243	1232090dac9319612d10800ec0ee36d8355be177	RED	merge3	GATE RED floor: unit_complexity: 4.86 -> 4.83; unit_interfacing: 4.78 -> 4.76
+planninq	1244	b4d018dd002711bfd8fc95a9a2a917507f0201b8	RED	merge3	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
