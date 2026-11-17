@@ -20228,3 +20228,4 @@ review:integriq:3613:83ce7d7b	GREEN: matches change specs; no new failures (PHP 
 fix:planninq:1216:1976ec7c	merged #1216 at 45902e2e3c022b09c9b7f4349c086a71ac905884	session-20261117T081254-2b2b5b50	2026-11-17T10:07:50Z
 review:versioniq:686:d08215d3	GREEN: 0 new failures (2365 vs 2309 tests, 2 inherited)	session-20261117T092700-641a7a7c	2026-11-17T10:07:58Z
 verify:humaniq:1184:8d045012	CONFLICT: #1184 conflicts with development (info.xml, l10n)	session-20261117T095422-114b47a9	2026-11-17T10:08:12Z
+merge:integriq:2650:91c4f09e	failed: permission (land refused; 3574 REQUEST_CHANGES on component_independence floor; 2650 3557 3582 3601 CONFLICT recorded)	session-20261117T092553-97564f2f	2026-11-17T10:08:32Z
