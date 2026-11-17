@@ -20576,3 +20576,4 @@ cover:buildiq:70b3e29em2454:f84921d5	PR #1706: 1 test + coverage metadata on 4 t
 cover:buildiq:70b3e29em2454:34f5c300	PR #1705: 4 Service classes to 100% lines, +30 tests, suite 3578->3608 OK	session-20261117T121311-1734385f	2026-11-17T12:24:02Z
 cover:decidiq:a5f973bbmfcd5:60c2c265	PR #2269: 7 controllers, 18 tests, suite 4951->4969 OK	session-20261117T120806-7b4cac02	2026-11-17T12:24:57Z
 fix:buildiq:1654:20cc2aa0	conflict resolved (new head a9ea9841); tree green and APPROVE, but merge gate RED floor unit_complexity 3.42 -> 3.37, not landed	session-20261117T120218-38f2a955	2026-11-17T12:24:53Z
+fix:hermiq:1719:0b2ffe7a	failed: permission (fix pushed as d2352914, floor PASS, tree green; land step refused; REVERIFY queued)	session-20261117T115540-1ba6ee8c	2026-11-17T12:25:24Z
