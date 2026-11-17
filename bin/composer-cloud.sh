@@ -62,8 +62,13 @@ json.dump(lock, open("composer.cloud.lock", "w"), indent=4)
 open("composer.cloud.json", "w").write(open("composer.json").read())
 PY
 grep -qxF composer.cloud.json .git/info/exclude 2>/dev/null || printf 'composer.cloud.json\ncomposer.cloud.lock\n' >> .git/info/exclude
-env -u GH_TOKEN -u GITHUB_TOKEN COMPOSER=composer.cloud.json COMPOSER_ALLOW_SUPERUSER=1 COMPOSER_PROCESS_TIMEOUT=0 \
-	composer install --no-interaction --prefer-dist --no-progress
+# A dev tool locked to a newer PHP patch release than the container (learniq: psalm needs 8.3.16,
+# the image has 8.3.6) must not stop the unit suite: retry once ignoring only the php version.
+cinstall() {
+	env -u GH_TOKEN -u GITHUB_TOKEN COMPOSER=composer.cloud.json COMPOSER_ALLOW_SUPERUSER=1 COMPOSER_PROCESS_TIMEOUT=0 \
+		composer install --no-interaction --prefer-dist --no-progress "$@"
+}
+cinstall || cinstall --ignore-platform-req=php --ignore-platform-req=php-64bit
 rc=$?
 rm -f composer.cloud.json composer.cloud.lock
 if [ "$rc" = 0 ]; then
