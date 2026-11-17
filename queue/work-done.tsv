@@ -20227,3 +20227,4 @@ merge:opencatalogi:2677:1dec7308	cloud tree of 1 opencatalogi PRs: none; conflic
 verify:learniq:2577:9814b894	CONFLICT: tests/unit-js/structureProfile.test.mjs	session-20261117T095501-3bc4ddc7	2026-11-17T10:07:00Z
 review:integriq:3613:83ce7d7b	GREEN: matches change specs; no new failures (PHP 9744, vitest 136)	session-20261117T095242-04e7b270	2026-11-17T10:07:11Z
 review:versioniq:686:d08215d3	GREEN: 0 new failures (2365 vs 2309 tests, 2 inherited)	session-20261117T092700-641a7a7c	2026-11-17T10:07:58Z
+verify:humaniq:1184:8d045012	CONFLICT: #1184 conflicts with development (info.xml, l10n)	session-20261117T095422-114b47a9	2026-11-17T10:08:12Z
