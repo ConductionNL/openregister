@@ -18305,6 +18305,7 @@ hermiq	1834	2ec2d5b77529247afde6f16319118cd6b584a52e	GREEN	worker-22	unit 5615 t
 hermiq	867	76c9978a57e6e78646e93f8f83e4a8f98a7141a0	GREEN	worker-07	5617 unit tests, baseline 0 failures, 0 new; merge adds no file changes vs development (beta sync already contained)
 launchpad	759	3f179d5b27c3072baa60549b8656cd80ef5c587e	CONFLICT	worker-20	conflicts with development in package-lock.json; baseline unit 4621 OK
 integriq	2720	7f6df619bcf696e15e8adea822963863ea34b052	CONFLICT	worker-08	conflicts with development in lib/Controller/SetupController.php, lib/Repair/InitializeRegister.php, lib/Repair/SyncConnectionDeclarations.php, 2 register.d json, 3 tests
+integriq	2719	c44e802f1d1d358085285cd17d6484737443d622	BLOCK	worker-49	behaviour change in an access check: the endpoint custom-header authentication lookup now folds - to _ on both sides, so configured hyphenated headers start matching (intended fix, needs a review verdict, not a verify one); unit 9844 run, baseline 9839 with 2E+2F inherited, no new failures
 larpinq	909	4e081978f641df7fc9c3288a00852ee0406e08ae	GREEN	worker-23	phpunit 1228 tests (baseline 1228, 0 failures), vitest 730/730 after npm ci; lockfile-only dompurify 3.4.17 bump, 0 new failures
 opencatalogi	1853	25c66e05359f65dfdd67721b48b9c326bc23055b	GREEN	worker-57	beta back-merge that changes no file on development (tree identical to base); no tests needed beyond baseline
 versioniq	768	07f73891964c8b96e003a728914e0c7b1c0b3982	GREEN	worker-16	config-only (quality floor json); unit 2421 tests, baseline 2 golden failures, new failures 0
@@ -18348,6 +18349,7 @@ versioniq	685	aadbc2526fe04760a59accfad26904c4fb19c0cb	CONFLICT	worker-16	confli
 integriq	2152	b149b10fd341de51ebb2c851b9fda81dbabf4518	GREEN	worker-46	unit 9839 tests, baseline 2 errors 2 failures, new failures 0; merge commit with no change against development
 opencatalogi	1857	82668b5d869517933f46b9ce30535f4486c37da0	GREEN	worker-57	beta back-merge that changes no file on development (tree identical to base); no tests needed beyond baseline
 opencatalogi	2769	0c4a78f746a745c0379a06e1d75546f9b012e222	GREEN	worker-37	version bump only (info.xml, openapi.json); no code changed, suite = baseline
+launchpad	1261	f23c46deef80d0f64201a9d0ce37e50a46a2e833	GREEN	worker-36	build widget-calculated-fields per its specs; phpunit 4779 OK (baseline 4621 OK), vitest 2915/2916 with the 1 failure (propDefinitions golden) inherited from development; new failures 0
 pipelinq	2417	727efa5a804b8ae0154f8413300fadbbfc6adaa0	GREEN	worker-15	unit 9280 tests (development baseline run this session), 0 failures, new failures 0; merge is a no-op (merged tree identical to development)
 pipelinq	2292	250dc1f211270cc1729262d0b1fbab88bb7f28a3	GREEN	worker-01	no tests run: merge onto development b99fd659 is an empty tree diff (openspec/parity/capabilities.json content already on development); no code changed
 integriq	3713	1ac9342215f8b89a3080078a2a4852d1a9560e0a	GREEN	worker-12	dev-dep bump @typescript-eslint/parser; unit 9839 tests, baseline 5 failing (inherited), new failures 0; vitest 2383 passed
