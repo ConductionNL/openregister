@@ -16014,3 +16014,4 @@ planninq	1068	40deb423f1222b7b1faa5b7624b9c58ff150df52	GREEN	worker-03	1243 unit
 portaliq	2500	211dedaaa53ed03580d110ce2e01528d9a392676	CONFLICT	worker-28	conflict in tests/example-site.spec.mjs with development 064d94f1; tree not run
 pipelinq	3743	871e47d54f19aad16fb7eeac1f4d38f79b61e6af	CONFLICT	worker-14	conflicts with development in l10n en/nl, lib/Service/SettingsLoadService.php, src/manifest.json, tests/vitest/structureProfile.spec.js; suite not run
 shillinq	1965	38aa9e98d92064163730059c45e299b358346b33	CONFLICT	worker-36	conflicts with development in appinfo/info.xml, tests/fixtures/register-versions.lock.json; suite not run
+shillinq	3004	effacbb9439be9f0cbc6ed231cd687e6baf98952	CONFLICT	worker-41	conflicts with development in 15 files (info.xml, l10n, VATReturnController, IcpService, SettingsService, ...); tree not run
