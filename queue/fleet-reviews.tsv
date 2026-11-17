@@ -818,3 +818,4 @@ humaniq	1143	ef2689eaa85a742a010784b01fbf356e5952989b	APPROVE	worker-52	Strict; 
 versioniq	715	f78bf6ec7fe496be81970d63b041950456dea081	APPROVE	worker-36	Strict; no blockers; implements install-manual-upload per its specs: admin-only + strict password confirmation on both routes, store signature fail-closed to unsigned, unsigned path gated by setting and SHA-256, token pattern-checked
 stackiq	2008	f4283fd2b011b22e1db321a12037e0a4238a2759	APPROVE	worker-33	Quick; no blockers; tests only, OrganizationSyncService entity users with exact save/log assertions
 stackiq	2009	4f69815ca694c8ced85d99cdeb69efda4734d748	APPROVE	worker-33	Quick; no blockers; tests only; concern: second class (stream wrapper) declared in the test file
+stackiq	2011	839dbbe5f8e4ae95cce6838b2a1744c9534ff136	APPROVE	worker-33	Quick; no blockers; tests only, backfill skip paths with exact collaborator calls
