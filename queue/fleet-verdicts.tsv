@@ -18775,3 +18775,4 @@ buildiq	1648	616837279746c70653f0f41163c0dd6efd73fa7e	GREEN	worker-15	unit 3737 
 keepiq	1900	a6ccac84767665a898692a9826befe197f56bcea	GREEN	worker-39	vitest 7173 pass, 3 inherited reds only; frontend-only build of portability-export-choice-and-restore-fidelity
 keepiq	1901	f9f7976788c4b0b79cfd7a58bceadaf67c54401f	REVERIFY	worker-39	conflicts only with an earlier PR of the verify tree
 pipelinq	3945	ceffbf1ffd95fdbc429b3b7e77c1cbf97a8849c2	REVERIFY	worker-30	conflicts only with an earlier PR of the verify tree (#3943, l10n files)
+pipelinq	3946	633106e5ce5d34520df6e3801898478fcca78d26	REVERIFY	worker-30	conflicts only with an earlier PR of the verify tree (#3943, l10n files)
