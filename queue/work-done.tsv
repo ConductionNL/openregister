@@ -19942,3 +19942,4 @@ merge:integriq:3545:477955b5	unmeasured: static.developer.overheid.nl; cloud tre
 fix:buildiq:1651:a201e3b3	fixed: wrapper removal checks ownership, pushed 144da0d4; merge lock held elsewhere, REVERIFY queued	session-20261117T081204-71167548	2026-11-17T08:33:44Z
 review:opencatalogi:2652:eb4bae0a	RED: OpenApiParityTest version mismatch (info.xml bumped, openapi.json not)	session-20261117T081325-e9991c50	2026-11-17T08:34:44Z
 verify:shillinq:3110:eeefdd59	GREEN 3110: phpunit 12613/0 new, vitest 1 inherited failure	session-20261117T081254-2b2b5b50	2026-11-17T08:35:30Z
+fix:shillinq:3080:6a2e8035	conflict resolved, unit 12641 OK, new head f7c6e71c; REVERIFY queued (merge lock held)	session-20261117T081243-77ae4827	2026-11-17T08:35:57Z
