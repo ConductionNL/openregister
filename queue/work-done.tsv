@@ -22450,4 +22450,5 @@ build:shillinq:sales-quick-draft-from-any-page:b2:c2	partial: pushed to PR #3174
 build:dossiq:e2e-citation-integrity:b2:c2	partial: nothing new buildable here; PR #6647 is on development; left: e2e rewrites 1.x-3.x per worklist-2026-09-12 need a live instance (the change requires watching each repaired test fail), 4.4 waits on page-topology-cleanup, 5.2-5.4 are gate-side	session-20261117T190026-7c82e6b3	2026-11-17T20:11:32Z
 verify:stackiq:2057:109a8c2a	2057 GREEN (e2e spec only)	session-20261117T185710-40ec955c	2026-11-17T20:11:35Z
 verify:thematiq:1722:f4097408	GREEN: thematiq #1722	session-20261117T185937-87a1822c	2026-11-17T20:11:53Z
+verify:shillinq:3011:b03586ea	CONFLICT shillinq#3011 (tests/fixtures/register-versions.lock.json vs development)	session-20261117T190556-ce2c6374	2026-11-17T20:12:07Z
 verify:thematiq:1724:bee24dc0	GREEN thematiq#1724 (webpack bump; vitest 1571 pass, build ok)	session-20261117T190626-5c7fccb4	2026-11-17T20:12:15Z
