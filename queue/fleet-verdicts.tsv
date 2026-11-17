@@ -18281,6 +18281,7 @@ stackiq	1028	665e6e656cc60a5758ae9ba4331264c79d90029e	GREEN	worker-14	merge into
 dossiq	3968	e024c870c3d323a901beef540601499e6ba5f127	CONFLICT	worker-57	conflicts with development, files: .procedure-code-baseline.json appinfo/info.xml l10n/* lib/Controller/WOOAssessmentController.php lib/Service/Publication/{CasePublicationState,CatalogTransport,OutcomePublisher}.php lib/Service/TermijnNotificationService.php lib/Service/WooPublication/WooCategoryMapper.php (modify/delete) lib/Settings/dossiq_register.json and 4 tests; baseline unit 18392 tests 19 failures
 keepiq	830	2d73be926b6f2743f5940c00f27817e40b660baa	GREEN	worker-27	merge adds no file change vs development (tree identical to baseline); suite not rerun, 0 new failures
 buildiq	1703	39097174f7442fbb6a56d840419407585745dba1	GREEN	worker-20	unit 3580 tests OK (baseline 3578 OK, +2 new), no new failures; tests-only
+dossiq	6631	f4e91e8d2efb57f97b56fc275ff7c536732c4bea	GREEN	worker-55	18392 tests, baseline 1 inherited error, 0 new failures; version bump only
 hermiq	1833	0071295fe2a53c30c193f263069b2a3a427d3028	GREEN	worker-12	docs-only (README, publiccode.yml; yaml valid, referenced images exist); unit 5617 tests, baseline 0 failures, new failures 0
 humaniq	860	8e1a6e8a5513e80ba0796bb2acef1135b8107b16	GREEN	worker-19	4509 tests run, baseline 4509 ok/1 skipped, no new failures; config-only quality floor change
 humaniq	1190	27f4e9816e988888fa4607eb9373eb2223988dc2	GREEN	worker-58	4509 tests, baseline 0 failures, 0 new failures; version bump only
