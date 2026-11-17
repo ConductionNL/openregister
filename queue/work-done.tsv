@@ -18857,6 +18857,7 @@ merge:filinq:2069:c8a059e6	cloud tree of 1 filinq PRs: none; conflict 1, lint 0,
 review:shillinq:1965:1ff93738	GREEN; additive register fragment, 12496 tests OK	session-20261117T004626-d23ae300	2026-11-17T01:22:49Z
 review:portaliq:2417:3783fdfb	GREEN (conflicts with development in l10n/nl.json)	session-20261117T004655-cf1f2f80	2026-11-17T01:23:07Z
 review:portaliq:2452:e50c3f86	BLOCK: StaffSubmissionReader uses the removed find() named arguments; suite no new failures	session-20261117T004756-036f1d35	2026-11-17T01:23:21Z
+build4:openregister:object-write-sub-500ms:c8	partial: no new slice this pass. Open code work each needs a design decision: deferring ObjectUpdatedEvent needs the old-object snapshot carried in the job (a re-read only sees the new state); task 6 index table + backfill; task 7 single-transaction write; tasks 2/3 rest wait on the read-trace histogram; 10-13 need CI or a live instance. PR #10568 head d6d45901 unchanged	session-20261113T214350-9762e143	2026-11-17T01:23:33Z
 fix:integriq:3561:a24572ec:v3	resolved conflict, pushed fbf5b6de; merge lock held elsewhere, REVERIFY	session-20261117T005212-998cc343	2026-11-17T01:23:33Z
 review:shillinq:2997:40268216	GREEN	session-20261117T004656-5d4b3c4e	2026-11-17T01:23:43Z
 review:portaliq:2494:b99070c9	GREEN: spec build, suite 6221 with 16 inherited errors, node spec 5/5	session-20261117T003652-c6487e72	2026-11-17T01:23:53Z
