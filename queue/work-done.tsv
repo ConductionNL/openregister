@@ -22658,3 +22658,4 @@ verify:opencatalogi:2771:502ce9b9	CONFLICT 2771 (l10n en/nl with development; ve
 verify:decidiq:2282:f00027e0	GREEN 2282 (unit 5047, 0 new failures)	session-20261117T211315-f96d97db	2026-11-17T21:33:03Z
 verify:hermiq:1855:54a9e416	GREEN #1855 (version bump, no new failures)	session-20261117T213035-1b926cd2	2026-11-17T21:33:37Z
 verify:buildiq:1643:f8d38be6	GREEN #1643 (3692 PHP, 5025 JS, 0 new failures)	session-20261117T211607-9073788f	2026-11-17T21:33:54Z
+verify:integriq:3734:12b2f75d	GREEN 3734: no new failures	session-20261117T211359-bea33e3d	2026-11-17T21:34:13Z
