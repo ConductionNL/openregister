@@ -4876,3 +4876,4 @@ opencatalogi	2669	8c31eee0b472b465c61cb9093196892e942a8f06	RED	worker-49	GATE RE
 opencatalogi	2244	9178373d320ba947d116220fe88c0cd71550e833	MERGED	worker-49	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.56
 hermiq	1764	a477a56c311b1a13150d9f71bcd3088ea1661e94	RED	worker-13	GATE RED floor: unit_complexity: 4.58 -> 4.55
 filinq	2141	d980f90d4ce78bd5a27004221e0eaad88cd1b166	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.10
+portaliq	1982	ebea533f0f3f8c061e63c23de231ae5193517228	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.16
