@@ -18870,3 +18870,23 @@ fix:hermiq:1764:a477a56c	floor restored (unit_complexity 4.57), pushed 7265b61e;
 review:shillinq:3008:05d98afc	GREEN: merges clean, suite 12526 OK, behaviour per change specs	session-20261117T004721-b30387a5	2026-11-17T01:24:57Z
 fix:humaniq:1134:6ff842b4:v3	fixed 15-file conflict, pushed 2d975a3c; merge lock held elsewhere, REVERIFY queued	session-20261117T004801-2f7a5fc1	2026-11-17T01:25:12Z
 review:shillinq:2083:18b0fa70	GREEN	session-20261117T004650-c3ae7bda	2026-11-17T01:25:27Z
+fix:hermiq:1795:efce9000:v4	fixed CONFLICT, pushed 78cb835e; merge lock held elsewhere, REVERIFY queued	session-20261116T230934-9ee320cf	2026-11-17T01:25:40Z
+fix:integriq:3557:363b07c6:v3	conflict resolved + OR main API fix, pushed 0b9792b0; 5 inherited failures; merge lock held elsewhere, REVERIFY queued	session-20261117T004609-b5037037	2026-11-17T01:25:55Z
+fix:integriq:3602:d7d08f57:v3	resolved conflict and wired the error sink store, pushed 9b919801; merge lock held elsewhere, REVERIFY	session-20261117T005212-998cc343	2026-11-17T01:26:07Z
+review:dossiq:6353:ea97ffc3	GREEN: removal per change spec, no new failures	session-20261117T003945-3aa9cc05	2026-11-17T01:26:33Z
+merge:versioniq:715:24a3aad9	cloud tree of 2 versioniq PRs: merged=0 red=1 fail=0 skip=0; conflict 1, lint 0, red 0, moved 0, done 0	session-20261117T011615-71ab0b2c	2026-11-17T01:27:05Z
+fix:learniq:1883:de89b902:v4	merged #1883 at 88ce2f2bd933e45c14f811fcf7001883ff74c3fd	session-20261117T005304-6fca2823	2026-11-17T01:26:41Z
+build:hermiq:tools-agent-workspace-and-installed-tools:c7	partial: still blocked, PR #1760 head 440cf2e9; tasks 2/4/5 extend RunCodeTool, CodeSandboxToolDescriptors and exapp code-sandbox, which are only on open quality/build-tools-code-sandbox (97a61ef1, not on development)	session-20261116T230934-9ee320cf	2026-11-17T01:27:02Z
+review:portaliq:2493:733b81a3	GREEN; conflicts with development in package.json	session-20261117T004640-1b533885	2026-11-17T01:27:09Z
+fix:integriq:3618:e9d117fd:v3	fixed CONFLICT, pushed c0bf242ee99f318f068d39bce98e990199005a99; merge lock busy, REVERIFY queued	session-20261117T005217-ad04a5d2	2026-11-17T01:27:16Z
+build:hermiq:tools-browser-and-computer-use:c7	partial: still blocked, tasks 1-3 extend exapp/code-sandbox, only on open quality/build-tools-code-sandbox (now 19bcd689, not on development); PR #1754 holds tasks 4-7	session-20261116T230934-9ee320cf	2026-11-17T01:27:33Z
+fix:buildiq:1643:5d14674c:v3	conflict resolved, pushed c4bd2510, suite green; merge lock held elsewhere, REVERIFY queued	session-20261117T004716-5a617a43	2026-11-17T01:27:31Z
+fix:buildiq:1602:0e7fc4e7:v3	conflict resolved, pushed 795c2893; merge lock busy, REVERIFY queued	session-20261117T005933-5e669a88	2026-11-17T01:27:45Z
+merge:integriq:3638:f0edcb2f	cloud tree of 1 integriq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T004735-ba0cb916	2026-11-17T01:28:01Z
+fix:buildiq:1607:2af29a31:v3	conflict resolved (FieldEditor + l10n), pushed 19da316c, tests green; lock held elsewhere, REVERIFY queued	session-20261117T004133-c974afac	2026-11-17T01:27:59Z
+fix:launchpad:1216:004aa912:v3	obsolete: already built on development via #785 (change archived); PR closed	session-20261117T005304-6fca2823	2026-11-17T01:28:12Z
+fix:integriq:3572:35bfc428:v3	conflict resolved, pushed 5ea14816; 5 inherited failures; merge lock held elsewhere, REVERIFY queued	session-20261117T004640-78f538a3	2026-11-17T01:28:09Z
+fix:integriq:3632:b8b6d7ad:v3	conflict resolved, pushed 6bc3018b, no failures beyond development's; merge lock held elsewhere, REVERIFY queued	session-20261117T005055-4c5f0209	2026-11-17T01:28:44Z
+fix:integriq:3626:d61b9b39:v3	fixed CONFLICT, pushed 7c1c0ef3; REVERIFY queued (merge lock held elsewhere)	session-20261117T004655-cf1f2f80	2026-11-17T01:29:15Z
+fix:buildiq:1651:e765d7de:v5	conflict resolved, pushed 4514f95f; lock held elsewhere, REVERIFY queued	session-20261117T004721-b30387a5	2026-11-17T01:29:44Z
+fix:integriq:3550:b2995130:v3	fixed CONFLICT #3550, new head 268ca022; REVERIFY (merge lock held elsewhere)	session-20261117T004616-c7acc36d	2026-11-17T01:29:54Z
