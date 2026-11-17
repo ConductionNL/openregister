@@ -19760,3 +19760,4 @@ review:pipelinq:3734:9499f0c6	GREEN: unit 9271/9271 on PR+development, matches c
 fix:shillinq:2070:0210f86b	conflict resolved, pushed a52f769a; REVERIFY queued (merge lock held elsewhere)	session-20261117T065410-e9ad9bdf	2026-11-17T07:14:15Z
 review:buildiq:1608:b1698085	GREEN	session-20261117T055853-7ddd3cb3	2026-11-17T07:14:23Z
 review:decidiq:2173:0ef71c12	BLOCK: group provisioning takes unrestricted group names from editable body data; tests green	session-20261117T063112-55331435	2026-11-17T07:14:39Z
+review:shillinq:3080:6a2e8035	CONFLICT with development (info.xml, registrar count tests, versions lock); head alone unit 12610 OK, diff clean	session-20261117T063708-4c9ceddc	2026-11-17T07:14:53Z
