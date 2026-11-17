@@ -22749,3 +22749,4 @@ fix:planninq:1241:257fbd02	inherited: opensourcehealth rates dependencies; PR ch
 fix:portaliq:2579:df1bfc40	conflict resolved, pushed a1421e2b; REVERIFY queued (merge lock held elsewhere)	session-20261117T211406-076a7a0e	2026-11-17T21:54:26Z
 verify:versioniq:783:9296e1ce	GREEN 783: e2e specs only, eslint clean	session-20261117T211359-bea33e3d	2026-11-17T21:55:04Z
 verify:shillinq:2993:fe6cd880	GREEN #2993 (12821 unit, vitest 1 inherited failure)	session-20261117T213058-6689a4c6	2026-11-17T21:55:12Z
+fix:launchpad:1304:952ebaa8	unmeasured: api.osv.dev (blocked in this session; PR has no dependency change, REVERIFY queued)	session-20261117T213056-2ba36933	2026-11-17T21:55:20Z
