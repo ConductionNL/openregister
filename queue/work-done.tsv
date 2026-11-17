@@ -22764,3 +22764,4 @@ fix:keepiq:1895:62f8ad55	sbom regenerated, pushed 7cf24009; lock held elsewhere,
 fix:versioniq:729:497abe19	conflict resolved, pushed 073d6c6c; REVERIFY queued; land skipped (gate host blocked)	session-20261117T211433-35a96960	2026-11-17T21:57:16Z
 verify:pipelinq:3963:e0b88c16	GREEN #3963 (vitest reds inherited)	session-20261117T211535-4eae9738	2026-11-17T21:57:37Z
 verify:pipelinq:3965:080c1798	GREEN 3965: vitest only baseline failures	session-20261117T211425-939d7fb0	2026-11-17T21:58:04Z
+fix:shillinq:3007:7ed685a6	conflict fixed, new head 357ddc9b pushed, REVERIFY recorded (not landed: own push is not self-reviewed)	session-20261117T204330-02b728bd	2026-11-17T21:58:27Z
