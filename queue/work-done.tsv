@@ -21189,3 +21189,4 @@ build:humaniq:a-time-entry-can-be-booked-to-a-day:b2	already built: 1.1-3.6 on d
 build:portaliq:documents-for-each-record:b2	done: PR #2566 ticks T4 (built in learniq ParentDocumentsPage); every task done	session-20261117T124637-3e909745	2026-11-17T14:37:42Z
 build:portaliq:anonymous-collection-reads-what-the-public-may:b2	PR #2567 ticks T3 (decidiq already filters both collections); every task done	session-20261117T134347-d0294040	2026-11-17T14:37:49Z
 build:portaliq:form-save-and-resume-dialogs:b2	already done: code tasks on development (c1135fa1); only T07, a product decision, left	session-20261117T134355-826c5a0b	2026-11-17T14:37:42Z
+build:portaliq:guardian-message-to-and-whole-day:b2	already built: T1-T3 on development, named specs exist; T4 is on learniq development (lib/Portal/ParentRecordPage.php messageTo teacherRef)	session-20261117T140942-88b3095a	2026-11-17T14:38:34Z
