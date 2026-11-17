@@ -1374,3 +1374,6 @@ learniq	2595	5aa1fd02d4e2d7f9e3d0168e0d07e36042b38b03	APPROVE	worker-39	Standard
 opencatalogi	2756	70b8b0cb8de57fabae21fef0562dfe82dda9fab2	APPROVE	worker-46	Strict; no blockers; new public document and error-report routes read through the catalogue read-rule guard in anonymous scope, fail closed, rate limited; errorReport schema reads limited to admin and moderator groups; phpcs/phpstan hits inherited or trait false positives
 opencatalogi	2787	362419bab9add372a8fd8dc0f8d2e513585524cb	APPROVE	worker-46	Quick; no blockers; tests and fixture only
 opencatalogi	2793	d14f5f969a4c92d42409f8c9a2b0ebe0c6d49eab	APPROVE	worker-46	Standard; no blockers; DownloadService error messages translated via IL10N, all constructors updated, docs and tasks
+opencatalogi	2794	85f20bb85c5a19d6e66aea0b7267df306933caac	APPROVE	worker-46	Standard; no blockers; publication-only delete dialog wording per spec, nextcloud-vue bump to 2.180; jest 10 failing suites identical on development
+opencatalogi	2795	9844e9a09589c8fb5eb3275c484e4adb67f6bb38	APPROVE	worker-46	Quick; no blockers; Newman collection only; concern: default baseUrl localhost:8080 in collection variables
+opencatalogi	2796	7d78014c5c048a8b9ec158b0573d341fb0dfbe97	APPROVE	worker-46	Quick; no blockers; e2e spec only, refuses shared instances and restores production mode
