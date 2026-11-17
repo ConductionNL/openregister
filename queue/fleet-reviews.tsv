@@ -1077,3 +1077,4 @@ shillinq	2993	cf43d96e6a66276d18cb4f3c7399b21c590143a1	APPROVE	worker-17	Thoroug
 shillinq	3005	fb9ac5c41d5b2499c55a3b19960791ea75317e36	APPROVE	worker-17	Thorough; no blockers; admin endpoints use AuthorizedAdminSetting, the user endpoint returns only admin-shown type metadata; inherited gate failures only
 opencatalogi	2665	c01ead53615d98144c900f739999b9417688d111	REQUEST_CHANGES	worker-08	Thorough; PublicationDetail layout: pub-languages cell overlaps pub-plain-summary and pub-calendar and reuses id 15 (detail-page-discipline); fixing on the branch
 versioniq	754	8a439f2e58c63839aec02a340ba2336879e26bf8	APPROVE	worker-30	Strict; no blockers; none (gate-116 did not run: vendored schema missing)
+opencatalogi	2665	16ac2bab62195fd2d8ce728161b28db9e28ec22c	APPROVE	worker-08	Thorough; no blockers; layout overlap fixed at this head; inherited gate findings outside the diff (dependency-shape, throttling, demo data, procedure count); tree adds no failures
