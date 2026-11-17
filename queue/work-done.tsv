@@ -22714,3 +22714,4 @@ verify:opencatalogi:2808:71772fd9	GREEN; version bump, no new failures (baseline
 verify:keepiq:1900:13b343d7	GREEN #1900 (JS only; inherited: 3 vitest HealthReportView, 7 l10n misses)	session-20261117T213101-157fb562	2026-11-17T21:47:19Z
 verify:larpinq:1099:b7a0ceb7	GREEN #1099: unit 1243/0 new failures; dev-only psalm bump	session-20261117T213052-c1bc9d10	2026-11-17T21:47:32Z
 verify:stackiq:2055:5f39aed8	GREEN #2055 (0 new php failures; 1 vitest failure inherited)	session-20261117T211437-e305ed6d	2026-11-17T21:47:58Z
+merge:humaniq:1191:7c8b795c	unmeasured: static.developer.overheid.nl (proxy refuses it in this session); reviews: 1191,1194-1197 APPROVE, 1192 REQUEST_CHANGES (new schema lacks demo data); merged=0 skip=6	session-20261117T211535-4eae9738	2026-11-17T21:48:06Z
