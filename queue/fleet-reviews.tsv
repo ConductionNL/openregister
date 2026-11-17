@@ -1179,3 +1179,4 @@ planninq	1231	b038b5610549a1158583fe4f9f91a795be9267a8	APPROVE	worker-54	Quick; 
 integriq	3703	80544b3ca452aaca520969c1dbe59bf25d34dc66	APPROVE	worker-08	Quick; no blockers; composer.lock patch/minor bump, tree suite 0 new failures
 integriq	3704	ef91827a9deb643222e2c4ece7853589b5dbcd5a	APPROVE	worker-08	Quick; no blockers; composer.lock patch/minor bump, tree suite 0 new failures
 learniq	2589	241404be95b288b1abd5a2da268f098d513e533f	APPROVE	worker-17	Standard; no blockers; docs/metadata only, referenced logo/screenshots/roadmap exist, languages match l10n, NC range matches info.xml; softwareVersion 0.3.12-beta differs from info.xml 0.3.9-beta
+buildiq	1701	6183315e3d9928c24a7a60efb4b0aaa99d529590	APPROVE	worker-10	Standard; no blockers (supports entry restored); concerns: none, metadata matches info.xml, l10n and img
