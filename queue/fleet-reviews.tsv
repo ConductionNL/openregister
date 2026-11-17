@@ -1326,3 +1326,4 @@ decidiq	2274	4160473e9683f4824a024b2a1be9ca45af4810b3	APPROVE	worker-42	Quick (t
 decidiq	2275	a2504982a57dd3baef7b32f736efdd4c91c5b798	APPROVE	worker-42	Quick (tests only); no blockers; 8 tests with real assertions
 decidiq	2276	b77ffaa99a83ac211a8cff55b080ccb1f773fd62	APPROVE	worker-42	Quick (e2e spec only); no blockers; no concerns
 decidiq	2277	b03780e5e71f9c9a7d94f5ad1d658e3f438c2cb4	APPROVE	worker-42	Quick (Newman collection only); no blockers; base URL overridden by run-all env vars
+decidiq	2278	d120be3ea5c86aa6aa74b4081c7a6da1b31d2921	APPROVE	worker-42	Quick (e2e spec only); no blockers; boxes left open until run live
