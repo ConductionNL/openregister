@@ -22312,3 +22312,4 @@ verify:thematiq:1721:9c6152f2	GREEN 1721-1726; RED 1727 (needs stylelint 18 from
 verify:larpinq:1056:f075a857	CONFLICT larpinq#1056 (l10n + Settings* vs development)	session-20261117T190626-5c7fccb4	2026-11-17T19:44:49Z
 verify:integriq:3721:30322060	GREEN integriq#3721 (e2e + Newman only; 9910 tests, 4 inherited, 0 new)	session-20261117T190556-ce2c6374	2026-11-17T19:45:08Z
 verify:portaliq:2590:9bc1d978	GREEN (version bump)	session-20261117T190242-7c82bed8	2026-11-17T19:45:11Z
+verify:learniq:2497:48225cf9	GREEN #2497: 0 new PHP or JS failures	session-20261117T185732-534997e2	2026-11-17T19:45:21Z
