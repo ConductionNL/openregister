@@ -20218,6 +20218,7 @@ merge:versioniq:709:160c49f8	cloud tree of 1 versioniq PRs: none; conflict 1, li
 review:shillinq:2975:d0bcdce6	BLOCK: deferral endpoint posts journals without the posting-rights check; conflicts with development	session-20261117T093922-7676ffcc	2026-11-17T10:04:31Z
 fix:filinq:2121:a5b31115	conflict resolved, pushed 69607770; REVERIFY queued	session-20261117T095426-fa057cee	2026-11-17T10:04:39Z
 review:stackiq:1943:1d009f7f	GREEN: suite 4041 tests, 1 inherited failure, no new	session-20261117T100057-7775ee42	2026-11-17T10:04:52Z
+build:launchpad:widget-calculated-fields:c8	partial: PR #1261 (quality/build-widget-calculated-fields) at 07612654 built 26-28, 32, 39-41, 47, 48, 52 (server-mode fields materialised as OpenRegister calculated schema properties, cleanup on delete/source change, 183-case parser table, openapi/postman/docs), phpunit 4673->4719 OK, vitest 2671->2854 OK. Left: 19, 20, 35 (per-row calculated columns need a LaunchPad host over the shared table/ch	session-20261117T093948-dddf369f	2026-11-17T10:05:05Z
 fix:versioniq:706:74033735	conflict resolved; pushed 31ba582805; REVERIFY queued (merge lock held elsewhere)	session-20261117T085512-6b57566b	2026-11-17T10:05:02Z
 fix:integriq:3564:e2164fe1	conflict resolved, REVERIFY at d45b5057 (merge lock held elsewhere)	session-20261117T083929-9c5fceb9	2026-11-17T10:05:30Z
 review:integriq:3628:0e0f7320	GREEN: 9777 unit tests, only failures inherited from development	session-20261117T093335-9904a269	2026-11-17T10:05:43Z
@@ -20225,6 +20226,13 @@ review:integriq:3596:e4864f09	GREEN: matches change specs; no new failures (5 in
 merge:opencatalogi:2677:1dec7308	cloud tree of 1 opencatalogi PRs: none; conflict 1, lint 0, red 0, moved 0, done 0	session-20261117T094207-9b025024	2026-11-17T10:06:47Z
 verify:learniq:2577:9814b894	CONFLICT: tests/unit-js/structureProfile.test.mjs	session-20261117T095501-3bc4ddc7	2026-11-17T10:07:00Z
 review:integriq:3613:83ce7d7b	GREEN: matches change specs; no new failures (PHP 9744, vitest 136)	session-20261117T095242-04e7b270	2026-11-17T10:07:11Z
+fix:planninq:1216:1976ec7c	merged #1216 at 45902e2e3c022b09c9b7f4349c086a71ac905884	session-20261117T081254-2b2b5b50	2026-11-17T10:07:50Z
+merge:hermiq:1781:1f1621c5	cloud tree of 1 hermiq PRs: none; conflict 1, lint 0, red 0, moved 0, done 0	session-20261117T093219-f1a53dc3	2026-11-17T10:07:39Z
 review:versioniq:686:d08215d3	GREEN: 0 new failures (2365 vs 2309 tests, 2 inherited)	session-20261117T092700-641a7a7c	2026-11-17T10:07:58Z
 fix:versioniq:754:8a439f2e	stale: merged #754 at 09e903d3 in this session	session-20261117T092700-641a7a7c	2026-11-17T10:08:15Z
 verify:humaniq:1184:8d045012	CONFLICT: #1184 conflicts with development (info.xml, l10n)	session-20261117T095422-114b47a9	2026-11-17T10:08:12Z
+merge:integriq:2650:91c4f09e	failed: permission (land refused; 3574 REQUEST_CHANGES on component_independence floor; 2650 3557 3582 3601 CONFLICT recorded)	session-20261117T092553-97564f2f	2026-11-17T10:08:32Z
+review:opencatalogi:2654:3703a084	GREEN: behaviour per spec, no new failures; floor concern on component_independence	session-20261117T083938-f8f3a0e7	2026-11-17T10:08:49Z
+verify:launchpad:1261:bb8601df	stale: #1261 head moved bff4a8b6 -> 07612654	session-20261117T093948-dddf369f	2026-11-17T10:09:08Z
+merge:humaniq:1183:e2af1ca3	cloud tree of 1 humaniq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T094037-14874ab0	2026-11-17T10:09:37Z
+fix:filinq:2079:1b7aa3aa	no change: bundling resolves when #2069 lands first (revert would delete intake); test removal checked, cases moved; REVERIFY recorded	session-20261117T093335-9904a269	2026-11-17T10:10:15Z
