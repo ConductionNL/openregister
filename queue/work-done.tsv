@@ -18797,6 +18797,7 @@ fix:hermiq:1578:c7adfb00:v4	obsolete: development already has llphant 1.0.10; cl
 fix:learniq:2523:6236bc6d:v3	conflict resolved, pushed 3742dedc; merge lock held elsewhere, REVERIFY recorded	session-20261117T004626-d23ae300	2026-11-17T01:11:23Z
 fix:hermiq:1740:26c96d0f:v3	conflicts resolved, old-API calls migrated, new head 9e13a128, no new failures; merge lock held elsewhere, REVERIFY queued	session-20261117T004714-8c7f98bc	2026-11-17T01:11:35Z
 fix:filinq:2116:29aaca50:v3	fixed CONFLICT #2116, new head 748154e2; REVERIFY (merge lock held elsewhere)	session-20261117T004616-c7acc36d	2026-11-17T01:11:53Z
+build:filinq:specify-capability-rows:c7	partial: pushed 06d3cf49 to PR #2123: task 2.3 now writes versioned (restoreVersion) and anonymised (recordAnonymizationLink) into the document trail, 4 tests, unit 7055 OK; left opened/downloaded/signed (no single filinq hook), activity tab, 3.3 portal accept action, Playwright checks	session-20261113T214350-9762e143	2026-11-17T01:12:26Z
 fix:learniq:2497:c85c5913:v3	fixed: conflicts + ObjectFindOptions migration, suite 6998 / 2 inherited; lock held elsewhere, REVERIFY at a6d36cf2	session-20261117T003652-c6487e72	2026-11-17T01:12:17Z
 fix:decidiq:2148:2bf0e346:v3	conflicts resolved + main API migration, pushed d7247809, suite 4792 green; lock held elsewhere, REVERIFY queued	session-20261117T004735-ba0cb916	2026-11-17T01:12:25Z
 fix:learniq:2524:593b6b37:v3	fixed CONFLICT, pushed 03298d02; REVERIFY queued (merge lock held elsewhere)	session-20261117T004655-cf1f2f80	2026-11-17T01:12:44Z
