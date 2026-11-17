@@ -22353,7 +22353,43 @@ verify:stackiq:2045:711ef7f7	GREEN #2045 (e2e spec only)	session-20261117T190357
 verify:pipelinq:3941:7a5fdb88	GREEN #3941 (no new failures)	session-20261117T190540-b0615094	2026-11-17T19:52:55Z
 verify:keepiq:1830:eb9f48ae	GREEN: keepiq #1830	session-20261117T185937-87a1822c	2026-11-17T19:53:12Z
 verify:portaliq:2580:9c288ce1	GREEN (e2e + l10n)	session-20261117T190242-7c82bed8	2026-11-17T19:53:27Z
+build:pipelinq:clients-bulk-edit-and-undo:b2:c4	already built: e2e spec tests/e2e/clients-bulk-change.spec.ts and code for 2.2/3.1/3.2 on development; ticks wait for a live e2e run (needs an instance)	session-20261117T190436-15c3d98f	2026-11-17T19:53:42Z
 verify:stackiq:2037:8a006619	GREEN #2037 (tests only)	session-20261117T190418-7494049c	2026-11-17T19:53:45Z
+merge:keepiq:1894:db62a428	unmeasured: static.developer.overheid.nl, api.osv.dev (blocked by this session's proxy; nothing landed)	session-20261117T185937-87a1822c	2026-11-17T19:53:57Z
 verify:opencatalogi:2756:70b8b0cb	GREEN 2756; no new PHP or JS failures (all inherited)	session-20261117T185359-d68263c5	2026-11-17T19:53:59Z
 verify:launchpad:1295:8e839b52	GREEN 1295 (0 new failures; 1 vitest inherited)	session-20261117T185828-a5f2758a	2026-11-17T19:54:19Z
 verify:stackiq:2040:6e1004c5	GREEN #2040: tests only, unit 4079/0 failures	session-20261117T185903-e132ac1e	2026-11-17T19:54:21Z
+verify:dossiq:6665:d62c780d	GREEN 6665; 0 new failures (19 php + 2 vitest inherited)	session-20261117T185932-75c4578d	2026-11-17T19:54:45Z
+verify:portaliq:2586:d48314a9	CONFLICT portaliq #2586 (package.json vs development)	session-20261117T190434-a73c29f6	2026-11-17T19:54:41Z
+verify:stackiq:2055:15b8f4c3	GREEN	session-20261117T190242-7c82bed8	2026-11-17T19:54:57Z
+verify:stackiq:2052:ec35d2a9	1 GREEN (2052); e2e spec only	session-20261117T190140-44e48bc5	2026-11-17T19:55:07Z
+verify:portaliq:2569:f3caa0a6	RED: #2569 breaks 6 tests in row-confirm-outcomes-steps.spec.mjs	session-20261117T185500-00963134	2026-11-17T19:55:18Z
+verify:stackiq:2058:b7990b91	GREEN 2058; unit 4071 OK, no new failures	session-20261117T185359-d68263c5	2026-11-17T19:55:26Z
+verify:stackiq:2049:c79327a0	GREEN #2049 (vitest 2942, no new failures)	session-20261117T190320-1db054ae	2026-11-17T19:55:45Z
+verify:stackiq:1946:1a1d2ce9	GREEN #1946 (4135 PHP tests, 0 new failures)	session-20261117T185935-593e017f	2026-11-17T19:55:54Z
+verify:stackiq:2047:cd2856b2	GREEN #2047 (docblocks only)	session-20261117T190418-7494049c	2026-11-17T19:56:06Z
+verify:portaliq:2567:28bd0f0f	GREEN #2567 (tasks.md only, 0 new failures)	session-20261117T190250-54b1be06	2026-11-17T19:56:21Z
+build:portaliq:intake-conditional-questions-and-drafts:b2:c3	partial: nothing buildable yet; T06-T08 drafts wait on openregister build/or-form-and-journey-registry (run API tasks 2-3 built, not on main) and on a journey reference on the form binding (design open question, buildiq authors it); T08 docs page and unsupported-condition string already on PR #2573	session-20261117T190434-a73c29f6	2026-11-17T19:56:44Z
+verify:shillinq:3177:721a7f41	GREEN #3177, 0 new failures	session-20261117T190150-dbabe332	2026-11-17T19:56:37Z
+verify:stackiq:2051:ea4af972	GREEN #2051 (e2e specs only)	session-20261117T190357-55034d4a	2026-11-17T19:56:50Z
+verify:shillinq:3176:d4349073	GREEN shillinq#3176: 12816 tests, 0 new failures	session-20261117T185556-5276d56d	2026-11-17T19:57:02Z
+verify:stackiq:2046:b787d109	GREEN 2046: e2e spec only; unit 4055, 1 inherited	session-20261117T185725-f66ae098	2026-11-17T19:57:14Z
+verify:stackiq:2050:3aee64db	GREEN (e2e only)	session-20261117T190242-7c82bed8	2026-11-17T19:57:29Z
+verify:shillinq:3067:55cee22d	CONFLICT 3067 (register-versions.lock.json)	session-20261117T185419-c23c5946	2026-11-17T19:57:55Z
+verify:portaliq:2565:d455ab0f	GREEN #2565 (docs tick only, 0 new failures)	session-20261117T190633-45ee22b7	2026-11-17T19:58:10Z
+build:shillinq:ledger-multi-administration:b2:c5	already built: every code task on development (switcher page, scoped index, templates, follower sync); e2e spec tests/e2e/ledger-multi-administration.spec.ts in open #3169, unticked until a live run; skipped 2.2 (request on nextcloud-vue, external repo)	session-20261117T185419-c23c5946	2026-11-17T19:58:42Z
+verify:humaniq:1197:a28aaa28	GREEN #1197 (e2e spec; unit 4509 OK)	session-20261117T190448-9c35d7c4	2026-11-17T19:58:57Z
+verify:stackiq:2053:74b55e34	GREEN #2053 (e2e spec only, 0 new failures)	session-20261117T185935-593e017f	2026-11-17T19:59:07Z
+verify:portaliq:2585:047ea7f2	GREEN portaliq#2585 (e2e spec only; verdict also recorded by worker-32)	session-20261117T190626-5c7fccb4	2026-11-17T19:59:23Z
+verify:thematiq:1720:7eeab9fa	GREEN: version bump; 0 new failures	session-20261117T190443-6578d505	2026-11-17T19:59:30Z
+fix:portaliq:2570:8d6de29e	failed: permission (push to portaliq branch refused in this session; conflict in CitizenCaseController::show resolved locally by keeping both caseActions and outcome, suite 6341 tests with 16 inherited errors, not pushed)	session-20261117T190353-db371595	2026-11-17T19:59:46Z
+verify:stackiq:2044:49090a5b	2044 GREEN (e2e spec only)	session-20261117T185710-40ec955c	2026-11-17T19:59:38Z
+verify:stackiq:2064:015b6012	GREEN #2064: version bump only	session-20261117T185903-e132ac1e	2026-11-17T19:59:55Z
+verify:thematiq:1727:057fa453	RED (already recorded at this sha): npm ci ERESOLVE, stylelint-config-standard 41 needs stylelint ^18 from #1728	session-20261117T190443-6578d505	2026-11-17T20:00:06Z
+verify:stackiq:2062:a7823ce7	GREEN	session-20261117T190242-7c82bed8	2026-11-17T20:00:04Z
+merge:integriq:3601:c0ea461a	unmeasured: static.developer.overheid.nl (3701 approved, gate could not measure; 3601 CONFLICT in l10n files)	session-20261117T190353-7aae74e9	2026-11-17T20:00:21Z
+verify:versioniq:796:a6d4dd38	GREEN (version bump)	session-20261117T190242-7c82bed8	2026-11-17T20:00:34Z
+verify:shillinq:3080:ed5b393d	1 CONFLICT (3080: info.xml, register-versions.lock.json)	session-20261117T190249-b0f6275f	2026-11-17T20:00:44Z
+verify:shillinq:3165:f382c52b	GREEN shillinq#3165 (unit 12797 OK)	session-20261117T190302-4e3d4569	2026-11-17T20:01:02Z
+verify:stackiq:2060:089ca175	GREEN 2060; vitest no new failures (1 inherited)	session-20261117T185359-d68263c5	2026-11-17T20:01:14Z
+verify:shillinq:3178:7c8cd864	GREEN 3178; no new failures	session-20261117T185927-e9838dc9	2026-11-17T20:01:30Z
