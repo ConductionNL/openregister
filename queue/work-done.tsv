@@ -20057,3 +20057,4 @@ merge:opencatalogi:2651:3132aebc	cloud tree of 4 opencatalogi PRs: merged=0 red=
 fix:buildiq:1632:339aedb1	conflict resolved, pushed 53f9828c; merge lock held elsewhere, REVERIFY queued	session-20261117T085356-c13ba754	2026-11-17T09:12:13Z
 fix:buildiq:1605:2848f1e2	conflict resolved, pushed 5e5363ab; merge lock held elsewhere, REVERIFY queued	session-20261117T084727-10682198	2026-11-17T09:12:21Z
 fix:buildiq:1630:fd159d9c	conflict resolved, pushed 19bdcf6d; REVERIFY (merge lock held elsewhere)	session-20261117T081254-2b2b5b50	2026-11-17T09:12:37Z
+fix:buildiq:1626:230c8f81	conflict resolved, pushed 3826ea7c; REVERIFY queued (merge lock held elsewhere)	session-20261117T084023-906a5a8e	2026-11-17T09:12:46Z
