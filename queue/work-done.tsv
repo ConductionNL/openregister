@@ -20144,3 +20144,4 @@ merge:humaniq:1146:5e4dde8f	cloud tree of 1 humaniq PRs: merged=1 red=0 fail=0 s
 review:openregister:10607:3dcb1ed3	APPROVE 10607	session-20261117T092708-8cee6d46	2026-11-17T09:43:52Z
 fix:stackiq:1943:520d167f	conflict resolved, pushed 1d009f7f, REVERIFY (merge lock held elsewhere)	session-20261117T091057-940845f2	2026-11-17T09:44:00Z
 fix:opencatalogi:2650:e518db3d	fixed BLOCK: repair step on ObjectSaveOptions, failures warned; pushed 4abde043, REVERIFY queued (merge lock held elsewhere)	session-20261117T093934-e62fdbdf	2026-11-17T09:44:07Z
+review:shillinq:2983:7c48c94a	BLOCK: duplicate index pages (ADR-097), plus conflicts with development	session-20261117T093625-46de7bd3	2026-11-17T09:44:28Z
