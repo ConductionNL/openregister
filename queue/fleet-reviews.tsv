@@ -1356,3 +1356,4 @@ hermiq	1845	84f28a112420767ebcf2b90cc1e5b72faa4a377b	APPROVE	worker-48	Standard;
 hermiq	1846	5032dbe476b08e7c18c9b11969ca737daa6a3249	APPROVE	worker-48	Quick; no blockers; tests/spec bookkeeping only, none
 hermiq	1847	4b35bf029a1ae7308503d63ef3b7d87dd2e68235	APPROVE	worker-48	Thorough; no blockers; tests/spec bookkeeping only, Newman base_url default localhost:8080 matches existing collection, overridable
 hermiq	1848	65d35bc5c91cb52e899ac03cd9fd06cc301f8aa5	APPROVE	worker-48	Thorough; no blockers; tests/spec bookkeeping only, none
+shillinq	3164	7ae11281542796cf1f363da0d6e8b887f42798ab	APPROVE	worker-15	Strict; no blockers; both new endpoints AuthorizedAdminSetting, input validated before any write, tests assert refusal stores nothing
