@@ -18642,3 +18642,4 @@ filinq	2182	af614fee7742906a70da9c30346e9eb6541d7740	GREEN	worker-36	docs: OpenA
 filinq	2183	fb25a98a385e31605573510e1f28367b920a420b	GREEN	worker-36	vitest spec only; unit 7298 OK on the 9-PR tree, baseline 7288 OK, new failures 0; vitest 857/857
 filinq	2184	6da46b71eaef66c39d938d3bfecaf1d756918363	GREEN	worker-36	e2e specs only; unit 7298 OK on the 9-PR tree, baseline 7288 OK, new failures 0; vitest 857/857
 integriq	3714	b9668573e7033e4950efd58082ccf86566f9ca9a	GREEN	worker-06	implements access-developer-portal-and-subscriptions per its specs (subscribe path extracted unchanged, portal requests scoped to the developer's own application, retired 410 / expired 403 per REQ-DEVP-004/005); unit 9948 tests, baseline 9910 with the same 2 errors + 3 failures, no new failures; vitest 2395 passed
+pipelinq	3943	ca8a7004855906b9e00ed5aeb35851c413d08653	REVERIFY	worker-55	conflicts only with an earlier PR of the verify tree
