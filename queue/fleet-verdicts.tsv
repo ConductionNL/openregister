@@ -18688,3 +18688,4 @@ larpinq	1102	53a4124923f5d9be485ff1fbd3c9d204a2aafba2	CONFLICT	worker-22	conflic
 larpinq	1103	e6ac5573a73f4c753fa34e0f540224f7f2899f79	CONFLICT	worker-22	conflicts with development; tree unit 1265 OK/20 skipped (baseline 1243 OK), vitest 796/796, no new failures
 larpinq	1104	072740aae8be224bd39bab37e1dd43eb661d0a64	GREEN	worker-22	e2e spec + tasks.md only; tree unit 1265 OK/20 skipped (baseline 1243 OK), vitest 796/796, no new failures
 larpinq	1105	768215bad5f868107f3b278314c2a670c2a14596	GREEN	worker-22	matches change specs (reject/resubmit, GM access answers); owner/GM check before app-authority write; tree unit 1265 OK/20 skipped (baseline 1243 OK), vitest 796/796, no new failures
+buildiq	1712	c5e1d2176bcdc55e8a11d05009e04345b81c4bc1	GREEN	worker-41	unit 3676 tests, baseline 3676 OK, no new failures; @uses metadata only
