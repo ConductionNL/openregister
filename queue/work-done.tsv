@@ -22142,3 +22142,4 @@ verify:buildiq:1608:10685d4e	CONFLICT: 1608 conflicts with development (4 files)
 verify:buildiq:1630:285ac6f0	CONFLICT: useManifestValidator.js vs development	session-20261117T190242-7c82bed8	2026-11-17T19:04:48Z
 verify:buildiq:1724:8556ed5a	GREEN 1724 (same head as tree verify this session)	session-20261117T185419-c23c5946	2026-11-17T19:05:17Z
 verify:planninq:1246:a8cdba71	GREEN 1246,1247,1248; REVERIFY 1250 (conflicts only with earlier tree PR); unit 1254 OK, vitest 3593 OK	session-20261117T185359-d68263c5	2026-11-17T19:05:43Z
+review:versioniq:735:6cc6a20f	CONFLICT with development (8 files); behaviour per specs, PR head suite 0 new failures	session-20261117T185932-75c4578d	2026-11-17T19:06:31Z
