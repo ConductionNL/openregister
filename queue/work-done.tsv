@@ -22588,3 +22588,4 @@ fix:filinq:2130:151267ee	CONFLICT fixed on #2130: development merged, suite 7350
 fix:filinq:2072:f3b90da8	conflict resolved, pushed 5199bdf2 (unit 7423 ok, vitest 866 ok); REVERIFY queued	session-20261117T190633-45ee22b7	2026-11-17T20:45:27Z
 fix:versioniq:692:96800420	conflicts resolved (both sides kept), pushed f611aea1; REVERIFY queued	session-20261117T185927-e9838dc9	2026-11-17T20:45:38Z
 fix:filinq:2121:fb55b720	fixed CONFLICT: merged development in, both sides kept; PHP 7356 OK, vitest 866 OK; pushed 760729f0, REVERIFY queued (no end-to-end merge: gate unmeasured here)	session-20261117T190333-2bf83f45	2026-11-17T20:45:54Z
+fix:filinq:2093:71ddff39	merged development into #2093 (new head f46e9fd2), suite green; REVERIFY queued	session-20261117T190320-1db054ae	2026-11-17T20:46:04Z
