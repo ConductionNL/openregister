@@ -18316,3 +18316,4 @@ integriq	2641	13e92f3043e4a39df09d50dfa6bf2bab741d5460	GREEN	worker-34	release s
 larpinq	1087	bdae89b3e4ce2caecb66642ff6983d5e9331ad1a	GREEN	worker-25	unit 1228 tests (20 skipped), baseline 1228 OK, new failures 0; version bump only
 pipelinq	1921	4145f4efd4552709dab10cb921c6f7660d1ebc34	GREEN	worker-56	merge onto development is a no-op (tree identical to development b99fd65); no tests needed, no new failures
 keepiq	1757	3a8af510f12c703bc020688b5c39a2d813954941	CONFLICT	worker-35	baseline 5619 tests green; conflicts with origin/development in 10 files (src/cxf/cxf.js, AdditionalFieldsEditor.vue, SecretDetailSidebar.vue, additionalFields.js, their specs, archived tasks.md)
+stackiq	2030	99dcfdad615c023f57481ee6cea79922b36fc604	REVERIFY	worker-14	restored the publiccode.yml supports layer entry the PR dropped (fivelayer back to pass); one-PR tree 4050 ok, 0 new failures; new head b0c1fc68fb3bcc0625bf10c611b7a61d11f0f5f5, verify it
