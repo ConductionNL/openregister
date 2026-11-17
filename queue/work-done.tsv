@@ -20475,6 +20475,7 @@ verify:launchpad:1267:544bf6ef	GREEN #1267 (docs only, 4621 tests, 0 new failure
 review:learniq:2551:7d11c48b	GREEN: no new PHP or JS failures, matches spec; conflicts with development in register json	session-20261117T112106-1814b74b	2026-11-17T11:59:55Z
 fix:launchpad:1210:fcd51164	conflict resolved, pushed 748b8e0b; merge lock held elsewhere, REVERIFY queued	session-20261117T112432-6eb8ecae	2026-11-17T12:00:07Z
 verify:humaniq:1184:54f5f41a	GREEN #1184	session-20261117T113142-3e3cc1d3	2026-11-17T12:00:44Z
+merge:dossiq:6203:b7db5fe4	merge3 tree of 1 dossiq PRs: merged=0 red=1 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-17T12:01:30Z
 merge:planninq:1217:4421f900	cloud tree of 2 planninq PRs: merged=1 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T111351-f79c232f	2026-11-17T12:01:26Z
 fix:buildiq:1590:d570d17d	spec tags added, pushed ca570ceb; land RED on maintainability floor (unit_complexity 3.42->3.39)	session-20261117T112054-1e62e295	2026-11-17T12:01:37Z
 review:shillinq:3080:77004414	GREEN: unit 12799 OK on merge with development; info.xml/lock conflict noted	session-20261117T112552-11cae4cc	2026-11-17T12:02:07Z
