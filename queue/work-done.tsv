@@ -19799,6 +19799,7 @@ fix:opencatalogi:2683:783543f7	conflict resolved, pushed b9a9bc9f; REVERIFY (mer
 build:versioniq:inventory-lifecycle-signals:c5	PR #754 head 8d9ac96: merged development (l10n union, openapi JSON merge), built endOfSupport stamp in the sweep (AppStoreSource::supportedMajors + LifecycleSignals::endOfSupport, 10 tests); unit 2255->2265, same 2 inherited golden failures; vitest 3177 pass. Code tasks complete; left: 3.2 e2e and 4.1 matrix/archive need a live instance	session-20261117T065609-89f8b9cf	2026-11-17T07:22:23Z
 fix:larpinq:1043:09d10d17	conflict resolved, pushed 03f6b920; REVERIFY queued	session-20261117T063100-87feca45	2026-11-17T07:22:20Z
 review:shillinq:3009:0bd3c949	GREEN: spec-conform, PHPUnit 12640 OK, vitest red inherited only	session-20261117T065527-44da8271	2026-11-17T07:22:34Z
+review:portaliq:2449:05704f30	GREEN: portaliq#2449 no new failures, node specs 11/11	session-20261117T065829-ba4e0772	2026-11-17T07:22:53Z
 fix:versioniq:715:160a3e87	conflict resolved, pushed 4657c9dc; REVERIFY queued	session-20261117T055853-7ddd3cb3	2026-11-17T07:23:06Z
 fix:larpinq:1049:8083d2b9	fixed: test code ratio back to 3 stars (75.05%), new head 6a27cf9497, REVERIFY queued; land skipped: static.developer.overheid.nl unreachable	session-20261117T064936-821ba2a3	2026-11-17T07:23:16Z
 fix:versioniq:729:624afbb6	conflict resolved, pushed 48ad9ca09c; REVERIFY queued (2 inherited golden reds)	session-20261117T070159-36e67801	2026-11-17T07:23:31Z
@@ -19806,4 +19807,6 @@ fix:opencatalogi:2722:8f7ea1f5	fixed BLOCK (@spec tag), new head 6007a1fe; merge
 fix:opencatalogi:2680:7b795492	conflict resolved, pushed 2286260f; merge lock held elsewhere, REVERIFY	session-20261117T065443-facc0d23	2026-11-17T07:24:18Z
 fix:stackiq:1946:644c7833	conflict resolved, pushed 79f3a2dd (phpunit OK, vitest only inherited facets failure); lock held elsewhere, REVERIFY queued	session-20261117T065426-e0b4a950	2026-11-17T07:24:43Z
 fix:opencatalogi:2650:fef15211	unmeasured: api.osv.dev (conflict fixed, floor restored, new head e518db3d, APPROVE recorded, tree 0 new failures)	session-20261117T062917-0fb3a5d4	2026-11-17T07:25:02Z
+fix:stackiq:1938:1b19373e	conflict resolved and @spec fixed, head 08b568aa; approved, merge gate RED on floors (unit_complexity 3.73->3.71, unit_interfacing 4.71->4.68), not landed	session-20261117T063127-b908dd01	2026-11-17T07:25:09Z
 fix:launchpad:1239:1b2f911c	conflict resolved, pushed a96d699c; merge lock held elsewhere, REVERIFY queued	session-20261117T065500-f63bc812	2026-11-17T07:25:12Z
+fix:filinq:2105:0d907f7f	conflict resolved (template 1.8.0, register 8.67.0), pushed 6c1363a4 with icon/app-version/@spec fixes; suite 7196 OK; not landed: REQUEST_CHANGES for the component_independence floor	session-20261117T063118-c67285ab	2026-11-17T07:25:34Z
