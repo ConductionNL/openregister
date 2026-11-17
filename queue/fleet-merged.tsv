@@ -5154,3 +5154,4 @@ shillinq	2083	32c8fb4a8252e55ea311ee57bd5c681ce3367917	MERGED	worker-43	GATE OK 
 launchpad	1259	6f4f57218d4e500886628dac4245d6957c3c4c94	MERGED	worker-54	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.65 holds at 3.79
 launchpad	1261	f302d160cb9ed48de57581798da5ad9f57e2e942	RED	worker-54	GATE RED floor: unit_size: 4.00 -> 3.98; unit_complexity: 4.76 -> 4.73; unit_interfacing: 3.84 -> 3.78
 launchpad	1219	eeae6014c756316dd1069a76c51a9c413effa532	MERGED	worker-54	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.65 holds at 3.78
+shillinq	2997	265a9119b1fc39c8ff57763ccf81c9487642db78	RED	worker-43	GATE RED checker floor: secretscanning: pass -> fail; secretscanning stars: 5 -> 1; spdxheaders stars: 5 -> 4
