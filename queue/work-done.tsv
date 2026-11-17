@@ -21716,3 +21716,4 @@ review:shillinq:3048:4dfa4261	stale	feeder	2026-11-17T15:34:01Z
 review:filinq:2107:7fd0b6e1	stale	feeder	2026-11-17T15:34:01Z
 review:versioniq:700:b95e71ea	stale	feeder	2026-11-17T15:34:01Z
 build:decidiq:competitor-parity-2026-09:b2:c2	already built: index change with no code or spec-file task; open items build other changes (own rows), hand-offs to dossiq/filinq and lane questions	session-20261117T151651-9c0f11a5	2026-11-17T15:39:07Z
+review:decidiq:2198:3e20b726	GREEN: behaviour per specs, unit 4895 OK at head; conflicts with development (7 files) noted	session-20261117T134347-d0294040	2026-11-17T15:39:20Z
