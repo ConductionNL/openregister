@@ -20101,3 +20101,4 @@ review:opencatalogi:2683:7b81beb8	GREEN: no new failures vs development baseline
 review:learniq:2497:d7ffe7d9	GREEN: 7078 tests, 1 inherited failure	session-20261117T092632-101520de	2026-11-17T09:30:16Z
 fix:integriq:3628:c2938095	fixed spec-tag blockers; new head 0e0f7320, REVERIFY (merge lock held elsewhere)	session-20261117T092706-95ac9736	2026-11-17T09:30:30Z
 review:buildiq:1607:7bdbd4b0	GREEN; vitest 4943 OK, PHP suite same as development	session-20261117T083929-9c5fceb9	2026-11-17T09:30:49Z
+review:integriq:3550:7acdaf52	BLOCK: floor php component_independence worsened 93.0->92.8%; tests clean (5 inherited)	session-20261117T091836-c439b8c6	2026-11-17T09:30:58Z
