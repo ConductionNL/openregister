@@ -19436,3 +19436,4 @@ review:learniq:2523:3742dedc	BLOCK: register change without version move, unregi
 review:dossiq:4887:3f70eb10	GREEN: no new failures (19 inherited), behaviour additive	session-20261117T052912-fd9cd3d6	2026-11-17T05:34:13Z
 review:larpinq:1054:72b83a79	GREEN	session-20261117T042937-c444c626	2026-11-17T05:36:55Z
 fix:hermiq:1763:0ba5d841	conflict resolved, pushed 685f966966; REVERIFY queued	session-20261117T042937-c444c626	2026-11-17T05:40:12Z
+fix:hermiq:1719:ba454aad	stale	session-20261117T042937-c444c626	2026-11-17T05:40:40Z
