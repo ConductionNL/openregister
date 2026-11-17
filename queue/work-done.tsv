@@ -19797,3 +19797,5 @@ fix:opencatalogi:2683:783543f7	conflict resolved, pushed b9a9bc9f; REVERIFY (mer
 fix:larpinq:1043:09d10d17	conflict resolved, pushed 03f6b920; REVERIFY queued	session-20261117T063100-87feca45	2026-11-17T07:22:20Z
 review:shillinq:3009:0bd3c949	GREEN: spec-conform, PHPUnit 12640 OK, vitest red inherited only	session-20261117T065527-44da8271	2026-11-17T07:22:34Z
 review:portaliq:2449:05704f30	GREEN: portaliq#2449 no new failures, node specs 11/11	session-20261117T065829-ba4e0772	2026-11-17T07:22:53Z
+fix:versioniq:715:160a3e87	conflict resolved, pushed 4657c9dc; REVERIFY queued	session-20261117T055853-7ddd3cb3	2026-11-17T07:23:06Z
+fix:larpinq:1049:8083d2b9	fixed: test code ratio back to 3 stars (75.05%), new head 6a27cf9497, REVERIFY queued; land skipped: static.developer.overheid.nl unreachable	session-20261117T064936-821ba2a3	2026-11-17T07:23:16Z
