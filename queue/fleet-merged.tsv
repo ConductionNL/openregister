@@ -4963,6 +4963,7 @@ larpinq	1049	8083d2b965b71b35f9f630efe240c6d6130d8481	RED	worker-30	GATE RED che
 stackiq	1959	61653b66fc533cc7a476461f11f450b82479dc8a	MERGED	worker-28	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.16
 larpinq	1059	064564f8eebf0763f2d68215c6289a261f3c882d	MERGED	worker-30	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.25
 stackiq	1989	45dbd96288cca2c93a2162055fe2c65597c4ed55	MERGED	worker-28	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.16
+humaniq	1139	3c0dc9a8fc49f0e2d3d2dcb8600ebf57374df54a	MERGED	worker-50	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.47 holds at 3.47
 opencatalogi	2685	361759822db99f7f36be9cef2062afe006059ba5	MERGED	worker-53	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.52
 launchpad	760	3d286e79d2e2e88b035d84491e595b061600b514	MERGED	worker-54	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.65 holds at 3.79
 opencatalogi	2722	8f7ea1f5190ab3e63079bf7e3b3d461e30808d08	SKIP	worker-53	no APPROVE review at this head
