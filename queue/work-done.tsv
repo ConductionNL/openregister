@@ -20096,3 +20096,4 @@ review:filinq:2069:db5701f0	GREEN: filinq #2069, unit 7155/0 failures, vitest 14
 review:filinq:2083:e57df6b0	CONFLICT: filinq#2083 conflicts with development (register, l10n); diff clean, unit 7173 OK on head	session-20261117T084229-c4fc3f9c	2026-11-17T09:28:49Z
 review:hermiq:1754:e5a330ff	BLOCK: php duplication floor 5.8->5.9%; tests green (5644 unit, 1630 vitest)	session-20261117T092223-98298a84	2026-11-17T09:29:31Z
 fix:filinq:2114:790aa030	fixed: refused uncheck answers 403; pushed 8555a6f9, REVERIFY (merge lock held elsewhere)	session-20261117T091057-940845f2	2026-11-17T09:29:39Z
+fix:launchpad:1219:ca7a79d2	merged #1219 at eeae6014c756316dd1069a76c51a9c413effa532	session-20261117T083938-f8f3a0e7	2026-11-17T09:29:50Z
