@@ -19689,3 +19689,4 @@ review:hermiq:1760:02cb1469	stale	session-20261117T061802-b42f2669	2026-11-17T07
 review:integriq:3585:472896a8	GREEN (Strict review, no blockers)	session-20261117T063021-b217a961	2026-11-17T07:00:09Z
 fix:hermiq:1719:d7853a9e	blockers fixed, pushed 72b13e05 (suite 5581 OK); merge lock held elsewhere, REVERIFY queued	session-20261117T062856-12839ec9	2026-11-17T07:00:20Z
 review:buildiq:1654:8cbe077a	BLOCK: DashboardController factory omits settings, offline never offered in production	session-20261117T055834-d932e117	2026-11-17T07:00:35Z
+merge:hermiq:1738:26b23afe	merge3 tree of 7 hermiq PRs: merged=1 red=3 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-17T07:00:51Z
