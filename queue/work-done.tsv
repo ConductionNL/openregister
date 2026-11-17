@@ -19896,3 +19896,4 @@ fix:dossiq:6630:d26712f8	REVERIFY: BLOCK was the owner-requested archival behavi
 review:shillinq:2070:a52f769a	GREEN: unit 12630/0 failures, vitest 32 pass	session-20261117T081327-bdafbf12	2026-11-17T08:22:25Z
 review:stackiq:1966:07fea94b	RED: 1 new phpunit failure (usage version pin in BaselineClassificationDeclarationTest); rest matches specs	session-20261117T081247-63811e04	2026-11-17T08:22:54Z
 fix:hermiq:1757:5857cce3	failed: permission (running the ADR ruleset from npm was refused; static.developer.overheid.nl blocked here, adrvalidator unmeasurable)	session-20261117T081203-88d20425	2026-11-17T08:23:10Z
+fix:shillinq:3067:57c917aa	fixed l10n keys, new head 8205f49a; merge lock held elsewhere, REVERIFY	session-20261117T081941-dbad7940	2026-11-17T08:23:06Z
