@@ -20005,4 +20005,5 @@ review:shillinq:3067:8205f49a	GREEN: suite 12629 tests 0 failures	session-202611
 fix:integriq:3564:6d065ca0	fixed, pushed e2164fe1; REVERIFY queued	session-20261117T081138-8732f141	2026-11-17T08:58:46Z
 merge:larpinq:1043:53f3f771	cloud tree of 6 larpinq PRs: merged=1 red=1 fail=0 skip=0; conflict 4, lint 0, red 0, moved 0, done 0	session-20261117T084927-57ebccdf	2026-11-17T08:59:02Z
 cover:dossiq:069ee2d6m9d1b:3641032a	failed: permission (installing a coverage driver was refused; no pcov/xdebug to find the uncovered lines of lib/Service/Pipelinq at 94.26%)	session-20261117T083929-9c5fceb9	2026-11-17T08:59:27Z
+merge:thematiq:1365:d68cd124	cloud tree of 1 thematiq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T084906-3448b9ad	2026-11-17T08:59:14Z
 fix:filinq:2085:7276c4b5	conflict resolved, pushed 38d24886; unit 7143 OK; merge lock held elsewhere, REVERIFY queued	session-20261117T084019-84d2c33c	2026-11-17T08:59:23Z
