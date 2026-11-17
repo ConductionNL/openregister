@@ -17828,3 +17828,4 @@ hermiq	1738	461c70b6c5723b611ebb600f2a6c6e9297a62661	REVERIFY	worker-58	merged d
 stackiq	2022	dd6d4b11005caee34f97773d81b938f02d226d90	RED	worker-55:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 stackiq	1938	903d38ebb1408ac2b76caf4e3df4eff0c96c40e4	CONFLICT	worker-55:merge	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Settings/stackiq_mock_register.json 
 stackiq	2023	4b571496463e29f34eb2c14da0d	REVERIFY	worker-55:merge	verdict sha is not the head: head is 4b571496463e29f34eb2c14da0dfb98b850b6306
+decidiq	2173	2b8ce60b6644e459ef1636d89488afb0abf24351	REVERIFY	worker-22	merged development in (decision page change applied onto the expanded manifest; DecisionDetail equals development, other pages equal the branch); floor PASS vs new base, phpunit 4996 OK, vitest 2973 pass + 1 inherited golden failure; new head 050c1776c5d62774a872639305fb99d7dd436431, verify it
