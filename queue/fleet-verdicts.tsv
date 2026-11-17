@@ -18103,3 +18103,4 @@ filinq	2086	2b8e54e77b6d862c5f52f4cd3c3523499d002e57	GREEN	worker-04:review	buil
 buildiq	1701	67dece1fabcf3a353a99f8740874b663b7c7593f	GREEN	worker-13	publiccode.yml only (valid YAML, facts match info.xml/img/roadmap); no code changed; unit baseline 3578 tests 1 failure inherited, new failures 0
 larpinq	1086	46f1ee9a3cd151eeec65ac932ab8eaf720f67ec0	RED	worker-24:merge-gate	GATE RED floor: unit_interfacing: 4.77 -> 4.74
 filinq	2105	be740cc2cc3ebb548eafa9933b8cc7ffcf23fb40	GREEN	worker-43:review	implements office-template-authoring per its specs; Twig path unchanged except fragment resolution the spec asks for; new endpoints session-checked, template read with caller access; unit 7344 OK merged with development; phpstan clean
+shillinq	3160	1013c8e612b10949e022ce7791fa7648456cc109	GREEN	worker-21	docs only (README, publiccode.yml valid YAML, logo present); unit suite 12771 OK on tree, baseline 12771 OK, no new failures
