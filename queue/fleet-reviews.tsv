@@ -1519,3 +1519,4 @@ buildiq	1711	c046bf16a2d185fd3a110f47e78450a28c23551c	APPROVE	worker-08	Quick (t
 buildiq	1712	c5e1d2176bcdc55e8a11d05009e04345b81c4bc1	APPROVE	worker-08	Quick (tests only); no blockers; assertions on real behaviour, no skipped or assertion-free tests
 buildiq	1713	2b78ac989bb71c96a61611961bdc826e1fb7af1f	APPROVE	worker-08	Quick (one task tick); no blockers; none
 buildiq	1715	628d9e25f091953535ee8b7bb259bf0baf012802	APPROVE	worker-08	Quick (e2e spec + task note, not run); no blockers; T06 left unticked correctly
+portaliq	2446	e217a1c6bb4e763d1da65844a3ccc81b850678f8	REQUEST_CHANGES	worker-28	Strict; message() serves a row of an inbox collection that declares no scopeField/scopeClaim/via (tenant-only boundary) while the inbox list refuses that collection; concerns: markRead has the same inherited gap
