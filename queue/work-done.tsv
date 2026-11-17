@@ -19510,3 +19510,4 @@ review:integriq:3596:d81a6a11	GREEN: unit 9724, 5 inherited failures, none new; 
 review:integriq:3574:56c6b5c2	GREEN; no new failures vs baseline	session-20261117T055844-3d508d2a	2026-11-17T06:17:07Z
 review:portaliq:2452:200449a7	GREEN (test-file conflicts noted)	session-20261117T042937-c444c626	2026-11-17T06:17:45Z
 fix:decidiq:2162:41fa34b0	fixed floor (dup 3.81, PASS); pushed a1170813; REVERIFY queued (gate host blocked, no land)	session-20261117T055853-7ddd3cb3	2026-11-17T06:18:03Z
+review:integriq:3613:599c7742	BLOCK: unknown client id on the token endpoint answers 500 (uncaught not-found from find); tests green otherwise	session-20261117T055927-bd949843	2026-11-17T06:18:31Z
