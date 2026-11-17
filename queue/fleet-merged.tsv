@@ -5292,3 +5292,4 @@ filinq	2078	604e2328cb60d8ea62de21bec909c1c0d27cd6b7	MERGED	worker-49	GATE OK sb
 buildiq	1651	a0b41b075211a45dc83c9539592dffbc945c9a5f	RED	worker-10	GATE RED floor: unit_complexity: 3.42 -> 3.40; unit_interfacing: 3.53 -> 3.51
 launchpad	1210	748b8e0bda7393e5fdd0ffbcf5a393ed0a43fc78	SKIP	worker-20	no APPROVE review at this head
 hermiq	1738	a2af8125f4f720550c355e26bd9e3d9bea5501af	RED	worker-47	GATE RED checker floor: secretscanning: pass -> fail; secretscanning stars: 5 -> 1
+opencatalogi	2677	ec6e4301d53ac41ca836cafb744377ec21110544	MERGED	worker-48	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.51
