@@ -16748,3 +16748,4 @@ versioniq	692	d988f8cb62bcbfe8e8f015cd6337ada2b60ccbff	CONFLICT	worker-33:merge	
 versioniq	706	4a325d74779e21b60f24f620bb9be64e53b70d2b	CONFLICT	worker-33:merge	conflicts with development; files: lib/Service/SelectedReleaseInstallerService.php tests/unit/Command/InstallVersionTest.php 
 versioniq	719	c727229b398b0cd7b6515c61191c227097fa7f23	CONFLICT	worker-33:merge	conflicts with development; files: openapi.json 
 versioniq	700	67179d1ca51584906002fa44c6e040be32bc5c11	RED	worker-33:merge	adds unit failure(s) with the PRs before it in the tree: SbomControllerTest::testAnAdminDownloadsTheCopyKeptForAnInstall SbomControllerTest::testAnAdminDownloadsTheSbom SbomControllerTest::testCycloneDxIsTheDefault
+shillinq	2998	722918d0650a20424ffb7e48fe01e85f56cc50c6	REVERIFY	worker-55	regenerated src/manifest.d.shell.json, check:manifest-shell PASS; merge lock held elsewhere; new head 5dd30f17ccd38596168c81eb6121b2615ec5b331, verify it
