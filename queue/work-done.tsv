@@ -20913,3 +20913,4 @@ cover:stackiq:9ac19b3am209e:60c2c265	PR #2039: 5 controller error-path tests, su
 cover:stackiq:9ac19b3am209e:34f5c300	PR #2040: 24 tests for SettingsService auto-configuration; lib/Service/*.php 88.22% -> 89.61%	session-20261117T135429-746b6e69	2026-11-17T14:03:37Z
 fix:integriq:3612:a0f66b1a	fixed: revoke credential on failed resolve check; new head e27499b1, REVERIFY queued	session-20261117T124637-3e909745	2026-11-17T14:03:54Z
 fix:versioniq:685:aadbc252	merged development (25 conflicted files, both sides kept), suites green beyond 2 inherited; REVERIFY at 50806996	session-20261117T134258-58728df3	2026-11-17T14:04:25Z
+fix:opencatalogi:2766:61ed15e9	failed: permission (landing step refused; pushed fixes, new head ba8f0a67 queued REVERIFY)	session-20261117T133804-84492b74	2026-11-17T14:05:49Z
