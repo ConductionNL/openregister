@@ -19951,3 +19951,4 @@ fix:shillinq:3004:0e70c6a3	conflict resolved, new head 04b7af8a, REVERIFY (merge
 fix:humaniq:1134:cfbe5201	fixed gate-123 (unit_interfacing 15.8% -> under the limit, 4507 tests green), pushed 69b3282e; merge gate still RED on the maintainability floor (unit_size 4.47->4.44, complexity 3.52->3.48, interfacing 3.68->3.66), RED verdict recorded for a follow-up fix	session-20261117T082106-2acc8483	2026-11-17T08:38:12Z
 merge:dossiq:6203:ab88a5ae	merge3 tree of 2 dossiq PRs: fatal: remote error: upload-pack: not our ref 6c923b78f26ada1989477d77b90516e502616102; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-17T08:38:12Z
 fix:filinq:2105:6c1363a4	fixed floor, pushed 2a7c3169; not landed (gate unmeasured: api.osv.dev); REVERIFY recorded	session-20261117T080525-3d8e09fd	2026-11-17T08:38:50Z
+fix:filinq:2120:5a2b996f	stale	session-20261117T083812-7850b396	2026-11-17T08:39:06Z
