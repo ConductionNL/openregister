@@ -18343,4 +18343,5 @@ integriq	2152	b149b10fd341de51ebb2c851b9fda81dbabf4518	GREEN	worker-46	unit 9839
 opencatalogi	1857	82668b5d869517933f46b9ce30535f4486c37da0	GREEN	worker-57	beta back-merge that changes no file on development (tree identical to base); no tests needed beyond baseline
 opencatalogi	2769	0c4a78f746a745c0379a06e1d75546f9b012e222	GREEN	worker-37	version bump only (info.xml, openapi.json); no code changed, suite = baseline
 integriq	3709	4cb85bb991cb2af12526621fe2212abe4b6e95af	GREEN	worker-34	unit 9839 tests; baseline 2E/3F; no new failures; dev-only psalm bump (note: psalm 7 needs PHP>=8.3.16)
+pipelinq	2404	19142132900a022ab6d59663dfdee0af6a6402ca	GREEN	worker-31	merge into development changes no files (beta already contained); suite on tree 9280 tests OK (2 warnings, 4 skipped) = development b99fd659, 0 new failures
 keepiq	1478	4bcaa207bffe6e753356e878e1c3ff1b7de7cb3a	GREEN	worker-32	mobile e2e tooling + ktor connect/socket timeouts with a test; no lib/ or src/ files changed so PHP/JS suites unaffected (not rerun); node --check and bash -n ok; Kotlin test not run here
