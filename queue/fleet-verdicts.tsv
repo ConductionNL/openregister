@@ -18022,3 +18022,4 @@ decidiq	2173	050c1776c5d62774a872639305fb99d7dd436431	REVERIFY	worker-44:merge	c
 decidiq	2205	8a3de4c6be1208375b0e3243a96a4b8db2ed80eb	REVERIFY	worker-44:merge	conflicts only with an earlier PR of the merge tree: merges clean on development alone; files: lib/Settings/profiles/municipality.json src/manifest.json 
 launchpad	1210	fcd51164e3351ae1fe6f7a11a04d9db65e7e8a8f	CONFLICT	worker-38:merge	conflicts with development; files: appinfo/info.xml src/views/Views.vue 
 launchpad	1217	365b7069cdf8dd17c14d4c518c34b0ed1243def6	CONFLICT	worker-38:merge	conflicts with development; files: appinfo/info.xml 
+dossiq	6638	89db4fd0d58bce432e1040de4cddd4b86226f366	REVERIFY	worker-04	merged development in, regenerated sbom.cdx.json (regen-sbom --check clean); new head 501374d688a7f0645ba4ae9af1be076059752579, verify it
