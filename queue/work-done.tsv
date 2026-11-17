@@ -19919,3 +19919,4 @@ merge:learniq:2509:4e8e3e1a	cloud tree of 6 learniq PRs: merged=0 red=0 fail=0 s
 review:versioniq:709:482317ee	BLOCK: spdx and spec-coverage gate failures on added files; suite green vs baseline	session-20261117T081313-388ffb60	2026-11-17T08:28:22Z
 review:opencatalogi:2677:635c5d4a	RED: WooReadinessServiceTest::testTheReportNamesTheMappingSource (ctor arg order)	session-20261117T081153-b2625937	2026-11-17T08:28:32Z
 fix:hermiq:1764:f9abfe44	fixed, pushed b2118ca7; REVERIFY queued (end-to-end skipped: static.developer.overheid.nl unreachable)	session-20261117T081203-88d20425	2026-11-17T08:28:53Z
+merge:buildiq:1597:cad5b7a1	unmeasured: api.osv.dev, static.developer.overheid.nl (proxy refused); #1597 #1602 reviewed APPROVE, not landed; 6 CONFLICT, 1 MOVED	session-20261117T080452-29d91ff1	2026-11-17T08:29:06Z
