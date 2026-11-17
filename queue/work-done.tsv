@@ -21349,3 +21349,4 @@ build:portaliq:site-shared-page-blocks:b2	PR #2588: built T06 (shared block deta
 build:shillinq:reporting-data-delivery:b2	already done: code tasks on development (1b383aea); 2.2 is filing an integriq issue, which workers do not do	session-20261117T133035-588aec38	2026-11-17T14:55:18Z
 build:shillinq:receivables-automatic-dunning:b2	already done: code on development (5 Oct, 05a174b3 and before); 4.1 Playwright half and 5.1 are live	session-20261117T133035-588aec38	2026-11-17T14:55:33Z
 build:shillinq:glline-administration-scope:b2	already done: code on development (f63ae70d0, 705cf2ca5); the one open item is marked not applicable (no frontend consumer)	session-20261117T134355-826c5a0b	2026-11-17T14:55:26Z
+build:shillinq:budget-charts:b2	PR #3170: Trend tab moved to config.sidebar so the account detail sidebar reaches the chart; spec file exists; skipped axe and live Playwright run (need a live instance)	session-20261117T140942-88b3095a	2026-11-17T14:56:23Z
