@@ -22129,3 +22129,4 @@ verify:launchpad:1306:bd67eb8e	GREEN 1306, GREEN 1307; unit 4671 tests, 0 new fa
 review:versioniq:719:d043e91d	RED: openapi.json truncated (all paths lost), VersionedRoutesTest fails; rest of diff per spec	session-20261117T185710-40ec955c	2026-11-17T18:59:42Z
 review:larpinq:1054:0d13d8ee	CONFLICT with development (mock register, SettingsServiceTest); code review clean; PR head unit 1158 OK, vitest 701 OK	session-20261117T185359-d68263c5	2026-11-17T19:00:12Z
 verify:buildiq:1712:c5e1d217	GREEN: #1712 (unit 3676 OK, baseline OK)	session-20261117T185500-00963134	2026-11-17T19:00:58Z
+verify:buildiq:1724:86533fb7	GREEN 1724-1732 (9 PRs); unit 3676, 0 new failures	session-20261117T185419-c23c5946	2026-11-17T19:01:59Z
