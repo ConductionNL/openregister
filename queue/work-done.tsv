@@ -18663,3 +18663,4 @@ cover:decidiq:a5f973bbm56fe:59826f43	deferred: decidiq has 44 open PRs	session-2
 cover:decidiq:a5f973bbm56fe:882bd950	deferred: decidiq has 44 open PRs	session-20261116T230531-f9095b0f	2026-11-17T00:35:08Z
 cover:stackiq:9ac19b3am039e:8ed5443b	nothing to cover: lib/Kernel/Contracts holds 62 interfaces only, no executable lines	session-20261116T230531-f9095b0f	2026-11-17T00:35:37Z
 cover:stackiq:9ac19b3am039e:f545d745	PR #2011: BackfillRecordStatus skip paths, 3 tests, class 61->67/68; suite 3937->3940 OK; lib/Repair otherwise fully covered	session-20261113T214350-9762e143	2026-11-17T00:35:59Z
+merge:opencatalogi:2669:64c0537b	cloud tree of 1 opencatalogi PRs: merged=0 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T230934-9ee320cf	2026-11-17T00:35:57Z
