@@ -18949,6 +18949,7 @@ portaliq	2566	3ec0f45991b0b758d08ddff651a968ddd819dad7	GREEN	worker-41	tasks.md 
 pipelinq	3937	77a25a62c5a28d2eeeb25cc35fba960d94b959de	GREEN	worker-49	unit 9285 (baseline 9282), 0 new failures; register membership additions per change
 portaliq	2579	df1bfc402b7652facf47819ec22a83d590bd098c	CONFLICT	worker-51	conflicts with development in package.json
 planninq	1250	70dfe254912eeaa8aeb0a5a52fbb7c735485ff4e	GREEN	worker-24	e2e and postman specs only for change project-data-export; postman JSON valid; unit 1253 tests 0 failures on tree
+pipelinq	3956	88c728b0df7eb26f363a20d2fe729080308519dc	GREEN	worker-31	version bump only; phpunit 9282 on tree, 0 failures, same as baseline
 portaliq	2590	9bc1d978687152cb2fd5d70d75832fb8164a2b9f	GREEN	worker-51	release version bump only (info.xml, openapi.json 0.2.13-unstable); no code
 thematiq	1723	f6aae08d113aa98b5a8129910468602b07e598e8	GREEN	worker-37	phpunit 2900, baseline 1 failure (MigrateOverrideValueTypesTest::testUnwritableDirectoryDoesNotThrow), new failures 0; vitest 1571/1571 on tree 1721-1726
 thematiq	1724	bee24dc0a0b313ee6429de1edec32a5449244f66	GREEN	worker-37	phpunit 2900, baseline 1 failure (MigrateOverrideValueTypesTest::testUnwritableDirectoryDoesNotThrow), new failures 0; vitest 1571/1571 on tree 1721-1726
