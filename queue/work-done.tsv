@@ -20486,4 +20486,5 @@ cover:integriq:92114ab0m17d5:js308ddf90	deferred: integriq has 58 open PRs	sessi
 review:launchpad:1210:748b8e0b	GREEN (phpunit 4695 ok, vitest 2755 ok)	session-20261117T112432-6eb8ecae	2026-11-17T12:04:55Z
 fix:decidiq:2171:6b39135c	gate blockers fixed and development merged, head fa36c32 reviewed APPROVE, tree green 4968; land RED: floor unit_complexity 4.04 -> 4.00 (new PHP units over complexity 5: anchor, points, factionsOf, storedVersions, context, readableFile), RED verdict queued	session-20261117T112009-00ac618f	2026-11-17T12:05:02Z
 merge:planninq:1231:0248eee9	cloud tree of 1 planninq PRs: merged=0 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T111351-f79c232f	2026-11-17T12:05:31Z
+merge:launchpad:1106:9005290f	cloud tree of 3 launchpad PRs: merged=0 red=1 fail=0 skip=0; #1267 gate RED (publiccode supports entry removed: fivelayer floor 5->3)	session-20261117T115011-195ffbc6	2026-11-17T12:06:11Z
 review:opencatalogi:2650:6678e3ea	BLOCK #2650: uses/used answers skip the public sourceIdentifiers filter; suite no new failures	session-20261117T114001-07512b39	2026-11-17T12:06:11Z
