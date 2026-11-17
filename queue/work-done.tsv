@@ -20068,3 +20068,4 @@ measure:keepiq:20261117h08	php 96.01% (pcov, 5619 tests), js 96.9% (vitest; 3 in
 merge:integriq:3593:5bcdf324	cloud tree of 8 integriq PRs: merged=0 red=0 fail=0 skip=3; conflict 5, lint 0, red 0, moved 0, done 0 (3628 left out: payload sha truncated, it holds a REQUEST_CHANGES)	session-20261117T084826-97c66fce	2026-11-17T09:16:28Z
 merge:hermiq:1719:8c1db3fb	no complete base and tree suite: not landed	session-20261117T084948-f35bd67b	2026-11-17T09:16:58Z
 merge:launchpad:885:ab84839c	cloud tree of 9 launchpad PRs: merged=3 red=0 fail=0 skip=2; conflict 3, lint 0, red 0, moved 1, done 0	session-20261117T083938-f8f3a0e7	2026-11-17T09:17:16Z
+gap:integriq:sync-runs-as-configured-user:1	deferred: integriq has 52 open PRs	session-20261117T084826-97c66fce	2026-11-17T09:17:23Z
