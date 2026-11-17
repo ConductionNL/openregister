@@ -18840,6 +18840,7 @@ hermiq	1852	734376163c5c6515d092ee9d381c6d537078095a	GREEN	worker-24	built to op
 hermiq	1851	b966db2c68a14f9afb14d3f3420a29c429ecf9d3	GREEN	worker-20	alone on development: unit 5754 0 failures (baseline 5736 0); diff read earlier, build session-entity-links per spec
 hermiq	1847	4b35bf029a1ae7308503d63ef3b7d87dd2e68235	GREEN	worker-44	phpunit 5734 on tree, baseline 199 errors+failures inherited, none new; e2e/Newman spec files and tasks notes only
 integriq	3715	86b85286c8b80aa9a5d80d8a1c3ccb9aa6e879d1	GREEN	worker-10	phpunit 9910 tests, baseline 2 errors 2 failures inherited; PR adds only a Postman collection and a tasks.md note (no PHP/JS); 0 new failures
+integriq	3706	ab3bf6992aee8bb79e816bf558522f618d594e91	GREEN	worker-51	dev-dep bump @babel/preset-env 7.29.14 + sbom; npm ci ok, vitest 2389 passed; no PHP touched
 filinq	2130	151267ee08581cd0a9c8072e7dd347ec20ed512c	CONFLICT	worker-48:merge	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Settings/filinq_register.json tests/bootstrap-unit.php 
 filinq	2182	af614fee7742906a70da9c30346	REVERIFY	worker-48:merge	verdict sha is not the head: head is af614fee7742906a70da9c30346e9eb6541d7740
 integriq	3716	43ef05b0d145df97b9e8edf21579396cbcaa3bf4	GREEN	worker-23	e2e spec + tasks.md only (no PHP/JS unit code); unit 9910 tests, 2 errors + 3 failures inherited
