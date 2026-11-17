@@ -21686,6 +21686,7 @@ build:hermiq:tools-agent-workspace-and-installed-tools:b2	already building: qual
 build:hermiq:memory-retrieval-scope:b2	already building: quality/build-memory-retrieval-scope 	session-20261117T135414-614629b0	2026-11-17T15:33:29Z
 build:hermiq:store-through-federated-config:b2	already building: quality/build-store-through-federated-config 	session-20261117T135414-614629b0	2026-11-17T15:33:35Z
 build:hermiq:persistent-llm-process:b2	already building: quality/build-persistent-llm-process 	session-20261117T135414-614629b0	2026-11-17T15:33:48Z
+build:hermiq:models-prompt-and-answer-cache:b2	already building (quality/build-models-prompt-and-answer-cache and -c3 exist)	session-20261117T125716-5aa18045	2026-11-17T15:33:56Z
 build:hermiq:models-provider-connections:b2	already building: quality/build-models-provider-connections 	session-20261117T135414-614629b0	2026-11-17T15:33:55Z
 build:hermiq:tools-deep-research-report:b2	already building: quality/build-tools-deep-research-report quality/build-tools-deep-research-report-2 quality/build-tools-deep-research-report-3 	session-20261117T135414-614629b0	2026-11-17T15:34:02Z
 build:hermiq:memory-knowledge-bases:b2	PR #1843: Newman KB upload (owner/non-owner) + tests/e2e/spec-coverage/knowledge-bases.spec.ts (5); code tasks were on development; not run (needs live instance); skipped: integriq-sync marker detection (needs integriq contract)	session-20261117T152617-5bc1e1b2	2026-11-17T15:34:34Z
