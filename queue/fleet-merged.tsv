@@ -5217,3 +5217,4 @@ buildiq	1605	15e373c74d853ac7b0ec840eeea9e04ae399f2d3	MERGED	worker-56	GATE OK s
 buildiq	1607	7bdbd4b0cd9abe768c516e017e0f4055e67ecd79	MERGED	worker-56	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.91 holds at 3.95
 buildiq	1608	2dd81c6fbea1a867498381425a51f0f50ffa30df	RED	worker-56	GATE RED checker floor: owaspsecurecoding: pass -> warn; owaspsecurecoding stars: 5 -> 3; score: 100 -> 96
 dossiq	6640	f6770616edd0130f7864c19a2783f56d50286180	RED	worker-08	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+launchpad	1212	d9d12e6f087dc1a6d42e4918693a7cef10b8a07f	RED	worker-39	GATE RED checker floor: adrvalidator: pass -> warn; adrvalidator stars: 5 -> 3; score: 100 -> 97
