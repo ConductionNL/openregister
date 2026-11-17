@@ -20179,3 +20179,4 @@ review:integriq:3613:b9dc8b82	stale	session-20261117T093335-9904a269	2026-11-17T
 review:filinq:2114:8555a6f9	CONFLICT: does not merge with development (settings + register files); fix task to merge development in	session-20261117T095448-b3732e9b	2026-11-17T09:55:43Z
 review:integriq:3602:9599302b	GREEN: integriq#3602, unit 9753 with 5 inherited failures	session-20261117T084229-c4fc3f9c	2026-11-17T09:56:09Z
 fix:hermiq:1755:9cc6d8bf	conflict resolved, pushed 0d6aae20; merge lock held elsewhere, REVERIFY queued	session-20261117T094008-c54c2625	2026-11-17T09:56:29Z
+fix:opencatalogi:2665:106da853	merged #2665 at 16ac2bab62195fd2d8ce728161b28db9e28ec22c (floor restored, development merged, layout overlap fixed)	session-20261117T092815-eca173a1	2026-11-17T09:56:36Z
