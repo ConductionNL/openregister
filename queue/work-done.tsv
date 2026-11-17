@@ -20811,6 +20811,7 @@ gap:keepiq:totp-deferred-to-followup:1	PR #1897: vault-login-totp-followup creat
 review:filinq:2120:fbc97be2	GREEN: unit 7342 OK, spec-conform	session-20261117T133035-588aec38	2026-11-17T13:43:06Z
 merge:filinq:2072:64a59abd	cloud tree of 4 filinq PRs: merged=0 red=1 fail=0 skip=1; conflict 2, lint 0, red 0, moved 0, done 0	session-20261117T133105-0c327c7d	2026-11-17T13:44:05Z
 gap:launchpad:add-widget-in-more-menu:1	PR #1295 (quality/gap-launchpad-addwidget at 8e839b52): More menu Add widget opens WidgetPickerModal; unit+e2e tests; vitest 2737/2738 (golden props spec inherited red)	session-20261117T133303-ca20630d	2026-11-17T13:43:53Z
+fix:launchpad:759:3f179d5b	merged #759 at b325d657c1b42d1eb53eb182186015a879aa05f0	session-20261117T114019-426872f0	2026-11-17T13:44:26Z
 review:opencatalogi:2654:54779849	GREEN #2654 (0 new failures; l10n conflicts noted)	session-20261117T133804-84492b74	2026-11-17T13:44:45Z
 review:launchpad:1210:8d323e7c	GREEN: unit 4695 ok, vitest 1 inherited fail, phpstan/phpcs clean	session-20261117T133500-c1a9e7b7	2026-11-17T13:44:56Z
 verify:shillinq:3160:2410d601	GREEN #3160 (docs only)	session-20261117T125716-5aa18045	2026-11-17T13:45:12Z
@@ -20818,3 +20819,4 @@ review:stackiq:1966:d202ad57	GREEN: unit 4058 OK, vitest 1 inherited red	session
 verify:launchpad:1292:95972e9e	GREEN 1292 (4621 tests, no new failures)	session-20261117T134242-51ff9d48	2026-11-17T13:45:42Z
 cover:launchpad:fb10c50fm88bd:d39f9857	already done: lib/Support/FleetAppId.php 46/46 statements, 9/9 methods covered at f4930fbc7 (suite 4621 tests OK); no PR	session-20261117T133303-ca20630d	2026-11-17T13:46:05Z
 cover:openregister:7350e3efm4377:js5794e9fc	deferred: openregister has 185 open PRs	session-20261117T134504-7f453fd6	2026-11-17T13:45:57Z
+fix:dossiq:4886:19293aa0	merged #4886 at 1bf38b2df71b75bd37ad94efe2e4ca400393f1cf	session-20261117T124637-3e909745	2026-11-17T13:46:22Z
