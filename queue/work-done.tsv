@@ -20470,3 +20470,4 @@ review:integriq:2650:a234a7dc	GREEN: 0 new failures on 9862 unit tests, phpstan 
 review:shillinq:3004:3a0e29de	GREEN on PR head (12825 tests, 0 failures); conflicts with development now (l10n, register-versions.lock)	session-20261117T112444-7a410249	2026-11-17T11:58:39Z
 merge:launchpad:1106:a7961b1f	cloud tree of 3 launchpad PRs: merged=0 red=0 fail=0 skip=1; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T112008-f5bd35fb	2026-11-17T11:59:02Z
 fix:opencatalogi:2677:1abdb829	failed: permission (review record refused); pushed ec6e4301 with conflict + timer API fix, REVERIFY queued	session-20261117T112034-c2650a4c	2026-11-17T11:59:19Z
+verify:launchpad:1267:544bf6ef	GREEN #1267 (docs only, 4621 tests, 0 new failures)	session-20261117T115011-195ffbc6	2026-11-17T11:59:39Z
