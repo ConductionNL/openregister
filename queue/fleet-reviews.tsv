@@ -1177,3 +1177,4 @@ launchpad	1267	9d79d281f3fc412df609b569b852ab6ed4da90df	APPROVE	worker-20	Quick;
 integriq	3612	a0f66b1a4495f5377e1e81309f41f0c12c7a3be2	REQUEST_CHANGES	worker-08	Strict; concern: when the minted credential fails the resolve check (mismatch or exception after mint) mintAndVerify returns null without revoking it, leaving an unreferenced credential in the broker; revoke it as the save-failure path does; gate fails inherited
 planninq	1231	b038b5610549a1158583fe4f9f91a795be9267a8	APPROVE	worker-54	Quick; no blockers; publiccode.yml metadata only, supports layer entry and release metadata kept
 integriq	3703	80544b3ca452aaca520969c1dbe59bf25d34dc66	APPROVE	worker-08	Quick; no blockers; composer.lock patch/minor bump, tree suite 0 new failures
+integriq	3704	ef91827a9deb643222e2c4ece7853589b5dbcd5a	APPROVE	worker-08	Quick; no blockers; composer.lock patch/minor bump, tree suite 0 new failures
