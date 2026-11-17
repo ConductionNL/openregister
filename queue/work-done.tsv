@@ -20836,13 +20836,23 @@ review:shillinq:3007:7ed685a6	GREEN: unit suite 12816 OK, behaviour matches chan
 cover:dossiq:069ee2d6m9d1b:52aafbe5	already done: lib/Service/Vth/ at 100% statement coverage on development 21f141bd21 (pcov, 128 Lhs tests green), target 95	session-20261117T133105-0c327c7d	2026-11-17T13:49:14Z
 review:integriq:2650:c1e85c0b	BLOCK: gate-14 snake_case route names on 2 new routes + ServiceBindings conflict with development; tests clean (no new failures)	session-20261117T134024-07d6c268	2026-11-17T13:49:17Z
 cover:openregister:7350e3efm4377:js7af948c9	deferred: openregister has 185 open PRs	session-20261117T134504-7f453fd6	2026-11-17T13:49:17Z
+cover:dossiq:069ee2d6m9d1b:5ebe3eb6	already done: lib/Service/Mcp/ at 100% lines (8 classes, 251 lines) under pcov, CreateTaskRun has no logic	session-20261117T124637-3e909745	2026-11-17T13:49:41Z
 cover:launchpad:fb10c50fm88bd:34763eb4	PR #1298: ApiContractMiddleware 58/59 -> 59/59 lines, 1 test, suite 4621 -> 4622 OK	session-20261117T134242-51ff9d48	2026-11-17T13:49:51Z
 fix:integriq:3711:dd118ae9	fixed sbom, pushed 42694816; merge lock held elsewhere, REVERIFY queued	session-20261117T124621-35d7386d	2026-11-17T13:50:06Z
 cover:dossiq:069ee2d6m9d1b:4c817077	already done: lib/Service/Notification/ at 100% lines (377/377) on development 21f141bd2; earlier -1/-2 branches merged	session-20261117T134355-826c5a0b	2026-11-17T13:50:14Z
 review:shillinq:2975:df2c1919	GREEN: unit 12832 ok (baseline 12779), phpstan clean, vitest 47 ok, gates clean on the diff	session-20261117T133308-c6d52416	2026-11-17T13:50:17Z
 fix:stackiq:1942:90499893	conflict resolved, pushed 9b4a8fa2; merge lock held elsewhere, REVERIFY	session-20261117T134404-362023fb	2026-11-17T13:50:53Z
 fix:learniq:2497:35dd044e	conflict resolved, pushed 48225cf9; merge lock held elsewhere, REVERIFY queued	session-20261117T124010-7774729d	2026-11-17T13:51:06Z
+cover:stackiq:9ac19b3am209e:4d89782c	PR #2037: EntryReferences 5 tests, lib/Service/EntryType 52/55 -> 55/55	session-20261117T132538-ac3b9ef5	2026-11-17T13:51:26Z
 fix:integriq:3710:8618c31d	sbom regenerated, new head 49c6e016; REVERIFY (merge lock held elsewhere)	session-20261117T134024-07d6c268	2026-11-17T13:51:23Z
 cover:decidiq:a5f973bbmfcd5:dfaef732	already done: lib/Notification/Notifier.php at 100% lines (53/53) on development; earlier -1 branch merged	session-20261117T134242-51ff9d48	2026-11-17T13:51:45Z
 verify:keepiq:1894:db62a428	GREEN 1894,1895,1896 (5619 tests, no new failures)	session-20261117T133629-e10185c0	2026-11-17T13:51:44Z
 fix:hermiq:1719:d2352914	conflict resolved, pushed fdc4de5b; merge lock held elsewhere, REVERIFY queued	session-20261117T132743-10cec9d3	2026-11-17T13:51:55Z
+cover:decidiq:a5f973bbmfcd5:aae6d66c	PR #2273: 5 tests, exception refusals; suite 5020->5025 OK	session-20261117T134504-7f453fd6	2026-11-17T13:52:17Z
+fix:shillinq:3080:77004414	conflict resolved, pushed ed5b393d; REVERIFY queued (merge lock busy)	session-20261117T125716-5aa18045	2026-11-17T13:52:27Z
+review:integriq:3601:691712f5	GREEN: no new failures, phpstan clean	session-20261117T134304-10008ffd	2026-11-17T13:52:44Z
+merge:launchpad:1106:7c0af468	cloud tree of 3 launchpad PRs: merged=0 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T134525-c871bd14	2026-11-17T13:53:14Z
+fix:versioniq:729:ea732a80	pushed @spec tags, gate-16 green; REVERIFY at 497abe19 (end-to-end merge skipped: own PR)	session-20261117T134258-58728df3	2026-11-17T13:53:12Z
+fix:hermiq:1781:a56a9450	merged #1781 at 6b45e373bba2ccb19851caeb6ae9adf8e2edc15b	session-20261117T132823-a99794a3	2026-11-17T13:53:31Z
+review:shillinq:2993:39b07fb3	BLOCK: repair step added without info.xml version bump; unit suite green (12804), vitest 31 pass	session-20261117T134327-bbccf916	2026-11-17T13:53:42Z
+cover:decidiq:a5f973bbmfcd5:38e80a9f	already done: lib/Command/*.php at 100% lines (106/106) on development 161ca15ec, 17 tests	session-20261117T135029-424a7669	2026-11-17T13:53:56Z
