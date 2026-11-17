@@ -22768,3 +22768,4 @@ fix:shillinq:3007:7ed685a6	conflict fixed, new head 357ddc9b pushed, REVERIFY re
 fix:opencatalogi:2674:8afba882	conflicts resolved, pushed c6d01be6; REVERIFY queued	session-20261117T213146-716f8927	2026-11-17T21:58:36Z
 verify:versioniq:800:156569fd	GREEN 800 (version bump only; unit suite needs server bootstrap, not run)	session-20261117T211910-eb4216c0	2026-11-17T21:59:02Z
 merge:opencatalogi:2756:4dd9f226	unmeasured: api.osv.dev (merged=0; 2756 gate RED floor unit_interfacing 4.77->4.66; 2787,2793-2796 APPROVE but SKIP unmeasured; 2792 RED; 2766 CONFLICT; 2797 MOVED)	session-20261117T213035-1b926cd2	2026-11-17T21:59:14Z
+fix:shillinq:3011:b03586ea	conflict resolved (app version moved, lock recorded), pushed 16e445fd; REVERIFY	session-20261117T211932-f471137a	2026-11-17T21:59:17Z
