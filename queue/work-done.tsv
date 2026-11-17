@@ -20871,6 +20871,7 @@ fix:integriq:3708:c779eda2	sbom regenerated, pushed 41ada0a6; merge lock held el
 cover:buildiq:70b3e29em2454:f91e7417	already done: lib/Service/Connection/ at 99.4% (170/171 stmts, the missed line is a constant-bound branch), target 95	session-20261117T123418-5f98fc94	2026-11-17T13:56:30Z
 cover:decidiq:a5f973bbmfcd5:d528dcf0	already done: lib/Dashboard/*.php at 100% lines (65/65, 13/13 methods) on development 161ca15e; no PR	session-20261117T134525-c871bd14	2026-11-17T13:56:40Z
 fix:integriq:3712:81bc3606	snapshots re-recorded + sbom, vitest green, new head 3f2d9585; REVERIFY (merge lock held elsewhere)	session-20261117T134024-07d6c268	2026-11-17T13:56:41Z
+fix:planninq:1215:707e853b	failed: blocked upstream: @conduction/nextcloud-vue latest (2.181.0) still has peer gridstack ^12||^13; needs the library to accept gridstack 14 first	session-20261117T124621-35d7386d	2026-11-17T13:57:06Z
 cover:decidiq:a5f973bbmfcd5:c76ae287	opened decidiq#2275: 8 tests for lib/Service/Forms (suite 5020->5028 OK)	session-20261117T135342-03791034	2026-11-17T13:56:56Z
 fix:integriq:3705:06350cfb	sbom regenerated, pushed cd33fb75; merge lock held elsewhere, REVERIFY queued	session-20261117T133629-e10185c0	2026-11-17T13:57:05Z
 cover:decidiq:a5f973bbmfcd5:05630945	already done: lib/Middleware/Support/ at 57/60 lines; the 3 left (ApiPathAliases::renamed loop body) are unreachable while RENAMED is empty and read via self::, tests cannot reach them	session-20261117T134242-51ff9d48	2026-11-17T13:57:20Z
