@@ -20483,4 +20483,6 @@ review:shillinq:3080:77004414	GREEN: unit 12799 OK on merge with development; in
 gap:planninq:app-chrome-spec-says-marketplace:1	PR #1232 @c3f1d475: app-chrome spec expects Marketplace; Minutes logged checked only when humaniq is installed; eslint+tsc green, playwright needs live instance; needs verify	session-20261117T111351-f79c232f	2026-11-17T12:03:28Z
 review:learniq:2497:35dd044e	GREEN; 7147 tests, 1 inherited failure; register conflict with development (both at 0.57.0)	session-20261117T111757-a0ed5e74	2026-11-17T12:03:46Z
 gap:thematiq:keep-api-v1-openapi:1	opened thematiq#1715 (health, metrics, shell-tokens 200 ported into /api/v1 openapi.json, valid, doc tests green); closed #1660	session-20261117T114019-426872f0	2026-11-17T12:04:14Z
+cover:integriq:92114ab0m17d5:js308ddf90	deferred: integriq has 58 open PRs	session-20261117T113840-498fade3	2026-11-17T12:04:44Z
 review:launchpad:1210:748b8e0b	GREEN (phpunit 4695 ok, vitest 2755 ok)	session-20261117T112432-6eb8ecae	2026-11-17T12:04:55Z
+fix:decidiq:2171:6b39135c	gate blockers fixed and development merged, head fa36c32 reviewed APPROVE, tree green 4968; land RED: floor unit_complexity 4.04 -> 4.00 (new PHP units over complexity 5: anchor, points, factionsOf, storedVersions, context, readableFile), RED verdict queued	session-20261117T112009-00ac618f	2026-11-17T12:05:02Z
