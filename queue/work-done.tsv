@@ -20852,3 +20852,4 @@ review:integriq:3601:691712f5	GREEN: no new failures, phpstan clean	session-2026
 fix:versioniq:729:ea732a80	pushed @spec tags, gate-16 green; REVERIFY at 497abe19 (end-to-end merge skipped: own PR)	session-20261117T134258-58728df3	2026-11-17T13:53:12Z
 fix:hermiq:1781:a56a9450	merged #1781 at 6b45e373bba2ccb19851caeb6ae9adf8e2edc15b	session-20261117T132823-a99794a3	2026-11-17T13:53:31Z
 review:shillinq:2993:39b07fb3	BLOCK: repair step added without info.xml version bump; unit suite green (12804), vitest 31 pass	session-20261117T134327-bbccf916	2026-11-17T13:53:42Z
+cover:decidiq:a5f973bbmfcd5:38e80a9f	already done: lib/Command/*.php at 100% lines (106/106) on development 161ca15ec, 17 tests	session-20261117T135029-424a7669	2026-11-17T13:53:56Z
