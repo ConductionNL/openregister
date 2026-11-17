@@ -19348,4 +19348,5 @@ fix:integriq:3613:b4fef9cf	blockers fixed (write-only hash, jwks rate limit, 23 
 fix:hermiq:1719:fa2696b2:v3	stale	session-20261117T031134-129380a1	2026-11-17T03:12:22Z
 fix:learniq:2538:fe4a0798	fixed: development merged, Dutch labels added; REVERIFY at 0b1eaa819c (merge lock held by another merger)	session-20261117T020358-1a8df617	2026-11-17T03:12:23Z
 merge:shillinq:1991:2ff0bfc6:r	cloud tree of 9 shillinq PRs: merged=1 red=0 fail=0 skip=0; conflict 7, lint 0, red 0, moved 1, done 0	session-20261117T024846-230b807c	2026-11-17T03:13:02Z
+fix:learniq:2537:0831c23e	merged #2537 at b93181df666579edd62352cfd7cac6c1c148f493	session-20261117T020231-8c38940a	2026-11-17T03:13:31Z
 fix:learniq:2524:03298d02	fixed RED, new head 77f1c40bb5a4740d9d3f0343dd2024d38cfc5492; REVERIFY (merge lock held elsewhere)	session-20261117T020353-b50811a6	2026-11-17T03:13:43Z
