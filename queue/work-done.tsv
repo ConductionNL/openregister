@@ -21673,3 +21673,4 @@ build:hermiq:models-provider-connections:b2	already building: quality/build-mode
 build:hermiq:tools-deep-research-report:b2	already building: quality/build-tools-deep-research-report quality/build-tools-deep-research-report-2 quality/build-tools-deep-research-report-3 	session-20261117T135414-614629b0	2026-11-17T15:34:02Z
 build:hermiq:tools-code-sandbox:b2	already building: branch quality/build-tools-code-sandbox exists	session-20261117T124621-35d7386d	2026-11-17T15:34:45Z
 build:hermiq:skill-install-idempotency:b2	already building: quality/build-skill-install-idempotency exists; open tasks are live DB cleanup, live re-install, Playwright and the PR checks	session-20261117T134441-beae3c0d	2026-11-17T15:34:25Z
+build:hermiq:oversight-ask-and-hold:b2	already building: quality/build-oversight-ask-and-hold is open (head 0d6aae20, active today)	session-20261117T124637-3e909745	2026-11-17T15:34:55Z
