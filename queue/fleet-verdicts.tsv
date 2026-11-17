@@ -18941,3 +18941,6 @@ portaliq	2579	df1bfc402b7652facf47819ec22a83d590bd098c	CONFLICT	worker-51	confli
 portaliq	2590	9bc1d978687152cb2fd5d70d75832fb8164a2b9f	GREEN	worker-51	release version bump only (info.xml, openapi.json 0.2.13-unstable); no code
 thematiq	1723	f6aae08d113aa98b5a8129910468602b07e598e8	GREEN	worker-37	phpunit 2900, baseline 1 failure (MigrateOverrideValueTypesTest::testUnwritableDirectoryDoesNotThrow), new failures 0; vitest 1571/1571 on tree 1721-1726
 thematiq	1724	bee24dc0a0b313ee6429de1edec32a5449244f66	GREEN	worker-37	phpunit 2900, baseline 1 failure (MigrateOverrideValueTypesTest::testUnwritableDirectoryDoesNotThrow), new failures 0; vitest 1571/1571 on tree 1721-1726
+thematiq	1725	f7a10dc12ca1b7982050d7bf7fb649d8684d2882	GREEN	worker-37	phpunit 2900, baseline 1 failure (MigrateOverrideValueTypesTest::testUnwritableDirectoryDoesNotThrow), new failures 0; vitest 1571/1571 on tree 1721-1726
+thematiq	1726	ebe538c8dc4ba9e635c349fc608093ec09646cb6	GREEN	worker-37	phpunit 2900, baseline 1 failure (MigrateOverrideValueTypesTest::testUnwritableDirectoryDoesNotThrow), new failures 0; vitest 1571/1571 on tree 1721-1726
+thematiq	1727	057fa453a0569e5c526c7ccf37e79c7bdb12518d	RED	worker-37	npm ci ERESOLVE: stylelint-config-standard 41 needs peer stylelint ^18 (bumped only in #1728); land together with #1728
