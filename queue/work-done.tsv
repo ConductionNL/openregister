@@ -22844,3 +22844,4 @@ review:openregister:10623:d8f427f0	APPROVE: CI-only actions/cache bump, sha-pinn
 review:opencatalogi:2674:c6d01be6	GREEN: no new failures (phpunit 0 new of 6425, vitest 0 new)	session-20261117T222048-3a9e0119	2026-11-17T22:26:29Z
 fix:hermiq:1843:45ed8874	CONFLICT resolved, pushed d623cf6f; REVERIFY queued (end to end skipped: merge gate host unreachable)	session-20261117T211422-95669914	2026-11-17T22:27:47Z
 verify:opencatalogi:2790:0f2e476a	GREEN #2790: 0 new failures	session-20261117T222048-3a9e0119	2026-11-17T22:28:16Z
+review:openregister:10627:b3283ac8	APPROVE #10627 (spectral-cli dev patch bump)	session-20261117T212735-2b6c91a0	2026-11-17T22:28:59Z
