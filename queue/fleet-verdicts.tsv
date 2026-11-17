@@ -18272,5 +18272,6 @@ filinq	2172	3c8384eecf55f14d60964bae8d16705a6f6e6944	GREEN	worker-49	version bum
 stackiq	1435	8d2e5a8e97cee6b5dc7bc84ac39aa1433deb6f46	GREEN	worker-14	unit 4054 tests ok on tree (baseline 4050 ok, +4 new SearchSelectionTest); no new failures; search args adapter keeps OR main behaviour (deleted defaults false)
 dossiq	3106	2e1244492cdfac558fe97a5c37b9b027ad47f1d4	CONFLICT	worker-55	conflicts with development in sbom.cdx.json (regenerate sbom after merging development); baseline 18392 tests, 1 inherited error
 buildiq	1704	41c7345c858e3069d66f4d489f4dcecaac45a0f4	GREEN	worker-15	unit 3578 tests, baseline 0 failures (7 skipped), new failures 0; test coverage metadata only
+buildiq	1242	41af2f95cf4662dbc51bbe9349de2bac2db4e7c5	GREEN	worker-03	unit 3578 tests run, baseline 3578 green, 0 new failures; quality floor metadata only
 stackiq	1028	665e6e656cc60a5758ae9ba4331264c79d90029e	GREEN	worker-14	merge into development changes no files (beta sync, history only); suite unchanged vs baseline 4050 ok
 keepiq	830	2d73be926b6f2743f5940c00f27817e40b660baa	GREEN	worker-27	merge adds no file change vs development (tree identical to baseline); suite not rerun, 0 new failures
