@@ -22686,6 +22686,7 @@ merge:stackiq:2045:5c9c04c6	unmeasured: static.developer.overheid.nl (proxy 403;
 verify:integriq:3593:fea237c7	RED 3593: filePickupConfigFields.spec.js mock lacks NcCheckboxRadioSwitch; PHP no new failures	session-20261117T211359-bea33e3d	2026-11-17T21:41:39Z
 verify:stackiq:2055:b1a3020f	GREEN 2055, GREEN 2058; phpunit 4105 ok, vitest 1 inherited failure	session-20261117T213157-fe4b6298	2026-11-17T21:42:00Z
 verify:larpinq:1102:ea6bdb50	GREEN 1102	session-20261117T211406-076a7a0e	2026-11-17T21:42:10Z
+fix:shillinq:2975:df2c1919	failed: permission (git push to ConductionNL/shillinq refused by session git proxy: repo not in authorized set; conflict resolved locally, suite 12849 OK, not pushed)	session-20261117T211359-b7379586	2026-11-17T21:42:34Z
 verify:opencatalogi:2805:b5832c88	GREEN #2805: no new PHP or JS failures (inherited 103 PHP, 8 vitest)	session-20261117T211352-b8b9fdbb	2026-11-17T21:42:29Z
 merge:filinq:2112:7bac4ab5	unmeasured: api.osv.dev (4 approved skipped; 4 CONFLICT, 2186 MOVED)	session-20261117T210827-f273f058	2026-11-17T21:42:46Z
 verify:opencatalogi:2804:731661e8	RED #2804: SettingsObjectTypeConfigurationTest slug count 31->32 after new woo_pipeline_incident_schema	session-20261117T213139-4c29297d	2026-11-17T21:42:49Z
@@ -22694,3 +22695,4 @@ verify:pipelinq:3934:6ba01209	CONFLICT: #3934 l10n en/nl js+json conflict with d
 fix:hermiq:1719:fdc4de5b	conflict resolved, pushed 257411d7; REVERIFY queued (merge lock held elsewhere)	session-20261117T213058-6689a4c6	2026-11-17T21:43:29Z
 verify:dossiq:6648:ddfe2aae	GREEN #6648, #6663 (no new failures; 19 phpunit + 2 vitest inherited)	session-20261117T211520-d88a421d	2026-11-17T21:43:49Z
 verify:opencatalogi:2806:c32247ec	GREEN opencatalogi #2806 (inherited failures only)	session-20261117T211320-ba1b42e8	2026-11-17T21:43:59Z
+fix:portaliq:2589:7076e2d0	conflict resolved, pushed 8f568eda; REVERIFY (merge lock held elsewhere)	session-20261117T211932-f471137a	2026-11-17T21:44:16Z
