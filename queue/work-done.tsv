@@ -22683,3 +22683,4 @@ verify:decidiq:2282:f3a3dab1	2282 GREEN; 2286 REVERIFY (l10n conflict with 2282 
 verify:larpinq:1112:3faffe76	GREEN #1112: unit 1243 -> 1245, 0 new failures	session-20261117T213154-bb97695e	2026-11-17T21:40:53Z
 merge:stackiq:2045:5c9c04c6	unmeasured: static.developer.overheid.nl (proxy 403; merge gate cannot measure, nothing landed)	session-20261117T211437-e305ed6d	2026-11-17T21:41:37Z
 verify:integriq:3593:fea237c7	RED 3593: filePickupConfigFields.spec.js mock lacks NcCheckboxRadioSwitch; PHP no new failures	session-20261117T211359-bea33e3d	2026-11-17T21:41:39Z
+verify:stackiq:2055:b1a3020f	GREEN 2055, GREEN 2058; phpunit 4105 ok, vitest 1 inherited failure	session-20261117T213157-fe4b6298	2026-11-17T21:42:00Z
