@@ -17182,4 +17182,5 @@ buildiq	1630	ee26301ee93901f9d65e1063259396f4ac303779	REVERIFY	worker-12	merged 
 hermiq	1741	d8e7284d38b15fe8334cde5259203dbbf11f0f3f	RED	merge3:merge-gate	GATE RED floor: unit_interfacing: 2.57 -> 2.53
 hermiq	1757	5857cce396efeb6810438a3a1f28c5b6462db48f	RED	merge3:merge-gate	GATE RED checker floor: adrvalidator: pass -> warn; adrvalidator stars: 5 -> 3; score: 100 -> 97
 hermiq	1762	20443b51a261b115b668b2a58a09f249b936bc1b	RED	merge3:merge-gate	GATE RED checker floor: adrvalidator: pass -> warn; adrvalidator stars: 5 -> 3; score: 100 -> 97
+filinq	2079	27589b09daabd5dd0cdd53e5b4c5ab8e1a6ff7bf	REVERIFY	worker-13	merged development in, resolved info.xml, register and listener-count test conflicts; unit suite 7193 OK (6 skipped); merge lock held elsewhere; new head b23f14265d06af5bbe5d3ec613046104adcbbb9f, verify it
 filinq	2126	2630cf2826622346cb99917f3a1203a0a199d7f6	REVERIFY	worker-47	merged development in (l10n both sides, register 8.67.0); PHP 7129 OK, jest 606, vitest 801 green; merge lock held elsewhere; new head d4e6690492876dd1d7da027250a1ce235ee9c21d, verify it
