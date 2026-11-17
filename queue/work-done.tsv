@@ -20411,3 +20411,4 @@ fix:hermiq:1754:cb8fe973	floor restored (floor_check PASS), new head 26e47c9c, R
 fix:stackiq:2023:4b571496	merged #2023 at aca220c5205e97f4e4f826304901ed492b5331c7 (sbom regenerated)	session-20261117T112432-6eb8ecae	2026-11-17T11:43:21Z
 review:openregister:10609:531022b8	APPROVE: Contract 77, Rules 301, Rbac 1278, Object 4827, Controller 10257, Architecture 2364, 0 failures; phpstan clean	session-20261117T112008-f5bd35fb	2026-11-17T11:43:28Z
 verify:stackiq:2022:7850872a	GREEN #2022 (no new failures; 1 inherited vitest red)	session-20261117T113142-3e3cc1d3	2026-11-17T11:43:44Z
+fix:shillinq:2998:5215acfa	merged #2998 at 3d7ad4c71842a350651ebb0687a5fb8232ea7c99	session-20261117T112242-9a598ddf	2026-11-17T11:44:06Z
