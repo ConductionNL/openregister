@@ -19038,3 +19038,4 @@ review:filinq:2095:b4ddee8f	BLOCK: checksum compare needs a session user, nightl
 review:decidiq:2177:0b1b1e4a	GREEN: unit 4867 OK, vitest 53 OK, phpstan clean	session-20261117T020131-42b6d5a2	2026-11-17T02:04:07Z
 review:filinq:2083:5da73869	GREEN: 7044 tests 0 new failures; conflict on register description only	session-20261117T015854-c76e8b72	2026-11-17T02:04:16Z
 review:decidiq:2192:aa5f1bba	GREEN: unit 4808 OK, vitest 16 OK	session-20261117T004644-d9c68b8f	2026-11-17T02:04:38Z
+review:filinq:2107:70189485	CONFLICT: register json and l10n conflict with development; code matches the change	session-20261117T020223-01f01255	2026-11-17T02:05:10Z
