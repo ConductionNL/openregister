@@ -18729,6 +18729,7 @@ filinq	2192	8501a0bcb5607d5c70a7694701fb8e1d30de2196	GREEN	worker-19	phpunit 730
 buildiq	1728	666fa51783a7c825cf7218fbb90e1ca4f928bd0a	GREEN	worker-22	e2e spec + tasks.md only; baseline unit 3676 OK/7 skipped, no PHP/unit JS touched, no new failures
 portaliq	2578	ecda0995fde017ac8deb6fa1e5162d5706e02426	GREEN	worker-32	unit 6339 tests on tree, baseline 6324 with 16 inherited errors (openregister classes absent), new failures 0; no JS unit script, markdown-block node test passes; e2e spec + seed only, per change
 versioniq	798	91fdceff9606e38c08294f9f188caa4b1c92289f	GREEN	worker-44	phpunit 2456 on tree, baseline 2, none new; vitest 3237 passed (2 inherited unhandled errors); CSS/aria keyboard reachability fix + spec
+buildiq	1730	2d9f793fa41e7c5762b22fbb277435269ee86876	GREEN	worker-16	PHPUnit 3676 tests baseline OK, tree OK, no new failures; e2e spec + tasks.md only, matches change pages-chart-widget-authoring T03/T05
 stackiq	1963	5d4b224b8a597d13518bc49c1b7eaeaa96eb7211	GREEN	worker-37:review	implements operations-sync-status-and-progress per its design (D5 permissions initial state, sync page); unit 3952 OK, vitest 7/7, eslint clean; note: l10n tails conflict with current development
 versioniq	799	9d0b17e161aabdb3641874366fbf88fc9343996c	REVERIFY	worker-44	conflicts only with an earlier PR of the verify tree (l10n/*, src/App.vue vs #798)
 buildiq	1711	c046bf16a2d185fd3a110f47e78450a28c23551c	GREEN	worker-53	unit suite 3691 tests (baseline 3676, 0 failures), tests-only PR, 0 new failures
