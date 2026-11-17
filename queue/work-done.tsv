@@ -18635,3 +18635,4 @@ build:stackiq:architecture-shared-usage-on-views:c5	already building: branch hea
 review:shillinq:1900:7c67b538	GREEN #1900	session-20261116T232844-9c7f5cce	2026-11-17T00:28:36Z
 verify:shillinq:2071:f455c68f	CONFLICT: info.xml, register-versions.lock.json vs development	session-20261116T232959-6ccea9dc	2026-11-17T00:28:41Z
 fix:dossiq:3955:051bc7d2:v3	conflict fixed, pushed 66d20622; merge lock held elsewhere, REVERIFY queued	session-20261116T232948-9d2e8ce2	2026-11-17T00:28:47Z
+fix:opencatalogi:2674:05957a6e	floor restored, pushed 4ec49fd3; REVERIFY recorded (merge lock busy)	session-20261116T232852-594dae77	2026-11-17T00:28:58Z
