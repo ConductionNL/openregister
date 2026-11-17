@@ -22139,3 +22139,4 @@ review:integriq:3585:39f07d5a	GREEN integriq#3585: 0 new failures (9932 tests vs
 review:versioniq:685:0b94d417	GREEN: matches change specs; unit 0 new failures (2 inherited), vitest 59 pass	session-20261117T185932-75c4578d	2026-11-17T19:03:31Z
 verify:buildiq:1709:e329cf17	GREEN 1709; unit 3698, 0 new failures	session-20261117T185419-c23c5946	2026-11-17T19:03:51Z
 verify:buildiq:1608:10685d4e	CONFLICT: 1608 conflicts with development (4 files)	session-20261117T185625-a1e67f54	2026-11-17T19:04:28Z
+verify:buildiq:1630:285ac6f0	CONFLICT: useManifestValidator.js vs development	session-20261117T190242-7c82bed8	2026-11-17T19:04:48Z
