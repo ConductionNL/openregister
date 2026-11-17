@@ -937,3 +937,4 @@ decidiq	2195	ebc6d9d54e01c779de13acd4b3b086e4f83c1306	APPROVE	worker-29	Standard
 decidiq	2249	3d2d6c428cf0ad3d1f1c8252b6e856b7ac653a50	APPROVE	worker-29	Quick; no blockers; dev-dependency patch bump
 decidiq	2251	0ed475e33cbb588dda158bc53a43c6b0bed603a7	APPROVE	worker-29	Quick; no blockers; dev-dependency minor bump
 decidiq	2252	8ede89d50aa29803f8ecaee6001a6961a5492da9	APPROVE	worker-29	Quick; no blockers; ocp patch bump, tree suite green
+decidiq	2254	16b684f63b7714a0673146cd447c69dbfdb9b6d8	REQUEST_CHANGES	worker-29	Quick; gridstack 14 is outside the peer range ^12||^13 that @conduction/nextcloud-vue 2.135.0 declares; none
