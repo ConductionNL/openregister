@@ -18515,3 +18515,4 @@ verify:portaliq:2493:f9355756	CONFLICT 2493 (package.json)	session-20261116T2324
 verify:shillinq:3052:10940568	CONFLICT #3052	session-20261116T233929-170accb7	2026-11-17T00:05:09Z
 verify:opencatalogi:2680:66ae4f4f	CONFLICT: #2680 vs development in docs, l10n, SitemapDocumentMapper	session-20261116T232911-3dffa1ae	2026-11-17T00:05:20Z
 verify:shillinq:2983:55242378	CONFLICT #2983 (info.xml, GLLineResultStampListener, manifest, l10n)	session-20261116T232623-066b53c9	2026-11-17T00:05:29Z
+verify:learniq:2551:ca8152ea	CONFLICT #2551 (l10n, committed .pyc)	session-20261116T232944-146e39d7	2026-11-17T00:05:41Z
