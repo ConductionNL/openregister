@@ -19319,3 +19319,4 @@ fix:versioniq:727:0c2b3b95	fixed RED (spec stub matched install-progress poll), 
 fix:stackiq:1943:54d0045e	fixed RED (schema version overlay), pushed 520d167f; REVERIFY queued	session-20261117T020322-58ced631	2026-11-17T03:05:08Z
 fix:opencatalogi:2677:6cedbbd6	fixed conflicts + RED; new head d1c995ac; merge lock busy, REVERIFY queued	session-20261117T025836-3022644d	2026-11-17T03:05:27Z
 fix:integriq:3602:9b919801	conflict resolved, pushed a1c8c62e; merge lock held elsewhere, REVERIFY queued	session-20261117T025311-e27d60f7	2026-11-17T03:06:03Z
+review:buildiq:1608:ae635677	GREEN: buildiq #1608 (en.js conflicts with development)	session-20261117T020211-438428f3	2026-11-17T03:06:18Z
