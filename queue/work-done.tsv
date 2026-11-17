@@ -22472,3 +22472,4 @@ merge:humaniq:1193:1d3bba27	unmeasured: static.developer.overheid.nl (#1194); #1
 merge:filinq:2069:b862cb1e	cloud tree of 9 filinq PRs: merged=0 red=1 fail=0 skip=1; conflict 7, lint 0, red 0, moved 0, done 0	session-20261117T190320-1db054ae	2026-11-17T20:15:01Z
 merge:buildiq:1632:ce0aa0e4	cloud tree of 4 buildiq PRs: merged=0 red=0 fail=0 skip=3; conflict 1, lint 0, red 0, moved 0, done 0	session-20261117T190150-dbabe332	2026-11-17T20:16:00Z
 merge:shillinq:2975:f625e6a5	unmeasured: static.developer.overheid.nl (3 IN approved, SKIP; 5 CONFLICT verdicts written)	session-20261117T185927-e9838dc9	2026-11-17T20:16:08Z
+merge:learniq:2524:a5178729	unmeasured: static.developer.overheid.nl; cloud tree of 5 learniq PRs: merged=0 red=1 (2524 spdxheaders 5->4) skip=3 unmeasured, conflict 1 (2551)	session-20261117T190115-a0afcf82	2026-11-17T20:16:11Z
