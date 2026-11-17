@@ -5226,4 +5226,5 @@ dossiq	6634	9e5c5ebab145ab07294e3e31eab79f95f0236793	RED	merge3	GATE RED sbom: p
 larpinq	1043	aaa4e47172f5197d969e7c92c792daf70fe80b5b	MERGED	worker-45	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.25
 decidiq	2171	6b39135c61bbc1d3689590e259b0ae222a8a08e2	SKIP	worker-44	no APPROVE review at this head
 launchpad	1099	68a939c50526992d016a472eb33b00e7be785ac0	MERGED	worker-38	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.65 holds at 3.78
+stackiq	1943	1d009f7fe396ede6e41e6cd20ece45a5d8d73a0e	RED	worker-28	GATE RED floor: unit_complexity: 3.73 -> 3.71
 opencatalogi	2651	cc6fe4e150a2104a3e07587b125aa11b8df8754b	MERGED	worker-43	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.51
