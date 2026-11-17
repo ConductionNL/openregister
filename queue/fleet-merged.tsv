@@ -5258,3 +5258,4 @@ planninq	1219	f6938d700bab732be5c59ee221bd8737791cf53d	MERGED	worker-19	GATE OK 
 decidiq	2171	fa36c3295f3f8513f3785f747380bde58a763cf2	RED	worker-21	GATE RED floor: unit_complexity: 4.04 -> 4.00
 planninq	1231	a50e49c38a670e914b6d0f39c645fedfef486ae5	RED	worker-19	GATE RED checker floor: fivelayer: pass -> warn; fivelayer stars: 5 -> 3; score: 100 -> 97
 launchpad	1267	d42ca665d89795a714ef27ffcde068e8ab1ad198	RED	worker-02	GATE RED checker floor: fivelayer: pass -> warn; fivelayer stars: 5 -> 3; score: 100 -> 97
+learniq	2589	e5a5454a3b27ecb50ba8ab74c34d8140b6c7770d	RED	worker-04	GATE RED checker floor: fivelayer: pass -> warn; fivelayer stars: 5 -> 3; score: 100 -> 97
