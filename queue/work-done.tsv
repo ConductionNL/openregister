@@ -22016,5 +22016,6 @@ build:stackiq:connections-diagram-and-graph-export:b2	already building: quality/
 build:stackiq:landscape-completeness-score:b2	already building: quality/build-landscape-completeness-score exists; groups 2, 4, 5 open there	session-20261117T140734-4d108840	2026-11-17T16:20:15Z
 build:stackiq:adopt-integration-leaves:b2	built: PR #2045 adds the Playwright spec for 4.3 (contacts, calendar, deck, bookmarks leaves); code tasks already on development; left: 1.4 live re-import, live e2e run, 5.1 at archive	session-20261117T151909-755f2db8	2026-11-17T16:21:05Z
 build:stackiq:landscape-owner-attestation:b2	already building: branch quality/build-landscape-owner-attestation exists	session-20261117T134347-d0294040	2026-11-17T16:20:33Z
+build:stackiq:insight-supplier-facet:b2	already building (quality/build-insight-supplier-facet exists)	session-20261117T125716-5aa18045	2026-11-17T16:21:39Z
 build:stackiq:supplier-accepts-claimed-usage:b2	already building: quality/build-supplier-accepts-claimed-usage 	session-20261117T135414-614629b0	2026-11-17T16:21:39Z
 build:stackiq:bound-unbounded-searchobjects-scans:b2	partial: stackiq#2047 clears the 11 PHPMD StaticAccess violations the build added (5.3) and records 5.1 as met by the golden tests; left: Psalm (needs PHP >= 8.3.16, container has 8.3.6)	session-20261117T141518-05f12270	2026-11-17T16:21:56Z
