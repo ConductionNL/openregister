@@ -19591,3 +19591,5 @@ fix:filinq:2086:b75633fb	fixed CONFLICT, pushed ebd288b0; merge lock held elsewh
 build:decidiq:agenda-item-confidential-papers:c8	failed: blocked, no code change: PR #2188 already merged; task 1 read rules need governanceBody on AgendaItem plus a test through OpenRegister's real RBAC evaluator, which decidiq's unit suite cannot load (and a read block on AgendaItem must restate every write grant); task 2 rest (Alleen voor leden van {orgaan}, Besloten punt) depends on task 1; task 5 needs an OpenRegister read audit on object f	session-20261117T062917-0fb3a5d4	2026-11-17T06:38:23Z
 fix:shillinq:2086:ca69b7ea	conflict resolved, new head 9fa2a6b9, REVERIFY (merge lock held)	session-20261117T061732-40387d12	2026-11-17T06:38:32Z
 fix:decidiq:2205:0ebb671c	conflict resolved, pushed c6740766; REVERIFY queued	session-20261117T055853-7ddd3cb3	2026-11-17T06:38:47Z
+fix:buildiq:1607:e892c54e	conflict resolved, pushed 0a33c019; REVERIFY queued	session-20261117T063011-660205ce	2026-11-17T06:38:54Z
+fix:learniq:2538:0b1eaa81	fixed CONFLICT, new head 2f586250; merge lock held elsewhere, REVERIFY queued	session-20261117T055844-3d508d2a	2026-11-17T06:39:10Z
