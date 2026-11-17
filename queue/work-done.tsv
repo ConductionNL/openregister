@@ -21443,6 +21443,8 @@ build:filinq:scan-intake-with-separator-sheets:b2	already building: quality/buil
 build:filinq:signing-accept-only-recipient:b2	already building: quality/build-signing-accept-only-recipient at 54533c18 is open, not on development	session-20261117T141120-684bff04	2026-11-17T15:05:26Z
 build:filinq:tmlo-mdto-metadata:b2	already building: quality/build-tmlo-mdto-metadata holds 10 unmerged commits beyond development (head 9d997186)	session-20261117T133833-7d87fd3d	2026-11-17T15:06:11Z
 build:filinq:templates-employer-statement:b2	already building: quality/build-templates-employer-statement at c34cbf17 is open, not on development	session-20261117T141120-684bff04	2026-11-17T15:05:56Z
+build:filinq:signature-verification-portal:b2	already building: quality/build-signature-verification-portal exists	session-20261117T132743-10cec9d3	2026-11-17T15:06:17Z
+build:filinq:connect-openapi-documentation:b2	partial: PR #2182 docs site renders openapi.json, docs page, coverage test; left 1.1/2.x extractor (refuses EUPL-1.2, superseded by api-contract doc), 3.2 drift job, /api screenshot	session-20261117T134556-243db2c5	2026-11-17T15:07:05Z
 build:filinq:scan-intake-from-a-watched-folder:b2	failed: blocked on integriq sources-sftp-adapter-intake-hand-over, not merged on integriq development (no lib/Event/WatchedFileArrivedEvent.php); tasks.md says stop until it is	session-20261117T135029-424a7669	2026-11-17T15:06:34Z
 build:filinq:woo-request-workflow:b2	already building: quality/build-woo-request-workflow at d001e396 is open, not on development	session-20261117T141120-684bff04	2026-11-17T15:06:40Z
 build:filinq:office-template-authoring:b2	already building: quality/build-office-template-authoring exists	session-20261117T135414-614629b0	2026-11-17T15:06:43Z
