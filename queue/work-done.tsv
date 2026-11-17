@@ -22360,6 +22360,7 @@ build:pipelinq:clients-bulk-edit-and-undo:b2:c4	already built: e2e spec tests/e2
 verify:stackiq:2037:8a006619	GREEN #2037 (tests only)	session-20261117T190418-7494049c	2026-11-17T19:53:45Z
 merge:keepiq:1894:db62a428	unmeasured: static.developer.overheid.nl, api.osv.dev (blocked by this session's proxy; nothing landed)	session-20261117T185937-87a1822c	2026-11-17T19:53:57Z
 verify:opencatalogi:2756:70b8b0cb	GREEN 2756; no new PHP or JS failures (all inherited)	session-20261117T185359-d68263c5	2026-11-17T19:53:59Z
+verify:launchpad:1295:8e839b52	GREEN 1295 (0 new failures; 1 vitest inherited)	session-20261117T185828-a5f2758a	2026-11-17T19:54:19Z
 verify:stackiq:2040:6e1004c5	GREEN #2040: tests only, unit 4079/0 failures	session-20261117T185903-e132ac1e	2026-11-17T19:54:21Z
 verify:dossiq:6665:d62c780d	GREEN 6665; 0 new failures (19 php + 2 vitest inherited)	session-20261117T185932-75c4578d	2026-11-17T19:54:45Z
 verify:portaliq:2586:d48314a9	CONFLICT portaliq #2586 (package.json vs development)	session-20261117T190434-a73c29f6	2026-11-17T19:54:41Z
@@ -22369,6 +22370,7 @@ verify:portaliq:2569:f3caa0a6	RED: #2569 breaks 6 tests in row-confirm-outcomes-
 verify:stackiq:2058:b7990b91	GREEN 2058; unit 4071 OK, no new failures	session-20261117T185359-d68263c5	2026-11-17T19:55:26Z
 verify:stackiq:2049:c79327a0	GREEN #2049 (vitest 2942, no new failures)	session-20261117T190320-1db054ae	2026-11-17T19:55:45Z
 verify:stackiq:1946:1a1d2ce9	GREEN #1946 (4135 PHP tests, 0 new failures)	session-20261117T185935-593e017f	2026-11-17T19:55:54Z
+verify:opencatalogi:2786:077a0049	GREEN #2786 (6390 tests, 0 new failures; inherited reds only)	session-20261117T190359-60e4fde5	2026-11-17T19:56:09Z
 verify:stackiq:2047:cd2856b2	GREEN #2047 (docblocks only)	session-20261117T190418-7494049c	2026-11-17T19:56:06Z
 verify:portaliq:2567:28bd0f0f	GREEN #2567 (tasks.md only, 0 new failures)	session-20261117T190250-54b1be06	2026-11-17T19:56:21Z
 build:portaliq:intake-conditional-questions-and-drafts:b2:c3	partial: nothing buildable yet; T06-T08 drafts wait on openregister build/or-form-and-journey-registry (run API tasks 2-3 built, not on main) and on a journey reference on the form binding (design open question, buildiq authors it); T08 docs page and unsupported-condition string already on PR #2573	session-20261117T190434-a73c29f6	2026-11-17T19:56:44Z
@@ -22399,6 +22401,7 @@ verify:shillinq:3165:f382c52b	GREEN shillinq#3165 (unit 12797 OK)	session-202611
 verify:stackiq:2060:089ca175	GREEN 2060; vitest no new failures (1 inherited)	session-20261117T185359-d68263c5	2026-11-17T20:01:14Z
 fix:portaliq:2449:89f90703	failed: permission (git push to ConductionNL/portaliq refused by session git proxy; local merge of development resolving package.json conflict passes the floor: unit_complexity 4.54->4.53 within tolerance)	session-20261117T190626-5c7fccb4	2026-11-17T20:01:39Z
 verify:shillinq:3178:7c8cd864	GREEN 3178; no new failures	session-20261117T185927-e9838dc9	2026-11-17T20:01:30Z
+build:pipelinq:forecast-slip-reason:b2:c3	failed: permission (git push to ConductionNL/pipelinq refused by the session proxy: repo not in authorized set); task 3.1 was built and green locally (LeadCloseDate card + SlipReasonModal, vitest +14, no new failures) but not pushed; 3.1 and 5.1 still left	session-20261117T190632-f0412d81	2026-11-17T20:02:07Z
 verify:shillinq:3163:00685f93	GREEN 3163 (12796 tests, 0 new failures)	session-20261117T190316-ad3f71cf	2026-11-17T20:01:51Z
 verify:versioniq:798:91fdceff	GREEN	session-20261117T190242-7c82bed8	2026-11-17T20:02:03Z
 verify:versioniq:797:c57c4855	GREEN 797 (e2e + fixture only)	session-20261117T185359-d68263c5	2026-11-17T20:02:16Z
@@ -22406,4 +22409,13 @@ verify:stackiq:2063:2062779c	GREEN #2063 (4081 tests, no new failures)	session-2
 merge:launchpad:1106:07908920	unmeasured: api.osv.dev, static.developer.overheid.nl (connect_rejected by this session's proxy); 1302-1305 reviewed APPROVE, nothing landed; 1106,1109 EXCL never merged	session-20261117T185853-76335694	2026-11-17T20:02:34Z
 verify:stackiq:2039:77e11bc6	GREEN #2039 (tests only)	session-20261117T190418-7494049c	2026-11-17T20:02:46Z
 build:portaliq:retire-the-vendored-woo-bundle:b2:c2	partial: pushed to PR #2586 at 1fd306ff3: wrote tests/e2e/woo-parity.spec.ts (task 5 spec, unticked until run live), merged development (package.json check:specs union); left: task 1 needs real-register measurement, task 4 takes over the bundle's live paths so it lands with task 6, task 5 live run, task 6 needs municipality sign-off	session-20261117T190026-7c82e6b3	2026-11-17T20:03:43Z
+fix:portaliq:2560:9791e493	failed: permission (git proxy refused push to ConductionNL/portaliq: repo not in session authorized set); conflict was package.json check:specs, resolvable by keeping both sides	session-20261117T190507-82f8fe51	2026-11-17T20:03:43Z
 verify:thematiq:1728:3eb4a913	RED #1728: npm ci ERESOLVE (stylelint 18 vs nextcloud-vue peer ^17)	session-20261117T185903-e132ac1e	2026-11-17T20:03:54Z
+verify:stackiq:2054:73e60e3f	GREEN #2054 (e2e + newman only)	session-20261117T190357-55034d4a	2026-11-17T20:04:09Z
+verify:stackiq:2061:6ab602c4	GREEN #2061 (0 new failures)	session-20261117T185935-593e017f	2026-11-17T20:04:20Z
+verify:versioniq:729:497abe19	CONFLICT 729 with development	session-20261117T185359-d68263c5	2026-11-17T20:04:36Z
+build:decidiq:voting-groups-chosen-when-a-round-opens:b2:c2	no code left: Tasks 1-2 on development, e2e spec tests/e2e/voting-group-round.spec.ts in open #2284 (awaits verify/merge); left: live e2e run, then vot-25 to built (needs an instance)	session-20261117T190328-baef12f4	2026-11-17T20:04:47Z
+verify:stackiq:2048:3df81eba	GREEN #2048: 0 new failures (1 inherited)	session-20261117T185732-534997e2	2026-11-17T20:04:45Z
+verify:shillinq:3164:7ae11281	GREEN 3164 (0 new failures)	session-20261117T185828-a5f2758a	2026-11-17T20:05:00Z
+verify:thematiq:1719:740e1349	GREEN #1719 (2933+437 tests, vitest 1576, 0 new failures)	session-20261117T190359-60e4fde5	2026-11-17T20:05:14Z
+verify:versioniq:778:6d4ae19d	GREEN 778 (floor file only)	session-20261117T185359-d68263c5	2026-11-17T20:05:41Z
