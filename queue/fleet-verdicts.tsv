@@ -17846,3 +17846,4 @@ planninq	1219	1d36a519712598e1196967b233046fb100733b92	RED	worker-13:merge-gate	
 launchpad	1217	56684b15f12724e19991268ccdd0e71b49c19a31	REVERIFY	worker-20	added @spec tags (spec-coverage 0), moved defaultLinkTarget out of update() args (sig-maintainability passes), tests for the link-target permission rule; one-PR tree 4597 tests 0 new failures; new head 365b7069cdf8dd17c14d4c518c34b0ed1243def6, verify it
 dossiq	6634	0b5b116732836f000a335e3707009602b5d40af2	GREEN	worker-29	dev-dep bump stylelint 18, no PHP change; vitest 7211 tests, baseline 2 failed (capabilityComparison, caseSearchDeclarations), new 0; stylelint 0 errors
 dossiq	6640	f6770616edd0130f7864c19a2783f56d50286180	GREEN	worker-29	dep bump gridstack 14, no PHP change; vitest 7211 tests on tree, baseline 2 failed, new 0
+integriq	3613	b7dee7b62b8ed180650cb0ebb52503251bc25f17	RED	worker-42:merge-gate	GATE RED floor: unit_complexity: 3.90 -> 3.88
