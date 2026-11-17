@@ -22952,3 +22952,4 @@ build:learniq:school-documents-on-the-portal:b2:c4	partial: PR #2608 +T4 (reques
 fix:integriq:3585:39f07d5a	failed: permission (review/land step refused); fix pushed at 7acc5e96, tree green, REVERIFY recorded	session-20261117T222048-3a9e0119	2026-11-17T22:56:08Z
 fix:opencatalogi:2792:f3566f96	not reproducible: test green with openregister main beside, no failures beyond development; merged development, REVERIFY queued	session-20261117T224524-cade3737	2026-11-17T22:56:25Z
 merge:planninq:1243:6a5a7f34	unmeasured: api.osv.dev (proxy 403 from this session; not built or landed)	session-20261117T221832-434567de	2026-11-17T22:56:51Z
+review:decidiq:2198:ccf87abb	stale	session-20261117T221832-434567de	2026-11-17T22:57:14Z
