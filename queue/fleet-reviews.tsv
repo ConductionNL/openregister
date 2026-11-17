@@ -1258,3 +1258,4 @@ shillinq	3173	b9ea40e5c850c5d6bdaf6c4a581a9b68d952ef76	APPROVE	worker-33	Quick; 
 decidiq	2282	62cb71dc73585922a4abc7ed581296def299f459	APPROVE	worker-05	Standard; no blockers; schema fields and example data per REQ-PSH-002, register test green
 decidiq	2283	e9a802fd9e1a29d7531dd6061c07fb0d66139593	APPROVE	worker-05	Quick (tests only); no blockers; e2e not run live
 decidiq	2284	75bf16e4978932fd693798e5513fda961c651b66	APPROVE	worker-05	Quick (tests only); no blockers; e2e not run live
+learniq	2600	3dd1b33d30e301887b5e829946f9b3224f874ddd	APPROVE	worker-04	Quick (tests only: Playwright e2e spec + tasks/spec notes); no blockers; e2e specs not run live, env-driven base URL and credentials
