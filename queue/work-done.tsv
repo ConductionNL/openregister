@@ -20545,3 +20545,4 @@ verify:portaliq:2560:32c65e23	portaliq #2560 RED: portal-live-regions spec, erro
 fix:integriq:3550:c36eeb35	conflict resolved, pushed 7bd183b1; merge lock held elsewhere, REVERIFY queued	session-20261117T113142-3e3cc1d3	2026-11-17T12:18:07Z
 merge:buildiq:1651:f9079089	cloud tree of 2 buildiq PRs: merged=0 red=0 fail=0 skip=1; conflict 1, lint 0, red 0, moved 0, done 0	session-20261117T111351-f79c232f	2026-11-17T12:18:30Z
 verify:thematiq:1714:4e9ea861	CONFLICT #1714 (scripts/sync-upstream-tokens.mjs)	session-20261117T111714-cd94760b	2026-11-17T12:18:41Z
+measure:stackiq:20261117h12	php 92.55 % js 95.94% at 25962f2c	session-20261117T110646-831a671b	2026-11-17T12:18:59Z
