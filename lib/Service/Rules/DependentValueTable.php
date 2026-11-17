@@ -225,7 +225,7 @@ final class DependentValueTable implements DependentValueTableInterface {
 			$found['value'],
 			$found['controlledBy'],
 			$found['controllingValue'],
-			implode(', ', $found['allowed'][$found['controllingValue']])
+			($found['allowed'][$found['controllingValue']] === [] ? 'none' : implode(', ', $found['allowed'][$found['controllingValue']]))
 		);
 	}//end message()
 

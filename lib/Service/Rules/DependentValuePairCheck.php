@@ -71,9 +71,10 @@ final class DependentValuePairCheck {
 	 * @return array<int, array{code: string, message: string}> The errors.
 	 */
 	private function pairErrors(DependentValueDeclaration $declaration, string $controllingValue): array {
+		// An empty list is a pair that allows no value: the dependent property must stay empty.
 		$values = $declaration->valuesFor(controllingValue: $controllingValue);
-		if (is_array($values) === false || $values === []) {
-			$message = 'Property "%s": "%s" must be paired with a non-empty list of allowed values.';
+		if (is_array($values) === false) {
+			$message = 'Property "%s": "%s" must be paired with a list of allowed values.';
 			return [$this->error(code: DependentValueValidator::CODE_MALFORMED, message: sprintf($message, $declaration->name, $controllingValue))];
 		}
 
