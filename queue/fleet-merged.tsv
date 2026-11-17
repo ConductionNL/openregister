@@ -5236,4 +5236,5 @@ integriq	3613	83ce7d7b340c38300b2ba8935c9dc56770b53196	RED	worker-13	GATE RED ch
 integriq	3628	0e0f7320e9fcaed6c032c5f90f1a5c14957d626e	MERGED	worker-13	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.60
 stackiq	2023	aca220c5205e97f4e4f826304901ed492b5331c7	MERGED	worker-11	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.13
 shillinq	2998	3d7ad4c71842a350651ebb0687a5fb8232ea7c99	MERGED	worker-46	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.00
+versioniq	709	9a092579fe35082f7bf63ebcda2b2bc537645326	RED	worker-37	GATE RED floor: unit_interfacing: 4.63 -> 4.61
 learniq	2577	981856abaafa0866c2b358887e8b36225f7a5b33	MERGED	worker-34	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 4.09
