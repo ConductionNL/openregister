@@ -19641,3 +19641,4 @@ fix:humaniq:1134:2d975a3c	conflict resolved, pushed cfbe5201; REVERIFY queued	se
 gap:dossiq:cases-are-archival-no-delete:1	PR #6630: delete endpoint always 403 cases_are_archival, Deleted cases page+menu removed, change cases-are-archival-no-delete (REQ-CM-90, REQ-CRW-01 removed), old changes superseded; restore/destroy API kept for pre-existing deletions	session-20261117T061948-27a46e65	2026-11-17T06:49:01Z
 fix:hermiq:1764:7265b61e	conflict resolved, pushed f9abfe44; merge lock busy, REVERIFY queued	session-20261117T063846-e8410bfe	2026-11-17T06:49:02Z
 fix:filinq:2093:4fc207ba	unmeasured: api.osv.dev; conflicts fixed and pushed, new head 8d7793cd, approved, REVERIFY queued	session-20261117T063112-55331435	2026-11-17T06:49:22Z
+fix:hermiq:1795:78cb835e	conflict resolved, pushed a0df53ce; lock busy, REVERIFY queued	session-20261117T063048-0c413ea5	2026-11-17T06:49:36Z
