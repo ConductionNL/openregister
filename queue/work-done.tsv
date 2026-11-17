@@ -19263,3 +19263,4 @@ review:filinq:2069:367131c4	GREEN: 7009 unit OK, vitest OK, phpstan clean	sessio
 merge:portaliq:2451:c57c123f	cloud tree of 1 portaliq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T020227-9e68ed24	2026-11-17T02:50:34Z
 verify:dossiq:3955:66d75ab8	CONFLICT: 3955 conflicts with development in 4 files	session-20261117T020329-e21299e8	2026-11-17T02:50:46Z
 merge:decidiq:2239:c474f6d4	cloud tree of 1 decidiq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T021723-9d734048	2026-11-17T02:50:58Z
+fix:hermiq:1751:36c34dcf	fixed conflict, new head 73163d7d386c831af30dcaddf6fdaff65a1390b1; REVERIFY (merge lock held elsewhere)	session-20261117T020353-b50811a6	2026-11-17T02:51:07Z
