@@ -20047,3 +20047,4 @@ merge:shillinq:3065:606bc8ab	cloud tree of 1 shillinq PRs: merged=1 red=0 fail=0
 merge:launchpad:1106:8be6a2fa	merged 0: 1210 RED at merge gate (floor module_coupling 4.74 -> 4.68); 1219 REQUEST_CHANGES (no @spec on 7 new modal methods); 1106,1109 excluded (never merged); land step hit the 590s call timeout after recording 1210	session-20261117T083938-f8f3a0e7	2026-11-17T09:07:55Z
 fix:stackiq:1942:9623d967	fixed RED (binding counts); pushed f000f6c2; merge lock held elsewhere, REVERIFY recorded	session-20261117T084906-fb469281	2026-11-17T09:07:52Z
 fix:humaniq:1147:811c369e	merged #1147 at 468abb9267 (floor restored by splitting lineage units; schema titles, demo-data exclusion, registered icon)	session-20261117T083450-d3af0287	2026-11-17T09:08:23Z
+merge:integriq:3545:c510ab64	cloud tree of 7 integriq PRs: merged=3 red=0 fail=0 skip=2; conflict 2, lint 0, red 0, moved 0, done 0	session-20261117T084826-97c66fce	2026-11-17T09:08:16Z

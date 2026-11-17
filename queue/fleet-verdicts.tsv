@@ -17662,3 +17662,4 @@ stackiq	1943	520d167f52a78a8a42ca3403800185d9b9f595f8	CONFLICT	worker-02:merge	c
 stackiq	1946	79f3a2dd4b475ca90022230511c4a9c29e285593	REVERIFY	worker-02:merge	conflicts only with an earlier PR of the merge tree: merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
 integriq	3631	905f2fc3c11173b27459887a027c88ffb562f07f	REVERIFY	worker-03:merge	conflicts only with an earlier PR of the merge tree: merges clean on development alone; files: l10n/en.json l10n/nl.json 
 integriq	3633	109ddb59cb44e81e0e89bab020c847a6b60e839d	REVERIFY	worker-03:merge	conflicts only with an earlier PR of the merge tree: merges clean on development alone; files: src/modals/v2/SourceFormFields.vue 
+versioniq	686	6799e346c3de5db336709e5fb2f61df3b944cf62	RED	worker-29:merge-gate	GATE RED floor: overall: 5.07 -> 5.05; unit_complexity: 4.79 -> 4.77; unit_interfacing: 4.57 -> 4.45
