@@ -18766,6 +18766,7 @@ learniq	2599	d006d35c98825c27df01811a18bd6dd92028d785	GREEN	worker-50	phpunit 71
 buildiq	1721	ed2a82a6eaae9cb761b06a96378b66716313d4c6	GREEN	worker-41	implements built-app-connections-page per its spec (editors/owners/admin checked before reads); unit 3684 OK vs baseline 3676 OK, no new failures; vitest 5015 OK
 buildiq	1651	c1a3ad84f420d8cac16d29a8b2d018d08e83a9cd	GREEN	worker-22	build logic-shared-flows-and-automations: owner-only share change and own-record write refusal as REQ-BQSF-003 asks, wrapper sync endpoint owner/org-guarded (fail closed); tree unit 3699 OK/7 skipped (baseline 3676), vitest 5028/5028, no new failures
 hermiq	1848	65d35bc5c91cb52e899ac03cd9fd06cc301f8aa5	GREEN	worker-20	unit 5736 baseline 0 fail, tree 5736 0 new failures; tests-only (Playwright spec, Newman folder, tasks.md notes)
+decidiq	2287	39b59d2af3ca16d4d23436035ae2f8eeb16e7bdd	GREEN	worker-14	unit 5020 baseline 0 failures, tree 5020 0 new; build of planning-long-term-agenda-tracks-and-report: profile seed (7 objects, count updated, refs resolve), e2e + newman specs
 buildiq	1725	a838ebd1030cdd45cf4f0d4d47fa14c5524c6093	GREEN	worker-49	unit 3676 (baseline 3676), vitest 5011 passed, 0 new failures; e2e spec + tasks note for the change
 dossiq	6648	68583fc019e59a6c250dbb5c188151eea3bcb4f5	GREEN	worker-43	unit suite: baseline 18398 tests 19 failures (inherited), tree 18401 tests 19 failures, no new failures; example-set grants fragment plus its test
 pipelinq	3943	ca8a7004855906b9e00ed5aeb35851c413d08653	GREEN	worker-30	phpunit 9317 ok (baseline 9282 ok), vitest 2 failed/3 files all inherited from development, no new failures; builds requests-web-chat-and-bot per its specs
@@ -18782,6 +18783,7 @@ portaliq	2586	d48314a985599ff8b6ed00246dba8cf43321e1ba	CONFLICT	worker-32	packag
 portaliq	2587	664b8ca8575ae2f35befab13dda8dba4deb03d63	GREEN	worker-32	unit 6339 tests on tree, baseline 6324 with 16 inherited errors (openregister classes absent), new failures 0; no JS unit script, markdown-block node test passes; portal-bound sessions and domain re-check per change, access only tightened
 filinq	2114	e0bb0357f219978209e4261a9d459a241c88a393	GREEN	worker-19	phpunit 7386 ok (baseline 7288 ok, 0 new failures); vitest 879 passed; build anonymization-review-workbench, adds checked gate after existing access checks
 buildiq	1648	616837279746c70653f0f41163c0dd6efd73fa7e	GREEN	worker-15	unit 3737 OK on tree (baseline 3676 OK), vitest 5027/5027, 0 new failures; build of logic-automation-actions-that-run, new run/manual routes keep role checks
+dossiq	6643	0d24d1c52449d037d6611b027579e67248612e82	GREEN	worker-09	tasks.md tick only (no code); claim checked against lib/Settings/packages and lib/ seeders; baseline 18398 tests 1 error (StatusEntryRequirementsGuardTest, inherited), no new failures
 hermiq	1846	5032dbe476b08e7c18c9b11969ca737daa6a3249	GREEN	worker-20	tasks.md only; ticks confirmed (info.xml min 32, VersionFloorGuardTest 5 pass); unit suite unchanged
 filinq	2188	a7b68fe976f749325f4b8f313e44b59b89381ae2	GREEN	worker-26	unit 7299 on tree (baseline 7288, 0 failures), new failures 0; php -l clean; new office fillers additive, not yet wired (office-template-authoring 2.3 pending, as tasks.md says)
 keepiq	1900	a6ccac84767665a898692a9826befe197f56bcea	GREEN	worker-39	vitest 7173 pass, 3 inherited reds only; frontend-only build of portability-export-choice-and-restore-fidelity
@@ -18794,6 +18796,7 @@ pipelinq	3945	ceffbf1ffd95fdbc429b3b7e77c1cbf97a8849c2	REVERIFY	worker-30	confli
 pipelinq	3946	633106e5ce5d34520df6e3801898478fcca78d26	REVERIFY	worker-30	conflicts only with an earlier PR of the verify tree (#3943, l10n files)
 dossiq	6642	dcd42889d10247bf15a7678d1ab0326f6ca37950	GREEN	worker-44	phpunit 18398 on tree, baseline 19 failures inherited, none new; tasks.md tick only, the code it names is on development
 dossiq	6660	9f09443de66fb27222359ed58556cfdc9f42c592	GREEN	worker-40	unit 18422 on tree vs 18398 baseline, 1 inherited error, 0 new; vitest 7224, 2 inherited failures, 0 new; build PR judged against its change
+dossiq	6661	a6b5bd94aa1fc40b7ca325fb7e67ef05af3ba48f	GREEN	worker-40	unit 18422 on tree vs 18398 baseline, 1 inherited error, 0 new; vitest 7224, 2 inherited failures, 0 new; build PR judged against its change
 opencatalogi	2793	d14f5f969a4c92d42409f8c9a2b0ebe0c6d49eab	GREEN	worker-31	phpunit 6389 tests on tree, baseline 6364 with 103 inherited failures/errors, 0 new; vitest 8 inherited mainEntry failures, 0 new
 opencatalogi	2794	85f20bb85c5a19d6e66aea0b7267df306933caac	GREEN	worker-31	phpunit 6389 tests on tree, baseline 6364 with 103 inherited failures/errors, 0 new; vitest 8 inherited mainEntry failures, 0 new
 opencatalogi	2795	9844e9a09589c8fb5eb3275c484e4adb67f6bb38	GREEN	worker-31	phpunit 6389 tests on tree, baseline 6364 with 103 inherited failures/errors, 0 new; vitest 8 inherited mainEntry failures, 0 new
@@ -18811,6 +18814,7 @@ filinq	2186	9bbf0ae16146dab80c0b1bc57ab5d57f6fd7bf69	GREEN	worker-22	build edit-
 filinq	2174	cb6650c7ab7ec341179061d3a82022a2119cfc16	GREEN	worker-26	unit 7288 on tree = baseline (0 failures), new failures 0; version bump in info.xml/openapi.json only
 opencatalogi	2796	7d78014c5c048a8b9ec158b0573d341fb0dfbe97	GREEN	worker-31	phpunit 6389 tests on tree, baseline 6364 with 103 inherited failures/errors, 0 new; vitest 8 inherited mainEntry failures, 0 new
 opencatalogi	2797	73c7291c61fbe1ac6ed7f6f4bb7f1da3b265956d	GREEN	worker-31	phpunit 6389 tests on tree, baseline 6364 with 103 inherited failures/errors, 0 new; vitest 8 inherited mainEntry failures, 0 new
+keepiq	1899	abebdd6ffa781653cb3cdfbbfdac6d7c181fbded	GREEN	worker-39	alone on development: phpunit 5631 ok (baseline 5619 ok), no new failures, PHP-only
 opencatalogi	2798	f43db4b9fe7611c1537c1a1d54f949df9e16db64	GREEN	worker-31	phpunit 6389 tests on tree, baseline 6364 with 103 inherited failures/errors, 0 new; vitest 8 inherited mainEntry failures, 0 new
 dossiq	6663	7ad8d4657778d1082dea10da61309ea37d382dd0	GREEN	worker-53	build inspection-checklists-onto-task per its spec; unit 18421 tests (baseline 18398), 19 inherited failures, 0 new; php -l clean
 dossiq	6646	eb19f73d3dfe4c5313e6aa76ef6c339c953b85c5	GREEN	worker-21	tasks.md tick only (1.4 seed confirmed on portaliq development zuiddrecht.json); unit 18399, 19 failures inherited, none new
@@ -18825,4 +18829,19 @@ integriq	3718	63ae9b35cd2d3779df06f01175c97a5c2b4d541a	GREEN	worker-35	unit 9911
 integriq	3719	47ed6f87082f05301751bb769f32c01be8626b43	GREEN	worker-35	unit 9911 tests on 9-PR tree, baseline 5 inherited failures, new failures 0; vitest 2389 passed; tests/spec files only
 integriq	3720	b1dbefe4cf5b1d11bb1f5c42da4f5706bf7472b2	GREEN	worker-35	unit 9911 tests on 9-PR tree, baseline 5 inherited failures, new failures 0; vitest 2389 passed; tests/spec files only
 integriq	3721	30322060ec71f82562694e63d3031528bae94ec2	GREEN	worker-35	unit 9911 tests on 9-PR tree, baseline 5 inherited failures, new failures 0; vitest 2389 passed; tests/spec files only
+filinq	2113	374ff86db69b9fcb8d0e55beeae136482b38672f	GREEN	worker-19	phpunit 7296 ok (baseline 7288 ok, 0 new failures); no JS touched; build hermiq-ai-tooling per change specs
 filinq	2191	377356bf2f306d95ea02377504a7b19877cf41cb	GREEN	worker-51	build image-redaction per its specs; phpunit 7288 baseline OK -> 7350 OK, no new failures; vitest 857 passed; new endpoints resolve the file in the caller folder (404 otherwise)
+humaniq	1191	b875c583d9c11a753090974efd8cc0d409a3eac8	GREEN	worker-43	adds one Playwright e2e spec only (not part of unit suites); tree unit suite 4509 tests 0 failures
+integriq	3703	e877128e20b84e54175d4bfa3784353eb4378378	GREEN	worker-52	unit 9910 tests on tree, baseline 9910 with 4 inherited failures, 0 new; php-dot-notation 3.5.0->3.6.0 lock + sbom only
+hermiq	1852	734376163c5c6515d092ee9d381c6d537078095a	GREEN	worker-24	built to openspec change vector-rag; unit 5755 tests, 199 failures/errors all inherited from development (baseline 5734 same set), 0 new; vitest 1659 pass; concern: ToolSearchService array_combine assumes embedTexts returns one vector per text
+hermiq	1851	b966db2c68a14f9afb14d3f3420a29c429ecf9d3	GREEN	worker-20	alone on development: unit 5754 0 failures (baseline 5736 0); diff read earlier, build session-entity-links per spec
+hermiq	1847	4b35bf029a1ae7308503d63ef3b7d87dd2e68235	GREEN	worker-44	phpunit 5734 on tree, baseline 199 errors+failures inherited, none new; e2e/Newman spec files and tasks notes only
+integriq	3716	43ef05b0d145df97b9e8edf21579396cbcaa3bf4	GREEN	worker-23	e2e spec + tasks.md only (no PHP/JS unit code); unit 9910 tests, 2 errors + 3 failures inherited
+keepiq	1897	cb062e6781152a50caa312836a625237c407fa7c	GREEN	worker-39	openspec archive; code changes are @spec path comments only; 15 touched vitest files 152 pass
+hermiq	1837	37735cabaf825916a86c15478841c02ede545c01	GREEN	worker-13	release version bump only (info.xml, openapi.json); unit 5736 OK on tree, no PHP/JS changed, no new failures
+dossiq	6662	e845dfbaec252189a9bca20af70b3d3fedf2a4a6	GREEN	worker-40	unit 18422 on tree vs 18398 baseline, 1 inherited error, 0 new; vitest 7224, 2 inherited failures, 0 new; build PR judged against its change
+dossiq	6663	7ad8d4657778d1082dea10da61309ea37d382dd0	GREEN	worker-40	unit 18422 on tree vs 18398 baseline, 1 inherited error, 0 new; vitest 7224, 2 inherited failures, 0 new; build PR judged against its change
+dossiq	6664	339af5a53f00481f2674650b655a0a5963df7dd4	GREEN	worker-40	unit 18422 on tree vs 18398 baseline, 1 inherited error, 0 new; vitest 7224, 2 inherited failures, 0 new; build PR judged against its change
+dossiq	6665	d62c780df34731fa7d6cab3b8f77f8a362c8a493	GREEN	worker-40	unit 18422 on tree vs 18398 baseline, 1 inherited error, 0 new; vitest 7224, 2 inherited failures, 0 new; build PR judged against its change
+dossiq	6666	54d4dfed6a9fd52abdf898cac964f4f37b9fe24d	GREEN	worker-40	unit 18422 on tree vs 18398 baseline, 1 inherited error, 0 new; vitest 7224, 2 inherited failures, 0 new; build PR judged against its change
+dossiq	6668	1395d5e68c106240715cd719a08bf8d2652f8bf5	GREEN	worker-40	unit 18422 on tree vs 18398 baseline, 1 inherited error, 0 new; vitest 7224, 2 inherited failures, 0 new; build PR judged against its change
