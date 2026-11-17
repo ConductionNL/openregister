@@ -18518,3 +18518,4 @@ opencatalogi	2770	f134b8f7dabb094897970e0f20bd6313ef5fa5dc	GREEN	worker-14	unit 
 integriq	3709	4cb85bb991cb2af12526621fe2212abe4b6e95af	RED	worker-24:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
 planninq	1218	3bb9d8d2ab2644e3b22cdb1144eb07f0a9df1e21	RED	worker-16:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 integriq	3713	1ac9342215f8b89a3080078a2a4852d1a9560e0a	RED	worker-24:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+integriq	3593	975e519b6d9ee71fe6b1479ea6fc50cb4dfb9a9f	CONFLICT	worker-24:merge	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Service/ServiceBindings.php 
