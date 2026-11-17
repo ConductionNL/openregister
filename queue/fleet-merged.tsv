@@ -5061,3 +5061,4 @@ decidiq	2162	a11708136c625a38e8ac005dd7a8f94b249c2033	SKIP	worker-20	GATE UNMEAS
 versioniq	706	2a838675481799fd60e9963297c76b760fd694b5	RED	worker-17	GATE RED floor: overall: 5.07 -> 5.05; duplication: 5.19 -> 5.17; unit_complexity: 4.79 -> 4.76; unit_interfacing: 4.57 -> 4.53
 larpinq	1047	398465ad6138e13314483929a9473cf23f1b4482	SKIP	worker-27	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 opencatalogi	2650	e518db3d4ba09e41b85d9dbf215290fbd24057eb	SKIP	worker-45	GATE UNMEASURED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3 while api.osv.dev is unreachable from this session
+stackiq	1938	08b568aa0bebcc56245555764e42c8caa21c5f32	RED	worker-28	GATE RED floor: unit_complexity: 3.73 -> 3.71; unit_interfacing: 4.71 -> 4.68
