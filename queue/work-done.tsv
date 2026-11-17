@@ -19172,6 +19172,7 @@ verify:opencatalogi:2756:80b2e0ad	GREEN #2756: no new failures, vitest 1165 OK	s
 review:opencatalogi:2665:1e4b30ce	GREEN: no new failures (PHP 6154, vitest 1174); needs a development merge (additive conflicts in settings keys)	session-20261117T020926-7d1643a8	2026-11-17T02:31:27Z
 merge:launchpad:1223:6c93e239	cloud tree of 3 launchpad PRs: merged=1 red=1 fail=0 skip=0; conflict 1, lint 0, red 0, moved 0, done 0	session-20261117T021649-387ee607	2026-11-17T02:31:46Z
 review:integriq:3632:6bc3018b	GREEN: seed + test; golden digest conflict with development needs recompute	session-20261117T020348-42793e58	2026-11-17T02:31:48Z
+merge:pipelinq:3734:5098e811	cloud tree of 1 pipelinq PRs: merged=0 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T020233-6aa2851d	2026-11-17T02:32:03Z
 merge:integriq:3574:6886a39a	cloud tree of 1 integriq PRs: none; conflict 1, lint 0, red 0, moved 0, done 0	session-20261117T021325-9fd6cbed	2026-11-17T02:32:20Z
 review:launchpad:1217:faab5f5c	GREEN: 4548 unit tests OK on PR+development, vitest 2069 pass, static checks clean	session-20261117T020416-cc0fb378	2026-11-17T02:32:33Z
 review:opencatalogi:2722:8f7ea1f5	GREEN: per spec, no new failures, merges clean	session-20261117T021636-02f2b960	2026-11-17T02:32:46Z
@@ -19183,3 +19184,7 @@ review:launchpad:763:b75dc631	GREEN: vitest 5 bump, 2652/2652 tests, coverage wo
 review:versioniq:727:0c2b3b95	RED: 3 vitest failures in App.rangeAndSkip.spec.ts after merging development	session-20261117T004644-d9c68b8f	2026-11-17T02:33:57Z
 review:learniq:2486:384efb33	GREEN; conflicts with development in golden PortalManifests.json	session-20261117T020358-1a8df617	2026-11-17T02:34:12Z
 review:versioniq:700:67179d1c	GREEN; SbomControllerTest needs the server (env-only errors)	session-20261117T004133-c974afac	2026-11-17T02:34:26Z
+fix:shillinq:3002:64f4bc01	fixed AppIdentity import, suite green; new head 0d472796, REVERIFY (merge lock busy)	session-20261117T021616-30ab3d21	2026-11-17T02:34:46Z
+review:stackiq:1928:fccc382c	GREEN: per spec, suite green, merges clean	session-20261117T020537-9e43f62e	2026-11-17T02:34:58Z
+review:stackiq:1942:200de863	BLOCK: conflicts, SPDX headers stripped from l10n js, repair step without version bump	session-20261117T020210-893a9346	2026-11-17T02:35:11Z
+review:stackiq:1944:a796a511	GREEN: vitest only inherited facets failure, l10n gate OK	session-20261117T020227-9e68ed24	2026-11-17T02:35:30Z
