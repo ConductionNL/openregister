@@ -18732,6 +18732,7 @@ stackiq	1963	5d4b224b8a597d13518bc49c1b7eaeaa96eb7211	GREEN	worker-37:review	imp
 versioniq	799	9d0b17e161aabdb3641874366fbf88fc9343996c	REVERIFY	worker-44	conflicts only with an earlier PR of the verify tree (l10n/*, src/App.vue vs #798)
 buildiq	1711	c046bf16a2d185fd3a110f47e78450a28c23551c	GREEN	worker-53	unit suite 3691 tests (baseline 3676, 0 failures), tests-only PR, 0 new failures
 portaliq	2579	df1bfc402b7652facf47819ec22a83d590bd098c	CONFLICT	worker-32	package.json conflicts with development
+opencatalogi	2756	70b8b0cb8de57fabae21fef0562dfe82dda9fab2	GREEN	worker-31	phpunit 6389 tests on tree, baseline 6364 with 103 inherited failures/errors, 0 new; vitest 8 inherited mainEntry failures, 0 new
 buildiq	1648	616837279746c70653f0f41163c0dd6efd73fa7e	GREEN	worker-13:review	Builds the change per its specs (manual run D8 any app role, record read with caller rights, flow compile D1-D7, repair D9); openregister calls match main. Unit 3737 tests, 1 inherited failure (baseline 3676/1); vitest 5027 pass. Concerns: manual() has no try/catch; flow backend added to org-guard exemption list.
 portaliq	2580	9c288ce1119aa41d64c1f1e9220fcd7bd60a841a	GREEN	worker-32	unit 6339 tests on tree, baseline 6324 with 16 inherited errors (openregister classes absent), new failures 0; no JS unit script, markdown-block node test passes; e2e spec + en_US strings, per change
 buildiq	1734	666e0ef94dbb48dd31d6c384ca7470201645bef1	GREEN	worker-26	unit 3676 on tree = baseline (0 failures), new failures 0; e2e spec + tasks.md only; concern: ticks 4.2 before a live run
@@ -18778,3 +18779,4 @@ pipelinq	3945	ceffbf1ffd95fdbc429b3b7e77c1cbf97a8849c2	REVERIFY	worker-30	confli
 pipelinq	3946	633106e5ce5d34520df6e3801898478fcca78d26	REVERIFY	worker-30	conflicts only with an earlier PR of the verify tree (#3943, l10n files)
 dossiq	6659	565a618a74e1407233ed8b1363bf412763f216c3	GREEN	worker-06	unit 18398 tests on tree, baseline 19 failures (inherited, Access/CaseTypeRights*), new failures 0; e2e spec and playwright config only
 dossiq	6660	9f09443de66fb27222359ed58556cfdc9f42c592	GREEN	worker-40	unit 18422 on tree vs 18398 baseline, 1 inherited error, 0 new; vitest 7224, 2 inherited failures, 0 new; build PR judged against its change
+opencatalogi	2793	d14f5f969a4c92d42409f8c9a2b0ebe0c6d49eab	GREEN	worker-31	phpunit 6389 tests on tree, baseline 6364 with 103 inherited failures/errors, 0 new; vitest 8 inherited mainEntry failures, 0 new
