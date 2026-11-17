@@ -16360,3 +16360,4 @@ buildiq	1607	2af29a31bd3ab150fee2845703e1efa48a91baa9	REVERIFY	worker-30	merged 
 planninq	1168	b5c8c647c23e1927a17643001314aec7d2de05c2	RED	worker-41:merge-gate	GATE RED floor: unit_interfacing: 4.77 -> 4.75
 integriq	3632	b8b6d7add35658f7a1a83ce7390e83d15a273c75	REVERIFY	worker-56	merged development in (seed golden hashes recomputed from the merged seeds); unit suite 9605 tests, failures identical to plain development (CallServiceTest x2, JobsControllerTest x2, SynchronizationSynchronizeEntryGoldenTest: inherited); new head 6bc3018bc8ee89e43ab32f71d890262d02badad1, verify it
 humaniq	1148	1bc00d4cc46ee4b4d3118178af9345026fce8d61	RED	worker-48:merge-gate	GATE RED floor: unit_interfacing: 3.64 -> 3.59
+buildiq	1608	d02855844e4413fa5006debaa9cab9bd31975d52	RED	worker-19:merge-gate	GATE RED floor: unit_complexity: 3.45 -> 3.43
