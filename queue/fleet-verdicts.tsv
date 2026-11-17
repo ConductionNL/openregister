@@ -18839,6 +18839,7 @@ hermiq	1851	b966db2c68a14f9afb14d3f3420a29c429ecf9d3	GREEN	worker-20	alone on de
 hermiq	1847	4b35bf029a1ae7308503d63ef3b7d87dd2e68235	GREEN	worker-44	phpunit 5734 on tree, baseline 199 errors+failures inherited, none new; e2e/Newman spec files and tasks notes only
 integriq	3716	43ef05b0d145df97b9e8edf21579396cbcaa3bf4	GREEN	worker-23	e2e spec + tasks.md only (no PHP/JS unit code); unit 9910 tests, 2 errors + 3 failures inherited
 keepiq	1897	cb062e6781152a50caa312836a625237c407fa7c	GREEN	worker-39	openspec archive; code changes are @spec path comments only; 15 touched vitest files 152 pass
+hermiq	1837	37735cabaf825916a86c15478841c02ede545c01	GREEN	worker-13	release version bump only (info.xml, openapi.json); unit 5736 OK on tree, no PHP/JS changed, no new failures
 dossiq	6662	e845dfbaec252189a9bca20af70b3d3fedf2a4a6	GREEN	worker-40	unit 18422 on tree vs 18398 baseline, 1 inherited error, 0 new; vitest 7224, 2 inherited failures, 0 new; build PR judged against its change
 dossiq	6663	7ad8d4657778d1082dea10da61309ea37d382dd0	GREEN	worker-40	unit 18422 on tree vs 18398 baseline, 1 inherited error, 0 new; vitest 7224, 2 inherited failures, 0 new; build PR judged against its change
 dossiq	6664	339af5a53f00481f2674650b655a0a5963df7dd4	GREEN	worker-40	unit 18422 on tree vs 18398 baseline, 1 inherited error, 0 new; vitest 7224, 2 inherited failures, 0 new; build PR judged against its change
