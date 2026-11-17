@@ -3376,3 +3376,4 @@
 10629 784ab3dd184c21490a21023dfe8a240a87ab67cc APPROVE dev-only patch bump of @types/node 26.6.4 to 26.6.6; package.json and lockfile entry only, registry-resolved with integrity, no runtime or lib changes
 10626 01fe2e08f462a224d902efa2cd7b10bd3a6b6dce APPROVE CI-only: setup-buildx-action v3 to v4 in container-image workflow, no inputs used, hosted ubuntu-latest runner; no lib, test or frontend change
 10621 07810fff7f827e9f13c1911079448dc8d49f1b1a APPROVE dev-dependency bump eslint 10.11->10.15 only (package.json, lockfile); eslint src gives the same 5 errors as main with 10.11, no new findings; no PHP or runtime code touched
+10641 f14b3333f75576f230e910c21adaccfd83d3ead5 BLOCK npm ci fails with ERESOLVE at this head (passes on main): @nextcloud/stylelint-config 3.2.2 peers stylelint-config-recommended-scss ^17.0.1, and v18 also peers stylelint ^18 while the repo pins stylelint ^17.15. Needs a stylelint 18 + nextcloud config upgrade together
