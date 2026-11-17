@@ -22204,3 +22204,4 @@ verify:learniq:2599:40527111	GREEN #2599 (no new failures; PHP 1 and JS 8 inheri
 verify:filinq:2186:9bbf0ae1	GREEN 2186; vitest 879 OK, no PHP touched	session-20261117T185359-d68263c5	2026-11-17T19:23:06Z
 verify:dossiq:6660:9f09443d	GREEN dossiq #6660 (0 new failures; 19 php + 2 js inherited)	session-20261117T190434-a73c29f6	2026-11-17T19:23:14Z
 verify:filinq:2191:377356bf	GREEN	session-20261117T190242-7c82bed8	2026-11-17T19:23:26Z
+verify:dossiq:6664:339af5a5	GREEN dossiq#6664 (no new failures; 19 inherited)	session-20261117T190302-4e3d4569	2026-11-17T19:23:36Z
