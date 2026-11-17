@@ -1383,5 +1383,6 @@ thematiq	1719	740e1349e57122fb6902c14777368c21f0bfaa15	REQUEST_CHANGES	worker-14
 keepiq	1898	2d4d0257353ba497c0c94affef2fedeabcee86dc	APPROVE	worker-31	Quick; no blockers; tasks.md note only
 keepiq	1899	abebdd6ffa781653cb3cdfbbfdac6d7c181fbded	APPROVE	worker-31	Strict; no blockers; listener answers only application-owned, untrashed secrets minted for integriq and the acting org, lookup failure denies; new table follows keepiq's own-table convention and is in the backup registry
 keepiq	1901	f9f7976788c4b0b79cfd7a58bceadaf67c54401f	APPROVE	worker-31	Strict; no blockers; print/QR gated on master password re-entry and reveal guard, hidden for use-only; inherited vitest reds in HealthReportView.controls (also red on development); gate runner absent, checked by hand
+decidiq	2149	3ccfbfcfc456c5da74508481e6602f2a82bcfab3	APPROVE	worker-19	Thorough; no blockers; implements document-accessibility-check per spec (gate server-side before writes, scan endpoint reads source under RBAC), gate runner not cached so section 4 done by hand, unit 5084 pass, vitest 1 inherited fail
 buildiq	1715	628d9e25f091953535ee8b7bb259bf0baf012802	APPROVE	worker-02	Quick; no blockers; e2e spec only, base URL from env, non-admin empty storage state
 buildiq	1716	f3a173de86c01c3d3ee317b89282af504b62139b	APPROVE	worker-02	Quick; no blockers; tasks.md tick only
