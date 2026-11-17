@@ -18540,6 +18540,7 @@ verify:shillinq:3005:155acc0f	CONFLICT: #3005 conflicts with development (l10n, 
 verify:shillinq:3064:334cea16	CONFLICT #3064 (10 files)	session-20261116T232923-46913d93	2026-11-17T00:08:42Z
 verify:hermiq:1728:4a375b99	CONFLICT: 6 files conflict with development (l10n, hermiq_register.json, openapi.json)	session-20261116T232834-a3ef1c86	2026-11-17T00:08:59Z
 fix:learniq:2577:15fc4a90	fixed menu order tie; pushed 5bf20572; REVERIFY (end to end skipped: learniq composer prep fails on php 8.3.6)	session-20261116T232944-146e39d7	2026-11-17T00:09:16Z
+verify:hermiq:1785:3cc1bb7c	CONFLICT #1785 (lib/Settings/hermiq_register.json)	session-20261116T233939-9a6702d9	2026-11-17T00:09:25Z
 verify:shillinq:3008:1f4ba84a	CONFLICT #3008 (7 files conflict with development)	session-20261116T233050-d0df160f	2026-11-17T00:09:27Z
 verify:learniq:2579:b356ecaa	failed: composer-cloud refuses learniq's lock on this session's php 8.3.6 (vimeo/psalm 7.5.0 needs ~8.3.16); no unit suite	session-20261116T232944-146e39d7	2026-11-17T00:09:45Z
 verify:stackiq:1963:0202df86	CONFLICT: 6 files vs development	session-20261116T232912-634ff2e8	2026-11-17T00:09:38Z
@@ -18593,8 +18594,15 @@ fix:shillinq:2086:bda4253e:v4	fixed @spec tags; new head 3e9decdf, REVERIFY (mer
 verify:filinq:2086:c846f108	filinq #2086 CONFLICT (info.xml, l10n, filinq_register.json)	session-20261116T233009-d8b07fcf	2026-11-17T00:05:30Z
 verify:versioniq:503:c2757498	CONFLICT: #503 package files conflict with development	session-20261116T233923-d48b13fa	2026-11-17T00:19:50Z
 fix:portaliq:2530:23908dc9:v3	no change needed: sbom --check current at head (dev-only lock change); REVERIFY queued	session-20261116T232406-b9eb038c	2026-11-17T00:20:22Z
+cover:stackiq:9ac19b3am039e:34f5c300	PR #2008: OrganizationSyncService entity users + admin users, 5 tests, 59 statements; suite 3912->3917 OK	session-20261113T214350-9762e143	2026-11-17T00:20:48Z
 merge:decidiq:2236:f824c814	cloud tree of 1 decidiq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T233929-170accb7	2026-11-17T00:20:36Z
 verify:versioniq:710:a0b3f51c	CONFLICT #710 (16 files vs development)	session-20261116T233933-3050c00d	2026-11-17T00:20:33Z
 verify:learniq:2579:b0a9fa79	GREEN #2579	session-20261116T232948-9d2e8ce2	2026-11-17T00:20:42Z
 verify:versioniq:716:696aeaa9	CONFLICT #716 (AutoUpdateJob, ApiController, App.vue)	session-20261116T232623-066b53c9	2026-11-17T00:21:07Z
 verify:versioniq:686:f8225f3d	CONFLICT #686	session-20261116T232918-5354fd88	2026-11-17T00:21:53Z
+merge:shillinq:3055:92c05448	cloud tree of 2 shillinq PRs: merged=1 (#3055) red=0 fail=0 skip=0; conflict 1 (#3135, with #3055 only)	session-20261116T232033-3ca59164	2026-11-17T00:22:01Z
+merge:versioniq:758:437c8999	cloud tree of 1 versioniq PRs: merged=0 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T233627-44605965	2026-11-17T00:22:33Z
+fix:hermiq:1764:b3921191	conflict resolved, pushed 73544d4e; merge lock held elsewhere, REVERIFY queued	session-20261116T233939-9a6702d9	2026-11-17T00:22:23Z
+fix:dossiq:5396:cc232d59:v3	merged development; sbom check current; new head 3792d795, REVERIFY	session-20261116T233900-0eb43466	2026-11-17T00:22:32Z
+fix:dossiq:4887:5b3dec5c:v3	fixed BLOCK (titles + app version), pushed 58a39c94; REVERIFY queued (merge lock held elsewhere)	session-20261116T232911-3dffa1ae	2026-11-17T00:22:47Z
+fix:versioniq:715:37497a7e	conflict resolved, pushed f78bf6ec; merge lock held elsewhere, REVERIFY	session-20261116T232918-35016340	2026-11-17T00:23:16Z
