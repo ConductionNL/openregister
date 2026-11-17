@@ -18638,3 +18638,4 @@ verify:shillinq:2071:f455c68f	CONFLICT: info.xml, register-versions.lock.json vs
 fix:dossiq:3955:051bc7d2:v3	conflict fixed, pushed 66d20622; merge lock held elsewhere, REVERIFY queued	session-20261116T232948-9d2e8ce2	2026-11-17T00:28:47Z
 fix:opencatalogi:2674:05957a6e	floor restored, pushed 4ec49fd3; REVERIFY recorded (merge lock busy)	session-20261116T232852-594dae77	2026-11-17T00:28:58Z
 verify:learniq:2577:3e179100	RED #2577: HigherEducationExampleSetTest::testTheFileIsWhatTheGeneratorProduces	session-20261116T233627-44605965	2026-11-17T00:29:27Z
+review:shillinq:2086:3e9decdf	GREEN #2086 (conflicts with development in l10n/openapi.json)	session-20261116T232033-3ca59164	2026-11-17T00:29:40Z
