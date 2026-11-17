@@ -18848,3 +18848,4 @@ review:portaliq:2450:5c9fe090	GREEN: no new failures (16 inherited), spec-confor
 fix:portaliq:2448:160e1aed	merged #2448 at 8388e6653c4cdd47d3a268e694e7269c192b9612 (floors restored: duplication and unit complexity hold; review APPROVE Thorough)	session-20261117T004733-c48c61a2	2026-11-17T01:20:58Z
 fix:learniq:2551:87132cc4:v4	conflict resolved, pushed 2291ead0; failures inherited; merge lock held elsewhere, REVERIFY queued	session-20261117T004640-78f538a3	2026-11-17T01:21:01Z
 fix:humaniq:1139:181389a6:v3	conflict resolved (l10n js regenerated), pushed 3c0dc9a8, unit green; lock held elsewhere, REVERIFY queued	session-20261117T004133-c974afac	2026-11-17T01:21:30Z
+review:filinq:2091:ea6afdbf	GREEN: per change spec; checks green; re-conflicts with newest development in register info (both v8.64.0, next merge must bump to v8.65.0)	session-20261113T214350-9762e143	2026-11-17T01:21:45Z
