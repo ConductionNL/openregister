@@ -20030,3 +20030,4 @@ fix:integriq:2650:e2326510	conflict resolved, pushed 92ce810e, REVERIFY queued	s
 fix:learniq:2551:2291ead0	fixed: register/app version raised, spec tags added, development merged; new head a86b68dc, REVERIFY queued (merge lock held elsewhere)	session-20261117T085350-7b102f7f	2026-11-17T09:04:00Z
 fix:opencatalogi:2683:b9a9bc9f	fixed #2683, new head 7b81beb8 (merge lock held elsewhere, REVERIFY queued)	session-20261117T084753-0ae58c51	2026-11-17T09:04:36Z
 measure:buildiq:20261117h08	php 91.61% js 95.5%	session-20261117T084819-7b38da2a	2026-11-17T09:05:14Z
+fix:integriq:3582:ec13862c	conflict resolved, pushed 5de17aa9; REVERIFY queued	session-20261117T081138-8732f141	2026-11-17T09:05:16Z
