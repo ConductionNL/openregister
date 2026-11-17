@@ -18717,3 +18717,4 @@ buildiq	1630	285ac6f0971889105f2dbd12d6e5111710aaf0b2	CONFLICT	worker-51	conflic
 planninq	1247	1a42908edf32546f4d27dfc8c1b8aec9935bd950	GREEN	worker-22	e2e spec + tasks.md only; tree unit 1254 OK/11 skipped (baseline 1253), vitest 3593/3593, no new failures
 hermiq	1851	b966db2c68a14f9afb14d3f3420a29c429ecf9d3	GREEN	worker-20	unit 5736 baseline 0 fail; tree 5800 tests 0 new failures; vitest 1659 passed; build session-entity-links per spec
 planninq	1248	36d5dc19e1277c9823e4512f8072ca92540206a6	GREEN	worker-22	e2e + postman collection only; tree unit 1254 OK/11 skipped (baseline 1253), vitest 3593/3593, no new failures
+planninq	1250	70dfe254912eeaa8aeb0a5a52fbb7c735485ff4e	REVERIFY	worker-22	conflicts only with an earlier PR of the verify tree (postman collection)
