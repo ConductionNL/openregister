@@ -20496,6 +20496,7 @@ cover:decidiq:a5f973bbmfcd5:e372e6ff	already done: lib/Event/*.php at 100% lines
 review:learniq:2486:9b989f6b	GREEN: merges clean, no new failures, matches spec	session-20261117T112106-1814b74b	2026-11-17T12:07:31Z
 review:hermiq:1738:35c4d891	GREEN: unit 5670 OK, vitest 1647 OK on PR merged with development	session-20261117T115540-1ba6ee8c	2026-11-17T12:07:50Z
 fix:shillinq:1958:6c4f9eed	conflict resolved (info.xml version), pushed 4334b560, suite 12793/0 failures; merge lock busy, REVERIFY recorded	session-20261117T112947-12b56cd8	2026-11-17T12:08:06Z
+cover:decidiq:a5f973bbmfcd5:58192586	already done: lib/Service/Records at 100% lines (7 classes) on development	session-20261117T112009-00ac618f	2026-11-17T12:08:33Z
 fix:learniq:2524:4fd0d8a1	resolved register conflict (0.58.0, Enrolment 0.7.0), pushed e082152e; suite 7137 with 1 inherited failure; merge lock busy, REVERIFY queued	session-20261117T111757-a0ed5e74	2026-11-17T12:08:30Z
 fix:shillinq:2070:770f20c3	conflict resolved, pushed 7439ff5e; merge lock held elsewhere, REVERIFY queued	session-20261117T112444-7a410249	2026-11-17T12:08:42Z
 review:launchpad:1217:7283f62c	GREEN: unit 4633 OK, vitest 2752 OK	session-20261117T115541-a0785606	2026-11-17T12:08:58Z
@@ -20504,3 +20505,25 @@ fix:launchpad:1261:07612654	fixed #1261: explicit RBAC/multitenancy on schema re
 merge:humaniq:1184:54f5f41a	cloud tree of 1 humaniq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T113142-3e3cc1d3	2026-11-17T12:09:51Z
 merge:learniq:2551:3f23ab7e	cloud tree of 2 learniq PRs: merged=0 red=1 fail=0 skip=0; conflict 1, lint 0, red 0, moved 0, done 0	session-20261117T113901-5c9d981d	2026-11-17T12:10:07Z
 merge:hermiq:1760:b25a0ffe	cloud tree of 1 hermiq PRs: none; conflict 1, lint 0, red 0, moved 0, done 0	session-20261117T115540-1ba6ee8c	2026-11-17T12:10:11Z
+review:integriq:3612:a0f66b1a	GREEN: 0 new failures (9861 tests, 5 inherited), matches spec	session-20261117T120335-b942e878	2026-11-17T12:10:40Z
+fix:planninq:1217:f6120234	merged #1217 at 6ab21439 (merged development in, regenerated sbom)	session-20261117T111351-f79c232f	2026-11-17T12:10:59Z
+cover:launchpad:fb10c50fm88bd:d8ac3ddd	already done: lib/Service/Cleanup/ measures 42/42 statements, every class has its own test	session-20261117T115541-a0785606	2026-11-17T12:10:48Z
+verify:opencatalogi:2766:29579c9f	GREEN #2766 (no new failures)	session-20261117T114001-07512b39	2026-11-17T12:10:54Z
+cover:launchpad:fb10c50fm88bd:59826f43	no PR: lib/Settings/ already 55/55 covered, all 4 classes have behaviour tests (LaunchPadAdminTest, LaunchPadAdminSectionTest); nothing thin to add	session-20261117T115011-195ffbc6	2026-11-17T12:10:56Z
+review:versioniq:729:ea732a80	GREEN: matches change specs; unit 2427 tests, 2 inherited failures; vitest 3208 pass	session-20261117T120635-25da0b5a	2026-11-17T12:11:03Z
+fix:learniq:2509:56cfb0f8	conflict resolved, pushed 4853fbe3; REVERIFY (merge lock held elsewhere)	session-20261117T112106-1814b74b	2026-11-17T12:11:45Z
+review:integriq:3601:34350fe3	CONFLICT #3601 (tests/Unit/Service/CatalogRegistrySeedGoldenTest.php)	session-20261117T113142-3e3cc1d3	2026-11-17T12:12:14Z
+fix:integriq:3613:83ce7d7b	fixed adrvalidator (API-Version header on 3 responses), gate OK; REVERIFY at 549ed1063e (merge lock held)	session-20261117T113840-498fade3	2026-11-17T12:12:28Z
+fix:hermiq:1833:6a516e78	fixed: restored supports entry; merge lock held elsewhere, REVERIFY at 0071295f	session-20261117T111714-cd94760b	2026-11-17T12:12:38Z
+merge:stackiq:1966:69f9282f	cloud tree of 5 stackiq PRs: merged=3 red=1 fail=0 skip=0; conflict 1, lint 0, red 0, moved 0, done 0	session-20261117T110646-831a671b	2026-11-17T12:13:01Z
+merge:thematiq:1713:55fd5f49	cloud tree of 1 thematiq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T114019-426872f0	2026-11-17T12:13:07Z
+merge:versioniq:706:891fd555	cloud tree of 1 versioniq PRs: none; conflict 1, lint 0, red 0, moved 0, done 0	session-20261117T121049-5b84d45a	2026-11-17T12:13:18Z
+cover:dossiq:069ee2d6m9d1b:afe29cfd	deferred: dossiq has 42 open PRs (only open cover PR #6203 is excluded from merge trees, not stacked onto)	session-20261117T112947-12b56cd8	2026-11-17T12:13:39Z
+review:opencatalogi:2677:ec6e4301	GREEN #2677 (no new failures; one minor robustness concern noted)	session-20261117T114001-07512b39	2026-11-17T12:13:49Z
+fix:shillinq:2983:aac6fcf6	conflict resolved, pushed 501b81a9; merge lock held elsewhere, REVERIFY queued	session-20261117T112444-7a410249	2026-11-17T12:13:57Z
+review:buildiq:1590:ca570ceb	GREEN: unit 3621 OK, phpstan clean, specs matched	session-20261117T121046-ffb3fcc9	2026-11-17T12:14:20Z
+review:integriq:3574:daecacd9	GREEN: built to spec, no new failures (4 inherited)	session-20261117T120218-38f2a955	2026-11-17T12:14:32Z
+cover:dossiq:069ee2d6m9d1b:9951e799	deferred: dossiq has 42 open PRs	session-20261117T112106-1814b74b	2026-11-17T12:14:57Z
+verify:versioniq:770:2d93a058	770 GREEN	session-20261117T121049-5b84d45a	2026-11-17T12:14:55Z
+review:versioniq:700:563a324a	GREEN: 2410 tests, 2 inherited failures, no new	session-20261117T121050-a5ee25f2	2026-11-17T12:15:05Z
+fix:integriq:3564:d45b5057	fixed: demo objects added for both schemas; pushed d0095e30, REVERIFY queued (merge lock held elsewhere)	session-20261117T120335-b942e878	2026-11-17T12:15:28Z
