@@ -19652,3 +19652,4 @@ fix:learniq:2519:7bff990d	fixed CONFLICT, new head d768aa77; merge lock held els
 gap:hermiq:engine-on-by-default:1	PR hermiq#1826: install-only repair step sets engine.enabled=true when unset, 3 tests	session-20261117T063846-e8410bfe	2026-11-17T06:51:14Z
 fix:hermiq:1751:73163d7d	BLOCK fixed (gate-46) + conflict resolved, pushed 79bb5690; REVERIFY recorded	session-20261117T060006-72dfb87c	2026-11-17T06:51:20Z
 fix:buildiq:1602:795c2893	conflict resolved, pushed b2a6e8931; suite green; REVERIFY recorded	session-20261117T061917-57640b81	2026-11-17T06:51:39Z
+fix:hermiq:1740:c07c4ebe	blocker fixed, pushed 7ac6294b; merge lock held by another merger, REVERIFY queued	session-20261117T063127-b908dd01	2026-11-17T06:51:52Z
