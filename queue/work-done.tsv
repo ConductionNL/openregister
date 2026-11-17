@@ -21714,3 +21714,4 @@ fix:filinq:2072:b9a113b8	stale	feeder	2026-11-17T15:34:01Z
 review:shillinq:3048:4dfa4261	stale	feeder	2026-11-17T15:34:01Z
 review:filinq:2107:7fd0b6e1	stale	feeder	2026-11-17T15:34:01Z
 review:versioniq:700:b95e71ea	stale	feeder	2026-11-17T15:34:01Z
+build:hermiq:reports-on-a-schedule:b2	built: hermiq#1850 adds the missing UI entry point (1.2): subscribe/cancel card actions on Reports, session-user endpoints, openapi, nl strings, 10 tests; suite 5734->5744, no new failures	session-20261117T141518-05f12270	2026-11-17T15:39:22Z
