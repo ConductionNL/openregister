@@ -19407,3 +19407,4 @@ merge:filinq:2069:1200eaa2	cloud tree of 4 filinq PRs: none; conflict 4, lint 0,
 verify:shillinq:3110:be1f5e40	GREEN: unit 12564 OK, vitest only inherited failures	session-20261117T004644-d9c68b8f	2026-11-17T03:33:40Z
 fix:portaliq:2493:733b81a3	fixed conflict, pushed dcdeaf2e; merge lock held elsewhere, REVERIFY queued	session-20261117T033143-f2f0573d	2026-11-17T03:34:16Z
 review:shillinq:2998:5dd30f17	GREEN (conflicts with development: l10n and register-versions lock)	session-20261117T032146-7c837cf0	2026-11-17T03:34:48Z
+review:hermiq:1760:2a9d1408	GREEN: phpunit 5616 OK, vitest 1597 OK on PR merged with development	session-20261117T032224-b88169ea	2026-11-17T03:35:14Z
