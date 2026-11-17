@@ -19978,3 +19978,4 @@ review:filinq:2087:6547dafe	GREEN: filinq#2087, unit 7103 OK, vitest 13 passed	s
 review:filinq:2121:a5b31115	GREEN: unit 7125 OK (baseline 7098), touched 53 OK, vitest OK	session-20261117T084019-84d2c33c	2026-11-17T08:51:42Z
 review:versioniq:706:74033735	GREEN: no new failures (2277 tests, 2 inherited), matches spec	session-20261117T084835-4ff9a661	2026-11-17T08:52:05Z
 review:filinq:2096:a0ad494f	GREEN: 7154 tests OK on PR+development, phpstan clean; register json description conflicts with development	session-20261117T084726-4d3c0dd8	2026-11-17T08:52:17Z
+fix:hermiq:1754:bf0cc3bd	fixed interface param order + merged development (register v0.63.0); suite 5619 OK; REVERIFY at e5a330ff (merge lock held elsewhere)	session-20261117T083929-9c5fceb9	2026-11-17T08:52:31Z
