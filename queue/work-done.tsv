@@ -20777,4 +20777,5 @@ merge:learniq:2486:43088474	cloud tree of 2 learniq PRs: merged=1 red=0 fail=0 s
 verify:stackiq:2030:2d2b0f24	GREEN #2030 (docs only, 4050 tests, 0 new failures)	session-20261117T124637-3e909745	2026-11-17T13:28:02Z
 fix:dossiq:3193:ac67d68f	obsolete: development already has twig v3.30.0; closed #3193	session-20261117T124326-d41be1c2	2026-11-17T13:28:24Z
 fix:shillinq:2063:fd491fcd	conflict resolved, pushed 2caa7618a5; not landed: merge gate RED maintainability 3.99 < floor 4.00	session-20261117T123632-d3b91db3	2026-11-17T13:28:21Z
+fix:dossiq:3106:2e124449	closed #3106 as obsolete: eslint 10.11.0 already on development	session-20261117T124809-d8aae7cd	2026-11-17T13:29:36Z
 verify:larpinq:1088:9768d339	GREEN #1088 (docs only)	session-20261117T125716-5aa18045	2026-11-17T13:29:39Z
