@@ -1143,3 +1143,5 @@ planninq	1231	a50e49c38a670e914b6d0f39c645fedfef486ae5	APPROVE	worker-19	Standar
 learniq	2589	e5a5454a3b27ecb50ba8ab74c34d8140b6c7770d	APPROVE	worker-04	Quick; no blockers; docs only, gates not applicable (no code touched); concern: publiccode softwareVersion 0.3.12-beta differs from info.xml 0.3.9-beta
 planninq	1217	6ab214393634d13f52ff5a3a36d35219325e97f1	APPROVE	worker-19	Quick; no blockers; vue 3.5.43 to 3.5.45 patch bump plus my merge of development and regenerated sbom (current per regen-sbom --check)
 stackiq	2022	a08934f72ca968249e20d92ba2a14f16ddf3c3ea	APPROVE	worker-28	Quick; no blockers; dev-dependency eslint minor bump with regenerated sbom
+stackiq	2025	93f4ebf09d8540babcec8d0d3f2f70f77f5bedd1	APPROVE	worker-28	Quick; no blockers; php-dot-notation minor bump with regenerated sbom, tree suite unchanged
+stackiq	2026	490a9654ff42ca3a847e1bf34698f6799a8e2144	APPROVE	worker-28	Quick; no blockers; vue-router patch bump with regenerated sbom
