@@ -15994,6 +15994,7 @@ launchpad	1239	793d60336936c8b1bb2989a8c17900a0a7c2457d	CONFLICT	worker-21	merge
 launchpad	819	c5c80a07dc500fcc4e5064cd5126241a9f4bf32a	GREEN	worker-38	dev-dep phpmd 2.15->3.0 + sbom; unit 4516 base -> 4516 tree, 0 new failures; note: phpmd already exits 2 on development, 3.0 reports more findings (text lines 66->81, unusedparams 4->5) and deprecates positional args
 learniq	2534	097afa2d9090610d05c97d2c2e116aeeed835108	CONFLICT	worker-27	conflicts with development in l10n/en.js,en.json,nl.js,nl.json, lib/Service/ContractBindings.php
 learniq	2519	644c2a7995dd39085b6e8c57a462495226c6efec	CONFLICT	worker-17	conflicts with development in l10n/en.js,en.json,nl.js, tests/Unit/Portal/golden/PortalManifests.json
+opencatalogi	2665	fbbdb9b4979ec70fcf42d330b65402fe8dd25534	CONFLICT	worker-32	conflicts with development in 20 files (l10n, Catalogi/FederationController, DcatSerializer, SettingsService, src/main.js, manifest, settings views, their tests); baseline 6066 tests, 103 inherited failures/errors; PR not tested
 learniq	2514	2e2444ab4454d26a110258855a257f891ba0768c	CONFLICT	worker-27	conflicts with development in tests/Unit/Portal/golden/PortalManifests.json
 opencatalogi	2684	8f4a54a3fb21e0dbf759ace3f6058ff85231177d	CONFLICT	worker-41	conflicts with development in 12 files (info.xml, l10n, ThemesController, ListenerRegistrar, PublicationQueryService, openapi, tasks.md); tree not run
 learniq	2532	2772c58e19949ae707acc898bd7fec7a06f7bd6a	CONFLICT	worker-17	conflicts with development in lib/Settings/learniq_register.json
@@ -16029,6 +16030,7 @@ portaliq	2492	0067a042060f65936a833e23d0b84d2b08a307f4	CONFLICT	worker-28	confli
 shillinq	2081	5c4b6e15884f9ade7eb22f959d12f708da02d2c9	CONFLICT	worker-03	conflicts with development in l10n/en.js, en.json, nl.js, nl.json
 pipelinq	3743	871e47d54f19aad16fb7eeac1f4d38f79b61e6af	CONFLICT	worker-14	conflicts with development in l10n en/nl, lib/Service/SettingsLoadService.php, src/manifest.json, tests/vitest/structureProfile.spec.js; suite not run
 shillinq	1965	38aa9e98d92064163730059c45e299b358346b33	CONFLICT	worker-36	conflicts with development in appinfo/info.xml, tests/fixtures/register-versions.lock.json; suite not run
+shillinq	3064	0cade1527ef105a80543a2f958c4a957ab92be6f	CONFLICT	worker-34	merge with development conflicts in 10 files incl. appinfo/info.xml, l10n, ListenerRegistrar.php, InvoiceGenerationService.php, openapi.json, manifest.d.shell.json
 shillinq	3004	effacbb9439be9f0cbc6ed231cd687e6baf98952	CONFLICT	worker-41	conflicts with development in 15 files (info.xml, l10n, VATReturnController, IcpService, SettingsService, ...); tree not run
 portaliq	2494	01e731ef3972848f7177150052c8e8d79a13543c	CONFLICT	worker-15	conflicts with development in lib/Contribution/CitizenWriteActionFinder.php, package.json
 shillinq	2998	433dff3d17522ac5d5267b8edacc1dfa9ed311e5	CONFLICT	worker-52	conflicts with development fa3292ae0; files: appinfo/info.xml l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/AppInfo/Application.php tests/fixtures/register-versions.lock.json; baseline 12460 tests 0 failures
