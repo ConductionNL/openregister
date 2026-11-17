@@ -22700,3 +22700,4 @@ verify:larpinq:1104:072740aa	GREEN #1104 (e2e spec only)	session-20261117T211341
 verify:integriq:2650:ecac209c	GREEN #2650: 9933 tests, no new failures	session-20261117T211412-45e1aeb8	2026-11-17T21:44:41Z
 verify:portaliq:2564:9fbc2d81	stale	session-20261117T211932-f471137a	2026-11-17T21:44:59Z
 verify:launchpad:1305:1358f946	GREEN 1305, GREEN 1307; tree 4684 OK, baseline 4621	session-20261117T211353-2c595f41	2026-11-17T21:45:00Z
+verify:dossiq:6648:7529b2ea	GREEN #6648: 18405 tests, no new failures	session-20261117T213149-40fbaeee	2026-11-17T21:45:08Z
