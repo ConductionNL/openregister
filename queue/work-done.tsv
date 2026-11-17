@@ -18761,3 +18761,5 @@ fix:filinq:2093:282560c2:v3	fixed: merged development in and migrated field-fill
 fix:filinq:2124:5e42335d:v3	conflict resolved, pushed 8f7d55a4; merge lock held by another merger, REVERIFY queued	session-20261117T005304-6fca2823	2026-11-17T01:04:39Z
 fix:filinq:2059:876e3d8e:v3	conflict resolved, pushed 4c6a7b12; REVERIFY recorded (merge lock held elsewhere)	session-20261117T005242-9db4df06	2026-11-17T01:04:57Z
 fix:decidiq:2165:8558e270:v5	fixed conflict, pushed 79ba6be4; merge lock busy, REVERIFY queued	session-20261117T004650-4097ce5f	2026-11-17T01:05:13Z
+fix:shillinq:2993:92931e59:v3	fixed CONFLICT, pushed 9a8d6e12; merge lock held elsewhere, REVERIFY queued	session-20261116T230934-9ee320cf	2026-11-17T01:05:24Z
+fix:filinq:2106:3c54d4a0:v4	conflict resolved, pushed 6f753abc; unit 6987/0 fail; lock busy, REVERIFY queued	session-20261117T004708-53deec56	2026-11-17T01:05:38Z
