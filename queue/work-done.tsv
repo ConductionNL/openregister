@@ -22045,3 +22045,4 @@ build:versioniq:install-live-progress:b2	already building: quality/build-install
 build:versioniq:advisories-per-app-detail:b2	already building: quality/build-advisories-per-app-detail 	session-20261117T135414-614629b0	2026-11-17T16:25:00Z
 build:versioniq:releases-minimum-age:b2	already building: quality/build-releases-minimum-age 	session-20261117T135414-614629b0	2026-11-17T16:25:15Z
 build:versioniq:safety-upgrade-migration-preview:b2	already building: quality/build-safety-upgrade-migration-preview 	session-20261117T135414-614629b0	2026-11-17T16:25:23Z
+build:versioniq:safety-withdrawn-and-revoked:b2	already building: quality/build-safety-withdrawn-and-revoked 	session-20261117T135414-614629b0	2026-11-17T16:25:30Z
