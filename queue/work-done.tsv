@@ -20515,6 +20515,7 @@ review:integriq:3601:34350fe3	CONFLICT #3601 (tests/Unit/Service/CatalogRegistry
 fix:integriq:3613:83ce7d7b	fixed adrvalidator (API-Version header on 3 responses), gate OK; REVERIFY at 549ed1063e (merge lock held)	session-20261117T113840-498fade3	2026-11-17T12:12:28Z
 fix:hermiq:1833:6a516e78	fixed: restored supports entry; merge lock held elsewhere, REVERIFY at 0071295f	session-20261117T111714-cd94760b	2026-11-17T12:12:38Z
 merge:stackiq:1966:69f9282f	cloud tree of 5 stackiq PRs: merged=3 red=1 fail=0 skip=0; conflict 1, lint 0, red 0, moved 0, done 0	session-20261117T110646-831a671b	2026-11-17T12:13:01Z
+gap:openregister:integration-route-passes-extra-keys:1	PR #10611 to main: DeclaresListExtraKeys interface, declared extra list keys passed through unchanged; 10 new tests, Architecture/Contract/Controller/Integration suites green	session-20261117T112054-1e62e295	2026-11-17T12:13:11Z
 merge:thematiq:1713:55fd5f49	cloud tree of 1 thematiq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T114019-426872f0	2026-11-17T12:13:07Z
 merge:versioniq:706:891fd555	cloud tree of 1 versioniq PRs: none; conflict 1, lint 0, red 0, moved 0, done 0	session-20261117T121049-5b84d45a	2026-11-17T12:13:18Z
 cover:dossiq:069ee2d6m9d1b:afe29cfd	deferred: dossiq has 42 open PRs (only open cover PR #6203 is excluded from merge trees, not stacked onto)	session-20261117T112947-12b56cd8	2026-11-17T12:13:39Z
@@ -20537,3 +20538,5 @@ review:shillinq:3048:4c867fcf	GREEN (phpunit 12787 ok); conflicts with current d
 fix:integriq:3593:5718bcca	conflict resolved, new head 975e519b; merge lock held elsewhere, REVERIFY queued	session-20261117T120218-38f2a955	2026-11-17T12:16:46Z
 review:stackiq:1942:90499893	GREEN: no new failures (4067 tests, 1 inherited), matches change specs; info.xml version conflicts with development	session-20261117T121314-91021944	2026-11-17T12:16:57Z
 cover:integriq:92114ab0m17d5:jsf3772e2d	deferred: integriq has 58 open PRs	session-20261117T112444-7a410249	2026-11-17T12:17:06Z
+cover:integriq:92114ab0m17d5:js0023cfc7	deferred: integriq has 58 open PRs	session-20261117T120218-38f2a955	2026-11-17T12:17:38Z
+verify:portaliq:2560:32c65e23	portaliq #2560 RED: portal-live-regions spec, error status must be role=alert	session-20261117T121424-7e15f9cb	2026-11-17T12:17:41Z
