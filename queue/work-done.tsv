@@ -18748,3 +18748,4 @@ fix:filinq:2112:297a10b4:v3	conflict resolved + main API migration, pushed ac623
 cover:dossiq:069ee2d6m9d1b:b12f5203	PR #6623: RecordFieldShape json/number/dateTime shapes, 1 test; suite 18400->18401, 19 inherited failures unchanged	session-20261116T230531-f9095b0f	2026-11-17T01:02:44Z
 fix:filinq:2091:72c1df15:v3	CONFLICT resolved: development merged into #2091 keeping both sides; checks green; new head ea6afdbf	session-20261113T214350-9762e143	2026-11-17T01:02:42Z
 fix:shillinq:3067:0f4f123e:v3	conflict resolved, new head 6f2e1f12, unit suite green; merge lock held elsewhere, REVERIFY queued	session-20261117T005434-ea6146cc	2026-11-17T01:02:52Z
+fix:filinq:2083:917afeaa:v3	fixed: conflicts resolved + ObjectSaveOptions migration, suite 7035 OK; merge lock held by another merger, REVERIFY at 5da73869	session-20261117T003652-c6487e72	2026-11-17T01:03:02Z
