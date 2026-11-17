@@ -4869,3 +4869,4 @@ integriq	2744	1aa7d916d2b9142e7caa6da52d0a61fcc2d22831	MERGED	worker-56	GATE OK 
 stackiq	1941	cb6c2b26242670bf14220d3b4a2d8b39b992b144	RED	worker-15	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 planninq	930	210b9056b490372454da0e500a6a5dfc69480ebf	MERGED	worker-26	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.66 holds at 4.07
 stackiq	1941	92fdaeeb94f12877f88fbbf4acef9cdf928d218e	MERGED	worker-15	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.19
+hermiq	1781	256eb1a52582141a4b7db6400b78421dee8bc72a	RED	worker-50	GATE RED floor: overall: 4.20 -> 4.18; module_coupling: 5.08 -> 4.97

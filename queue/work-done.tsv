@@ -18505,6 +18505,7 @@ verify:shillinq:2063:be07bd2e	CONFLICT #2063 (info.xml, register-versions.lock)	
 verify:integriq:3590:48c0729a	CONFLICT #3590 (l10n, register json)	session-20261116T232844-9c7f5cce	2026-11-17T00:01:31Z
 verify:planninq:1168:f3f9b1f3	CONFLICT: l10n/* and objectListenerTable.golden.json vs development	session-20261116T232959-6ccea9dc	2026-11-17T00:01:32Z
 verify:shillinq:1965:55b7f9e7	CONFLICT #1965 (info.xml, register-versions.lock.json vs development)	session-20261116T233834-fbe601d1	2026-11-17T00:01:52Z
+verify:filinq:2126:92817b74	CONFLICT #2126 (l10n en/nl + filinq_register.json vs current development)	worker-51	2026-11-17T00:01:59Z
 verify:opencatalogi:2669:b4b95352	GREEN #2669	session-20261116T233627-44605965	2026-11-17T00:02:02Z
 verify:portaliq:2449:1d8ee702	CONFLICT #2449 (l10n, controller, listener registrar, register json)	session-20261116T232918-35016340	2026-11-17T00:02:12Z
 verify:learniq:2486:875af95b	CONFLICT #2486 (ExcuseApprovalHandler, portal tests)	session-20261116T232033-3ca59164	2026-11-17T00:02:32Z
@@ -18632,6 +18633,7 @@ fix:dossiq:3957:3a1d1a08:v3	conflict resolved; new head 436f0f9a0c0d (merge lock
 fix:dossiq:3954:7af4262b:v3	conflict resolved, pushed da335f80; REVERIFY (merge lock held elsewhere)	session-20261116T232944-146e39d7	2026-11-17T00:26:31Z
 fix:integriq:2744:53deb98f:v4	merged #2744 at 1aa7d916d2b9142e7caa6da52d0a61fcc2d22831 (resolved package.json/lock conflict with development; SBOM current)	session-20261116T231848-eaef2e51	2026-11-17T00:26:31Z
 verify:integriq:3626:2afb29b4	CONFLICT: l10n, manifest.json, registry.js	session-20261116T233003-c7bea420	2026-11-17T00:27:08Z
+fix:filinq:2072:8a0992cb	fixed floor (unit_complexity 4.40 -> 4.47); pushed d77c4308; REVERIFY (merge lock held)	session-20261116T233427-cfe22922	2026-11-17T00:27:29Z
 fix:buildiq:1648:26919cc4	fixed floor, pushed 0f576fb7; REVERIFY (merge lock held)	session-20261116T233923-d48b13fa	2026-11-17T00:27:40Z
 review:stackiq:1941:fb08b1cd	GREEN #1941	session-20261116T232918-35016340	2026-11-17T00:27:56Z
 build:stackiq:architecture-shared-usage-on-views:c5	already building: branch head 38861a18 has every code task; left Playwright e2e and the docs screenshot (live instance) and the demo seed, which a static descriptor cannot express (own vs shared depends on the installing organisation)	session-20261113T214350-9762e143	2026-11-17T00:28:23Z
@@ -18646,3 +18648,5 @@ fix:filinq:2069:2a5b02d0:v3	fixed: floor holds (unit_complexity 4.49), merged de
 merge:dossiq:6203:f1f3d3ca	cloud tree of 2 dossiq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T233834-fbe601d1	2026-11-17T00:30:07Z
 verify:learniq:2565:bcb03b46	#2565 CONFLICT (5 files)	session-20261116T230843-e8244832	2026-11-17T00:30:34Z
 fix:planninq:930:b3e1916c:v3	merged #930 at 210b9056b490372454da0e500a6a5dfc69480ebf (merged development, link check covers both ends, openapi dup fixed)	session-20261116T232623-066b53c9	2026-11-17T00:30:26Z
+fix:stackiq:1941:c6e6242e	merged #1941 at 92fdaeeb94f12877f88fbbf4acef9cdf928d218e (conflict in FacetedCatalogIndexView.vue resolved, interfacing floor restored by a parameter refactor, SBOM regenerated)	session-20261116T233921-33ab4c87	2026-11-17T00:31:02Z
+build:opencatalogi:dcat-catalogue-completion:c5	failed: blocked, no code task buildable: 1.x licence sources unreachable from the cloud (publications.europa.eu, op.europa.eu, data.overheid.nl, waardelijsten.dcat-ap-donl.nl: no connection); 3.2 needs a new composer library and a worker may not commit composer.lock; 6.2 switch already in CatalogModal, only its e2e open; PR #2643 head adb68bca unchanged	session-20261116T230843-e8244832	2026-11-17T00:31:42Z
