@@ -19476,3 +19476,4 @@ review:filinq:2098:071c0864	BLOCK: spec-coverage gate fails on 5 added JS method
 review:filinq:2112:dc4b7d6c	GREEN on PR head (conflicts with development in registers/openapi): unit 7019 OK, vitest 788 OK	session-20261117T055928-ffb37dd3	2026-11-17T06:05:30Z
 review:decidiq:2173:6e5001e5	CONFLICT: l10n, manifest.json, menu-layout vs development	session-20261117T055908-62351962	2026-11-17T06:05:38Z
 review:hermiq:1738:10d3c28c	GREEN: 5580 PHP + 1606 vitest OK (baseline 5527)	session-20261117T060006-72dfb87c	2026-11-17T06:05:57Z
+merge:keepiq:1787:83be8949	merge3 tree of 1 keepiq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-17T06:06:09Z
