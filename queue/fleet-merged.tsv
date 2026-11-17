@@ -5719,6 +5719,7 @@ pipelinq	3966	a7266ea55cd3b7630b581cb54ee6cb04bf9912dd	SKIP	worker-10	GATE UNMEA
 keepiq	1897	cb062e6781152a50caa312836a625237c407fa7c	SKIP	worker-26	GATE UNMEASURED floor_check exit 5: [maintainability-floor] TOOLING: estimator tooling unavailable: [gate-122] sig-maintainability: tooling: /root/.cache/hydra-gates/tools/jscpd-4.0.5/node_modules/.bin/jscpd reports jscpd ?, not the pinned 4.0.5
 humaniq	1197	a28aaa28605b810450a87a2c0ed4f9a2cfa22fa4	SKIP	worker-22	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 filinq	2072	5199bdf2bbd03910e404fd7b79e0d6c2fea567ce	SKIP	worker-08	no APPROVE review at this head
+humaniq	1198	ada533a81007f708bdfe9eb24a2ba5a6a2041daa	SKIP	worker-22	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 stackiq	1942	9b4a8fa20ae7f1997da78b1cc75beb9d9c76726f	RED	merge3	GATE RED floor: unit_interfacing: 4.70 -> 4.68
 stackiq	1966	b74dfc9fbfa739b5090aef81bcb83d4f2d68fa75	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.10
 stackiq	2028	9d9add83116540ecee19b9cfe128025267881839	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
