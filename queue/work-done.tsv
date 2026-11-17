@@ -21667,6 +21667,7 @@ build:hermiq:forms-smart-paste-fill:b2	already building: branch quality/build-fo
 build:hermiq:hermiq-mcp-adoption:b2	failed: the change no longer fits the code: HermiqToolProvider now merges ~11 descriptor families (write, mail, workspace, graph, domain, tasks, talk, image, sandbox, computer, browser) and is declared the only provider (ADR-034/035); Tasks 2-6 (move six tools, delete the provider) would drop or duplicate tool ids. Needs a rewritten change; Task 1 is done	session-20261117T141518-05f12270	2026-11-17T15:30:50Z
 build:hermiq:chat-carry-a-conversation-across-channels:b2	already building: quality/build-chat-carry-a-conversation-across-channels exists (ef950b14)	session-20261117T135029-424a7669	2026-11-17T15:30:30Z
 build:hermiq:exapp-stage-workload:b2	already built: code tasks on development, no e2e named; skipped 9 (live palette check), 10 (operator decision on the forge credential), 11 (deployment behind the CONNECT proxy)	session-20261117T141335-245f063b	2026-11-17T15:30:20Z
+build:hermiq:contextagent-provider:b2	PR hermiq#1842: every task was already in code (#21); verified each against lib/ and tests (15 tests pass) and ticked tasks.md; nothing left	session-20261117T133833-7d87fd3d	2026-11-17T15:31:10Z
 build:hermiq:hydra-console-agent-leaves:b2	already built: tasks 2-8 code on development, e2e tests/e2e/spec-coverage/hydra-console-agent-leaves.spec.ts exists; left: task 1 live leaf render, task 5 owner record (OR runFlow records the acting session user, not hermiq's injected owner), task 8 live run	session-20261117T145748-1419d209	2026-11-17T15:31:19Z
 build:hermiq:delivery-public-web-chat:b2	already building: quality/build-delivery-public-web-chat exists	session-20261117T135414-614629b0	2026-11-17T15:30:48Z
 build:hermiq:models-several-models-per-turn:b2	already building: branch exists, 3 builds on development; every Implement ticked, open are Newman/Playwright/live halves	session-20261117T135029-424a7669	2026-11-17T15:31:13Z
@@ -21686,11 +21687,13 @@ build:hermiq:tools-agent-workspace-and-installed-tools:b2	already building: qual
 build:hermiq:memory-retrieval-scope:b2	already building: quality/build-memory-retrieval-scope 	session-20261117T135414-614629b0	2026-11-17T15:33:29Z
 build:hermiq:store-through-federated-config:b2	already building: quality/build-store-through-federated-config 	session-20261117T135414-614629b0	2026-11-17T15:33:35Z
 build:hermiq:persistent-llm-process:b2	already building: quality/build-persistent-llm-process 	session-20261117T135414-614629b0	2026-11-17T15:33:48Z
+build:hermiq:models-prompt-and-answer-cache:b2	already building (quality/build-models-prompt-and-answer-cache and -c3 exist)	session-20261117T125716-5aa18045	2026-11-17T15:33:56Z
 build:hermiq:models-provider-connections:b2	already building: quality/build-models-provider-connections 	session-20261117T135414-614629b0	2026-11-17T15:33:55Z
 build:hermiq:tools-deep-research-report:b2	already building: quality/build-tools-deep-research-report quality/build-tools-deep-research-report-2 quality/build-tools-deep-research-report-3 	session-20261117T135414-614629b0	2026-11-17T15:34:02Z
 build:hermiq:memory-knowledge-bases:b2	PR #1843: Newman KB upload (owner/non-owner) + tests/e2e/spec-coverage/knowledge-bases.spec.ts (5); code tasks were on development; not run (needs live instance); skipped: integriq-sync marker detection (needs integriq contract)	session-20261117T152617-5bc1e1b2	2026-11-17T15:34:34Z
 build:hermiq:tools-code-sandbox:b2	already building: branch quality/build-tools-code-sandbox exists	session-20261117T124621-35d7386d	2026-11-17T15:34:45Z
 build:hermiq:skill-install-idempotency:b2	already building: quality/build-skill-install-idempotency exists; open tasks are live DB cleanup, live re-install, Playwright and the PR checks	session-20261117T134441-beae3c0d	2026-11-17T15:34:25Z
+build:hermiq:personal-preferences:b2	done: PR #1844 adds the 3.1 e2e spec, @e2e excludes for the two run scenarios, sendRunDone @spec; suite unchanged (5734, 173E/26F inherited)	session-20261117T135520-9a524c6b	2026-11-17T15:34:55Z
 build:hermiq:oversight-ask-and-hold:b2	already building: quality/build-oversight-ask-and-hold is open (head 0d6aae20, active today)	session-20261117T124637-3e909745	2026-11-17T15:34:55Z
 build:learniq:content-scorm-package-upload:b2	PR #2600: wrote tests/e2e/content-scorm-package-upload.spec.ts (upload, learner plays, progress 100); code on development; 4.1 live run and 4.2 (archive) left	session-20261117T141807-e3fb543a	2026-11-17T15:34:49Z
 build:hermiq:skills-curator-merges-duplicates:b2	PR #1845: e2e spec for approve/reject merge scenarios + reasoned exclude for the curator-run one; code was already on development	session-20261117T145912-e9f6485a	2026-11-17T15:35:29Z
@@ -21713,6 +21716,7 @@ build:humaniq:configuration-store:b2	partial: nothing pushed. Left 1.1, 1.2, 2.1
 build:hermiq:chat-fork-and-share-link:b2	PR #1849: Playwright session-fork-and-share spec + Newman fork outcomes; code already on development; live runs left	session-20261117T151214-35ff5eaa	2026-11-17T15:37:09Z
 build:humaniq:setup-wizard-six-steps:b2	already building: quality/build-setup-wizard-six-steps exists	session-20261117T132743-10cec9d3	2026-11-17T15:37:01Z
 build:humaniq:payroll-reservation-payouts:b2	already building: quality/build-payroll-reservation-payouts exists	session-20261117T132743-10cec9d3	2026-11-17T15:37:45Z
+build:hermiq:operations-backup-and-restore:b2	partial: code is on open hermiq#1763 (not yet on development); pushed the missing tests/e2e/spec-coverage/backup-restore.spec.ts and the Newman admin/non-admin folder to it; left: openspec validate, live runs	session-20261117T141335-245f063b	2026-11-17T15:38:19Z
 fix:learniq:2524:e082152e	stale	feeder	2026-11-17T15:34:01Z
 fix:filinq:2072:b9a113b8	stale	feeder	2026-11-17T15:34:01Z
 review:shillinq:3048:4dfa4261	stale	feeder	2026-11-17T15:34:01Z
@@ -21724,3 +21728,5 @@ build:humaniq:reporting-full-list-export:b2	already building: quality/build-repo
 review:decidiq:2198:3e20b726	GREEN: behaviour per specs, unit 4895 OK at head; conflicts with development (7 files) noted	session-20261117T134347-d0294040	2026-11-17T15:39:20Z
 verify:hermiq:1838:2d9e82f5	GREEN 1838,1839,1840,1841,1842 (no new failures; docs/tests only)	session-20261117T124621-35d7386d	2026-11-17T15:40:07Z
 review:decidiq:2190:c75776f4	GREEN: unit 5038 OK, phpstan/vitest clean	session-20261117T151214-35ff5eaa	2026-11-17T15:40:21Z
+review:filinq:2093:71ddff39	GREEN: unit 7317 OK, vitest/jest pass, access checks hold	session-20261117T145748-1419d209	2026-11-17T15:40:40Z
+verify:humaniq:1193:1d3bba27	GREEN 1193, GREEN 1194; tree 4517 OK, baseline 4509 OK	session-20261117T132743-10cec9d3	2026-11-17T15:41:12Z
