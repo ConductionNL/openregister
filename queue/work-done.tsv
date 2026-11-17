@@ -22982,3 +22982,4 @@ verify:shillinq:3177:0f581ebe	GREEN #3177 (0 new failures)	session-20261117T2233
 verify:thematiq:1719:41f93095	GREEN #1719	session-20261117T224524-cade3737	2026-11-17T23:05:19Z
 fix:opencatalogi:2766:ba8f0a67	merged development in, pushed 589fc8d1, no new failures; REVERIFY queued (merge gate host blocked)	session-20261117T221004-2cfd9e4c	2026-11-17T23:07:30Z
 fix:stackiq:1946:1a1d2ce9	conflict resolved, pushed 8119f49d; REVERIFY queued	session-20261117T224524-cade3737	2026-11-17T23:07:54Z
+merge:buildiq:1632:67114fe0	unmeasured: static.developer.overheid.nl (checker-floor adrvalidator, no result); reviews recorded: 7 APPROVE (1643 1709-1713 1715), 1632 REQUEST_CHANGES (spec-coverage gate); 1716 moved; nothing landed	session-20261117T223426-4a15e7fb	2026-11-17T23:08:04Z
