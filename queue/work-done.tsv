@@ -20078,3 +20078,4 @@ merge:buildiq:1597:b695ee93	cloud tree of 2 buildiq PRs: none; conflict 0, lint 
 verify:humaniq:1173:cd3ec72e	1183 GREEN; 1173 CONFLICT (TimeEntryStampListener.php)	session-20261117T081247-63811e04	2026-11-17T09:22:30Z
 merge:buildiq:1651:7ac065b0	cloud tree of 2 buildiq PRs: none; conflict 2 (l10n)	session-20261117T083929-9c5fceb9	2026-11-17T09:22:53Z
 review:filinq:2078:202f24a1	GREEN: unit 7163 no new failures, vitest 849 pass	session-20261117T091244-7c1a3c79	2026-11-17T09:23:05Z
+review:buildiq:1608:3cd5c177	GREEN: unit 3612 OK, vitest 856 passed; 2 new methods lack @spec	session-20261117T084727-10682198	2026-11-17T09:23:34Z
