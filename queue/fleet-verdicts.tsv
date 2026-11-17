@@ -19361,6 +19361,7 @@ versioniq	692	f611aea1fbe0680e0104782b13effcf7b0d02d99	GREEN	worker-56	phpunit u
 integriq	3613	dd360a604314022901564e1d9ed3936260dff032	REVERIFY	worker-40:merge	conflicts only with an earlier PR of the merge tree: merges clean on development alone; files: openapi.json tests/postman/integriq.postman_collection.json
 integriq	3708	41ada0a60a58b5bf9827e860d97f5a9c4eee0a3b	REVERIFY	worker-40:merge	verdict sha is not the head: head is 41ada0a60a58b5bf9827e860d97f5a9c4eee0a3b
 shillinq	3006	35f7579036e051e79c70c3207ad06583d9de9465	GREEN	worker-30	phpunit 12800 OK (baseline 12796 OK), vitest 1 inherited failure (dunningNextRun, red on development), 0 new; build of platform-mobile-pwa
+stackiq	2028	9d9add83116540ecee19b9cfe128025267881839	GREEN	worker-32	phpunit 4055, baseline 0, new 0; vitest 2939, 1 failure inherited (facets.spec); dependency bump only. Note: merge gate earlier reported sbom.cdx.json not regenerated
 integriq	3714	b02f1d04d14117d274784434443fed8841cc64fd	GREEN	worker-18	unit 9966 tests on tree, baseline 9910 with 5 inherited failures (JobsControllerTest x2, CallServiceTest x2, SynchronizationSynchronizeEntryGoldenTest), 0 new; vitest 2395/2395; build access-developer-portal-and-subscriptions, judged against its specs (subscribe path moved into a shared service, same tier/approval flow)
 integriq	3725	dcad683aedefbf7e58df9f170d5d78a8082a7e48	REVERIFY	worker-18	conflicts only with an earlier PR of the verify tree
 integriq	3733	674a28d71cab8deeadf7cccb92321ec6235cd80f	REVERIFY	worker-18	conflicts only with an earlier PR of the verify tree
