@@ -20758,3 +20758,4 @@ fix:shillinq:3004:3a0e29de	conflict resolved, pushed 5df6f499; merge lock held b
 fix:hermiq:1754:26e47c9c	merged #1754 at 1a5852e797be3689f5f2f7e90ce77944cb53d2eb (raised app version; restored php duplication floor)	session-20261117T124656-1c0ce655	2026-11-17T13:20:01Z
 fix:dossiq:6641:b6ff9847	failed: permission (end-to-end self-review refused); fix pushed, new head 44c7fef, REVERIFY queued	session-20261117T124337-ec94f242	2026-11-17T13:20:08Z
 fix:shillinq:2975:f616ab85	fixed #2975 conflict, pushed df2c1919; REVERIFY queued (merge lock held elsewhere)	session-20261117T124803-fa9e5cee	2026-11-17T13:20:35Z
+fix:opencatalogi:2654:7717f5da	floor restored (independence 93.5%, sig-floor PASS), pushed 54779849; merge lock held elsewhere, REVERIFY queued	session-20261117T124010-7774729d	2026-11-17T13:20:46Z
