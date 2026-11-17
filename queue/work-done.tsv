@@ -19228,3 +19228,5 @@ fix:portaliq:2449:ecb78c85	fixed at 3a70eb8a (contact e-mail owner-only, develop
 review:opencatalogi:2652:541cb28a	GREEN: no new failures (6204 vs 6133, same 78 inherited), jest pass	session-20261117T004708-53deec56	2026-11-17T02:43:27Z
 merge:learniq:2549:c7ddb5d6	cloud tree of 1 learniq PRs: none; conflict 1, lint 0, red 0, moved 0, done 0	session-20261117T020231-8c38940a	2026-11-17T02:43:16Z
 review:stackiq:1946:644c7833	GREEN: phpunit 4047, vitest 2902, only inherited failures; docs README conflict	session-20261117T020322-58ced631	2026-11-17T02:43:36Z
+merge:learniq:2567:908b4487	stale	feeder	2026-11-17T02:39:41Z
+merge:learniq:2573:230fcd36	stale	feeder	2026-11-17T02:39:41Z
