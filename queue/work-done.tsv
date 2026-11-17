@@ -19558,4 +19558,5 @@ review:shillinq:3064:b11030b8	CONFLICT: openapi.json conflicts with development;
 review:learniq:2524:77f1c40b	GREEN; conflicts with development	session-20261117T055844-3d508d2a	2026-11-17T06:30:10Z
 review:shillinq:2983:ad375f2d	CONFLICT: openapi.json, register-versions.lock.json conflict with development	session-20261117T061802-b42f2669	2026-11-17T06:30:21Z
 review:shillinq:2083:ca162c3e	RED shillinq#2083: 3 new vitest failures in billImportSave.spec.js	session-20261117T061824-01d4fad5	2026-11-17T06:30:34Z
+gap:dossiq:zuiddrecht-example-installs:3	PR #6628: set declares Schuur Molenweg 3 and the Jeugdwet case itself, all links via {{object:}}; (3) optional not done: woo-zaaksysteem-uitkomst change quotes the decision, changes cannot be optional on main	session-20261117T061948-27a46e65	2026-11-17T06:30:47Z
 review:shillinq:2070:0210f86b	CONFLICT: info.xml, register-versions.lock.json conflict with development	session-20261117T061802-b42f2669	2026-11-17T06:31:07Z
