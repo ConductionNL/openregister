@@ -1430,3 +1430,4 @@ learniq	2606	79bec0a6b13a375c6bdac5c3f52b04ffda07e438	APPROVE	worker-49	Standard
 learniq	2607	4327ccd23479ba220db46c6f5ed001cdc5f3dadf	APPROVE	worker-49	Thorough; no blockers; public test schedule exposes only allowlisted fields of periods marked public; concern: author email typo in docblock; gates: inherited gate-23/101, gate-53 did not run (ajv)
 shillinq	3172	efb8780416c555bec59db7576bf423b483fda66d	APPROVE	worker-01	Quick; no blockers; e2e spec + tasks tick only, base URL from env, gate fails inherited
 shillinq	3173	b9ea40e5c850c5d6bdaf6c4a581a9b68d952ef76	APPROVE	worker-01	Quick; no blockers; e2e spec only, gate fails inherited
+shillinq	3178	7c8cd864f281ea388a2a5b6f814fc1601bf623d3	APPROVE	worker-01	Thorough; no blockers; new POST regenerate checks auth then canPostJournalEntry before running, masked 404, modal in src/modals; gate fails inherited, ajv-setup gates judged by hand
