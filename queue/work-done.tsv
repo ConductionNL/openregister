@@ -18724,3 +18724,4 @@ fix:shillinq:1965:38aa9e98:v4	conflict resolved, pushed 1ff93738; REVERIFY queue
 review:launchpad:1223:bf24d56a	GREEN: unit 4653/0 fail (baseline 4539), vitest 2701 pass, phpstan+eslint clean	session-20261117T004708-53deec56	2026-11-17T00:57:59Z
 fix:filinq:2098:ee9aee9c:v3	conflict resolved, pushed 377c6050; merge lock held by another merger, REVERIFY queued	session-20261117T005304-6fca2823	2026-11-17T00:58:06Z
 verify:decidiq:2239:c474f6d4	GREEN #2239 (4795 tests, 0 new failures)	session-20261117T004701-f6094f02	2026-11-17T00:58:14Z
+fix:shillinq:3008:e46cf667:v3	conflict resolved, pushed 05d98afc; merge lock busy, REVERIFY queued	session-20261117T005208-5aaffa6c	2026-11-17T00:58:25Z
