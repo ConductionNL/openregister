@@ -20500,6 +20500,7 @@ cover:decidiq:a5f973bbmfcd5:58192586	already done: lib/Service/Records at 100% l
 fix:learniq:2524:4fd0d8a1	resolved register conflict (0.58.0, Enrolment 0.7.0), pushed e082152e; suite 7137 with 1 inherited failure; merge lock busy, REVERIFY queued	session-20261117T111757-a0ed5e74	2026-11-17T12:08:30Z
 fix:shillinq:2070:770f20c3	conflict resolved, pushed 7439ff5e; merge lock held elsewhere, REVERIFY queued	session-20261117T112444-7a410249	2026-11-17T12:08:42Z
 review:launchpad:1217:7283f62c	GREEN: unit 4633 OK, vitest 2752 OK	session-20261117T115541-a0785606	2026-11-17T12:08:58Z
+cover:decidiq:a5f973bbmfcd5:7556941f	already done: lib/Service/Ori 580/581 lines covered on development 4137e9bf (99.8%, target 95); no PR	session-20261117T115612-9783d86e	2026-11-17T12:09:22Z
 fix:hermiq:1781:11f91da4	fixed: raised app version; merge lock held elsewhere, REVERIFY at a56a9450	session-20261117T111714-cd94760b	2026-11-17T12:09:22Z
 fix:launchpad:1261:07612654	fixed #1261: explicit RBAC/multitenancy on schema read + 2 tests, pushed f23c46deef; REVERIFY queued	session-20261117T115011-195ffbc6	2026-11-17T12:09:43Z
 merge:humaniq:1184:54f5f41a	cloud tree of 1 humaniq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T113142-3e3cc1d3	2026-11-17T12:09:51Z
@@ -20530,6 +20531,7 @@ verify:versioniq:770:2d93a058	770 GREEN	session-20261117T121049-5b84d45a	2026-11
 review:versioniq:700:563a324a	GREEN: 2410 tests, 2 inherited failures, no new	session-20261117T121050-a5ee25f2	2026-11-17T12:15:05Z
 cover:decidiq:a5f973bbmfcd5:9d3a1784	PR #2265: 8 tests, lib/BackgroundJob all classes 100% lines; suite 4951 -> 4959 OK	session-20261117T112009-00ac618f	2026-11-17T12:15:30Z
 fix:integriq:3564:d45b5057	fixed: demo objects added for both schemas; pushed d0095e30, REVERIFY queued (merge lock held elsewhere)	session-20261117T120335-b942e878	2026-11-17T12:15:28Z
+cover:buildiq:70b3e29em2454:8ed5443b	failed: lib/Kernel/Contracts/*.php holds only interfaces, no executable logic to cover	session-20261117T121046-ffb3fcc9	2026-11-17T12:15:39Z
 review:opencatalogi:2654:7717f5da	BLOCK floors: component_independence 93.5->92.8; behaviour ok, 0 new test failures	session-20261117T120834-820bb574	2026-11-17T12:15:40Z
 fix:filinq:2069:08c42f1e	fixed BLOCK: bumped intakeDefaultRule 1.1.0 + app version, unit 7280 OK; pushed b67ef532; merge lock busy, REVERIFY queued	session-20261117T121311-1734385f	2026-11-17T12:15:57Z
 fix:buildiq:1654:9db550c5	stale	session-20261117T112947-12b56cd8	2026-11-17T12:16:11Z
@@ -20546,3 +20548,7 @@ verify:portaliq:2560:32c65e23	portaliq #2560 RED: portal-live-regions spec, erro
 fix:integriq:3550:c36eeb35	conflict resolved, pushed 7bd183b1; merge lock held elsewhere, REVERIFY queued	session-20261117T113142-3e3cc1d3	2026-11-17T12:18:07Z
 merge:buildiq:1651:f9079089	cloud tree of 2 buildiq PRs: merged=0 red=0 fail=0 skip=1; conflict 1, lint 0, red 0, moved 0, done 0	session-20261117T111351-f79c232f	2026-11-17T12:18:30Z
 verify:thematiq:1714:4e9ea861	CONFLICT #1714 (scripts/sync-upstream-tokens.mjs)	session-20261117T111714-cd94760b	2026-11-17T12:18:41Z
+cover:buildiq:70b3e29em2454:f545d745	already done: lib/Repair classes at 98-100%; the 3 open lines are two getName getters and an unreachable null check (RegisterMapper::find never returns null), no test added	session-20261117T112009-00ac618f	2026-11-17T12:19:03Z
+measure:stackiq:20261117h12	php 92.55 % js 95.94% at 25962f2c	session-20261117T110646-831a671b	2026-11-17T12:18:59Z
+fix:buildiq:1643:3bf75b8a	conflict resolved, pushed d0645acc; REVERIFY (merge lock held elsewhere)	session-20261117T121700-929975cb	2026-11-17T12:19:18Z
+merge:opencatalogi:2683:de316a9c	cloud tree of 2 opencatalogi PRs: merged=0 red=0 fail=0 skip=1; conflict 0, lint 0, red 1, moved 0, done 0	session-20261117T120834-820bb574	2026-11-17T12:19:49Z
