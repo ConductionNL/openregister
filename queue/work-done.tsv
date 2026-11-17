@@ -19764,8 +19764,19 @@ cover:launchpad:fb10c50fm88bd:7505aeb4	PR #1259: DebounceHelper 41/41 lines, +6 
 fix:launchpad:1219:08b864a2	conflict resolved, pushed ca7a79d2; merge lock held by another merger, REVERIFY queued	session-20261117T063127-b908dd01	2026-11-17T07:15:18Z
 review:buildiq:1605:2848f1e2	GREEN: vitest 4882 passed on merge with development	session-20261117T065459-2cd0c351	2026-11-17T07:15:25Z
 fix:launchpad:819:ff71d979	no change: sbom check passes on head and tree (dev-only bump); REVERIFY queued	session-20261117T055908-62351962	2026-11-17T07:15:37Z
+cover:launchpad:fb10c50fm88bd:6d5c7d3c	PR #1260: 7 tests for JoseEncoding/JwtSigningService edge cases, Embed uncovered lines 8 -> 1; suite 4563 -> 4570, 0 failures	session-20261117T063048-0c413ea5	2026-11-17T07:15:55Z
 review:shillinq:2993:cf43d96e	GREEN: unit 12638 OK, vitest 1 inherited red, phpstan clean	session-20261117T065619-e5275297	2026-11-17T07:15:47Z
 review:learniq:2534:6beffdd0	GREEN: unit 7016 (baseline 6998), only the 2 inherited failures; node 12 pass	session-20261117T061802-b42f2669	2026-11-17T07:15:58Z
 review:shillinq:2986:34de7944	GREEN shillinq#2986: matches specs; 12636 tests, 0 new failures	session-20261117T065609-89f8b9cf	2026-11-17T07:16:09Z
 fix:integriq:3626:7c1c0ef3	unmeasured: static.developer.overheid.nl; conflict fixed, new head 7c8ff8cb03, APPROVE recorded, REVERIFY queued	session-20261117T064936-821ba2a3	2026-11-17T07:16:17Z
 fix:opencatalogi:2756:a7e29de0	conflict resolved, new head b1e917d5, REVERIFY queued	session-20261117T055928-ffb37dd3	2026-11-17T07:16:27Z
+fix:launchpad:1217:faab5f5c	conflict resolved, pushed 56684b15; REVERIFY queued (merge lock held elsewhere)	session-20261117T065537-5000a36a	2026-11-17T07:16:41Z
+verify:dossiq:6628:02172125	6628 GREEN, 6629 GREEN, 6630 BLOCK (behaviour change outside a build commit)	session-20261117T063021-b217a961	2026-11-17T07:17:13Z
+review:shillinq:3062:2d73a4e6	GREEN: unit 12634 OK (baseline 12613), vitest 16/16	session-20261117T060006-72dfb87c	2026-11-17T07:17:27Z
+fix:versioniq:758:0dfd34ac	conflict resolved, pushed 7a728e33; REVERIFY queued	session-20261117T055853-7ddd3cb3	2026-11-17T07:17:39Z
+fix:opencatalogi:2684:d59bbd9f	fixed RED (golden re-recorded), pushed 0f1cbda6; lock held elsewhere, REVERIFY queued	session-20261117T055905-03eea4d3	2026-11-17T07:18:11Z
+fix:portaliq:2417:b8acf329	unmeasured: static.developer.overheid.nl (fix pushed, new head 5a89d39e01, APPROVE recorded)	session-20261117T070159-36e67801	2026-11-17T07:18:27Z
+build:larpinq:forms-registration-is-checked-at-binding:c3	partial: 1.2 and 2.1 left, nothing new pushed (worker context nearly full). Needed first in openregister main: an in-process app-authority submit, e.g. an authority flag on FormSubmitter carried into FormWriteContext so rbac() is false for that write, settable only from PHP (FormSubmitController never sets it), exposed through a lib/Contract interface; then larpinq FormSubmissionListener submits t	session-20261117T063048-0c413ea5	2026-11-17T07:18:43Z
+fix:shillinq:2983:ad375f2d	conflict resolved, pushed ff39cb27 (phpunit 12650 OK); merge lock held elsewhere, REVERIFY queued	session-20261117T065426-e0b4a950	2026-11-17T07:18:40Z
+fix:launchpad:1218:d81a4a57	conflict resolved, pushed 2d2e11df; merge lock busy, REVERIFY queued	session-20261117T070335-73c86ca7	2026-11-17T07:18:55Z
+fix:versioniq:726:c5419f20	conflicts fixed and pushed, new head 6bf08276; REVERIFY queued (api.osv.dev blocked, not landed)	session-20261117T063112-55331435	2026-11-17T07:19:10Z
