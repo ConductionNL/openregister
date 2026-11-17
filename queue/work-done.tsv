@@ -20867,3 +20867,4 @@ fix:integriq:3708:c779eda2	sbom regenerated, pushed 41ada0a6; merge lock held el
 cover:decidiq:a5f973bbmfcd5:d528dcf0	already done: lib/Dashboard/*.php at 100% lines (65/65, 13/13 methods) on development 161ca15e; no PR	session-20261117T134525-c871bd14	2026-11-17T13:56:40Z
 fix:integriq:3712:81bc3606	snapshots re-recorded + sbom, vitest green, new head 3f2d9585; REVERIFY (merge lock held elsewhere)	session-20261117T134024-07d6c268	2026-11-17T13:56:41Z
 fix:integriq:3705:06350cfb	sbom regenerated, pushed cd33fb75; merge lock held elsewhere, REVERIFY queued	session-20261117T133629-e10185c0	2026-11-17T13:57:05Z
+measure:integriq:20261117h12	php 95.17% js 94.36%	session-20261117T134304-10008ffd	2026-11-17T13:57:26Z
