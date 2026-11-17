@@ -20861,6 +20861,7 @@ review:shillinq:2993:39b07fb3	BLOCK: repair step added without info.xml version 
 verify:opencatalogi:2770:71864641	GREEN #2770; 0 new failures	session-20261117T134951-9fef99ce	2026-11-17T13:54:10Z
 cover:dossiq:069ee2d6m9d1b:cdc59513	already done: lib/Service/Inspection/ at 100% statement coverage on development 21f141bd21 (pcov, 46 tests green), target 95; row from Aug looks stale	session-20261117T133105-0c327c7d	2026-11-17T13:53:53Z
 cover:decidiq:a5f973bbmfcd5:38e80a9f	already done: lib/Command/*.php at 100% lines (106/106) on development 161ca15ec, 17 tests	session-20261117T135029-424a7669	2026-11-17T13:53:56Z
+cover:stackiq:9ac19b3am209e:59826f43	already done: lib/Settings/*.php measured 11/11 lines (100%) on development	session-20261117T132538-ac3b9ef5	2026-11-17T13:55:07Z
 cover:decidiq:a5f973bbmfcd5:568ec52a	PR #2274: 9 tests, lifecycle co-signer threshold + contract bindings; suite 5020->5029 OK	session-20261117T134504-7f453fd6	2026-11-17T13:54:52Z
 merge:integriq:3550:0fd65065	cloud tree of 5 integriq PRs: merged=1 red=2 fail=0 skip=1; conflict 1, lint 0, red 0, moved 0, done 0	session-20261117T133833-7d87fd3d	2026-11-17T13:55:13Z
 fix:shillinq:3048:4c867fcf	conflict resolved, new head 4dfa4261, REVERIFY (merge lock held elsewhere)	session-20261117T134556-243db2c5	2026-11-17T13:55:15Z
