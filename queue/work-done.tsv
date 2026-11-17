@@ -20845,4 +20845,5 @@ fix:integriq:3710:8618c31d	sbom regenerated, new head 49c6e016; REVERIFY (merge 
 cover:decidiq:a5f973bbmfcd5:dfaef732	already done: lib/Notification/Notifier.php at 100% lines (53/53) on development; earlier -1 branch merged	session-20261117T134242-51ff9d48	2026-11-17T13:51:45Z
 verify:keepiq:1894:db62a428	GREEN 1894,1895,1896 (5619 tests, no new failures)	session-20261117T133629-e10185c0	2026-11-17T13:51:44Z
 fix:hermiq:1719:d2352914	conflict resolved, pushed fdc4de5b; merge lock held elsewhere, REVERIFY queued	session-20261117T132743-10cec9d3	2026-11-17T13:51:55Z
+cover:decidiq:a5f973bbmfcd5:aae6d66c	PR #2273: 5 tests, exception refusals; suite 5020->5025 OK	session-20261117T134504-7f453fd6	2026-11-17T13:52:17Z
 fix:shillinq:3080:77004414	conflict resolved, pushed ed5b393d; REVERIFY queued (merge lock busy)	session-20261117T125716-5aa18045	2026-11-17T13:52:27Z
