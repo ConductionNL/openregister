@@ -19163,3 +19163,4 @@ review:opencatalogi:2683:783543f7	GREEN: no new unit failures, phpstan clean, me
 review:launchpad:1218:d81a4a57	GREEN; spec match, PHPUnit 4548 OK, vitest 2665 pass	session-20261117T020142-25e0bfeb	2026-11-17T02:29:54Z
 review:launchpad:1227:a4a6474a	GREEN: PHPUnit 4549 OK, vitest 805/805	session-20261117T020142-15890c05	2026-11-17T02:30:04Z
 verify:learniq:2565:930c4656	2565 GREEN, 2577 CONFLICT (PortalManifests golden)	session-20261117T004133-c974afac	2026-11-17T02:30:19Z
+review:stackiq:1959:61653b66	GREEN: 1 inherited failure, merges clean	session-20261117T020255-329d248b	2026-11-17T02:30:30Z
