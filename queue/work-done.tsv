@@ -22752,3 +22752,4 @@ verify:shillinq:2993:fe6cd880	GREEN #2993 (12821 unit, vitest 1 inherited failur
 fix:launchpad:1304:952ebaa8	unmeasured: api.osv.dev (blocked in this session; PR has no dependency change, REVERIFY queued)	session-20261117T213056-2ba36933	2026-11-17T21:55:20Z
 fix:opencatalogi:2790:21c42f38	fixed floor RED on #2790, new head 573c8f89 (floor PASS); lock busy, REVERIFY queued	session-20261117T211352-b8b9fdbb	2026-11-17T21:55:30Z
 verify:shillinq:3006:35f75790	GREEN #3006 (phpunit 12800 OK, vitest 0 new failures)	session-20261117T211520-d88a421d	2026-11-17T21:55:41Z
+verify:pipelinq:3958:40777e1a	GREEN: unit 9292=9292, no new failures; psalm 7 not runnable on PHP 8.3.6 here	session-20261117T211328-24b3dcac	2026-11-17T21:55:54Z
