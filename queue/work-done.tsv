@@ -21800,3 +21800,4 @@ verify:shillinq:3166:4b1d9f24	8 GREEN (3166-3173); 3174 skipped: no pull head on
 build:integriq:idp-broker-yivi-route:b2	failed: blocked: tasks.md says build after portal-idp-broker-config, which still has 7 open tasks on quality/build-portal-idp-broker-config; task 4 waits on the decision named in the proposal	session-20261117T125716-5aa18045	2026-11-17T15:52:43Z
 review:buildiq:1632:ba29c96c	GREEN: builds experience-multilingual-apps as specified; phpunit 3680 OK, vitest 4928 OK; conflicts with development in l10n and 3 Vue files	session-20261117T151651-9c0f11a5	2026-11-17T15:52:46Z
 build:integriq:gateway-upstream-routing:b2	already building (quality/build-gateway-upstream-routing exists)	session-20261117T125716-5aa18045	2026-11-17T15:53:27Z
+review:openregister:10614:70f24420	APPROVE 10614 70f24420	session-20261117T154039-5ee392b5	2026-11-17T15:54:13Z
