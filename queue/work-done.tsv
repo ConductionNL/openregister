@@ -21733,3 +21733,4 @@ verify:humaniq:1193:1d3bba27	GREEN 1193, GREEN 1194; tree 4517 OK, baseline 4509
 build:humaniq:time-non-project-activities:b2	PR #1196: wrote time-non-project-activities.spec.ts (scenarios 1-2, non-admin) and an @e2e exclude for scenario 3; 3.1 left open for the live week	session-20261117T134242-51ff9d48	2026-11-17T15:41:58Z
 review:decidiq:2174:218e06dd	CONFLICT (l10n + municipality profile); code reviewed clean, suite 4854 OK on head	session-20261117T134556-243db2c5	2026-11-17T15:41:56Z
 review:filinq:2072:f3b90da8	GREEN #2072 (7382 OK, access fails closed); conflicts with development on the register version	session-20261117T124637-3e909745	2026-11-17T15:42:09Z
+review:learniq:2519:143f271a	BLOCK: manifest transitions list hides the other ReportCard lifecycle actions; golden-file conflict with development	session-20261117T152630-80f67c9b	2026-11-17T15:42:27Z
