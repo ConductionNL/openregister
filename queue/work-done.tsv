@@ -20691,3 +20691,4 @@ verify:pipelinq:2330:7c2e1706	GREEN #2330: no-op merge, tree identical to develo
 verify:learniq:2509:4853fbe3	GREEN 2509 (7129 tests, no new failures)	session-20261117T124809-d8aae7cd	2026-11-17T13:04:31Z
 verify:integriq:3702:e6c3a1b8	GREEN #3702	session-20261117T123701-2c29f729	2026-11-17T13:04:42Z
 verify:planninq:869:6ffcb32c	GREEN 869	session-20261117T124544-f8740317	2026-11-17T13:04:55Z
+verify:integriq:3713:1ac93422	GREEN #3713 (dev-dep bump, no new failures, vitest green)	session-20261117T124526-11739f5d	2026-11-17T13:05:03Z
