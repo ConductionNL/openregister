@@ -20424,3 +20424,4 @@ review:hermiq:1781:11f91da4	BLOCK: app <version> not raised with register 0.63.0
 fix:versioniq:709:87f7ff42	conflict resolved (openapi.json 3-way JSON merge, App.vue, en/nl l10n), pushed 9a092579; tree green (0 new failures), reviewed APPROVE, but merge gate RED floor unit_interfacing 4.63->4.61 (InstallerService ctor 6->7 params, ReleaseChannel::admits 4, SetChannel::apply 3); RED verdict at 9a092579 recorded by land, not merged	session-20261117T112947-12b56cd8	2026-11-17T11:46:48Z
 review:stackiq:1966:46114bbf	GREEN #1966	session-20261117T113142-3e3cc1d3	2026-11-17T11:47:01Z
 review:hermiq:1760:0b27b76c	GREEN: phpunit 5697, vitest 1631, sandbox 25, 0 failures on PR+development	session-20261117T112008-f5bd35fb	2026-11-17T11:47:11Z
+review:filinq:2095:97c8a004	GREEN: filinq #2095 unit 7269 OK, phpstan clean	session-20261117T114001-eb50211c	2026-11-17T11:47:34Z
