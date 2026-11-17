@@ -19242,3 +19242,4 @@ merge:portaliq:2417:5ba1e02d	cloud tree of 6 portaliq PRs: merged=1 red=0 fail=0
 review:hermiq:1794:58725be9	GREEN: 5520 unit tests pass on PR+development, vitest and exapp tests pass	session-20261117T020353-b50811a6	2026-11-17T02:46:15Z
 review:portaliq:2452:92f46428	GREEN: 6245 tests, 16 inherited errors; node specs 50/50	session-20261117T020142-15890c05	2026-11-17T02:46:23Z
 fix:buildiq:1608:d0285584	fixed floor unit_complexity 3.43->3.48; pushed ae635677; REVERIFY (merge lock held)	session-20261117T020211-438428f3	2026-11-17T02:46:30Z
+fix:integriq:3545:9367d2e7	fixed CONFLICT #3545, new head 76605dd4; REVERIFY (merge lock held elsewhere)	session-20261117T015705-50845751	2026-11-17T02:46:53Z
