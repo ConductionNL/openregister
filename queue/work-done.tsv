@@ -22650,6 +22650,7 @@ verify:integriq:3707:ccad9aca	GREEN #3707: no new failures (golden test red on p
 verify:filinq:2072:5199bdf2	GREEN #2072 (phpunit 7423 OK, vitest 866 OK)	session-20261117T211520-d88a421d	2026-11-17T21:30:55Z
 verify:learniq:2519:26cb0ee8	GREEN 2519: suite 7164, no new failures	session-20261117T211425-939d7fb0	2026-11-17T21:31:05Z
 verify:planninq:1218:df1e59ad	GREEN 1218 (same sha verified in previous tree: phpunit 1253 ok, vitest 3589 passed)	session-20261117T211932-f471137a	2026-11-17T21:31:16Z
+merge:buildiq:1630:b9ae09b4	unmeasured: static.developer.overheid.nl (proxy 403); 6 IN reviewed APPROVE, suite green (3781 tests, 0 new), nothing landed; 1630 CONFLICT, 1651/1715 REVERIFY	session-20261117T211611-151c4a14	2026-11-17T21:31:39Z
 verify:planninq:1252:d65f0492	GREEN 1252 (same sha verified in previous tree)	session-20261117T211932-f471137a	2026-11-17T21:31:45Z
 verify:learniq:2608:7ec13009	GREEN 2608, 2612; REVERIFY 2609 (conflicts only with 2608)	session-20261117T211320-ba1b42e8	2026-11-17T21:32:03Z
 verify:humaniq:1193:ef7f5e47	1193 GREEN; unit 4532 tests, 0 failures	session-20261117T211422-95669914	2026-11-17T21:32:41Z
