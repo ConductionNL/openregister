@@ -19525,3 +19525,4 @@ review:pipelinq:3734:fd1741d7	GREEN: suite 9270 OK, spec-conformant	session-2026
 review:opencatalogi:2677:d1c995ac	BLOCK: repair step without version move	session-20261117T042937-c444c626	2026-11-17T06:21:26Z
 merge:integriq:3545:e65d7f65	cloud tree of 2 integriq PRs: merged=0 red=0 fail=0 skip=1; conflict 1, lint 0, red 0, moved 0, done 0	session-20261117T055834-d932e117	2026-11-17T06:21:47Z
 review:shillinq:2063:ba502d7d	GREEN: 12598 tests, 0 failures	session-20261117T061732-40387d12	2026-11-17T06:21:55Z
+review:portaliq:2446:14bb0792	GREEN: unit 6296 (16 inherited errors), page specs 38/38	session-20261117T060006-72dfb87c	2026-11-17T06:22:09Z
