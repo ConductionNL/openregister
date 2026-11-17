@@ -18889,3 +18889,4 @@ fix:integriq:3632:b8b6d7ad:v3	conflict resolved, pushed 6bc3018b, no failures be
 fix:integriq:3626:d61b9b39:v3	fixed CONFLICT, pushed 7c1c0ef3; REVERIFY queued (merge lock held elsewhere)	session-20261117T004655-cf1f2f80	2026-11-17T01:29:15Z
 fix:buildiq:1651:e765d7de:v5	conflict resolved, pushed 4514f95f; lock held elsewhere, REVERIFY queued	session-20261117T004721-b30387a5	2026-11-17T01:29:44Z
 build4:openregister:object-write-at-instance-floor:c8	partial: not started in this pass (worker context too low for the core mapper work); PR #10520 (branch -3, head 087462fb) unchanged, tasks 1-4 and 6-19 still open as left by c7	session-20261116T230934-9ee320cf	2026-11-17T01:29:52Z
+fix:integriq:3550:b2995130:v3	fixed CONFLICT #3550, new head 268ca022; REVERIFY (merge lock held elsewhere)	session-20261117T004616-c7acc36d	2026-11-17T01:29:54Z
