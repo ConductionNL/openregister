@@ -20293,3 +20293,4 @@ merge:filinq:2069:0906b167	cloud tree of 7 filinq PRs: none; conflict 7, lint 0,
 fix:learniq:2509:2500f767	fixed gate-25 and the interfacing floor, pushed 56cfb0f8 (merge gate OK); merge lock held elsewhere, REVERIFY queued	session-20261117T085356-c13ba754	2026-11-17T10:22:21Z
 merge:buildiq:1605:6f095ae1	cloud tree of 7 buildiq PRs: merged=2 red=1 fail=0 skip=0; conflict 4, lint 0, red 0, moved 0, done 0	session-20261117T095421-a4dff672	2026-11-17T10:22:47Z
 fix:filinq:2099:51b673de	conflict resolved (register v8.69.0), suite 7213 green, pushed 6033f8b8; REVERIFY queued (merge lock busy)	session-20261117T095242-04e7b270	2026-11-17T10:22:45Z
+fix:shillinq:2086:9fa2a6b9	fixed: ADR problem responses and absolute floor (3.98 -> 4.00); new head e8381a8cad, REVERIFY queued	session-20261117T092553-97564f2f	2026-11-17T10:23:03Z
