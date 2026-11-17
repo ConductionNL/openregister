@@ -19847,3 +19847,4 @@ review:larpinq:1047:398465ad	GREEN: unit 1135 OK, vitest 706 pass	session-202611
 review:buildiq:1590:48018867	GREEN: buildiq #1590, suite 3519 tests, no new failures	session-20261117T080452-29d91ff1	2026-11-17T08:09:30Z
 verify:decidiq:2249:3723b38e	GREEN #2249 (vitest meetingSessionsGolden red inherited from development)	session-20261117T080304-46e8fe42	2026-11-17T08:09:42Z
 review:integriq:3626:7c8ff8cb	GREEN: spec-conform; 4 inherited unit reds; one eslint import-order error in registry.js	session-20261117T080525-3d8e09fd	2026-11-17T08:10:05Z
+review:integriq:3593:7f0ace68	GREEN: unit suite no new failures (5 inherited), phpstan clean, vitest 2390 pass	session-20261117T080411-8da96012	2026-11-17T08:10:23Z
