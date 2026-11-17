@@ -20240,3 +20240,4 @@ merge:dossiq:6203:bc5eb8ad	nothing landed: dossiq #6203 is on the never-merge ex
 fix:shillinq:3007:4b9a3466	fixed: conflict merged, floor restored to 4.00, gate OK at 8f36129b; REVERIFY queued	session-20261117T091244-7c1a3c79	2026-11-17T10:10:32Z
 fix:stackiq:2022:dd6d4b11	sbom regenerated, pushed a08934f7; REVERIFY queued (merge lock held elsewhere)	session-20261117T100057-7775ee42	2026-11-17T10:10:42Z
 review:hermiq:1751:2d383135	GREEN: matches change specs; no new failures (198 inherited)	session-20261117T095701-9003708e	2026-11-17T10:11:08Z
+fix:filinq:2083:e57df6b0	merged #2083 at 5d07ba4bc78322efee76fe9e02a3a7dd4ff8a232 (merged development in, fixed vue duplication floor)	session-20261117T095448-b3732e9b	2026-11-17T10:11:20Z
