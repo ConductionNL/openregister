@@ -19852,3 +19852,4 @@ review:integriq:3632:e95b6afd	GREEN: no new failures (9676 vs 9674 tests), seed-
 merge:hermiq:1758:46c9c7b2	unmeasured: static.developer.overheid.nl (1758 approved, gate SKIP; 1781,1795 CONFLICT with 1758 only)	session-20261117T075956-4a06c0e3	2026-11-17T08:10:48Z
 review:larpinq:1056:cc58f17b	GREEN: unit 1149 OK, vitest pass	session-20261117T080442-9c9fe2f8	2026-11-17T08:11:17Z
 review:integriq:2650:e2326510	CONFLICT: composer.lock conflicts with development; recorded for a fix	session-20261117T080525-3d8e09fd	2026-11-17T08:11:32Z
+review:larpinq:1049:6a27cf94	GREEN: phpunit 1137 OK, vitest 716 pass	session-20261117T080920-ed540db0	2026-11-17T08:11:50Z
