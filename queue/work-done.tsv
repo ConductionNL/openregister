@@ -19937,3 +19937,4 @@ fix:filinq:2093:8d7793cd	fixed: golden re-recorded, new head 43815020; merge loc
 fix:buildiq:1654:8cbe077a	fixed: settings passed to DashboardController factory + test; new head 9db550c5, REVERIFY queued (merge lock busy)	session-20261117T081719-6746d738	2026-11-17T08:32:14Z
 fix:hermiq:1741:d8e7284d	floor restored (unit_interfacing 2.57), pushed 7b6013ee; REVERIFY queued	session-20261117T075956-4a06c0e3	2026-11-17T08:32:38Z
 fix:shillinq:3048:fa8eacaf	conflict resolved, pushed 73fa0019; REVERIFY (merge lock busy)	session-20261117T081503-d7471efc	2026-11-17T08:32:52Z
+fix:versioniq:700:ee56187d	unmeasured: static.developer.overheid.nl	session-20261117T080541-d8abe4ad	2026-11-17T08:33:21Z
