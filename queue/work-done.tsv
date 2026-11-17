@@ -20700,3 +20700,4 @@ verify:planninq:1215:707e853b	RED #1215: gridstack 14 conflicts with nextcloud-v
 fix:integriq:3701:69d057ce	fixed #3701: restored publiccode.yml layer declaration, new head 4816b22c; lock busy, REVERIFY queued	session-20261117T124647-f1a70460	2026-11-17T13:06:20Z
 verify:thematiq:1167:dcea2bc0	GREEN #1167 (empty merge, already on development)	session-20261117T124634-577ba792	2026-11-17T13:06:37Z
 merge:opencatalogi:2677:a1602fb7	cloud tree of 2 opencatalogi PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 1, moved 0, done 0	session-20261117T125302-a32fc8d7	2026-11-17T13:06:52Z
+fix:stackiq:2030:99dcfdad	failed: permission (self review+land refused); fixed and pushed b0c1fc68, REVERIFY recorded	session-20261117T124128-c2e9515e	2026-11-17T13:06:58Z
