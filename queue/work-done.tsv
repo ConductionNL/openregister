@@ -20651,3 +20651,4 @@ verify:launchpad:1272:932d2d7c	GREEN #1272 (version bump, 4621 tests, no new fai
 verify:integriq:2641:13e92f30	GREEN (no-op tree: sync merge already on development)	session-20261117T124618-509d3d7a	2026-11-17T12:56:00Z
 verify:keepiq:1757:3a8af510	CONFLICT: #1757 conflicts with development in 10 files	session-20261117T124559-fffd8ca8	2026-11-17T12:56:10Z
 verify:integriq:2718:21805a33	CONFLICT #2718 (lib/Flow nodes, tests, package files vs development)	session-20261117T124621-35d7386d	2026-11-17T12:56:18Z
+verify:opencatalogi:2368:791b0b69	CONFLICT #2368 (PublicationService.php)	session-20261117T125302-a32fc8d7	2026-11-17T12:56:33Z
