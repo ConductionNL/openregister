@@ -20201,7 +20201,9 @@ review:decidiq:2171:6b39135c	GREEN: suite clean on merge with development; minor
 fix:versioniq:754:8d9ac96c	merged #754 at 09e903d37e8c8bd99785cadf2f06bb610974b3e2	session-20261117T092700-641a7a7c	2026-11-17T10:00:11Z
 fix:portaliq:2450:260942b5	conflict resolved, pushed be5bbb37; REVERIFY queued (merge lock held elsewhere)	session-20261117T095538-ac42296b	2026-11-17T10:00:27Z
 review:learniq:2486:973f96e7	GREEN: spec-conformant, 0 new failures (1 inherited)	session-20261117T095501-3bc4ddc7	2026-11-17T10:00:50Z
+fix:decidiq:2254:dba412a5	failed: gridstack 14 is outside the peer range ^12||^13 of every published @conduction/nextcloud-vue (latest 2.181.0, 3.4.0); needs the library to widen it first	session-20261117T093904-44ff7b5f	2026-11-17T10:01:01Z
 merge:versioniq:729:470068c5	no complete base and tree suite: not landed	session-20261117T092700-641a7a7c	2026-11-17T10:01:09Z
 review:integriq:3593:5718bcca	GREEN: no new failures (9786 tests, 5 inherited), vitest 2395 pass	session-20261117T094207-9b025024	2026-11-17T10:02:16Z
 review:versioniq:700:89648f84	GREEN: phpunit no new failures (2 inherited), vitest 3177/3177	session-20261117T085512-6b57566b	2026-11-17T10:02:30Z
 fix:hermiq:1763:6defd651	failed: permission (landing step refused); conflicts fixed, pushed 71d4e059, REVERIFY queued	session-20261117T093219-f1a53dc3	2026-11-17T10:02:51Z
+review:larpinq:1043:aaa4e471	GREEN: unit 1228 ok, vitest 730 ok, matches change specs	session-20261117T094037-14874ab0	2026-11-17T10:02:59Z
