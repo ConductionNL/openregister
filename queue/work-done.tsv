@@ -22806,3 +22806,4 @@ fix:planninq:1243:1232090d	fixed floor (complexity 4.86, php interfacing back to
 verify:pipelinq:3957:c41f8c7b	GREEN #3957 (vitest 0 new failures; 3 inherited failing files)	session-20261117T211657-3a85bb14	2026-11-17T22:07:25Z
 fix:shillinq:3004:5df6f499	conflict resolved, pushed fa8a07cf; REVERIFY queued (merge gate hosts blocked in this session)	session-20261117T211542-5413f208	2026-11-17T22:08:09Z
 merge:thematiq:1714:1199abc8	unmeasured: static.developer.overheid.nl (merge gate checker floor); nothing landed; 7 APPROVE, 1719 REQUEST_CHANGES, 1729 MOVED (task row sha was truncated)	session-20261117T211422-95669914	2026-11-17T22:08:37Z
+merge:opencatalogi:2797:d9522187	unmeasured: api.osv.dev (5 IN approved, 0 merged; 2802 CONFLICT)	session-20261117T211651-58c92edf	2026-11-17T22:09:25Z
