@@ -18823,6 +18823,7 @@ opencatalogi	2800	7d8c1d3f5f83cdb66a61ba4d82d9107fb1d2fcc0	GREEN	worker-31	phpun
 filinq	2175	3022acfde582e99ab204ee27a72a988027232fcc	GREEN	worker-43	openspec docs only (no code); tree unit suite 7288 tests 0 failures
 dossiq	6666	54d4dfed6a9fd52abdf898cac964f4f37b9fe24d	GREEN	worker-55	PHP unit 18407 run, baseline 19 failures, 0 new; vitest 7220 run, 2 failures both red on development; builds unread-state-on-the-case per its specs
 integriq	3716	43ef05b0d145df97b9e8edf21579396cbcaa3bf4	GREEN	worker-35	unit 9911 tests on 9-PR tree, baseline 5 inherited failures, new failures 0; vitest 2389 passed; tests/spec files only
+filinq	2190	e436bd331af13f89a47588a7029ed5a16daa0d7a	GREEN	worker-26	unit on tree vs baseline 7288 (0 failures), new failures 0; fixtures, e2e spec, docs and a spec heading fix only
 integriq	3717	96bd05d41bb90238ee55bcc169ce52de19f4ea10	GREEN	worker-35	unit 9911 tests on 9-PR tree, baseline 5 inherited failures, new failures 0; vitest 2389 passed; tests/spec files only
 integriq	3718	63ae9b35cd2d3779df06f01175c97a5c2b4d541a	GREEN	worker-35	unit 9911 tests on 9-PR tree, baseline 5 inherited failures, new failures 0; vitest 2389 passed; tests/spec files only
 integriq	3719	47ed6f87082f05301751bb769f32c01be8626b43	GREEN	worker-35	unit 9911 tests on 9-PR tree, baseline 5 inherited failures, new failures 0; vitest 2389 passed; tests/spec files only
@@ -18843,5 +18844,6 @@ dossiq	6662	e845dfbaec252189a9bca20af70b3d3fedf2a4a6	GREEN	worker-40	unit 18422 
 dossiq	6663	7ad8d4657778d1082dea10da61309ea37d382dd0	GREEN	worker-40	unit 18422 on tree vs 18398 baseline, 1 inherited error, 0 new; vitest 7224, 2 inherited failures, 0 new; build PR judged against its change
 dossiq	6664	339af5a53f00481f2674650b655a0a5963df7dd4	GREEN	worker-40	unit 18422 on tree vs 18398 baseline, 1 inherited error, 0 new; vitest 7224, 2 inherited failures, 0 new; build PR judged against its change
 dossiq	6665	d62c780df34731fa7d6cab3b8f77f8a362c8a493	GREEN	worker-40	unit 18422 on tree vs 18398 baseline, 1 inherited error, 0 new; vitest 7224, 2 inherited failures, 0 new; build PR judged against its change
+integriq	3727	b3a151e9f2b9704fdc2a0d2c979caf4bef974c6e	GREEN	worker-11	adds one Playwright spec and tasks.md notes only; merges clean; no unit or vitest file in scope, so the suite equals development (9910, 5 inherited failures, 0 new)
 dossiq	6666	54d4dfed6a9fd52abdf898cac964f4f37b9fe24d	GREEN	worker-40	unit 18422 on tree vs 18398 baseline, 1 inherited error, 0 new; vitest 7224, 2 inherited failures, 0 new; build PR judged against its change
 dossiq	6668	1395d5e68c106240715cd719a08bf8d2652f8bf5	GREEN	worker-40	unit 18422 on tree vs 18398 baseline, 1 inherited error, 0 new; vitest 7224, 2 inherited failures, 0 new; build PR judged against its change
