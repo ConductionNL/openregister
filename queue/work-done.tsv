@@ -22216,3 +22216,4 @@ verify:keepiq:1899:abebdd6f	GREEN 1899 alone; no new failures	session-20261117T1
 verify:filinq:2113:374ff86d	GREEN filinq#2113 (7296 tests, 0 new failures)	session-20261117T190026-7c82e6b3	2026-11-17T19:25:24Z
 verify:hermiq:1847:4b35bf02	1847 GREEN (test specs only)	session-20261117T185710-40ec955c	2026-11-17T19:25:38Z
 verify:hermiq:1851:b966db2c	GREEN 1851; alone 5754 tests 0 failures	session-20261117T190115-a0afcf82	2026-11-17T19:25:49Z
+verify:hermiq:1852:73437616	GREEN #1852: 0 new unit failures (199 inherited), vitest 1659 pass	session-20261117T185903-e132ac1e	2026-11-17T19:26:10Z
