@@ -4962,3 +4962,4 @@ stackiq	1944	a796a511b719eec60192ecd7b44a0b3427066e0d	SKIP	worker-28	no APPROVE 
 larpinq	1049	8083d2b965b71b35f9f630efe240c6d6130d8481	RED	worker-30	GATE RED checker floor: testcoderatio: warn -> fail; testcoderatio stars: 3 -> 2
 stackiq	1959	61653b66fc533cc7a476461f11f450b82479dc8a	MERGED	worker-28	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.16
 stackiq	1989	45dbd96288cca2c93a2162055fe2c65597c4ed55	MERGED	worker-28	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.16
+humaniq	1139	3c0dc9a8fc49f0e2d3d2dcb8600ebf57374df54a	MERGED	worker-50	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.47 holds at 3.47
