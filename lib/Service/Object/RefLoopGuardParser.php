@@ -44,7 +44,7 @@ final class RefLoopGuardParser extends KeywordValidatorParser {
 	public function schemaParser(): SchemaParser {
 		$guards = [$this, new self(keyword: '$recursiveRef'), new self(keyword: '$dynamicRef')];
 
-		return new SchemaParser(extraVocabulary: new DefaultVocabulary(keywordValidators: $guards));
+		return new ExactDecimalSchemaParser(extraVocabulary: new DefaultVocabulary(keywordValidators: $guards));
 	}//end schemaParser()
 
 	/**
