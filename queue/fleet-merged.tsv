@@ -4969,3 +4969,4 @@ opencatalogi	2722	8f7ea1f5190ab3e63079bf7e3b3d461e30808d08	SKIP	worker-53	no APP
 launchpad	763	b75dc6316f4add428baa50ada6e90b4f46b8fe6a	MERGED	worker-54	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.65 holds at 3.79
 launchpad	885	1143e3afc2183f572ee3bc9b553c665b93d2bd89	RED	worker-54	GATE RED floor: unit_complexity: 4.76 -> 4.74
 learniq	2537	b93181df666579edd62352cfd7cac6c1c148f493	MERGED	worker-35	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 4.08
+launchpad	1209	fde5af3ee8a493b0cf220637ea3e54eff915d66b	MERGED	worker-54	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.65 holds at 3.79
