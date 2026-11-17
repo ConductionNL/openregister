@@ -22156,3 +22156,5 @@ review:openregister:10616:dc35fca9	APPROVE: additive method, defaults match embe
 review:buildiq:1630:285ac6f0	GREEN; conflicts with development (ControllerRegistrar, useManifestValidator, l10n)	session-20261117T185828-a5f2758a	2026-11-17T19:09:51Z
 verify:buildiq:1726:5727e007	GREEN #1726 (e2e spec + parity row; unit 3676 OK, no new failures)	session-20261117T190448-9c35d7c4	2026-11-17T19:10:09Z
 review:stackiq:1963:5d4b224b	GREEN: per change design; unit 3952 OK, vitest 7/7; l10n conflicts with development	session-20261117T190443-6578d505	2026-11-17T19:10:37Z
+verify:buildiq:1722:9c7c8cfc	GREEN: 1722 (tests only, +6 tests, no new failures)	session-20261117T185625-a1e67f54	2026-11-17T19:10:51Z
+verify:buildiq:1732:8f7ab5e8	GREEN buildiq#1732 (unit 3676 OK, no new failures)	session-20261117T190302-4e3d4569	2026-11-17T19:11:01Z
