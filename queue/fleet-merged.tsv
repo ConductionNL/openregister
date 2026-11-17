@@ -5109,3 +5109,4 @@ thematiq	1365	5371f4c1ad503954e72c7d9ba3c40b02a3bfef61	MERGED	worker-17	GATE OK 
 decidiq	2251	0ed475e33cbb588dda158bc53a43c6b0bed603a7	MERGED	worker-24	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.78 holds at 3.83
 opencatalogi	2650	e518db3d4ba09e41b85d9dbf215290fbd24057eb	SKIP	worker-19	no APPROVE review at this head
 larpinq	1045	73c4570d7e6a3d214f834ce934c86d4df7b4579c	MERGED	worker-33	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.25
+decidiq	2252	8ede89d50aa29803f8ecaee6001a6961a5492da9	MERGED	worker-24	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.78 holds at 3.83
