@@ -22728,3 +22728,4 @@ verify:pipelinq:3961:6eff78b5	RED 3961: eventAddAttendee spec fails with @nextcl
 verify:portaliq:2587:c972ccc3	GREEN 2587	session-20261117T211406-076a7a0e	2026-11-17T21:49:55Z
 merge:integriq:3582:034e6fe7	unmeasured: static.developer.overheid.nl; tree 7 IN adds no failures, 6 APPROVE, #3585 REQUEST_CHANGES, nothing merged; 3613/3708 REVERIFY	session-20261117T211657-3a85bb14	2026-11-17T21:50:16Z
 verify:pipelinq:3960:c710eaaf	BLOCK #3960: gridstack 14 outside nextcloud-vue peer range; tests 0 new failures	session-20261117T213154-bb97695e	2026-11-17T21:50:48Z
+fix:integriq:3601:691712f5	failed: permission (commit of the l10n conflict merge refused because it disabled git hooks; nothing pushed; resolution is append-both of en/nl keys, tree adds no unit failures)	session-20261117T212922-3d1ca36c	2026-11-17T21:51:26Z
