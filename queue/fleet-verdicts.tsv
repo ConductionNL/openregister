@@ -18778,3 +18778,4 @@ keepiq	1901	f9f7976788c4b0b79cfd7a58bceadaf67c54401f	REVERIFY	worker-39	conflict
 pipelinq	3945	ceffbf1ffd95fdbc429b3b7e77c1cbf97a8849c2	REVERIFY	worker-30	conflicts only with an earlier PR of the verify tree (#3943, l10n files)
 pipelinq	3946	633106e5ce5d34520df6e3801898478fcca78d26	REVERIFY	worker-30	conflicts only with an earlier PR of the verify tree (#3943, l10n files)
 dossiq	6660	9f09443de66fb27222359ed58556cfdc9f42c592	GREEN	worker-40	unit 18422 on tree vs 18398 baseline, 1 inherited error, 0 new; vitest 7224, 2 inherited failures, 0 new; build PR judged against its change
+opencatalogi	2793	d14f5f969a4c92d42409f8c9a2b0ebe0c6d49eab	GREEN	worker-31	phpunit 6389 tests on tree, baseline 6364 with 103 inherited failures/errors, 0 new; vitest 8 inherited mainEntry failures, 0 new
