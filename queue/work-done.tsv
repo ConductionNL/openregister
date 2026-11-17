@@ -19482,3 +19482,4 @@ review:integriq:3561:69748294	GREEN	session-20261117T042937-c444c626	2026-11-17T
 review:hermiq:1762:20443b51	GREEN; no new failures vs baseline	session-20261117T055844-3d508d2a	2026-11-17T06:07:04Z
 review:integriq:3618:04df7b2f	GREEN: merges clean, vitest 2379 pass	session-20261117T055834-d932e117	2026-11-17T06:07:55Z
 merge:launchpad:761:5ccd0724	merge3 tree of 7 launchpad PRs: merged=1 red=1 fail=0 skip=0; conflict 5, lint 0, moved 0; fix rows 5	merge3-20261113T213425-c36bcd5f	2026-11-17T06:08:31Z
+merge:decidiq:2148:53b96f64	cloud tree of 9 decidiq PRs: merged=0 red=2 fail=0 skip=0; conflict 3, lint 0, red 0, moved 1, done 3	session-20261117T055853-7ddd3cb3	2026-11-17T06:08:15Z
