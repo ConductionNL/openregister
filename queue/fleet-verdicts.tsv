@@ -18268,3 +18268,4 @@ keepiq	1206	97b3f92691a2bcbf0e84c64e181c5cc0ba4ce32d	GREEN	worker-27	merge adds 
 opencatalogi	2402	a571d2dbfdde9684f4cf5af0e308ed4aa1a3e381	GREEN	worker-44	unit 6306 tests, baseline 92F/11E, no new failures; quality-floor config only
 filinq	2172	3c8384eecf55f14d60964bae8d16705a6f6e6944	GREEN	worker-49	version bump only (info.xml, openapi.json); unit 7288 OK, baseline 7288 OK, no new failures
 stackiq	1435	8d2e5a8e97cee6b5dc7bc84ac39aa1433deb6f46	GREEN	worker-14	unit 4054 tests ok on tree (baseline 4050 ok, +4 new SearchSelectionTest); no new failures; search args adapter keeps OR main behaviour (deleted defaults false)
+buildiq	1704	41c7345c858e3069d66f4d489f4dcecaac45a0f4	GREEN	worker-15	unit 3578 tests, baseline 0 failures (7 skipped), new failures 0; test coverage metadata only
