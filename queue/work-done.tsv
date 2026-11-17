@@ -20605,3 +20605,4 @@ verify:buildiq:1705:4992a07c	1705 GREEN (3608 tests, 0 new failures)	session-202
 verify:decidiq:2270:94657535	GREEN: tests only, 4989 tests OK	session-20261117T112106-1814b74b	2026-11-17T12:44:13Z
 verify:stackiq:1435:8d2e5a8e	GREEN #1435 (4054 tests, no new failures)	session-20261117T124128-c2e9515e	2026-11-17T12:44:25Z
 verify:filinq:2172:3c8384ee	GREEN: version bump, unit 7288 OK	session-20261117T121046-ffb3fcc9	2026-11-17T12:44:41Z
+verify:buildiq:1704:41c7345c	GREEN #1704 (3578 tests, 0 new failures)	session-20261117T123632-d3b91db3	2026-11-17T12:44:53Z
