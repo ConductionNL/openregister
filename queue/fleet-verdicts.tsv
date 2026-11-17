@@ -18760,3 +18760,5 @@ hermiq	1848	65d35bc5c91cb52e899ac03cd9fd06cc301f8aa5	GREEN	worker-20	unit 5736 b
 hermiq	1845	84f28a112420767ebcf2b90cc1e5b72faa4a377b	GREEN	worker-20	unit 5736 baseline 0 fail, tree 5736 0 new failures; tests-only (e2e spec, tasks.md tick)
 portaliq	2581	a16c6b8acc30ffc5695451390622f9e12613586d	GREEN	worker-32	unit 6339 tests on tree, baseline 6324 with 16 inherited errors (openregister classes absent), new failures 0; no JS unit script, markdown-block node test passes; e2e spec only
 portaliq	2582	628f5a095fd877dfbc0668719312f4b0f6f7670d	GREEN	worker-32	unit 6339 tests on tree, baseline 6324 with 16 inherited errors (openregister classes absent), new failures 0; no JS unit script, markdown-block node test passes; table classes in MarkdownBlock per change
+portaliq	2583	d8b97f3d2f59b320429f65f08684bf9f10a34084	CONFLICT	worker-32	package.json conflicts with development
+portaliq	2585	047ea7f203051ca4121b9fbb4fe5d368a8652f63	GREEN	worker-32	unit 6339 tests on tree, baseline 6324 with 16 inherited errors (openregister classes absent), new failures 0; no JS unit script, markdown-block node test passes; e2e spec only
