@@ -1,16 +1,16 @@
 {
  "app": "integriq",
- "commit": "694af091269d7a7b2e7304c8e2db8b6adc45d627",
- "measured_at": "2026-11-16T21:29:26Z",
+ "commit": "0dd96b03ab4521b74dd0423e06093f9831b0988d",
+ "measured_at": "2026-11-17T09:04:19Z",
  "php": {
   "tool": "pcov",
-  "pct": 95.29,
-  "statements": 69643,
-  "covered": 66362,
+  "pct": 95.21,
+  "statements": 70526,
+  "covered": 67147,
   "dirs": {
    "lib/Adapters/": [
-    181,
-    160
+    182,
+    161
    ],
    "lib/Adapters/Berichtenbox/": [
     393,
@@ -69,12 +69,16 @@
     143
    ],
    "lib/Auth/": [
-    11,
-    10
+    13,
+    12
    ],
    "lib/Auth/Idp/": [
-    795,
-    789
+    1020,
+    1006
+   ],
+   "lib/Auth/Idp/Adapter/": [
+    237,
+    216
    ],
    "lib/BackgroundJob/": [
     1024,
@@ -97,7 +101,7 @@
     243
    ],
    "lib/Command/": [
-    901,
+    938,
     901
    ],
    "lib/Command/Integration/": [
@@ -109,8 +113,8 @@
     274
    ],
    "lib/Controller/": [
-    6923,
-    6580
+    6965,
+    6620
    ],
    "lib/Db/": [
     187,
@@ -121,15 +125,15 @@
     600
    ],
    "lib/Event/": [
-    495,
+    507,
     487
    ],
    "lib/EventListener/": [
-    1587,
-    1463
+    1623,
+    1495
    ],
    "lib/Exception/": [
-    62,
+    63,
     61
    ],
    "lib/Expression/": [
@@ -141,8 +145,8 @@
     36
    ],
    "lib/Flow/": [
-    2589,
-    2560
+    2610,
+    2581
    ],
    "lib/Gateway/": [
     333,
@@ -157,8 +161,8 @@
     52
    ],
    "lib/Intake/": [
-    524,
-    505
+    572,
+    553
    ],
    "lib/Intake/Adapter/": [
     372,
@@ -233,8 +237,8 @@
     7
    ],
    "lib/Service/": [
-    23463,
-    21462
+    23485,
+    21476
    ],
    "lib/Service/Adapter/": [
     48,
@@ -265,8 +269,8 @@
     12
    ],
    "lib/Service/Call/": [
-    5,
-    5
+    14,
+    14
    ],
    "lib/Service/Cardfeed/": [
     70,
@@ -285,8 +289,8 @@
     370
    ],
    "lib/Service/Consumer/": [
-    354,
-    326
+    367,
+    339
    ],
    "lib/Service/Datasource/": [
     106,
@@ -381,8 +385,8 @@
     704
    ],
    "lib/Service/OpenFormulieren/": [
-    91,
-    90
+    244,
+    242
    ],
    "lib/Service/Oso/": [
     150,
@@ -469,8 +473,8 @@
     75
    ],
    "lib/Service/Synchronization/": [
-    173,
-    173
+    197,
+    193
    ],
    "lib/Service/Tables/": [
     283,
@@ -535,9 +539,9 @@
   }
  },
  "js": {
-  "pct": 94.87,
-  "statements": 8133,
-  "covered": 7716,
+  "pct": 94.38,
+  "statements": 8414,
+  "covered": 7941,
   "dirs": {
    "src/": [
     94,
@@ -568,8 +572,8 @@
     57
    ],
    "src/dialogs/": [
-    730,
-    689
+    741,
+    697
    ],
    "src/handlers/": [
     114,
@@ -584,8 +588,8 @@
     263
    ],
    "src/modals/": [
-    194,
-    160
+    250,
+    191
    ],
    "src/modals/CallLog/": [
     187,
@@ -676,8 +680,8 @@
     917
    ],
    "src/views/admin/": [
-    586,
-    562
+    800,
+    748
    ],
    "src/views/wrappers/": [
     220,
