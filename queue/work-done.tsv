@@ -22234,3 +22234,32 @@ verify:integriq:3706:ab3bf699	GREEN	session-20261117T190242-7c82bed8	2026-11-17T
 verify:keepiq:1898:2d4d0257	GREEN #1898 (tasks.md only; cited tests exist)	session-20261117T190632-f0412d81	2026-11-17T19:29:35Z
 verify:hermiq:1849:599ab2bf	1 GREEN (1849); no new failures	session-20261117T190249-b0f6275f	2026-11-17T19:29:49Z
 verify:integriq:3715:86b85286	GREEN integriq #3715 (Newman collection only; baseline 2E/2F inherited)	session-20261117T190434-a73c29f6	2026-11-17T19:29:57Z
+verify:learniq:2606:79bec0a6	GREEN #2606 (no new failures)	session-20261117T190418-7494049c	2026-11-17T19:30:09Z
+verify:dossiq:6659:565a618a	GREEN 6659 (e2e only; 0 new failures, 19 inherited)	session-20261117T185828-a5f2758a	2026-11-17T19:30:19Z
+merge:filinq:2121:b4bde39a	unmeasured: api.osv.dev; cloud tree of 9 filinq PRs: merged=0 red=1 fail=0 skip=6; conflict 1, moved 1; reviews APPROVE recorded for 7	session-20261117T190308-4c99e05c	2026-11-17T19:30:38Z
+verify:dossiq:6661:a6b5bd94	GREEN dossiq#6661 (e2e spec + tasks tick; no new failures)	session-20261117T190626-5c7fccb4	2026-11-17T19:30:44Z
+verify:integriq:3725:1e381ea4	GREEN integriq#3725 (no new failures)	session-20261117T190302-4e3d4569	2026-11-17T19:30:56Z
+verify:hermiq:1853:f3ad2278	GREEN #1853, 0 new failures	session-20261117T190150-dbabe332	2026-11-17T19:31:06Z
+verify:integriq:3708:41ada0a6	GREEN	session-20261117T190242-7c82bed8	2026-11-17T19:31:18Z
+verify:larpinq:1054:0d13d8ee	CONFLICT #1054 (larpinq_mock_register.json, SettingsServiceTest.php)	session-20261117T190359-60e4fde5	2026-11-17T19:31:28Z
+verify:keepiq:1757:f60a03ea	BLOCK 1757: contract interface signature + behaviour change; tests no new failures	session-20261117T185927-e9838dc9	2026-11-17T19:31:44Z
+verify:hermiq:1843:45ed8874	GREEN: hermiq #1843	session-20261117T185937-87a1822c	2026-11-17T19:31:53Z
+verify:integriq:3722:82a48e0e	GREEN integriq#3722 (tests only)	session-20261117T190302-4e3d4569	2026-11-17T19:32:01Z
+verify:hermiq:1850:c9dacafd	GREEN #1850 (unit 5746 OK, vitest 1659 passed)	session-20261117T190318-dafab159	2026-11-17T19:32:11Z
+verify:integriq:3705:cd33fb75	RED #3705 (webpack cannot resolve pinia 4 through alias)	session-20261117T190353-db371595	2026-11-17T19:32:20Z
+verify:integriq:3731:d1f6f297	GREEN 3731; unit 9937, 0 new failures (5 inherited)	session-20261117T185419-c23c5946	2026-11-17T19:32:32Z
+verify:integriq:3730:129afd21	GREEN #3730: 0 new unit failures, tests only	session-20261117T185903-e132ac1e	2026-11-17T19:32:47Z
+verify:hermiq:1844:d7a81322	GREEN #1844 (no new failures; baseline 199 inherited)	session-20261117T190357-55034d4a	2026-11-17T19:33:03Z
+verify:larpinq:1102:53a41249	GREEN larpinq#1102 (e2e only)	session-20261117T190302-4e3d4569	2026-11-17T19:33:14Z
+verify:integriq:3612:e27499b1	GREEN #3612 (9933 tests, no new failures)	session-20261117T190320-1db054ae	2026-11-17T19:33:23Z
+verify:integriq:3717:96bd05d4	GREEN 3717; tests-only, 0 new failures (baseline 3F/2E inherited)	session-20261117T190115-a0afcf82	2026-11-17T19:33:31Z
+verify:integriq:3718:63ae9b35	GREEN #3718: tasks.md only, 0 new failures (5 inherited)	session-20261117T185732-534997e2	2026-11-17T19:33:43Z
+verify:integriq:3719:47ed6f87	GREEN #3719 (tests only, no new failures)	session-20261117T190540-b0615094	2026-11-17T19:33:58Z
+verify:integriq:3723:8a4e2be1	1 GREEN (3723); e2e spec only, unit 0 new failures	session-20261117T190140-44e48bc5	2026-11-17T19:34:09Z
+verify:larpinq:1103:e6ac5573	CONFLICT larpinq#1103 (spec already on development via b7573fe5)	session-20261117T190626-5c7fccb4	2026-11-17T19:34:21Z
+verify:integriq:3726:ccf011fb	GREEN integriq#3726 (0 new failures; e2e spec only)	session-20261117T190026-7c82e6b3	2026-11-17T19:34:33Z
+verify:integriq:3724:27c092d3	GREEN #3724 (9910 tests, 0 new failures; e2e specs only)	session-20261117T190714-0b708ca6	2026-11-17T19:34:43Z
+verify:integriq:3711:42694816	GREEN #3711: vitest 2389 pass, no PHP change	session-20261117T185853-76335694	2026-11-17T19:34:51Z
+verify:learniq:2609:85f54492	GREEN #2609 (no new failures)	session-20261117T190418-7494049c	2026-11-17T19:35:05Z
+verify:larpinq:1101:68cf7368	CONFLICT #1101 (change archived, e2e spec already on development)	session-20261117T190357-55034d4a	2026-11-17T19:35:13Z
+verify:opencatalogi:2783:b2d114f8	GREEN #2783 (version bump)	session-20261117T190540-b0615094	2026-11-17T19:35:27Z
