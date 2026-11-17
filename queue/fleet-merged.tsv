@@ -5285,3 +5285,4 @@ shillinq	3160	1013c8e612b10949e022ce7791fa7648456cc109	RED	worker-22	GATE RED ch
 portaliq	2450	be5bbb3701d13af9cfecd7e5a55a84232d6cda64	MERGED	worker-04	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.04
 portaliq	2559	7c12499872f3aafc79a76b979d9dde5a96010667	SKIP	worker-04	no APPROVE review at this head
 versioniq	686	d08215d31184429e6889ffdc012ebfe2666065dd	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.97 holds at 4.15
+opencatalogi	2651	cc6fe4e150a2104a3e07587b125aa11b8df8754b	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.51
