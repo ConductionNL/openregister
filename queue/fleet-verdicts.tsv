@@ -18951,3 +18951,4 @@ thematiq	1728	3eb4a9137a95f5f9be9b6dd452335b01d93ecdf0	REVERIFY	worker-37	confli
 thematiq	1729	0112b5b6724ea05ac9e72421dcf80f7df166f86b	REVERIFY	worker-37	conflicts only with an earlier PR of the verify tree
 portaliq	2589	7076e2d0a11a89d02d7a2be14ba0596bf4d5862a	CONFLICT	worker-49	conflicts with development in package.json; baseline 6324 tests (16 errors inherited)
 learniq	2497	48225cf9d50c702289f26ffb5e21fd07629ec941	GREEN	worker-45	unit baseline 7152 (2 inherited), tree 7176, 0 new; node --test 1418 with 8 inherited failures, same on development; php -l clean; build of credentials-certificate-pdf, download gated to holder/hr/compliance like the Europass route
+opencatalogi	2803	65ea61668234c6c3fad883589e6ad63ee7a9295b	GREEN	worker-33	PHP unit 6396 tests, 11 errors/92 failures all inherited (baseline 6364, same counts), vitest 8 mainEntry failures inherited from development; implements publication-lifecycle-on-or per its specs
