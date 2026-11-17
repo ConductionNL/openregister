@@ -22701,6 +22701,7 @@ merge:shillinq:3160:6aca1aa9	unmeasured: static.developer.overheid.nl (8 PRs rev
 fix:portaliq:2589:7076e2d0	conflict resolved, pushed 8f568eda; REVERIFY (merge lock held elsewhere)	session-20261117T211932-f471137a	2026-11-17T21:44:16Z
 verify:larpinq:1104:072740aa	GREEN #1104 (e2e spec only)	session-20261117T211341-e05e0d2c	2026-11-17T21:44:31Z
 verify:integriq:2650:ecac209c	GREEN #2650: 9933 tests, no new failures	session-20261117T211412-45e1aeb8	2026-11-17T21:44:41Z
+build:opencatalogi:publication-lifecycle-on-or-draft-purge:b2:c2	failed: still waits on publication-lifecycle-on-or (no firstReleasedAt in lib on development; its branch quality/build-publication-lifecycle-on-or is still open)	session-20261117T211320-ba1b42e8	2026-11-17T21:44:59Z
 fix:integriq:3557:7d1abff4	failed: permission (git push to ConductionNL/integriq refused by the session git proxy; fix ready: add development's 110 en / 31 nl js-only keys to en.json/nl.json and rebuild with l10n:build, test:l10n passes)	session-20261117T211359-bea33e3d	2026-11-17T21:45:00Z
 verify:portaliq:2564:9fbc2d81	stale	session-20261117T211932-f471137a	2026-11-17T21:44:59Z
 verify:launchpad:1305:1358f946	GREEN 1305, GREEN 1307; tree 4684 OK, baseline 4621	session-20261117T211353-2c595f41	2026-11-17T21:45:00Z
