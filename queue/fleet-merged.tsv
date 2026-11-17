@@ -4881,3 +4881,4 @@ thematiq	1124	c6a62f1f5b4a45a1285a0dcb7f634f9d956c6268	MERGED	worker-49	GATE OK 
 portaliq	2445	824a489a394a69575fc8f9c9018febe76e65b3a5	MERGED	worker-29	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.16
 thematiq	1289	2557e0bad801f3a73a99cfa6f1d2ac0861598309	MERGED	worker-49	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.15
 dossiq	3894	586519b90f512275cd9e689b9d449594ab1b9ca2	MERGED	worker-32	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.40
+launchpad	819	c5c80a07dc500fcc4e5064cd5126241a9f4bf32a	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
