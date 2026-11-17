@@ -18620,3 +18620,4 @@ review:shillinq:2997:b92dd7ab	CONFLICT #2997 (info.xml, register-versions.lock.j
 verify:larpinq:1054:9b437535	CONFLICT: routes/SettingsService/manifest vs development	session-20261116T233900-0eb43466	2026-11-17T00:25:55Z
 review:hermiq:1764:73544d4e	GREEN #1764	session-20261116T233929-170accb7	2026-11-17T00:26:02Z
 cover:stackiq:9ac19b3am039e:f4b2f7af	nothing worth a PR: lib/Service/ArchiMate at 251/253; left ConnectionFlows::asArray jsonSerialize branch (1 stmt) and ArchiMateContext constructor	session-20261113T214350-9762e143	2026-11-17T00:26:20Z
+fix:dossiq:3957:3a1d1a08:v3	conflict resolved; new head 436f0f9a0c0d (merge lock held elsewhere, REVERIFY)	session-20261116T233901-7abe1a78	2026-11-17T00:26:19Z
