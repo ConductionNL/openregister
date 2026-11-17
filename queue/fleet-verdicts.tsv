@@ -18773,6 +18773,7 @@ dossiq	6662	e845dfbaec252189a9bca20af70b3d3fedf2a4a6	GREEN	worker-21	unit 18398 
 portaliq	2585	047ea7f203051ca4121b9fbb4fe5d368a8652f63	GREEN	worker-32	unit 6339 tests on tree, baseline 6324 with 16 inherited errors (openregister classes absent), new failures 0; no JS unit script, markdown-block node test passes; e2e spec only
 portaliq	2586	d48314a985599ff8b6ed00246dba8cf43321e1ba	CONFLICT	worker-32	package.json conflicts with development
 portaliq	2587	664b8ca8575ae2f35befab13dda8dba4deb03d63	GREEN	worker-32	unit 6339 tests on tree, baseline 6324 with 16 inherited errors (openregister classes absent), new failures 0; no JS unit script, markdown-block node test passes; portal-bound sessions and domain re-check per change, access only tightened
+filinq	2114	e0bb0357f219978209e4261a9d459a241c88a393	GREEN	worker-19	phpunit 7386 ok (baseline 7288 ok, 0 new failures); vitest 879 passed; build anonymization-review-workbench, adds checked gate after existing access checks
 buildiq	1648	616837279746c70653f0f41163c0dd6efd73fa7e	GREEN	worker-15	unit 3737 OK on tree (baseline 3676 OK), vitest 5027/5027, 0 new failures; build of logic-automation-actions-that-run, new run/manual routes keep role checks
 hermiq	1846	5032dbe476b08e7c18c9b11969ca737daa6a3249	GREEN	worker-20	tasks.md only; ticks confirmed (info.xml min 32, VersionFloorGuardTest 5 pass); unit suite unchanged
 keepiq	1900	a6ccac84767665a898692a9826befe197f56bcea	GREEN	worker-39	vitest 7173 pass, 3 inherited reds only; frontend-only build of portability-export-choice-and-restore-fidelity
