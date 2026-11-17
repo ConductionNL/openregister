@@ -19369,3 +19369,4 @@ review:filinq:2113:36d16af0	GREEN: unit 6979 -> 6987, 0 failures	session-2026111
 review:integriq:3545:76605dd4	GREEN: l10n-only, strings complete; tasks.md note on en.js inaccurate	session-20261117T032038-9668112c	2026-11-17T03:21:41Z
 review:learniq:2537:b93181df	already merged: head b93181df is on development	session-20261117T020353-b50811a6	2026-11-17T03:22:05Z
 fix:filinq:2123:06d3cf49	merged #2123 at bb0d49c3f8201f782665b19c1aa074a188b27d58	session-20261117T020416-cc0fb378	2026-11-17T03:22:36Z
+review:filinq:2123:a2e8c23e	stale	session-20261117T032146-7c837cf0	2026-11-17T03:22:34Z
