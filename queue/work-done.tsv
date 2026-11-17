@@ -19299,3 +19299,4 @@ fix:filinq:2112:ac62393f	fixed: merged development, golden re-recorded, new head
 fix:shillinq:2983:1f5c0426	fixed: merged development, regenerated scoped pages + register lock, pushed ad375f2d; merge lock busy, REVERIFY queued	session-20261117T025031-1b32b183	2026-11-17T03:01:12Z
 fix:filinq:2113:9e76e544	conflict resolved; REVERIFY at 36d16af002 (merge lock held by another merger)	session-20261117T020358-1a8df617	2026-11-17T03:01:22Z
 fix:integriq:3678:31eb3920	obsolete: #3678 already merged (head is in development; SPDX fix landed via #3679)	session-20261117T025311-e27d60f7	2026-11-17T03:01:29Z
+fix:filinq:2086:fe4bcf08:v3	stale	session-20261117T025204-e27953f1	2026-11-17T03:01:29Z
