@@ -4919,3 +4919,4 @@ versioniq	716	11823d08643bb31a001dc6515bdb823fbc1f93bb	RED	worker-36	GATE RED fl
 keepiq	1829	f14d3a1536981686b8b778bb02ceb2bcb8f4b385	MERGED	worker-40	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.58 holds at 3.65
 buildiq	1628	6e72df365dcc781f7cafb42f4286245b94f89331	MERGED	worker-58	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.91 holds at 3.99
 versioniq	703	6665c28103129bccbfc61854d3e03f4e18f8d880	RED	worker-35	GATE RED floor: unit_complexity: 4.79 -> 4.77
+stackiq	1937	53bbb64a58e178ee4616c53220567a0102eaac89	RED	worker-33	GATE RED floor: unit_interfacing: 4.71 -> 4.68
