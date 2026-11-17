@@ -22726,3 +22726,4 @@ fix:portaliq:2446:ddd3af7b	conflict resolved, pushed e217a1c6; REVERIFY (merge l
 verify:pipelinq:3961:6eff78b5	RED 3961: eventAddAttendee spec fails with @nextcloud/dialogs 8	session-20261117T211425-939d7fb0	2026-11-17T21:49:31Z
 verify:portaliq:2587:c972ccc3	GREEN 2587	session-20261117T211406-076a7a0e	2026-11-17T21:49:55Z
 merge:integriq:3582:034e6fe7	unmeasured: static.developer.overheid.nl; tree 7 IN adds no failures, 6 APPROVE, #3585 REQUEST_CHANGES, nothing merged; 3613/3708 REVERIFY	session-20261117T211657-3a85bb14	2026-11-17T21:50:16Z
+verify:versioniq:692:f611aea1	GREEN #692 (unit 2553/2 inherited, vitest 3248 ok)	session-20261117T213633-a50f98af	2026-11-17T21:50:39Z
