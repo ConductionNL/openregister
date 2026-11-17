@@ -22392,3 +22392,4 @@ verify:shillinq:3080:ed5b393d	1 CONFLICT (3080: info.xml, register-versions.lock
 verify:shillinq:3165:f382c52b	GREEN shillinq#3165 (unit 12797 OK)	session-20261117T190302-4e3d4569	2026-11-17T20:01:02Z
 verify:stackiq:2060:089ca175	GREEN 2060; vitest no new failures (1 inherited)	session-20261117T185359-d68263c5	2026-11-17T20:01:14Z
 verify:shillinq:3178:7c8cd864	GREEN 3178; no new failures	session-20261117T185927-e9838dc9	2026-11-17T20:01:30Z
+build:pipelinq:forecast-slip-reason:b2:c3	failed: permission (git push to ConductionNL/pipelinq refused by the session proxy: repo not in authorized set); task 3.1 was built and green locally (LeadCloseDate card + SlipReasonModal, vitest +14, no new failures) but not pushed; 3.1 and 5.1 still left	session-20261117T190632-f0412d81	2026-11-17T20:02:07Z
