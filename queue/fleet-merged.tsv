@@ -5273,3 +5273,4 @@ larpinq	1088	b6f2f9b48fd84e4b68a1cefdf77af3ad41f94ec1	RED	worker-13	GATE RED che
 integriq	3582	a26852d23164396c63cb9d870d1aefb64282810a	RED	worker-36	GATE RED floor: unit_size: 3.58 -> 3.56; unit_complexity: 3.90 -> 3.83
 integriq	3701	69d057cecad110f0b4ba7734cca3c7a91f925ec5	RED	worker-36	GATE RED checker floor: fivelayer: pass -> warn; fivelayer stars: 5 -> 3; score: 100 -> 97
 versioniq	709	15263d7c05a007f23ae4464332a1db12ae29c2a2	MERGED	worker-41	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.97 holds at 4.15
+dossiq	6635	1292bb3c763654d5f87920df463b739b7d4437df	MERGED	worker-03	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
