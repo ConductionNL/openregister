@@ -17891,3 +17891,4 @@ hermiq	1763	6defd6515301633e4a5886080700448f74f510ad	REVERIFY	worker-27	merged d
 versioniq	709	87f7ff42a86a7713abefb14603133f7cb612b9f6	CONFLICT	worker-30:merge	conflicts with development; files: openapi.json 
 stackiq	2023	4b571496463e29f34eb2c14da0dfb98b850b6306	RED	worker-32:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
 stackiq	2024	d3bfa511d93e185f2889fb936ffefa27d7bc0c3a	RED	worker-32:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+versioniq	706	7403373559495f88263ca564e393cfc37504c22f	REVERIFY	worker-26	merged development in, resolved src/App.vue keeping both sides (migration preview + LifecycleBadge/AppAboutCard); eslint 0 errors, vitest 3201/3201; merge lock held elsewhere; new head 31ba5828052881c7b2daf1d9137aa1a65c259470, verify it
