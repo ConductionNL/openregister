@@ -18925,3 +18925,4 @@ fix:launchpad:1217:edcbef17:v3	conflict resolved, pushed faab5f5c; phpunit+vites
 verify:filinq:2130:9e0cab71	stale	session-20261117T004756-036f1d35	2026-11-17T01:37:03Z
 merge:dossiq:3954:e90d8848	cloud tree of 6 dossiq PRs: merged=2 red=0 fail=0 skip=1; conflict 2, lint 0, red 0, moved 0, done 0	session-20261117T004626-d23ae300	2026-11-17T01:36:59Z
 fix:buildiq:1654:ac924f1b:v5	conflict resolved, pushed 37e70c18; suite green; lock held elsewhere, REVERIFY queued	session-20261117T004721-b30387a5	2026-11-17T01:37:06Z
+fix:keepiq:1787:a1fbe07c:v3	fixed conflict, pushed 981b98990; merge lock busy, REVERIFY recorded	session-20261117T004435-9e7fb02f	2026-11-17T01:37:40Z
