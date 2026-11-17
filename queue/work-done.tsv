@@ -22900,3 +22900,4 @@ fix:filinq:2112:4a6629c6	conflict resolved, pushed c6b6ed3a; REVERIFY queued	ses
 fix:filinq:2114:e0bb0357	conflict resolved, pushed eadfebce; merge lock held elsewhere, REVERIFY recorded	session-20261117T223234-66fa6b77	2026-11-17T22:43:57Z
 review:openregister:10632:e9de049d	APPROVE: graphiql 6 compatible, explorer entry builds, spec green	session-20261117T221923-343449c6	2026-11-17T22:44:03Z
 fix:decidiq:2198:3e20b726	conflict fixed, pushed e149db46; end-to-end review step refused by permission check (failed: permission), REVERIFY recorded	session-20261117T223145-5ed35ecc	2026-11-17T22:44:12Z
+fix:filinq:2188:a7b68fe9	fixed spec anchors, pushed d0adb35a; merge lock held elsewhere, REVERIFY recorded	session-20261117T222048-3a9e0119	2026-11-17T22:44:26Z
