@@ -20186,3 +20186,4 @@ review:launchpad:1099:68a939c5	GREEN: dev-only psalm bump, unit 4585 OK; psalm 7
 merge:shillinq:1958:70c6e595	cloud tree of 9 shillinq PRs: merged=1 red=2 fail=0 skip=0; conflict 5, lint 0, red 0, moved 1, done 0	session-20261117T093922-7676ffcc	2026-11-17T09:57:54Z
 fix:launchpad:1261:f302d160	stale	feeder	2026-11-17T09:57:23Z
 review:shillinq:2997:4b1b64a6	stale	feeder	2026-11-17T09:57:23Z
+fix:hermiq:1762:28760e6b	conflict resolved, pushed c10940e1; merge lock held elsewhere, REVERIFY queued	session-20261117T094008-c54c2625	2026-11-17T09:58:08Z
