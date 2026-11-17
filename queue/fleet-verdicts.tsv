@@ -18910,6 +18910,7 @@ integriq	3728	181269252df39eb8b8616056c26d5d2b1ff1d6fc	GREEN	worker-10	phpunit 9
 pipelinq	3952	724737b6aa5dba076f7d938b823c2377c86bdc3e	REVERIFY	worker-30	conflicts only with an earlier PR of the verify tree (#3943, l10n files)
 learniq	2594	259feb56de2bd786055277d5a9b39371d1cecb1c	GREEN	worker-26	unit suite on tree green (no PHP/JS-unit change), new failures 0; e2e spec + tasks.md note only, imports reorganised, no assertion removed
 opencatalogi	2783	b2d114f8e5f369a5012945225e70b599844f6613	GREEN	worker-25	version bump in info.xml and openapi.json only; no code, suite not rerun
+larpinq	1056	f075a857dc525798420d9f492142143c49b8af15	CONFLICT	worker-18	conflicts with development: all l10n/*.js|json, SettingsLoadService.php, SettingsService.php, SettingsServiceTest.php
 opencatalogi	2795	9844e9a09589c8fb5eb3275c484e4adb67f6bb38	GREEN	worker-19	phpunit 6364 (baseline 6364 with 103 inherited errors/failures, 0 new); adds Newman collection only
 launchpad	1218	981059667af30b6907fafe7e0e9be698f74a9e73	GREEN	worker-51	build launcher-tile-internal-address per its specs; phpunit 4621 baseline OK -> 4630 OK; vitest 2746 passed, 1 inherited fail (propDefinitions.golden, red on development too); note: development package-lock out of sync (npm ci fails, inherited)
 opencatalogi	2800	7d8c1d3f5f83cdb66a61ba4d82d9107fb1d2fcc0	GREEN	worker-25	build change; no-assistant note per spec REQ-PPL-002; vitest 1181 (8 inherited mainEntry failures, none new); jest widget spec 5/5; eslint clean; no PHP changed
