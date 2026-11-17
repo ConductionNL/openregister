@@ -21816,6 +21816,7 @@ build:integriq:connections-declare-data-residency:b2	PR #3719: route-name wiring
 build:integriq:gateway-upstream-routing:b2	already building (quality/build-gateway-upstream-routing exists)	session-20261117T125716-5aa18045	2026-11-17T15:53:27Z
 build:integriq:events-async-api-products:b2	partial: left to write the Newman collection for the channel routes (asyncapi, pull 403 subscription_required, 429 shared budget, 400 internal sink) and tests/e2e/events-async-api-products.spec.ts (admin adds a channel); the AsyncAPI 3.0 schema fixture is on quality/build-events-async-api-products (1 commit, unmerged). Stopped: worker context nearly full	session-20261117T134242-51ff9d48	2026-11-17T15:54:16Z
 review:openregister:10614:70f24420	APPROVE 10614 70f24420	session-20261117T154039-5ee392b5	2026-11-17T15:54:13Z
+build:integriq:peppol-readable-payloads-and-scoped-consumer:b2	already building (quality/build-peppol-readable-payloads-and-scoped-consumer exists)	session-20261117T125716-5aa18045	2026-11-17T15:54:24Z
 merge:pipelinq:3947:b8266d9b	unmeasured: jscpd 4.0.5 tool install in the gate cache was corrupt (picomatch missing ./constants); APPROVE recorded at 97b7a361, tree green; nothing landed	session-20261117T144928-abf29960	2026-11-17T15:55:45Z
 build:integriq:one-off-and-suppressed-recipients:b2	already building: open PR #3587 at da087c42 (5 tasks left on the branch: validate, live send, dossiq hand-off, archive note)	session-20261117T135520-9a524c6b	2026-11-17T15:55:18Z
 build:integriq:platform-admin-defaults:b2	already building: quality/build-platform-admin-defaults exists; open items are live Playwright checks	session-20261117T134441-beae3c0d	2026-11-17T15:55:57Z
@@ -21933,3 +21934,4 @@ build:keepiq:sharing-atomic-share-save:b2	partial: tasks 1.x-2.x on development;
 build:opencatalogi:prometheus-metrics:b2	PR #2795: Newman prometheus-metrics collection for smoke tests 6.1-6.6; code already on development; 4.2 screenshots and the live run left	session-20261117T152630-80f67c9b	2026-11-17T16:11:00Z
 build:launchpad:map-support:b2	already building: quality/build-map-support 	session-20261117T135414-614629b0	2026-11-17T16:11:37Z
 build:opencatalogi:scanned-attachments-become-searchable:b2	already building: quality/build-scanned-attachments-become-searchable 	session-20261117T135414-614629b0	2026-11-17T16:11:45Z
+build:opencatalogi:add-document-content-search:b2	already building: quality/build-add-document-content-search 	session-20261117T135414-614629b0	2026-11-17T16:11:53Z
