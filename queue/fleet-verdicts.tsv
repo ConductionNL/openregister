@@ -18223,3 +18223,4 @@ integriq	3710	8618c31d0bf78ae3b11dde0270d6bd52d7200e8d	GREEN	worker-45	unit 9839
 integriq	3711	dd118ae9f781f7bf22d90735e52321741fb6be80	GREEN	worker-45	unit 9839 run, baseline 5 failing (JobsController x2, CallService x2, SyncGolden), vitest 2383 pass; new failures 0
 buildiq	1654	a9ea9841fe8591e532717d7ef26f2988c5e39ea2	RED	worker-55:merge-gate	GATE RED floor: unit_complexity: 3.42 -> 3.37
 hermiq	1719	0b2ffe7a03dc76e2f3e1b383208fc4361e4e8611	REVERIFY	worker-16	floor restored (module_coupling 5.10->5.10, floor_check PASS) by sharing SessionTurns/UserFolders/TaskAudioInput and depending on the marker interface and AiFeatureService; unit 5655 OK on the tree; end-to-end land refused by a permission check; new head d2352914530959591eaf31c5ea8ea41c94ca6b79, verify it
+shillinq	2993	4007e0e10d11421496990f8e9c4a906ff16900c9	RED	worker-22:merge-gate	GATE RED absolute floor: shillinq maintainability 3.99 after merge is below its floor 4.00
