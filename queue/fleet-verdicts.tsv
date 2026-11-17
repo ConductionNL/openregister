@@ -18024,3 +18024,4 @@ decidiq	2205	8a3de4c6be1208375b0e3243a96a4b8db2ed80eb	REVERIFY	worker-44:merge	c
 launchpad	1210	fcd51164e3351ae1fe6f7a11a04d9db65e7e8a8f	CONFLICT	worker-38:merge	conflicts with development; files: appinfo/info.xml src/views/Views.vue 
 launchpad	1217	365b7069cdf8dd17c14d4c518c34b0ed1243def6	CONFLICT	worker-38:merge	conflicts with development; files: appinfo/info.xml 
 shillinq	2975	d0bcdce6bffffcd3d4456bc487b2ab0b65bcc5d5	REVERIFY	worker-16	merged development (app version 0.5.7-unstable.20261117141000 + register-versions record, openapi tags kept); create now requires canPostJournalEntry (403), 2 tests added and seen failing without it; suite 12812 OK, l10n gates OK; new head f616ab858e5f8837baed3f9a6cf95008a88cbe38, verify it
+stackiq	2026	176656140c5a9e0070bb25f530a974f19be299f3	REVERIFY	worker-56	regenerated sbom.cdx.json with bin/regen-sbom.sh (merge lock held elsewhere, not landed); new head 490a9654ff42ca3a847e1bf34698f6799a8e2144, verify it
