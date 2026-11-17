@@ -18183,3 +18183,4 @@ learniq	2509	56cfb0f89fe2624585dfe1380a03415f7ddd95c1	REVERIFY	worker-57	merged 
 stackiq	2030	99dcfdad615c023f57481ee6cea79922b36fc604	RED	worker-28:merge-gate	GATE RED checker floor: fivelayer: pass -> warn; fivelayer stars: 5 -> 3; score: 100 -> 97
 stackiq	1966	46114bbf021646f123dbfe2520e0c129381171d5	CONFLICT	worker-28:merge	conflicts with development; files: tests/Unit/Settings/BaselineClassificationDeclarationTest.php 
 versioniq	706	31ba5828052881c7b2daf1d9137aa1a65c259470	CONFLICT	worker-46:merge	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+opencatalogi	2654	7717f5da9c6bf7aad2abe74c9c9fa91500756a3a	BLOCK	worker-40:review	floors: php component_independence 93.5% -> 92.8% (already under the 94.5% floor, this PR lowers it further; gate sig-floor). Behaviour matches the change specs (OAI-006/007), anonymous read and catalog guard in place; unit suite 6322 tests, baseline 78 failing, 0 new; other gate fails inherited
