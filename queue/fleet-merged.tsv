@@ -5392,3 +5392,13 @@ integriq	3714	b9668573e7033e4950efd58082ccf86566f9ca9a	SKIP	worker-52	GATE UNMEA
 learniq	2600	3dd1b33d30e301887b5e829946f9b3224f874ddd	SKIP	worker-04	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 learniq	2601	3cc5a9d81623e03b4652659765476e0ce4828d7d	SKIP	worker-04	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 learniq	2602	562289417dc44c1a437b7a634ba5466aed65748e	SKIP	worker-04	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
+portaliq	2494	c493c65ea0d07a305dcbc41fa0993e26363185fc	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.03
+portaliq	2559	2560356101f01731f5f208d3c59e68686e48232e	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.03
+portaliq	2568	9cb1e687eabb657a2d74c7d1556699050d269021	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.03
+portaliq	2571	2bfded2cd316891f3b2e26af9fabf3e850eea94d	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.03
+portaliq	2572	890b2c08a49e143d1029b5e558f4a1a0394fb431	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.03
+portaliq	2573	e6eef8c83eab2226a7e72bbc99f2b3076b89f820	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.03
+portaliq	2574	a3844b675f2daf5f1d3e1e28eb97157c9d16b122	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.03
+portaliq	2575	d0a50a81118efaa6925551d8cdbf0210700320dd	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.03
+portaliq	2576	a80ea3a359641cd093b21e8dfeff1cc1d45eef59	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.03
+portaliq	2577	37ba0c5557e0e3b307a0e43c4bc4e28667030ac1	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.03
