@@ -22311,3 +22311,4 @@ verify:opencatalogi:2793:d14f5f96	GREEN #2793 (6365 tests, 0 new failures)	sessi
 verify:thematiq:1721:9c6152f2	GREEN 1721-1726; RED 1727 (needs stylelint 18 from #1728); REVERIFY 1728,1729	session-20261117T190443-6578d505	2026-11-17T19:44:37Z
 verify:larpinq:1056:f075a857	CONFLICT larpinq#1056 (l10n + Settings* vs development)	session-20261117T190626-5c7fccb4	2026-11-17T19:44:49Z
 verify:integriq:3721:30322060	GREEN integriq#3721 (e2e + Newman only; 9910 tests, 4 inherited, 0 new)	session-20261117T190556-ce2c6374	2026-11-17T19:45:08Z
+verify:portaliq:2590:9bc1d978	GREEN (version bump)	session-20261117T190242-7c82bed8	2026-11-17T19:45:11Z
