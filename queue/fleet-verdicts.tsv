@@ -18309,4 +18309,5 @@ hermiq	1719	d2352914530959591eaf31c5ea8ea41c94ca6b79	GREEN	worker-47	build chat-
 launchpad	628	7ce60794924a774915dfec084c803ddddf04e02b	GREEN	worker-37	merge into development yields a tree identical to development (beta sync already present); no diff, suite = baseline
 integriq	1985	6e4c92f5a867f924633f527c3d41ff4024cffa90	GREEN	worker-03	merge adds no file changes to development (tree identical); baseline 9839 tests with 4 inherited failures/errors, 0 new
 dossiq	3600	6920f0950a584dea44762dd337e00e6311dd371c	GREEN	worker-31	merge into development changes no files (beta already contained); suite 18392 tests, 19 failures inherited from development 644f96b2 (tree identical), 0 new
+larpinq	1087	bdae89b3e4ce2caecb66642ff6983d5e9331ad1a	GREEN	worker-25	unit 1228 tests (20 skipped), baseline 1228 OK, new failures 0; version bump only
 pipelinq	1921	4145f4efd4552709dab10cb921c6f7660d1ebc34	GREEN	worker-56	merge onto development is a no-op (tree identical to development b99fd65); no tests needed, no new failures
