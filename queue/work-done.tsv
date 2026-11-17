@@ -19639,8 +19639,14 @@ fix:buildiq:1608:ae635677	conflict resolved, pushed b1698085; REVERIFY (merge ga
 merge:decidiq:2154:ee145254	unmeasured: static.developer.overheid.nl (reviews recorded: 5 APPROVE, #2254 REQUEST_CHANGES gridstack peer range; #2249 gate RED sbom; #2171,#2189 CONFLICT)	session-20261117T063021-b217a961	2026-11-17T06:48:21Z
 fix:hermiq:1758:7278524b	blockers fixed, pushed 9fd79088; merge lock held by another merger, REVERIFY queued	session-20261117T063127-b908dd01	2026-11-17T06:48:30Z
 fix:humaniq:1134:2d975a3c	conflict resolved, pushed cfbe5201; REVERIFY queued	session-20261117T055853-7ddd3cb3	2026-11-17T06:48:53Z
+gap:dossiq:cases-are-archival-no-delete:1	PR #6630: delete endpoint always 403 cases_are_archival, Deleted cases page+menu removed, change cases-are-archival-no-delete (REQ-CM-90, REQ-CRW-01 removed), old changes superseded; restore/destroy API kept for pre-existing deletions	session-20261117T061948-27a46e65	2026-11-17T06:49:01Z
 fix:hermiq:1764:7265b61e	conflict resolved, pushed f9abfe44; merge lock busy, REVERIFY queued	session-20261117T063846-e8410bfe	2026-11-17T06:49:02Z
 fix:filinq:2093:4fc207ba	unmeasured: api.osv.dev; conflicts fixed and pushed, new head 8d7793cd, approved, REVERIFY queued	session-20261117T063112-55331435	2026-11-17T06:49:22Z
 merge:portaliq:2417:1b98d0f2	cloud tree of 5 portaliq PRs: merged=0 red=0 fail=0 skip=1; conflict 4, lint 0, red 0, moved 0, done 0	session-20261117T063032-e9a993e2	2026-11-17T06:49:34Z
 fix:hermiq:1795:78cb835e	conflict resolved, pushed a0df53ce; lock busy, REVERIFY queued	session-20261117T063048-0c413ea5	2026-11-17T06:49:36Z
 fix:integriq:3601:fc46c8d9	conflict resolved, new head 823e2117, REVERIFY queued	session-20261117T055928-ffb37dd3	2026-11-17T06:49:43Z
+fix:buildiq:1649:039cc4ad	floor restored (unit_complexity 3.44, PASS), pushed 50616cd8; REVERIFY queued	session-20261117T063011-660205ce	2026-11-17T06:50:12Z
+fix:integriq:2650:54f2db42	blockers fixed, pushed e2326510; REVERIFY queued	session-20261117T063100-87feca45	2026-11-17T06:50:34Z
+fix:learniq:2536:31b84d24	conflict resolved (new head 3f0c2d08, tree 0 new failures); review REQUEST_CHANGES: app-version bump, duplicate index page, unregistered icon, schema titles, nl keys	session-20261117T061732-40387d12	2026-11-17T06:50:44Z
+fix:learniq:2519:7bff990d	fixed CONFLICT, new head d768aa77; merge lock held elsewhere, REVERIFY queued	session-20261117T055844-3d508d2a	2026-11-17T06:50:50Z
+fix:hermiq:1751:73163d7d	BLOCK fixed (gate-46) + conflict resolved, pushed 79bb5690; REVERIFY recorded	session-20261117T060006-72dfb87c	2026-11-17T06:51:20Z
