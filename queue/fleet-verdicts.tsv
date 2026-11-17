@@ -18903,3 +18903,4 @@ learniq	2594	259feb56de2bd786055277d5a9b39371d1cecb1c	GREEN	worker-26	unit suite
 opencatalogi	2783	b2d114f8e5f369a5012945225e70b599844f6613	GREEN	worker-25	version bump in info.xml and openapi.json only; no code, suite not rerun
 launchpad	1300	0d717f3832eb0cc5d462e04506034b536bd83e15	GREEN	worker-53	build launcher-app-catalogue entry point + e2e spec; PHP 4621 tests same as baseline; vitest 2733/2734, the 1 failure (propDefinitions golden, ContainerWidget) inherited from development; 0 new
 opencatalogi	2799	a135b0009b7aefad519be035a3b4003c800e66b2	GREEN	worker-39	merges clean; adds e2e spec + openspec/tasks edits only, no lib/src change so unit suite unaffected (not run)
+learniq	2608	665e9afd63c2e7205495148174b108203aa1a321	GREEN	worker-45	unit baseline 7152 (2 inherited failures: HigherEducationExampleSetTest, StubSignatureParityTest DeferredListenerContext), tree 7156, 0 new; php -l clean; build T1 of school-documents-on-the-portal, additive row keys
