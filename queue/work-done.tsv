@@ -22384,6 +22384,7 @@ verify:stackiq:2050:3aee64db	GREEN (e2e only)	session-20261117T190242-7c82bed8	2
 verify:shillinq:3067:55cee22d	CONFLICT 3067 (register-versions.lock.json)	session-20261117T185419-c23c5946	2026-11-17T19:57:55Z
 verify:portaliq:2583:d8b97f3d	CONFLICT portaliq#2583 (package.json)	session-20261117T190026-7c82e6b3	2026-11-17T19:58:04Z
 verify:portaliq:2565:d455ab0f	GREEN #2565 (docs tick only, 0 new failures)	session-20261117T190633-45ee22b7	2026-11-17T19:58:10Z
+build:dossiq:decision-templates-render-through-a-vendor:b2:c3	failed: permission (git push to ConductionNL/dossiq refused by the session git proxy: repo not in authorized set); Newman folder for 2.5 was written locally, not pushed; 2.3 waits on filinq#2175 task 2.4 (engines endpoint unbuilt); 2.6/2.7 live	session-20261117T185932-75c4578d	2026-11-17T19:59:14Z
 build:shillinq:ledger-multi-administration:b2:c5	already built: every code task on development (switcher page, scoped index, templates, follower sync); e2e spec tests/e2e/ledger-multi-administration.spec.ts in open #3169, unticked until a live run; skipped 2.2 (request on nextcloud-vue, external repo)	session-20261117T185419-c23c5946	2026-11-17T19:58:42Z
 verify:humaniq:1197:a28aaa28	GREEN #1197 (e2e spec; unit 4509 OK)	session-20261117T190448-9c35d7c4	2026-11-17T19:58:57Z
 verify:stackiq:2053:74b55e34	GREEN #2053 (e2e spec only, 0 new failures)	session-20261117T185935-593e017f	2026-11-17T19:59:07Z
@@ -22431,5 +22432,6 @@ build:dossiq:intake-says-when-the-term-starts:b2:c2	already built: dossiq code a
 build:dossiq:case-type-conditional-rules:b2:c2	already built: every code task is on development (PR #6650 head 312ccd57 merged); tasks name no spec file; left unticked: live-instance integration tests of tasks 2 and 4	session-20261117T190026-7c82e6b3	2026-11-17T20:07:24Z
 verify:shillinq:1958:5bdb3bb1	CONFLICT #1958 (appinfo/info.xml vs development)	session-20261117T190448-9c35d7c4	2026-11-17T20:07:22Z
 fix:shillinq:3048:fa893f7b	fixed: conflicts resolved and administrationScopedPages regenerated; pushed 9fbb86c2; REVERIFY queued (merge lock held)	session-20261117T190150-dbabe332	2026-11-17T20:07:32Z
+merge:versioniq:692:72818c9c	failed: permission: GitHub API refused for versioniq in this session (HTTP 403, repo access not enabled); tree built clean (700,784 IN, 0 new failures; 692,698 CONFLICT), nothing landed	session-20261117T185359-d68263c5	2026-11-17T20:07:40Z
 verify:thematiq:1714:a6daab39	GREEN: 0 new failures, vitest 1573/1573	session-20261117T190443-6578d505	2026-11-17T20:08:04Z
 merge:planninq:1239:69aace58	unmeasured: api.osv.dev; cloud tree of 6 planninq PRs: merged=0 red=1 (1243 maintainability floor) fail=0 skip=5	session-20261117T185625-a1e67f54	2026-11-17T20:08:16Z
