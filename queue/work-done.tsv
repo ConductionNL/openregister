@@ -18803,6 +18803,7 @@ review:filinq:2102:65d3f572	stale	session-20261117T004616-c7acc36d	2026-11-17T01
 build:filinq:specify-capability-rows:c7	partial: pushed 06d3cf49 to PR #2123: task 2.3 now writes versioned (restoreVersion) and anonymised (recordAnonymizationLink) into the document trail, 4 tests, unit 7055 OK; left opened/downloaded/signed (no single filinq hook), activity tab, 3.3 portal accept action, Playwright checks	session-20261113T214350-9762e143	2026-11-17T01:12:26Z
 fix:learniq:2497:c85c5913:v3	fixed: conflicts + ObjectFindOptions migration, suite 6998 / 2 inherited; lock held elsewhere, REVERIFY at a6d36cf2	session-20261117T003652-c6487e72	2026-11-17T01:12:17Z
 fix:decidiq:2148:2bf0e346:v3	conflicts resolved + main API migration, pushed d7247809, suite 4792 green; lock held elsewhere, REVERIFY queued	session-20261117T004735-ba0cb916	2026-11-17T01:12:25Z
+fix:humaniq:670:404bf31c:v4	obsolete: preset-env 8.0.7 and core 8 already on development; PR closed	session-20261117T005434-ea6146cc	2026-11-17T01:12:48Z
 fix:learniq:2524:593b6b37:v3	fixed CONFLICT, pushed 03298d02; REVERIFY queued (merge lock held elsewhere)	session-20261117T004655-cf1f2f80	2026-11-17T01:12:44Z
 fix:shillinq:3065:82dc0d10:v3	fixed CONFLICT, pushed ba9580f8f; merge lock held elsewhere, REVERIFY queued	session-20261117T004638-e72c1040	2026-11-17T01:12:56Z
 fix:hermiq:1762:6f2d6587:v3	conflict resolved, pushed d2151c56, unit green; lock held elsewhere, REVERIFY queued	session-20261117T004133-c974afac	2026-11-17T01:13:11Z
