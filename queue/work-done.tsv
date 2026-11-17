@@ -22049,6 +22049,7 @@ build:launchpad:scheduled-exports:b2	partial: PR #1307 built tasks 3,5,7,9,21,23
 build:stackiq:sharing-generated-api-docs:b2	failed: needs nextcloud/openapi-extractor installed under vendor-bin (composer outside composer-cloud.sh, not allowed for a cloud worker) to generate and check openapi.json; tasks 3-4 depend on it	session-20261117T132743-10cec9d3	2026-11-17T16:24:13Z
 build:versioniq:inventory-verified-publisher:b2	already building: quality/build-inventory-verified-publisher 	session-20261117T135414-614629b0	2026-11-17T16:24:17Z
 build:versioniq:releases-notes-reach:b2	already building: quality/build-releases-notes-reach 	session-20261117T135414-614629b0	2026-11-17T16:24:24Z
+build:versioniq:releases-channel-and-prereleases:b2	already done: change archived on development (380ccc6)	session-20261117T132743-10cec9d3	2026-11-17T16:24:55Z
 build:versioniq:install-live-progress:b2	already building: quality/build-install-live-progress 	session-20261117T135414-614629b0	2026-11-17T16:24:52Z
 build:versioniq:advisories-per-app-detail:b2	already building: quality/build-advisories-per-app-detail 	session-20261117T135414-614629b0	2026-11-17T16:25:00Z
 build:stackiq:contracts-expiry-and-owner:b2	PR #2053: tests/e2e/spec-coverage/contract-expiry-and-owner.spec.ts (quick filters, columns, responsible user picker); vitest halves pass; Test boxes unticked until a live run	session-20261117T145912-e9f6485a	2026-11-17T16:25:17Z
