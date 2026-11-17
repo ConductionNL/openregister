@@ -22825,3 +22825,4 @@ merge:integriq:3727:ba590c19	unmeasured: static.developer.overheid.nl (proxy ref
 merge:thematiq:1714:330d56f1	unmeasured: static.developer.overheid.nl (proxy 403 from this session; merge gate checker_floor cannot measure), lock released, nothing landed	session-20261117T212735-2b6c91a0	2026-11-17T22:19:23Z
 review:openregister:10622:d498ab65	APPROVE: CI-only setup-node pin bump, no code changed	session-20261117T221832-434567de	2026-11-17T22:19:44Z
 review:openregister:10625:77e25041	APPROVE: CI-only upload-artifact pin bump, same sha as scorecard.yml	session-20261117T221428-ca31c1a7	2026-11-17T22:20:08Z
+review:openregister:10630:56e67fcf	APPROVE: dev-only vue-eslint-parser patch bump	session-20261117T221832-434567de	2026-11-17T22:20:33Z
