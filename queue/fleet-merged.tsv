@@ -5635,3 +5635,4 @@ buildiq	1722	9c7c8cfc7b3c10467efbe2b02ebf84adc7af41c7	SKIP	worker-02	GATE UNMEAS
 opencatalogi	2801	ebec806c87bf79c189993d39f1d7c8c142469975	SKIP	worker-18	GATE UNMEASURED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3 while api.osv.dev is unreachable from this session
 integriq	3731	d1f6f2979cd52bb09500599fce18732c3238ee04	RED	worker-58	GATE RED floor: unit_complexity: 3.89 -> 3.87
 learniq	2601	3cc5a9d81623e03b4652659765476e0ce4828d7d	SKIP	worker-49	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
+learniq	2602	562289417dc44c1a437b7a634ba5466aed65748e	SKIP	worker-49	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
