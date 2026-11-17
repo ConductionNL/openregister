@@ -1389,6 +1389,7 @@ buildiq	1716	f3a173de86c01c3d3ee317b89282af504b62139b	APPROVE	worker-02	Quick; n
 buildiq	1717	e829fe43c9a5cef45899fc7b358e8344c41b504b	APPROVE	worker-02	Quick; no blockers; spec wording and tasks tick only
 thematiq	1721	b57b4ab90b6e9cd73b7a08ae3f63864fc2e778d5	APPROVE	worker-14	Quick; no blockers; dev-only psalm major bump, php ^8.3 satisfied
 thematiq	1722	f409740840de20ce047e4abde179bd59e0a9d729	APPROVE	worker-14	Quick; no blockers; dev dependency patch bump
+thematiq	1723	f6aae08d113aa98b5a8129910468602b07e598e8	APPROVE	worker-14	Quick; no blockers; shared widget minor bump, vitest 1576 green on tree
 buildiq	1718	56e7faf39d616a8090eb63a8426131ae67e763f5	APPROVE	worker-02	Quick; no blockers; tasks tick and parity matrix re-rating only
 buildiq	1719	7653a33d583d1867e34be5ee228c5344ab9943f5	APPROVE	worker-02	Thorough; no blockers; vector retrieval falls back to whole files on any failure, knowledge read stays after the role check, filtered to the agent's own file ids; health adds a bool
 buildiq	1720	b381c76e51c6407ce503784b63007dee43070ee0	APPROVE	worker-02	Quick; no blockers; tasks.md tick only
