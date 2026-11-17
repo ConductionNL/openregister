@@ -19076,3 +19076,4 @@ shillinq	3179	7b95f4f0e690def8326bac1ce7c4ddffd7e3c02e	GREEN	worker-11	build of 
 filinq	2069	ac2fa7c734e5737f6808e0ef9a2d2d3956ca4aa2	BLOCK	worker-57:review	review: Thorough; blockers: 7 @spec tags point at #requirement-an-arriving-pdf-may-get-a-stamped-copy-req-ias-003 but the spec heading is 'A received stamp goes on a copy, never on what arrived (REQ-IAS-003)' (gate spec-anchor-existence); 6 new intakeDocument.acknowledgement properties lack title/descriptio
 versioniq	692	96800420d9df09f61c55ff8510dbb0ab80c2a269	CONFLICT	worker-22	conflicts with development; files: tests/e2e/cli.spec.ts tests/e2e/jobs.spec.ts
 versioniq	698	ee38e0b72ee16970a4538db390dba458699d7063	CONFLICT	worker-22	conflicts with development; files: tests/e2e/cli.spec.ts
+decidiq	2149	c4919c09bcf229e7e35047308d66f1d9f91c0053	RED	worker-45:merge-gate	GATE RED checker floor: secretscanning: pass -> fail; secretscanning stars: 5 -> 1
