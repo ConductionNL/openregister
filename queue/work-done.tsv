@@ -21206,3 +21206,4 @@ build:portaliq:case-actions-row-inputs-and-conditions:b2	PR #2569: T03 ActionFie
 build:portaliq:guardian-pages-follow-the-wilgenboom-boards:b2	already done: T6 landed in learniq#2087; PR #2572 ticks it	session-20261117T135520-9a524c6b	2026-11-17T14:39:38Z
 build:portaliq:lookup-by-row-field:b2	done: PR #2571 ticks task 5 (learniq declarations on development); every task done	session-20261117T124637-3e909745	2026-11-17T14:39:28Z
 build:portaliq:mandated-case-offers-no-writes:b2	already built: T1 on development with tests/collection-loader.spec.mjs; scenario e2e-excluded; skipped T2 (live rehearsal check)	session-20261117T141335-245f063b	2026-11-17T14:39:17Z
+build:portaliq:mijn-taken-lists-contributed-tasks:b2	already done: T1-T2 on development (5e9f3fe6, 186e0a13); T3 live	session-20261117T133035-588aec38	2026-11-17T14:40:04Z
