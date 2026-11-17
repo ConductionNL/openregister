@@ -20269,3 +20269,4 @@ fix:hermiq:1719:72b13e05	conflict resolved, pushed 0b2ffe7a; REVERIFY queued (me
 fix:filinq:2107:11172a4b	conflict resolved, pushed af5c1387; merge lock held elsewhere, REVERIFY queued	session-20261117T101047-61b4b05d	2026-11-17T10:16:54Z
 fix:filinq:2126:d4e66904	conflict resolved, pushed 7a17d80f; lock busy, REVERIFY queued	session-20261117T100711-68dc61ca	2026-11-17T10:17:03Z
 review:hermiq:1740:c6bf622f	GREEN: unit 5633 OK on PR+development	session-20261117T093219-f1a53dc3	2026-11-17T10:17:21Z
+fix:dossiq:6635:4ef9f4fa	sbom regenerated, development merged in; new head 1292bb3c, REVERIFY queued (2 vitest failures inherited from development)	session-20261117T100910-d59d6f46	2026-11-17T10:17:35Z
