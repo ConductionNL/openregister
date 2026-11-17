@@ -6180,6 +6180,29 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     }//end lockObject()
 
     /**
+     * Claim a lock for an explicit owner, atomically, without a session.
+     *
+     * For background jobs and workers that have no signed-in user. Succeeds
+     * when the object is unlocked, its lock expired, or the same owner (and
+     * run) already holds it; of two racing claimers only one gets true. No
+     * RBAC check runs, as there is no user to check: locks taken for a person
+     * keep going through lockObject().
+     *
+     * @param LockRequest $request The object, process, duration and flow run step of the lock.
+     * @param string      $ownerId The owner the lock is taken for.
+     *
+     * @return bool True when the caller now holds the lock; false when another holder has it.
+     *
+     * @throws \InvalidArgumentException When the owner id is empty.
+     *
+     * @spec exclude One-line delegation to lock handler; lock behavior owned by object-lifecycle.
+     */
+    public function claimObject(LockRequest $request, string $ownerId): bool
+    {
+        return $this->lockHandler->claim(request: $request, ownerId: $ownerId);
+    }//end claimObject()
+
+    /**
      * Unlock an object
      *
      * Removes the lock from an object, allowing other processes to modify it.
