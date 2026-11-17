@@ -19734,3 +19734,4 @@ review:filinq:2121:06812be1	BLOCK: register version without app version bump, co
 review:learniq:2536:3f0c2d08	BLOCK #2536: tests baseline, 5 gate findings on PR lines	session-20261117T062935-1aa25581	2026-11-17T07:09:24Z
 fix:shillinq:3110:e8ca71f4	sbom current (dev-only lock changes); merged development, REVERIFY new head 1e1e9564	session-20261117T065524-8fc65d3f	2026-11-17T07:09:35Z
 review:shillinq:3004:0e70c6a3	CONFLICT with development (7 files); fix task follows	session-20261117T063100-87feca45	2026-11-17T07:09:49Z
+fix:decidiq:2171:853b82a5	conflict resolved, pushed 6d1d07d3; merge lock held elsewhere, REVERIFY queued	session-20261117T065448-ceb2e7e7	2026-11-17T07:10:02Z
