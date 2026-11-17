@@ -21445,6 +21445,7 @@ build:filinq:redaction-at-scale:b2	already building: quality/build-redaction-at-
 build:filinq:scan-intake-with-separator-sheets:b2	already building: quality/build-scan-intake-with-separator-sheets exists; 3.2 and 4.2 code tasks open	session-20261117T140734-4d108840	2026-11-17T15:05:03Z
 build:filinq:signing-trust-rebuild:b2	already building: quality/build-signing-trust-rebuild exists (125367015); left live/e2e/docs	session-20261117T140734-4d108840	2026-11-17T15:05:28Z
 build:filinq:signing-accept-only-recipient:b2	already building: quality/build-signing-accept-only-recipient at 54533c18 is open, not on development	session-20261117T141120-684bff04	2026-11-17T15:05:26Z
+build:buildiq:data-external-database-sources:b2	PR #1717: spec made strict-valid (REQ-BQDB-002 split into a scenario), T12 ticked; change complete	session-20261117T133433-906519d6	2026-11-17T15:05:41Z
 build:filinq:intake-base-registry-enrichment:b2	already building: quality/build-intake-base-registry-enrichment is open (head 2b8e54e7)	session-20261117T124637-3e909745	2026-11-17T15:06:13Z
 build:filinq:tmlo-mdto-metadata:b2	already building: quality/build-tmlo-mdto-metadata holds 10 unmerged commits beyond development (head 9d997186)	session-20261117T133833-7d87fd3d	2026-11-17T15:06:11Z
 build:filinq:templates-employer-statement:b2	already building: quality/build-templates-employer-statement at c34cbf17 is open, not on development	session-20261117T141120-684bff04	2026-11-17T15:05:56Z
