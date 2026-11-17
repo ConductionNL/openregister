@@ -22722,3 +22722,4 @@ verify:opencatalogi:2786:0400a8ec	GREEN #2786: no new unit or vitest failures; a
 verify:shillinq:3048:9fbb86c2	GREEN 3048: unit 12824 OK, vitest only inherited failure	session-20261117T211359-b7379586	2026-11-17T21:48:55Z
 fix:portaliq:2446:ddd3af7b	conflict resolved, pushed e217a1c6; REVERIFY (merge lock held elsewhere)	session-20261117T211932-f471137a	2026-11-17T21:49:09Z
 verify:pipelinq:3961:6eff78b5	RED 3961: eventAddAttendee spec fails with @nextcloud/dialogs 8	session-20261117T211425-939d7fb0	2026-11-17T21:49:31Z
+verify:portaliq:2587:c972ccc3	GREEN 2587	session-20261117T211406-076a7a0e	2026-11-17T21:49:55Z
