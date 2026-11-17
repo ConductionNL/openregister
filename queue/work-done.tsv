@@ -19085,3 +19085,4 @@ review:learniq:2536:85923107	RED: 2 new failures merged with development (Planne
 review:hermiq:1741:b210624d	GREEN: 5502 tests, 0 failures, matches change specs	session-20261117T020255-329d248b	2026-11-17T02:14:52Z
 review:humaniq:1134:2d975a3c	GREEN: unit 4503, 0 new failures; test-const conflict with development	session-20261117T015705-50845751	2026-11-17T02:15:01Z
 review:learniq:2551:2291ead0	GREEN: 7001 tests, 1 inherited failure; js 140/140	session-20261117T020142-15890c05	2026-11-17T02:15:15Z
+review:learniq:2537:0831c23e	BLOCK: re-saving a day drops its photoRef; conflicts with development (golden manifests)	session-20261117T020210-893a9346	2026-11-17T02:15:30Z
