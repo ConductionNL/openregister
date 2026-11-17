@@ -19748,3 +19748,4 @@ fix:shillinq:2071:c9fb8008	restored BookCapturesCommand registration, pushed 6ef
 fix:shillinq:3064:b11030b8	conflict resolved, pushed e4c2b4532; REVERIFY recorded	session-20261117T063021-b217a961	2026-11-17T07:12:04Z
 review:shillinq:2086:9fa2a6b9	GREEN: unit 12621 green, vitest 24 green, phpstan clean	session-20261117T070105-e962857c	2026-11-17T07:12:16Z
 review:shillinq:3067:57c917aa	BLOCK: manifest labels without nl keys	session-20261117T063127-b908dd01	2026-11-17T07:12:29Z
+cover:launchpad:fb10c50fm88bd:f545d745	no PR: lib/Repair has 315/333 lines covered by existing tests; the 18 left are missing/unreadable/malformed-seed branches on a fixed __DIR__ seed path and a glob() false, reachable only by changing production code (injectable path), which cover may not do	session-20261117T063048-0c413ea5	2026-11-17T07:12:47Z
