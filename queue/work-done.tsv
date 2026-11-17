@@ -20745,3 +20745,4 @@ verify:dossiq:3440:911163c7	GREEN #3440 (no-op tree, 0 new failures)	session-202
 fix:buildiq:1701:67dece1f	merged #1701 at 6183315e3d9928c24a7a60efb4b0aaa99d529590	session-20261117T123026-260cb3a6	2026-11-17T13:16:42Z
 fix:shillinq:3160:1013c8e6	fixed: restored publiccode supports layer entry, gate OK; new head 28ae1c74, REVERIFY queued	session-20261117T124637-3e909745	2026-11-17T13:16:45Z
 verify:integriq:3564:d0095e30	GREEN #3564 (no new failures; vitest green)	session-20261117T124734-fbd41490	2026-11-17T13:17:06Z
+verify:shillinq:2070:7439ff5e	GREEN #2070 (phpunit +17 OK, 1 inherited vitest failure)	session-20261117T125347-9d1a8146	2026-11-17T13:17:44Z
