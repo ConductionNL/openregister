@@ -21029,3 +21029,4 @@ build:portaliq:card-status-today:b2	already built: tasks 1-3 on development (Car
 build:dossiq:task-list-deadline-tones:b2	already done: 1.1-1.2 on development (03c7676e2); only 1.3 live left	session-20261117T124637-3e909745	2026-11-17T14:20:45Z
 build:dossiq:recent-tile-shows-when-you-opened:b2	already done: config tasks 1.1-1.3 on development (0199c033c); only live check 2.1 left	session-20261117T134355-826c5a0b	2026-11-17T14:20:29Z
 build:dossiq:task-case-card-handler-name:b2	already done: built on development in 8ef4b5eda3; only live task 1.3 left	session-20261117T140734-4d108840	2026-11-17T14:21:10Z
+build:dossiq:report-card-handler-name:b2	already done: code tasks 1.1-1.2 on development (reportCardHandlerName.spec.js 2/2 green); only 1.3 left, a live check	session-20261117T123632-d3b91db3	2026-11-17T14:21:50Z
