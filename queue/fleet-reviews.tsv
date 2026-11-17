@@ -1386,3 +1386,8 @@ keepiq	1901	f9f7976788c4b0b79cfd7a58bceadaf67c54401f	APPROVE	worker-31	Strict; n
 decidiq	2149	3ccfbfcfc456c5da74508481e6602f2a82bcfab3	APPROVE	worker-19	Thorough; no blockers; implements document-accessibility-check per spec (gate server-side before writes, scan endpoint reads source under RBAC), gate runner not cached so section 4 done by hand, unit 5084 pass, vitest 1 inherited fail
 buildiq	1715	628d9e25f091953535ee8b7bb259bf0baf012802	APPROVE	worker-02	Quick; no blockers; e2e spec only, base URL from env, non-admin empty storage state
 buildiq	1716	f3a173de86c01c3d3ee317b89282af504b62139b	APPROVE	worker-02	Quick; no blockers; tasks.md tick only
+buildiq	1717	e829fe43c9a5cef45899fc7b358e8344c41b504b	APPROVE	worker-02	Quick; no blockers; spec wording and tasks tick only
+thematiq	1721	b57b4ab90b6e9cd73b7a08ae3f63864fc2e778d5	APPROVE	worker-14	Quick; no blockers; dev-only psalm major bump, php ^8.3 satisfied
+thematiq	1722	f409740840de20ce047e4abde179bd59e0a9d729	APPROVE	worker-14	Quick; no blockers; dev dependency patch bump
+buildiq	1718	56e7faf39d616a8090eb63a8426131ae67e763f5	APPROVE	worker-02	Quick; no blockers; tasks tick and parity matrix re-rating only
+buildiq	1719	7653a33d583d1867e34be5ee228c5344ab9943f5	APPROVE	worker-02	Thorough; no blockers; vector retrieval falls back to whole files on any failure, knowledge read stays after the role check, filtered to the agent's own file ids; health adds a bool
