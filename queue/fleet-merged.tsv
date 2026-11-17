@@ -5117,4 +5117,5 @@ larpinq	1045	73c4570d7e6a3d214f834ce934c86d4df7b4579c	MERGED	worker-33	GATE OK s
 decidiq	2252	8ede89d50aa29803f8ecaee6001a6961a5492da9	MERGED	worker-24	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.78 holds at 3.83
 buildiq	1597	2a5d5c23c4e32ed0e06dec824275f109665091aa	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.91 holds at 3.99
 buildiq	1602	b2a6e8931b7f5b55133804139c2d271e4c3791e2	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.91 holds at 3.99
+opencatalogi	2665	106da8530ac7a95c453ceb9d64328d7fd03cec44	RED	worker-19	GATE RED floor: overall: 4.87 -> 4.84; unit_size: 4.66 -> 4.64; unit_complexity: 4.85 -> 4.83; unit_interfacing: 4.73 -> 4.53
 decidiq	2253	bd32087871f8d23258331464e6e6c9491d8b8168	MERGED	worker-24	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.78 holds at 3.83
