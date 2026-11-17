@@ -19303,3 +19303,4 @@ fix:integriq:3678:31eb3920	obsolete: #3678 already merged (head is in developmen
 fix:decidiq:2154:7aa3f202	fixed objectCount, unit 4821 OK; REVERIFY at 6fc49611 (merge lock busy)	session-20261117T025205-24fff43b	2026-11-17T03:01:44Z
 fix:filinq:2086:fe4bcf08:v3	stale	session-20261117T025204-e27953f1	2026-11-17T03:01:29Z
 fix:decidiq:2199:1ea0b090	conflict resolved (manifest ids), spec counts updated, pushed 207cf34b; merge lock held elsewhere, REVERIFY queued	session-20261117T021723-9d734048	2026-11-17T03:01:59Z
+fix:learniq:2579:9a422773	maintainability findings fixed + demo data; new head 65b68bcb, REVERIFY (merge lock held elsewhere)	session-20261117T003945-3aa9cc05	2026-11-17T03:02:16Z
