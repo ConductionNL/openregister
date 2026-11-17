@@ -20521,3 +20521,4 @@ review:opencatalogi:2677:ec6e4301	GREEN #2677 (no new failures; one minor robust
 fix:shillinq:2983:aac6fcf6	conflict resolved, pushed 501b81a9; merge lock held elsewhere, REVERIFY queued	session-20261117T112444-7a410249	2026-11-17T12:13:57Z
 build:opencatalogi:publications-for-signed-in-readers:c4	partial: PR #2771, tasks 1.1-1.4, 2.1-2.3, 3.1 code, 3.2 built; left: 4.1, 4.2 (portaliq PR), 5.1 openspec validate, 3.1 e2e	session-20261117T114001-eb50211c	2026-11-17T12:14:13Z
 review:buildiq:1590:ca570ceb	GREEN: unit 3621 OK, phpstan clean, specs matched	session-20261117T121046-ffb3fcc9	2026-11-17T12:14:20Z
+review:integriq:3574:daecacd9	GREEN: built to spec, no new failures (4 inherited)	session-20261117T120218-38f2a955	2026-11-17T12:14:32Z
