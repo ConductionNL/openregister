@@ -20622,3 +20622,4 @@ verify:decidiq:2266:2faec0d5	GREEN #2266 (4958 OK, metadata only)	session-202611
 verify:humaniq:1190:27f4e981	GREEN #1190 (version bump only, 4509 tests, no new failures)	session-20261117T124621-35d7386d	2026-11-17T12:48:51Z
 verify:integriq:2969:a2ea40ef	CONFLICT: info.xml, mock register, openapi.json	session-20261117T124624-f509cbbb	2026-11-17T12:49:15Z
 verify:dossiq:6631:f4e91e8d	GREEN #6631	session-20261117T123701-2c29f729	2026-11-17T12:49:26Z
+verify:dossiq:3490:74c43e35	GREEN #3490: empty diff vs development	session-20261117T124618-77238b95	2026-11-17T12:49:55Z
