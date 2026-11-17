@@ -5269,3 +5269,4 @@ thematiq	1713	204da621108a37e8af06ddfa66c7ff4419d272d7	MERGED	worker-53	GATE OK 
 integriq	2650	a234a7dcd5406b084a8ab52688a27782b7f62f89	RED	worker-36	GATE RED floor: unit_complexity: 3.90 -> 3.88
 buildiq	1701	67dece1fabcf3a353a99f8740874b663b7c7593f	SKIP	worker-19	no APPROVE review at this head
 opencatalogi	2683	77bd70e15f690f5b09ff5b6b11c6215b728e809f	SKIP	worker-40	no APPROVE review at this head
+larpinq	1088	b6f2f9b48fd84e4b68a1cefdf77af3ad41f94ec1	RED	worker-13	GATE RED checker floor: fivelayer: pass -> warn; fivelayer stars: 5 -> 3; score: 100 -> 97
