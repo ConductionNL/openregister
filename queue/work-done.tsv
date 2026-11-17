@@ -19357,3 +19357,4 @@ merge:integriq:3675:189bdd6e	cloud tree of 1 integriq PRs: merged=1 red=0 fail=0
 build4:openregister:scoped-api-tokens:c7	partial: PR #10514 head 9e2df373 - merged main (27 commits, clean; Rbac 1308, Db 5845, Middleware 259, Object 4822, Controller 10274 all OK). Nothing buildable left without a decision or an instance: 3.1 needs a decision on which token the account page manages (app password vs own api_tokens) and a Consumer admin view; 4.1, 4.2b and W.1 need a running instance; C40.7 is a handover	session-20261113T214350-9762e143	2026-11-17T03:15:15Z
 fix:integriq:3678:31eb3920	stale	feeder	2026-11-17T02:57:26Z
 fix:integriq:3678:31eb3920	stale	feeder	2026-11-17T02:57:26Z
+fix:stackiq:1939:4b930687	merged #1939 at 6f56332279ddf2bc015019d39d801104e240e38d	session-20261117T020319-9833efe0	2026-11-17T03:16:14Z
