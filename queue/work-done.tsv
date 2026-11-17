@@ -19926,3 +19926,4 @@ fix:filinq:2107:0bc2f69d	BLOCK fixed, pushed 11172a4b; REVERIFY recorded (merge 
 review:versioniq:701:8845d766	GREEN: per change, no new failures	session-20261117T081258-8ec427f2	2026-11-17T08:29:59Z
 review:launchpad:885:de52aba3	GREEN: phpunit 4563 ok, vitest 2695 ok, no new failures	session-20261117T080453-34aa4034	2026-11-17T08:30:27Z
 merge:filinq:2059:579ca20b	unmeasured: api.osv.dev (2059 APPROVE, gate SKIP; 7 CONFLICT, 2098 MOVED)	session-20261117T081227-7932bc83	2026-11-17T08:30:35Z
+fix:versioniq:706:2a838675	fixed floor (5.07->5.08 PASS), pushed 7403373; merge lock held by another merger, REVERIFY queued	session-20261117T080505-a1a86f91	2026-11-17T08:30:46Z
