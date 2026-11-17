@@ -20875,5 +20875,6 @@ fix:integriq:3705:06350cfb	sbom regenerated, pushed cd33fb75; merge lock held el
 cover:buildiq:70b3e29em2454:6818da73	PR #1709: 22 tests for 7 Kernel value objects; suite 3676 -> 3698, 0 failures	session-20261117T135414-614629b0	2026-11-17T13:57:33Z
 measure:integriq:20261117h12	php 95.17% js 94.36%	session-20261117T134304-10008ffd	2026-11-17T13:57:26Z
 verify:dossiq:6641:c2d5c3a2	GREEN #6641 (publiccode.yml only; 0 new failures over baseline 19)	session-20261117T135015-f9a7106f	2026-11-17T13:57:34Z
+cover:decidiq:a5f973bbmfcd5:fa6ed6d4	already covered: 129/130 statements (99.2%) on development, target 95; only the unreachable glob()-false branch is left; no PR	session-20261117T125716-5aa18045	2026-11-17T13:57:35Z
 build:versioniq:releases-version-facts:c8	partial: nothing buildable, 2.3 still waits for RemoteInstanceReader (#735 open at f5849eb, not on development), 4.4 e2e and 5.1 close left, PR #755 open at 01df198	session-20261117T135342-03791034	2026-11-17T13:57:57Z
 cover:buildiq:70b3e29em2454:34763eb4	already done: lib/Middleware/*.php at 100% lines (60/60, 13/13 methods) on development 465f72e4; no PR	session-20261117T135528-a58cdfc6	2026-11-17T13:58:01Z
