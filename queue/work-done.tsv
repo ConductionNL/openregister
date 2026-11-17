@@ -19659,3 +19659,4 @@ fix:integriq:3613:599c7742	fixed BLOCK, pushed b7a00be90; REVERIFY recorded (mer
 fix:learniq:2486:384efb33	conflict resolved, pushed 2a7fcc37; merge lock held elsewhere, REVERIFY queued	session-20261117T062935-1aa25581	2026-11-17T06:52:40Z
 fix:filinq:2059:9ead1961	unmeasured: api.osv.dev (conflicts resolved, pushed 7a6dae82, APPROVE recorded, not landed)	session-20261117T063708-4c9ceddc	2026-11-17T06:52:52Z
 fix:humaniq:1142:dc634057	conflict resolved, pushed 7f00cdb5; REVERIFY queued	session-20261117T055853-7ddd3cb3	2026-11-17T06:53:08Z
+fix:integriq:3631:36311b4c	conflict resolved, new head 905f2fc3, REVERIFY queued	session-20261117T055928-ffb37dd3	2026-11-17T06:53:47Z
