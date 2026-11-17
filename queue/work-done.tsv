@@ -22448,3 +22448,4 @@ verify:thematiq:1729:0112b5b6	GREEN #1729: vitest 1571 pass, lint clean	session-
 build:shillinq:sales-quick-draft-from-any-page:b2:c2	partial: pushed to PR #3174 tests/e2e/sales-quick-draft-from-any-page.spec.ts (3 scenarios tagged, eslint + playwright --list clean); left 1.1 (needs a nextcloud-vue app-level open-modal action), 2.1 live run	session-20261117T190333-2bf83f45	2026-11-17T20:11:17Z
 build:dossiq:e2e-citation-integrity:b2:c2	partial: nothing new buildable here; PR #6647 is on development; left: e2e rewrites 1.x-3.x per worklist-2026-09-12 need a live instance (the change requires watching each repaired test fail), 4.4 waits on page-topology-cleanup, 5.2-5.4 are gate-side	session-20261117T190026-7c82e6b3	2026-11-17T20:11:32Z
 verify:stackiq:2057:109a8c2a	2057 GREEN (e2e spec only)	session-20261117T185710-40ec955c	2026-11-17T20:11:35Z
+verify:thematiq:1722:f4097408	GREEN: thematiq #1722	session-20261117T185937-87a1822c	2026-11-17T20:11:53Z
