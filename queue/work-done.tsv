@@ -19662,3 +19662,4 @@ fix:humaniq:1142:dc634057	conflict resolved, pushed 7f00cdb5; REVERIFY queued	se
 gap:hermiq:agent-form-pickers-a11y:1	PR #1827: people/group pickers keep their listbox inside the dialog (appendToBody false), vitest a11y spec added	session-20261117T063112-55331435	2026-11-17T06:53:30Z
 fix:integriq:3631:36311b4c	conflict resolved, new head 905f2fc3, REVERIFY queued	session-20261117T055928-ffb37dd3	2026-11-17T06:53:47Z
 fix:humaniq:1146:3a8cc16b	fixed CONFLICT and a missing version bump (head 7c1dfd1e), tree green, APPROVE recorded; merge gate RED on floor module_coupling 4.34->4.32, not landed	session-20261117T055905-03eea4d3	2026-11-17T06:54:02Z
+gap:hermiq:every-user-creates-agents:1	PR #1828: Agent create granted to authenticated, update/delete owner-only, unit+e2e tests; unit 5546 OK	session-20261117T063048-0c413ea5	2026-11-17T06:54:32Z
