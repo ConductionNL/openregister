@@ -19048,3 +19048,4 @@ versioniq	797	c57c48555761cf2212f669c177b61cc63d932ea9	GREEN	worker-22	e2e spec 
 thematiq	1719	740e1349e57122fb6902c14777368c21f0bfaa15	GREEN	worker-07	adds 3 token sets + sync of generated upstream themes; phpunit-unit 2933 (baseline 2900, 1 inherited failure MigrateOverrideValueTypesTest), token-sets 437 OK, vitest 1576 OK, 0 new failures
 versioniq	729	497abe19ff268ce16525a80c4f175e57d1a81499	CONFLICT	worker-22	conflicts with development
 stackiq	2061	6ab602c46d48b7cee3466e36e021e8be6512ce4c	GREEN	worker-33	PHP unit 4055 OK (baseline 4055 OK), vitest 2946 with 1 facets failure inherited from development; frontend overlay for architecture-shared-usage-on-views, CSS variables only
+learniq	2551	f185e0a06298be8168e632a52b6bec49e9079fde	REVERIFY	worker-20:merge	conflicts only with an earlier PR of the merge tree: merges clean on development alone; files: lib/Settings/learniq_register.json 
