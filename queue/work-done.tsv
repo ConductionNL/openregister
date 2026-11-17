@@ -19017,3 +19017,4 @@ fix:larpinq:1045:e9397f8e:v3	conflict resolved + asker fix; APPROVE at aac5b194 
 fix:stackiq:1937:3a8099f9:v3	merged #1937 at de3abb3c43e0e66c3013e1d38bd09751ee88a37b	session-20261117T004644-d9c68b8f	2026-11-17T01:56:00Z
 merge:launchpad:819:9983e3d6:r	merge3 tree of 1 launchpad PRs: merged=0 red=1 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-17T01:56:41Z
 merge:shillinq:1900:aca810c3:r	merge3 tree of 3 shillinq PRs: merged=0 red=2 fail=0 skip=0; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-17T01:57:06Z
+fix:versioniq:700:d6286a7e:v3	conflicts resolved, pushed 67179d1c; not landed: SbomControllerTest needs server-only Symfony classes, REVERIFY queued	session-20261117T004133-c974afac	2026-11-17T01:57:23Z
