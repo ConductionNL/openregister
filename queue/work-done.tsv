@@ -20562,6 +20562,7 @@ merge:opencatalogi:2683:de316a9c	cloud tree of 2 opencatalogi PRs: merged=0 red=
 cover:buildiq:70b3e29em2454:0d8702e3	no PR: template classes are already tested (98 tests); the uncovered lines are behind \OCP\Server::get (needs a global \OC stub that would break IconService tests), a fixed config path, unreachable fallbacks, and the template's own tests/ php under lib/	session-20261117T114019-426872f0	2026-11-17T12:20:31Z
 cover:decidiq:a5f973bbmfcd5:1b97f731	PR #2266: lib/Listener 91.9% -> 98.0% (@uses on 6 risky tests), suite 4951 ok	session-20261117T112432-6eb8ecae	2026-11-17T12:20:38Z
 cover:buildiq:70b3e29em2454:d39f9857	already done: lib/Support/*.php at 98.2% lines on development e4700fc7 (target 95; 6 uncovered lines in ApplicationStories, FormPageConfig, WidgetIdAllocator)	session-20261117T113142-3e3cc1d3	2026-11-17T12:20:32Z
+cover:buildiq:70b3e29em2454:38e80a9f	PR #1702: 13 tests for AppImport/AppDelete/AppExport/PublishTarget edge cases; suite 3578->3591, 0 failures	session-20261117T121021-f9b4bce3	2026-11-17T12:21:36Z
 merge:integriq:2650:e275cd00	cloud tree of 4 integriq PRs: merged=0 red=3 fail=0 skip=0; conflict 1, lint 0, red 0, moved 0, done 0	session-20261117T111757-a0ed5e74	2026-11-17T12:21:37Z
 cover:buildiq:70b3e29em2454:1b97f731	already done: lib/Listener/*.php at 99.4% (789/794 stmts) on development, above 95 target; branches -1..-4 merged	session-20261117T120335-b942e878	2026-11-17T12:21:51Z
 cover:decidiq:a5f973bbmfcd5:f545d745	PR #2267: FillDecisionDecidingBody 5 tests (53/63 -> 62/63 lines with its own test); suite 4951 -> 4956 OK; rest of lib/Repair already 100%	session-20261117T112444-7a410249	2026-11-17T12:21:53Z
@@ -20571,3 +20572,4 @@ cover:buildiq:70b3e29em2454:60c2c265	PR #1703: lib/Controller lines 93.64% -> 95
 cover:buildiq:70b3e29em2454:1106b038	PR #1704: Mcp handler tests declare AppOrganisationGuard, 10 risky to 0, lib/Mcp/Handler 785 to 849 of 852 stmts	session-20261117T121046-ffb3fcc9	2026-11-17T12:23:19Z
 review:filinq:2072:b9a113b8	GREEN: merges clean, unit and vitest green, access tightened per spec	session-20261117T112106-1814b74b	2026-11-17T12:22:59Z
 verify:integriq:3703:9857fabd	7 GREEN, 1 RED (#3707 guzzle 8, 4 new failures), 1 REVERIFY (#3709)	session-20261117T121011-06450cb7	2026-11-17T12:23:23Z
+cover:buildiq:70b3e29em2454:34f5c300	PR #1705: 4 Service classes to 100% lines, +30 tests, suite 3578->3608 OK	session-20261117T121311-1734385f	2026-11-17T12:24:02Z
