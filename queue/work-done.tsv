@@ -22762,3 +22762,4 @@ fix:integriq:3705:cd33fb75	fixed RED: pinia alias to dist entry, build green; ne
 fix:keepiq:1895:62f8ad55	sbom regenerated, pushed 7cf24009; lock held elsewhere, REVERIFY queued	session-20261117T213124-9bd98896	2026-11-17T21:56:57Z
 fix:versioniq:729:497abe19	conflict resolved, pushed 073d6c6c; REVERIFY queued; land skipped (gate host blocked)	session-20261117T211433-35a96960	2026-11-17T21:57:16Z
 verify:pipelinq:3963:e0b88c16	GREEN #3963 (vitest reds inherited)	session-20261117T211535-4eae9738	2026-11-17T21:57:37Z
+verify:pipelinq:3965:080c1798	GREEN 3965: vitest only baseline failures	session-20261117T211425-939d7fb0	2026-11-17T21:58:04Z
