@@ -4899,3 +4899,4 @@ hermiq	1794	19bcd6897ef6ffbf59aa52e717a2be86c3da3cdf	RED	worker-57	GATE RED floo
 versioniq	715	f78bf6ec7fe496be81970d63b041950456dea081	RED	worker-36	GATE RED floor: overall: 5.07 -> 5.01; unit_size: 4.85 -> 4.82; unit_complexity: 4.79 -> 4.73; unit_interfacing: 4.59 -> 4.24
 planninq	1168	b5c8c647c23e1927a17643001314aec7d2de05c2	RED	worker-41	GATE RED floor: unit_interfacing: 4.77 -> 4.75
 integriq	3638	b2bbb6eff55fb594d521e3cbc839209cd49a7368	MERGED	worker-51	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.57
+humaniq	1148	1bc00d4cc46ee4b4d3118178af9345026fce8d61	RED	worker-48	GATE RED floor: unit_interfacing: 3.64 -> 3.59
