@@ -19983,3 +19983,4 @@ review:portaliq:2450:260942b5	GREEN: no new failures, behaviour per change spec	
 verify:pipelinq:3929:7e1c56ee	GREEN #3929 (9280 tests, 0 new failures)	session-20261117T084845-60bc4ee0	2026-11-17T08:52:56Z
 review:shillinq:2998:5215acfa	GREEN: additive build of platform-help-agent; unit suite 12625 tests, no new failures	session-20261117T084657-70a14b78	2026-11-17T08:53:05Z
 review:shillinq:3011:3989b7d8	GREEN: suite 12629 OK, vitest 7/7	session-20261117T084736-592032f2	2026-11-17T08:53:28Z
+cover:openregister:7350e3efm18f8:jsaba0d069	deferred: openregister has 185 open PRs	session-20261117T085227-a13dc102	2026-11-17T08:53:33Z
