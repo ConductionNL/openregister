@@ -1239,3 +1239,4 @@ pipelinq	3947	97b7a3617d8a09231ade320985bae52a437362b9	APPROVE	worker-34	Quick; 
 buildiq	1718	56e7faf39d616a8090eb63a8426131ae67e763f5	APPROVE	worker-47	Quick; no blockers; docs/parity metadata only, T08 tags verified in src
 buildiq	1719	7653a33d583d1867e34be5ee228c5344ab9943f5	APPROVE	worker-47	Thorough (gate runner absent, checklist by hand); no blockers; ranked retrieval searches as caller and keeps only the agent's own file ids, falls back to whole files; global top-50 may miss the agent's files (falls back)
 buildiq	1720	b381c76e51c6407ce503784b63007dee43070ee0	APPROVE	worker-47	Quick; no blockers; tasks.md tick only
+decidiq	2281	7dd420ed33958ce45f70156a5a798c097cbc461d	APPROVE	worker-05	Thorough (tests only, >500 lines); no blockers; e2e/Newman not run live, as the PR says
