@@ -22659,6 +22659,7 @@ verify:opencatalogi:2771:502ce9b9	CONFLICT 2771 (l10n en/nl with development; ve
 verify:decidiq:2282:f00027e0	GREEN 2282 (unit 5047, 0 new failures)	session-20261117T211315-f96d97db	2026-11-17T21:33:03Z
 merge:buildiq:1732:75f444e7	unmeasured: static.developer.overheid.nl (proxy 403 in this session); nothing built or landed	session-20261117T211611-151c4a14	2026-11-17T21:33:19Z
 verify:hermiq:1855:54a9e416	GREEN #1855 (version bump, no new failures)	session-20261117T213035-1b926cd2	2026-11-17T21:33:37Z
+verify:buildiq:1643:f8d38be6	GREEN #1643 (3692 PHP, 5025 JS, 0 new failures)	session-20261117T211607-9073788f	2026-11-17T21:33:54Z
 verify:integriq:3734:12b2f75d	GREEN 3734: no new failures	session-20261117T211359-bea33e3d	2026-11-17T21:34:13Z
 verify:hermiq:1760:9fd70f20	GREEN 1760	session-20261117T211406-076a7a0e	2026-11-17T21:34:53Z
 merge:stackiq:1942:d6104197	unmeasured: static.developer.overheid.nl; cloud tree of 9 stackiq PRs: merged=0 red=1 (2028 sbom) skip=6; 1942 REQUEST_CHANGES (repair step unregistered); conflict 1, moved 1	session-20261117T211437-e305ed6d	2026-11-17T21:35:00Z
@@ -22686,7 +22687,20 @@ merge:stackiq:2045:5c9c04c6	unmeasured: static.developer.overheid.nl (proxy 403;
 verify:integriq:3593:fea237c7	RED 3593: filePickupConfigFields.spec.js mock lacks NcCheckboxRadioSwitch; PHP no new failures	session-20261117T211359-bea33e3d	2026-11-17T21:41:39Z
 verify:stackiq:2055:b1a3020f	GREEN 2055, GREEN 2058; phpunit 4105 ok, vitest 1 inherited failure	session-20261117T213157-fe4b6298	2026-11-17T21:42:00Z
 verify:larpinq:1102:ea6bdb50	GREEN 1102	session-20261117T211406-076a7a0e	2026-11-17T21:42:10Z
+fix:shillinq:2975:df2c1919	failed: permission (git push to ConductionNL/shillinq refused by session git proxy: repo not in authorized set; conflict resolved locally, suite 12849 OK, not pushed)	session-20261117T211359-b7379586	2026-11-17T21:42:34Z
 verify:opencatalogi:2805:b5832c88	GREEN #2805: no new PHP or JS failures (inherited 103 PHP, 8 vitest)	session-20261117T211352-b8b9fdbb	2026-11-17T21:42:29Z
+merge:filinq:2112:7bac4ab5	unmeasured: api.osv.dev (4 approved skipped; 4 CONFLICT, 2186 MOVED)	session-20261117T210827-f273f058	2026-11-17T21:42:46Z
 verify:opencatalogi:2804:731661e8	RED #2804: SettingsObjectTypeConfigurationTest slug count 31->32 after new woo_pipeline_incident_schema	session-20261117T213139-4c29297d	2026-11-17T21:42:49Z
 verify:pipelinq:3952:6243a86d	CONFLICT: l10n en/nl js+json conflict with development	session-20261117T213212-f60cff91	2026-11-17T21:42:59Z
 verify:pipelinq:3934:6ba01209	CONFLICT: #3934 l10n en/nl js+json conflict with development	session-20261117T211328-24b3dcac	2026-11-17T21:43:10Z
+fix:hermiq:1719:fdc4de5b	conflict resolved, pushed 257411d7; REVERIFY queued (merge lock held elsewhere)	session-20261117T213058-6689a4c6	2026-11-17T21:43:29Z
+verify:dossiq:6648:ddfe2aae	GREEN #6648, #6663 (no new failures; 19 phpunit + 2 vitest inherited)	session-20261117T211520-d88a421d	2026-11-17T21:43:49Z
+verify:opencatalogi:2806:c32247ec	GREEN opencatalogi #2806 (inherited failures only)	session-20261117T211320-ba1b42e8	2026-11-17T21:43:59Z
+fix:portaliq:2589:7076e2d0	conflict resolved, pushed 8f568eda; REVERIFY (merge lock held elsewhere)	session-20261117T211932-f471137a	2026-11-17T21:44:16Z
+verify:larpinq:1104:072740aa	GREEN #1104 (e2e spec only)	session-20261117T211341-e05e0d2c	2026-11-17T21:44:31Z
+verify:integriq:2650:ecac209c	GREEN #2650: 9933 tests, no new failures	session-20261117T211412-45e1aeb8	2026-11-17T21:44:41Z
+verify:portaliq:2564:9fbc2d81	stale	session-20261117T211932-f471137a	2026-11-17T21:44:59Z
+verify:launchpad:1305:1358f946	GREEN 1305, GREEN 1307; tree 4684 OK, baseline 4621	session-20261117T211353-2c595f41	2026-11-17T21:45:00Z
+verify:dossiq:6648:7529b2ea	GREEN #6648: 18405 tests, no new failures	session-20261117T213149-40fbaeee	2026-11-17T21:45:08Z
+verify:launchpad:1210:e8abd64f	GREEN #1210 (unit 4706 OK; vitest 1 inherited failure)	session-20261117T213056-2ba36933	2026-11-17T21:45:25Z
+fix:filinq:2182:af614fee	fixed: curl auth example no longer trips the secret scan; pushed eb336b2b, REVERIFY queued (merge lock held elsewhere)	session-20261117T211329-58121c09	2026-11-17T21:45:42Z
