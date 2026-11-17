@@ -20732,3 +20732,4 @@ verify:shillinq:2191:6135d3d4	GREEN #2191 (no-op merge, tree equals development;
 verify:planninq:1218:3bb9d8d2	GREEN #1218: vitest 3589 pass, = baseline	session-20261117T125151-bf6843dc	2026-11-17T13:13:48Z
 fix:portaliq:2560:ad2c1e34	fixed role=alert + merge conflict, pushed 9791e493; REVERIFY queued	session-20261117T124618-509d3d7a	2026-11-17T13:13:59Z
 fix:filinq:2120:34cc4cd4	resolved conflict, new head fbc97be2; REVERIFY queued (merge lock held elsewhere)	session-20261117T124639-0485e5ab	2026-11-17T13:14:10Z
+fix:integriq:2650:a234a7dc	fixed floor: unit_complexity 3.91 >= 3.90; pushed c1e85c0b; merge lock held elsewhere, REVERIFY queued	session-20261117T124628-9de56351	2026-11-17T13:14:23Z
