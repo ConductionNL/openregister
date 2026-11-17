@@ -18888,6 +18888,7 @@ fix:launchpad:1216:004aa912:v3	obsolete: already built on development via #785 (
 fix:integriq:3572:35bfc428:v3	conflict resolved, pushed 5ea14816; 5 inherited failures; merge lock held elsewhere, REVERIFY queued	session-20261117T004640-78f538a3	2026-11-17T01:28:09Z
 fix:integriq:3632:b8b6d7ad:v3	conflict resolved, pushed 6bc3018b, no failures beyond development's; merge lock held elsewhere, REVERIFY queued	session-20261117T005055-4c5f0209	2026-11-17T01:28:44Z
 fix:integriq:3626:d61b9b39:v3	fixed CONFLICT, pushed 7c1c0ef3; REVERIFY queued (merge lock held elsewhere)	session-20261117T004655-cf1f2f80	2026-11-17T01:29:15Z
+fix:buildiq:1689:c2b20681	failed: floors need a refactor beyond a bounded fix: module_coupling from lib/Support/ObjectRecord.php fan-in 48->53 (5 new automation callers, crosses 50); unit_interfacing from AutomationCompilerService::__construct 9 params (was 5) and AutomationsController 8; unit_complexity from ~380 loc of new PHP units over McCabe 5 plus AutomationEditDialog valid() 14 and withInboundSettings 11; nothing pu	session-20261117T004801-2f7a5fc1	2026-11-17T01:29:45Z
 fix:buildiq:1262:a0a4f287:v4	obsolete: development already carries the LockRequest migration; closed #1262	session-20261117T005933-5e669a88	2026-11-17T01:29:25Z
 fix:buildiq:1651:e765d7de:v5	conflict resolved, pushed 4514f95f; lock held elsewhere, REVERIFY queued	session-20261117T004721-b30387a5	2026-11-17T01:29:44Z
 build4:openregister:object-write-at-instance-floor:c8	partial: not started in this pass (worker context too low for the core mapper work); PR #10520 (branch -3, head 087462fb) unchanged, tasks 1-4 and 6-19 still open as left by c7	session-20261116T230934-9ee320cf	2026-11-17T01:29:52Z
@@ -18917,10 +18918,12 @@ fix:buildiq:1626:cac162dc:v3	conflict resolved, pushed 77575f40; REVERIFY queued
 fix:humaniq:1148:3bc5cb16:v3	merged #1148 at 9a856f88c9dce85c98afbf612a33d936cb7629bc	session-20261117T005434-ea6146cc	2026-11-17T01:34:13Z
 verify:decidiq:2173:518cf792	2173 CONFLICT (src/menu-layout.simple.json)	session-20261117T004650-4097ce5f	2026-11-17T01:34:19Z
 fix:integriq:3601:be3e4259:v3	conflict resolved, pushed fc46c8d9; merge lock busy, REVERIFY queued	session-20261117T004655-1a901c92	2026-11-17T01:34:33Z
+fix:hermiq:1763:36a77c20:v3	conflict resolved + RestoreRunner on main API, pushed 0ba5d841; REVERIFY queued (merge lock held)	session-20261117T004705-084072e6	2026-11-17T01:35:27Z
 review:shillinq:2071:c0d1a0de	GREEN	session-20261117T004638-e72c1040	2026-11-17T01:35:09Z
 fix:launchpad:761:ca2815b8:v4	conflict resolved, pushed fb9c34bd; merge lock held by another merger, REVERIFY queued	session-20261117T005304-6fca2823	2026-11-17T01:35:27Z
 fix:integriq:3633:2cf69c00:v4	conflict resolved, pushed f549382c84; merge lock held elsewhere, REVERIFY queued	session-20261117T004733-c48c61a2	2026-11-17T01:35:34Z
 fix:buildiq:1619:e0722b68:v3	conflict resolved, pushed 3d592e85; merge lock held elsewhere, REVERIFY queued	session-20261117T004756-036f1d35	2026-11-17T01:35:35Z
+verify:filinq:2121:8cb8372c	stale	session-20261117T003652-c6487e72	2026-11-17T01:35:53Z
 merge:buildiq:1608:754a2e84	cloud tree of 1 buildiq PRs: merged=0 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T004644-5138fb50	2026-11-17T01:36:03Z
 fix:opencatalogi:2683:9def1ff8:v3	fixed CONFLICT, pushed 783543f7c3ddf46f3c87957bf2ca6b6b6c890e22; merge lock busy, REVERIFY queued	session-20261117T005217-ad04a5d2	2026-11-17T01:36:15Z
 fix:launchpad:1210:7f9c64f6:v3	conflict resolved; new head 6f168e0b, REVERIFY (merge lock held elsewhere)	session-20261117T003945-3aa9cc05	2026-11-17T01:36:25Z
@@ -18936,6 +18939,26 @@ fix:opencatalogi:2756:a362a4ec	fixed CONFLICT, pushed a7e29de035dd75ca97938b295b
 fix:opencatalogi:2651:c5411594:v3	conflict resolved, pushed 91263dc8; merge lock held elsewhere, REVERIFY queued	session-20261117T005226-366998de	2026-11-17T01:38:50Z
 fix:opencatalogi:2680:5c8f25a1:v3	fixed conflict on #2680, new head 7b795492; REVERIFY queued (merge lock held)	session-20261117T005237-d93074af	2026-11-17T01:39:02Z
 fix:opencatalogi:2671:0c44bbf1:v4	merged #2671 at 272f5fcd0e4d456f4bdf27b8e23a81004f67abb8	session-20261117T005212-998cc343	2026-11-17T01:39:13Z
+verify:filinq:2116:0849a1e2	stale	session-20261117T004756-036f1d35	2026-11-17T01:39:37Z
 fix:stackiq:1959:fe24e23b:v4	conflict resolved, pushed 61653b66; merge lock held elsewhere, REVERIFY recorded	session-20261117T004626-d23ae300	2026-11-17T01:39:38Z
 verify:humaniq:1146:35e75e13	stale	session-20261117T005226-366998de	2026-11-17T01:39:43Z
 fix:opencatalogi:2652:2348aeca:v4	fixed CONFLICT, pushed 541cb28a7; merge lock held elsewhere, REVERIFY queued	session-20261117T004638-e72c1040	2026-11-17T01:39:52Z
+fix:opencatalogi:2685:607939f5:v4	conflict resolved, pushed 36175982; REVERIFY queued (merge lock held)	session-20261117T004705-084072e6	2026-11-17T01:40:16Z
+fix:stackiq:1938:a321d1cf:v3	conflict resolved, new head 1b19373e, unit suite green; merge lock held elsewhere, REVERIFY queued	session-20261117T005434-ea6146cc	2026-11-17T01:40:27Z
+fix:buildiq:1632:c06b2a4f:v3	conflict resolved, pushed 3f019d31; REVERIFY queued (merge lock held elsewhere)	session-20261117T004656-5d4b3c4e	2026-11-17T01:40:43Z
+fix:stackiq:1943:1cd381e0:v3	fixed CONFLICT (+ options API in ClaimedUsageService), pushed 54d0045e8bd48af8f97061046f449b9681472d01; merge lock held elsewhere, REVERIFY queued	session-20261117T004644-5138fb50	2026-11-17T01:40:58Z
+fix:versioniq:503:7514a922:v4	dependency conflict resolved, lock + sbom regenerated, vitest green; pushed ab0b9d6f; REVERIFY queued (merge lock held elsewhere)	session-20261117T004651-e86f3253	2026-11-17T01:41:06Z
+fix:launchpad:1209:418bb0e5:v3	fixed CONFLICT, pushed fde5af3e; merge lock held elsewhere, REVERIFY queued	session-20261116T230934-9ee320cf	2026-11-17T01:41:16Z
+fix:stackiq:1928:36057a15:v4	fixed CONFLICT, pushed fccc382; merge lock held elsewhere, REVERIFY queued	session-20261117T004701-f6094f02	2026-11-17T01:41:33Z
+fix:stackiq:1939:7a225714:v3	conflict resolved, register fragment fix, pushed 4b930687; merge lock busy, REVERIFY queued	session-20261117T004651-172e3db6	2026-11-17T01:41:43Z
+fix:stackiq:1946:1b85feb2:v3	conflict resolved + main API, pushed 644c7833; REVERIFY queued (merge lock held elsewhere)	session-20261117T004640-1b533885	2026-11-17T01:41:53Z
+fix:keepiq:1829:d00cfb44:v5	merged #1829 at f14d3a1536981686b8b778bb02ceb2bcb8f4b385	session-20261117T004616-c7acc36d	2026-11-17T01:42:01Z
+gap:openregister:example-set-optional-lookup:1	PR #10605: optional example-set entries skip (with a note) when their lookup finds nothing or their app is absent; other refusals unchanged; 4 tests; spec REQ-EXS-002 documents it	session-20261113T214350-9762e143	2026-11-17T01:42:18Z
+fix:stackiq:1963:61fae429:v3	conflict resolved, new head c8580463, unit suite green; merge lock held elsewhere, REVERIFY queued	session-20261117T005434-ea6146cc	2026-11-17T01:42:22Z
+fix:buildiq:1605:a2943842:v4	conflict resolved, pushed b350a916; REVERIFY (merge lock held elsewhere)	session-20261117T004650-c3ae7bda	2026-11-17T01:42:36Z
+fix:opencatalogi:2654:9a530c05:v4	fixed conflict on #2654, new head 8d972568; REVERIFY queued (merge lock held)	session-20261117T005237-d93074af	2026-11-17T01:42:46Z
+fix:stackiq:1942:7d2c0d3f:v3	conflict and semantic merge fixed, pushed 200de863, suites green beyond inherited; merge lock held elsewhere, REVERIFY queued	session-20261117T005055-4c5f0209	2026-11-17T01:43:01Z
+fix:larpinq:1049:0b6c6360:v3	conflict resolved, pushed 8083d2b9; merge lock busy, REVERIFY queued	session-20261117T004651-172e3db6	2026-11-17T01:43:09Z
+fix:versioniq:701:ccfb01ba:v3	conflict resolved, pushed a3461ebb; merge lock held elsewhere, REVERIFY queued	session-20261117T004908-b4bcfe9b	2026-11-17T01:43:16Z
+fix:versioniq:710:52c774ec:v3	conflict resolved, pushed 3d4846bf; REVERIFY (merge lock held elsewhere)	session-20261117T011615-71ab0b2c	2026-11-17T01:43:38Z
+fix:versioniq:686:3f4bd26e:v4	conflict resolved; new head ae19578c, REVERIFY (merge lock held elsewhere)	session-20261117T003945-3aa9cc05	2026-11-17T01:43:52Z
