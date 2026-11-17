@@ -18329,3 +18329,11 @@ larpinq	718	be7e57e1c8a7ba099c6c59c1a2c0f824b100842b	GREEN	worker-25	merge into 
 launchpad	1210	748b8e0bda7393e5fdd0ffbcf5a393ed0a43fc78	BLOCK	worker-20:review	review: Strict; adds migration Version002014Date20261114120000 without raising appinfo/info.xml <version> (1.1.7-unstable.20261117110000 at base and head), so occ upgrade never runs it on existing installs; concerns: PR body is stale (says custom CSS left open, diff adds it), Views.vue handler lacks @spec
 versioniq	771	3de848dcdcea309c9a238b78758f0da34d2f6e61	GREEN	worker-16	version bump only (info.xml, openapi.json); no PHP/JS touched; baseline 2421 tests, 2 golden failures, new failures 0
 opencatalogi	2769	0c4a78f746a745c0379a06e1d75546f9b012e222	GREEN	worker-37	version bump only (info.xml, openapi.json); no code changed, suite = baseline
+filinq	2087	46364ded23adacd8e6d2b402165a48c3798015b0	CONFLICT	merge3	conflicts with development; files: appinfo/info.xml l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Settings/filinq_register.json 
+filinq	2099	6033f8b89c97964ea76c4c5add377df8f1f4a6bb	CONFLICT	merge3	conflicts with development; files: lib/Settings/filinq_register.json 
+filinq	2106	58e1b34d7fabba3cc69ca1f49d3571bb3aa8b0a8	CONFLICT	merge3	conflicts with development; files: lib/Settings/filinq_register.json 
+filinq	2107	af5c1387f0052dcd98c86e870ee9100dd813d4e8	CONFLICT	merge3	conflicts with development; files: appinfo/info.xml lib/Settings/filinq_register.json 
+filinq	2112	62f4e41c68eadfb55d80dfd4f87bb540f051f675	CONFLICT	merge3	conflicts with development; files: appinfo/info.xml lib/Settings/filinq_register.json 
+filinq	2113	ee71f67d35e937c866edd8da7c05e0ea857a5ab6	CONFLICT	merge3	conflicts with development; files: lib/Settings/filinq_register.json 
+filinq	2114	34e75cf99344b5fb5d0b919d717f9cfcadab419c	CONFLICT	merge3	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Settings/filinq_register.json 
+filinq	2116	6e4312c81996c0302a3adb485efcc64f5176c859	CONFLICT	merge3	conflicts with development; files: lib/Settings/filinq_register.json 
