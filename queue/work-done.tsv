@@ -19586,3 +19586,4 @@ review:decidiq:2174:e59aab77	GREEN: build per spec, unit 4854/0 fail, vitest ok;
 fix:shillinq:3067:6f2e1f12	conflict resolved, pushed 57c917aa92; REVERIFY queued	session-20261117T042937-c444c626	2026-11-17T06:36:41Z
 fix:decidiq:2250:cd3a5c96	failed: fix needs the platform pin raised in composer.json AND composer.lock (platform-overrides, content-hash); workers may not commit composer.lock, so it needs a human or a fresh dependabot run; RED stands	session-20261117T055853-7ddd3cb3	2026-11-17T06:36:55Z
 merge:opencatalogi:2651:5e4d5ad4	cloud tree of 3 opencatalogi PRs: merged=0 red=0 fail=0 skip=1; conflict 2, lint 0, red 0, moved 0, done 0	session-20261117T063127-b908dd01	2026-11-17T06:37:49Z
+gap:pipelinq:assignee-starts-ticket:1	PR #3929: start/reject now run TicketAssigneeGuard (assignee, sales or admin), unit tested	session-20261117T062856-12839ec9	2026-11-17T06:38:12Z
