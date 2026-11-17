@@ -22890,4 +22890,5 @@ review:shillinq:3004:fa8a07cf	GREEN: unit 12862 OK, phpstan/eslint clean, vitest
 review:openregister:10631:4e3a71b7	BLOCK: dbal 4 makes unit suite fatal at boot (stub redeclares Exception interface)	session-20261117T221428-ca31c1a7	2026-11-17T22:41:28Z
 merge:buildiq:1734:e06928e5	unmeasured: static.developer.overheid.nl (3 PRs green tree, 3 APPROVE recorded, gate checker_floor could not measure adrvalidator)	session-20261117T223303-c1d113c1	2026-11-17T22:41:51Z
 build:filinq:pdfua-verapdf-matterhorn:b2:c4	partial: every code task and the e2e spec are on PR #2190 (head 31521cfa, merges clean with development); left 5.1 live veraPDF run, 5.4 screenshots, 5.5 hydra gates: all need a running instance	session-20261117T223300-24d20109	2026-11-17T22:42:34Z
+merge:filinq:2072:80a4e903	cloud tree of 9 filinq PRs: merged=0 red=0 fail=0 skip=1 (#2072 REQUEST_CHANGES: backfill repair step not registered); conflict 7, moved 1	session-20261117T223426-4a15e7fb	2026-11-17T22:42:37Z
 fix:pipelinq:3952:6243a86d	conflict resolved, pushed 3ad1de77; REVERIFY queued	session-20261117T211406-076a7a0e	2026-11-17T22:42:36Z
