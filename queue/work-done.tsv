@@ -19224,3 +19224,4 @@ review:versioniq:686:ae19578c	GREEN: versioniq #686 (InstallFinalizer conflict w
 merge:integriq:3050:c05dd513	cloud tree of 9 integriq PRs: merged=0 red=0 fail=0 skip=1; conflict 5, lint 0, red 1, moved 2, done 0	session-20261117T021325-9fd6cbed	2026-11-17T02:42:24Z
 review:versioniq:709:861187fb	GREEN: suite 2248, only 2 inherited failures; vitest 38 OK	session-20261117T020348-42793e58	2026-11-17T02:42:34Z
 merge:shillinq:3003:ee2f3f5e	cloud tree of 3 shillinq PRs: merged=2 red=0 fail=0 skip=0; conflict 1, lint 0, red 0, moved 0, done 0	session-20261117T020146-60d3aeb8	2026-11-17T02:42:49Z
+fix:portaliq:2449:ecb78c85	fixed at 3a70eb8a (contact e-mail owner-only, development merged); merge lock held elsewhere, REVERIFY queued	session-20261117T020252-b4828a7d	2026-11-17T02:43:00Z
