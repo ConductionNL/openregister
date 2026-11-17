@@ -22789,3 +22789,5 @@ fix:keepiq:1896:1fa9aa0d	no change needed: sbom current for dev-only bump; REVER
 verify:pipelinq:3962:63a9f870	GREEN; dompurify patch bump, vitest no new failures	session-20261117T210827-f273f058	2026-11-17T22:03:08Z
 fix:shillinq:3080:ed5b393d	conflict resolved on #3080, new head 9c446227 (12824 tests green); lock busy, REVERIFY queued	session-20261117T211352-b8b9fdbb	2026-11-17T22:04:04Z
 fix:larpinq:1054:0d13d8ee	conflict resolved + rank-limit fail-closed fix pushed, new head fcbf9d48 (unit 1243->1282 OK, APPROVE); not landed: merge gate RED on maintainability floors (overall 5.04->4.97, interfacing 4.75->4.43), RED verdict recorded	session-20261117T211328-24b3dcac	2026-11-17T22:04:15Z
+fix:versioniq:735:6cc6a20f	conflict resolved, pushed 3c904010 (suite 2543, 2 inherited failures); APPROVE recorded; merge gate RED on maintainability floors, RED verdict queued	session-20261117T213124-9bd98896	2026-11-17T22:04:26Z
+fix:buildiq:1632:ba29c96c	fixed CONFLICT #1632, new head 712402e5; merge lock held elsewhere, REVERIFY queued	session-20261117T213149-40fbaeee	2026-11-17T22:04:33Z
