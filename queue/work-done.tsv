@@ -20210,3 +20210,4 @@ review:larpinq:1043:aaa4e471	GREEN: unit 1228 ok, vitest 730 ok, matches change 
 review:opencatalogi:2650:4abde043	GREEN: unit no new failures (6294), jest 7 pass; version-line conflict with development noted	session-20261117T092815-eca173a1	2026-11-17T10:03:12Z
 verify:hermiq:1826:1928a94b	GREEN #1826 (0 new failures, baseline 196 inherited)	session-20261117T094008-c54c2625	2026-11-17T10:03:27Z
 review:launchpad:1212:dc706ee1	GREEN: unit 4610 OK, vitest 1076 OK	session-20261117T093950-8ae04963	2026-11-17T10:03:58Z
+build:opencatalogi:publications-for-signed-in-readers:c3	partial: nothing built in this session (context nearly full after earlier tasks); the blocker is gone: integration-feed-consumer-credentials is 9/9 ticked on development, so all 12 code tasks (1.1-4.2, 5.1) are left for a fresh build	session-20261117T092815-eca173a1	2026-11-17T10:04:11Z
