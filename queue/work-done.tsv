@@ -22879,6 +22879,9 @@ review:openregister:10643:abc631d8	BLOCK: react-dom 19 without react 19 (peer un
 fix:pipelinq:3960:c710eaaf	failed: not fixable in pipelinq; latest @conduction/nextcloud-vue 2.181.0 still peers gridstack ^12||^13, BLOCK stands until nextcloud-vue widens its range	session-20261117T221832-434567de	2026-11-17T22:38:57Z
 verify:filinq:2182:11fdbaee	GREEN #2182 (unit 7332/0 fail, baseline 7329/0)	session-20261117T223214-1034c7a7	2026-11-17T22:38:58Z
 build:shillinq:sales-quick-draft-from-any-page:b2:c3	failed: blocked on nextcloud-vue: 1.1 needs an app-level open-modal action (nav schema is closed, primaryAction holds New Booking, CnAppNav cannot dispatch open-modal; still so in 2.181.0, the latest); 1.2 and e2e spec already on PR #3174; 2.1 needs a live run	session-20261117T223108-25abe84e	2026-11-17T22:39:18Z
+build:portaliq:change-proposals-reach-the-case-page:b2:c3	already built: every code task and the named e2e spec are on PR #2564 (head ea302ce1); T07 live run + screenshots need a live instance with dossiq, T08 follows T07	session-20261117T223848-41a890d6	2026-11-17T22:39:37Z
 merge:portaliq:2582:112dba55	unmeasured: static.developer.overheid.nl (and api.osv.dev) refused by this session's proxy; 2585+2588 reviewed APPROVE, tree 0 new failures, 2582 already on development	session-20261117T222626-5de57cc1	2026-11-17T22:39:38Z
+verify:dossiq:6659:1406f352	GREEN #6659 (e2e only, 0 new failures)	session-20261117T223347-77301f38	2026-11-17T22:39:49Z
 review:shillinq:3007:357ddc9b	GREEN #3007 (unit 12833 OK, no new failures)	session-20261117T213056-2ba36933	2026-11-17T22:39:57Z
 review:shillinq:1958:2f747686	GREEN: no new failures (12810 tests), phpstan clean, behaviour per specs	session-20261117T223234-66fa6b77	2026-11-17T22:40:12Z
+review:shillinq:3067:24169645	GREEN: suite 12812 OK vs baseline 12796, phpstan clean	session-20261117T223148-4e97a38d	2026-11-17T22:40:35Z
