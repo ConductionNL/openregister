@@ -4991,3 +4991,4 @@ decidiq	2193	8ad11d671f59c5b6ed7c57f87cbb48380e3483a0	MERGED	worker-47	GATE OK s
 filinq	2123	7be67afacbf455989a7c39c17624e198f32974b6	RED	worker-51	GATE RED checker floor: adrvalidator: pass -> warn; adrvalidator stars: 5 -> 3; score: 100 -> 97
 versioniq	710	112aa503a96b23f8a64a1cd3c22f2fa4ca18e12f	MERGED	worker-33	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.97 holds at 4.24
 learniq	2518	59333b4904ef5873937c2d1ac6e022da3c2175f7	MERGED	worker-16	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 4.08
+filinq	2123	bb0d49c3f8201f782665b19c1aa074a188b27d58	MERGED	worker-51	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.07
