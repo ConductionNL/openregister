@@ -19373,3 +19373,4 @@ review:filinq:2123:a2e8c23e	stale	session-20261117T032146-7c837cf0	2026-11-17T03
 fix:filinq:2059:4c6a7b12	conflict resolved, pushed 9ead1961; merge lock busy, REVERIFY queued	session-20261117T031850-8a9a8f98	2026-11-17T03:23:05Z
 review:shillinq:2986:c200c996	GREEN on behaviour; conflicts with development (PR head 12519 OK)	session-20261117T004644-d9c68b8f	2026-11-17T03:24:05Z
 review:filinq:2089:c81f7860	GREEN on head (7082 tests, 0 failures); conflicts with development in register json and openapi.json	session-20261117T031850-8a9a8f98	2026-11-17T03:24:36Z
+merge:filinq:2083:2982f188	cloud tree of 9 filinq PRs: none; conflict 8, lint 0, red 0, moved 1, done 0	session-20261117T032146-7c837cf0	2026-11-17T03:24:44Z
