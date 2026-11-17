@@ -22165,3 +22165,4 @@ verify:hermiq:1851:a800ca5d	GREEN 1851,1852,1853; REVERIFY 1854 (conflicts only 
 verify:buildiq:1708:e03d2fbe	1708 GREEN (release version bump)	session-20261117T185710-40ec955c	2026-11-17T19:12:41Z
 verify:filinq:2192:ff7f39b6	GREEN filinq#2192 (7305 tests, 0 new failures)	session-20261117T190026-7c82e6b3	2026-11-17T19:12:55Z
 review:integriq:3557:7d1abff4	GREEN; merges clean; 0 new failures	session-20261117T185757-f5106521	2026-11-17T19:13:09Z
+verify:decidiq:2286:15cd21f4	GREEN #2286 (5031 tests, 0 new failures)	session-20261117T190250-54b1be06	2026-11-17T19:13:32Z
