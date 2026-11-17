@@ -1472,3 +1472,5 @@ keepiq	1899	abebdd6ffa781653cb3cdfbbfdac6d7c181fbded	REQUEST_CHANGES	worker-26	S
 filinq	2072	5199bdf2bbd03910e404fd7b79e0d6c2fea567ce	REQUEST_CHANGES	worker-08	Strict (RBAC/multi-tenancy, 67 files); blocker: task 2.5 is ticked and REQ-DDMTH-006 says MUST, but lib/Repair/BackfillDefaultOrganisation.php is not listed in appinfo/info.xml repair-steps (grep -c BackfillDefaultOrganisation appinfo/info.xml = 0), so legacy unstamped rows are never adopted while P
 keepiq	1900	28274ec8585891650cb35c0a1a772d97dcb7ec9e	APPROVE	worker-26	Thorough; no blockers; scope and omit choices map onto the serializer filters already on development, 105 touched vitest specs pass on the tree
 learniq	2594	259feb56de2bd786055277d5a9b39371d1cecb1c	APPROVE	worker-17	Quick (e2e spec only); no blockers; none
+learniq	2596	7ff99e0704ef8eafd7681a2b6936ec425d72eae0	APPROVE	worker-17	Quick (e2e spec only); no blockers; none
+learniq	2597	bfba3423788080c7d26b5ce143c4ee3d883ada0c	APPROVE	worker-17	Quick (e2e spec only); no blockers; none
