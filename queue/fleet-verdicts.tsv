@@ -18209,3 +18209,4 @@ larpinq	1088	b6f2f9b48fd84e4b68a1cefdf77af3ad41f94ec1	RED	worker-13:merge-gate	G
 opencatalogi	2770	72042976b4c3f5aae493ad44dabd636654ce8d87	RED	worker-40:merge	adds unit failure(s) with the PRs before it in the tree: PubliccodeMappingTest::testAReleaseDateThatIsNotADateIsDroppedNotFatal PubliccodeMappingTest::testAReleaseDateWithATimeIsCutToTheDate PubliccodeMappingTest::testAnUnquotedReleaseDateStillLandsAsADate
 integriq	3582	a26852d23164396c63cb9d870d1aefb64282810a	RED	worker-36:merge-gate	GATE RED floor: unit_size: 3.58 -> 3.56; unit_complexity: 3.90 -> 3.83
 integriq	3701	69d057cecad110f0b4ba7734cca3c7a91f925ec5	RED	worker-36:merge-gate	GATE RED checker floor: fivelayer: pass -> warn; fivelayer stars: 5 -> 3; score: 100 -> 97
+integriq	3557	5f4da252ab44efb9a6ad491b360e4ef3a9bd0494	REVERIFY	worker-36:merge	conflicts only with an earlier PR of the merge tree: merges clean on development alone; files: l10n/en.json l10n/nl.json 
