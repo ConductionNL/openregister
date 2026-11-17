@@ -992,3 +992,5 @@ larpinq	1043	03f6b920a26ecff333adc85188cb5c043995a685	APPROVE	worker-33	Thorough
 decidiq	2224	ece2d16c9b532327a6bc2d9d1fa0bc0bfcc37b4e	APPROVE	worker-24	Quick; no blockers; minor/patch bumps, tree suite green
 decidiq	2249	b46f792f7f876aade74a1dcd64c651d0ef2743ba	APPROVE	worker-24	Quick; no blockers; dev patch bump plus sbom
 decidiq	2251	0ed475e33cbb588dda158bc53a43c6b0bed603a7	APPROVE	worker-24	Quick; no blockers; prettier minor bump
+decidiq	2252	8ede89d50aa29803f8ecaee6001a6961a5492da9	APPROVE	worker-24	Quick; no blockers; nextcloud/ocp patch bump, tree suite green
+decidiq	2253	bd32087871f8d23258331464e6e6c9491d8b8168	APPROVE	worker-24	Quick; no blockers; concern: stylelint 18 is outside peer ranges of @nextcloud/stylelint-config and scss configs, but npm ci and stylelint run clean (0 errors) with legacy-peer-deps
