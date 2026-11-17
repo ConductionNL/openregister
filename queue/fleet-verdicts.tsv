@@ -18383,6 +18383,7 @@ portaliq	533	d7eecc0fe49eae646acf00e568a118cc90f93c10	CONFLICT	worker-19	conflic
 thematiq	1716	af83f77293159f6adf859c10617f5ef676317892	GREEN	worker-50	version bump in info.xml and openapi.json only; merges clean; no code changed
 portaliq	1364	8a7a486bcfadef63c3234198657eb6d4e888abd4	GREEN	worker-01	no tests run: merge onto development is an empty tree diff (sync PR content already on development); no code changed
 portaliq	2449	ae33c0d7a3956f30d3c56462513e3cbd200001bc	CONFLICT	worker-51	conflicts with development 9051e37e: package.json, tests/Unit/Settings/PortaliqRegisterConfigTest.php, tests/example-site.spec.mjs
+learniq	2590	bcc12c33a26e4cd267ee282f776d6b0421cc1a7b	GREEN	worker-43	version bump only (info.xml, openapi.json); unit 7123 tests, baseline 1 failure (HigherEducationExampleSetTest), 0 new
 portaliq	2558	062b085377958dd655bd3589ac05e42ed6f30d47	GREEN	worker-23	phpunit 6313 tests; baseline 16 errors (inherited), tree 16 errors, 0 new; version-only release bump (info.xml, openapi.json)
 portaliq	658	e8518393f599feee68277306b2dce789215e0304	GREEN	worker-01	no tests run: merge onto development is an empty tree diff (sync PR content already on development); no code changed
 learniq	2551	7d11c48b5712e3c311d742c9058000f6989cf5f6	REVERIFY	worker-41	merged development in, resolved learniq_register.json (both sides at 0.57.0: register now 0.58.0, both description clauses kept); unit 7143, 1 failure HigherEducationExampleSetTest inherited from development; new head f185e0a06298be8168e632a52b6bec49e9079fde, verify it
