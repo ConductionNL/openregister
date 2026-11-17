@@ -19238,6 +19238,7 @@ planninq	1218	df1e59ad2a22c23d46fe16a4c228b5b2a66e72e2	GREEN	worker-36	phpunit 1
 learniq	2524	defae59897776df65fca752cdd26e7ebdc87d32d	GREEN	worker-49	unit 7166 tests on tree, baseline 7152 with 1 inherited failure (HigherEducationExampleSet), no new failures; php -l clean; implements enrolment-sync-classes-from-student-administration per its specs
 filinq	2173	6bce70eb0c412e2bc6eaa1d778075d1f8f776f04	GREEN	worker-38	publiccode.yml only (parses, referenced images exist); no code changed, unit baseline 7329 OK unchanged, 0 new failures
 filinq	2124	089581db204973bbe9a2c97d92587144ea4cc9e0	CONFLICT	worker-30	conflicts with development in lib/Settings/filinq_register.json
+opencatalogi	2805	b5832c88ee2a159946d2f6880ba534de439fb504	GREEN	worker-45	phpunit 6393 tests vs baseline 6373, 103 failures all inherited, no new; vitest 1181 tests, 8 failures in mainEntry.spec.js inherited from development; php -l clean; build of woo-value-lists-on-the-concept-register judged against its specs
 integriq	3564	7f70763f72d12f479172f828f1d1ae6bb824c3b0	GREEN	worker-52	unit 9976 on tree vs baseline 9910 (2E/3F inherited), no new failures; vitest 183 files/2401 pass; lint clean
 planninq	1252	d65f04922fee972a0c53a84c02b54d6a5eed02ff	GREEN	worker-36	phpunit 1253 ok (baseline same), vitest 3589 passed on tree; e2e spec + tasks.md note for task-description-images; no new failures
 learniq	2519	26cb0ee872e5d3bba79683e7c5d8bf1c83e0942b	GREEN	worker-49	unit 7164 tests on tree over development 79a307ec3, baseline 7152 with 1 inherited failure (HigherEducationExampleSet), no new failures; php -l and phpstan clean; implements report-card-pdf-to-guardians
@@ -19298,6 +19299,7 @@ portaliq	2587	c972ccc36c2ad633d56605e064450690a8e395ff	GREEN	worker-36	phpunit t
 pipelinq	3934	6ba01209ecd5625e0ddf012ef749484450241fb1	CONFLICT	worker-23	conflicts with development in l10n/en.js en.json nl.js nl.json
 shillinq	3177	605a77debdf7ceac3634af4e4ce6a4f307c7e04e	GREEN	worker-24	unit 12813 on tree (baseline 12796 OK, 3 skipped), 0 new failures; no JS/Vue code (manifest only)
 pipelinq	3945	ceffbf1ffd95fdbc429b3b7e77c1cbf97a8849c2	CONFLICT	worker-23	conflicts with development in l10n/en.js en.json nl.js nl.json
+opencatalogi	2805	b5832c88ee2a159946d2f6880ba534de439fb504	GREEN	worker-45	phpunit 6393 tests vs baseline 6373, 103 failures all inherited, no new; vitest 1181 tests, 8 failures in mainEntry.spec.js inherited from development; php -l clean; build of woo-value-lists-on-the-concept-register judged against its specs
 pipelinq	3946	633106e5ce5d34520df6e3801898478fcca78d26	CONFLICT	worker-23	conflicts with development in l10n/en.js en.json nl.js nl.json
 opencatalogi	2650	35c5e9bce49ddf60b196b9ca52987e901d45418f	GREEN	worker-41	phpunit 6409 tests on tree, baseline 78 fail/err on development, 0 new; vitest 1181, 8 inherited (mainEntry.spec), 0 new; build of publication-relations-place-and-source-ids matches its specs
 pipelinq	3951	3f91729e747b42aa473b8f2e393252eb895f2728	CONFLICT	worker-23	conflicts with development in l10n/en.js en.json nl.js nl.json
