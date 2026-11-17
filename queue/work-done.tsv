@@ -20063,3 +20063,4 @@ verify:dossiq:6632:db04df2a	7 GREEN (6632,6633,6635-6639), 2 REVERIFY (6634,6640
 fix:buildiq:1618:088b083a	conflict resolved, pushed f57d6d53; merge lock held by another merger, REVERIFY queued	session-20261117T085001-185db726	2026-11-17T09:14:19Z
 fix:buildiq:1607:0a33c019	conflict resolved, pushed 7bdbd4b0; merge lock held elsewhere, REVERIFY queued	session-20261117T084643-d8b33e95	2026-11-17T09:14:32Z
 fix:versioniq:729:48ad9ca0	fixed: goldens re-recorded for spec'd dry-run checks, pushed 91f511d2; merge lock held elsewhere, REVERIFY queued	session-20261117T084229-c4fc3f9c	2026-11-17T09:14:41Z
+merge:hermiq:1738:0deb279b	cloud tree of 8 hermiq PRs: merged=1 red=1 fail=0 skip=0; conflict 5, lint 0, red 0, moved 0, done 1	session-20261117T084948-f35bd67b	2026-11-17T09:15:09Z
