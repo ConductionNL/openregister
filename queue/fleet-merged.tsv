@@ -5330,3 +5330,4 @@ buildiq	1705	4992a07c7825e60eff3b7ed293282f5bdc9d6da6	MERGED	worker-19	GATE OK s
 buildiq	1706	21011791647b7460e89fbb45d36fa731d58a9d14	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.91 holds at 3.95
 launchpad	759	aeb42237d74c78449e951753ec4787e001a08d9b	RED	worker-53	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 filinq	2124	e25a43e2a9c0c32a978b66ad3b8e6a646abb09d3	SKIP	worker-33	no APPROVE review at this head
+launchpad	759	b325d657c1b42d1eb53eb182186015a879aa05f0	MERGED	worker-53	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.65 holds at 3.78
