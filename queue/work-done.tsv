@@ -22386,3 +22386,5 @@ verify:stackiq:2044:49090a5b	2044 GREEN (e2e spec only)	session-20261117T185710-
 verify:stackiq:2064:015b6012	GREEN #2064: version bump only	session-20261117T185903-e132ac1e	2026-11-17T19:59:55Z
 verify:stackiq:2062:a7823ce7	GREEN	session-20261117T190242-7c82bed8	2026-11-17T20:00:04Z
 merge:integriq:3601:c0ea461a	unmeasured: static.developer.overheid.nl (3701 approved, gate could not measure; 3601 CONFLICT in l10n files)	session-20261117T190353-7aae74e9	2026-11-17T20:00:21Z
+verify:versioniq:796:a6d4dd38	GREEN (version bump)	session-20261117T190242-7c82bed8	2026-11-17T20:00:34Z
+verify:shillinq:3080:ed5b393d	1 CONFLICT (3080: info.xml, register-versions.lock.json)	session-20261117T190249-b0f6275f	2026-11-17T20:00:44Z
