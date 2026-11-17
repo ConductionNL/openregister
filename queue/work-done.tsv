@@ -20683,3 +20683,4 @@ verify:integriq:2152:b149b10f	2152 GREEN (no diff against development)	session-2
 verify:versioniq:685:aadbc252	CONFLICT #685	session-20261117T124257-115d3113	2026-11-17T13:02:38Z
 verify:opencatalogi:1991:e9c69dce	RED #1991: new vitest failure catalogObjectDetailPage Attachments widget test (type integration vs publication-attachments on development)	session-20261117T124803-fa9e5cee	2026-11-17T13:02:50Z
 verify:pipelinq:2404:19142132	GREEN #2404 (empty merge, 9280 OK)	session-20261117T121348-2ad62e18	2026-11-17T13:03:01Z
+verify:pipelinq:2284:aef4e838	GREEN #2284 (no-op merge: tree identical to development)	session-20261117T125716-5aa18045	2026-11-17T13:03:16Z
