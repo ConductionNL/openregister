@@ -1088,3 +1088,4 @@ stackiq	2025	820ddd39fcc967bdb6dc528cddcfb206e955f86a	APPROVE	worker-32	Quick; n
 stackiq	2026	176656140c5a9e0070bb25f530a974f19be299f3	APPROVE	worker-32	Quick; no blockers; vue-router 4.6.4->4.6.5 patch, vitest and build OK
 stackiq	2027	5e7aec4583a018e1b857b6b2830ad30c21d30b40	APPROVE	worker-32	Quick; no blockers; @toast-ui/editor 3.2.2->3.2.3 patch, vitest and build OK
 planninq	1216	45902e2e3c022b09c9b7f4349c086a71ac905884	APPROVE	worker-13	Quick; no blockers; dev-only SBOM tool bump plus regenerated sbom.cdx.json (regen-sbom --check current), tree suite 1253 tests 0 new failures
+launchpad	1260	90efd3f3c4dbb686f66f3be9250f73abdccccfd4	APPROVE	worker-41	Strict (tests for token code); no blockers; tests only, real assertions, no clock pinning (wide margins on time()); MCP test commit not mentioned in the body
