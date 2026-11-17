@@ -21333,3 +21333,4 @@ build:shillinq:public-sector-task-field-allocation:b2	already done: build merged
 build:shillinq:platform-administration-import:b2	already built: every code task is on development and tests/e2e/platform-administration-import.spec.ts exists; 3.2 left open: it needs a live run, which stops at mapping review until there is an MKB-chart seed or a fixture mapping	session-20261117T144928-abf29960	2026-11-17T14:53:34Z
 build:shillinq:ledger-period-end:b2	already building: branch quality/build-ledger-period-end exists	session-20261117T134347-d0294040	2026-11-17T14:54:18Z
 build:shillinq:purchasing-order-dispatch-and-receipt:b2	already building: quality/build-purchasing-order-dispatch-and-receipt is open	session-20261117T133035-588aec38	2026-11-17T14:54:27Z
+build:shillinq:purchasing-call-offs-and-reorder-proposals:b2	already building: quality/build-purchasing-call-offs-and-reorder-proposals is open	session-20261117T133035-588aec38	2026-11-17T14:54:41Z
