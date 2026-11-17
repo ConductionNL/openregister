@@ -20146,3 +20146,4 @@ fix:stackiq:1943:520d167f	conflict resolved, pushed 1d009f7f, REVERIFY (merge lo
 fix:opencatalogi:2650:e518db3d	fixed BLOCK: repair step on ObjectSaveOptions, failures warned; pushed 4abde043, REVERIFY queued (merge lock held elsewhere)	session-20261117T093934-e62fdbdf	2026-11-17T09:44:07Z
 review:shillinq:2983:7c48c94a	BLOCK: duplicate index pages (ADR-097), plus conflicts with development	session-20261117T093625-46de7bd3	2026-11-17T09:44:28Z
 fix:opencatalogi:2652:eb4bae0a	merged #2652 at c34c2c87779ffc6ac837f61b8abc7dbe6c683086	session-20261117T084727-10682198	2026-11-17T09:44:44Z
+fix:hermiq:1760:d0454e30	conflict resolved, tests green; REVERIFY at e77b5f0c (merge lock held elsewhere)	session-20261117T092223-98298a84	2026-11-17T09:44:51Z
