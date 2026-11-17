@@ -22000,3 +22000,4 @@ build:opencatalogi:woo-metadata-suggestions:b2	pushed the missing e2e spec to PR
 build:stackiq:architecture-process-mapping:b2	already building: branch quality/build-architecture-process-mapping exists	session-20261117T134347-d0294040	2026-11-17T16:19:07Z
 build:stackiq:insight-assistant-answers-and-action-trail:b2	already building: quality/build-insight-assistant-answers-and-action-trail{,-2} exist on origin	session-20261117T134441-beae3c0d	2026-11-17T16:19:28Z
 build:stackiq:contract-approval-ownership-guard:b2	already building: quality/build-contract-approval-ownership-guard exists (2b1f5701 on development); only 4.2 note in the hydra repo left	session-20261117T140734-4d108840	2026-11-17T16:19:32Z
+build:stackiq:landscape-application-components:b2	already building: quality/build-landscape-application-components exists; open items need a running instance (Playwright, screenshot)	session-20261117T134441-beae3c0d	2026-11-17T16:19:52Z
