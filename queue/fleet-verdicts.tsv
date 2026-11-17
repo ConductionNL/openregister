@@ -19252,6 +19252,7 @@ versioniq	799	9d0b17e161aabdb3641874366fbf88fc9343996c	CONFLICT	worker-11:merge	
 planninq	1218	df1e59ad2a22c23d46fe16a4c228b5b2a66e72e2	GREEN	worker-36	same sha verified minutes earlier on development 17e6169e: phpunit 1253 ok (= baseline), vitest 3589 passed; deps bump + sbom only
 opencatalogi	2805	b5832c88ee2a159946d2f6880ba534de439fb504	REVERIFY	worker-09	conflicts only with an earlier PR of the verify tree
 opencatalogi	2806	c32247ec0843cd01d478d2d0970444b6954ce5e2	REVERIFY	worker-09	conflicts only with an earlier PR of the verify tree
+humaniq	1193	ef7f5e47529d295f00f4a5b05b2aa464576bc3ba	GREEN	worker-14	build matrix-rows-without-a-requirement per its specs (sign-off guard fails closed, reopen guard, cycle budget endpoint behind the cycle guard); unit 4532 tests, baseline 4509 green, no new failures
 filinq	2072	5199bdf2bbd03910e404fd7b79e0d6c2fea567ce	GREEN	worker-30	phpunit 7423 OK (baseline 7329 OK), vitest 866 passed, no new failures; build of multi-tenant-hardening, access paths fail closed per its specs
 humaniq	1198	ada533a81007f708bdfe9eb24a2ba5a6a2041daa	GREEN	worker-54	phpunit 4532 OK on tree (baseline 4509 OK); node test:js 13 fails = baseline 13; new failures 0; build of record-history-on-every-detail-page per its specs
 integriq	3714	b02f1d04d14117d274784434443fed8841cc64fd	GREEN	worker-07	PHP unit 9921 on tree, baseline 9883 with 5 inherited failures, no new (SOAPServiceTest flaky, passes alone on both); vitest 2 touched specs 35 pass, eslint clean; build of access-developer-portal-and-subscriptions per its specs
