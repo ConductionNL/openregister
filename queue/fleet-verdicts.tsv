@@ -19307,3 +19307,4 @@ hermiq	1843	45ed8874b7086bd4025662de7d1606b75a2b59a9	CONFLICT	worker-48:merge	co
 hermiq	1849	599ab2bf863fc652db45cd05a25b1a74eb760c49	CONFLICT	worker-48:merge	conflicts with development; files: tests/integration/hermiq.postman_collection.json 
 hermiq	1850	c9dacafd2a9b91c0cb908137cd3	REVERIFY	worker-48:merge	verdict sha is not the head: head is c9dacafd2a9b91c0cb908137cd3b2116117e49d3
 decidiq	2286	62b9a48215c112bd9dece76e06b8073d424f20a8	REVERIFY	worker-19	conflicts only with an earlier PR of the verify tree (l10n en/nl after 2282)
+thematiq	1719	740e1349e57122fb6902c14777368c21f0bfaa15	BLOCK	worker-14:review	review: Strict (CI workflow); blocker: the new step runs the upstream theme builds inside the job that holds write permissions; build them in a separate read-only job and pass the token files on as an artifact; rest of the diff fine
