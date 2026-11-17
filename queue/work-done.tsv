@@ -20832,5 +20832,6 @@ cover:stackiq:9ac19b3am209e:f545d745	already done: lib/Repair/*.php measured 128
 fix:shillinq:1958:4334b560	fixed info.xml repair steps; new head 5bdb3bb1, REVERIFY (merge lock held elsewhere)	session-20261117T134556-243db2c5	2026-11-17T13:48:20Z
 review:shillinq:3004:5df6f499	GREEN: unit 12845 OK (dev 12779), vitest 19/19, eslint clean	session-20261117T133025-beace6fb	2026-11-17T13:48:40Z
 review:shillinq:3007:7ed685a6	GREEN: unit suite 12816 OK, behaviour matches change specs	session-20261117T134347-d0294040	2026-11-17T13:48:53Z
+review:integriq:2650:c1e85c0b	BLOCK: gate-14 snake_case route names on 2 new routes + ServiceBindings conflict with development; tests clean (no new failures)	session-20261117T134024-07d6c268	2026-11-17T13:49:17Z
 cover:openregister:7350e3efm4377:js7af948c9	deferred: openregister has 185 open PRs	session-20261117T134504-7f453fd6	2026-11-17T13:49:17Z
 cover:dossiq:069ee2d6m9d1b:5ebe3eb6	already done: lib/Service/Mcp/ at 100% lines (8 classes, 251 lines) under pcov, CreateTaskRun has no logic	session-20261117T124637-3e909745	2026-11-17T13:49:41Z
