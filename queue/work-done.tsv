@@ -20205,3 +20205,4 @@ fix:decidiq:2254:dba412a5	failed: gridstack 14 is outside the peer range ^12||^1
 merge:versioniq:729:470068c5	no complete base and tree suite: not landed	session-20261117T092700-641a7a7c	2026-11-17T10:01:09Z
 review:integriq:3593:5718bcca	GREEN: no new failures (9786 tests, 5 inherited), vitest 2395 pass	session-20261117T094207-9b025024	2026-11-17T10:02:16Z
 review:versioniq:700:89648f84	GREEN: phpunit no new failures (2 inherited), vitest 3177/3177	session-20261117T085512-6b57566b	2026-11-17T10:02:30Z
+fix:hermiq:1763:6defd651	failed: permission (landing step refused); conflicts fixed, pushed 71d4e059, REVERIFY queued	session-20261117T093219-f1a53dc3	2026-11-17T10:02:51Z
