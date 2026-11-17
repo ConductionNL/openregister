@@ -4993,3 +4993,4 @@ versioniq	710	112aa503a96b23f8a64a1cd3c22f2fa4ca18e12f	MERGED	worker-33	GATE OK 
 learniq	2518	59333b4904ef5873937c2d1ac6e022da3c2175f7	MERGED	worker-16	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 4.08
 filinq	2123	bb0d49c3f8201f782665b19c1aa074a188b27d58	MERGED	worker-51	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.07
 filinq	2091	508232a5f0100a8686e34fc5738e9d877ef14dee	MERGED	worker-51	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.06
+decidiq	2148	d72478092caef7d784f6faa93fbfefc4c30a3263	MERGED	worker-36	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.78 holds at 3.83
