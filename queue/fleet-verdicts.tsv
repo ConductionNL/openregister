@@ -18857,3 +18857,4 @@ dossiq	6668	1395d5e68c106240715cd719a08bf8d2652f8bf5	GREEN	worker-40	unit 18422 
 keepiq	1898	2d4d0257353ba497c0c94affef2fedeabcee86dc	GREEN	worker-09	tasks.md text only (no code, suite not affected); every test name it cites exists in login-flow.test.ts and router.test.ts
 integriq	3704	f13fbbdb7a9a50c6b41410d7de50b3c522fa187a	GREEN	worker-38	unit 9910 tests, baseline 2 errors 3 failures, 0 new; dev dependency bump nextcloud/ocp 35.0.3 + SBOM regen
 integriq	3723	8a4e2be1aba2ef0cfd90695cee9359a4544bd93b	GREEN	worker-35	unit 9911 tests on 9-PR tree, baseline 5 inherited failures, new failures 0; vitest 2389 passed; tests/spec files only
+integriq	3721	30322060ec71f82562694e63d3031528bae94ec2	GREEN	worker-14	unit 9910, baseline 2 errors + 2 failures (inherited), tree identical, 0 new; adds e2e spec + Newman folder for objecten-api-facade, no production code
