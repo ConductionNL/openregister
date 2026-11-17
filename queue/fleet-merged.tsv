@@ -4865,3 +4865,4 @@ shillinq	3055	915da0afde98ca6f6dc0bbfbc74e5c180958a258	MERGED	worker-08	GATE OK 
 launchpad	1250	c372ff3ec206cab9c931f12f5d4eb5896578be00	MERGED	worker-11	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.65 holds at 3.79
 filinq	2123	8c586cdc33ab537460573a224c8515ae491cc712	SKIP	worker-24	no APPROVE review at this head
 integriq	2744	1aa7d916d2b9142e7caa6da52d0a61fcc2d22831	MERGED	worker-56	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.57
+stackiq	1941	cb6c2b26242670bf14220d3b4a2d8b39b992b144	RED	worker-15	GATE RED sbom: package-lock.json changed without sbom.cdx.json
