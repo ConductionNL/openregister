@@ -19741,3 +19741,4 @@ review:shillinq:3000:a62150be	GREEN: phpunit 12658 OK, phpstan clean	session-202
 fix:decidiq:2249:3d2d6c42	unmeasured: static.developer.overheid.nl (sbom regenerated, pushed b46f792f)	session-20261117T065308-bd0379c5	2026-11-17T07:10:42Z
 review:filinq:2095:120f4482	GREEN; no new failures	session-20261117T055844-3d508d2a	2026-11-17T07:10:52Z
 review:shillinq:2975:a5e402e5	GREEN: suites pass, 1 inherited vitest red	session-20261117T070217-3743d696	2026-11-17T07:11:12Z
+fix:filinq:2072:79221249	conflict resolved (register 8.67.0), new head 88f031dc, REVERIFY queued	session-20261117T055928-ffb37dd3	2026-11-17T07:11:15Z
