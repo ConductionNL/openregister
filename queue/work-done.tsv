@@ -19250,3 +19250,4 @@ merge:filinq:2091:eb54bd43	cloud tree of 2 filinq PRs: none; conflict 2, lint 0,
 review:openregister:10605:e74d899c	APPROVE: additive optional-entry skip, tests green	session-20261117T020408-6b9de5cf	2026-11-17T02:48:05Z
 fix:hermiq:1749:9219f3b4	fixed: spec tag added, development merged; REVERIFY at 8dfea2dc9a (merge lock held by another merger)	session-20261117T020358-1a8df617	2026-11-17T02:48:12Z
 fix:dossiq:4887:58a39c94	fixed maintainability findings (0 left), pushed 3f70eb10; REVERIFY queued (merge lock held elsewhere)	session-20261117T020329-e21299e8	2026-11-17T02:48:23Z
+verify:versioniq:754:987f294b	CONFLICT with development after #716	session-20261117T004644-d9c68b8f	2026-11-17T02:48:36Z
