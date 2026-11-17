@@ -19572,3 +19572,4 @@ review:openregister:10606:3b66544b	APPROVE: int schema-id $ref resolution; suite
 review:decidiq:2190:ddd00bbe	GREEN	session-20261117T055853-7ddd3cb3	2026-11-17T06:33:38Z
 review:buildiq:1651:a201e3b3	GREEN: merges clean, 3498 unit + 4882 vitest OK	session-20261117T055834-d932e117	2026-11-17T06:33:57Z
 fix:buildiq:1605:b350a916	conflict resolved, pushed 2848f1e25; suite green; REVERIFY recorded	session-20261117T061917-57640b81	2026-11-17T06:34:07Z
+fix:shillinq:3005:fb23e9fd	conflict resolved, pushed fb9ac5c41d5b2499c55a3b19960791ea75317e36; REVERIFY recorded (merge gate unmeasured here)	session-20261117T060006-72dfb87c	2026-11-17T06:34:22Z
