@@ -1511,3 +1511,5 @@ dossiq	6668	1395d5e68c106240715cd719a08bf8d2652f8bf5	APPROVE	worker-42	Standard;
 decidiq	2149	3ccfbfcfc456c5da74508481e6602f2a82bcfab3	APPROVE	worker-33	Thorough; no blockers; builds document-accessibility-check per its specs: scan endpoint checks session, RBAC read on the source and that the file belongs to it, gate fails closed on scan errors; concern: any publisher may override with a reason, the spec says an authorised user
 decidiq	2280	f341db5555b2782cffa8c059027a79d397c42c35	APPROVE	worker-33	Quick; no blockers; e2e spec and tasks.md note only
 decidiq	2283	e9a802fd9e1a29d7531dd6061c07fb0d66139593	APPROVE	worker-33	Quick; no blockers; e2e spec with fresh accounts and empty storage state, tasks.md note only
+decidiq	2284	75bf16e4978932fd693798e5513fda961c651b66	APPROVE	worker-33	Quick; no blockers; e2e spec and tasks.md note only
+decidiq	2285	eeb91b118b1c241df162e0f00bdce238c0111d68	APPROVE	worker-33	Thorough (569 added lines, tests only); no blockers; e2e spec per scenario, two reason-bearing e2e excludes for cron-driven rappels
