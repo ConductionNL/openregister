@@ -20299,3 +20299,4 @@ fix:shillinq:2086:9fa2a6b9	fixed: ADR problem responses and absolute floor (3.98
 fix:buildiq:1590:48018867	conflict resolved, pushed d570d17; merge lock busy, REVERIFY queued	session-20261117T100151-2ed854b4	2026-11-17T10:23:20Z
 merge:dossiq:6640:516a6262	cloud tree of 1 dossiq PRs: merged=0 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T100953-67f0e4bc	2026-11-17T10:25:00Z
 fix:launchpad:1212:dc706ee1	merged #1212 at e9a6da17 (restored duplication and module_coupling floors: shared action guard trait, one decision record, admin page state moved out of LaunchPadAdmin; declared the catalogue OpenAPI tag for the ADR checker)	session-20261117T093948-dddf369f	2026-11-17T10:30:17Z
+fix:filinq:2124:0922105d	failed: permission: recording the review of the fixed head (e25a43e2) was refused; blockers fixed and pushed, tree green, REVERIFY queued, merge lock released	session-20261117T100903-26d78736	2026-11-17T10:31:52Z
