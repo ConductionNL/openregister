@@ -1283,6 +1283,7 @@ opencatalogi	2789	e54e7b57d6586bb81a80b16195aa0471d62384b4	REQUEST_CHANGES	worke
 learniq	2597	bfba3423788080c7d26b5ce143c4ee3d883ada0c	APPROVE	worker-20	Quick; no blockers; e2e spec only, data-conditional skip
 decidiq	2276	b77ffaa99a83ac211a8cff55b080ccb1f773fd62	APPROVE	worker-45	Quick; no blockers; e2e spec + tasks.md only
 decidiq	2277	b03780e5e71f9c9a7d94f5ad1d658e3f438c2cb4	APPROVE	worker-45	Thorough (size); no blockers; Newman collection + tasks.md only; default baseUrl localhost like the other collections, overridable
+shillinq	3160	28ae1c746191e9ad45e1c70698bed38f1ec8205e	APPROVE	worker-39	Quick; no blockers; docs only (publiccode.yml valid YAML, README link)
 decidiq	2278	d120be3ea5c86aa6aa74b4081c7a6da1b31d2921	APPROVE	worker-45	Quick; no blockers; e2e spec + tasks.md only
 decidiq	2279	9029034a754b55ffbb5afc179985738e6927cc62	APPROVE	worker-45	Quick; no blockers; e2e spec + tasks.md only
 decidiq	2280	f341db5555b2782cffa8c059027a79d397c42c35	APPROVE	worker-45	Quick; no blockers; e2e spec + tasks.md only; seeds as admin like the existing tests in that file
