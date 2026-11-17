@@ -16062,3 +16062,4 @@ shillinq	3009	00edad9294d414a3407bf9bf391221edf006496b	CONFLICT	worker-10	confli
 stackiq	1963	61fae429306c3510d1a20ce48ad29aab5a325dd6	CONFLICT	worker-32	conflicts with development in docs/features/README.md, l10n/en.js, en.json, nl.js, nl.json, src/customComponents.js; PR not tested
 learniq	2577	15fc4a90544190851896affac4e02d9aed5c9516	REVERIFY	worker-22	fixed menu order tie (CourseParticipantsMenu 58 -> 56); node --test 9 fail = baseline; new head 5bf2057232b5aabbfd004f1943a2ae1de7859671, verify it
 stackiq	1942	7d2c0d3f7c687acb0e1883d507e2793d4d176e41	CONFLICT	worker-29	conflicts with origin/development in l10n en/nl and src/manifest.json
+shillinq	1900	65225988bf5200218c0eb4b807e3dbeb19f0df7d	REVERIFY	worker-02	merged development in (l10n and phpmd.xml conflicts: development already held the same entries, took its side, no branch key lost); unit suite 12461 OK; new head 7c67b53846a791a3e762d24ded38e17fec205a03, verify it
