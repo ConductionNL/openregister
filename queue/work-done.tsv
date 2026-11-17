@@ -19488,3 +19488,4 @@ review:hermiq:1763:685f9669	GREEN; no new failures vs baseline	session-20261117T
 review:hermiq:1757:5857cce3	GREEN: unit 5618 green, vitest green; concern re #1740 department gate status mapping	session-20261117T055905-03eea4d3	2026-11-17T06:09:20Z
 merge:shillinq:1900:0597e78d	merge3 tree of 6 shillinq PRs: merged=2 red=0 fail=0 skip=0; conflict 4, lint 0, moved 0; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-17T06:09:47Z
 review:integriq:3628:d1d59a18	BLOCK: status callback not scoped to its source	session-20261117T042937-c444c626	2026-11-17T06:10:07Z
+verify:decidiq:2249:6f6a3c62	GREEN 2249,2251,2252,2254; RED 2250 (psalm 7 vs php 8.3 platform pin), 2253 (stylelint 18 config resolution)	session-20261117T055908-62351962	2026-11-17T06:10:47Z
