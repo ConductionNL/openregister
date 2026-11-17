@@ -18638,3 +18638,5 @@ filinq	2179	fe61fa8190c782e8e6e0568c8d078ce3ef6cdd49	GREEN	worker-36	spec tags, 
 filinq	2180	6cd5e86ffab43fd4ee6c0242f32056d724e26036	GREEN	worker-36	e2e spec only; unit 7298 OK on the 9-PR tree, baseline 7288 OK, new failures 0; vitest 857/857
 filinq	2181	7ce08a512c146195e9c7c946dbc7e9e267449432	GREEN	worker-36	build documents-in-and-out-of-the-building: best-effort download trail on served copies and versions, access checks unchanged; unit 7298 OK on the 9-PR tree, baseline 7288 OK, new failures 0; vitest 857/857
 filinq	2182	af614fee7742906a70da9c30346e9eb6541d7740	GREEN	worker-36	docs: OpenAPI documentation from openapi.json, coverage test; unit 7298 OK on the 9-PR tree, baseline 7288 OK, new failures 0; vitest 857/857
+filinq	2183	fb25a98a385e31605573510e1f28367b920a420b	GREEN	worker-36	vitest spec only; unit 7298 OK on the 9-PR tree, baseline 7288 OK, new failures 0; vitest 857/857
+filinq	2184	6da46b71eaef66c39d938d3bfecaf1d756918363	GREEN	worker-36	e2e specs only; unit 7298 OK on the 9-PR tree, baseline 7288 OK, new failures 0; vitest 857/857
