@@ -5301,5 +5301,6 @@ hermiq	1754	1a5852e797be3689f5f2f7e90ce77944cb53d2eb	MERGED	worker-22	GATE OK sb
 pipelinq	3932	b68d98558ef0ca9c770e0950081777dd4103c596	MERGED	worker-31	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.49
 integriq	3574	daecacd949c49a2ccaaeb6c3087ab83eee15516d	MERGED	worker-08	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.60
 integriq	3612	a0f66b1a4495f5377e1e81309f41f0c12c7a3be2	SKIP	worker-08	no APPROVE review at this head
+integriq	3703	80544b3ca452aaca520969c1dbe59bf25d34dc66	RED	worker-08	GATE RED sbom: composer.lock changed without sbom.cdx.json
 stackiq	2024	88367b0f7609080b2500feb97979114e706ac71b	MERGED	worker-29	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.10
 opencatalogi	2683	5e43507f27c0159977694eec58e4211184698e5f	MERGED	worker-48	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.51
