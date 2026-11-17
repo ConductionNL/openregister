@@ -22792,3 +22792,4 @@ fix:larpinq:1054:0d13d8ee	conflict resolved + rank-limit fail-closed fix pushed,
 fix:versioniq:735:6cc6a20f	conflict resolved, pushed 3c904010 (suite 2543, 2 inherited failures); APPROVE recorded; merge gate RED on maintainability floors, RED verdict queued	session-20261117T213124-9bd98896	2026-11-17T22:04:26Z
 fix:buildiq:1632:ba29c96c	fixed CONFLICT #1632, new head 712402e5; merge lock held elsewhere, REVERIFY queued	session-20261117T213149-40fbaeee	2026-11-17T22:04:33Z
 merge:filinq:2186:87d1157e	unmeasured: api.osv.dev (cloud tree of 6 filinq PRs: merged=0 skip=4, conflict 2; 2186/2188 REQUEST_CHANGES on gate findings)	session-20261117T211329-58121c09	2026-11-17T22:04:41Z
+fix:dossiq:6659:565a618a	conflict resolved, new head 7c7be56443; REVERIFY queued (gate host unreachable, not landed)	session-20261117T211437-e305ed6d	2026-11-17T22:05:02Z
