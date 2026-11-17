@@ -21384,5 +21384,6 @@ build:learniq:compliance-assign-from-hr-roles:b2	already built: every code task 
 build:shillinq:tax-cbcr-and-pillar2-returns:b2	already building (branch quality/build-tax-cbcr-and-pillar2-returns exists, builds landed 16 Nov)	session-20261117T121049-5b84d45a	2026-11-17T14:58:55Z
 build:shillinq:tax-vat-return-from-books:b2	already building: quality/build-tax-vat-return-from-books and -c2 exist on origin	session-20261117T134441-beae3c0d	2026-11-17T14:58:42Z
 build:buildiq:data-restore-record-version:b2	PR #1716: T07 validated and ticked; T03 (nextcloud-vue), T04 (Playwright), T05 (openregister question) left	session-20261117T133433-906519d6	2026-11-17T14:59:38Z
+build:learniq:an-invited-trainer-may-activate-a-placement:b2	blocked: T1 is Ruben's open decision (may an invitation carry a POK signature); T2-T6 would lower a signature trust floor before it, and T5's e2e asserts the decided behaviour, so nothing built	session-20261117T141347-c536bb61	2026-11-17T14:59:37Z
 build:filinq:dossier-management-ui:b2	already building: quality/build-dossier-management-ui exists; only open task 4.5 is docs with screenshots	session-20261117T134441-beae3c0d	2026-11-17T14:59:25Z
 build:filinq:document-waarmerk-certification:b2	already building (branch quality/build-document-waarmerk-certification exists)	session-20261117T121049-5b84d45a	2026-11-17T14:59:27Z
