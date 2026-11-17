@@ -19045,3 +19045,4 @@ merge:integriq:3678:bb45729a	cloud tree of 2 integriq PRs: merged=0 red=2 fail=0
 review:filinq:2096:f6e8d167	GREEN: suite 7014 OK vs baseline 6969, spec-conform; register version line conflicts with development	session-20261117T020244-328833fb	2026-11-17T02:06:19Z
 review:filinq:2114:93be4fcb	GREEN: spec-conformant; unit 7054 ok, vitest 801, jest 610; conflicts with development (5 files)	session-20261117T020207-847c18e7	2026-11-17T02:06:48Z
 review:filinq:2079:d658c1dd	BLOCK: floor lost (component independence), missing @spec/anchors, schema titles, custom page +1; conflicts with development	session-20261117T020210-893a9346	2026-11-17T02:06:55Z
+review:hermiq:1751:36c34dcf	CONFLICT with development in lib/Settings/hermiq_register.json; verdict recorded for a fix	session-20261117T020131-42b6d5a2	2026-11-17T02:07:05Z
