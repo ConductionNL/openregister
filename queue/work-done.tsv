@@ -21580,3 +21580,4 @@ build:decidiq:followup-implementation-progress:b2	already building: quality/buil
 build:decidiq:leaf-integrations:b2	already building: quality/build-leaf-integrations(-c2) exist	session-20261117T132743-10cec9d3	2026-11-17T15:21:37Z
 build:buildiq:decision-tables-live-in-openregister:b2	already built: the one open task is a live occ upgrade check after openregister#4572; no spec files named	session-20261117T141351-c4de67df	2026-11-17T15:23:07Z
 build:decidiq:integrity-disclosures-in-plain-words:b2	already done in code: only 5.2 E2E is open (needs the live instance)	session-20261117T135029-424a7669	2026-11-17T15:23:24Z
+build:learniq:school-year-setting:b2	PR #2606: attendance summaries, pupil list, sweep job and hour plan activities read school_year_start; all code tasks ticked	session-20261117T145912-e9f6485a	2026-11-17T15:23:46Z
