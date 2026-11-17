@@ -5189,3 +5189,4 @@ shillinq	2993	cf43d96e6a66276d18cb4f3c7399b21c590143a1	RED	worker-17	GATE RED ab
 versioniq	754	8a439f2e58c63839aec02a340ba2336879e26bf8	RED	worker-30	GATE RED floor: unit_interfacing: 4.62 -> 4.60
 opencatalogi	2665	16ac2bab62195fd2d8ce728161b28db9e28ec22c	MERGED	worker-08	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.51
 dossiq	6636	ec703426ebee6d770f11e7035231e62cad09bab6	MERGED	worker-02	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
+learniq	2523	3f4bf7183dd6cf757c044ccbf72a2119a09158ed	MERGED	worker-15	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 4.10
