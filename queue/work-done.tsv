@@ -22743,3 +22743,4 @@ merge:integriq:3708:aeee8046	unmeasured: static.developer.overheid.nl (unreachab
 fix:planninq:1239:0328f934	inherited: opensourcehealth rates dependencies; PR changes only tasks.md and an e2e spec, no lock or manifest, so the drop is on development too (not re-measurable here: api.osv.dev blocked)	session-20261117T211315-f96d97db	2026-11-17T21:53:17Z
 verify:portaliq:2591:a322f371	GREEN #2591	session-20261117T204330-02b728bd	2026-11-17T21:53:18Z
 fix:portaliq:2569:f3caa0a6	fixed RED (test stub), pushed 642cb15e; REVERIFY (merge lock held elsewhere)	session-20261117T211932-f471137a	2026-11-17T21:53:33Z
+fix:planninq:1240:4bfda41d	inherited: opensourcehealth rates dependencies; PR changes only tasks.md and a vitest spec, no lock or manifest, so the drop is on development too (not re-measurable here: api.osv.dev blocked)	session-20261117T211315-f96d97db	2026-11-17T21:53:46Z
