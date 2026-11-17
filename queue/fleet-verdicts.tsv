@@ -17822,3 +17822,6 @@ filinq	2096	a0ad494fdeddada7837dc71d239810204c75f6a9	CONFLICT	worker-09:merge	co
 filinq	2107	11172a4bbe4d9fa786b77c78447266b4d44c37d4	CONFLICT	worker-09:merge	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Settings/filinq_mock_register.json lib/Settings/filinq_register.json 
 filinq	2121	a5b31115255bd774af932d35b30ffaac2ad51a62	CONFLICT	worker-09:merge	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Settings/filinq_mock_register.json lib/Settings/filinq_register.json 
 hermiq	1738	461c70b6c5723b611ebb600f2a6c6e9297a62661	REVERIFY	worker-58	merged development in, register joined at v0.63.0, unit suite OK (5654 tests); new head ae94be6ed3d921ffe86d4c04747000b90941a84a, verify it
+stackiq	2022	dd6d4b11005caee34f97773d81b938f02d226d90	RED	worker-55:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+stackiq	1938	903d38ebb1408ac2b76caf4e3df4eff0c96c40e4	CONFLICT	worker-55:merge	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Settings/stackiq_mock_register.json 
+stackiq	2023	4b571496463e29f34eb2c14da0d	REVERIFY	worker-55:merge	verdict sha is not the head: head is 4b571496463e29f34eb2c14da0dfb98b850b6306
