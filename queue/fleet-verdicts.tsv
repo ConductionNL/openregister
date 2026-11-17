@@ -16000,3 +16000,4 @@ opencatalogi	2685	607939f5803eb0395c8c899fa6fe078934470793	CONFLICT	worker-41	co
 portaliq	2417	5cad603093b2ac37262b3e10054d4f69245dbe5e	CONFLICT	worker-58	conflicts with development in l10n (4), package.json, PageGridEditor.vue, SiteEditMode.vue, PageLayoutDesigner.vue
 portaliq	2450	aead78dde8b0da5abf176dc2b3911de1c851d105	CONFLICT	worker-35	baseline 6217 tests, 16 errors inherited; conflicts with development in lib/Settings/portaliq_register.json, package.json, tests/Unit/Settings/PortaliqRegisterConfigTest.php, tests/example-site.spec.mjs
 planninq	1068	40deb423f1222b7b1faa5b7624b9c58ff150df52	GREEN	worker-03	1243 unit tests, baseline 0 failures, 0 new failures; dev-only phpstan lock bump
+shillinq	2975	b4abe00a4904a15540d40606881ac37917d8a6e1	CONFLICT	worker-05	conflicts with origin/development in info.xml, l10n, SoftCloseExecutor, openapi.json, register-versions.lock.json; not tested
