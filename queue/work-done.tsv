@@ -20368,3 +20368,4 @@ merge:learniq:2486:523e4432	cloud tree of 1 learniq PRs: none; conflict 1, lint 
 fix:humaniq:1184:faa2ffdf	conflict resolved, pushed deaad7cf, REVERIFY queued	session-20261117T112424-8445787b	2026-11-17T11:34:20Z
 fix:hermiq:1760:e77b5f0c	floor restored (floor_check PASS), pushed 0b27b76c; end-to-end skipped (strict review of 55 files over time cap), REVERIFY queued	session-20261117T111401-f300ca25	2026-11-17T11:34:44Z
 fix:shillinq:3080:f7c6e71c	conflict resolved, pushed 7700441; lock held elsewhere, REVERIFY queued	session-20261117T112009-00ac618f	2026-11-17T11:34:56Z
+fix:stackiq:2025:820ddd39	sbom regenerated, pushed 93f4ebf0; merge lock busy, REVERIFY recorded	session-20261117T112147-4fea037e	2026-11-17T11:35:05Z
