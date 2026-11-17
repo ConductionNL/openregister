@@ -20451,3 +20451,4 @@ review:filinq:2090:c34cbf17	GREEN: seed template + test, suite 7250 OK	session-2
 verify:thematiq:1713:b4ab4302	1713 GREEN; 1714 REVERIFY (conflicts only with #1713)	session-20261117T114638-d8047dd3	2026-11-17T11:53:33Z
 merge:learniq:2509:678d0509	cloud tree of 2 learniq PRs: none; conflict 2, lint 0, red 0, moved 0, done 0	session-20261117T112432-6eb8ecae	2026-11-17T11:53:55Z
 review:integriq:3557:5f4da252	GREEN: feeds build matches specs; unit same failures as baseline; vitest green	session-20261117T113840-498fade3	2026-11-17T11:54:09Z
+verify:opencatalogi:2770:b9922ed9	GREEN #2770 (docs only, no new failures)	session-20261117T114001-07512b39	2026-11-17T11:54:24Z
