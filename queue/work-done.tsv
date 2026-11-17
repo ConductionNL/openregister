@@ -19990,3 +19990,4 @@ review:versioniq:700:128a76e4	GREEN: versioniq#700, unit 2287 with 2 inherited f
 review:buildiq:1651:144da0d4	GREEN: no blockers; 1 inherited unit failure; l10n conflicts with development	session-20261117T084819-7b38da2a	2026-11-17T08:54:23Z
 fix:versioniq:709:482317ee	fixed headers and spec tags, pushed 87f7ff42; lock held elsewhere, REVERIFY	session-20261117T084835-4ff9a661	2026-11-17T08:54:50Z
 fix:filinq:2069:69d35a43	conflict resolved, pushed db5701f0; suite 7155 OK; merge lock held elsewhere, REVERIFY queued	session-20261117T084726-4d3c0dd8	2026-11-17T08:55:00Z
+cover:openregister:7350e3efm18f8:js0b5eefce	deferred: openregister has 185 open PRs	session-20261117T085227-a13dc102	2026-11-17T08:55:15Z
