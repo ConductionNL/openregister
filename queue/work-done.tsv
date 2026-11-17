@@ -21697,3 +21697,4 @@ build:humaniq:payroll-wage-tax-remittance-shillinq:b2	already building: branch e
 build:hermiq:chat-session-search-and-bulk-delete:b2	PR #1848: Playwright session-search-and-bulk.spec.ts and Newman search/bulk folder written; code already on development; live runs left	session-20261117T152630-80f67c9b	2026-11-17T15:36:45Z
 build:humaniq:rules-onto-or-decision-tables:b2	already done: only section 6 staged retirement left, deliberately unchecked (6.1 needs a live audit run first)	session-20261117T132743-10cec9d3	2026-11-17T15:36:36Z
 build:humaniq:filings-wage-tax-message:b2	nothing to build: only 3.2 (live check) is unchecked	session-20261117T123418-5f98fc94	2026-11-17T15:37:33Z
+build:humaniq:setup-wizard-six-steps:b2	already building: quality/build-setup-wizard-six-steps exists	session-20261117T132743-10cec9d3	2026-11-17T15:37:01Z
