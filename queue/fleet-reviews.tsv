@@ -1440,3 +1440,6 @@ pipelinq	3963	e0b88c16e1c5e43d0827e293701b09a4c5a0c8d2	APPROVE	worker-10	Quick; 
 pipelinq	3964	753442e626996f44d05bcc37231b0aba15c257be	APPROVE	worker-10	Quick; no blockers; cyclonedx-npm major bump, dev tooling, no script in repo pins its CLI flags
 pipelinq	3965	080c179868dab388890597bce399aace1a8c7ecd	APPROVE	worker-10	Quick; no blockers; vue-router patch bump
 pipelinq	3966	a7266ea55cd3b7630b581cb54ee6cb04bf9912dd	APPROVE	worker-10	Quick; no blockers; e2e spec and tasks.md only, helpers it imports exist, non-admin empty-storage context, base URL from env
+buildiq	1643	f8d38be6806298702a3a6c0ba4d0928cd0ee5588	APPROVE	worker-16	Thorough; no blockers; implements logic-automation-run-log per its specs, run recording is additive and every recording failure is caught and logged, endpoints pre-exist; concern: automationForRuleSet looks up across organisations (existing pattern)
+buildiq	1709	e329cf1746b8b2c6a15b3d436c66bf3d67d5fb62	APPROVE	worker-16	Thorough; no blockers; tests only, real assertions, covers tags and SPDX present; no concerns
+buildiq	1710	9b6b9e95f81917400acb306e4b2fae708797b460	APPROVE	worker-16	Standard; no blockers; tests only for credential registrar calls and logging; no concerns
