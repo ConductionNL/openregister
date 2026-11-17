@@ -19135,3 +19135,4 @@ review:integriq:3585:027d5ca5	GREEN: matches spec; failures inherited; conflicts
 review:opencatalogi:2723:ba525e6a	GREEN: no new unit or jest failures, merges clean	session-20261117T020212-3e3772fe	2026-11-17T02:24:19Z
 review:pipelinq:3743:4a743d55	GREEN; vitest reds inherited from development	session-20261117T020233-6aa2851d	2026-11-17T02:24:28Z
 review:learniq:2514:3f5207d1	GREEN #2514 (inherited failures only; golden conflict with development)	session-20261117T020252-b4828a7d	2026-11-17T02:24:40Z
+review:integriq:3618:c0bf242e	CONFLICT: l10n en/nl conflict with development; code matches the change	session-20261117T020223-01f01255	2026-11-17T02:24:54Z
