@@ -5052,5 +5052,9 @@ buildiq	1651	a201e3b38e0830b37d3db7b06d9c048f6b76bddc	SKIP	worker-28	no APPROVE 
 integriq	3626	7c8ff8cb03bd7a84a7935796d4893549293828f2	SKIP	worker-40	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 decidiq	2249	b46f792f7f876aade74a1dcd64c651d0ef2743ba	SKIP	worker-23	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 hermiq	1755	ec7a9edefcc3d29f8a3dbc28a0f8c58f000a30f7	RED	worker-42	GATE RED floor: unit_size: 3.86 -> 3.83; unit_complexity: 4.56 -> 4.52; module_coupling: 5.09 -> 5.04
+integriq	3626	7c8ff8cb03bd7a84a7935796d4893549293828f2	SKIP	worker-40	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 learniq	2579	65b68bcb8470f38a15c0f5298c14c96a4f9a6bb9	SKIP	worker-01	no APPROVE review at this head
 opencatalogi	2650	f465179e12f05f34b3515746f5ff120b9df08ff4	RED	worker-45	GATE RED floor: unit_complexity: 4.85 -> 4.83
+portaliq	2417	5a89d39e01388c3a9324898a1c52f13f296ec643	SKIP	worker-16	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
+versioniq	700	ee56187d5b94074595db29be2c0093f2889b6820	SKIP	worker-17	no APPROVE review at this head
+versioniq	706	2a838675481799fd60e9963297c76b760fd694b5	RED	worker-17	GATE RED floor: overall: 5.07 -> 5.05; duplication: 5.19 -> 5.17; unit_complexity: 4.79 -> 4.76; unit_interfacing: 4.57 -> 4.53
