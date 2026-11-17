@@ -5351,3 +5351,4 @@ dossiq	6634	024fc8422aa191aa02c0ebab3deb5f407d0f938f	RED	worker-32	GATE RED sbom
 portaliq	2449	89f90703ddd84d5ad7f4d90909874100e9df44c5	RED	worker-19	GATE RED floor: unit_complexity: 4.55 -> 4.53
 thematiq	1715	266d57c4976c78d3e6f336808f216ceff92792bc	MERGED	worker-44	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.15
 learniq	2509	fe4568006c124a02d9189ab37fdb16f24f0b8d4a	MERGED	worker-49	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 4.07
+larpinq	1088	c530ed46ec00d64843bb149aec13eea9f23d2afb	MERGED	worker-28	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.25
