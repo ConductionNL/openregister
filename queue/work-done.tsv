@@ -20013,6 +20013,7 @@ review:shillinq:3080:f7c6e71c	GREEN: phpunit 12641/0 failures, vitest touched 36
 merge:decidiq:2205:bfeeb582	cloud tree of 6 decidiq PRs: merged=5 red=0 fail=0 skip=1; conflict 0, lint 0, red 0, moved 0, done 0	session-20261117T084727-10682198	2026-11-17T09:00:25Z
 cover:launchpad:fb10c50fm88bd:882bd950	already covered: lib/Search 202/202 statements (pcov on development), no thin class left; launchpad has 42 open PRs	session-20261117T084643-d8b33e95	2026-11-17T09:00:18Z
 review:shillinq:2997:10c8efba	BLOCK: repair step unregistered in info.xml, 2 manifest icons unregistered; suite 12695/0 failures	session-20261117T084851-7a832684	2026-11-17T09:00:34Z
+cover:dossiq:069ee2d6m9d1b:ceb285b8	added 4 tests (Publication: CasePublicationState, SourceCollectionReturn) to open PR #6203 (44 open PRs); suite 18930->18934, 19 inherited failures, none new	session-20261117T084657-70a14b78	2026-11-17T09:00:51Z
 cover:stackiq:9ac19b3am039e:216a9a0a	deferred: stackiq has 43 open PRs	session-20261117T083929-9c5fceb9	2026-11-17T09:00:51Z
 fix:integriq:3557:89d30cbe	conflict resolved, pushed 76fedb76; lock held elsewhere, REVERIFY	session-20261117T084835-4ff9a661	2026-11-17T09:00:53Z
 verify:learniq:2577:4e6c5569	CONFLICT #2577 (tests/unit-js/structureProfile.test.mjs)	session-20261117T084918-0b033747	2026-11-17T09:01:03Z
