@@ -19267,6 +19267,7 @@ fix:stackiq:1933:99e5e172	fixed RED (test expectation), pushed 60a38fa8; REVERIF
 fix:hermiq:1758:d5151101	conflict resolved; REVERIFY at 7278524b78 (merge lock held by another merger)	session-20261117T020358-1a8df617	2026-11-17T02:52:46Z
 merge:hermiq:1496:053264b1	cloud tree of 9 hermiq PRs: merged=1 red=0 fail=0 skip=1; conflict 6, lint 0, red 0, moved 1, done 0	session-20261117T024430-b5e75bd7	2026-11-17T02:53:07Z
 verify:buildiq:1648:4c269521	CONFLICT: l10n/nl.json vs development	session-20261117T025134-c7910d2d	2026-11-17T02:53:23Z
+gap:portaliq:public-bundle-budget:1	PR #2556: site entry 453,578 -> 440,960 B (limit 441,344) without raising the budget; cosign route, theme case counts and isClosedCase split into small modules, claim invitation loaded on demand like mandate/contact; build:site and build:traffic pass	session-20261113T214350-9762e143	2026-11-17T02:53:56Z
 verify:dossiq:3957:8e3f5a35	CONFLICT: 3 files conflict with development	session-20261117T020227-9e68ed24	2026-11-17T02:53:37Z
 fix:shillinq:2998:722918d0	fixed: manifest shell regenerated, new head 5dd30f17, REVERIFY (merge lock held elsewhere)	session-20261117T025204-e27953f1	2026-11-17T02:53:45Z
 fix:shillinq:3110:cca3fd23:v6	development merged in, sbom check current; REVERIFY at e8ca71f4 (merge lock busy)	session-20261117T025205-24fff43b	2026-11-17T02:53:56Z
