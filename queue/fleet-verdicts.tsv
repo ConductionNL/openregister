@@ -18835,3 +18835,4 @@ hermiq	1847	4b35bf029a1ae7308503d63ef3b7d87dd2e68235	GREEN	worker-44	phpunit 573
 filinq	2130	151267ee08581cd0a9c8072e7dd347ec20ed512c	CONFLICT	worker-48:merge	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Settings/filinq_register.json tests/bootstrap-unit.php 
 filinq	2182	af614fee7742906a70da9c30346	REVERIFY	worker-48:merge	verdict sha is not the head: head is af614fee7742906a70da9c30346e9eb6541d7740
 keepiq	1897	cb062e6781152a50caa312836a625237c407fa7c	GREEN	worker-39	openspec archive; code changes are @spec path comments only; 15 touched vitest files 152 pass
+dossiq	6662	e845dfbaec252189a9bca20af70b3d3fedf2a4a6	GREEN	worker-40	unit 18422 on tree vs 18398 baseline, 1 inherited error, 0 new; vitest 7224, 2 inherited failures, 0 new; build PR judged against its change
