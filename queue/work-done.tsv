@@ -18828,3 +18828,7 @@ fix:decidiq:2198:73a76b6a:v3	conflicts resolved + urgency services moved to main
 fix:hermiq:1755:c4172dcd:v3	conflict resolved + 2 find() calls migrated to main API, pushed a55ceb60; lock held elsewhere, REVERIFY queued	session-20261117T004644-d9c68b8f	2026-11-17T01:16:52Z
 fix:humaniq:1146:497b5f3c:v3	fixed conflict + test signature, pushed 3a8cc16b; merge lock held elsewhere, REVERIFY queued	session-20261117T004801-2f7a5fc1	2026-11-17T01:17:15Z
 fix:decidiq:2193:03fef7f1:v4	conflict resolved, pushed 8ad11d67; merge lock busy, REVERIFY queued	session-20261117T005208-5aaffa6c	2026-11-17T01:17:26Z
+fix:decidiq:2190:be028a48:v3	fixed CONFLICT (+ simple-structure blocks, edge test parties), pushed 4d90c497473996365e0cb4eee1b84062d285255d; merge lock held elsewhere, REVERIFY queued	session-20261117T004644-5138fb50	2026-11-17T01:17:40Z
+review:shillinq:2081:42e3cf9c	GREEN	session-20261117T004656-5d4b3c4e	2026-11-17T01:17:51Z
+merge:planninq:1068:b49b0718:r	merge3 tree of 1 planninq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-17T01:17:59Z
+review:portaliq:2451:f157947e	GREEN: spec build, suite 6218 with 16 inherited errors, node spec pass	session-20261117T003652-c6487e72	2026-11-17T01:18:10Z
