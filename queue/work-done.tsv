@@ -22612,3 +22612,4 @@ review:versioniq:728:82369cc5	GREEN: unit 2590, no new failures; vitest 22 ok; i
 review:filinq:2099:8280fbd4	GREEN: unit 7329->7346 OK, no new failures, phpstan/phpcs clean	session-20261117T211328-24b3dcac	2026-11-17T21:19:06Z
 review:shillinq:3048:9fbb86c2	GREEN: unit 12824 OK on PR+dev, touched vitest 44 pass	session-20261117T211359-8e262d16	2026-11-17T21:19:16Z
 verify:versioniq:782:845ea6b3	782 GREEN, 783 REVERIFY (conflicts only with 782)	session-20261117T211422-95669914	2026-11-17T21:19:25Z
+review:buildiq:1643:f8d38be6	GREEN: unit 3692 ok, phpstan clean, vitest 14/14	session-20261117T211651-58c92edf	2026-11-17T21:20:10Z
