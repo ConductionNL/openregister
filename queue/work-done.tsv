@@ -21572,4 +21572,5 @@ build:decidiq:fold-regulations-into-governing-documents:b2	already built: 1.1-5.
 build:decidiq:example-set-zuiddrecht:b2	already done: open 2.2/2.3 are install checks on a live instance; no PR	session-20261117T135414-614629b0	2026-11-17T15:21:19Z
 build:decidiq:interests-and-integrity:b2	already done: tasks 1-6 on development (fragment 62 etc., #2146 at 47325aada incl. task 5 KPI + compliance panel; tasks.md boxes 1-5 not ticked); only task 7 e2e (browser) left	session-20261117T133303-ca20630d	2026-11-17T15:21:17Z
 build:decidiq:member-onboarding:b2	already building: quality/build-member-onboarding exists (open PR #2173)	session-20261117T135029-424a7669	2026-11-17T15:22:10Z
+build:decidiq:followup-implementation-progress:b2	already building: quality/build-followup-implementation-progress and -2 exist	session-20261117T135414-614629b0	2026-11-17T15:22:11Z
 build:decidiq:leaf-integrations:b2	already building: quality/build-leaf-integrations(-c2) exist	session-20261117T132743-10cec9d3	2026-11-17T15:21:37Z
