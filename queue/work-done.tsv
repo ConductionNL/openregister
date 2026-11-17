@@ -18955,3 +18955,4 @@ fix:keepiq:1829:d00cfb44:v5	merged #1829 at f14d3a1536981686b8b778bb02ceb2bcb8f4
 fix:stackiq:1963:61fae429:v3	conflict resolved, new head c8580463, unit suite green; merge lock held elsewhere, REVERIFY queued	session-20261117T005434-ea6146cc	2026-11-17T01:42:22Z
 fix:buildiq:1605:a2943842:v4	conflict resolved, pushed b350a916; REVERIFY (merge lock held elsewhere)	session-20261117T004650-c3ae7bda	2026-11-17T01:42:36Z
 fix:opencatalogi:2654:9a530c05:v4	fixed conflict on #2654, new head 8d972568; REVERIFY queued (merge lock held)	session-20261117T005237-d93074af	2026-11-17T01:42:46Z
+fix:stackiq:1942:7d2c0d3f:v3	conflict and semantic merge fixed, pushed 200de863, suites green beyond inherited; merge lock held elsewhere, REVERIFY queued	session-20261117T005055-4c5f0209	2026-11-17T01:43:01Z
