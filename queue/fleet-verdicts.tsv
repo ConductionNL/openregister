@@ -18304,3 +18304,4 @@ launchpad	759	3f179d5b27c3072baa60549b8656cd80ef5c587e	CONFLICT	worker-20	confli
 integriq	2720	7f6df619bcf696e15e8adea822963863ea34b052	CONFLICT	worker-08	conflicts with development in lib/Controller/SetupController.php, lib/Repair/InitializeRegister.php, lib/Repair/SyncConnectionDeclarations.php, 2 register.d json, 3 tests
 launchpad	628	7ce60794924a774915dfec084c803ddddf04e02b	GREEN	worker-37	merge into development yields a tree identical to development (beta sync already present); no diff, suite = baseline
 integriq	1985	6e4c92f5a867f924633f527c3d41ff4024cffa90	GREEN	worker-03	merge adds no file changes to development (tree identical); baseline 9839 tests with 4 inherited failures/errors, 0 new
+larpinq	1087	bdae89b3e4ce2caecb66642ff6983d5e9331ad1a	GREEN	worker-25	unit 1228 tests (20 skipped), baseline 1228 OK, new failures 0; version bump only
