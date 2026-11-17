@@ -19491,3 +19491,4 @@ review:integriq:3628:d1d59a18	BLOCK: status callback not scoped to its source	se
 verify:decidiq:2249:6f6a3c62	GREEN 2249,2251,2252,2254; RED 2250 (psalm 7 vs php 8.3 platform pin), 2253 (stylelint 18 config resolution)	session-20261117T055908-62351962	2026-11-17T06:10:47Z
 review:hermiq:1755:b5d33f2f	GREEN; no new failures vs baseline	session-20261117T055844-3d508d2a	2026-11-17T06:11:16Z
 review:learniq:2536:31b84d24	CONFLICT: routes, register, mbo profile, portal golden vs development	session-20261117T055908-62351962	2026-11-17T06:11:36Z
+review:learniq:2538:0b1eaa81	CONFLICT: l10n, register, portal tests vs development	session-20261117T055908-62351962	2026-11-17T06:12:18Z
