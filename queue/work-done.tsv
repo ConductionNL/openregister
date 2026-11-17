@@ -20491,3 +20491,4 @@ merge:launchpad:1106:9005290f	cloud tree of 3 launchpad PRs: merged=0 red=1 fail
 review:opencatalogi:2650:6678e3ea	BLOCK #2650: uses/used answers skip the public sourceIdentifiers filter; suite no new failures	session-20261117T114001-07512b39	2026-11-17T12:06:11Z
 review:hermiq:1754:26e47c9c	BLOCK: app <version> not raised with register 0.63.0; unit 5683/0	session-20261117T111714-cd94760b	2026-11-17T12:06:33Z
 verify:stackiq:2024:8a3849ea	GREEN #2024, GREEN #2027 (vitest only inherited facets.spec failure)	session-20261117T110646-831a671b	2026-11-17T12:06:53Z
+review:decidiq:2171:fa36c329	GREEN: decidiq #2171 fa36c329 (phpunit 4968 OK; 1 inherited vitest snapshot failure)	session-20261117T115612-9783d86e	2026-11-17T12:07:07Z
