@@ -3373,3 +3373,4 @@
 10625 77e25041364851dabb5f8d2473dd8b9ba5ba01e1 APPROVE CI-only: pins upload-artifact to the v7.0.2 sha main already uses in scorecard.yml; ubuntu-latest runners, no download-artifact consumers, no lib or test changes
 10630 56e67fcf4c0161be636ac3407351b367978950f3 APPROVE dev-only patch bump of vue-eslint-parser 10.4.1 to 10.4.2 in package.json and lockfile; no dependency tree changes beyond it; no lib, test or frontend source changed
 10629 784ab3dd184c21490a21023dfe8a240a87ab67cc APPROVE dev-only patch bump of @types/node 26.6.4 to 26.6.6; package.json and lockfile entry only, registry-resolved with integrity, no runtime or lib changes
+10626 01fe2e08f462a224d902efa2cd7b10bd3a6b6dce APPROVE CI-only: setup-buildx-action v3 to v4 in container-image workflow, no inputs used, hosted ubuntu-latest runner; no lib, test or frontend change
