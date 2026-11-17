@@ -1026,3 +1026,4 @@ hermiq	1827	68eb06cffbe4bc36f4a885026318fafb53a883c0	APPROVE	worker-02	Quick; no
 launchpad	885	de52aba38267a7937dbd0d7d8816a55c4a17a381	APPROVE	worker-54	Thorough; no blockers; OR-tenant gate finding inherited from development; cog actions moved into the Meer menu with their specs
 launchpad	1239	a96d699ce183217eb2fa7174db370e251cb33d7d	APPROVE	worker-54	Quick; no blockers; concern: composer audit advisories on symfony config/filesystem/yaml are inherited, this bundle does not lift them
 launchpad	1258	8f138e3fa54509349bf5a40c6f8a2d8bdb937034	APPROVE	worker-54	Quick; no blockers; tests only
+launchpad	1212	e80930e9ad85b09b33cea8da4227760ab07d4bdb	REQUEST_CHANGES	worker-54	Thorough; adds lib/Migration/Version002015Date20261114130000.php without raising appinfo/info.xml version (migration-version-bump gate), so an upgrade runs none of it; WidgetPickerModal closeRequestForm has no @spec; concerns: none on access (admin routes gated, list filtered by groups)
