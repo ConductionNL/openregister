@@ -1539,3 +1539,4 @@ stackiq	1963	d255f3be7e27c59c7c424d2717cc537c3a207a16	APPROVE	worker-20	Thorough
 stackiq	2048	3df81eba42bc8409a9466601d3a6e1d32fab9deb	APPROVE	worker-20	Strict; no blockers; anonymous branch decided before AanbodService, published-date filter on top of schema RBAC, @self/_ keys dropped, fails closed on read error or missing reader, rate-limited; authenticated path unchanged; per change anonymous-aanbod-listing-is-published-only
 stackiq	2049	c79327a0e856361eeefc08380f98991c4772d770	APPROVE	worker-20	Standard; no blockers; copy overrides clear publication dates on module and catalogService copies; vitest added
 stackiq	2050	3aee64db981ba893fb229fcd82feb05137f79174	APPROVE	worker-20	Quick; no blockers; e2e spec only
+stackiq	2051	ea4af972eb77b68a49a8fcfd1bb61bf4df92f6d5	APPROVE	worker-20	Quick; no blockers; e2e specs only, throwaway user with empty storage state
