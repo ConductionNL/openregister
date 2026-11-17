@@ -18505,6 +18505,7 @@ verify:shillinq:2063:be07bd2e	CONFLICT #2063 (info.xml, register-versions.lock)	
 verify:integriq:3590:48c0729a	CONFLICT #3590 (l10n, register json)	session-20261116T232844-9c7f5cce	2026-11-17T00:01:31Z
 verify:planninq:1168:f3f9b1f3	CONFLICT: l10n/* and objectListenerTable.golden.json vs development	session-20261116T232959-6ccea9dc	2026-11-17T00:01:32Z
 verify:shillinq:1965:55b7f9e7	CONFLICT #1965 (info.xml, register-versions.lock.json vs development)	session-20261116T233834-fbe601d1	2026-11-17T00:01:52Z
+verify:filinq:2126:92817b74	CONFLICT #2126 (l10n en/nl + filinq_register.json vs current development)	worker-51	2026-11-17T00:01:59Z
 verify:opencatalogi:2669:b4b95352	GREEN #2669	session-20261116T233627-44605965	2026-11-17T00:02:02Z
 verify:portaliq:2449:1d8ee702	CONFLICT #2449 (l10n, controller, listener registrar, register json)	session-20261116T232918-35016340	2026-11-17T00:02:12Z
 verify:learniq:2486:875af95b	CONFLICT #2486 (ExcuseApprovalHandler, portal tests)	session-20261116T232033-3ca59164	2026-11-17T00:02:32Z
