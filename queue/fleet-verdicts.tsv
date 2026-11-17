@@ -16081,6 +16081,7 @@ shillinq	3062	faaae73e234727476b1a3a73e75779e41d5d05a1	CONFLICT	worker-55	confli
 thematiq	1680	31fb4f82491973605e3b9fd0fb721096311bc020	CONFLICT	worker-21	merge conflict with origin/development in l10n/*.js and l10n/*.json; suite not run
 stackiq	1933	96e3bd2b7c6cb1d33b873cb9fa56294750efe779	CONFLICT	worker-23	conflicts with development in l10n en/nl, ListenerRegistrar.php, stackiq_mock_register.json, src/manifest.json; suite not run
 stackiq	1942	7d2c0d3f7c687acb0e1883d507e2793d4d176e41	CONFLICT	worker-29	conflicts with origin/development in l10n en/nl and src/manifest.json
+versioniq	686	3f4bd26e4fa747fda9ffd2fa195731faa550fa26	CONFLICT	worker-07	conflicts with development in 19 files (lib/AppInfo/Application.php, SettingsController, App.vue, l10n, openapi.json, ...); not tested
 hermiq	1781	dd5b5dad5a842fd2fb0749c7d264dd607ba9ac32	CONFLICT	worker-01:merge	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Settings/hermiq_register.json 
 stackiq	1939	7a225714c5a8137d8913669f83d476fb722316c4	CONFLICT	worker-10	conflicts with development in: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Settings/ register json src/customComponents.js
 shillinq	1991	29abf7fb303a9a25601637bfbbaecaeb9a1feae7	REVERIFY	worker-36	merge gate rerun on the same head: GATE OK (sbom, checker and maintainability floors hold; abs floor 4.00 at 4.09), earlier spdxheaders drop not reproduced, no change needed; merge lock held by another merger; new head 29abf7fb303a9a25601637bfbbaecaeb9a1feae7, verify it
