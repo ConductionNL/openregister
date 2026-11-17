@@ -22890,3 +22890,4 @@ review:shillinq:3004:fa8a07cf	GREEN: unit 12862 OK, phpstan/eslint clean, vitest
 review:openregister:10631:4e3a71b7	BLOCK: dbal 4 makes unit suite fatal at boot (stub redeclares Exception interface)	session-20261117T221428-ca31c1a7	2026-11-17T22:41:28Z
 merge:buildiq:1734:e06928e5	unmeasured: static.developer.overheid.nl (3 PRs green tree, 3 APPROVE recorded, gate checker_floor could not measure adrvalidator)	session-20261117T223303-c1d113c1	2026-11-17T22:41:51Z
 build:portaliq:retire-the-vendored-woo-bundle:b2:c3	built task 4 on PR #2586 at 2f262445 (/woo paths redirect to the authored site behind bundled_site_portal_woo; 57 tests, 0 new failures); left: task 1 needs the real register volumes, task 5 a live run, task 6 the municipality's sign-off	session-20261117T222048-3a9e0119	2026-11-17T22:42:30Z
+fix:pipelinq:3952:6243a86d	conflict resolved, pushed 3ad1de77; REVERIFY queued	session-20261117T211406-076a7a0e	2026-11-17T22:42:36Z
