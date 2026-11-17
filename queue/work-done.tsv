@@ -19958,3 +19958,4 @@ fix:filinq:2114:bafd9b56	fixed floor+gate-120+RBAC on uncheck, pushed 790aa030; 
 fix:portaliq:2493:76051e0b	no conflict alone: branch already contains development; REVERIFY recorded	session-20261117T084012-4fcd2968	2026-11-17T08:41:12Z
 fix:decidiq:2173:0ef71c12	fixed BLOCK (admin allowlist for provisioned groups, never admin; icon registered), pushed 1a950f6c; tree 4884/0 new; review APPROVE; not landed: merge gate RED on maintainability floor (unit_complexity 4.05->3.93), RED verdict recorded	session-20261117T081154-c3187d32	2026-11-17T08:42:13Z
 merge:shillinq:2086:307373f1	unmeasured: static.developer.overheid.nl (4 IN reviewed: 3 APPROVE, #2975 REQUEST_CHANGES; 4 CONFLICT + 1 MOVED requeued)	session-20261117T081138-8732f141	2026-11-17T08:42:16Z
+merge:learniq:2509:3afcc222	cloud tree of 6 learniq PRs: merged=3 red=0 fail=0 skip=1; conflict 2, lint 0, red 0, moved 0, done 0	session-20261117T080445-fa502475	2026-11-17T08:44:00Z
