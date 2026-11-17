@@ -5809,3 +5809,4 @@ thematiq	1726	ebe538c8dc4ba9e635c349fc608093ec09646cb6	RED	merge3	GATE RED sbom:
 launchpad	1295	8e839b5210cfdfcca1ed2fcad366db008d7a4c2c	RED	merge3	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
 launchpad	1298	c874c6ad5b2e7c88a07d5ac2a92feb874cb52782	RED	merge3	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
 launchpad	1306	060171415ec0321c8968a4087ce146a20f0714d7	RED	merge3	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+stackiq	1963	d255f3be7e27c59c7c424d2717cc537c3a207a16	SKIP	worker-20	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
