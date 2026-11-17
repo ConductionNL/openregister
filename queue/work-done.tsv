@@ -22627,3 +22627,4 @@ verify:filinq:2173:5987a415	2173 GREEN, 2190 GREEN; unit 7336 tests, 0 failures	
 verify:decidiq:2174:53ff0981	GREEN 2174 (unit 5035, vitest 1 inherited)	session-20261117T211315-f96d97db	2026-11-17T21:23:44Z
 review:integriq:3564:7f70763f	GREEN: no new failures (9976 tests, baseline 2E/3F inherited), vitest 41 pass	session-20261117T211359-bea33e3d	2026-11-17T21:24:09Z
 verify:hermiq:1853:8a1330a3	GREEN 1853	session-20261117T211406-076a7a0e	2026-11-17T21:24:23Z
+review:integriq:2650:ecac209c	GREEN: no new failures (9933 vs 9910 baseline, 5 inherited), behaviour per sources-sftp-adapter spec	session-20261117T211412-45e1aeb8	2026-11-17T21:24:47Z
