@@ -19604,3 +19604,9 @@ opencatalogi	2674	c6d01be66cd42b890d76ceb430114cd02e9223de	BLOCK	worker-46:revie
 planninq	1250	70dfe254912eeaa8aeb0a5a52fbb7c735485ff4e	REVERIFY	worker-55	no conflict with development (postman collection merges clean; conflict was only with an earlier PR of the tree); merged development in; new head d428c28451fbc7511b9f3bac3121996d971229e9, verify it alone
 versioniq	735	3c9040104be324b72d47be58967808da6c5e7027	REVERIFY	worker-19	floor restored (split PromotionService into PromotionPlanner + PromotionOptions, smaller units in reader, commands, settings, instance matrix, dialogs; @spec tags; SensitiveParameter on the remote password); floor_check PASS, one-PR tree adds no failures (2 inherited golden failures); not landed: self-review approve refused by permission check; new head 505cff78dc807a140c50a5bf156aefd3ab1920b2, verify it
 dossiq	6659	565a618a74e1407233ed8b1363bf412763f216c3	REVERIFY	worker-42:merge	verdict sha is not the head: head is 7c7be56443aeb3a89787e941ed3e97fbc3c0b146
+thematiq	1721	b57b4ab90b6e9cd73b7a08ae3f63864fc2e778d5	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+thematiq	1722	f409740840de20ce047e4abde179bd59e0a9d729	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+thematiq	1723	f6aae08d113aa98b5a8129910468602b07e598e8	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+thematiq	1724	bee24dc0a0b313ee6429de1edec32a5449244f66	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+thematiq	1725	f7a10dc12ca1b7982050d7bf7fb649d8684d2882	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+thematiq	1726	ebe538c8dc4ba9e635c349fc608093ec09646cb6	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
