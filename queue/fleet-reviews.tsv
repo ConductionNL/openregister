@@ -935,3 +935,4 @@ decidiq	2154	6fc49611cd252c8bdc22cdf54c5631780f3f0b3c	APPROVE	worker-29	Thorough
 decidiq	2195	ebc6d9d54e01c779de13acd4b3b086e4f83c1306	APPROVE	worker-29	Standard; no blockers; voting methods limited per body as the change asks, server still enforces; 55 vitest pass
 decidiq	2249	3d2d6c428cf0ad3d1f1c8252b6e856b7ac653a50	APPROVE	worker-29	Quick; no blockers; dev-dependency patch bump
 decidiq	2251	0ed475e33cbb588dda158bc53a43c6b0bed603a7	APPROVE	worker-29	Quick; no blockers; dev-dependency minor bump
+decidiq	2252	8ede89d50aa29803f8ecaee6001a6961a5492da9	APPROVE	worker-29	Quick; no blockers; ocp patch bump, tree suite green
