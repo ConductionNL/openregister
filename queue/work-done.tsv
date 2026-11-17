@@ -21011,3 +21011,4 @@ build:dossiq:social-history-people-and-files:b2	already done: 1.1 and 1.2 on dev
 build:dossiq:stuf-onto-integriq:b2	already done: only a next-release removal task left	session-20261117T132743-10cec9d3	2026-11-17T14:18:50Z
 build:dossiq:starter-content-and-templates:b2	already done in dossiq: only 7.2 open, its remaining three surfaces live in nextcloud-vue/openregister and lane L1 builds them (decision 156); no dossiq code left; no PR	session-20261117T135414-614629b0	2026-11-17T14:18:40Z
 build:dossiq:social-domain-consent-and-safeguards:b2	already building: quality/build-social-domain-consent-and-safeguards-2..5 exist	session-20261117T135414-614629b0	2026-11-17T14:19:11Z
+build:dossiq:resident-start-points-have-a-page:b2	already built: 1.1 and 2.1 on development with tests, no e2e spec files named; skipped 3.1 (live check on an upgraded instance)	session-20261117T134242-51ff9d48	2026-11-17T14:19:01Z
