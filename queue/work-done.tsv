@@ -20156,3 +20156,4 @@ review:openregister:10608:4add3e2c	BLOCK: breaks the result-order golden test (f
 review:versioniq:709:87f7ff42	GREEN: phpunit no new failures (2 inherited), vitest 3195/3195	session-20261117T085512-6b57566b	2026-11-17T09:46:22Z
 fix:integriq:3612:a2e78b15	fixed BLOCK, pushed 7ac38eeb; merge lock held elsewhere, REVERIFY queued	session-20261117T084229-c4fc3f9c	2026-11-17T09:46:56Z
 merge:filinq:2087:8e431ead	cloud tree of 4 filinq PRs: none; conflict 4, lint 0, red 0, moved 0, done 0	session-20261117T094112-96b7fa6a	2026-11-17T09:47:33Z
+merge:stackiq:1938:95c5c39f	cloud tree of 9 stackiq PRs: merged=6 red=1 fail=0 skip=0; conflict 1, lint 0, red 0, moved 1, done 0	session-20261117T092810-d097e665	2026-11-17T09:47:16Z
