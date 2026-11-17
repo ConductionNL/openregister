@@ -43,7 +43,10 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Lifecycle\SchemaReading;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Event\ObjectReadStatePropertiesEvent;
+use OCP\EventDispatcher\IEventDispatcher;
 use Psr\Log\LoggerInterface;
+use Throwable;
 
 /**
  * Reads `x-openregister-read-state` and answers one question about one write.
@@ -101,9 +104,13 @@ class SubstantiveChangeEvaluator implements SubstantiveChangeEvaluatorInterface 
 	/**
 	 * Constructor.
 	 *
-	 * @param SchemaReading $schemas Resolves the object's schema; logs a failed read.
+	 * @param SchemaReading         $schemas    Resolves the object's schema; logs a failed read.
+	 * @param IEventDispatcher|null $dispatcher Asks leaf apps to narrow the declared properties per object.
 	 */
-	public function __construct(SchemaReading $schemas) {
+	public function __construct(
+		SchemaReading $schemas,
+		private readonly ?IEventDispatcher $dispatcher = null,
+	) {
 		$this->schemaMapper = $schemas->schemaMapper;
 		$this->logger = $schemas->logger;
 		$this->normaliser = new ValueNormaliser();
@@ -134,11 +141,12 @@ class SubstantiveChangeEvaluator implements SubstantiveChangeEvaluatorInterface 
 		}
 
 		$schema = $this->resolveSchema(object: $new);
-		$declared = $this->declaredProperties(schema: $schema);
+		$declared = $this->narrowedProperties(object: $new, schema: $schema, declared: $this->declaredProperties(schema: $schema));
 
-		if ($declared !== []) {
+		if ($declared !== null) {
 			// A schema that names its properties means exactly those: a change
-			// to anything else is a technical touch.
+			// to anything else is a technical touch. A listener may have
+			// narrowed the list for this object, never widened it.
 			return array_intersect($changed, $declared) !== [];
 		}
 
@@ -272,6 +280,46 @@ class SubstantiveChangeEvaluator implements SubstantiveChangeEvaluatorInterface 
 		return [];
 
 	}//end body()
+
+	/**
+	 * The schema's declared properties, narrowed for this one object by any listener.
+	 *
+	 * A schema that names no properties gets null, so the caller keeps its
+	 * "every non-computed property" default; no listener is asked then,
+	 * because there is no floor to narrow. A listener can only narrow, so
+	 * the schema's list stays the most a write can count. A listener that
+	 * throws is logged and the schema's list stands: a failed narrowing
+	 * makes a badge too eager, never silently dark.
+	 *
+	 * @param ObjectEntity       $object   The object as it will be stored.
+	 * @param Schema|null        $schema   The object's schema, when it resolved.
+	 * @param array<int, string> $declared The properties the schema names.
+	 *
+	 * @return array<int, string>|null The properties that count, or null when the schema names none.
+	 *
+	 * @spec openspec/specs/object-read-state/spec.md
+	 */
+	private function narrowedProperties(ObjectEntity $object, ?Schema $schema, array $declared): ?array {
+		if ($declared === []) {
+			return null;
+		}
+
+		if ($schema === null || $this->dispatcher === null) {
+			return $declared;
+		}
+
+		$event = new ObjectReadStatePropertiesEvent(object: $object, schema: $schema, declared: $declared);
+		try {
+			$this->dispatcher->dispatchTyped($event);
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				sprintf('[SubstantiveChangeEvaluator] narrowing the read-state properties failed, the schema\'s list stands: %s', $e->getMessage())
+			);
+			return $declared;
+		}
+
+		return $event->getProperties();
+	}//end narrowedProperties()
 
 	/**
 	 * The properties the schema declares as substantive.
