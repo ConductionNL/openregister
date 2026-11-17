@@ -21998,3 +21998,4 @@ build:stackiq:cmdb-import-archive-reconciliation:b2	already done: only task 7's 
 build:stackiq:adopt-connection-registry:b2	already done: 19 tasks ticked on development; only 6.1 (e2e on a live instance, then archive) left	session-20261117T125716-5aa18045	2026-11-17T16:18:31Z
 build:stackiq:contracts-expiry-warning-fires:b2	already done: code tasks on development (2f7bbbeb); only task 3 live check left	session-20261117T124637-3e909745	2026-11-17T16:19:20Z
 build:stackiq:insight-assistant-answers-and-action-trail:b2	already building: quality/build-insight-assistant-answers-and-action-trail{,-2} exist on origin	session-20261117T134441-beae3c0d	2026-11-17T16:19:28Z
+build:stackiq:contract-approval-ownership-guard:b2	already building: quality/build-contract-approval-ownership-guard exists (2b1f5701 on development); only 4.2 note in the hydra repo left	session-20261117T140734-4d108840	2026-11-17T16:19:32Z
