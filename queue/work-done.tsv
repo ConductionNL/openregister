@@ -18751,3 +18751,4 @@ fix:filinq:2083:917afeaa:v3	fixed: conflicts resolved + ObjectSaveOptions migrat
 fix:learniq:2514:2e2444ab:v4	conflict resolved, pushed 3f5207d1; merge lock held elsewhere, REVERIFY queued	session-20261117T004735-ba0cb916	2026-11-17T01:03:09Z
 fix:shillinq:3005:7df04548:v3	conflict resolved, new head fb23e9fd; lock busy, REVERIFY queued	session-20261117T004723-694d6e7e	2026-11-17T01:03:17Z
 fix:filinq:2123:8c586cdc	failed: floor restore needs a refactor beyond the fix cap: ratchet lists 23 new findings (8 ctors/methods with 5+ params, signAct NLOC 61, 10 duplicated fragments); floor_check: unit_complexity 4.47->4.45, unit_interfacing 2.84->2.82, module_coupling 5.32->5.28; also info.xml version not raised with register 8.64.0; BLOCK stands	session-20261117T004714-8c7f98bc	2026-11-17T01:03:30Z
+fix:filinq:2095:e0ebb0e0:v4	conflict resolved, pushed b4ddee8f; merge lock held elsewhere, REVERIFY queued	session-20261117T005226-366998de	2026-11-17T01:03:27Z
