@@ -18604,6 +18604,7 @@ verify:learniq:2579:b0a9fa79	GREEN #2579	session-20261116T232948-9d2e8ce2	2026-1
 verify:versioniq:716:696aeaa9	CONFLICT #716 (AutoUpdateJob, ApiController, App.vue)	session-20261116T232623-066b53c9	2026-11-17T00:21:07Z
 merge:launchpad:1106:7a58696d	cloud tree of 3 launchpad PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T232923-e93e6b40	2026-11-17T00:21:40Z
 merge:shillinq:3055:92c05448	cloud tree of 2 shillinq PRs: merged=1 (#3055) red=0 fail=0 skip=0; conflict 1 (#3135, with #3055 only)	session-20261116T232033-3ca59164	2026-11-17T00:22:01Z
+cover:decidiq:a5f973bbm56fe:dfaef732	deferred: decidiq has 44 open PRs	session-20261116T230531-f9095b0f	2026-11-17T00:22:22Z
 merge:versioniq:758:437c8999	cloud tree of 1 versioniq PRs: merged=0 red=1 fail=0 skip=0; conflict 0, lint 0, red 0, moved 0, done 0	session-20261116T233627-44605965	2026-11-17T00:22:33Z
 fix:hermiq:1764:b3921191	conflict resolved, pushed 73544d4e; merge lock held elsewhere, REVERIFY queued	session-20261116T233939-9a6702d9	2026-11-17T00:22:23Z
 fix:dossiq:5396:cc232d59:v3	merged development; sbom check current; new head 3792d795, REVERIFY	session-20261116T233900-0eb43466	2026-11-17T00:22:32Z
@@ -18628,3 +18629,4 @@ fix:dossiq:3954:7af4262b:v3	conflict resolved, pushed da335f80; REVERIFY (merge 
 fix:integriq:2744:53deb98f:v4	merged #2744 at 1aa7d916d2b9142e7caa6da52d0a61fcc2d22831 (resolved package.json/lock conflict with development; SBOM current)	session-20261116T231848-eaef2e51	2026-11-17T00:26:31Z
 verify:integriq:3626:2afb29b4	CONFLICT: l10n, manifest.json, registry.js	session-20261116T233003-c7bea420	2026-11-17T00:27:08Z
 fix:buildiq:1648:26919cc4	fixed floor, pushed 0f576fb7; REVERIFY (merge lock held)	session-20261116T233923-d48b13fa	2026-11-17T00:27:40Z
+review:stackiq:1941:fb08b1cd	GREEN #1941	session-20261116T232918-35016340	2026-11-17T00:27:56Z
