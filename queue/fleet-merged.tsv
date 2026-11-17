@@ -5251,3 +5251,4 @@ stackiq	1943	61ef25c28535107a6191128eea1d7ee611b28ce7	MERGED	worker-28	GATE OK s
 dossiq	6634	9e5c5ebab145ab07294e3e31eab79f95f0236793	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 decidiq	2263	1961fa6f38aead9bff6396771efeac3486344c64	MERGED	worker-07	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.78 holds at 3.80
 hermiq	1833	6a516e7878f5c1cbad3111ca5bb12c4b1203e40b	RED	worker-33	GATE RED checker floor: fivelayer: pass -> warn; fivelayer stars: 5 -> 3; score: 100 -> 97
+planninq	1217	f6120234f8623d11059dd154f7dcc77e9391f407	RED	worker-19	GATE RED sbom: package-lock.json changed without sbom.cdx.json
