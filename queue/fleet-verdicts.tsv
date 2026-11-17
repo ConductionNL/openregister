@@ -16714,3 +16714,4 @@ portaliq	2446	478f986ee7cff544223b5becaf2c7eb7188e33f6	CONFLICT	worker-42:merge	
 portaliq	2450	5c9fe090314431963f17652a8492bff99c8f7b4b	CONFLICT	worker-42:merge	conflicts with development; files: package.json 
 portaliq	2493	733b81a3500f6d3d1d635490e08695c60df3f279	CONFLICT	worker-42:merge	conflicts with development; files: package.json 
 portaliq	2494	b99070c9ab1e77a31de8de16652870a2571993c9	CONFLICT	worker-42:merge	conflicts with development; files: package.json 
+hermiq	1794	58725be9b04edb729c72faf541cd06e9553151bd	GREEN	worker-16:review	builds tools-code-sandbox per its specs; runCode gated by a disabled-by-default AI feature and default-denied grant, settings admin-only; unit 5520 tests 0 failures on PR+development; 12 vitest and 20 exapp node tests pass
