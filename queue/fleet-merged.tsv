@@ -5333,3 +5333,6 @@ filinq	2124	e25a43e2a9c0c32a978b66ad3b8e6a646abb09d3	SKIP	worker-33	no APPROVE r
 dossiq	4886	1bf38b2df71b75bd37ad94efe2e4ca400393f1cf	MERGED	worker-36	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
 launchpad	759	b325d657c1b42d1eb53eb182186015a879aa05f0	MERGED	worker-53	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.65 holds at 3.78
 filinq	2173	a7b20c844918e286697bd71fb7eeb708a5ee5aae	RED	worker-33	GATE RED checker floor: fivelayer: pass -> warn; fivelayer stars: 5 -> 3; score: 100 -> 97
+planninq	869	6ffcb32c975a1d1ef48ce64825dc3e75ae9fdeea	MERGED	worker-16	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.66 holds at 4.05
+integriq	3550	7bd183b1e5f9c205d89161050f3843bf828514cb	MERGED	worker-24	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.59
+integriq	3564	d0095e3002552b32512eeb6fed7b4a07f0169bba	SKIP	worker-24	no APPROVE review at this head
