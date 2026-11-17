@@ -1478,3 +1478,7 @@ planninq	1218	df1e59ad2a22c23d46fe16a4c228b5b2a66e72e2	APPROVE	worker-41	Quick; 
 learniq	2598	2cd09662b2c6df698224c284c244aa83bd0f77ee	APPROVE	worker-17	Quick (e2e spec only); no blockers; none
 learniq	2600	3dd1b33d30e301887b5e829946f9b3224f874ddd	APPROVE	worker-17	Quick (e2e spec only); no blockers; none
 planninq	1238	a2d0008dd4f59ba29e63e1d9a0b4fdb0644576b0	APPROVE	worker-41	Quick; none; e2e spec only, BASE_URL from env, member runs with empty storage state, admin only seeds and cleans up
+planninq	1246	64caa7ce8e8fec9974544ab87ac0ff8ccd473dc5	APPROVE	worker-41	Thorough; none; adds optional task.estimateSize (string, max 32) as asked by task 2.4, register 0.41.0, t-shirt scale in workflows.js and WorkflowEstimateField, schema and vitest tests added; e2e specs not yet run
+planninq	1247	1a42908edf32546f4d27dfc8c1b8aec9935bd950	APPROVE	worker-41	Quick; none; e2e spec only, non-admin contexts with empty storage state
+planninq	1248	36d5dc19e1277c9823e4512f8072ca92540206a6	APPROVE	worker-41	Quick; none; axe e2e spec and postman collection only, base_url variable, no stored secrets
+planninq	1252	d65f04922fee972a0c53a84c02b54d6a5eed02ff	APPROVE	worker-41	Quick; none; e2e spec only, non-admin member with empty storage state
