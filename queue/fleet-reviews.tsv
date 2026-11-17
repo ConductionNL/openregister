@@ -1497,3 +1497,4 @@ shillinq	3167	f264bb7ba79a07690b1dee49ba132418f3d71db0	APPROVE	worker-18	Quick; 
 launchpad	1295	8e839b5210cfdfcca1ed2fcad366db008d7a4c2c	APPROVE	worker-35	Standard; no blockers; gate-23 inherited (untouched file), gate-116 did not run (ajv)
 launchpad	1298	c874c6ad5b2e7c88a07d5ac2a92feb874cb52782	APPROVE	worker-35	Quick; no blockers; tests only, gate-23 inherited
 launchpad	1305	93c891348ec0af3d6a8a9a1ddd7ac3d96196f0e5	APPROVE	worker-35	Standard; no blockers; e2e specs and spec exclusions per e2e-coverage-programme, gate-23 inherited
+launchpad	1306	060171415ec0321c8968a4087ce146a20f0714d7	APPROVE	worker-35	Standard; no blockers; e2e spec and parity rows per integrations-live-tile-lists, gate-23 inherited
