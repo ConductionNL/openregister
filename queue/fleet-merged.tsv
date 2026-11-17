@@ -4907,3 +4907,5 @@ integriq	3638	b2bbb6eff55fb594d521e3cbc839209cd49a7368	MERGED	worker-51	GATE OK 
 humaniq	1148	1bc00d4cc46ee4b4d3118178af9345026fce8d61	RED	worker-48	GATE RED floor: unit_interfacing: 3.64 -> 3.59
 buildiq	1608	d02855844e4413fa5006debaa9cab9bd31975d52	RED	worker-19	GATE RED floor: unit_complexity: 3.45 -> 3.43
 stackiq	2011	839dbbe5f8e4ae95cce6838b2a1744c9534ff136	MERGED	worker-33	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.19
+shillinq	1900	7c67b53846a791a3e762d24ded38e17fec205a03	RED	merge3	GATE RED checker floor: adrvalidator: pass -> fail; adrvalidator stars: 5 -> 1; score: 100 -> 93
+shillinq	3110	cca3fd23bdfcaf08b914978343921a1bfc362fcb	RED	merge3	GATE RED sbom: composer.lock, package-lock.json changed without sbom.cdx.json
