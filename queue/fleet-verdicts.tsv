@@ -17839,4 +17839,5 @@ filinq	2113	c8fcb4bf17f1d349178463a797548caf57214da7	CONFLICT	worker-09:merge	co
 filinq	2116	b8017fb645e4596f9ed7fc15d69bc42221669b4f	CONFLICT	worker-09:merge	conflicts with development; files: lib/Settings/filinq_mock_register.json lib/Settings/filinq_register.json 
 filinq	2120	f16ae4383298db46c2802d3b1410d6d1c8606c1c	CONFLICT	worker-09:merge	conflicts with development; files: lib/Settings/filinq_register.json 
 filinq	2126	d4e6690492876dd1d7da027250a1ce235ee9c21d	CONFLICT	worker-09:merge	conflicts with development; files: lib/Service/AnonymizeOptions.php lib/Service/BatchAnonymizeService.php lib/Settings/filinq_register.json tests/unit/Service/AnonymizeOptionsTest.php 
+shillinq	2975	a5e402e529de751fac99a6ada939de15bc68e927	REVERIFY	worker-51	added @spec tags to the 25 methods the spec-coverage gate flagged (comments only); spec-coverage and spec-anchor gates PASS, eslint clean, 56 related vitest specs green; merge lock held elsewhere; new head d0bcdce6bffffcd3d4456bc487b2ab0b65bcc5d5, verify it
 planninq	1217	fa5c4f9ae6ae9d07a6becdca46f7a84f3f9d411a	RED	worker-13:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
