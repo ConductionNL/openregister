@@ -16051,3 +16051,4 @@ shillinq	3008	e46cf66744d0ceffe2aff61ffcb303349778cac9	CONFLICT	worker-35	baseli
 shillinq	3005	7df04548317c3840c8d73ca62d249ae5c8b9a33b	CONFLICT	worker-10	conflicts with development in: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json src/manifest.d.shell.json tests/vitest/adminRootCoverage.spec.js
 stackiq	1963	61fae429306c3510d1a20ce48ad29aab5a325dd6	CONFLICT	worker-32	conflicts with development in docs/features/README.md, l10n/en.js, en.json, nl.js, nl.json, src/customComponents.js; PR not tested
 learniq	2577	15fc4a90544190851896affac4e02d9aed5c9516	REVERIFY	worker-22	fixed menu order tie (CourseParticipantsMenu 58 -> 56); node --test 9 fail = baseline; new head 5bf2057232b5aabbfd004f1943a2ae1de7859671, verify it
+shillinq	3062	faaae73e234727476b1a3a73e75779e41d5d05a1	CONFLICT	worker-55	conflicts with development in tests/fixtures/register-versions.lock.json; baseline unit 12460 tests green
