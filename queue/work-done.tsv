@@ -20872,6 +20872,7 @@ fix:shillinq:3011:87ae5ea8	conflict resolved, pushed b03586ea8; REVERIFY queued 
 cover:decidiq:a5f973bbmfcd5:98083bbf	already done: lib/Listener/Registrar/ at 100% lines in full unit suite on development 161ca15ec (5020 tests, 0 failures)	session-20261117T135029-424a7669	2026-11-17T13:55:46Z
 fix:shillinq:3067:7ff7357f	conflict resolved, pushed 55cee22d; unit 12795 OK; merge lock held elsewhere, REVERIFY queued	session-20261117T133025-beace6fb	2026-11-17T13:55:49Z
 fix:integriq:3708:c779eda2	sbom regenerated, pushed 41ada0a6; merge lock held elsewhere, REVERIFY queued	session-20261117T124010-7774729d	2026-11-17T13:56:04Z
+cover:buildiq:70b3e29em2454:6891a8ac	already done: lib/Service/Dashboard/ at 100% lines (142/142) on development; no PR	session-20261117T134951-9fef99ce	2026-11-17T13:56:35Z
 cover:buildiq:70b3e29em2454:f91e7417	already done: lib/Service/Connection/ at 99.4% (170/171 stmts, the missed line is a constant-bound branch), target 95	session-20261117T123418-5f98fc94	2026-11-17T13:56:30Z
 cover:decidiq:a5f973bbmfcd5:d528dcf0	already done: lib/Dashboard/*.php at 100% lines (65/65, 13/13 methods) on development 161ca15e; no PR	session-20261117T134525-c871bd14	2026-11-17T13:56:40Z
 fix:integriq:3712:81bc3606	snapshots re-recorded + sbom, vitest green, new head 3f2d9585; REVERIFY (merge lock held elsewhere)	session-20261117T134024-07d6c268	2026-11-17T13:56:41Z
