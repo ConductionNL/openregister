@@ -1,4 +1,5 @@
 # Claim order for all non-PR work (Ruben 13 Nov: finish app by app, quality and specs)
+thematiq
 dossiq
 pipelinq
 openregister
@@ -18,4 +19,3 @@ opencatalogi
 stackiq
 versioniq
 larpinq
-thematiq
