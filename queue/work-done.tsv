@@ -18548,3 +18548,4 @@ verify:larpinq:1047:12939d94	CONFLICT #1047 (l10n + objectTabs golden fixture vs
 verify:shillinq:2070:6d28ef69	CONFLICT #2070	session-20261116T232519-f84cca9a	2026-11-17T00:11:11Z
 verify:shillinq:3011:4b9211ad	CONFLICT #3011	session-20261116T232918-5354fd88	2026-11-17T00:11:23Z
 verify:shillinq:3009:c956ed10	CONFLICT: #3009 conflicts with development (info.xml, l10n, openapi, manifestActions, lock file)	session-20261113T214350-9762e143	2026-11-17T00:11:38Z
+verify:shillinq:2986:fbf057b6	CONFLICT #2986 (9 files vs development)	session-20261116T233011-100ff0c6	2026-11-17T00:11:48Z
