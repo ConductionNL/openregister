@@ -19571,3 +19571,4 @@ fix:learniq:2509:afdcf4ef	fixed CONFLICT, new head 2500f767; merge lock held els
 review:openregister:10606:3b66544b	APPROVE: int schema-id $ref resolution; suites green, phpstan clean	session-20261117T061734-31f6d58b	2026-11-17T06:33:32Z
 review:decidiq:2190:ddd00bbe	GREEN	session-20261117T055853-7ddd3cb3	2026-11-17T06:33:38Z
 review:buildiq:1651:a201e3b3	GREEN: merges clean, 3498 unit + 4882 vitest OK	session-20261117T055834-d932e117	2026-11-17T06:33:57Z
+fix:buildiq:1605:b350a916	conflict resolved, pushed 2848f1e25; suite green; REVERIFY recorded	session-20261117T061917-57640b81	2026-11-17T06:34:07Z
