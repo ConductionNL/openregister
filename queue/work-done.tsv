@@ -19328,3 +19328,4 @@ fix:filinq:2079:d658c1dd	failed: conflicts and 5 of 6 blockers fixed at 27589b09
 fix:opencatalogi:2684:d8aa1341	fixed: theme show tests, pushed d59bbd9f; REVERIFY (merge lock held)	session-20261117T020142-15890c05	2026-11-17T03:07:16Z
 merge:launchpad:760:a2e1f26b	cloud tree of 9 launchpad PRs: merged=3 red=1 fail=0 skip=0; conflict 2, lint 0, red 0, moved 1, done 0	session-20261117T025212-e8f3887f	2026-11-17T03:07:30Z
 fix:learniq:2577:d1fcf9c0	golden conflict resolved; new head 203ef614, REVERIFY (merge lock held elsewhere)	session-20261117T003945-3aa9cc05	2026-11-17T03:07:36Z
+fix:integriq:3582:e824c737	conflict resolved at ec13862c (development merged, l10n union); merge lock held elsewhere, REVERIFY queued	session-20261117T020252-b4828a7d	2026-11-17T03:07:51Z
