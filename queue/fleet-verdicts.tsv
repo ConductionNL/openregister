@@ -15985,6 +15985,7 @@ learniq	2533	adbae3b0cb1c6df378db735c449288dcc7091c70	CONFLICT	worker-57	merge o
 learniq	2497	c85c59131ff95ca94a1b6a84d4175a6a8da8d545	CONFLICT	worker-17	conflicts with development in l10n/en.js,en.json,nl.js, lib/Settings/learniq_register.json
 larpinq	1055	3553b217084367d6f7078f260cc8ebae9f7a722d	CONFLICT	worker-48	conflicts with development in l10n/*.js/json (all locales); baseline 1120 tests OK, 20 skipped
 launchpad	761	ca2815b851deb1969d5b23ac0c29185819391d2e	CONFLICT	worker-41	conflicts with development (package-lock/package.json/sbom); tree not run
+keepiq	1787	a1fbe07c955e217940ca03e20a3c7d4961395d72	CONFLICT	worker-16	conflicts with development in 74 l10n/*.js|json files and src/export/serializer.js; baseline 5618 tests OK
 integriq	3633	2cf69c00a89f7e878553792c7b1c9409b9db0053	CONFLICT	worker-24	conflicts with development in l10n/en.js, l10n/nl.js
 launchpad	1216	004aa912e89c40ec9313fd7d2da0112513dcae3e	CONFLICT	worker-58	conflicts with development in 15 files; development already archived openspec/changes/search-ai-prefix-shortcuts and adds RuntimeShellSearch.shortcuts.spec.js (add/add): possibly already built on development, check obsolete
 learniq	2518	6f169224fb68e4b47062a891d6ea45001308f260	CONFLICT	worker-20	conflicts with development in lib/Settings/learniq_register.json and tests/Unit/Settings/OpenLearningMaterialRegisterTest.php; not tested
