@@ -20835,3 +20835,4 @@ cover:launchpad:fb10c50fm88bd:33ae6285	cover	launchpad	development	quality/test-
 cover:launchpad:fb10c50fm88bd:59826f43	cover	launchpad	development	quality/test-coverage-59826f43	lang=php;dirs=lib/Settings/*.php;focus=thin;weight=374;coverage=94.97;target=95.0	2026-11-17T11:53:50Z
 measure:openregister:20261117h12	measure	openregister	main	queue/coverage/openregister.json	why=slices need per-directory coverage	2026-11-17T12:01:20Z
 measure:stackiq:20261117h12	measure	stackiq	development	queue/coverage/stackiq.json	why=slices need per-directory coverage	2026-11-17T08:01:53Z
+review:openregister:10610:f0556597	review	openregister	main	10610	sha=f0556597457ca1105e4723c9fe207287fcbc5d2b;last_approved=;title=fix(openregister): resync package-lock.json for npm 11	2026-11-17T12:01:28Z
