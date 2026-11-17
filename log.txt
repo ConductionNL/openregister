@@ -3417,3 +3417,7 @@ To https://github.; per-PR merges
 2026-11-17T00:31:39Z integrator-20261111T115842-a749432d GREEN tree 82131bd5f6 on dev ac0fe06b30 prs 3 front=skip: Tests: 62469, Assertions: 218492, Errors: 3, Failures: 3, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24.
 2026-11-17T00:33:26Z integrator-20261111T115842-a749432d MERGED-TREE 82131bd5f6: 3 PRs in one push, main now 82131bd5f6 = tested tree
 2026-11-17T03:14:46Z integrator-20261111T115842-a749432d GREEN tree 5b4587a1ae on dev 4577c58e37 prs 1 front=skip: Tests: 62487, Assertions: 218538, Errors: 3, Failures: 3, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24.
+2026-11-17T03:15:10Z integrator-20261111T115842-a749432d PUSH-REFUSED remote: error: GH006: Protected branch update failed for refs/heads/main.        
+remote: error:         
+To https://github.com/ConductionNL/openregister
+ ! [re; per-PR merges
