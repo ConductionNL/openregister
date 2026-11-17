@@ -1535,3 +1535,4 @@ opencatalogi	2798	f43db4b9fe7611c1537c1a1d54f949df9e16db64	APPROVE	worker-46	Qui
 opencatalogi	2799	a135b0009b7aefad519be035a3b4003c800e66b2	APPROVE	worker-46	Quick; no blockers; e2e spec, spec front matter removed for openspec validate, tasks.md
 opencatalogi	2800	7d8c1d3f5f83cdb66a61ba4d82d9107fb1d2fcc0	APPROVE	worker-46	Standard; no blockers; widget shows a note without a text assistant as the change asks, strings in en/nl, e2e spec; gate findings 66/82/119 inherited
 opencatalogi	2801	ebec806c87bf79c189993d39f1d7c8c142469975	APPROVE	worker-46	Quick; no blockers; e2e spec and tasks.md only
+stackiq	1963	d255f3be7e27c59c7c424d2717cc537c3a207a16	APPROVE	worker-20	Thorough; no blockers; permissions now come from initial state (user/admin/sync.view), which also makes the admin-gated connection-registry menu entries visible to admins as their manifests declare; sync status endpoint gated by SyncAccessPolicy
