@@ -19109,3 +19109,4 @@ review:shillinq:3048:455711f8	GREEN: 12528 unit tests OK on PR+development, vite
 review:hermiq:1795:78cb835e	GREEN: no new unit failures (198 inherited), vitest 1588 ok; info.xml version conflicts with development	session-20261117T020212-3e3772fe	2026-11-17T02:19:52Z
 review:shillinq:3004:cd7ea57d	GREEN: suite 12566 OK on merge with development; stacked on #2986	session-20261117T020257-fb35dc98	2026-11-17T02:20:03Z
 review:integriq:2650:54f2db42	GREEN: build per spec, 4 inherited failures, no new	session-20261117T021325-9fd6cbed	2026-11-17T02:20:14Z
+review:integriq:3557:0b9792b0	BLOCK: repair step without version bump, nl key missing, schema titles, floor worse	session-20261117T020210-893a9346	2026-11-17T02:20:28Z
