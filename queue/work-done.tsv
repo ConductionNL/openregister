@@ -19796,3 +19796,4 @@ review:shillinq:3005:fb9ac5c4	GREEN: unit 12639 OK, touched vitest 36 OK	session
 fix:opencatalogi:2683:783543f7	conflict resolved, pushed b9a9bc9f; REVERIFY (merge gate host unreachable)	session-20261117T065308-bd0379c5	2026-11-17T07:22:06Z
 fix:larpinq:1043:09d10d17	conflict resolved, pushed 03f6b920; REVERIFY queued	session-20261117T063100-87feca45	2026-11-17T07:22:20Z
 review:shillinq:3009:0bd3c949	GREEN: spec-conform, PHPUnit 12640 OK, vitest red inherited only	session-20261117T065527-44da8271	2026-11-17T07:22:34Z
+fix:versioniq:715:160a3e87	conflict resolved, pushed 4657c9dc; REVERIFY queued	session-20261117T055853-7ddd3cb3	2026-11-17T07:23:06Z
