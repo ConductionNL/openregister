@@ -18993,3 +18993,8 @@ fix:thematiq:1365:39f057e7:v4	conflict resolved, pushed 214b4a2d, no failures be
 fix:versioniq:729:a4722246:v3	fixed CONFLICT, pushed e24515d; merge lock held elsewhere, REVERIFY queued	session-20261117T004701-f6094f02	2026-11-17T01:49:57Z
 verify:integriq:3593:e603a8cc	stale	session-20261117T004733-c48c61a2	2026-11-17T01:50:31Z
 fix:larpinq:1043:b1b57382:v3	conflict resolved, pushed 09d10d17; REVERIFY queued (merge lock held)	session-20261117T004705-084072e6	2026-11-17T01:50:33Z
+verify:filinq:2116:0849a1e2	stale	feeder	2026-11-17T01:37:28Z
+review:learniq:1883:88ce2f2b	stale	feeder	2026-11-17T01:37:28Z
+review:hermiq:1794:5770f0c4	stale	feeder	2026-11-17T01:37:28Z
+review:integriq:3557:e5c34432	stale	feeder	2026-11-17T01:37:28Z
+review:portaliq:2448:8388e665	stale	feeder	2026-11-17T01:37:28Z
