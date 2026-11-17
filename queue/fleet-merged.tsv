@@ -4968,3 +4968,4 @@ launchpad	760	3d286e79d2e2e88b035d84491e595b061600b514	MERGED	worker-54	GATE OK 
 opencatalogi	2722	8f7ea1f5190ab3e63079bf7e3b3d461e30808d08	SKIP	worker-53	no APPROVE review at this head
 opencatalogi	2723	ba525e6af54ba825e76cc5e35a83be1986df5e2d	MERGED	worker-53	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.52
 launchpad	763	b75dc6316f4add428baa50ada6e90b4f46b8fe6a	MERGED	worker-54	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.65 holds at 3.79
+launchpad	885	1143e3afc2183f572ee3bc9b553c665b93d2bd89	RED	worker-54	GATE RED floor: unit_complexity: 4.76 -> 4.74
