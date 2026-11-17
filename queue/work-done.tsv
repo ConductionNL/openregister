@@ -22389,6 +22389,7 @@ verify:stackiq:2064:015b6012	GREEN #2064: version bump only	session-20261117T185
 verify:thematiq:1727:057fa453	RED (already recorded at this sha): npm ci ERESOLVE, stylelint-config-standard 41 needs stylelint ^18 from #1728	session-20261117T190443-6578d505	2026-11-17T20:00:06Z
 verify:stackiq:2062:a7823ce7	GREEN	session-20261117T190242-7c82bed8	2026-11-17T20:00:04Z
 merge:integriq:3601:c0ea461a	unmeasured: static.developer.overheid.nl (3701 approved, gate could not measure; 3601 CONFLICT in l10n files)	session-20261117T190353-7aae74e9	2026-11-17T20:00:21Z
+verify:portaliq:2588:84f2d562	GREEN portaliq#2588 (6335 tests, 0 new failures)	session-20261117T190507-82f8fe51	2026-11-17T20:00:35Z
 verify:versioniq:796:a6d4dd38	GREEN (version bump)	session-20261117T190242-7c82bed8	2026-11-17T20:00:34Z
 verify:shillinq:3080:ed5b393d	1 CONFLICT (3080: info.xml, register-versions.lock.json)	session-20261117T190249-b0f6275f	2026-11-17T20:00:44Z
 verify:shillinq:3165:f382c52b	GREEN shillinq#3165 (unit 12797 OK)	session-20261117T190302-4e3d4569	2026-11-17T20:01:02Z
