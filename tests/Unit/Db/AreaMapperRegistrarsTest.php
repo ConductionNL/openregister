@@ -12,9 +12,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\DbRegistrar;
-use OCA\OpenRegister\Db\ComplianceMapperRegistrar;
-use OCA\OpenRegister\Db\IntegrationsMapperRegistrar;
-use OCA\OpenRegister\Db\ProcessesMapperRegistrar;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -32,16 +29,17 @@ use ReflectionClass;
 final class AreaMapperRegistrarsTest extends TestCase {
 
 	/**
-	 * One case per area mapper registrar.
+	 * One case per area mapper registrar, DbRegistrar left out.
 	 *
 	 * @return array<string, array{class-string}>
 	 */
 	public static function registrars(): array {
-		return [
-			'Compliance' => [ComplianceMapperRegistrar::class],
-			'Integrations' => [IntegrationsMapperRegistrar::class],
-			'Processes' => [ProcessesMapperRegistrar::class],
-		];
+		$cases = [];
+		foreach (array_diff(DbBindingMaps::REGISTRARS, [DbRegistrar::class]) as $registrar) {
+			$cases[$registrar] = [$registrar];
+		}
+
+		return $cases;
 	}//end registrars()
 
 	/**
@@ -77,13 +75,13 @@ final class AreaMapperRegistrarsTest extends TestCase {
 	}//end testEveryBindingIsImplementedByItsClass()
 
 	/**
-	 * No interface is bound both here and in DbRegistrar or another area's registrar.
+	 * No interface is bound by two of the registrars.
 	 *
 	 * @return void
 	 */
 	public function testEachInterfaceIsBoundOnce(): void {
-		$seen = array_keys(DbRegistrar::BINDINGS);
-		foreach (self::registrars() as [$registrar]) {
+		$seen = [];
+		foreach (DbBindingMaps::REGISTRARS as $registrar) {
 			$keys = array_keys(constant($registrar . '::BINDINGS'));
 			$this->assertSame([], array_values(array_intersect($seen, $keys)), $registrar . ' binds an interface bound elsewhere');
 			$seen = array_merge($seen, $keys);
