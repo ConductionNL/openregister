@@ -40,7 +40,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\AuthDenialWarning;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Controller\Support\EntityRelationPatch;
@@ -55,6 +54,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Decision\DecisionOwnedException;
 use OCA\OpenRegister\Service\Decision\DecisionVisibilityInterface;
 use OCA\OpenRegister\Service\Decision\RelationDecisionServiceInterface;
@@ -154,7 +154,7 @@ class EntityRelationsController extends Controller {
 		IRequest $request,
 		EntityRelationsControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->entityRelationMapper = $services->mappers->entityRelationMapper;
 		$this->session = $services->platform->session;
 		$this->rootFolder = $services->platform->rootFolder;
