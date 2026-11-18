@@ -16,3 +16,4 @@ stackiq	4f5ef19e	php=RED	phpunit skipped (no NC server tree)	phpmd,psalm	js=RED	
 openregister	34e54f794a7	php=RED	Tests: 62539, Failures: 1, Errors: 5	phpcs,phpmd,psalm,phpstan,phpunit	js=RED	Talk test fails (Talk classes present); ReservedColumnNames 5 errs+migration chk = env only, pass on rerun; eslint 7 errs
 dossiq	05292aae7	php=RED	Tests: 18402, Failures: 0, Errors: 1	phpcs,phpmd,psalm,phpstan,phpunit	js=RED	StatusEntryRequirementsGuardTest: sibling OR vendor Amp clash; psalm env PHP<8.3.16; eslint 2 errs; vitest 2 fail
 filinq	2d967653	php=RED	Tests: 7329, Failures: 0, Errors: 0	phpcs,phpmd,psalm,phpstan	js=RED	phpcs 1 file, phpmd 82, psalm 219, phpstan 18 errs; eslint exit 2: unused suppressions; vitest 866 pass
+thematiq	7cf8a854	php=RED	Tests: not run (guard: no server tree)	cs:check,psalm	js=GREEN	cs:check 50/685 files; psalm 5 errs; phpunit did not run (needs Nextcloud server tree); vitest 1573 pass
