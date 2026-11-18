@@ -19761,3 +19761,6 @@ hermiq	1763	bff0c5dd4f69136e48433718ae0ef67427395a19	CONFLICT	merge3	merges clea
 hermiq	1849	b2a8aa0f359f55910f8c21cd47ffe81ad804f481	CONFLICT	merge3	merges clean on development alone; files: tests/integration/hermiq.postman_collection.json 
 hermiq	1851	267e436069cc547716f95cc491508c6e12736003	CONFLICT	merge3	merges clean on development alone; files: lib/Settings/hermiq_register.json 
 hermiq	1854	d890a013df656c18a3ff7146d19b4e764bbd0f5c	CONFLICT	merge3	merges clean on development alone; files: appinfo/routes.php l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Settings/hermiq_register.json src/views/AdminRoot.vue 
+planninq	1243	c1be8cd6cf0c003f804ac94f1db262ed29b308dc	RED	merge3:merge-gate	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+planninq	1245	bdab0519cda410700fd9b3a044acb9bca392cb56	RED	merge3:merge-gate	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+planninq	1250	d428c28451fbc7511b9f3bac3121996d971229e9	RED	merge3:merge-gate	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
