@@ -23,8 +23,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\AdministratorOnlyGate;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\ActionRightsCatalogueInterface;
 use OCA\OpenRegister\Service\Flow\FlowNodeRightsGuardInterface;
 use OCA\OpenRegister\Service\Flow\IFlowNodeRequiresRight;
@@ -62,7 +62,7 @@ class ActionRightsController extends Controller {
 		private readonly ActionRightsCatalogueInterface $catalogue,
 		private readonly FlowNodeRightsGuardInterface $nodeRights,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**
