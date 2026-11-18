@@ -23026,3 +23026,4 @@ merge:decidiq:1306:bc69fa7e	merge3 tree of 4 decidiq PRs: merged=1 red=1 fail=1 
 merge:versioniq:719:3b1585ab	merge3 tree of 6 versioniq PRs: merged=1 red=1 fail=0 skip=1; conflict 2, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-18T08:07:22Z
 merge:opencatalogi:1503:8c505fc8	merge3 tree of 13 opencatalogi PRs: merged=0 red=8 fail=0 skip=0; conflict 5, lint 0, moved 0; fix rows 5	merge3-20261113T213425-c36bcd5f	2026-11-18T08:08:29Z
 merge:opencatalogi:2802:49bb5306	merge3 tree of 13 opencatalogi PRs: merged=0 red=8 fail=0 skip=0; conflict 5, lint 0, moved 0; fix rows 5	merge3-20261113T213425-c36bcd5f	2026-11-18T08:08:38Z
+merge:larpinq:718:f5b86062	merge3 tree of 7 larpinq PRs: merged=5 red=0 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-18T08:22:11Z
