@@ -5891,3 +5891,11 @@ versioniq	783	9296e1cee10d3162c8416a41a95ac9641999b3e1	SKIP	merge3	GATE UNMEASUR
 decidiq	1306	e528f697ad325e5b10cf75898ab687871e381fc2	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.78 holds at 3.80
 decidiq	2174	8825e17a0745751ca54f819cb8052999b35fbfcd	RED	merge3	GATE RED floor: unit_complexity: 4.05 -> 4.03
 decidiq	2286	62b9a48215c112bd9dece76e06b8073d424f20a8	FAIL	merge3	Put "https://api.github.com/repos/ConductionNL/decidiq/pulls/2286/merge": net/http: TLS handshake timeout
+opencatalogi	1503	b8b25cba7c1119b8f4d73e6bd9e884778e9887bd	RED	merge3	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+opencatalogi	1853	25c66e05359f65dfdd67721b48b9c326bc23055b	RED	merge3	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+opencatalogi	1857	82668b5d869517933f46b9ce30535f4486c37da0	RED	merge3	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+opencatalogi	2722	6007a1fe8b20daee494cffc8e3286d77cbd59839	RED	merge3	GATE RED floor: unit_interfacing: 4.73 -> 4.67
+opencatalogi	2766	589fc8d13039455102d23d8cfd7f9a099256ae10	RED	merge3	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+opencatalogi	2771	51599f3121eee90c30a58a28fe0aa531b564af99	RED	merge3	GATE RED floor: unit_interfacing: 4.77 -> 4.74
+opencatalogi	2792	74344066c69c88d9c8785b1096289344f3e48e6b	RED	merge3	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+opencatalogi	2802	8b3d04966f0b354bb518651f1f4810a7ccfab598	RED	merge3	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
