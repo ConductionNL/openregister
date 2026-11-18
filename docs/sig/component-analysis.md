@@ -177,6 +177,68 @@ De meeste verwijzingen omhoog en de grootste kring hebben dus één bron: de obj
 
 De huidige indeling kent een paar bestanden van de oudere commits niet meer. Het script deelde die in op hun map: 4 op 9 november, 7 op 10 november.
 
+## Wat dit betekent voor de beoordeling
+
+Eerst iets over onszelf. De audit van SIG is de eerste keer dat we de koppeling binnen de backend op deze manier hebben doorgemeten. Onze eigen controles keken naar de lagen (ADR-013), niet naar de functionele gebieden. Deze pagina is dus ook voor ons een les: de lagen houden, en de gebieden zitten nog aan elkaar vast.
+
+### De schatting per indeling
+
+SIG publiceert alleen de grenzen voor 4 sterren. Ons scoreprogramma schat de rest, op een schaal van 0,5 tot 5,5. De getallen zijn dus een schatting, geen uitslag van SIG. Gemeten op main van 18 november (`d356db5b71`):
+
+| Wat telt als component | Onafhankelijkheid | Verstrengeling | Modulariteit | Totaal |
+|---|---|---|---|---|
+| A. `lib/` als geheel (onze opgave, ADR-014) | 5,5 | 5,5 | 5,35 | 5,12 |
+| B. Elke map onder `lib/` | 2,15 | 4,02 | 3,74 | 4,37 tot 4,47 |
+| C. De tien functionele gebieden | 1,30 | 2,21 | 2,85 | 3,96 tot 4,20 |
+| D. Gebieden, met objectopslag en toegang als gedeeld fundament | 1,31 | 2,01 | 2,79 | 3,93 tot 4,19 |
+| E. Als D, maar het fundament wijst niet terug naar de gebieden | 1,37 | 3,45 | 3,29 | 4,12 tot 4,30 |
+
+Variant A zegt niets over de koppeling: met één component is er niets om tussen te meten. Variant C is de eerlijke meting volgens het patroon van Fowler. Variant E is een simulatie, geen bestaande code.
+
+### Een gewenste afhankelijkheid kost niets
+
+Alle gebieden gebruiken de objectopslag en de toegangscontroles. Dat is zo bedoeld: het is kritische code die we niet dubbel willen hebben. De verstrengeling telt zo'n afhankelijkheid ook niet als fout. Een verbinding is alleen een fout als er ook een terug loopt, als hij een kring sluit, of als hij een pad herhaalt dat er al is.
+
+Daarom hebben we in variant D de objectopslag en de toegangscontroles (het gebied Core) samengevoegd met Kernel tot één fundament. De verstrengeling wordt daar slechter van, niet beter. Het fundament verwijst zelf terug naar alle acht andere gebieden, in 1.210 verwijzingen tussen bestanden:
+
+| Fundament verwijst naar | Verwijzingen | Voorbeelden |
+|---|---|---|
+| Processes | 334 | `Db/Task`, `BulkAction/BulkActionInterface` |
+| Integrations | 245 | `Db/Source`, `Db/FederatedShare`, `Db/AccessLink` |
+| Compliance | 244 | `Db/AuditTrail` en de audit-events |
+| Configuration | 150 | `Db/Configuration`, `Service/LanguageService` |
+| Search | 92 | `Db/RegisterSchema`, `Search/Db/ViewMapperInterface` |
+| Files | 60 | `Files/Db/FileMapperInterface` |
+| Platform | 58 | `AppInfo/Application` |
+| Notifications | 27 | `Notifications/Db/WatcherMapperInterface` |
+
+Elk van die terugverwijzingen maakt van een gewenste afhankelijkheid een verbinding die heen en terug loopt. Zonder die terugverwijzingen (variant E) stijgt de verstrengeling van 2,01 naar 3,45. Wat dan nog fout telt, zijn kringen tussen de andere gebieden onderling, zoals Compliance en Processes.
+
+### Onafhankelijkheid telt elk gedeeld bestand
+
+De onafhankelijkheid blijft in elke functionele indeling rond 1,3. Deze maat telt elk bestand waar een ander gebied naar verwijst als zichtbaar, ook als dat zo bedoeld is. In variant C is 37,5% van de code zichtbaar:
+
+| Soort bestand | Bestanden | Regels code | Aandeel van de backend |
+|---|---|---|---|
+| Concrete klasse | 1.479 | 141.213 | 30,8% |
+| Mapper | 90 | 8.960 | 2,0% |
+| Interface | 821 | 8.723 | 1,9% |
+| Entiteit | 68 | 5.797 | 1,3% |
+| Exception | 141 | 4.627 | 1,0% |
+| Event | 106 | 1.772 | 0,4% |
+| Trait | 30 | 703 | 0,2% |
+
+Het script deelt de bestanden in op hun declaratie en naam. Een entiteit die niet direct `Entity` uitbreidt, telt daardoor als concrete klasse. Het grootste deel zijn concrete klassen die andere gebieden direct gebruiken, zonder een smalle interface ertussen.
+
+### Conclusie
+
+De koppeling naar de objectopslag en de toegangscontroles is gewenst, en die kost in deze meting niets. Wat wel kost, zijn twee dingen:
+
+- de objectopslag verwijst terug naar entiteiten en interfaces van andere gebieden;
+- gebieden gebruiken elkaars concrete klassen in plaats van een smalle interface.
+
+Beide zijn echte bevindingen over de code. Ze komen niet voort uit de manier van meten.
+
 ## Zelf nameten
 
 Vanuit de hoofdmap van de repository:
@@ -190,11 +252,15 @@ composer --working-dir=vendor-bin/deptrac install
 tools/sig/deptrac.sh layers --rev 70e5570455 --out /tmp/analyse-70e5570455
 tools/sig/deptrac.sh areas --rev 70e5570455 --out /tmp/analyse-70e5570455
 
-# De tests van het script.
+# De schatting per indeling: eerst het volledige rapport, dan de vijf varianten.
+python3 tools/sig/check_sig_maintainability.py report . --json /tmp/rapport.json
+python3 tools/sig/rate_component_views.py --report /tmp/rapport.json --json /tmp/varianten.json
+
+# De tests van de scripts.
 python3 -m unittest discover -s tools/sig -p 'test_*.py'
 ```
 
-Zonder `--rev` meten beide tools de werkmap. Het script doet er ongeveer 15 seconden over, elke deptrac-run minder dan een minuut.
+Zonder `--rev` meten beide tools de werkmap. Het script doet er ongeveer 15 seconden over, elke deptrac-run minder dan een minuut. Het volledige rapport duurt ongeveer drie minuten, [`tools/sig/rate_component_views.py`](https://github.com/ConductionNL/openregister/blob/main/tools/sig/rate_component_views.py) daarna een paar seconden.
 
 ## Resultaten
 
@@ -210,6 +276,7 @@ Per commit staat de uitvoer van beide tools in een eigen map:
 | `70e5570455`, main op 9 november 2026 | [rapport](./dependency-analysis/70e5570455/report.md) |
 | `d20a7aee8c`, main op 10 november 2026 | [rapport](./dependency-analysis/d20a7aee8c/report.md) |
 | `29890847e7`, main op 17 november 2026 | [rapport](./dependency-analysis/29890847e7/report.md) |
+| `d356db5b71`, main op 18 november 2026 | [schatting per indeling](https://github.com/ConductionNL/openregister/blob/main/docs/sig/dependency-analysis/d356db5b71/rating-views.json) |
 
 ## Zie ook
 
