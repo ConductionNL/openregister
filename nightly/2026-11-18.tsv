@@ -7,3 +7,4 @@ pipelinq	f8fe801f1	php=RED	Tests 9330/Failures 0/Errors 0	phpmd,psalm	js=RED	psa
 learniq	0f2d1fb2	php=RED	Tests 7160/Failures 51/Errors 103	phpcs,phpmd,psalm,phpunit	js=n/a	Tests\Support\ContractImplementations missing; psalm needs PHP>=8.3.16; phpmd 185; phpcs 1 err
 integriq	f79927c0	php=RED	Tests 9883/Failures 3/Errors 2	phpcs,phpmd,psalm,phpunit	js=RED	psalm 298 (294 UndefinedClass OCA\OpenRegister); CallServiceTest, JobsControllerTest, SyncEntryGoldenTest; eslint sort-imports
 hermiq	1281045a	php=RED	Tests 5736, Failures 0, Errors 0	phpcs,phpmd,psalm,phpstan	js=RED	psalm 21; phpstan 4; phpunit green (exit 1 = no coverage driver); eslint stale suppressions; vitest ok
+planninq	17e6169e	php=RED	Tests 1253/Failures 0/Errors 0	phpmd,psalm,phpstan	js=GREEN	phpstan 9 errs (AppHostRegistration, RegisterProjectsLeafListener args); psalm needs PHP>=8.3.16; phpmd 27
