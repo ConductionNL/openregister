@@ -55,8 +55,8 @@ final class AreaMapperRegistrarsTest extends TestCase {
 		$registrar::register(context: $context);
 
 		$bindings = constant($registrar . '::BINDINGS');
-		$this->assertNotSame([], $bindings);
-		$this->assertSame($bindings, array_column($context->aliases, 'target', 'alias'));
+		$this->assertNotSame(expected: [], actual: $bindings);
+		$this->assertSame(expected: $bindings, actual: array_column($context->aliases, 'target', 'alias'));
 	}//end testTheRegistrarAliasesEveryBindingOfItsMap()
 
 	/**
@@ -69,8 +69,8 @@ final class AreaMapperRegistrarsTest extends TestCase {
 	#[DataProvider('registrars')]
 	public function testEveryBindingIsImplementedByItsClass(string $registrar): void {
 		foreach (constant($registrar . '::BINDINGS') as $interface => $class) {
-			$this->assertStringStartsWith('OCA\\OpenRegister\\Db\\', $class);
-			$this->assertTrue((new ReflectionClass($class))->implementsInterface($interface), $class . ' implements ' . $interface);
+			$this->assertStringStartsWith(prefix: 'OCA\\OpenRegister\\Db\\', string: $class);
+			$this->assertTrue(condition: (new ReflectionClass($class))->implementsInterface($interface), message: $class . ' implements ' . $interface);
 		}
 	}//end testEveryBindingIsImplementedByItsClass()
 
@@ -83,7 +83,7 @@ final class AreaMapperRegistrarsTest extends TestCase {
 		$seen = [];
 		foreach (DbBindingMaps::REGISTRARS as $registrar) {
 			$keys = array_keys(constant($registrar . '::BINDINGS'));
-			$this->assertSame([], array_values(array_intersect($seen, $keys)), $registrar . ' binds an interface bound elsewhere');
+			$this->assertSame(expected: [], actual: array_values(array_intersect($seen, $keys)), message: $registrar . ' binds an interface bound elsewhere');
 			$seen = array_merge($seen, $keys);
 		}
 	}//end testEachInterfaceIsBoundOnce()

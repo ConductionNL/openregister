@@ -25,11 +25,14 @@ namespace OCA\OpenRegister\Db;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 
 /**
- * Binds the interfaces of the Integrations area's mappers (links to other Nextcloud apps, endpoints, consumers, sources, mappings, sync records and webhooks).
+ * Binds the interfaces of the Integrations area's mappers: the links to
+ * other Nextcloud apps, endpoints, consumers, sources, mappings, sync records
+ * and webhooks.
  *
- * Application names this class only; the map lives in IntegrationsMapperBindings,
- * inside the area. An interface of a lower area that a Integrations class
- * implements is bound here as well, so no lower registrar names it.
+ * Application names this class only; the map lives in
+ * IntegrationsMapperBindings, inside the area. An interface of a lower area
+ * that an Integrations class implements is bound here as well, so no lower
+ * registrar names it.
  *
  * @spec exclude Container wiring; no behaviour of its own.
  */
