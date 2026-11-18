@@ -19757,3 +19757,7 @@ hermiq	1719	257411d705c48272c7393fd775c4c35c07b6cc37	RED	merge3:merge-gate	GATE 
 hermiq	1843	d623cf6f4647a4c786871b8bdc271e161e81fe40	RED	merge3:merge-gate	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
 hermiq	1852	734376163c5c6515d092ee9d381c6d537078095a	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 4.55 -> 4.53
 hermiq	1853	ab8d677846d3064d56b1529f752ad3b72518e090	RED	merge3:merge-gate	GATE RED floor: overall: 4.21 -> 4.17; unit_size: 3.87 -> 3.84; unit_complexity: 4.55 -> 4.48; unit_interfacing: 2.64 -> 2.50; module_coupling: 5.15 -> 5.13
+hermiq	1763	bff0c5dd4f69136e48433718ae0ef67427395a19	CONFLICT	merge3	merges clean on development alone; files: appinfo/routes.php l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+hermiq	1849	b2a8aa0f359f55910f8c21cd47ffe81ad804f481	CONFLICT	merge3	merges clean on development alone; files: tests/integration/hermiq.postman_collection.json 
+hermiq	1851	267e436069cc547716f95cc491508c6e12736003	CONFLICT	merge3	merges clean on development alone; files: lib/Settings/hermiq_register.json 
+hermiq	1854	d890a013df656c18a3ff7146d19b4e764bbd0f5c	CONFLICT	merge3	merges clean on development alone; files: appinfo/routes.php l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Settings/hermiq_register.json src/views/AdminRoot.vue 
