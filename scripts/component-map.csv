@@ -3546,7 +3546,7 @@ BackgroundJob/JobHandles.php,,BackgroundJob,,,,,Core
 BackgroundJob/JobRuntime.php,,BackgroundJob,,,,,Core
 BackgroundJob/ProcessingLogPrune.php,,BackgroundJob,,,,,Compliance
 BackgroundJob/QueuedJobClassesInterface.php,,BackgroundJob,,,,,Core
-BackgroundJob/RecomputeTimersForCalendarJobServices.php,,BackgroundJob,,,,,Core
+BackgroundJob/RecomputeTimersForCalendarJobServices.php,,BackgroundJob,,,,,Processes
 BackgroundJob/RecordedJobRuntime.php,,BackgroundJob,,,,,Configuration
 BackgroundJob/TransferAttemptRun.php,,BackgroundJob,,,,,Core
 BulkAction/ApplyRuleActionInterface.php,,BulkAction,,,,,Processes
@@ -3791,7 +3791,7 @@ Exception/ObjectLookupFailedException.php,,Exception,,,,,Kernel
 Exception/ObjectStateMarker.php,,Exception,,,,,Core
 Exception/ReferenceCycle.php,,Exception,,,,,Platform
 Exception/RuleRefusedException.php,,Exception,,,,,Kernel
-Listener/ChainGateRun.php,,Listener,,,,,Core
+Listener/ChainGateRun.php,,Listener,,,,,Processes
 Listener/ConsentApplyRun.php,,Listener,,,,,Processes
 Listener/DecisionTableValidationListenerInterface.php,,Listener,,,,,Processes
 Listener/DeclaredFlowRun.php,,Listener,,,,,Processes
