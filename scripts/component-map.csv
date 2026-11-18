@@ -3743,7 +3743,7 @@ Event/AbstractConversationEvent.php,,Event,,,,,Kernel
 Event/AbstractDecisionRequestEvent.php,,Event,,,,,Kernel
 Event/AbstractObjectEntityEvent.php,,Event,,,,,Kernel
 Event/AbstractOrganisationEvent.php,,Event,,,,,Core
-Event/AbstractPersonLinkEvent.php,,Event,,,,,Core
+Event/AbstractPersonLinkEvent.php,,Event,,,,,Kernel
 Event/AbstractRegisterEvent.php,,Event,,,,,Kernel
 Event/AbstractRegistrySubscriptionEvent.php,,Event,,,,,Kernel
 Event/AbstractSchemaEvent.php,,Event,,,,,Kernel
