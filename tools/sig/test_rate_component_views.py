@@ -78,5 +78,14 @@ class KindTest(unittest.TestCase):
             self.assertEqual(views.kind_of(rel, text), kind, rel)
 
 
+class TargetsTest(unittest.TestCase):
+    def test_top_of_the_scale_needs_nothing_exposed(self):
+        self.assertEqual(views.targets()["5.5"], {"exposed_share": 0.0, "violation_degree": 0.0})
+
+    def test_half_a_star_above_four_is_the_five_star_band_limit(self):
+        self.assertAlmostEqual(views.targets()["4.5"]["exposed_share"], 0.0275, places=4)
+        self.assertAlmostEqual(views.targets()["4.5"]["violation_degree"], 0.0375, places=4)
+
+
 if __name__ == "__main__":
     unittest.main()
