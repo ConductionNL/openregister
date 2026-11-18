@@ -25,11 +25,14 @@ namespace OCA\OpenRegister\Db;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 
 /**
- * Binds the interfaces of the Compliance area's mappers (audit trails, search trails, processing records, GDPR entities, subject exports, erasure previews, content reports and quality audits).
+ * Binds the interfaces of the Compliance area's mappers: audit trails,
+ * search trails, processing records, GDPR entities, subject exports, erasure
+ * previews, content reports and quality audits.
  *
- * Application names this class only; the map lives in ComplianceMapperBindings,
- * inside the area. An interface of a lower area that a Compliance class
- * implements is bound here as well, so no lower registrar names it.
+ * Application names this class only; the map lives in
+ * ComplianceMapperBindings, inside the area. An interface of a lower area
+ * that a Compliance class implements is bound here as well, so no lower
+ * registrar names it.
  *
  * @spec exclude Container wiring; no behaviour of its own.
  */
