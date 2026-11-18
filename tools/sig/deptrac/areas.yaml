@@ -74,11 +74,7 @@ deptrac:
         - type: directory
           value: 'lib/Controller/Support/AgentsControllerServices[.]php$'
         - type: directory
-          value: 'lib/Controller/Support/AnalyticsLinksControllerServices[.]php$'
-        - type: directory
           value: 'lib/Controller/Support/AnonymisationBackendControllerServices[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/ApiCallersControllerServices[.]php$'
         - type: directory
           value: 'lib/Controller/Support/ApiSurfaceControllerServices[.]php$'
         - type: directory
@@ -119,8 +115,6 @@ deptrac:
           value: 'lib/Controller/Support/AuditTrailReaders[.]php$'
         - type: directory
           value: 'lib/Controller/Support/BatchOutcome[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/BookmarkLinksControllerServices[.]php$'
         - type: directory
           value: 'lib/Controller/Support/BulkControllerServices[.]php$'
         - type: directory
@@ -166,10 +160,6 @@ deptrac:
         - type: directory
           value: 'lib/Controller/Support/CodedOptionsRequest[.]php$'
         - type: directory
-          value: 'lib/Controller/Support/CollectiveLinksControllerServices[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/CompanyLookupControllerServices[.]php$'
-        - type: directory
           value: 'lib/Controller/Support/ConfigDeploymentControllerServices[.]php$'
         - type: directory
           value: 'lib/Controller/Support/ConfigPublishRequest[.]php$'
@@ -194,14 +184,6 @@ deptrac:
         - type: directory
           value: 'lib/Controller/Support/ConnectionReporting[.]php$'
         - type: directory
-          value: 'lib/Controller/Support/ConsumersControllerServices[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/ContactsControllerServices[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/ContactsDomain[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/ContactsPlatform[.]php$'
-        - type: directory
           value: 'lib/Controller/Support/ContentReportControllerServices[.]php$'
         - type: directory
           value: 'lib/Controller/Support/ContextsControllerServices[.]php$'
@@ -220,31 +202,11 @@ deptrac:
         - type: directory
           value: 'lib/Controller/Support/CorrectionsControllerServices[.]php$'
         - type: directory
-          value: 'lib/Controller/Support/CospendLinksControllerServices[.]php$'
-        - type: directory
           value: 'lib/Controller/Support/CredentialCaller[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/CredentialControllerServices[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/CredentialOauth2ControllerServices[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/CredentialOauth2Domain[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/CredentialOauth2Mappers[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/CredentialPlatform[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/CredentialTokens[.]php$'
         - type: directory
           value: 'lib/Controller/Support/CredentialUpdateTarget[.]php$'
         - type: directory
-          value: 'lib/Controller/Support/CredentialVault[.]php$'
-        - type: directory
           value: 'lib/Controller/Support/DatabaseServerProfile[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/DeckControllerServices[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/DeckLinksControllerServices[.]php$'
         - type: directory
           value: 'lib/Controller/Support/DelegationControllerServices[.]php$'
         - type: directory
@@ -280,11 +242,7 @@ deptrac:
         - type: directory
           value: 'lib/Controller/Support/EdepotSettingsDomain[.]php$'
         - type: directory
-          value: 'lib/Controller/Support/EmailLinksControllerServices[.]php$'
-        - type: directory
           value: 'lib/Controller/Support/EmptyValueStripper[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/EndpointsControllerServices[.]php$'
         - type: directory
           value: 'lib/Controller/Support/EntityRelationPatch[.]php$'
         - type: directory
@@ -303,8 +261,6 @@ deptrac:
           value: 'lib/Controller/Support/ExportProfilesControllerServices[.]php$'
         - type: directory
           value: 'lib/Controller/Support/FederatedConfigControllerServices[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/FederationControllerServices[.]php$'
         - type: directory
           value: 'lib/Controller/Support/FormLinksControllerServices[.]php$'
         - type: directory
@@ -338,8 +294,6 @@ deptrac:
         - type: directory
           value: 'lib/Controller/Support/GitHubTokenFailure[.]php$'
         - type: directory
-          value: 'lib/Controller/Support/HandoffControllerServices[.]php$'
-        - type: directory
           value: 'lib/Controller/Support/HardeningControllerServices[.]php$'
         - type: directory
           value: 'lib/Controller/Support/HardeningStatementControllerServices[.]php$'
@@ -353,8 +307,6 @@ deptrac:
           value: 'lib/Controller/Support/ImportPreviewMappers[.]php$'
         - type: directory
           value: 'lib/Controller/Support/ImportPreviewPlatform[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/IntegrationsControllerServices[.]php$'
         - type: directory
           value: 'lib/Controller/Support/LinkRemoval[.]php$'
         - type: directory
@@ -379,8 +331,6 @@ deptrac:
           value: 'lib/Controller/Support/ManifestControllerServices[.]php$'
         - type: directory
           value: 'lib/Controller/Support/MapLinksControllerServices[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/MappingsControllerServices[.]php$'
         - type: directory
           value: 'lib/Controller/Support/McpControllerServices[.]php$'
         - type: directory
@@ -421,10 +371,6 @@ deptrac:
           value: 'lib/Controller/Support/ObjectGrantsControllerServices[.]php$'
         - type: directory
           value: 'lib/Controller/Support/ObjectIntegrationsAccess[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/ObjectIntegrationsControllerServices[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/ObjectIntegrationsDomain[.]php$'
         - type: directory
           value: 'lib/Controller/Support/ObjectLinkRoute[.]php$'
         - type: directory
@@ -586,13 +532,7 @@ deptrac:
         - type: directory
           value: 'lib/Controller/Support/RelationUrlStamper[.]php$'
         - type: directory
-          value: 'lib/Controller/Support/RelationsCollaboration[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/RelationsControllerServices[.]php$'
-        - type: directory
           value: 'lib/Controller/Support/RelationsObjectLookup[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/RelationsPlatform[.]php$'
         - type: directory
           value: 'lib/Controller/Support/RelationsRecords[.]php$'
         - type: directory
@@ -682,8 +622,6 @@ deptrac:
         - type: directory
           value: 'lib/Controller/Support/TagsControllerServices[.]php$'
         - type: directory
-          value: 'lib/Controller/Support/TalkLinksControllerServices[.]php$'
-        - type: directory
           value: 'lib/Controller/Support/TaskEventsControllerServices[.]php$'
         - type: directory
           value: 'lib/Controller/Support/TasksPlatform[.]php$'
@@ -738,19 +676,21 @@ deptrac:
         - type: directory
           value: 'lib/Controller/Support/WebhookLogQuery[.]php$'
         - type: directory
-          value: 'lib/Controller/Support/WebhooksControllerServices[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/WebhooksMappers[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/WellKnownControllerServices[.]php$'
-        - type: directory
           value: 'lib/Controller/Support/WriteCaller[.]php$'
         - type: directory
           value: 'lib/Controller/Support/WriteFailureAnswer[.]php$'
         - type: directory
           value: 'lib/Controller/Support/XwikiLinksControllerServices[.]php$'
         - type: directory
-          value: 'lib/Controller/Trait/[^/]*$'
+          value: 'lib/Controller/Trait/ChecksObjectUpdateRight[.]php$'
+        - type: directory
+          value: 'lib/Controller/Trait/HandlesExceptionsTrait[.]php$'
+        - type: directory
+          value: 'lib/Controller/Trait/RequiresJsonBodyTrait[.]php$'
+        - type: directory
+          value: 'lib/Controller/Trait/ResolvesLinkedObjectTrait[.]php$'
+        - type: directory
+          value: 'lib/Controller/Trait/ResolvesRegisterAndSchemaTrait[.]php$'
         - type: directory
           value: 'lib/Db/(AbstractObjectMapper|AccessLinkMapper|AccessLinkMapperInterface|AuditTrailMapperInterface|AuthorizationRulesTrait|ContentReportMapperInterface|DbRegistrar|DecisionMetadataChange|DelegationGrant|DelegationGrantMapper|DelegationGrantMapperInterface|DeleteByObjectTrait|DraftVersion|DraftVersionMapper|EmptyJsonHydration|EmptyPropertyClaim|EntityChangeDetector|EntityRelation|EntityRelationMapper|ErasurePreviewMapperInterface|FederatedShareMapperInterface|FileDigest|FileDigestMapper|HydrateEmptyJsonAsNullTrait|HydrationKey|JobRunFilter|JobRunMapperInterface|LikeOperator|LikeOperatorInterface|LikeOperators|MagicMapper|MagicMapperInterface|ManagedByConfigurationTrait|MapLinkMapperInterface|MapperRegistrar|MapperWiring|MultiTenancyTrait|ObjectHandling|ObjectLinkTypesTrait|ObjectReadState|ObjectReadStateMapper|ObjectReadStateMapperInterface|ObjectRelation|ObjectRelationMapper|ObjectRelationMapperInterface|OpenProjectLinkMapperInterface|Organisation|OrganisationFieldTrait|OrganisationMapper|OrganisationMapperInterface|OutcomeFilter|PartialObjectEntity|PhotoLinkMapperInterface|PollLinkMapperInterface|ProcessingLogMapperInterface|ProcessingLogReadScope|ProcessingPurposeMapperInterface|QueryPage|RecordTemplateMapperInterface|RegisterLookup|RegisterMapper|RegisterMapperHelper|RegisterMapperServices|RegistrySubscription|RegistrySubscriptionMapper|RegistrySubscriptionMapperInterface|RunObjectLock|RunObjectLockMapper|RunObjectLockMapperInterface|SchemaCatalog|SchemaCatalogInterface|SchemaChangelog|SchemaChangelogMapper|SchemaChangelogMapperInterface|SchemaFollower|SchemaFollowerMapper|SchemaMapper|SchemaPropertyInheritance|SchemaRun|SchemaRunEntry|SchemaRunEntryMapper|SchemaRunEntryMapperInterface|SchemaRunMapper|SchemaRunMapperInterface|SchemaRunStoreInterface|SlugIdLookupTrait|SourceMapperInterface|StateChangePeriod|StateHistory|StateHistoryMapper|StateHistoryMapperInterface|TenantUsage|TenantUsageMapper|TenantUsageMapperInterface|TextSignature|TextSignatureMapper|TimeTrackerLinkMapperInterface|TypedFieldsJson|TypedFieldsJsonTrait|UsageMeasurement|VerwerkingsactiviteitMapperInterface|XwikiLinkMapperInterface)[.]php$'
         - type: directory
@@ -2553,6 +2493,76 @@ deptrac:
           value: 'lib/ContextChat/Support/[^/]*$'
         - type: directory
           value: 'lib/Controller/(ActivityLinksController|AnalyticsLinksController|AnalyticsSeriesController|ApiCallersController|BookmarkLinksController|CaseTokenController|CollectiveLinksController|CompanyLookupController|ConsumersController|ContactsController|CospendLinksController|CredentialController|CredentialOauth2Controller|CredentialOrganisationController|DeckController|DeckLinksController|EmailLinksController|EndpointsController|FederationController|FormLinksController|HandoffController|IntegrationControllersRegistrar|IntegrationControllersWiring|IntegrationsController|LinkedEntityController|MapLinksController|MappingsController|MessageDispatchController|ObjectIntegrationsController|ObjectShareLinkController|OpenProjectLinksController|PhotoLinksController|PollLinksController|RelationsController|ScheduledMessagesController|ShareLinksController|TalkLinksController|TimeTrackerLinksController|WebhooksController|WellKnownController|XwikiLinksController)[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/AnalyticsLinksControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/ApiCallersControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/BookmarkLinksControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/CollectiveLinksControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/CompanyLookupControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/ConsumersControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/ContactsControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/ContactsDomain[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/ContactsPlatform[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/CospendLinksControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/CredentialControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/CredentialOauth2ControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/CredentialOauth2Domain[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/CredentialOauth2Mappers[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/CredentialPlatform[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/CredentialTokens[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/CredentialVault[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/DeckControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/DeckLinksControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/EmailLinksControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/EndpointsControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/FederationControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/HandoffControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/IntegrationsControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/MappingsControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/ObjectIntegrationsControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/ObjectIntegrationsDomain[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/RelationsCollaboration[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/RelationsControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/RelationsPlatform[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/TalkLinksControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/WebhooksControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/WebhooksMappers[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/WellKnownControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Controller/Trait/ObjectLinkActionsTrait[.]php$'
         - type: directory
           value: 'lib/Dav/[^/]*$'
         - type: directory
