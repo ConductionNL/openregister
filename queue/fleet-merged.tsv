@@ -5848,3 +5848,6 @@ pipelinq	3962	4a00fe01acdad8680f6c0eaee66af587b17bd7b2	MERGED	merge3	GATE OK sbo
 dossiq	6630	d26712f85b6fba5ca583fa99981caba52477b8f3	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
 dossiq	6648	e8520bc3b2f8932803ee3956d94deb900e702d57	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
 dossiq	6659	7c7be56443aeb3a89787e941ed3e97fbc3c0b146	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.39
+learniq	2524	defae59897776df65fca752cdd26e7ebdc87d32d	RED	merge3	GATE RED checker floor: spdxheaders stars: 5 -> 4
+learniq	2599	d006d35c98825c27df01811a18bd6dd92028d785	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 4.07
+learniq	2612	2ee740f1c00542d494eea6628579fc69bb43768e	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 4.07
