@@ -19737,3 +19737,16 @@ filinq	2173	6bce70eb0c412e2bc6eaa1d778075d1f8f776f04	RED	merge3:merge-gate	GATE 
 filinq	2182	eb336b2bf97ef745daec9dc210abddc404a5718a	RED	merge3:merge-gate	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
 filinq	2188	d0adb35a8f3d46930a62d9d15ebc2398a21cab5e	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 4.49 -> 4.47
 filinq	2190	31521cfa124aa71c4f036a2e0b32a52ffc9387cc	RED	merge3:merge-gate	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+filinq	2093	f46e9fd29c21f6ae281c2182dc2a38856f7228f3	CONFLICT	merge3	merges clean on development alone; files: lib/Settings/filinq_register.json 
+filinq	2099	8280fbd47f4fabd474b3cdc1eee8b5057b537fa9	CONFLICT	merge3	merges clean on development alone; files: lib/Settings/filinq_register.json 
+filinq	2106	88285f4024ca75ba2f27638acf70d89ef392b403	CONFLICT	merge3	merges clean on development alone; files: lib/Settings/filinq_register.json 
+filinq	2107	f00845e04f3c6fdbdc9cadd8ed371c4d4a321d3d	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json lib/Settings/filinq_register.json tests/vitest/manifestFragments.spec.js 
+filinq	2112	c6b6ed3aa22c3431a85629112889b02a01d7cd02	CONFLICT	merge3	merges clean on development alone; files: lib/Settings/filinq_register.json src/registry.js tests/vitest/manifestFragments.spec.js 
+filinq	2113	e86b2786a047445e0a371ec4038ecfe035752c34	CONFLICT	merge3	merges clean on development alone; files: lib/Settings/filinq_register.json 
+filinq	2114	eadfebce735eae21b7ccf143a1d20b6be0c91859	CONFLICT	merge3	merges clean on development alone; files: lib/Settings/filinq_register.json 
+filinq	2116	f4aa7a1d9b0a7416f7fe1cf6314f7208f11077b3	CONFLICT	merge3	merges clean on development alone; files: lib/Settings/filinq_register.json 
+filinq	2120	97997d7ec12a0ce8c933977fb8131bdd8fd72260	CONFLICT	merge3	merges clean on development alone; files: lib/Settings/filinq_register.json 
+filinq	2124	487f5a1532b35f148d9fd615b7f8d5d520b269d4	CONFLICT	merge3	merges clean on development alone; files: lib/Settings/filinq_register.json 
+filinq	2130	45c816db2ee1d375cd70358dee19911a024d3f5d	CONFLICT	merge3	merges clean on development alone; files: lib/Settings/filinq_register.json 
+filinq	2191	29f92719ce8d21313520f21015eb4042828d1a27	CONFLICT	merge3	merges clean on development alone; files: appinfo/info.xml lib/Settings/filinq_register.json 
+filinq	2192	d9bcc0c9059681333e57618e35a356ba4b283505	CONFLICT	merge3	merges clean on development alone; files: appinfo/info.xml lib/Settings/filinq_register.json 
