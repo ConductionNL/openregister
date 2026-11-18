@@ -19785,3 +19785,4 @@ launchpad	1218	1d9132cfbb9f66b8592307016ece8a897798d265	CONFLICT	merge3	merges c
 launchpad	1307	7e2a16a19158f4205dd2a724c950c85ca37d9088	CONFLICT	merge3	merges clean on development alone; files: l10n/nl.js l10n/nl.json 
 decidiq	2174	8825e17a0745751ca54f819cb8052999b35fbfcd	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 4.05 -> 4.03
 decidiq	2198	e149db467ece48fe46cf15bc4e8c19738cb55e44	CONFLICT	merge3	merges clean on development alone; files: lib/Settings/profiles/municipality.json 
+versioniq	728	5aa3028534a2808e1c9a5b529153941a7d7ea032	RED	merge3:merge-gate	GATE RED floor: overall: 5.07 -> 5.02; duplication: 5.18 -> 5.14; unit_size: 4.87 -> 4.84; unit_complexity: 4.80 -> 4.75; unit_interfacing: 4.65 -> 4.38
