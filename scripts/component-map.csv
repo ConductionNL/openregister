@@ -4358,3 +4358,4 @@ Controller/Support/ProcessingActivityVisibility.php,,Controller,,,,,Compliance
 Controller/Support/ProcessingPurposeControllerServices.php,,Controller,,,,,Compliance
 Controller/Support/SelectielijstControllerServices.php,,Controller,,,,,Compliance
 Db/Support/ConfigServices.php,,Db,,,,,Core
+Notifications/Service/ObjectPresenceTracker.php,,Notifications,,,,,Notifications
