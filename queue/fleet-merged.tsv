@@ -5839,3 +5839,9 @@ portaliq	2446	cd321d53ff3feed11edc9739307e0aa8a2c88326	RED	merge3	GATE RED floor
 portaliq	2569	642cb15ec846c00d0982b919cd417938525c4899	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.03
 portaliq	2587	15032d52c8fdad196917462604cfa6db269beca9	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.02
 portaliq	2593	df81c3582960f1f2d9b23757c081d461ef1f89e4	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.02
+pipelinq	1931	94e5fc381b7aaebb70668b5d3657f4e276995b43	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.48
+pipelinq	2010	706c19df61541e115fcdcc1528caba0d093a39b8	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.48
+pipelinq	3934	c444dc92ad2258ad9d6b7eced8d3fe449d9d8b93	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.48
+pipelinq	3942	c054de2a0a17eda212af30b61e2f8dce26dad7d8	RED	merge3	GATE RED floor: duplication: 4.26 -> 4.24
+pipelinq	3959	e2f8424e4c58e8e506450acebddeb5675c769bde	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.48
+pipelinq	3962	4a00fe01acdad8680f6c0eaee66af587b17bd7b2	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.48
