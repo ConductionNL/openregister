@@ -55,6 +55,6 @@ final class IntegrationsMapperRegistrar {
 	 * @spec exclude Container wiring; no behaviour of its own.
 	 */
 	public static function register(IRegistrationContext $context): void {
-		IntegrationsMapperBindings::register(context: $context);
+		DbRegistrar::bind(context: $context, bindings: IntegrationsMapperBindings::BINDINGS);
 	}//end register()
 }//end class

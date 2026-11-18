@@ -127,8 +127,22 @@ final class DbRegistrar {
 	 * @spec exclude Container wiring; no behaviour of its own.
 	 */
 	public static function register(IRegistrationContext $context): void {
-		foreach (self::BINDINGS as $contract => $class) {
+		self::bind(context: $context, bindings: self::BINDINGS);
+	}//end register()
+
+	/**
+	 * Alias each interface of a map to its class; the area mapper registrars bind through this too.
+	 *
+	 * @param IRegistrationContext              $context  The registration context.
+	 * @param array<class-string, class-string> $bindings Interface => class.
+	 *
+	 * @return void
+	 *
+	 * @spec exclude Container wiring; no behaviour of its own.
+	 */
+	public static function bind(IRegistrationContext $context, array $bindings): void {
+		foreach ($bindings as $contract => $class) {
 			$context->registerServiceAlias($contract, $class);
 		}
-	}//end register()
+	}//end bind()
 }//end class
