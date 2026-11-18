@@ -5867,3 +5867,13 @@ hermiq	1853	ab8d677846d3064d56b1529f752ad3b72518e090	RED	merge3	GATE RED floor: 
 planninq	1243	c1be8cd6cf0c003f804ac94f1db262ed29b308dc	RED	merge3	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
 planninq	1245	bdab0519cda410700fd9b3a044acb9bca392cb56	RED	merge3	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
 planninq	1250	d428c28451fbc7511b9f3bac3121996d971229e9	RED	merge3	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+buildiq	1721	ed2a82a6eaae9cb761b06a96378b66716313d4c6	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.91 holds at 3.93
+buildiq	1723	7cd3ca1a58d36f87240a6eaa104d10f70d2327a3	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.91 holds at 3.93
+buildiq	1724	8556ed5ad76ab347c9e8e97dd7635371cce5a6d6	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.91 holds at 3.93
+buildiq	1725	a838ebd1030cdd45cf4f0d4d47fa14c5524c6093	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.91 holds at 3.93
+buildiq	1726	5727e007884aa326eae962f524c9d932e87798c9	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.91 holds at 3.93
+buildiq	1727	4916d3fd0aee276364b2ec147ef6e723807f88ca	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.91 holds at 3.93
+buildiq	1728	666fa51783a7c825cf7218fbb90e1ca4f928bd0a	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.91 holds at 3.93
+buildiq	1729	9f91a88bb139c28be30fed9312d8ab4e55de996c	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.91 holds at 3.93
+buildiq	1730	2d9f793fa41e7c5762b22fbb277435269ee86876	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.91 holds at 3.93
+buildiq	1732	8f7ab5e8d61276d56f5dfd89cf40980cca8200e2	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.91 holds at 3.93
