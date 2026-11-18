@@ -12,3 +12,4 @@ versioniq	88123eb	php=RED	no phpunit in check:strict	cs:check,psalm	js=RED	psalm
 humaniq	dcdb4ca0	php=RED	Tests 4509, Failures 0, Errors 0 (1 skipped)	phpmd,psalm	js=n/a	psalm did not run: needs PHP >=8.3.16, container 8.3.6; phpmd (StaticAccess etc); phpcs/phpstan ok
 keepiq	2b71b65b	php=RED	Tests 5619/Failures 0/Errors 0	phpcs,phpmd,psalm	js=RED	phpcs 3 line>150 (controllers); psalm 6 UnusedParam; eslint 4 err; vitest HealthReportView.controls no active Pinia
 launchpad	c7e11020	php=RED	Tests 4621/Failures 0/Errors 0	phpcs,phpmd,psalm	js=RED	npm ci: lock out of sync (@noble/hashes 2.4.0); psalm not run (needs PHP>=8.3.16); phpcs 6 err
+stackiq	4f5ef19e	php=RED	phpunit skipped (no NC server tree)	phpmd,psalm	js=RED	psalm not run (needs PHP>=8.3.16); eslint 21 err; vitest facets.spec FACET_DIMENSIONS != FacetService
