@@ -9,3 +9,4 @@ integriq	f79927c0	php=RED	Tests 9883/Failures 3/Errors 2	phpcs,phpmd,psalm,phpun
 hermiq	1281045a	php=RED	Tests 5736, Failures 0, Errors 0	phpcs,phpmd,psalm,phpstan	js=RED	psalm 21; phpstan 4; phpunit green (exit 1 = no coverage driver); eslint stale suppressions; vitest ok
 planninq	17e6169e	php=RED	Tests 1253/Failures 0/Errors 0	phpmd,psalm,phpstan	js=GREEN	phpstan 9 errs (AppHostRegistration, RegisterProjectsLeafListener args); psalm needs PHP>=8.3.16; phpmd 27
 versioniq	88123eb	php=RED	no phpunit in check:strict	cs:check,psalm	js=RED	psalm/coding-standard not in composer deps; eslint parses broken fixture json; vitest 2 unhandled errs
+humaniq	dcdb4ca0	php=RED	Tests 4509, Failures 0, Errors 0 (1 skipped)	phpmd,psalm	js=n/a	psalm did not run: needs PHP >=8.3.16, container 8.3.6; phpmd (StaticAccess etc); phpcs/phpstan ok
