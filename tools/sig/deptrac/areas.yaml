@@ -286,18 +286,6 @@ deptrac:
         - type: directory
           value: 'lib/Controller/Support/EndpointsControllerServices[.]php$'
         - type: directory
-          value: 'lib/Controller/Support/EntityRelationPatch[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/EntityRelationsControllerServices[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/EntityRelationsDomain[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/EntityRelationsLinks[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/EntityRelationsMappers[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/EntityRelationsPlatform[.]php$'
-        - type: directory
           value: 'lib/Controller/Support/ErasurePreviewControllerServices[.]php$'
         - type: directory
           value: 'lib/Controller/Support/ExportProfilesControllerServices[.]php$'
@@ -307,14 +295,6 @@ deptrac:
           value: 'lib/Controller/Support/FederationControllerServices[.]php$'
         - type: directory
           value: 'lib/Controller/Support/FormLinksControllerServices[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/GdprEntitiesControllerServices[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/GdprEntitiesDomain[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/GdprEntitiesMappers[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/GdprEntitiesPlatform[.]php$'
         - type: directory
           value: 'lib/Controller/Support/GdprRegisterAccess[.]php$'
         - type: directory
@@ -1700,6 +1680,18 @@ deptrac:
         - type: directory
           value: 'lib/Controller/Support/CaseTransitionCommand[.]php$'
         - type: directory
+          value: 'lib/Controller/Support/EntityRelationPatch[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/EntityRelationsControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/EntityRelationsDomain[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/EntityRelationsLinks[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/EntityRelationsMappers[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/EntityRelationsPlatform[.]php$'
+        - type: directory
           value: 'lib/Controller/Support/FlowCatalogue[.]php$'
         - type: directory
           value: 'lib/Controller/Support/FlowControllerServices[.]php$'
@@ -1741,6 +1733,14 @@ deptrac:
           value: 'lib/Controller/Support/FormsDomain[.]php$'
         - type: directory
           value: 'lib/Controller/Support/FormsPlatform[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/GdprEntitiesControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/GdprEntitiesDomain[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/GdprEntitiesMappers[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/GdprEntitiesPlatform[.]php$'
         - type: directory
           value: 'lib/Controller/Support/ObjectActionsCatalogue[.]php$'
         - type: directory
