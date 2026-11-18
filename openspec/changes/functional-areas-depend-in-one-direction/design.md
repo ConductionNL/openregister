@@ -1,7 +1,32 @@
 # Design: functional areas depend in one direction
 
-The decision is ADR-015 (`openspec/architecture/adr-015-functional-areas-depend-in-one-direction.md`). This
-file describes how the change is carried out and measured.
+The organisation-wide decision is hydra ADR-119, "Boundaries inside an app run through interfaces", as revised
+on 2026-11-18. This file fixes OpenRegister's order of areas and describes how the change is carried out and
+measured.
+
+## The order of OpenRegister's areas
+
+Bottom to top. An area uses only areas of a lower rank (ADR-119 Decision 8).
+
+| Rank | Area |
+|---|---|
+| 0 | Kernel |
+| 1 | Core (the object store and its access control) |
+| 2 | Notifications |
+| 3 | Search |
+| 4 | Compliance |
+| 5 | Files |
+| 6 | Integrations |
+| 7 | Processes |
+| 8 | Configuration |
+| 9 | Platform |
+
+Kernel at the bottom and Configuration and Platform at the top are a design choice. In the middle the rank
+follows the heavier direction of today's references between two areas, for example Processes to Integrations
+113 against 82 back.
+
+Measured on main `d356db5b71`: 1,849 file references in 908 files run against this order, 183 of them from
+registrars.
 
 ## The measure and the test are one thing
 
@@ -28,7 +53,7 @@ Measured on main `d356db5b71`. Every wave is a set of small PRs, each lowering a
 | Wave | Removes | Size today | Effect |
 |---|---|---|---|
 | 0 | nothing: the tests and baselines | | the numbers can only go down |
-| 1 | wiring in the wrong registrar (Rule 4) | 183 references, mostly `Db/DbRegistrar.php`, part of the wave 3 count | mechanical; each binding moves to its own area's registrar |
+| 1 | wiring in the wrong registrar (ADR-119 Decision 2) | 183 references, mostly `Db/DbRegistrar.php`, part of the wave 3 count | mechanical; each binding moves to its own area's registrar |
 | 2 | Kernel referring upward | 114 references (80 to Core, 17 Processes, 9 Integrations, 7 Configuration, 1 Platform) | events and exceptions carry ids or Kernel types |
 | 3 | Core referring upward | 1,176 references to eight areas | events and contracts that Core defines and the higher area implements |
 | 4 | the remaining references against the order | about 560 | one direction per pair, the other through events |

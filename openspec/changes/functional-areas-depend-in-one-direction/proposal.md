@@ -7,8 +7,9 @@ other area, and areas use each other's concrete classes. No test stops either fr
 
 ## What changes
 
-- ADR-015 fixes one order of the areas and four rules: use only lower areas, through their contracts; entities
-  stay in their area; each area wires its own classes; the measure is a test.
+- hydra ADR-119 (revised 2026-11-18) is the organisation-wide decision: a component is a functional area, areas
+  depend in one direction, entities stay in their area, each area wires its own classes, and the measure is a
+  test. This change applies it to OpenRegister and fixes OpenRegister's order of areas.
 - A ratchet test and a deptrac baseline make every new reference against the order fail, and make every PR that
   removes some lower the recorded numbers.
 - The code follows in waves: first the references that make the foundation point back, then the references

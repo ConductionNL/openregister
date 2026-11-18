@@ -3,7 +3,7 @@
 ### Requirement: Areas reference only lower areas
 
 A PHP file in one functional area of `sigrid.components.yaml` MUST NOT reference a file of an area with a higher
-rank in ADR-015. It MAY reference a lower area only through that area's contracts in
+rank in the order of design.md (hydra ADR-119 Decision 8). It MAY reference a lower area only through that area's contracts in
 `lib/Kernel/Contracts/<Area>/` or through Kernel types. `ComponentDependencyRulesTest` MUST fail on a reference
 that is not in its recorded list of exceptions, and the list MUST only shrink.
 

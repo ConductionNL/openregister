@@ -1,10 +1,11 @@
 # Tasks: functional-areas-depend-in-one-direction
 
 ## 0. The measure is a test
-- [ ] 0.1 ADR-015 accepted
+- [ ] 0.1 hydra ADR-119 (revised 2026-11-18) accepted
+- [ ] 0.1b `scripts/component-map.csv`: every contract in `lib/Kernel/Contracts/<Area>/` assigned to its owning area, so a call through it counts as a line to its owner
 - [ ] 0.2 `rate_component_views.py --check BASELINE` and `--write-baseline`: exposed lines per area, Kernel size and violation degree in the functional view, no lizard needed
 - [ ] 0.3 `tools/sig/modularity-baseline.json` recorded on main
-- [ ] 0.4 `tests/Unit/Architecture/ComponentDependencyRulesTest.php`: the order of ADR-015 Rule 1 and the contract ranks of Rule 2, with today's references as a shrinking exception list
+- [ ] 0.4 `tests/Unit/Architecture/ComponentDependencyRulesTest.php`: the order of the areas (design.md) and the contract ranks, with today's references as a shrinking exception list
 - [ ] 0.5 `tools/sig/deptrac/areas.yaml` follows the order; `areas.baseline.yaml` recorded
 - [ ] 0.6 `composer check:modularity` runs 0.2 and 0.5; `check:strict` calls it
 - [ ] 0.7 Unit tests for the check, the baseline writer and the rank rules
