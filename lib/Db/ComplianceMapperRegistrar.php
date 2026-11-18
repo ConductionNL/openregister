@@ -55,6 +55,6 @@ final class ComplianceMapperRegistrar {
 	 * @spec exclude Container wiring; no behaviour of its own.
 	 */
 	public static function register(IRegistrationContext $context): void {
-		ComplianceMapperBindings::register(context: $context);
+		DbRegistrar::bind(context: $context, bindings: ComplianceMapperBindings::BINDINGS);
 	}//end register()
 }//end class

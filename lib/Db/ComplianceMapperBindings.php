@@ -22,8 +22,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
-use OCP\AppFramework\Bootstrap\IRegistrationContext;
-
 /**
  * Interface => mapper map of the Compliance area, behind ComplianceMapperRegistrar.
  *
@@ -55,19 +53,4 @@ final class ComplianceMapperBindings {
 		SubjectExportMapperInterface::class         => SubjectExportMapper::class,
 		VerwerkingsactiviteitMapperInterface::class => VerwerkingsactiviteitMapper::class,
 	];
-
-	/**
-	 * Register every binding with the app container.
-	 *
-	 * @param IRegistrationContext $context The registration context.
-	 *
-	 * @return void
-	 *
-	 * @spec exclude Container wiring; no behaviour of its own.
-	 */
-	public static function register(IRegistrationContext $context): void {
-		foreach (self::BINDINGS as $contract => $class) {
-			$context->registerServiceAlias($contract, $class);
-		}
-	}//end register()
 }//end class
