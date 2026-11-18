@@ -3,3 +3,4 @@ decidiq	1a56389c	php=RED	Tests 5068, Failures 0, Errors 0 (8 skipped)	phpcs,phpm
 portaliq	c9c9777b	php=RED	Tests 6324/Failures 0/Errors 16	phpcs,phpmd,psalm,phpstan,phpunit	js=n/a	OpenRegister ObjectLeavingEvent/RefIntegrationProvider missing: ChangeProposalsProvider*Test, RegisterProposalLeaves*Test
 shillinq	d355d436	php=RED	Tests 12796/Failures 0/Errors 0	phpcs,phpmd,psalm	js=RED	psalm 491 errs; phpcs 8 errs; eslint 89 json/no-empty-keys; vitest dunningNextRun.spec fails
 buildiq	465f72e4	php=RED	Tests 3676, Failures 7, Errors 0	phpcs,phpmd,psalm,phpstan,phpunit,gates	js=RED	AppRecordsImporterTest 7 fail; psalm 120; phpstan 6; gates 4,7,8,22,24; eslint 9 err (eqeqeq); vitest ok
+pipelinq	f8fe801f1	php=RED	Tests 9330/Failures 0/Errors 0	phpmd,psalm	js=RED	psalm 5 errs; phpmd 92 violations; vitest fails reportSectionPeriod, myWorkPage, notificationLabels
