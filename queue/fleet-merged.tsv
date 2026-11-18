@@ -5899,3 +5899,8 @@ opencatalogi	2766	589fc8d13039455102d23d8cfd7f9a099256ae10	RED	merge3	GATE RED c
 opencatalogi	2771	51599f3121eee90c30a58a28fe0aa531b564af99	RED	merge3	GATE RED floor: unit_interfacing: 4.77 -> 4.74
 opencatalogi	2792	74344066c69c88d9c8785b1096289344f3e48e6b	RED	merge3	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
 opencatalogi	2802	8b3d04966f0b354bb518651f1f4810a7ccfab598	RED	merge3	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+larpinq	718	be7e57e1c8a7ba099c6c59c1a2c0f824b100842b	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.23
+larpinq	1049	eb8c9f5fcde502b5e286633b918fe448a8275e57	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.23
+larpinq	1102	ea6bdb50a6aba50d4c4a1bf97ac4b08f36e11515	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.23
+larpinq	1104	072740aae8be224bd39bab37e1dd43eb661d0a64	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.23
+larpinq	1112	3faffe76627b2b6657807e9c340e73a09704a48e	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.23
