@@ -23021,3 +23021,4 @@ merge:buildiq:1721:a57a4b1a	merge3 tree of 11 buildiq PRs: merged=10 red=0 fail=
 merge:buildiq:1730:a76d6e3c	merge3 tree of 11 buildiq PRs: merged=10 red=0 fail=0 skip=0; conflict 0, lint 0, moved 1; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-18T07:40:35Z
 merge:shillinq:1597:033aaa80	merge3 tree of 14 shillinq PRs: merged=2 red=2 fail=0 skip=0; conflict 10, lint 0, moved 0; fix rows 10	merge3-20261113T213425-c36bcd5f	2026-11-18T07:45:45Z
 merge:shillinq:3080:1a3044c5	merge3 tree of 14 shillinq PRs: merged=2 red=2 fail=0 skip=0; conflict 10, lint 0, moved 0; fix rows 10	merge3-20261113T213425-c36bcd5f	2026-11-18T07:45:52Z
+merge:launchpad:1217:ead78be0	merge3 tree of 6 launchpad PRs: merged=0 red=4 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-18T07:49:26Z
