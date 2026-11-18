@@ -15,7 +15,7 @@ Bij de beoordeling van onderhoudbaarheid tellen twee maten per component:
 - **Componentonafhankelijkheid**: het deel van de code dat geen andere component aanroept, de verborgen code.
 - **Componentverstrengeling**: hoeveel lijnen er tussen componenten lopen, en welk deel daarvan de structuur breekt. Een lijn breekt de structuur als er ook een lijn terug loopt, als hij een kring sluit, of als hij een pad herhaalt dat er al is. Het gewicht van die lijnen gedeeld door het totaal heet de schendingsgraad.
 
-Wat een component is, bepaalt dus de uitkomst. Wij hebben de mappen in de hoofdmap van de repository als componenten opgegeven: `lib/` is de backend, `src/` de frontend. ADR-014 legt die keuze vast. SIG keek in `lib/` en nam elke map daaronder als component.
+Wat een component is, bepaalt dus de uitkomst. Wij hebben de mappen in de hoofdmap van de repository als componenten opgegeven: `lib/` is de backend, `src/` de frontend. [ADR-014](https://github.com/ConductionNL/openregister/blob/main/openspec/architecture/adr-014-sig-components-are-top-level-directories.md) legt die keuze vast. SIG keek in `lib/` en nam elke map daaronder als component.
 
 Ons eigen schattingsinstrument bootst de beoordelingsregels zo goed mogelijk na. Op main van 9 november geeft het:
 
@@ -78,7 +78,7 @@ Het gebied Processes pakt zo de bestanden van flows samen uit drie mappen: `Flow
 
 `scripts/component-patterns.py` maakt het bestand aan uit `scripts/component-map.csv`, waarin elk bestand een gebied heeft. `tests/Unit/Architecture/ComponentDefinitionTest.php` controleert dat elk PHP-bestand onder `lib/` in precies één gebied valt.
 
-Binnen elk gebied geldt de gelaagdheid. Een ingang mag een service, de opslag en gedeelde typen gebruiken. Een service mag de opslag en gedeelde typen gebruiken. De opslag mag alleen gedeelde typen gebruiken. ADR-013 legt die regels vast.
+Binnen elk gebied geldt de gelaagdheid. Een ingang mag een service, de opslag en gedeelde typen gebruiken. Een service mag de opslag en gedeelde typen gebruiken. De opslag mag alleen gedeelde typen gebruiken. [ADR-013](https://github.com/ConductionNL/openregister/blob/main/openspec/architecture/adr-013-component-dependency-rules.md) legt die regels vast.
 
 ## Het meetinstrument
 
@@ -214,7 +214,7 @@ Per commit staat de uitvoer van beide tools in een eigen map:
 ## Zie ook
 
 - [Vragenlijst onderhoudbaarheid](./maintainability.md), vraag 16: de componenten en hoe ze samenhangen
-- `ARCHITECTURE.md`: de beschrijving van de componenten in de repository
-- `openspec/architecture/adr-012-functional-components-over-the-nextcloud-layout.md`: de functionele gebieden
-- `openspec/architecture/adr-013-component-dependency-rules.md`: de regels voor de lagen
-- `openspec/architecture/adr-014-sig-components-are-top-level-directories.md`: de mappen in de hoofdmap als componenten
+- [ARCHITECTURE.md](https://github.com/ConductionNL/openregister/blob/main/ARCHITECTURE.md): de beschrijving van de componenten in de repository
+- [ADR-012](https://github.com/ConductionNL/openregister/blob/main/openspec/architecture/adr-012-functional-components-over-the-nextcloud-layout.md): de functionele gebieden
+- [ADR-013](https://github.com/ConductionNL/openregister/blob/main/openspec/architecture/adr-013-component-dependency-rules.md): de regels voor de lagen
+- [ADR-014](https://github.com/ConductionNL/openregister/blob/main/openspec/architecture/adr-014-sig-components-are-top-level-directories.md): de mappen in de hoofdmap als componenten
