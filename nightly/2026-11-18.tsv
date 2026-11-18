@@ -17,3 +17,4 @@ openregister	34e54f794a7	php=RED	Tests: 62539, Failures: 1, Errors: 5	phpcs,phpm
 dossiq	05292aae7	php=RED	Tests: 18402, Failures: 0, Errors: 1	phpcs,phpmd,psalm,phpstan,phpunit	js=RED	StatusEntryRequirementsGuardTest: sibling OR vendor Amp clash; psalm env PHP<8.3.16; eslint 2 errs; vitest 2 fail
 filinq	2d967653	php=RED	Tests: 7329, Failures: 0, Errors: 0	phpcs,phpmd,psalm,phpstan	js=RED	phpcs 1 file, phpmd 82, psalm 219, phpstan 18 errs; eslint exit 2: unused suppressions; vitest 866 pass
 thematiq	7cf8a854	php=RED	Tests: not run (guard: no server tree)	cs:check,psalm	js=GREEN	cs:check 50/685 files; psalm 5 errs; phpunit did not run (needs Nextcloud server tree); vitest 1573 pass
+larpinq	7e044770	php=RED	Tests: 1243, Failures: 5, Errors: 13	psalm,phpstan,phpunit	js=GREEN	PlayerAttendanceController,OwnXpAwardsRead,RuleSchemaAuthorization,OpenRegisterStubDrift tests; psalm 8
