@@ -5904,3 +5904,10 @@ larpinq	1049	eb8c9f5fcde502b5e286633b918fe448a8275e57	MERGED	merge3	GATE OK sbom
 larpinq	1102	ea6bdb50a6aba50d4c4a1bf97ac4b08f36e11515	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.23
 larpinq	1104	072740aae8be224bd39bab37e1dd43eb661d0a64	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.23
 larpinq	1112	3faffe76627b2b6657807e9c340e73a09704a48e	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.23
+keepiq	693	5699615846375906995b13abd25a1a1e70e03776	RED	merge3	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+keepiq	827	798025c3c32c1480e8ba9be47d1dfde79bfcce63	RED	merge3	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+keepiq	830	2d73be926b6f2743f5940c00f27817e40b660baa	RED	merge3	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+keepiq	1203	d60b0db01521195d0fde6b27a3b3b1161134a2ba	RED	merge3	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+keepiq	1206	97b3f92691a2bcbf0e84c64e181c5cc0ba4ce32d	RED	merge3	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+keepiq	1227	9b9a8a0900e43d56d03c77909b92e23c07fd9190	RED	merge3	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+keepiq	1895	7cf24009dd2947c103212c09ea126275e51b8cd4	RED	merge3	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
