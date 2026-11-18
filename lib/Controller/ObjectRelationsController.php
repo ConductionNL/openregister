@@ -32,8 +32,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Export\SpreadsheetCell;
-use OCA\OpenRegister\AppInfo\Application;
 use InvalidArgumentException;
 use OCA\OpenRegister\Controller\Support\DerivedLineage;
 use OCA\OpenRegister\Controller\Support\ObjectDerivation;
@@ -160,7 +160,7 @@ class ObjectRelationsController extends Controller {
 		IRequest $request,
 		ObjectRelationsControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->relations = $services->graph->relations;
 		$this->graphs = $services->graph->graphs;
 		$this->objectService = $services->graph->objectService;
