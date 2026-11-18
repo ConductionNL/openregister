@@ -5885,3 +5885,6 @@ launchpad	1217	7283f62c39d4b8397cc6a45523632a26fadf09ad	RED	merge3	GATE RED chec
 launchpad	1296	53e338879ab2e450620fb634473e8fa302db883d	RED	merge3	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
 launchpad	1300	00d3700a29a329ed9f149a9a610a17d0a0458d9f	RED	merge3	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
 launchpad	1305	63d40440377329b220332105aee7d194c25e714a	RED	merge3	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+versioniq	719	81e7123b73c2c562576c148be514d1290671c3df	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.97 holds at 4.16
+versioniq	728	5aa3028534a2808e1c9a5b529153941a7d7ea032	RED	merge3	GATE RED floor: overall: 5.07 -> 5.02; duplication: 5.18 -> 5.14; unit_size: 4.87 -> 4.84; unit_complexity: 4.80 -> 4.75; unit_interfacing: 4.65 -> 4.38
+versioniq	783	9296e1cee10d3162c8416a41a95ac9641999b3e1	SKIP	merge3	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
