@@ -52,6 +52,6 @@ final class ProcessesMapperRegistrar {
 	 * @spec exclude Container wiring; no behaviour of its own.
 	 */
 	public static function register(IRegistrationContext $context): void {
-		ProcessesMapperBindings::register(context: $context);
+		DbRegistrar::bind(context: $context, bindings: ProcessesMapperBindings::BINDINGS);
 	}//end register()
 }//end class
