@@ -3455,6 +3455,7 @@ Service/Merge/,,Service,,,,,Core
 Service/MigrationPack/,,Service,,,,,Configuration
 Service/Notification/,,Service,,,,,Configuration
 Service/Oas/,,Service,,,,,Core
+Service/Oas/OasValidationReportInterface.php,,Service,,,,,Kernel
 Service/Oas/NlGovConformance.php,69,Service,Service,Service/Oas/NlGovConformance.php,0,,Core
 Service/Oas/NlGovDateTimeRules.php,226,Service,Service,Service/Oas/NlGovDateTimeRules.php,0,,Core
 Service/Oas/NlGovDocumentInfoRules.php,208,Service,Service,Service/Oas/NlGovDocumentInfoRules.php,0,,Core
@@ -3464,6 +3465,7 @@ Service/Oas/NlGovFindings.php,115,Service,Service,Service/Oas/NlGovFindings.php,
 Service/Oas/NlGovMarker.php,117,Service,Service,Service/Oas/NlGovMarker.php,0,,Core
 Service/Oas/NlGovRuleCatalogue.php,201,Service,Service,Service/Oas/NlGovRuleCatalogue.php,0,,Core
 Service/Object/,,Service,,,,,Core
+Service/Object/BatchOperationStatusInterface.php,,Service,,,,,Kernel
 Service/ObjectAction/,,Service,,,,,Processes
 Service/ObjectSource/,,Service,,,,,Core
 Service/Operations/,,Service,,,,,Configuration
@@ -3761,11 +3763,11 @@ Event/HandoffExecutedTarget.php,,Event,,,,,Kernel
 Event/ObjectLeavingEvent.php,,Event,,,,,Core
 Event/PermissionVerb.php,,Event,,,,,Kernel
 Exception/ActionParameterTypeException.php,,Exception,,,,,Kernel
-Exception/BrokenReference.php,,Exception,,,,,Core
-Exception/DatabaseConstraintMessages.php,,Exception,,,,,Core
+Exception/BrokenReference.php,,Exception,,,,,Kernel
+Exception/DatabaseConstraintMessages.php,,Exception,,,,,Kernel
 Exception/ObjectLookupFailedException.php,,Exception,,,,,Kernel
-Exception/ObjectStateMarker.php,,Exception,,,,,Core
-Exception/ReferenceCycle.php,,Exception,,,,,Platform
+Exception/ObjectStateMarker.php,,Exception,,,,,Kernel
+Exception/ReferenceCycle.php,,Exception,,,,,Kernel
 Exception/RuleRefusedException.php,,Exception,,,,,Kernel
 Listener/ChainGateRun.php,,Listener,,,,,Core
 Listener/ConsentApplyRun.php,,Listener,,,,,Processes
