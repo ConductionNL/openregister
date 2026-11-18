@@ -239,6 +239,64 @@ De koppeling naar de objectopslag en de toegangscontroles is gewenst, en die kos
 
 Beide zijn echte bevindingen over de code. Ze komen niet voort uit de manier van meten.
 
+### Wat een hogere score vraagt
+
+In ons scoreprogramma hoort bij elk niveau een grens voor de zichtbare code en voor de schendingsgraad. Voor de tien functionele gebieden, op een backend van 458.590 regels:
+
+| Niveau | Zichtbare code | Schendingsgraad |
+|---|---|---|
+| Vandaag | 37,5% (171.795 regels) | 0,194 |
+| 4,0 | hoogstens 4,1% (ongeveer 18.900 regels) | hoogstens 0,056 |
+| 4,5 | hoogstens 2,75% (ongeveer 12.600 regels) | hoogstens 0,0375 |
+| 5,0 | hoogstens 1,4% (ongeveer 6.300 regels) | hoogstens 0,019 |
+| 5,5 | niets | 0 |
+
+5,5 is de bovenkant van de schaal. Daar is geen enkel bestand zichtbaar voor een ander component en telt geen enkele verbinding als fout. Dat kan alleen als de backend één component is, en die indeling meet niets. 5,5 is dus geen zinvol doel.
+
+Per gebied is vandaag zichtbaar:
+
+| Gebied | Regels code | Zichtbaar voor andere gebieden |
+|---|---|---|
+| Core | 154.967 | 67.182 |
+| Processes | 84.862 | 38.513 |
+| Integrations | 55.846 | 20.258 |
+| Compliance | 34.940 | 17.832 |
+| Configuration | 56.686 | 10.651 |
+| Kernel | 9.059 | 8.079 |
+| Files | 18.732 | 3.741 |
+| Search | 15.131 | 2.286 |
+| Notifications | 19.855 | 1.734 |
+| Platform | 8.512 | 1.519 |
+
+Kernel is bedoeld als gedeelde basis en is dus bijna helemaal zichtbaar: 8.079 regels. Voor 4,5 blijft er dan ongeveer 4.500 regels over voor de publieke toegang van alle andere gebieden samen. Een interface per klasse past daar niet in: alleen de interfaces van vandaag zijn al 8.723 regels.
+
+### Wat dat vraagt van de code
+
+Binnen het patroon van Fowler komt het neer op vier veranderingen:
+
+1. **Eén smalle toegang per gebied.** Andere gebieden gebruiken een paar interfaces van een gebied, niet zijn concrete klassen. Bij Fowler is de Service Layer precies die grens van een module.
+2. **Entiteiten gaan niet over de grens.** Een gebied geeft een id of een eenvoudig dataobject door. Een entiteit die echt gedeeld is, hoort in het fundament.
+3. **Het fundament wijst nooit terug.** Het fundament definieert events en interfaces. De gebieden haken daarop in via de event dispatcher en de registratie in de container van Nextcloud.
+4. **Gebieden verwijzen in één richting.** Twee gebieden verwijzen niet allebei naar elkaar. De andere richting loopt via een event.
+
+Punt 3 en 4 bepalen de verstrengeling. Punt 1 en 2 bepalen de onafhankelijkheid, en daar zit het meeste werk.
+
+### Is deze manier van meten gerechtvaardigd?
+
+Grotendeels wel, als de componenten functioneel zijn:
+
+- **De principes zijn degelijk.** Onafhankelijkheid meet information hiding (Parnas, 1972). Verstrengeling meet of afhankelijkheden een kring vormen, wat het acyclic dependencies principle van Robert C. Martin verbiedt. Ook het advies van Fowler vraagt om smalle grenzen tussen modules.
+- **De bevindingen zijn echt.** Het fundament wijst terug, en gebieden gebruiken elkaars concrete klassen. Dat zien we ook zonder sterren.
+- **Elke map als component is voor Nextcloud niet gerechtvaardigd.** Die indeling meet de lagen, niet de componenten.
+
+Er zijn drie kanttekeningen:
+
+- **Een bedoeld gedeeld bestand telt even zwaar als een ongewenst gedeeld bestand.** Ook een interface telt als zichtbaar. Volgens het stable dependencies principle van Martin is afhankelijk zijn van een stabiel fundament juist goed.
+- **Het is alles of niets per bestand.** Eén verwijzing van buiten maakt het hele bestand zichtbaar.
+- **Het blijft een schatting.** SIG publiceert alleen de grenzen voor 4 sterren, niet de omrekening daaromheen.
+
+Ons doel is daarom 4 in de functionele indeling, en daarna 4,5. Niet 5,5.
+
 ## Zelf nameten
 
 Vanuit de hoofdmap van de repository:

@@ -18,8 +18,10 @@ and runs the scorer's rating_estimate() on it:
 - E as D, without the references from the foundation to the other areas. This is a simulation of
   a foundation that is only depended on, not a measurement of existing code.
 
-For C the script also splits the exposed code by kind of file (exposed_by_kind), and for D it
-lists the foundation's references to each other component (foundation_backrefs).
+For C the script also splits the exposed code by kind of file (exposed_by_kind) and by component
+(exposed_by_component), and for D it lists the foundation's references to each other component
+(foundation_backrefs). `targets` gives, per rating, the largest exposed share and violation degree
+that still earn it, from the scorer's own rating scale.
 
 All ratings are estimates on the scorer's 0.5 to 5.5 scale; SIG publishes only the 4-star limits.
 """
@@ -94,6 +96,41 @@ def exposed_by_kind(app, deps, comp):
     return dict(sorted(out.items(), key=lambda kv: -kv[1]["loc"]))
 
 
+def exposed_by_component(app, deps, comp):
+    """{component: {"loc": lines, "exposed_loc": lines another component references}}."""
+    incoming = collections.defaultdict(set)
+    for src, targets in deps.items():
+        for t in targets:
+            incoming[t].add(src)
+    out = collections.defaultdict(lambda: {"loc": 0, "exposed_loc": 0})
+    for rel in deps:
+        lines = len(tool.code_lines(tool.read_text(os.path.join(app, rel)), "php"))
+        row = out[comp(rel)]
+        row["loc"] += lines
+        if any(comp(s) != comp(rel) for s in incoming[rel]):
+            row["exposed_loc"] += lines
+    return dict(sorted(out.items(), key=lambda kv: -kv[1]["loc"]))
+
+
+def max_value_for(kind, rating):
+    """The largest value of an exposed share or violation degree that still rates `rating`."""
+    caps = tool.rating_caps(kind)
+    lo, hi = 0.0, 1.0
+    for _ in range(50):
+        mid = (lo + hi) / 2
+        if tool.interpolate(mid, caps) >= rating:
+            lo = mid
+        else:
+            hi = mid
+    return round(lo, 4)
+
+
+def targets(ratings=(4.0, 4.5, 5.0, 5.5)):
+    """{rating: {"exposed_share": max, "violation_degree": max}}."""
+    return {str(r): {"exposed_share": max_value_for("component_independence", r),
+                     "violation_degree": max_value_for("component_entanglement", r)} for r in ratings}
+
+
 def foundation_backrefs(deps, comp):
     """{component: file references from the foundation to it}, heaviest first."""
     out = collections.Counter(comp(d) for src, targets in deps.items() if comp(src) == FOUNDATION
@@ -135,6 +172,7 @@ def views(report, app=APP):
                 _, comp = tool.component_of_factory(sorted(deps), app)
                 if key == "C":
                     out[key]["exposed_by_kind"] = exposed_by_kind(app, deps, comp)
+                    out[key]["exposed_by_component"] = exposed_by_component(app, deps, comp)
                 if key == "D":
                     out[key]["foundation_backrefs"] = foundation_backrefs(deps, comp)
             out["E"] = rate(report, tool.structure(app, files, without_foundation_backrefs(deps, comp)))
@@ -152,7 +190,10 @@ def main(argv=None):
     ap.add_argument("--json", help="write the results here")
     args = ap.parse_args(argv)
     out = views(json.load(open(args.report, encoding="utf-8")))
+    out["targets"] = targets()
     for key, v in out.items():
+        if key == "targets":
+            continue
         lo, hi = v["overall"]
         print(f"{key}: {v['components']} components, hidden {v['hidden_share']:.1%}, "
               f"violation degree {v['violation_degree']:.4f}; independence {v['independence']}, "

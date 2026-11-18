@@ -74,6 +74,48 @@
         "files": 30,
         "loc": 703
       }
+    },
+    "exposed_by_component": {
+      "Core": {
+        "loc": 154967,
+        "exposed_loc": 67182
+      },
+      "Processes": {
+        "loc": 84862,
+        "exposed_loc": 38513
+      },
+      "Configuration": {
+        "loc": 56686,
+        "exposed_loc": 10651
+      },
+      "Integrations": {
+        "loc": 55846,
+        "exposed_loc": 20258
+      },
+      "Compliance": {
+        "loc": 34940,
+        "exposed_loc": 17832
+      },
+      "Notifications": {
+        "loc": 19855,
+        "exposed_loc": 1734
+      },
+      "Files": {
+        "loc": 18732,
+        "exposed_loc": 3741
+      },
+      "Search": {
+        "loc": 15131,
+        "exposed_loc": 2286
+      },
+      "Kernel": {
+        "loc": 9059,
+        "exposed_loc": 8079
+      },
+      "Platform": {
+        "loc": 8512,
+        "exposed_loc": 1519
+      }
     }
   },
   "D": {
@@ -119,5 +161,23 @@
       4.12,
       4.3
     ]
+  },
+  "targets": {
+    "4.0": {
+      "exposed_share": 0.0412,
+      "violation_degree": 0.0562
+    },
+    "4.5": {
+      "exposed_share": 0.0275,
+      "violation_degree": 0.0375
+    },
+    "5.0": {
+      "exposed_share": 0.0137,
+      "violation_degree": 0.0187
+    },
+    "5.5": {
+      "exposed_share": 0.0,
+      "violation_degree": 0.0
+    }
   }
 }
