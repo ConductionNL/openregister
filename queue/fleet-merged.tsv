@@ -5851,3 +5851,9 @@ dossiq	6659	7c7be56443aeb3a89787e941ed3e97fbc3c0b146	MERGED	merge3	GATE OK sbom,
 learniq	2524	defae59897776df65fca752cdd26e7ebdc87d32d	RED	merge3	GATE RED checker floor: spdxheaders stars: 5 -> 4
 learniq	2599	d006d35c98825c27df01811a18bd6dd92028d785	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 4.07
 learniq	2612	2ee740f1c00542d494eea6628579fc69bb43768e	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 4.07
+filinq	1081	2601000baf2f7733dce710d5c18e953d5aab621b	RED	merge3	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+filinq	2087	9d205c2d34ce58dbd2753858625267abd4156870	RED	merge3	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+filinq	2173	6bce70eb0c412e2bc6eaa1d778075d1f8f776f04	RED	merge3	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+filinq	2182	eb336b2bf97ef745daec9dc210abddc404a5718a	RED	merge3	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+filinq	2188	d0adb35a8f3d46930a62d9d15ebc2398a21cab5e	RED	merge3	GATE RED floor: unit_complexity: 4.49 -> 4.47
+filinq	2190	31521cfa124aa71c4f036a2e0b32a52ffc9387cc	RED	merge3	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
