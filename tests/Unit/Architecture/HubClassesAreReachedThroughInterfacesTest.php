@@ -107,7 +107,8 @@ final class HubClassesAreReachedThroughInterfacesTest extends TestCase {
 	public function testEveryInterfaceIsImplementedAndBound(): void {
 		foreach (self::HUBS as $class => $interface) {
 			$this->assertTrue(is_subclass_of($class, $interface), $class . ' implements ' . $interface);
-			$this->assertSame($class, (ContractBindings::BINDINGS + DbBindingMaps::all() + FilesRegistrar::BINDINGS)[$interface] ?? null, $interface . ' is bound');
+			$bound = (ContractBindings::BINDINGS + DbBindingMaps::all() + FilesRegistrar::BINDINGS)[$interface] ?? null;
+			$this->assertSame(expected: $class, actual: $bound, message: $interface . ' is bound');
 		}
 	}//end testEveryInterfaceIsImplementedAndBound()
 
