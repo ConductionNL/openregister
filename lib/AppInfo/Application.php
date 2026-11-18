@@ -36,6 +36,7 @@ use OCA\OpenRegister\ContextChat\ContextChatRegistrar;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\DbRegistrar;
 use OCA\OpenRegister\Db\MapperRegistrar;
+use OCA\OpenRegister\Db\IntegrationsMapperRegistrar;
 use OCA\OpenRegister\Db\ProcessesMapperRegistrar;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -191,6 +192,7 @@ class Application extends App implements IBootstrap {
 		// The contracts other components type-hint, bound to their services.
 		ContractBindingsRegistrar::register(context: $context);
 		DbRegistrar::register(context: $context);
+		IntegrationsMapperRegistrar::register(context: $context);
 		ProcessesMapperRegistrar::register(context: $context);
 
 		MiddlewareRegistrar::register(context: $context);

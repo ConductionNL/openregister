@@ -4301,3 +4301,5 @@ Service/File/ObjectFileReader.php,14,Service,Service,Service/File/ObjectFileRead
 Controller/FileEntityRelationsController.php,,Controller,,,,,Processes
 Db/ProcessesMapperBindings.php,,Db,,,,,Processes
 Db/ProcessesMapperRegistrar.php,,Db,,,,,Processes
+Db/IntegrationsMapperBindings.php,,Db,,,,,Integrations
+Db/IntegrationsMapperRegistrar.php,,Db,,,,,Integrations

@@ -12,6 +12,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\DbRegistrar;
+use OCA\OpenRegister\Db\IntegrationsMapperRegistrar;
 use OCA\OpenRegister\Db\ProcessesMapperRegistrar;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -21,6 +22,8 @@ use ReflectionClass;
 /**
  * @covers \OCA\OpenRegister\Db\ProcessesMapperRegistrar
  * @covers \OCA\OpenRegister\Db\ProcessesMapperBindings
+ * @covers \OCA\OpenRegister\Db\IntegrationsMapperRegistrar
+ * @covers \OCA\OpenRegister\Db\IntegrationsMapperBindings
  * @uses   \OCA\OpenRegister\Db\DbRegistrar
  */
 final class AreaMapperRegistrarsTest extends TestCase {
@@ -32,6 +35,7 @@ final class AreaMapperRegistrarsTest extends TestCase {
 	 */
 	public static function registrars(): array {
 		return [
+			'Integrations' => [IntegrationsMapperRegistrar::class],
 			'Processes' => [ProcessesMapperRegistrar::class],
 		];
 	}//end registrars()
