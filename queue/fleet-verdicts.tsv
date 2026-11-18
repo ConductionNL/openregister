@@ -19797,3 +19797,8 @@ opencatalogi	2766	589fc8d13039455102d23d8cfd7f9a099256ae10	RED	merge3:merge-gate
 opencatalogi	2771	51599f3121eee90c30a58a28fe0aa531b564af99	RED	merge3:merge-gate	GATE RED floor: unit_interfacing: 4.77 -> 4.74
 opencatalogi	2792	74344066c69c88d9c8785b1096289344f3e48e6b	RED	merge3:merge-gate	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
 opencatalogi	2802	8b3d04966f0b354bb518651f1f4810a7ccfab598	RED	merge3:merge-gate	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+opencatalogi	2786	bad229c1dd55cc6287d340918e1eef18369ed6de	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+opencatalogi	2803	182028e8f50085dad6352c07ec0abb07a4eb807b	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Controller/PublicationStateController.php lib/Settings/publication_register.json lib/Settings/register.d/woo-publication-translations.json src/compo
+opencatalogi	2804	6cc446695180a04578b5cad62931155c1fa6673e	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json tests/Unit/Service/SettingsObjectTypeConfigurationTest.php 
+opencatalogi	2805	b5832c88ee2a159946d2f6880ba534de439fb504	CONFLICT	merge3	merges clean on development alone; files: appinfo/info.xml l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+opencatalogi	2806	ad12c8a4602e7d92f12ff145798d75c202ccad18	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Controller/WooController.php tests/Unit/Settings/PublicationTellsItsSourceSchemaTest.php 
