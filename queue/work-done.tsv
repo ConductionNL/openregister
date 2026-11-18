@@ -23013,3 +23013,4 @@ merge:learniq:2524:9f88e174	merge3 tree of 6 learniq PRs: merged=2 red=1 fail=0 
 merge:filinq:1081:4e533541	merge3 tree of 19 filinq PRs: merged=0 red=6 fail=0 skip=0; conflict 13, lint 0, moved 0; fix rows 13	merge3-20261113T213425-c36bcd5f	2026-11-18T07:07:16Z
 merge:filinq:2114:a934da6f	merge3 tree of 19 filinq PRs: merged=0 red=6 fail=0 skip=0; conflict 13, lint 0, moved 0; fix rows 13	merge3-20261113T213425-c36bcd5f	2026-11-18T07:07:26Z
 merge:filinq:2190:e89681d6	merge3 tree of 19 filinq PRs: merged=0 red=6 fail=0 skip=0; conflict 13, lint 0, moved 0; fix rows 13	merge3-20261113T213425-c36bcd5f	2026-11-18T07:07:33Z
+merge:humaniq:1192:d1a62ae9	merge3 tree of 2 humaniq PRs: merged=0 red=2 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-18T07:08:26Z
