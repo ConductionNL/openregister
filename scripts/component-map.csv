@@ -180,6 +180,7 @@ Controller/Support/ProcessingPurposeControllerServices.php,,Controller,,,,,Compl
 Controller/Support/SelectielijstControllerServices.php,,Controller,,,,,Compliance
 Controller/Support/TalkLinksControllerServices.php,,Controller,,,,,Integrations
 Controller/Support/WellKnownControllerServices.php,,Controller,,,,,Integrations
+Db/Support/ConfigServices.php,,Db,,,,,Core
 BulkAction/ExportWholeSetAction.php,158,BulkAction,Configuration,Configuration/BulkAction/ExportWholeSetAction.php,0,173,Configuration
 BulkAction/RestorePriorValuesAction.php,163,BulkAction,Flows,Flows/BulkAction/RestorePriorValuesAction.php,0,,Processes
 BulkAction/ReversibleBulkActionInterface.php,10,BulkAction,Flows,Flows/BulkAction/ReversibleBulkActionInterface.php,0,,Processes
@@ -670,7 +671,7 @@ Db/CaseToken.php,51,Db,Integrations,Integrations/Db/CaseToken.php,0,,Integration
 Db/CaseTokenMapper.php,42,Db,Integrations,Integrations/Db/CaseTokenMapper.php,0,,Integrations
 Db/CollectiveLink.php,54,Db,Integrations,Integrations/Db/CollectiveLink.php,0,,Integrations
 Db/CollectiveLinkMapper.php,23,Db,Integrations,Integrations/Db/CollectiveLinkMapper.php,0,,Integrations
-Db/ColumnFiltersTrait.php,19,Db,Integrations,Integrations/Db/ColumnFiltersTrait.php,0,,Integrations
+Db/ColumnFiltersTrait.php,19,Db,Integrations,Integrations/Db/ColumnFiltersTrait.php,0,,Core
 Db/Configuration.php,174,Db,Configuration,Configuration/Db/Configuration.php,0,117,Configuration
 Db/ConfigurationBinding.php,,Db,,,,,Configuration
 Db/ConfigurationBindingMapper.php,,Db,,,,,Configuration
@@ -772,9 +773,9 @@ Db/ImportPreviewRowMapper.php,58,Db,Configuration,Configuration/Db/ImportPreview
 Db/IsoTimestampsTrait.php,17,Db,Configuration,Configuration/Db/IsoTimestampsTrait.php,0,,Configuration
 Db/JobRun.php,66,Db,Configuration,Configuration/Db/JobRun.php,0,,Configuration
 Db/JobRunMapper.php,121,Db,Configuration,Configuration/Db/JobRunMapper.php,0,,Configuration
-Db/JsonFieldsTrait.php,15,Db,Integrations,Integrations/Db/JsonFieldsTrait.php,0,,Integrations
+Db/JsonFieldsTrait.php,15,Db,Integrations,Integrations/Db/JsonFieldsTrait.php,0,,Kernel
 Db/LikeOperator.php,62,Db,Service,Service/Db/LikeOperator.php,0,,Core
-Db/LinkColumn.php,33,Db,Integrations,Integrations/Db/LinkColumn.php,0,,Integrations
+Db/LinkColumn.php,33,Db,Integrations,Integrations/Db/LinkColumn.php,0,,Core
 Db/MagicMapper.php,6709,Db,Service,Service/Db/MagicMapper.php,54,1,Core
 Db/MagicMapper/ArrayElementFilter.php,58,Db,Service,Service/Db/MagicMapper/ArrayElementFilter.php,0,,Core
 Db/MagicMapper/DeletedFilter.php,54,Db,Service,Service/Db/MagicMapper/DeletedFilter.php,0,,Core
@@ -885,7 +886,7 @@ Db/SchemaRunEntryMapper.php,31,Db,Service,Service/Db/SchemaRunEntryMapper.php,0,
 Db/SchemaRunMapper.php,60,Db,Service,Service/Db/SchemaRunMapper.php,0,349,Core
 Db/SearchTrail.php,149,Db,Compliance,Compliance/Db/SearchTrail.php,0,,Compliance
 Db/SearchTrailMapper.php,570,Db,Compliance,Compliance/Db/SearchTrailMapper.php,0,32,Compliance
-Db/SelectByColumnTrait.php,22,Db,Integrations,Integrations/Db/SelectByColumnTrait.php,0,,Integrations
+Db/SelectByColumnTrait.php,22,Db,Integrations,Integrations/Db/SelectByColumnTrait.php,0,,Core
 Db/Sequence.php,26,Db,Configuration,Configuration/Db/Sequence.php,0,,Configuration
 Db/SequenceMapper.php,44,Db,Configuration,Configuration/Db/SequenceMapper.php,0,,Configuration
 Db/SlugIdLookupTrait.php,51,Db,Db,Db/SlugIdLookupTrait.php,0,,Core
@@ -3378,7 +3379,7 @@ Db/ContactLink/,,Db,,,,,Integrations
 Db/ContentReport/,,Db,,,,,Integrations
 Db/EmailLink/,,Db,,,,,Integrations
 Db/Endpoint/,,Db,,,,,Integrations
-Db/EntityRelation/,,Db,,,,,Integrations
+Db/EntityRelation/,,Db,,,,,Core
 Db/ExportRun/,,Db,,,,,Integrations
 Db/Flow/,,Db,,,,,Integrations
 Db/FlowTimer/,,Db,,,,,Integrations
@@ -3390,7 +3391,7 @@ Db/ObjectRelation/,,Db,,,,,Integrations
 Db/Register/,,Db,,,,,Core
 Db/Schema/,,Db,,,,,Core
 Db/SchemaMapper/,,Db,,,,,Core
-Db/SchemaRun/,,Db,,,,,Integrations
+Db/SchemaRun/,,Db,,,,,Core
 Db/SearchTrail/,,Db,,,,,Search
 Db/Source/,,Db,,,,,Integrations
 Db/Support/,,Db,,,,,Integrations
@@ -3888,7 +3889,7 @@ Service/CauseFrame.php,,Service,,,,,Core
 Service/CollectiveLinkServiceInterface.php,,Service,,,,,Integrations
 Service/CollectivePageDraft.php,,Service,,,,,Integrations
 Service/ConditionUserResolvers.php,,Service,,,,,Core
-Service/ConfigLookup.php,,Service,,,,,Integrations
+Service/ConfigLookup.php,,Service,,,,,Core
 Service/ConfigurationTransferInterface.php,,Service,,,,,Configuration
 Service/ConfigurationUpdateNotice.php,,Service,,,,,Configuration
 Service/ContactCardRef.php,,Service,,,,,Integrations
@@ -3904,7 +3905,7 @@ Service/DeckCardServiceInterface.php,,Service,,,,,Integrations
 Service/DeckLinkServiceInterface.php,,Service,,,,,Integrations
 Service/DeckPlatform.php,,Service,,,,,Integrations
 Service/DeclaredPair.php,,Service,,,,,Core
-Service/DeclaredRow.php,,Service,,,,,Integrations
+Service/DeclaredRow.php,,Service,,,,,Core
 Service/DeepLinkRegistryServiceInterface.php,,Service,,,,,Core
 Service/CommentsCollectionCatalog.php,,Service,,,,,Processes
 Service/DeepLinkResolverInterface.php,,Service,,,,,Core
