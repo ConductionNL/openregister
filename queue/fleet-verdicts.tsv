@@ -19717,3 +19717,4 @@ versioniq	783	9296e1cee10d3162c8416a41a95ac9641999b3e1	GREEN	bulk-local	github c
 versioniq	799	3046731fc002961fc88b5bbbfaf3b79c4a3f1ff4	GREEN	bulk-local	github checks absent; lands only on the runner's local tree test and merge gate (Ruben 18 Nov)
 larpinq	1105	768215bad5f868107f3b278314c2a670c2a14596	GREEN	bulk-local	github checks absent; lands only on the runner's local tree test and merge gate (Ruben 18 Nov)
 thematiq	1729	f449e3fef6ac3a411a2a1f89da7c6bbfbc44df81	GREEN	bulk-local	github checks absent; lands only on the runner's local tree test and merge gate (Ruben 18 Nov)
+portaliq	2446	cd321d53ff3feed11edc9739307e0aa8a2c88326	RED	merge3:merge-gate	GATE RED floor: module_coupling: 5.10 -> 5.08
