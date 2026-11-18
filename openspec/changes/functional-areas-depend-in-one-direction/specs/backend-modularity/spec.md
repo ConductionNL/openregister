@@ -4,13 +4,14 @@
 
 A PHP file in one functional area of `sigrid.components.yaml` MUST NOT reference a file of an area with a higher
 rank in the order of design.md (hydra ADR-119 Decision 8). It MAY reference a lower area only through that area's contracts in
-`lib/Kernel/Contracts/<Area>/` or through Kernel types. `ComponentDependencyRulesTest` MUST fail on a reference
-that is not in its recorded list of exceptions, and the list MUST only shrink.
+`lib/Kernel/Contracts/<Area>/` or through Kernel types. `tools/sig/modularity_check.py --check` (the Modularity workflow and
+`composer check:modularity`) MUST fail on a reference that is not in its recorded list, and the list MUST only
+shrink.
 
 #### Scenario: an upward reference fails the test
 - **GIVEN** a file in Core
 - **WHEN** it names a class of Processes
-- **THEN** `ComponentDependencyRulesTest` fails and names both files and both areas
+- **THEN** the modularity check fails and names both files
 
 #### Scenario: a call through a lower contract passes
 - **GIVEN** a file in Processes
@@ -19,14 +20,15 @@ that is not in its recorded list of exceptions, and the list MUST only shrink.
 
 ### Requirement: A contract is called and implemented by the right ranks
 
-A contract in `lib/Kernel/Contracts/<Area>/` MUST be implemented only by that area or a higher one, and MUST be
-called only by areas of a higher rank than its owner. The test MUST fail otherwise, so a cycle between two
-areas cannot pass through the Kernel.
+A contract in `lib/Kernel/Contracts/<Area>/` MUST count as part of its owning area in `sigrid.components.yaml`.
+It MUST then be implemented only by that area or a higher one, and called only by areas of a higher rank than its
+owner, because any other reference runs against the order and the modularity check fails. A cycle between two
+areas therefore cannot pass through the Kernel.
 
 #### Scenario: a hidden cycle through the Kernel fails
 - **GIVEN** Processes calls a contract owned by Integrations
 - **WHEN** Integrations calls a contract owned by Processes
-- **THEN** the test fails on the second call, because Integrations ranks below Processes
+- **THEN** the modularity check fails on the second call, because Integrations ranks below Processes
 
 ### Requirement: The modularity numbers can only go down
 

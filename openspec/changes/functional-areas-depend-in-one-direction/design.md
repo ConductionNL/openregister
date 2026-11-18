@@ -36,11 +36,11 @@ improve the test without improving the number, or the other way round.
 
 | Check | Reads | Fails when |
 |---|---|---|
-| `ComponentDependencyRulesTest` (PHPUnit) | the module graph, as the scorer builds it | a reference runs against the order, or a contract is called or implemented by the wrong rank |
-| `rate_component_views.py --check` (Python, about 5 s) | the same graph | exposed lines of an area, Kernel size or the violation degree rise above `tools/sig/modularity-baseline.json` |
-| `tools/sig/deptrac.sh areas` | a PHP parser | a violation outside `tools/sig/deptrac/areas.baseline.yaml` |
+| `tools/sig/modularity_check.py --check` (Python, about 10 s) | the module graph, as the scorer builds it | exposed lines of an area, Kernel size or the violation degree differ from `tools/sig/modularity-baseline.json`, or a reference against the order is new |
+| `tools/sig/deptrac.sh areas --check` (about 40 s) | a PHP parser | a violating class pair differs from `tools/sig/deptrac/areas.baseline.json` |
 
-`composer check:modularity` runs the Python check and deptrac. `composer check:strict` runs it after phpstan.
+`composer check:modularity` runs both; `composer check:strict` runs it after the migration check. The CI
+workflow `modularity.yml` runs both on every PR and push to main.
 
 The baseline records, per area, the exposed lines, and overall the violation degree and the Kernel size.
 Lowering a number means updating the baseline in the same PR. Raising one is a failure, also for an unrelated

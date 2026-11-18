@@ -8,13 +8,15 @@
 #   areas    the functional areas of sigrid.components.yaml (areas.yaml, written by
 #            tools/sig/deptrac_areas.py); every area may use Kernel and nothing else
 #
-# Usage: tools/sig/deptrac.sh layers|areas [--rev REV] [--out DIR]
-#   --rev REV   analyse lib/ of that commit (exported with git archive) instead of the working tree
-#   --out DIR   write deptrac-<config>.json to DIR: the violations per layer pair, summarised by
-#               tools/sig/deptrac_summary.py
+# Usage: tools/sig/deptrac.sh layers|areas [--rev REV] [--out DIR] [--check | --write-baseline]
+#   --rev REV          analyse lib/ of that commit (exported with git archive) instead of the working tree
+#   --out DIR          write deptrac-<config>.json to DIR: the violations per layer pair, summarised by
+#                      tools/sig/deptrac_summary.py
+#   --check            exit 1 when the violating class pairs differ from tools/sig/deptrac/<config>.baseline.json
+#   --write-baseline   record today's violating class pairs in that file
 #
-# Prints the violations per layer pair. Exits 0 whether or not deptrac finds violations; the
-# numbers are the result, not a pass or fail.
+# Without --check, prints the violations per layer pair and exits 0 whether or not deptrac finds
+# violations; the numbers are the result, not a pass or fail.
 #
 # deptrac itself is installed in vendor-bin/deptrac: composer --working-dir=vendor-bin/deptrac install
 
@@ -27,10 +29,13 @@ config="${1:?usage: deptrac.sh layers|areas [--rev REV] [--out DIR]}"
 shift
 rev=""
 out=""
+mode=()
 while [ "$#" -gt 0 ]; do
 	case "$1" in
 		--rev) rev="$2"; shift 2 ;;
 		--out) out="$2"; shift 2 ;;
+		--check) mode=(--check "${here}/deptrac/${config}.baseline.json"); shift ;;
+		--write-baseline) mode=(--write-baseline "${here}/deptrac/${config}.baseline.json"); shift ;;
 		*) echo "unknown argument: $1" >&2; exit 2 ;;
 	esac
 done
@@ -55,4 +60,4 @@ if [ -n "${out}" ]; then
 	mkdir -p "${out}"
 	summary=(--out "${out}/deptrac-${config}.json")
 fi
-python3 "${here}/deptrac_summary.py" "${work}/report.json" "${summary[@]}"
+python3 "${here}/deptrac_summary.py" "${work}/report.json" "${summary[@]}" "${mode[@]}"
