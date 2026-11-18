@@ -1266,6 +1266,15 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'forms#upload', 'url' => '/api/forms/{formId}/uploads', 'verb' => 'POST'],
         ['name' => 'forms#draft', 'url' => '/api/forms/{formId}/draft', 'verb' => 'POST'],
         ['name' => 'objects#export', 'url' => '/api/objects/{register}/{schema}/export', 'verb' => 'GET'],
+        // The reporting aggregation (rapportage-bi-export): literal, so before objects#show.
+        ['name' => 'aggregation#report', 'url' => '/api/objects/{register}/{schema}/aggregate', 'verb' => 'GET'],
+        // Chart labels and series over the same report (rapportage-bi-export): literal, so before objects#show.
+        ['name' => 'aggregation#chart', 'url' => '/api/objects/{register}/{schema}/chart', 'verb' => 'GET'],
+        // Period-over-period comparison of one metric (rapportage-bi-export).
+        ['name' => 'aggregation#compare', 'url' => '/api/reports/compare', 'verb' => 'GET'],
+        // rapportage-bi-export: one aggregation across registers (total and
+        // per register, or a count series per register); RBAC per pair.
+        ['name' => 'crossRegisterReport#aggregate', 'url' => '/api/reports/aggregate', 'verb' => 'GET'],
         // BEFORE objects#show, because `{id}` matches `[^/]+` and a route with
         // a longer path must be declared first or the generic one swallows it.
         // Address an object by its schema's declared identity. BEFORE objects#show for the same reason.
