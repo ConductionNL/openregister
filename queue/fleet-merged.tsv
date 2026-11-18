@@ -5834,3 +5834,8 @@ stackiq	2054	73e60e3f28793ad0781a6cbe39ec3e2594b01d05	SKIP	worker-20	GATE UNMEAS
 hermiq	1847	4b35bf029a1ae7308503d63ef3b7d87dd2e68235	SKIP	worker-12	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 hermiq	1848	65d35bc5c91cb52e899ac03cd9fd06cc301f8aa5	SKIP	worker-12	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
 hermiq	1850	c9dacafd2a9b91c0cb908137cd3b2116117e49d3	SKIP	worker-12	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
+portaliq	658	e8518393f599feee68277306b2dce789215e0304	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.03
+portaliq	2446	cd321d53ff3feed11edc9739307e0aa8a2c88326	RED	merge3	GATE RED floor: module_coupling: 5.10 -> 5.08
+portaliq	2569	642cb15ec846c00d0982b919cd417938525c4899	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.03
+portaliq	2587	15032d52c8fdad196917462604cfa6db269beca9	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.02
+portaliq	2593	df81c3582960f1f2d9b23757c081d461ef1f89e4	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.02
