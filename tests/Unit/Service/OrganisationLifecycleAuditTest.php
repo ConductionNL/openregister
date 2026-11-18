@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\TenantUsageMapper;
+use OCA\OpenRegister\Service\Audit\AuditEntryWriter;
 use OCA\OpenRegister\Service\Organisation\OrganisationLifecycleAuditor;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\OrganisationUsageService;
@@ -79,7 +80,7 @@ class OrganisationLifecycleAuditTest extends TestCase {
 		$session = $this->createMock(IUserSession::class);
 		$session->method('getUser')->willReturn($user);
 
-		$this->auditor = new OrganisationLifecycleAuditor($this->trail, $session, new NullLogger());
+		$this->auditor = new OrganisationLifecycleAuditor(new AuditEntryWriter($this->trail), $session, new NullLogger());
 
 		$this->organisations = $this->createMock(OrganisationMapper::class);
 		$this->organisations->method('update')->willReturnArgument(0);
@@ -201,7 +202,7 @@ class OrganisationLifecycleAuditTest extends TestCase {
 		$logger = $this->createMock(LoggerInterface::class);
 		$logger->expects($this->once())->method('error')
 			->with($this->stringContains('Could not record a change'), $this->callback(static fn (array $context): bool => $context['exception'] === 'down'));
-		$auditor = new OrganisationLifecycleAuditor($trail, $this->createMock(IUserSession::class), $logger);
+		$auditor = new OrganisationLifecycleAuditor(new AuditEntryWriter($trail), $this->createMock(IUserSession::class), $logger);
 
 		$auditor->recordStatus($this->organisation('suspended'), 'active');
 	}//end testAFailingTrailDoesNotFailTheChange()
