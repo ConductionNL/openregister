@@ -19728,3 +19728,6 @@ pipelinq	3943	2c67bc7f59f8af0d0d9f4a7c108a3dbc21e6301e	CONFLICT	merge3	merges cl
 pipelinq	3952	3ad1de77cd1adc9f8aa2d8c49ad033ab48b0252b	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
 pipelinq	3954	778f1212ff3cd50bed333e4afef105dc9cd7f71b	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
 learniq	2524	defae59897776df65fca752cdd26e7ebdc87d32d	RED	merge3:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
+learniq	2551	f185e0a06298be8168e632a52b6bec49e9079fde	CONFLICT	merge3	merges clean on development alone; files: lib/Settings/learniq_register.json 
+learniq	2608	736845e3efbd217d2d08d58394495a5fd59af3a3	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json tests/Unit/Portal/golden/PortalManifests.json 
+learniq	2609	8977d2522364358c9e44a986f5ec7a6fa1b6e9b1	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Settings/learniq_register.json 
