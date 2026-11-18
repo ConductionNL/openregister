@@ -1,1 +1,2 @@
 opencatalogi	9b300d26	php=RED	phpunit skipped (no NC server tree)	phpcs,phpmd,psalm	js=RED	psalm 151 err (132 UndefinedClass OCA\OpenRegister\Kernel\Contracts\Value); phpcs inline-IF; eslint 13; vitest mainEntry.spec 8 fail
+decidiq	1a56389c	php=RED	Tests 5068, Failures 0, Errors 0 (8 skipped)	phpcs,phpmd,psalm	js=RED	psalm.xml missing DomainServiceRegistrar.php; eslint stale suppressions; vitest meetingSessionsGolden snapshot
