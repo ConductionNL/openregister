@@ -2639,7 +2639,7 @@ Service/Lifecycle/LifecycleWriteBoundary.php,46,Service,Flows,Flows/Service/Life
 Service/Lifecycle/StateConditionEvaluator.php,143,Service,Flows,Flows/Service/Lifecycle/StateConditionEvaluator.php,0,,Processes
 Service/Lifecycle/StateFieldRuleResolver.php,230,Service,Flows,Flows/Service/Lifecycle/StateFieldRuleResolver.php,4,,Processes
 Service/Lifecycle/StateFieldRuleScope.php,14,Service,Flows,Flows/Service/Lifecycle/StateFieldRuleScope.php,0,,Processes
-Service/Lifecycle/StateFieldRules.php,46,Service,Flows,Flows/Service/Lifecycle/StateFieldRules.php,4,,Processes
+Service/Lifecycle/StateFieldRules.php,46,Service,Flows,Flows/Service/Lifecycle/StateFieldRules.php,4,,Core
 Service/Lifecycle/TransitionEngine.php,814,Service,Flows,Flows/Service/Lifecycle/TransitionEngine.php,119,26,Processes
 Service/LinkTarget.php,41,Service,Integrations,Integrations/Service/LinkTarget.php,1,,Integrations
 Service/LinkedEntityLookup.php,18,Service,Integrations,Integrations/Service/LinkedEntityLookup.php,0,,Integrations
@@ -2948,8 +2948,8 @@ Service/Portal/PortalSubjectAssertion.php,97,Service,Work,Work/Service/Portal/Po
 Service/Portal/PortalTaskDeliveryService.php,68,Service,Work,Work/Service/Portal/PortalTaskDeliveryService.php,1,342,Processes
 Service/Portal/PortalTaskService.php,223,Service,Work,Work/Service/Portal/PortalTaskService.php,0,,Processes
 Service/ProcessingLogService.php,264,Service,Compliance,Compliance/Service/ProcessingLogService.php,0,,Compliance
-Service/PropertyAccessRequest.php,30,Service,Flows,Flows/Service/PropertyAccessRequest.php,0,,Processes
-Service/PropertyRbacHandler.php,375,Service,Flows,Flows/Service/PropertyRbacHandler.php,6,53,Processes
+Service/PropertyAccessRequest.php,30,Service,Flows,Flows/Service/PropertyAccessRequest.php,0,,Core
+Service/PropertyRbacHandler.php,375,Service,Flows,Flows/Service/PropertyRbacHandler.php,6,53,Core
 Service/Quality/DedupAnnotationValidator.php,87,Service,Service,Service/Quality/DedupAnnotationValidator.php,0,,Core
 Service/Quality/QualityAnnotationValidator.php,80,Service,Service,Service/Quality/QualityAnnotationValidator.php,0,,Core
 Service/Quality/QualityAuditEvaluator.php,329,Service,Compliance,Compliance/Service/Quality/QualityAuditEvaluator.php,0,,Core
@@ -3968,7 +3968,7 @@ Service/PropertyRbacCaller.php,,Service,,,,,Core
 Service/PropertyRbacHandlerInterface.php,,Service,,,,,Core
 Service/PropertyRbacRules.php,,Service,,,,,Core
 Service/PropertyTranslation.php,,Service,,,,,Processes
-Service/PropertyWriteCheck.php,,Service,,,,,Processes
+Service/PropertyWriteCheck.php,,Service,,,,,Core
 Service/ProtectedCarryForward.php,,Service,,,,,Core
 Service/ProtectedPropertyRead.php,,Service,,,,,Core
 Service/RateLimitResetInterface.php,,Service,,,,,Core
@@ -4001,7 +4001,7 @@ Service/SchemaApplicationMigratorInterface.php,,Service,,,,,Core
 Service/SchemaCascade.php,,Service,,,,,Configuration
 Service/SchemaDeletionStores.php,,Service,,,,,Core
 Service/SchemaObjectTally.php,,Service,,,,,Core
-Service/SchemaProperty.php,,Service,,,,,Configuration
+Service/SchemaProperty.php,,Service,,,,,Core
 Service/SchemaSplitRun.php,,Service,,,,,Configuration
 Service/SchemaTeardownGuard.php,,Service,,,,,Core
 Service/SchemaTeardownInterface.php,,Service,,,,,Core
@@ -4158,6 +4158,8 @@ Service/Flow/FlowErrorPolicy.php,,Service,,,,,Processes
 Service/Flow/FlowStepRetry.php,,Service,,,,,Processes
 Service/Lifecycle/GraphMoveCatalogue.php,402,Service,Flows,Flows/Service/Lifecycle/GraphMoveCatalogue.php,0,,Processes
 Service/Lifecycle/LifecycleGraphMovesValidator.php,314,Service,Flows,Flows/Service/Lifecycle/LifecycleGraphMovesValidator.php,0,,Processes
+Service/Lifecycle/StateFieldLists.php,11,Service,,,0,,Core
+Service/Lifecycle/StateFieldRulesInterface.php,9,Service,,,0,,Core
 Service/Import/BaseColumn.php,27,Service,Configuration,Configuration/Service/Import/BaseColumn.php,0,,Configuration
 Service/Import/BaseTable.php,14,Service,Configuration,Configuration/Service/Import/BaseTable.php,0,,Configuration
 Service/Import/BaseSet.php,33,Service,Configuration,Configuration/Service/Import/BaseSet.php,0,,Configuration
