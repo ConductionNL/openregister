@@ -23009,3 +23009,4 @@ merge:portaliq:2593:d32e08ac	merge3 tree of 9 portaliq PRs: merged=4 red=1 fail=
 merge:pipelinq:1931:33baa186	merge3 tree of 10 pipelinq PRs: merged=5 red=1 fail=0 skip=0; conflict 4, lint 0, moved 0; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-18T06:50:54Z
 merge:pipelinq:3959:6a60658d	merge3 tree of 10 pipelinq PRs: merged=5 red=1 fail=0 skip=0; conflict 4, lint 0, moved 0; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-18T06:50:58Z
 merge:dossiq:6630:f3914e6c	merge3 tree of 3 dossiq PRs: merged=3 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-18T06:54:02Z
+merge:learniq:2524:9f88e174	merge3 tree of 6 learniq PRs: merged=2 red=1 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-18T07:00:28Z
