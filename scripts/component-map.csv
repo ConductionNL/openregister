@@ -3699,7 +3699,7 @@ Db/ProcessingPurposeMapperInterface.php,,Db,,,,,Core
 Db/RecordTemplateMapperInterface.php,,Db,,,,,Core
 Db/RegisterLookup.php,,Db,,,,,Core
 Db/RegisterMapperServices.php,,Db,,,,,Core
-Db/RegisterSchema.php,,Db,,,,,Search
+Db/RegisterSchema.php,,Db,,,,,Core
 Db/RegistrySubscriptionMapperInterface.php,,Db,,,,,Core
 Db/RuleRunFilter.php,,Db,,,,,Processes
 Db/RuleRunMapperInterface.php,,Db,,,,,Processes
