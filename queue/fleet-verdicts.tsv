@@ -19764,3 +19764,4 @@ hermiq	1854	d890a013df656c18a3ff7146d19b4e764bbd0f5c	CONFLICT	merge3	merges clea
 planninq	1243	c1be8cd6cf0c003f804ac94f1db262ed29b308dc	RED	merge3:merge-gate	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
 planninq	1245	bdab0519cda410700fd9b3a044acb9bca392cb56	RED	merge3:merge-gate	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
 planninq	1250	d428c28451fbc7511b9f3bac3121996d971229e9	RED	merge3:merge-gate	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+buildiq	1731	73ee9a5e9c349c9df92d21ac0d456cf0dbbb708c	REVERIFY	merge3	verdict sha is not the head: fetch failed
