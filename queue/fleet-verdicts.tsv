@@ -19727,3 +19727,4 @@ pipelinq	3940	2e6c53c610fbce6f6610e758e3b2e23878063cfa	CONFLICT	merge3	merges cl
 pipelinq	3943	2c67bc7f59f8af0d0d9f4a7c108a3dbc21e6301e	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
 pipelinq	3952	3ad1de77cd1adc9f8aa2d8c49ad033ab48b0252b	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
 pipelinq	3954	778f1212ff3cd50bed333e4afef105dc9cd7f71b	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+learniq	2524	defae59897776df65fca752cdd26e7ebdc87d32d	RED	merge3:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
