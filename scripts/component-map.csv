@@ -170,7 +170,7 @@ Capabilities/UrnCapability.php,35,Capabilities,Platform,Platform/Capabilities/Ur
 Collaboration/ObjectResourceProvider.php,,Collaboration,,,,,Platform
 Command/AdoptLeafOrganisationsCommand.php,312,Command,Access,Access/Command/AdoptLeafOrganisationsCommand.php,0,,Core
 Command/AdoptOrganisationlessRowsCommand.php,,Command,,,,,Core
-Command/AdoptionRun.php,,Command,,,,,Processes
+Command/AdoptionRun.php,,Command,,,,,Core
 Command/ApplicationIdRename.php,,Command,,,,,Configuration
 Command/BackfillObjectSlugsCommand.php,118,Command,Service,Service/Command/BackfillObjectSlugsCommand.php,0,,Core
 Command/BackfillSystemOwnerCommand.php,146,Command,Configuration,Configuration/Command/BackfillSystemOwnerCommand.php,0,,Configuration
@@ -1368,7 +1368,7 @@ Listener/WebhookEventListener.php,175,Listener,Flows,Flows/Listener/WebhookEvent
 Listener/WorkingCalendarChangedListener.php,57,Listener,Work,Work/Listener/WorkingCalendarChangedListener.php,0,354,Processes
 Listener/WorkingCalendarDeleteGuardListener.php,56,Listener,Flows,Flows/Listener/WorkingCalendarDeleteGuardListener.php,0,,Processes
 Listener/WorkingCalendarValidationListener.php,72,Listener,Flows,Flows/Listener/WorkingCalendarValidationListener.php,0,,Processes
-Listener/WrittenObjectOfEvent.php,29,Listener,Flows,Flows/Listener/WrittenObjectOfEvent.php,0,,Processes
+Listener/WrittenObjectOfEvent.php,29,Listener,Flows,Flows/Listener/WrittenObjectOfEvent.php,0,,Core
 Mcp/Attribute/McpTool.php,27,Mcp,Mcp,Mcp/Attribute/McpTool.php,46,,Integrations
 Mcp/Attribute/McpToolTitle.php,10,Mcp,Mcp,Mcp/Attribute/McpToolTitle.php,2,,Integrations
 Mcp/AttributeToolScanner.php,354,Mcp,Mcp,Mcp/AttributeToolScanner.php,5,,Integrations
@@ -1890,11 +1890,11 @@ Service/BulkJob/BulkJobReversal.php,104,Service,Flows,Flows/Service/BulkJob/Bulk
 Service/BulkJob/BulkJobService.php,290,Service,Flows,Flows/Service/BulkJob/BulkJobService.php,2,,Processes
 Service/BulkJob/BulkSelectionResolver.php,95,Service,Flows,Flows/Service/BulkJob/BulkSelectionResolver.php,0,,Processes
 Service/BulkJob/ReversibilityAnnotationValidator.php,137,Service,Service,Service/BulkJob/ReversibilityAnnotationValidator.php,0,,Processes
-Service/BulkJob/ReversibilityDeclarationException.php,16,Service,Flows,Flows/Service/BulkJob/ReversibilityDeclarationException.php,0,481,Processes
+Service/BulkJob/ReversibilityDeclarationException.php,16,Service,Flows,Flows/Service/BulkJob/ReversibilityDeclarationException.php,0,481,Core
 Service/BulkTranslationService.php,131,Service,Flows,Flows/Service/BulkTranslationService.php,0,,Processes
 Service/Calculation/AggregateReferenceResolver.php,98,Service,Flows,Flows/Service/Calculation/AggregateReferenceResolver.php,0,,Processes
 Service/Calculation/CalculationAnnotationValidator.php,322,Service,Flows,Flows/Service/Calculation/CalculationAnnotationValidator.php,1,44,Processes
-Service/Calculation/CalculationDeclarationException.php,16,Service,Flows,Flows/Service/Calculation/CalculationDeclarationException.php,0,480,Processes
+Service/Calculation/CalculationDeclarationException.php,16,Service,Flows,Flows/Service/Calculation/CalculationDeclarationException.php,0,480,Core
 Service/Calculation/CalculationEvaluator.php,909,Service,Flows,Flows/Service/Calculation/CalculationEvaluator.php,1,10,Processes
 Service/Calculation/CalculationEvaluatorInterface.php,8,Service,Flows,Flows/Service/Calculation/CalculationEvaluatorInterface.php,0,,Processes
 Service/Calculation/CalculationPayloadBuilder.php,95,Service,Flows,Flows/Service/Calculation/CalculationPayloadBuilder.php,0,,Processes
@@ -2085,7 +2085,7 @@ Service/Decision/DecisionService.php,52,Service,Flows,Flows/Service/Decision/Dec
 Service/Decision/DecisionVisibility.php,88,Service,Flows,Flows/Service/Decision/DecisionVisibility.php,0,,Processes
 Service/Decision/RelationDecisionService.php,115,Service,Flows,Flows/Service/Decision/RelationDecisionService.php,0,,Processes
 Service/Decision/ReviewAnnotationValidator.php,56,Service,Flows,Flows/Service/Decision/ReviewAnnotationValidator.php,0,359,Processes
-Service/Decision/ReviewDeclarationException.php,16,Service,Flows,Flows/Service/Decision/ReviewDeclarationException.php,0,478,Processes
+Service/Decision/ReviewDeclarationException.php,16,Service,Flows,Flows/Service/Decision/ReviewDeclarationException.php,0,478,Core
 Service/Decision/ReviewPolicy.php,53,Service,Flows,Flows/Service/Decision/ReviewPolicy.php,13,381,Processes
 Service/Decision/ReviewPolicyResolver.php,89,Service,Flows,Flows/Service/Decision/ReviewPolicyResolver.php,0,,Processes
 Service/DeckCardService.php,280,Service,Integrations,Integrations/Service/DeckCardService.php,3,,Integrations
@@ -3093,7 +3093,7 @@ Service/Rules/AdministeredValidations.php,155,Service,Flows,Flows/Service/Rules/
 Service/Rules/ConditionDialect.php,85,Service,Flows,Flows/Service/Rules/ConditionDialect.php,0,,Processes
 Service/Rules/ConditionRefusedException.php,24,Service,Flows,Flows/Service/Rules/ConditionRefusedException.php,0,,Processes
 Service/Rules/ConditionTracer.php,124,Service,Flows,Flows/Service/Rules/ConditionTracer.php,0,,Processes
-Service/Rules/DependentValueDeclarationException.php,16,Service,Flows,Flows/Service/Rules/DependentValueDeclarationException.php,0,474,Processes
+Service/Rules/DependentValueDeclarationException.php,16,Service,Flows,Flows/Service/Rules/DependentValueDeclarationException.php,0,474,Core
 Service/Rules/DependentValueTable.php,94,Service,Flows,Flows/Service/Rules/DependentValueTable.php,0,288,Processes
 Service/Rules/DependentValueValidator.php,174,Service,Service,Service/Rules/DependentValueValidator.php,0,,Processes
 Service/Rules/ExpressionDefaultException.php,22,Service,Flows,Flows/Service/Rules/ExpressionDefaultException.php,0,463,Processes
@@ -3169,7 +3169,7 @@ Service/Schemas/SemanticReferenceDeclaration.php,36,Service,Service,Service/Sche
 Service/Schemas/SemanticReferenceException.php,5,Service,Service,Service/Schemas/SemanticReferenceException.php,0,,Core
 Service/Schemas/SemanticRoleHandler.php,120,Service,Service,Service/Schemas/SemanticRoleHandler.php,0,238,Core
 Service/Schemas/UniqueConstraintEvaluator.php,131,Service,Service,Service/Schemas/UniqueConstraintEvaluator.php,0,217,Core
-Service/ScriptManifestLoader.php,48,Service,Flows,Flows/Service/ScriptManifestLoader.php,0,,Processes
+Service/ScriptManifestLoader.php,48,Service,Flows,Flows/Service/ScriptManifestLoader.php,0,,Core
 Service/Search/ContentSnippetSource.php,14,Service,Service,Service/Search/ContentSnippetSource.php,0,,Core
 Service/Search/DictionaryExpansion.php,41,Service,Service,Service/Search/DictionaryExpansion.php,0,,Core
 Service/Search/HistoryNarrowing.php,48,Service,Service,Service/Search/HistoryNarrowing.php,0,,Core
@@ -3378,6 +3378,8 @@ Lifecycle/,,Lifecycle,,,,,Kernel
 Listener/FlowNodes/,,Listener,,,,,Processes
 Listener/Registrar/,,Listener,,,,,Processes
 Listener/Support/,,Listener,,,,,Processes
+Listener/Support/ConflictVeto.php,10,Listener,,,0,,Core
+Listener/Support/SurvivorshipResolvers.php,14,Listener,,,0,,Core
 Mcp/,,Mcp,,,,,Integrations
 Middleware/,,Middleware,,,,,Platform
 Notification/,,Notification,,,,,Notifications
@@ -3591,7 +3593,7 @@ Db/ContentReportMapperInterface.php,,Db,,,,,Core
 Db/CospendLinkMapperInterface.php,,Db,,,,,Integrations
 Db/DbRegistrar.php,,Db,,,,,Core
 Db/DecisionMapperInterface.php,,Db,,,,,Processes
-Db/DecisionMetadataChange.php,,Db,,,,,Processes
+Db/DecisionMetadataChange.php,,Db,,,,,Core
 Db/DecisionMetadataEdit.php,,Db,,,,,Processes
 Db/DeckLinkMapperInterface.php,,Db,,,,,Integrations
 Db/DelegationGrantMapperInterface.php,,Db,,,,,Core
@@ -3678,7 +3680,7 @@ Db/RuleRunMapperInterface.php,,Db,,,,,Processes
 Db/RuleRunSelection.php,,Db,,,,,Processes
 Db/RuleRunSummary/RuleEvaluation.php,,Db,,,,,Processes
 Db/RuleRunSummaryMapperInterface.php,,Db,,,,,Processes
-Db/RunObjectLockMapperInterface.php,,Db,,,,,Processes
+Db/RunObjectLockMapperInterface.php,,Db,,,,,Core
 Db/RunScopedRowsTrait.php,,Db,,,,,Processes
 Db/SchemaCatalog.php,,Db,,,,,Core
 Db/SchemaCatalogInterface.php,,Db,,,,,Core
