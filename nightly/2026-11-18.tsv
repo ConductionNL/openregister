@@ -1,7 +1,0 @@
-opencatalogi	9b300d26	php=RED	phpunit skipped (no NC server tree)	phpcs,phpmd,psalm	js=RED	psalm 151 err (132 UndefinedClass OCA\OpenRegister\Kernel\Contracts\Value); phpcs inline-IF; eslint 13; vitest mainEntry.spec 8 fail
-decidiq	1a56389c	php=RED	Tests 5068, Failures 0, Errors 0 (8 skipped)	phpcs,phpmd,psalm	js=RED	psalm.xml missing DomainServiceRegistrar.php; eslint stale suppressions; vitest meetingSessionsGolden snapshot
-portaliq	c9c9777b	php=RED	Tests 6324/Failures 0/Errors 16	phpcs,phpmd,psalm,phpstan,phpunit	js=n/a	OpenRegister ObjectLeavingEvent/RefIntegrationProvider missing: ChangeProposalsProvider*Test, RegisterProposalLeaves*Test
-shillinq	d355d436	php=RED	Tests 12796/Failures 0/Errors 0	phpcs,phpmd,psalm	js=RED	psalm 491 errs; phpcs 8 errs; eslint 89 json/no-empty-keys; vitest dunningNextRun.spec fails
-buildiq	465f72e4	php=RED	Tests 3676, Failures 7, Errors 0	phpcs,phpmd,psalm,phpstan,phpunit,gates	js=RED	AppRecordsImporterTest 7 fail; psalm 120; phpstan 6; gates 4,7,8,22,24; eslint 9 err (eqeqeq); vitest ok
-pipelinq	f8fe801f1	php=RED	Tests 9330/Failures 0/Errors 0	phpmd,psalm	js=RED	psalm 5 errs; phpmd 92 violations; vitest fails reportSectionPeriod, myWorkPage, notificationLabels
-integriq	f79927c0	php=RED	Tests 9883/Failures 3/Errors 2	phpcs,phpmd,psalm,phpunit	js=RED	psalm 298 (294 UndefinedClass OCA\OpenRegister); CallServiceTest, JobsControllerTest, SyncEntryGoldenTest; eslint sort-imports
