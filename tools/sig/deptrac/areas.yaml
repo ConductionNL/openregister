@@ -138,25 +138,9 @@ deptrac:
         - type: directory
           value: 'lib/Controller/Support/CodedOptionsRequest[.]php$'
         - type: directory
-          value: 'lib/Controller/Support/ConfigDeploymentControllerServices[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/ConfigPublishRequest[.]php$'
-        - type: directory
           value: 'lib/Controller/Support/ConfigurationAction[.]php$'
         - type: directory
-          value: 'lib/Controller/Support/ConfigurationControllerServices[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/ConfigurationDomain[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/ConfigurationImport[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/ConfigurationMappers[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/ConfigurationPlatform[.]php$'
-        - type: directory
           value: 'lib/Controller/Support/ConfigurationSettingsControllerServices[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/ConfigurationsControllerServices[.]php$'
         - type: directory
           value: 'lib/Controller/Support/ConflictTrail[.]php$'
         - type: directory
@@ -224,10 +208,6 @@ deptrac:
         - type: directory
           value: 'lib/Controller/Support/EntityRelationsPlatform[.]php$'
         - type: directory
-          value: 'lib/Controller/Support/ExportProfilesControllerServices[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/FederatedConfigControllerServices[.]php$'
-        - type: directory
           value: 'lib/Controller/Support/FormLinksControllerServices[.]php$'
         - type: directory
           value: 'lib/Controller/Support/GdprEntitiesControllerServices[.]php$'
@@ -250,25 +230,9 @@ deptrac:
         - type: directory
           value: 'lib/Controller/Support/GitHubIssueListing[.]php$'
         - type: directory
-          value: 'lib/Controller/Support/GitHubIssuesControllerServices[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/GitHubIssuesDomain[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/GitHubIssuesPlatform[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/GitHubPublishRun[.]php$'
-        - type: directory
           value: 'lib/Controller/Support/GitHubTokenFailure[.]php$'
         - type: directory
           value: 'lib/Controller/Support/HybridSearchDiagnostics[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/ImportPreviewControllerServices[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/ImportPreviewDomain[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/ImportPreviewMappers[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/ImportPreviewPlatform[.]php$'
         - type: directory
           value: 'lib/Controller/Support/LinkRemoval[.]php$'
         - type: directory
@@ -279,12 +243,6 @@ deptrac:
           value: 'lib/Controller/Support/LinkedSourceActions[.]php$'
         - type: directory
           value: 'lib/Controller/Support/LinkedSourceResponses[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/LlmSettingsControllerServices[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/LlmSettingsDomain[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/LlmSettingsPlatform[.]php$'
         - type: directory
           value: 'lib/Controller/Support/MagicMappedTable[.]php$'
         - type: directory
@@ -299,8 +257,6 @@ deptrac:
           value: 'lib/Controller/Support/MembershipChangeRun[.]php$'
         - type: directory
           value: 'lib/Controller/Support/MergeControllerServices[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/MigrationPacksControllerServices[.]php$'
         - type: directory
           value: 'lib/Controller/Support/MigrationStart[.]php$'
         - type: directory
@@ -394,12 +350,6 @@ deptrac:
         - type: directory
           value: 'lib/Controller/Support/OperationsActingRequest[.]php$'
         - type: directory
-          value: 'lib/Controller/Support/OperationsConsistencyControllerServices[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/OperationsConsoleControllerServices[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/OperationsMaintenanceControllerServices[.]php$'
-        - type: directory
           value: 'lib/Controller/Support/OrganisationAuditing[.]php$'
         - type: directory
           value: 'lib/Controller/Support/OrganisationControllerServices[.]php$'
@@ -447,8 +397,6 @@ deptrac:
           value: 'lib/Controller/Support/ProseReference[.]php$'
         - type: directory
           value: 'lib/Controller/Support/PurgeRequest[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/RecordTemplatesControllerServices[.]php$'
         - type: directory
           value: 'lib/Controller/Support/ReferenceOptionsAnswer[.]php$'
         - type: directory
@@ -2259,6 +2207,58 @@ deptrac:
           value: 'lib/Controller/(ApplicationsController|ConfigurationBundleController|ConfigurationController|ConfigurationDeploymentController|ConfigurationSeedController|ConfigurationsController|ExportProfilesController|ExportRunsController|FederatedConfigController|GitHubIssuesController|IconController|ImportPreviewController|ManifestController|MigrationController|MigrationPacksController|OperationsConsistencyController|OperationsConsoleController|OperationsMaintenanceController|PreferencesController|RecordTemplatesController|RegisterDescriptorController|SetupController|ShippedBaselineController|UiController|UserSettingsController)[.]php$'
         - type: directory
           value: 'lib/Controller/Settings/[^/]*$'
+        - type: directory
+          value: 'lib/Controller/Support/ConfigDeploymentControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/ConfigPublishRequest[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/ConfigurationControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/ConfigurationDomain[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/ConfigurationImport[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/ConfigurationMappers[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/ConfigurationPlatform[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/ConfigurationsControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/ExportProfilesControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/FederatedConfigControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/GitHubIssuesControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/GitHubIssuesDomain[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/GitHubIssuesPlatform[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/GitHubPublishRun[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/ImportPreviewControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/ImportPreviewDomain[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/ImportPreviewMappers[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/ImportPreviewPlatform[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/LlmSettingsControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/LlmSettingsDomain[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/LlmSettingsPlatform[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/MigrationPacksControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/OperationsConsistencyControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/OperationsConsoleControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/OperationsMaintenanceControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/RecordTemplatesControllerServices[.]php$'
         - type: directory
           value: 'lib/Db/(Application|ApplicationMapper|Configuration|ConfigurationBinding|ConfigurationBindingMapper|ConfigurationBindingMapperInterface|ConfigurationDeployment|ConfigurationDeploymentMapper|ConfigurationDeploymentMapperInterface|ConfigurationDraft|ConfigurationDraftMapper|ConfigurationDraftMapperInterface|ConfigurationDraftSet|ConfigurationDraftSetMapper|ConfigurationDraftSetMapperInterface|ConfigurationMapper|ConfigurationMapperInterface|ConfigurationSyncResult|ConfigurationValue|ConfigurationValueMapper|ExportProfile|ExportProfileMapper|ExportProfileMapperInterface|ExportRun|ExportRunMapper|HydrateBySettersTrait|ImportPreview|ImportPreviewFinderInterface|ImportPreviewMapper|ImportPreviewMapperInterface|ImportPreviewRow|ImportPreviewRowMapper|ImportPreviewRowMapperInterface|IsoTimestampsTrait|JobRun|JobRunMapper|MigrationPack|MigrationPackMapper|MigrationPackMapperInterface|NewRowStamps|RecordTemplate|RecordTemplateMapper|Sequence|SequenceMapper|StoredEntity|TaskSequence|TaskSequenceMapper|Translation|TranslationMapper)[.]php$'
         - type: directory
