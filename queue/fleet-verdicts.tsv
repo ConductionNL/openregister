@@ -19783,3 +19783,4 @@ launchpad	1300	00d3700a29a329ed9f149a9a610a17d0a0458d9f	RED	merge3:merge-gate	GA
 launchpad	1305	63d40440377329b220332105aee7d194c25e714a	RED	merge3:merge-gate	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
 launchpad	1218	1d9132cfbb9f66b8592307016ece8a897798d265	CONFLICT	merge3	merges clean on development alone; files: lib/Service/TileUpdater.php src/components/TileWidget.vue src/modals/TileEditor.vue src/views/Views.vue tests/Unit/Service/TileUpdaterTest.php 
 launchpad	1307	7e2a16a19158f4205dd2a724c950c85ca37d9088	CONFLICT	merge3	merges clean on development alone; files: l10n/nl.js l10n/nl.json 
+decidiq	2174	8825e17a0745751ca54f819cb8052999b35fbfcd	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 4.05 -> 4.03
