@@ -10,3 +10,4 @@ hermiq	1281045a	php=RED	Tests 5736, Failures 0, Errors 0	phpcs,phpmd,psalm,phpst
 planninq	17e6169e	php=RED	Tests 1253/Failures 0/Errors 0	phpmd,psalm,phpstan	js=GREEN	phpstan 9 errs (AppHostRegistration, RegisterProjectsLeafListener args); psalm needs PHP>=8.3.16; phpmd 27
 versioniq	88123eb	php=RED	no phpunit in check:strict	cs:check,psalm	js=RED	psalm/coding-standard not in composer deps; eslint parses broken fixture json; vitest 2 unhandled errs
 humaniq	dcdb4ca0	php=RED	Tests 4509, Failures 0, Errors 0 (1 skipped)	phpmd,psalm	js=n/a	psalm did not run: needs PHP >=8.3.16, container 8.3.6; phpmd (StaticAccess etc); phpcs/phpstan ok
+keepiq	2b71b65b	php=RED	Tests 5619/Failures 0/Errors 0	phpcs,phpmd,psalm	js=RED	phpcs 3 line>150 (controllers); psalm 6 UnusedParam; eslint 4 err; vitest HealthReportView.controls no active Pinia
