@@ -3647,7 +3647,7 @@ Db/LinkedItemsTrait.php,,Db,,,,,Kernel
 Db/ListQuery.php,,Db,,,,,Core
 Db/LockTerms.php,,Db,,,,,Kernel
 Db/MailMessageKey.php,,Db,,,,,Integrations
-Db/ManagedByConfigurationTrait.php,,Db,,,,,Core
+Db/ManagedByConfigurationTrait.php,,Db,,,,,Kernel
 Db/MapLinkMapperInterface.php,,Db,,,,,Core
 Db/MapperWiring.php,,Db,,,,,Core
 Db/MappingMapperInterface.php,,Db,,,,,Integrations
