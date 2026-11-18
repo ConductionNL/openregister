@@ -5885,3 +5885,6 @@ launchpad	1217	7283f62c39d4b8397cc6a45523632a26fadf09ad	RED	merge3	GATE RED chec
 launchpad	1296	53e338879ab2e450620fb634473e8fa302db883d	RED	merge3	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
 launchpad	1300	00d3700a29a329ed9f149a9a610a17d0a0458d9f	RED	merge3	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
 launchpad	1305	63d40440377329b220332105aee7d194c25e714a	RED	merge3	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+decidiq	1306	e528f697ad325e5b10cf75898ab687871e381fc2	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.78 holds at 3.80
+decidiq	2174	8825e17a0745751ca54f819cb8052999b35fbfcd	RED	merge3	GATE RED floor: unit_complexity: 4.05 -> 4.03
+decidiq	2286	62b9a48215c112bd9dece76e06b8073d424f20a8	FAIL	merge3	Put "https://api.github.com/repos/ConductionNL/decidiq/pulls/2286/merge": net/http: TLS handshake timeout
