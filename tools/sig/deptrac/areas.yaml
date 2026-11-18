@@ -45,7 +45,7 @@ deptrac:
         - type: directory
           value: 'lib/Command/(AdoptLeafOrganisationsCommand|AdoptOrganisationlessRowsCommand|BackfillObjectSlugsCommand|DeclaredGroupsCommand|DedupCollidedSchemasCommand|DedupeRegistersCommand|DescriptorImportTarget|DocumentStoreStatusCommand|DraftsExpiredCommand|EncryptFieldCommand|FederationSharesExpiringCommand|FieldEncryptionPass|LeafMatch|MagicTableCommand|MagicTableRun|MagicTableSelection|MagicTableTarget|PruneRetiredSchemasCommand|PruneRetiredSchemasPass|PruneRetiredSchemasRun|PurgeCandidate|PurgeObjectCommand|PurgeRun|RegisterRepairOptions|RelinkRegisterSchemasCommand|ResolverListCommand|RetiredSchemaRow|RetiredSlugRows|SchemaDedupRun|UnknownMetadataConditionsCommand)[.]php$'
         - type: directory
-          value: 'lib/Controller/(AccessLinkController|AccessLinkPageController|ActionRightsController|ApiSurfaceController|BulkController|ContextsController|DelegationController|DeletedController|DerivedGrantsController|McpController|OasController|ObjectCollectionsController|ObjectDraftController|ObjectGrantsController|ObjectOwnershipController|ObjectPermissionsController|ObjectReadStateController|ObjectRelationsController|ObjectSharingController|ObjectStateController|ObjectsController|OpenApiController|OrganisationController|PermissionsAuditController|PermissionsController|PrincipalReachController|PropertyVocabularyController|RegistersController|RegistrySubscriptionController|RegistryUpdatesController|RevertController|SchemaChangeFollowersController|SchemaImportController|SchemaMigrationController|SchemasController|ScopesController|SourcesController|SurvivorshipController|TablesController|TagsController|TransferController|UrnController|UserController|VersionsController|VocabularyController|WhoamiController)[.]php$'
+          value: 'lib/Controller/(AccessLinkController|AccessLinkPageController|ActionRightsController|ApiSurfaceController|BulkController|ContextsController|DelegationController|DeletedController|DerivedGrantsController|McpController|OasController|ObjectCollectionsController|ObjectDraftController|ObjectGrantsController|ObjectOwnershipController|ObjectPermissionsController|ObjectReadStateController|ObjectRelationsController|ObjectSharingController|ObjectStateController|ObjectsController|OpenApiController|OrganisationController|PermissionsAuditController|PermissionsController|PrincipalReachController|PropertyVocabularyController|RegistersController|RegistrySubscriptionController|RegistryUpdatesController|RevertController|SchemaChangeFollowersController|SchemaImportController|SchemaMigrationController|SchemasController|ScopesController|SourcesController|SurvivorshipController|TablesController|TagsController|UrnController|UserController|VersionsController|VocabularyController|WhoamiController)[.]php$'
         - type: directory
           value: 'lib/Controller/Support/AccessLinkControllerServices[.]php$'
         - type: directory
@@ -65,8 +65,6 @@ deptrac:
         - type: directory
           value: 'lib/Controller/Support/AgentsControllerServices[.]php$'
         - type: directory
-          value: 'lib/Controller/Support/AnonymisationBackendControllerServices[.]php$'
-        - type: directory
           value: 'lib/Controller/Support/ApiSurfaceControllerServices[.]php$'
         - type: directory
           value: 'lib/Controller/Support/ApiTokenProbe[.]php$'
@@ -74,14 +72,6 @@ deptrac:
           value: 'lib/Controller/Support/ApiTokenSettingsControllerServices[.]php$'
         - type: directory
           value: 'lib/Controller/Support/ApplicationsControllerServices[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/ArchivalControllerServices[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/ArchivalDecisions[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/ArchivalMappers[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/ArchivalNomination[.]php$'
         - type: directory
           value: 'lib/Controller/Support/ArchivalNominationSubject[.]php$'
         - type: directory
@@ -91,19 +81,7 @@ deptrac:
         - type: directory
           value: 'lib/Controller/Support/AuditObjectRef[.]php$'
         - type: directory
-          value: 'lib/Controller/Support/AuditQueryControllerServices[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/AuditSinkControllerServices[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/AuditTrailControllerServices[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/AuditTrailLog[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/AuditTrailMappers[.]php$'
-        - type: directory
           value: 'lib/Controller/Support/AuditTrailPlatform[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/AuditTrailReaders[.]php$'
         - type: directory
           value: 'lib/Controller/Support/AuthDenialWarning[.]php$'
         - type: directory
@@ -195,8 +173,6 @@ deptrac:
         - type: directory
           value: 'lib/Controller/Support/ConnectionReporting[.]php$'
         - type: directory
-          value: 'lib/Controller/Support/ContentReportControllerServices[.]php$'
-        - type: directory
           value: 'lib/Controller/Support/ContextsControllerServices[.]php$'
         - type: directory
           value: 'lib/Controller/Support/ControllerSession[.]php$'
@@ -237,15 +213,7 @@ deptrac:
         - type: directory
           value: 'lib/Controller/Support/DestructionListApproval[.]php$'
         - type: directory
-          value: 'lib/Controller/Support/DsarCaseCases[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/DsarCaseControllerServices[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/DsarCaseDisclosure[.]php$'
-        - type: directory
           value: 'lib/Controller/Support/DsarCasePlatform[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/DsarCaseRegistries[.]php$'
         - type: directory
           value: 'lib/Controller/Support/DsarControllerServices[.]php$'
         - type: directory
@@ -266,8 +234,6 @@ deptrac:
           value: 'lib/Controller/Support/EntityRelationsMappers[.]php$'
         - type: directory
           value: 'lib/Controller/Support/EntityRelationsPlatform[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/ErasurePreviewControllerServices[.]php$'
         - type: directory
           value: 'lib/Controller/Support/ExportProfilesControllerServices[.]php$'
         - type: directory
@@ -346,10 +312,6 @@ deptrac:
           value: 'lib/Controller/Support/GitHubPublishRun[.]php$'
         - type: directory
           value: 'lib/Controller/Support/GitHubTokenFailure[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/HardeningControllerServices[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/HardeningStatementControllerServices[.]php$'
         - type: directory
           value: 'lib/Controller/Support/HybridSearchDiagnostics[.]php$'
         - type: directory
@@ -553,19 +515,11 @@ deptrac:
         - type: directory
           value: 'lib/Controller/Support/ProcessingActivityAuditCounts[.]php$'
         - type: directory
-          value: 'lib/Controller/Support/ProcessingActivityHydrator[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/ProcessingActivityViewer[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/ProcessingActivityVisibility[.]php$'
-        - type: directory
           value: 'lib/Controller/Support/ProcessingLogAccess[.]php$'
         - type: directory
           value: 'lib/Controller/Support/ProcessingLogControllerServices[.]php$'
         - type: directory
           value: 'lib/Controller/Support/ProcessingLogPolicy[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/ProcessingPurposeControllerServices[.]php$'
         - type: directory
           value: 'lib/Controller/Support/PropertyConversionChange[.]php$'
         - type: directory
@@ -625,12 +579,6 @@ deptrac:
         - type: directory
           value: 'lib/Controller/Support/ResultWindow[.]php$'
         - type: directory
-          value: 'lib/Controller/Support/RetentionControllerServices[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/RetentionDomain[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/RetentionMappers[.]php$'
-        - type: directory
           value: 'lib/Controller/Support/RetentionPlatform[.]php$'
         - type: directory
           value: 'lib/Controller/Support/RevertControllerServices[.]php$'
@@ -674,8 +622,6 @@ deptrac:
           value: 'lib/Controller/Support/SearchTrailPageLinks[.]php$'
         - type: directory
           value: 'lib/Controller/Support/SecuritySettingsControllerServices[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/SelectielijstControllerServices[.]php$'
         - type: directory
           value: 'lib/Controller/Support/SentWrite[.]php$'
         - type: directory
@@ -748,8 +694,6 @@ deptrac:
           value: 'lib/Controller/Support/TmloGuards[.]php$'
         - type: directory
           value: 'lib/Controller/Support/TmloRecords[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/TransferControllerServices[.]php$'
         - type: directory
           value: 'lib/Controller/Support/TranslationControllerServices[.]php$'
         - type: directory
@@ -1159,7 +1103,63 @@ deptrac:
         - type: directory
           value: 'lib/Command/(DedupeRegistersRun|RechainAuditTrailCommand|RetentionDryRunCommand)[.]php$'
         - type: directory
-          value: 'lib/Controller/(AnonymisationBackendController|AnonymisationPipelineController|ArchivalController|ArchivalOverviewController|AuditQueryController|AuditSinkController|AuditTrailController|ContentReportController|CorrectionsController|DataSubjectRequestController|DsarCaseController|DsarController|ErasurePreviewController|FileDisclosuresController|HardeningController|HardeningStatementController|MergeController|ProcessingLogController|ProcessingPurposeController|QualityAuditController|QualityController|RetentionController|SearchTrailController|SelectielijstController|SelectielijstReferenceController|SubjectExportController|TmloController|VerwerkingsactiviteitenController)[.]php$'
+          value: 'lib/Controller/(AnonymisationBackendController|AnonymisationPipelineController|ArchivalController|ArchivalOverviewController|AuditQueryController|AuditSinkController|AuditTrailController|ContentReportController|CorrectionsController|DataSubjectRequestController|DsarCaseController|DsarController|ErasurePreviewController|FileDisclosuresController|HardeningController|HardeningStatementController|MergeController|ProcessingLogController|ProcessingPurposeController|QualityAuditController|QualityController|RetentionController|SearchTrailController|SelectielijstController|SelectielijstReferenceController|SubjectExportController|TmloController|TransferController|VerwerkingsactiviteitenController)[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/AnonymisationBackendControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/ArchivalControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/ArchivalDecisions[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/ArchivalMappers[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/ArchivalNomination[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/AuditQueryControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/AuditSinkControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/AuditTrailControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/AuditTrailLog[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/AuditTrailMappers[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/AuditTrailReaders[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/ContentReportControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/DsarCaseCases[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/DsarCaseControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/DsarCaseDisclosure[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/DsarCaseRegistries[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/ErasurePreviewControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/HardeningControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/HardeningStatementControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/ProcessingActivityHydrator[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/ProcessingActivityViewer[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/ProcessingActivityVisibility[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/ProcessingPurposeControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/RetentionControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/RetentionDomain[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/RetentionMappers[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/SelectielijstControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/TransferControllerServices[.]php$'
         - type: directory
           value: 'lib/Db/(AuditFlowAttributionInterface|AuditTrail|AuditTrailFilterTerm|AuditTrailMapper|AuditTrailPageQuery|AuditTrailPageQueryInterface|AuditTrailPayloadHelper|ContentReport|ContentReportMapper|ErasurePreview|ErasurePreviewMapper|GdprEntity|GdprEntityMapper|GdprEntityMapperInterface|ProcessingLogEntry|ProcessingLogMapper|ProcessingPurpose|ProcessingPurposeMapper|QualityAudit|QualityAuditFailure|QualityAuditMapper|QualityAuditMapperInterface|QualityAuditRun|QualityAuditRunMapper|QualityAuditRunMapperInterface|SearchTrail|SearchTrailMapper|SearchTrailOutcome|StatusVocabularyTrait|SubjectExport|SubjectExportMapper|SubjectExportMapperInterface|TaskAudit|TaskAuditMapper|TrailRetentionTrait|Verwerkingsactiviteit|VerwerkingsactiviteitMapper)[.]php$'
         - type: directory
