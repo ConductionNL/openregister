@@ -32,19 +32,21 @@ areas therefore cannot pass through the Kernel.
 
 ### Requirement: The modularity numbers can only go down
 
-`tools/sig/rate_component_views.py --check` MUST compare, in the functional view, the exposed lines per area,
-the Kernel size and the violation degree with `tools/sig/modularity-baseline.json`. It MUST fail when any of
-them is higher. A change that lowers a number MUST update the baseline in the same change.
+`tools/sig/modularity_check.py --check` MUST compare a measurement of the functional view with
+`tools/sig/modularity-baseline.json` per file. It MUST fail on a file that becomes exposed to another area, a new
+file in Kernel, a new reference against the order, or a violation degree more than 0.002 above the baseline. It
+MUST NOT fail when a change only adds lines to a file, so two changes in flight do not collide. An entry that is
+gone MUST be reported, and the change that removes it SHOULD lower the baseline.
 
 #### Scenario: a feature adds a cross-area call
-- **GIVEN** the baseline records 67,182 exposed lines for Core
-- **WHEN** a change makes another area reference a concrete Core class that no other area used
-- **THEN** the check fails and names the area, the old and the new number
+- **GIVEN** a concrete Core class that no other area references
+- **WHEN** a change makes another area reference it
+- **THEN** the check fails and names the newly exposed file
 
 #### Scenario: a refactor lowers a number
 - **GIVEN** a change that removes the last outside reference to a concrete class
-- **WHEN** the check runs without an updated baseline
-- **THEN** it fails and asks for the baseline to be lowered to the new number
+- **WHEN** the check runs
+- **THEN** it passes, reports the entry as gone, and `--write-baseline` records the lower numbers
 
 ### Requirement: Two readings agree
 

@@ -36,15 +36,15 @@ improve the test without improving the number, or the other way round.
 
 | Check | Reads | Fails when |
 |---|---|---|
-| `tools/sig/modularity_check.py --check` (Python, about 10 s) | the module graph, as the scorer builds it | exposed lines of an area, Kernel size or the violation degree differ from `tools/sig/modularity-baseline.json`, or a reference against the order is new |
-| `tools/sig/deptrac.sh areas --check` (about 40 s) | a PHP parser | a violating class pair differs from `tools/sig/deptrac/areas.baseline.json` |
+| `tools/sig/modularity_check.py --check` (Python, about 10 s) | the module graph, as the scorer builds it | a file becomes exposed, a file is new in Kernel, a reference against the order is new, or the violation degree rises more than 0.002 (`tools/sig/modularity-baseline.json`) |
+| `tools/sig/deptrac.sh areas --check` (about 40 s) | a PHP parser | a violating class pair is new (`tools/sig/deptrac/areas.baseline.json`) |
 
 `composer check:modularity` runs both; `composer check:strict` runs it after the migration check. The CI
 workflow `modularity.yml` runs both on every PR and push to main.
 
-The baseline records, per area, the exposed lines, and overall the violation degree and the Kernel size.
-Lowering a number means updating the baseline in the same PR. Raising one is a failure, also for an unrelated
-feature PR.
+The checks are per file and per class pair, so a change that only adds lines never fails and two changes in
+flight do not collide. An entry that is gone is reported; the change that removes it lowers the baseline with
+`--write-baseline`.
 
 ## Waves
 

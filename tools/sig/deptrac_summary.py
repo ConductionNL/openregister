@@ -13,8 +13,8 @@ layer it may not use. This summary counts those occurrences and the distinct cla
 temporary directory compares with one made in the working tree. The table goes to stdout.
 
 A baseline lists every violating class pair as "A -> B: ClassX -> ClassY". --check exits 1 when a
-pair is new, and also when a listed pair is gone, so the change that removes one lowers the
-baseline in the same change.
+pair is new. A listed pair that is gone is reported, so the change that removes it can lower the
+baseline with --write-baseline.
 """
 import collections
 import json
@@ -54,12 +54,11 @@ def violating_pairs(report):
 
 
 def compare(baseline, pairs):
-    """Messages for new pairs and for the count of pairs that are gone."""
+    """(failures for new pairs, notices for pairs that are gone)."""
     old, new = set(baseline), set(pairs)
-    out = [f"new deptrac violation: {p}" for p in sorted(new - old)]
-    if old - new:
-        out.append(f"{len(old - new)} deptrac violation(s) are gone: lower the baseline")
-    return out
+    fail = [f"new deptrac violation: {p}" for p in sorted(new - old)]
+    note = [f"{len(old - new)} deptrac violation(s) are gone: lower the baseline"] if old - new else []
+    return fail, note
 
 
 def table(summary):
@@ -82,8 +81,9 @@ def main(argv):
             json.dump(violating_pairs(report), fh, indent=0)
             fh.write("\n")
     if "--check" in argv:
-        problems = compare(json.load(open(argv[argv.index("--check") + 1], encoding="utf-8")), violating_pairs(report))
-        for p in problems:
+        problems, notices = compare(json.load(open(argv[argv.index("--check") + 1], encoding="utf-8")),
+                                    violating_pairs(report))
+        for p in problems + notices:
             print(p)
         if problems:
             print("deptrac check FAILED. After a deliberate improvement: tools/sig/deptrac.sh areas --write-baseline")

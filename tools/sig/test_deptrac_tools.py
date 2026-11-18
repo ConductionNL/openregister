@@ -50,11 +50,13 @@ class BaselineTest(unittest.TestCase):
         self.assertEqual(deptrac_summary.violating_pairs(self.REPORT),
                          ["Core -> Processes: OCA\\X\\Db\\A -> OCA\\X\\Service\\S"])
 
-    def test_a_new_pair_fails_and_a_gone_pair_asks_for_a_lower_baseline(self):
+    def test_a_new_pair_fails_and_a_gone_pair_is_a_notice(self):
         pairs = deptrac_summary.violating_pairs(self.REPORT)
-        self.assertEqual(deptrac_summary.compare(pairs, pairs), [])
-        self.assertTrue(deptrac_summary.compare([], pairs)[0].startswith("new deptrac violation"))
-        self.assertIn("lower the baseline", deptrac_summary.compare(pairs, [])[0])
+        self.assertEqual(deptrac_summary.compare(pairs, pairs), ([], []))
+        self.assertTrue(deptrac_summary.compare([], pairs)[0][0].startswith("new deptrac violation"))
+        fail, note = deptrac_summary.compare(pairs, [])
+        self.assertEqual(fail, [])
+        self.assertIn("lower the baseline", note[0])
 
 
 class SummaryTest(unittest.TestCase):
