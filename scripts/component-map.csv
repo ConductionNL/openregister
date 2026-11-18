@@ -4303,3 +4303,5 @@ Db/ProcessesMapperBindings.php,,Db,,,,,Processes
 Db/ProcessesMapperRegistrar.php,,Db,,,,,Processes
 Db/IntegrationsMapperBindings.php,,Db,,,,,Integrations
 Db/IntegrationsMapperRegistrar.php,,Db,,,,,Integrations
+Db/ComplianceMapperBindings.php,,Db,,,,,Compliance
+Db/ComplianceMapperRegistrar.php,,Db,,,,,Compliance
