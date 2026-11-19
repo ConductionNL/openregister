@@ -27,7 +27,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\SetupControllerServices;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Settings\OpenRegisterAdmin;
@@ -112,7 +111,7 @@ class SetupController extends Controller {
 		IRequest $request,
 		SetupControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->appConfig = $services->appConfig;
 		$this->logger = $services->logger;
 		$this->demoDataService = $services->demoDataService;

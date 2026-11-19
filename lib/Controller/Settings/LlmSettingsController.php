@@ -20,8 +20,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Settings;
 
 use Exception;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\LlmSettingsControllerServices;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCA\OpenRegister\Search\Service\VectorizationServiceInterface;
 use OCA\OpenRegister\Service\Connection\ConnectionReporterInterface;
@@ -110,7 +110,7 @@ class LlmSettingsController extends Controller {
 		IRequest $request,
 		LlmSettingsControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->container = $services->platform->container;
 		$this->settingsService = $services->domain->settingsService;
 		$this->vectorizationService = $services->domain->vectorizationService;

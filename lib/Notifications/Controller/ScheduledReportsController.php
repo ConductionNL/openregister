@@ -27,12 +27,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
 use InvalidArgumentException;
 use OCA\OpenRegister\Kernel\Contracts\ReportCaller;
 use OCA\OpenRegister\Kernel\Contracts\ScheduledReportUpdate;
 use OCA\OpenRegister\Notifications\Controller\Support\ScheduledReportsControllerServices;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Notifications\BackgroundJob\ScheduledReportRunNowJob;
 use OCA\OpenRegister\Kernel\Contracts\ScheduledReportsInterface;
 use OCA\OpenRegister\Service\Connection\ConnectionReportForbiddenException;
@@ -82,7 +82,7 @@ class ScheduledReportsController extends Controller {
 		IRequest $request,
 		ScheduledReportsControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 
 		$this->service = $services->service;
 		$this->jobList = $services->jobList;
