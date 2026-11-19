@@ -46,6 +46,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Hardening;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\AuthRateLimitCeilingInterface;
 use OCP\IAppConfig;
 use Throwable;
 
@@ -55,7 +56,7 @@ use Throwable;
  * @category Service
  * @package  OCA\OpenRegister\Service\Hardening
  */
-class HardeningPolicy implements HardeningFloorsInterface, AllowedOriginsInterface {
+class HardeningPolicy implements HardeningFloorsInterface, AllowedOriginsInterface, AuthRateLimitCeilingInterface {
 
 	/**
 	 * The app the administered controls live under.
