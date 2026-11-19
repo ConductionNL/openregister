@@ -753,6 +753,7 @@ Db/JsonFieldsTrait.php,15,Db,Integrations,Integrations/Db/JsonFieldsTrait.php,0,
 Db/LikeOperator.php,62,Db,Service,Service/Db/LikeOperator.php,0,,Core
 Db/LinkColumn.php,33,Db,Integrations,Integrations/Db/LinkColumn.php,0,,Core
 Db/MagicMapper.php,6709,Db,Service,Service/Db/MagicMapper.php,54,1,Core
+Db/CatalogueScope.php,,Db,,,,,Core
 Db/MagicMapper/ArrayElementFilter.php,58,Db,Service,Service/Db/MagicMapper/ArrayElementFilter.php,0,,Core
 Db/MagicMapper/DeletedFilter.php,54,Db,Service,Service/Db/MagicMapper/DeletedFilter.php,0,,Core
 Db/MagicMapper/DeletedLens.php,33,Db,Service,Service/Db/MagicMapper/DeletedLens.php,0,,Core
@@ -1663,6 +1664,7 @@ Repair/RegisterOpenRegisterWithDoriath.php,158,Repair,Integrations,Integrations/
 Repair/RegisterRiskLevelMetadata.php,19,Repair,Platform,Platform/Repair/RegisterRiskLevelMetadata.php,0,,Platform
 Repair/RemoveRetiredCronJobs.php,45,Repair,Platform,Platform/Repair/RemoveRetiredCronJobs.php,0,,Platform
 Repair/RenameDutchColumns.php,194,Repair,Platform,Platform/Repair/RenameDutchColumns.php,0,,Platform
+Repair/NarrowMagicJsonColumns.php,,Repair,,,,,Core
 Repair/RepointMovedBackgroundJobs.php,47,Repair,Platform,Platform/Repair/RepointMovedBackgroundJobs.php,0,,Platform
 Repair/SeedAppVirtualSchemas.php,159,Repair,Platform,Platform/Repair/SeedAppVirtualSchemas.php,0,,Platform
 Repair/SeedCaseFixtures.php,191,Repair,Work,Work/Repair/SeedCaseFixtures.php,0,,Processes
@@ -3590,6 +3592,7 @@ Command/DescriptorImportTarget.php,,Command,,,,,Core
 Command/FieldEncryptionPass.php,,Command,,,,,Core
 Command/LeafMatch.php,,Command,,,,,Core
 Command/MagicTableCommand.php,,Command,,,,,Core
+Command/NarrowMagicJsonColumnsCommand.php,,Command,,,,,Core
 Command/MagicTableRun.php,,Command,,,,,Core
 Command/MagicTableSelection.php,,Command,,,,,Core
 Command/MagicTableTarget.php,,Command,,,,,Core
@@ -4007,7 +4010,7 @@ Service/PersonLinkTarget.php,,Service,,,,,Core
 Service/PersonLinkTargets.php,,Service,,,,,Integrations
 Service/PhotoLinkServiceInterface.php,,Service,,,,,Integrations
 Service/PollIdentity.php,,Service,,,,,Integrations
-Service/PollLinkServiceInterface.php,,Service,,,,,Core
+Service/PollLinkServiceInterface.php,,Service,,,,,Integrations
 Service/PollOptionRow.php,,Service,,,,,Integrations
 Service/ProcessingRead.php,,Service,,,,,Compliance
 Service/PropertyAccessCollaborators.php,,Service,,,,,Core
@@ -4068,7 +4071,7 @@ Service/SemanticTypeResolverInterface.php,,Service,,,,,Core
 Service/SequenceScope.php,,Service,,,,,Configuration
 Service/SequenceServiceInterface.php,,Service,,,,,Processes
 Service/ServiceBootstrap.php,,Service,,,,,Core
-Service/ShareLinkServiceInterface.php,,Service,,,,,Core
+Service/ShareLinkServiceInterface.php,,Service,,,,,Integrations
 Service/ShareListingRun.php,,Service,,,,,Integrations
 Service/ShareRequest.php,,Service,,,,,Integrations
 Service/SharedMasterDataServiceInterface.php,,Service,,,,,Core
@@ -4091,7 +4094,7 @@ Service/TenantKeyRotationInterface.php,,Service,,,,,Core
 Service/TenantLifecycleServiceInterface.php,,Service,,,,,Core
 Service/TenantLogRedactorInterface.php,,Service,,,,,Core
 Service/TextExtraction/EntityRecognitionBackends.php,,Service,,,,,Files
-Service/TimeTrackerLinkServiceInterface.php,,Service,,,,,Core
+Service/TimeTrackerLinkServiceInterface.php,,Service,,,,,Integrations
 Service/TmloServiceInterface.php,,Service,,,,,Core
 Service/TranslationProjectionServiceInterface.php,,Service,,,,,Platform
 Service/TranslationSearch.php,,Service,,,,,Configuration
@@ -4478,6 +4481,6 @@ BackgroundJob/Support/BackfillCalendarLinksSources.php,,BackgroundJob,,,,,Config
 BackgroundJob/Support/OAuth2TokenRefreshServices.php,,BackgroundJob,,,,,Integrations
 BackgroundJob/Support/SyncDataServices.php,,BackgroundJob,,,,,Integrations
 BackgroundJob/Support/WebhookDeliveryStores.php,,BackgroundJob,,,,,Integrations
-Command/NarrowMagicJsonColumnsCommand.php,,Command,,,,,Core
-Db/CatalogueScope.php,,Db,,,,,Core
-Repair/NarrowMagicJsonColumns.php,,Repair,,,,,Core
+Controller/Support/PollLinksControllerServices.php,,Controller,,,,,Integrations
+Controller/Support/ShareLinksControllerServices.php,,Controller,,,,,Integrations
+Controller/Support/TimeTrackerLinksControllerServices.php,,Controller,,,,,Integrations
