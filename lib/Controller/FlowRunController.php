@@ -30,7 +30,6 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use DateTimeZone;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\FlowRunControllerServices;
 use OCA\OpenRegister\Db\AuditFlowAttributionInterface;
 use OCA\OpenRegister\Db\AuditTrail;
@@ -42,6 +41,7 @@ use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Db\FlowRunSubjectScope;
 use OCA\OpenRegister\Db\FlowRunViewer;
 use OCA\OpenRegister\Exception\FlowSignalRefused;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Flow\FlowCaller;
 use OCA\OpenRegister\Service\Flow\FlowLocatorInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunnableGuardInterface;
@@ -170,7 +170,7 @@ class FlowRunController extends Controller {
 		IRequest $request,
 		FlowRunControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->mapper = $services->runs->mapper;
 		$this->runner = $services->runs->runner;
 		$this->resolvers = $services->runs->resolvers;

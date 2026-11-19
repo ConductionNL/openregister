@@ -42,9 +42,9 @@ namespace OCA\OpenRegister\Controller;
 use OCA\OpenRegister\Db\ApiCall\ApiCallPeriod;
 use DateTime;
 use JsonSerializable;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ApiCallersControllerServices;
 use OCA\OpenRegister\Db\ApiCallRecordMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\ApiVersion\ApiVersionCatalogueInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -148,7 +148,7 @@ class ApiCallersController extends Controller {
 		IRequest $request,
 		ApiCallersControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->records = $services->records;
 		$this->catalogue = $services->catalogue;
 		$this->appConfig = $services->appConfig;
