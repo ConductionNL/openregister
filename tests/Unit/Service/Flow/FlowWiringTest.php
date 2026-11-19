@@ -14,8 +14,10 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\NodeRightsMapInterface;
 use OCA\OpenRegister\Service\Flow\FlowAccess;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistryInterface;
+use OCA\OpenRegister\Service\Flow\FlowNodeRightsGuard;
 use OCA\OpenRegister\Service\Flow\FlowRegistrar;
 use OCA\OpenRegister\Service\Flow\FlowRunAsScope;
 use OCA\OpenRegister\Service\Flow\FlowRunAuthorization;
@@ -152,7 +154,7 @@ final class FlowWiringTest extends TestCase {
 	}//end testTheFieldRulesPortIsAnsweredByTheStateResolver()
 
 	/**
-	 * The store of the flows compiled from application schedules is bound, and the generated-identifier counter is bound, and only those three aliases are registered.
+	 * The schedule flow store, the node-rights map and the generated-identifier counter are bound, and only those four aliases are registered.
 	 *
 	 * @return void
 	 */
@@ -160,6 +162,7 @@ final class FlowWiringTest extends TestCase {
 		self::assertSame(
 			expected: [
 				FieldRulesSourceInterface::class  => StateFieldRuleResolver::class,
+				NodeRightsMapInterface::class     => FlowNodeRightsGuard::class,
 				ScheduleFlowStoreInterface::class => ScheduleFlowStore::class,
 				SequenceServiceInterface::class   => SequenceService::class,
 			],

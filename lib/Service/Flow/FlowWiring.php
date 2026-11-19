@@ -24,6 +24,7 @@ use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\NodeRightsMapInterface;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionRunner;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
@@ -57,6 +58,7 @@ final class FlowWiring {
 	 * @var array<class-string, class-string>
 	 */
 	public const BINDINGS = [
+		NodeRightsMapInterface::class     => FlowNodeRightsGuard::class,
 		ScheduleFlowStoreInterface::class => ScheduleFlowStore::class,
 		SequenceServiceInterface::class   => SequenceService::class,
 	];

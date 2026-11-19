@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\NodeRightsMapInterface;
+
 /**
  * A step type that an author may only put in a flow when they hold a named right.
  *
@@ -35,11 +37,11 @@ namespace OCA\OpenRegister\Service\Flow;
 interface IFlowNodeRequiresRight {
 
 	/**
-	 * The prefix every node right starts with.
+	 * The prefix every node right starts with; the node map's own (Core) prefix.
 	 *
 	 * @var string
 	 */
-	public const RIGHT_PREFIX = 'flow.node.';
+	public const RIGHT_PREFIX = NodeRightsMapInterface::RIGHT_PREFIX;
 
 	/**
 	 * The right a step with this configuration needs, or null when it needs none.
