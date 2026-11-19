@@ -734,7 +734,7 @@ Db/GdprEntity.php,52,Db,Compliance,Compliance/Db/GdprEntity.php,9,372,Compliance
 Db/GdprEntityMapper.php,55,Db,Compliance,Compliance/Db/GdprEntityMapper.php,10,370,Compliance
 Db/HandoffQueueEntry.php,62,Db,Integrations,Integrations/Db/HandoffQueueEntry.php,0,,Integrations
 Db/HandoffQueueEntryMapper.php,48,Db,Integrations,Integrations/Db/HandoffQueueEntryMapper.php,0,,Integrations
-Db/HydrateBySettersTrait.php,15,Db,Configuration,Configuration/Db/HydrateBySettersTrait.php,0,,Configuration
+Db/HydrateBySettersTrait.php,15,Db,Configuration,Configuration/Db/HydrateBySettersTrait.php,0,,Core
 Db/HydrateEmptyJsonAsNullTrait.php,19,Db,Service,Service/Db/HydrateEmptyJsonAsNullTrait.php,0,,Core
 Db/HydrateKnownFieldsTrait.php,15,Db,Work,Work/Db/HydrateKnownFieldsTrait.php,0,,Processes
 Db/IdCursor.php,14,Db,Flows,Flows/Db/IdCursor.php,0,,Processes
@@ -4120,7 +4120,7 @@ Service/WebhookStores.php,,Service,,,,,Integrations
 Service/WholeTableRows.php,,Service,,,,,Core
 Service/WorkPackageDraft.php,,Service,,,,,Integrations
 Service/WritePhase.php,,Service,,,,,Core
-Service/XwikiLinkServiceInterface.php,,Service,,,,,Core
+Service/XwikiLinkServiceInterface.php,,Service,,,,,Integrations
 Service/XwikiPageDraft.php,,Service,,,,,Integrations
 Service/XwikiPendingLink.php,,Service,,,,,Integrations
 Command/FederationSharesExpiringCommand.php,,Command,,,,,Core
@@ -4183,7 +4183,7 @@ Service/Anonymisation/TextDisclosureRecorder.php,,Service,,,,,Compliance
 Service/Anonymisation/PipelineSteps.php,,Service,,,,,Compliance
 Service/Anonymisation/ContentPipelineReport.php,,Service,,,,,Compliance
 Controller/AnonymisationPipelineController.php,,Controller,,,,,Compliance
-Controller/FileDisclosuresController.php,,Controller,,,,,Compliance
+Controller/FileDisclosuresController.php,,Controller,,,,,Files
 Exception/TextDisclosureNotRecordedException.php,,Exception,,,,,Compliance
 Files/Db/TextDisclosure.php,,Files,,,,,Files
 Files/Db/TextDisclosureMapper.php,,Files,,,,,Files
@@ -4414,3 +4414,4 @@ Db/PlatformMapperBindings.php,,Db,,,,,Platform
 Db/PlatformMapperRegistrar.php,,Db,,,,,Platform
 Service/PlatformServiceBindings.php,,Service,,,,,Platform
 Service/PlatformServiceRegistrar.php,,Service,,,,,Platform
+Controller/Support/XwikiLinksControllerServices.php,,Controller,,,,,Integrations
