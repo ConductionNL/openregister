@@ -49,7 +49,6 @@ final class ProcessesMapperBindings {
 		DecisionMapperInterface::class            => DecisionMapper::class,
 		FlowClaimMapperInterface::class           => FlowClaimMapper::class,
 		FlowDefinitionMapperInterface::class      => FlowDefinitionMapper::class,
-		FlowLinkMapperInterface::class            => FlowLinkMapper::class,
 		FlowMapperInterface::class                => FlowMapper::class,
 		FlowRunMapperInterface::class             => FlowRunMapper::class,
 		FlowRunStepMapperInterface::class         => FlowRunStepMapper::class,

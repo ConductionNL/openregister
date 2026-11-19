@@ -278,7 +278,7 @@ Controller/FileExtractionController.php,382,Controller,Files,Files/Controller/Fi
 Controller/FileTextController.php,496,Controller,Files,Files/Controller/FileTextController.php,0,,Files
 Controller/FlowController.php,574,Controller,Flows,Flows/Controller/FlowController.php,0,,Processes
 Controller/FlowDryRunController.php,57,Controller,Flows,Flows/Controller/FlowDryRunController.php,0,,Processes
-Controller/FlowLinksController.php,103,Controller,Flows,Flows/Controller/FlowLinksController.php,0,,Processes
+Controller/FlowLinksController.php,103,Controller,Flows,Flows/Controller/FlowLinksController.php,0,,Integrations
 Controller/FlowNodeRunController.php,211,Controller,Flows,Flows/Controller/FlowNodeRunController.php,0,,Processes
 Controller/FlowPrincipalController.php,21,Controller,Flows,Flows/Controller/FlowPrincipalController.php,0,,Processes
 Controller/FlowRunController.php,443,Controller,Flows,Flows/Controller/FlowRunController.php,0,,Processes
@@ -706,8 +706,8 @@ Db/FlowClaim.php,33,Db,Flows,Flows/Db/FlowClaim.php,4,,Processes
 Db/FlowClaimMapper.php,92,Db,Flows,Flows/Db/FlowClaimMapper.php,3,,Processes
 Db/FlowDefinition.php,36,Db,Flows,Flows/Db/FlowDefinition.php,3,,Processes
 Db/FlowDefinitionMapper.php,47,Db,Flows,Flows/Db/FlowDefinitionMapper.php,2,,Processes
-Db/FlowLink.php,45,Db,Flows,Flows/Db/FlowLink.php,0,,Processes
-Db/FlowLinkMapper.php,23,Db,Flows,Flows/Db/FlowLinkMapper.php,0,382,Processes
+Db/FlowLink.php,45,Db,Flows,Flows/Db/FlowLink.php,0,,Integrations
+Db/FlowLinkMapper.php,23,Db,Flows,Flows/Db/FlowLinkMapper.php,0,382,Integrations
 Db/FlowMapper.php,165,Db,Flows,Flows/Db/FlowMapper.php,52,167,Processes
 Db/FlowRun.php,122,Db,Flows,Flows/Db/FlowRun.php,74,230,Processes
 Db/FlowRunMapper.php,551,Db,Flows,Flows/Db/FlowRunMapper.php,40,17,Processes
@@ -2454,7 +2454,7 @@ Service/Flow/Timer/WorkingCalendar.php,313,Service,Flows,Flows/Service/Flow/Time
 Service/Flow/Timer/WorkingCalendarService.php,56,Service,Flows,Flows/Service/Flow/Timer/WorkingCalendarService.php,8,362,Processes
 Service/Flow/Timer/WorkingCalendarWriteGuard.php,52,Service,Flows,Flows/Service/Flow/Timer/WorkingCalendarWriteGuard.php,0,,Processes
 Service/Flow/Timer/WorkingDayRoll.php,50,Service,Flows,Flows/Service/Flow/Timer/WorkingDayRoll.php,0,,Processes
-Service/FlowLinkService.php,174,Service,Flows,Flows/Service/FlowLinkService.php,0,151,Processes
+Service/FlowLinkService.php,174,Service,Flows,Flows/Service/FlowLinkService.php,0,151,Integrations
 Service/Form/AppDataFolder.php,17,Service,Work,Work/Service/Form/AppDataFolder.php,0,,Processes
 Service/Form/FormDefinitionResolver.php,56,Service,Work,Work/Service/Form/FormDefinitionResolver.php,0,,Processes
 Service/Form/FormDependent.php,16,Service,Work,Work/Service/Form/FormDependent.php,17,473,Kernel
@@ -3345,7 +3345,7 @@ Controller/Support/CasePlanRequest.php,13,Controller,Work,Work/Controller/Suppor
 Controller/Support/CaseTransitionCommand.php,11,Controller,Work,Work/Controller/Support/CaseTransitionCommand.php,0,,Processes
 Controller/Support/EntityRelationPatch.php,13,Controller,,,0,,Processes
 Controller/Support/FlowLifecycleRefusalTrait.php,19,Controller,Flows,Flows/Controller/Support/FlowLifecycleRefusalTrait.php,0,,Processes
-Controller/Support/FlowLinksControllerServices.php,12,Controller,Flows,Flows/Controller/Support/FlowLinksControllerServices.php,0,,Processes
+Controller/Support/FlowLinksControllerServices.php,12,Controller,Flows,Flows/Controller/Support/FlowLinksControllerServices.php,0,,Integrations
 Controller/Support/FlowNodeCall.php,10,Controller,Flows,Flows/Controller/Support/FlowNodeCall.php,0,,Processes
 Controller/Support/FlowNodeTypes.php,12,Controller,Flows,Flows/Controller/Support/FlowNodeTypes.php,0,,Processes
 Controller/Support/FlowRunMigrationControllerServices.php,16,Controller,Flows,Flows/Controller/Support/FlowRunMigrationControllerServices.php,0,,Processes
@@ -3654,7 +3654,7 @@ Db/FeedbackMapperInterface.php,,Db,,,,,Notifications
 Db/FlowActivityWindow.php,,Db,,,,,Processes
 Db/FlowClaimMapperInterface.php,,Db,,,,,Processes
 Db/FlowDefinitionMapperInterface.php,,Db,,,,,Processes
-Db/FlowLinkMapperInterface.php,,Db,,,,,Processes
+Db/FlowLinkMapperInterface.php,,Db,,,,,Integrations
 Db/FlowMapperInterface.php,,Db,,,,,Processes
 Db/FlowRun/FlowRunFieldTypes.php,,Db,,,,,Processes
 Db/FlowRunFilter.php,,Db,,,,,Processes
@@ -3945,9 +3945,9 @@ Service/FileHandlerSupportInterface.php,,Service,,,,,Files
 Service/FileReaderInterface.php,,Service,,,,,Files
 Service/FileServiceInterface.php,,Service,,,,,Files
 Service/FileWriterInterface.php,,Service,,,,,Files
-Service/FlowJsonColumn.php,,Service,,,,,Processes
-Service/FlowLinkPlatform.php,,Service,,,,,Processes
-Service/FlowLinkServiceInterface.php,,Service,,,,,Processes
+Service/FlowJsonColumn.php,,Service,,,,,Integrations
+Service/FlowLinkPlatform.php,,Service,,,,,Integrations
+Service/FlowLinkServiceInterface.php,,Service,,,,,Integrations
 Service/FormLinkScope.php,,Service,,,,,Integrations
 Service/FormLinkServiceInterface.php,,Service,,,,,Integrations
 Service/FormsAppRows.php,,Service,,,,,Configuration

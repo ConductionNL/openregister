@@ -53,6 +53,7 @@ final class IntegrationsMapperBindings {
 		EndpointLogMapperInterface::class     => EndpointLogMapper::class,
 		EndpointMapperInterface::class        => EndpointMapper::class,
 		FederatedShareMapperInterface::class  => FederatedShareMapper::class,
+		FlowLinkMapperInterface::class        => FlowLinkMapper::class,
 		MapLinkMapperInterface::class         => MapLinkMapper::class,
 		MappingMapperInterface::class         => MappingMapper::class,
 		OpenProjectLinkMapperInterface::class => OpenProjectLinkMapper::class,
