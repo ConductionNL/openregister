@@ -33,12 +33,11 @@ use Closure;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\Types;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Adds the `retained_at` column to `openregister_organisations`.
  */
-final class Version1Date20260911060000 extends SimpleMigrationStep {
+final class Version1Date20260911060000 extends TargetedMigrationStep {
 
 	/**
 	 * The table this migration widens.
@@ -63,7 +62,7 @@ final class Version1Date20260911060000 extends SimpleMigrationStep {
 	 *
 	 * @return ISchemaWrapper The changed schema.
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ISchemaWrapper {
 		/* @var ISchemaWrapper $schema The schema wrapper. */
 		$schema = $schemaClosure();
 
@@ -91,6 +90,6 @@ final class Version1Date20260911060000 extends SimpleMigrationStep {
 		$output->info(message: 'openregister_organisations: added ' . self::COLUMN);
 
 		return $schema;
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 
 }//end class

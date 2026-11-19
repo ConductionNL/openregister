@@ -2,7 +2,7 @@
     "pg / two objects / preUpdate true / managed false": {
         "events": [
             {
-                "prepare": "SELECT LOWER(column_name) AS col, numeric_precision, numeric_scale FROM information_schema.columns WHERE LOWER(table_name) = ? AND LOWER(data_type) IN ('decimal', 'numeric')"
+                "prepare": "SELECT LOWER(column_name) AS col, numeric_precision, numeric_scale FROM information_schema.columns WHERE LOWER(table_name) = ? AND LOWER(data_type) IN ('decimal', 'numeric') AND table_schema = current_schema()"
             },
             {
                 "execute": [
@@ -258,7 +258,7 @@
     "pg / two objects / preUpdate false / managed true": {
         "events": [
             {
-                "prepare": "SELECT LOWER(column_name) AS col, numeric_precision, numeric_scale FROM information_schema.columns WHERE LOWER(table_name) = ? AND LOWER(data_type) IN ('decimal', 'numeric')"
+                "prepare": "SELECT LOWER(column_name) AS col, numeric_precision, numeric_scale FROM information_schema.columns WHERE LOWER(table_name) = ? AND LOWER(data_type) IN ('decimal', 'numeric') AND table_schema = current_schema()"
             },
             {
                 "execute": [
@@ -509,7 +509,7 @@
     "pg / duplicate uuid / preUpdate true / managed false": {
         "events": [
             {
-                "prepare": "SELECT LOWER(column_name) AS col, numeric_precision, numeric_scale FROM information_schema.columns WHERE LOWER(table_name) = ? AND LOWER(data_type) IN ('decimal', 'numeric')"
+                "prepare": "SELECT LOWER(column_name) AS col, numeric_precision, numeric_scale FROM information_schema.columns WHERE LOWER(table_name) = ? AND LOWER(data_type) IN ('decimal', 'numeric') AND table_schema = current_schema()"
             },
             {
                 "execute": [
@@ -730,7 +730,7 @@
     "pg / duplicate uuid / preUpdate false / managed true": {
         "events": [
             {
-                "prepare": "SELECT LOWER(column_name) AS col, numeric_precision, numeric_scale FROM information_schema.columns WHERE LOWER(table_name) = ? AND LOWER(data_type) IN ('decimal', 'numeric')"
+                "prepare": "SELECT LOWER(column_name) AS col, numeric_precision, numeric_scale FROM information_schema.columns WHERE LOWER(table_name) = ? AND LOWER(data_type) IN ('decimal', 'numeric') AND table_schema = current_schema()"
             },
             {
                 "execute": [
@@ -954,7 +954,7 @@
     "pg / upsert fails": {
         "events": [
             {
-                "prepare": "SELECT LOWER(column_name) AS col, numeric_precision, numeric_scale FROM information_schema.columns WHERE LOWER(table_name) = ? AND LOWER(data_type) IN ('decimal', 'numeric')"
+                "prepare": "SELECT LOWER(column_name) AS col, numeric_precision, numeric_scale FROM information_schema.columns WHERE LOWER(table_name) = ? AND LOWER(data_type) IN ('decimal', 'numeric') AND table_schema = current_schema()"
             },
             {
                 "execute": [
@@ -1178,7 +1178,7 @@
     "mysql / two objects / preUpdate true / managed false": {
         "events": [
             {
-                "prepare": "SELECT LOWER(column_name) AS col, numeric_precision, numeric_scale FROM information_schema.columns WHERE LOWER(table_name) = ? AND LOWER(data_type) IN ('decimal', 'numeric')"
+                "prepare": "SELECT LOWER(column_name) AS col, numeric_precision, numeric_scale FROM information_schema.columns WHERE LOWER(table_name) = ? AND LOWER(data_type) IN ('decimal', 'numeric') AND table_schema = DATABASE()"
             },
             {
                 "execute": [
@@ -1432,7 +1432,7 @@
     "mysql / two objects / preUpdate false / managed true": {
         "events": [
             {
-                "prepare": "SELECT LOWER(column_name) AS col, numeric_precision, numeric_scale FROM information_schema.columns WHERE LOWER(table_name) = ? AND LOWER(data_type) IN ('decimal', 'numeric')"
+                "prepare": "SELECT LOWER(column_name) AS col, numeric_precision, numeric_scale FROM information_schema.columns WHERE LOWER(table_name) = ? AND LOWER(data_type) IN ('decimal', 'numeric') AND table_schema = DATABASE()"
             },
             {
                 "execute": [
@@ -1681,7 +1681,7 @@
     "mysql / duplicate uuid / preUpdate true / managed false": {
         "events": [
             {
-                "prepare": "SELECT LOWER(column_name) AS col, numeric_precision, numeric_scale FROM information_schema.columns WHERE LOWER(table_name) = ? AND LOWER(data_type) IN ('decimal', 'numeric')"
+                "prepare": "SELECT LOWER(column_name) AS col, numeric_precision, numeric_scale FROM information_schema.columns WHERE LOWER(table_name) = ? AND LOWER(data_type) IN ('decimal', 'numeric') AND table_schema = DATABASE()"
             },
             {
                 "execute": [
@@ -1900,7 +1900,7 @@
     "mysql / duplicate uuid / preUpdate false / managed true": {
         "events": [
             {
-                "prepare": "SELECT LOWER(column_name) AS col, numeric_precision, numeric_scale FROM information_schema.columns WHERE LOWER(table_name) = ? AND LOWER(data_type) IN ('decimal', 'numeric')"
+                "prepare": "SELECT LOWER(column_name) AS col, numeric_precision, numeric_scale FROM information_schema.columns WHERE LOWER(table_name) = ? AND LOWER(data_type) IN ('decimal', 'numeric') AND table_schema = DATABASE()"
             },
             {
                 "execute": [
@@ -2122,7 +2122,7 @@
     "mysql / upsert fails": {
         "events": [
             {
-                "prepare": "SELECT LOWER(column_name) AS col, numeric_precision, numeric_scale FROM information_schema.columns WHERE LOWER(table_name) = ? AND LOWER(data_type) IN ('decimal', 'numeric')"
+                "prepare": "SELECT LOWER(column_name) AS col, numeric_precision, numeric_scale FROM information_schema.columns WHERE LOWER(table_name) = ? AND LOWER(data_type) IN ('decimal', 'numeric') AND table_schema = DATABASE()"
             },
             {
                 "execute": [
