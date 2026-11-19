@@ -21,6 +21,7 @@ namespace OCA\OpenRegister\Search\Service\GraphQL;
 use GraphQL\Error\Error;
 use GraphQL\Error\FormattedError;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Service\GraphQL\GraphQLResolver;
 
 /**
  * Formats GraphQL errors into a structured response with extension codes.
@@ -83,7 +84,7 @@ class GraphQLErrorFormatter {
 	}//end fieldForbidden()
 
 	/**
-	 * Create a not-found error.
+	 * Create a not-found error, the one the resolver raises.
 	 *
 	 * @param string $type The object type
 	 * @param string $id The object ID
@@ -93,15 +94,7 @@ class GraphQLErrorFormatter {
 	 * @spec openspec/specs/graphql-api/spec.md#requirement-graphql-must-enforce-schema-level-rbac-via-permissionhandler
 	 */
 	public static function notFound(string $type, string $id): Error {
-		return new Error(
-			"$type with ID '$id' not found",
-			null,
-			null,
-			[],
-			null,
-			null,
-			['code' => 'NOT_FOUND']
-		);
+		return GraphQLResolver::recordNotFound(type: $type, id: $id);
 
 	}//end notFound()
 }//end class
