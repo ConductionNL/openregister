@@ -41,8 +41,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\WellKnownControllerServices;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\WellKnown\SecurityTxtBuilderInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -90,7 +90,7 @@ class WellKnownController extends Controller {
 		IRequest $request,
 		WellKnownControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->securityTxt = $services->securityTxt;
 		$this->urlGenerator = $services->urlGenerator;
 	}//end __construct()
