@@ -29,7 +29,7 @@ use OCA\OpenRegister\Service\Flow\IFlowNode;
  *
  * Its only outside caller hands it to {@see \OCA\OpenRegister\Service\Flow\RegisterFlowNodesEvent::registerNode()},
  * which takes an IFlowNode, so the contract adds nothing to IFlowNode. Binding it
- * in FlowBindings lets that caller resolve the node without naming the class.
+ * in FlowWiring lets that caller resolve the node without naming the class.
  */
 interface LockObjectNodeInterface extends IFlowNode {
 }//end interface
