@@ -30,7 +30,7 @@ interface AuditEntryWriterInterface {
 	/**
 	 * Write the entries, in order.
 	 *
-	 * @param list<AuditEntry> $entries The entries.
+	 * @param list<AuditEntry|PlacedAuditEntry> $entries The entries; a placed entry is filed under its register and schema.
 	 *
 	 * @return void
 	 *
