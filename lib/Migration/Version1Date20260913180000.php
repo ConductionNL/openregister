@@ -36,14 +36,13 @@ use Doctrine\DBAL\Types\Types;
 use OCP\DB\ISchemaWrapper;
 use Doctrine\DBAL\Schema\Table;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Widens the contact link table to users, validity and several roles per person.
  *
  * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md#requirement-a-link-on-an-object-is-a-user-or-a-contact-in-a-role-for-a-period
  */
-class Version1Date20260913180000 extends SimpleMigrationStep {
+class Version1Date20260913180000 extends TargetedMigrationStep {
 
 	/*
 	 * NO NATIVE TYPE HINT on the $table parameters below, deliberately.
@@ -112,7 +111,7 @@ class Version1Date20260913180000 extends SimpleMigrationStep {
 	 *
 	 * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md#requirement-a-link-on-an-object-is-a-user-or-a-contact-in-a-role-for-a-period
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		$schema = $schemaClosure();
 		if ($schema->hasTable(self::TABLE) === false) {
 			return $schema;
@@ -127,7 +126,7 @@ class Version1Date20260913180000 extends SimpleMigrationStep {
 		}
 
 		return $schema;
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 
 	/**
 	 * Add the four people-on-objects columns that are still missing.
