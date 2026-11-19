@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Service\Connection;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
+use OCA\OpenRegister\Notifications\Db\ScheduledReport;
 
 /**
  * Options and run of the connection-health report kind.
@@ -39,12 +40,12 @@ class ConnectionReportKind {
 	/**
 	 * The kind of an object export, the default.
 	 */
-	public const EXPORT = 'export';
+	public const EXPORT = ScheduledReport::KIND_EXPORT;
 
 	/**
 	 * The kind of the daily connection report.
 	 */
-	public const CONNECTION_HEALTH = 'connection-health';
+	public const CONNECTION_HEALTH = ScheduledReport::KIND_CONNECTION_HEALTH;
 
 	/**
 	 * The kinds a scheduled report may have.

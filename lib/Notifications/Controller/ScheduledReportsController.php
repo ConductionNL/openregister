@@ -34,9 +34,9 @@ use OCA\OpenRegister\Notifications\Controller\Support\ScheduledReportsController
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Notifications\BackgroundJob\ScheduledReportRunNowJob;
+use OCA\OpenRegister\Notifications\Db\ScheduledReport;
 use OCA\OpenRegister\Kernel\Contracts\ScheduledReportsInterface;
 use OCA\OpenRegister\Service\Connection\ConnectionReportForbiddenException;
-use OCA\OpenRegister\Service\Connection\ConnectionReportKind;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -221,7 +221,7 @@ class ScheduledReportsController extends Controller {
 			}
 		}
 
-		if (($data['kind'] ?? null) === ConnectionReportKind::CONNECTION_HEALTH && $this->isCurrentUserAdmin() === false) {
+		if (($data['kind'] ?? null) === ScheduledReport::KIND_CONNECTION_HEALTH && $this->isCurrentUserAdmin() === false) {
 			return new JSONResponse(data: ['error' => (new ConnectionReportForbiddenException())->getMessage()], statusCode: 403);
 		}
 
