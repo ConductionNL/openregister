@@ -34,130 +34,214 @@ use ReflectionClass;
  */
 final class SchemaDeclarationOrder {
 
-	/** The lifecycle annotation (Processes). */
+	/**
+	 * The lifecycle annotation (Processes).
+	 */
 	public const LIFECYCLE = 10;
 
-	/** The declared object actions (Processes). */
+	/**
+	 * The declared object actions (Processes).
+	 */
 	public const DECLARED_ACTIONS = 20;
 
-	/** The MDTO element mapping. */
+	/**
+	 * The MDTO element mapping.
+	 */
 	public const MDTO_MAPPING = 30;
 
-	/** The aggregations, advisory. */
+	/**
+	 * The aggregations, advisory.
+	 */
 	public const AGGREGATIONS = 40;
 
-	/** The property calculations (Processes). */
+	/**
+	 * The property calculations (Processes).
+	 */
 	public const CALCULATIONS = 50;
 
-	/** The consent declarations. */
+	/**
+	 * The consent declarations.
+	 */
 	public const CONSENT = 60;
 
-	/** The relation declarations. */
+	/**
+	 * The relation declarations.
+	 */
 	public const RELATIONS = 70;
 
-	/** The dependent values and default expressions (Processes). */
+	/**
+	 * The dependent values and default expressions (Processes).
+	 */
 	public const DEPENDENT_VALUES = 80;
 
-	/** The reference loops through declared actions (Processes). */
+	/**
+	 * The reference loops through declared actions (Processes).
+	 */
 	public const REFERENCE_LOOPS = 90;
 
-	/** The named conditions (Processes). */
+	/**
+	 * The named conditions (Processes).
+	 */
 	public const NAMED_CONDITIONS = 100;
 
-	/** The quality annotation, advisory. */
+	/**
+	 * The quality annotation, advisory.
+	 */
 	public const QUALITY = 110;
 
-	/** The dedup annotation, advisory. */
+	/**
+	 * The dedup annotation, advisory.
+	 */
 	public const DEDUP = 120;
 
-	/** The unique hint. */
+	/**
+	 * The unique hint.
+	 */
 	public const UNIQUE_HINT = 130;
 
-	/** The identity declaration. */
+	/**
+	 * The identity declaration.
+	 */
 	public const IDENTITY = 140;
 
-	/** The hinge annotation, advisory. */
+	/**
+	 * The hinge annotation, advisory.
+	 */
 	public const HINGE = 150;
 
-	/** The survivorship annotation, advisory. */
+	/**
+	 * The survivorship annotation, advisory.
+	 */
 	public const SURVIVORSHIP = 160;
 
-	/** The merge annotation, advisory. */
+	/**
+	 * The merge annotation, advisory.
+	 */
 	public const MERGE = 170;
 
-	/** The party annotation, advisory. */
+	/**
+	 * The party annotation, advisory.
+	 */
 	public const PARTY = 180;
 
-	/** The notification annotation. */
+	/**
+	 * The notification annotation.
+	 */
 	public const NOTIFICATIONS = 190;
 
-	/** The widget annotation. */
+	/**
+	 * The widget annotation.
+	 */
 	public const WIDGETS = 200;
 
-	/** The archival annotation. */
+	/**
+	 * The archival annotation.
+	 */
 	public const ARCHIVAL = 210;
 
-	/** The reference card. */
+	/**
+	 * The reference card.
+	 */
 	public const REFERENCE_CARD = 220;
 
-	/** The search result. */
+	/**
+	 * The search result.
+	 */
 	public const SEARCH_RESULT = 230;
 
-	/** The retention annotation. */
+	/**
+	 * The retention annotation.
+	 */
 	public const RETENTION = 240;
 
-	/** The handoff annotation. */
+	/**
+	 * The handoff annotation.
+	 */
 	public const HANDOFF = 250;
 
-	/** The handoff contract binding. */
+	/**
+	 * The handoff contract binding.
+	 */
 	public const HANDOFF_CONTRACT = 260;
 
-	/** The MCP annotation. */
+	/**
+	 * The MCP annotation.
+	 */
 	public const MCP = 270;
 
-	/** The registry annotation. */
+	/**
+	 * The registry annotation.
+	 */
 	public const REGISTRY = 280;
 
-	/** The external links. */
+	/**
+	 * The external links.
+	 */
 	public const EXTERNAL_LINKS = 290;
 
-	/** The extending form. */
+	/**
+	 * The extending form.
+	 */
 	public const EXTENDING_FORM = 300;
 
-	/** The authorization deny block. */
+	/**
+	 * The authorization deny block.
+	 */
 	public const AUTHORIZATION = 310;
 
-	/** The hierarchy. */
+	/**
+	 * The hierarchy.
+	 */
 	public const HIERARCHY = 320;
 
-	/** The department matrix. */
+	/**
+	 * The department matrix.
+	 */
 	public const DEPARTMENT_MATRIX = 330;
 
-	/** The reveal audit. */
+	/**
+	 * The reveal audit.
+	 */
 	public const REVEAL_AUDIT = 340;
 
-	/** The classification. */
+	/**
+	 * The classification.
+	 */
 	public const CLASSIFICATION = 350;
 
-	/** The confidentiality. */
+	/**
+	 * The confidentiality.
+	 */
 	public const CONFIDENTIALITY = 360;
 
-	/** The reversible bulk actions (Processes). */
+	/**
+	 * The reversible bulk actions (Processes).
+	 */
 	public const REVERSIBILITY = 370;
 
-	/** The review ownership (Processes). */
+	/**
+	 * The review ownership (Processes).
+	 */
 	public const REVIEW = 380;
 
-	/** The first and last slot of what objects of a schema do. */
+	/**
+	 * The first and last slot of what objects of a schema do.
+	 */
 	public const BEHAVIOUR = [self::LIFECYCLE, self::NAMED_CONDITIONS];
 
-	/** The first and last slot of what the data of a schema means. */
+	/**
+	 * The first and last slot of what the data of a schema means.
+	 */
 	public const DATA = [self::QUALITY, self::RETENTION];
 
-	/** The first and last slot of how objects leave or enter. */
+	/**
+	 * The first and last slot of how objects leave or enter.
+	 */
 	public const EXCHANGE = [self::HANDOFF, self::EXTENDING_FORM];
 
-	/** The first and last slot of who reaches what. */
+	/**
+	 * The first and last slot of who reaches what.
+	 */
 	public const ACCESS = [self::AUTHORIZATION, self::REVIEW];
 
 	/**

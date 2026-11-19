@@ -1341,7 +1341,8 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	private function behaviourSteps(Schema $schema): array {
 		return [
 			SchemaDeclarationOrder::MDTO_MAPPING => fn () => (new RecordAnnotationRefusals(logger: $this->logger))->checkMdtoMapping(schema: $schema),
-			SchemaDeclarationOrder::AGGREGATIONS => fn () => (new AdvisoryAnnotationChecks(logger: $this->logger, discarded: $this->discarded))->checkAggregations(schema: $schema),
+			SchemaDeclarationOrder::AGGREGATIONS => fn () => (new AdvisoryAnnotationChecks(logger: $this->logger, discarded: $this->discarded))
+				->checkAggregations(schema: $schema),
 			SchemaDeclarationOrder::CONSENT => static fn () => (new SubjectDeclarationRefusals())->checkConsent(schema: $schema),
 			SchemaDeclarationOrder::RELATIONS => fn () => (new RelationDeclarationCheck(
 				findSchema: fn (string $id): Schema => $this->find(id: $id, _rbac: false, _multitenancy: false)

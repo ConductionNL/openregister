@@ -120,7 +120,8 @@ class MapperRegistrarSchemaActionsTest extends TestCase {
 			'OCP\IGroupManager' => $groups,
 			ObjectActionValidatorInterface::class => new ObjectActionValidator($macros, $session, $groups),
 		];
-		$services['OCP\EventDispatcher\IEventDispatcher'] = new ProcessDeclarationChecksDispatcher(objectActions: $services[ObjectActionValidatorInterface::class]);
+		$dispatcher = new ProcessDeclarationChecksDispatcher(objectActions: $services[ObjectActionValidatorInterface::class]);
+		$services['OCP\EventDispatcher\IEventDispatcher'] = $dispatcher;
 		$container = $this->createMock(originalClassName: IAppContainer::class);
 		$container->method('get')->willReturnCallback(
 			function (string $id) use (&$services) {

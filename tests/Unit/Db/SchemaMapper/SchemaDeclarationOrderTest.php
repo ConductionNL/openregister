@@ -86,7 +86,9 @@ final class SchemaDeclarationOrderTest extends TestCase {
 		}
 
 		$event = new SchemaDeclarationChecksEvent();
-		(new SchemaDeclarationChecksListener(logger: new NullLogger(), container: $this->createMock(ContainerInterface::class)))->handle(event: $event);
+		$container = $this->createMock(originalClassName: ContainerInterface::class);
+		$listener  = new SchemaDeclarationChecksListener(logger: new NullLogger(), container: $container);
+		$listener->handle(event: $event);
 		$contributed = array_map(static fn ($check): int => $check->position(), $event->checks());
 
 		$this->assertSame(expected: [], actual: array_intersect($own, $contributed), message: 'No slot is claimed twice');
@@ -152,16 +154,16 @@ final class SchemaDeclarationOrderTest extends TestCase {
 	 */
 	private function mapper(): SchemaMapper {
 		return new SchemaMapper(
-			db: $this->createMock(IDBConnection::class),
+			db: $this->createMock(originalClassName: IDBConnection::class),
 			tenancy: new TenancyServices(
-				organisationMapper: $this->createMock(OrganisationMapper::class),
-				userSession: $this->createMock(IUserSession::class),
-				groupManager: $this->createMock(IGroupManager::class)
+				organisationMapper: $this->createMock(originalClassName: OrganisationMapper::class),
+				userSession: $this->createMock(originalClassName: IUserSession::class),
+				groupManager: $this->createMock(originalClassName: IGroupManager::class)
 			),
-			appConfig: $this->createMock(IAppConfig::class),
+			appConfig: $this->createMock(originalClassName: IAppConfig::class),
 			services: new SchemaMapperServices(
 				eventDispatcher: new ProcessDeclarationChecksDispatcher(),
-				validator: $this->createMock(PropertyValidatorHandler::class),
+				validator: $this->createMock(originalClassName: PropertyValidatorHandler::class),
 				logger: new NullLogger()
 			)
 		);

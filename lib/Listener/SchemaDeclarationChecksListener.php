@@ -90,12 +90,18 @@ final class SchemaDeclarationChecksListener implements IEventListener {
 		$container = $this->container;
 		$refusals  = new ProcessDeclarationRefusals();
 		return [
-			SchemaDeclarationOrder::LIFECYCLE => static fn (Schema $schema, DiscardedAnnotations $discarded) => (new LifecycleAnnotationCheck(logger: $logger, discarded: $discarded))->check(schema: $schema),
+			SchemaDeclarationOrder::LIFECYCLE => static fn (Schema $schema, DiscardedAnnotations $discarded) => (new LifecycleAnnotationCheck(
+				logger: $logger,
+				discarded: $discarded
+			))->check(schema: $schema),
 			SchemaDeclarationOrder::DECLARED_ACTIONS => static fn (Schema $schema) => (new DeclaredActionCheck(
 				objectActions: static fn (): ?ObjectActionValidatorInterface => $container->get(ObjectActionValidatorInterface::class),
 				logger: $logger
 			))->check(schema: $schema),
-			SchemaDeclarationOrder::CALCULATIONS => static fn (Schema $schema, DiscardedAnnotations $discarded) => (new CalculationAnnotationCheck(logger: $logger, discarded: $discarded))->check(schema: $schema),
+			SchemaDeclarationOrder::CALCULATIONS => static fn (Schema $schema, DiscardedAnnotations $discarded) => (new CalculationAnnotationCheck(
+				logger: $logger,
+				discarded: $discarded
+			))->check(schema: $schema),
 			SchemaDeclarationOrder::DEPENDENT_VALUES => static fn (Schema $schema) => $refusals->checkDependentValues(schema: $schema),
 			SchemaDeclarationOrder::REFERENCE_LOOPS => static fn (Schema $schema) => (new ReferenceLoopCheck())->check(schema: $schema),
 			SchemaDeclarationOrder::NAMED_CONDITIONS => static fn (Schema $schema) => (new NamedConditionCheck())->check(schema: $schema),

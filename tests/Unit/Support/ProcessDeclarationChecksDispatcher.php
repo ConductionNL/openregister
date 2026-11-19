@@ -59,23 +59,71 @@ final class ProcessDeclarationChecksDispatcher implements IEventDispatcher, Cont
 	) {
 	}//end __construct()
 
+	/**
+	 * Ignored: this dispatcher has no listeners of its own.
+	 *
+	 * @param string   $eventName The event.
+	 * @param callable $listener  The listener.
+	 * @param int      $priority  The priority.
+	 *
+	 * @return void
+	 */
 	public function addListener(string $eventName, callable $listener, int $priority = 0): void {
 	}//end addListener()
 
+	/**
+	 * Ignored.
+	 *
+	 * @param string   $eventName The event.
+	 * @param callable $listener  The listener.
+	 *
+	 * @return void
+	 */
 	public function removeListener(string $eventName, callable $listener): void {
 	}//end removeListener()
 
+	/**
+	 * Ignored.
+	 *
+	 * @param string $eventName The event.
+	 * @param string $className The listener class.
+	 * @param int    $priority  The priority.
+	 *
+	 * @return void
+	 */
 	public function addServiceListener(string $eventName, string $className, int $priority = 0): void {
 	}//end addServiceListener()
 
+	/**
+	 * Only the checks collection has a listener.
+	 *
+	 * @param string $eventName The event.
+	 *
+	 * @return bool
+	 */
 	public function hasListeners(string $eventName): bool {
 		return $eventName === SchemaDeclarationChecksEvent::class;
 	}//end hasListeners()
 
+	/**
+	 * Dispatch by name, as dispatchTyped does.
+	 *
+	 * @param string $eventName The event name.
+	 * @param Event  $event     The event.
+	 *
+	 * @return void
+	 */
 	public function dispatch(string $eventName, Event $event): void {
 		$this->dispatchTyped(event: $event);
 	}//end dispatch()
 
+	/**
+	 * Contribute the process checks to the collection event; record every other event.
+	 *
+	 * @param Event $event The event.
+	 *
+	 * @return void
+	 */
 	public function dispatchTyped(Event $event): void {
 		if ($event instanceof SchemaDeclarationChecksEvent) {
 			(new SchemaDeclarationChecksListener(logger: ($this->logger ?? new NullLogger()), container: $this))->handle(event: $event);
@@ -85,6 +133,13 @@ final class ProcessDeclarationChecksDispatcher implements IEventDispatcher, Cont
 		$this->dispatched[] = $event;
 	}//end dispatchTyped()
 
+	/**
+	 * The action validator, for the listener's lazy lookup.
+	 *
+	 * @param string $id The service id.
+	 *
+	 * @return mixed
+	 */
 	public function get(string $id): mixed {
 		if ($id === ObjectActionValidatorInterface::class) {
 			return $this->objectActions;
@@ -94,6 +149,13 @@ final class ProcessDeclarationChecksDispatcher implements IEventDispatcher, Cont
 		};
 	}//end get()
 
+	/**
+	 * Whether the action validator is given.
+	 *
+	 * @param string $id The service id.
+	 *
+	 * @return bool
+	 */
 	public function has(string $id): bool {
 		return $id === ObjectActionValidatorInterface::class && $this->objectActions !== null;
 	}//end has()

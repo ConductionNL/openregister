@@ -42,6 +42,8 @@ use OCA\OpenRegister\Service\Rules\ExpressionDefaultResolver;
  * The process declaration checks Processes contributes to the schema save live
  * in the Db layer and have no container: each builds its validator with `new`
  * through this class, typed against the validator's interface.
+ *
+ * @spec openspec/specs/runtime-schema-api/spec.md
  */
 final class ProcessDeclarationValidators {
 
@@ -49,6 +51,8 @@ final class ProcessDeclarationValidators {
 	 * A fresh calculation annotation validator.
 	 *
 	 * @return CalculationAnnotationValidatorInterface
+	 *
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public static function calculation(): CalculationAnnotationValidatorInterface {
 		return new CalculationAnnotationValidator();
@@ -58,6 +62,8 @@ final class ProcessDeclarationValidators {
 	 * A fresh reader of the calculations declared on properties.
 	 *
 	 * @return PropertyCalculationsInterface
+	 *
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public static function propertyCalculations(): PropertyCalculationsInterface {
 		return new PropertyCalculations();
@@ -67,6 +73,8 @@ final class ProcessDeclarationValidators {
 	 * A fresh lifecycle annotation validator.
 	 *
 	 * @return LifecycleAnnotationValidatorInterface
+	 *
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public static function lifecycle(): LifecycleAnnotationValidatorInterface {
 		return new LifecycleAnnotationValidator();
@@ -76,6 +84,8 @@ final class ProcessDeclarationValidators {
 	 * A fresh reversibility annotation validator.
 	 *
 	 * @return ReversibilityAnnotationValidatorInterface
+	 *
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public static function reversibility(): ReversibilityAnnotationValidatorInterface {
 		return new ReversibilityAnnotationValidator();
@@ -85,6 +95,8 @@ final class ProcessDeclarationValidators {
 	 * A fresh dependent-value validator.
 	 *
 	 * @return DependentValueValidatorInterface
+	 *
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public static function dependentValues(): DependentValueValidatorInterface {
 		return new DependentValueValidator();
@@ -96,6 +108,8 @@ final class ProcessDeclarationValidators {
 	 * @param array<string, mixed> $properties The schema's properties block.
 	 *
 	 * @return array<int, array{code: string, message: string}> The errors, empty when sound.
+	 *
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public static function expressionDefaultRefusals(array $properties): array {
 		return ExpressionDefaultResolver::validateDeclarations(properties: $properties);
@@ -105,6 +119,8 @@ final class ProcessDeclarationValidators {
 	 * A fresh review annotation validator.
 	 *
 	 * @return ReviewAnnotationValidatorInterface
+	 *
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public static function review(): ReviewAnnotationValidatorInterface {
 		return new ReviewAnnotationValidator();
