@@ -81,7 +81,10 @@ class ObjectsControllerAmbiguousSlugTest extends TestCase {
 		$presence->method('depart')->willReturn(true);
 		$presence->method('present')->willReturn([]);
 		$container->method('get')->willReturnCallback(
-			fn (string $id) => ($id === ObjectPresenceInterface::class) ? new ObjectPresenceTracker(presence: $presence) : $this->createMock(MagicMapper::class)
+			fn (string $id) => match ($id) {
+				ObjectPresenceInterface::class => new ObjectPresenceTracker(presence: $presence),
+				default => $this->createMock(MagicMapper::class),
+			}
 		);
 
 		return ObjectsControllerFactory::create(

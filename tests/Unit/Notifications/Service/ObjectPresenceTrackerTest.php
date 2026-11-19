@@ -1,19 +1,25 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * The presence register, answering the object API's Core port.
  *
- * @category Tests
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category Test
  * @package  OCA\OpenRegister\Tests\Unit\Notifications\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @link https://www.OpenRegister.app
+ * @link https://www.OpenRegister.nl
  */
+
+declare(strict_types=1);
+
+// phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
+// phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion helpers use positional args.
 
 namespace OCA\OpenRegister\Tests\Unit\Notifications\Service;
 
