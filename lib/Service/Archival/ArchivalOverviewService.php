@@ -29,11 +29,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Archival;
 
+use OCA\OpenRegister\Kernel\Contracts\Compliance\ArchivalSettingsInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Edepot\TransferListService;
 use OCA\OpenRegister\Service\Edepot\TransferRecordService;
 use OCA\OpenRegister\Service\RetentionService;
-use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
 use OCP\IL10N;
 use OCP\IUserManager;
 use Psr\Log\LoggerInterface;
@@ -61,7 +61,7 @@ class ArchivalOverviewService {
 	 * @param RetentionService                $retention       Scans the records that carry retention.
 	 * @param TransferRecordService           $transfers       Reads the e-Depot transfer lists.
 	 * @param SelectielijstImportService      $selectielijst   Reads the stored selection lists.
-	 * @param ArchivalSettingsReaderInterface $settingsHandler Reads the archival settings.
+	 * @param ArchivalSettingsInterface       $settingsHandler Reads the archival settings.
 	 * @param DestructionListCreator          $creator         Creates a list for the objects named.
 	 * @param IUserManager                    $userManager     Resolves display names.
 	 * @param IL10N                           $l10n            Translates the status labels.
@@ -75,7 +75,7 @@ class ArchivalOverviewService {
 		private readonly RetentionService $retention,
 		private readonly TransferRecordService $transfers,
 		private readonly SelectielijstImportService $selectielijst,
-		private readonly ArchivalSettingsReaderInterface $settingsHandler,
+		private readonly ArchivalSettingsInterface $settingsHandler,
 		private readonly DestructionListCreator $creator,
 		private readonly IUserManager $userManager,
 		private readonly IL10N $l10n,

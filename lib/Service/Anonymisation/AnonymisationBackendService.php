@@ -20,8 +20,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Anonymisation;
 
 use OCA\OpenRegister\Exception\AnalyzeRequestRejectedException;
-use OCA\OpenRegister\Service\Connection\ConnectionReporter;
-use OCA\OpenRegister\Service\Settings\FileSettingsHandler;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\ConnectionStatusReporterInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\FileSettingsReaderInterface;
 use OCP\App\IAppManager;
 use OCP\Http\Client\IClientService;
 use OCP\Http\Client\IResponse;
@@ -104,9 +104,9 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 	/**
 	 * Reads the stored entity-recognition settings.
 	 *
-	 * @var FileSettingsHandler
+	 * @var FileSettingsReaderInterface
 	 */
-	private readonly FileSettingsHandler $fileSettingsHandler;
+	private readonly FileSettingsReaderInterface $fileSettingsHandler;
 
 	/**
 	 * Logger.
@@ -118,9 +118,9 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 	/**
 	 * Reports an OpenAnonymiser connection test to integriq's connection registry.
 	 *
-	 * @var ConnectionReporter
+	 * @var ConnectionStatusReporterInterface
 	 */
-	private readonly ConnectionReporter $connectionReporter;
+	private readonly ConnectionStatusReporterInterface $connectionReporter;
 
 	/**
 	 * The next step an unconfigured OpenAnonymiser connection reports, by probe error.
