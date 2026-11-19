@@ -262,8 +262,6 @@ deptrac:
         - type: directory
           value: 'lib/Controller/Support/LinkedDataServices[.]php$'
         - type: directory
-          value: 'lib/Controller/Support/LinkedEntityControllerServices[.]php$'
-        - type: directory
           value: 'lib/Controller/Support/LinkedSourceActions[.]php$'
         - type: directory
           value: 'lib/Controller/Support/LinkedSourceResponses[.]php$'
@@ -273,8 +271,6 @@ deptrac:
           value: 'lib/Controller/Support/MaintenanceReachableControllersInterface[.]php$'
         - type: directory
           value: 'lib/Controller/Support/ManifestControllerServices[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/MapLinksControllerServices[.]php$'
         - type: directory
           value: 'lib/Controller/Support/McpControllerServices[.]php$'
         - type: directory
@@ -370,8 +366,6 @@ deptrac:
         - type: directory
           value: 'lib/Controller/Support/ObjectsTableRead[.]php$'
         - type: directory
-          value: 'lib/Controller/Support/OpenProjectLinksControllerServices[.]php$'
-        - type: directory
           value: 'lib/Controller/Support/OperationsActingRequest[.]php$'
         - type: directory
           value: 'lib/Controller/Support/OrganisationAuditing[.]php$'
@@ -393,8 +387,6 @@ deptrac:
           value: 'lib/Controller/Support/PermissionsAuditScope[.]php$'
         - type: directory
           value: 'lib/Controller/Support/PermissionsControllerServices[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/PhotoLinksControllerServices[.]php$'
         - type: directory
           value: 'lib/Controller/Support/PollLinksControllerServices[.]php$'
         - type: directory
@@ -732,7 +724,7 @@ deptrac:
         - type: directory
           value: 'lib/Repair/(AdoptOrganisationlessRows|MarkImplicitCrossOrganisationReadRules|MigratedFlowOrigins|OpenSpecialRightsToEveryone|PerformerField|PerformerTyping)[.]php$'
         - type: directory
-          value: 'lib/Service/(AnonymousEvaluationContext|AppConfigurationImporterInterface|AppRegisterImportRunnerInterface|AuthenticationTokenFetcherInterface|AvgComplianceServiceInterface|AvgRetentionPassInterface|BulkTranslationServiceInterface|CauseFrame|ComparableInstants|ConditionMatcher|ConditionUserResolvers|ConfigLookup|CrossRegisterExistenceService|DateTimeNormalizer|DateTimeNormalizerInterface|DeclaredPair|DeclaredRow|DeepLinkRegistryServiceInterface|DeepLinkResolverInterface|DemoDataServiceInterface|DisposalSweep|DsarServiceInterface|EntryScripts|ExecutedDestruction|FailedAttempt|FieldDecryptionScope|FieldEncryptionHandler|FieldEncryptionHandlerInterface|FileService|HoldOrder|InboundAuthRateLimitInterface|LinkPageWindow|LinkServiceRuntime|LinkSessionRuntime|LinkedEntityIntegrations|LinkedEntityMappers|LinkedEntityServiceInterface|LinkedEventMerge|LockoutStrike|LogExportFormatter|LogObjectInTable|LoginSecurityInterface|ManifestServiceInterface|ManifestSources|MapLinkServiceInterface|MdiIconRenderer|MdiIconSvg|MdiIconSvgInterface|MigrationServiceInterface|OasService|OasServiceInterface|OasSources|ObjectFilesInterface|ObjectHandlerAccessInterface|ObjectRelationCleanupLinks|ObjectRelationCleanupServiceInterface|ObjectService|ObjectServiceMapperAdapter|ObjectSourceRead|ObjectStreamingSaveInterface|OpenProjectLinkServiceInterface|OperatorEvaluator|OrganisationContext|OrganisationService|OrganisationServiceInterface|OrganisationUsageService|OrganisationUsageServiceInterface|PersonLinkServiceInterface|PersonLinkTarget|PersonLinkTargets|PhotoLinkServiceInterface|PollLinkServiceInterface|PropertyAccessCollaborators|PropertyAccessRequest|PropertyRbacCaller|PropertyRbacHandler|PropertyRbacHandlerInterface|PropertyRbacRules|PropertyWriteCheck|ProtectedCarryForward|ProtectedPropertyRead|RateLimitResetInterface|RegisterDescriptorServiceInterface|RegisterImportCall|RegisterImportDocument|RegisterImportRoute|RegisterMappingFunctionsEvent|RegisterResolverService|RegisterResolverServiceInterface|RegisterSchemaLinkageRepairService|RegisterSchemaLinkageRepairServiceInterface|RegisterSchemaMappers|RegisterScopedSchemaResolver|RegisterScopedSchemaResolverInterface|RegisterScopedSchemaResolvers|RegisterService|RegisterServiceHelpers|RegisterServiceInterface|RegisterServiceStorage|RegisterSlugProbe|RegisterSlugResolver|SchemaApplicationMigratorInterface|SchemaDeletionStores|SchemaObjectTally|SchemaProperty|SchemaTeardownGuard|SchemaTeardownInterface|SchemaTeardownOverride|ScriptManifestLoader|SecurityHeadersInterface|SecurityService|SemanticTypeQuery|SemanticTypeResolver|SemanticTypeResolverInterface|ServiceBootstrap|ServiceRegistrar|SettingsServiceInterface|ShareLinkServiceInterface|SharedMasterDataService|SharedMasterDataServiceInterface|SharedSchemaDedupeServiceInterface|ShippedRegister|SkosNodeReader|SystemOperationContext|TenancyCollaborators|TenantDirectory|TenantKeyRotationInterface|TenantLifecycleService|TenantLifecycleServiceInterface|TenantLogRedactor|TenantLogRedactorInterface|TimeTrackerLinkServiceInterface|TmloServiceInterface|UrnService|UrnServiceInterface|UserService|UserServiceInterface|UserTaskListInterface|VocabularyConceptEdges|VocabularyCsvReader|VocabularyImportTally|VocabularyObjectStore|WholeTableRows|WriteCause|WritePhase|WritePhaseProbe)[.]php$'
+          value: 'lib/Service/(AnonymousEvaluationContext|AppConfigurationImporterInterface|AppRegisterImportRunnerInterface|AuthenticationTokenFetcherInterface|AvgComplianceServiceInterface|AvgRetentionPassInterface|BulkTranslationServiceInterface|CauseFrame|ComparableInstants|ConditionMatcher|ConditionUserResolvers|ConfigLookup|CrossRegisterExistenceService|DateTimeNormalizer|DateTimeNormalizerInterface|DeclaredPair|DeclaredRow|DeepLinkRegistryServiceInterface|DeepLinkResolverInterface|DemoDataServiceInterface|DisposalSweep|DsarServiceInterface|EntryScripts|ExecutedDestruction|FailedAttempt|FieldDecryptionScope|FieldEncryptionHandler|FieldEncryptionHandlerInterface|FileService|HoldOrder|InboundAuthRateLimitInterface|LinkPageWindow|LinkServiceRuntime|LinkSessionRuntime|LinkedEntityMappers|LinkedEventMerge|LockoutStrike|LogExportFormatter|LogObjectInTable|LoginSecurityInterface|ManifestServiceInterface|ManifestSources|MdiIconRenderer|MdiIconSvg|MdiIconSvgInterface|MigrationServiceInterface|OasService|OasServiceInterface|OasSources|ObjectFilesInterface|ObjectHandlerAccessInterface|ObjectRelationCleanupServiceInterface|ObjectService|ObjectServiceMapperAdapter|ObjectSourceRead|ObjectStreamingSaveInterface|OperatorEvaluator|OrganisationContext|OrganisationService|OrganisationServiceInterface|OrganisationUsageService|OrganisationUsageServiceInterface|PersonLinkTarget|PollLinkServiceInterface|PropertyAccessCollaborators|PropertyAccessRequest|PropertyRbacCaller|PropertyRbacHandler|PropertyRbacHandlerInterface|PropertyRbacRules|PropertyWriteCheck|ProtectedCarryForward|ProtectedPropertyRead|RateLimitResetInterface|RegisterDescriptorServiceInterface|RegisterImportCall|RegisterImportDocument|RegisterImportRoute|RegisterMappingFunctionsEvent|RegisterResolverService|RegisterResolverServiceInterface|RegisterSchemaLinkageRepairService|RegisterSchemaLinkageRepairServiceInterface|RegisterSchemaMappers|RegisterScopedSchemaResolver|RegisterScopedSchemaResolverInterface|RegisterScopedSchemaResolvers|RegisterService|RegisterServiceHelpers|RegisterServiceInterface|RegisterServiceStorage|RegisterSlugProbe|RegisterSlugResolver|SchemaApplicationMigratorInterface|SchemaDeletionStores|SchemaObjectTally|SchemaProperty|SchemaTeardownGuard|SchemaTeardownInterface|SchemaTeardownOverride|ScriptManifestLoader|SecurityHeadersInterface|SecurityService|SemanticTypeQuery|SemanticTypeResolver|SemanticTypeResolverInterface|ServiceBootstrap|ServiceRegistrar|SettingsServiceInterface|ShareLinkServiceInterface|SharedMasterDataService|SharedMasterDataServiceInterface|SharedSchemaDedupeServiceInterface|ShippedRegister|SkosNodeReader|SystemOperationContext|TenancyCollaborators|TenantDirectory|TenantKeyRotationInterface|TenantLifecycleService|TenantLifecycleServiceInterface|TenantLogRedactor|TenantLogRedactorInterface|TimeTrackerLinkServiceInterface|TmloServiceInterface|UrnService|UrnServiceInterface|UserService|UserServiceInterface|UserTaskListInterface|VocabularyConceptEdges|VocabularyCsvReader|VocabularyImportTally|VocabularyObjectStore|WholeTableRows|WriteCause|WritePhase|WritePhaseProbe)[.]php$'
         - type: directory
           value: 'lib/Service/Aggregation/[^/]*$'
         - type: directory
@@ -3464,11 +3456,19 @@ deptrac:
         - type: directory
           value: 'lib/Controller/Support/IntegrationsControllerServices[.]php$'
         - type: directory
+          value: 'lib/Controller/Support/LinkedEntityControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/MapLinksControllerServices[.]php$'
+        - type: directory
           value: 'lib/Controller/Support/MappingsControllerServices[.]php$'
         - type: directory
           value: 'lib/Controller/Support/ObjectIntegrationsControllerServices[.]php$'
         - type: directory
           value: 'lib/Controller/Support/ObjectIntegrationsDomain[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/OpenProjectLinksControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/PhotoLinksControllerServices[.]php$'
         - type: directory
           value: 'lib/Controller/Support/RelationsCollaboration[.]php$'
         - type: directory
@@ -3592,7 +3592,7 @@ deptrac:
         - type: directory
           value: 'lib/Repair/(LogDanglingLinkedTypes|RegisterDescriptorImport|RegisterOpenRegisterWithDoriath)[.]php$'
         - type: directory
-          value: 'lib/Service/(ActivityEntriesOptions|ActivityFilterService|AlbumLinkRun|AnalyticsLinkService|AnalyticsLinkServiceInterface|AnalyticsReportDraft|AnalyticsSeriesDraft|AnalyticsSeriesService|AnalyticsSeriesServiceInterface|AuthenticationService|AuthorizationService|BookmarkDraft|BookmarkLinkService|BookmarkLinkServiceInterface|BookmarkSearch|CalendarEventKey|CalendarLinkService|CalendarLinkServiceInterface|CalendarObjectRef|CalendarPickerScan|CalendarPickerWindow|CardDraft|CaseTokenIssuance|CaseTokenService|CaseTokenServiceInterface|CaseTokenTarget|CollectiveLinkService|CollectiveLinkServiceInterface|CollectivePageDraft|ContactCardRef|ContactMatchingMappers|ContactPlacement|ContactService|ContactServiceInterface|CospendLinkService|CospendLinkServiceInterface|CospendProjectDraft|DeckCardRun|DeckCardService|DeckCardServiceInterface|DeckLinkService|DeckLinkServiceInterface|DeckPlatform|DeckRowMapper|DeepLinkRegistryService|EmailLinkService|EmailLinkServiceInterface|EmailMessageRef|EndpointExchange|EndpointMappers|EndpointService|EndpointServiceInterface|EntityLink|FederationShareService|FederationShareServiceInterface|FormLinkScope|FormLinkService|FormLinkServiceInterface|FormsAppRows|LinkTarget|LinkedEntityLookup|LinkedEntityService|MailTableQueries|MailboxPage|MapLinkService|MappingKeyRewrite|MappingService|MappingServiceInterface|MappingTwigSandbox|NewForm|ObjectRelationCleanupService|OpenProjectLinkService|OwnedWebhookView|PageSearch|PersonLinkChange|PersonLinkEvents|PersonLinkPlacement|PersonLinkRef|PersonLinkService|PhotoLinkService|PoiDraft|PollDraft|PollIdentity|PollLinkService|PollOptionRow|ShareDraft|ShareLinkService|ShareListingRun|ShareRequest|TableDeletionOptions|TableObjectRef|TalkLinkService|TalkLinkServiceInterface|TimeTrackerLinkService|UserDirectory|UserLinkRequest|UserLinkWriter|WebhookDelivery|WebhookDeliveryAttempt|WebhookDeliveryRecorder|WebhookDispatchServices|WebhookEvent|WebhookRequestOptions|WebhookService|WebhookStores|WorkPackageDraft|XwikiLinkService|XwikiLinkServiceInterface|XwikiPageDraft|XwikiPendingLink)[.]php$'
+          value: 'lib/Service/(ActivityEntriesOptions|ActivityFilterService|AlbumLinkRun|AnalyticsLinkService|AnalyticsLinkServiceInterface|AnalyticsReportDraft|AnalyticsSeriesDraft|AnalyticsSeriesService|AnalyticsSeriesServiceInterface|AuthenticationService|AuthorizationService|BookmarkDraft|BookmarkLinkService|BookmarkLinkServiceInterface|BookmarkSearch|CalendarEventKey|CalendarLinkService|CalendarLinkServiceInterface|CalendarObjectRef|CalendarPickerScan|CalendarPickerWindow|CardDraft|CaseTokenIssuance|CaseTokenService|CaseTokenServiceInterface|CaseTokenTarget|CollectiveLinkService|CollectiveLinkServiceInterface|CollectivePageDraft|ContactCardRef|ContactMatchingMappers|ContactPlacement|ContactService|ContactServiceInterface|CospendLinkService|CospendLinkServiceInterface|CospendProjectDraft|DeckCardRun|DeckCardService|DeckCardServiceInterface|DeckLinkService|DeckLinkServiceInterface|DeckPlatform|DeckRowMapper|DeepLinkRegistryService|EmailLinkService|EmailLinkServiceInterface|EmailMessageRef|EndpointExchange|EndpointMappers|EndpointService|EndpointServiceInterface|EntityLink|FederationShareService|FederationShareServiceInterface|FormLinkScope|FormLinkService|FormLinkServiceInterface|FormsAppRows|LinkTarget|LinkedEntityIntegrations|LinkedEntityLookup|LinkedEntityService|LinkedEntityServiceInterface|MailTableQueries|MailboxPage|MapLinkService|MapLinkServiceInterface|MappingKeyRewrite|MappingService|MappingServiceInterface|MappingTwigSandbox|NewForm|ObjectRelationCleanupLinks|ObjectRelationCleanupService|OpenProjectLinkService|OpenProjectLinkServiceInterface|OwnedWebhookView|PageSearch|PersonLinkChange|PersonLinkEvents|PersonLinkPlacement|PersonLinkRef|PersonLinkService|PersonLinkServiceInterface|PersonLinkTargets|PhotoLinkService|PhotoLinkServiceInterface|PoiDraft|PollDraft|PollIdentity|PollLinkService|PollOptionRow|ShareDraft|ShareLinkService|ShareListingRun|ShareRequest|TableDeletionOptions|TableObjectRef|TalkLinkService|TalkLinkServiceInterface|TimeTrackerLinkService|UserDirectory|UserLinkRequest|UserLinkWriter|WebhookDelivery|WebhookDeliveryAttempt|WebhookDeliveryRecorder|WebhookDispatchServices|WebhookEvent|WebhookRequestOptions|WebhookService|WebhookStores|WorkPackageDraft|XwikiLinkService|XwikiLinkServiceInterface|XwikiPageDraft|XwikiPendingLink)[.]php$'
         - type: directory
           value: 'lib/Service/Bindings/[^/]*$'
         - type: directory
