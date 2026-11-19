@@ -213,14 +213,7 @@
   "lib/Controller/Support/EdepotSettingsDomain.php -> lib/Service/Edepot/Transport/OpenConnectorTransportInterface.php",
   "lib/Controller/Support/EdepotSettingsDomain.php -> lib/Service/Edepot/Transport/RestApiTransportInterface.php",
   "lib/Controller/Support/EdepotSettingsDomain.php -> lib/Service/Edepot/Transport/SftpTransportInterface.php",
-  "lib/Controller/Support/EntityRelationsDomain.php -> lib/Service/Decision/DecisionVisibilityInterface.php",
-  "lib/Controller/Support/EntityRelationsDomain.php -> lib/Service/Decision/RelationDecisionServiceInterface.php",
-  "lib/Controller/Support/EntityRelationsLinks.php -> lib/Db/EmailLinkMapperInterface.php",
-  "lib/Controller/Support/EntityRelationsMappers.php -> lib/Files/Db/EntityRelationMapperInterface.php",
   "lib/Controller/Support/FormLinksControllerServices.php -> lib/Service/FormLinkServiceInterface.php",
-  "lib/Controller/Support/GdprEntitiesDomain.php -> lib/Service/Decision/DecisionVisibilityInterface.php",
-  "lib/Controller/Support/GdprEntitiesMappers.php -> lib/Db/GdprEntityMapperInterface.php",
-  "lib/Controller/Support/GdprEntitiesMappers.php -> lib/Files/Db/EntityRelationMapperInterface.php",
   "lib/Controller/Support/GeoServices.php -> lib/Search/Service/Geo/GeoFeatureCollectionBuilderInterface.php",
   "lib/Controller/Support/GeoServices.php -> lib/Search/Service/Geo/GeoFilterApplierInterface.php",
   "lib/Controller/Support/GeoServices.php -> lib/Search/Service/Geo/GeoFilterParserInterface.php",
@@ -1292,10 +1285,7 @@
   "lib/Controller/Support/DsarCasePlatform.php",
   "lib/Controller/Support/DsarControllerServices.php",
   "lib/Controller/Support/EdepotSettingsControllerServices.php",
-  "lib/Controller/Support/EntityRelationPatch.php",
-  "lib/Controller/Support/EntityRelationsControllerServices.php",
   "lib/Controller/Support/FormLinksControllerServices.php",
-  "lib/Controller/Support/GdprEntitiesControllerServices.php",
   "lib/Controller/Support/GdprRegisterAccess.php",
   "lib/Controller/Support/GdprRegisterReplies.php",
   "lib/Controller/Support/GdprRequestParams.php",
@@ -3630,7 +3620,7 @@
  "exposed_loc": {
   "Compliance": 16400,
   "Configuration": 10272,
-  "Core": 65290,
+  "Core": 65253,
   "Files": 3741,
   "Integrations": 18574,
   "Kernel": 8249,
@@ -4068,5 +4058,5 @@
  ],
  "kernel_loc": 9716,
  "total_loc": 458674,
- "violation_degree": 0.128
+ "violation_degree": 0.1272
 }
