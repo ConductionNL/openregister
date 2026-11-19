@@ -607,7 +607,7 @@ Controller/XwikiLinksController.php,140,Controller,Integrations,Integrations/Con
 Dashboard/IntegrationDashboardWidget.php,40,Dashboard,Flows,Flows/Dashboard/IntegrationDashboardWidget.php,0,,Platform
 Dav/TaskVtodoWriteBackPlugin.php,136,Dav,Platform,Platform/Dav/TaskVtodoWriteBackPlugin.php,0,,Integrations
 Db/AbstractObjectMapper.php,70,Db,Service,Service/Db/AbstractObjectMapper.php,0,378,Core
-Db/AccessLink.php,120,Db,Integrations,Integrations/Db/AccessLink.php,1,248,Integrations
+Db/AccessLink.php,120,Db,Access,Access/Db/AccessLink.php,1,248,Core
 Db/AccessLinkMapper.php,63,Db,Access,Access/Db/AccessLinkMapper.php,0,,Core
 Db/AnalyticsLink.php,48,Db,Integrations,Integrations/Db/AnalyticsLink.php,0,,Integrations
 Db/AnalyticsLinkMapper.php,23,Db,Integrations,Integrations/Db/AnalyticsLinkMapper.php,0,,Integrations
@@ -888,8 +888,8 @@ Db/TaskProjectionState.php,37,Db,Work,Work/Db/TaskProjectionState.php,0,,Process
 Db/TaskProjectionStateMapper.php,30,Db,Work,Work/Db/TaskProjectionStateMapper.php,0,,Processes
 Db/TaskRelation.php,29,Db,Work,Work/Db/TaskRelation.php,0,,Processes
 Db/TaskRelationMapper.php,28,Db,Work,Work/Db/TaskRelationMapper.php,0,,Processes
-Db/TaskSequence.php,89,Db,Configuration,Configuration/Db/TaskSequence.php,31,298,Configuration
-Db/TaskSequenceMapper.php,55,Db,Configuration,Configuration/Db/TaskSequenceMapper.php,18,375,Configuration
+Db/TaskSequence.php,89,Db,Work,Work/Db/TaskSequence.php,31,298,Processes
+Db/TaskSequenceMapper.php,55,Db,Work,Work/Db/TaskSequenceMapper.php,18,375,Processes
 Db/TenantUsage.php,48,Db,Access,Access/Db/TenantUsage.php,0,,Core
 Db/TenantUsageMapper.php,106,Db,Access,Access/Db/TenantUsageMapper.php,0,,Core
 Db/TimeTrackerLink.php,54,Db,Integrations,Integrations/Db/TimeTrackerLink.php,0,,Integrations
@@ -3367,7 +3367,7 @@ Controller/Support/WorkingCalendarControllerServices.php,14,Controller,Flows,Flo
 Controller/Trait/,,Controller,,,,,Core
 Dashboard/,,Dashboard,,,,,Platform
 Dav/,,Dav,,,,,Integrations
-Db/AccessLink/,,Db,,,,,Integrations
+Db/AccessLink/,,Db,,,,,Core
 Db/Application/,,Db,,,,,Integrations
 Db/AuditTrail/,,Db,,,,,Compliance
 Db/BulkJob/,,Db,,,,,Integrations
@@ -3403,7 +3403,7 @@ Db/SchemaRun/,,Db,,,,,Core
 Db/SearchTrail/,,Db,,,,,Search
 Db/Source/,,Db,,,,,Integrations
 Db/Support/,,Db,,,,,Integrations
-Db/TaskSequence/,,Db,,,,,Integrations
+Db/TaskSequence/,,Db,,,,,Processes
 Db/Tenancy/,,Db,,,,,Core
 Db/Webhook/,,Db,,,,,Integrations
 Db/WebhookLog/,,Db,,,,,Integrations
@@ -4399,6 +4399,7 @@ Controller/Support/OperationsConsoleControllerServices.php,,Controller,,,,,Confi
 Controller/Support/OperationsMaintenanceControllerServices.php,,Controller,,,,,Configuration
 Controller/Support/RecordTemplatesControllerServices.php,,Controller,,,,,Configuration
 BackgroundJob/Support/ActorForwardingServices.php,,BackgroundJob,,,,,Core
+BackgroundJob/Support/ConfigurationCheckServices.php,,BackgroundJob,,,,,Configuration
 AppHost/Listener/ApplicationPublishListener.php,,AppHost,,,,,Processes
 AppHost/Scheduling/CompiledScheduleFlow.php,,AppHost,,,,,Processes
 AppHost/Scheduling/ScheduleAuditTrail.php,,AppHost,,,,,Processes
