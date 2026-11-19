@@ -2810,7 +2810,7 @@ deptrac:
         - type: directory
           value: 'lib/Controller/Support/RecordTemplatesControllerServices[.]php$'
         - type: directory
-          value: 'lib/Db/(Application|ApplicationMapper|Configuration|ConfigurationBinding|ConfigurationBindingMapper|ConfigurationBindingMapperInterface|ConfigurationDeployment|ConfigurationDeploymentMapper|ConfigurationDeploymentMapperInterface|ConfigurationDraft|ConfigurationDraftMapper|ConfigurationDraftMapperInterface|ConfigurationDraftSet|ConfigurationDraftSetMapper|ConfigurationDraftSetMapperInterface|ConfigurationMapper|ConfigurationMapperBindings|ConfigurationMapperInterface|ConfigurationMapperRegistrar|ConfigurationSyncResult|ConfigurationValue|ConfigurationValueMapper|ExportProfile|ExportProfileMapper|ExportProfileMapperInterface|ExportRun|ExportRunMapper|ImportPreview|ImportPreviewFinderInterface|ImportPreviewMapper|ImportPreviewMapperInterface|ImportPreviewRow|ImportPreviewRowMapper|ImportPreviewRowMapperInterface|JobRun|JobRunMapper|JobRunMapperInterface|MigrationPack|MigrationPackMapper|MigrationPackMapperInterface|RecordTemplate|RecordTemplateMapper|RecordTemplateMapperInterface|Sequence|SequenceMapper|StoredEntity|TaskSequence|TaskSequenceMapper|Translation|TranslationMapper)[.]php$'
+          value: 'lib/Db/(Application|ApplicationMapper|Configuration|ConfigurationBinding|ConfigurationBindingMapper|ConfigurationBindingMapperInterface|ConfigurationDeployment|ConfigurationDeploymentMapper|ConfigurationDeploymentMapperInterface|ConfigurationDraft|ConfigurationDraftMapper|ConfigurationDraftMapperInterface|ConfigurationDraftSet|ConfigurationDraftSetMapper|ConfigurationDraftSetMapperInterface|ConfigurationMapper|ConfigurationMapperBindings|ConfigurationMapperInterface|ConfigurationMapperRegistrar|ConfigurationSyncResult|ConfigurationValue|ConfigurationValueMapper|ExportProfile|ExportProfileMapper|ExportProfileMapperInterface|ExportRun|ExportRunMapper|ImportPreview|ImportPreviewFinderInterface|ImportPreviewMapper|ImportPreviewMapperInterface|ImportPreviewRow|ImportPreviewRowMapper|ImportPreviewRowMapperInterface|JobRun|JobRunMapper|JobRunMapperInterface|MigrationPack|MigrationPackMapper|MigrationPackMapperInterface|RecordTemplate|RecordTemplateMapper|RecordTemplateMapperInterface|Sequence|SequenceMapper|StoredEntity|TaskSequence|TaskSequenceMapper|Translation|TranslationBackfillScope|TranslationEdit|TranslationFilter|TranslationMapper|TranslationMapperInterface|TranslationSlot|TranslationSourceLanguageBackfillInterface)[.]php$'
         - type: directory
           value: 'lib/Db/Configuration/[^/]*$'
         - type: directory
@@ -4286,7 +4286,7 @@ deptrac:
         - type: directory
           value: 'lib/Dashboard/[^/]*$'
         - type: directory
-          value: 'lib/Db/(Feedback|FeedbackMapper|PlatformMapperBindings|PlatformMapperRegistrar|TranslationBackfillScope|TranslationEdit|TranslationFilter|TranslationMapperInterface|TranslationSlot|TranslationSourceLanguageBackfillInterface)[.]php$'
+          value: 'lib/Db/(Feedback|FeedbackMapper|PlatformMapperBindings|PlatformMapperRegistrar)[.]php$'
         - type: directory
           value: 'lib/Listener/(ListenerBootstrap|NotifyPushListener|NotifyPushRun)[.]php$'
         - type: directory
