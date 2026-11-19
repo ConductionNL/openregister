@@ -620,7 +620,6 @@
 "Core -> Integrations: OCA\\OpenRegister\\Db\\SourceMapperInterface -> OCA\\OpenRegister\\Db\\Source",
 "Core -> Integrations: OCA\\OpenRegister\\Db\\TimeTrackerLinkMapperInterface -> OCA\\OpenRegister\\Db\\TimeTrackerLink",
 "Core -> Integrations: OCA\\OpenRegister\\Db\\XwikiLinkMapperInterface -> OCA\\OpenRegister\\Db\\XwikiLink",
-"Core -> Integrations: OCA\\OpenRegister\\Event\\AbstractPersonLinkEvent -> OCA\\OpenRegister\\Db\\ContactLink",
 "Core -> Integrations: OCA\\OpenRegister\\Event\\AbstractSourceEvent -> OCA\\OpenRegister\\Db\\Source",
 "Core -> Integrations: OCA\\OpenRegister\\Service\\Dbal\\DatabaseIntrospectionService -> OCA\\OpenRegister\\Db\\Source",
 "Core -> Integrations: OCA\\OpenRegister\\Service\\Dbal\\DatabaseIntrospectionServiceInterface -> OCA\\OpenRegister\\Db\\Source",
