@@ -41,14 +41,13 @@ use Closure;
 use Doctrine\DBAL\Types\Types;
 use OCP\DB\ISchemaWrapper;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Creates the favourites table and the object-view history table.
  *
  * @spec openspec/specs/object-interactions/spec.md
  */
-class Version1Date20260915061500 extends SimpleMigrationStep {
+class Version1Date20260915061500 extends TargetedMigrationStep {
 
 	/**
 	 * The favourites table.
@@ -76,7 +75,7 @@ class Version1Date20260915061500 extends SimpleMigrationStep {
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		$schema = $schemaClosure();
 		$changed = 0;
 
@@ -90,7 +89,7 @@ class Version1Date20260915061500 extends SimpleMigrationStep {
 
 		return $schema;
 
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 
 	/**
 	 * Create the favourites table.
