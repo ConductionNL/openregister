@@ -1498,7 +1498,137 @@ deptrac:
         - type: directory
           value: 'lib/Service/Object/SaveObjects/[^/]*$'
         - type: directory
-          value: 'lib/Service/ObjectSource/[^/]*$'
+          value: 'lib/Service/ObjectSource/AnyAppInstalledCheck[.]php$'
+        - type: directory
+          value: 'lib/Service/ObjectSource/AtomMoment[.]php$'
+        - type: directory
+          value: 'lib/Service/ObjectSource/CalDavVtodoObjectSourceProvider[.]php$'
+        - type: directory
+          value: 'lib/Service/ObjectSource/CalendarEventObjectSourceProvider[.]php$'
+        - type: directory
+          value: 'lib/Service/ObjectSource/ContactsObjectSourceProvider[.]php$'
+        - type: directory
+          value: 'lib/Service/ObjectSource/ContainerServiceLookup[.]php$'
+        - type: directory
+          value: 'lib/Service/ObjectSource/CountsThroughFindAll[.]php$'
+        - type: directory
+          value: 'lib/Service/ObjectSource/DbalAggregation[.]php$'
+        - type: directory
+          value: 'lib/Service/ObjectSource/DbalAggregationQuery[.]php$'
+        - type: directory
+          value: 'lib/Service/ObjectSource/DbalAggregationShape[.]php$'
+        - type: directory
+          value: 'lib/Service/ObjectSource/DbalAggregator[.]php$'
+        - type: directory
+          value: 'lib/Service/ObjectSource/DbalColumnCriterion[.]php$'
+        - type: directory
+          value: 'lib/Service/ObjectSource/DbalFromClause[.]php$'
+        - type: directory
+          value: 'lib/Service/ObjectSource/DbalListClauses[.]php$'
+        - type: directory
+          value: 'lib/Service/ObjectSource/DbalMetricRequest[.]php$'
+        - type: directory
+          value: 'lib/Service/ObjectSource/DbalObjectRef[.]php$'
+        - type: directory
+          value: 'lib/Service/ObjectSource/DbalObjectSourceException[.]php$'
+        - type: directory
+          value: 'lib/Service/ObjectSource/DbalObjectSourceProvider[.]php$'
+        - type: directory
+          value: 'lib/Service/ObjectSource/DbalStatement[.]php$'
+        - type: directory
+          value: 'lib/Service/ObjectSource/DbalTarget[.]php$'
+        - type: directory
+          value: 'lib/Service/ObjectSource/DbalWriteException[.]php$'
+        - type: directory
+          value: 'lib/Service/ObjectSource/DeckObjectSourceProvider[.]php$'
+        - type: directory
+          value: 'lib/Service/ObjectSource/DefensiveGetters[.]php$'
+        - type: directory
+          value: 'lib/Service/ObjectSource/DirectoryPage[.]php$'
+        - type: directory
+          value: 'lib/Service/ObjectSource/FederatedObjectSourceProvider[.]php$'
+        - type: directory
+          value: 'lib/Service/ObjectSource/FederatedPeer[.]php$'
+        - type: directory
+          value: 'lib/Service/ObjectSource/FilesObjectSourceProvider[.]php$'
+        - type: directory
+          value: 'lib/Service/ObjectSource/FilesScan[.]php$'
+        - type: directory
+          value: 'lib/Service/ObjectSource/GroupObjectSourceProvider[.]php$'
+        - type: directory
+          value: 'lib/Service/ObjectSource/InstalledAppCheck[.]php$'
+        - type: directory
+          value: 'lib/Service/ObjectSource/NcEntitySemanticMap[.]php$'
+        - type: directory
+          value: 'lib/Service/ObjectSource/ObjectSourceProvider[.]php$'
+        - type: directory
+          value: 'lib/Service/ObjectSource/ObjectSourceRegistrar[.]php$'
+        - type: directory
+          value: 'lib/Service/ObjectSource/ObjectSourceRegistry[.]php$'
+        - type: directory
+          value: 'lib/Service/ObjectSource/ObjectSourceWiring[.]php$'
+        - type: directory
+          value: 'lib/Service/ObjectSource/OptionalAppBridge[.]php$'
+        - type: directory
+          value: 'lib/Service/ObjectSource/OrganisationActingUser[.]php$'
+        - type: directory
+          value: 'lib/Service/ObjectSource/OrganisationObjectSourceProvider[.]php$'
+        - type: directory
+          value: 'lib/Service/ObjectSource/ReadsRowsById[.]php$'
+        - type: directory
+          value: 'lib/Service/ObjectSource/SourcedObjectBinding[.]php$'
+        - type: directory
+          value: 'lib/Service/ObjectSource/SourcedTable[.]php$'
+        - type: directory
+          value: 'lib/Service/ObjectSource/TablesCatalogueInterface[.]php$'
+        - type: directory
+          value: 'lib/Service/ObjectSource/TablesCell[.]php$'
+        - type: directory
+          value: 'lib/Service/ObjectSource/TablesColumnMapper[.]php$'
+        - type: directory
+          value: 'lib/Service/ObjectSource/TablesEntityDescriptors[.]php$'
+        - type: directory
+          value: 'lib/Service/ObjectSource/TablesObjectQuery[.]php$'
+        - type: directory
+          value: 'lib/Service/ObjectSource/TablesObjectSourceProvider[.]php$'
+        - type: directory
+          value: 'lib/Service/ObjectSource/TablesObjectTarget[.]php$'
+        - type: directory
+          value: 'lib/Service/ObjectSource/TablesProviderParts[.]php$'
+        - type: directory
+          value: 'lib/Service/ObjectSource/TablesReadScope[.]php$'
+        - type: directory
+          value: 'lib/Service/ObjectSource/TablesRetireRun[.]php$'
+        - type: directory
+          value: 'lib/Service/ObjectSource/TablesRowProjection[.]php$'
+        - type: directory
+          value: 'lib/Service/ObjectSource/TablesSchemaReconcilerInterface[.]php$'
+        - type: directory
+          value: 'lib/Service/ObjectSource/TablesSchemaSyncService[.]php$'
+        - type: directory
+          value: 'lib/Service/ObjectSource/TablesTableReader[.]php$'
+        - type: directory
+          value: 'lib/Service/ObjectSource/TablesUuidDeriver[.]php$'
+        - type: directory
+          value: 'lib/Service/ObjectSource/TalkObjectSourceProvider[.]php$'
+        - type: directory
+          value: 'lib/Service/ObjectSource/TalkRoomViewer[.]php$'
+        - type: directory
+          value: 'lib/Service/ObjectSource/UserDirectoryObjectSourceProvider[.]php$'
+        - type: directory
+          value: 'lib/Service/ObjectSource/ViewFacet[.]php$'
+        - type: directory
+          value: 'lib/Service/ObjectSource/ViewObjectSourceProvider[.]php$'
+        - type: directory
+          value: 'lib/Service/ObjectSource/ViewRowsRequest[.]php$'
+        - type: directory
+          value: 'lib/Service/ObjectSource/ViewSourceMappers[.]php$'
+        - type: directory
+          value: 'lib/Service/ObjectSource/VtodoScope[.]php$'
+        - type: directory
+          value: 'lib/Service/ObjectSource/VtodoSelection[.]php$'
+        - type: directory
+          value: 'lib/Service/ObjectSource/WritableObjectSourceProvider[.]php$'
         - type: directory
           value: 'lib/Service/Organisation/[^/]*$'
         - type: directory
@@ -3045,6 +3175,10 @@ deptrac:
           value: 'lib/Service/Integration/BuiltinProviders/[^/]*$'
         - type: directory
           value: 'lib/Service/Integration/Providers/[^/]*$'
+        - type: directory
+          value: 'lib/Service/ObjectSource/ConfiguredSourceUpstream[.]php$'
+        - type: directory
+          value: 'lib/Service/ObjectSource/OpenConnectorHttpProvider[.]php$'
         - type: directory
           value: 'lib/Service/Observability/[^/]*$'
         - type: directory

@@ -298,6 +298,12 @@ class BuiltinIntegrationProviderRegistrationTest extends TestCase {
 			'OCA\OpenRegister\Db\SchemaMapperInterface',
 			'OCA\OpenRegister\Service\ObjectService',
 		],
+		'OCA\OpenRegister\Service\ObjectSource\OpenConnectorHttpProvider' => [
+			'OCA\OpenRegister\Service\Integration\ExternalIntegrationRouterInterface',
+			'OCA\OpenRegister\Db\MappingMapperInterface',
+			'OCA\OpenRegister\Service\MappingService',
+			'Psr\Log\LoggerInterface',
+		],
 	];
 
 	/**

@@ -264,6 +264,8 @@ class Application extends App implements IBootstrap {
 		IntegrationRegistrar::boot(server: $server);
 		IntegrationRegistrar::bootLeafRegistry(server: $server);
 		ObjectSourceRegistrar::boot(server: $server);
+		// The external-register provider (Integrations) follows the built-in object sources.
+		IntegrationRegistrar::bootObjectSources(server: $server);
 		// Any object whose schema opts in may join a collaboration collection
 		// (platform-collaboration-resources, REQ-PCR-001).
 		$server->get(\OCP\Collaboration\Resources\IProviderManager::class)

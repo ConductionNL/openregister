@@ -39,6 +39,9 @@ use OCA\OpenRegister\Service\Integration\PropertyReferenceTypeValidator;
 use OCA\OpenRegister\Service\Integration\PropertySemanticReferenceValidator;
 use OCA\OpenRegister\Service\Integration\Providers\TimeProvider;
 use OCA\OpenRegister\Service\JsonLd\JsonLdContextService;
+use OCA\OpenRegister\Service\ObjectSource\ObjectSourceProvider;
+use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
+use OCA\OpenRegister\Service\ObjectSource\OpenConnectorHttpProvider;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCP\IURLGenerator;
 use PHPUnit\Framework\TestCase;
@@ -204,6 +207,44 @@ class IntegrationWiringTest extends TestCase {
 
 		IntegrationWiring::boot($server);
 	}//end testAFailingProviderIsDroppedSilentlyWithoutALogger()
+
+	public function testBootObjectSourcesAddsTheExternalRegisterProvider(): void {
+		$provider = $this->createMock(ObjectSourceProvider::class);
+		$registry = $this->createMock(ObjectSourceRegistry::class);
+		$registry->expects($this->once())->method('addProvider')->with($provider)->willReturn(true);
+		$server = $this->createMock(ContainerInterface::class);
+		$server->method('get')->willReturnMap([[ObjectSourceRegistry::class, $registry], [OpenConnectorHttpProvider::class, $provider]]);
+
+		IntegrationWiring::bootObjectSources($server);
+	}//end testBootObjectSourcesAddsTheExternalRegisterProvider()
+
+	public function testBootObjectSourcesLogsAProviderThatCannotBeResolved(): void {
+		$registry = $this->createMock(ObjectSourceRegistry::class);
+		$registry->expects($this->never())->method('addProvider');
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->once())->method('warning')
+			->with('[ObjectSource] could not register '.OpenConnectorHttpProvider::class.': openconnector missing');
+		$server = $this->createMock(ContainerInterface::class);
+		$server->method('get')->willReturnCallback(
+			static function (string $id) use ($registry, $logger): mixed {
+				return match ($id) {
+					ObjectSourceRegistry::class => $registry,
+					LoggerInterface::class => $logger,
+					default => throw new RuntimeException('openconnector missing'),
+				};
+			}
+		);
+
+		IntegrationWiring::bootObjectSources($server);
+	}//end testBootObjectSourcesLogsAProviderThatCannotBeResolved()
+
+	public function testBootObjectSourcesSkipsQuietlyWithoutARegistry(): void {
+		$server = $this->createMock(ContainerInterface::class);
+		$server->expects($this->once())->method('get')->with(ObjectSourceRegistry::class)
+			->willThrowException(new RuntimeException('not bound'));
+
+		IntegrationWiring::bootObjectSources($server);
+	}//end testBootObjectSourcesSkipsQuietlyWithoutARegistry()
 
 	public function testTheLeafLoaderReadsTheLeafCatalogueWhenCalled(): void {
 		$loader   = null;

@@ -90,6 +90,7 @@ class IntegrationRegistrarTest extends TestCase {
 				'OCA\OpenRegister\Service\Schema\SchemaVersioningService',
 				'OCA\OpenRegister\Service\Schema\SchemaRevalidationService',
 				'OCA\OpenRegister\Service\Schema\SchemaMigrationService',
+				'OCA\OpenRegister\Service\ObjectSource\OpenConnectorHttpProvider',
 				'OCA\OpenRegister\Controller\IntegrationsController',
 				'OCA\OpenRegister\Controller\ObjectIntegrationsController',
 			],
@@ -212,6 +213,27 @@ class IntegrationRegistrarTest extends TestCase {
 
 		$loader();
 	}//end testBootLeafRegistryInstallsALazyLoader()
+
+	/**
+	 * bootObjectSources() adds the external-register provider to the object source registry.
+	 *
+	 * @return void
+	 */
+	public function testBootObjectSourcesAddsTheExternalRegisterProvider(): void {
+		$provider = $this->createMock(originalClassName: \OCA\OpenRegister\Service\ObjectSource\ObjectSourceProvider::class);
+		$registry = $this->createMock(originalClassName: \OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry::class);
+		$registry->expects($this->once())->method('addProvider')->with($provider)->willReturn(true);
+
+		$server = $this->createMock(originalClassName: ContainerInterface::class);
+		$server->method('get')->willReturnMap(
+			[
+				[\OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry::class, $registry],
+				[\OCA\OpenRegister\Service\ObjectSource\OpenConnectorHttpProvider::class, $provider],
+			]
+		);
+
+		IntegrationRegistrar::bootObjectSources(server: $server);
+	}//end testBootObjectSourcesAddsTheExternalRegisterProvider()
 
 	/**
 	 * A test double for a service, or, for a final class, a real instance.

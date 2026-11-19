@@ -24,7 +24,7 @@ use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionService;
 use OCA\OpenRegister\Service\Dbal\DbalConnectionFactory;
 use OCA\OpenRegister\Service\Dbal\IntrospectionTools;
 use OCA\OpenRegister\Service\Dbal\SqlTypeMapper;
-use OCA\OpenRegister\Service\TaskService;
+use OCA\OpenRegister\Service\UserTaskListInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use Psr\Container\ContainerInterface;
 
@@ -76,8 +76,6 @@ final class ObjectSourceWiring {
 		DbalObjectSourceProvider::class,
 		// A saved view's rows as a read-only type (modelling-query-backed-type).
 		\OCA\OpenRegister\Service\ObjectSource\ViewObjectSourceProvider::class,
-		// An external register (BAG, BRK, WOZ, ...) through a configured OpenConnector source.
-		OpenConnectorHttpProvider::class,
 	];
 
 	/**
@@ -102,7 +100,7 @@ final class ObjectSourceWiring {
 			'logger'     => 'Psr\Log\LoggerInterface',
 		],
 		CalDavVtodoObjectSourceProvider::class => [
-			'taskService' => TaskService::class,
+			'taskService' => UserTaskListInterface::class,
 			'app'         => OptionalAppBridge::class,
 		],
 		UserDirectoryObjectSourceProvider::class => [
@@ -188,12 +186,6 @@ final class ObjectSourceWiring {
 		TablesObjectSourceProvider::class => [
 			'parts'   => TablesProviderParts::class,
 			'session' => \OCA\OpenRegister\Service\LinkSessionRuntime::class,
-		],
-		OpenConnectorHttpProvider::class => [
-			'router'         => 'OCA\OpenRegister\Service\Integration\ExternalIntegrationRouterInterface',
-			'mappingMapper'  => 'OCA\OpenRegister\Db\MappingMapperInterface',
-			'mappingService' => 'OCA\OpenRegister\Service\MappingService',
-			'logger'         => 'Psr\Log\LoggerInterface',
 		],
 	];
 

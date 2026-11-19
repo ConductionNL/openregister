@@ -43,6 +43,8 @@ use OCA\OpenRegister\Service\Integration\Providers\PollsProvider;
 use OCA\OpenRegister\Service\Integration\Providers\SharesProvider;
 use OCA\OpenRegister\Service\Integration\Providers\TalkProvider;
 use OCA\OpenRegister\Service\Integration\Providers\XwikiProvider;
+use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
+use OCA\OpenRegister\Service\ObjectSource\OpenConnectorHttpProvider;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use Psr\Container\ContainerInterface;
 
@@ -135,6 +137,16 @@ final class IntegrationWiring {
 		TalkProvider::class,
 		// @spec openspec/specs/integration-time-tracker/spec.md (canonical spec).
 		\OCA\OpenRegister\Service\Integration\Providers\TimeProvider::class,
+	];
+
+	/**
+	 * The object-source providers of this component bootObjectSources() adds to the object source registry, in order.
+	 *
+	 * @var list<class-string>
+	 */
+	private const OBJECT_SOURCE_PROVIDERS = [
+		// An external register (BAG, BRK, WOZ, ...) through a configured OpenConnector source.
+		OpenConnectorHttpProvider::class,
 	];
 
 	/**
@@ -336,6 +348,35 @@ final class IntegrationWiring {
 			}
 		}
 	}//end addBuiltinProviders()
+
+	/**
+	 * Add this component's object-source providers to the shared ObjectSourceRegistry.
+	 *
+	 * Runs in boot() after ObjectSourceRegistrar::boot(), so these providers follow
+	 * the built-in ones in the registry. Guarded like that step: without a registry
+	 * nothing is added, and a provider that cannot be resolved is logged and skipped.
+	 *
+	 * @param mixed $server Server container (passed in from boot()).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/external-register-view-leaf/specs/object-source-providers/spec.md
+	 */
+	public static function bootObjectSources($server): void {
+		try {
+			$registry = $server->get(ObjectSourceRegistry::class);
+		} catch (\Throwable $e) {
+			return;
+		}
+
+		foreach (self::OBJECT_SOURCE_PROVIDERS as $providerClass) {
+			try {
+				$registry->addProvider($server->get($providerClass));
+			} catch (\Throwable $e) {
+				self::bootLogger(server: $server)?->warning('[ObjectSource] could not register ' . $providerClass . ': ' . $e->getMessage());
+			}
+		}
+	}//end bootObjectSources()
 
 	/**
 	 * Install the lazy leaf loader on the shared IntegrationRegistry.
