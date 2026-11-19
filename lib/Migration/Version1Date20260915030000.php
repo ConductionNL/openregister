@@ -48,14 +48,13 @@ use Closure;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\Types;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Create the object relation row table.
  *
  * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
  */
-class Version1Date20260915030000 extends SimpleMigrationStep {
+class Version1Date20260915030000 extends TargetedMigrationStep {
 	/**
 	 * Change the database schema.
 	 *
@@ -67,7 +66,7 @@ class Version1Date20260915030000 extends SimpleMigrationStep {
 	 *
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		/*
 		 * @var ISchemaWrapper $schema
 		 */
@@ -126,5 +125,5 @@ class Version1Date20260915030000 extends SimpleMigrationStep {
 		$output->info('Created openregister_object_relations table');
 
 		return $schema;
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 }//end class
