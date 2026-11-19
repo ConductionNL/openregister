@@ -1680,8 +1680,6 @@ deptrac:
         - type: directory
           value: 'lib/Service/User/[^/]*$'
         - type: directory
-          value: 'lib/Service/UserMigration/[^/]*$'
-        - type: directory
           value: 'lib/Service/Vectorization/Strategies/[^/]*$'
         - type: directory
           value: 'lib/Service/View/[^/]*$'
@@ -3247,6 +3245,8 @@ deptrac:
           value: 'lib/Service/Chat/[^/]*$'
         - type: directory
           value: 'lib/Service/Resilience/[^/]*$'
+        - type: directory
+          value: 'lib/Service/UserMigration/[^/]*$'
         - type: directory
           value: 'lib/Settings/[^/]*$'
   ruleset:
