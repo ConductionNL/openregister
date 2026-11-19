@@ -27,6 +27,7 @@ use OCA\OpenRegister\Kernel\Contracts\Core\ExportGuardInterface;
 use OCA\OpenRegister\Kernel\Contracts\ExampleSetInstallerInterface;
 use OCA\OpenRegister\Kernel\Contracts\FlowTimerControlInterface;
 use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
+use OCA\OpenRegister\Kernel\Contracts\Integrations\ShareableConfigCatalogueInterface;
 use OCA\OpenRegister\Kernel\Contracts\McpCatalogueInterface;
 use OCA\OpenRegister\Kernel\Contracts\NotificationTemplatesInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarEventsInterface;
@@ -137,6 +138,7 @@ use OCA\OpenRegister\Service\Config\FederatedConfigService;
 use OCA\OpenRegister\Service\Config\FederatedConfigServiceInterface;
 use OCA\OpenRegister\Service\Config\SchemaShareableConfigScanner;
 use OCA\OpenRegister\Service\Config\SchemaShareableConfigScannerInterface;
+use OCA\OpenRegister\Service\Config\ShareableConfigCatalogue;
 use OCA\OpenRegister\Service\Config\ShareableConfigTypeRegistry;
 use OCA\OpenRegister\Service\Config\ShareableConfigTypeRegistryInterface;
 use OCA\OpenRegister\Service\Config\Types\ConfigSetShareableConfigType;
@@ -1035,6 +1037,7 @@ final class ContractBindings {
 		SendNotificationNodeInterface::class => SendNotificationNode::class,
 		SendTalkMessageNodeInterface::class => SendTalkMessageNode::class,
 		SequenceServiceInterface::class => SequenceService::class,
+		ShareableConfigCatalogueInterface::class => ShareableConfigCatalogue::class,
 		ShareableConfigTypeRegistryInterface::class => ShareableConfigTypeRegistry::class,
 		SharedSchemaDedupeServiceInterface::class => SharedSchemaDedupeService::class,
 		SlaCalculatorInterface::class => SlaCalculator::class,

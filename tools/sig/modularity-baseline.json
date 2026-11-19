@@ -2,9 +2,6 @@
  "against_order": [
   "lib/AppHost/Reference/AbstractSchemaReferenceProvider.php -> lib/Service/Reference/ObjectPreviewFormatterInterface.php",
   "lib/AppHost/Service/AppHostSettingsService.php -> lib/Service/ConfigurationServiceInterface.php",
-  "lib/AppHost/Store/DeclaredShareableType.php -> lib/Service/Config/IShareableConfigType.php",
-  "lib/AppHost/Store/FederatedStoreCatalog.php -> lib/Service/Config/FederatedConfigServiceInterface.php",
-  "lib/AppHost/Store/FederatedStoreCatalog.php -> lib/Service/Config/ShareableConfigTypeRegistryInterface.php",
   "lib/BackgroundJob/AuditTrailExportJob.php -> lib/BackgroundJob/RecordedJobRuntime.php",
   "lib/BackgroundJob/AuditTrailExportJob.php -> lib/BackgroundJob/RecordedQueuedJob.php",
   "lib/BackgroundJob/DbalIntrospectionJob.php -> lib/Db/Source.php",
@@ -645,6 +642,7 @@
   "lib/AppHost/Scheduling/ScheduleReleaseReader.php",
   "lib/AppHost/Service/GenericActionAuthService.php",
   "lib/AppHost/Service/RegisterDocumentLoaderInterface.php",
+  "lib/AppHost/Store/DeclaredShareableType.php",
   "lib/AppInfo/Application.php",
   "lib/BackgroundJob/AbstractRetentionJob.php",
   "lib/BackgroundJob/AbstractTextExtractionJob.php",
@@ -1351,6 +1349,7 @@
   "lib/Kernel/Contracts/FlowTimerControlInterface.php",
   "lib/Kernel/Contracts/FlowTimerInterface.php",
   "lib/Kernel/Contracts/GitHubClientInterface.php",
+  "lib/Kernel/Contracts/Integrations/ShareableConfigCatalogueInterface.php",
   "lib/Kernel/Contracts/Integrations/TranslationBindingInterface.php",
   "lib/Kernel/Contracts/KeywordChunkSearch.php",
   "lib/Kernel/Contracts/LinkedTaskDraft.php",
@@ -1836,10 +1835,7 @@
   "lib/Service/CollectiveLinkService.php",
   "lib/Service/CollectiveLinkServiceInterface.php",
   "lib/Service/ComplianceServiceRegistrar.php",
-  "lib/Service/Config/FederatedConfigServiceInterface.php",
-  "lib/Service/Config/IShareableConfigType.php",
   "lib/Service/Config/RegisterShareableConfigTypesEvent.php",
-  "lib/Service/Config/ShareableConfigTypeRegistryInterface.php",
   "lib/Service/ConfigLookup.php",
   "lib/Service/Configuration/AppSettingsAccess.php",
   "lib/Service/Configuration/ConfigurationCollaborators.php",
@@ -2956,10 +2952,10 @@
  ],
  "exposed_loc": {
   "Compliance": 15582,
-  "Configuration": 6736,
+  "Configuration": 6702,
   "Core": 64669,
   "Files": 3640,
-  "Integrations": 18381,
+  "Integrations": 18403,
   "Kernel": 8482,
   "Notifications": 1914,
   "Platform": 879,
@@ -3423,6 +3419,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10407,
- "total_loc": 459960,
- "violation_degree": 0.0767
+ "total_loc": 460003,
+ "violation_degree": 0.0764
 }
