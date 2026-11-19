@@ -21,7 +21,6 @@
 namespace OCA\OpenRegister\Search\Controller;
 
 use OCA\OpenRegister\Service\Rbac\ReachedView;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Search\Controller\Support\ViewPatch;
 use OCA\OpenRegister\Search\Db\View;
 use InvalidArgumentException;
@@ -32,6 +31,7 @@ use OCA\OpenRegister\Search\Service\ViewDefinition;
 use OCA\OpenRegister\Search\Service\ViewService;
 use OCA\OpenRegister\Service\View\ViewAlert;
 use OCA\OpenRegister\Exception\InvalidViewAlertException;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Search\Controller\Support\ViewsControllerServices;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -96,7 +96,7 @@ class ViewsController extends Controller {
 	 * @param ViewsControllerServices $services The saved-views API services.
 	 */
 	public function __construct(IRequest $request, ViewsControllerServices $services) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 
 		$this->viewService             = $services->viewService;
 		$this->viewPresentationService = $services->viewPresentationService;

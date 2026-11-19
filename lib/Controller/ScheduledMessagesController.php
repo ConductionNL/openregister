@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Notifications\Controller\Support\ReadableObject;
 use OCA\OpenRegister\Notifications\Service\Notification\ScheduledMessageRefusal;
@@ -55,7 +55,7 @@ class ScheduledMessagesController extends Controller {
 		private readonly ScheduledMessageScheduler $scheduler,
 		private readonly ObjectOperationsInterface $objects,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**
