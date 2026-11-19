@@ -21,7 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Audit;
 
 use OCA\OpenRegister\BackgroundJob\AuditExportSource;
-use OCA\OpenRegister\BackgroundJob\JobHandles;
+use OCA\OpenRegister\BackgroundJob\ComplianceJobHandlesInterface;
 use OCA\OpenRegister\Db\AuditTrail\AuditPageRequest;
 use OCA\OpenRegister\Db\AuditTrail\AuditTrailCriteria;
 use OCA\OpenRegister\Db\AuditTrailPageQueryInterface;
@@ -74,7 +74,7 @@ class AuditTrailPageServiceTest extends TestCase {
 	public function testAnExportUnderTheCeilingIsRenderedInline(): void {
 		$rows = [['id' => 1], ['id' => 2]];
 		$this->pageQuery->expects($this->once())->method('collect')
-			->with(new AuditTrailCriteria(['user' => 'u'], null), JobHandles::AUDIT_TRAIL_EXPORT_INLINE_LIMIT)
+			->with(new AuditTrailCriteria(['user' => 'u'], null), ComplianceJobHandlesInterface::AUDIT_TRAIL_EXPORT_INLINE_LIMIT)
 			->willReturn(['results' => $rows, 'truncated' => false]);
 		$this->logService->expects($this->once())->method('exportRows')
 			->with('csv', $rows, ['includeChanges' => true])
@@ -90,7 +90,7 @@ class AuditTrailPageServiceTest extends TestCase {
 		$this->pageQuery->method('collect')->willReturn(['results' => [['id' => 1], ['id' => 2], ['id' => 3]], 'truncated' => true]);
 		$this->logService->expects($this->never())->method('exportRows');
 		$this->jobList->expects($this->once())->method('add')->with(
-			JobHandles::AUDIT_TRAIL_EXPORT,
+			ComplianceJobHandlesInterface::AUDIT_TRAIL_EXPORT,
 			['actor' => 'admin', 'filters' => ['user' => 'u'], 'search' => 'term', 'format' => 'json', 'includeChanges' => false]
 		);
 
