@@ -46,7 +46,7 @@ components:
       - ".*/lib/Service/Schemas/PropertyValidatorHandlerInterface[.]php"
       - ".*/lib/Support/.*"
     exclude:
-      - ".*/lib/Kernel/Contracts/(Core|Notifications|Processes)/.*"
+      - ".*/lib/Kernel/Contracts/(Core|Integrations|Notifications|Processes)/.*"
   - name: Core
     include:
       - ".*/lib/Kernel/Contracts/Core/.*"
@@ -1509,7 +1509,7 @@ components:
       - ".*/lib/Service/Translation/[^/]*"
   - name: Compliance
     include:
-      - ".*/lib/BackgroundJob/(AbstractTextExtractionJob|ArchivalRetentionTask|ArchivalRowExpiry|ArchivalSweep|AuditExportDelivery|AuditExportSource|AuditSealJob|AuditTrailExportJob|AvgRetentionJob|BlobGroup|BlobMigrationRun|BulkLegalHoldJob|ComplianceJobHandlesInterface|ConnectionSeamReportJob|DestructionCheckJob|DestructionExecutionJob|DestructionExecutionJobInterface|DestructionListRun|DsarDpiaDetectionJob|DsarRetentionSweepJob|ExternalGrantLapseJob|ProcessingLogPrune|ProcessingLogRetentionJob|QualityAuditScheduleJob|RelatedRetentionRecalculationJob|ReviewReminderJob|SharerAccessSweepJob|SubjectExportJob|TransferCheckJob)[.]php"
+      - ".*/lib/BackgroundJob/(AbstractTextExtractionJob|ArchivalRetentionTask|ArchivalRowExpiry|ArchivalSweep|AuditExportDelivery|AuditExportSource|AuditSealJob|AuditTrailExportJob|AvgRetentionJob|BlobGroup|BlobMigrationRun|BulkLegalHoldJob|ComplianceJobHandlesInterface|DestructionCheckJob|DestructionExecutionJob|DestructionExecutionJobInterface|DestructionListRun|DsarDpiaDetectionJob|DsarRetentionSweepJob|ExternalGrantLapseJob|ProcessingLogPrune|ProcessingLogRetentionJob|QualityAuditScheduleJob|RelatedRetentionRecalculationJob|ReviewReminderJob|SharerAccessSweepJob|SubjectExportJob|TransferCheckJob)[.]php"
       - ".*/lib/BackgroundJob/Support/AbandonedFlowClaim[.]php"
       - ".*/lib/BackgroundJob/Support/ArchivalRetentionPlatform[.]php"
       - ".*/lib/BackgroundJob/Support/ArchivalRetentionSources[.]php"
@@ -1630,6 +1630,7 @@ components:
       - ".*/lib/Service/Quality/QualityAuditStores[.]php"
   - name: Integrations
     include:
+      - ".*/lib/Kernel/Contracts/Integrations/.*"
       - ".*/lib/AppHost/[^/]*"
       - ".*/lib/AppHost/Controller/[^/]*"
       - ".*/lib/AppHost/Controller/Support/[^/]*"
@@ -1659,7 +1660,7 @@ components:
       - ".*/lib/AppHost/Settings/[^/]*"
       - ".*/lib/AppHost/Store/[^/]*"
       - ".*/lib/AppHost/Store/Source/[^/]*"
-      - ".*/lib/BackgroundJob/(CalendarLinkBackfillRun|ContextChatSubmissionJob|HandoffQueueDrainJob|IntegrationsJobHandlesInterface|OAuth2TokenRefreshJob|SyncDataJob|WebhookDeliveryJob|WebhookRetryJob)[.]php"
+      - ".*/lib/BackgroundJob/(CalendarLinkBackfillRun|ConnectionSeamReportJob|ContextChatSubmissionJob|HandoffQueueDrainJob|IntegrationsJobHandlesInterface|OAuth2TokenRefreshJob|SyncDataJob|WebhookDeliveryJob|WebhookRetryJob)[.]php"
       - ".*/lib/Calendar/[^/]*"
       - ".*/lib/Command/(BackfillTranslationSourceLanguageCommand|FederationShareRightsCommand|FederationSharesExpiringCommand|TablesSyncCommand|TimeReconcileCommand)[.]php"
       - ".*/lib/Contacts/[^/]*"

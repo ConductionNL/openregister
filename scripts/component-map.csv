@@ -90,7 +90,7 @@ BackgroundJob/BulkLegalHoldJob.php,46,BackgroundJob,Compliance,Compliance/Backgr
 BackgroundJob/CacheClearAndWarmJob.php,19,BackgroundJob,Configuration,Configuration/BackgroundJob/CacheClearAndWarmJob.php,0,,Configuration
 BackgroundJob/CasePlanTimerRearmJob.php,43,BackgroundJob,Work,Work/BackgroundJob/CasePlanTimerRearmJob.php,0,,Processes
 BackgroundJob/ConfigurationCheckJob.php,179,BackgroundJob,Configuration,Configuration/BackgroundJob/ConfigurationCheckJob.php,0,,Configuration
-BackgroundJob/ConnectionSeamReportJob.php,78,BackgroundJob,Compliance,Compliance/BackgroundJob/ConnectionSeamReportJob.php,0,,Compliance
+BackgroundJob/ConnectionSeamReportJob.php,78,BackgroundJob,Compliance,Compliance/BackgroundJob/ConnectionSeamReportJob.php,0,,Integrations
 BackgroundJob/ConsistencyCheckJob.php,33,BackgroundJob,Configuration,Configuration/BackgroundJob/ConsistencyCheckJob.php,0,,Configuration
 BackgroundJob/ContextChatSubmissionJob.php,,BackgroundJob,,,,,Integrations
 BackgroundJob/DbalIntrospectionJob.php,62,BackgroundJob,Service,Service/BackgroundJob/DbalIntrospectionJob.php,0,,Core
@@ -4447,3 +4447,4 @@ BackgroundJob/ComplianceJobHandlesInterface.php,,BackgroundJob,,,,,Compliance
 BackgroundJob/ConfigurationJobHandlesInterface.php,,BackgroundJob,,,,,Configuration
 BackgroundJob/IntegrationsJobHandlesInterface.php,,BackgroundJob,,,,,Integrations
 BackgroundJob/ProcessesJobHandlesInterface.php,,BackgroundJob,,,,,Processes
+Service/Translation/TranslationBindingDescription.php,,Service,,,,,Configuration
