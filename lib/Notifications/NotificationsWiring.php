@@ -35,8 +35,6 @@ use OCA\OpenRegister\Notifications\Db\ScheduledReportMapperInterface;
 use OCA\OpenRegister\Notifications\Db\WatcherMapper;
 use OCA\OpenRegister\Notifications\Db\WatcherMapperInterface;
 use OCA\OpenRegister\Notifications\Search\TimelineEntriesProvider;
-use OCA\OpenRegister\Notifications\Service\ExampleSet\ExampleSetTimelineEntries;
-use OCA\OpenRegister\Notifications\Service\ExampleSet\ExampleSetTimelineRowsInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
 use OCA\OpenRegister\Notifications\Service\Notification\EmailSender;
 use OCA\OpenRegister\Notifications\Service\Notification\EmailSenderInterface;
@@ -126,7 +124,6 @@ final class NotificationsWiring {
 		ScheduledReportMapperInterface::class => ScheduledReportMapper::class,
 		NotificationAnnotationValidatorInterface::class => NotificationAnnotationValidator::class,
 		TaskTransitionNotifierInterface::class => TaskTransitionNotifier::class,
-		ExampleSetTimelineRowsInterface::class => ExampleSetTimelineEntries::class,
 	];
 
 	/**

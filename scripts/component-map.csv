@@ -1532,7 +1532,7 @@ Notifications/Search/TimelineEntriesProvider.php,110,Notifications,Notifications
 Notifications/Service/ActivityService.php,290,Notifications,Notifications,Notifications/Service/ActivityService.php,0,,Notifications
 Notifications/Service/EmailService.php,225,Notifications,Notifications,Notifications/Service/EmailService.php,0,104,Integrations
 Notifications/Service/EmailServiceInterface.php,12,Notifications,Notifications,Notifications/Service/EmailServiceInterface.php,0,,Integrations
-Notifications/Service/ExampleSet/ExampleSetTimelineEntries.php,120,Notifications,Notifications,Notifications/Service/ExampleSet/ExampleSetTimelineEntries.php,0,245,Notifications
+Notifications/Service/ExampleSet/ExampleSetTimelineEntries.php,120,Notifications,Notifications,Notifications/Service/ExampleSet/ExampleSetTimelineEntries.php,0,245,Configuration
 Notifications/Service/GraphQL/SubscriptionService.php,115,Notifications,Notifications,Notifications/Service/GraphQL/SubscriptionService.php,0,,Notifications
 Notifications/Service/Notification/AnnotationNotificationDispatcher.php,1700,Notifications,Notifications,Notifications/Service/Notification/AnnotationNotificationDispatcher.php,0,23,Notifications
 Notifications/Service/Notification/DigestScheduleEvaluator.php,58,Notifications,Notifications,Notifications/Service/Notification/DigestScheduleEvaluator.php,0,,Notifications
@@ -4428,3 +4428,4 @@ Notifications/Controller/Support/EmailsControllerServices.php,,Notifications,,,,
 Notifications/Controller/Support/EmailsDomain.php,,Notifications,,,,,Integrations
 Notifications/Controller/Support/EmailsObjectAccess.php,,Notifications,,,,,Integrations
 Notifications/Controller/Support/EmailsPlatform.php,,Notifications,,,,,Integrations
+Notifications/Service/ExampleSet/ExampleSetTimelineRowsInterface.php,,Notifications,,,,,Configuration

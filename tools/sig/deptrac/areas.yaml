@@ -2718,6 +2718,8 @@ deptrac:
         - type: directory
           value: 'lib/Listener/(RedactionPolicyCacheListener|ShareableConfigTypeRegistrationListener)[.]php$'
         - type: directory
+          value: 'lib/Notifications/Service/ExampleSet/[^/]*$'
+        - type: directory
           value: 'lib/Service/(AppRegisterImportRunner|ApplicationMove|ApplicationService|ConfigurationService|ConfigurationServiceInterface|ConfigurationTransferInterface|ConfigurationUpdateNotice|ContractBindings|ContractBindingsRegistrar|CountedRegisterImport|DemoDataService|DescriptorImportTarget|ExportService|FormsAppRows|ImportService|LanguageGapScan|LanguageService|ManifestProfile|ManifestService|MassValidationRun|McpCatalogSummaries|McpDiscoveryService|MdiIconRenderer|MigrationPackService|MigrationPackServiceInterface|MigrationService|MockImportRun|NotificationService|OperationsConsoleService|PropertyDiscoveryRun|RecordUpdate|RegisterDescriptorService|ScheduledReportRun|ScheduledReportService|SchemaApplicationMigrator|SchemaCascade|SchemaService|SchemaSplitRun|SequenceScope|SequenceService|SettingsService|SharedSchemaDedupeService|SharedSchemaPlanRun|SharedSchemaUse|ShippedRegister|SourceLanguageLookup|TenantKeyService|TranslationProjectionService|TranslationSearch|TranslationStatusService|ValidationChunkResult|VocabularyImportService)[.]php$'
         - type: directory
           value: 'lib/Service/Capability/[^/]*$'
@@ -3525,8 +3527,6 @@ deptrac:
           value: 'lib/Notifications/Service/TimelineVisibilityService[.]php$'
         - type: directory
           value: 'lib/Notifications/Service/TimelineVisibilityServiceInterface[.]php$'
-        - type: directory
-          value: 'lib/Notifications/Service/ExampleSet/[^/]*$'
         - type: directory
           value: 'lib/Notifications/Service/GraphQL/[^/]*$'
         - type: directory
