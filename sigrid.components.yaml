@@ -1638,10 +1638,11 @@ components:
       - ".*/lib/Db/ProcessingLog/[^/]*"
       - ".*/lib/Db/ProcessingLogEntry/[^/]*"
       - ".*/lib/Db/ProcessingPurpose/[^/]*"
+      - ".*/lib/Db/SchemaMapper/ArchivalDeclarationRefusals[.]php"
       - ".*/lib/Db/SubjectExport/[^/]*"
       - ".*/lib/Db/Verwerkingsactiviteit/[^/]*"
       - ".*/lib/Exception/(TextDisclosureNotRecordedException)[.]php"
-      - ".*/lib/Listener/(ArchivalNominationListener|ContentReportRemovalListener|EntityEditAuditListener|QualityScoreOnSaveListener|RecordTypeAuditListener|RelatedRetentionRecalculationListener|SchemaAuthorizationAuditListener)[.]php"
+      - ".*/lib/Listener/(ArchivalDeclarationChecksListener|ArchivalNominationListener|ContentReportRemovalListener|EntityEditAuditListener|QualityScoreOnSaveListener|RecordTypeAuditListener|RelatedRetentionRecalculationListener|SchemaAuthorizationAuditListener)[.]php"
       - ".*/lib/Repair/(RechainAuditTrailForFlowAttribution)[.]php"
       - ".*/lib/Service/(AuditCanonicalV1|AuditChainKey|AuditHashService|AuditHashServiceInterface|AuditQueryService|AuditQueryServiceInterface|AuditRechainInterface|AuditRetentionResolver|AuditRetentionResolverInterface|AuditSealInterface|AuthFailureRun|AuthorizationAuditService|AuthorizationChange|AvgComplianceService|AvgRetentionErasureRun|AvgRetentionService|CalculationRun|ComplianceServiceBindings|ComplianceServiceRegistrar|ContentScanService|DescriptorReimportRun|DsarErasureRun|DsarGuards|DsarService|DsarStores|DsarSubjectQuery|LogService|ProcessingLogService|ProcessingRead|ReadCaptureRun|RetentionClock|RetentionPass|RetentionRules|RetentionService|RetentionServiceInterface|RetentionStores|SchemaDeletionService|SearchMeasurement|SearchPeriod|SearchTrailNameEnricher|SearchTrailService|SearchTrailServiceInterface|SearchTrailStatistics|TableDeletionRun|TmloService|UnclassifiedProcessing)[.]php"
       - ".*/lib/Service/Anonymisation/[^/]*"
@@ -1666,6 +1667,7 @@ components:
       - ".*/lib/Service/Quality/QualityAuditRefusedException[.]php"
       - ".*/lib/Service/Quality/QualityAuditService[.]php"
       - ".*/lib/Service/Quality/QualityAuditStores[.]php"
+      - ".*/lib/Service/Schemas/ArchivalDeclarationValidators[.]php"
   - name: Integrations
     include:
       - ".*/lib/Kernel/Contracts/Integrations/.*"

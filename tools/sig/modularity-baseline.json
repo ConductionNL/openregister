@@ -226,7 +226,6 @@
   "lib/Db/SchemaMapper/NotificationAnnotationCheck.php -> lib/Notifications/Service/Notification/NotificationContentValidator.php",
   "lib/Db/SchemaMapper/NotificationAnnotationCheck.php -> lib/Notifications/Service/Notification/NotificationDeclarationException.php",
   "lib/Db/SchemaMapper/RecordAnnotationRefusals.php -> lib/Search/Service/SearchAnnotationValidators.php",
-  "lib/Db/SchemaMapper/RecordAnnotationRefusals.php -> lib/Service/Archival/ElementMappingValidatorInterface.php",
   "lib/Db/SchemaMapper/RecordAnnotationRefusals.php -> lib/Service/Archival/InheritedAppraisal.php",
   "lib/Db/SearchTrailMapperInterface.php -> lib/Db/SearchTrail.php",
   "lib/Db/SearchTrailMapperInterface.php -> lib/Db/SearchTrailOutcome.php",
@@ -705,11 +704,6 @@
   "lib/Service/SchemaDeletionService.php -> lib/Service/TableDeletionOptions.php",
   "lib/Service/SchemaTeardownGuard.php -> lib/Service/SchemaDeletionService.php",
   "lib/Service/Schemas/PropertyTitles.php -> lib/Service/LanguageService.php",
-  "lib/Service/Schemas/SchemaDeclarationValidators.php -> lib/Service/Archival/ArchivalAnnotationValidator.php",
-  "lib/Service/Schemas/SchemaDeclarationValidators.php -> lib/Service/Archival/ArchivalAnnotationValidatorInterface.php",
-  "lib/Service/Schemas/SchemaDeclarationValidators.php -> lib/Service/Archival/ElementMappingValidator.php",
-  "lib/Service/Schemas/SchemaDeclarationValidators.php -> lib/Service/Archival/ElementMappingValidatorInterface.php",
-  "lib/Service/Schemas/SchemaDeclarationValidators.php -> lib/Service/Archival/MdtoElementCatalogue.php",
   "lib/Service/Schemas/SchemaDeclarationValidators.php -> lib/Service/Handoff/HandoffAnnotationValidator.php",
   "lib/Service/Schemas/SchemaDeclarationValidators.php -> lib/Service/Handoff/HandoffAnnotationValidatorInterface.php",
   "lib/Service/Schemas/SchemaDeclarationValidators.php -> lib/Service/Handoff/HandoffContractBindingValidator.php",
@@ -1615,6 +1609,7 @@
   "lib/Lifecycle/LifecycleGuardContext.php",
   "lib/Lifecycle/LifecycleGuardInterface.php",
   "lib/Lifecycle/LifecycleTransitionGuardInterface.php",
+  "lib/Listener/ArchivalDeclarationChecksListener.php",
   "lib/Listener/ArchivalNominationListener.php",
   "lib/Listener/ChangeGateListener.php",
   "lib/Listener/CodedValueValidationListener.php",
@@ -1849,7 +1844,6 @@
   "lib/Service/Archival/InheritedAppraisal.php",
   "lib/Service/Archival/LegalHoldService.php",
   "lib/Service/Archival/LegalHoldServiceInterface.php",
-  "lib/Service/Archival/MdtoElementCatalogue.php",
   "lib/Service/Archival/RecordState.php",
   "lib/Service/Archival/RetentionEvaluator.php",
   "lib/Service/Archival/RetentionEvaluatorInterface.php",
@@ -3135,7 +3129,7 @@
   "lib/Twig/MappingTwigInstallerInterface.php"
  ],
  "exposed_loc": {
-  "Compliance": 15781,
+  "Compliance": 15739,
   "Configuration": 6896,
   "Core": 65054,
   "Files": 3684,
@@ -3143,7 +3137,7 @@
   "Kernel": 8515,
   "Notifications": 1710,
   "Platform": 976,
-  "Processes": 32040,
+  "Processes": 32046,
   "Search": 2072
  },
  "kernel_files": [
@@ -3605,6 +3599,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10440,
- "total_loc": 459309,
- "violation_degree": 0.0917
+ "total_loc": 459355,
+ "violation_degree": 0.0911
 }

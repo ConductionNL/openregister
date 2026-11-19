@@ -4419,6 +4419,9 @@ Service/ComplianceServiceBindings.php,,Service,,,,,Compliance
 Service/ComplianceServiceRegistrar.php,,Service,,,,,Compliance
 Event/ObjectWriteRequestEvent.php,,Event,,,,,Core
 Listener/WebhookRequestInterceptionListener.php,,Listener,,,,,Integrations
+Service/Schemas/ArchivalDeclarationValidators.php,,Service,,,,,Compliance
+Db/SchemaMapper/ArchivalDeclarationRefusals.php,,Db,,,,,Compliance
+Listener/ArchivalDeclarationChecksListener.php,,Listener,,,,,Compliance
 Service/Form/PublishedForm.php,,Service,,,,,Kernel
 Service/Lifecycle/TransitionActor.php,,Service,,,,,Kernel
 Service/Lifecycle/TransitionMove.php,,Service,,,,,Kernel
