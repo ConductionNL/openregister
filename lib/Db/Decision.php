@@ -30,6 +30,7 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use JsonSerializable;
+use OCA\OpenRegister\Kernel\Contracts\DecisionInterface;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -58,7 +59,7 @@ use OCP\AppFramework\Db\Entity;
  *
  * @spec openspec/changes/reviewer-owns-their-decisions/specs/decisions/spec.md#requirement-a-decision-is-its-own-object-req-dec-001
  */
-class Decision extends Entity implements JsonSerializable {
+class Decision extends Entity implements JsonSerializable, DecisionInterface {
 
 	/**
 	 * The decision's own uuid, by which subjects link to it.
