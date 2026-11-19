@@ -374,8 +374,6 @@
   "lib/Mcp/Controller/McpServerController.php -> lib/Service/Mcp/McpSessionCaller.php",
   "lib/Mcp/Controller/McpServerController.php -> lib/Service/Mcp/ToolCall.php",
   "lib/Mcp/Controller/Support/McpServerDomain.php -> lib/Service/Mcp/McpAgentScope.php",
-  "lib/Mcp/Db/Agent.php -> lib/Db/Configuration.php",
-  "lib/Mcp/Tool/ApplicationTool.php -> lib/Db/Application.php",
   "lib/Notifications/BackgroundJob/TaskNotificationCandidates.php -> lib/Db/TaskMapper.php",
   "lib/Notifications/BackgroundJob/TaskNotificationCandidates.php -> lib/Service/Task/TaskInboxServiceInterface.php",
   "lib/Notifications/BackgroundJob/TaskScheduledNotificationJob.php -> lib/Db/Task.php",
@@ -3794,6 +3792,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10375,
- "total_loc": 459194,
- "violation_degree": 0.105
+ "total_loc": 459192,
+ "violation_degree": 0.1048
 }
