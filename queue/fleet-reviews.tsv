@@ -1555,3 +1555,4 @@ stackiq	2062	a7823ce7adea7831886624260e8c1bee0da56f6c	APPROVE	worker-52	Standard
 stackiq	2067	e971ae4237faf50b44bb2e0ec0cd330126e07dc8	REQUEST_CHANGES	worker-52	Strict; a schema row with no stored read rule is rewritten to the single public-approved entry, which drops the group read entries the register declares (moderator and member groups lose read on pending reviews); seed those from the declared rule instead; raw SQL on openregister tables follows exist
 integriq	3713	7c19b1408e500c25d44a833dbea4d96c78654719	APPROVE	worker-39	Quick; no blockers; dev dependency bump with lockfile and SBOM regenerated
 integriq	3715	86b85286c8b80aa9a5d80d8a1c3ccb9aa6e879d1	APPROVE	worker-39	Quick; no blockers; Postman collection only, credentials via variables, task tick
+integriq	3716	43ef05b0d145df97b9e8edf21579396cbcaa3bf4	APPROVE	worker-39	Quick; no blockers; e2e spec only and tasks notes, boxes left unticked honestly
