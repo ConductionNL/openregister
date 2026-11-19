@@ -22,10 +22,15 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Search\Service\Search;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\FilterPlaceholdersInterface;
+
 /**
  * Resolves placeholder strings (`$now`, `$startOfMonth-1`, `$currentUser`, ...) to concrete values.
+ *
+ * Resolving a whole filter map is declared by the Core port it extends, so the
+ * aggregation runner can ask for it without naming Search.
  */
-interface PlaceholderResolverInterface {
+interface PlaceholderResolverInterface extends FilterPlaceholdersInterface {
 
 	/**
 	 * Resolve a single value. Strings are parsed for placeholders; non-strings are passed through.
@@ -35,13 +40,4 @@ interface PlaceholderResolverInterface {
 	 * @return mixed DateTimeImmutable for date placeholders, string for $currentUser, the value otherwise.
 	 */
 	public function resolve(mixed $value): mixed;
-
-	/**
-	 * Recursively resolve placeholders inside an array.
-	 *
-	 * @param array<string, mixed> $values The array whose leaf values may contain placeholders.
-	 *
-	 * @return array<string, mixed>
-	 */
-	public function resolveArray(array $values): array;
 }//end interface

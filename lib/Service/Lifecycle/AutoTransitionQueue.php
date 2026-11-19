@@ -25,7 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Lifecycle;
 
-use OCA\OpenRegister\BackgroundJob\JobHandles;
+use OCA\OpenRegister\BackgroundJob\ProcessesJobHandlesInterface;
 use OCA\OpenRegister\Service\Deferral\ListenerDeferralService;
 use Psr\Log\LoggerInterface;
 
@@ -110,7 +110,7 @@ class AutoTransitionQueue {
 	 */
 	public function queue(AutoTransitionDecision $decision, array $lineage): void {
 		$this->deferral->defer(
-			jobClass: JobHandles::AUTO_TRANSITION,
+			jobClass: ProcessesJobHandlesInterface::AUTO_TRANSITION,
 			entry: self::entryFor(decision: $decision, lineage: $lineage),
 			chunkSize: self::CHUNK_SIZE,
 			dedupeKey: $decision->uuid . '|' . ((string)$decision->version)

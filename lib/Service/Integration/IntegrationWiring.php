@@ -22,6 +22,10 @@ namespace OCA\OpenRegister\Service\Integration;
 
 use OCA\OpenRegister\Controller\IntegrationControllersRegistrar;
 use OCA\OpenRegister\Db\Integration\IntegrationIdIndexInterface;
+use OCA\OpenRegister\Event\ObjectWriteRequestEvent;
+use OCA\OpenRegister\Listener\WebhookRequestInterceptionListener;
+use OCA\OpenRegister\Notifications\Service\EmailService;
+use OCA\OpenRegister\Notifications\Service\EmailServiceInterface;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\AuditTrailProvider;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\FilesProvider;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\NotesProvider;
@@ -43,6 +47,8 @@ use OCA\OpenRegister\Service\Integration\Providers\PollsProvider;
 use OCA\OpenRegister\Service\Integration\Providers\SharesProvider;
 use OCA\OpenRegister\Service\Integration\Providers\TalkProvider;
 use OCA\OpenRegister\Service\Integration\Providers\XwikiProvider;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectTimelineLinksInterface;
+use OCA\OpenRegister\Service\ObjectRelationCleanupService;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use Psr\Container\ContainerInterface;
 
@@ -65,11 +71,13 @@ final class IntegrationWiring {
 	 * Callers that only read the registry type against its read-side contracts;
 	 * registration (addProvider, withProviders, setLeafLoader) stays on
 	 * IntegrationRegistry. The lookup and dispatch controllers type against the
-	 * provider contracts.
+	 * provider contracts. The mail-sidebar link service is bound here because
+	 * linking Mail messages to objects is integration work.
 	 *
 	 * @var array<class-string, class-string>
 	 */
 	public const BINDINGS = [
+		EmailServiceInterface::class => EmailService::class,
 		IntegrationCatalogueInterface::class => IntegrationRegistry::class,
 		IntegrationIdIndexInterface::class => IntegrationRegistry::class,
 		KvkLookupInterface::class => KvkProvider::class,
@@ -77,6 +85,7 @@ final class IntegrationWiring {
 		MessageDispatcherInterface::class => MessageDispatchProvider::class,
 		OpenCorporatesSearchInterface::class => OpenCorporatesProvider::class,
 		PageWidgetRegistryInterface::class => IntegrationRegistry::class,
+		ObjectTimelineLinksInterface::class => ObjectRelationCleanupService::class,
 	];
 
 	/**
@@ -160,6 +169,7 @@ final class IntegrationWiring {
 		self::registerLeafRegistry(context: $context);
 		self::registerBuiltinIntegrationProviders(context: $context);
 		IntegrationControllersRegistrar::register(context: $context);
+		$context->registerEventListener(ObjectWriteRequestEvent::class, WebhookRequestInterceptionListener::class);
 		foreach (self::BINDINGS as $contract => $service) {
 			$context->registerServiceAlias($contract, $service);
 		}
