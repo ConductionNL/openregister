@@ -42,6 +42,7 @@ namespace OCA\OpenRegister\Db;
 use DateTime;
 use DateTimeImmutable;
 use DateTimeZone;
+use Doctrine\DBAL\Platforms\MariaDBPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Exception;
 use RuntimeException;
@@ -198,6 +199,11 @@ class MagicMapper extends AbstractObjectMapper {
 	 * Metadata column prefix to avoid conflicts with schema properties
 	 */
 	private const METADATA_PREFIX = '_';
+
+	/**
+	 * How a JSON column is stored on MariaDB; see storesJsonAsText().
+	 */
+	public const MARIADB_JSON = 'MEDIUMTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin';
 
 	/**
 	 * Schema-and-property pairs already warned about as named like a metadata column.
@@ -847,7 +853,7 @@ class MagicMapper extends AbstractObjectMapper {
 			}
 		}
 
-		return $sql;
+		return $sql.$this->jsonCheckSql(type: (string)$definition['type'], columnName: (string)$definition['name']);
 	}//end buildAddColumnSql()
 
 	/**
@@ -3032,7 +3038,7 @@ class MagicMapper extends AbstractObjectMapper {
 		$this->invalidateTableMemos();
 
 		// Create indexes for performance.
-		$this->createTableIndexes(tableName: $tableName, _register: $register, _schema: $schema);
+		$this->createTableIndexes(tableName: $tableName, _register: $register, _schema: $schema, newTable: true);
 
 		// Store schema version for change detection.
 		$this->storeRegisterSchemaVersion(register: $register, schema: $schema);
@@ -4021,7 +4027,7 @@ class MagicMapper extends AbstractObjectMapper {
 					}
 				}
 
-				$columnDefs[] = $def;
+				$columnDefs[] = $def . $this->jsonCheckSql(type: (string)$column['type'], columnName: (string)$column['name']);
 
 				// Track primary key.
 				if (($column['primary'] ?? false) === true) {
@@ -4137,13 +4143,20 @@ class MagicMapper extends AbstractObjectMapper {
 				if ($isPostgres === true) {
 					return 'JSONB';
 				}
+
+				if ($this->storesJsonAsText() === true) {
+					return self::MARIADB_JSON;
+				}
 				return 'JSON';
 			case 'json_ordered':
 				// Order-preserving JSON storage for object-typed schema properties.
 				// PostgreSQL JSONB hashes keys and loses insertion order; the JSON type
 				// stores the document verbatim. MySQL/MariaDB JSON also stores in document
-				// order (LONGTEXT-backed), so the same type label maps to JSON on both
+				// order (text-backed), so the same type label maps to JSON on both
 				// platforms. See issue #1720.
+				if ($this->storesJsonAsText() === true) {
+					return self::MARIADB_JSON;
+				}
 				return 'JSON';
 			default:
 				return 'TEXT';
@@ -4151,73 +4164,147 @@ class MagicMapper extends AbstractObjectMapper {
 	}//end mapColumnTypeToSQL()
 
 	/**
+	 * The condition that keeps a query on the database catalogue inside this instance's own database.
+	 *
+	 * @return string
+	 */
+	private function catalogueScope(): string {
+		return (new CatalogueScope(db: $this->db))->condition();
+	}//end catalogueScope()
+
+	/**
+	 * Whether a JSON column is stored as checked MEDIUMTEXT, which is on MariaDB only.
+	 *
+	 * MariaDB's JSON is LONGTEXT with a json_valid check, and Doctrine runs a
+	 * subquery over the constraints of every table for each LONGTEXT column
+	 * whenever Nextcloud reads the schema: 235 to 290 seconds a read with a
+	 * thousand magic tables (#10612). MEDIUMTEXT with the same check validates
+	 * the same and falls outside that subquery. A value is limited to 16 MB.
+	 *
+	 * @return bool
+	 */
+	private function storesJsonAsText(): bool {
+		return $this->db->getDatabasePlatform() instanceof MariaDBPlatform;
+	}//end storesJsonAsText()
+
+	/**
+	 * The check that keeps a JSON column valid where it is stored as text; empty everywhere else.
+	 *
+	 * It goes last in a column definition, and a MODIFY has to restate it or the column loses it.
+	 *
+	 * @param string $type       The column type as the schema maps it.
+	 * @param string $columnName The column name.
+	 *
+	 * @return string
+	 */
+	private function jsonCheckSql(string $type, string $columnName): string {
+		if (in_array($type, ['json', 'json_ordered'], true) === false || $this->storesJsonAsText() === false) {
+			return '';
+		}
+
+		return ' CHECK (json_valid(' . $this->quoteIdentifier(name: $columnName, isPostgres: false) . '))';
+	}//end jsonCheckSql()
+
+	/**
+	 * The ten indexes every magic table carries, in the order they are created.
+	 *
+	 * `slug` and `uri` are here because the single-object lookup ORs all four
+	 * identity columns together (`_id OR _uuid OR _slug OR _uri`), and Postgres
+	 * will not use an index for a disjunction unless it can use one for EVERY
+	 * branch. With two of the four unindexed it fell back to a sequential scan
+	 * for what is a primary-key-shaped read. Measured on the contract register
+	 * (2,962 rows): 2.5ms as a Seq Scan against 0.107ms for the same row by
+	 * `_uuid` alone, and that read happens on every object fetch in every
+	 * sharded table.
+	 *
+	 * @param string $tableName The table name, without prefix.
+	 *
+	 * @return array<string, array{unique: bool, columns: string}> The index names with their kind and columns.
+	 */
+	private function baseIndexes(string $tableName): array {
+		$meta = self::METADATA_PREFIX;
+		$indexes = [
+			"{$tableName}_uuid_idx" => ['unique' => true, 'columns' => $meta . 'uuid'],
+			"{$tableName}_register_schema_idx" => ['unique' => false, 'columns' => $meta . 'register, ' . $meta . 'schema'],
+			"{$tableName}_organisation_idx" => ['unique' => false, 'columns' => $meta . 'organisation'],
+			"{$tableName}_owner_idx" => ['unique' => false, 'columns' => $meta . 'owner'],
+		];
+		foreach (['created', 'updated', 'name', 'slug', 'uri', 'last_user_activity'] as $field) {
+			$indexes["{$tableName}_{$field}_idx"] = ['unique' => false, 'columns' => $meta . $field];
+		}
+
+		return $indexes;
+	}//end baseIndexes()
+
+	/**
+	 * Create the base indexes of a magic table.
+	 *
+	 * Each index statement is a DDL transaction of its own on MariaDB: 0.4 s a
+	 * table for the ten, 206 of the 270 seconds it took to install an app with
+	 * 538 schemas (#9945). A table created just now gets them in one ALTER
+	 * TABLE there. An existing table keeps one statement per index, so a column
+	 * an older table lacks refuses that one index and not all ten.
+	 *
+	 * @param string                                              $fullTableName The table name with prefix.
+	 * @param array<string, array{unique: bool, columns: string}> $indexes       The indexes, by name.
+	 * @param bool                                                $atOnce        One statement for all of them (MariaDB syntax).
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The caller knows whether the table is new; two methods would repeat the list
+	 */
+	private function createBaseIndexes(string $fullTableName, array $indexes, bool $atOnce): void {
+		$additions = [];
+		foreach ($indexes as $name => $index) {
+			$kind = 'INDEX';
+			if ($index['unique'] === true) {
+				$kind = 'UNIQUE INDEX';
+			}
+
+			if ($atOnce === true) {
+				$additions[] = "ADD {$kind} IF NOT EXISTS {$name} ({$index['columns']})";
+				continue;
+			}
+
+			$this->db->executeStatement("CREATE {$kind} IF NOT EXISTS {$name} ON {$fullTableName} ({$index['columns']})");
+		}
+
+		if ($additions !== []) {
+			$this->db->executeStatement("ALTER TABLE {$fullTableName} " . implode(', ', $additions));
+		}
+	}//end createBaseIndexes()
+
+	/**
 	 * Create indexes for table performance
 	 *
 	 * @param string $tableName The table name
 	 * @param Register $_register The register context (unused)
 	 * @param Schema $_schema The schema for index analysis (unused)
+	 * @param bool $newTable Whether the table was created just now
 	 *
 	 * @return void
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 * @SuppressWarnings(PHPMD.StaticAccess)          ObjectHandling::relates() is a pure enum-style helper
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   A new table gets its base indexes in one statement on MariaDB
 	 */
-	private function createTableIndexes(string $tableName, Register $_register, Schema $_schema): void {
+	private function createTableIndexes(string $tableName, Register $_register, Schema $_schema, bool $newTable=false): void {
 		try {
 			// Add prefix for raw SQL queries.
 			$fullTableName = $this->getFullTableName(tableName: $tableName);
 
-			// Create unique index on UUID.
-			// Phpcs:ignore Generic.Files.LineLength.TooLong.
-			$this->db->executeStatement(
-				"CREATE UNIQUE INDEX IF NOT EXISTS {$tableName}_uuid_idx ON {$fullTableName} (" . self::METADATA_PREFIX . 'uuid)'
-			);
-
-			// Create composite index on register + schema for multitenancy.
-			$registerCol = self::METADATA_PREFIX . 'register';
-			$schemaCol = self::METADATA_PREFIX . 'schema';
-			$idxName = "{$tableName}_register_schema_idx";
-			$this->db->executeStatement(
-				"CREATE INDEX IF NOT EXISTS {$idxName} ON {$fullTableName} ({$registerCol}, {$schemaCol})"
-			);
-
-			// Create index on organisation for multitenancy.
-			$orgCol = self::METADATA_PREFIX . 'organisation';
-			$orgIdx = "{$tableName}_organisation_idx";
-			$this->db->executeStatement(
-				"CREATE INDEX IF NOT EXISTS {$orgIdx} ON {$fullTableName} ({$orgCol})"
-			);
-
-			// Create index on owner for RBAC.
-			$ownerCol = self::METADATA_PREFIX . 'owner';
-			$ownerIdx = "{$tableName}_owner_idx";
-			$this->db->executeStatement(
-				"CREATE INDEX IF NOT EXISTS {$ownerIdx} ON {$fullTableName} ({$ownerCol})"
-			);
-
-			// Create indexes on frequently filtered metadata fields.
-			// `slug` and `uri` are here because the single-object lookup ORs all
-			// four identity columns together — `_id OR _uuid OR _slug OR _uri` —
-			// and Postgres will not use an index for a disjunction unless it can
-			// use one for EVERY branch. With two of the four unindexed it fell
-			// back to a sequential scan for what is a primary-key-shaped read.
-			// Measured on the contract register (2,962 rows): 2.5ms as a Seq Scan
-			// against 0.107ms for the same row by `_uuid` alone, and that read
-			// happens on every object fetch in every sharded table.
-			$idxMetaFields = ['created', 'updated', 'name', 'slug', 'uri', 'last_user_activity'];
-			foreach ($idxMetaFields as $field) {
-				$col = self::METADATA_PREFIX . $field;
-				$idx = "{$tableName}_{$field}_idx";
-				$this->db->executeStatement(
-					"CREATE INDEX IF NOT EXISTS {$idx} ON {$fullTableName} ({$col})"
-				);
-			}
-
-			// Create GIN index on _relations for fast relationship lookups.
-			// This enables O(log n) containment queries with @> operator.
 			$platform = $this->db->getDatabasePlatform();
 			$isPostgres = stripos($platform::class, 'PostgreSQL') !== false;
 
+			$baseIndexes = $this->baseIndexes(tableName: $tableName);
+			$this->createBaseIndexes(
+				fullTableName: $fullTableName,
+				indexes: $baseIndexes,
+				atOnce: ($newTable === true && $platform instanceof MariaDBPlatform)
+			);
+
+			// Create GIN index on _relations for fast relationship lookups.
+			// This enables O(log n) containment queries with @> operator.
 			if ($isPostgres === true) {
 				$relationsIdx = "{$tableName}_relations_gin_idx";
 				$this->db->executeStatement(
@@ -4399,7 +4486,7 @@ class MagicMapper extends AbstractObjectMapper {
 					'file' => __FILE__,
 					'line' => __LINE__,
 					'tableName' => $tableName,
-					'baseIndexCount' => 5 + count($idxMetaFields),
+					'baseIndexCount' => count($baseIndexes) + 1,
 					'relationIndexes' => $relationIndexes,
 					'facetIndexes' => $facetIndexes,
 					'searchableIndexes' => $searchableIndexes,
@@ -6260,6 +6347,8 @@ class MagicMapper extends AbstractObjectMapper {
 					$sql .= ' DEFAULT ' . $defaultValue;
 				}
 
+				$sql .= $this->jsonCheckSql(type: (string)$columnDef['type'], columnName: $columnName);
+
 				$this->db->executeStatement($sql);
 				$columnsAdded[] = $columnName;
 			}//end if
@@ -6316,7 +6405,8 @@ class MagicMapper extends AbstractObjectMapper {
 
 				// MySQL syntax - need to specify full column definition.
 				$colType = $this->mapColumnTypeToSQL(type: $columnDef['type'], column: $columnDef);
-				$sql = 'ALTER TABLE ' . $tableNameQuoted . ' MODIFY COLUMN ' . $colNameQuoted . ' ' . $colType . ' NULL';
+				$sql = 'ALTER TABLE ' . $tableNameQuoted . ' MODIFY COLUMN ' . $colNameQuoted . ' ' . $colType . ' NULL'
+					. $this->jsonCheckSql(type: (string)$columnDef['type'], columnName: $columnName);
 				if ($isPostgres === true) {
 					$sql = 'ALTER TABLE ' . $tableNameQuoted . ' ALTER COLUMN ' . $colNameQuoted . ' DROP NOT NULL';
 				}
@@ -6389,7 +6479,8 @@ class MagicMapper extends AbstractObjectMapper {
 
 				// MySQL syntax - need to specify full column definition.
 				$colType = $this->mapColumnTypeToSQL(type: $columnDef['type'], column: $columnDef);
-				$sql = 'ALTER TABLE ' . $tableNameQuoted . ' MODIFY COLUMN ' . $colNameQuoted . ' ' . $colType . ' NOT NULL';
+				$sql = 'ALTER TABLE ' . $tableNameQuoted . ' MODIFY COLUMN ' . $colNameQuoted . ' ' . $colType . ' NOT NULL'
+					. $this->jsonCheckSql(type: (string)$columnDef['type'], columnName: $columnName);
 				if ($isPostgres === true) {
 					$sql = 'ALTER TABLE ' . $tableNameQuoted . ' ALTER COLUMN ' . $colNameQuoted . ' SET NOT NULL';
 				}
@@ -7852,7 +7943,7 @@ class MagicMapper extends AbstractObjectMapper {
 		$prefix = $this->getTablePrefix();
 		$tablePattern = $prefix . 'openregister_table_%';
 
-		$sql = 'SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?';
+		$sql = 'SELECT table_name FROM information_schema.tables WHERE table_name LIKE ? AND ' . $this->catalogueScope();
 		$stmt = $this->db->prepare($sql);
 		$result = $stmt->execute([$tablePattern]);
 		$tables = $result->fetchAll();
@@ -8207,7 +8298,7 @@ class MagicMapper extends AbstractObjectMapper {
 		$prefix = $this->getTablePrefix();
 		$tablePattern = $prefix . 'openregister_table_%';
 
-		$sql = 'SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?';
+		$sql = 'SELECT table_name FROM information_schema.tables WHERE table_name LIKE ? AND ' . $this->catalogueScope();
 		$stmt = $this->db->prepare($sql);
 		$result = $stmt->execute([$tablePattern]);
 		$tables = $result->fetchAll();
@@ -8389,7 +8480,7 @@ class MagicMapper extends AbstractObjectMapper {
 		$prefix = $this->getTablePrefix();
 		$tablePattern = $prefix . 'openregister_table_%';
 
-		$sql = 'SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?';
+		$sql = 'SELECT table_name FROM information_schema.tables WHERE table_name LIKE ? AND ' . $this->catalogueScope();
 		$stmt = $this->db->prepare($sql);
 		$result = $stmt->execute([$tablePattern]);
 		$tables = $result->fetchAll();
@@ -8752,7 +8843,7 @@ class MagicMapper extends AbstractObjectMapper {
 		$prefix = $this->getTablePrefix();
 		$tablePattern = $prefix . 'openregister_table_%';
 
-		$sql = 'SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?';
+		$sql = 'SELECT table_name FROM information_schema.tables WHERE table_name LIKE ? AND ' . $this->catalogueScope();
 		$stmt = $this->db->prepare($sql);
 		$result = $stmt->execute([$tablePattern]);
 		$tables = $result->fetchAll();
@@ -10871,7 +10962,7 @@ class MagicMapper extends AbstractObjectMapper {
 		// catalog index, so each lookup walked the columns of every table
 		// (89k columns over 1.7k magic tables: 18-33 ms against 3-4 ms).
 		$sql = 'SELECT LOWER(column_name) AS col, LOWER(data_type) AS col_type FROM information_schema.columns
-                WHERE table_name = ?';
+                WHERE table_name = ? AND ' . $this->catalogueScope();
 
 		$stmt = $this->db->prepare($sql);
 		$stmt->execute([$fullTableNameLower]);

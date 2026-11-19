@@ -26,6 +26,7 @@
 namespace OCA\OpenRegister\Service;
 
 use Exception;
+use OCA\OpenRegister\Db\CatalogueScope;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -700,7 +701,7 @@ class RegisterService {
 				// the caller passes `openregister_table_R_S`, which is exactly the suffix
 				// we key on.
 				$sql = 'SELECT table_name FROM information_schema.tables';
-				$sql .= ' WHERE table_name LIKE :pattern';
+				$sql .= ' WHERE table_name LIKE :pattern AND ' . (new CatalogueScope(db: $this->db))->condition();
 
 				$stmt = $this->db->prepare($sql);
 				$stmt->bindValue('pattern', '%openregister\_table\_%');
