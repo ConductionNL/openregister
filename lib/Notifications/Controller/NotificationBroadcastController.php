@@ -41,13 +41,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
 use DateTime;
 use OCA\OpenRegister\Notifications\Db\BroadcastMessage;
 use OCA\OpenRegister\Notifications\Db\BroadcastWindow;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationBroadcastService;
 use OCA\OpenRegister\Notifications\Controller\Support\NotificationBroadcastControllerServices;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -88,7 +88,7 @@ class NotificationBroadcastController extends Controller {
 		IRequest $request,
 		NotificationBroadcastControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 
 		$this->broadcastService = $services->broadcastService;
 		$this->session = $services->session;

@@ -139,6 +139,7 @@ use OCA\OpenRegister\Db\Schema\TopLevelAnnotationFold;
  */
 class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	use JsonFieldsTrait;
+	use ManagedByConfigurationTrait;
 	use LinkedItemsTrait;
 
 	/**
@@ -2317,58 +2318,11 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	}//end setAnyOf()
 
 	/**
-	 * Check if this schema is managed by any configuration
+	 * The member list a configuration keeps its schemas in, see ManagedByConfigurationTrait.
 	 *
-	 * This method checks if the schema's ID is present in the schemas array
-	 * of any provided configuration entities.
-	 *
-	 * @param array<Configuration> $configurations Array of Configuration entities to check against
-	 *
-	 * @return bool True if this schema is managed by at least one configuration
-	 *
-	 * @phpstan-param array<Configuration> $configurations
-	 * @psalm-param   array<Configuration> $configurations
+	 * @return string
 	 */
-	public function isManagedByConfiguration(array $configurations): bool {
-		if (empty($configurations) === true || $this->id === null) {
-			return false;
-		}
-
-		foreach ($configurations as $configuration) {
-			$schemas = $configuration->getSchemas();
-			if (in_array($this->id, $schemas ?? [], true) === true) {
-				return true;
-			}
-		}
-
-		return false;
-	}//end isManagedByConfiguration()
-
-	/**
-	 * Get the configuration that manages this schema
-	 *
-	 * Returns the first configuration that has this schema's ID in its schemas array.
-	 * Returns null if the schema is not managed by any configuration.
-	 *
-	 * @param array<Configuration> $configurations Array of Configuration entities to check against
-	 *
-	 * @return Configuration|null The configuration managing this schema, or null
-	 *
-	 * @phpstan-param array<Configuration> $configurations
-	 * @psalm-param   array<Configuration> $configurations
-	 */
-	public function getManagedByConfiguration(array $configurations): ?Configuration {
-		if (empty($configurations) === true || $this->id === null) {
-			return null;
-		}
-
-		foreach ($configurations as $configuration) {
-			$schemas = $configuration->getSchemas();
-			if (in_array($this->id, $schemas ?? [], true) === true) {
-				return $configuration;
-			}
-		}
-
-		return null;
-	}//end getManagedByConfiguration()
+	protected function configurationMemberKind(): string {
+		return 'schemas';
+	}//end configurationMemberKind()
 }//end class

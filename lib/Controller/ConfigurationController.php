@@ -27,7 +27,6 @@ use Exception;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use OCA\OpenRegister\Controller\Support\ConfigurationAction;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ConfigurationControllerServices;
 use OCA\OpenRegister\Controller\Support\ConfigurationImport;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
@@ -35,6 +34,7 @@ use OCA\OpenRegister\Controller\Support\GitHubPublishRun;
 use OCA\OpenRegister\Controller\Support\RepositoryCallFailure;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
 use OCA\OpenRegister\Service\Configuration\GitLabHandlerInterface;
 use OCA\OpenRegister\Service\Configuration\GitLabProjectRef;
@@ -182,7 +182,7 @@ class ConfigurationController extends Controller {
 		IRequest $request,
 		ConfigurationControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->session = $services->session;
 
 		$this->configurationMapper = $services->mappers->configurationMapper;
