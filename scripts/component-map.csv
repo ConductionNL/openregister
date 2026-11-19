@@ -607,7 +607,7 @@ Controller/XwikiLinksController.php,140,Controller,Integrations,Integrations/Con
 Dashboard/IntegrationDashboardWidget.php,40,Dashboard,Flows,Flows/Dashboard/IntegrationDashboardWidget.php,0,,Platform
 Dav/TaskVtodoWriteBackPlugin.php,136,Dav,Platform,Platform/Dav/TaskVtodoWriteBackPlugin.php,0,,Integrations
 Db/AbstractObjectMapper.php,70,Db,Service,Service/Db/AbstractObjectMapper.php,0,378,Core
-Db/AccessLink.php,120,Db,Integrations,Integrations/Db/AccessLink.php,1,248,Integrations
+Db/AccessLink.php,120,Db,Integrations,Integrations/Db/AccessLink.php,1,248,Core
 Db/AccessLinkMapper.php,63,Db,Access,Access/Db/AccessLinkMapper.php,0,,Core
 Db/AnalyticsLink.php,48,Db,Integrations,Integrations/Db/AnalyticsLink.php,0,,Integrations
 Db/AnalyticsLinkMapper.php,23,Db,Integrations,Integrations/Db/AnalyticsLinkMapper.php,0,,Integrations
@@ -3367,7 +3367,7 @@ Controller/Support/WorkingCalendarControllerServices.php,14,Controller,Flows,Flo
 Controller/Trait/,,Controller,,,,,Core
 Dashboard/,,Dashboard,,,,,Platform
 Dav/,,Dav,,,,,Integrations
-Db/AccessLink/,,Db,,,,,Integrations
+Db/AccessLink/,,Db,,,,,Core
 Db/Application/,,Db,,,,,Integrations
 Db/AuditTrail/,,Db,,,,,Compliance
 Db/BulkJob/,,Db,,,,,Integrations
@@ -3530,7 +3530,7 @@ Service/Schemas/,,Service,,,,,Core
 Service/Schemas/PropertyValidatorHandlerInterface.php,,Service,,,,,Kernel
 Service/Schemas/RetentionAnnotationValidator.php,,Service,,,,,Core
 Service/Search/,,Service,,,,,Core
-Service/Security/,,Service,,,,,Integrations
+Service/Security/,,Service,,,,,Core
 Service/Serializer/,,Service,,,,,Core
 Service/Settings/,,Service,,,,,Configuration
 Service/SharedSchema/,,Service,,,,,Configuration
@@ -3689,7 +3689,7 @@ Db/ListQuery.php,,Db,,,,,Core
 Db/LockTerms.php,,Db,,,,,Kernel
 Db/MailMessageKey.php,,Db,,,,,Integrations
 Db/ManagedByConfigurationTrait.php,,Db,,,,,Kernel
-Db/MapLinkMapperInterface.php,,Db,,,,,Core
+Db/MapLinkMapperInterface.php,,Db,,,,,Integrations
 Db/MapperWiring.php,,Db,,,,,Core
 Db/MappingMapperInterface.php,,Db,,,,,Integrations
 Db/MigrationPackMapperInterface.php,,Db,,,,,Configuration
@@ -3699,12 +3699,12 @@ Db/ObjectLinkTypesTrait.php,,Db,,,,,Core
 Db/ObjectReadState/ReadStateScope.php,,Db,,,,,Core
 Db/ObjectReadStateMapperInterface.php,,Db,,,,,Core
 Db/ObjectRelationMapperInterface.php,,Db,,,,,Core
-Db/OpenProjectLinkMapperInterface.php,,Db,,,,,Core
+Db/OpenProjectLinkMapperInterface.php,,Db,,,,,Integrations
 Db/Organisation/OrganisationFieldTypes.php,,Db,,,,,Core
 Db/OrganisationFieldTrait.php,,Db,,,,,Core
 Db/PartialObjectEntity.php,,Db,,,,,Core
-Db/PhotoLinkMapperInterface.php,,Db,,,,,Core
-Db/PollLinkMapperInterface.php,,Db,,,,,Core
+Db/PhotoLinkMapperInterface.php,,Db,,,,,Integrations
+Db/PollLinkMapperInterface.php,,Db,,,,,Integrations
 Db/ProcessingLog/ProcessingLogSubject.php,,Db,,,,,Compliance
 Db/ProcessingLogEntry/ProcessingLogEntryFieldTypes.php,,Db,,,,,Compliance
 Db/ProcessingLogMapperInterface.php,,Db,,,,,Core
@@ -3760,7 +3760,7 @@ Db/TaskSequenceMapperInterface.php,,Db,,,,,Processes
 Db/TenantUsage/UsageBucket.php,,Db,,,,,Core
 Db/TenantUsage/UsageRange.php,,Db,,,,,Core
 Db/TenantUsageMapperInterface.php,,Db,,,,,Core
-Db/TimeTrackerLinkMapperInterface.php,,Db,,,,,Core
+Db/TimeTrackerLinkMapperInterface.php,,Db,,,,,Integrations
 Db/TrailRetentionTrait.php,,Db,,,,,Compliance
 Db/Translation/LanguageCoverageCheck.php,,Db,,,,,Configuration
 Db/TranslationBackfillScope.php,,Db,,,,,Platform
@@ -3776,7 +3776,7 @@ Db/Verwerkingsactiviteit/VerwerkingsactiviteitFieldTypes.php,,Db,,,,,Compliance
 Db/VerwerkingsactiviteitMapperInterface.php,,Db,,,,,Core
 Db/WebhookLogMapperInterface.php,,Db,,,,,Integrations
 Db/WebhookMapperInterface.php,,Db,,,,,Integrations
-Db/XwikiLinkMapperInterface.php,,Db,,,,,Core
+Db/XwikiLinkMapperInterface.php,,Db,,,,,Integrations
 Event/AbstractAgentEvent.php,,Event,,,,,Kernel
 Event/AbstractApplicationEvent.php,,Event,,,,,Kernel
 Event/AbstractConfigurationEvent.php,,Event,,,,,Kernel
