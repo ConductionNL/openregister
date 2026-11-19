@@ -29,7 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Event;
 
-use OCA\OpenRegister\Db\Decision;
+use OCA\OpenRegister\Kernel\Contracts\DecisionInterface;
 use OCA\OpenRegister\Kernel\Contracts\ReviewPolicyInterface;
 
 /**
@@ -55,17 +55,17 @@ class DecisionVisibilityRequestedEvent extends AbstractDecisionRequestEvent {
 	/**
 	 * Constructor.
 	 *
-	 * @param Decision|null         $decision The hidden decision, or null when its record is gone.
-	 * @param string                $actorId  The user who reads it.
-	 * @param ReviewPolicyInterface $policy   The policy that applies.
-	 * @param array<string, mixed>  $subject  What the decision is on: subjectType,
-	 *                                        subjectId and, when known, register,
-	 *                                        schema, objectUuid and fileId.
+	 * @param DecisionInterface|null $decision The hidden decision, or null when its record is gone.
+	 * @param string                 $actorId  The user who reads it.
+	 * @param ReviewPolicyInterface  $policy   The policy that applies.
+	 * @param array<string, mixed>   $subject  What the decision is on: subjectType,
+	 *                                         subjectId and, when known, register,
+	 *                                         schema, objectUuid and fileId.
 	 *
 	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/decisions/spec.md#requirement-the-app-that-owns-the-subject-may-show-a-hidden-decision-req-dec-003
 	 */
 	public function __construct(
-		private readonly ?Decision $decision,
+		private readonly ?DecisionInterface $decision,
 		string $actorId,
 		ReviewPolicyInterface $policy,
 		array $subject,
@@ -76,11 +76,11 @@ class DecisionVisibilityRequestedEvent extends AbstractDecisionRequestEvent {
 	/**
 	 * The hidden decision.
 	 *
-	 * @return Decision|null The decision, or null when its record is gone.
+	 * @return DecisionInterface|null The decision, or null when its record is gone.
 	 *
 	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/decisions/spec.md#requirement-the-app-that-owns-the-subject-may-show-a-hidden-decision-req-dec-003
 	 */
-	public function getDecision(): ?Decision {
+	public function getDecision(): ?DecisionInterface {
 		return $this->decision;
 	}//end getDecision()
 
