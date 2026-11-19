@@ -1922,7 +1922,7 @@ Service/Calendar/IcalendarWriter.php,119,Service,Work,Work/Service/Calendar/Ical
 Service/Calendar/ObjectCalendarFeedService.php,175,Service,Work,Work/Service/Calendar/ObjectCalendarFeedService.php,0,,Processes
 Service/Calendar/ObjectDateDeclaration.php,174,Service,Work,Work/Service/Calendar/ObjectDateDeclaration.php,0,143,Processes
 Service/Calendar/ObjectDateEventBuilder.php,239,Service,Work,Work/Service/Calendar/ObjectDateEventBuilder.php,0,,Processes
-Service/CalendarEventService.php,444,Service,Work,Work/Service/CalendarEventService.php,32,48,Processes
+Service/CalendarEventService.php,444,Service,Work,Work/Service/CalendarEventService.php,32,48,Integrations
 Service/CalendarLinkService.php,431,Service,Integrations,Integrations/Service/CalendarLinkService.php,0,39,Integrations
 Service/CalendarPickerScan.php,41,Service,Integrations,Integrations/Service/CalendarPickerScan.php,0,,Integrations
 Service/Capability/ToolGrantCodec.php,80,Service,Configuration,Configuration/Service/Capability/ToolGrantCodec.php,1,,Configuration
@@ -3894,7 +3894,7 @@ Service/CalendarEventKey.php,,Service,,,,,Integrations
 Service/CalendarLinkServiceInterface.php,,Service,,,,,Integrations
 Service/CalendarObjectRef.php,,Service,,,,,Integrations
 Service/CalendarPickerWindow.php,,Service,,,,,Integrations
-Service/CalendarScanRun.php,,Service,,,,,Processes
+Service/CalendarScanRun.php,,Service,,,,,Integrations
 Service/CaseTokenIssuance.php,,Service,,,,,Integrations
 Service/CaseTokenServiceInterface.php,,Service,,,,,Integrations
 Service/CaseTokenTarget.php,,Service,,,,,Integrations
@@ -4073,7 +4073,7 @@ Service/SharedSchemaUse.php,,Service,,,,,Configuration
 Service/ShippedRegister.php,,Service,,,,,Configuration
 Service/SkosNodeReader.php,,Service,,,,,Core
 Service/SourceLanguageLookup.php,,Service,,,,,Configuration
-Service/StoredEvent.php,,Service,,,,,Processes
+Service/StoredEvent.php,,Service,,,,,Integrations
 Service/StoredTask.php,,Service,,,,,Processes
 Service/TableDeletionOptions.php,,Service,,,,,Integrations
 Service/TableDeletionRun.php,,Service,,,,,Compliance
