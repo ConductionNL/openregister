@@ -377,6 +377,63 @@ class ShippedConfigurationGuard {
 	}//end recordShippedSchema()
 
 	/**
+	 * Record the conflicts an import kept local for a schema, so an administrator can decide them later.
+	 *
+	 * Replaces what was recorded before: a release that no longer conflicts
+	 * clears the list. Nothing is written for a schema that has none and never
+	 * had any, so an app import does not add a row per schema.
+	 *
+	 * @param string            $slug      The schema slug.
+	 * @param ShippedDefinition $conflicts `{conflicts: list<{path, shipped, live}>}` and the release.
+	 *
+	 * @return bool Whether a record was written.
+	 *
+	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
+	 */
+	public function recordShippedConflicts(string $slug, ShippedDefinition $conflicts): bool {
+		if (($conflicts->definition['conflicts'] ?? []) === [] && $this->baselines->readConflicts(slug: $slug) === null) {
+			return false;
+		}
+
+		return $this->baselines->recordConflicts(slug: $slug, conflicts: $conflicts);
+	}//end recordShippedConflicts()
+
+	/**
+	 * Put an administrator's acceptance of a shipped definition on the trail: who, which part, from what, to what.
+	 *
+	 * @param string    $slug     The schema slug.
+	 * @param PartReset $accepted The part, the instance's definition and the accepted shipped one.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
+	 */
+	public function recordAcceptedConflict(string $slug, PartReset $accepted): void {
+		$changed = [
+			'schema' => $slug,
+			'path' => $accepted->path,
+			'decision' => 'accepted-shipped',
+			'from' => $accepted->from,
+			'to' => $accepted->to,
+		];
+		$this->record(action: self::ACTION_DECIDED, changed: $changed);
+	}//end recordAcceptedConflict()
+
+	/**
+	 * Record what an app shipped for a register, with the release that shipped it.
+	 *
+	 * @param string            $slug    The register slug.
+	 * @param ShippedDefinition $shipped What the app ships, and which release.
+	 *
+	 * @return bool True when it was recorded.
+	 *
+	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
+	 */
+	public function recordShippedRegister(string $slug, ShippedDefinition $shipped): bool {
+		return $this->baselines->recordRegister(slug: $slug, shipped: $shipped);
+	}//end recordShippedRegister()
+
+	/**
 	 * Where one schema differs from what was shipped.
 	 *
 	 * 🔑 IT DOES NOT NAME THE ACTOR YET, and says so rather than returning a
