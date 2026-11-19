@@ -722,6 +722,8 @@ deptrac:
         - type: directory
           value: 'lib/Service/Confidentiality/[^/]*$'
         - type: directory
+          value: 'lib/Service/Configuration/AppSettingsAccess[.]php$'
+        - type: directory
           value: 'lib/Service/Consent/[^/]*$'
         - type: directory
           value: 'lib/Service/Dbal/[^/]*$'
@@ -2524,7 +2526,165 @@ deptrac:
         - type: directory
           value: 'lib/Service/Config/Types/[^/]*$'
         - type: directory
-          value: 'lib/Service/Configuration/[^/]*$'
+          value: 'lib/Service/Configuration/AppConfigurationRecord[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/AppImport[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/AppImportJobRecorder[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/ArrayStructure[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/AttributionFormatter[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/CacheHandler[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/ConfigurationCollaborators[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/ConfigurationComponentSections[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/ConfigurationExportRun[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/ConfigurationFileImport[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/ConfigurationGitHosts[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/ConfigurationImportRecords[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/ConfigurationServicePlatform[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/ConfigurationServiceRegistrar[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/ConfigurationTransferHandlers[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/DescriptorConfigIds[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/DescriptorConfigIdsInterface[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/DistinctKeyBudget[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/ExportHandler[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/ExportSlugMaps[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/FetchHandler[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/FinishedImportJob[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/ForeignSeedSchema[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/GitHubGuards[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/GitHubGuardsInterface[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/GitHubHandler[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/GitHubIssueDelivery[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/GitHubIssueQuery[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/GitHubRequestValidator[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/GitHubRequestValidatorInterface[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/GitLabApiClient[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/GitLabApiSettings[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/GitLabHandler[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/GitLabHandlerInterface[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/GitLabProjectRef[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/ImportComponent[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/ImportDuplicates[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/ImportHandler[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/ImportHandlerBuildRun[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/ImportLogTag[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/ImportReferenceMap[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/ImportRun[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/ImportSelection[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/ImportedConfigurationUpdate[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/ImportedSchemaChangeLog[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/ImportedSchemaComparison[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/ImportedSchemaLookup[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/ImportedSchemaShape[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/ImportedSchemaUpdate[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/ListedSeed[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/LocalConfigurationFile[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/ObjectChangePreview[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/ObjectPreviewTargets[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/PendingSchemaBaseline[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/PreviewHandler[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/ProposedDefinition[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/RateLimiterService[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/RateLimiterServiceInterface[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/ReadableExportObjects[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/RegisterBundleBinding[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/RegisterBundleBindingInterface[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/RegisterBundleEntryRules[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/RejectedSchemaReport[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/RepositoryApiCall[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/SchemaImportInstaller[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/SchemaImportOptions[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/SchemaImportSteps[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/SeedDataObject[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/SeedDirectoryImporter[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/SeedImport[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/SeedReferenceIndex[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/SeedReferenceResolver[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/SeedRelatedItems[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/SeedRelatedTarget[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/SeedReport[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/SeedVersionLedger[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/ShippedSchemaBaseline[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/ShippedSeed[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/ShippedSeedContent[.]php$'
+        - type: directory
+          value: 'lib/Service/Configuration/UploadHandler[.]php$'
         - type: directory
           value: 'lib/Service/ConfigurationDeployment/[^/]*$'
         - type: directory

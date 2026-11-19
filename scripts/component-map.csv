@@ -4420,3 +4420,4 @@ Db/AuditTrail/ObjectAuditEvent.php,,Db,,,,,Core
 Db/AuditTrail/ObjectAuditEventOptions.php,,Db,,,,,Core
 Db/AuditTrail/NamedActor.php,,Db,,,,,Core
 Service/Export/SpreadsheetCell.php,,Service,,,,,Core
+Service/Configuration/AppSettingsAccess.php,,Service,,,,,Core
