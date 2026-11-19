@@ -29,6 +29,7 @@ use OCA\OpenRegister\Service\Flow\FlowRunSignalService;
 use OCA\OpenRegister\Service\Flow\FlowRunnableGuard;
 use OCA\OpenRegister\Service\Flow\FlowService;
 use OCA\OpenRegister\Service\Flow\FlowStepDispatcher;
+use OCA\OpenRegister\Search\FlowTasksProvider;
 use OCA\OpenRegister\Service\Flow\FlowWiring;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNode;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNodeInterface;
@@ -96,6 +97,13 @@ final class FlowWiringTest extends TestCase {
 	private array $aliases = [];
 
 	/**
+	 * Search providers registered, in order.
+	 *
+	 * @var array<int, string>
+	 */
+	private array $searchProviders = [];
+
+	/**
 	 * Register the wiring against a recording context.
 	 *
 	 * @return void
@@ -112,6 +120,11 @@ final class FlowWiringTest extends TestCase {
 		$context->method('registerServiceAlias')->willReturnCallback(
 			function (string $alias, string $target): void {
 				$this->aliases[$alias] = $target;
+			}
+		);
+		$context->method('registerSearchProvider')->willReturnCallback(
+			function (string $class): void {
+				$this->searchProviders[] = $class;
 			}
 		);
 
@@ -160,6 +173,15 @@ final class FlowWiringTest extends TestCase {
 			actual: array_keys($this->factories)
 		);
 	}//end testItRegistersTheServicesInOrder()
+
+	/**
+	 * The flow tasks search provider is registered here, by the component that owns it.
+	 *
+	 * @return void
+	 */
+	public function testItRegistersTheFlowTasksSearchProvider(): void {
+		self::assertSame(expected: [FlowTasksProvider::class], actual: $this->searchProviders);
+	}//end testItRegistersTheFlowTasksSearchProvider()
 
 	/**
 	 * The run authorization is built on the container's flow access.

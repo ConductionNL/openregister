@@ -285,13 +285,6 @@
   "lib/Search/Db/View.php -> lib/Mcp/Db/Agent.php",
   "lib/Search/Db/ViewFormatting.php -> lib/Db/Configuration.php",
   "lib/Search/Db/ViewMapper.php -> lib/Db/Configuration.php",
-  "lib/Search/FlowTasksProvider.php -> lib/Db/TaskInboxAudience.php",
-  "lib/Search/FlowTasksProvider.php -> lib/Db/TaskInboxCriteria.php",
-  "lib/Search/FlowTasksProvider.php -> lib/Db/TaskInboxFilter.php",
-  "lib/Search/FlowTasksProvider.php -> lib/Db/TaskInboxOrder.php",
-  "lib/Search/FlowTasksProvider.php -> lib/Db/TaskInboxSelection.php",
-  "lib/Search/FlowTasksProvider.php -> lib/Service/Task/TaskInboxPage.php",
-  "lib/Search/FlowTasksProvider.php -> lib/Service/Task/TaskInboxServiceInterface.php",
   "lib/Search/Service/DashboardAuditReads.php -> lib/Db/AuditTrail/AuditStatisticsScope.php",
   "lib/Search/Service/DashboardMappers.php -> lib/Db/WebhookLogMapperInterface.php",
   "lib/Search/Service/DashboardService.php -> lib/Db/AuditTrail/AuditStatisticsScope.php",
@@ -2800,7 +2793,6 @@
   "lib/Service/Task/TaskFormResolver.php",
   "lib/Service/Task/TaskFormResolverInterface.php",
   "lib/Service/Task/TaskImport.php",
-  "lib/Service/Task/TaskInboxPage.php",
   "lib/Service/Task/TaskInboxService.php",
   "lib/Service/Task/TaskInboxServiceInterface.php",
   "lib/Service/Task/TaskMetricsProvider.php",
@@ -2900,8 +2892,8 @@
   "Kernel": 8482,
   "Notifications": 1914,
   "Platform": 731,
-  "Processes": 31812,
-  "Search": 2027
+  "Processes": 31793,
+  "Search": 2026
  },
  "kernel_files": [
   "lib/Contract/EmailLinkReaderInterface.php",
@@ -3360,6 +3352,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10407,
- "total_loc": 460004,
- "violation_degree": 0.0714
+ "total_loc": 460005,
+ "violation_degree": 0.0707
 }
