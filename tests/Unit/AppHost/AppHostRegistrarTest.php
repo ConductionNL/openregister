@@ -19,8 +19,6 @@ namespace OCA\OpenRegister\Tests\Unit\AppHost;
 
 use OCA\OpenRegister\AppHost\AppContainerLocator;
 use OCA\OpenRegister\AppHost\AppHostRegistrar;
-use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
-use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleManifestLoader;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleManifestLoaderInterface;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleRefusalReportInterface;
@@ -41,7 +39,7 @@ class AppHostRegistrarTest extends TestCase {
 	public function testRegisterAliasesEveryContractToItsServiceInOrder(): void {
 		$calls = [];
 		$context = $this->createMock(IRegistrationContext::class);
-		$context->expects($this->exactly(6))
+		$context->expects($this->exactly(count: 5))
 			->method('registerServiceAlias')
 			->willReturnCallback(
 				static function (string $alias, string $target) use (&$calls): void {
@@ -54,7 +52,6 @@ class AppHostRegistrarTest extends TestCase {
 
 		$this->assertSame(
 			[
-				[ScheduleFlowStoreInterface::class, ScheduleFlowStore::class],
 				[ScheduleManifestLoaderInterface::class, ScheduleManifestLoader::class],
 				[ScheduleRefusalReportInterface::class, ScheduleRefusals::class],
 				[RegisterDocumentLoaderInterface::class, RegisterDocumentLoader::class],
