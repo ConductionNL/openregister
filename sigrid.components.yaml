@@ -12,6 +12,7 @@
 components:
   - name: Kernel
     include:
+      - ".*/lib/BulkAction/(BulkActionInterface)[.]php"
       - ".*/lib/Contract/[^/]*"
       - ".*/lib/Db/(FreezeTerms|JsonArrayColumn|JsonFieldsTrait|LinkedItemsTrait|LockTerms|ManagedByConfigurationTrait|ObjectEntity|Register|RegisterMapperInterface|Schema|SchemaMapperInterface|SoftDeletion)[.]php"
       - ".*/lib/Db/ObjectEntity/[^/]*"
@@ -869,7 +870,7 @@ components:
       - ".*/lib/AppHost/Scheduling/ScheduleFlowStoreInterface[.]php"
       - ".*/lib/AppHost/Scheduling/ScheduleFlowSync[.]php"
       - ".*/lib/BackgroundJob/(AnnotationNotificationDispatchJob|AutoTransitionJob|AutomationRecordRetentionJob|BulkJobRunner|CasePlanTimerRearmJob|FileTextExtractionJob|FlowRunRecoveryServices|FlowRunRetentionJob|FlowRunWorker|FlowRunWorkerServices|FlowScheduleWorker|FlowTimerWorker|FormUploadPurgeJob|ObjectTextExtractionJob|RecomputeTimersForCalendarJob|RecomputeTimersForCalendarJobServices|RuleRunRetentionJob|ScheduledMessageSweepJob|SourceRecordRecomputeJob|TemporalCalculationSweepJob|TranslationProjectionJob)[.]php"
-      - ".*/lib/BulkAction/(AbstractPropertyWriteAction|ApplyRuleAction|ApplyRuleActionInterface|AssignAction|AssignActionInterface|BulkActionInterface|BulkActionInvoker|BulkActionOutcomeInterface|BulkActionRegistrar|BulkActionResult|BulkActionWiring|BulkObjectAccess|BulkStep|LegacyBulkActionInterface|RestorePriorValuesAction|RestorePriorValuesActionInterface|ReversibleBulkActionInterface|RunActionAction|RunActionActionInterface|SetPropertiesAction|SetPropertiesActionInterface|StepBulkActionInterface|TransitionAction|TransitionActionInterface)[.]php"
+      - ".*/lib/BulkAction/(AbstractPropertyWriteAction|ApplyRuleAction|ApplyRuleActionInterface|AssignAction|AssignActionInterface|BulkActionInvoker|BulkActionOutcomeInterface|BulkActionRegistrar|BulkActionResult|BulkActionWiring|BulkObjectAccess|BulkStep|LegacyBulkActionInterface|RestorePriorValuesAction|RestorePriorValuesActionInterface|ReversibleBulkActionInterface|RunActionAction|RunActionActionInterface|SetPropertiesAction|SetPropertiesActionInterface|StepBulkActionInterface|TransitionAction|TransitionActionInterface)[.]php"
       - ".*/lib/Command/(RematerialiseCalculationsCommand|RematerialiseRun)[.]php"
       - ".*/lib/Controller/(AutomationRecordsController|BulkJobsController|CalculationsController|CalendarEventsController|CalendarFeedController|CaseController|EntityRelationsController|FileEntityRelationsController|FlowController|FlowDryRunController|FlowLinksController|FlowNodeRunController|FlowPrincipalController|FlowRunController|FlowRunMigrationController|FlowTestRunController|FlowTimerDiagnosticController|FormsController|GdprEntitiesController|NamesController|ObjectActionsController|ObjectFavouriteController|OrganisationHaltController|PartyController|PersonLookupController|PortalTaskController|RulesController|TaskController|TaskEventsController|TaskNotesController|TasksController|TransitionController|TranslationController|WorkingCalendarController)[.]php"
       - ".*/lib/Controller/Support/ActionParameters[.]php"

@@ -17,6 +17,8 @@ deptrac:
         - type: bool
           must:
             - type: directory
+              value: 'lib/BulkAction/(BulkActionInterface)[.]php$'
+            - type: directory
               value: 'lib/Contract/[^/]*$'
             - type: directory
               value: 'lib/Db/(FreezeTerms|JsonArrayColumn|JsonFieldsTrait|LinkedItemsTrait|LockTerms|ManagedByConfigurationTrait|ObjectEntity|Register|RegisterMapperInterface|Schema|SchemaMapperInterface|SoftDeletion)[.]php$'
@@ -1726,7 +1728,7 @@ deptrac:
         - type: directory
           value: 'lib/BackgroundJob/(AnnotationNotificationDispatchJob|AutoTransitionJob|AutomationRecordRetentionJob|BulkJobRunner|CasePlanTimerRearmJob|FileTextExtractionJob|FlowRunRecoveryServices|FlowRunRetentionJob|FlowRunWorker|FlowRunWorkerServices|FlowScheduleWorker|FlowTimerWorker|FormUploadPurgeJob|ObjectTextExtractionJob|RecomputeTimersForCalendarJob|RecomputeTimersForCalendarJobServices|RuleRunRetentionJob|ScheduledMessageSweepJob|SourceRecordRecomputeJob|TemporalCalculationSweepJob|TranslationProjectionJob)[.]php$'
         - type: directory
-          value: 'lib/BulkAction/(AbstractPropertyWriteAction|ApplyRuleAction|ApplyRuleActionInterface|AssignAction|AssignActionInterface|BulkActionInterface|BulkActionInvoker|BulkActionOutcomeInterface|BulkActionRegistrar|BulkActionResult|BulkActionWiring|BulkObjectAccess|BulkStep|LegacyBulkActionInterface|RestorePriorValuesAction|RestorePriorValuesActionInterface|ReversibleBulkActionInterface|RunActionAction|RunActionActionInterface|SetPropertiesAction|SetPropertiesActionInterface|StepBulkActionInterface|TransitionAction|TransitionActionInterface)[.]php$'
+          value: 'lib/BulkAction/(AbstractPropertyWriteAction|ApplyRuleAction|ApplyRuleActionInterface|AssignAction|AssignActionInterface|BulkActionInvoker|BulkActionOutcomeInterface|BulkActionRegistrar|BulkActionResult|BulkActionWiring|BulkObjectAccess|BulkStep|LegacyBulkActionInterface|RestorePriorValuesAction|RestorePriorValuesActionInterface|ReversibleBulkActionInterface|RunActionAction|RunActionActionInterface|SetPropertiesAction|SetPropertiesActionInterface|StepBulkActionInterface|TransitionAction|TransitionActionInterface)[.]php$'
         - type: directory
           value: 'lib/Command/(RematerialiseCalculationsCommand|RematerialiseRun)[.]php$'
         - type: directory
