@@ -22,14 +22,17 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Service\File;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\FileAccountInterface;
 use OCP\Files\File;
 use OCP\Files\Node;
-use OCP\IUser;
 
 /**
  * Gives openregister's own account and moves files and folders into it.
+ *
+ * The account and the file move are the Core port FileAccountInterface, which the file handlers
+ * ask; this interface adds the folder move and the optional sharing handler.
  */
-interface FileOwnershipHandlerInterface {
+interface FileOwnershipHandlerInterface extends FileAccountInterface {
 
 	/**
 	 * Application user name: the account openregister owns its files under.
@@ -37,25 +40,6 @@ interface FileOwnershipHandlerInterface {
 	 * @var string
 	 */
 	public const APP_USER = 'openregister';
-
-	/**
-	 * Gets or creates the OpenRegister user for file operations.
-	 *
-	 * @throws \Exception If OpenRegister user cannot be created.
-	 *
-	 * @return IUser The OpenRegister user.
-	 *
-	 * @spec openspec/specs/file-actions/spec.md
-	 * @spec openspec/specs/file-actions/spec.md
-	 */
-	public function getUser(): IUser;
-
-	/**
-	 * The user logged in to this request, or null when nobody is.
-	 *
-	 * @return IUser|null The currently active user or null if no user is logged in.
-	 */
-	public function getCurrentUser(): ?IUser;
 
 	/**
 	 * Transfer file ownership to OpenRegister user and share with current user.

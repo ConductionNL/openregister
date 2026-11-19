@@ -57,6 +57,7 @@ use OCA\OpenRegister\Files\Service\TextExtractionService;
 use OCA\OpenRegister\Files\Service\UploadService;
 use OCA\OpenRegister\Kernel\Contracts\AccessLinkReaderInterface;
 use OCA\OpenRegister\Kernel\Contracts\ChunkMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\FileAccountInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FileReadRestrictionInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\RegisterFolderRecordsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ShareLinkUrlInterface;
@@ -85,6 +86,7 @@ final class FilesRegistrar
         ChunkSourceReaderInterface::class         => ChunkMapper::class,
         ChunkStoreInterface::class                => ChunkMapper::class,
         DocumentProcessingHandlerInterface::class => DocumentProcessingHandler::class,
+        FileAccountInterface::class               => FileOwnershipHandler::class,
         FileAuditHandlerInterface::class          => FileAuditHandler::class,
         FileMapperInterface::class                => FileMapper::class,
         FileOwnershipHandlerInterface::class      => FileOwnershipHandler::class,
