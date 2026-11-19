@@ -22,23 +22,17 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Integration;
 
+use OCA\OpenRegister\Kernel\Contracts\Search\PageWidgetDeclarationInterface;
+
 /**
  * Registers and reads the declarative page-level widget descriptors.
  *
+ * The Search contract this interface extends declares registerPageWidget()
+ * and getPageWidget().
+ *
  * @spec openspec/specs/integration-leaf-foundation/spec.md
  */
-interface PageWidgetRegistryInterface {
-
-	/**
-	 * Register a page-level widget contract.
-	 *
-	 * @param array<string,mixed> $descriptor The page-widget descriptor.
-	 *
-	 * @return bool True when accepted, false when rejected (missing id or duplicate).
-	 *
-	 * @spec openspec/specs/integration-leaf-foundation/spec.md
-	 */
-	public function registerPageWidget(array $descriptor): bool;
+interface PageWidgetRegistryInterface extends PageWidgetDeclarationInterface {
 
 	/**
 	 * List every registered page-level widget descriptor.
@@ -48,15 +42,4 @@ interface PageWidgetRegistryInterface {
 	 * @spec openspec/specs/integration-leaf-foundation/spec.md
 	 */
 	public function listPageWidgets(): array;
-
-	/**
-	 * Look up a page-level widget descriptor by id.
-	 *
-	 * @param string $id The widget id.
-	 *
-	 * @return array<string,mixed>|null The descriptor, or null when unknown.
-	 *
-	 * @spec openspec/specs/integration-leaf-foundation/spec.md
-	 */
-	public function getPageWidget(string $id): ?array;
 }//end interface

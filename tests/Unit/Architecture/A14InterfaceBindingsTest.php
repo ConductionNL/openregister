@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Service\Integration\IntegrationCatalogueInterface;
 use OCA\OpenRegister\Db\Integration\IntegrationIdIndexInterface;
+use OCA\OpenRegister\Kernel\Contracts\Search\PageWidgetDeclarationInterface;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistrar;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
 use OCA\OpenRegister\Service\Integration\PageWidgetRegistryInterface;
@@ -65,6 +66,7 @@ final class A14InterfaceBindingsTest extends TestCase {
 		KvkLookupInterface::class => [KvkProvider::class, IntegrationRegistrar::class],
 		MessageDispatcherInterface::class => [MessageDispatchProvider::class, IntegrationRegistrar::class],
 		OpenCorporatesSearchInterface::class => [OpenCorporatesProvider::class, IntegrationRegistrar::class],
+		PageWidgetDeclarationInterface::class => [IntegrationRegistry::class, IntegrationRegistrar::class],
 		PageWidgetRegistryInterface::class => [IntegrationRegistry::class, IntegrationRegistrar::class],
 		TablesCatalogueInterface::class => [TablesTableReader::class, ObjectSourceRegistrar::class],
 		TablesSchemaReconcilerInterface::class => [TablesSchemaSyncService::class, ObjectSourceRegistrar::class],
@@ -94,10 +96,8 @@ final class A14InterfaceBindingsTest extends TestCase {
 		KvkLookupInterface::class => ['Controller/CompanyLookupController.php'],
 		MessageDispatcherInterface::class => ['Controller/MessageDispatchController.php'],
 		OpenCorporatesSearchInterface::class => ['Controller/CompanyLookupController.php'],
-		PageWidgetRegistryInterface::class => [
-			'Search/Service/MapsOverviewService.php',
-			'Service/AnalyticsSeriesService.php',
-		],
+		PageWidgetDeclarationInterface::class => ['Search/Service/MapsOverviewSources.php'],
+		PageWidgetRegistryInterface::class => ['Service/AnalyticsSeriesService.php'],
 		TablesCatalogueInterface::class => [
 			'Command/TablesSyncCommand.php',
 			'Repair/SeedTablesVirtualSchemas.php',
