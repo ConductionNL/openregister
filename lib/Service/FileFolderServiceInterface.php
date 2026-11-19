@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectFolderLookupInterface;
 use OCP\Files\Folder;
 use OCP\Files\Node;
 use OCP\IUser;
@@ -31,7 +32,7 @@ use OCP\IUser;
 /**
  * Creating, resolving, listing, re-validating and removing the folder behind a register or object.
  */
-interface FileFolderServiceInterface {
+interface FileFolderServiceInterface extends ObjectFolderLookupInterface {
 
 	/**
 	 * Re-validate the access check on an existing object's bound folder.
