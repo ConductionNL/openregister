@@ -22,6 +22,7 @@ namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ContactMatcherInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ExportGuardInterface;
 use OCA\OpenRegister\Kernel\Contracts\ExampleSetInstallerInterface;
 use OCA\OpenRegister\Kernel\Contracts\FlowTimerControlInterface;
 use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
@@ -38,6 +39,8 @@ use OCA\OpenRegister\Kernel\Contracts\ScheduledReportsInterface;
 use OCA\OpenRegister\Kernel\Contracts\SchemaExplorationInterface;
 use OCA\OpenRegister\Kernel\Contracts\TaskManagerInterface;
 use OCA\OpenRegister\Kernel\Contracts\VocabularyImporterInterface;
+use OCA\OpenRegister\Notifications\Service\ExampleSet\ExampleSetTimelineEntries;
+use OCA\OpenRegister\Notifications\Service\ExampleSet\ExampleSetTimelineRowsInterface;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunnerInterface;
 use OCA\OpenRegister\Service\Aggregation\WidgetAnnotationValidator;
@@ -670,6 +673,7 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\AuthenticationTokenFetcherInterface::class => \OCA\OpenRegister\Service\AuthenticationService::class,
 		\OCA\OpenRegister\Service\Rbac\ObjectOwnershipServiceInterface::class => \OCA\OpenRegister\Service\Rbac\ObjectOwnershipService::class,
 		\OCA\OpenRegister\Service\Reference\ObjectPreviewFormatterInterface::class => \OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter::class,
+		\OCA\OpenRegister\Kernel\Contracts\Core\ObjectPreviewCacheInterface::class => \OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter::class,
 		\OCA\OpenRegister\Service\Task\TaskMetricsProviderInterface::class => \OCA\OpenRegister\Service\Task\TaskMetricsProvider::class,
 		DoriathApplicationRegistrarInterface::class => DoriathApplicationRegistrar::class,
 		\OCA\OpenRegister\Service\Object\BatchOperationStatusInterface::class => \OCA\OpenRegister\Service\Object\BatchOperationStatus::class,
@@ -841,6 +845,7 @@ final class ContractBindings {
 		ExampleSetRemoverInterface::class => ExampleSetRemover::class,
 		ExportAuditRecorderInterface::class => ExportAuditRecorder::class,
 		ExportGateInterface::class => ExportGate::class,
+		ExportGuardInterface::class => ExportGate::class,
 		ExportProfileServiceInterface::class => ExportProfileService::class,
 		ExportProfileWriterInterface::class => ExportProfileWriter::class,
 		ExplodeNodeInterface::class => ExplodeNode::class,
@@ -1066,6 +1071,7 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\ExampleSet\ExampleSetDailyRefreshInterface::class => \OCA\OpenRegister\Service\ExampleSet\ExampleSetDailyRefresh::class,
 		\OCA\OpenRegister\Service\ExampleSet\ExampleSetCatalogueInterface::class => \OCA\OpenRegister\Service\ExampleSet\ExampleSetCatalogue::class,
 		\OCA\OpenRegister\Service\ExampleSet\ExampleSetDailyMarksInterface::class => \OCA\OpenRegister\Service\ExampleSet\ExampleSetDailyRefresh::class,
+		ExampleSetTimelineRowsInterface::class => ExampleSetTimelineEntries::class,
 		OrganisationUsageServiceInterface::class => OrganisationUsageService::class,
 		TenantLifecycleServiceInterface::class => TenantLifecycleService::class,
 		\OCA\OpenRegister\Service\History\StateHistoryRebuildInterface::class => \OCA\OpenRegister\Service\History\StateHistoryRebuild::class,
