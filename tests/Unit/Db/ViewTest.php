@@ -3,6 +3,7 @@
 namespace Unit\Db;
 
 use DateTime;
+use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Search\Db\View;
 use PHPUnit\Framework\TestCase;
 
@@ -283,5 +284,50 @@ class ViewTest extends TestCase {
 
 	public function testGetManagedByConfigurationReturnsNullWithNoId(): void {
 		$this->assertNull($this->view->getManagedByConfiguration([]));
+	}
+
+	public function testGetManagedByConfigurationReturnsTheFirstConfigurationListingTheId(): void {
+		$this->view->setId(7);
+		$other = new Configuration();
+		$other->setViews([3]);
+		$first = new Configuration();
+		$first->setViews([7]);
+		$second = new Configuration();
+		$second->setViews([7]);
+
+		$this->assertSame($first, $this->view->getManagedByConfiguration([$other, $first, $second]));
+	}
+
+	public function testGetManagedByConfigurationComparesTheIdStrictly(): void {
+		$this->view->setId(7);
+		$configuration = new Configuration();
+		$configuration->setViews(['7']);
+
+		$this->assertNull($this->view->getManagedByConfiguration([$configuration]));
+	}
+
+	public function testGetManagedByConfigurationReturnsNullWhenTheIdIsNotListed(): void {
+		$this->view->setId(7);
+		$configuration = new Configuration();
+		$configuration->setViews([1, 2]);
+
+		$this->assertNull($this->view->getManagedByConfiguration([$configuration]));
+	}
+
+	public function testGetManagedByConfigurationReturnsNullForAViewWithoutId(): void {
+		$configuration = new Configuration();
+		$configuration->setViews([7]);
+
+		$this->assertNull($this->view->getManagedByConfiguration([$configuration]));
+	}
+
+	public function testTheManagingConfigurationIsSerialisedAsIdUuidAndTitle(): void {
+		$configuration = new Configuration();
+		$configuration->setId(5);
+		$configuration->setUuid('conf-uuid');
+		$configuration->setTitle('Catalogue');
+		$this->view->setManagedByConfigurationEntity($configuration);
+
+		$this->assertSame(['id' => 5, 'uuid' => 'conf-uuid', 'title' => 'Catalogue'], $this->view->jsonSerialize()['managedByConfiguration']);
 	}
 }

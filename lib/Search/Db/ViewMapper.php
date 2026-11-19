@@ -38,7 +38,6 @@ use OCP\IDBConnection;
 use OCP\IGroupManager;
 use OCP\IUserSession;
 use Symfony\Component\Uid\Uuid;
-use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\MultiTenancyTrait;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;

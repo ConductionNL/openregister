@@ -740,7 +740,7 @@ Db/ImportPreview.php,94,Db,Configuration,Configuration/Db/ImportPreview.php,0,,C
 Db/ImportPreviewMapper.php,61,Db,Configuration,Configuration/Db/ImportPreviewMapper.php,0,,Configuration
 Db/ImportPreviewRow.php,55,Db,Configuration,Configuration/Db/ImportPreviewRow.php,0,,Configuration
 Db/ImportPreviewRowMapper.php,58,Db,Configuration,Configuration/Db/ImportPreviewRowMapper.php,0,,Configuration
-Db/IsoTimestampsTrait.php,17,Db,Configuration,Configuration/Db/IsoTimestampsTrait.php,0,,Configuration
+Db/IsoTimestampsTrait.php,17,Db,Configuration,Configuration/Db/IsoTimestampsTrait.php,0,,Core
 Db/JobRun.php,66,Db,Configuration,Configuration/Db/JobRun.php,0,,Configuration
 Db/JobRunMapper.php,121,Db,Configuration,Configuration/Db/JobRunMapper.php,0,,Configuration
 Db/JsonFieldsTrait.php,15,Db,Integrations,Integrations/Db/JsonFieldsTrait.php,0,,Kernel

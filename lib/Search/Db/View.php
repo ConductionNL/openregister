@@ -25,13 +25,12 @@ namespace OCA\OpenRegister\Search\Db;
 
 use DateTime;
 use JsonSerializable;
+use OCA\OpenRegister\Kernel\Contracts\ConfigurationInterface;
+use OCA\OpenRegister\Kernel\Contracts\ConfigurationMembershipInterface;
 use OCA\OpenRegister\Kernel\Contracts\ViewInterface;
 use OCP\AppFramework\Db\Entity;
-use OCA\OpenRegister\Mcp\Db\Agent;
-use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\IsoTimestampsTrait;
 use OCA\OpenRegister\Db\Organisation;
-use OCA\OpenRegister\Db\Task;
 
 /**
  * Entity class representing a View
@@ -75,8 +74,8 @@ use OCA\OpenRegister\Db\Task;
  *
  * @SuppressWarnings(PHPMD.TooManyFields) Sixteen of the eighteen ARE the
  * columns of `oc_openregister_views`, one property each, the way every other
- * entity in this directory is built ({@see Task}, {@see ScheduledReport},
- * {@see TimelineEntry} and sixteen more carry this same suppression for the
+ * entity in this directory is built (Task, ScheduledReport, TimelineEntry
+ * and sixteen more carry this same suppression for the
  * same reason). Reducing the count would mean folding columns together, which
  * is a migration and a change to stored data, not a refactor. The remaining
  * two — `$managedByConfig` and `$access` — are transient decorations set per
@@ -124,9 +123,9 @@ class View extends Entity implements JsonSerializable, ViewInterface {
 	/**
 	 * Configuration that manages this view (transient, not stored in DB)
 	 *
-	 * @var Configuration|null
+	 * @var ConfigurationInterface|null
 	 */
-	private ?Configuration $managedByConfig = null;
+	private ?ConfigurationInterface $managedByConfig = null;
 
 	/**
 	 * The access the current caller holds (transient, not stored in DB)
@@ -528,11 +527,11 @@ class View extends Entity implements JsonSerializable, ViewInterface {
 	/**
 	 * Set the configuration that manages this view (transient property)
 	 *
-	 * @param Configuration|null $configuration The managing configuration
+	 * @param ConfigurationInterface|null $configuration The managing configuration
 	 *
 	 * @return void
 	 */
-	public function setManagedByConfigurationEntity(?Configuration $configuration): void {
+	public function setManagedByConfigurationEntity(?ConfigurationInterface $configuration): void {
 		$this->managedByConfig = $configuration;
 	}//end setManagedByConfigurationEntity()
 
@@ -542,14 +541,13 @@ class View extends Entity implements JsonSerializable, ViewInterface {
 	 * Returns the first configuration that has this view's ID in its views array.
 	 * Returns null if the view is not managed by any configuration.
 	 *
-	 * @param array<Configuration> $configurations Array of Configuration entities to check against
+	 * @param array<T> $configurations The configurations to check against
 	 *
-	 * @return Configuration|null The configuration managing this view, or null
+	 * @return T|null The configuration managing this view, or null
 	 *
-	 * @phpstan-param array<Configuration> $configurations
-	 * @psalm-param   array<Configuration> $configurations
+	 * @template T of ConfigurationMembershipInterface
 	 */
-	public function getManagedByConfiguration(array $configurations): ?Configuration {
+	public function getManagedByConfiguration(array $configurations): ?ConfigurationMembershipInterface {
 		return ViewFormatting::managing(viewId: $this->id, configurations: $configurations);
 	}//end getManagedByConfiguration()
 }//end class
