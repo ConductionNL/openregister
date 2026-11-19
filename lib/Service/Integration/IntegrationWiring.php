@@ -24,6 +24,8 @@ use OCA\OpenRegister\Controller\IntegrationControllersRegistrar;
 use OCA\OpenRegister\Db\Integration\IntegrationIdIndexInterface;
 use OCA\OpenRegister\Event\ObjectWriteRequestEvent;
 use OCA\OpenRegister\Listener\WebhookRequestInterceptionListener;
+use OCA\OpenRegister\Notifications\Service\EmailService;
+use OCA\OpenRegister\Notifications\Service\EmailServiceInterface;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\AuditTrailProvider;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\FilesProvider;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\NotesProvider;
@@ -67,11 +69,13 @@ final class IntegrationWiring {
 	 * Callers that only read the registry type against its read-side contracts;
 	 * registration (addProvider, withProviders, setLeafLoader) stays on
 	 * IntegrationRegistry. The lookup and dispatch controllers type against the
-	 * provider contracts.
+	 * provider contracts. The mail-sidebar link service is bound here because
+	 * linking Mail messages to objects is integration work.
 	 *
 	 * @var array<class-string, class-string>
 	 */
 	public const BINDINGS = [
+		EmailServiceInterface::class => EmailService::class,
 		IntegrationCatalogueInterface::class => IntegrationRegistry::class,
 		IntegrationIdIndexInterface::class => IntegrationRegistry::class,
 		KvkLookupInterface::class => KvkProvider::class,

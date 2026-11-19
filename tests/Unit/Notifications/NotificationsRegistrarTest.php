@@ -79,7 +79,7 @@ final class NotificationsRegistrarTest extends TestCase {
 			$expected[] = ['alias' => $contract, 'target' => $service];
 		}
 
-		$this->assertCount(expectedCount: 28, haystack: $expected);
+		$this->assertCount(expectedCount: 27, haystack: $expected);
 		$this->assertSame(expected: $expected, actual: $context->aliases);
 	}//end testEveryInterfaceIsBoundToItsImplementation()
 

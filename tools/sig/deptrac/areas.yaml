@@ -3194,6 +3194,30 @@ deptrac:
         - type: directory
           value: 'lib/Mcp/Tool/[^/]*$'
         - type: directory
+          value: 'lib/Notifications/Controller/EmailsController[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Controller/Support/EmailsControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Controller/Support/EmailsDomain[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Controller/Support/EmailsObjectAccess[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Controller/Support/EmailsPlatform[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/EmailLinkRequest[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/EmailLinkedSchemas[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/EmailMailAppReader[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/EmailService[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/EmailServiceInterface[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/ReplyThreadService[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/ReplyThreadResolver[.]php$'
+        - type: directory
           value: 'lib/Repair/(LogDanglingLinkedTypes|RegisterDescriptorImport|RegisterOpenRegisterWithDoriath)[.]php$'
         - type: directory
           value: 'lib/Service/(ActivityEntriesOptions|ActivityFilterService|AlbumLinkRun|AnalyticsLinkService|AnalyticsLinkServiceInterface|AnalyticsReportDraft|AnalyticsSeriesDraft|AnalyticsSeriesService|AnalyticsSeriesServiceInterface|ApplicationServiceInterface|AuthenticationService|AuthorizationService|BookmarkDraft|BookmarkLinkService|BookmarkLinkServiceInterface|BookmarkSearch|CalendarEventKey|CalendarLinkService|CalendarLinkServiceInterface|CalendarObjectRef|CalendarPickerScan|CalendarPickerWindow|CardDraft|CaseTokenIssuance|CaseTokenService|CaseTokenServiceInterface|CaseTokenTarget|CollectiveLinkService|CollectiveLinkServiceInterface|CollectivePageDraft|ContactCardRef|ContactMatchingMappers|ContactPlacement|ContactService|ContactServiceInterface|CospendLinkService|CospendLinkServiceInterface|CospendProjectDraft|DeckCardRun|DeckCardService|DeckCardServiceInterface|DeckLinkService|DeckLinkServiceInterface|DeckPlatform|DeckRowMapper|DeepLinkRegistryService|EmailLinkService|EmailLinkServiceInterface|EmailMessageRef|EndpointExchange|EndpointMappers|EndpointService|EndpointServiceInterface|EntityLink|FederationShareService|FederationShareServiceInterface|FormLinkScope|FormLinkService|FormLinkServiceInterface|LinkTarget|LinkedEntityLookup|LinkedEntityService|MailTableQueries|MailboxPage|MapLinkService|MappingKeyRewrite|MappingService|MappingServiceInterface|MappingTwigSandbox|NewForm|ObjectRelationCleanupService|OpenProjectLinkService|OwnedWebhookView|PageSearch|PersonLinkChange|PersonLinkEvents|PersonLinkPlacement|PersonLinkRef|PersonLinkService|PhotoLinkService|PoiDraft|PollDraft|PollIdentity|PollLinkService|PollOptionRow|ShareDraft|ShareLinkService|ShareListingRun|ShareRequest|TableDeletionOptions|TableObjectRef|TalkLinkService|TalkLinkServiceInterface|TimeTrackerLinkService|UserDirectory|UserLinkRequest|UserLinkWriter|WebhookDelivery|WebhookDeliveryAttempt|WebhookDeliveryRecorder|WebhookDispatchServices|WebhookEvent|WebhookRequestOptions|WebhookService|WebhookStores|WorkPackageDraft|XwikiLinkService|XwikiPageDraft|XwikiPendingLink)[.]php$'
@@ -3386,9 +3410,83 @@ deptrac:
         - type: directory
           value: 'lib/Notifications/Command/[^/]*$'
         - type: directory
-          value: 'lib/Notifications/Controller/[^/]*$'
+          value: 'lib/Notifications/Controller/GraphQLSubscriptionController[.]php$'
         - type: directory
-          value: 'lib/Notifications/Controller/Support/[^/]*$'
+          value: 'lib/Notifications/Controller/HeartbeatController[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Controller/NotesController[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Controller/NotificationBroadcastController[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Controller/NotificationDeliveryWindowController[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Controller/NotificationGroupPreferencesController[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Controller/NotificationHistoryController[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Controller/NotificationPreferencesController[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Controller/NotificationRecipientAnswerController[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Controller/NotificationSubscriptionsController[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Controller/NotificationTemplatesController[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Controller/ObjectWatchersController[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Controller/ScheduledReportsController[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Controller/TimelineAdminController[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Controller/TimelineEntriesController[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Controller/WebPushController[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Controller/Support/AddressedObject[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Controller/Support/NotePath[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Controller/Support/NoteStep[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Controller/Support/NoteUpdate[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Controller/Support/NotesControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Controller/Support/NotificationBroadcastControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Controller/Support/NotificationDeliveryWindowControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Controller/Support/NotificationGroupPreferencesControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Controller/Support/NotificationHistoryControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Controller/Support/NotificationPreferencesControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Controller/Support/NotificationRequestTrait[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Controller/Support/NotificationSubscriptionsControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Controller/Support/NotificationTemplatesControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Controller/Support/ObjectNote[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Controller/Support/ObjectWatchersControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Controller/Support/QueryText[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Controller/Support/ReadableObject[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Controller/Support/ScheduledReportsControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Controller/Support/TimelineAdminControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Controller/Support/TimelineEntriesControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Controller/Support/TimelineEntriesDomain[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Controller/Support/TimelineEntriesVisibility[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Controller/Support/WebPushControllerServices[.]php$'
         - type: directory
           value: 'lib/Notifications/Db/[^/]*$'
         - type: directory
@@ -3398,13 +3496,299 @@ deptrac:
         - type: directory
           value: 'lib/Notifications/Search/[^/]*$'
         - type: directory
-          value: 'lib/Notifications/Service/[^/]*$'
+          value: 'lib/Notifications/Service/ActivityEntries[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/ActivityEntry[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/ActivityService[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/ActivitySubject[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/NoteVisibilityMove[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/ObjectDeepLinks[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/ObjectPresenceTracker[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/PresenceBeat[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/PresenceLookup[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/PresenceService[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/PresenceServiceInterface[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/PrincipalDirectory[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/TimelineVisibilityPlatform[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/TimelineVisibilityService[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/TimelineVisibilityServiceInterface[.]php$'
         - type: directory
           value: 'lib/Notifications/Service/ExampleSet/[^/]*$'
         - type: directory
           value: 'lib/Notifications/Service/GraphQL/[^/]*$'
         - type: directory
-          value: 'lib/Notifications/Service/Notification/[^/]*$'
+          value: 'lib/Notifications/Service/Notification/ActionLinkResolver[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/ActionTargetContext[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/AnnotationNotificationDispatcher[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/AppIntegrations[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/AppRouteBase[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/BucketReading[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/ChannelSet[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/ClaimAttempt[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/CoalesceBucket[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/CoalesceRule[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/DeclaredNotification[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/DeclaredTrigger[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/DeliveryDetail[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/DeliveryHold[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/DeliveryLedger[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/DeliveryOrigin[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/DeliveryRecord[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/DeliveryWindowSpan[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/DigestScheduleEvaluator[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/DispatchGates[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/DispatchThrottle[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/EmailSender[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/EmailSenderInterface[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/ForcedChannelPolicy[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/HeldDeliveryRun[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/HoldDecision[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/InAppNotice[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/KindPreference[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/LinkableUrl[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/MailAddressee[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/MailContent[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/MessageRendering[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/MessageTarget[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/NcNotificationSender[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/NcNotificationSenderInterface[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/NoticeContent[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/NoticeRule[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/NoticeSubject[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/NotificationAnnotationValidator[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/NotificationAnnotationValidatorInterface[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/NotificationAnnotationValidators[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/NotificationBroadcastService[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/NotificationChannelPolicy[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/NotificationChannelPolicyInterface[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/NotificationClearingService[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/NotificationClearingServiceInterface[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/NotificationCoalescer[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/NotificationContentValidator[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/NotificationDeclarationException[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/NotificationDeliveryWindowService[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/NotificationDigestValidator[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/NotificationEvent[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/NotificationPreferenceService[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/NotificationPreferenceServiceInterface[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/NotificationRecipientResolver[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/NotificationRecipientResolverInterface[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/NotificationRecipientValidator[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/NotificationReminderValidator[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/NotificationRuleContext[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/NotificationRuleDispatcherInterface[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/NotificationRunTally[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/NotificationSchemaFacts[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/NotificationTemplating[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/NotificationTemplatingInterface[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/NotificationTransportValidator[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/NotificationTriggerMatcher[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/NotificationTriggerValidator[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/ObjectDetailLinks[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/OptOutAuthority[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/OptOutAuthorityInterface[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/OptOutQuestion[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/OutboundTransportInterface[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/OutboundTransportRun[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/OutgoingBroadcast[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/PlaceholderValues[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/PreferenceLookup[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/PreferenceResolution[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/PreferenceTopic[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/PushRideAlong[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/QueueWait[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/QueuedFlush[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/RateLimitSubject[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/RateLimiter[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/RateLimiterInterface[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/RecipientAudience[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/RecipientDelivery[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/RecipientEntry[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/RecipientKindAnswer[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/RecipientResolverInterface[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/RecipientSource[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/RuleAudience[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/RuleFiring[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/RuleMessageRenderer[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/RuleReachRecorder[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/ScheduledFilterClause[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/ScheduledFilterDates[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/ScheduledFilterEvaluator[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/ScheduledFilterGrammar[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/ScheduledFilterParser[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/ScheduledFilterPosition[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/ScheduledFilterTarget[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/ScheduledMessagePolicy[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/ScheduledMessageRefusal[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/ScheduledMessageScheduler[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/ScheduledMessageStore[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/ScheduledMessageStoreInterface[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/ScheduledMessageSweep[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/SystemEntityChange[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/SystemEntityObjectAdapter[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/SystemSchemaRules[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/TalkMessage[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/TalkSendException[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/TalkSender[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/TalkSenderInterface[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/TalkUserPost[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/TaskActionLinks[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/TaskAdapterOptions[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/TaskNotificationRules[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/TaskNotificationRulesInterface[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/TaskObjectAdapter[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/TaskObjectAdapters[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/TaskPayloadOptions[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/TaskPoolRecipientResolver[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/TaskTransitionNotifier[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/TaskTransitionNotifierInterface[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/ThresholdOperators[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/TokenBucket[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/TransitionNotice[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/UnsubscribeHeaders[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/Notification/UserGroupServices[.]php$'
         - type: directory
           value: 'lib/Notifications/Service/Party/[^/]*$'
         - type: directory
