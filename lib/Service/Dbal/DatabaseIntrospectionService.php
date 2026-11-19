@@ -41,7 +41,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Db\Source;
+use OCA\OpenRegister\Kernel\Contracts\SourceInterface;
 use OCA\OpenRegister\Service\Schema\SchemaDiffService;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -109,7 +109,7 @@ class DatabaseIntrospectionService implements DatabaseIntrospectionServiceInterf
 	 * table-name-ordered `schemas` list — suitable for golden-file assertions
 	 * and as the input to {@see introspect()}.
 	 *
-	 * @param Source $source The `type: database` source to introspect.
+	 * @param SourceInterface $source The `type: database` source to introspect.
 	 *
 	 * @return array{register: array<string, mixed>, schemas: array<int, array<string, mixed>>}
 	 *
@@ -117,7 +117,7 @@ class DatabaseIntrospectionService implements DatabaseIntrospectionServiceInterf
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
-	public function buildBlueprint(Source $source): array {
+	public function buildBlueprint(SourceInterface $source): array {
 		$sourceId = $this->sourceId(source: $source);
 		$tables   = $this->introspectSource(source: $source, sourceId: $sourceId);
 
@@ -138,14 +138,14 @@ class DatabaseIntrospectionService implements DatabaseIntrospectionServiceInterf
 	/**
 	 * The virtual register a database source is introspected into.
 	 *
-	 * @param Source $source   The database source.
-	 * @param string $sourceId The owning source id.
+	 * @param SourceInterface $source   The database source.
+	 * @param string          $sourceId The owning source id.
 	 *
 	 * @return array<string, string> title, slug, source and description.
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
-	private function registerBlueprint(Source $source, string $sourceId): array {
+	private function registerBlueprint(SourceInterface $source, string $sourceId): array {
 		return [
 			'title' => (string)($source->getTitle() ?? ('Database ' . $sourceId)),
 			'slug' => $this->slugify(value: 'db-' . $sourceId),
@@ -157,8 +157,8 @@ class DatabaseIntrospectionService implements DatabaseIntrospectionServiceInterf
 	/**
 	 * Introspect every user table and view of a source into working records, foreign keys applied.
 	 *
-	 * @param Source $source   The `type: database` source.
-	 * @param string $sourceId The source id.
+	 * @param SourceInterface $source   The `type: database` source.
+	 * @param string          $sourceId The source id.
 	 *
 	 * @return array<string, array<string, mixed>> The working records, keyed by table name.
 	 *
@@ -166,7 +166,7 @@ class DatabaseIntrospectionService implements DatabaseIntrospectionServiceInterf
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
-	private function introspectSource(Source $source, string $sourceId): array {
+	private function introspectSource(SourceInterface $source, string $sourceId): array {
 		$pass = new SourceIntrospection(
 			connection: $this->tools->connectionFactory->getConnection(source: $source),
 			sourceId: $sourceId
@@ -290,7 +290,7 @@ class DatabaseIntrospectionService implements DatabaseIntrospectionServiceInterf
 	 * schemas (matched by source id / table name) and logs structural drift via
 	 * {@see SchemaDiffService}; it never creates duplicates.
 	 *
-	 * @param Source $source The `type: database` source to introspect.
+	 * @param SourceInterface $source The `type: database` source to introspect.
 	 *
 	 * @return array{register: int, created: array<int, string>, updated: array<int, string>, drift: array<int, array<string, mixed>>}
 	 *
@@ -298,7 +298,7 @@ class DatabaseIntrospectionService implements DatabaseIntrospectionServiceInterf
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
-	public function introspect(Source $source): array {
+	public function introspect(SourceInterface $source): array {
 		$blueprint = $this->buildBlueprint(source: $source);
 		$sourceId  = $this->sourceId(source: $source);
 
@@ -939,7 +939,7 @@ class DatabaseIntrospectionService implements DatabaseIntrospectionServiceInterf
 	 * Find or create the register for a source and return it.
 	 *
 	 * @param array<string, mixed> $definition The register blueprint.
-	 * @param string $sourceId The owning source id.
+	 * @param string          $sourceId The owning source id.
 	 *
 	 * @return Register The persisted register.
 	 *
@@ -984,13 +984,13 @@ class DatabaseIntrospectionService implements DatabaseIntrospectionServiceInterf
 	/**
 	 * Resolve the source id used as the register `source` and config `sourceId`.
 	 *
-	 * @param Source $source The database source.
+	 * @param SourceInterface $source The database source.
 	 *
 	 * @return string The stable source identifier.
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
-	private function sourceId(Source $source): string {
+	private function sourceId(SourceInterface $source): string {
 		$uuid = $source->getUuid();
 		if ($uuid !== null && $uuid !== '') {
 			return (string)$uuid;
