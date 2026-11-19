@@ -603,8 +603,14 @@ class UpdateFileHandler {
 	 * @throws NotPermittedException When the session may not write the file
 	 */
 	private function writeContent(File $file, mixed $content): void {
-		if (is_resource($content) === false && base64_encode(base64_decode($content, true)) === $content) {
-			$content = base64_decode($content);
+		if (is_resource($content) === false) {
+			// base64_decode(..., true) returns false for the common case of
+			// real (non-base64) binary content, and base64_encode(false) is a
+			// TypeError in PHP 8+ — check the decode result before re-encoding it.
+			$decodedContent = base64_decode($content, true);
+			if ($decodedContent !== false && base64_encode($decodedContent) === $content) {
+				$content = $decodedContent;
+			}
 		}
 
 		$execCheckBytes = $content;
