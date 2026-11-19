@@ -26,6 +26,7 @@ use OCA\OpenRegister\Db\AuditTrail\AuditedChange;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\TransitionInFlightInterface;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\IDBConnection;
@@ -92,7 +93,7 @@ final class AuditTrailReopenKindTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
 			function (string $id): object {
-				if ($id === LifecycleActionContext::class) {
+				if ($id === TransitionInFlightInterface::class) {
 					return $this->actions;
 				}
 

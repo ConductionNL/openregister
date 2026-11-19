@@ -23,6 +23,7 @@ namespace OCA\OpenRegister\Service\Flow;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\TransitionInFlightInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionRunner;
@@ -56,6 +57,7 @@ final class FlowWiring {
 	 */
 	public const BINDINGS = [
 		ScheduleFlowStoreInterface::class => ScheduleFlowStore::class,
+		TransitionInFlightInterface::class => LifecycleActionContext::class,
 	];
 
 	/**

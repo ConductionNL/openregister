@@ -27,8 +27,10 @@ namespace Unit\Service\Audit;
 
 use OCA\OpenRegister\Db\Consumer;
 use OCA\OpenRegister\Db\ConsumerMapper;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\AccountConsumerInterface;
 use OCA\OpenRegister\Service\Audit\TokenContext;
 use OCA\OpenRegister\Service\Audit\TokenResolver;
+use OCA\OpenRegister\Service\Consumer\AccountConsumerLookup;
 use OCP\Authentication\Token\IProvider as ITokenProvider;
 use OCP\Authentication\Token\IToken;
 use OCP\ISession;
@@ -69,11 +71,11 @@ final class TokenResolverTest extends TestCase {
 		return $userSession;
 	}//end userSession()
 
-	private function consumers(array $rows): ConsumerMapper {
+	private function consumers(array $rows): AccountConsumerInterface {
 		$mapper = $this->createMock(ConsumerMapper::class);
 		$mapper->method('findAll')->willReturn($rows);
 
-		return $mapper;
+		return new AccountConsumerLookup($mapper);
 	}//end consumers()
 
 	private function consumer(string $uuid, string $name): Consumer {

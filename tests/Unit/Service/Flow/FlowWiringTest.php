@@ -13,6 +13,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\TransitionInFlightInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
 use OCA\OpenRegister\Service\Flow\FlowAccess;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistryInterface;
@@ -150,15 +151,17 @@ final class FlowWiringTest extends TestCase {
 	}//end testTheFieldRulesPortIsAnsweredByTheStateResolver()
 
 	/**
-	 * The store of the flows compiled from application schedules is bound, and only the two aliases are registered.
+	 * The store of the flows compiled from application schedules and the audit trail's
+	 * transition-in-flight port are bound, and only these three aliases are registered.
 	 *
 	 * @return void
 	 */
 	public function testTheScheduleFlowStoreIsBound(): void {
 		self::assertSame(
 			expected: [
-				FieldRulesSourceInterface::class  => StateFieldRuleResolver::class,
-				ScheduleFlowStoreInterface::class => ScheduleFlowStore::class,
+				FieldRulesSourceInterface::class   => StateFieldRuleResolver::class,
+				ScheduleFlowStoreInterface::class  => ScheduleFlowStore::class,
+				TransitionInFlightInterface::class => LifecycleActionContext::class,
 			],
 			actual: $this->aliases
 		);
