@@ -36,14 +36,13 @@ namespace OCA\OpenRegister\Migration;
 use Closure;
 use OCP\DB\ISchemaWrapper;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Drops `openregister_object_views` when it exists.
  *
  * @spec openspec/specs/object-interactions/spec.md#requirement-recently-opened-is-read-from-the-audit-trail
  */
-class Version1Date20261009100100 extends SimpleMigrationStep {
+class Version1Date20261009100100 extends TargetedMigrationStep {
 
 	/**
 	 * The table this migration drops.
@@ -63,7 +62,7 @@ class Version1Date20261009100100 extends SimpleMigrationStep {
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md#requirement-recently-opened-is-read-from-the-audit-trail
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		$schema = $schemaClosure();
 		if ($schema->hasTable(self::TABLE) === false) {
 			return $schema;
@@ -73,5 +72,5 @@ class Version1Date20261009100100 extends SimpleMigrationStep {
 		$output->info('Dropped '.self::TABLE.': recently opened is read from the audit trail');
 
 		return $schema;
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 }//end class

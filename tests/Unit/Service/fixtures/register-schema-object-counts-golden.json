@@ -14,7 +14,7 @@
         ],
         [
             "prepare",
-            "SELECT table_name FROM information_schema.tables WHERE table_name LIKE :pattern"
+            "SELECT table_name FROM information_schema.tables WHERE table_name LIKE :pattern AND table_schema = DATABASE()"
         ],
         [
             "bind",
@@ -77,7 +77,7 @@
         ],
         [
             "prepare",
-            "SELECT table_name FROM information_schema.tables WHERE table_name LIKE :pattern"
+            "SELECT table_name FROM information_schema.tables WHERE table_name LIKE :pattern AND table_schema = current_schema()"
         ],
         [
             "bind",
@@ -154,7 +154,7 @@
         ],
         [
             "prepare",
-            "SELECT table_name FROM information_schema.tables WHERE table_name LIKE :pattern"
+            "SELECT table_name FROM information_schema.tables WHERE table_name LIKE :pattern AND table_schema = DATABASE()"
         ],
         [
             "bind",
@@ -236,7 +236,7 @@
         ],
         [
             "prepare",
-            "SELECT table_name FROM information_schema.tables WHERE table_name LIKE :pattern"
+            "SELECT table_name FROM information_schema.tables WHERE table_name LIKE :pattern AND table_schema = DATABASE()"
         ],
         [
             "bind",
@@ -253,7 +253,7 @@
         ],
         [
             "prepare",
-            "SELECT table_name FROM information_schema.tables WHERE table_name LIKE :pattern"
+            "SELECT table_name FROM information_schema.tables WHERE table_name LIKE :pattern AND table_schema = DATABASE()"
         ],
         [
             "bind",
@@ -270,7 +270,7 @@
         ],
         [
             "prepare",
-            "SELECT table_name FROM information_schema.tables WHERE table_name LIKE :pattern"
+            "SELECT table_name FROM information_schema.tables WHERE table_name LIKE :pattern AND table_schema = DATABASE()"
         ],
         [
             "bind",
@@ -287,7 +287,7 @@
         ],
         [
             "prepare",
-            "SELECT table_name FROM information_schema.tables WHERE table_name LIKE :pattern"
+            "SELECT table_name FROM information_schema.tables WHERE table_name LIKE :pattern AND table_schema = DATABASE()"
         ],
         [
             "bind",
@@ -355,7 +355,7 @@
         ],
         [
             "prepare",
-            "SELECT table_name FROM information_schema.tables WHERE table_name LIKE :pattern"
+            "SELECT table_name FROM information_schema.tables WHERE table_name LIKE :pattern AND table_schema = DATABASE()"
         ],
         [
             "bind",
@@ -409,7 +409,7 @@
         ],
         [
             "prepare",
-            "SELECT table_name FROM information_schema.tables WHERE table_name LIKE :pattern"
+            "SELECT table_name FROM information_schema.tables WHERE table_name LIKE :pattern AND table_schema = DATABASE()"
         ],
         [
             "bind",

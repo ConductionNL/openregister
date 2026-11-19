@@ -42,14 +42,13 @@ use Closure;
 use Doctrine\DBAL\Types\Types;
 use OCP\DB\ISchemaWrapper;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Adds the dispatch event id and the broadcast tables.
  *
  * @spec openspec/specs/notificatie-engine/spec.md
  */
-class Version1Date20260915200000 extends SimpleMigrationStep {
+class Version1Date20260915200000 extends TargetedMigrationStep {
 
 	/**
 	 * The notification history, which gains the event id.
@@ -83,7 +82,7 @@ class Version1Date20260915200000 extends SimpleMigrationStep {
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		$schema = $schemaClosure();
 		$changed = 0;
 
@@ -97,7 +96,7 @@ class Version1Date20260915200000 extends SimpleMigrationStep {
 
 		return $schema;
 
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 
 	/**
 	 * Add `event_id` to the notification history, and the index that reads it.
