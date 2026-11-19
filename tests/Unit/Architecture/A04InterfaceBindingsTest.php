@@ -23,7 +23,7 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Db\ConfigurationMapperInterface;
-use OCA\OpenRegister\Db\DbRegistrar;
+use OCA\OpenRegister\Db\ConfigurationMapperRegistrar;
 use OCA\OpenRegister\Db\ProcessesMapperRegistrar;
 use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Db\FlowMapperInterface;
@@ -50,7 +50,7 @@ final class A04InterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{0: class-string, 1: class-string}>
 	 */
 	private const HIDDEN = [
-		ConfigurationMapper::class => [ConfigurationMapperInterface::class, DbRegistrar::class],
+		ConfigurationMapper::class => [ConfigurationMapperInterface::class, ConfigurationMapperRegistrar::class],
 		FlowMapper::class => [FlowMapperInterface::class, ProcessesMapperRegistrar::class],
 	];
 

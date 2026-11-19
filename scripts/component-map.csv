@@ -3385,6 +3385,15 @@ Db/Mapping/,,Db,,,,,Integrations
 Db/ObjectRelation/,,Db,,,,,Integrations
 Db/Register/,,Db,,,,,Kernel
 Db/Schema/,,Db,,,,,Core
+Db/Schema/FacetBlockStamp.php,,Db,,,,,Kernel
+Db/Schema/InversedByNormaliser.php,,Db,,,,,Kernel
+Db/Schema/NotSuppliedReasons.php,,Db,,,,,Kernel
+Db/Schema/ObjectSourceDeclaration.php,,Db,,,,,Kernel
+Db/Schema/PresentationAnnotations.php,,Db,,,,,Kernel
+Db/Schema/PropertyFacetBlock.php,,Db,,,,,Kernel
+Db/Schema/SchemaFieldTypes.php,,Db,,,,,Kernel
+Db/Schema/SchemaPropertyDocument.php,,Db,,,,,Kernel
+Db/Schema/TopLevelAnnotationFold.php,,Db,,,,,Kernel
 Db/SchemaMapper/,,Db,,,,,Core
 Db/SchemaMapper/CalculationAnnotationCheck.php,63,Db,,,0,,Processes
 Db/SchemaMapper/DeclaredActionCheck.php,51,Db,,,0,,Processes
@@ -3516,6 +3525,7 @@ Service/Rules/,,Service,,,,,Processes
 Service/Schema/,,Service,,,,,Core
 Service/SchemaImport/,,Service,,,,,Core
 Service/Schemas/,,Service,,,,,Core
+Service/Schemas/PropertyValidatorHandlerInterface.php,,Service,,,,,Kernel
 Service/Schemas/RetentionAnnotationValidator.php,,Service,,,,,Core
 Service/Search/,,Service,,,,,Core
 Service/Security/,,Service,,,,,Integrations
@@ -3897,7 +3907,7 @@ Service/ContactCardRef.php,,Service,,,,,Integrations
 Service/ContactMatchingMappers.php,,Service,,,,,Integrations
 Service/ContactPlacement.php,,Service,,,,,Integrations
 Service/ContactServiceInterface.php,,Service,,,,,Integrations
-Service/ContractBindingsRegistrar.php,,Service,,,,,Core
+Service/ContractBindingsRegistrar.php,,Service,,,,,Configuration
 Service/CospendLinkServiceInterface.php,,Service,,,,,Integrations
 Service/CospendProjectDraft.php,,Service,,,,,Integrations
 Service/DateTimeNormalizerInterface.php,,Service,,,,,Core
@@ -4393,3 +4403,12 @@ AppHost/Scheduling/ScheduleAuditTrail.php,,AppHost,,,,,Processes
 AppHost/Scheduling/ScheduleFlowStore.php,,AppHost,,,,,Processes
 AppHost/Scheduling/ScheduleFlowStoreInterface.php,,AppHost,,,,,Processes
 AppHost/Scheduling/ScheduleFlowSync.php,,AppHost,,,,,Processes
+Db/Schema/AnnotationVocabulary.php,,Db,,,,,Kernel
+Service/Handoff/HandoffRequest.php,,Service,,,,,Kernel
+Service/Handoff/HandoffSourceRef.php,,Service,,,,,Kernel
+Db/ConfigurationMapperBindings.php,,Db,,,,,Configuration
+Db/ConfigurationMapperRegistrar.php,,Db,,,,,Configuration
+Db/PlatformMapperBindings.php,,Db,,,,,Platform
+Db/PlatformMapperRegistrar.php,,Db,,,,,Platform
+Service/PlatformServiceBindings.php,,Service,,,,,Platform
+Service/PlatformServiceRegistrar.php,,Service,,,,,Platform
