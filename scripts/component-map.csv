@@ -598,7 +598,7 @@ Controller/Trait/ResolvesLinkedObjectTrait.php,14,Controller,Service,Service/Con
 Controller/Trait/ResolvesRegisterAndSchemaTrait.php,41,Controller,Service,Service/Controller/Trait/ResolvesRegisterAndSchemaTrait.php,0,409,Core
 Controller/TransferController.php,150,Controller,Access,Access/Controller/TransferController.php,0,,Compliance
 Controller/TransitionController.php,103,Controller,Flows,Flows/Controller/TransitionController.php,0,,Processes
-Controller/TranslationController.php,161,Controller,Flows,Flows/Controller/TranslationController.php,0,,Processes
+Controller/TranslationController.php,161,Controller,Flows,Flows/Controller/TranslationController.php,0,,Configuration
 Controller/UiController.php,113,Controller,Configuration,Configuration/Controller/UiController.php,0,,Configuration
 Controller/UrnController.php,82,Controller,Service,Service/Controller/UrnController.php,0,,Core
 Controller/UserController.php,527,Controller,Access,Access/Controller/UserController.php,0,,Core
