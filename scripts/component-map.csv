@@ -3631,7 +3631,7 @@ Db/ConfigurationMapperInterface.php,,Db,,,,,Configuration
 Db/ConfigurationSyncResult.php,,Db,,,,,Configuration
 Db/ConsumerMapperInterface.php,,Db,,,,,Integrations
 Db/ContactLinkMapperInterface.php,,Db,,,,,Integrations
-Db/ContentReportMapperInterface.php,,Db,,,,,Core
+Db/ContentReportMapperInterface.php,,Db,,,,,Compliance
 Db/CospendLinkMapperInterface.php,,Db,,,,,Integrations
 Db/DbRegistrar.php,,Db,,,,,Core
 Db/DecisionMapperInterface.php,,Db,,,,,Processes
@@ -3646,7 +3646,7 @@ Db/EndpointLogMapperInterface.php,,Db,,,,,Integrations
 Db/EndpointLogScope.php,,Db,,,,,Integrations
 Db/EndpointMapperInterface.php,,Db,,,,,Integrations
 Db/ErasurePreview/ErasurePreviewFieldTypes.php,,Db,,,,,Compliance
-Db/ErasurePreviewMapperInterface.php,,Db,,,,,Core
+Db/ErasurePreviewMapperInterface.php,,Db,,,,,Compliance
 Db/ExportProfile/ExportProfileFieldTypes.php,,Db,,,,,Configuration
 Db/ExportProfileMapperInterface.php,,Db,,,,,Configuration
 Db/FederatedShare/FederatedShareFieldTypes.php,,Db,,,,,Integrations
@@ -3708,10 +3708,10 @@ Db/PhotoLinkMapperInterface.php,,Db,,,,,Integrations
 Db/PollLinkMapperInterface.php,,Db,,,,,Integrations
 Db/ProcessingLog/ProcessingLogSubject.php,,Db,,,,,Compliance
 Db/ProcessingLogEntry/ProcessingLogEntryFieldTypes.php,,Db,,,,,Compliance
-Db/ProcessingLogMapperInterface.php,,Db,,,,,Core
+Db/ProcessingLogMapperInterface.php,,Db,,,,,Compliance
 Db/ProcessingLogReadScope.php,,Db,,,,,Core
 Db/ProcessingPurpose/ProcessingPurposeFieldTypes.php,,Db,,,,,Compliance
-Db/ProcessingPurposeMapperInterface.php,,Db,,,,,Core
+Db/ProcessingPurposeMapperInterface.php,,Db,,,,,Compliance
 Db/RecordTemplateMapperInterface.php,,Db,,,,,Core
 Db/RegisterLookup.php,,Db,,,,,Core
 Db/RegisterMapperServices.php,,Db,,,,,Core
@@ -4461,3 +4461,4 @@ Notifications/Controller/Support/EmailsDomain.php,,Notifications,,,,,Integration
 Notifications/Controller/Support/EmailsObjectAccess.php,,Notifications,,,,,Integrations
 Notifications/Controller/Support/EmailsPlatform.php,,Notifications,,,,,Integrations
 Notifications/Service/ExampleSet/ExampleSetTimelineRowsInterface.php,,Notifications,,,,,Configuration
+Controller/Support/ProcessingLogControllerServices.php,,Controller,,,,,Compliance
