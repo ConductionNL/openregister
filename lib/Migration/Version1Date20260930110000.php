@@ -30,14 +30,13 @@ use Closure;
 use Doctrine\DBAL\Types\Types;
 use OCP\DB\ISchemaWrapper;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Adds the nullable `draft` column to openregister_schemas.
  *
  * @spec openspec/specs/runtime-schema-api/spec.md
  */
-class Version1Date20260930110000 extends SimpleMigrationStep {
+class Version1Date20260930110000 extends TargetedMigrationStep {
 
 	/**
 	 * The schemas table.
@@ -62,7 +61,7 @@ class Version1Date20260930110000 extends SimpleMigrationStep {
 	 *
 	 * @spec openspec/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		$schema = $schemaClosure();
 
 		if ($schema->hasTable(self::TABLE) === false) {
@@ -90,5 +89,5 @@ class Version1Date20260930110000 extends SimpleMigrationStep {
 
 		return $schema;
 
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 }//end class

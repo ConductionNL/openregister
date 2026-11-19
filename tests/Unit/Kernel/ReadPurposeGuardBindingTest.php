@@ -28,6 +28,7 @@ use OCA\OpenRegister\Kernel\Contracts\Core\ReadPurposeRefusalInterface;
 use OCA\OpenRegister\Service\Audit\PurposeGuard;
 use OCA\OpenRegister\Service\Audit\PurposeGuardInterface;
 use OCA\OpenRegister\Service\Audit\PurposeRefusedException;
+use OCA\OpenRegister\Service\ComplianceServiceBindings;
 use OCA\OpenRegister\Service\ContractBindings;
 use PHPUnit\Framework\TestCase;
 
@@ -36,8 +37,8 @@ use PHPUnit\Framework\TestCase;
  */
 final class ReadPurposeGuardBindingTest extends TestCase {
 
-	public function testThePortAndTheGuardInterfaceResolveToTheSameGuard(): void {
-		$this->assertSame(PurposeGuard::class, ContractBindings::BINDINGS[ReadPurposeGuardInterface::class] ?? null);
+	public function testTheReadPortAndTheGuardInterfaceResolveToTheSameGuard(): void {
+		$this->assertSame(PurposeGuard::class, ComplianceServiceBindings::BINDINGS[ReadPurposeGuardInterface::class] ?? null);
 		$this->assertSame(PurposeGuard::class, ContractBindings::BINDINGS[PurposeGuardInterface::class] ?? null);
 	}
 
