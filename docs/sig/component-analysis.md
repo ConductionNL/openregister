@@ -297,6 +297,29 @@ Er zijn drie kanttekeningen:
 
 Ons doel is daarom 4 in de functionele indeling, en daarna 4,5. Niet 5,5.
 
+## Wat het onderhoud kost
+
+Een sterrenbeoordeling zegt hoe moeilijk de code te veranderen is. Wie OpenRegister gebruikt, betaalt voor iets anders: het onderhoud. Daarom kijken we ook naar wat het onderhoud werkelijk kost.
+
+| | Per jaar |
+|---|---|
+| Ontwikkeling en techniek | 2,5 fte |
+| Inzet vanuit de overheid | 0,5 fte |
+| Totaal | 3 fte |
+
+De herbouwwaarde van OpenRegister schatten we zelf op 60 persoonsjaren. Dat is onze eigen schatting; SIG berekent een eigen herbouwwaarde uit het volume van de code.
+
+3 fte per jaar is 5% van die herbouwwaarde. Eén fte houdt dus 20 persoonsjaren aan herbouwwaarde draaiende.
+
+Bij dezelfde code bepaalt de beheerpartij hoeveel mensen dat kost. Bij ons hangt die efficiëntie van twee dingen af:
+
+- **De kwaliteit van de code.** Wat deze pagina meet: hoe los de gebieden van elkaar staan, en hoeveel een wijziging raakt.
+- **De code factory.** Agents bouwen de code, met een spec, een ADR en een scherm vooraf, en gates en tests achteraf. De ontwikkelaar beslist en merget. [De code factory](https://docs.conduction.nl/WayOfWork/spec-driven-development) beschrijft hoe dat werkt.
+
+Daarbovenop telt hoeveel codebases er zijn en hoeveel partijen de kosten delen. OpenRegister is één kern voor veel registers, die meerdere organisaties samen gebruiken. [Three ways to look at maintainability](https://docs.conduction.nl/WayOfWork/development-pipeline#three-ways-to-look-at-maintainability) werkt die afweging uit.
+
+Het plan op deze pagina verbetert de eerste factor. Elke stap maakt een wijziging kleiner, en dus het onderhoud goedkoper.
+
 ## Zelf nameten
 
 Vanuit de hoofdmap van de repository:

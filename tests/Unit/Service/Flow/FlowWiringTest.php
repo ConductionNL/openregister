@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
 use OCA\OpenRegister\Service\Flow\FlowAccess;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistryInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunAsScope;
@@ -21,6 +22,7 @@ use OCA\OpenRegister\Service\Flow\FlowService;
 use OCA\OpenRegister\Service\Flow\FlowStepDispatcher;
 use OCA\OpenRegister\Service\Flow\FlowWiring;
 use OCA\OpenRegister\Service\Flow\RegistryStepDispatcher;
+use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -57,6 +59,13 @@ final class FlowWiringTest extends TestCase {
 	private array $services = [];
 
 	/**
+	 * Aliases registered, keyed by the contract.
+	 *
+	 * @var array<string, string>
+	 */
+	private array $aliases = [];
+
+	/**
 	 * Register the wiring against a recording context.
 	 *
 	 * @return void
@@ -68,6 +77,11 @@ final class FlowWiringTest extends TestCase {
 		$context->method('registerService')->willReturnCallback(
 			function (string $name, callable $factory, bool $shared = true): void {
 				$this->factories[$name] = $factory;
+			}
+		);
+		$context->method('registerServiceAlias')->willReturnCallback(
+			function (string $alias, string $target): void {
+				$this->aliases[$alias] = $target;
 			}
 		);
 
@@ -112,6 +126,11 @@ final class FlowWiringTest extends TestCase {
 	 *
 	 * @return void
 	 */
+	public function testTheFieldRulesPortIsAnsweredByTheStateResolver(): void {
+		self::assertSame(expected: [FieldRulesSourceInterface::class => StateFieldRuleResolver::class], actual: $this->aliases);
+		self::assertTrue(condition: is_a(StateFieldRuleResolver::class, FieldRulesSourceInterface::class, true));
+	}//end testTheFieldRulesPortIsAnsweredByTheStateResolver()
+
 	public function testTheRunAuthorizationGetsTheFlowAccess(): void {
 		$built = ($this->factories[FlowRunAuthorization::class])($this->container);
 

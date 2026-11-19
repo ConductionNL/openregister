@@ -37,13 +37,13 @@ namespace OCA\OpenRegister\Controller;
 use OCA\OpenRegister\Service\AnalyticsReportDraft;
 use Closure;
 use Exception;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Trait\ObjectLinkActionsTrait;
 use OCA\OpenRegister\Controller\Support\AnalyticsLinksControllerServices;
 use OCA\OpenRegister\Controller\Support\LinkedSourceActions;
 use OCA\OpenRegister\Controller\Support\LinkedSourceResponses;
 use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\AnalyticsLinkServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
@@ -84,7 +84,7 @@ class AnalyticsLinksController extends Controller {
 		IRequest $request,
 		AnalyticsLinksControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->analyticsLinkService = $services->analyticsLinkService;
 		$this->objectService = $services->objectService;
 	}//end __construct()
