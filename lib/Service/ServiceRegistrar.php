@@ -29,20 +29,15 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\File\ObjectFileReader;
-use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
-use OCA\OpenRegister\Service\Lifecycle\AutoTransitionRunner;
-use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\CacheHandlerInterface;
 use OCA\OpenRegister\Service\Object\CacheHandlerRuntime;
 use OCA\OpenRegister\Service\Object\CacheHandlerStores;
 use OCA\OpenRegister\Service\Object\CacheNameScopeSources;
-use OCA\OpenRegister\Service\Portal\PortalPartyResolver;
 use OCA\OpenRegister\Service\SchemaImport\DialectDetector;
 use OCA\OpenRegister\Service\SchemaImport\SchemaImportService;
 use OCA\OpenRegister\Service\SchemaImport\ThreeWayMerge;
 use OCA\OpenRegister\Service\Sync\SourceFetcherRegistry;
-use OCA\OpenRegister\Service\Task\TaskInboxService;
 use OCA\OpenRegister\Service\Translation\TranslationProviderInterface;
 use OCA\OpenRegister\Service\Translation\TranslationProviderResolver;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
@@ -92,27 +87,6 @@ final class ServiceRegistrar {
 				return new LanguageService();
 			}
 		);
-
-		// The named-transition context MUST be shared for the same reason:
-		// TransitionEngine declares the action on one instance and the
-		// lifecycle listeners read it on another. Unshared, every named call
-		// would silently fall back to matching by from/to value.
-		$context->registerService(
-			LifecycleActionContext::class,
-			function () {
-				return new LifecycleActionContext();
-			}
-		);
-
-		// The automatic-transition pass MUST be shared, and for a sharper reason
-		// than the two above: it IS the request's state. The listener records
-		// into it, ObjectService and TransitionEngine open and close boundaries
-		// on it, and the drain reads the lineage the boundary counted. Auto-
-		// wired fresh at each injection point, every one of those would hold its
-		// own counter: nothing would ever reach depth zero with a record in it,
-		// so no automatic transition would ever fire, silently and with no
-		// error anywhere.
-		$context->registerService(AutoTransitionPass::class, self::buildAutoTransitionPass(...));
 
 		// The register-slug resolver MUST be shared. It memoises one indexed
 		// read per candidate list for the life of the request, and a sweep asks
@@ -219,7 +193,7 @@ final class ServiceRegistrar {
 	}//end registerUserAndOrganisation()
 
 	/**
-	 * Register the object, file, vectorization, task and note services that are built by hand.
+	 * Register the object, file, vectorization and note services that are built by hand.
 	 *
 	 * @param IRegistrationContext $context The registration context.
 	 *
@@ -228,43 +202,11 @@ final class ServiceRegistrar {
 	 * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
 	 */
 	private static function registerObjectServices(IRegistrationContext $context): void {
-		// The task inbox and the portal party resolver read the object store
-		// through AbstractObjectMapper, which the autowirer cannot build (it is
-		// abstract) and would silently default to null: an inbox row without
-		// subject context, and a portal task that can match nobody. Both are
-		// wired to the MagicMapper explicitly for that reason.
-		$context->registerService(TaskInboxService::class, self::buildTaskInboxService(...));
-
-		$context->registerService(
-			PortalPartyResolver::class,
-			function (ContainerInterface $container) {
-				return new PortalPartyResolver(
-					objects: $container->get(MagicMapperInterface::class)
-				);
-			}
-		);
-
 		$context->registerService(CacheHandler::class, self::buildCacheHandler(...));
 
 		// FolderManagementHandler without FileService to break circular dependency.
 		$context->registerService(FolderManagementHandler::class, self::buildFolderManagementHandler(...));
-
-		$context->registerService(TaskService::class, self::buildTaskService(...));
 	}//end registerObjectServices()
-
-	/**
-	 * Build the AutoTransitionPass service.
-	 *
-	 * @param ContainerInterface $container The container.
-	 *
-	 * @return AutoTransitionPass
-	 */
-	private static function buildAutoTransitionPass(ContainerInterface $container): AutoTransitionPass {
-			return new AutoTransitionPass(
-				runner: $container->get(AutoTransitionRunner::class),
-				logger: $container->get(LoggerInterface::class)
-			);
-	}//end buildAutoTransitionPass()
 
 	/**
 	 * Build the RegisterSlugResolver service.
@@ -327,28 +269,6 @@ final class ServiceRegistrar {
 	}//end buildUserService()
 
 	/**
-	 * Build the TaskInboxService service.
-	 *
-	 * @param ContainerInterface $container The container.
-	 *
-	 * @return TaskInboxService
-	 */
-	private static function buildTaskInboxService(ContainerInterface $container): TaskInboxService {
-			return new TaskInboxService(
-				tasks: $container->get(\OCA\OpenRegister\Db\TaskMapper::class),
-				logger: $container->get('Psr\Log\LoggerInterface'),
-				objects: $container->get(MagicMapperInterface::class),
-				deliveries: $container->get(\OCA\OpenRegister\Db\PortalTaskDeliveryMapper::class),
-				// Reads a located task's subject from its own table instead
-				// of searching every magic table for it.
-				locator: $container->get(\OCA\OpenRegister\Service\Task\TaskSubjectLocator::class),
-				// The per-row `can` list (record-tasks-tab D-4), asked of the
-				// same authorization service every verb's endpoint asks.
-				verbs: $container->get(\OCA\OpenRegister\Service\Task\TaskVerbList::class)
-			);
-	}//end buildTaskInboxService()
-
-	/**
 	 * Build the CacheHandler service.
 	 *
 	 * @param ContainerInterface $container The container.
@@ -399,35 +319,6 @@ final class ServiceRegistrar {
 				documentStore: $container->get(\OCA\OpenRegister\Service\File\DocumentStore::class)
 			);
 	}//end buildFolderManagementHandler()
-
-	/**
-	 * Build the TaskService service.
-	 *
-	 * @param ContainerInterface $container The container.
-	 *
-	 * @return TaskService
-	 */
-	private static function buildTaskService(ContainerInterface $container): TaskService {
-			// The write-back gate is resolved lazily and best-effort: without
-			// it a PROJECTED VTODO's update is refused (fail closed), and
-			// standalone VTODOs are unaffected either way.
-			$gate = null;
-			try {
-				$gate = $container->get(\OCA\OpenRegister\Service\Task\TaskVtodoWriteBackGate::class);
-			} catch (\Throwable $e) {
-				$container->get('Psr\Log\LoggerInterface')->debug(
-					'[Application] TaskVtodoWriteBackGate unavailable for TaskService: ' . $e->getMessage()
-				);
-			}
-
-			return new TaskService(
-				calDavBackend: $container->get('OCA\DAV\CalDAV\CalDavBackend'),
-				userSession: $container->get('OCP\IUserSession'),
-				logger: $container->get('Psr\Log\LoggerInterface'),
-				urlGenerator: $container->get('OCP\IURLGenerator'),
-				gate: $gate
-			);
-	}//end buildTaskService()
 
 	/**
 	 * Build the SourceFetcherRegistry service.

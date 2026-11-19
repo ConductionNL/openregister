@@ -22,7 +22,12 @@ use OCA\OpenRegister\Service\Flow\FlowService;
 use OCA\OpenRegister\Service\Flow\FlowStepDispatcher;
 use OCA\OpenRegister\Service\Flow\FlowWiring;
 use OCA\OpenRegister\Service\Flow\RegistryStepDispatcher;
+use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
+use OCA\OpenRegister\Service\Portal\PortalPartyResolver;
+use OCA\OpenRegister\Service\Task\TaskInboxService;
+use OCA\OpenRegister\Service\TaskService;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -110,16 +115,26 @@ final class FlowWiringTest extends TestCase {
 	}//end field()
 
 	/**
-	 * Exactly the four services are registered, in order.
+	 * Exactly these services are registered, in order.
 	 *
 	 * @return void
 	 */
-	public function testItRegistersTheFourServices(): void {
+	public function testItRegistersTheServicesInOrder(): void {
 		self::assertSame(
-			[FlowRunAuthorization::class, FlowRunnableGuard::class, FlowRunContext::class, FlowStepDispatcher::class],
-			array_keys($this->factories)
+			expected: [
+				FlowRunAuthorization::class,
+				FlowRunnableGuard::class,
+				FlowRunContext::class,
+				FlowStepDispatcher::class,
+				LifecycleActionContext::class,
+				AutoTransitionPass::class,
+				TaskInboxService::class,
+				PortalPartyResolver::class,
+				TaskService::class,
+			],
+			actual: array_keys($this->factories)
 		);
-	}//end testItRegistersTheFourServices()
+	}//end testItRegistersTheServicesInOrder()
 
 	/**
 	 * The run authorization is built on the container's flow access.
