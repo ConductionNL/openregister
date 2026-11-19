@@ -22,7 +22,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Exception\ConsistencyCheckWouldWriteException;
 use OCA\OpenRegister\Exception\RepairRefusedException;
 use OCA\OpenRegister\Service\Operations\ConsistencyCheckServiceInterface;
@@ -34,6 +33,7 @@ use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCA\OpenRegister\Controller\Support\OperationsConsistencyControllerServices;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 
 /**
  * The consistency check, the repair plan and the repair.
@@ -81,7 +81,7 @@ class OperationsConsistencyController extends Controller {
 		IRequest $request,
 		OperationsConsistencyControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->check = $services->check;
 		$this->repair = $services->repair;
 		$this->acting = new OperationsActingRequest(request: $request, userSession: $services->userSession);
