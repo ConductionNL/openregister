@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\ActionRightsInterface;
 use OCA\OpenRegister\Service\ApiCaller\ApiCallRecorder;
 use OCA\OpenRegister\Service\ApiCaller\ApiCallRecorderInterface;
 use OCA\OpenRegister\Service\ApiCaller\CallerPolicy;
@@ -49,6 +50,7 @@ final class PlatformServiceBindings {
 	 */
 	public const BINDINGS = [
 		ActionRightsCatalogueInterface::class        => ActionRightsCatalogue::class,
+		ActionRightsInterface::class                 => ActionRightsCatalogue::class,
 		ApiCallRecorderInterface::class              => ApiCallRecorder::class,
 		CallerPolicyInterface::class                 => CallerPolicy::class,
 		CallerRateLimiterInterface::class            => CallerRateLimiter::class,

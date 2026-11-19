@@ -28,7 +28,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use DateTime;
-use DateTimeImmutable;
 use OCA\OpenRegister\Controller\Support\ConflictTrail;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Controller\Support\EmptyValueStripper;
@@ -66,6 +65,7 @@ use OCA\OpenRegister\Controller\Support\WriteCaller;
 use OCA\OpenRegister\Controller\Support\StringTypedPatch;
 use OCA\OpenRegister\Controller\Support\RenderedObjectUuids;
 use OCA\OpenRegister\Controller\Trait\ResolvesRegisterAndSchemaTrait;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectPresenceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -156,8 +156,6 @@ use Psr\Container\NotFoundExceptionInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Symfony\Component\Uid\Uuid;
-use OCA\OpenRegister\Notifications\Service\PresenceBeat;
-use OCA\OpenRegister\Notifications\Service\PresenceLookup;
 use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
@@ -5963,20 +5961,20 @@ class ObjectsController extends Controller {
 			return $object;
 		}
 
-		$service = $this->container->get(\OCA\OpenRegister\Notifications\Service\PresenceServiceInterface::class);
-		$beat = $service->heartbeat(beat: new PresenceBeat(userId: $caller, objectUuid: $id, now: new DateTimeImmutable()));
-		$present = $service->present(lookup: new PresenceLookup(objectUuid: $id, exceptUser: $caller));
+		$service = $this->container->get(ObjectPresenceInterface::class);
+		$arrived = $service->beat(userId: $caller, objectUuid: $id);
+		$present = $service->present(objectUuid: $id, exceptUser: $caller);
 
 		// ONLY on an arrival. A renewal that changed nothing is silent, which
-		// is the whole of D-2 and the reason `heartbeat()` reports which it was
+		// is the whole of D-2 and the reason `beat()` reports which it was
 		// rather than leaving the caller to work it out.
-		if ($beat['arrived'] === true) {
+		if ($arrived === true) {
 			$this->container->get(\OCA\OpenRegister\Listener\PresencePushInterface::class)
-				->pushPresence(object: $object, present: $service->present(lookup: new PresenceLookup(objectUuid: $id)));
+				->pushPresence(object: $object, present: $service->present(objectUuid: $id));
 		}
 
 		return new JSONResponse(
-			data: ['present' => $present, 'beatSeconds' => \OCA\OpenRegister\Notifications\Service\PresenceServiceInterface::BEAT_SECONDS]
+			data: ['present' => $present, 'beatSeconds' => ObjectPresenceInterface::BEAT_SECONDS]
 		);
 	}//end presenceBeat()
 
@@ -6002,7 +6000,7 @@ class ObjectsController extends Controller {
 			return new JSONResponse(data: ['error' => 'Not authenticated'], statusCode: 401);
 		}
 
-		$service = $this->container->get(\OCA\OpenRegister\Notifications\Service\PresenceServiceInterface::class);
+		$service = $this->container->get(ObjectPresenceInterface::class);
 		$left = $service->depart(userId: $caller, objectUuid: $id);
 
 		// A departure by somebody who was not there pushes nothing: there is no
@@ -6018,11 +6016,11 @@ class ObjectsController extends Controller {
 
 			if ($object !== null) {
 				$this->container->get(\OCA\OpenRegister\Listener\PresencePushInterface::class)
-					->pushPresence(object: $object, present: $service->present(lookup: new PresenceLookup(objectUuid: $id)));
+					->pushPresence(object: $object, present: $service->present(objectUuid: $id));
 			}
 		}
 
-		return new JSONResponse(data: ['present' => $service->present(lookup: new PresenceLookup(objectUuid: $id, exceptUser: $caller))]);
+		return new JSONResponse(data: ['present' => $service->present(objectUuid: $id, exceptUser: $caller)]);
 	}//end presenceDepart()
 
 	/**
@@ -6088,8 +6086,8 @@ class ObjectsController extends Controller {
 
 		return new JSONResponse(
 			data: [
-				'present' => $this->container->get(\OCA\OpenRegister\Notifications\Service\PresenceServiceInterface::class)
-					->present(lookup: new PresenceLookup(objectUuid: $id, exceptUser: $caller)),
+				'present' => $this->container->get(ObjectPresenceInterface::class)
+					->present(objectUuid: $id, exceptUser: $caller),
 			]
 		);
 	}//end presenceList()

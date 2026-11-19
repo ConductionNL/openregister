@@ -51,7 +51,7 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Controller\Support\PermissionsControllerServices;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
-use OCA\OpenRegister\Service\ActionRightsCatalogueInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ActionRightsInterface;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementModeInterface;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogueInterface;
 use OCP\AppFramework\Controller;
@@ -84,9 +84,9 @@ class PermissionsController extends Controller {
 	/**
 	 * The action rights, described.
 	 *
-	 * @var ActionRightsCatalogueInterface
+	 * @var ActionRightsInterface
 	 */
-	private readonly ActionRightsCatalogueInterface $actions;
+	private readonly ActionRightsInterface $actions;
 
 	/**
 	 * Constructor.
