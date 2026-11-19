@@ -590,10 +590,7 @@
   "lib/Service/UrnService.php -> lib/Db/AuditTrail/ActionLookupOptions.php",
   "lib/Service/User/ApiTokenAuditRow.php -> lib/Db/AuditTrail.php",
   "lib/Service/UserService.php -> lib/Db/AuditTrail/ActionWindow.php",
-  "lib/Service/UserService.php -> lib/Db/AuditTrail/ActorTrailQuery.php",
-  "lib/Service/Vocabulary/ConceptDeleteGuard.php -> lib/Service/VocabularyImportService.php",
-  "lib/Service/Vocabulary/ConceptRepository.php -> lib/Service/VocabularyImportService.php",
-  "lib/Service/Vocabulary/ConceptShapeGuard.php -> lib/Service/VocabularyImportService.php"
+  "lib/Service/UserService.php -> lib/Db/AuditTrail/ActorTrailQuery.php"
  ],
  "exposed_files": [
   "lib/AppHost/AppHostRegistrar.php",
@@ -2887,7 +2884,6 @@
   "lib/Service/Vocabulary/VocabularyDeclarationResolverInterface.php",
   "lib/Service/VocabularyConceptEdges.php",
   "lib/Service/VocabularyCsvReader.php",
-  "lib/Service/VocabularyImportService.php",
   "lib/Service/VocabularyImportTally.php",
   "lib/Service/VocabularyObjectStore.php",
   "lib/Service/WebhookService.php",
@@ -2912,7 +2908,7 @@
  ],
  "exposed_loc": {
   "Compliance": 15582,
-  "Configuration": 6561,
+  "Configuration": 6369,
   "Core": 64605,
   "Files": 3640,
   "Integrations": 18390,
@@ -3380,5 +3376,5 @@
  ],
  "kernel_loc": 10407,
  "total_loc": 460003,
- "violation_degree": 0.0732
+ "violation_degree": 0.0729
 }

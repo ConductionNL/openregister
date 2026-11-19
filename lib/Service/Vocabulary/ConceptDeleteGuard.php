@@ -37,7 +37,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Vocabulary;
 
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\VocabularyImportService;
+use OCA\OpenRegister\Kernel\Contracts\VocabularyImporterInterface;
 use Throwable;
 
 /**
@@ -75,7 +75,7 @@ class ConceptDeleteGuard implements ConceptDeleteGuardInterface {
 	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function isConcept(Schema $schema): bool {
-		return ((string)$schema->getSlug() === VocabularyImportService::SCHEMA_CONCEPT);
+		return ((string)$schema->getSlug() === VocabularyImporterInterface::SCHEMA_CONCEPT);
 	}//end isConcept()
 
 	/**
