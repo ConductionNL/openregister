@@ -28,7 +28,7 @@ use OCP\AppFramework\Db\Entity;
 /**
  * The translations-sidecar queries that callers outside lib/Db use.
  *
- * Bound to TranslationMapper in PlatformMapperRegistrar.
+ * Bound to TranslationMapper in ConfigurationMapperRegistrar.
  */
 interface TranslationMapperInterface {
 

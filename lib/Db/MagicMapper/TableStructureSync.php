@@ -47,14 +47,29 @@ final class TableStructureSync {
 	 * @param string           $fullTableName The table name with the configured prefix.
 	 * @param MagicColumnDrift $columns       The live and required columns.
 	 * @param bool             $isPostgres    Whether the platform is PostgreSQL.
+	 * @param bool             $jsonAsText    Whether JSON is stored as checked text, as on MariaDB.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Optional: only MariaDB differs
 	 */
 	public function __construct(
 		public readonly string $tableName,
 		public readonly string $fullTableName,
 		public readonly MagicColumnDrift $columns,
 		public readonly bool $isPostgres,
+		public readonly bool $jsonAsText=false,
 	) {
 		$this->tableNameQuoted = (new MagicColumnSql(isPostgres: $isPostgres))->quote(name: $fullTableName);
 		$this->requiredNames = $columns->requiredNames();
 	}//end __construct()
+
+	/**
+	 * The column writer of this table's platform.
+	 *
+	 * @return MagicColumnSql
+	 *
+	 * @spec openspec/specs/magic-table-columns/spec.md
+	 */
+	public function columnSql(): MagicColumnSql {
+		return new MagicColumnSql(isPostgres: $this->isPostgres, jsonAsText: $this->jsonAsText);
+	}//end columnSql()
 }//end class

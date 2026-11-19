@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db\SchemaMapper;
 
+use Exception;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -27,6 +28,9 @@ use OCA\OpenRegister\Db\SchemaMapper\SchemaDeclarationChecksEvent;
 use OCA\OpenRegister\Db\SchemaMapper\SchemaDeclarationOrder;
 use OCA\OpenRegister\Db\SchemaMapper\SchemaMapperServices;
 use OCA\OpenRegister\Db\Tenancy\TenancyServices;
+use OCA\OpenRegister\Exception\UniqueHintException;
+use OCA\OpenRegister\Listener\ArchivalDeclarationChecksListener;
+use OCA\OpenRegister\Listener\HandoffDeclarationChecksListener;
 use OCA\OpenRegister\Listener\SchemaDeclarationChecksListener;
 use OCA\OpenRegister\Service\Calculation\CalculationDeclarationException;
 use OCA\OpenRegister\Service\Consent\ConsentDeclarationException;
@@ -89,6 +93,8 @@ final class SchemaDeclarationOrderTest extends TestCase {
 		$container = $this->createMock(originalClassName: ContainerInterface::class);
 		$listener  = new SchemaDeclarationChecksListener(logger: new NullLogger(), container: $container);
 		$listener->handle(event: $event);
+		(new ArchivalDeclarationChecksListener(logger: new NullLogger()))->handle(event: $event);
+		(new HandoffDeclarationChecksListener())->handle(event: $event);
 		$contributed = array_map(static fn ($check): int => $check->position(), $event->checks());
 
 		$this->assertSame(expected: [], actual: array_intersect($own, $contributed), message: 'No slot is claimed twice');
@@ -146,6 +152,82 @@ final class SchemaDeclarationOrderTest extends TestCase {
 
 		$this->assertInstanceOf(expected: $refusal, actual: $thrown);
 	}//end testTheFirstFaultInSlotOrderRefusesTheSave()
+
+	/**
+	 * A schema whose configuration has several faults is refused for the first in slot order.
+	 *
+	 * @return array<string, array{array<string, mixed>, array<string, mixed>, class-string, string}>
+	 */
+	public static function severalConfigurationFaults(): array {
+		return [
+			'mdto mapping (Compliance) before consent (Core)' => [
+				['x-openregister-mdto-mapping' => ['nonsense' => ['property' => 'nope']]],
+				['a' => ['type' => 'string', 'x-openregister-consent' => 'nonsense']],
+				Exception::class,
+				'Invalid x-openregister-mdto-mapping declaration',
+			],
+			'unique hint (Core) before archival (Compliance)' => [
+				['x-openregister-unique-hint' => 'nope', 'x-openregister-archival' => ['foo' => 1]],
+				['a' => ['type' => 'string']],
+				UniqueHintException::class,
+				'x-openregister-unique-hint:',
+			],
+			'archival (Compliance) before reference card (Core)' => [
+				['x-openregister-archival' => ['foo' => 1], 'x-openregister-card' => 'nope'],
+				['a' => ['type' => 'string']],
+				Exception::class,
+				'x-openregister-archival:',
+			],
+			'reference card (Core) before handoff contract (Integrations)' => [
+				['x-openregister-card' => 'nope', 'implements' => ['https://openregister.app/ns#Case'], 'handoffContract' => ['https://openregister.app/ns#Case' => []]],
+				['a' => ['type' => 'string']],
+				Exception::class,
+				'x-openregister-card:',
+			],
+			'handoff (Integrations) before external links (Core)' => [
+				['x-openregister-handoff' => [['id' => 'send']], 'x-openregister-external-links' => 'nope'],
+				['a' => ['type' => 'string']],
+				Exception::class,
+				'x-openregister-handoff:',
+			],
+			'handoff contract (Integrations) before external links (Core)' => [
+				['implements' => ['https://openregister.app/ns#Case'], 'handoffContract' => ['https://openregister.app/ns#Case' => []], 'x-openregister-external-links' => 'nope'],
+				['a' => ['type' => 'string']],
+				Exception::class,
+				'handoffContract:',
+			],
+		];
+	}//end severalConfigurationFaults()
+
+	/**
+	 * The refusal a schema with several configuration faults gets.
+	 *
+	 * @param array<string, mixed> $configuration The faulty configuration.
+	 * @param array<string, mixed> $properties    The properties.
+	 * @param class-string         $refusal       The refusal it gets.
+	 * @param string               $message       How the refusal's message starts.
+	 *
+	 * @return void
+	 *
+	 * @dataProvider severalConfigurationFaults
+	 */
+	#[\PHPUnit\Framework\Attributes\DataProvider('severalConfigurationFaults')]
+	public function testTheFirstConfigurationFaultInSlotOrderRefusesTheSave(array $configuration, array $properties, string $refusal, string $message): void {
+		$schema = new Schema();
+		$schema->setSlug('faults');
+		$schema->setProperties($properties);
+		$schema->setConfiguration($configuration);
+
+		$thrown = null;
+		try {
+			(new ReflectionMethod(SchemaMapper::class, 'cleanObject'))->invoke($this->mapper(), $schema);
+		} catch (Throwable $e) {
+			$thrown = $e;
+		}
+
+		$this->assertInstanceOf(expected: $refusal, actual: $thrown);
+		$this->assertStringStartsWith(prefix: $message, string: $thrown->getMessage());
+	}//end testTheFirstConfigurationFaultInSlotOrderRefusesTheSave()
 
 	/**
 	 * A mapper whose dispatcher contributes the process checks as the app does.

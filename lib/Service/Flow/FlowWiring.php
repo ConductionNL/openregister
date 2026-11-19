@@ -23,11 +23,29 @@ namespace OCA\OpenRegister\Service\Flow;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionDefaultsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\PublicationRefusalInterface;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionRunner;
+use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNode;
+use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNodeInterface;
+use OCA\OpenRegister\Service\Flow\Principal\PrincipalKinds;
+use OCA\OpenRegister\Service\Flow\Principal\PrincipalKindsInterface;
+use OCA\OpenRegister\Service\Flow\Timer\CalendarRecompute;
+use OCA\OpenRegister\Service\Flow\Timer\CalendarRecomputeInterface;
+use OCA\OpenRegister\Service\Flow\Timer\TermDiagnostic;
+use OCA\OpenRegister\Service\Flow\Timer\TermDiagnosticInterface;
+use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarDefinitionsInterface;
+use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendars;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
+use OCA\OpenRegister\Service\Party\PartyIndicatorGuard;
+use OCA\OpenRegister\Service\Party\PartySearchInterface;
+use OCA\OpenRegister\Service\Party\PartySearchService;
 use OCA\OpenRegister\Service\Portal\PortalPartyResolver;
+use OCA\OpenRegister\Service\Rules\ExpressionDefaults;
+use OCA\OpenRegister\Service\Task\TaskCalendarDocument;
+use OCA\OpenRegister\Service\Task\TaskCalendarDocumentInterface;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
 use OCA\OpenRegister\Service\TaskService;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
@@ -42,8 +60,9 @@ use Psr\Log\LoggerInterface;
  *
  * Registers the flow run guards, the shared run context, the loop step dispatcher,
  * the lifecycle's answer to property-level access, the store of the flows
- * compiled from application schedules, the lifecycle's request state and the
- * task services that are built by hand.
+ * compiled from application schedules, the party indicators' answer to file
+ * publishing, the lifecycle's request state and the task services that are
+ * built by hand.
  *
  * Application::register() calls register() once.
  */
@@ -52,10 +71,24 @@ final class FlowWiring {
 	/**
 	 * The interfaces callers outside the component type against, bound to their class.
 	 *
+	 * These are the Processes area's own interfaces: an area binds its own
+	 * classes, so no lower area's map names them.
+	 *
 	 * @var array<class-string, class-string>
 	 */
 	public const BINDINGS = [
 		ScheduleFlowStoreInterface::class => ScheduleFlowStore::class,
+		PublicationRefusalInterface::class => PartyIndicatorGuard::class,
+		FlowRunSignalInterface::class => FlowRunSignalService::class,
+		LockObjectNodeInterface::class => LockObjectNode::class,
+		PrincipalKindsInterface::class => PrincipalKinds::class,
+		CalendarRecomputeInterface::class => CalendarRecompute::class,
+		TermDiagnosticInterface::class => TermDiagnostic::class,
+		WorkingCalendarDefinitionsInterface::class => WorkingCalendars::class,
+		TaskCalendarDocumentInterface::class => TaskCalendarDocument::class,
+		PartySearchInterface::class => PartySearchService::class,
+		FlowConsentSweepInterface::class => FlowConsentParking::class,
+		ExpressionDefaultsInterface::class => ExpressionDefaults::class,
 	];
 
 	/**

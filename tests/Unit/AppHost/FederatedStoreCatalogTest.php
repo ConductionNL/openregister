@@ -26,6 +26,7 @@ use OCA\OpenRegister\AppHost\Service\StoreSearch;
 use OCA\OpenRegister\AppHost\Store\StoreManifest;
 use OCA\OpenRegister\Service\Config\FederatedConfigService;
 use OCA\OpenRegister\Service\Config\IShareableConfigType;
+use OCA\OpenRegister\Service\Config\ShareableConfigCatalogue;
 use OCA\OpenRegister\Service\Config\ShareableConfigTypeRegistry;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -40,6 +41,7 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\AppHost\Store\StoreManifest
  * @uses \OCA\OpenRegister\AppHost\Service\StoreSearch
  * @uses \OCA\OpenRegister\AppHost\Store\DeclaredShareableType
+ * @uses \OCA\OpenRegister\Service\Config\ShareableConfigCatalogue
  * @uses \OCA\OpenRegister\AppHost\Store\StoreManifestCatalogue
  * @uses \OCA\OpenRegister\AppHost\Store\StoreManifestContent
  * @uses \OCA\OpenRegister\AppHost\Store\StoreManifestDiscovery
@@ -58,6 +60,9 @@ class FederatedStoreCatalogTest extends TestCase {
 	/**
 	 * Build the collaborators.
 	 *
+	 * The catalogue reaches the registry and the federated engine through the
+	 * Configuration adapter of its port, so these cases pin the whole path.
+	 *
 	 * @return void
 	 */
 	protected function setUp(): void {
@@ -70,8 +75,7 @@ class FederatedStoreCatalogTest extends TestCase {
 			->getMock();
 
 		$this->catalog = new FederatedStoreCatalog(
-			registry: $this->registry,
-			federated: $this->federated,
+			catalogue: new ShareableConfigCatalogue(registry: $this->registry, federated: $this->federated),
 			logger: $this->createMock(LoggerInterface::class)
 		);
 	}//end setUp()

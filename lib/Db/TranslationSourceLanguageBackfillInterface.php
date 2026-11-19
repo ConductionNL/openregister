@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Db;
 /**
  * The two queries the source-language back-fill command runs.
  *
- * Bound to TranslationMapper in PlatformMapperRegistrar.
+ * Bound to TranslationMapper in ConfigurationMapperRegistrar.
  */
 interface TranslationSourceLanguageBackfillInterface {
 

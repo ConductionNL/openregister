@@ -39,14 +39,13 @@ use Closure;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\Types;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Create the object draft store.
  *
  * @spec openspec/changes/records-draft-versions/design.md
  */
-class Version1Date20261113140200 extends SimpleMigrationStep {
+class Version1Date20261113140200 extends TargetedMigrationStep {
 
 	/**
 	 * Change the database schema.
@@ -59,7 +58,7 @@ class Version1Date20261113140200 extends SimpleMigrationStep {
 	 *
 	 * @spec openspec/changes/records-draft-versions/design.md
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		/*
 		 * @var ISchemaWrapper $schema
 		 */
@@ -91,5 +90,5 @@ class Version1Date20261113140200 extends SimpleMigrationStep {
 
 		return $schema;
 
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 }//end class

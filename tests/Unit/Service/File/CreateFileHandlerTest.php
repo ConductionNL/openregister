@@ -22,7 +22,7 @@ use Exception;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\File\CreateFileHandler;
-use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
+use OCA\OpenRegister\Kernel\Contracts\Core\FileAccountInterface;
 use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Service\File\FileUpload;
 use OCA\OpenRegister\Service\File\FileChecksum;
@@ -61,7 +61,7 @@ class CreateFileHandlerTest extends TestCase {
 	private $fileValidHandler;
 
 	/**
-	 * @var FileOwnershipHandler&MockObject
+	 * @var FileAccountInterface&MockObject
 	 */
 	private $fileOwnershipHandler;
 
@@ -92,7 +92,7 @@ class CreateFileHandlerTest extends TestCase {
 
 		$this->folderMgmtHandler = $this->createMock(FolderManagementHandler::class);
 		$this->fileValidHandler = $this->createMock(FileValidationHandler::class);
-		$this->fileOwnershipHandler = $this->createMock(FileOwnershipHandler::class);
+		$this->fileOwnershipHandler = $this->createMock(FileAccountInterface::class);
 		$this->objectEntityMapper = $this->createMock(MagicMapper::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->fileService = $this->createMock(FileService::class);
