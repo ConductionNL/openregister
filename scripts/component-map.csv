@@ -888,8 +888,8 @@ Db/TaskProjectionState.php,37,Db,Work,Work/Db/TaskProjectionState.php,0,,Process
 Db/TaskProjectionStateMapper.php,30,Db,Work,Work/Db/TaskProjectionStateMapper.php,0,,Processes
 Db/TaskRelation.php,29,Db,Work,Work/Db/TaskRelation.php,0,,Processes
 Db/TaskRelationMapper.php,28,Db,Work,Work/Db/TaskRelationMapper.php,0,,Processes
-Db/TaskSequence.php,89,Db,Configuration,Configuration/Db/TaskSequence.php,31,298,Configuration
-Db/TaskSequenceMapper.php,55,Db,Configuration,Configuration/Db/TaskSequenceMapper.php,18,375,Configuration
+Db/TaskSequence.php,89,Db,Configuration,Configuration/Db/TaskSequence.php,31,298,Processes
+Db/TaskSequenceMapper.php,55,Db,Configuration,Configuration/Db/TaskSequenceMapper.php,18,375,Processes
 Db/TenantUsage.php,48,Db,Access,Access/Db/TenantUsage.php,0,,Core
 Db/TenantUsageMapper.php,106,Db,Access,Access/Db/TenantUsageMapper.php,0,,Core
 Db/TimeTrackerLink.php,54,Db,Integrations,Integrations/Db/TimeTrackerLink.php,0,,Integrations
@@ -4416,3 +4416,4 @@ Service/PlatformServiceBindings.php,,Service,,,,,Platform
 Service/PlatformServiceRegistrar.php,,Service,,,,,Platform
 Event/ObjectWriteRequestEvent.php,,Event,,,,,Core
 Listener/WebhookRequestInterceptionListener.php,,Listener,,,,,Integrations
+Service/Capability/ToolReachLevels.php,,Service,,,,,Integrations

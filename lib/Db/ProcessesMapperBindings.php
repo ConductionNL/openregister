@@ -70,5 +70,6 @@ final class ProcessesMapperBindings {
 		TaskCandidateMapperInterface::class       => TaskCandidateMapper::class,
 		TaskProjectionStateMapperInterface::class => TaskProjectionStateMapper::class,
 		TaskRelationMapperInterface::class        => TaskRelationMapper::class,
+		TaskSequenceMapperInterface::class        => TaskSequenceMapper::class,
 	];
 }//end class
