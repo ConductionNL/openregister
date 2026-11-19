@@ -13,8 +13,6 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Bindings;
 
 use OCA\OpenRegister\Service\Bindings\AccessBindings;
 use OCA\OpenRegister\Service\Bindings\FeatureBindings;
-use OCA\OpenRegister\Service\Bindings\FlowBindings;
-use OCA\OpenRegister\Service\Bindings\MiscBindings;
 use OCA\OpenRegister\Service\Bindings\ObjectsBindings;
 use OCA\OpenRegister\Service\Bindings\RootBindings;
 use OCA\OpenRegister\Service\Bindings\SchemasBindings;
@@ -35,11 +33,9 @@ final class BindingMapsTest extends TestCase {
 	private const MAPS = [
 		ObjectsBindings::class,
 		RootBindings::class,
-		FlowBindings::class,
 		AccessBindings::class,
 		SchemasBindings::class,
 		FeatureBindings::class,
-		MiscBindings::class,
 	];
 
 	/**

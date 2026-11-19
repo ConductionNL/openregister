@@ -21,7 +21,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener\Registrar;
 
 use OCA\OpenRegister\ContextChat\ContextChatRegistrar;
-use OCA\OpenRegister\Db\SchemaMapper\SchemaDeclarationChecksEvent;
 use OCA\OpenRegister\Event\BulkActionRegistrationEvent;
 use OCA\OpenRegister\Event\ObjectLockedEvent;
 use OCA\OpenRegister\Event\ObjectRevertedEvent;
@@ -29,6 +28,7 @@ use OCA\OpenRegister\Event\ObjectUnlockedEvent;
 use OCA\OpenRegister\Event\ObjectsMergedEvent;
 use OCA\OpenRegister\Event\TaskSequenceCompletedEvent;
 use OCA\OpenRegister\Event\ViewAlertCrossedEvent;
+use OCA\OpenRegister\Kernel\Contracts\AppEventWebhookListenerInterface;
 use OCA\OpenRegister\Listener\ApprovalChainAdvanceListener;
 use OCA\OpenRegister\Listener\BulkActionRegistrationListener;
 use OCA\OpenRegister\Listener\CommentsEntityListener;
@@ -48,7 +48,6 @@ use OCA\OpenRegister\Listener\OcmResourceTypeListener;
 use OCA\OpenRegister\Listener\PartyMergeListener;
 use OCA\OpenRegister\Listener\PrincipalResolverRegistrationListener;
 use OCA\OpenRegister\Listener\PushClientScriptListener;
-use OCA\OpenRegister\Listener\SchemaDeclarationChecksListener;
 use OCA\OpenRegister\Listener\TablesTableDeletedListener;
 use OCA\OpenRegister\Listener\ViewAlertCrossedListener;
 use OCA\OpenRegister\Listener\WebhookEventListener;
@@ -83,7 +82,25 @@ final class FlowsListenerRegistrar {
 		self::registerFileAndDiscoveryListeners(context: $context);
 		self::registerTriggerListeners(context: $context);
 		self::registerPageScriptListeners(context: $context);
+		self::bindAppEventWebhookListener(context: $context);
 	}//end register()
+
+	/**
+	 * Bind the Kernel webhook-delivery port to the webhook listener.
+	 *
+	 * AppWebhookEvents::declare() subscribes the port by its service name to
+	 * each app-declared event; this alias makes that resolve to
+	 * WebhookEventListener. It registers no listener, so the order is unchanged.
+	 *
+	 * @param IRegistrationContext $context The registration context.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/connect-document-webhooks/specs/app-declared-webhook-events/spec.md
+	 */
+	private static function bindAppEventWebhookListener(IRegistrationContext $context): void {
+		$context->registerServiceAlias(AppEventWebhookListenerInterface::class, WebhookEventListener::class);
+	}//end bindAppEventWebhookListener()
 
 	/**
 	 * Register the file, discovery and platform listeners.
@@ -203,10 +220,6 @@ final class FlowsListenerRegistrar {
 		// BulkActionRegistrationListener for the built-in bulk actions. A leaf
 		// app registers its own action on the same event (ADR-022).
 		$context->registerEventListener(BulkActionRegistrationEvent::class, BulkActionRegistrationListener::class);
-
-		// The process declaration checks run inside the schema save, in the slots
-		// of SchemaDeclarationOrder the mapper keeps for them.
-		$context->registerEventListener(SchemaDeclarationChecksEvent::class, SchemaDeclarationChecksListener::class);
 
 		// Tables schema-lifecycle listener — retire the managed virtual schema of
 		// a deleted Tables table. Guarded by class_exists so boot never fatals on
