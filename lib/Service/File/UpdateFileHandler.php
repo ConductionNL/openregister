@@ -666,8 +666,14 @@ class UpdateFileHandler {
 	 * @return mixed The content to write
 	 */
 	private function decodedBase64(mixed $content): mixed {
-		if (is_resource($content) === false && base64_encode(base64_decode($content, true)) === $content) {
-			return base64_decode($content);
+		if (is_resource($content) === false) {
+			// base64_decode(..., true) returns false for the common case of
+			// real (non-base64) binary content, and base64_encode(false) is a
+			// TypeError in PHP 8+ — check the decode result before re-encoding it.
+			$decoded = base64_decode($content, true);
+			if ($decoded !== false && base64_encode($decoded) === $content) {
+				return $decoded;
+			}
 		}
 
 		return $content;
