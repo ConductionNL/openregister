@@ -12,6 +12,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Db\DbRegistrar;
+use OCA\OpenRegister\Db\IntegrationsMapperRegistrar;
 use OCA\OpenRegister\Db\ProcessesMapperRegistrar;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Db\FlowRunMapper;
@@ -58,11 +59,11 @@ final class D1InterfaceBindingsTest extends TestCase {
 		EntityRelationMapper::class => [EntityRelationMapperInterface::class, DbRegistrar::class, 'Db'],
 		FlowRunMapper::class => [FlowRunMapperInterface::class, ProcessesMapperRegistrar::class, 'Db'],
 		MagicMapper::class => [MagicMapperInterface::class, DbRegistrar::class, 'Db'],
-		MappingMapper::class => [MappingMapperInterface::class, DbRegistrar::class, 'Db'],
+		MappingMapper::class => [MappingMapperInterface::class, IntegrationsMapperRegistrar::class, 'Db'],
 		RegisterMapper::class => [RegisterMapperInterface::class, DbRegistrar::class, 'Db'],
 		SchemaMapper::class => [SchemaMapperInterface::class, DbRegistrar::class, 'Db'],
 		TranslationMapper::class => [TranslationMapperInterface::class, DbRegistrar::class, 'Db'],
-		WebhookMapper::class => [WebhookMapperInterface::class, DbRegistrar::class, 'Db'],
+		WebhookMapper::class => [WebhookMapperInterface::class, IntegrationsMapperRegistrar::class, 'Db'],
 	];
 
 	/**

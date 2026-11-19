@@ -20,6 +20,8 @@ use ReflectionClass;
 /**
  * @covers \OCA\OpenRegister\Db\ProcessesMapperRegistrar
  * @covers \OCA\OpenRegister\Db\ProcessesMapperBindings
+ * @covers \OCA\OpenRegister\Db\IntegrationsMapperRegistrar
+ * @covers \OCA\OpenRegister\Db\IntegrationsMapperBindings
  * @uses   \OCA\OpenRegister\Db\DbRegistrar
  */
 final class AreaMapperRegistrarsTest extends TestCase {
