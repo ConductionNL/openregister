@@ -586,6 +586,12 @@ deptrac:
         - type: directory
           value: 'lib/Db/ApiCall/[^/]*$'
         - type: directory
+          value: 'lib/Db/AuditTrail/NamedActor[.]php$'
+        - type: directory
+          value: 'lib/Db/AuditTrail/ObjectAuditEvent[.]php$'
+        - type: directory
+          value: 'lib/Db/AuditTrail/ObjectAuditEventOptions[.]php$'
+        - type: directory
           value: 'lib/Db/EntityRelation/[^/]*$'
         - type: directory
           value: 'lib/Db/Integration/[^/]*$'
@@ -1668,6 +1674,8 @@ deptrac:
         - type: directory
           value: 'lib/Service/Search/[^/]*$'
         - type: directory
+          value: 'lib/Service/Security/[^/]*$'
+        - type: directory
           value: 'lib/Service/Serializer/[^/]*$'
         - type: directory
           value: 'lib/Service/Sharing/[^/]*$'
@@ -2510,7 +2518,17 @@ deptrac:
         - type: directory
           value: 'lib/Service/(AppRegisterImportRunner|ApplicationMove|ApplicationService|ConfigurationService|ConfigurationServiceInterface|ConfigurationTransferInterface|ConfigurationUpdateNotice|ContractBindings|ContractBindingsRegistrar|CountedRegisterImport|DemoDataService|DescriptorImportTarget|ExportService|FormsAppRows|ImportService|LanguageGapScan|LanguageService|ManifestProfile|ManifestService|MassValidationRun|McpCatalogSummaries|McpDiscoveryService|MdiIconRenderer|MigrationPackService|MigrationPackServiceInterface|MigrationService|MockImportRun|NotificationService|OperationsConsoleService|PropertyDiscoveryRun|RecordUpdate|RegisterDescriptorService|ScheduledReportRun|ScheduledReportService|SchemaApplicationMigrator|SchemaCascade|SchemaService|SchemaSplitRun|SequenceScope|SequenceService|SettingsService|SharedSchemaDedupeService|SharedSchemaPlanRun|SharedSchemaUse|ShippedRegister|SourceLanguageLookup|TenantKeyService|TranslationProjectionService|TranslationSearch|TranslationStatusService|ValidationChunkResult|VocabularyImportService)[.]php$'
         - type: directory
-          value: 'lib/Service/Capability/[^/]*$'
+          value: 'lib/Service/Capability/ToolGrantCodec[.]php$'
+        - type: directory
+          value: 'lib/Service/Capability/ToolGrantCoordinates[.]php$'
+        - type: directory
+          value: 'lib/Service/Capability/ToolGrantResolutionException[.]php$'
+        - type: directory
+          value: 'lib/Service/Capability/ToolGrantResolver[.]php$'
+        - type: directory
+          value: 'lib/Service/Capability/ToolGrantSet[.]php$'
+        - type: directory
+          value: 'lib/Service/Capability/ToolReachResolver[.]php$'
         - type: directory
           value: 'lib/Service/Config/[^/]*$'
         - type: directory
@@ -2692,7 +2710,53 @@ deptrac:
         - type: directory
           value: 'lib/Db/(AuditFlowAttributionInterface|AuditTrail|AuditTrailFilterTerm|AuditTrailMapper|AuditTrailPageQuery|AuditTrailPageQueryInterface|AuditTrailPayloadHelper|ComplianceMapperBindings|ComplianceMapperRegistrar|ContentReport|ContentReportMapper|ErasurePreview|ErasurePreviewMapper|GdprEntity|GdprEntityMapper|GdprEntityMapperInterface|ProcessingLogEntry|ProcessingLogMapper|ProcessingPurpose|ProcessingPurposeMapper|QualityAudit|QualityAuditFailure|QualityAuditMapper|QualityAuditMapperInterface|QualityAuditRun|QualityAuditRunMapper|QualityAuditRunMapperInterface|SearchTrail|SearchTrailMapper|SearchTrailOutcome|StatusVocabularyTrait|SubjectExport|SubjectExportMapper|SubjectExportMapperInterface|TaskAudit|TaskAuditMapper|TrailRetentionTrait|Verwerkingsactiviteit|VerwerkingsactiviteitMapper)[.]php$'
         - type: directory
-          value: 'lib/Db/AuditTrail/[^/]*$'
+          value: 'lib/Db/AuditTrail/ActionLookupOptions[.]php$'
+        - type: directory
+          value: 'lib/Db/AuditTrail/ActionScope[.]php$'
+        - type: directory
+          value: 'lib/Db/AuditTrail/ActionWindow[.]php$'
+        - type: directory
+          value: 'lib/Db/AuditTrail/ActorTrailQuery[.]php$'
+        - type: directory
+          value: 'lib/Db/AuditTrail/AuditActionStatistics[.]php$'
+        - type: directory
+          value: 'lib/Db/AuditTrail/AuditPageRequest[.]php$'
+        - type: directory
+          value: 'lib/Db/AuditTrail/AuditStatisticsScope[.]php$'
+        - type: directory
+          value: 'lib/Db/AuditTrail/AuditTrailCriteria[.]php$'
+        - type: directory
+          value: 'lib/Db/AuditTrail/AuditTrailFieldTypes[.]php$'
+        - type: directory
+          value: 'lib/Db/AuditTrail/AuditTrailMapperServices[.]php$'
+        - type: directory
+          value: 'lib/Db/AuditTrail/AuditTrailSealedForm[.]php$'
+        - type: directory
+          value: 'lib/Db/AuditTrail/AuditTrailStatistics[.]php$'
+        - type: directory
+          value: 'lib/Db/AuditTrail/AuditedChange[.]php$'
+        - type: directory
+          value: 'lib/Db/AuditTrail/AuditedObject[.]php$'
+        - type: directory
+          value: 'lib/Db/AuditTrail/ExportOutcome[.]php$'
+        - type: directory
+          value: 'lib/Db/AuditTrail/HardeningChange[.]php$'
+        - type: directory
+          value: 'lib/Db/AuditTrail/PartyQueryRefusal[.]php$'
+        - type: directory
+          value: 'lib/Db/AuditTrail/PurposeRefusal[.]php$'
+        - type: directory
+          value: 'lib/Db/AuditTrail/RegisterAuditEvent[.]php$'
+        - type: directory
+          value: 'lib/Db/AuditTrail/RevertOptions[.]php$'
+        - type: directory
+          value: 'lib/Db/AuditTrail/SharedMasterDataRefusal[.]php$'
+        - type: directory
+          value: 'lib/Db/AuditTrail/SharedMasterDataRefusalOptions[.]php$'
+        - type: directory
+          value: 'lib/Db/AuditTrail/SlugBackfill[.]php$'
+        - type: directory
+          value: 'lib/Db/AuditTrail/ToolInvocation[.]php$'
         - type: directory
           value: 'lib/Db/ErasurePreview/[^/]*$'
         - type: directory
@@ -2992,6 +3056,8 @@ deptrac:
         - type: directory
           value: 'lib/Service/CalendarEvent/[^/]*$'
         - type: directory
+          value: 'lib/Service/Capability/ToolReachLevels[.]php$'
+        - type: directory
           value: 'lib/Service/Connection/[^/]*$'
         - type: directory
           value: 'lib/Service/Consumer/[^/]*$'
@@ -3052,8 +3118,6 @@ deptrac:
         - type: directory
           value: 'lib/Service/Outbound/[^/]*$'
         - type: directory
-          value: 'lib/Service/Security/[^/]*$'
-        - type: directory
           value: 'lib/Service/Sync/[^/]*$'
         - type: directory
           value: 'lib/Service/TalkLink/[^/]*$'
@@ -3082,7 +3146,51 @@ deptrac:
         - type: directory
           value: 'lib/Files/Repair/[^/]*$'
         - type: directory
-          value: 'lib/Files/Service/[^/]*$'
+          value: 'lib/Files/Service/ChunkSizing[.]php$'
+        - type: directory
+          value: 'lib/Files/Service/ChunkingPlan[.]php$'
+        - type: directory
+          value: 'lib/Files/Service/ExtractionSource[.]php$'
+        - type: directory
+          value: 'lib/Files/Service/FileExtractionOptions[.]php$'
+        - type: directory
+          value: 'lib/Files/Service/FileReferenceSearch[.]php$'
+        - type: directory
+          value: 'lib/Files/Service/FileSidebarEntityStore[.]php$'
+        - type: directory
+          value: 'lib/Files/Service/FileSidebarSchemaLookup[.]php$'
+        - type: directory
+          value: 'lib/Files/Service/FileSidebarService[.]php$'
+        - type: directory
+          value: 'lib/Files/Service/FileSidebarTable[.]php$'
+        - type: directory
+          value: 'lib/Files/Service/NoteAccounts[.]php$'
+        - type: directory
+          value: 'lib/Files/Service/NoteLockService[.]php$'
+        - type: directory
+          value: 'lib/Files/Service/NoteReplies[.]php$'
+        - type: directory
+          value: 'lib/Files/Service/NoteService[.]php$'
+        - type: directory
+          value: 'lib/Files/Service/NoteVersionService[.]php$'
+        - type: directory
+          value: 'lib/Files/Service/PendingExtractionWalk[.]php$'
+        - type: directory
+          value: 'lib/Files/Service/ProvidedTextRequest[.]php$'
+        - type: directory
+          value: 'lib/Files/Service/RiskLevelService[.]php$'
+        - type: directory
+          value: 'lib/Files/Service/RiskLevelServiceInterface[.]php$'
+        - type: directory
+          value: 'lib/Files/Service/SourceStamp[.]php$'
+        - type: directory
+          value: 'lib/Files/Service/SplitLevel[.]php$'
+        - type: directory
+          value: 'lib/Files/Service/TextExtractionService[.]php$'
+        - type: directory
+          value: 'lib/Files/Service/TextSplitPass[.]php$'
+        - type: directory
+          value: 'lib/Files/Service/UploadService[.]php$'
         - type: directory
           value: 'lib/Files/Service/File/[^/]*$'
         - type: directory
@@ -3165,6 +3273,8 @@ deptrac:
           value: 'lib/Activity/Setting/[^/]*$'
         - type: directory
           value: 'lib/Db/(FeedbackMapperInterface)[.]php$'
+        - type: directory
+          value: 'lib/Files/Service/NoteJournalExporter[.]php$'
         - type: directory
           value: 'lib/Listener/(NotificationsAnnotationInstallListener)[.]php$'
         - type: directory
