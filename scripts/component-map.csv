@@ -1664,7 +1664,7 @@ Repair/SeedAppVirtualSchemas.php,159,Repair,Platform,Platform/Repair/SeedAppVirt
 Repair/SeedCaseFixtures.php,191,Repair,Work,Work/Repair/SeedCaseFixtures.php,0,,Processes
 Repair/SeedDirectoryVirtualSchemas.php,159,Repair,Platform,Platform/Repair/SeedDirectoryVirtualSchemas.php,0,,Platform
 Repair/SeedFlowRunTriggerSubject.php,78,Repair,Flows,Flows/Repair/SeedFlowRunTriggerSubject.php,0,,Processes
-Repair/SeedFlowTimerRegister.php,46,Repair,Flows,Flows/Repair/SeedFlowTimerRegister.php,0,,Processes
+Repair/SeedFlowTimerRegister.php,46,Repair,Flows,Flows/Repair/SeedFlowTimerRegister.php,0,,Platform
 Repair/SeedIntakeSourceRegister.php,48,Repair,Platform,Platform/Repair/SeedIntakeSourceRegister.php,0,,Platform
 Repair/SeedTablesVirtualSchemas.php,55,Repair,Platform,Platform/Repair/SeedTablesVirtualSchemas.php,0,,Platform
 Repair/SeedTaskFixtures.php,288,Repair,Work,Work/Repair/SeedTaskFixtures.php,0,,Processes
@@ -3425,6 +3425,10 @@ Notifications/,,Notifications,,,,,Notifications
 Push/,,Push,,,,,Notifications
 Reference/,,Reference,,,,,Platform
 Repair/Support/,,Repair,,,,,Platform
+Repair/Support/ApprovalTaskStores.php,,Repair,,,,,Processes
+Repair/Support/ChainMigrationRun.php,,Repair,,,,,Processes
+Repair/Support/EveryFlow.php,,Repair,,,,,Processes
+Repair/Support/RepairPlatform.php,,Repair,,,,,Core
 Search/,,Search,,,,,Search
 Sections/,,Sections,,,,,Platform
 Service/Aggregation/,,Service,,,,,Core
