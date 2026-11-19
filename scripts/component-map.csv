@@ -2674,7 +2674,7 @@ Service/MigrationPackService.php,155,Service,Configuration,Configuration/Service
 Service/MigrationService.php,91,Service,Configuration,Configuration/Service/MigrationService.php,0,,Configuration
 Service/Notification/NotificationTemplateRegistry.php,376,Service,Configuration,Configuration/Service/Notification/NotificationTemplateRegistry.php,1,,Configuration
 Service/Notification/NotificationsAnnotationInstaller.php,117,Service,Flows,Flows/Service/Notification/NotificationsAnnotationInstaller.php,0,,Configuration
-Service/Notification/ReferencedAddressNotifier.php,200,Service,Service,Service/Notification/ReferencedAddressNotifier.php,0,120,Configuration
+Service/Notification/ReferencedAddressNotifier.php,200,Service,Service,Service/Notification/ReferencedAddressNotifier.php,0,120,Notifications
 Service/NotificationService.php,96,Service,Configuration,Configuration/Service/NotificationService.php,1,,Configuration
 Service/Oas/OasETagComputer.php,50,Service,Service,Service/Oas/OasETagComputer.php,0,,Core
 Service/Oas/OasExtendedTypes.php,60,Service,Service,Service/Oas/OasExtendedTypes.php,0,,Core
@@ -4412,3 +4412,12 @@ Db/PlatformMapperBindings.php,,Db,,,,,Platform
 Db/PlatformMapperRegistrar.php,,Db,,,,,Platform
 Service/PlatformServiceBindings.php,,Service,,,,,Platform
 Service/PlatformServiceRegistrar.php,,Service,,,,,Platform
+Service/Notification/AddressDeliveryServices.php,,Service,,,,,Notifications
+Service/Notification/ClearedMailing.php,,Service,,,,,Notifications
+Service/Notification/MailingRequest.php,,Service,,,,,Notifications
+Service/Notification/ReferenceLookupServices.php,,Service,,,,,Notifications
+Service/Notification/ReferenceOrigin.php,,Service,,,,,Notifications
+Service/Notification/ReferenceProperty.php,,Service,,,,,Notifications
+Service/Notification/ReferencedAddressNotifierInterface.php,,Service,,,,,Notifications
+Service/NotificationsServiceBindings.php,,Service,,,,,Notifications
+Service/NotificationsServiceRegistrar.php,,Service,,,,,Notifications

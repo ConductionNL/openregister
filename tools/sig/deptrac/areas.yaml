@@ -2534,7 +2534,13 @@ deptrac:
         - type: directory
           value: 'lib/Service/MigrationPack/[^/]*$'
         - type: directory
-          value: 'lib/Service/Notification/[^/]*$'
+          value: 'lib/Service/Notification/NotificationTemplateRegistry[.]php$'
+        - type: directory
+          value: 'lib/Service/Notification/NotificationsAnnotationInstaller[.]php$'
+        - type: directory
+          value: 'lib/Service/Notification/NotificationsAnnotationInstallerInterface[.]php$'
+        - type: directory
+          value: 'lib/Service/Notification/TemplateCatalogue[.]php$'
         - type: directory
           value: 'lib/Service/Operations/[^/]*$'
         - type: directory
@@ -3204,9 +3210,25 @@ deptrac:
         - type: directory
           value: 'lib/Push/[^/]*$'
         - type: directory
-          value: 'lib/Service/(ActivityFilter|ActivityFilterServiceInterface|AdminRecipientExpander|NotificationServiceInterface|ScheduledReportDelivery|ScheduledReportExportQuery|ScheduledReportExporters|ScheduledReportNotice|ScheduledReportOwnerServices|ScheduledReportStores)[.]php$'
+          value: 'lib/Service/(ActivityFilter|ActivityFilterServiceInterface|AdminRecipientExpander|NotificationServiceInterface|NotificationsServiceBindings|NotificationsServiceRegistrar|ScheduledReportDelivery|ScheduledReportExportQuery|ScheduledReportExporters|ScheduledReportNotice|ScheduledReportOwnerServices|ScheduledReportStores)[.]php$'
         - type: directory
           value: 'lib/Service/Mail/[^/]*$'
+        - type: directory
+          value: 'lib/Service/Notification/AddressDeliveryServices[.]php$'
+        - type: directory
+          value: 'lib/Service/Notification/ClearedMailing[.]php$'
+        - type: directory
+          value: 'lib/Service/Notification/MailingRequest[.]php$'
+        - type: directory
+          value: 'lib/Service/Notification/ReferenceLookupServices[.]php$'
+        - type: directory
+          value: 'lib/Service/Notification/ReferenceOrigin[.]php$'
+        - type: directory
+          value: 'lib/Service/Notification/ReferenceProperty[.]php$'
+        - type: directory
+          value: 'lib/Service/Notification/ReferencedAddressNotifier[.]php$'
+        - type: directory
+          value: 'lib/Service/Notification/ReferencedAddressNotifierInterface[.]php$'
     - name: Platform
       collectors:
         - type: directory
