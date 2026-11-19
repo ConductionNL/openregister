@@ -4416,3 +4416,7 @@ Service/PlatformServiceBindings.php,,Service,,,,,Platform
 Service/PlatformServiceRegistrar.php,,Service,,,,,Platform
 Event/ObjectWriteRequestEvent.php,,Event,,,,,Core
 Listener/WebhookRequestInterceptionListener.php,,Listener,,,,,Integrations
+BackgroundJob/Support/BackfillCalendarLinksSources.php,,BackgroundJob,,,,,Configuration
+BackgroundJob/Support/OAuth2TokenRefreshServices.php,,BackgroundJob,,,,,Integrations
+BackgroundJob/Support/SyncDataServices.php,,BackgroundJob,,,,,Integrations
+BackgroundJob/Support/WebhookDeliveryStores.php,,BackgroundJob,,,,,Integrations
