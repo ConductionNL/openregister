@@ -13,6 +13,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ContactMatchCacheInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionDefaultsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
 use OCA\OpenRegister\Service\Flow\FlowAccess;
@@ -43,6 +44,7 @@ use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendars;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
+use OCA\OpenRegister\Service\ContactMatchingService;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaults;
 use OCA\OpenRegister\Service\Party\PartySearchInterface;
 use OCA\OpenRegister\Service\Party\PartySearchService;
@@ -180,6 +182,16 @@ final class FlowWiringTest extends TestCase {
 	}//end testTheExpressionDefaultsPortIsAnsweredByTheRulesEngine()
 
 	/**
+	 * The contact-match cache a save clears is answered by contact matching itself.
+	 *
+	 * @return void
+	 */
+	public function testTheContactMatchCachePortIsAnsweredByContactMatching(): void {
+		self::assertSame(expected: ContactMatchingService::class, actual: ($this->aliases[ContactMatchCacheInterface::class] ?? null));
+		self::assertTrue(condition: is_a(ContactMatchingService::class, ContactMatchCacheInterface::class, true));
+	}//end testTheContactMatchCachePortIsAnsweredByContactMatching()
+
+	/**
 	 * The schedule flow store and the area's own interfaces are bound, and only these aliases are registered.
 	 *
 	 * @return void
@@ -199,6 +211,7 @@ final class FlowWiringTest extends TestCase {
 				PartySearchInterface::class                => PartySearchService::class,
 				FlowConsentSweepInterface::class           => FlowConsentParking::class,
 				ExpressionDefaultsInterface::class         => ExpressionDefaults::class,
+				ContactMatchCacheInterface::class          => ContactMatchingService::class,
 			],
 			actual: $this->aliases
 		);
