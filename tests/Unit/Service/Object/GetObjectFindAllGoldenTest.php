@@ -26,7 +26,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicListRequest;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\Interaction\ReadHistoryService;
+use OCA\OpenRegister\Kernel\Contracts\Core\ReadHistoryInterface;
 use OCA\OpenRegister\Service\Object\GetObject;
 use OCA\OpenRegister\Service\Object\ObjectListRequest;
 use OCA\OpenRegister\Service\Object\ObjectSelection;
@@ -137,7 +137,7 @@ class GetObjectFindAllGoldenTest extends TestCase {
 		return new GetObject(
 			objectMapper: $mapper,
 			auditTrailMapper: $this->createMock(AuditTrailMapperInterface::class),
-			readHistory: $this->createMock(ReadHistoryService::class),
+			readHistory: $this->createMock(ReadHistoryInterface::class),
 			sources: new \OCA\OpenRegister\Service\Object\GetObjectSources(
 				objectSourceRegistry: $registry,
 				logger: new NullLogger()

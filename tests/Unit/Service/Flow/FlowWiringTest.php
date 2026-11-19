@@ -14,6 +14,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ReadHistoryInterface;
 use OCA\OpenRegister\Service\Flow\FlowAccess;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistryInterface;
 use OCA\OpenRegister\Service\Flow\FlowRegistrar;
@@ -25,6 +26,7 @@ use OCA\OpenRegister\Service\Flow\FlowService;
 use OCA\OpenRegister\Service\Flow\FlowStepDispatcher;
 use OCA\OpenRegister\Service\Flow\FlowWiring;
 use OCA\OpenRegister\Service\Flow\RegistryStepDispatcher;
+use OCA\OpenRegister\Service\Interaction\ReadHistoryService;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
@@ -150,7 +152,18 @@ final class FlowWiringTest extends TestCase {
 	}//end testTheFieldRulesPortIsAnsweredByTheStateResolver()
 
 	/**
-	 * The store of the flows compiled from application schedules is bound, and only the two aliases are registered.
+	 * The read history port is answered by the read history service.
+	 *
+	 * @return void
+	 */
+	public function testTheReadHistoryPortIsAnsweredByTheReadHistoryService(): void {
+		self::assertSame(expected: ReadHistoryService::class, actual: (FlowWiring::BINDINGS[ReadHistoryInterface::class] ?? null));
+		self::assertTrue(condition: is_a(ReadHistoryService::class, ReadHistoryInterface::class, true));
+		self::assertSame(expected: ReadHistoryInterface::REASON_UNAVAILABLE, actual: ReadHistoryService::REASON_UNAVAILABLE);
+	}//end testTheReadHistoryPortIsAnsweredByTheReadHistoryService()
+
+	/**
+	 * The store of the flows compiled from application schedules and the read history are bound, and only those aliases are registered.
 	 *
 	 * @return void
 	 */
@@ -159,6 +172,7 @@ final class FlowWiringTest extends TestCase {
 			expected: [
 				FieldRulesSourceInterface::class  => StateFieldRuleResolver::class,
 				ScheduleFlowStoreInterface::class => ScheduleFlowStore::class,
+				ReadHistoryInterface::class       => ReadHistoryService::class,
 			],
 			actual: $this->aliases
 		);

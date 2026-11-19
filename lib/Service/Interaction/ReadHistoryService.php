@@ -50,6 +50,7 @@ namespace OCA\OpenRegister\Service\Interaction;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Core\ReadHistoryInterface;
 use OCA\OpenRegister\Service\ProcessingLogService;
 use OCA\OpenRegister\Service\ProcessingRead;
 use OCA\OpenRegister\Service\SettingsServiceInterface;
@@ -61,7 +62,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/object-interactions/spec.md#requirement-recently-opened-is-read-from-the-audit-trail
  */
-class ReadHistoryService {
+class ReadHistoryService implements ReadHistoryInterface {
 
 	/**
 	 * How many distinct objects one user's read history answers.
@@ -99,7 +100,7 @@ class ReadHistoryService {
 	 *
 	 * @var string
 	 */
-	public const REASON_UNAVAILABLE = 'read-history-unavailable';
+	public const REASON_UNAVAILABLE = ReadHistoryInterface::REASON_UNAVAILABLE;
 
 	/**
 	 * Constructor.
