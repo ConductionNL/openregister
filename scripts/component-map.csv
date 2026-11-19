@@ -4358,3 +4358,9 @@ Controller/Support/ProcessingActivityVisibility.php,,Controller,,,,,Compliance
 Controller/Support/ProcessingPurposeControllerServices.php,,Controller,,,,,Compliance
 Controller/Support/SelectielijstControllerServices.php,,Controller,,,,,Compliance
 Db/Support/ConfigServices.php,,Db,,,,,Core
+AppHost/Listener/ApplicationPublishListener.php,,AppHost,,,,,Processes
+AppHost/Scheduling/CompiledScheduleFlow.php,,AppHost,,,,,Processes
+AppHost/Scheduling/ScheduleAuditTrail.php,,AppHost,,,,,Processes
+AppHost/Scheduling/ScheduleFlowStore.php,,AppHost,,,,,Processes
+AppHost/Scheduling/ScheduleFlowStoreInterface.php,,AppHost,,,,,Processes
+AppHost/Scheduling/ScheduleFlowSync.php,,AppHost,,,,,Processes

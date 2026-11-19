@@ -1560,6 +1560,18 @@ deptrac:
     - name: Processes
       collectors:
         - type: directory
+          value: 'lib/AppHost/Listener/ApplicationPublishListener[.]php$'
+        - type: directory
+          value: 'lib/AppHost/Scheduling/CompiledScheduleFlow[.]php$'
+        - type: directory
+          value: 'lib/AppHost/Scheduling/ScheduleAuditTrail[.]php$'
+        - type: directory
+          value: 'lib/AppHost/Scheduling/ScheduleFlowStore[.]php$'
+        - type: directory
+          value: 'lib/AppHost/Scheduling/ScheduleFlowStoreInterface[.]php$'
+        - type: directory
+          value: 'lib/AppHost/Scheduling/ScheduleFlowSync[.]php$'
+        - type: directory
           value: 'lib/BackgroundJob/(AnnotationNotificationDispatchJob|AutoTransitionJob|AutomationRecordRetentionJob|BulkJobRunner|CasePlanTimerRearmJob|FileTextExtractionJob|FlowRunRecoveryServices|FlowRunRetentionJob|FlowRunWorker|FlowRunWorkerServices|FlowScheduleWorker|FlowTimerWorker|FormUploadPurgeJob|ObjectTextExtractionJob|RecomputeTimersForCalendarJob|RecomputeTimersForCalendarJobServices|RuleRunRetentionJob|ScheduledMessageSweepJob|SourceRecordRecomputeJob|TemporalCalculationSweepJob|TranslationProjectionJob)[.]php$'
         - type: directory
           value: 'lib/BulkAction/(AbstractPropertyWriteAction|ApplyRuleAction|ApplyRuleActionInterface|AssignAction|AssignActionInterface|BulkActionInterface|BulkActionInvoker|BulkActionOutcomeInterface|BulkActionRegistrar|BulkActionResult|BulkActionWiring|BulkObjectAccess|BulkStep|LegacyBulkActionInterface|RestorePriorValuesAction|RestorePriorValuesActionInterface|ReversibleBulkActionInterface|RunActionAction|RunActionActionInterface|SetPropertiesAction|SetPropertiesActionInterface|StepBulkActionInterface|TransitionAction|TransitionActionInterface)[.]php$'
@@ -2460,7 +2472,7 @@ deptrac:
         - type: directory
           value: 'lib/AppHost/Exception/[^/]*$'
         - type: directory
-          value: 'lib/AppHost/Listener/[^/]*$'
+          value: 'lib/AppHost/Listener/GenericDeepLinkRegistrationListener[.]php$'
         - type: directory
           value: 'lib/AppHost/Observability/[^/]*$'
         - type: directory
@@ -2470,7 +2482,35 @@ deptrac:
         - type: directory
           value: 'lib/AppHost/Repair/[^/]*$'
         - type: directory
-          value: 'lib/AppHost/Scheduling/[^/]*$'
+          value: 'lib/AppHost/Scheduling/ApplicationRegister[.]php$'
+        - type: directory
+          value: 'lib/AppHost/Scheduling/CronScheduleEvaluator[.]php$'
+        - type: directory
+          value: 'lib/AppHost/Scheduling/IntervalCron[.]php$'
+        - type: directory
+          value: 'lib/AppHost/Scheduling/ScheduleActionNodes[.]php$'
+        - type: directory
+          value: 'lib/AppHost/Scheduling/ScheduleCadence[.]php$'
+        - type: directory
+          value: 'lib/AppHost/Scheduling/ScheduleCall[.]php$'
+        - type: directory
+          value: 'lib/AppHost/Scheduling/ScheduleDescriptor[.]php$'
+        - type: directory
+          value: 'lib/AppHost/Scheduling/ScheduleManifest[.]php$'
+        - type: directory
+          value: 'lib/AppHost/Scheduling/ScheduleManifestLoader[.]php$'
+        - type: directory
+          value: 'lib/AppHost/Scheduling/ScheduleManifestLoaderInterface[.]php$'
+        - type: directory
+          value: 'lib/AppHost/Scheduling/ScheduleRefusalReportInterface[.]php$'
+        - type: directory
+          value: 'lib/AppHost/Scheduling/ScheduleRefusals[.]php$'
+        - type: directory
+          value: 'lib/AppHost/Scheduling/ScheduleRelease[.]php$'
+        - type: directory
+          value: 'lib/AppHost/Scheduling/ScheduleReleaseReader[.]php$'
+        - type: directory
+          value: 'lib/AppHost/Scheduling/ScheduleValidationException[.]php$'
         - type: directory
           value: 'lib/AppHost/Search/[^/]*$'
         - type: directory
