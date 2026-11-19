@@ -20,6 +20,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
+use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 
 /**
@@ -27,14 +29,15 @@ use OCP\AppFramework\Bootstrap\IRegistrationContext;
  *
  * FlowRegistrar keeps the public entry points and delegates each of them here.
  *
- * Registers the flow run guards, the shared run context and the loop step dispatcher.
+ * Registers the flow run guards, the shared run context, the loop step dispatcher
+ * and the lifecycle's answer to property-level access.
  *
  * Application::register() calls register() once.
  */
 final class FlowWiring {
 
 	/**
-	 * Register the flow run guards, the run context and the step dispatcher.
+	 * Register the flow run guards, the run context, the step dispatcher and the field rules source.
 	 *
 	 * @param IRegistrationContext $context The registration context.
 	 *
@@ -47,6 +50,7 @@ final class FlowWiring {
 		self::registerRunnableGuard(context: $context);
 		self::registerRunContext(context: $context);
 		self::registerStepDispatcher(context: $context);
+		self::registerFieldRulesSource(context: $context);
 	}//end register()
 
 	/**
@@ -162,4 +166,17 @@ final class FlowWiring {
 			}
 		);
 	}//end registerStepDispatcher()
+
+	/**
+	 * Answer property-level access's field rules port with the lifecycle state resolver.
+	 *
+	 * @param IRegistrationContext $context The registration context.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/row-field-level-security/spec.md
+	 */
+	private static function registerFieldRulesSource(IRegistrationContext $context): void {
+		$context->registerServiceAlias(FieldRulesSourceInterface::class, StateFieldRuleResolver::class);
+	}//end registerFieldRulesSource()
 }//end class

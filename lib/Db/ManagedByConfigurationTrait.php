@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Kernel\Contracts\ConfigurationMembershipInterface;
+
 /**
  * Whether, and by which configuration, the using entity is managed.
  *
@@ -36,12 +38,9 @@ trait ManagedByConfigurationTrait {
 	/**
 	 * Check if this entity is managed by any of the configurations.
 	 *
-	 * @param array<Configuration> $configurations Array of Configuration entities to check against
+	 * @param array<ConfigurationMembershipInterface> $configurations The configurations to check against
 	 *
 	 * @return bool True if this entity is managed by at least one configuration
-	 *
-	 * @phpstan-param array<Configuration> $configurations
-	 * @psalm-param   array<Configuration> $configurations
 	 *
 	 * @spec exclude shared entity plumbing, not a capability of its own
 	 */
@@ -52,22 +51,21 @@ trait ManagedByConfigurationTrait {
 	/**
 	 * Get the first configuration that has this entity's id among its members, or null.
 	 *
-	 * @param array<Configuration> $configurations Array of Configuration entities to check against
+	 * @param array<T> $configurations The configurations to check against
 	 *
-	 * @return Configuration|null The configuration managing this entity, or null
+	 * @return T|null The configuration managing this entity, or null
 	 *
-	 * @phpstan-param array<Configuration> $configurations
-	 * @psalm-param   array<Configuration> $configurations
+	 * @template T of ConfigurationMembershipInterface
 	 *
 	 * @spec exclude shared entity plumbing, not a capability of its own
 	 */
-	public function getManagedByConfiguration(array $configurations): ?Configuration {
+	public function getManagedByConfiguration(array $configurations): ?ConfigurationMembershipInterface {
 		if ($this->id === null) {
 			return null;
 		}
 
 		foreach ($configurations as $configuration) {
-			if (in_array($this->id, ($this->configurationMembers(configuration: $configuration) ?? []), true) === true) {
+			if ($configuration->listsMember(kind: $this->configurationMemberKind(), id: $this->id) === true) {
 				return $configuration;
 			}
 		}
@@ -76,11 +74,9 @@ trait ManagedByConfigurationTrait {
 	}//end getManagedByConfiguration()
 
 	/**
-	 * The ids a configuration lists for this entity's kind.
+	 * The member list of a configuration that holds this entity's kind.
 	 *
-	 * @param Configuration $configuration The configuration.
-	 *
-	 * @return array|null
+	 * @return string One of the kinds ConfigurationMembershipInterface::listsMember() reads.
 	 */
-	abstract protected function configurationMembers(Configuration $configuration): ?array;
+	abstract protected function configurationMemberKind(): string;
 }//end trait

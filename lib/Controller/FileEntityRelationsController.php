@@ -24,9 +24,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Files\Service\File\CallerFileAccess;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Decision\DecisionVisibilityInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -58,7 +58,7 @@ class FileEntityRelationsController extends Controller {
 		private readonly DecisionVisibilityInterface $decisionVisibility,
 		private readonly IUserSession $userSession,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**
