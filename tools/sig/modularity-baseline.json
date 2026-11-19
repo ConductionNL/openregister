@@ -682,9 +682,6 @@
   "lib/Service/Rbac/SharerFolderAccess.php -> lib/Files/Service/File/ObjectFileAccess.php",
   "lib/Service/RegisterService.php -> lib/Service/FileFolderServiceInterface.php",
   "lib/Service/RegisterServiceHelpers.php -> lib/Service/FileFolderServiceInterface.php",
-  "lib/Service/Registers/EntityEventPublisher.php -> lib/Db/Application.php",
-  "lib/Service/Registers/EntityEventPublisher.php -> lib/Db/Configuration.php",
-  "lib/Service/Registers/EntityEventPublisher.php -> lib/Db/Source.php",
   "lib/Service/Registers/EntityEventPublisher.php -> lib/Db/Task.php",
   "lib/Service/Relation/ObjectTreeService.php -> lib/Service/Party/PartyDefinition.php",
   "lib/Service/RetentionRules.php -> lib/Service/Settings/ArchivalSettingsReaderInterface.php",
@@ -3598,5 +3595,5 @@
  ],
  "kernel_loc": 10440,
  "total_loc": 459376,
- "violation_degree": 0.0906
+ "violation_degree": 0.0903
 }
