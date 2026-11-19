@@ -26,6 +26,7 @@ use OCA\OpenRegister\Service\Organisation\OrganisationEdit;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\Organisation;
+use OCA\OpenRegister\Service\Audit\AuditEntryWriter;
 use OCA\OpenRegister\Service\Organisation\OrganisationLifecycleAuditor;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -64,7 +65,7 @@ class OrganisationLifecycleAuditorGoldenTest extends TestCase {
 
 		$this->logger = $this->createMock(LoggerInterface::class);
 
-		return new OrganisationLifecycleAuditor(mapper: $mapper, userSession: $session, logger: $this->logger);
+		return new OrganisationLifecycleAuditor(auditEntries: new AuditEntryWriter(mapper: $mapper), userSession: $session, logger: $this->logger);
 	}//end auditor()
 
 	private function user(): IUser {

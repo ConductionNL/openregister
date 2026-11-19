@@ -34,6 +34,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Db;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\RegisterFolderRecordsInterface;
 use OCP\DB\QueryBuilder\ICompositeExpression;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -43,7 +44,7 @@ use OCP\IDBConnection;
  *
  * @spec openspec/specs/file-actions/spec.md#requirement-recording-a-registers-folder-id-is-bookkeeping-req-rffu-002
  */
-class RegisterFolderRecorder {
+class RegisterFolderRecorder implements RegisterFolderRecordsInterface {
 
 	/**
 	 * The registers table.

@@ -28,21 +28,25 @@ use OCP\AppFramework\Bootstrap\IRegistrationContext;
  * Registers the event listeners of OpenRegister, in their fixed order.
  *
  * Application::register() calls register() once. The ordered list itself is
- * ListenerRegistrar, which stays inside the Listener component; this class
- * also binds the interfaces outside callers type against. Those aliases are
- * registered before the listeners and do not change their order.
+ * ListenerRegistrar, which stays inside the Listener component and binds the
+ * interfaces of its own listeners. This class is the application's entry into
+ * that list and binds only the Platform listener outside callers type against
+ * (the presence push). The alias is registered before the listeners and does
+ * not change their order.
  *
  * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
  */
 final class ListenerBootstrap {
 
 	/**
-	 * The interfaces callers outside the component type against, bound to their class.
+	 * The Platform listener interfaces callers outside the component type against, bound to their class.
+	 *
+	 * DecisionTableValidationListenerInterface is bound by ListenerRegistrar::BINDINGS, next to the
+	 * other Processes listener interfaces.
 	 *
 	 * @var array<class-string, class-string>
 	 */
 	public const BINDINGS = [
-		DecisionTableValidationListenerInterface::class => DecisionTableValidationListener::class,
 		PresencePushInterface::class => NotifyPushListener::class,
 	];
 
