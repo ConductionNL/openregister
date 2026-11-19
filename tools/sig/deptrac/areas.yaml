@@ -710,7 +710,7 @@ deptrac:
         - type: directory
           value: 'lib/Event/(AbstractOrganisationEvent|AbstractTaskEvent|AbstractTaskSequenceEvent|ObjectLeavingEvent|ObjectWriteRequestEvent)[.]php$'
         - type: directory
-          value: 'lib/Listener/(CodedValueValidationListener|ConceptDeleteGuardListener|FacetCacheInvalidationListener|GeneratedIdentifierFreezeRun|GeneratedIdentifierIssueRun|GeneratedIdentifierListener|GrantableRightsInvalidationListener|IdentityClaimsLoginListener|IdentityGuardListener|ListenerBootstrap|ListenerClassesInterface|NotifyPushBatch|NotifyPushBatchInterface|ObjectCleanupListener|ObjectEventFilterRun|ObjectEventProxyListener|ObjectEventSlugMapRun|ObjectStateDeleteGuardListener|PresencePushInterface|SchemaFlowImportListenerInterface|StateHistoryProjectionListener|SurvivorshipRecomputeListener|SurvivorshipRecomputeRun|UniqueConstraintListener|UniqueConstraintListenerInterface|UniqueConstraintRun|ValidatesPreWriteObject|WrittenObjectOfEvent)[.]php$'
+          value: 'lib/Listener/(CodedValueValidationListener|ConceptDeleteGuardListener|FacetCacheInvalidationListener|GeneratedIdentifierFreezeRun|GeneratedIdentifierIssueRun|GeneratedIdentifierListener|GrantableRightsInvalidationListener|IdentityClaimsLoginListener|IdentityGuardListener|ListenerClassesInterface|NotifyPushBatch|NotifyPushBatchInterface|ObjectCleanupListener|ObjectEventFilterRun|ObjectEventProxyListener|ObjectEventSlugMapRun|ObjectStateDeleteGuardListener|PresencePushInterface|SchemaFlowImportListenerInterface|StateHistoryProjectionListener|SurvivorshipRecomputeListener|SurvivorshipRecomputeRun|UniqueConstraintListener|UniqueConstraintListenerInterface|UniqueConstraintRun|ValidatesPreWriteObject|WrittenObjectOfEvent)[.]php$'
         - type: directory
           value: 'lib/Listener/Support/ConflictVeto[.]php$'
         - type: directory
@@ -4246,7 +4246,7 @@ deptrac:
         - type: directory
           value: 'lib/Db/(Feedback|FeedbackMapper|PlatformMapperBindings|PlatformMapperRegistrar|TranslationBackfillScope|TranslationEdit|TranslationFilter|TranslationMapperInterface|TranslationSlot|TranslationSourceLanguageBackfillInterface)[.]php$'
         - type: directory
-          value: 'lib/Listener/(NotifyPushListener|NotifyPushRun)[.]php$'
+          value: 'lib/Listener/(ListenerBootstrap|NotifyPushListener|NotifyPushRun)[.]php$'
         - type: directory
           value: 'lib/Middleware/[^/]*$'
         - type: directory
