@@ -501,15 +501,13 @@ class Application extends Entity implements JsonSerializable {
 	}//end __toString()
 
 	/**
-	 * The ids a configuration lists as its applications, see ManagedByConfigurationTrait.
+	 * The member list a configuration keeps its applications in, see ManagedByConfigurationTrait.
 	 *
-	 * @param Configuration $configuration The configuration.
-	 *
-	 * @return array|null
+	 * @return string
 	 */
-	protected function configurationMembers(Configuration $configuration): ?array {
-		return $configuration->getApplications();
-	}//end configurationMembers()
+	protected function configurationMemberKind(): string {
+		return 'applications';
+	}//end configurationMemberKind()
 
 	/**
 	 * Get quota data for JSON serialization.

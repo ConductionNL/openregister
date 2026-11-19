@@ -35,13 +35,14 @@ namespace OCA\OpenRegister\Service\View;
 
 use JsonSerializable;
 use OCA\OpenRegister\Exception\InvalidViewAlertException;
+use OCA\OpenRegister\Kernel\Contracts\ViewAlertInterface;
 
 /**
  * One view's declared count alert.
  *
  * @spec openspec/changes/saved-view-count-alert/specs/saved-search-views/spec.md#requirement-a-view-may-declare-a-count-alert
  */
-final class ViewAlert implements JsonSerializable {
+final class ViewAlert implements JsonSerializable, ViewAlertInterface {
 
 	/**
 	 * Fire when the count reaches or passes the threshold.
@@ -401,6 +402,50 @@ final class ViewAlert implements JsonSerializable {
 
 		return (($now - $lastEvaluated) >= $this->every);
 	}//end isDue()
+
+	/**
+	 * The direction of the line: `gte` or `lte`.
+	 *
+	 * @return string The operator.
+	 *
+	 * @spec openspec/changes/saved-view-count-alert/specs/saved-search-views/spec.md#requirement-a-view-may-declare-a-count-alert
+	 */
+	public function getOperator(): string {
+		return $this->operator;
+	}//end getOperator()
+
+	/**
+	 * The count the line sits at.
+	 *
+	 * @return int The threshold.
+	 *
+	 * @spec openspec/changes/saved-view-count-alert/specs/saved-search-views/spec.md#requirement-a-view-may-declare-a-count-alert
+	 */
+	public function getThreshold(): int {
+		return $this->threshold;
+	}//end getThreshold()
+
+	/**
+	 * Who hears about a crossing: `user:<uid>` entries and group ids.
+	 *
+	 * @return string[] The recipients.
+	 *
+	 * @spec openspec/changes/saved-view-count-alert/specs/saved-search-views/spec.md#requirement-a-view-may-declare-a-count-alert
+	 */
+	public function getRecipients(): array {
+		return $this->recipients;
+	}//end getRecipients()
+
+	/**
+	 * The channels a crossing is delivered over.
+	 *
+	 * @return string[] The channels.
+	 *
+	 * @spec openspec/changes/saved-view-count-alert/specs/saved-search-views/spec.md#requirement-a-view-may-declare-a-count-alert
+	 */
+	public function getChannels(): array {
+		return $this->channels;
+	}//end getChannels()
 
 	/**
 	 * The alert as stored.
