@@ -1,0 +1,30 @@
+W01	build	16	Core to Files, lib/Service/File + Compliance to Integrations, lib/BackgroundJob/Support
+W02	build	16	Core to Compliance, lib/BackgroundJob + Kernel to Integrations, lib/Event + Processes to Configuration, lib/Service/Task + Compliance to Configuration, lib/BackgroundJob + Compliance to Configuration, lib/BackgroundJob/Support
+W03	build	16	Integrations to Platform, lib/Command + Core to Configuration, lib/Command + Processes to Configuration, lib/Command + Core to Compliance, lib/Controller + Configuration to Platform, lib/Controller + Compliance to Configuration, lib/Controller/Support + Core to Platform, lib/Controller/Support + Integrations to Processes, lib/Db/Flow
+W04	build	14	Core to Files, lib/Service/File
+W05	build	14	hotspot Schema.php + hotspot RenderObject.php
+W06	build	14	Search to Processes, lib/Search + Core to Search, lib/Service/Aggregation
+W07	build	14	Core to Configuration, lib/Service/Object + Core to Notifications, lib/Service/UserMigration
+W08	build	12	Core to Compliance, lib/BackgroundJob
+W09	build	12	Kernel to Processes, lib/Event
+W10	build	12	Core to Compliance, lib/Service/Object
+W11	build	12	Processes to Platform, lib/Controller + Compliance to Configuration, lib/Service
+W12	build	12	Core to Configuration, lib/Service/Object/SaveObject + Core to Integrations, lib/Service
+W13	build	12	Compliance to Configuration, lib/Db + Core to Integrations, lib/Db + Core to Notifications, lib/Db/SchemaMapper + Compliance to Processes, lib/Listener
+W14	build	12	Integrations to Configuration, lib/Mcp/Controller + Core to Processes, lib/Repair + Search to Compliance, lib/Search/Service + Search to Configuration, lib/Search/Service/ExampleSet
+W15	build	12	Core to Compliance, lib/Service/File + Integrations to Processes, lib/Service/Integration/Providers + Core to Search, lib/Service/Search + Core to Compliance, lib/Service/User + hotspot MagicMapper.php
+W16	build	11	Processes to Platform, lib/Repair
+W17	build	11	Configuration to Platform, lib/Service
+W18	build	10	Core to Integrations, lib/Controller/Support
+W19	build	10	Core to Notifications, lib/Controller/Support + Core to Compliance, lib/Service
+W20	build	10	Notifications to Configuration, lib/Service + Core to Processes, lib/Service/Relation + Core to Configuration, lib/Service/Schemas + Core to Configuration, lib/Controller/Support
+W21	build	9	Integrations to Processes, lib/Mcp/BuiltIn
+W22	build	9	Processes to Configuration, lib/Service
+W23	build	9	Core to Processes, lib/Service/Object
+W24	build	8	Core to Configuration, lib/Db + Search to Compliance, lib/Db + Processes to Configuration, lib/Listener + Processes to Configuration, lib/Listener/Registrar
+W25	build	8	Notifications to Processes, lib/Notifications/Controller + Notifications to Processes, lib/Notifications/Service/Timeline + Search to Configuration, lib/Search/BackgroundJob + Compliance to Files, lib/Service/Anonymisation
+W26	build	8	Core to Search, lib/Service/GraphQL + Core to Files, lib/Service/Object/Collaborators + Processes to Platform, lib/Service + Core to Integrations, lib/BackgroundJob + Core to Processes, lib/BackgroundJob
+W27	build	8	Processes to Platform, lib/BackgroundJob + Compliance to Platform, lib/Controller + Core to Compliance, lib/Controller/Support + Compliance to Processes, lib/Controller/Support + Core to Search, lib/Controller/Support + Integrations to Processes, lib/Dav + Integrations to Configuration, lib/Db + Compliance to Integrations, lib/Db
+W28	build	8	Core to Processes, lib/Db + Core to Processes, lib/Db/Schema + Core to Processes, lib/Event + Core to Configuration, lib/Event + Files to Processes, lib/Files/Db + Files to Configuration, lib/Files/Service/File + Files to Configuration, lib/Files/Service + Files to Configuration, lib/Files/Service/TextExtraction
+W29	build	8	Core to Platform, lib/Listener + Integrations to Configuration, lib/Mcp/Controller/Support + Notifications to Processes, lib/Notifications/Controller/Support + Notifications to Platform, lib/Notifications/Controller + Core to Platform, lib/Repair + Notifications to Integrations, lib/Service + Core to Processes, lib/Service + Processes to Configuration, lib/Service/Calculation
+W30	build	8	Integrations to Processes, lib/Service + Core to Processes, lib/Service/Hinge + Compliance to Integrations, lib/Service + Core to Processes, lib/Service/Object/Collaborators + Core to Search, lib/Service/Object/Collaborators + Core to Compliance, lib/Service/Object/SaveObject + Core to Processes, lib/Service/Object/SaveObject + Core to Processes, lib/Service/Registers
