@@ -131,7 +131,6 @@
   "lib/Controller/Support/TranslationMappers.php -> lib/Db/TranslationMapperInterface.php",
   "lib/Controller/TmloController.php -> lib/Service/Export/ExportGateInterface.php",
   "lib/Controller/TransferController.php -> lib/AppInfo/Application.php",
-  "lib/Controller/TranslationController.php -> lib/Service/TranslationStatusServiceInterface.php",
   "lib/Dav/TaskVtodoWriteBackPlugin.php -> lib/Service/Task/TaskVtodoWriteBackGateInterface.php",
   "lib/Db/ApplicationMapperInterface.php -> lib/Db/Application.php",
   "lib/Db/AuditTrailMapper.php -> lib/Db/AuditFlowAttribution.php",
@@ -421,7 +420,6 @@
   "lib/Service/Integration/Providers/FlowProvider.php -> lib/Db/FlowLink.php",
   "lib/Service/Integration/Providers/FlowProvider.php -> lib/Db/FlowLinkMapperInterface.php",
   "lib/Service/Integration/Providers/FlowProvider.php -> lib/Service/FlowJsonColumn.php",
-  "lib/Service/LanguageService.php -> lib/Service/LanguageServiceInterface.php",
   "lib/Service/NotificationServiceInterface.php -> lib/Db/Configuration.php",
   "lib/Service/Object/BulkRowRules.php -> lib/Service/Dmn/DecisionTableBulkGuard.php",
   "lib/Service/Object/BulkRowRules.php -> lib/Service/Flow/FlowRunContext.php",
@@ -589,9 +587,6 @@
   "lib/Service/Task/TaskSequenceDecisionGuard.php -> lib/Db/TaskSequence.php",
   "lib/Service/Task/TaskSequenceService.php -> lib/Db/TaskSequence.php",
   "lib/Service/Task/TaskSequenceServiceInterface.php -> lib/Db/TaskSequence.php",
-  "lib/Service/TranslationProjectionService.php -> lib/Service/TranslationProjectionServiceInterface.php",
-  "lib/Service/TranslationProjectionService.php -> lib/Service/TranslationStores.php",
-  "lib/Service/TranslationStatusService.php -> lib/Service/TranslationStatusServiceInterface.php",
   "lib/Service/UrnService.php -> lib/Db/AuditTrail/ActionLookupOptions.php",
   "lib/Service/User/ApiTokenAuditRow.php -> lib/Db/AuditTrail.php",
   "lib/Service/UserService.php -> lib/Db/AuditTrail/ActionWindow.php",
@@ -2862,7 +2857,6 @@
   "lib/Service/Translation/TranslationProviderResolver.php",
   "lib/Service/TranslationProjectionService.php",
   "lib/Service/TranslationProjectionServiceInterface.php",
-  "lib/Service/TranslationSearch.php",
   "lib/Service/TranslationStatusService.php",
   "lib/Service/TranslationStatusServiceInterface.php",
   "lib/Service/TranslationStores.php",
@@ -2918,13 +2912,13 @@
  ],
  "exposed_loc": {
   "Compliance": 15582,
-  "Configuration": 6529,
+  "Configuration": 6561,
   "Core": 64605,
   "Files": 3640,
   "Integrations": 18390,
   "Kernel": 8482,
   "Notifications": 1914,
-  "Platform": 776,
+  "Platform": 731,
   "Processes": 31812,
   "Search": 2027
  },
@@ -3386,5 +3380,5 @@
  ],
  "kernel_loc": 10407,
  "total_loc": 460003,
- "violation_degree": 0.0739
+ "violation_degree": 0.0732
 }

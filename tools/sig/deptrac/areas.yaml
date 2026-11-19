@@ -2824,7 +2824,7 @@ deptrac:
         - type: directory
           value: 'lib/Notifications/Service/ExampleSet/[^/]*$'
         - type: directory
-          value: 'lib/Service/(AppRegisterImportRunner|ApplicationMove|ApplicationService|ApplicationServiceInterface|ConfigurationService|ConfigurationServiceInterface|ConfigurationTransferInterface|ConfigurationUpdateNotice|ContractBindings|ContractBindingsRegistrar|CountedRegisterImport|DemoDataService|DescriptorImportTarget|ExportService|ImportService|LanguageGapScan|LanguageService|ManifestProfile|ManifestService|MassValidationRun|McpCatalogSummaries|McpDiscoveryService|MigrationPackService|MigrationPackServiceInterface|MigrationService|MockImportRun|NotificationService|OperationsConsoleService|PropertyDiscoveryRun|RecordUpdate|RegisterDescriptorService|RegisterImporters|ScheduledReportRun|ScheduledReportService|SchemaApplicationMigrator|SchemaCascade|SchemaService|SchemaSplitRun|SequenceScope|SequenceService|SettingsService|SharedSchemaDedupeService|SharedSchemaPlanRun|SharedSchemaUse|SourceLanguageLookup|TenantKeyService|TranslationProjectionService|TranslationSearch|TranslationStatusService|ValidationChunkResult|VocabularyImportService)[.]php$'
+          value: 'lib/Service/(AppRegisterImportRunner|ApplicationMove|ApplicationService|ApplicationServiceInterface|ConfigurationService|ConfigurationServiceInterface|ConfigurationTransferInterface|ConfigurationUpdateNotice|ContractBindings|ContractBindingsRegistrar|CountedRegisterImport|DemoDataService|DescriptorImportTarget|ExportService|ImportService|LanguageGapScan|LanguageService|LanguageServiceInterface|ManifestProfile|ManifestService|MassValidationRun|McpCatalogSummaries|McpDiscoveryService|MigrationPackService|MigrationPackServiceInterface|MigrationService|MockImportRun|NotificationService|OperationsConsoleService|PropertyDiscoveryRun|RecordUpdate|RegisterDescriptorService|RegisterImporters|ScheduledReportRun|ScheduledReportService|SchemaApplicationMigrator|SchemaCascade|SchemaService|SchemaSplitRun|SequenceScope|SequenceService|SettingsService|SharedSchemaDedupeService|SharedSchemaPlanRun|SharedSchemaUse|SourceLanguageLookup|TenantKeyService|TranslationProjectionService|TranslationProjectionServiceInterface|TranslationSearch|TranslationStatusService|TranslationStatusServiceInterface|TranslationStores|ValidationChunkResult|VocabularyImportService)[.]php$'
         - type: directory
           value: 'lib/Service/Capability/ToolGrantCodec[.]php$'
         - type: directory
@@ -4308,7 +4308,7 @@ deptrac:
         - type: directory
           value: 'lib/Sections/[^/]*$'
         - type: directory
-          value: 'lib/Service/(ActionRightsCatalogue|ActionRightsCatalogueInterface|LanguageServiceInterface|OpenRegisterActionAuthService|PlatformServiceBindings|PlatformServiceRegistrar|TranslationProjectionServiceInterface|TranslationStatusServiceInterface|TranslationStores)[.]php$'
+          value: 'lib/Service/(ActionRightsCatalogue|ActionRightsCatalogueInterface|OpenRegisterActionAuthService|PlatformServiceBindings|PlatformServiceRegistrar)[.]php$'
         - type: directory
           value: 'lib/Service/ApiCaller/[^/]*$'
         - type: directory

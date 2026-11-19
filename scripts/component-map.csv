@@ -3969,7 +3969,7 @@ Service/FormsAppRows.php,,Service,,,,,Integrations
 Service/HoldOrder.php,,Service,,,,,Core
 Service/InboundAuthRateLimitInterface.php,,Service,,,,,Core
 Service/LanguageGapScan.php,,Service,,,,,Configuration
-Service/LanguageServiceInterface.php,,Service,,,,,Platform
+Service/LanguageServiceInterface.php,,Service,,,,,Configuration
 Service/LinkPageWindow.php,,Service,,,,,Core
 Service/LinkServiceRuntime.php,,Service,,,,,Core
 Service/LinkSessionRuntime.php,,Service,,,,,Core
@@ -4103,10 +4103,10 @@ Service/TenantLogRedactorInterface.php,,Service,,,,,Core
 Service/TextExtraction/EntityRecognitionBackends.php,,Service,,,,,Files
 Service/TimeTrackerLinkServiceInterface.php,,Service,,,,,Integrations
 Service/TmloServiceInterface.php,,Service,,,,,Core
-Service/TranslationProjectionServiceInterface.php,,Service,,,,,Platform
+Service/TranslationProjectionServiceInterface.php,,Service,,,,,Configuration
 Service/TranslationSearch.php,,Service,,,,,Configuration
-Service/TranslationStatusServiceInterface.php,,Service,,,,,Platform
-Service/TranslationStores.php,,Service,,,,,Platform
+Service/TranslationStatusServiceInterface.php,,Service,,,,,Configuration
+Service/TranslationStores.php,,Service,,,,,Configuration
 Service/Translation/GlossaryService.php,,Service,,,,,Configuration
 Service/Translation/TaskProcessingTranslationProvider.php,,Service,,,,,Configuration
 Service/Translation/TranslationOutcome.php,,Service,,,,,Configuration
