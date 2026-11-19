@@ -1931,11 +1931,12 @@ Service/Calendar/ObjectDateEventBuilder.php,239,Service,Work,Work/Service/Calend
 Service/CalendarEventService.php,444,Service,Work,Work/Service/CalendarEventService.php,32,48,Processes
 Service/CalendarLinkService.php,431,Service,Integrations,Integrations/Service/CalendarLinkService.php,0,39,Integrations
 Service/CalendarPickerScan.php,41,Service,Integrations,Integrations/Service/CalendarPickerScan.php,0,,Integrations
-Service/Capability/ToolGrantCodec.php,80,Service,Configuration,Configuration/Service/Capability/ToolGrantCodec.php,1,,Configuration
-Service/Capability/ToolGrantResolutionException.php,22,Service,Configuration,Configuration/Service/Capability/ToolGrantResolutionException.php,22,,Configuration
-Service/Capability/ToolGrantResolver.php,308,Service,Configuration,Configuration/Service/Capability/ToolGrantResolver.php,173,,Configuration
-Service/Capability/ToolGrantSet.php,135,Service,Configuration,Configuration/Service/Capability/ToolGrantSet.php,7,,Configuration
-Service/Capability/ToolReachResolver.php,64,Service,Configuration,Configuration/Service/Capability/ToolReachResolver.php,115,347,Configuration
+Service/Capability/ToolGrantCodec.php,80,Service,Configuration,Configuration/Service/Capability/ToolGrantCodec.php,1,,Integrations
+Service/Capability/ToolGrantCoordinates.php,,Service,,,0,,Integrations
+Service/Capability/ToolGrantResolutionException.php,22,Service,Configuration,Configuration/Service/Capability/ToolGrantResolutionException.php,22,,Integrations
+Service/Capability/ToolGrantResolver.php,308,Service,Configuration,Configuration/Service/Capability/ToolGrantResolver.php,173,,Integrations
+Service/Capability/ToolGrantSet.php,135,Service,Configuration,Configuration/Service/Capability/ToolGrantSet.php,7,,Integrations
+Service/Capability/ToolReachResolver.php,64,Service,Configuration,Configuration/Service/Capability/ToolReachResolver.php,115,347,Integrations
 Service/CardDraft.php,49,Service,Integrations,Integrations/Service/CardDraft.php,0,,Integrations
 Service/Case/CaseAnchorReader.php,53,Service,Work,Work/Service/Case/CaseAnchorReader.php,0,,Processes
 Service/Case/CaseBusinessStateWriter.php,56,Service,Work,Work/Service/Case/CaseBusinessStateWriter.php,0,,Processes
@@ -2659,7 +2660,9 @@ Service/ManifestService.php,241,Service,Configuration,Configuration/Service/Mani
 Service/MapLinkService.php,198,Service,Integrations,Integrations/Service/MapLinkService.php,0,,Integrations
 Service/MappingService.php,428,Service,Integrations,Integrations/Service/MappingService.php,5,50,Integrations
 Service/MassValidationRun.php,300,Service,Configuration,Configuration/Service/MassValidationRun.php,0,,Configuration
-Service/Mcp/McpAgentScope.php,111,Service,Configuration,Configuration/Service/Mcp/McpAgentScope.php,0,257,Configuration
+Service/Mcp/McpAgentScope.php,111,Service,Configuration,Configuration/Service/Mcp/McpAgentScope.php,0,257,Integrations
+Service/Mcp/McpSessionCaller.php,,Service,,,0,,Integrations
+Service/Mcp/ToolCall.php,,Service,,,0,,Integrations
 Service/McpDiscoveryService.php,690,Service,Configuration,Configuration/Service/McpDiscoveryService.php,0,,Configuration
 Service/MdiIconRenderer.php,53,Service,Configuration,Configuration/Service/MdiIconRenderer.php,0,,Core
 Service/Merge/MasterRecomputeService.php,36,Service,Flows,Flows/Service/Merge/MasterRecomputeService.php,0,,Core
@@ -3450,7 +3453,7 @@ Service/BulkJob/,,Service,,,,,Processes
 Service/Calculation/,,Service,,,,,Processes
 Service/Calendar/,,Service,,,,,Processes
 Service/CalendarEvent/,,Service,,,,,Integrations
-Service/Capability/,,Service,,,,,Configuration
+Service/Capability/,,Service,,,,,Integrations
 Service/Case/,,Service,,,,,Processes
 Service/Chat/,,Service,,,,,Platform
 Service/Config/,,Service,,,,,Configuration

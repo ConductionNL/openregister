@@ -114,8 +114,6 @@ use OCA\OpenRegister\Service\Calendar\AppointmentAttendeeService;
 use OCA\OpenRegister\Service\Calendar\AppointmentAttendeeServiceInterface;
 use OCA\OpenRegister\Service\Calendar\CalendarFeedTokenService;
 use OCA\OpenRegister\Service\Calendar\CalendarFeedTokenServiceInterface;
-use OCA\OpenRegister\Service\Capability\ToolReachLevels;
-use OCA\OpenRegister\Service\Capability\ToolReachResolver;
 use OCA\OpenRegister\Service\Case\CasePlanAuthorizationService;
 use OCA\OpenRegister\Service\Case\CasePlanAuthorizationServiceInterface;
 use OCA\OpenRegister\Service\Case\CasePlanItemTimers;
@@ -654,7 +652,6 @@ final class ContractBindings {
 		WholeSetExportActionInterface::class => ExportWholeSetAction::class,
 		ShareGrantorInterface::class => ShareGrantor::class,
 		TenantKeyRotationInterface::class => TenantKeyService::class,
-		ToolReachLevels::class => ToolReachResolver::class,
 		AppSettingsInterface::class => SettingsService::class,
 		ArchivalNominationServiceInterface::class => ArchivalNominationService::class,
 		\OCA\OpenRegister\Service\Archival\ArchivalNominationTriggerInterface::class => ArchivalNominationService::class,
