@@ -676,8 +676,6 @@
 "Integrations -> Configuration: OCA\\OpenRegister\\Mcp\\Controller\\McpServerController -> OCA\\OpenRegister\\Service\\Mcp\\McpSessionCaller",
 "Integrations -> Configuration: OCA\\OpenRegister\\Mcp\\Controller\\McpServerController -> OCA\\OpenRegister\\Service\\Mcp\\ToolCall",
 "Integrations -> Configuration: OCA\\OpenRegister\\Mcp\\Controller\\Support\\McpServerDomain -> OCA\\OpenRegister\\Service\\Mcp\\McpAgentScope",
-"Integrations -> Configuration: OCA\\OpenRegister\\Mcp\\Db\\Agent -> OCA\\OpenRegister\\Db\\Configuration",
-"Integrations -> Configuration: OCA\\OpenRegister\\Mcp\\Tool\\ApplicationTool -> OCA\\OpenRegister\\Db\\Application",
 "Integrations -> Configuration: OCA\\OpenRegister\\Service\\ApplicationServiceInterface -> OCA\\OpenRegister\\Db\\Application",
 "Integrations -> Configuration: OCA\\OpenRegister\\Service\\Bindings\\SchemasBindings -> OCA\\OpenRegister\\Service\\ConfigurationDeployment\\ConfigurationDraftService",
 "Integrations -> Configuration: OCA\\OpenRegister\\Service\\Bindings\\SchemasBindings -> OCA\\OpenRegister\\Service\\ConfigurationDeployment\\ConfigurationDraftsInterface",
