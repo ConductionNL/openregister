@@ -188,8 +188,6 @@ deptrac:
         - type: directory
           value: 'lib/Controller/Support/ConversationPlatform[.]php$'
         - type: directory
-          value: 'lib/Controller/Support/CorrectionsControllerServices[.]php$'
-        - type: directory
           value: 'lib/Controller/Support/CredentialCaller[.]php$'
         - type: directory
           value: 'lib/Controller/Support/CredentialUpdateTarget[.]php$'
@@ -881,14 +879,6 @@ deptrac:
           value: 'lib/Service/Object/ContentSearchWidening[.]php$'
         - type: directory
           value: 'lib/Service/Object/CopyPayload[.]php$'
-        - type: directory
-          value: 'lib/Service/Object/Correction[.]php$'
-        - type: directory
-          value: 'lib/Service/Object/CorrectionAuditing[.]php$'
-        - type: directory
-          value: 'lib/Service/Object/CorrectionService[.]php$'
-        - type: directory
-          value: 'lib/Service/Object/CorrectionServiceInterface[.]php$'
         - type: directory
           value: 'lib/Service/Object/CorrectionTarget[.]php$'
         - type: directory
@@ -2658,6 +2648,8 @@ deptrac:
         - type: directory
           value: 'lib/Controller/Support/ContentReportControllerServices[.]php$'
         - type: directory
+          value: 'lib/Controller/Support/CorrectionsControllerServices[.]php$'
+        - type: directory
           value: 'lib/Controller/Support/DsarCaseCases[.]php$'
         - type: directory
           value: 'lib/Controller/Support/DsarCaseControllerServices[.]php$'
@@ -2751,6 +2743,14 @@ deptrac:
           value: 'lib/Service/Gdpr/Subject/[^/]*$'
         - type: directory
           value: 'lib/Service/Hardening/[^/]*$'
+        - type: directory
+          value: 'lib/Service/Object/Correction[.]php$'
+        - type: directory
+          value: 'lib/Service/Object/CorrectionAuditing[.]php$'
+        - type: directory
+          value: 'lib/Service/Object/CorrectionService[.]php$'
+        - type: directory
+          value: 'lib/Service/Object/CorrectionServiceInterface[.]php$'
         - type: directory
           value: 'lib/Service/Quality/QualityAuditRefusedException[.]php$'
         - type: directory

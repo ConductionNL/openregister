@@ -28,13 +28,18 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\AppHost\Service\GenericActionAuthService;
+use OCA\OpenRegister\Kernel\Contracts\Core\ActionRightCheckInterface;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
 
 /**
  * The action matrix, bound to the `openregister` app id.
+ *
+ * It answers the Core port a narrowly granted act asks before it runs.
+ *
+ * @spec openspec/specs/flow-engine/spec.md#requirement-creating-editing-and-running-a-flow-are-named-rights
  */
-class OpenRegisterActionAuthService extends GenericActionAuthService {
+class OpenRegisterActionAuthService extends GenericActionAuthService implements ActionRightCheckInterface {
 	/**
 	 * Constructor.
 	 *

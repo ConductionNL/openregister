@@ -2697,7 +2697,7 @@ Service/Object/CascadeTarget.php,19,Service,Service,Service/Object/CascadeTarget
 Service/Object/CascadingHandler.php,160,Service,Service,Service/Object/CascadingHandler.php,0,,Core
 Service/Object/ConflictReport.php,122,Service,Service,Service/Object/ConflictReport.php,0,,Core
 Service/Object/ContentSearchHandler.php,267,Service,Service,Service/Object/ContentSearchHandler.php,0,,Core
-Service/Object/CorrectionService.php,129,Service,Compliance,Compliance/Service/Object/CorrectionService.php,0,,Core
+Service/Object/CorrectionService.php,129,Service,Compliance,Compliance/Service/Object/CorrectionService.php,0,,Compliance
 Service/Object/DataManipulationHandler.php,14,Service,Service,Service/Object/DataManipulationHandler.php,0,,Core
 Service/Object/DeleteObject.php,725,Service,Service,Service/Object/DeleteObject.php,0,,Core
 Service/Object/DeletionGraph/DeletionGraphNode.php,13,Service,Service,Service/Object/DeletionGraph/DeletionGraphNode.php,0,,Core
@@ -4412,3 +4412,7 @@ Db/PlatformMapperBindings.php,,Db,,,,,Platform
 Db/PlatformMapperRegistrar.php,,Db,,,,,Platform
 Service/PlatformServiceBindings.php,,Service,,,,,Platform
 Service/PlatformServiceRegistrar.php,,Service,,,,,Platform
+Service/Object/CorrectionServiceInterface.php,,Service,,,,,Compliance
+Controller/Support/CorrectionsControllerServices.php,,Controller,,,,,Compliance
+Service/Object/Correction.php,,Service,,,,,Compliance
+Service/Object/CorrectionAuditing.php,,Service,,,,,Compliance

@@ -32,9 +32,9 @@ use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\CorrectionRefusedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Kernel\Contracts\Core\ActionRightCheckInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
-use OCA\OpenRegister\Service\OpenRegisterActionAuthService;
 use OCP\IUser;
 use OCP\IUserSession;
 use Throwable;
@@ -95,13 +95,13 @@ class CorrectionService implements CorrectionServiceInterface {
 	 * Constructor.
 	 *
 	 * @param ObjectOperationsInterface     $objectService The write path a correction goes through.
-	 * @param OpenRegisterActionAuthService $actionAuth    The action-rights matrix.
+	 * @param ActionRightCheckInterface     $actionAuth    The action-rights matrix.
 	 * @param IUserSession                  $userSession   Resolves the correcting user.
 	 * @param CorrectionAuditing            $auditing      The audit trail and the logger.
 	 */
 	public function __construct(
 		private readonly ObjectOperationsInterface $objectService,
-		private readonly OpenRegisterActionAuthService $actionAuth,
+		private readonly ActionRightCheckInterface $actionAuth,
 		private readonly IUserSession $userSession,
 		private readonly CorrectionAuditing $auditing,
 	) {
