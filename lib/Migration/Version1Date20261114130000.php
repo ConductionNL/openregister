@@ -35,14 +35,13 @@ use Closure;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\Types;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Create the three quality audit tables.
  *
  * @spec openspec/changes/runs-recorded-and-causes-named/specs/data-quality-scoring/spec.md
  */
-class Version1Date20261114130000 extends SimpleMigrationStep {
+class Version1Date20261114130000 extends TargetedMigrationStep {
 
 	/**
 	 * Create the tables.
@@ -57,7 +56,7 @@ class Version1Date20261114130000 extends SimpleMigrationStep {
 	 *
 	 * @spec openspec/changes/runs-recorded-and-causes-named/specs/data-quality-scoring/spec.md#requirement-a-quality-audit-run-is-kept-with-its-failures-and-the-tolerance-it-was-judged-against-req-rcn-004
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		/*
 		 * @var ISchemaWrapper $schema
 		 */
@@ -123,5 +122,5 @@ class Version1Date20261114130000 extends SimpleMigrationStep {
 		}
 
 		return $schema;
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 }//end class

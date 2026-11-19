@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db\MagicMapper;
 
+use OCA\OpenRegister\Db\CatalogueScope;
 use OCP\IDBConnection;
 
 /**
@@ -82,6 +83,7 @@ final class MagicNumberColumnSizes {
 	private function read(string $key): array {
 		$sql = 'SELECT LOWER(column_name) AS col, numeric_precision, numeric_scale FROM information_schema.columns';
 		$sql .= " WHERE LOWER(table_name) = ? AND LOWER(data_type) IN ('decimal', 'numeric')";
+		$sql .= ' AND ' . (new CatalogueScope(db: $this->db))->condition();
 		$stmt = $this->db->prepare($sql);
 		$stmt->execute([$key]);
 
