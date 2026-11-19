@@ -84,7 +84,7 @@ deptrac:
               value: 'lib/Support/.*$'
           must_not:
             - type: directory
-              value: 'lib/Kernel/Contracts/(Core|Search)/.*$'
+              value: 'lib/Kernel/Contracts/(Core|Notifications|Processes|Search)/.*$'
     - name: Core
       collectors:
         - type: directory
@@ -1709,6 +1709,8 @@ deptrac:
           value: 'lib/Service/Vocabulary/[^/]*$'
     - name: Processes
       collectors:
+        - type: directory
+          value: 'lib/Kernel/Contracts/Processes/.*$'
         - type: directory
           value: 'lib/AppHost/Listener/ApplicationPublishListener[.]php$'
         - type: directory
@@ -3479,6 +3481,8 @@ deptrac:
           value: 'lib/Service/(SearchTrailActivityInsights|SearchTrailNameEnricher|SearchTrailQueryConfig|SearchTrailServiceInterface|SearchTrailStatistics|SearchTrailUserAgentParser)[.]php$'
     - name: Notifications
       collectors:
+        - type: directory
+          value: 'lib/Kernel/Contracts/Notifications/.*$'
         - type: directory
           value: 'lib/Activity/[^/]*$'
         - type: directory
