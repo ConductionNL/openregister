@@ -106,10 +106,6 @@ deptrac:
         - type: directory
           value: 'lib/Controller/Support/ApiTokenProbe[.]php$'
         - type: directory
-          value: 'lib/Controller/Support/ApiTokenSettingsControllerServices[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/ApplicationsControllerServices[.]php$'
-        - type: directory
           value: 'lib/Controller/Support/ArchivalNominationSubject[.]php$'
         - type: directory
           value: 'lib/Controller/Support/ArchivalReviewAnswer[.]php$'
@@ -172,8 +168,6 @@ deptrac:
         - type: directory
           value: 'lib/Controller/Support/ConflictTrail[.]php$'
         - type: directory
-          value: 'lib/Controller/Support/ConnectionReporting[.]php$'
-        - type: directory
           value: 'lib/Controller/Support/ContextsControllerServices[.]php$'
         - type: directory
           value: 'lib/Controller/Support/ControllerSession[.]php$'
@@ -217,10 +211,6 @@ deptrac:
           value: 'lib/Controller/Support/DsarCasePlatform[.]php$'
         - type: directory
           value: 'lib/Controller/Support/DsarControllerServices[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/EdepotSettingsControllerServices[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/EdepotSettingsDomain[.]php$'
         - type: directory
           value: 'lib/Controller/Support/EmptyValueStripper[.]php$'
         - type: directory
@@ -2444,6 +2434,10 @@ deptrac:
         - type: directory
           value: 'lib/Controller/Settings/[^/]*$'
         - type: directory
+          value: 'lib/Controller/Support/ApiTokenSettingsControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/ApplicationsControllerServices[.]php$'
+        - type: directory
           value: 'lib/Controller/Support/ConfigDeploymentControllerServices[.]php$'
         - type: directory
           value: 'lib/Controller/Support/ConfigPublishRequest[.]php$'
@@ -2459,6 +2453,12 @@ deptrac:
           value: 'lib/Controller/Support/ConfigurationPlatform[.]php$'
         - type: directory
           value: 'lib/Controller/Support/ConfigurationsControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/ConnectionReporting[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/EdepotSettingsControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/EdepotSettingsDomain[.]php$'
         - type: directory
           value: 'lib/Controller/Support/ExportProfilesControllerServices[.]php$'
         - type: directory
