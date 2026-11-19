@@ -5911,3 +5911,4 @@ keepiq	1203	d60b0db01521195d0fde6b27a3b3b1161134a2ba	RED	merge3	GATE RED checker
 keepiq	1206	97b3f92691a2bcbf0e84c64e181c5cc0ba4ce32d	RED	merge3	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
 keepiq	1227	9b9a8a0900e43d56d03c77909b92e23c07fd9190	RED	merge3	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
 keepiq	1895	7cf24009dd2947c103212c09ea126275e51b8cd4	RED	merge3	GATE RED checker floor: opensourcehealth: pass -> warn; opensourcehealth stars: 4 -> 3
+stackiq	2060	089ca17521a93f8bf937e48fd0b85b26e556d560	SKIP	worker-52	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass (static.developer.overheid.nl unreachable from this session)
