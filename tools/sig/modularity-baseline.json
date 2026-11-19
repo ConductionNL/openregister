@@ -510,8 +510,6 @@
   "lib/Db/Mapping.php -> lib/Db/HydrateBySettersTrait.php",
   "lib/Db/ObjectEntity.php -> lib/Db/Configuration.php",
   "lib/Db/ObjectEntity.php -> lib/Db/EmptyJsonHydration.php",
-  "lib/Db/ObjectEntity.php -> lib/Db/FreezeTerms.php",
-  "lib/Db/ObjectEntity.php -> lib/Db/SoftDeletion.php",
   "lib/Db/ObjectRelation.php -> lib/Db/HydrateBySettersTrait.php",
   "lib/Db/ObjectRelation.php -> lib/Db/ObjectRelation/ObjectRelationFieldTypes.php",
   "lib/Db/OpenProjectLinkMapperInterface.php -> lib/Db/OpenProjectLink.php",
@@ -993,7 +991,6 @@
   "lib/Service/MdiIconSvg.php -> lib/Service/MdiIconRenderer.php",
   "lib/Service/Merge/MergeService.php -> lib/Db/AuditTrail/ObjectAuditEvent.php",
   "lib/Service/NotificationServiceInterface.php -> lib/Db/Configuration.php",
-  "lib/Service/Object/ArchiveHandler.php -> lib/Db/FreezeTerms.php",
   "lib/Service/Object/BulkRowRules.php -> lib/Service/Dmn/DecisionTableBulkGuard.php",
   "lib/Service/Object/BulkRowRules.php -> lib/Service/Flow/FlowRunContext.php",
   "lib/Service/Object/Collaborators/ObjectHistoryServices.php -> lib/Service/Lifecycle/AutoTransitionPass.php",
@@ -2829,7 +2826,6 @@
   "lib/Service/Delegation/DelegationVerdict.php",
   "lib/Service/Deletion/DeletedObjectAuthorizer.php",
   "lib/Service/Deletion/DeletedObjectAuthorizerInterface.php",
-  "lib/Service/Deletion/DeletionWindowService.php",
   "lib/Service/Deletion/DestroyRightService.php",
   "lib/Service/Deletion/DestructionRecorder.php",
   "lib/Service/Deletion/DestructionRefusedException.php",
@@ -3922,13 +3918,13 @@
  "exposed_loc": {
   "Compliance": 17638,
   "Configuration": 10640,
-  "Core": 65612,
+  "Core": 65477,
   "Files": 3741,
   "Integrations": 20111,
-  "Kernel": 8204,
+  "Kernel": 8246,
   "Notifications": 1734,
   "Platform": 1508,
-  "Processes": 37102,
+  "Processes": 37060,
   "Search": 2270
  },
  "kernel_files": [
@@ -3938,6 +3934,7 @@
   "lib/Contract/ObjectServiceInterface.php",
   "lib/Contract/RegisterSlugResolution.php",
   "lib/Contract/RegisterSlugResolverInterface.php",
+  "lib/Db/FreezeTerms.php",
   "lib/Db/JsonArrayColumn.php",
   "lib/Db/JsonFieldsTrait.php",
   "lib/Db/LinkedItemsTrait.php",
@@ -3954,6 +3951,7 @@
   "lib/Db/RegisterMapperInterface.php",
   "lib/Db/Schema.php",
   "lib/Db/SchemaMapperInterface.php",
+  "lib/Db/SoftDeletion.php",
   "lib/Dto/BulkRowCount.php",
   "lib/Dto/BulkSaveOutcome.php",
   "lib/Dto/BulkSaveOutcomeInterface.php",
@@ -4351,7 +4349,7 @@
   "lib/Support/RegisterSlugAliasesInterface.php",
   "lib/Support/UnknownFilterKeys.php"
  ],
- "kernel_loc": 9657,
- "total_loc": 458600,
- "violation_degree": 0.1447
+ "kernel_loc": 9699,
+ "total_loc": 458601,
+ "violation_degree": 0.1444
 }
