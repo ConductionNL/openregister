@@ -4478,3 +4478,7 @@ BackgroundJob/Support/BackfillCalendarLinksSources.php,,BackgroundJob,,,,,Config
 BackgroundJob/Support/OAuth2TokenRefreshServices.php,,BackgroundJob,,,,,Integrations
 BackgroundJob/Support/SyncDataServices.php,,BackgroundJob,,,,,Integrations
 BackgroundJob/Support/WebhookDeliveryStores.php,,BackgroundJob,,,,,Integrations
+Db/AuditTrail/ActionScope.php,,Db,,,,,Core
+Db/AuditTrail/AuditedChange.php,,Db,,,,,Core
+Db/AuditTrail/HardeningChange.php,,Db,,,,,Core
+Db/AuditTrail/RegisterAuditEvent.php,,Db,,,,,Core
