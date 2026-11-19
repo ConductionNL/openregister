@@ -24,6 +24,8 @@ use ReflectionClass;
  * @covers \OCA\OpenRegister\Db\IntegrationsMapperBindings
  * @covers \OCA\OpenRegister\Db\ComplianceMapperRegistrar
  * @covers \OCA\OpenRegister\Db\ComplianceMapperBindings
+ * @covers \OCA\OpenRegister\Db\ConfigurationMapperRegistrar
+ * @covers \OCA\OpenRegister\Db\ConfigurationMapperBindings
  * @uses   \OCA\OpenRegister\Db\DbRegistrar
  */
 final class AreaMapperRegistrarsTest extends TestCase {

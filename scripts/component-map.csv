@@ -3894,7 +3894,7 @@ Service/ContactCardRef.php,,Service,,,,,Integrations
 Service/ContactMatchingMappers.php,,Service,,,,,Integrations
 Service/ContactPlacement.php,,Service,,,,,Integrations
 Service/ContactServiceInterface.php,,Service,,,,,Integrations
-Service/ContractBindingsRegistrar.php,,Service,,,,,Core
+Service/ContractBindingsRegistrar.php,,Service,,,,,Configuration
 Service/CospendLinkServiceInterface.php,,Service,,,,,Integrations
 Service/CospendProjectDraft.php,,Service,,,,,Integrations
 Service/DateTimeNormalizerInterface.php,,Service,,,,,Core
@@ -4374,3 +4374,5 @@ Controller/Support/OperationsConsistencyControllerServices.php,,Controller,,,,,C
 Controller/Support/OperationsConsoleControllerServices.php,,Controller,,,,,Configuration
 Controller/Support/OperationsMaintenanceControllerServices.php,,Controller,,,,,Configuration
 Controller/Support/RecordTemplatesControllerServices.php,,Controller,,,,,Configuration
+Db/ConfigurationMapperBindings.php,,Db,,,,,Configuration
+Db/ConfigurationMapperRegistrar.php,,Db,,,,,Configuration
