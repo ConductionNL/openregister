@@ -23075,3 +23075,4 @@ fix:opencatalogi:2805:b5832c88	merged development into the branch, new head f274
 fix:opencatalogi:2803:182028e8	merged development into the branch, new head 96679be3; REVERIFY recorded	session-20261119T214535-17440c61	2026-11-19T22:14:41Z
 fix:opencatalogi:2804:6cc44669	merged development into the branch, new head 6cc44669; REVERIFY recorded	session-20261119T214535-17440c61	2026-11-19T22:15:00Z
 fix:opencatalogi:2806:ad12c8a4	merged development into the branch, new head 8c1af901; REVERIFY recorded	session-20261119T214535-17440c61	2026-11-19T22:15:23Z
+build:opencatalogi:publication-withdrawal-aftercare:b2:c2	failed: blocked, needs firstReleasedAt from publication-lifecycle-on-or, which is 10 of 19 tasks built on its open branch (quality/build-publication-lifecycle-on-or) and not merged; starts once that lands	session-20261119T214535-17440c61	2026-11-19T22:15:53Z
