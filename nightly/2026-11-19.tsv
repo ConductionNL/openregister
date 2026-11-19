@@ -11,3 +11,4 @@ versioniq	a50e115	php=RED	phpunit not in check:strict	cs:check,psalm	js=RED	cs-f
 launchpad	580c7770	php=RED	Tests 4621/F0/E0	phpcs,phpmd,psalm	js=RED	npm ci: lock out of sync (@noble/hashes); phpcs AnnouncementFollowNotifier/DemoAnnouncements; psalm needs PHP>=8.3.16
 stackiq	4f5ef19e	php=RED	PHPUnit not run (needs NC server tree)	phpmd,psalm	js=RED	vitest facets.spec FACET_DIMENSIONS; eslint 21 errs (json/no-empty-keys); psalm needs PHP>=8.3.16
 buildiq	d0e8bd99	php=RED	Tests 3684, Failures 7, Errors 0	phpcs,phpmd,psalm,phpstan,phpunit,gates	js=RED	AppRecordsImporterTest 7 fail; psalm 120; phpstan 6; 14 gates (2 only as npm ci ran after); eslint 9 err; vitest ok
+hermiq	1281045a	php=RED	Tests 5736, Failures 0, Errors 3	phpcs,phpmd,psalm,phpstan,phpunit	js=RED	ToolAccessRequestPropertyRulesTest 3 err (OR StateFieldRuleResolver unresolved); psalm 21; phpstan 4; phpcs 2; eslint stale suppr
