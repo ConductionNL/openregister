@@ -255,7 +255,6 @@
 "Core -> Compliance: OCA\\OpenRegister\\Service\\Object\\SaveObject\\SaveObjectRecords -> OCA\\OpenRegister\\Service\\TmloService",
 "Core -> Compliance: OCA\\OpenRegister\\Service\\Object\\SearchQueryHandler -> OCA\\OpenRegister\\Service\\SearchMeasurement",
 "Core -> Compliance: OCA\\OpenRegister\\Service\\Object\\SearchQueryHandler -> OCA\\OpenRegister\\Service\\SearchTrailService",
-"Core -> Compliance: OCA\\OpenRegister\\Service\\Organisation\\OrganisationLifecycleAuditor -> OCA\\OpenRegister\\Db\\AuditTrail",
 "Core -> Compliance: OCA\\OpenRegister\\Service\\Rbac\\AuditRowWriter -> OCA\\OpenRegister\\Db\\AuditTrail",
 "Core -> Compliance: OCA\\OpenRegister\\Service\\Rbac\\GrantChangeAuditor -> OCA\\OpenRegister\\Db\\AuditTrail\\ObjectAuditEvent",
 "Core -> Compliance: OCA\\OpenRegister\\Service\\Rbac\\ObjectAccessHistory -> OCA\\OpenRegister\\Db\\AuditTrail",
