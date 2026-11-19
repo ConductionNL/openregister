@@ -3769,10 +3769,10 @@ Db/TimeTrackerLinkMapperInterface.php,,Db,,,,,Integrations
 Db/TrailRetentionTrait.php,,Db,,,,,Compliance
 Db/Translation/LanguageCoverageCheck.php,,Db,,,,,Configuration
 Db/TranslationBackfillScope.php,,Db,,,,,Platform
-Db/TranslationEdit.php,,Db,,,,,Platform
-Db/TranslationFilter.php,,Db,,,,,Platform
+Db/TranslationEdit.php,,Db,,,,,Core
+Db/TranslationFilter.php,,Db,,,,,Core
 Db/TranslationMapperInterface.php,,Db,,,,,Platform
-Db/TranslationSlot.php,,Db,,,,,Platform
+Db/TranslationSlot.php,,Db,,,,,Core
 Db/TranslationSourceLanguageBackfillInterface.php,,Db,,,,,Platform
 Db/TypedFieldsJson.php,,Db,,,,,Core
 Db/TypedFieldsJsonTrait.php,,Db,,,,,Core
@@ -4094,7 +4094,7 @@ Service/TextExtraction/EntityRecognitionBackends.php,,Service,,,,,Files
 Service/TimeTrackerLinkServiceInterface.php,,Service,,,,,Integrations
 Service/TmloServiceInterface.php,,Service,,,,,Core
 Service/TranslationProjectionServiceInterface.php,,Service,,,,,Platform
-Service/TranslationSearch.php,,Service,,,,,Configuration
+Service/TranslationSearch.php,,Service,,,,,Core
 Service/TranslationStatusServiceInterface.php,,Service,,,,,Platform
 Service/TranslationStores.php,,Service,,,,,Platform
 Service/Translation/GlossaryService.php,,Service,,,,,Configuration
