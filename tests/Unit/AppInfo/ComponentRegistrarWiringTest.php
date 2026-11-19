@@ -21,6 +21,7 @@ use OCA\OpenRegister\Notifications\NotificationsRegistrar;
 use OCA\OpenRegister\Search\SearchRegistrar;
 use OCA\OpenRegister\Service\NotificationsServiceRegistrar;
 use OCA\OpenRegister\Service\PlatformServiceRegistrar;
+use OCA\OpenRegister\Service\ComplianceServiceRegistrar;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -91,6 +92,8 @@ use ReflectionClass;
  * @uses \OCA\OpenRegister\Service\NotificationsServiceRegistrar
  * @uses \OCA\OpenRegister\Service\PlatformServiceBindings
  * @uses \OCA\OpenRegister\Service\PlatformServiceRegistrar
+ * @uses \OCA\OpenRegister\Service\ComplianceServiceRegistrar
+ * @uses \OCA\OpenRegister\Service\ComplianceServiceBindings
  * @uses \OCA\OpenRegister\Service\Rbac\RbacRegistrar
  * @uses \OCA\OpenRegister\Service\Rbac\RbacWiring
  * @uses \OCA\OpenRegister\Service\ServiceBootstrap
@@ -112,6 +115,7 @@ class ComponentRegistrarWiringTest extends TestCase
             'notifications services' => [NotificationsServiceRegistrar::BINDINGS],
             'platform mappers' => [PlatformMapperRegistrar::BINDINGS],
             'platform services' => [PlatformServiceRegistrar::BINDINGS],
+            'compliance services' => [ComplianceServiceRegistrar::BINDINGS],
             'configuration mappers' => [ConfigurationMapperRegistrar::BINDINGS],
             'compliance mappers' => [ComplianceMapperRegistrar::BINDINGS],
             'integrations mappers' => [IntegrationsMapperRegistrar::BINDINGS],
