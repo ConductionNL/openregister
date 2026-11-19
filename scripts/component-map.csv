@@ -4185,8 +4185,8 @@ Service/Anonymisation/ContentPipelineReport.php,,Service,,,,,Compliance
 Controller/AnonymisationPipelineController.php,,Controller,,,,,Compliance
 Controller/FileDisclosuresController.php,,Controller,,,,,Compliance
 Exception/TextDisclosureNotRecordedException.php,,Exception,,,,,Compliance
-Files/Db/TextDisclosure.php,,Files,,,,,Files
-Files/Db/TextDisclosureMapper.php,,Files,,,,,Files
+Files/Db/TextDisclosure.php,,Files,,,,,Compliance
+Files/Db/TextDisclosureMapper.php,,Files,,,,,Compliance
 Service/Mail/MailThreadAssembler.php,,Service,,,,,Notifications
 Db/AutomationRecord.php,,Db,,,,,Processes
 Db/AutomationRecordFilter.php,,Db,,,,,Processes

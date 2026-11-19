@@ -2708,6 +2708,10 @@ deptrac:
         - type: directory
           value: 'lib/Exception/(TextDisclosureNotRecordedException)[.]php$'
         - type: directory
+          value: 'lib/Files/Db/TextDisclosure[.]php$'
+        - type: directory
+          value: 'lib/Files/Db/TextDisclosureMapper[.]php$'
+        - type: directory
           value: 'lib/Listener/(ArchivalNominationListener|ContentReportRemovalListener|EntityEditAuditListener|QualityScoreOnSaveListener|RecordTypeAuditListener|RelatedRetentionRecalculationListener|SchemaAuthorizationAuditListener)[.]php$'
         - type: directory
           value: 'lib/Repair/(RechainAuditTrailForFlowAttribution)[.]php$'
@@ -3076,7 +3080,47 @@ deptrac:
         - type: directory
           value: 'lib/Files/Controller/Support/[^/]*$'
         - type: directory
-          value: 'lib/Files/Db/[^/]*$'
+          value: 'lib/Files/Db/AnonymisationLog[.]php$'
+        - type: directory
+          value: 'lib/Files/Db/AnonymisationLogMapper[.]php$'
+        - type: directory
+          value: 'lib/Files/Db/Chunk[.]php$'
+        - type: directory
+          value: 'lib/Files/Db/ChunkIndexOverviewInterface[.]php$'
+        - type: directory
+          value: 'lib/Files/Db/ChunkMapper[.]php$'
+        - type: directory
+          value: 'lib/Files/Db/ChunkSourceReaderInterface[.]php$'
+        - type: directory
+          value: 'lib/Files/Db/ChunkStoreInterface[.]php$'
+        - type: directory
+          value: 'lib/Files/Db/DetectionMethod[.]php$'
+        - type: directory
+          value: 'lib/Files/Db/EntityMention[.]php$'
+        - type: directory
+          value: 'lib/Files/Db/EntityRelationMapperInterface[.]php$'
+        - type: directory
+          value: 'lib/Files/Db/File[.]php$'
+        - type: directory
+          value: 'lib/Files/Db/FileMapper[.]php$'
+        - type: directory
+          value: 'lib/Files/Db/FileMapperInterface[.]php$'
+        - type: directory
+          value: 'lib/Files/Db/FileSourceOrder[.]php$'
+        - type: directory
+          value: 'lib/Files/Db/MailHeader[.]php$'
+        - type: directory
+          value: 'lib/Files/Db/MailHeaderMapper[.]php$'
+        - type: directory
+          value: 'lib/Files/Db/NoteVersion[.]php$'
+        - type: directory
+          value: 'lib/Files/Db/NoteVersionMapper[.]php$'
+        - type: directory
+          value: 'lib/Files/Db/PublicShareRequest[.]php$'
+        - type: directory
+          value: 'lib/Files/Db/PublicationWindow[.]php$'
+        - type: directory
+          value: 'lib/Files/Db/RegisterFolderRecorder[.]php$'
         - type: directory
           value: 'lib/Files/Db/Chunk/[^/]*$'
         - type: directory
