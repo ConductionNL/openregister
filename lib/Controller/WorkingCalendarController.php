@@ -34,7 +34,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\AdministratorOnlyGate;
 use OCA\OpenRegister\Controller\Support\WorkingCalendarControllerServices;
 use OCA\OpenRegister\Exception\FlowTimerValidationException;
@@ -105,7 +104,7 @@ class WorkingCalendarController extends Controller {
 		IRequest $request,
 		WorkingCalendarControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->userSession = $services->userSession;
 		$this->groupManager = $services->groupManager;
 		$this->calendars = $services->calendars;
