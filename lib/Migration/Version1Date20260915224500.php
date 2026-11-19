@@ -38,14 +38,13 @@ use Closure;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\Types;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Create the configuration deployment tables.
  *
  * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
  */
-class Version1Date20260915224500 extends SimpleMigrationStep {
+class Version1Date20260915224500 extends TargetedMigrationStep {
 
 	/**
 	 * Change the database schema.
@@ -58,7 +57,7 @@ class Version1Date20260915224500 extends SimpleMigrationStep {
 	 *
 	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		/*
 		 * @var ISchemaWrapper $schema
 		 */
@@ -72,7 +71,7 @@ class Version1Date20260915224500 extends SimpleMigrationStep {
 
 		return $schema;
 
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 
 	/**
 	 * Create the draft set table.
