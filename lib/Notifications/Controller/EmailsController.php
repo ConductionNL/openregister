@@ -32,7 +32,7 @@ use OCA\OpenRegister\Notifications\Service\EmailService;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Notifications\Service\ReplyThreadService;
-use OCA\OpenRegister\Service\EmailLinkServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Notifications\ObjectEmailLinkWritesInterface;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -82,9 +82,9 @@ class EmailsController extends Controller {
 	/**
 	 * Object-scoped email link reads and writes.
 	 *
-	 * @var EmailLinkServiceInterface
+	 * @var ObjectEmailLinkWritesInterface
 	 */
-	private readonly EmailLinkServiceInterface $emailLinkService;
+	private readonly ObjectEmailLinkWritesInterface $emailLinkService;
 
 	/**
 	 * Answers the object update right.

@@ -25,12 +25,14 @@ namespace OCA\OpenRegister\Service;
 use Exception;
 use OCA\OpenRegister\Contract\EmailLinkReaderInterface;
 use OCA\OpenRegister\Db\EmailLink;
+use OCA\OpenRegister\Kernel\Contracts\Notifications\ObjectEmailLinkWritesInterface;
 
 /**
  * The methods of EmailLinkService that callers outside the Service component use;
- * getLinkedEmails() comes from EmailLinkReaderInterface.
+ * getLinkedEmails() comes from EmailLinkReaderInterface, unlinkEmail() and
+ * assertAccountOwnership() from ObjectEmailLinkWritesInterface.
  */
-interface EmailLinkServiceInterface extends EmailLinkReaderInterface {
+interface EmailLinkServiceInterface extends EmailLinkReaderInterface, ObjectEmailLinkWritesInterface {
 
 	/**
 	 * Whether NC Mail is installed + enabled for the current user.
@@ -63,20 +65,6 @@ interface EmailLinkServiceInterface extends EmailLinkReaderInterface {
 	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
 	public function linkEmail(LinkTarget $target, EmailMessageRef $message): EmailLink;
-
-	/**
-	 * Unlink a Mail message from an OR object.
-	 *
-	 * @param string $objectUuid Parent OR object uuid.
-	 * @param int $linkId Link primary key.
-	 *
-	 * @return void
-	 *
-	 * @throws Exception When no matching link is found (404).
-	 *
-	 * @spec openspec/specs/generic-integrations/spec.md
-	 */
-	public function unlinkEmail(string $objectUuid, int $linkId): void;
 
 	/**
 	 * Return the IMAP accounts visible to the current user.
@@ -120,19 +108,4 @@ interface EmailLinkServiceInterface extends EmailLinkReaderInterface {
 	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
 	public function getMessagesForMailbox(MailboxPage $page): array;
-
-	/**
-	 * Verify the active user owns the Mail account; throw on mismatch.
-	 *
-	 * Defence-in-depth — Mail's middleware already enforces this server-side
-	 * for its own endpoints, but the picker reaches into the raw tables
-	 * so we re-check ownership before exposing any per-account data.
-	 *
-	 * @param int $accountId Mail account id.
-	 *
-	 * @return void
-	 *
-	 * @throws Exception When the active user does not own the account.
-	 */
-	public function assertAccountOwnership(int $accountId): void;
 }//end interface

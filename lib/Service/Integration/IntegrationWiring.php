@@ -23,7 +23,9 @@ namespace OCA\OpenRegister\Service\Integration;
 use OCA\OpenRegister\Controller\IntegrationControllersRegistrar;
 use OCA\OpenRegister\Db\Integration\IntegrationIdIndexInterface;
 use OCA\OpenRegister\Event\ObjectWriteRequestEvent;
+use OCA\OpenRegister\Kernel\Contracts\Notifications\ObjectEmailLinkWritesInterface;
 use OCA\OpenRegister\Listener\WebhookRequestInterceptionListener;
+use OCA\OpenRegister\Service\EmailLinkService;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\AuditTrailProvider;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\FilesProvider;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\NotesProvider;
@@ -79,6 +81,7 @@ final class IntegrationWiring {
 		MessageDispatcherInterface::class => MessageDispatchProvider::class,
 		OpenCorporatesSearchInterface::class => OpenCorporatesProvider::class,
 		PageWidgetRegistryInterface::class => IntegrationRegistry::class,
+		ObjectEmailLinkWritesInterface::class => EmailLinkService::class,
 	];
 
 	/**
