@@ -4461,3 +4461,6 @@ Notifications/Controller/Support/EmailsDomain.php,,Notifications,,,,,Integration
 Notifications/Controller/Support/EmailsObjectAccess.php,,Notifications,,,,,Integrations
 Notifications/Controller/Support/EmailsPlatform.php,,Notifications,,,,,Integrations
 Notifications/Service/ExampleSet/ExampleSetTimelineRowsInterface.php,,Notifications,,,,,Configuration
+Command/NarrowMagicJsonColumnsCommand.php,,Command,,,,,Core
+Db/CatalogueScope.php,,Db,,,,,Core
+Repair/NarrowMagicJsonColumns.php,,Repair,,,,,Core
