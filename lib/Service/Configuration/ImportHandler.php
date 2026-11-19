@@ -395,6 +395,13 @@ class ImportHandler {
 	private readonly ?SchemaImportInstaller $schemaInstaller;
 
 	/**
+	 * What pass 1 of the running import wrote, so pass 2 does not write the same definition again.
+	 *
+	 * @var FirstPassWrites
+	 */
+	private readonly FirstPassWrites $firstPass;
+
+	/**
 	 * Constructor for ImportHandler.
 	 *
 	 * @param SchemaCatalogInterface $catalog The register, schema and magic-table mappers.
@@ -430,6 +437,7 @@ class ImportHandler {
 		$this->appConfigurations = new AppConfigurationRecord(configurationMapper: $this->configurationMapper, logger: $logger);
 		$this->schemaShape = new ImportedSchemaShape(validator: $schemaSteps->shapeValidator, logger: $logger);
 		$this->rejectedSchemas = new RejectedSchemaReport(logger: $logger);
+		$this->firstPass = new FirstPassWrites();
 	}//end __construct()
 
 	/**
@@ -1905,7 +1913,15 @@ class ImportHandler {
 			return $update->existing;
 		}
 
-		return $this->writeChangedSchema(update: $update, options: $options);
+		// Pass 2 with no reference left to resolve: pass 1 stored this very definition.
+		if ($this->firstPass->wroteTheSame(schemaId: $update->existing->getId(), definition: $update->data) === true) {
+			return $update->existing;
+		}
+
+		$schema = $this->writeChangedSchema(update: $update, options: $options);
+		$this->firstPass->remember(schemaId: $schema->getId(), definition: $update->data);
+
+		return $schema;
 	}//end updateImportedSchema()
 
 	/**
@@ -2037,6 +2053,7 @@ class ImportHandler {
 
 		$schema = $this->schemaMapper->update($this->withImportOwnership(schema: $schema, options: $options));
 		$this->noteDiscardedAnnotations(schema: $schema);
+		$this->firstPass->remember(schemaId: $schema->getId(), definition: $data);
 
 		return $schema;
 	}//end createImportedSchema()
@@ -2376,7 +2393,8 @@ class ImportHandler {
 		$run->version = $version ?? ($run->data['version'] ?? null);
 		$run->force = $force;
 
-		return $this->runImport(run: $run);
+		// Every frame from here down holds the configuration; see TraceArguments for what that cost.
+		return (new TraceArguments())->withheldDuring(operation: fn (): array => $this->runImport(run: $run));
 	}//end importFromJson()
 
 	/**
@@ -2548,8 +2566,14 @@ class ImportHandler {
 			]
 		);
 
-		$schemasToResolve = $this->createSchemasWithoutReferences(run: $run);
-		$this->resolveSchemaReferences(run: $run, schemasToResolve: $schemasToResolve);
+		try {
+			$this->firstPass->beginFirstPass();
+			$schemasToResolve = $this->createSchemasWithoutReferences(run: $run);
+			$this->firstPass->beginSecondPass();
+			$this->resolveSchemaReferences(run: $run, schemasToResolve: $schemasToResolve);
+		} finally {
+			$this->firstPass->end();
+		}
 
 		$this->logger->debug(
 			message: '[ImportHandler] Schema import process completed (TWO-PASS)',
@@ -4295,22 +4319,8 @@ class ImportHandler {
 				force: $force
 			);
 
-			$configuration = ($this->findAppConfiguration(import: $import) ?? $this->appConfigurations->create(import: $import));
-
-			// Run under its own import job id so the objects it creates can be
-			// removed by job later (a setup wizard's "remove this example set").
-			$this->takeKeptLocalReport();
-			$result = $this->importFromJsonAsJob(import: $import, configuration: $configuration);
-			$result['keptLocal'] = ['schemas' => $this->takeKeptLocalReport()];
-
-			$update = new ImportedConfigurationUpdate(configuration: $configuration, result: $result);
-			if (count($result['registers']) > 0 || count($result['schemas']) > 0 || count($result['objects']) > 0) {
-				$this->appConfigurations->track(import: $import, update: $update);
-			}
-
-			$this->finishAppImport(import: $import, update: $update);
-
-			return $update->result;
+			// The steps before and after importFromJson() hold the configuration too.
+			return (new TraceArguments())->withheldDuring(operation: fn (): array => $this->importAppConfiguration(import: $import));
 		} catch (Exception $e) {
 			$this->logger->error(
 				message: "[ImportHandler] Failed to import configuration for app {$appId}: " . $e->getMessage(),
@@ -4319,6 +4329,36 @@ class ImportHandler {
 			throw new Exception("Failed to import configuration for app {$appId}: " . $e->getMessage());
 		}//end try
 	}//end importFromApp()
+
+	/**
+	 * Import an app's configuration into its Configuration entity and finish the import.
+	 *
+	 * @param AppImport $import The app import.
+	 *
+	 * @return array The import results.
+	 *
+	 * @throws Exception If import fails.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function importAppConfiguration(AppImport $import): array {
+		$configuration = ($this->findAppConfiguration(import: $import) ?? $this->appConfigurations->create(import: $import));
+
+		// Run under its own import job id so the objects it creates can be
+		// removed by job later (a setup wizard's "remove this example set").
+		$this->takeKeptLocalReport();
+		$result = $this->importFromJsonAsJob(import: $import, configuration: $configuration);
+		$result['keptLocal'] = ['schemas' => $this->takeKeptLocalReport()];
+
+		$update = new ImportedConfigurationUpdate(configuration: $configuration, result: $result);
+		if (count($result['registers']) > 0 || count($result['schemas']) > 0 || count($result['objects']) > 0) {
+			$this->appConfigurations->track(import: $import, update: $update);
+		}
+
+		$this->finishAppImport(import: $import, update: $update);
+
+		return $update->result;
+	}//end importAppConfiguration()
 
 	/**
 	 * Find the Configuration an app import updates: by its `sourceUrl`
