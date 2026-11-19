@@ -29,6 +29,8 @@ use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
 use OCA\OpenRegister\Service\Portal\PortalPartyResolver;
+use OCA\OpenRegister\Service\SequenceService;
+use OCA\OpenRegister\Service\SequenceServiceInterface;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
 use OCA\OpenRegister\Service\TaskService;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
@@ -150,7 +152,7 @@ final class FlowWiringTest extends TestCase {
 	}//end testTheFieldRulesPortIsAnsweredByTheStateResolver()
 
 	/**
-	 * The store of the flows compiled from application schedules is bound, and only the two aliases are registered.
+	 * The store of the flows compiled from application schedules is bound, and the generated-identifier counter is bound, and only those three aliases are registered.
 	 *
 	 * @return void
 	 */
@@ -159,6 +161,7 @@ final class FlowWiringTest extends TestCase {
 			expected: [
 				FieldRulesSourceInterface::class  => StateFieldRuleResolver::class,
 				ScheduleFlowStoreInterface::class => ScheduleFlowStore::class,
+				SequenceServiceInterface::class   => SequenceService::class,
 			],
 			actual: $this->aliases
 		);

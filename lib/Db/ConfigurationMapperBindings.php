@@ -52,7 +52,5 @@ final class ConfigurationMapperBindings {
 		JobRunMapperInterface::class                  => JobRunMapper::class,
 		MigrationPackMapperInterface::class           => MigrationPackMapper::class,
 		RecordTemplateMapperInterface::class          => RecordTemplateMapper::class,
-		SequenceMapperInterface::class                => SequenceMapper::class,
-		TaskSequenceMapperInterface::class            => TaskSequenceMapper::class,
 	];
 }//end class

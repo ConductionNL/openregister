@@ -1017,7 +1017,6 @@ final class ContractBindings {
 		SendEmailNodeInterface::class => SendEmailNode::class,
 		SendNotificationNodeInterface::class => SendNotificationNode::class,
 		SendTalkMessageNodeInterface::class => SendTalkMessageNode::class,
-		SequenceServiceInterface::class => SequenceService::class,
 		ShareableConfigTypeRegistryInterface::class => ShareableConfigTypeRegistry::class,
 		SharedSchemaDedupeServiceInterface::class => SharedSchemaDedupeService::class,
 		SlaCalculatorInterface::class => SlaCalculator::class,
