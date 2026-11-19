@@ -38,7 +38,7 @@ use OCA\OpenRegister\Notifications\Service\Timeline\ReferenceService;
 use OCA\OpenRegister\Notifications\Service\Timeline\TextBlockService;
 use OCA\OpenRegister\Notifications\Service\Timeline\TimelineKindService;
 use OCA\OpenRegister\Notifications\Service\Timeline\TimelineValidationException;
-use OCA\OpenRegister\Settings\OpenRegisterAdmin;
+use OCA\OpenRegister\Kernel\Contracts\AdminSettingDelegation;
 use OCA\OpenRegister\Notifications\Controller\Support\QueryText;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -171,7 +171,7 @@ class TimelineAdminController extends Controller {
 	 *
 	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
 	 */
-	#[AuthorizedAdminSetting(settings: OpenRegisterAdmin::class)]
+	#[AuthorizedAdminSetting(settings: AdminSettingDelegation::OPEN_REGISTER_ADMIN)]
 	public function declareKind(): JSONResponse {
 		$refusal = $this->requireAdmin();
 		if ($refusal !== null) {
@@ -198,7 +198,7 @@ class TimelineAdminController extends Controller {
 	 *
 	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
 	 */
-	#[AuthorizedAdminSetting(settings: OpenRegisterAdmin::class)]
+	#[AuthorizedAdminSetting(settings: AdminSettingDelegation::OPEN_REGISTER_ADMIN)]
 	public function withdrawKind(string $slug): JSONResponse {
 		$refusal = $this->requireAdmin();
 		if ($refusal !== null) {
@@ -253,7 +253,7 @@ class TimelineAdminController extends Controller {
 	 *
 	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
 	 */
-	#[AuthorizedAdminSetting(settings: OpenRegisterAdmin::class)]
+	#[AuthorizedAdminSetting(settings: AdminSettingDelegation::OPEN_REGISTER_ADMIN)]
 	public function declarePattern(): JSONResponse {
 		$refusal = $this->requireAdmin();
 		if ($refusal !== null) {
@@ -280,7 +280,7 @@ class TimelineAdminController extends Controller {
 	 *
 	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
 	 */
-	#[AuthorizedAdminSetting(settings: OpenRegisterAdmin::class)]
+	#[AuthorizedAdminSetting(settings: AdminSettingDelegation::OPEN_REGISTER_ADMIN)]
 	public function withdrawPattern(string $slug): JSONResponse {
 		$refusal = $this->requireAdmin();
 		if ($refusal !== null) {
@@ -343,7 +343,7 @@ class TimelineAdminController extends Controller {
 	 *
 	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
 	 */
-	#[AuthorizedAdminSetting(settings: OpenRegisterAdmin::class)]
+	#[AuthorizedAdminSetting(settings: AdminSettingDelegation::OPEN_REGISTER_ADMIN)]
 	public function declareTextBlock(): JSONResponse {
 		$refusal = $this->requireAdmin();
 		if ($refusal !== null) {
@@ -370,7 +370,7 @@ class TimelineAdminController extends Controller {
 	 *
 	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
 	 */
-	#[AuthorizedAdminSetting(settings: OpenRegisterAdmin::class)]
+	#[AuthorizedAdminSetting(settings: AdminSettingDelegation::OPEN_REGISTER_ADMIN)]
 	public function withdrawTextBlock(string $slug): JSONResponse {
 		$refusal = $this->requireAdmin();
 		if ($refusal !== null) {
