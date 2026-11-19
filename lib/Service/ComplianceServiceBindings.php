@@ -22,7 +22,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\AuthRateLimitCeilingInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\SearchTrailRecorderInterface;
+use OCA\OpenRegister\Service\Hardening\HardeningPolicy;
 
 /**
  * Interface => service map of the Compliance area, behind ComplianceServiceRegistrar.
@@ -41,6 +43,7 @@ final class ComplianceServiceBindings {
 	 * @var array<class-string, class-string>
 	 */
 	public const BINDINGS = [
+		AuthRateLimitCeilingInterface::class => HardeningPolicy::class,
 		SearchTrailRecorderInterface::class => SearchTrailService::class,
 	];
 }//end class

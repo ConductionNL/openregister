@@ -88,9 +88,9 @@ use ReflectionClass;
  * @uses \OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistrar
  * @uses \OCA\OpenRegister\Service\ObjectSource\ObjectSourceWiring
  * @uses \OCA\OpenRegister\Service\PlatformServiceBindings
- * @uses \OCA\OpenRegister\Service\ComplianceServiceBindings
  * @uses \OCA\OpenRegister\Service\PlatformServiceRegistrar
  * @uses \OCA\OpenRegister\Service\ComplianceServiceRegistrar
+ * @uses \OCA\OpenRegister\Service\ComplianceServiceBindings
  * @uses \OCA\OpenRegister\Service\Rbac\RbacRegistrar
  * @uses \OCA\OpenRegister\Service\Rbac\RbacWiring
  * @uses \OCA\OpenRegister\Service\ServiceBootstrap

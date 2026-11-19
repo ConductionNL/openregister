@@ -12,8 +12,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Kernel\Contracts\Core\SearchTrailRecorderInterface;
-use OCA\OpenRegister\Service\ComplianceServiceRegistrar;
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\ComplianceServiceRegistrar;
 use OCA\OpenRegister\Service\Object\SearchQueryHandler;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
@@ -54,7 +54,7 @@ final class ComplianceServiceRegistrarTest extends TestCase {
 	}//end testEveryBindingIsImplementedByItsClass()
 
 	/**
-	 * ContractBindings does not bind any of these interfaces as well.
+	 * ContractBindings no longer binds any of these interfaces.
 	 *
 	 * @return void
 	 */
