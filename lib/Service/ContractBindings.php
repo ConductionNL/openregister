@@ -78,8 +78,6 @@ use OCA\OpenRegister\Service\Authorization\GrantableRightsIndex;
 use OCA\OpenRegister\Service\Authorization\GrantableRightsIndexInterface;
 use OCA\OpenRegister\Service\Bindings\AccessBindings;
 use OCA\OpenRegister\Service\Bindings\FeatureBindings;
-use OCA\OpenRegister\Service\Bindings\FlowBindings;
-use OCA\OpenRegister\Service\Bindings\MiscBindings;
 use OCA\OpenRegister\Service\Bindings\ObjectsBindings;
 use OCA\OpenRegister\Service\Bindings\RootBindings;
 use OCA\OpenRegister\Service\Bindings\SchemasBindings;
@@ -450,6 +448,10 @@ use OCA\OpenRegister\Service\Operations\SupportBundleServiceInterface;
 use OCA\OpenRegister\Service\Organisation\OrganisationEditAuditorInterface;
 use OCA\OpenRegister\Service\Organisation\OrganisationLifecycleAuditor;
 use OCA\OpenRegister\Kernel\Contracts\Core\AuditEntryWriterInterface;
+use OCA\OpenRegister\Kernel\Contracts\Notifications\DeclaredWebhookInstallerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Processes\TranslationProjectionInterface;
+use OCA\OpenRegister\Kernel\Contracts\Processes\WholeSetExportActionInterface;
+use OCA\OpenRegister\BulkAction\ExportWholeSetAction;
 use OCA\OpenRegister\Service\Audit\AuditEntryWriter;
 use OCA\OpenRegister\Service\Party\PartyRoleService;
 use OCA\OpenRegister\Service\Party\PartyRoleServiceInterface;
@@ -535,6 +537,8 @@ use OCA\OpenRegister\Service\Schemas\SemanticRoleHandlerInterface;
 use OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluator;
 use OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluatorInterface;
 use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
+use OCA\OpenRegister\Kernel\Contracts\Integrations\TranslationBindingInterface;
+use OCA\OpenRegister\Service\Translation\TranslationBindingDescription;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCA\OpenRegister\Service\Settings\RetentionSettingsReaderInterface;
 use OCA\OpenRegister\Service\SharedMasterDataService;
@@ -642,6 +646,9 @@ final class ContractBindings {
 		OdtWriterInterface::class => OdtWriter::class,
 		OrganisationEditAuditorInterface::class => OrganisationLifecycleAuditor::class,
 		AuditEntryWriterInterface::class => AuditEntryWriter::class,
+		DeclaredWebhookInstallerInterface::class => NotificationsAnnotationInstaller::class,
+		TranslationProjectionInterface::class => TranslationProjectionService::class,
+		WholeSetExportActionInterface::class => ExportWholeSetAction::class,
 		ShareGrantorInterface::class => ShareGrantor::class,
 		TenantKeyRotationInterface::class => TenantKeyService::class,
 		ToolReachLevels::class => ToolReachResolver::class,
@@ -649,6 +656,7 @@ final class ContractBindings {
 		ArchivalNominationServiceInterface::class => ArchivalNominationService::class,
 		\OCA\OpenRegister\Service\Archival\ArchivalNominationTriggerInterface::class => ArchivalNominationService::class,
 		ArchivalSettingsReaderInterface::class => ObjectRetentionHandler::class,
+		TranslationBindingInterface::class => TranslationBindingDescription::class,
 		\OCA\OpenRegister\Service\Audit\AuditSinkInterface::class => \OCA\OpenRegister\Service\Audit\AuditSink::class,
 		DeferredEntryObjectResolverInterface::class => DeferredEntryObjectResolver::class,
 		ListenerDeferralInterface::class => ListenerDeferralService::class,
@@ -1166,7 +1174,6 @@ final class ContractBindings {
 		ProviderCatalogueInterface::class => ProviderCatalogue::class,
 		...RootBindings::BINDINGS,
 		NotificationsAnnotationInstallerInterface::class => NotificationsAnnotationInstaller::class,
-		...FlowBindings::BINDINGS,
 		ReferencedAddressNotifierInterface::class => ReferencedAddressNotifier::class,
 		...AccessBindings::BINDINGS,
 		\OCA\OpenRegister\Service\Lifecycle\AutoTransitionPassInterface::class => \OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass::class,
@@ -1174,7 +1181,6 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\Flow\FlowRunContextInterface::class => \OCA\OpenRegister\Service\Flow\FlowRunContext::class,
 		...FeatureBindings::BINDINGS,
 		TrustTierResolverInterface::class => TrustTierResolver::class,
-		...MiscBindings::BINDINGS,
 		\OCA\OpenRegister\Service\RedactionPolicy\TermRuleSourceInterface::class => \OCA\OpenRegister\Service\RedactionPolicy\ObjectTermRuleSource::class,
 	];
 
