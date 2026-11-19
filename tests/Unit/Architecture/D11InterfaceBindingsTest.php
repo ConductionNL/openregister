@@ -126,8 +126,8 @@ final class D11InterfaceBindingsTest extends TestCase {
 	#[DataProvider('classes')]
 	public function testTheInterfaceIsBound(string $class, string $contract): void {
 		$bindings = ContractBindings::BINDINGS + PlatformServiceRegistrar::BINDINGS;
-		$this->assertArrayHasKey($contract, $bindings);
-		$this->assertSame($class, $bindings[$contract]);
+		$this->assertArrayHasKey(key: $contract, array: $bindings);
+		$this->assertSame(expected: $class, actual: $bindings[$contract]);
 	}//end testTheInterfaceIsBound()
 
 	/**
