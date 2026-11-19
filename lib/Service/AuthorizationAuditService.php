@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\SchemaAccessChangeLogInterface;
 
 /**
  * Audit service for authorization configuration changes
@@ -34,14 +35,14 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
  * Each log entry includes who made the change, what changed, and the
  * old and new values for full audit trail compliance.
  */
-class AuthorizationAuditService {
+class AuthorizationAuditService implements SchemaAccessChangeLogInterface {
 
 	/**
 	 * Log event type for authorization changes.
 	 *
 	 * @var string
 	 */
-	public const EVENT_TYPE = 'openregister_authorization';
+	public const EVENT_TYPE = SchemaAccessChangeLogInterface::EVENT_TYPE;
 
 	/**
 	 * Constructor.

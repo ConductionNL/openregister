@@ -27,7 +27,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Rbac;
 use OCA\OpenRegister\Db\DelegationGrantMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\AuthorizationAuditService;
+use OCA\OpenRegister\Kernel\Contracts\Core\SchemaAccessChangeLogInterface;
 use OCA\OpenRegister\Service\Rbac\DerivedGrantStore;
 use OCA\OpenRegister\Service\Rbac\PrincipalReachService;
 use OCA\OpenRegister\Service\Rbac\ReachRevocationLog;
@@ -74,7 +74,7 @@ class ReachRevocationEntryMatchGoldenTest extends TestCase {
 		$service = new ReachRevocationService(
 			reach: $reach,
 			sources: new ReachSources(schemaMapper: $schemas, derived: $store, delegations: $delegations),
-			log: new ReachRevocationLog(audit: $this->createMock(AuthorizationAuditService::class), logger: new NullLogger()),
+			log: new ReachRevocationLog(audit: $this->createMock(SchemaAccessChangeLogInterface::class), logger: new NullLogger()),
 			userSession: $this->createMock(IUserSession::class)
 		);
 		$service->revokeAll('anja');
