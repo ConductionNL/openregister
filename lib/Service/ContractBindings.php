@@ -22,6 +22,7 @@ namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ContactMatcherInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\RetentionSettingsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExportGuardInterface;
 use OCA\OpenRegister\Kernel\Contracts\ExampleSetInstallerInterface;
 use OCA\OpenRegister\Kernel\Contracts\FlowTimerControlInterface;
@@ -1020,6 +1021,7 @@ final class ContractBindings {
 		RegisterServiceInterface::class => RegisterService::class,
 		RelationGraphServiceInterface::class => RelationGraphService::class,
 		RetentionSettingsReaderInterface::class => ObjectRetentionHandler::class,
+		RetentionSettingsInterface::class => ObjectRetentionHandler::class,
 		ScheduledReportsInterface::class => ScheduledReportService::class,
 		SchemaApplicationMigratorInterface::class => SchemaApplicationMigrator::class,
 		SchemaCacheHandlerInterface::class => SchemaCacheHandler::class,

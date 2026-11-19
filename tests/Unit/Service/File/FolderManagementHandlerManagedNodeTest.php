@@ -19,7 +19,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\File;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Files\Db\RegisterFolderRecorder;
+use OCA\OpenRegister\Kernel\Contracts\Core\RegisterFolderRecordsInterface;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\FileHandlerSupportInterface;
 use OCP\Files\Config\IUserMountCache;
@@ -80,7 +80,7 @@ class FolderManagementHandlerManagedNodeTest extends TestCase {
 			logger: $this->logger,
 			auditTrailMapper: $this->createMock(AuditTrailMapperInterface::class),
 			mountCache: $this->createMock(IUserMountCache::class),
-			folderRecorder: $this->createMock(RegisterFolderRecorder::class),
+			folderRecorder: $this->createMock(RegisterFolderRecordsInterface::class),
 			fileService: $fileService,
 			container: $container
 		);
