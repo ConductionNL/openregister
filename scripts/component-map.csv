@@ -3281,7 +3281,7 @@ Service/Task/TaskVtodoStatusMapping.php,58,Service,Work,Work/Service/Task/TaskVt
 Service/Task/TaskVtodoWriteBackGate.php,153,Service,Work,Work/Service/Task/TaskVtodoWriteBackGate.php,0,174,Processes
 Service/Task/VtodoCalendarLocator.php,44,Service,Work,Work/Service/Task/VtodoCalendarLocator.php,0,,Processes
 Service/TaskService.php,422,Service,Work,Work/Service/TaskService.php,7,52,Processes
-Service/TenantKeyService.php,120,Service,Configuration,Configuration/Service/TenantKeyService.php,35,,Configuration
+Service/TenantKeyService.php,120,Service,Configuration,Configuration/Service/TenantKeyService.php,35,,Compliance
 Service/TenantLifecycleService.php,219,Service,Access,Access/Service/TenantLifecycleService.php,0,,Core
 Service/TenantLogRedactor.php,161,Service,Service,Service/TenantLogRedactor.php,0,,Core
 Service/TimeTrackerLinkService.php,503,Service,Integrations,Integrations/Service/TimeTrackerLinkService.php,0,,Integrations
@@ -3939,7 +3939,7 @@ Service/CommentsCollectionCatalog.php,,Service,,,,,Processes
 Service/DeepLinkResolverInterface.php,,Service,,,,,Core
 Service/DemoDataServiceInterface.php,,Service,,,,,Core
 Service/DescriptorImportTarget.php,,Service,,,,,Configuration
-Service/DescriptorReimportRun.php,,Service,,,,,Compliance
+Service/DescriptorReimportRun.php,,Service,,,,,Configuration
 Service/DisposalSweep.php,,Service,,,,,Core
 Service/DsarGuards.php,,Service,,,,,Compliance
 Service/DsarServiceInterface.php,,Service,,,,,Core
@@ -4031,7 +4031,7 @@ Service/ProtectedCarryForward.php,,Service,,,,,Core
 Service/ProtectedPropertyRead.php,,Service,,,,,Core
 Service/RateLimitResetInterface.php,,Service,,,,,Core
 Service/ReadCaptureRun.php,,Service,,,,,Compliance
-Service/RecordUpdate.php,,Service,,,,,Configuration
+Service/RecordUpdate.php,,Service,,,,,Core
 Service/RegisterDescriptorServiceInterface.php,,Service,,,,,Core
 Service/RegisterImportCall.php,,Service,,,,,Core
 Service/RegisterImportDocument.php,,Service,,,,,Core
@@ -4056,7 +4056,7 @@ Service/ScheduledReportNotice.php,,Service,,,,,Notifications
 Service/ScheduledReportOwnerServices.php,,Service,,,,,Notifications
 Service/ScheduledReportStores.php,,Service,,,,,Notifications
 Service/SchemaApplicationMigratorInterface.php,,Service,,,,,Core
-Service/SchemaCascade.php,,Service,,,,,Configuration
+Service/SchemaCascade.php,,Service,,,,,Compliance
 Service/SchemaDeletionStores.php,,Service,,,,,Core
 Service/SchemaObjectTally.php,,Service,,,,,Core
 Service/SchemaProperty.php,,Service,,,,,Core
@@ -4090,7 +4090,7 @@ Service/SkosNodeReader.php,,Service,,,,,Core
 Service/SourceLanguageLookup.php,,Service,,,,,Configuration
 Service/StoredEvent.php,,Service,,,,,Processes
 Service/StoredTask.php,,Service,,,,,Processes
-Service/TableDeletionOptions.php,,Service,,,,,Integrations
+Service/TableDeletionOptions.php,,Service,,,,,Core
 Service/TableDeletionRun.php,,Service,,,,,Compliance
 Service/TableObjectRef.php,,Service,,,,,Compliance
 Service/TalkLinkServiceInterface.php,,Service,,,,,Integrations
@@ -4495,3 +4495,4 @@ Controller/Support/TimeTrackerLinksControllerServices.php,,Controller,,,,,Integr
 Controller/Support/SourcePayload.php,,Controller,,,,,Integrations
 Controller/Support/MaintenanceReachableControllersInterface.php,,Controller,,,,,Configuration
 Service/Party/PartyRecipients.php,,Service,,,,,Processes
+Service/Settings/ArchivalSettingsReaderInterface.php,,Service,,,,,Compliance
