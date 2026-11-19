@@ -1241,7 +1241,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	}//end checkBehaviourDeclarations()
 
 	/**
-	 * What the data of this schema means: quality, dedup, merge, party and archiving.
+	 * What the data of this schema means: quality, dedup, merge, party and retention; Compliance adds the archival check.
 	 *
 	 * @param Schema $schema The schema being saved.
 	 *
@@ -1252,7 +1252,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	}//end checkDataDeclarations()
 
 	/**
-	 * How objects leave or enter: handoff, MCP, registry, links and extending forms.
+	 * How objects leave or enter: MCP, registry, links and extending forms; Integrations adds the handoff checks.
 	 *
 	 * @param Schema $schema The schema being saved.
 	 *
@@ -1340,7 +1340,6 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 */
 	private function behaviourSteps(Schema $schema): array {
 		return [
-			SchemaDeclarationOrder::MDTO_MAPPING => fn () => (new RecordAnnotationRefusals(logger: $this->logger))->checkMdtoMapping(schema: $schema),
 			SchemaDeclarationOrder::AGGREGATIONS => fn () => (new AdvisoryAnnotationChecks(logger: $this->logger, discarded: $this->discarded))
 				->checkAggregations(schema: $schema),
 			SchemaDeclarationOrder::CONSENT => static fn () => (new SubjectDeclarationRefusals())->checkConsent(schema: $schema),
@@ -1351,7 +1350,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	}//end behaviourSteps()
 
 	/**
-	 * What the data of this schema means: quality, dedup, merge, party and archiving.
+	 * What the data of this schema means: quality, dedup, merge, party and retention; Compliance adds the archival check.
 	 *
 	 * @param Schema $schema The schema being saved.
 	 *
@@ -1359,7 +1358,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 */
 	private function dataSteps(Schema $schema): array {
 		$advisory = new AdvisoryAnnotationChecks(logger: $this->logger, discarded: $this->discarded);
-		$records = new RecordAnnotationRefusals(logger: $this->logger);
+		$records = new RecordAnnotationRefusals();
 		return [
 			SchemaDeclarationOrder::QUALITY => static fn () => $advisory->checkQuality(schema: $schema),
 			SchemaDeclarationOrder::DEDUP => static fn () => $advisory->checkDedup(schema: $schema),
@@ -1371,7 +1370,6 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 			SchemaDeclarationOrder::PARTY => static fn () => $advisory->checkParty(schema: $schema),
 			SchemaDeclarationOrder::NOTIFICATIONS => fn () => $this->checkNotifications(schema: $schema),
 			SchemaDeclarationOrder::WIDGETS => static fn () => $records->checkWidgets(schema: $schema),
-			SchemaDeclarationOrder::ARCHIVAL => static fn () => $records->checkArchival(schema: $schema),
 			SchemaDeclarationOrder::REFERENCE_CARD => static fn () => $records->checkReferenceCard(schema: $schema),
 			SchemaDeclarationOrder::SEARCH_RESULT => static fn () => $records->checkSearchResult(schema: $schema),
 			SchemaDeclarationOrder::RETENTION => static fn () => $records->checkRetention(schema: $schema),
@@ -1397,7 +1395,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	}//end checkNotifications()
 
 	/**
-	 * How objects leave or enter: handoff, MCP, registry, links and extending forms.
+	 * How objects leave or enter: MCP, registry, links and extending forms; Integrations adds the handoff checks.
 	 *
 	 * @param Schema $schema The schema being saved.
 	 *
@@ -1406,11 +1404,9 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	private function exchangeSteps(Schema $schema): array {
 		$exchange = new ExchangeAnnotationRefusals();
 		return [
-			SchemaDeclarationOrder::HANDOFF => static fn () => $exchange->checkHandoff(schema: $schema),
-			SchemaDeclarationOrder::HANDOFF_CONTRACT => static fn () => $exchange->checkHandoffContract(schema: $schema),
 			SchemaDeclarationOrder::MCP => static fn () => $exchange->checkMcp(schema: $schema),
 			SchemaDeclarationOrder::REGISTRY => static fn () => (new SubjectDeclarationRefusals())->checkRegistry(schema: $schema),
-			SchemaDeclarationOrder::EXTERNAL_LINKS => fn () => (new RecordAnnotationRefusals(logger: $this->logger))->checkExternalLinks(schema: $schema),
+			SchemaDeclarationOrder::EXTERNAL_LINKS => fn () => (new RecordAnnotationRefusals())->checkExternalLinks(schema: $schema),
 			SchemaDeclarationOrder::EXTENDING_FORM => static fn () => (new PropertyDeclarationRefusals())->checkExtendingForm(schema: $schema),
 		];
 	}//end exchangeSteps()

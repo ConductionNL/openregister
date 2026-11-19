@@ -22,27 +22,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Export;
 
-use OCA\OpenRegister\Db\Schema;
-use OCP\AppFramework\Http\JSONResponse;
+use OCA\OpenRegister\Kernel\Contracts\Core\ExportGuardInterface;
 
 /**
  * Answers whether an export may run, as the refusal response to return or null.
  *
- * Declares only what callers outside the component use; the rest of the
- * class stays its own. Bound to ExportGate.
+ * The method is declared on the Core contract this interface extends.
+ * Bound, with that contract, to ExportGate.
  */
-interface ExportGateInterface {
-
-	/**
-	 * The refusal this export should return, or null when it may run.
-	 *
-	 * @param Schema|null $schema     The schema being exported.
-	 * @param string      $profile    What the audit entry calls this export.
-	 * @param int|null    $registerId The register, for the audit entry.
-	 *
-	 * @return JSONResponse|null The refusal, or null when the export may run.
-	 *
-	 * @spec openspec/specs/authorization-rbac/spec.md#requirement-export-is-its-own-permission-verb-req-exp-001
-	 */
-	public function refusalFor(?Schema $schema, string $profile, ?int $registerId = null): ?JSONResponse;
+interface ExportGateInterface extends ExportGuardInterface {
 }//end interface
