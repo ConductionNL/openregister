@@ -443,13 +443,6 @@
   "lib/Service/Deletion/DestructionScopeService.php -> lib/Service/Edepot/AuditRecording.php",
   "lib/Service/Deletion/RetentionClockService.php -> lib/Db/Verwerkingsactiviteit.php",
   "lib/Service/DsarServiceInterface.php -> lib/Service/DsarSubjectQuery.php",
-  "lib/Service/Federation/CreatorPropertyFilter.php -> lib/Db/FederatedShare.php",
-  "lib/Service/Federation/RemoteShareNotification.php -> lib/Db/FederatedShare.php",
-  "lib/Service/Federation/ShareCreatorCheck.php -> lib/Db/FederatedShare.php",
-  "lib/Service/Federation/ShareGrantor.php -> lib/Db/FederatedShare.php",
-  "lib/Service/Federation/ShareGrantorInterface.php -> lib/Db/FederatedShare.php",
-  "lib/Service/Federation/ShareLifetime.php -> lib/Db/FederatedShare.php",
-  "lib/Service/Federation/ShareTargets.php -> lib/Db/FederatedShare.php",
   "lib/Service/File/ArchiveMemberEnumerator.php -> lib/Service/Settings/FileSettingsHandler.php",
   "lib/Service/File/CreateFileHandler.php -> lib/Files/Service/File/FileOwnershipHandlerInterface.php",
   "lib/Service/File/CreateFileHandler.php -> lib/Service/FileHandlerSupportInterface.php",
@@ -1472,6 +1465,7 @@
   "lib/Kernel/Contracts/Core/CredentialSecretReaderInterface.php",
   "lib/Kernel/Contracts/Core/ExportGuardInterface.php",
   "lib/Kernel/Contracts/Core/ExpressionDefaultsInterface.php",
+  "lib/Kernel/Contracts/Core/FederatedShareInterface.php",
   "lib/Kernel/Contracts/Core/FieldRulesSourceInterface.php",
   "lib/Kernel/Contracts/Core/ObjectPresenceInterface.php",
   "lib/Kernel/Contracts/Core/ObjectPreviewCacheInterface.php",
@@ -2139,7 +2133,6 @@
   "lib/Service/FailedAttempt.php",
   "lib/Service/Federation/CreatorPropertyFilter.php",
   "lib/Service/Federation/PlainQueryMatch.php",
-  "lib/Service/Federation/RemoteShareNotification.php",
   "lib/Service/Federation/ShareCreatorCheck.php",
   "lib/Service/Federation/ShareGrantor.php",
   "lib/Service/Federation/ShareGrantorInterface.php",
@@ -3114,9 +3107,9 @@
  "exposed_loc": {
   "Compliance": 15739,
   "Configuration": 6895,
-  "Core": 65076,
+  "Core": 65031,
   "Files": 3684,
-  "Integrations": 18784,
+  "Integrations": 18785,
   "Kernel": 8515,
   "Notifications": 1914,
   "Platform": 976,
@@ -3582,6 +3575,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10440,
- "total_loc": 459415,
- "violation_degree": 0.0886
+ "total_loc": 459423,
+ "violation_degree": 0.0879
 }

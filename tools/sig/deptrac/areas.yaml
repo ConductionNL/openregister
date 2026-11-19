@@ -764,7 +764,19 @@ deptrac:
         - type: directory
           value: 'lib/Service/ExternalLink/[^/]*$'
         - type: directory
-          value: 'lib/Service/Federation/[^/]*$'
+          value: 'lib/Service/Federation/CreatorPropertyFilter[.]php$'
+        - type: directory
+          value: 'lib/Service/Federation/PlainQueryMatch[.]php$'
+        - type: directory
+          value: 'lib/Service/Federation/ShareCreatorCheck[.]php$'
+        - type: directory
+          value: 'lib/Service/Federation/ShareGrantor[.]php$'
+        - type: directory
+          value: 'lib/Service/Federation/ShareGrantorInterface[.]php$'
+        - type: directory
+          value: 'lib/Service/Federation/ShareLifetime[.]php$'
+        - type: directory
+          value: 'lib/Service/Federation/ShareTargets[.]php$'
         - type: directory
           value: 'lib/Service/File/[^/]*$'
         - type: directory
@@ -3591,6 +3603,8 @@ deptrac:
           value: 'lib/Service/Consumer/[^/]*$'
         - type: directory
           value: 'lib/Service/Credential/[^/]*$'
+        - type: directory
+          value: 'lib/Service/Federation/RemoteShareNotification[.]php$'
         - type: directory
           value: 'lib/Service/Handoff/HandoffAnnotationEntry[.]php$'
         - type: directory
