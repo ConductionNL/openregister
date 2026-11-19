@@ -30,6 +30,7 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use Exception;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\ArchivalSettingsInterface;
 use OCA\OpenRegister\Service\HoldOrder;
 use OCA\OpenRegister\BackgroundJob\DestructionExecutionJobInterface;
 use OCA\OpenRegister\Controller\Support\DestructionListApproval;
@@ -42,7 +43,6 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Archival\DestructionServiceInterface;
 use OCA\OpenRegister\Service\Object\SaveObjectWriterInterface;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
-use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\BackgroundJob\IJobList;
@@ -78,9 +78,9 @@ class RetentionController extends Controller {
 	/**
 	 * Settings handler
 	 *
-	 * @var ArchivalSettingsReaderInterface
+	 * @var ArchivalSettingsInterface
 	 */
-	private readonly ArchivalSettingsReaderInterface $settingsHandler;
+	private readonly ArchivalSettingsInterface $settingsHandler;
 
 	/**
 	 * Save object service

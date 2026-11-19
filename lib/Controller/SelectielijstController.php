@@ -35,9 +35,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\ArchivalSettingsInterface;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Service\Archival\SelectielijstImportServiceInterface;
-use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
@@ -82,9 +82,9 @@ class SelectielijstController extends Controller {
 	/**
 	 * Names the version in force.
 	 *
-	 * @var ArchivalSettingsReaderInterface
+	 * @var ArchivalSettingsInterface
 	 */
-	private readonly ArchivalSettingsReaderInterface $settingsHandler;
+	private readonly ArchivalSettingsInterface $settingsHandler;
 
 	/**
 	 * Constructor.
