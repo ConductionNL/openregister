@@ -64,12 +64,23 @@ class TaskTerminalEvent extends AbstractTaskEvent {
 	 *                        closed; FALSE when dispatched inside it.
 	 */
 	public function __construct(
-		Task $task,
+		private readonly Task $task,
 		private readonly bool $committed = true,
 	) {
 		parent::__construct(task: $task);
 
 	}//end __construct()
+
+	/**
+	 * The task the event is about, as the Task row it was dispatched with.
+	 *
+	 * @return Task The task as persisted.
+	 *
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-the-run-continues-on-task-terminality-never-on-a-nudge
+	 */
+	public function getTask(): Task {
+		return $this->task;
+	}//end getTask()
 
 	/**
 	 * Whether the terminal write has committed.

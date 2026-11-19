@@ -3794,8 +3794,8 @@ Event/AbstractRegisterEvent.php,,Event,,,,,Kernel
 Event/AbstractRegistrySubscriptionEvent.php,,Event,,,,,Kernel
 Event/AbstractSchemaEvent.php,,Event,,,,,Kernel
 Event/AbstractSourceEvent.php,,Event,,,,,Kernel
-Event/AbstractTaskEvent.php,,Event,,,,,Core
-Event/AbstractTaskSequenceEvent.php,,Event,,,,,Core
+Event/AbstractTaskEvent.php,,Event,,,,,Kernel
+Event/AbstractTaskSequenceEvent.php,,Event,,,,,Kernel
 Event/AbstractViewEvent.php,,Event,,,,,Kernel
 Event/AgentRunDispatch.php,,Event,,,,,Kernel
 Event/AgentRunInstruction.php,,Event,,,,,Kernel
@@ -4481,3 +4481,4 @@ BackgroundJob/Support/WebhookDeliveryStores.php,,BackgroundJob,,,,,Integrations
 Controller/Support/PollLinksControllerServices.php,,Controller,,,,,Integrations
 Controller/Support/ShareLinksControllerServices.php,,Controller,,,,,Integrations
 Controller/Support/TimeTrackerLinksControllerServices.php,,Controller,,,,,Integrations
+Kernel/Contracts/TaskSequenceInterface.php,,Kernel,,,,,Kernel
