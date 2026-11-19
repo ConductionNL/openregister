@@ -29,7 +29,7 @@ use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
 use OCA\OpenRegister\Kernel\Contracts\Value\LockRunStep;
 use OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\SchemaDeletionService;
+use OCA\OpenRegister\Service\SchemaTeardownInterface;
 use OCP\AppFramework\IAppContainer;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
@@ -88,12 +88,12 @@ class ObjectServiceLockAndTableDeleteFacadeTest extends TestCase {
 	}
 
 	public function testDeleteObjectsBySchemaForwardsIdsAndHardDeleteAsBulkDelete(): void {
-		$deletion = $this->createMock(SchemaDeletionService::class);
+		$deletion = $this->createMock(SchemaTeardownInterface::class);
 		$deletion->expects($this->once())->method('deleteObjectsBySchema')
-			->with(new RegisterSchemaRef(7, 42), new TableDeletionOptions(true, SchemaDeletionService::TRIGGER_BULK_DELETE))
+			->with(new RegisterSchemaRef(7, 42), new TableDeletionOptions(true, SchemaTeardownInterface::TRIGGER_BULK_DELETE))
 			->willReturn(['deleted_count' => 1, 'deleted_uuids' => ['u'], 'schema_id' => 42]);
 		$container = $this->createMock(IAppContainer::class);
-		$container->method('get')->with(SchemaDeletionService::class)->willReturn($deletion);
+		$container->method('get')->with(SchemaTeardownInterface::class)->willReturn($deletion);
 
 		$result = $this->service($this->createMock(LockHandler::class), $container)->deleteObjectsOfTable(new RegisterSchemaRef(7, 42), true);
 
@@ -101,9 +101,9 @@ class ObjectServiceLockAndTableDeleteFacadeTest extends TestCase {
 	}
 
 	public function testDeleteObjectsBySchemaIsSoftByDefault(): void {
-		$deletion = $this->createMock(SchemaDeletionService::class);
+		$deletion = $this->createMock(SchemaTeardownInterface::class);
 		$deletion->expects($this->once())->method('deleteObjectsBySchema')
-			->with(new RegisterSchemaRef(7, 42), new TableDeletionOptions(false, SchemaDeletionService::TRIGGER_BULK_DELETE))
+			->with(new RegisterSchemaRef(7, 42), new TableDeletionOptions(false, SchemaTeardownInterface::TRIGGER_BULK_DELETE))
 			->willReturn(['deleted_count' => 0, 'deleted_uuids' => [], 'schema_id' => 42]);
 		$container = $this->createMock(IAppContainer::class);
 		$container->method('get')->willReturn($deletion);

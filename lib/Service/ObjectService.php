@@ -7589,11 +7589,11 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      */
     public function deleteObjectsOfTable(RegisterSchemaRef $table, bool $hardDelete=false): array
     {
-        $schemaDeletionService = $this->container->get(\OCA\OpenRegister\Service\SchemaDeletionService::class);
+        $schemaDeletionService = $this->container->get(SchemaTeardownInterface::class);
 
         return $schemaDeletionService->deleteObjectsBySchema(
             table: new RegisterSchemaRef(register: (int) $table->register, schema: (int) $table->schema),
-            options: new TableDeletionOptions(hardDelete: $hardDelete, triggeredBy: \OCA\OpenRegister\Service\SchemaDeletionService::TRIGGER_BULK_DELETE)
+            options: new TableDeletionOptions(hardDelete: $hardDelete, triggeredBy: SchemaTeardownInterface::TRIGGER_BULK_DELETE)
         );
     }//end deleteObjectsOfTable()
 
@@ -7603,8 +7603,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * Empties every magic table of every schema the register lists, in one
      * transaction, snapshotting each object to the audit trail first. Refuses the
      * whole request with ArchivalImmutableException, before touching any row, when
-     * any of those schemas is archival. The work lives in SchemaDeletionService,
-     * resolved lazily for the reason deleteObjectsOfTable() gives.
+     * any of those schemas is archival. The work lives in SchemaDeletionService
+     * (Compliance), reached through SchemaTeardownInterface and resolved lazily.
      *
      * @param int  $registerId The ID of the register whose objects should be deleted
      * @param bool $hardDelete Whether to force hard delete (default: false)
@@ -7625,7 +7625,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     public function deleteObjectsByRegister(int $registerId, bool $hardDelete=false): array
     {
         $register = $this->registerMapper->find(id: $registerId);
-        $schemaDeletionService = $this->container->get(\OCA\OpenRegister\Service\SchemaDeletionService::class);
+        $schemaDeletionService = $this->container->get(SchemaTeardownInterface::class);
 
         return $schemaDeletionService->deleteObjectsByRegister(
             register: $register,

@@ -4075,7 +4075,7 @@ Service/SkosNodeReader.php,,Service,,,,,Core
 Service/SourceLanguageLookup.php,,Service,,,,,Configuration
 Service/StoredEvent.php,,Service,,,,,Processes
 Service/StoredTask.php,,Service,,,,,Processes
-Service/TableDeletionOptions.php,,Service,,,,,Integrations
+Service/TableDeletionOptions.php,,Service,,,,,Core
 Service/TableDeletionRun.php,,Service,,,,,Compliance
 Service/TableObjectRef.php,,Service,,,,,Integrations
 Service/TalkLinkServiceInterface.php,,Service,,,,,Integrations
