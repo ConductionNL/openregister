@@ -28,7 +28,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Service\ShippedRegister;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\AdministratorOnlyGate;
 use OCA\OpenRegister\Service\RegisterDescriptorServiceInterface;
 use OCA\OpenRegister\Settings\OpenRegisterAdmin;
@@ -39,6 +38,7 @@ use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
 use OCA\OpenRegister\Controller\Support\RegisterDescriptorControllerServices;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 
 /**
  * Serves the register-descriptor inventory and the forced re-import.
@@ -77,7 +77,7 @@ class RegisterDescriptorController extends Controller {
 		IRequest $request,
 		RegisterDescriptorControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->descriptors = $services->descriptors;
 		$this->userSession = $services->userSession;
 		$this->groupManager = $services->groupManager;

@@ -35,7 +35,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Service\Archival\SelectielijstImportServiceInterface;
 use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
@@ -46,6 +45,7 @@ use OCP\AppFramework\Http;
 use OCP\IRequest;
 use Throwable;
 use OCA\OpenRegister\Controller\Support\SelectielijstControllerServices;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 
 /**
  * Import, list and compare selectielijst versions.
@@ -96,7 +96,7 @@ class SelectielijstController extends Controller {
 		IRequest $request,
 		SelectielijstControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->selectielijst = $services->selectielijst;
 		$this->settingsHandler = $services->settingsHandler;
 

@@ -26,12 +26,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\CalculationsControllerServices;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableRowReaderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaCatalogInterface;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Calculation\CalculationTrialServiceInterface;
 use OCA\OpenRegister\Service\Calculation\OperatorCatalogueInterface;
 use OCA\OpenRegister\Service\Calculation\TrialObject;
@@ -86,7 +86,7 @@ class CalculationsController extends Controller {
 		IRequest $request,
 		CalculationsControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->catalogue = $services->catalogue;
 		$this->trials = $services->trials;
 		$this->schemaCatalog = $services->schemaCatalog;
