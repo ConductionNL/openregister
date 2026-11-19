@@ -3685,7 +3685,7 @@ Db/ImportPreviewRowMapperInterface.php,,Db,,,,,Configuration
 Db/Integration/IntegrationIdIndexInterface.php,,Db,,,,,Core
 Db/JobRun/JobRunFieldTypes.php,,Db,,,,,Configuration
 Db/JobRunFilter.php,,Db,,,,,Core
-Db/JobRunMapperInterface.php,,Db,,,,,Core
+Db/JobRunMapperInterface.php,,Db,,,,,Configuration
 Db/JsonArrayColumn.php,,Db,,,,,Kernel
 Db/LikeOperatorInterface.php,,Db,,,,,Core
 Db/LikeOperators.php,,Db,,,,,Core
@@ -3716,7 +3716,7 @@ Db/ProcessingLogMapperInterface.php,,Db,,,,,Core
 Db/ProcessingLogReadScope.php,,Db,,,,,Core
 Db/ProcessingPurpose/ProcessingPurposeFieldTypes.php,,Db,,,,,Compliance
 Db/ProcessingPurposeMapperInterface.php,,Db,,,,,Core
-Db/RecordTemplateMapperInterface.php,,Db,,,,,Core
+Db/RecordTemplateMapperInterface.php,,Db,,,,,Configuration
 Db/RegisterLookup.php,,Db,,,,,Core
 Db/RegisterMapperServices.php,,Db,,,,,Core
 Db/RegisterSchema.php,,Db,,,,,Core
@@ -3736,7 +3736,7 @@ Db/SchemaRunMapperInterface.php,,Db,,,,,Core
 Db/SchemaRunStoreInterface.php,,Db,,,,,Core
 Db/SearchTrailCleanupInterface.php,,Db,,,,,Search
 Db/SearchTrailCriteria.php,,Db,,,,,Search
-Db/SearchTrailMapperInterface.php,,Db,,,,,Search
+Db/SearchTrailMapperInterface.php,,Db,,,,,Compliance
 Db/SearchTrailOutcome.php,,Db,,,,,Compliance
 Db/SequenceMapperInterface.php,,Db,,,,,Processes
 Db/SoftDeletion.php,,Db,,,,,Kernel
