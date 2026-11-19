@@ -2,6 +2,7 @@ publiccodeYmlVersion: "0.4"
 
 name: OpenRegister
 url: "https://github.com/ConductionNL/openregister"
+logo: img/app-store.svg
 softwareVersion: "2.1.0"
 releaseDate: "2026-09-06"
 developmentStatus: stable
