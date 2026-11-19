@@ -28,6 +28,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Rbac;
 
 use DateTime;
 use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Service\Audit\ObjectTrailReader;
 use OCA\OpenRegister\Service\Rbac\ObjectAccessHistory;
 use PHPUnit\Framework\TestCase;
 
@@ -106,7 +108,7 @@ class ObjectAccessHistoryTest extends TestCase {
 			),
 		];
 
-		$history = $this->history->forEntries(entries: $entries, moment: '2026-04-15T12:00:00+02:00');
+		$history = $this->history->forEntries(entries: $this->trailOf($entries), moment: '2026-04-15T12:00:00+02:00');
 
 		$this->assertCount(2, $history['changes']);
 		$this->assertNotNull($history['asOf'], 'no set was reported for the moment asked about');
@@ -144,7 +146,7 @@ class ObjectAccessHistoryTest extends TestCase {
 		$dataOnly->setCreated(new DateTime('2026-05-01T09:00:00+02:00'));
 		$dataOnly->setChanged(['object' => ['old' => ['title' => 'oud'], 'new' => ['title' => 'nieuw']]]);
 
-		$history = $this->history->forEntries(entries: [$dataOnly], moment: '2026-06-01T00:00:00+02:00');
+		$history = $this->history->forEntries(entries: $this->trailOf([$dataOnly]), moment: '2026-06-01T00:00:00+02:00');
 
 		$this->assertSame([], $history['changes']);
 		$this->assertNull($history['asOf']);
@@ -169,7 +171,7 @@ class ObjectAccessHistoryTest extends TestCase {
 			]
 		);
 
-		$history = $this->history->forEntries(entries: [$entry], moment: '2026-03-01T09:00:00+01:00');
+		$history = $this->history->forEntries(entries: $this->trailOf([$entry]), moment: '2026-03-01T09:00:00+01:00');
 
 		$this->assertCount(1, $history['changes']);
 		$this->assertSame(
@@ -177,4 +179,18 @@ class ObjectAccessHistoryTest extends TestCase {
 			array_column($history['asOf']['holders'], 'principal')
 		);
 	}//end testAnAuthorizationStoredAsJsonTextIsStillRead()
+
+	/**
+	 * The rows as the trail reader hands them to the history: the fields, newest first.
+	 *
+	 * @param array<int, AuditTrail> $rows The rows.
+	 *
+	 * @return list<array<string, mixed>> The entries.
+	 */
+	private function trailOf(array $rows): array {
+		$mapper = $this->createMock(AuditTrailMapperInterface::class);
+		$mapper->method('findObjectActions')->willReturn($rows);
+
+		return (new ObjectTrailReader(mapper: $mapper))->objectTrail(objectUuid: 'object-1', limit: 50);
+	}//end trailOf()
 }//end class
