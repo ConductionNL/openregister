@@ -39,7 +39,7 @@ class AppHostRegistrarTest extends TestCase {
 	public function testRegisterAliasesEveryContractToItsServiceInOrder(): void {
 		$calls = [];
 		$context = $this->createMock(IRegistrationContext::class);
-		$context->expects($this->exactly(5))
+		$context->expects($this->exactly(count: 5))
 			->method('registerServiceAlias')
 			->willReturnCallback(
 				static function (string $alias, string $target) use (&$calls): void {
