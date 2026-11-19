@@ -22,6 +22,7 @@ namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ContactMatcherInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\RunningNumbersInterface;
 use OCA\OpenRegister\Kernel\Contracts\ExampleSetInstallerInterface;
 use OCA\OpenRegister\Kernel\Contracts\FlowTimerControlInterface;
 use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
@@ -1024,6 +1025,7 @@ final class ContractBindings {
 		SendEmailNodeInterface::class => SendEmailNode::class,
 		SendNotificationNodeInterface::class => SendNotificationNode::class,
 		SendTalkMessageNodeInterface::class => SendTalkMessageNode::class,
+		RunningNumbersInterface::class => RunningNumbers::class,
 		SequenceServiceInterface::class => SequenceService::class,
 		ShareableConfigTypeRegistryInterface::class => ShareableConfigTypeRegistry::class,
 		SharedSchemaDedupeServiceInterface::class => SharedSchemaDedupeService::class,

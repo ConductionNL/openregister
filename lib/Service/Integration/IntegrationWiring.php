@@ -23,6 +23,7 @@ namespace OCA\OpenRegister\Service\Integration;
 use OCA\OpenRegister\Controller\IntegrationControllersRegistrar;
 use OCA\OpenRegister\Db\Integration\IntegrationIdIndexInterface;
 use OCA\OpenRegister\Event\ObjectWriteRequestEvent;
+use OCA\OpenRegister\Kernel\Contracts\Notifications\ScheduledMessageDeliveryInterface;
 use OCA\OpenRegister\Listener\WebhookRequestInterceptionListener;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\AuditTrailProvider;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\FilesProvider;
@@ -42,6 +43,7 @@ use OCA\OpenRegister\Service\Integration\Providers\OpenCorporatesProvider;
 use OCA\OpenRegister\Service\Integration\Providers\OpenCorporatesSearchInterface;
 use OCA\OpenRegister\Service\Integration\Providers\OpenProjectProvider;
 use OCA\OpenRegister\Service\Integration\Providers\PollsProvider;
+use OCA\OpenRegister\Service\Integration\Providers\ScheduledMessageDelivery;
 use OCA\OpenRegister\Service\Integration\Providers\SharesProvider;
 use OCA\OpenRegister\Service\Integration\Providers\TalkProvider;
 use OCA\OpenRegister\Service\Integration\Providers\XwikiProvider;
@@ -79,6 +81,7 @@ final class IntegrationWiring {
 		MessageDispatcherInterface::class => MessageDispatchProvider::class,
 		OpenCorporatesSearchInterface::class => OpenCorporatesProvider::class,
 		PageWidgetRegistryInterface::class => IntegrationRegistry::class,
+		ScheduledMessageDeliveryInterface::class => ScheduledMessageDelivery::class,
 	];
 
 	/**

@@ -28,6 +28,7 @@ use OCA\OpenRegister\Listener\GeneratedIdentifierListener;
 use OCA\OpenRegister\Service\Object\ObjectEventGate;
 use OCA\OpenRegister\Service\Schemas\GeneratedIdentifierDeclaration;
 use OCA\OpenRegister\Service\SequenceScope;
+use OCA\OpenRegister\Service\RunningNumbers;
 use OCA\OpenRegister\Service\SequenceService;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -80,7 +81,7 @@ class GeneratedIdentifierListenerTest extends TestCase {
 		$this->schemaMapper = $this->createMock(originalClassName: SchemaMapper::class);
 		$this->listener = new GeneratedIdentifierListener(
 			$this->schemaMapper,
-			$this->sequences,
+			new RunningNumbers($this->sequences),
 			$this->createMock(originalClassName: LoggerInterface::class),
 			// The real gate: it decides what a draft is held from, here as after a write.
 			new ObjectEventGate($this->createMock(originalClassName: IEventDispatcher::class))
