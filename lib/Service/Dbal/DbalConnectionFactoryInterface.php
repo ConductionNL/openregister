@@ -21,7 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Dbal;
 
 use Doctrine\DBAL\Connection;
-use OCA\OpenRegister\Db\Source;
+use OCA\OpenRegister\Kernel\Contracts\SourceInterface;
 
 /**
  * The methods of DbalConnectionFactory that callers outside its component use.
@@ -37,7 +37,7 @@ interface DbalConnectionFactoryInterface {
 	 * returned. The password is resolved through the credential custody seam and
 	 * never logged.
 	 *
-	 * @param Source $source The `type: database` source to connect to.
+	 * @param SourceInterface $source The `type: database` source to connect to.
 	 *
 	 * @return Connection The open (lazy) DBAL connection.
 	 *
@@ -49,5 +49,5 @@ interface DbalConnectionFactoryInterface {
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
-	public function getConnection(Source $source): Connection;
+	public function getConnection(SourceInterface $source): Connection;
 }//end interface
