@@ -20,7 +20,6 @@ namespace OCA\OpenRegister\Db;
 
 use DateInterval;
 use DateTime;
-use OCA\OpenRegister\Service\Deletion\DeletionWindowService;
 
 /**
  * Why an object is soft-deleted and how many days it stays recoverable.
@@ -28,6 +27,13 @@ use OCA\OpenRegister\Service\Deletion\DeletionWindowService;
  * @spec openspec/specs/deletion-audit-trail/spec.md
  */
 final class SoftDeletion {
+
+	/**
+	 * The recovery window when neither the caller, the schema nor the instance states one, in days.
+	 *
+	 * @var int
+	 */
+	public const DEFAULT_RETENTION_DAYS = 30;
 
 	/**
 	 * Constructor.
@@ -52,7 +58,7 @@ final class SoftDeletion {
 	 */
 	public function days(): int {
 		if ($this->retentionDays === null || $this->retentionDays < 1) {
-			return DeletionWindowService::DEFAULT_RETENTION_DAYS;
+			return self::DEFAULT_RETENTION_DAYS;
 		}
 
 		return $this->retentionDays;

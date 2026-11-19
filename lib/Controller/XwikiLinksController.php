@@ -39,7 +39,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\XwikiLinksControllerServices;
 use OCA\OpenRegister\Controller\Trait\ObjectLinkActionsTrait;
 use OCA\OpenRegister\Controller\Support\LinkedSourceActions;
@@ -48,6 +47,7 @@ use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\XwikiLink;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\XwikiLinkServiceInterface;
 use OCA\OpenRegister\Service\XwikiPageDraft;
@@ -88,7 +88,7 @@ class XwikiLinksController extends Controller {
 		IRequest $request,
 		XwikiLinksControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->xwikiLinkService = $services->xwikiLinkService;
 		$this->objectService = $services->objectService;
 	}//end __construct()
