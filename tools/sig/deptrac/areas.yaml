@@ -72,7 +72,7 @@ deptrac:
               value: 'lib/Support/.*$'
           must_not:
             - type: directory
-              value: 'lib/Kernel/Contracts/(Core)/.*$'
+              value: 'lib/Kernel/Contracts/(Compliance|Core|Integrations)/.*$'
     - name: Core
       collectors:
         - type: directory
@@ -2554,6 +2554,8 @@ deptrac:
     - name: Compliance
       collectors:
         - type: directory
+          value: 'lib/Kernel/Contracts/Compliance/.*$'
+        - type: directory
           value: 'lib/BackgroundJob/(AbstractTextExtractionJob|ArchivalRetentionTask|ArchivalRowExpiry|ArchivalSweep|AuditExportDelivery|AuditExportSource|AuditSealJob|AuditTrailExportJob|AvgRetentionJob|BlobGroup|BlobMigrationRun|BulkLegalHoldJob|ConfiguredJobRuntime|ConnectionSeamReportJob|DestructionCheckJob|DestructionExecutionJobInterface|DestructionListRun|DsarDpiaDetectionJob|DsarRetentionSweepJob|ExternalGrantLapseJob|ProcessingLogPrune|ProcessingLogRetentionJob|QualityAuditScheduleJob|RelatedRetentionRecalculationJob|ReviewReminderJob|SharerAccessSweepJob|SubjectExportJob)[.]php$'
         - type: directory
           value: 'lib/BackgroundJob/Support/AbandonedFlowClaim[.]php$'
@@ -2759,6 +2761,8 @@ deptrac:
           value: 'lib/Service/Quality/QualityAuditStores[.]php$'
     - name: Integrations
       collectors:
+        - type: directory
+          value: 'lib/Kernel/Contracts/Integrations/.*$'
         - type: directory
           value: 'lib/AppHost/[^/]*$'
         - type: directory

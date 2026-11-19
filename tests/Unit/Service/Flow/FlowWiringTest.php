@@ -35,6 +35,8 @@ use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use ReflectionProperty;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\LifecycleTransitionInterface;
+use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\FlowWiring
@@ -150,15 +152,16 @@ final class FlowWiringTest extends TestCase {
 	}//end testTheFieldRulesPortIsAnsweredByTheStateResolver()
 
 	/**
-	 * The store of the flows compiled from application schedules is bound, and only the two aliases are registered.
+	 * The store of the flows compiled from application schedules is bound, and the lifecycle transition port is answered by the engine, and only those three aliases are registered.
 	 *
 	 * @return void
 	 */
 	public function testTheScheduleFlowStoreIsBound(): void {
 		self::assertSame(
 			expected: [
-				FieldRulesSourceInterface::class  => StateFieldRuleResolver::class,
-				ScheduleFlowStoreInterface::class => ScheduleFlowStore::class,
+				FieldRulesSourceInterface::class    => StateFieldRuleResolver::class,
+				ScheduleFlowStoreInterface::class   => ScheduleFlowStore::class,
+				LifecycleTransitionInterface::class => TransitionEngine::class,
 			],
 			actual: $this->aliases
 		);

@@ -23,6 +23,7 @@ namespace OCA\OpenRegister\Service\Flow;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\LifecycleTransitionInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionRunner;
@@ -31,6 +32,7 @@ use OCA\OpenRegister\Service\Portal\PortalPartyResolver;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
 use OCA\OpenRegister\Service\TaskService;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
+use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -56,6 +58,7 @@ final class FlowWiring {
 	 */
 	public const BINDINGS = [
 		ScheduleFlowStoreInterface::class => ScheduleFlowStore::class,
+		LifecycleTransitionInterface::class => TransitionEngine::class,
 	];
 
 	/**

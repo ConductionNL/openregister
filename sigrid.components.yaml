@@ -40,7 +40,7 @@ components:
       - ".*/lib/Service/Schemas/PropertyValidatorHandlerInterface[.]php"
       - ".*/lib/Support/.*"
     exclude:
-      - ".*/lib/Kernel/Contracts/(Core)/.*"
+      - ".*/lib/Kernel/Contracts/(Compliance|Core|Integrations)/.*"
   - name: Core
     include:
       - ".*/lib/Kernel/Contracts/Core/.*"
@@ -1285,6 +1285,7 @@ components:
       - ".*/lib/Service/Translation/[^/]*"
   - name: Compliance
     include:
+      - ".*/lib/Kernel/Contracts/Compliance/.*"
       - ".*/lib/BackgroundJob/(AbstractTextExtractionJob|ArchivalRetentionTask|ArchivalRowExpiry|ArchivalSweep|AuditExportDelivery|AuditExportSource|AuditSealJob|AuditTrailExportJob|AvgRetentionJob|BlobGroup|BlobMigrationRun|BulkLegalHoldJob|ConfiguredJobRuntime|ConnectionSeamReportJob|DestructionCheckJob|DestructionExecutionJobInterface|DestructionListRun|DsarDpiaDetectionJob|DsarRetentionSweepJob|ExternalGrantLapseJob|ProcessingLogPrune|ProcessingLogRetentionJob|QualityAuditScheduleJob|RelatedRetentionRecalculationJob|ReviewReminderJob|SharerAccessSweepJob|SubjectExportJob)[.]php"
       - ".*/lib/BackgroundJob/Support/AbandonedFlowClaim[.]php"
       - ".*/lib/BackgroundJob/Support/ArchivalRetentionPlatform[.]php"
@@ -1389,6 +1390,7 @@ components:
       - ".*/lib/Service/Quality/QualityAuditStores[.]php"
   - name: Integrations
     include:
+      - ".*/lib/Kernel/Contracts/Integrations/.*"
       - ".*/lib/AppHost/[^/]*"
       - ".*/lib/AppHost/Controller/[^/]*"
       - ".*/lib/AppHost/Controller/Support/[^/]*"
