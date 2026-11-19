@@ -619,6 +619,7 @@ Db/Application.php,215,Db,Configuration,Configuration/Db/Application.php,0,79,Co
 Db/ApplicationMapper.php,181,Db,Configuration,Configuration/Db/ApplicationMapper.php,0,146,Configuration
 Db/AuditFlowAttribution.php,44,Db,Flows,Flows/Db/AuditFlowAttribution.php,0,410,Processes
 Db/AuditTrail.php,155,Db,Compliance,Compliance/Db/AuditTrail.php,194,145,Compliance
+Db/AuditTrail/AuditStatisticsScope.php,,Db,,,0,,Core
 Db/AuditTrailFilterTerm.php,10,Db,Compliance,Compliance/Db/AuditTrailFilterTerm.php,0,,Compliance
 Db/AuditTrailMapper.php,1811,Db,Compliance,Compliance/Db/AuditTrailMapper.php,297,6,Compliance
 Db/AuditTrailMapperInterface.php,76,Db,Service,Service/Db/AuditTrailMapperInterface.php,0,,Core
@@ -2654,6 +2655,8 @@ Service/MapLinkService.php,198,Service,Integrations,Integrations/Service/MapLink
 Service/MappingService.php,428,Service,Integrations,Integrations/Service/MappingService.php,5,50,Integrations
 Service/MassValidationRun.php,300,Service,Configuration,Configuration/Service/MassValidationRun.php,0,,Configuration
 Service/Mcp/McpAgentScope.php,111,Service,Configuration,Configuration/Service/Mcp/McpAgentScope.php,0,257,Configuration
+Service/Mcp/McpSessionCaller.php,,Service,,,0,,Integrations
+Service/Mcp/ToolCall.php,,Service,,,0,,Integrations
 Service/McpDiscoveryService.php,690,Service,Configuration,Configuration/Service/McpDiscoveryService.php,0,,Configuration
 Service/MdiIconRenderer.php,53,Service,Configuration,Configuration/Service/MdiIconRenderer.php,0,,Configuration
 Service/Merge/MasterRecomputeService.php,36,Service,Flows,Flows/Service/Merge/MasterRecomputeService.php,0,,Core
@@ -3418,6 +3421,8 @@ Listener/Registrar/,,Listener,,,,,Processes
 Listener/Support/,,Listener,,,,,Processes
 Listener/Support/ConflictVeto.php,10,Listener,,,0,,Core
 Listener/Support/SurvivorshipResolvers.php,14,Listener,,,0,,Core
+Listener/Support/EventSchemaLookup.php,,Listener,,,0,,Core
+Listener/Support/HandlesObjectDeletion.php,,Listener,,,0,,Core
 Mcp/,,Mcp,,,,,Integrations
 Middleware/,,Middleware,,,,,Platform
 Notification/,,Notification,,,,,Notifications
@@ -3852,8 +3857,8 @@ Repair/MagicTableSweepRun.php,,Repair,,,,,Platform
 Repair/MigrateRegisterFlowsRun.php,,Repair,,,,,Platform
 Repair/MigratedFlowOrigins.php,,Repair,,,,,Core
 Repair/OpenSpecialRightsToEveryone.php,,Repair,,,,,Core
-Repair/PerformerField.php,,Repair,,,,,Core
-Repair/PerformerTyping.php,,Repair,,,,,Core
+Repair/PerformerField.php,,Repair,,,,,Processes
+Repair/PerformerTyping.php,,Repair,,,,,Processes
 Repair/PhantomFlowPurgeRun.php,,Repair,,,,,Processes
 Repair/RegisterDescriptorImport.php,,Repair,,,,,Integrations
 Repair/ReportUnpublishedSchedules.php,,Repair,,,,,Processes
@@ -4220,7 +4225,7 @@ Service/Connection/ConnectionHealthReport.php,,Service,,,,,Integrations
 Service/Connection/ConnectionHealthReportBuilder.php,,Service,,,,,Integrations
 Service/Connection/ConnectionRegistryMissingException.php,,Service,,,,,Integrations
 Service/Connection/ConnectionRegistryReader.php,,Service,,,,,Integrations
-Service/Connection/ConnectionReportForbiddenException.php,,Service,,,,,Integrations
+Service/Connection/ConnectionReportForbiddenException.php,,Service,,,,,Notifications
 Service/Connection/ConnectionReportKind.php,,Service,,,,,Integrations
 Service/Object/SaveObjects/BulkObjectQuota.php,,Service,,,,,Core
 Service/Object/SaveObjects/BulkQuotaTally.php,,Service,,,,,Core
