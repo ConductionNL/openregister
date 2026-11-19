@@ -1676,7 +1676,57 @@ deptrac:
         - type: directory
           value: 'lib/Service/Schemas/UniqueConstraintEvaluatorInterface[.]php$'
         - type: directory
-          value: 'lib/Service/Search/[^/]*$'
+          value: 'lib/Service/Search/ContentSnippetSource[.]php$'
+        - type: directory
+          value: 'lib/Service/Search/DictionaryExpansion[.]php$'
+        - type: directory
+          value: 'lib/Service/Search/DictionaryStopwords[.]php$'
+        - type: directory
+          value: 'lib/Service/Search/HistoryNarrowing[.]php$'
+        - type: directory
+          value: 'lib/Service/Search/HistoryPredicate[.]php$'
+        - type: directory
+          value: 'lib/Service/Search/HistoryPredicateInterface[.]php$'
+        - type: directory
+          value: 'lib/Service/Search/ObjectSearchHit[.]php$'
+        - type: directory
+          value: 'lib/Service/Search/ObjectSearchResultFormatter[.]php$'
+        - type: directory
+          value: 'lib/Service/Search/ObjectSearchResultFormatterInterface[.]php$'
+        - type: directory
+          value: 'lib/Service/Search/SearchDictionary[.]php$'
+        - type: directory
+          value: 'lib/Service/Search/SearchDictionaryMappers[.]php$'
+        - type: directory
+          value: 'lib/Service/Search/SearchDictionaryProvider[.]php$'
+        - type: directory
+          value: 'lib/Service/Search/SearchGrammar[.]php$'
+        - type: directory
+          value: 'lib/Service/Search/SearchResultDeclaration[.]php$'
+        - type: directory
+          value: 'lib/Service/Search/SearchResultDeclarations[.]php$'
+        - type: directory
+          value: 'lib/Service/Search/SearchTermLiteral[.]php$'
+        - type: directory
+          value: 'lib/Service/Search/SearchTermNode[.]php$'
+        - type: directory
+          value: 'lib/Service/Search/SearchTermParser[.]php$'
+        - type: directory
+          value: 'lib/Service/Search/SearchTermParserInterface[.]php$'
+        - type: directory
+          value: 'lib/Service/Search/SearchTermSqlCompiler[.]php$'
+        - type: directory
+          value: 'lib/Service/Search/SearchTermSqlCompilerInterface[.]php$'
+        - type: directory
+          value: 'lib/Service/Search/SearchTokenStream[.]php$'
+        - type: directory
+          value: 'lib/Service/Search/SnippetBuilder[.]php$'
+        - type: directory
+          value: 'lib/Service/Search/SynonymCaps[.]php$'
+        - type: directory
+          value: 'lib/Service/Search/TokenizeRun[.]php$'
+        - type: directory
+          value: 'lib/Service/Search/VectorResultFilter[.]php$'
         - type: directory
           value: 'lib/Service/Serializer/[^/]*$'
         - type: directory
@@ -3155,6 +3205,8 @@ deptrac:
           value: 'lib/Search/Service/Vectorization/Handlers/[^/]*$'
         - type: directory
           value: 'lib/Service/(SearchTrailActivityInsights|SearchTrailNameEnricher|SearchTrailQueryConfig|SearchTrailServiceInterface|SearchTrailStatistics|SearchTrailUserAgentParser)[.]php$'
+        - type: directory
+          value: 'lib/Service/Search/VectorSearchFacade[.]php$'
     - name: Notifications
       collectors:
         - type: directory
