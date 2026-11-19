@@ -3558,10 +3558,12 @@ BackgroundJob/AuditExportSource.php,,BackgroundJob,,,,,Compliance
 BackgroundJob/CalendarLinkBackfillRun.php,,BackgroundJob,,,,,Integrations
 BackgroundJob/CalendarRecomputeJobInterface.php,,BackgroundJob,,,,,Integrations
 BackgroundJob/ComplianceJobHandlesInterface.php,,BackgroundJob,,,,,Compliance
+BackgroundJob/ConfigurationJobHandlesInterface.php,,BackgroundJob,,,,,Configuration
 BackgroundJob/ConfiguredJobRuntime.php,,BackgroundJob,,,,,Compliance
 BackgroundJob/DestructionExecutionJobInterface.php,,BackgroundJob,,,,,Compliance
 BackgroundJob/FlowRunRecoveryServices.php,,BackgroundJob,,,,,Processes
 BackgroundJob/FlowRunWorkerServices.php,,BackgroundJob,,,,,Processes
+BackgroundJob/IntegrationsJobHandlesInterface.php,,BackgroundJob,,,,,Integrations
 BackgroundJob/JobHandles.php,,BackgroundJob,,,,,Core
 BackgroundJob/JobRuntime.php,,BackgroundJob,,,,,Core
 BackgroundJob/ProcessesJobHandlesInterface.php,,BackgroundJob,,,,,Processes

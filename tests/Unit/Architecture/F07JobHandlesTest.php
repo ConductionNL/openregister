@@ -26,10 +26,13 @@ use OCA\OpenRegister\BackgroundJob\BulkJobRunner;
 use OCA\OpenRegister\BackgroundJob\BulkLegalHoldJob;
 use OCA\OpenRegister\BackgroundJob\CacheClearAndWarmJob;
 use OCA\OpenRegister\BackgroundJob\ComplianceJobHandlesInterface;
+use OCA\OpenRegister\BackgroundJob\ConfigurationJobHandlesInterface;
 use OCA\OpenRegister\BackgroundJob\ConsistencyCheckJob;
+use OCA\OpenRegister\BackgroundJob\ContextChatSubmissionJob;
 use OCA\OpenRegister\BackgroundJob\DeferredObjectEventJob;
 use OCA\OpenRegister\BackgroundJob\FileTextExtractionJob;
 use OCA\OpenRegister\BackgroundJob\ImportPreviewRunner;
+use OCA\OpenRegister\BackgroundJob\IntegrationsJobHandlesInterface;
 use OCA\OpenRegister\BackgroundJob\JobHandles;
 use OCA\OpenRegister\BackgroundJob\ObjectCleanupJob;
 use OCA\OpenRegister\BackgroundJob\ObjectTextExtractionJob;
@@ -67,11 +70,12 @@ final class F07JobHandlesTest extends TestCase {
 		ComplianceJobHandlesInterface::AUDIT_TRAIL_EXPORT => AuditTrailExportJob::class,
 		ProcessesJobHandlesInterface::BULK_JOB_RUNNER => BulkJobRunner::class,
 		ComplianceJobHandlesInterface::BULK_LEGAL_HOLD => BulkLegalHoldJob::class,
-		JobHandles::CACHE_CLEAR_AND_WARM => CacheClearAndWarmJob::class,
-		JobHandles::CONSISTENCY_CHECK => ConsistencyCheckJob::class,
+		ConfigurationJobHandlesInterface::CACHE_CLEAR_AND_WARM => CacheClearAndWarmJob::class,
+		ConfigurationJobHandlesInterface::CONSISTENCY_CHECK => ConsistencyCheckJob::class,
+		IntegrationsJobHandlesInterface::CONTEXT_CHAT_SUBMISSION => ContextChatSubmissionJob::class,
 		JobHandles::DEFERRED_OBJECT_EVENT => DeferredObjectEventJob::class,
 		ProcessesJobHandlesInterface::FILE_TEXT_EXTRACTION => FileTextExtractionJob::class,
-		JobHandles::IMPORT_PREVIEW_RUNNER => ImportPreviewRunner::class,
+		ConfigurationJobHandlesInterface::IMPORT_PREVIEW_RUNNER => ImportPreviewRunner::class,
 		JobHandles::OBJECT_CLEANUP => ObjectCleanupJob::class,
 		ProcessesJobHandlesInterface::OBJECT_TEXT_EXTRACTION => ObjectTextExtractionJob::class,
 		ComplianceJobHandlesInterface::RELATED_RETENTION_RECALCULATION => RelatedRetentionRecalculationJob::class,
@@ -89,6 +93,8 @@ final class F07JobHandlesTest extends TestCase {
 	private const HOLDERS = [
 		JobHandles::class,
 		ComplianceJobHandlesInterface::class,
+		ConfigurationJobHandlesInterface::class,
+		IntegrationsJobHandlesInterface::class,
 		ProcessesJobHandlesInterface::class,
 	];
 
@@ -128,8 +134,8 @@ final class F07JobHandlesTest extends TestCase {
 	public function testTheArgumentConstantsKeepTheJobsValues(): void {
 		$this->assertSame(expected: AuditTrailExportJob::INLINE_LIMIT, actual: ComplianceJobHandlesInterface::AUDIT_TRAIL_EXPORT_INLINE_LIMIT);
 		$this->assertSame(expected: AuditTrailExportJob::FOLDER, actual: ComplianceJobHandlesInterface::AUDIT_TRAIL_EXPORT_FOLDER);
-		$this->assertSame(expected: ImportPreviewRunner::PHASE_PREVIEW, actual: JobHandles::IMPORT_PREVIEW_PHASE_PREVIEW);
-		$this->assertSame(expected: ImportPreviewRunner::PHASE_COMMIT, actual: JobHandles::IMPORT_PREVIEW_PHASE_COMMIT);
+		$this->assertSame(expected: ImportPreviewRunner::PHASE_PREVIEW, actual: ConfigurationJobHandlesInterface::IMPORT_PREVIEW_PHASE_PREVIEW);
+		$this->assertSame(expected: ImportPreviewRunner::PHASE_COMMIT, actual: ConfigurationJobHandlesInterface::IMPORT_PREVIEW_PHASE_COMMIT);
 	}//end testTheArgumentConstantsKeepTheJobsValues()
 
 	/**

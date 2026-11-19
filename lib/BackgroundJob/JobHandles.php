@@ -32,46 +32,18 @@ namespace OCA\OpenRegister\BackgroundJob;
  * the value the caller used before (`Job::class` or `Job::CONSTANT`), so what
  * lands on the job list does not change.
  *
- * The jobs of a higher area are named on that area's own holder in this
- * directory (ComplianceJobHandlesInterface and its siblings), so this Core
- * class lists no job of an area above Core.
+ * It names only Core jobs. The jobs of a higher area are named on that area's
+ * own holder in this directory (ComplianceJobHandlesInterface,
+ * ConfigurationJobHandlesInterface, IntegrationsJobHandlesInterface and
+ * ProcessesJobHandlesInterface), so this Core class lists no job of an area
+ * above Core.
  */
 final class JobHandles {
-
-	/**
-	 * Cache clear-and-warm maintenance job.
-	 */
-	public const CACHE_CLEAR_AND_WARM = CacheClearAndWarmJob::class;
-
-	/**
-	 * Consistency check maintenance job.
-	 */
-	public const CONSISTENCY_CHECK = ConsistencyCheckJob::class;
-
-	/**
-	 * Context Chat submission job.
-	 */
-	public const CONTEXT_CHAT_SUBMISSION = ContextChatSubmissionJob::class;
 
 	/**
 	 * Deferred object event job.
 	 */
 	public const DEFERRED_OBJECT_EVENT = DeferredObjectEventJob::class;
-
-	/**
-	 * Import preview runner.
-	 */
-	public const IMPORT_PREVIEW_RUNNER = ImportPreviewRunner::class;
-
-	/**
-	 * The import preview runner's preview phase.
-	 */
-	public const IMPORT_PREVIEW_PHASE_PREVIEW = ImportPreviewRunner::PHASE_PREVIEW;
-
-	/**
-	 * The import preview runner's commit phase.
-	 */
-	public const IMPORT_PREVIEW_PHASE_COMMIT = ImportPreviewRunner::PHASE_COMMIT;
 
 	/**
 	 * Object cleanup job.

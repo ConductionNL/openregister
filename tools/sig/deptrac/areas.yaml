@@ -2422,7 +2422,7 @@ deptrac:
     - name: Configuration
       collectors:
         - type: directory
-          value: 'lib/BackgroundJob/(BackfillCalendarLinksJob|BlobMigrationJob|CacheClearAndWarmJob|ConfigurationCheckJob|ConsistencyCheckJob|ExampleSetDailyRefreshJob|ImportPreviewRunner|ImportRunRetentionJob|NameCacheWarmupJob|OneUseJobKeySweepJob|RecordedJobRuntime|RecordedQueuedJob|RecordedTimedJob|RecordsItsRuns|SeedDirectoryJob|SweepExpiredExportRunsJob|SyncConfigurationsJob)[.]php$'
+          value: 'lib/BackgroundJob/(BackfillCalendarLinksJob|BlobMigrationJob|CacheClearAndWarmJob|ConfigurationCheckJob|ConfigurationJobHandlesInterface|ConsistencyCheckJob|ExampleSetDailyRefreshJob|ImportPreviewRunner|ImportRunRetentionJob|NameCacheWarmupJob|OneUseJobKeySweepJob|RecordedJobRuntime|RecordedQueuedJob|RecordedTimedJob|RecordsItsRuns|SeedDirectoryJob|SweepExpiredExportRunsJob|SyncConfigurationsJob)[.]php$'
         - type: directory
           value: 'lib/BulkAction/(ExportWholeSetAction|WholeSetExportRun)[.]php$'
         - type: directory
@@ -2818,7 +2818,7 @@ deptrac:
         - type: directory
           value: 'lib/AppHost/Store/Source/[^/]*$'
         - type: directory
-          value: 'lib/BackgroundJob/(CalendarLinkBackfillRun|CalendarRecomputeJobInterface|ContextChatSubmissionJob|HandoffQueueDrainJob|OAuth2TokenRefreshJob|SyncDataJob|WebhookDeliveryJob|WebhookRetryJob)[.]php$'
+          value: 'lib/BackgroundJob/(CalendarLinkBackfillRun|CalendarRecomputeJobInterface|ContextChatSubmissionJob|HandoffQueueDrainJob|IntegrationsJobHandlesInterface|OAuth2TokenRefreshJob|SyncDataJob|WebhookDeliveryJob|WebhookRetryJob)[.]php$'
         - type: directory
           value: 'lib/Calendar/[^/]*$'
         - type: directory
