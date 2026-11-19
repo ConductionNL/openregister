@@ -90,7 +90,7 @@ BackgroundJob/BulkLegalHoldJob.php,46,BackgroundJob,Compliance,Compliance/Backgr
 BackgroundJob/CacheClearAndWarmJob.php,19,BackgroundJob,Configuration,Configuration/BackgroundJob/CacheClearAndWarmJob.php,0,,Configuration
 BackgroundJob/CasePlanTimerRearmJob.php,43,BackgroundJob,Work,Work/BackgroundJob/CasePlanTimerRearmJob.php,0,,Processes
 BackgroundJob/ConfigurationCheckJob.php,179,BackgroundJob,Configuration,Configuration/BackgroundJob/ConfigurationCheckJob.php,0,,Configuration
-BackgroundJob/ConnectionSeamReportJob.php,78,BackgroundJob,Compliance,Compliance/BackgroundJob/ConnectionSeamReportJob.php,0,,Compliance
+BackgroundJob/ConnectionSeamReportJob.php,78,BackgroundJob,Compliance,Compliance/BackgroundJob/ConnectionSeamReportJob.php,0,,Integrations
 BackgroundJob/ConsistencyCheckJob.php,33,BackgroundJob,Configuration,Configuration/BackgroundJob/ConsistencyCheckJob.php,0,,Configuration
 BackgroundJob/ContextChatSubmissionJob.php,,BackgroundJob,,,,,Integrations
 BackgroundJob/DbalIntrospectionJob.php,62,BackgroundJob,Service,Service/BackgroundJob/DbalIntrospectionJob.php,0,,Core
@@ -607,7 +607,7 @@ Controller/XwikiLinksController.php,140,Controller,Integrations,Integrations/Con
 Dashboard/IntegrationDashboardWidget.php,40,Dashboard,Flows,Flows/Dashboard/IntegrationDashboardWidget.php,0,,Platform
 Dav/TaskVtodoWriteBackPlugin.php,136,Dav,Platform,Platform/Dav/TaskVtodoWriteBackPlugin.php,0,,Integrations
 Db/AbstractObjectMapper.php,70,Db,Service,Service/Db/AbstractObjectMapper.php,0,378,Core
-Db/AccessLink.php,120,Db,Integrations,Integrations/Db/AccessLink.php,1,248,Integrations
+Db/AccessLink.php,120,Db,Integrations,Integrations/Db/AccessLink.php,1,248,Core
 Db/AccessLinkMapper.php,63,Db,Access,Access/Db/AccessLinkMapper.php,0,,Core
 Db/AnalyticsLink.php,48,Db,Integrations,Integrations/Db/AnalyticsLink.php,0,,Integrations
 Db/AnalyticsLinkMapper.php,23,Db,Integrations,Integrations/Db/AnalyticsLinkMapper.php,0,,Integrations
@@ -2655,7 +2655,7 @@ Service/MappingService.php,428,Service,Integrations,Integrations/Service/Mapping
 Service/MassValidationRun.php,300,Service,Configuration,Configuration/Service/MassValidationRun.php,0,,Configuration
 Service/Mcp/McpAgentScope.php,111,Service,Configuration,Configuration/Service/Mcp/McpAgentScope.php,0,257,Configuration
 Service/McpDiscoveryService.php,690,Service,Configuration,Configuration/Service/McpDiscoveryService.php,0,,Configuration
-Service/MdiIconRenderer.php,53,Service,Configuration,Configuration/Service/MdiIconRenderer.php,0,,Configuration
+Service/MdiIconRenderer.php,53,Service,Configuration,Configuration/Service/MdiIconRenderer.php,0,,Core
 Service/Merge/MasterRecomputeService.php,36,Service,Flows,Flows/Service/Merge/MasterRecomputeService.php,0,,Core
 Service/Merge/MergeAnnotationValidator.php,81,Service,Service,Service/Merge/MergeAnnotationValidator.php,0,,Core
 Service/Merge/MergeService.php,758,Service,Service,Service/Merge/MergeService.php,1,29,Core
@@ -3367,7 +3367,7 @@ Controller/Support/WorkingCalendarControllerServices.php,14,Controller,Flows,Flo
 Controller/Trait/,,Controller,,,,,Core
 Dashboard/,,Dashboard,,,,,Platform
 Dav/,,Dav,,,,,Integrations
-Db/AccessLink/,,Db,,,,,Integrations
+Db/AccessLink/,,Db,,,,,Core
 Db/Application/,,Db,,,,,Integrations
 Db/AuditTrail/,,Db,,,,,Compliance
 Db/BulkJob/,,Db,,,,,Integrations
@@ -3530,7 +3530,7 @@ Service/Schemas/,,Service,,,,,Core
 Service/Schemas/PropertyValidatorHandlerInterface.php,,Service,,,,,Kernel
 Service/Schemas/RetentionAnnotationValidator.php,,Service,,,,,Core
 Service/Search/,,Service,,,,,Core
-Service/Security/,,Service,,,,,Integrations
+Service/Security/,,Service,,,,,Core
 Service/Serializer/,,Service,,,,,Core
 Service/Settings/,,Service,,,,,Configuration
 Service/SharedSchema/,,Service,,,,,Configuration
@@ -3689,7 +3689,7 @@ Db/ListQuery.php,,Db,,,,,Core
 Db/LockTerms.php,,Db,,,,,Kernel
 Db/MailMessageKey.php,,Db,,,,,Integrations
 Db/ManagedByConfigurationTrait.php,,Db,,,,,Kernel
-Db/MapLinkMapperInterface.php,,Db,,,,,Core
+Db/MapLinkMapperInterface.php,,Db,,,,,Integrations
 Db/MapperWiring.php,,Db,,,,,Core
 Db/MappingMapperInterface.php,,Db,,,,,Integrations
 Db/MigrationPackMapperInterface.php,,Db,,,,,Configuration
@@ -3699,12 +3699,12 @@ Db/ObjectLinkTypesTrait.php,,Db,,,,,Core
 Db/ObjectReadState/ReadStateScope.php,,Db,,,,,Core
 Db/ObjectReadStateMapperInterface.php,,Db,,,,,Core
 Db/ObjectRelationMapperInterface.php,,Db,,,,,Core
-Db/OpenProjectLinkMapperInterface.php,,Db,,,,,Core
+Db/OpenProjectLinkMapperInterface.php,,Db,,,,,Integrations
 Db/Organisation/OrganisationFieldTypes.php,,Db,,,,,Core
 Db/OrganisationFieldTrait.php,,Db,,,,,Core
 Db/PartialObjectEntity.php,,Db,,,,,Core
-Db/PhotoLinkMapperInterface.php,,Db,,,,,Core
-Db/PollLinkMapperInterface.php,,Db,,,,,Core
+Db/PhotoLinkMapperInterface.php,,Db,,,,,Integrations
+Db/PollLinkMapperInterface.php,,Db,,,,,Integrations
 Db/ProcessingLog/ProcessingLogSubject.php,,Db,,,,,Compliance
 Db/ProcessingLogEntry/ProcessingLogEntryFieldTypes.php,,Db,,,,,Compliance
 Db/ProcessingLogMapperInterface.php,,Db,,,,,Core
@@ -3760,7 +3760,7 @@ Db/TaskSequenceMapperInterface.php,,Db,,,,,Processes
 Db/TenantUsage/UsageBucket.php,,Db,,,,,Core
 Db/TenantUsage/UsageRange.php,,Db,,,,,Core
 Db/TenantUsageMapperInterface.php,,Db,,,,,Core
-Db/TimeTrackerLinkMapperInterface.php,,Db,,,,,Core
+Db/TimeTrackerLinkMapperInterface.php,,Db,,,,,Integrations
 Db/TrailRetentionTrait.php,,Db,,,,,Compliance
 Db/Translation/LanguageCoverageCheck.php,,Db,,,,,Configuration
 Db/TranslationBackfillScope.php,,Db,,,,,Platform
@@ -3776,7 +3776,7 @@ Db/Verwerkingsactiviteit/VerwerkingsactiviteitFieldTypes.php,,Db,,,,,Compliance
 Db/VerwerkingsactiviteitMapperInterface.php,,Db,,,,,Core
 Db/WebhookLogMapperInterface.php,,Db,,,,,Integrations
 Db/WebhookMapperInterface.php,,Db,,,,,Integrations
-Db/XwikiLinkMapperInterface.php,,Db,,,,,Core
+Db/XwikiLinkMapperInterface.php,,Db,,,,,Integrations
 Event/AbstractAgentEvent.php,,Event,,,,,Kernel
 Event/AbstractApplicationEvent.php,,Event,,,,,Kernel
 Event/AbstractConfigurationEvent.php,,Event,,,,,Kernel
@@ -4021,7 +4021,7 @@ Service/RegisterDescriptorServiceInterface.php,,Service,,,,,Core
 Service/RegisterImportCall.php,,Service,,,,,Core
 Service/RegisterImportDocument.php,,Service,,,,,Core
 Service/RegisterImportRoute.php,,Service,,,,,Core
-Service/RegisterImporters.php,,Service,,,,,Core
+Service/RegisterImporters.php,,Service,,,,,Configuration
 Service/RegisterResolverServiceInterface.php,,Service,,,,,Core
 Service/RegisterSchemaLinkageRepairServiceInterface.php,,Service,,,,,Core
 Service/RegisterSchemaMappers.php,,Service,,,,,Core
@@ -4070,7 +4070,7 @@ Service/SharedMasterDataServiceInterface.php,,Service,,,,,Core
 Service/SharedSchemaDedupeServiceInterface.php,,Service,,,,,Core
 Service/SharedSchemaPlanRun.php,,Service,,,,,Configuration
 Service/SharedSchemaUse.php,,Service,,,,,Configuration
-Service/ShippedRegister.php,,Service,,,,,Configuration
+Service/ShippedRegister.php,,Service,,,,,Core
 Service/SkosNodeReader.php,,Service,,,,,Core
 Service/SourceLanguageLookup.php,,Service,,,,,Configuration
 Service/StoredEvent.php,,Service,,,,,Processes
@@ -4348,6 +4348,7 @@ BackgroundJob/QualityAuditScheduleJob.php,,BackgroundJob,,,,,Compliance
 Service/Export/ExportPage.php,,Service,,,,,Configuration
 Service/Export/PublicExportResult.php,,Service,,,,,Configuration
 Service/Export/PublicExportService.php,,Service,,,,,Configuration
+Service/Export/SpreadsheetCell.php,,Service,,,,,Core
 Contract/ObjectFileReaderInterface.php,4,Contract,Contract,Contract/ObjectFileReaderInterface.php,1,,Kernel
 Service/File/ObjectFileReader.php,14,Service,Service,Service/File/ObjectFileReader.php,0,,Core
 Controller/FileEntityRelationsController.php,,Controller,,,,,Processes
@@ -4418,6 +4419,9 @@ Service/ComplianceServiceBindings.php,,Service,,,,,Compliance
 Service/ComplianceServiceRegistrar.php,,Service,,,,,Compliance
 Event/ObjectWriteRequestEvent.php,,Event,,,,,Core
 Listener/WebhookRequestInterceptionListener.php,,Listener,,,,,Integrations
+Service/Schemas/ArchivalDeclarationValidators.php,,Service,,,,,Compliance
+Db/SchemaMapper/ArchivalDeclarationRefusals.php,,Db,,,,,Compliance
+Listener/ArchivalDeclarationChecksListener.php,,Listener,,,,,Compliance
 Service/Form/PublishedForm.php,,Service,,,,,Kernel
 Service/Lifecycle/TransitionActor.php,,Service,,,,,Kernel
 Service/Lifecycle/TransitionMove.php,,Service,,,,,Kernel
@@ -4443,3 +4447,8 @@ BackgroundJob/Support/ScheduledJobRuntime.php,,BackgroundJob,,,,,Core
 BackgroundJob/Support/TenantRecords.php,,BackgroundJob,,,,,Core
 BackgroundJob/Support/StateHistoryRebuildSources.php,,BackgroundJob,,,,,Core
 Service/Sharing/AccessLinkReaderFilters.php,,Service,,,,,Files
+BackgroundJob/ComplianceJobHandlesInterface.php,,BackgroundJob,,,,,Compliance
+BackgroundJob/ConfigurationJobHandlesInterface.php,,BackgroundJob,,,,,Configuration
+BackgroundJob/IntegrationsJobHandlesInterface.php,,BackgroundJob,,,,,Integrations
+BackgroundJob/ProcessesJobHandlesInterface.php,,BackgroundJob,,,,,Processes
+Service/Translation/TranslationBindingDescription.php,,Service,,,,,Configuration
