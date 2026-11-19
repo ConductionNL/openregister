@@ -13,6 +13,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionDefaultsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\NodeRightsMapInterface;
 use OCA\OpenRegister\Service\Flow\FlowAccess;
@@ -44,6 +45,7 @@ use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendars;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
+use OCA\OpenRegister\Service\Rules\ExpressionDefaults;
 use OCA\OpenRegister\Service\Party\PartySearchInterface;
 use OCA\OpenRegister\Service\Party\PartySearchService;
 use OCA\OpenRegister\Service\Portal\PortalPartyResolver;
@@ -172,6 +174,16 @@ final class FlowWiringTest extends TestCase {
 	}//end testTheFieldRulesPortIsAnsweredByTheStateResolver()
 
 	/**
+	 * The Core expression-defaults port is answered by the rules engine's implementation.
+	 *
+	 * @return void
+	 */
+	public function testTheExpressionDefaultsPortIsAnsweredByTheRulesEngine(): void {
+		self::assertSame(expected: ExpressionDefaults::class, actual: ($this->aliases[ExpressionDefaultsInterface::class] ?? null));
+		self::assertTrue(condition: is_a(ExpressionDefaults::class, ExpressionDefaultsInterface::class, true));
+	}//end testTheExpressionDefaultsPortIsAnsweredByTheRulesEngine()
+
+	/**
 	 * The schedule flow store and the area's own interfaces are bound, and only these aliases are registered.
 	 *
 	 * @return void
@@ -190,6 +202,7 @@ final class FlowWiringTest extends TestCase {
 				TaskCalendarDocumentInterface::class       => TaskCalendarDocument::class,
 				PartySearchInterface::class                => PartySearchService::class,
 				FlowConsentSweepInterface::class           => FlowConsentParking::class,
+				ExpressionDefaultsInterface::class         => ExpressionDefaults::class,
 				SequenceServiceInterface::class            => SequenceService::class,
 				NodeRightsMapInterface::class              => FlowNodeRightsGuard::class,
 			],
