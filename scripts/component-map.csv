@@ -3847,7 +3847,7 @@ Repair/FlowNodeTypeRewrite.php,,Repair,,,,,Processes
 Repair/FlowTimerRegisterPathInterface.php,,Repair,,,,,Processes
 Repair/FlowVersionBackfillTally.php,,Repair,,,,,Processes
 Repair/FlowVersionNumbering.php,,Repair,,,,,Processes
-Repair/IntakeSourceRegisterSlugsInterface.php,,Repair,,,,,Processes
+Repair/IntakeSourceRegisterSlugsInterface.php,,Repair,,,,,Core
 Repair/MagicTableSweepRun.php,,Repair,,,,,Platform
 Repair/MigrateRegisterFlowsRun.php,,Repair,,,,,Platform
 Repair/MigratedFlowOrigins.php,,Repair,,,,,Core
@@ -3857,12 +3857,12 @@ Repair/PerformerTyping.php,,Repair,,,,,Core
 Repair/PhantomFlowPurgeRun.php,,Repair,,,,,Processes
 Repair/RegisterDescriptorImport.php,,Repair,,,,,Integrations
 Repair/ReportUnpublishedSchedules.php,,Repair,,,,,Processes
-Repair/SchemaListing.php,,Repair,,,,,Platform
+Repair/SchemaListing.php,,Repair,,,,,Core
 Repair/TaskFixtureMappers.php,,Repair,,,,,Processes
 Repair/TaskSubjectLocationBackfill.php,,Repair,,,,,Processes
 Repair/V1ChainVerificationRun.php,,Repair,,,,,Processes
 Repair/VirtualRegisterSeed.php,,Repair,,,,,Platform
-Service/ActivityEntriesOptions.php,,Service,,,,,Integrations
+Service/ActivityEntriesOptions.php,,Service,,,,,Notifications
 Service/ActivityFilter.php,,Service,,,,,Notifications
 Service/ActivityFilterServiceInterface.php,,Service,,,,,Notifications
 Service/AlbumLinkRun.php,,Service,,,,,Integrations
@@ -3950,7 +3950,7 @@ Service/FlowLinkPlatform.php,,Service,,,,,Processes
 Service/FlowLinkServiceInterface.php,,Service,,,,,Processes
 Service/FormLinkScope.php,,Service,,,,,Integrations
 Service/FormLinkServiceInterface.php,,Service,,,,,Integrations
-Service/FormsAppRows.php,,Service,,,,,Configuration
+Service/FormsAppRows.php,,Service,,,,,Integrations
 Service/HoldOrder.php,,Service,,,,,Core
 Service/InboundAuthRateLimitInterface.php,,Service,,,,,Core
 Service/LanguageGapScan.php,,Service,,,,,Configuration
@@ -4060,7 +4060,7 @@ Service/SearchTrailUserAgentParser.php,,Service,,,,,Search
 Service/SecurityHeadersInterface.php,,Service,,,,,Core
 Service/SemanticTypeQuery.php,,Service,,,,,Core
 Service/SemanticTypeResolverInterface.php,,Service,,,,,Core
-Service/SequenceScope.php,,Service,,,,,Configuration
+Service/SequenceScope.php,,Service,,,,,Core
 Service/SequenceServiceInterface.php,,Service,,,,,Processes
 Service/ServiceBootstrap.php,,Service,,,,,Core
 Service/ShareLinkServiceInterface.php,,Service,,,,,Core
@@ -4416,3 +4416,7 @@ Service/PlatformServiceBindings.php,,Service,,,,,Platform
 Service/PlatformServiceRegistrar.php,,Service,,,,,Platform
 Event/ObjectWriteRequestEvent.php,,Event,,,,,Core
 Listener/WebhookRequestInterceptionListener.php,,Listener,,,,,Integrations
+Db/AuditTrail/ObjectAuditEvent.php,,Db,,,,,Core
+Db/AuditTrail/ObjectAuditEventOptions.php,,Db,,,,,Core
+Db/AuditTrail/NamedActor.php,,Db,,,,,Core
+Service/Export/SpreadsheetCell.php,,Service,,,,,Core
