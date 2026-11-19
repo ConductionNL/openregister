@@ -96,7 +96,12 @@ class IntegrationRegistrarTest extends TestCase {
 			],
 			actual: $context->services
 		);
-		$this->assertCount(expectedCount: 0, haystack: $context->listeners);
+		$this->assertSame(
+			expected: [
+				['event' => 'OCA\OpenRegister\Event\ObjectWriteRequestEvent', 'listener' => 'OCA\OpenRegister\Listener\WebhookRequestInterceptionListener'],
+			],
+			actual: $context->listeners
+		);
 	}//end testRegistersTheServicesInOrder()
 
 	/**

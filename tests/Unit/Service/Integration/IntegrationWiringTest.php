@@ -120,6 +120,16 @@ class IntegrationWiringTest extends TestCase {
 		$this->assertNotSame([], $this->aliases);
 	}//end testEveryContractIsAliasedToItsService()
 
+	/**
+	 * The mail-sidebar link service is bound by Integrations, not by Notifications.
+	 *
+	 * @return void
+	 */
+	public function testTheMailLinkServiceIsBoundByIntegrationsOnly(): void {
+		$this->assertSame(\OCA\OpenRegister\Notifications\Service\EmailService::class, IntegrationWiring::BINDINGS[\OCA\OpenRegister\Notifications\Service\EmailServiceInterface::class]);
+		$this->assertArrayNotHasKey(\OCA\OpenRegister\Notifications\Service\EmailServiceInterface::class, \OCA\OpenRegister\Notifications\NotificationsWiring::BINDINGS);
+	}//end testTheMailLinkServiceIsBoundByIntegrationsOnly()
+
 	public function testTheRegistryAndSemanticValidatorFactoriesBuildFromTheContainer(): void {
 		$this->registerAll();
 		$container = $this->createMock(ContainerInterface::class);
