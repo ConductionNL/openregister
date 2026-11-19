@@ -195,7 +195,8 @@ class AnonymisationBackendProbeTest extends TestCase {
 			new AnonymisationBackendCollaborators(
 				$this->fileSettingsHandler,
 				$this->logger,
-				$this->createMock(ConnectionReporter::class)
+				$this->createMock(ConnectionReporter::class),
+				new \OCA\OpenRegister\Files\Service\TextExtraction\PatternSet\PatternSetVersion()
 			)
 		);
 	}//end service()

@@ -137,7 +137,7 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 	 * Constructor.
 	 *
 	 * @param AnonymisationBackendPlatform      $platform      App manager, app config, cache factory and HTTP clients.
-	 * @param AnonymisationBackendCollaborators $collaborators File settings, logger and connection reporter.
+	 * @param AnonymisationBackendCollaborators $collaborators File settings, logger, connection reporter and pattern version.
 	 */
 	public function __construct(
 		AnonymisationBackendPlatform $platform,
@@ -158,7 +158,7 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 		}
 
 		$this->probeCache = new ProbeResultCache(cache: $cache, appConfig: $this->appConfig);
-		$this->detectorVersions = new DetectorVersionReader(appManager: $this->appManager);
+		$this->detectorVersions = new DetectorVersionReader(appManager: $this->appManager, patterns: $collaborators->patterns);
 		$this->detectorHistory  = new DetectorVersionHistory(appConfig: $this->appConfig);
 	}//end __construct()
 

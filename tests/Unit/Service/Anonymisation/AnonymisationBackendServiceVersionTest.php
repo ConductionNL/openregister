@@ -72,7 +72,7 @@ final class AnonymisationBackendServiceVersionTest extends TestCase {
 
 		$service = new AnonymisationBackendService(
 			new AnonymisationBackendPlatform($apps, $this->inMemoryAppConfig(), $caches, $this->createMock(IClientService::class)),
-			new AnonymisationBackendCollaborators($settings, $this->createMock(LoggerInterface::class), $this->createMock(ConnectionReporter::class))
+			new AnonymisationBackendCollaborators($settings, $this->createMock(LoggerInterface::class), $this->createMock(ConnectionReporter::class), new \OCA\OpenRegister\Files\Service\TextExtraction\PatternSet\PatternSetVersion())
 		);
 
 		return $service->getState()->jsonSerialize();

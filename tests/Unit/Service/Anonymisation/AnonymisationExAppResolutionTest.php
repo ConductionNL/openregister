@@ -58,7 +58,8 @@ final class AnonymisationExAppResolutionTest extends TestCase {
 			new AnonymisationBackendCollaborators(
 				$this->createMock(FileSettingsHandler::class),
 				$this->createMock(LoggerInterface::class),
-				$this->createMock(ConnectionReporter::class)
+				$this->createMock(ConnectionReporter::class),
+				new \OCA\OpenRegister\Files\Service\TextExtraction\PatternSet\PatternSetVersion()
 			)
 		);
 	}
