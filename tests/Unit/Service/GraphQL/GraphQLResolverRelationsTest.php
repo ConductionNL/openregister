@@ -34,6 +34,7 @@ use OCA\OpenRegister\Service\GraphQL\GraphQLResolver;
 use OCA\OpenRegister\Service\GraphQL\GraphQLResolverObjects;
 use OCA\OpenRegister\Service\GraphQL\GraphQLResolverRights;
 use OCA\OpenRegister\Service\GraphQL\GraphQLResolverShaping;
+use OCA\OpenRegister\Service\GraphQL\ListAggregations;
 use OCA\OpenRegister\Service\Object\GetObject;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\RelationHandler;
@@ -108,8 +109,7 @@ class GraphQLResolverRelationsTest extends TestCase {
 			),
 			new GraphQLResolverShaping(
 				$this->createMock(TranslationHandler::class),
-				$this->createMock(AggregationRunner::class),
-				new TimeseriesRequestValidator()
+				new ListAggregations(runner: $this->createMock(AggregationRunner::class), validator: new TimeseriesRequestValidator())
 			),
 			$this->logger
 		);
