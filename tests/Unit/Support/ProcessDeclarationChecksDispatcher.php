@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Tests\Unit\Support;
 
 use OCA\OpenRegister\Db\SchemaMapper\SchemaDeclarationChecksEvent;
 use OCA\OpenRegister\Listener\SchemaDeclarationChecksListener;
+use OCA\OpenRegister\Notifications\Listener\NotificationDeclarationCheckListener;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionValidatorInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -36,7 +37,7 @@ use Psr\Log\NullLogger;
 use RuntimeException;
 
 /**
- * Contributes the process declaration checks; every other event is recorded and dropped.
+ * Contributes the process and notification declaration checks; every other event is recorded and dropped.
  */
 final class ProcessDeclarationChecksDispatcher implements IEventDispatcher, ContainerInterface {
 
@@ -118,7 +119,7 @@ final class ProcessDeclarationChecksDispatcher implements IEventDispatcher, Cont
 	}//end dispatch()
 
 	/**
-	 * Contribute the process checks to the collection event; record every other event.
+	 * Contribute the process and notification checks to the collection event; record every other event.
 	 *
 	 * @param Event $event The event.
 	 *
@@ -127,6 +128,7 @@ final class ProcessDeclarationChecksDispatcher implements IEventDispatcher, Cont
 	public function dispatchTyped(Event $event): void {
 		if ($event instanceof SchemaDeclarationChecksEvent) {
 			(new SchemaDeclarationChecksListener(logger: ($this->logger ?? new NullLogger()), container: $this))->handle(event: $event);
+			(new NotificationDeclarationCheckListener(logger: ($this->logger ?? new NullLogger())))->handle(event: $event);
 			return;
 		}
 

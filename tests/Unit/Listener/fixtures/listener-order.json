@@ -3,7 +3,8 @@
 		"OCA\\OpenRegister\\Listener\\FilesSidebarListener"
 	],
 	"OCA\\OpenRegister\\Db\\SchemaMapper\\SchemaDeclarationChecksEvent": [
-		"OCA\\OpenRegister\\Listener\\SchemaDeclarationChecksListener"
+		"OCA\\OpenRegister\\Listener\\SchemaDeclarationChecksListener",
+		"OCA\\OpenRegister\\Notifications\\Listener\\NotificationDeclarationCheckListener"
 	],
 	"OCA\\OpenRegister\\Event\\AgentCreatedEvent": [
 		"OCA\\OpenRegister\\Notifications\\Listener\\SystemEntityNotificationListener"

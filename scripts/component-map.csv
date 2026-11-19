@@ -1525,6 +1525,7 @@ Notifications/Listener/ActivityEventListener.php,61,Notifications,Notifications,
 Notifications/Listener/GraphQLSubscriptionListener.php,31,Notifications,Notifications,Notifications/Listener/GraphQLSubscriptionListener.php,0,441,Notifications
 Notifications/Listener/NotificationDedupeAnnotationSyncListener.php,55,Notifications,Notifications,Notifications/Listener/NotificationDedupeAnnotationSyncListener.php,0,364,Notifications
 Notifications/Listener/NotificationDedupePruneListener.php,31,Notifications,Notifications,Notifications/Listener/NotificationDedupePruneListener.php,0,440,Notifications
+Notifications/Listener/NotificationDeclarationCheckListener.php,,Listener,,,0,,Notifications
 Notifications/Listener/Registrar/NotificationsListenerRegistrar.php,21,Notifications,Notifications,Notifications/Listener/Registrar/NotificationsListenerRegistrar.php,0,,Notifications
 Notifications/Listener/SystemEntityNotificationListener.php,102,Notifications,Notifications,Notifications/Listener/SystemEntityNotificationListener.php,0,271,Notifications
 Notifications/NotificationsRegistrar.php,94,Notifications,Notifications,Notifications/NotificationsRegistrar.php,0,,Notifications
@@ -4307,6 +4308,7 @@ Collaboration/ObjectCollections.php,,Collaboration,,,,,Platform
 Controller/ObjectCollectionsController.php,,Controller,,,,,Core
 Controller/VersionsController.php,310,Controller,Service,Service/Controller/VersionsController.php,0,,Core
 Db/SchemaMapper/NamedConditionCheck.php,,Db,,,,,Processes
+Db/SchemaMapper/NotificationAnnotationCheck.php,,Db,,,0,,Notifications
 Service/Import/RecordImport/ColumnMapper.php,,Service,,,,,Core
 Service/Import/RecordImport/ConfirmedMapping.php,,Service,,,,,Core
 Service/Import/RecordImport/RecordFileReader.php,,Service,,,,,Core

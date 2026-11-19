@@ -28,8 +28,11 @@ use OCA\OpenRegister\Db\SchemaMapper\SchemaDeclarationOrder;
 use OCA\OpenRegister\Db\SchemaMapper\SchemaMapperServices;
 use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 use OCA\OpenRegister\Listener\SchemaDeclarationChecksListener;
+use OCA\OpenRegister\Notifications\Listener\NotificationDeclarationCheckListener;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationDeclarationException;
 use OCA\OpenRegister\Service\Calculation\CalculationDeclarationException;
 use OCA\OpenRegister\Service\Consent\ConsentDeclarationException;
+use OCA\OpenRegister\Exception\UniqueHintException;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
 use OCA\OpenRegister\Tests\Unit\Support\ProcessDeclarationChecksDispatcher;
 use OCP\IAppConfig;
@@ -89,6 +92,7 @@ final class SchemaDeclarationOrderTest extends TestCase {
 		$container = $this->createMock(originalClassName: ContainerInterface::class);
 		$listener  = new SchemaDeclarationChecksListener(logger: new NullLogger(), container: $container);
 		$listener->handle(event: $event);
+		(new NotificationDeclarationCheckListener(logger: new NullLogger()))->handle(event: $event);
 		$contributed = array_map(static fn ($check): int => $check->position(), $event->checks());
 
 		$this->assertSame(expected: [], actual: array_intersect($own, $contributed), message: 'No slot is claimed twice');
@@ -146,6 +150,106 @@ final class SchemaDeclarationOrderTest extends TestCase {
 
 		$this->assertInstanceOf(expected: $refusal, actual: $thrown);
 	}//end testTheFirstFaultInSlotOrderRefusesTheSave()
+
+	/**
+	 * A schema whose configuration has several faults, one of them in the notification slot.
+	 *
+	 * @return array<string, array{array<string, mixed>, class-string}>
+	 */
+	public static function severalConfigurationFaults(): array {
+		return [
+			'unique hint (Core) before notifications (Notifications)' => [
+				[
+					'x-openregister-unique-hint' => 'nonsense',
+					'x-openregister-notifications' => self::unlinkableNotification(),
+				],
+				UniqueHintException::class,
+			],
+			'notifications (Notifications) before widgets (Core)' => [
+				[
+					'x-openregister-notifications' => self::unlinkableNotification(),
+					'x-openregister-widgets' => [['nope' => 1]],
+				],
+				NotificationDeclarationException::class,
+			],
+		];
+	}//end severalConfigurationFaults()
+
+	/**
+	 * Each fault of those cases refuses the save on its own.
+	 *
+	 * @return array<string, array{array<string, mixed>}>
+	 */
+	public static function singleConfigurationFaults(): array {
+		return [
+			'unique hint' => [['x-openregister-unique-hint' => 'nonsense']],
+			'notifications' => [['x-openregister-notifications' => self::unlinkableNotification()]],
+			'widgets' => [['x-openregister-widgets' => [['nope' => 1]]]],
+		];
+	}//end singleConfigurationFaults()
+
+	/**
+	 * The refusal a schema whose configuration has several faults gets.
+	 *
+	 * @param array<string, mixed> $configuration The faulty configuration.
+	 * @param class-string         $refusal       The refusal it gets.
+	 *
+	 * @return void
+	 */
+	#[\PHPUnit\Framework\Attributes\DataProvider('severalConfigurationFaults')]
+	public function testTheFirstConfigurationFaultInSlotOrderRefusesTheSave(array $configuration, string $refusal): void {
+		$this->assertInstanceOf(expected: $refusal, actual: $this->refusalOf(configuration: $configuration));
+	}//end testTheFirstConfigurationFaultInSlotOrderRefusesTheSave()
+
+	/**
+	 * Each fault alone refuses the save, so the cases above test the order.
+	 *
+	 * @param array<string, mixed> $configuration The faulty configuration.
+	 *
+	 * @return void
+	 */
+	#[\PHPUnit\Framework\Attributes\DataProvider('singleConfigurationFaults')]
+	public function testEachConfigurationFaultAloneRefusesTheSave(array $configuration): void {
+		$this->assertInstanceOf(expected: Throwable::class, actual: $this->refusalOf(configuration: $configuration));
+	}//end testEachConfigurationFaultAloneRefusesTheSave()
+
+	/**
+	 * A notification rule whose url action cannot be linked to.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function unlinkableNotification(): array {
+		return [
+			'opened' => [
+				'trigger' => ['type' => 'created'],
+				'channels' => ['nc-notification'],
+				'recipients' => [['kind' => 'users', 'users' => ['admin']]],
+				'subject' => 'Opened',
+				'actions' => [['label' => ['nl' => 'Open'], 'target' => ['kind' => 'url', 'href' => 'call']]],
+			],
+		];
+	}//end unlinkableNotification()
+
+	/**
+	 * What the save of a schema with this configuration throws, if anything.
+	 *
+	 * @param array<string, mixed> $configuration The configuration.
+	 *
+	 * @return Throwable|null
+	 */
+	private function refusalOf(array $configuration): ?Throwable {
+		$schema = new Schema();
+		$schema->setSlug('faults');
+		$schema->setConfiguration($configuration);
+
+		try {
+			(new ReflectionMethod(SchemaMapper::class, 'cleanObject'))->invoke($this->mapper(), $schema);
+		} catch (Throwable $e) {
+			return $e;
+		}
+
+		return null;
+	}//end refusalOf()
 
 	/**
 	 * A mapper whose dispatcher contributes the process checks as the app does.

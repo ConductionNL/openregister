@@ -137,7 +137,7 @@ final class NotificationActionHrefRefusalTest extends TestCase {
 		};
 		(function (LoggerInterface $logger): void {
 			$this->logger          = $logger;
-			$this->eventDispatcher = new ProcessDeclarationChecksDispatcher();
+			$this->eventDispatcher = new ProcessDeclarationChecksDispatcher(logger: $logger);
 		})->call($mapper, $logger);
 		$schema = self::schemaWith(['kind' => 'url', 'href' => 'call']);
 

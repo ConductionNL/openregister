@@ -37,7 +37,6 @@ use OCA\OpenRegister\Db\SchemaMapper\ExchangeAnnotationRefusals;
 use OCA\OpenRegister\Db\SchemaMapper\ExtendedByReads;
 use OCA\OpenRegister\Db\SchemaMapper\FacetConfiguration;
 use OCA\OpenRegister\Db\SchemaMapper\IdentityDeclarationCheck;
-use OCA\OpenRegister\Db\SchemaMapper\NotificationAnnotationCheck;
 use OCA\OpenRegister\Db\SchemaMapper\PropertyDeclarationRefusals;
 use OCA\OpenRegister\Db\SchemaMapper\RecordAnnotationRefusals;
 use OCA\OpenRegister\Db\SchemaMapper\ReferenceNormaliser;
@@ -1317,7 +1316,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 */
 	private function contributedDeclarationChecks(): array {
 		if ($this->declarationChecks === null) {
-			$event = new SchemaDeclarationChecksEvent();
+			$event = new SchemaDeclarationChecksEvent(warnsOnUnlinkable: fn (): bool => $this->warnUnlinkable);
 			$this->eventDispatcher->dispatchTyped($event);
 			foreach ($event->checks() as $check) {
 				if (SchemaDeclarationOrder::isSlot(position: $check->position()) === false) {
@@ -1369,7 +1368,6 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 			SchemaDeclarationOrder::SURVIVORSHIP => static fn () => $advisory->checkSurvivorship(schema: $schema),
 			SchemaDeclarationOrder::MERGE => static fn () => $advisory->checkMerge(schema: $schema),
 			SchemaDeclarationOrder::PARTY => static fn () => $advisory->checkParty(schema: $schema),
-			SchemaDeclarationOrder::NOTIFICATIONS => fn () => $this->checkNotifications(schema: $schema),
 			SchemaDeclarationOrder::WIDGETS => static fn () => $records->checkWidgets(schema: $schema),
 			SchemaDeclarationOrder::ARCHIVAL => static fn () => $records->checkArchival(schema: $schema),
 			SchemaDeclarationOrder::REFERENCE_CARD => static fn () => $records->checkReferenceCard(schema: $schema),
@@ -1377,24 +1375,6 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 			SchemaDeclarationOrder::RETENTION => static fn () => $records->checkRetention(schema: $schema),
 		];
 	}//end dataSteps()
-
-
-	/**
-	 * Check the notification annotation; an unlinkable url action only warns while an import asked it.
-	 *
-	 * @param Schema $schema The schema being saved.
-	 *
-	 * @return void
-	 */
-	private function checkNotifications(Schema $schema): void {
-		$notifications = new NotificationAnnotationCheck(logger: $this->logger);
-		if ($this->warnUnlinkable === true) {
-			$notifications->warn(schema: $schema);
-			return;
-		}
-
-		$notifications->check(schema: $schema);
-	}//end checkNotifications()
 
 	/**
 	 * How objects leave or enter: handoff, MCP, registry, links and extending forms.
