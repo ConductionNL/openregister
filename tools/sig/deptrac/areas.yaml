@@ -1708,7 +1708,7 @@ deptrac:
         - type: directory
           value: 'lib/Command/(RematerialiseCalculationsCommand|RematerialiseRun)[.]php$'
         - type: directory
-          value: 'lib/Controller/(AutomationRecordsController|BulkJobsController|CalculationsController|CalendarEventsController|CalendarFeedController|CaseController|EntityRelationsController|FileEntityRelationsController|FlowController|FlowDryRunController|FlowLinksController|FlowNodeRunController|FlowPrincipalController|FlowRunController|FlowRunMigrationController|FlowTestRunController|FlowTimerDiagnosticController|FormsController|GdprEntitiesController|NamesController|ObjectActionsController|ObjectFavouriteController|OrganisationHaltController|PartyController|PersonLookupController|PortalTaskController|RulesController|TaskController|TaskEventsController|TaskNotesController|TasksController|TransitionController|TranslationController|WorkingCalendarController)[.]php$'
+          value: 'lib/Controller/(AutomationRecordsController|BulkJobsController|CalculationsController|CalendarEventsController|CalendarFeedController|CaseController|EntityRelationsController|FileEntityRelationsController|FlowController|FlowDryRunController|FlowLinksController|FlowNodeRunController|FlowPrincipalController|FlowRunController|FlowRunMigrationController|FlowTestRunController|FlowTimerDiagnosticController|FormsController|GdprEntitiesController|NamesController|ObjectActionsController|ObjectFavouriteController|OrganisationHaltController|PartyController|PersonLookupController|PortalTaskController|RulesController|TaskController|TaskEventsController|TaskNotesController|TasksController|TransitionController|WorkingCalendarController)[.]php$'
         - type: directory
           value: 'lib/Controller/Support/ActionParameters[.]php$'
         - type: directory
@@ -2430,7 +2430,7 @@ deptrac:
         - type: directory
           value: 'lib/Command/Support/[^/]*$'
         - type: directory
-          value: 'lib/Controller/(ApplicationsController|ConfigurationBundleController|ConfigurationController|ConfigurationDeploymentController|ConfigurationSeedController|ConfigurationsController|ExportProfilesController|ExportRunsController|FederatedConfigController|GitHubIssuesController|IconController|ImportPreviewController|ManifestController|MigrationController|MigrationPacksController|OperationsConsistencyController|OperationsConsoleController|OperationsMaintenanceController|PreferencesController|RecordTemplatesController|RegisterDescriptorController|SetupController|ShippedBaselineController|UiController|UserSettingsController)[.]php$'
+          value: 'lib/Controller/(ApplicationsController|ConfigurationBundleController|ConfigurationController|ConfigurationDeploymentController|ConfigurationSeedController|ConfigurationsController|ExportProfilesController|ExportRunsController|FederatedConfigController|GitHubIssuesController|IconController|ImportPreviewController|ManifestController|MigrationController|MigrationPacksController|OperationsConsistencyController|OperationsConsoleController|OperationsMaintenanceController|PreferencesController|RecordTemplatesController|RegisterDescriptorController|SetupController|ShippedBaselineController|TranslationController|UiController|UserSettingsController)[.]php$'
         - type: directory
           value: 'lib/Controller/Settings/[^/]*$'
         - type: directory
