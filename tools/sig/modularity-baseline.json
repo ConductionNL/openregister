@@ -812,8 +812,6 @@
   "lib/Service/SchemaDeletionService.php -> lib/Service/TableDeletionOptions.php",
   "lib/Service/SchemaTeardownGuard.php -> lib/Service/SchemaDeletionService.php",
   "lib/Service/Schemas/PropertyTitles.php -> lib/Service/LanguageService.php",
-  "lib/Service/Schemas/PropertyValidatorHandler.php -> lib/Search/Service/Search/PropertySearchProfile.php",
-  "lib/Service/Schemas/RetentionAnnotationValidator.php -> lib/Service/Archival/InheritedAppraisal.php",
   "lib/Service/Schemas/SchemaDeclarationValidators.php -> lib/Service/Archival/ArchivalAnnotationValidator.php",
   "lib/Service/Schemas/SchemaDeclarationValidators.php -> lib/Service/Archival/ArchivalAnnotationValidatorInterface.php",
   "lib/Service/Schemas/SchemaDeclarationValidators.php -> lib/Service/Archival/ElementMappingValidator.php",
@@ -3793,5 +3791,5 @@
  ],
  "kernel_loc": 10388,
  "total_loc": 459222,
- "violation_degree": 0.1043
+ "violation_degree": 0.1041
 }
