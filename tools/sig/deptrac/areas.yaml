@@ -756,6 +756,8 @@ deptrac:
         - type: directory
           value: 'lib/Service/Import/RecordImport/[^/]*$'
         - type: directory
+          value: 'lib/Service/Interaction/AddressedObject[.]php$'
+        - type: directory
           value: 'lib/Service/JsonLd/[^/]*$'
         - type: directory
           value: 'lib/Service/Lifecycle/StateFieldLists[.]php$'
@@ -1938,7 +1940,7 @@ deptrac:
         - type: directory
           value: 'lib/Listener/Support/TaskVtodoWriteBackServices[.]php$'
         - type: directory
-          value: 'lib/Repair/(BackfillFlowSemanticVersions|BackfillFlowTriggerIndex|BackfillFlowVersions|FlowNodeTypeRewrite|FlowTimerRegisterPathInterface|FlowVersionBackfillTally|FlowVersionNumbering|IntakeSourceRegisterSlugsInterface|MigrateApprovalChainsToTasks|MigrateRenamedFlowNodeTypes|PhantomFlowPurgeRun|ReportUnpublishedSchedules|SeedCaseFixtures|SeedFlowRunTriggerSubject|SeedFlowTimerRegister|SeedTaskFixtures|TaskSubjectLocationBackfill|V1ChainVerificationRun)[.]php$'
+          value: 'lib/Repair/(BackfillFlowSemanticVersions|BackfillFlowTriggerIndex|BackfillFlowVersions|FlowNodeTypeRewrite|FlowTimerRegisterPathInterface|FlowVersionBackfillTally|FlowVersionNumbering|IntakeSourceRegisterSlugsInterface|MigrateApprovalChainsToTasks|MigrateRenamedFlowNodeTypes|PhantomFlowPurgeRun|ReportUnpublishedSchedules|SeedCaseFixtures|SeedFlowRunTriggerSubject|SeedFlowTimerRegister|SeedTaskFixtures|TaskSubjectLocationBackfill)[.]php$'
         - type: directory
           value: 'lib/Service/(ApprovalChainAnnotationInstaller|AutomationRecordService|AutomationRecordWriter|BulkActionRegistry|BulkTranslationService|CalendarEventService|CalendarScanRun|CommentsCollectionCatalog|ContactMatchQuery|ContactMatchingService|FlowJsonColumn|FlowLinkPlatform|FlowLinkService|FlowLinkServiceInterface|ObjectTranslationRequest|OperationsConsoleJobs|OperationsConsoleNotifications|OperationsConsoleRules|OperationsConsoleServiceInterface|PropertyTranslation|SequenceServiceInterface|StoredEvent|StoredTask|TaskService|TaskVtodoDocument)[.]php$'
         - type: directory
@@ -2324,7 +2326,27 @@ deptrac:
         - type: directory
           value: 'lib/Service/Form/OwnedDraft[.]php$'
         - type: directory
-          value: 'lib/Service/Interaction/[^/]*$'
+          value: 'lib/Service/Interaction/FavouriteService[.]php$'
+        - type: directory
+          value: 'lib/Service/Interaction/FavouriteServiceInterface[.]php$'
+        - type: directory
+          value: 'lib/Service/Interaction/ProcessingListRead[.]php$'
+        - type: directory
+          value: 'lib/Service/Interaction/ReadHistoryService[.]php$'
+        - type: directory
+          value: 'lib/Service/Interaction/ReadStateService[.]php$'
+        - type: directory
+          value: 'lib/Service/Interaction/ReadStateServiceInterface[.]php$'
+        - type: directory
+          value: 'lib/Service/Interaction/SubResourceWindow[.]php$'
+        - type: directory
+          value: 'lib/Service/Interaction/SubstantiveChangeEvaluator[.]php$'
+        - type: directory
+          value: 'lib/Service/Interaction/SubstantiveChangeEvaluatorInterface[.]php$'
+        - type: directory
+          value: 'lib/Service/Interaction/UnreadCountCalculator[.]php$'
+        - type: directory
+          value: 'lib/Service/Interaction/ValueNormaliser[.]php$'
         - type: directory
           value: 'lib/Service/Lifecycle/AutoTransitionCandidate[.]php$'
         - type: directory
@@ -2920,7 +2942,7 @@ deptrac:
         - type: directory
           value: 'lib/Listener/(ArchivalNominationListener|ContentReportRemovalListener|EntityEditAuditListener|QualityScoreOnSaveListener|RecordTypeAuditListener|RelatedRetentionRecalculationListener|SchemaAuthorizationAuditListener)[.]php$'
         - type: directory
-          value: 'lib/Repair/(RechainAuditTrailForFlowAttribution)[.]php$'
+          value: 'lib/Repair/(RechainAuditTrailForFlowAttribution|V1ChainVerificationRun)[.]php$'
         - type: directory
           value: 'lib/Service/(AuditCanonicalV1|AuditChainKey|AuditHashService|AuditHashServiceInterface|AuditQueryService|AuditQueryServiceInterface|AuditRechainInterface|AuditRetentionResolver|AuditRetentionResolverInterface|AuditSealInterface|AuthFailureRun|AuthorizationAuditService|AuthorizationChange|AvgComplianceService|AvgRetentionErasureRun|AvgRetentionService|CalculationRun|ContentScanService|DescriptorReimportRun|DsarErasureRun|DsarGuards|DsarService|DsarStores|DsarSubjectQuery|LogService|ProcessingLogService|ProcessingRead|ReadCaptureRun|RetentionClock|RetentionPass|RetentionRules|RetentionService|RetentionServiceInterface|RetentionStores|SchemaDeletionService|SearchMeasurement|SearchPeriod|SearchTrailService|TableDeletionRun|TmloService|UnclassifiedProcessing)[.]php$'
         - type: directory
@@ -3417,6 +3439,14 @@ deptrac:
           value: 'lib/Push/[^/]*$'
         - type: directory
           value: 'lib/Service/(ActivityFilter|ActivityFilterServiceInterface|AdminRecipientExpander|NotificationServiceInterface|ScheduledReportDelivery|ScheduledReportExportQuery|ScheduledReportExporters|ScheduledReportNotice|ScheduledReportOwnerServices|ScheduledReportStores)[.]php$'
+        - type: directory
+          value: 'lib/Service/Interaction/WatcherCaller[.]php$'
+        - type: directory
+          value: 'lib/Service/Interaction/WatcherService[.]php$'
+        - type: directory
+          value: 'lib/Service/Interaction/WatcherServiceInterface[.]php$'
+        - type: directory
+          value: 'lib/Service/Interaction/WatcherStore[.]php$'
         - type: directory
           value: 'lib/Service/Mail/[^/]*$'
     - name: Platform
