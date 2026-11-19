@@ -46,7 +46,7 @@ use DateTimeImmutable;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\RetentionClock;
-use OCA\OpenRegister\Service\Lifecycle\LifecycleFinalStateResolver;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\LifecycleFinalStatesInterface;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -122,15 +122,15 @@ class ArchivalNominationService implements ArchivalNominationServiceInterface, A
 	/**
 	 * Constructor.
 	 *
-	 * @param RetentionServiceInterface            $retentionService Owns the selectielijst lookup and the date arithmetic.
-	 * @param LoggerInterface             $logger           Where an unnominatable record is reported.
-	 * @param LifecycleFinalStateResolver $finalStates      Answers whether a referenced state row is an end.
-	 * @param ArchivalDeclarationReader   $declarations     Reads both places a schema can declare archiving.
+	 * @param RetentionServiceInterface     $retentionService Owns the selectielijst lookup and the date arithmetic.
+	 * @param LoggerInterface               $logger           Where an unnominatable record is reported.
+	 * @param LifecycleFinalStatesInterface $finalStates      Answers whether a declared `final` ends at a state.
+	 * @param ArchivalDeclarationReader     $declarations     Reads both places a schema can declare archiving.
 	 */
 	public function __construct(
 		private readonly RetentionServiceInterface $retentionService,
 		private readonly LoggerInterface $logger,
-		private readonly LifecycleFinalStateResolver $finalStates,
+		private readonly LifecycleFinalStatesInterface $finalStates,
 		private readonly ArchivalDeclarationReader $declarations,
 	) {
 	}//end __construct()
@@ -149,7 +149,7 @@ class ArchivalNominationService implements ArchivalNominationServiceInterface, A
 	 * schema names nothing and NOTHING IS EVER TERMINAL: no error, no log, no
 	 * nomination, and a closed dossier with no archival future. So `final` also
 	 * takes `{ from: <schema>, field: <property> }`, resolved against the
-	 * referenced row; see {@see LifecycleFinalStateResolver}. A graph-mode
+	 * referenced row; see {@see LifecycleFinalStatesInterface}. A graph-mode
 	 * annotation already says the same thing in `graph.schema` and
 	 * `graph.finalField`, so it is read there rather than declared twice.
 	 *
@@ -171,11 +171,7 @@ class ArchivalNominationService implements ArchivalNominationServiceInterface, A
 			return false;
 		}
 
-		if ($this->finalStates->isReferenceForm($final) === true) {
-			return $this->finalStates->isFinalByReference(declaration: $final, state: $state);
-		}
-
-		return in_array($state, $final, true);
+		return $this->finalStates->isFinalState(final: $final, state: $state);
 	}//end isTerminalState()
 
 	/**

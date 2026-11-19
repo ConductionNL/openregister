@@ -11,6 +11,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
+use OCA\OpenRegister\Kernel\Contracts\Compliance\LifecycleFinalStatesInterface;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleFinalStateResolver;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
@@ -157,8 +159,9 @@ final class FlowWiringTest extends TestCase {
 	public function testTheScheduleFlowStoreIsBound(): void {
 		self::assertSame(
 			expected: [
-				FieldRulesSourceInterface::class  => StateFieldRuleResolver::class,
-				ScheduleFlowStoreInterface::class => ScheduleFlowStore::class,
+				FieldRulesSourceInterface::class     => StateFieldRuleResolver::class,
+				ScheduleFlowStoreInterface::class    => ScheduleFlowStore::class,
+				LifecycleFinalStatesInterface::class => LifecycleFinalStateResolver::class,
 			],
 			actual: $this->aliases
 		);

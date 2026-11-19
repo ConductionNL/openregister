@@ -39,7 +39,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow;
 
-use OCA\OpenRegister\Service\OpenRegisterActionAuthService;
+use OCA\OpenRegister\Kernel\Contracts\Core\ActionRightCheckInterface;
 use OCA\OpenRegister\Service\Rbac\CallerContext;
 use OCP\IUser;
 
@@ -52,12 +52,12 @@ class FlowAccess implements FlowAccessInterface {
 	 *
 	 * The action-rights matrix is an access guard and stays a direct parameter.
 	 *
-	 * @param CallerContext                 $caller     Resolves the calling user and whether they are an administrator.
-	 * @param OpenRegisterActionAuthService $actionAuth The flow action-rights matrix.
+	 * @param CallerContext             $caller     Resolves the calling user and whether they are an administrator.
+	 * @param ActionRightCheckInterface $actionAuth The flow action-rights matrix.
 	 */
 	public function __construct(
 		private readonly CallerContext $caller,
-		private readonly OpenRegisterActionAuthService $actionAuth,
+		private readonly ActionRightCheckInterface $actionAuth,
 	) {
 	}//end __construct()
 
