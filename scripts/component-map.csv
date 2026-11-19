@@ -3881,7 +3881,7 @@ Service/AuditRetentionResolverInterface.php,,Service,,,,,Compliance
 Service/AuditSealInterface.php,,Service,,,,,Compliance
 Service/AuthFailureRun.php,,Service,,,,,Compliance
 Service/AuthenticationTokenFetcherInterface.php,,Service,,,,,Core
-Service/AuthorizationChange.php,,Service,,,,,Compliance
+Service/AuthorizationChange.php,,Service,,,,,Core
 Service/AvgComplianceServiceInterface.php,,Service,,,,,Core
 Service/AvgRetentionErasureRun.php,,Service,,,,,Compliance
 Service/AvgRetentionPassInterface.php,,Service,,,,,Core

@@ -729,6 +729,7 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\Audit\ObjectHistoryForReadersInterface::class => \OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders::class,
 		\OCA\OpenRegister\Service\Audit\ReadableAuditTrailListerInterface::class => \OCA\OpenRegister\Service\Audit\ReadableAuditTrailLister::class,
 		\OCA\OpenRegister\Service\Audit\PurposeGuardInterface::class => \OCA\OpenRegister\Service\Audit\PurposeGuard::class,
+		\OCA\OpenRegister\Kernel\Contracts\Core\RegisterAccessChangeLogInterface::class => \OCA\OpenRegister\Service\AuthorizationAuditService::class,
 		\OCA\OpenRegister\Service\Audit\PurposeRegistryInterface::class => \OCA\OpenRegister\Service\Audit\PurposeRegistry::class,
 		\OCA\OpenRegister\Service\Credential\OAuth2ConnectServiceInterface::class => \OCA\OpenRegister\Service\Credential\OAuth2ConnectService::class,
 		\OCA\OpenRegister\Service\Credential\OAuth2EndpointsInterface::class => \OCA\OpenRegister\Service\Credential\OAuth2Endpoints::class,
