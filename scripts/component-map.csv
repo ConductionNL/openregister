@@ -4416,8 +4416,5 @@ Service/PlatformServiceBindings.php,,Service,,,,,Platform
 Service/PlatformServiceRegistrar.php,,Service,,,,,Platform
 Event/ObjectWriteRequestEvent.php,,Event,,,,,Core
 Listener/WebhookRequestInterceptionListener.php,,Listener,,,,,Integrations
-Db/AuditTrail/ObjectAuditEvent.php,,Db,,,,,Core
-Db/AuditTrail/ObjectAuditEventOptions.php,,Db,,,,,Core
-Db/AuditTrail/NamedActor.php,,Db,,,,,Core
 Service/Export/SpreadsheetCell.php,,Service,,,,,Core
 Service/Configuration/AppSettingsAccess.php,,Service,,,,,Core
