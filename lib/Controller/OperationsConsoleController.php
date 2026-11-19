@@ -41,7 +41,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Exception\JobRunRefusedException;
 use OCA\OpenRegister\Service\OperationsConsoleServiceInterface;
 use OCA\OpenRegister\Service\Operations\JobAlertServiceInterface;
@@ -56,6 +55,7 @@ use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCA\OpenRegister\Controller\Support\OperationsConsoleControllerServices;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 
 /**
  * OperationsConsoleController.
@@ -109,7 +109,7 @@ class OperationsConsoleController extends Controller {
 		IRequest $request,
 		OperationsConsoleControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->console = $services->console;
 		$this->jobsService = $services->jobsService;
 		$this->alerts = $services->alerts;

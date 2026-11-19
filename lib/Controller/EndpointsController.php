@@ -24,13 +24,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Controller\Support\EndpointsControllerServices;
 use OCA\OpenRegister\Db\Endpoint;
 use OCA\OpenRegister\Db\EndpointLogMapperInterface;
 use OCA\OpenRegister\Db\EndpointLogScope;
 use OCA\OpenRegister\Db\EndpointMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Service\EndpointServiceInterface;
 use OCP\AppFramework\Controller;
@@ -130,7 +130,7 @@ class EndpointsController extends Controller {
 		EndpointsControllerServices $services,
 	) {
 		// Call parent constructor to initialize base controller.
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 
 		// Store dependencies for use in controller methods.
 		$this->endpointMapper = $services->endpointMapper;

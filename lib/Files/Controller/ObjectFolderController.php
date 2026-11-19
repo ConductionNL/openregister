@@ -24,7 +24,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Files\Controller;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Files\Controller\Support\ObjectFolderControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\ObjectFileAccessDeniedException;
@@ -34,6 +33,7 @@ use OCA\OpenRegister\Files\Service\File\ObjectFolderBrowser;
 use OCA\OpenRegister\Files\Service\File\ObjectFolderPath;
 use OCA\OpenRegister\Files\Service\File\ObjectFolderResponder;
 use OCA\OpenRegister\Files\Service\File\ObjectFolderUploads;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Object\FileWriteGuardInterface;
 use OCP\AppFramework\Controller;
@@ -101,7 +101,7 @@ class ObjectFolderController extends Controller {
 		ObjectFolderControllerServices $services,
 		private readonly FileWriteGuardInterface $fileWriteGuard,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->services = $services;
 		$this->objectFileAccess = $services->objectFileAccess;
 		$this->browser = $services->browser;
