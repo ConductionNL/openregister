@@ -31,6 +31,36 @@ documentation-only note (per OPS-12 in `CODE-REVIEW-IMPROVEMENT-PLAN.md`): recor
 the inconsistency, standardise *going forward*, and never rename already-applied
 migrations.
 
+## Extend `TargetedMigrationStep`, not `SimpleMigrationStep`
+
+A new migration extends `TargetedMigrationStep` and implements
+`changeTargetedSchema()`, `beforeTargetedSchemaChange()` and
+`afterTargetedSchemaChange()` where it would have implemented `changeSchema()`,
+`preSchemaChange()` and `postSchemaChange()`. Arguments and return values are
+the same, and `changeTargetedSchema()` still ends with `return $schema;`.
+
+On an upgrade Nextcloud runs every step on its own and reads the **whole
+database schema three times for it**: every table of every app, magic tables
+included. Measured on an instance with 1,067 magic tables on MariaDB, that was
+four minutes a read, so twelve minutes a step, and an upgrade from release 2.1.0
+ran 78 steps (#10612). The base class hands the step a schema that reads only
+the tables the step names and applies the difference itself. The same 78 steps
+on a copy of that instance's own tables: 84 seconds by Nextcloud's path, 4 by
+this one, with identical table definitions afterwards.
+
+A fresh install and `occ db:schema:check` are untouched: there Nextcloud shares
+one schema between all steps, and the step works on the schema it is given.
+
+Keep to what the targeted schema is for: name the tables you change
+(`hasTable`, `getTable`, `createTable`, `dropTable`). A step that lists every
+table (`getTables`, `getTableNames`) still works, and gets the slow full read.
+
+`openregister.targeted_migrations => false` in `config.php` leaves every step
+to Nextcloud's own path, should one ever come out differently.
+`SchemaReuseHygieneTest` fails a migration dated after 2.1.0 that extends
+`SimpleMigrationStep` directly. The 204 that shipped in 2.1.0 are left as they
+are.
+
 ## A migration without a version bump reaches nobody
 
 **Every change that adds a file here MUST also move `<version>` in
