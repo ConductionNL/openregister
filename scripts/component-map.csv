@@ -867,7 +867,7 @@ Db/SourceMapper.php,143,Db,Integrations,Integrations/Db/SourceMapper.php,0,184,I
 Db/StateHistory.php,36,Db,Service,Service/Db/StateHistory.php,0,,Core
 Db/StateHistoryMapper.php,75,Db,Service,Service/Db/StateHistoryMapper.php,0,,Core
 Db/StatusVocabularyTrait.php,11,Db,Compliance,Compliance/Db/StatusVocabularyTrait.php,0,,Compliance
-Db/StoredEntity.php,20,Db,Configuration,Configuration/Db/StoredEntity.php,0,,Configuration
+Db/StoredEntity.php,20,Db,Configuration,Configuration/Db/StoredEntity.php,0,,Core
 Db/SubjectExport.php,72,Db,Compliance,Compliance/Db/SubjectExport.php,0,,Compliance
 Db/SubjectExportMapper.php,52,Db,Compliance,Compliance/Db/SubjectExportMapper.php,0,,Compliance
 Db/SyncExecution.php,10,Db,Integrations,Integrations/Db/SyncExecution.php,0,,Integrations
@@ -3650,7 +3650,7 @@ Db/ExportProfile/ExportProfileFieldTypes.php,,Db,,,,,Configuration
 Db/ExportProfileMapperInterface.php,,Db,,,,,Configuration
 Db/FederatedShare/FederatedShareFieldTypes.php,,Db,,,,,Integrations
 Db/FederatedShareMapperInterface.php,,Db,,,,,Core
-Db/FeedbackMapperInterface.php,,Db,,,,,Notifications
+Db/FeedbackMapperInterface.php,,Db,,,,,Platform
 Db/FlowActivityWindow.php,,Db,,,,,Processes
 Db/FlowClaimMapperInterface.php,,Db,,,,,Processes
 Db/FlowDefinitionMapperInterface.php,,Db,,,,,Processes
@@ -3731,7 +3731,7 @@ Db/SchemaRunMapperInterface.php,,Db,,,,,Core
 Db/SchemaRunStoreInterface.php,,Db,,,,,Core
 Db/SearchTrailCleanupInterface.php,,Db,,,,,Search
 Db/SearchTrailCriteria.php,,Db,,,,,Search
-Db/SearchTrailMapperInterface.php,,Db,,,,,Search
+Db/SearchTrailMapperInterface.php,,Db,,,,,Compliance
 Db/SearchTrailOutcome.php,,Db,,,,,Compliance
 Db/SequenceMapperInterface.php,,Db,,,,,Processes
 Db/SoftDeletion.php,,Db,,,,,Kernel
@@ -4416,3 +4416,4 @@ Service/PlatformServiceBindings.php,,Service,,,,,Platform
 Service/PlatformServiceRegistrar.php,,Service,,,,,Platform
 Event/ObjectWriteRequestEvent.php,,Event,,,,,Core
 Listener/WebhookRequestInterceptionListener.php,,Listener,,,,,Integrations
+Db/Flow/FlowJson.php,,Db,,,,,Processes
