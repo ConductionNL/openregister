@@ -206,7 +206,10 @@ class CrudToolsCharacterisationTest extends TestCase
             $app->setUuid('app-uuid');
             return $app;
         };
-        $mapper->method('insert')->willReturnCallback($store);
+        // As ApplicationMapper::createFromArray(): hydrate a new entity, then insert it.
+        $mapper->method('createFromArray')->willReturnCallback(
+            fn (array $data): Application => $store((new Application())->hydrate($data))
+        );
         $mapper->method('update')->willReturnCallback($store);
         $mapper->method('findByUuid')->willReturnCallback(
             function (string $uuid): Application {
@@ -234,7 +237,9 @@ class CrudToolsCharacterisationTest extends TestCase
 
         $this->assertTrue($result['success']);
         $this->assertSame("Application 'Zaken' created successfully with UUID app-uuid.", $result['message']);
+        $this->assertSame('Zaken', $seen[0]->getName());
         $this->assertSame('Cases', $seen[0]->getDescription());
+        $this->assertSame('Leeg', $seen[1]->getName());
         $this->assertNull($seen[1]->getDescription());
         $this->assertSame(
             ['success' => false, 'error' => 'Failed to create application: db down'],
