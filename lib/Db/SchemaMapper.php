@@ -27,27 +27,25 @@ use Closure;
 use DateTime;
 use Exception;
 use InvalidArgumentException;
+use LogicException;
 use OCA\OpenRegister\Db\SchemaMapper\AccessDeclarationChecks;
 use OCA\OpenRegister\Db\SchemaMapper\AdvisoryAnnotationChecks;
 use OCA\OpenRegister\Db\SchemaMapper\AuthorizationBlockCheck;
-use OCA\OpenRegister\Db\SchemaMapper\CalculationAnnotationCheck;
 use OCA\OpenRegister\Db\SchemaMapper\ConfigurationFields;
-use OCA\OpenRegister\Db\SchemaMapper\DeclaredActionCheck;
 use OCA\OpenRegister\Db\SchemaMapper\DiscardedAnnotations;
 use OCA\OpenRegister\Db\SchemaMapper\ExchangeAnnotationRefusals;
 use OCA\OpenRegister\Db\SchemaMapper\ExtendedByReads;
 use OCA\OpenRegister\Db\SchemaMapper\FacetConfiguration;
 use OCA\OpenRegister\Db\SchemaMapper\IdentityDeclarationCheck;
-use OCA\OpenRegister\Db\SchemaMapper\LifecycleAnnotationCheck;
-use OCA\OpenRegister\Db\SchemaMapper\NamedConditionCheck;
 use OCA\OpenRegister\Db\SchemaMapper\NotificationAnnotationCheck;
 use OCA\OpenRegister\Db\SchemaMapper\PropertyDeclarationRefusals;
 use OCA\OpenRegister\Db\SchemaMapper\RecordAnnotationRefusals;
-use OCA\OpenRegister\Db\SchemaMapper\ReferenceLoopCheck;
 use OCA\OpenRegister\Db\SchemaMapper\ReferenceNormaliser;
 use OCA\OpenRegister\Db\SchemaMapper\RelationDeclarationCheck;
 use OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation;
 use OCA\OpenRegister\Db\SchemaMapper\SchemaComposition;
+use OCA\OpenRegister\Db\SchemaMapper\SchemaDeclarationChecksEvent;
+use OCA\OpenRegister\Db\SchemaMapper\SchemaDeclarationOrder;
 use OCA\OpenRegister\Db\SchemaMapper\SchemaDefaults;
 use OCA\OpenRegister\Db\SchemaMapper\SchemaLookup;
 use OCA\OpenRegister\Db\SchemaMapper\SchemaMapperServices;
@@ -60,8 +58,8 @@ use OCA\OpenRegister\Event\SchemaCreatedEvent;
 use OCA\OpenRegister\Event\SchemaDeletedEvent;
 use OCA\OpenRegister\Event\SchemaUpdatedEvent;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Kernel\Contracts\Core\SchemaDeclarationCheckInterface;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
-use OCA\OpenRegister\Service\ObjectAction\ObjectActionValidatorInterface;
 use OCA\OpenRegister\Service\Schemas\ScopedField;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandlerInterface;
 use OCA\OpenRegister\Service\Schemas\ScopedPropertyDeclaration;
@@ -181,6 +179,13 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	private ?DiscardedAnnotations $discarded = null;
 
 	/**
+	 * The checks other areas contribute, once collected.
+	 *
+	 * @var array<int, SchemaDeclarationCheckInterface>|null
+	 */
+	private ?array $declarationChecks = null;
+
+	/**
 	 * Event dispatcher for schema events.
 	 *
 	 * @var IEventDispatcher
@@ -223,16 +228,6 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	private readonly LoggerInterface $logger;
 
 	/**
-	 * Verifies every declared action; a Closure returns it on first use, which
-	 * breaks the construction cycle through the flow services. Null only in a
-	 * hand-built test: the shape refusals still fire, only the questions about
-	 * other records are skipped.
-	 *
-	 * @var ObjectActionValidatorInterface|Closure|null
-	 */
-	private readonly ObjectActionValidatorInterface|Closure|null $objectActions;
-
-	/**
 	 * Constructor
 	 *
 	 * Initializes mapper with database connection and required dependencies
@@ -241,7 +236,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 * @param IDBConnection        $db        Database connection for queries
 	 * @param TenancyServices      $tenancy   The organisation mapper, user session and group manager the tenancy and RBAC checks read
 	 * @param IAppConfig           $appConfig App configuration for multitenancy settings
-	 * @param SchemaMapperServices $services  The event dispatcher, property validator, logger and action checks
+	 * @param SchemaMapperServices $services  The event dispatcher, property validator and logger
 	 *
 	 * @return void
 	 */
@@ -260,7 +255,6 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 		$this->eventDispatcher    = $services->eventDispatcher;
 		$this->validator          = $services->validator;
 		$this->logger             = $services->logger;
-		$this->objectActions      = $services->objectActions;
 
 		// Assign appConfig to trait's protected property.
 		$this->appConfig = $appConfig;
@@ -1243,18 +1237,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 * @return void
 	 */
 	private function checkBehaviourDeclarations(Schema $schema): void {
-		(new LifecycleAnnotationCheck(logger: $this->logger, discarded: $this->discarded))->check(schema: $schema);
-		(new DeclaredActionCheck(objectActions: $this->objectActions, logger: $this->logger))->check(schema: $schema);
-		(new RecordAnnotationRefusals(logger: $this->logger))->checkMdtoMapping(schema: $schema);
-		(new AdvisoryAnnotationChecks(logger: $this->logger, discarded: $this->discarded))->checkAggregations(schema: $schema);
-		(new CalculationAnnotationCheck(logger: $this->logger, discarded: $this->discarded))->check(schema: $schema);
-		(new SubjectDeclarationRefusals())->checkConsent(schema: $schema);
-		(new RelationDeclarationCheck(
-			findSchema: fn (string $id): Schema => $this->find(id: $id, _rbac: false, _multitenancy: false)
-		))->check(schema: $schema);
-		(new PropertyDeclarationRefusals())->checkDependentValues(schema: $schema);
-		(new ReferenceLoopCheck())->check(schema: $schema);
-		(new NamedConditionCheck())->check(schema: $schema);
+		$this->runSlots(steps: $this->behaviourSteps(schema: $schema), schema: $schema);
 	}//end checkBehaviourDeclarations()
 
 	/**
@@ -1265,23 +1248,135 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 * @return void
 	 */
 	private function checkDataDeclarations(Schema $schema): void {
+		$this->runSlots(steps: $this->dataSteps(schema: $schema), schema: $schema);
+	}//end checkDataDeclarations()
+
+	/**
+	 * How objects leave or enter: handoff, MCP, registry, links and extending forms.
+	 *
+	 * @param Schema $schema The schema being saved.
+	 *
+	 * @return void
+	 */
+	private function checkExchangeDeclarations(Schema $schema): void {
+		$this->runSlots(steps: $this->exchangeSteps(schema: $schema), schema: $schema);
+	}//end checkExchangeDeclarations()
+
+	/**
+	 * Who reaches what: authorization, hierarchy, matrix, reveal audit, reversibility and review.
+	 *
+	 * @param Schema $schema The schema being saved.
+	 *
+	 * @return void
+	 */
+	private function checkAccessDeclarations(Schema $schema): void {
+		$this->runSlots(steps: $this->accessSteps(schema: $schema), schema: $schema);
+	}//end checkAccessDeclarations()
+
+	/**
+	 * Run one section's checks and the contributed checks in its slots, in slot order.
+	 *
+	 * The first check that throws refuses the save, so the order of
+	 * SchemaDeclarationOrder decides which fault a schema with several is refused for.
+	 *
+	 * @param array<int, Closure> $steps  This mapper's checks of one section, by slot.
+	 * @param Schema              $schema The schema being saved.
+	 *
+	 * @return void
+	 *
+	 * @throws LogicException When a contributed check claims a slot already taken.
+	 */
+	private function runSlots(array $steps, Schema $schema): void {
+		$section   = SchemaDeclarationOrder::sectionOf(position: (int) array_key_first($steps));
+		$discarded = $this->discarded ?? new DiscardedAnnotations();
+		foreach ($this->contributedDeclarationChecks() as $check) {
+			$slot = $check->position();
+			if ($slot < $section[0] || $slot > $section[1]) {
+				continue;
+			}
+
+			if (isset($steps[$slot]) === true) {
+				throw new LogicException('Two schema declaration checks claim slot '.$slot);
+			}
+
+			$steps[$slot] = static fn () => $check->check(schema: $schema, discarded: $discarded);
+		}
+
+		ksort($steps);
+		foreach ($steps as $step) {
+			$step();
+		}
+	}//end runSlots()
+
+	/**
+	 * The checks other areas contribute, collected once per mapper.
+	 *
+	 * @return array<int, SchemaDeclarationCheckInterface>
+	 *
+	 * @throws LogicException When a contributed check names a slot outside every section.
+	 */
+	private function contributedDeclarationChecks(): array {
+		if ($this->declarationChecks === null) {
+			$event = new SchemaDeclarationChecksEvent();
+			$this->eventDispatcher->dispatchTyped($event);
+			foreach ($event->checks() as $check) {
+				if (SchemaDeclarationOrder::isSlot(position: $check->position()) === false) {
+					throw new LogicException('Schema declaration check in unknown slot '.$check->position());
+				}
+			}
+
+			$this->declarationChecks = $event->checks();
+		}
+
+		return $this->declarationChecks;
+	}//end contributedDeclarationChecks()
+
+	/**
+	 * What objects of this schema do: actions, relations and their records.
+	 *
+	 * @param Schema $schema The schema being saved.
+	 *
+	 * @return array<int, Closure> The checks by slot.
+	 */
+	private function behaviourSteps(Schema $schema): array {
+		return [
+			SchemaDeclarationOrder::MDTO_MAPPING => fn () => (new RecordAnnotationRefusals(logger: $this->logger))->checkMdtoMapping(schema: $schema),
+			SchemaDeclarationOrder::AGGREGATIONS => fn () => (new AdvisoryAnnotationChecks(logger: $this->logger, discarded: $this->discarded))->checkAggregations(schema: $schema),
+			SchemaDeclarationOrder::CONSENT => static fn () => (new SubjectDeclarationRefusals())->checkConsent(schema: $schema),
+			SchemaDeclarationOrder::RELATIONS => fn () => (new RelationDeclarationCheck(
+				findSchema: fn (string $id): Schema => $this->find(id: $id, _rbac: false, _multitenancy: false)
+			))->check(schema: $schema),
+		];
+	}//end behaviourSteps()
+
+	/**
+	 * What the data of this schema means: quality, dedup, merge, party and archiving.
+	 *
+	 * @param Schema $schema The schema being saved.
+	 *
+	 * @return array<int, Closure> The checks by slot.
+	 */
+	private function dataSteps(Schema $schema): array {
 		$advisory = new AdvisoryAnnotationChecks(logger: $this->logger, discarded: $this->discarded);
 		$records = new RecordAnnotationRefusals(logger: $this->logger);
-		$advisory->checkQuality(schema: $schema);
-		$advisory->checkDedup(schema: $schema);
-		$records->checkUniqueHint(schema: $schema);
-		(new IdentityDeclarationCheck())->check(schema: $schema);
-		$advisory->checkHinge(schema: $schema);
-		$advisory->checkSurvivorship(schema: $schema);
-		$advisory->checkMerge(schema: $schema);
-		$advisory->checkParty(schema: $schema);
-		$this->checkNotifications(schema: $schema);
-		$records->checkWidgets(schema: $schema);
-		$records->checkArchival(schema: $schema);
-		$records->checkReferenceCard(schema: $schema);
-		$records->checkSearchResult(schema: $schema);
-		$records->checkRetention(schema: $schema);
-	}//end checkDataDeclarations()
+		return [
+			SchemaDeclarationOrder::QUALITY => static fn () => $advisory->checkQuality(schema: $schema),
+			SchemaDeclarationOrder::DEDUP => static fn () => $advisory->checkDedup(schema: $schema),
+			SchemaDeclarationOrder::UNIQUE_HINT => static fn () => $records->checkUniqueHint(schema: $schema),
+			SchemaDeclarationOrder::IDENTITY => static fn () => (new IdentityDeclarationCheck())->check(schema: $schema),
+			SchemaDeclarationOrder::HINGE => static fn () => $advisory->checkHinge(schema: $schema),
+			SchemaDeclarationOrder::SURVIVORSHIP => static fn () => $advisory->checkSurvivorship(schema: $schema),
+			SchemaDeclarationOrder::MERGE => static fn () => $advisory->checkMerge(schema: $schema),
+			SchemaDeclarationOrder::PARTY => static fn () => $advisory->checkParty(schema: $schema),
+			SchemaDeclarationOrder::NOTIFICATIONS => fn () => $this->checkNotifications(schema: $schema),
+			SchemaDeclarationOrder::WIDGETS => static fn () => $records->checkWidgets(schema: $schema),
+			SchemaDeclarationOrder::ARCHIVAL => static fn () => $records->checkArchival(schema: $schema),
+			SchemaDeclarationOrder::REFERENCE_CARD => static fn () => $records->checkReferenceCard(schema: $schema),
+			SchemaDeclarationOrder::SEARCH_RESULT => static fn () => $records->checkSearchResult(schema: $schema),
+			SchemaDeclarationOrder::RETENTION => static fn () => $records->checkRetention(schema: $schema),
+		];
+	}//end dataSteps()
+
 
 	/**
 	 * Check the notification annotation; an unlinkable url action only warns while an import asked it.
@@ -1305,36 +1400,38 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 *
 	 * @param Schema $schema The schema being saved.
 	 *
-	 * @return void
+	 * @return array<int, Closure> The checks by slot.
 	 */
-	private function checkExchangeDeclarations(Schema $schema): void {
+	private function exchangeSteps(Schema $schema): array {
 		$exchange = new ExchangeAnnotationRefusals();
-		$exchange->checkHandoff(schema: $schema);
-		$exchange->checkHandoffContract(schema: $schema);
-		$exchange->checkMcp(schema: $schema);
-		(new SubjectDeclarationRefusals())->checkRegistry(schema: $schema);
-		(new RecordAnnotationRefusals(logger: $this->logger))->checkExternalLinks(schema: $schema);
-		(new PropertyDeclarationRefusals())->checkExtendingForm(schema: $schema);
-	}//end checkExchangeDeclarations()
+		return [
+			SchemaDeclarationOrder::HANDOFF => static fn () => $exchange->checkHandoff(schema: $schema),
+			SchemaDeclarationOrder::HANDOFF_CONTRACT => static fn () => $exchange->checkHandoffContract(schema: $schema),
+			SchemaDeclarationOrder::MCP => static fn () => $exchange->checkMcp(schema: $schema),
+			SchemaDeclarationOrder::REGISTRY => static fn () => (new SubjectDeclarationRefusals())->checkRegistry(schema: $schema),
+			SchemaDeclarationOrder::EXTERNAL_LINKS => fn () => (new RecordAnnotationRefusals(logger: $this->logger))->checkExternalLinks(schema: $schema),
+			SchemaDeclarationOrder::EXTENDING_FORM => static fn () => (new PropertyDeclarationRefusals())->checkExtendingForm(schema: $schema),
+		];
+	}//end exchangeSteps()
 
 	/**
-	 * Who reaches what: authorization, hierarchy, matrix, reveal audit, reversibility and review.
+	 * Who reaches what: authorization, hierarchy, matrix, reveal audit and classification.
 	 *
 	 * @param Schema $schema The schema being saved.
 	 *
-	 * @return void
+	 * @return array<int, Closure> The checks by slot.
 	 */
-	private function checkAccessDeclarations(Schema $schema): void {
-		$this->validateAuthorizationDeny(schema: $schema);
+	private function accessSteps(Schema $schema): array {
 		$access = new AccessDeclarationChecks(logger: $this->logger);
-		$access->checkHierarchy(schema: $schema);
-		$access->checkDepartmentMatrix(schema: $schema);
-		$access->checkRevealAudit(schema: $schema);
-		$access->checkClassification(schema: $schema);
-		$access->checkConfidentiality(schema: $schema);
-		(new PropertyDeclarationRefusals())->checkReversibility(schema: $schema);
-		(new SubjectDeclarationRefusals())->checkReview(schema: $schema);
-	}//end checkAccessDeclarations()
+		return [
+			SchemaDeclarationOrder::AUTHORIZATION => fn () => $this->validateAuthorizationDeny(schema: $schema),
+			SchemaDeclarationOrder::HIERARCHY => static fn () => $access->checkHierarchy(schema: $schema),
+			SchemaDeclarationOrder::DEPARTMENT_MATRIX => static fn () => $access->checkDepartmentMatrix(schema: $schema),
+			SchemaDeclarationOrder::REVEAL_AUDIT => static fn () => $access->checkRevealAudit(schema: $schema),
+			SchemaDeclarationOrder::CLASSIFICATION => static fn () => $access->checkClassification(schema: $schema),
+			SchemaDeclarationOrder::CONFIDENTIALITY => static fn () => $access->checkConfidentiality(schema: $schema),
+		];
+	}//end accessSteps()
 
 	/**
 	 * Refuse an authorization block that cannot hold; RegisterMapper has its own of this name.

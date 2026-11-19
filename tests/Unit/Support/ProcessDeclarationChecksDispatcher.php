@@ -1,0 +1,100 @@
+<?php
+
+/**
+ * OpenRegister ProcessDeclarationChecksDispatcher
+ *
+ * An event dispatcher that answers the schema declaration checks event the way
+ * the app does, through SchemaDeclarationChecksListener, so a hand-built
+ * SchemaMapper runs the process checks Processes contributes.
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category Test
+ * @package  OCA\OpenRegister\Tests\Unit\Support
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @link https://OpenRegister.app
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\Tests\Unit\Support;
+
+use OCA\OpenRegister\Db\SchemaMapper\SchemaDeclarationChecksEvent;
+use OCA\OpenRegister\Listener\SchemaDeclarationChecksListener;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionValidatorInterface;
+use OCP\EventDispatcher\Event;
+use OCP\EventDispatcher\IEventDispatcher;
+use Psr\Container\ContainerInterface;
+use Psr\Container\NotFoundExceptionInterface;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
+use RuntimeException;
+
+/**
+ * Contributes the process declaration checks; every other event is recorded and dropped.
+ */
+final class ProcessDeclarationChecksDispatcher implements IEventDispatcher, ContainerInterface {
+
+	/**
+	 * The events dispatched, other than the checks collection.
+	 *
+	 * @var array<int, Event>
+	 */
+	public array $dispatched = [];
+
+	/**
+	 * Constructor.
+	 *
+	 * @param ObjectActionValidatorInterface|null $objectActions The action validator the declared action check asks; none checks the shape only.
+	 * @param LoggerInterface|null                $logger        The logger the checks report to.
+	 */
+	public function __construct(
+		private readonly ?ObjectActionValidatorInterface $objectActions = null,
+		private readonly ?LoggerInterface $logger = null,
+	) {
+	}//end __construct()
+
+	public function addListener(string $eventName, callable $listener, int $priority = 0): void {
+	}//end addListener()
+
+	public function removeListener(string $eventName, callable $listener): void {
+	}//end removeListener()
+
+	public function addServiceListener(string $eventName, string $className, int $priority = 0): void {
+	}//end addServiceListener()
+
+	public function hasListeners(string $eventName): bool {
+		return $eventName === SchemaDeclarationChecksEvent::class;
+	}//end hasListeners()
+
+	public function dispatch(string $eventName, Event $event): void {
+		$this->dispatchTyped(event: $event);
+	}//end dispatch()
+
+	public function dispatchTyped(Event $event): void {
+		if ($event instanceof SchemaDeclarationChecksEvent) {
+			(new SchemaDeclarationChecksListener(logger: ($this->logger ?? new NullLogger()), container: $this))->handle(event: $event);
+			return;
+		}
+
+		$this->dispatched[] = $event;
+	}//end dispatchTyped()
+
+	public function get(string $id): mixed {
+		if ($id === ObjectActionValidatorInterface::class) {
+			return $this->objectActions;
+		}
+
+		throw new class ('No ' . $id . ' in this test') extends RuntimeException implements NotFoundExceptionInterface {
+		};
+	}//end get()
+
+	public function has(string $id): bool {
+		return $id === ObjectActionValidatorInterface::class && $this->objectActions !== null;
+	}//end has()
+}//end class

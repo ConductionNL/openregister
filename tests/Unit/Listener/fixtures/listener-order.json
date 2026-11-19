@@ -2,6 +2,9 @@
 	"OCA\\Files\\Event\\LoadAdditionalScriptsEvent": [
 		"OCA\\OpenRegister\\Listener\\FilesSidebarListener"
 	],
+	"OCA\\OpenRegister\\Db\\SchemaMapper\\SchemaDeclarationChecksEvent": [
+		"OCA\\OpenRegister\\Listener\\SchemaDeclarationChecksListener"
+	],
 	"OCA\\OpenRegister\\Event\\AgentCreatedEvent": [
 		"OCA\\OpenRegister\\Notifications\\Listener\\SystemEntityNotificationListener"
 	],

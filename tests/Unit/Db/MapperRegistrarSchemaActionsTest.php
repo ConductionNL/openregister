@@ -19,6 +19,7 @@ use OCA\OpenRegister\Service\Flow\MacroActionValidator;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionValidator;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionValidatorInterface;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
+use OCA\OpenRegister\Tests\Unit\Support\ProcessDeclarationChecksDispatcher;
 use OCP\AppFramework\IAppContainer;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -119,6 +120,7 @@ class MapperRegistrarSchemaActionsTest extends TestCase {
 			'OCP\IGroupManager' => $groups,
 			ObjectActionValidatorInterface::class => new ObjectActionValidator($macros, $session, $groups),
 		];
+		$services['OCP\EventDispatcher\IEventDispatcher'] = new ProcessDeclarationChecksDispatcher(objectActions: $services[ObjectActionValidatorInterface::class]);
 		$container = $this->createMock(originalClassName: IAppContainer::class);
 		$container->method('get')->willReturnCallback(
 			function (string $id) use (&$services) {
