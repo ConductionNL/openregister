@@ -317,6 +317,7 @@ components:
       - ".*/lib/Db/Schema/WriteOnlyPathsDeclaration[.]php"
       - ".*/lib/Db/SchemaMapper/AccessDeclarationChecks[.]php"
       - ".*/lib/Db/SchemaMapper/AdvisoryAnnotationChecks[.]php"
+      - ".*/lib/Db/SchemaMapper/AdvisoryAnnotationRule[.]php"
       - ".*/lib/Db/SchemaMapper/AnnotationFaults[.]php"
       - ".*/lib/Db/SchemaMapper/AuthorizationBlockCheck[.]php"
       - ".*/lib/Db/SchemaMapper/ConfigurationFields[.]php"

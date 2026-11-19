@@ -1341,8 +1341,6 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	private function behaviourSteps(Schema $schema): array {
 		return [
 			SchemaDeclarationOrder::MDTO_MAPPING => fn () => (new RecordAnnotationRefusals(logger: $this->logger))->checkMdtoMapping(schema: $schema),
-			SchemaDeclarationOrder::AGGREGATIONS => fn () => (new AdvisoryAnnotationChecks(logger: $this->logger, discarded: $this->discarded))
-				->checkAggregations(schema: $schema),
 			SchemaDeclarationOrder::CONSENT => static fn () => (new SubjectDeclarationRefusals())->checkConsent(schema: $schema),
 			SchemaDeclarationOrder::RELATIONS => fn () => (new RelationDeclarationCheck(
 				findSchema: fn (string $id): Schema => $this->find(id: $id, _rbac: false, _multitenancy: false)
@@ -1368,7 +1366,6 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 			SchemaDeclarationOrder::HINGE => static fn () => $advisory->checkHinge(schema: $schema),
 			SchemaDeclarationOrder::SURVIVORSHIP => static fn () => $advisory->checkSurvivorship(schema: $schema),
 			SchemaDeclarationOrder::MERGE => static fn () => $advisory->checkMerge(schema: $schema),
-			SchemaDeclarationOrder::PARTY => static fn () => $advisory->checkParty(schema: $schema),
 			SchemaDeclarationOrder::NOTIFICATIONS => fn () => $this->checkNotifications(schema: $schema),
 			SchemaDeclarationOrder::WIDGETS => static fn () => $records->checkWidgets(schema: $schema),
 			SchemaDeclarationOrder::ARCHIVAL => static fn () => $records->checkArchival(schema: $schema),

@@ -28,6 +28,7 @@ use OCA\OpenRegister\Db\SchemaMapper\SchemaDeclarationOrder;
 use OCA\OpenRegister\Db\SchemaMapper\SchemaMapperServices;
 use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 use OCA\OpenRegister\Listener\SchemaDeclarationChecksListener;
+use OCA\OpenRegister\Search\Listener\AggregationDeclarationCheckListener;
 use OCA\OpenRegister\Service\Calculation\CalculationDeclarationException;
 use OCA\OpenRegister\Service\Consent\ConsentDeclarationException;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
@@ -89,6 +90,7 @@ final class SchemaDeclarationOrderTest extends TestCase {
 		$container = $this->createMock(originalClassName: ContainerInterface::class);
 		$listener  = new SchemaDeclarationChecksListener(logger: new NullLogger(), container: $container);
 		$listener->handle(event: $event);
+		(new AggregationDeclarationCheckListener(logger: new NullLogger()))->handle(event: $event);
 		$contributed = array_map(static fn ($check): int => $check->position(), $event->checks());
 
 		$this->assertSame(expected: [], actual: array_intersect($own, $contributed), message: 'No slot is claimed twice');

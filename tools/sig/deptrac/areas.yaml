@@ -624,6 +624,8 @@ deptrac:
         - type: directory
           value: 'lib/Db/SchemaMapper/AdvisoryAnnotationChecks[.]php$'
         - type: directory
+          value: 'lib/Db/SchemaMapper/AdvisoryAnnotationRule[.]php$'
+        - type: directory
           value: 'lib/Db/SchemaMapper/AnnotationFaults[.]php$'
         - type: directory
           value: 'lib/Db/SchemaMapper/AuthorizationBlockCheck[.]php$'

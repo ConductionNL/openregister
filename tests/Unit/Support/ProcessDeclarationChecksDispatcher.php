@@ -4,8 +4,9 @@
  * OpenRegister ProcessDeclarationChecksDispatcher
  *
  * An event dispatcher that answers the schema declaration checks event the way
- * the app does, through SchemaDeclarationChecksListener, so a hand-built
- * SchemaMapper runs the process checks Processes contributes.
+ * the app does, through SchemaDeclarationChecksListener and Search's
+ * AggregationDeclarationCheckListener, so a hand-built SchemaMapper runs the
+ * checks Processes and Search contribute.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -26,6 +27,7 @@ namespace OCA\OpenRegister\Tests\Unit\Support;
 
 use OCA\OpenRegister\Db\SchemaMapper\SchemaDeclarationChecksEvent;
 use OCA\OpenRegister\Listener\SchemaDeclarationChecksListener;
+use OCA\OpenRegister\Search\Listener\AggregationDeclarationCheckListener;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionValidatorInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -36,7 +38,7 @@ use Psr\Log\NullLogger;
 use RuntimeException;
 
 /**
- * Contributes the process declaration checks; every other event is recorded and dropped.
+ * Contributes the Processes and Search declaration checks; every other event is recorded and dropped.
  */
 final class ProcessDeclarationChecksDispatcher implements IEventDispatcher, ContainerInterface {
 
@@ -126,7 +128,9 @@ final class ProcessDeclarationChecksDispatcher implements IEventDispatcher, Cont
 	 */
 	public function dispatchTyped(Event $event): void {
 		if ($event instanceof SchemaDeclarationChecksEvent) {
-			(new SchemaDeclarationChecksListener(logger: ($this->logger ?? new NullLogger()), container: $this))->handle(event: $event);
+			$logger = ($this->logger ?? new NullLogger());
+			(new SchemaDeclarationChecksListener(logger: $logger, container: $this))->handle(event: $event);
+			(new AggregationDeclarationCheckListener(logger: $logger))->handle(event: $event);
 			return;
 		}
 

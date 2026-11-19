@@ -16,6 +16,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Search;
 
+use OCA\OpenRegister\Db\SchemaMapper\SchemaDeclarationChecksEvent;
+use OCA\OpenRegister\Search\Listener\AggregationDeclarationCheckListener;
 use OCA\OpenRegister\Search\SearchRegistrar;
 use OCA\OpenRegister\Search\Service\Vectorization\VectorEmbeddingsInterface;
 use OCA\OpenRegister\Search\Service\VectorizationService;
@@ -82,4 +84,19 @@ final class SearchRegistrarTest extends TestCase {
 		$this->assertCount(20, $expected);
 		$this->assertSame(expected: $expected, actual: $context->aliases);
 	}//end testEveryInterfaceIsBoundToItsImplementation()
+
+	/**
+	 * Search registers its own schema-save listener, for the declaration checks event only.
+	 *
+	 * @return void
+	 */
+	public function testTheAggregationsDeclarationCheckListenerIsRegistered(): void {
+		$context = new RecordingRegistrationContext();
+		SearchRegistrar::register(context: $context);
+
+		$this->assertSame(
+			expected: [['event' => SchemaDeclarationChecksEvent::class, 'listener' => AggregationDeclarationCheckListener::class]],
+			actual: array_map(static fn (array $r): array => ['event' => $r['event'], 'listener' => $r['listener']], $context->listeners)
+		);
+	}//end testTheAggregationsDeclarationCheckListenerIsRegistered()
 }//end class
