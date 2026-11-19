@@ -39,21 +39,6 @@ namespace OCA\OpenRegister\BackgroundJob;
 final class JobHandles {
 
 	/**
-	 * Deferred x-openregister-notifications dispatch job.
-	 */
-	public const ANNOTATION_NOTIFICATION_DISPATCH = AnnotationNotificationDispatchJob::class;
-
-	/**
-	 * Queued automatic lifecycle transition job.
-	 */
-	public const AUTO_TRANSITION = AutoTransitionJob::class;
-
-	/**
-	 * Bulk job runner.
-	 */
-	public const BULK_JOB_RUNNER = BulkJobRunner::class;
-
-	/**
 	 * Cache clear-and-warm maintenance job.
 	 */
 	public const CACHE_CLEAR_AND_WARM = CacheClearAndWarmJob::class;
@@ -72,11 +57,6 @@ final class JobHandles {
 	 * Deferred object event job.
 	 */
 	public const DEFERRED_OBJECT_EVENT = DeferredObjectEventJob::class;
-
-	/**
-	 * File text extraction job.
-	 */
-	public const FILE_TEXT_EXTRACTION = FileTextExtractionJob::class;
 
 	/**
 	 * Import preview runner.
@@ -99,27 +79,12 @@ final class JobHandles {
 	public const OBJECT_CLEANUP = ObjectCleanupJob::class;
 
 	/**
-	 * Object text extraction job.
-	 */
-	public const OBJECT_TEXT_EXTRACTION = ObjectTextExtractionJob::class;
-
-	/**
 	 * Schema run job.
 	 */
 	public const SCHEMA_RUN = SchemaRunJob::class;
 
 	/**
-	 * Source record recompute job.
-	 */
-	public const SOURCE_RECORD_RECOMPUTE = SourceRecordRecomputeJob::class;
-
-	/**
 	 * Transfer execution job.
 	 */
 	public const TRANSFER_EXECUTION = TransferExecutionJob::class;
-
-	/**
-	 * Translation projection job.
-	 */
-	public const TRANSLATION_PROJECTION = TranslationProjectionJob::class;
 }//end class

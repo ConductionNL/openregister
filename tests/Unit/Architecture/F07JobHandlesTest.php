@@ -33,12 +33,12 @@ use OCA\OpenRegister\BackgroundJob\ImportPreviewRunner;
 use OCA\OpenRegister\BackgroundJob\JobHandles;
 use OCA\OpenRegister\BackgroundJob\ObjectCleanupJob;
 use OCA\OpenRegister\BackgroundJob\ObjectTextExtractionJob;
+use OCA\OpenRegister\BackgroundJob\ProcessesJobHandlesInterface;
 use OCA\OpenRegister\BackgroundJob\RelatedRetentionRecalculationJob;
 use OCA\OpenRegister\BackgroundJob\SchemaRunJob;
 use OCA\OpenRegister\BackgroundJob\SourceRecordRecomputeJob;
 use OCA\OpenRegister\BackgroundJob\SubjectExportJob;
 use OCA\OpenRegister\BackgroundJob\TransferExecutionJob;
-use OCA\OpenRegister\BackgroundJob\TranslationProjectionJob;
 use OCP\BackgroundJob\IJob;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -65,21 +65,20 @@ final class F07JobHandlesTest extends TestCase {
 	 */
 	private const JOBS = [
 		ComplianceJobHandlesInterface::AUDIT_TRAIL_EXPORT => AuditTrailExportJob::class,
-		JobHandles::BULK_JOB_RUNNER => BulkJobRunner::class,
+		ProcessesJobHandlesInterface::BULK_JOB_RUNNER => BulkJobRunner::class,
 		ComplianceJobHandlesInterface::BULK_LEGAL_HOLD => BulkLegalHoldJob::class,
 		JobHandles::CACHE_CLEAR_AND_WARM => CacheClearAndWarmJob::class,
 		JobHandles::CONSISTENCY_CHECK => ConsistencyCheckJob::class,
 		JobHandles::DEFERRED_OBJECT_EVENT => DeferredObjectEventJob::class,
-		JobHandles::FILE_TEXT_EXTRACTION => FileTextExtractionJob::class,
+		ProcessesJobHandlesInterface::FILE_TEXT_EXTRACTION => FileTextExtractionJob::class,
 		JobHandles::IMPORT_PREVIEW_RUNNER => ImportPreviewRunner::class,
 		JobHandles::OBJECT_CLEANUP => ObjectCleanupJob::class,
-		JobHandles::OBJECT_TEXT_EXTRACTION => ObjectTextExtractionJob::class,
+		ProcessesJobHandlesInterface::OBJECT_TEXT_EXTRACTION => ObjectTextExtractionJob::class,
 		ComplianceJobHandlesInterface::RELATED_RETENTION_RECALCULATION => RelatedRetentionRecalculationJob::class,
 		JobHandles::SCHEMA_RUN => SchemaRunJob::class,
-		JobHandles::SOURCE_RECORD_RECOMPUTE => SourceRecordRecomputeJob::class,
+		ProcessesJobHandlesInterface::SOURCE_RECORD_RECOMPUTE => SourceRecordRecomputeJob::class,
 		ComplianceJobHandlesInterface::SUBJECT_EXPORT => SubjectExportJob::class,
 		JobHandles::TRANSFER_EXECUTION => TransferExecutionJob::class,
-		JobHandles::TRANSLATION_PROJECTION => TranslationProjectionJob::class,
 	];
 
 	/**
@@ -90,6 +89,7 @@ final class F07JobHandlesTest extends TestCase {
 	private const HOLDERS = [
 		JobHandles::class,
 		ComplianceJobHandlesInterface::class,
+		ProcessesJobHandlesInterface::class,
 	];
 
 	/**

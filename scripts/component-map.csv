@@ -3564,6 +3564,7 @@ BackgroundJob/FlowRunRecoveryServices.php,,BackgroundJob,,,,,Processes
 BackgroundJob/FlowRunWorkerServices.php,,BackgroundJob,,,,,Processes
 BackgroundJob/JobHandles.php,,BackgroundJob,,,,,Core
 BackgroundJob/JobRuntime.php,,BackgroundJob,,,,,Core
+BackgroundJob/ProcessesJobHandlesInterface.php,,BackgroundJob,,,,,Processes
 BackgroundJob/ProcessingLogPrune.php,,BackgroundJob,,,,,Compliance
 BackgroundJob/QueuedJobClassesInterface.php,,BackgroundJob,,,,,Core
 BackgroundJob/RecomputeTimersForCalendarJobServices.php,,BackgroundJob,,,,,Processes
