@@ -6,6 +6,7 @@ namespace Unit\Service\GraphQL;
 
 use GraphQL\Error\Error;
 use OCA\OpenRegister\Search\Service\GraphQL\GraphQLErrorFormatter;
+use OCA\OpenRegister\Service\GraphQL\GraphQLResolver;
 use PHPUnit\Framework\TestCase;
 
 class GraphQLErrorFormatterTest extends TestCase {
@@ -55,5 +56,15 @@ class GraphQLErrorFormatterTest extends TestCase {
 		$this->assertStringContainsString('Melding', $error->getMessage());
 		$this->assertStringContainsString('melding-1', $error->getMessage());
 		$this->assertSame('NOT_FOUND', $error->getExtensions()['code']);
+	}
+
+	public function testNotFoundIsTheErrorTheResolverRaises(): void {
+		$formatted = GraphQLErrorFormatter::notFound('Melding', 'melding-1');
+		$raised = GraphQLResolver::recordNotFound(type: 'Melding', id: 'melding-1');
+
+		$this->assertSame("Melding with ID 'melding-1' not found", $raised->getMessage());
+		$this->assertSame(['code' => 'NOT_FOUND'], $raised->getExtensions());
+		$this->assertSame($raised->getMessage(), $formatted->getMessage());
+		$this->assertSame($raised->getExtensions(), $formatted->getExtensions());
 	}
 }

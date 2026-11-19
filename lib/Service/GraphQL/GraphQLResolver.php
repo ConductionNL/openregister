@@ -37,8 +37,6 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\EncryptedFieldFilterException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\ValidationException;
-use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
-use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidatorInterface;
 use OCA\OpenRegister\Service\Object\GetObject;
 use OCA\OpenRegister\Service\Object\ObjectFindRequest;
 use OCA\OpenRegister\Service\Object\ReadScope;
@@ -48,7 +46,6 @@ use OCA\OpenRegister\Service\Object\RelationLookup;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
 use Psr\Log\LoggerInterface;
-use OCA\OpenRegister\Search\Service\GraphQL\GraphQLErrorFormatter;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
@@ -205,7 +202,7 @@ class GraphQLResolver {
 	 * @return ListAggregations The aggregations.
 	 */
 	private function aggregations(): ListAggregations {
-		return new ListAggregations(runner: $this->shaping->aggregationRunner, validator: $this->shaping->timeseriesValidator);
+		return $this->shaping->aggregations;
 	}//end aggregations()
 
 	/**
@@ -415,8 +412,30 @@ class GraphQLResolver {
 			$schemaTitle = $schema->getSlug();
 		}
 
-		return GraphQLErrorFormatter::notFound($schemaTitle, $id);
+		return self::recordNotFound(type: $schemaTitle, id: $id);
 	}//end notFoundError()
+
+	/**
+	 * The NOT_FOUND error for a record of a type, as the resolver raises it.
+	 *
+	 * @param string $type The object type.
+	 * @param string $id   The requested id.
+	 *
+	 * @return Error The GraphQL error, with extension code NOT_FOUND.
+	 *
+	 * @spec openspec/specs/graphql-api/spec.md#requirement-graphql-must-enforce-schema-level-rbac-via-permissionhandler
+	 */
+	public static function recordNotFound(string $type, string $id): Error {
+		return new Error(
+			"$type with ID '$id' not found",
+			null,
+			null,
+			[],
+			null,
+			null,
+			['code' => 'NOT_FOUND']
+		);
+	}//end recordNotFound()
 
 	/**
 	 * One page of a list query, RBAC and multitenancy on.
