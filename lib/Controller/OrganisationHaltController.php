@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Controller;
 
 use Closure;
 use InvalidArgumentException;
-use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Flow\Oversight\HaltRequest;
 use OCA\OpenRegister\Service\Flow\Oversight\OrganisationHaltServiceInterface;
 use OCP\AppFramework\Controller;
@@ -50,7 +50,7 @@ class OrganisationHaltController extends Controller {
 		IRequest $request,
 		private readonly OrganisationHaltServiceInterface $halts,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**
