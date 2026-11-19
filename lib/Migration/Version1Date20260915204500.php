@@ -36,14 +36,13 @@ use Closure;
 use Doctrine\DBAL\Types\Types;
 use OCP\DB\ISchemaWrapper;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Creates the access-link table.
  *
  * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md
  */
-class Version1Date20260915204500 extends SimpleMigrationStep {
+class Version1Date20260915204500 extends TargetedMigrationStep {
 
 	/**
 	 * The access-link table.
@@ -65,7 +64,7 @@ class Version1Date20260915204500 extends SimpleMigrationStep {
 	 *
 	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		$schema = $schemaClosure();
 
 		if ($schema->hasTable(self::LINKS_TABLE) === true) {
@@ -102,5 +101,5 @@ class Version1Date20260915204500 extends SimpleMigrationStep {
 
 		return $schema;
 
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 }//end class
