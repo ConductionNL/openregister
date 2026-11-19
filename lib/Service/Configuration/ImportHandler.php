@@ -322,6 +322,13 @@ class ImportHandler {
 	private ShippedSeedContent $shippedContent;
 
 	/**
+	 * What pass 1 of the running import wrote, so pass 2 does not write the same definition again.
+	 *
+	 * @var FirstPassWrites
+	 */
+	private readonly FirstPassWrites $firstPass;
+
+	/**
 	 * Collector for declared RBAC group ids. Dependency-free value object,
 	 * created lazily via {@see self::rbacGroupCollector()}.
 	 *
@@ -385,6 +392,7 @@ class ImportHandler {
 		$this->uploadHandler = $uploadHandler;
 		$this->objectService = $objectService;
 		$this->shippedContent = new ShippedSeedContent();
+		$this->firstPass = new FirstPassWrites();
 	}//end __construct()
 
 	/**
@@ -2523,6 +2531,11 @@ class ImportHandler {
 			return $existing;
 		}
 
+		// Pass 2 with no reference left to resolve: pass 1 stored this very definition.
+		if ($this->firstPass->wroteTheSame(schemaId: $existing->getId(), definition: $update->data) === true) {
+			return $existing;
+		}
+
 		$guarded = $this->applyShippedBaselineGuard(
 			data: $update->data,
 			existing: $existing,
@@ -2541,6 +2554,7 @@ class ImportHandler {
 		$this->installWhenNoEventFired(schema: $schema, eventsBefore: $eventsBefore);
 		$this->recordPendingBaseline(guarded: $guarded, appId: $options->appId, appVersion: $options->version);
 		$this->recordImportedSchemaChange(schema: $schema, changeSet: $changeSet, appId: $options->appId);
+		$this->firstPass->remember(schemaId: $schema->getId(), definition: $update->data);
 
 		return $schema;
 	}//end updateImportedSchema()
@@ -2624,7 +2638,10 @@ class ImportHandler {
 		$schema = $this->schemaMapper->createFromArray($data);
 		$this->recordShippedBaseline(data: $data, appId: $options->appId, appVersion: $options->version);
 
-		return $this->schemaMapper->update($this->withImportOwnership(schema: $schema, options: $options));
+		$schema = $this->schemaMapper->update($this->withImportOwnership(schema: $schema, options: $options));
+		$this->firstPass->remember(schemaId: $schema->getId(), definition: $data);
+
+		return $schema;
 	}//end createImportedSchema()
 
 	/**
@@ -2834,12 +2851,10 @@ class ImportHandler {
 	 *     failed: array{schemas: list<array{key: string, slug: string, error: string}>}
 	 * }
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Force flag to override version checks
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       JSON import requires many conditional transformations
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multi-component import has many branching conditions
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Full configuration import involves many entity types
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force flag to override version checks
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-an-import-must-not-write-its-configuration-into-the-log
 	 */
 	public function importFromJson(
 		array $data,
@@ -2848,6 +2863,51 @@ class ImportHandler {
 		?string $appId = null,
 		?string $version = null,
 		bool $force = false,
+	): array {
+		try {
+			// Every frame from here down holds the configuration; see TraceArguments for what that cost.
+			return (new TraceArguments())->withheldDuring(
+				operation: fn (): array => $this->importComponents(
+					data: $data,
+					configuration: $configuration,
+					owner: $owner,
+					appId: $appId,
+					version: $version,
+					force: $force
+				)
+			);
+		} finally {
+			// An import that stopped between its two schema passes must not leave pass 1 remembered.
+			$this->firstPass->end();
+		}
+	}//end importFromJson()
+
+	/**
+	 * Run every phase of a configuration import; see importFromJson().
+	 *
+	 * @param array              $data          The configuration data to import.
+	 * @param Configuration|null $configuration The configuration entity for tracking (REQUIRED).
+	 * @param string|null        $owner         The owner of the imported entities.
+	 * @param string|null        $appId         The application ID.
+	 * @param string|null        $version       The configuration version.
+	 * @param bool               $force         Force import regardless of version checks.
+	 *
+	 * @return array The import results containing created/updated entities.
+	 *
+	 * @throws Exception If configuration entity is missing or import fails.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Force flag to override version checks
+	 * @SuppressWarnings(PHPMD.NPathComplexity)       JSON import requires many conditional transformations
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multi-component import has many branching conditions
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Full configuration import involves many entity types
+	 */
+	private function importComponents(
+		array $data,
+		?Configuration $configuration,
+		?string $owner,
+		?string $appId,
+		?string $version,
+		bool $force,
 	): array {
 		// CRITICAL: Configuration entity is required for proper tracking.
 		if ($configuration === null) {
@@ -3032,6 +3092,7 @@ class ImportHandler {
 
 			// PASS 1: Create all schemas without resolving objectConfiguration.schema references.
 			// This ensures all schema entities exist before we try to look them up.
+			$this->firstPass->beginFirstPass();
 			$this->logger->debug(
 				message: '[ImportHandler] PASS 1: Creating all schemas without cross-reference resolution',
 				context: ['file' => __FILE__, 'line' => __LINE__]
@@ -3181,7 +3242,9 @@ class ImportHandler {
 			);
 
 			// PASS 2: Now resolve cross-references (objectConfiguration.schema) for all schemas.
-			// All schemas now exist, so find() calls will succeed.
+			// All schemas now exist, so find() calls will succeed. A schema whose definition
+			// is the one pass 1 just wrote is not written again (FirstPassWrites).
+			$this->firstPass->beginSecondPass();
 			$this->logger->debug(
 				message: '[ImportHandler] PASS 2: Resolving schema cross-references',
 				context: ['file' => __FILE__, 'line' => __LINE__]
@@ -3263,6 +3326,8 @@ class ImportHandler {
 					);
 				}//end try
 			}//end foreach
+
+			$this->firstPass->end();
 
 			$this->logger->debug(
 				message: '[ImportHandler] Schema import process completed (TWO-PASS)',
@@ -3649,7 +3714,7 @@ class ImportHandler {
 		}//end try
 
 		return $result;
-	}//end importFromJson()
+	}//end importComponents()
 
 	/**
 	 * Import one object listed in a configuration (`components.objects`).
@@ -4444,26 +4509,8 @@ class ImportHandler {
 				force: $force
 			);
 
-			$configuration = ($this->findAppConfiguration(import: $import) ?? $this->createAppConfiguration(import: $import));
-
-			// Run under its own import job id so the objects it creates can be
-			// removed by job later (a setup wizard's "remove this example set").
-			$result = $this->importFromJsonAsJob(
-				data: $import->data,
-				configuration: $configuration,
-				appId: $appId,
-				version: $version,
-				force: $force
-			);
-
-			$update = new ImportedConfigurationUpdate(configuration: $configuration, result: $result);
-			if (count($result['registers']) > 0 || count($result['schemas']) > 0 || count($result['objects']) > 0) {
-				$this->trackAppImportResult(import: $import, update: $update);
-			}
-
-			$this->finishAppImport(import: $import, update: $update);
-
-			return $update->result;
+			// The steps before and after importFromJson() hold the configuration too.
+			return (new TraceArguments())->withheldDuring(operation: fn (): array => $this->importAppConfiguration(import: $import));
 		} catch (Exception $e) {
 			$this->logger->error(
 				message: "[ImportHandler] Failed to import configuration for app {$appId}: " . $e->getMessage(),
@@ -4472,6 +4519,38 @@ class ImportHandler {
 			throw new Exception("Failed to import configuration for app {$appId}: " . $e->getMessage());
 		}//end try
 	}//end importFromApp()
+
+	/**
+	 * Import an app's configuration into its Configuration entity and finish the import.
+	 *
+	 * @param AppImport $import The app import.
+	 *
+	 * @return array The import results.
+	 *
+	 * @throws Exception If import fails.
+	 */
+	private function importAppConfiguration(AppImport $import): array {
+		$configuration = ($this->findAppConfiguration(import: $import) ?? $this->createAppConfiguration(import: $import));
+
+		// Run under its own import job id so the objects it creates can be
+		// removed by job later (a setup wizard's "remove this example set").
+		$result = $this->importFromJsonAsJob(
+			data: $import->data,
+			configuration: $configuration,
+			appId: $import->appId,
+			version: $import->version,
+			force: $import->force
+		);
+
+		$update = new ImportedConfigurationUpdate(configuration: $configuration, result: $result);
+		if (count($result['registers']) > 0 || count($result['schemas']) > 0 || count($result['objects']) > 0) {
+			$this->trackAppImportResult(import: $import, update: $update);
+		}
+
+		$this->finishAppImport(import: $import, update: $update);
+
+		return $update->result;
+	}//end importAppConfiguration()
 
 	/**
 	 * Find the Configuration an app import updates: by its `sourceUrl`
