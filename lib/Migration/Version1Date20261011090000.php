@@ -30,14 +30,13 @@ use Closure;
 use OCP\DB\Types;
 use OCP\DB\ISchemaWrapper;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Creates `openregister_record_templates`.
  *
  * @spec openspec/changes/records-saved-templates/specs/record-templates/spec.md#requirement-a-user-can-save-and-share-a-named-record-template
  */
-class Version1Date20261011090000 extends SimpleMigrationStep {
+class Version1Date20261011090000 extends TargetedMigrationStep {
 
 	/**
 	 * The table.
@@ -59,7 +58,7 @@ class Version1Date20261011090000 extends SimpleMigrationStep {
 	 *
 	 * @spec openspec/changes/records-saved-templates/specs/record-templates/spec.md#requirement-a-user-can-save-and-share-a-named-record-template
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		/*
 		 * @var ISchemaWrapper $schema
 		 */
@@ -89,5 +88,5 @@ class Version1Date20261011090000 extends SimpleMigrationStep {
 		$table->addIndex(['owner'], 'or_rectpl_owner');
 
 		return $schema;
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 }//end class

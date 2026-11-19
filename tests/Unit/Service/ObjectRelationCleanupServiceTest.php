@@ -149,6 +149,20 @@ class ObjectRelationCleanupServiceTest extends TestCase {
 	}//end testCleanupInvokesAllSixEntityCleanupsWithTheObjectUuid()
 
 	/**
+	 * The service is the timeline-links port a declared destruction counts and destroys through.
+	 *
+	 * @return void
+	 */
+	public function testTheServiceAnswersTheTimelineLinksPort(): void {
+		$this->emailService->expects($this->once())->method('deleteLinksForObject')->with('obj-1')->willReturn(0);
+		$this->noteService->expects($this->never())->method('deleteNotesForObject');
+
+		$port = $this->service;
+		$this->assertInstanceOf(\OCA\OpenRegister\Kernel\Contracts\Core\ObjectTimelineLinksInterface::class, $port);
+		$port->destroyTimelineLinks(objectUuid: 'obj-1');
+	}//end testTheServiceAnswersTheTimelineLinksPort()
+
+	/**
 	 * POSITIVE CONTROL — every listed task is deleted on its own calendar.
 	 *
 	 * @return void

@@ -20,8 +20,21 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Files;
 
+use OCA\OpenRegister\Files\Db\RegisterFolderRecorder;
 use OCA\OpenRegister\Files\FilesRegistrar;
 use OCA\OpenRegister\Files\Service\NoteService;
+use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
+use OCA\OpenRegister\Files\Service\File\FileOwnershipHandlerInterface;
+use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
+use OCA\OpenRegister\Files\Service\File\FileRestrictionGuardInterface;
+use OCA\OpenRegister\Files\Service\File\PreviewSize;
+use OCA\OpenRegister\Files\Service\File\ShareUrlBuilder;
+use OCA\OpenRegister\Files\Service\File\ShareUrlBuilderInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\FileAccountInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\FileReadRestrictionInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\PreviewDimensionsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\RegisterFolderRecordsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ShareLinkUrlInterface;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
 use PHPUnit\Framework\TestCase;
 
@@ -41,9 +54,21 @@ class FilesRegistrarTest extends TestCase
             $expected[] = ['alias' => $contract, 'target' => $service];
         }
 
-        $this->assertCount(20, $expected);
+        $this->assertCount(25, $expected);
         $this->assertSame(expected: $expected, actual: $context->aliases);
     }//end testEveryInterfaceIsBoundToItsImplementation()
+
+    public function testTheCorePortsTheFileHandlersAskAreAnsweredHere(): void
+    {
+        $this->assertSame(FileRestrictionGuard::class, FilesRegistrar::BINDINGS[FileReadRestrictionInterface::class]);
+        $this->assertSame(ShareUrlBuilder::class, FilesRegistrar::BINDINGS[ShareLinkUrlInterface::class]);
+        $this->assertSame(RegisterFolderRecorder::class, FilesRegistrar::BINDINGS[RegisterFolderRecordsInterface::class]);
+        $this->assertSame(FileOwnershipHandler::class, FilesRegistrar::BINDINGS[FileAccountInterface::class]);
+        $this->assertTrue(is_subclass_of(FileOwnershipHandlerInterface::class, FileAccountInterface::class));
+        $this->assertTrue(is_subclass_of(FileRestrictionGuardInterface::class, FileReadRestrictionInterface::class));
+        $this->assertTrue(is_subclass_of(ShareUrlBuilderInterface::class, ShareLinkUrlInterface::class));
+        $this->assertTrue(is_subclass_of(PreviewSize::class, PreviewDimensionsInterface::class));
+    }//end testTheCorePortsTheFileHandlersAskAreAnsweredHere()
 
     public function testNoteServiceHasAFactory(): void
     {

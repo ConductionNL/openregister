@@ -28,7 +28,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\File;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Files\Db\RegisterFolderRecorder;
+use OCA\OpenRegister\Kernel\Contracts\Core\RegisterFolderRecordsInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Exception\FolderAccessDeniedException;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
@@ -96,7 +96,7 @@ class FolderManagementHandlerSystemContextTest extends TestCase {
 			logger: $this->createMock(LoggerInterface::class),
 			auditTrailMapper: $this->auditTrailMapper,
 			mountCache: $this->mountCache,
-			folderRecorder: $this->createMock(RegisterFolderRecorder::class)
+			folderRecorder: $this->createMock(RegisterFolderRecordsInterface::class)
 		);
 		$this->handler->setFileService($this->fileService);
 
