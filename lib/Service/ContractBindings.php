@@ -78,8 +78,6 @@ use OCA\OpenRegister\Service\Authorization\GrantableRightsIndex;
 use OCA\OpenRegister\Service\Authorization\GrantableRightsIndexInterface;
 use OCA\OpenRegister\Service\Bindings\AccessBindings;
 use OCA\OpenRegister\Service\Bindings\FeatureBindings;
-use OCA\OpenRegister\Service\Bindings\FlowBindings;
-use OCA\OpenRegister\Service\Bindings\MiscBindings;
 use OCA\OpenRegister\Service\Bindings\ObjectsBindings;
 use OCA\OpenRegister\Service\Bindings\RootBindings;
 use OCA\OpenRegister\Service\Bindings\SchemasBindings;
@@ -1172,7 +1170,6 @@ final class ContractBindings {
 		ProviderCatalogueInterface::class => ProviderCatalogue::class,
 		...RootBindings::BINDINGS,
 		NotificationsAnnotationInstallerInterface::class => NotificationsAnnotationInstaller::class,
-		...FlowBindings::BINDINGS,
 		ReferencedAddressNotifierInterface::class => ReferencedAddressNotifier::class,
 		...AccessBindings::BINDINGS,
 		\OCA\OpenRegister\Service\Lifecycle\AutoTransitionPassInterface::class => \OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass::class,
@@ -1180,7 +1177,6 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\Flow\FlowRunContextInterface::class => \OCA\OpenRegister\Service\Flow\FlowRunContext::class,
 		...FeatureBindings::BINDINGS,
 		TrustTierResolverInterface::class => TrustTierResolver::class,
-		...MiscBindings::BINDINGS,
 		\OCA\OpenRegister\Service\RedactionPolicy\TermRuleSourceInterface::class => \OCA\OpenRegister\Service\RedactionPolicy\ObjectTermRuleSource::class,
 	];
 
