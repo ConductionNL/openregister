@@ -3528,6 +3528,8 @@ deptrac:
         - type: directory
           value: 'lib/Db/ObjectRelation/[^/]*$'
         - type: directory
+          value: 'lib/Db/SchemaMapper/HandoffDeclarationRefusals[.]php$'
+        - type: directory
           value: 'lib/Db/Source/[^/]*$'
         - type: directory
           value: 'lib/Db/Support/SecretAtRest[.]php$'
@@ -3540,7 +3542,7 @@ deptrac:
         - type: directory
           value: 'lib/Federation/[^/]*$'
         - type: directory
-          value: 'lib/Listener/(WebhookRequestInterceptionListener)[.]php$'
+          value: 'lib/Listener/(HandoffDeclarationChecksListener|WebhookRequestInterceptionListener)[.]php$'
         - type: directory
           value: 'lib/Mcp/[^/]*$'
         - type: directory
@@ -3663,6 +3665,8 @@ deptrac:
           value: 'lib/Service/Observability/[^/]*$'
         - type: directory
           value: 'lib/Service/Outbound/[^/]*$'
+        - type: directory
+          value: 'lib/Service/Schemas/HandoffDeclarationValidators[.]php$'
         - type: directory
           value: 'lib/Service/Sync/[^/]*$'
         - type: directory

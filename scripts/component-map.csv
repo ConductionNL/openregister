@@ -4461,6 +4461,12 @@ Notifications/Controller/Support/EmailsDomain.php,,Notifications,,,,,Integration
 Notifications/Controller/Support/EmailsObjectAccess.php,,Notifications,,,,,Integrations
 Notifications/Controller/Support/EmailsPlatform.php,,Notifications,,,,,Integrations
 Notifications/Service/ExampleSet/ExampleSetTimelineRowsInterface.php,,Notifications,,,,,Configuration
+Service/Schemas/ArchivalDeclarationValidators.php,,Service,,,,,Compliance
+Db/SchemaMapper/ArchivalDeclarationRefusals.php,,Db,,,,,Compliance
+Listener/ArchivalDeclarationChecksListener.php,,Listener,,,,,Compliance
+Service/Schemas/HandoffDeclarationValidators.php,,Service,,,,,Integrations
+Db/SchemaMapper/HandoffDeclarationRefusals.php,,Db,,,,,Integrations
+Listener/HandoffDeclarationChecksListener.php,,Listener,,,,,Integrations
 Command/NarrowMagicJsonColumnsCommand.php,,Command,,,,,Core
 Db/CatalogueScope.php,,Db,,,,,Core
 Repair/NarrowMagicJsonColumns.php,,Repair,,,,,Core
