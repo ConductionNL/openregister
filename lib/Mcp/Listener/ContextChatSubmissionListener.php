@@ -50,7 +50,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Mcp\Listener;
 
 use DateTime;
-use OCA\OpenRegister\BackgroundJob\JobHandles;
+use OCA\OpenRegister\BackgroundJob\IntegrationsJobHandlesInterface;
 use OCA\OpenRegister\ContextChat\ContentProviderInterface;
 use OCA\OpenRegister\ContextChat\Listener\ContextChatSubmissionListenerInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -275,7 +275,7 @@ class ContextChatSubmissionListener implements IEventListener, ContextChatSubmis
 		}
 
 		$this->deferral?->defer(
-			jobClass: JobHandles::CONTEXT_CHAT_SUBMISSION,
+			jobClass: IntegrationsJobHandlesInterface::CONTEXT_CHAT_SUBMISSION,
 			entry: ['uuid' => $uuid, 'schemaId' => (string)$object->getSchema()],
 			dedupeKey: $uuid
 		);
