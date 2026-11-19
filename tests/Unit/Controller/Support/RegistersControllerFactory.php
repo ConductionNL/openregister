@@ -86,10 +86,10 @@ final class RegistersControllerFactory {
 					registerService: $registerService,
 					registerCacheHandler: $registerCacheHandler,
 					registerSerializer: $registerSerializer,
-					migrationPackService: $migrationPackService,
+					migrationPacks: new \OCA\OpenRegister\Service\MigrationPack\MigrationPackDefinitions(packs: $migrationPackService),
 				),
 				integrations: new \OCA\OpenRegister\Controller\Support\RegisterIntegrations(
-					configurationService: $configurationService,
+					bundles: new \OCA\OpenRegister\Service\Configuration\RegisterBundles(configurations: $configurationService),
 					githubService: $githubService,
 					oasService: $oasService,
 					container: $container,

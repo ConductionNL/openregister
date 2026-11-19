@@ -46,7 +46,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectRelation;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
-use OCA\OpenRegister\Service\Export\ExportGateInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ExportCheckInterface;
 use OCA\OpenRegister\Service\Object\ObjectReadAccessInterface;
 use OCA\OpenRegister\Service\Relation\GraphExportOptions;
 use OCA\OpenRegister\Service\Relation\Derivation;
@@ -118,9 +118,9 @@ class ObjectRelationsController extends Controller {
 	/**
 	 * The export verb, checked before the graph leaves.
 	 *
-	 * @var ExportGateInterface
+	 * @var ExportCheckInterface
 	 */
-	private readonly ExportGateInterface $exportGate;
+	private readonly ExportCheckInterface $exportGate;
 
 	/**
 	 * Resolves an object under the caller's own RBAC.
