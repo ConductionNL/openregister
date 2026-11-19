@@ -33,12 +33,11 @@ use Closure;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\Types;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Creates openregister_export_runs.
  */
-class Version1Date20260922123000 extends SimpleMigrationStep {
+class Version1Date20260922123000 extends TargetedMigrationStep {
 
 	/**
 	 * The table this step creates.
@@ -58,7 +57,7 @@ class Version1Date20260922123000 extends SimpleMigrationStep {
 	 *
 	 * @spec openspec/changes/an-export-is-a-file-with-a-life/specs/data-import-export/spec.md
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ISchemaWrapper {
 		/*
 		 * @var ISchemaWrapper $schema
 		 */
@@ -107,5 +106,5 @@ class Version1Date20260922123000 extends SimpleMigrationStep {
 		$output->info('Created ' . self::TABLE);
 
 		return $schema;
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 }//end class

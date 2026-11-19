@@ -41,7 +41,7 @@ class FilesRegistrarTest extends TestCase
             $expected[] = ['alias' => $contract, 'target' => $service];
         }
 
-        $this->assertCount(21, $expected);
+        $this->assertCount(22, $expected);
         $this->assertSame(expected: $expected, actual: $context->aliases);
     }//end testEveryInterfaceIsBoundToItsImplementation()
 

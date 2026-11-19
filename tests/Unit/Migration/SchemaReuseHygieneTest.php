@@ -93,6 +93,10 @@ class SchemaReuseHygieneTest extends TestCase {
 	/**
 	 * The body of a file's changeSchema() method, as numbered lines.
 	 *
+	 * A step extending TargetedMigrationStep writes that method as
+	 * changeTargetedSchema(); an install still threads one snapshot through
+	 * it, so the same rule holds for it.
+	 *
 	 * Keyed by 1-based line number in the original file so offenders can be
 	 * reported at a location a reader can jump to.
 	 *
@@ -107,7 +111,7 @@ class SchemaReuseHygieneTest extends TestCase {
 
 		foreach ($lines as $index => $line) {
 			if (preg_match('/function\s+([A-Za-z_]\w*)\s*\(/', (string) $line, $matches) === 1) {
-				$inside = ($matches[1] === 'changeSchema');
+				$inside = in_array($matches[1], ['changeSchema', 'changeTargetedSchema'], true);
 				continue;
 			}
 
@@ -210,6 +214,44 @@ class SchemaReuseHygieneTest extends TestCase {
 			"every return in changeSchema() must be `return \$schema;`:\n" . implode("\n", $offenders)
 		);
 	}//end testEveryChangeSchemaReturnHandsBackTheSchema()
+
+	/**
+	 * Every step added after release 2.1.0 extends TargetedMigrationStep.
+	 *
+	 * On an upgrade Nextcloud reads the whole database schema three times for
+	 * a step that extends SimpleMigrationStep directly: minutes per step on an
+	 * instance with many magic tables (#10612). The steps that shipped in 2.1.0
+	 * are left as they were; a new one that goes back to the plain base class
+	 * brings those reads back, and nothing else would say so.
+	 *
+	 * @return void
+	 */
+	public function testEveryStepAfterRelease210IsTargeted(): void {
+		$offenders = [];
+		$targeted = 0;
+
+		foreach ($this->migrationFiles() as $file) {
+			// The four `Version002…` files predate 2.1.0 whatever their name sorts as (NAMING.md).
+			if (preg_match('/^Version1Date(\d{14})\.php$/', basename($file), $matches) !== 1 || $matches[1] < '20260907000000') {
+				continue;
+			}
+
+			if (preg_match('/^(final )?class \w+ extends TargetedMigrationStep\b/m', (string) file_get_contents($file)) === 1) {
+				$targeted++;
+				continue;
+			}
+
+			$offenders[] = 'lib/Migration/' . basename($file);
+		}
+
+		$this->assertGreaterThan(50, $targeted, 'the scan found implausibly few targeted steps');
+		$this->assertSame(
+			[],
+			$offenders,
+			"a migration step must extend TargetedMigrationStep and implement changeTargetedSchema(),\n"
+			. "so an upgrade reads only the tables the step changes:\n" . implode("\n", $offenders)
+		);
+	}//end testEveryStepAfterRelease210IsTargeted()
 
 	/**
 	 * A guard that fires because the table is absent returns the schema.
