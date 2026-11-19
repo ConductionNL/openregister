@@ -1459,7 +1459,7 @@ Notifications/BackgroundJob/ScheduledReportRunNowJob.php,43,Notifications,Notifi
 Notifications/BackgroundJob/TaskScheduledNotificationJob.php,163,Notifications,Notifications,Notifications/BackgroundJob/TaskScheduledNotificationJob.php,0,,Notifications
 Notifications/BackgroundJob/WebPushDispatchJob.php,85,Notifications,Notifications,Notifications/BackgroundJob/WebPushDispatchJob.php,0,,Notifications
 Notifications/Command/GenerateVapidKeys.php,49,Notifications,Notifications,Notifications/Command/GenerateVapidKeys.php,0,,Notifications
-Notifications/Controller/EmailsController.php,200,Notifications,Notifications,Notifications/Controller/EmailsController.php,0,,Notifications
+Notifications/Controller/EmailsController.php,200,Notifications,Notifications,Notifications/Controller/EmailsController.php,0,,Integrations
 Notifications/Controller/GraphQLSubscriptionController.php,72,Notifications,Notifications,Notifications/Controller/GraphQLSubscriptionController.php,0,,Notifications
 Notifications/Controller/HeartbeatController.php,22,Notifications,Notifications,Notifications/Controller/HeartbeatController.php,0,,Notifications
 Notifications/Controller/NotesController.php,319,Notifications,Notifications,Notifications/Controller/NotesController.php,0,,Notifications
@@ -1530,9 +1530,9 @@ Notifications/Listener/SystemEntityNotificationListener.php,102,Notifications,No
 Notifications/NotificationsRegistrar.php,94,Notifications,Notifications,Notifications/NotificationsRegistrar.php,0,,Notifications
 Notifications/Search/TimelineEntriesProvider.php,110,Notifications,Notifications,Notifications/Search/TimelineEntriesProvider.php,0,,Notifications
 Notifications/Service/ActivityService.php,290,Notifications,Notifications,Notifications/Service/ActivityService.php,0,,Notifications
-Notifications/Service/EmailService.php,225,Notifications,Notifications,Notifications/Service/EmailService.php,0,104,Notifications
-Notifications/Service/EmailServiceInterface.php,12,Notifications,Notifications,Notifications/Service/EmailServiceInterface.php,0,,Notifications
-Notifications/Service/ExampleSet/ExampleSetTimelineEntries.php,120,Notifications,Notifications,Notifications/Service/ExampleSet/ExampleSetTimelineEntries.php,0,245,Notifications
+Notifications/Service/EmailService.php,225,Notifications,Notifications,Notifications/Service/EmailService.php,0,104,Integrations
+Notifications/Service/EmailServiceInterface.php,12,Notifications,Notifications,Notifications/Service/EmailServiceInterface.php,0,,Integrations
+Notifications/Service/ExampleSet/ExampleSetTimelineEntries.php,120,Notifications,Notifications,Notifications/Service/ExampleSet/ExampleSetTimelineEntries.php,0,245,Configuration
 Notifications/Service/GraphQL/SubscriptionService.php,115,Notifications,Notifications,Notifications/Service/GraphQL/SubscriptionService.php,0,,Notifications
 Notifications/Service/Notification/AnnotationNotificationDispatcher.php,1700,Notifications,Notifications,Notifications/Service/Notification/AnnotationNotificationDispatcher.php,0,23,Notifications
 Notifications/Service/Notification/DigestScheduleEvaluator.php,58,Notifications,Notifications,Notifications/Service/Notification/DigestScheduleEvaluator.php,0,,Notifications
@@ -1572,7 +1572,7 @@ Notifications/Service/Notification/RecipientAudience.php,10,Notifications,Notifi
 Notifications/Service/Notification/RecipientDelivery.php,15,Notifications,Notifications,Notifications/Service/Notification/RecipientDelivery.php,0,,Notifications
 Notifications/Service/Notification/RecipientResolverInterface.php,7,Notifications,Notifications,Notifications/Service/Notification/RecipientResolverInterface.php,26,491,Notifications
 Notifications/Service/Notification/RecipientSource.php,13,Notifications,Notifications,Notifications/Service/Notification/RecipientSource.php,0,,Notifications
-Notifications/Service/Notification/ReplyThreadResolver.php,99,Notifications,Notifications,Notifications/Service/Notification/ReplyThreadResolver.php,0,,Notifications
+Notifications/Service/Notification/ReplyThreadResolver.php,99,Notifications,Notifications,Notifications/Service/Notification/ReplyThreadResolver.php,0,,Integrations
 Notifications/Service/Notification/RuleFiring.php,44,Notifications,Notifications,Notifications/Service/Notification/RuleFiring.php,0,,Notifications
 Notifications/Service/Notification/RuleReachRecorder.php,49,Notifications,Notifications,Notifications/Service/Notification/RuleReachRecorder.php,0,,Notifications
 Notifications/Service/Notification/ScheduledFilterEvaluator.php,190,Notifications,Notifications,Notifications/Service/Notification/ScheduledFilterEvaluator.php,2,,Notifications
@@ -1598,7 +1598,7 @@ Notifications/Service/Notification/UnsubscribeHeaders.php,54,Notifications,Notif
 Notifications/Service/Party/PartyNotificationService.php,136,Notifications,Notifications,Notifications/Service/Party/PartyNotificationService.php,0,,Notifications
 Notifications/Service/PresenceService.php,124,Notifications,Notifications,Notifications/Service/PresenceService.php,0,229,Notifications
 Notifications/Service/PresenceServiceInterface.php,11,Notifications,Notifications,Notifications/Service/PresenceServiceInterface.php,0,,Notifications
-Notifications/Service/ReplyThreadService.php,41,Notifications,Notifications,Notifications/Service/ReplyThreadService.php,0,,Notifications
+Notifications/Service/ReplyThreadService.php,41,Notifications,Notifications,Notifications/Service/ReplyThreadService.php,0,,Integrations
 Notifications/Service/Timeline/EntryMentionService.php,173,Notifications,Notifications,Notifications/Service/Timeline/EntryMentionService.php,0,,Notifications
 Notifications/Service/Timeline/LanguageDetector.php,74,Notifications,Notifications,Notifications/Service/Timeline/LanguageDetector.php,0,,Notifications
 Notifications/Service/Timeline/OptionalPayloadString.php,15,Notifications,Notifications,Notifications/Service/Timeline/OptionalPayloadString.php,0,,Notifications
@@ -4452,3 +4452,11 @@ BackgroundJob/ConfigurationJobHandlesInterface.php,,BackgroundJob,,,,,Configurat
 BackgroundJob/IntegrationsJobHandlesInterface.php,,BackgroundJob,,,,,Integrations
 BackgroundJob/ProcessesJobHandlesInterface.php,,BackgroundJob,,,,,Processes
 Service/Translation/TranslationBindingDescription.php,,Service,,,,,Configuration
+Notifications/Service/EmailLinkRequest.php,,Notifications,,,,,Integrations
+Notifications/Service/EmailLinkedSchemas.php,,Notifications,,,,,Integrations
+Notifications/Service/EmailMailAppReader.php,,Notifications,,,,,Integrations
+Notifications/Controller/Support/EmailsControllerServices.php,,Notifications,,,,,Integrations
+Notifications/Controller/Support/EmailsDomain.php,,Notifications,,,,,Integrations
+Notifications/Controller/Support/EmailsObjectAccess.php,,Notifications,,,,,Integrations
+Notifications/Controller/Support/EmailsPlatform.php,,Notifications,,,,,Integrations
+Notifications/Service/ExampleSet/ExampleSetTimelineRowsInterface.php,,Notifications,,,,,Configuration
