@@ -4376,3 +4376,7 @@ Controller/Support/OperationsMaintenanceControllerServices.php,,Controller,,,,,C
 Controller/Support/RecordTemplatesControllerServices.php,,Controller,,,,,Configuration
 Db/ConfigurationMapperBindings.php,,Db,,,,,Configuration
 Db/ConfigurationMapperRegistrar.php,,Db,,,,,Configuration
+Db/PlatformMapperBindings.php,,Db,,,,,Platform
+Db/PlatformMapperRegistrar.php,,Db,,,,,Platform
+Service/PlatformServiceBindings.php,,Service,,,,,Platform
+Service/PlatformServiceRegistrar.php,,Service,,,,,Platform

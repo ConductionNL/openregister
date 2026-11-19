@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\AppInfo;
 
 use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Db\PlatformMapperRegistrar;
 use OCA\OpenRegister\Db\ConfigurationMapperRegistrar;
 use OCA\OpenRegister\Db\ComplianceMapperRegistrar;
 use OCA\OpenRegister\Db\IntegrationsMapperRegistrar;
@@ -18,6 +19,7 @@ use OCA\OpenRegister\Files\FilesRegistrar;
 use OCA\OpenRegister\Mcp\McpRegistrar;
 use OCA\OpenRegister\Notifications\NotificationsRegistrar;
 use OCA\OpenRegister\Search\SearchRegistrar;
+use OCA\OpenRegister\Service\PlatformServiceRegistrar;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -43,6 +45,8 @@ use ReflectionClass;
  * @uses \OCA\OpenRegister\Db\DbRegistrar
  * @uses \OCA\OpenRegister\Db\MapperRegistrar
  * @uses \OCA\OpenRegister\Db\MapperWiring
+ * @uses \OCA\OpenRegister\Db\PlatformMapperBindings
+ * @uses \OCA\OpenRegister\Db\PlatformMapperRegistrar
  * @uses \OCA\OpenRegister\Db\ConfigurationMapperBindings
  * @uses \OCA\OpenRegister\Db\ConfigurationMapperRegistrar
  * @uses \OCA\OpenRegister\Db\ComplianceMapperBindings
@@ -82,6 +86,8 @@ use ReflectionClass;
  * @uses \OCA\OpenRegister\Service\Integration\IntegrationWiring
  * @uses \OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistrar
  * @uses \OCA\OpenRegister\Service\ObjectSource\ObjectSourceWiring
+ * @uses \OCA\OpenRegister\Service\PlatformServiceBindings
+ * @uses \OCA\OpenRegister\Service\PlatformServiceRegistrar
  * @uses \OCA\OpenRegister\Service\Rbac\RbacRegistrar
  * @uses \OCA\OpenRegister\Service\Rbac\RbacWiring
  * @uses \OCA\OpenRegister\Service\ServiceBootstrap
@@ -100,6 +106,8 @@ class ComponentRegistrarWiringTest extends TestCase
             'files'         => [FilesRegistrar::BINDINGS],
             'mcp'           => [McpRegistrar::BINDINGS],
             'notifications' => [NotificationsRegistrar::BINDINGS],
+            'platform mappers' => [PlatformMapperRegistrar::BINDINGS],
+            'platform services' => [PlatformServiceRegistrar::BINDINGS],
             'configuration mappers' => [ConfigurationMapperRegistrar::BINDINGS],
             'compliance mappers' => [ComplianceMapperRegistrar::BINDINGS],
             'integrations mappers' => [IntegrationsMapperRegistrar::BINDINGS],

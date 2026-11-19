@@ -22,6 +22,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\PlatformServiceRegistrar;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;
@@ -68,11 +69,11 @@ final class D5InterfaceBindingsTest extends TestCase {
 		'OCA\OpenRegister\Service\TimeTrackerLinkService' => ['OCA\OpenRegister\Service\TimeTrackerLinkServiceInterface', ContractBindings::class],
 		'OCA\OpenRegister\Service\TranslationProjectionService' => [
 			'OCA\OpenRegister\Service\TranslationProjectionServiceInterface',
-			ContractBindings::class,
+			PlatformServiceRegistrar::class,
 		],
 		'OCA\OpenRegister\Service\TranslationStatusService' => [
 			'OCA\OpenRegister\Service\TranslationStatusServiceInterface',
-			ContractBindings::class,
+			PlatformServiceRegistrar::class,
 		],
 		'OCA\OpenRegister\Service\XwikiLinkService' => ['OCA\OpenRegister\Service\XwikiLinkServiceInterface', ContractBindings::class],
 	];
