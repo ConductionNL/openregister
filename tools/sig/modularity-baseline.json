@@ -70,7 +70,6 @@
   "lib/Controller/DeletedController.php -> lib/Db/AuditTrail/ActionLookupOptions.php",
   "lib/Controller/DsarCaseController.php -> lib/Service/Lifecycle/TransitionEngine.php",
   "lib/Controller/ObjectReadStateController.php -> lib/Service/Interaction/AddressedObject.php",
-  "lib/Controller/ObjectRelationsController.php -> lib/Service/Export/ExportGateInterface.php",
   "lib/Controller/ObjectsController.php -> lib/Files/Service/File/BulkDownloadArchive.php",
   "lib/Controller/ObjectsController.php -> lib/Listener/ChangeGateListener.php",
   "lib/Controller/ObjectsController.php -> lib/Search/Service/Geo/FeatureShape.php",
@@ -1475,6 +1474,7 @@
   "lib/Kernel/Contracts/Core/AuditEntryWriterInterface.php",
   "lib/Kernel/Contracts/Core/AuthRateLimitCeilingInterface.php",
   "lib/Kernel/Contracts/Core/CredentialSecretReaderInterface.php",
+  "lib/Kernel/Contracts/Core/ExportGuardInterface.php",
   "lib/Kernel/Contracts/Core/FieldRulesSourceInterface.php",
   "lib/Kernel/Contracts/Core/ObjectPresenceInterface.php",
   "lib/Kernel/Contracts/Core/ObjectPreviewCacheInterface.php",
@@ -3117,8 +3117,8 @@
  ],
  "exposed_loc": {
   "Compliance": 15739,
-  "Configuration": 6897,
-  "Core": 65069,
+  "Configuration": 6895,
+  "Core": 65077,
   "Files": 3684,
   "Integrations": 18784,
   "Kernel": 8515,
@@ -3586,6 +3586,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10440,
- "total_loc": 459376,
- "violation_degree": 0.0892
+ "total_loc": 459384,
+ "violation_degree": 0.0891
 }
