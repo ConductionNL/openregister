@@ -44,12 +44,6 @@ use OCA\OpenRegister\Service\Aggregation\WidgetAnnotationValidator;
 use OCA\OpenRegister\Service\Aggregation\WidgetAnnotationValidatorInterface;
 use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendService;
 use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendServiceInterface;
-use OCA\OpenRegister\Service\ApiCaller\ApiCallRecorder;
-use OCA\OpenRegister\Service\ApiCaller\ApiCallRecorderInterface;
-use OCA\OpenRegister\Service\ApiCaller\CallerPolicy;
-use OCA\OpenRegister\Service\ApiCaller\CallerPolicyInterface;
-use OCA\OpenRegister\Service\ApiCaller\CallerRateLimiter;
-use OCA\OpenRegister\Service\ApiCaller\CallerRateLimiterInterface;
 use OCA\OpenRegister\Service\ApiVersion\ApiCapabilitiesService;
 use OCA\OpenRegister\Service\ApiVersion\ApiCapabilitiesServiceInterface;
 use OCA\OpenRegister\Service\ApiVersion\ApiVersionNegotiator;
@@ -135,8 +129,6 @@ use OCA\OpenRegister\Service\Case\Nodes\CaseOpenNode;
 use OCA\OpenRegister\Service\Case\Nodes\CaseOpenNodeInterface;
 use OCA\OpenRegister\Service\Case\ZaaktypeCaseSkeletonMapper;
 use OCA\OpenRegister\Service\Case\ZaaktypeCaseSkeletonMapperInterface;
-use OCA\OpenRegister\Service\Chat\ChatProxyHandler;
-use OCA\OpenRegister\Service\Chat\ChatProxyHandlerInterface;
 use OCA\OpenRegister\Service\Config\FederatedConfigAccess;
 use OCA\OpenRegister\Service\Config\FederatedConfigAccessInterface;
 use OCA\OpenRegister\Service\Config\FederatedConfigService;
@@ -922,7 +914,6 @@ final class ContractBindings {
 		JobScheduleServiceInterface::class => JobScheduleService::class,
 		JsonLdContextServiceInterface::class => JsonLdContextService::class,
 		JsonLdSerializerInterface::class => JsonLdSerializer::class,
-		LanguageServiceInterface::class => LanguageService::class,
 		LifecycleActionExecutorInterface::class => LifecycleActionExecutor::class,
 		LifecycleGuardRegistryInterface::class => LifecycleGuardRegistry::class,
 		LifecycleConditionEvaluatorInterface::class => LifecycleConditionEvaluator::class,
@@ -1050,8 +1041,6 @@ final class ContractBindings {
 		TransitionNodeInterface::class => TransitionNode::class,
 		TrustedPartyReaderInterface::class => PartyService::class,
 		TranslationHandlerInterface::class => TranslationHandler::class,
-		TranslationProjectionServiceInterface::class => TranslationProjectionService::class,
-		TranslationStatusServiceInterface::class => TranslationStatusService::class,
 		TriggerManualNodeInterface::class => TriggerManualNode::class,
 		TriggerObjectNodeInterface::class => TriggerObjectNode::class,
 		TriggerScheduleNodeInterface::class => TriggerScheduleNode::class,
@@ -1132,11 +1121,7 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\Rbac\ExternalGrantLapseNotifierInterface::class => \OCA\OpenRegister\Service\Rbac\ExternalGrantLapseNotifier::class,
 		AgentPrincipalResolverInterface::class => AgentPrincipalResolver::class,
 		AnonymousEnvelopeInterface::class => AnonymousEnvelope::class,
-		ApiCallRecorderInterface::class => ApiCallRecorder::class,
 		ApiVersionNegotiatorInterface::class => ApiVersionNegotiator::class,
-		CallerPolicyInterface::class => CallerPolicy::class,
-		CallerRateLimiterInterface::class => CallerRateLimiter::class,
-		ChatProxyHandlerInterface::class => ChatProxyHandler::class,
 		CodedValueGuardInterface::class => CodedValueGuard::class,
 		ConceptShapeGuardInterface::class => ConceptShapeGuard::class,
 		ConfigSetShareableConfigTypeInterface::class => ConfigSetShareableConfigType::class,
@@ -1157,7 +1142,6 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\Flow\Nodes\ActionInputsNodeInterface::class => \OCA\OpenRegister\Service\Flow\Nodes\ActionInputsNode::class,
 		\OCA\OpenRegister\Service\Flow\FlowAccessInterface::class => \OCA\OpenRegister\Service\Flow\FlowAccess::class,
 		\OCA\OpenRegister\Service\Flow\FlowNodeRightsGuardInterface::class => \OCA\OpenRegister\Service\Flow\FlowNodeRightsGuard::class,
-		\OCA\OpenRegister\Service\ActionRightsCatalogueInterface::class => \OCA\OpenRegister\Service\ActionRightsCatalogue::class,
 		\OCA\OpenRegister\Service\Flow\FlowDefinitionPinInterface::class => \OCA\OpenRegister\Service\Flow\FlowDefinitionPin::class,
 		\OCA\OpenRegister\Service\Flow\FlowRunAdvancerInterface::class => \OCA\OpenRegister\Service\Flow\FlowRunAdvancer::class,
 		\OCA\OpenRegister\Service\Flow\FlowSemanticVersionInterface::class => \OCA\OpenRegister\Service\Flow\FlowSemanticVersion::class,

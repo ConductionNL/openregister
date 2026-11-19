@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
-use OCA\OpenRegister\Db\DbRegistrar;
+use OCA\OpenRegister\Db\ProcessesMapperRegistrar;
 use OCA\OpenRegister\Db\FlowStateMapper;
 use OCA\OpenRegister\Db\FlowStateMapperInterface;
 use OCA\OpenRegister\Service\ContractBindings;
@@ -66,7 +66,7 @@ final class C01FlowInterfaceBindingsTest extends TestCase {
 		FlowRunAuthorization::class => [FlowRunAuthorizationInterface::class, ContractBindings::class],
 		FlowRunVersionPin::class => [FlowRunVersionPinInterface::class, ContractBindings::class],
 		FlowRunnableGuard::class => [FlowRunnableGuardInterface::class, ContractBindings::class],
-		FlowStateMapper::class => [FlowStateMapperInterface::class, DbRegistrar::class],
+		FlowStateMapper::class => [FlowStateMapperInterface::class, ProcessesMapperRegistrar::class],
 		PrincipalResolverRegistry::class => [PrincipalResolverRegistryInterface::class, ContractBindings::class],
 	];
 

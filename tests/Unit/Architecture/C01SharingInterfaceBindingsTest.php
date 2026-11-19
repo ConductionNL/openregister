@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
-use OCA\OpenRegister\Db\DbRegistrar;
+use OCA\OpenRegister\Db\IntegrationsMapperRegistrar;
 use OCA\OpenRegister\Db\FederatedShareMapper;
 use OCA\OpenRegister\Db\FederatedShareMapperInterface;
 use OCA\OpenRegister\Service\Calendar\AppointmentAttendeeService;
@@ -66,7 +66,7 @@ final class C01SharingInterfaceBindingsTest extends TestCase {
 		AppointmentAttendeeService::class => [AppointmentAttendeeServiceInterface::class, ContractBindings::class],
 		CalendarFeedTokenService::class => [CalendarFeedTokenServiceInterface::class, ContractBindings::class],
 		CaseTokenService::class => [CaseTokenServiceInterface::class, ContractBindings::class],
-		FederatedShareMapper::class => [FederatedShareMapperInterface::class, DbRegistrar::class],
+		FederatedShareMapper::class => [FederatedShareMapperInterface::class, IntegrationsMapperRegistrar::class],
 		FederationShareService::class => [FederationShareServiceInterface::class, ContractBindings::class],
 	];
 

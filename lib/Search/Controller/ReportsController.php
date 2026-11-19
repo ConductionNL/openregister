@@ -34,11 +34,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Search\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\OfficeServerRequiredException;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Search\Service\Reporting\ReportRenderService;
 use OCA\OpenRegister\Search\Controller\Support\ReportRenderRequest;
 use OCA\OpenRegister\Search\Controller\Support\ReportsControllerServices;
@@ -82,7 +82,7 @@ class ReportsController extends Controller {
 	 * @param ReportsControllerServices $services The reports API services.
 	 */
 	public function __construct(IRequest $request, ReportsControllerServices $services) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 
 		$this->renderService = $services->renderService;
 		$this->objectMapper  = $services->objectMapper;
