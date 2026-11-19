@@ -31,8 +31,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Search;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\DeepLinkRegistryService;
-use OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter;
+use OCA\OpenRegister\Kernel\Contracts\Core\AppDeepLinksInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\RegisterSchemaLabelsInterface;
 use OCA\OpenRegister\Service\Reference\ReferenceCardDeclaration;
 use OCP\IURLGenerator;
 use OCP\Search\SearchResultEntry;
@@ -55,8 +55,8 @@ final class ObjectSearchResultFormatter implements ObjectSearchResultFormatterIn
 	 * Constructor for ObjectSearchResultFormatter.
 	 *
 	 * @param IURLGenerator $urlGenerator The URL generator service
-	 * @param DeepLinkRegistryService $deepLinkRegistry Deep link registry for URL resolution
-	 * @param ObjectPreviewFormatter $formatter Shared schema icon/name resolution service
+	 * @param AppDeepLinksInterface $deepLinkRegistry Deep link registry for URL, icon and app label resolution
+	 * @param RegisterSchemaLabelsInterface $formatter Register and schema names and the schema icon
 	 * @param SearchResultDeclarations|null $declarations What each schema declares a result shows;
 	 *     absent keeps the derived title and subline for every schema
 	 *
@@ -66,8 +66,8 @@ final class ObjectSearchResultFormatter implements ObjectSearchResultFormatterIn
 	 */
 	public function __construct(
 		private readonly IURLGenerator $urlGenerator,
-		private readonly DeepLinkRegistryService $deepLinkRegistry,
-		private readonly ObjectPreviewFormatter $formatter,
+		private readonly AppDeepLinksInterface $deepLinkRegistry,
+		private readonly RegisterSchemaLabelsInterface $formatter,
 		private readonly ?SearchResultDeclarations $declarations = null,
 	) {
 	}//end __construct()
