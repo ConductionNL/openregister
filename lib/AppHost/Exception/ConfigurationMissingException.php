@@ -33,6 +33,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\AppHost\Exception;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\ServiceUnavailableExceptionInterface;
 use RuntimeException;
 use Throwable;
 
@@ -42,7 +43,7 @@ use Throwable;
  * @spec openspec/changes/apphost-settings-plane/specs/apphost-settings-plane/spec.md
  *   — Requirement: Register configuration resolution (Scenario: Empty configuration fails closed)
  */
-class ConfigurationMissingException extends RuntimeException {
+class ConfigurationMissingException extends RuntimeException implements ServiceUnavailableExceptionInterface {
 	/**
 	 * Construct the configuration-missing exception with diagnostic context.
 	 *
