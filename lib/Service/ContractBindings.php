@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\EntityFolderInterface;
 use OCA\OpenRegister\Kernel\Contracts\ContactMatcherInterface;
 use OCA\OpenRegister\Kernel\Contracts\ExampleSetInstallerInterface;
 use OCA\OpenRegister\Kernel\Contracts\FlowTimerControlInterface;
@@ -858,6 +859,7 @@ final class ContractBindings {
 		FederatedConfigServiceInterface::class => FederatedConfigService::class,
 		FederatedConfigAccessInterface::class => FederatedConfigAccess::class,
 		RegisterBundleBindingInterface::class => RegisterBundleBinding::class,
+		EntityFolderInterface::class => FileService::class,
 		FileFolderServiceInterface::class => FileService::class,
 		FileHandlerSupportInterface::class => FileService::class,
 		FileReaderInterface::class => FileService::class,

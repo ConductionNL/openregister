@@ -24,13 +24,14 @@ namespace OCA\OpenRegister\Files\Db;
 
 use OCP\AppFramework\Db\Entity;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Core\FileSizeTotalsInterface;
 
 /**
  * Every public method of FileMapper. Callers depend on this interface, not on the class.
  *
  * @phpstan-import-type FilecacheRow from FileMapper
  */
-interface FileMapperInterface {
+interface FileMapperInterface extends FileSizeTotalsInterface {
 
 	/**
 	 * Find an OR-side `File` row by its Nextcloud `filecache.fileid`.
@@ -312,20 +313,6 @@ interface FileMapperInterface {
 	 * @phpstan-return int
 	 */
 	public function getTotalFilesSize(): int;
-
-	/**
-	 * The summed size of the given files or folders.
-	 *
-	 * A folder's size in the file cache is the size of everything under it. A
-	 * negative size means the entry was never scanned and is left out.
-	 *
-	 * @param list<int> $fileIds The file cache ids.
-	 *
-	 * @return int The total size in bytes, 0 for no ids.
-	 *
-	 * @spec openspec/specs/organisation-usage-measured/spec.md
-	 */
-	public function sumSizesByFileIds(array $fileIds): int;
 
 	/**
 	 * Find files in Nextcloud that are not tracked in the extraction system yet

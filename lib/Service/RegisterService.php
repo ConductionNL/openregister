@@ -29,6 +29,7 @@ use Exception;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\EntityFolderInterface;
 use OCA\OpenRegister\Service\Serializer\RegisterExpansion;
 use OCA\OpenRegister\Service\Serializer\RegisterListExtension;
 use OCA\OpenRegister\Service\Serializer\RegisterSerializer;
@@ -108,9 +109,9 @@ class RegisterService implements RegisterServiceInterface {
 	/**
 	 * File service for file operations.
 	 *
-	 * @var FileFolderServiceInterface
+	 * @var EntityFolderInterface
 	 */
-	private readonly FileFolderServiceInterface $fileService;
+	private readonly EntityFolderInterface $fileService;
 
 	/**
 	 * Applies `_extend` post-processing (`schemas`, `@self.stats`).
