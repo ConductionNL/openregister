@@ -515,7 +515,6 @@
   "lib/Service/Object/ReferentialIntegrityService.php -> lib/Db/AuditTrail.php",
   "lib/Service/Object/ReferentialIntegrityService.php -> lib/Db/AuditTrail/AuditedChange.php",
   "lib/Service/Object/ReferentialIntegrityService.php -> lib/Service/Archival/ArchivalRetentionGuard.php",
-  "lib/Service/Object/RelationHandler.php -> lib/Service/Audit/PurposeGuard.php",
   "lib/Service/Object/RenderDerivations.php -> lib/Service/Calculation/CalculationEvaluatorInterface.php",
   "lib/Service/Object/RenderObject.php -> lib/Db/Translation.php",
   "lib/Service/Object/RenderObject.php -> lib/Db/TranslationSlot.php",
@@ -3474,6 +3473,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10440,
- "total_loc": 459499,
- "violation_degree": 0.0778
+ "total_loc": 459502,
+ "violation_degree": 0.0777
 }
