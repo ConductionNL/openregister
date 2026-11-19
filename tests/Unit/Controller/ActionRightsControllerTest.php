@@ -97,7 +97,7 @@ final class ActionRightsControllerTest extends TestCase {
 	 */
 	protected function setUp(): void {
 		$this->request = $this->createMock(IRequest::class);
-		$this->catalogue = $this->createMock(ActionRightsInterface::class);
+		$this->catalogue = $this->createMock(originalClassName: ActionRightsInterface::class);
 		$this->nodeRights = $this->createMock(FlowNodeRightsGuardInterface::class);
 		$this->session = $this->createMock(IUserSession::class);
 		$this->groups = $this->createMock(IGroupManager::class);
