@@ -13,7 +13,10 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionEvaluatorInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
+use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
+use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
 use OCA\OpenRegister\Service\Flow\FlowAccess;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistryInterface;
 use OCA\OpenRegister\Service\Flow\FlowRegistrar;
@@ -150,15 +153,27 @@ final class FlowWiringTest extends TestCase {
 	}//end testTheFieldRulesPortIsAnsweredByTheStateResolver()
 
 	/**
-	 * The store of the flows compiled from application schedules is bound, and only the two aliases are registered.
+	 * The render's expression port is answered by the calculation evaluator, through its own interface.
+	 *
+	 * @return void
+	 */
+	public function testTheExpressionPortIsAnsweredByTheCalculationEvaluator(): void {
+		self::assertSame(expected: CalculationEvaluator::class, actual: (FlowWiring::BINDINGS[ExpressionEvaluatorInterface::class] ?? null));
+		self::assertTrue(condition: is_a(CalculationEvaluatorInterface::class, ExpressionEvaluatorInterface::class, true));
+		self::assertTrue(condition: is_a(CalculationEvaluator::class, ExpressionEvaluatorInterface::class, true));
+	}//end testTheExpressionPortIsAnsweredByTheCalculationEvaluator()
+
+	/**
+	 * The store of the flows compiled from application schedules and the render's expression evaluator are bound, and only those aliases are registered.
 	 *
 	 * @return void
 	 */
 	public function testTheScheduleFlowStoreIsBound(): void {
 		self::assertSame(
 			expected: [
-				FieldRulesSourceInterface::class  => StateFieldRuleResolver::class,
-				ScheduleFlowStoreInterface::class => ScheduleFlowStore::class,
+				FieldRulesSourceInterface::class    => StateFieldRuleResolver::class,
+				ScheduleFlowStoreInterface::class   => ScheduleFlowStore::class,
+				ExpressionEvaluatorInterface::class => CalculationEvaluator::class,
 			],
 			actual: $this->aliases
 		);

@@ -23,7 +23,9 @@ namespace OCA\OpenRegister\Service\Flow;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionEvaluatorInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
+use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionRunner;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
@@ -55,7 +57,8 @@ final class FlowWiring {
 	 * @var array<class-string, class-string>
 	 */
 	public const BINDINGS = [
-		ScheduleFlowStoreInterface::class => ScheduleFlowStore::class,
+		ScheduleFlowStoreInterface::class   => ScheduleFlowStore::class,
+		ExpressionEvaluatorInterface::class => CalculationEvaluator::class,
 	];
 
 	/**

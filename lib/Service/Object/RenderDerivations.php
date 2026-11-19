@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
-use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionEvaluatorInterface;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
 use OCA\OpenRegister\Service\UrnService;
 
@@ -36,7 +36,7 @@ final class RenderDerivations {
 	 * Bundle the services.
 	 *
 	 * @param ComputedFieldHandler               $computedFieldHandler Evaluates computed fields.
-	 * @param CalculationEvaluatorInterface      $calculationEvaluator Evaluates derived properties.
+	 * @param ExpressionEvaluatorInterface       $calculationEvaluator Evaluates derived properties.
 	 * @param LinkedEntityEnricher               $linkedEntityEnricher Enriches linked entity metadata.
 	 * @param UrnService                         $urnService           Resolves register, schema and object URNs.
 	 *
@@ -44,7 +44,7 @@ final class RenderDerivations {
 	 */
 	public function __construct(
 		public readonly ComputedFieldHandler $computedFieldHandler,
-		public readonly CalculationEvaluatorInterface $calculationEvaluator,
+		public readonly ExpressionEvaluatorInterface $calculationEvaluator,
 		public readonly LinkedEntityEnricher $linkedEntityEnricher,
 		public readonly UrnService $urnService,
 	) {
