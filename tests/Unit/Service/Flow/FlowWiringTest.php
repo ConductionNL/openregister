@@ -14,6 +14,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Notifications\TaskRowSourceInterface;
 use OCA\OpenRegister\Service\Flow\FlowAccess;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistryInterface;
 use OCA\OpenRegister\Service\Flow\FlowRegistrar;
@@ -140,6 +141,16 @@ final class FlowWiringTest extends TestCase {
 	}//end testItRegistersTheServicesInOrder()
 
 	/**
+	 * The task row port of the notifier (Notifications) is answered by the task inbox (Processes).
+	 *
+	 * @return void
+	 */
+	public function testTheTaskRowPortIsAnsweredByTheTaskInbox(): void {
+		self::assertSame(expected: TaskInboxService::class, actual: ($this->aliases[TaskRowSourceInterface::class] ?? null));
+		self::assertTrue(condition: is_a(TaskInboxService::class, TaskRowSourceInterface::class, true));
+	}//end testTheTaskRowPortIsAnsweredByTheTaskInbox()
+
+	/**
 	 * The run authorization is built on the container's flow access.
 	 *
 	 * @return void
@@ -150,7 +161,7 @@ final class FlowWiringTest extends TestCase {
 	}//end testTheFieldRulesPortIsAnsweredByTheStateResolver()
 
 	/**
-	 * The store of the flows compiled from application schedules is bound, and only the two aliases are registered.
+	 * The store of the flows compiled from application schedules and the task row port are bound, and only those aliases are registered.
 	 *
 	 * @return void
 	 */
@@ -159,6 +170,7 @@ final class FlowWiringTest extends TestCase {
 			expected: [
 				FieldRulesSourceInterface::class  => StateFieldRuleResolver::class,
 				ScheduleFlowStoreInterface::class => ScheduleFlowStore::class,
+				TaskRowSourceInterface::class     => TaskInboxService::class,
 			],
 			actual: $this->aliases
 		);

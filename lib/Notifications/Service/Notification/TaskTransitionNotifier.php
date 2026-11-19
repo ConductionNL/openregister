@@ -24,8 +24,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Service\Notification;
 
-use OCA\OpenRegister\Db\Task;
-use OCA\OpenRegister\Service\Task\TaskInboxServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Notifications\TaskRowSourceInterface;
+use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
 
 /**
  * Builds the task's adapter from its inbox row and hands it, with the task rule
@@ -39,12 +39,12 @@ final class TaskTransitionNotifier implements TaskTransitionNotifierInterface {
 	 *
 	 * @param NotificationRuleDispatcherInterface $dispatcher The one dispatcher.
 	 * @param TaskNotificationRulesInterface      $rules      The task rule registry.
-	 * @param TaskInboxServiceInterface           $inbox      The row the adapter is built from.
+	 * @param TaskRowSourceInterface              $inbox      The row the adapter is built from.
 	 */
 	public function __construct(
 		private readonly NotificationRuleDispatcherInterface $dispatcher,
 		private readonly TaskNotificationRulesInterface $rules,
-		private readonly TaskInboxServiceInterface $inbox,
+		private readonly TaskRowSourceInterface $inbox,
 	) {
 
 	}//end __construct()
@@ -52,14 +52,14 @@ final class TaskTransitionNotifier implements TaskTransitionNotifierInterface {
 	/**
 	 * Dispatch the `transition` trigger for one task through the task rule set.
 	 *
-	 * @param Task             $task   The task, presented to the dispatcher as its inbox row.
+	 * @param TaskInterface    $task   The task, presented to the dispatcher as its inbox row.
 	 * @param TransitionNotice $notice The payload fields the transition adds and the context the rules match on.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-task-lifecycle-delivery-is-automatic-and-declarative
 	 */
-	public function notifyTransition(Task $task, TransitionNotice $notice): void {
+	public function notifyTransition(TaskInterface $task, TransitionNotice $notice): void {
 		$adapter = TaskObjectAdapters::forTask(
 			task: $task,
 			options: new TaskAdapterOptions(row: $this->inbox->enrich(task: $task), extra: $notice->extra)
