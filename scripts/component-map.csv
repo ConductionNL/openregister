@@ -4021,7 +4021,7 @@ Service/ProtectedCarryForward.php,,Service,,,,,Core
 Service/ProtectedPropertyRead.php,,Service,,,,,Core
 Service/RateLimitResetInterface.php,,Service,,,,,Core
 Service/ReadCaptureRun.php,,Service,,,,,Compliance
-Service/RecordUpdate.php,,Service,,,,,Configuration
+Service/RecordUpdate.php,,Service,,,,,Core
 Service/RegisterDescriptorServiceInterface.php,,Service,,,,,Core
 Service/RegisterImportCall.php,,Service,,,,,Core
 Service/RegisterImportDocument.php,,Service,,,,,Core
@@ -4046,7 +4046,7 @@ Service/ScheduledReportNotice.php,,Service,,,,,Notifications
 Service/ScheduledReportOwnerServices.php,,Service,,,,,Notifications
 Service/ScheduledReportStores.php,,Service,,,,,Notifications
 Service/SchemaApplicationMigratorInterface.php,,Service,,,,,Core
-Service/SchemaCascade.php,,Service,,,,,Configuration
+Service/SchemaCascade.php,,Service,,,,,Compliance
 Service/SchemaDeletionStores.php,,Service,,,,,Core
 Service/SchemaObjectTally.php,,Service,,,,,Core
 Service/SchemaProperty.php,,Service,,,,,Core
@@ -4080,7 +4080,7 @@ Service/SkosNodeReader.php,,Service,,,,,Core
 Service/SourceLanguageLookup.php,,Service,,,,,Configuration
 Service/StoredEvent.php,,Service,,,,,Processes
 Service/StoredTask.php,,Service,,,,,Processes
-Service/TableDeletionOptions.php,,Service,,,,,Integrations
+Service/TableDeletionOptions.php,,Service,,,,,Core
 Service/TableDeletionRun.php,,Service,,,,,Compliance
 Service/TableObjectRef.php,,Service,,,,,Integrations
 Service/TalkLinkServiceInterface.php,,Service,,,,,Integrations
@@ -4481,3 +4481,4 @@ BackgroundJob/Support/WebhookDeliveryStores.php,,BackgroundJob,,,,,Integrations
 Controller/Support/PollLinksControllerServices.php,,Controller,,,,,Integrations
 Controller/Support/ShareLinksControllerServices.php,,Controller,,,,,Integrations
 Controller/Support/TimeTrackerLinksControllerServices.php,,Controller,,,,,Integrations
+Service/Settings/ArchivalSettingsReaderInterface.php,,Service,,,,,Compliance
