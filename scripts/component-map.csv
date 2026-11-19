@@ -4052,10 +4052,10 @@ Service/SchemaTeardownOverride.php,,Service,,,,,Core
 Service/SearchMeasurement.php,,Service,,,,,Compliance
 Service/SearchPeriod.php,,Service,,,,,Compliance
 Service/SearchTrailActivityInsights.php,,Service,,,,,Search
-Service/SearchTrailNameEnricher.php,,Service,,,,,Search
+Service/SearchTrailNameEnricher.php,,Service,,,,,Compliance
 Service/SearchTrailQueryConfig.php,,Service,,,,,Search
-Service/SearchTrailServiceInterface.php,,Service,,,,,Search
-Service/SearchTrailStatistics.php,,Service,,,,,Search
+Service/SearchTrailServiceInterface.php,,Service,,,,,Compliance
+Service/SearchTrailStatistics.php,,Service,,,,,Compliance
 Service/SearchTrailUserAgentParser.php,,Service,,,,,Search
 Service/SecurityHeadersInterface.php,,Service,,,,,Core
 Service/SemanticTypeQuery.php,,Service,,,,,Core
@@ -4247,7 +4247,7 @@ Service/File/OcrWordLocator.php,,Service,,,,,Core
 Service/File/OcrWords.php,,Service,,,,,Core
 Service/File/OfficeMediaBurner.php,,Service,,,,,Core
 AppHost/Controller/GenericReadinessController.php,,AppHost,,,,,Integrations
-Service/Reference/ReferenceCardDeclaration.php,,Service,,,,,Configuration
+Service/Reference/ReferenceCardDeclaration.php,,Service,,,,,Core
 Service/Task/TaskVerbList.php,152,Service,Work,Work/Service/Task/TaskVerbList.php,0,,Processes
 Service/Audit/RuleDigest.php,96,Service,Compliance,Compliance/Service/Audit/RuleDigest.php,0,,Compliance
 Service/Object/ObjectSaveCheck.php,8,Service,Service,Service/Object/ObjectSaveCheck.php,0,,Core
@@ -4430,3 +4430,4 @@ Kernel/Contracts/CaseItemInterface.php,,Kernel,,,,,Kernel
 Kernel/Contracts/DecisionInterface.php,,Kernel,,,,,Kernel
 Kernel/Contracts/AppEventWebhookListenerInterface.php,,Kernel,,,,,Kernel
 Kernel/Contracts/AdminSettingDelegation.php,,Kernel,,,,,Kernel
+Controller/Support/SearchTrailControllerServices.php,,Controller,,,,,Compliance

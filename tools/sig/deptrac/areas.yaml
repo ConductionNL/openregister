@@ -482,8 +482,6 @@ deptrac:
         - type: directory
           value: 'lib/Controller/Support/ScopesControllerServices[.]php$'
         - type: directory
-          value: 'lib/Controller/Support/SearchTrailControllerServices[.]php$'
-        - type: directory
           value: 'lib/Controller/Support/SearchTrailPageLinks[.]php$'
         - type: directory
           value: 'lib/Controller/Support/SecuritySettingsControllerServices[.]php$'
@@ -1565,6 +1563,8 @@ deptrac:
           value: 'lib/Service/Query/[^/]*$'
         - type: directory
           value: 'lib/Service/Rbac/[^/]*$'
+        - type: directory
+          value: 'lib/Service/Reference/ReferenceCardDeclaration[.]php$'
         - type: directory
           value: 'lib/Service/Registers/[^/]*$'
         - type: directory
@@ -2772,7 +2772,11 @@ deptrac:
         - type: directory
           value: 'lib/Service/RedactionPolicy/[^/]*$'
         - type: directory
-          value: 'lib/Service/Reference/[^/]*$'
+          value: 'lib/Service/Reference/ObjectPreviewFormatter[.]php$'
+        - type: directory
+          value: 'lib/Service/Reference/ObjectPreviewFormatterInterface[.]php$'
+        - type: directory
+          value: 'lib/Service/Reference/ObjectPreviewSources[.]php$'
         - type: directory
           value: 'lib/Service/Settings/[^/]*$'
         - type: directory
@@ -2916,6 +2920,8 @@ deptrac:
         - type: directory
           value: 'lib/Controller/Support/RetentionMappers[.]php$'
         - type: directory
+          value: 'lib/Controller/Support/SearchTrailControllerServices[.]php$'
+        - type: directory
           value: 'lib/Controller/Support/SelectielijstControllerServices[.]php$'
         - type: directory
           value: 'lib/Controller/Support/TransferControllerServices[.]php$'
@@ -2988,7 +2994,7 @@ deptrac:
         - type: directory
           value: 'lib/Repair/(RechainAuditTrailForFlowAttribution)[.]php$'
         - type: directory
-          value: 'lib/Service/(AuditCanonicalV1|AuditChainKey|AuditHashService|AuditHashServiceInterface|AuditQueryService|AuditQueryServiceInterface|AuditRechainInterface|AuditRetentionResolver|AuditRetentionResolverInterface|AuditSealInterface|AuthFailureRun|AuthorizationAuditService|AuthorizationChange|AvgComplianceService|AvgRetentionErasureRun|AvgRetentionService|CalculationRun|ContentScanService|DescriptorReimportRun|DsarErasureRun|DsarGuards|DsarService|DsarStores|DsarSubjectQuery|LogService|ProcessingLogService|ProcessingRead|ReadCaptureRun|RetentionClock|RetentionPass|RetentionRules|RetentionService|RetentionServiceInterface|RetentionStores|SchemaDeletionService|SearchMeasurement|SearchPeriod|SearchTrailService|TableDeletionRun|TmloService|UnclassifiedProcessing)[.]php$'
+          value: 'lib/Service/(AuditCanonicalV1|AuditChainKey|AuditHashService|AuditHashServiceInterface|AuditQueryService|AuditQueryServiceInterface|AuditRechainInterface|AuditRetentionResolver|AuditRetentionResolverInterface|AuditSealInterface|AuthFailureRun|AuthorizationAuditService|AuthorizationChange|AvgComplianceService|AvgRetentionErasureRun|AvgRetentionService|CalculationRun|ContentScanService|DescriptorReimportRun|DsarErasureRun|DsarGuards|DsarService|DsarStores|DsarSubjectQuery|LogService|ProcessingLogService|ProcessingRead|ReadCaptureRun|RetentionClock|RetentionPass|RetentionRules|RetentionService|RetentionServiceInterface|RetentionStores|SchemaDeletionService|SearchMeasurement|SearchPeriod|SearchTrailNameEnricher|SearchTrailService|SearchTrailServiceInterface|SearchTrailStatistics|TableDeletionRun|TmloService|UnclassifiedProcessing)[.]php$'
         - type: directory
           value: 'lib/Service/Anonymisation/[^/]*$'
         - type: directory
@@ -3476,7 +3482,7 @@ deptrac:
         - type: directory
           value: 'lib/Search/Service/Vectorization/Handlers/[^/]*$'
         - type: directory
-          value: 'lib/Service/(SearchTrailActivityInsights|SearchTrailNameEnricher|SearchTrailQueryConfig|SearchTrailServiceInterface|SearchTrailStatistics|SearchTrailUserAgentParser)[.]php$'
+          value: 'lib/Service/(SearchTrailActivityInsights|SearchTrailQueryConfig|SearchTrailUserAgentParser)[.]php$'
     - name: Notifications
       collectors:
         - type: directory
