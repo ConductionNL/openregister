@@ -42,7 +42,6 @@ use OCA\OpenRegister\Db\MagicMapper\MagicTableMaintenanceInterface;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableRowReaderInterface;
 use OCA\OpenRegister\Db\MagicMapper\OrganisationScopeResolverInterface;
 use OCA\OpenRegister\Db\MagicMapper\RelatedRowRbacInterface;
-use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 
 /**
@@ -65,7 +64,6 @@ final class DbRegistrar {
 	public const BINDINGS = [
 		AccessLinkMapperInterface::class => AccessLinkMapper::class,
 		DelegationGrantMapperInterface::class => DelegationGrantMapper::class,
-		EntityRelationMapperInterface::class => EntityRelationMapper::class,
 		OrganisationScopeResolverInterface::class => MagicOrganizationHandler::class,
 		SchemaRunMapperInterface::class => SchemaRunMapper::class,
 		SchemaRunStoreInterface::class => SchemaRunMapper::class,

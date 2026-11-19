@@ -15,6 +15,7 @@ use OCA\OpenRegister\Db\DbRegistrar;
 use OCA\OpenRegister\Db\PlatformMapperRegistrar;
 use OCA\OpenRegister\Db\ConfigurationMapperRegistrar;
 use OCA\OpenRegister\Db\ComplianceMapperRegistrar;
+use OCA\OpenRegister\Db\FilesMapperRegistrar;
 use OCA\OpenRegister\Db\IntegrationsMapperRegistrar;
 use OCA\OpenRegister\Db\ProcessesMapperRegistrar;
 
@@ -34,6 +35,7 @@ final class DbBindingMaps {
 		PlatformMapperRegistrar::class,
 		ConfigurationMapperRegistrar::class,
 		ComplianceMapperRegistrar::class,
+		FilesMapperRegistrar::class,
 		IntegrationsMapperRegistrar::class,
 		ProcessesMapperRegistrar::class,
 	];

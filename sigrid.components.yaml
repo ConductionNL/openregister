@@ -1542,6 +1542,7 @@ components:
       - ".*/lib/Twig/[^/]*"
   - name: Files
     include:
+      - ".*/lib/Db/(FilesMapperBindings|FilesMapperRegistrar)[.]php"
       - ".*/lib/Files/[^/]*"
       - ".*/lib/Files/BackgroundJob/[^/]*"
       - ".*/lib/Files/Command/[^/]*"

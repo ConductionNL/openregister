@@ -3064,6 +3064,8 @@ deptrac:
     - name: Files
       collectors:
         - type: directory
+          value: 'lib/Db/(FilesMapperBindings|FilesMapperRegistrar)[.]php$'
+        - type: directory
           value: 'lib/Files/[^/]*$'
         - type: directory
           value: 'lib/Files/BackgroundJob/[^/]*$'
