@@ -24,7 +24,11 @@ use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Notifications\NotificationRunRecorderInterface;
+use OCA\OpenRegister\Kernel\Contracts\Notifications\ObjectWatchersInterface;
 use OCA\OpenRegister\Kernel\Contracts\Notifications\TaskRowSourceInterface;
+use OCA\OpenRegister\Service\AutomationRecordWriter;
+use OCA\OpenRegister\Service\Interaction\WatcherService;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionRunner;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
@@ -56,8 +60,10 @@ final class FlowWiring {
 	 * @var array<class-string, class-string>
 	 */
 	public const BINDINGS = [
-		ScheduleFlowStoreInterface::class => ScheduleFlowStore::class,
-		TaskRowSourceInterface::class     => TaskInboxService::class,
+		ScheduleFlowStoreInterface::class       => ScheduleFlowStore::class,
+		TaskRowSourceInterface::class           => TaskInboxService::class,
+		ObjectWatchersInterface::class          => WatcherService::class,
+		NotificationRunRecorderInterface::class => AutomationRecordWriter::class,
 	];
 
 	/**

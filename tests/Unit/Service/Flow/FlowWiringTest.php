@@ -14,7 +14,11 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Notifications\NotificationRunRecorderInterface;
+use OCA\OpenRegister\Kernel\Contracts\Notifications\ObjectWatchersInterface;
 use OCA\OpenRegister\Kernel\Contracts\Notifications\TaskRowSourceInterface;
+use OCA\OpenRegister\Service\AutomationRecordWriter;
+use OCA\OpenRegister\Service\Interaction\WatcherService;
 use OCA\OpenRegister\Service\Flow\FlowAccess;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistryInterface;
 use OCA\OpenRegister\Service\Flow\FlowRegistrar;
@@ -151,6 +155,18 @@ final class FlowWiringTest extends TestCase {
 	}//end testTheTaskRowPortIsAnsweredByTheTaskInbox()
 
 	/**
+	 * The watcher and run-record ports of the notification dispatcher (Notifications) are answered by Processes.
+	 *
+	 * @return void
+	 */
+	public function testTheNotificationPortsAreAnsweredByProcesses(): void {
+		self::assertSame(expected: WatcherService::class, actual: ($this->aliases[ObjectWatchersInterface::class] ?? null));
+		self::assertSame(expected: AutomationRecordWriter::class, actual: ($this->aliases[NotificationRunRecorderInterface::class] ?? null));
+		self::assertTrue(condition: is_a(WatcherService::class, ObjectWatchersInterface::class, true));
+		self::assertTrue(condition: is_a(AutomationRecordWriter::class, NotificationRunRecorderInterface::class, true));
+	}//end testTheNotificationPortsAreAnsweredByProcesses()
+
+	/**
 	 * The run authorization is built on the container's flow access.
 	 *
 	 * @return void
@@ -169,8 +185,10 @@ final class FlowWiringTest extends TestCase {
 		self::assertSame(
 			expected: [
 				FieldRulesSourceInterface::class  => StateFieldRuleResolver::class,
-				ScheduleFlowStoreInterface::class => ScheduleFlowStore::class,
-				TaskRowSourceInterface::class     => TaskInboxService::class,
+				ScheduleFlowStoreInterface::class       => ScheduleFlowStore::class,
+				TaskRowSourceInterface::class           => TaskInboxService::class,
+				ObjectWatchersInterface::class          => WatcherService::class,
+				NotificationRunRecorderInterface::class => AutomationRecordWriter::class,
 			],
 			actual: $this->aliases
 		);

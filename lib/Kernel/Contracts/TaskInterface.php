@@ -195,6 +195,13 @@ interface TaskInterface extends JsonSerializable {
 	public const EXTERNAL_PARTY_PREFIX = 'party:';
 
 	/**
+	 * Outcomes that reject or return the work, matched trimmed and lowercased.
+	 *
+	 * @var array<int, string>
+	 */
+	public const REJECTING_OUTCOMES = ['rejected', 'returned', 'declined', 'denied'];
+
+	/**
 	 * The performer types known to this release.
 	 *
 	 * @var array<int, string>
