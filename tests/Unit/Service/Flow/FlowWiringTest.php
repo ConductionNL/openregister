@@ -14,6 +14,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Notifications\OverdueTaskSourceInterface;
 use OCA\OpenRegister\Kernel\Contracts\Notifications\TaskRowSourceInterface;
 use OCA\OpenRegister\Service\Flow\FlowAccess;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistryInterface;
@@ -30,6 +31,7 @@ use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
 use OCA\OpenRegister\Service\Portal\PortalPartyResolver;
+use OCA\OpenRegister\Service\Task\OverdueOpenTasks;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
 use OCA\OpenRegister\Service\TaskService;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
@@ -151,6 +153,16 @@ final class FlowWiringTest extends TestCase {
 	}//end testTheTaskRowPortIsAnsweredByTheTaskInbox()
 
 	/**
+	 * The scheduled task sweep's candidate port is answered by the open overdue tasks query.
+	 *
+	 * @return void
+	 */
+	public function testTheOverdueTaskPortIsAnsweredByTheOverdueTaskQuery(): void {
+		self::assertSame(expected: OverdueOpenTasks::class, actual: ($this->aliases[OverdueTaskSourceInterface::class] ?? null));
+		self::assertTrue(condition: is_a(OverdueOpenTasks::class, OverdueTaskSourceInterface::class, true));
+	}//end testTheOverdueTaskPortIsAnsweredByTheOverdueTaskQuery()
+
+	/**
 	 * The run authorization is built on the container's flow access.
 	 *
 	 * @return void
@@ -161,7 +173,7 @@ final class FlowWiringTest extends TestCase {
 	}//end testTheFieldRulesPortIsAnsweredByTheStateResolver()
 
 	/**
-	 * The store of the flows compiled from application schedules and the task row port are bound, and only those aliases are registered.
+	 * The schedule flow store, the task row port and the overdue task port are bound, and only those aliases are registered.
 	 *
 	 * @return void
 	 */
@@ -171,6 +183,7 @@ final class FlowWiringTest extends TestCase {
 				FieldRulesSourceInterface::class  => StateFieldRuleResolver::class,
 				ScheduleFlowStoreInterface::class => ScheduleFlowStore::class,
 				TaskRowSourceInterface::class     => TaskInboxService::class,
+				OverdueTaskSourceInterface::class => OverdueOpenTasks::class,
 			],
 			actual: $this->aliases
 		);
