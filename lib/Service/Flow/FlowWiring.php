@@ -79,6 +79,7 @@ final class FlowWiring {
 	 */
 	public const BINDINGS = [
 		ScheduleFlowStoreInterface::class => ScheduleFlowStore::class,
+		\OCA\OpenRegister\Kernel\Contracts\Notifications\PartyRecipientsInterface::class => \OCA\OpenRegister\Service\Party\PartyRecipients::class,
 		PublicationRefusalInterface::class => PartyIndicatorGuard::class,
 		FlowRunSignalInterface::class => FlowRunSignalService::class,
 		LockObjectNodeInterface::class => LockObjectNode::class,
