@@ -29,9 +29,9 @@ use OCA\OpenRegister\Controller\Support\HybridSearchDiagnostics;
 use OCA\OpenRegister\Controller\Support\SettingsControllerServices;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Search\SearchBackendSettingsInterface;
 use OCA\OpenRegister\Search\BackgroundJob\SearchIndexRebuildJob;
 use OCA\OpenRegister\Search\Service\Search\SearchIndexMaintenanceInterface;
-use OCA\OpenRegister\Service\Settings\SearchBackendHandler;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\BackgroundJob\IJobList;
@@ -355,7 +355,7 @@ class SettingsController extends Controller {
 		$enabled = ($value === true || $value === 'true' || $value === '1');
 
 		try {
-			$handler = $this->container->get(SearchBackendHandler::class);
+			$handler = $this->container->get(SearchBackendSettingsInterface::class);
 			$handler->setAccentInsensitive(enabled: $enabled);
 			return new JSONResponse(data: $handler->getSearchBackendConfig());
 		} catch (InvalidArgumentException $e) {

@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Service\Settings;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\MagicMapper\AccentFoldingSetting;
 use OCA\OpenRegister\Db\MagicMapper\MagicUnaccentProbe;
+use OCA\OpenRegister\Kernel\Contracts\Search\SearchBackendSettingsInterface;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
@@ -49,7 +50,7 @@ use Psr\Log\LoggerInterface;
  *
  * @link https://www.OpenRegister.nl
  */
-class SearchBackendHandler {
+class SearchBackendHandler implements SearchBackendSettingsInterface {
 
 	/**
 	 * Whether the database can fold accents; built on first use.

@@ -51,6 +51,7 @@ use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentValues;
 use OCA\OpenRegister\Service\ConfigurationService;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Search\SearchBackendSettingsInterface;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCA\OpenRegister\Service\Settings\CacheSettingsHandler;
 use OCA\OpenRegister\Service\Settings\ConfigurationSettingsHandler;
@@ -483,6 +484,9 @@ final class ConfigurationServiceRegistrar {
 
 		// Register TenantKeyService for audit-trail HMAC key management.
 		$context->registerService(TenantKeyService::class, self::buildTenantKeyService(...));
+
+		// The search settings API reads the search backend settings through Search's contract.
+		$context->registerServiceAlias(SearchBackendSettingsInterface::class, SearchBackendHandler::class);
 	}//end registerSettingsServices()
 
 	/**

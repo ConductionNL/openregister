@@ -72,7 +72,7 @@ deptrac:
               value: 'lib/Support/.*$'
           must_not:
             - type: directory
-              value: 'lib/Kernel/Contracts/(Core)/.*$'
+              value: 'lib/Kernel/Contracts/(Core|Integrations|Search)/.*$'
     - name: Core
       collectors:
         - type: directory
@@ -2760,6 +2760,8 @@ deptrac:
     - name: Integrations
       collectors:
         - type: directory
+          value: 'lib/Kernel/Contracts/Integrations/.*$'
+        - type: directory
           value: 'lib/AppHost/[^/]*$'
         - type: directory
           value: 'lib/AppHost/Controller/[^/]*$'
@@ -3105,6 +3107,8 @@ deptrac:
           value: 'lib/Service/(FileFolderServiceInterface|FileHandlerSupportInterface|FileReaderInterface|FileServiceInterface|FileWriterInterface)[.]php$'
     - name: Search
       collectors:
+        - type: directory
+          value: 'lib/Kernel/Contracts/Search/.*$'
         - type: directory
           value: 'lib/Controller/(SettingsController)[.]php$'
         - type: directory

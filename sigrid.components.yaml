@@ -40,7 +40,7 @@ components:
       - ".*/lib/Service/Schemas/PropertyValidatorHandlerInterface[.]php"
       - ".*/lib/Support/.*"
     exclude:
-      - ".*/lib/Kernel/Contracts/(Core)/.*"
+      - ".*/lib/Kernel/Contracts/(Core|Integrations|Search)/.*"
   - name: Core
     include:
       - ".*/lib/Kernel/Contracts/Core/.*"
@@ -1389,6 +1389,7 @@ components:
       - ".*/lib/Service/Quality/QualityAuditStores[.]php"
   - name: Integrations
     include:
+      - ".*/lib/Kernel/Contracts/Integrations/.*"
       - ".*/lib/AppHost/[^/]*"
       - ".*/lib/AppHost/Controller/[^/]*"
       - ".*/lib/AppHost/Controller/Support/[^/]*"
@@ -1564,6 +1565,7 @@ components:
       - ".*/lib/Service/(FileFolderServiceInterface|FileHandlerSupportInterface|FileReaderInterface|FileServiceInterface|FileWriterInterface)[.]php"
   - name: Search
     include:
+      - ".*/lib/Kernel/Contracts/Search/.*"
       - ".*/lib/Controller/(SettingsController)[.]php"
       - ".*/lib/Db/(SearchTrailCleanupInterface|SearchTrailCriteria|SearchTrailMapperInterface)[.]php"
       - ".*/lib/Db/SearchTrail/[^/]*"

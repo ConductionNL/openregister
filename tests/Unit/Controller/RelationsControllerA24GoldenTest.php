@@ -35,6 +35,7 @@ use OCA\OpenRegister\Service\DeckCardService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\TalkLinkService;
 use OCA\OpenRegister\Service\TalkLinkServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Integrations\LinkedFlowOperationsInterface;
 use OCA\OpenRegister\Service\TaskService;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\RelationsControllerFactory;
 use OCA\OpenRegister\Tests\Unit\Support\RegistersContainerServices;
@@ -264,6 +265,25 @@ class RelationsControllerA24GoldenTest extends TestCase {
 			$this->controller->index('reg', 'sch', 'id-1')->getData()
 		);
 	}//end testLeafFailuresAndAbsentLeaves()
+
+	/**
+	 * The flow type reads the linked operations through Integrations' flow-link port.
+	 *
+	 * @return void
+	 */
+	public function testTheFlowTypeReadsThroughItsPort(): void {
+		$this->readable(uuid: 'u-1');
+		$this->request->method('getParams')->willReturn(['types' => 'flow']);
+		$flow = $this->createMock(LinkedFlowOperationsInterface::class);
+		$flow->method('isFlowAvailable')->willReturn(true);
+		$flow->expects($this->once())->method('getLinkedOperations')->with('u-1')->willReturn([['operationId' => 7]]);
+		$this->registerService(LinkedFlowOperationsInterface::class, fn () => $flow);
+
+		$this->assertSame(
+			['flow' => ['results' => [['operationId' => 7]], 'total' => 1]],
+			$this->controller->index('reg', 'sch', 'id-1')->getData()
+		);
+	}//end testTheFlowTypeReadsThroughItsPort()
 
 	/**
 	 * A failing core type is an error log and an `_errors` entry after the others.

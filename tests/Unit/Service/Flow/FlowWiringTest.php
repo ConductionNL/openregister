@@ -14,6 +14,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Integrations\LinkedFlowOperationsInterface;
 use OCA\OpenRegister\Service\Flow\FlowAccess;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistryInterface;
 use OCA\OpenRegister\Service\Flow\FlowRegistrar;
@@ -24,6 +25,7 @@ use OCA\OpenRegister\Service\Flow\FlowRunnableGuard;
 use OCA\OpenRegister\Service\Flow\FlowService;
 use OCA\OpenRegister\Service\Flow\FlowStepDispatcher;
 use OCA\OpenRegister\Service\Flow\FlowWiring;
+use OCA\OpenRegister\Service\FlowLinkServiceInterface;
 use OCA\OpenRegister\Service\Flow\RegistryStepDispatcher;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
@@ -150,7 +152,7 @@ final class FlowWiringTest extends TestCase {
 	}//end testTheFieldRulesPortIsAnsweredByTheStateResolver()
 
 	/**
-	 * The store of the flows compiled from application schedules is bound, and only the two aliases are registered.
+	 * The store of the flows compiled from application schedules is bound, and only the three aliases are registered.
 	 *
 	 * @return void
 	 */
@@ -159,11 +161,22 @@ final class FlowWiringTest extends TestCase {
 			expected: [
 				FieldRulesSourceInterface::class  => StateFieldRuleResolver::class,
 				ScheduleFlowStoreInterface::class => ScheduleFlowStore::class,
+				LinkedFlowOperationsInterface::class => FlowLinkServiceInterface::class,
 			],
 			actual: $this->aliases
 		);
 		self::assertSame(expected: FlowWiring::BINDINGS, actual: FlowRegistrar::BINDINGS);
 	}//end testTheScheduleFlowStoreIsBound()
+
+	/**
+	 * The relations API's flow-link port resolves to the flow link service, which implements it.
+	 *
+	 * @return void
+	 */
+	public function testTheLinkedFlowOperationsPortIsAnsweredByTheFlowLinkService(): void {
+		self::assertSame(expected: FlowLinkServiceInterface::class, actual: ($this->aliases[LinkedFlowOperationsInterface::class] ?? null));
+		self::assertTrue(is_subclass_of(FlowLinkServiceInterface::class, LinkedFlowOperationsInterface::class));
+	}//end testTheLinkedFlowOperationsPortIsAnsweredByTheFlowLinkService()
 
 	public function testTheRunAuthorizationGetsTheFlowAccess(): void {
 		$built = ($this->factories[FlowRunAuthorization::class])($this->container);
