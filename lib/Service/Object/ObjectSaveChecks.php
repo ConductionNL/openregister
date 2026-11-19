@@ -26,8 +26,8 @@ namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\Core\DependentValueCheckInterface;
 use OCA\OpenRegister\Listener\CodedValueValidationListener;
-use OCA\OpenRegister\Listener\DependentValueListener;
 
 /**
  * Collects the ObjectSaveCheck rules, in the order their listeners are
@@ -50,7 +50,7 @@ class ObjectSaveChecks {
 	 * Constructor.
 	 *
 	 * @param CodedValueValidationListener $codedValues     The coded-value and concept-shape rule.
-	 * @param DependentValueListener       $dependentValues The dependent-value rule.
+	 * @param DependentValueCheckInterface $dependentValues The dependent-value rule.
 	 *
 	 * @return void
 	 *
@@ -58,7 +58,7 @@ class ObjectSaveChecks {
 	 */
 	public function __construct(
 		CodedValueValidationListener $codedValues,
-		DependentValueListener $dependentValues,
+		DependentValueCheckInterface $dependentValues,
 	) {
 		$this->checks = [$codedValues, $dependentValues];
 	}//end __construct()

@@ -13,6 +13,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\BulkRowRefusalsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\DependentValueCheckInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionDefaultsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
 use OCA\OpenRegister\Service\Flow\FlowAccess;
@@ -43,6 +45,8 @@ use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendars;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
+use OCA\OpenRegister\Listener\DependentValueListener;
+use OCA\OpenRegister\Service\Dmn\DecisionTableBulkGuard;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaults;
 use OCA\OpenRegister\Service\Party\PartySearchInterface;
 use OCA\OpenRegister\Service\Party\PartySearchService;
@@ -180,6 +184,18 @@ final class FlowWiringTest extends TestCase {
 	}//end testTheExpressionDefaultsPortIsAnsweredByTheRulesEngine()
 
 	/**
+	 * The Core save-rule ports are answered by the decision-table guard and the dependent-value rule.
+	 *
+	 * @return void
+	 */
+	public function testTheSaveRulePortsAreAnsweredByTheRulesEngine(): void {
+		self::assertSame(expected: DecisionTableBulkGuard::class, actual: ($this->aliases[BulkRowRefusalsInterface::class] ?? null));
+		self::assertTrue(condition: is_a(DecisionTableBulkGuard::class, BulkRowRefusalsInterface::class, true));
+		self::assertSame(expected: DependentValueListener::class, actual: ($this->aliases[DependentValueCheckInterface::class] ?? null));
+		self::assertTrue(condition: is_a(DependentValueListener::class, DependentValueCheckInterface::class, true));
+	}//end testTheSaveRulePortsAreAnsweredByTheRulesEngine()
+
+	/**
 	 * The schedule flow store and the area's own interfaces are bound, and only these aliases are registered.
 	 *
 	 * @return void
@@ -199,6 +215,8 @@ final class FlowWiringTest extends TestCase {
 				PartySearchInterface::class                => PartySearchService::class,
 				FlowConsentSweepInterface::class           => FlowConsentParking::class,
 				ExpressionDefaultsInterface::class         => ExpressionDefaults::class,
+				BulkRowRefusalsInterface::class            => DecisionTableBulkGuard::class,
+				DependentValueCheckInterface::class        => DependentValueListener::class,
 			],
 			actual: $this->aliases
 		);
