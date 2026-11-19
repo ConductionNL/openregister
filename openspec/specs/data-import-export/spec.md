@@ -1450,6 +1450,38 @@ A configuration bundle uploaded to a register by a caller who is not an administ
 - **THEN** the importer MUST get the register's application as the app id
 - @e2e exclude {controller unit test}
 
+### Requirement: An import MUST NOT write its configuration into the log
+
+A stack trace created while a configuration import runs MUST NOT carry the arguments of its frames. Every frame of an import holds the decoded configuration, and Nextcloud writes the arguments of a logged trace into its log, unabridged at the debug level, which `occ upgrade` always uses. The setting that withholds them MUST be in effect for the import only and MUST be put back afterwards, also when the import throws. Measured on an app with 538 schemas before this requirement: 6.8 MB a log entry, four entries a schema, and 895 of 901 seconds of the import spent writing them (#9945).
+
+#### Scenario: A trace logged during an import
+- **GIVEN** PHP running with `zend.exception_ignore_args` off
+- **WHEN** an exception is created while `importFromApp()` or `importFromJson()` runs
+- **THEN** its trace MUST hold the frames and MUST NOT hold their arguments
+- @e2e exclude {process-level setting with no screen of its own; covered by TraceArgumentsTest}
+
+#### Scenario: After the import
+- **GIVEN** PHP running with `zend.exception_ignore_args` off
+- **WHEN** the import has returned or thrown
+- **THEN** the setting MUST be off again
+- @e2e exclude {process-level setting with no screen of its own; covered by TraceArgumentsTest}
+
+### Requirement: The second schema pass MUST write only what resolving references changed
+
+A configuration import creates or updates every schema in a first pass and imports each again in a second, so a reference to a schema declared later in the file resolves. In the second pass a schema MUST NOT be written when the definition about to be written, references resolved, is identical to the definition the first pass of the same import wrote for it: no store write, no shipped baseline write, no changelog entry and no installer run. A schema the first pass did not write, because it was unchanged, MUST still be imported by the second pass as before. What the first pass wrote MUST NOT be remembered beyond the import's second pass, so an import of a single schema outside a run always writes.
+
+#### Scenario: A schema without references
+- **GIVEN** a configuration in which `product` references no other schema
+- **WHEN** the configuration is imported
+- **THEN** `product` MUST be written once
+- @e2e exclude {backend import path with no screen of its own; covered by ImportHandlerSecondPassTest}
+
+#### Scenario: A schema referencing one declared after it
+- **GIVEN** a configuration in which `order` references `customer`, declared after it
+- **WHEN** the configuration is imported
+- **THEN** `order` MUST be written in the first pass and again in the second, and MUST end up holding the id of `customer`
+- @e2e exclude {backend import path with no screen of its own; covered by ImportHandlerSecondPassTest}
+
 ## Current Implementation Status
 - **Implemented:**
   - `ImportService` (`lib/Service/ImportService.php`) with `importFromCsv()` and `importFromExcel()` methods for batch import with ReactPHP optimization
