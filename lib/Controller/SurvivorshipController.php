@@ -36,11 +36,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Survivorship\MasterRecord;
 use OCA\OpenRegister\Service\Survivorship\SourceRecordResolverInterface;
@@ -109,7 +109,7 @@ class SurvivorshipController extends Controller {
 		IRequest $request,
 		SurvivorshipControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->objectService = $services->objectService;
 		$this->schemaMapper = $services->schemaMapper;
 		$this->sourceRecordResolver = $services->sourceRecordResolver;

@@ -55,10 +55,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\PermissionsAuditControllerServices;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Rbac\AdminGateInterface;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementModeInterface;
 use OCA\OpenRegister\Service\Rbac\DenyResolverInterface;
@@ -135,7 +135,7 @@ class PermissionsAuditController extends Controller {
 		IRequest $request,
 		PermissionsAuditControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->catalogue = $services->rules->catalogue;
 		$this->enforcement = $services->rules->enforcement;
 		$this->denyResolver = $services->rules->denyResolver;
