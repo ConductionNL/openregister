@@ -29,8 +29,8 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Service\ShippedRegister;
 use OCA\OpenRegister\Controller\Support\AdministratorOnlyGate;
+use OCA\OpenRegister\Kernel\Contracts\AdminSettingDelegation;
 use OCA\OpenRegister\Service\RegisterDescriptorServiceInterface;
-use OCA\OpenRegister\Settings\OpenRegisterAdmin;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
 use OCP\AppFramework\Http\JSONResponse;
@@ -150,11 +150,12 @@ class RegisterDescriptorController extends Controller {
 	 * green gate — the panel posts through axios with Nextcloud's request token,
 	 * so it needs nothing of the sort. `AuthorizedAdminSetting` declares the
 	 * posture the body actually enforces, which is what both gates are asking
-	 * for. Bound to OpenRegisterAdmin, the panel this endpoint serves.
+	 * for. Bound to the OpenRegisterAdmin panel this endpoint serves, by its
+	 * delegation id.
 	 *
 	 * @spec openspec/specs/register-descriptor-admin/spec.md
 	 */
-	#[AuthorizedAdminSetting(settings: OpenRegisterAdmin::class)]
+	#[AuthorizedAdminSetting(settings: AdminSettingDelegation::OPEN_REGISTER_ADMIN)]
 	public function import(string $appId, string $slug): JSONResponse {
 		return ($this->requireAdmin() ?? $this->reimport(appId: $appId, slug: $slug));
 	}//end import()
