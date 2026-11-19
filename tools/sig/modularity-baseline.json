@@ -122,9 +122,6 @@
   "lib/Controller/ObjectRelationsController.php -> lib/Service/Export/SpreadsheetCell.php",
   "lib/Controller/ObjectsController.php -> lib/Files/Service/File/BulkDownloadArchive.php",
   "lib/Controller/ObjectsController.php -> lib/Listener/ChangeGateListener.php",
-  "lib/Controller/ObjectsController.php -> lib/Notifications/Service/PresenceBeat.php",
-  "lib/Controller/ObjectsController.php -> lib/Notifications/Service/PresenceLookup.php",
-  "lib/Controller/ObjectsController.php -> lib/Notifications/Service/PresenceServiceInterface.php",
   "lib/Controller/ObjectsController.php -> lib/Search/Service/Geo/FeatureShape.php",
   "lib/Controller/ObjectsController.php -> lib/Search/Service/Geo/GeoResponseCrsFactory.php",
   "lib/Controller/ObjectsController.php -> lib/Search/Service/Geo/GeoResponseCrsInterface.php",
@@ -1875,6 +1872,7 @@
   "lib/Kernel/Contracts/ConversationInterface.php",
   "lib/Kernel/Contracts/ConversationMapperInterface.php",
   "lib/Kernel/Contracts/Core/FieldRulesSourceInterface.php",
+  "lib/Kernel/Contracts/Core/ObjectPresenceInterface.php",
   "lib/Kernel/Contracts/DeckPlacement.php",
   "lib/Kernel/Contracts/DocumentProcessingHandlerInterface.php",
   "lib/Kernel/Contracts/EmbeddingGeneratorInterface.php",
@@ -2092,9 +2090,6 @@
   "lib/Notifications/Service/Notification/TaskNotificationRulesInterface.php",
   "lib/Notifications/Service/Notification/TaskTransitionNotifierInterface.php",
   "lib/Notifications/Service/Notification/TransitionNotice.php",
-  "lib/Notifications/Service/PresenceBeat.php",
-  "lib/Notifications/Service/PresenceLookup.php",
-  "lib/Notifications/Service/PresenceServiceInterface.php",
   "lib/Notifications/Service/Timeline/PublicTimelineInterface.php",
   "lib/Notifications/Service/TimelineVisibilityServiceInterface.php",
   "lib/Notifications/Service/Webhook/CloudEventAttributes.php",
@@ -3550,11 +3545,11 @@
  "exposed_loc": {
   "Compliance": 16384,
   "Configuration": 10272,
-  "Core": 66030,
+  "Core": 66037,
   "Files": 3741,
   "Integrations": 18733,
   "Kernel": 8249,
-  "Notifications": 1734,
+  "Notifications": 1696,
   "Platform": 1514,
   "Processes": 33887,
   "Search": 2270
@@ -3987,6 +3982,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 9716,
- "total_loc": 458895,
- "violation_degree": 0.1199
+ "total_loc": 458927,
+ "violation_degree": 0.1195
 }
