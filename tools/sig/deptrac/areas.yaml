@@ -78,9 +78,23 @@ deptrac:
         - type: directory
           value: 'lib/Kernel/Contracts/Core/.*$'
         - type: directory
-          value: 'lib/BackgroundJob/(AbstractRetentionJob|ActorForwardedJob|DbalIntrospectionJob|DeferredObjectEventJob|DestructionExecutionJob|DraftExpiryJob|GroupReconcilerJob|JobHandles|JobRuntime|LogCleanUpTask|ObjectCleanupJob|PublishedDigestVerifyJob|QueuedJobClassesInterface|SchemaChangeNoticeJob|SchemaRunJob|StateHistoryRebuildJob|TenantDeprovisionJob|TenantPurgeJob|TenantUsageSyncJob|TransferAttemptRun|TransferCheckJob|TransferExecutionJob|ViewAlertSweepJob)[.]php$'
+          value: 'lib/BackgroundJob/(AbstractRetentionJob|ActorForwardedJob|ConfiguredJobRuntime|DbalIntrospectionJob|DeferredObjectEventJob|DraftExpiryJob|GroupReconcilerJob|JobHandles|JobRuntime|LogCleanUpTask|ObjectCleanupJob|PublishedDigestVerifyJob|QueuedJobClassesInterface|SchemaChangeNoticeJob|SchemaRunJob|StateHistoryRebuildJob|TenantDeprovisionJob|TenantPurgeJob|TenantUsageSyncJob|TransferAttemptRun|TransferExecutionJob|ViewAlertSweepJob)[.]php$'
         - type: directory
           value: 'lib/BackgroundJob/Support/ActorForwardingServices[.]php$'
+        - type: directory
+          value: 'lib/BackgroundJob/Support/DeferredObjectEventActor[.]php$'
+        - type: directory
+          value: 'lib/BackgroundJob/Support/DeferredObjectEventLookup[.]php$'
+        - type: directory
+          value: 'lib/BackgroundJob/Support/DeferredObjectEventPlatform[.]php$'
+        - type: directory
+          value: 'lib/BackgroundJob/Support/ScheduledJobRuntime[.]php$'
+        - type: directory
+          value: 'lib/BackgroundJob/Support/SchemaRunServices[.]php$'
+        - type: directory
+          value: 'lib/BackgroundJob/Support/StateHistoryRebuildSources[.]php$'
+        - type: directory
+          value: 'lib/BackgroundJob/Support/TenantRecords[.]php$'
         - type: directory
           value: 'lib/Command/(AdoptLeafOrganisationsCommand|AdoptOrganisationlessRowsCommand|AdoptionRun|BackfillObjectSlugsCommand|DeclaredGroupsCommand|DedupCollidedSchemasCommand|DedupeRegistersCommand|DescriptorImportTarget|DocumentStoreStatusCommand|DraftsExpiredCommand|EncryptFieldCommand|FederationSharesExpiringCommand|FieldEncryptionPass|LeafMatch|MagicTableCommand|MagicTableRun|MagicTableSelection|MagicTableTarget|PruneRetiredSchemasCommand|PruneRetiredSchemasPass|PruneRetiredSchemasRun|PurgeCandidate|PurgeObjectCommand|PurgeRun|RegisterRepairOptions|RelinkRegisterSchemasCommand|ResolverListCommand|RetiredSchemaRow|RetiredSlugRows|SchemaDedupRun|UnknownMetadataConditionsCommand)[.]php$'
         - type: directory
@@ -2554,7 +2568,7 @@ deptrac:
     - name: Compliance
       collectors:
         - type: directory
-          value: 'lib/BackgroundJob/(AbstractTextExtractionJob|ArchivalRetentionTask|ArchivalRowExpiry|ArchivalSweep|AuditExportDelivery|AuditExportSource|AuditSealJob|AuditTrailExportJob|AvgRetentionJob|BlobGroup|BlobMigrationRun|BulkLegalHoldJob|ConfiguredJobRuntime|ConnectionSeamReportJob|DestructionCheckJob|DestructionExecutionJobInterface|DestructionListRun|DsarDpiaDetectionJob|DsarRetentionSweepJob|ExternalGrantLapseJob|ProcessingLogPrune|ProcessingLogRetentionJob|QualityAuditScheduleJob|RelatedRetentionRecalculationJob|ReviewReminderJob|SharerAccessSweepJob|SubjectExportJob)[.]php$'
+          value: 'lib/BackgroundJob/(AbstractTextExtractionJob|ArchivalRetentionTask|ArchivalRowExpiry|ArchivalSweep|AuditExportDelivery|AuditExportSource|AuditSealJob|AuditTrailExportJob|AvgRetentionJob|BlobGroup|BlobMigrationRun|BulkLegalHoldJob|ConnectionSeamReportJob|DestructionCheckJob|DestructionExecutionJob|DestructionExecutionJobInterface|DestructionListRun|DsarDpiaDetectionJob|DsarRetentionSweepJob|ExternalGrantLapseJob|ProcessingLogPrune|ProcessingLogRetentionJob|QualityAuditScheduleJob|RelatedRetentionRecalculationJob|ReviewReminderJob|SharerAccessSweepJob|SubjectExportJob|TransferCheckJob)[.]php$'
         - type: directory
           value: 'lib/BackgroundJob/Support/AbandonedFlowClaim[.]php$'
         - type: directory
@@ -2571,12 +2585,6 @@ deptrac:
           value: 'lib/BackgroundJob/Support/BulkJobServices[.]php$'
         - type: directory
           value: 'lib/BackgroundJob/Support/ConfigurationCheckServices[.]php$'
-        - type: directory
-          value: 'lib/BackgroundJob/Support/DeferredObjectEventActor[.]php$'
-        - type: directory
-          value: 'lib/BackgroundJob/Support/DeferredObjectEventLookup[.]php$'
-        - type: directory
-          value: 'lib/BackgroundJob/Support/DeferredObjectEventPlatform[.]php$'
         - type: directory
           value: 'lib/BackgroundJob/Support/DestructionCheckRun[.]php$'
         - type: directory
@@ -2602,17 +2610,9 @@ deptrac:
         - type: directory
           value: 'lib/BackgroundJob/Support/RetentionDependantPlace[.]php$'
         - type: directory
-          value: 'lib/BackgroundJob/Support/ScheduledJobRuntime[.]php$'
-        - type: directory
-          value: 'lib/BackgroundJob/Support/SchemaRunServices[.]php$'
-        - type: directory
-          value: 'lib/BackgroundJob/Support/StateHistoryRebuildSources[.]php$'
-        - type: directory
           value: 'lib/BackgroundJob/Support/SyncDataServices[.]php$'
         - type: directory
           value: 'lib/BackgroundJob/Support/TenantPurgeStores[.]php$'
-        - type: directory
-          value: 'lib/BackgroundJob/Support/TenantRecords[.]php$'
         - type: directory
           value: 'lib/BackgroundJob/Support/TransferCheckServices[.]php$'
         - type: directory

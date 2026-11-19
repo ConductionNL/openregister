@@ -96,7 +96,7 @@ BackgroundJob/ContextChatSubmissionJob.php,,BackgroundJob,,,,,Integrations
 BackgroundJob/DbalIntrospectionJob.php,62,BackgroundJob,Service,Service/BackgroundJob/DbalIntrospectionJob.php,0,,Core
 BackgroundJob/DeferredObjectEventJob.php,80,BackgroundJob,Service,Service/BackgroundJob/DeferredObjectEventJob.php,0,,Core
 BackgroundJob/DestructionCheckJob.php,213,BackgroundJob,Compliance,Compliance/BackgroundJob/DestructionCheckJob.php,0,,Compliance
-BackgroundJob/DestructionExecutionJob.php,28,BackgroundJob,Service,Service/BackgroundJob/DestructionExecutionJob.php,0,105,Core
+BackgroundJob/DestructionExecutionJob.php,28,BackgroundJob,Service,Service/BackgroundJob/DestructionExecutionJob.php,0,105,Compliance
 BackgroundJob/DestructionListRun.php,184,BackgroundJob,Compliance,Compliance/BackgroundJob/DestructionListRun.php,0,,Compliance
 BackgroundJob/DraftExpiryJob.php,48,BackgroundJob,Service,Service/BackgroundJob/DraftExpiryJob.php,0,,Core
 BackgroundJob/DsarDpiaDetectionJob.php,177,BackgroundJob,Compliance,Compliance/BackgroundJob/DsarDpiaDetectionJob.php,0,,Compliance
@@ -138,7 +138,7 @@ BackgroundJob/TemporalCalculationSweepJob.php,63,BackgroundJob,Flows,Flows/Backg
 BackgroundJob/TenantDeprovisionJob.php,50,BackgroundJob,Access,Access/BackgroundJob/TenantDeprovisionJob.php,0,,Core
 BackgroundJob/TenantPurgeJob.php,85,BackgroundJob,Access,Access/BackgroundJob/TenantPurgeJob.php,0,,Core
 BackgroundJob/TenantUsageSyncJob.php,84,BackgroundJob,Access,Access/BackgroundJob/TenantUsageSyncJob.php,0,,Core
-BackgroundJob/TransferCheckJob.php,78,BackgroundJob,Access,Access/BackgroundJob/TransferCheckJob.php,0,,Core
+BackgroundJob/TransferCheckJob.php,78,BackgroundJob,Access,Access/BackgroundJob/TransferCheckJob.php,0,,Compliance
 BackgroundJob/TransferExecutionJob.php,143,BackgroundJob,Access,Access/BackgroundJob/TransferExecutionJob.php,0,,Core
 BackgroundJob/TranslationProjectionJob.php,51,BackgroundJob,Flows,Flows/BackgroundJob/TranslationProjectionJob.php,0,,Processes
 BackgroundJob/ViewAlertSweepJob.php,121,BackgroundJob,Service,Service/BackgroundJob/ViewAlertSweepJob.php,0,,Core
@@ -3555,7 +3555,7 @@ BackgroundJob/AuditExportDelivery.php,,BackgroundJob,,,,,Compliance
 BackgroundJob/AuditExportSource.php,,BackgroundJob,,,,,Compliance
 BackgroundJob/CalendarLinkBackfillRun.php,,BackgroundJob,,,,,Integrations
 BackgroundJob/CalendarRecomputeJobInterface.php,,BackgroundJob,,,,,Integrations
-BackgroundJob/ConfiguredJobRuntime.php,,BackgroundJob,,,,,Compliance
+BackgroundJob/ConfiguredJobRuntime.php,,BackgroundJob,,,,,Core
 BackgroundJob/DestructionExecutionJobInterface.php,,BackgroundJob,,,,,Compliance
 BackgroundJob/FlowRunRecoveryServices.php,,BackgroundJob,,,,,Processes
 BackgroundJob/FlowRunWorkerServices.php,,BackgroundJob,,,,,Processes
@@ -4412,3 +4412,10 @@ Db/PlatformMapperBindings.php,,Db,,,,,Platform
 Db/PlatformMapperRegistrar.php,,Db,,,,,Platform
 Service/PlatformServiceBindings.php,,Service,,,,,Platform
 Service/PlatformServiceRegistrar.php,,Service,,,,,Platform
+BackgroundJob/Support/DeferredObjectEventActor.php,,BackgroundJob,,,,,Core
+BackgroundJob/Support/DeferredObjectEventLookup.php,,BackgroundJob,,,,,Core
+BackgroundJob/Support/DeferredObjectEventPlatform.php,,BackgroundJob,,,,,Core
+BackgroundJob/Support/SchemaRunServices.php,,BackgroundJob,,,,,Core
+BackgroundJob/Support/ScheduledJobRuntime.php,,BackgroundJob,,,,,Core
+BackgroundJob/Support/TenantRecords.php,,BackgroundJob,,,,,Core
+BackgroundJob/Support/StateHistoryRebuildSources.php,,BackgroundJob,,,,,Core
