@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\SchemaMapper\SchemaMapperServices;
 use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 use OCA\OpenRegister\Exception\UniqueHintException;
 use OCA\OpenRegister\Listener\ArchivalDeclarationChecksListener;
+use OCA\OpenRegister\Listener\HandoffDeclarationChecksListener;
 use OCA\OpenRegister\Listener\SchemaDeclarationChecksListener;
 use OCA\OpenRegister\Service\Calculation\CalculationDeclarationException;
 use OCA\OpenRegister\Service\Consent\ConsentDeclarationException;
@@ -93,6 +94,7 @@ final class SchemaDeclarationOrderTest extends TestCase {
 		$listener  = new SchemaDeclarationChecksListener(logger: new NullLogger(), container: $container);
 		$listener->handle(event: $event);
 		(new ArchivalDeclarationChecksListener(logger: new NullLogger()))->handle(event: $event);
+		(new HandoffDeclarationChecksListener())->handle(event: $event);
 		$contributed = array_map(static fn ($check): int => $check->position(), $event->checks());
 
 		$this->assertSame(expected: [], actual: array_intersect($own, $contributed), message: 'No slot is claimed twice');
@@ -175,6 +177,24 @@ final class SchemaDeclarationOrderTest extends TestCase {
 				['a' => ['type' => 'string']],
 				Exception::class,
 				'x-openregister-archival:',
+			],
+			'reference card (Core) before handoff contract (Integrations)' => [
+				['x-openregister-card' => 'nope', 'implements' => ['https://openregister.app/ns#Case'], 'handoffContract' => ['https://openregister.app/ns#Case' => []]],
+				['a' => ['type' => 'string']],
+				Exception::class,
+				'x-openregister-card:',
+			],
+			'handoff (Integrations) before external links (Core)' => [
+				['x-openregister-handoff' => [['id' => 'send']], 'x-openregister-external-links' => 'nope'],
+				['a' => ['type' => 'string']],
+				Exception::class,
+				'x-openregister-handoff:',
+			],
+			'handoff contract (Integrations) before external links (Core)' => [
+				['implements' => ['https://openregister.app/ns#Case'], 'handoffContract' => ['https://openregister.app/ns#Case' => []], 'x-openregister-external-links' => 'nope'],
+				['a' => ['type' => 'string']],
+				Exception::class,
+				'handoffContract:',
 			],
 		];
 	}//end severalConfigurationFaults()

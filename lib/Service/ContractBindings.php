@@ -22,6 +22,8 @@ namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ContactMatcherInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\RetentionSettingsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ExportGuardInterface;
 use OCA\OpenRegister\Kernel\Contracts\ExampleSetInstallerInterface;
 use OCA\OpenRegister\Kernel\Contracts\FlowTimerControlInterface;
 use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
@@ -38,6 +40,8 @@ use OCA\OpenRegister\Kernel\Contracts\ScheduledReportsInterface;
 use OCA\OpenRegister\Kernel\Contracts\SchemaExplorationInterface;
 use OCA\OpenRegister\Kernel\Contracts\TaskManagerInterface;
 use OCA\OpenRegister\Kernel\Contracts\VocabularyImporterInterface;
+use OCA\OpenRegister\Notifications\Service\ExampleSet\ExampleSetTimelineEntries;
+use OCA\OpenRegister\Notifications\Service\ExampleSet\ExampleSetTimelineRowsInterface;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunnerInterface;
 use OCA\OpenRegister\Service\Aggregation\WidgetAnnotationValidator;
@@ -842,6 +846,7 @@ final class ContractBindings {
 		ExampleSetRemoverInterface::class => ExampleSetRemover::class,
 		ExportAuditRecorderInterface::class => ExportAuditRecorder::class,
 		ExportGateInterface::class => ExportGate::class,
+		ExportGuardInterface::class => ExportGate::class,
 		ExportProfileServiceInterface::class => ExportProfileService::class,
 		ExportProfileWriterInterface::class => ExportProfileWriter::class,
 		ExplodeNodeInterface::class => ExplodeNode::class,
@@ -873,6 +878,8 @@ final class ContractBindings {
 		FileFolderServiceInterface::class => FileService::class,
 		FileHandlerSupportInterface::class => FileService::class,
 		FileReaderInterface::class => FileService::class,
+		\OCA\OpenRegister\Kernel\Contracts\Core\FileNodeLookupInterface::class => FileService::class,
+		\OCA\OpenRegister\Kernel\Contracts\Core\ObjectFolderLookupInterface::class => FileService::class,
 		FileServiceInterface::class => FileService::class,
 		FileWriterInterface::class => FileService::class,
 		FilterNodeInterface::class => FilterNode::class,
@@ -1014,6 +1021,7 @@ final class ContractBindings {
 		RegisterServiceInterface::class => RegisterService::class,
 		RelationGraphServiceInterface::class => RelationGraphService::class,
 		RetentionSettingsReaderInterface::class => ObjectRetentionHandler::class,
+		RetentionSettingsInterface::class => ObjectRetentionHandler::class,
 		ScheduledReportsInterface::class => ScheduledReportService::class,
 		SchemaApplicationMigratorInterface::class => SchemaApplicationMigrator::class,
 		SchemaCacheHandlerInterface::class => SchemaCacheHandler::class,
@@ -1067,6 +1075,7 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\ExampleSet\ExampleSetDailyRefreshInterface::class => \OCA\OpenRegister\Service\ExampleSet\ExampleSetDailyRefresh::class,
 		\OCA\OpenRegister\Service\ExampleSet\ExampleSetCatalogueInterface::class => \OCA\OpenRegister\Service\ExampleSet\ExampleSetCatalogue::class,
 		\OCA\OpenRegister\Service\ExampleSet\ExampleSetDailyMarksInterface::class => \OCA\OpenRegister\Service\ExampleSet\ExampleSetDailyRefresh::class,
+		ExampleSetTimelineRowsInterface::class => ExampleSetTimelineEntries::class,
 		OrganisationUsageServiceInterface::class => OrganisationUsageService::class,
 		TenantLifecycleServiceInterface::class => TenantLifecycleService::class,
 		\OCA\OpenRegister\Service\History\StateHistoryRebuildInterface::class => \OCA\OpenRegister\Service\History\StateHistoryRebuild::class,

@@ -37,14 +37,13 @@ use Closure;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\Types;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Add the roll and its explanation to timers and their events.
  *
  * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-budget-may-roll-its-end-date-to-a-working-day
  */
-class Version1Date20260918223000 extends SimpleMigrationStep {
+class Version1Date20260918223000 extends TargetedMigrationStep {
 
 	/**
 	 * The timer table.
@@ -71,7 +70,7 @@ class Version1Date20260918223000 extends SimpleMigrationStep {
 	 *
 	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-budget-may-roll-its-end-date-to-a-working-day
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ISchemaWrapper {
 		/*
 		 * @var ISchemaWrapper $schema
 		 */
@@ -106,5 +105,5 @@ class Version1Date20260918223000 extends SimpleMigrationStep {
 		}
 
 		return $schema;
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 }//end class

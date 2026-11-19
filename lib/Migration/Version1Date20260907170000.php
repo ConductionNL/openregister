@@ -36,12 +36,11 @@ use Closure;
 use Doctrine\DBAL\Types\Types;
 use OCP\DB\ISchemaWrapper;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Adds `subjects` to flow runs.
  */
-class Version1Date20260907170000 extends SimpleMigrationStep {
+class Version1Date20260907170000 extends TargetedMigrationStep {
 
 	private const RUNS = 'openregister_flow_runs';
 
@@ -56,7 +55,7 @@ class Version1Date20260907170000 extends SimpleMigrationStep {
 	 *
 	 * @spec openspec/specs/flow-run-subjects/spec.md
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		/*
 		 * @var ISchemaWrapper $schema
 		 */
@@ -76,5 +75,5 @@ class Version1Date20260907170000 extends SimpleMigrationStep {
 		$output->info(message: 'Added the declared-subject set to flow runs; subject_uuid is unchanged.');
 
 		return $schema;
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 }//end class
