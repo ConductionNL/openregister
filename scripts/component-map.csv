@@ -923,7 +923,7 @@ Event/AppWebhookEvents.php,87,Event,Event,Event/AppWebhookEvents.php,0,,Kernel
 Event/ApplicationCreatedEvent.php,14,Event,Event,Event/ApplicationCreatedEvent.php,0,,Kernel
 Event/ApplicationDeletedEvent.php,14,Event,Event,Event/ApplicationDeletedEvent.php,0,,Kernel
 Event/ApplicationUpdatedEvent.php,19,Event,Event,Event/ApplicationUpdatedEvent.php,0,,Kernel
-Event/BulkActionRegistrationEvent.php,16,Event,Event,Event/BulkActionRegistrationEvent.php,5,,Kernel
+Event/BulkActionRegistrationEvent.php,16,Event,Event,Event/BulkActionRegistrationEvent.php,5,,Processes
 Event/CaseItemTransitionedEvent.php,33,Event,Event,Event/CaseItemTransitionedEvent.php,0,,Kernel
 Event/ConfigurationCreatedEvent.php,14,Event,Event,Event/ConfigurationCreatedEvent.php,0,,Kernel
 Event/ConfigurationDeletedEvent.php,14,Event,Event,Event/ConfigurationDeletedEvent.php,0,,Kernel
@@ -994,7 +994,7 @@ Event/SourceUpdatedEvent.php,22,Event,Event,Event/SourceUpdatedEvent.php,0,,Kern
 Event/TaskSequenceCompletedEvent.php,28,Event,Event,Event/TaskSequenceCompletedEvent.php,18,,Kernel
 Event/TaskSequenceUndecidedEvent.php,20,Event,Event,Event/TaskSequenceUndecidedEvent.php,0,,Kernel
 Event/TaskTerminalEvent.php,28,Event,Event,Event/TaskTerminalEvent.php,103,,Kernel
-Event/TaskTransitionedEvent.php,33,Event,Event,Event/TaskTransitionedEvent.php,19,,Kernel
+Event/TaskTransitionedEvent.php,33,Event,Event,Event/TaskTransitionedEvent.php,19,,Processes
 Event/ToolRegistrationEvent.php,15,Event,Event,Event/ToolRegistrationEvent.php,10,,Kernel
 Event/UserProfileUpdatedEvent.php,41,Event,Event,Event/UserProfileUpdatedEvent.php,17,,Kernel
 Event/ViewAlertCrossedEvent.php,25,Event,Event,Event/ViewAlertCrossedEvent.php,0,,Kernel
