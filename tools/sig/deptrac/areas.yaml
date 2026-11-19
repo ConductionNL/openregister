@@ -1938,6 +1938,8 @@ deptrac:
         - type: directory
           value: 'lib/Repair/(BackfillFlowSemanticVersions|BackfillFlowTriggerIndex|BackfillFlowVersions|FlowNodeTypeRewrite|FlowTimerRegisterPathInterface|FlowVersionBackfillTally|FlowVersionNumbering|IntakeSourceRegisterSlugsInterface|MigrateApprovalChainsToTasks|MigrateRenamedFlowNodeTypes|PhantomFlowPurgeRun|ReportUnpublishedSchedules|SeedCaseFixtures|SeedFlowRunTriggerSubject|SeedFlowTimerRegister|SeedTaskFixtures|TaskSubjectLocationBackfill|V1ChainVerificationRun)[.]php$'
         - type: directory
+          value: 'lib/Search/FlowTasksProvider[.]php$'
+        - type: directory
           value: 'lib/Service/(ApprovalChainAnnotationInstaller|AutomationRecordService|AutomationRecordWriter|BulkActionRegistry|BulkTranslationService|CalendarEventService|CalendarScanRun|CommentsCollectionCatalog|ContactMatchQuery|ContactMatchingService|FlowJsonColumn|FlowLinkPlatform|FlowLinkService|FlowLinkServiceInterface|ObjectTranslationRequest|OperationsConsoleJobs|OperationsConsoleNotifications|OperationsConsoleRules|OperationsConsoleServiceInterface|PropertyTranslation|SequenceServiceInterface|StoredEvent|StoredTask|TaskService|TaskVtodoDocument)[.]php$'
         - type: directory
           value: 'lib/Service/BulkJob/BulkJobActionCall[.]php$'
@@ -3112,7 +3114,21 @@ deptrac:
         - type: directory
           value: 'lib/Listener/(ViewAlertAudience|ViewAlertMail)[.]php$'
         - type: directory
-          value: 'lib/Search/[^/]*$'
+          value: 'lib/Search/ObjectsProvider[.]php$'
+        - type: directory
+          value: 'lib/Search/ObjectsProviderOutput[.]php$'
+        - type: directory
+          value: 'lib/Search/SearchProviderRegistrar[.]php$'
+        - type: directory
+          value: 'lib/Search/SearchRegistrar[.]php$'
+        - type: directory
+          value: 'lib/Search/SearchScopeCatalog[.]php$'
+        - type: directory
+          value: 'lib/Search/SearchScopeTargets[.]php$'
+        - type: directory
+          value: 'lib/Search/SearchScopes[.]php$'
+        - type: directory
+          value: 'lib/Search/SearchWiring[.]php$'
         - type: directory
           value: 'lib/Search/BackgroundJob/[^/]*$'
         - type: directory

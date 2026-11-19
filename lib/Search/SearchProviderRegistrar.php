@@ -43,10 +43,8 @@ final class SearchProviderRegistrar {
 	public static function register(IRegistrationContext $context): void {
 		$context->registerSearchProvider(ObjectsProvider::class);
 
-		// The flow tasks the searcher would see in their inbox (flow-task-search-provider).
-		$context->registerSearchProvider(FlowTasksProvider::class);
-
-		// The timeline entries beside the objects have their own provider,
-		// registered by the Notifications component that owns it.
+		// The timeline entries beside the objects and the flow tasks in the
+		// searcher's inbox have their own providers, registered by the
+		// Notifications and Processes components that own them.
 	}//end register()
 }//end class
