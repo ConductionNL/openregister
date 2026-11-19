@@ -30,7 +30,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\AppHost\Service;
 
-use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use Psr\Container\ContainerInterface;
@@ -88,7 +87,7 @@ class LocalStoreRegistry {
 		try {
 			// The concrete class: not every app's container aliases the interface.
 			$objects = $this->container->get(ObjectOperationsInterface::class);
-			if ($objects instanceof ObjectServiceInterface === false) {
+			if ($objects instanceof ObjectOperationsInterface === false) {
 				return ['outcome' => GenericStoreService::OUTCOME_UNREACHABLE, 'results' => []];
 			}
 
@@ -143,7 +142,7 @@ class LocalStoreRegistry {
 
 		try {
 			$objects = $this->container->get(ObjectOperationsInterface::class);
-			if ($objects instanceof ObjectServiceInterface === false) {
+			if ($objects instanceof ObjectOperationsInterface === false) {
 				return ['outcome' => GenericStoreService::OUTCOME_UNREACHABLE, 'slug' => ''];
 			}
 

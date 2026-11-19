@@ -131,7 +131,7 @@ class ValidationHandlerBySchemaGoldenTest extends TestCase {
 	}//end testEachObjectIsSavedSilentlyAndSortedByOutcome()
 
 	/**
-	 * The callback is ObjectService::saveObject itself, so the call must fit that signature.
+	 * The call must fit the callback ObjectService passes, which takes saveObject()'s options form.
 	 */
 	public function testTheCallFitsTheSaveObjectSignature(): void {
 		$object = new ObjectEntity();
@@ -159,9 +159,10 @@ class ValidationHandlerBySchemaGoldenTest extends TestCase {
 			return new ObjectEntity();
 		};
 
-		$saveObject = new \ReflectionMethod(ObjectService::class, 'saveObject');
+		$service  = (new \ReflectionClass(ObjectService::class))->newInstanceWithoutConstructor();
+		$callback = (new \ReflectionMethod(ObjectService::class, 'optionsFormSaveCallback'))->invoke($service);
 		$this->assertSame(
-			array_map(static fn (\ReflectionParameter $p): string => $p->getName() . ':' . $p->getType(), $saveObject->getParameters()),
+			array_map(static fn (\ReflectionParameter $p): string => $p->getName() . ':' . $p->getType(), (new \ReflectionFunction($callback))->getParameters()),
 			array_map(static fn (\ReflectionParameter $p): string => $p->getName() . ':' . $p->getType(), (new \ReflectionFunction($save))->getParameters())
 		);
 

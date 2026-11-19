@@ -34,7 +34,7 @@ use OCA\OpenRegister\AppHost\Service\GenericStoreService;
 use OCA\OpenRegister\AppHost\Service\StoreRegistryAccess;
 use OCA\OpenRegister\AppHost\Service\LocalStoreRegistry;
 use OCA\OpenRegister\AppHost\Service\StoreDescriptor;
-use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\Http\Client\IClient;
 use OCP\Http\Client\IClientService;
 use OCP\Http\Client\IResponse;
@@ -179,7 +179,7 @@ class GenericStoreServiceTest extends TestCase {
 		$this->configure(url: 'local', register: 'pipelinq');
 		$this->clientService->expects($this->never())->method('newClient');
 
-		$objects = $this->createMock(ObjectServiceInterface::class);
+		$objects = $this->createMock(ObjectOperationsInterface::class);
 		$objects->expects($this->once())
 			->method('searchObjectsBySlug')
 			->with('pipelinq', 'application-template', ['kind' => 'pipeline'], true, false)
@@ -213,7 +213,7 @@ class GenericStoreServiceTest extends TestCase {
 	 */
 	public function testLocalRegistryResolvesBySlug(): void {
 		$this->configure(url: 'local', register: 'pipelinq');
-		$objects = $this->createMock(ObjectServiceInterface::class);
+		$objects = $this->createMock(ObjectOperationsInterface::class);
 		$objects->method('searchObjectsBySlug')->willReturn([
 			['slug' => 'other', 'title' => 'Other'],
 			['slug' => 'b2b-sales-pipeline', 'title' => 'B2B sales pipeline'],
@@ -235,7 +235,7 @@ class GenericStoreServiceTest extends TestCase {
 	 */
 	public function testLocalRegistryWithoutTheSchemaIsUnreachable(): void {
 		$this->configure(url: 'local', register: 'pipelinq');
-		$objects = $this->createMock(ObjectServiceInterface::class);
+		$objects = $this->createMock(ObjectOperationsInterface::class);
 		$objects->method('searchObjectsBySlug')->willThrowException(new RuntimeException('schema not found'));
 
 		$result = $this->localService(objects: $objects)->search(descriptor: $this->descriptor(appId: 'pipelinq'));
@@ -273,7 +273,7 @@ class GenericStoreServiceTest extends TestCase {
 		$this->configure(url: 'local', register: 'pipelinq');
 		$this->clientService->expects($this->never())->method('newClient');
 
-		$objects = $this->createMock(ObjectServiceInterface::class);
+		$objects = $this->createMock(ObjectOperationsInterface::class);
 		$objects->method('searchObjectsBySlug')->willReturn([]);
 		$objects->expects($this->once())
 			->method('saveObject')
@@ -301,7 +301,7 @@ class GenericStoreServiceTest extends TestCase {
 	public function testPublishToALocalRegistryUpdatesTheObjectWithTheSameSlug(): void {
 		$this->configure(url: 'local', register: 'pipelinq');
 
-		$objects = $this->createMock(ObjectServiceInterface::class);
+		$objects = $this->createMock(ObjectOperationsInterface::class);
 		$objects->method('searchObjectsBySlug')->willReturn([
 			['id' => '0f3c2a8e-4b1d-4c55-9a7e-2d6b9e1f0a11', 'slug' => 'woo-intake', 'version' => '1.0.0'],
 		]);
@@ -331,7 +331,7 @@ class GenericStoreServiceTest extends TestCase {
 	public function testAFailedLocalPublishIsUnreachable(): void {
 		$this->configure(url: 'local', register: 'pipelinq');
 
-		$objects = $this->createMock(ObjectServiceInterface::class);
+		$objects = $this->createMock(ObjectOperationsInterface::class);
 		$objects->method('searchObjectsBySlug')->willReturn([]);
 		$objects->method('saveObject')->willThrowException(new RuntimeException('validation failed'));
 
@@ -347,11 +347,11 @@ class GenericStoreServiceTest extends TestCase {
 	/**
 	 * Build the service with a container that hands out the given object service.
 	 *
-	 * @param ObjectServiceInterface $objects The object service the local registry reads.
+	 * @param ObjectOperationsInterface $objects The object service the local registry reads.
 	 *
 	 * @return GenericStoreService
 	 */
-	private function localService(ObjectServiceInterface $objects): GenericStoreService {
+	private function localService(ObjectOperationsInterface $objects): GenericStoreService {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturn($objects);
 

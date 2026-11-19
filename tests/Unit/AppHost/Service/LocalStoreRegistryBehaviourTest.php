@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\AppHost\Service;
 
 use OCA\OpenRegister\AppHost\Service\GenericStoreService;
 use OCA\OpenRegister\AppHost\Service\LocalStoreRegistry;
-use OCA\OpenRegister\Contract\ObjectServiceInterface;
+
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use PHPUnit\Framework\TestCase;
@@ -75,7 +75,7 @@ class LocalStoreRegistryBehaviourTest extends TestCase {
 	 * @return void
 	 */
 	public function testANonArraySearchAnswerReadsAsEmpty(): void {
-		$objects = $this->createMock(ObjectServiceInterface::class);
+		$objects = $this->createMock(ObjectOperationsInterface::class);
 		$objects->expects($this->once())->method('searchObjectsBySlug')->willReturn(7);
 
 		$registry = new LocalStoreRegistry($this->container($objects), $this->createMock(LoggerInterface::class));
@@ -92,7 +92,7 @@ class LocalStoreRegistryBehaviourTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnArraySearchAnswerIsReturned(): void {
-		$objects = $this->createMock(ObjectServiceInterface::class);
+		$objects = $this->createMock(ObjectOperationsInterface::class);
 		$objects->expects($this->once())->method('searchObjectsBySlug')->willReturn([['slug' => 'a']]);
 
 		$registry = new LocalStoreRegistry($this->container($objects), $this->createMock(LoggerInterface::class));
@@ -125,7 +125,7 @@ class LocalStoreRegistryBehaviourTest extends TestCase {
 	 * @return void
 	 */
 	public function testAWriteWhoseServiceVanishesIsUnreachable(): void {
-		$objects = $this->createMock(ObjectServiceInterface::class);
+		$objects = $this->createMock(ObjectOperationsInterface::class);
 		$objects->method('searchObjectsBySlug')->willReturn([]);
 		$objects->expects($this->never())->method('saveObject');
 
@@ -146,7 +146,7 @@ class LocalStoreRegistryBehaviourTest extends TestCase {
 	 * @return void
 	 */
 	public function testAFailedSaveIsUnreachable(): void {
-		$objects = $this->createMock(ObjectServiceInterface::class);
+		$objects = $this->createMock(ObjectOperationsInterface::class);
 		$objects->method('searchObjectsBySlug')->willReturn([['slug' => 'demo', 'id' => 'uuid-1']]);
 		$objects->expects($this->once())
 			->method('saveObject')
@@ -172,7 +172,7 @@ class LocalStoreRegistryBehaviourTest extends TestCase {
 	 * @return void
 	 */
 	public function testASucceedingSaveIsOk(): void {
-		$objects = $this->createMock(ObjectServiceInterface::class);
+		$objects = $this->createMock(ObjectOperationsInterface::class);
 		$objects->method('searchObjectsBySlug')->willReturn([]);
 		$objects->expects($this->once())
 			->method('saveObject')

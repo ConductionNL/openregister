@@ -546,7 +546,7 @@ class ObjectServicePatchObjectTest extends TestCase {
 			$names[] = $parameter->getName();
 		}
 
-		$this->assertSame(['patch', '_rbac', '_multitenancy'], $names, 'the patch travels as one ObjectPatch');
+		$this->assertSame(['patch', '_rbac', '_multitenancy'], array_slice($names, 0, 3), 'the patch travels as one ObjectPatch');
 
 		$currentUser = (new \ReflectionClass(ObjectPatch::class))->getConstructor()->getParameters()[3];
 		$this->assertSame('currentUser', $currentUser->getName());

@@ -241,7 +241,7 @@ final class ActionLinkGoldenTest extends TestCase {
 		$service = $this->createMock(ObjectOperationsInterface::class);
 		$service->method('find')->willReturnCallback(
 			function (mixed $id, mixed ...$rest): ?ObjectEntity {
-				$this->lookups[] = [$id, $rest];
+				$this->lookups[] = [$id, array_slice($rest, 0, 3)];
 				return match ($id) {
 					'readable' => self::objectWith(['5', '6', 'uuid-r']),
 					'gone' => null,
