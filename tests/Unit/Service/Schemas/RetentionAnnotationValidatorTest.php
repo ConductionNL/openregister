@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Schemas;
 use Exception;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper\RecordAnnotationRefusals;
+use OCA\OpenRegister\Service\Archival\InheritedAppraisal;
 use OCA\OpenRegister\Service\Schemas\RetentionAnnotationValidator;
 use PHPUnit\Framework\TestCase;
 
@@ -49,6 +50,11 @@ class RetentionAnnotationValidatorTest extends TestCase {
 
 	private function errors(mixed $annotation): array {
 		return (new RetentionAnnotationValidator())->validate($annotation, self::PROPERTIES);
+	}
+
+	public function testItChecksTheKeyTheArchivalReaderFollows(): void {
+		$this->assertSame('inheritAppraisalFrom', RetentionAnnotationValidator::KEY);
+		$this->assertSame(InheritedAppraisal::KEY, RetentionAnnotationValidator::KEY);
 	}
 
 	public function testReferencePropertiesAreAccepted(): void {

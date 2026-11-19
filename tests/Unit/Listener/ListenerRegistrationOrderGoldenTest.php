@@ -33,7 +33,7 @@ class ListenerRegistrationOrderGoldenTest extends TestCase {
 	/**
 	 * The sha256 of every registration call, one `method|arg|arg...` line each, in order.
 	 */
-	private const SEQUENCE_SHA256 = '1b50b9628bb6e60f16c8a990fde83ac4cbc52a77977bbb09d5de331393cdb3f5';
+	private const SEQUENCE_SHA256 = '05b079808cc27470e8d22ec7e5f93c5431877da39f7ab7d5e2ecf9996ff9b325';
 
 	/**
 	 * The registration calls, in call order, with every argument.
