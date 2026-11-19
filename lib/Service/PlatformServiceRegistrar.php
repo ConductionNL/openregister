@@ -1,7 +1,7 @@
 <?php
 
 /**
- * PlatformServiceRegistrar: the entry that binds the Platform area's service interfaces.
+ * PlatformServiceRegistrar: the entry that binds the Platform area's service and listener interfaces.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\DbRegistrar;
+use OCA\OpenRegister\Listener\PlatformListenerBindings;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 
 /**
@@ -47,6 +48,13 @@ final class PlatformServiceRegistrar {
 	public const BINDINGS = PlatformServiceBindings::BINDINGS;
 
 	/**
+	 * The listener contracts the ordered listener list registers, bound to their Platform listener.
+	 *
+	 * @var array<class-string, class-string>
+	 */
+	public const LISTENER_BINDINGS = PlatformListenerBindings::BINDINGS;
+
+	/**
 	 * Register every binding with the app container.
 	 *
 	 * @param IRegistrationContext $context The registration context.
@@ -57,5 +65,6 @@ final class PlatformServiceRegistrar {
 	 */
 	public static function register(IRegistrationContext $context): void {
 		DbRegistrar::bind(context: $context, bindings: PlatformServiceBindings::BINDINGS);
+		DbRegistrar::bind(context: $context, bindings: PlatformListenerBindings::BINDINGS);
 	}//end register()
 }//end class

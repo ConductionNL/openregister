@@ -3828,6 +3828,7 @@ Listener/NotificationsAnnotationInstallListener.php,,Listener,,,,,Notifications
 Listener/NotifyPushBatch.php,,Listener,,,,,Core
 Listener/NotifyPushBatchInterface.php,,Listener,,,,,Core
 Listener/NotifyPushRun.php,,Listener,,,,,Platform
+Listener/PlatformListenerBindings.php,,Listener,,,,,Platform
 Listener/ObjectEventFilterRun.php,,Listener,,,,,Core
 Listener/ObjectEventSlugMapRun.php,,Listener,,,,,Core
 Listener/ObjectExtractionRun.php,,Listener,,,,,Processes

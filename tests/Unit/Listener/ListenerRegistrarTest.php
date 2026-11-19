@@ -12,8 +12,15 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Listener;
 
 use OCA\OpenRegister\Event\DraftDeletedEvent;
+use OCA\OpenRegister\Kernel\Contracts\Processes\ObjectWriteCacheFollowerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Processes\ObjectWritePushInterface;
+use OCA\OpenRegister\Listener\NotifyPushListener;
+use OCA\OpenRegister\Listener\RedactionPolicyCacheListener;
 use OCA\OpenRegister\Listener\ListenerRegistrar;
 use OCA\OpenRegister\Notifications\Listener\NotificationDedupePruneListener;
+use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\PlatformServiceRegistrar;
+use OCP\EventDispatcher\IEventListener;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
 use PHPUnit\Framework\TestCase;
 
@@ -35,13 +42,46 @@ class ListenerRegistrarTest extends TestCase {
 
 		$missing = [];
 		foreach ($context->listeners as $registration) {
-			if (class_exists($registration['listener']) === false) {
+			if (class_exists($registration['listener']) === false && interface_exists($registration['listener']) === false) {
 				$missing[] = $registration['listener'];
 			}
 		}
 
 		$this->assertSame(expected: [], actual: array_values(array_unique($missing)));
 	}//end testEveryListenerExists()
+
+	/**
+	 * A listener registered by its contract is bound to a listener that implements it.
+	 *
+	 * The container resolves the contract through the alias, so an unbound one
+	 * would fail on the first event it is dispatched for.
+	 *
+	 * @return void
+	 */
+	public function testEveryListenerContractIsBoundToAListenerThatImplementsIt(): void {
+		$context = new RecordingRegistrationContext();
+		ListenerRegistrar::register(context: $context);
+		$bindings = ContractBindings::BINDINGS + PlatformServiceRegistrar::LISTENER_BINDINGS;
+
+		$contracts = [];
+		foreach ($context->listeners as $registration) {
+			if (interface_exists($registration['listener']) === true) {
+				$contracts[$registration['listener']] = $bindings[$registration['listener']] ?? null;
+			}
+		}
+
+		$this->assertSame(
+			expected: [
+				ObjectWriteCacheFollowerInterface::class => RedactionPolicyCacheListener::class,
+				ObjectWritePushInterface::class => NotifyPushListener::class,
+			],
+			actual: $contracts
+		);
+		foreach ($contracts as $contract => $listener) {
+			$this->assertContains(needle: $contract, haystack: class_implements($listener), message: $listener.' implements '.$contract);
+			$this->assertContains(needle: IEventListener::class, haystack: class_implements($listener), message: $listener.' is a listener');
+		}
+	}//end testEveryListenerContractIsBoundToAListenerThatImplementsIt()
 
 	/**
 	 * A lock and the archive answer on the deleting event, the one every delete path asks.

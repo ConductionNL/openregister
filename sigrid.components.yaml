@@ -1787,7 +1787,7 @@ components:
       - ".*/lib/Controller/(AgentsController|ChatController|ChatHealthController|ChatStreamController|ConversationController)[.]php"
       - ".*/lib/Dashboard/[^/]*"
       - ".*/lib/Db/(Feedback|FeedbackMapper|PlatformMapperBindings|PlatformMapperRegistrar|TranslationBackfillScope|TranslationEdit|TranslationFilter|TranslationMapperInterface|TranslationSlot|TranslationSourceLanguageBackfillInterface)[.]php"
-      - ".*/lib/Listener/(NotifyPushListener|NotifyPushRun)[.]php"
+      - ".*/lib/Listener/(NotifyPushListener|NotifyPushRun|PlatformListenerBindings)[.]php"
       - ".*/lib/Middleware/[^/]*"
       - ".*/lib/Middleware/Exception/[^/]*"
       - ".*/lib/Middleware/Support/[^/]*"

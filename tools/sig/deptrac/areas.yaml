@@ -3548,7 +3548,7 @@ deptrac:
         - type: directory
           value: 'lib/Db/(Feedback|FeedbackMapper|PlatformMapperBindings|PlatformMapperRegistrar|TranslationBackfillScope|TranslationEdit|TranslationFilter|TranslationMapperInterface|TranslationSlot|TranslationSourceLanguageBackfillInterface)[.]php$'
         - type: directory
-          value: 'lib/Listener/(NotifyPushListener|NotifyPushRun)[.]php$'
+          value: 'lib/Listener/(NotifyPushListener|NotifyPushRun|PlatformListenerBindings)[.]php$'
         - type: directory
           value: 'lib/Middleware/[^/]*$'
         - type: directory
