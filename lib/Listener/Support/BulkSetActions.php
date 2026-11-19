@@ -22,9 +22,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener\Support;
 
-use OCA\OpenRegister\BulkAction\ExportWholeSetAction;
 use OCA\OpenRegister\BulkAction\RestorePriorValuesActionInterface;
 use OCA\OpenRegister\BulkAction\RunActionActionInterface;
+use OCA\OpenRegister\Kernel\Contracts\Processes\WholeSetExportActionInterface;
 
 /**
  * The built-in bulk actions that work on the selection as a set: extract, restore, run.
@@ -35,14 +35,14 @@ final class BulkSetActions {
 	/**
 	 * Bundle the actions.
 	 *
-	 * @param ExportWholeSetAction              $exportWholeSet The whole-set extract.
+	 * @param WholeSetExportActionInterface     $exportWholeSet The whole-set extract.
 	 * @param RestorePriorValuesActionInterface $restore        The inverse of a reversible job.
 	 * @param RunActionActionInterface          $runAction      A declared object action on a large selection.
 	 *
 	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function __construct(
-		public readonly ExportWholeSetAction $exportWholeSet,
+		public readonly WholeSetExportActionInterface $exportWholeSet,
 		public readonly RestorePriorValuesActionInterface $restore,
 		public readonly RunActionActionInterface $runAction,
 	) {
