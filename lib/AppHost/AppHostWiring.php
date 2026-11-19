@@ -29,6 +29,7 @@ use OCA\OpenRegister\AppHost\Scheduling\ScheduleRefusals;
 use OCA\OpenRegister\AppHost\Service\RegisterDocumentLoader;
 use OCA\OpenRegister\AppHost\Service\RegisterDocumentLoaderInterface;
 use OCA\OpenRegister\Kernel\Contracts\AppContainerFinderInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\TwigFunctionsInstallerInterface;
 use OCA\OpenRegister\Twig\MappingTwigInstaller;
 use OCA\OpenRegister\Twig\MappingTwigInstallerInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
@@ -55,8 +56,9 @@ final class AppHostWiring {
 		ScheduleRefusalReportInterface::class => ScheduleRefusals::class,
 		RegisterDocumentLoaderInterface::class => RegisterDocumentLoader::class,
 		AppContainerFinderInterface::class => AppContainerLocator::class,
-		// The lib/Twig component has no registrar of its own; its one binding lives here.
+		// The lib/Twig component has no registrar of its own; its bindings live here.
 		MappingTwigInstallerInterface::class => MappingTwigInstaller::class,
+		TwigFunctionsInstallerInterface::class => MappingTwigInstaller::class,
 	];
 
 	/**

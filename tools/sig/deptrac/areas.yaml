@@ -84,7 +84,7 @@ deptrac:
               value: 'lib/Support/.*$'
           must_not:
             - type: directory
-              value: 'lib/Kernel/Contracts/(Core|Notifications|Processes)/.*$'
+              value: 'lib/Kernel/Contracts/(Core|Integrations|Notifications|Processes)/.*$'
     - name: Core
       collectors:
         - type: directory
@@ -3035,6 +3035,8 @@ deptrac:
           value: 'lib/Service/Quality/QualityAuditStores[.]php$'
     - name: Integrations
       collectors:
+        - type: directory
+          value: 'lib/Kernel/Contracts/Integrations/.*$'
         - type: directory
           value: 'lib/AppHost/[^/]*$'
         - type: directory

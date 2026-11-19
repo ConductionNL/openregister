@@ -46,7 +46,7 @@ components:
       - ".*/lib/Service/Schemas/PropertyValidatorHandlerInterface[.]php"
       - ".*/lib/Support/.*"
     exclude:
-      - ".*/lib/Kernel/Contracts/(Core|Notifications|Processes)/.*"
+      - ".*/lib/Kernel/Contracts/(Core|Integrations|Notifications|Processes)/.*"
   - name: Core
     include:
       - ".*/lib/Kernel/Contracts/Core/.*"
@@ -1527,6 +1527,7 @@ components:
       - ".*/lib/Service/Quality/QualityAuditStores[.]php"
   - name: Integrations
     include:
+      - ".*/lib/Kernel/Contracts/Integrations/.*"
       - ".*/lib/AppHost/[^/]*"
       - ".*/lib/AppHost/Controller/[^/]*"
       - ".*/lib/AppHost/Controller/Support/[^/]*"
