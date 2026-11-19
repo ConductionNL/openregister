@@ -314,7 +314,6 @@
   "lib/Db/XwikiLinkMapperInterface.php -> lib/Db/XwikiLink.php",
   "lib/Event/AbstractTaskEvent.php -> lib/Db/Task.php",
   "lib/Event/AbstractTaskSequenceEvent.php -> lib/Db/TaskSequence.php",
-  "lib/Event/AppWebhookEvents.php -> lib/Listener/WebhookEventListener.php",
   "lib/Event/BulkActionRegistrationEvent.php -> lib/BulkAction/BulkActionInterface.php",
   "lib/Event/BulkActionRegistrationEvent.php -> lib/Service/BulkActionRegistryInterface.php",
   "lib/Event/DeepLinkRegistrationEvent.php -> lib/Service/DeepLinkRegistryServiceInterface.php",
@@ -1648,6 +1647,7 @@
   "lib/Kernel/Contracts/AgentInterface.php",
   "lib/Kernel/Contracts/AgentMapperInterface.php",
   "lib/Kernel/Contracts/AppContainerFinderInterface.php",
+  "lib/Kernel/Contracts/AppEventWebhookListenerInterface.php",
   "lib/Kernel/Contracts/AppIdentity.php",
   "lib/Kernel/Contracts/AppSettingsInterface.php",
   "lib/Kernel/Contracts/ApplicationInterface.php",
@@ -1822,7 +1822,6 @@
   "lib/Listener/ValidatesPreWriteObject.php",
   "lib/Listener/ViewAlertAudience.php",
   "lib/Listener/ViewAlertMail.php",
-  "lib/Listener/WebhookEventListener.php",
   "lib/Listener/WrittenObjectOfEvent.php",
   "lib/Mcp/Db/Agent.php",
   "lib/Mcp/Db/Conversation.php",
@@ -3331,10 +3330,10 @@
   "Core": 64899,
   "Files": 3684,
   "Integrations": 19056,
-  "Kernel": 8450,
+  "Kernel": 8457,
   "Notifications": 1710,
   "Platform": 1032,
-  "Processes": 33496,
+  "Processes": 33287,
   "Search": 2270
  },
  "kernel_files": [
@@ -3637,6 +3636,7 @@
   "lib/Kernel/Contracts/AgentInterface.php",
   "lib/Kernel/Contracts/AgentMapperInterface.php",
   "lib/Kernel/Contracts/AppContainerFinderInterface.php",
+  "lib/Kernel/Contracts/AppEventWebhookListenerInterface.php",
   "lib/Kernel/Contracts/AppIdentity.php",
   "lib/Kernel/Contracts/AppSettingsInterface.php",
   "lib/Kernel/Contracts/ApplicationInterface.php",
@@ -3791,7 +3791,7 @@
   "lib/Support/RegisterSlugAliasesInterface.php",
   "lib/Support/UnknownFilterKeys.php"
  ],
- "kernel_loc": 10375,
- "total_loc": 459192,
- "violation_degree": 0.1048
+ "kernel_loc": 10382,
+ "total_loc": 459205,
+ "violation_degree": 0.1047
 }

@@ -4428,3 +4428,4 @@ Db/AuditTrail/ObjectAuditEventOptions.php,,Db,,,,,Core
 Db/AuditTrail/NamedActor.php,,Db,,,,,Core
 Kernel/Contracts/CaseItemInterface.php,,Kernel,,,,,Kernel
 Kernel/Contracts/DecisionInterface.php,,Kernel,,,,,Kernel
+Kernel/Contracts/AppEventWebhookListenerInterface.php,,Kernel,,,,,Kernel
