@@ -56,6 +56,16 @@ interface AccessLinkServiceInterface {
 	public const ACT_UPLOAD = 'accesslink.upload';
 
 	/**
+	 * The brute-force throttler action of the access-link surface.
+	 *
+	 * Owned here, beside the surface it throttles; the hardening report reads
+	 * the same value through ThrottledSurfacesInterface::ACCESS_LINK.
+	 *
+	 * @var string
+	 */
+	public const THROTTLE_ACTION = 'openregister_access_link';
+
+	/**
 	 * Every link one principal minted, with the URL each one opens.
 	 *
 	 * @param string $userId The minting principal.
