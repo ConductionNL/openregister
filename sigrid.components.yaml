@@ -1409,7 +1409,7 @@ components:
       - ".*/lib/Db/Translation/[^/]*"
       - ".*/lib/Listener/(RedactionPolicyCacheListener|ShareableConfigTypeRegistrationListener)[.]php"
       - ".*/lib/Notifications/Service/ExampleSet/[^/]*"
-      - ".*/lib/Service/(AppRegisterImportRunner|ApplicationMove|ApplicationService|ApplicationServiceInterface|ConfigurationService|ConfigurationServiceInterface|ConfigurationTransferInterface|ConfigurationUpdateNotice|ContractBindings|ContractBindingsRegistrar|CountedRegisterImport|DemoDataService|DescriptorImportTarget|ExportService|ImportService|LanguageGapScan|LanguageService|ManifestProfile|ManifestService|MassValidationRun|McpCatalogSummaries|McpDiscoveryService|MigrationPackService|MigrationPackServiceInterface|MigrationService|MockImportRun|NotificationService|OperationsConsoleService|PropertyDiscoveryRun|RecordUpdate|RegisterDescriptorService|RegisterImporters|ScheduledReportRun|ScheduledReportService|SchemaApplicationMigrator|SchemaCascade|SchemaService|SchemaSplitRun|SequenceScope|SequenceService|SettingsService|SharedSchemaDedupeService|SharedSchemaPlanRun|SharedSchemaUse|SourceLanguageLookup|TenantKeyService|TranslationProjectionService|TranslationSearch|TranslationStatusService|ValidationChunkResult|VocabularyImportService)[.]php"
+      - ".*/lib/Service/(AppRegisterImportRunner|ApplicationMove|ApplicationService|ApplicationServiceInterface|ConfigurationService|ConfigurationServiceInterface|ConfigurationTransferInterface|ConfigurationUpdateNotice|ContractBindings|ContractBindingsRegistrar|CountedRegisterImport|DemoDataService|DescriptorImportTarget|ExportService|ImportService|LanguageGapScan|LanguageService|ManifestProfile|ManifestService|MassValidationRun|McpCatalogSummaries|McpDiscoveryService|MigrationPackService|MigrationPackServiceInterface|MigrationService|MockImportRun|NotificationService|OperationsConsoleService|PropertyDiscoveryRun|RecordUpdate|RegisterDescriptorService|RegisterImporters|ScheduledReportExporters|ScheduledReportRun|ScheduledReportService|SchemaApplicationMigrator|SchemaCascade|SchemaService|SchemaSplitRun|SequenceScope|SequenceService|SettingsService|SharedSchemaDedupeService|SharedSchemaPlanRun|SharedSchemaUse|SourceLanguageLookup|TenantKeyService|TranslationProjectionService|TranslationSearch|TranslationStatusService|ValidationChunkResult|VocabularyImportService)[.]php"
       - ".*/lib/Service/Capability/ToolGrantCodec[.]php"
       - ".*/lib/Service/Capability/ToolGrantCoordinates[.]php"
       - ".*/lib/Service/Capability/ToolGrantResolutionException[.]php"
@@ -2126,7 +2126,7 @@ components:
       - ".*/lib/Notifications/Service/WebPush/[^/]*"
       - ".*/lib/Notifications/Service/Webhook/[^/]*"
       - ".*/lib/Push/[^/]*"
-      - ".*/lib/Service/(ActivityFilter|ActivityFilterServiceInterface|AdminRecipientExpander|NotificationServiceInterface|ScheduledReportDelivery|ScheduledReportExportQuery|ScheduledReportExporters|ScheduledReportNotice|ScheduledReportOwnerServices|ScheduledReportStores)[.]php"
+      - ".*/lib/Service/(ActivityFilter|ActivityFilterServiceInterface|AdminRecipientExpander|NotificationServiceInterface|ScheduledReportDelivery|ScheduledReportExportQuery|ScheduledReportNotice|ScheduledReportOwnerServices|ScheduledReportStores)[.]php"
       - ".*/lib/Service/Mail/[^/]*"
   - name: Platform
     include:

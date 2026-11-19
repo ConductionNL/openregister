@@ -4041,7 +4041,7 @@ Service/RetentionRules.php,,Service,,,,,Compliance
 Service/RetentionStores.php,,Service,,,,,Compliance
 Service/ScheduledReportDelivery.php,,Service,,,,,Notifications
 Service/ScheduledReportExportQuery.php,,Service,,,,,Notifications
-Service/ScheduledReportExporters.php,,Service,,,,,Notifications
+Service/ScheduledReportExporters.php,,Service,,,,,Configuration
 Service/ScheduledReportNotice.php,,Service,,,,,Notifications
 Service/ScheduledReportOwnerServices.php,,Service,,,,,Notifications
 Service/ScheduledReportStores.php,,Service,,,,,Notifications
