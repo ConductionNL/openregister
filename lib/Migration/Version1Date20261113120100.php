@@ -33,14 +33,13 @@ use Closure;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\Types;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Add `kind` and `options` to scheduled reports and make `register_id` nullable.
  *
  * @spec openspec/changes/connections-daily-report-mail/specs/scheduled-report-jobs/spec.md#requirement-a-scheduled-report-can-be-a-daily-connection-health-report
  */
-class Version1Date20261113120100 extends SimpleMigrationStep {
+class Version1Date20261113120100 extends TargetedMigrationStep {
 	/**
 	 * Change the database schema.
 	 *
@@ -52,7 +51,7 @@ class Version1Date20261113120100 extends SimpleMigrationStep {
 	 *
 	 * @spec openspec/changes/connections-daily-report-mail/specs/scheduled-report-jobs/spec.md#requirement-a-scheduled-report-can-be-a-daily-connection-health-report
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		/*
 		 * @var ISchemaWrapper $schema
 		 */
@@ -84,5 +83,5 @@ class Version1Date20261113120100 extends SimpleMigrationStep {
 
 		$output->info('Added kind and options to openregister_scheduled_reports');
 		return $schema;
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 }//end class
