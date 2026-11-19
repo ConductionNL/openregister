@@ -158,7 +158,7 @@ final class ListenerRegistrar {
 	/**
 	 * The listeners that contribute checks to the schema save.
 	 *
-	 * Processes and Compliance each add their checks, so the event stays here.
+	 * Processes, Compliance and Integrations each add their checks, so the event stays here.
 	 * It is a positioned collection: every check names its slot of
 	 * SchemaDeclarationOrder and the mapper runs them in slot order, whatever
 	 * order the listeners run in.
@@ -172,6 +172,7 @@ final class ListenerRegistrar {
 	private static function registerSchemaDeclarationChecks(IRegistrationContext $context): void {
 		$context->registerEventListener(SchemaDeclarationChecksEvent::class, SchemaDeclarationChecksListener::class);
 		$context->registerEventListener(SchemaDeclarationChecksEvent::class, ArchivalDeclarationChecksListener::class);
+		$context->registerEventListener(SchemaDeclarationChecksEvent::class, HandoffDeclarationChecksListener::class);
 	}//end registerSchemaDeclarationChecks()
 
 	/**

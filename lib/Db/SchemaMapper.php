@@ -1241,7 +1241,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	}//end checkBehaviourDeclarations()
 
 	/**
-	 * What the data of this schema means: quality, dedup, merge, party and archiving.
+	 * What the data of this schema means: quality, dedup, merge, party and retention; Compliance adds the archival check.
 	 *
 	 * @param Schema $schema The schema being saved.
 	 *
@@ -1252,7 +1252,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	}//end checkDataDeclarations()
 
 	/**
-	 * How objects leave or enter: handoff, MCP, registry, links and extending forms.
+	 * How objects leave or enter: MCP, registry, links and extending forms; Integrations adds the handoff checks.
 	 *
 	 * @param Schema $schema The schema being saved.
 	 *
@@ -1350,7 +1350,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	}//end behaviourSteps()
 
 	/**
-	 * What the data of this schema means: quality, dedup, merge, party and archiving.
+	 * What the data of this schema means: quality, dedup, merge, party and retention; Compliance adds the archival check.
 	 *
 	 * @param Schema $schema The schema being saved.
 	 *
@@ -1395,7 +1395,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	}//end checkNotifications()
 
 	/**
-	 * How objects leave or enter: handoff, MCP, registry, links and extending forms.
+	 * How objects leave or enter: MCP, registry, links and extending forms; Integrations adds the handoff checks.
 	 *
 	 * @param Schema $schema The schema being saved.
 	 *
@@ -1404,8 +1404,6 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	private function exchangeSteps(Schema $schema): array {
 		$exchange = new ExchangeAnnotationRefusals();
 		return [
-			SchemaDeclarationOrder::HANDOFF => static fn () => $exchange->checkHandoff(schema: $schema),
-			SchemaDeclarationOrder::HANDOFF_CONTRACT => static fn () => $exchange->checkHandoffContract(schema: $schema),
 			SchemaDeclarationOrder::MCP => static fn () => $exchange->checkMcp(schema: $schema),
 			SchemaDeclarationOrder::REGISTRY => static fn () => (new SubjectDeclarationRefusals())->checkRegistry(schema: $schema),
 			SchemaDeclarationOrder::EXTERNAL_LINKS => fn () => (new RecordAnnotationRefusals())->checkExternalLinks(schema: $schema),
