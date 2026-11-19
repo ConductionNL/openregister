@@ -7,3 +7,4 @@ learniq	868779f0	php=RED	Tests 7166/Failures 51/Errors 103	phpcs,phpmd,psalm,php
 decidiq	bacb288a	php=RED	Tests 5068, Failures 0, Errors 0 (8 skipped)	phpcs,phpmd,psalm	js=RED	psalm.xml: missing DomainServiceRegistrar.php; phpcs 2 err; eslint stale suppressions; vitest meetingSessionsGolden snapshot
 planninq	17e6169e	php=RED	Tests 1253/Failures 0/Errors 0	phpmd,psalm,phpstan	js=GREEN	phpmd 27 viol; phpstan 9 err; psalm needs PHP>=8.3.16 (env 8.3.6)
 keepiq	4ebe6c1d	php=GREEN	Tests 5620/F0/E0	none	js=GREEN	all checks passed; eslint 0 errors/186 warnings; vitest 7163 passed
+versioniq	a50e115	php=RED	phpunit not in check:strict	cs:check,psalm	js=RED	cs-fixer: Nextcloud CodingStandard Config missing; psalm not in require-dev; eslint parse err fixture; vitest 2 unhandled errs
