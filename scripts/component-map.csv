@@ -4443,3 +4443,7 @@ BackgroundJob/Support/ScheduledJobRuntime.php,,BackgroundJob,,,,,Core
 BackgroundJob/Support/TenantRecords.php,,BackgroundJob,,,,,Core
 BackgroundJob/Support/StateHistoryRebuildSources.php,,BackgroundJob,,,,,Core
 Service/Sharing/AccessLinkReaderFilters.php,,Service,,,,,Files
+BackgroundJob/ComplianceJobHandlesInterface.php,,BackgroundJob,,,,,Compliance
+BackgroundJob/ConfigurationJobHandlesInterface.php,,BackgroundJob,,,,,Configuration
+BackgroundJob/IntegrationsJobHandlesInterface.php,,BackgroundJob,,,,,Integrations
+BackgroundJob/ProcessesJobHandlesInterface.php,,BackgroundJob,,,,,Processes
