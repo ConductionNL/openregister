@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Kernel\Contracts\Core\ActionCheckInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ActionRightCheckInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ActionRightsInterface;
 use OCA\OpenRegister\Service\ApiCaller\ApiCallRecorder;
 use OCA\OpenRegister\Service\ApiCaller\ApiCallRecorderInterface;
@@ -51,6 +52,7 @@ final class PlatformServiceBindings {
 	 */
 	public const BINDINGS = [
 		ActionCheckInterface::class                  => OpenRegisterActionAuthService::class,
+		ActionRightCheckInterface::class             => OpenRegisterActionAuthService::class,
 		ActionRightsCatalogueInterface::class        => ActionRightsCatalogue::class,
 		ActionRightsInterface::class                 => ActionRightsCatalogue::class,
 		ApiCallRecorderInterface::class              => ApiCallRecorder::class,
