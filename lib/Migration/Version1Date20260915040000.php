@@ -42,14 +42,13 @@ use OCP\DB\ISchemaWrapper;
 use Doctrine\DBAL\Schema\Table;
 use OCP\DB\Types;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Widens the contact link table to a party without an account.
  *
  * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
  */
-class Version1Date20260915040000 extends SimpleMigrationStep {
+class Version1Date20260915040000 extends TargetedMigrationStep {
 
 	/*
 	 * NO NATIVE TYPE HINT on the $table parameters below, deliberately.
@@ -102,7 +101,7 @@ class Version1Date20260915040000 extends SimpleMigrationStep {
 	 *
 	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		$schema = $schemaClosure();
 		if ($schema->hasTable(self::TABLE) === false) {
 			return $schema;
@@ -120,7 +119,7 @@ class Version1Date20260915040000 extends SimpleMigrationStep {
 		}
 
 		return $schema;
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 
 	/**
 	 * Add the party columns that are still missing.
