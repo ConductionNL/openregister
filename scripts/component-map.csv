@@ -4000,7 +4000,7 @@ Service/PersonLinkTarget.php,,Service,,,,,Core
 Service/PersonLinkTargets.php,,Service,,,,,Core
 Service/PhotoLinkServiceInterface.php,,Service,,,,,Core
 Service/PollIdentity.php,,Service,,,,,Integrations
-Service/PollLinkServiceInterface.php,,Service,,,,,Core
+Service/PollLinkServiceInterface.php,,Service,,,,,Integrations
 Service/PollOptionRow.php,,Service,,,,,Integrations
 Service/ProcessingRead.php,,Service,,,,,Compliance
 Service/PropertyAccessCollaborators.php,,Service,,,,,Core
@@ -4061,7 +4061,7 @@ Service/SemanticTypeResolverInterface.php,,Service,,,,,Core
 Service/SequenceScope.php,,Service,,,,,Configuration
 Service/SequenceServiceInterface.php,,Service,,,,,Processes
 Service/ServiceBootstrap.php,,Service,,,,,Core
-Service/ShareLinkServiceInterface.php,,Service,,,,,Core
+Service/ShareLinkServiceInterface.php,,Service,,,,,Integrations
 Service/ShareListingRun.php,,Service,,,,,Integrations
 Service/ShareRequest.php,,Service,,,,,Integrations
 Service/SharedMasterDataServiceInterface.php,,Service,,,,,Core
@@ -4084,7 +4084,7 @@ Service/TenantKeyRotationInterface.php,,Service,,,,,Core
 Service/TenantLifecycleServiceInterface.php,,Service,,,,,Core
 Service/TenantLogRedactorInterface.php,,Service,,,,,Core
 Service/TextExtraction/EntityRecognitionBackends.php,,Service,,,,,Core
-Service/TimeTrackerLinkServiceInterface.php,,Service,,,,,Core
+Service/TimeTrackerLinkServiceInterface.php,,Service,,,,,Integrations
 Service/TmloServiceInterface.php,,Service,,,,,Core
 Service/TranslationProjectionServiceInterface.php,,Service,,,,,Platform
 Service/TranslationSearch.php,,Service,,,,,Configuration
@@ -4371,6 +4371,9 @@ Controller/Support/IntegrationsControllerServices.php,,Controller,,,,,Integratio
 Controller/Support/ObjectIntegrationsControllerServices.php,,Controller,,,,,Integrations
 Controller/Support/ObjectIntegrationsDomain.php,,Controller,,,,,Integrations
 Controller/Support/TalkLinksControllerServices.php,,Controller,,,,,Integrations
+Controller/Support/PollLinksControllerServices.php,,Controller,,,,,Integrations
+Controller/Support/ShareLinksControllerServices.php,,Controller,,,,,Integrations
+Controller/Support/TimeTrackerLinksControllerServices.php,,Controller,,,,,Integrations
 Controller/Support/WellKnownControllerServices.php,,Controller,,,,,Integrations
 Controller/Support/AnonymisationBackendControllerServices.php,,Controller,,,,,Compliance
 Controller/Support/AuditQueryControllerServices.php,,Controller,,,,,Compliance
