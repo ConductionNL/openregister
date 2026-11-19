@@ -23063,3 +23063,4 @@ fix:shillinq:3048:9fbb86c2	merged development into the branch, new head 69e2f94b
 fix:shillinq:3175:24b91d17	merged development into the branch, new head 9375847d; REVERIFY recorded	session-20261119T214535-17440c61	2026-11-19T22:04:24Z
 fix:launchpad:1218:1d9132cf	stale	session-20261119T214535-17440c61	2026-11-19T22:04:44Z
 fix:launchpad:1307:7e2a16a1	failed: development now carries its own scheduled-exports implementation (Service/ScheduledExport namespace); 16 files conflict in lib, tests, stores and openapi, needs a rebuild of the b2 work on top of it, not a merge	session-20261119T214535-17440c61	2026-11-19T22:05:21Z
+fix:versioniq:726:0758c4e2	conflict resolved, new head d946bdc1; 2 inherited installer golden failures on development; REVERIFY recorded	session-20261119T214535-17440c61	2026-11-19T22:07:18Z
