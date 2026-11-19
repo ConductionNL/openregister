@@ -50,6 +50,7 @@ use OCA\OpenRegister\Notifications\Service\Notification\NotificationChannelPolic
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationChannelPolicyInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationClearingService;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationClearingServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ReadNoticeClearingInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationPreferenceService;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationPreferenceServiceInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolver;
@@ -125,6 +126,7 @@ final class NotificationsWiring {
 		MessageMapperInterface::class => MessageMapper::class,
 		NotificationPreferencesInterface::class => NotificationPreferenceService::class,
 		NotificationClearingServiceInterface::class => NotificationClearingService::class,
+		ReadNoticeClearingInterface::class => NotificationClearingService::class,
 		NotificationChannelPolicyInterface::class => NotificationChannelPolicy::class,
 		ScheduledReportMapperInterface::class => ScheduledReportMapper::class,
 		NotificationAnnotationValidatorInterface::class => NotificationAnnotationValidator::class,
