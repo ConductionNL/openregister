@@ -41,7 +41,7 @@ use OCA\OpenRegister\Service\File\FileLockHandler;
 use OCA\OpenRegister\Service\File\FilePublishingHandler;
 use OCA\OpenRegister\Service\File\FileValidationHandler;
 use OCA\OpenRegister\Service\FileService;
-use OCA\OpenRegister\Service\Party\PartyIndicatorGuard;
+use OCA\OpenRegister\Kernel\Contracts\Core\PublicationRefusalInterface;
 use OCP\Files\File;
 use OCP\ICache;
 use OCP\ICacheFactory;
@@ -300,7 +300,7 @@ class FileAccessGuardsGoldenTest extends TestCase {
 	}//end object()
 
 	private function publishing(bool $indicatorRefuses, bool $restricted): FilePublishingHandler {
-		$guard = $this->createMock(PartyIndicatorGuard::class);
+		$guard = $this->createMock(PublicationRefusalInterface::class);
 		$guard->method('assertPublicationAllowed')->willReturnCallback(function (string $objectUuid) use ($indicatorRefuses): void {
 			$this->trace[] = 'indicator ' . $objectUuid;
 			if ($indicatorRefuses === true) {

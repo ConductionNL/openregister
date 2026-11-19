@@ -27,7 +27,7 @@ use OCA\OpenRegister\Service\File\FilePublishingHandler;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionGuardInterface;
 use OCA\OpenRegister\Service\FileService;
-use OCA\OpenRegister\Service\Party\PartyIndicatorGuard;
+use OCA\OpenRegister\Kernel\Contracts\Core\PublicationRefusalInterface;
 use OCP\Files\File;
 use OCP\Files\Folder;
 use OCP\Files\NotFoundException;
@@ -178,7 +178,7 @@ class FilePublishingHandlerGoldenTest extends TestCase {
 
 		$restrictions = $this->createMock(FileRestrictionGuard::class);
 		$restrictions->method('isRestricted')->willReturn(false);
-		$guard = $this->createMock(PartyIndicatorGuard::class);
+		$guard = $this->createMock(PublicationRefusalInterface::class);
 		$container = $this->createMock(IServerContainer::class);
 		$container->method('get')->willReturnCallback(fn (string $id): object => $id === FileRestrictionGuardInterface::class ? $restrictions : $guard);
 
