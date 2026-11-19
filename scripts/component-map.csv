@@ -370,8 +370,8 @@ Controller/SubjectExportController.php,67,Controller,Compliance,Compliance/Contr
 Controller/Support/AccessLinkControllerServices.php,10,Controller,Access,Access/Controller/Support/AccessLinkControllerServices.php,0,,Core
 Controller/Support/AccessLinkDomain.php,16,Controller,Access,Access/Controller/Support/AccessLinkDomain.php,0,,Core
 Controller/Support/AccessLinkPlatform.php,14,Controller,Access,Access/Controller/Support/AccessLinkPlatform.php,0,,Core
-Controller/Support/AgentsControllerServices.php,16,Controller,Platform,Platform/Controller/Support/AgentsControllerServices.php,0,,Core
-Controller/Support/ApiTokenSettingsControllerServices.php,16,Controller,Configuration,Configuration/Controller/Support/ApiTokenSettingsControllerServices.php,0,,Core
+Controller/Support/AgentsControllerServices.php,16,Controller,Platform,Platform/Controller/Support/AgentsControllerServices.php,0,,Platform
+Controller/Support/ApiTokenSettingsControllerServices.php,16,Controller,Configuration,Configuration/Controller/Support/ApiTokenSettingsControllerServices.php,0,,Configuration
 Controller/Support/ArchivalControllerServices.php,12,Controller,Compliance,Compliance/Controller/Support/ArchivalControllerServices.php,0,,Compliance
 Controller/Support/ArchivalDecisions.php,16,Controller,Compliance,Compliance/Controller/Support/ArchivalDecisions.php,0,,Compliance
 Controller/Support/ArchivalMappers.php,16,Controller,Compliance,Compliance/Controller/Support/ArchivalMappers.php,0,,Compliance
@@ -398,7 +398,7 @@ Controller/Support/ChatPlatform.php,14,Controller,Platform,Platform/Controller/S
 Controller/Support/ChatStreamChat.php,16,Controller,Platform,Platform/Controller/Support/ChatStreamChat.php,0,,Core
 Controller/Support/ChatStreamControllerServices.php,10,Controller,Platform,Platform/Controller/Support/ChatStreamControllerServices.php,0,,Core
 Controller/Support/ChatStreamPlatform.php,12,Controller,Platform,Platform/Controller/Support/ChatStreamPlatform.php,0,,Core
-Controller/Support/ChatStreamTurn.php,12,Controller,Platform,Platform/Controller/Support/ChatStreamTurn.php,0,,Core
+Controller/Support/ChatStreamTurn.php,12,Controller,Platform,Platform/Controller/Support/ChatStreamTurn.php,0,,Platform
 Controller/Support/ConfigDeploymentControllerServices.php,16,Controller,Configuration,Configuration/Controller/Support/ConfigDeploymentControllerServices.php,0,,Configuration
 Controller/Support/ConfigurationControllerServices.php,12,Controller,Configuration,Configuration/Controller/Support/ConfigurationControllerServices.php,0,,Configuration
 Controller/Support/ConfigurationDomain.php,16,Controller,Configuration,Configuration/Controller/Support/ConfigurationDomain.php,0,,Configuration
@@ -433,8 +433,8 @@ Controller/Support/DsarCaseControllerServices.php,12,Controller,Compliance,Compl
 Controller/Support/DsarCaseDisclosure.php,16,Controller,Compliance,Compliance/Controller/Support/DsarCaseDisclosure.php,0,,Compliance
 Controller/Support/DsarCasePlatform.php,10,Controller,Compliance,Compliance/Controller/Support/DsarCasePlatform.php,0,,Core
 Controller/Support/DsarCaseRegistries.php,12,Controller,Compliance,Compliance/Controller/Support/DsarCaseRegistries.php,0,,Compliance
-Controller/Support/EdepotSettingsControllerServices.php,10,Controller,Compliance,Compliance/Controller/Support/EdepotSettingsControllerServices.php,0,,Core
-Controller/Support/EdepotSettingsDomain.php,16,Controller,Compliance,Compliance/Controller/Support/EdepotSettingsDomain.php,0,,Core
+Controller/Support/EdepotSettingsControllerServices.php,10,Controller,Compliance,Compliance/Controller/Support/EdepotSettingsControllerServices.php,0,,Configuration
+Controller/Support/EdepotSettingsDomain.php,16,Controller,Compliance,Compliance/Controller/Support/EdepotSettingsDomain.php,0,,Configuration
 Controller/Support/EdepotSettingsPlatform.php,14,Controller,Compliance,Compliance/Controller/Support/EdepotSettingsPlatform.php,0,,Core
 Controller/Support/EmptyValueStripper.php,41,Controller,Service,Service/Controller/Support/EmptyValueStripper.php,0,,Core
 Controller/Support/EntityRelationsControllerServices.php,12,Controller,Flows,Flows/Controller/Support/EntityRelationsControllerServices.php,0,,Processes
@@ -555,7 +555,7 @@ Controller/Support/SourcesPlatform.php,14,Controller,Service,Service/Controller/
 Controller/Support/TablesControllerServices.php,14,Controller,Controller,Controller/Support/TablesControllerServices.php,0,,Core
 Controller/Support/TaskCompletion.php,12,Controller,Work,Work/Controller/Support/TaskCompletion.php,0,,Processes
 Controller/Support/TaskControllerServices.php,11,Controller,Work,Work/Controller/Support/TaskControllerServices.php,0,,Processes
-Controller/Support/TaskEventsControllerServices.php,16,Controller,Work,Work/Controller/Support/TaskEventsControllerServices.php,0,,Core
+Controller/Support/TaskEventsControllerServices.php,16,Controller,Work,Work/Controller/Support/TaskEventsControllerServices.php,0,,Processes
 Controller/Support/TaskPlatform.php,14,Controller,Work,Work/Controller/Support/TaskPlatform.php,0,,Processes
 Controller/Support/TaskWork.php,16,Controller,Work,Work/Controller/Support/TaskWork.php,0,,Processes
 Controller/Support/TasksControllerServices.php,10,Controller,Work,Work/Controller/Support/TasksControllerServices.php,0,,Processes
@@ -4412,3 +4412,8 @@ Db/PlatformMapperBindings.php,,Db,,,,,Platform
 Db/PlatformMapperRegistrar.php,,Db,,,,,Platform
 Service/PlatformServiceBindings.php,,Service,,,,,Platform
 Service/PlatformServiceRegistrar.php,,Service,,,,,Platform
+Controller/Support/ApplicationsControllerServices.php,,Controller,,,,,Configuration
+Controller/Support/ConnectionReporting.php,,Controller,,,,,Configuration
+Controller/Support/CalendarEventsControllerServices.php,,Controller,,,,,Processes
+Controller/Support/CaseTokenControllerServices.php,,Controller,,,,,Integrations
+Controller/Support/FormLinksControllerServices.php,,Controller,,,,,Integrations
