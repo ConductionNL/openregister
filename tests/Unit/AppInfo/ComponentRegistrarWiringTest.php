@@ -19,6 +19,7 @@ use OCA\OpenRegister\Files\FilesRegistrar;
 use OCA\OpenRegister\Mcp\McpRegistrar;
 use OCA\OpenRegister\Notifications\NotificationsRegistrar;
 use OCA\OpenRegister\Search\SearchRegistrar;
+use OCA\OpenRegister\Service\ComplianceServiceRegistrar;
 use OCA\OpenRegister\Service\PlatformServiceRegistrar;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -86,6 +87,8 @@ use ReflectionClass;
  * @uses \OCA\OpenRegister\Service\Integration\IntegrationWiring
  * @uses \OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistrar
  * @uses \OCA\OpenRegister\Service\ObjectSource\ObjectSourceWiring
+ * @uses \OCA\OpenRegister\Service\ComplianceServiceBindings
+ * @uses \OCA\OpenRegister\Service\ComplianceServiceRegistrar
  * @uses \OCA\OpenRegister\Service\PlatformServiceBindings
  * @uses \OCA\OpenRegister\Service\PlatformServiceRegistrar
  * @uses \OCA\OpenRegister\Service\Rbac\RbacRegistrar
@@ -110,6 +113,7 @@ class ComponentRegistrarWiringTest extends TestCase
             'platform services' => [PlatformServiceRegistrar::BINDINGS],
             'configuration mappers' => [ConfigurationMapperRegistrar::BINDINGS],
             'compliance mappers' => [ComplianceMapperRegistrar::BINDINGS],
+            'compliance services' => [ComplianceServiceRegistrar::BINDINGS],
             'integrations mappers' => [IntegrationsMapperRegistrar::BINDINGS],
             'processes mappers' => [ProcessesMapperRegistrar::BINDINGS],
             'search'        => [SearchRegistrar::BINDINGS],
