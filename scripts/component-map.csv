@@ -3935,7 +3935,7 @@ Service/DescriptorImportTarget.php,,Service,,,,,Configuration
 Service/DescriptorReimportRun.php,,Service,,,,,Compliance
 Service/DisposalSweep.php,,Service,,,,,Core
 Service/DsarGuards.php,,Service,,,,,Compliance
-Service/DsarServiceInterface.php,,Service,,,,,Core
+Service/DsarServiceInterface.php,,Service,,,,,Compliance
 Service/DsarStores.php,,Service,,,,,Compliance
 Service/DsarSubjectQuery.php,,Service,,,,,Compliance
 Service/EmailLinkServiceInterface.php,,Service,,,,,Integrations
@@ -4054,7 +4054,7 @@ Service/SchemaDeletionStores.php,,Service,,,,,Core
 Service/SchemaObjectTally.php,,Service,,,,,Core
 Service/SchemaProperty.php,,Service,,,,,Core
 Service/SchemaSplitRun.php,,Service,,,,,Configuration
-Service/SchemaTeardownGuard.php,,Service,,,,,Core
+Service/SchemaTeardownGuard.php,,Service,,,,,Compliance
 Service/SchemaTeardownInterface.php,,Service,,,,,Core
 Service/SchemaTeardownOverride.php,,Service,,,,,Core
 Service/SearchMeasurement.php,,Service,,,,,Compliance
@@ -4125,7 +4125,7 @@ Service/WebhookDelivery.php,,Service,,,,,Integrations
 Service/WebhookDispatchServices.php,,Service,,,,,Integrations
 Service/WebhookEvent.php,,Service,,,,,Integrations
 Service/WebhookStores.php,,Service,,,,,Integrations
-Service/WholeTableRows.php,,Service,,,,,Core
+Service/WholeTableRows.php,,Service,,,,,Compliance
 Service/WorkPackageDraft.php,,Service,,,,,Integrations
 Service/WritePhase.php,,Service,,,,,Core
 Service/XwikiLinkServiceInterface.php,,Service,,,,,Integrations
@@ -4484,3 +4484,7 @@ BackgroundJob/Support/WebhookDeliveryStores.php,,BackgroundJob,,,,,Integrations
 Controller/Support/PollLinksControllerServices.php,,Controller,,,,,Integrations
 Controller/Support/ShareLinksControllerServices.php,,Controller,,,,,Integrations
 Controller/Support/TimeTrackerLinksControllerServices.php,,Controller,,,,,Integrations
+Controller/Support/DsarControllerServices.php,,Controller,,,,,Compliance
+Db/AuditTrail/ActionLookupOptions.php,,Db,,,,,Core
+Db/AuditTrail/ActionWindow.php,,Db,,,,,Core
+Db/AuditTrail/ActorTrailQuery.php,,Db,,,,,Core
