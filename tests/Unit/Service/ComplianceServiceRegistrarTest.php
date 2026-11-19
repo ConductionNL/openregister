@@ -13,6 +13,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\ComplianceServiceRegistrar;
+use OCA\OpenRegister\Service\Gdpr\GdprRegistrar;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
@@ -21,6 +22,7 @@ use ReflectionClass;
  * @covers \OCA\OpenRegister\Service\ComplianceServiceRegistrar
  * @covers \OCA\OpenRegister\Service\ComplianceServiceBindings
  * @uses   \OCA\OpenRegister\Db\DbRegistrar
+ * @uses   \OCA\OpenRegister\Service\Gdpr\GdprRegistrar
  */
 final class ComplianceServiceRegistrarTest extends TestCase {
 
@@ -57,4 +59,19 @@ final class ComplianceServiceRegistrarTest extends TestCase {
 		$twice = array_intersect_key(ComplianceServiceRegistrar::BINDINGS, ContractBindings::BINDINGS);
 		$this->assertSame(expected: [], actual: $twice);
 	}//end testContractBindingsDoesNotBindThemAgain()
+
+	/**
+	 * registerGdpr() registers exactly what the GDPR registrar registers, in its order.
+	 *
+	 * @return void
+	 */
+	public function testRegisterGdprRegistersTheGdprServices(): void {
+		$entry = new RecordingRegistrationContext();
+		ComplianceServiceRegistrar::registerGdpr(context: $entry);
+		$direct = new RecordingRegistrationContext();
+		GdprRegistrar::register(context: $direct);
+
+		$this->assertNotSame(expected: [], actual: $entry->services);
+		$this->assertSame(expected: $direct->services, actual: $entry->services);
+	}//end testRegisterGdprRegistersTheGdprServices()
 }//end class

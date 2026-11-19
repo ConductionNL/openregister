@@ -31,7 +31,6 @@ class MapperRegistrarTest extends TestCase {
 			expected: [
 				'OCA\OpenRegister\Db\SchemaMapper',
 				'OCA\OpenRegister\Db\RegisterMapper',
-				'OCA\OpenRegister\Db\WebhookMapper',
 				'OCA\OpenRegister\Db\MagicMapper',
 				'OCA\OpenRegister\Db\EntityRelationMapper',
 			],

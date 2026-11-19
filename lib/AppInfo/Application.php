@@ -192,7 +192,7 @@ class Application extends App implements IBootstrap {
 
 		FlowRegistrar::register(context: $context);
 		RbacRegistrar::register(context: $context);
-		ServiceBootstrap::registerGdpr(context: $context);
+		ComplianceServiceRegistrar::registerGdpr(context: $context);
 
 		// The contracts other components type-hint, bound to their services.
 		ContractBindingsRegistrar::register(context: $context);

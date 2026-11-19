@@ -23,11 +23,14 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\DbRegistrar;
+use OCA\OpenRegister\Service\Gdpr\GdprRegistrar;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 
 /**
  * Binds the interfaces of the Compliance area's services that a lower area
  * owns: the inbound-authentication ceiling Core's SecurityService reads.
+ * It is also the entry for the GDPR registrar, so Application reaches the
+ * Compliance GDPR wiring here rather than through a Core class.
  *
  * Application names this class only; the map lives in
  * ComplianceServiceBindings, inside the area.
@@ -55,4 +58,17 @@ final class ComplianceServiceRegistrar {
 	public static function register(IRegistrationContext $context): void {
 		DbRegistrar::bind(context: $context, bindings: ComplianceServiceBindings::BINDINGS);
 	}//end register()
+
+	/**
+	 * Register the DSAR signer and the shared DSAR registries with their fail-closed defaults.
+	 *
+	 * @param IRegistrationContext $context The registration context.
+	 *
+	 * @return void
+	 *
+	 * @spec exclude Container wiring; no behaviour of its own.
+	 */
+	public static function registerGdpr(IRegistrationContext $context): void {
+		GdprRegistrar::register(context: $context);
+	}//end registerGdpr()
 }//end class

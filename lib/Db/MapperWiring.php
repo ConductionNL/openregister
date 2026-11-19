@@ -29,7 +29,6 @@ use OCA\OpenRegister\Db\SchemaMapper\SchemaMapperServices;
 use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use Psr\Container\ContainerInterface;
-use OCA\OpenRegister\Db\Support\SecretAtRest;
 
 
 /**
@@ -44,7 +43,7 @@ use OCA\OpenRegister\Db\Support\SecretAtRest;
 final class MapperWiring {
 
 	/**
-	 * Register the schema, register, webhook, magic and entity-relation mappers.
+	 * Register the schema, register, magic and entity-relation mappers.
 	 *
 	 * @param IRegistrationContext $context The registration context.
 	 *
@@ -55,7 +54,6 @@ final class MapperWiring {
 	public static function register(IRegistrationContext $context): void {
 		$context->registerService(SchemaMapper::class, self::schemaMapper(...));
 		$context->registerService(RegisterMapper::class, self::registerMapper(...));
-		$context->registerService(WebhookMapper::class, self::webhookMapper(...));
 		$context->registerService(MagicMapper::class, self::magicMapper(...));
 		$context->registerService(EntityRelationMapper::class, self::entityRelationMapper(...));
 	}//end register()
@@ -128,29 +126,6 @@ final class MapperWiring {
 	}//end registerMapper()
 
 	/**
-	 * Build the WebhookMapper.
-	 *
-	 * @param ContainerInterface $container The container.
-	 *
-	 * @return WebhookMapper The mapper.
-	 */
-	private static function webhookMapper(ContainerInterface $container): WebhookMapper {
-		return new WebhookMapper(
-			db: $container->get('OCP\IDBConnection'),
-			tenancy: new TenancyServices(
-				organisationMapper: $container->get(OrganisationMapperInterface::class),
-				userSession: $container->get('OCP\IUserSession'),
-				groupManager: $container->get('OCP\IGroupManager')
-			),
-			appConfig: $container->get('OCP\IAppConfig'),
-			secrets: new SecretAtRest(
-				crypto: $container->get('OCP\Security\ICrypto'),
-				logger: $container->get('Psr\Log\LoggerInterface')
-			)
-		);
-	}//end webhookMapper()
-
-	/**
 	 * Build the MagicMapper.
 	 *
 	 * @param ContainerInterface $container The container.
@@ -218,7 +193,7 @@ final class MapperWiring {
 	 * EntityRelationMapper is registered explicitly because it constructor-injects
 	 * `IEventDispatcher` to dispatch `EntityRelationDecisionUpdatedEvent`. Every
 	 * other event-dispatcher-dependent mapper in this class (SchemaMapper,
-	 * RegisterMapper, MagicMapper, WebhookMapper) is wired explicitly to avoid
+	 * RegisterMapper, MagicMapper) is wired explicitly to avoid
 	 * depending on NC's autowirer resolution of framework-interface keys, which
 	 * has historically been version-sensitive.
 	 *
