@@ -36,11 +36,11 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTimeImmutable;
 use Exception;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\AdministratorOnlyGate;
 use OCA\OpenRegister\Controller\Support\FlowTimerDiagnosticControllerServices;
 use OCA\OpenRegister\Controller\Support\TermExplanationRequest;
 use OCA\OpenRegister\Exception\FlowTimerValidationException;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Flow\Timer\TermDiagnosticInterface;
 use OCA\OpenRegister\Service\Flow\Timer\TermQuery;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarDefinitionsInterface;
@@ -97,7 +97,7 @@ class FlowTimerDiagnosticController extends Controller {
 		IRequest $request,
 		FlowTimerDiagnosticControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->userSession = $services->userSession;
 		$this->groupManager = $services->groupManager;
 		$this->diagnostic = $services->diagnostic;

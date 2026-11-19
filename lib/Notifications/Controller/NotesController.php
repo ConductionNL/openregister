@@ -29,7 +29,6 @@ use OCA\OpenRegister\Kernel\Contracts\Value\NoteEdit;
 use OCA\OpenRegister\Kernel\Contracts\Value\NoteDraft;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use Exception;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Notifications\Controller\Support\AddressedObject;
 use OCA\OpenRegister\Notifications\Controller\Support\NotePath;
 use OCA\OpenRegister\Notifications\Controller\Support\NoteStep;
@@ -40,6 +39,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\InvalidNoteParentException;
 use OCA\OpenRegister\Files\Service\NoteJournalExporter;
 use OCA\OpenRegister\Exception\NoteWriteRefusedException;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Notifications\Service\Timeline\NoteProjection;
@@ -109,7 +109,7 @@ class NotesController extends Controller {
 		IRequest $request,
 		NotesControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->services = $services;
 		$this->noteService = $services->noteService;
 		$this->objectService = $services->objectService;

@@ -23,7 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
-use OCA\OpenRegister\Db\DbRegistrar;
+use OCA\OpenRegister\Db\ProcessesMapperRegistrar;
 use OCA\OpenRegister\Db\RuleRunMapper;
 use OCA\OpenRegister\Db\RuleRunMapperInterface;
 use OCA\OpenRegister\Service\ContractBindings;
@@ -73,7 +73,7 @@ final class C03MiscInterfaceBindingsTest extends TestCase {
 		PdokGeocoder::class => [PdokGeocoderInterface::class, ContractBindings::class],
 		RegisterCacheHandler::class => [RegisterCacheHandlerInterface::class, ContractBindings::class],
 		RegisterSerializer::class => [RegisterSerializerInterface::class, ContractBindings::class],
-		RuleRunMapper::class => [RuleRunMapperInterface::class, DbRegistrar::class],
+		RuleRunMapper::class => [RuleRunMapperInterface::class, ProcessesMapperRegistrar::class],
 		SchemaMigrationService::class => [SchemaMigrationServiceInterface::class, ContractBindings::class],
 		SchemaObjectReader::class => [SchemaObjectReaderInterface::class, ContractBindings::class],
 		SecurityTxtBuilder::class => [SecurityTxtBuilderInterface::class, ContractBindings::class],

@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Db\DbRegistrar;
+use OCA\OpenRegister\Db\ProcessesMapperRegistrar;
 use OCA\OpenRegister\Db\ExportProfileMapper;
 use OCA\OpenRegister\Db\ExportProfileMapperInterface;
 use OCA\OpenRegister\Db\FlowStreamMapper;
@@ -58,9 +59,9 @@ final class F05DbMapperInterfaceBindingsTest extends TestCase {
 	 */
 	private const CLASSES = [
 		ExportProfileMapper::class => [ExportProfileMapperInterface::class, DbRegistrar::class],
-		FlowStreamMapper::class => [FlowStreamMapperInterface::class, DbRegistrar::class],
-		FlowTimerEventMapper::class => [FlowTimerEventMapperInterface::class, DbRegistrar::class],
-		FormLinkMapper::class => [FormLinkMapperInterface::class, DbRegistrar::class],
+		FlowStreamMapper::class => [FlowStreamMapperInterface::class, ProcessesMapperRegistrar::class],
+		FlowTimerEventMapper::class => [FlowTimerEventMapperInterface::class, ProcessesMapperRegistrar::class],
+		FormLinkMapper::class => [FormLinkMapperInterface::class, ProcessesMapperRegistrar::class],
 		SchemaRunEntryMapper::class => [SchemaRunEntryMapperInterface::class, DbRegistrar::class],
 	];
 
