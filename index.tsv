@@ -1,0 +1,58 @@
+P01	build	31	Core to Compliance, lib/BackgroundJob
+P02	build	28	Notifications to Processes, lib/Notifications/Service/Notification + hotspot RenderObject.php + hotspot SchemasController.php
+P03	build	28	Core to Integrations, lib/Controller + Core to Configuration, lib/Controller/Support + Notifications to Processes, lib/Notifications/Service/Party + Search to Processes, lib/Search
+P04	build	28	Compliance to Configuration, lib/Service + Core to Integrations, lib/Service/Federation + Core to Configuration, lib/Service/Object + Core to Notifications, lib/Service/UserMigration
+P05	build	27	Core to Integrations, lib/Service
+P06	build	25	Core to Files, lib/Service/File
+P07	build	25	Search to Files, lib/Search/Service/Quality + Core to Compliance, lib/Service/File + Integrations to Platform, lib/Service/Outbound + Core to Compliance, lib/Service/Registry + Core to Search, lib/Service/Search + Core to Configuration, lib/Service/Vocabulary + hotspot Schema.php
+P08	build	24	Core to Compliance, lib/Service/Object
+P09	build	24	Core to Compliance, lib/Service/Object
+P10	build	24	Core to Integrations, lib/Controller/Support + Core to Compliance, lib/Controller/Support
+P11	build	24	Core to Integrations, lib/Db + Core to Compliance, lib/Service
+P12	build	24	Core to Files, lib/Service + Core to Integrations, lib/Service/ObjectSource
+P13	build	24	Configuration to Platform, lib/Db + Kernel to Core, lib/Event + Search to Configuration, lib/Search/Db + Core to Integrations, lib/Service/Dbal
+P14	build	24	Core to Configuration, lib/Service/Object/SaveObject + Core to Integrations, lib/Service + Core to Compliance, lib/Service/Object + Integrations to Configuration, lib/AppHost/Store + Compliance to Files, lib/Controller + Integrations to Configuration, lib/Db + Core to Notifications, lib/Db/MagicMapper
+P15	build	24	Core to Notifications, lib/Db/SchemaMapper + Compliance to Processes, lib/Listener + Integrations to Configuration, lib/Mcp/Controller + Notifications to Integrations, lib/Notifications/Controller + Notifications to Integrations, lib/Notifications/Db + Core to Processes, lib/Repair + Search to Compliance, lib/Search/Service + Search to Configuration, lib/Search/Service/ExampleSet
+P16	build	23	Core to Integrations, lib/Service
+P17	build	22	Kernel to Processes, lib/Event
+P18	build	22	Configuration to Platform, lib/Service + Notifications to Configuration, lib/Service + Core to Search, lib/Controller/Support
+P19	build	21	Integrations to Processes, lib/Service/Integration + Core to Configuration, lib/Service + Processes to Platform, lib/Repair
+P20	build	20	Processes to Configuration, lib/Service + Integrations to Processes, lib/Calendar + Compliance to Configuration, lib/Controller
+P21	build	20	Compliance to Configuration, lib/Db + Core to Configuration, lib/Db + Core to Processes, lib/Listener + Core to Search, lib/Service/GraphQL
+P22	build	19	Core to Compliance, lib/Service/Rbac + Core to Compliance, lib/Controller
+P23	build	18	Integrations to Processes, lib/Service/Bindings
+P24	build	18	hotspot ObjectService.php + hotspot SchemaDeclarationValidators.php
+P25	build	18	Integrations to Processes, lib/Mcp/BuiltIn + Notifications to Processes, lib/Notifications/BackgroundJob
+P26	build	16	Core to Processes, lib/Service/Object
+P27	build	16	Compliance to Configuration, lib/BackgroundJob + Compliance to Processes, lib/BackgroundJob/Support
+P28	build	16	Compliance to Integrations, lib/BackgroundJob/Support + Processes to Platform, lib/Controller
+P29	build	16	Core to Notifications, lib/Controller/Support + Core to Search, lib/Service/Aggregation
+P30	build	16	Compliance to Files, lib/Service/Anonymisation + Core to Compliance, lib/Service/Deletion
+P31	build	16	Core to Processes, lib/Controller + Compliance to Processes, lib/Db + Processes to Configuration, lib/Db + Core to Files, lib/Db
+P32	build	16	Core to Compliance, lib/Db/SchemaMapper + Kernel to Integrations, lib/Event + Notifications to Integrations, lib/Notifications/Service + Notifications to Configuration, lib/Notifications/Service/ExampleSet
+P33	build	16	Search to Integrations, lib/Search/Service + Compliance to Integrations, lib/Service/Anonymisation + Compliance to Configuration, lib/Service/Archival + Integrations to Processes, lib/Service/Integration/Providers
+P34	build	16	Core to Files, lib/Service/Object + Core to Configuration, lib/Service/Registers + Core to Configuration, lib/Service/Search + Search to Compliance, lib/Service
+P35	build	16	Core to Integrations, lib/Service/Sharing + Core to Compliance, lib/Service/Sharing + Processes to Configuration, lib/Service/Task + hotspot ListenerRegistrar.php + Compliance to Configuration, lib/BackgroundJob/Support
+P36	build	16	Integrations to Platform, lib/Command + Core to Configuration, lib/Command + Processes to Configuration, lib/Command + Core to Configuration, lib/Controller + Compliance to Platform, lib/Controller + Configuration to Platform, lib/Controller + Processes to Configuration, lib/Controller + Compliance to Configuration, lib/Controller/Support
+P37	build	16	Core to Platform, lib/Controller/Support + Core to Integrations, lib/Controller/Trait + Notifications to Platform, lib/Db + Integrations to Processes, lib/Db/Flow + Core to Compliance, lib/Db/MagicMapper + Core to Search, lib/Db/SchemaMapper + Search to Compliance, lib/Db + Files to Integrations, lib/Files/Service/Sharing
+P38	build	16	Processes to Configuration, lib/Listener + Core to Configuration, lib/Listener + Processes to Configuration, lib/Listener/Registrar + Integrations to Configuration, lib/Mcp + Notifications to Processes, lib/Notifications/Controller + Notifications to Integrations, lib/Notifications/Service/Notification + Notifications to Processes, lib/Notifications/Service/Timeline + Compliance to Platform, lib/Repair
+P39	build	16	Search to Configuration, lib/Search/BackgroundJob + Search to Files, lib/Search/Service/Reporting + Integrations to Configuration, lib/Service + Compliance to Processes, lib/Service/Audit + Compliance to Integrations, lib/Service/Audit + Integrations to Configuration, lib/Service/Bindings + Core to Processes, lib/Service + Integrations to Configuration, lib/Service/Credential
+P40	build	16	Core to Integrations, lib/Service/Deletion + Core to Files, lib/Service/Object/Collaborators + Core to Search, lib/Service/Object + Core to Integrations, lib/Service/Object + Core to Processes, lib/Service/Object/SaveObjects + Processes to Platform, lib/Service + Core to Integrations, lib/Service/Schema + Core to Files, lib/Service/Search
+P41	build	16	Core to Notifications, lib/Service/Sharing + Core to Compliance, lib/Service/TextExtraction + hotspot DbRegistrar.php + hotspot ObjectEntity.php + Integrations to Configuration, lib/AppHost/Reference + Integrations to Configuration, lib/AppHost/Service + Integrations to Processes, lib/BackgroundJob + Core to Integrations, lib/BackgroundJob + Core to Processes, lib/BackgroundJob + Processes to Platform, lib/BackgroundJob + Core to Compliance, lib/Command + Core to Integrations, lib/Command + Compliance to Processes, lib/Controller + Core to Platform, lib/Controller
+P42	build	16	Integrations to Processes, lib/Controller + Search to Configuration, lib/Controller + Compliance to Processes, lib/Controller/Support + Core to Files, lib/Controller/Support + Integrations to Processes, lib/Dav + Compliance to Integrations, lib/Db + Core to Processes, lib/Db + Core to Processes, lib/Db/Schema + Core to Integrations, lib/Db/SchemaMapper + Core to Processes, lib/Event + Core to Configuration, lib/Event + Files to Integrations, lib/Files/Db + Files to Processes, lib/Files/Db + Files to Configuration, lib/Files/Service/File + Files to Configuration, lib/Files/Service + Files to Configuration, lib/Files/Service/TextExtraction
+P43	build	16	Files to Integrations, lib/Files/Service + Notifications to Configuration, lib/Listener + Core to Platform, lib/Listener + Processes to Configuration, lib/Listener/Support + Processes to Platform, lib/Listener + Integrations to Configuration, lib/Mcp/BuiltIn + Integrations to Configuration, lib/Mcp/Controller/Support + Integrations to Configuration, lib/Mcp/Db + Integrations to Configuration, lib/Mcp/Service/Mcp + Integrations to Configuration, lib/Mcp/Tool + Notifications to Files, lib/Notifications/Controller + Notifications to Integrations, lib/Notifications/Controller/Support + Notifications to Processes, lib/Notifications/Controller/Support + Notifications to Platform, lib/Notifications/Controller + Notifications to Configuration, lib/Notifications/Service/Notification + Notifications to Compliance, lib/Notifications/Service/Notification
+P44	build	16	Notifications to Compliance, lib/Notifications/Service + Core to Platform, lib/Repair + Search to Compliance, lib/Search/Service/Quality + Search to Configuration, lib/Search/Service/Reporting + Notifications to Integrations, lib/Service + Compliance to Processes, lib/Service/Archival + Processes to Configuration, lib/Service/Calculation + Integrations to Processes, lib/Service + Processes to Configuration, lib/Service/Decision + Core to Configuration, lib/Service/Deletion + Compliance to Configuration, lib/Service/Edepot + Core to Configuration, lib/Service/File + Processes to Platform, lib/Service/Flow + Core to Processes, lib/Service/Hinge + Integrations to Configuration, lib/Service/Integration + Integrations to Configuration, lib/Service/Integration/Providers
+P45	build	16	Compliance to Integrations, lib/Service + Core to Compliance, lib/Service/Merge + Core to Processes, lib/Service/Object/Collaborators + Core to Search, lib/Service/Object/Collaborators + Core to Integrations, lib/Service/Object/SaveObject + Core to Compliance, lib/Service/Object/SaveObject + Core to Processes, lib/Service/Object/SaveObject + Core to Processes, lib/Service/ObjectSource + Core to Search, lib/Service/ObjectSource + Integrations to Processes, lib/Service/Observability + Core to Files, lib/Service/Rbac + Core to Processes, lib/Service/Relation + Core to Configuration, lib/Service/Schemas + Core to Search, lib/Service/Schemas + Core to Compliance, lib/Service/Schemas + Core to Search, lib/Service/Sharing
+P46	build	15	hotspot JobHandles.php
+P47	build	15	Core to Compliance, lib/Db
+P48	build	15	Core to Compliance, lib/Service/User + hotspot MagicMapper.php + Core to Compliance, lib/BackgroundJob + Core to Files, lib/Service/File
+D01	design	-	Kernel
+D02	design	-	Core
+D03	design	-	Notifications
+D04	design	-	Search
+D05	design	-	Compliance
+D06	design	-	Files
+D07	design	-	Integrations
+D08	design	-	Processes
+D09	design	-	Configuration
+D10	design	-	Platform
