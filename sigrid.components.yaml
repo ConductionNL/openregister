@@ -44,7 +44,7 @@ components:
   - name: Core
     include:
       - ".*/lib/Kernel/Contracts/Core/.*"
-      - ".*/lib/BackgroundJob/(AbstractRetentionJob|ActorForwardedJob|DbalIntrospectionJob|DeferredObjectEventJob|DestructionExecutionJob|DraftExpiryJob|GroupReconcilerJob|JobHandles|JobRuntime|LogCleanUpTask|ObjectCleanupJob|PublishedDigestVerifyJob|QueuedJobClassesInterface|SchemaChangeNoticeJob|SchemaRunJob|StateHistoryRebuildJob|TenantDeprovisionJob|TenantPurgeJob|TenantUsageSyncJob|TransferAttemptRun|TransferCheckJob|TransferExecutionJob|ViewAlertSweepJob)[.]php"
+      - ".*/lib/BackgroundJob/(AbstractRetentionJob|ActorForwardedJob|DbalIntrospectionJob|DeferredObjectEventJob|DestructionExecutionJob|DraftExpiryJob|GroupReconcilerJob|JobHandles|JobRuntime|LogCleanUpTask|ObjectCleanupJob|PublishedDigestVerifyJob|QueuedJobClassesInterface|SchemaChangeNoticeJob|SchemaRunJob|StateHistoryRebuildJob|TenantDeprovisionJob|TenantPurgeJob|TenantUsageSyncJob|TransferAttemptRun|TransferCheckJob|TransferExecutionJob)[.]php"
       - ".*/lib/BackgroundJob/Support/ActorForwardingServices[.]php"
       - ".*/lib/Command/(AdoptLeafOrganisationsCommand|AdoptOrganisationlessRowsCommand|AdoptionRun|BackfillObjectSlugsCommand|DeclaredGroupsCommand|DedupCollidedSchemasCommand|DedupeRegistersCommand|DescriptorImportTarget|DocumentStoreStatusCommand|DraftsExpiredCommand|EncryptFieldCommand|FederationSharesExpiringCommand|FieldEncryptionPass|LeafMatch|MagicTableCommand|MagicTableRun|MagicTableSelection|MagicTableTarget|PruneRetiredSchemasCommand|PruneRetiredSchemasPass|PruneRetiredSchemasRun|PurgeCandidate|PurgeObjectCommand|PurgeRun|RegisterRepairOptions|RelinkRegisterSchemasCommand|ResolverListCommand|RetiredSchemaRow|RetiredSlugRows|SchemaDedupRun|UnknownMetadataConditionsCommand)[.]php"
       - ".*/lib/Controller/(AccessLinkController|AccessLinkPageController|ActionRightsController|ApiSurfaceController|BulkController|ContextsController|DelegationController|DeletedController|DerivedGrantsController|McpController|OasController|ObjectCollectionsController|ObjectDraftController|ObjectGrantsController|ObjectOwnershipController|ObjectPermissionsController|ObjectReadStateController|ObjectRelationsController|ObjectSharingController|ObjectStateController|ObjectsController|OpenApiController|OrganisationController|PermissionsAuditController|PermissionsController|PrincipalReachController|PropertyVocabularyController|RegistersController|RegistrySubscriptionController|RegistryUpdatesController|RevertController|SchemaChangeFollowersController|SchemaImportController|SchemaMigrationController|SchemasController|ScopesController|SourcesController|SurvivorshipController|TablesController|TagsController|UrnController|UserController|VersionsController|VocabularyController|WhoamiController)[.]php"
@@ -1319,9 +1319,6 @@ components:
       - ".*/lib/BackgroundJob/Support/TransferExecutionPlatform[.]php"
       - ".*/lib/BackgroundJob/Support/TransferExecutionRecords[.]php"
       - ".*/lib/BackgroundJob/Support/TransferExecutionTransports[.]php"
-      - ".*/lib/BackgroundJob/Support/ViewAlertCheck[.]php"
-      - ".*/lib/BackgroundJob/Support/ViewAlertSweepPlatform[.]php"
-      - ".*/lib/BackgroundJob/Support/ViewAlertSweepSources[.]php"
       - ".*/lib/BackgroundJob/Support/WebhookDeliveryStores[.]php"
       - ".*/lib/Command/(DedupeRegistersRun|RechainAuditTrailCommand|RetentionDryRunCommand)[.]php"
       - ".*/lib/Controller/(AnonymisationBackendController|AnonymisationPipelineController|ArchivalController|ArchivalOverviewController|AuditQueryController|AuditSinkController|AuditTrailController|ContentReportController|CorrectionsController|DataSubjectRequestController|DsarCaseController|DsarController|ErasurePreviewController|FileDisclosuresController|HardeningController|HardeningStatementController|MergeController|ProcessingLogController|ProcessingPurposeController|QualityAuditController|QualityController|RetentionController|SearchTrailController|SelectielijstController|SelectielijstReferenceController|SubjectExportController|TmloController|TransferController|VerwerkingsactiviteitenController)[.]php"
@@ -1564,6 +1561,10 @@ components:
       - ".*/lib/Service/(FileFolderServiceInterface|FileHandlerSupportInterface|FileReaderInterface|FileServiceInterface|FileWriterInterface)[.]php"
   - name: Search
     include:
+      - ".*/lib/BackgroundJob/(ViewAlertSweepJob)[.]php"
+      - ".*/lib/BackgroundJob/Support/ViewAlertCheck[.]php"
+      - ".*/lib/BackgroundJob/Support/ViewAlertSweepPlatform[.]php"
+      - ".*/lib/BackgroundJob/Support/ViewAlertSweepSources[.]php"
       - ".*/lib/Controller/(SettingsController)[.]php"
       - ".*/lib/Db/(SearchTrailCleanupInterface|SearchTrailCriteria|SearchTrailMapperInterface)[.]php"
       - ".*/lib/Db/SearchTrail/[^/]*"

@@ -78,7 +78,7 @@ deptrac:
         - type: directory
           value: 'lib/Kernel/Contracts/Core/.*$'
         - type: directory
-          value: 'lib/BackgroundJob/(AbstractRetentionJob|ActorForwardedJob|DbalIntrospectionJob|DeferredObjectEventJob|DestructionExecutionJob|DraftExpiryJob|GroupReconcilerJob|JobHandles|JobRuntime|LogCleanUpTask|ObjectCleanupJob|PublishedDigestVerifyJob|QueuedJobClassesInterface|SchemaChangeNoticeJob|SchemaRunJob|StateHistoryRebuildJob|TenantDeprovisionJob|TenantPurgeJob|TenantUsageSyncJob|TransferAttemptRun|TransferCheckJob|TransferExecutionJob|ViewAlertSweepJob)[.]php$'
+          value: 'lib/BackgroundJob/(AbstractRetentionJob|ActorForwardedJob|DbalIntrospectionJob|DeferredObjectEventJob|DestructionExecutionJob|DraftExpiryJob|GroupReconcilerJob|JobHandles|JobRuntime|LogCleanUpTask|ObjectCleanupJob|PublishedDigestVerifyJob|QueuedJobClassesInterface|SchemaChangeNoticeJob|SchemaRunJob|StateHistoryRebuildJob|TenantDeprovisionJob|TenantPurgeJob|TenantUsageSyncJob|TransferAttemptRun|TransferCheckJob|TransferExecutionJob)[.]php$'
         - type: directory
           value: 'lib/BackgroundJob/Support/ActorForwardingServices[.]php$'
         - type: directory
@@ -2622,12 +2622,6 @@ deptrac:
         - type: directory
           value: 'lib/BackgroundJob/Support/TransferExecutionTransports[.]php$'
         - type: directory
-          value: 'lib/BackgroundJob/Support/ViewAlertCheck[.]php$'
-        - type: directory
-          value: 'lib/BackgroundJob/Support/ViewAlertSweepPlatform[.]php$'
-        - type: directory
-          value: 'lib/BackgroundJob/Support/ViewAlertSweepSources[.]php$'
-        - type: directory
           value: 'lib/BackgroundJob/Support/WebhookDeliveryStores[.]php$'
         - type: directory
           value: 'lib/Command/(DedupeRegistersRun|RechainAuditTrailCommand|RetentionDryRunCommand)[.]php$'
@@ -3105,6 +3099,14 @@ deptrac:
           value: 'lib/Service/(FileFolderServiceInterface|FileHandlerSupportInterface|FileReaderInterface|FileServiceInterface|FileWriterInterface)[.]php$'
     - name: Search
       collectors:
+        - type: directory
+          value: 'lib/BackgroundJob/(ViewAlertSweepJob)[.]php$'
+        - type: directory
+          value: 'lib/BackgroundJob/Support/ViewAlertCheck[.]php$'
+        - type: directory
+          value: 'lib/BackgroundJob/Support/ViewAlertSweepPlatform[.]php$'
+        - type: directory
+          value: 'lib/BackgroundJob/Support/ViewAlertSweepSources[.]php$'
         - type: directory
           value: 'lib/Controller/(SettingsController)[.]php$'
         - type: directory
