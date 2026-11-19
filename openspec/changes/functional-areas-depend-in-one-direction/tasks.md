@@ -38,4 +38,9 @@
 ## 6. Documentation and fleet
 - [ ] 6.1 `docs/sig/component-analysis.md` updated with the numbers after each milestone
 - [ ] 6.2 The scripts and the deptrac recipe in the hydra-gates package (ConductionNL/.github)
-- [ ] 6.3 Handover note for the fleet in `~/memcap-work/sig/`
+- [x] 6.3 Handover note for the fleet in `~/memcap-work/sig/`
+
+## 7. The fleet surface (hydra ADR-119 Decisions 14 and 15)
+- [x] 7.1 `tools/sig/fleet_surface.py` and `tools/sig/fleet_checkout.sh`: references from the fleet apps' development branches to OpenRegister classes outside `Contract\` and `Event\`; baseline `tools/sig/fleet-surface-baseline.json` (19 Nov 2026: 6,873 pairs from 19 apps to 433 classes)
+- [ ] 7.2 Decide the promotion of `Kernel\Contracts\Value\*`: the published `ObjectServiceInterface` names them, and fleet apps hold 2,958 references to `Kernel\` classes
+- [ ] 7.3 Fleet apps type against the published contract instead of `Service\ObjectService` (1,143 references) and `Db\ObjectEntity` (670)

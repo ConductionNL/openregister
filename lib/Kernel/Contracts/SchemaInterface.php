@@ -34,8 +34,7 @@ use stdClass;
  * Implemented by \OCA\OpenRegister\Db\Schema. The column accessors are
  * served by Nextcloud's Entity::__call, so they are listed as tags here.
  * hydrate() and validateProperties() stay on the entity (they take a
- * Service validator), and so does getManagedByConfiguration() (it returns a
- * Db\Configuration): a Kernel contract names no Service or Db class.
+ * Service validator): a Kernel contract names no Service or Db class.
  *
  * @method int getId()
  * @method string|null getUuid()

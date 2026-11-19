@@ -36,6 +36,7 @@ namespace OCA\OpenRegister\Service\Deletion;
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SoftDeletion;
 use OCA\OpenRegister\Service\Settings\RetentionSettingsReaderInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -55,7 +56,7 @@ class DeletionWindowService {
 	 *
 	 * @var int
 	 */
-	public const DEFAULT_RETENTION_DAYS = 30;
+	public const DEFAULT_RETENTION_DAYS = SoftDeletion::DEFAULT_RETENTION_DAYS;
 
 	/**
 	 * Milliseconds in a day, for reading the instance setting.

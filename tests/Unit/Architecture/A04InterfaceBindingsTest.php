@@ -3,10 +3,10 @@
 /**
  * Lane A04: the Db classes below are reached only through an interface next to them.
  *
- * Each class implements its interface, DbRegistrar binds the interface to the
- * class, and no lib/ file outside the Db component names the class. A missing
- * binding is a 500 at the first request that no other unit test sees, so the
- * binding is pinned here as well.
+ * Each class implements its interface, its area's registrar binds the
+ * interface to the class, and no lib/ file outside the Db component names the
+ * class. A missing binding is a 500 at the first request that no other unit
+ * test sees, so the binding is pinned here as well.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
@@ -23,7 +23,8 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Db\ConfigurationMapperInterface;
-use OCA\OpenRegister\Db\DbRegistrar;
+use OCA\OpenRegister\Db\ConfigurationMapperRegistrar;
+use OCA\OpenRegister\Db\ProcessesMapperRegistrar;
 use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Db\FlowMapperInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -49,8 +50,8 @@ final class A04InterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{0: class-string, 1: class-string}>
 	 */
 	private const HIDDEN = [
-		ConfigurationMapper::class => [ConfigurationMapperInterface::class, DbRegistrar::class],
-		FlowMapper::class => [FlowMapperInterface::class, DbRegistrar::class],
+		ConfigurationMapper::class => [ConfigurationMapperInterface::class, ConfigurationMapperRegistrar::class],
+		FlowMapper::class => [FlowMapperInterface::class, ProcessesMapperRegistrar::class],
 	];
 
 	/**
