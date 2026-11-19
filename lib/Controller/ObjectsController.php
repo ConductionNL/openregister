@@ -2243,12 +2243,12 @@ class ObjectsController extends Controller {
 	#[UserRateLimit(limit: 300, period: 60)]
 	#[AnonRateLimit(limit: 60, period: 60)]
 	public function geoSearch(string $register, string $schema, ObjectOperationsInterface $objectService): JSONResponse {
-		if ($this->geo->geoFilterParser === null || $this->geo->geoFilterApplier === null) {
+		if ($this->geo->spatialFilter === null) {
 			return new JSONResponse(data: ['error' => 'Geo filtering primitives not configured'], statusCode: 501);
 		}
 
 		try {
-			$filters = $this->geo->geoFilterParser->fromGeoSearchBody(body: $this->request->getParams());
+			$filters = $this->geo->spatialFilter->fromGeoSearchBody(body: $this->request->getParams());
 		} catch (\InvalidArgumentException $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 422);
 		}
@@ -2464,7 +2464,7 @@ class ObjectsController extends Controller {
 	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-008
 	 */
 	private function withGeoFilteredRows(array $result, array $filters): array {
-		$result['results'] = $this->geo->geoFilterApplier->applyAll(rows: $result['results'], filters: $filters);
+		$result['results'] = $this->geo->spatialFilter->applyAll(rows: $result['results'], filters: $filters);
 		if (isset($result['total']) === true) {
 			$result['total'] = count($result['results']);
 		}
@@ -2558,8 +2558,8 @@ class ObjectsController extends Controller {
 	 * Apply geo query-param filters to a listing result.
 	 *
 	 * Reads `geo.bbox` / `geo.near` / `geo.radius` / `geo.property` from
-	 * the query params via GeoFilterParser and post-filters
-	 * `$result['results']` via GeoFilterApplier under AND-composition.
+	 * the query params via the spatial filter port and post-filters
+	 * `$result['results']` under AND-composition.
 	 *
 	 * Null-safe: when the geo deps aren't wired (older fixtures),
 	 * returns the result unchanged. Parser failures (malformed bbox,
@@ -2583,7 +2583,7 @@ class ObjectsController extends Controller {
 		}
 
 		try {
-			$filters = $this->geo->geoFilterParser->fromQueryParams(params: $flatParams);
+			$filters = $this->geo->spatialFilter->fromQueryParams(params: $flatParams);
 		} catch (\InvalidArgumentException $e) {
 			// Malformed input: surface a 422-shape envelope inside the
 			// existing result body so consumers see the validation error
@@ -2608,7 +2608,7 @@ class ObjectsController extends Controller {
 	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-008
 	 */
 	private function asksForGeoFilter(array $flatParams): bool {
-		if ($this->geo->geoFilterParser === null || $this->geo->geoFilterApplier === null) {
+		if ($this->geo->spatialFilter === null) {
 			return false;
 		}
 
@@ -2618,7 +2618,7 @@ class ObjectsController extends Controller {
 
 	/**
 	 * Flatten NC's nested `geo: {bbox: ...}` query-param shape back into
-	 * the dotted `geo.bbox: ...` form the GeoFilterParser expects.
+	 * the dotted `geo.bbox: ...` form the spatial filter expects.
 	 *
 	 * Accepts both already-flat keys and nested `geo` arrays — the
 	 * dotted form takes priority when both are present.

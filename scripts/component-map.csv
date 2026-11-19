@@ -1725,6 +1725,7 @@ Search/Service/Geo/GeoFilterParser.php,65,Search,Search,Search/Service/Geo/GeoFi
 Search/Service/Geo/GeoResponseCrs.php,62,Search,Search,Search/Service/Geo/GeoResponseCrs.php,0,,Search
 Search/Service/Geo/GeoSpatialEvaluator.php,197,Search,Search,Search/Service/Geo/GeoSpatialEvaluator.php,0,,Search
 Search/Service/Geo/RdCrsTransformer.php,73,Search,Search,Search/Service/Geo/RdCrsTransformer.php,0,,Search
+Search/Service/Geo/SpatialFilter.php,,Search,,,,,Search
 Search/Service/GraphQL/GraphQLErrorFormatter.php,45,Search,Search,Search/Service/GraphQL/GraphQLErrorFormatter.php,0,405,Search
 Search/Service/GraphQL/GraphQLService.php,209,Search,Search,Search/Service/GraphQL/GraphQLService.php,0,,Search
 Search/Service/GraphQL/QueryComplexityAnalyzer.php,154,Search,Search,Search/Service/GraphQL/QueryComplexityAnalyzer.php,0,,Search
