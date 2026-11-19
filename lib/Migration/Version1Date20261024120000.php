@@ -29,7 +29,6 @@ use Closure;
 use OCP\DB\ISchemaWrapper;
 use OCP\IDBConnection;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Adds the unique index on the task key, unless stored keys already collide.
@@ -40,7 +39,7 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * @spec openspec/specs/flow-tasks/spec.md
  */
-class Version1Date20261024120000 extends SimpleMigrationStep {
+class Version1Date20261024120000 extends TargetedMigrationStep {
 
 	/**
 	 * The tasks table.
@@ -81,7 +80,7 @@ class Version1Date20261024120000 extends SimpleMigrationStep {
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The signature is Nextcloud's.
 	 * @spec openspec/specs/flow-tasks/spec.md
 	 */
-	public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
+	protected function beforeTargetedSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
 		if ($schemaClosure()->hasTable(self::TABLE) === false) {
 			return;
 		}
@@ -93,7 +92,7 @@ class Version1Date20261024120000 extends SimpleMigrationStep {
 				. 'Give those tasks distinct keys and run the upgrade again.'
 			);
 		}
-	}//end preSchemaChange()
+	}//end beforeTargetedSchemaChange()
 
 	/**
 	 * Add the unique index when it is absent and the keys allow it.
@@ -107,7 +106,7 @@ class Version1Date20261024120000 extends SimpleMigrationStep {
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The signature is Nextcloud's.
 	 * @spec openspec/specs/flow-tasks/spec.md
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		/*
 		 * @var ISchemaWrapper $schema
 		 */
@@ -125,7 +124,7 @@ class Version1Date20261024120000 extends SimpleMigrationStep {
 		$table->addUniqueIndex(['task_key'], self::INDEX);
 
 		return $schema;
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 
 	/**
 	 * The number of non-null keys carried by more than one task.

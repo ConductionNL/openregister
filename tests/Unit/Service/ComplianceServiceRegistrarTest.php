@@ -11,6 +11,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\ReadPurposeGuardInterface;
+use OCA\OpenRegister\Service\Audit\PurposeGuard;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\ComplianceServiceRegistrar;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
@@ -57,4 +59,15 @@ final class ComplianceServiceRegistrarTest extends TestCase {
 		$twice = array_intersect_key(ComplianceServiceRegistrar::BINDINGS, ContractBindings::BINDINGS);
 		$this->assertSame(expected: [], actual: $twice);
 	}//end testContractBindingsDoesNotBindThemAgain()
+
+	/**
+	 * The Core read purpose-guard port, which relation reads ask per table, is answered by the doelbinding guard.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
+	 */
+	public function testTheReadPurposeGuardPortIsAnsweredByThePurposeGuard(): void {
+		$this->assertSame(expected: PurposeGuard::class, actual: (ComplianceServiceRegistrar::BINDINGS[ReadPurposeGuardInterface::class] ?? null));
+	}//end testTheReadPurposeGuardPortIsAnsweredByThePurposeGuard()
 }//end class
