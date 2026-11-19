@@ -1897,7 +1897,7 @@ Service/BulkJob/BulkJobService.php,290,Service,Flows,Flows/Service/BulkJob/BulkJ
 Service/BulkJob/BulkSelectionResolver.php,95,Service,Flows,Flows/Service/BulkJob/BulkSelectionResolver.php,0,,Processes
 Service/BulkJob/ReversibilityAnnotationValidator.php,137,Service,Service,Service/BulkJob/ReversibilityAnnotationValidator.php,0,,Processes
 Service/BulkJob/ReversibilityDeclarationException.php,16,Service,Flows,Flows/Service/BulkJob/ReversibilityDeclarationException.php,0,481,Core
-Service/BulkTranslationService.php,131,Service,Flows,Flows/Service/BulkTranslationService.php,0,,Processes
+Service/BulkTranslationService.php,131,Service,Flows,Flows/Service/BulkTranslationService.php,0,,Configuration
 Service/Calculation/AggregateReferenceResolver.php,98,Service,Flows,Flows/Service/Calculation/AggregateReferenceResolver.php,0,,Processes
 Service/Calculation/CalculationAnnotationValidator.php,322,Service,Flows,Flows/Service/Calculation/CalculationAnnotationValidator.php,1,44,Processes
 Service/Calculation/CalculationDeclarationException.php,16,Service,Flows,Flows/Service/Calculation/CalculationDeclarationException.php,0,480,Core
@@ -4015,7 +4015,7 @@ Service/PropertyDiscoveryRun.php,,Service,,,,,Configuration
 Service/PropertyRbacCaller.php,,Service,,,,,Core
 Service/PropertyRbacHandlerInterface.php,,Service,,,,,Core
 Service/PropertyRbacRules.php,,Service,,,,,Core
-Service/PropertyTranslation.php,,Service,,,,,Processes
+Service/PropertyTranslation.php,,Service,,,,,Configuration
 Service/PropertyWriteCheck.php,,Service,,,,,Core
 Service/ProtectedCarryForward.php,,Service,,,,,Core
 Service/ProtectedPropertyRead.php,,Service,,,,,Core
@@ -4065,7 +4065,7 @@ Service/SearchTrailUserAgentParser.php,,Service,,,,,Search
 Service/SecurityHeadersInterface.php,,Service,,,,,Core
 Service/SemanticTypeQuery.php,,Service,,,,,Core
 Service/SemanticTypeResolverInterface.php,,Service,,,,,Core
-Service/SequenceScope.php,,Service,,,,,Configuration
+Service/SequenceScope.php,,Service,,,,,Processes
 Service/SequenceServiceInterface.php,,Service,,,,,Processes
 Service/ServiceBootstrap.php,,Service,,,,,Core
 Service/ShareLinkServiceInterface.php,,Service,,,,,Integrations
