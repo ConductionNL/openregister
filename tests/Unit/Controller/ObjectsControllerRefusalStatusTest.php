@@ -64,6 +64,11 @@ class ObjectsControllerRefusalStatusTest extends TestCase {
 	private IGroupManager&MockObject $groupManager;
 	private ExportService&MockObject $exportService;
 	private ImportService&MockObject $importService;
+	/**
+	 * The dispatcher of the write-request event.
+	 *
+	 * @var IEventDispatcher&MockObject
+	 */
 	private IEventDispatcher&MockObject $writeRequestDispatcher;
 	private LoggerInterface&MockObject $logger;
 
@@ -82,7 +87,7 @@ class ObjectsControllerRefusalStatusTest extends TestCase {
 		$this->groupManager = $this->createMock(IGroupManager::class);
 		$this->exportService = $this->createMock(ExportService::class);
 		$this->importService = $this->createMock(ImportService::class);
-		$this->writeRequestDispatcher = $this->createMock(IEventDispatcher::class);
+		$this->writeRequestDispatcher = $this->createMock(originalClassName: IEventDispatcher::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		// resolveRegisterSchemaRef() reuses the entities resolved by

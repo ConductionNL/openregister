@@ -86,7 +86,7 @@ class ObjectsControllerLogsRedactionTest extends TestCase {
 			$this->groupManager,
 			$this->createMock(ExportService::class),
 			$this->createMock(ImportService::class),
-			$this->createMock(IEventDispatcher::class),
+			$this->createMock(originalClassName: IEventDispatcher::class),
 			$this->createMock(LoggerInterface::class)
 		);
 	}//end setUp()

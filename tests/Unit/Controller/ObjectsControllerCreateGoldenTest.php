@@ -287,7 +287,7 @@ class ObjectsControllerCreateGoldenTest extends TestCase {
 			return null;
 		}
 
-		$service = $this->createMock(IEventDispatcher::class);
+		$service = $this->createMock(originalClassName: IEventDispatcher::class);
 		if ($setup['webhook'] === 'fails') {
 			$service->method('dispatchTyped')->willThrowException(new RuntimeException('no hook'));
 			return $service;

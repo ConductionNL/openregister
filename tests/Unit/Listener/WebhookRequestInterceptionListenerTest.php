@@ -39,18 +39,18 @@ class WebhookRequestInterceptionListenerTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheBodyBecomesTheInterceptionAnswer(): void {
-		$request = $this->createMock(IRequest::class);
+		$request = $this->createMock(originalClassName: IRequest::class);
 		$request->method('getParams')->willReturn(['title' => 'x']);
 		$event = new ObjectWriteRequestEvent(request: $request, eventType: 'object.creating');
 
-		$webhooks = $this->createMock(WebhookService::class);
+		$webhooks = $this->createMock(originalClassName: WebhookService::class);
 		$webhooks->expects($this->once())->method('interceptRequest')
 			->with($request, 'object.creating')
 			->willReturn(['title' => 'y']);
 
 		(new WebhookRequestInterceptionListener(webhookService: $webhooks))->handle($event);
 
-		$this->assertSame(['title' => 'y'], $event->getBody());
+		$this->assertSame(expected: ['title' => 'y'], actual: $event->getBody());
 	}//end testTheBodyBecomesTheInterceptionAnswer()
 
 	/**
@@ -59,13 +59,14 @@ class WebhookRequestInterceptionListenerTest extends TestCase {
 	 * @return void
 	 */
 	public function testAFailingInterceptionIsNotSwallowed(): void {
-		$request = $this->createMock(IRequest::class);
+		$request = $this->createMock(originalClassName: IRequest::class);
 		$request->method('getParams')->willReturn([]);
-		$webhooks = $this->createMock(WebhookService::class);
+		$webhooks = $this->createMock(originalClassName: WebhookService::class);
 		$webhooks->method('interceptRequest')->willThrowException(new RuntimeException('down'));
 
-		$this->expectException(RuntimeException::class);
-		(new WebhookRequestInterceptionListener(webhookService: $webhooks))->handle(new ObjectWriteRequestEvent(request: $request, eventType: 'object.creating'));
+		$this->expectException(exception: RuntimeException::class);
+		$event = new ObjectWriteRequestEvent(request: $request, eventType: 'object.creating');
+		(new WebhookRequestInterceptionListener(webhookService: $webhooks))->handle($event);
 	}//end testAFailingInterceptionIsNotSwallowed()
 
 	/**
@@ -74,10 +75,10 @@ class WebhookRequestInterceptionListenerTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnotherEventIsIgnored(): void {
-		$webhooks = $this->createMock(WebhookService::class);
+		$webhooks = $this->createMock(originalClassName: WebhookService::class);
 		$webhooks->expects($this->never())->method('interceptRequest');
 
 		(new WebhookRequestInterceptionListener(webhookService: $webhooks))->handle(new Event());
-		$this->addToAssertionCount(1);
+		$this->addToAssertionCount(count: 1);
 	}//end testAnotherEventIsIgnored()
 }//end class

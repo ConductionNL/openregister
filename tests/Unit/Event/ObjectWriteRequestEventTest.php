@@ -35,14 +35,14 @@ class ObjectWriteRequestEventTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheBodyStartsAsTheRequestParameters(): void {
-		$request = $this->createMock(IRequest::class);
+		$request = $this->createMock(originalClassName: IRequest::class);
 		$request->method('getParams')->willReturn(['title' => 'x']);
 
 		$event = new ObjectWriteRequestEvent(request: $request, eventType: 'object.creating');
 
-		$this->assertSame(['title' => 'x'], $event->getBody());
-		$this->assertSame($request, $event->getRequest());
-		$this->assertSame('object.creating', $event->getEventType());
+		$this->assertSame(expected: ['title' => 'x'], actual: $event->getBody());
+		$this->assertSame(expected: $request, actual: $event->getRequest());
+		$this->assertSame(expected: 'object.creating', actual: $event->getEventType());
 	}//end testTheBodyStartsAsTheRequestParameters()
 
 	/**
@@ -51,12 +51,12 @@ class ObjectWriteRequestEventTest extends TestCase {
 	 * @return void
 	 */
 	public function testAListenerReplacesTheBody(): void {
-		$request = $this->createMock(IRequest::class);
+		$request = $this->createMock(originalClassName: IRequest::class);
 		$request->method('getParams')->willReturn(['title' => 'x']);
 		$event = new ObjectWriteRequestEvent(request: $request, eventType: 'object.creating');
 
 		$event->setBody(['title' => 'y']);
 
-		$this->assertSame(['title' => 'y'], $event->getBody());
+		$this->assertSame(expected: ['title' => 'y'], actual: $event->getBody());
 	}//end testAListenerReplacesTheBody()
 }//end class

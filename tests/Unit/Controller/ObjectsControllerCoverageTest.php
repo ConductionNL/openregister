@@ -63,6 +63,11 @@ class ObjectsControllerCoverageTest extends TestCase {
 	private IGroupManager&MockObject $groupManager;
 	private ExportService&MockObject $exportService;
 	private ImportService&MockObject $importService;
+	/**
+	 * The dispatcher of the write-request event.
+	 *
+	 * @var IEventDispatcher&MockObject
+	 */
 	private IEventDispatcher&MockObject $writeRequestDispatcher;
 	private LoggerInterface&MockObject $logger;
 
@@ -97,7 +102,7 @@ class ObjectsControllerCoverageTest extends TestCase {
 		$this->groupManager = $this->createMock(IGroupManager::class);
 		$this->exportService = $this->createMock(ExportService::class);
 		$this->importService = $this->createMock(ImportService::class);
-		$this->writeRequestDispatcher = $this->createMock(IEventDispatcher::class);
+		$this->writeRequestDispatcher = $this->createMock(originalClassName: IEventDispatcher::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		// Entities resolved by ObjectService::setRegister()/setSchema() default
@@ -1475,7 +1480,7 @@ class ObjectsControllerCoverageTest extends TestCase {
 		$this->objectService->method('getCurrentSchemaEntity')->willReturn($schemaEntity);
 
 		// A fresh dispatcher whose write-request listener throws.
-		$failingDispatcher = $this->createMock(IEventDispatcher::class);
+		$failingDispatcher = $this->createMock(originalClassName: IEventDispatcher::class);
 		$failingDispatcher->method('dispatchTyped')
 			->willThrowException($webhookException);
 

@@ -32,6 +32,8 @@ use OCP\EventDispatcher\IEventListener;
 /**
  * Runs the request-interception webhooks for an object write request.
  *
+ * @spec openspec/specs/webhook-payload-mapping/spec.md#request-interception-must-support-pre-event-webhooks
+ *
  * @template-implements IEventListener<ObjectWriteRequestEvent>
  */
 final class WebhookRequestInterceptionListener implements IEventListener {

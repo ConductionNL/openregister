@@ -65,6 +65,11 @@ class ObjectsControllerTest extends TestCase {
 	private IGroupManager&MockObject $groupManager;
 	private ExportService&MockObject $exportService;
 	private ImportService&MockObject $importService;
+	/**
+	 * The dispatcher of the write-request event.
+	 *
+	 * @var IEventDispatcher&MockObject
+	 */
 	private IEventDispatcher&MockObject $writeRequestDispatcher;
 	private LoggerInterface&MockObject $logger;
 
@@ -84,7 +89,7 @@ class ObjectsControllerTest extends TestCase {
 		$this->groupManager = $this->createMock(IGroupManager::class);
 		$this->exportService = $this->createMock(ExportService::class);
 		$this->importService = $this->createMock(ImportService::class);
-		$this->writeRequestDispatcher = $this->createMock(IEventDispatcher::class);
+		$this->writeRequestDispatcher = $this->createMock(originalClassName: IEventDispatcher::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		// resolveRegisterSchemaRef() reuses the entities resolved by
@@ -3938,7 +3943,7 @@ class ObjectsControllerTest extends TestCase {
 		$this->objectService->method('getSchema')->willReturn(2);
 		$this->objectService->method('saveObject')->willReturn($objectEntity);
 
-		// A write-request listener throws OCP\DB\Exception — controller catches this
+		// A write-request listener throws OCP\DB\Exception; the controller catches it.
 		$this->writeRequestDispatcher->method('dispatchTyped')
 			->willThrowException(new DBException('Webhook failed'));
 

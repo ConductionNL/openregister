@@ -118,7 +118,7 @@ class ObjectsControllerUpsertOnKeyTest extends TestCase {
 
 		// With no interception webhook configured, the real service hands the
 		// request's own parameters back unchanged.
-		$webhooks = $this->createMock(IEventDispatcher::class);
+		$webhooks = $this->createMock(originalClassName: IEventDispatcher::class);
 		$webhooks->method('dispatchTyped')->willReturnCallback(fn (ObjectWriteRequestEvent $event) => $event->setBody($this->params));
 
 		$this->controller = ObjectsControllerFactory::create(

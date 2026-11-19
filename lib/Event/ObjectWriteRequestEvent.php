@@ -32,6 +32,8 @@ use OCP\IRequest;
  *
  * The body starts as the request parameters; a listener may replace it. An exception a listener
  * throws reaches the dispatcher's caller.
+ *
+ * @spec openspec/specs/webhook-payload-mapping/spec.md#request-interception-must-support-pre-event-webhooks
  */
 class ObjectWriteRequestEvent extends Event {
 

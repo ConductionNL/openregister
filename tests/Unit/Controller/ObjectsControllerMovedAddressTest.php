@@ -121,7 +121,7 @@ class ObjectsControllerMovedAddressTest extends TestCase {
 			$groupManager,
 			$this->createMock(ExportService::class),
 			$this->createMock(ImportService::class),
-			$this->createMock(IEventDispatcher::class),
+			$this->createMock(originalClassName: IEventDispatcher::class),
 			$this->createMock(LoggerInterface::class),
 			windowService: $this->createMock(DeletionWindowService::class)
 		);

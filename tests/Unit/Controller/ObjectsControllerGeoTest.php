@@ -93,7 +93,7 @@ class ObjectsControllerGeoTest extends TestCase {
 				$this->createMock(IGroupManager::class),
 				$this->createMock(ExportService::class),
 				$this->createMock(ImportService::class),
-				$this->createMock(IEventDispatcher::class),
+				$this->createMock(originalClassName: IEventDispatcher::class),
 				$this->createMock(LoggerInterface::class),
 				null,
 				null,
@@ -247,7 +247,7 @@ class ObjectsControllerGeoTest extends TestCase {
 			$this->createMock(IGroupManager::class),
 			$this->createMock(ExportService::class),
 			$this->createMock(ImportService::class),
-			$this->createMock(IEventDispatcher::class),
+			$this->createMock(originalClassName: IEventDispatcher::class),
 			$this->createMock(LoggerInterface::class)
 			// No geo feature builder wired -> 501.
 		);
@@ -288,7 +288,7 @@ class ObjectsControllerGeoTest extends TestCase {
 				$this->createMock(IGroupManager::class),
 				$this->createMock(ExportService::class),
 				$this->createMock(ImportService::class),
-				$this->createMock(IEventDispatcher::class),
+				$this->createMock(originalClassName: IEventDispatcher::class),
 				$this->createMock(LoggerInterface::class),
 				$parser,
 				$applier
@@ -327,7 +327,7 @@ class ObjectsControllerGeoTest extends TestCase {
 			$this->createMock(IGroupManager::class),
 			$this->createMock(ExportService::class),
 			$this->createMock(ImportService::class),
-			$this->createMock(IEventDispatcher::class),
+			$this->createMock(originalClassName: IEventDispatcher::class),
 			$this->createMock(LoggerInterface::class),
 			null,
 			null,
