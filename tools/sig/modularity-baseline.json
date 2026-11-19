@@ -520,11 +520,9 @@
   "lib/Service/Object/Collaborators/ObjectStorageServices.php -> lib/Service/SearchTrailService.php",
   "lib/Service/Object/ConflictReport.php -> lib/Db/AuditTrail.php",
   "lib/Service/Object/ConflictReportInterface.php -> lib/Db/AuditTrail.php",
-  "lib/Service/Object/ContentSearchHandler.php -> lib/Files/Db/FileMapperInterface.php",
   "lib/Service/Object/CorrectionService.php -> lib/Db/AuditTrail.php",
   "lib/Service/Object/CorrectionService.php -> lib/Service/OpenRegisterActionAuthService.php",
   "lib/Service/Object/CorrectionServiceInterface.php -> lib/Db/AuditTrail.php",
-  "lib/Service/Object/DeleteObject.php -> lib/Service/FileFolderServiceInterface.php",
   "lib/Service/Object/DeleteRowRules.php -> lib/Service/Archival/RecordState.php",
   "lib/Service/Object/DraftActivation.php -> lib/Service/Form/FormPayloadFindings.php",
   "lib/Service/Object/DraftActivationChecks.php -> lib/Service/Form/FormPayloadFindings.php",
@@ -550,8 +548,6 @@
   "lib/Service/Object/ReferentialIntegrityService.php -> lib/Service/Archival/ArchivalRetentionGuard.php",
   "lib/Service/Object/RelationHandler.php -> lib/Service/Audit/PurposeGuard.php",
   "lib/Service/Object/RenderDerivations.php -> lib/Service/Calculation/CalculationEvaluatorInterface.php",
-  "lib/Service/Object/RenderFileSources.php -> lib/Files/Db/FileMapperInterface.php",
-  "lib/Service/Object/RenderFileSources.php -> lib/Service/FileReaderInterface.php",
   "lib/Service/Object/RenderObject.php -> lib/Db/Translation.php",
   "lib/Service/Object/RenderObject.php -> lib/Db/TranslationSlot.php",
   "lib/Service/Object/RenderObject.php -> lib/Files/Service/File/FileRestrictionGuardInterface.php",
@@ -1467,6 +1463,9 @@
   "lib/Kernel/Contracts/Core/ExpressionDefaultsInterface.php",
   "lib/Kernel/Contracts/Core/FederatedShareInterface.php",
   "lib/Kernel/Contracts/Core/FieldRulesSourceInterface.php",
+  "lib/Kernel/Contracts/Core/FileNodeLookupInterface.php",
+  "lib/Kernel/Contracts/Core/ObjectFileRecordsInterface.php",
+  "lib/Kernel/Contracts/Core/ObjectFolderLookupInterface.php",
   "lib/Kernel/Contracts/Core/ObjectPresenceInterface.php",
   "lib/Kernel/Contracts/Core/ObjectPreviewCacheInterface.php",
   "lib/Kernel/Contracts/Core/ObjectTimelineLinksInterface.php",
@@ -3107,8 +3106,8 @@
  "exposed_loc": {
   "Compliance": 15739,
   "Configuration": 6895,
-  "Core": 65031,
-  "Files": 3684,
+  "Core": 65057,
+  "Files": 3689,
   "Integrations": 18785,
   "Kernel": 8515,
   "Notifications": 1914,
@@ -3575,6 +3574,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10440,
- "total_loc": 459423,
- "violation_degree": 0.0879
+ "total_loc": 459456,
+ "violation_degree": 0.0874
 }
