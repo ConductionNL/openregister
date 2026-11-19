@@ -661,13 +661,6 @@
   "lib/Service/TranslationStatusService.php -> lib/Service/TranslationStatusServiceInterface.php",
   "lib/Service/UrnService.php -> lib/Db/AuditTrail/ActionLookupOptions.php",
   "lib/Service/User/ApiTokenAuditRow.php -> lib/Db/AuditTrail.php",
-  "lib/Service/UserMigration/PersonalStateMigrator.php -> lib/Notifications/Db/Watcher.php",
-  "lib/Service/UserMigration/PersonalStateMigrator.php -> lib/Notifications/Db/WatcherMapperInterface.php",
-  "lib/Service/UserMigration/PersonalStateMigrator.php -> lib/Search/Db/View.php",
-  "lib/Service/UserMigration/PersonalStateMigrator.php -> lib/Search/Db/ViewMapperInterface.php",
-  "lib/Service/UserMigration/PersonalStateReader.php -> lib/Notifications/Db/Watcher.php",
-  "lib/Service/UserMigration/PersonalStateReader.php -> lib/Notifications/Db/WatcherMapperInterface.php",
-  "lib/Service/UserMigration/PersonalStateReader.php -> lib/Search/Db/View.php",
   "lib/Service/UserService.php -> lib/Db/AuditTrail/ActionWindow.php",
   "lib/Service/UserService.php -> lib/Db/AuditTrail/ActorTrailQuery.php",
   "lib/Service/Vocabulary/ConceptDeleteGuard.php -> lib/Service/VocabularyImportService.php",
@@ -2962,7 +2955,6 @@
   "lib/Service/TranslationStores.php",
   "lib/Service/UrnService.php",
   "lib/Service/UrnServiceInterface.php",
-  "lib/Service/UserMigration/PersonalStateMigrator.php",
   "lib/Service/UserService.php",
   "lib/Service/UserServiceInterface.php",
   "lib/Service/UserTaskListInterface.php",
@@ -3014,7 +3006,7 @@
  "exposed_loc": {
   "Compliance": 15598,
   "Configuration": 6895,
-  "Core": 64799,
+  "Core": 64598,
   "Files": 3689,
   "Integrations": 18418,
   "Kernel": 8515,
@@ -3483,5 +3475,5 @@
  ],
  "kernel_loc": 10440,
  "total_loc": 459499,
- "violation_degree": 0.0785
+ "violation_degree": 0.0778
 }
