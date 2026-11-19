@@ -1267,6 +1267,7 @@ components:
       - ".*/lib/Service/Rules/ExpressionDefaultEvaluation[.]php"
       - ".*/lib/Service/Rules/ExpressionDefaultException[.]php"
       - ".*/lib/Service/Rules/ExpressionDefaultResolver[.]php"
+      - ".*/lib/Service/Rules/ExpressionDefaults[.]php"
       - ".*/lib/Service/Rules/ExpressionValueSources[.]php"
       - ".*/lib/Service/Rules/FlowRuleDescriptors[.]php"
       - ".*/lib/Service/Rules/NamedConditionEvaluator[.]php"

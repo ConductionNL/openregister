@@ -2522,6 +2522,8 @@ deptrac:
         - type: directory
           value: 'lib/Service/Rules/ExpressionDefaultResolver[.]php$'
         - type: directory
+          value: 'lib/Service/Rules/ExpressionDefaults[.]php$'
+        - type: directory
           value: 'lib/Service/Rules/ExpressionValueSources[.]php$'
         - type: directory
           value: 'lib/Service/Rules/FlowRuleDescriptors[.]php$'
