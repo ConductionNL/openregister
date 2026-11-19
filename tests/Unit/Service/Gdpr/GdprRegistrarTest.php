@@ -11,6 +11,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Gdpr;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\PurposeAdmissionInterface;
+use OCA\OpenRegister\Service\Audit\PurposeGuard;
 use OCA\OpenRegister\Service\Gdpr\GdprRegistrar;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
 use OCP\AppFramework\IAppContainer;
@@ -71,4 +73,22 @@ class GdprRegistrarTest extends TestCase {
 			$this->assertInstanceOf(expected: $name, actual: $factory($container), message: $name);
 		}
 	}//end testEveryFactoryBuildsItsService()
+
+	/**
+	 * The Core purpose-admission port is answered by the doelbinding guard, and that is the only alias.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
+	 */
+	public function testThePurposeAdmissionPortIsAnsweredByThePurposeGuard(): void {
+		$context = new RecordingRegistrationContext();
+		GdprRegistrar::register(context: $context);
+
+		$this->assertSame(
+			expected: [['alias' => PurposeAdmissionInterface::class, 'target' => PurposeGuard::class]],
+			actual: $context->aliases
+		);
+		$this->assertTrue(is_a(PurposeGuard::class, PurposeAdmissionInterface::class, true));
+	}//end testThePurposeAdmissionPortIsAnsweredByThePurposeGuard()
 }//end class

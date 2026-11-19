@@ -24,12 +24,14 @@ namespace OCA\OpenRegister\Service\Audit;
 
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\Core\PurposeAdmissionInterface;
 
 /**
  * The methods of PurposeGuard that callers outside its component use.
- * Callers depend on this interface, not on the class.
+ * Callers depend on this interface, not on the class. allows() comes from the
+ * Core port {@see PurposeAdmissionInterface}, which a read that spans tables asks.
  */
-interface PurposeGuardInterface {
+interface PurposeGuardInterface extends PurposeAdmissionInterface {
 
 	/**
 	 * The audit action a refused read is recorded under.
@@ -56,19 +58,4 @@ interface PurposeGuardInterface {
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function enforce(?Register $register, ?Schema $schema): ?string;
-
-	/**
-	 * Whether a read of this table may run, without recording a refusal.
-	 *
-	 * For a search that spans tables and leaves out the ones it may not read,
-	 * rather than refusing the whole search.
-	 *
-	 * @param Register|null $register The register being read.
-	 * @param Schema|null   $schema   The schema being read.
-	 *
-	 * @return bool True when no purpose is needed or the declared one is accepted.
-	 *
-	 * @spec openspec/specs/verwerkingsregister-api/spec.md
-	 */
-	public function allows(?Register $register, ?Schema $schema): bool;
 }//end interface
