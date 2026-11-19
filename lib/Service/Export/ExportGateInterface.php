@@ -22,13 +22,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Export;
 
-use OCA\OpenRegister\Kernel\Contracts\Core\ExportCheckInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ExportGuardInterface;
 
 /**
  * Answers whether an export may run, as the refusal response to return or null.
  *
- * The method is declared on the Core contract this interface extends, so the
- * Core export endpoints type against that contract. Bound to ExportGate.
+ * The method is declared on the Core contract this interface extends.
+ * Bound, with that contract, to ExportGate.
  */
-interface ExportGateInterface extends ExportCheckInterface {
+interface ExportGateInterface extends ExportGuardInterface {
 }//end interface

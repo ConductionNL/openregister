@@ -23,7 +23,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Export;
 
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 
-use OCA\OpenRegister\Kernel\Contracts\Core\ExportCheckInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ExportGuardInterface;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\Export\ExportGate;
 use OCA\OpenRegister\Service\Export\ExportGateInterface;
@@ -33,8 +33,8 @@ use ReflectionClass;
 final class ExportCheckBindingTest extends TestCase {
 
 	public function testTheGateInterfaceExtendsTheCoreCheck(): void {
-		$this->assertContains(ExportCheckInterface::class, class_implements(ExportGate::class));
-		$this->assertTrue(is_subclass_of(ExportGateInterface::class, ExportCheckInterface::class));
+		$this->assertContains(ExportGuardInterface::class, class_implements(ExportGate::class));
+		$this->assertTrue(is_subclass_of(ExportGateInterface::class, ExportGuardInterface::class));
 	}//end testTheGateInterfaceExtendsTheCoreCheck()
 
 	public function testTheGateInterfaceDeclaresNothingOfItsOwn(): void {
@@ -47,7 +47,7 @@ final class ExportCheckBindingTest extends TestCase {
 	}//end testTheGateInterfaceDeclaresNothingOfItsOwn()
 
 	public function testBothContractsAreBoundToTheGate(): void {
-		$this->assertSame(ExportGate::class, ContractBindings::BINDINGS[ExportCheckInterface::class]);
+		$this->assertSame(ExportGate::class, ContractBindings::BINDINGS[ExportGuardInterface::class]);
 		$this->assertSame(ExportGate::class, ContractBindings::BINDINGS[ExportGateInterface::class]);
 	}//end testBothContractsAreBoundToTheGate()
 }//end class

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * ExportCheckInterface: whether an export may run, as the export endpoints ask it.
+ * ExportGuardInterface: whether an export may run, as the object store's export paths ask it.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -24,15 +24,12 @@ use OCA\OpenRegister\Db\Schema;
 use OCP\AppFramework\Http\JSONResponse;
 
 /**
- * The export verb check every export endpoint makes before data leaves.
+ * Answers whether an export may run, as the refusal response to return or null.
  *
- * The object relations and archival-metadata APIs ask; the export gate
- * (Configuration) answers, records a refusal, and is bound to this contract
- * in its own bindings.
- *
- * @spec openspec/specs/authorization-rbac/spec.md#requirement-export-is-its-own-permission-verb-req-exp-001
+ * The export paths of the object store (Core) ask; the export permission
+ * gate (Configuration) answers and is bound to this contract.
  */
-interface ExportCheckInterface {
+interface ExportGuardInterface {
 
 	/**
 	 * The refusal this export should return, or null when it may run.

@@ -26,7 +26,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Mcp\Tool;
 
 use OCA\OpenRegister\Mcp\Db\Agent;
-use OCA\OpenRegister\Db\Application;
 use OCA\OpenRegister\Db\ApplicationMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -263,15 +262,14 @@ class ApplicationTool extends AbstractTool implements ToolInterface {
 				context: ['file' => __FILE__, 'line' => __LINE__, 'name' => $name]
 			);
 
-			// Create application entity.
-			$application = new Application();
-			$application->setName($name);
+			// The mapper builds the entity from the fields and inserts it
+			// (RBAC and organisation are enforced in the mapper).
+			$fields = ['name' => $name];
 			if ($description !== null && $description !== '') {
-				$application->setDescription($description);
+				$fields['description'] = $description;
 			}
 
-			// Save via mapper (RBAC and organisation are enforced in mapper).
-			$application = $this->applicationMapper->insert($application);
+			$application = $this->applicationMapper->createFromArray(data: $fields);
 
 			return $this->formatSuccess(
 				data: $application->jsonSerialize(),

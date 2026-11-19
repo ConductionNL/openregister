@@ -40,7 +40,7 @@ Open Register drijft apps zoals OpenCatalogi, Procest, Pipelinq en Software Cata
 
 Vrij en open source onder de EUPL-licentie.
     ]]></description>
-    <version>2.2.0-dev.2</version>
+    <version>2.2.0-dev.3</version>
     <licence>EUPL-1.2</licence>
     <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
     <namespace>OpenRegister</namespace>
@@ -212,6 +212,18 @@ Vrij en open source onder de EUPL-licentie.
 	</background-jobs>
 
 	<repair-steps>
+		<pre-migration>
+			<!-- BEFORE the migrations, because it is the migrations it speeds up.
+			     On MariaDB every schema read Nextcloud makes rescans all tables
+			     once per LONGTEXT column, and a magic table created as JSON holds
+			     thirteen of them: about four minutes a read on an instance with a
+			     thousand magic tables, three reads for every migration step of any
+			     app (#10612). Needs only the catalogue and the magic tables, so
+			     nothing a migration of this upgrade creates. Never fails the
+			     upgrade; large tables are left to
+			     `occ openregister:tables:narrow-json`. Idempotent. -->
+			<step>OCA\OpenRegister\Repair\NarrowMagicJsonColumns</step>
+		</pre-migration>
 		<post-migration>
 			<!--
 				The two job-list steps are a pair and run together.
@@ -589,6 +601,7 @@ Vrij en open source onder de EUPL-licentie.
 		<command>OCA\OpenRegister\Command\PruneRetiredSchemasCommand</command>
 		<command>OCA\OpenRegister\Command\RelinkRegisterSchemasCommand</command>
 		<command>OCA\OpenRegister\Command\ReconcileMagicTablesCommand</command>
+		<command>OCA\OpenRegister\Command\NarrowMagicJsonColumnsCommand</command>
 		<command>OCA\OpenRegister\Search\Command\SearchIndexCommand</command>
 		<!-- The sanctioned administrative purge. Every HTTP delete route refuses an
 		     archival record; this is the one path that can still destroy one, and it
