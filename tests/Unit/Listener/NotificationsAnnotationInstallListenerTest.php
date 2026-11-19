@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Listener;
 
 use OCA\OpenRegister\Listener\NotificationsAnnotationInstallListener;
-use OCA\OpenRegister\Service\Notification\NotificationsAnnotationInstallerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Notifications\DeclaredWebhookInstallerInterface;
 use OCP\EventDispatcher\Event;
 use PHPUnit\Framework\TestCase;
 
@@ -33,7 +33,7 @@ use PHPUnit\Framework\TestCase;
 class NotificationsAnnotationInstallListenerTest extends TestCase {
 	public function testForwardsTheExactEventToTheInstallerOnce(): void {
 		$event     = new Event();
-		$installer = $this->createMock(NotificationsAnnotationInstallerInterface::class);
+		$installer = $this->createMock(DeclaredWebhookInstallerInterface::class);
 		$installer->expects($this->once())->method('handle')->with($this->identicalTo($event));
 
 		(new NotificationsAnnotationInstallListener($installer))->handle($event);
