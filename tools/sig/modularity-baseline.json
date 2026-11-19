@@ -327,12 +327,7 @@
   "lib/Event/DeepLinkRegistrationEvent.php -> lib/Service/DeepLinkRegistryServiceInterface.php",
   "lib/Event/EntityRelationDecisionUpdatedEvent.php -> lib/Db/EntityRelation.php",
   "lib/Event/FlowTimerFiredEvent.php -> lib/Db/FlowTimer.php",
-  "lib/Event/FlowTimerFiredEvent.php -> lib/Service/Flow/Timer/EscalationNotice.php",
-  "lib/Event/FlowTimerFiredEvent.php -> lib/Service/Flow/Timer/TimerFiring.php",
-  "lib/Event/FormDestinationDependentsEvent.php -> lib/Service/Form/FormDependent.php",
   "lib/Event/ObjectEventSubscription.php -> lib/Listener/ListenerClassesInterface.php",
-  "lib/Event/ObjectTransitionedEvent.php -> lib/Service/Lifecycle/TransitionActor.php",
-  "lib/Event/ObjectTransitionedEvent.php -> lib/Service/Lifecycle/TransitionMove.php",
   "lib/Event/OrganisationCreatedEvent.php -> lib/Event/AbstractOrganisationEvent.php",
   "lib/Event/OrganisationDeletedEvent.php -> lib/Event/AbstractOrganisationEvent.php",
   "lib/Event/OrganisationUpdatedEvent.php -> lib/Db/Organisation.php",
@@ -3382,10 +3377,10 @@
   "Core": 64730,
   "Files": 3741,
   "Integrations": 19068,
-  "Kernel": 8369,
+  "Kernel": 8434,
   "Notifications": 1696,
   "Platform": 1034,
-  "Processes": 33584,
+  "Processes": 33519,
   "Search": 2270
  },
  "kernel_files": [
@@ -3812,8 +3807,14 @@
   "lib/Lifecycle/LifecycleGuardContext.php",
   "lib/Lifecycle/LifecycleGuardInterface.php",
   "lib/Lifecycle/LifecycleTransitionGuardInterface.php",
+  "lib/Service/Flow/Timer/EscalationNotice.php",
+  "lib/Service/Flow/Timer/TimerFiring.php",
+  "lib/Service/Form/FormDependent.php",
+  "lib/Service/Form/PublishedForm.php",
   "lib/Service/Handoff/HandoffRequest.php",
   "lib/Service/Handoff/HandoffSourceRef.php",
+  "lib/Service/Lifecycle/TransitionActor.php",
+  "lib/Service/Lifecycle/TransitionMove.php",
   "lib/Service/Oas/OasValidationReportInterface.php",
   "lib/Service/Object/BatchOperationStatusInterface.php",
   "lib/Service/Schemas/PropertyValidatorHandlerInterface.php",
@@ -3834,7 +3835,7 @@
   "lib/Support/RegisterSlugAliasesInterface.php",
   "lib/Support/UnknownFilterKeys.php"
  ],
- "kernel_loc": 10282,
+ "kernel_loc": 10359,
  "total_loc": 459141,
- "violation_degree": 0.1121
+ "violation_degree": 0.1115
 }
