@@ -94,8 +94,6 @@ deptrac:
         - type: directory
           value: 'lib/Controller/Support/AccessLinkPlatform[.]php$'
         - type: directory
-          value: 'lib/Controller/Support/ActivityLinksControllerServices[.]php$'
-        - type: directory
           value: 'lib/Controller/Support/AdminGroupMembership[.]php$'
         - type: directory
           value: 'lib/Controller/Support/AdministratorOnlyGate[.]php$'
@@ -140,17 +138,9 @@ deptrac:
         - type: directory
           value: 'lib/Controller/Support/CaseTokenControllerServices[.]php$'
         - type: directory
-          value: 'lib/Controller/Support/ChatControllerServices[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/ChatDomain[.]php$'
-        - type: directory
           value: 'lib/Controller/Support/ChatFamilyControllerInterface[.]php$'
         - type: directory
           value: 'lib/Controller/Support/ChatHealthControllerServices[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/ChatMappers[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/ChatPlatform[.]php$'
         - type: directory
           value: 'lib/Controller/Support/ChatStreamChat[.]php$'
         - type: directory
@@ -173,10 +163,6 @@ deptrac:
           value: 'lib/Controller/Support/ControllerSession[.]php$'
         - type: directory
           value: 'lib/Controller/Support/ConversationChange[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/ConversationControllerServices[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/ConversationDomain[.]php$'
         - type: directory
           value: 'lib/Controller/Support/ConversationFailure[.]php$'
         - type: directory
@@ -285,8 +271,6 @@ deptrac:
           value: 'lib/Controller/Support/ObjectGovernanceServices[.]php$'
         - type: directory
           value: 'lib/Controller/Support/ObjectGrantsControllerServices[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/ObjectIntegrationsAccess[.]php$'
         - type: directory
           value: 'lib/Controller/Support/ObjectLinkRoute[.]php$'
         - type: directory
@@ -433,8 +417,6 @@ deptrac:
           value: 'lib/Controller/Support/RelationUrlStamper[.]php$'
         - type: directory
           value: 'lib/Controller/Support/RelationsObjectLookup[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/RelationsRecords[.]php$'
         - type: directory
           value: 'lib/Controller/Support/RenderedObjectUuids[.]php$'
         - type: directory
@@ -2836,6 +2818,8 @@ deptrac:
         - type: directory
           value: 'lib/Controller/(ActivityLinksController|AnalyticsLinksController|AnalyticsSeriesController|ApiCallersController|BookmarkLinksController|CaseTokenController|CollectiveLinksController|CompanyLookupController|ConsumersController|ContactsController|CospendLinksController|CredentialController|CredentialOauth2Controller|CredentialOrganisationController|DeckController|DeckLinksController|EmailLinksController|EndpointsController|FederationController|FormLinksController|HandoffController|IntegrationControllersRegistrar|IntegrationControllersWiring|IntegrationsController|LinkedEntityController|MapLinksController|MappingsController|MessageDispatchController|ObjectIntegrationsController|ObjectShareLinkController|OpenProjectLinksController|PhotoLinksController|PollLinksController|RelationsController|ScheduledMessagesController|ShareLinksController|TalkLinksController|TimeTrackerLinksController|WebhooksController|WellKnownController|XwikiLinksController)[.]php$'
         - type: directory
+          value: 'lib/Controller/Support/ActivityLinksControllerServices[.]php$'
+        - type: directory
           value: 'lib/Controller/Support/AnalyticsLinksControllerServices[.]php$'
         - type: directory
           value: 'lib/Controller/Support/ApiCallersControllerServices[.]php$'
@@ -2886,6 +2870,8 @@ deptrac:
         - type: directory
           value: 'lib/Controller/Support/MappingsControllerServices[.]php$'
         - type: directory
+          value: 'lib/Controller/Support/ObjectIntegrationsAccess[.]php$'
+        - type: directory
           value: 'lib/Controller/Support/ObjectIntegrationsControllerServices[.]php$'
         - type: directory
           value: 'lib/Controller/Support/ObjectIntegrationsDomain[.]php$'
@@ -2895,6 +2881,8 @@ deptrac:
           value: 'lib/Controller/Support/RelationsControllerServices[.]php$'
         - type: directory
           value: 'lib/Controller/Support/RelationsPlatform[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/RelationsRecords[.]php$'
         - type: directory
           value: 'lib/Controller/Support/TalkLinksControllerServices[.]php$'
         - type: directory
@@ -3219,6 +3207,18 @@ deptrac:
           value: 'lib/Collaboration/[^/]*$'
         - type: directory
           value: 'lib/Controller/(AgentsController|ChatController|ChatHealthController|ChatStreamController|ConversationController)[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/ChatControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/ChatDomain[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/ChatMappers[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/ChatPlatform[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/ConversationControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/ConversationDomain[.]php$'
         - type: directory
           value: 'lib/Dashboard/[^/]*$'
         - type: directory

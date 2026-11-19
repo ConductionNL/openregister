@@ -372,6 +372,7 @@ Controller/SubjectExportController.php,67,Controller,Compliance,Compliance/Contr
 Controller/Support/AccessLinkControllerServices.php,10,Controller,Access,Access/Controller/Support/AccessLinkControllerServices.php,0,,Core
 Controller/Support/AccessLinkDomain.php,16,Controller,Access,Access/Controller/Support/AccessLinkDomain.php,0,,Core
 Controller/Support/AccessLinkPlatform.php,14,Controller,Access,Access/Controller/Support/AccessLinkPlatform.php,0,,Core
+Controller/Support/ActivityLinksControllerServices.php,,Controller,,,,,Integrations
 Controller/Support/AgentsControllerServices.php,16,Controller,Platform,Platform/Controller/Support/AgentsControllerServices.php,0,,Core
 Controller/Support/ApiTokenSettingsControllerServices.php,16,Controller,Configuration,Configuration/Controller/Support/ApiTokenSettingsControllerServices.php,0,,Configuration
 Controller/Support/ArchivalControllerServices.php,12,Controller,Compliance,Compliance/Controller/Support/ArchivalControllerServices.php,0,,Compliance
@@ -393,10 +394,10 @@ Controller/Support/CalendarFeedControllerServices.php,10,Controller,Work,Work/Co
 Controller/Support/CalendarFeedDomain.php,16,Controller,Work,Work/Controller/Support/CalendarFeedDomain.php,0,,Processes
 Controller/Support/CalendarFeedPlatform.php,12,Controller,Work,Work/Controller/Support/CalendarFeedPlatform.php,0,,Processes
 Controller/Support/CaseControllerServices.php,16,Controller,Work,Work/Controller/Support/CaseControllerServices.php,0,,Processes
-Controller/Support/ChatControllerServices.php,11,Controller,Platform,Platform/Controller/Support/ChatControllerServices.php,0,,Core
-Controller/Support/ChatDomain.php,12,Controller,Platform,Platform/Controller/Support/ChatDomain.php,0,,Core
-Controller/Support/ChatMappers.php,16,Controller,Platform,Platform/Controller/Support/ChatMappers.php,0,,Core
-Controller/Support/ChatPlatform.php,14,Controller,Platform,Platform/Controller/Support/ChatPlatform.php,0,,Core
+Controller/Support/ChatControllerServices.php,11,Controller,Platform,Platform/Controller/Support/ChatControllerServices.php,0,,Platform
+Controller/Support/ChatDomain.php,12,Controller,Platform,Platform/Controller/Support/ChatDomain.php,0,,Platform
+Controller/Support/ChatMappers.php,16,Controller,Platform,Platform/Controller/Support/ChatMappers.php,0,,Platform
+Controller/Support/ChatPlatform.php,14,Controller,Platform,Platform/Controller/Support/ChatPlatform.php,0,,Platform
 Controller/Support/ChatStreamChat.php,16,Controller,Platform,Platform/Controller/Support/ChatStreamChat.php,0,,Core
 Controller/Support/ChatStreamControllerServices.php,10,Controller,Platform,Platform/Controller/Support/ChatStreamControllerServices.php,0,,Core
 Controller/Support/ChatStreamPlatform.php,12,Controller,Platform,Platform/Controller/Support/ChatStreamPlatform.php,0,,Core
@@ -411,8 +412,8 @@ Controller/Support/ContactsControllerServices.php,10,Controller,Integrations,Int
 Controller/Support/ContactsDomain.php,16,Controller,Integrations,Integrations/Controller/Support/ContactsDomain.php,0,,Integrations
 Controller/Support/ContactsPlatform.php,16,Controller,Integrations,Integrations/Controller/Support/ContactsPlatform.php,0,,Integrations
 Controller/Support/ControllerSession.php,21,Controller,Service,Service/Controller/Support/ControllerSession.php,0,,Core
-Controller/Support/ConversationControllerServices.php,11,Controller,Platform,Platform/Controller/Support/ConversationControllerServices.php,0,,Core
-Controller/Support/ConversationDomain.php,12,Controller,Platform,Platform/Controller/Support/ConversationDomain.php,0,,Core
+Controller/Support/ConversationControllerServices.php,11,Controller,Platform,Platform/Controller/Support/ConversationControllerServices.php,0,,Platform
+Controller/Support/ConversationDomain.php,12,Controller,Platform,Platform/Controller/Support/ConversationDomain.php,0,,Platform
 Controller/Support/ConversationFailure.php,20,Controller,Platform,Platform/Controller/Support/ConversationFailure.php,0,,Core
 Controller/Support/ConversationPlatform.php,10,Controller,Platform,Platform/Controller/Support/ConversationPlatform.php,0,,Core
 Controller/Support/CredentialControllerServices.php,12,Controller,Integrations,Integrations/Controller/Support/CredentialControllerServices.php,0,,Integrations
@@ -492,6 +493,7 @@ Controller/Support/ObjectDraftControllerServices.php,10,Controller,Service,Servi
 Controller/Support/ObjectDraftDomain.php,16,Controller,Service,Service/Controller/Support/ObjectDraftDomain.php,0,,Core
 Controller/Support/ObjectDraftPlatform.php,14,Controller,Service,Service/Controller/Support/ObjectDraftPlatform.php,0,,Core
 Controller/Support/ObjectGovernanceServices.php,16,Controller,Service,Service/Controller/Support/ObjectGovernanceServices.php,0,,Core
+Controller/Support/ObjectIntegrationsAccess.php,,Controller,,,,,Integrations
 Controller/Support/ObjectLinkRoute.php,11,Controller,Integrations,Integrations/Controller/Support/ObjectLinkRoute.php,0,,Core
 Controller/Support/ObjectOwnershipControllerServices.php,16,Controller,Access,Access/Controller/Support/ObjectOwnershipControllerServices.php,0,,Core
 Controller/Support/ObjectRelationsControllerServices.php,11,Controller,Service,Service/Controller/Support/ObjectRelationsControllerServices.php,0,,Core
@@ -529,7 +531,7 @@ Controller/Support/RelationUrlStamper.php,71,Controller,Service,Service/Controll
 Controller/Support/RelationsCollaboration.php,14,Controller,Integrations,Integrations/Controller/Support/RelationsCollaboration.php,0,,Integrations
 Controller/Support/RelationsControllerServices.php,11,Controller,Integrations,Integrations/Controller/Support/RelationsControllerServices.php,0,,Integrations
 Controller/Support/RelationsPlatform.php,12,Controller,Integrations,Integrations/Controller/Support/RelationsPlatform.php,0,,Integrations
-Controller/Support/RelationsRecords.php,16,Controller,Integrations,Integrations/Controller/Support/RelationsRecords.php,0,,Core
+Controller/Support/RelationsRecords.php,16,Controller,Integrations,Integrations/Controller/Support/RelationsRecords.php,0,,Integrations
 Controller/Support/RenderedObjectUuids.php,54,Controller,Service,Service/Controller/Support/RenderedObjectUuids.php,0,,Core
 Controller/Support/RetentionControllerServices.php,11,Controller,Compliance,Compliance/Controller/Support/RetentionControllerServices.php,0,,Compliance
 Controller/Support/RetentionDomain.php,16,Controller,Compliance,Compliance/Controller/Support/RetentionDomain.php,0,,Compliance
