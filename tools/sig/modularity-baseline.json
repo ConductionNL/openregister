@@ -206,7 +206,6 @@
   "lib/Listener/ListenerRegistrar.php -> lib/Listener/NotifyPushListener.php",
   "lib/Listener/ListenerRegistrar.php -> lib/Listener/RedactionPolicyCacheListener.php",
   "lib/Listener/NotifyPushBatch.php -> lib/Listener/NotifyPushListener.php",
-  "lib/Listener/ObjectStateDeleteGuardListener.php -> lib/Service/Flow/FlowRunContextInterface.php",
   "lib/Listener/QualityScoreOnSaveListener.php -> lib/Listener/Support/EventSchemaLookup.php",
   "lib/Listener/Registrar/ConfigurationListenerRegistrar.php -> lib/Listener/ShareableConfigTypeRegistrationListener.php",
   "lib/Listener/Registrar/ConfigurationListenerRegistrar.php -> lib/Service/Config/RegisterShareableConfigTypesEvent.php",
@@ -1223,6 +1222,7 @@
   "lib/Kernel/Contracts/Core/AuditEntryWriterInterface.php",
   "lib/Kernel/Contracts/Core/AuthRateLimitCeilingInterface.php",
   "lib/Kernel/Contracts/Core/CredentialSecretReaderInterface.php",
+  "lib/Kernel/Contracts/Core/CurrentFlowRunInterface.php",
   "lib/Kernel/Contracts/Core/ExportGuardInterface.php",
   "lib/Kernel/Contracts/Core/ExpressionDefaultsInterface.php",
   "lib/Kernel/Contracts/Core/FederatedShareInterface.php",
@@ -2852,7 +2852,7 @@
  "exposed_loc": {
   "Compliance": 15860,
   "Configuration": 5799,
-  "Core": 64708,
+  "Core": 64714,
   "Files": 3640,
   "Integrations": 18359,
   "Kernel": 8482,
@@ -3318,6 +3318,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10407,
- "total_loc": 460022,
- "violation_degree": 0.0671
+ "total_loc": 460030,
+ "violation_degree": 0.067
 }
