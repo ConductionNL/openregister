@@ -38,8 +38,8 @@ use OCA\OpenRegister\Service\Deletion\DestructionScopeService;
 use OCA\OpenRegister\Service\Deletion\DestructionCompanions;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Files\Service\NoteService;
-use OCA\OpenRegister\Service\ObjectRelationCleanupService;
-use OCA\OpenRegister\Service\TaskService;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectTimelineLinksInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarTasksInterface;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 
@@ -65,7 +65,7 @@ final class DestructionScopeServiceTest extends TestCase {
 		$files = $this->createMock(FileService::class);
 		$files->method('getFiles')->willReturn([['id' => 1], ['id' => 2]]);
 
-		$relations = $this->createMock(ObjectRelationCleanupService::class);
+		$relations = $this->createMock(ObjectTimelineLinksInterface::class);
 		$relations->method('countTimelineLinks')->willReturn(11);
 
 		$service = new DestructionScopeService(new \OCA\OpenRegister\Service\Edepot\AuditRecording($this->createMock(AuditTrailMapper::class), new NullLogger()), new DestructionScopeReader(), new DestructionCompanions($notes, $files, null, $relations));
@@ -146,7 +146,7 @@ final class DestructionScopeServiceTest extends TestCase {
 		$notes->method('countNotesForObject')->willReturn(4);
 		$notes->expects(self::once())->method('deleteNotesForObject')->with('zaak-100');
 
-		$tasks = $this->createMock(TaskService::class);
+		$tasks = $this->createMock(ObjectCalendarTasksInterface::class);
 		$tasks->method('getTasksForObject')->willReturn(
 			[
 				['calendarId' => 1, 'id' => 'a'],

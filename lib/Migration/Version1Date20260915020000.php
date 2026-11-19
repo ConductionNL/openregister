@@ -34,14 +34,13 @@ use Closure;
 use Doctrine\DBAL\Types\Types;
 use OCP\DB\ISchemaWrapper;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Creates the rule run log and the per-rule summary.
  *
  * @spec openspec/specs/flow-engine/spec.md
  */
-class Version1Date20260915020000 extends SimpleMigrationStep {
+class Version1Date20260915020000 extends TargetedMigrationStep {
 
 	/**
 	 * The detail log: one row per evaluation, pruned by retention.
@@ -66,7 +65,7 @@ class Version1Date20260915020000 extends SimpleMigrationStep {
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		$schema = $schemaClosure();
 		$changed = false;
 
@@ -124,5 +123,5 @@ class Version1Date20260915020000 extends SimpleMigrationStep {
 		}
 
 		return $schema;
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 }//end class
