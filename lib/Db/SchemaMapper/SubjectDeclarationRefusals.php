@@ -22,7 +22,6 @@ namespace OCA\OpenRegister\Db\SchemaMapper;
 
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Consent\ConsentDeclarationException;
-use OCA\OpenRegister\Service\Decision\ReviewDeclarationException;
 use OCA\OpenRegister\Service\Schemas\SchemaDeclarationValidators;
 
 /**
@@ -64,27 +63,6 @@ final class SubjectDeclarationRefusals {
 			throw new ConsentDeclarationException(errors: $errors);
 		}
 	}//end checkConsent()
-
-	/**
-	 * Refuse an `x-openregister-review` declaration the ownership rule cannot honour.
-	 *
-	 * Refused rather than logged: a mistyped ownership read as open would leave
-	 * a four-eyes review open while its author believes it is closed.
-	 *
-	 * @param Schema $schema Schema to validate.
-	 *
-	 * @return void
-	 *
-	 * @throws ReviewDeclarationException When the declaration is unsound.
-	 *
-	 * @spec openspec/specs/entity-relation-grondslagen/spec.md
-	 */
-	public function checkReview(Schema $schema): void {
-		$errors = SchemaDeclarationValidators::review()->validate(configuration: ($schema->getConfiguration() ?? []));
-		if ($errors !== []) {
-			throw new ReviewDeclarationException(errors: $errors);
-		}
-	}//end checkReview()
 
 	/**
 	 * Validate the optional `x-openregister-registry` annotation.
