@@ -70,7 +70,6 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectNotesQuery;
 use OCA\OpenRegister\Kernel\Contracts\Value\NoteEdit;
 use OCA\OpenRegister\Kernel\Contracts\Value\NoteDraft;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\TaskLeafGuard;
 use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
@@ -82,6 +81,7 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCP\IUserSession;
 use OCA\OpenRegister\Controller\Support\TaskNotesControllerServices;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 
 /**
  * REST surface for the notes leaf on a task.
@@ -119,7 +119,7 @@ class TaskNotesController extends Controller {
 		IRequest $request,
 		TaskNotesControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->notes = $services->notes;
 		$this->guard = new TaskLeafGuard(tasks: $services->tasks, authorization: $services->authorization, userSession: $services->userSession);
 

@@ -24,7 +24,8 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Db\ConsumerMapper;
 use OCA\OpenRegister\Db\ConsumerMapperInterface;
-use OCA\OpenRegister\Db\DbRegistrar;
+use OCA\OpenRegister\Db\PlatformMapperRegistrar;
+use OCA\OpenRegister\Db\IntegrationsMapperRegistrar;
 use OCA\OpenRegister\Db\FeedbackMapper;
 use OCA\OpenRegister\Db\FeedbackMapperInterface;
 use OCA\OpenRegister\Service\AnalyticsSeriesService;
@@ -56,9 +57,9 @@ final class C01MiscInterfaceBindingsTest extends TestCase {
 	 */
 	private const CLASSES = [
 		AnalyticsSeriesService::class => [AnalyticsSeriesServiceInterface::class, ContractBindings::class],
-		ConsumerMapper::class => [ConsumerMapperInterface::class, DbRegistrar::class],
+		ConsumerMapper::class => [ConsumerMapperInterface::class, IntegrationsMapperRegistrar::class],
 		CorrectionService::class => [CorrectionServiceInterface::class, ContractBindings::class],
-		FeedbackMapper::class => [FeedbackMapperInterface::class, DbRegistrar::class],
+		FeedbackMapper::class => [FeedbackMapperInterface::class, PlatformMapperRegistrar::class],
 	];
 
 	/**

@@ -28,10 +28,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use DateTimeImmutable;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\AdministratorOnlyGate;
 use OCA\OpenRegister\Db\QualityAudit;
 use OCA\OpenRegister\Db\QualityAuditRun;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Service\Quality\QualityAuditRefusedException;
 use OCA\OpenRegister\Service\Quality\QualityAuditService;
@@ -82,7 +82,7 @@ class QualityAuditController extends Controller {
 		private readonly QualityAuditStores $stores,
 		private readonly IUserSession $userSession,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**

@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectPresenceInterface;
 use OCA\OpenRegister\Kernel\Contracts\NotificationPreferencesInterface;
 use OCA\OpenRegister\Notifications\Db\MessageMapper;
 use OCA\OpenRegister\Notifications\Db\MessageMapperInterface;
@@ -67,6 +68,7 @@ use OCA\OpenRegister\Notifications\Service\Notification\TaskNotificationRules;
 use OCA\OpenRegister\Notifications\Service\Notification\TaskNotificationRulesInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\TaskTransitionNotifier;
 use OCA\OpenRegister\Notifications\Service\Notification\TaskTransitionNotifierInterface;
+use OCA\OpenRegister\Notifications\Service\ObjectPresenceTracker;
 use OCA\OpenRegister\Notifications\Service\PresenceService;
 use OCA\OpenRegister\Notifications\Service\PresenceServiceInterface;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityService;
@@ -113,6 +115,7 @@ final class NotificationsWiring {
 		TimelineVisibilityServiceInterface::class => TimelineVisibilityService::class,
 		NcNotificationSenderInterface::class => NcNotificationSender::class,
 		PresenceServiceInterface::class => PresenceService::class,
+		ObjectPresenceInterface::class => ObjectPresenceTracker::class,
 		NotificationTemplatingInterface::class => NotificationTemplating::class,
 		CloudEventFormatterInterface::class => CloudEventFormatter::class,
 		TalkSenderInterface::class => TalkSender::class,

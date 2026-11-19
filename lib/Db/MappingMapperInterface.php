@@ -29,7 +29,7 @@ use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 /**
  * The mapping queries and writes that callers outside lib/Db use.
  *
- * Bound to MappingMapper in DbRegistrar.
+ * Bound to MappingMapper in IntegrationsMapperRegistrar.
  */
 interface MappingMapperInterface {
 
