@@ -44,6 +44,7 @@ use DateTimeInterface;
 use DateTimeZone;
 use Exception;
 use InvalidArgumentException;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectAuditEntry;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Service\Audit\AuditAggregationServiceInterface;
 use OCA\OpenRegister\Db\AuditTrail\PartyQueryRefusal;
@@ -2674,6 +2675,22 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 
 		return $this->insertHashChained(auditTrail: $auditTrail);
 	}//end recordObjectEvent()
+
+	/**
+	 * Record an action on one object as Core names it, through recordObjectEvent().
+	 *
+	 * @param ObjectAuditEntry $entry The object, the action, its context and the explicit actor, if any.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
+	 */
+	public function writeObjectEvent(ObjectAuditEntry $entry): void {
+		$options = new ObjectAuditEventOptions(actor: new NamedActor(id: $entry->actorId, name: $entry->actorName));
+		$this->recordObjectEvent(
+			event: new ObjectAuditEvent(object: $entry->object, action: $entry->action, context: $entry->context, options: $options)
+		);
+	}//end writeObjectEvent()
 
 	/**
 	 * The actor a createAuditTrailEntry() row names.

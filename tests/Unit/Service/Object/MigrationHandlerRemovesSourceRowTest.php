@@ -354,7 +354,7 @@ class MigrationHandlerRemovesSourceRowTest extends TestCase {
 	 */
 	private function audit(): AuditTrailMapper {
 		$audit = $this->createMock(AuditTrailMapper::class);
-		$audit->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
+		$audit->method('writeObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
 			function (ObjectEntity $object, string $action, array $context): AuditTrail {
 				$this->auditEntries[] = [$action, $context];
 				return new AuditTrail();

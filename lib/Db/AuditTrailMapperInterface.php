@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectAuditRecorderInterface;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use DateTime;
 use OCA\OpenRegister\Db\AuditTrail\ExportOutcome;
@@ -37,8 +38,10 @@ use OCP\AppFramework\Db\Entity;
 
 /**
  * Every public method of AuditTrailMapper. Callers depend on this interface, not on the class.
+ *
+ * It extends the Core port through which Core records an action on one object.
  */
-interface AuditTrailMapperInterface {
+interface AuditTrailMapperInterface extends ObjectAuditRecorderInterface {
 
 	/**
 	 * Set the request-scoped import-job UUID stamped on all
