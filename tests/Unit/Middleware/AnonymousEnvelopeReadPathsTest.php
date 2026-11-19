@@ -44,6 +44,7 @@ use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\FederationShareService;
 use OCA\OpenRegister\Service\GraphQL\GraphQLResolver;
 use OCA\OpenRegister\Service\GraphQL\GraphQLResolverShaping;
+use OCA\OpenRegister\Service\GraphQL\ListAggregations;
 use OCA\OpenRegister\Service\GraphQL\GraphQLResolverRights;
 use OCA\OpenRegister\Service\GraphQL\GraphQLResolverObjects;
 use OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator;
@@ -381,8 +382,7 @@ class AnonymousEnvelopeReadPathsTest extends TestCase {
 			),
 			new GraphQLResolverShaping(
 				$translation,
-				$this->createMock(AggregationRunner::class),
-				new TimeseriesRequestValidator()
+				new ListAggregations(runner: $this->createMock(AggregationRunner::class), validator: new TimeseriesRequestValidator())
 			),
 			$this->createMock(LoggerInterface::class)
 		);
