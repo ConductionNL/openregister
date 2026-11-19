@@ -3841,7 +3841,7 @@ Repair/PerformerField.php,,Repair,,,,,Core
 Repair/PerformerTyping.php,,Repair,,,,,Core
 Repair/PhantomFlowPurgeRun.php,,Repair,,,,,Processes
 Repair/RegisterDescriptorImport.php,,Repair,,,,,Integrations
-Repair/ReportUnpublishedSchedules.php,,Repair,,,,,Search
+Repair/ReportUnpublishedSchedules.php,,Repair,,,,,Processes
 Repair/SchemaListing.php,,Repair,,,,,Platform
 Repair/TaskFixtureMappers.php,,Repair,,,,,Processes
 Repair/TaskSubjectLocationBackfill.php,,Repair,,,,,Processes
