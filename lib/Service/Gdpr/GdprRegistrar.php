@@ -20,8 +20,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Gdpr;
 
-use OCA\OpenRegister\Kernel\Contracts\Core\ReadPurposeGuardInterface;
-use OCA\OpenRegister\Service\Audit\PurposeGuard;
 use OCA\OpenRegister\Service\Gdpr\Evidence\EvidenceSourceRegistry;
 use OCA\OpenRegister\Service\Gdpr\Export\UnsignedPadesSigner;
 use OCA\OpenRegister\Service\Gdpr\Identity\IdentityVerifyRegistry;
@@ -32,8 +30,7 @@ use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use Psr\Container\ContainerInterface;
 
 /**
- * Registers the DSAR signing seam and the evidence, identity-verify and regulator-escalate registries,
- * and binds the Core read purpose-guard port to the doelbinding guard.
+ * Registers the DSAR signing seam and the evidence, identity-verify and regulator-escalate registries.
  *
  * Application::register() calls register() once.
  *
@@ -43,7 +40,7 @@ use Psr\Container\ContainerInterface;
 final class GdprRegistrar {
 
 	/**
-	 * Register the DSAR signer and the shared DSAR registries with their fail-closed defaults, and the read purpose-guard port.
+	 * Register the DSAR signer and the shared DSAR registries with their fail-closed defaults.
 	 *
 	 * @param IRegistrationContext $context The registration context.
 	 *
@@ -56,24 +53,7 @@ final class GdprRegistrar {
 		self::registerEvidenceRegistry(context: $context);
 		self::registerIdentitySeam(context: $context);
 		self::registerRegulatorSeam(context: $context);
-		self::registerReadPurposeGuard(context: $context);
 	}//end register()
-
-	/**
-	 * Answer the Core read purpose-guard port with the doelbinding guard.
-	 *
-	 * Purpose limitation is a GDPR principle (article 5(1)(b)); object reads that
-	 * span tables ask the port per table and leave out what the purpose does not admit.
-	 *
-	 * @param IRegistrationContext $context The registration context.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/verwerkingsregister-api/spec.md
-	 */
-	private static function registerReadPurposeGuard(IRegistrationContext $context): void {
-		$context->registerServiceAlias(ReadPurposeGuardInterface::class, PurposeGuard::class);
-	}//end registerReadPurposeGuard()
 
 	/**
 	 * Bind the swappable PAdES signing seam to its default SHA-256-only stub.
