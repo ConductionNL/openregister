@@ -734,7 +734,7 @@ Db/GdprEntity.php,52,Db,Compliance,Compliance/Db/GdprEntity.php,9,372,Compliance
 Db/GdprEntityMapper.php,55,Db,Compliance,Compliance/Db/GdprEntityMapper.php,10,370,Compliance
 Db/HandoffQueueEntry.php,62,Db,Integrations,Integrations/Db/HandoffQueueEntry.php,0,,Integrations
 Db/HandoffQueueEntryMapper.php,48,Db,Integrations,Integrations/Db/HandoffQueueEntryMapper.php,0,,Integrations
-Db/HydrateBySettersTrait.php,15,Db,Configuration,Configuration/Db/HydrateBySettersTrait.php,0,,Configuration
+Db/HydrateBySettersTrait.php,15,Db,Configuration,Configuration/Db/HydrateBySettersTrait.php,0,,Core
 Db/HydrateEmptyJsonAsNullTrait.php,19,Db,Service,Service/Db/HydrateEmptyJsonAsNullTrait.php,0,,Core
 Db/HydrateKnownFieldsTrait.php,15,Db,Work,Work/Db/HydrateKnownFieldsTrait.php,0,,Processes
 Db/IdCursor.php,14,Db,Flows,Flows/Db/IdCursor.php,0,,Processes
@@ -3873,7 +3873,7 @@ Service/AnalyticsSeriesServiceInterface.php,,Service,,,,,Integrations
 Service/AppConfigurationImporterInterface.php,,Service,,,,,Core
 Service/AppRegisterImportRunnerInterface.php,,Service,,,,,Core
 Service/ApplicationMove.php,,Service,,,,,Configuration
-Service/ApplicationServiceInterface.php,,Service,,,,,Integrations
+Service/ApplicationServiceInterface.php,,Service,,,,,Configuration
 Service/AuditHashServiceInterface.php,,Service,,,,,Compliance
 Service/AuditQueryServiceInterface.php,,Service,,,,,Compliance
 Service/AuditRechainInterface.php,,Service,,,,,Compliance
@@ -3887,7 +3887,7 @@ Service/AvgRetentionErasureRun.php,,Service,,,,,Compliance
 Service/AvgRetentionPassInterface.php,,Service,,,,,Core
 Service/BookmarkLinkServiceInterface.php,,Service,,,,,Integrations
 Service/BookmarkSearch.php,,Service,,,,,Integrations
-Service/BulkActionRegistryInterface.php,,Service,,,,,Core
+Service/BulkActionRegistryInterface.php,,Service,,,,,Processes
 Service/BulkTranslationServiceInterface.php,,Service,,,,,Core
 Service/CalculationRun.php,,Service,,,,,Compliance
 Service/CalendarEventKey.php,,Service,,,,,Integrations
@@ -3950,7 +3950,7 @@ Service/FlowLinkPlatform.php,,Service,,,,,Processes
 Service/FlowLinkServiceInterface.php,,Service,,,,,Processes
 Service/FormLinkScope.php,,Service,,,,,Integrations
 Service/FormLinkServiceInterface.php,,Service,,,,,Integrations
-Service/FormsAppRows.php,,Service,,,,,Configuration
+Service/FormsAppRows.php,,Service,,,,,Integrations
 Service/HoldOrder.php,,Service,,,,,Core
 Service/InboundAuthRateLimitInterface.php,,Service,,,,,Core
 Service/LanguageGapScan.php,,Service,,,,,Configuration
@@ -4052,10 +4052,10 @@ Service/SchemaTeardownOverride.php,,Service,,,,,Core
 Service/SearchMeasurement.php,,Service,,,,,Compliance
 Service/SearchPeriod.php,,Service,,,,,Compliance
 Service/SearchTrailActivityInsights.php,,Service,,,,,Search
-Service/SearchTrailNameEnricher.php,,Service,,,,,Search
+Service/SearchTrailNameEnricher.php,,Service,,,,,Compliance
 Service/SearchTrailQueryConfig.php,,Service,,,,,Search
-Service/SearchTrailServiceInterface.php,,Service,,,,,Search
-Service/SearchTrailStatistics.php,,Service,,,,,Search
+Service/SearchTrailServiceInterface.php,,Service,,,,,Compliance
+Service/SearchTrailStatistics.php,,Service,,,,,Compliance
 Service/SearchTrailUserAgentParser.php,,Service,,,,,Search
 Service/SecurityHeadersInterface.php,,Service,,,,,Core
 Service/SemanticTypeQuery.php,,Service,,,,,Core
@@ -4120,7 +4120,7 @@ Service/WebhookStores.php,,Service,,,,,Integrations
 Service/WholeTableRows.php,,Service,,,,,Core
 Service/WorkPackageDraft.php,,Service,,,,,Integrations
 Service/WritePhase.php,,Service,,,,,Core
-Service/XwikiLinkServiceInterface.php,,Service,,,,,Core
+Service/XwikiLinkServiceInterface.php,,Service,,,,,Integrations
 Service/XwikiPageDraft.php,,Service,,,,,Integrations
 Service/XwikiPendingLink.php,,Service,,,,,Integrations
 Command/FederationSharesExpiringCommand.php,,Command,,,,,Core
@@ -4183,7 +4183,7 @@ Service/Anonymisation/TextDisclosureRecorder.php,,Service,,,,,Compliance
 Service/Anonymisation/PipelineSteps.php,,Service,,,,,Compliance
 Service/Anonymisation/ContentPipelineReport.php,,Service,,,,,Compliance
 Controller/AnonymisationPipelineController.php,,Controller,,,,,Compliance
-Controller/FileDisclosuresController.php,,Controller,,,,,Compliance
+Controller/FileDisclosuresController.php,,Controller,,,,,Files
 Exception/TextDisclosureNotRecordedException.php,,Exception,,,,,Compliance
 Files/Db/TextDisclosure.php,,Files,,,,,Files
 Files/Db/TextDisclosureMapper.php,,Files,,,,,Files
@@ -4247,7 +4247,7 @@ Service/File/OcrWordLocator.php,,Service,,,,,Core
 Service/File/OcrWords.php,,Service,,,,,Core
 Service/File/OfficeMediaBurner.php,,Service,,,,,Core
 AppHost/Controller/GenericReadinessController.php,,AppHost,,,,,Integrations
-Service/Reference/ReferenceCardDeclaration.php,,Service,,,,,Configuration
+Service/Reference/ReferenceCardDeclaration.php,,Service,,,,,Core
 Service/Task/TaskVerbList.php,152,Service,Work,Work/Service/Task/TaskVerbList.php,0,,Processes
 Service/Audit/RuleDigest.php,96,Service,Compliance,Compliance/Service/Audit/RuleDigest.php,0,,Compliance
 Service/Object/ObjectSaveCheck.php,8,Service,Service,Service/Object/ObjectSaveCheck.php,0,,Core
@@ -4428,3 +4428,10 @@ Service/Capability/ToolReachLevels.php,,Service,,,,,Integrations
 Db/AuditTrail/ObjectAuditEvent.php,,Db,,,,,Core
 Db/AuditTrail/ObjectAuditEventOptions.php,,Db,,,,,Core
 Db/AuditTrail/NamedActor.php,,Db,,,,,Core
+Kernel/Contracts/CaseItemInterface.php,,Kernel,,,,,Kernel
+Kernel/Contracts/DecisionInterface.php,,Kernel,,,,,Kernel
+Kernel/Contracts/AppEventWebhookListenerInterface.php,,Kernel,,,,,Kernel
+Kernel/Contracts/AdminSettingDelegation.php,,Kernel,,,,,Kernel
+Controller/Support/SearchTrailControllerServices.php,,Controller,,,,,Compliance
+Controller/Support/XwikiLinksControllerServices.php,,Controller,,,,,Integrations
+Service/Configuration/AppSettingsAccess.php,,Service,,,,,Core
