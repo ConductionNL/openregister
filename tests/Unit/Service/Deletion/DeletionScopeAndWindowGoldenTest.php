@@ -39,7 +39,7 @@ use OCA\OpenRegister\Service\Deletion\DestructionRefusedException;
 use OCA\OpenRegister\Service\Deletion\DestructionScope;
 use OCA\OpenRegister\Service\Deletion\DestructionScopeReader;
 use OCA\OpenRegister\Service\Deletion\DestructionScopeService;
-use OCA\OpenRegister\Service\Edepot\AuditRecording;
+use OCA\OpenRegister\Service\Object\AuditRecording;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
