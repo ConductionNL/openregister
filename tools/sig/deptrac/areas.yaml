@@ -84,7 +84,7 @@ deptrac:
               value: 'lib/Support/.*$'
           must_not:
             - type: directory
-              value: 'lib/Kernel/Contracts/(Core|Notifications)/.*$'
+              value: 'lib/Kernel/Contracts/(Core|Notifications|Processes)/.*$'
     - name: Core
       collectors:
         - type: directory
@@ -1709,6 +1709,8 @@ deptrac:
           value: 'lib/Service/Vocabulary/[^/]*$'
     - name: Processes
       collectors:
+        - type: directory
+          value: 'lib/Kernel/Contracts/Processes/.*$'
         - type: directory
           value: 'lib/AppHost/Listener/ApplicationPublishListener[.]php$'
         - type: directory

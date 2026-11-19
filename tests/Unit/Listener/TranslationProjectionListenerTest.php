@@ -14,7 +14,7 @@ use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Listener\TranslationProjectionListener;
 use OCA\OpenRegister\Service\Deferral\ListenerDeferralService;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
-use OCA\OpenRegister\Service\TranslationProjectionService;
+use OCA\OpenRegister\Kernel\Contracts\Processes\TranslationProjectionInterface;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -25,14 +25,14 @@ use PHPUnit\Framework\TestCase;
  * switch.
  */
 class TranslationProjectionListenerTest extends TestCase {
-	private TranslationProjectionService&MockObject $projection;
+	private TranslationProjectionInterface&MockObject $projection;
 	private SchemaMapper&MockObject $schemaMapper;
 	private TranslationHandler&MockObject $translationHandler;
 	private ListenerDeferralService&MockObject $deferral;
 
 	protected function setUp(): void {
 		parent::setUp();
-		$this->projection = $this->createMock(TranslationProjectionService::class);
+		$this->projection = $this->createMock(TranslationProjectionInterface::class);
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 		$this->translationHandler = $this->createMock(TranslationHandler::class);
 		$this->deferral = $this->createMock(ListenerDeferralService::class);

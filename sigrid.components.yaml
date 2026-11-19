@@ -46,7 +46,7 @@ components:
       - ".*/lib/Service/Schemas/PropertyValidatorHandlerInterface[.]php"
       - ".*/lib/Support/.*"
     exclude:
-      - ".*/lib/Kernel/Contracts/(Core|Notifications)/.*"
+      - ".*/lib/Kernel/Contracts/(Core|Notifications|Processes)/.*"
   - name: Core
     include:
       - ".*/lib/Kernel/Contracts/Core/.*"
@@ -861,6 +861,7 @@ components:
       - ".*/lib/Service/Vocabulary/[^/]*"
   - name: Processes
     include:
+      - ".*/lib/Kernel/Contracts/Processes/.*"
       - ".*/lib/AppHost/Listener/ApplicationPublishListener[.]php"
       - ".*/lib/AppHost/Scheduling/CompiledScheduleFlow[.]php"
       - ".*/lib/AppHost/Scheduling/ScheduleAuditTrail[.]php"
