@@ -451,6 +451,8 @@ use OCA\OpenRegister\Service\Organisation\OrganisationEditAuditorInterface;
 use OCA\OpenRegister\Service\Organisation\OrganisationLifecycleAuditor;
 use OCA\OpenRegister\Kernel\Contracts\Core\AuditEntryWriterInterface;
 use OCA\OpenRegister\Service\Audit\AuditEntryWriter;
+use OCA\OpenRegister\Kernel\Contracts\Core\AccessLinkUseRecorderInterface;
+use OCA\OpenRegister\Service\Audit\AccessLinkUseRecorder;
 use OCA\OpenRegister\Service\Party\PartyRoleService;
 use OCA\OpenRegister\Service\Party\PartyRoleServiceInterface;
 use OCA\OpenRegister\Service\Party\PartySchemaCatalogueInterface;
@@ -642,6 +644,7 @@ final class ContractBindings {
 		OdtWriterInterface::class => OdtWriter::class,
 		OrganisationEditAuditorInterface::class => OrganisationLifecycleAuditor::class,
 		AuditEntryWriterInterface::class => AuditEntryWriter::class,
+		AccessLinkUseRecorderInterface::class => AccessLinkUseRecorder::class,
 		ShareGrantorInterface::class => ShareGrantor::class,
 		TenantKeyRotationInterface::class => TenantKeyService::class,
 		ToolReachLevels::class => ToolReachResolver::class,

@@ -1849,6 +1849,7 @@ Service/Archival/UnestablishedValues.php,32,Service,Service,Service/Archival/Une
 Service/Audit/AuditAggregationService.php,61,Service,Compliance,Compliance/Service/Audit/AuditAggregationService.php,0,,Compliance
 Service/Audit/AuditSink.php,152,Service,Compliance,Compliance/Service/Audit/AuditSink.php,0,,Compliance
 Service/Audit/AuditSinkStatus.php,74,Service,Compliance,Compliance/Service/Audit/AuditSinkStatus.php,0,,Compliance
+Service/Audit/AccessLinkUseRecorder.php,,Service,,,,,Compliance
 Service/Audit/AuditTrailPageService.php,46,Service,Compliance,Compliance/Service/Audit/AuditTrailPageService.php,0,,Compliance
 Service/Audit/ContentReportService.php,143,Service,Compliance,Compliance/Service/Audit/ContentReportService.php,0,,Compliance
 Service/Audit/EntityEditAuditor.php,468,Service,Compliance,Compliance/Service/Audit/EntityEditAuditor.php,0,,Compliance

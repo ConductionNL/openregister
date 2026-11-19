@@ -24,7 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Sharing;
 
-use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\AccessLinkUseRecorderInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -37,11 +37,11 @@ final readonly class AccessLinkUseLog {
 	/**
 	 * Bundle the collaborators.
 	 *
-	 * @param AuditTrailMapperInterface $auditTrail The audit trail, where every use is written.
+	 * @param AccessLinkUseRecorderInterface $recorder The audit trail's recorder, where every use is written.
 	 * @param LoggerInterface $logger PSR logger, for an audit write that fails.
 	 */
 	public function __construct(
-		public AuditTrailMapperInterface $auditTrail,
+		public AccessLinkUseRecorderInterface $recorder,
 		public LoggerInterface $logger,
 	) {
 	}//end __construct()
