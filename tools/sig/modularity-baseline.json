@@ -480,8 +480,6 @@
   "lib/Service/Integration/Providers/FlowProvider.php -> lib/Db/FlowLinkMapperInterface.php",
   "lib/Service/Integration/Providers/FlowProvider.php -> lib/Service/FlowJsonColumn.php",
   "lib/Service/LanguageService.php -> lib/Service/LanguageServiceInterface.php",
-  "lib/Service/LogObjectInTable.php -> lib/Service/TableObjectRef.php",
-  "lib/Service/LogService.php -> lib/Service/TableObjectRef.php",
   "lib/Service/NotificationServiceInterface.php -> lib/Db/Configuration.php",
   "lib/Service/Object/BulkRowRules.php -> lib/Service/Dmn/DecisionTableBulkGuard.php",
   "lib/Service/Object/BulkRowRules.php -> lib/Service/Flow/FlowRunContext.php",
@@ -2412,7 +2410,6 @@
   "lib/Service/LinkedEntityServiceInterface.php",
   "lib/Service/LinkedEventMerge.php",
   "lib/Service/LogExportFormatter.php",
-  "lib/Service/LogObjectInTable.php",
   "lib/Service/LoginSecurityInterface.php",
   "lib/Service/ManifestServiceInterface.php",
   "lib/Service/ManifestSources.php",
@@ -2911,7 +2908,6 @@
   "lib/Service/Sync/SyncScheduleService.php",
   "lib/Service/SystemOperationContext.php",
   "lib/Service/TableDeletionOptions.php",
-  "lib/Service/TableObjectRef.php",
   "lib/Service/TalkLinkService.php",
   "lib/Service/TalkLinkServiceInterface.php",
   "lib/Service/Task/ApprovalPositionFormGuard.php",
@@ -3018,9 +3014,9 @@
  "exposed_loc": {
   "Compliance": 15598,
   "Configuration": 6895,
-  "Core": 64836,
+  "Core": 64799,
   "Files": 3689,
-  "Integrations": 18429,
+  "Integrations": 18418,
   "Kernel": 8515,
   "Notifications": 1914,
   "Platform": 976,
@@ -3487,5 +3483,5 @@
  ],
  "kernel_loc": 10440,
  "total_loc": 459499,
- "violation_degree": 0.0787
+ "violation_degree": 0.0785
 }
