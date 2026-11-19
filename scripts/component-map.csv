@@ -176,7 +176,7 @@ Command/AdoptionRun.php,,Command,,,,,Core
 Command/ApplicationIdRename.php,,Command,,,,,Configuration
 Command/BackfillObjectSlugsCommand.php,118,Command,Service,Service/Command/BackfillObjectSlugsCommand.php,0,,Core
 Command/BackfillSystemOwnerCommand.php,146,Command,Configuration,Configuration/Command/BackfillSystemOwnerCommand.php,0,,Configuration
-Command/BackfillTranslationSourceLanguageCommand.php,83,Command,Integrations,Integrations/Command/BackfillTranslationSourceLanguageCommand.php,0,,Configuration
+Command/BackfillTranslationSourceLanguageCommand.php,83,Command,Integrations,Integrations/Command/BackfillTranslationSourceLanguageCommand.php,0,,Integrations
 Command/DeclaredGroupsCommand.php,71,Command,Access,Access/Command/DeclaredGroupsCommand.php,0,,Core
 Command/DedupCollidedSchemasCommand.php,214,Command,Service,Service/Command/DedupCollidedSchemasCommand.php,0,,Core
 Command/DedupeConfigurationsCommand.php,118,Command,Configuration,Configuration/Command/DedupeConfigurationsCommand.php,0,,Configuration
@@ -3776,7 +3776,7 @@ Db/TranslationEdit.php,,Db,,,,,Platform
 Db/TranslationFilter.php,,Db,,,,,Platform
 Db/TranslationMapperInterface.php,,Db,,,,,Platform
 Db/TranslationSlot.php,,Db,,,,,Platform
-Db/TranslationSourceLanguageBackfillInterface.php,,Db,,,,,Configuration
+Db/TranslationSourceLanguageBackfillInterface.php,,Db,,,,,Platform
 Db/TypedFieldsJson.php,,Db,,,,,Core
 Db/TypedFieldsJsonTrait.php,,Db,,,,,Core
 Db/UsageMeasurement.php,,Db,,,,,Core

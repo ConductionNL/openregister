@@ -2728,7 +2728,7 @@ deptrac:
         - type: directory
           value: 'lib/BulkAction/(ExportWholeSetAction|WholeSetExportRun)[.]php$'
         - type: directory
-          value: 'lib/Command/(ApplicationIdRename|BackfillSystemOwnerCommand|BackfillTranslationSourceLanguageCommand|DedupeConfigurationsCommand|DedupeSharedSchemasCommand|DescriptorListCommand|ExampleSetInstallCommand|ExampleSetListCommand|ExampleSetRemoveCommand|ImportSkosCsvCommand|MetadataReconcileRun|MigrateSchemaApplicationCommand|MigrateStorageCommand|MigrateStorageRun|PlannedSchemaSplit|ReconcileMagicTablesCommand|ResetSchemaToShippedCommand|ResetToShippedRun|RollbackApprovalMigrationCommand|RotateTenantKeyCommand|SeedImportCommand|SharedSchemaSplitRun)[.]php$'
+          value: 'lib/Command/(ApplicationIdRename|BackfillSystemOwnerCommand|DedupeConfigurationsCommand|DedupeSharedSchemasCommand|DescriptorListCommand|ExampleSetInstallCommand|ExampleSetListCommand|ExampleSetRemoveCommand|ImportSkosCsvCommand|MetadataReconcileRun|MigrateSchemaApplicationCommand|MigrateStorageCommand|MigrateStorageRun|PlannedSchemaSplit|ReconcileMagicTablesCommand|ResetSchemaToShippedCommand|ResetToShippedRun|RollbackApprovalMigrationCommand|RotateTenantKeyCommand|SeedImportCommand|SharedSchemaSplitRun)[.]php$'
         - type: directory
           value: 'lib/Command/Support/ApprovalRollbackRun[.]php$'
         - type: directory
@@ -2800,7 +2800,7 @@ deptrac:
         - type: directory
           value: 'lib/Controller/Support/RecordTemplatesControllerServices[.]php$'
         - type: directory
-          value: 'lib/Db/(Application|ApplicationMapper|Configuration|ConfigurationBinding|ConfigurationBindingMapper|ConfigurationBindingMapperInterface|ConfigurationDeployment|ConfigurationDeploymentMapper|ConfigurationDeploymentMapperInterface|ConfigurationDraft|ConfigurationDraftMapper|ConfigurationDraftMapperInterface|ConfigurationDraftSet|ConfigurationDraftSetMapper|ConfigurationDraftSetMapperInterface|ConfigurationMapper|ConfigurationMapperBindings|ConfigurationMapperInterface|ConfigurationMapperRegistrar|ConfigurationSyncResult|ConfigurationValue|ConfigurationValueMapper|ExportProfile|ExportProfileMapper|ExportProfileMapperInterface|ExportRun|ExportRunMapper|ImportPreview|ImportPreviewFinderInterface|ImportPreviewMapper|ImportPreviewMapperInterface|ImportPreviewRow|ImportPreviewRowMapper|ImportPreviewRowMapperInterface|IsoTimestampsTrait|JobRun|JobRunMapper|MigrationPack|MigrationPackMapper|MigrationPackMapperInterface|NewRowStamps|RecordTemplate|RecordTemplateMapper|Sequence|SequenceMapper|StoredEntity|TaskSequence|TaskSequenceMapper|Translation|TranslationMapper|TranslationSourceLanguageBackfillInterface)[.]php$'
+          value: 'lib/Db/(Application|ApplicationMapper|Configuration|ConfigurationBinding|ConfigurationBindingMapper|ConfigurationBindingMapperInterface|ConfigurationDeployment|ConfigurationDeploymentMapper|ConfigurationDeploymentMapperInterface|ConfigurationDraft|ConfigurationDraftMapper|ConfigurationDraftMapperInterface|ConfigurationDraftSet|ConfigurationDraftSetMapper|ConfigurationDraftSetMapperInterface|ConfigurationMapper|ConfigurationMapperBindings|ConfigurationMapperInterface|ConfigurationMapperRegistrar|ConfigurationSyncResult|ConfigurationValue|ConfigurationValueMapper|ExportProfile|ExportProfileMapper|ExportProfileMapperInterface|ExportRun|ExportRunMapper|ImportPreview|ImportPreviewFinderInterface|ImportPreviewMapper|ImportPreviewMapperInterface|ImportPreviewRow|ImportPreviewRowMapper|ImportPreviewRowMapperInterface|IsoTimestampsTrait|JobRun|JobRunMapper|MigrationPack|MigrationPackMapper|MigrationPackMapperInterface|NewRowStamps|RecordTemplate|RecordTemplateMapper|Sequence|SequenceMapper|StoredEntity|TaskSequence|TaskSequenceMapper|Translation|TranslationMapper)[.]php$'
         - type: directory
           value: 'lib/Db/Configuration/[^/]*$'
         - type: directory
@@ -3400,7 +3400,7 @@ deptrac:
         - type: directory
           value: 'lib/Calendar/[^/]*$'
         - type: directory
-          value: 'lib/Command/(FederationShareRightsCommand|FederationSharesExpiringCommand|TablesSyncCommand|TimeReconcileCommand)[.]php$'
+          value: 'lib/Command/(BackfillTranslationSourceLanguageCommand|FederationShareRightsCommand|FederationSharesExpiringCommand|TablesSyncCommand|TimeReconcileCommand)[.]php$'
         - type: directory
           value: 'lib/Contacts/[^/]*$'
         - type: directory
@@ -4262,7 +4262,7 @@ deptrac:
         - type: directory
           value: 'lib/Dashboard/[^/]*$'
         - type: directory
-          value: 'lib/Db/(Feedback|FeedbackMapper|PlatformMapperBindings|PlatformMapperRegistrar|TranslationBackfillScope|TranslationEdit|TranslationFilter|TranslationMapperInterface|TranslationSlot)[.]php$'
+          value: 'lib/Db/(Feedback|FeedbackMapper|PlatformMapperBindings|PlatformMapperRegistrar|TranslationBackfillScope|TranslationEdit|TranslationFilter|TranslationMapperInterface|TranslationSlot|TranslationSourceLanguageBackfillInterface)[.]php$'
         - type: directory
           value: 'lib/Listener/(ListenerBootstrap|NotifyPushListener|NotifyPushRun)[.]php$'
         - type: directory
