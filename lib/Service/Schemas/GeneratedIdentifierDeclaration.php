@@ -67,7 +67,7 @@ final class GeneratedIdentifierDeclaration implements GeneratedIdentifierDeclara
 	 *
 	 * @var array<int, string>
 	 */
-	private const KNOWN_KEYS = ['sequence', 'format', 'resetOn', 'reserved', 'kind', 'length', 'alphabet'];
+	private const KNOWN_KEYS = ['sequence', 'format', 'resetOn', 'reserved', 'kind', 'length', 'alphabet', 'per'];
 
 	/**
 	 * A counter shown as its number: the default kind.
@@ -106,6 +106,7 @@ final class GeneratedIdentifierDeclaration implements GeneratedIdentifierDeclara
 	 * @param string $resetOn When the counter restarts.
 	 * @param array<int, string> $reserved The reserved values and patterns.
 	 * @param array{alphabet: string, length: int}|null $random The code shape of a random sequence, null for a counter.
+	 * @param string|null $per The property whose value keeps a counter of its own, null for one counter.
 	 */
 	private function __construct(
 		private readonly string $sequence,
@@ -113,6 +114,7 @@ final class GeneratedIdentifierDeclaration implements GeneratedIdentifierDeclara
 		private readonly string $resetOn,
 		private readonly array $reserved = [],
 		private readonly ?array $random = null,
+		private readonly ?string $per = null,
 	) {
 	}//end __construct()
 
@@ -169,11 +171,45 @@ final class GeneratedIdentifierDeclaration implements GeneratedIdentifierDeclara
 			format: $format,
 			resetOn: $resetOn,
 			reserved: self::reservedOf(raw: $raw, path: $path),
-			random: self::randomOf(raw: $raw, path: $path)
+			random: self::randomOf(raw: $raw, path: $path),
+			per: self::perOf(raw: $raw, path: $path)
 		);
 		self::assertRenderable(declaration: $declaration, path: $path);
 		return $declaration;
 	}//end fromAnnotation()
+
+	/**
+	 * The property whose value keeps a counter of its own, or null for one counter.
+	 *
+	 * `per` is optional; when present it names a property of the same object,
+	 * as a non-empty string. Each distinct value of that property (a unit, a
+	 * department, a location) then draws from its own counter, still reset by
+	 * `resetOn`.
+	 *
+	 * @param array<string, mixed> $raw  The annotation block.
+	 * @param string               $path The property's path, for the error message.
+	 *
+	 * @return string|null The property name, or null when `per` is absent.
+	 *
+	 * @throws GeneratedIdentifierException When `per` is present but not a non-empty string.
+	 *
+	 * @spec openspec/changes/generated-identifier/specs/computed-fields/spec.md#requirement-a-property-declares-a-generated-identifier-from-a-sequence-and-a-format
+	 */
+	private static function perOf(array $raw, string $path): ?string {
+		if (array_key_exists('per', $raw) === false) {
+			return null;
+		}
+
+		$per = self::required(raw: $raw, key: 'per');
+		if ($per === null) {
+			throw self::refusal(
+				message: sprintf('%s.per at \'%s\' must name a property of the object.', self::ANNOTATION, $path),
+				path: $path
+			);
+		}
+
+		return trim($per);
+	}//end perOf()
 
 	/**
 	 * The code shape of a random sequence, or null for a counter.
@@ -243,6 +279,18 @@ final class GeneratedIdentifierDeclaration implements GeneratedIdentifierDeclara
 		return $this->sequence;
 
 	}//end sequence()
+
+	/**
+	 * The property whose value keeps a counter of its own, or null for one counter.
+	 *
+	 * @return string|null The property name.
+	 *
+	 * @spec openspec/changes/generated-identifier/specs/computed-fields/spec.md#requirement-a-property-declares-a-generated-identifier-from-a-sequence-and-a-format
+	 */
+	public function per(): ?string {
+		return $this->per;
+
+	}//end per()
 
 	/**
 	 * The format, as declared.

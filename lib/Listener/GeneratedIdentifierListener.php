@@ -69,6 +69,13 @@ class GeneratedIdentifierListener implements IEventListener {
 	public const ERROR_CODE = 'generated-identifier-frozen';
 
 	/**
+	 * How many hex characters of the hashed `per` value key a counter.
+	 *
+	 * @var integer
+	 */
+	private const PARTITION_WIDTH = 16;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param SchemaMapperInterface $schemaMapper Resolves the object's schema.
@@ -203,14 +210,18 @@ class GeneratedIdentifierListener implements IEventListener {
 		$declaration = $run->declarations[$field];
 		$supplied = (string)($run->data[$field] ?? '');
 		if ($supplied !== '') {
-			$this->advancePast(declaration: $declaration, value: $supplied);
+			$this->advancePast(declaration: $declaration, value: $supplied, data: $run->data);
 			return null;
 		}
 
 		$scope = new SequenceScope(
 			registerId: 0,
 			schemaId: 0,
-			scopeKey: $this->scopeKey(declaration: $declaration, period: $declaration->periodAt(moment: $run->now))
+			scopeKey: $this->scopeKey(
+				declaration: $declaration,
+				period: $declaration->periodAt(moment: $run->now),
+				data: $run->data
+			)
 		);
 
 		return $this->firstUnreserved(declaration: $declaration, scope: $scope, moment: $run->now);
@@ -402,19 +413,24 @@ class GeneratedIdentifierListener implements IEventListener {
 	 *
 	 * @param GeneratedIdentifierDeclarationInterface $declaration The property's declaration.
 	 * @param string $value The value that was supplied.
+	 * @param array<string, mixed> $data The object being created, for a per-value counter.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/generated-identifier/specs/computed-fields/spec.md#requirement-a-generated-identifier-is-frozen-after-creation
 	 */
-	private function advancePast(GeneratedIdentifierDeclarationInterface $declaration, string $value): void {
+	private function advancePast(GeneratedIdentifierDeclarationInterface $declaration, string $value, array $data): void {
 		$parsed = $declaration->parse(value: $value);
 		if ($parsed === null) {
 			return;
 		}
 
 		$this->sequences->advanceTo(
-			new SequenceScope(registerId: 0, schemaId: 0, scopeKey: $this->scopeKey(declaration: $declaration, period: $parsed['period'])),
+			new SequenceScope(
+				registerId: 0,
+				schemaId: 0,
+				scopeKey: $this->scopeKey(declaration: $declaration, period: $parsed['period'], data: $data)
+			),
 			reserved: $parsed['sequence']
 		);
 
@@ -429,17 +445,61 @@ class GeneratedIdentifierListener implements IEventListener {
 	 * sentinel is also what lets two schemas share a counter by naming it,
 	 * which a per-schema scope cannot express.
 	 *
+	 * A declaration with `per` adds the value of that property, hashed to a
+	 * fixed width so any value fits the scope column and none can forge a
+	 * separator: each value keeps a counter of its own. An object without a
+	 * value there draws from the counter of the empty value.
+	 *
 	 * @param GeneratedIdentifierDeclarationInterface $declaration The property's declaration.
 	 * @param string $period The period keying the counter.
+	 * @param array<string, mixed> $data The object being created.
 	 *
 	 * @return string The scope key.
 	 *
 	 * @spec openspec/changes/generated-identifier/specs/computed-fields/spec.md#requirement-two-schemas-may-share-one-sequence
 	 */
-	private function scopeKey(GeneratedIdentifierDeclarationInterface $declaration, string $period): string {
-		return 'gen:'.$declaration->sequence().'|'.$period;
+	private function scopeKey(GeneratedIdentifierDeclarationInterface $declaration, string $period, array $data=[]): string {
+		$key = 'gen:'.$declaration->sequence().'|'.$period;
+		$per = $declaration->per();
+		if ($per === null) {
+			return $key;
+		}
+
+		return $key.'|'.substr(hash('sha256', self::partitionOf(value: ($data[$per] ?? null))), 0, self::PARTITION_WIDTH);
 
 	}//end scopeKey()
+
+	/**
+	 * The text a per-value counter is keyed on.
+	 *
+	 * A scalar is its string form; an object reference is its id or uuid, so
+	 * a reference stored expanded or as a bare id keys the same counter; any
+	 * other value is its JSON.
+	 *
+	 * @param mixed $value The value of the `per` property.
+	 *
+	 * @return string The partition text, '' when there is no value.
+	 */
+	private static function partitionOf(mixed $value): string {
+		if ($value === null) {
+			return '';
+		}
+
+		if (is_scalar($value) === true) {
+			return (string)$value;
+		}
+
+		if (is_array($value) === true) {
+			foreach (['id', 'uuid'] as $idKey) {
+				if (isset($value[$idKey]) === true && is_scalar($value[$idKey]) === true) {
+					return (string)$value[$idKey];
+				}
+			}
+		}
+
+		return (string)json_encode($value);
+
+	}//end partitionOf()
 
 	/**
 	 * Every property of the object's schema that declares a generated identifier.
