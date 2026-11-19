@@ -3968,7 +3968,7 @@ Service/LinkedEntityServiceInterface.php,,Service,,,,,Integrations
 Service/LinkedEventMerge.php,,Service,,,,,Core
 Service/LockoutStrike.php,,Service,,,,,Core
 Service/LogExportFormatter.php,,Service,,,,,Core
-Service/LogObjectInTable.php,,Service,,,,,Core
+Service/LogObjectInTable.php,,Service,,,,,Compliance
 Service/LoginSecurityInterface.php,,Service,,,,,Core
 Service/ManifestProfile.php,,Service,,,,,Configuration
 Service/ManifestServiceInterface.php,,Service,,,,,Core
@@ -4081,7 +4081,7 @@ Service/StoredEvent.php,,Service,,,,,Processes
 Service/StoredTask.php,,Service,,,,,Processes
 Service/TableDeletionOptions.php,,Service,,,,,Integrations
 Service/TableDeletionRun.php,,Service,,,,,Compliance
-Service/TableObjectRef.php,,Service,,,,,Integrations
+Service/TableObjectRef.php,,Service,,,,,Compliance
 Service/TalkLinkServiceInterface.php,,Service,,,,,Integrations
 Service/TaskVtodoDocument.php,,Service,,,,,Processes
 Service/TenancyCollaborators.php,,Service,,,,,Core
