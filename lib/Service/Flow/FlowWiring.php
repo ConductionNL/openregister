@@ -20,6 +20,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow;
 
+use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
+use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
@@ -39,15 +41,25 @@ use Psr\Log\LoggerInterface;
  * FlowRegistrar keeps the public entry points and delegates each of them here.
  *
  * Registers the flow run guards, the shared run context, the loop step dispatcher,
- * the lifecycle's answer to property-level access, the lifecycle's request state
- * and the task services that are built by hand.
+ * the lifecycle's answer to property-level access, the store of the flows
+ * compiled from application schedules, the lifecycle's request state and the
+ * task services that are built by hand.
  *
  * Application::register() calls register() once.
  */
 final class FlowWiring {
 
 	/**
-	 * Register the flow run guards, the run context, the step dispatcher and the field rules source.
+	 * The interfaces callers outside the component type against, bound to their class.
+	 *
+	 * @var array<class-string, class-string>
+	 */
+	public const BINDINGS = [
+		ScheduleFlowStoreInterface::class => ScheduleFlowStore::class,
+	];
+
+	/**
+	 * Register the flow run guards, the run context, the step dispatcher, the field rules source and the bindings.
 	 *
 	 * @param IRegistrationContext $context The registration context.
 	 *
@@ -61,6 +73,10 @@ final class FlowWiring {
 		self::registerRunContext(context: $context);
 		self::registerStepDispatcher(context: $context);
 		self::registerFieldRulesSource(context: $context);
+		foreach (self::BINDINGS as $contract => $service) {
+			$context->registerServiceAlias($contract, $service);
+		}
+
 		self::registerLifecycleState(context: $context);
 		self::registerTaskServices(context: $context);
 	}//end register()
