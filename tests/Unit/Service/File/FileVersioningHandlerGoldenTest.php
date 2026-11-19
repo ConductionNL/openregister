@@ -32,8 +32,7 @@ use OCP\IGroupManager;
 use OCA\OpenRegister\Service\File\FileSession;
 use OCA\OpenRegister\Service\File\FileVersionsPlatform;
 use Exception;
-use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
-use OCA\OpenRegister\Files\Service\File\FileOwnershipHandlerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\FileAccountInterface;
 use OCA\OpenRegister\Service\File\FileVersioningHandler;
 use OCP\App\IAppManager;
 use OCP\Files\File;
@@ -402,14 +401,14 @@ class FileVersioningHandlerGoldenTest extends TestCase {
 		self::assertCount(2, $this->handler()->listVersions($this->file(null))['versions']);
 
 		// An object's file is listed as the openregister account.
-		$owner = $this->createMock(FileOwnershipHandler::class);
+		$owner = $this->createMock(FileAccountInterface::class);
 		$owner->method('getUser')->willReturn($this->user('openregister'));
-		$this->services[FileOwnershipHandlerInterface::class] = $owner;
+		$this->services[FileAccountInterface::class] = $owner;
 		self::assertCount(2, $this->handler()->listVersions($this->file('/openregister/files/Open Registers/r/s/o/a.pdf'))['versions']);
 		self::assertSame(['list as alice', 'list as openregister'], $manager->calls);
 
 		// The ownership handler failing leaves no user: only the current entry.
-		$this->services[FileOwnershipHandlerInterface::class] = new Exception('no owner');
+		$this->services[FileAccountInterface::class] = new Exception('no owner');
 		self::assertSame(['versions' => [self::current('alice')]], $this->handler()->listVersions($this->file('/openregister/files/Open Registers/a.pdf')));
 
 		// No session user on a plain path: only the current entry, authored by 'system'.

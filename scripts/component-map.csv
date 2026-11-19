@@ -112,7 +112,7 @@ BackgroundJob/FormUploadPurgeJob.php,36,BackgroundJob,Work,Work/BackgroundJob/Fo
 BackgroundJob/GroupReconcilerJob.php,28,BackgroundJob,Access,Access/BackgroundJob/GroupReconcilerJob.php,0,,Core
 BackgroundJob/HandoffQueueDrainJob.php,34,BackgroundJob,Integrations,Integrations/BackgroundJob/HandoffQueueDrainJob.php,0,,Integrations
 BackgroundJob/ImportPreviewRunner.php,53,BackgroundJob,Configuration,Configuration/BackgroundJob/ImportPreviewRunner.php,0,,Configuration
-BackgroundJob/LogCleanUpTask.php,175,BackgroundJob,Service,Service/BackgroundJob/LogCleanUpTask.php,0,,Core
+BackgroundJob/LogCleanUpTask.php,175,BackgroundJob,Service,Service/BackgroundJob/LogCleanUpTask.php,0,,Compliance
 BackgroundJob/NameCacheWarmupJob.php,61,BackgroundJob,Configuration,Configuration/BackgroundJob/NameCacheWarmupJob.php,0,,Configuration
 BackgroundJob/OAuth2TokenRefreshJob.php,82,BackgroundJob,Integrations,Integrations/BackgroundJob/OAuth2TokenRefreshJob.php,0,,Integrations
 BackgroundJob/ObjectCleanupJob.php,62,BackgroundJob,Service,Service/BackgroundJob/ObjectCleanupJob.php,0,,Core
@@ -740,7 +740,7 @@ Db/GdprEntity.php,52,Db,Compliance,Compliance/Db/GdprEntity.php,9,372,Compliance
 Db/GdprEntityMapper.php,55,Db,Compliance,Compliance/Db/GdprEntityMapper.php,10,370,Compliance
 Db/HandoffQueueEntry.php,62,Db,Integrations,Integrations/Db/HandoffQueueEntry.php,0,,Integrations
 Db/HandoffQueueEntryMapper.php,48,Db,Integrations,Integrations/Db/HandoffQueueEntryMapper.php,0,,Integrations
-Db/HydrateBySettersTrait.php,15,Db,Configuration,Configuration/Db/HydrateBySettersTrait.php,0,,Core
+Db/HydrateBySettersTrait.php,15,Db,Core,Core/Db/HydrateBySettersTrait.php,0,,Core
 Db/HydrateEmptyJsonAsNullTrait.php,19,Db,Service,Service/Db/HydrateEmptyJsonAsNullTrait.php,0,,Core
 Db/HydrateKnownFieldsTrait.php,15,Db,Work,Work/Db/HydrateKnownFieldsTrait.php,0,,Processes
 Db/IdCursor.php,14,Db,Flows,Flows/Db/IdCursor.php,0,,Processes
@@ -748,13 +748,14 @@ Db/ImportPreview.php,94,Db,Configuration,Configuration/Db/ImportPreview.php,0,,C
 Db/ImportPreviewMapper.php,61,Db,Configuration,Configuration/Db/ImportPreviewMapper.php,0,,Configuration
 Db/ImportPreviewRow.php,55,Db,Configuration,Configuration/Db/ImportPreviewRow.php,0,,Configuration
 Db/ImportPreviewRowMapper.php,58,Db,Configuration,Configuration/Db/ImportPreviewRowMapper.php,0,,Configuration
-Db/IsoTimestampsTrait.php,17,Db,Configuration,Configuration/Db/IsoTimestampsTrait.php,0,,Configuration
+Db/IsoTimestampsTrait.php,17,Db,Core,Core/Db/IsoTimestampsTrait.php,0,,Core
 Db/JobRun.php,66,Db,Configuration,Configuration/Db/JobRun.php,0,,Configuration
 Db/JobRunMapper.php,121,Db,Configuration,Configuration/Db/JobRunMapper.php,0,,Configuration
 Db/JsonFieldsTrait.php,15,Db,Integrations,Integrations/Db/JsonFieldsTrait.php,0,,Kernel
 Db/LikeOperator.php,62,Db,Service,Service/Db/LikeOperator.php,0,,Core
 Db/LinkColumn.php,33,Db,Integrations,Integrations/Db/LinkColumn.php,0,,Core
 Db/MagicMapper.php,6709,Db,Service,Service/Db/MagicMapper.php,54,1,Core
+Db/CatalogueScope.php,,Db,,,,,Core
 Db/MagicMapper/ArrayElementFilter.php,58,Db,Service,Service/Db/MagicMapper/ArrayElementFilter.php,0,,Core
 Db/MagicMapper/DeletedFilter.php,54,Db,Service,Service/Db/MagicMapper/DeletedFilter.php,0,,Core
 Db/MagicMapper/DeletedLens.php,33,Db,Service,Service/Db/MagicMapper/DeletedLens.php,0,,Core
@@ -983,7 +984,7 @@ Event/ReferenceValidationFailedEvent.php,5,Event,Event,Event/ReferenceValidation
 Event/RegisterCreatedEvent.php,14,Event,Event,Event/RegisterCreatedEvent.php,16,,Kernel
 Event/RegisterDeletedEvent.php,14,Event,Event,Event/RegisterDeletedEvent.php,3,,Kernel
 Event/RegisterFlowTriggersEvent.php,13,Event,Event,Event/RegisterFlowTriggersEvent.php,1,,Kernel
-Event/RegisterLeafProvidersEvent.php,18,Event,Event,Event/RegisterLeafProvidersEvent.php,99,,Kernel
+Event/RegisterLeafProvidersEvent.php,18,Event,Event,Event/RegisterLeafProvidersEvent.php,99,,Integrations
 Event/RegisterUpdatedEvent.php,19,Event,Event,Event/RegisterUpdatedEvent.php,14,,Kernel
 Event/RegistrySubscriptionEndedEvent.php,22,Event,Event,Event/RegistrySubscriptionEndedEvent.php,0,,Kernel
 Event/RegistrySubscriptionRequestedEvent.php,39,Event,Event,Event/RegistrySubscriptionRequestedEvent.php,12,,Kernel
@@ -997,7 +998,7 @@ Event/TaskSequenceCompletedEvent.php,28,Event,Event,Event/TaskSequenceCompletedE
 Event/TaskSequenceUndecidedEvent.php,20,Event,Event,Event/TaskSequenceUndecidedEvent.php,0,,Kernel
 Event/TaskTerminalEvent.php,28,Event,Event,Event/TaskTerminalEvent.php,103,,Kernel
 Event/TaskTransitionedEvent.php,33,Event,Event,Event/TaskTransitionedEvent.php,19,,Kernel
-Event/ToolRegistrationEvent.php,15,Event,Event,Event/ToolRegistrationEvent.php,10,,Kernel
+Event/ToolRegistrationEvent.php,15,Event,Event,Event/ToolRegistrationEvent.php,10,,Integrations
 Event/UserProfileUpdatedEvent.php,41,Event,Event,Event/UserProfileUpdatedEvent.php,17,,Kernel
 Event/ViewAlertCrossedEvent.php,25,Event,Event,Event/ViewAlertCrossedEvent.php,0,,Kernel
 Event/ViewCreatedEvent.php,14,Event,Event,Event/ViewCreatedEvent.php,0,,Kernel
@@ -1665,12 +1666,13 @@ Repair/RegisterOpenRegisterWithDoriath.php,158,Repair,Integrations,Integrations/
 Repair/RegisterRiskLevelMetadata.php,19,Repair,Platform,Platform/Repair/RegisterRiskLevelMetadata.php,0,,Platform
 Repair/RemoveRetiredCronJobs.php,45,Repair,Platform,Platform/Repair/RemoveRetiredCronJobs.php,0,,Platform
 Repair/RenameDutchColumns.php,194,Repair,Platform,Platform/Repair/RenameDutchColumns.php,0,,Platform
+Repair/NarrowMagicJsonColumns.php,,Repair,,,,,Core
 Repair/RepointMovedBackgroundJobs.php,47,Repair,Platform,Platform/Repair/RepointMovedBackgroundJobs.php,0,,Platform
 Repair/SeedAppVirtualSchemas.php,159,Repair,Platform,Platform/Repair/SeedAppVirtualSchemas.php,0,,Platform
 Repair/SeedCaseFixtures.php,191,Repair,Work,Work/Repair/SeedCaseFixtures.php,0,,Processes
 Repair/SeedDirectoryVirtualSchemas.php,159,Repair,Platform,Platform/Repair/SeedDirectoryVirtualSchemas.php,0,,Platform
 Repair/SeedFlowRunTriggerSubject.php,78,Repair,Flows,Flows/Repair/SeedFlowRunTriggerSubject.php,0,,Processes
-Repair/SeedFlowTimerRegister.php,46,Repair,Flows,Flows/Repair/SeedFlowTimerRegister.php,0,,Processes
+Repair/SeedFlowTimerRegister.php,46,Repair,Flows,Flows/Repair/SeedFlowTimerRegister.php,0,,Platform
 Repair/SeedIntakeSourceRegister.php,48,Repair,Platform,Platform/Repair/SeedIntakeSourceRegister.php,0,,Platform
 Repair/SeedTablesVirtualSchemas.php,55,Repair,Platform,Platform/Repair/SeedTablesVirtualSchemas.php,0,,Platform
 Repair/SeedTaskFixtures.php,288,Repair,Work,Work/Repair/SeedTaskFixtures.php,0,,Processes
@@ -2609,6 +2611,7 @@ Service/Integration/Providers/TimeProvider.php,145,Service,Integrations,Integrat
 Service/Integration/Providers/XwikiProvider.php,150,Service,Integrations,Integrations/Service/Integration/Providers/XwikiProvider.php,0,,Integrations
 Service/Integration/QueryTimeContract.php,18,Service,Integrations,Integrations/Service/Integration/QueryTimeContract.php,0,,Integrations
 Service/Integration/TimeProvider.php,39,Service,Integrations,Integrations/Service/Integration/TimeProvider.php,0,,Integrations
+Service/Interaction/AddressedObject.php,,Service,,,,,Core
 Service/Interaction/FavouriteService.php,25,Service,Work,Work/Service/Interaction/FavouriteService.php,0,,Processes
 Service/Interaction/ReadHistoryService.php,125,Service,Compliance,Compliance/Service/Interaction/ReadHistoryService.php,0,335,Processes
 Service/Interaction/ReadStateService.php,141,Service,Work,Work/Service/Interaction/ReadStateService.php,1,208,Processes
@@ -3290,10 +3293,10 @@ Service/TranslationProjectionService.php,183,Service,Configuration,Configuration
 Service/TranslationStatusService.php,143,Service,Configuration,Configuration/Service/TranslationStatusService.php,0,200,Configuration
 Service/UrnService.php,214,Service,Service,Service/UrnService.php,0,106,Core
 Service/UserLinkWriter.php,50,Service,Integrations,Integrations/Service/UserLinkWriter.php,0,,Integrations
-Service/UserMigration/ImportReport.php,20,Service,Service,Service/UserMigration/ImportReport.php,0,,Core
-Service/UserMigration/PersonalStateMigrator.php,177,Service,Service,Service/UserMigration/PersonalStateMigrator.php,0,,Core
-Service/UserMigration/PersonalStateReader.php,40,Service,Service,Service/UserMigration/PersonalStateReader.php,0,,Core
-Service/UserMigration/RegisterReferences.php,39,Service,Service,Service/UserMigration/RegisterReferences.php,0,,Core
+Service/UserMigration/ImportReport.php,20,Service,Service,Service/UserMigration/ImportReport.php,0,,Platform
+Service/UserMigration/PersonalStateMigrator.php,177,Service,Service,Service/UserMigration/PersonalStateMigrator.php,0,,Platform
+Service/UserMigration/PersonalStateReader.php,40,Service,Service,Service/UserMigration/PersonalStateReader.php,0,,Platform
+Service/UserMigration/RegisterReferences.php,39,Service,Service,Service/UserMigration/RegisterReferences.php,0,,Platform
 Service/UserService.php,864,Service,Access,Access/Service/UserService.php,0,,Core
 Service/Vectorization/Strategies/FileVectorizationStrategy.php,86,Service,Access,Access/Service/Vectorization/Strategies/FileVectorizationStrategy.php,0,,Core
 Service/Vectorization/Strategies/ObjectVectorizationStrategy.php,179,Service,Access,Access/Service/Vectorization/Strategies/ObjectVectorizationStrategy.php,0,,Core
@@ -3391,7 +3394,7 @@ Db/FlowVersion/,,Db,,,,,Integrations
 Db/HandoffQueueEntry/,,Db,,,,,Integrations
 Db/MagicMapper/,,Db,,,,,Core
 Db/Mapping/,,Db,,,,,Integrations
-Db/ObjectRelation/,,Db,,,,,Integrations
+Db/ObjectRelation/,,Db,,,,,Core
 Db/Register/,,Db,,,,,Kernel
 Db/Schema/,,Db,,,,,Core
 Db/Schema/FacetBlockStamp.php,,Db,,,,,Kernel
@@ -3432,6 +3435,10 @@ Notifications/,,Notifications,,,,,Notifications
 Push/,,Push,,,,,Notifications
 Reference/,,Reference,,,,,Platform
 Repair/Support/,,Repair,,,,,Platform
+Repair/Support/ApprovalTaskStores.php,,Repair,,,,,Processes
+Repair/Support/ChainMigrationRun.php,,Repair,,,,,Processes
+Repair/Support/EveryFlow.php,,Repair,,,,,Processes
+Repair/Support/RepairPlatform.php,,Repair,,,,,Core
 Search/,,Search,,,,,Search
 Sections/,,Sections,,,,,Platform
 Service/Aggregation/,,Service,,,,,Core
@@ -3592,6 +3599,7 @@ Command/DescriptorImportTarget.php,,Command,,,,,Core
 Command/FieldEncryptionPass.php,,Command,,,,,Core
 Command/LeafMatch.php,,Command,,,,,Core
 Command/MagicTableCommand.php,,Command,,,,,Core
+Command/NarrowMagicJsonColumnsCommand.php,,Command,,,,,Core
 Command/MagicTableRun.php,,Command,,,,,Core
 Command/MagicTableSelection.php,,Command,,,,,Core
 Command/MagicTableTarget.php,,Command,,,,,Core
@@ -3642,7 +3650,7 @@ Db/CospendLinkMapperInterface.php,,Db,,,,,Integrations
 Db/DbRegistrar.php,,Db,,,,,Core
 Db/DecisionMapperInterface.php,,Db,,,,,Processes
 Db/DecisionMetadataChange.php,,Db,,,,,Core
-Db/DecisionMetadataEdit.php,,Db,,,,,Processes
+Db/DecisionMetadataEdit.php,,Db,,,,,Core
 Db/DeckLinkMapperInterface.php,,Db,,,,,Integrations
 Db/DelegationGrantMapperInterface.php,,Db,,,,,Core
 Db/EmailLinkMapperInterface.php,,Db,,,,,Integrations
@@ -3687,7 +3695,7 @@ Db/ImportPreviewRowMapperInterface.php,,Db,,,,,Configuration
 Db/Integration/IntegrationIdIndexInterface.php,,Db,,,,,Core
 Db/JobRun/JobRunFieldTypes.php,,Db,,,,,Configuration
 Db/JobRunFilter.php,,Db,,,,,Core
-Db/JobRunMapperInterface.php,,Db,,,,,Core
+Db/JobRunMapperInterface.php,,Db,,,,,Configuration
 Db/JsonArrayColumn.php,,Db,,,,,Kernel
 Db/LikeOperatorInterface.php,,Db,,,,,Core
 Db/LikeOperators.php,,Db,,,,,Core
@@ -3700,7 +3708,7 @@ Db/MapLinkMapperInterface.php,,Db,,,,,Integrations
 Db/MapperWiring.php,,Db,,,,,Core
 Db/MappingMapperInterface.php,,Db,,,,,Integrations
 Db/MigrationPackMapperInterface.php,,Db,,,,,Configuration
-Db/NewRowStamps.php,,Db,,,,,Configuration
+Db/NewRowStamps.php,,Db,,,,,Compliance
 Db/ObjectEntity/ObjectEntityFieldTypes.php,,Db,,,,,Kernel
 Db/ObjectLinkTypesTrait.php,,Db,,,,,Core
 Db/ObjectReadState/ReadStateScope.php,,Db,,,,,Core
@@ -3718,7 +3726,7 @@ Db/ProcessingLogMapperInterface.php,,Db,,,,,Core
 Db/ProcessingLogReadScope.php,,Db,,,,,Core
 Db/ProcessingPurpose/ProcessingPurposeFieldTypes.php,,Db,,,,,Compliance
 Db/ProcessingPurposeMapperInterface.php,,Db,,,,,Core
-Db/RecordTemplateMapperInterface.php,,Db,,,,,Core
+Db/RecordTemplateMapperInterface.php,,Db,,,,,Configuration
 Db/RegisterLookup.php,,Db,,,,,Core
 Db/RegisterMapperServices.php,,Db,,,,,Core
 Db/RegisterSchema.php,,Db,,,,,Core
@@ -4422,6 +4430,7 @@ Db/PlatformMapperBindings.php,,Db,,,,,Platform
 Db/PlatformMapperRegistrar.php,,Db,,,,,Platform
 Service/PlatformServiceBindings.php,,Service,,,,,Platform
 Service/PlatformServiceRegistrar.php,,Service,,,,,Platform
+Service/Config/ShareableConfigCatalogue.php,,Service,,,,,Configuration
 Service/ComplianceServiceBindings.php,,Service,,,,,Compliance
 Service/ComplianceServiceRegistrar.php,,Service,,,,,Compliance
 Event/ObjectWriteRequestEvent.php,,Event,,,,,Core
