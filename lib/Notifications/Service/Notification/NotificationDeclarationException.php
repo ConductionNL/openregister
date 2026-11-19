@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Notifications\Service\Notification;
 
 use Exception;
+use OCA\OpenRegister\Kernel\Contracts\Core\DeclarationRefusalInterface;
 
 /**
  * A `url` action whose target the dispatcher would never link to.
@@ -30,7 +31,7 @@ use Exception;
  *
  * @spec openspec/specs/notificatie-engine/spec.md
  */
-final class NotificationDeclarationException extends Exception {
+final class NotificationDeclarationException extends Exception implements DeclarationRefusalInterface {
 
 	/**
 	 * Build the exception from the validator's error rows.

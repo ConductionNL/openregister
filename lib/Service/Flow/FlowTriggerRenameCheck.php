@@ -23,6 +23,7 @@ namespace OCA\OpenRegister\Service\Flow;
 use OCA\OpenRegister\Db\Flow\FlowSelection;
 use OCA\OpenRegister\Db\FlowMapperInterface;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\Core\SchemaRenameWarningsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Service\Schema\SchemaChangeSet;
 use Psr\Log\LoggerInterface;
@@ -39,7 +40,7 @@ use Throwable;
  *
  * @spec openspec/changes/flow-trigger-transitions-and-changed-fields/specs/flow-engine/spec.md#requirement-an-update-trigger-can-watch-named-fields
  */
-class FlowTriggerRenameCheck {
+class FlowTriggerRenameCheck implements SchemaRenameWarningsInterface {
 
 	/**
 	 * Flows read per page.

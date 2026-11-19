@@ -14,6 +14,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\SchemaFormDependentsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\SchemaRenameWarningsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Notifications\NotificationRunRecorderInterface;
 use OCA\OpenRegister\Kernel\Contracts\Notifications\ObjectWatchersInterface;
 use OCA\OpenRegister\Kernel\Contracts\Notifications\TaskRowSourceInterface;
@@ -28,7 +30,9 @@ use OCA\OpenRegister\Service\Flow\FlowRunContext;
 use OCA\OpenRegister\Service\Flow\FlowRunnableGuard;
 use OCA\OpenRegister\Service\Flow\FlowService;
 use OCA\OpenRegister\Service\Flow\FlowStepDispatcher;
+use OCA\OpenRegister\Service\Flow\FlowTriggerRenameCheck;
 use OCA\OpenRegister\Service\Flow\FlowWiring;
+use OCA\OpenRegister\Service\Form\FormDependentsCheck;
 use OCA\OpenRegister\Service\Flow\RegistryStepDispatcher;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
@@ -189,6 +193,8 @@ final class FlowWiringTest extends TestCase {
 				TaskRowSourceInterface::class           => TaskInboxService::class,
 				ObjectWatchersInterface::class          => WatcherService::class,
 				NotificationRunRecorderInterface::class => AutomationRecordWriter::class,
+				SchemaRenameWarningsInterface::class    => FlowTriggerRenameCheck::class,
+				SchemaFormDependentsInterface::class    => FormDependentsCheck::class,
 			],
 			actual: $this->aliases
 		);

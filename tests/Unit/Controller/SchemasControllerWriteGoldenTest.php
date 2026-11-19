@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use Exception;
+use OCA\OpenRegister\Kernel\Contracts\Core\SchemaFormDependentsInterface;
 use OCA\OpenRegister\Controller\SchemasController;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\SchemasControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -28,8 +29,6 @@ use OCA\OpenRegister\Service\Calculation\CalculationDeclarationException;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationDeclarationException;
 use OCA\OpenRegister\Service\Consent\ConsentDeclarationException;
 use OCA\OpenRegister\Service\Decision\ReviewDeclarationException;
-use OCA\OpenRegister\Service\Form\FormDependentsCheck;
-use OCA\OpenRegister\Service\Form\FormDependentsCheckInterface;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\Relation\RelationDeclarationException;
 use OCA\OpenRegister\Service\Rules\DependentValueDeclarationException;
@@ -305,7 +304,7 @@ class SchemasControllerWriteGoldenTest extends TestCase {
 				return $audit;
 			}
 
-			if ($id === FormDependentsCheckInterface::class) {
+			if ($id === SchemaFormDependentsInterface::class) {
 				$this->record(method: 'container.get', args: ['FormDependentsCheck']);
 				if (($case['forms'] ?? null) === 'throws') {
 					throw new Exception('No form check');
@@ -509,13 +508,13 @@ class SchemasControllerWriteGoldenTest extends TestCase {
 	/**
 	 * @param array<string, mixed> $case
 	 */
-	private function formCheck(array $case): ?FormDependentsCheck {
+	private function formCheck(array $case): ?SchemaFormDependentsInterface {
 		$mode = ($case['forms'] ?? 'clean');
 		if ($mode === 'missing') {
 			return null;
 		}
 
-		$check = $this->createMock(FormDependentsCheck::class);
+		$check = $this->createMock(SchemaFormDependentsInterface::class);
 		$check->method('assess')->willReturnCallback(function () use ($mode) {
 			$this->record(method: 'forms.assess', args: func_get_args());
 			return [

@@ -24,10 +24,13 @@ use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\SchemaFormDependentsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\SchemaRenameWarningsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Notifications\NotificationRunRecorderInterface;
 use OCA\OpenRegister\Kernel\Contracts\Notifications\ObjectWatchersInterface;
 use OCA\OpenRegister\Kernel\Contracts\Notifications\TaskRowSourceInterface;
 use OCA\OpenRegister\Service\AutomationRecordWriter;
+use OCA\OpenRegister\Service\Form\FormDependentsCheck;
 use OCA\OpenRegister\Service\Interaction\WatcherService;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionRunner;
@@ -64,6 +67,8 @@ final class FlowWiring {
 		TaskRowSourceInterface::class           => TaskInboxService::class,
 		ObjectWatchersInterface::class          => WatcherService::class,
 		NotificationRunRecorderInterface::class => AutomationRecordWriter::class,
+		SchemaRenameWarningsInterface::class    => FlowTriggerRenameCheck::class,
+		SchemaFormDependentsInterface::class    => FormDependentsCheck::class,
 	];
 
 	/**
