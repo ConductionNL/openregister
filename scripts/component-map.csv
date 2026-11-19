@@ -2855,6 +2855,7 @@ Service/ObjectAction/ObjectActionDefinitions.php,51,Service,Flows,Flows/Service/
 Service/ObjectAction/ObjectActionElevation.php,98,Service,Flows,Flows/Service/ObjectAction/ObjectActionElevation.php,0,,Processes
 Service/ObjectAction/ObjectActionElevationEntries.php,26,Service,Flows,Flows/Service/ObjectAction/ObjectActionElevationEntries.php,0,,Processes
 Service/ObjectAction/ObjectActionElevationScope.php,44,Service,Flows,Flows/Service/ObjectAction/ObjectActionElevationScope.php,0,,Processes
+Service/ObjectAction/ObjectActionWriteElevation.php,,Service,,,,,Processes
 Service/ObjectAction/ObjectActionGate.php,132,Service,Flows,Flows/Service/ObjectAction/ObjectActionGate.php,0,,Processes
 Service/ObjectAction/ObjectActionHistory.php,60,Service,Flows,Flows/Service/ObjectAction/ObjectActionHistory.php,0,,Processes
 Service/ObjectAction/ObjectActionInputSchema.php,23,Service,Flows,Flows/Service/ObjectAction/ObjectActionInputSchema.php,0,,Processes
