@@ -39,8 +39,11 @@ use OCP\Files\Node;
 
 /**
  * The file operations controllers and the Files component call on FileService.
+ *
+ * It names FileReaderInterface and FileWriterInterface as well as ObjectFilesInterface,
+ * whose read and write halves are the Core ports those two extend.
  */
-interface FileServiceInterface extends ObjectFilesInterface, FileFolderServiceInterface {
+interface FileServiceInterface extends ObjectFilesInterface, FileReaderInterface, FileWriterInterface, FileFolderServiceInterface {
 
 	/**
 	 * Anonymize a document by replacing detected entities (DELEGATED to DocumentProcessingHandler).

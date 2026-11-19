@@ -22,8 +22,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\StoredFileReaderInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\StoredFileWriterInterface;
+
 /**
  * For callers that both read and write an object's files.
  */
-interface ObjectFilesInterface extends FileReaderInterface, FileWriterInterface {
+interface ObjectFilesInterface extends StoredFileReaderInterface, StoredFileWriterInterface {
 }//end interface

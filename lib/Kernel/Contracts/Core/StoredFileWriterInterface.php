@@ -1,0 +1,91 @@
+<?php
+
+/**
+ * StoredFileWriterInterface: adding, overwriting and deleting an object's stored files.
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category Contract
+ * @package  OCA\OpenRegister\Kernel\Contracts\Core
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://OpenRegister.app
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\Kernel\Contracts\Core;
+
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\File\FileOverwrite;
+use OCA\OpenRegister\Service\File\FileTarget;
+use OCA\OpenRegister\Service\File\FileUpload;
+use OCP\Files\File;
+use OCP\Files\Node;
+
+/**
+ * The file writes callers make on an object's folder.
+ *
+ * Core asks (saving, merging and access links store an object's files through
+ * it); file storage answers. FileWriterInterface extends it, so FileService and
+ * every caller of FileWriterInterface keep working.
+ */
+interface StoredFileWriterInterface {
+
+	/**
+	 * Adds a new file to an object's folder.
+	 *
+	 * @param FileTarget $target The object (or its id) and, when the object does not name it, its register.
+	 * @param FileUpload $upload The file name, content, share toggle and tags.
+	 *
+	 * @return File The created file.
+	 *
+	 * @throws \OCP\Files\NotPermittedException If file creation fails due to permissions.
+	 * @throws \Exception If file creation fails for other reasons.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-29
+	 */
+	public function addFile(FileTarget $target, FileUpload $upload): File;
+
+	/**
+	 * Delete a file by node, path, or ID.
+	 *
+	 * Delegates to DeleteFileHandler for single-responsibility file deletion operations.
+	 *
+	 * @param Node|string|int $file The file Node object, path (from root), or file ID to delete.
+	 * @param ObjectEntity|null $object Optional object entity.
+	 *
+	 * @return bool True if successful, false if the file didn't exist.
+	 *
+	 * @throws \Exception If deleting the file is not permitted or file operations fail.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md#file-update-and-delete-enforce-per-action-node-permissions
+	 *   (deletes a file resolved by node/path/id, with object-folder context)
+	 */
+	public function deleteFile(Node|string|int $file, ?ObjectEntity $object = null): bool;
+
+	/**
+	 * Overwrites an existing file in NextCloud.
+	 *
+	 * Delegates to UpdateFileHandler for single-responsibility file update operations.
+	 *
+	 * @param FileOverwrite $overwrite The path (from root, with filename and extension) or file ID, the optional
+	 *                                content (a byte string or a readable stream resource; null updates only
+	 *                                metadata such as tags), the tags to attach (object tags are preserved) and
+	 *                                the optional object whose folder is searched first.
+	 *
+	 * @throws \Exception If the file doesn't exist or if file operations fail.
+	 *
+	 * @return File The updated file.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md#file-update-guards-locks-preserves-object-tags-and-persists-or-side-metadata-separately
+	 *   (updates a file's content and tags within an object's folder)
+	 */
+	public function overwriteFile(FileOverwrite $overwrite): File;
+}//end interface
