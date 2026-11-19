@@ -176,7 +176,7 @@ Command/AdoptionRun.php,,Command,,,,,Core
 Command/ApplicationIdRename.php,,Command,,,,,Configuration
 Command/BackfillObjectSlugsCommand.php,118,Command,Service,Service/Command/BackfillObjectSlugsCommand.php,0,,Core
 Command/BackfillSystemOwnerCommand.php,146,Command,Configuration,Configuration/Command/BackfillSystemOwnerCommand.php,0,,Configuration
-Command/BackfillTranslationSourceLanguageCommand.php,83,Command,Integrations,Integrations/Command/BackfillTranslationSourceLanguageCommand.php,0,,Integrations
+Command/BackfillTranslationSourceLanguageCommand.php,83,Command,Integrations,Integrations/Command/BackfillTranslationSourceLanguageCommand.php,0,,Configuration
 Command/DeclaredGroupsCommand.php,71,Command,Access,Access/Command/DeclaredGroupsCommand.php,0,,Core
 Command/DedupCollidedSchemasCommand.php,214,Command,Service,Service/Command/DedupCollidedSchemasCommand.php,0,,Core
 Command/DedupeConfigurationsCommand.php,118,Command,Configuration,Configuration/Command/DedupeConfigurationsCommand.php,0,,Configuration
@@ -1624,7 +1624,7 @@ Push/PushEvents.php,7,Push,Platform,Platform/Push/PushEvents.php,0,,Notification
 Reference/ObjectReferenceProvider.php,62,Reference,Platform,Platform/Reference/ObjectReferenceProvider.php,0,,Platform
 Repair/AbstractRegisterImportStep.php,46,Repair,Platform,Platform/Repair/AbstractRegisterImportStep.php,0,,Platform
 Repair/AddObjectStateColumns.php,55,Repair,Platform,Platform/Repair/AddObjectStateColumns.php,0,,Platform
-Repair/AdminUserIds.php,,Repair,,,,,Platform
+Repair/AdminUserIds.php,,Repair,,,,,Core
 Repair/AdoptOrganisationlessRows.php,,Repair,,,,,Core
 Repair/AppRegisterDescriptor.php,,Repair,,,,,Platform
 Repair/BackfillFlowSemanticVersions.php,114,Repair,Flows,Flows/Repair/BackfillFlowSemanticVersions.php,0,,Processes
@@ -3768,7 +3768,7 @@ Db/TranslationEdit.php,,Db,,,,,Platform
 Db/TranslationFilter.php,,Db,,,,,Platform
 Db/TranslationMapperInterface.php,,Db,,,,,Platform
 Db/TranslationSlot.php,,Db,,,,,Platform
-Db/TranslationSourceLanguageBackfillInterface.php,,Db,,,,,Platform
+Db/TranslationSourceLanguageBackfillInterface.php,,Db,,,,,Configuration
 Db/TypedFieldsJson.php,,Db,,,,,Core
 Db/TypedFieldsJsonTrait.php,,Db,,,,,Core
 Db/UsageMeasurement.php,,Db,,,,,Core
@@ -4416,3 +4416,7 @@ Service/PlatformServiceBindings.php,,Service,,,,,Platform
 Service/PlatformServiceRegistrar.php,,Service,,,,,Platform
 Event/ObjectWriteRequestEvent.php,,Event,,,,,Core
 Listener/WebhookRequestInterceptionListener.php,,Listener,,,,,Integrations
+Command/Support/PurgeSwitches.php,,Command,,,,,Core
+Command/Support/RematerialiseEvaluation.php,,Command,,,,,Processes
+Command/Support/RematerialiseStorage.php,,Command,,,,,Processes
+Service/Export/SpreadsheetCell.php,,Service,,,,,Core
