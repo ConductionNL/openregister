@@ -586,6 +586,14 @@ deptrac:
         - type: directory
           value: 'lib/Db/ApiCall/[^/]*$'
         - type: directory
+          value: 'lib/Db/AuditTrail/ActionScope[.]php$'
+        - type: directory
+          value: 'lib/Db/AuditTrail/NamedActor[.]php$'
+        - type: directory
+          value: 'lib/Db/AuditTrail/ObjectAuditEvent[.]php$'
+        - type: directory
+          value: 'lib/Db/AuditTrail/ObjectAuditEventOptions[.]php$'
+        - type: directory
           value: 'lib/Db/EntityRelation/[^/]*$'
         - type: directory
           value: 'lib/Db/Integration/[^/]*$'
@@ -2692,7 +2700,51 @@ deptrac:
         - type: directory
           value: 'lib/Db/(AuditFlowAttributionInterface|AuditTrail|AuditTrailFilterTerm|AuditTrailMapper|AuditTrailPageQuery|AuditTrailPageQueryInterface|AuditTrailPayloadHelper|ComplianceMapperBindings|ComplianceMapperRegistrar|ContentReport|ContentReportMapper|ErasurePreview|ErasurePreviewMapper|GdprEntity|GdprEntityMapper|GdprEntityMapperInterface|ProcessingLogEntry|ProcessingLogMapper|ProcessingPurpose|ProcessingPurposeMapper|QualityAudit|QualityAuditFailure|QualityAuditMapper|QualityAuditMapperInterface|QualityAuditRun|QualityAuditRunMapper|QualityAuditRunMapperInterface|SearchTrail|SearchTrailMapper|SearchTrailOutcome|StatusVocabularyTrait|SubjectExport|SubjectExportMapper|SubjectExportMapperInterface|TaskAudit|TaskAuditMapper|TrailRetentionTrait|Verwerkingsactiviteit|VerwerkingsactiviteitMapper)[.]php$'
         - type: directory
-          value: 'lib/Db/AuditTrail/[^/]*$'
+          value: 'lib/Db/AuditTrail/ActionLookupOptions[.]php$'
+        - type: directory
+          value: 'lib/Db/AuditTrail/ActionWindow[.]php$'
+        - type: directory
+          value: 'lib/Db/AuditTrail/ActorTrailQuery[.]php$'
+        - type: directory
+          value: 'lib/Db/AuditTrail/AuditActionStatistics[.]php$'
+        - type: directory
+          value: 'lib/Db/AuditTrail/AuditPageRequest[.]php$'
+        - type: directory
+          value: 'lib/Db/AuditTrail/AuditStatisticsScope[.]php$'
+        - type: directory
+          value: 'lib/Db/AuditTrail/AuditTrailCriteria[.]php$'
+        - type: directory
+          value: 'lib/Db/AuditTrail/AuditTrailFieldTypes[.]php$'
+        - type: directory
+          value: 'lib/Db/AuditTrail/AuditTrailMapperServices[.]php$'
+        - type: directory
+          value: 'lib/Db/AuditTrail/AuditTrailSealedForm[.]php$'
+        - type: directory
+          value: 'lib/Db/AuditTrail/AuditTrailStatistics[.]php$'
+        - type: directory
+          value: 'lib/Db/AuditTrail/AuditedChange[.]php$'
+        - type: directory
+          value: 'lib/Db/AuditTrail/AuditedObject[.]php$'
+        - type: directory
+          value: 'lib/Db/AuditTrail/ExportOutcome[.]php$'
+        - type: directory
+          value: 'lib/Db/AuditTrail/HardeningChange[.]php$'
+        - type: directory
+          value: 'lib/Db/AuditTrail/PartyQueryRefusal[.]php$'
+        - type: directory
+          value: 'lib/Db/AuditTrail/PurposeRefusal[.]php$'
+        - type: directory
+          value: 'lib/Db/AuditTrail/RegisterAuditEvent[.]php$'
+        - type: directory
+          value: 'lib/Db/AuditTrail/RevertOptions[.]php$'
+        - type: directory
+          value: 'lib/Db/AuditTrail/SharedMasterDataRefusal[.]php$'
+        - type: directory
+          value: 'lib/Db/AuditTrail/SharedMasterDataRefusalOptions[.]php$'
+        - type: directory
+          value: 'lib/Db/AuditTrail/SlugBackfill[.]php$'
+        - type: directory
+          value: 'lib/Db/AuditTrail/ToolInvocation[.]php$'
         - type: directory
           value: 'lib/Db/ErasurePreview/[^/]*$'
         - type: directory

@@ -4416,3 +4416,7 @@ Service/PlatformServiceBindings.php,,Service,,,,,Platform
 Service/PlatformServiceRegistrar.php,,Service,,,,,Platform
 Event/ObjectWriteRequestEvent.php,,Event,,,,,Core
 Listener/WebhookRequestInterceptionListener.php,,Listener,,,,,Integrations
+Db/AuditTrail/NamedActor.php,,Db,,,,,Core
+Db/AuditTrail/ObjectAuditEvent.php,,Db,,,,,Core
+Db/AuditTrail/ObjectAuditEventOptions.php,,Db,,,,,Core
+Db/AuditTrail/ActionScope.php,,Db,,,,,Core
