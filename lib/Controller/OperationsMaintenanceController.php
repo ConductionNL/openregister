@@ -22,7 +22,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Service\Operations\MaintenanceModeServiceInterface;
 use OCA\OpenRegister\Service\Operations\SupportBundleServiceInterface;
 use OCA\OpenRegister\Controller\Support\OperationsActingRequest;
@@ -31,6 +30,7 @@ use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCA\OpenRegister\Controller\Support\OperationsMaintenanceControllerServices;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 
 /**
  * Closing the instance, and saying what it is made of.
@@ -76,7 +76,7 @@ class OperationsMaintenanceController extends Controller {
 		IRequest $request,
 		OperationsMaintenanceControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->maintenance = $services->maintenance;
 		$this->bundle = $services->bundle;
 		$this->acting = new OperationsActingRequest(request: $request, userSession: $services->userSession);
