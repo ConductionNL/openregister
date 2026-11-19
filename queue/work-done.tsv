@@ -23031,3 +23031,4 @@ merge:keepiq:693:351be9ba	merge3 tree of 7 keepiq PRs: merged=0 red=7 fail=0 ski
 merge:stackiq:2060:77bf18e9	unmeasured: static.developer.overheid.nl (checker_floor adrvalidator); 2060,2062 APPROVE not landed; 2067 REQUEST_CHANGES; 2063 REVERIFY (conflicts only with earlier tree PR)	session-20261119T214535-17440c61	2026-11-19T21:50:08Z
 merge:stackiq:1028:b94ad06d	unmeasured: static.developer.overheid.nl (proxy 403 in this session; gate cannot measure adrvalidator)	session-20261119T214535-17440c61	2026-11-19T21:50:31Z
 fix:portaliq:2583:9cdf93db	merged development into the branch, new head 8708edee; REVERIFY recorded	session-20261119T214535-17440c61	2026-11-19T21:51:12Z
+fix:portaliq:2589:8f568eda	merged development into the branch, new head a399728d; REVERIFY recorded	session-20261119T214535-17440c61	2026-11-19T21:51:42Z
