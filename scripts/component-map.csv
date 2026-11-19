@@ -4328,6 +4328,8 @@ Service/Export/PublicExportService.php,,Service,,,,,Configuration
 Contract/ObjectFileReaderInterface.php,4,Contract,Contract,Contract/ObjectFileReaderInterface.php,1,,Kernel
 Service/File/ObjectFileReader.php,14,Service,Service,Service/File/ObjectFileReader.php,0,,Core
 Controller/FileEntityRelationsController.php,,Controller,,,,,Processes
+Db/ProcessesMapperBindings.php,,Db,,,,,Processes
+Db/ProcessesMapperRegistrar.php,,Db,,,,,Processes
 Controller/Support/AnalyticsLinksControllerServices.php,,Controller,,,,,Integrations
 Controller/Support/ApiCallersControllerServices.php,,Controller,,,,,Integrations
 Controller/Support/BookmarkLinksControllerServices.php,,Controller,,,,,Integrations
