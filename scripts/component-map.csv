@@ -4426,3 +4426,5 @@ Service/Capability/ToolReachLevels.php,,Service,,,,,Integrations
 Db/AuditTrail/ObjectAuditEvent.php,,Db,,,,,Core
 Db/AuditTrail/ObjectAuditEventOptions.php,,Db,,,,,Core
 Db/AuditTrail/NamedActor.php,,Db,,,,,Core
+Kernel/Contracts/CaseItemInterface.php,,Kernel,,,,,Kernel
+Kernel/Contracts/DecisionInterface.php,,Kernel,,,,,Kernel
