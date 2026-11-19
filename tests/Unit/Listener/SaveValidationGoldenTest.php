@@ -30,7 +30,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\BulkAction\ApplyRuleActionInterface;
 use OCA\OpenRegister\BulkAction\AssignActionInterface;
 use OCA\OpenRegister\BulkAction\BulkActionInterface;
-use OCA\OpenRegister\BulkAction\ExportWholeSetAction;
+use OCA\OpenRegister\Kernel\Contracts\Processes\WholeSetExportActionInterface;
 use OCA\OpenRegister\BulkAction\RestorePriorValuesActionInterface;
 use OCA\OpenRegister\BulkAction\RunActionActionInterface;
 use OCA\OpenRegister\BulkAction\SetPropertiesActionInterface;
@@ -324,7 +324,7 @@ class SaveValidationGoldenTest extends TestCase {
 
 		$listener = new BulkActionRegistrationListener(
 			new BulkEditActions($make(SetPropertiesActionInterface::class, 'set'), $make(AssignActionInterface::class, 'assign'), $make(ApplyRuleActionInterface::class, 'rule'), $make(TransitionActionInterface::class, 'transition')),
-			new BulkSetActions($make(ExportWholeSetAction::class, 'export'), $make(RestorePriorValuesActionInterface::class, 'restore'), $make(RunActionActionInterface::class, 'run')),
+			new BulkSetActions($make(WholeSetExportActionInterface::class, 'export'), $make(RestorePriorValuesActionInterface::class, 'restore'), $make(RunActionActionInterface::class, 'run')),
 			$this->logger()
 		);
 		$listener->handle(new Event());
