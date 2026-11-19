@@ -151,6 +151,7 @@ use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Throwable;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Kernel\Contracts\Core\CurrentFlowRunInterface;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
@@ -522,11 +523,11 @@ class SaveObject implements SaveObjectInterface {
 	private readonly ?FieldEncryptionHandler $fieldEncryptionHandler;
 
 	/**
-	 * Collaborator, taken from the services bundle.
+	 * Which flow run is writing, taken from the services bundle.
 	 *
-	 * @var \OCA\OpenRegister\Service\Flow\FlowRunContext|null
+	 * @var CurrentFlowRunInterface|null
 	 */
-	private readonly ?\OCA\OpenRegister\Service\Flow\FlowRunContext $runContext;
+	private readonly ?CurrentFlowRunInterface $runContext;
 
 	/**
 	 * Collaborator, taken from the services bundle.

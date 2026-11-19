@@ -28,6 +28,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\ObjectStateWriteException;
+use OCA\OpenRegister\Kernel\Contracts\Core\CurrentFlowRunInterface;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Event\ObjectRevertedEvent;
@@ -63,6 +64,13 @@ use Psr\Container\ContainerInterface;
  * @uses \OCA\OpenRegister\Service\Object\StoredObjectUpdate
  */
 final class RevertHandlerWriteGuardsTest extends TestCase {
+	/**
+	 * The Core port that names the writing flow run, or null when the container cannot serve it.
+	 *
+	 * @var CurrentFlowRunInterface|null
+	 */
+	private ?CurrentFlowRunInterface $currentRun = null;
+
 
 	private const OBJ = 'obj-4105-0000-0000-0000-000000000001';
 
@@ -158,6 +166,7 @@ final class RevertHandlerWriteGuardsTest extends TestCase {
 		$container->method('get')->willReturnCallback(
 			fn (string $id) => match ($id) {
 				'userId' => 'alice',
+				CurrentFlowRunInterface::class => $this->currentRun ?? throw new \RuntimeException('no flow run port'),
 				default => throw new \RuntimeException('unexpected service ' . $id),
 			}
 		);
@@ -358,6 +367,36 @@ final class RevertHandlerWriteGuardsTest extends TestCase {
 		$this->assertCount(1, $this->saved);
 		$this->assertSame('then', $saved->getObject()['title']);
 	}//end testTheCallersOwnLockAllowsRevert()
+
+	/**
+	 * A run lock admits the revert of the run that took it: the run is read through the Core current-run port.
+	 *
+	 * @return void
+	 */
+	public function testARunLockAdmitsTheRunTheCurrentRunPortNames(): void {
+		$this->current->setLocked(['kind' => ObjectEntity::LOCK_KIND_RUN, 'runUuid' => 'run-1', 'user' => 'alice', 'expiration' => (new \DateTime('+1 hour'))->format('c')]);
+		$this->validator->method('validateObject')->willReturn($this->valid());
+		$this->currentRun = $this->createMock(CurrentFlowRunInterface::class);
+		$this->currentRun->method('currentRunUuid')->willReturn('run-1');
+
+		$this->handler()->revert(register: '5', schema: '7', id: self::OBJ, point: new \OCA\OpenRegister\Service\Object\RevertPoint(until: '1.0.1'));
+
+		$this->assertCount(1, $this->saved);
+	}//end testARunLockAdmitsTheRunTheCurrentRunPortNames()
+
+	/**
+	 * A container that cannot serve the current-run port reads as a person writing, so a run lock refuses (fail closed).
+	 *
+	 * @return void
+	 */
+	public function testARunLockRefusesWhenNoCurrentRunCanBeRead(): void {
+		$this->current->setLocked(['kind' => ObjectEntity::LOCK_KIND_RUN, 'runUuid' => 'run-1', 'user' => 'alice', 'expiration' => (new \DateTime('+1 hour'))->format('c')]);
+		$this->save->expects($this->never())->method('updateObject');
+
+		$this->expectException(\OCA\OpenRegister\Exception\LockedException::class);
+
+		$this->handler()->revert(register: '5', schema: '7', id: self::OBJ, point: new \OCA\OpenRegister\Service\Object\RevertPoint(until: '1.0.1'));
+	}//end testARunLockRefusesWhenNoCurrentRunCanBeRead()
 
 	/**
 	 * Restored data that the current schema no longer allows is refused before it is written.

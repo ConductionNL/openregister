@@ -23,6 +23,7 @@ namespace OCA\OpenRegister\Service\Flow;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\CurrentFlowRunInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionRunner;
@@ -132,7 +133,7 @@ final class FlowWiring {
 	}//end registerRunnableGuard()
 
 	/**
-	 * Register the flow-attribution stack as one shared instance.
+	 * Register the flow-attribution stack as one shared instance, also answering the Core current-run port.
 	 *
 	 * @param IRegistrationContext $context The registration context.
 	 *
@@ -150,6 +151,9 @@ final class FlowWiring {
 				return new FlowRunContext();
 			}
 		);
+		// The object write path asks the Core port which run is writing; it is
+		// the same shared stack, so the port is an alias and never a second instance.
+		$context->registerServiceAlias(CurrentFlowRunInterface::class, FlowRunContext::class);
 	}//end registerRunContext()
 
 	/**

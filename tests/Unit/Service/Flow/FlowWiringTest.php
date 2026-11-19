@@ -13,6 +13,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\CurrentFlowRunInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
 use OCA\OpenRegister\Service\Flow\FlowAccess;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistryInterface;
@@ -150,13 +151,25 @@ final class FlowWiringTest extends TestCase {
 	}//end testTheFieldRulesPortIsAnsweredByTheStateResolver()
 
 	/**
-	 * The store of the flows compiled from application schedules is bound, and only the two aliases are registered.
+	 * The Core current-run port is an alias of the one shared attribution stack, never a second instance.
+	 *
+	 * @return void
+	 */
+	public function testTheCurrentRunPortIsTheSharedRunContext(): void {
+		self::assertSame(expected: FlowRunContext::class, actual: ($this->aliases[CurrentFlowRunInterface::class] ?? null));
+		self::assertTrue(condition: is_a(FlowRunContext::class, CurrentFlowRunInterface::class, true));
+		self::assertArrayHasKey(key: FlowRunContext::class, array: $this->factories);
+	}//end testTheCurrentRunPortIsTheSharedRunContext()
+
+	/**
+	 * The store of the flows compiled from application schedules is bound, and only the three aliases are registered.
 	 *
 	 * @return void
 	 */
 	public function testTheScheduleFlowStoreIsBound(): void {
 		self::assertSame(
 			expected: [
+				CurrentFlowRunInterface::class    => FlowRunContext::class,
 				FieldRulesSourceInterface::class  => StateFieldRuleResolver::class,
 				ScheduleFlowStoreInterface::class => ScheduleFlowStore::class,
 			],
