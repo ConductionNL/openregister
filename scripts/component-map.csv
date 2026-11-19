@@ -3844,7 +3844,7 @@ Repair/PerformerField.php,,Repair,,,,,Core
 Repair/PerformerTyping.php,,Repair,,,,,Core
 Repair/PhantomFlowPurgeRun.php,,Repair,,,,,Processes
 Repair/RegisterDescriptorImport.php,,Repair,,,,,Integrations
-Repair/ReportUnpublishedSchedules.php,,Repair,,,,,Search
+Repair/ReportUnpublishedSchedules.php,,Repair,,,,,Processes
 Repair/SchemaListing.php,,Repair,,,,,Platform
 Repair/TaskFixtureMappers.php,,Repair,,,,,Processes
 Repair/TaskSubjectLocationBackfill.php,,Repair,,,,,Processes
@@ -4386,3 +4386,9 @@ Controller/Support/OperationsConsoleControllerServices.php,,Controller,,,,,Confi
 Controller/Support/OperationsMaintenanceControllerServices.php,,Controller,,,,,Configuration
 Controller/Support/RecordTemplatesControllerServices.php,,Controller,,,,,Configuration
 BackgroundJob/Support/ActorForwardingServices.php,,BackgroundJob,,,,,Core
+AppHost/Listener/ApplicationPublishListener.php,,AppHost,,,,,Processes
+AppHost/Scheduling/CompiledScheduleFlow.php,,AppHost,,,,,Processes
+AppHost/Scheduling/ScheduleAuditTrail.php,,AppHost,,,,,Processes
+AppHost/Scheduling/ScheduleFlowStore.php,,AppHost,,,,,Processes
+AppHost/Scheduling/ScheduleFlowStoreInterface.php,,AppHost,,,,,Processes
+AppHost/Scheduling/ScheduleFlowSync.php,,AppHost,,,,,Processes

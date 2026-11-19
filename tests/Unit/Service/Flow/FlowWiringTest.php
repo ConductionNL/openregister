@@ -11,9 +11,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
+use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
+use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
 use OCA\OpenRegister\Service\Flow\FlowAccess;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistryInterface;
+use OCA\OpenRegister\Service\Flow\FlowRegistrar;
 use OCA\OpenRegister\Service\Flow\FlowRunAsScope;
 use OCA\OpenRegister\Service\Flow\FlowRunAuthorization;
 use OCA\OpenRegister\Service\Flow\FlowRunContext;
@@ -127,9 +130,25 @@ final class FlowWiringTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheFieldRulesPortIsAnsweredByTheStateResolver(): void {
-		self::assertSame(expected: [FieldRulesSourceInterface::class => StateFieldRuleResolver::class], actual: $this->aliases);
+		self::assertSame(expected: StateFieldRuleResolver::class, actual: ($this->aliases[FieldRulesSourceInterface::class] ?? null));
 		self::assertTrue(condition: is_a(StateFieldRuleResolver::class, FieldRulesSourceInterface::class, true));
 	}//end testTheFieldRulesPortIsAnsweredByTheStateResolver()
+
+	/**
+	 * The store of the flows compiled from application schedules is bound, and only the two aliases are registered.
+	 *
+	 * @return void
+	 */
+	public function testTheScheduleFlowStoreIsBound(): void {
+		self::assertSame(
+			expected: [
+				FieldRulesSourceInterface::class  => StateFieldRuleResolver::class,
+				ScheduleFlowStoreInterface::class => ScheduleFlowStore::class,
+			],
+			actual: $this->aliases
+		);
+		self::assertSame(expected: FlowWiring::BINDINGS, actual: FlowRegistrar::BINDINGS);
+	}//end testTheScheduleFlowStoreIsBound()
 
 	public function testTheRunAuthorizationGetsTheFlowAccess(): void {
 		$built = ($this->factories[FlowRunAuthorization::class])($this->container);
