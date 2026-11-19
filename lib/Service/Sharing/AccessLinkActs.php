@@ -41,7 +41,6 @@ use OCA\OpenRegister\Service\ObjectFilesInterface;
 use OCA\OpenRegister\Service\File\FileUpload;
 use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
-use OCA\OpenRegister\Notifications\Service\TimelineVisibilityServiceInterface;
 
 /**
  * The comment and the upload a link may make.
@@ -87,7 +86,7 @@ class AccessLinkActs implements AccessLinkActsInterface {
 			draft: new NoteDraft(
 				objectUuid: (string)$act->object->getUuid(),
 				message: $message,
-				visibility: TimelineVisibilityServiceInterface::PUBLIC_ENTRY
+				visibility: NoteDraft::PUBLIC_VISIBILITY
 			),
 			author: new NoteAuthor(type: self::LINK_ACTOR_TYPE, id: $act->link->principalId())
 		);

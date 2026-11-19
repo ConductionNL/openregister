@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Notifications\Service;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\NoteDraft;
 
 /**
  * Every public method of TimelineVisibilityService. Callers depend on this interface, not on the class.
@@ -37,11 +38,11 @@ interface TimelineVisibilityServiceInterface {
 	public const INTERNAL = 'internal';
 
 	/**
-	 * The flag that lets an entry reach a citizen.
+	 * The flag that lets an entry reach a citizen; the Kernel note draft owns the value.
 	 *
 	 * @var string
 	 */
-	public const PUBLIC_ENTRY = 'public';
+	public const PUBLIC_ENTRY = NoteDraft::PUBLIC_VISIBILITY;
 
 	/**
 	 * Normalise any incoming value to one of the two flags.
