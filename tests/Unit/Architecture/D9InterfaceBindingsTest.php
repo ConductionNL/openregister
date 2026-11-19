@@ -62,6 +62,7 @@ use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolverInterface;
 use OCA\OpenRegister\Search\Service\VectorizationService;
 use OCA\OpenRegister\Search\Service\VectorizationServiceInterface;
+use OCA\OpenRegister\Service\Flow\FlowRegistrar;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -130,8 +131,8 @@ final class D9InterfaceBindingsTest extends TestCase {
 		],
 		ScheduleFlowStore::class => [
 			ScheduleFlowStoreInterface::class,
-			AppHostRegistrar::class,
-			[],
+			FlowRegistrar::class,
+			['lib/Service/Flow/FlowWiring.php'],
 		],
 		ScheduleManifestLoader::class => [
 			ScheduleManifestLoaderInterface::class,
