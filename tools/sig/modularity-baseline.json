@@ -458,9 +458,6 @@
   "lib/Service/Object/SearchQueryHandler.php -> lib/Service/SearchMeasurement.php",
   "lib/Service/Object/SearchQueryHandler.php -> lib/Service/SearchTrailService.php",
   "lib/Service/Object/TranslationHandler.php -> lib/Service/LanguageService.php",
-  "lib/Service/Object/UpsertOnKeyHandler.php -> lib/Service/Import/MatchLookupFailedException.php",
-  "lib/Service/Object/UpsertOnKeyHandler.php -> lib/Service/Import/MatchQuery.php",
-  "lib/Service/Object/UpsertOnKeyHandler.php -> lib/Service/Import/MatchResolver.php",
   "lib/Service/Object/ViewScopeApplier.php -> lib/Search/Db/ViewMapperInterface.php",
   "lib/Service/Object/VirtualCalculations.php -> lib/Service/Calculation/CalculationEvaluatorInterface.php",
   "lib/Service/ObjectFilesInterface.php -> lib/Service/FileReaderInterface.php",
@@ -2857,8 +2854,8 @@
  ],
  "exposed_loc": {
   "Compliance": 15699,
-  "Configuration": 5937,
-  "Core": 64738,
+  "Configuration": 5799,
+  "Core": 64876,
   "Files": 3640,
   "Integrations": 18359,
   "Kernel": 8482,
@@ -3325,5 +3322,5 @@
  ],
  "kernel_loc": 10407,
  "total_loc": 460012,
- "violation_degree": 0.0678
+ "violation_degree": 0.0675
 }
