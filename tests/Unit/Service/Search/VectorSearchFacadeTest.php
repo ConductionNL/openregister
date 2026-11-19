@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Search;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Files\Service\File\FileReadScope;
+use OCA\OpenRegister\Kernel\Contracts\Core\ReadableFileHitsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ChunkMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\KeywordChunkSearch;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -32,6 +32,8 @@ use OCA\OpenRegister\Search\Db\View;
 use OCA\OpenRegister\Search\Service\Vectorization\HybridSearchRequest;
 use OCA\OpenRegister\Search\Service\Vectorization\SemanticSearchRequest;
 use OCA\OpenRegister\Search\Service\VectorizationServiceInterface;
+use OCA\OpenRegister\Search\Db\ViewMapperInterface;
+use OCA\OpenRegister\Search\Service\StoredViewQueries;
 use OCA\OpenRegister\Search\Service\ViewService;
 use OCA\OpenRegister\Service\Search\VectorResultFilter;
 use OCA\OpenRegister\Service\Search\VectorSearchFacade;
@@ -50,6 +52,7 @@ use RuntimeException;
  */
 #[CoversClass(VectorSearchFacade::class)]
 #[UsesClass(VectorResultFilter::class)]
+#[UsesClass(StoredViewQueries::class)]
 #[UsesClass(ObjectEntity::class)]
 #[UsesClass(ObjectFindOptions::class)]
 #[UsesClass(View::class)]
@@ -81,7 +84,7 @@ class VectorSearchFacadeTest extends TestCase {
 		$session->method('getUser')->willReturn($alice);
 
 		// Alice can open file 10, not file 20 (bob's).
-		$files = $this->createMock(FileReadScope::class);
+		$files = $this->createMock(ReadableFileHitsInterface::class);
 		$files->method('readableResults')->willReturnCallback(
 			static fn (array $results): array => array_values(array_filter($results, static fn (array $r): bool => (string)$r['entity_id'] === '10'))
 		);
@@ -93,7 +96,7 @@ class VectorSearchFacadeTest extends TestCase {
 
 		$this->facade = new VectorSearchFacade(
 			$this->vectors,
-			new VectorResultFilter($files, $objects, $this->views, $session),
+			new VectorResultFilter($files, $objects, new StoredViewQueries($this->createMock(ViewMapperInterface::class), $this->views), $session),
 			$this->chunks,
 			$this->settings,
 			new NullLogger()
