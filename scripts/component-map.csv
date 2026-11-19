@@ -3822,7 +3822,7 @@ Listener/LifecycleDeclaration.php,,Listener,,,,,Processes
 Listener/LifecycleEdit.php,,Listener,,,,,Processes
 Listener/LifecycleEditReader.php,,Listener,,,,,Processes
 Listener/LifecycleInitialReference.php,,Listener,,,,,Processes
-Listener/ListenerBootstrap.php,,Listener,,,,,Core
+Listener/ListenerBootstrap.php,,Listener,,,,,Platform
 Listener/ListenerClassesInterface.php,,Listener,,,,,Core
 Listener/NotificationsAnnotationInstallListener.php,,Listener,,,,,Notifications
 Listener/NotifyPushBatch.php,,Listener,,,,,Core
