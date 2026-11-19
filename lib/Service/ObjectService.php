@@ -35,6 +35,9 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectMigration;
 use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\Rbac\MaskedWrite;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectFolderAccessInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ProcessingReadsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\SaveBoundaryInterface;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
@@ -51,7 +54,6 @@ use JsonSerializable;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Service\FacetableAnalyzer;
-use OCA\OpenRegister\Service\FileFolderServiceInterface;
 use OCA\OpenRegister\Service\Hinge\LensResolver;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterSchema;
@@ -61,7 +63,6 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Search\Db\ViewMapperInterface;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
-use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\Object\DraftCaller;
 use OCA\OpenRegister\Service\Object\DraftCallerRule;
 use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
@@ -150,7 +151,6 @@ use OCP\IGroupManager;
 use OCP\IUserManager;
 use OCA\OpenRegister\Service\Object\SaveAccessRequest;
 use OCA\OpenRegister\Service\OrganisationService;
-use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\SharedMasterDataService;
 use OCP\AppFramework\IAppContainer;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -532,9 +532,9 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     /**
      * Collaborator taken from the storage bundle.
      *
-     * @var FileFolderServiceInterface
+     * @var ObjectFolderAccessInterface
      */
-    private readonly FileFolderServiceInterface $fileService;
+    private readonly ObjectFolderAccessInterface $fileService;
 
     /**
      * Collaborator taken from the caller bundle.
@@ -616,9 +616,9 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     /**
      * Collaborator taken from the history bundle.
      *
-     * @var AutoTransitionPass|null
+     * @var SaveBoundaryInterface|null
      */
-    private readonly ?AutoTransitionPass $autoTransitions;
+    private readonly ?SaveBoundaryInterface $autoTransitions;
 
     /**
      * Collaborator taken from the caller bundle.
@@ -2028,7 +2028,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         // which delegates to ProcessingLogService unchanged: same opt-in,
         // same storage, same retention, same readers.
         try {
-            $this->container->get(\OCA\OpenRegister\Service\Interaction\ReadHistoryService::class)
+            $this->container->get(ProcessingReadsInterface::class)
                 ->registerProcessingRead(object: $object);
         } catch (\Throwable $e) {
             // Fail-soft: read logging never breaks or slows the read path.
@@ -2057,8 +2057,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         }
 
         try {
-            $this->container->get(\OCA\OpenRegister\Service\Interaction\ReadHistoryService::class)
-                ->registerListRead(objects: $objects, read: new \OCA\OpenRegister\Service\Interaction\ProcessingListRead(query: $query));
+            $this->container->get(ProcessingReadsInterface::class)
+                ->registerQueriedRead(objects: $objects, query: $query);
         } catch (\Throwable $e) {
             // Fail-soft: read logging never breaks the list.
             $this->logger->debug(

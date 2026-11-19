@@ -22,7 +22,7 @@ use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\FileService;
-use OCA\OpenRegister\Service\Interaction\ReadHistoryService;
+use OCA\OpenRegister\Kernel\Contracts\Core\ProcessingReadsInterface;
 use OCA\OpenRegister\Service\Object\AuditHandler;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\CascadingHandler;
@@ -281,7 +281,7 @@ class ObjectServiceSearchPaginatedGoldenTest extends TestCase {
 	private function service(): ObjectService {
 		// The list-read hook resolves the read registration from the container; a stub keeps it silent.
 		$container = $this->createMock(IAppContainer::class);
-		$container->method('get')->willReturn($this->createStub(ReadHistoryService::class));
+		$container->method('get')->willReturn($this->createStub(ProcessingReadsInterface::class));
 
 		$queryHandler = $this->createMock(QueryHandler::class);
 		$queryHandler->method('searchObjectsPaginatedDatabase')->willReturnCallback(

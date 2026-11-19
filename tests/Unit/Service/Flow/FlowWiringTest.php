@@ -14,6 +14,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ProcessingReadsInterface;
 use OCA\OpenRegister\Service\Flow\FlowAccess;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistryInterface;
 use OCA\OpenRegister\Service\Flow\FlowRegistrar;
@@ -25,6 +26,7 @@ use OCA\OpenRegister\Service\Flow\FlowService;
 use OCA\OpenRegister\Service\Flow\FlowStepDispatcher;
 use OCA\OpenRegister\Service\Flow\FlowWiring;
 use OCA\OpenRegister\Service\Flow\RegistryStepDispatcher;
+use OCA\OpenRegister\Service\Interaction\ReadHistoryService;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
@@ -154,16 +156,17 @@ final class FlowWiringTest extends TestCase {
 	 *
 	 * @return void
 	 */
-	public function testTheScheduleFlowStoreIsBound(): void {
+	public function testTheScheduleFlowStoreAndTheProcessingReadsAreBound(): void {
 		self::assertSame(
 			expected: [
 				FieldRulesSourceInterface::class  => StateFieldRuleResolver::class,
 				ScheduleFlowStoreInterface::class => ScheduleFlowStore::class,
+				ProcessingReadsInterface::class   => ReadHistoryService::class,
 			],
 			actual: $this->aliases
 		);
 		self::assertSame(expected: FlowWiring::BINDINGS, actual: FlowRegistrar::BINDINGS);
-	}//end testTheScheduleFlowStoreIsBound()
+	}//end testTheScheduleFlowStoreAndTheProcessingReadsAreBound()
 
 	public function testTheRunAuthorizationGetsTheFlowAccess(): void {
 		$built = ($this->factories[FlowRunAuthorization::class])($this->container);
