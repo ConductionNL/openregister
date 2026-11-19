@@ -161,8 +161,6 @@
   "lib/Controller/Support/TranslationControllerServices.php -> lib/Service/TranslationStatusServiceInterface.php",
   "lib/Controller/Support/TranslationMappers.php -> lib/Db/TranslationMapperInterface.php",
   "lib/Controller/TmloController.php -> lib/Service/Export/ExportGateInterface.php",
-  "lib/Controller/Trait/HandlesExceptionsTrait.php -> lib/AppHost/Exception/ConfigurationMissingException.php",
-  "lib/Controller/Trait/HandlesExceptionsTrait.php -> lib/AppHost/Exception/FoundationUnavailableException.php",
   "lib/Controller/TransferController.php -> lib/AppInfo/Application.php",
   "lib/Controller/TranslationController.php -> lib/Db/Translation.php",
   "lib/Controller/TranslationController.php -> lib/Db/TranslationFilter.php",
@@ -207,8 +205,6 @@
   "lib/Db/MagicMapper/MagicSearchHandler.php -> lib/Notifications/Db/WatcherMapperInterface.php",
   "lib/Db/MagicMapper/MagicSearchHandler.php -> lib/Search/Service/Search/PropertySearchProfile.php",
   "lib/Db/MagicMapper/MagicSearchHandler.php -> lib/Service/LanguageServiceInterface.php",
-  "lib/Db/MagicMapper/PurposeBoundTables.php -> lib/Service/Audit/PurposeGuardInterface.php",
-  "lib/Db/MagicMapper/PurposeBoundTables.php -> lib/Service/Audit/PurposeRefusedException.php",
   "lib/Db/MapLinkMapperInterface.php -> lib/Db/MapLink.php",
   "lib/Db/MapperWiring.php -> lib/Db/Support/SecretAtRest.php",
   "lib/Db/MapperWiring.php -> lib/Db/WebhookMapper.php",
@@ -794,8 +790,6 @@
  ],
  "exposed_files": [
   "lib/AppHost/AppHostRegistrar.php",
-  "lib/AppHost/Exception/ConfigurationMissingException.php",
-  "lib/AppHost/Exception/FoundationUnavailableException.php",
   "lib/AppHost/FeatureToggleRegistrar.php",
   "lib/AppHost/IMetricsProvider.php",
   "lib/AppHost/Observability/MetricSample.php",
@@ -1533,6 +1527,9 @@
   "lib/Kernel/Contracts/Core/AuthRateLimitCeilingInterface.php",
   "lib/Kernel/Contracts/Core/FieldRulesSourceInterface.php",
   "lib/Kernel/Contracts/Core/ObjectPresenceInterface.php",
+  "lib/Kernel/Contracts/Core/ReadPurposeGuardInterface.php",
+  "lib/Kernel/Contracts/Core/ReadPurposeRefusalInterface.php",
+  "lib/Kernel/Contracts/Core/ServiceUnavailableExceptionInterface.php",
   "lib/Kernel/Contracts/DecisionInterface.php",
   "lib/Kernel/Contracts/DeckPlacement.php",
   "lib/Kernel/Contracts/DocumentProcessingHandlerInterface.php",
@@ -3165,11 +3162,11 @@
   "lib/Twig/MappingTwigInstallerInterface.php"
  ],
  "exposed_loc": {
-  "Compliance": 15783,
+  "Compliance": 15781,
   "Configuration": 6896,
-  "Core": 64976,
+  "Core": 64997,
   "Files": 3684,
-  "Integrations": 18965,
+  "Integrations": 18916,
   "Kernel": 8515,
   "Notifications": 1710,
   "Platform": 976,
@@ -3635,6 +3632,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10440,
- "total_loc": 459282,
- "violation_degree": 0.0941
+ "total_loc": 459303,
+ "violation_degree": 0.0936
 }
