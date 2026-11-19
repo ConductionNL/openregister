@@ -770,7 +770,6 @@
   "lib/Service/Outbound/OutboundClientFactory.php -> lib/Service/Resilience/BreakerRegistry.php",
   "lib/Service/Outbound/OutboundHttpClient.php -> lib/Service/Resilience/BreakerRegistry.php",
   "lib/Service/Outbound/OutboundHttpClient.php -> lib/Service/Resilience/DependencyUnavailableException.php",
-  "lib/Service/OwnedWebhookView.php -> lib/Service/OpenRegisterActionAuthService.php",
   "lib/Service/PersonLinkServiceInterface.php -> lib/Db/ContactLink.php",
   "lib/Service/PersonLinkServiceInterface.php -> lib/Service/PersonLinkChange.php",
   "lib/Service/PersonLinkServiceInterface.php -> lib/Service/PersonLinkRef.php",
@@ -1662,6 +1661,7 @@
   "lib/Kernel/Contracts/ContactMatcherInterface.php",
   "lib/Kernel/Contracts/ConversationInterface.php",
   "lib/Kernel/Contracts/ConversationMapperInterface.php",
+  "lib/Kernel/Contracts/Core/ActionCheckInterface.php",
   "lib/Kernel/Contracts/Core/ActionRightsInterface.php",
   "lib/Kernel/Contracts/Core/AuditEntry.php",
   "lib/Kernel/Contracts/Core/AuditEntryWriterInterface.php",
@@ -3327,12 +3327,12 @@
  "exposed_loc": {
   "Compliance": 16381,
   "Configuration": 7743,
-  "Core": 64899,
+  "Core": 64906,
   "Files": 3684,
   "Integrations": 19056,
   "Kernel": 8457,
   "Notifications": 1710,
-  "Platform": 1032,
+  "Platform": 1033,
   "Processes": 33287,
   "Search": 2270
  },
@@ -3792,6 +3792,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10382,
- "total_loc": 459205,
- "violation_degree": 0.1047
+ "total_loc": 459216,
+ "violation_degree": 0.1046
 }
