@@ -44,6 +44,7 @@ use OCA\OpenRegister\Search\Service\Quality\DedupCreatePolicy;
 use OCA\OpenRegister\Search\Service\Quality\DedupCreatePolicyInterface;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolverInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\FilterPlaceholdersInterface;
 use OCA\OpenRegister\Search\Service\Search\SearchIndexMaintenance;
 use OCA\OpenRegister\Search\Service\Search\SearchIndexMaintenanceInterface;
 use OCA\OpenRegister\Search\Service\Quality\UniqueHintAnnotationValidator;
@@ -90,6 +91,7 @@ final class SearchWiring {
 		GeoFilterParserInterface::class => GeoFilterParser::class,
 		MetricsRetentionInterface::class => MetricsService::class,
 		PlaceholderResolverInterface::class => PlaceholderResolver::class,
+		FilterPlaceholdersInterface::class => PlaceholderResolver::class,
 		SearchIndexMaintenanceInterface::class => SearchIndexMaintenance::class,
 		DuplicateDetectionServiceInterface::class => DuplicateDetectionService::class,
 		UniqueHintAnnotationValidatorInterface::class => UniqueHintAnnotationValidator::class,
