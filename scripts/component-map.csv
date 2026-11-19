@@ -3907,7 +3907,7 @@ Service/ContactCardRef.php,,Service,,,,,Integrations
 Service/ContactMatchingMappers.php,,Service,,,,,Integrations
 Service/ContactPlacement.php,,Service,,,,,Integrations
 Service/ContactServiceInterface.php,,Service,,,,,Integrations
-Service/ContractBindingsRegistrar.php,,Service,,,,,Core
+Service/ContractBindingsRegistrar.php,,Service,,,,,Configuration
 Service/CospendLinkServiceInterface.php,,Service,,,,,Integrations
 Service/CospendProjectDraft.php,,Service,,,,,Integrations
 Service/DateTimeNormalizerInterface.php,,Service,,,,,Core
@@ -4406,3 +4406,5 @@ AppHost/Scheduling/ScheduleFlowSync.php,,AppHost,,,,,Processes
 Db/Schema/AnnotationVocabulary.php,,Db,,,,,Kernel
 Service/Handoff/HandoffRequest.php,,Service,,,,,Kernel
 Service/Handoff/HandoffSourceRef.php,,Service,,,,,Kernel
+Db/ConfigurationMapperBindings.php,,Db,,,,,Configuration
+Db/ConfigurationMapperRegistrar.php,,Db,,,,,Configuration

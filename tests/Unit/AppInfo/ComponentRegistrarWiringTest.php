@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\AppInfo;
 
 use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Db\ConfigurationMapperRegistrar;
 use OCA\OpenRegister\Db\ComplianceMapperRegistrar;
 use OCA\OpenRegister\Db\IntegrationsMapperRegistrar;
 use OCA\OpenRegister\Db\ProcessesMapperRegistrar;
@@ -42,6 +43,8 @@ use ReflectionClass;
  * @uses \OCA\OpenRegister\Db\DbRegistrar
  * @uses \OCA\OpenRegister\Db\MapperRegistrar
  * @uses \OCA\OpenRegister\Db\MapperWiring
+ * @uses \OCA\OpenRegister\Db\ConfigurationMapperBindings
+ * @uses \OCA\OpenRegister\Db\ConfigurationMapperRegistrar
  * @uses \OCA\OpenRegister\Db\ComplianceMapperBindings
  * @uses \OCA\OpenRegister\Db\ComplianceMapperRegistrar
  * @uses \OCA\OpenRegister\Db\IntegrationsMapperBindings
@@ -97,6 +100,7 @@ class ComponentRegistrarWiringTest extends TestCase
             'files'         => [FilesRegistrar::BINDINGS],
             'mcp'           => [McpRegistrar::BINDINGS],
             'notifications' => [NotificationsRegistrar::BINDINGS],
+            'configuration mappers' => [ConfigurationMapperRegistrar::BINDINGS],
             'compliance mappers' => [ComplianceMapperRegistrar::BINDINGS],
             'integrations mappers' => [IntegrationsMapperRegistrar::BINDINGS],
             'processes mappers' => [ProcessesMapperRegistrar::BINDINGS],
