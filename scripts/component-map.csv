@@ -435,6 +435,7 @@ Controller/Support/DsarCaseControllerServices.php,12,Controller,Compliance,Compl
 Controller/Support/DsarCaseDisclosure.php,16,Controller,Compliance,Compliance/Controller/Support/DsarCaseDisclosure.php,0,,Compliance
 Controller/Support/DsarCasePlatform.php,10,Controller,Compliance,Compliance/Controller/Support/DsarCasePlatform.php,0,,Core
 Controller/Support/DsarCaseRegistries.php,12,Controller,Compliance,Compliance/Controller/Support/DsarCaseRegistries.php,0,,Compliance
+Controller/Support/DsarControllerServices.php,,Controller,,,,,Compliance
 Controller/Support/EdepotSettingsControllerServices.php,10,Controller,Compliance,Compliance/Controller/Support/EdepotSettingsControllerServices.php,0,,Configuration
 Controller/Support/EdepotSettingsDomain.php,16,Controller,Compliance,Compliance/Controller/Support/EdepotSettingsDomain.php,0,,Configuration
 Controller/Support/EdepotSettingsPlatform.php,14,Controller,Compliance,Compliance/Controller/Support/EdepotSettingsPlatform.php,0,,Core
@@ -3613,6 +3614,9 @@ Db/ApiCallRecordMapperInterface.php,,Db,,,,,Integrations
 Db/ApplicationMapperInterface.php,,Db,,,,,Integrations
 Db/AuditFlowAttributionInterface.php,,Db,,,,,Compliance
 Db/AuditTrailPageQueryInterface.php,,Db,,,,,Compliance
+Db/AuditTrail/ActionLookupOptions.php,,Db,,,,,Core
+Db/AuditTrail/ActionWindow.php,,Db,,,,,Core
+Db/AuditTrail/ActorTrailQuery.php,,Db,,,,,Core
 Db/BookmarkLinkMapperInterface.php,,Db,,,,,Integrations
 Db/BulkJobMapperInterface.php,,Db,,,,,Processes
 Db/BulkJobMemberMapperInterface.php,,Db,,,,,Processes
@@ -3879,7 +3883,7 @@ Service/AuditQueryServiceInterface.php,,Service,,,,,Compliance
 Service/AuditRechainInterface.php,,Service,,,,,Compliance
 Service/AuditRetentionResolverInterface.php,,Service,,,,,Compliance
 Service/AuditSealInterface.php,,Service,,,,,Compliance
-Service/AuthFailureRun.php,,Service,,,,,Compliance
+Service/AuthFailureRun.php,,Service,,,,,Core
 Service/AuthenticationTokenFetcherInterface.php,,Service,,,,,Core
 Service/AuthorizationChange.php,,Service,,,,,Compliance
 Service/AvgComplianceServiceInterface.php,,Service,,,,,Core
@@ -3927,7 +3931,7 @@ Service/DescriptorImportTarget.php,,Service,,,,,Configuration
 Service/DescriptorReimportRun.php,,Service,,,,,Compliance
 Service/DisposalSweep.php,,Service,,,,,Core
 Service/DsarGuards.php,,Service,,,,,Compliance
-Service/DsarServiceInterface.php,,Service,,,,,Core
+Service/DsarServiceInterface.php,,Service,,,,,Compliance
 Service/DsarStores.php,,Service,,,,,Compliance
 Service/DsarSubjectQuery.php,,Service,,,,,Compliance
 Service/EmailLinkServiceInterface.php,,Service,,,,,Integrations
@@ -4046,7 +4050,7 @@ Service/SchemaDeletionStores.php,,Service,,,,,Core
 Service/SchemaObjectTally.php,,Service,,,,,Core
 Service/SchemaProperty.php,,Service,,,,,Core
 Service/SchemaSplitRun.php,,Service,,,,,Configuration
-Service/SchemaTeardownGuard.php,,Service,,,,,Core
+Service/SchemaTeardownGuard.php,,Service,,,,,Compliance
 Service/SchemaTeardownInterface.php,,Service,,,,,Core
 Service/SchemaTeardownOverride.php,,Service,,,,,Core
 Service/SearchMeasurement.php,,Service,,,,,Compliance
@@ -4117,7 +4121,7 @@ Service/WebhookDelivery.php,,Service,,,,,Integrations
 Service/WebhookDispatchServices.php,,Service,,,,,Integrations
 Service/WebhookEvent.php,,Service,,,,,Integrations
 Service/WebhookStores.php,,Service,,,,,Integrations
-Service/WholeTableRows.php,,Service,,,,,Core
+Service/WholeTableRows.php,,Service,,,,,Compliance
 Service/WorkPackageDraft.php,,Service,,,,,Integrations
 Service/WritePhase.php,,Service,,,,,Core
 Service/XwikiLinkServiceInterface.php,,Service,,,,,Core
