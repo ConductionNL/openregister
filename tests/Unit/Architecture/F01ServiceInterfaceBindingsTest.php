@@ -139,7 +139,7 @@ final class F01ServiceInterfaceBindingsTest extends TestCase {
 	 * Classes outside callers now reach through a small entry class or a forwarding facade.
 	 *
 	 * Application registers the hand-wired services through ServiceBootstrap; RulesController reads its
-	 * run window through ExampleSetDateValue; outside callers build a scoped schema resolver through
+	 * run window itself; outside callers build a scoped schema resolver through
 	 * RegisterScopedSchemaResolvers.
 	 *
 	 * @var list<class-string>
