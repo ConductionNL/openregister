@@ -2613,7 +2613,7 @@ Service/Interaction/ReadStateService.php,141,Service,Work,Work/Service/Interacti
 Service/Interaction/SubstantiveChangeEvaluator.php,136,Service,Work,Work/Service/Interaction/SubstantiveChangeEvaluator.php,0,,Processes
 Service/Interaction/UnreadCountCalculator.php,106,Service,Work,Work/Service/Interaction/UnreadCountCalculator.php,0,,Processes
 Service/Interaction/ValueNormaliser.php,32,Service,Work,Work/Service/Interaction/ValueNormaliser.php,0,,Processes
-Service/Interaction/WatcherService.php,296,Service,Work,Work/Service/Interaction/WatcherService.php,0,74,Processes
+Service/Interaction/WatcherService.php,296,Service,Work,Work/Service/Interaction/WatcherService.php,0,74,Notifications
 Service/JsonLd/JsonLdContextService.php,270,Service,Service,Service/JsonLd/JsonLdContextService.php,0,77,Core
 Service/JsonLd/JsonLdSerializer.php,178,Service,Service,Service/JsonLd/JsonLdSerializer.php,0,,Core
 Service/LanguageService.php,120,Service,Configuration,Configuration/Service/LanguageService.php,15,258,Configuration
@@ -3493,6 +3493,10 @@ Service/History/,,Service,,,,,Core
 Service/Import/,,Service,,,,,Configuration
 Service/Integration/,,Service,,,,,Integrations
 Service/Interaction/,,Service,,,,,Processes
+Service/Interaction/WatcherServiceInterface.php,,Service,,,,,Notifications
+Service/Interaction/WatcherStore.php,,Service,,,,,Notifications
+Service/Interaction/WatcherCaller.php,,Service,,,,,Notifications
+Service/Interaction/AddressedObject.php,,Service,,,,,Core
 Service/JsonLd/,,Service,,,,,Core
 Service/Lifecycle/,,Service,,,,,Processes
 Service/Mcp/,,Service,,,,,Configuration

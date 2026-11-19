@@ -776,6 +776,8 @@ deptrac:
         - type: directory
           value: 'lib/Service/Import/RecordImport/[^/]*$'
         - type: directory
+          value: 'lib/Service/Interaction/AddressedObject[.]php$'
+        - type: directory
           value: 'lib/Service/JsonLd/[^/]*$'
         - type: directory
           value: 'lib/Service/Lifecycle/StateFieldLists[.]php$'
@@ -2404,7 +2406,27 @@ deptrac:
         - type: directory
           value: 'lib/Service/Form/OwnedDraft[.]php$'
         - type: directory
-          value: 'lib/Service/Interaction/[^/]*$'
+          value: 'lib/Service/Interaction/FavouriteService[.]php$'
+        - type: directory
+          value: 'lib/Service/Interaction/FavouriteServiceInterface[.]php$'
+        - type: directory
+          value: 'lib/Service/Interaction/ProcessingListRead[.]php$'
+        - type: directory
+          value: 'lib/Service/Interaction/ReadHistoryService[.]php$'
+        - type: directory
+          value: 'lib/Service/Interaction/ReadStateService[.]php$'
+        - type: directory
+          value: 'lib/Service/Interaction/ReadStateServiceInterface[.]php$'
+        - type: directory
+          value: 'lib/Service/Interaction/SubResourceWindow[.]php$'
+        - type: directory
+          value: 'lib/Service/Interaction/SubstantiveChangeEvaluator[.]php$'
+        - type: directory
+          value: 'lib/Service/Interaction/SubstantiveChangeEvaluatorInterface[.]php$'
+        - type: directory
+          value: 'lib/Service/Interaction/UnreadCountCalculator[.]php$'
+        - type: directory
+          value: 'lib/Service/Interaction/ValueNormaliser[.]php$'
         - type: directory
           value: 'lib/Service/Lifecycle/AutoTransitionCandidate[.]php$'
         - type: directory
@@ -4229,6 +4251,14 @@ deptrac:
           value: 'lib/Push/[^/]*$'
         - type: directory
           value: 'lib/Service/(ActivityFilter|ActivityFilterServiceInterface|AdminRecipientExpander|NotificationServiceInterface|ScheduledReportDelivery|ScheduledReportExportQuery|ScheduledReportExporters|ScheduledReportNotice|ScheduledReportOwnerServices|ScheduledReportStores)[.]php$'
+        - type: directory
+          value: 'lib/Service/Interaction/WatcherCaller[.]php$'
+        - type: directory
+          value: 'lib/Service/Interaction/WatcherService[.]php$'
+        - type: directory
+          value: 'lib/Service/Interaction/WatcherServiceInterface[.]php$'
+        - type: directory
+          value: 'lib/Service/Interaction/WatcherStore[.]php$'
         - type: directory
           value: 'lib/Service/Mail/[^/]*$'
     - name: Platform
