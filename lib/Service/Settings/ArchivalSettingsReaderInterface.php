@@ -20,19 +20,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Settings;
 
+use OCA\OpenRegister\Kernel\Contracts\Compliance\ArchivalSettingsInterface;
+
 /**
  * The read side of the archival settings, for callers that only read them.
  *
  * The container binds it to {@see ObjectRetentionHandler} in ContractBindings.
+ * The method is the Compliance-owned {@see ArchivalSettingsInterface}; callers
+ * in Compliance type against that contract.
  */
-interface ArchivalSettingsReaderInterface {
-
-	/**
-	 * The archival settings, every key present, stored values over the defaults.
-	 *
-	 * @return array<string, mixed> The archival settings.
-	 *
-	 * @spec openspec/specs/retention-management/spec.md#requirement-retention-settings-must-be-configurable-via-api
-	 */
-	public function getArchivalSettingsOnly(): array;
+interface ArchivalSettingsReaderInterface extends ArchivalSettingsInterface {
 }//end interface

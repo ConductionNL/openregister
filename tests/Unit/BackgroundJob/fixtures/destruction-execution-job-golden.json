@@ -18,7 +18,7 @@
         },
         {
             "get": [
-                "ArchivalSettingsReaderInterface"
+                "ArchivalSettingsInterface"
             ]
         },
         {
@@ -240,7 +240,7 @@
         },
         {
             "get": [
-                "ArchivalSettingsReaderInterface"
+                "ArchivalSettingsInterface"
             ]
         },
         {
@@ -855,7 +855,7 @@
         },
         {
             "get": [
-                "ArchivalSettingsReaderInterface"
+                "ArchivalSettingsInterface"
             ]
         },
         {
@@ -1455,7 +1455,7 @@
         },
         {
             "get": [
-                "ArchivalSettingsReaderInterface"
+                "ArchivalSettingsInterface"
             ]
         },
         {
@@ -1709,7 +1709,7 @@
         },
         {
             "get": [
-                "ArchivalSettingsReaderInterface"
+                "ArchivalSettingsInterface"
             ]
         },
         {
@@ -1850,7 +1850,7 @@
         },
         {
             "get": [
-                "ArchivalSettingsReaderInterface"
+                "ArchivalSettingsInterface"
             ]
         },
         {
@@ -2354,7 +2354,7 @@
         },
         {
             "get": [
-                "ArchivalSettingsReaderInterface"
+                "ArchivalSettingsInterface"
             ]
         },
         {
@@ -2571,7 +2571,7 @@
         },
         {
             "get": [
-                "ArchivalSettingsReaderInterface"
+                "ArchivalSettingsInterface"
             ]
         },
         {
@@ -2637,7 +2637,7 @@
         },
         {
             "get": [
-                "ArchivalSettingsReaderInterface"
+                "ArchivalSettingsInterface"
             ]
         },
         {
@@ -2701,7 +2701,7 @@
         },
         {
             "get": [
-                "ArchivalSettingsReaderInterface"
+                "ArchivalSettingsInterface"
             ]
         },
         {
@@ -2780,7 +2780,7 @@
         },
         {
             "get": [
-                "ArchivalSettingsReaderInterface"
+                "ArchivalSettingsInterface"
             ]
         },
         {
@@ -2975,7 +2975,7 @@
         },
         {
             "get": [
-                "ArchivalSettingsReaderInterface"
+                "ArchivalSettingsInterface"
             ]
         },
         {

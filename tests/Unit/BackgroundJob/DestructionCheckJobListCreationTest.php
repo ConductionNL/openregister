@@ -32,7 +32,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObjectWriterInterface;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
-use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\ArchivalSettingsInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IAppConfig;
 use OCP\IGroup;
@@ -154,7 +154,7 @@ class DestructionCheckJobListCreationTest extends TestCase {
 		$retention->method('findEligibleForDestruction')->willReturn($eligible);
 		$retention->method('createDestructionList')->willReturn($listData);
 
-		$settings = $this->createMock(ArchivalSettingsReaderInterface::class);
+		$settings = $this->createMock(ArchivalSettingsInterface::class);
 		$settings->method('getArchivalSettingsOnly')->willReturn(
 			['destructionListRegister' => 'reg-7', 'destructionListSchema' => 'schema-9', 'notificationLeadDays' => 30]
 		);
@@ -183,7 +183,7 @@ class DestructionCheckJobListCreationTest extends TestCase {
 		$services = [
 			LoggerInterface::class                 => $logger,
 			RetentionServiceInterface::class       => $retention,
-			ArchivalSettingsReaderInterface::class => $settings,
+			ArchivalSettingsInterface::class => $settings,
 			IAppConfig::class                      => $appConfig,
 			SaveObject::class                      => $saver,
 			SaveObjectWriterInterface::class       => $saver,
