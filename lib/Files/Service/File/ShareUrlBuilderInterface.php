@@ -22,21 +22,15 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Service\File;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\ShareLinkUrlInterface;
+
 /**
  * Builds the public link of a share, as FileService formats it.
  *
+ * Its method is the Core port ShareLinkUrlInterface, which the file service asks; this name stays
+ * for the callers in Files.
+ *
  * @spec openspec/specs/file-actions/spec.md#requirement-a-file-link-points-at-the-host-the-visitor-used
  */
-interface ShareUrlBuilderInterface {
-
-	/**
-	 * The public link of a share token.
-	 *
-	 * @param string $token The share token.
-	 *
-	 * @return string The absolute share link, without a trailing `/download`.
-	 *
-	 * @spec openspec/specs/file-actions/spec.md#requirement-a-file-link-points-at-the-host-the-visitor-used
-	 */
-	public function shareLink(string $token): string;
+interface ShareUrlBuilderInterface extends ShareLinkUrlInterface {
 }//end interface

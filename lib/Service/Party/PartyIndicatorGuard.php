@@ -36,13 +36,14 @@ use Exception;
 use OCA\OpenRegister\Db\ContactLink;
 use OCA\OpenRegister\Db\ContactLinkMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Core\PublicationRefusalInterface;
 
 /**
  * Evaluates the declared effect of every indicator on every party of an object.
  *
  * @spec openspec/specs/party-model/spec.md#requirement-an-indicator-on-a-party-declares-its-effect-and-is-honoured-req-prm-003
  */
-class PartyIndicatorGuard implements PartyIndicatorGuardInterface, PartySendRefusalInterface {
+class PartyIndicatorGuard implements PartyIndicatorGuardInterface, PartySendRefusalInterface, PublicationRefusalInterface {
 
 	/**
 	 * The effect refusing a publication.
