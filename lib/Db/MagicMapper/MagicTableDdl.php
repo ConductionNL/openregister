@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db\MagicMapper;
 
 use Doctrine\DBAL\Platforms\AbstractPlatform;
+use Doctrine\DBAL\Platforms\MariaDBPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Doctrine\DBAL\Platforms\SqlitePlatform;
 
@@ -44,6 +45,13 @@ final class MagicTableDdl {
 	 * @var boolean
 	 */
 	public readonly bool $isSqlite;
+
+	/**
+	 * Whether the platform is MariaDB, where JSON is stored as checked text.
+	 *
+	 * @var boolean
+	 */
+	public readonly bool $isMariaDb;
 
 	/**
 	 * The column definitions, in order.
@@ -87,6 +95,7 @@ final class MagicTableDdl {
 	) {
 		$this->isPostgres = ($platform instanceof PostgreSQLPlatform);
 		$this->isSqlite = ($platform instanceof SqlitePlatform);
+		$this->isMariaDb = ($platform instanceof MariaDBPlatform);
 	}//end __construct()
 
 	/**

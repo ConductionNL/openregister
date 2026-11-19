@@ -31,14 +31,13 @@ use Closure;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\Types;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Adds the file retention column to export profiles.
  *
  * @spec openspec/changes/an-export-is-a-file-with-a-life/specs/data-import-export/spec.md#requirement-an-export-expires-and-the-row-outlives-the-file
  */
-class Version1Date20261009150000 extends SimpleMigrationStep {
+class Version1Date20261009150000 extends TargetedMigrationStep {
 
 	/**
 	 * The export profiles table.
@@ -58,7 +57,7 @@ class Version1Date20261009150000 extends SimpleMigrationStep {
 	 *
 	 * @spec openspec/changes/an-export-is-a-file-with-a-life/specs/data-import-export/spec.md#requirement-an-export-expires-and-the-row-outlives-the-file
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		$schema = $schemaClosure();
 		if ($schema->hasTable(self::TABLE) === false) {
 			return $schema;
@@ -73,5 +72,5 @@ class Version1Date20261009150000 extends SimpleMigrationStep {
 		$output->info('Added retention_days to '.self::TABLE);
 
 		return $schema;
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 }//end class

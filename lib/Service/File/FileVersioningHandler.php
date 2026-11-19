@@ -31,7 +31,7 @@ use OCP\IUser;
 use OCP\IUserSession;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
-use OCA\OpenRegister\Files\Service\File\FileOwnershipHandlerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\FileAccountInterface;
 
 /**
  * Handles file versioning operations.
@@ -412,7 +412,7 @@ class FileVersioningHandler {
 		// passed the object rule, so the versions are read as that account.
 		if (preg_match('#^/' . DocumentStore::ACCOUNT . '/files/' . preg_quote($this->documentRoot(), '#') . '/#', $path) === 1) {
 			try {
-				return $this->container->get(FileOwnershipHandlerInterface::class)->getUser();
+				return $this->container->get(FileAccountInterface::class)->getUser();
 			} catch (\Throwable $e) {
 				return null;
 			}
