@@ -32,7 +32,7 @@
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\BackgroundJob\JobHandles;
+use OCA\OpenRegister\BackgroundJob\ComplianceJobHandlesInterface;
 use OCA\OpenRegister\Controller\Support\AdministratorOnlyGate;
 use OCA\OpenRegister\Controller\Support\AuditObjectRef;
 use OCA\OpenRegister\Controller\Support\AuditTrailControllerServices;
@@ -966,8 +966,8 @@ class AuditTrailController extends Controller {
 					'queued' => true,
 					'message' => sprintf(
 						'More than %d entries match. The export runs in the background and you get a notification when the file is in your Files under "%s".',
-						JobHandles::AUDIT_TRAIL_EXPORT_INLINE_LIMIT,
-						JobHandles::AUDIT_TRAIL_EXPORT_FOLDER
+						ComplianceJobHandlesInterface::AUDIT_TRAIL_EXPORT_INLINE_LIMIT,
+						ComplianceJobHandlesInterface::AUDIT_TRAIL_EXPORT_FOLDER
 					),
 				],
 				statusCode: Http::STATUS_ACCEPTED

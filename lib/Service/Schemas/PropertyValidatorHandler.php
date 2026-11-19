@@ -26,8 +26,8 @@
 namespace OCA\OpenRegister\Service\Schemas;
 
 use Exception;
+use OCA\OpenRegister\Kernel\Contracts\PropertySearchProfileInterface;
 use OCA\OpenRegister\Service\Object\ReferenceKey;
-use OCA\OpenRegister\Search\Service\Search\PropertySearchProfile;
 
 /**
  * Class PropertyValidatorHandler
@@ -493,8 +493,8 @@ class PropertyValidatorHandler implements PropertyValidatorHandlerInterface {
 	private const ON_DELETE_ACTIONS = ['CASCADE', 'RESTRICT', 'SET_NULL', 'SET_DEFAULT', 'NO_ACTION'];
 
 	public const CLOSED_MODIFIER_VALUES = [
-		'matchType' => PropertySearchProfile::MATCH_TYPES,
-		'inputControl' => PropertySearchProfile::INPUT_CONTROLS,
+		'matchType' => PropertySearchProfileInterface::MATCH_TYPES,
+		'inputControl' => PropertySearchProfileInterface::INPUT_CONTROLS,
 	];
 
 	/**

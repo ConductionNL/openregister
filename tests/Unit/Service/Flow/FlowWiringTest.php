@@ -16,20 +16,38 @@ use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\CurrentFlowRunInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
 use OCA\OpenRegister\Service\Flow\FlowAccess;
+use OCA\OpenRegister\Service\Flow\FlowConsentParking;
+use OCA\OpenRegister\Service\Flow\FlowConsentSweepInterface;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistryInterface;
 use OCA\OpenRegister\Service\Flow\FlowRegistrar;
 use OCA\OpenRegister\Service\Flow\FlowRunAsScope;
 use OCA\OpenRegister\Service\Flow\FlowRunAuthorization;
 use OCA\OpenRegister\Service\Flow\FlowRunContext;
+use OCA\OpenRegister\Service\Flow\FlowRunSignalInterface;
+use OCA\OpenRegister\Service\Flow\FlowRunSignalService;
 use OCA\OpenRegister\Service\Flow\FlowRunnableGuard;
 use OCA\OpenRegister\Service\Flow\FlowService;
 use OCA\OpenRegister\Service\Flow\FlowStepDispatcher;
 use OCA\OpenRegister\Service\Flow\FlowWiring;
+use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNode;
+use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNodeInterface;
+use OCA\OpenRegister\Service\Flow\Principal\PrincipalKinds;
+use OCA\OpenRegister\Service\Flow\Principal\PrincipalKindsInterface;
 use OCA\OpenRegister\Service\Flow\RegistryStepDispatcher;
+use OCA\OpenRegister\Service\Flow\Timer\CalendarRecompute;
+use OCA\OpenRegister\Service\Flow\Timer\CalendarRecomputeInterface;
+use OCA\OpenRegister\Service\Flow\Timer\TermDiagnostic;
+use OCA\OpenRegister\Service\Flow\Timer\TermDiagnosticInterface;
+use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarDefinitionsInterface;
+use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendars;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
+use OCA\OpenRegister\Service\Party\PartySearchInterface;
+use OCA\OpenRegister\Service\Party\PartySearchService;
 use OCA\OpenRegister\Service\Portal\PortalPartyResolver;
+use OCA\OpenRegister\Service\Task\TaskCalendarDocument;
+use OCA\OpenRegister\Service\Task\TaskCalendarDocumentInterface;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
 use OCA\OpenRegister\Service\TaskService;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
@@ -162,16 +180,25 @@ final class FlowWiringTest extends TestCase {
 	}//end testTheCurrentRunPortIsTheSharedRunContext()
 
 	/**
-	 * The store of the flows compiled from application schedules is bound, and only the three aliases are registered.
+	 * The schedule flow store and the area's own interfaces are bound, and only these aliases are registered.
 	 *
 	 * @return void
 	 */
 	public function testTheScheduleFlowStoreIsBound(): void {
 		self::assertSame(
 			expected: [
-				CurrentFlowRunInterface::class    => FlowRunContext::class,
-				FieldRulesSourceInterface::class  => StateFieldRuleResolver::class,
-				ScheduleFlowStoreInterface::class => ScheduleFlowStore::class,
+				CurrentFlowRunInterface::class             => FlowRunContext::class,
+				FieldRulesSourceInterface::class           => StateFieldRuleResolver::class,
+				ScheduleFlowStoreInterface::class          => ScheduleFlowStore::class,
+				FlowRunSignalInterface::class              => FlowRunSignalService::class,
+				LockObjectNodeInterface::class             => LockObjectNode::class,
+				PrincipalKindsInterface::class             => PrincipalKinds::class,
+				CalendarRecomputeInterface::class          => CalendarRecompute::class,
+				TermDiagnosticInterface::class             => TermDiagnostic::class,
+				WorkingCalendarDefinitionsInterface::class => WorkingCalendars::class,
+				TaskCalendarDocumentInterface::class       => TaskCalendarDocument::class,
+				PartySearchInterface::class                => PartySearchService::class,
+				FlowConsentSweepInterface::class           => FlowConsentParking::class,
 			],
 			actual: $this->aliases
 		);
