@@ -2702,13 +2702,15 @@ deptrac:
         - type: directory
           value: 'lib/Db/ProcessingPurpose/[^/]*$'
         - type: directory
+          value: 'lib/Db/SchemaMapper/ArchivalDeclarationRefusals[.]php$'
+        - type: directory
           value: 'lib/Db/SubjectExport/[^/]*$'
         - type: directory
           value: 'lib/Db/Verwerkingsactiviteit/[^/]*$'
         - type: directory
           value: 'lib/Exception/(TextDisclosureNotRecordedException)[.]php$'
         - type: directory
-          value: 'lib/Listener/(ArchivalNominationListener|ContentReportRemovalListener|EntityEditAuditListener|QualityScoreOnSaveListener|RecordTypeAuditListener|RelatedRetentionRecalculationListener|SchemaAuthorizationAuditListener)[.]php$'
+          value: 'lib/Listener/(ArchivalDeclarationChecksListener|ArchivalNominationListener|ContentReportRemovalListener|EntityEditAuditListener|QualityScoreOnSaveListener|RecordTypeAuditListener|RelatedRetentionRecalculationListener|SchemaAuthorizationAuditListener)[.]php$'
         - type: directory
           value: 'lib/Repair/(RechainAuditTrailForFlowAttribution)[.]php$'
         - type: directory
@@ -2757,6 +2759,8 @@ deptrac:
           value: 'lib/Service/Quality/QualityAuditService[.]php$'
         - type: directory
           value: 'lib/Service/Quality/QualityAuditStores[.]php$'
+        - type: directory
+          value: 'lib/Service/Schemas/ArchivalDeclarationValidators[.]php$'
     - name: Integrations
       collectors:
         - type: directory

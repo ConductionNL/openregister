@@ -4416,3 +4416,6 @@ Service/PlatformServiceBindings.php,,Service,,,,,Platform
 Service/PlatformServiceRegistrar.php,,Service,,,,,Platform
 Event/ObjectWriteRequestEvent.php,,Event,,,,,Core
 Listener/WebhookRequestInterceptionListener.php,,Listener,,,,,Integrations
+Service/Schemas/ArchivalDeclarationValidators.php,,Service,,,,,Compliance
+Db/SchemaMapper/ArchivalDeclarationRefusals.php,,Db,,,,,Compliance
+Listener/ArchivalDeclarationChecksListener.php,,Listener,,,,,Compliance

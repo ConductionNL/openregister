@@ -28,7 +28,6 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper\RecordAnnotationRefusals;
 use OCA\OpenRegister\Service\Schemas\RetentionAnnotationValidator;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Service\Schemas\RetentionAnnotationValidator
@@ -87,11 +86,11 @@ class RetentionAnnotationValidatorTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage("x-openregister-retention: inheritAppraisalFrom names 'title', which does not reference other objects.");
 
-		(new RecordAnnotationRefusals($this->createMock(LoggerInterface::class)))->checkRetention($schema);
+		(new RecordAnnotationRefusals())->checkRetention($schema);
 	}
 
 	public function testTheSchemaSaveAcceptsASoundOrAbsentDeclaration(): void {
-		$refusals = new RecordAnnotationRefusals($this->createMock(LoggerInterface::class));
+		$refusals = new RecordAnnotationRefusals();
 		$schema   = new Schema();
 		$schema->setProperties(self::PROPERTIES);
 		$refusals->checkRetention($schema);
