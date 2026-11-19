@@ -3389,7 +3389,7 @@ Db/FlowVersion/,,Db,,,,,Integrations
 Db/HandoffQueueEntry/,,Db,,,,,Integrations
 Db/MagicMapper/,,Db,,,,,Core
 Db/Mapping/,,Db,,,,,Integrations
-Db/ObjectRelation/,,Db,,,,,Integrations
+Db/ObjectRelation/,,Db,,,,,Core
 Db/Register/,,Db,,,,,Kernel
 Db/Schema/,,Db,,,,,Core
 Db/Schema/FacetBlockStamp.php,,Db,,,,,Kernel
@@ -3423,6 +3423,8 @@ Listener/Registrar/,,Listener,,,,,Processes
 Listener/Support/,,Listener,,,,,Processes
 Listener/Support/ConflictVeto.php,10,Listener,,,0,,Core
 Listener/Support/SurvivorshipResolvers.php,14,Listener,,,0,,Core
+Listener/Support/EventSchemaLookup.php,,Listener,,,0,,Core
+Listener/Support/HandlesObjectDeletion.php,,Listener,,,0,,Core
 Mcp/,,Mcp,,,,,Integrations
 Middleware/,,Middleware,,,,,Platform
 Notification/,,Notification,,,,,Notifications
@@ -3654,7 +3656,7 @@ Db/ErasurePreviewMapperInterface.php,,Db,,,,,Core
 Db/ExportProfile/ExportProfileFieldTypes.php,,Db,,,,,Configuration
 Db/ExportProfileMapperInterface.php,,Db,,,,,Configuration
 Db/FederatedShare/FederatedShareFieldTypes.php,,Db,,,,,Integrations
-Db/FederatedShareMapperInterface.php,,Db,,,,,Core
+Db/FederatedShareMapperInterface.php,,Db,,,,,Integrations
 Db/FeedbackMapperInterface.php,,Db,,,,,Notifications
 Db/FlowActivityWindow.php,,Db,,,,,Processes
 Db/FlowClaimMapperInterface.php,,Db,,,,,Processes
@@ -3698,7 +3700,7 @@ Db/MapLinkMapperInterface.php,,Db,,,,,Integrations
 Db/MapperWiring.php,,Db,,,,,Core
 Db/MappingMapperInterface.php,,Db,,,,,Integrations
 Db/MigrationPackMapperInterface.php,,Db,,,,,Configuration
-Db/NewRowStamps.php,,Db,,,,,Configuration
+Db/NewRowStamps.php,,Db,,,,,Compliance
 Db/ObjectEntity/ObjectEntityFieldTypes.php,,Db,,,,,Kernel
 Db/ObjectLinkTypesTrait.php,,Db,,,,,Core
 Db/ObjectReadState/ReadStateScope.php,,Db,,,,,Core
