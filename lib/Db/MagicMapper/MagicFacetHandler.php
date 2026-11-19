@@ -41,6 +41,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db\MagicMapper;
 
+use OCA\OpenRegister\Db\CatalogueScope;
 use OCA\OpenRegister\Service\PropertyAccessRequest;
 use OCA\OpenRegister\Service\SchemaProperty;
 use OCA\OpenRegister\Formats\UuidFormat;
@@ -2333,7 +2334,7 @@ class MagicFacetHandler {
 	private function loadColumns(string $fullTableNameLower): void {
 		// The table_name is compared as stored, so PostgreSQL can use the catalog index.
 		$sql = 'SELECT LOWER(column_name) as col FROM information_schema.columns
-                    WHERE table_name = ?';
+                    WHERE table_name = ? AND ' . (new CatalogueScope(db: $this->db))->condition();
 
 		$stmt = $this->db->prepare($sql);
 		$stmt->execute([$fullTableNameLower]);
