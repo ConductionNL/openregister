@@ -139,7 +139,7 @@ BackgroundJob/TenantDeprovisionJob.php,50,BackgroundJob,Access,Access/Background
 BackgroundJob/TenantPurgeJob.php,85,BackgroundJob,Access,Access/BackgroundJob/TenantPurgeJob.php,0,,Core
 BackgroundJob/TenantUsageSyncJob.php,84,BackgroundJob,Access,Access/BackgroundJob/TenantUsageSyncJob.php,0,,Core
 BackgroundJob/TransferCheckJob.php,78,BackgroundJob,Access,Access/BackgroundJob/TransferCheckJob.php,0,,Compliance
-BackgroundJob/TransferExecutionJob.php,143,BackgroundJob,Access,Access/BackgroundJob/TransferExecutionJob.php,0,,Core
+BackgroundJob/TransferExecutionJob.php,143,BackgroundJob,Access,Access/BackgroundJob/TransferExecutionJob.php,0,,Compliance
 BackgroundJob/TranslationProjectionJob.php,51,BackgroundJob,Flows,Flows/BackgroundJob/TranslationProjectionJob.php,0,,Processes
 BackgroundJob/ViewAlertSweepJob.php,121,BackgroundJob,Service,Service/BackgroundJob/ViewAlertSweepJob.php,0,,Core
 BackgroundJob/WebhookDeliveryJob.php,100,BackgroundJob,Integrations,Integrations/BackgroundJob/WebhookDeliveryJob.php,0,272,Integrations
@@ -3572,7 +3572,7 @@ BackgroundJob/ProcessingLogPrune.php,,BackgroundJob,,,,,Compliance
 BackgroundJob/QueuedJobClassesInterface.php,,BackgroundJob,,,,,Core
 BackgroundJob/RecomputeTimersForCalendarJobServices.php,,BackgroundJob,,,,,Processes
 BackgroundJob/RecordedJobRuntime.php,,BackgroundJob,,,,,Configuration
-BackgroundJob/TransferAttemptRun.php,,BackgroundJob,,,,,Core
+BackgroundJob/TransferAttemptRun.php,,BackgroundJob,,,,,Compliance
 BulkAction/ApplyRuleActionInterface.php,,BulkAction,,,,,Processes
 BulkAction/AssignActionInterface.php,,BulkAction,,,,,Processes
 BulkAction/BulkActionOutcomeInterface.php,,BulkAction,,,,,Processes

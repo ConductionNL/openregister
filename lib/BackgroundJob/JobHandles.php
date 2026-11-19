@@ -54,9 +54,4 @@ final class JobHandles {
 	 * Schema run job.
 	 */
 	public const SCHEMA_RUN = SchemaRunJob::class;
-
-	/**
-	 * Transfer execution job.
-	 */
-	public const TRANSFER_EXECUTION = TransferExecutionJob::class;
 }//end class

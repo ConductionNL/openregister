@@ -31,13 +31,6 @@ namespace OCA\OpenRegister\BackgroundJob;
 interface QueuedJobClassesInterface {
 
 	/**
-	 * Executes one transfer list (TransferController queues it on execute).
-	 *
-	 * @var class-string
-	 */
-	public const TRANSFER_EXECUTION = TransferExecutionJob::class;
-
-	/**
 	 * Projects an object's translatable properties (TranslationProjectionListener defers it).
 	 *
 	 * @var class-string

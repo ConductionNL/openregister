@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
+use OCA\OpenRegister\BackgroundJob\ComplianceJobHandlesInterface;
 use OCA\OpenRegister\BackgroundJob\QueuedJobClassesInterface;
 use OCA\OpenRegister\BackgroundJob\TransferExecutionJob;
 use OCA\OpenRegister\BackgroundJob\TranslationProjectionJob;
@@ -48,7 +49,7 @@ final class E18QueuedJobsInterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{class-string, string}>
 	 */
 	private const CLASSES = [
-		TransferExecutionJob::class => [QueuedJobClassesInterface::class, 'TRANSFER_EXECUTION'],
+		TransferExecutionJob::class => [ComplianceJobHandlesInterface::class, 'TRANSFER_EXECUTION'],
 		TranslationProjectionJob::class => [QueuedJobClassesInterface::class, 'TRANSLATION_PROJECTION'],
 	];
 
