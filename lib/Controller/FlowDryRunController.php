@@ -27,7 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Flow\FlowAccessInterface;
 use OCA\OpenRegister\Service\Flow\FlowDryRunServiceInterface;
 use OCP\AppFramework\Controller;
@@ -55,7 +55,7 @@ class FlowDryRunController extends Controller {
 		private readonly FlowAccessInterface $access,
 		private readonly FlowDryRunServiceInterface $service,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**
