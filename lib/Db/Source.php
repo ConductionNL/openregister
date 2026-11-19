@@ -309,14 +309,12 @@ class Source extends Entity implements JsonSerializable {
 	}//end __toString()
 
 	/**
-	 * The ids a configuration lists as its sources, see ManagedByConfigurationTrait.
+	 * The member list a configuration keeps its sources in, see ManagedByConfigurationTrait.
 	 *
-	 * @param Configuration $configuration The configuration.
-	 *
-	 * @return array|null
+	 * @return string
 	 */
-	protected function configurationMembers(Configuration $configuration): ?array {
-		return $configuration->getSources();
-	}//end configurationMembers()
+	protected function configurationMemberKind(): string {
+		return 'sources';
+	}//end configurationMemberKind()
 
 }//end class
