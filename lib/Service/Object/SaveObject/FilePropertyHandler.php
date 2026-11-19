@@ -405,7 +405,12 @@ class FilePropertyHandler {
 			return $this->hasFileExtension(url: $value);
 		}
 
-		return base64_encode(base64_decode($value, true)) === $value && strlen($value) > 100;
+		// base64_decode(..., true) returns false for ordinary non-base64
+		// content, and base64_encode(false) is a TypeError in PHP 8+ — check
+		// the decode result before re-encoding it.
+		$decoded = base64_decode($value, true);
+
+		return $decoded !== false && base64_encode($decoded) === $value && strlen($value) > 100;
 	}//end looksLikeFile()
 
 	/**
