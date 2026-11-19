@@ -44,7 +44,7 @@ components:
   - name: Core
     include:
       - ".*/lib/Kernel/Contracts/Core/.*"
-      - ".*/lib/BackgroundJob/(AbstractRetentionJob|ActorForwardedJob|ConfiguredJobRuntime|DbalIntrospectionJob|DeferredObjectEventJob|DraftExpiryJob|GroupReconcilerJob|JobHandles|JobRuntime|LogCleanUpTask|ObjectCleanupJob|PublishedDigestVerifyJob|QueuedJobClassesInterface|SchemaChangeNoticeJob|SchemaRunJob|StateHistoryRebuildJob|TenantDeprovisionJob|TenantPurgeJob|TenantUsageSyncJob|TransferAttemptRun|TransferExecutionJob|ViewAlertSweepJob)[.]php"
+      - ".*/lib/BackgroundJob/(AbstractRetentionJob|ActorForwardedJob|ConfiguredJobRuntime|DbalIntrospectionJob|DeferredObjectEventJob|DraftExpiryJob|GroupReconcilerJob|JobHandles|JobRuntime|ObjectCleanupJob|PublishedDigestVerifyJob|QueuedJobClassesInterface|SchemaChangeNoticeJob|SchemaRunJob|StateHistoryRebuildJob|TenantDeprovisionJob|TenantPurgeJob|TenantUsageSyncJob|TransferAttemptRun|TransferExecutionJob|ViewAlertSweepJob)[.]php"
       - ".*/lib/BackgroundJob/Support/ActorForwardingServices[.]php"
       - ".*/lib/BackgroundJob/Support/DeferredObjectEventActor[.]php"
       - ".*/lib/BackgroundJob/Support/DeferredObjectEventLookup[.]php"
@@ -1292,7 +1292,7 @@ components:
       - ".*/lib/Service/Translation/[^/]*"
   - name: Compliance
     include:
-      - ".*/lib/BackgroundJob/(AbstractTextExtractionJob|ArchivalRetentionTask|ArchivalRowExpiry|ArchivalSweep|AuditExportDelivery|AuditExportSource|AuditSealJob|AuditTrailExportJob|AvgRetentionJob|BlobGroup|BlobMigrationRun|BulkLegalHoldJob|ConnectionSeamReportJob|DestructionCheckJob|DestructionExecutionJob|DestructionExecutionJobInterface|DestructionListRun|DsarDpiaDetectionJob|DsarRetentionSweepJob|ExternalGrantLapseJob|ProcessingLogPrune|ProcessingLogRetentionJob|QualityAuditScheduleJob|RelatedRetentionRecalculationJob|ReviewReminderJob|SharerAccessSweepJob|SubjectExportJob|TransferCheckJob)[.]php"
+      - ".*/lib/BackgroundJob/(AbstractTextExtractionJob|ArchivalRetentionTask|ArchivalRowExpiry|ArchivalSweep|AuditExportDelivery|AuditExportSource|AuditSealJob|AuditTrailExportJob|AvgRetentionJob|BlobGroup|BlobMigrationRun|BulkLegalHoldJob|ConnectionSeamReportJob|DestructionCheckJob|DestructionExecutionJob|DestructionExecutionJobInterface|DestructionListRun|DsarDpiaDetectionJob|DsarRetentionSweepJob|ExternalGrantLapseJob|LogCleanUpTask|ProcessingLogPrune|ProcessingLogRetentionJob|QualityAuditScheduleJob|RelatedRetentionRecalculationJob|ReviewReminderJob|SharerAccessSweepJob|SubjectExportJob|TransferCheckJob)[.]php"
       - ".*/lib/BackgroundJob/Support/AbandonedFlowClaim[.]php"
       - ".*/lib/BackgroundJob/Support/ArchivalRetentionPlatform[.]php"
       - ".*/lib/BackgroundJob/Support/ArchivalRetentionSources[.]php"

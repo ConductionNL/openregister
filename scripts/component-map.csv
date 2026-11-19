@@ -112,7 +112,7 @@ BackgroundJob/FormUploadPurgeJob.php,36,BackgroundJob,Work,Work/BackgroundJob/Fo
 BackgroundJob/GroupReconcilerJob.php,28,BackgroundJob,Access,Access/BackgroundJob/GroupReconcilerJob.php,0,,Core
 BackgroundJob/HandoffQueueDrainJob.php,34,BackgroundJob,Integrations,Integrations/BackgroundJob/HandoffQueueDrainJob.php,0,,Integrations
 BackgroundJob/ImportPreviewRunner.php,53,BackgroundJob,Configuration,Configuration/BackgroundJob/ImportPreviewRunner.php,0,,Configuration
-BackgroundJob/LogCleanUpTask.php,175,BackgroundJob,Service,Service/BackgroundJob/LogCleanUpTask.php,0,,Core
+BackgroundJob/LogCleanUpTask.php,175,BackgroundJob,Service,Service/BackgroundJob/LogCleanUpTask.php,0,,Compliance
 BackgroundJob/NameCacheWarmupJob.php,61,BackgroundJob,Configuration,Configuration/BackgroundJob/NameCacheWarmupJob.php,0,,Configuration
 BackgroundJob/OAuth2TokenRefreshJob.php,82,BackgroundJob,Integrations,Integrations/BackgroundJob/OAuth2TokenRefreshJob.php,0,,Integrations
 BackgroundJob/ObjectCleanupJob.php,62,BackgroundJob,Service,Service/BackgroundJob/ObjectCleanupJob.php,0,,Core

@@ -78,7 +78,7 @@ deptrac:
         - type: directory
           value: 'lib/Kernel/Contracts/Core/.*$'
         - type: directory
-          value: 'lib/BackgroundJob/(AbstractRetentionJob|ActorForwardedJob|ConfiguredJobRuntime|DbalIntrospectionJob|DeferredObjectEventJob|DraftExpiryJob|GroupReconcilerJob|JobHandles|JobRuntime|LogCleanUpTask|ObjectCleanupJob|PublishedDigestVerifyJob|QueuedJobClassesInterface|SchemaChangeNoticeJob|SchemaRunJob|StateHistoryRebuildJob|TenantDeprovisionJob|TenantPurgeJob|TenantUsageSyncJob|TransferAttemptRun|TransferExecutionJob|ViewAlertSweepJob)[.]php$'
+          value: 'lib/BackgroundJob/(AbstractRetentionJob|ActorForwardedJob|ConfiguredJobRuntime|DbalIntrospectionJob|DeferredObjectEventJob|DraftExpiryJob|GroupReconcilerJob|JobHandles|JobRuntime|ObjectCleanupJob|PublishedDigestVerifyJob|QueuedJobClassesInterface|SchemaChangeNoticeJob|SchemaRunJob|StateHistoryRebuildJob|TenantDeprovisionJob|TenantPurgeJob|TenantUsageSyncJob|TransferAttemptRun|TransferExecutionJob|ViewAlertSweepJob)[.]php$'
         - type: directory
           value: 'lib/BackgroundJob/Support/ActorForwardingServices[.]php$'
         - type: directory
@@ -2568,7 +2568,7 @@ deptrac:
     - name: Compliance
       collectors:
         - type: directory
-          value: 'lib/BackgroundJob/(AbstractTextExtractionJob|ArchivalRetentionTask|ArchivalRowExpiry|ArchivalSweep|AuditExportDelivery|AuditExportSource|AuditSealJob|AuditTrailExportJob|AvgRetentionJob|BlobGroup|BlobMigrationRun|BulkLegalHoldJob|ConnectionSeamReportJob|DestructionCheckJob|DestructionExecutionJob|DestructionExecutionJobInterface|DestructionListRun|DsarDpiaDetectionJob|DsarRetentionSweepJob|ExternalGrantLapseJob|ProcessingLogPrune|ProcessingLogRetentionJob|QualityAuditScheduleJob|RelatedRetentionRecalculationJob|ReviewReminderJob|SharerAccessSweepJob|SubjectExportJob|TransferCheckJob)[.]php$'
+          value: 'lib/BackgroundJob/(AbstractTextExtractionJob|ArchivalRetentionTask|ArchivalRowExpiry|ArchivalSweep|AuditExportDelivery|AuditExportSource|AuditSealJob|AuditTrailExportJob|AvgRetentionJob|BlobGroup|BlobMigrationRun|BulkLegalHoldJob|ConnectionSeamReportJob|DestructionCheckJob|DestructionExecutionJob|DestructionExecutionJobInterface|DestructionListRun|DsarDpiaDetectionJob|DsarRetentionSweepJob|ExternalGrantLapseJob|LogCleanUpTask|ProcessingLogPrune|ProcessingLogRetentionJob|QualityAuditScheduleJob|RelatedRetentionRecalculationJob|ReviewReminderJob|SharerAccessSweepJob|SubjectExportJob|TransferCheckJob)[.]php$'
         - type: directory
           value: 'lib/BackgroundJob/Support/AbandonedFlowClaim[.]php$'
         - type: directory
