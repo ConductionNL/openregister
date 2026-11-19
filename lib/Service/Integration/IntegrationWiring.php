@@ -22,6 +22,8 @@ namespace OCA\OpenRegister\Service\Integration;
 
 use OCA\OpenRegister\Controller\IntegrationControllersRegistrar;
 use OCA\OpenRegister\Db\Integration\IntegrationIdIndexInterface;
+use OCA\OpenRegister\Event\ObjectWriteRequestEvent;
+use OCA\OpenRegister\Listener\WebhookRequestInterceptionListener;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\AuditTrailProvider;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\FilesProvider;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\NotesProvider;
@@ -160,6 +162,7 @@ final class IntegrationWiring {
 		self::registerLeafRegistry(context: $context);
 		self::registerBuiltinIntegrationProviders(context: $context);
 		IntegrationControllersRegistrar::register(context: $context);
+		$context->registerEventListener(ObjectWriteRequestEvent::class, WebhookRequestInterceptionListener::class);
 		foreach (self::BINDINGS as $contract => $service) {
 			$context->registerServiceAlias($contract, $service);
 		}
