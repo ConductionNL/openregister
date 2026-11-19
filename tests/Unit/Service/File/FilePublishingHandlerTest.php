@@ -19,8 +19,7 @@ use OCA\OpenRegister\Files\Db\FileMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\File\FilePublishingHandler;
-use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
-use OCA\OpenRegister\Files\Service\File\FileRestrictionGuardInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\FileReadRestrictionInterface;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Kernel\Contracts\Core\PublicationRefusalInterface;
 use OCP\Files\File;
@@ -59,7 +58,7 @@ class FilePublishingHandlerTest extends TestCase {
 	/** @var IServerContainer&MockObject */
 	private IServerContainer $container;
 
-	private FileRestrictionGuard&MockObject $restrictions;
+	private FileReadRestrictionInterface&MockObject $restrictions;
 
 	/**
 	 * The party indicator guard the handler resolves before it publishes.
@@ -82,10 +81,10 @@ class FilePublishingHandlerTest extends TestCase {
 		// close the cycle FileService is already set through a setter to avoid.
 		$this->partyIndicators = $this->createMock(PublicationRefusalInterface::class);
 		$this->container = $this->createMock(IServerContainer::class);
-		$this->restrictions = $this->createMock(FileRestrictionGuard::class);
+		$this->restrictions = $this->createMock(FileReadRestrictionInterface::class);
 		$this->restrictions->method('readableNodes')->willReturnArgument(0);
 		$services = [
-			FileRestrictionGuardInterface::class => $this->restrictions,
+			FileReadRestrictionInterface::class => $this->restrictions,
 			PublicationRefusalInterface::class   => $this->partyIndicators,
 		];
 		$this->container->method('get')->willReturnCallback(

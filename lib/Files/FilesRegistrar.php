@@ -56,6 +56,8 @@ use OCA\OpenRegister\Files\Service\TextExtractionService;
 use OCA\OpenRegister\Files\Service\UploadService;
 use OCA\OpenRegister\Kernel\Contracts\AccessLinkReaderInterface;
 use OCA\OpenRegister\Kernel\Contracts\ChunkMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\FileReadRestrictionInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ShareLinkUrlInterface;
 use OCA\OpenRegister\Kernel\Contracts\DocumentProcessingHandlerInterface;
 use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\TaggingHandlerInterface;
@@ -85,12 +87,14 @@ final class FilesRegistrar
         FileMapperInterface::class                => FileMapper::class,
         FileOwnershipHandlerInterface::class      => FileOwnershipHandler::class,
         AntivirusScannerInterface::class          => AntivirusScannerAdapter::class,
+        FileReadRestrictionInterface::class       => FileRestrictionGuard::class,
         FileRestrictionGuardInterface::class      => FileRestrictionGuard::class,
         FileSharingHandlerInterface::class        => FileSharingHandler::class,
         NcOfficeConverterInterface::class         => ConversionManagerConverter::class,
         NoteServiceInterface::class               => NoteService::class,
         RegisterFolderProvisionerInterface::class => RegisterFolderProvisioner::class,
         RiskLevelServiceInterface::class          => RiskLevelService::class,
+        ShareLinkUrlInterface::class              => ShareUrlBuilder::class,
         ShareUrlBuilderInterface::class           => ShareUrlBuilder::class,
         TaggingHandlerInterface::class            => TaggingHandler::class,
         TextExtractionServiceInterface::class     => TextExtractionService::class,
