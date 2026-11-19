@@ -29,6 +29,7 @@ use DateTime;
 use JsonSerializable;
 use OCA\OpenRegister\Db\Application\ApplicationFieldTypes;
 use OCA\OpenRegister\Db\Application\ApplicationQuota;
+use OCA\OpenRegister\Kernel\Contracts\ApplicationInterface;
 use OCP\AppFramework\Db\Entity;
 use Symfony\Component\Uid\Uuid;
 
@@ -85,7 +86,7 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.TooManyFields)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
-class Application extends Entity implements JsonSerializable {
+class Application extends Entity implements JsonSerializable, ApplicationInterface {
 	use IsoTimestampsTrait;
 	use AuthorizationRulesTrait;
 	use JsonFieldsTrait;

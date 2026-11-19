@@ -26,7 +26,6 @@ use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
-use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
 use OCP\IGroupManager;
@@ -36,6 +35,7 @@ use Psr\Log\LoggerInterface;
 use ReflectionMethod;
 use OCA\OpenRegister\Db\SchemaMapper\SchemaMapperServices;
 use OCA\OpenRegister\Db\Tenancy\TenancyServices;
+use OCA\OpenRegister\Tests\Unit\Support\ProcessDeclarationChecksDispatcher;
 
 /**
  * @covers \OCA\OpenRegister\Db\SchemaMapper
@@ -594,7 +594,7 @@ class SchemaMapperSaveGoldenTest extends TestCase {
 			),
 			appConfig: $this->createMock(IAppConfig::class),
 			services: new SchemaMapperServices(
-				eventDispatcher: $this->createMock(IEventDispatcher::class),
+				eventDispatcher: new ProcessDeclarationChecksDispatcher(logger: $logger),
 				validator: $this->createMock(PropertyValidatorHandler::class),
 				logger: $logger
 			)

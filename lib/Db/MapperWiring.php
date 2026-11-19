@@ -21,7 +21,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use OCA\OpenRegister\Kernel\Contracts\EntityEventsInterface;
-use OCA\OpenRegister\Service\ObjectAction\ObjectActionValidatorInterface;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandlerInterface;
 use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
 use OCA\OpenRegister\Db\MagicMapper\MagicMapperLookups;
@@ -87,8 +86,7 @@ final class MapperWiring {
 			services: new SchemaMapperServices(
 				eventDispatcher: $eventDispatcher,
 				validator: $validator,
-				logger: $container->get('Psr\Log\LoggerInterface'),
-				objectActions: static fn (): ObjectActionValidatorInterface => $container->get(ObjectActionValidatorInterface::class)
+				logger: $container->get('Psr\Log\LoggerInterface')
 			)
 		);
 	}//end schemaMapper()
