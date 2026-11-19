@@ -22,8 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db\MagicMapper;
 
-use OCA\OpenRegister\Service\Audit\PurposeGuardInterface;
-use OCA\OpenRegister\Service\Audit\PurposeRefusedException;
+use OCA\OpenRegister\Kernel\Contracts\Core\ReadPurposeGuardInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ReadPurposeRefusalInterface;
 
 /**
  * Applies the purpose rule of each table to a search that names no table itself.
@@ -39,9 +39,9 @@ final class PurposeBoundTables {
 	/**
 	 * Constructor.
 	 *
-	 * @param PurposeGuardInterface $guard The doelbinding guard.
+	 * @param ReadPurposeGuardInterface $guard The doelbinding guard.
 	 */
-	public function __construct(private readonly PurposeGuardInterface $guard) {
+	public function __construct(private readonly ReadPurposeGuardInterface $guard) {
 	}//end __construct()
 
 	/**
@@ -51,7 +51,7 @@ final class PurposeBoundTables {
 	 *
 	 * @return void
 	 *
-	 * @throws PurposeRefusedException When a table needs a purpose and none is usable.
+	 * @throws ReadPurposeRefusalInterface When a table needs a purpose and none is usable.
 	 *
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */

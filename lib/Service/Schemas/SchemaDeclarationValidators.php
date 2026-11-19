@@ -24,11 +24,6 @@ namespace OCA\OpenRegister\Service\Schemas;
 
 use OCA\OpenRegister\Service\Aggregation\WidgetAnnotationValidator;
 use OCA\OpenRegister\Service\Aggregation\WidgetAnnotationValidatorInterface;
-use OCA\OpenRegister\Service\Archival\ArchivalAnnotationValidator;
-use OCA\OpenRegister\Service\Archival\ArchivalAnnotationValidatorInterface;
-use OCA\OpenRegister\Service\Archival\ElementMappingValidator;
-use OCA\OpenRegister\Service\Archival\ElementMappingValidatorInterface;
-use OCA\OpenRegister\Service\Archival\MdtoElementCatalogue;
 use OCA\OpenRegister\Service\Consent\ConsentAnnotationValidator;
 use OCA\OpenRegister\Service\Consent\ConsentAnnotationValidatorInterface;
 use OCA\OpenRegister\Service\ExternalLink\ExternalLinkAnnotationValidator;
@@ -92,24 +87,6 @@ final class SchemaDeclarationValidators {
 	public static function widgets(): WidgetAnnotationValidatorInterface {
 		return new WidgetAnnotationValidator();
 	}//end widgets()
-
-	/**
-	 * A fresh MDTO element-mapping validator over the MDTO element catalogue.
-	 *
-	 * @return ElementMappingValidatorInterface
-	 */
-	public static function elementMapping(): ElementMappingValidatorInterface {
-		return new ElementMappingValidator(catalogue: new MdtoElementCatalogue());
-	}//end elementMapping()
-
-	/**
-	 * A fresh archival annotation validator.
-	 *
-	 * @return ArchivalAnnotationValidatorInterface
-	 */
-	public static function archival(): ArchivalAnnotationValidatorInterface {
-		return new ArchivalAnnotationValidator();
-	}//end archival()
 
 	/**
 	 * A fresh external-link annotation validator.
