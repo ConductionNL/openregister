@@ -160,26 +160,36 @@ class SeedFlowRunTriggerSubject implements IRepairStep {
 	 * 🔴 A MAPPER'S DEFAULT LIMIT WOULD SILENTLY SEED THE FIRST PAGE and report
 	 * success — the shape that left 119 of 219 flows unversioned once already.
 	 *
+	 * 🔴 YIELDS, DOES NOT COLLECT. An earlier version returned `array_merge()`d
+	 * pages, holding every run — JSON `log`/`context`/`items` columns included —
+	 * in memory at once before processing a single one. On an instance with a
+	 * large `flow_runs` table that OOMs before `run()` even starts, regardless
+	 * of the memory limit: the fix is to stop holding the whole table, not to
+	 * raise the ceiling. A page is only ever referenced while `run()` is
+	 * iterating it, so it is free to be collected before the next page is read.
+	 *
 	 * @param FlowRunMapper $runs The mapper.
 	 *
-	 * @return array<int, FlowRun> Every run.
+	 * @return iterable<int, FlowRun> Every run, one at a time.
 	 *
 	 * @spec openspec/specs/flow-run-subjects/spec.md
 	 */
-	private function everyRun(FlowRunMapper $runs): array {
+	private function everyRun(FlowRunMapper $runs): iterable {
 		$page = 500;
 		$offset = 0;
-		$all = [];
 
 		while (true) {
 			// 🔴 `findAllRuns()`, NOT `findAll()`. The latter does not exist;
 			// writing it once already produced a repair that threw, reported
 			// itself skipped, and let the upgrade go green having done nothing.
 			$batch = $runs->findAllRuns(limit: $page, offset: $offset);
-			$all = array_merge($all, $batch);
+
+			foreach ($batch as $run) {
+				yield $run;
+			}
 
 			if (count($batch) < $page) {
-				return $all;
+				return;
 			}
 
 			$offset += $page;
