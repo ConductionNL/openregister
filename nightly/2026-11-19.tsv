@@ -9,3 +9,4 @@ planninq	17e6169e	php=RED	Tests 1253/Failures 0/Errors 0	phpmd,psalm,phpstan	js=
 keepiq	4ebe6c1d	php=GREEN	Tests 5620/F0/E0	none	js=GREEN	all checks passed; eslint 0 errors/186 warnings; vitest 7163 passed
 versioniq	a50e115	php=RED	phpunit not in check:strict	cs:check,psalm	js=RED	cs-fixer: Nextcloud CodingStandard Config missing; psalm not in require-dev; eslint parse err fixture; vitest 2 unhandled errs
 launchpad	580c7770	php=RED	Tests 4621/F0/E0	phpcs,phpmd,psalm	js=RED	npm ci: lock out of sync (@noble/hashes); phpcs AnnouncementFollowNotifier/DemoAnnouncements; psalm needs PHP>=8.3.16
+stackiq	4f5ef19e	php=RED	PHPUnit not run (needs NC server tree)	phpmd,psalm	js=RED	vitest facets.spec FACET_DIMENSIONS; eslint 21 errs (json/no-empty-keys); psalm needs PHP>=8.3.16
