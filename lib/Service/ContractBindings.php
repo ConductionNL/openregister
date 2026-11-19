@@ -535,6 +535,8 @@ use OCA\OpenRegister\Service\Schemas\SemanticRoleHandlerInterface;
 use OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluator;
 use OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluatorInterface;
 use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
+use OCA\OpenRegister\Kernel\Contracts\Integrations\TranslationBindingInterface;
+use OCA\OpenRegister\Service\Translation\TranslationBindingDescription;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCA\OpenRegister\Service\Settings\RetentionSettingsReaderInterface;
 use OCA\OpenRegister\Service\SharedMasterDataService;
@@ -649,6 +651,7 @@ final class ContractBindings {
 		ArchivalNominationServiceInterface::class => ArchivalNominationService::class,
 		\OCA\OpenRegister\Service\Archival\ArchivalNominationTriggerInterface::class => ArchivalNominationService::class,
 		ArchivalSettingsReaderInterface::class => ObjectRetentionHandler::class,
+		TranslationBindingInterface::class => TranslationBindingDescription::class,
 		\OCA\OpenRegister\Service\Audit\AuditSinkInterface::class => \OCA\OpenRegister\Service\Audit\AuditSink::class,
 		DeferredEntryObjectResolverInterface::class => DeferredEntryObjectResolver::class,
 		ListenerDeferralInterface::class => ListenerDeferralService::class,

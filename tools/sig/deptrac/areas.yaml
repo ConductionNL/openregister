@@ -72,7 +72,7 @@ deptrac:
               value: 'lib/Support/.*$'
           must_not:
             - type: directory
-              value: 'lib/Kernel/Contracts/(Core)/.*$'
+              value: 'lib/Kernel/Contracts/(Core|Integrations)/.*$'
     - name: Core
       collectors:
         - type: directory
@@ -2554,7 +2554,7 @@ deptrac:
     - name: Compliance
       collectors:
         - type: directory
-          value: 'lib/BackgroundJob/(AbstractTextExtractionJob|ArchivalRetentionTask|ArchivalRowExpiry|ArchivalSweep|AuditExportDelivery|AuditExportSource|AuditSealJob|AuditTrailExportJob|AvgRetentionJob|BlobGroup|BlobMigrationRun|BulkLegalHoldJob|ConfiguredJobRuntime|ConnectionSeamReportJob|DestructionCheckJob|DestructionExecutionJobInterface|DestructionListRun|DsarDpiaDetectionJob|DsarRetentionSweepJob|ExternalGrantLapseJob|ProcessingLogPrune|ProcessingLogRetentionJob|QualityAuditScheduleJob|RelatedRetentionRecalculationJob|ReviewReminderJob|SharerAccessSweepJob|SubjectExportJob)[.]php$'
+          value: 'lib/BackgroundJob/(AbstractTextExtractionJob|ArchivalRetentionTask|ArchivalRowExpiry|ArchivalSweep|AuditExportDelivery|AuditExportSource|AuditSealJob|AuditTrailExportJob|AvgRetentionJob|BlobGroup|BlobMigrationRun|BulkLegalHoldJob|ConfiguredJobRuntime|DestructionCheckJob|DestructionExecutionJobInterface|DestructionListRun|DsarDpiaDetectionJob|DsarRetentionSweepJob|ExternalGrantLapseJob|ProcessingLogPrune|ProcessingLogRetentionJob|QualityAuditScheduleJob|RelatedRetentionRecalculationJob|ReviewReminderJob|SharerAccessSweepJob|SubjectExportJob)[.]php$'
         - type: directory
           value: 'lib/BackgroundJob/Support/AbandonedFlowClaim[.]php$'
         - type: directory
@@ -2760,6 +2760,8 @@ deptrac:
     - name: Integrations
       collectors:
         - type: directory
+          value: 'lib/Kernel/Contracts/Integrations/.*$'
+        - type: directory
           value: 'lib/AppHost/[^/]*$'
         - type: directory
           value: 'lib/AppHost/Controller/[^/]*$'
@@ -2818,7 +2820,7 @@ deptrac:
         - type: directory
           value: 'lib/AppHost/Store/Source/[^/]*$'
         - type: directory
-          value: 'lib/BackgroundJob/(CalendarLinkBackfillRun|CalendarRecomputeJobInterface|ContextChatSubmissionJob|HandoffQueueDrainJob|OAuth2TokenRefreshJob|SyncDataJob|WebhookDeliveryJob|WebhookRetryJob)[.]php$'
+          value: 'lib/BackgroundJob/(CalendarLinkBackfillRun|CalendarRecomputeJobInterface|ConnectionSeamReportJob|ContextChatSubmissionJob|HandoffQueueDrainJob|OAuth2TokenRefreshJob|SyncDataJob|WebhookDeliveryJob|WebhookRetryJob)[.]php$'
         - type: directory
           value: 'lib/Calendar/[^/]*$'
         - type: directory
