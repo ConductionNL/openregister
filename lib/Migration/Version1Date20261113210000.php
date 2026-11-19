@@ -25,7 +25,6 @@ namespace OCA\OpenRegister\Migration;
 use Closure;
 use OCP\IDBConnection;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 use Throwable;
 
 /**
@@ -47,7 +46,7 @@ use Throwable;
  *
  * @spec openspec/changes/audit-seal-backlog-repair/tasks.md
  */
-class Version1Date20261113210000 extends SimpleMigrationStep {
+class Version1Date20261113210000 extends TargetedMigrationStep {
 
 	/**
 	 * The index name.
@@ -73,7 +72,7 @@ class Version1Date20261113210000 extends SimpleMigrationStep {
 	 *
 	 * @spec openspec/changes/audit-seal-backlog-repair/tasks.md
 	 */
-	public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
+	protected function afterTargetedSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
 		$provider = $this->connection->getDatabaseProvider();
 		if ($provider !== IDBConnection::PLATFORM_POSTGRES && $provider !== IDBConnection::PLATFORM_SQLITE) {
 			$output->info('Skipping ' . self::INDEX . ': partial indexes exist on PostgreSQL and SQLite only.');
@@ -91,5 +90,5 @@ class Version1Date20261113210000 extends SimpleMigrationStep {
 		}
 
 		$output->info('Created ' . self::INDEX . ' (or it was already present).');
-	}//end postSchemaChange()
+	}//end afterTargetedSchemaChange()
 }//end class

@@ -336,7 +336,6 @@
   "lib/Repair/PerformerTyping.php -> lib/Db/Flow.php",
   "lib/Repair/PerformerTyping.php -> lib/Db/FlowMapperInterface.php",
   "lib/Repair/PerformerTyping.php -> lib/Service/Flow/Principal/PrincipalKindsInterface.php",
-  "lib/Repair/RechainAuditTrailForFlowAttribution.php -> lib/Repair/Support/RepairPlatform.php",
   "lib/Repair/RechainAuditTrailForFlowAttribution.php -> lib/Repair/V1ChainVerificationRun.php",
   "lib/Repair/SeedFlowTimerRegister.php -> lib/Repair/AppRegisterDescriptor.php",
   "lib/Repair/SeedTaskFixtures.php -> lib/Repair/Support/ApprovalTaskStores.php",
@@ -515,7 +514,6 @@
   "lib/Service/Object/ReferentialIntegrityService.php -> lib/Db/AuditTrail.php",
   "lib/Service/Object/ReferentialIntegrityService.php -> lib/Db/AuditTrail/AuditedChange.php",
   "lib/Service/Object/ReferentialIntegrityService.php -> lib/Service/Archival/ArchivalRetentionGuard.php",
-  "lib/Service/Object/RelationHandler.php -> lib/Service/Audit/PurposeGuard.php",
   "lib/Service/Object/RenderDerivations.php -> lib/Service/Calculation/CalculationEvaluatorInterface.php",
   "lib/Service/Object/RenderObject.php -> lib/Db/Translation.php",
   "lib/Service/Object/RenderObject.php -> lib/Db/TranslationSlot.php",
@@ -661,13 +659,6 @@
   "lib/Service/TranslationStatusService.php -> lib/Service/TranslationStatusServiceInterface.php",
   "lib/Service/UrnService.php -> lib/Db/AuditTrail/ActionLookupOptions.php",
   "lib/Service/User/ApiTokenAuditRow.php -> lib/Db/AuditTrail.php",
-  "lib/Service/UserMigration/PersonalStateMigrator.php -> lib/Notifications/Db/Watcher.php",
-  "lib/Service/UserMigration/PersonalStateMigrator.php -> lib/Notifications/Db/WatcherMapperInterface.php",
-  "lib/Service/UserMigration/PersonalStateMigrator.php -> lib/Search/Db/View.php",
-  "lib/Service/UserMigration/PersonalStateMigrator.php -> lib/Search/Db/ViewMapperInterface.php",
-  "lib/Service/UserMigration/PersonalStateReader.php -> lib/Notifications/Db/Watcher.php",
-  "lib/Service/UserMigration/PersonalStateReader.php -> lib/Notifications/Db/WatcherMapperInterface.php",
-  "lib/Service/UserMigration/PersonalStateReader.php -> lib/Search/Db/View.php",
   "lib/Service/UserService.php -> lib/Db/AuditTrail/ActionWindow.php",
   "lib/Service/UserService.php -> lib/Db/AuditTrail/ActorTrailQuery.php",
   "lib/Service/Vocabulary/ConceptDeleteGuard.php -> lib/Service/VocabularyImportService.php",
@@ -2962,7 +2953,6 @@
   "lib/Service/TranslationStores.php",
   "lib/Service/UrnService.php",
   "lib/Service/UrnServiceInterface.php",
-  "lib/Service/UserMigration/PersonalStateMigrator.php",
   "lib/Service/UserService.php",
   "lib/Service/UserServiceInterface.php",
   "lib/Service/UserTaskListInterface.php",
@@ -3014,7 +3004,7 @@
  "exposed_loc": {
   "Compliance": 15598,
   "Configuration": 6895,
-  "Core": 64799,
+  "Core": 64601,
   "Files": 3689,
   "Integrations": 18418,
   "Kernel": 8515,
@@ -3482,6 +3472,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10440,
- "total_loc": 459499,
- "violation_degree": 0.0785
+ "total_loc": 459898,
+ "violation_degree": 0.0775
 }
