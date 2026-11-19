@@ -3657,7 +3657,7 @@ Db/FlowTimerMapperInterface.php,,Db,,,,,Processes
 Db/FlowTriggerMapperInterface.php,,Db,,,,,Processes
 Db/FlowVersionMapperInterface.php,,Db,,,,,Processes
 Db/FormLinkMapperInterface.php,,Db,,,,,Processes
-Db/FreezeTerms.php,,Db,,,,,Processes
+Db/FreezeTerms.php,,Db,,,,,Kernel
 Db/GdprEntityMapperInterface.php,,Db,,,,,Compliance
 Db/HandoffQueueEntryMapperInterface.php,,Db,,,,,Processes
 Db/ImportPreviewFinderInterface.php,,Db,,,,,Configuration
@@ -3674,7 +3674,7 @@ Db/LinkedItemsTrait.php,,Db,,,,,Kernel
 Db/ListQuery.php,,Db,,,,,Core
 Db/LockTerms.php,,Db,,,,,Kernel
 Db/MailMessageKey.php,,Db,,,,,Integrations
-Db/ManagedByConfigurationTrait.php,,Db,,,,,Core
+Db/ManagedByConfigurationTrait.php,,Db,,,,,Kernel
 Db/MapLinkMapperInterface.php,,Db,,,,,Core
 Db/MapperWiring.php,,Db,,,,,Core
 Db/MappingMapperInterface.php,,Db,,,,,Integrations
@@ -3720,7 +3720,7 @@ Db/SearchTrailCriteria.php,,Db,,,,,Search
 Db/SearchTrailMapperInterface.php,,Db,,,,,Search
 Db/SearchTrailOutcome.php,,Db,,,,,Compliance
 Db/SequenceMapperInterface.php,,Db,,,,,Processes
-Db/SoftDeletion.php,,Db,,,,,Processes
+Db/SoftDeletion.php,,Db,,,,,Kernel
 Db/SourceMapperInterface.php,,Db,,,,,Core
 Db/StateChangePeriod.php,,Db,,,,,Core
 Db/StateHistory/TrackedProperty.php,,Db,,,,,Core
