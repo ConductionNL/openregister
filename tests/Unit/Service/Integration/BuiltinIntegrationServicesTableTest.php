@@ -30,7 +30,7 @@ class BuiltinIntegrationServicesTableTest extends TestCase {
 	public function testWiringTableIsUnchanged(): void {
 		$encoded = json_encode(BuiltinIntegrationServices::FACTORIES, JSON_THROW_ON_ERROR);
 
-		$this->assertSame('6825facdf1148ae6809f2721274a58ee0e040987cf3ecd3b80b08181447dfbdd', hash('sha256', $encoded));
+		$this->assertSame('558fe8ca3c1a0dd4a8c948dd1fed09d6177dcc0aa2af8ca92996fcd9a82b3e22', hash('sha256', $encoded));
 	}
 
 	public function testConnectorProvidersShareOneRoutingBundle(): void {

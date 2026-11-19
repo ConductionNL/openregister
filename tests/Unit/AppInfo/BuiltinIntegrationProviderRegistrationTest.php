@@ -49,7 +49,7 @@ class BuiltinIntegrationProviderRegistrationTest extends TestCase {
 			'OCP\IL10N',
 		],
 		'OCA\OpenRegister\Service\Integration\BuiltinProviders\TasksProvider' => [
-			'OCA\OpenRegister\Service\TaskService',
+			'OCA\OpenRegister\Kernel\Contracts\ObjectCalendarTasksInterface',
 			'OCA\OpenRegister\Db\RegisterMapperInterface',
 			'OCA\OpenRegister\Db\SchemaMapperInterface',
 			'OCA\OpenRegister\Service\ObjectService',
@@ -191,14 +191,6 @@ class BuiltinIntegrationProviderRegistrationTest extends TestCase {
 		'OCA\OpenRegister\Service\ActivityFilterService' => [
 			'OCP\IDBConnection',
 			'OCA\OpenRegister\Service\LinkServiceRuntime',
-		],
-		'OCA\OpenRegister\Service\FlowLinkService' => [
-			'OCA\OpenRegister\Db\FlowLinkMapperInterface',
-			'OCP\IDBConnection',
-			'OCP\App\IAppManager',
-			'OCP\IUserSession',
-			'OCP\IGroupManager',
-			'Psr\Log\LoggerInterface',
 		],
 		'OCA\OpenRegister\Service\Integration\Providers\MapsProvider' => [
 			'OCP\IDBConnection',

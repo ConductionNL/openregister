@@ -72,7 +72,6 @@ class IntegrationRegistrarTest extends TestCase {
 				'OCA\OpenRegister\Service\Integration\Providers\PollsProvider',
 				'OCA\OpenRegister\Service\Integration\Providers\FlowProvider',
 				'OCA\OpenRegister\Service\ActivityFilterService',
-				'OCA\OpenRegister\Service\FlowLinkService',
 				'OCA\OpenRegister\Service\Integration\Providers\MapsProvider',
 				'OCA\OpenRegister\Service\MapLinkService',
 				'OCA\OpenRegister\Service\Integration\Providers\PhotosProvider',

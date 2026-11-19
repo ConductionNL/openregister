@@ -143,7 +143,7 @@ final class BuiltinIntegrationServices {
 			'services' => [
 				\OCA\OpenRegister\Service\Integration\BuiltinProviders\TasksProviderServices::class,
 				[
-					'taskService'    => \OCA\OpenRegister\Service\TaskService::class,
+					'taskService'    => \OCA\OpenRegister\Kernel\Contracts\ObjectCalendarTasksInterface::class,
 					'registerMapper' => \OCA\OpenRegister\Db\RegisterMapperInterface::class,
 					'schemaMapper'   => \OCA\OpenRegister\Db\SchemaMapperInterface::class,
 					'objectService'  => \OCA\OpenRegister\Service\ObjectService::class,
@@ -300,20 +300,6 @@ final class BuiltinIntegrationServices {
 		\OCA\OpenRegister\Service\ActivityFilterService::class => [
 			'db'      => \OCP\IDBConnection::class,
 			'runtime' => \OCA\OpenRegister\Service\LinkServiceRuntime::class,
-		],
-		// @spec openspec/specs/integration-flow/spec.md
-		\OCA\OpenRegister\Service\FlowLinkService::class => [
-			'platform'     => [
-				\OCA\OpenRegister\Service\FlowLinkPlatform::class,
-				[
-					'flowLinkMapper' => \OCA\OpenRegister\Db\FlowLinkMapperInterface::class,
-					'db'             => \OCP\IDBConnection::class,
-					'appManager'     => \OCP\App\IAppManager::class,
-				],
-			],
-			'userSession'  => \OCP\IUserSession::class,
-			'groupManager' => \OCP\IGroupManager::class,
-			'logger'       => \Psr\Log\LoggerInterface::class,
 		],
 		// @spec openspec/specs/integration-maps/spec.md
 		\OCA\OpenRegister\Service\Integration\Providers\MapsProvider::class => [

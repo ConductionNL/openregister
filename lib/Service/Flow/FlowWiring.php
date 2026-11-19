@@ -22,8 +22,11 @@ namespace OCA\OpenRegister\Service\Flow;
 
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
+use OCA\OpenRegister\Db\FlowLinkMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
+use OCA\OpenRegister\Service\FlowLinkPlatform;
+use OCA\OpenRegister\Service\FlowLinkService;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionRunner;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
@@ -31,7 +34,11 @@ use OCA\OpenRegister\Service\Portal\PortalPartyResolver;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
 use OCA\OpenRegister\Service\TaskService;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
+use OCP\App\IAppManager;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
+use OCP\IDBConnection;
+use OCP\IGroupManager;
+use OCP\IUserSession;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
@@ -42,8 +49,8 @@ use Psr\Log\LoggerInterface;
  *
  * Registers the flow run guards, the shared run context, the loop step dispatcher,
  * the lifecycle's answer to property-level access, the store of the flows
- * compiled from application schedules, the lifecycle's request state and the
- * task services that are built by hand.
+ * compiled from application schedules, the lifecycle's request state, the
+ * task services that are built by hand and the flow link service.
  *
  * Application::register() calls register() once.
  */
@@ -79,6 +86,7 @@ final class FlowWiring {
 
 		self::registerLifecycleState(context: $context);
 		self::registerTaskServices(context: $context);
+		$context->registerService(FlowLinkService::class, self::buildFlowLinkService(...));
 	}//end register()
 
 	/**
@@ -304,6 +312,28 @@ final class FlowWiring {
 				verbs: $container->get(\OCA\OpenRegister\Service\Task\TaskVerbList::class)
 			);
 	}//end buildTaskInboxService()
+
+	/**
+	 * Build the FlowLinkService with its platform bundle.
+	 *
+	 * @param ContainerInterface $container The container.
+	 *
+	 * @return FlowLinkService
+	 *
+	 * @spec openspec/specs/integration-flow/spec.md
+	 */
+	private static function buildFlowLinkService(ContainerInterface $container): FlowLinkService {
+		return new FlowLinkService(
+			platform: new FlowLinkPlatform(
+				flowLinkMapper: $container->get(FlowLinkMapperInterface::class),
+				db: $container->get(IDBConnection::class),
+				appManager: $container->get(IAppManager::class)
+			),
+			userSession: $container->get(IUserSession::class),
+			groupManager: $container->get(IGroupManager::class),
+			logger: $container->get(LoggerInterface::class)
+		);
+	}//end buildFlowLinkService()
 
 	/**
 	 * Build the TaskService service.

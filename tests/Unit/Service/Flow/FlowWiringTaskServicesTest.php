@@ -18,6 +18,8 @@ use OCA\OpenRegister\Service\Portal\PortalPartyResolver;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
 use OCA\OpenRegister\Service\Task\TaskVtodoWriteBackGate;
 use OCA\OpenRegister\Service\TaskService;
+use OCA\OpenRegister\Service\FlowLinkService;
+use OCA\OpenRegister\Service\Integration\BuiltinIntegrationServices;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
 use OCP\AppFramework\IAppContainer;
 use PHPUnit\Framework\TestCase;
@@ -61,7 +63,7 @@ final class FlowWiringTaskServicesTest extends TestCase {
 			}
 		);
 
-		$names = [LifecycleActionContext::class, AutoTransitionPass::class, TaskInboxService::class, PortalPartyResolver::class, TaskService::class];
+		$names = [LifecycleActionContext::class, AutoTransitionPass::class, TaskInboxService::class, PortalPartyResolver::class, TaskService::class, FlowLinkService::class];
 		foreach ($names as $name) {
 			$this->assertInstanceOf(expected: $name, actual: $context->factories[$name]($container), message: $name);
 		}
@@ -100,4 +102,51 @@ final class FlowWiringTaskServicesTest extends TestCase {
 			actual: $context->factories[TaskService::class]($container)
 		);
 	}//end testTaskServiceIsBuiltWithoutTheWriteBackGate()
+
+	/**
+	 * The flow link service is wired by the flow registrar only, not by the
+	 * integration provider table.
+	 *
+	 * @return void
+	 */
+	public function testTheFlowLinkServiceIsWiredHereOnly(): void {
+		$context = new RecordingRegistrationContext();
+		FlowWiring::register(context: $context);
+
+		$this->assertArrayHasKey(key: FlowLinkService::class, array: $context->factories);
+		$this->assertArrayNotHasKey(key: FlowLinkService::class, array: BuiltinIntegrationServices::FACTORIES);
+	}//end testTheFlowLinkServiceIsWiredHereOnly()
+
+	/**
+	 * The flow link service reads the same container entries, in the same
+	 * order, as its entry in the integration provider table did.
+	 *
+	 * @return void
+	 */
+	public function testTheFlowLinkServiceReadsItsEntriesInOrder(): void {
+		$context = new RecordingRegistrationContext();
+		FlowWiring::register(context: $context);
+
+		$reads     = [];
+		$container = $this->createMock(originalClassName: IAppContainer::class);
+		$container->method('get')->willReturnCallback(
+			function (string $id) use (&$reads) {
+				$reads[] = $id;
+				return $this->createMock(originalClassName: $id);
+			}
+		);
+
+		$this->assertInstanceOf(expected: FlowLinkService::class, actual: $context->factories[FlowLinkService::class]($container));
+		$this->assertSame(
+			expected: [
+				'OCA\OpenRegister\Db\FlowLinkMapperInterface',
+				'OCP\IDBConnection',
+				'OCP\App\IAppManager',
+				'OCP\IUserSession',
+				'OCP\IGroupManager',
+				'Psr\Log\LoggerInterface',
+			],
+			actual: $reads
+		);
+	}//end testTheFlowLinkServiceReadsItsEntriesInOrder()
 }//end class
