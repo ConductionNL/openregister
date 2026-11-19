@@ -810,7 +810,6 @@
   "lib/Service/OpenProjectLinkServiceInterface.php -> lib/Service/LinkTarget.php",
   "lib/Service/OpenProjectLinkServiceInterface.php -> lib/Service/WorkPackageDraft.php",
   "lib/Service/OperationsConsoleNotifications.php -> lib/Service/Notification/NotificationTemplateRegistry.php",
-  "lib/Service/Organisation/OrganisationLifecycleAuditor.php -> lib/Db/AuditTrail.php",
   "lib/Service/OrganisationUsageService.php -> lib/Files/Db/FileMapperInterface.php",
   "lib/Service/Outbound/OutboundClientFactory.php -> lib/Service/Resilience/BreakerRegistry.php",
   "lib/Service/Outbound/OutboundHttpClient.php -> lib/Service/Resilience/BreakerRegistry.php",
@@ -1744,6 +1743,8 @@
   "lib/Kernel/Contracts/ConversationInterface.php",
   "lib/Kernel/Contracts/ConversationMapperInterface.php",
   "lib/Kernel/Contracts/Core/ActionRightsInterface.php",
+  "lib/Kernel/Contracts/Core/AuditEntry.php",
+  "lib/Kernel/Contracts/Core/AuditEntryWriterInterface.php",
   "lib/Kernel/Contracts/Core/FieldRulesSourceInterface.php",
   "lib/Kernel/Contracts/Core/ObjectPresenceInterface.php",
   "lib/Kernel/Contracts/DeckPlacement.php",
@@ -2102,6 +2103,7 @@
   "lib/Service/Archival/SelectionListSeeder.php",
   "lib/Service/Audit/AuditAggregationService.php",
   "lib/Service/Audit/AuditAggregationServiceInterface.php",
+  "lib/Service/Audit/AuditEntryWriter.php",
   "lib/Service/Audit/AuditSink.php",
   "lib/Service/Audit/AuditSinkInterface.php",
   "lib/Service/Audit/AuditSinkShipperInterface.php",
@@ -3405,9 +3407,9 @@
   "lib/Twig/MappingTwigInstallerInterface.php"
  ],
  "exposed_loc": {
-  "Compliance": 16384,
+  "Compliance": 16414,
   "Configuration": 7964,
-  "Core": 65464,
+  "Core": 65486,
   "Files": 3741,
   "Integrations": 18722,
   "Kernel": 8369,
@@ -3863,6 +3865,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10282,
- "total_loc": 459035,
- "violation_degree": 0.1144
+ "total_loc": 459090,
+ "violation_degree": 0.1142
 }
