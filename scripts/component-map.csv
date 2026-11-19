@@ -72,7 +72,7 @@ AppHost/Store/StorePublishRules.php,56,AppHost,Platform,Platform/AppHost/Store/S
 AppInfo/Application.php,140,AppInfo,AppInfo,AppInfo/Application.php,1,,Platform
 AppInfo/ClassAliasMap.php,77,AppInfo,AppInfo,AppInfo/ClassAliasMap.php,0,,Platform
 BackgroundJob/AbstractTextExtractionJob.php,54,BackgroundJob,Compliance,Compliance/BackgroundJob/AbstractTextExtractionJob.php,0,,Compliance
-BackgroundJob/ActorForwardedJob.php,82,BackgroundJob,Integrations,Integrations/BackgroundJob/ActorForwardedJob.php,22,304,Integrations
+BackgroundJob/ActorForwardedJob.php,82,BackgroundJob,Integrations,Integrations/BackgroundJob/ActorForwardedJob.php,22,304,Core
 BackgroundJob/AnnotationNotificationDispatchJob.php,93,BackgroundJob,Flows,Flows/BackgroundJob/AnnotationNotificationDispatchJob.php,0,,Processes
 BackgroundJob/ArchivalRetentionTask.php,250,BackgroundJob,Compliance,Compliance/BackgroundJob/ArchivalRetentionTask.php,3,,Compliance
 BackgroundJob/ArchivalRowExpiry.php,56,BackgroundJob,Compliance,Compliance/BackgroundJob/ArchivalRowExpiry.php,0,,Compliance
@@ -2092,9 +2092,9 @@ Service/DeckCardService.php,280,Service,Integrations,Integrations/Service/DeckCa
 Service/DeckLinkService.php,331,Service,Integrations,Integrations/Service/DeckLinkService.php,0,,Integrations
 Service/DeckRowMapper.php,47,Service,Integrations,Integrations/Service/DeckRowMapper.php,0,,Integrations
 Service/DeepLinkRegistryService.php,186,Service,Integrations,Integrations/Service/DeepLinkRegistryService.php,0,134,Integrations
-Service/Deferral/DeferredEntryObjectResolver.php,55,Service,Flows,Flows/Service/Deferral/DeferredEntryObjectResolver.php,0,363,Processes
-Service/Deferral/DeferredListenerContext.php,50,Service,Flows,Flows/Service/Deferral/DeferredListenerContext.php,73,391,Processes
-Service/Deferral/ListenerDeferralService.php,206,Service,Flows,Flows/Service/Deferral/ListenerDeferralService.php,98,111,Processes
+Service/Deferral/DeferredEntryObjectResolver.php,55,Service,Flows,Flows/Service/Deferral/DeferredEntryObjectResolver.php,0,363,Core
+Service/Deferral/DeferredListenerContext.php,50,Service,Flows,Flows/Service/Deferral/DeferredListenerContext.php,73,391,Core
+Service/Deferral/ListenerDeferralService.php,206,Service,Flows,Flows/Service/Deferral/ListenerDeferralService.php,98,111,Core
 Service/Delegation/DelegationConsentService.php,120,Service,Access,Access/Service/Delegation/DelegationConsentService.php,0,,Core
 Service/Delegation/DelegationNotifier.php,69,Service,Access,Access/Service/Delegation/DelegationNotifier.php,0,,Core
 Service/Delegation/DelegationRefused.php,32,Service,Access,Access/Service/Delegation/DelegationRefused.php,0,449,Core
@@ -3442,7 +3442,7 @@ Service/Consumer/,,Service,,,,,Integrations
 Service/Credential/,,Service,,,,,Integrations
 Service/Dbal/,,Service,,,,,Core
 Service/Decision/,,Service,,,,,Processes
-Service/Deferral/,,Service,,,,,Processes
+Service/Deferral/,,Service,,,,,Core
 Service/Delegation/,,Service,,,,,Core
 Service/Deletion/,,Service,,,,,Core
 Service/Dmn/,,Service,,,,,Processes
@@ -4358,3 +4358,4 @@ Controller/Support/ProcessingActivityVisibility.php,,Controller,,,,,Compliance
 Controller/Support/ProcessingPurposeControllerServices.php,,Controller,,,,,Compliance
 Controller/Support/SelectielijstControllerServices.php,,Controller,,,,,Compliance
 Db/Support/ConfigServices.php,,Db,,,,,Core
+BackgroundJob/Support/ActorForwardingServices.php,,BackgroundJob,,,,,Core

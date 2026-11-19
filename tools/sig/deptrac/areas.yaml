@@ -52,7 +52,9 @@ deptrac:
         - type: directory
           value: 'lib/Kernel/Contracts/Core/.*$'
         - type: directory
-          value: 'lib/BackgroundJob/(AbstractRetentionJob|DbalIntrospectionJob|DeferredObjectEventJob|DestructionExecutionJob|DraftExpiryJob|GroupReconcilerJob|JobHandles|JobRuntime|LogCleanUpTask|ObjectCleanupJob|PublishedDigestVerifyJob|QueuedJobClassesInterface|SchemaChangeNoticeJob|SchemaRunJob|StateHistoryRebuildJob|TenantDeprovisionJob|TenantPurgeJob|TenantUsageSyncJob|TransferAttemptRun|TransferCheckJob|TransferExecutionJob|ViewAlertSweepJob)[.]php$'
+          value: 'lib/BackgroundJob/(AbstractRetentionJob|ActorForwardedJob|DbalIntrospectionJob|DeferredObjectEventJob|DestructionExecutionJob|DraftExpiryJob|GroupReconcilerJob|JobHandles|JobRuntime|LogCleanUpTask|ObjectCleanupJob|PublishedDigestVerifyJob|QueuedJobClassesInterface|SchemaChangeNoticeJob|SchemaRunJob|StateHistoryRebuildJob|TenantDeprovisionJob|TenantPurgeJob|TenantUsageSyncJob|TransferAttemptRun|TransferCheckJob|TransferExecutionJob|ViewAlertSweepJob)[.]php$'
+        - type: directory
+          value: 'lib/BackgroundJob/Support/ActorForwardingServices[.]php$'
         - type: directory
           value: 'lib/Command/(AdoptLeafOrganisationsCommand|AdoptOrganisationlessRowsCommand|AdoptionRun|BackfillObjectSlugsCommand|DeclaredGroupsCommand|DedupCollidedSchemasCommand|DedupeRegistersCommand|DescriptorImportTarget|DocumentStoreStatusCommand|DraftsExpiredCommand|EncryptFieldCommand|FederationSharesExpiringCommand|FieldEncryptionPass|LeafMatch|MagicTableCommand|MagicTableRun|MagicTableSelection|MagicTableTarget|PruneRetiredSchemasCommand|PruneRetiredSchemasPass|PruneRetiredSchemasRun|PurgeCandidate|PurgeObjectCommand|PurgeRun|RegisterRepairOptions|RelinkRegisterSchemasCommand|ResolverListCommand|RetiredSchemaRow|RetiredSlugRows|SchemaDedupRun|UnknownMetadataConditionsCommand)[.]php$'
         - type: directory
@@ -693,6 +695,8 @@ deptrac:
           value: 'lib/Service/Dbal/[^/]*$'
         - type: directory
           value: 'lib/Service/Decision/ReviewDeclarationException[.]php$'
+        - type: directory
+          value: 'lib/Service/Deferral/[^/]*$'
         - type: directory
           value: 'lib/Service/Delegation/[^/]*$'
         - type: directory
@@ -1920,8 +1924,6 @@ deptrac:
         - type: directory
           value: 'lib/Service/Decision/ReviewPolicyResolver[.]php$'
         - type: directory
-          value: 'lib/Service/Deferral/[^/]*$'
-        - type: directory
           value: 'lib/Service/Dmn/[^/]*$'
         - type: directory
           value: 'lib/Service/Flow/[^/]*$'
@@ -2320,7 +2322,79 @@ deptrac:
         - type: directory
           value: 'lib/BackgroundJob/(AbstractTextExtractionJob|ArchivalRetentionTask|ArchivalRowExpiry|ArchivalSweep|AuditExportDelivery|AuditExportSource|AuditSealJob|AuditTrailExportJob|AvgRetentionJob|BlobGroup|BlobMigrationRun|BulkLegalHoldJob|ConfiguredJobRuntime|ConnectionSeamReportJob|DestructionCheckJob|DestructionExecutionJobInterface|DestructionListRun|DsarDpiaDetectionJob|DsarRetentionSweepJob|ExternalGrantLapseJob|ProcessingLogPrune|ProcessingLogRetentionJob|QualityAuditScheduleJob|RelatedRetentionRecalculationJob|ReviewReminderJob|SharerAccessSweepJob|SubjectExportJob)[.]php$'
         - type: directory
-          value: 'lib/BackgroundJob/Support/[^/]*$'
+          value: 'lib/BackgroundJob/Support/AbandonedFlowClaim[.]php$'
+        - type: directory
+          value: 'lib/BackgroundJob/Support/ArchivalRetentionPlatform[.]php$'
+        - type: directory
+          value: 'lib/BackgroundJob/Support/ArchivalRetentionSources[.]php$'
+        - type: directory
+          value: 'lib/BackgroundJob/Support/AutoTransitionServices[.]php$'
+        - type: directory
+          value: 'lib/BackgroundJob/Support/BackfillCalendarLinksPlatform[.]php$'
+        - type: directory
+          value: 'lib/BackgroundJob/Support/BackfillCalendarLinksSources[.]php$'
+        - type: directory
+          value: 'lib/BackgroundJob/Support/BulkJobServices[.]php$'
+        - type: directory
+          value: 'lib/BackgroundJob/Support/ConfigurationCheckServices[.]php$'
+        - type: directory
+          value: 'lib/BackgroundJob/Support/DeferredObjectEventActor[.]php$'
+        - type: directory
+          value: 'lib/BackgroundJob/Support/DeferredObjectEventLookup[.]php$'
+        - type: directory
+          value: 'lib/BackgroundJob/Support/DeferredObjectEventPlatform[.]php$'
+        - type: directory
+          value: 'lib/BackgroundJob/Support/DestructionCheckRun[.]php$'
+        - type: directory
+          value: 'lib/BackgroundJob/Support/DsarDpiaDetectionServices[.]php$'
+        - type: directory
+          value: 'lib/BackgroundJob/Support/FlowReapRun[.]php$'
+        - type: directory
+          value: 'lib/BackgroundJob/Support/FlowRunRetentionServices[.]php$'
+        - type: directory
+          value: 'lib/BackgroundJob/Support/FlowRunRetentionStores[.]php$'
+        - type: directory
+          value: 'lib/BackgroundJob/Support/LogCleanUpTrails[.]php$'
+        - type: directory
+          value: 'lib/BackgroundJob/Support/OAuth2TokenRefreshServices[.]php$'
+        - type: directory
+          value: 'lib/BackgroundJob/Support/PreDestructionPass[.]php$'
+        - type: directory
+          value: 'lib/BackgroundJob/Support/ProcessingLogRetentionStores[.]php$'
+        - type: directory
+          value: 'lib/BackgroundJob/Support/RelatedRetentionLookup[.]php$'
+        - type: directory
+          value: 'lib/BackgroundJob/Support/RelatedRetentionRules[.]php$'
+        - type: directory
+          value: 'lib/BackgroundJob/Support/RetentionDependantPlace[.]php$'
+        - type: directory
+          value: 'lib/BackgroundJob/Support/ScheduledJobRuntime[.]php$'
+        - type: directory
+          value: 'lib/BackgroundJob/Support/SchemaRunServices[.]php$'
+        - type: directory
+          value: 'lib/BackgroundJob/Support/StateHistoryRebuildSources[.]php$'
+        - type: directory
+          value: 'lib/BackgroundJob/Support/SyncDataServices[.]php$'
+        - type: directory
+          value: 'lib/BackgroundJob/Support/TenantPurgeStores[.]php$'
+        - type: directory
+          value: 'lib/BackgroundJob/Support/TenantRecords[.]php$'
+        - type: directory
+          value: 'lib/BackgroundJob/Support/TransferCheckServices[.]php$'
+        - type: directory
+          value: 'lib/BackgroundJob/Support/TransferExecutionPlatform[.]php$'
+        - type: directory
+          value: 'lib/BackgroundJob/Support/TransferExecutionRecords[.]php$'
+        - type: directory
+          value: 'lib/BackgroundJob/Support/TransferExecutionTransports[.]php$'
+        - type: directory
+          value: 'lib/BackgroundJob/Support/ViewAlertCheck[.]php$'
+        - type: directory
+          value: 'lib/BackgroundJob/Support/ViewAlertSweepPlatform[.]php$'
+        - type: directory
+          value: 'lib/BackgroundJob/Support/ViewAlertSweepSources[.]php$'
+        - type: directory
+          value: 'lib/BackgroundJob/Support/WebhookDeliveryStores[.]php$'
         - type: directory
           value: 'lib/Command/(DedupeRegistersRun|RechainAuditTrailCommand|RetentionDryRunCommand)[.]php$'
         - type: directory
@@ -2482,7 +2556,7 @@ deptrac:
         - type: directory
           value: 'lib/AppHost/Store/Source/[^/]*$'
         - type: directory
-          value: 'lib/BackgroundJob/(ActorForwardedJob|CalendarLinkBackfillRun|CalendarRecomputeJobInterface|ContextChatSubmissionJob|HandoffQueueDrainJob|OAuth2TokenRefreshJob|SyncDataJob|WebhookDeliveryJob|WebhookRetryJob)[.]php$'
+          value: 'lib/BackgroundJob/(CalendarLinkBackfillRun|CalendarRecomputeJobInterface|ContextChatSubmissionJob|HandoffQueueDrainJob|OAuth2TokenRefreshJob|SyncDataJob|WebhookDeliveryJob|WebhookRetryJob)[.]php$'
         - type: directory
           value: 'lib/Calendar/[^/]*$'
         - type: directory
