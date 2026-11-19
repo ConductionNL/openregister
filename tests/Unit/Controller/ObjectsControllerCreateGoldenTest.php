@@ -33,7 +33,8 @@ use OCA\OpenRegister\Service\Object\UpsertOnKeyHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\ObjectSource\DbalWriteException;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaultException;
-use OCA\OpenRegister\Service\WebhookService;
+use OCA\OpenRegister\Event\ObjectWriteRequestEvent;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectsControllerFactory;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Http\JSONResponse;
@@ -281,18 +282,18 @@ class ObjectsControllerCreateGoldenTest extends TestCase {
 		);
 	}
 
-	private function webhooks(array $setup): ?WebhookService {
+	private function webhooks(array $setup): ?IEventDispatcher {
 		if (isset($setup['webhook']) === false) {
 			return null;
 		}
 
-		$service = $this->createMock(WebhookService::class);
+		$service = $this->createMock(originalClassName: IEventDispatcher::class);
 		if ($setup['webhook'] === 'fails') {
-			$service->method('interceptRequest')->willThrowException(new RuntimeException('no hook'));
+			$service->method('dispatchTyped')->willThrowException(new RuntimeException('no hook'));
 			return $service;
 		}
 
-		$service->method('interceptRequest')->willReturn($setup['webhook']);
+		$service->method('dispatchTyped')->willReturnCallback(fn (ObjectWriteRequestEvent $event) => $event->setBody($setup['webhook']));
 		return $service;
 	}
 
