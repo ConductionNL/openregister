@@ -27,7 +27,6 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper\RecordAnnotationRefusals;
 use OCA\OpenRegister\Service\Search\SearchResultDeclaration;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\LoggerInterface;
 
 /**
  * Tests for the save-time refusal of a search result declaration.
@@ -64,7 +63,7 @@ final class SchemaSearchResultRefusalTest extends TestCase {
 	 * @return RecordAnnotationRefusals The checks.
 	 */
 	private function checks(): RecordAnnotationRefusals {
-		return new RecordAnnotationRefusals(logger: $this->createMock(LoggerInterface::class));
+		return new RecordAnnotationRefusals();
 	}//end checks()
 
 	public function testADeclarationNamingAnAbsentPropertyFailsTheSave(): void {
