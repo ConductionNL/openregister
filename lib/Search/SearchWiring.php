@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Search;
 
 use OCA\OpenRegister\Search\Db\ViewMapper;
+use OCA\OpenRegister\Kernel\Contracts\Core\ViewFinderInterface;
 use OCA\OpenRegister\Kernel\Contracts\EmbeddingGeneratorInterface;
 use OCA\OpenRegister\Kernel\Contracts\MetricsRetentionInterface;
 use OCA\OpenRegister\Search\Db\ViewMapperInterface;
@@ -100,6 +101,7 @@ final class SearchWiring {
 		VectorStorageHandlerInterface::class => VectorStorageHandler::class,
 		AggregationCacheInterface::class => AggregationCache::class,
 		ViewMapperInterface::class => ViewMapper::class,
+		ViewFinderInterface::class => ViewMapper::class,
 		ExampleSetViewRowsInterface::class => ExampleSetViews::class,
 		ChunkVectorFactoryInterface::class => ChunkVectorFactory::class,
 		PropertySearchProfileInterface::class => PropertySearchProfile::class,

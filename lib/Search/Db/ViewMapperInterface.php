@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Search\Db;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\ViewFinderInterface;
 use OCA\OpenRegister\Service\Rbac\ViewerReach;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
@@ -29,8 +30,10 @@ use Symfony\Component\Uid\Uuid;
 
 /**
  * Every public method of ViewMapper. Callers depend on this interface, not on the class.
+ *
+ * Its find() is also Core's ViewFinderInterface, so Core reads a view without naming Search.
  */
-interface ViewMapperInterface {
+interface ViewMapperInterface extends ViewFinderInterface {
 
 	/**
 	 * Views carrying an alert, oldest evaluation first.

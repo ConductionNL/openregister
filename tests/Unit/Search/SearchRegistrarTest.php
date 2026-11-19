@@ -16,6 +16,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Search;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\ViewFinderInterface;
+use OCA\OpenRegister\Search\Db\ViewMapper;
 use OCA\OpenRegister\Search\SearchRegistrar;
 use OCA\OpenRegister\Search\Service\Vectorization\VectorEmbeddingsInterface;
 use OCA\OpenRegister\Search\Service\VectorizationService;
@@ -79,7 +81,8 @@ final class SearchRegistrarTest extends TestCase {
 			$expected[] = ['alias' => $contract, 'target' => $service];
 		}
 
-		$this->assertCount(20, $expected);
+		$this->assertCount(21, $expected);
+		$this->assertSame(ViewMapper::class, SearchRegistrar::BINDINGS[ViewFinderInterface::class]);
 		$this->assertSame(expected: $expected, actual: $context->aliases);
 	}//end testEveryInterfaceIsBoundToItsImplementation()
 }//end class
