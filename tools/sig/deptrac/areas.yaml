@@ -734,6 +734,8 @@ deptrac:
         - type: directory
           value: 'lib/Service/File/[^/]*$'
         - type: directory
+          value: 'lib/Service/Form/FormPayloadFindings[.]php$'
+        - type: directory
           value: 'lib/Service/Geo/[^/]*$'
         - type: directory
           value: 'lib/Service/GraphQL/[^/]*$'
@@ -1405,6 +1407,8 @@ deptrac:
           value: 'lib/Service/Object/SearchScopeFilters[.]php$'
         - type: directory
           value: 'lib/Service/Object/SearchTrailRecorder[.]php$'
+        - type: directory
+          value: 'lib/Service/Object/ServerFilledProperty[.]php$'
         - type: directory
           value: 'lib/Service/Object/SoftDeleteStamp[.]php$'
         - type: directory
@@ -2108,7 +2112,87 @@ deptrac:
         - type: directory
           value: 'lib/Service/Flow/Timer/[^/]*$'
         - type: directory
-          value: 'lib/Service/Form/[^/]*$'
+          value: 'lib/Service/Form/AppDataFolder[.]php$'
+        - type: directory
+          value: 'lib/Service/Form/FixedValue[.]php$'
+        - type: directory
+          value: 'lib/Service/Form/FormDefinitionResolver[.]php$'
+        - type: directory
+          value: 'lib/Service/Form/FormDefinitionResolverInterface[.]php$'
+        - type: directory
+          value: 'lib/Service/Form/FormDependent[.]php$'
+        - type: directory
+          value: 'lib/Service/Form/FormDependentsCheck[.]php$'
+        - type: directory
+          value: 'lib/Service/Form/FormDependentsCheckInterface[.]php$'
+        - type: directory
+          value: 'lib/Service/Form/FormDependentsSignals[.]php$'
+        - type: directory
+          value: 'lib/Service/Form/FormDestination[.]php$'
+        - type: directory
+          value: 'lib/Service/Form/FormDestinationValidator[.]php$'
+        - type: directory
+          value: 'lib/Service/Form/FormDestinationValidatorInterface[.]php$'
+        - type: directory
+          value: 'lib/Service/Form/FormFieldRules[.]php$'
+        - type: directory
+          value: 'lib/Service/Form/FormFileStorage[.]php$'
+        - type: directory
+          value: 'lib/Service/Form/FormFinding[.]php$'
+        - type: directory
+          value: 'lib/Service/Form/FormIdempotencyStore[.]php$'
+        - type: directory
+          value: 'lib/Service/Form/FormIdempotencyStoreInterface[.]php$'
+        - type: directory
+          value: 'lib/Service/Form/FormPayloadMapper[.]php$'
+        - type: directory
+          value: 'lib/Service/Form/FormSubmission[.]php$'
+        - type: directory
+          value: 'lib/Service/Form/FormSubmitDestinations[.]php$'
+        - type: directory
+          value: 'lib/Service/Form/FormSubmitFailure[.]php$'
+        - type: directory
+          value: 'lib/Service/Form/FormSubmitKeeping[.]php$'
+        - type: directory
+          value: 'lib/Service/Form/FormSubmitPlatform[.]php$'
+        - type: directory
+          value: 'lib/Service/Form/FormSubmitRefusals[.]php$'
+        - type: directory
+          value: 'lib/Service/Form/FormSubmitService[.]php$'
+        - type: directory
+          value: 'lib/Service/Form/FormSubmitServiceInterface[.]php$'
+        - type: directory
+          value: 'lib/Service/Form/FormSubmitter[.]php$'
+        - type: directory
+          value: 'lib/Service/Form/FormUnpublishRun[.]php$'
+        - type: directory
+          value: 'lib/Service/Form/FormUploadClaim[.]php$'
+        - type: directory
+          value: 'lib/Service/Form/FormUploadClaims[.]php$'
+        - type: directory
+          value: 'lib/Service/Form/FormUploadPurgeRun[.]php$'
+        - type: directory
+          value: 'lib/Service/Form/FormUploadStore[.]php$'
+        - type: directory
+          value: 'lib/Service/Form/FormUploadStoreInterface[.]php$'
+        - type: directory
+          value: 'lib/Service/Form/FormUploadTarget[.]php$'
+        - type: directory
+          value: 'lib/Service/Form/FormWriteCompensation[.]php$'
+        - type: directory
+          value: 'lib/Service/Form/FormWriteContext[.]php$'
+        - type: directory
+          value: 'lib/Service/Form/FormWriteReferences[.]php$'
+        - type: directory
+          value: 'lib/Service/Form/IdempotentRequest[.]php$'
+        - type: directory
+          value: 'lib/Service/Form/MappedField[.]php$'
+        - type: directory
+          value: 'lib/Service/Form/NestedIdentityGuard[.]php$'
+        - type: directory
+          value: 'lib/Service/Form/OwnedDraft[.]php$'
+        - type: directory
+          value: 'lib/Service/Form/PublishedForm[.]php$'
         - type: directory
           value: 'lib/Service/Interaction/[^/]*$'
         - type: directory
