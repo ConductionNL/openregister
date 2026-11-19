@@ -105,12 +105,13 @@ final class MagicColumnAdder {
 	 * @return string The ALTER TABLE statement.
 	 */
 	private function statement(TableStructureSync $sync, array $column): string {
-		$sql = new MagicColumnSql(isPostgres: $sync->isPostgres);
+		$sql = $sync->columnSql();
 		$add = 'ALTER TABLE ' . $sync->tableNameQuoted . ' ADD COLUMN ' . $sql->quote(name: $column['name']);
 
 		return $add . ' ' . $sql->type(type: $column['type'], column: $column)
 			. $this->notNullClause(sync: $sync, column: $column)
-			. $this->defaultClause(column: $column);
+			. $this->defaultClause(column: $column)
+			. $sql->check(type: $column['type'], name: $column['name']);
 	}//end statement()
 
 	/**

@@ -38,6 +38,7 @@ namespace OCA\OpenRegister\Service;
 
 use Exception;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectTimelineLinksInterface;
 use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarTasksInterface;
 
@@ -48,7 +49,7 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarTasksInterface;
  *
  * @spec openspec/changes/object-event-sync-async-split/specs/event-driven-architecture/spec.md
  */
-class ObjectRelationCleanupService implements ObjectRelationCleanupServiceInterface {
+class ObjectRelationCleanupService implements ObjectRelationCleanupServiceInterface, ObjectTimelineLinksInterface {
 	/**
 	 * Wire the entity services this cleanup spans.
 	 *
