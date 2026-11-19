@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Db\AuditTrailPageQuery;
 use OCA\OpenRegister\Db\AuditTrailPageQueryInterface;
-use OCA\OpenRegister\Db\DbRegistrar;
+use OCA\OpenRegister\Db\ComplianceMapperRegistrar;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;
@@ -48,7 +48,7 @@ final class F06AuditPageInterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{class-string, class-string}>
 	 */
 	private const CLASSES = [
-		AuditTrailPageQuery::class => [AuditTrailPageQueryInterface::class, DbRegistrar::class],
+		AuditTrailPageQuery::class => [AuditTrailPageQueryInterface::class, ComplianceMapperRegistrar::class],
 	];
 
 	/**

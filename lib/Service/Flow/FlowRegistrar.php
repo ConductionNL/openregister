@@ -33,6 +33,13 @@ use OCP\AppFramework\Bootstrap\IRegistrationContext;
 final class FlowRegistrar {
 
 	/**
+	 * The interfaces callers outside the component type against, bound to their class.
+	 *
+	 * @var array<class-string, class-string>
+	 */
+	public const BINDINGS = FlowWiring::BINDINGS;
+
+	/**
 	 * Register the flow run guards, the run context and the step dispatcher.
 	 *
 	 * @param IRegistrationContext $context The registration context.

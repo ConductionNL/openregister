@@ -21,8 +21,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db\SchemaMapper;
 
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\BulkJob\ReversibilityDeclarationException;
-use OCA\OpenRegister\Service\Rules\DependentValueDeclarationException;
 use OCA\OpenRegister\Service\Schemas\ExtendingFormValidatorInterface;
 use OCA\OpenRegister\Service\Schemas\PropertyVocabularyException;
 use OCA\OpenRegister\Service\Schemas\SchemaDeclarationValidators;
@@ -33,46 +31,6 @@ use OCA\OpenRegister\Service\Schemas\SchemaDeclarationValidators;
  * @spec exclude schema save plumbing moved out of SchemaMapper, not a capability of its own
  */
 final class PropertyDeclarationRefusals {
-
-	/**
-	 * Validate the two property-level rule annotations.
-	 *
-	 * REFUSES, it does not warn. A table naming a property the schema does not
-	 * declare, or a value the controlling property cannot take, does not fail
-	 * loudly at object save: it constrains nothing, and the object it was
-	 * written to guard saves cleanly. Storing it advisory would be storing a
-	 * rule its author believes is enforced.
-	 *
-	 * `x-openregister-default-expression` rides along for the same reason: an
-	 * expression the evaluator cannot dispatch does not fail at save, it fails
-	 * on the first create, one object at a time, for whoever happens to be
-	 * using the register that day.
-	 *
-	 * @param Schema $schema Schema to validate.
-	 *
-	 * @throws DependentValueDeclarationException When a declaration is malformed or names nothing.
-	 *
-	 * @return void
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) The expression shape check reads one constant
-	 *   operator table and holds no state; it is the same walk the evaluator dispatches on.
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	public function checkDependentValues(Schema $schema): void {
-		$properties = $schema->getProperties();
-		if ($properties === []) {
-			return;
-		}
-
-		$errors = array_merge(
-			SchemaDeclarationValidators::dependentValues()->validate(['properties' => $properties]),
-			SchemaDeclarationValidators::expressionDefaultRefusals(properties: $properties)
-		);
-		if ($errors !== []) {
-			throw new DependentValueDeclarationException(errors: $errors);
-		}
-	}//end checkDependentValues()
 
 	/**
 	 * Validate the optional `x-openregister-extends-form` annotation.
@@ -105,28 +63,6 @@ final class PropertyDeclarationRefusals {
 			errors: $errors
 		);
 	}//end checkExtendingForm()
-
-	/**
-	 * Refuse a schema that declares an action reversible that cannot be.
-	 *
-	 * Validated at the mapper because this is the one choke point the create,
-	 * update and file-upload paths all pass through, the same reason the
-	 * relation declarations are checked here.
-	 *
-	 * @param Schema $schema Schema to validate.
-	 *
-	 * @return void
-	 *
-	 * @throws ReversibilityDeclarationException When a declaration contradicts itself.
-	 *
-	 * @spec openspec/specs/bulk-action-jobs/spec.md
-	 */
-	public function checkReversibility(Schema $schema): void {
-		$errors = SchemaDeclarationValidators::reversibility()->validate(configuration: ($schema->getConfiguration() ?? []));
-		if ($errors !== []) {
-			throw new ReversibilityDeclarationException(errors: $errors);
-		}
-	}//end checkReversibility()
 
 	/**
 	 * The errors of every extending-form declaration on the schema.
