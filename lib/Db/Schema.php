@@ -800,6 +800,27 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	public const GEO_INHERITANCE_ANNOTATION = 'x-openregister-geo-inheritance';
 
 	/**
+	 * The hierarchy annotation: the parent edge grants travel along.
+	 *
+	 * @var string
+	 */
+	public const HIERARCHY_ANNOTATION = 'x-openregister-hierarchy';
+
+	/**
+	 * The classification annotation: the scale an object's classification is read on.
+	 *
+	 * @var string
+	 */
+	public const CLASSIFICATION_ANNOTATION = 'x-openregister-classification';
+
+	/**
+	 * The confidentiality annotation: a per-object tier, legal ground and timed release.
+	 *
+	 * @var string
+	 */
+	public const CONFIDENTIALITY_ANNOTATION = 'x-openregister-confidentiality';
+
+	/**
 	 * The property keys whose falsy value is a real one.
 	 *
 	 * An empty value is dropped by getSchemaObject(), because an empty `title`

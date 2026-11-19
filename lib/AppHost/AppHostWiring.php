@@ -22,8 +22,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\AppHost;
 
-use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
-use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleManifestLoader;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleManifestLoaderInterface;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleRefusalReportInterface;
@@ -53,7 +51,6 @@ final class AppHostWiring {
 	 * @var array<class-string, class-string>
 	 */
 	public const BINDINGS = [
-		ScheduleFlowStoreInterface::class => ScheduleFlowStore::class,
 		ScheduleManifestLoaderInterface::class => ScheduleManifestLoader::class,
 		ScheduleRefusalReportInterface::class => ScheduleRefusals::class,
 		RegisterDocumentLoaderInterface::class => RegisterDocumentLoader::class,
