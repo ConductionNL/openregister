@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 use InvalidArgumentException;
 use OCA\OpenRegister\Controller\ActionRightsController;
 use OCA\OpenRegister\Controller\Support\AdministratorOnlyGate;
-use OCA\OpenRegister\Service\ActionRightsCatalogueInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ActionRightsInterface;
 use OCA\OpenRegister\Service\Flow\FlowNodeRightsGuardInterface;
 use OCP\IGroupManager;
 use OCP\IRequest;
@@ -65,9 +65,9 @@ final class ActionRightsControllerTest extends TestCase {
 	/**
 	 * The catalogue.
 	 *
-	 * @var ActionRightsCatalogueInterface&MockObject
+	 * @var ActionRightsInterface&MockObject
 	 */
-	private ActionRightsCatalogueInterface&MockObject $catalogue;
+	private ActionRightsInterface&MockObject $catalogue;
 
 	/**
 	 * The node map.
@@ -97,7 +97,7 @@ final class ActionRightsControllerTest extends TestCase {
 	 */
 	protected function setUp(): void {
 		$this->request = $this->createMock(IRequest::class);
-		$this->catalogue = $this->createMock(ActionRightsCatalogueInterface::class);
+		$this->catalogue = $this->createMock(ActionRightsInterface::class);
 		$this->nodeRights = $this->createMock(FlowNodeRightsGuardInterface::class);
 		$this->session = $this->createMock(IUserSession::class);
 		$this->groups = $this->createMock(IGroupManager::class);
