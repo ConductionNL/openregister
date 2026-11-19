@@ -261,10 +261,6 @@
   "lib/Listener/ContentReportRemovalListener.php -> lib/Listener/Support/HandlesObjectDeletion.php",
   "lib/Listener/GeneratedIdentifierListener.php -> lib/Service/SequenceScope.php",
   "lib/Listener/GeneratedIdentifierListener.php -> lib/Service/SequenceServiceInterface.php",
-  "lib/Listener/ListenerBootstrap.php -> lib/Listener/DecisionTableValidationListener.php",
-  "lib/Listener/ListenerBootstrap.php -> lib/Listener/DecisionTableValidationListenerInterface.php",
-  "lib/Listener/ListenerBootstrap.php -> lib/Listener/ListenerRegistrar.php",
-  "lib/Listener/ListenerBootstrap.php -> lib/Listener/NotifyPushListener.php",
   "lib/Listener/ListenerRegistrar.php -> lib/Listener/NotifyPushListener.php",
   "lib/Listener/ListenerRegistrar.php -> lib/Listener/RedactionPolicyCacheListener.php",
   "lib/Listener/NotifyPushBatch.php -> lib/Listener/NotifyPushListener.php",
@@ -484,8 +480,6 @@
   "lib/Service/Integration/Providers/FlowProvider.php -> lib/Db/FlowLinkMapperInterface.php",
   "lib/Service/Integration/Providers/FlowProvider.php -> lib/Service/FlowJsonColumn.php",
   "lib/Service/LanguageService.php -> lib/Service/LanguageServiceInterface.php",
-  "lib/Service/LogObjectInTable.php -> lib/Service/TableObjectRef.php",
-  "lib/Service/LogService.php -> lib/Service/TableObjectRef.php",
   "lib/Service/NotificationServiceInterface.php -> lib/Db/Configuration.php",
   "lib/Service/Object/BulkRowRules.php -> lib/Service/Dmn/DecisionTableBulkGuard.php",
   "lib/Service/Object/BulkRowRules.php -> lib/Service/Flow/FlowRunContext.php",
@@ -1519,8 +1513,6 @@
   "lib/Listener/CodedValueValidationListener.php",
   "lib/Listener/ConceptDeleteGuardListener.php",
   "lib/Listener/ContentReportRemovalListener.php",
-  "lib/Listener/DecisionTableValidationListener.php",
-  "lib/Listener/DecisionTableValidationListenerInterface.php",
   "lib/Listener/DependentValueListener.php",
   "lib/Listener/EntityEditAuditListener.php",
   "lib/Listener/FacetCacheInvalidationListener.php",
@@ -1529,7 +1521,6 @@
   "lib/Listener/HandoffDeclarationChecksListener.php",
   "lib/Listener/IdentityClaimsLoginListener.php",
   "lib/Listener/IdentityGuardListener.php",
-  "lib/Listener/ListenerBootstrap.php",
   "lib/Listener/ListenerClassesInterface.php",
   "lib/Listener/ListenerRegistrar.php",
   "lib/Listener/NotificationsAnnotationInstallListener.php",
@@ -2419,7 +2410,6 @@
   "lib/Service/LinkedEntityServiceInterface.php",
   "lib/Service/LinkedEventMerge.php",
   "lib/Service/LogExportFormatter.php",
-  "lib/Service/LogObjectInTable.php",
   "lib/Service/LoginSecurityInterface.php",
   "lib/Service/ManifestServiceInterface.php",
   "lib/Service/ManifestSources.php",
@@ -2918,7 +2908,6 @@
   "lib/Service/Sync/SyncScheduleService.php",
   "lib/Service/SystemOperationContext.php",
   "lib/Service/TableDeletionOptions.php",
-  "lib/Service/TableObjectRef.php",
   "lib/Service/TalkLinkService.php",
   "lib/Service/TalkLinkServiceInterface.php",
   "lib/Service/Task/ApprovalPositionFormGuard.php",
@@ -3025,13 +3014,13 @@
  "exposed_loc": {
   "Compliance": 15598,
   "Configuration": 6895,
-  "Core": 64852,
+  "Core": 64799,
   "Files": 3689,
-  "Integrations": 18429,
+  "Integrations": 18418,
   "Kernel": 8515,
   "Notifications": 1914,
   "Platform": 976,
-  "Processes": 31953,
+  "Processes": 31810,
   "Search": 2027
  },
  "kernel_files": [
@@ -3493,6 +3482,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10440,
- "total_loc": 459500,
- "violation_degree": 0.0828
+ "total_loc": 459499,
+ "violation_degree": 0.0785
 }

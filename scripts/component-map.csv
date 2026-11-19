@@ -3830,7 +3830,7 @@ Listener/LifecycleDeclaration.php,,Listener,,,,,Processes
 Listener/LifecycleEdit.php,,Listener,,,,,Processes
 Listener/LifecycleEditReader.php,,Listener,,,,,Processes
 Listener/LifecycleInitialReference.php,,Listener,,,,,Processes
-Listener/ListenerBootstrap.php,,Listener,,,,,Core
+Listener/ListenerBootstrap.php,,Listener,,,,,Platform
 Listener/ListenerClassesInterface.php,,Listener,,,,,Core
 Listener/NotificationsAnnotationInstallListener.php,,Listener,,,,,Notifications
 Listener/NotifyPushBatch.php,,Listener,,,,,Core
@@ -3972,7 +3972,7 @@ Service/LinkedEntityServiceInterface.php,,Service,,,,,Integrations
 Service/LinkedEventMerge.php,,Service,,,,,Core
 Service/LockoutStrike.php,,Service,,,,,Core
 Service/LogExportFormatter.php,,Service,,,,,Core
-Service/LogObjectInTable.php,,Service,,,,,Core
+Service/LogObjectInTable.php,,Service,,,,,Compliance
 Service/LoginSecurityInterface.php,,Service,,,,,Core
 Service/ManifestProfile.php,,Service,,,,,Configuration
 Service/ManifestServiceInterface.php,,Service,,,,,Core
@@ -4085,7 +4085,7 @@ Service/StoredEvent.php,,Service,,,,,Processes
 Service/StoredTask.php,,Service,,,,,Processes
 Service/TableDeletionOptions.php,,Service,,,,,Integrations
 Service/TableDeletionRun.php,,Service,,,,,Compliance
-Service/TableObjectRef.php,,Service,,,,,Integrations
+Service/TableObjectRef.php,,Service,,,,,Compliance
 Service/TalkLinkServiceInterface.php,,Service,,,,,Integrations
 Service/TaskVtodoDocument.php,,Service,,,,,Processes
 Service/TenancyCollaborators.php,,Service,,,,,Core
