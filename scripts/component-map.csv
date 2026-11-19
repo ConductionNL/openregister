@@ -2912,7 +2912,7 @@ Service/ObjectSource/UserDirectoryObjectSourceProvider.php,99,Service,Service,Se
 Service/ObjectSource/ViewObjectSourceProvider.php,130,Service,Service,Service/ObjectSource/ViewObjectSourceProvider.php,0,,Core
 Service/ObjectSource/WritableObjectSourceProvider.php,11,Service,Service,Service/ObjectSource/WritableObjectSourceProvider.php,0,,Core
 Service/ObjectSourceRead.php,14,Service,Service,Service/ObjectSourceRead.php,0,,Core
-Service/ObjectTranslationRequest.php,14,Service,Flows,Flows/Service/ObjectTranslationRequest.php,0,,Processes
+Service/ObjectTranslationRequest.php,14,Service,Flows,Flows/Service/ObjectTranslationRequest.php,0,,Core
 Service/Observability/OpenRegisterMetricsProvider.php,12,Service,Platform,Platform/Service/Observability/OpenRegisterMetricsProvider.php,0,,Integrations
 Service/Observability/WebhookRetryMetricsProvider.php,20,Service,Platform,Platform/Service/Observability/WebhookRetryMetricsProvider.php,0,,Integrations
 Service/OpenProjectLinkService.php,287,Service,Integrations,Integrations/Service/OpenProjectLinkService.php,0,,Integrations
@@ -3865,12 +3865,12 @@ Repair/PerformerTyping.php,,Repair,,,,,Core
 Repair/PhantomFlowPurgeRun.php,,Repair,,,,,Processes
 Repair/RegisterDescriptorImport.php,,Repair,,,,,Integrations
 Repair/ReportUnpublishedSchedules.php,,Repair,,,,,Processes
-Repair/SchemaListing.php,,Repair,,,,,Platform
+Repair/SchemaListing.php,,Repair,,,,,Core
 Repair/TaskFixtureMappers.php,,Repair,,,,,Processes
 Repair/TaskSubjectLocationBackfill.php,,Repair,,,,,Processes
 Repair/V1ChainVerificationRun.php,,Repair,,,,,Processes
 Repair/VirtualRegisterSeed.php,,Repair,,,,,Platform
-Service/ActivityEntriesOptions.php,,Service,,,,,Integrations
+Service/ActivityEntriesOptions.php,,Service,,,,,Notifications
 Service/ActivityFilter.php,,Service,,,,,Notifications
 Service/ActivityFilterServiceInterface.php,,Service,,,,,Notifications
 Service/AlbumLinkRun.php,,Service,,,,,Integrations
@@ -4068,7 +4068,7 @@ Service/SearchTrailUserAgentParser.php,,Service,,,,,Search
 Service/SecurityHeadersInterface.php,,Service,,,,,Core
 Service/SemanticTypeQuery.php,,Service,,,,,Core
 Service/SemanticTypeResolverInterface.php,,Service,,,,,Core
-Service/SequenceScope.php,,Service,,,,,Configuration
+Service/SequenceScope.php,,Service,,,,,Processes
 Service/SequenceServiceInterface.php,,Service,,,,,Processes
 Service/ServiceBootstrap.php,,Service,,,,,Core
 Service/ShareLinkServiceInterface.php,,Service,,,,,Integrations
