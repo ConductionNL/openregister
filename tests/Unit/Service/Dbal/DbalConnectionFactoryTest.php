@@ -32,7 +32,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Dbal;
 
 use OCA\OpenRegister\Db\Source;
-use OCA\OpenRegister\Service\Credential\CredentialStore;
+use OCA\OpenRegister\Kernel\Contracts\Core\CredentialSecretReaderInterface;
 use OCA\OpenRegister\Service\Dbal\DbalConnectionException;
 use OCA\OpenRegister\Service\Dbal\DbalConnectionFactory;
 use PHPUnit\Framework\TestCase;
@@ -74,14 +74,17 @@ class DbalConnectionFactoryTest extends TestCase {
 	}//end tearDownAfterClass()
 
 	/**
-	 * Build a CredentialStore stub returning the given secret (or null).
+	 * Build a credential-reader stub returning the given secret (or null).
+	 *
+	 * The factory only reads secrets, so the stub implements the Core read port
+	 * alone, not the whole Integrations CredentialStore.
 	 *
 	 * @param string|null $secret The secret get() returns.
 	 *
-	 * @return CredentialStore The stub store.
+	 * @return CredentialSecretReaderInterface The stub reader.
 	 */
-	private function store(?string $secret): CredentialStore {
-		return new class($secret) implements CredentialStore {
+	private function store(?string $secret): CredentialSecretReaderInterface {
+		return new class($secret) implements CredentialSecretReaderInterface {
 			/**
 			 * @param string|null $secret The stubbed secret.
 			 */
@@ -94,18 +97,6 @@ class DbalConnectionFactoryTest extends TestCase {
 			 * {@inheritDoc}
 			 *
 			 * @param string $uuid The credential UUID.
-			 * @param string $secret The secret.
-			 * @param string $scope The scope.
-			 *
-			 * @return void
-			 */
-			public function put(string $uuid, string $secret, string $scope = 'personal'): void {
-			}//end put()
-
-			/**
-			 * {@inheritDoc}
-			 *
-			 * @param string $uuid The credential UUID.
 			 * @param string $scope The scope.
 			 *
 			 * @return string|null The stubbed secret.
@@ -113,17 +104,6 @@ class DbalConnectionFactoryTest extends TestCase {
 			public function get(string $uuid, string $scope = 'personal'): ?string {
 				return $this->secret;
 			}//end get()
-
-			/**
-			 * {@inheritDoc}
-			 *
-			 * @param string $uuid The credential UUID.
-			 * @param string $scope The scope.
-			 *
-			 * @return void
-			 */
-			public function delete(string $uuid, string $scope = 'personal'): void {
-			}//end delete()
 		};
 	}//end store()
 

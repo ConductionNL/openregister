@@ -22,14 +22,15 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Audit;
 
-use OCA\OpenRegister\Kernel\Contracts\Core\PurposeAdmissionInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ReadPurposeGuardInterface;
 
 /**
  * The methods of PurposeGuard that callers outside its component use.
- * Callers depend on this interface, not on the class; Core read paths
- * depend on PurposeAdmissionInterface, which this interface extends.
+ * Callers depend on this interface, not on the class.
+ *
+ * The read checks enforce() and allows() come from the Core read port it extends.
  */
-interface PurposeGuardInterface extends PurposeAdmissionInterface {
+interface PurposeGuardInterface extends ReadPurposeGuardInterface {
 
 	/**
 	 * The audit action a refused read is recorded under.
@@ -37,4 +38,5 @@ interface PurposeGuardInterface extends PurposeAdmissionInterface {
 	 * @var string
 	 */
 	public const ACTION_REFUSED = 'purpose.query-refused';
+
 }//end interface
