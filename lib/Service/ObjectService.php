@@ -58,7 +58,6 @@ use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Search\Db\ViewMapperInterface;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
@@ -518,13 +517,6 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     /**
      * Collaborator taken from the mappers bundle.
      *
-     * @var ViewMapperInterface
-     */
-    private readonly ViewMapperInterface $viewMapper;
-
-    /**
-     * Collaborator taken from the mappers bundle.
-     *
      * @var MagicMapperInterface
      */
     private readonly MagicMapperInterface $objectMapper;
@@ -668,7 +660,6 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         $this->migrationHandler = $write->removal->migrationHandler;
         $this->registerMapper = $platform->mappers->registerMapper;
         $this->schemaMapper = $platform->mappers->schemaMapper;
-        $this->viewMapper = $platform->mappers->viewMapper;
         $this->objectMapper = $platform->mappers->objectMapper;
         $this->fileService = $platform->storage->fileService;
         $this->userSession = $access->caller->userSession;

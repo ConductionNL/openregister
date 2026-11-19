@@ -97,7 +97,7 @@ final class ObjectServiceFactory {
 	 * @param MigrationHandler               $migrationHandler     Constructor argument.
 	 * @param RegisterMapperInterface        $registerMapper       Constructor argument.
 	 * @param SchemaMapperInterface          $schemaMapper         Constructor argument.
-	 * @param ViewMapperInterface            $viewMapper           Constructor argument.
+	 * @param ViewMapperInterface            $viewMapper           Former constructor argument; ObjectService no longer holds it. Kept so positional callers keep their order.
 	 * @param MagicMapperInterface           $objectMapper         Constructor argument.
 	 * @param FileFolderServiceInterface     $fileService          Constructor argument.
 	 * @param IUserSession                   $userSession          Constructor argument.
@@ -214,7 +214,6 @@ final class ObjectServiceFactory {
 				mappers: new ObjectMapperServices(
 					registerMapper: $registerMapper,
 					schemaMapper: $schemaMapper,
-					viewMapper: $viewMapper,
 					objectMapper: $objectMapper,
 				),
 				storage: new ObjectStorageServices(
