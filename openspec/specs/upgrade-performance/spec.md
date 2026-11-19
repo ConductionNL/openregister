@@ -13,6 +13,8 @@ A migration step added after release 2.1.0 SHALL extend `TargetedMigrationStep` 
 
 When Nextcloud's migration service runs such a step on its own, which is how an upgrade runs every step, the step SHALL be handed a schema that reads a table from the database the first time the step names it and reads no other table, and the change the step made SHALL be applied from those tables alone: the tables as they were compared with the tables as the step left them, a string column longer than 4000 turned into text, and a dropped table dropped after the other statements, as Nextcloud's own migrator does. Nextcloud SHALL then be told there is nothing left to apply, so it reads the whole schema for neither the comparison nor its name checks. The resulting tables SHALL be the ones Nextcloud's own path produces.
 
+The statements of a step SHALL run in one transaction on every database but MySQL and MariaDB, which commit on each DDL statement; that is the rule Nextcloud's own migrator applies. When the database refuses one of them, the transaction SHALL be rolled back before the refusal is passed on: the step is undone as a whole where DDL is transactional (PostgreSQL, SQLite), and the connection is left without an open transaction. Left open, PostgreSQL refuses every later statement of the process ("current transaction is aborted") and SQLite discards them at disconnect.
+
 On a fresh install, where Nextcloud hands every step one shared schema and applies the sum once, and in a schema check, which replays the steps against a schema of its own, a step SHALL work on the schema it is given, unchanged. A hook called with a closure that is not Nextcloud's migration service's SHALL be given that closure. A step that returns a schema it did not get from the closure, or null, SHALL be left to Nextcloud.
 
 #### Scenario: an upgrade runs a step that adds a column
@@ -31,6 +33,12 @@ On a fresh install, where Nextcloud hands every step one shared schema and appli
 - **GIVEN** a pending step that drops a table
 - **WHEN** an upgrade runs it
 - **THEN** the table SHALL be dropped after the step's other statements, and no other table SHALL be touched
+- @e2e exclude {database migration has no screen of its own; covered by the targeted-migration database test}
+
+#### Scenario: the database refuses a statement of a step
+- **GIVEN** a pending step that creates a table and adds a unique index the existing rows violate
+- **WHEN** an upgrade runs it on PostgreSQL or SQLite
+- **THEN** the refusal SHALL reach Nextcloud, the created table SHALL be gone again, and the connection SHALL have no open transaction
 - @e2e exclude {database migration has no screen of its own; covered by the targeted-migration database test}
 
 #### Scenario: a step asks for every table

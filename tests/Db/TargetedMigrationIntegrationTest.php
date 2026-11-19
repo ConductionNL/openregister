@@ -227,24 +227,39 @@ class TargetedMigrationIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	public function testOnSqliteAColumnCommentDoesNotMakeAnUnchangedTableDiffer(): void {
+		$this->onSqlite(
+			function (Connection $sqlite): void {
+				$create = new TargetedSchemaChange(connection: $sqlite);
+				$table = $create->wrapper()->createTable($this->table);
+				$table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true]);
+				$table->addColumn('body', Types::TEXT, ['notnull' => false, 'comment' => 'what was said']);
+				$table->setPrimaryKey(['id']);
+				$create->apply();
+
+				$again = new TargetedSchemaChange(connection: $sqlite);
+				$again->wrapper()->getTable($this->table)->addColumn('note', Types::STRING, ['notnull' => false, 'length' => 64, 'comment' => 'why']);
+				$again->apply();
+
+				$unchanged = new TargetedSchemaChange(connection: $sqlite);
+				$this->assertTrue($unchanged->wrapper()->getTable($this->table)->hasColumn('note'));
+				$this->assertSame([], $unchanged->statements());
+			}
+		);
+	}//end testOnSqliteAColumnCommentDoesNotMakeAnUnchangedTableDiffer()
+
+	/**
+	 * Run a test on a SQLite database of its own, removed afterwards.
+	 *
+	 * @param callable(Connection): void $test The test.
+	 *
+	 * @return void
+	 */
+	private function onSqlite(callable $test): void {
 		$file = tempnam(sys_get_temp_dir(), 'or_tm_') . '.db';
 		$sqlite = \OC::$server->get(\OC\DB\ConnectionFactory::class)->getConnection('sqlite3', ['path' => $file]);
 
 		try {
-			$create = new TargetedSchemaChange(connection: $sqlite);
-			$table = $create->wrapper()->createTable($this->table);
-			$table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true]);
-			$table->addColumn('body', Types::TEXT, ['notnull' => false, 'comment' => 'what was said']);
-			$table->setPrimaryKey(['id']);
-			$create->apply();
-
-			$again = new TargetedSchemaChange(connection: $sqlite);
-			$again->wrapper()->getTable($this->table)->addColumn('note', Types::STRING, ['notnull' => false, 'length' => 64, 'comment' => 'why']);
-			$again->apply();
-
-			$unchanged = new TargetedSchemaChange(connection: $sqlite);
-			$this->assertTrue($unchanged->wrapper()->getTable($this->table)->hasColumn('note'));
-			$this->assertSame([], $unchanged->statements());
+			$test($sqlite);
 		} finally {
 			$sqlite->close();
 			foreach (glob($file . '*') as $leftover) {
@@ -253,7 +268,66 @@ class TargetedMigrationIntegrationTest extends TestCase {
 
 			unlink(substr($file, 0, -3));
 		}
-	}//end testOnSqliteAColumnCommentDoesNotMakeAnUnchangedTableDiffer()
+	}//end onSqlite()
+
+	/**
+	 * Run a step whose statements fail after the first: it creates a second table, then asks for a
+	 * unique index over two equal rows of the scratch table.
+	 *
+	 * @param Connection $connection The connection to run on.
+	 *
+	 * @return \Throwable|null What the database refused the step with.
+	 */
+	private function failHalfway(Connection $connection): ?\Throwable {
+		$create = new TargetedSchemaChange(connection: $connection);
+		$table = $create->wrapper()->createTable($this->table);
+		$table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true]);
+		$table->addColumn('name', Types::STRING, ['notnull' => false, 'length' => 64]);
+		$table->setPrimaryKey(['id']);
+		$create->apply();
+		$connection->executeStatement('INSERT INTO `*PREFIX*' . $this->table . '` (`name`) VALUES (?), (?)', ['twice', 'twice']);
+
+		$failing = new TargetedSchemaChange(connection: $connection);
+		$second = $failing->wrapper()->createTable($this->table . '_b');
+		$second->addColumn('id', Types::BIGINT, ['notnull' => true]);
+		$second->setPrimaryKey(['id']);
+		$failing->wrapper()->getTable($this->table)->addUniqueIndex(['name'], $this->table . '_uq');
+
+		try {
+			$failing->apply();
+		} catch (\Throwable $refused) {
+			return $refused;
+		}
+
+		return null;
+	}//end failHalfway()
+
+	/**
+	 * Left open, the transaction of a failed step takes every later statement of the process with it:
+	 * refused on PostgreSQL, silently discarded at disconnect on SQLite.
+	 *
+	 * @return void
+	 */
+	public function testAStepThatFailsHalfwayLeavesNoTransactionOpen(): void {
+		$refused = $this->failHalfway($this->connection);
+
+		$this->assertInstanceOf(\Doctrine\DBAL\Exception::class, $refused);
+		$this->assertFalse($this->connection->isTransactionActive());
+	}//end testAStepThatFailsHalfwayLeavesNoTransactionOpen()
+
+	public function testWhereDdlIsTransactionalAStepThatFailsHalfwayIsUndoneAsAWhole(): void {
+		$this->onSqlite(
+			function (Connection $sqlite): void {
+				$refused = $this->failHalfway($sqlite);
+
+				$this->assertInstanceOf(\Doctrine\DBAL\Exception::class, $refused);
+				$this->assertFalse($sqlite->isTransactionActive(), 'the transaction of the failed step is still open');
+				$this->assertFalse($sqlite->tableExists($this->table . '_b'), 'the table created before the refused statement is still there');
+				$this->assertSame(2, (int)$sqlite->executeQuery('SELECT COUNT(*) FROM `*PREFIX*' . $this->table . '`')->fetchOne());
+				$this->assertSame(['id', 'name'], array_keys($sqlite->createSchemaManager()->introspectTable($sqlite->getPrefix() . $this->table)->getColumns()));
+			}
+		);
+	}//end testWhereDdlIsTransactionalAStepThatFailsHalfwayIsUndoneAsAWhole()
 
 	public function testOnlyTheTablesAStepNamesAreRead(): void {
 		$schema = new TargetedSchema(manager: $this->connection->createSchemaManager());

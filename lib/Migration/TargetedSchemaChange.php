@@ -82,31 +82,64 @@ final class TargetedSchemaChange {
 	/**
 	 * Bring the database to what the step left in the wrapper.
 	 *
+	 * Where the database has transactional DDL (PostgreSQL, SQLite) a step that
+	 * fails halfway is undone as a whole and its transaction is closed, so the
+	 * rest of the process keeps a connection it can use.
+	 *
 	 * @return void
 	 *
-	 * @throws \Doctrine\DBAL\Exception When a statement fails.
+	 * @throws \Throwable When a statement fails.
 	 *
 	 * @spec openspec/specs/upgrade-performance/spec.md#requirement-a-migration-step-reads-only-the-tables-it-changes
 	 */
 	public function apply(): void {
 		$statements = $this->statements();
 
-		// MySQL commits on every DDL statement, so a transaction around them is one in name only.
-		$transactional = ($this->connection->getDatabasePlatform() instanceof MySQLPlatform) === false;
-		if ($transactional === true) {
-			$this->connection->beginTransaction();
+		// MySQL and MariaDB commit on every DDL statement, so a transaction around them is one in name only.
+		if ($this->connection->getDatabasePlatform() instanceof MySQLPlatform) {
+			$this->run(statements: $statements);
+			$this->wrapper->performDropTableCalls();
+			return;
 		}
 
-		foreach ($statements as $statement) {
-			$this->connection->executeStatement($statement);
-		}
-
-		if ($transactional === true) {
+		$this->connection->beginTransaction();
+		try {
+			$this->run(statements: $statements);
 			$this->connection->commit();
+		} catch (\Throwable $refused) {
+			$this->rollBack();
+			throw $refused;
 		}
 
 		$this->wrapper->performDropTableCalls();
 	}//end apply()
+
+	/**
+	 * Run the statements in order.
+	 *
+	 * @param list<string> $statements The statements.
+	 *
+	 * @return void
+	 */
+	private function run(array $statements): void {
+		foreach ($statements as $statement) {
+			$this->connection->executeStatement($statement);
+		}
+	}//end run()
+
+	/**
+	 * Close the transaction of a refused step.
+	 *
+	 * @return void
+	 */
+	private function rollBack(): void {
+		try {
+			$this->connection->rollBack();
+		} catch (\Throwable $e) {
+			// The refusal of the statement is what the caller is told; a connection that cannot roll back adds nothing to it.
+			unset($e);
+		}
+	}//end rollBack()
 
 	/**
 	 * The statements that turn the tables as they were into the tables as the step left them.
