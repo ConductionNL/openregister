@@ -2609,6 +2609,7 @@ Service/Integration/Providers/TimeProvider.php,145,Service,Integrations,Integrat
 Service/Integration/Providers/XwikiProvider.php,150,Service,Integrations,Integrations/Service/Integration/Providers/XwikiProvider.php,0,,Integrations
 Service/Integration/QueryTimeContract.php,18,Service,Integrations,Integrations/Service/Integration/QueryTimeContract.php,0,,Integrations
 Service/Integration/TimeProvider.php,39,Service,Integrations,Integrations/Service/Integration/TimeProvider.php,0,,Integrations
+Service/Interaction/AddressedObject.php,,Service,,,,,Core
 Service/Interaction/FavouriteService.php,25,Service,Work,Work/Service/Interaction/FavouriteService.php,0,,Processes
 Service/Interaction/ReadHistoryService.php,125,Service,Compliance,Compliance/Service/Interaction/ReadHistoryService.php,0,335,Processes
 Service/Interaction/ReadStateService.php,141,Service,Work,Work/Service/Interaction/ReadStateService.php,1,208,Processes
@@ -3647,7 +3648,7 @@ Db/CospendLinkMapperInterface.php,,Db,,,,,Integrations
 Db/DbRegistrar.php,,Db,,,,,Core
 Db/DecisionMapperInterface.php,,Db,,,,,Processes
 Db/DecisionMetadataChange.php,,Db,,,,,Core
-Db/DecisionMetadataEdit.php,,Db,,,,,Processes
+Db/DecisionMetadataEdit.php,,Db,,,,,Core
 Db/DeckLinkMapperInterface.php,,Db,,,,,Integrations
 Db/DelegationGrantMapperInterface.php,,Db,,,,,Core
 Db/EmailLinkMapperInterface.php,,Db,,,,,Integrations

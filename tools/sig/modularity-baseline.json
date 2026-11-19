@@ -50,7 +50,6 @@
   "lib/Controller/DeletedController.php -> lib/Db/AuditTrail.php",
   "lib/Controller/DeletedController.php -> lib/Db/AuditTrail/ActionLookupOptions.php",
   "lib/Controller/DsarCaseController.php -> lib/Service/Lifecycle/TransitionEngine.php",
-  "lib/Controller/ObjectReadStateController.php -> lib/Service/Interaction/AddressedObject.php",
   "lib/Controller/ObjectsController.php -> lib/Files/Service/File/BulkDownloadArchive.php",
   "lib/Controller/ObjectsController.php -> lib/Listener/ChangeGateListener.php",
   "lib/Controller/ObjectsController.php -> lib/Search/Service/Geo/FeatureShape.php",
@@ -166,7 +165,6 @@
   "lib/Db/ContentReportMapperInterface.php -> lib/Db/ContentReport.php",
   "lib/Db/DbRegistrar.php -> lib/Files/Db/EntityRelationMapperInterface.php",
   "lib/Db/EntityRelationMapper.php -> lib/Db/AuditTrail.php",
-  "lib/Db/EntityRelationMapper.php -> lib/Db/DecisionMetadataEdit.php",
   "lib/Db/EntityRelationMapper.php -> lib/Files/Db/EntityMention.php",
   "lib/Db/EntityRelationMapper.php -> lib/Files/Db/EntityRelationMapperInterface.php",
   "lib/Db/ErasurePreviewMapperInterface.php -> lib/Db/ErasurePreview.php",
@@ -236,7 +234,6 @@
   "lib/Event/TaskTransitionedEvent.php -> lib/Db/Task.php",
   "lib/Event/TaskTransitionedEvent.php -> lib/Event/AbstractTaskEvent.php",
   "lib/Files/Db/ChunkMapper.php -> lib/Db/Source.php",
-  "lib/Files/Db/EntityRelationMapperInterface.php -> lib/Db/DecisionMetadataEdit.php",
   "lib/Files/Service/File/DocumentRedactionServices.php -> lib/Service/Settings/FileSettingsHandler.php",
   "lib/Files/Service/NoteService.php -> lib/Db/StoredEntity.php",
   "lib/Files/Service/Sharing/AccessLinkReader.php -> lib/Db/StoredEntity.php",
@@ -276,7 +273,6 @@
   "lib/Notifications/BackgroundJob/TaskScheduledNotificationJob.php -> lib/Db/TaskInboxFilter.php",
   "lib/Notifications/BackgroundJob/TaskScheduledNotificationJob.php -> lib/Db/TaskInboxOrder.php",
   "lib/Notifications/BackgroundJob/TaskScheduledNotificationJob.php -> lib/Db/TaskInboxSelection.php",
-  "lib/Notifications/Controller/ObjectWatchersController.php -> lib/Service/Interaction/AddressedObject.php",
   "lib/Notifications/Controller/ObjectWatchersController.php -> lib/Service/Interaction/WatcherServiceInterface.php",
   "lib/Notifications/Controller/ScheduledReportsController.php -> lib/Service/Connection/ConnectionReportForbiddenException.php",
   "lib/Notifications/Controller/ScheduledReportsController.php -> lib/Service/Connection/ConnectionReportKind.php",
@@ -308,7 +304,6 @@
   "lib/Notifications/Service/Party/PartyNotificationService.php -> lib/Service/Party/PartySendRefusalInterface.php",
   "lib/Notifications/Service/Party/PartyNotificationService.php -> lib/Service/Party/PartyServiceInterface.php",
   "lib/Notifications/Service/Party/PartyReachGates.php -> lib/Service/Party/PartySendRefusalInterface.php",
-  "lib/Notifications/Service/Timeline/EntryMentionService.php -> lib/Service/Interaction/AddressedObject.php",
   "lib/Notifications/Service/Timeline/MentionPrincipals.php -> lib/Service/Interaction/WatcherServiceInterface.php",
   "lib/Repair/MarkImplicitCrossOrganisationReadRules.php -> lib/Repair/SchemaListing.php",
   "lib/Repair/MigrateApprovalChainsToTasks.php -> lib/Db/TaskSequence.php",
@@ -2962,13 +2957,13 @@
  "exposed_loc": {
   "Compliance": 15582,
   "Configuration": 6736,
-  "Core": 64645,
+  "Core": 64669,
   "Files": 3640,
   "Integrations": 18381,
   "Kernel": 8482,
   "Notifications": 1914,
   "Platform": 879,
-  "Processes": 31836,
+  "Processes": 31812,
   "Search": 2027
  },
  "kernel_files": [
@@ -3429,5 +3424,5 @@
  ],
  "kernel_loc": 10407,
  "total_loc": 459960,
- "violation_degree": 0.0773
+ "violation_degree": 0.0767
 }
