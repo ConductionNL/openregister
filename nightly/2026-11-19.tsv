@@ -1,3 +1,4 @@
 shillinq	8e69049c	php=RED	Tests 12796/Failures 0/Errors 0	phpcs,phpmd,psalm	js=RED	phpcs 8 err; phpmd 194 viol; psalm 491 err; eslint 89 err (json/no-empty-keys); vitest dunningNextRun.spec fails
 portaliq	f92f8405	php=RED	Tests 6363/F0/E16	phpcs,phpmd,psalm,phpstan,phpunit	js=n/a	ChangeProposalsProvider implements unknown OR interface: psalm/phpstan+16 test errors; phpcs NotificationDispatchJob
 pipelinq	19c8a06d4	php=RED	Tests 9342/Failures 0/Errors 0	phpmd,psalm	js=RED	phpmd 94 viol; psalm 5 err; vitest 3 files fail: reportSectionPeriod, myWorkPage, notificationLabels
+opencatalogi	9b300d26	php=RED	phpunit skipped (no NC server tree)	phpcs,phpmd,psalm	js=RED	psalm 151 err; phpcs 5 inline-IF; eslint 13 err no-use-before-define; vitest mainEntry.spec 8 fail (.vue parse)
