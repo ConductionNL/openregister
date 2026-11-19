@@ -3,3 +3,4 @@ portaliq	f92f8405	php=RED	Tests 6363/F0/E16	phpcs,phpmd,psalm,phpstan,phpunit	js
 pipelinq	19c8a06d4	php=RED	Tests 9342/Failures 0/Errors 0	phpmd,psalm	js=RED	phpmd 94 viol; psalm 5 err; vitest 3 files fail: reportSectionPeriod, myWorkPage, notificationLabels
 opencatalogi	9b300d26	php=RED	phpunit skipped (no NC server tree)	phpcs,phpmd,psalm	js=RED	psalm 151 err; phpcs 5 inline-IF; eslint 13 err no-use-before-define; vitest mainEntry.spec 8 fail (.vue parse)
 integriq	f79927c0	php=RED	Tests 9883/F3/E2	phpcs,phpmd,psalm,phpunit	js=RED	psalm 298 errs; phpunit JobsController/CallService/SyncGolden; eslint 1 sort-imports ApiProductDetail.vue
+learniq	868779f0	php=RED	Tests 7166/Failures 51/Errors 103	phpcs,phpmd,psalm,phpunit	js=n/a	phpunit top: TransitionListenersMatchIdsTest; phpcs 1 err; phpmd 186; psalm needs PHP>=8.3.16 (env 8.3.6)
