@@ -26,6 +26,8 @@ namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\PurposeBoundTables;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\Core\ReadPurposeGuardInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ReadPurposeRefusalInterface;
 use OCA\OpenRegister\Service\Audit\PurposeGuard;
 use OCA\OpenRegister\Service\Audit\PurposeRefusedException;
 use PHPUnit\Framework\TestCase;
@@ -96,4 +98,36 @@ final class PurposeBoundTablesTest extends TestCase {
 		(new PurposeBoundTables(guard: $guard))->refuseUnbound(pairs: $pairs);
 		$this->assertCount(2, (new PurposeBoundTables(guard: $guard))->readable(pairs: $pairs));
 	}//end testTablesThatAllAllowPass()
+
+	/**
+	 * The tables need only the Core read port, and its refusal reaches the caller unchanged.
+	 *
+	 * @return void
+	 */
+	public function testAPortOnlyGuardRefusesThroughTheCoreContract(): void {
+		$guard = new class implements ReadPurposeGuardInterface {
+			public function enforce(?Register $register, ?Schema $schema): ?string {
+				if ($schema?->getId() === 3) {
+					throw new PurposeRefusedException(rule: PurposeRefusedException::RULE_UNKNOWN, reason: 'unknown', purpose: 'x');
+				}
+
+				return null;
+			}//end enforce()
+
+			public function allows(?Register $register, ?Schema $schema): bool {
+				return $schema?->getId() !== 3;
+			}//end allows()
+		};
+
+		$tables = new PurposeBoundTables(guard: $guard);
+		$this->assertSame([1, 2], array_map(static fn (array $pair): int => $pair['schema']->getId(), $tables->readable(pairs: self::pairs())));
+
+		try {
+			$tables->refuseUnbound(pairs: self::pairs());
+			$this->fail('The refused table should refuse the read.');
+		} catch (ReadPurposeRefusalInterface $refusal) {
+			$this->assertSame(403, $refusal->getStatusCode());
+			$this->assertSame('purpose-unknown', $refusal->toResponseBody()['rule']);
+		}
+	}//end testAPortOnlyGuardRefusesThroughTheCoreContract()
 }//end class

@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Tests\Unit\Kernel;
 
 use OCA\OpenRegister\Kernel\Contracts\Core\RegisterAccessChangeLogInterface;
 use OCA\OpenRegister\Service\AuthorizationAuditService;
-use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\ComplianceServiceBindings;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -34,7 +34,7 @@ use PHPUnit\Framework\TestCase;
 final class RegisterAccessChangeLogBindingTest extends TestCase {
 
 	public function testThePortIsBoundToTheAuthorizationAudit(): void {
-		$this->assertSame(AuthorizationAuditService::class, ContractBindings::BINDINGS[RegisterAccessChangeLogInterface::class] ?? null);
+		$this->assertSame(AuthorizationAuditService::class, ComplianceServiceBindings::BINDINGS[RegisterAccessChangeLogInterface::class] ?? null);
 	}
 
 	public function testTheAuthorizationAuditIsThePort(): void {

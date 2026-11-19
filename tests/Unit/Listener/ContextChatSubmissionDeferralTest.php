@@ -21,7 +21,7 @@ declare(strict_types=1);
 
 namespace Unit\Listener;
 
-use OCA\OpenRegister\BackgroundJob\JobHandles;
+use OCA\OpenRegister\BackgroundJob\IntegrationsJobHandlesInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -42,7 +42,7 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Mcp\Listener\ContextChatSubmissionListener
- * @uses \OCA\OpenRegister\BackgroundJob\JobHandles
+ * @uses \OCA\OpenRegister\BackgroundJob\IntegrationsJobHandlesInterface
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
@@ -131,7 +131,7 @@ class ContextChatSubmissionDeferralTest extends TestCase {
 		$this->schemaMapper->method('find')->willReturn($this->schema(optedIn: true));
 
 		$this->deferral->expects($this->once())->method('defer')->with(
-			JobHandles::CONTEXT_CHAT_SUBMISSION,
+			IntegrationsJobHandlesInterface::CONTEXT_CHAT_SUBMISSION,
 			['uuid' => 'obj-uuid-1', 'schemaId' => '5'],
 			ListenerDeferralInterface::DEFAULT_CHUNK_SIZE,
 			'obj-uuid-1'

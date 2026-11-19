@@ -37,6 +37,7 @@ use JsonSerializable;
  * @method string|null getVersion()
  * @method string|null getType()
  * @method string|null getOrganisation()
+ * @method array|null getAuthConfig()
  * @method DateTime|null getCreated()
  * @method DateTime|null getUpdated()
  */
