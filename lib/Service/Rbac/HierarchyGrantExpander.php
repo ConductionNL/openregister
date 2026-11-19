@@ -74,7 +74,7 @@ class HierarchyGrantExpander {
 	 *
 	 * @var string
 	 */
-	public const ANNOTATION = 'x-openregister-hierarchy';
+	public const ANNOTATION = Schema::HIERARCHY_ANNOTATION;
 
 	/**
 	 * The depth used when a declaration names none.

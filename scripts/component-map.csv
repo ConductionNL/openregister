@@ -3384,6 +3384,7 @@ Db/Mapping/,,Db,,,,,Integrations
 Db/ObjectRelation/,,Db,,,,,Integrations
 Db/Register/,,Db,,,,,Kernel
 Db/Schema/,,Db,,,,,Core
+Db/Schema/AnnotationVocabulary.php,,Db,,,,,Kernel
 Db/SchemaMapper/,,Db,,,,,Core
 Db/SchemaRun/,,Db,,,,,Core
 Db/SearchTrail/,,Db,,,,,Search
@@ -3468,6 +3469,8 @@ Service/Gdpr/Subject/SubjectDeclaredFieldIndex.php,249,Service,Compliance,Compli
 Service/Geo/,,Service,,,,,Core
 Service/GraphQL/,,Service,,,,,Core
 Service/Handoff/,,Service,,,,,Integrations
+Service/Handoff/HandoffRequest.php,,Service,,,,,Kernel
+Service/Handoff/HandoffSourceRef.php,,Service,,,,,Kernel
 Service/Hardening/,,Service,,,,,Compliance
 Service/Hinge/,,Service,,,,,Core
 Service/History/,,Service,,,,,Core
