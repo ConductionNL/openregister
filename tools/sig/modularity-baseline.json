@@ -101,7 +101,6 @@
   "lib/Controller/AccessLinkController.php -> lib/Db/AccessLink.php",
   "lib/Controller/AccessLinkController.php -> lib/Db/StoredEntity.php",
   "lib/Controller/AccessLinkController.php -> lib/Service/Hardening/ThrottledSurfacesInterface.php",
-  "lib/Controller/ActionRightsController.php -> lib/Service/ActionRightsCatalogueInterface.php",
   "lib/Controller/ActionRightsController.php -> lib/Service/Flow/FlowNodeRightsGuardInterface.php",
   "lib/Controller/ActionRightsController.php -> lib/Service/Flow/IFlowNodeRequiresRight.php",
   "lib/Controller/ActionRightsController.php -> lib/Settings/OpenRegisterAdmin.php",
@@ -142,7 +141,6 @@
   "lib/Controller/ObjectsController.php -> lib/Service/Flow/FlowRunContextInterface.php",
   "lib/Controller/ObjectsController.php -> lib/Service/Interaction/ReadStateServiceInterface.php",
   "lib/Controller/ObjectsController.php -> lib/Service/Rules/ExpressionDefaultException.php",
-  "lib/Controller/PermissionsController.php -> lib/Service/ActionRightsCatalogueInterface.php",
   "lib/Controller/QualityAuditController.php -> lib/Settings/OpenRegisterAdmin.php",
   "lib/Controller/RegisterDescriptorController.php -> lib/Settings/OpenRegisterAdmin.php",
   "lib/Controller/RegistersController.php -> lib/Db/AuditTrail/AuditStatisticsScope.php",
@@ -203,7 +201,6 @@
   "lib/Controller/Support/ObjectRelationsGuards.php -> lib/Service/Audit/PurposeGuardInterface.php",
   "lib/Controller/Support/ObjectRelationsPurposeScope.php -> lib/Service/Audit/PurposeGuardInterface.php",
   "lib/Controller/Support/ObjectRelationsPurposeScope.php -> lib/Service/Audit/PurposeRefusedException.php",
-  "lib/Controller/Support/PermissionsControllerServices.php -> lib/Service/ActionRightsCatalogueInterface.php",
   "lib/Controller/Support/RegisterAccessAudit.php -> lib/Service/AuthorizationAuditService.php",
   "lib/Controller/Support/RegisterAccessAudit.php -> lib/Service/AuthorizationChange.php",
   "lib/Controller/Support/RegisterIntegrations.php -> lib/Service/ConfigurationServiceInterface.php",
@@ -1871,6 +1868,7 @@
   "lib/Kernel/Contracts/ContactMatcherInterface.php",
   "lib/Kernel/Contracts/ConversationInterface.php",
   "lib/Kernel/Contracts/ConversationMapperInterface.php",
+  "lib/Kernel/Contracts/Core/ActionRightsInterface.php",
   "lib/Kernel/Contracts/Core/FieldRulesSourceInterface.php",
   "lib/Kernel/Contracts/Core/ObjectPresenceInterface.php",
   "lib/Kernel/Contracts/DeckPlacement.php",
@@ -3544,13 +3542,13 @@
  ],
  "exposed_loc": {
   "Compliance": 16384,
-  "Configuration": 10272,
-  "Core": 66037,
+  "Configuration": 10273,
+  "Core": 66046,
   "Files": 3741,
   "Integrations": 18733,
   "Kernel": 8249,
   "Notifications": 1696,
-  "Platform": 1514,
+  "Platform": 1511,
   "Processes": 33887,
   "Search": 2270
  },
@@ -3982,6 +3980,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 9716,
- "total_loc": 458927,
- "violation_degree": 0.1195
+ "total_loc": 458934,
+ "violation_degree": 0.1192
 }

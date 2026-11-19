@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Controller;
 use InvalidArgumentException;
 use OCA\OpenRegister\Controller\Support\AdministratorOnlyGate;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
-use OCA\OpenRegister\Service\ActionRightsCatalogueInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ActionRightsInterface;
 use OCA\OpenRegister\Service\Flow\FlowNodeRightsGuardInterface;
 use OCA\OpenRegister\Service\Flow\IFlowNodeRequiresRight;
 use OCA\OpenRegister\Settings\OpenRegisterAdmin;
@@ -51,15 +51,15 @@ class ActionRightsController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param IRequest                       $request    The request.
-	 * @param AdministratorOnlyGate          $gate       Refuses a caller who is not an administrator.
-	 * @param ActionRightsCatalogueInterface $catalogue  The action rights and their groups.
-	 * @param FlowNodeRightsGuardInterface   $nodeRights The administrator's map of node type to right.
+	 * @param IRequest                     $request    The request.
+	 * @param AdministratorOnlyGate        $gate       Refuses a caller who is not an administrator.
+	 * @param ActionRightsInterface        $catalogue  The action rights and their groups.
+	 * @param FlowNodeRightsGuardInterface $nodeRights The administrator's map of node type to right.
 	 */
 	public function __construct(
 		IRequest $request,
 		private readonly AdministratorOnlyGate $gate,
-		private readonly ActionRightsCatalogueInterface $catalogue,
+		private readonly ActionRightsInterface $catalogue,
 		private readonly FlowNodeRightsGuardInterface $nodeRights,
 	) {
 		parent::__construct(appName: AppIdentity::APP_ID, request: $request);

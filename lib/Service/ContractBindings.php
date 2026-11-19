@@ -1155,6 +1155,7 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\Flow\FlowAccessInterface::class => \OCA\OpenRegister\Service\Flow\FlowAccess::class,
 		\OCA\OpenRegister\Service\Flow\FlowNodeRightsGuardInterface::class => \OCA\OpenRegister\Service\Flow\FlowNodeRightsGuard::class,
 		\OCA\OpenRegister\Service\ActionRightsCatalogueInterface::class => \OCA\OpenRegister\Service\ActionRightsCatalogue::class,
+		\OCA\OpenRegister\Kernel\Contracts\Core\ActionRightsInterface::class => \OCA\OpenRegister\Service\ActionRightsCatalogue::class,
 		\OCA\OpenRegister\Service\Flow\FlowDefinitionPinInterface::class => \OCA\OpenRegister\Service\Flow\FlowDefinitionPin::class,
 		\OCA\OpenRegister\Service\Flow\FlowRunAdvancerInterface::class => \OCA\OpenRegister\Service\Flow\FlowRunAdvancer::class,
 		\OCA\OpenRegister\Service\Flow\FlowSemanticVersionInterface::class => \OCA\OpenRegister\Service\Flow\FlowSemanticVersion::class,
