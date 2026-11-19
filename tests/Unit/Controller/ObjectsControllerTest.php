@@ -20,7 +20,8 @@ use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\WebhookService;
+use OCA\OpenRegister\Event\ObjectWriteRequestEvent;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\DB\Exception as DBException;
@@ -64,7 +65,12 @@ class ObjectsControllerTest extends TestCase {
 	private IGroupManager&MockObject $groupManager;
 	private ExportService&MockObject $exportService;
 	private ImportService&MockObject $importService;
-	private WebhookService&MockObject $webhookService;
+	/**
+	 * The dispatcher of the write-request event.
+	 *
+	 * @var IEventDispatcher&MockObject
+	 */
+	private IEventDispatcher&MockObject $writeRequestDispatcher;
 	private LoggerInterface&MockObject $logger;
 
 	protected function setUp(): void {
@@ -83,7 +89,7 @@ class ObjectsControllerTest extends TestCase {
 		$this->groupManager = $this->createMock(IGroupManager::class);
 		$this->exportService = $this->createMock(ExportService::class);
 		$this->importService = $this->createMock(ImportService::class);
-		$this->webhookService = $this->createMock(WebhookService::class);
+		$this->writeRequestDispatcher = $this->createMock(originalClassName: IEventDispatcher::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		// resolveRegisterSchemaRef() reuses the entities resolved by
@@ -104,7 +110,7 @@ class ObjectsControllerTest extends TestCase {
 			$this->groupManager,
 			$this->exportService,
 			$this->importService,
-			$this->webhookService,
+			$this->writeRequestDispatcher,
 			$this->logger
 		);
 	}
@@ -3937,8 +3943,8 @@ class ObjectsControllerTest extends TestCase {
 		$this->objectService->method('getSchema')->willReturn(2);
 		$this->objectService->method('saveObject')->willReturn($objectEntity);
 
-		// WebhookService interceptRequest throws OCP\DB\Exception — controller catches this
-		$this->webhookService->method('interceptRequest')
+		// A write-request listener throws OCP\DB\Exception; the controller catches it.
+		$this->writeRequestDispatcher->method('dispatchTyped')
 			->willThrowException(new DBException('Webhook failed'));
 
 		$result = $this->controller->create('1', '2', $this->objectService);
@@ -4373,8 +4379,8 @@ class ObjectsControllerTest extends TestCase {
 		$this->objectService->method('saveObject')->willReturn($objectEntity);
 
 		// Webhook intercept returns modified data
-		$this->webhookService->method('interceptRequest')
-			->willReturn(['title' => 'Webhook-Modified']);
+		$this->writeRequestDispatcher->method('dispatchTyped')
+			->willReturnCallback(fn (ObjectWriteRequestEvent $event) => $event->setBody(['title' => 'Webhook-Modified']));
 
 		$result = $this->controller->create('1', '2', $this->objectService);
 
@@ -4382,7 +4388,7 @@ class ObjectsControllerTest extends TestCase {
 	}
 
 	// =========================================================================
-	// create() — with null webhookService (constructor allows null)
+	// create() — with a null event dispatcher (constructor allows null)
 	// =========================================================================
 
 	public function testCreateWithoutWebhookService(): void {
@@ -8034,9 +8040,9 @@ class ObjectsControllerTest extends TestCase {
 		$this->objectService->method('getSchema')->willReturn(2);
 		$this->objectService->method('saveObject')->willReturn($objectEntity);
 
-		$this->webhookService->expects($this->once())
-			->method('interceptRequest')
-			->willReturn(['title' => 'Public']);
+		$this->writeRequestDispatcher->expects($this->once())
+			->method('dispatchTyped')
+			->willReturnCallback(fn (ObjectWriteRequestEvent $event) => $event->setBody(['title' => 'Public']));
 
 		$result = $this->controller->create('reg', 'schema', $this->objectService);
 
@@ -8195,7 +8201,7 @@ class ObjectsControllerTest extends TestCase {
 			$this->groupManager,
 			$this->exportService,
 			$this->importService,
-			$this->webhookService,
+			$this->writeRequestDispatcher,
 			$this->logger,
 			null,
 			null,
