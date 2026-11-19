@@ -4419,3 +4419,6 @@ Listener/WebhookRequestInterceptionListener.php,,Listener,,,,,Integrations
 Service/Schemas/ArchivalDeclarationValidators.php,,Service,,,,,Compliance
 Db/SchemaMapper/ArchivalDeclarationRefusals.php,,Db,,,,,Compliance
 Listener/ArchivalDeclarationChecksListener.php,,Listener,,,,,Compliance
+Service/Schemas/HandoffDeclarationValidators.php,,Service,,,,,Integrations
+Db/SchemaMapper/HandoffDeclarationRefusals.php,,Db,,,,,Integrations
+Listener/HandoffDeclarationChecksListener.php,,Listener,,,,,Integrations
