@@ -31,6 +31,10 @@ namespace OCA\OpenRegister\BackgroundJob;
  * keeps the job classes internal to this component: each constant is exactly
  * the value the caller used before (`Job::class` or `Job::CONSTANT`), so what
  * lands on the job list does not change.
+ *
+ * The jobs of a higher area are named on that area's own holder in this
+ * directory (ComplianceJobHandlesInterface and its siblings), so this Core
+ * class lists no job of an area above Core.
  */
 final class JobHandles {
 
@@ -38,21 +42,6 @@ final class JobHandles {
 	 * Deferred x-openregister-notifications dispatch job.
 	 */
 	public const ANNOTATION_NOTIFICATION_DISPATCH = AnnotationNotificationDispatchJob::class;
-
-	/**
-	 * Audit trail export job.
-	 */
-	public const AUDIT_TRAIL_EXPORT = AuditTrailExportJob::class;
-
-	/**
-	 * Rows the audit page exports inline before it queues the export job.
-	 */
-	public const AUDIT_TRAIL_EXPORT_INLINE_LIMIT = AuditTrailExportJob::INLINE_LIMIT;
-
-	/**
-	 * The user folder the audit trail export job writes into.
-	 */
-	public const AUDIT_TRAIL_EXPORT_FOLDER = AuditTrailExportJob::FOLDER;
 
 	/**
 	 * Queued automatic lifecycle transition job.
@@ -63,11 +52,6 @@ final class JobHandles {
 	 * Bulk job runner.
 	 */
 	public const BULK_JOB_RUNNER = BulkJobRunner::class;
-
-	/**
-	 * Bulk legal hold job.
-	 */
-	public const BULK_LEGAL_HOLD = BulkLegalHoldJob::class;
 
 	/**
 	 * Cache clear-and-warm maintenance job.
@@ -120,11 +104,6 @@ final class JobHandles {
 	public const OBJECT_TEXT_EXTRACTION = ObjectTextExtractionJob::class;
 
 	/**
-	 * Related retention recalculation job.
-	 */
-	public const RELATED_RETENTION_RECALCULATION = RelatedRetentionRecalculationJob::class;
-
-	/**
 	 * Schema run job.
 	 */
 	public const SCHEMA_RUN = SchemaRunJob::class;
@@ -133,11 +112,6 @@ final class JobHandles {
 	 * Source record recompute job.
 	 */
 	public const SOURCE_RECORD_RECOMPUTE = SourceRecordRecomputeJob::class;
-
-	/**
-	 * Subject export job.
-	 */
-	public const SUBJECT_EXPORT = SubjectExportJob::class;
 
 	/**
 	 * Transfer execution job.

@@ -3557,6 +3557,7 @@ BackgroundJob/AuditExportDelivery.php,,BackgroundJob,,,,,Compliance
 BackgroundJob/AuditExportSource.php,,BackgroundJob,,,,,Compliance
 BackgroundJob/CalendarLinkBackfillRun.php,,BackgroundJob,,,,,Integrations
 BackgroundJob/CalendarRecomputeJobInterface.php,,BackgroundJob,,,,,Integrations
+BackgroundJob/ComplianceJobHandlesInterface.php,,BackgroundJob,,,,,Compliance
 BackgroundJob/ConfiguredJobRuntime.php,,BackgroundJob,,,,,Compliance
 BackgroundJob/DestructionExecutionJobInterface.php,,BackgroundJob,,,,,Compliance
 BackgroundJob/FlowRunRecoveryServices.php,,BackgroundJob,,,,,Processes

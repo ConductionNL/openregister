@@ -25,6 +25,7 @@ use OCA\OpenRegister\BackgroundJob\AuditTrailExportJob;
 use OCA\OpenRegister\BackgroundJob\BulkJobRunner;
 use OCA\OpenRegister\BackgroundJob\BulkLegalHoldJob;
 use OCA\OpenRegister\BackgroundJob\CacheClearAndWarmJob;
+use OCA\OpenRegister\BackgroundJob\ComplianceJobHandlesInterface;
 use OCA\OpenRegister\BackgroundJob\ConsistencyCheckJob;
 use OCA\OpenRegister\BackgroundJob\DeferredObjectEventJob;
 use OCA\OpenRegister\BackgroundJob\FileTextExtractionJob;
@@ -42,6 +43,7 @@ use OCP\BackgroundJob\IJob;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;
+use ReflectionClass;
 use RecursiveIteratorIterator;
 
 /**
@@ -62,9 +64,9 @@ final class F07JobHandlesTest extends TestCase {
 	 * @var array<string, class-string>
 	 */
 	private const JOBS = [
-		JobHandles::AUDIT_TRAIL_EXPORT => AuditTrailExportJob::class,
+		ComplianceJobHandlesInterface::AUDIT_TRAIL_EXPORT => AuditTrailExportJob::class,
 		JobHandles::BULK_JOB_RUNNER => BulkJobRunner::class,
-		JobHandles::BULK_LEGAL_HOLD => BulkLegalHoldJob::class,
+		ComplianceJobHandlesInterface::BULK_LEGAL_HOLD => BulkLegalHoldJob::class,
 		JobHandles::CACHE_CLEAR_AND_WARM => CacheClearAndWarmJob::class,
 		JobHandles::CONSISTENCY_CHECK => ConsistencyCheckJob::class,
 		JobHandles::DEFERRED_OBJECT_EVENT => DeferredObjectEventJob::class,
@@ -72,12 +74,22 @@ final class F07JobHandlesTest extends TestCase {
 		JobHandles::IMPORT_PREVIEW_RUNNER => ImportPreviewRunner::class,
 		JobHandles::OBJECT_CLEANUP => ObjectCleanupJob::class,
 		JobHandles::OBJECT_TEXT_EXTRACTION => ObjectTextExtractionJob::class,
-		JobHandles::RELATED_RETENTION_RECALCULATION => RelatedRetentionRecalculationJob::class,
+		ComplianceJobHandlesInterface::RELATED_RETENTION_RECALCULATION => RelatedRetentionRecalculationJob::class,
 		JobHandles::SCHEMA_RUN => SchemaRunJob::class,
 		JobHandles::SOURCE_RECORD_RECOMPUTE => SourceRecordRecomputeJob::class,
-		JobHandles::SUBJECT_EXPORT => SubjectExportJob::class,
+		ComplianceJobHandlesInterface::SUBJECT_EXPORT => SubjectExportJob::class,
 		JobHandles::TRANSFER_EXECUTION => TransferExecutionJob::class,
 		JobHandles::TRANSLATION_PROJECTION => TranslationProjectionJob::class,
+	];
+
+	/**
+	 * The holders the handles live on: Core's class, and one interface per higher area.
+	 *
+	 * @var list<class-string>
+	 */
+	private const HOLDERS = [
+		JobHandles::class,
+		ComplianceJobHandlesInterface::class,
 	];
 
 	/**
@@ -114,11 +126,36 @@ final class F07JobHandlesTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheArgumentConstantsKeepTheJobsValues(): void {
-		$this->assertSame(expected: AuditTrailExportJob::INLINE_LIMIT, actual: JobHandles::AUDIT_TRAIL_EXPORT_INLINE_LIMIT);
-		$this->assertSame(expected: AuditTrailExportJob::FOLDER, actual: JobHandles::AUDIT_TRAIL_EXPORT_FOLDER);
+		$this->assertSame(expected: AuditTrailExportJob::INLINE_LIMIT, actual: ComplianceJobHandlesInterface::AUDIT_TRAIL_EXPORT_INLINE_LIMIT);
+		$this->assertSame(expected: AuditTrailExportJob::FOLDER, actual: ComplianceJobHandlesInterface::AUDIT_TRAIL_EXPORT_FOLDER);
 		$this->assertSame(expected: ImportPreviewRunner::PHASE_PREVIEW, actual: JobHandles::IMPORT_PREVIEW_PHASE_PREVIEW);
 		$this->assertSame(expected: ImportPreviewRunner::PHASE_COMMIT, actual: JobHandles::IMPORT_PREVIEW_PHASE_COMMIT);
 	}//end testTheArgumentConstantsKeepTheJobsValues()
+
+	/**
+	 * Each area holder is a constant-only interface, and no job is named on two holders.
+	 *
+	 * @return void
+	 */
+	public function testEachJobIsNamedOnOneHolder(): void {
+		$seen = [];
+		foreach (self::HOLDERS as $holder) {
+			$reflection = new ReflectionClass($holder);
+			if ($holder !== JobHandles::class) {
+				$this->assertTrue(condition: $reflection->isInterface(), message: $holder . ' is an interface');
+				$this->assertSame(expected: [], actual: $reflection->getMethods(), message: $holder . ' only holds constants');
+			}
+
+			foreach ($reflection->getConstants() as $value) {
+				if (is_string($value) === false || class_exists($value) === false) {
+					continue;
+				}
+
+				$this->assertArrayNotHasKey(key: $value, array: $seen, message: $value . ' is named on ' . ($seen[$value] ?? '') . ' and ' . $holder);
+				$seen[$value] = $holder;
+			}
+		}
+	}//end testEachJobIsNamedOnOneHolder()
 
 	/**
 	 * No lib file outside lib/BackgroundJob names the job class in code.
@@ -147,6 +184,6 @@ final class F07JobHandlesTest extends TestCase {
 			}
 		}
 
-		$this->assertSame(expected: [], actual: $found, message: 'Use ' . $handle . ' through JobHandles instead.');
+		$this->assertSame(expected: [], actual: $found, message: 'Use ' . $handle . ' through its area\'s job handles instead.');
 	}//end testNoFileOutsideBackgroundJobNamesTheJob()
 }//end class
