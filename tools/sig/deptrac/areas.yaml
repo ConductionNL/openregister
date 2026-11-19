@@ -2730,6 +2730,8 @@ deptrac:
         - type: directory
           value: 'lib/BackgroundJob/(BackfillCalendarLinksJob|BlobMigrationJob|CacheClearAndWarmJob|ConfigurationCheckJob|ConfigurationJobHandlesInterface|ConsistencyCheckJob|ExampleSetDailyRefreshJob|ImportPreviewRunner|ImportRunRetentionJob|NameCacheWarmupJob|OneUseJobKeySweepJob|RecordedJobRuntime|RecordedQueuedJob|RecordedTimedJob|RecordsItsRuns|SeedDirectoryJob|SweepExpiredExportRunsJob|SyncConfigurationsJob)[.]php$'
         - type: directory
+          value: 'lib/BackgroundJob/Support/BackfillCalendarLinksSources[.]php$'
+        - type: directory
           value: 'lib/BulkAction/(ExportWholeSetAction|WholeSetExportRun)[.]php$'
         - type: directory
           value: 'lib/Command/(ApplicationIdRename|BackfillSystemOwnerCommand|DedupeConfigurationsCommand|DedupeSharedSchemasCommand|DescriptorListCommand|ExampleSetInstallCommand|ExampleSetListCommand|ExampleSetRemoveCommand|ImportSkosCsvCommand|MetadataReconcileRun|MigrateSchemaApplicationCommand|MigrateStorageCommand|MigrateStorageRun|PlannedSchemaSplit|ReconcileMagicTablesCommand|ResetSchemaToShippedCommand|ResetToShippedRun|RollbackApprovalMigrationCommand|RotateTenantKeyCommand|SeedImportCommand|SharedSchemaSplitRun)[.]php$'
@@ -3114,8 +3116,6 @@ deptrac:
         - type: directory
           value: 'lib/BackgroundJob/Support/BackfillCalendarLinksPlatform[.]php$'
         - type: directory
-          value: 'lib/BackgroundJob/Support/BackfillCalendarLinksSources[.]php$'
-        - type: directory
           value: 'lib/BackgroundJob/Support/ConfigurationCheckServices[.]php$'
         - type: directory
           value: 'lib/BackgroundJob/Support/DestructionCheckRun[.]php$'
@@ -3123,8 +3123,6 @@ deptrac:
           value: 'lib/BackgroundJob/Support/DsarDpiaDetectionServices[.]php$'
         - type: directory
           value: 'lib/BackgroundJob/Support/LogCleanUpTrails[.]php$'
-        - type: directory
-          value: 'lib/BackgroundJob/Support/OAuth2TokenRefreshServices[.]php$'
         - type: directory
           value: 'lib/BackgroundJob/Support/PreDestructionPass[.]php$'
         - type: directory
@@ -3135,8 +3133,6 @@ deptrac:
           value: 'lib/BackgroundJob/Support/RelatedRetentionRules[.]php$'
         - type: directory
           value: 'lib/BackgroundJob/Support/RetentionDependantPlace[.]php$'
-        - type: directory
-          value: 'lib/BackgroundJob/Support/SyncDataServices[.]php$'
         - type: directory
           value: 'lib/BackgroundJob/Support/TenantPurgeStores[.]php$'
         - type: directory
@@ -3153,8 +3149,6 @@ deptrac:
           value: 'lib/BackgroundJob/Support/ViewAlertSweepPlatform[.]php$'
         - type: directory
           value: 'lib/BackgroundJob/Support/ViewAlertSweepSources[.]php$'
-        - type: directory
-          value: 'lib/BackgroundJob/Support/WebhookDeliveryStores[.]php$'
         - type: directory
           value: 'lib/Command/(RechainAuditTrailCommand|RetentionDryRunCommand)[.]php$'
         - type: directory
@@ -3399,6 +3393,12 @@ deptrac:
           value: 'lib/AppHost/Store/Source/[^/]*$'
         - type: directory
           value: 'lib/BackgroundJob/(CalendarLinkBackfillRun|ConnectionSeamReportJob|ContextChatSubmissionJob|HandoffQueueDrainJob|IntegrationsJobHandlesInterface|OAuth2TokenRefreshJob|SyncDataJob|WebhookDeliveryJob|WebhookRetryJob)[.]php$'
+        - type: directory
+          value: 'lib/BackgroundJob/Support/OAuth2TokenRefreshServices[.]php$'
+        - type: directory
+          value: 'lib/BackgroundJob/Support/SyncDataServices[.]php$'
+        - type: directory
+          value: 'lib/BackgroundJob/Support/WebhookDeliveryStores[.]php$'
         - type: directory
           value: 'lib/Calendar/[^/]*$'
         - type: directory
