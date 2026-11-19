@@ -23070,3 +23070,4 @@ fix:versioniq:729:073d6c6c	RED not reproducible on branch+development (interacti
 fix:learniq:2608:736845e3	l10n conflict resolved, new head 70af1e1e; REVERIFY recorded	session-20261119T214535-17440c61	2026-11-19T22:12:28Z
 fix:learniq:2551:f185e0a0	merged development into the branch, new head dc47a84c; REVERIFY recorded	session-20261119T214535-17440c61	2026-11-19T22:13:03Z
 fix:learniq:2609:8977d252	merged development into the branch, new head 8286014b; REVERIFY recorded	session-20261119T214535-17440c61	2026-11-19T22:13:33Z
+fix:opencatalogi:2786:bad229c1	merged development into the branch, new head dbc8a0f5; REVERIFY recorded	session-20261119T214535-17440c61	2026-11-19T22:13:57Z
