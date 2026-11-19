@@ -884,7 +884,6 @@ components:
       - ".*/lib/Service/Survivorship/[^/]*"
       - ".*/lib/Service/TimeTracker/[^/]*"
       - ".*/lib/Service/User/[^/]*"
-      - ".*/lib/Service/UserMigration/[^/]*"
       - ".*/lib/Service/Vectorization/Strategies/[^/]*"
       - ".*/lib/Service/View/[^/]*"
       - ".*/lib/Service/Vocabulary/[^/]*"
@@ -2148,4 +2147,5 @@ components:
       - ".*/lib/Service/ApiCaller/[^/]*"
       - ".*/lib/Service/Chat/[^/]*"
       - ".*/lib/Service/Resilience/[^/]*"
+      - ".*/lib/Service/UserMigration/[^/]*"
       - ".*/lib/Settings/[^/]*"
