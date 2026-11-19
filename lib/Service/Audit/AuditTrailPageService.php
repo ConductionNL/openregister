@@ -27,7 +27,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Audit;
 
 use OCA\OpenRegister\BackgroundJob\AuditExportSource;
-use OCA\OpenRegister\BackgroundJob\JobHandles;
+use OCA\OpenRegister\BackgroundJob\ComplianceJobHandlesInterface;
 use OCA\OpenRegister\Db\AuditTrail\AuditPageRequest;
 use OCA\OpenRegister\Db\AuditTrail\AuditTrailCriteria;
 use OCA\OpenRegister\Db\AuditTrailPageQueryInterface;
@@ -109,12 +109,12 @@ class AuditTrailPageService implements AuditTrailPageServiceInterface {
 		$query = $export->query;
 		$collected = $this->source->pageQuery->collect(
 			criteria: new AuditTrailCriteria(filters: $query->filters, search: $query->search),
-			ceiling: JobHandles::AUDIT_TRAIL_EXPORT_INLINE_LIMIT
+			ceiling: ComplianceJobHandlesInterface::AUDIT_TRAIL_EXPORT_INLINE_LIMIT
 		);
 
 		if ($collected['truncated'] === true) {
 			$this->jobList->add(
-				JobHandles::AUDIT_TRAIL_EXPORT,
+				ComplianceJobHandlesInterface::AUDIT_TRAIL_EXPORT,
 				[
 					'actor' => $export->actor,
 					'filters' => $query->filters,
