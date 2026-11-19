@@ -63,7 +63,6 @@ use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Exception\SharedMasterDataWriteException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Formats\UuidFormat;
-use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\DeclaredRow;
 use OCA\OpenRegister\Service\FieldEncryptionHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\CascadeRun;
@@ -128,9 +127,6 @@ use OCA\OpenRegister\Service\Quality\UniqueHintChecker;
 use OCA\OpenRegister\Service\Quality\UniqueHintCandidate;
 use OCA\OpenRegister\Service\Quality\UniqueHintScope;
 use OCA\OpenRegister\Search\Service\Quality\CreateCandidate;
-use OCA\OpenRegister\Service\Rules\ExpressionDefaultException;
-use OCA\OpenRegister\Service\Rules\ExpressionDefaultResolver;
-use OCA\OpenRegister\Search\Service\Search\PlaceholderResolvers;
 use OCA\OpenRegister\Service\SettingsServiceInterface;
 use OCA\OpenRegister\Service\SharedMasterDataService;
 use OCA\OpenRegister\Service\TenantLogRedactor;
@@ -151,6 +147,7 @@ use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Throwable;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionDefaultsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
@@ -1166,37 +1163,33 @@ class SaveObject implements SaveObjectInterface {
 	 * update would silently overwrite what a caseworker typed, which is a
 	 * calculation and is a different annotation.
 	 *
-	 * The resolver is built here from this handler's own session rather than
-	 * injected, because adding a constructor parameter to this class would
-	 * change the positional signature ten unit tests construct it by. It holds
-	 * no state between calls, so building it per create costs an object.
+	 * The expressions are the rules engine's work (Processes): this handler asks
+	 * the Core port {@see ExpressionDefaultsInterface}, resolved from the
+	 * injected app container rather than taken as a constructor parameter,
+	 * because adding one would change the positional form ten unit tests
+	 * construct this class by. A container that cannot serve the port fails
+	 * loudly; only a hand-built handler with no container at all derives nothing.
 	 *
 	 * @param Schema $schema The schema being written against.
 	 * @param array<string, mixed> $data The object being created.
 	 *
 	 * @return array<string, mixed> The object with the derived defaults written onto it.
 	 *
-	 * @throws ExpressionDefaultException When an expression cannot be evaluated.
+	 * @throws \RuntimeException When an expression cannot be evaluated; the create is refused (HTTP 422).
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function applyExpressionDefaults(Schema $schema, array $data): array {
-		$properties = ($schema->getProperties() ?? []);
-		if (is_array($properties) === false || $properties === []) {
+		if ($this->container === null) {
 			return $data;
 		}
 
-		$resolver = new ExpressionDefaultResolver(
-			evaluator: new CalculationEvaluator(
-				placeholders: PlaceholderResolvers::forSession(userSession: $this->userSession)
-			)
-		);
-
-		if ($resolver->declaresAny(properties: $properties) === false) {
-			return $data;
+		$defaults = $this->container->get(ExpressionDefaultsInterface::class);
+		if ($defaults instanceof ExpressionDefaultsInterface === false) {
+			throw new \LogicException('The expression defaults port is bound to ' . get_debug_type($defaults));
 		}
 
-		return $resolver->apply(properties: $properties, data: $data);
+		return $defaults->apply(schema: $schema, data: $data);
 	}//end applyExpressionDefaults()
 
 	/**
