@@ -30,7 +30,7 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Files\Db\RegisterFolderRecorder;
+use OCA\OpenRegister\Kernel\Contracts\Core\RegisterFolderRecordsInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\FileService;
@@ -65,8 +65,8 @@ class FolderManagementHandlerFirstUploadTest extends TestCase {
 	/** @var RegisterMapper&MockObject */
 	private RegisterMapper $registerMapper;
 
-	/** @var RegisterFolderRecorder&MockObject */
-	private RegisterFolderRecorder $recorder;
+	/** @var RegisterFolderRecordsInterface&MockObject */
+	private RegisterFolderRecordsInterface $recorder;
 
 	private FolderManagementHandler $handler;
 
@@ -105,7 +105,7 @@ class FolderManagementHandlerFirstUploadTest extends TestCase {
 			->method('update')
 			->willThrowException(new Exception('Access denied: You do not have permission to update register entities.', 403));
 
-		$this->recorder = $this->createMock(RegisterFolderRecorder::class);
+		$this->recorder = $this->createMock(RegisterFolderRecordsInterface::class);
 
 		$groupManager = $this->createMock(IGroupManager::class);
 		$groupManager->method('groupExists')->willReturn(true);

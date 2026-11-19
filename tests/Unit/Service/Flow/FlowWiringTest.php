@@ -13,19 +13,46 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionDefaultsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\PublicationRefusalInterface;
 use OCA\OpenRegister\Service\Flow\FlowAccess;
+use OCA\OpenRegister\Service\Flow\FlowConsentParking;
+use OCA\OpenRegister\Service\Flow\FlowConsentSweepInterface;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistryInterface;
 use OCA\OpenRegister\Service\Flow\FlowRegistrar;
 use OCA\OpenRegister\Service\Flow\FlowRunAsScope;
 use OCA\OpenRegister\Service\Flow\FlowRunAuthorization;
 use OCA\OpenRegister\Service\Flow\FlowRunContext;
+use OCA\OpenRegister\Service\Flow\FlowRunSignalInterface;
+use OCA\OpenRegister\Service\Flow\FlowRunSignalService;
 use OCA\OpenRegister\Service\Flow\FlowRunnableGuard;
 use OCA\OpenRegister\Service\Flow\FlowService;
 use OCA\OpenRegister\Service\Flow\FlowStepDispatcher;
 use OCA\OpenRegister\Service\Flow\FlowWiring;
+use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNode;
+use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNodeInterface;
+use OCA\OpenRegister\Service\Flow\Principal\PrincipalKinds;
+use OCA\OpenRegister\Service\Flow\Principal\PrincipalKindsInterface;
 use OCA\OpenRegister\Service\Flow\RegistryStepDispatcher;
+use OCA\OpenRegister\Service\Flow\Timer\CalendarRecompute;
+use OCA\OpenRegister\Service\Flow\Timer\CalendarRecomputeInterface;
+use OCA\OpenRegister\Service\Flow\Timer\TermDiagnostic;
+use OCA\OpenRegister\Service\Flow\Timer\TermDiagnosticInterface;
+use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarDefinitionsInterface;
+use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendars;
+use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
+use OCA\OpenRegister\Service\Party\PartyIndicatorGuard;
+use OCA\OpenRegister\Service\Rules\ExpressionDefaults;
+use OCA\OpenRegister\Service\Party\PartySearchInterface;
+use OCA\OpenRegister\Service\Party\PartySearchService;
+use OCA\OpenRegister\Service\Portal\PortalPartyResolver;
+use OCA\OpenRegister\Service\Task\TaskCalendarDocument;
+use OCA\OpenRegister\Service\Task\TaskCalendarDocumentInterface;
+use OCA\OpenRegister\Service\Task\TaskInboxService;
+use OCA\OpenRegister\Service\TaskService;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -113,16 +140,26 @@ final class FlowWiringTest extends TestCase {
 	}//end field()
 
 	/**
-	 * Exactly the four services are registered, in order.
+	 * Exactly these services are registered, in order.
 	 *
 	 * @return void
 	 */
-	public function testItRegistersTheFourServices(): void {
+	public function testItRegistersTheServicesInOrder(): void {
 		self::assertSame(
-			[FlowRunAuthorization::class, FlowRunnableGuard::class, FlowRunContext::class, FlowStepDispatcher::class],
-			array_keys($this->factories)
+			expected: [
+				FlowRunAuthorization::class,
+				FlowRunnableGuard::class,
+				FlowRunContext::class,
+				FlowStepDispatcher::class,
+				LifecycleActionContext::class,
+				AutoTransitionPass::class,
+				TaskInboxService::class,
+				PortalPartyResolver::class,
+				TaskService::class,
+			],
+			actual: array_keys($this->factories)
 		);
-	}//end testItRegistersTheFourServices()
+	}//end testItRegistersTheServicesInOrder()
 
 	/**
 	 * The run authorization is built on the container's flow access.
@@ -135,15 +172,36 @@ final class FlowWiringTest extends TestCase {
 	}//end testTheFieldRulesPortIsAnsweredByTheStateResolver()
 
 	/**
-	 * The store of the flows compiled from application schedules is bound, and only the two aliases are registered.
+	 * The Core expression-defaults port is answered by the rules engine's implementation.
+	 *
+	 * @return void
+	 */
+	public function testTheExpressionDefaultsPortIsAnsweredByTheRulesEngine(): void {
+		self::assertSame(expected: ExpressionDefaults::class, actual: ($this->aliases[ExpressionDefaultsInterface::class] ?? null));
+		self::assertTrue(condition: is_a(ExpressionDefaults::class, ExpressionDefaultsInterface::class, true));
+	}//end testTheExpressionDefaultsPortIsAnsweredByTheRulesEngine()
+
+	/**
+	 * The schedule flow store and the area's own interfaces are bound, and only these aliases are registered.
 	 *
 	 * @return void
 	 */
 	public function testTheScheduleFlowStoreIsBound(): void {
 		self::assertSame(
 			expected: [
-				FieldRulesSourceInterface::class  => StateFieldRuleResolver::class,
-				ScheduleFlowStoreInterface::class => ScheduleFlowStore::class,
+				FieldRulesSourceInterface::class           => StateFieldRuleResolver::class,
+				ScheduleFlowStoreInterface::class          => ScheduleFlowStore::class,
+				PublicationRefusalInterface::class         => PartyIndicatorGuard::class,
+				FlowRunSignalInterface::class              => FlowRunSignalService::class,
+				LockObjectNodeInterface::class             => LockObjectNode::class,
+				PrincipalKindsInterface::class             => PrincipalKinds::class,
+				CalendarRecomputeInterface::class          => CalendarRecompute::class,
+				TermDiagnosticInterface::class             => TermDiagnostic::class,
+				WorkingCalendarDefinitionsInterface::class => WorkingCalendars::class,
+				TaskCalendarDocumentInterface::class       => TaskCalendarDocument::class,
+				PartySearchInterface::class                => PartySearchService::class,
+				FlowConsentSweepInterface::class           => FlowConsentParking::class,
+				ExpressionDefaultsInterface::class         => ExpressionDefaults::class,
 			],
 			actual: $this->aliases
 		);
