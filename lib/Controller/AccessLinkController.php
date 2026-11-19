@@ -59,7 +59,6 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\StoredEntity;
 use OCA\OpenRegister\Kernel\Contracts\AccessLinkReaderInterface;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
-use OCA\OpenRegister\Service\Hardening\ThrottledSurfacesInterface;
 use OCA\OpenRegister\Service\Sharing\AccessLinkActsInterface;
 use OCA\OpenRegister\Service\Sharing\LinkAct;
 use OCA\OpenRegister\Service\Sharing\LinkFile;
@@ -96,7 +95,7 @@ class AccessLinkController extends Controller {
 	 *
 	 * @var string
 	 */
-	public const THROTTLE_ACTION = ThrottledSurfacesInterface::ACCESS_LINK;
+	public const THROTTLE_ACTION = AccessLinkServiceInterface::THROTTLE_ACTION;
 
 	/**
 	 * The link lifecycle.

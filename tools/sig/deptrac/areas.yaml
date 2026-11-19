@@ -84,7 +84,7 @@ deptrac:
         - type: directory
           value: 'lib/Command/(AdoptLeafOrganisationsCommand|AdoptOrganisationlessRowsCommand|AdoptionRun|BackfillObjectSlugsCommand|DeclaredGroupsCommand|DedupCollidedSchemasCommand|DedupeRegistersCommand|DescriptorImportTarget|DocumentStoreStatusCommand|DraftsExpiredCommand|EncryptFieldCommand|FederationSharesExpiringCommand|FieldEncryptionPass|LeafMatch|MagicTableCommand|MagicTableRun|MagicTableSelection|MagicTableTarget|PruneRetiredSchemasCommand|PruneRetiredSchemasPass|PruneRetiredSchemasRun|PurgeCandidate|PurgeObjectCommand|PurgeRun|RegisterRepairOptions|RelinkRegisterSchemasCommand|ResolverListCommand|RetiredSchemaRow|RetiredSlugRows|SchemaDedupRun|UnknownMetadataConditionsCommand)[.]php$'
         - type: directory
-          value: 'lib/Controller/(AccessLinkController|AccessLinkPageController|ActionRightsController|ApiSurfaceController|BulkController|ContextsController|DelegationController|DeletedController|DerivedGrantsController|McpController|OasController|ObjectCollectionsController|ObjectDraftController|ObjectGrantsController|ObjectOwnershipController|ObjectPermissionsController|ObjectReadStateController|ObjectRelationsController|ObjectSharingController|ObjectStateController|ObjectsController|OpenApiController|OrganisationController|PermissionsAuditController|PermissionsController|PrincipalReachController|PropertyVocabularyController|RegistersController|RegistrySubscriptionController|RegistryUpdatesController|RevertController|SchemaChangeFollowersController|SchemaImportController|SchemaMigrationController|SchemasController|ScopesController|SourcesController|SurvivorshipController|TablesController|TagsController|UrnController|UserController|VersionsController|VocabularyController|WhoamiController)[.]php$'
+          value: 'lib/Controller/(AccessLinkController|AccessLinkPageController|ActionRightsController|ApiSurfaceController|BulkController|ContextsController|DelegationController|DeletedController|DerivedGrantsController|McpController|OasController|ObjectCollectionsController|ObjectDraftController|ObjectGrantsController|ObjectOwnershipController|ObjectPermissionsController|ObjectReadStateController|ObjectRelationsController|ObjectSharingController|ObjectStateController|ObjectsController|OpenApiController|OrganisationController|PermissionsAuditController|PermissionsController|PrincipalReachController|PropertyVocabularyController|RegistersController|RegistrySubscriptionController|RegistryUpdatesController|RevertController|SchemaChangeFollowersController|SchemaImportController|SchemaMigrationController|SchemasController|ScopesController|SurvivorshipController|TablesController|TagsController|UrnController|UserController|VersionsController|VocabularyController|WhoamiController)[.]php$'
         - type: directory
           value: 'lib/Controller/Support/AccessLinkControllerServices[.]php$'
         - type: directory
@@ -253,8 +253,6 @@ deptrac:
           value: 'lib/Controller/Support/LinkedSourceResponses[.]php$'
         - type: directory
           value: 'lib/Controller/Support/MagicMappedTable[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/MaintenanceReachableControllersInterface[.]php$'
         - type: directory
           value: 'lib/Controller/Support/ManifestControllerServices[.]php$'
         - type: directory
@@ -506,16 +504,6 @@ deptrac:
         - type: directory
           value: 'lib/Controller/Support/ShownEntity[.]php$'
         - type: directory
-          value: 'lib/Controller/Support/SourcePayload[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/SourcesControllerServices[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/SourcesDomain[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/SourcesMappers[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/SourcesPlatform[.]php$'
-        - type: directory
           value: 'lib/Controller/Support/StringTypedPatch[.]php$'
         - type: directory
           value: 'lib/Controller/Support/SurvivorshipControllerServices[.]php$'
@@ -592,7 +580,9 @@ deptrac:
         - type: directory
           value: 'lib/Controller/Trait/ResolvesRegisterAndSchemaTrait[.]php$'
         - type: directory
-          value: 'lib/Db/(AbstractObjectMapper|AccessLinkMapper|AccessLinkMapperInterface|AuditTrailMapperInterface|AuthorizationRulesTrait|ColumnFiltersTrait|ContentReportMapperInterface|DbRegistrar|DecisionMetadataChange|DelegationGrant|DelegationGrantMapper|DelegationGrantMapperInterface|DeleteByObjectTrait|DraftVersion|DraftVersionMapper|EmptyJsonHydration|EmptyPropertyClaim|EntityChangeDetector|EntityRelation|EntityRelationMapper|ErasurePreviewMapperInterface|FederatedShareMapperInterface|FileDigest|FileDigestMapper|HydrateEmptyJsonAsNullTrait|HydrationKey|JobRunFilter|JobRunMapperInterface|LikeOperator|LikeOperatorInterface|LikeOperators|LinkColumn|MagicMapper|MagicMapperInterface|MapLinkMapperInterface|MapperRegistrar|MapperWiring|MultiTenancyTrait|ObjectHandling|ObjectLinkTypesTrait|ObjectReadState|ObjectReadStateMapper|ObjectReadStateMapperInterface|ObjectRelation|ObjectRelationMapper|ObjectRelationMapperInterface|OpenProjectLinkMapperInterface|Organisation|OrganisationFieldTrait|OrganisationMapper|OrganisationMapperInterface|OutcomeFilter|PartialObjectEntity|PhotoLinkMapperInterface|PollLinkMapperInterface|ProcessingLogMapperInterface|ProcessingLogReadScope|ProcessingPurposeMapperInterface|QueryPage|RecordTemplateMapperInterface|RegisterLookup|RegisterMapper|RegisterMapperHelper|RegisterMapperServices|RegisterSchema|RegistrySubscription|RegistrySubscriptionMapper|RegistrySubscriptionMapperInterface|RunObjectLock|RunObjectLockMapper|RunObjectLockMapperInterface|SchemaCatalog|SchemaCatalogInterface|SchemaChangelog|SchemaChangelogMapper|SchemaChangelogMapperInterface|SchemaFollower|SchemaFollowerMapper|SchemaMapper|SchemaPropertyInheritance|SchemaRun|SchemaRunEntry|SchemaRunEntryMapper|SchemaRunEntryMapperInterface|SchemaRunMapper|SchemaRunMapperInterface|SchemaRunStoreInterface|SelectByColumnTrait|SlugIdLookupTrait|SourceMapperInterface|StateChangePeriod|StateHistory|StateHistoryMapper|StateHistoryMapperInterface|TenantUsage|TenantUsageMapper|TenantUsageMapperInterface|TextSignature|TextSignatureMapper|TimeTrackerLinkMapperInterface|TypedFieldsJson|TypedFieldsJsonTrait|UsageMeasurement|VerwerkingsactiviteitMapperInterface|XwikiLinkMapperInterface)[.]php$'
+          value: 'lib/Db/(AbstractObjectMapper|AccessLink|AccessLinkMapper|AccessLinkMapperInterface|AuditTrailMapperInterface|AuthorizationRulesTrait|ColumnFiltersTrait|ContentReportMapperInterface|DbRegistrar|DecisionMetadataChange|DelegationGrant|DelegationGrantMapper|DelegationGrantMapperInterface|DeleteByObjectTrait|DraftVersion|DraftVersionMapper|EmptyJsonHydration|EmptyPropertyClaim|EntityChangeDetector|EntityRelation|EntityRelationMapper|ErasurePreviewMapperInterface|FederatedShareMapperInterface|FileDigest|FileDigestMapper|HydrateEmptyJsonAsNullTrait|HydrationKey|JobRunFilter|JobRunMapperInterface|LikeOperator|LikeOperatorInterface|LikeOperators|LinkColumn|MagicMapper|MagicMapperInterface|MapLinkMapperInterface|MapperRegistrar|MapperWiring|MultiTenancyTrait|ObjectHandling|ObjectLinkTypesTrait|ObjectReadState|ObjectReadStateMapper|ObjectReadStateMapperInterface|ObjectRelation|ObjectRelationMapper|ObjectRelationMapperInterface|OpenProjectLinkMapperInterface|Organisation|OrganisationFieldTrait|OrganisationMapper|OrganisationMapperInterface|OutcomeFilter|PartialObjectEntity|PhotoLinkMapperInterface|PollLinkMapperInterface|ProcessingLogMapperInterface|ProcessingLogReadScope|ProcessingPurposeMapperInterface|QueryPage|RecordTemplateMapperInterface|RegisterLookup|RegisterMapper|RegisterMapperHelper|RegisterMapperServices|RegisterSchema|RegistrySubscription|RegistrySubscriptionMapper|RegistrySubscriptionMapperInterface|RunObjectLock|RunObjectLockMapper|RunObjectLockMapperInterface|SchemaCatalog|SchemaCatalogInterface|SchemaChangelog|SchemaChangelogMapper|SchemaChangelogMapperInterface|SchemaFollower|SchemaFollowerMapper|SchemaMapper|SchemaPropertyInheritance|SchemaRun|SchemaRunEntry|SchemaRunEntryMapper|SchemaRunEntryMapperInterface|SchemaRunMapper|SchemaRunMapperInterface|SchemaRunStoreInterface|SelectByColumnTrait|SlugIdLookupTrait|SourceMapperInterface|StateChangePeriod|StateHistory|StateHistoryMapper|StateHistoryMapperInterface|StoredEntity|TenantUsage|TenantUsageMapper|TenantUsageMapperInterface|TextSignature|TextSignatureMapper|TimeTrackerLinkMapperInterface|TypedFieldsJson|TypedFieldsJsonTrait|UsageMeasurement|VerwerkingsactiviteitMapperInterface|XwikiLinkMapperInterface)[.]php$'
+        - type: directory
+          value: 'lib/Db/AccessLink/[^/]*$'
         - type: directory
           value: 'lib/Db/ApiCall/[^/]*$'
         - type: directory
@@ -2486,6 +2476,8 @@ deptrac:
         - type: directory
           value: 'lib/Controller/Support/LlmSettingsPlatform[.]php$'
         - type: directory
+          value: 'lib/Controller/Support/MaintenanceReachableControllersInterface[.]php$'
+        - type: directory
           value: 'lib/Controller/Support/MigrationPacksControllerServices[.]php$'
         - type: directory
           value: 'lib/Controller/Support/OperationsConsistencyControllerServices[.]php$'
@@ -2496,7 +2488,7 @@ deptrac:
         - type: directory
           value: 'lib/Controller/Support/RecordTemplatesControllerServices[.]php$'
         - type: directory
-          value: 'lib/Db/(Application|ApplicationMapper|Configuration|ConfigurationBinding|ConfigurationBindingMapper|ConfigurationBindingMapperInterface|ConfigurationDeployment|ConfigurationDeploymentMapper|ConfigurationDeploymentMapperInterface|ConfigurationDraft|ConfigurationDraftMapper|ConfigurationDraftMapperInterface|ConfigurationDraftSet|ConfigurationDraftSetMapper|ConfigurationDraftSetMapperInterface|ConfigurationMapper|ConfigurationMapperBindings|ConfigurationMapperInterface|ConfigurationMapperRegistrar|ConfigurationSyncResult|ConfigurationValue|ConfigurationValueMapper|ExportProfile|ExportProfileMapper|ExportProfileMapperInterface|ExportRun|ExportRunMapper|HydrateBySettersTrait|ImportPreview|ImportPreviewFinderInterface|ImportPreviewMapper|ImportPreviewMapperInterface|ImportPreviewRow|ImportPreviewRowMapper|ImportPreviewRowMapperInterface|IsoTimestampsTrait|JobRun|JobRunMapper|MigrationPack|MigrationPackMapper|MigrationPackMapperInterface|NewRowStamps|RecordTemplate|RecordTemplateMapper|Sequence|SequenceMapper|StoredEntity|TaskSequence|TaskSequenceMapper|Translation|TranslationMapper)[.]php$'
+          value: 'lib/Db/(Application|ApplicationMapper|Configuration|ConfigurationBinding|ConfigurationBindingMapper|ConfigurationBindingMapperInterface|ConfigurationDeployment|ConfigurationDeploymentMapper|ConfigurationDeploymentMapperInterface|ConfigurationDraft|ConfigurationDraftMapper|ConfigurationDraftMapperInterface|ConfigurationDraftSet|ConfigurationDraftSetMapper|ConfigurationDraftSetMapperInterface|ConfigurationMapper|ConfigurationMapperBindings|ConfigurationMapperInterface|ConfigurationMapperRegistrar|ConfigurationSyncResult|ConfigurationValue|ConfigurationValueMapper|ExportProfile|ExportProfileMapper|ExportProfileMapperInterface|ExportRun|ExportRunMapper|HydrateBySettersTrait|ImportPreview|ImportPreviewFinderInterface|ImportPreviewMapper|ImportPreviewMapperInterface|ImportPreviewRow|ImportPreviewRowMapper|ImportPreviewRowMapperInterface|IsoTimestampsTrait|JobRun|JobRunMapper|MigrationPack|MigrationPackMapper|MigrationPackMapperInterface|NewRowStamps|RecordTemplate|RecordTemplateMapper|Sequence|SequenceMapper|TaskSequence|TaskSequenceMapper|Translation|TranslationMapper)[.]php$'
         - type: directory
           value: 'lib/Db/Configuration/[^/]*$'
         - type: directory
@@ -2834,7 +2826,7 @@ deptrac:
         - type: directory
           value: 'lib/ContextChat/Support/[^/]*$'
         - type: directory
-          value: 'lib/Controller/(ActivityLinksController|AnalyticsLinksController|AnalyticsSeriesController|ApiCallersController|BookmarkLinksController|CaseTokenController|CollectiveLinksController|CompanyLookupController|ConsumersController|ContactsController|CospendLinksController|CredentialController|CredentialOauth2Controller|CredentialOrganisationController|DeckController|DeckLinksController|EmailLinksController|EndpointsController|FederationController|FormLinksController|HandoffController|IntegrationControllersRegistrar|IntegrationControllersWiring|IntegrationsController|LinkedEntityController|MapLinksController|MappingsController|MessageDispatchController|ObjectIntegrationsController|ObjectShareLinkController|OpenProjectLinksController|PhotoLinksController|PollLinksController|RelationsController|ScheduledMessagesController|ShareLinksController|TalkLinksController|TimeTrackerLinksController|WebhooksController|WellKnownController|XwikiLinksController)[.]php$'
+          value: 'lib/Controller/(ActivityLinksController|AnalyticsLinksController|AnalyticsSeriesController|ApiCallersController|BookmarkLinksController|CaseTokenController|CollectiveLinksController|CompanyLookupController|ConsumersController|ContactsController|CospendLinksController|CredentialController|CredentialOauth2Controller|CredentialOrganisationController|DeckController|DeckLinksController|EmailLinksController|EndpointsController|FederationController|FormLinksController|HandoffController|IntegrationControllersRegistrar|IntegrationControllersWiring|IntegrationsController|LinkedEntityController|MapLinksController|MappingsController|MessageDispatchController|ObjectIntegrationsController|ObjectShareLinkController|OpenProjectLinksController|PhotoLinksController|PollLinksController|RelationsController|ScheduledMessagesController|ShareLinksController|SourcesController|TalkLinksController|TimeTrackerLinksController|WebhooksController|WellKnownController|XwikiLinksController)[.]php$'
         - type: directory
           value: 'lib/Controller/Support/AnalyticsLinksControllerServices[.]php$'
         - type: directory
@@ -2896,6 +2888,16 @@ deptrac:
         - type: directory
           value: 'lib/Controller/Support/RelationsPlatform[.]php$'
         - type: directory
+          value: 'lib/Controller/Support/SourcePayload[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/SourcesControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/SourcesDomain[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/SourcesMappers[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/SourcesPlatform[.]php$'
+        - type: directory
           value: 'lib/Controller/Support/TalkLinksControllerServices[.]php$'
         - type: directory
           value: 'lib/Controller/Support/WebhooksControllerServices[.]php$'
@@ -2908,9 +2910,7 @@ deptrac:
         - type: directory
           value: 'lib/Dav/[^/]*$'
         - type: directory
-          value: 'lib/Db/(AccessLink|AnalyticsLink|AnalyticsLinkMapper|AnalyticsLinkMapperInterface|AnalyticsSeries|AnalyticsSeriesMapper|AnalyticsSeriesMapperInterface|ApiCallKey|ApiCallKeys|ApiCallRecord|ApiCallRecordMapper|ApiCallRecordMapperInterface|ApplicationMapperInterface|BookmarkLink|BookmarkLinkMapper|BookmarkLinkMapperInterface|CalendarLink|CalendarLinkMapper|CalendarLinkMapperInterface|CaseToken|CaseTokenMapper|CaseTokenMapperInterface|CollectiveLink|CollectiveLinkMapper|CollectiveLinkMapperInterface|Consumer|ConsumerMapper|ConsumerMapperInterface|ContactLink|ContactLinkMapper|ContactLinkMapperInterface|CospendEntryKey|CospendLink|CospendLinkMapper|CospendLinkMapperInterface|CountLinksByObjectUuidTrait|DeckLink|DeckLinkMapper|DeckLinkMapperInterface|DeleteLinksByObjectUuidTrait|EmailLink|EmailLinkMapper|EmailLinkMapperInterface|Endpoint|EndpointLog|EndpointLogMapper|EndpointLogMapperInterface|EndpointLogScope|EndpointMapper|EndpointMapperInterface|FederatedShare|FederatedShareMapper|FindAllNewestFirstTrait|FindLinksByObjectUuidTrait|FormLink|FormLinkMapper|FormLinkMapperInterface|FormSubmissionRef|HandoffQueueEntry|HandoffQueueEntryMapper|HandoffQueueEntryMapperInterface|IntegrationsMapperBindings|IntegrationsMapperRegistrar|MailMessageKey|MapLink|MapLinkMapper|Mapping|MappingMapper|MappingMapperInterface|ObjectKeyLinkTrait|OpenProjectLink|OpenProjectLinkMapper|PhotoLink|PhotoLinkMapper|PollLink|PollLinkMapper|Source|SourceMapper|SyncExecution|SyncFailure|SyncRecord|SyncRecordInputs|SyncRecordMapper|SyncRecordMapperInterface|TalkLink|TalkLinkMapper|TalkLinkMapperInterface|TimeTrackerLink|TimeTrackerLinkMapper|Webhook|WebhookLog|WebhookLogMapper|WebhookLogMapperInterface|WebhookMapper|WebhookMapperInterface|XwikiLink|XwikiLinkMapper)[.]php$'
-        - type: directory
-          value: 'lib/Db/AccessLink/[^/]*$'
+          value: 'lib/Db/(AnalyticsLink|AnalyticsLinkMapper|AnalyticsLinkMapperInterface|AnalyticsSeries|AnalyticsSeriesMapper|AnalyticsSeriesMapperInterface|ApiCallKey|ApiCallKeys|ApiCallRecord|ApiCallRecordMapper|ApiCallRecordMapperInterface|ApplicationMapperInterface|BookmarkLink|BookmarkLinkMapper|BookmarkLinkMapperInterface|CalendarLink|CalendarLinkMapper|CalendarLinkMapperInterface|CaseToken|CaseTokenMapper|CaseTokenMapperInterface|CollectiveLink|CollectiveLinkMapper|CollectiveLinkMapperInterface|Consumer|ConsumerMapper|ConsumerMapperInterface|ContactLink|ContactLinkMapper|ContactLinkMapperInterface|CospendEntryKey|CospendLink|CospendLinkMapper|CospendLinkMapperInterface|CountLinksByObjectUuidTrait|DeckLink|DeckLinkMapper|DeckLinkMapperInterface|DeleteLinksByObjectUuidTrait|EmailLink|EmailLinkMapper|EmailLinkMapperInterface|Endpoint|EndpointLog|EndpointLogMapper|EndpointLogMapperInterface|EndpointLogScope|EndpointMapper|EndpointMapperInterface|FederatedShare|FederatedShareMapper|FindAllNewestFirstTrait|FindLinksByObjectUuidTrait|FormLink|FormLinkMapper|FormLinkMapperInterface|FormSubmissionRef|HandoffQueueEntry|HandoffQueueEntryMapper|HandoffQueueEntryMapperInterface|IntegrationsMapperBindings|IntegrationsMapperRegistrar|MailMessageKey|MapLink|MapLinkMapper|Mapping|MappingMapper|MappingMapperInterface|ObjectKeyLinkTrait|OpenProjectLink|OpenProjectLinkMapper|PhotoLink|PhotoLinkMapper|PollLink|PollLinkMapper|Source|SourceMapper|SyncExecution|SyncFailure|SyncRecord|SyncRecordInputs|SyncRecordMapper|SyncRecordMapperInterface|TalkLink|TalkLinkMapper|TalkLinkMapperInterface|TimeTrackerLink|TimeTrackerLinkMapper|Webhook|WebhookLog|WebhookLogMapper|WebhookLogMapperInterface|WebhookMapper|WebhookMapperInterface|XwikiLink|XwikiLinkMapper)[.]php$'
         - type: directory
           value: 'lib/Db/Application/[^/]*$'
         - type: directory

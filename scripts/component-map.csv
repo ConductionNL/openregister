@@ -365,7 +365,7 @@ Controller/SettingsController.php,483,Controller,Search,Search/Controller/Settin
 Controller/SetupController.php,140,Controller,Configuration,Configuration/Controller/SetupController.php,0,,Configuration
 Controller/ShareLinksController.php,94,Controller,Integrations,Integrations/Controller/ShareLinksController.php,0,,Integrations
 Controller/ShippedBaselineController.php,36,Controller,Configuration,Configuration/Controller/ShippedBaselineController.php,0,,Configuration
-Controller/SourcesController.php,290,Controller,Service,Service/Controller/SourcesController.php,0,,Core
+Controller/SourcesController.php,290,Controller,Service,Service/Controller/SourcesController.php,0,,Integrations
 Controller/SubjectExportController.php,67,Controller,Compliance,Compliance/Controller/SubjectExportController.php,0,,Compliance
 Controller/Support/AccessLinkControllerServices.php,10,Controller,Access,Access/Controller/Support/AccessLinkControllerServices.php,0,,Core
 Controller/Support/AccessLinkDomain.php,16,Controller,Access,Access/Controller/Support/AccessLinkDomain.php,0,,Core
@@ -548,10 +548,10 @@ Controller/Support/SchemasControllerServices.php,12,Controller,Service,Service/C
 Controller/Support/SettingsControllerServices.php,10,Controller,Search,Search/Controller/Support/SettingsControllerServices.php,0,,Core
 Controller/Support/SettingsRuntime.php,12,Controller,Search,Search/Controller/Support/SettingsRuntime.php,0,,Core
 Controller/Support/SettingsStore.php,16,Controller,Search,Search/Controller/Support/SettingsStore.php,0,,Core
-Controller/Support/SourcesControllerServices.php,12,Controller,Service,Service/Controller/Support/SourcesControllerServices.php,0,,Core
-Controller/Support/SourcesDomain.php,16,Controller,Service,Service/Controller/Support/SourcesDomain.php,0,,Core
-Controller/Support/SourcesMappers.php,10,Controller,Service,Service/Controller/Support/SourcesMappers.php,0,,Core
-Controller/Support/SourcesPlatform.php,14,Controller,Service,Service/Controller/Support/SourcesPlatform.php,0,,Core
+Controller/Support/SourcesControllerServices.php,12,Controller,Service,Service/Controller/Support/SourcesControllerServices.php,0,,Integrations
+Controller/Support/SourcesDomain.php,16,Controller,Service,Service/Controller/Support/SourcesDomain.php,0,,Integrations
+Controller/Support/SourcesMappers.php,10,Controller,Service,Service/Controller/Support/SourcesMappers.php,0,,Integrations
+Controller/Support/SourcesPlatform.php,14,Controller,Service,Service/Controller/Support/SourcesPlatform.php,0,,Integrations
 Controller/Support/TablesControllerServices.php,14,Controller,Controller,Controller/Support/TablesControllerServices.php,0,,Core
 Controller/Support/TaskCompletion.php,12,Controller,Work,Work/Controller/Support/TaskCompletion.php,0,,Processes
 Controller/Support/TaskControllerServices.php,11,Controller,Work,Work/Controller/Support/TaskControllerServices.php,0,,Processes
@@ -605,7 +605,7 @@ Controller/XwikiLinksController.php,140,Controller,Integrations,Integrations/Con
 Dashboard/IntegrationDashboardWidget.php,40,Dashboard,Flows,Flows/Dashboard/IntegrationDashboardWidget.php,0,,Platform
 Dav/TaskVtodoWriteBackPlugin.php,136,Dav,Platform,Platform/Dav/TaskVtodoWriteBackPlugin.php,0,,Integrations
 Db/AbstractObjectMapper.php,70,Db,Service,Service/Db/AbstractObjectMapper.php,0,378,Core
-Db/AccessLink.php,120,Db,Integrations,Integrations/Db/AccessLink.php,1,248,Integrations
+Db/AccessLink.php,120,Db,Integrations,Integrations/Db/AccessLink.php,1,248,Core
 Db/AccessLinkMapper.php,63,Db,Access,Access/Db/AccessLinkMapper.php,0,,Core
 Db/AnalyticsLink.php,48,Db,Integrations,Integrations/Db/AnalyticsLink.php,0,,Integrations
 Db/AnalyticsLinkMapper.php,23,Db,Integrations,Integrations/Db/AnalyticsLinkMapper.php,0,,Integrations
@@ -865,7 +865,7 @@ Db/SourceMapper.php,143,Db,Integrations,Integrations/Db/SourceMapper.php,0,184,I
 Db/StateHistory.php,36,Db,Service,Service/Db/StateHistory.php,0,,Core
 Db/StateHistoryMapper.php,75,Db,Service,Service/Db/StateHistoryMapper.php,0,,Core
 Db/StatusVocabularyTrait.php,11,Db,Compliance,Compliance/Db/StatusVocabularyTrait.php,0,,Compliance
-Db/StoredEntity.php,20,Db,Configuration,Configuration/Db/StoredEntity.php,0,,Configuration
+Db/StoredEntity.php,20,Db,Configuration,Configuration/Db/StoredEntity.php,0,,Core
 Db/SubjectExport.php,72,Db,Compliance,Compliance/Db/SubjectExport.php,0,,Compliance
 Db/SubjectExportMapper.php,52,Db,Compliance,Compliance/Db/SubjectExportMapper.php,0,,Compliance
 Db/SyncExecution.php,10,Db,Integrations,Integrations/Db/SyncExecution.php,0,,Integrations
@@ -3365,7 +3365,7 @@ Controller/Support/WorkingCalendarControllerServices.php,14,Controller,Flows,Flo
 Controller/Trait/,,Controller,,,,,Core
 Dashboard/,,Dashboard,,,,,Platform
 Dav/,,Dav,,,,,Integrations
-Db/AccessLink/,,Db,,,,,Integrations
+Db/AccessLink/,,Db,,,,,Core
 Db/Application/,,Db,,,,,Integrations
 Db/AuditTrail/,,Db,,,,,Compliance
 Db/BulkJob/,,Db,,,,,Integrations
@@ -4412,3 +4412,5 @@ Db/PlatformMapperBindings.php,,Db,,,,,Platform
 Db/PlatformMapperRegistrar.php,,Db,,,,,Platform
 Service/PlatformServiceBindings.php,,Service,,,,,Platform
 Service/PlatformServiceRegistrar.php,,Service,,,,,Platform
+Controller/Support/SourcePayload.php,,Controller,,,,,Integrations
+Controller/Support/MaintenanceReachableControllersInterface.php,,Controller,,,,,Configuration
