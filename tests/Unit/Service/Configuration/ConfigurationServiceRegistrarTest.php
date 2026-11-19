@@ -11,6 +11,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Configuration;
 
+use OCA\OpenRegister\Db\SchemaMapper\SchemaDeclarationChecksEvent;
+use OCA\OpenRegister\Listener\ReferenceCardDeclarationCheckListener;
 use OCA\OpenRegister\Service\Configuration\ConfigurationServiceRegistrar;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
 use PHPUnit\Framework\TestCase;
@@ -83,14 +85,20 @@ class ConfigurationServiceRegistrarTest extends TestCase {
 	}//end testEveryFactoryBuildsItsService()
 
 	/**
-	 * The registrar registers services only; listeners stay with ListenerRegistrar.
+	 * The only listener the registrar registers is Configuration's own schema declaration check.
+	 *
+	 * Every other listener stays with ListenerRegistrar; this one is Configuration's
+	 * contribution to the schema save, bound in Configuration's own registrar.
 	 *
 	 * @return void
 	 */
-	public function testRegistersNoListeners(): void {
+	public function testRegistersOnlyTheReferenceCardCheckListener(): void {
 		$context = new RecordingRegistrationContext();
 		ConfigurationServiceRegistrar::register(context: $context);
 
-		$this->assertCount(expectedCount: 0, haystack: $context->listeners);
-	}//end testRegistersNoListeners()
+		$this->assertSame(
+			expected: [['event' => SchemaDeclarationChecksEvent::class, 'listener' => ReferenceCardDeclarationCheckListener::class]],
+			actual: $context->listeners
+		);
+	}//end testRegistersOnlyTheReferenceCardCheckListener()
 }//end class

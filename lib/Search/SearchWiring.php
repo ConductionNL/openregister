@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Search;
 
+use OCA\OpenRegister\Db\SchemaMapper\SchemaDeclarationChecksEvent;
+use OCA\OpenRegister\Listener\UniqueHintDeclarationCheckListener;
 use OCA\OpenRegister\Search\Db\ViewMapper;
 use OCA\OpenRegister\Kernel\Contracts\EmbeddingGeneratorInterface;
 use OCA\OpenRegister\Kernel\Contracts\MetricsRetentionInterface;
@@ -120,6 +122,9 @@ final class SearchWiring {
 		foreach (self::BINDINGS as $contract => $service) {
 			$context->registerServiceAlias($contract, $service);
 		}
+
+		// The unique-hint declaration check runs inside the schema save, in its slot of SchemaDeclarationOrder.
+		$context->registerEventListener(SchemaDeclarationChecksEvent::class, UniqueHintDeclarationCheckListener::class);
 	}//end register()
 
 	/**

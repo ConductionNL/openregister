@@ -16,6 +16,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Search;
 
+use OCA\OpenRegister\Db\SchemaMapper\SchemaDeclarationChecksEvent;
+use OCA\OpenRegister\Listener\UniqueHintDeclarationCheckListener;
 use OCA\OpenRegister\Search\SearchRegistrar;
 use OCA\OpenRegister\Search\Service\Vectorization\VectorEmbeddingsInterface;
 use OCA\OpenRegister\Search\Service\VectorizationService;
@@ -82,4 +84,19 @@ final class SearchRegistrarTest extends TestCase {
 		$this->assertCount(20, $expected);
 		$this->assertSame(expected: $expected, actual: $context->aliases);
 	}//end testEveryInterfaceIsBoundToItsImplementation()
+
+	/**
+	 * The unique-hint declaration check is registered for the schema save.
+	 *
+	 * @return void
+	 */
+	public function testRegistersTheDeclarationCheckListener(): void {
+		$context = new RecordingRegistrationContext();
+		SearchRegistrar::register(context: $context);
+
+		$this->assertSame(
+			expected: [['event' => SchemaDeclarationChecksEvent::class, 'listener' => UniqueHintDeclarationCheckListener::class]],
+			actual: $context->listeners
+		);
+	}//end testRegistersTheDeclarationCheckListener()
 }//end class

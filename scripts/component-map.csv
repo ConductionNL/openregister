@@ -4426,3 +4426,6 @@ Service/Capability/ToolReachLevels.php,,Service,,,,,Integrations
 Db/AuditTrail/ObjectAuditEvent.php,,Db,,,,,Core
 Db/AuditTrail/ObjectAuditEventOptions.php,,Db,,,,,Core
 Db/AuditTrail/NamedActor.php,,Db,,,,,Core
+Listener/ArchivalDeclarationChecksListener.php,,Listener,,,,,Compliance
+Listener/ReferenceCardDeclarationCheckListener.php,,Listener,,,,,Configuration
+Listener/UniqueHintDeclarationCheckListener.php,,Listener,,,,,Search

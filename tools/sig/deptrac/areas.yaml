@@ -2724,7 +2724,7 @@ deptrac:
         - type: directory
           value: 'lib/Db/Translation/[^/]*$'
         - type: directory
-          value: 'lib/Listener/(RedactionPolicyCacheListener|ShareableConfigTypeRegistrationListener)[.]php$'
+          value: 'lib/Listener/(RedactionPolicyCacheListener|ReferenceCardDeclarationCheckListener|ShareableConfigTypeRegistrationListener)[.]php$'
         - type: directory
           value: 'lib/Service/(AppRegisterImportRunner|ApplicationMove|ApplicationService|ConfigurationService|ConfigurationServiceInterface|ConfigurationTransferInterface|ConfigurationUpdateNotice|ContractBindings|ContractBindingsRegistrar|CountedRegisterImport|DemoDataService|DescriptorImportTarget|ExportService|FormsAppRows|ImportService|LanguageGapScan|LanguageService|ManifestProfile|ManifestService|MassValidationRun|McpCatalogSummaries|McpDiscoveryService|MdiIconRenderer|MigrationPackService|MigrationPackServiceInterface|MigrationService|MockImportRun|NotificationService|OperationsConsoleService|PropertyDiscoveryRun|RecordUpdate|RegisterDescriptorService|ScheduledReportRun|ScheduledReportService|SchemaApplicationMigrator|SchemaCascade|SchemaService|SchemaSplitRun|SequenceScope|SequenceService|SettingsService|SharedSchemaDedupeService|SharedSchemaPlanRun|SharedSchemaUse|ShippedRegister|SourceLanguageLookup|TenantKeyService|TranslationProjectionService|TranslationSearch|TranslationStatusService|ValidationChunkResult|VocabularyImportService)[.]php$'
         - type: directory
@@ -2982,7 +2982,7 @@ deptrac:
         - type: directory
           value: 'lib/Exception/(TextDisclosureNotRecordedException)[.]php$'
         - type: directory
-          value: 'lib/Listener/(ArchivalNominationListener|ContentReportRemovalListener|EntityEditAuditListener|QualityScoreOnSaveListener|RecordTypeAuditListener|RelatedRetentionRecalculationListener|SchemaAuthorizationAuditListener)[.]php$'
+          value: 'lib/Listener/(ArchivalDeclarationChecksListener|ArchivalNominationListener|ContentReportRemovalListener|EntityEditAuditListener|QualityScoreOnSaveListener|RecordTypeAuditListener|RelatedRetentionRecalculationListener|SchemaAuthorizationAuditListener)[.]php$'
         - type: directory
           value: 'lib/Repair/(RechainAuditTrailForFlowAttribution)[.]php$'
         - type: directory
@@ -3430,7 +3430,7 @@ deptrac:
         - type: directory
           value: 'lib/Db/SearchTrail/[^/]*$'
         - type: directory
-          value: 'lib/Listener/(ViewAlertAudience|ViewAlertMail)[.]php$'
+          value: 'lib/Listener/(UniqueHintDeclarationCheckListener|ViewAlertAudience|ViewAlertMail)[.]php$'
         - type: directory
           value: 'lib/Search/[^/]*$'
         - type: directory

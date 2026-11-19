@@ -11,6 +11,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Gdpr;
 
+use OCA\OpenRegister\Db\SchemaMapper\SchemaDeclarationChecksEvent;
+use OCA\OpenRegister\Listener\ArchivalDeclarationChecksListener;
 use OCA\OpenRegister\Service\Gdpr\GdprRegistrar;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
 use OCP\AppFramework\IAppContainer;
@@ -71,4 +73,19 @@ class GdprRegistrarTest extends TestCase {
 			$this->assertInstanceOf(expected: $name, actual: $factory($container), message: $name);
 		}
 	}//end testEveryFactoryBuildsItsService()
+
+	/**
+	 * The archival declaration check is registered for the schema save.
+	 *
+	 * @return void
+	 */
+	public function testRegistersTheDeclarationCheckListener(): void {
+		$context = new RecordingRegistrationContext();
+		GdprRegistrar::register(context: $context);
+
+		$this->assertSame(
+			expected: [['event' => SchemaDeclarationChecksEvent::class, 'listener' => ArchivalDeclarationChecksListener::class]],
+			actual: $context->listeners
+		);
+	}//end testRegistersTheDeclarationCheckListener()
 }//end class
