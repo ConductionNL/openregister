@@ -25,6 +25,24 @@ deptrac:
             - type: directory
               value: 'lib/Db/Register/[^/]*$'
             - type: directory
+              value: 'lib/Db/Schema/FacetBlockStamp[.]php$'
+            - type: directory
+              value: 'lib/Db/Schema/InversedByNormaliser[.]php$'
+            - type: directory
+              value: 'lib/Db/Schema/NotSuppliedReasons[.]php$'
+            - type: directory
+              value: 'lib/Db/Schema/ObjectSourceDeclaration[.]php$'
+            - type: directory
+              value: 'lib/Db/Schema/PresentationAnnotations[.]php$'
+            - type: directory
+              value: 'lib/Db/Schema/PropertyFacetBlock[.]php$'
+            - type: directory
+              value: 'lib/Db/Schema/SchemaFieldTypes[.]php$'
+            - type: directory
+              value: 'lib/Db/Schema/SchemaPropertyDocument[.]php$'
+            - type: directory
+              value: 'lib/Db/Schema/TopLevelAnnotationFold[.]php$'
+            - type: directory
               value: 'lib/Dto/[^/]*$'
             - type: directory
               value: 'lib/Event/(AbstractAgentEvent|AbstractApplicationEvent|AbstractConfigurationEvent|AbstractConversationEvent|AbstractDecisionRequestEvent|AbstractObjectEntityEvent|AbstractObjectFileEvent|AbstractPersonLinkEvent|AbstractPreWriteObjectEvent|AbstractReferenceValidationEvent|AbstractRegisterEvent|AbstractRegistrySubscriptionEvent|AbstractSchemaEvent|AbstractSourceEvent|AbstractViewEvent|ActionEvaluatedEvent|AgentCreatedEvent|AgentDeletedEvent|AgentRunDispatch|AgentRunInstruction|AgentRunRequestedEvent|AgentUpdatedEvent|AppWebhookEvents|ApplicationCreatedEvent|ApplicationDeletedEvent|ApplicationUpdatedEvent|BulkActionRegistrationEvent|CaseItemTransitionedEvent|ConfigurationCreatedEvent|ConfigurationDeletedEvent|ConfigurationUpdatedEvent|ConversationCreatedEvent|ConversationDeletedEvent|ConversationUpdatedEvent|CredentialRelinkRequiredEvent|CustomScopeAccessors|CustomScopeEvaluatedEvent|CustomScopeEvaluatingEvent|DecisionChangeRequestedEvent|DecisionVisibilityRequestedEvent|DeepLinkRegistrationEvent|DraftCreatedEvent|DraftDeletedEvent|DraftUpdatedEvent|EntityRelationDecisionUpdatedEvent|EvaluatedSchemaActionAccessors|FileCopiedEvent|FileLockedEvent|FileMovedEvent|FileRenamedEvent|FileRestrictionAdmitEvent|FileUnlockedEvent|FileVersionRestoredEvent|FlowEmailItem|FlowEmailMessage|FlowEmailOrigin|FlowEmailSentEvent|FlowRunTerminalEvent|FlowTimerFiredEvent|FormDestinationDependentsEvent|HandoffExecutedEvent|HandoffExecutedSource|HandoffExecutedTarget|IdentityClaimsCollectingEvent|MatrixRowsRequestedEvent|ObjectActivatedEvent|ObjectCreatedEvent|ObjectCreatingEvent|ObjectDeletedEvent|ObjectDeletingEvent|ObjectEventSubscription|ObjectLockedEvent|ObjectNoteAddedEvent|ObjectRevertedEvent|ObjectTransitionedEvent|ObjectUnlockedEvent|ObjectUpdatedEvent|ObjectUpdatingEvent|ObjectsMergedEvent|OrganisationCreatedEvent|OrganisationDeletedEvent|OrganisationUpdatedEvent|PermissionVerb|PermissionsDeclaringEvent|PersonLinkUpdatedEvent|PersonLinkedEvent|PersonUnlinkedEvent|ReferenceValidatedEvent|ReferenceValidationFailedEvent|RegisterCreatedEvent|RegisterDeletedEvent|RegisterFlowTriggersEvent|RegisterLeafProvidersEvent|RegisterUpdatedEvent|RegistrySubscriptionEndedEvent|RegistrySubscriptionRequestedEvent|SchemaCreatedEvent|SchemaDeletedEvent|SchemaUpdatedEvent|SourceCreatedEvent|SourceDeletedEvent|SourceUpdatedEvent|TaskSequenceCompletedEvent|TaskSequenceUndecidedEvent|TaskTerminalEvent|TaskTransitionedEvent|ToolRegistrationEvent|UserProfileUpdatedEvent|ViewAlertCrossedEvent|ViewCreatedEvent|ViewDeletedEvent|ViewUpdatedEvent|WriteVetoState)[.]php$'
@@ -42,6 +60,8 @@ deptrac:
               value: 'lib/Service/Oas/OasValidationReportInterface[.]php$'
             - type: directory
               value: 'lib/Service/Object/BatchOperationStatusInterface[.]php$'
+            - type: directory
+              value: 'lib/Service/Schemas/PropertyValidatorHandlerInterface[.]php$'
             - type: directory
               value: 'lib/Support/.*$'
           must_not:
@@ -580,7 +600,31 @@ deptrac:
         - type: directory
           value: 'lib/Db/Organisation/[^/]*$'
         - type: directory
-          value: 'lib/Db/Schema/[^/]*$'
+          value: 'lib/Db/Schema/AnnotationVocabulary[.]php$'
+        - type: directory
+          value: 'lib/Db/Schema/AuthorizationControlKeys[.]php$'
+        - type: directory
+          value: 'lib/Db/Schema/AuthorizationEntry[.]php$'
+        - type: directory
+          value: 'lib/Db/Schema/AuthorizationRulesValidator[.]php$'
+        - type: directory
+          value: 'lib/Db/Schema/ConfigurationEntryRules[.]php$'
+        - type: directory
+          value: 'lib/Db/Schema/ConfigurationValidator[.]php$'
+        - type: directory
+          value: 'lib/Db/Schema/ConfigurationValueRules[.]php$'
+        - type: directory
+          value: 'lib/Db/Schema/DeclaredActions[.]php$'
+        - type: directory
+          value: 'lib/Db/Schema/LinkedTypesRule[.]php$'
+        - type: directory
+          value: 'lib/Db/Schema/PropertyAuthorization[.]php$'
+        - type: directory
+          value: 'lib/Db/Schema/SchemaGrantEvaluator[.]php$'
+        - type: directory
+          value: 'lib/Db/Schema/VocabularyEntries[.]php$'
+        - type: directory
+          value: 'lib/Db/Schema/WriteOnlyPathsDeclaration[.]php$'
         - type: directory
           value: 'lib/Db/SchemaMapper/AccessDeclarationChecks[.]php$'
         - type: directory
@@ -1559,8 +1603,6 @@ deptrac:
           value: 'lib/Service/Schemas/PropertyTitles[.]php$'
         - type: directory
           value: 'lib/Service/Schemas/PropertyValidatorHandler[.]php$'
-        - type: directory
-          value: 'lib/Service/Schemas/PropertyValidatorHandlerInterface[.]php$'
         - type: directory
           value: 'lib/Service/Schemas/PropertyVocabulary[.]php$'
         - type: directory

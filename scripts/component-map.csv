@@ -3385,6 +3385,15 @@ Db/Mapping/,,Db,,,,,Integrations
 Db/ObjectRelation/,,Db,,,,,Integrations
 Db/Register/,,Db,,,,,Kernel
 Db/Schema/,,Db,,,,,Core
+Db/Schema/FacetBlockStamp.php,,Db,,,,,Kernel
+Db/Schema/InversedByNormaliser.php,,Db,,,,,Kernel
+Db/Schema/NotSuppliedReasons.php,,Db,,,,,Kernel
+Db/Schema/ObjectSourceDeclaration.php,,Db,,,,,Kernel
+Db/Schema/PresentationAnnotations.php,,Db,,,,,Kernel
+Db/Schema/PropertyFacetBlock.php,,Db,,,,,Kernel
+Db/Schema/SchemaFieldTypes.php,,Db,,,,,Kernel
+Db/Schema/SchemaPropertyDocument.php,,Db,,,,,Kernel
+Db/Schema/TopLevelAnnotationFold.php,,Db,,,,,Kernel
 Db/SchemaMapper/,,Db,,,,,Core
 Db/SchemaMapper/CalculationAnnotationCheck.php,63,Db,,,0,,Processes
 Db/SchemaMapper/DeclaredActionCheck.php,51,Db,,,0,,Processes
@@ -3516,6 +3525,7 @@ Service/Rules/,,Service,,,,,Processes
 Service/Schema/,,Service,,,,,Core
 Service/SchemaImport/,,Service,,,,,Core
 Service/Schemas/,,Service,,,,,Core
+Service/Schemas/PropertyValidatorHandlerInterface.php,,Service,,,,,Kernel
 Service/Schemas/RetentionAnnotationValidator.php,,Service,,,,,Core
 Service/Search/,,Service,,,,,Core
 Service/Security/,,Service,,,,,Integrations
