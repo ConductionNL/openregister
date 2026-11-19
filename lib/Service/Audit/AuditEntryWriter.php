@@ -30,6 +30,8 @@ use OCA\OpenRegister\Kernel\Contracts\Core\AuditEntryWriterInterface;
 
 /**
  * Turns each entry into an audit trail row and inserts them through the mapper, which seals them.
+ *
+ * @spec openspec/specs/audit-hash-chain/spec.md
  */
 final class AuditEntryWriter implements AuditEntryWriterInterface {
 

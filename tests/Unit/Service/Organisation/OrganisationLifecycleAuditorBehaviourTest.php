@@ -56,7 +56,11 @@ class OrganisationLifecycleAuditorBehaviourTest extends TestCase {
 		$session = $this->createMock(IUserSession::class);
 		$session->method('getUser')->willReturn(null);
 
-		return new OrganisationLifecycleAuditor(auditEntries: new AuditEntryWriter(mapper: $mapper), userSession: $session, logger: $this->createMock(LoggerInterface::class));
+		return new OrganisationLifecycleAuditor(
+			auditEntries: new AuditEntryWriter(mapper: $mapper),
+			userSession: $session,
+			logger: $this->createMock(originalClassName: LoggerInterface::class)
+		);
 	}//end auditor()
 
 	/**

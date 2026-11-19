@@ -80,7 +80,11 @@ class OrganisationLifecycleAuditTest extends TestCase {
 		$session = $this->createMock(IUserSession::class);
 		$session->method('getUser')->willReturn($user);
 
-		$this->auditor = new OrganisationLifecycleAuditor(new AuditEntryWriter($this->trail), $session, new NullLogger());
+		$this->auditor = new OrganisationLifecycleAuditor(
+			auditEntries: new AuditEntryWriter(mapper: $this->trail),
+			userSession: $session,
+			logger: new NullLogger()
+		);
 
 		$this->organisations = $this->createMock(OrganisationMapper::class);
 		$this->organisations->method('update')->willReturnArgument(0);
@@ -202,7 +206,11 @@ class OrganisationLifecycleAuditTest extends TestCase {
 		$logger = $this->createMock(LoggerInterface::class);
 		$logger->expects($this->once())->method('error')
 			->with($this->stringContains('Could not record a change'), $this->callback(static fn (array $context): bool => $context['exception'] === 'down'));
-		$auditor = new OrganisationLifecycleAuditor(new AuditEntryWriter($trail), $this->createMock(IUserSession::class), $logger);
+		$auditor = new OrganisationLifecycleAuditor(
+			auditEntries: new AuditEntryWriter(mapper: $trail),
+			userSession: $this->createMock(originalClassName: IUserSession::class),
+			logger: $logger
+		);
 
 		$auditor->recordStatus($this->organisation('suspended'), 'active');
 	}//end testAFailingTrailDoesNotFailTheChange()

@@ -42,7 +42,7 @@ class AuditEntryWriterTest extends TestCase {
 	 */
 	public function testEachEntryBecomesARow(): void {
 		$rows   = [];
-		$mapper = $this->createMock(AuditTrailMapperInterface::class);
+		$mapper = $this->createMock(originalClassName: AuditTrailMapperInterface::class);
 		$mapper->expects($this->once())->method('insertAuditTrails')->willReturnCallback(
 			function (array $entries) use (&$rows): array {
 				$rows = $entries;
@@ -53,22 +53,30 @@ class AuditEntryWriterTest extends TestCase {
 
 		(new AuditEntryWriter(mapper: $mapper))->writeAuditEntries(
 			entries: [
-				new AuditEntry(uuid: 'u-1', action: 'organisation.status', user: 'admin', userName: 'Admin', changed: ['status' => ['old' => 'a', 'new' => 'b']], created: $created, objectUuid: 'org-1'),
+				new AuditEntry(
+					uuid: 'u-1',
+					action: 'organisation.status',
+					user: 'admin',
+					userName: 'Admin',
+					changed: ['status' => ['old' => 'a', 'new' => 'b']],
+					created: $created,
+					objectUuid: 'org-1'
+				),
 				new AuditEntry(uuid: 'u-2', action: 'settings.changed', user: 'system', userName: 'System', changed: [], created: $created),
 			]
 		);
 
-		$this->assertCount(2, $rows);
-		$this->assertInstanceOf(AuditTrail::class, $rows[0]);
-		$this->assertSame('u-1', $rows[0]->getUuid());
-		$this->assertSame('organisation.status', $rows[0]->getAction());
-		$this->assertSame('admin', $rows[0]->getUser());
-		$this->assertSame('Admin', $rows[0]->getUserName());
-		$this->assertSame(['status' => ['old' => 'a', 'new' => 'b']], $rows[0]->getChanged());
-		$this->assertSame('2026-11-18 10:00:00', $rows[0]->getCreated()->format('Y-m-d H:i:s'));
-		$this->assertSame('org-1', $rows[0]->getObjectUuid());
-		$this->assertSame('u-2', $rows[1]->getUuid());
-		$this->assertNull($rows[1]->getObjectUuid());
+		$this->assertCount(expectedCount: 2, haystack: $rows);
+		$this->assertInstanceOf(expected: AuditTrail::class, actual: $rows[0]);
+		$this->assertSame(expected: 'u-1', actual: $rows[0]->getUuid());
+		$this->assertSame(expected: 'organisation.status', actual: $rows[0]->getAction());
+		$this->assertSame(expected: 'admin', actual: $rows[0]->getUser());
+		$this->assertSame(expected: 'Admin', actual: $rows[0]->getUserName());
+		$this->assertSame(expected: ['status' => ['old' => 'a', 'new' => 'b']], actual: $rows[0]->getChanged());
+		$this->assertSame(expected: '2026-11-18 10:00:00', actual: $rows[0]->getCreated()->format('Y-m-d H:i:s'));
+		$this->assertSame(expected: 'org-1', actual: $rows[0]->getObjectUuid());
+		$this->assertSame(expected: 'u-2', actual: $rows[1]->getUuid());
+		$this->assertNull(actual: $rows[1]->getObjectUuid());
 	}//end testEachEntryBecomesARow()
 
 	/**
@@ -77,10 +85,10 @@ class AuditEntryWriterTest extends TestCase {
 	 * @return void
 	 */
 	public function testAFailedWriteIsThrown(): void {
-		$mapper = $this->createMock(AuditTrailMapperInterface::class);
+		$mapper = $this->createMock(originalClassName: AuditTrailMapperInterface::class);
 		$mapper->method('insertAuditTrails')->willThrowException(new DBException('down'));
 
-		$this->expectException(DBException::class);
+		$this->expectException(exception: DBException::class);
 		(new AuditEntryWriter(mapper: $mapper))->writeAuditEntries(
 			entries: [new AuditEntry(uuid: 'u-1', action: 'a', user: 'system', userName: 'System', changed: [], created: new DateTimeImmutable())]
 		);
