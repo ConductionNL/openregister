@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Db\ContentReportMapper;
 use OCA\OpenRegister\Db\ContentReportMapperInterface;
-use OCA\OpenRegister\Db\DbRegistrar;
+use OCA\OpenRegister\Db\ComplianceMapperRegistrar;
 use OCA\OpenRegister\Service\Audit\AuditSink;
 use OCA\OpenRegister\Service\Audit\AuditSinkInterface;
 use OCA\OpenRegister\Service\Audit\AuditSinkStatus;
@@ -72,7 +72,7 @@ final class C01AuditInterfaceBindingsTest extends TestCase {
 		AuditSink::class => [AuditSinkInterface::class, ContractBindings::class],
 		AuditSinkStatus::class => [AuditSinkStatusInterface::class, ContractBindings::class],
 		AuditTrailPageService::class => [AuditTrailPageServiceInterface::class, ContractBindings::class],
-		ContentReportMapper::class => [ContentReportMapperInterface::class, DbRegistrar::class],
+		ContentReportMapper::class => [ContentReportMapperInterface::class, ComplianceMapperRegistrar::class],
 		ContentReportService::class => [ContentReportServiceInterface::class, ContractBindings::class],
 		ExplicitRevealTrailMasker::class => [ExplicitRevealTrailMaskerInterface::class, ContractBindings::class],
 		ObjectHistoryForReaders::class => [ObjectHistoryForReadersInterface::class, ContractBindings::class],
