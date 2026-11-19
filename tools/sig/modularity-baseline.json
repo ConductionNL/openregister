@@ -111,7 +111,6 @@
   "lib/Controller/FileDisclosuresController.php -> lib/Files/Db/TextDisclosure.php",
   "lib/Controller/FileDisclosuresController.php -> lib/Files/Db/TextDisclosureMapper.php",
   "lib/Controller/FileDisclosuresController.php -> lib/Files/Service/File/CallerFileAccess.php",
-  "lib/Controller/FlowTimerDiagnosticController.php -> lib/Settings/OpenRegisterAdmin.php",
   "lib/Controller/ObjectCollectionsController.php -> lib/Collaboration/ObjectCollections.php",
   "lib/Controller/ObjectReadStateController.php -> lib/Service/Interaction/AddressedObject.php",
   "lib/Controller/ObjectRelationsController.php -> lib/Service/Export/ExportGateInterface.php",
@@ -217,7 +216,6 @@
   "lib/Controller/TranslationController.php -> lib/Db/TranslationSlot.php",
   "lib/Controller/TranslationController.php -> lib/Service/TranslationSearch.php",
   "lib/Controller/TranslationController.php -> lib/Service/TranslationStatusServiceInterface.php",
-  "lib/Controller/WorkingCalendarController.php -> lib/Settings/OpenRegisterAdmin.php",
   "lib/Dav/TaskVtodoWriteBackPlugin.php -> lib/Service/Task/TaskVtodoWriteBackGateInterface.php",
   "lib/Db/AccessLinkMapper.php -> lib/Db/AccessLink.php",
   "lib/Db/AccessLinkMapperInterface.php -> lib/Db/AccessLink.php",
@@ -1643,6 +1641,7 @@
   "lib/Kernel/Compat/ImplementationForm.php",
   "lib/Kernel/Contracts/AccessLinkInterface.php",
   "lib/Kernel/Contracts/AccessLinkReaderInterface.php",
+  "lib/Kernel/Contracts/AdminSettingDelegation.php",
   "lib/Kernel/Contracts/AgentInterface.php",
   "lib/Kernel/Contracts/AgentMapperInterface.php",
   "lib/Kernel/Contracts/AppContainerFinderInterface.php",
@@ -3330,7 +3329,7 @@
   "Core": 64906,
   "Files": 3684,
   "Integrations": 19056,
-  "Kernel": 8457,
+  "Kernel": 8463,
   "Notifications": 1710,
   "Platform": 1033,
   "Processes": 33287,
@@ -3633,6 +3632,7 @@
   "lib/Kernel/Compat/ImplementationForm.php",
   "lib/Kernel/Contracts/AccessLinkInterface.php",
   "lib/Kernel/Contracts/AccessLinkReaderInterface.php",
+  "lib/Kernel/Contracts/AdminSettingDelegation.php",
   "lib/Kernel/Contracts/AgentInterface.php",
   "lib/Kernel/Contracts/AgentMapperInterface.php",
   "lib/Kernel/Contracts/AppContainerFinderInterface.php",
@@ -3791,7 +3791,7 @@
   "lib/Support/RegisterSlugAliasesInterface.php",
   "lib/Support/UnknownFilterKeys.php"
  ],
- "kernel_loc": 10382,
- "total_loc": 459216,
- "violation_degree": 0.1046
+ "kernel_loc": 10388,
+ "total_loc": 459222,
+ "violation_degree": 0.1043
 }
