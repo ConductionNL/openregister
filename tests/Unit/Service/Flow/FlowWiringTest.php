@@ -17,6 +17,8 @@ use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionDefaultsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Notifications\PartyRecipientsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\PublicationRefusalInterface;
 use OCA\OpenRegister\Service\Flow\FlowAccess;
 use OCA\OpenRegister\Service\Flow\FlowConsentParking;
 use OCA\OpenRegister\Service\Flow\FlowConsentSweepInterface;
@@ -30,6 +32,7 @@ use OCA\OpenRegister\Service\Flow\FlowRunSignalService;
 use OCA\OpenRegister\Service\Flow\FlowRunnableGuard;
 use OCA\OpenRegister\Service\Flow\FlowService;
 use OCA\OpenRegister\Service\Flow\FlowStepDispatcher;
+use OCA\OpenRegister\Search\FlowTasksProvider;
 use OCA\OpenRegister\Service\Flow\FlowWiring;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNode;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNodeInterface;
@@ -45,6 +48,8 @@ use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendars;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
+use OCA\OpenRegister\Service\Party\PartyRecipients;
+use OCA\OpenRegister\Service\Party\PartyIndicatorGuard;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaults;
 use OCA\OpenRegister\Service\Party\PartySearchInterface;
 use OCA\OpenRegister\Service\Party\PartySearchService;
@@ -96,6 +101,13 @@ final class FlowWiringTest extends TestCase {
 	private array $aliases = [];
 
 	/**
+	 * Search providers registered, in order.
+	 *
+	 * @var array<int, string>
+	 */
+	private array $searchProviders = [];
+
+	/**
 	 * Register the wiring against a recording context.
 	 *
 	 * @return void
@@ -112,6 +124,11 @@ final class FlowWiringTest extends TestCase {
 		$context->method('registerServiceAlias')->willReturnCallback(
 			function (string $alias, string $target): void {
 				$this->aliases[$alias] = $target;
+			}
+		);
+		$context->method('registerSearchProvider')->willReturnCallback(
+			function (string $class): void {
+				$this->searchProviders[] = $class;
 			}
 		);
 
@@ -162,6 +179,15 @@ final class FlowWiringTest extends TestCase {
 	}//end testItRegistersTheServicesInOrder()
 
 	/**
+	 * The flow tasks search provider is registered here, by the component that owns it.
+	 *
+	 * @return void
+	 */
+	public function testItRegistersTheFlowTasksSearchProvider(): void {
+		self::assertSame(expected: [FlowTasksProvider::class], actual: $this->searchProviders);
+	}//end testItRegistersTheFlowTasksSearchProvider()
+
+	/**
 	 * The run authorization is built on the container's flow access.
 	 *
 	 * @return void
@@ -189,8 +215,12 @@ final class FlowWiringTest extends TestCase {
 	public function testTheScheduleFlowStoreIsBound(): void {
 		self::assertSame(
 			expected: [
+				FieldRulesSourceInterface::class  => StateFieldRuleResolver::class,
+				ScheduleFlowStoreInterface::class => ScheduleFlowStore::class,
+				PartyRecipientsInterface::class   => PartyRecipients::class,
 				FieldRulesSourceInterface::class           => StateFieldRuleResolver::class,
 				ScheduleFlowStoreInterface::class          => ScheduleFlowStore::class,
+				PublicationRefusalInterface::class         => PartyIndicatorGuard::class,
 				FlowRunSignalInterface::class              => FlowRunSignalService::class,
 				LockObjectNodeInterface::class             => LockObjectNode::class,
 				PrincipalKindsInterface::class             => PrincipalKinds::class,
