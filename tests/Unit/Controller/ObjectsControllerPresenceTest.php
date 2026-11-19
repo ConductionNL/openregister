@@ -37,7 +37,7 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Notifications\Service\PresenceService;
 use OCA\OpenRegister\Kernel\Contracts\Core\ObjectPresenceInterface;
 use OCA\OpenRegister\Notifications\Service\ObjectPresenceTracker;
-use OCA\OpenRegister\Service\WebhookService;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\App\IAppManager;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -100,7 +100,7 @@ class ObjectsControllerPresenceTest extends TestCase {
 			$this->createMock(IGroupManager::class),
 			$this->createMock(ExportService::class),
 			$this->createMock(ImportService::class),
-			$this->createMock(WebhookService::class),
+			$this->createMock(originalClassName: IEventDispatcher::class),
 			$this->createMock(LoggerInterface::class)
 		);
 	}//end setUp()

@@ -28,13 +28,16 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\AppHost\Service\GenericActionAuthService;
+use OCA\OpenRegister\Kernel\Contracts\Core\ActionCheckInterface;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
 
 /**
  * The action matrix, bound to the `openregister` app id.
+ *
+ * It answers the Core port ActionCheckInterface (bound in PlatformServiceBindings).
  */
-class OpenRegisterActionAuthService extends GenericActionAuthService {
+class OpenRegisterActionAuthService extends GenericActionAuthService implements ActionCheckInterface {
 	/**
 	 * Constructor.
 	 *
