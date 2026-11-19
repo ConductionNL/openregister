@@ -12,6 +12,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\DbRegistrar;
+use OCA\OpenRegister\Db\PlatformMapperRegistrar;
 use OCA\OpenRegister\Db\ConfigurationMapperRegistrar;
 use OCA\OpenRegister\Db\ComplianceMapperRegistrar;
 use OCA\OpenRegister\Db\IntegrationsMapperRegistrar;
@@ -30,6 +31,7 @@ final class DbBindingMaps {
 	 */
 	public const REGISTRARS = [
 		DbRegistrar::class,
+		PlatformMapperRegistrar::class,
 		ConfigurationMapperRegistrar::class,
 		ComplianceMapperRegistrar::class,
 		IntegrationsMapperRegistrar::class,

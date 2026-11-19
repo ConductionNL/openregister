@@ -26,7 +26,7 @@ namespace OCA\OpenRegister\Tests\Unit\Kernel;
 use OCA\OpenRegister\Kernel\Contracts\Core\ActionRightsInterface;
 use OCA\OpenRegister\Service\ActionRightsCatalogue;
 use OCA\OpenRegister\Service\ActionRightsCatalogueInterface;
-use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\PlatformServiceRegistrar;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
 use PHPUnit\Framework\TestCase;
 
@@ -37,7 +37,7 @@ final class ActionRightsBindingTest extends TestCase {
 
 	public function testThePortAndTheCatalogueInterfaceResolveToTheSameCatalogue(): void {
 		$context = new RecordingRegistrationContext();
-		ContractBindings::register(context: $context);
+		PlatformServiceRegistrar::register(context: $context);
 
 		$this->assertContains(['alias' => ActionRightsInterface::class, 'target' => ActionRightsCatalogue::class], $context->aliases);
 		$this->assertContains(['alias' => ActionRightsCatalogueInterface::class, 'target' => ActionRightsCatalogue::class], $context->aliases);

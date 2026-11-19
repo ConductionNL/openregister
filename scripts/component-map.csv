@@ -4408,3 +4408,7 @@ Service/Handoff/HandoffRequest.php,,Service,,,,,Kernel
 Service/Handoff/HandoffSourceRef.php,,Service,,,,,Kernel
 Db/ConfigurationMapperBindings.php,,Db,,,,,Configuration
 Db/ConfigurationMapperRegistrar.php,,Db,,,,,Configuration
+Db/PlatformMapperBindings.php,,Db,,,,,Platform
+Db/PlatformMapperRegistrar.php,,Db,,,,,Platform
+Service/PlatformServiceBindings.php,,Service,,,,,Platform
+Service/PlatformServiceRegistrar.php,,Service,,,,,Platform

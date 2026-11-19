@@ -3220,7 +3220,7 @@ deptrac:
         - type: directory
           value: 'lib/Dashboard/[^/]*$'
         - type: directory
-          value: 'lib/Db/(Feedback|FeedbackMapper|TranslationBackfillScope|TranslationEdit|TranslationFilter|TranslationMapperInterface|TranslationSlot|TranslationSourceLanguageBackfillInterface)[.]php$'
+          value: 'lib/Db/(Feedback|FeedbackMapper|PlatformMapperBindings|PlatformMapperRegistrar|TranslationBackfillScope|TranslationEdit|TranslationFilter|TranslationMapperInterface|TranslationSlot|TranslationSourceLanguageBackfillInterface)[.]php$'
         - type: directory
           value: 'lib/Listener/(NotifyPushListener|NotifyPushRun)[.]php$'
         - type: directory
@@ -3238,7 +3238,7 @@ deptrac:
         - type: directory
           value: 'lib/Sections/[^/]*$'
         - type: directory
-          value: 'lib/Service/(ActionRightsCatalogue|ActionRightsCatalogueInterface|LanguageServiceInterface|OpenRegisterActionAuthService|TranslationProjectionServiceInterface|TranslationStatusServiceInterface|TranslationStores)[.]php$'
+          value: 'lib/Service/(ActionRightsCatalogue|ActionRightsCatalogueInterface|LanguageServiceInterface|OpenRegisterActionAuthService|PlatformServiceBindings|PlatformServiceRegistrar|TranslationProjectionServiceInterface|TranslationStatusServiceInterface|TranslationStores)[.]php$'
         - type: directory
           value: 'lib/Service/ApiCaller/[^/]*$'
         - type: directory
