@@ -336,7 +336,6 @@
   "lib/Repair/PerformerTyping.php -> lib/Db/Flow.php",
   "lib/Repair/PerformerTyping.php -> lib/Db/FlowMapperInterface.php",
   "lib/Repair/PerformerTyping.php -> lib/Service/Flow/Principal/PrincipalKindsInterface.php",
-  "lib/Repair/RechainAuditTrailForFlowAttribution.php -> lib/Repair/Support/RepairPlatform.php",
   "lib/Repair/RechainAuditTrailForFlowAttribution.php -> lib/Repair/V1ChainVerificationRun.php",
   "lib/Repair/SeedFlowTimerRegister.php -> lib/Repair/AppRegisterDescriptor.php",
   "lib/Repair/SeedTaskFixtures.php -> lib/Repair/Support/ApprovalTaskStores.php",
@@ -515,7 +514,6 @@
   "lib/Service/Object/ReferentialIntegrityService.php -> lib/Db/AuditTrail.php",
   "lib/Service/Object/ReferentialIntegrityService.php -> lib/Db/AuditTrail/AuditedChange.php",
   "lib/Service/Object/ReferentialIntegrityService.php -> lib/Service/Archival/ArchivalRetentionGuard.php",
-  "lib/Service/Object/RelationHandler.php -> lib/Service/Audit/PurposeGuard.php",
   "lib/Service/Object/RenderDerivations.php -> lib/Service/Calculation/CalculationEvaluatorInterface.php",
   "lib/Service/Object/RenderObject.php -> lib/Db/Translation.php",
   "lib/Service/Object/RenderObject.php -> lib/Db/TranslationSlot.php",
@@ -3006,7 +3004,7 @@
  "exposed_loc": {
   "Compliance": 15598,
   "Configuration": 6895,
-  "Core": 64598,
+  "Core": 64601,
   "Files": 3689,
   "Integrations": 18418,
   "Kernel": 8515,
@@ -3474,6 +3472,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10440,
- "total_loc": 459499,
- "violation_degree": 0.0778
+ "total_loc": 459898,
+ "violation_degree": 0.0775
 }
