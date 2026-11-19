@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
-use OCA\OpenRegister\Service\Operations\JobRunRecorderInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\JobRunRecordingInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 
 /**
@@ -34,14 +34,14 @@ final class RecordedJobRuntime {
 	/**
 	 * Bundle the runtime.
 	 *
-	 * @param ITimeFactory            $time     Clock handed to the Nextcloud job base class.
-	 * @param JobRunRecorderInterface $recorder The wrapper that writes the run row.
+	 * @param ITimeFactory             $time     Clock handed to the Nextcloud job base class.
+	 * @param JobRunRecordingInterface $recorder The wrapper that writes the run row.
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md
 	 */
 	public function __construct(
 		public readonly ITimeFactory $time,
-		public readonly JobRunRecorderInterface $recorder,
+		public readonly JobRunRecordingInterface $recorder,
 	) {
 	}//end __construct()
 }//end class

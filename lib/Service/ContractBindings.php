@@ -450,6 +450,9 @@ use OCA\OpenRegister\Service\Operations\SupportBundleServiceInterface;
 use OCA\OpenRegister\Service\Organisation\OrganisationEditAuditorInterface;
 use OCA\OpenRegister\Service\Organisation\OrganisationLifecycleAuditor;
 use OCA\OpenRegister\Kernel\Contracts\Core\AuditEntryWriterInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\JobRunRecordingInterface;
+use OCA\OpenRegister\Kernel\Contracts\Search\HtmlPdfConverterInterface;
+use OCA\OpenRegister\Service\Export\Odt\OfficeHtmlPdfConverter;
 use OCA\OpenRegister\Service\Audit\AuditEntryWriter;
 use OCA\OpenRegister\Service\Party\PartyRoleService;
 use OCA\OpenRegister\Service\Party\PartyRoleServiceInterface;
@@ -640,6 +643,7 @@ final class ContractBindings {
 		MovedJobStateInterface::class => MovedJobState::class,
 		ObjectVectorizationStrategyInterface::class => ObjectVectorizationStrategy::class,
 		OdtWriterInterface::class => OdtWriter::class,
+		HtmlPdfConverterInterface::class => OfficeHtmlPdfConverter::class,
 		OrganisationEditAuditorInterface::class => OrganisationLifecycleAuditor::class,
 		AuditEntryWriterInterface::class => AuditEntryWriter::class,
 		ShareGrantorInterface::class => ShareGrantor::class,
@@ -911,6 +915,7 @@ final class ContractBindings {
 		ImportPreviewServiceInterface::class => ImportPreviewService::class,
 		JobAlertServiceInterface::class => JobAlertService::class,
 		JobRunRecorderInterface::class => JobRunRecorder::class,
+		JobRunRecordingInterface::class => JobRunRecorder::class,
 		JobScheduleServiceInterface::class => JobScheduleService::class,
 		JsonLdContextServiceInterface::class => JsonLdContextService::class,
 		JsonLdSerializerInterface::class => JsonLdSerializer::class,

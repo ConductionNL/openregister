@@ -120,9 +120,9 @@ BackgroundJob/ObjectTextExtractionJob.php,16,BackgroundJob,Flows,Flows/Backgroun
 BackgroundJob/OneUseJobKeySweepJob.php,23,BackgroundJob,Configuration,Configuration/BackgroundJob/OneUseJobKeySweepJob.php,0,,Configuration
 BackgroundJob/ProcessingLogRetentionJob.php,86,BackgroundJob,Compliance,Compliance/BackgroundJob/ProcessingLogRetentionJob.php,0,,Compliance
 BackgroundJob/RecomputeTimersForCalendarJob.php,85,BackgroundJob,Work,Work/BackgroundJob/RecomputeTimersForCalendarJob.php,0,,Processes
-BackgroundJob/RecordedQueuedJob.php,38,BackgroundJob,Configuration,Configuration/BackgroundJob/RecordedQueuedJob.php,0,413,Configuration
+BackgroundJob/RecordedQueuedJob.php,38,BackgroundJob,Configuration,Configuration/BackgroundJob/RecordedQueuedJob.php,0,413,Core
 BackgroundJob/RecordedTimedJob.php,30,BackgroundJob,Configuration,Configuration/BackgroundJob/RecordedTimedJob.php,0,,Configuration
-BackgroundJob/RecordsItsRuns.php,5,BackgroundJob,Configuration,Configuration/BackgroundJob/RecordsItsRuns.php,0,,Configuration
+BackgroundJob/RecordsItsRuns.php,5,BackgroundJob,Configuration,Configuration/BackgroundJob/RecordsItsRuns.php,0,,Core
 BackgroundJob/RelatedRetentionRecalculationJob.php,103,BackgroundJob,Compliance,Compliance/BackgroundJob/RelatedRetentionRecalculationJob.php,0,,Compliance
 BackgroundJob/ReviewReminderJob.php,105,BackgroundJob,Compliance,Compliance/BackgroundJob/ReviewReminderJob.php,0,,Compliance
 BackgroundJob/RuleRunRetentionJob.php,40,BackgroundJob,Flows,Flows/BackgroundJob/RuleRunRetentionJob.php,0,,Processes
@@ -3566,7 +3566,7 @@ BackgroundJob/JobRuntime.php,,BackgroundJob,,,,,Core
 BackgroundJob/ProcessingLogPrune.php,,BackgroundJob,,,,,Compliance
 BackgroundJob/QueuedJobClassesInterface.php,,BackgroundJob,,,,,Core
 BackgroundJob/RecomputeTimersForCalendarJobServices.php,,BackgroundJob,,,,,Processes
-BackgroundJob/RecordedJobRuntime.php,,BackgroundJob,,,,,Configuration
+BackgroundJob/RecordedJobRuntime.php,,BackgroundJob,,,,,Core
 BackgroundJob/TransferAttemptRun.php,,BackgroundJob,,,,,Core
 BulkAction/ApplyRuleActionInterface.php,,BulkAction,,,,,Processes
 BulkAction/AssignActionInterface.php,,BulkAction,,,,,Processes
@@ -4416,3 +4416,6 @@ Service/PlatformServiceBindings.php,,Service,,,,,Platform
 Service/PlatformServiceRegistrar.php,,Service,,,,,Platform
 Event/ObjectWriteRequestEvent.php,,Event,,,,,Core
 Listener/WebhookRequestInterceptionListener.php,,Listener,,,,,Integrations
+Service/Operations/JobRunStart.php,,Service,,,,,Core
+Service/Operations/JobRunContext.php,,Service,,,,,Core
+Service/Export/Odt/OfficeHtmlPdfConverter.php,,Service,,,,,Configuration

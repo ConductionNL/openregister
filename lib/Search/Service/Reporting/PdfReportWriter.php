@@ -24,8 +24,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Search\Service\Reporting;
 
 use OCA\OpenRegister\Exception\OfficeServerRequiredException;
-use OCA\OpenRegister\Files\Service\File\Pdf\Fallback\NcOfficeConverterInterface;
-use OCA\OpenRegister\Service\Export\Odt\OdtWriterInterface;
+use OCA\OpenRegister\Kernel\Contracts\Search\HtmlPdfConverterInterface;
 
 /**
  * Render a resolved dashboard as a single PDF document.
@@ -37,14 +36,12 @@ class PdfReportWriter {
 	/**
 	 * Constructor.
 	 *
-	 * @param HtmlReportWriter           $htmlWriter      HTML writer used as the input layer.
-	 * @param NcOfficeConverterInterface $officeConverter Office server conversion to PDF.
-	 * @param OdtWriterInterface         $odtWriter       Writes the report HTML as an ODT.
+	 * @param HtmlReportWriter          $htmlWriter   HTML writer used as the input layer.
+	 * @param HtmlPdfConverterInterface $pdfConverter Converts the report HTML to PDF through the office server.
 	 */
 	public function __construct(
 		private readonly HtmlReportWriter $htmlWriter,
-		private readonly NcOfficeConverterInterface $officeConverter,
-		private readonly OdtWriterInterface $odtWriter,
+		private readonly HtmlPdfConverterInterface $pdfConverter,
 	) {
 
 	}//end __construct()
@@ -62,13 +59,12 @@ class PdfReportWriter {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-4
 	 */
 	public function write(array $dashboard, array $resolvedWidgets): string {
-		if ($this->officeConverter->isAvailable() === false) {
+		if ($this->pdfConverter->isAvailable() === false) {
 			throw new OfficeServerRequiredException();
 		}
 
 		$html = $this->htmlWriter->write(dashboard: $dashboard, resolvedWidgets: $resolvedWidgets);
-		$odt = $this->odtWriter->fromHtml(html: $html, landscape: false);
 
-		return $this->officeConverter->odtToPdf(odtBytes: $odt);
+		return $this->pdfConverter->htmlToPdf(html: $html, landscape: false);
 	}//end write()
 }//end class
