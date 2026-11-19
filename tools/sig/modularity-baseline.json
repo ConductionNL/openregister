@@ -578,13 +578,9 @@
   "lib/Service/Object/SaveObject.php -> lib/Db/AuditTrail/SharedMasterDataRefusalOptions.php",
   "lib/Service/Object/SaveObject.php -> lib/Search/Service/Quality/CreateCandidate.php",
   "lib/Service/Object/SaveObject.php -> lib/Search/Service/Quality/DedupCreatePolicyInterface.php",
-  "lib/Service/Object/SaveObject.php -> lib/Search/Service/Search/PlaceholderResolvers.php",
-  "lib/Service/Object/SaveObject.php -> lib/Service/Calculation/CalculationEvaluator.php",
   "lib/Service/Object/SaveObject.php -> lib/Service/Flow/FlowRunContext.php",
   "lib/Service/Object/SaveObject.php -> lib/Service/RecordUpdate.php",
   "lib/Service/Object/SaveObject.php -> lib/Service/RetentionServiceInterface.php",
-  "lib/Service/Object/SaveObject.php -> lib/Service/Rules/ExpressionDefaultException.php",
-  "lib/Service/Object/SaveObject.php -> lib/Service/Rules/ExpressionDefaultResolver.php",
   "lib/Service/Object/SaveObject.php -> lib/Service/TmloService.php",
   "lib/Service/Object/SaveObject.php -> lib/Service/TranslationProjectionService.php",
   "lib/Service/Object/SaveObject.php -> lib/Service/TranslationStatusService.php",
@@ -1475,6 +1471,7 @@
   "lib/Kernel/Contracts/Core/AuthRateLimitCeilingInterface.php",
   "lib/Kernel/Contracts/Core/CredentialSecretReaderInterface.php",
   "lib/Kernel/Contracts/Core/ExportGuardInterface.php",
+  "lib/Kernel/Contracts/Core/ExpressionDefaultsInterface.php",
   "lib/Kernel/Contracts/Core/FieldRulesSourceInterface.php",
   "lib/Kernel/Contracts/Core/ObjectPresenceInterface.php",
   "lib/Kernel/Contracts/Core/ObjectPreviewCacheInterface.php",
@@ -2879,7 +2876,6 @@
   "lib/Service/Rules/DependentValueValidator.php",
   "lib/Service/Rules/DependentValueValidatorInterface.php",
   "lib/Service/Rules/ExpressionDefaultException.php",
-  "lib/Service/Rules/ExpressionDefaultResolver.php",
   "lib/Service/Rules/RuleEnablementService.php",
   "lib/Service/Rules/RuleEnablementServiceInterface.php",
   "lib/Service/Rules/RuleInventoryService.php",
@@ -3118,13 +3114,13 @@
  "exposed_loc": {
   "Compliance": 15739,
   "Configuration": 6895,
-  "Core": 65077,
+  "Core": 65076,
   "Files": 3684,
   "Integrations": 18784,
   "Kernel": 8515,
   "Notifications": 1914,
   "Platform": 976,
-  "Processes": 32046,
+  "Processes": 32009,
   "Search": 2072
  },
  "kernel_files": [
@@ -3586,6 +3582,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10440,
- "total_loc": 459384,
- "violation_degree": 0.0891
+ "total_loc": 459415,
+ "violation_degree": 0.0886
 }
