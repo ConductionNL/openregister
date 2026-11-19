@@ -2535,8 +2535,9 @@ Service/History/StateHistoryRebuild.php,97,Service,Service,Service/History/State
 Service/Import/ConflictPolicy.php,80,Service,Configuration,Configuration/Service/Import/ConflictPolicy.php,0,,Configuration
 Service/Import/ImportPreviewRefusedException.php,6,Service,Configuration,Configuration/Service/Import/ImportPreviewRefusedException.php,0,,Configuration
 Service/Import/ImportPreviewService.php,426,Service,Configuration,Configuration/Service/Import/ImportPreviewService.php,0,,Configuration
-Service/Import/MatchLookupFailedException.php,6,Service,Configuration,Configuration/Service/Import/MatchLookupFailedException.php,0,492,Configuration
-Service/Import/MatchResolver.php,116,Service,Configuration,Configuration/Service/Import/MatchResolver.php,0,241,Configuration
+Service/Import/MatchLookupFailedException.php,6,Service,Configuration,Configuration/Service/Import/MatchLookupFailedException.php,0,492,Core
+Service/Import/MatchResolver.php,116,Service,Configuration,Configuration/Service/Import/MatchResolver.php,0,241,Core
+Service/Import/MatchQuery.php,,Service,,,,,Core
 Service/Import/SchemaMappingCheck.php,49,Service,Configuration,Configuration/Service/Import/SchemaMappingCheck.php,0,,Configuration
 Service/Import/SourceRowReader.php,138,Service,Configuration,Configuration/Service/Import/SourceRowReader.php,0,,Configuration
 Service/ImportService.php,1197,Service,Configuration,Configuration/Service/ImportService.php,0,,Configuration

@@ -742,6 +742,12 @@ deptrac:
         - type: directory
           value: 'lib/Service/History/[^/]*$'
         - type: directory
+          value: 'lib/Service/Import/MatchLookupFailedException[.]php$'
+        - type: directory
+          value: 'lib/Service/Import/MatchQuery[.]php$'
+        - type: directory
+          value: 'lib/Service/Import/MatchResolver[.]php$'
+        - type: directory
           value: 'lib/Service/Import/RecordImport/[^/]*$'
         - type: directory
           value: 'lib/Service/JsonLd/[^/]*$'
@@ -2528,7 +2534,85 @@ deptrac:
         - type: directory
           value: 'lib/Service/Export/Odt/[^/]*$'
         - type: directory
-          value: 'lib/Service/Import/[^/]*$'
+          value: 'lib/Service/Import/BaseColumn[.]php$'
+        - type: directory
+          value: 'lib/Service/Import/BaseSchemaProposer[.]php$'
+        - type: directory
+          value: 'lib/Service/Import/BaseSet[.]php$'
+        - type: directory
+          value: 'lib/Service/Import/BaseSetReader[.]php$'
+        - type: directory
+          value: 'lib/Service/Import/BaseSetReaderInterface[.]php$'
+        - type: directory
+          value: 'lib/Service/Import/BaseTable[.]php$'
+        - type: directory
+          value: 'lib/Service/Import/BaserowBaseReader[.]php$'
+        - type: directory
+          value: 'lib/Service/Import/BaserowCells[.]php$'
+        - type: directory
+          value: 'lib/Service/Import/ConflictPolicy[.]php$'
+        - type: directory
+          value: 'lib/Service/Import/ConflictPolicyNames[.]php$'
+        - type: directory
+          value: 'lib/Service/Import/DryRunBatch[.]php$'
+        - type: directory
+          value: 'lib/Service/Import/ImportCommit[.]php$'
+        - type: directory
+          value: 'lib/Service/Import/ImportDestination[.]php$'
+        - type: directory
+          value: 'lib/Service/Import/ImportErrorsCsv[.]php$'
+        - type: directory
+          value: 'lib/Service/Import/ImportFailedRowsCsv[.]php$'
+        - type: directory
+          value: 'lib/Service/Import/ImportPreviewMatching[.]php$'
+        - type: directory
+          value: 'lib/Service/Import/ImportPreviewRefusedException[.]php$'
+        - type: directory
+          value: 'lib/Service/Import/ImportPreviewService[.]php$'
+        - type: directory
+          value: 'lib/Service/Import/ImportPreviewServiceInterface[.]php$'
+        - type: directory
+          value: 'lib/Service/Import/ImportPreviewStore[.]php$'
+        - type: directory
+          value: 'lib/Service/Import/ImportPreviewTargets[.]php$'
+        - type: directory
+          value: 'lib/Service/Import/ImportRowPayload[.]php$'
+        - type: directory
+          value: 'lib/Service/Import/ImportRun[.]php$'
+        - type: directory
+          value: 'lib/Service/Import/ImportRunRetention[.]php$'
+        - type: directory
+          value: 'lib/Service/Import/ImportServiceCodecs[.]php$'
+        - type: directory
+          value: 'lib/Service/Import/ImportServiceRuntime[.]php$'
+        - type: directory
+          value: 'lib/Service/Import/ImportServiceStores[.]php$'
+        - type: directory
+          value: 'lib/Service/Import/ImportSourceCheck[.]php$'
+        - type: directory
+          value: 'lib/Service/Import/ImportTarget[.]php$'
+        - type: directory
+          value: 'lib/Service/Import/ImportValueCaster[.]php$'
+        - type: directory
+          value: 'lib/Service/Import/InstanceAppConfigReader[.]php$'
+        - type: directory
+          value: 'lib/Service/Import/InstanceSecretFilter[.]php$'
+        - type: directory
+          value: 'lib/Service/Import/InstanceSetSerialiser[.]php$'
+        - type: directory
+          value: 'lib/Service/Import/JsonImportRows[.]php$'
+        - type: directory
+          value: 'lib/Service/Import/MappedSheet[.]php$'
+        - type: directory
+          value: 'lib/Service/Import/MappingErrorRow[.]php$'
+        - type: directory
+          value: 'lib/Service/Import/RowImportTarget[.]php$'
+        - type: directory
+          value: 'lib/Service/Import/SchemaMappingCheck[.]php$'
+        - type: directory
+          value: 'lib/Service/Import/SourceRowReader[.]php$'
+        - type: directory
+          value: 'lib/Service/Import/SourceRowReaderInterface[.]php$'
         - type: directory
           value: 'lib/Service/Mcp/[^/]*$'
         - type: directory
