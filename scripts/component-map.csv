@@ -605,7 +605,7 @@ Controller/WhoamiController.php,95,Controller,Access,Access/Controller/WhoamiCon
 Controller/WorkingCalendarController.php,79,Controller,Flows,Flows/Controller/WorkingCalendarController.php,0,,Processes
 Controller/XwikiLinksController.php,140,Controller,Integrations,Integrations/Controller/XwikiLinksController.php,0,,Integrations
 Dashboard/IntegrationDashboardWidget.php,40,Dashboard,Flows,Flows/Dashboard/IntegrationDashboardWidget.php,0,,Platform
-Dav/TaskVtodoWriteBackPlugin.php,136,Dav,Platform,Platform/Dav/TaskVtodoWriteBackPlugin.php,0,,Integrations
+Dav/TaskVtodoWriteBackPlugin.php,136,Dav,Platform,Platform/Dav/TaskVtodoWriteBackPlugin.php,0,,Processes
 Db/AbstractObjectMapper.php,70,Db,Service,Service/Db/AbstractObjectMapper.php,0,378,Core
 Db/AccessLink.php,120,Db,Integrations,Integrations/Db/AccessLink.php,1,248,Integrations
 Db/AccessLinkMapper.php,63,Db,Access,Access/Db/AccessLinkMapper.php,0,,Core
@@ -845,7 +845,7 @@ Db/RuleRunMapper.php,138,Db,Flows,Flows/Db/RuleRunMapper.php,0,205,Processes
 Db/RuleRunSummary.php,32,Db,Flows,Flows/Db/RuleRunSummary.php,0,,Processes
 Db/RuleRunSummaryMapper.php,93,Db,Flows,Flows/Db/RuleRunSummaryMapper.php,0,293,Processes
 Db/RunObjectLock.php,36,Db,Service,Service/Db/RunObjectLock.php,0,,Core
-Db/RunObjectLockMapper.php,93,Db,Service,Service/Db/RunObjectLockMapper.php,0,,Core
+Db/RunObjectLockMapper.php,93,Db,Service,Service/Db/RunObjectLockMapper.php,0,,Processes
 Db/Schema.php,1785,Db,Db,Db/Schema.php,333,22,Kernel
 Db/SchemaChangelog.php,41,Db,Service,Service/Db/SchemaChangelog.php,0,,Core
 Db/SchemaChangelogMapper.php,37,Db,Service,Service/Db/SchemaChangelogMapper.php,0,411,Core
@@ -867,7 +867,7 @@ Db/SourceMapper.php,143,Db,Integrations,Integrations/Db/SourceMapper.php,0,184,I
 Db/StateHistory.php,36,Db,Service,Service/Db/StateHistory.php,0,,Core
 Db/StateHistoryMapper.php,75,Db,Service,Service/Db/StateHistoryMapper.php,0,,Core
 Db/StatusVocabularyTrait.php,11,Db,Compliance,Compliance/Db/StatusVocabularyTrait.php,0,,Compliance
-Db/StoredEntity.php,20,Db,Configuration,Configuration/Db/StoredEntity.php,0,,Configuration
+Db/StoredEntity.php,20,Db,Configuration,Configuration/Db/StoredEntity.php,0,,Core
 Db/SubjectExport.php,72,Db,Compliance,Compliance/Db/SubjectExport.php,0,,Compliance
 Db/SubjectExportMapper.php,52,Db,Compliance,Compliance/Db/SubjectExportMapper.php,0,,Compliance
 Db/SyncExecution.php,10,Db,Integrations,Integrations/Db/SyncExecution.php,0,,Integrations
@@ -3373,7 +3373,7 @@ Db/AuditTrail/,,Db,,,,,Compliance
 Db/BulkJob/,,Db,,,,,Integrations
 Db/CaseItem/,,Db,,,,,Integrations
 Db/ContactLink/,,Db,,,,,Integrations
-Db/ContentReport/,,Db,,,,,Integrations
+Db/ContentReport/,,Db,,,,,Compliance
 Db/EmailLink/,,Db,,,,,Integrations
 Db/Endpoint/,,Db,,,,,Integrations
 Db/EntityRelation/,,Db,,,,,Core
@@ -3635,7 +3635,7 @@ Db/CospendLinkMapperInterface.php,,Db,,,,,Integrations
 Db/DbRegistrar.php,,Db,,,,,Core
 Db/DecisionMapperInterface.php,,Db,,,,,Processes
 Db/DecisionMetadataChange.php,,Db,,,,,Core
-Db/DecisionMetadataEdit.php,,Db,,,,,Processes
+Db/DecisionMetadataEdit.php,,Db,,,,,Core
 Db/DeckLinkMapperInterface.php,,Db,,,,,Integrations
 Db/DelegationGrantMapperInterface.php,,Db,,,,,Core
 Db/EmailLinkMapperInterface.php,,Db,,,,,Integrations
