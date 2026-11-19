@@ -734,7 +734,7 @@ Db/GdprEntity.php,52,Db,Compliance,Compliance/Db/GdprEntity.php,9,372,Compliance
 Db/GdprEntityMapper.php,55,Db,Compliance,Compliance/Db/GdprEntityMapper.php,10,370,Compliance
 Db/HandoffQueueEntry.php,62,Db,Integrations,Integrations/Db/HandoffQueueEntry.php,0,,Integrations
 Db/HandoffQueueEntryMapper.php,48,Db,Integrations,Integrations/Db/HandoffQueueEntryMapper.php,0,,Integrations
-Db/HydrateBySettersTrait.php,15,Db,Configuration,Configuration/Db/HydrateBySettersTrait.php,0,,Configuration
+Db/HydrateBySettersTrait.php,15,Db,Core,Core/Db/HydrateBySettersTrait.php,0,,Core
 Db/HydrateEmptyJsonAsNullTrait.php,19,Db,Service,Service/Db/HydrateEmptyJsonAsNullTrait.php,0,,Core
 Db/HydrateKnownFieldsTrait.php,15,Db,Work,Work/Db/HydrateKnownFieldsTrait.php,0,,Processes
 Db/IdCursor.php,14,Db,Flows,Flows/Db/IdCursor.php,0,,Processes
@@ -742,7 +742,7 @@ Db/ImportPreview.php,94,Db,Configuration,Configuration/Db/ImportPreview.php,0,,C
 Db/ImportPreviewMapper.php,61,Db,Configuration,Configuration/Db/ImportPreviewMapper.php,0,,Configuration
 Db/ImportPreviewRow.php,55,Db,Configuration,Configuration/Db/ImportPreviewRow.php,0,,Configuration
 Db/ImportPreviewRowMapper.php,58,Db,Configuration,Configuration/Db/ImportPreviewRowMapper.php,0,,Configuration
-Db/IsoTimestampsTrait.php,17,Db,Configuration,Configuration/Db/IsoTimestampsTrait.php,0,,Configuration
+Db/IsoTimestampsTrait.php,17,Db,Core,Core/Db/IsoTimestampsTrait.php,0,,Core
 Db/JobRun.php,66,Db,Configuration,Configuration/Db/JobRun.php,0,,Configuration
 Db/JobRunMapper.php,121,Db,Configuration,Configuration/Db/JobRunMapper.php,0,,Configuration
 Db/JsonFieldsTrait.php,15,Db,Integrations,Integrations/Db/JsonFieldsTrait.php,0,,Kernel
@@ -3384,7 +3384,7 @@ Db/FlowVersion/,,Db,,,,,Integrations
 Db/HandoffQueueEntry/,,Db,,,,,Integrations
 Db/MagicMapper/,,Db,,,,,Core
 Db/Mapping/,,Db,,,,,Integrations
-Db/ObjectRelation/,,Db,,,,,Integrations
+Db/ObjectRelation/,,Db,,,,,Core
 Db/Register/,,Db,,,,,Kernel
 Db/Schema/,,Db,,,,,Core
 Db/Schema/FacetBlockStamp.php,,Db,,,,,Kernel
@@ -3680,7 +3680,7 @@ Db/ImportPreviewRowMapperInterface.php,,Db,,,,,Configuration
 Db/Integration/IntegrationIdIndexInterface.php,,Db,,,,,Core
 Db/JobRun/JobRunFieldTypes.php,,Db,,,,,Configuration
 Db/JobRunFilter.php,,Db,,,,,Core
-Db/JobRunMapperInterface.php,,Db,,,,,Core
+Db/JobRunMapperInterface.php,,Db,,,,,Configuration
 Db/JsonArrayColumn.php,,Db,,,,,Kernel
 Db/LikeOperatorInterface.php,,Db,,,,,Core
 Db/LikeOperators.php,,Db,,,,,Core
@@ -3693,7 +3693,7 @@ Db/MapLinkMapperInterface.php,,Db,,,,,Core
 Db/MapperWiring.php,,Db,,,,,Core
 Db/MappingMapperInterface.php,,Db,,,,,Integrations
 Db/MigrationPackMapperInterface.php,,Db,,,,,Configuration
-Db/NewRowStamps.php,,Db,,,,,Configuration
+Db/NewRowStamps.php,,Db,,,,,Compliance
 Db/ObjectEntity/ObjectEntityFieldTypes.php,,Db,,,,,Kernel
 Db/ObjectLinkTypesTrait.php,,Db,,,,,Core
 Db/ObjectReadState/ReadStateScope.php,,Db,,,,,Core
@@ -3711,7 +3711,7 @@ Db/ProcessingLogMapperInterface.php,,Db,,,,,Core
 Db/ProcessingLogReadScope.php,,Db,,,,,Core
 Db/ProcessingPurpose/ProcessingPurposeFieldTypes.php,,Db,,,,,Compliance
 Db/ProcessingPurposeMapperInterface.php,,Db,,,,,Core
-Db/RecordTemplateMapperInterface.php,,Db,,,,,Core
+Db/RecordTemplateMapperInterface.php,,Db,,,,,Configuration
 Db/RegisterLookup.php,,Db,,,,,Core
 Db/RegisterMapperServices.php,,Db,,,,,Core
 Db/RegisterSchema.php,,Db,,,,,Core
