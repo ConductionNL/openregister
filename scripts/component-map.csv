@@ -3781,7 +3781,7 @@ Event/AbstractConfigurationEvent.php,,Event,,,,,Kernel
 Event/AbstractConversationEvent.php,,Event,,,,,Kernel
 Event/AbstractDecisionRequestEvent.php,,Event,,,,,Kernel
 Event/AbstractObjectEntityEvent.php,,Event,,,,,Kernel
-Event/AbstractOrganisationEvent.php,,Event,,,,,Core
+Event/AbstractOrganisationEvent.php,,Event,,,,,Kernel
 Event/AbstractPersonLinkEvent.php,,Event,,,,,Kernel
 Event/AbstractRegisterEvent.php,,Event,,,,,Kernel
 Event/AbstractRegistrySubscriptionEvent.php,,Event,,,,,Kernel
@@ -3790,6 +3790,7 @@ Event/AbstractSourceEvent.php,,Event,,,,,Kernel
 Event/AbstractTaskEvent.php,,Event,,,,,Core
 Event/AbstractTaskSequenceEvent.php,,Event,,,,,Core
 Event/AbstractViewEvent.php,,Event,,,,,Kernel
+Event/DeepLinkCollectorInterface.php,,Event,,,,,Kernel
 Event/AgentRunDispatch.php,,Event,,,,,Kernel
 Event/AgentRunInstruction.php,,Event,,,,,Kernel
 Event/CustomScopeAccessors.php,,Event,,,,,Kernel

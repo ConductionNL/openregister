@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Db;
 use DateTime;
 use JsonSerializable;
 use OCA\OpenRegister\Db\Organisation\OrganisationFieldTypes;
+use OCA\OpenRegister\Kernel\Contracts\OrganisationInterface;
 use OCP\AppFramework\Db\Entity;
 use Symfony\Component\Uid\Uuid;
 
@@ -145,7 +146,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
-class Organisation extends Entity implements JsonSerializable {
+class Organisation extends Entity implements JsonSerializable, OrganisationInterface {
 	use IsoTimestampsTrait;
 	use AuthorizationRulesTrait;
 
