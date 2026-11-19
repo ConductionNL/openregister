@@ -734,7 +734,7 @@ Db/GdprEntity.php,52,Db,Compliance,Compliance/Db/GdprEntity.php,9,372,Compliance
 Db/GdprEntityMapper.php,55,Db,Compliance,Compliance/Db/GdprEntityMapper.php,10,370,Compliance
 Db/HandoffQueueEntry.php,62,Db,Integrations,Integrations/Db/HandoffQueueEntry.php,0,,Integrations
 Db/HandoffQueueEntryMapper.php,48,Db,Integrations,Integrations/Db/HandoffQueueEntryMapper.php,0,,Integrations
-Db/HydrateBySettersTrait.php,15,Db,Configuration,Configuration/Db/HydrateBySettersTrait.php,0,,Configuration
+Db/HydrateBySettersTrait.php,15,Db,Configuration,Configuration/Db/HydrateBySettersTrait.php,0,,Core
 Db/HydrateEmptyJsonAsNullTrait.php,19,Db,Service,Service/Db/HydrateEmptyJsonAsNullTrait.php,0,,Core
 Db/HydrateKnownFieldsTrait.php,15,Db,Work,Work/Db/HydrateKnownFieldsTrait.php,0,,Processes
 Db/IdCursor.php,14,Db,Flows,Flows/Db/IdCursor.php,0,,Processes
@@ -2603,6 +2603,7 @@ Service/Integration/Providers/TimeProvider.php,145,Service,Integrations,Integrat
 Service/Integration/Providers/XwikiProvider.php,150,Service,Integrations,Integrations/Service/Integration/Providers/XwikiProvider.php,0,,Integrations
 Service/Integration/QueryTimeContract.php,18,Service,Integrations,Integrations/Service/Integration/QueryTimeContract.php,0,,Integrations
 Service/Integration/TimeProvider.php,39,Service,Integrations,Integrations/Service/Integration/TimeProvider.php,0,,Integrations
+Service/Interaction/AddressedObject.php,,Service,,,,,Core
 Service/Interaction/FavouriteService.php,25,Service,Work,Work/Service/Interaction/FavouriteService.php,0,,Processes
 Service/Interaction/ReadHistoryService.php,125,Service,Compliance,Compliance/Service/Interaction/ReadHistoryService.php,0,335,Processes
 Service/Interaction/ReadStateService.php,141,Service,Work,Work/Service/Interaction/ReadStateService.php,1,208,Processes
@@ -3635,7 +3636,7 @@ Db/CospendLinkMapperInterface.php,,Db,,,,,Integrations
 Db/DbRegistrar.php,,Db,,,,,Core
 Db/DecisionMapperInterface.php,,Db,,,,,Processes
 Db/DecisionMetadataChange.php,,Db,,,,,Core
-Db/DecisionMetadataEdit.php,,Db,,,,,Processes
+Db/DecisionMetadataEdit.php,,Db,,,,,Core
 Db/DeckLinkMapperInterface.php,,Db,,,,,Integrations
 Db/DelegationGrantMapperInterface.php,,Db,,,,,Core
 Db/EmailLinkMapperInterface.php,,Db,,,,,Integrations

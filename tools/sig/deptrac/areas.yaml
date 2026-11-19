@@ -594,7 +594,7 @@ deptrac:
         - type: directory
           value: 'lib/Controller/Trait/ResolvesRegisterAndSchemaTrait[.]php$'
         - type: directory
-          value: 'lib/Db/(AbstractObjectMapper|AccessLinkMapper|AccessLinkMapperInterface|AuditTrailMapperInterface|AuthorizationRulesTrait|ColumnFiltersTrait|ContentReportMapperInterface|DbRegistrar|DecisionMetadataChange|DelegationGrant|DelegationGrantMapper|DelegationGrantMapperInterface|DeleteByObjectTrait|DraftVersion|DraftVersionMapper|EmptyJsonHydration|EmptyPropertyClaim|EntityChangeDetector|EntityRelation|EntityRelationMapper|ErasurePreviewMapperInterface|FederatedShareMapperInterface|FileDigest|FileDigestMapper|HydrateEmptyJsonAsNullTrait|HydrationKey|JobRunFilter|JobRunMapperInterface|LikeOperator|LikeOperatorInterface|LikeOperators|LinkColumn|MagicMapper|MagicMapperInterface|MapLinkMapperInterface|MapperRegistrar|MapperWiring|MultiTenancyTrait|ObjectHandling|ObjectLinkTypesTrait|ObjectReadState|ObjectReadStateMapper|ObjectReadStateMapperInterface|ObjectRelation|ObjectRelationMapper|ObjectRelationMapperInterface|OpenProjectLinkMapperInterface|Organisation|OrganisationFieldTrait|OrganisationMapper|OrganisationMapperInterface|OutcomeFilter|PartialObjectEntity|PhotoLinkMapperInterface|PollLinkMapperInterface|ProcessingLogMapperInterface|ProcessingLogReadScope|ProcessingPurposeMapperInterface|QueryPage|RecordTemplateMapperInterface|RegisterLookup|RegisterMapper|RegisterMapperHelper|RegisterMapperServices|RegisterSchema|RegistrySubscription|RegistrySubscriptionMapper|RegistrySubscriptionMapperInterface|RunObjectLock|RunObjectLockMapper|RunObjectLockMapperInterface|SchemaCatalog|SchemaCatalogInterface|SchemaChangelog|SchemaChangelogMapper|SchemaChangelogMapperInterface|SchemaFollower|SchemaFollowerMapper|SchemaMapper|SchemaPropertyInheritance|SchemaRun|SchemaRunEntry|SchemaRunEntryMapper|SchemaRunEntryMapperInterface|SchemaRunMapper|SchemaRunMapperInterface|SchemaRunStoreInterface|SelectByColumnTrait|SlugIdLookupTrait|SourceMapperInterface|StateChangePeriod|StateHistory|StateHistoryMapper|StateHistoryMapperInterface|TenantUsage|TenantUsageMapper|TenantUsageMapperInterface|TextSignature|TextSignatureMapper|TimeTrackerLinkMapperInterface|TypedFieldsJson|TypedFieldsJsonTrait|UsageMeasurement|VerwerkingsactiviteitMapperInterface|XwikiLinkMapperInterface)[.]php$'
+          value: 'lib/Db/(AbstractObjectMapper|AccessLinkMapper|AccessLinkMapperInterface|AuditTrailMapperInterface|AuthorizationRulesTrait|ColumnFiltersTrait|ContentReportMapperInterface|DbRegistrar|DecisionMetadataChange|DecisionMetadataEdit|DelegationGrant|DelegationGrantMapper|DelegationGrantMapperInterface|DeleteByObjectTrait|DraftVersion|DraftVersionMapper|EmptyJsonHydration|EmptyPropertyClaim|EntityChangeDetector|EntityRelation|EntityRelationMapper|ErasurePreviewMapperInterface|FederatedShareMapperInterface|FileDigest|FileDigestMapper|HydrateBySettersTrait|HydrateEmptyJsonAsNullTrait|HydrationKey|JobRunFilter|JobRunMapperInterface|LikeOperator|LikeOperatorInterface|LikeOperators|LinkColumn|MagicMapper|MagicMapperInterface|MapLinkMapperInterface|MapperRegistrar|MapperWiring|MultiTenancyTrait|ObjectHandling|ObjectLinkTypesTrait|ObjectReadState|ObjectReadStateMapper|ObjectReadStateMapperInterface|ObjectRelation|ObjectRelationMapper|ObjectRelationMapperInterface|OpenProjectLinkMapperInterface|Organisation|OrganisationFieldTrait|OrganisationMapper|OrganisationMapperInterface|OutcomeFilter|PartialObjectEntity|PhotoLinkMapperInterface|PollLinkMapperInterface|ProcessingLogMapperInterface|ProcessingLogReadScope|ProcessingPurposeMapperInterface|QueryPage|RecordTemplateMapperInterface|RegisterLookup|RegisterMapper|RegisterMapperHelper|RegisterMapperServices|RegisterSchema|RegistrySubscription|RegistrySubscriptionMapper|RegistrySubscriptionMapperInterface|RunObjectLock|RunObjectLockMapper|RunObjectLockMapperInterface|SchemaCatalog|SchemaCatalogInterface|SchemaChangelog|SchemaChangelogMapper|SchemaChangelogMapperInterface|SchemaFollower|SchemaFollowerMapper|SchemaMapper|SchemaPropertyInheritance|SchemaRun|SchemaRunEntry|SchemaRunEntryMapper|SchemaRunEntryMapperInterface|SchemaRunMapper|SchemaRunMapperInterface|SchemaRunStoreInterface|SelectByColumnTrait|SlugIdLookupTrait|SourceMapperInterface|StateChangePeriod|StateHistory|StateHistoryMapper|StateHistoryMapperInterface|TenantUsage|TenantUsageMapper|TenantUsageMapperInterface|TextSignature|TextSignatureMapper|TimeTrackerLinkMapperInterface|TypedFieldsJson|TypedFieldsJsonTrait|UsageMeasurement|VerwerkingsactiviteitMapperInterface|XwikiLinkMapperInterface)[.]php$'
         - type: directory
           value: 'lib/Db/ApiCall/[^/]*$'
         - type: directory
@@ -761,6 +761,8 @@ deptrac:
           value: 'lib/Service/History/[^/]*$'
         - type: directory
           value: 'lib/Service/Import/RecordImport/[^/]*$'
+        - type: directory
+          value: 'lib/Service/Interaction/AddressedObject[.]php$'
         - type: directory
           value: 'lib/Service/JsonLd/[^/]*$'
         - type: directory
@@ -1878,7 +1880,7 @@ deptrac:
         - type: directory
           value: 'lib/Controller/Support/WorkingCalendarControllerServices[.]php$'
         - type: directory
-          value: 'lib/Db/(AuditFlowAttribution|AutomationRecord|AutomationRecordFilter|AutomationRecordMapper|BulkJob|BulkJobMapper|BulkJobMapperInterface|BulkJobMember|BulkJobMemberMapper|BulkJobMemberMapperInterface|CalendarFeedToken|CalendarFeedTokenMapper|CalendarFeedTokenMapperInterface|CaseItem|CaseItemAudit|CaseItemAuditMapper|CaseItemAuditMapperInterface|CaseItemMapper|CaseItemMapperInterface|Decision|DecisionMapper|DecisionMapperInterface|DecisionMetadataEdit|Flow|FlowActivityWindow|FlowClaim|FlowClaimMapper|FlowClaimMapperInterface|FlowDefinition|FlowDefinitionMapper|FlowDefinitionMapperInterface|FlowLink|FlowLinkMapper|FlowLinkMapperInterface|FlowMapper|FlowMapperInterface|FlowRun|FlowRunFilter|FlowRunListing|FlowRunMapper|FlowRunMapperInterface|FlowRunQueueExpiry|FlowRunStep|FlowRunStepMapper|FlowRunStepMapperInterface|FlowRunSubjectScope|FlowRunViewer|FlowState|FlowStateMapper|FlowStateMapperInterface|FlowStream|FlowStreamMapper|FlowStreamMapperInterface|FlowTimer|FlowTimerEvent|FlowTimerEventMapper|FlowTimerEventMapperInterface|FlowTimerFire|FlowTimerFireMapper|FlowTimerFireMapperInterface|FlowTimerMapper|FlowTimerMapperInterface|FlowTriggerMapper|FlowTriggerMapperInterface|FlowVersion|FlowVersionMapper|FlowVersionMapperInterface|HydrateKnownFieldsTrait|IdCursor|PortalTaskDelivery|PortalTaskDeliveryMapper|ProcessesMapperBindings|ProcessesMapperRegistrar|RuleRun|RuleRunFilter|RuleRunMapper|RuleRunMapperInterface|RuleRunSelection|RuleRunSummary|RuleRunSummaryMapper|RuleRunSummaryMapperInterface|RunScopedRowsTrait|SequenceMapperInterface|Task|TaskAuditMapperInterface|TaskBlockerMapper|TaskBlockerMapperInterface|TaskCandidate|TaskCandidateMapper|TaskCandidateMapperInterface|TaskInboxAnchor|TaskInboxAudience|TaskInboxCriteria|TaskInboxDueWindow|TaskInboxFilter|TaskInboxOrder|TaskInboxSelection|TaskMapper|TaskProjectionState|TaskProjectionStateMapper|TaskProjectionStateMapperInterface|TaskRelation|TaskRelationMapper|TaskRelationMapperInterface|TaskSequenceMapperInterface)[.]php$'
+          value: 'lib/Db/(AuditFlowAttribution|AutomationRecord|AutomationRecordFilter|AutomationRecordMapper|BulkJob|BulkJobMapper|BulkJobMapperInterface|BulkJobMember|BulkJobMemberMapper|BulkJobMemberMapperInterface|CalendarFeedToken|CalendarFeedTokenMapper|CalendarFeedTokenMapperInterface|CaseItem|CaseItemAudit|CaseItemAuditMapper|CaseItemAuditMapperInterface|CaseItemMapper|CaseItemMapperInterface|Decision|DecisionMapper|DecisionMapperInterface|Flow|FlowActivityWindow|FlowClaim|FlowClaimMapper|FlowClaimMapperInterface|FlowDefinition|FlowDefinitionMapper|FlowDefinitionMapperInterface|FlowLink|FlowLinkMapper|FlowLinkMapperInterface|FlowMapper|FlowMapperInterface|FlowRun|FlowRunFilter|FlowRunListing|FlowRunMapper|FlowRunMapperInterface|FlowRunQueueExpiry|FlowRunStep|FlowRunStepMapper|FlowRunStepMapperInterface|FlowRunSubjectScope|FlowRunViewer|FlowState|FlowStateMapper|FlowStateMapperInterface|FlowStream|FlowStreamMapper|FlowStreamMapperInterface|FlowTimer|FlowTimerEvent|FlowTimerEventMapper|FlowTimerEventMapperInterface|FlowTimerFire|FlowTimerFireMapper|FlowTimerFireMapperInterface|FlowTimerMapper|FlowTimerMapperInterface|FlowTriggerMapper|FlowTriggerMapperInterface|FlowVersion|FlowVersionMapper|FlowVersionMapperInterface|HydrateKnownFieldsTrait|IdCursor|PortalTaskDelivery|PortalTaskDeliveryMapper|ProcessesMapperBindings|ProcessesMapperRegistrar|RuleRun|RuleRunFilter|RuleRunMapper|RuleRunMapperInterface|RuleRunSelection|RuleRunSummary|RuleRunSummaryMapper|RuleRunSummaryMapperInterface|RunScopedRowsTrait|SequenceMapperInterface|Task|TaskAuditMapperInterface|TaskBlockerMapper|TaskBlockerMapperInterface|TaskCandidate|TaskCandidateMapper|TaskCandidateMapperInterface|TaskInboxAnchor|TaskInboxAudience|TaskInboxCriteria|TaskInboxDueWindow|TaskInboxFilter|TaskInboxOrder|TaskInboxSelection|TaskMapper|TaskProjectionState|TaskProjectionStateMapper|TaskProjectionStateMapperInterface|TaskRelation|TaskRelationMapper|TaskRelationMapperInterface|TaskSequenceMapperInterface)[.]php$'
         - type: directory
           value: 'lib/Db/FlowRun/[^/]*$'
         - type: directory
@@ -2332,7 +2334,35 @@ deptrac:
         - type: directory
           value: 'lib/Service/Form/OwnedDraft[.]php$'
         - type: directory
-          value: 'lib/Service/Interaction/[^/]*$'
+          value: 'lib/Service/Interaction/FavouriteService[.]php$'
+        - type: directory
+          value: 'lib/Service/Interaction/FavouriteServiceInterface[.]php$'
+        - type: directory
+          value: 'lib/Service/Interaction/ProcessingListRead[.]php$'
+        - type: directory
+          value: 'lib/Service/Interaction/ReadHistoryService[.]php$'
+        - type: directory
+          value: 'lib/Service/Interaction/ReadStateService[.]php$'
+        - type: directory
+          value: 'lib/Service/Interaction/ReadStateServiceInterface[.]php$'
+        - type: directory
+          value: 'lib/Service/Interaction/SubResourceWindow[.]php$'
+        - type: directory
+          value: 'lib/Service/Interaction/SubstantiveChangeEvaluator[.]php$'
+        - type: directory
+          value: 'lib/Service/Interaction/SubstantiveChangeEvaluatorInterface[.]php$'
+        - type: directory
+          value: 'lib/Service/Interaction/UnreadCountCalculator[.]php$'
+        - type: directory
+          value: 'lib/Service/Interaction/ValueNormaliser[.]php$'
+        - type: directory
+          value: 'lib/Service/Interaction/WatcherCaller[.]php$'
+        - type: directory
+          value: 'lib/Service/Interaction/WatcherService[.]php$'
+        - type: directory
+          value: 'lib/Service/Interaction/WatcherServiceInterface[.]php$'
+        - type: directory
+          value: 'lib/Service/Interaction/WatcherStore[.]php$'
         - type: directory
           value: 'lib/Service/Lifecycle/AutoTransitionCandidate[.]php$'
         - type: directory
@@ -2714,7 +2744,7 @@ deptrac:
         - type: directory
           value: 'lib/Controller/Support/RecordTemplatesControllerServices[.]php$'
         - type: directory
-          value: 'lib/Db/(Application|ApplicationMapper|Configuration|ConfigurationBinding|ConfigurationBindingMapper|ConfigurationBindingMapperInterface|ConfigurationDeployment|ConfigurationDeploymentMapper|ConfigurationDeploymentMapperInterface|ConfigurationDraft|ConfigurationDraftMapper|ConfigurationDraftMapperInterface|ConfigurationDraftSet|ConfigurationDraftSetMapper|ConfigurationDraftSetMapperInterface|ConfigurationMapper|ConfigurationMapperBindings|ConfigurationMapperInterface|ConfigurationMapperRegistrar|ConfigurationSyncResult|ConfigurationValue|ConfigurationValueMapper|ExportProfile|ExportProfileMapper|ExportProfileMapperInterface|ExportRun|ExportRunMapper|HydrateBySettersTrait|ImportPreview|ImportPreviewFinderInterface|ImportPreviewMapper|ImportPreviewMapperInterface|ImportPreviewRow|ImportPreviewRowMapper|ImportPreviewRowMapperInterface|IsoTimestampsTrait|JobRun|JobRunMapper|MigrationPack|MigrationPackMapper|MigrationPackMapperInterface|NewRowStamps|RecordTemplate|RecordTemplateMapper|Sequence|SequenceMapper|StoredEntity|TaskSequence|TaskSequenceMapper|Translation|TranslationMapper)[.]php$'
+          value: 'lib/Db/(Application|ApplicationMapper|Configuration|ConfigurationBinding|ConfigurationBindingMapper|ConfigurationBindingMapperInterface|ConfigurationDeployment|ConfigurationDeploymentMapper|ConfigurationDeploymentMapperInterface|ConfigurationDraft|ConfigurationDraftMapper|ConfigurationDraftMapperInterface|ConfigurationDraftSet|ConfigurationDraftSetMapper|ConfigurationDraftSetMapperInterface|ConfigurationMapper|ConfigurationMapperBindings|ConfigurationMapperInterface|ConfigurationMapperRegistrar|ConfigurationSyncResult|ConfigurationValue|ConfigurationValueMapper|ExportProfile|ExportProfileMapper|ExportProfileMapperInterface|ExportRun|ExportRunMapper|ImportPreview|ImportPreviewFinderInterface|ImportPreviewMapper|ImportPreviewMapperInterface|ImportPreviewRow|ImportPreviewRowMapper|ImportPreviewRowMapperInterface|IsoTimestampsTrait|JobRun|JobRunMapper|MigrationPack|MigrationPackMapper|MigrationPackMapperInterface|NewRowStamps|RecordTemplate|RecordTemplateMapper|Sequence|SequenceMapper|StoredEntity|TaskSequence|TaskSequenceMapper|Translation|TranslationMapper)[.]php$'
         - type: directory
           value: 'lib/Db/Configuration/[^/]*$'
         - type: directory
