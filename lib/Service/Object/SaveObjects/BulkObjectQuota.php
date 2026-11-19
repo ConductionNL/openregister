@@ -22,13 +22,13 @@ namespace OCA\OpenRegister\Service\Object\SaveObjects;
 
 use Closure;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Listener\ObjectQuotaListener;
-use OCA\OpenRegister\Service\Quota\ObjectQuotaServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectQuotaInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectQuotaRefusal;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
- * The bulk counterpart of ObjectQuotaListener (task 4.1).
+ * The bulk counterpart of the single-object quota listener (task 4.1).
  *
  * A bulk save does not dispatch `ObjectCreatingEvent` per row, and the rows of
  * one batch are not stored yet while the batch is screened, so the listener's
@@ -47,13 +47,13 @@ final class BulkObjectQuota {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectQuotaServiceInterface $quotas Reads the cap and counts the stored objects.
-	 * @param LoggerInterface             $logger Logs a count that failed.
+	 * @param ObjectQuotaInterface $quotas Reads the cap and counts the stored objects.
+	 * @param LoggerInterface      $logger Logs a count that failed.
 	 *
 	 * @spec openspec/changes/object-quota-per-organisation/specs/tenant-quotas/spec.md#requirement-a-create-past-an-organisations-cap-is-refused-req-oqp-002
 	 */
 	public function __construct(
-		private readonly ObjectQuotaServiceInterface $quotas,
+		private readonly ObjectQuotaInterface $quotas,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -194,18 +194,15 @@ final class BulkObjectQuota {
 	 * @return array{object: array<string, mixed>, error: string, code: string}
 	 */
 	private static function refusal(array $row, BulkQuotaTally $tally): array {
-		if ($tally->stored === null) {
-			return [
-				'object' => $row,
-				'error'  => ObjectQuotaListener::uncheckedMessage(schema: $tally->schemaRef),
-				'code'   => ObjectQuotaListener::ERROR_CODE_UNCHECKED,
-			];
+		$refusal = new ObjectQuotaRefusal(schema: $tally->schemaRef);
+		if ($tally->stored !== null) {
+			$refusal = new ObjectQuotaRefusal(schema: $tally->schemaSlug, held: $tally->held(), limit: $tally->limit);
 		}
 
 		return [
 			'object' => $row,
-			'error'  => ObjectQuotaListener::exceededMessage(count: $tally->held(), limit: $tally->limit, schema: $tally->schemaSlug),
-			'code'   => ObjectQuotaListener::ERROR_CODE,
+			'error'  => $refusal->message(),
+			'code'   => $refusal->code(),
 		];
 	}//end refusal()
 

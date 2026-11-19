@@ -22,42 +22,16 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Quota;
 
-use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectQuotaInterface;
 
 /**
  * ObjectQuotaService, typed for callers outside the Service component.
  *
- * Its outside caller, the object quota listener, calls limitFor() and count(), so those are
- * the whole contract. Binding it in ContractBindings lets that caller resolve
- * ObjectQuotaService without naming the class.
+ * Its outside callers, the object quota listener and the bulk save path, call limitFor()
+ * and count(), so those are the whole contract. They are declared once, on the Core-owned
+ * ObjectQuotaInterface this interface extends, so the bulk save path can hold its creates
+ * to the cap without naming a Processes class. Binding it in ContractBindings lets the
+ * listener resolve ObjectQuotaService without naming the class.
  */
-interface ObjectQuotaServiceInterface {
-	/**
-	 * The per-organisation cap a schema declares, or null when it declares none.
-	 *
-	 * @param Schema $schema The schema.
-	 *
-	 * @return int|null The cap, a positive integer, or null for no quota.
-	 *
-	 * @spec openspec/changes/object-quota-per-organisation/specs/tenant-quotas/spec.md
-	 */
-	public function limitFor(Schema $schema): ?int;
-
-	/**
-	 * How many objects of this register and schema the organisation holds.
-	 *
-	 * Soft-deleted rows are not counted: the search excludes them, as it does
-	 * for every list.
-	 *
-	 * @param int    $registerId       The register id.
-	 * @param Schema $schema           The schema.
-	 * @param string $organisationUuid The organisation's uuid.
-	 *
-	 * @return int The count.
-	 *
-	 * @throws \Throwable When the count cannot be made (it never answers 0 for a failure).
-	 *
-	 * @spec openspec/changes/object-quota-per-organisation/specs/tenant-quotas/spec.md
-	 */
-	public function count(int $registerId, Schema $schema, string $organisationUuid): int;
+interface ObjectQuotaServiceInterface extends ObjectQuotaInterface {
 }//end interface
