@@ -151,6 +151,8 @@ BulkAction/BulkActionInterface.php,15,BulkAction,Flows,Flows/BulkAction/BulkActi
 BulkAction/BulkActionInvoker.php,,BulkAction,,,,,Processes
 BulkAction/BulkActionResult.php,32,BulkAction,Flows,Flows/BulkAction/BulkActionResult.php,46,459,Processes
 BulkAction/LegacyBulkActionInterface.php,,BulkAction,,,,,Processes
+Controller/Support/ApplicationsControllerServices.php,,Controller,,,,,Configuration
+Controller/Support/ConnectionReporting.php,,Controller,,,,,Configuration
 BulkAction/ExportWholeSetAction.php,158,BulkAction,Configuration,Configuration/BulkAction/ExportWholeSetAction.php,0,173,Configuration
 BulkAction/RestorePriorValuesAction.php,163,BulkAction,Flows,Flows/BulkAction/RestorePriorValuesAction.php,0,,Processes
 BulkAction/ReversibleBulkActionInterface.php,10,BulkAction,Flows,Flows/BulkAction/ReversibleBulkActionInterface.php,0,,Processes
@@ -371,7 +373,7 @@ Controller/Support/AccessLinkControllerServices.php,10,Controller,Access,Access/
 Controller/Support/AccessLinkDomain.php,16,Controller,Access,Access/Controller/Support/AccessLinkDomain.php,0,,Core
 Controller/Support/AccessLinkPlatform.php,14,Controller,Access,Access/Controller/Support/AccessLinkPlatform.php,0,,Core
 Controller/Support/AgentsControllerServices.php,16,Controller,Platform,Platform/Controller/Support/AgentsControllerServices.php,0,,Core
-Controller/Support/ApiTokenSettingsControllerServices.php,16,Controller,Configuration,Configuration/Controller/Support/ApiTokenSettingsControllerServices.php,0,,Core
+Controller/Support/ApiTokenSettingsControllerServices.php,16,Controller,Configuration,Configuration/Controller/Support/ApiTokenSettingsControllerServices.php,0,,Configuration
 Controller/Support/ArchivalControllerServices.php,12,Controller,Compliance,Compliance/Controller/Support/ArchivalControllerServices.php,0,,Compliance
 Controller/Support/ArchivalDecisions.php,16,Controller,Compliance,Compliance/Controller/Support/ArchivalDecisions.php,0,,Compliance
 Controller/Support/ArchivalMappers.php,16,Controller,Compliance,Compliance/Controller/Support/ArchivalMappers.php,0,,Compliance
@@ -433,8 +435,8 @@ Controller/Support/DsarCaseControllerServices.php,12,Controller,Compliance,Compl
 Controller/Support/DsarCaseDisclosure.php,16,Controller,Compliance,Compliance/Controller/Support/DsarCaseDisclosure.php,0,,Compliance
 Controller/Support/DsarCasePlatform.php,10,Controller,Compliance,Compliance/Controller/Support/DsarCasePlatform.php,0,,Core
 Controller/Support/DsarCaseRegistries.php,12,Controller,Compliance,Compliance/Controller/Support/DsarCaseRegistries.php,0,,Compliance
-Controller/Support/EdepotSettingsControllerServices.php,10,Controller,Compliance,Compliance/Controller/Support/EdepotSettingsControllerServices.php,0,,Core
-Controller/Support/EdepotSettingsDomain.php,16,Controller,Compliance,Compliance/Controller/Support/EdepotSettingsDomain.php,0,,Core
+Controller/Support/EdepotSettingsControllerServices.php,10,Controller,Compliance,Compliance/Controller/Support/EdepotSettingsControllerServices.php,0,,Configuration
+Controller/Support/EdepotSettingsDomain.php,16,Controller,Compliance,Compliance/Controller/Support/EdepotSettingsDomain.php,0,,Configuration
 Controller/Support/EdepotSettingsPlatform.php,14,Controller,Compliance,Compliance/Controller/Support/EdepotSettingsPlatform.php,0,,Core
 Controller/Support/EmptyValueStripper.php,41,Controller,Service,Service/Controller/Support/EmptyValueStripper.php,0,,Core
 Controller/Support/EntityRelationsControllerServices.php,12,Controller,Flows,Flows/Controller/Support/EntityRelationsControllerServices.php,0,,Processes
@@ -3302,10 +3304,10 @@ Service/Vocabulary/ConceptRepository.php,202,Service,Service,Service/Vocabulary/
 Service/Vocabulary/ConceptShapeGuard.php,63,Service,Service,Service/Vocabulary/ConceptShapeGuard.php,0,,Core
 Service/Vocabulary/VocabularyDeclarationResolver.php,60,Service,Service,Service/Vocabulary/VocabularyDeclarationResolver.php,0,,Core
 Service/VocabularyImportService.php,486,Service,Configuration,Configuration/Service/VocabularyImportService.php,0,42,Configuration
-Service/WebhookDeliveryAttempt.php,12,Service,Service,Service/WebhookDeliveryAttempt.php,0,,Core
-Service/WebhookDeliveryRecorder.php,204,Service,Service,Service/WebhookDeliveryRecorder.php,0,,Core
-Service/WebhookRequestOptions.php,56,Service,Service,Service/WebhookRequestOptions.php,0,,Core
-Service/WebhookService.php,611,Service,Service,Service/WebhookService.php,40,27,Core
+Service/WebhookDeliveryAttempt.php,12,Service,Service,Service/WebhookDeliveryAttempt.php,0,,Integrations
+Service/WebhookDeliveryRecorder.php,204,Service,Service,Service/WebhookDeliveryRecorder.php,0,,Integrations
+Service/WebhookRequestOptions.php,56,Service,Service,Service/WebhookRequestOptions.php,0,,Integrations
+Service/WebhookService.php,611,Service,Service,Service/WebhookService.php,40,27,Integrations
 Service/WellKnown/SecurityTxtBuilder.php,88,Service,Integrations,Integrations/Service/WellKnown/SecurityTxtBuilder.php,0,,Integrations
 Service/WriteCause.php,64,Service,Service,Service/WriteCause.php,0,361,Core
 Service/WritePhaseProbe.php,123,Service,Service,Service/WritePhaseProbe.php,0,231,Core
@@ -4111,9 +4113,9 @@ Service/VocabularyConceptEdges.php,,Service,,,,,Core
 Service/VocabularyCsvReader.php,,Service,,,,,Core
 Service/VocabularyImportTally.php,,Service,,,,,Core
 Service/VocabularyObjectStore.php,,Service,,,,,Core
-Service/WebhookDelivery.php,,Service,,,,,Core
+Service/WebhookDelivery.php,,Service,,,,,Integrations
 Service/WebhookDispatchServices.php,,Service,,,,,Integrations
-Service/WebhookEvent.php,,Service,,,,,Core
+Service/WebhookEvent.php,,Service,,,,,Integrations
 Service/WebhookStores.php,,Service,,,,,Integrations
 Service/WholeTableRows.php,,Service,,,,,Core
 Service/WorkPackageDraft.php,,Service,,,,,Integrations
@@ -4314,7 +4316,7 @@ Service/Import/RecordImport/RowRangeFilter.php,,Service,,,,,Core
 Service/Import/RecordImport/UnconfirmedMappingException.php,,Service,,,,,Core
 Notifications/Service/Notification/ScheduledMessageRefusal.php,46,Notifications,Notifications,Notifications/Service/Notification/ScheduledMessageRefusal.php,0,,Notifications
 Notifications/Service/Notification/ScheduledMessageScheduler.php,247,Notifications,Notifications,Notifications/Service/Notification/ScheduledMessageScheduler.php,0,,Notifications
-Service/OwnedWebhookView.php,288,Service,Service,Service/OwnedWebhookView.php,0,,Core
+Service/OwnedWebhookView.php,288,Service,Service,Service/OwnedWebhookView.php,0,,Integrations
 Controller/Settings/TranslationSettingsController.php,,Controller,,,,,Configuration
 Db/SchemaMapper/DiscardedAnnotations.php,,Db,,,,,Core
 Db/SchemaMapper/LifecycleAnnotationCheck.php,47,Db,,,0,,Processes
@@ -4415,3 +4417,5 @@ Db/PlatformMapperBindings.php,,Db,,,,,Platform
 Db/PlatformMapperRegistrar.php,,Db,,,,,Platform
 Service/PlatformServiceBindings.php,,Service,,,,,Platform
 Service/PlatformServiceRegistrar.php,,Service,,,,,Platform
+Event/ObjectWriteRequestEvent.php,,Event,,,,,Core
+Listener/WebhookRequestInterceptionListener.php,,Listener,,,,,Integrations
