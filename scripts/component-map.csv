@@ -4403,3 +4403,6 @@ AppHost/Scheduling/ScheduleAuditTrail.php,,AppHost,,,,,Processes
 AppHost/Scheduling/ScheduleFlowStore.php,,AppHost,,,,,Processes
 AppHost/Scheduling/ScheduleFlowStoreInterface.php,,AppHost,,,,,Processes
 AppHost/Scheduling/ScheduleFlowSync.php,,AppHost,,,,,Processes
+Db/Schema/AnnotationVocabulary.php,,Db,,,,,Kernel
+Service/Handoff/HandoffRequest.php,,Service,,,,,Kernel
+Service/Handoff/HandoffSourceRef.php,,Service,,,,,Kernel
