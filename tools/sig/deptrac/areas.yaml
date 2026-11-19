@@ -242,8 +242,6 @@ deptrac:
         - type: directory
           value: 'lib/Controller/Support/GitHubTokenFailure[.]php$'
         - type: directory
-          value: 'lib/Controller/Support/HybridSearchDiagnostics[.]php$'
-        - type: directory
           value: 'lib/Controller/Support/LinkRemoval[.]php$'
         - type: directory
           value: 'lib/Controller/Support/LinkedDataServices[.]php$'
@@ -481,8 +479,6 @@ deptrac:
           value: 'lib/Controller/Support/ScopeCaller[.]php$'
         - type: directory
           value: 'lib/Controller/Support/ScopesControllerServices[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/SearchTrailControllerServices[.]php$'
         - type: directory
           value: 'lib/Controller/Support/SearchTrailPageLinks[.]php$'
         - type: directory
@@ -2728,7 +2724,7 @@ deptrac:
         - type: directory
           value: 'lib/Listener/(RedactionPolicyCacheListener|ShareableConfigTypeRegistrationListener)[.]php$'
         - type: directory
-          value: 'lib/Service/(AppRegisterImportRunner|ApplicationMove|ApplicationService|ConfigurationService|ConfigurationServiceInterface|ConfigurationTransferInterface|ConfigurationUpdateNotice|ContractBindings|ContractBindingsRegistrar|CountedRegisterImport|DemoDataService|DescriptorImportTarget|ExportService|FormsAppRows|ImportService|LanguageGapScan|LanguageService|ManifestProfile|ManifestService|MassValidationRun|McpCatalogSummaries|McpDiscoveryService|MdiIconRenderer|MigrationPackService|MigrationPackServiceInterface|MigrationService|MockImportRun|NotificationService|OperationsConsoleService|PropertyDiscoveryRun|RecordUpdate|RegisterDescriptorService|ScheduledReportRun|ScheduledReportService|SchemaApplicationMigrator|SchemaCascade|SchemaService|SchemaSplitRun|SequenceScope|SequenceService|SettingsService|SharedSchemaDedupeService|SharedSchemaPlanRun|SharedSchemaUse|ShippedRegister|SourceLanguageLookup|TenantKeyService|TranslationProjectionService|TranslationSearch|TranslationStatusService|ValidationChunkResult|VocabularyImportService)[.]php$'
+          value: 'lib/Service/(AppRegisterImportRunner|ApplicationMove|ApplicationService|ConfigurationService|ConfigurationServiceInterface|ConfigurationTransferInterface|ConfigurationUpdateNotice|ContractBindings|ContractBindingsRegistrar|CountedRegisterImport|DemoDataService|DescriptorImportTarget|ExportService|FormsAppRows|ImportService|LanguageGapScan|LanguageService|ManifestProfile|ManifestService|MassValidationRun|McpCatalogSummaries|McpDiscoveryService|MdiIconRenderer|MigrationPackService|MigrationPackServiceInterface|MigrationService|MockImportRun|NotificationService|OperationsConsoleService|PropertyDiscoveryRun|RecordUpdate|RegisterDescriptorService|ScheduledReportExporters|ScheduledReportRun|ScheduledReportService|SchemaApplicationMigrator|SchemaCascade|SchemaService|SchemaSplitRun|SequenceScope|SequenceService|SettingsService|SharedSchemaDedupeService|SharedSchemaPlanRun|SharedSchemaUse|ShippedRegister|SourceLanguageLookup|TenantKeyService|TranslationProjectionService|TranslationSearch|TranslationStatusService|ValidationChunkResult|VocabularyImportService)[.]php$'
         - type: directory
           value: 'lib/Service/Capability/ToolGrantCodec[.]php$'
         - type: directory
@@ -2915,6 +2911,8 @@ deptrac:
           value: 'lib/Controller/Support/RetentionDomain[.]php$'
         - type: directory
           value: 'lib/Controller/Support/RetentionMappers[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/SearchTrailControllerServices[.]php$'
         - type: directory
           value: 'lib/Controller/Support/SelectielijstControllerServices[.]php$'
         - type: directory
@@ -3428,6 +3426,8 @@ deptrac:
         - type: directory
           value: 'lib/Controller/(SettingsController)[.]php$'
         - type: directory
+          value: 'lib/Controller/Support/HybridSearchDiagnostics[.]php$'
+        - type: directory
           value: 'lib/Db/(SearchTrailCleanupInterface|SearchTrailCriteria|SearchTrailMapperInterface)[.]php$'
         - type: directory
           value: 'lib/Db/SearchTrail/[^/]*$'
@@ -3530,7 +3530,7 @@ deptrac:
         - type: directory
           value: 'lib/Push/[^/]*$'
         - type: directory
-          value: 'lib/Service/(ActivityFilter|ActivityFilterServiceInterface|AdminRecipientExpander|NotificationServiceInterface|ScheduledReportDelivery|ScheduledReportExportQuery|ScheduledReportExporters|ScheduledReportNotice|ScheduledReportOwnerServices|ScheduledReportStores)[.]php$'
+          value: 'lib/Service/(ActivityFilter|ActivityFilterServiceInterface|AdminRecipientExpander|NotificationServiceInterface|ScheduledReportDelivery|ScheduledReportExportQuery|ScheduledReportNotice|ScheduledReportOwnerServices|ScheduledReportStores)[.]php$'
         - type: directory
           value: 'lib/Service/Mail/[^/]*$'
     - name: Platform

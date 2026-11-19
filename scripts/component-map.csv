@@ -476,6 +476,7 @@ Controller/Support/GeoServices.php,16,Controller,Service,Service/Controller/Supp
 Controller/Support/GitHubIssuesControllerServices.php,10,Controller,Configuration,Configuration/Controller/Support/GitHubIssuesControllerServices.php,0,,Configuration
 Controller/Support/GitHubIssuesDomain.php,16,Controller,Configuration,Configuration/Controller/Support/GitHubIssuesDomain.php,0,,Configuration
 Controller/Support/GitHubIssuesPlatform.php,12,Controller,Configuration,Configuration/Controller/Support/GitHubIssuesPlatform.php,0,,Configuration
+Controller/Support/HybridSearchDiagnostics.php,,Controller,,,,,Search
 Controller/Support/ImportPreviewControllerServices.php,11,Controller,Configuration,Configuration/Controller/Support/ImportPreviewControllerServices.php,0,,Configuration
 Controller/Support/ImportPreviewDomain.php,12,Controller,Configuration,Configuration/Controller/Support/ImportPreviewDomain.php,0,,Configuration
 Controller/Support/ImportPreviewMappers.php,14,Controller,Configuration,Configuration/Controller/Support/ImportPreviewMappers.php,0,,Configuration
@@ -547,6 +548,7 @@ Controller/Support/SchemaPlatform.php,16,Controller,Service,Service/Controller/S
 Controller/Support/SchemaSemantics.php,16,Controller,Service,Service/Controller/Support/SchemaSemantics.php,0,,Core
 Controller/Support/SchemaServices.php,16,Controller,Service,Service/Controller/Support/SchemaServices.php,0,,Core
 Controller/Support/SchemasControllerServices.php,12,Controller,Service,Service/Controller/Support/SchemasControllerServices.php,0,,Core
+Controller/Support/SearchTrailControllerServices.php,,Controller,,,,,Compliance
 Controller/Support/SettingsControllerServices.php,10,Controller,Search,Search/Controller/Support/SettingsControllerServices.php,0,,Core
 Controller/Support/SettingsRuntime.php,12,Controller,Search,Search/Controller/Support/SettingsRuntime.php,0,,Core
 Controller/Support/SettingsStore.php,16,Controller,Search,Search/Controller/Support/SettingsStore.php,0,,Core
@@ -4036,7 +4038,7 @@ Service/RetentionRules.php,,Service,,,,,Compliance
 Service/RetentionStores.php,,Service,,,,,Compliance
 Service/ScheduledReportDelivery.php,,Service,,,,,Notifications
 Service/ScheduledReportExportQuery.php,,Service,,,,,Notifications
-Service/ScheduledReportExporters.php,,Service,,,,,Notifications
+Service/ScheduledReportExporters.php,,Service,,,,,Configuration
 Service/ScheduledReportNotice.php,,Service,,,,,Notifications
 Service/ScheduledReportOwnerServices.php,,Service,,,,,Notifications
 Service/ScheduledReportStores.php,,Service,,,,,Notifications
