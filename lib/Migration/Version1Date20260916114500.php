@@ -40,14 +40,13 @@ namespace OCA\OpenRegister\Migration;
 use Closure;
 use OCP\DB\ISchemaWrapper;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Index the notification dispatch history by outcome and moment.
  *
  * @spec openspec/specs/operations-console/spec.md
  */
-class Version1Date20260916114500 extends SimpleMigrationStep {
+class Version1Date20260916114500 extends TargetedMigrationStep {
 
 	/**
 	 * The table the console groups.
@@ -74,7 +73,7 @@ class Version1Date20260916114500 extends SimpleMigrationStep {
 	 *
 	 * @spec openspec/specs/operations-console/spec.md
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		/*
 		 * @var ISchemaWrapper $schema
 		 */
@@ -95,5 +94,5 @@ class Version1Date20260916114500 extends SimpleMigrationStep {
 		$output->info('Indexed '.self::TABLE.' by status and dispatch moment');
 
 		return $schema;
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 }//end class

@@ -128,7 +128,7 @@ final class MagicTableCreator {
 	 * @return string The definition.
 	 */
 	private function definition(MagicTableDdl $ddl, array $column): string {
-		$sql = new MagicColumnSql(isPostgres: $ddl->isPostgres);
+		$sql = new MagicColumnSql(isPostgres: $ddl->isPostgres, jsonAsText: $ddl->isMariaDb);
 		$colName = $sql->quote(name: $column['name']);
 		$def = $colName . ' ' . $sql->type(type: $column['type'], column: $column);
 
@@ -144,7 +144,7 @@ final class MagicTableCreator {
 			return $this->autoincrementColumn(ddl: $ddl, colName: $colName) ?? $def . ' AUTO_INCREMENT';
 		}
 
-		return $def;
+		return $def . $sql->check(type: $column['type'], name: $column['name']);
 	}//end definition()
 
 	/**

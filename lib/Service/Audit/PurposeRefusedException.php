@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Audit;
 
 use Exception;
+use OCA\OpenRegister\Kernel\Contracts\Core\ReadPurposeRefusalInterface;
 
 /**
  * The refusal, carrying the reason and the purpose that was named.
@@ -36,7 +37,7 @@ use Exception;
  *
  * @spec openspec/specs/verwerkingsregister-api/spec.md
  */
-class PurposeRefusedException extends Exception {
+class PurposeRefusedException extends Exception implements ReadPurposeRefusalInterface {
 	/**
 	 * No purpose was named at all.
 	 *

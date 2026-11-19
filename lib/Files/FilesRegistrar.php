@@ -31,6 +31,7 @@ use OCA\OpenRegister\Files\Db\ChunkStoreInterface;
 use OCA\OpenRegister\Files\Db\FileMapper;
 use OCA\OpenRegister\Files\Db\FileMapperInterface;
 use OCA\OpenRegister\Files\Db\RegisterFolderRecorder;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectFileRecordsInterface;
 use OCA\OpenRegister\Files\Service\File\DocumentProcessingHandler;
 use OCA\OpenRegister\Files\Service\File\FileAuditHandler;
 use OCA\OpenRegister\Files\Service\File\FileAuditHandlerInterface;
@@ -96,6 +97,7 @@ final class FilesRegistrar
         FileSharingHandlerInterface::class        => FileSharingHandler::class,
         NcOfficeConverterInterface::class         => ConversionManagerConverter::class,
         NoteServiceInterface::class               => NoteService::class,
+        ObjectFileRecordsInterface::class         => FileMapper::class,
         RegisterFolderProvisionerInterface::class => RegisterFolderProvisioner::class,
         RegisterFolderRecordsInterface::class     => RegisterFolderRecorder::class,
         RiskLevelServiceInterface::class          => RiskLevelService::class,
