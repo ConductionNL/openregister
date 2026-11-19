@@ -126,8 +126,6 @@ deptrac:
         - type: directory
           value: 'lib/Controller/Support/AdministratorOnlyGate[.]php$'
         - type: directory
-          value: 'lib/Controller/Support/AgentsControllerServices[.]php$'
-        - type: directory
           value: 'lib/Controller/Support/ApiSurfaceControllerServices[.]php$'
         - type: directory
           value: 'lib/Controller/Support/ApiTokenProbe[.]php$'
@@ -162,10 +160,6 @@ deptrac:
         - type: directory
           value: 'lib/Controller/Support/CacheSettingsControllerServices[.]php$'
         - type: directory
-          value: 'lib/Controller/Support/CalendarEventsControllerServices[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/CaseTokenControllerServices[.]php$'
-        - type: directory
           value: 'lib/Controller/Support/ChatControllerServices[.]php$'
         - type: directory
           value: 'lib/Controller/Support/ChatDomain[.]php$'
@@ -183,8 +177,6 @@ deptrac:
           value: 'lib/Controller/Support/ChatStreamControllerServices[.]php$'
         - type: directory
           value: 'lib/Controller/Support/ChatStreamPlatform[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/ChatStreamTurn[.]php$'
         - type: directory
           value: 'lib/Controller/Support/CodedOptionsRequest[.]php$'
         - type: directory
@@ -239,8 +231,6 @@ deptrac:
           value: 'lib/Controller/Support/DsarControllerServices[.]php$'
         - type: directory
           value: 'lib/Controller/Support/EmptyValueStripper[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/FormLinksControllerServices[.]php$'
         - type: directory
           value: 'lib/Controller/Support/GdprRegisterAccess[.]php$'
         - type: directory
@@ -450,8 +440,6 @@ deptrac:
         - type: directory
           value: 'lib/Controller/Support/RelationsObjectLookup[.]php$'
         - type: directory
-          value: 'lib/Controller/Support/RelationsRecords[.]php$'
-        - type: directory
           value: 'lib/Controller/Support/RenderedObjectUuids[.]php$'
         - type: directory
           value: 'lib/Controller/Support/RepositoryCallFailure[.]php$'
@@ -525,8 +513,6 @@ deptrac:
           value: 'lib/Controller/Support/TablesControllerServices[.]php$'
         - type: directory
           value: 'lib/Controller/Support/TagsControllerServices[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/TaskEventsControllerServices[.]php$'
         - type: directory
           value: 'lib/Controller/Support/TasksPlatform[.]php$'
         - type: directory
@@ -1812,6 +1798,8 @@ deptrac:
         - type: directory
           value: 'lib/Controller/Support/CalculationsControllerServices[.]php$'
         - type: directory
+          value: 'lib/Controller/Support/CalendarEventsControllerServices[.]php$'
+        - type: directory
           value: 'lib/Controller/Support/CalendarFeedControllerServices[.]php$'
         - type: directory
           value: 'lib/Controller/Support/CalendarFeedDomain[.]php$'
@@ -1931,6 +1919,8 @@ deptrac:
           value: 'lib/Controller/Support/TaskCompletionCommand[.]php$'
         - type: directory
           value: 'lib/Controller/Support/TaskControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/TaskEventsControllerServices[.]php$'
         - type: directory
           value: 'lib/Controller/Support/TaskInboxRequest[.]php$'
         - type: directory
@@ -3408,6 +3398,8 @@ deptrac:
         - type: directory
           value: 'lib/Controller/Support/BookmarkLinksControllerServices[.]php$'
         - type: directory
+          value: 'lib/Controller/Support/CaseTokenControllerServices[.]php$'
+        - type: directory
           value: 'lib/Controller/Support/CollectiveLinksControllerServices[.]php$'
         - type: directory
           value: 'lib/Controller/Support/CompanyLookupControllerServices[.]php$'
@@ -3446,6 +3438,8 @@ deptrac:
         - type: directory
           value: 'lib/Controller/Support/FederationControllerServices[.]php$'
         - type: directory
+          value: 'lib/Controller/Support/FormLinksControllerServices[.]php$'
+        - type: directory
           value: 'lib/Controller/Support/HandoffControllerServices[.]php$'
         - type: directory
           value: 'lib/Controller/Support/IntegrationsControllerServices[.]php$'
@@ -3471,6 +3465,8 @@ deptrac:
           value: 'lib/Controller/Support/RelationsControllerServices[.]php$'
         - type: directory
           value: 'lib/Controller/Support/RelationsPlatform[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/RelationsRecords[.]php$'
         - type: directory
           value: 'lib/Controller/Support/ShareLinksControllerServices[.]php$'
         - type: directory
@@ -4241,6 +4237,10 @@ deptrac:
           value: 'lib/Collaboration/[^/]*$'
         - type: directory
           value: 'lib/Controller/(AgentsController|ChatController|ChatHealthController|ChatStreamController|ConversationController|ObjectCollectionsController)[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/AgentsControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/ChatStreamTurn[.]php$'
         - type: directory
           value: 'lib/Dashboard/[^/]*$'
         - type: directory
