@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
+use OCA\OpenRegister\Db\SchemaMapper\SchemaDeclarationChecksEvent;
 use OCA\OpenRegister\Event\CaseItemTransitionedEvent;
 use OCA\OpenRegister\Event\DraftCreatedEvent;
 use OCA\OpenRegister\Event\DraftDeletedEvent;
@@ -151,7 +152,28 @@ final class ListenerRegistrar {
 		\OCA\OpenRegister\Mcp\Listener\Registrar\McpListenerRegistrar::register(context: $context);
 		\OCA\OpenRegister\Notifications\Listener\Registrar\NotificationsListenerRegistrar::register(context: $context);
 		Registrar\WorkListenerRegistrar::register(context: $context);
+		self::registerSchemaDeclarationChecks(context: $context);
 	}//end registerComponentListeners()
+
+	/**
+	 * The listeners that contribute checks to the schema save.
+	 *
+	 * Processes, Compliance and Integrations each add their checks, so the event stays here.
+	 * It is a positioned collection: every check names its slot of
+	 * SchemaDeclarationOrder and the mapper runs them in slot order, whatever
+	 * order the listeners run in.
+	 *
+	 * @param IRegistrationContext $context The registration context.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/runtime-schema-api/spec.md
+	 */
+	private static function registerSchemaDeclarationChecks(IRegistrationContext $context): void {
+		$context->registerEventListener(SchemaDeclarationChecksEvent::class, SchemaDeclarationChecksListener::class);
+		$context->registerEventListener(SchemaDeclarationChecksEvent::class, ArchivalDeclarationChecksListener::class);
+		$context->registerEventListener(SchemaDeclarationChecksEvent::class, HandoffDeclarationChecksListener::class);
+	}//end registerSchemaDeclarationChecks()
 
 	/**
 	 * Alias each interface in BINDINGS to its class.
