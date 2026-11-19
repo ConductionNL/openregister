@@ -728,6 +728,8 @@ deptrac:
         - type: directory
           value: 'lib/Service/Deletion/[^/]*$'
         - type: directory
+          value: 'lib/Service/Export/SpreadsheetCell[.]php$'
+        - type: directory
           value: 'lib/Service/ExternalLink/[^/]*$'
         - type: directory
           value: 'lib/Service/Federation/[^/]*$'
@@ -1928,7 +1930,7 @@ deptrac:
         - type: directory
           value: 'lib/Repair/(BackfillFlowSemanticVersions|BackfillFlowTriggerIndex|BackfillFlowVersions|FlowNodeTypeRewrite|FlowTimerRegisterPathInterface|FlowVersionBackfillTally|FlowVersionNumbering|IntakeSourceRegisterSlugsInterface|MigrateApprovalChainsToTasks|MigrateRenamedFlowNodeTypes|PhantomFlowPurgeRun|ReportUnpublishedSchedules|SeedCaseFixtures|SeedFlowRunTriggerSubject|SeedFlowTimerRegister|SeedTaskFixtures|TaskSubjectLocationBackfill|V1ChainVerificationRun)[.]php$'
         - type: directory
-          value: 'lib/Service/(ApprovalChainAnnotationInstaller|AutomationRecordService|AutomationRecordWriter|BulkActionRegistry|BulkTranslationService|CalendarEventService|CalendarScanRun|CommentsCollectionCatalog|ContactMatchQuery|ContactMatchingService|FlowJsonColumn|FlowLinkPlatform|FlowLinkService|FlowLinkServiceInterface|ObjectTranslationRequest|OperationsConsoleJobs|OperationsConsoleNotifications|OperationsConsoleRules|OperationsConsoleServiceInterface|PropertyTranslation|SequenceServiceInterface|StoredEvent|StoredTask|TaskService|TaskVtodoDocument)[.]php$'
+          value: 'lib/Service/(ApprovalChainAnnotationInstaller|AutomationRecordService|AutomationRecordWriter|BulkActionRegistry|CalendarEventService|CalendarScanRun|CommentsCollectionCatalog|ContactMatchQuery|ContactMatchingService|FlowJsonColumn|FlowLinkPlatform|FlowLinkService|FlowLinkServiceInterface|ObjectTranslationRequest|OperationsConsoleJobs|OperationsConsoleNotifications|OperationsConsoleRules|OperationsConsoleServiceInterface|SequenceScope|SequenceServiceInterface|StoredEvent|StoredTask|TaskService|TaskVtodoDocument)[.]php$'
         - type: directory
           value: 'lib/Service/BulkJob/BulkJobActionCall[.]php$'
         - type: directory
@@ -2508,7 +2510,7 @@ deptrac:
         - type: directory
           value: 'lib/Listener/(RedactionPolicyCacheListener|ShareableConfigTypeRegistrationListener)[.]php$'
         - type: directory
-          value: 'lib/Service/(AppRegisterImportRunner|ApplicationMove|ApplicationService|ConfigurationService|ConfigurationServiceInterface|ConfigurationTransferInterface|ConfigurationUpdateNotice|ContractBindings|ContractBindingsRegistrar|CountedRegisterImport|DemoDataService|DescriptorImportTarget|ExportService|FormsAppRows|ImportService|LanguageGapScan|LanguageService|ManifestProfile|ManifestService|MassValidationRun|McpCatalogSummaries|McpDiscoveryService|MdiIconRenderer|MigrationPackService|MigrationPackServiceInterface|MigrationService|MockImportRun|NotificationService|OperationsConsoleService|PropertyDiscoveryRun|RecordUpdate|RegisterDescriptorService|ScheduledReportRun|ScheduledReportService|SchemaApplicationMigrator|SchemaCascade|SchemaService|SchemaSplitRun|SequenceScope|SequenceService|SettingsService|SharedSchemaDedupeService|SharedSchemaPlanRun|SharedSchemaUse|ShippedRegister|SourceLanguageLookup|TenantKeyService|TranslationProjectionService|TranslationSearch|TranslationStatusService|ValidationChunkResult|VocabularyImportService)[.]php$'
+          value: 'lib/Service/(AppRegisterImportRunner|ApplicationMove|ApplicationService|BulkTranslationService|ConfigurationService|ConfigurationServiceInterface|ConfigurationTransferInterface|ConfigurationUpdateNotice|ContractBindings|ContractBindingsRegistrar|CountedRegisterImport|DemoDataService|DescriptorImportTarget|ExportService|FormsAppRows|ImportService|LanguageGapScan|LanguageService|ManifestProfile|ManifestService|MassValidationRun|McpCatalogSummaries|McpDiscoveryService|MdiIconRenderer|MigrationPackService|MigrationPackServiceInterface|MigrationService|MockImportRun|NotificationService|OperationsConsoleService|PropertyDiscoveryRun|PropertyTranslation|RecordUpdate|RegisterDescriptorService|ScheduledReportRun|ScheduledReportService|SchemaApplicationMigrator|SchemaCascade|SchemaService|SchemaSplitRun|SequenceService|SettingsService|SharedSchemaDedupeService|SharedSchemaPlanRun|SharedSchemaUse|ShippedRegister|SourceLanguageLookup|TenantKeyService|TranslationProjectionService|TranslationSearch|TranslationStatusService|ValidationChunkResult|VocabularyImportService)[.]php$'
         - type: directory
           value: 'lib/Service/Capability/[^/]*$'
         - type: directory
@@ -2524,7 +2526,79 @@ deptrac:
         - type: directory
           value: 'lib/Service/Exchange/[^/]*$'
         - type: directory
-          value: 'lib/Service/Export/[^/]*$'
+          value: 'lib/Service/Export/ColumnRendering[.]php$'
+        - type: directory
+          value: 'lib/Service/Export/DocumentStyleReader[.]php$'
+        - type: directory
+          value: 'lib/Service/Export/ExportAuditEntry[.]php$'
+        - type: directory
+          value: 'lib/Service/Export/ExportAuditRecorder[.]php$'
+        - type: directory
+          value: 'lib/Service/Export/ExportAuditRecorderInterface[.]php$'
+        - type: directory
+          value: 'lib/Service/Export/ExportCompletion[.]php$'
+        - type: directory
+          value: 'lib/Service/Export/ExportGate[.]php$'
+        - type: directory
+          value: 'lib/Service/Export/ExportGateInterface[.]php$'
+        - type: directory
+          value: 'lib/Service/Export/ExportPage[.]php$'
+        - type: directory
+          value: 'lib/Service/Export/ExportProfileCaller[.]php$'
+        - type: directory
+          value: 'lib/Service/Export/ExportProfileService[.]php$'
+        - type: directory
+          value: 'lib/Service/Export/ExportProfileServiceInterface[.]php$'
+        - type: directory
+          value: 'lib/Service/Export/ExportProfileSteps[.]php$'
+        - type: directory
+          value: 'lib/Service/Export/ExportProfileStores[.]php$'
+        - type: directory
+          value: 'lib/Service/Export/ExportProfileValidator[.]php$'
+        - type: directory
+          value: 'lib/Service/Export/ExportProfileWriter[.]php$'
+        - type: directory
+          value: 'lib/Service/Export/ExportProfileWriterInterface[.]php$'
+        - type: directory
+          value: 'lib/Service/Export/ExportRefusal[.]php$'
+        - type: directory
+          value: 'lib/Service/Export/ExportRefusedException[.]php$'
+        - type: directory
+          value: 'lib/Service/Export/ExportRequest[.]php$'
+        - type: directory
+          value: 'lib/Service/Export/ExportRightService[.]php$'
+        - type: directory
+          value: 'lib/Service/Export/ExportRunContent[.]php$'
+        - type: directory
+          value: 'lib/Service/Export/ExportRunFile[.]php$'
+        - type: directory
+          value: 'lib/Service/Export/ExportRunOrigin[.]php$'
+        - type: directory
+          value: 'lib/Service/Export/ExportRunRecorder[.]php$'
+        - type: directory
+          value: 'lib/Service/Export/ExportRunViewer[.]php$'
+        - type: directory
+          value: 'lib/Service/Export/ExportScope[.]php$'
+        - type: directory
+          value: 'lib/Service/Export/ExportTable[.]php$'
+        - type: directory
+          value: 'lib/Service/Export/ExportValueRenderer[.]php$'
+        - type: directory
+          value: 'lib/Service/Export/ProfileExportRun[.]php$'
+        - type: directory
+          value: 'lib/Service/Export/ProfileProjection[.]php$'
+        - type: directory
+          value: 'lib/Service/Export/ProjectionRun[.]php$'
+        - type: directory
+          value: 'lib/Service/Export/PublicExportResult[.]php$'
+        - type: directory
+          value: 'lib/Service/Export/PublicExportService[.]php$'
+        - type: directory
+          value: 'lib/Service/Export/RowsPdfSection[.]php$'
+        - type: directory
+          value: 'lib/Service/Export/RowsTable[.]php$'
+        - type: directory
+          value: 'lib/Service/Export/XmlObjectWriter[.]php$'
         - type: directory
           value: 'lib/Service/Export/Odt/[^/]*$'
         - type: directory
