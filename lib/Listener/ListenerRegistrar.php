@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
+use OCA\OpenRegister\Db\SchemaMapper\SchemaDeclarationChecksEvent;
 use OCA\OpenRegister\Event\CaseItemTransitionedEvent;
 use OCA\OpenRegister\Event\DraftCreatedEvent;
 use OCA\OpenRegister\Event\DraftDeletedEvent;
@@ -43,6 +44,7 @@ use OCA\OpenRegister\Event\SchemaUpdatedEvent;
 use OCA\OpenRegister\Event\TaskTerminalEvent;
 use OCA\OpenRegister\Event\TaskTransitionedEvent;
 use OCA\OpenRegister\Mcp\Listener\ContextChatSubmissionListener;
+use OCA\OpenRegister\Mcp\Listener\McpDeclarationChecksListener;
 use OCA\OpenRegister\Notifications\Listener\GraphQLSubscriptionListener;
 use OCA\OpenRegister\Notifications\Listener\NotificationDedupeAnnotationSyncListener;
 use OCA\OpenRegister\Notifications\Listener\NotificationDedupePruneListener;
@@ -93,6 +95,7 @@ final class ListenerRegistrar {
 	public static function register(IRegistrationContext $context): void {
 		self::registerBindings(context: $context);
 		self::registerComponentListeners(context: $context);
+		self::registerSchemaDeclarationCheckListeners(context: $context);
 		self::registerFileAndPlatformListeners(context: $context);
 		self::registerFlowAndTaskListeners(context: $context);
 		self::registerPublishListener(context: $context);
@@ -152,6 +155,24 @@ final class ListenerRegistrar {
 		\OCA\OpenRegister\Notifications\Listener\Registrar\NotificationsListenerRegistrar::register(context: $context);
 		Registrar\WorkListenerRegistrar::register(context: $context);
 	}//end registerComponentListeners()
+
+	/**
+	 * The areas that contribute checks to the schema save, Processes first, then Integrations.
+	 *
+	 * The schema mapper runs the contributed checks by their slot of
+	 * SchemaDeclarationOrder, not in listener order, so which fault a schema is
+	 * refused for does not depend on this order.
+	 *
+	 * @param IRegistrationContext $context The registration context
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/runtime-schema-api/spec.md
+	 */
+	private static function registerSchemaDeclarationCheckListeners(IRegistrationContext $context): void {
+		$context->registerEventListener(SchemaDeclarationChecksEvent::class, SchemaDeclarationChecksListener::class);
+		$context->registerEventListener(SchemaDeclarationChecksEvent::class, McpDeclarationChecksListener::class);
+	}//end registerSchemaDeclarationCheckListeners()
 
 	/**
 	 * Alias each interface in BINDINGS to its class.

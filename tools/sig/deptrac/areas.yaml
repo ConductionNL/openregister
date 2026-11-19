@@ -2944,6 +2944,8 @@ deptrac:
         - type: directory
           value: 'lib/Db/ObjectRelation/[^/]*$'
         - type: directory
+          value: 'lib/Db/SchemaMapper/McpDeclarationCheck[.]php$'
+        - type: directory
           value: 'lib/Db/Source/[^/]*$'
         - type: directory
           value: 'lib/Db/Support/SecretAtRest[.]php$'

@@ -1481,6 +1481,7 @@ components:
       - ".*/lib/Db/HandoffQueueEntry/[^/]*"
       - ".*/lib/Db/Mapping/[^/]*"
       - ".*/lib/Db/ObjectRelation/[^/]*"
+      - ".*/lib/Db/SchemaMapper/McpDeclarationCheck[.]php"
       - ".*/lib/Db/Source/[^/]*"
       - ".*/lib/Db/Support/SecretAtRest[.]php"
       - ".*/lib/Db/TaskSequence/[^/]*"

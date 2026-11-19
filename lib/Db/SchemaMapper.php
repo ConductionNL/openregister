@@ -1397,7 +1397,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	}//end checkNotifications()
 
 	/**
-	 * How objects leave or enter: handoff, MCP, registry, links and extending forms.
+	 * How objects leave or enter: handoff, registry, links and extending forms; Integrations adds MCP.
 	 *
 	 * @param Schema $schema The schema being saved.
 	 *
@@ -1408,7 +1408,6 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 		return [
 			SchemaDeclarationOrder::HANDOFF => static fn () => $exchange->checkHandoff(schema: $schema),
 			SchemaDeclarationOrder::HANDOFF_CONTRACT => static fn () => $exchange->checkHandoffContract(schema: $schema),
-			SchemaDeclarationOrder::MCP => static fn () => $exchange->checkMcp(schema: $schema),
 			SchemaDeclarationOrder::REGISTRY => static fn () => (new SubjectDeclarationRefusals())->checkRegistry(schema: $schema),
 			SchemaDeclarationOrder::EXTERNAL_LINKS => fn () => (new RecordAnnotationRefusals(logger: $this->logger))->checkExternalLinks(schema: $schema),
 			SchemaDeclarationOrder::EXTENDING_FORM => static fn () => (new PropertyDeclarationRefusals())->checkExtendingForm(schema: $schema),

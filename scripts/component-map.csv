@@ -4416,3 +4416,5 @@ Service/PlatformServiceBindings.php,,Service,,,,,Platform
 Service/PlatformServiceRegistrar.php,,Service,,,,,Platform
 Event/ObjectWriteRequestEvent.php,,Event,,,,,Core
 Listener/WebhookRequestInterceptionListener.php,,Listener,,,,,Integrations
+Db/SchemaMapper/McpDeclarationCheck.php,,Db,,,,,Integrations
+Mcp/Listener/McpDeclarationChecksListener.php,,Mcp,,,,,Integrations

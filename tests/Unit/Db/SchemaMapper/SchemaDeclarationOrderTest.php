@@ -28,6 +28,7 @@ use OCA\OpenRegister\Db\SchemaMapper\SchemaDeclarationOrder;
 use OCA\OpenRegister\Db\SchemaMapper\SchemaMapperServices;
 use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 use OCA\OpenRegister\Listener\SchemaDeclarationChecksListener;
+use OCA\OpenRegister\Mcp\Listener\McpDeclarationChecksListener;
 use OCA\OpenRegister\Service\Calculation\CalculationDeclarationException;
 use OCA\OpenRegister\Service\Consent\ConsentDeclarationException;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
@@ -89,6 +90,7 @@ final class SchemaDeclarationOrderTest extends TestCase {
 		$container = $this->createMock(originalClassName: ContainerInterface::class);
 		$listener  = new SchemaDeclarationChecksListener(logger: new NullLogger(), container: $container);
 		$listener->handle(event: $event);
+		(new McpDeclarationChecksListener())->handle(event: $event);
 		$contributed = array_map(static fn ($check): int => $check->position(), $event->checks());
 
 		$this->assertSame(expected: [], actual: array_intersect($own, $contributed), message: 'No slot is claimed twice');
@@ -146,6 +148,62 @@ final class SchemaDeclarationOrderTest extends TestCase {
 
 		$this->assertInstanceOf(expected: $refusal, actual: $thrown);
 	}//end testTheFirstFaultInSlotOrderRefusesTheSave()
+
+	/**
+	 * Schemas with several exchange faults, crossing the Integrations MCP check with Core's.
+	 *
+	 * @return array<string, array{array<string, mixed>, string}>
+	 */
+	public static function severalExchangeFaults(): array {
+		return [
+			'handoff (Core) before MCP (Integrations)' => [
+				[
+					'x-openregister-handoff' => [['id' => 'send', 'trigger' => 'lifecycle:nope']],
+					'x-openregister-mcp' => ['enabled' => 'yes'],
+				],
+				'x-openregister-handoff: ',
+			],
+			'MCP (Integrations) before registry (Core)' => [
+				[
+					'x-openregister-mcp' => ['enabled' => 'yes'],
+					'x-openregister-registry' => ['bogus'],
+				],
+				'x-openregister-mcp: mcp-bad-enabled',
+			],
+			'MCP alone (Integrations)' => [
+				['x-openregister-mcp' => []],
+				'x-openregister-mcp: mcp-missing-enabled',
+			],
+		];
+	}//end severalExchangeFaults()
+
+	/**
+	 * The message a schema with several exchange faults is refused with names the first in slot order.
+	 *
+	 * @param array<string, mixed> $configuration The faulty configuration.
+	 * @param string               $prefix        The start of the refusal's message.
+	 *
+	 * @return void
+	 *
+	 * @dataProvider severalExchangeFaults
+	 */
+	#[\PHPUnit\Framework\Attributes\DataProvider('severalExchangeFaults')]
+	public function testTheFirstExchangeFaultInSlotOrderRefusesTheSave(array $configuration, string $prefix): void {
+		$schema = new Schema();
+		$schema->setSlug('faults');
+		$schema->setProperties(['status' => ['type' => 'string', 'enum' => ['open', 'closed']]]);
+		$schema->setConfiguration($configuration);
+
+		$thrown = null;
+		try {
+			(new ReflectionMethod(SchemaMapper::class, 'cleanObject'))->invoke($this->mapper(), $schema);
+		} catch (Throwable $e) {
+			$thrown = $e;
+		}
+
+		$this->assertNotNull(actual: $thrown);
+		$this->assertStringStartsWith(prefix: $prefix, string: $thrown->getMessage());
+	}//end testTheFirstExchangeFaultInSlotOrderRefusesTheSave()
 
 	/**
 	 * A mapper whose dispatcher contributes the process checks as the app does.
