@@ -21,8 +21,8 @@ namespace OCA\OpenRegister\Controller\Settings;
 
 use Exception;
 use InvalidArgumentException;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ValidationSettingsControllerServices;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCA\OpenRegister\Kernel\Contracts\MassValidationRequest;
 use OCP\AppFramework\Controller;
@@ -118,7 +118,7 @@ class ValidationSettingsController extends Controller {
 		IRequest $request,
 		ValidationSettingsControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->settingsService = $services->settingsService;
 		$this->logger = $services->logger;
 	}//end __construct()

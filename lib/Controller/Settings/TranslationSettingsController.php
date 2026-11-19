@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Settings;
 
-use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Translation\IdentityTranslationProvider;
 use OCA\OpenRegister\Service\Translation\TaskProcessingTranslationProvider;
 use OCA\OpenRegister\Service\Translation\TranslationProviderResolver;
@@ -78,7 +78,7 @@ class TranslationSettingsController extends Controller {
 		private readonly IAppConfig $appConfig,
 		private readonly IManager $taskProcessing,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**

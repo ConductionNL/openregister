@@ -39,6 +39,7 @@ namespace OCA\OpenRegister\Listener;
 use DateTime;
 use OCA\OpenRegister\Event\ViewAlertCrossedEvent;
 use OCA\OpenRegister\Notifications\Service\Notification\EmailSenderInterface;
+use OCA\OpenRegister\Kernel\Contracts\ViewAlertInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\RecipientSource;
 use OCA\OpenRegister\Service\View\ViewAlert;
 use OCP\EventDispatcher\Event;
@@ -121,7 +122,7 @@ class ViewAlertCrossedListener implements IEventListener {
 		$run->parameters = self::parametersOf(event: $event);
 		$resolved = $this->resolve(viewId: $run->parameters['viewId'], alert: $alert);
 		$run->uids = $this->onlyThoseWhoMayRead(view: $event->getView()->jsonSerialize(), uids: $resolved);
-		foreach ($alert->channels as $channel) {
+		foreach ($alert->getChannels() as $channel) {
 			$this->deliver(run: $run, channel: $channel);
 		}
 	}//end handle()
@@ -140,8 +141,8 @@ class ViewAlertCrossedListener implements IEventListener {
 			'view' => (string)$view->getName(),
 			'viewId' => (string)$view->getUuid(),
 			'count' => $event->getCount(),
-			'operator' => $alert->operator,
-			'threshold' => $alert->threshold,
+			'operator' => $alert->getOperator(),
+			'threshold' => $alert->getThreshold(),
 		];
 	}//end parametersOf()
 
@@ -230,11 +231,11 @@ class ViewAlertCrossedListener implements IEventListener {
 	 * The verified uids an alert names, with every name that resolved to nobody logged.
 	 *
 	 * @param string $viewId The view's uuid, for the log line.
-	 * @param ViewAlert $alert The declaration.
+	 * @param ViewAlertInterface $alert The declaration.
 	 *
 	 * @return array<int, string> Verified, deduplicated uids.
 	 */
-	private function resolve(string $viewId, ViewAlert $alert): array {
+	private function resolve(string $viewId, ViewAlertInterface $alert): array {
 		[$users, $groups] = self::splitRecipients(alert: $alert);
 		$resolved = $this->audience->recipients->resolveFromSource(
 			recipientsSpec: [
@@ -252,14 +253,14 @@ class ViewAlertCrossedListener implements IEventListener {
 	/**
 	 * The alert's recipients split into user ids and group ids.
 	 *
-	 * @param ViewAlert $alert The declaration.
+	 * @param ViewAlertInterface $alert The declaration.
 	 *
 	 * @return array{0: array<int, string>, 1: array<int, string>} The uids and the group ids.
 	 */
-	private static function splitRecipients(ViewAlert $alert): array {
+	private static function splitRecipients(ViewAlertInterface $alert): array {
 		$users = [];
 		$groups = [];
-		foreach ($alert->recipients as $recipient) {
+		foreach ($alert->getRecipients() as $recipient) {
 			if (str_starts_with($recipient, self::USER_PREFIX) === true) {
 				$users[] = substr($recipient, strlen(self::USER_PREFIX));
 				continue;

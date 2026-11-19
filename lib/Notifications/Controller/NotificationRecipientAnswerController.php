@@ -34,7 +34,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Notifications\Service\Notification\RecipientKindAnswer;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -62,7 +62,7 @@ class NotificationRecipientAnswerController extends Controller {
 		private readonly RecipientKindAnswer $answers,
 		private readonly IUserManager $users,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**
