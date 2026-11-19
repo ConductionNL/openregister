@@ -23068,3 +23068,4 @@ fix:versioniq:799:3046731f	conflict resolved, new head 85ad9285; REVERIFY record
 verify:versioniq:782:432619ef	GREEN #782 (e2e/test fixtures only)	session-20261119T214535-17440c61	2026-11-19T22:08:34Z
 fix:versioniq:729:073d6c6c	RED not reproducible on branch+development (interaction with an earlier tree PR); new head 84687f98; REVERIFY recorded	session-20261119T214535-17440c61	2026-11-19T22:09:11Z
 fix:learniq:2608:736845e3	l10n conflict resolved, new head 70af1e1e; REVERIFY recorded	session-20261119T214535-17440c61	2026-11-19T22:12:28Z
+fix:learniq:2551:f185e0a0	merged development into the branch, new head dc47a84c; REVERIFY recorded	session-20261119T214535-17440c61	2026-11-19T22:13:03Z
