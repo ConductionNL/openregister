@@ -3,7 +3,7 @@
 ## Purpose
 An upgrade of OpenRegister, or of an app built on it, has to finish within the time, memory and log space of an ordinary Nextcloud upgrade, on an instance that holds a thousand registers and schemas as well as on an empty one. This spec sets what the app's own upgrade code may cost. What the stored tables themselves cost every upgrade is set in `magic-table-columns` (REQ-MTC-003); what an import may write to the log is set in `data-import-export`.
 
-Measured before these requirements, on Nextcloud 35 and MariaDB 10.6 with 1,067 magic tables: one read of the database schema took 235 to 290 seconds, Nextcloud core alone makes six of them in every `occ upgrade`, and each migration step of any app makes three (#10612). An upgrade from the last stable release ran 78 migration steps.
+Measured before these requirements, on Nextcloud 35 and MariaDB 10.6 with 1,067 magic tables: one read of the database schema took 235 to 290 seconds, Nextcloud core alone makes six of them in every `occ upgrade`, and each migration step of any app makes three (#10612). On this branch an upgrade from release 2.1.0 runs 56 migration steps.
 
 ## Requirements
 
@@ -55,13 +55,13 @@ On MariaDB the ten indexes every magic table carries (uuid, register and schema,
 - **GIVEN** an app configuration whose schemas have no table yet
 - **WHEN** it is imported
 - **THEN** each new table SHALL get its standard indexes in one statement
-- @e2e exclude {DDL has no screen of its own; covered by MagicTableIndexerNewTableTest}
+- @e2e exclude {DDL has no screen of its own; covered by MagicMapperMariaDbStorageTest}
 
 #### Scenario: an existing table is synchronised
 - **GIVEN** a magic table that already exists
 - **WHEN** its indexes are synchronised
 - **THEN** each standard index SHALL be created by a statement of its own, as before
-- @e2e exclude {DDL has no screen of its own; covered by MagicTableIndexerNewTableTest and MagicMapperCreateTableIndexesGoldenTest}
+- @e2e exclude {DDL has no screen of its own; covered by MagicMapperMariaDbStorageTest and MagicMapperSearchableIndexTest}
 
 ### Requirement: A catalogue query reads the instance's own database only
 

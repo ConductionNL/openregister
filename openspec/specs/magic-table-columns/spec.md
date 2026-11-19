@@ -59,13 +59,13 @@ An existing `LONGTEXT` JSON column SHALL be narrowed by the upgrade, before its 
 - **GIVEN** a schema with an `array` property on MariaDB
 - **WHEN** its magic table is created
 - **THEN** that column and the JSON metadata columns SHALL be `MEDIUMTEXT` with a `json_valid` check, and the table SHALL hold no `longtext` column
-- @e2e exclude {DDL has no screen of its own; covered by MagicColumnSqlTypesTest and MagicMapperCreateTableGoldenTest}
+- @e2e exclude {DDL has no screen of its own; covered by MagicMapperMariaDbStorageTest}
 
 #### Scenario: a column added to an existing table
 - **GIVEN** an existing magic table on MariaDB
 - **WHEN** a JSON column is added to it, or its nullability changes
 - **THEN** the statement SHALL declare `MEDIUMTEXT` and end with the `json_valid` check
-- @e2e exclude {DDL has no screen of its own; covered by MagicColumnAdderTest, MagicColumnNullabilityTest and MagicMapperAddJsonColumnTest}
+- @e2e exclude {DDL has no screen of its own; covered by MagicMapperMariaDbStorageTest}
 
 #### Scenario: an upgrade narrows the existing tables
 - **GIVEN** magic tables created with `JSON` columns on MariaDB
