@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Federation;
 
-use OCA\OpenRegister\Db\FederatedShare;
+use OCA\OpenRegister\Kernel\Contracts\Core\FederatedShareInterface;
 
 /**
  * Whether the caller may grant a federated share, as the occ share-rights
@@ -36,11 +36,11 @@ interface ShareGrantorInterface {
 	/**
 	 * Why the caller may not grant this share, or null when they hold every right it hands out.
 	 *
-	 * @param FederatedShare $share The share to grant, or one already granted.
+	 * @param FederatedShareInterface $share The share to grant, or one already granted.
 	 *
 	 * @return string|null The refusal, naming the right that is missing.
 	 *
 	 * @spec openspec/specs/federation-scope-enforcement/spec.md#requirement-a-share-never-grants-more-than-its-creator-holds-req-fse-005
 	 */
-	public function refusal(FederatedShare $share): ?string;
+	public function refusal(FederatedShareInterface $share): ?string;
 }//end interface

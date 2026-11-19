@@ -38,14 +38,13 @@ use Closure;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\Types;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Add the audit trail's consumer column.
  *
  * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
-class Version1Date20260916225200 extends SimpleMigrationStep {
+class Version1Date20260916225200 extends TargetedMigrationStep {
 	/**
 	 * Change the database schema.
 	 *
@@ -57,7 +56,7 @@ class Version1Date20260916225200 extends SimpleMigrationStep {
 	 *
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		/*
 		 * @var ISchemaWrapper $schema
 		 */
@@ -82,5 +81,5 @@ class Version1Date20260916225200 extends SimpleMigrationStep {
 		}
 
 		return $schema;
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 }//end class

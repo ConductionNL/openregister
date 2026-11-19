@@ -42,6 +42,7 @@ use OCA\OpenRegister\Service\Aggregation\NamedAggregationOptions;
 use OCA\OpenRegister\Service\Aggregation\NamedAggregationRef;
 use OCA\OpenRegister\Service\GraphQL\GraphQLResolver;
 use OCA\OpenRegister\Service\GraphQL\GraphQLResolverShaping;
+use OCA\OpenRegister\Service\GraphQL\ListAggregations;
 use OCA\OpenRegister\Service\GraphQL\GraphQLResolverRights;
 use OCA\OpenRegister\Service\GraphQL\GraphQLResolverObjects;
 use OCA\OpenRegister\Service\Object\GetObject;
@@ -115,8 +116,7 @@ final class GraphQLAggregationFilterTest extends TestCase {
 			),
 			new GraphQLResolverShaping(
 				$this->createMock(TranslationHandler::class),
-				$runner,
-				new TimeseriesRequestValidator()
+				new ListAggregations(runner: $runner, validator: new TimeseriesRequestValidator())
 			),
 			$this->createMock(LoggerInterface::class)
 		);
