@@ -1195,7 +1195,7 @@ Files/Service/File/TaggingHandler.php,225,Files,Files,Files/Service/File/Tagging
 Files/Service/FileSidebarService.php,198,Files,Files,Files/Service/FileSidebarService.php,0,,Files
 Files/Service/Integration/AttachTargetFilter.php,75,Files,Files,Files/Service/Integration/AttachTargetFilter.php,0,,Files
 Files/Service/Integration/TalkChatExporter.php,46,Files,Files,Files/Service/Integration/TalkChatExporter.php,0,,Files
-Files/Service/NoteJournalExporter.php,57,Files,Files,Files/Service/NoteJournalExporter.php,0,,Files
+Files/Service/NoteJournalExporter.php,57,Files,Files,Files/Service/NoteJournalExporter.php,0,,Notifications
 Files/Service/NoteLockService.php,62,Files,Files,Files/Service/NoteLockService.php,0,,Files
 Files/Service/NoteService.php,248,Files,Files,Files/Service/NoteService.php,2,88,Files
 Files/Service/NoteVersionService.php,124,Files,Files,Files/Service/NoteVersionService.php,0,,Files
@@ -2457,7 +2457,7 @@ Service/Flow/Timer/WorkingDayRoll.php,50,Service,Flows,Flows/Service/Flow/Timer/
 Service/FlowLinkService.php,174,Service,Flows,Flows/Service/FlowLinkService.php,0,151,Processes
 Service/Form/AppDataFolder.php,17,Service,Work,Work/Service/Form/AppDataFolder.php,0,,Processes
 Service/Form/FormDefinitionResolver.php,56,Service,Work,Work/Service/Form/FormDefinitionResolver.php,0,,Processes
-Service/Form/FormDependent.php,16,Service,Work,Work/Service/Form/FormDependent.php,17,473,Processes
+Service/Form/FormDependent.php,16,Service,Work,Work/Service/Form/FormDependent.php,17,473,Kernel
 Service/Form/FormDependentsCheck.php,92,Service,Work,Work/Service/Form/FormDependentsCheck.php,9,,Processes
 Service/Form/FormDestinationValidator.php,329,Service,Service,Service/Form/FormDestinationValidator.php,16,64,Processes
 Service/Form/FormFieldRules.php,166,Service,Work,Work/Service/Form/FormFieldRules.php,6,162,Processes
@@ -3188,7 +3188,7 @@ Service/Search/SnippetBuilder.php,107,Service,Service,Service/Search/SnippetBuil
 Service/Search/VectorResultFilter.php,135,Service,Service,Service/Search/VectorResultFilter.php,0,,Core
 Service/Search/VectorSearchFacade.php,81,Service,Service,Service/Search/VectorSearchFacade.php,0,,Core
 Service/SearchTrailService.php,511,Service,Compliance,Compliance/Service/SearchTrailService.php,0,38,Compliance
-Service/Security/OutboundAddressGuard.php,106,Service,Integrations,Integrations/Service/Security/OutboundAddressGuard.php,0,262,Integrations
+Service/Security/OutboundAddressGuard.php,106,Service,Integrations,Integrations/Service/Security/OutboundAddressGuard.php,0,262,Core
 Service/SecurityService.php,391,Service,Service,Service/SecurityService.php,3,56,Core
 Service/SemanticTypeResolver.php,210,Service,Service,Service/SemanticTypeResolver.php,2,107,Core
 Service/SequenceService.php,107,Service,Configuration,Configuration/Service/SequenceService.php,1,259,Configuration
@@ -4418,3 +4418,15 @@ Event/ObjectWriteRequestEvent.php,,Event,,,,,Core
 Listener/WebhookRequestInterceptionListener.php,,Listener,,,,,Integrations
 Db/SchemaMapper/McpDeclarationCheck.php,,Db,,,,,Integrations
 Mcp/Listener/McpDeclarationChecksListener.php,,Mcp,,,,,Integrations
+Service/Form/PublishedForm.php,,Service,,,,,Kernel
+Service/Lifecycle/TransitionActor.php,,Service,,,,,Kernel
+Service/Lifecycle/TransitionMove.php,,Service,,,,,Kernel
+Service/Flow/Timer/EscalationNotice.php,,Service,,,,,Kernel
+Service/Flow/Timer/TimerFiring.php,,Service,,,,,Kernel
+Service/Security/SafeFetchUrl.php,,Service,,,,,Core
+Service/Capability/ToolReachLevels.php,,Service,,,,,Integrations
+Db/AuditTrail/ObjectAuditEvent.php,,Db,,,,,Core
+Db/AuditTrail/ObjectAuditEventOptions.php,,Db,,,,,Core
+Db/AuditTrail/NamedActor.php,,Db,,,,,Core
+Kernel/Contracts/CaseItemInterface.php,,Kernel,,,,,Kernel
+Kernel/Contracts/DecisionInterface.php,,Kernel,,,,,Kernel
