@@ -14,6 +14,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Integrations\BuiltInToolProvidersInterface;
+use OCA\OpenRegister\Mcp\BuiltIn\FlowBuiltInToolProviders;
 use OCA\OpenRegister\Service\Flow\FlowAccess;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistryInterface;
 use OCA\OpenRegister\Service\Flow\FlowRegistrar;
@@ -150,20 +152,31 @@ final class FlowWiringTest extends TestCase {
 	}//end testTheFieldRulesPortIsAnsweredByTheStateResolver()
 
 	/**
-	 * The store of the flows compiled from application schedules is bound, and only the two aliases are registered.
+	 * The store of the flows compiled from application schedules is bound, and only the three aliases are registered.
 	 *
 	 * @return void
 	 */
 	public function testTheScheduleFlowStoreIsBound(): void {
 		self::assertSame(
 			expected: [
-				FieldRulesSourceInterface::class  => StateFieldRuleResolver::class,
-				ScheduleFlowStoreInterface::class => ScheduleFlowStore::class,
+				FieldRulesSourceInterface::class     => StateFieldRuleResolver::class,
+				ScheduleFlowStoreInterface::class    => ScheduleFlowStore::class,
+				BuiltInToolProvidersInterface::class => FlowBuiltInToolProviders::class,
 			],
 			actual: $this->aliases
 		);
 		self::assertSame(expected: FlowWiring::BINDINGS, actual: FlowRegistrar::BINDINGS);
 	}//end testTheScheduleFlowStoreIsBound()
+
+	/**
+	 * The MCP discovery's port for contributed built-in tool providers is answered by the flow tools.
+	 *
+	 * @return void
+	 */
+	public function testTheBuiltInToolPortIsAnsweredByTheFlowTools(): void {
+		self::assertSame(expected: FlowBuiltInToolProviders::class, actual: ($this->aliases[BuiltInToolProvidersInterface::class] ?? null));
+		self::assertTrue(condition: is_a(FlowBuiltInToolProviders::class, BuiltInToolProvidersInterface::class, true));
+	}//end testTheBuiltInToolPortIsAnsweredByTheFlowTools()
 
 	public function testTheRunAuthorizationGetsTheFlowAccess(): void {
 		$built = ($this->factories[FlowRunAuthorization::class])($this->container);

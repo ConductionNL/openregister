@@ -23,8 +23,8 @@ namespace OCA\OpenRegister\Mcp;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\AppContainerFinderInterface;
+use OCA\OpenRegister\Kernel\Contracts\Integrations\BuiltInToolProvidersInterface;
 use OCA\OpenRegister\Mcp\BuiltIn\AttributeToolProvider;
-use OCA\OpenRegister\Mcp\BuiltIn\FlowMcpToolProvider;
 use OCA\OpenRegister\Mcp\BuiltIn\IntegrationsToolProvider;
 use OCA\OpenRegister\Mcp\BuiltIn\ObjectsToolProvider;
 use OCA\OpenRegister\Mcp\BuiltIn\RegistersToolProvider;
@@ -116,6 +116,9 @@ class McpProviderDiscovery {
 	/**
 	 * The built-in providers, in their fixed order.
 	 *
+	 * Integrations' own providers come first; the providers another area
+	 * contributes (the flow tools, Processes) follow in the same place.
+	 *
 	 * @param ContainerInterface $container The shared container.
 	 *
 	 * @return list<IMcpToolProvider>
@@ -126,9 +129,20 @@ class McpProviderDiscovery {
 			$container->get(SchemasToolProvider::class),
 			$container->get(ObjectsToolProvider::class),
 			$container->get(IntegrationsToolProvider::class),
-			$container->get(FlowMcpToolProvider::class),
+			...$this->contributedProviders(container: $container),
 		];
 	}//end builtInProviders()
+
+	/**
+	 * The built-in providers another area contributes, in their order.
+	 *
+	 * @param ContainerInterface $container The shared container.
+	 *
+	 * @return list<IMcpToolProvider>
+	 */
+	private function contributedProviders(ContainerInterface $container): array {
+		return $container->get(BuiltInToolProvidersInterface::class)->providers();
+	}//end contributedProviders()
 
 	/**
 	 * Derive one SchemaDerivedToolProvider per owning app that has at least

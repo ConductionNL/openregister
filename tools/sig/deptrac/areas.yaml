@@ -72,7 +72,7 @@ deptrac:
               value: 'lib/Support/.*$'
           must_not:
             - type: directory
-              value: 'lib/Kernel/Contracts/(Core)/.*$'
+              value: 'lib/Kernel/Contracts/(Core|Integrations)/.*$'
     - name: Core
       collectors:
         - type: directory
@@ -1926,6 +1926,12 @@ deptrac:
         - type: directory
           value: 'lib/Listener/Support/TaskVtodoWriteBackServices[.]php$'
         - type: directory
+          value: 'lib/Mcp/BuiltIn/FlowBuiltInToolProviders[.]php$'
+        - type: directory
+          value: 'lib/Mcp/BuiltIn/FlowMcpToolProvider[.]php$'
+        - type: directory
+          value: 'lib/Mcp/BuiltIn/FlowToolServices[.]php$'
+        - type: directory
           value: 'lib/Repair/(BackfillFlowSemanticVersions|BackfillFlowTriggerIndex|BackfillFlowVersions|FlowNodeTypeRewrite|FlowTimerRegisterPathInterface|FlowVersionBackfillTally|FlowVersionNumbering|IntakeSourceRegisterSlugsInterface|MigrateApprovalChainsToTasks|MigrateRenamedFlowNodeTypes|PhantomFlowPurgeRun|ReportUnpublishedSchedules|SeedCaseFixtures|SeedFlowRunTriggerSubject|SeedFlowTimerRegister|SeedTaskFixtures|TaskSubjectLocationBackfill|V1ChainVerificationRun)[.]php$'
         - type: directory
           value: 'lib/Service/(ApprovalChainAnnotationInstaller|AutomationRecordService|AutomationRecordWriter|BulkActionRegistry|BulkTranslationService|CalendarEventService|CalendarScanRun|CommentsCollectionCatalog|ContactMatchQuery|ContactMatchingService|FlowJsonColumn|FlowLinkPlatform|FlowLinkService|FlowLinkServiceInterface|ObjectTranslationRequest|OperationsConsoleJobs|OperationsConsoleNotifications|OperationsConsoleRules|OperationsConsoleServiceInterface|PropertyTranslation|SequenceServiceInterface|StoredEvent|StoredTask|TaskService|TaskVtodoDocument)[.]php$'
@@ -2760,6 +2766,8 @@ deptrac:
     - name: Integrations
       collectors:
         - type: directory
+          value: 'lib/Kernel/Contracts/Integrations/.*$'
+        - type: directory
           value: 'lib/AppHost/[^/]*$'
         - type: directory
           value: 'lib/AppHost/Controller/[^/]*$'
@@ -2962,7 +2970,39 @@ deptrac:
         - type: directory
           value: 'lib/Mcp/Attribute/[^/]*$'
         - type: directory
-          value: 'lib/Mcp/BuiltIn/[^/]*$'
+          value: 'lib/Mcp/BuiltIn/AbstractBuiltInToolProvider[.]php$'
+        - type: directory
+          value: 'lib/Mcp/BuiltIn/AttributeToolProvider[.]php$'
+        - type: directory
+          value: 'lib/Mcp/BuiltIn/AuditedInvocation[.]php$'
+        - type: directory
+          value: 'lib/Mcp/BuiltIn/CrudToolSchema[.]php$'
+        - type: directory
+          value: 'lib/Mcp/BuiltIn/DerivedSearchPage[.]php$'
+        - type: directory
+          value: 'lib/Mcp/BuiltIn/DerivedToolCall[.]php$'
+        - type: directory
+          value: 'lib/Mcp/BuiltIn/DerivedToolDefinition[.]php$'
+        - type: directory
+          value: 'lib/Mcp/BuiltIn/IntegrationsToolProvider[.]php$'
+        - type: directory
+          value: 'lib/Mcp/BuiltIn/ObjectsToolProvider[.]php$'
+        - type: directory
+          value: 'lib/Mcp/BuiltIn/RegistersToolProvider[.]php$'
+        - type: directory
+          value: 'lib/Mcp/BuiltIn/SchemaDerivedToolProvider[.]php$'
+        - type: directory
+          value: 'lib/Mcp/BuiltIn/SchemaDerivedToolServices[.]php$'
+        - type: directory
+          value: 'lib/Mcp/BuiltIn/SchemasToolProvider[.]php$'
+        - type: directory
+          value: 'lib/Mcp/BuiltIn/ToolAuditTarget[.]php$'
+        - type: directory
+          value: 'lib/Mcp/BuiltIn/ToolInvocationAudit[.]php$'
+        - type: directory
+          value: 'lib/Mcp/BuiltIn/ToolInvocationDigest[.]php$'
+        - type: directory
+          value: 'lib/Mcp/BuiltIn/ToolInvocationOutcome[.]php$'
         - type: directory
           value: 'lib/Mcp/Command/[^/]*$'
         - type: directory
