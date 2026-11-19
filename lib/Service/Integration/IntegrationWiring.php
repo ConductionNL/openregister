@@ -47,6 +47,8 @@ use OCA\OpenRegister\Service\Integration\Providers\PollsProvider;
 use OCA\OpenRegister\Service\Integration\Providers\SharesProvider;
 use OCA\OpenRegister\Service\Integration\Providers\TalkProvider;
 use OCA\OpenRegister\Service\Integration\Providers\XwikiProvider;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectTimelineLinksInterface;
+use OCA\OpenRegister\Service\ObjectRelationCleanupService;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use Psr\Container\ContainerInterface;
 
@@ -83,6 +85,7 @@ final class IntegrationWiring {
 		MessageDispatcherInterface::class => MessageDispatchProvider::class,
 		OpenCorporatesSearchInterface::class => OpenCorporatesProvider::class,
 		PageWidgetRegistryInterface::class => IntegrationRegistry::class,
+		ObjectTimelineLinksInterface::class => ObjectRelationCleanupService::class,
 	];
 
 	/**

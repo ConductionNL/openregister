@@ -537,7 +537,7 @@ class RetentionController extends Controller {
 
 			// Queue via background job for large datasets.
 			$this->jobList->add(
-				\OCA\OpenRegister\BackgroundJob\JobHandles::BULK_LEGAL_HOLD,
+				\OCA\OpenRegister\BackgroundJob\ComplianceJobHandlesInterface::BULK_LEGAL_HOLD,
 				[
 					'schemaId' => $schemaId,
 					'reason' => $reason,
