@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Kernel\Contracts\Core\ActionRightsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Integrations\OutboundBreakerInterface;
 use OCA\OpenRegister\Service\ApiCaller\ApiCallRecorder;
 use OCA\OpenRegister\Service\ApiCaller\ApiCallRecorderInterface;
 use OCA\OpenRegister\Service\ApiCaller\CallerPolicy;
@@ -31,6 +32,7 @@ use OCA\OpenRegister\Service\ApiCaller\CallerRateLimiter;
 use OCA\OpenRegister\Service\ApiCaller\CallerRateLimiterInterface;
 use OCA\OpenRegister\Service\Chat\ChatProxyHandler;
 use OCA\OpenRegister\Service\Chat\ChatProxyHandlerInterface;
+use OCA\OpenRegister\Service\Resilience\OutboundBreaker;
 
 /**
  * Interface => service map of the Platform area, behind PlatformServiceRegistrar.
@@ -56,6 +58,7 @@ final class PlatformServiceBindings {
 		CallerRateLimiterInterface::class            => CallerRateLimiter::class,
 		ChatProxyHandlerInterface::class             => ChatProxyHandler::class,
 		LanguageServiceInterface::class              => LanguageService::class,
+		OutboundBreakerInterface::class              => OutboundBreaker::class,
 		TranslationProjectionServiceInterface::class => TranslationProjectionService::class,
 		TranslationStatusServiceInterface::class     => TranslationStatusService::class,
 	];

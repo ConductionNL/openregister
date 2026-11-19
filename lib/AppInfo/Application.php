@@ -184,7 +184,7 @@ class Application extends App implements IBootstrap {
 				return new OutboundClientFactory(
 					clientService: \OCP\Server::get(\OCP\Http\Client\IClientService::class),
 					proxy: $container->get(\OCA\OpenRegister\Service\Outbound\ProxySettingsInterface::class),
-					breakers: $container->get(\OCA\OpenRegister\Service\Resilience\BreakerRegistry::class),
+					breakers: $container->get(\OCA\OpenRegister\Kernel\Contracts\Integrations\OutboundBreakerInterface::class),
 				);
 			}
 		);
