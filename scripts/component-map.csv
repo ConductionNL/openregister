@@ -1721,7 +1721,7 @@ Search/Service/DashboardPeriod.php,12,Search,Search,Search/Service/DashboardPeri
 Search/Service/DashboardScope.php,37,Search,Search,Search/Service/DashboardScope.php,0,,Search
 Search/Service/DashboardService.php,192,Search,Search,Search/Service/DashboardService.php,0,,Search
 Search/Service/DashboardSizes.php,145,Search,Search,Search/Service/DashboardSizes.php,0,,Search
-Search/Service/ExampleSet/ExampleSetViews.php,177,Search,Search,Search/Service/ExampleSet/ExampleSetViews.php,0,152,Search
+Search/Service/ExampleSet/ExampleSetViews.php,177,Search,Search,Search/Service/ExampleSet/ExampleSetViews.php,0,152,Configuration
 Search/Service/Geo/GeoFeatureCollectionBuilder.php,157,Search,Search,Search/Service/Geo/GeoFeatureCollectionBuilder.php,0,171,Search
 Search/Service/Geo/GeoFilter.php,83,Search,Search,Search/Service/Geo/GeoFilter.php,0,,Search
 Search/Service/Geo/GeoFilterApplier.php,56,Search,Search,Search/Service/Geo/GeoFilterApplier.php,0,366,Search
@@ -4481,3 +4481,4 @@ BackgroundJob/Support/WebhookDeliveryStores.php,,BackgroundJob,,,,,Integrations
 Controller/Support/PollLinksControllerServices.php,,Controller,,,,,Integrations
 Controller/Support/ShareLinksControllerServices.php,,Controller,,,,,Integrations
 Controller/Support/TimeTrackerLinksControllerServices.php,,Controller,,,,,Integrations
+Search/Service/ExampleSet/ExampleSetViewRowsInterface.php,,Search,,,,,Configuration

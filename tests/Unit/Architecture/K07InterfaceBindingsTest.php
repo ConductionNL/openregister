@@ -1,10 +1,10 @@
 <?php
 
 /**
- * The interfaces lane K07 added for the example-set timeline writer are bound in ContractBindings.
+ * The example-set timeline and views writers are bound in ContractBindings.
  *
- * The writer is example-set seeding work, so it counts to Configuration like its sibling writers
- * in lib/Service/ExampleSet, and Configuration's ContractBindings binds it.
+ * The writers are example-set seeding work, so they count to Configuration like their sibling writers
+ * in lib/Service/ExampleSet, and Configuration's ContractBindings binds them.
  *
  * A missing alias is a runtime 500 (or, for an optional writer, a silently refused part) that no
  * other unit test sees, so this test pins each binding, that the bound class implements the
@@ -25,6 +25,8 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Notifications\Service\ExampleSet\ExampleSetTimelineEntries;
 use OCA\OpenRegister\Notifications\Service\ExampleSet\ExampleSetTimelineRowsInterface;
+use OCA\OpenRegister\Search\Service\ExampleSet\ExampleSetViewRowsInterface;
+use OCA\OpenRegister\Search\Service\ExampleSet\ExampleSetViews;
 use OCA\OpenRegister\Service\ContractBindings;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -49,6 +51,7 @@ final class K07InterfaceBindingsTest extends TestCase {
 	public static function bindings(): array {
 		return [
 			'example-set timeline entries' => [ExampleSetTimelineRowsInterface::class, ExampleSetTimelineEntries::class],
+			'example-set views' => [ExampleSetViewRowsInterface::class, ExampleSetViews::class],
 		];
 	}//end bindings()
 
@@ -75,6 +78,7 @@ final class K07InterfaceBindingsTest extends TestCase {
 	public static function callers(): array {
 		return [
 			'example-set history row kinds' => ['Service/ExampleSet/ExampleSetHistoryRowKinds.php', ['ExampleSetTimelineEntries']],
+			'example-set own row kinds' => ['Service/ExampleSet/ExampleSetOwnRowKinds.php', ['ExampleSetViews']],
 		];
 	}//end callers()
 
