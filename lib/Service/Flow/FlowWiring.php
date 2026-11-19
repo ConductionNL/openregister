@@ -23,7 +23,9 @@ namespace OCA\OpenRegister\Service\Flow;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Service\Calendar\ObjectCalendarFeedService;
 use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Integrations\ObjectDateEventsSourceInterface;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionRunner;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
@@ -42,8 +44,9 @@ use Psr\Log\LoggerInterface;
  *
  * Registers the flow run guards, the shared run context, the loop step dispatcher,
  * the lifecycle's answer to property-level access, the store of the flows
- * compiled from application schedules, the lifecycle's request state and the
- * task services that are built by hand.
+ * compiled from application schedules, the object date events the platform
+ * calendar reads, the lifecycle's request state and the task services that are
+ * built by hand.
  *
  * Application::register() calls register() once.
  */
@@ -56,6 +59,7 @@ final class FlowWiring {
 	 */
 	public const BINDINGS = [
 		ScheduleFlowStoreInterface::class => ScheduleFlowStore::class,
+		ObjectDateEventsSourceInterface::class => ObjectCalendarFeedService::class,
 	];
 
 	/**

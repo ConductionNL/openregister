@@ -36,6 +36,7 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use JsonSerializable;
+use OCA\OpenRegister\Kernel\Contracts\Integrations\ObjectDateEventsSourceInterface;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -67,18 +68,18 @@ use OCP\AppFramework\Db\Entity;
 class CalendarFeedToken extends Entity implements JsonSerializable {
 
 	/**
-	 * Scope type for a feed over one calendar-enabled schema.
+	 * Scope type for a feed over one calendar-enabled schema; the platform calendar's port owns the value.
 	 *
 	 * @var string
 	 */
-	public const SCOPE_SCHEMA = 'schema';
+	public const SCOPE_SCHEMA = ObjectDateEventsSourceInterface::SCOPE_SCHEMA;
 
 	/**
-	 * Scope type for a feed over one saved view.
+	 * Scope type for a feed over one saved view; the platform calendar's port owns the value.
 	 *
 	 * @var string
 	 */
-	public const SCOPE_VIEW = 'view';
+	public const SCOPE_VIEW = ObjectDateEventsSourceInterface::SCOPE_VIEW;
 
 	/**
 	 * The scope types a feed token may carry.

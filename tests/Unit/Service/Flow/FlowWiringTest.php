@@ -33,6 +33,8 @@ use OCA\OpenRegister\Service\Task\TaskInboxService;
 use OCA\OpenRegister\Service\TaskService;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Kernel\Contracts\Integrations\ObjectDateEventsSourceInterface;
+use OCA\OpenRegister\Service\Calendar\ObjectCalendarFeedService;
 use Psr\Container\ContainerInterface;
 use ReflectionProperty;
 
@@ -157,8 +159,9 @@ final class FlowWiringTest extends TestCase {
 	public function testTheScheduleFlowStoreIsBound(): void {
 		self::assertSame(
 			expected: [
-				FieldRulesSourceInterface::class  => StateFieldRuleResolver::class,
-				ScheduleFlowStoreInterface::class => ScheduleFlowStore::class,
+				FieldRulesSourceInterface::class       => StateFieldRuleResolver::class,
+				ScheduleFlowStoreInterface::class      => ScheduleFlowStore::class,
+				ObjectDateEventsSourceInterface::class => ObjectCalendarFeedService::class,
 			],
 			actual: $this->aliases
 		);
