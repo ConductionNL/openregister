@@ -580,7 +580,67 @@ deptrac:
         - type: directory
           value: 'lib/Db/Schema/[^/]*$'
         - type: directory
-          value: 'lib/Db/SchemaMapper/[^/]*$'
+          value: 'lib/Db/SchemaMapper/AccessDeclarationChecks[.]php$'
+        - type: directory
+          value: 'lib/Db/SchemaMapper/AdvisoryAnnotationChecks[.]php$'
+        - type: directory
+          value: 'lib/Db/SchemaMapper/AnnotationFaults[.]php$'
+        - type: directory
+          value: 'lib/Db/SchemaMapper/AuthorizationBlockCheck[.]php$'
+        - type: directory
+          value: 'lib/Db/SchemaMapper/ConfigurationFields[.]php$'
+        - type: directory
+          value: 'lib/Db/SchemaMapper/DiscardedAnnotations[.]php$'
+        - type: directory
+          value: 'lib/Db/SchemaMapper/ExchangeAnnotationRefusals[.]php$'
+        - type: directory
+          value: 'lib/Db/SchemaMapper/ExtendedByReads[.]php$'
+        - type: directory
+          value: 'lib/Db/SchemaMapper/FacetConfiguration[.]php$'
+        - type: directory
+          value: 'lib/Db/SchemaMapper/IdentityDeclarationCheck[.]php$'
+        - type: directory
+          value: 'lib/Db/SchemaMapper/NotificationAnnotationCheck[.]php$'
+        - type: directory
+          value: 'lib/Db/SchemaMapper/ParentReference[.]php$'
+        - type: directory
+          value: 'lib/Db/SchemaMapper/PositionedDeclarationCheck[.]php$'
+        - type: directory
+          value: 'lib/Db/SchemaMapper/PropertyDeclarationRefusals[.]php$'
+        - type: directory
+          value: 'lib/Db/SchemaMapper/PropertyDelta[.]php$'
+        - type: directory
+          value: 'lib/Db/SchemaMapper/PropertyMerge[.]php$'
+        - type: directory
+          value: 'lib/Db/SchemaMapper/RecordAnnotationRefusals[.]php$'
+        - type: directory
+          value: 'lib/Db/SchemaMapper/ReferenceLoops[.]php$'
+        - type: directory
+          value: 'lib/Db/SchemaMapper/ReferenceNormaliser[.]php$'
+        - type: directory
+          value: 'lib/Db/SchemaMapper/RelationDeclarationCheck[.]php$'
+        - type: directory
+          value: 'lib/Db/SchemaMapper/SchemaAnnotation[.]php$'
+        - type: directory
+          value: 'lib/Db/SchemaMapper/SchemaComposition[.]php$'
+        - type: directory
+          value: 'lib/Db/SchemaMapper/SchemaDeclarationChecksEvent[.]php$'
+        - type: directory
+          value: 'lib/Db/SchemaMapper/SchemaDeclarationOrder[.]php$'
+        - type: directory
+          value: 'lib/Db/SchemaMapper/SchemaDefaults[.]php$'
+        - type: directory
+          value: 'lib/Db/SchemaMapper/SchemaLookup[.]php$'
+        - type: directory
+          value: 'lib/Db/SchemaMapper/SchemaMapperServices[.]php$'
+        - type: directory
+          value: 'lib/Db/SchemaMapper/SchemaReadTrace[.]php$'
+        - type: directory
+          value: 'lib/Db/SchemaMapper/SchemaReferenceSearch[.]php$'
+        - type: directory
+          value: 'lib/Db/SchemaMapper/SchemaRegisterReads[.]php$'
+        - type: directory
+          value: 'lib/Db/SchemaMapper/SubjectDeclarationRefusals[.]php$'
         - type: directory
           value: 'lib/Db/SchemaRun/[^/]*$'
         - type: directory
@@ -1462,7 +1522,109 @@ deptrac:
         - type: directory
           value: 'lib/Service/SchemaImport/[^/]*$'
         - type: directory
-          value: 'lib/Service/Schemas/[^/]*$'
+          value: 'lib/Service/Schemas/CodedChoiceDeclaration[.]php$'
+        - type: directory
+          value: 'lib/Service/Schemas/CodedChoiceException[.]php$'
+        - type: directory
+          value: 'lib/Service/Schemas/ExtendingFormDeclaration[.]php$'
+        - type: directory
+          value: 'lib/Service/Schemas/ExtendingFormDeclarationInterface[.]php$'
+        - type: directory
+          value: 'lib/Service/Schemas/ExtendingFormValidatorInterface[.]php$'
+        - type: directory
+          value: 'lib/Service/Schemas/FacetResultCacheClearer[.]php$'
+        - type: directory
+          value: 'lib/Service/Schemas/FacetResultCacheClearerInterface[.]php$'
+        - type: directory
+          value: 'lib/Service/Schemas/FilePropertyOptionsValidator[.]php$'
+        - type: directory
+          value: 'lib/Service/Schemas/GeneratedIdentifierDeclaration[.]php$'
+        - type: directory
+          value: 'lib/Service/Schemas/GeneratedIdentifierDeclarationInterface[.]php$'
+        - type: directory
+          value: 'lib/Service/Schemas/GeneratedIdentifierDeclarationReader[.]php$'
+        - type: directory
+          value: 'lib/Service/Schemas/GeneratedIdentifierException[.]php$'
+        - type: directory
+          value: 'lib/Service/Schemas/IdentityRewriteScope[.]php$'
+        - type: directory
+          value: 'lib/Service/Schemas/PropertySourceDeclaration[.]php$'
+        - type: directory
+          value: 'lib/Service/Schemas/PropertySourceException[.]php$'
+        - type: directory
+          value: 'lib/Service/Schemas/PropertyTitles[.]php$'
+        - type: directory
+          value: 'lib/Service/Schemas/PropertyValidatorHandler[.]php$'
+        - type: directory
+          value: 'lib/Service/Schemas/PropertyValidatorHandlerInterface[.]php$'
+        - type: directory
+          value: 'lib/Service/Schemas/PropertyVocabulary[.]php$'
+        - type: directory
+          value: 'lib/Service/Schemas/PropertyVocabularyException[.]php$'
+        - type: directory
+          value: 'lib/Service/Schemas/PropertyVocabularyInterface[.]php$'
+        - type: directory
+          value: 'lib/Service/Schemas/RandomSequenceCode[.]php$'
+        - type: directory
+          value: 'lib/Service/Schemas/ReferenceFilterDeclaration[.]php$'
+        - type: directory
+          value: 'lib/Service/Schemas/ReferenceFilterException[.]php$'
+        - type: directory
+          value: 'lib/Service/Schemas/ReferenceFilterOperandGuard[.]php$'
+        - type: directory
+          value: 'lib/Service/Schemas/ReferenceOptionsReader[.]php$'
+        - type: directory
+          value: 'lib/Service/Schemas/ReferenceOptionsReaderInterface[.]php$'
+        - type: directory
+          value: 'lib/Service/Schemas/ReferenceOptionsReaders[.]php$'
+        - type: directory
+          value: 'lib/Service/Schemas/ReferencePick[.]php$'
+        - type: directory
+          value: 'lib/Service/Schemas/RegisterModelService[.]php$'
+        - type: directory
+          value: 'lib/Service/Schemas/RepeatingGroupDeclarationRun[.]php$'
+        - type: directory
+          value: 'lib/Service/Schemas/RepeatingGroupDeclarationValidator[.]php$'
+        - type: directory
+          value: 'lib/Service/Schemas/RequiredWhenDeclaration[.]php$'
+        - type: directory
+          value: 'lib/Service/Schemas/RetentionAnnotationValidator[.]php$'
+        - type: directory
+          value: 'lib/Service/Schemas/SchemaAnnotationValidators[.]php$'
+        - type: directory
+          value: 'lib/Service/Schemas/SchemaCacheHandler[.]php$'
+        - type: directory
+          value: 'lib/Service/Schemas/SchemaCacheHandlerInterface[.]php$'
+        - type: directory
+          value: 'lib/Service/Schemas/SchemaCacheSlot[.]php$'
+        - type: directory
+          value: 'lib/Service/Schemas/SchemaDeclarationValidators[.]php$'
+        - type: directory
+          value: 'lib/Service/Schemas/ScopedField[.]php$'
+        - type: directory
+          value: 'lib/Service/Schemas/ScopedPropertyCensus[.]php$'
+        - type: directory
+          value: 'lib/Service/Schemas/ScopedPropertyDeclaration[.]php$'
+        - type: directory
+          value: 'lib/Service/Schemas/ScopedPropertyException[.]php$'
+        - type: directory
+          value: 'lib/Service/Schemas/ScopedPropertyGovernance[.]php$'
+        - type: directory
+          value: 'lib/Service/Schemas/ScopedPropertyPromotion[.]php$'
+        - type: directory
+          value: 'lib/Service/Schemas/SemanticReferenceDeclaration[.]php$'
+        - type: directory
+          value: 'lib/Service/Schemas/SemanticReferenceException[.]php$'
+        - type: directory
+          value: 'lib/Service/Schemas/SemanticRoleHandler[.]php$'
+        - type: directory
+          value: 'lib/Service/Schemas/SemanticRoleHandlerInterface[.]php$'
+        - type: directory
+          value: 'lib/Service/Schemas/UniqueConflict[.]php$'
+        - type: directory
+          value: 'lib/Service/Schemas/UniqueConstraintEvaluator[.]php$'
+        - type: directory
+          value: 'lib/Service/Schemas/UniqueConstraintEvaluatorInterface[.]php$'
         - type: directory
           value: 'lib/Service/Search/[^/]*$'
         - type: directory
@@ -1650,9 +1812,21 @@ deptrac:
         - type: directory
           value: 'lib/Db/RuleRunSummary/[^/]*$'
         - type: directory
+          value: 'lib/Db/SchemaMapper/CalculationAnnotationCheck[.]php$'
+        - type: directory
+          value: 'lib/Db/SchemaMapper/DeclaredActionCheck[.]php$'
+        - type: directory
+          value: 'lib/Db/SchemaMapper/LifecycleAnnotationCheck[.]php$'
+        - type: directory
+          value: 'lib/Db/SchemaMapper/NamedConditionCheck[.]php$'
+        - type: directory
+          value: 'lib/Db/SchemaMapper/ProcessDeclarationRefusals[.]php$'
+        - type: directory
+          value: 'lib/Db/SchemaMapper/ReferenceLoopCheck[.]php$'
+        - type: directory
           value: 'lib/Db/Task/[^/]*$'
         - type: directory
-          value: 'lib/Listener/(AdministeredValidationListener|AggregationCacheInvalidationListener|AnnotationNotificationListener|ApprovalChainAdvanceListener|ApprovalChainGateListener|AssigneeFollowListener|AssigneeFollowRun|AuthorizationCacheInvalidationListener|AutoTransitionRecordListener|BulkActionRegistrationListener|CalculationApplyRun|CalculationOnSaveListener|CaseItemTimerListener|CaseObjectEventListener|CaseRunTerminalListener|CaseTaskTerminalListener|ChainGateRun|ChangeGateListener|CommentsEntityListener|ConsentApplyRun|ConsentEnvelopeOnSaveListener|DecisionTableValidationListener|DecisionTableValidationListenerInterface|DeclaredFlowRun|DependentValueListener|FileChangeListener|FilesSidebarListener|FlowEngineRegistrationListener|FlowNodePreflightListener|FlowNodeRegistrationListener|FlowOversightRegistrationListener|FlowRunLockReleaseListener|FlowTimerSubjectTerminalListener|FlowTriggerListener|FormDestinationSchemaListener|FrozenNodeWriteListener|FrozenObjectDeleteGuardListener|HandoffLifecycleListener|HandoffQueueDrainListener|IntegrationGlobalScriptListener|LeafScriptListener|LifecycleActionListener|LifecycleActionRecordListener|LifecycleAttempt|LifecycleCreate|LifecycleDeclaration|LifecycleEdit|LifecycleEditReader|LifecycleInitialReference|LifecycleInitialStateListener|LifecycleValidationListener|ListenerRegistrar|MailAppScriptListener|NativeFlowTriggerListener|NotificationTrigger|ObjectChangeListener|ObjectExtractionRun|ObjectQuotaListener|OcmResourceTypeListener|PartyAddressUnionRun|PartyMergeListener|PartyTreeGuardListener|PortalTaskReminderListener|PrincipalResolverRegistrationListener|PushClientScriptListener|ReadStateInvalidationListener|ReadStatePruneListener|ReferencedCalculationListener|RequiredWhenListener|SchemaFlowImportListener|SharerViewsEndWithUserListener|SourceRecordChangeListener|StateEntryFreezeListener|StateFieldRuleListener|StateFieldSaveRun|SurveyWriteListener|TablesTableDeletedListener|TaskBlockerReleaseListener|TaskCalendarProjectionListener|TaskNotificationListener|TaskRunTerminalListener|TaskSequenceProgressListener|TaskTerminalProjectionListener|TaskVtodoWriteBackListener|TranslationProjectionListener|UserTaskTerminalListener|ViewAlertCrossedListener|ViewAlertDeliveryRun|WatcherPruneListener|WebhookEventListener|WorkingCalendarChangedListener|WorkingCalendarDeleteGuardListener|WorkingCalendarValidationListener)[.]php$'
+          value: 'lib/Listener/(AdministeredValidationListener|AggregationCacheInvalidationListener|AnnotationNotificationListener|ApprovalChainAdvanceListener|ApprovalChainGateListener|AssigneeFollowListener|AssigneeFollowRun|AuthorizationCacheInvalidationListener|AutoTransitionRecordListener|BulkActionRegistrationListener|CalculationApplyRun|CalculationOnSaveListener|CaseItemTimerListener|CaseObjectEventListener|CaseRunTerminalListener|CaseTaskTerminalListener|ChainGateRun|ChangeGateListener|CommentsEntityListener|ConsentApplyRun|ConsentEnvelopeOnSaveListener|DecisionTableValidationListener|DecisionTableValidationListenerInterface|DeclaredFlowRun|DependentValueListener|FileChangeListener|FilesSidebarListener|FlowEngineRegistrationListener|FlowNodePreflightListener|FlowNodeRegistrationListener|FlowOversightRegistrationListener|FlowRunLockReleaseListener|FlowTimerSubjectTerminalListener|FlowTriggerListener|FormDestinationSchemaListener|FrozenNodeWriteListener|FrozenObjectDeleteGuardListener|HandoffLifecycleListener|HandoffQueueDrainListener|IntegrationGlobalScriptListener|LeafScriptListener|LifecycleActionListener|LifecycleActionRecordListener|LifecycleAttempt|LifecycleCreate|LifecycleDeclaration|LifecycleEdit|LifecycleEditReader|LifecycleInitialReference|LifecycleInitialStateListener|LifecycleValidationListener|ListenerRegistrar|MailAppScriptListener|NativeFlowTriggerListener|NotificationTrigger|ObjectChangeListener|ObjectExtractionRun|ObjectQuotaListener|OcmResourceTypeListener|PartyAddressUnionRun|PartyMergeListener|PartyTreeGuardListener|PortalTaskReminderListener|PrincipalResolverRegistrationListener|PushClientScriptListener|ReadStateInvalidationListener|ReadStatePruneListener|ReferencedCalculationListener|RequiredWhenListener|SchemaDeclarationChecksListener|SchemaFlowImportListener|SharerViewsEndWithUserListener|SourceRecordChangeListener|StateEntryFreezeListener|StateFieldRuleListener|StateFieldSaveRun|SurveyWriteListener|TablesTableDeletedListener|TaskBlockerReleaseListener|TaskCalendarProjectionListener|TaskNotificationListener|TaskRunTerminalListener|TaskSequenceProgressListener|TaskTerminalProjectionListener|TaskVtodoWriteBackListener|TranslationProjectionListener|UserTaskTerminalListener|ViewAlertCrossedListener|ViewAlertDeliveryRun|WatcherPruneListener|WebhookEventListener|WorkingCalendarChangedListener|WorkingCalendarDeleteGuardListener|WorkingCalendarValidationListener)[.]php$'
         - type: directory
           value: 'lib/Listener/FlowNodes/[^/]*$'
         - type: directory
@@ -2183,6 +2357,8 @@ deptrac:
           value: 'lib/Service/Rules/ValidationVerdict[.]php$'
         - type: directory
           value: 'lib/Service/Rules/Support/[^/]*$'
+        - type: directory
+          value: 'lib/Service/Schemas/ProcessDeclarationValidators[.]php$'
         - type: directory
           value: 'lib/Service/Survey/[^/]*$'
         - type: directory

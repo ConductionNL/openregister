@@ -3386,6 +3386,8 @@ Db/ObjectRelation/,,Db,,,,,Integrations
 Db/Register/,,Db,,,,,Kernel
 Db/Schema/,,Db,,,,,Core
 Db/SchemaMapper/,,Db,,,,,Core
+Db/SchemaMapper/CalculationAnnotationCheck.php,63,Db,,,0,,Processes
+Db/SchemaMapper/DeclaredActionCheck.php,51,Db,,,0,,Processes
 Db/SchemaRun/,,Db,,,,,Core
 Db/SearchTrail/,,Db,,,,,Search
 Db/Source/,,Db,,,,,Integrations
@@ -4125,6 +4127,7 @@ Db/SchemaMapper/IdentityDeclarationCheck.php,,Db,,,,,Core
 Listener/IdentityGuardListener.php,,Listener,,,,,Core
 Service/Object/ObjectKeyResolver.php,,Service,,,,,Core
 Service/Schemas/IdentityRewriteScope.php,,Service,,,,,Core
+Service/Schemas/ProcessDeclarationValidators.php,39,Service,,,0,,Processes
 Listener/RequiredWhenListener.php,,Listener,,,,,Processes
 Service/Schemas/RequiredWhenDeclaration.php,,Service,,,,,Core
 Db/MagicMapper/ConditionGroup.php,78,Db,Service,Service/Db/MagicMapper/ConditionGroup.php,0,,Core
@@ -4257,6 +4260,7 @@ Notifications/Service/Notification/RecipientKindAnswer.php,64,Notifications,Noti
 Db/MagicMapper/MagicTableIndexCatalogue.php,70,Db,Service,Service/Db/MagicMapper/MagicTableIndexCatalogue.php,0,,Core
 Service/RedactionPolicy/ObjectTermRuleSource.php,,Service,,,,,Configuration
 Listener/RedactionPolicyCacheListener.php,,Listener,,,,,Configuration
+Listener/SchemaDeclarationChecksListener.php,53,Listener,,,0,,Processes
 Exception/UnknownMaskFormException.php,30,Exception,Exception,Exception/UnknownMaskFormException.php,0,,Kernel
 Files/Service/File/MaskForm.php,208,Files,Files,Files/Service/File/MaskForm.php,0,,Files
 Files/Service/File/PlaceholderText.php,113,Files,Files,Files/Service/File/PlaceholderText.php,0,,Files
@@ -4290,7 +4294,7 @@ BackgroundJob/PublishedDigestVerifyJob.php,,BackgroundJob,,,,,Core
 Collaboration/ObjectCollections.php,,Collaboration,,,,,Platform
 Controller/ObjectCollectionsController.php,,Controller,,,,,Core
 Controller/VersionsController.php,310,Controller,Service,Service/Controller/VersionsController.php,0,,Core
-Db/SchemaMapper/NamedConditionCheck.php,,Db,,,,,Core
+Db/SchemaMapper/NamedConditionCheck.php,,Db,,,,,Processes
 Service/Import/RecordImport/ColumnMapper.php,,Service,,,,,Core
 Service/Import/RecordImport/ConfirmedMapping.php,,Service,,,,,Core
 Service/Import/RecordImport/RecordFileReader.php,,Service,,,,,Core
@@ -4303,6 +4307,12 @@ Notifications/Service/Notification/ScheduledMessageScheduler.php,247,Notificatio
 Service/OwnedWebhookView.php,288,Service,Service,Service/OwnedWebhookView.php,0,,Core
 Controller/Settings/TranslationSettingsController.php,,Controller,,,,,Configuration
 Db/SchemaMapper/DiscardedAnnotations.php,,Db,,,,,Core
+Db/SchemaMapper/LifecycleAnnotationCheck.php,47,Db,,,0,,Processes
+Db/SchemaMapper/PositionedDeclarationCheck.php,19,Db,,,0,,Core
+Db/SchemaMapper/ProcessDeclarationRefusals.php,35,Db,,,0,,Processes
+Db/SchemaMapper/ReferenceLoopCheck.php,29,Db,,,0,,Processes
+Db/SchemaMapper/SchemaDeclarationChecksEvent.php,14,Db,,,0,,Core
+Db/SchemaMapper/SchemaDeclarationOrder.php,43,Db,,,0,,Core
 Service/Configuration/SeedReferenceResolver.php,,Service,,,,,Configuration
 Service/Archival/DestructionListConflictRefresh.php,160,Service,Compliance,Compliance/Service/Archival/DestructionListConflictRefresh.php,0,,Compliance
 Service/Archival/LinkConflictsNotAcknowledgedException.php,75,Service,Compliance,Compliance/Service/Archival/LinkConflictsNotAcknowledgedException.php,0,,Compliance
