@@ -148,6 +148,8 @@ use OCA\OpenRegister\Service\Configuration\GitLabHandler;
 use OCA\OpenRegister\Service\Configuration\GitLabHandlerInterface;
 use OCA\OpenRegister\Service\Configuration\RegisterBundleBinding;
 use OCA\OpenRegister\Service\Configuration\RegisterBundleBindingInterface;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationDraftService;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationDraftsInterface;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationKeyRegistry;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationKeyRegistryInterface;
 use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentPreviewService;
@@ -669,6 +671,7 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\Dbal\DbalConnectionFactoryInterface::class => \OCA\OpenRegister\Service\Dbal\DbalConnectionFactory::class,
 		\OCA\OpenRegister\Service\Archival\DestructionListCreatorInterface::class => \OCA\OpenRegister\Service\Archival\DestructionListCreator::class,
 		\OCA\OpenRegister\Service\Archival\DestructionServiceInterface::class => \OCA\OpenRegister\Service\Archival\DestructionService::class,
+		ConfigurationDraftsInterface::class => ConfigurationDraftService::class,
 		ConfigurationKeyRegistryInterface::class => ConfigurationKeyRegistry::class,
 		\OCA\OpenRegister\Service\Archival\DependantRetentionIndexInterface::class => \OCA\OpenRegister\Service\Archival\DependantRetentionIndex::class,
 		DeploymentPreviewServiceInterface::class => DeploymentPreviewService::class,
