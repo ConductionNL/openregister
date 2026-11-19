@@ -4420,6 +4420,12 @@ Service/ComplianceServiceBindings.php,,Service,,,,,Compliance
 Service/ComplianceServiceRegistrar.php,,Service,,,,,Compliance
 Event/ObjectWriteRequestEvent.php,,Event,,,,,Core
 Listener/WebhookRequestInterceptionListener.php,,Listener,,,,,Integrations
+BackgroundJob/Support/AbandonedFlowClaim.php,,BackgroundJob,,,,,Processes
+BackgroundJob/Support/FlowReapRun.php,,BackgroundJob,,,,,Processes
+BackgroundJob/Support/AutoTransitionServices.php,,BackgroundJob,,,,,Processes
+BackgroundJob/Support/BulkJobServices.php,,BackgroundJob,,,,,Processes
+BackgroundJob/Support/FlowRunRetentionStores.php,,BackgroundJob,,,,,Processes
+BackgroundJob/Support/FlowRunRetentionServices.php,,BackgroundJob,,,,,Processes
 Service/Schemas/ArchivalDeclarationValidators.php,,Service,,,,,Compliance
 Db/SchemaMapper/ArchivalDeclarationRefusals.php,,Db,,,,,Compliance
 Listener/ArchivalDeclarationChecksListener.php,,Listener,,,,,Compliance
