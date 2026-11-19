@@ -487,9 +487,6 @@
   "lib/Service/FileService.php -> lib/Service/FileHandlerSupportInterface.php",
   "lib/Service/FileService.php -> lib/Service/FileServiceInterface.php",
   "lib/Service/Flow/FlowAccess.php -> lib/Service/OpenRegisterActionAuthService.php",
-  "lib/Service/GraphQL/GraphQLResolver.php -> lib/Search/Service/Aggregation/TimeseriesRequestValidatorInterface.php",
-  "lib/Service/GraphQL/GraphQLResolver.php -> lib/Search/Service/GraphQL/GraphQLErrorFormatter.php",
-  "lib/Service/GraphQL/GraphQLResolverShaping.php -> lib/Search/Service/Aggregation/TimeseriesRequestValidatorInterface.php",
   "lib/Service/GraphQL/ListAggregations.php -> lib/Search/Service/Aggregation/AggregationQuery.php",
   "lib/Service/GraphQL/ListAggregations.php -> lib/Search/Service/Aggregation/TimeseriesRequestValidatorInterface.php",
   "lib/Service/Hinge/IntakeSourceRegistry.php -> lib/Repair/IntakeSourceRegisterSlugsInterface.php",
@@ -1741,7 +1738,6 @@
   "lib/Search/Service/Geo/GeoResponseCrsFactory.php",
   "lib/Search/Service/Geo/GeoResponseCrsInterface.php",
   "lib/Search/Service/Geo/GetFeatureRequest.php",
-  "lib/Search/Service/GraphQL/GraphQLErrorFormatter.php",
   "lib/Search/Service/Quality/CreateCandidate.php",
   "lib/Search/Service/Quality/DedupCreatePolicyInterface.php",
   "lib/Search/Service/Search/PlaceholderResolverInterface.php",
@@ -3106,14 +3102,14 @@
  "exposed_loc": {
   "Compliance": 15739,
   "Configuration": 6895,
-  "Core": 65063,
+  "Core": 65071,
   "Files": 3689,
   "Integrations": 18785,
   "Kernel": 8515,
   "Notifications": 1914,
   "Platform": 976,
   "Processes": 32009,
-  "Search": 2072
+  "Search": 2027
  },
  "kernel_files": [
   "lib/Contract/EmailLinkReaderInterface.php",
@@ -3574,6 +3570,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10440,
- "total_loc": 459464,
- "violation_degree": 0.0873
+ "total_loc": 459462,
+ "violation_degree": 0.087
 }
