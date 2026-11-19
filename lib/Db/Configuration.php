@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Db;
 use DateTime;
 use JsonSerializable;
 use OCA\OpenRegister\Db\Configuration\ConfigurationFieldTypes;
+use OCA\OpenRegister\Kernel\Contracts\ConfigurationInterface;
 use OCA\OpenRegister\Kernel\Contracts\ConfigurationMembershipInterface;
 use OCP\AppFramework\Db\Entity;
 
@@ -106,7 +107,7 @@ use OCP\AppFramework\Db\Entity;
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
-class Configuration extends Entity implements JsonSerializable, ConfigurationMembershipInterface {
+class Configuration extends Entity implements JsonSerializable, ConfigurationMembershipInterface, ConfigurationInterface {
 	use IsoTimestampsTrait;
 	use JsonFieldsTrait;
 	use HydrateEmptyJsonAsNullTrait {

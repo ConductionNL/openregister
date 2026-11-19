@@ -3737,8 +3737,8 @@ Db/WebhookLogMapperInterface.php,,Db,,,,,Integrations
 Db/WebhookMapperInterface.php,,Db,,,,,Integrations
 Db/XwikiLinkMapperInterface.php,,Db,,,,,Core
 Event/AbstractAgentEvent.php,,Event,,,,,Kernel
-Event/AbstractApplicationEvent.php,,Event,,,,,Core
-Event/AbstractConfigurationEvent.php,,Event,,,,,Core
+Event/AbstractApplicationEvent.php,,Event,,,,,Kernel
+Event/AbstractConfigurationEvent.php,,Event,,,,,Kernel
 Event/AbstractConversationEvent.php,,Event,,,,,Kernel
 Event/AbstractDecisionRequestEvent.php,,Event,,,,,Kernel
 Event/AbstractObjectEntityEvent.php,,Event,,,,,Kernel
@@ -3747,7 +3747,7 @@ Event/AbstractPersonLinkEvent.php,,Event,,,,,Core
 Event/AbstractRegisterEvent.php,,Event,,,,,Kernel
 Event/AbstractRegistrySubscriptionEvent.php,,Event,,,,,Kernel
 Event/AbstractSchemaEvent.php,,Event,,,,,Kernel
-Event/AbstractSourceEvent.php,,Event,,,,,Core
+Event/AbstractSourceEvent.php,,Event,,,,,Kernel
 Event/AbstractTaskEvent.php,,Event,,,,,Core
 Event/AbstractTaskSequenceEvent.php,,Event,,,,,Core
 Event/AbstractViewEvent.php,,Event,,,,,Kernel
