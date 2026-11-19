@@ -25,6 +25,12 @@ use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionDefaultsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectUnreadMarkerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectWatchMarkersInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\RunnableActionsInterface;
+use OCA\OpenRegister\Service\Interaction\ReadStateService;
+use OCA\OpenRegister\Service\Interaction\WatcherService;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionList;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionRunner;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNode;
@@ -85,6 +91,9 @@ final class FlowWiring {
 		PartySearchInterface::class => PartySearchService::class,
 		FlowConsentSweepInterface::class => FlowConsentParking::class,
 		ExpressionDefaultsInterface::class => ExpressionDefaults::class,
+		ObjectWatchMarkersInterface::class => WatcherService::class,
+		ObjectUnreadMarkerInterface::class => ReadStateService::class,
+		RunnableActionsInterface::class => ObjectActionList::class,
 	];
 
 	/**

@@ -42,9 +42,9 @@ use OCA\OpenRegister\Db\TranslationSlot;
 use OCA\OpenRegister\Formats\UuidFormat;
 use OCA\OpenRegister\Service\Calculation\CalculationPayload;
 use OCA\OpenRegister\Service\Deletion\RetentionClockService;
-use OCA\OpenRegister\Service\ObjectAction\ObjectActionList;
-use OCA\OpenRegister\Service\Interaction\ReadStateService;
-use OCA\OpenRegister\Service\Interaction\WatcherService;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectUnreadMarkerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectWatchMarkersInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\RunnableActionsInterface;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionGuardInterface;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\SystemOperationContext;
@@ -3536,7 +3536,7 @@ class RenderObject implements RenderObjectInterface {
 	 * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-watch-an-object-they-may-read
 	 */
 	private function setWatcherMarkers(ObjectEntity $entity, string $uuid): void {
-		$watchers = $this->runtime->container->get(WatcherService::class);
+		$watchers = $this->runtime->container->get(ObjectWatchMarkersInterface::class);
 
 		// Anonymous reads get no marker at all: there is no "you" to answer
 		// for, and a hard false would read as "you do not follow this",
@@ -3593,7 +3593,7 @@ class RenderObject implements RenderObjectInterface {
 		}
 
 		try {
-			$readState = $this->runtime->container->get(ReadStateService::class);
+			$readState = $this->runtime->container->get(ObjectUnreadMarkerInterface::class);
 
 			// Anonymous reads get no marker at all: there is no "you" to answer
 			// for, and a hard false would read as "you have seen this", which is
@@ -3680,7 +3680,7 @@ class RenderObject implements RenderObjectInterface {
 			$owner = null;
 		}
 
-		$can = $this->runtime->container->get(ObjectActionList::class)->canRun(object: $entity, schema: $schema);
+		$can = $this->runtime->container->get(RunnableActionsInterface::class)->canRun(object: $entity, schema: $schema);
 		$can['update'] = $permissions->hasPermission(
 			schema: $schema,
 			action: 'update',

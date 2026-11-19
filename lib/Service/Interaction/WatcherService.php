@@ -52,6 +52,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Interaction;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectWatchMarkersInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Notifications\Db\Watcher;
 use OCA\OpenRegister\Notifications\Db\WatcherMapperInterface;
@@ -74,7 +75,7 @@ use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
  * subscription lookup can never take out an object read or a dispatch. Removing a branch
  * here means removing a fail-safe.
  */
-class WatcherService implements WatcherServiceInterface {
+class WatcherService implements WatcherServiceInterface, ObjectWatchMarkersInterface {
 
 	/**
 	 * What the current user follows, loaded once per request: uuid to whether

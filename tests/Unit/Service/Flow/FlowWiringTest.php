@@ -15,6 +15,9 @@ use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionDefaultsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectUnreadMarkerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectWatchMarkersInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\RunnableActionsInterface;
 use OCA\OpenRegister\Service\Flow\FlowAccess;
 use OCA\OpenRegister\Service\Flow\FlowConsentParking;
 use OCA\OpenRegister\Service\Flow\FlowConsentSweepInterface;
@@ -40,9 +43,12 @@ use OCA\OpenRegister\Service\Flow\Timer\TermDiagnostic;
 use OCA\OpenRegister\Service\Flow\Timer\TermDiagnosticInterface;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarDefinitionsInterface;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendars;
+use OCA\OpenRegister\Service\Interaction\ReadStateService;
+use OCA\OpenRegister\Service\Interaction\WatcherService;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionList;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaults;
 use OCA\OpenRegister\Service\Party\PartySearchInterface;
 use OCA\OpenRegister\Service\Party\PartySearchService;
@@ -180,6 +186,23 @@ final class FlowWiringTest extends TestCase {
 	}//end testTheExpressionDefaultsPortIsAnsweredByTheRulesEngine()
 
 	/**
+	 * The three Core render ports are answered by the Processes services that keep the state.
+	 *
+	 * @return void
+	 */
+	public function testTheRenderMarkerPortsAreAnsweredByTheInteractionServices(): void {
+		$ports = [
+			ObjectWatchMarkersInterface::class => WatcherService::class,
+			ObjectUnreadMarkerInterface::class => ReadStateService::class,
+			RunnableActionsInterface::class    => ObjectActionList::class,
+		];
+		foreach ($ports as $port => $service) {
+			self::assertSame(expected: $service, actual: ($this->aliases[$port] ?? null));
+			self::assertTrue(condition: is_a($service, $port, true));
+		}
+	}//end testTheRenderMarkerPortsAreAnsweredByTheInteractionServices()
+
+	/**
 	 * The schedule flow store and the area's own interfaces are bound, and only these aliases are registered.
 	 *
 	 * @return void
@@ -199,6 +222,9 @@ final class FlowWiringTest extends TestCase {
 				PartySearchInterface::class                => PartySearchService::class,
 				FlowConsentSweepInterface::class           => FlowConsentParking::class,
 				ExpressionDefaultsInterface::class         => ExpressionDefaults::class,
+				ObjectWatchMarkersInterface::class         => WatcherService::class,
+				ObjectUnreadMarkerInterface::class         => ReadStateService::class,
+				RunnableActionsInterface::class            => ObjectActionList::class,
 			],
 			actual: $this->aliases
 		);
