@@ -20,19 +20,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Settings;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\RetentionSettingsInterface;
+
 /**
  * The read side of the retention settings, for callers that only read them.
  *
- * The container binds it to {@see ObjectRetentionHandler} in ContractBindings.
+ * The method is declared on the Core contract this interface extends. The
+ * container binds both to {@see ObjectRetentionHandler} in ContractBindings.
  */
-interface RetentionSettingsReaderInterface {
-
-	/**
-	 * The retention settings, every key present, stored values over the defaults.
-	 *
-	 * @return array<string, mixed> The retention settings.
-	 *
-	 * @spec openspec/specs/retention-management/spec.md#requirement-retention-settings-must-be-configurable-via-api
-	 */
-	public function getRetentionSettingsOnly(): array;
+interface RetentionSettingsReaderInterface extends RetentionSettingsInterface {
 }//end interface

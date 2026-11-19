@@ -10,9 +10,6 @@
   "lib/BackgroundJob/DbalIntrospectionJob.php -> lib/Db/Source.php",
   "lib/BackgroundJob/DestructionCheckJob.php -> lib/Service/Settings/ArchivalSettingsReaderInterface.php",
   "lib/BackgroundJob/DestructionListRun.php -> lib/Service/Settings/ArchivalSettingsReaderInterface.php",
-  "lib/BackgroundJob/LogCleanUpTask.php -> lib/BackgroundJob/Support/LogCleanUpTrails.php",
-  "lib/BackgroundJob/LogCleanUpTask.php -> lib/Db/SearchTrailCleanupInterface.php",
-  "lib/BackgroundJob/LogCleanUpTask.php -> lib/Service/Settings/RetentionSettingsReaderInterface.php",
   "lib/BackgroundJob/QueuedJobClassesInterface.php -> lib/BackgroundJob/TranslationProjectionJob.php",
   "lib/BackgroundJob/ReviewReminderJob.php -> lib/Service/Settings/ArchivalSettingsReaderInterface.php",
   "lib/BackgroundJob/StateHistoryRebuildJob.php -> lib/Db/AuditTrail/ActionLookupOptions.php",
@@ -677,7 +674,6 @@
   "lib/BackgroundJob/Support/ActorForwardingServices.php",
   "lib/BackgroundJob/Support/BackfillCalendarLinksPlatform.php",
   "lib/BackgroundJob/Support/ConfigurationCheckServices.php",
-  "lib/BackgroundJob/Support/LogCleanUpTrails.php",
   "lib/BackgroundJob/Support/TransferExecutionPlatform.php",
   "lib/BackgroundJob/Support/TransferExecutionRecords.php",
   "lib/BackgroundJob/Support/TransferExecutionTransports.php",
@@ -1362,6 +1358,7 @@
   "lib/Kernel/Contracts/Core/ReadPurposeGuardInterface.php",
   "lib/Kernel/Contracts/Core/ReadPurposeRefusalInterface.php",
   "lib/Kernel/Contracts/Core/RegisterFolderRecordsInterface.php",
+  "lib/Kernel/Contracts/Core/RetentionSettingsInterface.php",
   "lib/Kernel/Contracts/Core/ServiceUnavailableExceptionInterface.php",
   "lib/Kernel/Contracts/Core/ShareLinkUrlInterface.php",
   "lib/Kernel/Contracts/DecisionInterface.php",
@@ -2977,9 +2974,9 @@
   "lib/Twig/MappingTwigInstallerInterface.php"
  ],
  "exposed_loc": {
-  "Compliance": 15598,
+  "Compliance": 15582,
   "Configuration": 6895,
-  "Core": 64662,
+  "Core": 64668,
   "Files": 3640,
   "Integrations": 18409,
   "Kernel": 8482,
@@ -3445,6 +3442,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10407,
- "total_loc": 459952,
- "violation_degree": 0.0785
+ "total_loc": 459960,
+ "violation_degree": 0.0781
 }
