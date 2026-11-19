@@ -1560,3 +1560,4 @@ integriq	3717	96bd05d41bb90238ee55bcc169ce52de19f4ea10	APPROVE	worker-39	Quick; 
 integriq	3718	63ae9b35cd2d3779df06f01175c97a5c2b4d541a	APPROVE	worker-39	Quick; no blockers; tasks.md ticks with evidence notes only
 integriq	3719	47ed6f87082f05301751bb769f32c01be8626b43	APPROVE	worker-39	Standard; no blockers; adds route-wiring unit test and e2e spec, no production code
 integriq	3720	b1dbefe4cf5b1d11bb1f5c42da4f5706bf7472b2	APPROVE	worker-39	Standard; no blockers; e2e spec only, vendor tests skip without env account; e2e boxes left unticked
+integriq	3714	b02f1d04d14117d274784434443fed8841cc64fd	APPROVE	worker-39	Strict; no blockers; portal routes check developer group then ownership before any read/write, admin pair AuthorizedAdminSetting, subscribe refactor equivalent, gate failures inherited; note: unparseable expiresAt counts as running (schema enforces date-time)
