@@ -23028,3 +23028,4 @@ merge:opencatalogi:1503:8c505fc8	merge3 tree of 13 opencatalogi PRs: merged=0 re
 merge:opencatalogi:2802:49bb5306	merge3 tree of 13 opencatalogi PRs: merged=0 red=8 fail=0 skip=0; conflict 5, lint 0, moved 0; fix rows 5	merge3-20261113T213425-c36bcd5f	2026-11-18T08:08:38Z
 merge:larpinq:718:f5b86062	merge3 tree of 7 larpinq PRs: merged=5 red=0 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-18T08:22:11Z
 merge:keepiq:693:351be9ba	merge3 tree of 7 keepiq PRs: merged=0 red=7 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-18T08:40:33Z
+merge:stackiq:2060:77bf18e9	unmeasured: static.developer.overheid.nl (checker_floor adrvalidator); 2060,2062 APPROVE not landed; 2067 REQUEST_CHANGES; 2063 REVERIFY (conflicts only with earlier tree PR)	session-20261119T214535-17440c61	2026-11-19T21:50:08Z
