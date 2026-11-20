@@ -39,6 +39,10 @@ use OCA\OpenRegister\Service\Credential\CredentialStoreResolver;
 use OCA\OpenRegister\Service\EmailLinkService;
 use OCA\OpenRegister\Notifications\Service\EmailService;
 use OCA\OpenRegister\Notifications\Service\EmailServiceInterface;
+use OCA\OpenRegister\Notifications\Service\Webhook\CloudEventFormatter;
+use OCA\OpenRegister\Notifications\Service\Webhook\CloudEventFormatterInterface;
+use OCA\OpenRegister\Notifications\Service\Webhook\WebhookInterceptionCache;
+use OCA\OpenRegister\Notifications\Service\Webhook\WebhookInterceptionCacheInterface;
 use OCA\OpenRegister\Service\Capability\ToolReachLevels;
 use OCA\OpenRegister\Service\Capability\ToolReachResolver;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\AuditTrailProvider;
@@ -92,7 +96,9 @@ final class IntegrationWiring {
 	 * registration (addProvider, withProviders, setLeafLoader) stays on
 	 * IntegrationRegistry. The lookup and dispatch controllers type against the
 	 * provider contracts. The mail-sidebar link service is bound here because
-	 * linking Mail messages to objects is integration work.
+	 * linking Mail messages to objects is integration work. The CloudEvent
+	 * formatter and the webhook interception cache are bound here because
+	 * their only users are the webhook services, which are integration work.
 	 * The MCP tool reach levels are bound here because the tool grants and reach
 	 * of lib/Service/Capability are MCP agent work and count to Integrations.
 	 * The Core credential reader port resolves to the active credential store
@@ -103,6 +109,7 @@ final class IntegrationWiring {
 	public const BINDINGS = [
 		AccountConsumerInterface::class => AccountConsumerLookup::class,
 		AppDeepLinksInterface::class => DeepLinkRegistryService::class,
+		CloudEventFormatterInterface::class => CloudEventFormatter::class,
 		ConnectionStatusReporterInterface::class => ConnectionReporter::class,
 		CredentialSecretReaderInterface::class => CredentialStore::class,
 		EmailServiceInterface::class => EmailService::class,
@@ -117,6 +124,7 @@ final class IntegrationWiring {
 		ScheduledMessageDeliveryInterface::class => ScheduledMessageDelivery::class,
 		ObjectTimelineLinksInterface::class => ObjectRelationCleanupService::class,
 		ToolReachLevels::class => ToolReachResolver::class,
+		WebhookInterceptionCacheInterface::class => WebhookInterceptionCache::class,
 	];
 
 	/**
