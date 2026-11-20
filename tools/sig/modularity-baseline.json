@@ -481,9 +481,6 @@
   "lib/Service/Search/ObjectSearchResultFormatter.php -> lib/Service/Reference/ObjectPreviewFormatter.php",
   "lib/Service/Search/VectorResultFilter.php -> lib/Files/Service/File/FileReadScope.php",
   "lib/Service/Search/VectorResultFilter.php -> lib/Search/Service/ViewService.php",
-  "lib/Service/Search/VectorSearchFacade.php -> lib/Search/Service/Vectorization/HybridSearchRequest.php",
-  "lib/Service/Search/VectorSearchFacade.php -> lib/Search/Service/Vectorization/SemanticSearchRequest.php",
-  "lib/Service/Search/VectorSearchFacade.php -> lib/Search/Service/VectorizationServiceInterface.php",
   "lib/Service/SecurityService.php -> lib/Service/AuthFailureRun.php",
   "lib/Service/SequenceServiceInterface.php -> lib/Service/SequenceScope.php",
   "lib/Service/ServiceBootstrap.php -> lib/Service/Gdpr/GdprRegistrar.php",
@@ -2656,6 +2653,7 @@
   "lib/Service/Search/ObjectSearchResultFormatter.php",
   "lib/Service/Search/ObjectSearchResultFormatterInterface.php",
   "lib/Service/Search/SearchResultDeclarations.php",
+  "lib/Service/Search/VectorResultFilter.php",
   "lib/Service/SearchMeasurement.php",
   "lib/Service/SearchTrailActivityInsights.php",
   "lib/Service/SearchTrailQueryConfig.php",
@@ -2821,7 +2819,7 @@
  "exposed_loc": {
   "Compliance": 15860,
   "Configuration": 5761,
-  "Core": 64890,
+  "Core": 65025,
   "Files": 3640,
   "Integrations": 18312,
   "Kernel": 8482,
@@ -3288,5 +3286,5 @@
  ],
  "kernel_loc": 10407,
  "total_loc": 460292,
- "violation_degree": 0.0633
+ "violation_degree": 0.063
 }
