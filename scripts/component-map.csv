@@ -4083,7 +4083,7 @@ Service/SchemaSplitRun.php,,Service,,,,,Configuration
 Service/SchemaTeardownGuard.php,,Service,,,,,Compliance
 Service/SchemaTeardownInterface.php,,Service,,,,,Core
 Service/SchemaTeardownOverride.php,,Service,,,,,Core
-Service/SearchMeasurement.php,,Service,,,,,Compliance
+Service/SearchMeasurement.php,,Service,,,,,Core
 Service/SearchPeriod.php,,Service,,,,,Compliance
 Service/SearchTrailActivityInsights.php,,Service,,,,,Search
 Service/SearchTrailNameEnricher.php,,Service,,,,,Compliance
