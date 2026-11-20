@@ -137,7 +137,6 @@
   "lib/Notifications/Service/Notification/TaskTransitionNotifier.php -> lib/Db/Task.php",
   "lib/Notifications/Service/Notification/TaskTransitionNotifier.php -> lib/Service/Task/TaskInboxServiceInterface.php",
   "lib/Notifications/Service/Notification/TaskTransitionNotifierInterface.php -> lib/Db/Task.php",
-  "lib/Repair/MarkImplicitCrossOrganisationReadRules.php -> lib/Repair/SchemaListing.php",
   "lib/Search/Db/View.php -> lib/Db/Configuration.php",
   "lib/Search/Db/View.php -> lib/Db/Task.php",
   "lib/Search/Db/View.php -> lib/Mcp/Db/Agent.php",
@@ -147,7 +146,6 @@
   "lib/Search/Service/Quality/NearDuplicateScope.php -> lib/Files/Db/FileMapperInterface.php",
   "lib/Search/Service/Quality/NearDuplicateScope.php -> lib/Files/Service/File/FileReadScope.php",
   "lib/Search/Service/Quality/ObjectTextSimilarity.php -> lib/Files/Db/FileMapperInterface.php",
-  "lib/Service/ActivityFilterServiceInterface.php -> lib/Service/ActivityEntriesOptions.php",
   "lib/Service/Aggregation/AdhocAggregationRun.php -> lib/Search/Service/Aggregation/AggregationQuery.php",
   "lib/Service/Aggregation/AggregationRunner.php -> lib/Search/Service/Aggregation/AggregationCacheInterface.php",
   "lib/Service/Aggregation/AggregationRunner.php -> lib/Search/Service/Aggregation/AggregationQuery.php",
@@ -166,7 +164,6 @@
   "lib/Service/Audit/AuditTrailCollaborators.php -> lib/Service/ObjectAction/ObjectActionElevationScope.php",
   "lib/Service/Audit/TokenResolver.php -> lib/Db/Consumer.php",
   "lib/Service/Audit/TokenResolver.php -> lib/Db/ConsumerMapperInterface.php",
-  "lib/Service/BulkTranslationServiceInterface.php -> lib/Service/ObjectTranslationRequest.php",
   "lib/Service/Decision/ReviewPolicyResolver.php -> lib/Service/Settings/FileSettingsHandler.php",
   "lib/Service/Deletion/DeletionWindowService.php -> lib/Service/Settings/RetentionSettingsReaderInterface.php",
   "lib/Service/File/ArchiveMemberEnumerator.php -> lib/Service/Settings/FileSettingsHandler.php",
@@ -2576,13 +2573,13 @@
  "exposed_loc": {
   "Compliance": 15514,
   "Configuration": 4030,
-  "Core": 64508,
+  "Core": 64543,
   "Files": 3592,
-  "Integrations": 18189,
+  "Integrations": 18179,
   "Kernel": 8505,
-  "Notifications": 2008,
-  "Platform": 313,
-  "Processes": 30217,
+  "Notifications": 2018,
+  "Platform": 292,
+  "Processes": 30203,
   "Search": 2027
  },
  "kernel_files": [
@@ -3049,5 +3046,5 @@
  ],
  "kernel_loc": 10456,
  "total_loc": 460637,
- "violation_degree": 0.042
+ "violation_degree": 0.0416
 }
