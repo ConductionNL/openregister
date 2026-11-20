@@ -455,6 +455,7 @@ use OCA\OpenRegister\Service\Operations\SupportBundleServiceInterface;
 use OCA\OpenRegister\Service\Organisation\OrganisationEditAuditorInterface;
 use OCA\OpenRegister\Service\Organisation\OrganisationLifecycleAuditor;
 use OCA\OpenRegister\Kernel\Contracts\Core\AuditEntryWriterInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\SchemaAccessChangeLogInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\JobRunRecordingInterface;
 use OCA\OpenRegister\Kernel\Contracts\Search\HtmlPdfConverterInterface;
 use OCA\OpenRegister\Service\Export\Odt\OfficeHtmlPdfConverter;
@@ -659,6 +660,7 @@ final class ContractBindings {
 		HtmlPdfConverterInterface::class => OfficeHtmlPdfConverter::class,
 		OrganisationEditAuditorInterface::class => OrganisationLifecycleAuditor::class,
 		AuditEntryWriterInterface::class => AuditEntryWriter::class,
+		SchemaAccessChangeLogInterface::class => AuthorizationAuditService::class,
 		ObjectTrailReaderInterface::class => ObjectTrailReader::class,
 		DeclaredWebhookInstallerInterface::class => NotificationsAnnotationInstaller::class,
 		TranslationProjectionInterface::class => TranslationProjectionService::class,
