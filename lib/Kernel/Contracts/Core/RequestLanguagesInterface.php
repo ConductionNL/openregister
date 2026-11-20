@@ -23,8 +23,10 @@ namespace OCA\OpenRegister\Kernel\Contracts\Core;
  * The request's negotiated languages.
  *
  * The object store (Core) reads them, so a translatable property sorts by the value
- * the response shows. The language service that negotiates them extends this
- * interface, so whatever is bound to it answers here too.
+ * the response shows, and the aggregation runner (Core) reads whether the request
+ * asked for every translation, so it leaves translatable group keys verbatim. The
+ * language service that negotiates them extends this interface, so whatever is
+ * bound to it answers here too.
  *
  * @spec openspec/specs/register-i18n/spec.md#requirement-ordering-by-a-translatable-property-must-follow-the-value-a-person-sees
  */
@@ -47,4 +49,13 @@ interface RequestLanguagesInterface {
 	 * @spec openspec/specs/register-i18n/spec.md#requirement-ordering-by-a-translatable-property-must-follow-the-value-a-person-sees
 	 */
 	public function getPreferredLanguage(): string;
+
+	/**
+	 * Whether the request asked for every translation (`_translations=all`).
+	 *
+	 * @return bool True if _translations=all was requested
+	 *
+	 * @spec openspec/specs/register-i18n/spec.md
+	 */
+	public function shouldReturnAllTranslations(): bool;
 }//end interface
