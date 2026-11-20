@@ -4552,3 +4552,6 @@ BackgroundJob/Support/ViewAlertCheck.php,,BackgroundJob,,,,,Search
 BackgroundJob/Support/ViewAlertSweepSources.php,,BackgroundJob,,,,,Search
 BackgroundJob/Support/ViewAlertSweepPlatform.php,,BackgroundJob,,,,,Search
 Controller/Support/ProcessingLogControllerServices.php,,Controller,,,,,Compliance
+Db/AuditTrail/AuditedChange.php,,Db,,,,,Core
+Db/AuditTrail/HardeningChange.php,,Db,,,,,Core
+Db/AuditTrail/RegisterAuditEvent.php,,Db,,,,,Core

@@ -560,11 +560,17 @@ deptrac:
         - type: directory
           value: 'lib/Db/AuditTrail/AuditStatisticsScope[.]php$'
         - type: directory
+          value: 'lib/Db/AuditTrail/AuditedChange[.]php$'
+        - type: directory
+          value: 'lib/Db/AuditTrail/HardeningChange[.]php$'
+        - type: directory
           value: 'lib/Db/AuditTrail/NamedActor[.]php$'
         - type: directory
           value: 'lib/Db/AuditTrail/ObjectAuditEvent[.]php$'
         - type: directory
           value: 'lib/Db/AuditTrail/ObjectAuditEventOptions[.]php$'
+        - type: directory
+          value: 'lib/Db/AuditTrail/RegisterAuditEvent[.]php$'
         - type: directory
           value: 'lib/Db/EntityRelation/[^/]*$'
         - type: directory
@@ -3576,19 +3582,13 @@ deptrac:
         - type: directory
           value: 'lib/Db/AuditTrail/AuditTrailStatistics[.]php$'
         - type: directory
-          value: 'lib/Db/AuditTrail/AuditedChange[.]php$'
-        - type: directory
           value: 'lib/Db/AuditTrail/AuditedObject[.]php$'
         - type: directory
           value: 'lib/Db/AuditTrail/ExportOutcome[.]php$'
         - type: directory
-          value: 'lib/Db/AuditTrail/HardeningChange[.]php$'
-        - type: directory
           value: 'lib/Db/AuditTrail/PartyQueryRefusal[.]php$'
         - type: directory
           value: 'lib/Db/AuditTrail/PurposeRefusal[.]php$'
-        - type: directory
-          value: 'lib/Db/AuditTrail/RegisterAuditEvent[.]php$'
         - type: directory
           value: 'lib/Db/AuditTrail/RevertOptions[.]php$'
         - type: directory

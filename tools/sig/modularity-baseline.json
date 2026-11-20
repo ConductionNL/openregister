@@ -71,11 +71,8 @@
   "lib/Controller/Support/TranslationMappers.php -> lib/Db/TranslationMapperInterface.php",
   "lib/Db/ApplicationMapperInterface.php -> lib/Db/Application.php",
   "lib/Db/AuditTrailMapperInterface.php -> lib/Db/AuditTrail.php",
-  "lib/Db/AuditTrailMapperInterface.php -> lib/Db/AuditTrail/AuditedChange.php",
   "lib/Db/AuditTrailMapperInterface.php -> lib/Db/AuditTrail/ExportOutcome.php",
-  "lib/Db/AuditTrailMapperInterface.php -> lib/Db/AuditTrail/HardeningChange.php",
   "lib/Db/AuditTrailMapperInterface.php -> lib/Db/AuditTrail/PurposeRefusal.php",
-  "lib/Db/AuditTrailMapperInterface.php -> lib/Db/AuditTrail/RegisterAuditEvent.php",
   "lib/Db/AuditTrailMapperInterface.php -> lib/Db/AuditTrail/SharedMasterDataRefusal.php",
   "lib/Db/AuditTrailMapperInterface.php -> lib/Db/AuditTrail/SlugBackfill.php",
   "lib/Db/AuditTrailMapperInterface.php -> lib/Db/AuditTrail/ToolInvocation.php",
@@ -214,7 +211,6 @@
   "lib/Service/File/ImageRedactionService.php -> lib/Files/Service/TextExtraction/EntityRecognitionHandler.php",
   "lib/Service/File/ObjectFileFinder.php -> lib/Service/FileHandlerSupportInterface.php",
   "lib/Service/File/PublishedDigestService.php -> lib/Db/AuditTrail.php",
-  "lib/Service/File/PublishedDigestService.php -> lib/Db/AuditTrail/AuditedChange.php",
   "lib/Service/File/ReadFileHandler.php -> lib/Files/Db/FileMapperInterface.php",
   "lib/Service/File/ReadFileHandler.php -> lib/Service/FileHandlerSupportInterface.php",
   "lib/Service/File/ReadFileSources.php -> lib/Files/Db/FileMapperInterface.php",
@@ -259,7 +255,6 @@
   "lib/Service/Object/RecordAnnotations.php -> lib/Service/Archival/ArchivalDecisionResolver.php",
   "lib/Service/Object/RecordAnnotations.php -> lib/Service/Archival/RetentionEvaluator.php",
   "lib/Service/Object/ReferentialIntegrityService.php -> lib/Db/AuditTrail.php",
-  "lib/Service/Object/ReferentialIntegrityService.php -> lib/Db/AuditTrail/AuditedChange.php",
   "lib/Service/Object/ReferentialIntegrityService.php -> lib/Service/Archival/ArchivalRetentionGuard.php",
   "lib/Service/Object/RenderDerivations.php -> lib/Service/Calculation/CalculationEvaluatorInterface.php",
   "lib/Service/Object/RenderObject.php -> lib/Db/Translation.php",
@@ -275,7 +270,6 @@
   "lib/Service/Object/RevertHandler.php -> lib/Db/AuditTrail/RevertOptions.php",
   "lib/Service/Object/RevertHandler.php -> lib/Service/Flow/FlowRunContext.php",
   "lib/Service/Object/SaveObject.php -> lib/Db/AuditTrail.php",
-  "lib/Service/Object/SaveObject.php -> lib/Db/AuditTrail/AuditedChange.php",
   "lib/Service/Object/SaveObject.php -> lib/Db/AuditTrail/AuditedObject.php",
   "lib/Service/Object/SaveObject.php -> lib/Db/AuditTrail/SharedMasterDataRefusal.php",
   "lib/Service/Object/SaveObject.php -> lib/Db/AuditTrail/SharedMasterDataRefusalOptions.php",
@@ -2609,9 +2603,9 @@
   "lib/Twig/MappingTwigInstallerInterface.php"
  ],
  "exposed_loc": {
-  "Compliance": 15559,
+  "Compliance": 15514,
   "Configuration": 4293,
-  "Core": 64503,
+  "Core": 64548,
   "Files": 3592,
   "Integrations": 18271,
   "Kernel": 8521,
@@ -3083,5 +3077,5 @@
  ],
  "kernel_loc": 10459,
  "total_loc": 460616,
- "violation_degree": 0.0456
+ "violation_degree": 0.0449
 }
