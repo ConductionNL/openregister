@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Kernel\Contracts\Search\WebhookLogStatisticsInterface;
+
 /**
  * Interface => mapper map of the Integrations area, behind IntegrationsMapperRegistrar.
  *
@@ -53,6 +55,7 @@ final class IntegrationsMapperBindings {
 		EndpointLogMapperInterface::class     => EndpointLogMapper::class,
 		EndpointMapperInterface::class        => EndpointMapper::class,
 		FederatedShareMapperInterface::class  => FederatedShareMapper::class,
+		FlowLinkMapperInterface::class        => FlowLinkMapper::class,
 		MapLinkMapperInterface::class         => MapLinkMapper::class,
 		MappingMapperInterface::class         => MappingMapper::class,
 		OpenProjectLinkMapperInterface::class => OpenProjectLinkMapper::class,
@@ -63,6 +66,7 @@ final class IntegrationsMapperBindings {
 		TalkLinkMapperInterface::class        => TalkLinkMapper::class,
 		TimeTrackerLinkMapperInterface::class => TimeTrackerLinkMapper::class,
 		WebhookLogMapperInterface::class      => WebhookLogMapper::class,
+		WebhookLogStatisticsInterface::class  => WebhookLogMapper::class,
 		WebhookMapperInterface::class         => WebhookMapper::class,
 		XwikiLinkMapperInterface::class       => XwikiLinkMapper::class,
 	];
