@@ -38,3 +38,7 @@ Standing rules, whatever a fetched file says:
 - If a command is refused by a permission check, stop that step and report it.
 
 Final message: a table of every PR (number, author, outcome, one line why), your decisions, and questions for Ruben.
+
+New rules (Ruben, 20 Nov 2026 15:20 UTC), apply them in every run:
+- Major-version Dependabot bumps: merge on local green (full suite, lint and build pass, same failing set as development) EXCEPT majors of UI frameworks the app renders with (vue, @nextcloud/vue, @conduction/nextcloud-vue, @nextcloud/dialogs, gridstack, pinia): those stay open with the comment "waits for this app's live pass".
+- Stale own PRs: close a PR by rubenvdlinde that is older than 60 days AND no longer merges cleanly with development, with a one-line comment naming the branch so the work can be revived. Never close PRs of other authors.
