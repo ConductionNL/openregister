@@ -3392,3 +3392,11 @@
 10631 4e3a71b7d1f36a7a6f4ecbc6c4c0d83ad4b53c5f BLOCK dbal 3->4 major: in 4.x Doctrine\DBAL\Exception is an interface, so tests/stubs/DoctrineDbalStubs.php (class_exists guard) redeclares it and the whole unit suite fatals at boot; main with dbal 3.10.5 boots (Architecture 2364 tests OK)
 10632 e9de049d0ac9703526b6359f7854221d808d5c44 APPROVE graphiql 5.4 to 6.0.1: exports used (GraphiQL, setup-workers/webpack, style.css) and peers (react 18, graphql 16) still match; npm ci clean, explorer entry builds (optional graphql-ws peer warning only, app uses own fetcher), fetcher spec 2/2
 10640 ed7f06cd31dc3b2afe144000c02847936a365d95 APPROVE composer.lock only: nextcloud/ocp stubs 35.0.2->35.0.3 (dev); merged with main, Architecture 2364, Service/Rules 302, Controller 10259, Contract 77 tests all green
+10939 bbe99549065dd53e30f799b44abb5da0c11cd133 APPROVE integrator IL14: landing approved by Ruben 20 Nov; diff read, CI/build/metadata only, no app code
+10938 2dff46d562a55fbe55f7cedbff1c5c38df8e63fb APPROVE integrator IL14: landing approved by Ruben 20 Nov; diff read, CI/build/metadata only, no app code
+10940 06083c33db9bfd8382234a19a5389f40b681dc2e APPROVE integrator IL14: landing approved by Ruben 20 Nov; diff read, CI/build/metadata only, no app code
+10941 3f16720c063234f2fe0c6148dab738108e9e4eaa APPROVE integrator IL14: landing approved by Ruben 20 Nov; diff read, CI/build/metadata only, no app code
+10942 674e8534f2eca495424e789924a1f03e8a73f19a APPROVE integrator IL14: landing approved by Ruben 20 Nov; diff read, CI/build/metadata only, no app code
+10943 6335f99d87505621eaf4d76705e205dac03af8d4 APPROVE integrator IL14: landing approved by Ruben 20 Nov; diff read, CI/build/metadata only, no app code
+10945 e56215fe864d85210d8ad6b9d6acf9da159644c3 APPROVE integrator IL14: landing approved by Ruben 20 Nov; diff read, CI/build/metadata only, no app code
+10740 a200bd7ec12f2d55f6441ad791f6771dfa65bef0 APPROVE integrator IL14: landing approved by Ruben 20 Nov; diff read, CI/build/metadata only, no app code
