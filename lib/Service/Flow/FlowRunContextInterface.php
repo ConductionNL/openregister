@@ -29,7 +29,8 @@ use OCA\OpenRegister\Kernel\Contracts\Core\CurrentFlowRunInterface;
  * that attribute or authorise a write by the run that makes it.
  *
  * Declares only what those callers use; push() and pop() stay the engine's own.
- * currentRunUuid() comes from the Core port {@see CurrentFlowRunInterface}.
+ * currentRunUuid() comes from the Core contract CurrentFlowRunInterface, which the
+ * Core delete guard types against.
  * Bound in ContractBindings to FlowRunContext, whose FlowRegistrar registration is
  * shared, so every caller reads the one ambient stack.
  */

@@ -25,9 +25,11 @@ use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\CurrentFlowRunInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionDefaultsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionEvaluatorInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
 use OCA\OpenRegister\Search\FlowTasksProvider;
 use OCA\OpenRegister\Kernel\Contracts\Core\PublicationRefusalInterface;
+use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionRunner;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNode;
@@ -51,6 +53,8 @@ use OCA\OpenRegister\Service\Task\TaskCalendarDocumentInterface;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
 use OCA\OpenRegister\Service\TaskService;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectQuotaInterface;
+use OCA\OpenRegister\Service\Quota\ObjectQuotaService;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -79,7 +83,9 @@ final class FlowWiring {
 	 * @var array<class-string, class-string>
 	 */
 	public const BINDINGS = [
+		CurrentFlowRunInterface::class => FlowRunContext::class,
 		ScheduleFlowStoreInterface::class => ScheduleFlowStore::class,
+		ExpressionEvaluatorInterface::class => CalculationEvaluator::class,
 		\OCA\OpenRegister\Kernel\Contracts\Notifications\PartyRecipientsInterface::class => \OCA\OpenRegister\Service\Party\PartyRecipients::class,
 		PublicationRefusalInterface::class => PartyIndicatorGuard::class,
 		FlowRunSignalInterface::class => FlowRunSignalService::class,
@@ -92,6 +98,7 @@ final class FlowWiring {
 		PartySearchInterface::class => PartySearchService::class,
 		FlowConsentSweepInterface::class => FlowConsentParking::class,
 		ExpressionDefaultsInterface::class => ExpressionDefaults::class,
+		ObjectQuotaInterface::class => ObjectQuotaService::class,
 	];
 
 	/**
@@ -171,7 +178,7 @@ final class FlowWiring {
 	}//end registerRunnableGuard()
 
 	/**
-	 * Register the flow-attribution stack as one shared instance, also answering the Core current-run port.
+	 * Register the flow-attribution stack as one shared instance.
 	 *
 	 * @param IRegistrationContext $context The registration context.
 	 *
@@ -189,9 +196,6 @@ final class FlowWiring {
 				return new FlowRunContext();
 			}
 		);
-		// The object write path asks the Core port which run is writing; it is
-		// the same shared stack, so the port is an alias and never a second instance.
-		$context->registerServiceAlias(CurrentFlowRunInterface::class, FlowRunContext::class);
 	}//end registerRunContext()
 
 	/**

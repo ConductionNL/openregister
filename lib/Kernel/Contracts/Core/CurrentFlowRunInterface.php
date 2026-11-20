@@ -1,6 +1,6 @@
 <?php
 /**
- * CurrentFlowRunInterface: which flow run, if any, the write being made belongs to.
+ * CurrentFlowRunInterface: which flow run is writing, as a Core write guard asks it.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -20,11 +20,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Kernel\Contracts\Core;
 
 /**
- * The uuid of the flow run that is executing now, or null when a person is writing.
+ * The uuid of the flow run executing right now, for the Core guards that let a run through its own lock.
  *
- * The object write path (Core) asks, so a run-scoped lock admits the run that took
- * it; the flow engine (Processes) answers from its shared attribution stack and
- * binds that stack to this port in its own registrar.
+ * The object delete guard (Core) asks; the flow engine (Processes) keeps the ambient
+ * run stack and binds its shared FlowRunContext to this contract in its own wiring.
+ *
+ * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-ownership-is-decided-by-one-predicate
  */
 interface CurrentFlowRunInterface {
 
@@ -44,7 +45,7 @@ interface CurrentFlowRunInterface {
 	 * read as "a person is writing", which is the FAIL-CLOSED direction: a run
 	 * lock refuses a caller with no run uuid.
 	 *
-	 * @return string|null The run uuid, or null.
+	 * @return string|null The executing run's uuid, or null.
 	 *
 	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-ownership-is-decided-by-one-predicate
 	 */
