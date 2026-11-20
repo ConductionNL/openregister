@@ -904,6 +904,10 @@ deptrac:
         - type: directory
           value: 'lib/Service/Interaction/AddressedObject[.]php$'
         - type: directory
+          value: 'lib/Service/Interaction/ReadStateService[.]php$'
+        - type: directory
+          value: 'lib/Service/Interaction/ReadStateServiceInterface[.]php$'
+        - type: directory
           value: 'lib/Service/JsonLd/[^/]*$'
         - type: directory
           value: 'lib/Service/Lifecycle/StateFieldLists[.]php$'
@@ -2782,10 +2786,6 @@ deptrac:
         - type: directory
           value: 'lib/Service/Interaction/ReadHistoryService[.]php$'
         - type: directory
-          value: 'lib/Service/Interaction/ReadStateService[.]php$'
-        - type: directory
-          value: 'lib/Service/Interaction/ReadStateServiceInterface[.]php$'
-        - type: directory
           value: 'lib/Service/Interaction/SubResourceWindow[.]php$'
         - type: directory
           value: 'lib/Service/Interaction/SubstantiveChangeEvaluator[.]php$'
@@ -2883,6 +2883,8 @@ deptrac:
           value: 'lib/Service/Lifecycle/LifecycleRuleCheck[.]php$'
         - type: directory
           value: 'lib/Service/Lifecycle/LifecycleStateValidator[.]php$'
+        - type: directory
+          value: 'lib/Service/Lifecycle/LifecycleStatesKeeper[.]php$'
         - type: directory
           value: 'lib/Service/Lifecycle/LifecycleTransitionOptionsValidator[.]php$'
         - type: directory

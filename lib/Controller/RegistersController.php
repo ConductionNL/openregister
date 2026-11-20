@@ -57,7 +57,7 @@ use OCA\OpenRegister\Service\Rbac\ReadRuleTenancy;
 use OCA\OpenRegister\Service\Rbac\RbacRuleChecks;
 use OCA\OpenRegister\Service\RegisterServiceInterface;
 use OCA\OpenRegister\Service\Serializer\RegisterListExtension;
-use OCA\OpenRegister\Service\Lifecycle\KeepLifecycleStatesScope;
+use OCA\OpenRegister\Kernel\Contracts\Core\LifecycleStatesKeeperInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -1423,8 +1423,6 @@ class RegistersController extends Controller {
 	 *
 	 * @return array|JSONResponse The import summary, or an error response
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) KeepLifecycleStatesScope is an ambient marker; a static call is the whole point of it.
-	 *
 	 * @spec openspec/changes/lifecycle-guards-see-the-stored-object/specs/object-lifecycle/spec.md#requirement-an-administrator-can-import-historic-data-in-its-own-states
 	 */
 	private function runImport(array $options): array|JSONResponse {
@@ -1436,7 +1434,8 @@ class RegistersController extends Controller {
 			return new JSONResponse(data: ['error' => 'Only an administrator can import historic data.'], statusCode: 403);
 		}
 
-		return KeepLifecycleStatesScope::run(fn (): array|JSONResponse => $this->runImporter(options: $options));
+		return $this->container->get(LifecycleStatesKeeperInterface::class)
+			->keepingStates(fn (): array|JSONResponse => $this->runImporter(options: $options));
 	}//end runImport()
 
 	/**
