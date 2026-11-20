@@ -28,7 +28,7 @@ namespace OCA\OpenRegister\Service\Federation;
 
 use DateInterval;
 use DateTime;
-use OCA\OpenRegister\Db\FederatedShare;
+use OCA\OpenRegister\Kernel\Contracts\Core\FederatedShareInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 
 /**
@@ -72,13 +72,13 @@ final class ShareLifetime {
 	/**
 	 * Whether the share is past its expiry, or has none.
 	 *
-	 * @param FederatedShare $share The share.
+	 * @param FederatedShareInterface $share The share.
 	 *
 	 * @return bool
 	 *
 	 * @spec openspec/specs/federation-scope-enforcement/spec.md
 	 */
-	public function hasExpired(FederatedShare $share): bool {
+	public function hasExpired(FederatedShareInterface $share): bool {
 		$expiresAt = $share->getExpiresAt();
 
 		return $expiresAt === null || $expiresAt <= $this->now();
@@ -87,14 +87,14 @@ final class ShareLifetime {
 	/**
 	 * Whether the share expires within the given number of days, or has already.
 	 *
-	 * @param FederatedShare $share The share.
+	 * @param FederatedShareInterface $share The share.
 	 * @param int            $days  The days ahead.
 	 *
 	 * @return bool
 	 *
 	 * @spec openspec/specs/federation-scope-enforcement/spec.md
 	 */
-	public function expiresWithin(FederatedShare $share, int $days): bool {
+	public function expiresWithin(FederatedShareInterface $share, int $days): bool {
 		$expiresAt = $share->getExpiresAt();
 
 		return $expiresAt === null || $expiresAt <= $this->now()->add(new DateInterval('P'.max(0, $days).'D'));
