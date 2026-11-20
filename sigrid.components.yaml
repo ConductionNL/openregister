@@ -934,6 +934,7 @@ components:
       - ".*/lib/Service/Rules/DependentValueDeclarationException[.]php"
       - ".*/lib/Service/Schema/[^/]*"
       - ".*/lib/Service/SchemaImport/[^/]*"
+      - ".*/lib/Service/Schemas/ApprovalChainDeclarations[.]php"
       - ".*/lib/Service/Schemas/CodedChoiceDeclaration[.]php"
       - ".*/lib/Service/Schemas/CodedChoiceException[.]php"
       - ".*/lib/Service/Schemas/ExtendingFormDeclaration[.]php"
