@@ -4,9 +4,10 @@
  * OpenRegister ProcessDeclarationChecksDispatcher
  *
  * An event dispatcher that answers the schema declaration checks event the way
- * the app does, through SchemaDeclarationChecksListener and
- * ArchivalDeclarationChecksListener, so a hand-built SchemaMapper runs the
- * checks Processes and Compliance contribute.
+ * the app does, through SchemaDeclarationChecksListener,
+ * ArchivalDeclarationChecksListener and HandoffDeclarationChecksListener, so a
+ * hand-built SchemaMapper runs the checks Processes, Compliance and
+ * Integrations contribute.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -27,7 +28,9 @@ namespace OCA\OpenRegister\Tests\Unit\Support;
 
 use OCA\OpenRegister\Db\SchemaMapper\SchemaDeclarationChecksEvent;
 use OCA\OpenRegister\Listener\ArchivalDeclarationChecksListener;
+use OCA\OpenRegister\Listener\HandoffDeclarationChecksListener;
 use OCA\OpenRegister\Listener\SchemaDeclarationChecksListener;
+use OCA\OpenRegister\Notifications\Listener\NotificationDeclarationCheckListener;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionValidatorInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -120,7 +123,7 @@ final class ProcessDeclarationChecksDispatcher implements IEventDispatcher, Cont
 	}//end dispatch()
 
 	/**
-	 * Contribute the process and archival checks to the collection event; record every other event.
+	 * Contribute the process, archival, hand-off and notification checks to the collection event; record every other event.
 	 *
 	 * @param Event $event The event.
 	 *
@@ -131,6 +134,8 @@ final class ProcessDeclarationChecksDispatcher implements IEventDispatcher, Cont
 			$logger = ($this->logger ?? new NullLogger());
 			(new SchemaDeclarationChecksListener(logger: $logger, container: $this))->handle(event: $event);
 			(new ArchivalDeclarationChecksListener(logger: $logger))->handle(event: $event);
+			(new HandoffDeclarationChecksListener())->handle(event: $event);
+			(new NotificationDeclarationCheckListener(logger: $logger))->handle(event: $event);
 			return;
 		}
 
