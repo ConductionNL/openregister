@@ -11,8 +11,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\CascadeRetentionCheckInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\SearchTrailRecorderInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ReadPurposeGuardInterface;
+use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
 use OCA\OpenRegister\Service\Audit\PurposeGuard;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\ComplianceServiceRegistrar;
@@ -96,4 +98,8 @@ final class ComplianceServiceRegistrarTest extends TestCase {
 	public function testTheReadPurposeGuardPortIsAnsweredByThePurposeGuard(): void {
 		$this->assertSame(expected: PurposeGuard::class, actual: (ComplianceServiceRegistrar::BINDINGS[ReadPurposeGuardInterface::class] ?? null));
 	}//end testTheReadPurposeGuardPortIsAnsweredByThePurposeGuard()
+
+	public function testTheCascadeAsksTheArchivalRetentionGuard(): void {
+		$this->assertSame(expected: ArchivalRetentionGuard::class, actual: ComplianceServiceRegistrar::BINDINGS[CascadeRetentionCheckInterface::class]);
+	}//end testTheCascadeAsksTheArchivalRetentionGuard()
 }//end class

@@ -22,7 +22,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Anonymisation;
 
-use OCA\OpenRegister\Service\File\ImageRedactionService;
 
 /**
  * Every step that changes a document's content, the file types it applies
@@ -41,6 +40,13 @@ final class PipelineSteps {
 	public const DOCX_SANITISER = 'docx-sanitiser';
 	public const ODT_SANITISER = 'odt-sanitiser';
 	public const IMAGE_BURNER = 'image-burner';
+
+	/**
+	 * The standalone image types the image steps apply to; the image redaction seam detects these.
+	 *
+	 * @var list<string>
+	 */
+	public const IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/tiff', 'image/webp'];
 
 	public const OUTCOME_RAN = 'ran';
 	public const OUTCOME_SKIPPED = 'skipped';
@@ -78,7 +84,7 @@ final class PipelineSteps {
 		],
 		self::IMAGE_BURNER => [
 			'label' => 'Image region burner (decided regions painted into the pixels)',
-			'mimeTypes' => [...ImageRedactionService::STANDALONE_TYPES, self::DOCX, self::ODT],
+			'mimeTypes' => [...self::IMAGE_TYPES, self::DOCX, self::ODT],
 		],
 	];
 
