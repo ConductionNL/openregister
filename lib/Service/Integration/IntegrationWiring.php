@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Integration;
 
+use OCA\OpenRegister\Contract\EmailLinkReaderInterface;
 use OCA\OpenRegister\Controller\IntegrationControllersRegistrar;
 use OCA\OpenRegister\Db\Integration\IntegrationIdIndexInterface;
 use OCA\OpenRegister\Event\ObjectWriteRequestEvent;
@@ -34,6 +35,8 @@ use OCA\OpenRegister\Service\Consumer\AccountConsumerLookup;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\Connection\ConnectionReporter;
 use OCA\OpenRegister\Service\Credential\CredentialStore;
+use OCA\OpenRegister\Service\Credential\CredentialStoreResolver;
+use OCA\OpenRegister\Service\EmailLinkService;
 use OCA\OpenRegister\Notifications\Service\EmailService;
 use OCA\OpenRegister\Notifications\Service\EmailServiceInterface;
 use OCA\OpenRegister\Service\Capability\ToolReachLevels;
@@ -64,6 +67,8 @@ use OCA\OpenRegister\Kernel\Contracts\Core\ObjectTimelineLinksInterface;
 use OCA\OpenRegister\Service\ObjectRelationCleanupService;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
 use OCA\OpenRegister\Service\ObjectSource\OpenConnectorHttpProvider;
+use OCA\OpenRegister\Service\Sync\RestApiSourceFetcher;
+use OCA\OpenRegister\Service\Sync\SourceFetcherRegistry;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use Psr\Container\ContainerInterface;
 
@@ -204,6 +209,7 @@ final class IntegrationWiring {
 		self::registerValidators(context: $context);
 		self::registerLeafRegistry(context: $context);
 		self::registerBuiltinIntegrationProviders(context: $context);
+		self::registerSeams(context: $context);
 		IntegrationControllersRegistrar::register(context: $context);
 		$context->registerEventListener(ObjectWriteRequestEvent::class, WebhookRequestInterceptionListener::class);
 		foreach (self::BINDINGS as $contract => $service) {
@@ -309,6 +315,60 @@ final class IntegrationWiring {
 			);
 		}
 	}//end registerBuiltinIntegrationProviders()
+
+	/**
+	 * Register the integration seams that need a factory: the published email-link read, the credential store and the source-fetcher registry.
+	 *
+	 * Each is integration work, so this area binds it rather than Core's
+	 * ServiceRegistrar, which only names Core classes.
+	 *
+	 * @param IRegistrationContext $context The registration context.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/credential-broker/spec.md#requirement-credential-store-backend-resolution
+	 */
+	private static function registerSeams(IRegistrationContext $context): void {
+		// The published read of an object's linked emails, for consuming apps.
+		$context->registerService(
+			EmailLinkReaderInterface::class,
+			static function (ContainerInterface $c) {
+				return $c->get(EmailLinkService::class);
+			}
+		);
+
+		// Credential broker (credential-broker-service + credential-doriath-leaf):
+		// bind the CredentialStore abstraction through the CredentialStoreResolver
+		// (design D-A) — the Doriath application-vault leaf when the doriath app is
+		// eligible (enabled + service classes + application-scoped seam methods +
+		// OR self-registration), else the NC encrypted per-user vault leaf. The
+		// broker and controller keep depending only on the CredentialStore
+		// interface; this factory is the ONLY place the selection happens.
+		$context->registerService(
+			CredentialStore::class,
+			static function (ContainerInterface $c) {
+				return $c->get(CredentialStoreResolver::class)->resolve();
+			}
+		);
+
+		// The data-sync source-fetcher registry pre-loaded with the built-in
+		// REST/OpenRegister fetcher. Apps can register additional fetchers
+		// (OData, SOAP, CSV) by resolving and extending this service.
+		$context->registerService(SourceFetcherRegistry::class, self::buildSourceFetcherRegistry(...));
+	}//end registerSeams()
+
+	/**
+	 * Build the SourceFetcherRegistry service.
+	 *
+	 * @param ContainerInterface $container The container.
+	 *
+	 * @return SourceFetcherRegistry
+	 */
+	private static function buildSourceFetcherRegistry(ContainerInterface $container): SourceFetcherRegistry {
+		$registry = new SourceFetcherRegistry();
+		$registry->register($container->get(RestApiSourceFetcher::class));
+		return $registry;
+	}//end buildSourceFetcherRegistry()
 
 	/**
 	 * Resolve every BuiltinProviders/* class and register it with the
