@@ -403,6 +403,14 @@ final class BuiltinIntegrationServices {
 			'planner' => \OCA\OpenRegister\Service\Schema\SchemaMigrationPlanner::class,
 			'runs'    => self::SCHEMA_POPULATION_RUNS,
 		],
+		// An external register (BAG, BRK, WOZ, ...) read through a configured OpenConnector source;
+		// IntegrationWiring::bootObjectSources() adds it to the object source registry.
+		\OCA\OpenRegister\Service\ObjectSource\OpenConnectorHttpProvider::class => [
+			'router'         => \OCA\OpenRegister\Service\Integration\ExternalIntegrationRouterInterface::class,
+			'mappingMapper'  => \OCA\OpenRegister\Db\MappingMapperInterface::class,
+			'mappingService' => \OCA\OpenRegister\Service\MappingService::class,
+			'logger'         => \Psr\Log\LoggerInterface::class,
+		],
 	];
 
 	/**
