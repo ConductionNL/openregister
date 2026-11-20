@@ -2351,13 +2351,13 @@
  "exposed_loc": {
   "Compliance": 14875,
   "Configuration": 2124,
-  "Core": 64906,
+  "Core": 64916,
   "Files": 801,
-  "Integrations": 17983,
-  "Kernel": 8470,
+  "Integrations": 17984,
+  "Kernel": 8464,
   "Notifications": 2057,
   "Platform": 61,
-  "Processes": 27382,
+  "Processes": 27383,
   "Search": 2020
  },
  "kernel_files": [
@@ -2820,7 +2820,7 @@
   "lib/Support/RegisterSlugAliasesInterface.php",
   "lib/Support/UnknownFilterKeys.php"
  ],
- "kernel_loc": 10408,
- "total_loc": 461684,
+ "kernel_loc": 10402,
+ "total_loc": 461690,
  "violation_degree": 0.0138
 }
