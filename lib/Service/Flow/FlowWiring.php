@@ -28,6 +28,8 @@ use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionDefaultsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
 use OCA\OpenRegister\Search\FlowTasksProvider;
 use OCA\OpenRegister\Kernel\Contracts\Core\PublicationRefusalInterface;
+use OCA\OpenRegister\Kernel\Contracts\Integrations\BuiltInToolProvidersInterface;
+use OCA\OpenRegister\Mcp\BuiltIn\FlowBuiltInToolProviders;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionRunner;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNode;
@@ -96,6 +98,7 @@ final class FlowWiring {
 		FlowConsentSweepInterface::class => FlowConsentParking::class,
 		ExpressionDefaultsInterface::class => ExpressionDefaults::class,
 		ObjectQuotaInterface::class => ObjectQuotaService::class,
+		BuiltInToolProvidersInterface::class => FlowBuiltInToolProviders::class,
 	];
 
 	/**
