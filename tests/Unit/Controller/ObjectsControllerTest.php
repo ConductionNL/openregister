@@ -5694,7 +5694,7 @@ class ObjectsControllerTest extends TestCase {
 			'mimeType' => 'application/zip',
 		]);
 
-		$this->container->method('get')->willReturn($fileService);
+		$this->container->method('get')->willReturn(new \OCA\OpenRegister\Service\File\ObjectFilesArchive($fileService));
 		$this->request->method('getParam')->willReturn(null);
 
 		$result = $this->controller->downloadFiles('uuid-123', '1', '2', $this->objectService);
@@ -5745,7 +5745,7 @@ class ObjectsControllerTest extends TestCase {
 		);
 		$fileService->method('getFiles')->willReturn([$first, $second]);
 		$fileService->method('getAuditHandler')->willReturn($audit);
-		$this->container->method('get')->willReturn($fileService);
+		$this->container->method('get')->willReturn(new \OCA\OpenRegister\Service\File\ObjectFilesArchive($fileService));
 
 		$result = $this->controller->downloadFiles('uuid-123', '1', '2', $this->objectService);
 
@@ -5772,7 +5772,7 @@ class ObjectsControllerTest extends TestCase {
 			['path' => $tempZip, 'filename' => 'test-files.zip', 'mimeType' => 'application/zip']
 		);
 		$fileService->method('getFiles')->willThrowException(new \RuntimeException('no trail'));
-		$this->container->method('get')->willReturn($fileService);
+		$this->container->method('get')->willReturn(new \OCA\OpenRegister\Service\File\ObjectFilesArchive($fileService));
 
 		$result = $this->controller->downloadFiles('uuid-123', '1', '2', $this->objectService);
 
@@ -6255,7 +6255,7 @@ class ObjectsControllerTest extends TestCase {
 			'mimeType' => 'application/zip',
 		]);
 
-		$this->container->method('get')->willReturn($fileService);
+		$this->container->method('get')->willReturn(new \OCA\OpenRegister\Service\File\ObjectFilesArchive($fileService));
 		$this->request->method('getParam')->willReturn('custom-name');
 
 		$result = $this->controller->downloadFiles('uuid-123', '1', '2', $this->objectService);
@@ -6288,7 +6288,7 @@ class ObjectsControllerTest extends TestCase {
 		$fileService->method('createObjectFilesZip')
 			->willThrowException(new \Exception('Disk full'));
 
-		$this->container->method('get')->willReturn($fileService);
+		$this->container->method('get')->willReturn(new \OCA\OpenRegister\Service\File\ObjectFilesArchive($fileService));
 		$this->request->method('getParam')->willReturn(null);
 
 		$result = $this->controller->downloadFiles('uuid-123', '1', '2', $this->objectService);

@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Files\Service\File\FileAuditHandlerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\FileTagCatalogueInterface;
 use OCA\OpenRegister\Kernel\Contracts\StructurePreservation;
 use OCA\OpenRegister\Service\File\DocumentAnonymization;
 use OCA\OpenRegister\Service\File\FileBatchHandler;
@@ -43,7 +44,7 @@ use OCP\Files\Node;
  * It names FileReaderInterface and FileWriterInterface as well as ObjectFilesInterface,
  * whose read and write halves are the Core ports those two extend.
  */
-interface FileServiceInterface extends ObjectFilesInterface, FileReaderInterface, FileWriterInterface, FileFolderServiceInterface {
+interface FileServiceInterface extends ObjectFilesInterface, FileReaderInterface, FileWriterInterface, FileFolderServiceInterface, FileTagCatalogueInterface {
 
 	/**
 	 * Anonymize a document by replacing detected entities (DELEGATED to DocumentProcessingHandler).
@@ -113,22 +114,6 @@ interface FileServiceInterface extends ObjectFilesInterface, FileReaderInterface
 	 *   follow-up pass (see file-actions tasks.md DROP list).
 	 */
 	public function formatFiles(array $files, ?array $requestParams = []): array;
-
-	/**
-	 * Retrieves all available tags in the system.
-	 *
-	 * Delegates to TaggingHandler for single-responsibility tag management operations.
-	 *
-	 * @throws \Exception If there's an error retrieving the tags.
-	 *
-	 * @return string[]
-	 *
-	 * @psalm-return   list<string>
-	 * @phpstan-return array<int, string>
-	 *
-	 * @spec openspec/specs/file-actions/spec.md
-	 */
-	public function getAllTags(): array;
 
 	/**
 	 * Get the file audit handler.

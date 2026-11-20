@@ -672,6 +672,7 @@ final class ContractBindings {
 		TranslationProjectionInterface::class => TranslationProjectionService::class,
 		\OCA\OpenRegister\Kernel\Contracts\Core\SourceLanguagesInterface::class => TranslationProjectionService::class,
 		\OCA\OpenRegister\Kernel\Contracts\Core\DerivedTranslationsInterface::class => \OCA\OpenRegister\Service\TranslationStatusService::class,
+		\OCA\OpenRegister\Kernel\Contracts\Core\TranslationCompletenessInterface::class => \OCA\OpenRegister\Service\TranslationStatusService::class,
 		WholeSetExportActionInterface::class => ExportWholeSetAction::class,
 		ShareGrantorInterface::class => ShareGrantor::class,
 		TenantKeyRotationInterface::class => TenantKeyService::class,
