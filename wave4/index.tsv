@@ -1,0 +1,8 @@
+U01	build	13	Core to Compliance, lib/Service/Rbac + Core to Compliance, lib/Service/User + Core to Files, lib/Service/File + hotspot Schema.php
+U02	build	12	Core to Files, lib/Service/File
+U03	build	12	Core to Search, lib/Service/Aggregation + Core to Files, lib/Service
+U04	build	8	hotspot ServiceRegistrar.php
+U05	build	8	Kernel to Processes, lib/Event + Core to Configuration, lib/Service/Object
+U06	build	8	hotspot SchemasController.php + Core to Configuration, lib/Controller/Support + Core to Compliance, lib/Service/File + Core to Search, lib/Service/GraphQL
+U07	build	8	Core to Processes, lib/BackgroundJob + Core to Search, lib/Controller/Support + Integrations to Configuration, lib/Db + Core to Search, lib/Db/MagicMapper + Core to Processes, lib/Db/Schema + Core to Integrations, lib/Db/SchemaMapper + Processes to Configuration, lib/Db + Core to Integrations, lib/Db
+U08	build	8	Compliance to Processes, lib/Db + Core to Platform, lib/Listener + Compliance to Processes, lib/Service/Audit + Core to Processes, lib/Service/Hinge + Core to Processes, lib/Service/Object/Collaborators + Core to Compliance, lib/Service/Object + Core to Processes, lib/Service/Object + Core to Integrations, lib/Service/ObjectSource
