@@ -26,6 +26,7 @@ use OCA\OpenRegister\Kernel\Contracts\Core\CurrentFlowRunInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionDefaultsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionEvaluatorInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ReadHistoryInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\WriteElevationInterface;
 use OCA\OpenRegister\Kernel\Contracts\Notifications\PartyRecipientsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\PublicationRefusalInterface;
@@ -66,6 +67,7 @@ use OCA\OpenRegister\Service\Flow\Principal\PrincipalKinds;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalKindsInterface;
 use OCA\OpenRegister\Service\Form\FormDependentsCheck;
 use OCA\OpenRegister\Service\Flow\RegistryStepDispatcher;
+use OCA\OpenRegister\Service\Interaction\ReadHistoryService;
 use OCA\OpenRegister\Service\Flow\Timer\CalendarRecompute;
 use OCA\OpenRegister\Service\Flow\Timer\CalendarRecomputeInterface;
 use OCA\OpenRegister\Service\Flow\Timer\TermDiagnostic;
@@ -264,6 +266,17 @@ final class FlowWiringTest extends TestCase {
 	}//end testTheFieldRulesPortIsAnsweredByTheStateResolver()
 
 	/**
+	 * The read history port is answered by the read history service.
+	 *
+	 * @return void
+	 */
+	public function testTheReadHistoryPortIsAnsweredByTheReadHistoryService(): void {
+		self::assertSame(expected: ReadHistoryService::class, actual: (FlowWiring::BINDINGS[ReadHistoryInterface::class] ?? null));
+		self::assertTrue(condition: is_a(ReadHistoryService::class, ReadHistoryInterface::class, true));
+		self::assertSame(expected: ReadHistoryInterface::REASON_UNAVAILABLE, actual: ReadHistoryService::REASON_UNAVAILABLE);
+	}//end testTheReadHistoryPortIsAnsweredByTheReadHistoryService()
+
+	/**
 	 * The render's expression port is answered by the calculation evaluator, through its own interface.
 	 *
 	 * @return void
@@ -296,6 +309,7 @@ final class FlowWiringTest extends TestCase {
 	}//end testTheExpressionDefaultsPortIsAnsweredByTheRulesEngine()
 
 	/**
+	 * The schedule flow store, the current-run port, the read history, the write elevation, the expression-defaults port and the area's own interfaces are bound, and only these aliases are registered.
 	 * The schedule flow store, the current-run port and every port the area answers for another (task rows, overdue tasks, watchers, run records, schema change checks, calendars, tool providers, write elevation, expression defaults) are bound, and only these aliases are registered.
 	 * The schedule flow store, the current-run port, the expression-defaults port, the area's own interfaces and the lifecycle transition port are bound, and only these aliases are registered.
 	 * The schedule flow store, the current-run port, the audit trail's transition-in-flight port, the expression-defaults port and the area's own interfaces are bound, and only these aliases are registered.
@@ -315,6 +329,7 @@ final class FlowWiringTest extends TestCase {
 				ObjectCalendarLinkInterface::class         => CalendarEventService::class,
 				CurrentFlowRunInterface::class             => FlowRunContext::class,
 				ScheduleFlowStoreInterface::class          => ScheduleFlowStore::class,
+				ReadHistoryInterface::class                => ReadHistoryService::class,
 				TransitionInFlightInterface::class         => LifecycleActionContext::class,
 				WriteElevationInterface::class             => ObjectActionWriteElevation::class,
 				ObjectDateEventsSourceInterface::class     => ObjectCalendarFeedService::class,
