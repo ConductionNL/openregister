@@ -44,14 +44,14 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\AuthorizationBlockException;
 use OCA\OpenRegister\Exception\DatabaseConstraintException;
+use OCA\OpenRegister\Kernel\Contracts\Core\AppImportJobOwnersInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\BundleImport;
+use OCA\OpenRegister\Kernel\Contracts\Core\RegisterAccessChangeLogInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\RegisterBundlesInterface;
 use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectExporterInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectImporterInterface;
 use OCA\OpenRegister\Service\Schemas\RegisterModelService;
-use OCA\OpenRegister\Service\AuthorizationAuditService;
-use OCA\OpenRegister\Service\Configuration\ConfigurationCollaborators;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Rbac\ReadRuleTenancy;
 use OCA\OpenRegister\Service\Rbac\RbacRuleChecks;
@@ -719,7 +719,7 @@ class RegistersController extends Controller {
 	 */
 	private function logAccessChanges(RegisterAccessAudit $audit, Register $updated): void {
 		try {
-			$audit->log(service: $this->container->get(AuthorizationAuditService::class), after: $updated);
+			$audit->log(service: $this->container->get(RegisterAccessChangeLogInterface::class), after: $updated);
 		} catch (\Throwable $e) {
 			// Audit logging should not break the update operation.
 			$this->logger->warning(
@@ -1745,7 +1745,7 @@ class RegistersController extends Controller {
 			return null;
 		}
 
-		$reason = ConfigurationCollaborators::registerBundleBinding(schemaMapper: $this->schemaMapper)->refusalFor(register: $register, bundle: $bundle);
+		$reason = $this->bundles->refusalFor(register: $register, bundle: $bundle);
 		if ($reason === null) {
 			return null;
 		}
@@ -1895,8 +1895,7 @@ class RegistersController extends Controller {
 	 * @return JSONResponse|null The refusal, or null when no app owns the job.
 	 */
 	private function appImportRefusal(string $importJobId): ?JSONResponse {
-		$owningApp = ConfigurationCollaborators::appImportJobsFrom(container: $this->container)
-			->appForJob(importJobId: $importJobId);
+		$owningApp = $this->container->get(AppImportJobOwnersInterface::class)->appForJob(importJobId: $importJobId);
 		if ($owningApp === null) {
 			return null;
 		}
