@@ -125,7 +125,6 @@
   "lib/Service/File/ReadFileHandler.php -> lib/Files/Db/FileMapperInterface.php",
   "lib/Service/File/ReadFileHandler.php -> lib/Service/FileHandlerSupportInterface.php",
   "lib/Service/File/ReadFileSources.php -> lib/Files/Db/FileMapperInterface.php",
-  "lib/Service/File/UpdateFileGuards.php -> lib/Files/Service/File/FileOwnershipHandlerInterface.php",
   "lib/Service/File/UpdateFileHandler.php -> lib/Files/Db/File.php",
   "lib/Service/File/UpdateFileHandler.php -> lib/Files/Db/FileMapperInterface.php",
   "lib/Service/File/UpdateFileHandler.php -> lib/Service/FileHandlerSupportInterface.php",
@@ -2963,5 +2962,5 @@
  ],
  "kernel_loc": 10457,
  "total_loc": 461188,
- "violation_degree": 0.0278
+ "violation_degree": 0.0276
 }
