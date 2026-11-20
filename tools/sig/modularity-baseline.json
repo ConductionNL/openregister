@@ -861,6 +861,7 @@
   "lib/Kernel/Contracts/ContactMatcherInterface.php",
   "lib/Kernel/Contracts/ConversationInterface.php",
   "lib/Kernel/Contracts/ConversationMapperInterface.php",
+  "lib/Kernel/Contracts/Core/AccessLinkUseRecorderInterface.php",
   "lib/Kernel/Contracts/Core/ActionCheckInterface.php",
   "lib/Kernel/Contracts/Core/ActionRightCheckInterface.php",
   "lib/Kernel/Contracts/Core/ActionRightsInterface.php",
@@ -1281,6 +1282,7 @@
   "lib/Service/Archival/SelectielijstReferenceResolver.php",
   "lib/Service/Archival/SelectielijstReferenceResolverInterface.php",
   "lib/Service/Archival/SelectionListSeeder.php",
+  "lib/Service/Audit/AccessLinkUseRecorder.php",
   "lib/Service/Audit/AuditAggregationService.php",
   "lib/Service/Audit/AuditAggregationServiceInterface.php",
   "lib/Service/Audit/AuditEntryWriter.php",
@@ -2372,6 +2374,7 @@
   "lib/Service/Sharing/AccessLinkSubject.php",
   "lib/Service/Sharing/AccessLinkSubjectInterface.php",
   "lib/Service/Sharing/AccessLinkTerms.php",
+  "lib/Service/Sharing/AccessLinkUse.php",
   "lib/Service/Sharing/LinkMintRequest.php",
   "lib/Service/Sharing/ObjectShareLookup.php",
   "lib/Service/Sharing/ShareGrantee.php",
@@ -2493,9 +2496,9 @@
   "lib/Twig/MappingTwigInstallerInterface.php"
  ],
  "exposed_loc": {
-  "Compliance": 15316,
+  "Compliance": 15354,
   "Configuration": 3604,
-  "Core": 64429,
+  "Core": 64431,
   "Files": 2667,
   "Integrations": 18251,
   "Kernel": 8506,
@@ -2967,6 +2970,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10457,
- "total_loc": 461075,
- "violation_degree": 0.0323
+ "total_loc": 461105,
+ "violation_degree": 0.0322
 }
