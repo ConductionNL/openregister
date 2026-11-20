@@ -36,6 +36,7 @@ use OCA\OpenRegister\Service\FlowLinkPlatform;
 use OCA\OpenRegister\Service\FlowLinkService;
 use OCA\OpenRegister\Search\FlowTasksProvider;
 use OCA\OpenRegister\Kernel\Contracts\Core\PublicationRefusalInterface;
+use OCA\OpenRegister\Kernel\Contracts\Notifications\TaskRowSourceInterface;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionRunner;
@@ -97,6 +98,7 @@ final class FlowWiring {
 		ObjectCalendarLinkInterface::class => CalendarEventService::class,
 		CurrentFlowRunInterface::class => FlowRunContext::class,
 		ScheduleFlowStoreInterface::class => ScheduleFlowStore::class,
+		TaskRowSourceInterface::class => TaskInboxService::class,
 		BuiltInToolProvidersInterface::class => FlowBuiltInToolProviders::class,
 		ExpressionEvaluatorInterface::class => CalculationEvaluator::class,
 		\OCA\OpenRegister\Kernel\Contracts\Notifications\PartyRecipientsInterface::class => \OCA\OpenRegister\Service\Party\PartyRecipients::class,

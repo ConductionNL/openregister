@@ -106,11 +106,6 @@
   "lib/Notifications/Service/Notification/AnnotationNotificationDispatcher.php -> lib/Service/Task/TaskStateRules.php",
   "lib/Notifications/Service/Notification/DeliveryLedger.php -> lib/Service/AutomationRecordWriter.php",
   "lib/Notifications/Service/Notification/NotificationReminderValidator.php -> lib/Service/Flow/Timer/SlaCalculatorInterface.php",
-  "lib/Notifications/Service/Notification/TaskObjectAdapter.php -> lib/Db/Task.php",
-  "lib/Notifications/Service/Notification/TaskObjectAdapters.php -> lib/Db/Task.php",
-  "lib/Notifications/Service/Notification/TaskTransitionNotifier.php -> lib/Db/Task.php",
-  "lib/Notifications/Service/Notification/TaskTransitionNotifier.php -> lib/Service/Task/TaskInboxServiceInterface.php",
-  "lib/Notifications/Service/Notification/TaskTransitionNotifierInterface.php -> lib/Db/Task.php",
   "lib/Search/Db/View.php -> lib/Db/Configuration.php",
   "lib/Search/Db/View.php -> lib/Db/Task.php",
   "lib/Search/Db/View.php -> lib/Mcp/Db/Agent.php",
@@ -975,6 +970,7 @@
   "lib/Kernel/Contracts/Notifications/DeclaredWebhookInstallerInterface.php",
   "lib/Kernel/Contracts/Notifications/PartyRecipientsInterface.php",
   "lib/Kernel/Contracts/Notifications/ScheduledMessageDeliveryInterface.php",
+  "lib/Kernel/Contracts/Notifications/TaskRowSourceInterface.php",
   "lib/Kernel/Contracts/ObjectCalendarEventsInterface.php",
   "lib/Kernel/Contracts/ObjectCalendarTasksInterface.php",
   "lib/Kernel/Contracts/ObjectExporterInterface.php",
@@ -2525,9 +2521,9 @@
   "Files": 2664,
   "Integrations": 18214,
   "Kernel": 8505,
-  "Notifications": 2018,
+  "Notifications": 2025,
   "Platform": 292,
-  "Processes": 30182,
+  "Processes": 30183,
   "Search": 2027
  },
  "kernel_files": [
@@ -2993,6 +2989,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10456,
- "total_loc": 460768,
- "violation_degree": 0.0358
+ "total_loc": 460778,
+ "violation_degree": 0.0352
 }

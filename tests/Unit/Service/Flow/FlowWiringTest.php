@@ -25,6 +25,7 @@ use OCA\OpenRegister\Kernel\Contracts\Integrations\BuiltInToolProvidersInterface
 use OCA\OpenRegister\Mcp\BuiltIn\FlowBuiltInToolProviders;
 use OCA\OpenRegister\Kernel\Contracts\Notifications\PartyRecipientsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\PublicationRefusalInterface;
+use OCA\OpenRegister\Kernel\Contracts\Notifications\TaskRowSourceInterface;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
 use OCA\OpenRegister\Service\Flow\FlowAccess;
@@ -189,6 +190,16 @@ final class FlowWiringTest extends TestCase {
 	}//end testItRegistersTheServicesInOrder()
 
 	/**
+	 * The task row port of the notifier (Notifications) is answered by the task inbox (Processes).
+	 *
+	 * @return void
+	 */
+	public function testTheTaskRowPortIsAnsweredByTheTaskInbox(): void {
+		self::assertSame(expected: TaskInboxService::class, actual: ($this->aliases[TaskRowSourceInterface::class] ?? null));
+		self::assertTrue(condition: is_a(TaskInboxService::class, TaskRowSourceInterface::class, true));
+	}//end testTheTaskRowPortIsAnsweredByTheTaskInbox()
+
+	/**
 	 * The flow tasks search provider is registered here, by the component that owns it.
 	 *
 	 * @return void
@@ -240,6 +251,7 @@ final class FlowWiringTest extends TestCase {
 	}//end testTheExpressionDefaultsPortIsAnsweredByTheRulesEngine()
 
 	/**
+	 * The schedule flow store, the current-run port, the task row port, the expression-defaults port and the area's own interfaces are bound, and only these aliases are registered.
 	 * The schedule flow store, the current-run port, the calendar link port, the expression-defaults port and the area's own interfaces are bound, and only these aliases are registered.
 	 * The schedule flow store, the current-run port, the expression-defaults port, the built-in tool providers and the area's own interfaces are bound, and only these aliases are registered.
 	 *
@@ -252,6 +264,7 @@ final class FlowWiringTest extends TestCase {
 				ObjectCalendarLinkInterface::class         => CalendarEventService::class,
 				CurrentFlowRunInterface::class             => FlowRunContext::class,
 				ScheduleFlowStoreInterface::class          => ScheduleFlowStore::class,
+				TaskRowSourceInterface::class              => TaskInboxService::class,
 				BuiltInToolProvidersInterface::class       => FlowBuiltInToolProviders::class,
 				ExpressionEvaluatorInterface::class        => CalculationEvaluator::class,
 				PartyRecipientsInterface::class            => PartyRecipients::class,
