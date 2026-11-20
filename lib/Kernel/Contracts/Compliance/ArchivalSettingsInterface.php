@@ -1,7 +1,6 @@
 <?php
-
 /**
- * ArchivalSettingsInterface: the archival settings the retention and destruction work reads.
+ * ArchivalSettingsInterface: the stored archival settings the archival work reads.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -21,12 +20,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Kernel\Contracts\Compliance;
 
 /**
- * Reads the stored archival settings, with their defaults filled in.
+ * Reads the archival settings, with their defaults filled in.
  *
- * Retention, destruction and review work (Compliance) asks; the settings
- * handler (Configuration) answers and is bound to this contract.
- *
- * @spec openspec/specs/retention-management/spec.md#requirement-retention-settings-must-be-configurable-via-api
+ * The archival services (Compliance) ask; the settings handler (Configuration)
+ * answers and is bound to this contract.
  */
 interface ArchivalSettingsInterface {
 

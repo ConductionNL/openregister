@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\RetentionSettingsInterface;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Kernel\Contracts\Compliance\ArchivalSettingsInterface;
 use OCA\OpenRegister\Service\Party\PartySchemaCatalogueInterface;
@@ -57,6 +58,7 @@ final class A18InterfaceBindingsTest extends TestCase {
 		ArchivalSettingsReaderInterface::class => ObjectRetentionHandler::class,
 		PartySchemaCatalogueInterface::class => PartyService::class,
 		RetentionSettingsReaderInterface::class => ObjectRetentionHandler::class,
+		RetentionSettingsInterface::class => ObjectRetentionHandler::class,
 		TrustedPartyReaderInterface::class => PartyService::class,
 	];
 
