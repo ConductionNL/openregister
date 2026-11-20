@@ -61,7 +61,6 @@
   "lib/Search/Db/View.php -> lib/Mcp/Db/Agent.php",
   "lib/Search/Db/ViewFormatting.php -> lib/Db/Configuration.php",
   "lib/Search/Db/ViewMapper.php -> lib/Db/Configuration.php",
-  "lib/Search/Service/DashboardSizes.php -> lib/Db/AuditTrail.php",
   "lib/Service/Aggregation/AdhocAggregationRun.php -> lib/Search/Service/Aggregation/AggregationQuery.php",
   "lib/Service/Aggregation/AggregationRunner.php -> lib/Search/Service/Aggregation/AggregationCacheInterface.php",
   "lib/Service/Aggregation/AggregationRunner.php -> lib/Search/Service/Aggregation/AggregationQuery.php",
@@ -2889,5 +2888,5 @@
  ],
  "kernel_loc": 10408,
  "total_loc": 461412,
- "violation_degree": 0.0201
+ "violation_degree": 0.02
 }
