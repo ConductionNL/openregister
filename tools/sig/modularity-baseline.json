@@ -31,8 +31,6 @@
   "lib/Db/AuditTrailMapperInterface.php -> lib/Db/AuditTrail/SharedMasterDataRefusal.php",
   "lib/Db/AuditTrailMapperInterface.php -> lib/Db/AuditTrail/SlugBackfill.php",
   "lib/Db/AuditTrailMapperInterface.php -> lib/Db/AuditTrail/ToolInvocation.php",
-  "lib/Db/MagicMapper.php -> lib/Service/Audit/PurposeGuardInterface.php",
-  "lib/Db/MagicMapper.php -> lib/Service/LanguageServiceInterface.php",
   "lib/Db/MagicMapper/MagicSearchHandler.php -> lib/Search/Service/Search/PropertySearchProfile.php",
   "lib/Db/MapperWiring.php -> lib/Db/Support/SecretAtRest.php",
   "lib/Db/MapperWiring.php -> lib/Db/WebhookMapper.php",
@@ -2933,6 +2931,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10457,
- "total_loc": 461254,
- "violation_degree": 0.0251
+ "total_loc": 461257,
+ "violation_degree": 0.0249
 }
