@@ -286,8 +286,6 @@
   "lib/Service/Registers/EntityEventPublisher.php -> lib/Db/Task.php",
   "lib/Service/Relation/ObjectTreeService.php -> lib/Service/Party/PartyDefinition.php",
   "lib/Service/Schemas/PropertyTitles.php -> lib/Service/LanguageService.php",
-  "lib/Service/Search/ObjectSearchResultFormatter.php -> lib/Service/DeepLinkRegistryService.php",
-  "lib/Service/Search/ObjectSearchResultFormatter.php -> lib/Service/Reference/ObjectPreviewFormatter.php",
   "lib/Service/Search/VectorResultFilter.php -> lib/Files/Service/File/FileReadScope.php",
   "lib/Service/Search/VectorResultFilter.php -> lib/Search/Service/ViewService.php",
   "lib/Service/ServiceBootstrap.php -> lib/Service/Gdpr/GdprRegistrar.php",
@@ -939,6 +937,7 @@
   "lib/Kernel/Contracts/Core/ActionCheckInterface.php",
   "lib/Kernel/Contracts/Core/ActionRightCheckInterface.php",
   "lib/Kernel/Contracts/Core/ActionRightsInterface.php",
+  "lib/Kernel/Contracts/Core/AppDeepLinksInterface.php",
   "lib/Kernel/Contracts/Core/AuditEntry.php",
   "lib/Kernel/Contracts/Core/AuditEntryWriterInterface.php",
   "lib/Kernel/Contracts/Core/AuditRecordInterface.php",
@@ -976,6 +975,7 @@
   "lib/Kernel/Contracts/Core/RegisterAccessChangeLogInterface.php",
   "lib/Kernel/Contracts/Core/RegisterBundlesInterface.php",
   "lib/Kernel/Contracts/Core/RegisterFolderRecordsInterface.php",
+  "lib/Kernel/Contracts/Core/RegisterSchemaLabelsInterface.php",
   "lib/Kernel/Contracts/Core/RequestLanguagesInterface.php",
   "lib/Kernel/Contracts/Core/RetainingActivityInterface.php",
   "lib/Kernel/Contracts/Core/RetentionSettingsInterface.php",
@@ -2561,10 +2561,10 @@
  ],
  "exposed_loc": {
   "Compliance": 15510,
-  "Configuration": 3647,
-  "Core": 64578,
+  "Configuration": 3648,
+  "Core": 64593,
   "Files": 3592,
-  "Integrations": 18237,
+  "Integrations": 18238,
   "Kernel": 8505,
   "Notifications": 2018,
   "Platform": 292,
@@ -3034,6 +3034,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10456,
- "total_loc": 460715,
- "violation_degree": 0.0397
+ "total_loc": 460736,
+ "violation_degree": 0.0394
 }

@@ -23,10 +23,12 @@ namespace OCA\OpenRegister\Service\Integration;
 use OCA\OpenRegister\Controller\IntegrationControllersRegistrar;
 use OCA\OpenRegister\Db\Integration\IntegrationIdIndexInterface;
 use OCA\OpenRegister\Event\ObjectWriteRequestEvent;
+use OCA\OpenRegister\Kernel\Contracts\Core\AppDeepLinksInterface;
 use OCA\OpenRegister\Kernel\Contracts\Notifications\ScheduledMessageDeliveryInterface;
 use OCA\OpenRegister\Kernel\Contracts\Search\PageWidgetDeclarationInterface;
 use OCA\OpenRegister\Kernel\Contracts\Compliance\ConnectionStatusReporterInterface;
 use OCA\OpenRegister\Listener\WebhookRequestInterceptionListener;
+use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\Connection\ConnectionReporter;
 use OCA\OpenRegister\Notifications\Service\EmailService;
 use OCA\OpenRegister\Notifications\Service\EmailServiceInterface;
@@ -88,6 +90,7 @@ final class IntegrationWiring {
 	 * @var array<class-string, class-string>
 	 */
 	public const BINDINGS = [
+		AppDeepLinksInterface::class => DeepLinkRegistryService::class,
 		ConnectionStatusReporterInterface::class => ConnectionReporter::class,
 		EmailServiceInterface::class => EmailService::class,
 		IntegrationCatalogueInterface::class => IntegrationRegistry::class,
