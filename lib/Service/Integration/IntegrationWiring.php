@@ -23,7 +23,13 @@ namespace OCA\OpenRegister\Service\Integration;
 use OCA\OpenRegister\Controller\IntegrationControllersRegistrar;
 use OCA\OpenRegister\Db\Integration\IntegrationIdIndexInterface;
 use OCA\OpenRegister\Event\ObjectWriteRequestEvent;
+use OCA\OpenRegister\Kernel\Contracts\Notifications\ScheduledMessageDeliveryInterface;
+use OCA\OpenRegister\Kernel\Contracts\Search\PageWidgetDeclarationInterface;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\ConnectionStatusReporterInterface;
 use OCA\OpenRegister\Listener\WebhookRequestInterceptionListener;
+use OCA\OpenRegister\Service\Connection\ConnectionReporter;
+use OCA\OpenRegister\Notifications\Service\EmailService;
+use OCA\OpenRegister\Notifications\Service\EmailServiceInterface;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\AuditTrailProvider;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\FilesProvider;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\NotesProvider;
@@ -42,9 +48,14 @@ use OCA\OpenRegister\Service\Integration\Providers\OpenCorporatesProvider;
 use OCA\OpenRegister\Service\Integration\Providers\OpenCorporatesSearchInterface;
 use OCA\OpenRegister\Service\Integration\Providers\OpenProjectProvider;
 use OCA\OpenRegister\Service\Integration\Providers\PollsProvider;
+use OCA\OpenRegister\Service\Integration\Providers\ScheduledMessageDelivery;
 use OCA\OpenRegister\Service\Integration\Providers\SharesProvider;
 use OCA\OpenRegister\Service\Integration\Providers\TalkProvider;
 use OCA\OpenRegister\Service\Integration\Providers\XwikiProvider;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectTimelineLinksInterface;
+use OCA\OpenRegister\Service\ObjectRelationCleanupService;
+use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
+use OCA\OpenRegister\Service\ObjectSource\OpenConnectorHttpProvider;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use Psr\Container\ContainerInterface;
 
@@ -67,18 +78,24 @@ final class IntegrationWiring {
 	 * Callers that only read the registry type against its read-side contracts;
 	 * registration (addProvider, withProviders, setLeafLoader) stays on
 	 * IntegrationRegistry. The lookup and dispatch controllers type against the
-	 * provider contracts.
+	 * provider contracts. The mail-sidebar link service is bound here because
+	 * linking Mail messages to objects is integration work.
 	 *
 	 * @var array<class-string, class-string>
 	 */
 	public const BINDINGS = [
+		ConnectionStatusReporterInterface::class => ConnectionReporter::class,
+		EmailServiceInterface::class => EmailService::class,
 		IntegrationCatalogueInterface::class => IntegrationRegistry::class,
 		IntegrationIdIndexInterface::class => IntegrationRegistry::class,
 		KvkLookupInterface::class => KvkProvider::class,
 		LeafRegistryInterface::class => LeafRegistry::class,
 		MessageDispatcherInterface::class => MessageDispatchProvider::class,
 		OpenCorporatesSearchInterface::class => OpenCorporatesProvider::class,
+		PageWidgetDeclarationInterface::class => IntegrationRegistry::class,
 		PageWidgetRegistryInterface::class => IntegrationRegistry::class,
+		ScheduledMessageDeliveryInterface::class => ScheduledMessageDelivery::class,
+		ObjectTimelineLinksInterface::class => ObjectRelationCleanupService::class,
 	];
 
 	/**
@@ -137,6 +154,16 @@ final class IntegrationWiring {
 		TalkProvider::class,
 		// @spec openspec/specs/integration-time-tracker/spec.md (canonical spec).
 		\OCA\OpenRegister\Service\Integration\Providers\TimeProvider::class,
+	];
+
+	/**
+	 * The object-source providers of this component bootObjectSources() adds to the object source registry, in order.
+	 *
+	 * @var list<class-string>
+	 */
+	private const OBJECT_SOURCE_PROVIDERS = [
+		// An external register (BAG, BRK, WOZ, ...) through a configured OpenConnector source.
+		OpenConnectorHttpProvider::class,
 	];
 
 	/**
@@ -339,6 +366,35 @@ final class IntegrationWiring {
 			}
 		}
 	}//end addBuiltinProviders()
+
+	/**
+	 * Add this component's object-source providers to the shared ObjectSourceRegistry.
+	 *
+	 * Runs in boot() after ObjectSourceRegistrar::boot(), so these providers follow
+	 * the built-in ones in the registry. Guarded like that step: without a registry
+	 * nothing is added, and a provider that cannot be resolved is logged and skipped.
+	 *
+	 * @param mixed $server Server container (passed in from boot()).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/external-register-view-leaf/specs/object-source-providers/spec.md
+	 */
+	public static function bootObjectSources($server): void {
+		try {
+			$registry = $server->get(ObjectSourceRegistry::class);
+		} catch (\Throwable $e) {
+			return;
+		}
+
+		foreach (self::OBJECT_SOURCE_PROVIDERS as $providerClass) {
+			try {
+				$registry->addProvider($server->get($providerClass));
+			} catch (\Throwable $e) {
+				self::bootLogger(server: $server)?->warning('[ObjectSource] could not register ' . $providerClass . ': ' . $e->getMessage());
+			}
+		}
+	}//end bootObjectSources()
 
 	/**
 	 * Install the lazy leaf loader on the shared IntegrationRegistry.
