@@ -30,8 +30,10 @@ use OCA\OpenRegister\Listener\ArchivalDeclarationChecksListener;
 use OCA\OpenRegister\Listener\HandoffDeclarationChecksListener;
 use OCA\OpenRegister\Listener\ReferenceCardDeclarationCheckListener;
 use OCA\OpenRegister\Listener\SchemaDeclarationChecksListener;
+use OCA\OpenRegister\Mcp\Listener\McpDeclarationChecksListener;
 use OCA\OpenRegister\Listener\UniqueHintDeclarationCheckListener;
 use OCA\OpenRegister\Notifications\Listener\NotificationDeclarationCheckListener;
+use OCA\OpenRegister\Search\Listener\AggregationDeclarationCheckListener;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionValidatorInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -142,8 +144,10 @@ final class ProcessDeclarationChecksDispatcher implements IEventDispatcher, Cont
 			new ArchivalDeclarationChecksListener(logger: $logger),
 			new HandoffDeclarationChecksListener(),
 			new NotificationDeclarationCheckListener(logger: $logger),
+			new McpDeclarationChecksListener(),
 			new ReferenceCardDeclarationCheckListener(),
 			new UniqueHintDeclarationCheckListener(),
+			new AggregationDeclarationCheckListener(logger: $logger),
 		];
 	}//end listeners()
 
