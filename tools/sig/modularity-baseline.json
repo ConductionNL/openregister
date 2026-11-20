@@ -3,17 +3,6 @@
   "lib/AppHost/Reference/AbstractSchemaReferenceProvider.php -> lib/Service/Reference/ObjectPreviewFormatterInterface.php",
   "lib/BackgroundJob/DbalIntrospectionJob.php -> lib/Db/Source.php",
   "lib/BackgroundJob/QueuedJobClassesInterface.php -> lib/BackgroundJob/TranslationProjectionJob.php",
-  "lib/BackgroundJob/TransferExecutionJob.php -> lib/BackgroundJob/Support/TransferExecutionPlatform.php",
-  "lib/BackgroundJob/TransferExecutionJob.php -> lib/BackgroundJob/Support/TransferExecutionRecords.php",
-  "lib/BackgroundJob/TransferExecutionJob.php -> lib/BackgroundJob/Support/TransferExecutionTransports.php",
-  "lib/BackgroundJob/TransferExecutionJob.php -> lib/Service/Edepot/EdepotTransferAttemptInterface.php",
-  "lib/BackgroundJob/TransferExecutionJob.php -> lib/Service/Edepot/TransferListRunInterface.php",
-  "lib/BackgroundJob/TransferExecutionJob.php -> lib/Service/Edepot/TransferListServiceInterface.php",
-  "lib/BackgroundJob/TransferExecutionJob.php -> lib/Service/Edepot/TransferRecordStoreInterface.php",
-  "lib/BackgroundJob/TransferExecutionJob.php -> lib/Service/Edepot/Transport/OpenConnectorTransportInterface.php",
-  "lib/BackgroundJob/TransferExecutionJob.php -> lib/Service/Edepot/Transport/RestApiTransportInterface.php",
-  "lib/BackgroundJob/TransferExecutionJob.php -> lib/Service/Edepot/Transport/SftpTransportInterface.php",
-  "lib/BackgroundJob/TransferExecutionJob.php -> lib/Service/Edepot/Transport/TransportInterface.php",
   "lib/Calendar/DeclaredDateCalendars.php -> lib/Db/CalendarFeedToken.php",
   "lib/Calendar/DeclaredDateCalendars.php -> lib/Service/Calendar/ObjectCalendarFeedService.php",
   "lib/Calendar/DeclaredDateCalendars.php -> lib/Service/Calendar/ObjectCalendarFeedSources.php",
@@ -319,9 +308,6 @@
   "lib/BackgroundJob/RecordsItsRuns.php",
   "lib/BackgroundJob/Support/ActorForwardingServices.php",
   "lib/BackgroundJob/Support/BackfillCalendarLinksPlatform.php",
-  "lib/BackgroundJob/Support/TransferExecutionPlatform.php",
-  "lib/BackgroundJob/Support/TransferExecutionRecords.php",
-  "lib/BackgroundJob/Support/TransferExecutionTransports.php",
   "lib/BackgroundJob/TranslationProjectionJob.php",
   "lib/BulkAction/BulkActionInterface.php",
   "lib/BulkAction/BulkActionRegistrar.php",
@@ -2535,9 +2521,9 @@
   "lib/Twig/MappingTwigInstallerInterface.php"
  ],
  "exposed_loc": {
-  "Compliance": 15496,
+  "Compliance": 15454,
   "Configuration": 3601,
-  "Core": 64292,
+  "Core": 64291,
   "Files": 2664,
   "Integrations": 18214,
   "Kernel": 8505,
@@ -3009,6 +2995,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10456,
- "total_loc": 460767,
- "violation_degree": 0.0373
+ "total_loc": 460766,
+ "violation_degree": 0.036
 }
