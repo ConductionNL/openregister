@@ -52,6 +52,8 @@ use OCA\OpenRegister\Service\Task\TaskInboxService;
 use OCA\OpenRegister\Service\TaskService;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
 use OCA\OpenRegister\Kernel\Contracts\Core\ObjectQuotaInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\UnreadCountsInterface;
+use OCA\OpenRegister\Service\Interaction\UnreadCountCalculator;
 use OCA\OpenRegister\Service\Quota\ObjectQuotaService;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use Psr\Container\ContainerInterface;
@@ -96,6 +98,7 @@ final class FlowWiring {
 		FlowConsentSweepInterface::class => FlowConsentParking::class,
 		ExpressionDefaultsInterface::class => ExpressionDefaults::class,
 		ObjectQuotaInterface::class => ObjectQuotaService::class,
+		UnreadCountsInterface::class => UnreadCountCalculator::class,
 	];
 
 	/**
