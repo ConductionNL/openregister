@@ -88,9 +88,6 @@
   "lib/Service/Object/ConflictReport.php -> lib/Db/AuditTrail.php",
   "lib/Service/Object/ConflictReportInterface.php -> lib/Db/AuditTrail.php",
   "lib/Service/Object/FacetableFieldDiscovery.php -> lib/Search/Service/Search/PropertySearchProfile.php",
-  "lib/Service/Object/ObjectCacheInvalidator.php -> lib/Service/ContactMatchingService.php",
-  "lib/Service/Object/ObjectCacheInvalidator.php -> lib/Service/DeepLinkRegistryService.php",
-  "lib/Service/Object/ObjectCacheInvalidator.php -> lib/Service/Reference/ObjectPreviewFormatter.php",
   "lib/Service/Object/ObjectSaveChecks.php -> lib/Listener/DependentValueListener.php",
   "lib/Service/Object/RenderObject.php -> lib/Db/Translation.php",
   "lib/Service/Object/RenderObject.php -> lib/Files/Service/File/FileRestrictionGuardInterface.php",
@@ -752,6 +749,7 @@
   "lib/Kernel/Contracts/Core/AuthRateLimitCeilingInterface.php",
   "lib/Kernel/Contracts/Core/BundleImport.php",
   "lib/Kernel/Contracts/Core/CascadeRetentionCheckInterface.php",
+  "lib/Kernel/Contracts/Core/ContactMatchCacheInterface.php",
   "lib/Kernel/Contracts/Core/CredentialSecretReaderInterface.php",
   "lib/Kernel/Contracts/Core/CurrentFlowRunInterface.php",
   "lib/Kernel/Contracts/Core/DeclarationRefusalInterface.php",
@@ -2108,7 +2106,6 @@
   "lib/Service/Rbac/ViewerReachResolver.php",
   "lib/Service/Rbac/ViewerReachResolverInterface.php",
   "lib/Service/RecordUpdate.php",
-  "lib/Service/Reference/ObjectPreviewFormatter.php",
   "lib/Service/Reference/ObjectPreviewFormatterInterface.php",
   "lib/Service/Reference/ReferenceCardDeclaration.php",
   "lib/Service/RegisterDescriptorServiceInterface.php",
@@ -2375,14 +2372,14 @@
  ],
  "exposed_loc": {
   "Compliance": 14915,
-  "Configuration": 2785,
-  "Core": 64563,
+  "Configuration": 2419,
+  "Core": 64569,
   "Files": 901,
   "Integrations": 17967,
   "Kernel": 8470,
   "Notifications": 2057,
   "Platform": 276,
-  "Processes": 28552,
+  "Processes": 28553,
   "Search": 2020
  },
  "kernel_files": [
@@ -2846,6 +2843,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10408,
- "total_loc": 461583,
- "violation_degree": 0.0167
+ "total_loc": 461593,
+ "violation_degree": 0.0163
 }

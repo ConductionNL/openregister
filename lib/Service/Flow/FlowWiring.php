@@ -24,6 +24,7 @@ use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
 use OCA\OpenRegister\Db\FlowLinkMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ContactMatchCacheInterface;
 use OCA\OpenRegister\Kernel\Contracts\Compliance\LifecycleFinalStatesInterface;
 use OCA\OpenRegister\Kernel\Contracts\Compliance\LifecycleTransitionInterface;
 use OCA\OpenRegister\Kernel\Contracts\Compliance\TransitionInFlightInterface;
@@ -32,6 +33,9 @@ use OCA\OpenRegister\Kernel\Contracts\Core\CurrentFlowRunInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionDefaultsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionEvaluatorInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
+use OCA\OpenRegister\Service\ContactMatchingService;
+use OCA\OpenRegister\Service\FlowLinkPlatform;
+use OCA\OpenRegister\Service\FlowLinkService;
 use OCA\OpenRegister\Kernel\Contracts\Core\UserCalendarEventsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Integrations\TaskGaugeInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ReadHistoryInterface;
@@ -55,8 +59,6 @@ use OCA\OpenRegister\Kernel\Contracts\Integrations\ObjectCalendarLinkInterface;
 use OCA\OpenRegister\Service\CalendarEventService;
 use OCA\OpenRegister\Kernel\Contracts\Integrations\BuiltInToolProvidersInterface;
 use OCA\OpenRegister\Mcp\BuiltIn\FlowBuiltInToolProviders;
-use OCA\OpenRegister\Service\FlowLinkPlatform;
-use OCA\OpenRegister\Service\FlowLinkService;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionRunner;
@@ -154,6 +156,7 @@ final class FlowWiring {
 		FlowConsentSweepInterface::class => FlowConsentParking::class,
 		LifecycleTransitionInterface::class => TransitionEngine::class,
 		ExpressionDefaultsInterface::class => ExpressionDefaults::class,
+		ContactMatchCacheInterface::class => ContactMatchingService::class,
 		ObjectQuotaInterface::class => ObjectQuotaService::class,
 		\OCA\OpenRegister\Kernel\Contracts\Core\PartyParentInterface::class => \OCA\OpenRegister\Service\Party\PartyParent::class,
 		\OCA\OpenRegister\Kernel\Contracts\Core\LifecycleStatesKeeperInterface::class => \OCA\OpenRegister\Service\Lifecycle\LifecycleStatesKeeper::class,
