@@ -76,8 +76,6 @@
   "lib/Service/Hinge/IntakeSourceRegistry.php -> lib/Repair/IntakeSourceRegisterSlugsInterface.php",
   "lib/Service/Object/BulkRowRules.php -> lib/Service/Flow/FlowRunContext.php",
   "lib/Service/Object/Collaborators/ObjectHistoryServices.php -> lib/Service/Lifecycle/AutoTransitionPass.php",
-  "lib/Service/Object/ConflictReport.php -> lib/Db/AuditTrail.php",
-  "lib/Service/Object/ConflictReportInterface.php -> lib/Db/AuditTrail.php",
   "lib/Service/Object/RenderObject.php -> lib/Files/Service/File/FileRestrictionGuardInterface.php",
   "lib/Service/Object/RenderObject.php -> lib/Service/Calculation/CalculationPayload.php",
   "lib/Service/Object/RenderObject.php -> lib/Service/Interaction/WatcherService.php",
@@ -2824,5 +2822,5 @@
  ],
  "kernel_loc": 10408,
  "total_loc": 461684,
- "violation_degree": 0.014
+ "violation_degree": 0.0138
 }
