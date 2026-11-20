@@ -19,14 +19,20 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Kernel\Contracts\Core;
 
+use DateTime;
+
 /**
- * An audit trail row, as the deletion services (Core) read it: who acted.
+ * An audit trail row, as Core reads it: who acted, when, and what changed.
  *
  * Implemented by the audit trail entity (Compliance), so Core reads a
- * destruction record without naming the entity. The column accessor is served
- * by Nextcloud's Entity::__call, so it is listed as a tag here.
+ * destruction record, or the writes a refused save collided with, without
+ * naming the entity. The column accessors are served by Nextcloud's
+ * Entity::__call, so they are listed as tags here.
  *
  * @method string|null getUser()
+ * @method string|null getUserName()
+ * @method array|null getChanged()
+ * @method DateTime|null getCreated()
  *
  * @spec openspec/specs/deletion-audit-trail/spec.md
  */
