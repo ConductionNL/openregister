@@ -3806,7 +3806,7 @@ Db/TypedFieldsJson.php,,Db,,,,,Core
 Db/TypedFieldsJsonTrait.php,,Db,,,,,Core
 Db/UsageMeasurement.php,,Db,,,,,Core
 Db/Verwerkingsactiviteit/VerwerkingsactiviteitFieldTypes.php,,Db,,,,,Compliance
-Db/VerwerkingsactiviteitMapperInterface.php,,Db,,,,,Core
+Db/VerwerkingsactiviteitMapperInterface.php,,Db,,,,,Compliance
 Db/WebhookLogMapperInterface.php,,Db,,,,,Integrations
 Db/WebhookMapperInterface.php,,Db,,,,,Integrations
 Db/XwikiLinkMapperInterface.php,,Db,,,,,Integrations
@@ -4558,3 +4558,4 @@ Db/AuditTrail/RegisterAuditEvent.php,,Db,,,,,Core
 Search/Service/ExampleSet/ExampleSetViewRowsInterface.php,,Search,,,,,Configuration
 Service/Capability/ToolGrantCoordinates.php,,Service,,,0,,Integrations
 Kernel/Contracts/TaskSequenceInterface.php,,Kernel,,,,,Kernel
+Controller/Support/VerwerkingsactiviteitenControllerServices.php,,Controller,,,,,Compliance
