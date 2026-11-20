@@ -399,7 +399,6 @@
   "lib/Service/OperationsConsoleNotifications.php -> lib/Service/Notification/NotificationTemplateRegistry.php",
   "lib/Service/OrganisationUsageService.php -> lib/Files/Db/FileMapperInterface.php",
   "lib/Service/Rbac/AuditRowWriter.php -> lib/Db/AuditTrail.php",
-  "lib/Service/Rbac/ObjectAccessHistory.php -> lib/Db/AuditTrail.php",
   "lib/Service/Rbac/ReachRevocationLog.php -> lib/Service/AuthorizationAuditService.php",
   "lib/Service/Rbac/ReachRevocationService.php -> lib/Service/AuthorizationAuditService.php",
   "lib/Service/Rbac/RevealFlusher.php -> lib/Db/AuditTrail.php",
@@ -1120,6 +1119,7 @@
   "lib/Kernel/Contracts/Core/ObjectQuotaInterface.php",
   "lib/Kernel/Contracts/Core/ObjectQuotaRefusal.php",
   "lib/Kernel/Contracts/Core/ObjectTimelineLinksInterface.php",
+  "lib/Kernel/Contracts/Core/ObjectTrailReaderInterface.php",
   "lib/Kernel/Contracts/Core/PreviewDimensionsInterface.php",
   "lib/Kernel/Contracts/Core/PublicationRefusalInterface.php",
   "lib/Kernel/Contracts/Core/ReadNoticeClearingInterface.php",
@@ -1498,6 +1498,7 @@
   "lib/Service/Audit/NamedIdentifier.php",
   "lib/Service/Audit/ObjectHistoryForReaders.php",
   "lib/Service/Audit/ObjectHistoryForReadersInterface.php",
+  "lib/Service/Audit/ObjectTrailReader.php",
   "lib/Service/Audit/OrganisationContextAttribution.php",
   "lib/Service/Audit/OrganisationContextAttributionInterface.php",
   "lib/Service/Audit/PurposeAttribution.php",
@@ -2721,9 +2722,9 @@
   "lib/Twig/MappingTwigInstallerInterface.php"
  ],
  "exposed_loc": {
-  "Compliance": 15770,
+  "Compliance": 15799,
   "Configuration": 4650,
-  "Core": 64639,
+  "Core": 64644,
   "Files": 3640,
   "Integrations": 18324,
   "Kernel": 8516,
@@ -3194,6 +3195,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10454,
- "total_loc": 460372,
- "violation_degree": 0.0546
+ "total_loc": 460409,
+ "violation_degree": 0.0545
 }

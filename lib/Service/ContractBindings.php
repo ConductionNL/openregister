@@ -452,11 +452,13 @@ use OCA\OpenRegister\Service\Operations\SupportBundleServiceInterface;
 use OCA\OpenRegister\Service\Organisation\OrganisationEditAuditorInterface;
 use OCA\OpenRegister\Service\Organisation\OrganisationLifecycleAuditor;
 use OCA\OpenRegister\Kernel\Contracts\Core\AuditEntryWriterInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectTrailReaderInterface;
 use OCA\OpenRegister\Kernel\Contracts\Notifications\DeclaredWebhookInstallerInterface;
 use OCA\OpenRegister\Kernel\Contracts\Processes\TranslationProjectionInterface;
 use OCA\OpenRegister\Kernel\Contracts\Processes\WholeSetExportActionInterface;
 use OCA\OpenRegister\BulkAction\ExportWholeSetAction;
 use OCA\OpenRegister\Service\Audit\AuditEntryWriter;
+use OCA\OpenRegister\Service\Audit\ObjectTrailReader;
 use OCA\OpenRegister\Service\Party\PartyRoleService;
 use OCA\OpenRegister\Service\Party\PartyRoleServiceInterface;
 use OCA\OpenRegister\Service\Party\PartySchemaCatalogueInterface;
@@ -650,6 +652,7 @@ final class ContractBindings {
 		OdtWriterInterface::class => OdtWriter::class,
 		OrganisationEditAuditorInterface::class => OrganisationLifecycleAuditor::class,
 		AuditEntryWriterInterface::class => AuditEntryWriter::class,
+		ObjectTrailReaderInterface::class => ObjectTrailReader::class,
 		DeclaredWebhookInstallerInterface::class => NotificationsAnnotationInstaller::class,
 		TranslationProjectionInterface::class => TranslationProjectionService::class,
 		WholeSetExportActionInterface::class => ExportWholeSetAction::class,
