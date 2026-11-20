@@ -32,6 +32,7 @@ use OCA\OpenRegister\Exception\UnknownPatternSetException;
 use OCA\OpenRegister\Files\Service\File\MaskForm;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\Core\FileSettingsReaderInterface;
+use OCA\OpenRegister\Kernel\Contracts\Files\RedactionSettingsInterface;
 use OCA\OpenRegister\Service\Decision\ReviewAnnotationValidator;
 use OCA\OpenRegister\Service\Decision\ReviewPolicy;
 use OCA\OpenRegister\Service\File\ArchiveBounds;
@@ -57,7 +58,7 @@ use RuntimeException;
  *
  * @spec openspec/changes/archive-members-are-searchable/specs
  */
-class FileSettingsHandler implements FileSettingsReaderInterface {
+class FileSettingsHandler implements FileSettingsReaderInterface, RedactionSettingsInterface {
 
 	/**
 	 * App config key holding the OpenAnonymiser password.
@@ -78,13 +79,6 @@ class FileSettingsHandler implements FileSettingsReaderInterface {
 	 * @var string
 	 */
 	public const OPENANONYMISER_PASSWORD_KEY = self::OPENANONYMISER_CREDENTIAL_FIELD;
-
-	/**
-	 * The minimum confidence a detection needs when no organisation setting says otherwise.
-	 *
-	 * @var float
-	 */
-	public const DEFAULT_CONFIDENCE_THRESHOLD = 0.5;
 
 	/**
 	 * The file settings key holding the anonymisation settings.

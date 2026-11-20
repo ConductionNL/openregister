@@ -151,6 +151,62 @@ final class SchemaDeclarationOrderTest extends TestCase {
 	}//end testTheFirstFaultInSlotOrderRefusesTheSave()
 
 	/**
+	 * Schemas with several exchange faults, crossing the Integrations hand-off and MCP checks with Core's.
+	 *
+	 * @return array<string, array{array<string, mixed>, string}>
+	 */
+	public static function severalExchangeFaults(): array {
+		return [
+			'handoff (Integrations) before MCP (Integrations)' => [
+				[
+					'x-openregister-handoff' => [['id' => 'send', 'trigger' => 'lifecycle:nope']],
+					'x-openregister-mcp' => ['enabled' => 'yes'],
+				],
+				'x-openregister-handoff: ',
+			],
+			'MCP (Integrations) before registry (Core)' => [
+				[
+					'x-openregister-mcp' => ['enabled' => 'yes'],
+					'x-openregister-registry' => ['bogus'],
+				],
+				'x-openregister-mcp: mcp-bad-enabled',
+			],
+			'MCP alone (Integrations)' => [
+				['x-openregister-mcp' => []],
+				'x-openregister-mcp: mcp-missing-enabled',
+			],
+		];
+	}//end severalExchangeFaults()
+
+	/**
+	 * The message a schema with several exchange faults is refused with names the first in slot order.
+	 *
+	 * @param array<string, mixed> $configuration The faulty configuration.
+	 * @param string               $prefix        The start of the refusal's message.
+	 *
+	 * @return void
+	 *
+	 * @dataProvider severalExchangeFaults
+	 */
+	#[\PHPUnit\Framework\Attributes\DataProvider('severalExchangeFaults')]
+	public function testTheFirstExchangeFaultInSlotOrderRefusesTheSave(array $configuration, string $prefix): void {
+		$schema = new Schema();
+		$schema->setSlug('faults');
+		$schema->setProperties(['status' => ['type' => 'string', 'enum' => ['open', 'closed']]]);
+		$schema->setConfiguration($configuration);
+
+		$thrown = null;
+		try {
+			(new ReflectionMethod(SchemaMapper::class, 'cleanObject'))->invoke($this->mapper(), $schema);
+		} catch (Throwable $e) {
+			$thrown = $e;
+		}
+
+		$this->assertNotNull(actual: $thrown);
+		$this->assertStringStartsWith(prefix: $prefix, string: $thrown->getMessage());
+	}//end testTheFirstExchangeFaultInSlotOrderRefusesTheSave()
+
+	/**
 	 * Schema-level faults across the areas that contribute data checks, and the refusal each gets.
 	 *
 	 * @return array<string, array{array<string, mixed>, class-string, string}>
