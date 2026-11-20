@@ -11,6 +11,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectQuotaInterface;
+use OCA\OpenRegister\Service\Quota\ObjectQuotaService;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\CurrentFlowRunInterface;
@@ -242,6 +244,7 @@ final class FlowWiringTest extends TestCase {
 				PartySearchInterface::class                => PartySearchService::class,
 				FlowConsentSweepInterface::class           => FlowConsentParking::class,
 				ExpressionDefaultsInterface::class         => ExpressionDefaults::class,
+				ObjectQuotaInterface::class                => ObjectQuotaService::class,
 			],
 			actual: $this->aliases
 		);

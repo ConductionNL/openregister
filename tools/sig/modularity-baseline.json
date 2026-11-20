@@ -439,8 +439,6 @@
   "lib/Service/Object/SaveObject/SaveObjectValueHandlers.php -> lib/Service/TranslationProjectionService.php",
   "lib/Service/Object/SaveObject/SaveObjectValueHandlers.php -> lib/Service/TranslationStatusService.php",
   "lib/Service/Object/SaveObjectInterface.php -> lib/Service/Rules/ExpressionDefaultException.php",
-  "lib/Service/Object/SaveObjects/BulkObjectQuota.php -> lib/Listener/ObjectQuotaListener.php",
-  "lib/Service/Object/SaveObjects/BulkObjectQuota.php -> lib/Service/Quota/ObjectQuotaServiceInterface.php",
   "lib/Service/Object/SearchLenses.php -> lib/Service/Interaction/ReadHistoryService.php",
   "lib/Service/Object/SearchQueryHandler.php -> lib/Service/Interaction/ReadHistoryService.php",
   "lib/Service/Object/SearchQueryHandler.php -> lib/Service/SearchMeasurement.php",
@@ -489,8 +487,6 @@
   "lib/Service/ScheduledReportExporters.php -> lib/Service/Export/ExportProfileService.php",
   "lib/Service/ScheduledReportExporters.php -> lib/Service/Export/ExportRunRecorder.php",
   "lib/Service/ScheduledReportExporters.php -> lib/Service/ExportService.php",
-  "lib/Service/Schema/SchemaChangeNoticeService.php -> lib/Db/ApiCallRecordMapperInterface.php",
-  "lib/Service/Schema/SchemaChangeNoticeService.php -> lib/Service/ApiCaller/ApiCallRecorder.php",
   "lib/Service/SchemaTeardownGuard.php -> lib/Service/SchemaDeletionService.php",
   "lib/Service/Schemas/PropertyTitles.php -> lib/Service/LanguageService.php",
   "lib/Service/Search/ObjectSearchResultFormatter.php -> lib/Service/DeepLinkRegistryService.php",
@@ -1218,6 +1214,8 @@
   "lib/Kernel/Contracts/Core/ObjectFolderLookupInterface.php",
   "lib/Kernel/Contracts/Core/ObjectPresenceInterface.php",
   "lib/Kernel/Contracts/Core/ObjectPreviewCacheInterface.php",
+  "lib/Kernel/Contracts/Core/ObjectQuotaInterface.php",
+  "lib/Kernel/Contracts/Core/ObjectQuotaRefusal.php",
   "lib/Kernel/Contracts/Core/ObjectTimelineLinksInterface.php",
   "lib/Kernel/Contracts/Core/PreviewDimensionsInterface.php",
   "lib/Kernel/Contracts/Core/PublicationRefusalInterface.php",
@@ -1226,6 +1224,8 @@
   "lib/Kernel/Contracts/Core/ReadPurposeRefusalInterface.php",
   "lib/Kernel/Contracts/Core/RegisterFolderRecordsInterface.php",
   "lib/Kernel/Contracts/Core/RetentionSettingsInterface.php",
+  "lib/Kernel/Contracts/Core/RouteCallWindow.php",
+  "lib/Kernel/Contracts/Core/RouteCallersInterface.php",
   "lib/Kernel/Contracts/Core/ServiceUnavailableExceptionInterface.php",
   "lib/Kernel/Contracts/Core/ShareLinkUrlInterface.php",
   "lib/Kernel/Contracts/DecisionInterface.php",
@@ -1363,7 +1363,6 @@
   "lib/Listener/NotifyPushBatchInterface.php",
   "lib/Listener/NotifyPushListener.php",
   "lib/Listener/ObjectCleanupListener.php",
-  "lib/Listener/ObjectQuotaListener.php",
   "lib/Listener/ObjectStateDeleteGuardListener.php",
   "lib/Listener/PresencePushInterface.php",
   "lib/Listener/QualityScoreOnSaveListener.php",
@@ -1533,7 +1532,6 @@
   "lib/Service/Anonymisation/PipelineSteps.php",
   "lib/Service/Anonymisation/TextDisclosureRecorder.php",
   "lib/Service/Anonymisation/TextDisclosureSource.php",
-  "lib/Service/ApiCaller/ApiCallRecorder.php",
   "lib/Service/ApiVersion/ApiCapabilitiesService.php",
   "lib/Service/ApiVersion/ApiCapabilitiesServiceInterface.php",
   "lib/Service/ApiVersion/ApiContractService.php",
@@ -2837,13 +2835,13 @@
  "exposed_loc": {
   "Compliance": 15860,
   "Configuration": 5799,
-  "Core": 64804,
+  "Core": 64859,
   "Files": 3640,
   "Integrations": 18305,
   "Kernel": 8482,
   "Notifications": 1753,
-  "Platform": 733,
-  "Processes": 31785,
+  "Platform": 647,
+  "Processes": 31679,
   "Search": 2026
  },
  "kernel_files": [
@@ -3303,6 +3301,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10407,
- "total_loc": 460096,
- "violation_degree": 0.0651
+ "total_loc": 460169,
+ "violation_degree": 0.0646
 }

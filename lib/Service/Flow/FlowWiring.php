@@ -51,6 +51,8 @@ use OCA\OpenRegister\Service\Task\TaskCalendarDocumentInterface;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
 use OCA\OpenRegister\Service\TaskService;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectQuotaInterface;
+use OCA\OpenRegister\Service\Quota\ObjectQuotaService;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -93,6 +95,7 @@ final class FlowWiring {
 		PartySearchInterface::class => PartySearchService::class,
 		FlowConsentSweepInterface::class => FlowConsentParking::class,
 		ExpressionDefaultsInterface::class => ExpressionDefaults::class,
+		ObjectQuotaInterface::class => ObjectQuotaService::class,
 	];
 
 	/**
