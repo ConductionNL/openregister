@@ -23,11 +23,19 @@ use OCA\OpenRegister\Service\Interaction\UnreadCountCalculator;
 use OCA\OpenRegister\Service\Quota\ObjectQuotaService;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\BulkRowRefusalsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\DependentValueCheckInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ContactMatchCacheInterface;
 use OCA\OpenRegister\Kernel\Contracts\Compliance\TransitionInFlightInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ApprovalPositionFormCheckInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\CurrentFlowRunInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionDefaultsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionEvaluatorInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Integrations\LinkedFlowOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ProcessingReadsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\UserCalendarEventsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Integrations\TaskGaugeInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ReadHistoryInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\WriteElevationInterface;
 use OCA\OpenRegister\Kernel\Contracts\Notifications\PartyRecipientsInterface;
@@ -63,6 +71,7 @@ use OCA\OpenRegister\Service\Flow\FlowStepDispatcher;
 use OCA\OpenRegister\Search\FlowTasksProvider;
 use OCA\OpenRegister\Service\Flow\FlowTriggerRenameCheck;
 use OCA\OpenRegister\Service\Flow\FlowWiring;
+use OCA\OpenRegister\Service\FlowLinkServiceInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNode;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNodeInterface;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalKinds;
@@ -80,15 +89,20 @@ use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionWriteElevation;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
+use OCA\OpenRegister\Listener\DependentValueListener;
+use OCA\OpenRegister\Service\Dmn\DecisionTableBulkGuard;
+use OCA\OpenRegister\Service\ContactMatchingService;
 use OCA\OpenRegister\Service\Party\PartyRecipients;
 use OCA\OpenRegister\Service\Party\PartyIndicatorGuard;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaults;
 use OCA\OpenRegister\Service\Party\PartySearchInterface;
 use OCA\OpenRegister\Service\Party\PartySearchService;
 use OCA\OpenRegister\Service\Portal\PortalPartyResolver;
+use OCA\OpenRegister\Service\Task\ApprovalPositionFormGuard;
 use OCA\OpenRegister\Service\Task\TaskCalendarDocument;
 use OCA\OpenRegister\Service\Task\TaskCalendarDocumentInterface;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
+use OCA\OpenRegister\Service\Task\TaskMetricsProvider;
 use OCA\OpenRegister\Service\TaskService;
 use OCA\OpenRegister\Service\FlowLinkService;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
@@ -311,26 +325,42 @@ final class FlowWiringTest extends TestCase {
 	}//end testTheExpressionDefaultsPortIsAnsweredByTheRulesEngine()
 
 	/**
-	 * The schedule flow store, the current-run port, the read history, the write elevation, the expression-defaults port and the area's own interfaces are bound, and only these aliases are registered.
-	 * The schedule flow store, the current-run port and every port the area answers for another (task rows, overdue tasks, watchers, run records, schema change checks, calendars, tool providers, write elevation, expression defaults) are bound, and only these aliases are registered.
-	 * The schedule flow store, the current-run port, the expression-defaults port, the area's own interfaces and the lifecycle transition port are bound, and only these aliases are registered.
-	 * The schedule flow store, the current-run port, the audit trail's transition-in-flight port, the expression-defaults port and the area's own interfaces are bound, and only these aliases are registered.
-	 * The schedule flow store, the current-run port, the write elevation, the expression-defaults port and the area's own interfaces are bound, and only these aliases are registered.
-	 * The schedule flow store, the current-run port, the task row, watcher and run-record ports, the schema rename and form dependents checks, the expression-defaults port and the area's own interfaces are bound, and only these aliases are registered.
-	 * The schedule flow store, the current-run port, the task row, watcher and run-record ports, the expression-defaults port and the area's own interfaces are bound, and only these aliases are registered.
-	 * The schedule flow store, the current-run port, the task row port, the expression-defaults port and the area's own interfaces are bound, and only these aliases are registered.
-	 * The schedule flow store, the current-run port, the calendar link port, the expression-defaults port and the area's own interfaces are bound, and only these aliases are registered.
-	 * The schedule flow store, the current-run port, the expression-defaults port, the built-in tool providers and the area's own interfaces are bound, and only these aliases are registered.
+	 * The Core save-rule ports are answered by the decision-table guard and the dependent-value rule.
 	 *
 	 * @return void
 	 */
-	public function testTheScheduleFlowStoreIsBound(): void {
+	public function testTheSaveRulePortsAreAnsweredByTheRulesEngine(): void {
+		self::assertSame(expected: DecisionTableBulkGuard::class, actual: ($this->aliases[BulkRowRefusalsInterface::class] ?? null));
+		self::assertTrue(condition: is_a(DecisionTableBulkGuard::class, BulkRowRefusalsInterface::class, true));
+		self::assertSame(expected: DependentValueListener::class, actual: ($this->aliases[DependentValueCheckInterface::class] ?? null));
+		self::assertTrue(condition: is_a(DependentValueListener::class, DependentValueCheckInterface::class, true));
+	}//end testTheSaveRulePortsAreAnsweredByTheRulesEngine()
+
+	/**
+	 * The contact-match cache a save clears is answered by contact matching itself.
+	 *
+	 * @return void
+	 */
+	public function testTheContactMatchCachePortIsAnsweredByContactMatching(): void {
+		self::assertSame(expected: ContactMatchingService::class, actual: ($this->aliases[ContactMatchCacheInterface::class] ?? null));
+		self::assertTrue(condition: is_a(ContactMatchingService::class, ContactMatchCacheInterface::class, true));
+	}//end testTheContactMatchCachePortIsAnsweredByContactMatching()
+
+	/**
+	 * Every port the flow area answers for another area is bound, and only these aliases are registered.
+	 *
+	 * @return void
+	 */
+	public function testTheScheduleFlowStoreAndTheProcessingReadsAreBound(): void {
 		self::assertSame(
 			expected: [
 				FieldRulesSourceInterface::class           => StateFieldRuleResolver::class,
 				ObjectCalendarLinkInterface::class         => CalendarEventService::class,
 				CurrentFlowRunInterface::class             => FlowRunContext::class,
 				ScheduleFlowStoreInterface::class          => ScheduleFlowStore::class,
+				ProcessingReadsInterface::class            => ReadHistoryService::class,
+				UserCalendarEventsInterface::class         => CalendarEventService::class,
+				TaskGaugeInterface::class                  => TaskMetricsProvider::class,
 				LifecycleFinalStatesInterface::class       => LifecycleFinalStateResolver::class,
 				ReadHistoryInterface::class                => ReadHistoryService::class,
 				TransitionInFlightInterface::class         => LifecycleActionContext::class,
@@ -342,6 +372,7 @@ final class FlowWiringTest extends TestCase {
 				NotificationRunRecorderInterface::class    => AutomationRecordWriter::class,
 				SchemaRenameWarningsInterface::class       => FlowTriggerRenameCheck::class,
 				SchemaFormDependentsInterface::class       => FormDependentsCheck::class,
+				ApprovalPositionFormCheckInterface::class  => ApprovalPositionFormGuard::class,
 				BuiltInToolProvidersInterface::class       => FlowBuiltInToolProviders::class,
 				ExpressionEvaluatorInterface::class        => CalculationEvaluator::class,
 				PartyRecipientsInterface::class            => PartyRecipients::class,
@@ -355,8 +386,12 @@ final class FlowWiringTest extends TestCase {
 				TaskCalendarDocumentInterface::class       => TaskCalendarDocument::class,
 				PartySearchInterface::class                => PartySearchService::class,
 				FlowConsentSweepInterface::class           => FlowConsentParking::class,
+				LinkedFlowOperationsInterface::class       => FlowLinkServiceInterface::class,
 				LifecycleTransitionInterface::class        => TransitionEngine::class,
 				ExpressionDefaultsInterface::class         => ExpressionDefaults::class,
+				BulkRowRefusalsInterface::class            => DecisionTableBulkGuard::class,
+				DependentValueCheckInterface::class        => DependentValueListener::class,
+				ContactMatchCacheInterface::class          => ContactMatchingService::class,
 				ObjectQuotaInterface::class                => ObjectQuotaService::class,
 				PartyParentInterface::class                => PartyParent::class,
 				LifecycleStatesKeeperInterface::class      => LifecycleStatesKeeper::class,
@@ -365,7 +400,17 @@ final class FlowWiringTest extends TestCase {
 			actual: $this->aliases
 		);
 		self::assertSame(expected: FlowWiring::BINDINGS, actual: FlowRegistrar::BINDINGS);
-	}//end testTheScheduleFlowStoreIsBound()
+	}//end testTheScheduleFlowStoreAndTheProcessingReadsAreBound()
+
+	/**
+	 * The relations API's flow-link port resolves to the flow link service, which implements it.
+	 *
+	 * @return void
+	 */
+	public function testTheLinkedFlowOperationsPortIsAnsweredByTheFlowLinkService(): void {
+		self::assertSame(expected: FlowLinkServiceInterface::class, actual: ($this->aliases[LinkedFlowOperationsInterface::class] ?? null));
+		self::assertTrue(is_subclass_of(FlowLinkServiceInterface::class, LinkedFlowOperationsInterface::class));
+	}//end testTheLinkedFlowOperationsPortIsAnsweredByTheFlowLinkService()
 
 	/**
 	 * The MCP discovery's port for contributed built-in tool providers is answered by the flow tools.

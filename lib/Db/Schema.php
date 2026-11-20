@@ -1002,6 +1002,13 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * @return true True if the authorization structure is valid
 	 *
 	 * @psalm-suppress PossiblyUnusedReturnValue
+	 *
+	 * @deprecated The entity (Kernel) should not construct a Core helper. Ask
+	 *             {@see \OCA\OpenRegister\Db\Schema\AuthorizationRulesValidator::validate()},
+	 *             built with {@see \OCA\OpenRegister\Db\Schema\DeclaredActions::names()}
+	 *             of the schema's configuration, instead; no openregister code calls this method.
+	 *             The method keeps working, with the same result, until no
+	 *             app calls it; it is removed in a later, separate change.
 	 */
 	public function validateAuthorization(): bool {
 		return (new AuthorizationRulesValidator(declaredActions: (new DeclaredActions())->names(configuration: $this->configuration)))->validate(
@@ -1490,16 +1497,15 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * @return array<int, string> The constraint names, in declaration order.
 	 *
 	 * @spec openspec/specs/objects-crud/spec.md
+	 *
+	 * @deprecated The entity (Kernel) should not construct a Core helper. Ask
+	 *             {@see \OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluator::upsertKeys()}
+	 *             with the schema's configuration instead; every openregister caller does.
+	 *             The method keeps working, with the same result, until no
+	 *             app calls it; it is removed in a later, separate change.
 	 */
 	public function getUpsertKeys(): array {
-		$keys = [];
-		foreach ((new UniqueConstraintEvaluator())->constraints(configuration: $this->getConfiguration(), includeLegacy: true) as $constraint) {
-			if ($constraint['action'] === UniqueConstraintEvaluator::ACTION_REFUSE) {
-				$keys[] = $constraint['name'];
-			}
-		}
-
-		return $keys;
+		return (new UniqueConstraintEvaluator())->upsertKeys(configuration: $this->getConfiguration());
 	}//end getUpsertKeys()
 
 	/**
@@ -1898,6 +1904,12 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * @return array<int, array{key: string, label: string, description?: string}> The vocabulary.
 	 *
 	 * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md#requirement-a-schema-declares-the-roles-its-objects-carry
+	 *
+	 * @deprecated The entity (Kernel) should not construct a Core helper. Ask
+	 *             {@see \OCA\OpenRegister\Db\Schema\VocabularyEntries::configuredVocabulary()}
+	 *             with the schema's configuration and `linkRoles` instead; every openregister caller does.
+	 *             The method keeps working, with the same result, until no
+	 *             app calls it; it is removed in a later, separate change.
 	 */
 	public function getLinkRoles(): array {
 		return (new VocabularyEntries())->configuredVocabulary(configuration: $this->configuration, config: 'linkRoles');
@@ -1913,6 +1925,12 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * @return array<int, array{key: string, label: string, description?: string, roles?: array<int, string>}> The vocabulary.
 	 *
 	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 *
+	 * @deprecated The entity (Kernel) should not construct a Core helper. Ask
+	 *             {@see \OCA\OpenRegister\Db\Schema\VocabularyEntries::configuredVocabulary()}
+	 *             with the schema's configuration and `partyKinds` instead; every openregister caller does.
+	 *             The method keeps working, with the same result, until no
+	 *             app calls it; it is removed in a later, separate change.
 	 */
 	public function getPartyKinds(): array {
 		return (new VocabularyEntries())->configuredVocabulary(configuration: $this->configuration, config: 'partyKinds');

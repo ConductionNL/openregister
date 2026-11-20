@@ -23,6 +23,8 @@ namespace OCA\OpenRegister\Tests\Unit\Files;
 use OCA\OpenRegister\Files\Db\RegisterFolderRecorder;
 use OCA\OpenRegister\Files\FilesRegistrar;
 use OCA\OpenRegister\Files\Service\NoteService;
+use OCA\OpenRegister\Kernel\Contracts\Core\FileTagCatalogueInterface;
+use OCA\OpenRegister\Service\FileServiceInterface;
 use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
 use OCA\OpenRegister\Files\Service\File\FileOwnershipHandlerInterface;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
@@ -31,6 +33,8 @@ use OCA\OpenRegister\Files\Service\File\PreviewSize;
 use OCA\OpenRegister\Files\Service\File\ShareUrlBuilder;
 use OCA\OpenRegister\Files\Service\File\ShareUrlBuilderInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FileAccountInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectFilesArchiveInterface;
+use OCA\OpenRegister\Service\File\ObjectFilesArchive;
 use OCA\OpenRegister\Kernel\Contracts\Core\FileReadRestrictionInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\PreviewDimensionsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\RegisterFolderRecordsInterface;
@@ -54,9 +58,23 @@ class FilesRegistrarTest extends TestCase
             $expected[] = ['alias' => $contract, 'target' => $service];
         }
 
-        $this->assertCount(27, $expected);
+        $this->assertCount(29, $expected);
         $this->assertSame(expected: $expected, actual: $context->aliases);
     }//end testEveryInterfaceIsBoundToItsImplementation()
+
+    /**
+     * The tags API's tag catalogue port resolves to the file service contract, which extends it.
+     *
+     * @return void
+     */
+    public function testTheTagCatalogueIsAnsweredByTheFileService(): void
+    {
+        $context = new RecordingRegistrationContext();
+        FilesRegistrar::register(context: $context);
+
+        $this->assertContains(['alias' => FileTagCatalogueInterface::class, 'target' => FileServiceInterface::class], $context->aliases);
+        $this->assertTrue(is_subclass_of(FileServiceInterface::class, FileTagCatalogueInterface::class));
+    }//end testTheTagCatalogueIsAnsweredByTheFileService()
 
     public function testTheCorePortsTheFileHandlersAskAreAnsweredHere(): void
     {
@@ -64,6 +82,7 @@ class FilesRegistrarTest extends TestCase
         $this->assertSame(ShareUrlBuilder::class, FilesRegistrar::BINDINGS[ShareLinkUrlInterface::class]);
         $this->assertSame(RegisterFolderRecorder::class, FilesRegistrar::BINDINGS[RegisterFolderRecordsInterface::class]);
         $this->assertSame(FileOwnershipHandler::class, FilesRegistrar::BINDINGS[FileAccountInterface::class]);
+        $this->assertSame(ObjectFilesArchive::class, FilesRegistrar::BINDINGS[ObjectFilesArchiveInterface::class]);
         $this->assertTrue(is_subclass_of(FileOwnershipHandlerInterface::class, FileAccountInterface::class));
         $this->assertTrue(is_subclass_of(FileRestrictionGuardInterface::class, FileReadRestrictionInterface::class));
         $this->assertTrue(is_subclass_of(ShareUrlBuilderInterface::class, ShareLinkUrlInterface::class));

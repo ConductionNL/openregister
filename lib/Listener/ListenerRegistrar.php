@@ -46,6 +46,7 @@ use OCA\OpenRegister\Event\TaskTransitionedEvent;
 use OCA\OpenRegister\Kernel\Contracts\Processes\ObjectWriteCacheFollowerInterface;
 use OCA\OpenRegister\Kernel\Contracts\Processes\ObjectWritePushInterface;
 use OCA\OpenRegister\Mcp\Listener\ContextChatSubmissionListener;
+use OCA\OpenRegister\Mcp\Listener\McpDeclarationChecksListener;
 use OCA\OpenRegister\Notifications\Listener\GraphQLSubscriptionListener;
 use OCA\OpenRegister\Notifications\Listener\NotificationDedupeAnnotationSyncListener;
 use OCA\OpenRegister\Notifications\Listener\NotificationDedupePruneListener;
@@ -80,7 +81,6 @@ final class ListenerRegistrar {
 	 */
 	public const BINDINGS = [
 		DecisionTableValidationListenerInterface::class => DecisionTableValidationListener::class,
-		NotifyPushBatchInterface::class => NotifyPushBatch::class,
 		SchemaFlowImportListenerInterface::class => SchemaFlowImportListener::class,
 		UniqueConstraintListenerInterface::class => UniqueConstraintListener::class,
 	];
@@ -150,7 +150,6 @@ final class ListenerRegistrar {
 	 */
 	private static function registerComponentListeners(IRegistrationContext $context): void {
 		Registrar\AccessListenerRegistrar::register(context: $context);
-		Registrar\ConfigurationListenerRegistrar::register(context: $context);
 		Registrar\FlowsListenerRegistrar::register(context: $context);
 		\OCA\OpenRegister\Mcp\Listener\Registrar\McpListenerRegistrar::register(context: $context);
 		\OCA\OpenRegister\Notifications\Listener\Registrar\NotificationsListenerRegistrar::register(context: $context);
@@ -161,7 +160,7 @@ final class ListenerRegistrar {
 	/**
 	 * The listeners that contribute checks to the schema save.
 	 *
-	 * Processes, Compliance, Integrations and Notifications each add their checks, so the event stays here.
+	 * Processes, Compliance, Integrations (hand-off and MCP) and Notifications each add their checks, so the event stays here.
 	 * It is a positioned collection: every check names its slot of
 	 * SchemaDeclarationOrder and the mapper runs them in slot order, whatever
 	 * order the listeners run in.
@@ -177,6 +176,7 @@ final class ListenerRegistrar {
 		$context->registerEventListener(SchemaDeclarationChecksEvent::class, ArchivalDeclarationChecksListener::class);
 		$context->registerEventListener(SchemaDeclarationChecksEvent::class, HandoffDeclarationChecksListener::class);
 		$context->registerEventListener(SchemaDeclarationChecksEvent::class, NotificationDeclarationCheckListener::class);
+		$context->registerEventListener(SchemaDeclarationChecksEvent::class, McpDeclarationChecksListener::class);
 	}//end registerSchemaDeclarationChecks()
 
 	/**
