@@ -274,8 +274,6 @@ deptrac:
         - type: directory
           value: 'lib/Controller/Support/ObjectDraftPlatform[.]php$'
         - type: directory
-          value: 'lib/Controller/Support/ObjectExport[.]php$'
-        - type: directory
           value: 'lib/Controller/Support/ObjectGovernanceServices[.]php$'
         - type: directory
           value: 'lib/Controller/Support/ObjectGrantsControllerServices[.]php$'
@@ -457,8 +455,6 @@ deptrac:
           value: 'lib/Controller/Support/SecuritySettingsControllerServices[.]php$'
         - type: directory
           value: 'lib/Controller/Support/SentWrite[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/ServedExport[.]php$'
         - type: directory
           value: 'lib/Controller/Support/SessionPrincipal[.]php$'
         - type: directory
@@ -2924,7 +2920,7 @@ deptrac:
         - type: directory
           value: 'lib/Command/Support/SchemaColumnDriftPass[.]php$'
         - type: directory
-          value: 'lib/Controller/(ApplicationsController|ConfigurationBundleController|ConfigurationController|ConfigurationDeploymentController|ConfigurationSeedController|ConfigurationsController|ExportProfilesController|ExportRunsController|FederatedConfigController|GitHubIssuesController|IconController|ImportPreviewController|ManifestController|MigrationController|MigrationPacksController|OperationsConsistencyController|OperationsConsoleController|OperationsMaintenanceController|PreferencesController|RecordTemplatesController|RegisterDescriptorController|SetupController|ShippedBaselineController|TranslationController|UiController|UserSettingsController)[.]php$'
+          value: 'lib/Controller/(ApplicationsController|ConfigurationBundleController|ConfigurationController|ConfigurationDeploymentController|ConfigurationSeedController|ConfigurationsController|ExportProfilesController|ExportRunsController|FederatedConfigController|GitHubIssuesController|IconController|ImportPreviewController|ManifestController|MigrationController|MigrationPacksController|ObjectExportController|OperationsConsistencyController|OperationsConsoleController|OperationsMaintenanceController|PreferencesController|RecordTemplatesController|RegisterDescriptorController|SetupController|ShippedBaselineController|TranslationController|UiController|UserSettingsController)[.]php$'
         - type: directory
           value: 'lib/Controller/Settings/[^/]*$'
         - type: directory
@@ -2984,6 +2980,8 @@ deptrac:
         - type: directory
           value: 'lib/Controller/Support/MigrationPacksControllerServices[.]php$'
         - type: directory
+          value: 'lib/Controller/Support/ObjectExport[.]php$'
+        - type: directory
           value: 'lib/Controller/Support/OperationsConsistencyControllerServices[.]php$'
         - type: directory
           value: 'lib/Controller/Support/OperationsConsoleControllerServices[.]php$'
@@ -2991,6 +2989,8 @@ deptrac:
           value: 'lib/Controller/Support/OperationsMaintenanceControllerServices[.]php$'
         - type: directory
           value: 'lib/Controller/Support/RecordTemplatesControllerServices[.]php$'
+        - type: directory
+          value: 'lib/Controller/Support/ServedExport[.]php$'
         - type: directory
           value: 'lib/Db/(Application|ApplicationMapper|Configuration|ConfigurationBinding|ConfigurationBindingMapper|ConfigurationBindingMapperInterface|ConfigurationDeployment|ConfigurationDeploymentMapper|ConfigurationDeploymentMapperInterface|ConfigurationDraft|ConfigurationDraftMapper|ConfigurationDraftMapperInterface|ConfigurationDraftSet|ConfigurationDraftSetMapper|ConfigurationDraftSetMapperInterface|ConfigurationMapper|ConfigurationMapperBindings|ConfigurationMapperInterface|ConfigurationMapperRegistrar|ConfigurationSyncResult|ConfigurationValue|ConfigurationValueMapper|ExportProfile|ExportProfileMapper|ExportProfileMapperInterface|ExportRun|ExportRunMapper|ImportPreview|ImportPreviewFinderInterface|ImportPreviewMapper|ImportPreviewMapperInterface|ImportPreviewRow|ImportPreviewRowMapper|ImportPreviewRowMapperInterface|JobRun|JobRunMapper|JobRunMapperInterface|MigrationPack|MigrationPackMapper|MigrationPackMapperInterface|RecordTemplate|RecordTemplateMapper|RecordTemplateMapperInterface|Sequence|SequenceMapper|TaskSequenceMapper|Translation|TranslationBackfillScope|TranslationEdit|TranslationFilter|TranslationMapper|TranslationMapperInterface|TranslationSlot|TranslationSourceLanguageBackfillInterface)[.]php$'
         - type: directory
