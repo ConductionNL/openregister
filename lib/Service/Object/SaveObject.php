@@ -132,8 +132,6 @@ use OCA\OpenRegister\Service\SharedMasterDataService;
 use OCA\OpenRegister\Service\TenantLogRedactor;
 use OCA\OpenRegister\Service\TmloService;
 use OCA\OpenRegister\Service\File\FolderAccessCheck;
-use OCA\OpenRegister\Service\TranslationProjectionService;
-use OCA\OpenRegister\Service\TranslationStatusService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
@@ -147,7 +145,10 @@ use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Throwable;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Kernel\Contracts\Core\CurrentFlowRunInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\DerivedTranslationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionDefaultsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\SourceLanguagesInterface;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
@@ -458,16 +459,16 @@ class SaveObject implements SaveObjectInterface {
 	/**
 	 * Collaborator, taken from the services bundle.
 	 *
-	 * @var TranslationProjectionService
+	 * @var SourceLanguagesInterface
 	 */
-	private readonly TranslationProjectionService $translationProjectionService;
+	private readonly SourceLanguagesInterface $translationProjectionService;
 
 	/**
 	 * Collaborator, taken from the services bundle.
 	 *
-	 * @var TranslationStatusService
+	 * @var DerivedTranslationsInterface
 	 */
-	private readonly TranslationStatusService $translationStatusService;
+	private readonly DerivedTranslationsInterface $translationStatusService;
 
 	/**
 	 * Collaborator, taken from the services bundle.
@@ -519,11 +520,11 @@ class SaveObject implements SaveObjectInterface {
 	private readonly ?FieldEncryptionHandler $fieldEncryptionHandler;
 
 	/**
-	 * Collaborator, taken from the services bundle.
+	 * Which flow run is writing, taken from the services bundle.
 	 *
-	 * @var \OCA\OpenRegister\Service\Flow\FlowRunContext|null
+	 * @var CurrentFlowRunInterface|null
 	 */
-	private readonly ?\OCA\OpenRegister\Service\Flow\FlowRunContext $runContext;
+	private readonly ?CurrentFlowRunInterface $runContext;
 
 	/**
 	 * Collaborator, taken from the services bundle.

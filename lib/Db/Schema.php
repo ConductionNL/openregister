@@ -1004,7 +1004,7 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * @psalm-suppress PossiblyUnusedReturnValue
 	 */
 	public function validateAuthorization(): bool {
-		return (new AuthorizationRulesValidator(declaredActions: $this->declaredActionNames()))->validate(
+		return (new AuthorizationRulesValidator(declaredActions: (new DeclaredActions())->names(configuration: $this->configuration)))->validate(
 			authorization: $this->authorization,
 			properties: $this->properties
 		);
@@ -1021,6 +1021,12 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * @return array<int, string> Declared action keys.
 	 *
 	 * @spec openspec/specs/declared-actions/spec.md
+	 *
+	 * @deprecated The entity (Kernel) should not construct a Core helper. Ask
+	 *             {@see \OCA\OpenRegister\Db\Schema\DeclaredActions::names()} with
+	 *             the schema's configuration instead; every openregister caller
+	 *             does. The method keeps working, with the same result, until no
+	 *             app calls it; it is removed in a later, separate change.
 	 */
 	public function declaredActionNames(): array {
 		return (new DeclaredActions())->names(configuration: $this->configuration);
