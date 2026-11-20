@@ -3,8 +3,6 @@
   "lib/AppHost/Reference/AbstractSchemaReferenceProvider.php -> lib/Service/Reference/ObjectPreviewFormatterInterface.php",
   "lib/BackgroundJob/DbalIntrospectionJob.php -> lib/Db/Source.php",
   "lib/BackgroundJob/QueuedJobClassesInterface.php -> lib/BackgroundJob/TranslationProjectionJob.php",
-  "lib/BackgroundJob/Support/ConfigurationCheckServices.php -> lib/Db/ConfigurationMapperInterface.php",
-  "lib/BackgroundJob/Support/ConfigurationCheckServices.php -> lib/Service/ConfigurationServiceInterface.php",
   "lib/BackgroundJob/TransferExecutionJob.php -> lib/BackgroundJob/Support/TransferExecutionPlatform.php",
   "lib/BackgroundJob/TransferExecutionJob.php -> lib/BackgroundJob/Support/TransferExecutionRecords.php",
   "lib/BackgroundJob/TransferExecutionJob.php -> lib/BackgroundJob/Support/TransferExecutionTransports.php",
@@ -334,7 +332,6 @@
   "lib/BackgroundJob/RecordsItsRuns.php",
   "lib/BackgroundJob/Support/ActorForwardingServices.php",
   "lib/BackgroundJob/Support/BackfillCalendarLinksPlatform.php",
-  "lib/BackgroundJob/Support/ConfigurationCheckServices.php",
   "lib/BackgroundJob/Support/TransferExecutionPlatform.php",
   "lib/BackgroundJob/Support/TransferExecutionRecords.php",
   "lib/BackgroundJob/Support/TransferExecutionTransports.php",
@@ -490,7 +487,6 @@
   "lib/Db/ColumnFiltersTrait.php",
   "lib/Db/ComplianceMapperRegistrar.php",
   "lib/Db/Configuration.php",
-  "lib/Db/ConfigurationMapperInterface.php",
   "lib/Db/ConfigurationMapperRegistrar.php",
   "lib/Db/Consumer.php",
   "lib/Db/ConsumerMapperInterface.php",
@@ -633,8 +629,6 @@
   "lib/Db/TaskInboxSelection.php",
   "lib/Db/TaskMapper.php",
   "lib/Db/TaskSequence.php",
-  "lib/Db/TaskSequence/TaskSequenceFieldTypes.php",
-  "lib/Db/TaskSequenceMapperInterface.php",
   "lib/Db/Tenancy/TenancyServices.php",
   "lib/Db/TenantUsageMapperInterface.php",
   "lib/Db/TextSignatureMapper.php",
@@ -1484,7 +1478,6 @@
   "lib/Service/Configuration/DescriptorConfigIdsInterface.php",
   "lib/Service/Configuration/SeedDirectoryImporter.php",
   "lib/Service/Configuration/SeedReport.php",
-  "lib/Service/ConfigurationServiceInterface.php",
   "lib/Service/Connection/ConnectionReportForbiddenException.php",
   "lib/Service/Connection/ConnectionReportKind.php",
   "lib/Service/Connection/ConnectionReporter.php",
@@ -2560,15 +2553,15 @@
   "lib/Twig/MappingTwigInstallerInterface.php"
  ],
  "exposed_loc": {
-  "Compliance": 15510,
-  "Configuration": 3648,
+  "Compliance": 15496,
+  "Configuration": 3601,
   "Core": 64593,
   "Files": 3592,
-  "Integrations": 18238,
+  "Integrations": 18214,
   "Kernel": 8505,
   "Notifications": 2018,
   "Platform": 292,
-  "Processes": 30192,
+  "Processes": 30182,
   "Search": 2027
  },
  "kernel_files": [
@@ -3035,5 +3028,5 @@
  ],
  "kernel_loc": 10456,
  "total_loc": 460736,
- "violation_degree": 0.0394
+ "violation_degree": 0.0391
 }
