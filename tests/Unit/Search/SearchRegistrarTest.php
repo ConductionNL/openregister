@@ -18,6 +18,7 @@ namespace OCA\OpenRegister\Tests\Unit\Search;
 
 use OCA\OpenRegister\Db\SchemaMapper\SchemaDeclarationChecksEvent;
 use OCA\OpenRegister\Listener\UniqueHintDeclarationCheckListener;
+use OCA\OpenRegister\Search\Listener\AggregationDeclarationCheckListener;
 use OCA\OpenRegister\Kernel\Contracts\Core\FilterPlaceholdersInterface;
 use OCA\OpenRegister\Search\SearchRegistrar;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
@@ -89,19 +90,22 @@ final class SearchRegistrarTest extends TestCase {
 	}//end testEveryInterfaceIsBoundToItsImplementation()
 
 	/**
-	 * The unique-hint declaration check is registered for the schema save.
+	 * Search registers its own schema-save listeners, the aggregations and unique-hint checks, for the declaration checks event only.
 	 *
 	 * @return void
 	 */
-	public function testRegistersTheDeclarationCheckListener(): void {
+	public function testTheDeclarationCheckListenersAreRegistered(): void {
 		$context = new RecordingRegistrationContext();
 		SearchRegistrar::register(context: $context);
 
 		$this->assertSame(
-			expected: [['event' => SchemaDeclarationChecksEvent::class, 'listener' => UniqueHintDeclarationCheckListener::class]],
-			actual: $context->listeners
+			expected: [
+				['event' => SchemaDeclarationChecksEvent::class, 'listener' => AggregationDeclarationCheckListener::class],
+				['event' => SchemaDeclarationChecksEvent::class, 'listener' => UniqueHintDeclarationCheckListener::class],
+			],
+			actual: array_map(static fn (array $r): array => ['event' => $r['event'], 'listener' => $r['listener']], $context->listeners)
 		);
-	}//end testRegistersTheDeclarationCheckListener()
+	}//end testTheDeclarationCheckListenersAreRegistered()
 
 	/**
 	 * The Core filter-placeholders port and the Search resolver contract resolve
