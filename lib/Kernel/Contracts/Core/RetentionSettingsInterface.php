@@ -1,6 +1,7 @@
 <?php
+
 /**
- * RetentionSettingsInterface: the stored retention settings, as Core reads them.
+ * RetentionSettingsInterface: the retention settings, as the log and deletion sweeps read them.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -20,10 +21,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Kernel\Contracts\Core;
 
 /**
- * The read side of the retention settings.
+ * Reads the stored retention settings, with their defaults filled in.
  *
- * Core asks it for the deletion window; Configuration keeps the settings and
- * binds its handler in its own bindings.
+ * The sweeps that act on retention (log clean-up, the deletion window) ask;
+ * the settings (Configuration) answer and bind their handler to this contract
+ * in their own binding map.
  *
  * @spec openspec/specs/retention-management/spec.md#requirement-retention-settings-must-be-configurable-via-api
  */

@@ -25,9 +25,8 @@ use OCA\OpenRegister\Kernel\Contracts\Core\RetentionSettingsInterface;
 /**
  * The read side of the retention settings, for callers that only read them.
  *
- * Its one read, getRetentionSettingsOnly(), is declared by the Core port it
- * extends, so a Core caller types against that port. The container binds it to
- * {@see ObjectRetentionHandler} in ContractBindings.
+ * The method is declared on the Core contract this interface extends. The
+ * container binds both to {@see ObjectRetentionHandler} in ContractBindings.
  */
 interface RetentionSettingsReaderInterface extends RetentionSettingsInterface {
 }//end interface

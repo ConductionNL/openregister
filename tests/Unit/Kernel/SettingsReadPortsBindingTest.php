@@ -23,7 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Kernel;
 
-use OCA\OpenRegister\Kernel\Contracts\Core\FileSettingsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\FileSettingsReaderInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\RetentionSettingsInterface;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\Decision\ReviewPolicy;
@@ -51,13 +51,13 @@ final class SettingsReadPortsBindingTest extends TestCase {
 		$context = new RecordingRegistrationContext();
 		ContractBindings::register(context: $context);
 
-		$this->assertContains(['alias' => FileSettingsInterface::class, 'target' => FileSettingsHandler::class], $context->aliases);
+		$this->assertContains(['alias' => FileSettingsReaderInterface::class, 'target' => FileSettingsHandler::class], $context->aliases);
 		$this->assertContains(['alias' => RetentionSettingsInterface::class, 'target' => ObjectRetentionHandler::class], $context->aliases);
 		$this->assertContains(['alias' => RetentionSettingsReaderInterface::class, 'target' => ObjectRetentionHandler::class], $context->aliases);
 	}
 
 	public function testTheHandlersAnswerThePorts(): void {
-		$this->assertTrue(is_subclass_of(FileSettingsHandler::class, FileSettingsInterface::class));
+		$this->assertTrue(is_subclass_of(FileSettingsHandler::class, FileSettingsReaderInterface::class));
 		$this->assertTrue(is_subclass_of(RetentionSettingsReaderInterface::class, RetentionSettingsInterface::class));
 		$this->assertTrue(is_subclass_of(ObjectRetentionHandler::class, RetentionSettingsInterface::class));
 	}
@@ -72,7 +72,7 @@ final class SettingsReadPortsBindingTest extends TestCase {
 	}
 
 	public function testTheReviewPolicyDefaultIsReadThroughThePort(): void {
-		$settings = $this->createMock(FileSettingsInterface::class);
+		$settings = $this->createMock(FileSettingsReaderInterface::class);
 		$declaration = ['ownership' => ReviewPolicy::OWNERSHIP_DECIDER, 'hideOthers' => true];
 		$settings->method('getFileSettingsOnly')->willReturn([ReviewPolicy::SETTINGS_KEY => $declaration]);
 
