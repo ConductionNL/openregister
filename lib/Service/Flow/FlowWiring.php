@@ -24,6 +24,7 @@ use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
 use OCA\OpenRegister\Db\FlowLinkMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\LifecycleFinalStatesInterface;
 use OCA\OpenRegister\Kernel\Contracts\Compliance\LifecycleTransitionInterface;
 use OCA\OpenRegister\Kernel\Contracts\Compliance\TransitionInFlightInterface;
 use OCA\OpenRegister\Service\Calendar\ObjectCalendarFeedService;
@@ -68,6 +69,7 @@ use OCA\OpenRegister\Service\Flow\Timer\TermDiagnosticInterface;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarDefinitionsInterface;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendars;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleFinalStateResolver;
 use OCA\OpenRegister\Service\Party\PartyIndicatorGuard;
 use OCA\OpenRegister\Service\Party\PartySearchInterface;
 use OCA\OpenRegister\Service\Party\PartySearchService;
@@ -121,6 +123,7 @@ final class FlowWiring {
 		ObjectCalendarLinkInterface::class => CalendarEventService::class,
 		CurrentFlowRunInterface::class => FlowRunContext::class,
 		ScheduleFlowStoreInterface::class => ScheduleFlowStore::class,
+		LifecycleFinalStatesInterface::class => LifecycleFinalStateResolver::class,
 		ReadHistoryInterface::class       => ReadHistoryService::class,
 		TransitionInFlightInterface::class => LifecycleActionContext::class,
 		WriteElevationInterface::class    => ObjectActionWriteElevation::class,

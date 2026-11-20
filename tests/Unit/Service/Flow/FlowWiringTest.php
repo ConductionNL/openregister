@@ -11,6 +11,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
+use OCA\OpenRegister\Kernel\Contracts\Compliance\LifecycleFinalStatesInterface;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleFinalStateResolver;
 use OCA\OpenRegister\Kernel\Contracts\Core\LifecycleStatesKeeperInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ObjectQuotaInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\PartyParentInterface;
@@ -329,6 +331,7 @@ final class FlowWiringTest extends TestCase {
 				ObjectCalendarLinkInterface::class         => CalendarEventService::class,
 				CurrentFlowRunInterface::class             => FlowRunContext::class,
 				ScheduleFlowStoreInterface::class          => ScheduleFlowStore::class,
+				LifecycleFinalStatesInterface::class       => LifecycleFinalStateResolver::class,
 				ReadHistoryInterface::class                => ReadHistoryService::class,
 				TransitionInFlightInterface::class         => LifecycleActionContext::class,
 				WriteElevationInterface::class             => ObjectActionWriteElevation::class,
