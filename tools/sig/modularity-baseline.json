@@ -239,8 +239,6 @@
   "lib/Service/Anonymisation/PipelineSteps.php -> lib/Files/Service/File/Pdf/PdfTextReplacer.php",
   "lib/Service/Anonymisation/PipelineSteps.php -> lib/Files/Service/File/Sanitizer/DocxSanitizer.php",
   "lib/Service/Anonymisation/PipelineSteps.php -> lib/Files/Service/File/Sanitizer/OdtSanitizer.php",
-  "lib/Service/Anonymisation/TextDisclosureRecorder.php -> lib/Files/Db/TextDisclosure.php",
-  "lib/Service/Anonymisation/TextDisclosureRecorder.php -> lib/Files/Db/TextDisclosureMapper.php",
   "lib/Service/Archival/ArchivalNominationService.php -> lib/Service/Lifecycle/LifecycleFinalStateResolver.php",
   "lib/Service/Audit/AuditTrailCollaborators.php -> lib/Service/Lifecycle/LifecycleActionContext.php",
   "lib/Service/Audit/AuditTrailCollaborators.php -> lib/Service/ObjectAction/ObjectActionElevationScope.php",
@@ -2719,10 +2717,10 @@
   "lib/Twig/MappingTwigInstallerInterface.php"
  ],
  "exposed_loc": {
-  "Compliance": 15799,
+  "Compliance": 15847,
   "Configuration": 4650,
   "Core": 64491,
-  "Files": 3640,
+  "Files": 3592,
   "Integrations": 18324,
   "Kernel": 8516,
   "Notifications": 1752,
@@ -3193,5 +3191,5 @@
  ],
  "kernel_loc": 10454,
  "total_loc": 460423,
- "violation_degree": 0.0541
+ "violation_degree": 0.0539
 }
