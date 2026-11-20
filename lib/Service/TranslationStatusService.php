@@ -35,10 +35,11 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\Translation;
 use OCA\OpenRegister\Db\TranslationMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\DerivedTranslationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\TranslationCompletenessInterface;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCP\IUserSession;
 
-class TranslationStatusService implements TranslationStatusServiceInterface, DerivedTranslationsInterface {
+class TranslationStatusService implements TranslationStatusServiceInterface, DerivedTranslationsInterface, TranslationCompletenessInterface {
 	/**
 	 * Constructor.
 	 *
