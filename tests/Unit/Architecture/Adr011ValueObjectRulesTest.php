@@ -56,6 +56,8 @@ class Adr011ValueObjectRulesTest extends TestCase {
 		'Kernel/Contracts/TimerSubjectRef.php',
 		'Kernel/Contracts/Core/AuditEntry.php',
 		'Kernel/Contracts/Notifications/NotificationRun.php',
+		'Kernel/Contracts/Core/BundleImport.php',
+		'Kernel/Contracts/Core/ObjectAuditEntry.php',
 	];
 
 	/**
@@ -86,6 +88,7 @@ class Adr011ValueObjectRulesTest extends TestCase {
 		'Kernel/Contracts/TimerChange.php',
 		'Kernel/Contracts/TimerSubjectRef.php',
 		'Kernel/Contracts/Core/AuditEntry.php',
+		'Kernel/Contracts/Core/BundleImport.php',
 	];
 
 	/**
