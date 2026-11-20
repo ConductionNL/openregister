@@ -4575,3 +4575,5 @@ Service/Rbac/AuditEntryRecorder.php,,Service,,,,,Core
 Listener/ReferenceCardDeclarationCheckListener.php,,Listener,,,,,Configuration
 Listener/UniqueHintDeclarationCheckListener.php,,Listener,,,,,Search
 Service/Consumer/AccountConsumerLookup.php,,Service,,,,,Integrations
+Service/Party/PartyParent.php,,Service,,,,,Processes
+Service/Lifecycle/LifecycleStatesKeeper.php,,Service,,,,,Processes

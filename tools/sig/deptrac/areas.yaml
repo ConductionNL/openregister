@@ -2884,6 +2884,8 @@ deptrac:
         - type: directory
           value: 'lib/Service/Lifecycle/LifecycleStateValidator[.]php$'
         - type: directory
+          value: 'lib/Service/Lifecycle/LifecycleStatesKeeper[.]php$'
+        - type: directory
           value: 'lib/Service/Lifecycle/LifecycleTransitionOptionsValidator[.]php$'
         - type: directory
           value: 'lib/Service/Lifecycle/LifecycleTransitionResolver[.]php$'
