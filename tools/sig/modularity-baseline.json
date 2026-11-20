@@ -316,9 +316,6 @@
   "lib/Service/Object/ConflictReport.php -> lib/Db/AuditTrail.php",
   "lib/Service/Object/ConflictReportInterface.php -> lib/Db/AuditTrail.php",
   "lib/Service/Object/DeleteRowRules.php -> lib/Service/Archival/RecordState.php",
-  "lib/Service/Object/DraftActivation.php -> lib/Service/Form/FormPayloadFindings.php",
-  "lib/Service/Object/DraftActivationChecks.php -> lib/Service/Form/FormPayloadFindings.php",
-  "lib/Service/Object/DraftStatusPolicy.php -> lib/Service/Form/FormDestinationValidator.php",
   "lib/Service/Object/FacetableFieldDiscovery.php -> lib/Search/Service/Search/PropertySearchProfile.php",
   "lib/Service/Object/GetObject.php -> lib/Service/Interaction/ReadHistoryService.php",
   "lib/Service/Object/IntegrityCascadeControls.php -> lib/Service/Archival/ArchivalRetentionGuard.php",
@@ -2256,6 +2253,7 @@
   "lib/Service/Object/SchemaTypeConverter.php",
   "lib/Service/Object/SchemaTypeConverterInterface.php",
   "lib/Service/Object/SchemaUriResolverInterface.php",
+  "lib/Service/Object/ServerFilledProperty.php",
   "lib/Service/Object/TransitionAuthorizationInterface.php",
   "lib/Service/Object/TransitionGate.php",
   "lib/Service/Object/TranslationHandler.php",
@@ -2546,7 +2544,6 @@
   "lib/Service/Schemas/ExtendingFormValidatorInterface.php",
   "lib/Service/Schemas/FacetResultCacheClearer.php",
   "lib/Service/Schemas/FacetResultCacheClearerInterface.php",
-  "lib/Service/Schemas/GeneratedIdentifierDeclaration.php",
   "lib/Service/Schemas/PropertyValidatorHandler.php",
   "lib/Service/Schemas/PropertyValidatorHandlerInterface.php",
   "lib/Service/Schemas/PropertyVocabulary.php",
@@ -2724,13 +2721,13 @@
  "exposed_loc": {
   "Compliance": 15799,
   "Configuration": 4650,
-  "Core": 64644,
+  "Core": 64491,
   "Files": 3640,
   "Integrations": 18324,
   "Kernel": 8516,
   "Notifications": 1752,
   "Platform": 526,
-  "Processes": 31433,
+  "Processes": 31322,
   "Search": 2006
  },
  "kernel_files": [
@@ -3195,6 +3192,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10454,
- "total_loc": 460409,
- "violation_degree": 0.0545
+ "total_loc": 460423,
+ "violation_degree": 0.0541
 }
