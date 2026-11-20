@@ -44,7 +44,6 @@
   "lib/Db/SequenceMapperInterface.php -> lib/Db/Sequence.php",
   "lib/Db/SourceMapperInterface.php -> lib/Db/Source.php",
   "lib/Db/TaskAuditMapper.php -> lib/Db/TaskAuditMapperInterface.php",
-  "lib/Db/VerwerkingsactiviteitMapperInterface.php -> lib/Db/Verwerkingsactiviteit.php",
   "lib/Listener/NotifyPushBatch.php -> lib/Listener/NotifyPushListener.php",
   "lib/Listener/Registrar/ConfigurationListenerRegistrar.php -> lib/Listener/ShareableConfigTypeRegistrationListener.php",
   "lib/Listener/Registrar/ConfigurationListenerRegistrar.php -> lib/Service/Config/RegisterShareableConfigTypesEvent.php",
@@ -293,7 +292,6 @@
   "lib/Controller/Support/TrimmedRequestParam.php",
   "lib/Controller/Support/UserSettingsControllerServices.php",
   "lib/Controller/Support/ValidationSettingsControllerServices.php",
-  "lib/Controller/Support/VerwerkingsactiviteitenControllerServices.php",
   "lib/Controller/Support/WebhookLogQuery.php",
   "lib/Controller/Trait/ChecksObjectUpdateRight.php",
   "lib/Controller/Trait/HandlesExceptionsTrait.php",
@@ -496,8 +494,6 @@
   "lib/Db/TranslationSlot.php",
   "lib/Db/TypedFieldsJson.php",
   "lib/Db/TypedFieldsJsonTrait.php",
-  "lib/Db/Verwerkingsactiviteit.php",
-  "lib/Db/VerwerkingsactiviteitMapperInterface.php",
   "lib/Db/Webhook.php",
   "lib/Db/WebhookMapper.php",
   "lib/Db/WebhookMapperInterface.php",
@@ -841,6 +837,7 @@
   "lib/Kernel/Contracts/Core/RegisterSchemaLabelsInterface.php",
   "lib/Kernel/Contracts/Core/RequestLanguagesInterface.php",
   "lib/Kernel/Contracts/Core/RetainingActivityInterface.php",
+  "lib/Kernel/Contracts/Core/RetainingActivityResolverInterface.php",
   "lib/Kernel/Contracts/Core/RetentionSettingsInterface.php",
   "lib/Kernel/Contracts/Core/RouteCallWindow.php",
   "lib/Kernel/Contracts/Core/RouteCallersInterface.php",
@@ -2419,9 +2416,9 @@
   "lib/Twig/MappingTwigInstallerInterface.php"
  ],
  "exposed_loc": {
-  "Compliance": 15029,
+  "Compliance": 14978,
   "Configuration": 2785,
-  "Core": 64492,
+  "Core": 64470,
   "Files": 2654,
   "Integrations": 18152,
   "Kernel": 8470,
@@ -2891,6 +2888,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10408,
- "total_loc": 461403,
- "violation_degree": 0.0202
+ "total_loc": 461412,
+ "violation_degree": 0.0201
 }

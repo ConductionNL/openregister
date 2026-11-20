@@ -3813,7 +3813,7 @@ Db/TypedFieldsJson.php,,Db,,,,,Core
 Db/TypedFieldsJsonTrait.php,,Db,,,,,Core
 Db/UsageMeasurement.php,,Db,,,,,Core
 Db/Verwerkingsactiviteit/VerwerkingsactiviteitFieldTypes.php,,Db,,,,,Compliance
-Db/VerwerkingsactiviteitMapperInterface.php,,Db,,,,,Core
+Db/VerwerkingsactiviteitMapperInterface.php,,Db,,,,,Compliance
 Db/WebhookLogMapperInterface.php,,Db,,,,,Integrations
 Db/WebhookMapperInterface.php,,Db,,,,,Integrations
 Db/XwikiLinkMapperInterface.php,,Db,,,,,Integrations
@@ -4581,3 +4581,4 @@ Service/Consumer/AccountConsumerLookup.php,,Service,,,,,Integrations
 Service/Party/PartyParent.php,,Service,,,,,Processes
 Service/Lifecycle/LifecycleStatesKeeper.php,,Service,,,,,Processes
 Service/AcceptLanguageHeader.php,,Service,,,,,Core
+Controller/Support/VerwerkingsactiviteitenControllerServices.php,,Controller,,,,,Compliance
