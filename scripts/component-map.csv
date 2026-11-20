@@ -3679,7 +3679,7 @@ Db/ExportProfile/ExportProfileFieldTypes.php,,Db,,,,,Configuration
 Db/ExportProfileMapperInterface.php,,Db,,,,,Configuration
 Db/FederatedShare/FederatedShareFieldTypes.php,,Db,,,,,Integrations
 Db/FederatedShareMapperInterface.php,,Db,,,,,Core
-Db/FeedbackMapperInterface.php,,Db,,,,,Notifications
+Db/FeedbackMapperInterface.php,,Db,,,,,Platform
 Db/FlowActivityWindow.php,,Db,,,,,Processes
 Db/FlowClaimMapperInterface.php,,Db,,,,,Processes
 Db/FlowDefinitionMapperInterface.php,,Db,,,,,Processes
@@ -3760,7 +3760,7 @@ Db/SchemaRunMapperInterface.php,,Db,,,,,Core
 Db/SchemaRunStoreInterface.php,,Db,,,,,Core
 Db/SearchTrailCleanupInterface.php,,Db,,,,,Search
 Db/SearchTrailCriteria.php,,Db,,,,,Search
-Db/SearchTrailMapperInterface.php,,Db,,,,,Search
+Db/SearchTrailMapperInterface.php,,Db,,,,,Compliance
 Db/SearchTrailOutcome.php,,Db,,,,,Compliance
 Db/SequenceMapperInterface.php,,Db,,,,,Processes
 Db/SoftDeletion.php,,Db,,,,,Kernel
@@ -4538,3 +4538,4 @@ Db/AuditTrail/ActionScope.php,,Db,,,,,Core
 Command/Support/PurgeSwitches.php,,Command,,,,,Core
 Command/Support/RematerialiseEvaluation.php,,Command,,,,,Processes
 Command/Support/RematerialiseStorage.php,,Command,,,,,Processes
+Db/Flow/FlowJson.php,,Db,,,,,Processes

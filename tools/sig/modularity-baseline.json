@@ -98,10 +98,6 @@
   "lib/Db/EntityRelationMapper.php -> lib/Files/Db/EntityRelationMapperInterface.php",
   "lib/Db/ErasurePreviewMapperInterface.php -> lib/Db/ErasurePreview.php",
   "lib/Db/FederatedShareMapperInterface.php -> lib/Db/FederatedShare.php",
-  "lib/Db/FeedbackMapperInterface.php -> lib/Db/Feedback.php",
-  "lib/Db/FeedbackMapperInterface.php -> lib/Mcp/Db/Conversation.php",
-  "lib/Db/Flow/FlowJson.php -> lib/Db/Flow.php",
-  "lib/Db/Flow/FlowJson.php -> lib/Db/FlowVersion.php",
   "lib/Db/MagicMapper.php -> lib/Service/Audit/PurposeGuardInterface.php",
   "lib/Db/MagicMapper.php -> lib/Service/LanguageServiceInterface.php",
   "lib/Db/MagicMapper/MagicSearchHandler.php -> lib/Search/Service/Search/PropertySearchProfile.php",
@@ -123,8 +119,6 @@
   "lib/Db/SchemaMapper/ExchangeAnnotationRefusals.php -> lib/Mcp/Service/Mcp/McpAnnotationValidators.php",
   "lib/Db/SchemaMapper/RecordAnnotationRefusals.php -> lib/Search/Service/SearchAnnotationValidators.php",
   "lib/Db/SchemaMapper/RecordAnnotationRefusals.php -> lib/Service/Archival/InheritedAppraisal.php",
-  "lib/Db/SearchTrailMapperInterface.php -> lib/Db/SearchTrail.php",
-  "lib/Db/SearchTrailMapperInterface.php -> lib/Db/SearchTrailOutcome.php",
   "lib/Db/SequenceMapperInterface.php -> lib/Db/Sequence.php",
   "lib/Db/SourceMapperInterface.php -> lib/Db/Source.php",
   "lib/Db/TaskAuditMapper.php -> lib/Db/TaskAuditMapperInterface.php",
@@ -612,11 +606,8 @@
   "lib/Db/ExportRun/ExportRunFieldTypes.php",
   "lib/Db/FederatedShare.php",
   "lib/Db/FederatedShareMapperInterface.php",
-  "lib/Db/Feedback.php",
-  "lib/Db/FeedbackMapperInterface.php",
   "lib/Db/Flow.php",
   "lib/Db/Flow/FlowFieldTypes.php",
-  "lib/Db/Flow/FlowJson.php",
   "lib/Db/Flow/FlowSelection.php",
   "lib/Db/Flow/FlowTriggerSet.php",
   "lib/Db/Flow/TriggerLookup.php",
@@ -628,7 +619,6 @@
   "lib/Db/FlowTimer/FlowTimerFieldTypes.php",
   "lib/Db/FlowTimer/TimerSubject.php",
   "lib/Db/FlowTimerMapperInterface.php",
-  "lib/Db/FlowVersion.php",
   "lib/Db/FlowVersion/FlowVersionFieldTypes.php",
   "lib/Db/FormLink.php",
   "lib/Db/FormLinkMapper.php",
@@ -713,7 +703,6 @@
   "lib/Db/SchemaMapperInterface.php",
   "lib/Db/SchemaRunEntryMapperInterface.php",
   "lib/Db/SchemaRunMapperInterface.php",
-  "lib/Db/SearchTrail.php",
   "lib/Db/SearchTrail/CreatedRange.php",
   "lib/Db/SearchTrail/SearchTrailFieldTypes.php",
   "lib/Db/SearchTrail/SearchTrailFilterRun.php",
@@ -721,8 +710,6 @@
   "lib/Db/SearchTrail/SearchTrailStatistics.php",
   "lib/Db/SearchTrailCleanupInterface.php",
   "lib/Db/SearchTrailCriteria.php",
-  "lib/Db/SearchTrailMapperInterface.php",
-  "lib/Db/SearchTrailOutcome.php",
   "lib/Db/SelectByColumnTrait.php",
   "lib/Db/Sequence.php",
   "lib/Db/SequenceMapperInterface.php",
@@ -2678,16 +2665,16 @@
   "lib/Twig/MappingTwigInstallerInterface.php"
  ],
  "exposed_loc": {
-  "Compliance": 15839,
+  "Compliance": 15748,
   "Configuration": 4583,
   "Core": 64534,
   "Files": 3592,
-  "Integrations": 18382,
+  "Integrations": 18357,
   "Kernel": 8516,
-  "Notifications": 1752,
-  "Platform": 344,
-  "Processes": 31053,
-  "Search": 2019
+  "Notifications": 1740,
+  "Platform": 313,
+  "Processes": 31011,
+  "Search": 1994
  },
  "kernel_files": [
   "lib/BulkAction/BulkActionInterface.php",
@@ -3151,6 +3138,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10454,
- "total_loc": 460484,
- "violation_degree": 0.0501
+ "total_loc": 460482,
+ "violation_degree": 0.0495
 }

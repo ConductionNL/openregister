@@ -2112,6 +2112,8 @@ deptrac:
         - type: directory
           value: 'lib/Db/(AuditFlowAttribution|AutomationRecord|AutomationRecordFilter|AutomationRecordMapper|BulkJob|BulkJobMapper|BulkJobMapperInterface|BulkJobMember|BulkJobMemberMapper|BulkJobMemberMapperInterface|CalendarFeedToken|CalendarFeedTokenMapper|CalendarFeedTokenMapperInterface|CaseItem|CaseItemAudit|CaseItemAuditMapper|CaseItemAuditMapperInterface|CaseItemMapper|CaseItemMapperInterface|Decision|DecisionMapper|DecisionMapperInterface|Flow|FlowActivityWindow|FlowClaim|FlowClaimMapper|FlowClaimMapperInterface|FlowDefinition|FlowDefinitionMapper|FlowDefinitionMapperInterface|FlowMapper|FlowMapperInterface|FlowRun|FlowRunFilter|FlowRunListing|FlowRunMapper|FlowRunMapperInterface|FlowRunQueueExpiry|FlowRunStep|FlowRunStepMapper|FlowRunStepMapperInterface|FlowRunSubjectScope|FlowRunViewer|FlowState|FlowStateMapper|FlowStateMapperInterface|FlowStream|FlowStreamMapper|FlowStreamMapperInterface|FlowTimer|FlowTimerEvent|FlowTimerEventMapper|FlowTimerEventMapperInterface|FlowTimerFire|FlowTimerFireMapper|FlowTimerFireMapperInterface|FlowTimerMapper|FlowTimerMapperInterface|FlowTriggerMapper|FlowTriggerMapperInterface|FlowVersion|FlowVersionMapper|FlowVersionMapperInterface|HydrateKnownFieldsTrait|IdCursor|PortalTaskDelivery|PortalTaskDeliveryMapper|ProcessesMapperBindings|ProcessesMapperRegistrar|RuleRun|RuleRunFilter|RuleRunMapper|RuleRunMapperInterface|RuleRunSelection|RuleRunSummary|RuleRunSummaryMapper|RuleRunSummaryMapperInterface|RunScopedRowsTrait|SequenceMapperInterface|Task|TaskAuditMapperInterface|TaskBlockerMapper|TaskBlockerMapperInterface|TaskCandidate|TaskCandidateMapper|TaskCandidateMapperInterface|TaskInboxAnchor|TaskInboxAudience|TaskInboxCriteria|TaskInboxDueWindow|TaskInboxFilter|TaskInboxOrder|TaskInboxSelection|TaskMapper|TaskProjectionState|TaskProjectionStateMapper|TaskProjectionStateMapperInterface|TaskRelation|TaskRelationMapper|TaskRelationMapperInterface|TaskSequence|TaskSequenceMapperInterface)[.]php$'
         - type: directory
+          value: 'lib/Db/Flow/FlowJson[.]php$'
+        - type: directory
           value: 'lib/Db/FlowRun/[^/]*$'
         - type: directory
           value: 'lib/Db/RuleRunSummary/[^/]*$'
@@ -3518,7 +3520,7 @@ deptrac:
         - type: directory
           value: 'lib/Controller/Support/TransferControllerServices[.]php$'
         - type: directory
-          value: 'lib/Db/(AuditFlowAttributionInterface|AuditTrail|AuditTrailFilterTerm|AuditTrailMapper|AuditTrailPageQuery|AuditTrailPageQueryInterface|AuditTrailPayloadHelper|ComplianceMapperBindings|ComplianceMapperRegistrar|ContentReport|ContentReportMapper|ErasurePreview|ErasurePreviewMapper|GdprEntity|GdprEntityMapper|GdprEntityMapperInterface|NewRowStamps|ProcessingLogEntry|ProcessingLogMapper|ProcessingPurpose|ProcessingPurposeMapper|QualityAudit|QualityAuditFailure|QualityAuditMapper|QualityAuditMapperInterface|QualityAuditRun|QualityAuditRunMapper|QualityAuditRunMapperInterface|SearchTrail|SearchTrailMapper|SearchTrailOutcome|StatusVocabularyTrait|SubjectExport|SubjectExportMapper|SubjectExportMapperInterface|TaskAudit|TaskAuditMapper|TrailRetentionTrait|Verwerkingsactiviteit|VerwerkingsactiviteitMapper)[.]php$'
+          value: 'lib/Db/(AuditFlowAttributionInterface|AuditTrail|AuditTrailFilterTerm|AuditTrailMapper|AuditTrailPageQuery|AuditTrailPageQueryInterface|AuditTrailPayloadHelper|ComplianceMapperBindings|ComplianceMapperRegistrar|ContentReport|ContentReportMapper|ErasurePreview|ErasurePreviewMapper|GdprEntity|GdprEntityMapper|GdprEntityMapperInterface|NewRowStamps|ProcessingLogEntry|ProcessingLogMapper|ProcessingPurpose|ProcessingPurposeMapper|QualityAudit|QualityAuditFailure|QualityAuditMapper|QualityAuditMapperInterface|QualityAuditRun|QualityAuditRunMapper|QualityAuditRunMapperInterface|SearchTrail|SearchTrailMapper|SearchTrailMapperInterface|SearchTrailOutcome|StatusVocabularyTrait|SubjectExport|SubjectExportMapper|SubjectExportMapperInterface|TaskAudit|TaskAuditMapper|TrailRetentionTrait|Verwerkingsactiviteit|VerwerkingsactiviteitMapper)[.]php$'
         - type: directory
           value: 'lib/Db/AuditTrail/AuditActionStatistics[.]php$'
         - type: directory
@@ -3858,7 +3860,13 @@ deptrac:
         - type: directory
           value: 'lib/Db/FederatedShare/[^/]*$'
         - type: directory
-          value: 'lib/Db/Flow/[^/]*$'
+          value: 'lib/Db/Flow/FlowFieldTypes[.]php$'
+        - type: directory
+          value: 'lib/Db/Flow/FlowSelection[.]php$'
+        - type: directory
+          value: 'lib/Db/Flow/FlowTriggerSet[.]php$'
+        - type: directory
+          value: 'lib/Db/Flow/TriggerLookup[.]php$'
         - type: directory
           value: 'lib/Db/FlowTimer/[^/]*$'
         - type: directory
@@ -4180,7 +4188,7 @@ deptrac:
         - type: directory
           value: 'lib/Controller/Support/HybridSearchDiagnostics[.]php$'
         - type: directory
-          value: 'lib/Db/(SearchTrailCleanupInterface|SearchTrailCriteria|SearchTrailMapperInterface)[.]php$'
+          value: 'lib/Db/(SearchTrailCleanupInterface|SearchTrailCriteria)[.]php$'
         - type: directory
           value: 'lib/Db/SearchTrail/[^/]*$'
         - type: directory
@@ -4253,8 +4261,6 @@ deptrac:
           value: 'lib/Activity/[^/]*$'
         - type: directory
           value: 'lib/Activity/Setting/[^/]*$'
-        - type: directory
-          value: 'lib/Db/(FeedbackMapperInterface)[.]php$'
         - type: directory
           value: 'lib/Db/SchemaMapper/NotificationAnnotationCheck[.]php$'
         - type: directory
@@ -4708,7 +4714,7 @@ deptrac:
         - type: directory
           value: 'lib/Dashboard/[^/]*$'
         - type: directory
-          value: 'lib/Db/(Feedback|FeedbackMapper|PlatformMapperBindings|PlatformMapperRegistrar)[.]php$'
+          value: 'lib/Db/(Feedback|FeedbackMapper|FeedbackMapperInterface|PlatformMapperBindings|PlatformMapperRegistrar)[.]php$'
         - type: directory
           value: 'lib/Listener/(ListenerBootstrap|NotifyPushListener|NotifyPushRun)[.]php$'
         - type: directory
