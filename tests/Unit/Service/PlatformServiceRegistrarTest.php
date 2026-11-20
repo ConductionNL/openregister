@@ -34,7 +34,7 @@ final class PlatformServiceRegistrarTest extends TestCase {
 		PlatformServiceRegistrar::register(context: $context);
 
 		$this->assertNotSame(expected: [], actual: PlatformServiceRegistrar::BINDINGS);
-		$this->assertSame(expected: PlatformServiceRegistrar::BINDINGS, actual: array_column($context->aliases, 'target', 'alias'));
+		$this->assertSame(expected: PlatformServiceRegistrar::BINDINGS + PlatformServiceRegistrar::LISTENER_BINDINGS, actual: array_column($context->aliases, 'target', 'alias'));
 	}//end testTheRegistrarAliasesEveryBindingOfItsMap()
 
 	/**
@@ -43,7 +43,7 @@ final class PlatformServiceRegistrarTest extends TestCase {
 	 * @return void
 	 */
 	public function testEveryBindingIsImplementedByItsClass(): void {
-		foreach (PlatformServiceRegistrar::BINDINGS as $interface => $class) {
+		foreach (PlatformServiceRegistrar::BINDINGS + PlatformServiceRegistrar::LISTENER_BINDINGS as $interface => $class) {
 			$this->assertTrue(condition: (new ReflectionClass($class))->implementsInterface($interface), message: $class . ' implements ' . $interface);
 		}
 	}//end testEveryBindingIsImplementedByItsClass()
@@ -54,7 +54,7 @@ final class PlatformServiceRegistrarTest extends TestCase {
 	 * @return void
 	 */
 	public function testContractBindingsDoesNotBindThemAgain(): void {
-		$twice = array_intersect_key(PlatformServiceRegistrar::BINDINGS, ContractBindings::BINDINGS);
+		$twice = array_intersect_key(PlatformServiceRegistrar::BINDINGS + PlatformServiceRegistrar::LISTENER_BINDINGS, ContractBindings::BINDINGS);
 		$this->assertSame(expected: [], actual: $twice);
 	}//end testContractBindingsDoesNotBindThemAgain()
 }//end class

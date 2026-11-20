@@ -31,7 +31,9 @@ use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\SchemaMapper\SchemaDeclarationChecksEvent;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Listener\ReferenceCardDeclarationCheckListener;
 use OCA\OpenRegister\Service\Configuration\CacheHandler as ConfigurationCacheHandler;
 use OCA\OpenRegister\Service\Configuration\ExportHandler as ConfigurationExportHandler;
 use OCA\OpenRegister\Service\Configuration\ImportHandler as ConfigurationImportHandler;
@@ -158,6 +160,9 @@ final class ConfigurationServiceRegistrar {
 
 		self::registerSettingsServices(context: $context);
 		self::registerConfigurationDeploymentServices(context: $context);
+
+		// The reference-card declaration check runs inside the schema save, in its slot of SchemaDeclarationOrder.
+		$context->registerEventListener(SchemaDeclarationChecksEvent::class, ReferenceCardDeclarationCheckListener::class);
 	}//end register()
 
 	/**

@@ -1339,8 +1339,6 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 */
 	private function behaviourSteps(Schema $schema): array {
 		return [
-			SchemaDeclarationOrder::AGGREGATIONS => fn () => (new AdvisoryAnnotationChecks(logger: $this->logger, discarded: $this->discarded))
-				->checkAggregations(schema: $schema),
 			SchemaDeclarationOrder::CONSENT => static fn () => (new SubjectDeclarationRefusals())->checkConsent(schema: $schema),
 			SchemaDeclarationOrder::RELATIONS => fn () => (new RelationDeclarationCheck(
 				findSchema: fn (string $id): Schema => $this->find(id: $id, _rbac: false, _multitenancy: false)
@@ -1361,16 +1359,12 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 		return [
 			SchemaDeclarationOrder::QUALITY => static fn () => $advisory->checkQuality(schema: $schema),
 			SchemaDeclarationOrder::DEDUP => static fn () => $advisory->checkDedup(schema: $schema),
-			SchemaDeclarationOrder::UNIQUE_HINT => static fn () => $records->checkUniqueHint(schema: $schema),
 			SchemaDeclarationOrder::IDENTITY => static fn () => (new IdentityDeclarationCheck())->check(schema: $schema),
 			SchemaDeclarationOrder::HINGE => static fn () => $advisory->checkHinge(schema: $schema),
 			SchemaDeclarationOrder::SURVIVORSHIP => static fn () => $advisory->checkSurvivorship(schema: $schema),
 			SchemaDeclarationOrder::MERGE => static fn () => $advisory->checkMerge(schema: $schema),
-			SchemaDeclarationOrder::PARTY => static fn () => $advisory->checkParty(schema: $schema),
 			SchemaDeclarationOrder::WIDGETS => static fn () => $records->checkWidgets(schema: $schema),
-			SchemaDeclarationOrder::REFERENCE_CARD => static fn () => $records->checkReferenceCard(schema: $schema),
 			SchemaDeclarationOrder::SEARCH_RESULT => static fn () => $records->checkSearchResult(schema: $schema),
-			SchemaDeclarationOrder::RETENTION => static fn () => $records->checkRetention(schema: $schema),
 		];
 	}//end dataSteps()
 

@@ -28,6 +28,7 @@ use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Core\ReadHistoryInterface;
 use OCA\OpenRegister\Service\Interaction\ReadHistoryService;
 use OCA\OpenRegister\Service\Object\GetObject;
 use OCA\OpenRegister\Service\Object\ObjectFindRequest;
@@ -60,7 +61,7 @@ class ReadRegistrationWiringTest extends TestCase {
 		$mapper = $this->createMock(MagicMapper::class);
 		$mapper->method('find')->willReturn($object);
 
-		$history = $this->createMock(ReadHistoryService::class);
+		$history = $this->createMock(ReadHistoryInterface::class);
 		$history->expects($this->exactly(2))
 			->method('registerAuditRead')
 			->willReturnCallback(
