@@ -233,9 +233,6 @@
   "lib/Notifications/Db/MessageMapperInterface.php -> lib/Mcp/Db/Conversation.php",
   "lib/Notifications/Service/Notification/AnnotationNotificationDispatcher.php -> lib/Db/AutomationRecord.php",
   "lib/Notifications/Service/Notification/AnnotationNotificationDispatcher.php -> lib/Service/AutomationRecordWriter.php",
-  "lib/Notifications/Service/Notification/AnnotationNotificationDispatcher.php -> lib/Service/Notification/MailingRequest.php",
-  "lib/Notifications/Service/Notification/AnnotationNotificationDispatcher.php -> lib/Service/Notification/ReferenceOrigin.php",
-  "lib/Notifications/Service/Notification/AnnotationNotificationDispatcher.php -> lib/Service/Notification/ReferencedAddressNotifierInterface.php",
   "lib/Notifications/Service/Notification/AnnotationNotificationDispatcher.php -> lib/Service/Task/TaskStateRules.php",
   "lib/Notifications/Service/Notification/DeliveryLedger.php -> lib/Service/AutomationRecordWriter.php",
   "lib/Notifications/Service/Notification/NotificationRecipientResolver.php -> lib/Service/Interaction/WatcherServiceInterface.php",
@@ -1251,7 +1248,6 @@
   "lib/Kernel/Contracts/NotificationTemplatesInterface.php",
   "lib/Kernel/Contracts/Notifications/DeclaredWebhookInstallerInterface.php",
   "lib/Kernel/Contracts/Notifications/PartyRecipientsInterface.php",
-  "lib/Kernel/Contracts/Notifications/ReferencedAddressLimits.php",
   "lib/Kernel/Contracts/ObjectCalendarEventsInterface.php",
   "lib/Kernel/Contracts/ObjectCalendarTasksInterface.php",
   "lib/Kernel/Contracts/ObjectExporterInterface.php",
@@ -2257,11 +2253,9 @@
   "lib/Service/Merge/SavePathReferenceWriter.php",
   "lib/Service/MigrationPackServiceInterface.php",
   "lib/Service/MigrationServiceInterface.php",
-  "lib/Service/Notification/MailingRequest.php",
   "lib/Service/Notification/NotificationTemplateRegistry.php",
-  "lib/Service/Notification/ReferenceOrigin.php",
-  "lib/Service/Notification/ReferencedAddressNotifierInterface.php",
   "lib/Service/NotificationServiceInterface.php",
+  "lib/Service/NotificationsServiceRegistrar.php",
   "lib/Service/Oas/OasETagComputer.php",
   "lib/Service/Oas/OasETagComputerInterface.php",
   "lib/Service/Oas/OasRequestValidator.php",
@@ -2834,13 +2828,13 @@
  ],
  "exposed_loc": {
   "Compliance": 15860,
-  "Configuration": 5799,
+  "Configuration": 5767,
   "Core": 64859,
   "Files": 3640,
   "Integrations": 18305,
   "Kernel": 8482,
-  "Notifications": 1753,
-  "Platform": 647,
+  "Notifications": 1757,
+  "Platform": 649,
   "Processes": 31679,
   "Search": 2026
  },
@@ -3301,6 +3295,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10407,
- "total_loc": 460169,
- "violation_degree": 0.0646
+ "total_loc": 460189,
+ "violation_degree": 0.0644
 }
