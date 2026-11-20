@@ -345,13 +345,6 @@
   "lib/Db/SchemaMapperInterface.php",
   "lib/Db/SchemaRunEntryMapperInterface.php",
   "lib/Db/SchemaRunMapperInterface.php",
-  "lib/Db/SearchTrail/CreatedRange.php",
-  "lib/Db/SearchTrail/SearchTrailFieldTypes.php",
-  "lib/Db/SearchTrail/SearchTrailFilterRun.php",
-  "lib/Db/SearchTrail/SearchTrailPage.php",
-  "lib/Db/SearchTrail/SearchTrailStatistics.php",
-  "lib/Db/SearchTrailCleanupInterface.php",
-  "lib/Db/SearchTrailCriteria.php",
   "lib/Db/SelectByColumnTrait.php",
   "lib/Db/Sequence.php",
   "lib/Db/SequenceMapperInterface.php",
@@ -906,8 +899,6 @@
   "lib/Listener/UniqueConstraintListener.php",
   "lib/Listener/UniqueConstraintListenerInterface.php",
   "lib/Listener/ValidatesPreWriteObject.php",
-  "lib/Listener/ViewAlertAudience.php",
-  "lib/Listener/ViewAlertMail.php",
   "lib/Listener/WrittenObjectOfEvent.php",
   "lib/Mcp/BuiltIn/AbstractBuiltInToolProvider.php",
   "lib/Mcp/Db/Agent.php",
@@ -2090,13 +2081,9 @@
   "lib/Service/Search/ObjectSearchResultFormatter.php",
   "lib/Service/Search/ObjectSearchResultFormatterInterface.php",
   "lib/Service/Search/SearchResultDeclarations.php",
-  "lib/Service/Search/VectorResultFilter.php",
   "lib/Service/SearchMeasurement.php",
-  "lib/Service/SearchTrailActivityInsights.php",
-  "lib/Service/SearchTrailQueryConfig.php",
   "lib/Service/SearchTrailService.php",
   "lib/Service/SearchTrailServiceInterface.php",
-  "lib/Service/SearchTrailUserAgentParser.php",
   "lib/Service/Security/OutboundAddressGuard.php",
   "lib/Service/Security/SafeFetchUrl.php",
   "lib/Service/SecurityHeadersInterface.php",
@@ -2244,14 +2231,14 @@
  "exposed_loc": {
   "Compliance": 14297,
   "Configuration": 997,
-  "Core": 57384,
+  "Core": 57249,
   "Files": 1458,
   "Integrations": 17733,
   "Kernel": 8464,
   "Notifications": 1759,
   "Platform": 61,
   "Processes": 27064,
-  "Search": 1772
+  "Search": 1344
  },
  "kernel_files": [
   "lib/BulkAction/BulkActionInterface.php",
@@ -2715,5 +2702,5 @@
  ],
  "kernel_loc": 10402,
  "total_loc": 462011,
- "violation_degree": 0.0084
+ "violation_degree": 0.0069
 }
