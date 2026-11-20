@@ -32,7 +32,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\BackgroundJob\QueuedJobClassesInterface;
+use OCA\OpenRegister\BackgroundJob\ComplianceJobHandlesInterface;
 use OCA\OpenRegister\Controller\Support\TransferControllerServices;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Edepot\TransferListServiceInterface;
@@ -346,7 +346,7 @@ class TransferController extends Controller {
 	 * @return JSONResponse The 202 response.
 	 */
 	private function queueExecution(string $transferListUuid): JSONResponse {
-		$this->jobList->add(QueuedJobClassesInterface::TRANSFER_EXECUTION, ['transferListId' => $transferListUuid, 'attempt' => 1]);
+		$this->jobList->add(ComplianceJobHandlesInterface::TRANSFER_EXECUTION, ['transferListId' => $transferListUuid, 'attempt' => 1]);
 
 		$this->logger->info(
 			message: '[TransferController] Dispatched transfer execution',

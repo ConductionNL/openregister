@@ -48,7 +48,7 @@ use OCA\OpenRegister\Service\Rules\RuleSwitch;
 use OCA\OpenRegister\Service\Rules\RuleTrialRequest;
 use OCA\OpenRegister\Service\Rules\RuleTrialServiceInterface;
 use OCA\OpenRegister\Service\Rules\RuleVocabulary;
-use OCA\OpenRegister\Settings\OpenRegisterAdmin;
+use OCA\OpenRegister\Kernel\Contracts\AdminSettingDelegation;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
 use OCP\AppFramework\Http\JSONResponse;
@@ -189,7 +189,7 @@ class RulesController extends Controller {
 	 * @spec openspec/specs/flow-engine/spec.md
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
-	#[AuthorizedAdminSetting(settings: OpenRegisterAdmin::class)]
+	#[AuthorizedAdminSetting(settings: AdminSettingDelegation::OPEN_REGISTER_ADMIN)]
 	public function index(string $schema): JSONResponse {
 		$entity = $this->resolveSchema(reference: $schema);
 		if ($entity === null) {
@@ -219,7 +219,7 @@ class RulesController extends Controller {
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
-	#[AuthorizedAdminSetting(settings: OpenRegisterAdmin::class)]
+	#[AuthorizedAdminSetting(settings: AdminSettingDelegation::OPEN_REGISTER_ADMIN)]
 	public function setEnabled(string $schema, string $ruleId): JSONResponse {
 		$entity = $this->resolveSchema(reference: $schema);
 		if ($entity === null) {
@@ -255,7 +255,7 @@ class RulesController extends Controller {
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
-	#[AuthorizedAdminSetting(settings: OpenRegisterAdmin::class)]
+	#[AuthorizedAdminSetting(settings: AdminSettingDelegation::OPEN_REGISTER_ADMIN)]
 	public function evaluate(string $schema, string $ruleId): JSONResponse {
 		$entity = $this->resolveSchema(reference: $schema);
 		if ($entity === null) {
@@ -307,7 +307,7 @@ class RulesController extends Controller {
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
-	#[AuthorizedAdminSetting(settings: OpenRegisterAdmin::class)]
+	#[AuthorizedAdminSetting(settings: AdminSettingDelegation::OPEN_REGISTER_ADMIN)]
 	public function replay(string $schema, string $ruleId): JSONResponse {
 		$entity = $this->resolveSchema(reference: $schema);
 		if ($entity === null) {
@@ -417,7 +417,7 @@ class RulesController extends Controller {
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
-	#[AuthorizedAdminSetting(settings: OpenRegisterAdmin::class)]
+	#[AuthorizedAdminSetting(settings: AdminSettingDelegation::OPEN_REGISTER_ADMIN)]
 	public function runs(string $ruleId): JSONResponse {
 		$verdict = $this->verdictFilter();
 		if ($verdict instanceof JSONResponse) {

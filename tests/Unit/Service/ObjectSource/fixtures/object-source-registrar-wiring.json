@@ -138,11 +138,11 @@
     },
     "OCA\\OpenRegister\\Service\\Dbal\\DbalConnectionFactory": {
         "asked": [
-            "OCA\\OpenRegister\\Service\\Credential\\CredentialStore",
+            "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\CredentialSecretReaderInterface",
             "Psr\\Log\\LoggerInterface"
         ],
         "params": {
-            "credentialStore": "OCA\\OpenRegister\\Service\\Credential\\CredentialStore",
+            "credentialStore": "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\CredentialSecretReaderInterface",
             "logger": "Psr\\Log\\LoggerInterface"
         }
     },
