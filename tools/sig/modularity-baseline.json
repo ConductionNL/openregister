@@ -164,10 +164,8 @@
   "lib/Service/Object/Collaborators/ObjectStorageServices.php -> lib/Service/SearchTrailService.php",
   "lib/Service/Object/ConflictReport.php -> lib/Db/AuditTrail.php",
   "lib/Service/Object/ConflictReportInterface.php -> lib/Db/AuditTrail.php",
-  "lib/Service/Object/DeleteRowRules.php -> lib/Service/Archival/RecordState.php",
   "lib/Service/Object/FacetableFieldDiscovery.php -> lib/Search/Service/Search/PropertySearchProfile.php",
   "lib/Service/Object/GetObject.php -> lib/Service/Interaction/ReadHistoryService.php",
-  "lib/Service/Object/IntegrityCascadeControls.php -> lib/Service/Archival/ArchivalRetentionGuard.php",
   "lib/Service/Object/ObjectCacheInvalidator.php -> lib/Service/ContactMatchingService.php",
   "lib/Service/Object/ObjectCacheInvalidator.php -> lib/Service/DeepLinkRegistryService.php",
   "lib/Service/Object/ObjectCacheInvalidator.php -> lib/Service/Reference/ObjectPreviewFormatter.php",
@@ -175,7 +173,6 @@
   "lib/Service/Object/ObjectSlugBackfillLedger.php -> lib/Db/AuditTrail/AuditedObject.php",
   "lib/Service/Object/ObjectSlugBackfillLedger.php -> lib/Db/AuditTrail/SlugBackfill.php",
   "lib/Service/Object/ObjectSlugBackfillLedger.php -> lib/Db/AuditTrailMapper.php",
-  "lib/Service/Object/OrphanDeletionGuard.php -> lib/Service/Archival/RecordState.php",
   "lib/Service/Object/PermissionHandler.php -> lib/Service/ObjectAction/ElevatedWrite.php",
   "lib/Service/Object/PermissionHandler.php -> lib/Service/ObjectAction/ObjectActionElevationScope.php",
   "lib/Service/Object/RecordAnnotations.php -> lib/Service/Archival/ArchivalDecisionResolver.php",
@@ -887,6 +884,7 @@
   "lib/Kernel/Contracts/Core/AuditRecordInterface.php",
   "lib/Kernel/Contracts/Core/AuthRateLimitCeilingInterface.php",
   "lib/Kernel/Contracts/Core/BundleImport.php",
+  "lib/Kernel/Contracts/Core/CascadeRetentionCheckInterface.php",
   "lib/Kernel/Contracts/Core/CredentialSecretReaderInterface.php",
   "lib/Kernel/Contracts/Core/CurrentFlowRunInterface.php",
   "lib/Kernel/Contracts/Core/DeclarationRefusalInterface.php",
@@ -933,6 +931,7 @@
   "lib/Kernel/Contracts/Core/ServiceUnavailableExceptionInterface.php",
   "lib/Kernel/Contracts/Core/ShareLinkUrlInterface.php",
   "lib/Kernel/Contracts/Core/SpatialFilterInterface.php",
+  "lib/Kernel/Contracts/Core/TransferredRecordStatesInterface.php",
   "lib/Kernel/Contracts/DecisionInterface.php",
   "lib/Kernel/Contracts/DeckPlacement.php",
   "lib/Kernel/Contracts/DocumentProcessingHandlerInterface.php",
@@ -1284,7 +1283,6 @@
   "lib/Service/Archival/InheritedAppraisal.php",
   "lib/Service/Archival/LegalHoldService.php",
   "lib/Service/Archival/LegalHoldServiceInterface.php",
-  "lib/Service/Archival/RecordState.php",
   "lib/Service/Archival/RetentionEvaluator.php",
   "lib/Service/Archival/RetentionEvaluatorInterface.php",
   "lib/Service/Archival/ReviewOutcomeService.php",
@@ -2508,9 +2506,9 @@
   "lib/Twig/MappingTwigInstallerInterface.php"
  ],
  "exposed_loc": {
-  "Compliance": 15454,
+  "Compliance": 15413,
   "Configuration": 3601,
-  "Core": 64316,
+  "Core": 64328,
   "Files": 2667,
   "Integrations": 18214,
   "Kernel": 8506,
@@ -2982,6 +2980,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10457,
- "total_loc": 460899,
- "violation_degree": 0.0342
+ "total_loc": 460915,
+ "violation_degree": 0.0338
 }
