@@ -160,9 +160,6 @@
   "lib/Db/SchemaMapper/AdvisoryAnnotationChecks.php -> lib/Search/Service/SearchAnnotationValidators.php",
   "lib/Db/SchemaMapper/AdvisoryAnnotationChecks.php -> lib/Service/Party/PartyAnnotationValidator.php",
   "lib/Db/SchemaMapper/ExchangeAnnotationRefusals.php -> lib/Mcp/Service/Mcp/McpAnnotationValidators.php",
-  "lib/Db/SchemaMapper/NotificationAnnotationCheck.php -> lib/Notifications/Service/Notification/NotificationAnnotationValidators.php",
-  "lib/Db/SchemaMapper/NotificationAnnotationCheck.php -> lib/Notifications/Service/Notification/NotificationContentValidator.php",
-  "lib/Db/SchemaMapper/NotificationAnnotationCheck.php -> lib/Notifications/Service/Notification/NotificationDeclarationException.php",
   "lib/Db/SchemaMapper/RecordAnnotationRefusals.php -> lib/Search/Service/SearchAnnotationValidators.php",
   "lib/Db/SchemaMapper/RecordAnnotationRefusals.php -> lib/Service/Archival/InheritedAppraisal.php",
   "lib/Db/SearchTrailMapperInterface.php -> lib/Db/SearchTrail.php",
@@ -1416,6 +1413,7 @@
   "lib/Notifications/Db/WatcherMapperInterface.php",
   "lib/Notifications/Listener/ActivityEventListener.php",
   "lib/Notifications/Listener/GraphQLSubscriptionListener.php",
+  "lib/Notifications/Listener/NotificationDeclarationCheckListener.php",
   "lib/Notifications/Listener/NotificationDedupeAnnotationSyncListener.php",
   "lib/Notifications/Listener/NotificationDedupePruneListener.php",
   "lib/Notifications/Listener/Registrar/NotificationsListenerRegistrar.php",
@@ -1429,10 +1427,8 @@
   "lib/Notifications/Service/Notification/NcNotificationSenderInterface.php",
   "lib/Notifications/Service/Notification/NoticeContent.php",
   "lib/Notifications/Service/Notification/NoticeRule.php",
-  "lib/Notifications/Service/Notification/NotificationAnnotationValidators.php",
   "lib/Notifications/Service/Notification/NotificationChannelPolicyInterface.php",
   "lib/Notifications/Service/Notification/NotificationClearingServiceInterface.php",
-  "lib/Notifications/Service/Notification/NotificationContentValidator.php",
   "lib/Notifications/Service/Notification/NotificationDeclarationException.php",
   "lib/Notifications/Service/Notification/NotificationPreferenceServiceInterface.php",
   "lib/Notifications/Service/Notification/NotificationRecipientResolverInterface.php",
@@ -2845,13 +2841,13 @@
  "exposed_loc": {
   "Compliance": 15860,
   "Configuration": 5799,
-  "Core": 64794,
+  "Core": 64804,
   "Files": 3640,
   "Integrations": 18305,
   "Kernel": 8482,
-  "Notifications": 1920,
+  "Notifications": 1753,
   "Platform": 733,
-  "Processes": 31783,
+  "Processes": 31785,
   "Search": 2026
  },
  "kernel_files": [
@@ -3311,6 +3307,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10407,
- "total_loc": 460060,
- "violation_degree": 0.0659
+ "total_loc": 460096,
+ "violation_degree": 0.0655
 }

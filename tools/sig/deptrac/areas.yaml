@@ -626,8 +626,6 @@ deptrac:
         - type: directory
           value: 'lib/Db/SchemaMapper/IdentityDeclarationCheck[.]php$'
         - type: directory
-          value: 'lib/Db/SchemaMapper/NotificationAnnotationCheck[.]php$'
-        - type: directory
           value: 'lib/Db/SchemaMapper/ParentReference[.]php$'
         - type: directory
           value: 'lib/Db/SchemaMapper/PositionedDeclarationCheck[.]php$'
@@ -4121,6 +4119,8 @@ deptrac:
           value: 'lib/Activity/Setting/[^/]*$'
         - type: directory
           value: 'lib/Db/(FeedbackMapperInterface)[.]php$'
+        - type: directory
+          value: 'lib/Db/SchemaMapper/NotificationAnnotationCheck[.]php$'
         - type: directory
           value: 'lib/Files/Service/NoteJournalExporter[.]php$'
         - type: directory

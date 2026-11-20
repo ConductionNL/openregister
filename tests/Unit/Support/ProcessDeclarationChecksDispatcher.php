@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\SchemaMapper\SchemaDeclarationChecksEvent;
 use OCA\OpenRegister\Listener\ArchivalDeclarationChecksListener;
 use OCA\OpenRegister\Listener\HandoffDeclarationChecksListener;
 use OCA\OpenRegister\Listener\SchemaDeclarationChecksListener;
+use OCA\OpenRegister\Notifications\Listener\NotificationDeclarationCheckListener;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionValidatorInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -122,7 +123,7 @@ final class ProcessDeclarationChecksDispatcher implements IEventDispatcher, Cont
 	}//end dispatch()
 
 	/**
-	 * Contribute the process, archival and hand-off checks to the collection event; record every other event.
+	 * Contribute the process, archival, hand-off and notification checks to the collection event; record every other event.
 	 *
 	 * @param Event $event The event.
 	 *
@@ -134,6 +135,7 @@ final class ProcessDeclarationChecksDispatcher implements IEventDispatcher, Cont
 			(new SchemaDeclarationChecksListener(logger: $logger, container: $this))->handle(event: $event);
 			(new ArchivalDeclarationChecksListener(logger: $logger))->handle(event: $event);
 			(new HandoffDeclarationChecksListener())->handle(event: $event);
+			(new NotificationDeclarationCheckListener(logger: $logger))->handle(event: $event);
 			return;
 		}
 
