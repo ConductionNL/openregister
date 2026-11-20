@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Kernel\Contracts\Core\AuthRateLimitCeilingInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectArchivalMetadataInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ReadPurposeGuardInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\RegisterAccessChangeLogInterface;
 use OCA\OpenRegister\Service\Audit\PurposeGuard;
@@ -46,6 +47,7 @@ final class ComplianceServiceBindings {
 	 */
 	public const BINDINGS = [
 		AuthRateLimitCeilingInterface::class    => HardeningPolicy::class,
+		ObjectArchivalMetadataInterface::class  => TmloService::class,
 		ReadPurposeGuardInterface::class        => PurposeGuard::class,
 		RegisterAccessChangeLogInterface::class => AuthorizationAuditService::class,
 	];

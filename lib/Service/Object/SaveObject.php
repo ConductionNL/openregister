@@ -130,7 +130,8 @@ use OCA\OpenRegister\Search\Service\Quality\CreateCandidate;
 use OCA\OpenRegister\Service\SettingsServiceInterface;
 use OCA\OpenRegister\Service\SharedMasterDataService;
 use OCA\OpenRegister\Service\TenantLogRedactor;
-use OCA\OpenRegister\Service\TmloService;
+use OCA\OpenRegister\Service\TmloServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectArchivalMetadataInterface;
 use OCA\OpenRegister\Service\File\FolderAccessCheck;
 use OCA\OpenRegister\Service\TranslationProjectionService;
 use OCA\OpenRegister\Service\TranslationStatusService;
@@ -477,11 +478,11 @@ class SaveObject implements SaveObjectInterface {
 	private readonly LoggerInterface $logger;
 
 	/**
-	 * Collaborator, taken from the services bundle.
+	 * Stamps and checks the archival (TMLO) metadata, taken from the services bundle.
 	 *
-	 * @var TmloService
+	 * @var ObjectArchivalMetadataInterface
 	 */
-	private readonly TmloService $tmloService;
+	private readonly ObjectArchivalMetadataInterface $tmloService;
 
 	/**
 	 * Collaborator, taken from the services bundle.
@@ -4338,7 +4339,7 @@ class SaveObject implements SaveObjectInterface {
 	 * Populate TMLO defaults on a new object if the register has TMLO enabled.
 	 *
 	 * Client-supplied @self.tmlo is intentionally NOT accepted here (wave-11 WF1 fix).
-	 * All TMLO fields on CREATE are system-managed defaults applied by TmloService.
+	 * All TMLO fields on CREATE are system-managed defaults applied by the archival metadata port.
 	 * On UPDATE, validateTmloOnUpdate() enforces the allowed transition matrix instead.
 	 *
 	 * @param ObjectEntity $objectEntity The object entity being created
@@ -4477,7 +4478,7 @@ class SaveObject implements SaveObjectInterface {
 	 */
 	private function assertTmloTransition(ObjectEntity $existingObject, array $newTmlo): void {
 		$oldTmlo = $existingObject->getTmlo();
-		$oldStatus = ($oldTmlo['archiefstatus'] ?? TmloService::ARCHIEFSTATUS_ACTIEF);
+		$oldStatus = ($oldTmlo['archiefstatus'] ?? TmloServiceInterface::ARCHIEFSTATUS_ACTIEF);
 		$newStatus = ($newTmlo['archiefstatus'] ?? null);
 		if ($newStatus === null || $newStatus === $oldStatus) {
 			return;

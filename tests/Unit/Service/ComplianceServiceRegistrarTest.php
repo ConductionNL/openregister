@@ -11,10 +11,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectArchivalMetadataInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ReadPurposeGuardInterface;
 use OCA\OpenRegister\Service\Audit\PurposeGuard;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\ComplianceServiceRegistrar;
+use OCA\OpenRegister\Service\TmloService;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
@@ -70,4 +72,15 @@ final class ComplianceServiceRegistrarTest extends TestCase {
 	public function testTheReadPurposeGuardPortIsAnsweredByThePurposeGuard(): void {
 		$this->assertSame(expected: PurposeGuard::class, actual: (ComplianceServiceRegistrar::BINDINGS[ReadPurposeGuardInterface::class] ?? null));
 	}//end testTheReadPurposeGuardPortIsAnsweredByThePurposeGuard()
+
+	/**
+	 * The save path's archival metadata port is answered by the TMLO service.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/tmlo-auto-populate/spec.md
+	 */
+	public function testTheArchivalMetadataPortIsAnsweredByTheTmloService(): void {
+		$this->assertSame(expected: TmloService::class, actual: (ComplianceServiceRegistrar::BINDINGS[ObjectArchivalMetadataInterface::class] ?? null));
+	}//end testTheArchivalMetadataPortIsAnsweredByTheTmloService()
 }//end class
