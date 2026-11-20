@@ -694,7 +694,7 @@ deptrac:
         - type: directory
           value: 'lib/Repair/Support/RepairPlatform[.]php$'
         - type: directory
-          value: 'lib/Service/(AnonymousEvaluationContext|AppConfigurationImporterInterface|AppRegisterImportRunnerInterface|AuthFailureRun|AuthenticationTokenFetcherInterface|AuthorizationChange|AvgComplianceServiceInterface|AvgRetentionPassInterface|BulkTranslationServiceInterface|CauseFrame|ComparableInstants|ConditionMatcher|ConditionUserResolvers|ConfigLookup|CrossRegisterExistenceService|DateTimeNormalizer|DateTimeNormalizerInterface|DeclaredPair|DeclaredRow|DeepLinkRegistryServiceInterface|DeepLinkResolverInterface|DemoDataServiceInterface|DisposalSweep|EntryScripts|ExecutedDestruction|FailedAttempt|FieldDecryptionScope|FieldEncryptionHandler|FieldEncryptionHandlerInterface|FileService|HoldOrder|InboundAuthRateLimitInterface|LinkPageWindow|LinkServiceRuntime|LinkSessionRuntime|LinkedEntityMappers|LinkedEventMerge|LockoutStrike|LogExportFormatter|LoginSecurityInterface|ManifestServiceInterface|ManifestSources|MdiIconRenderer|MdiIconSvg|MdiIconSvgInterface|MigrationServiceInterface|OasService|OasServiceInterface|OasSources|ObjectFilesInterface|ObjectHandlerAccessInterface|ObjectRelationCleanupServiceInterface|ObjectService|ObjectServiceMapperAdapter|ObjectSourceRead|ObjectStreamingSaveInterface|ObjectTranslationRequest|OperatorEvaluator|OrganisationContext|OrganisationService|OrganisationServiceInterface|OrganisationUsageService|OrganisationUsageServiceInterface|PersonLinkTarget|PropertyAccessCollaborators|PropertyAccessRequest|PropertyRbacCaller|PropertyRbacHandler|PropertyRbacHandlerInterface|PropertyRbacRules|PropertyWriteCheck|ProtectedCarryForward|ProtectedPropertyRead|RateLimitResetInterface|RecordUpdate|RegisterDescriptorServiceInterface|RegisterImportCall|RegisterImportDocument|RegisterImportRoute|RegisterMappingFunctionsEvent|RegisterResolverService|RegisterResolverServiceInterface|RegisterSchemaLinkageRepairService|RegisterSchemaLinkageRepairServiceInterface|RegisterSchemaMappers|RegisterScopedSchemaResolver|RegisterScopedSchemaResolverInterface|RegisterScopedSchemaResolvers|RegisterService|RegisterServiceHelpers|RegisterServiceInterface|RegisterServiceStorage|RegisterSlugProbe|RegisterSlugResolver|SchemaApplicationMigratorInterface|SchemaDeletionStores|SchemaObjectTally|SchemaProperty|SchemaTeardownInterface|SchemaTeardownOverride|ScriptManifestLoader|SecurityHeadersInterface|SecurityService|SemanticTypeQuery|SemanticTypeResolver|SemanticTypeResolverInterface|ServiceBootstrap|ServiceRegistrar|SettingsServiceInterface|SharedMasterDataService|SharedMasterDataServiceInterface|SharedSchemaDedupeServiceInterface|ShippedRegister|SkosNodeReader|SystemOperationContext|TableDeletionOptions|TenancyCollaborators|TenantDirectory|TenantKeyRotationInterface|TenantLifecycleService|TenantLifecycleServiceInterface|TenantLogRedactor|TenantLogRedactorInterface|TmloServiceInterface|UrnService|UrnServiceInterface|UserService|UserServiceInterface|UserTaskListInterface|VocabularyConceptEdges|VocabularyCsvReader|VocabularyImportTally|VocabularyObjectStore|WriteCause|WritePhase|WritePhaseProbe)[.]php$'
+          value: 'lib/Service/(AnonymousEvaluationContext|AppConfigurationImporterInterface|AppRegisterImportRunnerInterface|AuthFailureRun|AuthenticationTokenFetcherInterface|AuthorizationChange|AvgComplianceServiceInterface|AvgRetentionPassInterface|BulkTranslationServiceInterface|CauseFrame|ComparableInstants|ConditionMatcher|ConditionUserResolvers|ConfigLookup|CrossRegisterExistenceService|DateTimeNormalizer|DateTimeNormalizerInterface|DeclaredPair|DeclaredRow|DeepLinkRegistryServiceInterface|DeepLinkResolverInterface|DemoDataServiceInterface|DisposalSweep|EntryScripts|ExecutedDestruction|FailedAttempt|FieldDecryptionScope|FieldEncryptionHandler|FieldEncryptionHandlerInterface|FileService|HoldOrder|InboundAuthRateLimitInterface|LinkPageWindow|LinkServiceRuntime|LinkSessionRuntime|LinkedEntityMappers|LinkedEventMerge|LockoutStrike|LogExportFormatter|LoginSecurityInterface|ManifestServiceInterface|ManifestSources|MdiIconRenderer|MdiIconSvg|MdiIconSvgInterface|MigrationServiceInterface|OasService|OasServiceInterface|OasSources|ObjectFilesInterface|ObjectHandlerAccessInterface|ObjectRelationCleanupServiceInterface|ObjectService|ObjectServiceMapperAdapter|ObjectSourceRead|ObjectStreamingSaveInterface|ObjectTranslationRequest|OperatorEvaluator|OrganisationContext|OrganisationService|OrganisationServiceInterface|OrganisationUsageService|OrganisationUsageServiceInterface|PersonLinkTarget|PropertyAccessCollaborators|PropertyAccessRequest|PropertyRbacCaller|PropertyRbacHandler|PropertyRbacHandlerInterface|PropertyRbacRules|PropertyWriteCheck|ProtectedCarryForward|ProtectedPropertyRead|RateLimitResetInterface|RecordUpdate|RegisterDescriptorServiceInterface|RegisterImportCall|RegisterImportDocument|RegisterImportRoute|RegisterMappingFunctionsEvent|RegisterResolverService|RegisterResolverServiceInterface|RegisterSchemaLinkageRepairService|RegisterSchemaLinkageRepairServiceInterface|RegisterSchemaMappers|RegisterScopedSchemaResolver|RegisterScopedSchemaResolverInterface|RegisterScopedSchemaResolvers|RegisterService|RegisterServiceHelpers|RegisterServiceInterface|RegisterServiceStorage|RegisterSlugProbe|RegisterSlugResolver|SchemaApplicationMigratorInterface|SchemaDeletionStores|SchemaObjectTally|SchemaProperty|SchemaTeardownInterface|SchemaTeardownOverride|ScriptManifestLoader|SearchMeasurement|SecurityHeadersInterface|SecurityService|SemanticTypeQuery|SemanticTypeResolver|SemanticTypeResolverInterface|ServiceBootstrap|ServiceRegistrar|SettingsServiceInterface|SharedMasterDataService|SharedMasterDataServiceInterface|SharedSchemaDedupeServiceInterface|ShippedRegister|SkosNodeReader|SystemOperationContext|TableDeletionOptions|TenancyCollaborators|TenantDirectory|TenantKeyRotationInterface|TenantLifecycleService|TenantLifecycleServiceInterface|TenantLogRedactor|TenantLogRedactorInterface|TmloServiceInterface|UrnService|UrnServiceInterface|UserService|UserServiceInterface|UserTaskListInterface|VocabularyConceptEdges|VocabularyCsvReader|VocabularyImportTally|VocabularyObjectStore|WriteCause|WritePhase|WritePhaseProbe)[.]php$'
         - type: directory
           value: 'lib/Service/Aggregation/[^/]*$'
         - type: directory
@@ -2190,6 +2190,12 @@ deptrac:
         - type: directory
           value: 'lib/Listener/Support/TaskVtodoWriteBackServices[.]php$'
         - type: directory
+          value: 'lib/Mcp/BuiltIn/FlowBuiltInToolProviders[.]php$'
+        - type: directory
+          value: 'lib/Mcp/BuiltIn/FlowMcpToolProvider[.]php$'
+        - type: directory
+          value: 'lib/Mcp/BuiltIn/FlowToolServices[.]php$'
+        - type: directory
           value: 'lib/Repair/(BackfillFlowSemanticVersions|BackfillFlowTriggerIndex|BackfillFlowVersions|FlowNodeTypeRewrite|FlowTimerRegisterPathInterface|FlowVersionBackfillTally|FlowVersionNumbering|IntakeSourceRegisterSlugsInterface|MigrateApprovalChainsToTasks|MigrateRenamedFlowNodeTypes|PerformerField|PerformerTyping|PhantomFlowPurgeRun|ReportUnpublishedSchedules|SeedCaseFixtures|SeedFlowRunTriggerSubject|SeedTaskFixtures|TaskSubjectLocationBackfill)[.]php$'
         - type: directory
           value: 'lib/Repair/Support/ApprovalTaskStores[.]php$'
@@ -3618,7 +3624,7 @@ deptrac:
         - type: directory
           value: 'lib/Repair/(RechainAuditTrailForFlowAttribution|V1ChainVerificationRun)[.]php$'
         - type: directory
-          value: 'lib/Service/(AuditCanonicalV1|AuditChainKey|AuditHashService|AuditHashServiceInterface|AuditQueryService|AuditQueryServiceInterface|AuditRechainInterface|AuditRetentionResolver|AuditRetentionResolverInterface|AuditSealInterface|AuthorizationAuditService|AvgComplianceService|AvgRetentionErasureRun|AvgRetentionService|CalculationRun|ComplianceServiceBindings|ComplianceServiceRegistrar|ContentScanService|DsarErasureRun|DsarGuards|DsarService|DsarServiceInterface|DsarStores|DsarSubjectQuery|LogObjectInTable|LogService|ProcessingLogService|ProcessingRead|ReadCaptureRun|RetentionClock|RetentionPass|RetentionRules|RetentionService|RetentionServiceInterface|RetentionStores|SchemaCascade|SchemaDeletionService|SchemaTeardownGuard|SearchMeasurement|SearchPeriod|SearchTrailNameEnricher|SearchTrailService|SearchTrailServiceInterface|SearchTrailStatistics|TableDeletionRun|TableObjectRef|TenantKeyService|TmloService|UnclassifiedProcessing|WholeTableRows)[.]php$'
+          value: 'lib/Service/(AuditCanonicalV1|AuditChainKey|AuditHashService|AuditHashServiceInterface|AuditQueryService|AuditQueryServiceInterface|AuditRechainInterface|AuditRetentionResolver|AuditRetentionResolverInterface|AuditSealInterface|AuthorizationAuditService|AvgComplianceService|AvgRetentionErasureRun|AvgRetentionService|CalculationRun|ComplianceServiceBindings|ComplianceServiceRegistrar|ContentScanService|DsarErasureRun|DsarGuards|DsarService|DsarServiceInterface|DsarStores|DsarSubjectQuery|LogObjectInTable|LogService|ProcessingLogService|ProcessingRead|ReadCaptureRun|RetentionClock|RetentionPass|RetentionRules|RetentionService|RetentionServiceInterface|RetentionStores|SchemaCascade|SchemaDeletionService|SchemaTeardownGuard|SearchPeriod|SearchTrailNameEnricher|SearchTrailService|SearchTrailServiceInterface|SearchTrailStatistics|TableDeletionRun|TableObjectRef|TenantKeyService|TmloService|UnclassifiedProcessing|WholeTableRows)[.]php$'
         - type: directory
           value: 'lib/Service/Anonymisation/[^/]*$'
         - type: directory
@@ -3926,7 +3932,39 @@ deptrac:
         - type: directory
           value: 'lib/Mcp/Attribute/[^/]*$'
         - type: directory
-          value: 'lib/Mcp/BuiltIn/[^/]*$'
+          value: 'lib/Mcp/BuiltIn/AbstractBuiltInToolProvider[.]php$'
+        - type: directory
+          value: 'lib/Mcp/BuiltIn/AttributeToolProvider[.]php$'
+        - type: directory
+          value: 'lib/Mcp/BuiltIn/AuditedInvocation[.]php$'
+        - type: directory
+          value: 'lib/Mcp/BuiltIn/CrudToolSchema[.]php$'
+        - type: directory
+          value: 'lib/Mcp/BuiltIn/DerivedSearchPage[.]php$'
+        - type: directory
+          value: 'lib/Mcp/BuiltIn/DerivedToolCall[.]php$'
+        - type: directory
+          value: 'lib/Mcp/BuiltIn/DerivedToolDefinition[.]php$'
+        - type: directory
+          value: 'lib/Mcp/BuiltIn/IntegrationsToolProvider[.]php$'
+        - type: directory
+          value: 'lib/Mcp/BuiltIn/ObjectsToolProvider[.]php$'
+        - type: directory
+          value: 'lib/Mcp/BuiltIn/RegistersToolProvider[.]php$'
+        - type: directory
+          value: 'lib/Mcp/BuiltIn/SchemaDerivedToolProvider[.]php$'
+        - type: directory
+          value: 'lib/Mcp/BuiltIn/SchemaDerivedToolServices[.]php$'
+        - type: directory
+          value: 'lib/Mcp/BuiltIn/SchemasToolProvider[.]php$'
+        - type: directory
+          value: 'lib/Mcp/BuiltIn/ToolAuditTarget[.]php$'
+        - type: directory
+          value: 'lib/Mcp/BuiltIn/ToolInvocationAudit[.]php$'
+        - type: directory
+          value: 'lib/Mcp/BuiltIn/ToolInvocationDigest[.]php$'
+        - type: directory
+          value: 'lib/Mcp/BuiltIn/ToolInvocationOutcome[.]php$'
         - type: directory
           value: 'lib/Mcp/Command/[^/]*$'
         - type: directory
