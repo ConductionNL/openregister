@@ -64,7 +64,6 @@
   "lib/Service/Object/SaveObject.php -> lib/Search/Service/Quality/DedupCreatePolicyInterface.php",
   "lib/Service/Object/SaveObject.php -> lib/Service/RetentionServiceInterface.php",
   "lib/Service/Object/SearchQueryHandler.php -> lib/Service/Interaction/ReadHistoryService.php",
-  "lib/Service/ObjectService.php -> lib/Service/SchemaDeletionService.php",
   "lib/Service/ObjectSource/ObjectSourceWiring.php -> lib/Service/CalendarEventService.php",
   "lib/Service/ObjectSource/ViewSourceMappers.php -> lib/Search/Db/ViewMapperInterface.php",
   "lib/Service/OrganisationUsageService.php -> lib/Files/Db/FileMapperInterface.php",
@@ -2306,7 +2305,7 @@
  "exposed_loc": {
   "Compliance": 14875,
   "Configuration": 1580,
-  "Core": 63394,
+  "Core": 63399,
   "Files": 1463,
   "Integrations": 17984,
   "Kernel": 8464,
@@ -2776,6 +2775,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10402,
- "total_loc": 461744,
- "violation_degree": 0.011
+ "total_loc": 461749,
+ "violation_degree": 0.0109
 }
