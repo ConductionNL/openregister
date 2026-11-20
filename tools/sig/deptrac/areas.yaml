@@ -86,7 +86,7 @@ deptrac:
               value: 'lib/Support/.*$'
           must_not:
             - type: directory
-              value: 'lib/Kernel/Contracts/(Compliance|Core|Integrations|Notifications|Processes)/.*$'
+              value: 'lib/Kernel/Contracts/(Compliance|Core|Integrations|Notifications|Processes|Search)/.*$'
     - name: Core
       collectors:
         - type: directory
@@ -4165,6 +4165,8 @@ deptrac:
           value: 'lib/Service/TextExtraction/[^/]*$'
     - name: Search
       collectors:
+        - type: directory
+          value: 'lib/Kernel/Contracts/Search/.*$'
         - type: directory
           value: 'lib/Controller/(SettingsController)[.]php$'
         - type: directory

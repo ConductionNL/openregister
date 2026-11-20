@@ -207,14 +207,10 @@
   "lib/Search/Db/View.php -> lib/Mcp/Db/Agent.php",
   "lib/Search/Db/ViewFormatting.php -> lib/Db/Configuration.php",
   "lib/Search/Db/ViewMapper.php -> lib/Db/Configuration.php",
-  "lib/Search/Service/DashboardMappers.php -> lib/Db/WebhookLogMapperInterface.php",
   "lib/Search/Service/DashboardSizes.php -> lib/Db/AuditTrail.php",
   "lib/Search/Service/ExampleSet/ExampleSetViewRowsInterface.php -> lib/Service/ExampleSet/ExampleSetEngineRows.php",
   "lib/Search/Service/ExampleSet/ExampleSetViews.php -> lib/Service/ExampleSet/ExampleSetEngineRows.php",
   "lib/Search/Service/ExampleSet/ExampleSetViews.php -> lib/Service/ExampleSet/ExampleSetRow.php",
-  "lib/Search/Service/MapsOverviewService.php -> lib/Service/AnalyticsSeriesServiceInterface.php",
-  "lib/Search/Service/MapsOverviewService.php -> lib/Service/Integration/PageWidgetRegistryInterface.php",
-  "lib/Search/Service/MapsOverviewSources.php -> lib/Service/Integration/PageWidgetRegistryInterface.php",
   "lib/Search/Service/Quality/NearDuplicateScope.php -> lib/Files/Db/FileMapperInterface.php",
   "lib/Search/Service/Quality/NearDuplicateScope.php -> lib/Files/Service/File/FileReadScope.php",
   "lib/Search/Service/Quality/ObjectTextSimilarity.php -> lib/Files/Db/FileMapperInterface.php",
@@ -789,7 +785,6 @@
   "lib/Db/Verwerkingsactiviteit.php",
   "lib/Db/VerwerkingsactiviteitMapperInterface.php",
   "lib/Db/Webhook.php",
-  "lib/Db/WebhookLogMapperInterface.php",
   "lib/Db/WebhookMapper.php",
   "lib/Db/WebhookMapperInterface.php",
   "lib/Dto/BulkRowCount.php",
@@ -1176,6 +1171,8 @@
   "lib/Kernel/Contracts/ScheduledReportsInterface.php",
   "lib/Kernel/Contracts/SchemaExplorationInterface.php",
   "lib/Kernel/Contracts/SchemaInterface.php",
+  "lib/Kernel/Contracts/Search/PageWidgetDeclarationInterface.php",
+  "lib/Kernel/Contracts/Search/WebhookLogStatisticsInterface.php",
   "lib/Kernel/Contracts/SourceInterface.php",
   "lib/Kernel/Contracts/StructurePreservation.php",
   "lib/Kernel/Contracts/TaggingHandlerInterface.php",
@@ -2063,7 +2060,6 @@
   "lib/Service/Integration/LeafBundles.php",
   "lib/Service/Integration/LeafDescriptor.php",
   "lib/Service/Integration/LeafRegistryInterface.php",
-  "lib/Service/Integration/PageWidgetRegistryInterface.php",
   "lib/Service/Integration/Providers/BrpPersonProvider.php",
   "lib/Service/Integration/Providers/BrpPersonProviderInterface.php",
   "lib/Service/Integration/Providers/MessageDispatcherInterface.php",
@@ -2715,12 +2711,12 @@
   "Configuration": 4651,
   "Core": 64517,
   "Files": 3592,
-  "Integrations": 18324,
+  "Integrations": 18301,
   "Kernel": 8516,
   "Notifications": 1752,
   "Platform": 526,
   "Processes": 31322,
-  "Search": 2006
+  "Search": 2019
  },
  "kernel_files": [
   "lib/BulkAction/BulkActionInterface.php",
@@ -3184,6 +3180,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10454,
- "total_loc": 460459,
- "violation_degree": 0.0528
+ "total_loc": 460473,
+ "violation_degree": 0.0517
 }

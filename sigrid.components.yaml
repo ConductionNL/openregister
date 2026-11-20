@@ -47,7 +47,7 @@ components:
       - ".*/lib/Service/Schemas/PropertyValidatorHandlerInterface[.]php"
       - ".*/lib/Support/.*"
     exclude:
-      - ".*/lib/Kernel/Contracts/(Compliance|Core|Integrations|Notifications|Processes)/.*"
+      - ".*/lib/Kernel/Contracts/(Compliance|Core|Integrations|Notifications|Processes|Search)/.*"
   - name: Core
     include:
       - ".*/lib/Kernel/Contracts/Core/.*"
@@ -2094,6 +2094,7 @@ components:
       - ".*/lib/Service/TextExtraction/[^/]*"
   - name: Search
     include:
+      - ".*/lib/Kernel/Contracts/Search/.*"
       - ".*/lib/Controller/(SettingsController)[.]php"
       - ".*/lib/Controller/Support/HybridSearchDiagnostics[.]php"
       - ".*/lib/Db/(SearchTrailCleanupInterface|SearchTrailCriteria|SearchTrailMapperInterface)[.]php"
