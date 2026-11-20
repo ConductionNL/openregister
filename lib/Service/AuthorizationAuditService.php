@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\SchemaAccessChangeLogInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\RegisterAccessChangeLogInterface;
 
 /**
  * Audit service for authorization configuration changes
@@ -35,7 +36,7 @@ use OCA\OpenRegister\Kernel\Contracts\Core\SchemaAccessChangeLogInterface;
  * Each log entry includes who made the change, what changed, and the
  * old and new values for full audit trail compliance.
  */
-class AuthorizationAuditService implements SchemaAccessChangeLogInterface {
+class AuthorizationAuditService implements RegisterAccessChangeLogInterface, SchemaAccessChangeLogInterface {
 
 	/**
 	 * Log event type for authorization changes.
