@@ -62,4 +62,9 @@ interface ProcessesJobHandlesInterface {
 	 * Source record recompute job.
 	 */
 	public const SOURCE_RECORD_RECOMPUTE = SourceRecordRecomputeJob::class;
+
+	/**
+	 * Translation projection job (TranslationProjectionListener defers it).
+	 */
+	public const TRANSLATION_PROJECTION = TranslationProjectionJob::class;
 }//end interface

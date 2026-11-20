@@ -1,6 +1,5 @@
 {
  "against_order": [
-  "lib/BackgroundJob/QueuedJobClassesInterface.php -> lib/BackgroundJob/TranslationProjectionJob.php",
   "lib/Controller/ActionRightsController.php -> lib/Service/Flow/FlowNodeRightsGuardInterface.php",
   "lib/Controller/ActionRightsController.php -> lib/Service/Flow/IFlowNodeRequiresRight.php",
   "lib/Controller/ActionRightsController.php -> lib/Settings/OpenRegisterAdmin.php",
@@ -90,13 +89,11 @@
   "lib/BackgroundJob/ConfiguredJobRuntime.php",
   "lib/BackgroundJob/JobRuntime.php",
   "lib/BackgroundJob/ProcessesJobHandlesInterface.php",
-  "lib/BackgroundJob/QueuedJobClassesInterface.php",
   "lib/BackgroundJob/RecordedJobRuntime.php",
   "lib/BackgroundJob/RecordedQueuedJob.php",
   "lib/BackgroundJob/RecordsItsRuns.php",
   "lib/BackgroundJob/Support/ActorForwardingServices.php",
   "lib/BackgroundJob/Support/BackfillCalendarLinksPlatform.php",
-  "lib/BackgroundJob/TranslationProjectionJob.php",
   "lib/BulkAction/BulkActionInterface.php",
   "lib/BulkAction/BulkActionRegistrar.php",
   "lib/BulkAction/BulkActionResult.php",
@@ -2288,13 +2285,13 @@
  "exposed_loc": {
   "Compliance": 14778,
   "Configuration": 1444,
-  "Core": 63673,
+  "Core": 63667,
   "Files": 1458,
   "Integrations": 17724,
   "Kernel": 8464,
   "Notifications": 2057,
   "Platform": 61,
-  "Processes": 27328,
+  "Processes": 27288,
   "Search": 2028
  },
  "kernel_files": [
@@ -2758,6 +2755,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10402,
- "total_loc": 461844,
- "violation_degree": 0.0091
+ "total_loc": 461839,
+ "violation_degree": 0.009
 }

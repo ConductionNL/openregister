@@ -3602,7 +3602,6 @@ BackgroundJob/FlowRunWorkerServices.php,,BackgroundJob,,,,,Processes
 BackgroundJob/JobHandles.php,,BackgroundJob,,,,,Core
 BackgroundJob/JobRuntime.php,,BackgroundJob,,,,,Core
 BackgroundJob/ProcessingLogPrune.php,,BackgroundJob,,,,,Compliance
-BackgroundJob/QueuedJobClassesInterface.php,,BackgroundJob,,,,,Core
 BackgroundJob/RecomputeTimersForCalendarJobServices.php,,BackgroundJob,,,,,Processes
 BackgroundJob/RecordedJobRuntime.php,,BackgroundJob,,,,,Core
 BackgroundJob/TransferAttemptRun.php,,BackgroundJob,,,,,Compliance
