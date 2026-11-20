@@ -1,6 +1,5 @@
 {
  "against_order": [
-  "lib/BackgroundJob/DbalIntrospectionJob.php -> lib/Db/Source.php",
   "lib/BackgroundJob/QueuedJobClassesInterface.php -> lib/BackgroundJob/TranslationProjectionJob.php",
   "lib/Controller/ActionRightsController.php -> lib/Service/Flow/FlowNodeRightsGuardInterface.php",
   "lib/Controller/ActionRightsController.php -> lib/Service/Flow/IFlowNodeRequiresRight.php",
@@ -18,11 +17,9 @@
   "lib/Controller/RegistersController.php -> lib/Service/AuthorizationAuditService.php",
   "lib/Controller/RegistersController.php -> lib/Service/Configuration/ConfigurationCollaborators.php",
   "lib/Controller/RegistersController.php -> lib/Service/Lifecycle/KeepLifecycleStatesScope.php",
-  "lib/Controller/RulesController.php -> lib/Settings/OpenRegisterAdmin.php",
   "lib/Controller/SchemasController.php -> lib/Service/AuthorizationAuditService.php",
   "lib/Controller/SchemasController.php -> lib/Service/Task/ApprovalPositionFormGuard.php",
   "lib/Controller/SettingsController.php -> lib/Service/Settings/SearchBackendHandler.php",
-  "lib/Controller/Support/ConflictTrail.php -> lib/Db/AuditTrail.php",
   "lib/Controller/Support/DsarCaseCases.php -> lib/Service/Lifecycle/TransitionEngine.php",
   "lib/Controller/Support/GeoServices.php -> lib/Search/Service/Geo/GeoFeatureCollectionBuilderInterface.php",
   "lib/Controller/Support/ObjectReadStateControllerServices.php -> lib/Service/Interaction/ReadStateServiceInterface.php",
@@ -2469,7 +2466,7 @@
  "exposed_loc": {
   "Compliance": 15375,
   "Configuration": 3134,
-  "Core": 64119,
+  "Core": 64120,
   "Files": 2667,
   "Integrations": 18152,
   "Kernel": 8506,
@@ -2941,6 +2938,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10457,
- "total_loc": 461237,
- "violation_degree": 0.0263
+ "total_loc": 461238,
+ "violation_degree": 0.0259
 }
