@@ -12,14 +12,14 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
 use OCA\OpenRegister\Kernel\Contracts\Core\ObjectQuotaInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\UnreadCountsInterface;
+use OCA\OpenRegister\Service\Interaction\UnreadCountCalculator;
 use OCA\OpenRegister\Service\Quota\ObjectQuotaService;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
 use OCA\OpenRegister\Kernel\Contracts\Compliance\TransitionInFlightInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\CurrentFlowRunInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionDefaultsInterface;
-use OCA\OpenRegister\Kernel\Contracts\Core\UnreadCountsInterface;
-use OCA\OpenRegister\Service\Interaction\ReadStateService;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionEvaluatorInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\WriteElevationInterface;
@@ -280,16 +280,6 @@ final class FlowWiringTest extends TestCase {
 	}//end testTheExpressionDefaultsPortIsAnsweredByTheRulesEngine()
 
 	/**
-	 * The Core unread-counts port is answered by the read state service.
-	 *
-	 * @return void
-	 */
-	public function testTheUnreadCountsPortIsAnsweredByTheReadStateService(): void {
-		self::assertSame(expected: ReadStateService::class, actual: ($this->aliases[UnreadCountsInterface::class] ?? null));
-		self::assertTrue(condition: is_a(ReadStateService::class, UnreadCountsInterface::class, true));
-	}//end testTheUnreadCountsPortIsAnsweredByTheReadStateService()
-
-	/**
 	 * The schedule flow store, the current-run port, the expression-defaults port, the area's own interfaces and the lifecycle transition port are bound, and only these aliases are registered.
 	 * The schedule flow store, the current-run port, the audit trail's transition-in-flight port, the expression-defaults port and the area's own interfaces are bound, and only these aliases are registered.
 	 * The schedule flow store, the current-run port, the write elevation, the expression-defaults port and the area's own interfaces are bound, and only these aliases are registered.
@@ -332,7 +322,7 @@ final class FlowWiringTest extends TestCase {
 				LifecycleTransitionInterface::class        => TransitionEngine::class,
 				ExpressionDefaultsInterface::class         => ExpressionDefaults::class,
 				ObjectQuotaInterface::class                => ObjectQuotaService::class,
-				UnreadCountsInterface::class               => ReadStateService::class,
+				UnreadCountsInterface::class               => UnreadCountCalculator::class,
 			],
 			actual: $this->aliases
 		);

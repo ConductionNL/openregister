@@ -16,8 +16,9 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\History\StateHistoryProjector;
 use OCA\OpenRegister\Kernel\Contracts\Core\CurrentFlowRunInterface;
-use OCA\OpenRegister\Kernel\Contracts\Core\UnreadCountsInterface;
 use OCA\OpenRegister\Service\Audit\PurposeRefusedException;
+use OCA\OpenRegister\Service\Interaction\ReadStateService;
+use OCA\OpenRegister\Service\Interaction\ReadStateServiceInterface;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
 use OCP\AppFramework\Controller;
@@ -143,18 +144,16 @@ class ObjectsControllerSmallUnitsGoldenTest extends TestCase {
 	#[DataProvider('unreadCases')]
 	public function testUnreadCountsMatchTheRecording(?string $caller, ?array $counts): void {
 		$object = $this->createMock(ObjectEntity::class);
-		// The port answers nothing for an anonymous caller (ReadStateServiceGuardsTest pins that on the service).
-		$readState = $this->createMock(UnreadCountsInterface::class);
-		$readState->method('unreadCounts')->with($object)->willReturnCallback(
-			static fn (): array => match (true) {
-				$caller === null => [],
-				$counts === null => throw new RuntimeException('no read state'),
-				default => $counts,
-			}
-		);
+		$readState = $this->createMock(ReadStateService::class);
+		$readState->method('callerUid')->willReturn($caller);
+		if ($counts === null) {
+			$readState->method('unreadCounts')->willThrowException(new RuntimeException('no read state'));
+		} else {
+			$readState->method('unreadCounts')->with($object)->willReturn($counts);
+		}
 
 		$container = $this->createMock(ContainerInterface::class);
-		$container->method('get')->with(UnreadCountsInterface::class)->willReturn($readState);
+		$container->method('get')->with(ReadStateServiceInterface::class)->willReturn($readState);
 		$controller = $this->controller();
 		$this->set($controller, 'container', $container);
 

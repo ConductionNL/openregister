@@ -25,16 +25,14 @@ namespace OCA\OpenRegister\Service\Interaction;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectReadState;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
-use OCA\OpenRegister\Kernel\Contracts\Core\UnreadCountsInterface;
 
 /**
  * The per-user read state of objects: mark, read back, count, invalidate and clean up.
  *
  * Declares only what callers outside the component use; the rest of the
- * class stays its own. `unreadCounts()` comes from the Core contract
- * UnreadCountsInterface, which the object API asks for the unread badge.
+ * class stays its own.
  */
-interface ReadStateServiceInterface extends UnreadCountsInterface {
+interface ReadStateServiceInterface {
 
 	/**
 	 * The calling user's uid.
@@ -95,6 +93,22 @@ interface ReadStateServiceInterface extends UnreadCountsInterface {
 	 * @spec openspec/specs/object-read-state/spec.md#requirement-an-object-carries-a-read-state-per-user-req-ors-001
 	 */
 	public function readStateFor(ObjectEntity $object, ?string $userId = null): ?ObjectReadState;
+
+	/**
+	 * How many entries of each sub-resource are unread for the calling user.
+	 *
+	 * One map, from one read state row plus the object's own body, so a page
+	 * renders every tab badge without a call per tab. A sub-resource the schema
+	 * does not declare is absent from the map rather than zero, because "no
+	 * badge" and "a badge reading nought" are different claims.
+	 *
+	 * @param ObjectEntity $object The object being rendered.
+	 *
+	 * @return array<string, int> Sub-resource name to its unread count.
+	 *
+	 * @spec openspec/specs/object-read-state/spec.md#requirement-unread-is-a-filter-and-a-badge-resolved-in-the-query-req-ors-002
+	 */
+	public function unreadCounts(ObjectEntity $object): array;
 
 	/**
 	 * A write happened: everybody but the actor has something new to see.

@@ -1,6 +1,6 @@
 <?php
 /**
- * UnreadCountsInterface: what the signed-in caller has not yet seen of an object.
+ * UnreadCountsInterface: how many entries of each sub-resource one reader has not seen.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -20,31 +20,29 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Kernel\Contracts\Core;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\ObjectReadState;
 
 /**
- * The unread badge the object API (Core) puts on a single-object read (`@self.unreadCounts`).
+ * The unread count per sub-resource of an object, as the read state (Core) asks it for the tab badges.
  *
- * Processes keeps the per-user read state and answers this contract; its
- * ReadStateServiceInterface extends it and its own wiring binds it.
+ * Core asks; the counter that knows an object's declared sub-resources
+ * (Processes) answers and binds itself outside Core.
  *
- * @spec openspec/specs/object-read-state/spec.md#requirement-unread-is-a-filter-and-a-badge-resolved-in-the-query-req-ors-002
+ * @spec openspec/specs/object-read-state/spec.md
  */
 interface UnreadCountsInterface {
 
 	/**
-	 * How many entries of each sub-resource are unread for the calling user.
+	 * How many entries of each sub-resource are unread for one reader.
 	 *
-	 * One map, from one read state row plus the object's own body, so a page
-	 * renders every tab badge without a call per tab. A sub-resource the schema
-	 * does not declare is absent from the map rather than zero, because "no
-	 * badge" and "a badge reading nought" are different claims. An anonymous
-	 * caller, or an object without a uuid, has nothing unread: the map is empty.
+	 * A sub-resource the schema does not declare is absent from the map rather than zero.
 	 *
-	 * @param ObjectEntity $object The object being read.
+	 * @param ObjectEntity         $object The object being rendered.
+	 * @param ObjectReadState|null $state  The reader's row, or null when never seen.
 	 *
 	 * @return array<string, int> Sub-resource name to its unread count.
 	 *
 	 * @spec openspec/specs/object-read-state/spec.md#requirement-unread-is-a-filter-and-a-badge-resolved-in-the-query-req-ors-002
 	 */
-	public function unreadCounts(ObjectEntity $object): array;
+	public function countsFor(ObjectEntity $object, ?ObjectReadState $state): array;
 }//end interface
