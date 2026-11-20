@@ -29,11 +29,7 @@ use OCA\OpenRegister\Db\SchemaMapper\SchemaDeclarationOrder;
 use OCA\OpenRegister\Db\SchemaMapper\SchemaMapperServices;
 use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 use OCA\OpenRegister\Exception\UniqueHintException;
-use OCA\OpenRegister\Listener\ArchivalDeclarationChecksListener;
-use OCA\OpenRegister\Listener\HandoffDeclarationChecksListener;
-use OCA\OpenRegister\Listener\SchemaDeclarationChecksListener;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationDeclarationException;
-use OCA\OpenRegister\Notifications\Listener\NotificationDeclarationCheckListener;
 use OCA\OpenRegister\Service\Calculation\CalculationDeclarationException;
 use OCA\OpenRegister\Service\Consent\ConsentDeclarationException;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
@@ -93,11 +89,9 @@ final class SchemaDeclarationOrderTest extends TestCase {
 
 		$event = new SchemaDeclarationChecksEvent();
 		$container = $this->createMock(originalClassName: ContainerInterface::class);
-		$listener  = new SchemaDeclarationChecksListener(logger: new NullLogger(), container: $container);
-		$listener->handle(event: $event);
-		(new ArchivalDeclarationChecksListener(logger: new NullLogger()))->handle(event: $event);
-		(new HandoffDeclarationChecksListener())->handle(event: $event);
-		(new NotificationDeclarationCheckListener(logger: new NullLogger()))->handle(event: $event);
+		foreach (ProcessDeclarationChecksDispatcher::listeners(logger: new NullLogger(), container: $container) as $listener) {
+			$listener->handle(event: $event);
+		}
 		$contributed = array_map(static fn ($check): int => $check->position(), $event->checks());
 
 		$this->assertSame(expected: [], actual: array_intersect($own, $contributed), message: 'No slot is claimed twice');
@@ -155,6 +149,65 @@ final class SchemaDeclarationOrderTest extends TestCase {
 
 		$this->assertInstanceOf(expected: $refusal, actual: $thrown);
 	}//end testTheFirstFaultInSlotOrderRefusesTheSave()
+
+	/**
+	 * Schema-level faults across the areas that contribute data checks, and the refusal each gets.
+	 *
+	 * @return array<string, array{array<string, mixed>, class-string, string}>
+	 */
+	public static function severalDeclarationFaults(): array {
+		$card   = ['x-openregister-card' => ['titleProperty' => 'absent']];
+		$result = ['x-openregister-search-result' => ['titleProperty' => 'absent']];
+		return [
+			'unique hint (Search) before reference card (Configuration)' => [
+				['x-openregister-unique-hint' => ['absent']] + $card,
+				UniqueHintException::class,
+				'x-openregister-unique-hint',
+			],
+			'reference card (Configuration) before search result (Core)' => [
+				$card + $result,
+				Exception::class,
+				'x-openregister-card',
+			],
+			'search result (Core) before retention (Compliance)' => [
+				$result + ['x-openregister-retention' => ['inheritAppraisalFrom' => ['title']]],
+				Exception::class,
+				'x-openregister-search-result',
+			],
+			'retention (Compliance) alone' => [
+				['x-openregister-retention' => ['inheritAppraisalFrom' => ['title']]],
+				Exception::class,
+				'x-openregister-retention',
+			],
+		];
+	}//end severalDeclarationFaults()
+
+	/**
+	 * The refusal a schema with several declaration faults gets.
+	 *
+	 * @param array<string, mixed> $configuration The faulty declarations.
+	 * @param class-string         $refusal       The refusal it gets.
+	 * @param string               $names         What the refusal message starts with.
+	 *
+	 * @return void
+	 */
+	#[\PHPUnit\Framework\Attributes\DataProvider('severalDeclarationFaults')]
+	public function testTheFirstDeclarationFaultInSlotOrderRefusesTheSave(array $configuration, string $refusal, string $names): void {
+		$schema = new Schema();
+		$schema->setSlug('faults');
+		$schema->setProperties(['title' => ['type' => 'string']]);
+		$schema->setConfiguration($configuration);
+
+		$thrown = null;
+		try {
+			(new ReflectionMethod(SchemaMapper::class, 'cleanObject'))->invoke($this->mapper(), $schema);
+		} catch (Throwable $e) {
+			$thrown = $e;
+		}
+
+		$this->assertInstanceOf(expected: $refusal, actual: $thrown);
+		$this->assertStringStartsWith(prefix: $names, string: $thrown->getMessage());
+	}//end testTheFirstDeclarationFaultInSlotOrderRefusesTheSave()
 
 	/**
 	 * A schema whose configuration has several faults is refused for the first in slot order.
