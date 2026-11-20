@@ -108,8 +108,7 @@ final class ObjectsControllerFactory {
 				),
 				extensions: new \OCA\OpenRegister\Controller\Support\ObjectsExtensions(
 					geo: new \OCA\OpenRegister\Controller\Support\GeoServices(
-						geoFilterParser: $geoFilterParser,
-						geoFilterApplier: $geoFilterApplier,
+						spatialFilter: ($geoFilterParser !== null && $geoFilterApplier !== null) ? new \OCA\OpenRegister\Search\Service\Geo\SpatialFilter(parser: $geoFilterParser, applier: $geoFilterApplier) : null,
 						geoFeatureBuilder: $geoFeatureBuilder,
 						pdokGeocoder: $pdokGeocoder,
 					),
