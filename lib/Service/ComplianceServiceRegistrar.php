@@ -27,7 +27,8 @@ use OCP\AppFramework\Bootstrap\IRegistrationContext;
 
 /**
  * Binds the interfaces of the Compliance area's services that a lower area
- * owns: the inbound-authentication ceiling Core's SecurityService reads.
+ * owns: the inbound-authentication ceiling Core's SecurityService reads and
+ * the archival retention guard the referential-integrity cascade asks.
  *
  * Application names this class only; the map lives in
  * ComplianceServiceBindings, inside the area.
