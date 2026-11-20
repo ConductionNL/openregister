@@ -24,7 +24,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectReadState;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Interaction\ReadStateService;
-use OCA\OpenRegister\Notifications\Service\Notification\NotificationClearingService;
+use OCA\OpenRegister\Kernel\Contracts\Core\ReadNoticeClearingInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Http;
 use OCP\IRequest;
@@ -49,9 +49,9 @@ class ObjectReadStateControllerTest extends TestCase {
 	/**
 	 * The bell, mocked.
 	 *
-	 * @var NotificationClearingService
+	 * @var ReadNoticeClearingInterface
 	 */
-	private NotificationClearingService $clearing;
+	private ReadNoticeClearingInterface $clearing;
 
 	/**
 	 * The request, mocked.
@@ -67,7 +67,7 @@ class ObjectReadStateControllerTest extends TestCase {
 	 */
 	protected function setUp(): void {
 		$this->readState = $this->createMock(originalClassName: ReadStateService::class);
-		$this->clearing = $this->createMock(originalClassName: NotificationClearingService::class);
+		$this->clearing = $this->createMock(originalClassName: ReadNoticeClearingInterface::class);
 		$this->request = $this->createMock(originalClassName: IRequest::class);
 
 	}//end setUp()

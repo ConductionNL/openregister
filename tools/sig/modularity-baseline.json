@@ -95,7 +95,6 @@
   "lib/Controller/Support/GeoServices.php -> lib/Search/Service/Geo/GeoFilterParserInterface.php",
   "lib/Controller/Support/HybridSearchDiagnostics.php -> lib/Search/Service/Vectorization/Handlers/VectorSidecarTableInterface.php",
   "lib/Controller/Support/ObjectGovernanceServices.php -> lib/Service/Audit/PurposeGuardInterface.php",
-  "lib/Controller/Support/ObjectReadStateControllerServices.php -> lib/Notifications/Service/Notification/NotificationClearingServiceInterface.php",
   "lib/Controller/Support/ObjectReadStateControllerServices.php -> lib/Service/Interaction/ReadStateServiceInterface.php",
   "lib/Controller/Support/ObjectRelationsGraph.php -> lib/Service/Export/ExportGateInterface.php",
   "lib/Controller/Support/ObjectRelationsGuards.php -> lib/Service/Audit/PurposeGuardInterface.php",
@@ -1229,6 +1228,7 @@
   "lib/Kernel/Contracts/Core/ObjectTimelineLinksInterface.php",
   "lib/Kernel/Contracts/Core/PreviewDimensionsInterface.php",
   "lib/Kernel/Contracts/Core/PublicationRefusalInterface.php",
+  "lib/Kernel/Contracts/Core/ReadNoticeClearingInterface.php",
   "lib/Kernel/Contracts/Core/ReadPurposeGuardInterface.php",
   "lib/Kernel/Contracts/Core/ReadPurposeRefusalInterface.php",
   "lib/Kernel/Contracts/Core/RegisterFolderRecordsInterface.php",
@@ -2845,11 +2845,11 @@
  "exposed_loc": {
   "Compliance": 15860,
   "Configuration": 5799,
-  "Core": 64787,
+  "Core": 64794,
   "Files": 3640,
   "Integrations": 18305,
   "Kernel": 8482,
-  "Notifications": 1921,
+  "Notifications": 1920,
   "Platform": 733,
   "Processes": 31783,
   "Search": 2026
@@ -3311,6 +3311,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10407,
- "total_loc": 460052,
- "violation_degree": 0.066
+ "total_loc": 460060,
+ "violation_degree": 0.0659
 }
