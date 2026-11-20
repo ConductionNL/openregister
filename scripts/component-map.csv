@@ -1853,6 +1853,7 @@ Service/Archival/RecordState.php,44,Service,Compliance,Compliance/Service/Archiv
 Service/Archival/ReferencingSchema.php,13,Service,Compliance,Compliance/Service/Archival/ReferencingSchema.php,0,,Compliance
 Service/Archival/RetentionConditionEvaluator.php,63,Service,Compliance,Compliance/Service/Archival/RetentionConditionEvaluator.php,0,,Compliance
 Service/Archival/RetentionEvaluator.php,130,Service,Compliance,Compliance/Service/Archival/RetentionEvaluator.php,0,216,Compliance
+Service/Archival/RecordArchivalReading.php,,Service,,,,,Compliance
 Service/Archival/RetentionRowScanner.php,212,Service,Compliance,Compliance/Service/Archival/RetentionRowScanner.php,0,,Compliance
 Service/Archival/ReviewOutcomeService.php,110,Service,Compliance,Compliance/Service/Archival/ReviewOutcomeService.php,0,,Compliance
 Service/Archival/SelectielijstImportService.php,251,Service,Compliance,Compliance/Service/Archival/SelectielijstImportService.php,0,,Compliance
