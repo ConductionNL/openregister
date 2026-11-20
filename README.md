@@ -13,6 +13,7 @@
   <a href="https://github.com/ConductionNL/openregister/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-EUPL--1.2-blue" alt="License"></a>
   <a href="https://github.com/ConductionNL/openregister/actions"><img src="https://img.shields.io/github/actions/workflow/status/ConductionNL/openregister/code-quality.yml?label=quality" alt="Code quality"></a>
   <a href="https://openregisters.app"><img src="https://img.shields.io/badge/docs-openregisters.app-green" alt="Documentation"></a>
+  <a href="https://www.bestpractices.dev/projects/PROJECT_ID"><img src="https://www.bestpractices.dev/projects/PROJECT_ID/badge" alt="OpenSSF Best Practices"></a>
 </p>
 
 ---
