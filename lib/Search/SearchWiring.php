@@ -26,6 +26,7 @@ use OCA\OpenRegister\Db\SchemaMapper\SchemaDeclarationChecksEvent;
 use OCA\OpenRegister\Listener\UniqueHintDeclarationCheckListener;
 use OCA\OpenRegister\Search\Db\ViewMapper;
 use OCA\OpenRegister\Kernel\Contracts\Core\ViewFinderInterface;
+use OCA\OpenRegister\Search\Listener\AggregationDeclarationCheckListener;
 use OCA\OpenRegister\Kernel\Contracts\EmbeddingGeneratorInterface;
 use OCA\OpenRegister\Kernel\Contracts\MetricsRetentionInterface;
 use OCA\OpenRegister\Search\Db\ViewMapperInterface;
@@ -112,7 +113,7 @@ final class SearchWiring {
 	];
 
 	/**
-	 * Register the Search component's services.
+	 * Register the Search component's services and its schema-save listener.
 	 *
 	 * @param IRegistrationContext $context The registration context.
 	 *
@@ -126,6 +127,10 @@ final class SearchWiring {
 		foreach (self::BINDINGS as $contract => $service) {
 			$context->registerServiceAlias($contract, $service);
 		}
+
+		// The aggregations declaration check runs inside the schema save, in the
+		// AGGREGATIONS slot of SchemaDeclarationOrder the mapper keeps for it.
+		$context->registerEventListener(SchemaDeclarationChecksEvent::class, AggregationDeclarationCheckListener::class);
 
 		// The unique-hint declaration check runs inside the schema save, in its slot of SchemaDeclarationOrder.
 		$context->registerEventListener(SchemaDeclarationChecksEvent::class, UniqueHintDeclarationCheckListener::class);
