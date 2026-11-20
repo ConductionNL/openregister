@@ -1355,7 +1355,7 @@ Listener/ReadStateInvalidationListener.php,42,Listener,Work,Work/Listener/ReadSt
 Listener/ReadStatePruneListener.php,34,Listener,Flows,Flows/Listener/ReadStatePruneListener.php,0,,Processes
 Listener/ReferencedCalculationListener.php,26,Listener,Flows,Flows/Listener/ReferencedCalculationListener.php,0,,Processes
 Listener/Registrar/AccessListenerRegistrar.php,12,Listener,Access,Access/Listener/Registrar/AccessListenerRegistrar.php,0,,Processes
-Listener/Registrar/ConfigurationListenerRegistrar.php,12,Listener,Configuration,Configuration/Listener/Registrar/ConfigurationListenerRegistrar.php,0,,Processes
+Listener/Registrar/ConfigurationListenerRegistrar.php,12,Listener,Configuration,Configuration/Listener/Registrar/ConfigurationListenerRegistrar.php,0,,Configuration
 Listener/Registrar/FlowsListenerRegistrar.php,121,Listener,Flows,Flows/Listener/Registrar/FlowsListenerRegistrar.php,0,,Processes
 Listener/Registrar/WorkListenerRegistrar.php,16,Listener,Work,Work/Listener/Registrar/WorkListenerRegistrar.php,0,,Processes
 Listener/RelatedRetentionRecalculationListener.php,57,Listener,Compliance,Compliance/Listener/RelatedRetentionRecalculationListener.php,0,355,Compliance
@@ -2275,6 +2275,7 @@ Service/File/MalwareScanRefusal.php,47,Service,Service,Service/File/MalwareScanR
 Service/File/ManagedFileOwnerLookup.php,33,Service,Service,Service/File/ManagedFileOwnerLookup.php,0,434,Core
 Service/File/ObjectFileFinder.php,135,Service,Service,Service/File/ObjectFileFinder.php,0,,Files
 Service/File/ObjectFileLookup.php,17,Service,Service,Service/File/ObjectFileLookup.php,0,,Files
+Service/File/ObjectFilesArchive.php,,Service,,,,,Files
 Service/File/PublishedDigestService.php,,Service,,,,,Files
 Service/File/ReadFileHandler.php,148,Service,Service,Service/File/ReadFileHandler.php,0,181,Files
 Service/File/UpdateFileHandler.php,365,Service,Service,Service/File/UpdateFileHandler.php,0,58,Files

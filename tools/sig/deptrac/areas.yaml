@@ -2638,7 +2638,11 @@ deptrac:
         - type: directory
           value: 'lib/Listener/FlowNodes/[^/]*$'
         - type: directory
-          value: 'lib/Listener/Registrar/[^/]*$'
+          value: 'lib/Listener/Registrar/AccessListenerRegistrar[.]php$'
+        - type: directory
+          value: 'lib/Listener/Registrar/FlowsListenerRegistrar[.]php$'
+        - type: directory
+          value: 'lib/Listener/Registrar/WorkListenerRegistrar[.]php$'
         - type: directory
           value: 'lib/Listener/Support/ApprovalChainSequences[.]php$'
         - type: directory
@@ -3543,6 +3547,8 @@ deptrac:
           value: 'lib/Db/JobRun/[^/]*$'
         - type: directory
           value: 'lib/Listener/(RedactionPolicyCacheListener|ReferenceCardDeclarationCheckListener|ShareableConfigTypeRegistrationListener)[.]php$'
+        - type: directory
+          value: 'lib/Listener/Registrar/ConfigurationListenerRegistrar[.]php$'
         - type: directory
           value: 'lib/Notifications/Service/ExampleSet/[^/]*$'
         - type: directory
@@ -4877,6 +4883,8 @@ deptrac:
           value: 'lib/Service/File/ObjectFileFinder[.]php$'
         - type: directory
           value: 'lib/Service/File/ObjectFileLookup[.]php$'
+        - type: directory
+          value: 'lib/Service/File/ObjectFilesArchive[.]php$'
         - type: directory
           value: 'lib/Service/File/OcrWordLocator[.]php$'
         - type: directory

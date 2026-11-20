@@ -38,7 +38,6 @@ use OCA\OpenRegister\Controller\Support\ObjectCreateControls;
 use OCA\OpenRegister\Controller\Support\ObjectReadOptions;
 use OCA\OpenRegister\Controller\Support\ObjectRequestParams;
 use OCA\OpenRegister\Controller\Support\ObjectShow;
-use OCA\OpenRegister\Files\Service\File\BulkDownloadArchive;
 use OCA\OpenRegister\Controller\Support\LinkedDataServices;
 use OCA\OpenRegister\Controller\Support\RelationUrlStamper;
 use OCA\OpenRegister\Controller\Support\GeoServices;
@@ -85,7 +84,6 @@ use OCA\OpenRegister\Exception\SearchTermSyntaxException;
 use OCA\OpenRegister\Exception\TranslationTargetConflictException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
-use OCA\OpenRegister\Service\FileServiceInterface;
 use OCA\OpenRegister\Service\Hinge\InheritedGeoCollectorInterface;
 use OCA\OpenRegister\Service\Hinge\ReferencedByServiceInterface;
 use OCA\OpenRegister\Service\Object\MoveAddress;
@@ -107,6 +105,7 @@ use OCA\OpenRegister\Search\Service\Geo\GetFeatureRequest;
 use OCA\OpenRegister\Service\Geo\GeocodeOptions;
 use OCA\OpenRegister\Service\Object\PaginationLinks;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectFilesArchiveInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\CurrentFlowRunInterface;
 use OCA\OpenRegister\Service\Interaction\ReadStateServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ReadableObjectHistoryInterface;
@@ -6380,7 +6379,7 @@ class ObjectsController extends Controller {
 	 * @return DataDownloadResponse|JSONResponse Download response or error.
 	 *
 	 * @throws ContainerExceptionInterface If there's an issue with dependency injection.
-	 * @throws NotFoundExceptionInterface If the FileService dependency is not found.
+	 * @throws NotFoundExceptionInterface If the file archive dependency is not found.
 	 *
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
@@ -6401,18 +6400,14 @@ class ObjectsController extends Controller {
 			// Get the object to ensure it exists and we have access.
 			$object = WriteCause::asLookup(fn () => $objectService->find(id: $id));
 
-			/*
-			 * Get the FileService from the container.
-			 * @var FileServiceInterface $fileService
-			 */
-
-			$fileService = $this->container->get(FileServiceInterface::class);
+			// File storage builds the archive.
+			$archive = $this->container->get(ObjectFilesArchiveInterface::class);
 
 			// Optional: get custom filename from query parameters.
 			$customFilename = $this->request->getParam(key: 'filename');
 
 			// Create the ZIP archive.
-			$zipInfo = $fileService->createObjectFilesZip(object: $object, zipName: $customFilename);
+			$zipInfo = $archive->createZip(object: $object, zipName: $customFilename);
 
 			$zipContent = self::takeZipContent(path: $zipInfo['path']);
 
@@ -6477,17 +6472,7 @@ class ObjectsController extends Controller {
 	 */
 	private function auditBulkDownload(ObjectEntity $object, array $zipInfo): void {
 		try {
-			$fileService = $this->container->get(FileServiceInterface::class);
-			$files = $fileService->getFiles($object);
-			$fileService->getAuditHandler()->logBulkDownload(
-				object: $object,
-				archive: new BulkDownloadArchive(
-					fileIds: array_map(static fn ($file) => $file->getId(), $files),
-					fileNames: array_map(static fn ($file) => $file->getName(), $files),
-					zipName: $zipInfo['filename'],
-					totalBytes: $zipInfo['size'] ?? null
-				)
-			);
+			$this->container->get(ObjectFilesArchiveInterface::class)->recordDownload(object: $object, zipInfo: $zipInfo);
 		} catch (\Throwable $auditError) {
 			// The audit trail must never break the download response.
 			$this->logger->warning(
