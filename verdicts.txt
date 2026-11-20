@@ -3402,3 +3402,4 @@
 10740 a200bd7ec12f2d55f6441ad791f6771dfa65bef0 APPROVE integrator IL14: landing approved by Ruben 20 Nov; diff read, CI/build/metadata only, no app code
 10949 c5d7cafad38c81b0fe1bf652be50cb0b44ab5a2e APPROVE coordinator: Ruben approved landing in the main session 20 Nov (one-line test type fix; 9 federation test classes pass)
 10944 d4f93f2c4ac9699945aa4584eb55d17cf4bae4e2 APPROVE coordinator: Ruben approved landing 20 Nov (fast-check property tests + byte-label fix; dev-only lock change, SBOM current)
+10005 1d7a042e522a74d95a1715d852c4952bcdd16c81 BLOCK composer install from the lock fails: psalm 7.3.0 requires php-64bit ~8.3.16 but composer.json config.platform pins php 8.3 (=8.3.0); raise the platform pin or keep psalm 5 (cloud-or-reviewer)
