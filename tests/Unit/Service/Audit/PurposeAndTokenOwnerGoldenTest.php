@@ -36,6 +36,7 @@ use OCA\OpenRegister\Service\Audit\PurposeContext;
 use OCA\OpenRegister\Service\Audit\PurposeGuard;
 use OCA\OpenRegister\Service\Audit\PurposeRegistry;
 use OCA\OpenRegister\Service\Audit\TokenResolver;
+use OCA\OpenRegister\Service\Consumer\AccountConsumerLookup;
 use OCP\Authentication\Token\IProvider as ITokenProvider;
 use OCP\Authentication\Token\IToken;
 use OCP\IRequest;
@@ -102,7 +103,7 @@ final class PurposeAndTokenOwnerGoldenTest extends TestCase {
 			$mapper->method('findAll')->willReturn($consumers);
 		}
 
-		return new TokenResolver($session, $provider, $userSession, $mapper);
+		return new TokenResolver($session, $provider, $userSession, new AccountConsumerLookup($mapper));
 	}
 
 	private function user(string $uid, string $displayName): IUser {
