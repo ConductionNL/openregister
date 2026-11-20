@@ -53,8 +53,7 @@ use OCA\OpenRegister\Notifications\Listener\NotificationDedupeAnnotationSyncList
 use OCA\OpenRegister\Notifications\Listener\NotificationDedupePruneListener;
 use OCA\OpenRegister\Notifications\Listener\NotificationDeclarationCheckListener;
 use OCA\OpenRegister\Notifications\Listener\SystemEntityNotificationListener;
-use OCA\OpenRegister\Search\Listener\AggregationThresholdListener;
-use OCA\OpenRegister\Search\Listener\ObjectMetricsListener;
+use OCA\OpenRegister\Search\Listener\Registrar\SearchListenerRegistrar;
 use OCA\OpenRegister\Service\ApprovalChainAnnotationInstaller;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 
@@ -653,9 +652,7 @@ final class ListenerRegistrar {
 		// create/update/delete into `openregister_metrics`, which the canonical
 		// production-observability spec requires for counters that survive PHP
 		// request boundaries. Fail-soft: never aborts the write it observes.
-		$context->registerEventListener(ObjectCreatedEvent::class, ObjectMetricsListener::class);
-		$context->registerEventListener(ObjectUpdatedEvent::class, ObjectMetricsListener::class);
-		$context->registerEventListener(ObjectDeletedEvent::class, ObjectMetricsListener::class);
+		SearchListenerRegistrar::metrics(context: $context);
 	}//end registerSchemaChangeListeners()
 
 	/**
@@ -847,10 +844,7 @@ final class ListenerRegistrar {
 		$context->registerEventListener(ObjectDeletedEvent::class, ReadStatePruneListener::class);
 
 		// Threshold trigger evaluator: re-runs aggregations on writes and dispatches when thresholds are crossed.
-		$context->registerEventListener(ObjectCreatedEvent::class, AggregationThresholdListener::class);
-		$context->registerEventListener(ObjectUpdatedEvent::class, AggregationThresholdListener::class);
-		$context->registerEventListener(ObjectDeletedEvent::class, AggregationThresholdListener::class);
-		$context->registerEventListener(ObjectTransitionedEvent::class, AggregationThresholdListener::class);
+		SearchListenerRegistrar::thresholds(context: $context);
 	}//end registerPruneAndFollowListeners()
 
 	/**
