@@ -24,15 +24,15 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectPreviewCacheInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
-use OCA\OpenRegister\Service\DeepLinkRegistryService;
-use OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter;
+use OCA\OpenRegister\Service\DeepLinkResolverInterface;
 use OCP\Collaboration\Reference\IReferenceManager;
 
 /**
  * Clears the Smart Picker and reference-provider previews of one saved object.
  *
- * Every canonical URL shape comes from ObjectPreviewFormatter::buildCanonicalUrls(),
+ * Every canonical URL shape comes from the preview cache's buildCanonicalUrls(),
  * the same pattern list the providers match against, and each cache prefix is
  * invalidated once; the object's deep link is invalidated too.
  *
@@ -43,14 +43,14 @@ final class ReferencePreviewInvalidation {
 	/**
 	 * Hold the collaborators of one invalidation.
 	 *
-	 * @param IReferenceManager       $references The reference cache owner.
-	 * @param ObjectPreviewFormatter  $formatter  The source of the canonical URLs.
-	 * @param DeepLinkRegistryService $deepLinks  The source of the object's deep link.
+	 * @param IReferenceManager           $references The reference cache owner.
+	 * @param ObjectPreviewCacheInterface $formatter  The source of the canonical URLs.
+	 * @param DeepLinkResolverInterface   $deepLinks  The source of the object's deep link.
 	 */
 	public function __construct(
 		private readonly IReferenceManager $references,
-		private readonly ObjectPreviewFormatter $formatter,
-		private readonly DeepLinkRegistryService $deepLinks
+		private readonly ObjectPreviewCacheInterface $formatter,
+		private readonly DeepLinkResolverInterface $deepLinks
 	) {
 	}//end __construct()
 
