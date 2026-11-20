@@ -127,7 +127,6 @@
   "lib/Notifications/BackgroundJob/TaskScheduledNotificationJob.php -> lib/Db/TaskInboxFilter.php",
   "lib/Notifications/BackgroundJob/TaskScheduledNotificationJob.php -> lib/Db/TaskInboxOrder.php",
   "lib/Notifications/BackgroundJob/TaskScheduledNotificationJob.php -> lib/Db/TaskInboxSelection.php",
-  "lib/Notifications/Controller/TimelineAdminController.php -> lib/Settings/OpenRegisterAdmin.php",
   "lib/Notifications/Service/Notification/AnnotationNotificationDispatcher.php -> lib/Db/AutomationRecord.php",
   "lib/Notifications/Service/Notification/AnnotationNotificationDispatcher.php -> lib/Service/AutomationRecordWriter.php",
   "lib/Notifications/Service/Notification/AnnotationNotificationDispatcher.php -> lib/Service/Task/TaskStateRules.php",
@@ -3050,5 +3049,5 @@
  ],
  "kernel_loc": 10456,
  "total_loc": 460637,
- "violation_degree": 0.0421
+ "violation_degree": 0.042
 }
