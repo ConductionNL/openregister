@@ -32,6 +32,7 @@ use OCA\OpenRegister\Kernel\Contracts\Core\CurrentFlowRunInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionDefaultsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionEvaluatorInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ProcessingReadsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\UserCalendarEventsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Integrations\TaskGaugeInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ReadHistoryInterface;
@@ -334,37 +335,28 @@ final class FlowWiringTest extends TestCase {
 	}//end testTheSaveRulePortsAreAnsweredByTheRulesEngine()
 
 	/**
-	 * The schedule flow store, the current-run port, the calendar link, transition-in-flight, write elevation, date events, task row,
-	 * watcher and run-record ports, the schema rename and form dependents checks, the built-in tool providers, the save-rule ports,
-	 * the lifecycle transition and expression-defaults ports and the area's own interfaces are bound, and only these aliases are registered.
 	 * The contact-match cache a save clears is answered by contact matching itself.
+	 *
+	 * @return void
+	 */
 	public function testTheContactMatchCachePortIsAnsweredByContactMatching(): void {
 		self::assertSame(expected: ContactMatchingService::class, actual: ($this->aliases[ContactMatchCacheInterface::class] ?? null));
 		self::assertTrue(condition: is_a(ContactMatchingService::class, ContactMatchCacheInterface::class, true));
 	}//end testTheContactMatchCachePortIsAnsweredByContactMatching()
-	 * watcher and run-record ports, the schema rename and form dependents checks, the built-in tool providers, the contact-match cache,
-	 * The schedule flow store, the current-run port, the calendar link, user calendar events, task gauge, transition-in-flight, write elevation,
-	 * date events, task row, watcher and run-record ports, the schema rename and form dependents checks, the built-in tool providers,
-	 * The schedule flow store, the current-run port, the read history, the write elevation, the expression-defaults port and the area's own interfaces are bound, and only these aliases are registered.
-	 * The schedule flow store, the current-run port and every port the area answers for another (task rows, overdue tasks, watchers, run records, schema change checks, calendars, tool providers, write elevation, expression defaults) are bound, and only these aliases are registered.
-	 * The schedule flow store, the current-run port, the expression-defaults port, the area's own interfaces and the lifecycle transition port are bound, and only these aliases are registered.
-	 * The schedule flow store, the current-run port, the audit trail's transition-in-flight port, the expression-defaults port and the area's own interfaces are bound, and only these aliases are registered.
-	 * The schedule flow store, the current-run port, the write elevation, the expression-defaults port and the area's own interfaces are bound, and only these aliases are registered.
-	 * The schedule flow store, the current-run port, the task row, watcher and run-record ports, the schema rename and form dependents checks, the expression-defaults port and the area's own interfaces are bound, and only these aliases are registered.
-	 * The schedule flow store, the current-run port, the task row, watcher and run-record ports, the expression-defaults port and the area's own interfaces are bound, and only these aliases are registered.
-	 * The schedule flow store, the current-run port, the task row port, the expression-defaults port and the area's own interfaces are bound, and only these aliases are registered.
-	 * The schedule flow store, the current-run port, the calendar link port, the expression-defaults port and the area's own interfaces are bound, and only these aliases are registered.
-	 * The schedule flow store, the current-run port, the expression-defaults port, the built-in tool providers and the area's own interfaces are bound, and only these aliases are registered.
+
+	/**
+	 * Every port the flow area answers for another area is bound, and only these aliases are registered.
 	 *
 	 * @return void
 	 */
-	public function testTheScheduleFlowStoreIsBound(): void {
+	public function testTheScheduleFlowStoreAndTheProcessingReadsAreBound(): void {
 		self::assertSame(
 			expected: [
 				FieldRulesSourceInterface::class           => StateFieldRuleResolver::class,
 				ObjectCalendarLinkInterface::class         => CalendarEventService::class,
 				CurrentFlowRunInterface::class             => FlowRunContext::class,
 				ScheduleFlowStoreInterface::class          => ScheduleFlowStore::class,
+				ProcessingReadsInterface::class            => ReadHistoryService::class,
 				UserCalendarEventsInterface::class         => CalendarEventService::class,
 				TaskGaugeInterface::class                  => TaskMetricsProvider::class,
 				LifecycleFinalStatesInterface::class       => LifecycleFinalStateResolver::class,
@@ -405,7 +397,7 @@ final class FlowWiringTest extends TestCase {
 			actual: $this->aliases
 		);
 		self::assertSame(expected: FlowWiring::BINDINGS, actual: FlowRegistrar::BINDINGS);
-	}//end testTheScheduleFlowStoreIsBound()
+	}//end testTheScheduleFlowStoreAndTheProcessingReadsAreBound()
 
 	/**
 	 * The MCP discovery's port for contributed built-in tool providers is answered by the flow tools.
