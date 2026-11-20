@@ -16,7 +16,6 @@
   "lib/BackgroundJob/TransferExecutionJob.php -> lib/Service/Edepot/Transport/RestApiTransportInterface.php",
   "lib/BackgroundJob/TransferExecutionJob.php -> lib/Service/Edepot/Transport/SftpTransportInterface.php",
   "lib/BackgroundJob/TransferExecutionJob.php -> lib/Service/Edepot/Transport/TransportInterface.php",
-  "lib/BackgroundJob/TranslationProjectionJob.php -> lib/Service/TranslationProjectionServiceInterface.php",
   "lib/Calendar/DeclaredDateCalendars.php -> lib/Db/CalendarFeedToken.php",
   "lib/Calendar/DeclaredDateCalendars.php -> lib/Service/Calendar/ObjectCalendarFeedService.php",
   "lib/Calendar/DeclaredDateCalendars.php -> lib/Service/Calendar/ObjectCalendarFeedSources.php",
@@ -48,7 +47,6 @@
   "lib/Controller/ObjectsController.php -> lib/Service/Flow/FlowRunContextInterface.php",
   "lib/Controller/ObjectsController.php -> lib/Service/Interaction/ReadStateServiceInterface.php",
   "lib/Controller/ObjectsController.php -> lib/Service/Rules/ExpressionDefaultException.php",
-  "lib/Controller/QualityAuditController.php -> lib/Settings/OpenRegisterAdmin.php",
   "lib/Controller/RegistersController.php -> lib/Service/AuthorizationAuditService.php",
   "lib/Controller/RegistersController.php -> lib/Service/Configuration/ConfigurationCollaborators.php",
   "lib/Controller/RegistersController.php -> lib/Service/Lifecycle/KeepLifecycleStatesScope.php",
@@ -3054,5 +3052,5 @@
  ],
  "kernel_loc": 10414,
  "total_loc": 460617,
- "violation_degree": 0.0429
+ "violation_degree": 0.0426
 }
