@@ -44,6 +44,8 @@ use DateTimeInterface;
 use DateTimeZone;
 use Exception;
 use InvalidArgumentException;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectAuditEntry;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\AuditProcessContextInterface;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Service\Audit\AuditAggregationServiceInterface;
 use OCA\OpenRegister\Db\AuditTrail\PartyQueryRefusal;
@@ -302,7 +304,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 * @spec openspec/changes/act-for-an-organisation/specs/rbac-scopes/spec.md
 	 */
 	private function applyAttributions(AuditTrail $auditTrail): void {
-		(new AuditFlowAttribution($this->db, $this->container))->apply(auditTrail: $auditTrail);
+		$this->processContext()?->stampFlowFrame(auditTrail: $auditTrail);
 		AuditTrailCollaborators::purposeAttribution(container: $this->container)->apply(auditTrail: $auditTrail);
 		AuditTrailCollaborators::tokenAttribution(container: $this->container)->apply(auditTrail: $auditTrail);
 		AuditTrailCollaborators::organisationContextAttribution()->apply(auditTrail: $auditTrail);
@@ -1315,15 +1317,8 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 * @spec openspec/changes/lifecycle-over-reference-field/specs/object-lifecycle/spec.md#requirement-a-declared-reopen-is-the-only-move-out-of-a-terminal-state
 	 */
 	private function markTransitionOrigin(array $changed, ObjectEntity $objectEntity): array {
-		$automaticAction = null;
-		try {
-			$automaticAction = $this->container
-				->get(\OCA\OpenRegister\Service\Lifecycle\AutoTransitionPassInterface::class)
-				->applyingAction();
-		} catch (\Throwable $passUnavailable) {
-			$automaticAction = null;
-		}
-
+		$processContext  = $this->processContext();
+		$automaticAction = $processContext?->automaticTransition();
 		if ($automaticAction !== null) {
 			$changed['automaticTransition'] = $automaticAction;
 		}
@@ -1335,8 +1330,9 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 
 		// A declared reopen out of a terminal state is audited as a reopen, so
 		// an auditor can tell it from an ordinary forward move.
-		if ($this->transitionDeclaredFor(uuid: (string)$objectEntity->getUuid()) === \OCA\OpenRegister\Service\Lifecycle\GraphMoveCatalogue::REOPEN) {
-			$changed['transitionKind'] = \OCA\OpenRegister\Service\Lifecycle\GraphMoveCatalogue::REOPEN;
+		$transitionKind = $processContext?->transitionKindFor(uuid: (string)$objectEntity->getUuid());
+		if ($transitionKind !== null) {
+			$changed['transitionKind'] = $transitionKind;
 		}
 
 		return $changed;
@@ -1465,29 +1461,28 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	}//end transitionSystemApp()
 
 	/**
-	 * The lifecycle action being applied to this object right now, if any.
+	 * The flow run and lifecycle move in flight, as Processes answers it, or null when it is not wired.
 	 *
-	 * Read the same way as {@see transitionSystemApp()}: unavailable means
-	 * "no named transition in flight", never a failed audit row.
+	 * Read through the container like the other ambient frames: unavailable
+	 * means "nothing in flight", never a failed audit row.
 	 *
-	 * @param string $uuid The object's uuid.
-	 *
-	 * @return string|null The declared action, or null for an ordinary write.
+	 * @return AuditProcessContextInterface|null The process context, or null.
 	 *
 	 * @spec openspec/changes/lifecycle-over-reference-field/specs/object-lifecycle/spec.md#requirement-a-declared-reopen-is-the-only-move-out-of-a-terminal-state
 	 */
-	private function transitionDeclaredFor(string $uuid): ?string {
-		if ($uuid === '') {
+	private function processContext(): ?AuditProcessContextInterface {
+		try {
+			$context = $this->container->get(AuditProcessContextInterface::class);
+		} catch (Throwable $contextUnavailable) {
 			return null;
 		}
 
-		try {
-			return AuditTrailCollaborators::lifecycleActionContextFrom(container: $this->container)
-				->declaredFor($uuid);
-		} catch (\Throwable $contextUnavailable) {
+		if (($context instanceof AuditProcessContextInterface) === false) {
 			return null;
 		}
-	}//end transitionDeclaredFor()
+
+		return $context;
+	}//end processContext()
 
 	/**
 	 * Stamp an audit row's expiry and retention source from the retention of
@@ -2674,6 +2669,22 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 
 		return $this->insertHashChained(auditTrail: $auditTrail);
 	}//end recordObjectEvent()
+
+	/**
+	 * Record an action on one object as Core names it, through recordObjectEvent().
+	 *
+	 * @param ObjectAuditEntry $entry The object, the action, its context and the explicit actor, if any.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
+	 */
+	public function writeObjectEvent(ObjectAuditEntry $entry): void {
+		$options = new ObjectAuditEventOptions(actor: new NamedActor(id: $entry->actorId, name: $entry->actorName));
+		$this->recordObjectEvent(
+			event: new ObjectAuditEvent(object: $entry->object, action: $entry->action, context: $entry->context, options: $options)
+		);
+	}//end writeObjectEvent()
 
 	/**
 	 * The actor a createAuditTrailEntry() row names.
