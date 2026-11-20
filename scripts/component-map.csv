@@ -126,7 +126,7 @@ BackgroundJob/RecordsItsRuns.php,5,BackgroundJob,Configuration,Configuration/Bac
 BackgroundJob/RelatedRetentionRecalculationJob.php,103,BackgroundJob,Compliance,Compliance/BackgroundJob/RelatedRetentionRecalculationJob.php,0,,Compliance
 BackgroundJob/ReviewReminderJob.php,105,BackgroundJob,Compliance,Compliance/BackgroundJob/ReviewReminderJob.php,0,,Compliance
 BackgroundJob/RuleRunRetentionJob.php,40,BackgroundJob,Flows,Flows/BackgroundJob/RuleRunRetentionJob.php,0,,Processes
-BackgroundJob/ScheduledMessageSweepJob.php,15,BackgroundJob,Work,Work/BackgroundJob/ScheduledMessageSweepJob.php,0,,Processes
+BackgroundJob/ScheduledMessageSweepJob.php,15,BackgroundJob,Work,Work/BackgroundJob/ScheduledMessageSweepJob.php,0,,Notifications
 BackgroundJob/SchemaRunJob.php,63,BackgroundJob,Service,Service/BackgroundJob/SchemaRunJob.php,0,,Core
 BackgroundJob/SourceRecordRecomputeJob.php,37,BackgroundJob,Flows,Flows/BackgroundJob/SourceRecordRecomputeJob.php,0,,Processes
 BackgroundJob/StateHistoryRebuildJob.php,94,BackgroundJob,Service,Service/BackgroundJob/StateHistoryRebuildJob.php,0,,Core
@@ -311,7 +311,7 @@ Controller/OasController.php,71,Controller,Service,Service/Controller/OasControl
 Controller/OpenApiController.php,107,Controller,Service,Service/Controller/OpenApiController.php,0,,Core
 Controller/ObjectActionsController.php,210,Controller,Flows,Flows/Controller/ObjectActionsController.php,0,,Processes
 Controller/ObjectDraftController.php,114,Controller,Service,Service/Controller/ObjectDraftController.php,0,,Core
-Controller/ObjectFavouriteController.php,99,Controller,Work,Work/Controller/ObjectFavouriteController.php,0,,Processes
+Controller/ObjectFavouriteController.php,99,Controller,Work,Work/Controller/ObjectFavouriteController.php,0,,Notifications
 Controller/ObjectGrantsController.php,57,Controller,Access,Access/Controller/ObjectGrantsController.php,0,,Core
 Controller/ObjectIntegrationsController.php,247,Controller,Integrations,Integrations/Controller/ObjectIntegrationsController.php,0,,Integrations
 Controller/ObjectOwnershipController.php,172,Controller,Access,Access/Controller/ObjectOwnershipController.php,0,,Core
@@ -2625,7 +2625,7 @@ Service/Integration/Providers/XwikiProvider.php,150,Service,Integrations,Integra
 Service/Integration/QueryTimeContract.php,18,Service,Integrations,Integrations/Service/Integration/QueryTimeContract.php,0,,Integrations
 Service/Integration/TimeProvider.php,39,Service,Integrations,Integrations/Service/Integration/TimeProvider.php,0,,Integrations
 Service/Interaction/AddressedObject.php,,Service,,,,,Core
-Service/Interaction/FavouriteService.php,25,Service,Work,Work/Service/Interaction/FavouriteService.php,0,,Processes
+Service/Interaction/FavouriteService.php,25,Service,Work,Work/Service/Interaction/FavouriteService.php,0,,Notifications
 Service/Interaction/ReadHistoryService.php,125,Service,Compliance,Compliance/Service/Interaction/ReadHistoryService.php,0,335,Processes
 Service/Interaction/ReadStateService.php,141,Service,Work,Work/Service/Interaction/ReadStateService.php,1,208,Core
 Service/Interaction/ReadStateServiceInterface.php,,Service,,,,,Core
@@ -3381,7 +3381,7 @@ Controller/Support/FlowRunMigrationControllerServices.php,16,Controller,Flows,Fl
 Controller/Support/FlowTestRunControllerServices.php,16,Controller,Flows,Flows/Controller/Support/FlowTestRunControllerServices.php,0,,Processes
 Controller/Support/FlowTimerDiagnosticControllerServices.php,16,Controller,Flows,Flows/Controller/Support/FlowTimerDiagnosticControllerServices.php,0,,Processes
 Controller/Support/ObjectActionsSelection.php,28,Controller,Flows,Flows/Controller/Support/ObjectActionsSelection.php,0,,Processes
-Controller/Support/ObjectFavouriteControllerServices.php,14,Controller,Flows,Flows/Controller/Support/ObjectFavouriteControllerServices.php,0,,Processes
+Controller/Support/ObjectFavouriteControllerServices.php,14,Controller,Flows,Flows/Controller/Support/ObjectFavouriteControllerServices.php,0,,Notifications
 Controller/Support/ObjectTask.php,12,Controller,Work,Work/Controller/Support/ObjectTask.php,0,,Processes
 Controller/Support/OrganisationScopeFilter.php,18,Controller,Flows,Flows/Controller/Support/OrganisationScopeFilter.php,0,,Processes
 Controller/Support/PartyObjectAccess.php,69,Controller,Work,Work/Controller/Support/PartyObjectAccess.php,0,,Processes
@@ -4308,7 +4308,7 @@ Calendar/DeclaredDateCalendars.php,184,Calendar,Platform,Platform/Calendar/Decla
 Calendar/ObjectDateCalendar.php,54,Calendar,Platform,Platform/Calendar/ObjectDateCalendar.php,0,,Integrations
 Calendar/ObjectDateCalendarScope.php,14,Calendar,Platform,Platform/Calendar/ObjectDateCalendarScope.php,0,,Integrations
 Calendar/VeventSearchShape.php,202,Calendar,Platform,Platform/Calendar/VeventSearchShape.php,0,,Integrations
-Controller/ScheduledMessagesController.php,113,Controller,Integrations,Integrations/Controller/ScheduledMessagesController.php,0,,Integrations
+Controller/ScheduledMessagesController.php,113,Controller,Integrations,Integrations/Controller/ScheduledMessagesController.php,0,,Notifications
 Service/Calendar/ObjectDateEvents.php,26,Service,Work,Work/Service/Calendar/ObjectDateEvents.php,0,,Integrations
 Notifications/Controller/NotificationRecipientAnswerController.php,52,Notifications,Notifications,Notifications/Controller/NotificationRecipientAnswerController.php,0,,Notifications
 Notifications/Service/Notification/RecipientKindAnswer.php,64,Notifications,Notifications,Notifications/Service/Notification/RecipientKindAnswer.php,0,,Notifications
@@ -4616,3 +4616,5 @@ Service/File/ShareLinkRequest.php,,Service,,,,,Files
 Service/File/UpdateFileGuards.php,,Service,,,,,Files
 Service/File/UpdateFileLocator.php,,Service,,,,,Files
 Db/AuditTrail/RevertOptions.php,,Db,,,,,Core
+Service/Interaction/FavouriteServiceInterface.php,,Service,,,,,Notifications
+Notifications/Controller/Support/ReadableObject.php,,Notifications,,,,,Core
