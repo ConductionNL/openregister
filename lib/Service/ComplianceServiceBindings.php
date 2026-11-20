@@ -27,7 +27,9 @@ use OCA\OpenRegister\Kernel\Contracts\Core\CascadeRetentionCheckInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\SearchTrailRecorderInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ReadPurposeGuardInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ReadableObjectHistoryInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\RecordArchivalReadingInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\RegisterAccessChangeLogInterface;
+use OCA\OpenRegister\Service\Archival\RecordArchivalReading;
 use OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders;
 use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
 use OCA\OpenRegister\Service\Audit\PurposeGuard;
@@ -54,6 +56,7 @@ final class ComplianceServiceBindings {
 		CascadeRetentionCheckInterface::class   => ArchivalRetentionGuard::class,
 		ReadPurposeGuardInterface::class        => PurposeGuard::class,
 		ReadableObjectHistoryInterface::class   => ObjectHistoryForReaders::class,
+		RecordArchivalReadingInterface::class   => RecordArchivalReading::class,
 		RegisterAccessChangeLogInterface::class => AuthorizationAuditService::class,
 		SearchTrailRecorderInterface::class     => SearchTrailService::class,
 	];

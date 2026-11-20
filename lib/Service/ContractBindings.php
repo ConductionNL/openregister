@@ -670,6 +670,8 @@ final class ContractBindings {
 		ObjectTrailReaderInterface::class => ObjectTrailReader::class,
 		DeclaredWebhookInstallerInterface::class => NotificationsAnnotationInstaller::class,
 		TranslationProjectionInterface::class => TranslationProjectionService::class,
+		\OCA\OpenRegister\Kernel\Contracts\Core\SourceLanguagesInterface::class => TranslationProjectionService::class,
+		\OCA\OpenRegister\Kernel\Contracts\Core\DerivedTranslationsInterface::class => \OCA\OpenRegister\Service\TranslationStatusService::class,
 		WholeSetExportActionInterface::class => ExportWholeSetAction::class,
 		ShareGrantorInterface::class => ShareGrantor::class,
 		TenantKeyRotationInterface::class => TenantKeyService::class,
@@ -1124,6 +1126,8 @@ final class ContractBindings {
 		ConfigurationTransferInterface::class => ConfigurationService::class,
 		\OCA\OpenRegister\Kernel\Contracts\Core\RegisterBundlesInterface::class
 			=> \OCA\OpenRegister\Service\Configuration\RegisterBundles::class,
+		\OCA\OpenRegister\Kernel\Contracts\Core\AppImportJobOwnersInterface::class
+			=> \OCA\OpenRegister\Service\Configuration\AppImportJobRecorder::class,
 		\OCA\OpenRegister\Service\Object\ArchiveHandlerInterface::class => \OCA\OpenRegister\Service\Object\ArchiveHandler::class,
 		RetentionServiceInterface::class => RetentionService::class,
 		\OCA\OpenRegister\Service\Object\AuthorizationResolutionInterface::class => \OCA\OpenRegister\Service\Object\PermissionHandler::class,
