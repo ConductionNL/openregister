@@ -1001,8 +1001,8 @@ Event/SchemaUpdatedEvent.php,19,Event,Event,Event/SchemaUpdatedEvent.php,17,,Ker
 Event/SourceCreatedEvent.php,14,Event,Event,Event/SourceCreatedEvent.php,0,,Kernel
 Event/SourceDeletedEvent.php,14,Event,Event,Event/SourceDeletedEvent.php,0,,Kernel
 Event/SourceUpdatedEvent.php,22,Event,Event,Event/SourceUpdatedEvent.php,0,,Kernel
-Event/TaskSequenceCompletedEvent.php,28,Event,Event,Event/TaskSequenceCompletedEvent.php,18,,Kernel
-Event/TaskSequenceUndecidedEvent.php,20,Event,Event,Event/TaskSequenceUndecidedEvent.php,0,,Kernel
+Event/TaskSequenceCompletedEvent.php,28,Event,Event,Event/TaskSequenceCompletedEvent.php,18,,Processes
+Event/TaskSequenceUndecidedEvent.php,20,Event,Event,Event/TaskSequenceUndecidedEvent.php,0,,Processes
 Event/TaskTerminalEvent.php,28,Event,Event,Event/TaskTerminalEvent.php,103,,Kernel
 Event/TaskTransitionedEvent.php,33,Event,Event,Event/TaskTransitionedEvent.php,19,,Processes
 Event/ToolRegistrationEvent.php,15,Event,Event,Event/ToolRegistrationEvent.php,10,,Integrations
@@ -4580,3 +4580,4 @@ Listener/UniqueHintDeclarationCheckListener.php,,Listener,,,,,Search
 Service/Consumer/AccountConsumerLookup.php,,Service,,,,,Integrations
 Service/Party/PartyParent.php,,Service,,,,,Processes
 Service/Lifecycle/LifecycleStatesKeeper.php,,Service,,,,,Processes
+Service/AcceptLanguageHeader.php,,Service,,,,,Core

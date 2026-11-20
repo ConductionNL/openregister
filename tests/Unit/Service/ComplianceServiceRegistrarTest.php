@@ -12,6 +12,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Kernel\Contracts\Core\CascadeRetentionCheckInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectArchivalMetadataInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\SearchTrailRecorderInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ReadPurposeGuardInterface;
 use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
@@ -20,6 +21,7 @@ use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\ComplianceServiceRegistrar;
 use OCA\OpenRegister\Service\Object\SearchQueryHandler;
 use OCA\OpenRegister\Service\SearchTrailService;
+use OCA\OpenRegister\Service\TmloService;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
@@ -102,4 +104,15 @@ final class ComplianceServiceRegistrarTest extends TestCase {
 	public function testTheCascadeAsksTheArchivalRetentionGuard(): void {
 		$this->assertSame(expected: ArchivalRetentionGuard::class, actual: ComplianceServiceRegistrar::BINDINGS[CascadeRetentionCheckInterface::class]);
 	}//end testTheCascadeAsksTheArchivalRetentionGuard()
+
+	/**
+	 * The save path's archival metadata port is answered by the TMLO service.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/tmlo-auto-populate/spec.md
+	 */
+	public function testTheArchivalMetadataPortIsAnsweredByTheTmloService(): void {
+		$this->assertSame(expected: TmloService::class, actual: (ComplianceServiceRegistrar::BINDINGS[ObjectArchivalMetadataInterface::class] ?? null));
+	}//end testTheArchivalMetadataPortIsAnsweredByTheTmloService()
 }//end class
