@@ -33,7 +33,6 @@ use OCA\OpenRegister\Db\SchemaMapper\AdvisoryAnnotationChecks;
 use OCA\OpenRegister\Db\SchemaMapper\AuthorizationBlockCheck;
 use OCA\OpenRegister\Db\SchemaMapper\ConfigurationFields;
 use OCA\OpenRegister\Db\SchemaMapper\DiscardedAnnotations;
-use OCA\OpenRegister\Db\SchemaMapper\ExchangeAnnotationRefusals;
 use OCA\OpenRegister\Db\SchemaMapper\ExtendedByReads;
 use OCA\OpenRegister\Db\SchemaMapper\FacetConfiguration;
 use OCA\OpenRegister\Db\SchemaMapper\IdentityDeclarationCheck;
@@ -1251,7 +1250,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	}//end checkDataDeclarations()
 
 	/**
-	 * How objects leave or enter: MCP, registry, links and extending forms; Integrations adds the handoff checks.
+	 * How objects leave or enter: registry, links and extending forms; Integrations adds the hand-off and MCP checks.
 	 *
 	 * @param Schema $schema The schema being saved.
 	 *
@@ -1339,8 +1338,6 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 */
 	private function behaviourSteps(Schema $schema): array {
 		return [
-			SchemaDeclarationOrder::AGGREGATIONS => fn () => (new AdvisoryAnnotationChecks(logger: $this->logger, discarded: $this->discarded))
-				->checkAggregations(schema: $schema),
 			SchemaDeclarationOrder::CONSENT => static fn () => (new SubjectDeclarationRefusals())->checkConsent(schema: $schema),
 			SchemaDeclarationOrder::RELATIONS => fn () => (new RelationDeclarationCheck(
 				findSchema: fn (string $id): Schema => $this->find(id: $id, _rbac: false, _multitenancy: false)
@@ -1365,23 +1362,20 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 			SchemaDeclarationOrder::HINGE => static fn () => $advisory->checkHinge(schema: $schema),
 			SchemaDeclarationOrder::SURVIVORSHIP => static fn () => $advisory->checkSurvivorship(schema: $schema),
 			SchemaDeclarationOrder::MERGE => static fn () => $advisory->checkMerge(schema: $schema),
-			SchemaDeclarationOrder::PARTY => static fn () => $advisory->checkParty(schema: $schema),
 			SchemaDeclarationOrder::WIDGETS => static fn () => $records->checkWidgets(schema: $schema),
 			SchemaDeclarationOrder::SEARCH_RESULT => static fn () => $records->checkSearchResult(schema: $schema),
 		];
 	}//end dataSteps()
 
 	/**
-	 * How objects leave or enter: MCP, registry, links and extending forms; Integrations adds the handoff checks.
+	 * How objects leave or enter: registry, links and extending forms; Integrations adds the hand-off and MCP checks.
 	 *
 	 * @param Schema $schema The schema being saved.
 	 *
 	 * @return array<int, Closure> The checks by slot.
 	 */
 	private function exchangeSteps(Schema $schema): array {
-		$exchange = new ExchangeAnnotationRefusals();
 		return [
-			SchemaDeclarationOrder::MCP => static fn () => $exchange->checkMcp(schema: $schema),
 			SchemaDeclarationOrder::REGISTRY => static fn () => (new SubjectDeclarationRefusals())->checkRegistry(schema: $schema),
 			SchemaDeclarationOrder::EXTERNAL_LINKS => fn () => (new RecordAnnotationRefusals())->checkExternalLinks(schema: $schema),
 			SchemaDeclarationOrder::EXTENDING_FORM => static fn () => (new PropertyDeclarationRefusals())->checkExtendingForm(schema: $schema),
