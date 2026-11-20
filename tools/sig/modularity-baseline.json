@@ -17,10 +17,6 @@
   "lib/BackgroundJob/TransferExecutionJob.php -> lib/Service/Edepot/Transport/SftpTransportInterface.php",
   "lib/BackgroundJob/TransferExecutionJob.php -> lib/Service/Edepot/Transport/TransportInterface.php",
   "lib/BackgroundJob/TranslationProjectionJob.php -> lib/Service/TranslationProjectionServiceInterface.php",
-  "lib/BackgroundJob/ViewAlertSweepJob.php -> lib/BackgroundJob/Support/ViewAlertCheck.php",
-  "lib/BackgroundJob/ViewAlertSweepJob.php -> lib/BackgroundJob/Support/ViewAlertSweepPlatform.php",
-  "lib/BackgroundJob/ViewAlertSweepJob.php -> lib/BackgroundJob/Support/ViewAlertSweepSources.php",
-  "lib/BackgroundJob/ViewAlertSweepJob.php -> lib/Search/Db/View.php",
   "lib/Calendar/DeclaredDateCalendars.php -> lib/Db/CalendarFeedToken.php",
   "lib/Calendar/DeclaredDateCalendars.php -> lib/Service/Calendar/ObjectCalendarFeedService.php",
   "lib/Calendar/DeclaredDateCalendars.php -> lib/Service/Calendar/ObjectCalendarFeedSources.php",
@@ -397,9 +393,6 @@
   "lib/BackgroundJob/Support/TransferExecutionPlatform.php",
   "lib/BackgroundJob/Support/TransferExecutionRecords.php",
   "lib/BackgroundJob/Support/TransferExecutionTransports.php",
-  "lib/BackgroundJob/Support/ViewAlertCheck.php",
-  "lib/BackgroundJob/Support/ViewAlertSweepPlatform.php",
-  "lib/BackgroundJob/Support/ViewAlertSweepSources.php",
   "lib/BackgroundJob/TranslationProjectionJob.php",
   "lib/BulkAction/BulkActionInterface.php",
   "lib/BulkAction/BulkActionRegistrar.php",
@@ -2633,7 +2626,7 @@
   "lib/Twig/MappingTwigInstallerInterface.php"
  ],
  "exposed_loc": {
-  "Compliance": 15748,
+  "Compliance": 15703,
   "Configuration": 4293,
   "Core": 64562,
   "Files": 3592,
@@ -3107,5 +3100,5 @@
  ],
  "kernel_loc": 10459,
  "total_loc": 460567,
- "violation_degree": 0.0467
+ "violation_degree": 0.0463
 }

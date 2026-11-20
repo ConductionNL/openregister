@@ -92,7 +92,7 @@ deptrac:
         - type: directory
           value: 'lib/Kernel/Contracts/Core/.*$'
         - type: directory
-          value: 'lib/BackgroundJob/(AbstractRetentionJob|ActorForwardedJob|ConfiguredJobRuntime|DbalIntrospectionJob|DeferredObjectEventJob|DraftExpiryJob|GroupReconcilerJob|JobHandles|JobRuntime|ObjectCleanupJob|PublishedDigestVerifyJob|QueuedJobClassesInterface|RecordedJobRuntime|RecordedQueuedJob|RecordsItsRuns|SchemaChangeNoticeJob|SchemaRunJob|StateHistoryRebuildJob|TenantDeprovisionJob|TenantPurgeJob|TenantUsageSyncJob|TransferAttemptRun|TransferExecutionJob|ViewAlertSweepJob)[.]php$'
+          value: 'lib/BackgroundJob/(AbstractRetentionJob|ActorForwardedJob|ConfiguredJobRuntime|DbalIntrospectionJob|DeferredObjectEventJob|DraftExpiryJob|GroupReconcilerJob|JobHandles|JobRuntime|ObjectCleanupJob|PublishedDigestVerifyJob|QueuedJobClassesInterface|RecordedJobRuntime|RecordedQueuedJob|RecordsItsRuns|SchemaChangeNoticeJob|SchemaRunJob|StateHistoryRebuildJob|TenantDeprovisionJob|TenantPurgeJob|TenantUsageSyncJob|TransferAttemptRun|TransferExecutionJob)[.]php$'
         - type: directory
           value: 'lib/BackgroundJob/Support/ActorForwardingServices[.]php$'
         - type: directory
@@ -3494,12 +3494,6 @@ deptrac:
         - type: directory
           value: 'lib/BackgroundJob/Support/TransferExecutionTransports[.]php$'
         - type: directory
-          value: 'lib/BackgroundJob/Support/ViewAlertCheck[.]php$'
-        - type: directory
-          value: 'lib/BackgroundJob/Support/ViewAlertSweepPlatform[.]php$'
-        - type: directory
-          value: 'lib/BackgroundJob/Support/ViewAlertSweepSources[.]php$'
-        - type: directory
           value: 'lib/Command/(RechainAuditTrailCommand|RetentionDryRunCommand)[.]php$'
         - type: directory
           value: 'lib/Controller/(AnonymisationBackendController|AnonymisationPipelineController|ArchivalController|ArchivalOverviewController|AuditQueryController|AuditSinkController|AuditTrailController|ContentReportController|CorrectionsController|DataSubjectRequestController|DsarCaseController|DsarController|ErasurePreviewController|HardeningController|HardeningStatementController|MergeController|ProcessingLogController|ProcessingPurposeController|QualityAuditController|QualityController|RetentionController|SearchTrailController|SelectielijstController|SelectielijstReferenceController|SubjectExportController|TmloController|TransferController|VerwerkingsactiviteitenController)[.]php$'
@@ -4227,6 +4221,14 @@ deptrac:
       collectors:
         - type: directory
           value: 'lib/Kernel/Contracts/Search/.*$'
+        - type: directory
+          value: 'lib/BackgroundJob/(ViewAlertSweepJob)[.]php$'
+        - type: directory
+          value: 'lib/BackgroundJob/Support/ViewAlertCheck[.]php$'
+        - type: directory
+          value: 'lib/BackgroundJob/Support/ViewAlertSweepPlatform[.]php$'
+        - type: directory
+          value: 'lib/BackgroundJob/Support/ViewAlertSweepSources[.]php$'
         - type: directory
           value: 'lib/Controller/(SettingsController)[.]php$'
         - type: directory

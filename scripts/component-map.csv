@@ -141,7 +141,7 @@ BackgroundJob/TenantUsageSyncJob.php,84,BackgroundJob,Access,Access/BackgroundJo
 BackgroundJob/TransferCheckJob.php,78,BackgroundJob,Access,Access/BackgroundJob/TransferCheckJob.php,0,,Compliance
 BackgroundJob/TransferExecutionJob.php,143,BackgroundJob,Access,Access/BackgroundJob/TransferExecutionJob.php,0,,Core
 BackgroundJob/TranslationProjectionJob.php,51,BackgroundJob,Flows,Flows/BackgroundJob/TranslationProjectionJob.php,0,,Processes
-BackgroundJob/ViewAlertSweepJob.php,121,BackgroundJob,Service,Service/BackgroundJob/ViewAlertSweepJob.php,0,,Core
+BackgroundJob/ViewAlertSweepJob.php,121,BackgroundJob,Service,Service/BackgroundJob/ViewAlertSweepJob.php,0,,Search
 BackgroundJob/WebhookDeliveryJob.php,100,BackgroundJob,Integrations,Integrations/BackgroundJob/WebhookDeliveryJob.php,0,272,Integrations
 BackgroundJob/WebhookRetryJob.php,137,BackgroundJob,Integrations,Integrations/BackgroundJob/WebhookRetryJob.php,0,,Integrations
 BulkAction/AbstractPropertyWriteAction.php,73,BulkAction,Flows,Flows/BulkAction/AbstractPropertyWriteAction.php,0,,Processes
@@ -4547,3 +4547,6 @@ Db/Flow/FlowJson.php,,Db,,,,,Processes
 Service/Operations/JobRunStart.php,,Service,,,,,Core
 Service/Operations/JobRunContext.php,,Service,,,,,Core
 Service/Export/Odt/OfficeHtmlPdfConverter.php,,Service,,,,,Configuration
+BackgroundJob/Support/ViewAlertCheck.php,,BackgroundJob,,,,,Search
+BackgroundJob/Support/ViewAlertSweepSources.php,,BackgroundJob,,,,,Search
+BackgroundJob/Support/ViewAlertSweepPlatform.php,,BackgroundJob,,,,,Search

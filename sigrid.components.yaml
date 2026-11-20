@@ -51,7 +51,7 @@ components:
   - name: Core
     include:
       - ".*/lib/Kernel/Contracts/Core/.*"
-      - ".*/lib/BackgroundJob/(AbstractRetentionJob|ActorForwardedJob|ConfiguredJobRuntime|DbalIntrospectionJob|DeferredObjectEventJob|DraftExpiryJob|GroupReconcilerJob|JobHandles|JobRuntime|ObjectCleanupJob|PublishedDigestVerifyJob|QueuedJobClassesInterface|RecordedJobRuntime|RecordedQueuedJob|RecordsItsRuns|SchemaChangeNoticeJob|SchemaRunJob|StateHistoryRebuildJob|TenantDeprovisionJob|TenantPurgeJob|TenantUsageSyncJob|TransferAttemptRun|TransferExecutionJob|ViewAlertSweepJob)[.]php"
+      - ".*/lib/BackgroundJob/(AbstractRetentionJob|ActorForwardedJob|ConfiguredJobRuntime|DbalIntrospectionJob|DeferredObjectEventJob|DraftExpiryJob|GroupReconcilerJob|JobHandles|JobRuntime|ObjectCleanupJob|PublishedDigestVerifyJob|QueuedJobClassesInterface|RecordedJobRuntime|RecordedQueuedJob|RecordsItsRuns|SchemaChangeNoticeJob|SchemaRunJob|StateHistoryRebuildJob|TenantDeprovisionJob|TenantPurgeJob|TenantUsageSyncJob|TransferAttemptRun|TransferExecutionJob)[.]php"
       - ".*/lib/BackgroundJob/Support/ActorForwardingServices[.]php"
       - ".*/lib/BackgroundJob/Support/DeferredObjectEventActor[.]php"
       - ".*/lib/BackgroundJob/Support/DeferredObjectEventLookup[.]php"
@@ -1755,9 +1755,6 @@ components:
       - ".*/lib/BackgroundJob/Support/TransferExecutionPlatform[.]php"
       - ".*/lib/BackgroundJob/Support/TransferExecutionRecords[.]php"
       - ".*/lib/BackgroundJob/Support/TransferExecutionTransports[.]php"
-      - ".*/lib/BackgroundJob/Support/ViewAlertCheck[.]php"
-      - ".*/lib/BackgroundJob/Support/ViewAlertSweepPlatform[.]php"
-      - ".*/lib/BackgroundJob/Support/ViewAlertSweepSources[.]php"
       - ".*/lib/Command/(RechainAuditTrailCommand|RetentionDryRunCommand)[.]php"
       - ".*/lib/Controller/(AnonymisationBackendController|AnonymisationPipelineController|ArchivalController|ArchivalOverviewController|AuditQueryController|AuditSinkController|AuditTrailController|ContentReportController|CorrectionsController|DataSubjectRequestController|DsarCaseController|DsarController|ErasurePreviewController|HardeningController|HardeningStatementController|MergeController|ProcessingLogController|ProcessingPurposeController|QualityAuditController|QualityController|RetentionController|SearchTrailController|SelectielijstController|SelectielijstReferenceController|SubjectExportController|TmloController|TransferController|VerwerkingsactiviteitenController)[.]php"
       - ".*/lib/Controller/Support/AnonymisationBackendControllerServices[.]php"
@@ -2125,6 +2122,10 @@ components:
   - name: Search
     include:
       - ".*/lib/Kernel/Contracts/Search/.*"
+      - ".*/lib/BackgroundJob/(ViewAlertSweepJob)[.]php"
+      - ".*/lib/BackgroundJob/Support/ViewAlertCheck[.]php"
+      - ".*/lib/BackgroundJob/Support/ViewAlertSweepPlatform[.]php"
+      - ".*/lib/BackgroundJob/Support/ViewAlertSweepSources[.]php"
       - ".*/lib/Controller/(SettingsController)[.]php"
       - ".*/lib/Controller/Support/HybridSearchDiagnostics[.]php"
       - ".*/lib/Db/(SearchTrailCleanupInterface|SearchTrailCriteria)[.]php"
