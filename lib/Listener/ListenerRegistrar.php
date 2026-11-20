@@ -432,8 +432,7 @@ final class ListenerRegistrar {
 		// the one without a number. The same listener freezes it on update, because
 		// a frozen identifier that is not frozen fails in the quietest way there
 		// is: the number in the letter stops matching the record, and nothing errors.
-		$context->registerEventListener(ObjectCreatingEvent::class, GeneratedIdentifierListener::class);
-		$context->registerEventListener(ObjectUpdatingEvent::class, GeneratedIdentifierListener::class);
+		CoreListenerRegistrar::generatedIdentifier(context: $context);
 		$context->registerEventListener(ObjectUpdatingEvent::class, LifecycleValidationListener::class);
 
 		// Per-state field rules — see x-openregister-lifecycle.states.<state>.fields.
@@ -548,8 +547,7 @@ final class ListenerRegistrar {
 		// Survivorship annotation listener — materialises a declared golden
 		// record + attribute provenance into the object payload before
 		// persistence (see x-openregister-survivorship). MDM capability.
-		$context->registerEventListener(ObjectCreatingEvent::class, SurvivorshipRecomputeListener::class);
-		$context->registerEventListener(ObjectUpdatingEvent::class, SurvivorshipRecomputeListener::class);
+		CoreListenerRegistrar::survivorship(context: $context);
 
 		// Working-calendar write guard — runs WorkingCalendar::fromArray() at
 		// WRITE time, so the objects API, the admin page and a configuration
@@ -571,8 +569,7 @@ final class ListenerRegistrar {
 		// group are all refused at WRITE time, on every door, so a retired
 		// resultaattype cannot be chosen again while every dossier that
 		// already holds it keeps reading correctly.
-		$context->registerEventListener(ObjectCreatingEvent::class, CodedValueValidationListener::class);
-		$context->registerEventListener(ObjectUpdatingEvent::class, CodedValueValidationListener::class);
+		CoreListenerRegistrar::codedValueValidation(context: $context);
 	}//end registerScoringAndValidationListeners()
 
 	/**
@@ -603,12 +600,12 @@ final class ListenerRegistrar {
 		// ... and the delete half: a value the product defines, or one that
 		// objects still hold, is refused with its count. Closing the validity
 		// window is the operation that is always safe.
-		$context->registerEventListener(ObjectDeletingEvent::class, ConceptDeleteGuardListener::class);
+		CoreListenerRegistrar::conceptDeleteGuard(context: $context);
 
 		// A frozen object refuses its delete the way it refuses a write, on
 		// every path that dispatches the deleting event.
 		$context->registerEventListener(ObjectDeletingEvent::class, FrozenObjectDeleteGuardListener::class);
-		$context->registerEventListener(ObjectDeletingEvent::class, ObjectStateDeleteGuardListener::class);
+		CoreListenerRegistrar::objectStateDeleteGuard(context: $context);
 
 		self::registerLeavingGuards(context: $context);
 
@@ -617,13 +614,12 @@ final class ListenerRegistrar {
 		// lets it through and records the breach on the object's validation
 		// envelope, where it can be read afterwards. Both are real: a gemeente
 		// refuses a second bezwaar and only reports a repeated e-mail.
-		$context->registerEventListener(ObjectCreatingEvent::class, UniqueConstraintListener::class);
-		$context->registerEventListener(ObjectUpdatingEvent::class, UniqueConstraintListener::class);
+		CoreListenerRegistrar::uniqueConstraints(context: $context);
 
 		// A schema's identity values do not change once an object exists:
 		// outside software addresses the record by them. Only the audited
 		// schema migration path rewrites them.
-		$context->registerEventListener(ObjectUpdatingEvent::class, IdentityGuardListener::class);
+		CoreListenerRegistrar::identityGuard(context: $context);
 
 		// A schema may cap how many of its objects one organisation holds
 		// (`x-openregister-quota.perOrganisation`); a create past it is
@@ -666,9 +662,7 @@ final class ListenerRegistrar {
 		// write. Deliberately has no TTL to fall back on — a right removed from
 		// a schema must stop being offered at the moment of the write, and a
 		// stale permission menu is a bug that looks exactly like a correct one.
-		$context->registerEventListener(SchemaCreatedEvent::class, GrantableRightsInvalidationListener::class);
-		$context->registerEventListener(SchemaUpdatedEvent::class, GrantableRightsInvalidationListener::class);
-		$context->registerEventListener(SchemaDeletedEvent::class, GrantableRightsInvalidationListener::class);
+		CoreListenerRegistrar::grantableRights(context: $context);
 
 		// CRUD metric listener — persists an operational metric row per object
 		// create/update/delete into `openregister_metrics`, which the canonical
@@ -688,7 +682,7 @@ final class ListenerRegistrar {
 	 */
 	private static function registerLeavingGuards(IRegistrationContext $context): void {
 		$context->registerEventListener(ObjectLeavingEvent::class, WorkingCalendarDeleteGuardListener::class);
-		$context->registerEventListener(ObjectLeavingEvent::class, ConceptDeleteGuardListener::class);
+		CoreListenerRegistrar::conceptLeavingGuard(context: $context);
 	}//end registerLeavingGuards()
 
 	/**
@@ -788,15 +782,12 @@ final class ListenerRegistrar {
 		// Facet freshness on every object write: bumps the counter for the written
 		// object's (register, schema) scope so the next facet read cannot serve a
 		// bucket list computed before the write (openregister#3560).
-		$context->registerEventListener(ObjectCreatedEvent::class, FacetCacheInvalidationListener::class);
-		$context->registerEventListener(ObjectUpdatedEvent::class, FacetCacheInvalidationListener::class);
-		$context->registerEventListener(ObjectDeletedEvent::class, FacetCacheInvalidationListener::class);
-		$context->registerEventListener(ObjectTransitionedEvent::class, FacetCacheInvalidationListener::class);
+		CoreListenerRegistrar::facetCache(context: $context);
 
 		// A transition becomes an interval a history filter can join. The
 		// listener never fails the move: the projection is derived and
 		// rebuildable, the transition is not.
-		$context->registerEventListener(ObjectTransitionedEvent::class, StateHistoryProjectionListener::class);
+		CoreListenerRegistrar::stateHistory(context: $context);
 	}//end registerCacheEvictionListeners()
 
 	/**
@@ -933,7 +924,7 @@ final class ListenerRegistrar {
 		$context->registerEventListener(ObjectDeletedEvent::class, ObjectWritePushInterface::class);
 
 		// ObjectCleanupListener cleans up notes and tasks when an object is deleted.
-		$context->registerEventListener(ObjectDeletedEvent::class, ObjectCleanupListener::class);
+		CoreListenerRegistrar::objectCleanup(context: $context);
 	}//end registerPushAndCleanupListeners()
 
 	/**
@@ -987,12 +978,12 @@ final class ListenerRegistrar {
 		// The translation sidecar holds the draft's own values per language.
 		foreach ([...$saved, $removed] as $event) {
 			$context->registerEventListener($event, AggregationCacheInvalidationListener::class);
-			$context->registerEventListener($event, FacetCacheInvalidationListener::class);
+			CoreListenerRegistrar::draftFacetCache(context: $context, draftEvent: $event);
 			$context->registerEventListener($event, TranslationProjectionListener::class);
 		}
 
 		// What hangs on a draft goes with it: notes, tasks and links, watchers, read state, notification keys.
-		$context->registerEventListener($removed, ObjectCleanupListener::class);
+		CoreListenerRegistrar::draftCleanup(context: $context, draftEvent: $removed);
 		$context->registerEventListener($removed, WatcherPruneListener::class);
 		$context->registerEventListener($removed, ReadStatePruneListener::class);
 		$context->registerEventListener($removed, NotificationDedupePruneListener::class);
