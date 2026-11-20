@@ -33,7 +33,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\Audit\PurposeGuard;
+use OCA\OpenRegister\Kernel\Contracts\Core\ReadPurposeGuardInterface;
 use OCA\OpenRegister\Service\Object\RelationHandler;
 use OCA\OpenRegister\Service\Object\RelationHandlerStores;
 use OCA\OpenRegister\Service\Object\RelationLookup;
@@ -55,11 +55,11 @@ class RelationHandlerUsedByPurposeTest extends TestCase {
 	/**
 	 * Run /used for a target referenced from an unbound table and from a purpose-bound one.
 	 *
-	 * @param PurposeGuard|null $guard The doelbinding guard, null when none is wired.
+	 * @param ReadPurposeGuardInterface|null $guard The doelbinding guard, null when none is wired.
 	 *
 	 * @return string[] The uuids the list answers.
 	 */
-	private function usedBy(?PurposeGuard $guard): array {
+	private function usedBy(?ReadPurposeGuardInterface $guard): array {
 		$target = $this->object(uuid: 'target-1', schema: '2');
 		$open = $this->object(uuid: 'open-1', schema: '3');
 		$open->setRelations(['target' => 'target-1']);
@@ -115,10 +115,10 @@ class RelationHandlerUsedByPurposeTest extends TestCase {
 	/**
 	 * A guard that refuses reads of the bound schema and admits every other.
 	 *
-	 * @return PurposeGuard The guard.
+	 * @return ReadPurposeGuardInterface The guard.
 	 */
-	private function guardRefusingBoundSchema(): PurposeGuard {
-		$guard = $this->createMock(PurposeGuard::class);
+	private function guardRefusingBoundSchema(): ReadPurposeGuardInterface {
+		$guard = $this->createMock(ReadPurposeGuardInterface::class);
 		$guard->method('allows')->willReturnCallback(
 			static fn (?Register $register, ?Schema $schema): bool => $schema?->getId() !== self::BOUND_SCHEMA
 		);
@@ -128,10 +128,10 @@ class RelationHandlerUsedByPurposeTest extends TestCase {
 	/**
 	 * A guard that admits every read.
 	 *
-	 * @return PurposeGuard The guard.
+	 * @return ReadPurposeGuardInterface The guard.
 	 */
-	private function guardAdmittingAll(): PurposeGuard {
-		$guard = $this->createMock(PurposeGuard::class);
+	private function guardAdmittingAll(): ReadPurposeGuardInterface {
+		$guard = $this->createMock(ReadPurposeGuardInterface::class);
 		$guard->method('allows')->willReturn(true);
 		return $guard;
 	}//end guardAdmittingAll()
