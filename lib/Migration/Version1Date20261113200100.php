@@ -26,7 +26,6 @@ use Closure;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\Types;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Create `openregister_mail_headers`: one row per collected `.eml` file with
@@ -35,7 +34,7 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * @spec openspec/changes/reply-threading-by-headers/specs/integration-email/spec.md#requirement-collected-mail-files-carry-their-thread-headers-req-rth-010
  */
-class Version1Date20261113200100 extends SimpleMigrationStep {
+class Version1Date20261113200100 extends TargetedMigrationStep {
 
 	/**
 	 * Change the database schema.
@@ -50,7 +49,7 @@ class Version1Date20261113200100 extends SimpleMigrationStep {
 	 *
 	 * @spec openspec/changes/reply-threading-by-headers/specs/integration-email/spec.md#requirement-collected-mail-files-carry-their-thread-headers-req-rth-010
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		/*
 		 * @var ISchemaWrapper $schema
 		 */
@@ -76,5 +75,5 @@ class Version1Date20261113200100 extends SimpleMigrationStep {
 		$output->info('Created openregister_mail_headers table');
 
 		return $schema;
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 }//end class
