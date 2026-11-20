@@ -13,7 +13,6 @@
   "lib/Db/AuditTrailMapperInterface.php -> lib/Db/AuditTrail/PurposeRefusal.php",
   "lib/Db/AuditTrailMapperInterface.php -> lib/Db/AuditTrail/SharedMasterDataRefusal.php",
   "lib/Db/AuditTrailMapperInterface.php -> lib/Db/AuditTrail/ToolInvocation.php",
-  "lib/Db/MagicMapper/MagicSearchHandler.php -> lib/Search/Service/Search/PropertySearchProfile.php",
   "lib/Db/Schema.php -> lib/Db/Schema/AuthorizationRulesValidator.php",
   "lib/Db/Schema.php -> lib/Db/Schema/ConfigurationValidator.php",
   "lib/Db/Schema.php -> lib/Db/Schema/DeclaredActions.php",
@@ -1031,7 +1030,6 @@
   "lib/Search/Service/Quality/DedupCreatePolicyInterface.php",
   "lib/Search/Service/Search/PlaceholderResolverInterface.php",
   "lib/Search/Service/Search/PlaceholderResolvers.php",
-  "lib/Search/Service/Search/PropertySearchProfile.php",
   "lib/Search/Service/Vectorization/EmbeddingProbe.php",
   "lib/Search/Service/Vectorization/Handlers/ChunkVectorFactoryInterface.php",
   "lib/Search/Service/Vectorization/Handlers/ChunkVectorSourceInterface.php",
@@ -2288,7 +2286,7 @@
   "Notifications": 2057,
   "Platform": 61,
   "Processes": 27288,
-  "Search": 2028
+  "Search": 1929
  },
  "kernel_files": [
   "lib/BulkAction/BulkActionInterface.php",
@@ -2751,6 +2749,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10402,
- "total_loc": 461847,
- "violation_degree": 0.0087
+ "total_loc": 461857,
+ "violation_degree": 0.0086
 }
