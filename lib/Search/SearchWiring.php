@@ -36,6 +36,8 @@ use OCA\OpenRegister\Search\Service\Geo\GeoFilterApplier;
 use OCA\OpenRegister\Search\Service\Geo\GeoFilterApplierInterface;
 use OCA\OpenRegister\Search\Service\Geo\GeoFilterParser;
 use OCA\OpenRegister\Search\Service\Geo\GeoFilterParserInterface;
+use OCA\OpenRegister\Search\Service\Geo\SpatialFilter;
+use OCA\OpenRegister\Kernel\Contracts\Core\SpatialFilterInterface;
 use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidator;
 use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidatorInterface;
 use OCA\OpenRegister\Search\Service\Quality\DuplicateDetectionService;
@@ -52,8 +54,6 @@ use OCA\OpenRegister\Service\Quality\UniqueHintAnnotationValidatorInterface;
 use OCA\OpenRegister\Search\Service\VectorizationService;
 use OCA\OpenRegister\Search\Service\MetricsService;
 use OCA\OpenRegister\Search\Service\VectorizationServiceInterface;
-use OCA\OpenRegister\Search\Service\ExampleSet\ExampleSetViewRowsInterface;
-use OCA\OpenRegister\Search\Service\ExampleSet\ExampleSetViews;
 use OCA\OpenRegister\Search\Service\Vectorization\Handlers\ChunkVectorFactory;
 use OCA\OpenRegister\Search\Service\Vectorization\Handlers\ChunkVectorFactoryInterface;
 use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorStorageHandler;
@@ -89,6 +89,7 @@ final class SearchWiring {
 		GeoFeatureCollectionBuilderInterface::class => GeoFeatureCollectionBuilder::class,
 		GeoFilterApplierInterface::class => GeoFilterApplier::class,
 		GeoFilterParserInterface::class => GeoFilterParser::class,
+		SpatialFilterInterface::class => SpatialFilter::class,
 		MetricsRetentionInterface::class => MetricsService::class,
 		PlaceholderResolverInterface::class => PlaceholderResolver::class,
 		FilterPlaceholdersInterface::class => PlaceholderResolver::class,
@@ -102,7 +103,6 @@ final class SearchWiring {
 		VectorStorageHandlerInterface::class => VectorStorageHandler::class,
 		AggregationCacheInterface::class => AggregationCache::class,
 		ViewMapperInterface::class => ViewMapper::class,
-		ExampleSetViewRowsInterface::class => ExampleSetViews::class,
 		ChunkVectorFactoryInterface::class => ChunkVectorFactory::class,
 		PropertySearchProfileInterface::class => PropertySearchProfile::class,
 	];
