@@ -287,6 +287,22 @@ class ObjectPreviewFormatterTest extends TestCase {
 	}//end testAllCanonicalUrlsCollapseToTheSameCachePrefix()
 
 	/**
+	 * The formatter is the preview-cache port the object save path clears previews through.
+	 *
+	 * @return void
+	 */
+	public function testTheFormatterAnswersThePreviewCachePort(): void {
+		$uuid = '550e8400-e29b-41d4-a716-446655440000';
+		$port = $this->formatter;
+
+		$this->assertInstanceOf(\OCA\OpenRegister\Kernel\Contracts\Core\ObjectPreviewCacheInterface::class, $port);
+		$this->assertSame(['5/12/' . $uuid], array_values(array_unique(array_map(
+			fn (string $url): string => $port->resolveCachePrefix($url),
+			$port->buildCanonicalUrls(new ObjectRef(5, 12, $uuid))
+		))));
+	}//end testTheFormatterAnswersThePreviewCachePort()
+
+	/**
 	 * Test the cache-invalidation hook's dedup + separate deep-link call
 	 * pattern: iterating buildCanonicalUrls() through resolveCachePrefix()
 	 * with a dedup guard issues exactly one invalidateCache() call for the
