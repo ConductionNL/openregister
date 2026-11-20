@@ -67,9 +67,12 @@ use OCA\OpenRegister\Kernel\Contracts\PropertySearchProfileInterface;
 use OCA\OpenRegister\Search\Service\Search\PropertySearchProfile;
 use OCA\OpenRegister\Service\Vectorization\Strategies\FileVectorizationStrategyInterface;
 use OCA\OpenRegister\Service\Vectorization\Strategies\ObjectVectorizationStrategyInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\StoredViewQueriesInterface;
+use OCA\OpenRegister\Search\Service\StoredViewQueries;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+
 
 /**
  * The wiring behind SearchRegistrar.
@@ -108,6 +111,7 @@ final class SearchWiring {
 		ViewMapperInterface::class => ViewMapper::class,
 		ChunkVectorFactoryInterface::class => ChunkVectorFactory::class,
 		PropertySearchProfileInterface::class => PropertySearchProfile::class,
+		StoredViewQueriesInterface::class => StoredViewQueries::class,
 	];
 
 	/**
