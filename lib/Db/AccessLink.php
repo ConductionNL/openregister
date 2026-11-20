@@ -58,7 +58,6 @@ use OCP\AppFramework\Db\Entity;
  * @method void setLabel(?string $label)
  * @method string|null getPasswordHash()
  * @method void setPasswordHash(?string $passwordHash)
- * @method string|null getCreatedBy()
  * @method void setCreatedBy(?string $createdBy)
  * @method DateTime|null getCreated()
  * @method void setCreated(?DateTime $created)
@@ -84,21 +83,21 @@ class AccessLink extends Entity implements JsonSerializable, AccessLinkInterface
 	 *
 	 * @var string
 	 */
-	public const SUBJECT_OBJECT = 'object';
+	public const SUBJECT_OBJECT = AccessLinkInterface::SUBJECT_OBJECT;
 
 	/**
 	 * A link over one saved view.
 	 *
 	 * @var string
 	 */
-	public const SUBJECT_VIEW = 'view';
+	public const SUBJECT_VIEW = AccessLinkInterface::SUBJECT_VIEW;
 
 	/**
 	 * A link over one file the object carries.
 	 *
 	 * @var string
 	 */
-	public const SUBJECT_FILE = 'file';
+	public const SUBJECT_FILE = AccessLinkInterface::SUBJECT_FILE;
 
 	/**
 	 * The subject kinds a link may open.
@@ -274,6 +273,17 @@ class AccessLink extends Entity implements JsonSerializable, AccessLinkInterface
 	public function getSubjectId(): ?string {
 		return $this->subjectId;
 	}//end getSubjectId()
+
+	/**
+	 * The account that minted the link.
+	 *
+	 * @return string|null The user id, or null when unknown.
+	 *
+	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md
+	 */
+	public function getCreatedBy(): ?string {
+		return $this->createdBy;
+	}//end getCreatedBy()
 
 	/**
 	 * Whether this link still answers at the given moment.

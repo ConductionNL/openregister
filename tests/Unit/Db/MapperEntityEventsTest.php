@@ -267,8 +267,9 @@ final class MapperEntityEventsTest extends TestCase {
 			array_column($this->events, 0),
 			'insert announces nothing; update and updateIfOpen announce a terminal task'
 		);
-		$this->assertSame(['committed' => false, 'task' => 'given'], $this->events[0][1]);
-		$this->assertSame(['committed' => false, 'task' => 'given'], $this->events[1][1]);
+		// The concrete event keeps its own Task row, so `task` is read off the subclass first.
+		$this->assertSame(['task' => 'given', 'committed' => false], $this->events[0][1]);
+		$this->assertSame(['task' => 'given', 'committed' => false], $this->events[1][1]);
 	}
 
 	public function testNoTaskOrRunEventsWithoutADispatcher(): void {

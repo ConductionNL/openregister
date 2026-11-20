@@ -23,13 +23,14 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Core\FileNodeLookupInterface;
 use OCP\Files\File;
 use OCP\Files\Node;
 
 /**
  * The file look-ups and projections callers make without changing a file.
  */
-interface FileReaderInterface {
+interface FileReaderInterface extends FileNodeLookupInterface {
 
 	/**
 	 * Formats a single Node file into a metadata array (DELEGATED to FileFormattingHandler).
