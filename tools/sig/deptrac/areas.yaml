@@ -682,7 +682,7 @@ deptrac:
         - type: directory
           value: 'lib/Event/(ObjectLeavingEvent|ObjectWriteRequestEvent)[.]php$'
         - type: directory
-          value: 'lib/Listener/(CodedValueValidationListener|ConceptDeleteGuardListener|FacetCacheInvalidationListener|GeneratedIdentifierFreezeRun|GeneratedIdentifierIssueRun|GeneratedIdentifierListener|GrantableRightsInvalidationListener|IdentityClaimsLoginListener|IdentityGuardListener|ListenerClassesInterface|NotifyPushBatchInterface|ObjectCleanupListener|ObjectEventFilterRun|ObjectEventProxyListener|ObjectEventSlugMapRun|ObjectStateDeleteGuardListener|PresencePushInterface|SchemaFlowImportListenerInterface|StateHistoryProjectionListener|SurvivorshipRecomputeListener|SurvivorshipRecomputeRun|UniqueConstraintListener|UniqueConstraintListenerInterface|UniqueConstraintRun|ValidatesPreWriteObject|WrittenObjectOfEvent)[.]php$'
+          value: 'lib/Listener/(CodedValueValidationListener|ConceptDeleteGuardListener|CoreListenerRegistrar|FacetCacheInvalidationListener|GeneratedIdentifierFreezeRun|GeneratedIdentifierIssueRun|GeneratedIdentifierListener|GrantableRightsInvalidationListener|IdentityClaimsLoginListener|IdentityGuardListener|ListenerClassesInterface|NotifyPushBatchInterface|ObjectCleanupListener|ObjectEventFilterRun|ObjectEventProxyListener|ObjectEventSlugMapRun|ObjectStateDeleteGuardListener|PresencePushInterface|SchemaFlowImportListenerInterface|StateHistoryProjectionListener|SurvivorshipRecomputeListener|SurvivorshipRecomputeRun|UniqueConstraintListener|UniqueConstraintListenerInterface|UniqueConstraintRun|ValidatesPreWriteObject|WrittenObjectOfEvent)[.]php$'
         - type: directory
           value: 'lib/Listener/Support/ConflictVeto[.]php$'
         - type: directory
@@ -4152,6 +4152,8 @@ deptrac:
         - type: directory
           value: 'lib/Listener/(ArchivalDeclarationChecksListener|ArchivalNominationListener|ContentReportRemovalListener|EntityEditAuditListener|QualityScoreOnSaveListener|RecordTypeAuditListener|RelatedRetentionRecalculationListener|SchemaAuthorizationAuditListener)[.]php$'
         - type: directory
+          value: 'lib/Listener/Registrar/ComplianceListenerRegistrar[.]php$'
+        - type: directory
           value: 'lib/Repair/(RechainAuditTrailForFlowAttribution|V1ChainVerificationRun)[.]php$'
         - type: directory
           value: 'lib/Service/(AuditCanonicalV1|AuditChainKey|AuditHashService|AuditHashServiceInterface|AuditQueryService|AuditQueryServiceInterface|AuditRechainInterface|AuditRetentionResolver|AuditRetentionResolverInterface|AuditSealInterface|AuthorizationAuditService|AvgComplianceService|AvgRetentionErasureRun|AvgRetentionService|CalculationRun|ComplianceServiceBindings|ComplianceServiceRegistrar|ContentScanService|DsarErasureRun|DsarGuards|DsarService|DsarServiceInterface|DsarStores|DsarSubjectQuery|LogObjectInTable|LogService|ProcessingLogService|ProcessingRead|ReadCaptureRun|RetentionClock|RetentionPass|RetentionRules|RetentionService|RetentionServiceInterface|RetentionStores|SchemaCascade|SchemaDeletionService|SchemaTeardownGuard|SearchPeriod|SearchTrailNameEnricher|SearchTrailService|SearchTrailServiceInterface|SearchTrailStatistics|TableDeletionRun|TableObjectRef|TenantKeyService|TmloService|UnclassifiedProcessing|WholeTableRows)[.]php$'
@@ -4967,6 +4969,8 @@ deptrac:
           value: 'lib/Search/Db/[^/]*$'
         - type: directory
           value: 'lib/Search/Listener/[^/]*$'
+        - type: directory
+          value: 'lib/Search/Listener/Registrar/[^/]*$'
         - type: directory
           value: 'lib/Search/Service/[^/]*$'
         - type: directory

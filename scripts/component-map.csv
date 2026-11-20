@@ -4616,3 +4616,6 @@ Service/File/ShareLinkRequest.php,,Service,,,,,Files
 Service/File/UpdateFileGuards.php,,Service,,,,,Files
 Service/File/UpdateFileLocator.php,,Service,,,,,Files
 Db/AuditTrail/RevertOptions.php,,Db,,,,,Core
+Listener/CoreListenerRegistrar.php,,Listener,,,,,Core
+Listener/Registrar/ComplianceListenerRegistrar.php,,Listener,,,,,Compliance
+Search/Listener/Registrar/SearchListenerRegistrar.php,,Search,,,,,Search

@@ -64,12 +64,20 @@ class ListenerOrderTest extends TestCase {
 	/**
 	 * A component registrar only takes events no other registrar listens to.
 	 *
+	 * A slot registrar (no register(), only positioned slots) is not a
+	 * component registrar: ListenerRegistrar calls its slots inside the one
+	 * ordered list, so its events are shared by design and pinned there.
+	 *
 	 * @return void
 	 */
 	public function testAComponentRegistrarOwnsItsEventsAlone(): void {
 		$owners = [];
 		foreach (glob(__DIR__.'/../../../lib/{,*/}Listener/Registrar/*ListenerRegistrar.php', GLOB_BRACE) as $path) {
 			$class   = 'OCA\\OpenRegister\\'.str_replace('/', '\\', substr($path, strpos($path, 'lib/') + 4, -4));
+			if (method_exists($class, 'register') === false) {
+				continue;
+			}
+
 			$context = new RecordingRegistrationContext();
 			$class::register(context: $context);
 			foreach ($context->listeners as $registration) {
