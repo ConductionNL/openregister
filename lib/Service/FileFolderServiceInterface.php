@@ -25,13 +25,14 @@ namespace OCA\OpenRegister\Service;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Kernel\Contracts\Core\ObjectFolderAccessInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectFolderLookupInterface;
 use OCP\Files\Folder;
 use OCP\Files\Node;
 
 /**
  * Creating, resolving, listing, re-validating and removing the folder behind a register or object.
  */
-interface FileFolderServiceInterface extends ObjectFolderAccessInterface {
+interface FileFolderServiceInterface extends ObjectFolderAccessInterface, ObjectFolderLookupInterface {
 
 	/**
 	 * Creates a folder for either a Register or ObjectEntity and stores the folder ID.
