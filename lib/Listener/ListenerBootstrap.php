@@ -30,8 +30,9 @@ use OCP\AppFramework\Bootstrap\IRegistrationContext;
  * Application::register() calls register() once. The ordered list itself is
  * ListenerRegistrar, which stays inside the Listener component and binds the
  * interfaces of its own listeners. This class is the application's entry into
- * that list and binds only the Platform listener outside callers type against
- * (the presence push). The alias is registered before the listeners and does
+ * that list and binds only the Platform listener classes outside callers type
+ * against (the presence push and the bulk-import batch entry of the notify_push
+ * listener). The alias is registered before the listeners and does
  * not change their order.
  *
  * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
@@ -48,6 +49,7 @@ final class ListenerBootstrap {
 	 */
 	public const BINDINGS = [
 		PresencePushInterface::class => NotifyPushListener::class,
+		NotifyPushBatchInterface::class => NotifyPushBatch::class,
 	];
 
 	/**
