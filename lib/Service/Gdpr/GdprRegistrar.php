@@ -20,8 +20,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Gdpr;
 
-use OCA\OpenRegister\Db\SchemaMapper\SchemaDeclarationChecksEvent;
-use OCA\OpenRegister\Listener\ArchivalDeclarationChecksListener;
 use OCA\OpenRegister\Service\Gdpr\Evidence\EvidenceSourceRegistry;
 use OCA\OpenRegister\Service\Gdpr\Export\UnsignedPadesSigner;
 use OCA\OpenRegister\Service\Gdpr\Identity\IdentityVerifyRegistry;
@@ -55,9 +53,6 @@ final class GdprRegistrar {
 		self::registerEvidenceRegistry(context: $context);
 		self::registerIdentitySeam(context: $context);
 		self::registerRegulatorSeam(context: $context);
-
-		// The archival declaration checks run inside the schema save, in their slots of SchemaDeclarationOrder.
-		$context->registerEventListener(SchemaDeclarationChecksEvent::class, ArchivalDeclarationChecksListener::class);
 	}//end register()
 
 	/**

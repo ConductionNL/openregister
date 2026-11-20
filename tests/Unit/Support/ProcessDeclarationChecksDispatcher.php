@@ -5,7 +5,8 @@
  *
  * An event dispatcher that answers the schema declaration checks event the way
  * the app does, through every listener the areas register for it, so a hand-built
- * SchemaMapper runs the checks Processes, Compliance, Configuration and Search contribute.
+ * SchemaMapper runs the checks Processes, Compliance, Integrations, Notifications,
+ * Configuration and Search contribute.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -26,9 +27,11 @@ namespace OCA\OpenRegister\Tests\Unit\Support;
 
 use OCA\OpenRegister\Db\SchemaMapper\SchemaDeclarationChecksEvent;
 use OCA\OpenRegister\Listener\ArchivalDeclarationChecksListener;
+use OCA\OpenRegister\Listener\HandoffDeclarationChecksListener;
 use OCA\OpenRegister\Listener\ReferenceCardDeclarationCheckListener;
 use OCA\OpenRegister\Listener\SchemaDeclarationChecksListener;
 use OCA\OpenRegister\Listener\UniqueHintDeclarationCheckListener;
+use OCA\OpenRegister\Notifications\Listener\NotificationDeclarationCheckListener;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionValidatorInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -40,7 +43,7 @@ use Psr\Log\NullLogger;
 use RuntimeException;
 
 /**
- * Contributes every area's declaration checks; every other event is recorded and dropped.
+ * Contributes the declaration checks the areas add, as the app does; every other event is recorded and dropped.
  */
 final class ProcessDeclarationChecksDispatcher implements IEventDispatcher, ContainerInterface {
 
@@ -124,8 +127,9 @@ final class ProcessDeclarationChecksDispatcher implements IEventDispatcher, Cont
 	/**
 	 * Every listener the app registers for the schema declaration checks event.
 	 *
-	 * Processes, Compliance, Configuration and Search each contribute their checks
-	 * from their own registrar; a hand-built SchemaMapper runs all of them.
+	 * Processes, Compliance, Integrations, Notifications, Configuration and Search
+	 * each contribute their checks from their own registrar; a hand-built
+	 * SchemaMapper runs all of them.
 	 *
 	 * @param LoggerInterface    $logger    The logger the listeners receive.
 	 * @param ContainerInterface $container The container the process checks read.
@@ -136,6 +140,8 @@ final class ProcessDeclarationChecksDispatcher implements IEventDispatcher, Cont
 		return [
 			new SchemaDeclarationChecksListener(logger: $logger, container: $container),
 			new ArchivalDeclarationChecksListener(logger: $logger),
+			new HandoffDeclarationChecksListener(),
+			new NotificationDeclarationCheckListener(logger: $logger),
 			new ReferenceCardDeclarationCheckListener(),
 			new UniqueHintDeclarationCheckListener(),
 		];
