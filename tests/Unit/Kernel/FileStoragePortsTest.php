@@ -35,6 +35,7 @@ use OCA\OpenRegister\Files\Db\FileMapperInterface;
 use OCA\OpenRegister\Files\FilesRegistrar;
 use OCA\OpenRegister\Kernel\Contracts\Core\FileNodeLookupInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ObjectFileRecordsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectFolderAccessInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ObjectFolderLookupInterface;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\FileFolderServiceInterface;
@@ -42,6 +43,7 @@ use OCA\OpenRegister\Service\FileReaderInterface;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Object\AuditRecording;
 use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCA\OpenRegister\Service\Object\Collaborators\ObjectStorageServices;
 use OCA\OpenRegister\Service\Object\DeleteObject;
 use OCA\OpenRegister\Service\Object\DeletionAttribution;
 use OCA\OpenRegister\Service\Object\DeletionIntegrity;
@@ -58,6 +60,8 @@ use OCP\SystemTag\ISystemTagManager;
 use OCP\SystemTag\ISystemTagObjectMapper;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use ReflectionMethod;
+use ReflectionNamedType;
 
 /**
  * Each port is a parent of the file storage interface it was taken from, and is bound to the same class.
@@ -72,6 +76,7 @@ final class FileStoragePortsTest extends TestCase {
 			'file records'  => [ObjectFileRecordsInterface::class, FileMapperInterface::class],
 			'file node'     => [FileNodeLookupInterface::class, FileReaderInterface::class],
 			'object folder' => [ObjectFolderLookupInterface::class, FileFolderServiceInterface::class],
+			'folder access' => [ObjectFolderAccessInterface::class, FileFolderServiceInterface::class],
 		];
 	}
 
@@ -97,6 +102,22 @@ final class FileStoragePortsTest extends TestCase {
 		$this->assertSame(FileService::class, ContractBindings::BINDINGS[ObjectFolderLookupInterface::class]);
 		$this->assertSame(ContractBindings::BINDINGS[FileReaderInterface::class], ContractBindings::BINDINGS[FileNodeLookupInterface::class]);
 		$this->assertSame(ContractBindings::BINDINGS[FileFolderServiceInterface::class], ContractBindings::BINDINGS[ObjectFolderLookupInterface::class]);
+	}
+
+	public function testTheFolderAccessPortBindsToTheFileService(): void {
+		$this->assertSame(FileService::class, ContractBindings::BINDINGS[ObjectFolderAccessInterface::class]);
+		$this->assertSame(ContractBindings::BINDINGS[FileFolderServiceInterface::class], ContractBindings::BINDINGS[ObjectFolderAccessInterface::class]);
+	}
+
+	public function testTheObjectStorageBagCarriesTheFolderAccessPortOnly(): void {
+		$parameters = [];
+		foreach ((new ReflectionMethod(ObjectStorageServices::class, '__construct'))->getParameters() as $parameter) {
+			$type = $parameter->getType();
+			$parameters[$parameter->getName()] = ($type instanceof ReflectionNamedType) ? $type->getName() : null;
+		}
+
+		$this->assertSame(ObjectFolderAccessInterface::class, $parameters['fileService']);
+		$this->assertArrayNotHasKey('searchTrailService', $parameters);
 	}
 
 	public function testARenderReadsFilesThroughThePorts(): void {

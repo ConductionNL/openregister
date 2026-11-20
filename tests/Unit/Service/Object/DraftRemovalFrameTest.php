@@ -56,7 +56,7 @@ class DraftRemovalFrameTest extends TestCase {
 	 */
 	private function record(): DraftRemovalRecord {
 		$trail = $this->createMock(AuditTrailMapperInterface::class);
-		$trail->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
+		$trail->method('writeObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
 			function (ObjectEntity $object, string $action, array $context, ?string $actorId): AuditTrail {
 				$this->actors[] = $actorId;
 				return new AuditTrail();

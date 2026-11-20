@@ -24,6 +24,7 @@ use DateTimeImmutable;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\AuditEntry;
+use OCA\OpenRegister\Kernel\Contracts\Core\PlacedAuditEntry;
 use OCA\OpenRegister\Service\Audit\AuditEntryWriter;
 use OCP\DB\Exception as DBException;
 use PHPUnit\Framework\TestCase;
@@ -93,4 +94,31 @@ class AuditEntryWriterTest extends TestCase {
 			entries: [new AuditEntry(uuid: 'u-1', action: 'a', user: 'system', userName: 'System', changed: [], created: new DateTimeImmutable())]
 		);
 	}//end testAFailedWriteIsThrown()
+	/**
+	 * A placed entry is filed under its register and schema; a missing one stays empty.
+	 *
+	 * @return void
+	 */
+	public function testAPlacedEntryIsFiledUnderItsRegisterAndSchema(): void {
+		$rows   = [];
+		$mapper = $this->createMock(originalClassName: AuditTrailMapperInterface::class);
+		$mapper->expects($this->once())->method('insertAuditTrails')->willReturnCallback(
+			function (array $entries) use (&$rows): array {
+				$rows = $entries;
+				return $entries;
+			}
+		);
+		$entry = new AuditEntry(uuid: 'u-1', action: 'a', user: 'alice', userName: 'alice', changed: ['property' => 'bsn'], created: new DateTimeImmutable(), objectUuid: 'o-1');
+
+		(new AuditEntryWriter(mapper: $mapper))->writeAuditEntries(
+			entries: [new PlacedAuditEntry(entry: $entry, register: 14, schema: 24), new PlacedAuditEntry(entry: $entry, schema: 24)]
+		);
+
+		$this->assertSame(expected: 14, actual: $rows[0]->getRegister());
+		$this->assertSame(expected: 24, actual: $rows[0]->getSchema());
+		$this->assertSame(expected: 'o-1', actual: $rows[0]->getObjectUuid());
+		$this->assertSame(expected: ['property' => 'bsn'], actual: $rows[0]->getChanged());
+		$this->assertNull(actual: $rows[1]->getRegister());
+		$this->assertSame(expected: 24, actual: $rows[1]->getSchema());
+	}//end testAPlacedEntryIsFiledUnderItsRegisterAndSchema()
 }//end class
