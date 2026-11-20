@@ -42,6 +42,10 @@ class EntityEventsGoldenTest extends TestCase {
 	 * Entities outside the Kernel travel under the Kernel read interface they implement (ADR-013 Rule 1).
 	 */
 	private const DECLARED_AS = [
+		'OCA\\OpenRegister\\Db\\Application'      => 'OCA\\OpenRegister\\Kernel\\Contracts\\ApplicationInterface',
+		'OCA\\OpenRegister\\Db\\Configuration'    => 'OCA\\OpenRegister\\Kernel\\Contracts\\ConfigurationInterface',
+		'OCA\\OpenRegister\\Db\\Organisation'     => 'OCA\\OpenRegister\\Kernel\\Contracts\\OrganisationInterface',
+		'OCA\\OpenRegister\\Db\\Source'           => 'OCA\\OpenRegister\\Kernel\\Contracts\\SourceInterface',
 		'OCA\\OpenRegister\\Mcp\\Db\\Agent'        => 'OCA\\OpenRegister\\Kernel\\Contracts\\AgentInterface',
 		'OCA\\OpenRegister\\Mcp\\Db\\Conversation' => 'OCA\\OpenRegister\\Kernel\\Contracts\\ConversationInterface',
 		'OCA\\OpenRegister\\Search\\Db\\View'      => 'OCA\\OpenRegister\\Kernel\\Contracts\\ViewInterface',

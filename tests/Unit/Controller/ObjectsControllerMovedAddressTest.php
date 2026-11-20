@@ -40,7 +40,7 @@ use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\Object\MovedObjectLookupInterface;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\WebhookService;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IAppConfig;
@@ -121,7 +121,7 @@ class ObjectsControllerMovedAddressTest extends TestCase {
 			$groupManager,
 			$this->createMock(ExportService::class),
 			$this->createMock(ImportService::class),
-			$this->createMock(WebhookService::class),
+			$this->createMock(originalClassName: IEventDispatcher::class),
 			$this->createMock(LoggerInterface::class),
 			windowService: $this->createMock(DeletionWindowService::class)
 		);
