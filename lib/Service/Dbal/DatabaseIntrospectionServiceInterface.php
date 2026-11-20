@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Dbal;
 
-use OCA\OpenRegister\Db\Source;
+use OCA\OpenRegister\Kernel\Contracts\SourceInterface;
 use OCA\OpenRegister\Service\Schema\SchemaDiffService;
 
 /**
@@ -40,7 +40,7 @@ interface DatabaseIntrospectionServiceInterface {
 	 * schemas (matched by source id / table name) and logs structural drift via
 	 * {@see SchemaDiffService}; it never creates duplicates.
 	 *
-	 * @param Source $source The `type: database` source to introspect.
+	 * @param SourceInterface $source The `type: database` source to introspect.
 	 *
 	 * @return array{register: int, created: array<int, string>, updated: array<int, string>, drift: array<int, array<string, mixed>>}
 	 *
@@ -48,5 +48,5 @@ interface DatabaseIntrospectionServiceInterface {
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
-	public function introspect(Source $source): array;
+	public function introspect(SourceInterface $source): array;
 }//end interface
