@@ -321,6 +321,7 @@ Controller/ObjectRelationsController.php,542,Controller,Service,Service/Controll
 Controller/ObjectShareLinkController.php,137,Controller,Integrations,Integrations/Controller/ObjectShareLinkController.php,0,,Integrations
 Controller/ObjectSharingController.php,205,Controller,Access,Access/Controller/ObjectSharingController.php,0,,Core
 Controller/ObjectStateController.php,121,Controller,Service,Service/Controller/ObjectStateController.php,0,,Core
+Controller/ObjectExportController.php,,Controller,,,,,Configuration
 Controller/ObjectsController.php,3385,Controller,Service,Service/Controller/ObjectsController.php,0,,Core
 Controller/OpenProjectLinksController.php,111,Controller,Integrations,Integrations/Controller/OpenProjectLinksController.php,0,,Integrations
 Controller/Support/OpenProjectLinksControllerServices.php,,Controller,,,,,Integrations
@@ -498,6 +499,7 @@ Controller/Support/ObjectActionsExecution.php,14,Controller,Flows,Flows/Controll
 Controller/Support/ObjectDraftControllerServices.php,10,Controller,Service,Service/Controller/Support/ObjectDraftControllerServices.php,0,,Core
 Controller/Support/ObjectDraftDomain.php,16,Controller,Service,Service/Controller/Support/ObjectDraftDomain.php,0,,Core
 Controller/Support/ObjectDraftPlatform.php,14,Controller,Service,Service/Controller/Support/ObjectDraftPlatform.php,0,,Core
+Controller/Support/ObjectExport.php,,Controller,,,,,Configuration
 Controller/Support/ObjectGovernanceServices.php,16,Controller,Service,Service/Controller/Support/ObjectGovernanceServices.php,0,,Core
 Controller/Support/ObjectIntegrationsAccess.php,,Controller,,,,,Integrations
 Controller/Support/ObjectLinkRoute.php,11,Controller,Integrations,Integrations/Controller/Support/ObjectLinkRoute.php,0,,Core
@@ -555,6 +557,7 @@ Controller/Support/SchemaPlatform.php,16,Controller,Service,Service/Controller/S
 Controller/Support/SchemaSemantics.php,16,Controller,Service,Service/Controller/Support/SchemaSemantics.php,0,,Core
 Controller/Support/SchemaServices.php,16,Controller,Service,Service/Controller/Support/SchemaServices.php,0,,Core
 Controller/Support/SchemasControllerServices.php,12,Controller,Service,Service/Controller/Support/SchemasControllerServices.php,0,,Core
+Controller/Support/ServedExport.php,,Controller,,,,,Configuration
 Controller/Support/SettingsControllerServices.php,10,Controller,Search,Search/Controller/Support/SettingsControllerServices.php,0,,Core
 Controller/Support/SettingsRuntime.php,12,Controller,Search,Search/Controller/Support/SettingsRuntime.php,0,,Core
 Controller/Support/SettingsStore.php,16,Controller,Search,Search/Controller/Support/SettingsStore.php,0,,Core
