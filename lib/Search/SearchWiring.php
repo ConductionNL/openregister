@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Search;
 
 use OCA\OpenRegister\Db\SchemaMapper\SchemaDeclarationChecksEvent;
+use OCA\OpenRegister\Listener\UniqueHintDeclarationCheckListener;
 use OCA\OpenRegister\Search\Db\ViewMapper;
 use OCA\OpenRegister\Search\Listener\AggregationDeclarationCheckListener;
 use OCA\OpenRegister\Kernel\Contracts\EmbeddingGeneratorInterface;
@@ -128,6 +129,9 @@ final class SearchWiring {
 		// The aggregations declaration check runs inside the schema save, in the
 		// AGGREGATIONS slot of SchemaDeclarationOrder the mapper keeps for it.
 		$context->registerEventListener(SchemaDeclarationChecksEvent::class, AggregationDeclarationCheckListener::class);
+
+		// The unique-hint declaration check runs inside the schema save, in its slot of SchemaDeclarationOrder.
+		$context->registerEventListener(SchemaDeclarationChecksEvent::class, UniqueHintDeclarationCheckListener::class);
 	}//end register()
 
 	/**
