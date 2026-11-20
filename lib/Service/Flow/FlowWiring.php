@@ -32,6 +32,7 @@ use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionDefaultsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionEvaluatorInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ReadHistoryInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\SaveBoundaryInterface;
 use OCA\OpenRegister\Service\Interaction\ReadHistoryService;
 use OCA\OpenRegister\Kernel\Contracts\Core\WriteElevationInterface;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionWriteElevation;
@@ -150,6 +151,7 @@ final class FlowWiring {
 		\OCA\OpenRegister\Kernel\Contracts\Core\PartyParentInterface::class => \OCA\OpenRegister\Service\Party\PartyParent::class,
 		\OCA\OpenRegister\Kernel\Contracts\Core\LifecycleStatesKeeperInterface::class => \OCA\OpenRegister\Service\Lifecycle\LifecycleStatesKeeper::class,
 		UnreadCountsInterface::class => UnreadCountCalculator::class,
+		SaveBoundaryInterface::class => AutoTransitionPass::class,
 	];
 
 	/**

@@ -17,6 +17,7 @@ use OCA\OpenRegister\Kernel\Contracts\Core\PartyParentInterface;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleStatesKeeper;
 use OCA\OpenRegister\Service\Party\PartyParent;
 use OCA\OpenRegister\Kernel\Contracts\Core\UnreadCountsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\SaveBoundaryInterface;
 use OCA\OpenRegister\Service\Interaction\UnreadCountCalculator;
 use OCA\OpenRegister\Service\Quota\ObjectQuotaService;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
@@ -358,11 +359,23 @@ final class FlowWiringTest extends TestCase {
 				PartyParentInterface::class                => PartyParent::class,
 				LifecycleStatesKeeperInterface::class      => LifecycleStatesKeeper::class,
 				UnreadCountsInterface::class               => UnreadCountCalculator::class,
+				SaveBoundaryInterface::class               => AutoTransitionPass::class,
 			],
 			actual: $this->aliases
 		);
 		self::assertSame(expected: FlowWiring::BINDINGS, actual: FlowRegistrar::BINDINGS);
 	}//end testTheScheduleFlowStoreIsBound()
+
+	/**
+	 * The Core save-boundary port is answered by the shared automatic-transition pass, so ObjectService opens and closes the one request-scoped boundary.
+	 *
+	 * @return void
+	 */
+	public function testTheSaveBoundaryPortIsAnsweredByTheSharedAutoTransitionPass(): void {
+		self::assertSame(expected: AutoTransitionPass::class, actual: ($this->aliases[SaveBoundaryInterface::class] ?? null));
+		self::assertArrayHasKey(key: AutoTransitionPass::class, array: $this->factories);
+		self::assertTrue(condition: is_a(AutoTransitionPass::class, SaveBoundaryInterface::class, true));
+	}//end testTheSaveBoundaryPortIsAnsweredByTheSharedAutoTransitionPass()
 
 	/**
 	 * The MCP discovery's port for contributed built-in tool providers is answered by the flow tools.
