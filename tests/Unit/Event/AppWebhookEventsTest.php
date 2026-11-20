@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\WebhookLogMapper;
 use OCA\OpenRegister\Db\WebhookMapper;
 use OCA\OpenRegister\Event\AppWebhookEvents;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
+use OCA\OpenRegister\Kernel\Contracts\AppEventWebhookListenerInterface;
 use OCA\OpenRegister\Listener\WebhookEventListener;
 use OCA\OpenRegister\Service\WebhookService;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\WebhooksControllerFactory;
@@ -103,7 +104,7 @@ class AppWebhookEventsTest extends TestCase {
 		$dispatcher = $this->createMock(IEventDispatcher::class);
 		$dispatcher->expects($this->once())
 			->method('addServiceListener')
-			->with(ThingSignedEvent::class, WebhookEventListener::class);
+			->with(ThingSignedEvent::class, AppEventWebhookListenerInterface::class);
 
 		$this->assertTrue($this->declareSigned($dispatcher));
 		$this->assertTrue($this->declareSigned($dispatcher));
