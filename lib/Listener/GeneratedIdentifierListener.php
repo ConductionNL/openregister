@@ -40,11 +40,10 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
+use OCA\OpenRegister\Kernel\Contracts\Core\RunningNumbersInterface;
 use OCA\OpenRegister\Service\Object\ObjectEventGateInterface;
 use OCA\OpenRegister\Service\Schemas\GeneratedIdentifierDeclarationInterface;
 use OCA\OpenRegister\Service\Schemas\GeneratedIdentifierDeclarationReader;
-use OCA\OpenRegister\Service\SequenceScope;
-use OCA\OpenRegister\Service\SequenceServiceInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\IConfig;
@@ -72,14 +71,14 @@ class GeneratedIdentifierListener implements IEventListener {
 	 * Constructor.
 	 *
 	 * @param SchemaMapperInterface $schemaMapper Resolves the object's schema.
-	 * @param SequenceServiceInterface $sequences Reserves a number, atomically.
+	 * @param RunningNumbersInterface $sequences Reserves a number, atomically.
 	 * @param LoggerInterface $logger PSR logger.
 	 * @param ObjectEventGateInterface $gate Decides what a draft is held from.
 	 * @param IConfig|null $config The instance secret that keys a random sequence.
 	 */
 	public function __construct(
 		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly SequenceServiceInterface $sequences,
+		private readonly RunningNumbersInterface $sequences,
 		private readonly LoggerInterface $logger,
 		private readonly ObjectEventGateInterface $gate,
 		private readonly ?IConfig $config=null,
@@ -207,11 +206,7 @@ class GeneratedIdentifierListener implements IEventListener {
 			return null;
 		}
 
-		$scope = new SequenceScope(
-			registerId: 0,
-			schemaId: 0,
-			scopeKey: $this->scopeKey(declaration: $declaration, period: $declaration->periodAt(moment: $run->now))
-		);
+		$scope = $this->scopeKey(declaration: $declaration, period: $declaration->periodAt(moment: $run->now));
 
 		return $this->firstUnreserved(declaration: $declaration, scope: $scope, moment: $run->now);
 
@@ -225,7 +220,7 @@ class GeneratedIdentifierListener implements IEventListener {
 	 * spin forever; after MAX_RESERVED_SKIPS the issue fails and the create is refused.
 	 *
 	 * @param GeneratedIdentifierDeclarationInterface $declaration The identifier's declaration.
-	 * @param SequenceScope                           $scope       The counter to take from.
+	 * @param string                                  $scope       The key of the counter to take from.
 	 * @param DateTimeImmutable                       $moment      The moment of the create.
 	 *
 	 * @return string The first unreserved value.
@@ -234,7 +229,7 @@ class GeneratedIdentifierListener implements IEventListener {
 	 *
 	 * @spec openspec/changes/generated-identifier/specs/computed-fields/spec.md#requirement-a-second-human-identifier-reserved-values-and-a-scheme-change-as-a-migration-req-gid-006
 	 */
-	private function firstUnreserved(GeneratedIdentifierDeclarationInterface $declaration, SequenceScope $scope, DateTimeImmutable $moment): string {
+	private function firstUnreserved(GeneratedIdentifierDeclarationInterface $declaration, string $scope, DateTimeImmutable $moment): string {
 		for ($tried = 0; $tried <= GeneratedIdentifierDeclarationInterface::MAX_RESERVED_SKIPS; $tried++) {
 			$value = $declaration->render(
 				sequenceValue: $this->sequences->reserveNext($scope),
@@ -414,7 +409,7 @@ class GeneratedIdentifierListener implements IEventListener {
 		}
 
 		$this->sequences->advanceTo(
-			new SequenceScope(registerId: 0, schemaId: 0, scopeKey: $this->scopeKey(declaration: $declaration, period: $parsed['period'])),
+			$this->scopeKey(declaration: $declaration, period: $parsed['period']),
 			reserved: $parsed['sequence']
 		);
 

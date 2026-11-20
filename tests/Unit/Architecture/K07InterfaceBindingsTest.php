@@ -1,11 +1,14 @@
 <?php
 
 /**
- * The interfaces lane K07 added for the Notifications component are bound in NotificationsWiring.
+ * The interfaces lane K07 added for the example-set timeline writer are bound in ContractBindings.
+ *
+ * The writer is example-set seeding work, so it counts to Configuration like its sibling writers
+ * in lib/Service/ExampleSet, and Configuration's ContractBindings binds it.
  *
  * A missing alias is a runtime 500 (or, for an optional writer, a silently refused part) that no
  * other unit test sees, so this test pins each binding, that the bound class implements the
- * interface, and that the callers outside lib/Notifications name only the interface.
+ * interface, and that its callers name only the interface.
  *
  * @category Test
  * @package  OCA\OpenRegister\Tests\Unit\Architecture
@@ -20,9 +23,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
-use OCA\OpenRegister\Notifications\NotificationsWiring;
 use OCA\OpenRegister\Notifications\Service\ExampleSet\ExampleSetTimelineEntries;
 use OCA\OpenRegister\Notifications\Service\ExampleSet\ExampleSetTimelineRowsInterface;
+use OCA\OpenRegister\Service\ContractBindings;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -50,7 +53,7 @@ final class K07InterfaceBindingsTest extends TestCase {
 	}//end bindings()
 
 	/**
-	 * The interface is bound in NotificationsWiring to the class, and the class implements it.
+	 * The interface is bound in ContractBindings to the class, and the class implements it.
 	 *
 	 * @param class-string $contract The interface.
 	 * @param class-string $service  The class.
@@ -59,13 +62,13 @@ final class K07InterfaceBindingsTest extends TestCase {
 	 */
 	#[DataProvider('bindings')]
 	public function testBindingIsPresentAndImplemented(string $contract, string $service): void {
-		$this->assertArrayHasKey($contract, NotificationsWiring::BINDINGS);
-		$this->assertSame($service, NotificationsWiring::BINDINGS[$contract]);
+		$this->assertArrayHasKey($contract, ContractBindings::BINDINGS);
+		$this->assertSame($service, ContractBindings::BINDINGS[$contract]);
 		$this->assertTrue(is_subclass_of($service, $contract), $service . ' must implement ' . $contract);
 	}//end testBindingIsPresentAndImplemented()
 
 	/**
-	 * Outside lib/Notifications, the callers name the interface, not the Notifications classes.
+	 * The callers name the interface, not the writer class.
 	 *
 	 * @return array<string, array{0: string, 1: list<string>}>
 	 */
@@ -79,7 +82,7 @@ final class K07InterfaceBindingsTest extends TestCase {
 	 * The caller does not name a hidden class.
 	 *
 	 * @param string       $file    The caller, relative to lib/.
-	 * @param list<string> $classes The Notifications classes it must not name.
+	 * @param list<string> $classes The classes it must not name.
 	 *
 	 * @return void
 	 */
