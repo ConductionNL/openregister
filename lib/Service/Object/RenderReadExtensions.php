@@ -22,12 +22,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\RecordArchivalReadingInterface;
 use OCA\OpenRegister\Service\FieldEncryptionHandler;
 use OCA\OpenRegister\Service\Hinge\LensResolver;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
 
 /**
- * The optional read-time extensions of a render: object sources, field encryption and lenses.
+ * The optional read-time extensions of a render: object sources, field encryption, lenses and the archival reading.
  *
  * Each is nullable with a default, as on the renderer before: a null one leaves
  * the data exactly as it was.
@@ -38,9 +39,10 @@ final class RenderReadExtensions {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param ObjectSourceRegistry|null    $objectSourceRegistry   Resolves object-source providers for `$ref` extends into virtual schemas.
-	 * @param FieldEncryptionHandler|null  $fieldEncryptionHandler Field-level encryption handler (x-openregister-encrypted).
-	 * @param LensResolver|null            $lensResolver           Resolves a schema's declared lenses at read time.
+	 * @param ObjectSourceRegistry|null           $objectSourceRegistry   Resolves object-source providers for `$ref` extends into virtual schemas.
+	 * @param FieldEncryptionHandler|null         $fieldEncryptionHandler Field-level encryption handler (x-openregister-encrypted).
+	 * @param LensResolver|null                   $lensResolver           Resolves a schema's declared lenses at read time.
+	 * @param RecordArchivalReadingInterface|null $archivalReading        The archival retention and decision of a rendered record (Compliance binds it).
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
@@ -48,6 +50,7 @@ final class RenderReadExtensions {
 		public readonly ?ObjectSourceRegistry $objectSourceRegistry = null,
 		public readonly ?FieldEncryptionHandler $fieldEncryptionHandler = null,
 		public readonly ?LensResolver $lensResolver = null,
+		public readonly ?RecordArchivalReadingInterface $archivalReading = null,
 	) {
 	}//end __construct()
 }//end class
