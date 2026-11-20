@@ -45,7 +45,6 @@
   "lib/Db/SourceMapperInterface.php -> lib/Db/Source.php",
   "lib/Db/TaskAuditMapper.php -> lib/Db/TaskAuditMapperInterface.php",
   "lib/Db/VerwerkingsactiviteitMapperInterface.php -> lib/Db/Verwerkingsactiviteit.php",
-  "lib/Event/TaskTerminalEvent.php -> lib/Db/Task.php",
   "lib/Files/Service/File/DocumentRedactionServices.php -> lib/Service/Settings/FileSettingsHandler.php",
   "lib/Files/Service/TextExtraction/EntityRecognitionHandler.php -> lib/Service/Settings/FileSettingsHandler.php",
   "lib/Listener/NotifyPushBatch.php -> lib/Listener/NotifyPushListener.php",
@@ -158,7 +157,6 @@
   "lib/Service/Rbac/SharerFolderAccess.php -> lib/Files/Service/File/ObjectFileAccess.php",
   "lib/Service/RegisterService.php -> lib/Service/FileFolderServiceInterface.php",
   "lib/Service/RegisterServiceHelpers.php -> lib/Service/FileFolderServiceInterface.php",
-  "lib/Service/Registers/EntityEventPublisher.php -> lib/Db/Task.php",
   "lib/Service/Search/VectorResultFilter.php -> lib/Files/Service/File/FileReadScope.php",
   "lib/Service/Search/VectorResultFilter.php -> lib/Search/Service/ViewService.php",
   "lib/Service/ServiceBootstrap.php -> lib/Service/Gdpr/GdprRegistrar.php",
@@ -2433,7 +2431,7 @@
   "Core": 64480,
   "Files": 2646,
   "Integrations": 18152,
-  "Kernel": 8473,
+  "Kernel": 8470,
   "Notifications": 2049,
   "Platform": 293,
   "Processes": 28865,
@@ -2899,7 +2897,7 @@
   "lib/Support/RegisterSlugAliasesInterface.php",
   "lib/Support/UnknownFilterKeys.php"
  ],
- "kernel_loc": 10411,
- "total_loc": 461377,
- "violation_degree": 0.0213
+ "kernel_loc": 10408,
+ "total_loc": 461379,
+ "violation_degree": 0.021
 }
