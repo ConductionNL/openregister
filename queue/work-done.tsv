@@ -23087,3 +23087,4 @@ merge:thematiq:1167:0d783e0e	nothing landed: #1167 closed (not open), #1719 #172
 merge:integriq:1985:1588a9bc	failed: prep exit 2, composer needs ext-bcmath and ext-soap (not installed in cloud PHP)	session-20261119T224634-99998470	2026-11-19T22:52:54Z
 merge:integriq:3713:a35e1353	unmeasured: static.developer.overheid.nl (8 PRs reviewed APPROVE, tree adds no failures, none landed)	session-20261119T224634-99998470	2026-11-19T23:10:36Z
 merge:integriq:3731:80f864b4	unmeasured: static.developer.overheid.nl (also api.osv.dev refused); reviews recorded: 3731/3733/3734 APPROVE, 3732 REQUEST_CHANGES	session-20261119T234632-666dcbdf	2026-11-20T00:03:16Z
+merge:integriq:3721:dafe4824	unmeasured: static.developer.overheid.nl (merge gate checker_floor NO RESULT; 7 IN reviewed: 6 APPROVE, #3728 REQUEST_CHANGES for missing version bump; #3725 conflict re-verify; merged 0)	session-20261120T004535-45b81973	2026-11-20T01:00:32Z
