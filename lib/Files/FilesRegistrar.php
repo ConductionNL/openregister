@@ -36,9 +36,11 @@ use OCA\OpenRegister\Files\Service\File\DocumentProcessingHandler;
 use OCA\OpenRegister\Files\Service\File\FileAuditHandler;
 use OCA\OpenRegister\Files\Service\File\FileAuditHandlerInterface;
 use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
+use OCA\OpenRegister\Files\Service\File\FileReadScope;
 use OCA\OpenRegister\Files\Service\File\FileOwnershipHandlerInterface;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionGuardInterface;
+use OCA\OpenRegister\Files\Service\File\FileScopeReader;
 use OCA\OpenRegister\Files\Service\File\FileSharingHandler;
 use OCA\OpenRegister\Files\Service\File\FileSharingHandlerInterface;
 use OCA\OpenRegister\Files\Service\File\Office\ConversionManagerConverter;
@@ -54,17 +56,21 @@ use OCA\OpenRegister\Files\Service\NoteVersionService;
 use OCA\OpenRegister\Files\Service\RiskLevelService;
 use OCA\OpenRegister\Files\Service\RiskLevelServiceInterface;
 use OCA\OpenRegister\Files\Service\Sharing\AccessLinkReader;
+use OCA\OpenRegister\Files\Service\TextExtraction\PatternSet\PatternSetVersion;
 use OCA\OpenRegister\Files\Service\TextExtractionService;
 use OCA\OpenRegister\Files\Service\UploadService;
 use OCA\OpenRegister\Kernel\Contracts\AccessLinkReaderInterface;
 use OCA\OpenRegister\Kernel\Contracts\ChunkMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FileSizeTotalsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ReadableFileHitsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\DetectionPatternsVersionInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FileAccountInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FileReadRestrictionInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\RegisterFolderRecordsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ShareLinkUrlInterface;
 use OCA\OpenRegister\Kernel\Contracts\DocumentProcessingHandlerInterface;
 use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Search\FileScopeInterface;
 use OCA\OpenRegister\Kernel\Contracts\TaggingHandlerInterface;
 use OCA\OpenRegister\Kernel\Contracts\TextExtractionServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\UploadServiceInterface;
@@ -87,6 +93,7 @@ final class FilesRegistrar
         ChunkMapperInterface::class               => ChunkMapper::class,
         ChunkSourceReaderInterface::class         => ChunkMapper::class,
         ChunkStoreInterface::class                => ChunkMapper::class,
+        DetectionPatternsVersionInterface::class  => PatternSetVersion::class,
         DocumentProcessingHandlerInterface::class => DocumentProcessingHandler::class,
         FileAccountInterface::class               => FileOwnershipHandler::class,
         FileAuditHandlerInterface::class          => FileAuditHandler::class,
@@ -96,10 +103,12 @@ final class FilesRegistrar
         AntivirusScannerInterface::class          => AntivirusScannerAdapter::class,
         FileReadRestrictionInterface::class       => FileRestrictionGuard::class,
         FileRestrictionGuardInterface::class      => FileRestrictionGuard::class,
+        FileScopeInterface::class                 => FileScopeReader::class,
         FileSharingHandlerInterface::class        => FileSharingHandler::class,
         NcOfficeConverterInterface::class         => ConversionManagerConverter::class,
         NoteServiceInterface::class               => NoteService::class,
         ObjectFileRecordsInterface::class         => FileMapper::class,
+        ReadableFileHitsInterface::class          => FileReadScope::class,
         RegisterFolderProvisionerInterface::class => RegisterFolderProvisioner::class,
         RegisterFolderRecordsInterface::class     => RegisterFolderRecorder::class,
         RiskLevelServiceInterface::class          => RiskLevelService::class,

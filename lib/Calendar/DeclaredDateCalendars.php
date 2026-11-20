@@ -24,14 +24,14 @@ namespace OCA\OpenRegister\Calendar;
 
 use DateTimeImmutable;
 use DateTimeInterface;
-use OCA\OpenRegister\Db\CalendarFeedToken;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\Integrations\ObjectDateEventsSourceInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Search\Db\View;
-use OCA\OpenRegister\Service\Calendar\ObjectCalendarFeedService;
-use OCA\OpenRegister\Service\Calendar\ObjectCalendarFeedSources;
-use OCA\OpenRegister\Service\Calendar\ObjectDateDeclaration;
+use OCA\OpenRegister\Search\Db\ViewMapperInterface;
 use OCA\OpenRegister\Service\Calendar\ObjectDateEvents;
 use OCP\IUser;
+use OCP\IUserManager;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -76,16 +76,20 @@ class DeclaredDateCalendars {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectCalendarFeedService $feed    The one event generator, shared with the feed.
-	 * @param ObjectCalendarFeedSources $sources The object access path, the view store and the user lookup.
-	 * @param VeventSearchShape         $shape   Reads a generated VEVENT as a search result.
-	 * @param LoggerInterface           $logger  Logs what could not be read.
+	 * @param ObjectDateEventsSourceInterface $feed        The one event generator, shared with the feed.
+	 * @param ObjectOperationsInterface       $objects     The object access path, to list views as the principal.
+	 * @param ViewMapperInterface             $views       The saved-view store.
+	 * @param IUserManager                    $userManager The user a principal names.
+	 * @param VeventSearchShape               $shape       Reads a generated VEVENT as a search result.
+	 * @param LoggerInterface                 $logger      Logs what could not be read.
 	 *
 	 * @spec openspec/changes/platform-caldav-backend/specs/calendar-provider/spec.md#requirement-declared-object-dates-appear-as-platform-calendars-req-pcb-001
 	 */
 	public function __construct(
-		private readonly ObjectCalendarFeedService $feed,
-		private readonly ObjectCalendarFeedSources $sources,
+		private readonly ObjectDateEventsSourceInterface $feed,
+		private readonly ObjectOperationsInterface $objects,
+		private readonly ViewMapperInterface $views,
+		private readonly IUserManager $userManager,
 		private readonly VeventSearchShape $shape,
 		private readonly LoggerInterface $logger,
 	) {
@@ -103,13 +107,11 @@ class DeclaredDateCalendars {
 	 *
 	 * @return bool True when the schema declares at least one date kind.
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectDateDeclaration::allFromConfig is the declaration's named constructor.
-	 *
 	 * @spec openspec/changes/platform-caldav-backend/specs/calendar-provider/spec.md#requirement-declared-object-dates-appear-as-platform-calendars-req-pcb-001
 	 */
 	public function declaresDates(Schema $schema, array $config): bool {
 		try {
-			return ObjectDateDeclaration::allFromConfig(calendarConfig: $config) !== [];
+			return $this->feed->declaresDates(calendarConfig: $config);
 		} catch (Throwable $unreadable) {
 			$this->logger->warning(
 				'[DeclaredDateCalendars] Schema ' . $schema->getId() . ' declares unreadable date kinds; keeping its virtual calendar: '
@@ -136,7 +138,7 @@ class DeclaredDateCalendars {
 				key: self::SCHEMA_KEY_PREFIX . $schema->getId(),
 				displayName: $this->nameOr(candidate: ($config['displayName'] ?? $schema->getTitle())),
 				color: $this->colorOr(candidate: ($config['color'] ?? null)),
-				scopeType: CalendarFeedToken::SCOPE_SCHEMA,
+				scopeType: ObjectDateEventsSourceInterface::SCOPE_SCHEMA,
 				scopeId: (string)$schema->getId(),
 				principalUri: $principalUri
 			),
@@ -308,9 +310,9 @@ class DeclaredDateCalendars {
 	 */
 	private function visibleViews(IUser $user): array {
 		try {
-			$views = $this->sources->objects->runAs(
+			$views = $this->objects->runAs(
 				$user,
-				fn () => $this->sources->views->findAll($user->getUID())
+				fn () => $this->views->findAll($user->getUID())
 			);
 		} catch (Throwable $failure) {
 			$this->logger->warning(
@@ -361,7 +363,7 @@ class DeclaredDateCalendars {
 				key: self::VIEW_KEY_PREFIX . $view->getId(),
 				displayName: $this->nameOr(candidate: $view->getName()),
 				color: $this->colorOr(candidate: $color),
-				scopeType: CalendarFeedToken::SCOPE_VIEW,
+				scopeType: ObjectDateEventsSourceInterface::SCOPE_VIEW,
 				scopeId: (string)$view->getId(),
 				principalUri: $principalUri
 			),
@@ -381,7 +383,7 @@ class DeclaredDateCalendars {
 			return null;
 		}
 
-		return $this->sources->userManager->get($matches[1]);
+		return $this->userManager->get($matches[1]);
 	}//end principalUser()
 
 	/**

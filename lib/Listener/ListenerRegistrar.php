@@ -43,7 +43,10 @@ use OCA\OpenRegister\Event\SchemaDeletedEvent;
 use OCA\OpenRegister\Event\SchemaUpdatedEvent;
 use OCA\OpenRegister\Event\TaskTerminalEvent;
 use OCA\OpenRegister\Event\TaskTransitionedEvent;
+use OCA\OpenRegister\Kernel\Contracts\Processes\ObjectWriteCacheFollowerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Processes\ObjectWritePushInterface;
 use OCA\OpenRegister\Mcp\Listener\ContextChatSubmissionListener;
+use OCA\OpenRegister\Mcp\Listener\McpDeclarationChecksListener;
 use OCA\OpenRegister\Notifications\Listener\GraphQLSubscriptionListener;
 use OCA\OpenRegister\Notifications\Listener\NotificationDedupeAnnotationSyncListener;
 use OCA\OpenRegister\Notifications\Listener\NotificationDedupePruneListener;
@@ -78,7 +81,6 @@ final class ListenerRegistrar {
 	 */
 	public const BINDINGS = [
 		DecisionTableValidationListenerInterface::class => DecisionTableValidationListener::class,
-		NotifyPushBatchInterface::class => NotifyPushBatch::class,
 		SchemaFlowImportListenerInterface::class => SchemaFlowImportListener::class,
 		UniqueConstraintListenerInterface::class => UniqueConstraintListener::class,
 	];
@@ -159,7 +161,7 @@ final class ListenerRegistrar {
 	/**
 	 * The listeners that contribute checks to the schema save.
 	 *
-	 * Processes, Compliance, Integrations and Notifications each add their checks, so the event stays here.
+	 * Processes, Compliance, Integrations (hand-off and MCP) and Notifications each add their checks, so the event stays here.
 	 * It is a positioned collection: every check names its slot of
 	 * SchemaDeclarationOrder and the mapper runs them in slot order, whatever
 	 * order the listeners run in.
@@ -175,6 +177,7 @@ final class ListenerRegistrar {
 		$context->registerEventListener(SchemaDeclarationChecksEvent::class, ArchivalDeclarationChecksListener::class);
 		$context->registerEventListener(SchemaDeclarationChecksEvent::class, HandoffDeclarationChecksListener::class);
 		$context->registerEventListener(SchemaDeclarationChecksEvent::class, NotificationDeclarationCheckListener::class);
+		$context->registerEventListener(SchemaDeclarationChecksEvent::class, McpDeclarationChecksListener::class);
 	}//end registerSchemaDeclarationChecks()
 
 	/**
@@ -777,10 +780,11 @@ final class ListenerRegistrar {
 		$context->registerEventListener(ObjectUpdatedEvent::class, AggregationCacheInvalidationListener::class);
 		$context->registerEventListener(ObjectDeletedEvent::class, AggregationCacheInvalidationListener::class);
 
-		// The redaction policy index follows its termRule, detectionPattern and redactionProfile objects.
-		$context->registerEventListener(ObjectCreatedEvent::class, RedactionPolicyCacheListener::class);
-		$context->registerEventListener(ObjectUpdatedEvent::class, RedactionPolicyCacheListener::class);
-		$context->registerEventListener(ObjectDeletedEvent::class, RedactionPolicyCacheListener::class);
+		// The redaction policy index follows its termRule, detectionPattern and redactionProfile objects
+		// (Configuration binds the contract to RedactionPolicyCacheListener).
+		$context->registerEventListener(ObjectCreatedEvent::class, ObjectWriteCacheFollowerInterface::class);
+		$context->registerEventListener(ObjectUpdatedEvent::class, ObjectWriteCacheFollowerInterface::class);
+		$context->registerEventListener(ObjectDeletedEvent::class, ObjectWriteCacheFollowerInterface::class);
 
 		// Facet freshness on every object write: bumps the counter for the written
 		// object's (register, schema) scope so the next facet read cannot serve a
@@ -923,10 +927,11 @@ final class ListenerRegistrar {
 	 * @return void
 	 */
 	private static function registerPushAndCleanupListeners(IRegistrationContext $context): void {
-		// Notify_push real-time push listeners (soft-fail when notify_push not installed).
-		$context->registerEventListener(ObjectCreatedEvent::class, NotifyPushListener::class);
-		$context->registerEventListener(ObjectUpdatedEvent::class, NotifyPushListener::class);
-		$context->registerEventListener(ObjectDeletedEvent::class, NotifyPushListener::class);
+		// Notify_push real-time push listeners (soft-fail when notify_push not installed;
+		// Platform binds the contract to NotifyPushListener).
+		$context->registerEventListener(ObjectCreatedEvent::class, ObjectWritePushInterface::class);
+		$context->registerEventListener(ObjectUpdatedEvent::class, ObjectWritePushInterface::class);
+		$context->registerEventListener(ObjectDeletedEvent::class, ObjectWritePushInterface::class);
 
 		// ObjectCleanupListener cleans up notes and tasks when an object is deleted.
 		$context->registerEventListener(ObjectDeletedEvent::class, ObjectCleanupListener::class);
