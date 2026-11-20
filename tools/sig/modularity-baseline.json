@@ -6,7 +6,6 @@
   "lib/Controller/ActionRightsController.php -> lib/Service/Flow/IFlowNodeRequiresRight.php",
   "lib/Controller/ActionRightsController.php -> lib/Settings/OpenRegisterAdmin.php",
   "lib/Controller/ObjectsController.php -> lib/Files/Service/File/BulkDownloadArchive.php",
-  "lib/Controller/ObjectsController.php -> lib/Listener/ChangeGateListener.php",
   "lib/Controller/ObjectsController.php -> lib/Search/Service/Geo/FeatureShape.php",
   "lib/Controller/ObjectsController.php -> lib/Search/Service/Geo/GeoResponseCrsFactory.php",
   "lib/Controller/ObjectsController.php -> lib/Search/Service/Geo/GeoResponseCrsInterface.php",
@@ -16,7 +15,6 @@
   "lib/Controller/ObjectsController.php -> lib/Service/FileServiceInterface.php",
   "lib/Controller/ObjectsController.php -> lib/Service/Flow/FlowRunContextInterface.php",
   "lib/Controller/ObjectsController.php -> lib/Service/Interaction/ReadStateServiceInterface.php",
-  "lib/Controller/ObjectsController.php -> lib/Service/Rules/ExpressionDefaultException.php",
   "lib/Controller/RegistersController.php -> lib/Service/AuthorizationAuditService.php",
   "lib/Controller/RegistersController.php -> lib/Service/Configuration/ConfigurationCollaborators.php",
   "lib/Controller/RegistersController.php -> lib/Service/Lifecycle/KeepLifecycleStatesScope.php",
@@ -856,6 +854,7 @@
   "lib/Kernel/Contracts/Core/CurrentFlowRunInterface.php",
   "lib/Kernel/Contracts/Core/DeclarationRefusalInterface.php",
   "lib/Kernel/Contracts/Core/ExportGuardInterface.php",
+  "lib/Kernel/Contracts/Core/ExpressionDefaultRefusalInterface.php",
   "lib/Kernel/Contracts/Core/ExpressionDefaultsInterface.php",
   "lib/Kernel/Contracts/Core/ExpressionEvaluatorInterface.php",
   "lib/Kernel/Contracts/Core/FederatedShareInterface.php",
@@ -866,6 +865,7 @@
   "lib/Kernel/Contracts/Core/FileSettingsReaderInterface.php",
   "lib/Kernel/Contracts/Core/FilterPlaceholdersInterface.php",
   "lib/Kernel/Contracts/Core/FollowTableInterface.php",
+  "lib/Kernel/Contracts/Core/HeldChangeCodes.php",
   "lib/Kernel/Contracts/Core/JobRunRecordingInterface.php",
   "lib/Kernel/Contracts/Core/MigrationPackDefinitionsInterface.php",
   "lib/Kernel/Contracts/Core/ObjectAuditEntry.php",
@@ -1037,7 +1037,6 @@
   "lib/Lifecycle/LifecycleTransitionGuardInterface.php",
   "lib/Listener/ArchivalDeclarationChecksListener.php",
   "lib/Listener/ArchivalNominationListener.php",
-  "lib/Listener/ChangeGateListener.php",
   "lib/Listener/CodedValueValidationListener.php",
   "lib/Listener/ConceptDeleteGuardListener.php",
   "lib/Listener/ContentReportRemovalListener.php",
@@ -2470,13 +2469,13 @@
  "exposed_loc": {
   "Compliance": 15375,
   "Configuration": 3134,
-  "Core": 64102,
+  "Core": 64119,
   "Files": 2667,
   "Integrations": 18152,
   "Kernel": 8506,
   "Notifications": 2049,
   "Platform": 293,
-  "Processes": 29414,
+  "Processes": 29188,
   "Search": 2035
  },
  "kernel_files": [
@@ -2942,6 +2941,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10457,
- "total_loc": 461218,
- "violation_degree": 0.0265
+ "total_loc": 461237,
+ "violation_degree": 0.0263
 }

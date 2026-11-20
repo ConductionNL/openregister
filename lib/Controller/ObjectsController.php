@@ -74,7 +74,6 @@ use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\DuplicateBlockedException;
 use OCA\OpenRegister\Exception\FolderAccessDeniedException;
 use OCA\OpenRegister\Exception\HookStoppedException;
-use OCA\OpenRegister\Listener\ChangeGateListener;
 use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\ObjectExistsException;
@@ -111,10 +110,11 @@ use OCA\OpenRegister\Search\Service\Geo\GetFeatureRequest;
 use OCA\OpenRegister\Service\Geo\GeocodeOptions;
 use OCA\OpenRegister\Service\Object\PaginationLinks;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionDefaultRefusalInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\HeldChangeCodes;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
-use OCA\OpenRegister\Service\Rules\ExpressionDefaultException;
 use OCA\OpenRegister\Service\Search\HistoryPredicateInterface;
 use OCA\OpenRegister\Service\Search\SearchGrammar;
 use OCA\OpenRegister\Service\WriteCause;
@@ -3869,7 +3869,10 @@ class ObjectsController extends Controller {
 
 		return ($this->writeRefusal(exception: $e, objectService: $objectService) ?? match (true) {
 			$e instanceof UpsertOnKeyException => new JSONResponse(data: $e->getBody(), statusCode: $e->getStatusCode(), headers: $e->getHeaders()),
-			$e instanceof ExpressionDefaultException => new JSONResponse(data: ['error' => $e->getMessage(), 'errors' => [$e->toArray()]], statusCode: 422),
+			$e instanceof ExpressionDefaultRefusalInterface => new JSONResponse(
+				data: ['error' => $e->getMessage(), 'errors' => [$e->toArray()]],
+				statusCode: 422
+			),
 			$e instanceof ObjectExistsException => new JSONResponse(data: ['error' => $e->getMessage(), 'uuid' => $e->getUuid()], statusCode: 409),
 			$e instanceof DuplicateBlockedException => new JSONResponse(data: ['error' => $e->getMessage(), 'matches' => $e->getMatches()], statusCode: 409),
 			$e instanceof DbalWriteException => new JSONResponse(data: ['error' => $e->getMessage()], statusCode: $e->getStatusCode()),
@@ -3920,7 +3923,7 @@ class ObjectsController extends Controller {
 	private static function heldChangeAnswer(HookStoppedException $exception): ?JSONResponse {
 		$errors = $exception->getErrors();
 		$code   = ($errors['code'] ?? null);
-		if ($code === ChangeGateListener::CODE_PENDING) {
+		if ($code === HeldChangeCodes::PENDING) {
 			return new JSONResponse(
 				data: [
 					'message' => $exception->getMessage(),
@@ -3932,7 +3935,7 @@ class ObjectsController extends Controller {
 			);
 		}
 
-		if ($code === ChangeGateListener::CODE_OPEN) {
+		if ($code === HeldChangeCodes::PENDING_OPEN) {
 			return new JSONResponse(data: ['error' => $exception->getMessage(), 'errors' => $errors], statusCode: Http::STATUS_CONFLICT);
 		}
 
