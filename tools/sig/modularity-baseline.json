@@ -137,8 +137,6 @@
   "lib/Service/Object/SaveObject.php -> lib/Service/TmloService.php",
   "lib/Service/Object/SaveObject/ComputedFieldHandler.php -> lib/Twig/MappingTwigInstallerInterface.php",
   "lib/Service/Object/SaveObject/SaveObjectRecords.php -> lib/Service/TmloService.php",
-  "lib/Service/Object/SaveObject/SaveObjectRuntime.php -> lib/Service/Flow/FlowRunContext.php",
-  "lib/Service/Object/SaveObjectInterface.php -> lib/Service/Rules/ExpressionDefaultException.php",
   "lib/Service/Object/SearchLenses.php -> lib/Service/Interaction/ReadHistoryService.php",
   "lib/Service/Object/SearchQueryHandler.php -> lib/Service/Interaction/ReadHistoryService.php",
   "lib/Service/Object/TranslationHandler.php -> lib/Service/LanguageService.php",
@@ -2206,7 +2204,6 @@
   "lib/Service/Rules/DependentValueTableInterface.php",
   "lib/Service/Rules/DependentValueValidator.php",
   "lib/Service/Rules/DependentValueValidatorInterface.php",
-  "lib/Service/Rules/ExpressionDefaultException.php",
   "lib/Service/Rules/RuleEnablementService.php",
   "lib/Service/Rules/RuleEnablementServiceInterface.php",
   "lib/Service/Rules/RuleInventoryService.php",
@@ -2428,13 +2425,13 @@
  "exposed_loc": {
   "Compliance": 15028,
   "Configuration": 3063,
-  "Core": 64480,
+  "Core": 64479,
   "Files": 2646,
   "Integrations": 18152,
   "Kernel": 8470,
   "Notifications": 2049,
   "Platform": 293,
-  "Processes": 28865,
+  "Processes": 28842,
   "Search": 2035
  },
  "kernel_files": [
@@ -2898,6 +2895,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10408,
- "total_loc": 461379,
- "violation_degree": 0.021
+ "total_loc": 461378,
+ "violation_degree": 0.0208
 }
