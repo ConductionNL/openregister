@@ -11,11 +11,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\CascadeRetentionCheckInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\SearchTrailRecorderInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ReadPurposeGuardInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ReadableObjectHistoryInterface;
 use OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders;
 use OCA\OpenRegister\Service\Audit\ObjectHistoryForReadersInterface;
+use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
 use OCA\OpenRegister\Service\Audit\PurposeGuard;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\ComplianceServiceRegistrar;
@@ -111,4 +113,8 @@ final class ComplianceServiceRegistrarTest extends TestCase {
 		$this->assertSame(expected: ObjectHistoryForReaders::class, actual: (ComplianceServiceRegistrar::BINDINGS[ReadableObjectHistoryInterface::class] ?? null));
 		$this->assertTrue(is_subclass_of(ObjectHistoryForReadersInterface::class, ReadableObjectHistoryInterface::class));
 	}//end testTheReadableHistoryPortIsAnsweredByTheReaderHistory()
+
+	public function testTheCascadeAsksTheArchivalRetentionGuard(): void {
+		$this->assertSame(expected: ArchivalRetentionGuard::class, actual: ComplianceServiceRegistrar::BINDINGS[CascadeRetentionCheckInterface::class]);
+	}//end testTheCascadeAsksTheArchivalRetentionGuard()
 }//end class
