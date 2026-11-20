@@ -1,0 +1,98 @@
+id	round	design	expected_reduction	files	key	title
+X00	1	tasks.md 7.2 (decided by Ruben 2026-11-20); kernel.md section 6 "Candidates for promotion"	-65	29	X00	Promote the value types of the published ObjectServiceInterface into lib/Contract
+X01	1	core.md C5-01 (section 3.1 point 1)	22100	10	C-map	Core binds its own classes in a Core service map
+X02	1	core.md C5-02; compliance.md B2 (W4); search.md S6d	2045	8	C-listen	Core, Compliance and Search listeners through their own positioned registrars
+X03	1	core.md C5-03 (section 3.1 point 2)	5670	7	C-markers	Platform middlewares ask Core marker interfaces instead of three Core controllers
+X04	1	configuration.md CF8 (3c)	347	14	CF-platform-contracts	Configuration-owned contracts for Platform (maintenance marker, seed directory, seed outcome, export right)
+X05	1	files.md B5	0	3	F-pipeline-types	The image types of the anonymisation pipeline live in PipelineSteps
+X06	1	notifications.md N1a, N1b (3.3)	325	0	N-rows	Notifications rows out (chat, webhooks, mail links, activity filter, report bags) and in (follows, scheduled messages)
+X07	1	search.md S1 (A1, A2, A3, A6, A7)	547	0	S-rows	Search rows: search trail, alert delivery, alert sweep, vector facade, diagnostics
+X08	2	processes.md R1 (section 3.1); compliance.md B1 (W1, W2, W3)	31084	7	PC-map	Processes and Compliance bind their own classes in their own maps
+X09	2	processes.md R6c	630	7	P-example-sets-c	Party reads and calendar tasks on the existing Kernel contracts
+X10	2	compliance.md B5f; files.md B4; search.md S4c	10	7	Endpoints	ObjectsController endpoints that are another area's work move to that area's controller (object logs, bulk download, geo)
+X11	2	configuration.md CF3a, CF3b, CF3c (3b Core ports)	417	10	CF-settings-readers	Remaining callers of Configuration settings and job runs use the existing Core ports
+X12	2	configuration.md CF4b (and CF4a remainder)	486	14	CF-lower-contracts	Existing lower contracts instead of Configuration names (export guard, app importer, vocabulary, configuration contract)
+X13	2	files.md B1 (3b F1 to F4, F6, F7; A3 row)	0	13	F-ports	Files-owned ports and their Files implementations (entity mentions, caller file rights, managed files, file setting rules, folder provisioning, office conversion)
+X14	2	search.md S2 (A8, A9); search.md S3 (C1, C3)	168	6	S-core	Placeholders and property profile count to Core; Core-owned ports Search implements (stored view query, create guard)
+X15	2	search.md S4e	0	7	S-declaration-checks	Search schema annotation checks contributed through SchemaDeclarationChecksEvent
+X16	2	platform.md PL2a (3.4); platform.md PL1, PL4	78	5	PL	Platform: rows of repair helpers and breakers, and the last references into Platform
+X17	3	core.md C5-05 (section 3.2)	0	44	C-ports	The Core ports (reader, writer, tables, drafts, destruction, rendering, deferral, access, grants, reach, reveal, request security, tenancy, schema evolution, lookup, view alerts, deep links, API versions, problem details, declaration findings)
+X18	3	integrations.md I1 (I1a, I1b, I1c)	10670	2	I-map	Integrations binds its own classes in IntegrationWiring
+X19	3	processes.md R5a, R5b (section 3.3)	0	21	P-seeds	The Processes ports for Configuration and Platform (seeds, operations runs, setting keys, review policy)
+X20	3	compliance.md B4a (P1, P2, P8, P9, R6); core.md 3.2 AuditRecorderInterface	0	7	Comp-audit	Core-owned audit ports implemented by Compliance (recorder, history, search recording, authorization change log)
+X21	3	files.md B2a	143	13	F-processes	Processes callers of Files use the Files and Core ports
+X22	3	search.md S4a; search.md S4b	223	8	S-core-callers	Core callers of the Search-implemented Core ports (stored view query, duplicate guard)
+X23	3	search.md S5 (3b)	0	11	S-ports	Search-owned ports (saved views, vector search, embeddings administration, vector index, search scopes)
+X24	4	core.md C5-06, Appendix B "Compliance" PR 2	813	15	C-callers-Compliance-2	Compliance callers of Core switch to the Core ports (C5-06 PR 2)
+X25	4	core.md C5-06, Appendix B "Compliance" PR 3	813	15	C-callers-Compliance-3	Compliance callers of Core switch to the Core ports (C5-06 PR 3)
+X26	4	core.md C5-06, Appendix B "Compliance" PR 4	813	15	C-callers-Compliance-4	Compliance callers of Core switch to the Core ports (C5-06 PR 4)
+X27	4	core.md C5-06, Appendix B "Compliance" PR 5	813	15	C-callers-Compliance-5	Compliance callers of Core switch to the Core ports (C5-06 PR 5)
+X28	4	core.md C5-06, Appendix B "Compliance" PR 6	813	15	C-callers-Compliance-6	Compliance callers of Core switch to the Core ports (C5-06 PR 6)
+X29	4	core.md C5-06, Appendix B "Compliance" PR 7; core.md C5-11, Appendix B "Files" PR 2	596	11	C-callers-Compliance-7+Files-2	Compliance (C5-06 PR 7) and Files (C5-11 PR 2) callers of Core switch to the Core ports
+X30	4	core.md C5-07, Appendix B "Configuration" PR 1	813	15	C-callers-Configuration-1	Configuration callers of Core switch to the Core ports (C5-07 PR 1)
+X31	4	core.md C5-11, Appendix B "Files" PR 1	813	15	C-callers-Files-1	Files callers of Core switch to the Core ports (C5-11 PR 1)
+X32	4	integrations.md I2 (I2a, I2b)	820	16	I-reg	Registrars of other areas stop binding Integrations classes; Service/Bindings emptied
+X33	4	compliance.md B4b (P3 to P7)	0	9	Comp-archival	Core-owned archival ports implemented by Compliance (retention classification, archival metadata on save, archival annotations)
+X34	4	files.md B2c (C3); files.md B3a (C1, C2)	436	14	F-core-ports	Core file ports C1 to C3 and their Core and Integrations callers
+X35	4	files.md B3b	481	5	F-core-readers	Other Core and Compliance file callers use the Core file ports
+X36	5	core.md C5-06, Appendix B "Compliance" PR 1	813	15	C-callers-Compliance-1	Compliance callers of Core switch to the Core ports (C5-06 PR 1)
+X37	5	core.md C5-07, Appendix B "Configuration" PR 4	813	15	C-callers-Configuration-4	Configuration callers of Core switch to the Core ports (C5-07 PR 4)
+X38	5	core.md C5-07, Appendix B "Configuration" PR 5	542	10	C-callers-Configuration-5	Configuration callers of Core switch to the Core ports (C5-07 PR 5)
+X39	5	core.md C5-08, Appendix B "Integrations" PR 1	813	15	C-callers-Integrations-1	Integrations callers of Core switch to the Core ports (C5-08 PR 1)
+X40	5	core.md C5-08, Appendix B "Integrations" PR 2	813	15	C-callers-Integrations-2	Integrations callers of Core switch to the Core ports (C5-08 PR 2)
+X41	5	core.md C5-08, Appendix B "Integrations" PR 3	813	15	C-callers-Integrations-3	Integrations callers of Core switch to the Core ports (C5-08 PR 3)
+X42	5	core.md C5-08, Appendix B "Integrations" PR 4	813	15	C-callers-Integrations-4	Integrations callers of Core switch to the Core ports (C5-08 PR 4)
+X43	5	core.md C5-09, Appendix B "Processes" PR 1	813	15	C-callers-Processes-1	Processes callers of Core switch to the Core ports (C5-09 PR 1)
+X44	5	core.md C5-09, Appendix B "Processes" PR 2	813	15	C-callers-Processes-2	Processes callers of Core switch to the Core ports (C5-09 PR 2)
+X45	5	integrations.md I3 (I3a, I3b), section 3.4	889	4	I-rows	Integrations rows out (other areas' entity plumbing) and in (callers that do Integrations' work)
+X46	5	compliance.md B6a (3d)	0	9	Comp-ports-audit	Compliance-owned audit ports for higher areas (audit events, processing reads, token attribution, audit settings)
+X47	5	files.md B2b (F5, F4 callers, A6)	355	11	F-configuration	Configuration callers of Files and the redaction settings port
+X48	6	core.md C5-07, Appendix B "Configuration" PR 2	813	15	C-callers-Configuration-2	Configuration callers of Core switch to the Core ports (C5-07 PR 2)
+X49	6	core.md C5-07, Appendix B "Configuration" PR 3	813	15	C-callers-Configuration-3	Configuration callers of Core switch to the Core ports (C5-07 PR 3)
+X50	6	core.md C5-09, Appendix B "Processes" PR 3	813	15	C-callers-Processes-3	Processes callers of Core switch to the Core ports (C5-09 PR 3)
+X51	6	core.md C5-09, Appendix B "Processes" PR 5	813	15	C-callers-Processes-5	Processes callers of Core switch to the Core ports (C5-09 PR 5)
+X52	6	core.md C5-09, Appendix B "Processes" PR 6	813	15	C-callers-Processes-6	Processes callers of Core switch to the Core ports (C5-09 PR 6)
+X53	6	core.md C5-09, Appendix B "Processes" PR 7	596	11	C-callers-Processes-7	Processes callers of Core switch to the Core ports (C5-09 PR 7)
+X54	6	core.md C5-10, Appendix B "Notifications" PR 1 and 2	867	16	C-callers-Notifications-1+2	Notifications callers of Core switch to the Core ports (C5-10 PR 1+2)
+X55	6	core.md C5-11, Appendix B "Platform" PR 1	813	15	C-callers-Platform-1	Platform callers of Core switch to the Core ports (C5-11 PR 1)
+X56	6	core.md C5-11, Appendix B "Platform" PR 2 and 3	867	16	C-callers-Platform-2+3	Platform callers of Core switch to the Core ports (C5-11 PR 2+3)
+X57	6	integrations.md I7 (3.2 L1-L8)	296	12	I-lower	Lower areas reach Integrations' work only through their own ports (finish what wave 4 started)
+X58	6	compliance.md B6b (3d)	0	11	Comp-ports-other	Compliance-owned ports for higher areas (seams, anonymisation, archive transfer, selection lists, final lifecycle states)
+X59	6	notifications.md N2 (3.3 wiring); platform.md PL3; processes.md R2 (binding part)	587	12	N-wiring	Notifications listeners and bindings with their own registrar; real-time push counts to Notifications
+X60	7	core.md C5-04 (section 3.3, Appendix A treatment "R")	1251	7	C-rows	Core files that do another area's work count to that area (csv rows), with their bindings
+X61	7	integrations.md I4	988	5	I-listen	Integrations listeners through IntegrationsListenerRegistrar slots
+X62	7	processes.md R6a; processes.md R6b	2521	12	P-example-sets-ab	Example-set writers of tasks, case plans, parties, flows and runs use the Processes ports
+X63	7	compliance.md B5a	688	13	Comp-history-readers	Core's audit history readers use AuditHistoryInterface
+X64	7	compliance.md B5c	590	9	Comp-save-path	The save, render and delete paths reach archival work through the Core ports
+X65	7	compliance.md B5d	295	10	Comp-search-purpose-teardown	Search recording, read purpose and schema teardown callers in Core
+X66	7	compliance.md B5e	168	12	Comp-change-log-callers	Authorization change-log callers and throttled surface literals
+X67	7	compliance.md B7a	983	11	Comp-callers-processes	Higher callers of audit events and processing reads
+X68	7	compliance.md B7b	590	8	Comp-callers-configuration	Configuration's settings and import callers of the Compliance ports
+X69	7	notifications.md N3a (3.1 C1 to C3); notifications.md N3b (3.1 C4 to C12, 3.2)	0	26	N-ports	The Notifications ports (messaging, rules, timeline, follows, scheduled reports and messages, statistics, timeline seeds)
+X70	7	search.md S6a	505	7	S-callers-views	Higher callers of views, scopes and the search provider
+X71	7	search.md S6b, S6c	84	9	S-callers-vectors	Higher callers of vector search, administration and the vector index
+X72	8	integrations.md I8 (first half, 3.3); integrations.md I8 (second half, 3.2 L9)	1057	16	I-values-checks	MCP agents and conversations through Kernel contracts; handoff and MCP declaration checks contributed
+X73	8	processes.md R2, R3, R4 (3.2); configuration.md CF1 (A2 to A7)	1675	7	P-rows	Rows between Processes, Configuration and Core with their bindings (task sequences, sequences, repair helpers, listener bootstrap, bags)
+X74	8	processes.md R7	630	4	P-console	Operations console, settings and stored-secret callers use the Processes ports
+X75	8	compliance.md B3 (R1 to R5, R9, R11)	918	0	Comp-rows	Compliance rows (job bags, text extraction base, task audit, text disclosure, auth-failure run, row stamps, D02's missed rows)
+X76	8	configuration.md CF9 (W1)	263	2	CF-thin-registrar	A thin Configuration service registrar over one hidden factory map
+X77	8	notifications.md N6a; notifications.md N6b	56	14	N-messaging-callers	Flow messaging, view alerts, address delivery and push use the messaging ports
+X78	8	notifications.md N7a	171	15	N-rules-timeline	Rules and timeline callers use the Notifications ports
+X79	8	search.md S4d (C2)	42	3	S-personal-state	User migration sections through a Core port
+X80	9	core.md C5-08, Appendix B "Integrations" PR 5 and 6	921	17	C-callers-Integrations-5+6	Integrations callers of Core switch to the Core ports (C5-08 PR 5+6)
+X81	9	notifications.md N4	256	10	N-follows	Follows and notices callers use the Notifications and Core ports
+X82	9	notifications.md N5	256	7	N-reports	Scheduled reports, scheduled messages and statistics callers
+X83	9	notifications.md N7b	185	6	N-schema-check	The notification annotation check is contributed through SchemaDeclarationChecksEvent
+X84	9	search.md S7 (A4, A5); replaces core.md AggregationInterface	2456	8	S-aggregation	Aggregation and GraphQL count to Search; Processes asks AggregationResultsInterface
+X85	10	core.md C5-09, Appendix B "Processes" PR 4	813	15	C-callers-Processes-4	Processes callers of Core switch to the Core ports (C5-09 PR 4)
+X86	10	core.md C5-10, Appendix B "Search" PR 1	813	15	C-callers-Search-1	Search callers of Core switch to the Core ports (C5-10 PR 1)
+X87	10	core.md C5-10, Appendix B "Search" PR 2	813	15	C-callers-Search-2	Search callers of Core switch to the Core ports (C5-10 PR 2)
+X88	10	core.md C5-10, Appendix B "Search" PR 3	704	13	C-callers-Search-3	Search callers of Core switch to the Core ports (C5-10 PR 3)
+X89	10	integrations.md I5 (3.2 L3)	158	7	I-sources	Core reads connected sources through a Core port; the Sources controller counts to Integrations
+X90	10	compliance.md B7c; compliance.md B7d	1263	13	Comp-callers-rest	Integrations', Files' and Compliance's own callers of the Compliance ports
+X91	10	configuration.md CF5b; configuration.md CF6b; configuration.md CF6a; configuration.md CF7 (A8)	407	36	CF-ports	Ports owned by the lower areas that Configuration implements (tenant keys, search backend, ODT writer, referenced-address mail, machine translation, shareable types, MCP agent scope, application records) and example-set views through a Search port
+X92	11	integrations.md I6a (section 3.1); integrations.md I6b	1729	22	I-ports	The Integrations ports (credential broker, mappings, webhook subscriptions, link seeds) and their callers
+X93	11	configuration.md CF2 (A1, W3); platform.md PL5 (decision below)	286	11	CF-translation	Finish the translation split: the store counts to Core, Platform and Processes reach it through Core ports
+X94	12	files.md B6 (A1, A3, A4, A5); core.md C5-12	1546	8	F-store	The file store counts to Files and is wired by Files (Core design C5-12)
+X95	13	kernel.md K5-01 (Appendix A "To Core"); kernel.md K5-02 (Appendix A "To Processes"); kernel.md K5-03	2587	0	K-rows	Kernel files that one area uses count to that area (Core, Processes, Integrations, Files, Configuration)
+X96	14	kernel.md K5-04	24	5	K-task-terminal	Processes dispatches its own task terminal event
