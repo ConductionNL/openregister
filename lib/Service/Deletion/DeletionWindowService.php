@@ -37,7 +37,7 @@ use DateTimeImmutable;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SoftDeletion;
-use OCA\OpenRegister\Service\Settings\RetentionSettingsReaderInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\RetentionSettingsInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -68,13 +68,13 @@ class DeletionWindowService {
 	/**
 	 * Wire the retention settings reader.
 	 *
-	 * @param RetentionSettingsReaderInterface $retentionHandler Reads `objectDeleteRetention`.
-	 * @param LoggerInterface        $logger           PSR logger.
+	 * @param RetentionSettingsInterface $retentionHandler Reads `objectDeleteRetention`.
+	 * @param LoggerInterface            $logger           PSR logger.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly RetentionSettingsReaderInterface $retentionHandler,
+		private readonly RetentionSettingsInterface $retentionHandler,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
