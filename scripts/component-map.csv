@@ -3800,7 +3800,7 @@ Db/TranslationBackfillScope.php,,Db,,,,,Configuration
 Db/TranslationEdit.php,,Db,,,,,Configuration
 Db/TranslationFilter.php,,Db,,,,,Configuration
 Db/TranslationMapperInterface.php,,Db,,,,,Configuration
-Db/TranslationSlot.php,,Db,,,,,Configuration
+Db/TranslationSlot.php,,Db,,,,,Core
 Db/TranslationSourceLanguageBackfillInterface.php,,Db,,,,,Configuration
 Db/TypedFieldsJson.php,,Db,,,,,Core
 Db/TypedFieldsJsonTrait.php,,Db,,,,,Core
@@ -4106,7 +4106,7 @@ Service/SharedSchemaPlanRun.php,,Service,,,,,Configuration
 Service/SharedSchemaUse.php,,Service,,,,,Configuration
 Service/ShippedRegister.php,,Service,,,,,Core
 Service/SkosNodeReader.php,,Service,,,,,Core
-Service/SourceLanguageLookup.php,,Service,,,,,Configuration
+Service/SourceLanguageLookup.php,,Service,,,,,Core
 Service/StoredEvent.php,,Service,,,,,Integrations
 Service/StoredTask.php,,Service,,,,,Processes
 Service/TableDeletionOptions.php,,Service,,,,,Core
