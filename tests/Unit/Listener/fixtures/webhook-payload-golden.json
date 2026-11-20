@@ -951,7 +951,7 @@
                 "objectType": "organisation",
                 "action": "created",
                 "organisation": {
-                    "entity": "Organisation",
+                    "entity": "OrganisationInterface",
                     "from": "getOrganisation"
                 }
             }
@@ -970,7 +970,7 @@
                 "objectType": "organisation",
                 "action": "deleted",
                 "organisation": {
-                    "entity": "Organisation",
+                    "entity": "OrganisationInterface",
                     "from": "getOrganisation"
                 }
             }
@@ -989,7 +989,7 @@
                 "objectType": "organisation",
                 "action": "updated",
                 "organisation": {
-                    "entity": "Organisation",
+                    "entity": "OrganisationInterface",
                     "from": "getOrganisation"
                 }
             }
