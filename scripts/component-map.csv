@@ -4534,3 +4534,4 @@ Controller/Support/CaseTokenControllerServices.php,,Controller,,,,,Integrations
 Controller/Support/FormLinksControllerServices.php,,Controller,,,,,Integrations
 Repair/Support/SequenceMigrationRun.php,,Repair,,,,,Processes
 Service/Audit/ObjectTrailReader.php,,Service,,,,,Compliance
+Db/AuditTrail/ActionScope.php,,Db,,,,,Core
