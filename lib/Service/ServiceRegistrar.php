@@ -221,7 +221,8 @@ final class ServiceRegistrar {
 				auditTrailMapper: $container->get(\OCA\OpenRegister\Db\AuditTrailMapperInterface::class),
 				secureRandom: $container->get('OCP\Security\ISecureRandom'),
 				db: $container->get('OCP\IDBConnection'),
-				l10nFactory: $container->get('OCP\L10N\IFactory')
+				l10nFactory: $container->get('OCP\L10N\IFactory'),
+				auditEntries: $container->get(\OCA\OpenRegister\Kernel\Contracts\Core\AuditEntryWriterInterface::class)
 			);
 	}//end buildUserService()
 
