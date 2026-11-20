@@ -5002,7 +5002,7 @@ deptrac:
         - type: directory
           value: 'lib/Db/(Feedback|FeedbackMapper|FeedbackMapperInterface|PlatformMapperBindings|PlatformMapperRegistrar)[.]php$'
         - type: directory
-          value: 'lib/Listener/(ListenerBootstrap|NotifyPushListener|NotifyPushRun)[.]php$'
+          value: 'lib/Listener/(ListenerBootstrap|NotifyPushListener|NotifyPushRun|PlatformListenerBindings)[.]php$'
         - type: directory
           value: 'lib/Middleware/[^/]*$'
         - type: directory

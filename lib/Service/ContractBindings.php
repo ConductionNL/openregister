@@ -465,6 +465,8 @@ use OCA\OpenRegister\Kernel\Contracts\Processes\TranslationProjectionInterface;
 use OCA\OpenRegister\Kernel\Contracts\Processes\WholeSetExportActionInterface;
 use OCA\OpenRegister\BulkAction\ExportWholeSetAction;
 use OCA\OpenRegister\Service\Audit\AuditEntryWriter;
+use OCA\OpenRegister\Kernel\Contracts\Processes\ObjectWriteCacheFollowerInterface;
+use OCA\OpenRegister\Listener\RedactionPolicyCacheListener;
 use OCA\OpenRegister\Kernel\Contracts\Core\AccessLinkUseRecorderInterface;
 use OCA\OpenRegister\Service\Audit\AccessLinkUseRecorder;
 use OCA\OpenRegister\Service\Audit\ObjectTrailReader;
@@ -662,6 +664,7 @@ final class ContractBindings {
 		HtmlPdfConverterInterface::class => OfficeHtmlPdfConverter::class,
 		OrganisationEditAuditorInterface::class => OrganisationLifecycleAuditor::class,
 		AuditEntryWriterInterface::class => AuditEntryWriter::class,
+		ObjectWriteCacheFollowerInterface::class => RedactionPolicyCacheListener::class,
 		AccessLinkUseRecorderInterface::class => AccessLinkUseRecorder::class,
 		SchemaAccessChangeLogInterface::class => AuthorizationAuditService::class,
 		ObjectTrailReaderInterface::class => ObjectTrailReader::class,

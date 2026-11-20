@@ -2514,7 +2514,7 @@ components:
       - ".*/lib/Controller/Support/ConversationDomain[.]php"
       - ".*/lib/Dashboard/[^/]*"
       - ".*/lib/Db/(Feedback|FeedbackMapper|FeedbackMapperInterface|PlatformMapperBindings|PlatformMapperRegistrar)[.]php"
-      - ".*/lib/Listener/(ListenerBootstrap|NotifyPushListener|NotifyPushRun)[.]php"
+      - ".*/lib/Listener/(ListenerBootstrap|NotifyPushListener|NotifyPushRun|PlatformListenerBindings)[.]php"
       - ".*/lib/Middleware/[^/]*"
       - ".*/lib/Middleware/Exception/[^/]*"
       - ".*/lib/Middleware/Support/[^/]*"
