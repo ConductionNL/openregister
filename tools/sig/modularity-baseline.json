@@ -2667,10 +2667,10 @@
  "exposed_loc": {
   "Compliance": 15748,
   "Configuration": 4583,
-  "Core": 64534,
+  "Core": 64537,
   "Files": 3592,
   "Integrations": 18357,
-  "Kernel": 8516,
+  "Kernel": 8520,
   "Notifications": 1740,
   "Platform": 313,
   "Processes": 31011,
@@ -3137,7 +3137,7 @@
   "lib/Support/RegisterSlugAliasesInterface.php",
   "lib/Support/UnknownFilterKeys.php"
  ],
- "kernel_loc": 10454,
- "total_loc": 460482,
- "violation_degree": 0.0495
+ "kernel_loc": 10458,
+ "total_loc": 460485,
+ "violation_degree": 0.0496
 }
