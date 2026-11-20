@@ -12,6 +12,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Kernel\Contracts\Core\CascadeRetentionCheckInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectArchivalMetadataInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\SearchTrailRecorderInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ReadPurposeGuardInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ReadableObjectHistoryInterface;
@@ -21,8 +22,10 @@ use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
 use OCA\OpenRegister\Service\Audit\PurposeGuard;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\ComplianceServiceRegistrar;
+use OCA\OpenRegister\Service\Gdpr\GdprRegistrar;
 use OCA\OpenRegister\Service\Object\SearchQueryHandler;
 use OCA\OpenRegister\Service\SearchTrailService;
+use OCA\OpenRegister\Service\TmloService;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
@@ -33,6 +36,7 @@ use ReflectionNamedType;
  * @covers \OCA\OpenRegister\Service\ComplianceServiceRegistrar
  * @covers \OCA\OpenRegister\Service\ComplianceServiceBindings
  * @uses   \OCA\OpenRegister\Db\DbRegistrar
+ * @uses   \OCA\OpenRegister\Service\Gdpr\GdprRegistrar
  */
 final class ComplianceServiceRegistrarTest extends TestCase {
 
@@ -69,6 +73,21 @@ final class ComplianceServiceRegistrarTest extends TestCase {
 		$twice = array_intersect_key(ComplianceServiceRegistrar::BINDINGS, ContractBindings::BINDINGS);
 		$this->assertSame(expected: [], actual: $twice);
 	}//end testContractBindingsDoesNotBindThemAgain()
+
+	/**
+	 * registerGdpr() registers exactly what the GDPR registrar registers, in its order.
+	 *
+	 * @return void
+	 */
+	public function testRegisterGdprRegistersTheGdprServices(): void {
+		$entry = new RecordingRegistrationContext();
+		ComplianceServiceRegistrar::registerGdpr(context: $entry);
+		$direct = new RecordingRegistrationContext();
+		GdprRegistrar::register(context: $direct);
+
+		$this->assertNotSame(expected: [], actual: $entry->services);
+		$this->assertSame(expected: $direct->services, actual: $entry->services);
+	}//end testRegisterGdprRegistersTheGdprServices()
 
 	/**
 	 * The object search records its trails through the Core port the search trail service answers.
@@ -117,4 +136,15 @@ final class ComplianceServiceRegistrarTest extends TestCase {
 	public function testTheCascadeAsksTheArchivalRetentionGuard(): void {
 		$this->assertSame(expected: ArchivalRetentionGuard::class, actual: ComplianceServiceRegistrar::BINDINGS[CascadeRetentionCheckInterface::class]);
 	}//end testTheCascadeAsksTheArchivalRetentionGuard()
+
+	/**
+	 * The save path's archival metadata port is answered by the TMLO service.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/tmlo-auto-populate/spec.md
+	 */
+	public function testTheArchivalMetadataPortIsAnsweredByTheTmloService(): void {
+		$this->assertSame(expected: TmloService::class, actual: (ComplianceServiceRegistrar::BINDINGS[ObjectArchivalMetadataInterface::class] ?? null));
+	}//end testTheArchivalMetadataPortIsAnsweredByTheTmloService()
 }//end class

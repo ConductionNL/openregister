@@ -63,16 +63,41 @@ final class TaskEventContractsTest extends TestCase {
 	}//end testTheBasesCarryTheKernelContracts()
 
 	public function testTheConcreteEventsKeepTheirTypes(): void {
-		foreach ([TaskTerminalEvent::class, TaskTransitionedEvent::class] as $class) {
-			$this->assertSame(Task::class, $this->firstParameterType($class), $class);
-			$this->assertSame(Task::class, $this->returnType($class, 'getTask'), $class);
-		}
+		$this->assertSame(Task::class, $this->firstParameterType(TaskTransitionedEvent::class));
+		$this->assertSame(Task::class, $this->returnType(TaskTransitionedEvent::class, 'getTask'));
 
 		foreach ([TaskSequenceCompletedEvent::class, TaskSequenceUndecidedEvent::class] as $class) {
 			$this->assertSame(TaskSequence::class, $this->firstParameterType($class), $class);
 			$this->assertSame(TaskSequence::class, $this->returnType($class, 'getSequence'), $class);
 		}
 	}//end testTheConcreteEventsKeepTheirTypes()
+
+	public function testTheTerminalEventCarriesTheKernelTaskContract(): void {
+		$this->assertSame(TaskInterface::class, $this->firstParameterType(TaskTerminalEvent::class));
+		$this->assertSame(TaskInterface::class, $this->returnType(TaskTerminalEvent::class, 'getTask'));
+	}//end testTheTerminalEventCarriesTheKernelTaskContract()
+
+	public function testTheTerminalEventAcceptsAnyTaskContract(): void {
+		$task  = $this->createMock(TaskInterface::class);
+		$event = new TaskTerminalEvent(task: $task, committed: false);
+
+		$this->assertSame($task, $event->getTask());
+		$this->assertFalse($event->isCommitted());
+	}//end testTheTerminalEventAcceptsAnyTaskContract()
+
+	public function testTheTerminalEventReadsItsTaskThroughTheContract(): void {
+		$task = new Task();
+		$task->setUuid('t-1');
+		$task->setState('completed');
+		$task->setOutcome('approved');
+		$event = new TaskTerminalEvent(task: $task);
+
+		$this->assertSame($task, $event->getTask());
+		$this->assertSame('t-1', $event->getTaskUuid());
+		$this->assertSame('completed', $event->getState());
+		$this->assertSame('approved', $event->getOutcome());
+		$this->assertTrue($event->isCommitted());
+	}//end testTheTerminalEventReadsItsTaskThroughTheContract()
 
 	public function testTheRowsImplementTheContracts(): void {
 		$this->assertInstanceOf(TaskInterface::class, new Task());
