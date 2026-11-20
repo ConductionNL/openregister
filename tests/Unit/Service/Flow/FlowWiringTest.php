@@ -11,7 +11,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\LifecycleStatesKeeperInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ObjectQuotaInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\PartyParentInterface;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleStatesKeeper;
+use OCA\OpenRegister\Service\Party\PartyParent;
 use OCA\OpenRegister\Kernel\Contracts\Core\UnreadCountsInterface;
 use OCA\OpenRegister\Service\Interaction\UnreadCountCalculator;
 use OCA\OpenRegister\Service\Quota\ObjectQuotaService;
@@ -325,6 +329,8 @@ final class FlowWiringTest extends TestCase {
 				LifecycleTransitionInterface::class        => TransitionEngine::class,
 				ExpressionDefaultsInterface::class         => ExpressionDefaults::class,
 				ObjectQuotaInterface::class                => ObjectQuotaService::class,
+				PartyParentInterface::class                => PartyParent::class,
+				LifecycleStatesKeeperInterface::class      => LifecycleStatesKeeper::class,
 				UnreadCountsInterface::class               => UnreadCountCalculator::class,
 			],
 			actual: $this->aliases

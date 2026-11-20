@@ -1001,8 +1001,8 @@ Event/SchemaUpdatedEvent.php,19,Event,Event,Event/SchemaUpdatedEvent.php,17,,Ker
 Event/SourceCreatedEvent.php,14,Event,Event,Event/SourceCreatedEvent.php,0,,Kernel
 Event/SourceDeletedEvent.php,14,Event,Event,Event/SourceDeletedEvent.php,0,,Kernel
 Event/SourceUpdatedEvent.php,22,Event,Event,Event/SourceUpdatedEvent.php,0,,Kernel
-Event/TaskSequenceCompletedEvent.php,28,Event,Event,Event/TaskSequenceCompletedEvent.php,18,,Kernel
-Event/TaskSequenceUndecidedEvent.php,20,Event,Event,Event/TaskSequenceUndecidedEvent.php,0,,Kernel
+Event/TaskSequenceCompletedEvent.php,28,Event,Event,Event/TaskSequenceCompletedEvent.php,18,,Processes
+Event/TaskSequenceUndecidedEvent.php,20,Event,Event,Event/TaskSequenceUndecidedEvent.php,0,,Processes
 Event/TaskTerminalEvent.php,28,Event,Event,Event/TaskTerminalEvent.php,103,,Kernel
 Event/TaskTransitionedEvent.php,33,Event,Event,Event/TaskTransitionedEvent.php,19,,Processes
 Event/ToolRegistrationEvent.php,15,Event,Event,Event/ToolRegistrationEvent.php,10,,Integrations
@@ -1856,6 +1856,7 @@ Service/Archival/RecordState.php,44,Service,Compliance,Compliance/Service/Archiv
 Service/Archival/ReferencingSchema.php,13,Service,Compliance,Compliance/Service/Archival/ReferencingSchema.php,0,,Compliance
 Service/Archival/RetentionConditionEvaluator.php,63,Service,Compliance,Compliance/Service/Archival/RetentionConditionEvaluator.php,0,,Compliance
 Service/Archival/RetentionEvaluator.php,130,Service,Compliance,Compliance/Service/Archival/RetentionEvaluator.php,0,216,Compliance
+Service/Archival/RecordArchivalReading.php,,Service,,,,,Compliance
 Service/Archival/RetentionRowScanner.php,212,Service,Compliance,Compliance/Service/Archival/RetentionRowScanner.php,0,,Compliance
 Service/Archival/ReviewOutcomeService.php,110,Service,Compliance,Compliance/Service/Archival/ReviewOutcomeService.php,0,,Compliance
 Service/Archival/SelectielijstImportService.php,251,Service,Compliance,Compliance/Service/Archival/SelectielijstImportService.php,0,,Compliance
@@ -3807,7 +3808,7 @@ Db/TranslationBackfillScope.php,,Db,,,,,Configuration
 Db/TranslationEdit.php,,Db,,,,,Configuration
 Db/TranslationFilter.php,,Db,,,,,Configuration
 Db/TranslationMapperInterface.php,,Db,,,,,Configuration
-Db/TranslationSlot.php,,Db,,,,,Configuration
+Db/TranslationSlot.php,,Db,,,,,Core
 Db/TranslationSourceLanguageBackfillInterface.php,,Db,,,,,Configuration
 Db/TypedFieldsJson.php,,Db,,,,,Core
 Db/TypedFieldsJsonTrait.php,,Db,,,,,Core
@@ -4114,7 +4115,7 @@ Service/SharedSchemaPlanRun.php,,Service,,,,,Configuration
 Service/SharedSchemaUse.php,,Service,,,,,Configuration
 Service/ShippedRegister.php,,Service,,,,,Core
 Service/SkosNodeReader.php,,Service,,,,,Core
-Service/SourceLanguageLookup.php,,Service,,,,,Configuration
+Service/SourceLanguageLookup.php,,Service,,,,,Core
 Service/StoredEvent.php,,Service,,,,,Integrations
 Service/StoredTask.php,,Service,,,,,Processes
 Service/TableDeletionOptions.php,,Service,,,,,Core
@@ -4569,6 +4570,8 @@ Controller/Support/ProcessingLogControllerServices.php,,Controller,,,,,Complianc
 Db/AuditTrail/AuditedChange.php,,Db,,,,,Core
 Db/AuditTrail/HardeningChange.php,,Db,,,,,Core
 Db/AuditTrail/RegisterAuditEvent.php,,Db,,,,,Core
+Db/AuditTrail/AuditedObject.php,,Db,,,,,Core
+Db/AuditTrail/SlugBackfill.php,,Db,,,,,Core
 Search/Service/ExampleSet/ExampleSetViewRowsInterface.php,,Search,,,,,Configuration
 Service/Capability/ToolGrantCoordinates.php,,Service,,,0,,Integrations
 Kernel/Contracts/TaskSequenceInterface.php,,Kernel,,,,,Kernel
@@ -4576,3 +4579,6 @@ Service/Rbac/AuditEntryRecorder.php,,Service,,,,,Core
 Listener/ReferenceCardDeclarationCheckListener.php,,Listener,,,,,Configuration
 Listener/UniqueHintDeclarationCheckListener.php,,Listener,,,,,Search
 Service/Consumer/AccountConsumerLookup.php,,Service,,,,,Integrations
+Service/Party/PartyParent.php,,Service,,,,,Processes
+Service/Lifecycle/LifecycleStatesKeeper.php,,Service,,,,,Processes
+Service/AcceptLanguageHeader.php,,Service,,,,,Core
