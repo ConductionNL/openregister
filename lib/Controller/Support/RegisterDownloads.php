@@ -136,8 +136,8 @@ final class RegisterDownloads {
 	 * @spec openspec/specs/export-pdf-format/spec.md
 	 */
 	public function configuration(Register $register, bool $includeObjects): DataDownloadResponse {
-		$exportData  = $this->services->integrations->configurationService->exportConfig(
-			input: $register,
+		$exportData  = $this->services->integrations->bundles->exportRegister(
+			register: $register,
 			includeObjects: $includeObjects
 		);
 		$jsonContent = json_encode($exportData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
