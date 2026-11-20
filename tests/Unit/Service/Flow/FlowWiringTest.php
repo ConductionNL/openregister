@@ -19,6 +19,7 @@ use OCA\OpenRegister\Kernel\Contracts\Core\PartyParentInterface;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleStatesKeeper;
 use OCA\OpenRegister\Service\Party\PartyParent;
 use OCA\OpenRegister\Kernel\Contracts\Core\UnreadCountsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\SaveBoundaryInterface;
 use OCA\OpenRegister\Kernel\Contracts\Compliance\ElevationAttributionInterface;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationAttribution;
 use OCA\OpenRegister\Service\Interaction\UnreadCountCalculator;
@@ -398,6 +399,7 @@ final class FlowWiringTest extends TestCase {
 				PartyParentInterface::class                => PartyParent::class,
 				LifecycleStatesKeeperInterface::class      => LifecycleStatesKeeper::class,
 				UnreadCountsInterface::class               => UnreadCountCalculator::class,
+				SaveBoundaryInterface::class               => AutoTransitionPass::class,
 				ElevationAttributionInterface::class       => ObjectActionElevationAttribution::class,
 			],
 			actual: $this->aliases
@@ -414,6 +416,17 @@ final class FlowWiringTest extends TestCase {
 		self::assertSame(expected: FlowLinkServiceInterface::class, actual: ($this->aliases[LinkedFlowOperationsInterface::class] ?? null));
 		self::assertTrue(is_subclass_of(FlowLinkServiceInterface::class, LinkedFlowOperationsInterface::class));
 	}//end testTheLinkedFlowOperationsPortIsAnsweredByTheFlowLinkService()
+
+	/**
+	 * The Core save-boundary port is answered by the shared automatic-transition pass, so ObjectService opens and closes the one request-scoped boundary.
+	 *
+	 * @return void
+	 */
+	public function testTheSaveBoundaryPortIsAnsweredByTheSharedAutoTransitionPass(): void {
+		self::assertSame(expected: AutoTransitionPass::class, actual: ($this->aliases[SaveBoundaryInterface::class] ?? null));
+		self::assertArrayHasKey(key: AutoTransitionPass::class, array: $this->factories);
+		self::assertTrue(condition: is_a(AutoTransitionPass::class, SaveBoundaryInterface::class, true));
+	}//end testTheSaveBoundaryPortIsAnsweredByTheSharedAutoTransitionPass()
 
 	/**
 	 * The audit trail's elevation port is answered by the object-action run, from the frame it opened.

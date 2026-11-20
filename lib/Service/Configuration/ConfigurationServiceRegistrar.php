@@ -73,6 +73,8 @@ use OCA\OpenRegister\Service\ShippedBaseline\ShippedConfigurationGuard;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedDivergenceReport;
 use OCA\OpenRegister\Service\TaskService;
 use OCA\OpenRegister\Service\TenantKeyService;
+use OCA\OpenRegister\Service\Translation\TranslationProviderInterface;
+use OCA\OpenRegister\Service\Translation\TranslationProviderResolver;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCP\IContainer;
 use Psr\Container\ContainerInterface;
@@ -161,6 +163,17 @@ final class ConfigurationServiceRegistrar {
 		// Register ExportHandler with workflow dependencies.
 		$context->registerService(ConfigurationExportHandler::class, self::buildExportHandler(...));
 		$context->registerService(ConfigurationService::class, self::buildConfigurationService(...));
+
+		// Bind the translation provider the admin settings select: Nextcloud
+		// Task Processing only when an administrator chose it and confirmed
+		// that record text may be sent; the no-op identity provider otherwise
+		// (ai-translation-with-a-glossary design D-6).
+		$context->registerService(
+			TranslationProviderInterface::class,
+			static function (ContainerInterface $c) {
+				return $c->get(TranslationProviderResolver::class)->resolve();
+			}
+		);
 
 		self::registerSettingsServices(context: $context);
 		self::registerConfigurationDeploymentServices(context: $context);
