@@ -1520,7 +1520,6 @@ components:
       - ".*/lib/Service/Configuration/ArrayStructure[.]php"
       - ".*/lib/Service/Configuration/AttributionFormatter[.]php"
       - ".*/lib/Service/Configuration/CacheHandler[.]php"
-      - ".*/lib/Service/Configuration/ConfigurationCollaborators[.]php"
       - ".*/lib/Service/Configuration/ConfigurationComponentSections[.]php"
       - ".*/lib/Service/Configuration/ConfigurationExportRun[.]php"
       - ".*/lib/Service/Configuration/ConfigurationFileImport[.]php"

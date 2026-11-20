@@ -1112,6 +1112,8 @@ final class ContractBindings {
 		ConfigurationTransferInterface::class => ConfigurationService::class,
 		\OCA\OpenRegister\Kernel\Contracts\Core\RegisterBundlesInterface::class
 			=> \OCA\OpenRegister\Service\Configuration\RegisterBundles::class,
+		\OCA\OpenRegister\Kernel\Contracts\Core\AppImportJobOwnersInterface::class
+			=> \OCA\OpenRegister\Service\Configuration\AppImportJobRecorder::class,
 		\OCA\OpenRegister\Service\Object\ArchiveHandlerInterface::class => \OCA\OpenRegister\Service\Object\ArchiveHandler::class,
 		RetentionServiceInterface::class => RetentionService::class,
 		\OCA\OpenRegister\Service\Object\AuthorizationResolutionInterface::class => \OCA\OpenRegister\Service\Object\PermissionHandler::class,

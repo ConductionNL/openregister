@@ -3026,8 +3026,6 @@ deptrac:
         - type: directory
           value: 'lib/Service/Configuration/CacheHandler[.]php$'
         - type: directory
-          value: 'lib/Service/Configuration/ConfigurationCollaborators[.]php$'
-        - type: directory
           value: 'lib/Service/Configuration/ConfigurationComponentSections[.]php$'
         - type: directory
           value: 'lib/Service/Configuration/ConfigurationExportRun[.]php$'
