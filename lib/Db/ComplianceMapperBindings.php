@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\RetainingActivityResolverInterface;
+
 /**
  * Interface => mapper map of the Compliance area, behind ComplianceMapperRegistrar.
  *
@@ -48,6 +50,7 @@ final class ComplianceMapperBindings {
 		ProcessingPurposeMapperInterface::class     => ProcessingPurposeMapper::class,
 		QualityAuditMapperInterface::class          => QualityAuditMapper::class,
 		QualityAuditRunMapperInterface::class       => QualityAuditRunMapper::class,
+		RetainingActivityResolverInterface::class   => VerwerkingsactiviteitMapper::class,
 		SearchTrailCleanupInterface::class          => SearchTrailMapper::class,
 		SearchTrailMapperInterface::class           => SearchTrailMapper::class,
 		SubjectExportMapperInterface::class         => SubjectExportMapper::class,
