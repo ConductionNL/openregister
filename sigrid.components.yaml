@@ -47,7 +47,7 @@ components:
       - ".*/lib/Service/Schemas/PropertyValidatorHandlerInterface[.]php"
       - ".*/lib/Support/.*"
     exclude:
-      - ".*/lib/Kernel/Contracts/(Compliance|Core|Integrations|Notifications|Processes|Search)/.*"
+      - ".*/lib/Kernel/Contracts/(Compliance|Core|Files|Integrations|Notifications|Processes|Search)/.*"
   - name: Core
     include:
       - ".*/lib/Kernel/Contracts/Core/.*"
@@ -2163,6 +2163,7 @@ components:
       - ".*/lib/Twig/[^/]*"
   - name: Files
     include:
+      - ".*/lib/Kernel/Contracts/Files/.*"
       - ".*/lib/Controller/(FileDisclosuresController)[.]php"
       - ".*/lib/Db/(DecisionMetadataChange|EntityRelationMapper|FilesMapperBindings|FilesMapperRegistrar)[.]php"
       - ".*/lib/Files/[^/]*"
