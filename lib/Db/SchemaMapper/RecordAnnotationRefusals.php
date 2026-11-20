@@ -21,12 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db\SchemaMapper;
 
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Exception\UniqueHintException;
-use OCA\OpenRegister\Search\Service\SearchAnnotationValidators;
-use OCA\OpenRegister\Service\Archival\InheritedAppraisal;
 use OCA\OpenRegister\Service\ExternalLink\ExternalLinkResolverInterface;
-use OCA\OpenRegister\Service\Schemas\RetentionAnnotationValidator;
-use OCA\OpenRegister\Service\Reference\ReferenceCardDeclaration;
 use OCA\OpenRegister\Service\Search\SearchResultDeclaration;
 use OCA\OpenRegister\Service\Schemas\SchemaDeclarationValidators;
 
@@ -36,41 +31,6 @@ use OCA\OpenRegister\Service\Schemas\SchemaDeclarationValidators;
  * @spec exclude schema save plumbing moved out of SchemaMapper, not a capability of its own
  */
 final class RecordAnnotationRefusals {
-
-	/**
-	 * Validate the optional `x-openregister-unique-hint` annotation.
-	 *
-	 * FATAL, unlike {@see AdvisoryAnnotationChecks::checkDedup()}, which degrades
-	 * a malformed block to a logged warning. The difference is the cost of being
-	 * wrong. A malformed dedup block costs a duplicate sweep you can re-run; a
-	 * nomination of a property that does not exist costs a uniqueness alert that
-	 * silently never fires, and the only symptom is a second case on the same
-	 * KvK number found months later or never. The administrator who typed the
-	 * name is the one person who can fix it, and they are still holding the form.
-	 *
-	 * @param Schema $schema Schema to validate.
-	 *
-	 * @throws UniqueHintException When a nomination names a property the schema does not declare.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
-	 */
-	public function checkUniqueHint(Schema $schema): void {
-		$annotation = new SchemaAnnotation(schema: $schema, key: 'x-openregister-unique-hint');
-		if ($annotation->isWritten() === false) {
-			return;
-		}
-
-		$errors = SearchAnnotationValidators::uniqueHint()->validate($annotation->shape());
-		if (count($errors) > 0) {
-			$messages = array_map(static fn (array $err) => $err['message'], $errors);
-			throw new UniqueHintException(
-				message: 'x-openregister-unique-hint: ' . implode(' ', $messages),
-				errors: $errors
-			);
-		}
-	}//end checkUniqueHint()
 
 	/**
 	 * Validate the optional `x-openregister-widgets` annotation.
@@ -96,31 +56,6 @@ final class RecordAnnotationRefusals {
 			);
 		}
 	}//end checkWidgets()
-
-	/**
-	 * Refuse an `x-openregister-retention` declaration that names a property the
-	 * schema lacks, or one that holds no reference.
-	 *
-	 * It throws rather than warns: a declaration that follows nothing holds no
-	 * record back, and the first anyone would learn of it is a destroyed record
-	 * whose parent was meant to be kept.
-	 *
-	 * @param Schema $schema The schema being saved.
-	 *
-	 * @return void
-	 *
-	 * @throws \Exception When the declaration cannot be followed.
-	 *
-	 * @spec openspec/changes/appraisal-inherited-from-a-parent/specs/archivering-vernietiging/spec.md
-	 */
-	public function checkRetention(Schema $schema): void {
-		$annotation = new SchemaAnnotation(schema: $schema, key: InheritedAppraisal::ANNOTATION);
-		if ($annotation->isWritten() === true) {
-			$annotation->faults()->refuseWith(
-				messages: (new RetentionAnnotationValidator())->validate(annotation: $annotation->value(), properties: ($schema->getProperties() ?? []))
-			);
-		}
-	}//end checkRetention()
 
 	/**
 	 * Refuse a broken `x-openregister-external-links` declaration at save.
@@ -149,29 +84,6 @@ final class RecordAnnotationRefusals {
 		}
 	}//end checkExternalLinks()
 
-	/**
-	 * Refuse a save whose `x-openregister-card` names a property this schema does not have.
-	 *
-	 * A card that names a property that is not there would render an empty row
-	 * in a chat window, where nobody can see why.
-	 *
-	 * @param Schema $schema The schema being saved.
-	 *
-	 * @return void
-	 *
-	 * @throws \Exception When the card names something the schema does not have.
-	 *
-	 * @spec openspec/changes/platform-reference-provider/specs/schema-scoped-reference-providers/spec.md#requirement-a-schema-declares-what-its-reference-card-shows-req-prp-002
-	 */
-	public function checkReferenceCard(Schema $schema): void {
-		$annotation = new SchemaAnnotation(schema: $schema, key: ReferenceCardDeclaration::ANNOTATION);
-		$annotation->faults()->refuseWith(
-			messages: ReferenceCardDeclaration::faults(
-				block: $annotation->value(),
-				properties: ($schema->getProperties() ?? [])
-			)
-		);
-	}//end checkReferenceCard()
 	/**
 	 * Refuse a save whose `x-openregister-search-result` names a property this schema does not have.
 	 *
