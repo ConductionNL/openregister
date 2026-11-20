@@ -44,6 +44,7 @@ use DateTimeInterface;
 use DateTimeZone;
 use Exception;
 use InvalidArgumentException;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectAuditEntry;
 use OCA\OpenRegister\Kernel\Contracts\Compliance\AuditProcessContextInterface;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Service\Audit\AuditAggregationServiceInterface;
@@ -56,6 +57,7 @@ use OCA\OpenRegister\Service\Audit\AuditSinkShipperInterface;
 use OCA\OpenRegister\Service\Audit\AuditTrailCollaborators;
 use OCA\OpenRegister\Service\Audit\PurposeGuardInterface;
 use OCA\OpenRegister\Service\WriteCause;
+use OCA\OpenRegister\Service\Object\IntegrityAuditEntry;
 use OCA\OpenRegister\Db\AuditTrail\ActionLookupOptions;
 use OCA\OpenRegister\Db\AuditTrail\ActionScope;
 use OCA\OpenRegister\Db\AuditTrail\AuditedChange;
@@ -1520,6 +1522,51 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	}//end applyRetentionExpiry()
 
 	/**
+	 * Record what referential integrity did to one object: build the row, stamp its expiry, insert it.
+	 *
+	 * @param IntegrityAuditEntry $entry What happened to which object, by whom, and the object itself when found.
+	 *
+	 * @return AuditTrail The stored row.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function recordIntegrityAction(IntegrityAuditEntry $entry): AuditTrail {
+		$auditTrail = self::integrityRow(entry: $entry);
+		$this->applyRetentionExpiry(auditTrail: $auditTrail, objectEntity: $entry->object);
+		$this->insert(entity: $auditTrail);
+
+		return $auditTrail;
+	}//end recordIntegrityAction()
+
+	/**
+	 * The unsealed row of an integrity action, scoped to the schema and register the entry names.
+	 *
+	 * @param IntegrityAuditEntry $entry What happened to which object.
+	 *
+	 * @return AuditTrail The row, not yet stored.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public static function integrityRow(IntegrityAuditEntry $entry): AuditTrail {
+		$auditTrail = new AuditTrail();
+		$auditTrail->setUuid((string)Uuid::v4());
+		$auditTrail->setObjectUuid($entry->objectUuid);
+		$auditTrail->setAction($entry->action);
+		$auditTrail->setChanged($entry->changed);
+		$auditTrail->setUser($entry->userId);
+		$auditTrail->setCreated(new DateTime());
+		if ($entry->schemaId !== null) {
+			$auditTrail->setSchema((int)$entry->schemaId);
+		}
+
+		if ($entry->registerId !== null) {
+			$auditTrail->setRegister((int)$entry->registerId);
+		}
+
+		return $auditTrail;
+	}//end integrityRow()
+
+	/**
 	 * Resolve the audit row's expiry from the object's retention policy.
 	 *
 	 * Delegates to {@see AuditRetentionResolver}, resolved lazily through the
@@ -2664,6 +2711,22 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 
 		return $this->insertHashChained(auditTrail: $auditTrail);
 	}//end recordObjectEvent()
+
+	/**
+	 * Record an action on one object as Core names it, through recordObjectEvent().
+	 *
+	 * @param ObjectAuditEntry $entry The object, the action, its context and the explicit actor, if any.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
+	 */
+	public function writeObjectEvent(ObjectAuditEntry $entry): void {
+		$options = new ObjectAuditEventOptions(actor: new NamedActor(id: $entry->actorId, name: $entry->actorName));
+		$this->recordObjectEvent(
+			event: new ObjectAuditEvent(object: $entry->object, action: $entry->action, context: $entry->context, options: $options)
+		);
+	}//end writeObjectEvent()
 
 	/**
 	 * The actor a createAuditTrailEntry() row names.
