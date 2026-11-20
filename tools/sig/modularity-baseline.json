@@ -69,9 +69,6 @@
   "lib/Db/AuditTrailMapperInterface.php -> lib/Db/AuditTrail/SharedMasterDataRefusal.php",
   "lib/Db/AuditTrailMapperInterface.php -> lib/Db/AuditTrail/SlugBackfill.php",
   "lib/Db/AuditTrailMapperInterface.php -> lib/Db/AuditTrail/ToolInvocation.php",
-  "lib/Db/EntityRelationMapper.php -> lib/Db/AuditTrail.php",
-  "lib/Db/EntityRelationMapper.php -> lib/Files/Db/EntityMention.php",
-  "lib/Db/EntityRelationMapper.php -> lib/Files/Db/EntityRelationMapperInterface.php",
   "lib/Db/MagicMapper.php -> lib/Service/Audit/PurposeGuardInterface.php",
   "lib/Db/MagicMapper.php -> lib/Service/LanguageServiceInterface.php",
   "lib/Db/MagicMapper/MagicSearchHandler.php -> lib/Search/Service/Search/PropertySearchProfile.php",
@@ -494,7 +491,6 @@
   "lib/Db/EmptyJsonHydration.php",
   "lib/Db/EmptyPropertyClaim.php",
   "lib/Db/EntityRelation.php",
-  "lib/Db/EntityRelationMapper.php",
   "lib/Db/ExportRun/ExportRunFieldTypes.php",
   "lib/Db/FilesMapperRegistrar.php",
   "lib/Db/Flow.php",
@@ -858,7 +854,6 @@
   "lib/Exception/ValidationException.php",
   "lib/Exception/ViewAlertRecipientException.php",
   "lib/Federation/OpenRegisterCloudFederationProvider.php",
-  "lib/Files/Db/EntityMention.php",
   "lib/Files/Db/EntityRelationMapperInterface.php",
   "lib/Files/Db/File.php",
   "lib/Files/Db/FileMapperInterface.php",
@@ -2542,8 +2537,8 @@
  "exposed_loc": {
   "Compliance": 15496,
   "Configuration": 3601,
-  "Core": 64806,
-  "Files": 2675,
+  "Core": 64291,
+  "Files": 2664,
   "Integrations": 18214,
   "Kernel": 8505,
   "Notifications": 2018,
@@ -3014,6 +3009,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10456,
- "total_loc": 460760,
- "violation_degree": 0.0376
+ "total_loc": 460761,
+ "violation_degree": 0.0373
 }

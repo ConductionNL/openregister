@@ -696,7 +696,7 @@ Db/EndpointLogMapper.php,87,Db,Integrations,Integrations/Db/EndpointLogMapper.ph
 Db/EndpointMapper.php,78,Db,Integrations,Integrations/Db/EndpointMapper.php,0,,Integrations
 Db/EntityChangeDetector.php,37,Db,Service,Service/Db/EntityChangeDetector.php,0,,Core
 Db/EntityRelation.php,75,Db,Service,Service/Db/EntityRelation.php,15,318,Core
-Db/EntityRelationMapper.php,475,Db,Service,Service/Db/EntityRelationMapper.php,97,18,Core
+Db/EntityRelationMapper.php,475,Db,Service,Service/Db/EntityRelationMapper.php,97,18,Files
 Db/ErasurePreview.php,67,Db,Compliance,Compliance/Db/ErasurePreview.php,0,,Compliance
 Db/ErasurePreviewMapper.php,63,Db,Compliance,Compliance/Db/ErasurePreviewMapper.php,0,,Compliance
 Db/ExportProfile.php,90,Db,Configuration,Configuration/Db/ExportProfile.php,0,,Configuration
@@ -3667,7 +3667,7 @@ Db/ContentReportMapperInterface.php,,Db,,,,,Compliance
 Db/CospendLinkMapperInterface.php,,Db,,,,,Integrations
 Db/DbRegistrar.php,,Db,,,,,Core
 Db/DecisionMapperInterface.php,,Db,,,,,Processes
-Db/DecisionMetadataChange.php,,Db,,,,,Core
+Db/DecisionMetadataChange.php,,Db,,,,,Files
 Db/DecisionMetadataEdit.php,,Db,,,,,Core
 Db/DeckLinkMapperInterface.php,,Db,,,,,Integrations
 Db/DelegationGrantMapperInterface.php,,Db,,,,,Core
