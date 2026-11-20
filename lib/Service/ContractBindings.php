@@ -1046,6 +1046,7 @@ final class ContractBindings {
 		RegisterScopedSchemaResolverInterface::class => RegisterScopedSchemaResolver::class,
 		RegisterServiceInterface::class => RegisterService::class,
 		RelationGraphServiceInterface::class => RelationGraphService::class,
+		\OCA\OpenRegister\Kernel\Contracts\Core\RequestLanguagesInterface::class => LanguageService::class,
 		RetentionSettingsReaderInterface::class => ObjectRetentionHandler::class,
 		RetentionSettingsInterface::class => ObjectRetentionHandler::class,
 		ScheduledReportsInterface::class => ScheduledReportService::class,

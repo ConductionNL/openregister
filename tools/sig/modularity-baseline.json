@@ -79,7 +79,6 @@
   "lib/Service/Aggregation/AggregationRunner.php -> lib/Search/Service/Aggregation/AggregationQuery.php",
   "lib/Service/Aggregation/AggregationRunner.php -> lib/Search/Service/Aggregation/AggregationSlot.php",
   "lib/Service/Aggregation/AggregationRunner.php -> lib/Search/Service/Aggregation/CrossSchemaTarget.php",
-  "lib/Service/Aggregation/AggregationRunner.php -> lib/Service/LanguageService.php",
   "lib/Service/Aggregation/AggregationRunnerInterface.php -> lib/Search/Service/Aggregation/AggregationQuery.php",
   "lib/Service/Anonymisation/DetectorVersionReader.php -> lib/Files/Service/TextExtraction/PatternSet/NlPatternSet.php",
   "lib/Service/Anonymisation/PipelineSteps.php -> lib/Files/Service/File/DocumentProcessingHandler.php",
@@ -2459,7 +2458,7 @@
  "exposed_loc": {
   "Compliance": 15375,
   "Configuration": 3134,
-  "Core": 64285,
+  "Core": 64286,
   "Files": 2665,
   "Integrations": 18152,
   "Kernel": 8506,
@@ -2931,6 +2930,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10457,
- "total_loc": 461257,
- "violation_degree": 0.0249
+ "total_loc": 461259,
+ "violation_degree": 0.0248
 }
