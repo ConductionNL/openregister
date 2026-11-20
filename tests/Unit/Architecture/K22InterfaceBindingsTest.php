@@ -5,9 +5,8 @@
  *
  * ImportService drove the notify_push batch through the static NotifyPushBatch
  * entry class. It now types against NotifyPushBatchInterface, which
- * ListenerBootstrap (the Platform listener bindings, NotifyPushBatch being the
- * notify_push listener's batch entry) binds to NotifyPushBatch, so no file
- * outside lib/Listener names the class.
+ * ListenerBootstrap binds to NotifyPushBatch next to the other Platform
+ * listener bindings, so no file outside lib/Listener names the class.
  *
  * @category Test
  * @package  OCA\OpenRegister\Tests\Unit\Architecture

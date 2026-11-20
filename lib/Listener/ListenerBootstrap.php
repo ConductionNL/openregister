@@ -31,9 +31,9 @@ use OCP\AppFramework\Bootstrap\IRegistrationContext;
  * ListenerRegistrar, which stays inside the Listener component and binds the
  * interfaces of its own listeners. This class is the application's entry into
  * that list and binds only the Platform listener classes outside callers type
- * against (the presence push and the bulk-import batch entry of the notify_push
- * listener). The alias is registered before the listeners and does
- * not change their order.
+ * against (the presence push and the notify_push batch entry the import path
+ * drives). The aliases are registered before the listeners and do not change
+ * their order.
  *
  * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
  */
@@ -42,13 +42,16 @@ final class ListenerBootstrap {
 	/**
 	 * The Platform listener interfaces callers outside the component type against, bound to their class.
 	 *
+	 * NotifyPushBatchInterface is the Core port the import path drives; NotifyPushBatch is the
+	 * notify_push listener's own batch entry, so Platform binds it here.
+	 *
 	 * DecisionTableValidationListenerInterface is bound by ListenerRegistrar::BINDINGS, next to the
 	 * other Processes listener interfaces.
 	 *
 	 * @var array<class-string, class-string>
 	 */
 	public const BINDINGS = [
-		PresencePushInterface::class => NotifyPushListener::class,
+		PresencePushInterface::class    => NotifyPushListener::class,
 		NotifyPushBatchInterface::class => NotifyPushBatch::class,
 	];
 

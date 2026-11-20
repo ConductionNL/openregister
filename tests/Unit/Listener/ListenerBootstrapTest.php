@@ -32,20 +32,20 @@ final class ListenerBootstrapTest extends TestCase {
 	 *
 	 * @return void
 	 */
-	public function testItBindsOnlyThePlatformListeners(): void {
+	public function testItBindsOnlyThePlatformListenerClasses(): void {
 		$this->assertSame(
 			[
-				PresencePushInterface::class => NotifyPushListener::class,
+				PresencePushInterface::class    => NotifyPushListener::class,
 				NotifyPushBatchInterface::class => NotifyPushBatch::class,
 			],
 			ListenerBootstrap::BINDINGS
 		);
 		$this->assertSame(DecisionTableValidationListener::class, ListenerRegistrar::BINDINGS[DecisionTableValidationListenerInterface::class]);
 		$this->assertArrayNotHasKey(NotifyPushBatchInterface::class, ListenerRegistrar::BINDINGS);
-	}//end testItBindsOnlyThePlatformListeners()
+	}//end testItBindsOnlyThePlatformListenerClasses()
 
 	/**
-	 * Registering aliases the interfaces, the Platform ones before any listener.
+	 * Registering aliases every interface, the Platform ones before any listener.
 	 *
 	 * @return void
 	 */
