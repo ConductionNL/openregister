@@ -61,13 +61,6 @@
   "lib/Service/Rbac/SharerFolderAccess.php -> lib/Files/Service/File/ObjectFileAccess.php",
   "lib/Service/RegisterService.php -> lib/Service/FileFolderServiceInterface.php",
   "lib/Service/RegisterServiceHelpers.php -> lib/Service/FileFolderServiceInterface.php",
-  "lib/Service/ServiceRegistrar.php -> lib/Service/Credential/CredentialStore.php",
-  "lib/Service/ServiceRegistrar.php -> lib/Service/Credential/CredentialStoreResolver.php",
-  "lib/Service/ServiceRegistrar.php -> lib/Service/EmailLinkService.php",
-  "lib/Service/ServiceRegistrar.php -> lib/Service/Sync/RestApiSourceFetcher.php",
-  "lib/Service/ServiceRegistrar.php -> lib/Service/Sync/SourceFetcherRegistry.php",
-  "lib/Service/ServiceRegistrar.php -> lib/Service/Translation/TranslationProviderInterface.php",
-  "lib/Service/ServiceRegistrar.php -> lib/Service/Translation/TranslationProviderResolver.php",
   "lib/Service/Sharing/AccessLinkViewReaders.php -> lib/Search/Db/ViewMapperInterface.php"
  ],
  "exposed_files": [
@@ -1282,7 +1275,6 @@
   "lib/Service/Credential/CredentialMint.php",
   "lib/Service/Credential/CredentialMintOptions.php",
   "lib/Service/Credential/CredentialStore.php",
-  "lib/Service/Credential/CredentialStoreResolver.php",
   "lib/Service/Credential/DoriathApplicationRegistrar.php",
   "lib/Service/Credential/DoriathApplicationRegistrarInterface.php",
   "lib/Service/Credential/DoriathCredentialKeys.php",
@@ -2193,7 +2185,6 @@
   "lib/Service/Survivorship/TrustTierResolverInterface.php",
   "lib/Service/Sync/HarvestPipelineService.php",
   "lib/Service/Sync/HarvestPipelineServiceInterface.php",
-  "lib/Service/Sync/RestApiSourceFetcher.php",
   "lib/Service/Sync/SourceFetcherLookupInterface.php",
   "lib/Service/Sync/SourceFetcherRegistry.php",
   "lib/Service/Sync/SyncScheduleInterface.php",
@@ -2238,8 +2229,6 @@
   "lib/Service/TimeTrackerLinkServiceInterface.php",
   "lib/Service/TmloService.php",
   "lib/Service/TmloServiceInterface.php",
-  "lib/Service/Translation/TranslationProviderInterface.php",
-  "lib/Service/Translation/TranslationProviderResolver.php",
   "lib/Service/TranslationProjectionService.php",
   "lib/Service/TranslationProjectionServiceInterface.php",
   "lib/Service/TranslationSearch.php",
@@ -2295,10 +2284,10 @@
  ],
  "exposed_loc": {
   "Compliance": 14778,
-  "Configuration": 1482,
+  "Configuration": 1444,
   "Core": 63423,
   "Files": 1458,
-  "Integrations": 17990,
+  "Integrations": 17724,
   "Kernel": 8464,
   "Notifications": 2057,
   "Platform": 61,
@@ -2766,6 +2755,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10402,
- "total_loc": 461813,
- "violation_degree": 0.0099
+ "total_loc": 461819,
+ "violation_degree": 0.0091
 }

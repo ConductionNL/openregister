@@ -43,6 +43,7 @@ class ConfigurationServiceRegistrarTest extends TestCase {
 				'OCA\OpenRegister\Service\Configuration\ImportHandler',
 				'OCA\OpenRegister\Service\Configuration\ExportHandler',
 				'OCA\OpenRegister\Service\ConfigurationService',
+				'OCA\OpenRegister\Service\Translation\TranslationProviderInterface',
 				'OCA\OpenRegister\Service\Settings\ValidationOperationsHandler',
 				'OCA\OpenRegister\Service\SettingsService',
 				'OCA\OpenRegister\Service\TenantKeyService',
