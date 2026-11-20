@@ -3214,7 +3214,7 @@ Service/Search/SearchTermNode.php,86,Service,Service,Service/Search/SearchTermNo
 Service/Search/SearchTermParser.php,251,Service,Service,Service/Search/SearchTermParser.php,0,,Core
 Service/Search/SearchTermSqlCompiler.php,22,Service,Service,Service/Search/SearchTermSqlCompiler.php,0,,Core
 Service/Search/SnippetBuilder.php,107,Service,Service,Service/Search/SnippetBuilder.php,0,,Core
-Service/Search/VectorResultFilter.php,135,Service,Service,Service/Search/VectorResultFilter.php,0,,Core
+Service/Search/VectorResultFilter.php,135,Service,Service,Service/Search/VectorResultFilter.php,0,,Search
 Service/Search/VectorSearchFacade.php,81,Service,Search,Service/Search/VectorSearchFacade.php,0,,Search
 Service/SearchTrailService.php,511,Service,Compliance,Compliance/Service/SearchTrailService.php,0,38,Compliance
 Service/Security/OutboundAddressGuard.php,106,Service,Integrations,Integrations/Service/Security/OutboundAddressGuard.php,0,262,Core
@@ -3429,7 +3429,7 @@ Db/SchemaMapper/,,Db,,,,,Core
 Db/SchemaMapper/CalculationAnnotationCheck.php,63,Db,,,0,,Processes
 Db/SchemaMapper/DeclaredActionCheck.php,51,Db,,,0,,Processes
 Db/SchemaRun/,,Db,,,,,Core
-Db/SearchTrail/,,Db,,,,,Search
+Db/SearchTrail/,,Db,,,,,Compliance
 Db/Source/,,Db,,,,,Integrations
 Db/Support/,,Db,,,,,Integrations
 Db/TaskSequence/,,Db,,,,,Processes
@@ -3770,8 +3770,8 @@ Db/SchemaChangelogMapperInterface.php,,Db,,,,,Core
 Db/SchemaRunEntryMapperInterface.php,,Db,,,,,Core
 Db/SchemaRunMapperInterface.php,,Db,,,,,Core
 Db/SchemaRunStoreInterface.php,,Db,,,,,Core
-Db/SearchTrailCleanupInterface.php,,Db,,,,,Search
-Db/SearchTrailCriteria.php,,Db,,,,,Search
+Db/SearchTrailCleanupInterface.php,,Db,,,,,Compliance
+Db/SearchTrailCriteria.php,,Db,,,,,Compliance
 Db/SearchTrailMapperInterface.php,,Db,,,,,Compliance
 Db/SearchTrailOutcome.php,,Db,,,,,Compliance
 Db/SequenceMapperInterface.php,,Db,,,,,Processes
@@ -3883,9 +3883,9 @@ Listener/SurvivorshipRecomputeRun.php,,Listener,,,,,Core
 Listener/UniqueConstraintListenerInterface.php,,Listener,,,,,Core
 Listener/UniqueConstraintRun.php,,Listener,,,,,Core
 Listener/ValidatesPreWriteObject.php,,Listener,,,,,Core
-Listener/ViewAlertAudience.php,,Listener,,,,,Search
+Listener/ViewAlertAudience.php,,Listener,,,,,Processes
 Listener/ViewAlertDeliveryRun.php,,Listener,,,,,Processes
-Listener/ViewAlertMail.php,,Listener,,,,,Search
+Listener/ViewAlertMail.php,,Listener,,,,,Processes
 Repair/FlowNodeTypeRewrite.php,,Repair,,,,,Processes
 Repair/FlowTimerRegisterPathInterface.php,,Repair,,,,,Processes
 Repair/FlowVersionBackfillTally.php,,Repair,,,,,Processes
@@ -4094,12 +4094,12 @@ Service/SchemaTeardownInterface.php,,Service,,,,,Core
 Service/SchemaTeardownOverride.php,,Service,,,,,Core
 Service/SearchMeasurement.php,,Service,,,,,Core
 Service/SearchPeriod.php,,Service,,,,,Compliance
-Service/SearchTrailActivityInsights.php,,Service,,,,,Search
+Service/SearchTrailActivityInsights.php,,Service,,,,,Compliance
 Service/SearchTrailNameEnricher.php,,Service,,,,,Compliance
-Service/SearchTrailQueryConfig.php,,Service,,,,,Search
+Service/SearchTrailQueryConfig.php,,Service,,,,,Compliance
 Service/SearchTrailServiceInterface.php,,Service,,,,,Compliance
 Service/SearchTrailStatistics.php,,Service,,,,,Compliance
-Service/SearchTrailUserAgentParser.php,,Service,,,,,Search
+Service/SearchTrailUserAgentParser.php,,Service,,,,,Compliance
 Service/SecurityHeadersInterface.php,,Service,,,,,Core
 Service/SemanticTypeQuery.php,,Service,,,,,Core
 Service/SemanticTypeResolverInterface.php,,Service,,,,,Core

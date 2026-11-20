@@ -2352,8 +2352,6 @@ deptrac:
         - type: directory
           value: 'lib/Service/Search/TokenizeRun[.]php$'
         - type: directory
-          value: 'lib/Service/Search/VectorResultFilter[.]php$'
-        - type: directory
           value: 'lib/Service/Security/[^/]*$'
         - type: directory
           value: 'lib/Service/Serializer/[^/]*$'
@@ -2634,7 +2632,7 @@ deptrac:
         - type: directory
           value: 'lib/Event/(BulkActionRegistrationEvent|TaskSequenceCompletedEvent|TaskSequenceUndecidedEvent|TaskTransitionedEvent)[.]php$'
         - type: directory
-          value: 'lib/Listener/(AdministeredValidationListener|AggregationCacheInvalidationListener|AnnotationNotificationListener|ApprovalChainAdvanceListener|ApprovalChainGateListener|AssigneeFollowListener|AssigneeFollowRun|AuthorizationCacheInvalidationListener|AutoTransitionRecordListener|BulkActionRegistrationListener|CalculationApplyRun|CalculationOnSaveListener|CaseItemTimerListener|CaseObjectEventListener|CaseRunTerminalListener|CaseTaskTerminalListener|ChainGateRun|ChangeGateListener|CommentsEntityListener|ConsentApplyRun|ConsentEnvelopeOnSaveListener|DecisionTableValidationListener|DecisionTableValidationListenerInterface|DeclaredFlowRun|DependentValueListener|FileChangeListener|FilesSidebarListener|FlowEngineRegistrationListener|FlowNodePreflightListener|FlowNodeRegistrationListener|FlowOversightRegistrationListener|FlowRunLockReleaseListener|FlowTimerSubjectTerminalListener|FlowTriggerListener|FormDestinationSchemaListener|FrozenNodeWriteListener|FrozenObjectDeleteGuardListener|HandoffLifecycleListener|HandoffQueueDrainListener|IntegrationGlobalScriptListener|LeafScriptListener|LifecycleActionListener|LifecycleActionRecordListener|LifecycleAttempt|LifecycleCreate|LifecycleDeclaration|LifecycleEdit|LifecycleEditReader|LifecycleInitialReference|LifecycleInitialStateListener|LifecycleValidationListener|ListenerRegistrar|MailAppScriptListener|NativeFlowTriggerListener|NotificationTrigger|ObjectChangeListener|ObjectExtractionRun|ObjectQuotaListener|OcmResourceTypeListener|PartyAddressUnionRun|PartyMergeListener|PartyTreeGuardListener|PortalTaskReminderListener|PrincipalResolverRegistrationListener|PushClientScriptListener|ReadStateInvalidationListener|ReadStatePruneListener|ReferencedCalculationListener|RequiredWhenListener|SchemaDeclarationChecksListener|SchemaFlowImportListener|SharerViewsEndWithUserListener|SourceRecordChangeListener|StateEntryFreezeListener|StateFieldRuleListener|StateFieldSaveRun|SurveyWriteListener|TablesTableDeletedListener|TaskBlockerReleaseListener|TaskCalendarProjectionListener|TaskNotificationListener|TaskRunTerminalListener|TaskSequenceProgressListener|TaskTerminalProjectionListener|TaskVtodoWriteBackListener|TranslationProjectionListener|UserTaskTerminalListener|ViewAlertCrossedListener|ViewAlertDeliveryRun|WatcherPruneListener|WebhookEventListener|WorkingCalendarChangedListener|WorkingCalendarDeleteGuardListener|WorkingCalendarValidationListener)[.]php$'
+          value: 'lib/Listener/(AdministeredValidationListener|AggregationCacheInvalidationListener|AnnotationNotificationListener|ApprovalChainAdvanceListener|ApprovalChainGateListener|AssigneeFollowListener|AssigneeFollowRun|AuthorizationCacheInvalidationListener|AutoTransitionRecordListener|BulkActionRegistrationListener|CalculationApplyRun|CalculationOnSaveListener|CaseItemTimerListener|CaseObjectEventListener|CaseRunTerminalListener|CaseTaskTerminalListener|ChainGateRun|ChangeGateListener|CommentsEntityListener|ConsentApplyRun|ConsentEnvelopeOnSaveListener|DecisionTableValidationListener|DecisionTableValidationListenerInterface|DeclaredFlowRun|DependentValueListener|FileChangeListener|FilesSidebarListener|FlowEngineRegistrationListener|FlowNodePreflightListener|FlowNodeRegistrationListener|FlowOversightRegistrationListener|FlowRunLockReleaseListener|FlowTimerSubjectTerminalListener|FlowTriggerListener|FormDestinationSchemaListener|FrozenNodeWriteListener|FrozenObjectDeleteGuardListener|HandoffLifecycleListener|HandoffQueueDrainListener|IntegrationGlobalScriptListener|LeafScriptListener|LifecycleActionListener|LifecycleActionRecordListener|LifecycleAttempt|LifecycleCreate|LifecycleDeclaration|LifecycleEdit|LifecycleEditReader|LifecycleInitialReference|LifecycleInitialStateListener|LifecycleValidationListener|ListenerRegistrar|MailAppScriptListener|NativeFlowTriggerListener|NotificationTrigger|ObjectChangeListener|ObjectExtractionRun|ObjectQuotaListener|OcmResourceTypeListener|PartyAddressUnionRun|PartyMergeListener|PartyTreeGuardListener|PortalTaskReminderListener|PrincipalResolverRegistrationListener|PushClientScriptListener|ReadStateInvalidationListener|ReadStatePruneListener|ReferencedCalculationListener|RequiredWhenListener|SchemaDeclarationChecksListener|SchemaFlowImportListener|SharerViewsEndWithUserListener|SourceRecordChangeListener|StateEntryFreezeListener|StateFieldRuleListener|StateFieldSaveRun|SurveyWriteListener|TablesTableDeletedListener|TaskBlockerReleaseListener|TaskCalendarProjectionListener|TaskNotificationListener|TaskRunTerminalListener|TaskSequenceProgressListener|TaskTerminalProjectionListener|TaskVtodoWriteBackListener|TranslationProjectionListener|UserTaskTerminalListener|ViewAlertAudience|ViewAlertCrossedListener|ViewAlertDeliveryRun|ViewAlertMail|WatcherPruneListener|WebhookEventListener|WorkingCalendarChangedListener|WorkingCalendarDeleteGuardListener|WorkingCalendarValidationListener)[.]php$'
         - type: directory
           value: 'lib/Listener/FlowNodes/[^/]*$'
         - type: directory
@@ -4100,7 +4098,7 @@ deptrac:
         - type: directory
           value: 'lib/Controller/Support/VerwerkingsactiviteitenControllerServices[.]php$'
         - type: directory
-          value: 'lib/Db/(AuditFlowAttributionInterface|AuditTrail|AuditTrailFilterTerm|AuditTrailMapper|AuditTrailPageQuery|AuditTrailPageQueryInterface|AuditTrailPayloadHelper|ComplianceMapperBindings|ComplianceMapperRegistrar|ContentReport|ContentReportMapper|ContentReportMapperInterface|ErasurePreview|ErasurePreviewMapper|ErasurePreviewMapperInterface|GdprEntity|GdprEntityMapper|GdprEntityMapperInterface|NewRowStamps|ProcessingLogEntry|ProcessingLogMapper|ProcessingLogMapperInterface|ProcessingPurpose|ProcessingPurposeMapper|ProcessingPurposeMapperInterface|QualityAudit|QualityAuditFailure|QualityAuditMapper|QualityAuditMapperInterface|QualityAuditRun|QualityAuditRunMapper|QualityAuditRunMapperInterface|SearchTrail|SearchTrailMapper|SearchTrailMapperInterface|SearchTrailOutcome|StatusVocabularyTrait|SubjectExport|SubjectExportMapper|SubjectExportMapperInterface|TrailRetentionTrait|Verwerkingsactiviteit|VerwerkingsactiviteitMapper|VerwerkingsactiviteitMapperInterface)[.]php$'
+          value: 'lib/Db/(AuditFlowAttributionInterface|AuditTrail|AuditTrailFilterTerm|AuditTrailMapper|AuditTrailPageQuery|AuditTrailPageQueryInterface|AuditTrailPayloadHelper|ComplianceMapperBindings|ComplianceMapperRegistrar|ContentReport|ContentReportMapper|ContentReportMapperInterface|ErasurePreview|ErasurePreviewMapper|ErasurePreviewMapperInterface|GdprEntity|GdprEntityMapper|GdprEntityMapperInterface|NewRowStamps|ProcessingLogEntry|ProcessingLogMapper|ProcessingLogMapperInterface|ProcessingPurpose|ProcessingPurposeMapper|ProcessingPurposeMapperInterface|QualityAudit|QualityAuditFailure|QualityAuditMapper|QualityAuditMapperInterface|QualityAuditRun|QualityAuditRunMapper|QualityAuditRunMapperInterface|SearchTrail|SearchTrailCleanupInterface|SearchTrailCriteria|SearchTrailMapper|SearchTrailMapperInterface|SearchTrailOutcome|StatusVocabularyTrait|SubjectExport|SubjectExportMapper|SubjectExportMapperInterface|TrailRetentionTrait|Verwerkingsactiviteit|VerwerkingsactiviteitMapper|VerwerkingsactiviteitMapperInterface)[.]php$'
         - type: directory
           value: 'lib/Db/AuditTrail/AuditActionStatistics[.]php$'
         - type: directory
@@ -4140,6 +4138,8 @@ deptrac:
         - type: directory
           value: 'lib/Db/SchemaMapper/ArchivalDeclarationRefusals[.]php$'
         - type: directory
+          value: 'lib/Db/SearchTrail/[^/]*$'
+        - type: directory
           value: 'lib/Db/SubjectExport/[^/]*$'
         - type: directory
           value: 'lib/Db/Verwerkingsactiviteit/[^/]*$'
@@ -4154,7 +4154,7 @@ deptrac:
         - type: directory
           value: 'lib/Repair/(RechainAuditTrailForFlowAttribution|V1ChainVerificationRun)[.]php$'
         - type: directory
-          value: 'lib/Service/(AuditCanonicalV1|AuditChainKey|AuditHashService|AuditHashServiceInterface|AuditQueryService|AuditQueryServiceInterface|AuditRechainInterface|AuditRetentionResolver|AuditRetentionResolverInterface|AuditSealInterface|AuthorizationAuditService|AvgComplianceService|AvgRetentionErasureRun|AvgRetentionService|CalculationRun|ComplianceServiceBindings|ComplianceServiceRegistrar|ContentScanService|DsarErasureRun|DsarGuards|DsarService|DsarServiceInterface|DsarStores|DsarSubjectQuery|LogObjectInTable|LogService|ProcessingLogService|ProcessingRead|ReadCaptureRun|RetentionClock|RetentionPass|RetentionRules|RetentionService|RetentionServiceInterface|RetentionStores|SchemaCascade|SchemaDeletionService|SchemaTeardownGuard|SearchPeriod|SearchTrailNameEnricher|SearchTrailService|SearchTrailServiceInterface|SearchTrailStatistics|TableDeletionRun|TableObjectRef|TenantKeyService|TmloService|UnclassifiedProcessing|WholeTableRows)[.]php$'
+          value: 'lib/Service/(AuditCanonicalV1|AuditChainKey|AuditHashService|AuditHashServiceInterface|AuditQueryService|AuditQueryServiceInterface|AuditRechainInterface|AuditRetentionResolver|AuditRetentionResolverInterface|AuditSealInterface|AuthorizationAuditService|AvgComplianceService|AvgRetentionErasureRun|AvgRetentionService|CalculationRun|ComplianceServiceBindings|ComplianceServiceRegistrar|ContentScanService|DsarErasureRun|DsarGuards|DsarService|DsarServiceInterface|DsarStores|DsarSubjectQuery|LogObjectInTable|LogService|ProcessingLogService|ProcessingRead|ReadCaptureRun|RetentionClock|RetentionPass|RetentionRules|RetentionService|RetentionServiceInterface|RetentionStores|SchemaCascade|SchemaDeletionService|SchemaTeardownGuard|SearchPeriod|SearchTrailActivityInsights|SearchTrailNameEnricher|SearchTrailQueryConfig|SearchTrailService|SearchTrailServiceInterface|SearchTrailStatistics|SearchTrailUserAgentParser|TableDeletionRun|TableObjectRef|TenantKeyService|TmloService|UnclassifiedProcessing|WholeTableRows)[.]php$'
         - type: directory
           value: 'lib/Service/Anonymisation/[^/]*$'
         - type: directory
@@ -4932,11 +4932,7 @@ deptrac:
         - type: directory
           value: 'lib/Controller/Support/HybridSearchDiagnostics[.]php$'
         - type: directory
-          value: 'lib/Db/(SearchTrailCleanupInterface|SearchTrailCriteria)[.]php$'
-        - type: directory
-          value: 'lib/Db/SearchTrail/[^/]*$'
-        - type: directory
-          value: 'lib/Listener/(UniqueHintDeclarationCheckListener|ViewAlertAudience|ViewAlertMail)[.]php$'
+          value: 'lib/Listener/(UniqueHintDeclarationCheckListener)[.]php$'
         - type: directory
           value: 'lib/Search/ObjectsProvider[.]php$'
         - type: directory
@@ -4992,7 +4988,7 @@ deptrac:
         - type: directory
           value: 'lib/Search/Service/Vectorization/Handlers/[^/]*$'
         - type: directory
-          value: 'lib/Service/(SearchTrailActivityInsights|SearchTrailQueryConfig|SearchTrailUserAgentParser)[.]php$'
+          value: 'lib/Service/Search/VectorResultFilter[.]php$'
         - type: directory
           value: 'lib/Service/Search/VectorSearchFacade[.]php$'
     - name: Notifications
