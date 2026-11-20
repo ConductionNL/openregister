@@ -30,10 +30,13 @@ use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionEvaluatorInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
 use OCA\OpenRegister\Search\FlowTasksProvider;
 use OCA\OpenRegister\Kernel\Contracts\Core\PublicationRefusalInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\SchemaFormDependentsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\SchemaRenameWarningsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Notifications\NotificationRunRecorderInterface;
 use OCA\OpenRegister\Kernel\Contracts\Notifications\ObjectWatchersInterface;
 use OCA\OpenRegister\Kernel\Contracts\Notifications\TaskRowSourceInterface;
 use OCA\OpenRegister\Service\AutomationRecordWriter;
+use OCA\OpenRegister\Service\Form\FormDependentsCheck;
 use OCA\OpenRegister\Service\Interaction\WatcherService;
 use OCA\OpenRegister\Kernel\Contracts\Integrations\ObjectCalendarLinkInterface;
 use OCA\OpenRegister\Service\CalendarEventService;
@@ -105,6 +108,8 @@ final class FlowWiring {
 		TaskRowSourceInterface::class => TaskInboxService::class,
 		ObjectWatchersInterface::class => WatcherService::class,
 		NotificationRunRecorderInterface::class => AutomationRecordWriter::class,
+		SchemaRenameWarningsInterface::class => FlowTriggerRenameCheck::class,
+		SchemaFormDependentsInterface::class => FormDependentsCheck::class,
 		BuiltInToolProvidersInterface::class => FlowBuiltInToolProviders::class,
 		ExpressionEvaluatorInterface::class => CalculationEvaluator::class,
 		\OCA\OpenRegister\Kernel\Contracts\Notifications\PartyRecipientsInterface::class => \OCA\OpenRegister\Service\Party\PartyRecipients::class,

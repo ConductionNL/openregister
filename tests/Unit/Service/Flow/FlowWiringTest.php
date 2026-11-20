@@ -21,6 +21,8 @@ use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionEvaluatorInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
 use OCA\OpenRegister\Kernel\Contracts\Notifications\PartyRecipientsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\PublicationRefusalInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\SchemaFormDependentsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\SchemaRenameWarningsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Notifications\NotificationRunRecorderInterface;
 use OCA\OpenRegister\Kernel\Contracts\Notifications\ObjectWatchersInterface;
 use OCA\OpenRegister\Kernel\Contracts\Notifications\TaskRowSourceInterface;
@@ -46,11 +48,13 @@ use OCA\OpenRegister\Service\Flow\FlowRunnableGuard;
 use OCA\OpenRegister\Service\Flow\FlowService;
 use OCA\OpenRegister\Service\Flow\FlowStepDispatcher;
 use OCA\OpenRegister\Search\FlowTasksProvider;
+use OCA\OpenRegister\Service\Flow\FlowTriggerRenameCheck;
 use OCA\OpenRegister\Service\Flow\FlowWiring;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNode;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNodeInterface;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalKinds;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalKindsInterface;
+use OCA\OpenRegister\Service\Form\FormDependentsCheck;
 use OCA\OpenRegister\Service\Flow\RegistryStepDispatcher;
 use OCA\OpenRegister\Service\Flow\Timer\CalendarRecompute;
 use OCA\OpenRegister\Service\Flow\Timer\CalendarRecomputeInterface;
@@ -267,6 +271,7 @@ final class FlowWiringTest extends TestCase {
 	}//end testTheExpressionDefaultsPortIsAnsweredByTheRulesEngine()
 
 	/**
+	 * The schedule flow store, the current-run port, the task row, watcher and run-record ports, the schema rename and form dependents checks, the expression-defaults port and the area's own interfaces are bound, and only these aliases are registered.
 	 * The schedule flow store, the current-run port, the task row, watcher and run-record ports, the expression-defaults port and the area's own interfaces are bound, and only these aliases are registered.
 	 * The schedule flow store, the current-run port, the task row port, the expression-defaults port and the area's own interfaces are bound, and only these aliases are registered.
 	 * The schedule flow store, the current-run port, the calendar link port, the expression-defaults port and the area's own interfaces are bound, and only these aliases are registered.
@@ -284,6 +289,8 @@ final class FlowWiringTest extends TestCase {
 				TaskRowSourceInterface::class              => TaskInboxService::class,
 				ObjectWatchersInterface::class             => WatcherService::class,
 				NotificationRunRecorderInterface::class    => AutomationRecordWriter::class,
+				SchemaRenameWarningsInterface::class       => FlowTriggerRenameCheck::class,
+				SchemaFormDependentsInterface::class       => FormDependentsCheck::class,
 				BuiltInToolProvidersInterface::class       => FlowBuiltInToolProviders::class,
 				ExpressionEvaluatorInterface::class        => CalculationEvaluator::class,
 				PartyRecipientsInterface::class            => PartyRecipients::class,

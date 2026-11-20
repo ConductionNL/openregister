@@ -38,10 +38,7 @@
   "lib/Controller/RegistersController.php -> lib/Service/Configuration/ConfigurationCollaborators.php",
   "lib/Controller/RegistersController.php -> lib/Service/Lifecycle/KeepLifecycleStatesScope.php",
   "lib/Controller/RulesController.php -> lib/Settings/OpenRegisterAdmin.php",
-  "lib/Controller/SchemasController.php -> lib/Notifications/Service/Notification/NotificationDeclarationException.php",
   "lib/Controller/SchemasController.php -> lib/Service/AuthorizationAuditService.php",
-  "lib/Controller/SchemasController.php -> lib/Service/Flow/FlowTriggerRenameCheck.php",
-  "lib/Controller/SchemasController.php -> lib/Service/Form/FormDependentsCheckInterface.php",
   "lib/Controller/SchemasController.php -> lib/Service/Task/ApprovalPositionFormGuard.php",
   "lib/Controller/SettingsController.php -> lib/Service/Settings/SearchBackendHandler.php",
   "lib/Controller/Support/ConflictTrail.php -> lib/Db/AuditTrail.php",
@@ -895,6 +892,7 @@
   "lib/Kernel/Contracts/Core/BundleImport.php",
   "lib/Kernel/Contracts/Core/CredentialSecretReaderInterface.php",
   "lib/Kernel/Contracts/Core/CurrentFlowRunInterface.php",
+  "lib/Kernel/Contracts/Core/DeclarationRefusalInterface.php",
   "lib/Kernel/Contracts/Core/ExportGuardInterface.php",
   "lib/Kernel/Contracts/Core/ExpressionDefaultsInterface.php",
   "lib/Kernel/Contracts/Core/ExpressionEvaluatorInterface.php",
@@ -932,6 +930,8 @@
   "lib/Kernel/Contracts/Core/RouteCallWindow.php",
   "lib/Kernel/Contracts/Core/RouteCallersInterface.php",
   "lib/Kernel/Contracts/Core/RunningNumbersInterface.php",
+  "lib/Kernel/Contracts/Core/SchemaFormDependentsInterface.php",
+  "lib/Kernel/Contracts/Core/SchemaRenameWarningsInterface.php",
   "lib/Kernel/Contracts/Core/SearchTrailRecorderInterface.php",
   "lib/Kernel/Contracts/Core/ServiceUnavailableExceptionInterface.php",
   "lib/Kernel/Contracts/Core/ShareLinkUrlInterface.php",
@@ -1145,7 +1145,6 @@
   "lib/Notifications/Service/Notification/NoticeRule.php",
   "lib/Notifications/Service/Notification/NotificationChannelPolicyInterface.php",
   "lib/Notifications/Service/Notification/NotificationClearingServiceInterface.php",
-  "lib/Notifications/Service/Notification/NotificationDeclarationException.php",
   "lib/Notifications/Service/Notification/NotificationPreferenceServiceInterface.php",
   "lib/Notifications/Service/Notification/NotificationRecipientResolverInterface.php",
   "lib/Notifications/Service/Notification/NotificationRuleDispatcherInterface.php",
@@ -1673,7 +1672,6 @@
   "lib/Service/Flow/FlowTenantMembershipInterface.php",
   "lib/Service/Flow/FlowTriggerIndex.php",
   "lib/Service/Flow/FlowTriggerIndexInterface.php",
-  "lib/Service/Flow/FlowTriggerRenameCheck.php",
   "lib/Service/Flow/FlowTriggerService.php",
   "lib/Service/Flow/FlowTriggerServiceInterface.php",
   "lib/Service/Flow/FlowTriggerSlugs.php",
@@ -2514,13 +2512,13 @@
  "exposed_loc": {
   "Compliance": 15454,
   "Configuration": 3601,
-  "Core": 64293,
+  "Core": 64316,
   "Files": 2664,
   "Integrations": 18214,
   "Kernel": 8506,
-  "Notifications": 2065,
+  "Notifications": 2049,
   "Platform": 292,
-  "Processes": 30066,
+  "Processes": 29949,
   "Search": 2027
  },
  "kernel_files": [
@@ -2986,6 +2984,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10457,
- "total_loc": 460841,
- "violation_degree": 0.0346
+ "total_loc": 460868,
+ "violation_degree": 0.0343
 }
