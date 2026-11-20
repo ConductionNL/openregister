@@ -22,10 +22,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object\SaveObject;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\DerivedTranslationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\SourceLanguagesInterface;
 use OCA\OpenRegister\Service\FieldEncryptionHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
-use OCA\OpenRegister\Service\TranslationProjectionService;
-use OCA\OpenRegister\Service\TranslationStatusService;
 
 /**
  * The handlers that transform stored values: translations and field encryption.
@@ -37,16 +37,16 @@ final class SaveObjectValueHandlers {
 	 * Bundle the collaborators.
 	 *
 	 * @param TranslationHandler           $translationHandler           Handler for translation operations.
-	 * @param TranslationProjectionService $translationProjectionService Translation projection service.
-	 * @param TranslationStatusService     $translationStatusService     Translation status service.
+	 * @param SourceLanguagesInterface     $translationProjectionService Resolves a translatable property's source language.
+	 * @param DerivedTranslationsInterface $translationStatusService     Marks the translations derived from a changed source value.
 	 * @param ?FieldEncryptionHandler      $fieldEncryptionHandler       Field-level encryption handler.
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	public function __construct(
 		public readonly TranslationHandler $translationHandler,
-		public readonly TranslationProjectionService $translationProjectionService,
-		public readonly TranslationStatusService $translationStatusService,
+		public readonly SourceLanguagesInterface $translationProjectionService,
+		public readonly DerivedTranslationsInterface $translationStatusService,
 		public readonly ?FieldEncryptionHandler $fieldEncryptionHandler = null,
 	) {
 	}//end __construct()

@@ -25,7 +25,6 @@ use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Event\ApplicationCreatedEvent;
 use OCA\OpenRegister\Event\ApplicationDeletedEvent;
 use OCA\OpenRegister\Event\ApplicationUpdatedEvent;
@@ -54,6 +53,7 @@ use OCA\OpenRegister\Kernel\Contracts\RegisterInterface;
 use OCA\OpenRegister\Kernel\Contracts\RelationDecisionUpdate;
 use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
 use OCA\OpenRegister\Kernel\Contracts\SourceInterface;
+use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
 use OCP\AppFramework\Db\Entity;
 use OCP\EventDispatcher\IEventDispatcher;
 
@@ -402,7 +402,7 @@ final class EntityEventPublisher implements EntityEventsInterface {
 	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-all-entity-mutations-must-dispatch-typed-php-events-via-ieventdispatcher
 	 */
 	public function taskTerminal(Entity $task, bool $committed): void {
-		$this->dispatcher->dispatchTyped(new TaskTerminalEvent(task: self::narrow(entity: $task, class: Task::class), committed: $committed));
+		$this->dispatcher->dispatchTyped(new TaskTerminalEvent(task: self::narrow(entity: $task, class: TaskInterface::class), committed: $committed));
 	}//end taskTerminal()
 
 	/**

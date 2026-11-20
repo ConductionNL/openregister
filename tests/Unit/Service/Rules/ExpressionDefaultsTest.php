@@ -22,6 +22,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Rules;
 
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionDefaultsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionDefaultRefusalInterface;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaultException;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaultResolver;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaults;
@@ -128,4 +129,22 @@ final class ExpressionDefaultsTest extends TestCase {
 
 		$this->defaults()->apply(schema: self::sixWeeks(), data: []);
 	}//end testAnUnevaluableDefaultRefuses()
+
+	/**
+	 * The refusal is the Core refusal contract the object API answers with 422, its field error unchanged.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/objects-crud/spec.md
+	 */
+	public function testTheRefusalIsTheCoreRefusalWithItsFieldError(): void {
+		$refusal = new ExpressionDefaultException(property: 'deadline', message: 'cannot derive');
+
+		$this->assertInstanceOf(ExpressionDefaultRefusalInterface::class, $refusal);
+		$this->assertSame(422, $refusal->getCode());
+		$this->assertSame(
+			['code' => 'default-expression-unevaluable', 'property' => 'deadline', 'message' => 'cannot derive'],
+			$refusal->toArray()
+		);
+	}//end testTheRefusalIsTheCoreRefusalWithItsFieldError()
 }//end class
