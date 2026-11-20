@@ -35,10 +35,6 @@ use OCA\OpenRegister\Notifications\Db\ScheduledReportMapperInterface;
 use OCA\OpenRegister\Notifications\Db\WatcherMapper;
 use OCA\OpenRegister\Notifications\Db\WatcherMapperInterface;
 use OCA\OpenRegister\Notifications\Search\TimelineEntriesProvider;
-use OCA\OpenRegister\Notifications\Service\EmailService;
-use OCA\OpenRegister\Notifications\Service\ExampleSet\ExampleSetTimelineEntries;
-use OCA\OpenRegister\Notifications\Service\ExampleSet\ExampleSetTimelineRowsInterface;
-use OCA\OpenRegister\Notifications\Service\EmailServiceInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
 use OCA\OpenRegister\Notifications\Service\Notification\EmailSender;
 use OCA\OpenRegister\Notifications\Service\Notification\EmailSenderInterface;
@@ -50,6 +46,7 @@ use OCA\OpenRegister\Notifications\Service\Notification\NotificationChannelPolic
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationChannelPolicyInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationClearingService;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationClearingServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ReadNoticeClearingInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationPreferenceService;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationPreferenceServiceInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolver;
@@ -105,7 +102,6 @@ final class NotificationsWiring {
 		NotificationRuleDispatcherInterface::class => AnnotationNotificationDispatcher::class,
 		NotificationPreferenceServiceInterface::class => NotificationPreferenceService::class,
 		NotificationRecipientResolverInterface::class => NotificationRecipientResolver::class,
-		EmailServiceInterface::class => EmailService::class,
 		NotificationHistoryMapperInterface::class => NotificationHistoryMapper::class,
 		TaskNotificationRulesInterface::class => TaskNotificationRules::class,
 		RateLimiterInterface::class => RateLimiter::class,
@@ -125,11 +121,11 @@ final class NotificationsWiring {
 		MessageMapperInterface::class => MessageMapper::class,
 		NotificationPreferencesInterface::class => NotificationPreferenceService::class,
 		NotificationClearingServiceInterface::class => NotificationClearingService::class,
+		ReadNoticeClearingInterface::class => NotificationClearingService::class,
 		NotificationChannelPolicyInterface::class => NotificationChannelPolicy::class,
 		ScheduledReportMapperInterface::class => ScheduledReportMapper::class,
 		NotificationAnnotationValidatorInterface::class => NotificationAnnotationValidator::class,
 		TaskTransitionNotifierInterface::class => TaskTransitionNotifier::class,
-		ExampleSetTimelineRowsInterface::class => ExampleSetTimelineEntries::class,
 	];
 
 	/**
