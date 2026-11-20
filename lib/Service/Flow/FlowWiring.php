@@ -77,6 +77,8 @@ use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 use OCP\App\IAppManager;
 use OCA\OpenRegister\Kernel\Contracts\Core\ObjectQuotaInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\UnreadCountsInterface;
+use OCA\OpenRegister\Service\Interaction\UnreadCountCalculator;
 use OCA\OpenRegister\Service\Quota\ObjectQuotaService;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCP\IDBConnection;
@@ -139,6 +141,7 @@ final class FlowWiring {
 		LifecycleTransitionInterface::class => TransitionEngine::class,
 		ExpressionDefaultsInterface::class => ExpressionDefaults::class,
 		ObjectQuotaInterface::class => ObjectQuotaService::class,
+		UnreadCountsInterface::class => UnreadCountCalculator::class,
 	];
 
 	/**

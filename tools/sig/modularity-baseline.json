@@ -13,7 +13,6 @@
   "lib/Controller/ObjectsController.php -> lib/Service/Audit/PurposeRefusedException.php",
   "lib/Controller/ObjectsController.php -> lib/Service/FileServiceInterface.php",
   "lib/Controller/ObjectsController.php -> lib/Service/Flow/FlowRunContextInterface.php",
-  "lib/Controller/ObjectsController.php -> lib/Service/Interaction/ReadStateServiceInterface.php",
   "lib/Controller/RegistersController.php -> lib/Service/AuthorizationAuditService.php",
   "lib/Controller/RegistersController.php -> lib/Service/Configuration/ConfigurationCollaborators.php",
   "lib/Controller/RegistersController.php -> lib/Service/Lifecycle/KeepLifecycleStatesScope.php",
@@ -22,7 +21,6 @@
   "lib/Controller/SettingsController.php -> lib/Service/Settings/SearchBackendHandler.php",
   "lib/Controller/Support/DsarCaseCases.php -> lib/Service/Lifecycle/TransitionEngine.php",
   "lib/Controller/Support/GeoServices.php -> lib/Search/Service/Geo/GeoFeatureCollectionBuilderInterface.php",
-  "lib/Controller/Support/ObjectReadStateControllerServices.php -> lib/Service/Interaction/ReadStateServiceInterface.php",
   "lib/Controller/Support/TagsControllerServices.php -> lib/Service/FileServiceInterface.php",
   "lib/Controller/Support/TranslationControllerServices.php -> lib/Service/TranslationStatusServiceInterface.php",
   "lib/Controller/Support/TranslationMappers.php -> lib/Db/TranslationMapperInterface.php",
@@ -146,7 +144,6 @@
   "lib/Service/Object/RenderObject.php -> lib/Db/TranslationSlot.php",
   "lib/Service/Object/RenderObject.php -> lib/Files/Service/File/FileRestrictionGuardInterface.php",
   "lib/Service/Object/RenderObject.php -> lib/Service/Calculation/CalculationPayload.php",
-  "lib/Service/Object/RenderObject.php -> lib/Service/Interaction/ReadStateService.php",
   "lib/Service/Object/RenderObject.php -> lib/Service/Interaction/WatcherService.php",
   "lib/Service/Object/RenderObject.php -> lib/Service/ObjectAction/ObjectActionList.php",
   "lib/Service/Object/RenderTranslations.php -> lib/Db/TranslationMapperInterface.php",
@@ -895,6 +892,7 @@
   "lib/Kernel/Contracts/Core/ShareLinkUrlInterface.php",
   "lib/Kernel/Contracts/Core/SpatialFilterInterface.php",
   "lib/Kernel/Contracts/Core/TransferredRecordStatesInterface.php",
+  "lib/Kernel/Contracts/Core/UnreadCountsInterface.php",
   "lib/Kernel/Contracts/Core/WriteElevationInterface.php",
   "lib/Kernel/Contracts/DecisionInterface.php",
   "lib/Kernel/Contracts/DeckPlacement.php",
@@ -2463,13 +2461,13 @@
  "exposed_loc": {
   "Compliance": 15375,
   "Configuration": 3134,
-  "Core": 64126,
+  "Core": 64285,
   "Files": 2665,
   "Integrations": 18152,
   "Kernel": 8506,
   "Notifications": 2049,
   "Platform": 293,
-  "Processes": 29188,
+  "Processes": 29038,
   "Search": 2035
  },
  "kernel_files": [
@@ -2935,6 +2933,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10457,
- "total_loc": 461241,
- "violation_degree": 0.0255
+ "total_loc": 461254,
+ "violation_degree": 0.0251
 }
