@@ -2,7 +2,6 @@
 
 /**
  * FilesMapperRegistrar: the entry that builds and binds the Files area's mappers in lib/Db.
- * FilesMapperRegistrar: the entry that binds the Files area's mapper interfaces.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -34,8 +33,6 @@ use Psr\Container\ContainerInterface;
  * Application names this class only; the map lives in FilesMapperBindings,
  * so DbRegistrar (Core) names no Files interface and MapperWiring (Core)
  * no longer builds the entity relation mapper.
- * Binds the Files area's interfaces whose mapper lives in lib/Db: the entity
- * so DbRegistrar (Core) names no Files interface.
  *
  * @spec exclude Container wiring; no behaviour of its own.
  */
@@ -50,7 +47,6 @@ final class FilesMapperRegistrar {
 
 	/**
 	 * Register the entity relation mapper and every binding with the app container.
-	 * Register every binding with the app container.
 	 *
 	 * @param IRegistrationContext $context The registration context.
 	 *

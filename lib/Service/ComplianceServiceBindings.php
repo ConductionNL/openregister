@@ -24,11 +24,14 @@ namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Kernel\Contracts\Core\AuthRateLimitCeilingInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\CascadeRetentionCheckInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectArchivalMetadataInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\SearchTrailRecorderInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ReadPurposeGuardInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ReadableObjectHistoryInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\RecordArchivalReadingInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\RegisterAccessChangeLogInterface;
 use OCA\OpenRegister\Service\Archival\RecordArchivalReading;
+use OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders;
 use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
 use OCA\OpenRegister\Service\Audit\PurposeGuard;
 use OCA\OpenRegister\Service\Hardening\HardeningPolicy;
@@ -52,7 +55,9 @@ final class ComplianceServiceBindings {
 	public const BINDINGS = [
 		AuthRateLimitCeilingInterface::class    => HardeningPolicy::class,
 		CascadeRetentionCheckInterface::class   => ArchivalRetentionGuard::class,
+		ObjectArchivalMetadataInterface::class  => TmloService::class,
 		ReadPurposeGuardInterface::class        => PurposeGuard::class,
+		ReadableObjectHistoryInterface::class   => ObjectHistoryForReaders::class,
 		RecordArchivalReadingInterface::class   => RecordArchivalReading::class,
 		RegisterAccessChangeLogInterface::class => AuthorizationAuditService::class,
 		SearchTrailRecorderInterface::class     => SearchTrailService::class,
