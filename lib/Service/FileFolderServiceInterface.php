@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Service;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\Core\EntityFolderInterface;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectFolderLookupInterface;
 use OCP\Files\Folder;
 use OCP\Files\Node;
 use OCP\IUser;
@@ -34,7 +35,7 @@ use OCP\IUser;
  *
  * Creating an entity's folder and removing a register's folder are declared on the Core port it extends.
  */
-interface FileFolderServiceInterface extends EntityFolderInterface {
+interface FileFolderServiceInterface extends EntityFolderInterface, ObjectFolderLookupInterface {
 
 	/**
 	 * Re-validate the access check on an existing object's bound folder.
