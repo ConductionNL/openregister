@@ -45,6 +45,7 @@ use OCA\OpenRegister\Event\TaskTerminalEvent;
 use OCA\OpenRegister\Event\TaskTransitionedEvent;
 use OCA\OpenRegister\Kernel\Contracts\Processes\ObjectWriteCacheFollowerInterface;
 use OCA\OpenRegister\Kernel\Contracts\Processes\ObjectWritePushInterface;
+use OCA\OpenRegister\Listener\Registrar\ComplianceListenerRegistrar;
 use OCA\OpenRegister\Mcp\Listener\ContextChatSubmissionListener;
 use OCA\OpenRegister\Mcp\Listener\McpDeclarationChecksListener;
 use OCA\OpenRegister\Notifications\Listener\GraphQLSubscriptionListener;
@@ -121,22 +122,7 @@ final class ListenerRegistrar {
 	 * @spec openspec/changes/capability-rows-verified-c/specs/enhanced-audit-trail/spec.md#requirement-changes-to-authorisation-rules-api-tokens-and-record-types-are-on-the-audit-trail
 	 */
 	private static function registerAuditListeners(IRegistrationContext $context): void {
-		$context->registerEventListener(SchemaUpdatedEvent::class, SchemaAuthorizationAuditListener::class);
-		foreach (array_keys(RecordTypeAuditListener::ACTIONS) as $event) {
-			$context->registerEventListener($event, RecordTypeAuditListener::class);
-		}
-		// Every schema and register create, update and delete, whichever door
-		// it came through (history-schema-and-settings-edits-audited).
-		foreach ([
-			SchemaCreatedEvent::class,
-			SchemaUpdatedEvent::class,
-			SchemaDeletedEvent::class,
-			RegisterCreatedEvent::class,
-			RegisterUpdatedEvent::class,
-			RegisterDeletedEvent::class,
-		] as $entityEvent) {
-			$context->registerEventListener($entityEvent, EntityEditAuditListener::class);
-		}
+		ComplianceListenerRegistrar::authorizationAudit(context: $context);
 	}//end registerAuditListeners()
 
 	/**
@@ -173,7 +159,7 @@ final class ListenerRegistrar {
 	 */
 	private static function registerSchemaDeclarationChecks(IRegistrationContext $context): void {
 		$context->registerEventListener(SchemaDeclarationChecksEvent::class, SchemaDeclarationChecksListener::class);
-		$context->registerEventListener(SchemaDeclarationChecksEvent::class, ArchivalDeclarationChecksListener::class);
+		ComplianceListenerRegistrar::declarationChecks(context: $context);
 		$context->registerEventListener(SchemaDeclarationChecksEvent::class, HandoffDeclarationChecksListener::class);
 		$context->registerEventListener(SchemaDeclarationChecksEvent::class, NotificationDeclarationCheckListener::class);
 		$context->registerEventListener(SchemaDeclarationChecksEvent::class, McpDeclarationChecksListener::class);
@@ -467,7 +453,7 @@ final class ListenerRegistrar {
 
 		// A changed date that other records' destruction date reads through a
 		// relation queues their recalculation, off the save.
-		$context->registerEventListener(ObjectUpdatedEvent::class, RelatedRetentionRecalculationListener::class);
+		ComplianceListenerRegistrar::retentionRecalculation(context: $context);
 	}//end registerLifecycleAndFieldRuleListeners()
 
 	/**
@@ -541,8 +527,7 @@ final class ListenerRegistrar {
 		// Quality annotation listener — materialises a per-object data-quality
 		// score (0-1) into the object payload before persistence
 		// (see x-openregister-quality). MDM foundation capability.
-		$context->registerEventListener(ObjectCreatingEvent::class, QualityScoreOnSaveListener::class);
-		$context->registerEventListener(ObjectUpdatingEvent::class, QualityScoreOnSaveListener::class);
+		ComplianceListenerRegistrar::qualityScore(context: $context);
 
 		// Survivorship annotation listener — materialises a declared golden
 		// record + attribute provenance into the object payload before
@@ -710,7 +695,7 @@ final class ListenerRegistrar {
 		// Reported content: a removal is noted on every report filed against the
 		// content, and the removal record names the copies taken at filing time.
 		// Fail-soft: never blocks the removal it observes.
-		$context->registerEventListener(ObjectDeletedEvent::class, ContentReportRemovalListener::class);
+		ComplianceListenerRegistrar::contentReportRemoval(context: $context);
 
 		// Context Chat submission listener — submits/removes object content
 		// to OCP\ContextChat on create/update/delete for schemas opted in via
@@ -818,7 +803,7 @@ final class ListenerRegistrar {
 		// Nomination at closure: a record reaching a state its schema declares
 		// final gets its archiefnominatie and archiefactiedatum derived and
 		// written, with the rule that produced each.
-		$context->registerEventListener(ObjectTransitionedEvent::class, ArchivalNominationListener::class);
+		ComplianceListenerRegistrar::archivalNomination(context: $context);
 
 		// A state that declares `freezesObject: true` freezes the object on entry,
 		// so a closed phase's data stops changing without anybody clicking Freeze.

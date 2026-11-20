@@ -2084,6 +2084,7 @@ components:
       - ".*/lib/Files/Db/TextDisclosure[.]php"
       - ".*/lib/Files/Db/TextDisclosureMapper[.]php"
       - ".*/lib/Listener/(ArchivalDeclarationChecksListener|ArchivalNominationListener|ContentReportRemovalListener|EntityEditAuditListener|QualityScoreOnSaveListener|RecordTypeAuditListener|RelatedRetentionRecalculationListener|SchemaAuthorizationAuditListener)[.]php"
+      - ".*/lib/Listener/Registrar/ComplianceListenerRegistrar[.]php"
       - ".*/lib/Repair/(RechainAuditTrailForFlowAttribution|V1ChainVerificationRun)[.]php"
       - ".*/lib/Service/(AuditCanonicalV1|AuditChainKey|AuditHashService|AuditHashServiceInterface|AuditQueryService|AuditQueryServiceInterface|AuditRechainInterface|AuditRetentionResolver|AuditRetentionResolverInterface|AuditSealInterface|AuthorizationAuditService|AvgComplianceService|AvgRetentionErasureRun|AvgRetentionService|CalculationRun|ComplianceServiceBindings|ComplianceServiceRegistrar|ContentScanService|DsarErasureRun|DsarGuards|DsarService|DsarServiceInterface|DsarStores|DsarSubjectQuery|LogObjectInTable|LogService|ProcessingLogService|ProcessingRead|ReadCaptureRun|RetentionClock|RetentionPass|RetentionRules|RetentionService|RetentionServiceInterface|RetentionStores|SchemaCascade|SchemaDeletionService|SchemaTeardownGuard|SearchPeriod|SearchTrailNameEnricher|SearchTrailService|SearchTrailServiceInterface|SearchTrailStatistics|TableDeletionRun|TableObjectRef|TenantKeyService|TmloService|UnclassifiedProcessing|WholeTableRows)[.]php"
       - ".*/lib/Service/Anonymisation/[^/]*"
