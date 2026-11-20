@@ -386,6 +386,7 @@
   "lib/Db/Translation.php",
   "lib/Db/TranslationEdit.php",
   "lib/Db/TranslationFilter.php",
+  "lib/Db/TranslationMapper.php",
   "lib/Db/TranslationMapperInterface.php",
   "lib/Db/TranslationSlot.php",
   "lib/Db/TranslationSourceLanguageBackfillInterface.php",
@@ -753,6 +754,8 @@
   "lib/Kernel/Contracts/Core/StoredFileWriterInterface.php",
   "lib/Kernel/Contracts/Core/StoredViewQueriesInterface.php",
   "lib/Kernel/Contracts/Core/TransferredRecordStatesInterface.php",
+  "lib/Kernel/Contracts/Core/TranslationCompletenessInterface.php",
+  "lib/Kernel/Contracts/Core/TranslationRowStatusInterface.php",
   "lib/Kernel/Contracts/Core/TwigFunctionsInstallerInterface.php",
   "lib/Kernel/Contracts/Core/UnreadCountsInterface.php",
   "lib/Kernel/Contracts/Core/UserCalendarEventsInterface.php",
@@ -2285,7 +2288,7 @@
  "exposed_loc": {
   "Compliance": 14778,
   "Configuration": 1444,
-  "Core": 63423,
+  "Core": 63673,
   "Files": 1458,
   "Integrations": 17724,
   "Kernel": 8464,
@@ -2755,6 +2758,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10402,
- "total_loc": 461819,
+ "total_loc": 461844,
  "violation_degree": 0.0091
 }
