@@ -25,7 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use DateTime;
-use OCA\OpenRegister\Service\Hardening\HardeningPolicy;
+use OCA\OpenRegister\Kernel\Contracts\Core\AuthRateLimitCeilingInterface;
 use OCA\OpenRegister\Service\Security\SafeFetchUrl;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\ICache;
@@ -144,12 +144,12 @@ class SecurityService implements LoginSecurityInterface, RateLimitResetInterface
 	 *
 	 * @param ICacheFactory $cacheFactory Factory for creating cache instances
 	 * @param LoggerInterface $logger Logger for security event logging
-	 * @param HardeningPolicy $hardeningPolicy Resolves the administered inbound-auth ceiling
+	 * @param AuthRateLimitCeilingInterface $hardeningPolicy Resolves the administered inbound-auth ceiling
 	 */
 	public function __construct(
 		ICacheFactory $cacheFactory,
 		LoggerInterface $logger,
-		private readonly HardeningPolicy $hardeningPolicy,
+		private readonly AuthRateLimitCeilingInterface $hardeningPolicy,
 	) {
 		$this->cache = $cacheFactory->createDistributed('openregister_security');
 		$this->logger = $logger;
