@@ -30,7 +30,7 @@ use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
 
 /**
- * Adds the MDTO element-mapping and archival annotation checks.
+ * Adds the MDTO element-mapping, archival annotation and retention declaration checks.
  *
  * Each runs in its slot of SchemaDeclarationOrder, so the schema save keeps
  * the order it had when the mapper ran these checks itself.
@@ -80,6 +80,7 @@ final class ArchivalDeclarationChecksListener implements IEventListener {
 		return [
 			SchemaDeclarationOrder::MDTO_MAPPING => static fn (Schema $schema) => $refusals->checkMdtoMapping(schema: $schema),
 			SchemaDeclarationOrder::ARCHIVAL => static fn (Schema $schema) => $refusals->checkArchival(schema: $schema),
+			SchemaDeclarationOrder::RETENTION => static fn (Schema $schema) => $refusals->checkRetention(schema: $schema),
 		];
 	}//end checks()
 }//end class

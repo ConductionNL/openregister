@@ -21,7 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\File;
 
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
-use OCA\OpenRegister\Files\Db\FileMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectFileRecordsInterface;
 use OCP\Files\IRootFolder;
 
 /**
@@ -34,13 +34,13 @@ final readonly class ReadFileSources {
 	 * @param IRootFolder                $rootFolder        Root folder for file operations.
 	 * @param FolderManagementHandler    $folderMgmtHandler Folder management handler.
 	 * @param MagicObjectFinderInterface $objectMapper      Object mapper for magic table operations.
-	 * @param FileMapperInterface|null   $fileMapper        Optional OR-side metadata mapper for category-based filtering.
+	 * @param ObjectFileRecordsInterface|null $fileMapper   Optional OR-side file records for category-based filtering.
 	 */
 	public function __construct(
 		public IRootFolder $rootFolder,
 		public FolderManagementHandler $folderMgmtHandler,
 		public MagicObjectFinderInterface $objectMapper,
-		public ?FileMapperInterface $fileMapper = null,
+		public ?ObjectFileRecordsInterface $fileMapper = null,
 	) {
 	}//end __construct()
 }//end class
