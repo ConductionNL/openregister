@@ -43,6 +43,7 @@ use OCA\OpenRegister\Service\Oas\OasPropertySanitizer;
 use OCA\OpenRegister\Service\Oas\OasRbacAnnotator;
 use OCA\OpenRegister\Service\Oas\OasRequestValidator;
 use OCA\OpenRegister\Service\Oas\OasValidationReport;
+use OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluator;
 use OCP\IURLGenerator;
 use Psr\Log\LoggerInterface;
 
@@ -1484,11 +1485,11 @@ class OasService implements OasServiceInterface {
 	 * @spec openspec/specs/objects-crud/spec.md
 	 */
 	private function withUpsertOnKey(array $operation, object $schema): array {
-		if (method_exists($schema, 'getUpsertKeys') === false) {
+		if (method_exists($schema, 'getConfiguration') === false) {
 			return $operation;
 		}
 
-		$keys = $schema->getUpsertKeys();
+		$keys = (new UniqueConstraintEvaluator())->upsertKeys(configuration: $schema->getConfiguration());
 
 		if ($keys === []) {
 			return $operation;

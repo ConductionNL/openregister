@@ -33,7 +33,6 @@ use OCA\OpenRegister\Db\SchemaMapper\AdvisoryAnnotationChecks;
 use OCA\OpenRegister\Db\SchemaMapper\AuthorizationBlockCheck;
 use OCA\OpenRegister\Db\SchemaMapper\ConfigurationFields;
 use OCA\OpenRegister\Db\SchemaMapper\DiscardedAnnotations;
-use OCA\OpenRegister\Db\SchemaMapper\ExchangeAnnotationRefusals;
 use OCA\OpenRegister\Db\SchemaMapper\ExtendedByReads;
 use OCA\OpenRegister\Db\SchemaMapper\FacetConfiguration;
 use OCA\OpenRegister\Db\SchemaMapper\IdentityDeclarationCheck;
@@ -1251,7 +1250,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	}//end checkDataDeclarations()
 
 	/**
-	 * How objects leave or enter: MCP, registry, links and extending forms; Integrations adds the handoff checks.
+	 * How objects leave or enter: registry, links and extending forms; Integrations adds the hand-off and MCP checks.
 	 *
 	 * @param Schema $schema The schema being saved.
 	 *
@@ -1369,16 +1368,14 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	}//end dataSteps()
 
 	/**
-	 * How objects leave or enter: MCP, registry, links and extending forms; Integrations adds the handoff checks.
+	 * How objects leave or enter: registry, links and extending forms; Integrations adds the hand-off and MCP checks.
 	 *
 	 * @param Schema $schema The schema being saved.
 	 *
 	 * @return array<int, Closure> The checks by slot.
 	 */
 	private function exchangeSteps(Schema $schema): array {
-		$exchange = new ExchangeAnnotationRefusals();
 		return [
-			SchemaDeclarationOrder::MCP => static fn () => $exchange->checkMcp(schema: $schema),
 			SchemaDeclarationOrder::REGISTRY => static fn () => (new SubjectDeclarationRefusals())->checkRegistry(schema: $schema),
 			SchemaDeclarationOrder::EXTERNAL_LINKS => fn () => (new RecordAnnotationRefusals())->checkExternalLinks(schema: $schema),
 			SchemaDeclarationOrder::EXTENDING_FORM => static fn () => (new PropertyDeclarationRefusals())->checkExtendingForm(schema: $schema),
