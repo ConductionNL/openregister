@@ -45,6 +45,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectReadState;
 use OCA\OpenRegister\Db\ObjectReadStateMapperInterface;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Kernel\Contracts\Core\UnreadCountsInterface;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
@@ -74,13 +75,13 @@ class ReadStateService implements ReadStateServiceInterface {
 	 *
 	 * @param ObjectReadStateMapperInterface $mapper The read-state rows.
 	 * @param IUserSession $userSession Resolves the calling user.
-	 * @param UnreadCountCalculator $counter Counts what is unread on the tabs.
+	 * @param UnreadCountsInterface $counter Counts what is unread on the tabs.
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
 		private readonly ObjectReadStateMapperInterface $mapper,
 		private readonly IUserSession $userSession,
-		private readonly UnreadCountCalculator $counter,
+		private readonly UnreadCountsInterface $counter,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

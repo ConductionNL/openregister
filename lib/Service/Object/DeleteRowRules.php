@@ -32,7 +32,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\AppendOnlyException;
-use OCA\OpenRegister\Service\Archival\RecordState;
+use OCA\OpenRegister\Kernel\Contracts\Core\TransferredRecordStatesInterface;
 use OCA\OpenRegister\Service\OrganisationContext;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\SharedMasterDataService;
@@ -123,7 +123,7 @@ final class DeleteRowRules {
 	public static function isTransferred(ObjectEntity $object): bool {
 		$retention = ($object->getRetention() ?? []);
 
-		return in_array(($retention['archiefstatus'] ?? ''), RecordState::TRANSFERRED_ALIASES, true);
+		return in_array(($retention['archiefstatus'] ?? ''), TransferredRecordStatesInterface::TRANSFERRED_ALIASES, true);
 	}//end isTransferred()
 
 	/**

@@ -48,12 +48,5 @@
         "OCA\\OpenRegister\\Service\\DateTimeNormalizerInterface",
         "OCA\\OpenRegister\\Service\\DateTimeNormalizerInterface",
         "OCA\\OpenRegister\\Service\\Object\\SchemaTypeConverterInterface"
-    ],
-    "OCA\\OpenRegister\\Db\\EntityRelationMapper": [
-        "OCP\\IDBConnection",
-        "OCA\\OpenRegister\\Db\\AuditTrailMapperInterface",
-        "OCP\\IUserSession",
-        "OCA\\OpenRegister\\Kernel\\Contracts\\EntityEventsInterface",
-        "Psr\\Log\\LoggerInterface"
     ]
 }
