@@ -107,7 +107,6 @@
   "lib/Service/Object/SaveObject.php -> lib/Search/Service/Quality/CreateCandidate.php",
   "lib/Service/Object/SaveObject.php -> lib/Search/Service/Quality/DedupCreatePolicyInterface.php",
   "lib/Service/Object/SaveObject.php -> lib/Service/RetentionServiceInterface.php",
-  "lib/Service/Object/SaveObject/ComputedFieldHandler.php -> lib/Twig/MappingTwigInstallerInterface.php",
   "lib/Service/Object/SearchQueryHandler.php -> lib/Service/Interaction/ReadHistoryService.php",
   "lib/Service/Object/TranslationHandler.php -> lib/Service/LanguageService.php",
   "lib/Service/Object/ViewScopeApplier.php -> lib/Search/Db/ViewMapperInterface.php",
@@ -116,10 +115,8 @@
   "lib/Service/ObjectService.php -> lib/Service/Lifecycle/AutoTransitionPass.php",
   "lib/Service/ObjectService.php -> lib/Service/SchemaDeletionService.php",
   "lib/Service/ObjectService.php -> lib/Service/SettingsService.php",
-  "lib/Service/ObjectSource/CalendarEventObjectSourceProvider.php -> lib/Service/CalendarEventService.php",
   "lib/Service/ObjectSource/ObjectSourceWiring.php -> lib/Service/CalendarEventService.php",
   "lib/Service/ObjectSource/ViewSourceMappers.php -> lib/Search/Db/ViewMapperInterface.php",
-  "lib/Service/Observability/OpenRegisterMetricsProvider.php -> lib/Service/Task/TaskMetricsProviderInterface.php",
   "lib/Service/OrganisationUsageService.php -> lib/Files/Db/FileMapperInterface.php",
   "lib/Service/Rbac/SharerFolderAccess.php -> lib/Files/Service/File/ObjectFileAccess.php",
   "lib/Service/RegisterService.php -> lib/Service/FileFolderServiceInterface.php",
@@ -139,7 +136,6 @@
  "exposed_files": [
   "lib/AppHost/AppHostRegistrar.php",
   "lib/AppHost/FeatureToggleRegistrar.php",
-  "lib/AppHost/IMetricsProvider.php",
   "lib/AppHost/Observability/MetricSample.php",
   "lib/AppHost/ObservabilityRegistrar.php",
   "lib/AppHost/Repair/GenericInitializeActions.php",
@@ -818,7 +814,9 @@
   "lib/Kernel/Contracts/Core/StoredFileReaderInterface.php",
   "lib/Kernel/Contracts/Core/StoredFileWriterInterface.php",
   "lib/Kernel/Contracts/Core/TransferredRecordStatesInterface.php",
+  "lib/Kernel/Contracts/Core/TwigFunctionsInstallerInterface.php",
   "lib/Kernel/Contracts/Core/UnreadCountsInterface.php",
+  "lib/Kernel/Contracts/Core/UserCalendarEventsInterface.php",
   "lib/Kernel/Contracts/Core/WriteElevationInterface.php",
   "lib/Kernel/Contracts/DecisionInterface.php",
   "lib/Kernel/Contracts/DeckPlacement.php",
@@ -837,6 +835,7 @@
   "lib/Kernel/Contracts/Integrations/ObjectPreviewInterface.php",
   "lib/Kernel/Contracts/Integrations/OutboundBreakerInterface.php",
   "lib/Kernel/Contracts/Integrations/ShareableConfigCatalogueInterface.php",
+  "lib/Kernel/Contracts/Integrations/TaskGaugeInterface.php",
   "lib/Kernel/Contracts/Integrations/TranslationBindingInterface.php",
   "lib/Kernel/Contracts/KeywordChunkSearch.php",
   "lib/Kernel/Contracts/LinkedTaskDraft.php",
@@ -2372,15 +2371,14 @@
   "lib/Support/OrderParameter.php",
   "lib/Support/QueryLimit.php",
   "lib/Support/RegisterSlugAliasesInterface.php",
-  "lib/Support/UnknownFilterKeys.php",
-  "lib/Twig/MappingTwigInstallerInterface.php"
+  "lib/Support/UnknownFilterKeys.php"
  ],
  "exposed_loc": {
   "Compliance": 14915,
   "Configuration": 2785,
-  "Core": 64550,
+  "Core": 64563,
   "Files": 901,
-  "Integrations": 17974,
+  "Integrations": 17967,
   "Kernel": 8470,
   "Notifications": 2057,
   "Platform": 276,
@@ -2848,6 +2846,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10408,
- "total_loc": 461557,
- "violation_degree": 0.017
+ "total_loc": 461583,
+ "violation_degree": 0.0167
 }

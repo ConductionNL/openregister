@@ -28,6 +28,8 @@ use OCA\OpenRegister\Kernel\Contracts\Core\CurrentFlowRunInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionDefaultsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionEvaluatorInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\UserCalendarEventsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Integrations\TaskGaugeInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ReadHistoryInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\WriteElevationInterface;
 use OCA\OpenRegister\Kernel\Contracts\Notifications\PartyRecipientsInterface;
@@ -89,6 +91,7 @@ use OCA\OpenRegister\Service\Portal\PortalPartyResolver;
 use OCA\OpenRegister\Service\Task\TaskCalendarDocument;
 use OCA\OpenRegister\Service\Task\TaskCalendarDocumentInterface;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
+use OCA\OpenRegister\Service\Task\TaskMetricsProvider;
 use OCA\OpenRegister\Service\TaskService;
 use OCA\OpenRegister\Service\FlowLinkService;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
@@ -311,6 +314,9 @@ final class FlowWiringTest extends TestCase {
 	}//end testTheExpressionDefaultsPortIsAnsweredByTheRulesEngine()
 
 	/**
+	 * The schedule flow store, the current-run port, the calendar link, user calendar events, task gauge, transition-in-flight, write elevation,
+	 * date events, task row, watcher and run-record ports, the schema rename and form dependents checks, the built-in tool providers,
+	 * the lifecycle transition and expression-defaults ports and the area's own interfaces are bound, and only these aliases are registered.
 	 * The schedule flow store, the current-run port, the read history, the write elevation, the expression-defaults port and the area's own interfaces are bound, and only these aliases are registered.
 	 * The schedule flow store, the current-run port and every port the area answers for another (task rows, overdue tasks, watchers, run records, schema change checks, calendars, tool providers, write elevation, expression defaults) are bound, and only these aliases are registered.
 	 * The schedule flow store, the current-run port, the expression-defaults port, the area's own interfaces and the lifecycle transition port are bound, and only these aliases are registered.
@@ -331,6 +337,8 @@ final class FlowWiringTest extends TestCase {
 				ObjectCalendarLinkInterface::class         => CalendarEventService::class,
 				CurrentFlowRunInterface::class             => FlowRunContext::class,
 				ScheduleFlowStoreInterface::class          => ScheduleFlowStore::class,
+				UserCalendarEventsInterface::class         => CalendarEventService::class,
+				TaskGaugeInterface::class                  => TaskMetricsProvider::class,
 				LifecycleFinalStatesInterface::class       => LifecycleFinalStateResolver::class,
 				ReadHistoryInterface::class                => ReadHistoryService::class,
 				TransitionInFlightInterface::class         => LifecycleActionContext::class,

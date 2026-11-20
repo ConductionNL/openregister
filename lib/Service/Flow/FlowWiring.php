@@ -32,6 +32,8 @@ use OCA\OpenRegister\Kernel\Contracts\Core\CurrentFlowRunInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionDefaultsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionEvaluatorInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\UserCalendarEventsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Integrations\TaskGaugeInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ReadHistoryInterface;
 use OCA\OpenRegister\Service\Interaction\ReadHistoryService;
 use OCA\OpenRegister\Kernel\Contracts\Core\WriteElevationInterface;
@@ -78,6 +80,7 @@ use OCA\OpenRegister\Service\Rules\ExpressionDefaults;
 use OCA\OpenRegister\Service\Task\TaskCalendarDocument;
 use OCA\OpenRegister\Service\Task\TaskCalendarDocumentInterface;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
+use OCA\OpenRegister\Service\Task\TaskMetricsProvider;
 use OCA\OpenRegister\Service\TaskService;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
@@ -123,6 +126,8 @@ final class FlowWiring {
 		ObjectCalendarLinkInterface::class => CalendarEventService::class,
 		CurrentFlowRunInterface::class => FlowRunContext::class,
 		ScheduleFlowStoreInterface::class => ScheduleFlowStore::class,
+		UserCalendarEventsInterface::class => CalendarEventService::class,
+		TaskGaugeInterface::class => TaskMetricsProvider::class,
 		LifecycleFinalStatesInterface::class => LifecycleFinalStateResolver::class,
 		ReadHistoryInterface::class       => ReadHistoryService::class,
 		TransitionInFlightInterface::class => LifecycleActionContext::class,
