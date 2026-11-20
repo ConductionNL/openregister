@@ -22,10 +22,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Deletion;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectTimelineLinksInterface;
 use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarTasksInterface;
 use OCA\OpenRegister\Service\FileService;
-use OCA\OpenRegister\Service\ObjectRelationCleanupService;
-use OCA\OpenRegister\Service\TaskService;
 
 /**
  * The optional services that carry out the cascading part of a declared destruction scope.
@@ -38,14 +38,14 @@ final class DestructionCompanions {
 	 *
 	 * @param ?NoteServiceInterface         $noteService     Notes on the object.
 	 * @param ?FileService                  $fileService     The object's bound folder.
-	 * @param ?TaskService                  $taskService     CalDAV tasks linked to the object.
-	 * @param ?ObjectRelationCleanupService $relationCleanup The remaining timeline links.
+	 * @param ?ObjectCalendarTasksInterface $taskService     CalDAV tasks linked to the object.
+	 * @param ?ObjectTimelineLinksInterface $relationCleanup The remaining timeline links.
 	 */
 	public function __construct(
 		public readonly ?NoteServiceInterface $noteService = null,
 		public readonly ?FileService $fileService = null,
-		public readonly ?TaskService $taskService = null,
-		public readonly ?ObjectRelationCleanupService $relationCleanup = null,
+		public readonly ?ObjectCalendarTasksInterface $taskService = null,
+		public readonly ?ObjectTimelineLinksInterface $relationCleanup = null,
 	) {
 	}//end __construct()
 }//end class
