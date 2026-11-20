@@ -224,8 +224,6 @@
   "lib/Service/Observability/OpenRegisterMetricsProvider.php -> lib/Service/Task/TaskMetricsProviderInterface.php",
   "lib/Service/OrganisationUsageService.php -> lib/Files/Db/FileMapperInterface.php",
   "lib/Service/Rbac/AuditRowWriter.php -> lib/Db/AuditTrail.php",
-  "lib/Service/Rbac/ReachRevocationLog.php -> lib/Service/AuthorizationAuditService.php",
-  "lib/Service/Rbac/ReachRevocationService.php -> lib/Service/AuthorizationAuditService.php",
   "lib/Service/Rbac/SharerFolderAccess.php -> lib/Files/Service/File/ObjectFileAccess.php",
   "lib/Service/RegisterService.php -> lib/Service/FileFolderServiceInterface.php",
   "lib/Service/RegisterServiceHelpers.php -> lib/Service/FileFolderServiceInterface.php",
@@ -918,6 +916,7 @@
   "lib/Kernel/Contracts/Core/RouteCallWindow.php",
   "lib/Kernel/Contracts/Core/RouteCallersInterface.php",
   "lib/Kernel/Contracts/Core/RunningNumbersInterface.php",
+  "lib/Kernel/Contracts/Core/SchemaAccessChangeLogInterface.php",
   "lib/Kernel/Contracts/Core/SchemaFormDependentsInterface.php",
   "lib/Kernel/Contracts/Core/SchemaRenameWarningsInterface.php",
   "lib/Kernel/Contracts/Core/SearchTrailRecorderInterface.php",
@@ -2497,9 +2496,9 @@
   "lib/Twig/MappingTwigInstallerInterface.php"
  ],
  "exposed_loc": {
-  "Compliance": 15427,
+  "Compliance": 15428,
   "Configuration": 3601,
-  "Core": 64346,
+  "Core": 64354,
   "Files": 2667,
   "Integrations": 18251,
   "Kernel": 8506,
@@ -2971,6 +2970,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10457,
- "total_loc": 460994,
- "violation_degree": 0.033
+ "total_loc": 461005,
+ "violation_degree": 0.0328
 }
