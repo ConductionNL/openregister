@@ -23,8 +23,11 @@ namespace OCA\OpenRegister\Service\Flow;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\CurrentFlowRunInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionDefaultsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
+use OCA\OpenRegister\Search\FlowTasksProvider;
+use OCA\OpenRegister\Kernel\Contracts\Core\PublicationRefusalInterface;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionRunner;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNode;
@@ -38,6 +41,7 @@ use OCA\OpenRegister\Service\Flow\Timer\TermDiagnosticInterface;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarDefinitionsInterface;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendars;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
+use OCA\OpenRegister\Service\Party\PartyIndicatorGuard;
 use OCA\OpenRegister\Service\Party\PartySearchInterface;
 use OCA\OpenRegister\Service\Party\PartySearchService;
 use OCA\OpenRegister\Service\Portal\PortalPartyResolver;
@@ -58,8 +62,9 @@ use Psr\Log\LoggerInterface;
  *
  * Registers the flow run guards, the shared run context, the loop step dispatcher,
  * the lifecycle's answer to property-level access, the store of the flows
- * compiled from application schedules, the lifecycle's request state and the
- * task services that are built by hand.
+ * compiled from application schedules, the party indicators' answer to file
+ * publishing, the lifecycle's request state and the task services that are
+ * built by hand.
  *
  * Application::register() calls register() once.
  */
@@ -74,7 +79,10 @@ final class FlowWiring {
 	 * @var array<class-string, class-string>
 	 */
 	public const BINDINGS = [
+		CurrentFlowRunInterface::class => FlowRunContext::class,
 		ScheduleFlowStoreInterface::class => ScheduleFlowStore::class,
+		\OCA\OpenRegister\Kernel\Contracts\Notifications\PartyRecipientsInterface::class => \OCA\OpenRegister\Service\Party\PartyRecipients::class,
+		PublicationRefusalInterface::class => PartyIndicatorGuard::class,
 		FlowRunSignalInterface::class => FlowRunSignalService::class,
 		LockObjectNodeInterface::class => LockObjectNode::class,
 		PrincipalKindsInterface::class => PrincipalKinds::class,
@@ -88,7 +96,7 @@ final class FlowWiring {
 	];
 
 	/**
-	 * Register the flow run guards, the run context, the step dispatcher, the field rules source and the bindings.
+	 * Register the flow run guards, the run context, the step dispatcher, the field rules source, the bindings and the flow tasks search provider.
 	 *
 	 * @param IRegistrationContext $context The registration context.
 	 *
@@ -108,6 +116,9 @@ final class FlowWiring {
 
 		self::registerLifecycleState(context: $context);
 		self::registerTaskServices(context: $context);
+
+		// The flow tasks the searcher would see in their inbox (flow-task-search-provider).
+		$context->registerSearchProvider(FlowTasksProvider::class);
 	}//end register()
 
 	/**
