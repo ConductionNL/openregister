@@ -26,7 +26,6 @@ use Closure;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\Types;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Create `openregister_schema_followers` (unique on schema and user) and add
@@ -36,7 +35,7 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * @spec openspec/changes/schema-breaking-change-notice/specs/schema-migration/spec.md#requirement-a-reader-may-follow-a-schemas-breaking-changes
  */
-class Version1Date20261113160000 extends SimpleMigrationStep {
+class Version1Date20261113160000 extends TargetedMigrationStep {
 
 	/**
 	 * Change the database schema.
@@ -49,7 +48,7 @@ class Version1Date20261113160000 extends SimpleMigrationStep {
 	 *
 	 * @spec openspec/changes/schema-breaking-change-notice/specs/schema-migration/spec.md#requirement-a-reader-may-follow-a-schemas-breaking-changes
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		/*
 		 * @var ISchemaWrapper $schema
 		 */
@@ -78,5 +77,5 @@ class Version1Date20261113160000 extends SimpleMigrationStep {
 		}
 
 		return $schema;
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 }//end class
