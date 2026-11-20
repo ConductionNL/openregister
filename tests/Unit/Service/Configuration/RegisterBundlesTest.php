@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Configuration;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Kernel\Contracts\Core\BundleImport;
 use OCA\OpenRegister\Kernel\Contracts\Core\RegisterBundlesInterface;
+use OCA\OpenRegister\Service\Configuration\RegisterBundleBindingInterface;
 use OCA\OpenRegister\Service\Configuration\RegisterBundles;
 use OCA\OpenRegister\Service\ConfigurationServiceInterface;
 use OCA\OpenRegister\Service\ContractBindings;
@@ -37,12 +38,15 @@ final class RegisterBundlesTest extends TestCase {
 
 	private ConfigurationServiceInterface&MockObject $configurations;
 
+	private RegisterBundleBindingInterface&MockObject $binding;
+
 	private RegisterBundles $bundles;
 
 	protected function setUp(): void {
 		parent::setUp();
 		$this->configurations = $this->createMock(ConfigurationServiceInterface::class);
-		$this->bundles        = new RegisterBundles(configurations: $this->configurations);
+		$this->binding        = $this->createMock(RegisterBundleBindingInterface::class);
+		$this->bundles        = new RegisterBundles(configurations: $this->configurations, binding: $this->binding);
 	}//end setUp()
 
 	public function testTheUploadedBundleIsTheConfigurationServicesAnswer(): void {
@@ -93,6 +97,23 @@ final class RegisterBundlesTest extends TestCase {
 
 		$this->assertSame(['openapi' => '3.0.0'], $this->bundles->exportRegister(register: $register, includeObjects: true));
 	}//end testARegisterIsExportedAsItsConfiguration()
+
+	public function testTheScopeRefusalIsTheBindingChecksAnswer(): void {
+		$register = new Register();
+		$bundle   = ['components' => ['mappings' => []]];
+		$this->binding->expects($this->once())
+			->method('refusalFor')
+			->with($register, $bundle)
+			->willReturn('The bundle reaches outside the register.');
+
+		$this->assertSame('The bundle reaches outside the register.', $this->bundles->refusalFor(register: $register, bundle: $bundle));
+	}//end testTheScopeRefusalIsTheBindingChecksAnswer()
+
+	public function testABundleInsideTheRegisterIsNotRefused(): void {
+		$this->binding->method('refusalFor')->willReturn(null);
+
+		$this->assertNull($this->bundles->refusalFor(register: new Register(), bundle: []));
+	}//end testABundleInsideTheRegisterIsNotRefused()
 
 	public function testThePortIsBoundToTheAdapterInConfigurationsBindings(): void {
 		$this->assertSame(RegisterBundles::class, ContractBindings::BINDINGS[RegisterBundlesInterface::class]);

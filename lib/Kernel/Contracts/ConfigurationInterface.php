@@ -41,6 +41,9 @@ use JsonSerializable;
  * @method string|null getOwner()
  * @method DateTime|null getCreated()
  * @method DateTime|null getUpdated()
+ * @method string|null getLocalVersion()
+ * @method string|null getRemoteVersion()
+ * @method array|null getNotificationGroups()
  */
 interface ConfigurationInterface extends JsonSerializable {
 }//end interface
