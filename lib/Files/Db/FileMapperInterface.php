@@ -24,13 +24,14 @@ namespace OCA\OpenRegister\Files\Db;
 
 use OCP\AppFramework\Db\Entity;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectFileRecordsInterface;
 
 /**
  * Every public method of FileMapper. Callers depend on this interface, not on the class.
  *
  * @phpstan-import-type FilecacheRow from FileMapper
  */
-interface FileMapperInterface {
+interface FileMapperInterface extends ObjectFileRecordsInterface {
 
 	/**
 	 * Find an OR-side `File` row by its Nextcloud `filecache.fileid`.
