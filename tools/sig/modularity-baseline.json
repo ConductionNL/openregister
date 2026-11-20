@@ -25,7 +25,6 @@
   "lib/Controller/ActionRightsController.php -> lib/Service/Flow/FlowNodeRightsGuardInterface.php",
   "lib/Controller/ActionRightsController.php -> lib/Service/Flow/IFlowNodeRequiresRight.php",
   "lib/Controller/ActionRightsController.php -> lib/Settings/OpenRegisterAdmin.php",
-  "lib/Controller/DeletedController.php -> lib/Db/AuditTrail.php",
   "lib/Controller/DsarCaseController.php -> lib/Service/Lifecycle/TransitionEngine.php",
   "lib/Controller/ObjectsController.php -> lib/Files/Service/File/BulkDownloadArchive.php",
   "lib/Controller/ObjectsController.php -> lib/Listener/ChangeGateListener.php",
@@ -50,7 +49,6 @@
   "lib/Controller/ObjectsController.php -> lib/Service/Interaction/ReadStateServiceInterface.php",
   "lib/Controller/ObjectsController.php -> lib/Service/Rules/ExpressionDefaultException.php",
   "lib/Controller/QualityAuditController.php -> lib/Settings/OpenRegisterAdmin.php",
-  "lib/Controller/RegisterDescriptorController.php -> lib/Settings/OpenRegisterAdmin.php",
   "lib/Controller/RegistersController.php -> lib/Service/AuthorizationAuditService.php",
   "lib/Controller/RegistersController.php -> lib/Service/Configuration/ConfigurationCollaborators.php",
   "lib/Controller/RegistersController.php -> lib/Service/Lifecycle/KeepLifecycleStatesScope.php",
@@ -61,7 +59,6 @@
   "lib/Controller/SchemasController.php -> lib/Service/Form/FormDependentsCheckInterface.php",
   "lib/Controller/SchemasController.php -> lib/Service/Task/ApprovalPositionFormGuard.php",
   "lib/Controller/SettingsController.php -> lib/Service/Settings/SearchBackendHandler.php",
-  "lib/Controller/SetupController.php -> lib/Settings/OpenRegisterAdmin.php",
   "lib/Controller/Support/ConflictTrail.php -> lib/Db/AuditTrail.php",
   "lib/Controller/Support/DsarCaseCases.php -> lib/Service/Lifecycle/TransitionEngine.php",
   "lib/Controller/Support/GeoServices.php -> lib/Search/Service/Geo/GeoFeatureCollectionBuilderInterface.php",
@@ -3076,6 +3073,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10459,
- "total_loc": 460616,
- "violation_degree": 0.0449
+ "total_loc": 460617,
+ "violation_degree": 0.0446
 }
