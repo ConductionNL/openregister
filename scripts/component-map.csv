@@ -4558,3 +4558,5 @@ Db/AuditTrail/RegisterAuditEvent.php,,Db,,,,,Core
 Search/Service/ExampleSet/ExampleSetViewRowsInterface.php,,Search,,,,,Configuration
 Service/Capability/ToolGrantCoordinates.php,,Service,,,0,,Integrations
 Kernel/Contracts/TaskSequenceInterface.php,,Kernel,,,,,Kernel
+Service/Party/PartyParent.php,,Service,,,,,Processes
+Service/Lifecycle/LifecycleStatesKeeper.php,,Service,,,,,Processes

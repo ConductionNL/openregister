@@ -1352,6 +1352,7 @@ components:
       - ".*/lib/Service/Lifecycle/LifecycleRuleCaller[.]php"
       - ".*/lib/Service/Lifecycle/LifecycleRuleCheck[.]php"
       - ".*/lib/Service/Lifecycle/LifecycleStateValidator[.]php"
+      - ".*/lib/Service/Lifecycle/LifecycleStatesKeeper[.]php"
       - ".*/lib/Service/Lifecycle/LifecycleTransitionOptionsValidator[.]php"
       - ".*/lib/Service/Lifecycle/LifecycleTransitionResolver[.]php"
       - ".*/lib/Service/Lifecycle/LifecycleTransitionResolverInterface[.]php"
