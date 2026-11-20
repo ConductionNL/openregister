@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Kernel\Contracts\Core\AuthRateLimitCeilingInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\SearchTrailRecorderInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ReadPurposeGuardInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ReadableObjectHistoryInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\RegisterAccessChangeLogInterface;
@@ -51,5 +52,6 @@ final class ComplianceServiceBindings {
 		ReadPurposeGuardInterface::class        => PurposeGuard::class,
 		ReadableObjectHistoryInterface::class   => ObjectHistoryForReaders::class,
 		RegisterAccessChangeLogInterface::class => AuthorizationAuditService::class,
+		SearchTrailRecorderInterface::class     => SearchTrailService::class,
 	];
 }//end class
