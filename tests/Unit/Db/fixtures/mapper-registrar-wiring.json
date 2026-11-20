@@ -43,7 +43,7 @@
         "OCA\\OpenRegister\\Service\\ConditionMatcher",
         "OCA\\OpenRegister\\Service\\Object\\SchemaTypeConverterInterface",
         "OCA\\OpenRegister\\Service\\DateTimeNormalizerInterface",
-        "OCA\\OpenRegister\\Service\\LanguageServiceInterface",
+        "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\RequestLanguagesInterface",
         "OCA\\OpenRegister\\Service\\Rbac\\ExplicitRevealInterface",
         "OCA\\OpenRegister\\Service\\DateTimeNormalizerInterface",
         "OCA\\OpenRegister\\Service\\DateTimeNormalizerInterface",
