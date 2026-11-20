@@ -36,6 +36,8 @@ use OCA\OpenRegister\Search\Service\Geo\GeoFilterApplier;
 use OCA\OpenRegister\Search\Service\Geo\GeoFilterApplierInterface;
 use OCA\OpenRegister\Search\Service\Geo\GeoFilterParser;
 use OCA\OpenRegister\Search\Service\Geo\GeoFilterParserInterface;
+use OCA\OpenRegister\Search\Service\Geo\SpatialFilter;
+use OCA\OpenRegister\Kernel\Contracts\Core\SpatialFilterInterface;
 use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidator;
 use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidatorInterface;
 use OCA\OpenRegister\Search\Service\Quality\DuplicateDetectionService;
@@ -44,6 +46,7 @@ use OCA\OpenRegister\Search\Service\Quality\DedupCreatePolicy;
 use OCA\OpenRegister\Search\Service\Quality\DedupCreatePolicyInterface;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolverInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\FilterPlaceholdersInterface;
 use OCA\OpenRegister\Search\Service\Search\SearchIndexMaintenance;
 use OCA\OpenRegister\Search\Service\Search\SearchIndexMaintenanceInterface;
 use OCA\OpenRegister\Search\Service\Quality\UniqueHintAnnotationValidator;
@@ -88,8 +91,10 @@ final class SearchWiring {
 		GeoFeatureCollectionBuilderInterface::class => GeoFeatureCollectionBuilder::class,
 		GeoFilterApplierInterface::class => GeoFilterApplier::class,
 		GeoFilterParserInterface::class => GeoFilterParser::class,
+		SpatialFilterInterface::class => SpatialFilter::class,
 		MetricsRetentionInterface::class => MetricsService::class,
 		PlaceholderResolverInterface::class => PlaceholderResolver::class,
+		FilterPlaceholdersInterface::class => PlaceholderResolver::class,
 		SearchIndexMaintenanceInterface::class => SearchIndexMaintenance::class,
 		DuplicateDetectionServiceInterface::class => DuplicateDetectionService::class,
 		UniqueHintAnnotationValidatorInterface::class => UniqueHintAnnotationValidator::class,
