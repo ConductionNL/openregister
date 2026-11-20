@@ -26,14 +26,12 @@ use OCA\OpenRegister\Db\DbRegistrar;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 
 /**
- * Binds the interfaces of the Compliance area's services: for now the
- * archival retention guard, as the Core port the referential-integrity
- * cascade asks.
+ * Binds the interfaces of the Compliance area's services that a lower area
+ * owns: the inbound-authentication ceiling Core's SecurityService reads and
+ * the archival retention guard the referential-integrity cascade asks.
  *
  * Application names this class only; the map lives in
- * ComplianceServiceBindings, inside the area. An interface of a lower area
- * that a Compliance class implements is bound here as well, so no lower
- * registrar names it.
+ * ComplianceServiceBindings, inside the area.
  *
  * @spec exclude Container wiring; no behaviour of its own.
  */

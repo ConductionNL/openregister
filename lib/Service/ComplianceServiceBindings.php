@@ -1,7 +1,7 @@
 <?php
 
 /**
- * ComplianceServiceBindings: the Compliance area's service interfaces and their classes.
+ * ComplianceServiceBindings: the map of the Compliance area's service interfaces.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -22,8 +22,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\AuthRateLimitCeilingInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\CascadeRetentionCheckInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ReadPurposeGuardInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\RegisterAccessChangeLogInterface;
 use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
+use OCA\OpenRegister\Service\Audit\PurposeGuard;
+use OCA\OpenRegister\Service\Hardening\HardeningPolicy;
 
 /**
  * Interface => service map of the Compliance area, behind ComplianceServiceRegistrar.
@@ -42,6 +47,9 @@ final class ComplianceServiceBindings {
 	 * @var array<class-string, class-string>
 	 */
 	public const BINDINGS = [
-		CascadeRetentionCheckInterface::class => ArchivalRetentionGuard::class,
+		AuthRateLimitCeilingInterface::class    => HardeningPolicy::class,
+		CascadeRetentionCheckInterface::class   => ArchivalRetentionGuard::class,
+		ReadPurposeGuardInterface::class        => PurposeGuard::class,
+		RegisterAccessChangeLogInterface::class => AuthorizationAuditService::class,
 	];
 }//end class

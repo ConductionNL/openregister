@@ -134,7 +134,10 @@ class ToolOperationBindingTest extends TestCase
             $this->applications[] = clone $application;
             return $application;
         };
-        $mapper->method('insert')->willReturnCallback($store);
+        // As ApplicationMapper::createFromArray(): hydrate a new entity, then insert it.
+        $mapper->method('createFromArray')->willReturnCallback(
+            fn (array $data): Application => $store((new Application())->hydrate($data))
+        );
         $mapper->method('update')->willReturnCallback($store);
         $mapper->method('findByUuid')->willReturnCallback(
             function (): Application {

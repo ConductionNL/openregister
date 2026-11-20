@@ -33,14 +33,13 @@ use Closure;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\Types;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Create the published file digest table.
  *
  * @spec openspec/changes/published-file-digest/specs/file-actions/spec.md#requirement-a-files-digest-is-recorded-and-sealed-when-it-becomes-public-req-pfd-001
  */
-class Version1Date20261113100000 extends SimpleMigrationStep {
+class Version1Date20261113100000 extends TargetedMigrationStep {
 
 	/**
 	 * Change the database schema.
@@ -53,7 +52,7 @@ class Version1Date20261113100000 extends SimpleMigrationStep {
 	 *
 	 * @spec openspec/changes/published-file-digest/specs/file-actions/spec.md#requirement-a-files-digest-is-recorded-and-sealed-when-it-becomes-public-req-pfd-001
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		/*
 		 * @var ISchemaWrapper $schema
 		 */
@@ -85,5 +84,5 @@ class Version1Date20261113100000 extends SimpleMigrationStep {
 
 		return $schema;
 
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 }//end class
