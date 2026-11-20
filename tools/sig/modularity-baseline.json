@@ -210,7 +210,6 @@
   "lib/Service/Object/BulkRowRules.php -> lib/Service/Dmn/DecisionTableBulkGuard.php",
   "lib/Service/Object/BulkRowRules.php -> lib/Service/Flow/FlowRunContext.php",
   "lib/Service/Object/Collaborators/ObjectHistoryServices.php -> lib/Service/Lifecycle/AutoTransitionPass.php",
-  "lib/Service/Object/Collaborators/ObjectMapperServices.php -> lib/Search/Db/ViewMapperInterface.php",
   "lib/Service/Object/Collaborators/ObjectStorageServices.php -> lib/Service/FileFolderServiceInterface.php",
   "lib/Service/Object/Collaborators/ObjectStorageServices.php -> lib/Service/SearchTrailService.php",
   "lib/Service/Object/ConflictReport.php -> lib/Db/AuditTrail.php",
@@ -276,7 +275,6 @@
   "lib/Service/Object/VirtualCalculations.php -> lib/Service/Calculation/CalculationEvaluatorInterface.php",
   "lib/Service/ObjectFilesInterface.php -> lib/Service/FileReaderInterface.php",
   "lib/Service/ObjectFilesInterface.php -> lib/Service/FileWriterInterface.php",
-  "lib/Service/ObjectService.php -> lib/Search/Db/ViewMapperInterface.php",
   "lib/Service/ObjectService.php -> lib/Service/FileFolderServiceInterface.php",
   "lib/Service/ObjectService.php -> lib/Service/Interaction/ProcessingListRead.php",
   "lib/Service/ObjectService.php -> lib/Service/Interaction/ReadHistoryService.php",
@@ -2573,7 +2571,7 @@
  "exposed_loc": {
   "Compliance": 15514,
   "Configuration": 4030,
-  "Core": 64543,
+  "Core": 64540,
   "Files": 3592,
   "Integrations": 18179,
   "Kernel": 8505,
@@ -3045,6 +3043,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10456,
- "total_loc": 460637,
- "violation_degree": 0.0416
+ "total_loc": 460632,
+ "violation_degree": 0.0414
 }
