@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Anonymisation;
 
 use OCA\OpenRegister\Kernel\Contracts\Compliance\ConnectionStatusReporterInterface;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\DetectionPatternsVersionInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FileSettingsReaderInterface;
 use Psr\Log\LoggerInterface;
 
@@ -37,6 +38,7 @@ final readonly class AnonymisationBackendCollaborators {
 	 * @param FileSettingsReaderInterface       $fileSettingsHandler Reads the stored entity-recognition settings.
 	 * @param LoggerInterface                   $logger              Logger.
 	 * @param ConnectionStatusReporterInterface $connectionReporter  Reports an OpenAnonymiser connection test.
+	 * @param DetectionPatternsVersionInterface $patterns            The version of the pattern backend's patterns.
 	 *
 	 * @spec openspec/specs/pdf-anonymisation/spec.md
 	 */
@@ -44,6 +46,7 @@ final readonly class AnonymisationBackendCollaborators {
 		public FileSettingsReaderInterface $fileSettingsHandler,
 		public LoggerInterface $logger,
 		public ConnectionStatusReporterInterface $connectionReporter,
+		public DetectionPatternsVersionInterface $patterns,
 	) {
 	}//end __construct()
 }//end class
