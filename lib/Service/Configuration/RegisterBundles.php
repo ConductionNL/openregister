@@ -1,7 +1,7 @@
 <?php
 
 /**
- * RegisterBundles: the register API's bundle import and export, answered by the configuration service.
+ * RegisterBundles: the register API's bundle import, export and scope check, answered by the configuration helpers.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -29,9 +29,9 @@ use OCP\AppFramework\Http\JSONResponse;
 /**
  * Answers the register API's bundle questions with the configuration service.
  *
- * Every call is one call to the configuration service with the same
- * arguments the register API passed before, so import and export behave as
- * they did.
+ * Every call is one call to the configuration service or the register/bundle
+ * binding check with the same arguments the register API passed before, so
+ * import, export and the scope check behave as they did.
  *
  * @spec openspec/specs/data-import-export/spec.md
  */
@@ -40,10 +40,12 @@ final class RegisterBundles implements RegisterBundlesInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param ConfigurationServiceInterface $configurations The configuration import and export.
+	 * @param ConfigurationServiceInterface  $configurations The configuration import and export.
+	 * @param RegisterBundleBindingInterface $binding        Keeps a manager's bundle inside its register.
 	 */
 	public function __construct(
 		private readonly ConfigurationServiceInterface $configurations,
+		private readonly RegisterBundleBindingInterface $binding,
 	) {
 	}//end __construct()
 
@@ -60,6 +62,20 @@ final class RegisterBundles implements RegisterBundlesInterface {
 	public function uploadedBundle(array $params, ?array $files): array|JSONResponse {
 		return $this->configurations->getUploadedJson(data: $params, uploadedFiles: $files);
 	}//end uploadedBundle()
+
+	/**
+	 * Why this bundle may not be imported into this register by a manager.
+	 *
+	 * @param Register             $register The register the bundle was uploaded to.
+	 * @param array<string, mixed> $bundle   The bundle.
+	 *
+	 * @return string|null The reason, or null when the bundle stays inside the register.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-a-bundle-uploaded-by-a-register-manager-stays-inside-that-register
+	 */
+	public function refusalFor(Register $register, array $bundle): ?string {
+		return $this->binding->refusalFor(register: $register, bundle: $bundle);
+	}//end refusalFor()
 
 	/**
 	 * Import a bundle that belongs to no stored configuration.
