@@ -27,9 +27,11 @@ use OCA\OpenRegister\Kernel\Contracts\Core\AppDeepLinksInterface;
 use OCA\OpenRegister\Kernel\Contracts\Notifications\ScheduledMessageDeliveryInterface;
 use OCA\OpenRegister\Kernel\Contracts\Search\PageWidgetDeclarationInterface;
 use OCA\OpenRegister\Kernel\Contracts\Compliance\ConnectionStatusReporterInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\CredentialSecretReaderInterface;
 use OCA\OpenRegister\Listener\WebhookRequestInterceptionListener;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\Connection\ConnectionReporter;
+use OCA\OpenRegister\Service\Credential\CredentialStore;
 use OCA\OpenRegister\Notifications\Service\EmailService;
 use OCA\OpenRegister\Notifications\Service\EmailServiceInterface;
 use OCA\OpenRegister\Service\Capability\ToolReachLevels;
@@ -86,12 +88,15 @@ final class IntegrationWiring {
 	 * linking Mail messages to objects is integration work.
 	 * The MCP tool reach levels are bound here because the tool grants and reach
 	 * of lib/Service/Capability are MCP agent work and count to Integrations.
+	 * The Core credential reader port resolves to the active credential store
+	 * leaf, so Core's DBAL connection factory reads secrets without naming it.
 	 *
 	 * @var array<class-string, class-string>
 	 */
 	public const BINDINGS = [
 		AppDeepLinksInterface::class => DeepLinkRegistryService::class,
 		ConnectionStatusReporterInterface::class => ConnectionReporter::class,
+		CredentialSecretReaderInterface::class => CredentialStore::class,
 		EmailServiceInterface::class => EmailService::class,
 		IntegrationCatalogueInterface::class => IntegrationRegistry::class,
 		IntegrationIdIndexInterface::class => IntegrationRegistry::class,
