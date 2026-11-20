@@ -3,11 +3,6 @@
   "lib/AppHost/Reference/AbstractSchemaReferenceProvider.php -> lib/Service/Reference/ObjectPreviewFormatterInterface.php",
   "lib/BackgroundJob/DbalIntrospectionJob.php -> lib/Db/Source.php",
   "lib/BackgroundJob/QueuedJobClassesInterface.php -> lib/BackgroundJob/TranslationProjectionJob.php",
-  "lib/Calendar/DeclaredDateCalendars.php -> lib/Db/CalendarFeedToken.php",
-  "lib/Calendar/DeclaredDateCalendars.php -> lib/Service/Calendar/ObjectCalendarFeedService.php",
-  "lib/Calendar/DeclaredDateCalendars.php -> lib/Service/Calendar/ObjectCalendarFeedSources.php",
-  "lib/Calendar/DeclaredDateCalendars.php -> lib/Service/Calendar/ObjectDateDeclaration.php",
-  "lib/Calendar/DeclaredDateCalendars.php -> lib/Service/Calendar/ObjectDateEvents.php",
   "lib/Controller/ActionRightsController.php -> lib/Service/Flow/FlowNodeRightsGuardInterface.php",
   "lib/Controller/ActionRightsController.php -> lib/Service/Flow/IFlowNodeRequiresRight.php",
   "lib/Controller/ActionRightsController.php -> lib/Settings/OpenRegisterAdmin.php",
@@ -427,7 +422,6 @@
   "lib/Db/BulkJob.php",
   "lib/Db/BulkJob/BulkJobFieldTypes.php",
   "lib/Db/BulkJob/BulkJobJson.php",
-  "lib/Db/CalendarFeedToken.php",
   "lib/Db/CalendarLink.php",
   "lib/Db/CalendarLinkMapperInterface.php",
   "lib/Db/CaseItem.php",
@@ -944,6 +938,7 @@
   "lib/Kernel/Contracts/GitHubClientInterface.php",
   "lib/Kernel/Contracts/Integrations/BuiltInToolProvidersInterface.php",
   "lib/Kernel/Contracts/Integrations/ObjectCalendarLinkInterface.php",
+  "lib/Kernel/Contracts/Integrations/ObjectDateEventsSourceInterface.php",
   "lib/Kernel/Contracts/Integrations/OutboundBreakerInterface.php",
   "lib/Kernel/Contracts/Integrations/ShareableConfigCatalogueInterface.php",
   "lib/Kernel/Contracts/Integrations/TranslationBindingInterface.php",
@@ -1396,9 +1391,6 @@
   "lib/Service/Calendar/CalendarDateDeclarationCheck.php",
   "lib/Service/Calendar/CalendarFeedTokenService.php",
   "lib/Service/Calendar/CalendarFeedTokenServiceInterface.php",
-  "lib/Service/Calendar/ObjectCalendarFeedService.php",
-  "lib/Service/Calendar/ObjectCalendarFeedSources.php",
-  "lib/Service/Calendar/ObjectDateDeclaration.php",
   "lib/Service/Calendar/ObjectDateEvents.php",
   "lib/Service/CalendarEventKey.php",
   "lib/Service/CalendarEventService.php",
@@ -2510,11 +2502,11 @@
   "Configuration": 3601,
   "Core": 64328,
   "Files": 2667,
-  "Integrations": 18214,
+  "Integrations": 18251,
   "Kernel": 8506,
   "Notifications": 2049,
   "Platform": 292,
-  "Processes": 29949,
+  "Processes": 29407,
   "Search": 2035
  },
  "kernel_files": [
@@ -2980,6 +2972,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10457,
- "total_loc": 460915,
- "violation_degree": 0.0338
+ "total_loc": 460936,
+ "violation_degree": 0.0332
 }

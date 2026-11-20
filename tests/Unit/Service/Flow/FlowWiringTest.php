@@ -78,6 +78,8 @@ use OCA\OpenRegister\Service\TaskService;
 use OCA\OpenRegister\Service\FlowLinkService;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Kernel\Contracts\Integrations\ObjectDateEventsSourceInterface;
+use OCA\OpenRegister\Service\Calendar\ObjectCalendarFeedService;
 use Psr\Container\ContainerInterface;
 use ReflectionProperty;
 
@@ -286,6 +288,7 @@ final class FlowWiringTest extends TestCase {
 				ObjectCalendarLinkInterface::class         => CalendarEventService::class,
 				CurrentFlowRunInterface::class             => FlowRunContext::class,
 				ScheduleFlowStoreInterface::class          => ScheduleFlowStore::class,
+				ObjectDateEventsSourceInterface::class     => ObjectCalendarFeedService::class,
 				TaskRowSourceInterface::class              => TaskInboxService::class,
 				ObjectWatchersInterface::class             => WatcherService::class,
 				NotificationRunRecorderInterface::class    => AutomationRecordWriter::class,

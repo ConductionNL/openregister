@@ -2480,7 +2480,49 @@ deptrac:
         - type: directory
           value: 'lib/Service/Calculation/TemporalSweep/[^/]*$'
         - type: directory
-          value: 'lib/Service/Calendar/[^/]*$'
+          value: 'lib/Service/Calendar/AppointmentAttendeeService[.]php$'
+        - type: directory
+          value: 'lib/Service/Calendar/AppointmentAttendeeServiceInterface[.]php$'
+        - type: directory
+          value: 'lib/Service/Calendar/AttendeeResponse[.]php$'
+        - type: directory
+          value: 'lib/Service/Calendar/CalendarContents[.]php$'
+        - type: directory
+          value: 'lib/Service/Calendar/CalendarDateDeclarationCheck[.]php$'
+        - type: directory
+          value: 'lib/Service/Calendar/CalendarFeedTokenService[.]php$'
+        - type: directory
+          value: 'lib/Service/Calendar/CalendarFeedTokenServiceInterface[.]php$'
+        - type: directory
+          value: 'lib/Service/Calendar/CalendarYearSpan[.]php$'
+        - type: directory
+          value: 'lib/Service/Calendar/DateDeclarationRun[.]php$'
+        - type: directory
+          value: 'lib/Service/Calendar/DeadlineDateResolver[.]php$'
+        - type: directory
+          value: 'lib/Service/Calendar/DeadlineLookup[.]php$'
+        - type: directory
+          value: 'lib/Service/Calendar/EventSpan[.]php$'
+        - type: directory
+          value: 'lib/Service/Calendar/FeedTokenMint[.]php$'
+        - type: directory
+          value: 'lib/Service/Calendar/IcalendarWriter[.]php$'
+        - type: directory
+          value: 'lib/Service/Calendar/ObjectCalendarFeedRendering[.]php$'
+        - type: directory
+          value: 'lib/Service/Calendar/ObjectCalendarFeedService[.]php$'
+        - type: directory
+          value: 'lib/Service/Calendar/ObjectCalendarFeedSources[.]php$'
+        - type: directory
+          value: 'lib/Service/Calendar/ObjectDateDeclaration[.]php$'
+        - type: directory
+          value: 'lib/Service/Calendar/ObjectDateEventBuilder[.]php$'
+        - type: directory
+          value: 'lib/Service/Calendar/ObjectDateLayout[.]php$'
+        - type: directory
+          value: 'lib/Service/Calendar/ObjectDateOccurrence[.]php$'
+        - type: directory
+          value: 'lib/Service/Calendar/ObjectDateTerm[.]php$'
         - type: directory
           value: 'lib/Service/Case/[^/]*$'
         - type: directory
@@ -4161,6 +4203,8 @@ deptrac:
           value: 'lib/Service/(ActivityFilterService|AlbumLinkRun|AnalyticsLinkService|AnalyticsLinkServiceInterface|AnalyticsReportDraft|AnalyticsSeriesDraft|AnalyticsSeriesService|AnalyticsSeriesServiceInterface|AuthenticationService|AuthorizationService|BookmarkDraft|BookmarkLinkService|BookmarkLinkServiceInterface|BookmarkSearch|CalendarEventKey|CalendarEventService|CalendarLinkService|CalendarLinkServiceInterface|CalendarObjectRef|CalendarPickerScan|CalendarPickerWindow|CalendarScanRun|CardDraft|CaseTokenIssuance|CaseTokenService|CaseTokenServiceInterface|CaseTokenTarget|CollectiveLinkService|CollectiveLinkServiceInterface|CollectivePageDraft|ContactCardRef|ContactMatchingMappers|ContactPlacement|ContactService|ContactServiceInterface|CospendLinkService|CospendLinkServiceInterface|CospendProjectDraft|DeckCardRun|DeckCardService|DeckCardServiceInterface|DeckLinkService|DeckLinkServiceInterface|DeckPlatform|DeckRowMapper|DeepLinkRegistryService|EmailLinkService|EmailLinkServiceInterface|EmailMessageRef|EndpointExchange|EndpointMappers|EndpointService|EndpointServiceInterface|EntityLink|FederationShareService|FederationShareServiceInterface|FlowJsonColumn|FlowLinkPlatform|FlowLinkService|FlowLinkServiceInterface|FormLinkScope|FormLinkService|FormLinkServiceInterface|FormsAppRows|LinkTarget|LinkedEntityIntegrations|LinkedEntityLookup|LinkedEntityService|LinkedEntityServiceInterface|MailTableQueries|MailboxPage|MapLinkService|MapLinkServiceInterface|MappingKeyRewrite|MappingService|MappingServiceInterface|MappingTwigSandbox|NewForm|ObjectRelationCleanupLinks|ObjectRelationCleanupService|OpenProjectLinkService|OpenProjectLinkServiceInterface|OwnedWebhookView|PageSearch|PersonLinkChange|PersonLinkEvents|PersonLinkPlacement|PersonLinkRef|PersonLinkService|PersonLinkServiceInterface|PersonLinkTargets|PhotoLinkService|PhotoLinkServiceInterface|PoiDraft|PollDraft|PollIdentity|PollLinkService|PollLinkServiceInterface|PollOptionRow|ShareDraft|ShareLinkService|ShareLinkServiceInterface|ShareListingRun|ShareRequest|StoredEvent|TalkLinkService|TalkLinkServiceInterface|TimeTrackerLinkService|TimeTrackerLinkServiceInterface|UserDirectory|UserLinkRequest|UserLinkWriter|WebhookDelivery|WebhookDeliveryAttempt|WebhookDeliveryRecorder|WebhookDispatchServices|WebhookEvent|WebhookRequestOptions|WebhookService|WebhookStores|WorkPackageDraft|XwikiLinkService|XwikiLinkServiceInterface|XwikiPageDraft|XwikiPendingLink)[.]php$'
         - type: directory
           value: 'lib/Service/Bindings/[^/]*$'
+        - type: directory
+          value: 'lib/Service/Calendar/ObjectDateEvents[.]php$'
         - type: directory
           value: 'lib/Service/CalendarEvent/[^/]*$'
         - type: directory

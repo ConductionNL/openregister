@@ -24,10 +24,12 @@ use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
 use OCA\OpenRegister\Db\FlowLinkMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Service\Calendar\ObjectCalendarFeedService;
 use OCA\OpenRegister\Kernel\Contracts\Core\CurrentFlowRunInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionDefaultsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionEvaluatorInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Integrations\ObjectDateEventsSourceInterface;
 use OCA\OpenRegister\Search\FlowTasksProvider;
 use OCA\OpenRegister\Kernel\Contracts\Core\PublicationRefusalInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\SchemaFormDependentsInterface;
@@ -85,6 +87,9 @@ use Psr\Log\LoggerInterface;
  *
  * Registers the flow run guards, the shared run context, the loop step dispatcher,
  * the lifecycle's answer to property-level access, the store of the flows
+ * compiled from application schedules, the object date events the platform
+ * calendar reads, the party indicators' answer to file publishing, the
+ * lifecycle's request state and the task services that are built by hand.
  * compiled from application schedules, the party indicators' answer to file
  * publishing, the lifecycle's request state, the task services that are
  * built by hand and the flow link service.
@@ -105,6 +110,7 @@ final class FlowWiring {
 		ObjectCalendarLinkInterface::class => CalendarEventService::class,
 		CurrentFlowRunInterface::class => FlowRunContext::class,
 		ScheduleFlowStoreInterface::class => ScheduleFlowStore::class,
+		ObjectDateEventsSourceInterface::class => ObjectCalendarFeedService::class,
 		TaskRowSourceInterface::class => TaskInboxService::class,
 		ObjectWatchersInterface::class => WatcherService::class,
 		NotificationRunRecorderInterface::class => AutomationRecordWriter::class,
