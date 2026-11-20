@@ -682,7 +682,7 @@ deptrac:
         - type: directory
           value: 'lib/Event/(ObjectLeavingEvent|ObjectWriteRequestEvent)[.]php$'
         - type: directory
-          value: 'lib/Listener/(CodedValueValidationListener|ConceptDeleteGuardListener|FacetCacheInvalidationListener|GeneratedIdentifierFreezeRun|GeneratedIdentifierIssueRun|GeneratedIdentifierListener|GrantableRightsInvalidationListener|IdentityClaimsLoginListener|IdentityGuardListener|ListenerClassesInterface|NotifyPushBatchInterface|ObjectCleanupListener|ObjectEventFilterRun|ObjectEventProxyListener|ObjectEventSlugMapRun|ObjectStateDeleteGuardListener|PresencePushInterface|SchemaFlowImportListenerInterface|StateHistoryProjectionListener|SurvivorshipRecomputeListener|SurvivorshipRecomputeRun|UniqueConstraintListener|UniqueConstraintListenerInterface|UniqueConstraintRun|ValidatesPreWriteObject|WrittenObjectOfEvent)[.]php$'
+          value: 'lib/Listener/(CodedValueValidationListener|ConceptDeleteGuardListener|CoreListenerRegistrar|FacetCacheInvalidationListener|GeneratedIdentifierFreezeRun|GeneratedIdentifierIssueRun|GeneratedIdentifierListener|GrantableRightsInvalidationListener|IdentityClaimsLoginListener|IdentityGuardListener|ListenerClassesInterface|NotifyPushBatchInterface|ObjectCleanupListener|ObjectEventFilterRun|ObjectEventProxyListener|ObjectEventSlugMapRun|ObjectStateDeleteGuardListener|PresencePushInterface|SchemaFlowImportListenerInterface|StateHistoryProjectionListener|SurvivorshipRecomputeListener|SurvivorshipRecomputeRun|UniqueConstraintListener|UniqueConstraintListenerInterface|UniqueConstraintRun|ValidatesPreWriteObject|WrittenObjectOfEvent)[.]php$'
         - type: directory
           value: 'lib/Listener/Support/ConflictVeto[.]php$'
         - type: directory
