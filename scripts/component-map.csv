@@ -1532,6 +1532,7 @@ Notifications/Listener/ActivityEventListener.php,61,Notifications,Notifications,
 Notifications/Listener/GraphQLSubscriptionListener.php,31,Notifications,Notifications,Notifications/Listener/GraphQLSubscriptionListener.php,0,441,Notifications
 Notifications/Listener/NotificationDedupeAnnotationSyncListener.php,55,Notifications,Notifications,Notifications/Listener/NotificationDedupeAnnotationSyncListener.php,0,364,Notifications
 Notifications/Listener/NotificationDedupePruneListener.php,31,Notifications,Notifications,Notifications/Listener/NotificationDedupePruneListener.php,0,440,Notifications
+Notifications/Listener/NotificationDeclarationCheckListener.php,,Listener,,,0,,Notifications
 Notifications/Listener/Registrar/NotificationsListenerRegistrar.php,21,Notifications,Notifications,Notifications/Listener/Registrar/NotificationsListenerRegistrar.php,0,,Notifications
 Notifications/Listener/SystemEntityNotificationListener.php,102,Notifications,Notifications,Notifications/Listener/SystemEntityNotificationListener.php,0,271,Notifications
 Notifications/NotificationsRegistrar.php,94,Notifications,Notifications,Notifications/NotificationsRegistrar.php,0,,Notifications
@@ -1697,7 +1698,7 @@ Search/Controller/ViewsController.php,472,Search,Search,Search/Controller/ViewsC
 Search/Db/View.php,159,Search,Search,Search/Db/View.php,0,170,Search
 Search/Db/ViewMapper.php,156,Search,Search,Search/Db/ViewMapper.php,0,183,Search
 Search/Db/ViewMapperInterface.php,18,Search,Search,Search/Db/ViewMapperInterface.php,0,,Search
-Search/FlowTasksProvider.php,150,Search,Platform,Platform/Search/FlowTasksProvider.php,0,,Search
+Search/FlowTasksProvider.php,150,Search,Platform,Platform/Search/FlowTasksProvider.php,0,,Processes
 Search/Listener/AggregationThresholdListener.php,83,Search,Search,Search/Listener/AggregationThresholdListener.php,0,302,Search
 Search/Listener/ObjectMetricsListener.php,78,Search,Search,Search/Listener/ObjectMetricsListener.php,0,311,Search
 Search/ObjectsProvider.php,340,Search,Platform,Platform/Search/ObjectsProvider.php,0,,Search
@@ -2543,8 +2544,9 @@ Service/History/StateHistoryRebuild.php,97,Service,Service,Service/History/State
 Service/Import/ConflictPolicy.php,80,Service,Configuration,Configuration/Service/Import/ConflictPolicy.php,0,,Configuration
 Service/Import/ImportPreviewRefusedException.php,6,Service,Configuration,Configuration/Service/Import/ImportPreviewRefusedException.php,0,,Configuration
 Service/Import/ImportPreviewService.php,426,Service,Configuration,Configuration/Service/Import/ImportPreviewService.php,0,,Configuration
-Service/Import/MatchLookupFailedException.php,6,Service,Configuration,Configuration/Service/Import/MatchLookupFailedException.php,0,492,Configuration
-Service/Import/MatchResolver.php,116,Service,Configuration,Configuration/Service/Import/MatchResolver.php,0,241,Configuration
+Service/Import/MatchLookupFailedException.php,6,Service,Configuration,Configuration/Service/Import/MatchLookupFailedException.php,0,492,Core
+Service/Import/MatchResolver.php,116,Service,Configuration,Configuration/Service/Import/MatchResolver.php,0,241,Core
+Service/Import/MatchQuery.php,,Service,,,,,Core
 Service/Import/SchemaMappingCheck.php,49,Service,Configuration,Configuration/Service/Import/SchemaMappingCheck.php,0,,Configuration
 Service/Import/SourceRowReader.php,138,Service,Configuration,Configuration/Service/Import/SourceRowReader.php,0,,Configuration
 Service/ImportService.php,1197,Service,Configuration,Configuration/Service/ImportService.php,0,,Configuration
@@ -2708,7 +2710,7 @@ Service/Object/CascadeTarget.php,19,Service,Service,Service/Object/CascadeTarget
 Service/Object/CascadingHandler.php,160,Service,Service,Service/Object/CascadingHandler.php,0,,Core
 Service/Object/ConflictReport.php,122,Service,Service,Service/Object/ConflictReport.php,0,,Core
 Service/Object/ContentSearchHandler.php,267,Service,Service,Service/Object/ContentSearchHandler.php,0,,Core
-Service/Object/CorrectionService.php,129,Service,Compliance,Compliance/Service/Object/CorrectionService.php,0,,Core
+Service/Object/CorrectionService.php,129,Service,Compliance,Compliance/Service/Object/CorrectionService.php,0,,Compliance
 Service/Object/DataManipulationHandler.php,14,Service,Service,Service/Object/DataManipulationHandler.php,0,,Core
 Service/Object/DeleteObject.php,725,Service,Service,Service/Object/DeleteObject.php,0,,Core
 Service/Object/DeletionGraph/DeletionGraphNode.php,13,Service,Service,Service/Object/DeletionGraph/DeletionGraphNode.php,0,,Core
@@ -2894,9 +2896,9 @@ Service/ObjectSource/DbalStatement.php,20,Service,Service,Service/ObjectSource/D
 Service/ObjectSource/DbalWriteException.php,32,Service,Service,Service/ObjectSource/DbalWriteException.php,0,437,Core
 Service/ObjectSource/DeckObjectSourceProvider.php,126,Service,Service,Service/ObjectSource/DeckObjectSourceProvider.php,0,,Core
 Service/ObjectSource/DefensiveGetters.php,24,Service,Service,Service/ObjectSource/DefensiveGetters.php,0,,Core
-Service/ObjectSource/ConfiguredSourceUpstream.php,125,Service,Service,Service/ObjectSource/ConfiguredSourceUpstream.php,0,,Core
+Service/ObjectSource/ConfiguredSourceUpstream.php,125,Service,Service,Service/ObjectSource/ConfiguredSourceUpstream.php,0,,Integrations
 Service/ObjectSource/FederatedObjectSourceProvider.php,94,Service,Service,Service/ObjectSource/FederatedObjectSourceProvider.php,0,,Core
-Service/ObjectSource/OpenConnectorHttpProvider.php,290,Service,Service,Service/ObjectSource/OpenConnectorHttpProvider.php,0,,Core
+Service/ObjectSource/OpenConnectorHttpProvider.php,290,Service,Service,Service/ObjectSource/OpenConnectorHttpProvider.php,0,,Integrations
 Service/ObjectSource/FilesObjectSourceProvider.php,115,Service,Service,Service/ObjectSource/FilesObjectSourceProvider.php,0,,Core
 Service/ObjectSource/GroupObjectSourceProvider.php,100,Service,Service,Service/ObjectSource/GroupObjectSourceProvider.php,0,,Core
 Service/ObjectSource/InstalledAppCheck.php,13,Service,Service,Service/ObjectSource/InstalledAppCheck.php,0,,Core
@@ -3281,7 +3283,7 @@ Service/Task/TaskVtodoStatusMapping.php,58,Service,Work,Work/Service/Task/TaskVt
 Service/Task/TaskVtodoWriteBackGate.php,153,Service,Work,Work/Service/Task/TaskVtodoWriteBackGate.php,0,174,Processes
 Service/Task/VtodoCalendarLocator.php,44,Service,Work,Work/Service/Task/VtodoCalendarLocator.php,0,,Processes
 Service/TaskService.php,422,Service,Work,Work/Service/TaskService.php,7,52,Processes
-Service/TenantKeyService.php,120,Service,Configuration,Configuration/Service/TenantKeyService.php,35,,Configuration
+Service/TenantKeyService.php,120,Service,Configuration,Configuration/Service/TenantKeyService.php,35,,Compliance
 Service/TenantLifecycleService.php,219,Service,Access,Access/Service/TenantLifecycleService.php,0,,Core
 Service/TenantLogRedactor.php,161,Service,Service,Service/TenantLogRedactor.php,0,,Core
 Service/TimeTrackerLinkService.php,503,Service,Integrations,Integrations/Service/TimeTrackerLinkService.php,0,,Integrations
@@ -3939,7 +3941,7 @@ Service/CommentsCollectionCatalog.php,,Service,,,,,Processes
 Service/DeepLinkResolverInterface.php,,Service,,,,,Core
 Service/DemoDataServiceInterface.php,,Service,,,,,Core
 Service/DescriptorImportTarget.php,,Service,,,,,Configuration
-Service/DescriptorReimportRun.php,,Service,,,,,Compliance
+Service/DescriptorReimportRun.php,,Service,,,,,Configuration
 Service/DisposalSweep.php,,Service,,,,,Core
 Service/DsarGuards.php,,Service,,,,,Compliance
 Service/DsarServiceInterface.php,,Service,,,,,Core
@@ -4031,7 +4033,7 @@ Service/ProtectedCarryForward.php,,Service,,,,,Core
 Service/ProtectedPropertyRead.php,,Service,,,,,Core
 Service/RateLimitResetInterface.php,,Service,,,,,Core
 Service/ReadCaptureRun.php,,Service,,,,,Compliance
-Service/RecordUpdate.php,,Service,,,,,Configuration
+Service/RecordUpdate.php,,Service,,,,,Core
 Service/RegisterDescriptorServiceInterface.php,,Service,,,,,Core
 Service/RegisterImportCall.php,,Service,,,,,Core
 Service/RegisterImportDocument.php,,Service,,,,,Core
@@ -4056,7 +4058,7 @@ Service/ScheduledReportNotice.php,,Service,,,,,Notifications
 Service/ScheduledReportOwnerServices.php,,Service,,,,,Notifications
 Service/ScheduledReportStores.php,,Service,,,,,Notifications
 Service/SchemaApplicationMigratorInterface.php,,Service,,,,,Core
-Service/SchemaCascade.php,,Service,,,,,Configuration
+Service/SchemaCascade.php,,Service,,,,,Compliance
 Service/SchemaDeletionStores.php,,Service,,,,,Core
 Service/SchemaObjectTally.php,,Service,,,,,Core
 Service/SchemaProperty.php,,Service,,,,,Core
@@ -4090,7 +4092,7 @@ Service/SkosNodeReader.php,,Service,,,,,Core
 Service/SourceLanguageLookup.php,,Service,,,,,Configuration
 Service/StoredEvent.php,,Service,,,,,Processes
 Service/StoredTask.php,,Service,,,,,Processes
-Service/TableDeletionOptions.php,,Service,,,,,Integrations
+Service/TableDeletionOptions.php,,Service,,,,,Core
 Service/TableDeletionRun.php,,Service,,,,,Compliance
 Service/TableObjectRef.php,,Service,,,,,Compliance
 Service/TalkLinkServiceInterface.php,,Service,,,,,Integrations
@@ -4322,6 +4324,7 @@ Collaboration/ObjectCollections.php,,Collaboration,,,,,Platform
 Controller/ObjectCollectionsController.php,,Controller,,,,,Platform
 Controller/VersionsController.php,310,Controller,Service,Service/Controller/VersionsController.php,0,,Core
 Db/SchemaMapper/NamedConditionCheck.php,,Db,,,,,Processes
+Db/SchemaMapper/NotificationAnnotationCheck.php,,Db,,,0,,Notifications
 Service/Import/RecordImport/ColumnMapper.php,,Service,,,,,Core
 Service/Import/RecordImport/ConfirmedMapping.php,,Service,,,,,Core
 Service/Import/RecordImport/RecordFileReader.php,,Service,,,,,Core
@@ -4494,6 +4497,13 @@ Controller/Support/ShareLinksControllerServices.php,,Controller,,,,,Integrations
 Controller/Support/TimeTrackerLinksControllerServices.php,,Controller,,,,,Integrations
 Controller/Support/SourcePayload.php,,Controller,,,,,Integrations
 Controller/Support/MaintenanceReachableControllersInterface.php,,Controller,,,,,Configuration
+Service/Party/PartyRecipients.php,,Service,,,,,Processes
+Service/Settings/ArchivalSettingsReaderInterface.php,,Service,,,,,Compliance
+Service/Object/CorrectionServiceInterface.php,,Service,,,,,Compliance
+Controller/Support/CorrectionsControllerServices.php,,Controller,,,,,Compliance
+Service/Object/Correction.php,,Service,,,,,Compliance
+Service/Object/CorrectionAuditing.php,,Service,,,,,Compliance
+Service/ApiCaller/RouteCallers.php,,Service,,,,,Platform
 Service/Notification/AddressDeliveryServices.php,,Service,,,,,Notifications
 Service/Notification/ClearedMailing.php,,Service,,,,,Notifications
 Service/Notification/MailingRequest.php,,Service,,,,,Notifications
