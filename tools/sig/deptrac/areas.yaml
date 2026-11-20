@@ -86,7 +86,7 @@ deptrac:
               value: 'lib/Support/.*$'
           must_not:
             - type: directory
-              value: 'lib/Kernel/Contracts/(Core|Integrations|Notifications|Processes)/.*$'
+              value: 'lib/Kernel/Contracts/(Compliance|Core|Integrations|Notifications|Processes)/.*$'
     - name: Core
       collectors:
         - type: directory
@@ -3401,6 +3401,8 @@ deptrac:
           value: 'lib/Service/Translation/[^/]*$'
     - name: Compliance
       collectors:
+        - type: directory
+          value: 'lib/Kernel/Contracts/Compliance/.*$'
         - type: directory
           value: 'lib/BackgroundJob/(AbstractTextExtractionJob|ArchivalRetentionTask|ArchivalRowExpiry|ArchivalSweep|AuditExportDelivery|AuditExportSource|AuditSealJob|AuditTrailExportJob|AvgRetentionJob|BlobGroup|BlobMigrationRun|BulkLegalHoldJob|ComplianceJobHandlesInterface|DestructionCheckJob|DestructionExecutionJob|DestructionExecutionJobInterface|DestructionListRun|DsarDpiaDetectionJob|DsarRetentionSweepJob|ExternalGrantLapseJob|LogCleanUpTask|ProcessingLogPrune|ProcessingLogRetentionJob|QualityAuditScheduleJob|RelatedRetentionRecalculationJob|ReviewReminderJob|SharerAccessSweepJob|SubjectExportJob|TransferCheckJob)[.]php$'
         - type: directory
