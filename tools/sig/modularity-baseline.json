@@ -248,11 +248,7 @@
   "lib/Service/BulkTranslationServiceInterface.php -> lib/Service/ObjectTranslationRequest.php",
   "lib/Service/CalendarLinkService.php -> lib/Service/CalendarEventService.php",
   "lib/Service/Decision/ReviewPolicyResolver.php -> lib/Service/Settings/FileSettingsHandler.php",
-  "lib/Service/Deletion/DeletedObjectAuthorizer.php -> lib/Db/AuditTrail.php",
-  "lib/Service/Deletion/DeletedObjectAuthorizerInterface.php -> lib/Db/AuditTrail.php",
   "lib/Service/Deletion/DeletionWindowService.php -> lib/Service/Settings/RetentionSettingsReaderInterface.php",
-  "lib/Service/Deletion/DestructionScopeService.php -> lib/Service/Edepot/AuditRecording.php",
-  "lib/Service/Deletion/RetentionClockService.php -> lib/Db/Verwerkingsactiviteit.php",
   "lib/Service/File/ArchiveMemberEnumerator.php -> lib/Service/Settings/FileSettingsHandler.php",
   "lib/Service/File/CreateFileHandler.php -> lib/Service/FileHandlerSupportInterface.php",
   "lib/Service/File/FileBatchHandler.php -> lib/Service/FileHandlerSupportInterface.php",
@@ -1091,6 +1087,7 @@
   "lib/Kernel/Contracts/Core/ActionRightsInterface.php",
   "lib/Kernel/Contracts/Core/AuditEntry.php",
   "lib/Kernel/Contracts/Core/AuditEntryWriterInterface.php",
+  "lib/Kernel/Contracts/Core/AuditRecordInterface.php",
   "lib/Kernel/Contracts/Core/AuthRateLimitCeilingInterface.php",
   "lib/Kernel/Contracts/Core/BundleImport.php",
   "lib/Kernel/Contracts/Core/CredentialSecretReaderInterface.php",
@@ -1122,6 +1119,7 @@
   "lib/Kernel/Contracts/Core/RegisterBundlesInterface.php",
   "lib/Kernel/Contracts/Core/RegisterFolderRecordsInterface.php",
   "lib/Kernel/Contracts/Core/RequestLanguagesInterface.php",
+  "lib/Kernel/Contracts/Core/RetainingActivityInterface.php",
   "lib/Kernel/Contracts/Core/RetentionSettingsInterface.php",
   "lib/Kernel/Contracts/Core/RouteCallWindow.php",
   "lib/Kernel/Contracts/Core/RouteCallersInterface.php",
@@ -1725,7 +1723,6 @@
   "lib/Service/Dmn/DecisionTableValidatorInterface.php",
   "lib/Service/DsarService.php",
   "lib/Service/DsarServiceInterface.php",
-  "lib/Service/Edepot/AuditRecording.php",
   "lib/Service/Edepot/EdepotTransferAttemptInterface.php",
   "lib/Service/Edepot/EdepotTransferService.php",
   "lib/Service/Edepot/EdepotTransferServiceInterface.php",
@@ -2715,9 +2712,9 @@
   "lib/Twig/MappingTwigInstallerInterface.php"
  ],
  "exposed_loc": {
-  "Compliance": 15837,
+  "Compliance": 15827,
   "Configuration": 4650,
-  "Core": 64501,
+  "Core": 64511,
   "Files": 3592,
   "Integrations": 18324,
   "Kernel": 8516,
@@ -3188,6 +3185,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10454,
- "total_loc": 460423,
- "violation_degree": 0.0537
+ "total_loc": 460435,
+ "violation_degree": 0.0532
 }
