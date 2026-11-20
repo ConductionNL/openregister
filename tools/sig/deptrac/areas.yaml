@@ -86,7 +86,7 @@ deptrac:
               value: 'lib/Support/.*$'
           must_not:
             - type: directory
-              value: 'lib/Kernel/Contracts/(Compliance|Core|Files|Integrations|Notifications|Processes|Search)/.*$'
+              value: 'lib/Kernel/Contracts/(Compliance|Configuration|Core|Files|Integrations|Notifications|Processes|Search)/.*$'
     - name: Core
       collectors:
         - type: directory
@@ -3452,6 +3452,8 @@ deptrac:
     - name: Configuration
       collectors:
         - type: directory
+          value: 'lib/Kernel/Contracts/Configuration/.*$'
+        - type: directory
           value: 'lib/BackgroundJob/(BackfillCalendarLinksJob|BlobMigrationJob|CacheClearAndWarmJob|ConfigurationCheckJob|ConfigurationJobHandlesInterface|ConsistencyCheckJob|ExampleSetDailyRefreshJob|ImportPreviewRunner|ImportRunRetentionJob|NameCacheWarmupJob|OneUseJobKeySweepJob|RecordedTimedJob|SeedDirectoryJob|SweepExpiredExportRunsJob|SyncConfigurationsJob)[.]php$'
         - type: directory
           value: 'lib/BackgroundJob/Support/BackfillCalendarLinksSources[.]php$'
@@ -3521,8 +3523,6 @@ deptrac:
           value: 'lib/Controller/Support/LlmSettingsDomain[.]php$'
         - type: directory
           value: 'lib/Controller/Support/LlmSettingsPlatform[.]php$'
-        - type: directory
-          value: 'lib/Controller/Support/MaintenanceReachableControllersInterface[.]php$'
         - type: directory
           value: 'lib/Controller/Support/MigrationPacksControllerServices[.]php$'
         - type: directory
