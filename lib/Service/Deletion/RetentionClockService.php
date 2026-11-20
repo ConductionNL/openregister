@@ -43,8 +43,8 @@ namespace OCA\OpenRegister\Service\Deletion;
 use DateInterval;
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\VerwerkingsactiviteitMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\RetainingActivityInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\RetainingActivityResolverInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -75,13 +75,13 @@ class RetentionClockService {
 	/**
 	 * Wire the processing-activity catalogue.
 	 *
-	 * @param VerwerkingsactiviteitMapperInterface $activityMapper Resolves the object's processing activity.
-	 * @param LoggerInterface             $logger         PSR logger.
+	 * @param RetainingActivityResolverInterface $activityMapper Resolves the object's processing activity.
+	 * @param LoggerInterface                    $logger         PSR logger.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly VerwerkingsactiviteitMapperInterface $activityMapper,
+		private readonly RetainingActivityResolverInterface $activityMapper,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
