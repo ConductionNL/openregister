@@ -25,7 +25,6 @@ on:
 
 permissions:
   contents: read
-  packages: write
 
 concurrency:
   group: container-image
@@ -35,6 +34,9 @@ jobs:
   image:
     if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     steps:
       - name: Resolve the release
         id: release
