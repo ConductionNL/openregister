@@ -119,9 +119,7 @@
   "lib/Db/Flow/FlowJson.php -> lib/Db/FlowVersion.php",
   "lib/Db/MagicMapper.php -> lib/Service/Audit/PurposeGuardInterface.php",
   "lib/Db/MagicMapper.php -> lib/Service/LanguageServiceInterface.php",
-  "lib/Db/MagicMapper/MagicSearchHandler.php -> lib/Notifications/Db/WatcherMapperInterface.php",
   "lib/Db/MagicMapper/MagicSearchHandler.php -> lib/Search/Service/Search/PropertySearchProfile.php",
-  "lib/Db/MagicMapper/MagicSearchHandler.php -> lib/Service/LanguageServiceInterface.php",
   "lib/Db/MapperWiring.php -> lib/Db/Support/SecretAtRest.php",
   "lib/Db/MapperWiring.php -> lib/Db/WebhookMapper.php",
   "lib/Db/ProcessingLogMapperInterface.php -> lib/Db/ProcessingLog/ProcessingLogSubject.php",
@@ -1162,6 +1160,7 @@
   "lib/Kernel/Contracts/Core/FileNodeLookupInterface.php",
   "lib/Kernel/Contracts/Core/FileReadRestrictionInterface.php",
   "lib/Kernel/Contracts/Core/FilterPlaceholdersInterface.php",
+  "lib/Kernel/Contracts/Core/FollowTableInterface.php",
   "lib/Kernel/Contracts/Core/MigrationPackDefinitionsInterface.php",
   "lib/Kernel/Contracts/Core/ObjectFileRecordsInterface.php",
   "lib/Kernel/Contracts/Core/ObjectFolderLookupInterface.php",
@@ -1178,6 +1177,7 @@
   "lib/Kernel/Contracts/Core/RegisterAccessChangeLogInterface.php",
   "lib/Kernel/Contracts/Core/RegisterBundlesInterface.php",
   "lib/Kernel/Contracts/Core/RegisterFolderRecordsInterface.php",
+  "lib/Kernel/Contracts/Core/RequestLanguagesInterface.php",
   "lib/Kernel/Contracts/Core/RetentionSettingsInterface.php",
   "lib/Kernel/Contracts/Core/RouteCallWindow.php",
   "lib/Kernel/Contracts/Core/RouteCallersInterface.php",
@@ -2782,12 +2782,12 @@
  ],
  "exposed_loc": {
   "Compliance": 15800,
-  "Configuration": 5761,
-  "Core": 64854,
+  "Configuration": 5760,
+  "Core": 64867,
   "Files": 3640,
   "Integrations": 18312,
   "Kernel": 8504,
-  "Notifications": 1757,
+  "Notifications": 1758,
   "Platform": 537,
   "Processes": 31435,
   "Search": 2026
@@ -3253,6 +3253,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10442,
- "total_loc": 460329,
- "violation_degree": 0.06
+ "total_loc": 460342,
+ "violation_degree": 0.0598
 }
