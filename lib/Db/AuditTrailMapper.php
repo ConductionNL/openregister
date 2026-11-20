@@ -50,6 +50,7 @@ use OCA\OpenRegister\Service\Audit\AuditAggregationServiceInterface;
 use OCA\OpenRegister\Db\AuditTrail\PartyQueryRefusal;
 use OCA\OpenRegister\Db\AuditTrail\PurposeRefusal;
 use OCA\OpenRegister\Db\AuditTrail\SlugBackfill;
+use OCA\OpenRegister\Db\AuditTrail\AuditedObject;
 use OCA\OpenRegister\Db\AuditTrail\ToolInvocation;
 use OCA\OpenRegister\Service\Audit\AuditSinkShipperInterface;
 use OCA\OpenRegister\Service\Audit\AuditTrailCollaborators;
@@ -108,11 +109,6 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 * @var string
 	 */
 	private const TRAIL_NOUN = 'audit trail';
-
-	/**
-	 * The most changes one slug backfill entry lists; the rest is in the log.
-	 */
-	public const SLUG_BACKFILL_MAX_CHANGES = 1000;
 
 	/**
 	 * The only slug backfill mode: fill slugs that are missing (a set slug is never rewritten).
@@ -2762,7 +2758,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		$auditTrail->setToolId($invocation->toolId);
 		$auditTrail->setParamsDigest($invocation->paramsDigest);
 		$auditTrail->setResultSummary($invocation->resultSummary);
-		$invocation->about->stampOnto(auditTrail: $auditTrail);
+		self::stampTarget(auditTrail: $auditTrail, target: $invocation->about);
 
 		return $this->insertHashChained(auditTrail: $auditTrail);
 	}//end recordToolInvocation()
@@ -2994,7 +2990,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		$options = $refusal->options;
 		$actor = self::refusalActor(actorId: $options->actor->id, actorReference: $options->actor->name);
 		$auditTrail = self::actorEntry(action: 'shared_master_data_write_denied', actor: $actor);
-		$options->target->stampOnto(auditTrail: $auditTrail);
+		self::stampTarget(auditTrail: $auditTrail, target: $options->target);
 		$auditTrail->setOrganisationId($refusal->sourceOrganisation);
 		$summary = [
 			'holderOrganisation' => $refusal->holderOrganisation,
@@ -3057,7 +3053,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 */
 	public function recordPurposeRefusal(PurposeRefusal $refusal): AuditTrail {
 		$auditTrail = self::actorEntry(action: PurposeGuardInterface::ACTION_REFUSED, actor: $this->sessionActor());
-		$refusal->target->stampOnto(auditTrail: $auditTrail);
+		self::stampTarget(auditTrail: $auditTrail, target: $refusal->target);
 		$auditTrail->setResultSummary(['rule' => $refusal->rule, 'declaredPurpose' => $refusal->purpose, 'refused' => true]);
 
 		return $this->insertHashChained(auditTrail: $auditTrail);
@@ -3306,7 +3302,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 */
 	public function recordExport(ExportOutcome $export): AuditTrail {
 		$auditTrail = self::actorEntry(action: 'export.' . $export->outcome, actor: $this->exportActor(actorId: $export->actorId));
-		$export->target->stampOnto(auditTrail: $auditTrail);
+		self::stampTarget(auditTrail: $auditTrail, target: $export->target);
 		$auditTrail->setResultSummary($export->summary);
 
 		return $this->insertHashChained(auditTrail: $auditTrail);
@@ -3362,7 +3358,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		$auditTrail = self::actorEntry(action: 'slug.backfill.' . self::SLUG_BACKFILL_MODE, actor: $this->sessionActor());
 		// `changed` is NOT NULL and QBMapper writes only the fields a setter touched.
 		$auditTrail->setChanged([]);
-		$backfill->target->stampOnto(auditTrail: $auditTrail);
+		self::stampTarget(auditTrail: $auditTrail, target: $backfill->target);
 		$auditTrail->setResultSummary($this->slugBackfillSummary(backfill: $backfill, mode: self::SLUG_BACKFILL_MODE));
 
 		return $this->insertHashChained(auditTrail: $auditTrail);
@@ -3500,4 +3496,22 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		}
 	}//end toIsoMoment()
 
+	/**
+	 * Set the register, schema, object id and object uuid of a row from the object it is about.
+	 *
+	 * Every field is set, so an unknown object clears what the row held.
+	 *
+	 * @param AuditTrail    $auditTrail The row.
+	 * @param AuditedObject $target     The object the row is about.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/ai-mcp/spec.md
+	 */
+	public static function stampTarget(AuditTrail $auditTrail, AuditedObject $target): void {
+		$auditTrail->setRegister($target->register);
+		$auditTrail->setSchema($target->schema);
+		$auditTrail->setObject($target->object);
+		$auditTrail->setObjectUuid($target->objectUuid);
+	}//end stampTarget()
 }//end class

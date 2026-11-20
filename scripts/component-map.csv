@@ -4555,6 +4555,8 @@ Controller/Support/ProcessingLogControllerServices.php,,Controller,,,,,Complianc
 Db/AuditTrail/AuditedChange.php,,Db,,,,,Core
 Db/AuditTrail/HardeningChange.php,,Db,,,,,Core
 Db/AuditTrail/RegisterAuditEvent.php,,Db,,,,,Core
+Db/AuditTrail/AuditedObject.php,,Db,,,,,Core
+Db/AuditTrail/SlugBackfill.php,,Db,,,,,Core
 Search/Service/ExampleSet/ExampleSetViewRowsInterface.php,,Search,,,,,Configuration
 Service/Capability/ToolGrantCoordinates.php,,Service,,,0,,Integrations
 Kernel/Contracts/TaskSequenceInterface.php,,Kernel,,,,,Kernel

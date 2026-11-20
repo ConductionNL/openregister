@@ -562,6 +562,8 @@ deptrac:
         - type: directory
           value: 'lib/Db/AuditTrail/AuditedChange[.]php$'
         - type: directory
+          value: 'lib/Db/AuditTrail/AuditedObject[.]php$'
+        - type: directory
           value: 'lib/Db/AuditTrail/HardeningChange[.]php$'
         - type: directory
           value: 'lib/Db/AuditTrail/NamedActor[.]php$'
@@ -571,6 +573,8 @@ deptrac:
           value: 'lib/Db/AuditTrail/ObjectAuditEventOptions[.]php$'
         - type: directory
           value: 'lib/Db/AuditTrail/RegisterAuditEvent[.]php$'
+        - type: directory
+          value: 'lib/Db/AuditTrail/SlugBackfill[.]php$'
         - type: directory
           value: 'lib/Db/EntityRelation/[^/]*$'
         - type: directory
@@ -3572,8 +3576,6 @@ deptrac:
         - type: directory
           value: 'lib/Db/AuditTrail/AuditTrailStatistics[.]php$'
         - type: directory
-          value: 'lib/Db/AuditTrail/AuditedObject[.]php$'
-        - type: directory
           value: 'lib/Db/AuditTrail/ExportOutcome[.]php$'
         - type: directory
           value: 'lib/Db/AuditTrail/PartyQueryRefusal[.]php$'
@@ -3585,8 +3587,6 @@ deptrac:
           value: 'lib/Db/AuditTrail/SharedMasterDataRefusal[.]php$'
         - type: directory
           value: 'lib/Db/AuditTrail/SharedMasterDataRefusalOptions[.]php$'
-        - type: directory
-          value: 'lib/Db/AuditTrail/SlugBackfill[.]php$'
         - type: directory
           value: 'lib/Db/AuditTrail/ToolInvocation[.]php$'
         - type: directory

@@ -41,6 +41,16 @@ use OCP\AppFramework\Db\Entity;
 interface AuditTrailMapperInterface {
 
 	/**
+	 * The most changes one slug backfill entry lists; the rest is in the log.
+	 *
+	 * Owned here, by the port, because the slug backfill (Core) splits its log
+	 * lines by the same number the entry is capped at.
+	 *
+	 * @var int
+	 */
+	public const SLUG_BACKFILL_MAX_CHANGES = 1000;
+
+	/**
 	 * Set the request-scoped import-job UUID stamped on all
 	 * `createAuditTrail()` rows for the duration of an import. Pass
 	 * `null` to clear (typically in the import's `finally` block).
