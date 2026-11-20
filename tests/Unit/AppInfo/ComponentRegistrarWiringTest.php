@@ -13,6 +13,7 @@ use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Db\PlatformMapperRegistrar;
 use OCA\OpenRegister\Db\ConfigurationMapperRegistrar;
 use OCA\OpenRegister\Db\ComplianceMapperRegistrar;
+use OCA\OpenRegister\Db\FilesMapperRegistrar;
 use OCA\OpenRegister\Db\IntegrationsMapperRegistrar;
 use OCA\OpenRegister\Db\ProcessesMapperRegistrar;
 use OCA\OpenRegister\Files\FilesRegistrar;
@@ -53,6 +54,8 @@ use ReflectionClass;
  * @uses \OCA\OpenRegister\Db\ConfigurationMapperRegistrar
  * @uses \OCA\OpenRegister\Db\ComplianceMapperBindings
  * @uses \OCA\OpenRegister\Db\ComplianceMapperRegistrar
+ * @uses \OCA\OpenRegister\Db\FilesMapperBindings
+ * @uses \OCA\OpenRegister\Db\FilesMapperRegistrar
  * @uses \OCA\OpenRegister\Db\IntegrationsMapperBindings
  * @uses \OCA\OpenRegister\Db\IntegrationsMapperRegistrar
  * @uses \OCA\OpenRegister\Db\ProcessesMapperBindings
@@ -118,6 +121,7 @@ class ComponentRegistrarWiringTest extends TestCase
             'compliance services' => [ComplianceServiceRegistrar::BINDINGS],
             'configuration mappers' => [ConfigurationMapperRegistrar::BINDINGS],
             'compliance mappers' => [ComplianceMapperRegistrar::BINDINGS],
+            'files mappers' => [FilesMapperRegistrar::BINDINGS],
             'integrations mappers' => [IntegrationsMapperRegistrar::BINDINGS],
             'processes mappers' => [ProcessesMapperRegistrar::BINDINGS],
             'search'        => [SearchRegistrar::BINDINGS],
