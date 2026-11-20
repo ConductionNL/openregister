@@ -104,9 +104,6 @@
   "lib/Search/Db/ViewFormatting.php -> lib/Db/Configuration.php",
   "lib/Search/Db/ViewMapper.php -> lib/Db/Configuration.php",
   "lib/Search/Service/DashboardSizes.php -> lib/Db/AuditTrail.php",
-  "lib/Search/Service/Quality/NearDuplicateScope.php -> lib/Files/Db/FileMapperInterface.php",
-  "lib/Search/Service/Quality/NearDuplicateScope.php -> lib/Files/Service/File/FileReadScope.php",
-  "lib/Search/Service/Quality/ObjectTextSimilarity.php -> lib/Files/Db/FileMapperInterface.php",
   "lib/Service/Aggregation/AdhocAggregationRun.php -> lib/Search/Service/Aggregation/AggregationQuery.php",
   "lib/Service/Aggregation/AggregationRunner.php -> lib/Search/Service/Aggregation/AggregationCacheInterface.php",
   "lib/Service/Aggregation/AggregationRunner.php -> lib/Search/Service/Aggregation/AggregationQuery.php",
@@ -995,6 +992,7 @@
   "lib/Kernel/Contracts/ScheduledReportsInterface.php",
   "lib/Kernel/Contracts/SchemaExplorationInterface.php",
   "lib/Kernel/Contracts/SchemaInterface.php",
+  "lib/Kernel/Contracts/Search/FileScopeInterface.php",
   "lib/Kernel/Contracts/Search/HtmlPdfConverterInterface.php",
   "lib/Kernel/Contracts/Search/PageWidgetDeclarationInterface.php",
   "lib/Kernel/Contracts/Search/WebhookLogStatisticsInterface.php",
@@ -2513,13 +2511,13 @@
   "Compliance": 15454,
   "Configuration": 3601,
   "Core": 64316,
-  "Files": 2664,
+  "Files": 2667,
   "Integrations": 18214,
   "Kernel": 8506,
   "Notifications": 2049,
   "Platform": 292,
   "Processes": 29949,
-  "Search": 2027
+  "Search": 2035
  },
  "kernel_files": [
   "lib/BulkAction/BulkActionInterface.php",
@@ -2984,6 +2982,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10457,
- "total_loc": 460868,
- "violation_degree": 0.0343
+ "total_loc": 460899,
+ "violation_degree": 0.0342
 }
