@@ -86,4 +86,15 @@ interface ObjectFileRecordsInterface {
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	public function findOwningObjectUuid(int $fileId): ?string;
+
+	/**
+	 * The category of each file that has an OR-side metadata row, in one query: a file listing filters on it.
+	 *
+	 * @param int[] $fileIds The Nextcloud file ids.
+	 *
+	 * @return array<int, string|null> File id => its category (null when the row has none); files without a row are absent.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	public function findCategoriesByFileIds(array $fileIds): array;
 }//end interface
