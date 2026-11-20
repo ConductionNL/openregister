@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\AuditEntry;
 use OCA\OpenRegister\Kernel\Contracts\Core\AuditEntryWriterInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\PlacedAuditEntry;
 
 /**
  * Turns each entry into an audit trail row and inserts them through the mapper, which seals them.
@@ -48,7 +49,7 @@ final class AuditEntryWriter implements AuditEntryWriterInterface {
 	/**
 	 * Write the entries, in order; a database failure is thrown.
 	 *
-	 * @param list<AuditEntry> $entries The entries.
+	 * @param list<AuditEntry|PlacedAuditEntry> $entries The entries.
 	 *
 	 * @return void
 	 *
@@ -61,11 +62,15 @@ final class AuditEntryWriter implements AuditEntryWriterInterface {
 	/**
 	 * The unsealed row for one entry.
 	 *
-	 * @param AuditEntry $entry The entry.
+	 * @param AuditEntry|PlacedAuditEntry $entry The entry.
 	 *
 	 * @return AuditTrail The row.
 	 */
-	private static function rowFor(AuditEntry $entry): AuditTrail {
+	private static function rowFor(AuditEntry|PlacedAuditEntry $entry): AuditTrail {
+		if ($entry instanceof PlacedAuditEntry) {
+			return self::placedRowFor(placed: $entry);
+		}
+
 		$row = new AuditTrail();
 		$row->setUuid($entry->uuid);
 		$row->setAction($entry->action);
@@ -79,4 +84,24 @@ final class AuditEntryWriter implements AuditEntryWriterInterface {
 
 		return $row;
 	}//end rowFor()
+
+	/**
+	 * The unsealed row for one placed entry, filed under its register and schema where known.
+	 *
+	 * @param PlacedAuditEntry $placed The placed entry.
+	 *
+	 * @return AuditTrail The row.
+	 */
+	private static function placedRowFor(PlacedAuditEntry $placed): AuditTrail {
+		$row = self::rowFor(entry: $placed->entry);
+		if ($placed->register !== null) {
+			$row->setRegister($placed->register);
+		}
+
+		if ($placed->schema !== null) {
+			$row->setSchema($placed->schema);
+		}
+
+		return $row;
+	}//end placedRowFor()
 }//end class

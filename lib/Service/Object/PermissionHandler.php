@@ -43,6 +43,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\Schema\DeclaredActions;
 use OCP\IUser;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ActionEvaluatedEvent;
@@ -3007,7 +3008,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 		}
 
 		try {
-			$compiler = new DepartmentMatrixCompiler(declaredActions: $schema->declaredActionNames());
+			$compiler = new DepartmentMatrixCompiler(declaredActions: (new DeclaredActions())->names(configuration: $schema->getConfiguration()));
 			$compiled = $this->compiledMatrixRules(compiler: $compiler, matrix: $this->matrixRowsFromApps()->withAppRows(schema: $schema, matrix: $matrix));
 			return $compiler->merge(authorization: $authorization, compiled: $compiled);
 		} catch (\Throwable $e) {
@@ -3075,7 +3076,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 			return ['values' => [], 'scopes' => []];
 		}
 
-		$compiler = new DepartmentMatrixCompiler(declaredActions: $schema->declaredActionNames());
+		$compiler = new DepartmentMatrixCompiler(declaredActions: (new DeclaredActions())->names(configuration: $schema->getConfiguration()));
 		$matrix = $this->matrixRowsFromApps()->withAppRows(schema: $schema, matrix: $matrix);
 		$values = $this->matrixOwnValues(compiler: $compiler, matrix: $matrix, userId: $user->getUID());
 
