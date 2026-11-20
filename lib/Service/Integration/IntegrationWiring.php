@@ -23,6 +23,7 @@ namespace OCA\OpenRegister\Service\Integration;
 use OCA\OpenRegister\Controller\IntegrationControllersRegistrar;
 use OCA\OpenRegister\Db\Integration\IntegrationIdIndexInterface;
 use OCA\OpenRegister\Event\ObjectWriteRequestEvent;
+use OCA\OpenRegister\Kernel\Contracts\Notifications\ScheduledMessageDeliveryInterface;
 use OCA\OpenRegister\Kernel\Contracts\Search\PageWidgetDeclarationInterface;
 use OCA\OpenRegister\Kernel\Contracts\Compliance\ConnectionStatusReporterInterface;
 use OCA\OpenRegister\Listener\WebhookRequestInterceptionListener;
@@ -47,6 +48,7 @@ use OCA\OpenRegister\Service\Integration\Providers\OpenCorporatesProvider;
 use OCA\OpenRegister\Service\Integration\Providers\OpenCorporatesSearchInterface;
 use OCA\OpenRegister\Service\Integration\Providers\OpenProjectProvider;
 use OCA\OpenRegister\Service\Integration\Providers\PollsProvider;
+use OCA\OpenRegister\Service\Integration\Providers\ScheduledMessageDelivery;
 use OCA\OpenRegister\Service\Integration\Providers\SharesProvider;
 use OCA\OpenRegister\Service\Integration\Providers\TalkProvider;
 use OCA\OpenRegister\Service\Integration\Providers\XwikiProvider;
@@ -92,6 +94,7 @@ final class IntegrationWiring {
 		OpenCorporatesSearchInterface::class => OpenCorporatesProvider::class,
 		PageWidgetDeclarationInterface::class => IntegrationRegistry::class,
 		PageWidgetRegistryInterface::class => IntegrationRegistry::class,
+		ScheduledMessageDeliveryInterface::class => ScheduledMessageDelivery::class,
 		ObjectTimelineLinksInterface::class => ObjectRelationCleanupService::class,
 	];
 

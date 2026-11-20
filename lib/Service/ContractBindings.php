@@ -22,6 +22,7 @@ namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ContactMatcherInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\RunningNumbersInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\RetentionSettingsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExportGuardInterface;
 use OCA\OpenRegister\Kernel\Contracts\ExampleSetInstallerInterface;
@@ -1041,6 +1042,7 @@ final class ContractBindings {
 		SendEmailNodeInterface::class => SendEmailNode::class,
 		SendNotificationNodeInterface::class => SendNotificationNode::class,
 		SendTalkMessageNodeInterface::class => SendTalkMessageNode::class,
+		RunningNumbersInterface::class => RunningNumbers::class,
 		SequenceServiceInterface::class => SequenceService::class,
 		ShareableConfigCatalogueInterface::class => ShareableConfigCatalogue::class,
 		ShareableConfigTypeRegistryInterface::class => ShareableConfigTypeRegistry::class,
