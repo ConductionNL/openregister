@@ -22,6 +22,7 @@ namespace OCA\OpenRegister\Db\SchemaMapper;
 
 use Exception;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\Schema\DeclaredActions;
 use OCA\OpenRegister\Service\Confidentiality\ConfidentialityAnnotationValidator;
 use OCA\OpenRegister\Service\Rbac\AccessDeclarationValidators;
 use OCA\OpenRegister\Service\Rbac\ClassificationDeclarationValidator;
@@ -103,7 +104,7 @@ final class AccessDeclarationChecks {
 			return;
 		}
 
-		$findings = (new DepartmentMatrixValidator(declaredActions: $schema->declaredActionNames()))->validate(
+		$findings = (new DepartmentMatrixValidator(declaredActions: (new DeclaredActions())->names(configuration: $schema->getConfiguration())))->validate(
 			properties: $schema->getProperties(),
 			authorization: $authorization
 		);
