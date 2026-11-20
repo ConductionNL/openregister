@@ -17,11 +17,14 @@ use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\CurrentFlowRunInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionDefaultsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionEvaluatorInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
 use OCA\OpenRegister\Kernel\Contracts\Integrations\BuiltInToolProvidersInterface;
 use OCA\OpenRegister\Mcp\BuiltIn\FlowBuiltInToolProviders;
 use OCA\OpenRegister\Kernel\Contracts\Notifications\PartyRecipientsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\PublicationRefusalInterface;
+use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
+use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
 use OCA\OpenRegister\Service\Flow\FlowAccess;
 use OCA\OpenRegister\Service\Flow\FlowConsentParking;
 use OCA\OpenRegister\Service\Flow\FlowConsentSweepInterface;
@@ -61,6 +64,7 @@ use OCA\OpenRegister\Service\Task\TaskCalendarDocument;
 use OCA\OpenRegister\Service\Task\TaskCalendarDocumentInterface;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
 use OCA\OpenRegister\Service\TaskService;
+use OCA\OpenRegister\Service\FlowLinkService;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -176,6 +180,7 @@ final class FlowWiringTest extends TestCase {
 				TaskInboxService::class,
 				PortalPartyResolver::class,
 				TaskService::class,
+				FlowLinkService::class,
 			],
 			actual: array_keys($this->factories)
 		);
@@ -199,6 +204,17 @@ final class FlowWiringTest extends TestCase {
 		self::assertSame(expected: StateFieldRuleResolver::class, actual: ($this->aliases[FieldRulesSourceInterface::class] ?? null));
 		self::assertTrue(condition: is_a(StateFieldRuleResolver::class, FieldRulesSourceInterface::class, true));
 	}//end testTheFieldRulesPortIsAnsweredByTheStateResolver()
+
+	/**
+	 * The render's expression port is answered by the calculation evaluator, through its own interface.
+	 *
+	 * @return void
+	 */
+	public function testTheExpressionPortIsAnsweredByTheCalculationEvaluator(): void {
+		self::assertSame(expected: CalculationEvaluator::class, actual: (FlowWiring::BINDINGS[ExpressionEvaluatorInterface::class] ?? null));
+		self::assertTrue(condition: is_a(CalculationEvaluatorInterface::class, ExpressionEvaluatorInterface::class, true));
+		self::assertTrue(condition: is_a(CalculationEvaluator::class, ExpressionEvaluatorInterface::class, true));
+	}//end testTheExpressionPortIsAnsweredByTheCalculationEvaluator()
 
 	/**
 	 * The Core current-run port is answered by the shared run context, so the delete guard reads the one ambient stack.
@@ -233,6 +249,7 @@ final class FlowWiringTest extends TestCase {
 				CurrentFlowRunInterface::class             => FlowRunContext::class,
 				ScheduleFlowStoreInterface::class          => ScheduleFlowStore::class,
 				BuiltInToolProvidersInterface::class       => FlowBuiltInToolProviders::class,
+				ExpressionEvaluatorInterface::class        => CalculationEvaluator::class,
 				PartyRecipientsInterface::class            => PartyRecipients::class,
 				PublicationRefusalInterface::class         => PartyIndicatorGuard::class,
 				FlowRunSignalInterface::class              => FlowRunSignalService::class,
