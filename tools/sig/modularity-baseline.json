@@ -10,8 +10,6 @@
   "lib/Controller/ObjectsController.php -> lib/Search/Service/Geo/GeoResponseCrsInterface.php",
   "lib/Controller/ObjectsController.php -> lib/Search/Service/Geo/GetFeatureRequest.php",
   "lib/Controller/ObjectsController.php -> lib/Service/FileServiceInterface.php",
-  "lib/Controller/SchemasController.php -> lib/Service/AuthorizationAuditService.php",
-  "lib/Controller/SchemasController.php -> lib/Service/Task/ApprovalPositionFormGuard.php",
   "lib/Controller/SettingsController.php -> lib/Service/Settings/SearchBackendHandler.php",
   "lib/Controller/Support/GeoServices.php -> lib/Search/Service/Geo/GeoFeatureCollectionBuilderInterface.php",
   "lib/Controller/Support/TagsControllerServices.php -> lib/Service/FileServiceInterface.php",
@@ -698,6 +696,7 @@
   "lib/Kernel/Contracts/Core/ActionRightsInterface.php",
   "lib/Kernel/Contracts/Core/AppDeepLinksInterface.php",
   "lib/Kernel/Contracts/Core/AppImportJobOwnersInterface.php",
+  "lib/Kernel/Contracts/Core/ApprovalPositionFormCheckInterface.php",
   "lib/Kernel/Contracts/Core/AuditEntry.php",
   "lib/Kernel/Contracts/Core/AuditEntryWriterInterface.php",
   "lib/Kernel/Contracts/Core/AuditRecordInterface.php",
@@ -2129,6 +2128,7 @@
   "lib/Service/SchemaProperty.php",
   "lib/Service/SchemaTeardownInterface.php",
   "lib/Service/SchemaTeardownOverride.php",
+  "lib/Service/Schemas/ApprovalChainDeclarations.php",
   "lib/Service/Schemas/ExtendingFormDeclaration.php",
   "lib/Service/Schemas/ExtendingFormDeclarationInterface.php",
   "lib/Service/Schemas/ExtendingFormValidatorInterface.php",
@@ -2216,7 +2216,6 @@
   "lib/Service/TableDeletionOptions.php",
   "lib/Service/TalkLinkService.php",
   "lib/Service/TalkLinkServiceInterface.php",
-  "lib/Service/Task/ApprovalPositionFormGuard.php",
   "lib/Service/Task/TaskFormCompletion.php",
   "lib/Service/Task/TaskFormCompletionInterface.php",
   "lib/Service/Task/TaskFormResolver.php",
@@ -2311,13 +2310,13 @@
  "exposed_loc": {
   "Compliance": 14875,
   "Configuration": 2124,
-  "Core": 63347,
+  "Core": 63377,
   "Files": 1463,
   "Integrations": 17984,
   "Kernel": 8464,
   "Notifications": 2057,
   "Platform": 61,
-  "Processes": 27383,
+  "Processes": 27290,
   "Search": 2020
  },
  "kernel_files": [
@@ -2781,6 +2780,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10402,
- "total_loc": 461701,
- "violation_degree": 0.0117
+ "total_loc": 461722,
+ "violation_degree": 0.0115
 }
