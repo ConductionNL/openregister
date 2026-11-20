@@ -124,8 +124,6 @@
   "lib/Service/Object/ObjectCacheInvalidator.php -> lib/Service/DeepLinkRegistryService.php",
   "lib/Service/Object/ObjectCacheInvalidator.php -> lib/Service/Reference/ObjectPreviewFormatter.php",
   "lib/Service/Object/ObjectSaveChecks.php -> lib/Listener/DependentValueListener.php",
-  "lib/Service/Object/RecordAnnotations.php -> lib/Service/Archival/ArchivalDecisionResolver.php",
-  "lib/Service/Object/RecordAnnotations.php -> lib/Service/Archival/RetentionEvaluator.php",
   "lib/Service/Object/RenderObject.php -> lib/Db/Translation.php",
   "lib/Service/Object/RenderObject.php -> lib/Files/Service/File/FileRestrictionGuardInterface.php",
   "lib/Service/Object/RenderObject.php -> lib/Service/Calculation/CalculationPayload.php",
@@ -853,6 +851,7 @@
   "lib/Kernel/Contracts/Core/ReadNoticeClearingInterface.php",
   "lib/Kernel/Contracts/Core/ReadPurposeGuardInterface.php",
   "lib/Kernel/Contracts/Core/ReadPurposeRefusalInterface.php",
+  "lib/Kernel/Contracts/Core/RecordArchivalReadingInterface.php",
   "lib/Kernel/Contracts/Core/RegisterAccessChangeLogInterface.php",
   "lib/Kernel/Contracts/Core/RegisterBundlesInterface.php",
   "lib/Kernel/Contracts/Core/RegisterFolderRecordsInterface.php",
@@ -1204,7 +1203,6 @@
   "lib/Service/AppRegisterImportRunnerInterface.php",
   "lib/Service/Archival/ArchivalAnnotationValidator.php",
   "lib/Service/Archival/ArchivalAnnotationValidatorInterface.php",
-  "lib/Service/Archival/ArchivalDecisionResolver.php",
   "lib/Service/Archival/ArchivalNominationService.php",
   "lib/Service/Archival/ArchivalNominationServiceInterface.php",
   "lib/Service/Archival/ArchivalNominationTriggerInterface.php",
@@ -2436,9 +2434,9 @@
   "lib/Twig/MappingTwigInstallerInterface.php"
  ],
  "exposed_loc": {
-  "Compliance": 15250,
+  "Compliance": 15028,
   "Configuration": 3098,
-  "Core": 64396,
+  "Core": 64404,
   "Files": 2665,
   "Integrations": 18152,
   "Kernel": 8506,
@@ -2910,6 +2908,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10457,
- "total_loc": 461315,
- "violation_degree": 0.0223
+ "total_loc": 461355,
+ "violation_degree": 0.022
 }
