@@ -77,11 +77,11 @@ class SchemasControllerTest extends TestCase {
 	/**
 	 * The rename check the container hands out, or null for none.
 	 *
-	 * @var \OCA\OpenRegister\Service\Flow\FlowTriggerRenameCheck|null
+	 * @var \OCA\OpenRegister\Kernel\Contracts\Core\SchemaRenameWarningsInterface|null
 	 */
-	private ?\OCA\OpenRegister\Service\Flow\FlowTriggerRenameCheck $renameCheck = null;
+	private ?\OCA\OpenRegister\Kernel\Contracts\Core\SchemaRenameWarningsInterface $renameCheck = null;
 
-	private ?\OCA\OpenRegister\Service\Form\FormDependentsCheck $formCheck = null;
+	private ?\OCA\OpenRegister\Kernel\Contracts\Core\SchemaFormDependentsInterface $formCheck = null;
 
 	private \OCA\OpenRegister\Service\SchemaDeletionService&MockObject $schemaDeletionService;
 
@@ -167,11 +167,11 @@ class SchemasControllerTest extends TestCase {
 					return $schemaDeletionService;
 				}
 
-				if ($id === \OCA\OpenRegister\Service\Form\FormDependentsCheckInterface::class) {
+				if ($id === \OCA\OpenRegister\Kernel\Contracts\Core\SchemaFormDependentsInterface::class) {
 					return $this->formCheck;
 				}
 
-				if ($id === \OCA\OpenRegister\Service\Flow\FlowTriggerRenameCheck::class) {
+				if ($id === \OCA\OpenRegister\Kernel\Contracts\Core\SchemaRenameWarningsInterface::class) {
 					return $this->renameCheck;
 				}
 
@@ -764,7 +764,7 @@ class SchemasControllerTest extends TestCase {
 		$this->request->method('getParams')->willReturn(['required' => ['title', 'priority']]);
 		$this->schemaVersioningService->method('classify')->willReturn(new \OCA\OpenRegister\Service\Schema\SchemaChangeSet([], 'none', 'none'));
 		$assessment = ['refused' => true, 'schema' => 'ticket', 'affected' => [['id' => 'form-a']]];
-		$check = $this->createMock(\OCA\OpenRegister\Service\Form\FormDependentsCheck::class);
+		$check = $this->createMock(\OCA\OpenRegister\Kernel\Contracts\Core\SchemaFormDependentsInterface::class);
 		$check->expects($this->once())->method('assess')
 			->with($this->callback(static fn (Schema $proposed): bool => $proposed->getRequired() === ['title', 'priority'] && $proposed !== $schema))
 			->willReturn($assessment);
@@ -789,7 +789,7 @@ class SchemasControllerTest extends TestCase {
 		$this->schemaMapper->method('updateFromArray')->willReturn($schema);
 		$this->request->method('getParams')->willReturn(['required' => ['title', 'priority']]);
 		$this->schemaVersioningService->method('classify')->willReturn(new \OCA\OpenRegister\Service\Schema\SchemaChangeSet([], 'none', 'none'));
-		$check = $this->createMock(\OCA\OpenRegister\Service\Form\FormDependentsCheck::class);
+		$check = $this->createMock(\OCA\OpenRegister\Kernel\Contracts\Core\SchemaFormDependentsInterface::class);
 		$check->method('assess')->willReturn(['refused' => false, 'schema' => 'ticket', 'affected' => [['id' => 'form-a']]]);
 		$check->expects($this->once())->method('apply')->willReturn([['id' => 'form-a', 'outcome' => 'unpublished']]);
 		$this->formCheck = $check;
@@ -835,7 +835,7 @@ class SchemasControllerTest extends TestCase {
 		$changeSet = new \OCA\OpenRegister\Service\Schema\SchemaChangeSet([['property' => 'summary', 'kind' => 'renamed', 'old' => 'summary', 'new' => 'description']], 'breaking', 'major');
 		$this->schemaVersioningService->method('classify')->willReturn($changeSet);
 		$warning = ['flow' => 'flow-a', 'step' => 'start', 'field' => 'summary', 'renamedTo' => 'description', 'message' => 'Flow "flow-a" step "start" watches "summary".'];
-		$check = $this->createMock(\OCA\OpenRegister\Service\Flow\FlowTriggerRenameCheck::class);
+		$check = $this->createMock(\OCA\OpenRegister\Kernel\Contracts\Core\SchemaRenameWarningsInterface::class);
 		$check->expects($this->once())->method('warningsFor')->with($schema, $changeSet)->willReturn([$warning]);
 		$this->renameCheck = $check;
 
@@ -857,7 +857,7 @@ class SchemasControllerTest extends TestCase {
 		$this->schemaMapper->method('updateFromArray')->willReturn($schema);
 		$this->request->method('getParams')->willReturn(['properties' => ['title' => ['type' => 'string']]]);
 		$this->schemaVersioningService->method('classify')->willReturn(new \OCA\OpenRegister\Service\Schema\SchemaChangeSet([], 'none', 'none'));
-		$check = $this->createMock(\OCA\OpenRegister\Service\Flow\FlowTriggerRenameCheck::class);
+		$check = $this->createMock(\OCA\OpenRegister\Kernel\Contracts\Core\SchemaRenameWarningsInterface::class);
 		$check->method('warningsFor')->willReturn([]);
 		$this->renameCheck = $check;
 
@@ -884,7 +884,7 @@ class SchemasControllerTest extends TestCase {
 		$this->schemaMapper->method('discardedAnnotations')->willReturn($discarded);
 		$this->request->method('getParams')->willReturn(['properties' => ['title' => ['type' => 'string']]]);
 		$this->schemaVersioningService->method('classify')->willReturn(new \OCA\OpenRegister\Service\Schema\SchemaChangeSet([], 'none', 'none'));
-		$check = $this->createMock(\OCA\OpenRegister\Service\Flow\FlowTriggerRenameCheck::class);
+		$check = $this->createMock(\OCA\OpenRegister\Kernel\Contracts\Core\SchemaRenameWarningsInterface::class);
 		$check->method('warningsFor')->willReturn([]);
 		$this->renameCheck = $check;
 
@@ -906,7 +906,7 @@ class SchemasControllerTest extends TestCase {
 		$this->schemaMapper->method('updateFromArray')->willReturn($schema);
 		$this->request->method('getParams')->willReturn(['properties' => ['title' => ['type' => 'string']]]);
 		$this->schemaVersioningService->method('classify')->willReturn(new \OCA\OpenRegister\Service\Schema\SchemaChangeSet([], 'none', 'none'));
-		$check = $this->createMock(\OCA\OpenRegister\Service\Flow\FlowTriggerRenameCheck::class);
+		$check = $this->createMock(\OCA\OpenRegister\Kernel\Contracts\Core\SchemaRenameWarningsInterface::class);
 		$check->method('warningsFor')->willThrowException(new \RuntimeException('flows unreadable'));
 		$this->renameCheck = $check;
 		$warnings = [];
