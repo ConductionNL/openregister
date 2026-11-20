@@ -54,7 +54,5 @@ final class ConfigurationMapperBindings {
 		RecordTemplateMapperInterface::class              => RecordTemplateMapper::class,
 		SequenceMapperInterface::class                    => SequenceMapper::class,
 		TaskSequenceMapperInterface::class                => TaskSequenceMapper::class,
-		TranslationMapperInterface::class                 => TranslationMapper::class,
-		TranslationSourceLanguageBackfillInterface::class => TranslationMapper::class,
 	];
 }//end class

@@ -12,7 +12,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Db\DbRegistrar;
-use OCA\OpenRegister\Db\ConfigurationMapperRegistrar;
 use OCA\OpenRegister\Db\IntegrationsMapperRegistrar;
 use OCA\OpenRegister\Db\ProcessesMapperRegistrar;
 use OCA\OpenRegister\Db\EntityRelationMapper;
@@ -63,7 +62,7 @@ final class D1InterfaceBindingsTest extends TestCase {
 		MappingMapper::class => [MappingMapperInterface::class, IntegrationsMapperRegistrar::class, 'Db'],
 		RegisterMapper::class => [RegisterMapperInterface::class, DbRegistrar::class, 'Db'],
 		SchemaMapper::class => [SchemaMapperInterface::class, DbRegistrar::class, 'Db'],
-		TranslationMapper::class => [TranslationMapperInterface::class, ConfigurationMapperRegistrar::class, 'Db'],
+		TranslationMapper::class => [TranslationMapperInterface::class, DbRegistrar::class, 'Db'],
 		WebhookMapper::class => [WebhookMapperInterface::class, IntegrationsMapperRegistrar::class, 'Db'],
 	];
 
