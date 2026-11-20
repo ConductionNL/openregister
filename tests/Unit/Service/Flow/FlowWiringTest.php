@@ -11,10 +11,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectQuotaInterface;
+use OCA\OpenRegister\Service\Quota\ObjectQuotaService;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\CurrentFlowRunInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionDefaultsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Notifications\PartyRecipientsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\PublicationRefusalInterface;
 use OCA\OpenRegister\Service\Flow\FlowAccess;
 use OCA\OpenRegister\Service\Flow\FlowConsentParking;
@@ -45,6 +49,7 @@ use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendars;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
+use OCA\OpenRegister\Service\Party\PartyRecipients;
 use OCA\OpenRegister\Service\Party\PartyIndicatorGuard;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaults;
 use OCA\OpenRegister\Service\Party\PartySearchInterface;
@@ -194,6 +199,17 @@ final class FlowWiringTest extends TestCase {
 	}//end testTheFieldRulesPortIsAnsweredByTheStateResolver()
 
 	/**
+	 * The Core current-run port is answered by the shared run context, so the delete guard reads the one ambient stack.
+	 *
+	 * @return void
+	 */
+	public function testTheCurrentRunPortIsAnsweredByTheSharedRunContext(): void {
+		self::assertSame(expected: FlowRunContext::class, actual: ($this->aliases[CurrentFlowRunInterface::class] ?? null));
+		self::assertArrayHasKey(key: FlowRunContext::class, array: $this->factories);
+		self::assertTrue(condition: is_a(FlowRunContext::class, CurrentFlowRunInterface::class, true));
+	}//end testTheCurrentRunPortIsAnsweredByTheSharedRunContext()
+
+	/**
 	 * The Core expression-defaults port is answered by the rules engine's implementation.
 	 *
 	 * @return void
@@ -204,14 +220,18 @@ final class FlowWiringTest extends TestCase {
 	}//end testTheExpressionDefaultsPortIsAnsweredByTheRulesEngine()
 
 	/**
-	 * The schedule flow store and the area's own interfaces are bound, and only these aliases are registered.
+	 * The schedule flow store, the current-run port, the expression-defaults port and the area's own interfaces are bound, and only these aliases are registered.
 	 *
 	 * @return void
 	 */
 	public function testTheScheduleFlowStoreIsBound(): void {
 		self::assertSame(
 			expected: [
+				FieldRulesSourceInterface::class  => StateFieldRuleResolver::class,
+				ScheduleFlowStoreInterface::class => ScheduleFlowStore::class,
+				PartyRecipientsInterface::class   => PartyRecipients::class,
 				FieldRulesSourceInterface::class           => StateFieldRuleResolver::class,
+				CurrentFlowRunInterface::class             => FlowRunContext::class,
 				ScheduleFlowStoreInterface::class          => ScheduleFlowStore::class,
 				PublicationRefusalInterface::class         => PartyIndicatorGuard::class,
 				FlowRunSignalInterface::class              => FlowRunSignalService::class,
@@ -224,6 +244,7 @@ final class FlowWiringTest extends TestCase {
 				PartySearchInterface::class                => PartySearchService::class,
 				FlowConsentSweepInterface::class           => FlowConsentParking::class,
 				ExpressionDefaultsInterface::class         => ExpressionDefaults::class,
+				ObjectQuotaInterface::class                => ObjectQuotaService::class,
 			],
 			actual: $this->aliases
 		);
