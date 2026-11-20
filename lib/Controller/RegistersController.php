@@ -44,12 +44,13 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\AuthorizationBlockException;
 use OCA\OpenRegister\Exception\DatabaseConstraintException;
+use OCA\OpenRegister\Kernel\Contracts\Core\BundleImport;
+use OCA\OpenRegister\Kernel\Contracts\Core\RegisterBundlesInterface;
 use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectExporterInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectImporterInterface;
 use OCA\OpenRegister\Service\Schemas\RegisterModelService;
 use OCA\OpenRegister\Service\AuthorizationAuditService;
-use OCA\OpenRegister\Service\ConfigurationServiceInterface;
 use OCA\OpenRegister\Service\Configuration\ConfigurationCollaborators;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Rbac\ReadRuleTenancy;
@@ -130,11 +131,11 @@ class RegistersController extends Controller {
 	];
 
 	/**
-	 * Configuration service for handling import/export operations
+	 * Configuration bundle import and export
 	 *
-	 * @var ConfigurationServiceInterface
+	 * @var RegisterBundlesInterface
 	 */
-	private readonly ConfigurationServiceInterface $configurationService;
+	private readonly RegisterBundlesInterface $bundles;
 
 	/**
 	 * Audit trail mapper for fetching log statistics
@@ -272,7 +273,7 @@ class RegistersController extends Controller {
 			message: '[RegistersController] Parent constructor called.',
 			context: ['file' => __FILE__, 'line' => __LINE__]
 		);
-		$this->configurationService = $services->integrations->configurationService;
+		$this->bundles = $services->integrations->bundles;
 		$this->logger->debug(
 			message: '[RegistersController] ConfigurationService assigned.',
 			context: ['file' => __FILE__, 'line' => __LINE__]
@@ -1350,7 +1351,7 @@ class RegistersController extends Controller {
 		}
 
 		try {
-			$options['pack'] = $this->services->registers->migrationPackService->findByPackSlug(packSlug: (string)$packId)->getDefinitionArray();
+			$options['pack'] = $this->services->registers->migrationPacks->definitionBySlug(packSlug: (string)$packId);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => 'Migration pack "' . $packId . '" not found'], statusCode: 400);
 		}
@@ -1688,9 +1689,9 @@ class RegistersController extends Controller {
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function allowedBundle(array $options): array|JSONResponse {
-		$bundle = $this->configurationService->getUploadedJson(
-			data: $this->request->getParams(),
-			uploadedFiles: [$options['file']]
+		$bundle = $this->bundles->uploadedBundle(
+			params: $this->request->getParams(),
+			files: [$options['file']]
 		);
 		if ($bundle instanceof JSONResponse) {
 			return $bundle;
@@ -1710,14 +1711,15 @@ class RegistersController extends Controller {
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function storeBundle(array $options, array $bundle): array {
-		// ImportFromJson takes a Configuration entity; this endpoint has none to pass.
-		$result = $this->configurationService->importFromJson(
-			data: $bundle,
-			configuration: null,
-			owner: $this->userSession->getUser()?->getUID(),
-			appId: $options['register']->getApplication(),
-			version: $this->request->getParam('version'),
-			force: $options['force']
+		// A bundle imported here belongs to no stored configuration.
+		$result = $this->bundles->importBundle(
+			bundle: $bundle,
+			import: new BundleImport(
+				owner: $this->userSession->getUser()?->getUID(),
+				appId: $options['register']->getApplication(),
+				version: $this->request->getParam('version'),
+				force: $options['force']
+			)
 		);
 
 		$summary = $this->configurationImportSummary(result: $result, register: $options['register']);
