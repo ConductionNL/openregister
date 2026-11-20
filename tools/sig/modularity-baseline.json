@@ -70,9 +70,6 @@
   "lib/Controller/Support/TranslationControllerServices.php -> lib/Service/TranslationStatusServiceInterface.php",
   "lib/Controller/Support/TranslationMappers.php -> lib/Db/TranslationMapperInterface.php",
   "lib/Db/ApplicationMapperInterface.php -> lib/Db/Application.php",
-  "lib/Db/AuditTrailMapper.php -> lib/Db/AuditFlowAttribution.php",
-  "lib/Db/AuditTrailMapper.php -> lib/Service/Lifecycle/AutoTransitionPassInterface.php",
-  "lib/Db/AuditTrailMapper.php -> lib/Service/Lifecycle/GraphMoveCatalogue.php",
   "lib/Db/AuditTrailMapperInterface.php -> lib/Db/AuditTrail.php",
   "lib/Db/AuditTrailMapperInterface.php -> lib/Db/AuditTrail/AuditedChange.php",
   "lib/Db/AuditTrailMapperInterface.php -> lib/Db/AuditTrail/ExportOutcome.php",
@@ -506,7 +503,6 @@
   "lib/Db/Application/ApplicationFieldTypes.php",
   "lib/Db/Application/ApplicationQuota.php",
   "lib/Db/ApplicationMapperInterface.php",
-  "lib/Db/AuditFlowAttribution.php",
   "lib/Db/AuditFlowAttributionInterface.php",
   "lib/Db/AuditTrail.php",
   "lib/Db/AuditTrail/ActionLookupOptions.php",
@@ -994,6 +990,7 @@
   "lib/Kernel/Contracts/ChatStreamChannelInterface.php",
   "lib/Kernel/Contracts/ChunkMapperInterface.php",
   "lib/Kernel/Contracts/Compliance/ArchivalSettingsInterface.php",
+  "lib/Kernel/Contracts/Compliance/AuditProcessContextInterface.php",
   "lib/Kernel/Contracts/Compliance/ConnectionStatusReporterInterface.php",
   "lib/Kernel/Contracts/ConfigurationInterface.php",
   "lib/Kernel/Contracts/ConfigurationMembershipInterface.php",
@@ -2002,7 +1999,6 @@
   "lib/Service/Lifecycle/AutoTransitionPassInterface.php",
   "lib/Service/Lifecycle/AutoTransitionSelector.php",
   "lib/Service/Lifecycle/AutoTransitionSelectorInterface.php",
-  "lib/Service/Lifecycle/GraphMoveCatalogue.php",
   "lib/Service/Lifecycle/KeepLifecycleStatesScope.php",
   "lib/Service/Lifecycle/LifecycleActionContext.php",
   "lib/Service/Lifecycle/LifecycleActionContextInterface.php",
@@ -2626,7 +2622,7 @@
   "lib/Twig/MappingTwigInstallerInterface.php"
  ],
  "exposed_loc": {
-  "Compliance": 15703,
+  "Compliance": 15708,
   "Configuration": 4293,
   "Core": 64562,
   "Files": 3592,
@@ -2634,7 +2630,7 @@
   "Kernel": 8521,
   "Notifications": 2008,
   "Platform": 313,
-  "Processes": 30457,
+  "Processes": 30216,
   "Search": 2001
  },
  "kernel_files": [
@@ -3099,6 +3095,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10459,
- "total_loc": 460567,
- "violation_degree": 0.0463
+ "total_loc": 460616,
+ "violation_degree": 0.0459
 }
