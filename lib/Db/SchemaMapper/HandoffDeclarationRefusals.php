@@ -1,7 +1,7 @@
 <?php
 
 /**
- * ExchangeAnnotationRefusals: annotations about how objects leave a schema, refused at save.
+ * HandoffDeclarationRefusals: the hand-off annotations a schema save refuses.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -21,14 +21,17 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db\SchemaMapper;
 
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\Schemas\SchemaDeclarationValidators;
+use OCA\OpenRegister\Service\Schemas\HandoffDeclarationValidators;
 
 /**
- * Save-time checks of the handoff declarations, whose faults refuse the save with their codes.
+ * Save-time checks of the hand-off annotation and the hand-off contract binding.
  *
- * @spec exclude schema save plumbing moved out of SchemaMapper, not a capability of its own
+ * Integrations contributes them to the schema save through
+ * SchemaDeclarationChecksEvent, in the HANDOFF and HANDOFF_CONTRACT slots.
+ *
+ * @spec openspec/specs/semantic-object-handoff/spec.md
  */
-final class ExchangeAnnotationRefusals {
+final class HandoffDeclarationRefusals {
 
 	/**
 	 * Validate the optional `x-openregister-handoff` annotation (ADR-051).
@@ -51,7 +54,7 @@ final class ExchangeAnnotationRefusals {
 		$annotation = new SchemaAnnotation(schema: $schema, key: 'x-openregister-handoff');
 		if ($annotation->isBlock() === true) {
 			$lifecycle = ['x-openregister-lifecycle' => $annotation->configured(key: 'x-openregister-lifecycle')];
-			$annotation->faults()->refuseCoded(errors: SchemaDeclarationValidators::handoff()->validate($annotation->shape() + $lifecycle));
+			$annotation->faults()->refuseCoded(errors: HandoffDeclarationValidators::handoff()->validate($annotation->shape() + $lifecycle));
 		}
 	}//end checkHandoff()
 
@@ -84,6 +87,6 @@ final class ExchangeAnnotationRefusals {
 			$shape[$key] = $annotation->configured(key: $key);
 		}
 
-		$annotation->faults()->refuseCoded(errors: SchemaDeclarationValidators::handoffContractBinding()->validate($shape));
+		$annotation->faults()->refuseCoded(errors: HandoffDeclarationValidators::handoffContractBinding()->validate($shape));
 	}//end checkHandoffContract()
 }//end class

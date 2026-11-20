@@ -48,6 +48,7 @@ use OCA\OpenRegister\Mcp\Listener\McpDeclarationChecksListener;
 use OCA\OpenRegister\Notifications\Listener\GraphQLSubscriptionListener;
 use OCA\OpenRegister\Notifications\Listener\NotificationDedupeAnnotationSyncListener;
 use OCA\OpenRegister\Notifications\Listener\NotificationDedupePruneListener;
+use OCA\OpenRegister\Notifications\Listener\NotificationDeclarationCheckListener;
 use OCA\OpenRegister\Notifications\Listener\SystemEntityNotificationListener;
 use OCA\OpenRegister\Search\Listener\AggregationThresholdListener;
 use OCA\OpenRegister\Search\Listener\ObjectMetricsListener;
@@ -95,7 +96,6 @@ final class ListenerRegistrar {
 	public static function register(IRegistrationContext $context): void {
 		self::registerBindings(context: $context);
 		self::registerComponentListeners(context: $context);
-		self::registerSchemaDeclarationCheckListeners(context: $context);
 		self::registerFileAndPlatformListeners(context: $context);
 		self::registerFlowAndTaskListeners(context: $context);
 		self::registerPublishListener(context: $context);
@@ -154,25 +154,30 @@ final class ListenerRegistrar {
 		\OCA\OpenRegister\Mcp\Listener\Registrar\McpListenerRegistrar::register(context: $context);
 		\OCA\OpenRegister\Notifications\Listener\Registrar\NotificationsListenerRegistrar::register(context: $context);
 		Registrar\WorkListenerRegistrar::register(context: $context);
+		self::registerSchemaDeclarationChecks(context: $context);
 	}//end registerComponentListeners()
 
 	/**
-	 * The areas that contribute checks to the schema save, Processes first, then Integrations.
+	 * The listeners that contribute checks to the schema save.
 	 *
-	 * The schema mapper runs the contributed checks by their slot of
-	 * SchemaDeclarationOrder, not in listener order, so which fault a schema is
-	 * refused for does not depend on this order.
+	 * Processes, Compliance, Integrations (hand-off and MCP) and Notifications each add their checks, so the event stays here.
+	 * It is a positioned collection: every check names its slot of
+	 * SchemaDeclarationOrder and the mapper runs them in slot order, whatever
+	 * order the listeners run in.
 	 *
-	 * @param IRegistrationContext $context The registration context
+	 * @param IRegistrationContext $context The registration context.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
-	private static function registerSchemaDeclarationCheckListeners(IRegistrationContext $context): void {
+	private static function registerSchemaDeclarationChecks(IRegistrationContext $context): void {
 		$context->registerEventListener(SchemaDeclarationChecksEvent::class, SchemaDeclarationChecksListener::class);
+		$context->registerEventListener(SchemaDeclarationChecksEvent::class, ArchivalDeclarationChecksListener::class);
+		$context->registerEventListener(SchemaDeclarationChecksEvent::class, HandoffDeclarationChecksListener::class);
+		$context->registerEventListener(SchemaDeclarationChecksEvent::class, NotificationDeclarationCheckListener::class);
 		$context->registerEventListener(SchemaDeclarationChecksEvent::class, McpDeclarationChecksListener::class);
-	}//end registerSchemaDeclarationCheckListeners()
+	}//end registerSchemaDeclarationChecks()
 
 	/**
 	 * Alias each interface in BINDINGS to its class.

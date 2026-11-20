@@ -4,8 +4,11 @@
  * OpenRegister ProcessDeclarationChecksDispatcher
  *
  * An event dispatcher that answers the schema declaration checks event the way
- * the app does, through SchemaDeclarationChecksListener, so a hand-built
- * SchemaMapper runs the process checks Processes contributes.
+ * the app does, through SchemaDeclarationChecksListener,
+ * ArchivalDeclarationChecksListener, HandoffDeclarationChecksListener,
+ * NotificationDeclarationCheckListener and McpDeclarationChecksListener, so a
+ * hand-built SchemaMapper runs the checks Processes, Compliance, Integrations
+ * and Notifications contribute.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -25,8 +28,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Support;
 
 use OCA\OpenRegister\Db\SchemaMapper\SchemaDeclarationChecksEvent;
+use OCA\OpenRegister\Listener\ArchivalDeclarationChecksListener;
+use OCA\OpenRegister\Listener\HandoffDeclarationChecksListener;
 use OCA\OpenRegister\Listener\SchemaDeclarationChecksListener;
 use OCA\OpenRegister\Mcp\Listener\McpDeclarationChecksListener;
+use OCA\OpenRegister\Notifications\Listener\NotificationDeclarationCheckListener;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionValidatorInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -37,7 +43,7 @@ use Psr\Log\NullLogger;
 use RuntimeException;
 
 /**
- * Contributes the process and MCP declaration checks, as the app's listeners do; every other event is recorded and dropped.
+ * Contributes the declaration checks the areas add, as the app does; every other event is recorded and dropped.
  */
 final class ProcessDeclarationChecksDispatcher implements IEventDispatcher, ContainerInterface {
 
@@ -119,7 +125,7 @@ final class ProcessDeclarationChecksDispatcher implements IEventDispatcher, Cont
 	}//end dispatch()
 
 	/**
-	 * Contribute the process and MCP checks to the collection event, in registration order; record every other event.
+	 * Contribute the process, archival, hand-off, notification and MCP checks to the collection event; record every other event.
 	 *
 	 * @param Event $event The event.
 	 *
@@ -127,7 +133,11 @@ final class ProcessDeclarationChecksDispatcher implements IEventDispatcher, Cont
 	 */
 	public function dispatchTyped(Event $event): void {
 		if ($event instanceof SchemaDeclarationChecksEvent) {
-			(new SchemaDeclarationChecksListener(logger: ($this->logger ?? new NullLogger()), container: $this))->handle(event: $event);
+			$logger = ($this->logger ?? new NullLogger());
+			(new SchemaDeclarationChecksListener(logger: $logger, container: $this))->handle(event: $event);
+			(new ArchivalDeclarationChecksListener(logger: $logger))->handle(event: $event);
+			(new HandoffDeclarationChecksListener())->handle(event: $event);
+			(new NotificationDeclarationCheckListener(logger: $logger))->handle(event: $event);
 			(new McpDeclarationChecksListener())->handle(event: $event);
 			return;
 		}
