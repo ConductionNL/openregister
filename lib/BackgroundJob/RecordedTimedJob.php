@@ -25,9 +25,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use DateTime;
+use OCA\OpenRegister\Kernel\Contracts\Core\JobRunRecordingInterface;
 use OCA\OpenRegister\Service\Operations\JobRunStart;
 use OCA\OpenRegister\Service\Operations\JobRunContext;
-use OCA\OpenRegister\Service\Operations\JobRunRecorderInterface;
 use OCA\OpenRegister\Service\Operations\JobScheduleServiceInterface;
 use OCP\BackgroundJob\TimedJob;
 
@@ -51,9 +51,9 @@ abstract class RecordedTimedJob extends TimedJob implements RecordsItsRuns {
 	/**
 	 * The wrapper that writes the run row.
 	 *
-	 * @var JobRunRecorderInterface
+	 * @var JobRunRecordingInterface
 	 */
-	protected readonly JobRunRecorderInterface $recorder;
+	protected readonly JobRunRecordingInterface $recorder;
 
 	/**
 	 * Constructor.
