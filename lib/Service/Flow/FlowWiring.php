@@ -141,6 +141,8 @@ final class FlowWiring {
 		LifecycleTransitionInterface::class => TransitionEngine::class,
 		ExpressionDefaultsInterface::class => ExpressionDefaults::class,
 		ObjectQuotaInterface::class => ObjectQuotaService::class,
+		\OCA\OpenRegister\Kernel\Contracts\Core\PartyParentInterface::class => \OCA\OpenRegister\Service\Party\PartyParent::class,
+		\OCA\OpenRegister\Kernel\Contracts\Core\LifecycleStatesKeeperInterface::class => \OCA\OpenRegister\Service\Lifecycle\LifecycleStatesKeeper::class,
 		UnreadCountsInterface::class => UnreadCountCalculator::class,
 	];
 
