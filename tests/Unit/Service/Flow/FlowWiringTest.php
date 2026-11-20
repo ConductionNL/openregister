@@ -15,6 +15,7 @@ use OCA\OpenRegister\Kernel\Contracts\Core\ObjectQuotaInterface;
 use OCA\OpenRegister\Service\Quota\ObjectQuotaService;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\CurrentFlowRunInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionDefaultsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
 use OCA\OpenRegister\Kernel\Contracts\Notifications\PartyRecipientsInterface;
@@ -198,6 +199,17 @@ final class FlowWiringTest extends TestCase {
 	}//end testTheFieldRulesPortIsAnsweredByTheStateResolver()
 
 	/**
+	 * The Core current-run port is answered by the shared run context, so the delete guard reads the one ambient stack.
+	 *
+	 * @return void
+	 */
+	public function testTheCurrentRunPortIsAnsweredByTheSharedRunContext(): void {
+		self::assertSame(expected: FlowRunContext::class, actual: ($this->aliases[CurrentFlowRunInterface::class] ?? null));
+		self::assertArrayHasKey(key: FlowRunContext::class, array: $this->factories);
+		self::assertTrue(condition: is_a(FlowRunContext::class, CurrentFlowRunInterface::class, true));
+	}//end testTheCurrentRunPortIsAnsweredByTheSharedRunContext()
+
+	/**
 	 * The Core expression-defaults port is answered by the rules engine's implementation.
 	 *
 	 * @return void
@@ -208,7 +220,7 @@ final class FlowWiringTest extends TestCase {
 	}//end testTheExpressionDefaultsPortIsAnsweredByTheRulesEngine()
 
 	/**
-	 * The schedule flow store and the area's own interfaces are bound, and only these aliases are registered.
+	 * The schedule flow store, the current-run port, the expression-defaults port and the area's own interfaces are bound, and only these aliases are registered.
 	 *
 	 * @return void
 	 */
@@ -219,6 +231,7 @@ final class FlowWiringTest extends TestCase {
 				ScheduleFlowStoreInterface::class => ScheduleFlowStore::class,
 				PartyRecipientsInterface::class   => PartyRecipients::class,
 				FieldRulesSourceInterface::class           => StateFieldRuleResolver::class,
+				CurrentFlowRunInterface::class             => FlowRunContext::class,
 				ScheduleFlowStoreInterface::class          => ScheduleFlowStore::class,
 				PublicationRefusalInterface::class         => PartyIndicatorGuard::class,
 				FlowRunSignalInterface::class              => FlowRunSignalService::class,
