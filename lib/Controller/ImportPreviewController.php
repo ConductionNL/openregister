@@ -34,7 +34,7 @@ namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Service\Import\ImportCommit;
-use OCA\OpenRegister\BackgroundJob\JobHandles;
+use OCA\OpenRegister\BackgroundJob\ConfigurationJobHandlesInterface;
 use OCA\OpenRegister\Controller\Support\ImportPreviewControllerServices;
 use OCA\OpenRegister\Db\ImportPreview;
 use OCA\OpenRegister\Db\ImportPreviewMapperInterface;
@@ -478,10 +478,10 @@ class ImportPreviewController extends Controller {
 
 			if ($async === true) {
 				$this->jobList->add(
-					JobHandles::IMPORT_PREVIEW_RUNNER,
+					ConfigurationJobHandlesInterface::IMPORT_PREVIEW_RUNNER,
 					[
 						'preview_id' => (int)$preview->getId(),
-						'phase' => JobHandles::IMPORT_PREVIEW_PHASE_COMMIT,
+						'phase' => ConfigurationJobHandlesInterface::IMPORT_PREVIEW_PHASE_COMMIT,
 						'source_hash' => $sourceHash,
 					]
 				);
@@ -527,10 +527,10 @@ class ImportPreviewController extends Controller {
 		$this->previewMapper->persist(preview: $preview);
 
 		$this->jobList->add(
-			JobHandles::IMPORT_PREVIEW_RUNNER,
+			ConfigurationJobHandlesInterface::IMPORT_PREVIEW_RUNNER,
 			[
 				'preview_id' => (int)$preview->getId(),
-				'phase' => JobHandles::IMPORT_PREVIEW_PHASE_PREVIEW,
+				'phase' => ConfigurationJobHandlesInterface::IMPORT_PREVIEW_PHASE_PREVIEW,
 			]
 		);
 
