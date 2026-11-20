@@ -4515,3 +4515,4 @@ Service/NotificationsServiceBindings.php,,Service,,,,,Notifications
 Service/NotificationsServiceRegistrar.php,,Service,,,,,Notifications
 Service/Configuration/RegisterBundles.php,,Service,,,,,Configuration
 Service/MigrationPack/MigrationPackDefinitions.php,,Service,,,,,Configuration
+Service/Resilience/OutboundBreaker.php,,Service,,,,,Platform

@@ -456,9 +456,6 @@
   "lib/Service/Observability/OpenRegisterMetricsProvider.php -> lib/Service/Task/TaskMetricsProviderInterface.php",
   "lib/Service/OperationsConsoleNotifications.php -> lib/Service/Notification/NotificationTemplateRegistry.php",
   "lib/Service/OrganisationUsageService.php -> lib/Files/Db/FileMapperInterface.php",
-  "lib/Service/Outbound/OutboundClientFactory.php -> lib/Service/Resilience/BreakerRegistry.php",
-  "lib/Service/Outbound/OutboundHttpClient.php -> lib/Service/Resilience/BreakerRegistry.php",
-  "lib/Service/Outbound/OutboundHttpClient.php -> lib/Service/Resilience/DependencyUnavailableException.php",
   "lib/Service/PropertyTranslation.php -> lib/Db/TranslationSlot.php",
   "lib/Service/PropertyTranslation.php -> lib/Service/Translation/LanguagePair.php",
   "lib/Service/Rbac/AuditRowWriter.php -> lib/Db/AuditTrail.php",
@@ -1231,6 +1228,7 @@
   "lib/Kernel/Contracts/FlowTimerControlInterface.php",
   "lib/Kernel/Contracts/FlowTimerInterface.php",
   "lib/Kernel/Contracts/GitHubClientInterface.php",
+  "lib/Kernel/Contracts/Integrations/OutboundBreakerInterface.php",
   "lib/Kernel/Contracts/Integrations/ShareableConfigCatalogueInterface.php",
   "lib/Kernel/Contracts/Integrations/TranslationBindingInterface.php",
   "lib/Kernel/Contracts/KeywordChunkSearch.php",
@@ -2584,8 +2582,6 @@
   "lib/Service/Relation/RelationGraphServiceInterface.php",
   "lib/Service/Relation/RelationTypeResolver.php",
   "lib/Service/Relation/RelationTypeResolverInterface.php",
-  "lib/Service/Resilience/BreakerRegistry.php",
-  "lib/Service/Resilience/DependencyUnavailableException.php",
   "lib/Service/RetentionService.php",
   "lib/Service/RetentionServiceInterface.php",
   "lib/Service/Rules/AdministeredValidationEnforcer.php",
@@ -2827,10 +2823,10 @@
   "Configuration": 5761,
   "Core": 64890,
   "Files": 3640,
-  "Integrations": 18305,
+  "Integrations": 18312,
   "Kernel": 8482,
   "Notifications": 1757,
-  "Platform": 649,
+  "Platform": 537,
   "Processes": 31679,
   "Search": 2026
  },
@@ -3291,6 +3287,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10407,
- "total_loc": 460269,
- "violation_degree": 0.0637
+ "total_loc": 460292,
+ "violation_degree": 0.0633
 }
