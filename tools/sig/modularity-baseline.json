@@ -211,8 +211,6 @@
   "lib/Service/Audit/AuditTrailCollaborators.php -> lib/Service/ObjectAction/ObjectActionElevationScope.php",
   "lib/Service/Audit/TokenResolver.php -> lib/Db/Consumer.php",
   "lib/Service/Audit/TokenResolver.php -> lib/Db/ConsumerMapperInterface.php",
-  "lib/Service/Bindings/SchemasBindings.php -> lib/Service/ConfigurationDeployment/ConfigurationDraftService.php",
-  "lib/Service/Bindings/SchemasBindings.php -> lib/Service/ConfigurationDeployment/ConfigurationDraftsInterface.php",
   "lib/Service/BulkTranslationServiceInterface.php -> lib/Service/ObjectTranslationRequest.php",
   "lib/Service/CalendarLinkService.php -> lib/Service/CalendarEventService.php",
   "lib/Service/Decision/ReviewPolicyResolver.php -> lib/Service/Settings/FileSettingsHandler.php",
@@ -1571,8 +1569,6 @@
   "lib/Service/Configuration/DescriptorConfigIdsInterface.php",
   "lib/Service/Configuration/SeedDirectoryImporter.php",
   "lib/Service/Configuration/SeedReport.php",
-  "lib/Service/ConfigurationDeployment/ConfigurationDraftService.php",
-  "lib/Service/ConfigurationDeployment/ConfigurationDraftsInterface.php",
   "lib/Service/ConfigurationServiceInterface.php",
   "lib/Service/Connection/ConnectionReportForbiddenException.php",
   "lib/Service/Connection/ConnectionReportKind.php",
@@ -2656,10 +2652,10 @@
  ],
  "exposed_loc": {
   "Compliance": 15748,
-  "Configuration": 4583,
+  "Configuration": 4356,
   "Core": 64540,
   "Files": 3592,
-  "Integrations": 18340,
+  "Integrations": 18337,
   "Kernel": 8520,
   "Notifications": 2007,
   "Platform": 313,
@@ -3129,5 +3125,5 @@
  ],
  "kernel_loc": 10458,
  "total_loc": 460530,
- "violation_degree": 0.0485
+ "violation_degree": 0.0483
 }
