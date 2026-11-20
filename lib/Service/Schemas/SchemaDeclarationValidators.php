@@ -28,10 +28,6 @@ use OCA\OpenRegister\Service\Consent\ConsentAnnotationValidator;
 use OCA\OpenRegister\Service\Consent\ConsentAnnotationValidatorInterface;
 use OCA\OpenRegister\Service\ExternalLink\ExternalLinkAnnotationValidator;
 use OCA\OpenRegister\Service\ExternalLink\ExternalLinkAnnotationValidatorInterface;
-use OCA\OpenRegister\Service\Handoff\HandoffAnnotationValidator;
-use OCA\OpenRegister\Service\Handoff\HandoffAnnotationValidatorInterface;
-use OCA\OpenRegister\Service\Handoff\HandoffContractBindingValidator;
-use OCA\OpenRegister\Service\Handoff\HandoffContractBindingValidatorInterface;
 use OCA\OpenRegister\Service\Registry\RegistryAnnotationValidator;
 use OCA\OpenRegister\Service\Registry\RegistryAnnotationValidatorInterface;
 use OCA\OpenRegister\Service\Relation\LinkExposure;
@@ -96,24 +92,6 @@ final class SchemaDeclarationValidators {
 	public static function externalLinks(): ExternalLinkAnnotationValidatorInterface {
 		return new ExternalLinkAnnotationValidator();
 	}//end externalLinks()
-
-	/**
-	 * A fresh hand-off annotation validator.
-	 *
-	 * @return HandoffAnnotationValidatorInterface
-	 */
-	public static function handoff(): HandoffAnnotationValidatorInterface {
-		return new HandoffAnnotationValidator();
-	}//end handoff()
-
-	/**
-	 * A fresh hand-off contract binding validator.
-	 *
-	 * @return HandoffContractBindingValidatorInterface
-	 */
-	public static function handoffContractBinding(): HandoffContractBindingValidatorInterface {
-		return new HandoffContractBindingValidator();
-	}//end handoffContractBinding()
 
 	/**
 	 * A fresh registry annotation validator.
