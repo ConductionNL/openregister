@@ -12,6 +12,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Configuration;
 
 use OCA\OpenRegister\Listener\Registrar\ConfigurationListenerRegistrar;
+use OCA\OpenRegister\Db\SchemaMapper\SchemaDeclarationChecksEvent;
+use OCA\OpenRegister\Listener\ReferenceCardDeclarationCheckListener;
 use OCA\OpenRegister\Service\Configuration\ConfigurationServiceRegistrar;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
 use PHPUnit\Framework\TestCase;
@@ -84,7 +86,9 @@ class ConfigurationServiceRegistrarTest extends TestCase {
 	}//end testEveryFactoryBuildsItsService()
 
 	/**
-	 * The registrar subscribes only the Configuration area's own listener, through ConfigurationListenerRegistrar.
+	 * The registrar subscribes Configuration's own listeners: its schema declaration check, then ConfigurationListenerRegistrar's.
+	 *
+	 * Every other listener stays with ListenerRegistrar.
 	 *
 	 * @return void
 	 */
@@ -97,6 +101,7 @@ class ConfigurationServiceRegistrarTest extends TestCase {
 
 		$this->assertSame(
 			expected: [
+				['event' => SchemaDeclarationChecksEvent::class, 'listener' => ReferenceCardDeclarationCheckListener::class],
 				[
 					'event' => 'OCA\OpenRegister\Service\Config\RegisterShareableConfigTypesEvent',
 					'listener' => 'OCA\OpenRegister\Listener\ShareableConfigTypeRegistrationListener',
@@ -104,6 +109,6 @@ class ConfigurationServiceRegistrarTest extends TestCase {
 			],
 			actual: $context->listeners
 		);
-		$this->assertSame(expected: $own->listeners, actual: $context->listeners);
+		$this->assertSame(expected: $own->listeners, actual: array_slice($context->listeners, 1));
 	}//end testRegistersOnlyTheConfigurationListeners()
 }//end class

@@ -22,14 +22,16 @@ namespace OCA\OpenRegister\Db\SchemaMapper;
 
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Archival\ElementMappingValidatorInterface;
+use OCA\OpenRegister\Service\Archival\InheritedAppraisal;
 use OCA\OpenRegister\Service\Schemas\ArchivalDeclarationValidators;
+use OCA\OpenRegister\Service\Schemas\RetentionAnnotationValidator;
 use Psr\Log\LoggerInterface;
 
 /**
- * Save-time checks of the MDTO element mapping and the archival annotation.
+ * Save-time checks of the MDTO element mapping, the archival annotation and the retention declaration.
  *
  * Compliance contributes them to the schema save through
- * SchemaDeclarationChecksEvent, in the MDTO_MAPPING and ARCHIVAL slots.
+ * SchemaDeclarationChecksEvent, in the MDTO_MAPPING, ARCHIVAL and RETENTION slots.
  *
  * @spec openspec/specs/archival-annotation-vocabulary/spec.md
  */
@@ -113,4 +115,29 @@ final class ArchivalDeclarationRefusals {
 
 		$annotation->faults()->refuse(errors: $split['errors']);
 	}//end checkArchival()
+
+	/**
+	 * Refuse an `x-openregister-retention` declaration that names a property the
+	 * schema lacks, or one that holds no reference.
+	 *
+	 * It throws rather than warns: a declaration that follows nothing holds no
+	 * record back, and the first anyone would learn of it is a destroyed record
+	 * whose parent was meant to be kept.
+	 *
+	 * @param Schema $schema The schema being saved.
+	 *
+	 * @return void
+	 *
+	 * @throws \Exception When the declaration cannot be followed.
+	 *
+	 * @spec openspec/changes/appraisal-inherited-from-a-parent/specs/archivering-vernietiging/spec.md
+	 */
+	public function checkRetention(Schema $schema): void {
+		$annotation = new SchemaAnnotation(schema: $schema, key: InheritedAppraisal::ANNOTATION);
+		if ($annotation->isWritten() === true) {
+			$annotation->faults()->refuseWith(
+				messages: (new RetentionAnnotationValidator())->validate(annotation: $annotation->value(), properties: ($schema->getProperties() ?? []))
+			);
+		}
+	}//end checkRetention()
 }//end class
