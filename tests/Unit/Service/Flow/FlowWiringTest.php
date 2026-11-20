@@ -17,6 +17,8 @@ use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\CurrentFlowRunInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionDefaultsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\UnreadCountsInterface;
+use OCA\OpenRegister\Service\Interaction\ReadStateService;
 use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
 use OCA\OpenRegister\Kernel\Contracts\Notifications\PartyRecipientsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\PublicationRefusalInterface;
@@ -220,6 +222,16 @@ final class FlowWiringTest extends TestCase {
 	}//end testTheExpressionDefaultsPortIsAnsweredByTheRulesEngine()
 
 	/**
+	 * The Core unread-counts port is answered by the read state service.
+	 *
+	 * @return void
+	 */
+	public function testTheUnreadCountsPortIsAnsweredByTheReadStateService(): void {
+		self::assertSame(expected: ReadStateService::class, actual: ($this->aliases[UnreadCountsInterface::class] ?? null));
+		self::assertTrue(condition: is_a(ReadStateService::class, UnreadCountsInterface::class, true));
+	}//end testTheUnreadCountsPortIsAnsweredByTheReadStateService()
+
+	/**
 	 * The schedule flow store, the current-run port, the expression-defaults port and the area's own interfaces are bound, and only these aliases are registered.
 	 *
 	 * @return void
@@ -227,12 +239,10 @@ final class FlowWiringTest extends TestCase {
 	public function testTheScheduleFlowStoreIsBound(): void {
 		self::assertSame(
 			expected: [
-				FieldRulesSourceInterface::class  => StateFieldRuleResolver::class,
-				ScheduleFlowStoreInterface::class => ScheduleFlowStore::class,
-				PartyRecipientsInterface::class   => PartyRecipients::class,
 				FieldRulesSourceInterface::class           => StateFieldRuleResolver::class,
 				CurrentFlowRunInterface::class             => FlowRunContext::class,
 				ScheduleFlowStoreInterface::class          => ScheduleFlowStore::class,
+				PartyRecipientsInterface::class            => PartyRecipients::class,
 				PublicationRefusalInterface::class         => PartyIndicatorGuard::class,
 				FlowRunSignalInterface::class              => FlowRunSignalService::class,
 				LockObjectNodeInterface::class             => LockObjectNode::class,
@@ -245,6 +255,7 @@ final class FlowWiringTest extends TestCase {
 				FlowConsentSweepInterface::class           => FlowConsentParking::class,
 				ExpressionDefaultsInterface::class         => ExpressionDefaults::class,
 				ObjectQuotaInterface::class                => ObjectQuotaService::class,
+				UnreadCountsInterface::class               => ReadStateService::class,
 			],
 			actual: $this->aliases
 		);

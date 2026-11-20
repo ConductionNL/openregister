@@ -15,8 +15,9 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\History\StateHistoryProjector;
-use OCA\OpenRegister\Service\Interaction\ReadStateService;
-use OCA\OpenRegister\Service\Interaction\ReadStateServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\CurrentFlowRunInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\UnreadCountsInterface;
+use OCA\OpenRegister\Service\Audit\PurposeRefusedException;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
 use OCP\AppFramework\Controller;
@@ -142,16 +143,18 @@ class ObjectsControllerSmallUnitsGoldenTest extends TestCase {
 	#[DataProvider('unreadCases')]
 	public function testUnreadCountsMatchTheRecording(?string $caller, ?array $counts): void {
 		$object = $this->createMock(ObjectEntity::class);
-		$readState = $this->createMock(ReadStateService::class);
-		$readState->method('callerUid')->willReturn($caller);
-		if ($counts === null) {
-			$readState->method('unreadCounts')->willThrowException(new RuntimeException('no read state'));
-		} else {
-			$readState->method('unreadCounts')->with($object)->willReturn($counts);
-		}
+		// The port answers nothing for an anonymous caller (ReadStateServiceGuardsTest pins that on the service).
+		$readState = $this->createMock(UnreadCountsInterface::class);
+		$readState->method('unreadCounts')->with($object)->willReturnCallback(
+			static fn (): array => match (true) {
+				$caller === null => [],
+				$counts === null => throw new RuntimeException('no read state'),
+				default => $counts,
+			}
+		);
 
 		$container = $this->createMock(ContainerInterface::class);
-		$container->method('get')->with(ReadStateServiceInterface::class)->willReturn($readState);
+		$container->method('get')->with(UnreadCountsInterface::class)->willReturn($readState);
 		$controller = $this->controller();
 		$this->set($controller, 'container', $container);
 
@@ -244,6 +247,40 @@ class ObjectsControllerSmallUnitsGoldenTest extends TestCase {
 		$schema = $this->createMock(Schema::class);
 		$schema->method('getProperties')->willReturn($properties);
 		return $schema;
+	}
+
+	public function testTheCallerRunIsAskedOfTheCoreFlowRunPort(): void {
+		$run = $this->createMock(CurrentFlowRunInterface::class);
+		$run->method('currentRunUuid')->willReturn('run-7');
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->with(CurrentFlowRunInterface::class)->willReturn($run);
+		$controller = $this->controller();
+		$this->set($controller, 'container', $container);
+
+		$this->assertSame('run-7', $this->invoke($controller, 'callerRunUuid', []));
+	}
+
+	public function testACallerRunPortThatCannotBeServedReadsAsAPerson(): void {
+		$controller = $this->controller();
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willThrowException(new RuntimeException('no flows'));
+		$this->set($controller, 'container', $container);
+		$this->assertNull($this->invoke($controller, 'callerRunUuid', []));
+
+		$controller = $this->controller();
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willReturn(new \stdClass());
+		$this->set($controller, 'container', $container);
+		$this->assertNull($this->invoke($controller, 'callerRunUuid', []));
+	}
+
+	public function testAPurposeRefusalIsAnsweredWithItsOwnStatusAndBody(): void {
+		$refusal = new PurposeRefusedException(PurposeRefusedException::RULE_MISSING, 'No purpose given', null, ['schema' => 7]);
+
+		$answer = $this->invoke($this->controller(), 'purposeRefusal', [$refusal]);
+
+		$this->assertSame(403, $answer->getStatus());
+		$this->assertSame($refusal->toResponseBody(), $answer->getData());
 	}
 
 	private function controller(?LoggerInterface $logger = null): ObjectsController {
