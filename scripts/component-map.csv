@@ -482,6 +482,7 @@ Controller/Support/GeoServices.php,16,Controller,Service,Service/Controller/Supp
 Controller/Support/GitHubIssuesControllerServices.php,10,Controller,Configuration,Configuration/Controller/Support/GitHubIssuesControllerServices.php,0,,Configuration
 Controller/Support/GitHubIssuesDomain.php,16,Controller,Configuration,Configuration/Controller/Support/GitHubIssuesDomain.php,0,,Configuration
 Controller/Support/GitHubIssuesPlatform.php,12,Controller,Configuration,Configuration/Controller/Support/GitHubIssuesPlatform.php,0,,Configuration
+Controller/Support/HybridSearchDiagnostics.php,,Controller,,,,,Search
 Controller/Support/ImportPreviewControllerServices.php,11,Controller,Configuration,Configuration/Controller/Support/ImportPreviewControllerServices.php,0,,Configuration
 Controller/Support/ImportPreviewDomain.php,12,Controller,Configuration,Configuration/Controller/Support/ImportPreviewDomain.php,0,,Configuration
 Controller/Support/ImportPreviewMappers.php,14,Controller,Configuration,Configuration/Controller/Support/ImportPreviewMappers.php,0,,Configuration
@@ -4063,7 +4064,7 @@ Service/RetentionRules.php,,Service,,,,,Compliance
 Service/RetentionStores.php,,Service,,,,,Compliance
 Service/ScheduledReportDelivery.php,,Service,,,,,Notifications
 Service/ScheduledReportExportQuery.php,,Service,,,,,Notifications
-Service/ScheduledReportExporters.php,,Service,,,,,Notifications
+Service/ScheduledReportExporters.php,,Service,,,,,Configuration
 Service/ScheduledReportNotice.php,,Service,,,,,Notifications
 Service/ScheduledReportOwnerServices.php,,Service,,,,,Notifications
 Service/ScheduledReportStores.php,,Service,,,,,Notifications

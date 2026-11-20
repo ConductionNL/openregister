@@ -230,8 +230,6 @@ deptrac:
         - type: directory
           value: 'lib/Controller/Support/GitHubTokenFailure[.]php$'
         - type: directory
-          value: 'lib/Controller/Support/HybridSearchDiagnostics[.]php$'
-        - type: directory
           value: 'lib/Controller/Support/LinkRemoval[.]php$'
         - type: directory
           value: 'lib/Controller/Support/LinkedDataServices[.]php$'
@@ -2990,7 +2988,7 @@ deptrac:
         - type: directory
           value: 'lib/Notifications/Service/ExampleSet/[^/]*$'
         - type: directory
-          value: 'lib/Service/(AppRegisterImportRunner|ApplicationMove|ApplicationService|ApplicationServiceInterface|ConfigurationService|ConfigurationServiceInterface|ConfigurationTransferInterface|ConfigurationUpdateNotice|ContractBindings|ContractBindingsRegistrar|CountedRegisterImport|DemoDataService|DescriptorImportTarget|DescriptorReimportRun|ExportService|ImportService|LanguageGapScan|LanguageService|LanguageServiceInterface|ManifestProfile|ManifestService|MassValidationRun|McpCatalogSummaries|McpDiscoveryService|MigrationPackService|MigrationPackServiceInterface|MigrationService|MockImportRun|NotificationService|OperationsConsoleService|PropertyDiscoveryRun|RegisterDescriptorService|RegisterImporters|ScheduledReportRun|ScheduledReportService|SchemaApplicationMigrator|SchemaService|SchemaSplitRun|SequenceScope|SequenceService|SettingsService|SharedSchemaDedupeService|SharedSchemaPlanRun|SharedSchemaUse|SourceLanguageLookup|TranslationProjectionService|TranslationProjectionServiceInterface|TranslationSearch|TranslationStatusService|TranslationStatusServiceInterface|TranslationStores|ValidationChunkResult|VocabularyImportService)[.]php$'
+          value: 'lib/Service/(AppRegisterImportRunner|ApplicationMove|ApplicationService|ApplicationServiceInterface|ConfigurationService|ConfigurationServiceInterface|ConfigurationTransferInterface|ConfigurationUpdateNotice|ContractBindings|ContractBindingsRegistrar|CountedRegisterImport|DemoDataService|DescriptorImportTarget|DescriptorReimportRun|ExportService|ImportService|LanguageGapScan|LanguageService|LanguageServiceInterface|ManifestProfile|ManifestService|MassValidationRun|McpCatalogSummaries|McpDiscoveryService|MigrationPackService|MigrationPackServiceInterface|MigrationService|MockImportRun|NotificationService|OperationsConsoleService|PropertyDiscoveryRun|RegisterDescriptorService|RegisterImporters|ScheduledReportExporters|ScheduledReportRun|ScheduledReportService|SchemaApplicationMigrator|SchemaService|SchemaSplitRun|SequenceScope|SequenceService|SettingsService|SharedSchemaDedupeService|SharedSchemaPlanRun|SharedSchemaUse|SourceLanguageLookup|TranslationProjectionService|TranslationProjectionServiceInterface|TranslationSearch|TranslationStatusService|TranslationStatusServiceInterface|TranslationStores|ValidationChunkResult|VocabularyImportService)[.]php$'
         - type: directory
           value: 'lib/Service/Capability/ToolGrantCodec[.]php$'
         - type: directory
@@ -4120,6 +4118,8 @@ deptrac:
         - type: directory
           value: 'lib/Controller/(SettingsController)[.]php$'
         - type: directory
+          value: 'lib/Controller/Support/HybridSearchDiagnostics[.]php$'
+        - type: directory
           value: 'lib/Db/(SearchTrailCleanupInterface|SearchTrailCriteria|SearchTrailMapperInterface)[.]php$'
         - type: directory
           value: 'lib/Db/SearchTrail/[^/]*$'
@@ -4598,7 +4598,7 @@ deptrac:
         - type: directory
           value: 'lib/Push/[^/]*$'
         - type: directory
-          value: 'lib/Service/(ActivityFilter|ActivityFilterServiceInterface|AdminRecipientExpander|NotificationServiceInterface|NotificationsServiceBindings|NotificationsServiceRegistrar|ScheduledReportDelivery|ScheduledReportExportQuery|ScheduledReportExporters|ScheduledReportNotice|ScheduledReportOwnerServices|ScheduledReportStores)[.]php$'
+          value: 'lib/Service/(ActivityFilter|ActivityFilterServiceInterface|AdminRecipientExpander|NotificationServiceInterface|NotificationsServiceBindings|NotificationsServiceRegistrar|ScheduledReportDelivery|ScheduledReportExportQuery|ScheduledReportNotice|ScheduledReportOwnerServices|ScheduledReportStores)[.]php$'
         - type: directory
           value: 'lib/Service/Connection/ConnectionReportForbiddenException[.]php$'
         - type: directory
