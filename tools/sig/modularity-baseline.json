@@ -80,8 +80,6 @@
   "lib/Controller/Support/ConflictTrail.php -> lib/Db/AuditTrail.php",
   "lib/Controller/Support/DsarCaseCases.php -> lib/Service/Lifecycle/TransitionEngine.php",
   "lib/Controller/Support/GeoServices.php -> lib/Search/Service/Geo/GeoFeatureCollectionBuilderInterface.php",
-  "lib/Controller/Support/GeoServices.php -> lib/Search/Service/Geo/GeoFilterApplierInterface.php",
-  "lib/Controller/Support/GeoServices.php -> lib/Search/Service/Geo/GeoFilterParserInterface.php",
   "lib/Controller/Support/ObjectReadStateControllerServices.php -> lib/Service/Interaction/ReadStateServiceInterface.php",
   "lib/Controller/Support/TagsControllerServices.php -> lib/Service/FileServiceInterface.php",
   "lib/Controller/Support/TranslationControllerServices.php -> lib/Service/TranslationStatusServiceInterface.php",
@@ -1159,6 +1157,7 @@
   "lib/Kernel/Contracts/Core/RouteCallersInterface.php",
   "lib/Kernel/Contracts/Core/ServiceUnavailableExceptionInterface.php",
   "lib/Kernel/Contracts/Core/ShareLinkUrlInterface.php",
+  "lib/Kernel/Contracts/Core/SpatialFilterInterface.php",
   "lib/Kernel/Contracts/DecisionInterface.php",
   "lib/Kernel/Contracts/DeckPlacement.php",
   "lib/Kernel/Contracts/DocumentProcessingHandlerInterface.php",
@@ -1418,8 +1417,6 @@
   "lib/Search/Service/ExampleSet/ExampleSetViewRowsInterface.php",
   "lib/Search/Service/Geo/FeatureShape.php",
   "lib/Search/Service/Geo/GeoFeatureCollectionBuilderInterface.php",
-  "lib/Search/Service/Geo/GeoFilterApplierInterface.php",
-  "lib/Search/Service/Geo/GeoFilterParserInterface.php",
   "lib/Search/Service/Geo/GeoResponseCrsFactory.php",
   "lib/Search/Service/Geo/GeoResponseCrsInterface.php",
   "lib/Search/Service/Geo/GetFeatureRequest.php",
@@ -2755,14 +2752,14 @@
  "exposed_loc": {
   "Compliance": 15770,
   "Configuration": 4797,
-  "Core": 64630,
+  "Core": 64639,
   "Files": 3640,
   "Integrations": 18324,
   "Kernel": 8516,
   "Notifications": 1752,
   "Platform": 537,
   "Processes": 31548,
-  "Search": 2020
+  "Search": 2006
  },
  "kernel_files": [
   "lib/BulkAction/BulkActionInterface.php",
@@ -3226,6 +3223,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10454,
- "total_loc": 460342,
- "violation_degree": 0.0572
+ "total_loc": 460372,
+ "violation_degree": 0.057
 }
