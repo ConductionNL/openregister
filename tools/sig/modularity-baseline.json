@@ -991,8 +991,7 @@
   "lib/Search/BackgroundJob/SearchJobHandlesInterface.php",
   "lib/Search/Db/View.php",
   "lib/Search/Db/ViewMapperInterface.php",
-  "lib/Search/Listener/AggregationThresholdListener.php",
-  "lib/Search/Listener/ObjectMetricsListener.php",
+  "lib/Search/Listener/Registrar/SearchListenerRegistrar.php",
   "lib/Search/ObjectsProvider.php",
   "lib/Search/SearchProviderRegistrar.php",
   "lib/Search/SearchRegistrar.php",
@@ -2265,8 +2264,8 @@
   "Kernel": 8464,
   "Notifications": 2057,
   "Platform": 61,
-  "Processes": 27115,
-  "Search": 1929
+  "Processes": 27109,
+  "Search": 1772
  },
  "kernel_files": [
   "lib/BulkAction/BulkActionInterface.php",
@@ -2729,6 +2728,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10402,
- "total_loc": 461965,
+ "total_loc": 461982,
  "violation_degree": 0.0084
 }
