@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\ActionCheckInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Db\Webhook;
 use OCA\OpenRegister\Db\WebhookMapperInterface;
@@ -83,15 +84,15 @@ class OwnedWebhookView {
 	/**
 	 * Constructor.
 	 *
-	 * @param IUserManager                  $users      Looks the owner up.
-	 * @param OpenRegisterActionAuthService $actionAuth The action-rights matrix.
-	 * @param WebhookMapperInterface        $webhooks   Disables a webhook whose owner may no longer own it.
-	 * @param ContainerInterface            $container  Resolves the object operations lazily, out of WebhookService's construction.
-	 * @param LoggerInterface               $logger     Logger.
+	 * @param IUserManager           $users      Looks the owner up.
+	 * @param ActionCheckInterface   $actionAuth The action-rights matrix.
+	 * @param WebhookMapperInterface $webhooks   Disables a webhook whose owner may no longer own it.
+	 * @param ContainerInterface     $container  Resolves the object operations lazily, out of WebhookService's construction.
+	 * @param LoggerInterface        $logger     Logger.
 	 */
 	public function __construct(
 		private readonly IUserManager $users,
-		private readonly OpenRegisterActionAuthService $actionAuth,
+		private readonly ActionCheckInterface $actionAuth,
 		private readonly WebhookMapperInterface $webhooks,
 		private readonly ContainerInterface $container,
 		private readonly LoggerInterface $logger,
