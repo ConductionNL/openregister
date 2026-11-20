@@ -29,14 +29,13 @@ use Closure;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\Types;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Adds the imported flag to the plan-item audit.
  *
  * @spec openspec/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
  */
-class Version1Date20261010120000 extends SimpleMigrationStep {
+class Version1Date20261010120000 extends TargetedMigrationStep {
 
 	/**
 	 * The audit table.
@@ -56,7 +55,7 @@ class Version1Date20261010120000 extends SimpleMigrationStep {
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		$schema = $schemaClosure();
 		if ($schema->hasTable(self::AUDIT_TABLE) === false) {
 			return $schema;
@@ -72,5 +71,5 @@ class Version1Date20261010120000 extends SimpleMigrationStep {
 
 		return $schema;
 
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 }//end class
