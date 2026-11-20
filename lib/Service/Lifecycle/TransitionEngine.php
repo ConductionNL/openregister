@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Lifecycle;
 
+use OCA\OpenRegister\Kernel\Contracts\Compliance\ObjectTransitionInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
@@ -77,7 +78,7 @@ use OCA\OpenRegister\Kernel\Contracts\Value\SaveActor;
  * contract, and live beside `publishedInputs()` for the reason above: one
  * place decides what a client is told a transition asks for.
  */
-class TransitionEngine {
+class TransitionEngine implements ObjectTransitionInterface {
 	/**
 	 * App-config key opting an instance into the documented slug contract.
 	 *
