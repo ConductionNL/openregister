@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\CalendarFeedToken;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\Integrations\ObjectDateEventsSourceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Search\Db\View;
 use OCA\OpenRegister\Search\Db\ViewMapperInterface;
@@ -177,7 +178,7 @@ class DeclaredDateCalendarsTest extends TestCase {
 			$this->createMock(LoggerInterface::class)
 		);
 
-		$this->calendars = new DeclaredDateCalendars($this->feed, $sources, new VeventSearchShape(), $this->logger);
+		$this->calendars = new DeclaredDateCalendars($this->feed, $this->objects, $this->views, $this->userManager, new VeventSearchShape(), $this->logger);
 	}
 
 	private function deadlineSchema(): Schema {
@@ -327,7 +328,7 @@ class DeclaredDateCalendarsTest extends TestCase {
 			),
 			$this->createMock(LoggerInterface::class)
 		);
-		$calendars = new DeclaredDateCalendars($feed, $sources, new VeventSearchShape(), $this->logger);
+		$calendars = new DeclaredDateCalendars($feed, $objects, $this->views, $this->userManager, new VeventSearchShape(), $this->logger);
 
 		$schema = $this->deadlineSchema();
 		$calendar = $calendars->schemaCalendar($schema, (array)$schema->getCalendarProviderConfig(), 'principals/users/alice');
@@ -438,7 +439,7 @@ class DeclaredDateCalendarsTest extends TestCase {
 	}
 
 	public function testSearchResultsAskTheFeedGeneratorForTheScopeAndPrincipal(): void {
-		$feed = $this->createMock(ObjectCalendarFeedService::class);
+		$feed = $this->createMock(ObjectDateEventsSourceInterface::class);
 		$feed->expects($this->once())->method('eventsFor')
 			->with(
 				$this->callback(static fn (IUser $user): bool => $user->getUID() === 'bob'),
@@ -449,7 +450,9 @@ class DeclaredDateCalendarsTest extends TestCase {
 
 		$calendars = new DeclaredDateCalendars(
 			$feed,
-			new ObjectCalendarFeedSources($this->objects, $this->schemas, $this->views, $this->userManager),
+			$this->objects,
+			$this->views,
+			$this->userManager,
 			new VeventSearchShape(),
 			$this->logger
 		);
