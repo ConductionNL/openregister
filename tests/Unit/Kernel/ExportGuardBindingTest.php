@@ -1,7 +1,7 @@
 <?php
 
 /**
- * ExportRefusalInterface is bound to ExportGate.
+ * ExportGuardBindingTest: the Core export paths ask the export guard port; the export gate answers both names.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -23,28 +23,28 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Kernel;
 
-use OCA\OpenRegister\Kernel\Contracts\Core\ExportRefusalInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ExportGuardInterface;
+use OCA\OpenRegister\Service\ContractBindingsRegistrar;
 use OCA\OpenRegister\Service\Export\ExportGate;
 use OCA\OpenRegister\Service\Export\ExportGateInterface;
-use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
 use PHPUnit\Framework\TestCase;
 
 /**
- * The export endpoints ask the Core port; the export gate answers both names.
+ * The export guard port and the export gate interface resolve to the same gate.
  */
-final class ExportRefusalBindingTest extends TestCase {
+final class ExportGuardBindingTest extends TestCase {
 
-	public function testThePortAndTheOldInterfaceResolveToTheSameClass(): void {
+	public function testThePortAndTheGateInterfaceResolveToTheSameGate(): void {
 		$context = new RecordingRegistrationContext();
-		ContractBindings::register(context: $context);
+		ContractBindingsRegistrar::register(context: $context);
 
-		$this->assertContains(['alias' => ExportRefusalInterface::class, 'target' => ExportGate::class], $context->aliases);
+		$this->assertContains(['alias' => ExportGuardInterface::class, 'target' => ExportGate::class], $context->aliases);
 		$this->assertContains(['alias' => ExportGateInterface::class, 'target' => ExportGate::class], $context->aliases);
 	}
 
-	public function testTheOldInterfaceIsThePort(): void {
-		$this->assertTrue(is_subclass_of(ExportGateInterface::class, ExportRefusalInterface::class));
-		$this->assertTrue(is_subclass_of(ExportGate::class, ExportRefusalInterface::class));
+	public function testTheGateInterfaceIsThePort(): void {
+		$this->assertTrue(is_subclass_of(ExportGateInterface::class, ExportGuardInterface::class));
+		$this->assertTrue(is_subclass_of(ExportGate::class, ExportGuardInterface::class));
 	}
 }//end class

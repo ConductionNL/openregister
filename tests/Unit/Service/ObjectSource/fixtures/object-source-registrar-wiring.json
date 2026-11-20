@@ -30,11 +30,11 @@
     },
     "OCA\\OpenRegister\\Service\\ObjectSource\\CalDavVtodoObjectSourceProvider": {
         "asked": [
-            "OCA\\OpenRegister\\Service\\TaskService",
+            "OCA\\OpenRegister\\Service\\UserTaskListInterface",
             "OCA\\OpenRegister\\Service\\ObjectSource\\OptionalAppBridge"
         ],
         "params": {
-            "taskService": "OCA\\OpenRegister\\Service\\TaskService",
+            "taskService": "OCA\\OpenRegister\\Service\\UserTaskListInterface",
             "app": "(no property)"
         }
     },
@@ -240,20 +240,6 @@
         "params": {
             "parts": "OCA\\OpenRegister\\Service\\ObjectSource\\TablesProviderParts",
             "session": "(no property)"
-        }
-    },
-    "OCA\\OpenRegister\\Service\\ObjectSource\\OpenConnectorHttpProvider": {
-        "asked": [
-            "OCA\\OpenRegister\\Service\\Integration\\ExternalIntegrationRouterInterface",
-            "OCA\\OpenRegister\\Db\\MappingMapperInterface",
-            "OCA\\OpenRegister\\Service\\MappingService",
-            "Psr\\Log\\LoggerInterface"
-        ],
-        "params": {
-            "router": "OCA\\OpenRegister\\Service\\Integration\\ExternalIntegrationRouterInterface",
-            "mappingMapper": "OCA\\OpenRegister\\Db\\MappingMapperInterface",
-            "mappingService": "OCA\\OpenRegister\\Service\\MappingService",
-            "logger": "Psr\\Log\\LoggerInterface"
         }
     }
 }

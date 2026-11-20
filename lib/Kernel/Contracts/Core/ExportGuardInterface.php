@@ -1,7 +1,7 @@
 <?php
 
 /**
- * ExportRefusalInterface: whether an export may run, as the export endpoints ask it.
+ * ExportGuardInterface: whether an export may run, as the object store's export paths ask it.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -26,10 +26,10 @@ use OCP\AppFramework\Http\JSONResponse;
 /**
  * Answers whether an export may run, as the refusal response to return or null.
  *
- * The endpoints that let data leave (Core and Compliance) ask; the export
- * permission gate (Configuration) answers and is bound to this contract.
+ * The export paths of the object store (Core) ask; the export permission
+ * gate (Configuration) answers and is bound to this contract.
  */
-interface ExportRefusalInterface {
+interface ExportGuardInterface {
 
 	/**
 	 * The refusal this export should return, or null when it may run.

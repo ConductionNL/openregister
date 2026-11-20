@@ -22,14 +22,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Export;
 
-use OCA\OpenRegister\Kernel\Contracts\Core\ExportRefusalInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ExportGuardInterface;
 
 /**
  * Answers whether an export may run, as the refusal response to return or null.
  *
- * Declares only what callers outside the component use; the rest of the
- * class stays its own. Bound to ExportGate. The method is declared on the
- * Core contract this interface extends.
+ * The method is declared on the Core contract this interface extends.
+ * Bound, with that contract, to ExportGate.
  */
-interface ExportGateInterface extends ExportRefusalInterface {
+interface ExportGateInterface extends ExportGuardInterface {
 }//end interface

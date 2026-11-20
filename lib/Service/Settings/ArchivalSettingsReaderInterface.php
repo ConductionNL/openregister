@@ -25,8 +25,8 @@ use OCA\OpenRegister\Kernel\Contracts\Compliance\ArchivalSettingsInterface;
 /**
  * The read side of the archival settings, for callers that only read them.
  *
- * The container binds it to {@see ObjectRetentionHandler} in ContractBindings.
  * The method is declared on the Compliance contract this interface extends.
+ * The container binds both to {@see ObjectRetentionHandler} in ContractBindings.
  */
 interface ArchivalSettingsReaderInterface extends ArchivalSettingsInterface {
 }//end interface
