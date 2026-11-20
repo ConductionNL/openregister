@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use Exception;
+use OCA\OpenRegister\Kernel\Contracts\Core\SchemaAccessChangeLogInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\SchemaFormDependentsInterface;
 use OCA\OpenRegister\Controller\SchemasController;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\SchemasControllerFactory;
@@ -22,7 +23,6 @@ use OCA\OpenRegister\Exception\BreakingSchemaChangeException;
 use OCA\OpenRegister\Exception\DatabaseConstraintException;
 use OCA\OpenRegister\Exception\InvalidAuthorizationRuleException;
 use OCA\OpenRegister\Exception\UniqueHintException;
-use OCA\OpenRegister\Service\AuthorizationAuditService;
 use OCA\OpenRegister\Service\AuthorizationChange;
 use OCA\OpenRegister\Service\BulkJob\ReversibilityDeclarationException;
 use OCA\OpenRegister\Service\Calculation\CalculationDeclarationException;
@@ -281,7 +281,7 @@ class SchemasControllerWriteGoldenTest extends TestCase {
 			});
 		}
 
-		$audit = $this->createMock(AuthorizationAuditService::class);
+		$audit = $this->createMock(SchemaAccessChangeLogInterface::class);
 		$audit->method('recordSchemaChange')->willReturnCallback(function (AuthorizationChange $change) use ($case) {
 			$this->record(method: 'audit.logSchemaAuthorizationChange', args: [$change->entityId, $change->entityTitle, $change->before, $change->after]);
 			if (($case['auditThrows'] ?? false) === true) {
@@ -300,7 +300,7 @@ class SchemasControllerWriteGoldenTest extends TestCase {
 				return $groupManager;
 			}
 
-			if ($id === AuthorizationAuditService::class) {
+			if ($id === SchemaAccessChangeLogInterface::class) {
 				return $audit;
 			}
 

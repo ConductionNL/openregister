@@ -2275,6 +2275,7 @@ Service/File/MalwareScanRefusal.php,47,Service,Service,Service/File/MalwareScanR
 Service/File/ManagedFileOwnerLookup.php,33,Service,Service,Service/File/ManagedFileOwnerLookup.php,0,434,Core
 Service/File/ObjectFileFinder.php,135,Service,Service,Service/File/ObjectFileFinder.php,0,,Files
 Service/File/ObjectFileLookup.php,17,Service,Service,Service/File/ObjectFileLookup.php,0,,Files
+Service/File/ObjectFilesArchive.php,,Service,,,,,Files
 Service/File/PublishedDigestService.php,,Service,,,,,Files
 Service/File/ReadFileHandler.php,148,Service,Service,Service/File/ReadFileHandler.php,0,181,Files
 Service/File/UpdateFileHandler.php,365,Service,Service,Service/File/UpdateFileHandler.php,0,58,Files
@@ -3171,6 +3172,7 @@ Service/SchemaImport/SchemaOrgImporter.php,157,Service,Service,Service/SchemaImp
 Service/SchemaImport/SchemaOrgSnapshot.php,177,Service,Service,Service/SchemaImport/SchemaOrgSnapshot.php,0,,Core
 Service/SchemaImport/ThreeWayMerge.php,77,Service,Service,Service/SchemaImport/ThreeWayMerge.php,0,,Core
 Service/SchemaService.php,1026,Service,Configuration,Configuration/Service/SchemaService.php,0,,Configuration
+Service/Schemas/ApprovalChainDeclarations.php,84,Service,Service,Service/Schemas/ApprovalChainDeclarations.php,0,,Core
 Service/Schemas/CodedChoiceDeclaration.php,36,Service,Service,Service/Schemas/CodedChoiceDeclaration.php,0,,Core
 Service/Schemas/CodedChoiceException.php,23,Service,Service,Service/Schemas/CodedChoiceException.php,0,,Core
 Service/Schemas/ExtendingFormDeclaration.php,200,Service,Service,Service/Schemas/ExtendingFormDeclaration.php,0,,Core
