@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ObjectSource;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\CredentialSecretReaderInterface;
 use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionService;
 use OCA\OpenRegister\Service\Dbal\DbalConnectionFactory;
 use OCA\OpenRegister\Service\Dbal\IntrospectionTools;
@@ -143,9 +144,9 @@ final class ObjectSourceWiring {
 			'app'         => OptionalAppBridge::class,
 			'userSession' => 'OCP\IUserSession',
 		],
-		// DBAL virtual registers: the connection factory depends only on the CredentialStore interface.
+		// DBAL virtual registers: the connection factory only reads secrets, through the Core credential port.
 		DbalConnectionFactory::class => [
-			'credentialStore' => \OCA\OpenRegister\Service\Credential\CredentialStore::class,
+			'credentialStore' => CredentialSecretReaderInterface::class,
 			'logger'          => 'Psr\Log\LoggerInterface',
 		],
 		SqlTypeMapper::class => [

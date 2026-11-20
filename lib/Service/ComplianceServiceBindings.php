@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Kernel\Contracts\Core\AuthRateLimitCeilingInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\CascadeRetentionCheckInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\SearchTrailRecorderInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ReadPurposeGuardInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\RegisterAccessChangeLogInterface;
 use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
@@ -51,5 +52,6 @@ final class ComplianceServiceBindings {
 		CascadeRetentionCheckInterface::class   => ArchivalRetentionGuard::class,
 		ReadPurposeGuardInterface::class        => PurposeGuard::class,
 		RegisterAccessChangeLogInterface::class => AuthorizationAuditService::class,
+		SearchTrailRecorderInterface::class     => SearchTrailService::class,
 	];
 }//end class
