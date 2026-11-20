@@ -19,6 +19,10 @@ use OCA\OpenRegister\Kernel\Contracts\Core\CurrentFlowRunInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionDefaultsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionEvaluatorInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Integrations\ObjectCalendarLinkInterface;
+use OCA\OpenRegister\Service\CalendarEventService;
+use OCA\OpenRegister\Kernel\Contracts\Integrations\BuiltInToolProvidersInterface;
+use OCA\OpenRegister\Mcp\BuiltIn\FlowBuiltInToolProviders;
 use OCA\OpenRegister\Kernel\Contracts\Notifications\PartyRecipientsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\PublicationRefusalInterface;
 use OCA\OpenRegister\Kernel\Contracts\Notifications\TaskRowSourceInterface;
@@ -63,6 +67,7 @@ use OCA\OpenRegister\Service\Task\TaskCalendarDocument;
 use OCA\OpenRegister\Service\Task\TaskCalendarDocumentInterface;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
 use OCA\OpenRegister\Service\TaskService;
+use OCA\OpenRegister\Service\FlowLinkService;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -178,6 +183,7 @@ final class FlowWiringTest extends TestCase {
 				TaskInboxService::class,
 				PortalPartyResolver::class,
 				TaskService::class,
+				FlowLinkService::class,
 			],
 			actual: array_keys($this->factories)
 		);
@@ -246,6 +252,8 @@ final class FlowWiringTest extends TestCase {
 
 	/**
 	 * The schedule flow store, the current-run port, the task row port, the expression-defaults port and the area's own interfaces are bound, and only these aliases are registered.
+	 * The schedule flow store, the current-run port, the calendar link port, the expression-defaults port and the area's own interfaces are bound, and only these aliases are registered.
+	 * The schedule flow store, the current-run port, the expression-defaults port, the built-in tool providers and the area's own interfaces are bound, and only these aliases are registered.
 	 *
 	 * @return void
 	 */
@@ -253,9 +261,11 @@ final class FlowWiringTest extends TestCase {
 		self::assertSame(
 			expected: [
 				FieldRulesSourceInterface::class           => StateFieldRuleResolver::class,
+				ObjectCalendarLinkInterface::class         => CalendarEventService::class,
 				CurrentFlowRunInterface::class             => FlowRunContext::class,
 				ScheduleFlowStoreInterface::class          => ScheduleFlowStore::class,
 				TaskRowSourceInterface::class              => TaskInboxService::class,
+				BuiltInToolProvidersInterface::class       => FlowBuiltInToolProviders::class,
 				ExpressionEvaluatorInterface::class        => CalculationEvaluator::class,
 				PartyRecipientsInterface::class            => PartyRecipients::class,
 				PublicationRefusalInterface::class         => PartyIndicatorGuard::class,
@@ -275,6 +285,16 @@ final class FlowWiringTest extends TestCase {
 		);
 		self::assertSame(expected: FlowWiring::BINDINGS, actual: FlowRegistrar::BINDINGS);
 	}//end testTheScheduleFlowStoreIsBound()
+
+	/**
+	 * The MCP discovery's port for contributed built-in tool providers is answered by the flow tools.
+	 *
+	 * @return void
+	 */
+	public function testTheBuiltInToolPortIsAnsweredByTheFlowTools(): void {
+		self::assertSame(expected: FlowBuiltInToolProviders::class, actual: ($this->aliases[BuiltInToolProvidersInterface::class] ?? null));
+		self::assertTrue(condition: is_a(FlowBuiltInToolProviders::class, BuiltInToolProvidersInterface::class, true));
+	}//end testTheBuiltInToolPortIsAnsweredByTheFlowTools()
 
 	public function testTheRunAuthorizationGetsTheFlowAccess(): void {
 		$built = ($this->factories[FlowRunAuthorization::class])($this->container);
