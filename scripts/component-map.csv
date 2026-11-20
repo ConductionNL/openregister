@@ -3514,6 +3514,10 @@ Service/History/,,Service,,,,,Core
 Service/Import/,,Service,,,,,Configuration
 Service/Integration/,,Service,,,,,Integrations
 Service/Interaction/,,Service,,,,,Processes
+Service/Interaction/WatcherServiceInterface.php,,Service,,,,,Notifications
+Service/Interaction/WatcherStore.php,,Service,,,,,Notifications
+Service/Interaction/WatcherCaller.php,,Service,,,,,Notifications
+Service/Interaction/AddressedObject.php,,Service,,,,,Core
 Service/JsonLd/,,Service,,,,,Core
 Service/Lifecycle/,,Service,,,,,Processes
 Service/Mcp/,,Service,,,,,Configuration
