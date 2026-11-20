@@ -30,6 +30,8 @@ use OCA\OpenRegister\Files\Db\ChunkSourceReaderInterface;
 use OCA\OpenRegister\Files\Db\ChunkStoreInterface;
 use OCA\OpenRegister\Files\Db\FileMapper;
 use OCA\OpenRegister\Files\Db\FileMapperInterface;
+use OCA\OpenRegister\Files\Db\RegisterFolderRecorder;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectFileRecordsInterface;
 use OCA\OpenRegister\Files\Service\File\DocumentProcessingHandler;
 use OCA\OpenRegister\Files\Service\File\FileAuditHandler;
 use OCA\OpenRegister\Files\Service\File\FileAuditHandlerInterface;
@@ -57,6 +59,10 @@ use OCA\OpenRegister\Files\Service\UploadService;
 use OCA\OpenRegister\Kernel\Contracts\AccessLinkReaderInterface;
 use OCA\OpenRegister\Kernel\Contracts\ChunkMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FileTagCatalogueInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\FileAccountInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\FileReadRestrictionInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\RegisterFolderRecordsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ShareLinkUrlInterface;
 use OCA\OpenRegister\Kernel\Contracts\DocumentProcessingHandlerInterface;
 use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\TaggingHandlerInterface;
@@ -83,17 +89,22 @@ final class FilesRegistrar
         ChunkSourceReaderInterface::class         => ChunkMapper::class,
         ChunkStoreInterface::class                => ChunkMapper::class,
         DocumentProcessingHandlerInterface::class => DocumentProcessingHandler::class,
+        FileAccountInterface::class               => FileOwnershipHandler::class,
         FileAuditHandlerInterface::class          => FileAuditHandler::class,
         FileMapperInterface::class                => FileMapper::class,
         FileOwnershipHandlerInterface::class      => FileOwnershipHandler::class,
         AntivirusScannerInterface::class          => AntivirusScannerAdapter::class,
+        FileReadRestrictionInterface::class       => FileRestrictionGuard::class,
         FileRestrictionGuardInterface::class      => FileRestrictionGuard::class,
         FileSharingHandlerInterface::class        => FileSharingHandler::class,
         FileTagCatalogueInterface::class          => FileServiceInterface::class,
         NcOfficeConverterInterface::class         => ConversionManagerConverter::class,
         NoteServiceInterface::class               => NoteService::class,
+        ObjectFileRecordsInterface::class         => FileMapper::class,
         RegisterFolderProvisionerInterface::class => RegisterFolderProvisioner::class,
+        RegisterFolderRecordsInterface::class     => RegisterFolderRecorder::class,
         RiskLevelServiceInterface::class          => RiskLevelService::class,
+        ShareLinkUrlInterface::class              => ShareUrlBuilder::class,
         ShareUrlBuilderInterface::class           => ShareUrlBuilder::class,
         TaggingHandlerInterface::class            => TaggingHandler::class,
         TextExtractionServiceInterface::class     => TextExtractionService::class,

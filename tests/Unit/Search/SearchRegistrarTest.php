@@ -16,7 +16,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Search;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\FilterPlaceholdersInterface;
 use OCA\OpenRegister\Search\SearchRegistrar;
+use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
+use OCA\OpenRegister\Search\Service\Search\PlaceholderResolverInterface;
 use OCA\OpenRegister\Search\Service\Vectorization\VectorEmbeddingsInterface;
 use OCA\OpenRegister\Search\Service\VectorizationService;
 use OCA\OpenRegister\Service\Vectorization\Strategies\FileVectorizationStrategy;
@@ -82,4 +85,19 @@ final class SearchRegistrarTest extends TestCase {
 		$this->assertCount(20, $expected);
 		$this->assertSame(expected: $expected, actual: $context->aliases);
 	}//end testEveryInterfaceIsBoundToItsImplementation()
+
+	/**
+	 * The Core filter-placeholders port and the Search resolver contract resolve
+	 * to the same resolver, so the aggregation runner resolves exactly what it did.
+	 *
+	 * @return void
+	 */
+	public function testTheFilterPlaceholdersPortIsThePlaceholderResolver(): void {
+		$this->assertSame(expected: PlaceholderResolver::class, actual: SearchRegistrar::BINDINGS[FilterPlaceholdersInterface::class]);
+		$this->assertSame(
+			expected: SearchRegistrar::BINDINGS[PlaceholderResolverInterface::class],
+			actual: SearchRegistrar::BINDINGS[FilterPlaceholdersInterface::class]
+		);
+		$this->assertTrue(is_subclass_of(PlaceholderResolverInterface::class, FilterPlaceholdersInterface::class));
+	}//end testTheFilterPlaceholdersPortIsThePlaceholderResolver()
 }//end class
