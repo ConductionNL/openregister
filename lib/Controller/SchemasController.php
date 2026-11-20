@@ -26,6 +26,9 @@ namespace OCA\OpenRegister\Controller;
 
 use Exception;
 use GuzzleHttp\Exception\GuzzleException;
+use OCA\OpenRegister\Kernel\Contracts\Core\DeclarationRefusalInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\SchemaFormDependentsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\SchemaRenameWarningsInterface;
 use OCA\OpenRegister\Controller\Support\SchemaRemoval;
 use OCA\OpenRegister\Controller\Support\SchemasControllerServices;
 use OCA\OpenRegister\Db\AuditTrail\AuditStatisticsScope;
@@ -58,10 +61,7 @@ use OCA\OpenRegister\Service\AuthorizationChange;
 use OCA\OpenRegister\Service\Rbac\RbacChecks;
 use OCA\OpenRegister\Service\Rbac\ReadRuleTenancy;
 use OCA\OpenRegister\Service\Calculation\CalculationDeclarationException;
-use OCA\OpenRegister\Notifications\Service\Notification\NotificationDeclarationException;
 use OCA\OpenRegister\Service\Consent\ConsentDeclarationException;
-use OCA\OpenRegister\Service\Flow\FlowTriggerRenameCheck;
-use OCA\OpenRegister\Service\Form\FormDependentsCheckInterface;
 use OCA\OpenRegister\Service\Hinge\ListPresentationResolverInterface;
 use OCA\OpenRegister\Service\BulkJob\ReversibilityDeclarationException;
 use OCA\OpenRegister\Service\Decision\ReviewDeclarationException;
@@ -148,7 +148,7 @@ class SchemasController extends Controller {
 		CalculationDeclarationException::class,
 		ConsentDeclarationException::class,
 		DependentValueDeclarationException::class,
-		NotificationDeclarationException::class,
+		DeclarationRefusalInterface::class,
 	];
 	use \OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
 
@@ -1564,11 +1564,11 @@ class SchemasController extends Controller {
 	 * goes ahead without judging the published forms, and that must leave a trace
 	 * (an owning app's `refuse` setting is skipped with it).
 	 *
-	 * @return FormDependentsCheckInterface|null The check, or null when it cannot be built.
+	 * @return SchemaFormDependentsInterface|null The check, or null when it cannot be built.
 	 */
-	private function formDependentsCheck(): ?FormDependentsCheckInterface {
+	private function formDependentsCheck(): ?SchemaFormDependentsInterface {
 		try {
-			$check = $this->container->get(FormDependentsCheckInterface::class);
+			$check = $this->container->get(SchemaFormDependentsInterface::class);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				message: '[SchemasController] The dependent-form check could not be built; the schema save did not re-check the published forms',
@@ -1578,7 +1578,7 @@ class SchemasController extends Controller {
 			return null;
 		}
 
-		if ($check instanceof FormDependentsCheckInterface) {
+		if ($check instanceof SchemaFormDependentsInterface) {
 			return $check;
 		}
 
@@ -1969,8 +1969,8 @@ class SchemasController extends Controller {
 	 */
 	private function flowRenameWarnings(Schema $schema, SchemaChangeSet $changeSet): array {
 		try {
-			$check = $this->container->get(FlowTriggerRenameCheck::class);
-			if ($check instanceof FlowTriggerRenameCheck === false) {
+			$check = $this->container->get(SchemaRenameWarningsInterface::class);
+			if ($check instanceof SchemaRenameWarningsInterface === false) {
 				return [];
 			}
 

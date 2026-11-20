@@ -15,6 +15,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Service\Audit\AuditEntryWriter;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\User\ApiTokenRequest;
 use OCA\OpenRegister\Service\UserService;
@@ -38,7 +39,9 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Service\UserService
  * @uses   \OCA\OpenRegister\Service\User\ApiTokenAuditRow
  * @uses   \OCA\OpenRegister\Service\User\ApiTokenRequest
- * @uses   \OCA\OpenRegister\Service\Rbac\AuditRowWriter
+ * @uses   \OCA\OpenRegister\Service\Rbac\AuditEntryRecorder
+ * @uses   \OCA\OpenRegister\Service\Audit\AuditEntryWriter
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Core\AuditEntry
  * @uses   \OCA\OpenRegister\Db\AuditTrail
  */
 final class UserServiceApiTokenAuditTest extends TestCase {
@@ -90,6 +93,9 @@ final class UserServiceApiTokenAuditTest extends TestCase {
 	/**
 	 * The service over a recording audit trail and token store, with `beheerder` signed in.
 	 *
+	 * The audit entries go through the real writer of the trail, so the rows the mapper
+	 * receives are the rows production stores.
+	 *
 	 * @param bool $failing Whether the audit trail refuses the write.
 	 *
 	 * @return UserService
@@ -97,13 +103,13 @@ final class UserServiceApiTokenAuditTest extends TestCase {
 	private function service(bool $failing = false): UserService {
 		$mapper = $this->createMock(AuditTrailMapperInterface::class);
 		$mapper->method('insertAuditTrails')->willReturnCallback(
-			function (array $entries) use ($failing): int {
+			function (array $entries) use ($failing): array {
 				if ($failing === true) {
 					throw new RuntimeException('database gone');
 				}
 
 				array_push($this->written, ...$entries);
-				return count($entries);
+				return $entries;
 			}
 		);
 
@@ -138,7 +144,8 @@ final class UserServiceApiTokenAuditTest extends TestCase {
 			$mapper,
 			$random,
 			$this->createMock(IDBConnection::class),
-			$this->createMock(IFactory::class)
+			$this->createMock(IFactory::class),
+			new AuditEntryWriter(mapper: $mapper)
 		);
 	}//end service()
 
@@ -148,7 +155,9 @@ final class UserServiceApiTokenAuditTest extends TestCase {
 	 * @return void
 	 */
 	public function testMintingATokenWritesOneEntryWithoutItsValue(): void {
-		$token = $this->service()->issueApiToken(
+		$service = $this->service();
+		$this->logger->expects($this->never())->method('error');
+		$token = $service->issueApiToken(
 			user: $this->user(uid: 'jan', name: 'Jan'),
 			request: new ApiTokenRequest(name: 'koppeling-gis', expiresIn: null)
 		);
