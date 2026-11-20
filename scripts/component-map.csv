@@ -891,8 +891,8 @@ Db/SyncRecordMapper.php,70,Db,Integrations,Integrations/Db/SyncRecordMapper.php,
 Db/TalkLink.php,66,Db,Integrations,Integrations/Db/TalkLink.php,0,333,Integrations
 Db/TalkLinkMapper.php,23,Db,Integrations,Integrations/Db/TalkLinkMapper.php,0,384,Integrations
 Db/Task.php,237,Db,Work,Work/Db/Task.php,133,85,Processes
-Db/TaskAudit.php,45,Db,Compliance,Compliance/Db/TaskAudit.php,0,398,Compliance
-Db/TaskAuditMapper.php,38,Db,Compliance,Compliance/Db/TaskAuditMapper.php,0,430,Compliance
+Db/TaskAudit.php,45,Db,Compliance,Compliance/Db/TaskAudit.php,0,398,Processes
+Db/TaskAuditMapper.php,38,Db,Compliance,Compliance/Db/TaskAuditMapper.php,0,430,Processes
 Db/TaskBlockerMapper.php,37,Db,Work,Work/Db/TaskBlockerMapper.php,0,425,Processes
 Db/TaskCandidate.php,26,Db,Work,Work/Db/TaskCandidate.php,0,,Processes
 Db/TaskCandidateMapper.php,31,Db,Work,Work/Db/TaskCandidateMapper.php,0,,Processes
@@ -4616,3 +4616,4 @@ Service/File/ReadFileSources.php,,Service,,,,,Files
 Service/File/ShareLinkRequest.php,,Service,,,,,Files
 Service/File/UpdateFileGuards.php,,Service,,,,,Files
 Service/File/UpdateFileLocator.php,,Service,,,,,Files
+Db/AuditTrail/RevertOptions.php,,Db,,,,,Core

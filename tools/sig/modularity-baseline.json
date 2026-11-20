@@ -26,7 +26,6 @@
   "lib/Db/Schema/ConfigurationValueRules.php -> lib/Service/Calendar/CalendarDateDeclarationCheck.php",
   "lib/Db/SequenceMapperInterface.php -> lib/Db/Sequence.php",
   "lib/Db/SourceMapperInterface.php -> lib/Db/Source.php",
-  "lib/Db/TaskAuditMapper.php -> lib/Db/TaskAuditMapperInterface.php",
   "lib/Search/Db/View.php -> lib/Db/Configuration.php",
   "lib/Search/Db/View.php -> lib/Db/Task.php",
   "lib/Search/Db/View.php -> lib/Mcp/Db/Agent.php",
@@ -43,14 +42,12 @@
   "lib/Service/File/FolderManagementHandler.php -> lib/Service/FileHandlerSupportInterface.php",
   "lib/Service/GraphQL/ListAggregations.php -> lib/Search/Service/Aggregation/AggregationQuery.php",
   "lib/Service/GraphQL/ListAggregations.php -> lib/Search/Service/Aggregation/TimeseriesRequestValidatorInterface.php",
-  "lib/Service/Hinge/IntakeSourceRegistry.php -> lib/Repair/IntakeSourceRegisterSlugsInterface.php",
   "lib/Service/Object/BulkRowRules.php -> lib/Service/Flow/FlowRunContext.php",
   "lib/Service/Object/Collaborators/ObjectHistoryServices.php -> lib/Service/Lifecycle/AutoTransitionPass.php",
   "lib/Service/Object/RenderObject.php -> lib/Files/Service/File/FileRestrictionGuardInterface.php",
   "lib/Service/Object/RenderObject.php -> lib/Service/Calculation/CalculationPayload.php",
   "lib/Service/Object/RenderObject.php -> lib/Service/Interaction/WatcherService.php",
   "lib/Service/Object/RenderObject.php -> lib/Service/ObjectAction/ObjectActionList.php",
-  "lib/Service/Object/RevertHandler.php -> lib/Db/AuditTrail/RevertOptions.php",
   "lib/Service/Object/SaveObject.php -> lib/Db/AuditTrail.php",
   "lib/Service/Object/SaveObject.php -> lib/Db/AuditTrail/SharedMasterDataRefusal.php",
   "lib/Service/Object/SaveObject.php -> lib/Db/AuditTrail/SharedMasterDataRefusalOptions.php",
@@ -388,7 +385,6 @@
   "lib/Db/TalkLinkMapperInterface.php",
   "lib/Db/Task.php",
   "lib/Db/TaskAudit.php",
-  "lib/Db/TaskAuditMapper.php",
   "lib/Db/TaskAuditMapperInterface.php",
   "lib/Db/TaskMapper.php",
   "lib/Db/Tenancy/TenancyServices.php",
@@ -712,6 +708,7 @@
   "lib/Kernel/Contracts/Core/FilterPlaceholdersInterface.php",
   "lib/Kernel/Contracts/Core/FollowTableInterface.php",
   "lib/Kernel/Contracts/Core/HeldChangeCodes.php",
+  "lib/Kernel/Contracts/Core/IntakeSourceRegisterAddressInterface.php",
   "lib/Kernel/Contracts/Core/JobRunRecordingInterface.php",
   "lib/Kernel/Contracts/Core/LifecycleStatesKeeperInterface.php",
   "lib/Kernel/Contracts/Core/MigrationPackDefinitionsInterface.php",
@@ -2297,15 +2294,15 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "exposed_loc": {
-  "Compliance": 14875,
+  "Compliance": 14778,
   "Configuration": 1482,
-  "Core": 63402,
+  "Core": 63423,
   "Files": 1458,
   "Integrations": 17990,
   "Kernel": 8464,
   "Notifications": 2057,
   "Platform": 61,
-  "Processes": 27284,
+  "Processes": 27328,
   "Search": 2028
  },
  "kernel_files": [
@@ -2769,6 +2766,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10402,
- "total_loc": 461807,
- "violation_degree": 0.0102
+ "total_loc": 461813,
+ "violation_degree": 0.0099
 }
