@@ -4878,6 +4878,8 @@ deptrac:
         - type: directory
           value: 'lib/Service/File/ObjectFileLookup[.]php$'
         - type: directory
+          value: 'lib/Service/File/ObjectFilesArchive[.]php$'
+        - type: directory
           value: 'lib/Service/File/OcrWordLocator[.]php$'
         - type: directory
           value: 'lib/Service/File/OfficeMediaBurner[.]php$'

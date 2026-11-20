@@ -33,6 +33,8 @@ use OCA\OpenRegister\Files\Service\File\PreviewSize;
 use OCA\OpenRegister\Files\Service\File\ShareUrlBuilder;
 use OCA\OpenRegister\Files\Service\File\ShareUrlBuilderInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FileAccountInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectFilesArchiveInterface;
+use OCA\OpenRegister\Service\File\ObjectFilesArchive;
 use OCA\OpenRegister\Kernel\Contracts\Core\FileReadRestrictionInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\PreviewDimensionsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\RegisterFolderRecordsInterface;
@@ -80,6 +82,7 @@ class FilesRegistrarTest extends TestCase
         $this->assertSame(ShareUrlBuilder::class, FilesRegistrar::BINDINGS[ShareLinkUrlInterface::class]);
         $this->assertSame(RegisterFolderRecorder::class, FilesRegistrar::BINDINGS[RegisterFolderRecordsInterface::class]);
         $this->assertSame(FileOwnershipHandler::class, FilesRegistrar::BINDINGS[FileAccountInterface::class]);
+        $this->assertSame(ObjectFilesArchive::class, FilesRegistrar::BINDINGS[ObjectFilesArchiveInterface::class]);
         $this->assertTrue(is_subclass_of(FileOwnershipHandlerInterface::class, FileAccountInterface::class));
         $this->assertTrue(is_subclass_of(FileRestrictionGuardInterface::class, FileReadRestrictionInterface::class));
         $this->assertTrue(is_subclass_of(ShareUrlBuilderInterface::class, ShareLinkUrlInterface::class));

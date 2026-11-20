@@ -32,6 +32,7 @@ use OCA\OpenRegister\Files\Db\FileMapper;
 use OCA\OpenRegister\Files\Db\FileMapperInterface;
 use OCA\OpenRegister\Files\Db\RegisterFolderRecorder;
 use OCA\OpenRegister\Kernel\Contracts\Core\ObjectFileRecordsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectFilesArchiveInterface;
 use OCA\OpenRegister\Files\Service\File\DocumentProcessingHandler;
 use OCA\OpenRegister\Files\Service\File\FileAuditHandler;
 use OCA\OpenRegister\Files\Service\File\FileAuditHandlerInterface;
@@ -43,6 +44,7 @@ use OCA\OpenRegister\Files\Service\File\FileRestrictionGuardInterface;
 use OCA\OpenRegister\Files\Service\File\FileScopeReader;
 use OCA\OpenRegister\Files\Service\File\FileSharingHandler;
 use OCA\OpenRegister\Files\Service\File\FileSharingHandlerInterface;
+use OCA\OpenRegister\Service\File\ObjectFilesArchive;
 use OCA\OpenRegister\Files\Service\File\Office\ConversionManagerConverter;
 use OCA\OpenRegister\Files\Service\File\Pdf\Fallback\NcOfficeConverterInterface;
 use OCA\OpenRegister\Files\Service\File\RegisterFolderProvisioner;
@@ -109,6 +111,7 @@ final class FilesRegistrar
         NcOfficeConverterInterface::class         => ConversionManagerConverter::class,
         NoteServiceInterface::class               => NoteService::class,
         ObjectFileRecordsInterface::class         => FileMapper::class,
+        ObjectFilesArchiveInterface::class        => ObjectFilesArchive::class,
         ReadableFileHitsInterface::class          => FileReadScope::class,
         RegisterFolderProvisionerInterface::class => RegisterFolderProvisioner::class,
         RegisterFolderRecordsInterface::class     => RegisterFolderRecorder::class,

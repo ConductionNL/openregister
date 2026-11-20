@@ -4,12 +4,10 @@
   "lib/Controller/ActionRightsController.php -> lib/Service/Flow/FlowNodeRightsGuardInterface.php",
   "lib/Controller/ActionRightsController.php -> lib/Service/Flow/IFlowNodeRequiresRight.php",
   "lib/Controller/ActionRightsController.php -> lib/Settings/OpenRegisterAdmin.php",
-  "lib/Controller/ObjectsController.php -> lib/Files/Service/File/BulkDownloadArchive.php",
   "lib/Controller/ObjectsController.php -> lib/Search/Service/Geo/FeatureShape.php",
   "lib/Controller/ObjectsController.php -> lib/Search/Service/Geo/GeoResponseCrsFactory.php",
   "lib/Controller/ObjectsController.php -> lib/Search/Service/Geo/GeoResponseCrsInterface.php",
   "lib/Controller/ObjectsController.php -> lib/Search/Service/Geo/GetFeatureRequest.php",
-  "lib/Controller/ObjectsController.php -> lib/Service/FileServiceInterface.php",
   "lib/Controller/Support/GeoServices.php -> lib/Search/Service/Geo/GeoFeatureCollectionBuilderInterface.php",
   "lib/Db/ApplicationMapperInterface.php -> lib/Db/Application.php",
   "lib/Db/AuditTrailMapperInterface.php -> lib/Db/AuditTrail.php",
@@ -636,7 +634,6 @@
   "lib/Files/Db/TextDisclosure.php",
   "lib/Files/Db/TextDisclosureMapper.php",
   "lib/Files/FilesRegistrar.php",
-  "lib/Files/Service/File/BulkDownloadArchive.php",
   "lib/Files/Service/File/CallerFileAccess.php",
   "lib/Files/Service/File/FileOwnershipHandlerInterface.php",
   "lib/Files/Service/File/FileRestrictionGuardInterface.php",
@@ -723,6 +720,7 @@
   "lib/Kernel/Contracts/Core/ObjectArchivalMetadataInterface.php",
   "lib/Kernel/Contracts/Core/ObjectAuditEntry.php",
   "lib/Kernel/Contracts/Core/ObjectFileRecordsInterface.php",
+  "lib/Kernel/Contracts/Core/ObjectFilesArchiveInterface.php",
   "lib/Kernel/Contracts/Core/ObjectFolderAccessInterface.php",
   "lib/Kernel/Contracts/Core/ObjectFolderLookupInterface.php",
   "lib/Kernel/Contracts/Core/ObjectPresenceInterface.php",
@@ -2305,8 +2303,8 @@
  "exposed_loc": {
   "Compliance": 14875,
   "Configuration": 1523,
-  "Core": 63405,
-  "Files": 1466,
+  "Core": 63402,
+  "Files": 1458,
   "Integrations": 17990,
   "Kernel": 8464,
   "Notifications": 2057,
@@ -2775,6 +2773,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10402,
- "total_loc": 461778,
- "violation_degree": 0.0107
+ "total_loc": 461806,
+ "violation_degree": 0.0105
 }

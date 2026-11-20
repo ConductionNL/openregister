@@ -2275,6 +2275,7 @@ Service/File/MalwareScanRefusal.php,47,Service,Service,Service/File/MalwareScanR
 Service/File/ManagedFileOwnerLookup.php,33,Service,Service,Service/File/ManagedFileOwnerLookup.php,0,434,Core
 Service/File/ObjectFileFinder.php,135,Service,Service,Service/File/ObjectFileFinder.php,0,,Files
 Service/File/ObjectFileLookup.php,17,Service,Service,Service/File/ObjectFileLookup.php,0,,Files
+Service/File/ObjectFilesArchive.php,,Service,,,,,Files
 Service/File/PublishedDigestService.php,,Service,,,,,Files
 Service/File/ReadFileHandler.php,148,Service,Service,Service/File/ReadFileHandler.php,0,181,Files
 Service/File/UpdateFileHandler.php,365,Service,Service,Service/File/UpdateFileHandler.php,0,58,Files
