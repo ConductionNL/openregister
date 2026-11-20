@@ -3171,6 +3171,7 @@ Service/SchemaImport/SchemaOrgImporter.php,157,Service,Service,Service/SchemaImp
 Service/SchemaImport/SchemaOrgSnapshot.php,177,Service,Service,Service/SchemaImport/SchemaOrgSnapshot.php,0,,Core
 Service/SchemaImport/ThreeWayMerge.php,77,Service,Service,Service/SchemaImport/ThreeWayMerge.php,0,,Core
 Service/SchemaService.php,1026,Service,Configuration,Configuration/Service/SchemaService.php,0,,Configuration
+Service/Schemas/ApprovalChainDeclarations.php,84,Service,Service,Service/Schemas/ApprovalChainDeclarations.php,0,,Core
 Service/Schemas/CodedChoiceDeclaration.php,36,Service,Service,Service/Schemas/CodedChoiceDeclaration.php,0,,Core
 Service/Schemas/CodedChoiceException.php,23,Service,Service,Service/Schemas/CodedChoiceException.php,0,,Core
 Service/Schemas/ExtendingFormDeclaration.php,200,Service,Service,Service/Schemas/ExtendingFormDeclaration.php,0,,Core

@@ -2196,6 +2196,8 @@ deptrac:
         - type: directory
           value: 'lib/Service/SchemaImport/[^/]*$'
         - type: directory
+          value: 'lib/Service/Schemas/ApprovalChainDeclarations[.]php$'
+        - type: directory
           value: 'lib/Service/Schemas/CodedChoiceDeclaration[.]php$'
         - type: directory
           value: 'lib/Service/Schemas/CodedChoiceException[.]php$'
