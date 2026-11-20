@@ -31,6 +31,7 @@ use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\LanguageServiceInterface;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
+use OCA\OpenRegister\Service\PlatformServiceBindings;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
@@ -42,12 +43,21 @@ use ReflectionNamedType;
  * The language service is the port; the search handler asks only the port.
  *
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler
+ * @covers \OCA\OpenRegister\Service\PlatformServiceBindings
  */
 final class RequestLanguagesPortTest extends TestCase {
 
 	public function testTheLanguageServiceIsThePort(): void {
 		$this->assertTrue(is_subclass_of(LanguageServiceInterface::class, RequestLanguagesInterface::class));
 		$this->assertTrue(is_subclass_of(LanguageService::class, RequestLanguagesInterface::class));
+	}
+
+	public function testThePortResolvesToTheSharedLanguageService(): void {
+		// MagicMapper asks the container for the port; it must reach the same
+		// request-scoped instance the language middleware fills.
+		$bindings = PlatformServiceBindings::BINDINGS;
+		$this->assertSame(LanguageService::class, $bindings[RequestLanguagesInterface::class]);
+		$this->assertSame($bindings[LanguageServiceInterface::class], $bindings[RequestLanguagesInterface::class]);
 	}
 
 	public function testTheSearchHandlerTakesThePort(): void {
