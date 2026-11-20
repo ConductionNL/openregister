@@ -36,8 +36,6 @@ use OCA\OpenRegister\Service\Object\CacheNameScopeSources;
 use OCA\OpenRegister\Service\SchemaImport\DialectDetector;
 use OCA\OpenRegister\Service\SchemaImport\SchemaImportService;
 use OCA\OpenRegister\Service\SchemaImport\ThreeWayMerge;
-use OCA\OpenRegister\Service\Translation\TranslationProviderInterface;
-use OCA\OpenRegister\Service\Translation\TranslationProviderResolver;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -123,17 +121,6 @@ final class ServiceRegistrar {
 	 * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
 	 */
 	private static function registerSeams(IRegistrationContext $context): void {
-		// Bind the translation provider the admin settings select: Nextcloud
-		// Task Processing only when an administrator chose it and confirmed
-		// that record text may be sent; the no-op identity provider otherwise
-		// (ai-translation-with-a-glossary design D-6).
-		$context->registerService(
-			TranslationProviderInterface::class,
-			static function (ContainerInterface $c) {
-				return $c->get(TranslationProviderResolver::class)->resolve();
-			}
-		);
-
 		// Web Push hex-icon service (openregister-web-push-engine): needs an
 		// app-scoped IAppData for its rendered-PNG cache, which is not
 		// auto-wirable, so resolve it via IAppDataFactory here.
