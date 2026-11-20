@@ -82,7 +82,7 @@ final class F07JobHandlesTest extends TestCase {
 		JobHandles::SCHEMA_RUN => SchemaRunJob::class,
 		ProcessesJobHandlesInterface::SOURCE_RECORD_RECOMPUTE => SourceRecordRecomputeJob::class,
 		ComplianceJobHandlesInterface::SUBJECT_EXPORT => SubjectExportJob::class,
-		JobHandles::TRANSFER_EXECUTION => TransferExecutionJob::class,
+		ComplianceJobHandlesInterface::TRANSFER_EXECUTION => TransferExecutionJob::class,
 	];
 
 	/**
