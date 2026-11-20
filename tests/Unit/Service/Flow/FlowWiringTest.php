@@ -85,6 +85,8 @@ use OCA\OpenRegister\Kernel\Contracts\Integrations\ObjectDateEventsSourceInterfa
 use OCA\OpenRegister\Service\Calendar\ObjectCalendarFeedService;
 use Psr\Container\ContainerInterface;
 use ReflectionProperty;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\LifecycleTransitionInterface;
+use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\FlowWiring
@@ -276,6 +278,7 @@ final class FlowWiringTest extends TestCase {
 	}//end testTheExpressionDefaultsPortIsAnsweredByTheRulesEngine()
 
 	/**
+	 * The schedule flow store, the current-run port, the expression-defaults port, the area's own interfaces and the lifecycle transition port are bound, and only these aliases are registered.
 	 * The schedule flow store, the current-run port, the audit trail's transition-in-flight port, the expression-defaults port and the area's own interfaces are bound, and only these aliases are registered.
 	 * The schedule flow store, the current-run port, the write elevation, the expression-defaults port and the area's own interfaces are bound, and only these aliases are registered.
 	 * The schedule flow store, the current-run port, the task row, watcher and run-record ports, the schema rename and form dependents checks, the expression-defaults port and the area's own interfaces are bound, and only these aliases are registered.
@@ -314,6 +317,7 @@ final class FlowWiringTest extends TestCase {
 				TaskCalendarDocumentInterface::class       => TaskCalendarDocument::class,
 				PartySearchInterface::class                => PartySearchService::class,
 				FlowConsentSweepInterface::class           => FlowConsentParking::class,
+				LifecycleTransitionInterface::class        => TransitionEngine::class,
 				ExpressionDefaultsInterface::class         => ExpressionDefaults::class,
 				ObjectQuotaInterface::class                => ObjectQuotaService::class,
 			],
