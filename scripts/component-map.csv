@@ -3679,7 +3679,7 @@ Db/ErasurePreviewMapperInterface.php,,Db,,,,,Compliance
 Db/ExportProfile/ExportProfileFieldTypes.php,,Db,,,,,Configuration
 Db/ExportProfileMapperInterface.php,,Db,,,,,Configuration
 Db/FederatedShare/FederatedShareFieldTypes.php,,Db,,,,,Integrations
-Db/FederatedShareMapperInterface.php,,Db,,,,,Core
+Db/FederatedShareMapperInterface.php,,Db,,,,,Integrations
 Db/FeedbackMapperInterface.php,,Db,,,,,Platform
 Db/FlowActivityWindow.php,,Db,,,,,Processes
 Db/FlowClaimMapperInterface.php,,Db,,,,,Processes

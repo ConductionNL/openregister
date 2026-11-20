@@ -77,7 +77,6 @@
   "lib/Db/EntityRelationMapper.php -> lib/Db/AuditTrail.php",
   "lib/Db/EntityRelationMapper.php -> lib/Files/Db/EntityMention.php",
   "lib/Db/EntityRelationMapper.php -> lib/Files/Db/EntityRelationMapperInterface.php",
-  "lib/Db/FederatedShareMapperInterface.php -> lib/Db/FederatedShare.php",
   "lib/Db/MagicMapper.php -> lib/Service/Audit/PurposeGuardInterface.php",
   "lib/Db/MagicMapper.php -> lib/Service/LanguageServiceInterface.php",
   "lib/Db/MagicMapper/MagicSearchHandler.php -> lib/Search/Service/Search/PropertySearchProfile.php",
@@ -545,8 +544,6 @@
   "lib/Db/EmptyPropertyClaim.php",
   "lib/Db/EntityRelation.php",
   "lib/Db/ExportRun/ExportRunFieldTypes.php",
-  "lib/Db/FederatedShare.php",
-  "lib/Db/FederatedShareMapperInterface.php",
   "lib/Db/Flow.php",
   "lib/Db/Flow/FlowFieldTypes.php",
   "lib/Db/Flow/FlowSelection.php",
@@ -2597,9 +2594,9 @@
  "exposed_loc": {
   "Compliance": 15514,
   "Configuration": 4293,
-  "Core": 64548,
+  "Core": 64534,
   "Files": 3592,
-  "Integrations": 18271,
+  "Integrations": 18231,
   "Kernel": 8476,
   "Notifications": 2008,
   "Platform": 313,
@@ -3067,5 +3064,5 @@
  ],
  "kernel_loc": 10414,
  "total_loc": 460617,
- "violation_degree": 0.0443
+ "violation_degree": 0.0442
 }
