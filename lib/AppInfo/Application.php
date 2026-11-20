@@ -60,6 +60,7 @@ use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\Flow\FlowRegistrar;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistrar;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistrar;
+use OCA\OpenRegister\Service\NotificationsServiceRegistrar;
 use OCA\OpenRegister\Service\PlatformServiceRegistrar;
 use OCA\OpenRegister\Service\ComplianceServiceRegistrar;
 use OCA\OpenRegister\Service\Outbound\OutboundClientFactory;
@@ -186,7 +187,7 @@ class Application extends App implements IBootstrap {
 				return new OutboundClientFactory(
 					clientService: \OCP\Server::get(\OCP\Http\Client\IClientService::class),
 					proxy: $container->get(\OCA\OpenRegister\Service\Outbound\ProxySettingsInterface::class),
-					breakers: $container->get(\OCA\OpenRegister\Service\Resilience\BreakerRegistry::class),
+					breakers: $container->get(\OCA\OpenRegister\Kernel\Contracts\Integrations\OutboundBreakerInterface::class),
 				);
 			}
 		);
@@ -198,6 +199,7 @@ class Application extends App implements IBootstrap {
 		// The contracts other components type-hint, bound to their services.
 		ContractBindingsRegistrar::register(context: $context);
 		PlatformServiceRegistrar::register(context: $context);
+		NotificationsServiceRegistrar::register(context: $context);
 		ComplianceServiceRegistrar::register(context: $context);
 		DbRegistrar::register(context: $context);
 		PlatformMapperRegistrar::register(context: $context);
@@ -268,6 +270,8 @@ class Application extends App implements IBootstrap {
 		IntegrationRegistrar::boot(server: $server);
 		IntegrationRegistrar::bootLeafRegistry(server: $server);
 		ObjectSourceRegistrar::boot(server: $server);
+		// The external-register provider (Integrations) follows the built-in object sources.
+		IntegrationRegistrar::bootObjectSources(server: $server);
 		// Any object whose schema opts in may join a collaboration collection
 		// (platform-collaboration-resources, REQ-PCR-001).
 		$server->get(\OCP\Collaboration\Resources\IProviderManager::class)
