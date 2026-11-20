@@ -19,13 +19,17 @@ use OCA\OpenRegister\Kernel\Contracts\Core\CurrentFlowRunInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionDefaultsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionEvaluatorInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Notifications\PartyRecipientsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\PublicationRefusalInterface;
+use OCA\OpenRegister\Kernel\Contracts\Notifications\NotificationRunRecorderInterface;
+use OCA\OpenRegister\Kernel\Contracts\Notifications\ObjectWatchersInterface;
+use OCA\OpenRegister\Kernel\Contracts\Notifications\TaskRowSourceInterface;
+use OCA\OpenRegister\Service\AutomationRecordWriter;
+use OCA\OpenRegister\Service\Interaction\WatcherService;
 use OCA\OpenRegister\Kernel\Contracts\Integrations\ObjectCalendarLinkInterface;
 use OCA\OpenRegister\Service\CalendarEventService;
 use OCA\OpenRegister\Kernel\Contracts\Integrations\BuiltInToolProvidersInterface;
 use OCA\OpenRegister\Mcp\BuiltIn\FlowBuiltInToolProviders;
-use OCA\OpenRegister\Kernel\Contracts\Notifications\PartyRecipientsInterface;
-use OCA\OpenRegister\Kernel\Contracts\Core\PublicationRefusalInterface;
-use OCA\OpenRegister\Kernel\Contracts\Notifications\TaskRowSourceInterface;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
 use OCA\OpenRegister\Service\Flow\FlowAccess;
@@ -200,6 +204,18 @@ final class FlowWiringTest extends TestCase {
 	}//end testTheTaskRowPortIsAnsweredByTheTaskInbox()
 
 	/**
+	 * The watcher and run-record ports of the notification dispatcher (Notifications) are answered by Processes.
+	 *
+	 * @return void
+	 */
+	public function testTheNotificationPortsAreAnsweredByProcesses(): void {
+		self::assertSame(expected: WatcherService::class, actual: ($this->aliases[ObjectWatchersInterface::class] ?? null));
+		self::assertSame(expected: AutomationRecordWriter::class, actual: ($this->aliases[NotificationRunRecorderInterface::class] ?? null));
+		self::assertTrue(condition: is_a(WatcherService::class, ObjectWatchersInterface::class, true));
+		self::assertTrue(condition: is_a(AutomationRecordWriter::class, NotificationRunRecorderInterface::class, true));
+	}//end testTheNotificationPortsAreAnsweredByProcesses()
+
+	/**
 	 * The flow tasks search provider is registered here, by the component that owns it.
 	 *
 	 * @return void
@@ -251,6 +267,7 @@ final class FlowWiringTest extends TestCase {
 	}//end testTheExpressionDefaultsPortIsAnsweredByTheRulesEngine()
 
 	/**
+	 * The schedule flow store, the current-run port, the task row, watcher and run-record ports, the expression-defaults port and the area's own interfaces are bound, and only these aliases are registered.
 	 * The schedule flow store, the current-run port, the task row port, the expression-defaults port and the area's own interfaces are bound, and only these aliases are registered.
 	 * The schedule flow store, the current-run port, the calendar link port, the expression-defaults port and the area's own interfaces are bound, and only these aliases are registered.
 	 * The schedule flow store, the current-run port, the expression-defaults port, the built-in tool providers and the area's own interfaces are bound, and only these aliases are registered.
@@ -265,6 +282,8 @@ final class FlowWiringTest extends TestCase {
 				CurrentFlowRunInterface::class             => FlowRunContext::class,
 				ScheduleFlowStoreInterface::class          => ScheduleFlowStore::class,
 				TaskRowSourceInterface::class              => TaskInboxService::class,
+				ObjectWatchersInterface::class             => WatcherService::class,
+				NotificationRunRecorderInterface::class    => AutomationRecordWriter::class,
 				BuiltInToolProvidersInterface::class       => FlowBuiltInToolProviders::class,
 				ExpressionEvaluatorInterface::class        => CalculationEvaluator::class,
 				PartyRecipientsInterface::class            => PartyRecipients::class,

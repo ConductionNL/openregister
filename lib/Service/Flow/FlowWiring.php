@@ -28,15 +28,19 @@ use OCA\OpenRegister\Kernel\Contracts\Core\CurrentFlowRunInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionDefaultsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionEvaluatorInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
+use OCA\OpenRegister\Search\FlowTasksProvider;
+use OCA\OpenRegister\Kernel\Contracts\Core\PublicationRefusalInterface;
+use OCA\OpenRegister\Kernel\Contracts\Notifications\NotificationRunRecorderInterface;
+use OCA\OpenRegister\Kernel\Contracts\Notifications\ObjectWatchersInterface;
+use OCA\OpenRegister\Kernel\Contracts\Notifications\TaskRowSourceInterface;
+use OCA\OpenRegister\Service\AutomationRecordWriter;
+use OCA\OpenRegister\Service\Interaction\WatcherService;
 use OCA\OpenRegister\Kernel\Contracts\Integrations\ObjectCalendarLinkInterface;
 use OCA\OpenRegister\Service\CalendarEventService;
 use OCA\OpenRegister\Kernel\Contracts\Integrations\BuiltInToolProvidersInterface;
 use OCA\OpenRegister\Mcp\BuiltIn\FlowBuiltInToolProviders;
 use OCA\OpenRegister\Service\FlowLinkPlatform;
 use OCA\OpenRegister\Service\FlowLinkService;
-use OCA\OpenRegister\Search\FlowTasksProvider;
-use OCA\OpenRegister\Kernel\Contracts\Core\PublicationRefusalInterface;
-use OCA\OpenRegister\Kernel\Contracts\Notifications\TaskRowSourceInterface;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionRunner;
@@ -99,6 +103,8 @@ final class FlowWiring {
 		CurrentFlowRunInterface::class => FlowRunContext::class,
 		ScheduleFlowStoreInterface::class => ScheduleFlowStore::class,
 		TaskRowSourceInterface::class => TaskInboxService::class,
+		ObjectWatchersInterface::class => WatcherService::class,
+		NotificationRunRecorderInterface::class => AutomationRecordWriter::class,
 		BuiltInToolProvidersInterface::class => FlowBuiltInToolProviders::class,
 		ExpressionEvaluatorInterface::class => CalculationEvaluator::class,
 		\OCA\OpenRegister\Kernel\Contracts\Notifications\PartyRecipientsInterface::class => \OCA\OpenRegister\Service\Party\PartyRecipients::class,
