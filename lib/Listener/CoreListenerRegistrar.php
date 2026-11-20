@@ -48,6 +48,8 @@ use OCP\User\Events\UserLoggedInEvent;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) A registrar names every listener
  *   and every event it subscribes to; that coupling is what it is for.
+ *
+ * @spec openspec/specs/event-driven-architecture/spec.md
  */
 final class CoreListenerRegistrar {
 
