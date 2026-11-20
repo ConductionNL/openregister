@@ -36,7 +36,6 @@
   "lib/Db/Schema.php -> lib/Db/Schema/VocabularyEntries.php",
   "lib/Db/Schema.php -> lib/Service/Schemas/UniqueConstraintEvaluator.php",
   "lib/Db/Schema/ConfigurationValueRules.php -> lib/Service/Calendar/CalendarDateDeclarationCheck.php",
-  "lib/Db/SchemaMapper/ExchangeAnnotationRefusals.php -> lib/Mcp/Service/Mcp/McpAnnotationValidators.php",
   "lib/Db/SequenceMapperInterface.php -> lib/Db/Sequence.php",
   "lib/Db/SourceMapperInterface.php -> lib/Db/Source.php",
   "lib/Db/TaskAuditMapper.php -> lib/Db/TaskAuditMapperInterface.php",
@@ -989,10 +988,10 @@
   "lib/Mcp/Db/Agent.php",
   "lib/Mcp/Db/Conversation.php",
   "lib/Mcp/Listener/ContextChatSubmissionListener.php",
+  "lib/Mcp/Listener/McpDeclarationChecksListener.php",
   "lib/Mcp/Listener/Registrar/McpListenerRegistrar.php",
   "lib/Mcp/McpRegistrar.php",
   "lib/Mcp/Service/Chat/StreamYieldChannels.php",
-  "lib/Mcp/Service/Mcp/McpAnnotationValidators.php",
   "lib/Mcp/Service/ToolRegistryInterface.php",
   "lib/Notification/NotifierRegistrar.php",
   "lib/Notifications/Controller/Support/ReadableObject.php",
@@ -2366,11 +2365,11 @@
   "Configuration": 2419,
   "Core": 64571,
   "Files": 801,
-  "Integrations": 17967,
+  "Integrations": 17983,
   "Kernel": 8470,
   "Notifications": 2057,
   "Platform": 61,
-  "Processes": 28331,
+  "Processes": 28333,
   "Search": 2020
  },
  "kernel_files": [
@@ -2834,6 +2833,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10408,
- "total_loc": 461651,
- "violation_degree": 0.0155
+ "total_loc": 461674,
+ "violation_degree": 0.0154
 }
