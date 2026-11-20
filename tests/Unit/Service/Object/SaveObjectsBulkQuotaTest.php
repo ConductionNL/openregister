@@ -36,7 +36,7 @@ use OCA\OpenRegister\Service\Object\SaveObjects;
 use OCA\OpenRegister\Service\Object\SaveObjects\BulkObjectQuota;
 use OCA\OpenRegister\Service\Object\SaveObjects\BulkSaveRun;
 use OCA\OpenRegister\Service\OrganisationService;
-use OCA\OpenRegister\Service\Quota\ObjectQuotaServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectQuotaInterface;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -54,13 +54,13 @@ class SaveObjectsBulkQuotaTest extends TestCase {
 
 	private const NEW = '33333333-3333-4333-8333-333333333333';
 
-	private ObjectQuotaServiceInterface&MockObject $quotas;
+	private ObjectQuotaInterface&MockObject $quotas;
 
 	private ?BulkObjectQuota $quota;
 
 	protected function setUp(): void {
 		SaveObjects::clearSchemaCache();
-		$this->quotas = $this->createMock(ObjectQuotaServiceInterface::class);
+		$this->quotas = $this->createMock(ObjectQuotaInterface::class);
 		$this->quotas->method('limitFor')->willReturn(1);
 		$this->quota = new BulkObjectQuota($this->quotas, new NullLogger());
 	}
