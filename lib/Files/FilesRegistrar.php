@@ -36,6 +36,7 @@ use OCA\OpenRegister\Files\Service\File\DocumentProcessingHandler;
 use OCA\OpenRegister\Files\Service\File\FileAuditHandler;
 use OCA\OpenRegister\Files\Service\File\FileAuditHandlerInterface;
 use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
+use OCA\OpenRegister\Files\Service\File\FileReadScope;
 use OCA\OpenRegister\Files\Service\File\FileOwnershipHandlerInterface;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionGuardInterface;
@@ -62,6 +63,7 @@ use OCA\OpenRegister\Files\Service\UploadService;
 use OCA\OpenRegister\Kernel\Contracts\AccessLinkReaderInterface;
 use OCA\OpenRegister\Kernel\Contracts\ChunkMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ObjectFileRightsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ReadableFileHitsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Compliance\DetectionPatternsVersionInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FileAccountInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FileReadRestrictionInterface;
@@ -107,6 +109,7 @@ final class FilesRegistrar
         NoteServiceInterface::class               => NoteService::class,
         ObjectFileRightsInterface::class          => ObjectFileAccess::class,
         ObjectFileRecordsInterface::class         => FileMapper::class,
+        ReadableFileHitsInterface::class          => FileReadScope::class,
         RegisterFolderProvisionerInterface::class => RegisterFolderProvisioner::class,
         RegisterFolderRecordsInterface::class     => RegisterFolderRecorder::class,
         RiskLevelServiceInterface::class          => RiskLevelService::class,
