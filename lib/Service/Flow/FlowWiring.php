@@ -36,6 +36,9 @@ use OCA\OpenRegister\Kernel\Contracts\Core\CurrentFlowRunInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionDefaultsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionEvaluatorInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Integrations\LinkedFlowOperationsInterface;
+use OCA\OpenRegister\Service\FlowLinkServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ProcessingReadsInterface;
 use OCA\OpenRegister\Listener\DependentValueListener;
 use OCA\OpenRegister\Service\Dmn\DecisionTableBulkGuard;
 use OCA\OpenRegister\Service\FlowLinkPlatform;
@@ -136,6 +139,7 @@ final class FlowWiring {
 		ObjectCalendarLinkInterface::class => CalendarEventService::class,
 		CurrentFlowRunInterface::class => FlowRunContext::class,
 		ScheduleFlowStoreInterface::class => ScheduleFlowStore::class,
+		ProcessingReadsInterface::class => ReadHistoryService::class,
 		UserCalendarEventsInterface::class => CalendarEventService::class,
 		TaskGaugeInterface::class => TaskMetricsProvider::class,
 		LifecycleFinalStatesInterface::class => LifecycleFinalStateResolver::class,
@@ -163,6 +167,7 @@ final class FlowWiring {
 		TaskCalendarDocumentInterface::class => TaskCalendarDocument::class,
 		PartySearchInterface::class => PartySearchService::class,
 		FlowConsentSweepInterface::class => FlowConsentParking::class,
+		LinkedFlowOperationsInterface::class => FlowLinkServiceInterface::class,
 		LifecycleTransitionInterface::class => TransitionEngine::class,
 		ExpressionDefaultsInterface::class => ExpressionDefaults::class,
 		BulkRowRefusalsInterface::class => DecisionTableBulkGuard::class,
