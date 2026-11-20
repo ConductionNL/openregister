@@ -25,6 +25,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Lifecycle;
 
+use OCA\OpenRegister\Kernel\Contracts\Compliance\TransitionInFlightInterface;
+
 /**
  * Which named transition is being performed on which object, right now.
  *
@@ -51,7 +53,7 @@ namespace OCA\OpenRegister\Service\Lifecycle;
  * engine would declare on one instance and the listeners would read an empty
  * one, and every named call would silently fall back to value matching.
  */
-class LifecycleActionContext implements LifecycleActionContextInterface {
+class LifecycleActionContext implements LifecycleActionContextInterface, TransitionInFlightInterface {
 
 	/**
 	 * Declared actions, a stack per object uuid.
