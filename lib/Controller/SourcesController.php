@@ -70,7 +70,7 @@ class SourcesController extends Controller {
 	/**
 	 * The source mapper
 	 *
-	 * @var SourceMapperInterface
+	 * @var SourceMapperInterface<Source>
 	 */
 	private readonly SourceMapperInterface $sourceMapper;
 
