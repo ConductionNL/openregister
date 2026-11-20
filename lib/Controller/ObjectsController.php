@@ -85,12 +85,9 @@ use OCA\OpenRegister\Exception\SearchTermSyntaxException;
 use OCA\OpenRegister\Exception\TranslationTargetConflictException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
-use OCA\OpenRegister\Service\Audit\ObjectHistoryForReadersInterface;
-use OCA\OpenRegister\Service\Audit\PurposeRefusedException;
 use OCA\OpenRegister\Service\FileServiceInterface;
 use OCA\OpenRegister\Service\Hinge\InheritedGeoCollectorInterface;
 use OCA\OpenRegister\Service\Hinge\ReferencedByServiceInterface;
-use OCA\OpenRegister\Service\Interaction\ReadStateServiceInterface;
 use OCA\OpenRegister\Service\Object\MoveAddress;
 use OCA\OpenRegister\Service\Object\ObjectKeyResolver;
 use OCA\OpenRegister\Service\Object\ObjectMove;
@@ -110,6 +107,10 @@ use OCA\OpenRegister\Search\Service\Geo\GetFeatureRequest;
 use OCA\OpenRegister\Service\Geo\GeocodeOptions;
 use OCA\OpenRegister\Service\Object\PaginationLinks;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\CurrentFlowRunInterface;
+use OCA\OpenRegister\Service\Interaction\ReadStateServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ReadableObjectHistoryInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ReadPurposeRefusalInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionDefaultRefusalInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\HeldChangeCodes;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
@@ -977,7 +978,7 @@ class ObjectsController extends Controller {
 				register: ($resolved['registerEntity'] ?? null),
 				schema: ($resolved['schemaEntity'] ?? null)
 			);
-		} catch (\OCA\OpenRegister\Service\Audit\PurposeRefusedException $refusal) {
+		} catch (ReadPurposeRefusalInterface $refusal) {
 			return self::purposeRefusal(refusal: $refusal);
 		}
 
@@ -987,13 +988,13 @@ class ObjectsController extends Controller {
 	/**
 	 * The answer to a read refused for want of a purpose.
 	 *
-	 * @param \OCA\OpenRegister\Service\Audit\PurposeRefusedException $refusal The refusal.
+	 * @param ReadPurposeRefusalInterface $refusal The refusal.
 	 *
 	 * @return JSONResponse
 	 *
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
-	private static function purposeRefusal(\OCA\OpenRegister\Service\Audit\PurposeRefusedException $refusal): JSONResponse {
+	private static function purposeRefusal(ReadPurposeRefusalInterface $refusal): JSONResponse {
 		return new JSONResponse(data: $refusal->toResponseBody(), statusCode: $refusal->getStatusCode());
 	}//end purposeRefusal()
 
@@ -2829,7 +2830,7 @@ class ObjectsController extends Controller {
 			$result = $objectService->searchObjectsPaginated($query);
 		} catch (NotAuthorizedException $exception) {
 			return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
-		} catch (\OCA\OpenRegister\Service\Audit\PurposeRefusedException $refusal) {
+		} catch (ReadPurposeRefusalInterface $refusal) {
 			return self::purposeRefusal(refusal: $refusal);
 		}
 
@@ -5285,7 +5286,7 @@ class ObjectsController extends Controller {
 		}
 
 		try {
-			$page = $this->container->get(ObjectHistoryForReadersInterface::class)->page(
+			$page = $this->container->get(ReadableObjectHistoryInterface::class)->page(
 				ref: $ref,
 				params: [
 					'limit' => $config['limit'],
@@ -5296,7 +5297,7 @@ class ObjectsController extends Controller {
 					'search' => $search,
 				]
 			);
-		} catch (PurposeRefusedException $refusal) {
+		} catch (ReadPurposeRefusalInterface $refusal) {
 			return new JSONResponse(data: $refusal->toResponseBody(), statusCode: $refusal->getStatusCode());
 		} catch (MultipleObjectsReturnedException $e) {
 			// The 409 an administrator gets on this route (#4037), not a 500.
@@ -6835,12 +6836,12 @@ class ObjectsController extends Controller {
 	 */
 	private function callerRunUuid(): ?string {
 		try {
-			$flowContext = $this->container->get(\OCA\OpenRegister\Service\Flow\FlowRunContextInterface::class);
+			$flowContext = $this->container->get(CurrentFlowRunInterface::class);
 		} catch (\Throwable $unavailable) {
 			return null;
 		}
 
-		if ($flowContext instanceof \OCA\OpenRegister\Service\Flow\FlowRunContextInterface === false) {
+		if ($flowContext instanceof CurrentFlowRunInterface === false) {
 			return null;
 		}
 

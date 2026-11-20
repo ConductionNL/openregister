@@ -670,6 +670,8 @@ final class ContractBindings {
 		ObjectTrailReaderInterface::class => ObjectTrailReader::class,
 		DeclaredWebhookInstallerInterface::class => NotificationsAnnotationInstaller::class,
 		TranslationProjectionInterface::class => TranslationProjectionService::class,
+		\OCA\OpenRegister\Kernel\Contracts\Core\SourceLanguagesInterface::class => TranslationProjectionService::class,
+		\OCA\OpenRegister\Kernel\Contracts\Core\DerivedTranslationsInterface::class => \OCA\OpenRegister\Service\TranslationStatusService::class,
 		WholeSetExportActionInterface::class => ExportWholeSetAction::class,
 		ShareGrantorInterface::class => ShareGrantor::class,
 		TenantKeyRotationInterface::class => TenantKeyService::class,
@@ -679,6 +681,7 @@ final class ContractBindings {
 		ArchivalSettingsReaderInterface::class => ObjectRetentionHandler::class,
 		\OCA\OpenRegister\Kernel\Contracts\Compliance\ArchivalSettingsInterface::class => ObjectRetentionHandler::class,
 		\OCA\OpenRegister\Kernel\Contracts\Core\FileSettingsReaderInterface::class => \OCA\OpenRegister\Service\Settings\FileSettingsHandler::class,
+		\OCA\OpenRegister\Kernel\Contracts\Files\RedactionSettingsInterface::class => \OCA\OpenRegister\Service\Settings\FileSettingsHandler::class,
 		TranslationBindingInterface::class => TranslationBindingDescription::class,
 		\OCA\OpenRegister\Service\Audit\AuditSinkInterface::class => \OCA\OpenRegister\Service\Audit\AuditSink::class,
 		DeferredEntryObjectResolverInterface::class => DeferredEntryObjectResolver::class,
@@ -1046,6 +1049,7 @@ final class ContractBindings {
 		RegisterScopedSchemaResolverInterface::class => RegisterScopedSchemaResolver::class,
 		RegisterServiceInterface::class => RegisterService::class,
 		RelationGraphServiceInterface::class => RelationGraphService::class,
+		\OCA\OpenRegister\Kernel\Contracts\Core\RequestLanguagesInterface::class => LanguageService::class,
 		RetentionSettingsReaderInterface::class => ObjectRetentionHandler::class,
 		RetentionSettingsInterface::class => ObjectRetentionHandler::class,
 		ScheduledReportsInterface::class => ScheduledReportService::class,
@@ -1123,6 +1127,8 @@ final class ContractBindings {
 		ConfigurationTransferInterface::class => ConfigurationService::class,
 		\OCA\OpenRegister\Kernel\Contracts\Core\RegisterBundlesInterface::class
 			=> \OCA\OpenRegister\Service\Configuration\RegisterBundles::class,
+		\OCA\OpenRegister\Kernel\Contracts\Core\AppImportJobOwnersInterface::class
+			=> \OCA\OpenRegister\Service\Configuration\AppImportJobRecorder::class,
 		\OCA\OpenRegister\Service\Object\ArchiveHandlerInterface::class => \OCA\OpenRegister\Service\Object\ArchiveHandler::class,
 		RetentionServiceInterface::class => RetentionService::class,
 		\OCA\OpenRegister\Service\Object\AuthorizationResolutionInterface::class => \OCA\OpenRegister\Service\Object\PermissionHandler::class,
