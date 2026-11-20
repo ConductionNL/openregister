@@ -24,14 +24,14 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use Exception;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper\RecordAnnotationRefusals;
+use OCA\OpenRegister\Listener\ReferenceCardDeclarationCheckListener;
 use OCA\OpenRegister\Service\Reference\ReferenceCardDeclaration;
 use PHPUnit\Framework\TestCase;
 
 /**
  * Tests for the save-time refusal of a reference card declaration.
  *
- * @covers \OCA\OpenRegister\Db\SchemaMapper\RecordAnnotationRefusals
+ * @covers \OCA\OpenRegister\Listener\ReferenceCardDeclarationCheckListener
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation
  * @uses \OCA\OpenRegister\Db\SchemaMapper\AnnotationFaults
@@ -60,10 +60,10 @@ final class SchemaReferenceCardRefusalTest extends TestCase {
 	/**
 	 * The refusals.
 	 *
-	 * @return RecordAnnotationRefusals The checks.
+	 * @return ReferenceCardDeclarationCheckListener The checks.
 	 */
-	private function checks(): RecordAnnotationRefusals {
-		return new RecordAnnotationRefusals();
+	private function checks(): ReferenceCardDeclarationCheckListener {
+		return new ReferenceCardDeclarationCheckListener();
 	}//end checks()
 
 	/**

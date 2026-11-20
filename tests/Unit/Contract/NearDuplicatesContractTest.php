@@ -34,6 +34,7 @@ use OCA\OpenRegister\Files\Db\FileMapperInterface;
 use OCA\OpenRegister\Files\Service\File\FileReadScope;
 use OCA\OpenRegister\Files\Service\File\FileReadScopeRules;
 use OCA\OpenRegister\Files\Service\File\FileReadScopeTree;
+use OCA\OpenRegister\Files\Service\File\FileScopeReader;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Search\Controller\DuplicateController;
 use OCA\OpenRegister\Search\Controller\Support\DuplicateControllerServices;
@@ -68,6 +69,7 @@ use ReflectionMethod;
  * @uses   \OCA\OpenRegister\Files\Service\File\FileReadScope
  * @uses   \OCA\OpenRegister\Files\Service\File\FileReadScopeTree
  * @uses   \OCA\OpenRegister\Files\Service\File\FileReadScopeRules
+ * @uses   \OCA\OpenRegister\Files\Service\File\FileScopeReader
  * @uses   \OCA\OpenRegister\Search\Service\Quality\TextGroupFinder
  * @uses   \OCA\OpenRegister\Search\Service\Quality\TextGroups
  * @uses   \OCA\OpenRegister\Service\Quality\TextSignature
@@ -164,7 +166,7 @@ final class NearDuplicatesContractTest extends TestCase {
 				$this->createMock(DismissedPairStore::class),
 				$this->createMock(ObjectOperationsInterface::class),
 				new ControllerSession($session, $this->createMock(IGroupManager::class), new NullLogger()),
-				new NearDuplicateScope($files, new FileReadScope(new FileReadScopeTree($root, $session), new FileReadScopeRules(), new NullLogger()))
+				new NearDuplicateScope(new FileScopeReader($files, new FileReadScope(new FileReadScopeTree($root, $session), new FileReadScopeRules(), new NullLogger())))
 			)
 		);
 	}//end controller()
