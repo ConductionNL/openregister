@@ -38,11 +38,11 @@ use OCA\OpenRegister\Db\FileDigestMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Files\Db\FileMapperInterface;
-use OCA\OpenRegister\Files\Service\File\FileRestrictionGuardInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\FileReadRestrictionInterface;
 use OCA\OpenRegister\Service\File\FilePublishingHandler;
 use OCA\OpenRegister\Service\File\PublishedDigestService;
 use OCA\OpenRegister\Service\FileHandlerSupportInterface;
-use OCA\OpenRegister\Service\Party\PartyIndicatorGuard;
+use OCA\OpenRegister\Kernel\Contracts\Core\PublicationRefusalInterface;
 use OCA\OpenRegister\Tests\Unit\Db\RecordingQueryBuilderTrait;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -151,12 +151,12 @@ class PublishedDigestTest extends TestCase {
 			$logger
 		);
 
-		$restrictions = $this->createMock(FileRestrictionGuardInterface::class);
+		$restrictions = $this->createMock(FileReadRestrictionInterface::class);
 		$restrictions->method('isRestricted')->willReturn(false);
-		$partyGuard = $this->createMock(PartyIndicatorGuard::class);
+		$partyGuard = $this->createMock(PublicationRefusalInterface::class);
 		$container = $this->createMock(IServerContainer::class);
 		$container->method('get')->willReturnCallback(
-			static fn (string $id): object => ($id === FileRestrictionGuardInterface::class ? $restrictions : $partyGuard)
+			static fn (string $id): object => ($id === FileReadRestrictionInterface::class ? $restrictions : $partyGuard)
 		);
 
 		$this->handler = new FilePublishingHandler(
