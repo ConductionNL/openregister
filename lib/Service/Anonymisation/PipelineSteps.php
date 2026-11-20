@@ -28,7 +28,6 @@ use OCA\OpenRegister\Files\Service\File\Pdf\PdfTextReplacer;
 use OCA\OpenRegister\Files\Service\File\Sanitizer\DocxSanitizer;
 use OCA\OpenRegister\Files\Service\File\Sanitizer\OdtSanitizer;
 use OCA\OpenRegister\Service\File\ImageBurner;
-use OCA\OpenRegister\Service\File\ImageRedactionService;
 
 /**
  * Every step that changes a document's content, the class that does it, the
@@ -46,6 +45,13 @@ final class PipelineSteps {
 	public const DOCX_SANITISER = 'docx-sanitiser';
 	public const ODT_SANITISER = 'odt-sanitiser';
 	public const IMAGE_BURNER = 'image-burner';
+
+	/**
+	 * The standalone image types the image steps apply to; the image redaction seam detects these.
+	 *
+	 * @var list<string>
+	 */
+	public const IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/tiff', 'image/webp'];
 
 	public const OUTCOME_RAN = 'ran';
 	public const OUTCOME_SKIPPED = 'skipped';
@@ -89,7 +95,7 @@ final class PipelineSteps {
 		self::IMAGE_BURNER => [
 			'label' => 'Image region burner (decided regions painted into the pixels)',
 			'implementedBy' => ImageBurner::class,
-			'mimeTypes' => [...ImageRedactionService::STANDALONE_TYPES, self::DOCX, self::ODT],
+			'mimeTypes' => [...self::IMAGE_TYPES, self::DOCX, self::ODT],
 		],
 	];
 
