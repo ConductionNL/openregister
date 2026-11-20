@@ -21,7 +21,7 @@ use OCA\OpenRegister\Tests\Unit\Controller\Support\SettingsControllerFactory;
 use Doctrine\DBAL\Platforms\AbstractPlatform;
 use OCA\OpenRegister\Controller\SettingsController;
 use OCA\OpenRegister\Service\SettingsService;
-use OCA\OpenRegister\Service\Settings\SearchBackendHandler;
+use OCA\OpenRegister\Kernel\Contracts\Search\SearchBackendSettingsInterface;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
@@ -372,11 +372,11 @@ class SettingsControllerTest extends TestCase {
 	 */
 	public function testUpdateSearchBackendRefusesUnavailableFolding(): void {
 		$this->request->method('getParam')->with('accentInsensitive')->willReturn(true);
-		$handler = $this->createMock(SearchBackendHandler::class);
+		$handler = $this->createMock(SearchBackendSettingsInterface::class);
 		$handler->expects($this->once())->method('setAccentInsensitive')->with(true)
 			->willThrowException(new \InvalidArgumentException('Accent-insensitive search is not available: the unaccent extension could not be created.'));
 		$handler->expects($this->never())->method('getSearchBackendConfig');
-		$this->container->method('get')->with(SearchBackendHandler::class)->willReturn($handler);
+		$this->container->method('get')->with(SearchBackendSettingsInterface::class)->willReturn($handler);
 
 		$response = $this->controller->updateSearchBackend();
 
@@ -394,10 +394,10 @@ class SettingsControllerTest extends TestCase {
 	public function testUpdateSearchBackendStoresTheChoice(): void {
 		$this->request->method('getParam')->with('accentInsensitive')->willReturn('false');
 		$config = ['active' => 'database', 'available' => ['database'], 'accentInsensitive' => ['enabled' => false, 'available' => true, 'reason' => '']];
-		$handler = $this->createMock(SearchBackendHandler::class);
+		$handler = $this->createMock(SearchBackendSettingsInterface::class);
 		$handler->expects($this->once())->method('setAccentInsensitive')->with(false)->willReturn($config['accentInsensitive']);
 		$handler->method('getSearchBackendConfig')->willReturn($config);
-		$this->container->method('get')->with(SearchBackendHandler::class)->willReturn($handler);
+		$this->container->method('get')->with(SearchBackendSettingsInterface::class)->willReturn($handler);
 
 		$response = $this->controller->updateSearchBackend();
 
@@ -412,7 +412,7 @@ class SettingsControllerTest extends TestCase {
 	 */
 	public function testUpdateSearchBackendHidesAStorageFailure(): void {
 		$this->request->method('getParam')->willReturn(true);
-		$handler = $this->createMock(SearchBackendHandler::class);
+		$handler = $this->createMock(SearchBackendSettingsInterface::class);
 		$handler->method('setAccentInsensitive')->willThrowException(new \RuntimeException('database gone'));
 		$this->container->method('get')->willReturn($handler);
 

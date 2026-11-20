@@ -20,7 +20,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
-use OCA\OpenRegister\Contract\EmailLinkReaderInterface;
 use OCA\OpenRegister\Contract\ObjectFileReaderInterface;
 use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
@@ -37,9 +36,6 @@ use OCA\OpenRegister\Service\Object\CacheNameScopeSources;
 use OCA\OpenRegister\Service\SchemaImport\DialectDetector;
 use OCA\OpenRegister\Service\SchemaImport\SchemaImportService;
 use OCA\OpenRegister\Service\SchemaImport\ThreeWayMerge;
-use OCA\OpenRegister\Service\Sync\SourceFetcherRegistry;
-use OCA\OpenRegister\Service\Translation\TranslationProviderInterface;
-use OCA\OpenRegister\Service\Translation\TranslationProviderResolver;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -106,14 +102,6 @@ final class ServiceRegistrar {
 			}
 		);
 
-		// The published read of an object's linked emails, for consuming apps.
-		$context->registerService(
-			EmailLinkReaderInterface::class,
-			function ($c) {
-				return $c->get(EmailLinkService::class);
-			}
-		);
-
 		// The published read of an object's attached files, for consuming apps.
 		$context->registerService(
 			ObjectFileReaderInterface::class,
@@ -131,42 +119,11 @@ final class ServiceRegistrar {
 	 * @return void
 	 *
 	 * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
-	 * @spec openspec/specs/credential-broker/spec.md#requirement-credential-store-backend-resolution
 	 */
 	private static function registerSeams(IRegistrationContext $context): void {
-		// Credential broker (credential-broker-service + credential-doriath-leaf):
-		// bind the CredentialStore abstraction through the CredentialStoreResolver
-		// (design D-A) — the Doriath application-vault leaf when the doriath app is
-		// eligible (enabled + service classes + application-scoped seam methods +
-		// OR self-registration), else the NC encrypted per-user vault leaf. The
-		// broker and controller keep depending only on the CredentialStore
-		// interface; this factory is the ONLY place the selection happens.
-		$context->registerService(
-			\OCA\OpenRegister\Service\Credential\CredentialStore::class,
-			static function ($c) {
-				return $c->get(\OCA\OpenRegister\Service\Credential\CredentialStoreResolver::class)->resolve();
-			}
-		);
-
-		// Bind the translation provider the admin settings select: Nextcloud
-		// Task Processing only when an administrator chose it and confirmed
-		// that record text may be sent; the no-op identity provider otherwise
-		// (ai-translation-with-a-glossary design D-6).
-		$context->registerService(
-			TranslationProviderInterface::class,
-			static function (ContainerInterface $c) {
-				return $c->get(TranslationProviderResolver::class)->resolve();
-			}
-		);
-
 		// Web Push hex-icon service (openregister-web-push-engine): needs an
 		// app-scoped IAppData for its rendered-PNG cache, which is not
 		// auto-wirable, so resolve it via IAppDataFactory here.
-
-		// Register the data-sync source-fetcher registry pre-loaded with the
-		// built-in REST/OpenRegister fetcher. Apps can register additional
-		// fetchers (OData, SOAP, CSV) by resolving and extending this service.
-		$context->registerService(\OCA\OpenRegister\Service\Sync\SourceFetcherRegistry::class, self::buildSourceFetcherRegistry(...));
 
 		// Register the standards schema-import service with the bundled,
 		// versioned snapshot resources (schema-import-standards). Built
@@ -320,19 +277,6 @@ final class ServiceRegistrar {
 				documentStore: $container->get(\OCA\OpenRegister\Service\File\DocumentStore::class)
 			);
 	}//end buildFolderManagementHandler()
-
-	/**
-	 * Build the SourceFetcherRegistry service.
-	 *
-	 * @param ContainerInterface $container The container.
-	 *
-	 * @return SourceFetcherRegistry
-	 */
-	private static function buildSourceFetcherRegistry(ContainerInterface $container): SourceFetcherRegistry {
-		$registry = new SourceFetcherRegistry();
-		$registry->register($container->get(\OCA\OpenRegister\Service\Sync\RestApiSourceFetcher::class));
-		return $registry;
-	}//end buildSourceFetcherRegistry()
 
 	/**
 	 * Build the SchemaImportService service.
