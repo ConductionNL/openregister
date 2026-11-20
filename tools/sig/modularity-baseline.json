@@ -45,10 +45,6 @@
   "lib/Db/SourceMapperInterface.php -> lib/Db/Source.php",
   "lib/Db/TaskAuditMapper.php -> lib/Db/TaskAuditMapperInterface.php",
   "lib/Db/VerwerkingsactiviteitMapperInterface.php -> lib/Db/Verwerkingsactiviteit.php",
-  "lib/Event/TaskSequenceCompletedEvent.php -> lib/Db/Task.php",
-  "lib/Event/TaskSequenceCompletedEvent.php -> lib/Db/TaskSequence.php",
-  "lib/Event/TaskSequenceUndecidedEvent.php -> lib/Db/Task.php",
-  "lib/Event/TaskSequenceUndecidedEvent.php -> lib/Db/TaskSequence.php",
   "lib/Event/TaskTerminalEvent.php -> lib/Db/Task.php",
   "lib/Files/Service/File/DocumentRedactionServices.php -> lib/Service/Settings/FileSettingsHandler.php",
   "lib/Files/Service/TextExtraction/EntityRecognitionHandler.php -> lib/Service/Settings/FileSettingsHandler.php",
@@ -504,7 +500,6 @@
   "lib/Db/TaskInboxOrder.php",
   "lib/Db/TaskInboxSelection.php",
   "lib/Db/TaskMapper.php",
-  "lib/Db/TaskSequence.php",
   "lib/Db/Tenancy/TenancyServices.php",
   "lib/Db/TenantUsageMapperInterface.php",
   "lib/Db/TextSignatureMapper.php",
@@ -528,6 +523,7 @@
   "lib/Event/AbstractRegisterEvent.php",
   "lib/Event/AbstractSchemaEvent.php",
   "lib/Event/AbstractTaskEvent.php",
+  "lib/Event/AbstractTaskSequenceEvent.php",
   "lib/Event/ActionEvaluatedEvent.php",
   "lib/Event/AgentCreatedEvent.php",
   "lib/Event/AgentDeletedEvent.php",
@@ -613,8 +609,6 @@
   "lib/Event/SourceCreatedEvent.php",
   "lib/Event/SourceDeletedEvent.php",
   "lib/Event/SourceUpdatedEvent.php",
-  "lib/Event/TaskSequenceCompletedEvent.php",
-  "lib/Event/TaskSequenceUndecidedEvent.php",
   "lib/Event/TaskTerminalEvent.php",
   "lib/Event/UserProfileUpdatedEvent.php",
   "lib/Event/ViewAlertCrossedEvent.php",
@@ -2439,10 +2433,10 @@
   "Core": 64404,
   "Files": 2665,
   "Integrations": 18152,
-  "Kernel": 8506,
+  "Kernel": 8473,
   "Notifications": 2049,
   "Platform": 293,
-  "Processes": 28921,
+  "Processes": 28865,
   "Search": 2035
  },
  "kernel_files": [
@@ -2596,8 +2590,6 @@
   "lib/Event/SourceCreatedEvent.php",
   "lib/Event/SourceDeletedEvent.php",
   "lib/Event/SourceUpdatedEvent.php",
-  "lib/Event/TaskSequenceCompletedEvent.php",
-  "lib/Event/TaskSequenceUndecidedEvent.php",
   "lib/Event/TaskTerminalEvent.php",
   "lib/Event/UserProfileUpdatedEvent.php",
   "lib/Event/ViewAlertCrossedEvent.php",
@@ -2907,7 +2899,7 @@
   "lib/Support/RegisterSlugAliasesInterface.php",
   "lib/Support/UnknownFilterKeys.php"
  ],
- "kernel_loc": 10457,
+ "kernel_loc": 10411,
  "total_loc": 461355,
- "violation_degree": 0.022
+ "violation_degree": 0.0216
 }
