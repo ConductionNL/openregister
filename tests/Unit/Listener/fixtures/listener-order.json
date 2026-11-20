@@ -4,7 +4,9 @@
 	],
 	"OCA\\OpenRegister\\Db\\SchemaMapper\\SchemaDeclarationChecksEvent": [
 		"OCA\\OpenRegister\\Listener\\SchemaDeclarationChecksListener",
-		"OCA\\OpenRegister\\Listener\\ArchivalDeclarationChecksListener"
+		"OCA\\OpenRegister\\Listener\\ArchivalDeclarationChecksListener",
+		"OCA\\OpenRegister\\Listener\\HandoffDeclarationChecksListener",
+		"OCA\\OpenRegister\\Notifications\\Listener\\NotificationDeclarationCheckListener"
 	],
 	"OCA\\OpenRegister\\Event\\AgentCreatedEvent": [
 		"OCA\\OpenRegister\\Notifications\\Listener\\SystemEntityNotificationListener"

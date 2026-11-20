@@ -37,7 +37,6 @@ class SearchProviderRegistrarTest extends TestCase {
 		$this->assertSame(
 			expected: [
 				'OCA\OpenRegister\Search\ObjectsProvider',
-				'OCA\OpenRegister\Search\FlowTasksProvider',
 			],
 			actual: $registered
 		);

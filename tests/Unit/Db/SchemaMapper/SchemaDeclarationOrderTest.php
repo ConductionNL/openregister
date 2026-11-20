@@ -30,7 +30,10 @@ use OCA\OpenRegister\Db\SchemaMapper\SchemaMapperServices;
 use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 use OCA\OpenRegister\Exception\UniqueHintException;
 use OCA\OpenRegister\Listener\ArchivalDeclarationChecksListener;
+use OCA\OpenRegister\Listener\HandoffDeclarationChecksListener;
 use OCA\OpenRegister\Listener\SchemaDeclarationChecksListener;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationDeclarationException;
+use OCA\OpenRegister\Notifications\Listener\NotificationDeclarationCheckListener;
 use OCA\OpenRegister\Service\Calculation\CalculationDeclarationException;
 use OCA\OpenRegister\Service\Consent\ConsentDeclarationException;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
@@ -93,6 +96,8 @@ final class SchemaDeclarationOrderTest extends TestCase {
 		$listener  = new SchemaDeclarationChecksListener(logger: new NullLogger(), container: $container);
 		$listener->handle(event: $event);
 		(new ArchivalDeclarationChecksListener(logger: new NullLogger()))->handle(event: $event);
+		(new HandoffDeclarationChecksListener())->handle(event: $event);
+		(new NotificationDeclarationCheckListener(logger: new NullLogger()))->handle(event: $event);
 		$contributed = array_map(static fn ($check): int => $check->position(), $event->checks());
 
 		$this->assertSame(expected: [], actual: array_intersect($own, $contributed), message: 'No slot is claimed twice');
@@ -158,6 +163,18 @@ final class SchemaDeclarationOrderTest extends TestCase {
 	 */
 	public static function severalConfigurationFaults(): array {
 		return [
+			'unique hint (Core) before notifications (Notifications)' => [
+				['x-openregister-unique-hint' => 'nope', 'x-openregister-notifications' => self::unlinkableNotification()],
+				['a' => ['type' => 'string']],
+				UniqueHintException::class,
+				'x-openregister-unique-hint:',
+			],
+			'notifications (Notifications) before widgets (Core)' => [
+				['x-openregister-notifications' => self::unlinkableNotification(), 'x-openregister-widgets' => [['nope' => 1]]],
+				['a' => ['type' => 'string']],
+				NotificationDeclarationException::class,
+				'Invalid x-openregister-notifications declaration',
+			],
 			'mdto mapping (Compliance) before consent (Core)' => [
 				['x-openregister-mdto-mapping' => ['nonsense' => ['property' => 'nope']]],
 				['a' => ['type' => 'string', 'x-openregister-consent' => 'nonsense']],
@@ -175,6 +192,24 @@ final class SchemaDeclarationOrderTest extends TestCase {
 				['a' => ['type' => 'string']],
 				Exception::class,
 				'x-openregister-archival:',
+			],
+			'reference card (Core) before handoff contract (Integrations)' => [
+				['x-openregister-card' => 'nope', 'implements' => ['https://openregister.app/ns#Case'], 'handoffContract' => ['https://openregister.app/ns#Case' => []]],
+				['a' => ['type' => 'string']],
+				Exception::class,
+				'x-openregister-card:',
+			],
+			'handoff (Integrations) before external links (Core)' => [
+				['x-openregister-handoff' => [['id' => 'send']], 'x-openregister-external-links' => 'nope'],
+				['a' => ['type' => 'string']],
+				Exception::class,
+				'x-openregister-handoff:',
+			],
+			'handoff contract (Integrations) before external links (Core)' => [
+				['implements' => ['https://openregister.app/ns#Case'], 'handoffContract' => ['https://openregister.app/ns#Case' => []], 'x-openregister-external-links' => 'nope'],
+				['a' => ['type' => 'string']],
+				Exception::class,
+				'handoffContract:',
 			],
 		];
 	}//end severalConfigurationFaults()
@@ -208,6 +243,23 @@ final class SchemaDeclarationOrderTest extends TestCase {
 		$this->assertInstanceOf(expected: $refusal, actual: $thrown);
 		$this->assertStringStartsWith(prefix: $message, string: $thrown->getMessage());
 	}//end testTheFirstConfigurationFaultInSlotOrderRefusesTheSave()
+
+	/**
+	 * A notification rule whose url action cannot be linked to.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function unlinkableNotification(): array {
+		return [
+			'opened' => [
+				'trigger' => ['type' => 'created'],
+				'channels' => ['nc-notification'],
+				'recipients' => [['kind' => 'users', 'users' => ['admin']]],
+				'subject' => 'Opened',
+				'actions' => [['label' => ['nl' => 'Open'], 'target' => ['kind' => 'url', 'href' => 'call']]],
+			],
+		];
+	}//end unlinkableNotification()
 
 	/**
 	 * A mapper whose dispatcher contributes the process checks as the app does.

@@ -23,7 +23,8 @@
 
 namespace OCA\OpenRegister\Event;
 
-use OCA\OpenRegister\Db\Organisation;
+use OCA\OpenRegister\Kernel\Contracts\OrganisationInterface;
+use OCP\AppFramework\Db\Entity;
 use OCP\EventDispatcher\Event;
 
 /**
@@ -34,26 +35,26 @@ class OrganisationUpdatedEvent extends Event {
 	/**
 	 * The updated organisation state.
 	 *
-	 * @var Organisation The organisation after update.
+	 * @var OrganisationInterface&Entity The organisation after update.
 	 */
-	private Organisation $newOrganisation;
+	private OrganisationInterface $newOrganisation;
 
 	/**
 	 * The previous organisation state.
 	 *
-	 * @var Organisation The organisation before update.
+	 * @var OrganisationInterface&Entity The organisation before update.
 	 */
-	private Organisation $oldOrganisation;
+	private OrganisationInterface $oldOrganisation;
 
 	/**
 	 * Constructor for OrganisationUpdatedEvent.
 	 *
-	 * @param Organisation $newOrganisation The organisation after update.
-	 * @param Organisation $oldOrganisation The organisation before update.
+	 * @param OrganisationInterface&Entity $newOrganisation The organisation after update.
+	 * @param OrganisationInterface&Entity $oldOrganisation The organisation before update.
 	 *
 	 * @return void
 	 */
-	public function __construct(Organisation $newOrganisation, Organisation $oldOrganisation) {
+	public function __construct(OrganisationInterface $newOrganisation, OrganisationInterface $oldOrganisation) {
 		parent::__construct();
 		$this->newOrganisation = $newOrganisation;
 		$this->oldOrganisation = $oldOrganisation;
@@ -62,33 +63,33 @@ class OrganisationUpdatedEvent extends Event {
 	/**
 	 * Get the organisation (the updated state).
 	 *
-	 * @return Organisation The organisation after update.
+	 * @return OrganisationInterface&Entity The organisation after update.
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
 	 */
-	public function getOrganisation(): Organisation {
+	public function getOrganisation(): OrganisationInterface {
 		return $this->newOrganisation;
 	}//end getOrganisation()
 
 	/**
 	 * Get the new organisation state.
 	 *
-	 * @return Organisation The organisation after update.
+	 * @return OrganisationInterface&Entity The organisation after update.
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
 	 */
-	public function getNewOrganisation(): Organisation {
+	public function getNewOrganisation(): OrganisationInterface {
 		return $this->newOrganisation;
 	}//end getNewOrganisation()
 
 	/**
 	 * Get the old organisation state.
 	 *
-	 * @return Organisation The organisation before update.
+	 * @return OrganisationInterface&Entity The organisation before update.
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
 	 */
-	public function getOldOrganisation(): Organisation {
+	public function getOldOrganisation(): OrganisationInterface {
 		return $this->oldOrganisation;
 	}//end getOldOrganisation()
 }//end class
