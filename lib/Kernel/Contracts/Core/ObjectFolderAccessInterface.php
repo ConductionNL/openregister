@@ -1,6 +1,6 @@
 <?php
 /**
- * ObjectFolderAccessInterface: the folder-access check on an object's bound folder, as the object save asks it.
+ * ObjectFolderAccessInterface: the access check on an object's bound folder, as the object save asks it.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -23,10 +23,10 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\IUser;
 
 /**
- * The folder-access check on an object's bound folder, as the object save (Core) asks it.
+ * The access check on an object's bound folder, as the object save (Core) asks it.
  *
  * The object save re-validates the bound folder and resets the per-request
- * verdicts at its entry; file storage (Files) answers, through
+ * verdicts at its entry; file storage answers, through
  * FileFolderServiceInterface, which extends this.
  *
  * @spec openspec/specs/self-folder-access-control/spec.md

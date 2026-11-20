@@ -27,7 +27,7 @@ use OCA\OpenRegister\Db\DelegationGrant;
 use OCA\OpenRegister\Db\DelegationGrantMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\AuthorizationAuditService;
+use OCA\OpenRegister\Kernel\Contracts\Core\SchemaAccessChangeLogInterface;
 use OCA\OpenRegister\Service\Rbac\DerivedGrantStore;
 use OCA\OpenRegister\Service\Rbac\PrincipalReachService;
 use OCA\OpenRegister\Service\Rbac\ReachRevocationLog;
@@ -76,9 +76,9 @@ class ReachRevocationServiceFailureTest extends TestCase {
 	private LoggerInterface $logger;
 
 	/**
-	 * @var AuthorizationAuditService&MockObject
+	 * @var SchemaAccessChangeLogInterface&MockObject
 	 */
-	private AuthorizationAuditService $audit;
+	private SchemaAccessChangeLogInterface $audit;
 
 	/**
 	 * Build the collaborators.
@@ -90,7 +90,7 @@ class ReachRevocationServiceFailureTest extends TestCase {
 		$this->derived     = $this->createMock(DerivedGrantStore::class);
 		$this->delegations = $this->createMock(DelegationGrantMapperInterface::class);
 		$this->logger      = $this->createMock(LoggerInterface::class);
-		$this->audit       = $this->createMock(AuthorizationAuditService::class);
+		$this->audit       = $this->createMock(SchemaAccessChangeLogInterface::class);
 	}//end setUp()
 
 	/**
