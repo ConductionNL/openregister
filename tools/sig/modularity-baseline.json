@@ -997,6 +997,7 @@
   "lib/Kernel/Contracts/FlowTimerInterface.php",
   "lib/Kernel/Contracts/GitHubClientInterface.php",
   "lib/Kernel/Contracts/Integrations/BuiltInToolProvidersInterface.php",
+  "lib/Kernel/Contracts/Integrations/ObjectCalendarLinkInterface.php",
   "lib/Kernel/Contracts/Integrations/OutboundBreakerInterface.php",
   "lib/Kernel/Contracts/Integrations/ShareableConfigCatalogueInterface.php",
   "lib/Kernel/Contracts/Integrations/TranslationBindingInterface.php",
@@ -2563,7 +2564,7 @@
   "Configuration": 3647,
   "Core": 64578,
   "Files": 3592,
-  "Integrations": 18228,
+  "Integrations": 18237,
   "Kernel": 8505,
   "Notifications": 2018,
   "Platform": 292,
@@ -3033,6 +3034,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10456,
- "total_loc": 460703,
+ "total_loc": 460715,
  "violation_degree": 0.0397
 }
