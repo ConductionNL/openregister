@@ -139,7 +139,6 @@
   "lib/Db/SequenceMapperInterface.php -> lib/Service/SequenceScope.php",
   "lib/Db/SourceMapperInterface.php -> lib/Db/Source.php",
   "lib/Db/TaskAuditMapper.php -> lib/Db/TaskAuditMapperInterface.php",
-  "lib/Db/TaskSequenceMapperInterface.php -> lib/Db/TaskSequence.php",
   "lib/Db/VerwerkingsactiviteitMapperInterface.php -> lib/Db/Verwerkingsactiviteit.php",
   "lib/Event/AbstractTaskEvent.php -> lib/Db/Task.php",
   "lib/Event/AbstractTaskSequenceEvent.php -> lib/Db/TaskSequence.php",
@@ -157,8 +156,6 @@
   "lib/Files/Db/ChunkMapper.php -> lib/Db/Source.php",
   "lib/Files/Service/File/DocumentRedactionServices.php -> lib/Service/Settings/FileSettingsHandler.php",
   "lib/Files/Service/TextExtraction/EntityRecognitionHandler.php -> lib/Service/Settings/FileSettingsHandler.php",
-  "lib/Listener/ApprovalChainAdvanceListener.php -> lib/Db/TaskSequence.php",
-  "lib/Listener/ApprovalChainGateListener.php -> lib/Db/TaskSequence.php",
   "lib/Listener/GeneratedIdentifierListener.php -> lib/Service/SequenceScope.php",
   "lib/Listener/GeneratedIdentifierListener.php -> lib/Service/SequenceServiceInterface.php",
   "lib/Listener/ListenerRegistrar.php -> lib/Listener/NotifyPushListener.php",
@@ -204,8 +201,6 @@
   "lib/Notifications/Service/Notification/TaskTransitionNotifierInterface.php -> lib/Db/Task.php",
   "lib/Notifications/Service/Timeline/MentionPrincipals.php -> lib/Service/Interaction/WatcherServiceInterface.php",
   "lib/Repair/MarkImplicitCrossOrganisationReadRules.php -> lib/Repair/SchemaListing.php",
-  "lib/Repair/MigrateApprovalChainsToTasks.php -> lib/Db/TaskSequence.php",
-  "lib/Repair/MigrateApprovalChainsToTasks.php -> lib/Repair/Support/SequenceMigrationRun.php",
   "lib/Repair/RechainAuditTrailForFlowAttribution.php -> lib/Repair/V1ChainVerificationRun.php",
   "lib/Search/BackgroundJob/SearchIndexRebuildJob.php -> lib/BackgroundJob/RecordedJobRuntime.php",
   "lib/Search/BackgroundJob/SearchIndexRebuildJob.php -> lib/BackgroundJob/RecordedQueuedJob.php",
@@ -443,10 +438,6 @@
   "lib/Service/ServiceRegistrar.php -> lib/Service/Translation/TranslationProviderResolver.php",
   "lib/Service/Sharing/AccessLinkActs.php -> lib/Notifications/Service/TimelineVisibilityServiceInterface.php",
   "lib/Service/Sharing/AccessLinkViewReaders.php -> lib/Search/Db/ViewMapperInterface.php",
-  "lib/Service/Task/SequenceClosure.php -> lib/Db/TaskSequence.php",
-  "lib/Service/Task/TaskSequenceDecisionGuard.php -> lib/Db/TaskSequence.php",
-  "lib/Service/Task/TaskSequenceService.php -> lib/Db/TaskSequence.php",
-  "lib/Service/Task/TaskSequenceServiceInterface.php -> lib/Db/TaskSequence.php",
   "lib/Service/User/ApiTokenAuditRow.php -> lib/Db/AuditTrail.php"
  ],
  "exposed_files": [
@@ -1397,7 +1388,6 @@
   "lib/Repair/SchemaListing.php",
   "lib/Repair/Support/EveryFlow.php",
   "lib/Repair/Support/RepairPlatform.php",
-  "lib/Repair/Support/SequenceMigrationRun.php",
   "lib/Repair/TaskSubjectLocationBackfill.php",
   "lib/Repair/V1ChainVerificationRun.php",
   "lib/Search/BackgroundJob/SearchJobHandlesInterface.php",
@@ -2751,14 +2741,14 @@
  ],
  "exposed_loc": {
   "Compliance": 15770,
-  "Configuration": 4797,
+  "Configuration": 4742,
   "Core": 64639,
   "Files": 3640,
   "Integrations": 18324,
   "Kernel": 8516,
   "Notifications": 1752,
-  "Platform": 537,
-  "Processes": 31548,
+  "Platform": 526,
+  "Processes": 31603,
   "Search": 2006
  },
  "kernel_files": [
@@ -3224,5 +3214,5 @@
  ],
  "kernel_loc": 10454,
  "total_loc": 460372,
- "violation_degree": 0.057
+ "violation_degree": 0.056
 }
