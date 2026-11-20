@@ -568,6 +568,30 @@ Content-Type: application/json
 
 **Registration**: Registered in `Application.php` with service container integration.
 
+### Object Extraction in Background Mode
+
+**Location**: `lib/Listener/ObjectChangeListener.php`, `lib/BackgroundJob/ObjectTextExtractionChunkJob.php`
+
+`ObjectChangeListener` reacts to `ObjectCreatedEvent` and `ObjectUpdatedEvent`. With the extraction mode on `background` (the default), it does not queue a job per object. It hands the object id to `ListenerDeferralService`, which collects the ids of one PHP process and queues one `ObjectTextExtractionChunkJob` per chunk:
+
+- A flow that writes 700 objects item by item in one cron run leaves 7 chunk jobs, not 700 extraction jobs. Other background jobs, such as the next scheduled flow, get their turn between two chunks.
+- A bulk save with events and a single save through the API go the same way. A single save becomes a chunk of one at the end of the request.
+- An object saved twice in one process is extracted once.
+- The chunk job extracts its objects one by one. An object deleted in the meantime is skipped, and a failure on one object does not stop the rest of the chunk.
+
+| Setting | Default | Effect |
+|---------|---------|--------|
+| `textExtractionChunkSize` | `100` | Maximum number of objects per chunk job. A value below 1 falls back to 100. |
+| `listenerDeferral` | `background` | `inline` switches deferral off for every deferred listener; object extraction then queues one `ObjectTextExtractionJob` per object again. |
+
+```bash
+occ config:app:set openregister textExtractionChunkSize --value=50 --type=integer
+```
+
+A chunk of 100 stays under the 4,000-character job argument limit of Nextcloud 32 and 33, because an entry carries only the object id.
+
+A bulk save without events (`saveObjects(events: false)`, or a flow node with `bulk: true`) raises no object events, so its objects are not extracted. A schema that wants extraction for bulk writes sets `fireEventsOnBulkWrites`.
+
 ## File Size Limits
 
 ### Default Limits
