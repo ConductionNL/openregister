@@ -139,7 +139,7 @@ BackgroundJob/TenantDeprovisionJob.php,50,BackgroundJob,Access,Access/Background
 BackgroundJob/TenantPurgeJob.php,85,BackgroundJob,Access,Access/BackgroundJob/TenantPurgeJob.php,0,,Core
 BackgroundJob/TenantUsageSyncJob.php,84,BackgroundJob,Access,Access/BackgroundJob/TenantUsageSyncJob.php,0,,Core
 BackgroundJob/TransferCheckJob.php,78,BackgroundJob,Access,Access/BackgroundJob/TransferCheckJob.php,0,,Compliance
-BackgroundJob/TransferExecutionJob.php,143,BackgroundJob,Access,Access/BackgroundJob/TransferExecutionJob.php,0,,Core
+BackgroundJob/TransferExecutionJob.php,143,BackgroundJob,Access,Access/BackgroundJob/TransferExecutionJob.php,0,,Compliance
 BackgroundJob/TranslationProjectionJob.php,51,BackgroundJob,Flows,Flows/BackgroundJob/TranslationProjectionJob.php,0,,Processes
 BackgroundJob/ViewAlertSweepJob.php,121,BackgroundJob,Service,Service/BackgroundJob/ViewAlertSweepJob.php,0,,Search
 BackgroundJob/WebhookDeliveryJob.php,100,BackgroundJob,Integrations,Integrations/BackgroundJob/WebhookDeliveryJob.php,0,272,Integrations
@@ -615,7 +615,7 @@ Controller/XwikiLinksController.php,140,Controller,Integrations,Integrations/Con
 Dashboard/IntegrationDashboardWidget.php,40,Dashboard,Flows,Flows/Dashboard/IntegrationDashboardWidget.php,0,,Platform
 Dav/TaskVtodoWriteBackPlugin.php,136,Dav,Platform,Platform/Dav/TaskVtodoWriteBackPlugin.php,0,,Processes
 Db/AbstractObjectMapper.php,70,Db,Service,Service/Db/AbstractObjectMapper.php,0,378,Core
-Db/AccessLink.php,120,Db,Integrations,Integrations/Db/AccessLink.php,1,248,Core
+Db/AccessLink.php,120,Db,Access,Access/Db/AccessLink.php,1,248,Core
 Db/AccessLinkMapper.php,63,Db,Access,Access/Db/AccessLinkMapper.php,0,,Core
 Db/AnalyticsLink.php,48,Db,Integrations,Integrations/Db/AnalyticsLink.php,0,,Integrations
 Db/AnalyticsLinkMapper.php,23,Db,Integrations,Integrations/Db/AnalyticsLinkMapper.php,0,,Integrations
@@ -696,7 +696,7 @@ Db/EndpointLogMapper.php,87,Db,Integrations,Integrations/Db/EndpointLogMapper.ph
 Db/EndpointMapper.php,78,Db,Integrations,Integrations/Db/EndpointMapper.php,0,,Integrations
 Db/EntityChangeDetector.php,37,Db,Service,Service/Db/EntityChangeDetector.php,0,,Core
 Db/EntityRelation.php,75,Db,Service,Service/Db/EntityRelation.php,15,318,Core
-Db/EntityRelationMapper.php,475,Db,Service,Service/Db/EntityRelationMapper.php,97,18,Core
+Db/EntityRelationMapper.php,475,Db,Service,Service/Db/EntityRelationMapper.php,97,18,Files
 Db/ErasurePreview.php,67,Db,Compliance,Compliance/Db/ErasurePreview.php,0,,Compliance
 Db/ErasurePreviewMapper.php,63,Db,Compliance,Compliance/Db/ErasurePreviewMapper.php,0,,Compliance
 Db/ExportProfile.php,90,Db,Configuration,Configuration/Db/ExportProfile.php,0,,Configuration
@@ -899,8 +899,8 @@ Db/TaskProjectionState.php,37,Db,Work,Work/Db/TaskProjectionState.php,0,,Process
 Db/TaskProjectionStateMapper.php,30,Db,Work,Work/Db/TaskProjectionStateMapper.php,0,,Processes
 Db/TaskRelation.php,29,Db,Work,Work/Db/TaskRelation.php,0,,Processes
 Db/TaskRelationMapper.php,28,Db,Work,Work/Db/TaskRelationMapper.php,0,,Processes
-Db/TaskSequence.php,89,Db,Configuration,Configuration/Db/TaskSequence.php,31,298,Processes
-Db/TaskSequenceMapper.php,55,Db,Configuration,Configuration/Db/TaskSequenceMapper.php,18,375,Configuration
+Db/TaskSequence.php,89,Db,Work,Work/Db/TaskSequence.php,31,298,Processes
+Db/TaskSequenceMapper.php,55,Db,Work,Work/Db/TaskSequenceMapper.php,18,375,Processes
 Db/TenantUsage.php,48,Db,Access,Access/Db/TenantUsage.php,0,,Core
 Db/TenantUsageMapper.php,106,Db,Access,Access/Db/TenantUsageMapper.php,0,,Core
 Db/TimeTrackerLink.php,54,Db,Integrations,Integrations/Db/TimeTrackerLink.php,0,,Integrations
@@ -1386,7 +1386,7 @@ Mcp/Attribute/McpTool.php,27,Mcp,Mcp,Mcp/Attribute/McpTool.php,46,,Integrations
 Mcp/Attribute/McpToolTitle.php,10,Mcp,Mcp,Mcp/Attribute/McpToolTitle.php,2,,Integrations
 Mcp/AttributeToolScanner.php,354,Mcp,Mcp,Mcp/AttributeToolScanner.php,5,,Integrations
 Mcp/BuiltIn/AttributeToolProvider.php,162,Mcp,Mcp,Mcp/BuiltIn/AttributeToolProvider.php,1,,Integrations
-Mcp/BuiltIn/FlowMcpToolProvider.php,205,Mcp,Flows,Flows/Mcp/BuiltIn/FlowMcpToolProvider.php,0,112,Integrations
+Mcp/BuiltIn/FlowMcpToolProvider.php,205,Mcp,Flows,Flows/Mcp/BuiltIn/FlowMcpToolProvider.php,0,112,Processes
 Mcp/BuiltIn/IntegrationsToolProvider.php,153,Mcp,Mcp,Mcp/BuiltIn/IntegrationsToolProvider.php,0,,Integrations
 Mcp/BuiltIn/ObjectsToolProvider.php,128,Mcp,Mcp,Mcp/BuiltIn/ObjectsToolProvider.php,0,,Integrations
 Mcp/BuiltIn/RegistersToolProvider.php,124,Mcp,Mcp,Mcp/BuiltIn/RegistersToolProvider.php,0,,Integrations
@@ -3423,7 +3423,7 @@ Db/SchemaRun/,,Db,,,,,Core
 Db/SearchTrail/,,Db,,,,,Search
 Db/Source/,,Db,,,,,Integrations
 Db/Support/,,Db,,,,,Integrations
-Db/TaskSequence/,,Db,,,,,Integrations
+Db/TaskSequence/,,Db,,,,,Processes
 Db/Tenancy/,,Db,,,,,Core
 Db/Webhook/,,Db,,,,,Integrations
 Db/WebhookLog/,,Db,,,,,Integrations
@@ -3596,7 +3596,7 @@ BackgroundJob/ProcessingLogPrune.php,,BackgroundJob,,,,,Compliance
 BackgroundJob/QueuedJobClassesInterface.php,,BackgroundJob,,,,,Core
 BackgroundJob/RecomputeTimersForCalendarJobServices.php,,BackgroundJob,,,,,Processes
 BackgroundJob/RecordedJobRuntime.php,,BackgroundJob,,,,,Core
-BackgroundJob/TransferAttemptRun.php,,BackgroundJob,,,,,Core
+BackgroundJob/TransferAttemptRun.php,,BackgroundJob,,,,,Compliance
 BulkAction/ApplyRuleActionInterface.php,,BulkAction,,,,,Processes
 BulkAction/AssignActionInterface.php,,BulkAction,,,,,Processes
 BulkAction/BulkActionOutcomeInterface.php,,BulkAction,,,,,Processes
@@ -3667,7 +3667,7 @@ Db/ContentReportMapperInterface.php,,Db,,,,,Compliance
 Db/CospendLinkMapperInterface.php,,Db,,,,,Integrations
 Db/DbRegistrar.php,,Db,,,,,Core
 Db/DecisionMapperInterface.php,,Db,,,,,Processes
-Db/DecisionMetadataChange.php,,Db,,,,,Core
+Db/DecisionMetadataChange.php,,Db,,,,,Files
 Db/DecisionMetadataEdit.php,,Db,,,,,Core
 Db/DeckLinkMapperInterface.php,,Db,,,,,Integrations
 Db/DelegationGrantMapperInterface.php,,Db,,,,,Core
@@ -4268,18 +4268,18 @@ Service/RedactionPolicy/TermRule.php,101,Service,Configuration,Configuration/Ser
 Service/RedactionPolicy/TermRuleMatcher.php,73,Service,Configuration,Configuration/Service/RedactionPolicy/TermRuleMatcher.php,0,,Configuration
 Service/RedactionPolicy/TermRuleSourceInterface.php,6,Service,Configuration,Configuration/Service/RedactionPolicy/TermRuleSourceInterface.php,0,,Configuration
 Service/RedactionPolicy/TextFolder.php,62,Service,Configuration,Configuration/Service/RedactionPolicy/TextFolder.php,0,,Configuration
-Service/File/AnonymiqRegionDetector.php,,Service,,,,,Core
-Service/File/ExAppJsonRequester.php,,Service,,,,,Core
-Service/File/IImageRegionDetector.php,,Service,,,,,Core
+Service/File/AnonymiqRegionDetector.php,,Service,,,,,Files
+Service/File/ExAppJsonRequester.php,,Service,,,,,Files
+Service/File/IImageRegionDetector.php,,Service,,,,,Files
 Service/File/ImageBurner.php,,Service,,,,,Core
-Service/File/ImageDetection.php,,Service,,,,,Core
-Service/File/ImageRedactionService.php,,Service,,,,,Core
+Service/File/ImageDetection.php,,Service,,,,,Files
+Service/File/ImageRedactionService.php,,Service,,,,,Files
 Service/File/ImageRegion.php,,Service,,,,,Core
-Service/File/ImageRegionDetectorRegistry.php,,Service,,,,,Core
+Service/File/ImageRegionDetectorRegistry.php,,Service,,,,,Files
 Service/File/ImageRegionNotBurnableException.php,,Service,,,,,Core
-Service/File/OcrWordLocator.php,,Service,,,,,Core
+Service/File/OcrWordLocator.php,,Service,,,,,Files
 Service/File/OcrWords.php,,Service,,,,,Core
-Service/File/OfficeMediaBurner.php,,Service,,,,,Core
+Service/File/OfficeMediaBurner.php,,Service,,,,,Files
 AppHost/Controller/GenericReadinessController.php,,AppHost,,,,,Integrations
 Service/Reference/ReferenceCardDeclaration.php,,Service,,,,,Core
 Service/Task/TaskVerbList.php,152,Service,Work,Work/Service/Task/TaskVerbList.php,0,,Processes
@@ -4393,6 +4393,8 @@ Db/IntegrationsMapperBindings.php,,Db,,,,,Integrations
 Db/IntegrationsMapperRegistrar.php,,Db,,,,,Integrations
 Db/ComplianceMapperBindings.php,,Db,,,,,Compliance
 Db/ComplianceMapperRegistrar.php,,Db,,,,,Compliance
+Db/FilesMapperBindings.php,,Db,,,,,Files
+Db/FilesMapperRegistrar.php,,Db,,,,,Files
 Controller/Support/AnalyticsLinksControllerServices.php,,Controller,,,,,Integrations
 Controller/Support/ApiCallersControllerServices.php,,Controller,,,,,Integrations
 Controller/Support/BookmarkLinksControllerServices.php,,Controller,,,,,Integrations
@@ -4435,6 +4437,7 @@ Controller/Support/OperationsConsoleControllerServices.php,,Controller,,,,,Confi
 Controller/Support/OperationsMaintenanceControllerServices.php,,Controller,,,,,Configuration
 Controller/Support/RecordTemplatesControllerServices.php,,Controller,,,,,Configuration
 BackgroundJob/Support/ActorForwardingServices.php,,BackgroundJob,,,,,Core
+BackgroundJob/Support/ConfigurationCheckServices.php,,BackgroundJob,,,,,Configuration
 AppHost/Listener/ApplicationPublishListener.php,,AppHost,,,,,Processes
 AppHost/Scheduling/CompiledScheduleFlow.php,,AppHost,,,,,Processes
 AppHost/Scheduling/ScheduleAuditTrail.php,,AppHost,,,,,Processes
@@ -4464,6 +4467,8 @@ BackgroundJob/Support/FlowRunRetentionServices.php,,BackgroundJob,,,,,Processes
 Service/Schemas/ArchivalDeclarationValidators.php,,Service,,,,,Compliance
 Db/SchemaMapper/ArchivalDeclarationRefusals.php,,Db,,,,,Compliance
 Listener/ArchivalDeclarationChecksListener.php,,Listener,,,,,Compliance
+Mcp/BuiltIn/FlowToolServices.php,,Mcp,,,,,Processes
+Mcp/BuiltIn/FlowBuiltInToolProviders.php,,Mcp,,,,,Processes
 Service/Form/PublishedForm.php,,Service,,,,,Kernel
 Service/Lifecycle/TransitionActor.php,,Service,,,,,Kernel
 Service/Lifecycle/TransitionMove.php,,Service,,,,,Kernel
