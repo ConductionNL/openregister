@@ -28,6 +28,7 @@ use OCA\OpenRegister\Db\Application;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\Source;
+use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Event\ApplicationCreatedEvent;
 use OCA\OpenRegister\Event\ApplicationDeletedEvent;
 use OCA\OpenRegister\Event\ApplicationUpdatedEvent;
@@ -40,8 +41,10 @@ use OCA\OpenRegister\Event\SchemaUpdatedEvent;
 use OCA\OpenRegister\Event\SourceCreatedEvent;
 use OCA\OpenRegister\Event\SourceDeletedEvent;
 use OCA\OpenRegister\Event\SourceUpdatedEvent;
+use OCA\OpenRegister\Event\TaskTerminalEvent;
 use OCA\OpenRegister\Kernel\Contracts\SourceInterface;
 use OCA\OpenRegister\Kernel\Contracts\EntityEventsInterface;
+use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\Registers\EntityEventPublisher;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
@@ -195,6 +198,31 @@ final class EntityEventsBindingTest extends TestCase {
 		$this->expectException(InvalidArgumentException::class);
 		$this->expectExceptionMessage('Expected ' . SourceInterface::class . ', got ' . Application::class . '.');
 		(new EntityEventPublisher(dispatcher: $dispatcher))->sourceCreated(new Application());
+	}
+
+	public function testATerminalTaskIsAnnouncedWithTheRowItWasGiven(): void {
+		$events     = [];
+		$dispatcher = $this->createMock(IEventDispatcher::class);
+		$dispatcher->method('dispatchTyped')->willReturnCallback(static function (Event $event) use (&$events): void {
+			$events[] = $event;
+		});
+		$task = new Task();
+
+		(new EntityEventPublisher(dispatcher: $dispatcher))->taskTerminal(task: $task, committed: false);
+
+		$this->assertCount(1, $events);
+		$this->assertInstanceOf(TaskTerminalEvent::class, $events[0]);
+		$this->assertSame($task, $events[0]->getTask());
+		$this->assertFalse($events[0]->isCommitted());
+	}
+
+	public function testATerminalTaskAnnouncementRefusesAnEntityThatIsNoTask(): void {
+		$dispatcher = $this->createMock(IEventDispatcher::class);
+		$dispatcher->expects($this->never())->method('dispatchTyped');
+
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage('Expected ' . TaskInterface::class . ', got ' . Application::class . '.');
+		(new EntityEventPublisher(dispatcher: $dispatcher))->taskTerminal(task: new Application(), committed: true);
 	}
 
 	public function testOnlyTheListedMappersNameAnEventClass(): void {

@@ -29,7 +29,7 @@ use OCA\OpenRegister\Service\Archival\DestructionListRepository;
 use OCA\OpenRegister\Service\Archival\DestructionListRepositoryInterface;
 use OCA\OpenRegister\Service\Archival\DestructionReviewReminderInterface;
 use OCA\OpenRegister\Service\Archival\DestructionReviewService;
-use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\ArchivalSettingsInterface;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\Notification\IManager as INotificationManager;
@@ -119,7 +119,7 @@ class ReviewReminderJobPassTest extends TestCase {
 				DestructionListRepositoryInterface::class => $this->lists,
 				DestructionReviewReminderInterface::class => new DestructionReviewService(),
 				INotificationManager::class => $notificationManager,
-				ArchivalSettingsReaderInterface::class => $settings,
+				ArchivalSettingsInterface::class => $settings,
 				default => $logger,
 			}
 		);

@@ -32,8 +32,11 @@ class ListenerRegistrationOrderGoldenTest extends TestCase {
 
 	/**
 	 * The sha256 of every registration call, one `method|arg|arg...` line each, in order.
+	 *
+	 * Last changed when the NotifyPushBatchInterface alias moved to ListenerBootstrap; the
+	 * listener registrations themselves are unchanged.
 	 */
-	private const SEQUENCE_SHA256 = '2ac288b010ae38ee6093c96b8b3cb374d24abfe1934e4ccd1193156c005cb519';
+	private const SEQUENCE_SHA256 = '90adcd811b163fbf3b297d8f8279ff2a3f79714d1cc8474e845815fa26007745';
 
 	/**
 	 * The registration calls, in call order, with every argument.
