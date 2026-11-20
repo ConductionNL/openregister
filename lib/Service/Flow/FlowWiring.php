@@ -26,6 +26,8 @@ use OCA\OpenRegister\Db\FlowLinkMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\BulkRowRefusalsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\DependentValueCheckInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ContactMatchCacheInterface;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\LifecycleFinalStatesInterface;
 use OCA\OpenRegister\Kernel\Contracts\Compliance\LifecycleTransitionInterface;
 use OCA\OpenRegister\Kernel\Contracts\Compliance\TransitionInFlightInterface;
 use OCA\OpenRegister\Service\Calendar\ObjectCalendarFeedService;
@@ -37,6 +39,11 @@ use OCA\OpenRegister\Listener\DependentValueListener;
 use OCA\OpenRegister\Service\Dmn\DecisionTableBulkGuard;
 use OCA\OpenRegister\Service\FlowLinkPlatform;
 use OCA\OpenRegister\Service\FlowLinkService;
+use OCA\OpenRegister\Service\ContactMatchingService;
+use OCA\OpenRegister\Kernel\Contracts\Core\UserCalendarEventsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Integrations\TaskGaugeInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ReadHistoryInterface;
+use OCA\OpenRegister\Service\Interaction\ReadHistoryService;
 use OCA\OpenRegister\Kernel\Contracts\Core\WriteElevationInterface;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionWriteElevation;
 use OCA\OpenRegister\Kernel\Contracts\Integrations\ObjectDateEventsSourceInterface;
@@ -47,6 +54,8 @@ use OCA\OpenRegister\Kernel\Contracts\Core\SchemaRenameWarningsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Notifications\NotificationRunRecorderInterface;
 use OCA\OpenRegister\Kernel\Contracts\Notifications\ObjectWatchersInterface;
 use OCA\OpenRegister\Kernel\Contracts\Notifications\TaskRowSourceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Notifications\OverdueTaskSourceInterface;
+use OCA\OpenRegister\Service\Task\OverdueOpenTasks;
 use OCA\OpenRegister\Service\AutomationRecordWriter;
 use OCA\OpenRegister\Service\Form\FormDependentsCheck;
 use OCA\OpenRegister\Service\Interaction\WatcherService;
@@ -68,6 +77,7 @@ use OCA\OpenRegister\Service\Flow\Timer\TermDiagnosticInterface;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarDefinitionsInterface;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendars;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleFinalStateResolver;
 use OCA\OpenRegister\Service\Party\PartyIndicatorGuard;
 use OCA\OpenRegister\Service\Party\PartySearchInterface;
 use OCA\OpenRegister\Service\Party\PartySearchService;
@@ -76,6 +86,7 @@ use OCA\OpenRegister\Service\Rules\ExpressionDefaults;
 use OCA\OpenRegister\Service\Task\TaskCalendarDocument;
 use OCA\OpenRegister\Service\Task\TaskCalendarDocumentInterface;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
+use OCA\OpenRegister\Service\Task\TaskMetricsProvider;
 use OCA\OpenRegister\Service\TaskService;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
@@ -121,10 +132,15 @@ final class FlowWiring {
 		ObjectCalendarLinkInterface::class => CalendarEventService::class,
 		CurrentFlowRunInterface::class => FlowRunContext::class,
 		ScheduleFlowStoreInterface::class => ScheduleFlowStore::class,
+		UserCalendarEventsInterface::class => CalendarEventService::class,
+		TaskGaugeInterface::class => TaskMetricsProvider::class,
+		LifecycleFinalStatesInterface::class => LifecycleFinalStateResolver::class,
+		ReadHistoryInterface::class       => ReadHistoryService::class,
 		TransitionInFlightInterface::class => LifecycleActionContext::class,
 		WriteElevationInterface::class    => ObjectActionWriteElevation::class,
 		ObjectDateEventsSourceInterface::class => ObjectCalendarFeedService::class,
 		TaskRowSourceInterface::class => TaskInboxService::class,
+		OverdueTaskSourceInterface::class => OverdueOpenTasks::class,
 		ObjectWatchersInterface::class => WatcherService::class,
 		NotificationRunRecorderInterface::class => AutomationRecordWriter::class,
 		SchemaRenameWarningsInterface::class => FlowTriggerRenameCheck::class,
@@ -146,6 +162,7 @@ final class FlowWiring {
 		ExpressionDefaultsInterface::class => ExpressionDefaults::class,
 		BulkRowRefusalsInterface::class => DecisionTableBulkGuard::class,
 		DependentValueCheckInterface::class => DependentValueListener::class,
+		ContactMatchCacheInterface::class => ContactMatchingService::class,
 		ObjectQuotaInterface::class => ObjectQuotaService::class,
 		\OCA\OpenRegister\Kernel\Contracts\Core\PartyParentInterface::class => \OCA\OpenRegister\Service\Party\PartyParent::class,
 		\OCA\OpenRegister\Kernel\Contracts\Core\LifecycleStatesKeeperInterface::class => \OCA\OpenRegister\Service\Lifecycle\LifecycleStatesKeeper::class,

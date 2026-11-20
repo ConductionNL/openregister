@@ -4465,6 +4465,7 @@ Service/Config/ShareableConfigCatalogue.php,,Service,,,,,Configuration
 Service/ComplianceServiceBindings.php,,Service,,,,,Compliance
 Service/ComplianceServiceRegistrar.php,,Service,,,,,Compliance
 Files/Service/File/FileScopeReader.php,,Files,,,,,Files
+Service/Task/OverdueOpenTasks.php,,Service,,,,,Processes
 Event/ObjectWriteRequestEvent.php,,Event,,,,,Core
 Listener/WebhookRequestInterceptionListener.php,,Listener,,,,,Integrations
 BackgroundJob/Support/AbandonedFlowClaim.php,,BackgroundJob,,,,,Processes
@@ -4578,7 +4579,10 @@ Service/Rbac/AuditEntryRecorder.php,,Service,,,,,Core
 Listener/ReferenceCardDeclarationCheckListener.php,,Listener,,,,,Configuration
 Listener/UniqueHintDeclarationCheckListener.php,,Listener,,,,,Search
 Service/Consumer/AccountConsumerLookup.php,,Service,,,,,Integrations
+Service/Rbac/AuditRowWriter.php,,Service,,,,,Compliance
 Service/Party/PartyParent.php,,Service,,,,,Processes
 Service/Lifecycle/LifecycleStatesKeeper.php,,Service,,,,,Processes
 Service/AcceptLanguageHeader.php,,Service,,,,,Core
 Controller/Support/VerwerkingsactiviteitenControllerServices.php,,Controller,,,,,Compliance
+Files/Service/File/PipelineStepImplementers.php,,Files,,,,,Files
+Files/Service/TextExtraction/PatternSet/PatternSetVersion.php,,Files,,,,,Files
