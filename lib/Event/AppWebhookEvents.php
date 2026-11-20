@@ -26,7 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Event;
 
-use OCA\OpenRegister\Listener\WebhookEventListener;
+use OCA\OpenRegister\Kernel\Contracts\AppEventWebhookListenerInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventDispatcher;
 use ReflectionMethod;
@@ -135,7 +135,7 @@ final class AppWebhookEvents {
 			return false;
 		}
 
-		$dispatcher->addServiceListener($event, WebhookEventListener::class);
+		$dispatcher->addServiceListener($event, AppEventWebhookListenerInterface::class);
 		self::$declared[$event] = [
 			'class' => $event,
 			'name' => $name,
