@@ -39,7 +39,7 @@ use OCA\OpenRegister\Db\AuditTrail\ActionScope;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\Edepot\AuditRecording;
+use OCA\OpenRegister\Service\Object\AuditRecording;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -89,7 +89,7 @@ class DestructionScopeService {
 		private readonly DestructionScopeReader $reader,
 		private readonly DestructionCompanions $companions,
 	) {
-		$this->auditTrailMapper = $audit->auditTrailMapper;
+		$this->auditTrailMapper = $audit->trail;
 		$this->logger           = $audit->logger;
 	}//end __construct()
 
