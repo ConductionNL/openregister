@@ -159,7 +159,6 @@
   "lib/Service/RegisterService.php -> lib/Service/FileFolderServiceInterface.php",
   "lib/Service/RegisterServiceHelpers.php -> lib/Service/FileFolderServiceInterface.php",
   "lib/Service/Registers/EntityEventPublisher.php -> lib/Db/Task.php",
-  "lib/Service/Schemas/PropertyTitles.php -> lib/Service/LanguageService.php",
   "lib/Service/Search/VectorResultFilter.php -> lib/Files/Service/File/FileReadScope.php",
   "lib/Service/Search/VectorResultFilter.php -> lib/Search/Service/ViewService.php",
   "lib/Service/ServiceBootstrap.php -> lib/Service/Gdpr/GdprRegistrar.php",
@@ -1158,6 +1157,7 @@
   "lib/Search/Service/ViewDefinition.php",
   "lib/Search/Service/ViewEdit.php",
   "lib/Search/Service/ViewService.php",
+  "lib/Service/AcceptLanguageHeader.php",
   "lib/Service/ActivityEntriesOptions.php",
   "lib/Service/ActivityFilter.php",
   "lib/Service/ActivityFilterService.php",
@@ -2429,8 +2429,8 @@
  ],
  "exposed_loc": {
   "Compliance": 15028,
-  "Configuration": 3098,
-  "Core": 64435,
+  "Configuration": 3063,
+  "Core": 64480,
   "Files": 2646,
   "Integrations": 18152,
   "Kernel": 8473,
@@ -2900,6 +2900,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10411,
- "total_loc": 461367,
- "violation_degree": 0.0214
+ "total_loc": 461377,
+ "violation_degree": 0.0213
 }
