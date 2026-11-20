@@ -22,8 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Audit;
 
+use OCA\OpenRegister\Kernel\Contracts\Compliance\TransitionInFlightInterface;
 use OCA\OpenRegister\Service\AuditRetentionResolver;
-use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope;
 use OCP\IAppConfig;
 use Psr\Container\ContainerInterface;
@@ -36,9 +36,11 @@ use Psr\Container\ContainerInterface;
  * hands the instance back typed against its interface, so the Db layer names
  * the interface and never the class that implements it. The elevation frame
  * is static request state; its read is delegated unchanged. The shared
- * services the mapper looks up are asked for under the same container id as
- * before, and handed back as the container returns them, so the caller's own
- * `instanceof` and failure handling stay exactly as they were.
+ * services the mapper looks up are handed back as the container returns them,
+ * so the caller's own `instanceof` and failure handling stay exactly as they
+ * were. The lifecycle action context is asked for under its Compliance-owned
+ * contract, TransitionInFlightInterface, which the lifecycle binds to the same
+ * shared instance; the others under the same container id as before.
  *
  * Types only: what is attributed, merged or recorded stays with the caller.
  */
@@ -115,9 +117,9 @@ final class AuditTrailCollaborators {
 	 *
 	 * @param ContainerInterface $container The container the mapper holds.
 	 *
-	 * @return mixed The shared LifecycleActionContextInterface instance.
+	 * @return mixed The shared TransitionInFlightInterface instance (the lifecycle action context).
 	 */
 	public static function lifecycleActionContextFrom(ContainerInterface $container): mixed {
-		return $container->get(LifecycleActionContext::class);
+		return $container->get(TransitionInFlightInterface::class);
 	}//end lifecycleActionContextFrom()
 }//end class

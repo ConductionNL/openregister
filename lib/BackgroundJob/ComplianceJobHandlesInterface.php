@@ -64,4 +64,9 @@ interface ComplianceJobHandlesInterface {
 	 * Subject export job.
 	 */
 	public const SUBJECT_EXPORT = SubjectExportJob::class;
+
+	/**
+	 * e-Depot transfer execution job (one attempt, re-enqueued with backoff).
+	 */
+	public const TRANSFER_EXECUTION = TransferExecutionJob::class;
 }//end interface

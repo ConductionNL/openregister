@@ -89,7 +89,10 @@ final class RegistersControllerFactory {
 					migrationPacks: new \OCA\OpenRegister\Service\MigrationPack\MigrationPackDefinitions(packs: $migrationPackService),
 				),
 				integrations: new \OCA\OpenRegister\Controller\Support\RegisterIntegrations(
-					bundles: new \OCA\OpenRegister\Service\Configuration\RegisterBundles(configurations: $configurationService),
+					bundles: new \OCA\OpenRegister\Service\Configuration\RegisterBundles(
+						configurations: $configurationService,
+						binding: new \OCA\OpenRegister\Service\Configuration\RegisterBundleBinding(schemaMapper: $schemaMapper),
+					),
 					githubService: $githubService,
 					oasService: $oasService,
 					container: $container,
