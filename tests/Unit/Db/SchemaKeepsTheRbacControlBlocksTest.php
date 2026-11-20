@@ -66,7 +66,6 @@ use OCA\OpenRegister\Db\Tenancy\TenancyServices;
  * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation
  * @uses \OCA\OpenRegister\Db\SchemaMapper\AnnotationFaults
  * @uses \OCA\OpenRegister\Db\SchemaMapper\RecordAnnotationRefusals
- * @uses \OCA\OpenRegister\Db\SchemaMapper\ExchangeAnnotationRefusals
  * @uses \OCA\OpenRegister\Db\SchemaMapper\PropertyDeclarationRefusals
  * @uses \OCA\OpenRegister\Db\SchemaMapper\LifecycleAnnotationCheck
  * @uses \OCA\OpenRegister\Db\SchemaMapper\CalculationAnnotationCheck

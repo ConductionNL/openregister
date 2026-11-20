@@ -27,6 +27,7 @@ use OCA\OpenRegister\Kernel\Contracts\Core\BulkRowRefusalsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\DependentValueCheckInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ContactMatchCacheInterface;
 use OCA\OpenRegister\Kernel\Contracts\Compliance\TransitionInFlightInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ApprovalPositionFormCheckInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\CurrentFlowRunInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionDefaultsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionEvaluatorInterface;
@@ -95,6 +96,7 @@ use OCA\OpenRegister\Service\Rules\ExpressionDefaults;
 use OCA\OpenRegister\Service\Party\PartySearchInterface;
 use OCA\OpenRegister\Service\Party\PartySearchService;
 use OCA\OpenRegister\Service\Portal\PortalPartyResolver;
+use OCA\OpenRegister\Service\Task\ApprovalPositionFormGuard;
 use OCA\OpenRegister\Service\Task\TaskCalendarDocument;
 use OCA\OpenRegister\Service\Task\TaskCalendarDocumentInterface;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
@@ -368,6 +370,7 @@ final class FlowWiringTest extends TestCase {
 				NotificationRunRecorderInterface::class    => AutomationRecordWriter::class,
 				SchemaRenameWarningsInterface::class       => FlowTriggerRenameCheck::class,
 				SchemaFormDependentsInterface::class       => FormDependentsCheck::class,
+				ApprovalPositionFormCheckInterface::class  => ApprovalPositionFormGuard::class,
 				BuiltInToolProvidersInterface::class       => FlowBuiltInToolProviders::class,
 				ExpressionEvaluatorInterface::class        => CalculationEvaluator::class,
 				PartyRecipientsInterface::class            => PartyRecipients::class,

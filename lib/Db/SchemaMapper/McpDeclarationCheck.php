@@ -1,7 +1,7 @@
 <?php
 
 /**
- * ExchangeAnnotationRefusals: annotations about how objects leave a schema, refused at save.
+ * McpDeclarationCheck: save-time refusal of a malformed MCP declaration.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -24,11 +24,11 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Mcp\Service\Mcp\McpAnnotationValidators;
 
 /**
- * Save-time checks of the handoff and MCP declarations, whose faults refuse the save with their codes.
+ * Refuses a schema whose `x-openregister-mcp` block does not hold, with the validator's codes.
  *
- * @spec exclude schema save plumbing moved out of SchemaMapper, not a capability of its own
+ * @spec openspec/specs/ai-mcp/spec.md
  */
-final class ExchangeAnnotationRefusals {
+final class McpDeclarationCheck {
 
 	/**
 	 * Validate the optional `x-openregister-mcp` annotation (ADR-063).
@@ -46,10 +46,10 @@ final class ExchangeAnnotationRefusals {
 	 * @spec openspec/specs/ai-mcp/spec.md
 	 *   (Requirement: REQ-DIALECT-002 — Save-time validation of the dialect shape)
 	 */
-	public function checkMcp(Schema $schema): void {
+	public function check(Schema $schema): void {
 		$annotation = new SchemaAnnotation(schema: $schema, key: 'x-openregister-mcp');
 		if ($annotation->isBlock() === true) {
 			$annotation->faults()->refuseCoded(errors: McpAnnotationValidators::validator()->validate($annotation->shape()));
 		}
-	}//end checkMcp()
+	}//end check()
 }//end class
