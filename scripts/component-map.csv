@@ -4531,7 +4531,6 @@ Controller/Support/PollLinksControllerServices.php,,Controller,,,,,Integrations
 Controller/Support/ShareLinksControllerServices.php,,Controller,,,,,Integrations
 Controller/Support/TimeTrackerLinksControllerServices.php,,Controller,,,,,Integrations
 Controller/Support/SourcePayload.php,,Controller,,,,,Integrations
-Controller/Support/MaintenanceReachableControllersInterface.php,,Controller,,,,,Configuration
 Service/Party/PartyRecipients.php,,Service,,,,,Processes
 Service/Settings/ArchivalSettingsReaderInterface.php,,Service,,,,,Compliance
 Service/Object/CorrectionServiceInterface.php,,Service,,,,,Compliance
