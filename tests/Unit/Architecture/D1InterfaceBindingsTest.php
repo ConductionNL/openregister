@@ -14,7 +14,6 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 use OCA\OpenRegister\Db\DbRegistrar;
 use OCA\OpenRegister\Db\FilesMapperRegistrar;
 use OCA\OpenRegister\Db\ConfigurationMapperRegistrar;
-use OCA\OpenRegister\Db\FilesMapperRegistrar;
 use OCA\OpenRegister\Db\IntegrationsMapperRegistrar;
 use OCA\OpenRegister\Db\ProcessesMapperRegistrar;
 use OCA\OpenRegister\Db\EntityRelationMapper;
