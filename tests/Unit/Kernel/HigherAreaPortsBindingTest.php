@@ -24,7 +24,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Kernel;
 
 use OCA\OpenRegister\Kernel\Contracts\Compliance\LifecycleFinalStatesInterface;
-use OCA\OpenRegister\Kernel\Contracts\Core\ActionRightCheckInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ActionCheckInterface;
 use OCA\OpenRegister\Service\Flow\FlowAccess;
 use OCA\OpenRegister\Service\Flow\FlowWiring;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleFinalStateResolver;
@@ -38,16 +38,16 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Flows ask the Core action-right port; archival asks the Compliance final-state port.
+ * Flows ask the Core action-check port; archival asks the Compliance final-state port.
  */
 final class HigherAreaPortsBindingTest extends TestCase {
 
-	public function testTheActionRightCheckResolvesToTheOpenRegisterMatrix(): void {
+	public function testTheActionCheckResolvesToTheOpenRegisterMatrix(): void {
 		$context = new RecordingRegistrationContext();
 		PlatformServiceRegistrar::register(context: $context);
 
-		$this->assertContains(['alias' => ActionRightCheckInterface::class, 'target' => OpenRegisterActionAuthService::class], $context->aliases);
-		$this->assertTrue(is_subclass_of(OpenRegisterActionAuthService::class, ActionRightCheckInterface::class));
+		$this->assertContains(['alias' => ActionCheckInterface::class, 'target' => OpenRegisterActionAuthService::class], $context->aliases);
+		$this->assertTrue(is_subclass_of(OpenRegisterActionAuthService::class, ActionCheckInterface::class));
 	}
 
 	public function testTheFinalStatePortResolvesToTheLifecycleResolver(): void {
@@ -57,7 +57,7 @@ final class HigherAreaPortsBindingTest extends TestCase {
 
 	public function testAFlowRightIsAskedOfThePort(): void {
 		$user = $this->createMock(IUser::class);
-		$rights = $this->createMock(ActionRightCheckInterface::class);
+		$rights = $this->createMock(ActionCheckInterface::class);
 		$rights->expects($this->exactly(2))->method('can')
 			->willReturnCallback(static fn (IUser $who, string $action): bool => ($who === $user && $action === 'flow.run'));
 

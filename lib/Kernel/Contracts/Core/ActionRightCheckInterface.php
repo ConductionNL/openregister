@@ -1,6 +1,6 @@
 <?php
 /**
- * ActionRightCheckInterface: whether a user holds a named action right.
+ * ActionRightCheckInterface: whether a user holds a named action right, as a guarded act asks it.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -22,24 +22,27 @@ namespace OCA\OpenRegister\Kernel\Contracts\Core;
 use OCP\IUser;
 
 /**
- * The question an area asks the action-rights matrix: may this user do this?
+ * Refuses a user who does not hold a named right of Open Register's action matrix.
  *
- * The matrix itself is Platform's; it binds its answer in its own bindings.
- * The catalogue of rights is {@see ActionRightsInterface}.
+ * An act that is granted narrowly (correcting a record, for one) asks before it
+ * runs; the action matrix (Platform) answers and binds itself to this contract
+ * in its own wiring.
  *
- * @spec openspec/specs/flow-engine/spec.md#requirement-creating-editing-and-running-a-flow-are-named-rights
+ * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
 interface ActionRightCheckInterface {
 
 	/**
-	 * Whether the user may perform the named action; never throws for a refusal.
+	 * Require that the user holds the named right. Administrators always do.
 	 *
-	 * @param IUser  $user   The acting user.
-	 * @param string $action The right's dot-separated name.
+	 * @param IUser  $user   The authenticated user.
+	 * @param string $action The dot-separated right, e.g. `object.correct`.
 	 *
-	 * @return bool True when the user holds the right.
+	 * @return void
 	 *
-	 * @spec openspec/specs/flow-engine/spec.md#requirement-creating-editing-and-running-a-flow-are-named-rights
+	 * @throws \OCP\AppFramework\OCS\OCSForbiddenException When the user does not hold the right.
+	 *
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
-	public function can(IUser $user, string $action): bool;
+	public function requireAction(IUser $user, string $action): void;
 }//end interface
