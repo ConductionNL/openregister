@@ -54,6 +54,7 @@ use OCA\OpenRegister\Exception\LifecycleSubjectNotFoundException;
 use OCA\OpenRegister\Lifecycle\GuardResult;
 use OCA\OpenRegister\Lifecycle\LifecycleGuardInterface;
 use OCA\OpenRegister\Listener\LifecycleValidationListener;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\TransitionInFlightInterface;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionProviderRegistry;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionEvaluator;
@@ -451,7 +452,7 @@ class TransitionEngineAsSystemTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
 			function (string $class): object {
-				if ($class === LifecycleActionContext::class) {
+				if ($class === TransitionInFlightInterface::class) {
 					return $this->actions;
 				}
 

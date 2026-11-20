@@ -39,6 +39,7 @@ use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
 use OCA\OpenRegister\Files\Service\File\FileOwnershipHandlerInterface;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionGuardInterface;
+use OCA\OpenRegister\Files\Service\File\FileScopeReader;
 use OCA\OpenRegister\Files\Service\File\FileSharingHandler;
 use OCA\OpenRegister\Files\Service\File\FileSharingHandlerInterface;
 use OCA\OpenRegister\Files\Service\File\ObjectFileAccess;
@@ -66,6 +67,7 @@ use OCA\OpenRegister\Kernel\Contracts\Core\RegisterFolderRecordsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ShareLinkUrlInterface;
 use OCA\OpenRegister\Kernel\Contracts\DocumentProcessingHandlerInterface;
 use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Search\FileScopeInterface;
 use OCA\OpenRegister\Kernel\Contracts\TaggingHandlerInterface;
 use OCA\OpenRegister\Kernel\Contracts\TextExtractionServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\UploadServiceInterface;
@@ -96,6 +98,7 @@ final class FilesRegistrar
         AntivirusScannerInterface::class          => AntivirusScannerAdapter::class,
         FileReadRestrictionInterface::class       => FileRestrictionGuard::class,
         FileRestrictionGuardInterface::class      => FileRestrictionGuard::class,
+        FileScopeInterface::class                 => FileScopeReader::class,
         FileSharingHandlerInterface::class        => FileSharingHandler::class,
         NcOfficeConverterInterface::class         => ConversionManagerConverter::class,
         NoteServiceInterface::class               => NoteService::class,

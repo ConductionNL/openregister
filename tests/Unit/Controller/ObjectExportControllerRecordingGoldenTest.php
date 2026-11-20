@@ -1,7 +1,7 @@
 <?php
 
 /**
- * ObjectsController export recording golden test.
+ * ObjectExportController recording golden test.
  *
  * Pins what an ad-hoc API export writes to the audit trail and to the export
  * area: the completed entry with its register, schema, format and row count,
@@ -28,24 +28,17 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 // phpcs:disable Squiz.Commenting.VariableComment.Missing -- typed mock fixtures; the declaration IS the description.
 
-use OCA\OpenRegister\Controller\ObjectsController;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Controller\ObjectExportController;
 use OCA\OpenRegister\Db\ExportRun;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Export\ExportAuditRecorderInterface;
 use OCA\OpenRegister\Service\Export\ExportRefusedException;
 use OCA\OpenRegister\Service\Export\ExportRightService;
 use OCA\OpenRegister\Service\Export\ExportRunRecorder;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectsControllerFactory;
-use OCP\App\IAppManager;
 use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http\JSONResponse;
-use OCP\IAppConfig;
-use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -53,7 +46,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
 
-class ObjectsControllerExportRecordingGoldenTest extends TestCase {
+class ObjectExportControllerRecordingGoldenTest extends TestCase {
 
 	/** @var list<array<string, mixed>> */
 	private array $recorded = [];
@@ -100,7 +93,7 @@ class ObjectsControllerExportRecordingGoldenTest extends TestCase {
 		return $objectService;
 	}//end objectService()
 
-	private function controller(?ExportRefusedException $refusal): ObjectsController {
+	private function controller(?ExportRefusedException $refusal): ObjectExportController {
 		$rights = $this->createMock(ExportRightService::class);
 		$rights->method('refusalFor')->willReturn($refusal);
 
@@ -152,20 +145,12 @@ class ObjectsControllerExportRecordingGoldenTest extends TestCase {
 		$exporter = $this->createMock(\OCA\OpenRegister\Kernel\Contracts\ObjectExporterInterface::class);
 		$exporter->method('exportToCsv')->willReturn("col1,col2\nval1,val2");
 
-		return ObjectsControllerFactory::create(
+		return new ObjectExportController(
 			appName: 'openregister',
 			request: $request,
-			config: $this->createMock(IAppConfig::class),
-			appManager: $this->createMock(IAppManager::class),
-			container: $container,
-			registerMapper: $this->createMock(RegisterMapper::class),
-			schemaMapper: $this->createMock(SchemaMapper::class),
-			auditTrailMapper: $this->createMock(AuditTrailMapper::class),
-			objectService: $this->createMock(ObjectService::class),
 			userSession: $session,
-			groupManager: $this->createMock(IGroupManager::class),
 			exportService: $exporter,
-			importService: $this->createMock(\OCA\OpenRegister\Kernel\Contracts\ObjectImporterInterface::class),
+			container: $container,
 			logger: new NullLogger(),
 		);
 	}//end controller()
