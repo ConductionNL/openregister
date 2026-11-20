@@ -4586,5 +4586,6 @@ Service/AcceptLanguageHeader.php,,Service,,,,,Core
 Controller/Support/VerwerkingsactiviteitenControllerServices.php,,Controller,,,,,Compliance
 Files/Service/File/PipelineStepImplementers.php,,Files,,,,,Files
 Files/Service/TextExtraction/PatternSet/PatternSetVersion.php,,Files,,,,,Files
+Search/Service/StoredViewQueries.php,,Search,,,,,Search
 Db/SchemaMapper/McpDeclarationCheck.php,,Db,,,,,Integrations
 Mcp/Listener/McpDeclarationChecksListener.php,,Mcp,,,,,Integrations
