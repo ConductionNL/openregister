@@ -11,13 +11,20 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\CascadeRetentionCheckInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\SearchTrailRecorderInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ReadPurposeGuardInterface;
+use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
 use OCA\OpenRegister\Service\Audit\PurposeGuard;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\ComplianceServiceRegistrar;
+use OCA\OpenRegister\Service\Object\SearchQueryHandler;
+use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
+use ReflectionMethod;
+use ReflectionNamedType;
 
 /**
  * @covers \OCA\OpenRegister\Service\ComplianceServiceRegistrar
@@ -61,6 +68,27 @@ final class ComplianceServiceRegistrarTest extends TestCase {
 	}//end testContractBindingsDoesNotBindThemAgain()
 
 	/**
+	 * The object search records its trails through the Core port the search trail service answers.
+	 *
+	 * @return void
+	 */
+	public function testTheObjectSearchRecordsThroughThePort(): void {
+		$this->assertSame(expected: SearchTrailService::class, actual: ComplianceServiceRegistrar::BINDINGS[SearchTrailRecorderInterface::class] ?? null);
+
+		$parameter = null;
+		foreach ((new ReflectionMethod(SearchQueryHandler::class, '__construct'))->getParameters() as $candidate) {
+			if ($candidate->getName() === 'searchTrailService') {
+				$parameter = $candidate;
+			}
+		}
+
+		$this->assertNotNull($parameter);
+		$type = $parameter->getType();
+		$this->assertInstanceOf(ReflectionNamedType::class, $type);
+		$this->assertSame(expected: SearchTrailRecorderInterface::class, actual: $type->getName());
+	}//end testTheObjectSearchRecordsThroughThePort()
+
+	/**
 	 * The Core read purpose-guard port, which relation reads ask per table, is answered by the doelbinding guard.
 	 *
 	 * @return void
@@ -70,4 +98,8 @@ final class ComplianceServiceRegistrarTest extends TestCase {
 	public function testTheReadPurposeGuardPortIsAnsweredByThePurposeGuard(): void {
 		$this->assertSame(expected: PurposeGuard::class, actual: (ComplianceServiceRegistrar::BINDINGS[ReadPurposeGuardInterface::class] ?? null));
 	}//end testTheReadPurposeGuardPortIsAnsweredByThePurposeGuard()
+
+	public function testTheCascadeAsksTheArchivalRetentionGuard(): void {
+		$this->assertSame(expected: ArchivalRetentionGuard::class, actual: ComplianceServiceRegistrar::BINDINGS[CascadeRetentionCheckInterface::class]);
+	}//end testTheCascadeAsksTheArchivalRetentionGuard()
 }//end class

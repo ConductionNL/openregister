@@ -1,6 +1,6 @@
 <?php
 /**
- * ObjectTransitionInterface: applies a named lifecycle transition to one object.
+ * LifecycleTransitionInterface: moving an object along its lifecycle by a declared action.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -22,26 +22,25 @@ namespace OCA\OpenRegister\Kernel\Contracts\Compliance;
 use OCA\OpenRegister\Db\ObjectEntity;
 
 /**
- * Moves an object along its declared lifecycle, as the DSAR case API (Compliance) asks it.
+ * Applies one lifecycle action to an object, with its guards, and saves it.
  *
- * Compliance asks; the lifecycle engine (Processes) answers, with its own
- * permission checks, guards and audit entry, and binds itself outside Compliance.
+ * The DSAR case API (Compliance) asks; the lifecycle transition engine
+ * (Processes) answers and is bound to this contract.
  *
  * @spec openspec/specs/object-lifecycle/spec.md
  */
-interface ObjectTransitionInterface {
+interface LifecycleTransitionInterface {
 
 	/**
-	 * Apply a named transition to an object, as the session user.
+	 * Apply a transition action to an object and save it.
 	 *
 	 * @param string $objectId Object id, uuid or slug.
-	 * @param string $action   Transition action name.
+	 * @param string $action   The transition action name.
 	 *
 	 * @return ObjectEntity The saved object after the transition.
 	 *
-	 * @throws \RuntimeException When the object, schema or transition is missing, the action is not
-	 *                           allowed from the current state, or the save is rejected.
-	 * @throws \OCA\OpenRegister\Exception\NotAuthorizedException When the caller lacks update permission on the object.
+	 * @throws \Exception When the object, schema or transition is missing, the action is not
+	 *                    allowed, the caller may not update the object, or the save is refused.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */

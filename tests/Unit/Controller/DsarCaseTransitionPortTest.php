@@ -27,7 +27,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\DsarCaseController;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Kernel\Contracts\Compliance\ObjectTransitionInterface;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\LifecycleTransitionInterface;
 use OCA\OpenRegister\Service\Flow\FlowWiring;
 use OCA\OpenRegister\Service\Gdpr\Case\CaseAccessControl;
 use OCA\OpenRegister\Service\Gdpr\Case\CaseObjectAccessor;
@@ -53,15 +53,15 @@ use RuntimeException;
 final class DsarCaseTransitionPortTest extends TestCase {
 
 	public function testTheLifecycleEngineAnswersThePort(): void {
-		$this->assertTrue(is_subclass_of(TransitionEngine::class, ObjectTransitionInterface::class));
-		$this->assertSame(TransitionEngine::class, FlowWiring::BINDINGS[ObjectTransitionInterface::class]);
+		$this->assertTrue(is_subclass_of(TransitionEngine::class, LifecycleTransitionInterface::class));
+		$this->assertSame(TransitionEngine::class, FlowWiring::BINDINGS[LifecycleTransitionInterface::class]);
 	}
 
 	public function testTheEndpointMovesTheCaseThroughThePort(): void {
 		$saved = new ObjectEntity();
 		$saved->setUuid('case-1');
 
-		$transitions = $this->createMock(ObjectTransitionInterface::class);
+		$transitions = $this->createMock(LifecycleTransitionInterface::class);
 		$transitions->expects($this->once())->method('transition')->with('case-1', 'close')->willReturn($saved);
 
 		$response = $this->controller(transitions: $transitions, action: 'close')->transition('case-1');
@@ -71,7 +71,7 @@ final class DsarCaseTransitionPortTest extends TestCase {
 	}
 
 	public function testARefusedMoveIsForbidden(): void {
-		$transitions = $this->createMock(ObjectTransitionInterface::class);
+		$transitions = $this->createMock(LifecycleTransitionInterface::class);
 		$transitions->method('transition')->willThrowException(new RuntimeException('not allowed from this state'));
 
 		$response = $this->controller(transitions: $transitions, action: 'close')->transition('case-1');
@@ -81,7 +81,7 @@ final class DsarCaseTransitionPortTest extends TestCase {
 	}
 
 	public function testNoActionIsABadRequestAndMovesNothing(): void {
-		$transitions = $this->createMock(ObjectTransitionInterface::class);
+		$transitions = $this->createMock(LifecycleTransitionInterface::class);
 		$transitions->expects($this->never())->method('transition');
 
 		$response = $this->controller(transitions: $transitions, action: '')->transition('case-1');
@@ -92,12 +92,12 @@ final class DsarCaseTransitionPortTest extends TestCase {
 	/**
 	 * A controller for an authenticated handler who may act on case-1.
 	 *
-	 * @param ObjectTransitionInterface $transitions The port double.
+	 * @param LifecycleTransitionInterface $transitions The port double.
 	 * @param string                    $action      The posted action.
 	 *
 	 * @return DsarCaseController
 	 */
-	private function controller(ObjectTransitionInterface $transitions, string $action): DsarCaseController {
+	private function controller(LifecycleTransitionInterface $transitions, string $action): DsarCaseController {
 		$user = $this->createMock(IUser::class);
 		$user->method('getUID')->willReturn('handler1');
 		$session = $this->createMock(IUserSession::class);
