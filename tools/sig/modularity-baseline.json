@@ -94,12 +94,8 @@
   "lib/Controller/Support/GeoServices.php -> lib/Search/Service/Geo/GeoFilterApplierInterface.php",
   "lib/Controller/Support/GeoServices.php -> lib/Search/Service/Geo/GeoFilterParserInterface.php",
   "lib/Controller/Support/HybridSearchDiagnostics.php -> lib/Search/Service/Vectorization/Handlers/VectorSidecarTableInterface.php",
-  "lib/Controller/Support/ObjectGovernanceServices.php -> lib/Service/Audit/PurposeGuardInterface.php",
   "lib/Controller/Support/ObjectReadStateControllerServices.php -> lib/Service/Interaction/ReadStateServiceInterface.php",
   "lib/Controller/Support/ObjectRelationsGraph.php -> lib/Service/Export/ExportGateInterface.php",
-  "lib/Controller/Support/ObjectRelationsGuards.php -> lib/Service/Audit/PurposeGuardInterface.php",
-  "lib/Controller/Support/ObjectRelationsPurposeScope.php -> lib/Service/Audit/PurposeGuardInterface.php",
-  "lib/Controller/Support/ObjectRelationsPurposeScope.php -> lib/Service/Audit/PurposeRefusedException.php",
   "lib/Controller/Support/RegisterAccessAudit.php -> lib/Service/AuthorizationAuditService.php",
   "lib/Controller/Support/RegisterAccessAudit.php -> lib/Service/AuthorizationChange.php",
   "lib/Controller/Support/RegisterIntegrations.php -> lib/Service/ConfigurationServiceInterface.php",
@@ -3308,5 +3304,5 @@
  ],
  "kernel_loc": 10407,
  "total_loc": 460096,
- "violation_degree": 0.0655
+ "violation_degree": 0.0651
 }
