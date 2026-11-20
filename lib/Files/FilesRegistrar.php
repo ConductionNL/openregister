@@ -61,6 +61,7 @@ use OCA\OpenRegister\Files\Service\TextExtractionService;
 use OCA\OpenRegister\Files\Service\UploadService;
 use OCA\OpenRegister\Kernel\Contracts\AccessLinkReaderInterface;
 use OCA\OpenRegister\Kernel\Contracts\ChunkMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\FileTagCatalogueInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ReadableFileHitsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Compliance\DetectionPatternsVersionInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FileAccountInterface;
@@ -74,6 +75,7 @@ use OCA\OpenRegister\Kernel\Contracts\TaggingHandlerInterface;
 use OCA\OpenRegister\Kernel\Contracts\TextExtractionServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\UploadServiceInterface;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityServiceInterface;
+use OCA\OpenRegister\Service\FileServiceInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use Psr\Container\ContainerInterface;
 
@@ -103,6 +105,7 @@ final class FilesRegistrar
         FileRestrictionGuardInterface::class      => FileRestrictionGuard::class,
         FileScopeInterface::class                 => FileScopeReader::class,
         FileSharingHandlerInterface::class        => FileSharingHandler::class,
+        FileTagCatalogueInterface::class          => FileServiceInterface::class,
         NcOfficeConverterInterface::class         => ConversionManagerConverter::class,
         NoteServiceInterface::class               => NoteService::class,
         ObjectFileRecordsInterface::class         => FileMapper::class,

@@ -32,6 +32,7 @@ use OCA\OpenRegister\Kernel\Contracts\Core\CurrentFlowRunInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionDefaultsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionEvaluatorInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Integrations\LinkedFlowOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ProcessingReadsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\UserCalendarEventsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Integrations\TaskGaugeInterface;
@@ -70,6 +71,7 @@ use OCA\OpenRegister\Service\Flow\FlowStepDispatcher;
 use OCA\OpenRegister\Search\FlowTasksProvider;
 use OCA\OpenRegister\Service\Flow\FlowTriggerRenameCheck;
 use OCA\OpenRegister\Service\Flow\FlowWiring;
+use OCA\OpenRegister\Service\FlowLinkServiceInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNode;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNodeInterface;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalKinds;
@@ -384,6 +386,7 @@ final class FlowWiringTest extends TestCase {
 				TaskCalendarDocumentInterface::class       => TaskCalendarDocument::class,
 				PartySearchInterface::class                => PartySearchService::class,
 				FlowConsentSweepInterface::class           => FlowConsentParking::class,
+				LinkedFlowOperationsInterface::class       => FlowLinkServiceInterface::class,
 				LifecycleTransitionInterface::class        => TransitionEngine::class,
 				ExpressionDefaultsInterface::class         => ExpressionDefaults::class,
 				BulkRowRefusalsInterface::class            => DecisionTableBulkGuard::class,
@@ -398,6 +401,16 @@ final class FlowWiringTest extends TestCase {
 		);
 		self::assertSame(expected: FlowWiring::BINDINGS, actual: FlowRegistrar::BINDINGS);
 	}//end testTheScheduleFlowStoreAndTheProcessingReadsAreBound()
+
+	/**
+	 * The relations API's flow-link port resolves to the flow link service, which implements it.
+	 *
+	 * @return void
+	 */
+	public function testTheLinkedFlowOperationsPortIsAnsweredByTheFlowLinkService(): void {
+		self::assertSame(expected: FlowLinkServiceInterface::class, actual: ($this->aliases[LinkedFlowOperationsInterface::class] ?? null));
+		self::assertTrue(is_subclass_of(FlowLinkServiceInterface::class, LinkedFlowOperationsInterface::class));
+	}//end testTheLinkedFlowOperationsPortIsAnsweredByTheFlowLinkService()
 
 	/**
 	 * The MCP discovery's port for contributed built-in tool providers is answered by the flow tools.
