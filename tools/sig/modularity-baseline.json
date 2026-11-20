@@ -232,7 +232,6 @@
   "lib/Service/Object/RecordAnnotations.php -> lib/Service/Archival/RetentionEvaluator.php",
   "lib/Service/Object/ReferentialIntegrityService.php -> lib/Db/AuditTrail.php",
   "lib/Service/Object/ReferentialIntegrityService.php -> lib/Service/Archival/ArchivalRetentionGuard.php",
-  "lib/Service/Object/RenderDerivations.php -> lib/Service/Calculation/CalculationEvaluatorInterface.php",
   "lib/Service/Object/RenderObject.php -> lib/Db/Translation.php",
   "lib/Service/Object/RenderObject.php -> lib/Db/TranslationSlot.php",
   "lib/Service/Object/RenderObject.php -> lib/Files/Service/File/FileRestrictionGuardInterface.php",
@@ -272,7 +271,6 @@
   "lib/Service/Object/SearchQueryHandler.php -> lib/Service/SearchTrailService.php",
   "lib/Service/Object/TranslationHandler.php -> lib/Service/LanguageService.php",
   "lib/Service/Object/ViewScopeApplier.php -> lib/Search/Db/ViewMapperInterface.php",
-  "lib/Service/Object/VirtualCalculations.php -> lib/Service/Calculation/CalculationEvaluatorInterface.php",
   "lib/Service/ObjectFilesInterface.php -> lib/Service/FileReaderInterface.php",
   "lib/Service/ObjectFilesInterface.php -> lib/Service/FileWriterInterface.php",
   "lib/Service/ObjectService.php -> lib/Service/FileFolderServiceInterface.php",
@@ -962,6 +960,7 @@
   "lib/Kernel/Contracts/Core/CurrentFlowRunInterface.php",
   "lib/Kernel/Contracts/Core/ExportGuardInterface.php",
   "lib/Kernel/Contracts/Core/ExpressionDefaultsInterface.php",
+  "lib/Kernel/Contracts/Core/ExpressionEvaluatorInterface.php",
   "lib/Kernel/Contracts/Core/FederatedShareInterface.php",
   "lib/Kernel/Contracts/Core/FieldRulesSourceInterface.php",
   "lib/Kernel/Contracts/Core/FileAccountInterface.php",
@@ -972,6 +971,7 @@
   "lib/Kernel/Contracts/Core/FollowTableInterface.php",
   "lib/Kernel/Contracts/Core/JobRunRecordingInterface.php",
   "lib/Kernel/Contracts/Core/MigrationPackDefinitionsInterface.php",
+  "lib/Kernel/Contracts/Core/ObjectAuditEntry.php",
   "lib/Kernel/Contracts/Core/ObjectFileRecordsInterface.php",
   "lib/Kernel/Contracts/Core/ObjectFolderLookupInterface.php",
   "lib/Kernel/Contracts/Core/ObjectPresenceInterface.php",
@@ -2569,15 +2569,15 @@
   "lib/Twig/MappingTwigInstallerInterface.php"
  ],
  "exposed_loc": {
-  "Compliance": 15514,
+  "Compliance": 15521,
   "Configuration": 4030,
-  "Core": 64540,
+  "Core": 64559,
   "Files": 3592,
   "Integrations": 18179,
   "Kernel": 8505,
   "Notifications": 2018,
   "Platform": 292,
-  "Processes": 30203,
+  "Processes": 30204,
   "Search": 2027
  },
  "kernel_files": [
@@ -3043,6 +3043,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10456,
- "total_loc": 460632,
- "violation_degree": 0.0414
+ "total_loc": 460661,
+ "violation_degree": 0.0412
 }

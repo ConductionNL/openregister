@@ -17,9 +17,12 @@ use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\CurrentFlowRunInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionDefaultsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionEvaluatorInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
 use OCA\OpenRegister\Kernel\Contracts\Notifications\PartyRecipientsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\PublicationRefusalInterface;
+use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
+use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
 use OCA\OpenRegister\Service\Flow\FlowAccess;
 use OCA\OpenRegister\Service\Flow\FlowConsentParking;
 use OCA\OpenRegister\Service\Flow\FlowConsentSweepInterface;
@@ -199,6 +202,17 @@ final class FlowWiringTest extends TestCase {
 	}//end testTheFieldRulesPortIsAnsweredByTheStateResolver()
 
 	/**
+	 * The render's expression port is answered by the calculation evaluator, through its own interface.
+	 *
+	 * @return void
+	 */
+	public function testTheExpressionPortIsAnsweredByTheCalculationEvaluator(): void {
+		self::assertSame(expected: CalculationEvaluator::class, actual: (FlowWiring::BINDINGS[ExpressionEvaluatorInterface::class] ?? null));
+		self::assertTrue(condition: is_a(CalculationEvaluatorInterface::class, ExpressionEvaluatorInterface::class, true));
+		self::assertTrue(condition: is_a(CalculationEvaluator::class, ExpressionEvaluatorInterface::class, true));
+	}//end testTheExpressionPortIsAnsweredByTheCalculationEvaluator()
+
+	/**
 	 * The Core current-run port is answered by the shared run context, so the delete guard reads the one ambient stack.
 	 *
 	 * @return void
@@ -227,12 +241,11 @@ final class FlowWiringTest extends TestCase {
 	public function testTheScheduleFlowStoreIsBound(): void {
 		self::assertSame(
 			expected: [
-				FieldRulesSourceInterface::class  => StateFieldRuleResolver::class,
-				ScheduleFlowStoreInterface::class => ScheduleFlowStore::class,
-				PartyRecipientsInterface::class   => PartyRecipients::class,
 				FieldRulesSourceInterface::class           => StateFieldRuleResolver::class,
 				CurrentFlowRunInterface::class             => FlowRunContext::class,
 				ScheduleFlowStoreInterface::class          => ScheduleFlowStore::class,
+				ExpressionEvaluatorInterface::class        => CalculationEvaluator::class,
+				PartyRecipientsInterface::class            => PartyRecipients::class,
 				PublicationRefusalInterface::class         => PartyIndicatorGuard::class,
 				FlowRunSignalInterface::class              => FlowRunSignalService::class,
 				LockObjectNodeInterface::class             => LockObjectNode::class,
