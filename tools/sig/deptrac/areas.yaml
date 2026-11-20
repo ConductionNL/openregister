@@ -4116,6 +4116,8 @@ deptrac:
         - type: directory
           value: 'lib/Controller/(FileDisclosuresController)[.]php$'
         - type: directory
+          value: 'lib/Db/(FilesMapperBindings|FilesMapperRegistrar)[.]php$'
+        - type: directory
           value: 'lib/Files/[^/]*$'
         - type: directory
           value: 'lib/Files/BackgroundJob/[^/]*$'

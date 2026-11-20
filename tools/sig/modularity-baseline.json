@@ -69,7 +69,6 @@
   "lib/Db/AuditTrailMapperInterface.php -> lib/Db/AuditTrail/SharedMasterDataRefusal.php",
   "lib/Db/AuditTrailMapperInterface.php -> lib/Db/AuditTrail/SlugBackfill.php",
   "lib/Db/AuditTrailMapperInterface.php -> lib/Db/AuditTrail/ToolInvocation.php",
-  "lib/Db/DbRegistrar.php -> lib/Files/Db/EntityRelationMapperInterface.php",
   "lib/Db/EntityRelationMapper.php -> lib/Db/AuditTrail.php",
   "lib/Db/EntityRelationMapper.php -> lib/Files/Db/EntityMention.php",
   "lib/Db/EntityRelationMapper.php -> lib/Files/Db/EntityRelationMapperInterface.php",
@@ -504,7 +503,9 @@
   "lib/Db/EmptyJsonHydration.php",
   "lib/Db/EmptyPropertyClaim.php",
   "lib/Db/EntityRelation.php",
+  "lib/Db/EntityRelationMapper.php",
   "lib/Db/ExportRun/ExportRunFieldTypes.php",
+  "lib/Db/FilesMapperRegistrar.php",
   "lib/Db/Flow.php",
   "lib/Db/Flow/FlowFieldTypes.php",
   "lib/Db/Flow/FlowSelection.php",
@@ -2555,8 +2556,8 @@
  "exposed_loc": {
   "Compliance": 15496,
   "Configuration": 3601,
-  "Core": 64593,
-  "Files": 3592,
+  "Core": 65106,
+  "Files": 3602,
   "Integrations": 18214,
   "Kernel": 8505,
   "Notifications": 2018,
@@ -3027,6 +3028,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10456,
- "total_loc": 460736,
- "violation_degree": 0.0391
+ "total_loc": 460755,
+ "violation_degree": 0.0387
 }

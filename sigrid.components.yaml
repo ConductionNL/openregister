@@ -2068,6 +2068,7 @@ components:
   - name: Files
     include:
       - ".*/lib/Controller/(FileDisclosuresController)[.]php"
+      - ".*/lib/Db/(FilesMapperBindings|FilesMapperRegistrar)[.]php"
       - ".*/lib/Files/[^/]*"
       - ".*/lib/Files/BackgroundJob/[^/]*"
       - ".*/lib/Files/Command/[^/]*"
