@@ -86,7 +86,7 @@ deptrac:
               value: 'lib/Support/.*$'
           must_not:
             - type: directory
-              value: 'lib/Kernel/Contracts/(Compliance|Core|Integrations|Notifications|Processes|Search)/.*$'
+              value: 'lib/Kernel/Contracts/(Compliance|Core|Files|Integrations|Notifications|Processes|Search)/.*$'
     - name: Core
       collectors:
         - type: directory
@@ -4303,6 +4303,8 @@ deptrac:
           value: 'lib/Twig/[^/]*$'
     - name: Files
       collectors:
+        - type: directory
+          value: 'lib/Kernel/Contracts/Files/.*$'
         - type: directory
           value: 'lib/Controller/(FileDisclosuresController)[.]php$'
         - type: directory

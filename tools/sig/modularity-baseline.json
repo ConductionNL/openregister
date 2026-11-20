@@ -45,8 +45,6 @@
   "lib/Db/SourceMapperInterface.php -> lib/Db/Source.php",
   "lib/Db/TaskAuditMapper.php -> lib/Db/TaskAuditMapperInterface.php",
   "lib/Db/VerwerkingsactiviteitMapperInterface.php -> lib/Db/Verwerkingsactiviteit.php",
-  "lib/Files/Service/File/DocumentRedactionServices.php -> lib/Service/Settings/FileSettingsHandler.php",
-  "lib/Files/Service/TextExtraction/EntityRecognitionHandler.php -> lib/Service/Settings/FileSettingsHandler.php",
   "lib/Listener/NotifyPushBatch.php -> lib/Listener/NotifyPushListener.php",
   "lib/Listener/Registrar/ConfigurationListenerRegistrar.php -> lib/Listener/ShareableConfigTypeRegistrationListener.php",
   "lib/Listener/Registrar/ConfigurationListenerRegistrar.php -> lib/Service/Config/RegisterShareableConfigTypesEvent.php",
@@ -868,6 +866,7 @@
   "lib/Kernel/Contracts/EntityEventsInterface.php",
   "lib/Kernel/Contracts/EntityRelationInterface.php",
   "lib/Kernel/Contracts/ExampleSetInstallerInterface.php",
+  "lib/Kernel/Contracts/Files/RedactionSettingsInterface.php",
   "lib/Kernel/Contracts/FlowTimerControlInterface.php",
   "lib/Kernel/Contracts/FlowTimerInterface.php",
   "lib/Kernel/Contracts/GitHubClientInterface.php",
@@ -2282,7 +2281,6 @@
   "lib/Service/Serializer/RegisterSerializerInterface.php",
   "lib/Service/ServiceBootstrap.php",
   "lib/Service/Settings/ArchivalSettingsReaderInterface.php",
-  "lib/Service/Settings/FileSettingsHandler.php",
   "lib/Service/Settings/SearchBackendHandler.php",
   "lib/Service/SettingsService.php",
   "lib/Service/SettingsServiceInterface.php",
@@ -2423,9 +2421,9 @@
  ],
  "exposed_loc": {
   "Compliance": 15029,
-  "Configuration": 3063,
+  "Configuration": 2785,
   "Core": 64492,
-  "Files": 2646,
+  "Files": 2654,
   "Integrations": 18152,
   "Kernel": 8470,
   "Notifications": 2049,
@@ -2894,6 +2892,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10408,
- "total_loc": 461394,
- "violation_degree": 0.0206
+ "total_loc": 461403,
+ "violation_degree": 0.0203
 }
