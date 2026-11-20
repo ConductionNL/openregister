@@ -892,6 +892,7 @@ final class ContractBindings {
 		FileReaderInterface::class => FileService::class,
 		\OCA\OpenRegister\Kernel\Contracts\Core\FileNodeLookupInterface::class => FileService::class,
 		\OCA\OpenRegister\Kernel\Contracts\Core\ObjectFolderLookupInterface::class => FileService::class,
+		\OCA\OpenRegister\Kernel\Contracts\Core\ObjectFolderAccessInterface::class => FileService::class,
 		FileServiceInterface::class => FileService::class,
 		FileWriterInterface::class => FileService::class,
 		FilterNodeInterface::class => FilterNode::class,
