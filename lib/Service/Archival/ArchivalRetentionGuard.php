@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Service\Archival;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\Core\CascadeRetentionCheckInterface;
 
 /**
  * Decide whether a record is retained, and say so in words a handler can use.
@@ -67,7 +68,7 @@ use OCA\OpenRegister\Db\Schema;
  *
  * @spec openspec/specs/archival-annotation-vocabulary/spec.md
  */
-class ArchivalRetentionGuard {
+class ArchivalRetentionGuard implements CascadeRetentionCheckInterface {
 
 	/**
 	 * Ground: the record is retained under a legal archival obligation.
