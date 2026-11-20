@@ -40,7 +40,6 @@
   "lib/Db/SequenceMapperInterface.php -> lib/Db/Sequence.php",
   "lib/Db/SourceMapperInterface.php -> lib/Db/Source.php",
   "lib/Db/TaskAuditMapper.php -> lib/Db/TaskAuditMapperInterface.php",
-  "lib/Listener/NotifyPushBatch.php -> lib/Listener/NotifyPushListener.php",
   "lib/Listener/Registrar/ConfigurationListenerRegistrar.php -> lib/Listener/ShareableConfigTypeRegistrationListener.php",
   "lib/Listener/Registrar/ConfigurationListenerRegistrar.php -> lib/Service/Config/RegisterShareableConfigTypesEvent.php",
   "lib/Search/Db/View.php -> lib/Db/Configuration.php",
@@ -966,9 +965,7 @@
   "lib/Listener/IdentityGuardListener.php",
   "lib/Listener/ListenerRegistrar.php",
   "lib/Listener/NotificationsAnnotationInstallListener.php",
-  "lib/Listener/NotifyPushBatch.php",
   "lib/Listener/NotifyPushBatchInterface.php",
-  "lib/Listener/NotifyPushListener.php",
   "lib/Listener/ObjectCleanupListener.php",
   "lib/Listener/ObjectStateDeleteGuardListener.php",
   "lib/Listener/PresencePushInterface.php",
@@ -2370,13 +2367,13 @@
  "exposed_loc": {
   "Compliance": 14915,
   "Configuration": 2419,
-  "Core": 64575,
+  "Core": 64558,
   "Files": 901,
   "Integrations": 17967,
   "Kernel": 8470,
   "Notifications": 2057,
-  "Platform": 276,
-  "Processes": 28332,
+  "Platform": 61,
+  "Processes": 28331,
   "Search": 2020
  },
  "kernel_files": [
@@ -2841,5 +2838,5 @@
  ],
  "kernel_loc": 10408,
  "total_loc": 461614,
- "violation_degree": 0.0161
+ "violation_degree": 0.016
 }
