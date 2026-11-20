@@ -4580,3 +4580,4 @@ Listener/UniqueHintDeclarationCheckListener.php,,Listener,,,,,Search
 Service/Consumer/AccountConsumerLookup.php,,Service,,,,,Integrations
 Service/Party/PartyParent.php,,Service,,,,,Processes
 Service/Lifecycle/LifecycleStatesKeeper.php,,Service,,,,,Processes
+Service/AcceptLanguageHeader.php,,Service,,,,,Core
