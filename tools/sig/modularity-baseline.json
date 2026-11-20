@@ -1,7 +1,6 @@
 {
  "against_order": [
   "lib/AppHost/Reference/AbstractSchemaReferenceProvider.php -> lib/Service/Reference/ObjectPreviewFormatterInterface.php",
-  "lib/AppHost/Service/AppHostSettingsService.php -> lib/Service/ConfigurationServiceInterface.php",
   "lib/BackgroundJob/DbalIntrospectionJob.php -> lib/Db/Source.php",
   "lib/BackgroundJob/QueuedJobClassesInterface.php -> lib/BackgroundJob/TranslationProjectionJob.php",
   "lib/BackgroundJob/Support/ConfigurationCheckServices.php -> lib/Db/ConfigurationMapperInterface.php",
@@ -365,7 +364,6 @@
   "lib/Service/ServiceRegistrar.php -> lib/Service/Sync/SourceFetcherRegistry.php",
   "lib/Service/ServiceRegistrar.php -> lib/Service/Translation/TranslationProviderInterface.php",
   "lib/Service/ServiceRegistrar.php -> lib/Service/Translation/TranslationProviderResolver.php",
-  "lib/Service/Sharing/AccessLinkActs.php -> lib/Notifications/Service/TimelineVisibilityServiceInterface.php",
   "lib/Service/Sharing/AccessLinkViewReaders.php -> lib/Search/Db/ViewMapperInterface.php",
   "lib/Service/User/ApiTokenAuditRow.php -> lib/Db/AuditTrail.php"
  ],
@@ -2651,11 +2649,11 @@
  "exposed_loc": {
   "Compliance": 15748,
   "Configuration": 4293,
-  "Core": 64633,
+  "Core": 64632,
   "Files": 3592,
   "Integrations": 18337,
-  "Kernel": 8520,
-  "Notifications": 2007,
+  "Kernel": 8521,
+  "Notifications": 2008,
   "Platform": 313,
   "Processes": 30722,
   "Search": 2001
@@ -3121,7 +3119,7 @@
   "lib/Support/RegisterSlugAliasesInterface.php",
   "lib/Support/UnknownFilterKeys.php"
  ],
- "kernel_loc": 10458,
- "total_loc": 460567,
- "violation_degree": 0.0478
+ "kernel_loc": 10459,
+ "total_loc": 460568,
+ "violation_degree": 0.0475
 }
