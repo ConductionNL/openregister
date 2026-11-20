@@ -80,7 +80,6 @@ final class ListenerRegistrar {
 	 */
 	public const BINDINGS = [
 		DecisionTableValidationListenerInterface::class => DecisionTableValidationListener::class,
-		NotifyPushBatchInterface::class => NotifyPushBatch::class,
 		SchemaFlowImportListenerInterface::class => SchemaFlowImportListener::class,
 		UniqueConstraintListenerInterface::class => UniqueConstraintListener::class,
 	];
