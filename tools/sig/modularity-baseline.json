@@ -888,20 +888,13 @@
   "lib/Lifecycle/LifecycleGuardContext.php",
   "lib/Lifecycle/LifecycleGuardInterface.php",
   "lib/Lifecycle/LifecycleTransitionGuardInterface.php",
-  "lib/Listener/ArchivalDeclarationChecksListener.php",
-  "lib/Listener/ArchivalNominationListener.php",
-  "lib/Listener/ContentReportRemovalListener.php",
   "lib/Listener/CoreListenerRegistrar.php",
-  "lib/Listener/EntityEditAuditListener.php",
   "lib/Listener/HandoffDeclarationChecksListener.php",
   "lib/Listener/ListenerRegistrar.php",
   "lib/Listener/NotificationsAnnotationInstallListener.php",
   "lib/Listener/NotifyPushBatchInterface.php",
   "lib/Listener/PresencePushInterface.php",
-  "lib/Listener/QualityScoreOnSaveListener.php",
-  "lib/Listener/RecordTypeAuditListener.php",
-  "lib/Listener/RelatedRetentionRecalculationListener.php",
-  "lib/Listener/SchemaAuthorizationAuditListener.php",
+  "lib/Listener/Registrar/ComplianceListenerRegistrar.php",
   "lib/Listener/SchemaFlowImportListenerInterface.php",
   "lib/Listener/Support/ConflictVeto.php",
   "lib/Listener/Support/EventSchemaLookup.php",
@@ -2264,7 +2257,7 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "exposed_loc": {
-  "Compliance": 14778,
+  "Compliance": 14297,
   "Configuration": 1285,
   "Core": 62811,
   "Files": 1458,
@@ -2272,7 +2265,7 @@
   "Kernel": 8464,
   "Notifications": 2057,
   "Platform": 61,
-  "Processes": 27128,
+  "Processes": 27115,
   "Search": 1929
  },
  "kernel_files": [
@@ -2736,6 +2729,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10402,
- "total_loc": 461919,
+ "total_loc": 461965,
  "violation_degree": 0.0084
 }
