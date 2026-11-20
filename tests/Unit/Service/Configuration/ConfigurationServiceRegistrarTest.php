@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Configuration;
 
+use OCA\OpenRegister\Listener\Registrar\ConfigurationListenerRegistrar;
 use OCA\OpenRegister\Service\Configuration\ConfigurationServiceRegistrar;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
 use PHPUnit\Framework\TestCase;
@@ -83,14 +84,26 @@ class ConfigurationServiceRegistrarTest extends TestCase {
 	}//end testEveryFactoryBuildsItsService()
 
 	/**
-	 * The registrar registers services only; listeners stay with ListenerRegistrar.
+	 * The registrar subscribes only the Configuration area's own listener, through ConfigurationListenerRegistrar.
 	 *
 	 * @return void
 	 */
-	public function testRegistersNoListeners(): void {
+	public function testRegistersOnlyTheConfigurationListeners(): void {
 		$context = new RecordingRegistrationContext();
 		ConfigurationServiceRegistrar::register(context: $context);
 
-		$this->assertCount(expectedCount: 0, haystack: $context->listeners);
-	}//end testRegistersNoListeners()
+		$own = new RecordingRegistrationContext();
+		ConfigurationListenerRegistrar::register(context: $own);
+
+		$this->assertSame(
+			expected: [
+				[
+					'event' => 'OCA\OpenRegister\Service\Config\RegisterShareableConfigTypesEvent',
+					'listener' => 'OCA\OpenRegister\Listener\ShareableConfigTypeRegistrationListener',
+				],
+			],
+			actual: $context->listeners
+		);
+		$this->assertSame(expected: $own->listeners, actual: $context->listeners);
+	}//end testRegistersOnlyTheConfigurationListeners()
 }//end class

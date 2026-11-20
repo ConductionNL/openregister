@@ -1352,7 +1352,7 @@ Listener/ReadStateInvalidationListener.php,42,Listener,Work,Work/Listener/ReadSt
 Listener/ReadStatePruneListener.php,34,Listener,Flows,Flows/Listener/ReadStatePruneListener.php,0,,Processes
 Listener/ReferencedCalculationListener.php,26,Listener,Flows,Flows/Listener/ReferencedCalculationListener.php,0,,Processes
 Listener/Registrar/AccessListenerRegistrar.php,12,Listener,Access,Access/Listener/Registrar/AccessListenerRegistrar.php,0,,Processes
-Listener/Registrar/ConfigurationListenerRegistrar.php,12,Listener,Configuration,Configuration/Listener/Registrar/ConfigurationListenerRegistrar.php,0,,Processes
+Listener/Registrar/ConfigurationListenerRegistrar.php,12,Listener,Configuration,Configuration/Listener/Registrar/ConfigurationListenerRegistrar.php,0,,Configuration
 Listener/Registrar/FlowsListenerRegistrar.php,121,Listener,Flows,Flows/Listener/Registrar/FlowsListenerRegistrar.php,0,,Processes
 Listener/Registrar/WorkListenerRegistrar.php,16,Listener,Work,Work/Listener/Registrar/WorkListenerRegistrar.php,0,,Processes
 Listener/RelatedRetentionRecalculationListener.php,57,Listener,Compliance,Compliance/Listener/RelatedRetentionRecalculationListener.php,0,355,Compliance
@@ -4455,6 +4455,7 @@ Service/ComplianceServiceBindings.php,,Service,,,,,Compliance
 Service/ComplianceServiceRegistrar.php,,Service,,,,,Compliance
 Event/ObjectWriteRequestEvent.php,,Event,,,,,Core
 Listener/WebhookRequestInterceptionListener.php,,Listener,,,,,Integrations
+BackgroundJob/Support/ConfigurationCheckServices.php,,BackgroundJob,,,,,Configuration
 BackgroundJob/Support/AbandonedFlowClaim.php,,BackgroundJob,,,,,Processes
 BackgroundJob/Support/FlowReapRun.php,,BackgroundJob,,,,,Processes
 BackgroundJob/Support/AutoTransitionServices.php,,BackgroundJob,,,,,Processes

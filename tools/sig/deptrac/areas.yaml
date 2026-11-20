@@ -2148,7 +2148,11 @@ deptrac:
         - type: directory
           value: 'lib/Listener/FlowNodes/[^/]*$'
         - type: directory
-          value: 'lib/Listener/Registrar/[^/]*$'
+          value: 'lib/Listener/Registrar/AccessListenerRegistrar[.]php$'
+        - type: directory
+          value: 'lib/Listener/Registrar/FlowsListenerRegistrar[.]php$'
+        - type: directory
+          value: 'lib/Listener/Registrar/WorkListenerRegistrar[.]php$'
         - type: directory
           value: 'lib/Listener/Support/ApprovalChainSequences[.]php$'
         - type: directory
@@ -2916,6 +2920,8 @@ deptrac:
         - type: directory
           value: 'lib/BackgroundJob/Support/BackfillCalendarLinksSources[.]php$'
         - type: directory
+          value: 'lib/BackgroundJob/Support/ConfigurationCheckServices[.]php$'
+        - type: directory
           value: 'lib/BulkAction/(ExportWholeSetAction|WholeSetExportRun)[.]php$'
         - type: directory
           value: 'lib/Command/(ApplicationIdRename|BackfillSystemOwnerCommand|BackfillTranslationSourceLanguageCommand|DedupeConfigurationsCommand|DedupeSharedSchemasCommand|DescriptorListCommand|ExampleSetInstallCommand|ExampleSetListCommand|ExampleSetRemoveCommand|ImportSkosCsvCommand|MetadataReconcileRun|MigrateSchemaApplicationCommand|MigrateStorageCommand|MigrateStorageRun|PlannedSchemaSplit|ReconcileMagicTablesCommand|ResetSchemaToShippedCommand|ResetToShippedRun|RollbackApprovalMigrationCommand|RotateTenantKeyCommand|SeedImportCommand|SharedSchemaSplitRun)[.]php$'
@@ -3003,6 +3009,8 @@ deptrac:
           value: 'lib/Db/Translation/[^/]*$'
         - type: directory
           value: 'lib/Listener/(RedactionPolicyCacheListener|ShareableConfigTypeRegistrationListener)[.]php$'
+        - type: directory
+          value: 'lib/Listener/Registrar/ConfigurationListenerRegistrar[.]php$'
         - type: directory
           value: 'lib/Notifications/Service/ExampleSet/[^/]*$'
         - type: directory
@@ -3459,8 +3467,6 @@ deptrac:
           value: 'lib/BackgroundJob/Support/ArchivalRetentionSources[.]php$'
         - type: directory
           value: 'lib/BackgroundJob/Support/BackfillCalendarLinksPlatform[.]php$'
-        - type: directory
-          value: 'lib/BackgroundJob/Support/ConfigurationCheckServices[.]php$'
         - type: directory
           value: 'lib/BackgroundJob/Support/DestructionCheckRun[.]php$'
         - type: directory

@@ -148,7 +148,6 @@ final class ListenerRegistrar {
 	 */
 	private static function registerComponentListeners(IRegistrationContext $context): void {
 		Registrar\AccessListenerRegistrar::register(context: $context);
-		Registrar\ConfigurationListenerRegistrar::register(context: $context);
 		Registrar\FlowsListenerRegistrar::register(context: $context);
 		\OCA\OpenRegister\Mcp\Listener\Registrar\McpListenerRegistrar::register(context: $context);
 		\OCA\OpenRegister\Notifications\Listener\Registrar\NotificationsListenerRegistrar::register(context: $context);
