@@ -556,6 +556,8 @@ deptrac:
         - type: directory
           value: 'lib/Db/AuditTrail/ActorTrailQuery[.]php$'
         - type: directory
+          value: 'lib/Db/AuditTrail/AuditStatisticsScope[.]php$'
+        - type: directory
           value: 'lib/Db/AuditTrail/NamedActor[.]php$'
         - type: directory
           value: 'lib/Db/AuditTrail/ObjectAuditEvent[.]php$'
@@ -674,9 +676,13 @@ deptrac:
         - type: directory
           value: 'lib/Listener/Support/ConflictVeto[.]php$'
         - type: directory
+          value: 'lib/Listener/Support/EventSchemaLookup[.]php$'
+        - type: directory
+          value: 'lib/Listener/Support/HandlesObjectDeletion[.]php$'
+        - type: directory
           value: 'lib/Listener/Support/SurvivorshipResolvers[.]php$'
         - type: directory
-          value: 'lib/Repair/(AdoptOrganisationlessRows|MarkImplicitCrossOrganisationReadRules|MigratedFlowOrigins|NarrowMagicJsonColumns|OpenSpecialRightsToEveryone|PerformerField|PerformerTyping)[.]php$'
+          value: 'lib/Repair/(AdoptOrganisationlessRows|MarkImplicitCrossOrganisationReadRules|MigratedFlowOrigins|NarrowMagicJsonColumns|OpenSpecialRightsToEveryone)[.]php$'
         - type: directory
           value: 'lib/Repair/Support/RepairPlatform[.]php$'
         - type: directory
@@ -2136,10 +2142,6 @@ deptrac:
         - type: directory
           value: 'lib/Listener/Support/ConsentSaveContext[.]php$'
         - type: directory
-          value: 'lib/Listener/Support/EventSchemaLookup[.]php$'
-        - type: directory
-          value: 'lib/Listener/Support/HandlesObjectDeletion[.]php$'
-        - type: directory
           value: 'lib/Listener/Support/LifecycleTransitionAccess[.]php$'
         - type: directory
           value: 'lib/Listener/Support/LifecycleTransitionChecks[.]php$'
@@ -2162,7 +2164,7 @@ deptrac:
         - type: directory
           value: 'lib/Listener/Support/TaskVtodoWriteBackServices[.]php$'
         - type: directory
-          value: 'lib/Repair/(BackfillFlowSemanticVersions|BackfillFlowTriggerIndex|BackfillFlowVersions|FlowNodeTypeRewrite|FlowTimerRegisterPathInterface|FlowVersionBackfillTally|FlowVersionNumbering|IntakeSourceRegisterSlugsInterface|MigrateApprovalChainsToTasks|MigrateRenamedFlowNodeTypes|PhantomFlowPurgeRun|ReportUnpublishedSchedules|SeedCaseFixtures|SeedFlowRunTriggerSubject|SeedTaskFixtures|TaskSubjectLocationBackfill|V1ChainVerificationRun)[.]php$'
+          value: 'lib/Repair/(BackfillFlowSemanticVersions|BackfillFlowTriggerIndex|BackfillFlowVersions|FlowNodeTypeRewrite|FlowTimerRegisterPathInterface|FlowVersionBackfillTally|FlowVersionNumbering|IntakeSourceRegisterSlugsInterface|MigrateApprovalChainsToTasks|MigrateRenamedFlowNodeTypes|PerformerField|PerformerTyping|PhantomFlowPurgeRun|ReportUnpublishedSchedules|SeedCaseFixtures|SeedFlowRunTriggerSubject|SeedTaskFixtures|TaskSubjectLocationBackfill|V1ChainVerificationRun)[.]php$'
         - type: directory
           value: 'lib/Repair/Support/ApprovalTaskStores[.]php$'
         - type: directory
@@ -3332,7 +3334,7 @@ deptrac:
         - type: directory
           value: 'lib/Service/Import/SourceRowReaderInterface[.]php$'
         - type: directory
-          value: 'lib/Service/Mcp/[^/]*$'
+          value: 'lib/Service/Mcp/McpAgentScope[.]php$'
         - type: directory
           value: 'lib/Service/MigrationPack/[^/]*$'
         - type: directory
@@ -3509,8 +3511,6 @@ deptrac:
           value: 'lib/Db/AuditTrail/AuditActionStatistics[.]php$'
         - type: directory
           value: 'lib/Db/AuditTrail/AuditPageRequest[.]php$'
-        - type: directory
-          value: 'lib/Db/AuditTrail/AuditStatisticsScope[.]php$'
         - type: directory
           value: 'lib/Db/AuditTrail/AuditTrailCriteria[.]php$'
         - type: directory
@@ -3928,7 +3928,21 @@ deptrac:
         - type: directory
           value: 'lib/Service/Capability/ToolReachLevels[.]php$'
         - type: directory
-          value: 'lib/Service/Connection/[^/]*$'
+          value: 'lib/Service/Connection/ConnectionHealthReport[.]php$'
+        - type: directory
+          value: 'lib/Service/Connection/ConnectionHealthReportBuilder[.]php$'
+        - type: directory
+          value: 'lib/Service/Connection/ConnectionRegistryMissingException[.]php$'
+        - type: directory
+          value: 'lib/Service/Connection/ConnectionRegistryReader[.]php$'
+        - type: directory
+          value: 'lib/Service/Connection/ConnectionReportKind[.]php$'
+        - type: directory
+          value: 'lib/Service/Connection/ConnectionReporter[.]php$'
+        - type: directory
+          value: 'lib/Service/Connection/ConnectionReporterInterface[.]php$'
+        - type: directory
+          value: 'lib/Service/Connection/ConnectionStatusReport[.]php$'
         - type: directory
           value: 'lib/Service/Consumer/[^/]*$'
         - type: directory
@@ -3985,6 +3999,10 @@ deptrac:
           value: 'lib/Service/Integration/BuiltinProviders/[^/]*$'
         - type: directory
           value: 'lib/Service/Integration/Providers/[^/]*$'
+        - type: directory
+          value: 'lib/Service/Mcp/McpSessionCaller[.]php$'
+        - type: directory
+          value: 'lib/Service/Mcp/ToolCall[.]php$'
         - type: directory
           value: 'lib/Service/ObjectSource/ConfiguredSourceUpstream[.]php$'
         - type: directory
@@ -4579,6 +4597,8 @@ deptrac:
           value: 'lib/Push/[^/]*$'
         - type: directory
           value: 'lib/Service/(ActivityFilter|ActivityFilterServiceInterface|AdminRecipientExpander|NotificationServiceInterface|NotificationsServiceBindings|NotificationsServiceRegistrar|ScheduledReportDelivery|ScheduledReportExportQuery|ScheduledReportExporters|ScheduledReportNotice|ScheduledReportOwnerServices|ScheduledReportStores)[.]php$'
+        - type: directory
+          value: 'lib/Service/Connection/ConnectionReportForbiddenException[.]php$'
         - type: directory
           value: 'lib/Service/Mail/[^/]*$'
         - type: directory
