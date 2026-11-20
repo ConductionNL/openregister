@@ -23,6 +23,7 @@
 
 namespace OCA\OpenRegister\Service;
 
+use OCA\OpenRegister\Db\CatalogueScope;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCP\IDBConnection;
 use PDO;
@@ -232,7 +233,7 @@ class RegisterSchemaLinkageRepairService {
 	private function shardTableNames(): array {
 		try {
 			$stmt = $this->db->prepare(
-				'SELECT table_name FROM information_schema.tables WHERE table_name LIKE :pattern'
+				'SELECT table_name FROM information_schema.tables WHERE table_name LIKE :pattern AND ' . (new CatalogueScope(db: $this->db))->condition()
 			);
 			$stmt->bindValue('pattern', '%openregister\_table\_%');
 			$stmt->execute();

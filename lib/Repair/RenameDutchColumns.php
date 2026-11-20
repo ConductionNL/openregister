@@ -299,7 +299,7 @@ class RenameDutchColumns implements IRepairStep {
 	private function openRegisterTableNames(): array {
 		try {
 			$stmt = $this->db->prepare(
-				'SELECT table_name FROM information_schema.tables WHERE table_name LIKE :pattern'
+				'SELECT table_name FROM information_schema.tables WHERE table_name LIKE :pattern AND table_schema = ' . $this->currentSchemaFunction()
 			);
 			$stmt->bindValue('pattern', '%openregister\_table\_%');
 			$stmt->execute();
@@ -332,7 +332,7 @@ class RenameDutchColumns implements IRepairStep {
 	private function columnsOf(string $table): array {
 		try {
 			$stmt = $this->db->prepare(
-				'SELECT column_name FROM information_schema.columns WHERE table_name = :table'
+				'SELECT column_name FROM information_schema.columns WHERE table_name = :table AND table_schema = ' . $this->currentSchemaFunction()
 			);
 			$stmt->bindValue('table', $table);
 			$stmt->execute();
@@ -386,4 +386,17 @@ class RenameDutchColumns implements IRepairStep {
 	private function quote(string $identifier): string {
 		return $this->db->getDatabasePlatform()->quoteSingleIdentifier($identifier);
 	}//end quote()
+
+	/**
+	 * The SQL function that names the instance's own database, to keep a catalogue query inside it.
+	 *
+	 * @return string
+	 */
+	private function currentSchemaFunction(): string {
+		if (stripos(get_debug_type($this->db->getDatabasePlatform()), 'PostgreSQL') !== false) {
+			return 'current_schema()';
+		}
+
+		return 'DATABASE()';
+	}//end currentSchemaFunction()
 }//end class

@@ -44,6 +44,7 @@ namespace OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use DateTime;
 use LogicException;
+use OCA\OpenRegister\Db\CatalogueScope;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Support\FilterParams;
@@ -1837,7 +1838,7 @@ class MagicFacetHandler {
 			// Load ALL columns for this table in one query (instead of one query per column).
 			// table_name is compared as stored, so PostgreSQL can use the catalog index.
 			$sql = 'SELECT LOWER(column_name) as col FROM information_schema.columns
-                    WHERE table_name = ?';
+                    WHERE table_name = ? AND ' . (new CatalogueScope(db: $this->db))->condition();
 
 			$stmt = $this->db->prepare($sql);
 			$stmt->execute([$fullTableNameLower]);
