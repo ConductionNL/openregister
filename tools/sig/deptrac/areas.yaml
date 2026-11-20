@@ -740,7 +740,153 @@ deptrac:
         - type: directory
           value: 'lib/Service/Federation/ShareTargets[.]php$'
         - type: directory
-          value: 'lib/Service/File/[^/]*$'
+          value: 'lib/Service/File/AntivirusScan[.]php$'
+        - type: directory
+          value: 'lib/Service/File/AntivirusScannerAdapter[.]php$'
+        - type: directory
+          value: 'lib/Service/File/AntivirusScannerInterface[.]php$'
+        - type: directory
+          value: 'lib/Service/File/ArchiveBounds[.]php$'
+        - type: directory
+          value: 'lib/Service/File/ArchiveListing[.]php$'
+        - type: directory
+          value: 'lib/Service/File/ArchiveMemberEnumerator[.]php$'
+        - type: directory
+          value: 'lib/Service/File/ArchiveMemberReader[.]php$'
+        - type: directory
+          value: 'lib/Service/File/ArchiveWalk[.]php$'
+        - type: directory
+          value: 'lib/Service/File/CreateFileHandler[.]php$'
+        - type: directory
+          value: 'lib/Service/File/CreateFileSources[.]php$'
+        - type: directory
+          value: 'lib/Service/File/DangerousFileExtensions[.]php$'
+        - type: directory
+          value: 'lib/Service/File/DeleteFileHandler[.]php$'
+        - type: directory
+          value: 'lib/Service/File/DeleteFileSources[.]php$'
+        - type: directory
+          value: 'lib/Service/File/DocumentAnonymization[.]php$'
+        - type: directory
+          value: 'lib/Service/File/DocumentStore[.]php$'
+        - type: directory
+          value: 'lib/Service/File/ExecutableContentDetector[.]php$'
+        - type: directory
+          value: 'lib/Service/File/FetchedFile[.]php$'
+        - type: directory
+          value: 'lib/Service/File/FileBatchHandler[.]php$'
+        - type: directory
+          value: 'lib/Service/File/FileBatchRequest[.]php$'
+        - type: directory
+          value: 'lib/Service/File/FileChecksum[.]php$'
+        - type: directory
+          value: 'lib/Service/File/FileContentChange[.]php$'
+        - type: directory
+          value: 'lib/Service/File/FileContentHandlers[.]php$'
+        - type: directory
+          value: 'lib/Service/File/FileFolderHandlers[.]php$'
+        - type: directory
+          value: 'lib/Service/File/FileFormattingHandler[.]php$'
+        - type: directory
+          value: 'lib/Service/File/FileHistoryHandlers[.]php$'
+        - type: directory
+          value: 'lib/Service/File/FileLifecycleHandlers[.]php$'
+        - type: directory
+          value: 'lib/Service/File/FileListFilter[.]php$'
+        - type: directory
+          value: 'lib/Service/File/FileListOptions[.]php$'
+        - type: directory
+          value: 'lib/Service/File/FileLockEnvelope[.]php$'
+        - type: directory
+          value: 'lib/Service/File/FileLockHandler[.]php$'
+        - type: directory
+          value: 'lib/Service/File/FileMetadataChange[.]php$'
+        - type: directory
+          value: 'lib/Service/File/FileNodeHandlers[.]php$'
+        - type: directory
+          value: 'lib/Service/File/FileOverwrite[.]php$'
+        - type: directory
+          value: 'lib/Service/File/FilePreviewHandler[.]php$'
+        - type: directory
+          value: 'lib/Service/File/FilePropertyRules[.]php$'
+        - type: directory
+          value: 'lib/Service/File/FilePublishingHandler[.]php$'
+        - type: directory
+          value: 'lib/Service/File/FileRename[.]php$'
+        - type: directory
+          value: 'lib/Service/File/FileServicePlatform[.]php$'
+        - type: directory
+          value: 'lib/Service/File/FileSession[.]php$'
+        - type: directory
+          value: 'lib/Service/File/FileStorageHandlers[.]php$'
+        - type: directory
+          value: 'lib/Service/File/FileTarget[.]php$'
+        - type: directory
+          value: 'lib/Service/File/FileTransfer[.]php$'
+        - type: directory
+          value: 'lib/Service/File/FileUpload[.]php$'
+        - type: directory
+          value: 'lib/Service/File/FileUploadRun[.]php$'
+        - type: directory
+          value: 'lib/Service/File/FileValidationHandler[.]php$'
+        - type: directory
+          value: 'lib/Service/File/FileVersioningHandler[.]php$'
+        - type: directory
+          value: 'lib/Service/File/FileVersionsPlatform[.]php$'
+        - type: directory
+          value: 'lib/Service/File/FolderAccessCheck[.]php$'
+        - type: directory
+          value: 'lib/Service/File/FolderAccessDenial[.]php$'
+        - type: directory
+          value: 'lib/Service/File/FolderBindRun[.]php$'
+        - type: directory
+          value: 'lib/Service/File/FolderManagementHandler[.]php$'
+        - type: directory
+          value: 'lib/Service/File/ImageBurner[.]php$'
+        - type: directory
+          value: 'lib/Service/File/ImageRegion[.]php$'
+        - type: directory
+          value: 'lib/Service/File/ImageRegionNotBurnableException[.]php$'
+        - type: directory
+          value: 'lib/Service/File/MalwareScanGate[.]php$'
+        - type: directory
+          value: 'lib/Service/File/MalwareScanRefusal[.]php$'
+        - type: directory
+          value: 'lib/Service/File/MalwareScanState[.]php$'
+        - type: directory
+          value: 'lib/Service/File/ManagedFileOwnerLookup[.]php$'
+        - type: directory
+          value: 'lib/Service/File/ObjectFileFinder[.]php$'
+        - type: directory
+          value: 'lib/Service/File/ObjectFileLookup[.]php$'
+        - type: directory
+          value: 'lib/Service/File/ObjectFileReader[.]php$'
+        - type: directory
+          value: 'lib/Service/File/ObjectFolderOptions[.]php$'
+        - type: directory
+          value: 'lib/Service/File/OcrWords[.]php$'
+        - type: directory
+          value: 'lib/Service/File/PublishedDigestService[.]php$'
+        - type: directory
+          value: 'lib/Service/File/ReadFileHandler[.]php$'
+        - type: directory
+          value: 'lib/Service/File/ReadFileSources[.]php$'
+        - type: directory
+          value: 'lib/Service/File/ShareLinkRequest[.]php$'
+        - type: directory
+          value: 'lib/Service/File/UpdateFileGuards[.]php$'
+        - type: directory
+          value: 'lib/Service/File/UpdateFileHandler[.]php$'
+        - type: directory
+          value: 'lib/Service/File/UpdateFileLocator[.]php$'
+        - type: directory
+          value: 'lib/Service/File/UrlFetchRefused[.]php$'
+        - type: directory
+          value: 'lib/Service/File/UrlFileFetcher[.]php$'
+        - type: directory
+          value: 'lib/Service/File/UrlFileSource[.]php$'
+        - type: directory
+          value: 'lib/Service/File/UrlStreamOpener[.]php$'
         - type: directory
           value: 'lib/Service/Form/FormPayloadFindings[.]php$'
         - type: directory
@@ -4241,6 +4387,22 @@ deptrac:
           value: 'lib/Files/Service/TextExtraction/PatternSet/[^/]*$'
         - type: directory
           value: 'lib/Service/(FileFolderServiceInterface|FileHandlerSupportInterface|FileReaderInterface|FileServiceInterface|FileWriterInterface)[.]php$'
+        - type: directory
+          value: 'lib/Service/File/AnonymiqRegionDetector[.]php$'
+        - type: directory
+          value: 'lib/Service/File/ExAppJsonRequester[.]php$'
+        - type: directory
+          value: 'lib/Service/File/IImageRegionDetector[.]php$'
+        - type: directory
+          value: 'lib/Service/File/ImageDetection[.]php$'
+        - type: directory
+          value: 'lib/Service/File/ImageRedactionService[.]php$'
+        - type: directory
+          value: 'lib/Service/File/ImageRegionDetectorRegistry[.]php$'
+        - type: directory
+          value: 'lib/Service/File/OcrWordLocator[.]php$'
+        - type: directory
+          value: 'lib/Service/File/OfficeMediaBurner[.]php$'
         - type: directory
           value: 'lib/Service/Sharing/AccessLinkReaderFilters[.]php$'
         - type: directory
