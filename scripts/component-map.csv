@@ -4513,3 +4513,5 @@ Service/Notification/ReferenceProperty.php,,Service,,,,,Notifications
 Service/Notification/ReferencedAddressNotifierInterface.php,,Service,,,,,Notifications
 Service/NotificationsServiceBindings.php,,Service,,,,,Notifications
 Service/NotificationsServiceRegistrar.php,,Service,,,,,Notifications
+Service/Configuration/RegisterBundles.php,,Service,,,,,Configuration
+Service/MigrationPack/MigrationPackDefinitions.php,,Service,,,,,Configuration

@@ -1549,6 +1549,7 @@ components:
       - ".*/lib/Service/Configuration/RegisterBundleBinding[.]php"
       - ".*/lib/Service/Configuration/RegisterBundleBindingInterface[.]php"
       - ".*/lib/Service/Configuration/RegisterBundleEntryRules[.]php"
+      - ".*/lib/Service/Configuration/RegisterBundles[.]php"
       - ".*/lib/Service/Configuration/RejectedSchemaReport[.]php"
       - ".*/lib/Service/Configuration/RepositoryApiCall[.]php"
       - ".*/lib/Service/Configuration/SchemaImportInstaller[.]php"

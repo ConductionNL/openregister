@@ -944,6 +944,8 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\MigrationPack\MigrationPackRequestReaderInterface::class
 			=> \OCA\OpenRegister\Service\MigrationPack\MigrationPackRequestReader::class,
 		MigrationPackServiceInterface::class => MigrationPackService::class,
+		\OCA\OpenRegister\Kernel\Contracts\Core\MigrationPackDefinitionsInterface::class
+			=> \OCA\OpenRegister\Service\MigrationPack\MigrationPackDefinitions::class,
 		MigrationServiceInterface::class => MigrationService::class,
 		NotificationServiceInterface::class => NotificationService::class,
 		NotificationTemplatesInterface::class => NotificationTemplateRegistry::class,
@@ -1093,6 +1095,8 @@ final class ContractBindings {
 		FlowRunServiceInterface::class => FlowRunService::class,
 		ConfigurationServiceInterface::class => ConfigurationService::class,
 		ConfigurationTransferInterface::class => ConfigurationService::class,
+		\OCA\OpenRegister\Kernel\Contracts\Core\RegisterBundlesInterface::class
+			=> \OCA\OpenRegister\Service\Configuration\RegisterBundles::class,
 		\OCA\OpenRegister\Service\Object\ArchiveHandlerInterface::class => \OCA\OpenRegister\Service\Object\ArchiveHandler::class,
 		RetentionServiceInterface::class => RetentionService::class,
 		\OCA\OpenRegister\Service\Object\AuthorizationResolutionInterface::class => \OCA\OpenRegister\Service\Object\PermissionHandler::class,

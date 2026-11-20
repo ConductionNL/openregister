@@ -3084,6 +3084,8 @@ deptrac:
         - type: directory
           value: 'lib/Service/Configuration/RegisterBundleEntryRules[.]php$'
         - type: directory
+          value: 'lib/Service/Configuration/RegisterBundles[.]php$'
+        - type: directory
           value: 'lib/Service/Configuration/RejectedSchemaReport[.]php$'
         - type: directory
           value: 'lib/Service/Configuration/RepositoryApiCall[.]php$'
