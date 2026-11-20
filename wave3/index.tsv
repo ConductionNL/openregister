@@ -1,0 +1,12 @@
+V01	build	22	hotspot ObjectsController.php
+V02	build	16	Core to Search, lib/Service/GraphQL + Core to Files, lib/Service/Object/Collaborators + Core to Integrations, lib/BackgroundJob + Processes to Platform, lib/Controller + Core to Compliance, lib/Controller/Support + Compliance to Processes, lib/Controller/Support + Core to Search, lib/Controller/Support + Core to Processes, lib/Controller/Support + Integrations to Configuration, lib/Db + Core to Search, lib/Db/MagicMapper + Core to Processes, lib/Db/Schema + Processes to Configuration, lib/Db + Core to Integrations, lib/Db + Compliance to Processes, lib/Db
+V03	build	15	Core to Compliance, lib/Service/User + hotspot MagicMapper.php + Core to Configuration, lib/Service/Object + Compliance to Configuration, lib/BackgroundJob/Support + Core to Configuration, lib/Controller/Support + Processes to Configuration, lib/Listener/Registrar + Core to Compliance, lib/Service/File
+V04	build	14	Core to Files, lib/Service/File
+V05	build	14	Core to Files, lib/Service/File + Core to Search, lib/Service/Aggregation
+V06	build	13	Core to Files, lib/Db + Core to Integrations, lib/Service/ObjectSource + hotspot Schema.php
+V07	build	11	Core to Compliance, lib/BackgroundJob
+V08	build	11	Core to Processes, lib/Service/Relation + Core to Configuration, lib/Service/Schemas + Core to Compliance, lib/Controller + Core to Configuration, lib/Service/Object/SaveObject
+V09	build	9	Integrations to Processes, lib/Mcp/BuiltIn
+V10	build	9	Core to Compliance, lib/Service/Object
+V11	build	9	Core to Compliance, lib/Service/Object/SaveObject + Core to Processes, lib/Service/Object/SaveObject + Core to Processes, lib/Service/Object + Core to Processes, lib/Service/Registers + Kernel to Processes, lib/Event
+V12	build	8	Core to Compliance, lib/Db + Files to Configuration, lib/Files/Service/File + Files to Configuration, lib/Files/Service/TextExtraction + Core to Platform, lib/Listener + Search to Compliance, lib/Search/Service + Core to Processes, lib/Service/Hinge + Notifications to Configuration, lib/Service + Core to Processes, lib/Service/Object/Collaborators
