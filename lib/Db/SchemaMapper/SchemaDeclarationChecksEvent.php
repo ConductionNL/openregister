@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db\SchemaMapper;
 
+use Closure;
 use OCA\OpenRegister\Kernel\Contracts\Core\SchemaDeclarationCheckInterface;
 use OCP\EventDispatcher\Event;
 
@@ -36,6 +37,33 @@ final class SchemaDeclarationChecksEvent extends Event {
 	 * @var array<int, SchemaDeclarationCheckInterface>
 	 */
 	private array $checks = [];
+
+	/**
+	 * Constructor.
+	 *
+	 * @param Closure|null $warnsOnUnlinkable Answers, when a check runs, whether the save only warns about an unlinkable notification action.
+	 */
+	public function __construct(private readonly ?Closure $warnsOnUnlinkable = null) {
+		parent::__construct();
+	}//end __construct()
+
+	/**
+	 * Whether the save being checked only warns about a notification url action that cannot be linked to.
+	 *
+	 * A configuration import, and a save that keeps the stored notification block, set
+	 * this on the mapper; a check reads it when it runs, not when it is contributed.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 */
+	public function warnsOnUnlinkableNotificationActions(): bool {
+		if ($this->warnsOnUnlinkable === null) {
+			return false;
+		}
+
+		return ($this->warnsOnUnlinkable)() === true;
+	}//end warnsOnUnlinkableNotificationActions()
 
 	/**
 	 * Contribute one check.
