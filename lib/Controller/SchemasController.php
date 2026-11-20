@@ -31,6 +31,7 @@ use OCA\OpenRegister\Kernel\Contracts\Core\DeclarationRefusalInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\SchemaAccessChangeLogInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\SchemaFormDependentsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\SchemaRenameWarningsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\EnvelopedDefinitionControllerInterface;
 use OCA\OpenRegister\Controller\Support\SchemaRemoval;
 use OCA\OpenRegister\Controller\Support\SchemasControllerServices;
 use OCA\OpenRegister\Db\AuditTrail\AuditStatisticsScope;
@@ -133,7 +134,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @spec openspec/specs/openapi-generation/spec.md
  */
-class SchemasController extends Controller {
+class SchemasController extends Controller implements EnvelopedDefinitionControllerInterface {
 
 	/**
 	 * The exceptions that answer 422 with the errors of the declaration.

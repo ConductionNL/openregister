@@ -34,6 +34,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Export;
 
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\Configuration\ExportRightInterface;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCP\IGroupManager;
 use OCP\IUserSession;
@@ -47,23 +48,12 @@ use Throwable;
  * @category Service
  * @package  OCA\OpenRegister\Service\Export
  *
+ * ACTION (`export`) and FALLBACK_ACTION (`read`) are inherited from
+ * ExportRightInterface.
+ *
  * @spec openspec/specs/authorization-rbac/spec.md
  */
-class ExportRightService {
-	/**
-	 * The right an export requires.
-	 *
-	 * @var string
-	 */
-	public const ACTION = 'export';
-
-	/**
-	 * The right an export falls back to while no administrator has narrowed it.
-	 *
-	 * @var string
-	 */
-	public const FALLBACK_ACTION = 'read';
-
+class ExportRightService implements ExportRightInterface {
 	/**
 	 * The principal an anonymous caller acts as.
 	 *

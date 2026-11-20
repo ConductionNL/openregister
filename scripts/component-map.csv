@@ -4531,7 +4531,6 @@ Controller/Support/PollLinksControllerServices.php,,Controller,,,,,Integrations
 Controller/Support/ShareLinksControllerServices.php,,Controller,,,,,Integrations
 Controller/Support/TimeTrackerLinksControllerServices.php,,Controller,,,,,Integrations
 Controller/Support/SourcePayload.php,,Controller,,,,,Integrations
-Controller/Support/MaintenanceReachableControllersInterface.php,,Controller,,,,,Configuration
 Service/Party/PartyRecipients.php,,Service,,,,,Processes
 Service/Settings/ArchivalSettingsReaderInterface.php,,Service,,,,,Compliance
 Service/Object/CorrectionServiceInterface.php,,Service,,,,,Compliance
@@ -4616,5 +4615,8 @@ Service/File/ShareLinkRequest.php,,Service,,,,,Files
 Service/File/UpdateFileGuards.php,,Service,,,,,Files
 Service/File/UpdateFileLocator.php,,Service,,,,,Files
 Db/AuditTrail/RevertOptions.php,,Db,,,,,Core
+Listener/CoreListenerRegistrar.php,,Listener,,,,,Core
+Listener/Registrar/ComplianceListenerRegistrar.php,,Listener,,,,,Compliance
+Search/Listener/Registrar/SearchListenerRegistrar.php,,Search,,,,,Search
 Notifications/Service/Webhook/CloudEventAttributes.php,,Notifications,,,,,Integrations
 Notifications/Service/Webhook/WebhookInterceptionCacheInterface.php,,Notifications,,,,,Integrations
