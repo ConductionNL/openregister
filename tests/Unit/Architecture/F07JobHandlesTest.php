@@ -42,6 +42,7 @@ use OCA\OpenRegister\BackgroundJob\SchemaRunJob;
 use OCA\OpenRegister\BackgroundJob\SourceRecordRecomputeJob;
 use OCA\OpenRegister\BackgroundJob\SubjectExportJob;
 use OCA\OpenRegister\BackgroundJob\TransferExecutionJob;
+use OCA\OpenRegister\BackgroundJob\TranslationProjectionJob;
 use OCP\BackgroundJob\IJob;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -83,6 +84,7 @@ final class F07JobHandlesTest extends TestCase {
 		ProcessesJobHandlesInterface::SOURCE_RECORD_RECOMPUTE => SourceRecordRecomputeJob::class,
 		ComplianceJobHandlesInterface::SUBJECT_EXPORT => SubjectExportJob::class,
 		ComplianceJobHandlesInterface::TRANSFER_EXECUTION => TransferExecutionJob::class,
+		ProcessesJobHandlesInterface::TRANSLATION_PROJECTION => TranslationProjectionJob::class,
 	];
 
 	/**

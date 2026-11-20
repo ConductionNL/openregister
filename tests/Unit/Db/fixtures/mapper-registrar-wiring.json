@@ -36,6 +36,7 @@
         "OCA\\OpenRegister\\Service\\DateTimeNormalizerInterface",
         "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\RequestLanguagesInterface",
         "OCA\\OpenRegister\\Service\\Rbac\\ExplicitRevealInterface",
+        "OCA\\OpenRegister\\Kernel\\Contracts\\PropertySearchProfileInterface",
         "OCA\\OpenRegister\\Service\\DateTimeNormalizerInterface",
         "OCA\\OpenRegister\\Service\\DateTimeNormalizerInterface",
         "OCA\\OpenRegister\\Service\\Object\\SchemaTypeConverterInterface"
