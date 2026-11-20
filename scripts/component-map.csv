@@ -3517,7 +3517,6 @@ Service/Interaction/,,Service,,,,,Processes
 Service/Interaction/WatcherServiceInterface.php,,Service,,,,,Notifications
 Service/Interaction/WatcherStore.php,,Service,,,,,Notifications
 Service/Interaction/WatcherCaller.php,,Service,,,,,Notifications
-Service/Interaction/AddressedObject.php,,Service,,,,,Core
 Service/JsonLd/,,Service,,,,,Core
 Service/Lifecycle/,,Service,,,,,Processes
 Service/Mcp/,,Service,,,,,Configuration
@@ -3823,8 +3822,8 @@ Event/AbstractRegisterEvent.php,,Event,,,,,Kernel
 Event/AbstractRegistrySubscriptionEvent.php,,Event,,,,,Kernel
 Event/AbstractSchemaEvent.php,,Event,,,,,Kernel
 Event/AbstractSourceEvent.php,,Event,,,,,Kernel
-Event/AbstractTaskEvent.php,,Event,,,,,Core
-Event/AbstractTaskSequenceEvent.php,,Event,,,,,Core
+Event/AbstractTaskEvent.php,,Event,,,,,Kernel
+Event/AbstractTaskSequenceEvent.php,,Event,,,,,Kernel
 Event/AbstractViewEvent.php,,Event,,,,,Kernel
 Event/DeepLinkCollectorInterface.php,,Event,,,,,Kernel
 Event/AgentRunDispatch.php,,Event,,,,,Kernel
@@ -4470,9 +4469,6 @@ Service/Lifecycle/TransitionActor.php,,Service,,,,,Kernel
 Service/Lifecycle/TransitionMove.php,,Service,,,,,Kernel
 Service/Flow/Timer/EscalationNotice.php,,Service,,,,,Kernel
 Service/Flow/Timer/TimerFiring.php,,Service,,,,,Kernel
-Service/Interaction/WatcherServiceInterface.php,,Service,,,,,Notifications
-Service/Interaction/WatcherStore.php,,Service,,,,,Notifications
-Service/Interaction/WatcherCaller.php,,Service,,,,,Notifications
 Service/Security/SafeFetchUrl.php,,Service,,,,,Core
 Service/Capability/ToolReachLevels.php,,Service,,,,,Integrations
 Db/AuditTrail/ObjectAuditEvent.php,,Db,,,,,Core
@@ -4561,3 +4557,4 @@ Db/AuditTrail/HardeningChange.php,,Db,,,,,Core
 Db/AuditTrail/RegisterAuditEvent.php,,Db,,,,,Core
 Search/Service/ExampleSet/ExampleSetViewRowsInterface.php,,Search,,,,,Configuration
 Service/Capability/ToolGrantCoordinates.php,,Service,,,0,,Integrations
+Kernel/Contracts/TaskSequenceInterface.php,,Kernel,,,,,Kernel
