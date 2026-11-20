@@ -11,11 +11,15 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectQuotaInterface;
+use OCA\OpenRegister\Service\Quota\ObjectQuotaService;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\CurrentFlowRunInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionDefaultsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionEvaluatorInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Notifications\PartyRecipientsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\PublicationRefusalInterface;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
@@ -32,6 +36,7 @@ use OCA\OpenRegister\Service\Flow\FlowRunSignalService;
 use OCA\OpenRegister\Service\Flow\FlowRunnableGuard;
 use OCA\OpenRegister\Service\Flow\FlowService;
 use OCA\OpenRegister\Service\Flow\FlowStepDispatcher;
+use OCA\OpenRegister\Search\FlowTasksProvider;
 use OCA\OpenRegister\Service\Flow\FlowWiring;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNode;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNodeInterface;
@@ -47,6 +52,7 @@ use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendars;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
+use OCA\OpenRegister\Service\Party\PartyRecipients;
 use OCA\OpenRegister\Service\Party\PartyIndicatorGuard;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaults;
 use OCA\OpenRegister\Service\Party\PartySearchInterface;
@@ -99,6 +105,13 @@ final class FlowWiringTest extends TestCase {
 	private array $aliases = [];
 
 	/**
+	 * Search providers registered, in order.
+	 *
+	 * @var array<int, string>
+	 */
+	private array $searchProviders = [];
+
+	/**
 	 * Register the wiring against a recording context.
 	 *
 	 * @return void
@@ -115,6 +128,11 @@ final class FlowWiringTest extends TestCase {
 		$context->method('registerServiceAlias')->willReturnCallback(
 			function (string $alias, string $target): void {
 				$this->aliases[$alias] = $target;
+			}
+		);
+		$context->method('registerSearchProvider')->willReturnCallback(
+			function (string $class): void {
+				$this->searchProviders[] = $class;
 			}
 		);
 
@@ -165,6 +183,15 @@ final class FlowWiringTest extends TestCase {
 	}//end testItRegistersTheServicesInOrder()
 
 	/**
+	 * The flow tasks search provider is registered here, by the component that owns it.
+	 *
+	 * @return void
+	 */
+	public function testItRegistersTheFlowTasksSearchProvider(): void {
+		self::assertSame(expected: [FlowTasksProvider::class], actual: $this->searchProviders);
+	}//end testItRegistersTheFlowTasksSearchProvider()
+
+	/**
 	 * The run authorization is built on the container's flow access.
 	 *
 	 * @return void
@@ -186,6 +213,17 @@ final class FlowWiringTest extends TestCase {
 	}//end testTheExpressionPortIsAnsweredByTheCalculationEvaluator()
 
 	/**
+	 * The Core current-run port is answered by the shared run context, so the delete guard reads the one ambient stack.
+	 *
+	 * @return void
+	 */
+	public function testTheCurrentRunPortIsAnsweredByTheSharedRunContext(): void {
+		self::assertSame(expected: FlowRunContext::class, actual: ($this->aliases[CurrentFlowRunInterface::class] ?? null));
+		self::assertArrayHasKey(key: FlowRunContext::class, array: $this->factories);
+		self::assertTrue(condition: is_a(FlowRunContext::class, CurrentFlowRunInterface::class, true));
+	}//end testTheCurrentRunPortIsAnsweredByTheSharedRunContext()
+
+	/**
 	 * The Core expression-defaults port is answered by the rules engine's implementation.
 	 *
 	 * @return void
@@ -196,7 +234,7 @@ final class FlowWiringTest extends TestCase {
 	}//end testTheExpressionDefaultsPortIsAnsweredByTheRulesEngine()
 
 	/**
-	 * The schedule flow store and the area's own interfaces are bound, and only these aliases are registered.
+	 * The schedule flow store, the current-run port, the expression-defaults port and the area's own interfaces are bound, and only these aliases are registered.
 	 *
 	 * @return void
 	 */
@@ -204,8 +242,10 @@ final class FlowWiringTest extends TestCase {
 		self::assertSame(
 			expected: [
 				FieldRulesSourceInterface::class           => StateFieldRuleResolver::class,
+				CurrentFlowRunInterface::class             => FlowRunContext::class,
 				ScheduleFlowStoreInterface::class          => ScheduleFlowStore::class,
 				ExpressionEvaluatorInterface::class        => CalculationEvaluator::class,
+				PartyRecipientsInterface::class            => PartyRecipients::class,
 				PublicationRefusalInterface::class         => PartyIndicatorGuard::class,
 				FlowRunSignalInterface::class              => FlowRunSignalService::class,
 				LockObjectNodeInterface::class             => LockObjectNode::class,
@@ -217,6 +257,7 @@ final class FlowWiringTest extends TestCase {
 				PartySearchInterface::class                => PartySearchService::class,
 				FlowConsentSweepInterface::class           => FlowConsentParking::class,
 				ExpressionDefaultsInterface::class         => ExpressionDefaults::class,
+				ObjectQuotaInterface::class                => ObjectQuotaService::class,
 			],
 			actual: $this->aliases
 		);
