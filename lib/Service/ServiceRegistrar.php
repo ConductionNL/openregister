@@ -311,7 +311,7 @@ final class ServiceRegistrar {
 				logger: $container->get('Psr\Log\LoggerInterface'),
 				auditTrailMapper: $container->get(\OCA\OpenRegister\Db\AuditTrailMapperInterface::class),
 				mountCache: $container->get('OCP\Files\Config\IUserMountCache'),
-				folderRecorder: $container->get(\OCA\OpenRegister\Files\Db\RegisterFolderRecorder::class),
+				folderRecorder: $container->get(\OCA\OpenRegister\Kernel\Contracts\Core\RegisterFolderRecordsInterface::class),
 				fileService: null,
 				// Not FileService itself (that would be the cycle this
 				// factory breaks), only the means to resolve it on first use.

@@ -22,12 +22,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\FileNodeLookupInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\StoredFileReaderInterface;
 
 /**
  * The file look-ups and projections callers make without changing a file.
  *
- * The methods are declared on the Core port it extends.
+ * The methods are declared on the Core ports it extends.
  */
-interface FileReaderInterface extends StoredFileReaderInterface {
+interface FileReaderInterface extends StoredFileReaderInterface, FileNodeLookupInterface {
 }//end interface
