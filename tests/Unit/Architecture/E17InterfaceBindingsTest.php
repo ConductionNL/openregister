@@ -23,7 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
-use OCA\OpenRegister\Db\PlatformMapperRegistrar;
+use OCA\OpenRegister\Db\ConfigurationMapperRegistrar;
 use OCA\OpenRegister\Db\TranslationMapper;
 use OCA\OpenRegister\Db\TranslationSourceLanguageBackfillInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -40,7 +40,7 @@ final class E17InterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{class-string, class-string}>
 	 */
 	private const BINDINGS = [
-		TranslationSourceLanguageBackfillInterface::class => [TranslationMapper::class, PlatformMapperRegistrar::class],
+		TranslationSourceLanguageBackfillInterface::class => [TranslationMapper::class, ConfigurationMapperRegistrar::class],
 	];
 
 	/**

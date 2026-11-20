@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Db;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\FollowTableInterface;
+
 /**
  * Every public method of WatcherMapper. Callers depend on this interface, not on the class.
  */
@@ -43,9 +45,11 @@ interface WatcherMapperInterface {
 	/**
 	 * The follow table, named once for the query lenses that join on it.
 	 *
+	 * The object query's personal lens (Core) owns the name.
+	 *
 	 * @var string
 	 */
-	public const TABLE = 'openregister_watchers';
+	public const TABLE = FollowTableInterface::TABLE;
 
 	/**
 	 * The subscription of one user to one object, when it exists.
