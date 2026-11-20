@@ -11,17 +11,39 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\LifecycleStatesKeeperInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ObjectQuotaInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\PartyParentInterface;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleStatesKeeper;
+use OCA\OpenRegister\Service\Party\PartyParent;
+use OCA\OpenRegister\Kernel\Contracts\Core\UnreadCountsInterface;
+use OCA\OpenRegister\Service\Interaction\UnreadCountCalculator;
 use OCA\OpenRegister\Service\Quota\ObjectQuotaService;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\TransitionInFlightInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\CurrentFlowRunInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionDefaultsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionEvaluatorInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ProcessingReadsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ReadHistoryInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\WriteElevationInterface;
 use OCA\OpenRegister\Kernel\Contracts\Notifications\PartyRecipientsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\PublicationRefusalInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\SchemaFormDependentsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\SchemaRenameWarningsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Notifications\NotificationRunRecorderInterface;
+use OCA\OpenRegister\Kernel\Contracts\Notifications\ObjectWatchersInterface;
+use OCA\OpenRegister\Kernel\Contracts\Notifications\TaskRowSourceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Notifications\OverdueTaskSourceInterface;
+use OCA\OpenRegister\Service\Task\OverdueOpenTasks;
+use OCA\OpenRegister\Service\AutomationRecordWriter;
+use OCA\OpenRegister\Service\Interaction\WatcherService;
+use OCA\OpenRegister\Kernel\Contracts\Integrations\ObjectCalendarLinkInterface;
+use OCA\OpenRegister\Service\CalendarEventService;
+use OCA\OpenRegister\Kernel\Contracts\Integrations\BuiltInToolProvidersInterface;
+use OCA\OpenRegister\Mcp\BuiltIn\FlowBuiltInToolProviders;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
 use OCA\OpenRegister\Service\Flow\FlowAccess;
@@ -38,11 +60,13 @@ use OCA\OpenRegister\Service\Flow\FlowRunnableGuard;
 use OCA\OpenRegister\Service\Flow\FlowService;
 use OCA\OpenRegister\Service\Flow\FlowStepDispatcher;
 use OCA\OpenRegister\Search\FlowTasksProvider;
+use OCA\OpenRegister\Service\Flow\FlowTriggerRenameCheck;
 use OCA\OpenRegister\Service\Flow\FlowWiring;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNode;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNodeInterface;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalKinds;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalKindsInterface;
+use OCA\OpenRegister\Service\Form\FormDependentsCheck;
 use OCA\OpenRegister\Service\Flow\RegistryStepDispatcher;
 use OCA\OpenRegister\Service\Interaction\ReadHistoryService;
 use OCA\OpenRegister\Service\Flow\Timer\CalendarRecompute;
@@ -52,6 +76,7 @@ use OCA\OpenRegister\Service\Flow\Timer\TermDiagnosticInterface;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarDefinitionsInterface;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendars;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionWriteElevation;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
 use OCA\OpenRegister\Service\Party\PartyRecipients;
@@ -64,10 +89,15 @@ use OCA\OpenRegister\Service\Task\TaskCalendarDocument;
 use OCA\OpenRegister\Service\Task\TaskCalendarDocumentInterface;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
 use OCA\OpenRegister\Service\TaskService;
+use OCA\OpenRegister\Service\FlowLinkService;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Kernel\Contracts\Integrations\ObjectDateEventsSourceInterface;
+use OCA\OpenRegister\Service\Calendar\ObjectCalendarFeedService;
 use Psr\Container\ContainerInterface;
 use ReflectionProperty;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\LifecycleTransitionInterface;
+use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\FlowWiring
@@ -179,10 +209,43 @@ final class FlowWiringTest extends TestCase {
 				TaskInboxService::class,
 				PortalPartyResolver::class,
 				TaskService::class,
+				FlowLinkService::class,
 			],
 			actual: array_keys($this->factories)
 		);
 	}//end testItRegistersTheServicesInOrder()
+
+	/**
+	 * The task row port of the notifier (Notifications) is answered by the task inbox (Processes).
+	 *
+	 * @return void
+	 */
+	public function testTheTaskRowPortIsAnsweredByTheTaskInbox(): void {
+		self::assertSame(expected: TaskInboxService::class, actual: ($this->aliases[TaskRowSourceInterface::class] ?? null));
+		self::assertTrue(condition: is_a(TaskInboxService::class, TaskRowSourceInterface::class, true));
+	}//end testTheTaskRowPortIsAnsweredByTheTaskInbox()
+
+	/**
+	 * The scheduled task sweep's candidate port is answered by the open overdue tasks query.
+	 *
+	 * @return void
+	 */
+	public function testTheOverdueTaskPortIsAnsweredByTheOverdueTaskQuery(): void {
+		self::assertSame(expected: OverdueOpenTasks::class, actual: ($this->aliases[OverdueTaskSourceInterface::class] ?? null));
+		self::assertTrue(condition: is_a(OverdueOpenTasks::class, OverdueTaskSourceInterface::class, true));
+	}//end testTheOverdueTaskPortIsAnsweredByTheOverdueTaskQuery()
+
+	/**
+	 * The watcher and run-record ports of the notification dispatcher (Notifications) are answered by Processes.
+	 *
+	 * @return void
+	 */
+	public function testTheNotificationPortsAreAnsweredByProcesses(): void {
+		self::assertSame(expected: WatcherService::class, actual: ($this->aliases[ObjectWatchersInterface::class] ?? null));
+		self::assertSame(expected: AutomationRecordWriter::class, actual: ($this->aliases[NotificationRunRecorderInterface::class] ?? null));
+		self::assertTrue(condition: is_a(WatcherService::class, ObjectWatchersInterface::class, true));
+		self::assertTrue(condition: is_a(AutomationRecordWriter::class, NotificationRunRecorderInterface::class, true));
+	}//end testTheNotificationPortsAreAnsweredByProcesses()
 
 	/**
 	 * The flow tasks search provider is registered here, by the component that owns it.
@@ -202,6 +265,17 @@ final class FlowWiringTest extends TestCase {
 		self::assertSame(expected: StateFieldRuleResolver::class, actual: ($this->aliases[FieldRulesSourceInterface::class] ?? null));
 		self::assertTrue(condition: is_a(StateFieldRuleResolver::class, FieldRulesSourceInterface::class, true));
 	}//end testTheFieldRulesPortIsAnsweredByTheStateResolver()
+
+	/**
+	 * The read history port is answered by the read history service.
+	 *
+	 * @return void
+	 */
+	public function testTheReadHistoryPortIsAnsweredByTheReadHistoryService(): void {
+		self::assertSame(expected: ReadHistoryService::class, actual: (FlowWiring::BINDINGS[ReadHistoryInterface::class] ?? null));
+		self::assertTrue(condition: is_a(ReadHistoryService::class, ReadHistoryInterface::class, true));
+		self::assertSame(expected: ReadHistoryInterface::REASON_UNAVAILABLE, actual: ReadHistoryService::REASON_UNAVAILABLE);
+	}//end testTheReadHistoryPortIsAnsweredByTheReadHistoryService()
 
 	/**
 	 * The render's expression port is answered by the calculation evaluator, through its own interface.
@@ -236,7 +310,9 @@ final class FlowWiringTest extends TestCase {
 	}//end testTheExpressionDefaultsPortIsAnsweredByTheRulesEngine()
 
 	/**
-	 * The schedule flow store, the current-run port, the processing reads, the expression-defaults port and the area's own interfaces are bound, and only these aliases are registered.
+	 * The schedule flow store, the current-run port, the calendar link, transition-in-flight, write elevation, date events, task row,
+	 * watcher and run-record ports, the schema rename and form dependents checks, the built-in tool providers, the processing reads, the read history, the overdue tasks,
+	 * the lifecycle transition and expression-defaults ports and the area's own interfaces are bound, and only these aliases are registered.
 	 *
 	 * @return void
 	 */
@@ -244,9 +320,21 @@ final class FlowWiringTest extends TestCase {
 		self::assertSame(
 			expected: [
 				FieldRulesSourceInterface::class           => StateFieldRuleResolver::class,
+				ObjectCalendarLinkInterface::class         => CalendarEventService::class,
 				CurrentFlowRunInterface::class             => FlowRunContext::class,
 				ScheduleFlowStoreInterface::class          => ScheduleFlowStore::class,
 				ProcessingReadsInterface::class            => ReadHistoryService::class,
+				ReadHistoryInterface::class                => ReadHistoryService::class,
+				TransitionInFlightInterface::class         => LifecycleActionContext::class,
+				WriteElevationInterface::class             => ObjectActionWriteElevation::class,
+				ObjectDateEventsSourceInterface::class     => ObjectCalendarFeedService::class,
+				TaskRowSourceInterface::class              => TaskInboxService::class,
+				OverdueTaskSourceInterface::class          => OverdueOpenTasks::class,
+				ObjectWatchersInterface::class             => WatcherService::class,
+				NotificationRunRecorderInterface::class    => AutomationRecordWriter::class,
+				SchemaRenameWarningsInterface::class       => FlowTriggerRenameCheck::class,
+				SchemaFormDependentsInterface::class       => FormDependentsCheck::class,
+				BuiltInToolProvidersInterface::class       => FlowBuiltInToolProviders::class,
 				ExpressionEvaluatorInterface::class        => CalculationEvaluator::class,
 				PartyRecipientsInterface::class            => PartyRecipients::class,
 				PublicationRefusalInterface::class         => PartyIndicatorGuard::class,
@@ -259,13 +347,27 @@ final class FlowWiringTest extends TestCase {
 				TaskCalendarDocumentInterface::class       => TaskCalendarDocument::class,
 				PartySearchInterface::class                => PartySearchService::class,
 				FlowConsentSweepInterface::class           => FlowConsentParking::class,
+				LifecycleTransitionInterface::class        => TransitionEngine::class,
 				ExpressionDefaultsInterface::class         => ExpressionDefaults::class,
 				ObjectQuotaInterface::class                => ObjectQuotaService::class,
+				PartyParentInterface::class                => PartyParent::class,
+				LifecycleStatesKeeperInterface::class      => LifecycleStatesKeeper::class,
+				UnreadCountsInterface::class               => UnreadCountCalculator::class,
 			],
 			actual: $this->aliases
 		);
 		self::assertSame(expected: FlowWiring::BINDINGS, actual: FlowRegistrar::BINDINGS);
 	}//end testTheScheduleFlowStoreAndTheProcessingReadsAreBound()
+
+	/**
+	 * The MCP discovery's port for contributed built-in tool providers is answered by the flow tools.
+	 *
+	 * @return void
+	 */
+	public function testTheBuiltInToolPortIsAnsweredByTheFlowTools(): void {
+		self::assertSame(expected: FlowBuiltInToolProviders::class, actual: ($this->aliases[BuiltInToolProvidersInterface::class] ?? null));
+		self::assertTrue(condition: is_a(FlowBuiltInToolProviders::class, BuiltInToolProvidersInterface::class, true));
+	}//end testTheBuiltInToolPortIsAnsweredByTheFlowTools()
 
 	public function testTheRunAuthorizationGetsTheFlowAccess(): void {
 		$built = ($this->factories[FlowRunAuthorization::class])($this->container);

@@ -32,7 +32,7 @@ use OCP\Files\Node;
 /**
  * Creating, resolving, listing, re-validating and removing the folder behind a register or object.
  */
-interface FileFolderServiceInterface extends ObjectFolderAccessInterface, ObjectFolderLookupInterface {
+interface FileFolderServiceInterface extends ObjectFolderLookupInterface, ObjectFolderAccessInterface {
 
 	/**
 	 * Creates a folder for either a Register or ObjectEntity and stores the folder ID.
@@ -104,5 +104,4 @@ interface FileFolderServiceInterface extends ObjectFolderAccessInterface, Object
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function getObjectFolder(ObjectEntity|string $objectEntity, int|string|null $registerId = null): ?Folder;
-
 }//end interface

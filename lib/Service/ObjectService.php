@@ -67,7 +67,6 @@ use OCA\OpenRegister\Service\Object\DraftCallerRule;
 use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
 use OCA\OpenRegister\Service\Object\CacheHandlerInterface;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
-use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\Object\DataManipulationHandler;
 use OCA\OpenRegister\Service\Object\DeleteObject;
 use OCA\OpenRegister\Service\Object\DeleteRowRules;
@@ -536,13 +535,6 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     private readonly IUserSession $userSession;
 
     /**
-     * Collaborator taken from the storage bundle.
-     *
-     * @var SearchTrailService
-     */
-    private readonly SearchTrailService $searchTrailService;
-
-    /**
      * Collaborator taken from the caller bundle.
      *
      * @var IGroupManager
@@ -663,7 +655,6 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         $this->objectMapper = $platform->mappers->objectMapper;
         $this->fileService = $platform->storage->fileService;
         $this->userSession = $access->caller->userSession;
-        $this->searchTrailService = $platform->storage->searchTrailService;
         $this->groupManager = $access->caller->groupManager;
         $this->userManager = $access->caller->userManager;
         $this->organisationService = $access->authorisation->organisationService;
