@@ -19,6 +19,8 @@ use OCA\OpenRegister\Kernel\Contracts\Core\CurrentFlowRunInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionDefaultsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionEvaluatorInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Integrations\BuiltInToolProvidersInterface;
+use OCA\OpenRegister\Mcp\BuiltIn\FlowBuiltInToolProviders;
 use OCA\OpenRegister\Kernel\Contracts\Notifications\PartyRecipientsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\PublicationRefusalInterface;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
@@ -236,7 +238,7 @@ final class FlowWiringTest extends TestCase {
 	}//end testTheExpressionDefaultsPortIsAnsweredByTheRulesEngine()
 
 	/**
-	 * The schedule flow store, the current-run port, the expression-defaults port and the area's own interfaces are bound, and only these aliases are registered.
+	 * The schedule flow store, the current-run port, the expression-defaults port, the built-in tool providers and the area's own interfaces are bound, and only these aliases are registered.
 	 *
 	 * @return void
 	 */
@@ -246,6 +248,7 @@ final class FlowWiringTest extends TestCase {
 				FieldRulesSourceInterface::class           => StateFieldRuleResolver::class,
 				CurrentFlowRunInterface::class             => FlowRunContext::class,
 				ScheduleFlowStoreInterface::class          => ScheduleFlowStore::class,
+				BuiltInToolProvidersInterface::class       => FlowBuiltInToolProviders::class,
 				ExpressionEvaluatorInterface::class        => CalculationEvaluator::class,
 				PartyRecipientsInterface::class            => PartyRecipients::class,
 				PublicationRefusalInterface::class         => PartyIndicatorGuard::class,
@@ -265,6 +268,16 @@ final class FlowWiringTest extends TestCase {
 		);
 		self::assertSame(expected: FlowWiring::BINDINGS, actual: FlowRegistrar::BINDINGS);
 	}//end testTheScheduleFlowStoreIsBound()
+
+	/**
+	 * The MCP discovery's port for contributed built-in tool providers is answered by the flow tools.
+	 *
+	 * @return void
+	 */
+	public function testTheBuiltInToolPortIsAnsweredByTheFlowTools(): void {
+		self::assertSame(expected: FlowBuiltInToolProviders::class, actual: ($this->aliases[BuiltInToolProvidersInterface::class] ?? null));
+		self::assertTrue(condition: is_a(FlowBuiltInToolProviders::class, BuiltInToolProvidersInterface::class, true));
+	}//end testTheBuiltInToolPortIsAnsweredByTheFlowTools()
 
 	public function testTheRunAuthorizationGetsTheFlowAccess(): void {
 		$built = ($this->factories[FlowRunAuthorization::class])($this->container);

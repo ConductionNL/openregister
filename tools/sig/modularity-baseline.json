@@ -109,15 +109,6 @@
   "lib/Listener/NotifyPushBatch.php -> lib/Listener/NotifyPushListener.php",
   "lib/Listener/Registrar/ConfigurationListenerRegistrar.php -> lib/Listener/ShareableConfigTypeRegistrationListener.php",
   "lib/Listener/Registrar/ConfigurationListenerRegistrar.php -> lib/Service/Config/RegisterShareableConfigTypesEvent.php",
-  "lib/Mcp/BuiltIn/FlowMcpToolProvider.php -> lib/Db/FlowRunMapperInterface.php",
-  "lib/Mcp/BuiltIn/FlowMcpToolProvider.php -> lib/Service/Flow/FlowNodePreflightInterface.php",
-  "lib/Mcp/BuiltIn/FlowMcpToolProvider.php -> lib/Service/Flow/FlowRunQueueOptions.php",
-  "lib/Mcp/BuiltIn/FlowMcpToolProvider.php -> lib/Service/Flow/FlowRunServiceInterface.php",
-  "lib/Mcp/BuiltIn/FlowMcpToolProvider.php -> lib/Service/Flow/FlowServiceInterface.php",
-  "lib/Mcp/BuiltIn/FlowToolServices.php -> lib/Db/FlowRunMapperInterface.php",
-  "lib/Mcp/BuiltIn/FlowToolServices.php -> lib/Service/Flow/FlowNodePreflightInterface.php",
-  "lib/Mcp/BuiltIn/FlowToolServices.php -> lib/Service/Flow/FlowRunServiceInterface.php",
-  "lib/Mcp/BuiltIn/FlowToolServices.php -> lib/Service/Flow/FlowServiceInterface.php",
   "lib/Notifications/BackgroundJob/TaskNotificationCandidates.php -> lib/Db/TaskMapper.php",
   "lib/Notifications/BackgroundJob/TaskNotificationCandidates.php -> lib/Service/Task/TaskInboxServiceInterface.php",
   "lib/Notifications/BackgroundJob/TaskScheduledNotificationJob.php -> lib/Db/Task.php",
@@ -1005,6 +996,7 @@
   "lib/Kernel/Contracts/FlowTimerControlInterface.php",
   "lib/Kernel/Contracts/FlowTimerInterface.php",
   "lib/Kernel/Contracts/GitHubClientInterface.php",
+  "lib/Kernel/Contracts/Integrations/BuiltInToolProvidersInterface.php",
   "lib/Kernel/Contracts/Integrations/OutboundBreakerInterface.php",
   "lib/Kernel/Contracts/Integrations/ShareableConfigCatalogueInterface.php",
   "lib/Kernel/Contracts/Integrations/TranslationBindingInterface.php",
@@ -1158,6 +1150,7 @@
   "lib/Listener/ViewAlertAudience.php",
   "lib/Listener/ViewAlertMail.php",
   "lib/Listener/WrittenObjectOfEvent.php",
+  "lib/Mcp/BuiltIn/AbstractBuiltInToolProvider.php",
   "lib/Mcp/Db/Agent.php",
   "lib/Mcp/Db/Conversation.php",
   "lib/Mcp/Listener/ContextChatSubmissionListener.php",
@@ -1707,7 +1700,6 @@
   "lib/Service/Flow/FlowRunContextInterface.php",
   "lib/Service/Flow/FlowRunMigrationService.php",
   "lib/Service/Flow/FlowRunMigrationServiceInterface.php",
-  "lib/Service/Flow/FlowRunQueueOptions.php",
   "lib/Service/Flow/FlowRunService.php",
   "lib/Service/Flow/FlowRunServiceInterface.php",
   "lib/Service/Flow/FlowRunSubjects.php",
@@ -2571,11 +2563,11 @@
   "Configuration": 3647,
   "Core": 64578,
   "Files": 3592,
-  "Integrations": 18203,
+  "Integrations": 18228,
   "Kernel": 8505,
   "Notifications": 2018,
   "Platform": 292,
-  "Processes": 30204,
+  "Processes": 30192,
   "Search": 2027
  },
  "kernel_files": [
@@ -3041,6 +3033,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10456,
- "total_loc": 460678,
- "violation_degree": 0.0407
+ "total_loc": 460703,
+ "violation_degree": 0.0397
 }
