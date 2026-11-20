@@ -146,7 +146,6 @@
   "lib/Db/VerwerkingsactiviteitMapperInterface.php -> lib/Db/Verwerkingsactiviteit.php",
   "lib/Event/AbstractTaskEvent.php -> lib/Db/Task.php",
   "lib/Event/AbstractTaskSequenceEvent.php -> lib/Db/TaskSequence.php",
-  "lib/Event/BulkActionRegistrationEvent.php -> lib/BulkAction/BulkActionInterface.php",
   "lib/Event/BulkActionRegistrationEvent.php -> lib/Service/BulkActionRegistryInterface.php",
   "lib/Event/TaskSequenceCompletedEvent.php -> lib/Db/Task.php",
   "lib/Event/TaskSequenceCompletedEvent.php -> lib/Db/TaskSequence.php",
@@ -2769,13 +2768,14 @@
   "Core": 64772,
   "Files": 3640,
   "Integrations": 18324,
-  "Kernel": 8504,
+  "Kernel": 8516,
   "Notifications": 1767,
   "Platform": 537,
-  "Processes": 31560,
+  "Processes": 31548,
   "Search": 2026
  },
  "kernel_files": [
+  "lib/BulkAction/BulkActionInterface.php",
   "lib/Contract/EmailLinkReaderInterface.php",
   "lib/Contract/ObjectEntityInterface.php",
   "lib/Contract/ObjectFileReaderInterface.php",
@@ -3235,7 +3235,7 @@
   "lib/Support/RegisterSlugAliasesInterface.php",
   "lib/Support/UnknownFilterKeys.php"
  ],
- "kernel_loc": 10442,
+ "kernel_loc": 10454,
  "total_loc": 460342,
- "violation_degree": 0.058
+ "violation_degree": 0.0577
 }
