@@ -13,6 +13,7 @@ namespace OCA\OpenRegister\Tests\Unit\Kernel\Contracts;
 
 use OCA\OpenRegister\Controller\FlowTimerDiagnosticController;
 use OCA\OpenRegister\Controller\RegisterDescriptorController;
+use OCA\OpenRegister\Controller\RulesController;
 use OCA\OpenRegister\Controller\SetupController;
 use OCA\OpenRegister\Controller\WorkingCalendarController;
 use OCA\OpenRegister\Kernel\Contracts\AdminSettingDelegation;
@@ -63,6 +64,11 @@ class AdminSettingDelegationTest extends TestCase {
 			'setup status'               => [SetupController::class, 'status', 0],
 			'setup save config'          => [SetupController::class, 'saveConfig', 0],
 			'setup run action'           => [SetupController::class, 'runAction', 0],
+			'rules inventory'            => [RulesController::class, 'index', 'settings'],
+			'rules switch'               => [RulesController::class, 'setEnabled', 'settings'],
+			'rules trial'                => [RulesController::class, 'evaluate', 'settings'],
+			'rules replay'               => [RulesController::class, 'replay', 'settings'],
+			'rules run log'              => [RulesController::class, 'runs', 'settings'],
 		];
 	}//end adminOnlyEndpoints()
 

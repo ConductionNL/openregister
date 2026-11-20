@@ -34,7 +34,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Notifications\Service\Notification;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\Interaction\WatcherServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Notifications\ObjectWatchersInterface;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCP\IGroup;
 use OCP\IGroupManager;
@@ -476,7 +476,7 @@ class NotificationRecipientResolver implements NotificationRecipientResolverInte
 	 * @throws \Throwable When the watchers or the read rule cannot be resolved.
 	 */
 	private function readableWatchers(ObjectEntity $object): array {
-		$watchers = $this->serverContainer->get(WatcherServiceInterface::class);
+		$watchers = $this->serverContainer->get(ObjectWatchersInterface::class);
 		$uids = $watchers->watcherUids(objectUuid: (string)$object->getUuid());
 		if ($uids === []) {
 			return [];

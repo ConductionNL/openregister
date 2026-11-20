@@ -20,7 +20,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
-use OCA\OpenRegister\Kernel\Contracts\EntityEventsInterface;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandlerInterface;
 use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
 use OCA\OpenRegister\Db\MagicMapper\MagicMapperLookups;
@@ -43,7 +42,7 @@ use Psr\Container\ContainerInterface;
 final class MapperWiring {
 
 	/**
-	 * Register the schema, register, magic and entity-relation mappers.
+	 * Register the schema, register and magic mappers.
 	 *
 	 * @param IRegistrationContext $context The registration context.
 	 *
@@ -55,7 +54,6 @@ final class MapperWiring {
 		$context->registerService(SchemaMapper::class, self::schemaMapper(...));
 		$context->registerService(RegisterMapper::class, self::registerMapper(...));
 		$context->registerService(MagicMapper::class, self::magicMapper(...));
-		$context->registerService(EntityRelationMapper::class, self::entityRelationMapper(...));
 	}//end register()
 
 	/**
@@ -186,28 +184,4 @@ final class MapperWiring {
 			logger: $container->get('Psr\Log\LoggerInterface')
 		);
 	}//end magicRuntime()
-
-	/**
-	 * Build the EntityRelationMapper.
-	 *
-	 * EntityRelationMapper is registered explicitly because it constructor-injects
-	 * `IEventDispatcher` to dispatch `EntityRelationDecisionUpdatedEvent`. Every
-	 * other event-dispatcher-dependent mapper in this class (SchemaMapper,
-	 * RegisterMapper, MagicMapper) is wired explicitly to avoid
-	 * depending on NC's autowirer resolution of framework-interface keys, which
-	 * has historically been version-sensitive.
-	 *
-	 * @param ContainerInterface $container The container.
-	 *
-	 * @return EntityRelationMapper The mapper.
-	 */
-	private static function entityRelationMapper(ContainerInterface $container): EntityRelationMapper {
-		return new EntityRelationMapper(
-			db: $container->get('OCP\IDBConnection'),
-			auditTrailMapper: $container->get(\OCA\OpenRegister\Db\AuditTrailMapperInterface::class),
-			userSession: $container->get('OCP\IUserSession'),
-			entityEvents: $container->get(EntityEventsInterface::class),
-			logger: $container->get('Psr\Log\LoggerInterface')
-		);
-	}//end entityRelationMapper()
 }//end class

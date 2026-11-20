@@ -28,7 +28,8 @@ use OCP\AppFramework\Bootstrap\IRegistrationContext;
 
 /**
  * Binds the interfaces of the Compliance area's services that a lower area
- * owns: the inbound-authentication ceiling Core's SecurityService reads.
+ * owns: the inbound-authentication ceiling Core's SecurityService reads and
+ * the archival retention guard the referential-integrity cascade asks.
  * It is also the entry for the GDPR registrar, so Application reaches the
  * Compliance GDPR wiring here rather than through a Core class.
  *

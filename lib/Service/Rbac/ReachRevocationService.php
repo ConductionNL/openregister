@@ -37,7 +37,7 @@ use DateTime;
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\DelegationGrant;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\AuthorizationAuditService;
+use OCA\OpenRegister\Kernel\Contracts\Core\SchemaAccessChangeLogInterface;
 use OCA\OpenRegister\Service\AuthorizationChange;
 use OCP\IUserSession;
 use Throwable;
@@ -127,7 +127,7 @@ class ReachRevocationService implements ReachRevocationServiceInterface {
 		// is "what did this person still have on the day they left".
 		$this->log->logger->warning(
 			message: '[ReachRevocation] A principal\'s whole reach was revoked in one act',
-            context: array_merge(['event_type' => AuthorizationAuditService::EVENT_TYPE], $record)
+            context: array_merge(['event_type' => SchemaAccessChangeLogInterface::EVENT_TYPE], $record)
 		);
 
 		return $record;
