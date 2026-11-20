@@ -9,10 +9,7 @@
   "lib/Controller/ObjectsController.php -> lib/Search/Service/Geo/GeoResponseCrsFactory.php",
   "lib/Controller/ObjectsController.php -> lib/Search/Service/Geo/GeoResponseCrsInterface.php",
   "lib/Controller/ObjectsController.php -> lib/Search/Service/Geo/GetFeatureRequest.php",
-  "lib/Controller/ObjectsController.php -> lib/Service/Audit/ObjectHistoryForReadersInterface.php",
-  "lib/Controller/ObjectsController.php -> lib/Service/Audit/PurposeRefusedException.php",
   "lib/Controller/ObjectsController.php -> lib/Service/FileServiceInterface.php",
-  "lib/Controller/ObjectsController.php -> lib/Service/Flow/FlowRunContextInterface.php",
   "lib/Controller/SchemasController.php -> lib/Service/AuthorizationAuditService.php",
   "lib/Controller/SchemasController.php -> lib/Service/Task/ApprovalPositionFormGuard.php",
   "lib/Controller/SettingsController.php -> lib/Service/Settings/SearchBackendHandler.php",
@@ -783,6 +780,7 @@
   "lib/Kernel/Contracts/Core/ReadPurposeGuardInterface.php",
   "lib/Kernel/Contracts/Core/ReadPurposeRefusalInterface.php",
   "lib/Kernel/Contracts/Core/ReadableFileHitsInterface.php",
+  "lib/Kernel/Contracts/Core/ReadableObjectHistoryInterface.php",
   "lib/Kernel/Contracts/Core/RecordArchivalReadingInterface.php",
   "lib/Kernel/Contracts/Core/RegisterAccessChangeLogInterface.php",
   "lib/Kernel/Contracts/Core/RegisterBundlesInterface.php",
@@ -1193,7 +1191,6 @@
   "lib/Service/Audit/PurposeAttributionInterface.php",
   "lib/Service/Audit/PurposeGuard.php",
   "lib/Service/Audit/PurposeGuardInterface.php",
-  "lib/Service/Audit/PurposeRefusedException.php",
   "lib/Service/Audit/PurposeRegistry.php",
   "lib/Service/Audit/PurposeRegistryInterface.php",
   "lib/Service/Audit/ReadEventVisibility.php",
@@ -2361,9 +2358,9 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "exposed_loc": {
-  "Compliance": 14915,
+  "Compliance": 14875,
   "Configuration": 2419,
-  "Core": 64571,
+  "Core": 64579,
   "Files": 801,
   "Integrations": 17983,
   "Kernel": 8470,
@@ -2833,6 +2830,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10408,
- "total_loc": 461674,
- "violation_degree": 0.0154
+ "total_loc": 461684,
+ "violation_degree": 0.015
 }
