@@ -42,7 +42,7 @@ namespace OCA\OpenRegister\Service\Vocabulary;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectSearchInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaCatalogInterface;
-use OCA\OpenRegister\Service\VocabularyImportService;
+use OCA\OpenRegister\Kernel\Contracts\VocabularyImporterInterface;
 use Throwable;
 
 /**
@@ -145,9 +145,9 @@ class ConceptRepository implements ConceptRepositoryInterface {
 	 */
 	private function lookUpIds(): array {
 		return [
-			$this->registerIdOf(slug: VocabularyImportService::REGISTER),
-			$this->schemaIdOf(slug: VocabularyImportService::SCHEMA_SCHEME),
-			$this->schemaIdOf(slug: VocabularyImportService::SCHEMA_CONCEPT),
+			$this->registerIdOf(slug: VocabularyImporterInterface::REGISTER),
+			$this->schemaIdOf(slug: VocabularyImporterInterface::SCHEMA_SCHEME),
+			$this->schemaIdOf(slug: VocabularyImporterInterface::SCHEMA_CONCEPT),
 		];
 	}//end lookUpIds()
 
