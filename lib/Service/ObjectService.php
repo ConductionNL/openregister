@@ -35,6 +35,7 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectMigration;
 use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\Rbac\MaskedWrite;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectFolderAccessInterface;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
@@ -51,7 +52,6 @@ use JsonSerializable;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Service\FacetableAnalyzer;
-use OCA\OpenRegister\Service\FileFolderServiceInterface;
 use OCA\OpenRegister\Service\Hinge\LensResolver;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterSchema;
@@ -66,7 +66,6 @@ use OCA\OpenRegister\Service\Object\DraftCallerRule;
 use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
 use OCA\OpenRegister\Service\Object\CacheHandlerInterface;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
-use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\Object\DataManipulationHandler;
 use OCA\OpenRegister\Service\Object\DeleteObject;
 use OCA\OpenRegister\Service\Object\DeleteRowRules;
@@ -524,9 +523,9 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     /**
      * Collaborator taken from the storage bundle.
      *
-     * @var FileFolderServiceInterface
+     * @var ObjectFolderAccessInterface
      */
-    private readonly FileFolderServiceInterface $fileService;
+    private readonly ObjectFolderAccessInterface $fileService;
 
     /**
      * Collaborator taken from the caller bundle.
@@ -534,13 +533,6 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * @var IUserSession
      */
     private readonly IUserSession $userSession;
-
-    /**
-     * Collaborator taken from the storage bundle.
-     *
-     * @var SearchTrailService
-     */
-    private readonly SearchTrailService $searchTrailService;
 
     /**
      * Collaborator taken from the caller bundle.
@@ -663,7 +655,6 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         $this->objectMapper = $platform->mappers->objectMapper;
         $this->fileService = $platform->storage->fileService;
         $this->userSession = $access->caller->userSession;
-        $this->searchTrailService = $platform->storage->searchTrailService;
         $this->groupManager = $access->caller->groupManager;
         $this->userManager = $access->caller->userManager;
         $this->organisationService = $access->authorisation->organisationService;

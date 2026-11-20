@@ -3258,7 +3258,7 @@ class RenderObject implements RenderObjectInterface {
 		$this->applyWatcherMarkers(entity: $run->entity);
 		$this->applyReadStateMarkers(entity: $run->entity);
 		$this->applyUpdateRightMarker(run: $run);
-		$annotations = new RecordAnnotations(logger: $this->runtime->logger);
+		$annotations = new RecordAnnotations(logger: $this->runtime->logger, archival: $this->runtime->extensions->archivalReading);
 		$annotations->attachRetention(entity: $run->entity, schema: $run->schema);
 		$annotations->attachDecision(entity: $run->entity);
 		$this->applyRetentionClocks(entity: $run->entity);
