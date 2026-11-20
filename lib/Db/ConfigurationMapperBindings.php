@@ -53,7 +53,5 @@ final class ConfigurationMapperBindings {
 		MigrationPackMapperInterface::class               => MigrationPackMapper::class,
 		RecordTemplateMapperInterface::class              => RecordTemplateMapper::class,
 		SequenceMapperInterface::class                    => SequenceMapper::class,
-		TranslationMapperInterface::class                 => TranslationMapper::class,
-		TranslationSourceLanguageBackfillInterface::class => TranslationMapper::class,
 	];
 }//end class

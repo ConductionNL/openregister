@@ -24,7 +24,7 @@ namespace Unit\Contract;
 
 use OCA\OpenRegister\Contract\ObjectFileReaderInterface;
 use OCA\OpenRegister\Service\File\ObjectFileReader;
-use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\ObjectFilesInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\Files\File;
 use OCP\Files\Folder;
@@ -71,7 +71,7 @@ class ObjectFileReaderContractTest extends TestCase {
 		$scan   = $this->createMock(originalClassName: File::class);
 		$folder = $this->createMock(originalClassName: Folder::class);
 
-		$fileService = $this->createMock(originalClassName: FileService::class);
+		$fileService = $this->createMock(originalClassName: ObjectFilesInterface::class);
 		$fileService->expects($this->once())
 			->method('getFiles')
 			->with('client-1')
@@ -88,7 +88,7 @@ class ObjectFileReaderContractTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnObjectWithoutFilesAnswersAnEmptyList(): void {
-		$fileService = $this->createMock(originalClassName: FileService::class);
+		$fileService = $this->createMock(originalClassName: ObjectFilesInterface::class);
 		$fileService->method('getFiles')->willReturn([]);
 
 		$this->assertSame(expected: [], actual: $this->readThrough(reader: new ObjectFileReader(fileService: $fileService)));
@@ -100,7 +100,7 @@ class ObjectFileReaderContractTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnUnknownObjectIsNotFound(): void {
-		$fileService = $this->createMock(originalClassName: FileService::class);
+		$fileService = $this->createMock(originalClassName: ObjectFilesInterface::class);
 		$fileService->method('getFiles')->willThrowException(new DoesNotExistException('Object not found'));
 
 		$this->expectException(exception: DoesNotExistException::class);
