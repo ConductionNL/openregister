@@ -130,7 +130,6 @@
   "lib/Event/TaskTerminalEvent.php -> lib/Event/AbstractTaskEvent.php",
   "lib/Event/TaskTransitionedEvent.php -> lib/Db/Task.php",
   "lib/Event/TaskTransitionedEvent.php -> lib/Event/AbstractTaskEvent.php",
-  "lib/Files/Db/ChunkMapper.php -> lib/Db/Source.php",
   "lib/Files/Service/File/DocumentRedactionServices.php -> lib/Service/Settings/FileSettingsHandler.php",
   "lib/Files/Service/TextExtraction/EntityRecognitionHandler.php -> lib/Service/Settings/FileSettingsHandler.php",
   "lib/Listener/ListenerRegistrar.php -> lib/Listener/NotifyPushListener.php",
@@ -3116,6 +3115,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10459,
- "total_loc": 460568,
- "violation_degree": 0.0472
+ "total_loc": 460567,
+ "violation_degree": 0.0471
 }
