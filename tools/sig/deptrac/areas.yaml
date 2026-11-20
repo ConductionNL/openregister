@@ -3010,18 +3010,6 @@ deptrac:
         - type: directory
           value: 'lib/Service/(AppRegisterImportRunner|ApplicationMove|ApplicationService|ApplicationServiceInterface|BulkTranslationService|ConfigurationService|ConfigurationServiceInterface|ConfigurationTransferInterface|ConfigurationUpdateNotice|ContractBindings|ContractBindingsRegistrar|CountedRegisterImport|DemoDataService|DescriptorImportTarget|DescriptorReimportRun|ExportService|ImportService|LanguageGapScan|LanguageService|LanguageServiceInterface|ManifestProfile|ManifestService|MassValidationRun|McpCatalogSummaries|McpDiscoveryService|MigrationPackService|MigrationPackServiceInterface|MigrationService|MockImportRun|NotificationService|OperationsConsoleService|PropertyDiscoveryRun|PropertyTranslation|RegisterDescriptorService|RegisterImporters|RunningNumbers|ScheduledReportExporters|ScheduledReportRun|ScheduledReportService|SchemaApplicationMigrator|SchemaService|SchemaSplitRun|SequenceService|SettingsService|SharedSchemaDedupeService|SharedSchemaPlanRun|SharedSchemaUse|SourceLanguageLookup|TranslationProjectionService|TranslationProjectionServiceInterface|TranslationSearch|TranslationStatusService|TranslationStatusServiceInterface|TranslationStores|ValidationChunkResult|VocabularyImportService)[.]php$'
         - type: directory
-          value: 'lib/Service/Capability/ToolGrantCodec[.]php$'
-        - type: directory
-          value: 'lib/Service/Capability/ToolGrantCoordinates[.]php$'
-        - type: directory
-          value: 'lib/Service/Capability/ToolGrantResolutionException[.]php$'
-        - type: directory
-          value: 'lib/Service/Capability/ToolGrantResolver[.]php$'
-        - type: directory
-          value: 'lib/Service/Capability/ToolGrantSet[.]php$'
-        - type: directory
-          value: 'lib/Service/Capability/ToolReachResolver[.]php$'
-        - type: directory
           value: 'lib/Service/Config/[^/]*$'
         - type: directory
           value: 'lib/Service/Config/Types/[^/]*$'
@@ -3353,8 +3341,6 @@ deptrac:
           value: 'lib/Service/Import/SourceRowReader[.]php$'
         - type: directory
           value: 'lib/Service/Import/SourceRowReaderInterface[.]php$'
-        - type: directory
-          value: 'lib/Service/Mcp/McpAgentScope[.]php$'
         - type: directory
           value: 'lib/Service/MigrationPack/[^/]*$'
         - type: directory
@@ -3994,7 +3980,7 @@ deptrac:
         - type: directory
           value: 'lib/Service/CalendarEvent/[^/]*$'
         - type: directory
-          value: 'lib/Service/Capability/ToolReachLevels[.]php$'
+          value: 'lib/Service/Capability/[^/]*$'
         - type: directory
           value: 'lib/Service/Connection/ConnectionHealthReport[.]php$'
         - type: directory
@@ -4068,9 +4054,7 @@ deptrac:
         - type: directory
           value: 'lib/Service/Integration/Providers/[^/]*$'
         - type: directory
-          value: 'lib/Service/Mcp/McpSessionCaller[.]php$'
-        - type: directory
-          value: 'lib/Service/Mcp/ToolCall[.]php$'
+          value: 'lib/Service/Mcp/[^/]*$'
         - type: directory
           value: 'lib/Service/ObjectSource/ConfiguredSourceUpstream[.]php$'
         - type: directory

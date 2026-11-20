@@ -30,6 +30,8 @@ use OCA\OpenRegister\Listener\WebhookRequestInterceptionListener;
 use OCA\OpenRegister\Service\Connection\ConnectionReporter;
 use OCA\OpenRegister\Notifications\Service\EmailService;
 use OCA\OpenRegister\Notifications\Service\EmailServiceInterface;
+use OCA\OpenRegister\Service\Capability\ToolReachLevels;
+use OCA\OpenRegister\Service\Capability\ToolReachResolver;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\AuditTrailProvider;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\FilesProvider;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\NotesProvider;
@@ -80,6 +82,8 @@ final class IntegrationWiring {
 	 * IntegrationRegistry. The lookup and dispatch controllers type against the
 	 * provider contracts. The mail-sidebar link service is bound here because
 	 * linking Mail messages to objects is integration work.
+	 * The MCP tool reach levels are bound here because the tool grants and reach
+	 * of lib/Service/Capability are MCP agent work and count to Integrations.
 	 *
 	 * @var array<class-string, class-string>
 	 */
@@ -96,6 +100,7 @@ final class IntegrationWiring {
 		PageWidgetRegistryInterface::class => IntegrationRegistry::class,
 		ScheduledMessageDeliveryInterface::class => ScheduledMessageDelivery::class,
 		ObjectTimelineLinksInterface::class => ObjectRelationCleanupService::class,
+		ToolReachLevels::class => ToolReachResolver::class,
 	];
 
 	/**
