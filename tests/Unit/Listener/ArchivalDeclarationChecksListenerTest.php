@@ -40,15 +40,15 @@ use Psr\Log\NullLogger;
  */
 class ArchivalDeclarationChecksListenerTest extends TestCase {
 
-	public function testItContributesTheMdtoMappingAndArchivalSlots(): void {
+	public function testItContributesTheMdtoMappingArchivalAndRetentionSlots(): void {
 		$event = new SchemaDeclarationChecksEvent();
 		(new ArchivalDeclarationChecksListener(logger: new NullLogger()))->handle(event: $event);
 
 		$this->assertSame(
-			[SchemaDeclarationOrder::MDTO_MAPPING, SchemaDeclarationOrder::ARCHIVAL],
+			[SchemaDeclarationOrder::MDTO_MAPPING, SchemaDeclarationOrder::ARCHIVAL, SchemaDeclarationOrder::RETENTION],
 			array_map(static fn ($check): int => $check->position(), $event->checks())
 		);
-	}//end testItContributesTheMdtoMappingAndArchivalSlots()
+	}//end testItContributesTheMdtoMappingArchivalAndRetentionSlots()
 
 	public function testTheArchivalSlotRefusesAMalformedBlock(): void {
 		$event = new SchemaDeclarationChecksEvent();

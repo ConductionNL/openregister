@@ -455,6 +455,7 @@ use OCA\OpenRegister\Service\Operations\SupportBundleServiceInterface;
 use OCA\OpenRegister\Service\Organisation\OrganisationEditAuditorInterface;
 use OCA\OpenRegister\Service\Organisation\OrganisationLifecycleAuditor;
 use OCA\OpenRegister\Kernel\Contracts\Core\AuditEntryWriterInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\SchemaAccessChangeLogInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\JobRunRecordingInterface;
 use OCA\OpenRegister\Kernel\Contracts\Search\HtmlPdfConverterInterface;
 use OCA\OpenRegister\Service\Export\Odt\OfficeHtmlPdfConverter;
@@ -466,6 +467,8 @@ use OCA\OpenRegister\BulkAction\ExportWholeSetAction;
 use OCA\OpenRegister\Service\Audit\AuditEntryWriter;
 use OCA\OpenRegister\Kernel\Contracts\Processes\ObjectWriteCacheFollowerInterface;
 use OCA\OpenRegister\Listener\RedactionPolicyCacheListener;
+use OCA\OpenRegister\Kernel\Contracts\Core\AccessLinkUseRecorderInterface;
+use OCA\OpenRegister\Service\Audit\AccessLinkUseRecorder;
 use OCA\OpenRegister\Service\Audit\ObjectTrailReader;
 use OCA\OpenRegister\Service\Party\PartyRoleService;
 use OCA\OpenRegister\Service\Party\PartyRoleServiceInterface;
@@ -662,6 +665,8 @@ final class ContractBindings {
 		OrganisationEditAuditorInterface::class => OrganisationLifecycleAuditor::class,
 		AuditEntryWriterInterface::class => AuditEntryWriter::class,
 		ObjectWriteCacheFollowerInterface::class => RedactionPolicyCacheListener::class,
+		AccessLinkUseRecorderInterface::class => AccessLinkUseRecorder::class,
+		SchemaAccessChangeLogInterface::class => AuthorizationAuditService::class,
 		ObjectTrailReaderInterface::class => ObjectTrailReader::class,
 		DeclaredWebhookInstallerInterface::class => NotificationsAnnotationInstaller::class,
 		TranslationProjectionInterface::class => TranslationProjectionService::class,
@@ -688,6 +693,7 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\AuthenticationTokenFetcherInterface::class => \OCA\OpenRegister\Service\AuthenticationService::class,
 		\OCA\OpenRegister\Service\Rbac\ObjectOwnershipServiceInterface::class => \OCA\OpenRegister\Service\Rbac\ObjectOwnershipService::class,
 		\OCA\OpenRegister\Service\Reference\ObjectPreviewFormatterInterface::class => \OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter::class,
+		\OCA\OpenRegister\Kernel\Contracts\Core\RegisterSchemaLabelsInterface::class => \OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter::class,
 		\OCA\OpenRegister\Kernel\Contracts\Core\ObjectPreviewCacheInterface::class => \OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter::class,
 		\OCA\OpenRegister\Service\Task\TaskMetricsProviderInterface::class => \OCA\OpenRegister\Service\Task\TaskMetricsProvider::class,
 		DoriathApplicationRegistrarInterface::class => DoriathApplicationRegistrar::class,
