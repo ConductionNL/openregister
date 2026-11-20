@@ -83,19 +83,20 @@ final class MagicNullabilityChange {
 	 *
 	 * @param string $columnName The physical column.
 	 * @param string $sqlType    The SQL type MySQL needs restated.
+	 * @param string $check      The column check MySQL needs restated, with its leading space.
 	 *
 	 * @return string The ALTER TABLE statement.
 	 *
 	 * @spec openspec/specs/magic-table-columns/spec.md
 	 */
-	public function statement(string $columnName, string $sqlType): string {
+	public function statement(string $columnName, string $sqlType, string $check=''): string {
 		$table = 'ALTER TABLE ' . $this->sync->tableNameQuoted;
 		$column = (new MagicColumnSql(isPostgres: $this->sync->isPostgres))->quote(name: $columnName);
 		if ($this->sync->isPostgres === true) {
 			return $table . ' ALTER COLUMN ' . $column . ' ' . $this->postgresAction();
 		}
 
-		return $table . ' MODIFY COLUMN ' . $column . ' ' . $sqlType . ' ' . $this->mySqlNullability();
+		return $table . ' MODIFY COLUMN ' . $column . ' ' . $sqlType . ' ' . $this->mySqlNullability() . $check;
 	}//end statement()
 
 	/**
