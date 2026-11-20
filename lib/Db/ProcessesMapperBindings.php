@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Kernel\Contracts\Compliance\AuditProcessContextInterface;
+
 /**
  * Interface => mapper map of the Processes area, behind ProcessesMapperRegistrar.
  *
@@ -40,6 +42,7 @@ final class ProcessesMapperBindings {
 	 */
 	public const BINDINGS = [
 		AuditFlowAttributionInterface::class      => AuditFlowAttribution::class,
+		AuditProcessContextInterface::class       => AuditProcessContext::class,
 		BulkJobMapperInterface::class             => BulkJobMapper::class,
 		BulkJobMemberMapperInterface::class       => BulkJobMemberMapper::class,
 		CalendarFeedTokenMapperInterface::class   => CalendarFeedTokenMapper::class,
@@ -49,7 +52,6 @@ final class ProcessesMapperBindings {
 		DecisionMapperInterface::class            => DecisionMapper::class,
 		FlowClaimMapperInterface::class           => FlowClaimMapper::class,
 		FlowDefinitionMapperInterface::class      => FlowDefinitionMapper::class,
-		FlowLinkMapperInterface::class            => FlowLinkMapper::class,
 		FlowMapperInterface::class                => FlowMapper::class,
 		FlowRunMapperInterface::class             => FlowRunMapper::class,
 		FlowRunStepMapperInterface::class         => FlowRunStepMapper::class,
