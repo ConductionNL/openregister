@@ -1,6 +1,6 @@
 <?php
 /**
- * SaveBoundaryInterface: the write boundary an object save opens and closes, as the Core object service asks it.
+ * SaveBoundaryInterface: the write boundary an object save opens and closes, as the object save asks it.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -22,13 +22,12 @@ namespace OCA\OpenRegister\Kernel\Contracts\Core;
 use OCA\OpenRegister\Db\ObjectEntity;
 
 /**
- * The boundary around one object save: opened before the write, closed after it, and the entity to answer with.
+ * The write boundary around an object save, as the object save (Core) asks it.
  *
- * The object service (Core) opens and closes it around every save. The
- * request-scoped automatic-transition pass (Processes) implements it, because
- * whatever lifecycle move a save triggers is applied when the outermost
- * boundary closes, and binds its shared instance to this contract in its own
- * wiring.
+ * The save opens a boundary before it writes and closes it in a `finally`;
+ * closing the outermost one lets the work that waits for a finished write run,
+ * and the save answers with the entity that work left behind. The automatic
+ * lifecycle moves (Processes) answer, through AutoTransitionPass.
  *
  * @spec openspec/specs/object-lifecycle/spec.md
  */
@@ -44,7 +43,7 @@ interface SaveBoundaryInterface {
 	public function enter(): void;
 
 	/**
-	 * Close a write boundary; the outermost one applies what the save triggered.
+	 * Close a write boundary; the entities written once the outermost one closed, by object uuid.
 	 *
 	 * @return array<string, ObjectEntity> The last entity applied per object uuid, empty when nothing was.
 	 *
@@ -53,10 +52,10 @@ interface SaveBoundaryInterface {
 	public function leave(): array;
 
 	/**
-	 * The entity a save answers with: the one applied after it when there is one, else the saved one.
+	 * The entity a save answers with: the one applied after it, when there is one.
 	 *
 	 * @param ObjectEntity                $saved   The entity the write itself produced.
-	 * @param array<string, ObjectEntity> $applied What closing the boundary applied, by uuid.
+	 * @param array<string, ObjectEntity> $applied What leave() returned.
 	 *
 	 * @return ObjectEntity The object in its final state.
 	 *
