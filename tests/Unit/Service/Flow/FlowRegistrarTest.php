@@ -38,6 +38,7 @@ class FlowRegistrarTest extends TestCase {
 				'OCA\OpenRegister\Service\Task\TaskInboxService',
 				'OCA\OpenRegister\Service\Portal\PortalPartyResolver',
 				'OCA\OpenRegister\Service\TaskService',
+				'OCA\OpenRegister\Service\FlowLinkService',
 			],
 			actual: $context->services
 		);

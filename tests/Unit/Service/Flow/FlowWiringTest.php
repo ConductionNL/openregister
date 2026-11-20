@@ -62,6 +62,7 @@ use OCA\OpenRegister\Service\Task\TaskCalendarDocument;
 use OCA\OpenRegister\Service\Task\TaskCalendarDocumentInterface;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
 use OCA\OpenRegister\Service\TaskService;
+use OCA\OpenRegister\Service\FlowLinkService;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -177,6 +178,7 @@ final class FlowWiringTest extends TestCase {
 				TaskInboxService::class,
 				PortalPartyResolver::class,
 				TaskService::class,
+				FlowLinkService::class,
 			],
 			actual: array_keys($this->factories)
 		);
