@@ -112,6 +112,7 @@ use OCA\OpenRegister\Kernel\Contracts\Core\ReadableObjectHistoryInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ReadPurposeRefusalInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionDefaultRefusalInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\HeldChangeCodes;
+use OCA\OpenRegister\Kernel\Contracts\Core\SchemaChangeReportingControllerInterface;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
@@ -163,7 +164,7 @@ use OCA\OpenRegister\Service\Object\VerbListing;
  *
  * @spec openspec/specs/aggregation-api/spec.md
  */
-class ObjectsController extends Controller {
+class ObjectsController extends Controller implements SchemaChangeReportingControllerInterface {
 	use \OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
 	use ResolvesRegisterAndSchemaTrait;
 

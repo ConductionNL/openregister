@@ -107,9 +107,6 @@
   "lib/Contract/ObjectServiceInterface.php",
   "lib/Contract/RegisterSlugResolution.php",
   "lib/Contract/RegisterSlugResolverInterface.php",
-  "lib/Controller/ObjectsController.php",
-  "lib/Controller/RegistersController.php",
-  "lib/Controller/SchemasController.php",
   "lib/Controller/Support/AccessLinkPlatform.php",
   "lib/Controller/Support/AdminGroupMembership.php",
   "lib/Controller/Support/AdministratorOnlyGate.php",
@@ -678,6 +675,7 @@
   "lib/Kernel/Contracts/Core/DeclarationRefusalInterface.php",
   "lib/Kernel/Contracts/Core/DependentValueCheckInterface.php",
   "lib/Kernel/Contracts/Core/DerivedTranslationsInterface.php",
+  "lib/Kernel/Contracts/Core/EnvelopedDefinitionControllerInterface.php",
   "lib/Kernel/Contracts/Core/ExportGuardInterface.php",
   "lib/Kernel/Contracts/Core/ExpressionDefaultRefusalInterface.php",
   "lib/Kernel/Contracts/Core/ExpressionDefaultsInterface.php",
@@ -733,6 +731,7 @@
   "lib/Kernel/Contracts/Core/RunningNumbersInterface.php",
   "lib/Kernel/Contracts/Core/SaveBoundaryInterface.php",
   "lib/Kernel/Contracts/Core/SchemaAccessChangeLogInterface.php",
+  "lib/Kernel/Contracts/Core/SchemaChangeReportingControllerInterface.php",
   "lib/Kernel/Contracts/Core/SchemaFormDependentsInterface.php",
   "lib/Kernel/Contracts/Core/SchemaRenameWarningsInterface.php",
   "lib/Kernel/Contracts/Core/SearchTrailRecorderInterface.php",
@@ -2258,7 +2257,7 @@
  "exposed_loc": {
   "Compliance": 14297,
   "Configuration": 1285,
-  "Core": 62811,
+  "Core": 57356,
   "Files": 1458,
   "Integrations": 17663,
   "Kernel": 8464,
@@ -2728,6 +2727,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10402,
- "total_loc": 461982,
+ "total_loc": 461994,
  "violation_degree": 0.0084
 }
