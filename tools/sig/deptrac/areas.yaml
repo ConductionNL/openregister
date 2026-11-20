@@ -2176,7 +2176,7 @@ deptrac:
         - type: directory
           value: 'lib/Listener/Support/TaskVtodoWriteBackServices[.]php$'
         - type: directory
-          value: 'lib/Repair/(BackfillFlowSemanticVersions|BackfillFlowTriggerIndex|BackfillFlowVersions|FlowNodeTypeRewrite|FlowTimerRegisterPathInterface|FlowVersionBackfillTally|FlowVersionNumbering|IntakeSourceRegisterSlugsInterface|MigrateApprovalChainsToTasks|MigrateRenamedFlowNodeTypes|PerformerField|PerformerTyping|PhantomFlowPurgeRun|ReportUnpublishedSchedules|SeedCaseFixtures|SeedFlowRunTriggerSubject|SeedTaskFixtures|TaskSubjectLocationBackfill|V1ChainVerificationRun)[.]php$'
+          value: 'lib/Repair/(BackfillFlowSemanticVersions|BackfillFlowTriggerIndex|BackfillFlowVersions|FlowNodeTypeRewrite|FlowTimerRegisterPathInterface|FlowVersionBackfillTally|FlowVersionNumbering|IntakeSourceRegisterSlugsInterface|MigrateApprovalChainsToTasks|MigrateRenamedFlowNodeTypes|PerformerField|PerformerTyping|PhantomFlowPurgeRun|ReportUnpublishedSchedules|SeedCaseFixtures|SeedFlowRunTriggerSubject|SeedTaskFixtures|TaskSubjectLocationBackfill)[.]php$'
         - type: directory
           value: 'lib/Repair/Support/ApprovalTaskStores[.]php$'
         - type: directory
@@ -2591,14 +2591,6 @@ deptrac:
           value: 'lib/Service/Interaction/UnreadCountCalculator[.]php$'
         - type: directory
           value: 'lib/Service/Interaction/ValueNormaliser[.]php$'
-        - type: directory
-          value: 'lib/Service/Interaction/WatcherCaller[.]php$'
-        - type: directory
-          value: 'lib/Service/Interaction/WatcherService[.]php$'
-        - type: directory
-          value: 'lib/Service/Interaction/WatcherServiceInterface[.]php$'
-        - type: directory
-          value: 'lib/Service/Interaction/WatcherStore[.]php$'
         - type: directory
           value: 'lib/Service/Lifecycle/AutoTransitionCandidate[.]php$'
         - type: directory
@@ -3582,7 +3574,7 @@ deptrac:
         - type: directory
           value: 'lib/Listener/(ArchivalDeclarationChecksListener|ArchivalNominationListener|ContentReportRemovalListener|EntityEditAuditListener|QualityScoreOnSaveListener|RecordTypeAuditListener|RelatedRetentionRecalculationListener|SchemaAuthorizationAuditListener)[.]php$'
         - type: directory
-          value: 'lib/Repair/(RechainAuditTrailForFlowAttribution)[.]php$'
+          value: 'lib/Repair/(RechainAuditTrailForFlowAttribution|V1ChainVerificationRun)[.]php$'
         - type: directory
           value: 'lib/Service/(AuditCanonicalV1|AuditChainKey|AuditHashService|AuditHashServiceInterface|AuditQueryService|AuditQueryServiceInterface|AuditRechainInterface|AuditRetentionResolver|AuditRetentionResolverInterface|AuditSealInterface|AuthorizationAuditService|AvgComplianceService|AvgRetentionErasureRun|AvgRetentionService|CalculationRun|ComplianceServiceBindings|ComplianceServiceRegistrar|ContentScanService|DsarErasureRun|DsarGuards|DsarService|DsarServiceInterface|DsarStores|DsarSubjectQuery|LogObjectInTable|LogService|ProcessingLogService|ProcessingRead|ReadCaptureRun|RetentionClock|RetentionPass|RetentionRules|RetentionService|RetentionServiceInterface|RetentionStores|SchemaCascade|SchemaDeletionService|SchemaTeardownGuard|SearchMeasurement|SearchPeriod|SearchTrailNameEnricher|SearchTrailService|SearchTrailServiceInterface|SearchTrailStatistics|TableDeletionRun|TableObjectRef|TenantKeyService|TmloService|UnclassifiedProcessing|WholeTableRows)[.]php$'
         - type: directory
@@ -4667,6 +4659,14 @@ deptrac:
           value: 'lib/Service/(ActivityFilter|ActivityFilterServiceInterface|AdminRecipientExpander|NotificationServiceInterface|NotificationsServiceBindings|NotificationsServiceRegistrar|ScheduledReportDelivery|ScheduledReportExportQuery|ScheduledReportNotice|ScheduledReportOwnerServices|ScheduledReportStores)[.]php$'
         - type: directory
           value: 'lib/Service/Connection/ConnectionReportForbiddenException[.]php$'
+        - type: directory
+          value: 'lib/Service/Interaction/WatcherCaller[.]php$'
+        - type: directory
+          value: 'lib/Service/Interaction/WatcherService[.]php$'
+        - type: directory
+          value: 'lib/Service/Interaction/WatcherServiceInterface[.]php$'
+        - type: directory
+          value: 'lib/Service/Interaction/WatcherStore[.]php$'
         - type: directory
           value: 'lib/Service/Mail/[^/]*$'
         - type: directory
