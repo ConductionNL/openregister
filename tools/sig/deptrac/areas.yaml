@@ -4970,6 +4970,8 @@ deptrac:
         - type: directory
           value: 'lib/Search/Listener/[^/]*$'
         - type: directory
+          value: 'lib/Search/Listener/Registrar/[^/]*$'
+        - type: directory
           value: 'lib/Search/Service/[^/]*$'
         - type: directory
           value: 'lib/Search/Service/Aggregation/[^/]*$'

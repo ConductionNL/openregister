@@ -2496,6 +2496,7 @@ components:
       - ".*/lib/Search/Controller/Support/[^/]*"
       - ".*/lib/Search/Db/[^/]*"
       - ".*/lib/Search/Listener/[^/]*"
+      - ".*/lib/Search/Listener/Registrar/[^/]*"
       - ".*/lib/Search/Service/[^/]*"
       - ".*/lib/Search/Service/Aggregation/[^/]*"
       - ".*/lib/Search/Service/Geo/[^/]*"
