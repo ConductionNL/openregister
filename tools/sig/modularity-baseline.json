@@ -168,8 +168,6 @@
   "lib/Service/Object/ObjectSlugBackfillLedger.php -> lib/Db/AuditTrail/AuditedObject.php",
   "lib/Service/Object/ObjectSlugBackfillLedger.php -> lib/Db/AuditTrail/SlugBackfill.php",
   "lib/Service/Object/ObjectSlugBackfillLedger.php -> lib/Db/AuditTrailMapper.php",
-  "lib/Service/Object/PermissionHandler.php -> lib/Service/ObjectAction/ElevatedWrite.php",
-  "lib/Service/Object/PermissionHandler.php -> lib/Service/ObjectAction/ObjectActionElevationScope.php",
   "lib/Service/Object/RecordAnnotations.php -> lib/Service/Archival/ArchivalDecisionResolver.php",
   "lib/Service/Object/RecordAnnotations.php -> lib/Service/Archival/RetentionEvaluator.php",
   "lib/Service/Object/ReferentialIntegrityService.php -> lib/Db/AuditTrail.php",
@@ -924,6 +922,7 @@
   "lib/Kernel/Contracts/Core/ShareLinkUrlInterface.php",
   "lib/Kernel/Contracts/Core/SpatialFilterInterface.php",
   "lib/Kernel/Contracts/Core/TransferredRecordStatesInterface.php",
+  "lib/Kernel/Contracts/Core/WriteElevationInterface.php",
   "lib/Kernel/Contracts/DecisionInterface.php",
   "lib/Kernel/Contracts/DeckPlacement.php",
   "lib/Kernel/Contracts/DocumentProcessingHandlerInterface.php",
@@ -1992,6 +1991,7 @@
   "lib/Service/Object/ObjectSlugBackfillServiceInterface.php",
   "lib/Service/Object/ObjectValidatorInterface.php",
   "lib/Service/Object/OwnDraftSearch.php",
+  "lib/Service/Object/PermissionAsk.php",
   "lib/Service/Object/PermissionCacheInterface.php",
   "lib/Service/Object/PermissionCheckInterface.php",
   "lib/Service/Object/PermissionCheckOptions.php",
@@ -2039,7 +2039,6 @@
   "lib/Service/Object/ValidateObjectInterface.php",
   "lib/Service/Object/ValidationErrorResponseInterface.php",
   "lib/Service/Object/WriteConstraintValidatorInterface.php",
-  "lib/Service/ObjectAction/ElevatedWrite.php",
   "lib/Service/ObjectAction/ObjectActionBulk.php",
   "lib/Service/ObjectAction/ObjectActionBulkInterface.php",
   "lib/Service/ObjectAction/ObjectActionDefinition.php",
@@ -2498,13 +2497,13 @@
  "exposed_loc": {
   "Compliance": 15428,
   "Configuration": 3601,
-  "Core": 64354,
+  "Core": 64390,
   "Files": 2667,
   "Integrations": 18251,
   "Kernel": 8506,
   "Notifications": 2049,
   "Platform": 292,
-  "Processes": 29407,
+  "Processes": 29396,
   "Search": 2035
  },
  "kernel_files": [
@@ -2970,6 +2969,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10457,
- "total_loc": 461005,
- "violation_degree": 0.0328
+ "total_loc": 461025,
+ "violation_degree": 0.0326
 }
