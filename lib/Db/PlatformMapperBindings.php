@@ -39,8 +39,6 @@ final class PlatformMapperBindings {
 	 * @var array<class-string, class-string>
 	 */
 	public const BINDINGS = [
-		FeedbackMapperInterface::class                    => FeedbackMapper::class,
-		TranslationMapperInterface::class                 => TranslationMapper::class,
-		TranslationSourceLanguageBackfillInterface::class => TranslationMapper::class,
+		FeedbackMapperInterface::class => FeedbackMapper::class,
 	];
 }//end class
