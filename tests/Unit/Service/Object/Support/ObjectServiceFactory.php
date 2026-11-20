@@ -101,7 +101,7 @@ final class ObjectServiceFactory {
 	 * @param MagicMapperInterface           $objectMapper         Constructor argument.
 	 * @param FileFolderServiceInterface     $fileService          Constructor argument.
 	 * @param IUserSession                   $userSession          Constructor argument.
-	 * @param SearchTrailService             $searchTrailService   Constructor argument.
+	 * @param SearchTrailService             $searchTrailService   Former constructor argument; ObjectService no longer holds it. Kept so positional callers keep their order.
 	 * @param IGroupManager                  $groupManager         Constructor argument.
 	 * @param IUserManager                   $userManager          Constructor argument.
 	 * @param OrganisationServiceInterface   $organisationService  Constructor argument.
@@ -218,7 +218,6 @@ final class ObjectServiceFactory {
 				),
 				storage: new ObjectStorageServices(
 					fileService: $fileService,
-					searchTrailService: $searchTrailService,
 					cacheHandler: $cacheHandler,
 					objectSourceRegistry: $objectSourceRegistry,
 				),
