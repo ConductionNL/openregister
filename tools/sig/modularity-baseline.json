@@ -2,8 +2,6 @@
  "against_order": [
   "lib/AppHost/Reference/AbstractSchemaReferenceProvider.php -> lib/Service/Reference/ObjectPreviewFormatterInterface.php",
   "lib/AppHost/Service/AppHostSettingsService.php -> lib/Service/ConfigurationServiceInterface.php",
-  "lib/BackgroundJob/AuditTrailExportJob.php -> lib/BackgroundJob/RecordedJobRuntime.php",
-  "lib/BackgroundJob/AuditTrailExportJob.php -> lib/BackgroundJob/RecordedQueuedJob.php",
   "lib/BackgroundJob/DbalIntrospectionJob.php -> lib/Db/Source.php",
   "lib/BackgroundJob/QueuedJobClassesInterface.php -> lib/BackgroundJob/TranslationProjectionJob.php",
   "lib/BackgroundJob/Support/ConfigurationCheckServices.php -> lib/Db/ConfigurationMapperInterface.php",
@@ -176,8 +174,6 @@
   "lib/Notifications/Service/Notification/TaskTransitionNotifier.php -> lib/Service/Task/TaskInboxServiceInterface.php",
   "lib/Notifications/Service/Notification/TaskTransitionNotifierInterface.php -> lib/Db/Task.php",
   "lib/Repair/MarkImplicitCrossOrganisationReadRules.php -> lib/Repair/SchemaListing.php",
-  "lib/Search/BackgroundJob/SearchIndexRebuildJob.php -> lib/BackgroundJob/RecordedJobRuntime.php",
-  "lib/Search/BackgroundJob/SearchIndexRebuildJob.php -> lib/BackgroundJob/RecordedQueuedJob.php",
   "lib/Search/Db/View.php -> lib/Db/Configuration.php",
   "lib/Search/Db/View.php -> lib/Db/Task.php",
   "lib/Search/Db/View.php -> lib/Mcp/Db/Agent.php",
@@ -190,8 +186,6 @@
   "lib/Search/Service/Quality/NearDuplicateScope.php -> lib/Files/Db/FileMapperInterface.php",
   "lib/Search/Service/Quality/NearDuplicateScope.php -> lib/Files/Service/File/FileReadScope.php",
   "lib/Search/Service/Quality/ObjectTextSimilarity.php -> lib/Files/Db/FileMapperInterface.php",
-  "lib/Search/Service/Reporting/PdfReportWriter.php -> lib/Files/Service/File/Pdf/Fallback/NcOfficeConverterInterface.php",
-  "lib/Search/Service/Reporting/PdfReportWriter.php -> lib/Service/Export/Odt/OdtWriterInterface.php",
   "lib/Service/ActivityFilterServiceInterface.php -> lib/Service/ActivityEntriesOptions.php",
   "lib/Service/Aggregation/AdhocAggregationRun.php -> lib/Search/Service/Aggregation/AggregationQuery.php",
   "lib/Service/Aggregation/AggregationRunner.php -> lib/Search/Service/Aggregation/AggregationCacheInterface.php",
@@ -406,6 +400,7 @@
   "lib/BackgroundJob/QueuedJobClassesInterface.php",
   "lib/BackgroundJob/RecordedJobRuntime.php",
   "lib/BackgroundJob/RecordedQueuedJob.php",
+  "lib/BackgroundJob/RecordsItsRuns.php",
   "lib/BackgroundJob/Support/ActorForwardingServices.php",
   "lib/BackgroundJob/Support/BackfillCalendarLinksPlatform.php",
   "lib/BackgroundJob/Support/ConfigurationCheckServices.php",
@@ -1045,6 +1040,7 @@
   "lib/Kernel/Contracts/Core/FileSettingsReaderInterface.php",
   "lib/Kernel/Contracts/Core/FilterPlaceholdersInterface.php",
   "lib/Kernel/Contracts/Core/FollowTableInterface.php",
+  "lib/Kernel/Contracts/Core/JobRunRecordingInterface.php",
   "lib/Kernel/Contracts/Core/MigrationPackDefinitionsInterface.php",
   "lib/Kernel/Contracts/Core/ObjectFileRecordsInterface.php",
   "lib/Kernel/Contracts/Core/ObjectFolderLookupInterface.php",
@@ -1123,6 +1119,7 @@
   "lib/Kernel/Contracts/ScheduledReportsInterface.php",
   "lib/Kernel/Contracts/SchemaExplorationInterface.php",
   "lib/Kernel/Contracts/SchemaInterface.php",
+  "lib/Kernel/Contracts/Search/HtmlPdfConverterInterface.php",
   "lib/Kernel/Contracts/Search/PageWidgetDeclarationInterface.php",
   "lib/Kernel/Contracts/Search/WebhookLogStatisticsInterface.php",
   "lib/Kernel/Contracts/SourceInterface.php",
@@ -1701,7 +1698,6 @@
   "lib/Service/Export/ExportRunFile.php",
   "lib/Service/Export/ExportRunOrigin.php",
   "lib/Service/Export/ExportRunRecorder.php",
-  "lib/Service/Export/Odt/OdtWriterInterface.php",
   "lib/Service/Export/PublicExportService.php",
   "lib/Service/Export/SpreadsheetCell.php",
   "lib/Service/ExternalLink/ExternalLinkAnnotationValidator.php",
@@ -2232,6 +2228,8 @@
   "lib/Service/OpenProjectLinkService.php",
   "lib/Service/OpenProjectLinkServiceInterface.php",
   "lib/Service/OpenRegisterActionAuthService.php",
+  "lib/Service/Operations/JobRunContext.php",
+  "lib/Service/Operations/JobRunStart.php",
   "lib/Service/Operations/MaintenanceModeHoldInterface.php",
   "lib/Service/Operations/MovedJobStateInterface.php",
   "lib/Service/OperationsConsoleJobs.php",
@@ -2652,15 +2650,15 @@
  ],
  "exposed_loc": {
   "Compliance": 15748,
-  "Configuration": 4356,
-  "Core": 64540,
+  "Configuration": 4293,
+  "Core": 64633,
   "Files": 3592,
   "Integrations": 18337,
   "Kernel": 8520,
   "Notifications": 2007,
   "Platform": 313,
   "Processes": 30722,
-  "Search": 1994
+  "Search": 2001
  },
  "kernel_files": [
   "lib/BulkAction/BulkActionInterface.php",
@@ -3124,6 +3122,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10458,
- "total_loc": 460530,
- "violation_degree": 0.0483
+ "total_loc": 460567,
+ "violation_degree": 0.0478
 }

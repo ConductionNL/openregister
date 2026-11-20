@@ -92,7 +92,7 @@ deptrac:
         - type: directory
           value: 'lib/Kernel/Contracts/Core/.*$'
         - type: directory
-          value: 'lib/BackgroundJob/(AbstractRetentionJob|ActorForwardedJob|ConfiguredJobRuntime|DbalIntrospectionJob|DeferredObjectEventJob|DraftExpiryJob|GroupReconcilerJob|JobHandles|JobRuntime|ObjectCleanupJob|PublishedDigestVerifyJob|QueuedJobClassesInterface|SchemaChangeNoticeJob|SchemaRunJob|StateHistoryRebuildJob|TenantDeprovisionJob|TenantPurgeJob|TenantUsageSyncJob|TransferAttemptRun|TransferExecutionJob|ViewAlertSweepJob)[.]php$'
+          value: 'lib/BackgroundJob/(AbstractRetentionJob|ActorForwardedJob|ConfiguredJobRuntime|DbalIntrospectionJob|DeferredObjectEventJob|DraftExpiryJob|GroupReconcilerJob|JobHandles|JobRuntime|ObjectCleanupJob|PublishedDigestVerifyJob|QueuedJobClassesInterface|RecordedJobRuntime|RecordedQueuedJob|RecordsItsRuns|SchemaChangeNoticeJob|SchemaRunJob|StateHistoryRebuildJob|TenantDeprovisionJob|TenantPurgeJob|TenantUsageSyncJob|TransferAttemptRun|TransferExecutionJob|ViewAlertSweepJob)[.]php$'
         - type: directory
           value: 'lib/BackgroundJob/Support/ActorForwardingServices[.]php$'
         - type: directory
@@ -1628,6 +1628,10 @@ deptrac:
         - type: directory
           value: 'lib/Service/ObjectSource/WritableObjectSourceProvider[.]php$'
         - type: directory
+          value: 'lib/Service/Operations/JobRunContext[.]php$'
+        - type: directory
+          value: 'lib/Service/Operations/JobRunStart[.]php$'
+        - type: directory
           value: 'lib/Service/Organisation/[^/]*$'
         - type: directory
           value: 'lib/Service/Quality/DedupAnnotationValidator[.]php$'
@@ -2900,7 +2904,7 @@ deptrac:
     - name: Configuration
       collectors:
         - type: directory
-          value: 'lib/BackgroundJob/(BackfillCalendarLinksJob|BlobMigrationJob|CacheClearAndWarmJob|ConfigurationCheckJob|ConfigurationJobHandlesInterface|ConsistencyCheckJob|ExampleSetDailyRefreshJob|ImportPreviewRunner|ImportRunRetentionJob|NameCacheWarmupJob|OneUseJobKeySweepJob|RecordedJobRuntime|RecordedQueuedJob|RecordedTimedJob|RecordsItsRuns|SeedDirectoryJob|SweepExpiredExportRunsJob|SyncConfigurationsJob)[.]php$'
+          value: 'lib/BackgroundJob/(BackfillCalendarLinksJob|BlobMigrationJob|CacheClearAndWarmJob|ConfigurationCheckJob|ConfigurationJobHandlesInterface|ConsistencyCheckJob|ExampleSetDailyRefreshJob|ImportPreviewRunner|ImportRunRetentionJob|NameCacheWarmupJob|OneUseJobKeySweepJob|RecordedTimedJob|SeedDirectoryJob|SweepExpiredExportRunsJob|SyncConfigurationsJob)[.]php$'
         - type: directory
           value: 'lib/BackgroundJob/Support/BackfillCalendarLinksSources[.]php$'
         - type: directory
@@ -3352,7 +3356,55 @@ deptrac:
         - type: directory
           value: 'lib/Service/Notification/TemplateCatalogue[.]php$'
         - type: directory
-          value: 'lib/Service/Operations/[^/]*$'
+          value: 'lib/Service/Operations/ConsistencyCheckService[.]php$'
+        - type: directory
+          value: 'lib/Service/Operations/ConsistencyCheckServiceInterface[.]php$'
+        - type: directory
+          value: 'lib/Service/Operations/ConsistencyRepairService[.]php$'
+        - type: directory
+          value: 'lib/Service/Operations/ConsistencyRepairServiceInterface[.]php$'
+        - type: directory
+          value: 'lib/Service/Operations/JobAlertDelivery[.]php$'
+        - type: directory
+          value: 'lib/Service/Operations/JobAlertService[.]php$'
+        - type: directory
+          value: 'lib/Service/Operations/JobAlertServiceInterface[.]php$'
+        - type: directory
+          value: 'lib/Service/Operations/JobRunFilter[.]php$'
+        - type: directory
+          value: 'lib/Service/Operations/JobRunRecorder[.]php$'
+        - type: directory
+          value: 'lib/Service/Operations/JobRunRecorderInterface[.]php$'
+        - type: directory
+          value: 'lib/Service/Operations/JobScheduleChange[.]php$'
+        - type: directory
+          value: 'lib/Service/Operations/JobScheduleService[.]php$'
+        - type: directory
+          value: 'lib/Service/Operations/JobScheduleServiceInterface[.]php$'
+        - type: directory
+          value: 'lib/Service/Operations/MaintenanceModeHoldInterface[.]php$'
+        - type: directory
+          value: 'lib/Service/Operations/MaintenanceModeService[.]php$'
+        - type: directory
+          value: 'lib/Service/Operations/MaintenanceModeServiceInterface[.]php$'
+        - type: directory
+          value: 'lib/Service/Operations/MovedJobState[.]php$'
+        - type: directory
+          value: 'lib/Service/Operations/MovedJobStateInterface[.]php$'
+        - type: directory
+          value: 'lib/Service/Operations/OperationsJobsService[.]php$'
+        - type: directory
+          value: 'lib/Service/Operations/OperationsJobsServiceInterface[.]php$'
+        - type: directory
+          value: 'lib/Service/Operations/OperationsRunNowServices[.]php$'
+        - type: directory
+          value: 'lib/Service/Operations/OperatorAct[.]php$'
+        - type: directory
+          value: 'lib/Service/Operations/RecordingRun[.]php$'
+        - type: directory
+          value: 'lib/Service/Operations/SupportBundleService[.]php$'
+        - type: directory
+          value: 'lib/Service/Operations/SupportBundleServiceInterface[.]php$'
         - type: directory
           value: 'lib/Service/RecordTemplate/[^/]*$'
         - type: directory
