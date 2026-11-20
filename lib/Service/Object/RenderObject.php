@@ -37,7 +37,6 @@ use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\Translation;
 use OCA\OpenRegister\Db\TranslationSlot;
 use OCA\OpenRegister\Formats\UuidFormat;
 use OCA\OpenRegister\Service\Calculation\CalculationPayload;
@@ -3848,34 +3847,17 @@ class RenderObject implements RenderObjectInterface {
 			}
 
 			try {
-				$row = $this->enrichers->translations->translationMapper->findOne(new TranslationSlot(objectUuid: $uuid, property: $property, language: $entry['served']));
+				$slot   = new TranslationSlot(objectUuid: $uuid, property: $property, language: $entry['served']);
+				$status = $this->enrichers->translations->translationMapper->rowStatus(slot: $slot);
 			} catch (\Throwable $e) {
-				$row = null;
+				$status = null;
 			}
 
-			$languageMeta[$property]['status'] = $this->translationRowStatus(row: $row);
+			$languageMeta[$property]['status'] = $status ?? 'missing';
 		}
 
 		return $languageMeta;
 	}//end withSidecarStatus()
-
-	/**
-	 * The workflow status of a sidecar translation row: its status (draft when
-	 * unset), or 'missing' without a row.
-	 *
-	 * @param Translation|null $row The sidecar row
-	 *
-	 * @return string The status
-	 *
-	 * @spec openspec/specs/i18n-source-of-truth/spec.md
-	 */
-	private function translationRowStatus(?Translation $row): string {
-		if ($row === null) {
-			return 'missing';
-		}
-
-		return (string) ($row->getStatus() ?? Translation::STATUS_DRAFT);
-	}//end translationRowStatus()
 
 	/**
 	 * Resolve the source language for a single property from object override

@@ -108,6 +108,24 @@ class TranslationMapper extends QBMapper implements TranslationMapperInterface, 
 	}//end findOne()
 
 	/**
+	 * The workflow status of the slot's stored translation.
+	 *
+	 * @param TranslationSlot $slot The object, property and language.
+	 *
+	 * @return string|null The row's status (draft when the row has none), or null when there is no row.
+	 *
+	 * @spec openspec/specs/i18n-source-of-truth/spec.md
+	 */
+	public function rowStatus(TranslationSlot $slot): ?string {
+		$row = $this->findOne(slot: $slot);
+		if ($row === null) {
+			return null;
+		}
+
+		return (string) ($row->getStatus() ?? Translation::STATUS_DRAFT);
+	}//end rowStatus()
+
+	/**
 	 * The one translation the query selects, or null when there is none.
 	 *
 	 * @param IQueryBuilder $qb The query.

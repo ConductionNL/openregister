@@ -26,7 +26,6 @@ use OCA\OpenRegister\Kernel\Contracts\Core\ActionCheckInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ActionRightCheckInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ActionRightsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Integrations\OutboundBreakerInterface;
-use OCA\OpenRegister\Kernel\Contracts\Core\RequestLanguagesInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\RouteCallersInterface;
 use OCA\OpenRegister\Service\ApiCaller\ApiCallRecorder;
 use OCA\OpenRegister\Service\ApiCaller\ApiCallRecorderInterface;
@@ -66,7 +65,6 @@ final class PlatformServiceBindings {
 		ChatProxyHandlerInterface::class             => ChatProxyHandler::class,
 		LanguageServiceInterface::class              => LanguageService::class,
 		OutboundBreakerInterface::class              => OutboundBreaker::class,
-		RequestLanguagesInterface::class             => LanguageService::class,
 		RouteCallersInterface::class                 => RouteCallers::class,
 		TranslationProjectionServiceInterface::class => TranslationProjectionService::class,
 		TranslationStatusServiceInterface::class     => TranslationStatusService::class,

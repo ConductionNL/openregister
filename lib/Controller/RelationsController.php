@@ -163,7 +163,7 @@ class RelationsController extends Controller {
 			'method' => 'getLinkedReports',
 		],
 		'flow' => [
-			'class' => \OCA\OpenRegister\Service\FlowLinkServiceInterface::class,
+			'class' => \OCA\OpenRegister\Kernel\Contracts\Integrations\LinkedFlowOperationsInterface::class,
 			'available' => 'isFlowAvailable',
 			'method' => 'getLinkedOperations',
 		],
