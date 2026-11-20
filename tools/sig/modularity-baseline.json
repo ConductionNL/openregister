@@ -144,7 +144,6 @@
   "lib/Service/ObjectSource/ViewSourceMappers.php -> lib/Search/Db/ViewMapperInterface.php",
   "lib/Service/Observability/OpenRegisterMetricsProvider.php -> lib/Service/Task/TaskMetricsProviderInterface.php",
   "lib/Service/OrganisationUsageService.php -> lib/Files/Db/FileMapperInterface.php",
-  "lib/Service/Rbac/AuditRowWriter.php -> lib/Db/AuditTrail.php",
   "lib/Service/Rbac/SharerFolderAccess.php -> lib/Files/Service/File/ObjectFileAccess.php",
   "lib/Service/RegisterService.php -> lib/Service/FileFolderServiceInterface.php",
   "lib/Service/RegisterServiceHelpers.php -> lib/Service/FileFolderServiceInterface.php",
@@ -159,8 +158,7 @@
   "lib/Service/ServiceRegistrar.php -> lib/Service/Sync/SourceFetcherRegistry.php",
   "lib/Service/ServiceRegistrar.php -> lib/Service/Translation/TranslationProviderInterface.php",
   "lib/Service/ServiceRegistrar.php -> lib/Service/Translation/TranslationProviderResolver.php",
-  "lib/Service/Sharing/AccessLinkViewReaders.php -> lib/Search/Db/ViewMapperInterface.php",
-  "lib/Service/User/ApiTokenAuditRow.php -> lib/Db/AuditTrail.php"
+  "lib/Service/Sharing/AccessLinkViewReaders.php -> lib/Search/Db/ViewMapperInterface.php"
  ],
  "exposed_files": [
   "lib/AppHost/AppHostRegistrar.php",
@@ -2072,7 +2070,6 @@
   "lib/Service/Rbac/AggregateVisibilityInterface.php",
   "lib/Service/Rbac/AnonymousEnvelope.php",
   "lib/Service/Rbac/AnonymousEnvelopeInterface.php",
-  "lib/Service/Rbac/AuditRowWriter.php",
   "lib/Service/Rbac/CallerContext.php",
   "lib/Service/Rbac/CrossOrganisationMarkerChange.php",
   "lib/Service/Rbac/DefinitionWriteRights.php",
@@ -2417,7 +2414,7 @@
  "exposed_loc": {
   "Compliance": 14978,
   "Configuration": 2785,
-  "Core": 64470,
+  "Core": 64441,
   "Files": 2654,
   "Integrations": 18152,
   "Kernel": 8470,
@@ -2887,6 +2884,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10408,
- "total_loc": 461412,
- "violation_degree": 0.02
+ "total_loc": 461414,
+ "violation_degree": 0.0198
 }
