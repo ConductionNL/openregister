@@ -24,6 +24,8 @@ use ReflectionClass;
  * @covers \OCA\OpenRegister\Db\IntegrationsMapperBindings
  * @covers \OCA\OpenRegister\Db\ComplianceMapperRegistrar
  * @covers \OCA\OpenRegister\Db\ComplianceMapperBindings
+ * @covers \OCA\OpenRegister\Db\FilesMapperRegistrar
+ * @covers \OCA\OpenRegister\Db\FilesMapperBindings
  * @covers \OCA\OpenRegister\Db\ConfigurationMapperRegistrar
  * @covers \OCA\OpenRegister\Db\ConfigurationMapperBindings
  * @covers \OCA\OpenRegister\Db\PlatformMapperRegistrar

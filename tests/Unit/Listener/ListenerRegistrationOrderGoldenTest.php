@@ -36,7 +36,7 @@ class ListenerRegistrationOrderGoldenTest extends TestCase {
 	 * Last changed when the NotifyPushBatchInterface alias moved to ListenerBootstrap; the
 	 * listener registrations themselves are unchanged.
 	 */
-	private const SEQUENCE_SHA256 = '0176a62e08258415dcc28c551dc0b7737903766cac050470f5cfc730dec2a095';
+	private const SEQUENCE_SHA256 = '49f9a9f76ecef736b524d2eae9d318358f5add126eddf514d50349dd32cebaa0';
 
 	/**
 	 * The registration calls, in call order, with every argument.
