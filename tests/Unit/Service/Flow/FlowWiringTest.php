@@ -15,6 +15,7 @@ use OCA\OpenRegister\Kernel\Contracts\Core\ObjectQuotaInterface;
 use OCA\OpenRegister\Service\Quota\ObjectQuotaService;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\TransitionInFlightInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\CurrentFlowRunInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionDefaultsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionEvaluatorInterface;
@@ -275,6 +276,7 @@ final class FlowWiringTest extends TestCase {
 	}//end testTheExpressionDefaultsPortIsAnsweredByTheRulesEngine()
 
 	/**
+	 * The schedule flow store, the current-run port, the audit trail's transition-in-flight port, the expression-defaults port and the area's own interfaces are bound, and only these aliases are registered.
 	 * The schedule flow store, the current-run port, the write elevation, the expression-defaults port and the area's own interfaces are bound, and only these aliases are registered.
 	 * The schedule flow store, the current-run port, the task row, watcher and run-record ports, the schema rename and form dependents checks, the expression-defaults port and the area's own interfaces are bound, and only these aliases are registered.
 	 * The schedule flow store, the current-run port, the task row, watcher and run-record ports, the expression-defaults port and the area's own interfaces are bound, and only these aliases are registered.
@@ -291,6 +293,7 @@ final class FlowWiringTest extends TestCase {
 				ObjectCalendarLinkInterface::class         => CalendarEventService::class,
 				CurrentFlowRunInterface::class             => FlowRunContext::class,
 				ScheduleFlowStoreInterface::class          => ScheduleFlowStore::class,
+				TransitionInFlightInterface::class         => LifecycleActionContext::class,
 				WriteElevationInterface::class             => ObjectActionWriteElevation::class,
 				ObjectDateEventsSourceInterface::class     => ObjectCalendarFeedService::class,
 				TaskRowSourceInterface::class              => TaskInboxService::class,

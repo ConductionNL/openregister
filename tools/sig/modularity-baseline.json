@@ -109,10 +109,7 @@
   "lib/Service/Anonymisation/PipelineSteps.php -> lib/Files/Service/File/Sanitizer/DocxSanitizer.php",
   "lib/Service/Anonymisation/PipelineSteps.php -> lib/Files/Service/File/Sanitizer/OdtSanitizer.php",
   "lib/Service/Archival/ArchivalNominationService.php -> lib/Service/Lifecycle/LifecycleFinalStateResolver.php",
-  "lib/Service/Audit/AuditTrailCollaborators.php -> lib/Service/Lifecycle/LifecycleActionContext.php",
   "lib/Service/Audit/AuditTrailCollaborators.php -> lib/Service/ObjectAction/ObjectActionElevationScope.php",
-  "lib/Service/Audit/TokenResolver.php -> lib/Db/Consumer.php",
-  "lib/Service/Audit/TokenResolver.php -> lib/Db/ConsumerMapperInterface.php",
   "lib/Service/Decision/ReviewPolicyResolver.php -> lib/Service/Settings/FileSettingsHandler.php",
   "lib/Service/Deletion/DeletionWindowService.php -> lib/Service/Settings/RetentionSettingsReaderInterface.php",
   "lib/Service/File/ArchiveMemberEnumerator.php -> lib/Service/Settings/FileSettingsHandler.php",
@@ -423,8 +420,6 @@
   "lib/Db/ComplianceMapperRegistrar.php",
   "lib/Db/Configuration.php",
   "lib/Db/ConfigurationMapperRegistrar.php",
-  "lib/Db/Consumer.php",
-  "lib/Db/ConsumerMapperInterface.php",
   "lib/Db/ContactLink.php",
   "lib/Db/ContactLinkMapperInterface.php",
   "lib/Db/DbRegistrar.php",
@@ -849,9 +844,11 @@
   "lib/Kernel/Contracts/ChatServiceInterface.php",
   "lib/Kernel/Contracts/ChatStreamChannelInterface.php",
   "lib/Kernel/Contracts/ChunkMapperInterface.php",
+  "lib/Kernel/Contracts/Compliance/AccountConsumerInterface.php",
   "lib/Kernel/Contracts/Compliance/ArchivalSettingsInterface.php",
   "lib/Kernel/Contracts/Compliance/AuditProcessContextInterface.php",
   "lib/Kernel/Contracts/Compliance/ConnectionStatusReporterInterface.php",
+  "lib/Kernel/Contracts/Compliance/TransitionInFlightInterface.php",
   "lib/Kernel/Contracts/ConfigurationInterface.php",
   "lib/Kernel/Contracts/ConfigurationMembershipInterface.php",
   "lib/Kernel/Contracts/ContactDetails.php",
@@ -2495,15 +2492,15 @@
   "lib/Twig/MappingTwigInstallerInterface.php"
  ],
  "exposed_loc": {
-  "Compliance": 15354,
+  "Compliance": 15368,
   "Configuration": 3564,
   "Core": 64431,
   "Files": 2667,
-  "Integrations": 18251,
+  "Integrations": 18141,
   "Kernel": 8506,
   "Notifications": 2049,
   "Platform": 293,
-  "Processes": 29412,
+  "Processes": 29413,
   "Search": 2035
  },
  "kernel_files": [
@@ -2969,6 +2966,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10457,
- "total_loc": 461137,
- "violation_degree": 0.0287
+ "total_loc": 461170,
+ "violation_degree": 0.0283
 }

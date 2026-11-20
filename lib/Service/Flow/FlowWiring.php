@@ -24,6 +24,7 @@ use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
 use OCA\OpenRegister\Db\FlowLinkMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\TransitionInFlightInterface;
 use OCA\OpenRegister\Service\Calendar\ObjectCalendarFeedService;
 use OCA\OpenRegister\Kernel\Contracts\Core\CurrentFlowRunInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionDefaultsInterface;
@@ -112,6 +113,7 @@ final class FlowWiring {
 		ObjectCalendarLinkInterface::class => CalendarEventService::class,
 		CurrentFlowRunInterface::class => FlowRunContext::class,
 		ScheduleFlowStoreInterface::class => ScheduleFlowStore::class,
+		TransitionInFlightInterface::class => LifecycleActionContext::class,
 		WriteElevationInterface::class    => ObjectActionWriteElevation::class,
 		ObjectDateEventsSourceInterface::class => ObjectCalendarFeedService::class,
 		TaskRowSourceInterface::class => TaskInboxService::class,
