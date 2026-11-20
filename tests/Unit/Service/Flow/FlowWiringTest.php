@@ -34,6 +34,8 @@ use OCA\OpenRegister\Kernel\Contracts\Core\SchemaRenameWarningsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Notifications\NotificationRunRecorderInterface;
 use OCA\OpenRegister\Kernel\Contracts\Notifications\ObjectWatchersInterface;
 use OCA\OpenRegister\Kernel\Contracts\Notifications\TaskRowSourceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Notifications\OverdueTaskSourceInterface;
+use OCA\OpenRegister\Service\Task\OverdueOpenTasks;
 use OCA\OpenRegister\Service\AutomationRecordWriter;
 use OCA\OpenRegister\Service\Interaction\WatcherService;
 use OCA\OpenRegister\Kernel\Contracts\Integrations\ObjectCalendarLinkInterface;
@@ -221,6 +223,16 @@ final class FlowWiringTest extends TestCase {
 	}//end testTheTaskRowPortIsAnsweredByTheTaskInbox()
 
 	/**
+	 * The scheduled task sweep's candidate port is answered by the open overdue tasks query.
+	 *
+	 * @return void
+	 */
+	public function testTheOverdueTaskPortIsAnsweredByTheOverdueTaskQuery(): void {
+		self::assertSame(expected: OverdueOpenTasks::class, actual: ($this->aliases[OverdueTaskSourceInterface::class] ?? null));
+		self::assertTrue(condition: is_a(OverdueOpenTasks::class, OverdueTaskSourceInterface::class, true));
+	}//end testTheOverdueTaskPortIsAnsweredByTheOverdueTaskQuery()
+
+	/**
 	 * The watcher and run-record ports of the notification dispatcher (Notifications) are answered by Processes.
 	 *
 	 * @return void
@@ -284,6 +296,7 @@ final class FlowWiringTest extends TestCase {
 	}//end testTheExpressionDefaultsPortIsAnsweredByTheRulesEngine()
 
 	/**
+	 * The schedule flow store, the current-run port and every port the area answers for another (task rows, overdue tasks, watchers, run records, schema change checks, calendars, tool providers, write elevation, expression defaults) are bound, and only these aliases are registered.
 	 * The schedule flow store, the current-run port, the expression-defaults port, the area's own interfaces and the lifecycle transition port are bound, and only these aliases are registered.
 	 * The schedule flow store, the current-run port, the audit trail's transition-in-flight port, the expression-defaults port and the area's own interfaces are bound, and only these aliases are registered.
 	 * The schedule flow store, the current-run port, the write elevation, the expression-defaults port and the area's own interfaces are bound, and only these aliases are registered.
@@ -306,6 +319,7 @@ final class FlowWiringTest extends TestCase {
 				WriteElevationInterface::class             => ObjectActionWriteElevation::class,
 				ObjectDateEventsSourceInterface::class     => ObjectCalendarFeedService::class,
 				TaskRowSourceInterface::class              => TaskInboxService::class,
+				OverdueTaskSourceInterface::class          => OverdueOpenTasks::class,
 				ObjectWatchersInterface::class             => WatcherService::class,
 				NotificationRunRecorderInterface::class    => AutomationRecordWriter::class,
 				SchemaRenameWarningsInterface::class       => FlowTriggerRenameCheck::class,

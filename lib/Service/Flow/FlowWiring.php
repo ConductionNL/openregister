@@ -41,6 +41,8 @@ use OCA\OpenRegister\Kernel\Contracts\Core\SchemaRenameWarningsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Notifications\NotificationRunRecorderInterface;
 use OCA\OpenRegister\Kernel\Contracts\Notifications\ObjectWatchersInterface;
 use OCA\OpenRegister\Kernel\Contracts\Notifications\TaskRowSourceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Notifications\OverdueTaskSourceInterface;
+use OCA\OpenRegister\Service\Task\OverdueOpenTasks;
 use OCA\OpenRegister\Service\AutomationRecordWriter;
 use OCA\OpenRegister\Service\Form\FormDependentsCheck;
 use OCA\OpenRegister\Service\Interaction\WatcherService;
@@ -121,6 +123,7 @@ final class FlowWiring {
 		WriteElevationInterface::class    => ObjectActionWriteElevation::class,
 		ObjectDateEventsSourceInterface::class => ObjectCalendarFeedService::class,
 		TaskRowSourceInterface::class => TaskInboxService::class,
+		OverdueTaskSourceInterface::class => OverdueOpenTasks::class,
 		ObjectWatchersInterface::class => WatcherService::class,
 		NotificationRunRecorderInterface::class => AutomationRecordWriter::class,
 		SchemaRenameWarningsInterface::class => FlowTriggerRenameCheck::class,

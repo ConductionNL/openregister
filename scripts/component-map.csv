@@ -4465,6 +4465,7 @@ Service/Config/ShareableConfigCatalogue.php,,Service,,,,,Configuration
 Service/ComplianceServiceBindings.php,,Service,,,,,Compliance
 Service/ComplianceServiceRegistrar.php,,Service,,,,,Compliance
 Files/Service/File/FileScopeReader.php,,Files,,,,,Files
+Service/Task/OverdueOpenTasks.php,,Service,,,,,Processes
 Event/ObjectWriteRequestEvent.php,,Event,,,,,Core
 Listener/WebhookRequestInterceptionListener.php,,Listener,,,,,Integrations
 BackgroundJob/Support/AbandonedFlowClaim.php,,BackgroundJob,,,,,Processes
