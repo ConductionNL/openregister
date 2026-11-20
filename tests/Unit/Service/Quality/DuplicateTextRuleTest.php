@@ -38,6 +38,8 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\TextSignature as TextSignatureRow;
 use OCA\OpenRegister\Db\TextSignatureMapper;
 use OCA\OpenRegister\Files\Db\FileMapperInterface;
+use OCA\OpenRegister\Files\Service\File\FileReadScope;
+use OCA\OpenRegister\Files\Service\File\FileScopeReader;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Search\Controller\DuplicateController;
 use OCA\OpenRegister\Search\Controller\Support\DuplicateControllerServices;
@@ -63,6 +65,7 @@ use Psr\Log\NullLogger;
  * @covers \OCA\OpenRegister\Search\Service\Quality\PayloadComparator
  * @covers \OCA\OpenRegister\Search\Service\Quality\DedupRuleResolver
  * @covers \OCA\OpenRegister\Service\Quality\DedupAnnotationValidator
+ * @uses   \OCA\OpenRegister\Files\Service\File\FileScopeReader
  * @uses   \OCA\OpenRegister\Search\Controller\DuplicateController
  * @uses   \OCA\OpenRegister\Search\Controller\Support\DuplicateControllerServices
  * @uses   \OCA\OpenRegister\Controller\Support\ControllerSession
@@ -167,7 +170,7 @@ final class DuplicateTextRuleTest extends TestCase {
 			$dismissals,
 			new NullLogger(),
 			$this->createMock(TextGroupFinder::class),
-			new ObjectTextSimilarity($files, $signatures)
+			new ObjectTextSimilarity(new FileScopeReader($files, $this->createMock(FileReadScope::class)), $signatures)
 		);
 
 		$request = $this->createMock(IRequest::class);

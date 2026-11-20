@@ -32,9 +32,9 @@ namespace OCA\OpenRegister\Service\Object;
 use Exception;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\SearchTrailRecorderInterface;
 use OCA\OpenRegister\Service\Interaction\ReadHistoryService;
 use OCA\OpenRegister\Service\SearchMeasurement;
-use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\SettingsServiceInterface;
 use OCA\OpenRegister\Service\Vocabulary\CodedFilterExpander;
 use OCA\OpenRegister\Support\FilterParams;
@@ -118,7 +118,7 @@ class SearchQueryHandler {
 	 * @param SchemaMapperInterface $schemaMapper Mapper for schema operations.
 	 * @param SettingsServiceInterface $settingsService Service for settings operations.
 	 * @param LoggerInterface $logger Logger for performance monitoring.
-	 * @param SearchTrailService $searchTrailService Service for recording search trails.
+	 * @param SearchTrailRecorderInterface $searchTrailService Records the search trails (Compliance answers it).
 	 * @param IUserSession|null $userSession Resolves the caller for that lens.
 	 * @param CodedFilterExpander|null $codedFilters Expands a branch filter into the concepts under it.
 	 * @param SearchReferenceResolver|null $referenceResolver Resolves a register/schema slug or uuid to its id.
@@ -133,7 +133,7 @@ class SearchQueryHandler {
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly SettingsServiceInterface $settingsService,
 		private readonly LoggerInterface $logger,
-		private readonly SearchTrailService $searchTrailService,
+		private readonly SearchTrailRecorderInterface $searchTrailService,
 		private readonly ?IUserSession $userSession = null,
 		// The branch-filter expander. Nullable with a null default so the many
 		// unit tests that build this handler positionally keep working; the
