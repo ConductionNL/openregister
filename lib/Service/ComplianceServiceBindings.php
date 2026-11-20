@@ -24,6 +24,9 @@ namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Kernel\Contracts\Core\AuthRateLimitCeilingInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\SearchTrailRecorderInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ReadPurposeGuardInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\RegisterAccessChangeLogInterface;
+use OCA\OpenRegister\Service\Audit\PurposeGuard;
 use OCA\OpenRegister\Service\Hardening\HardeningPolicy;
 
 /**
@@ -43,7 +46,9 @@ final class ComplianceServiceBindings {
 	 * @var array<class-string, class-string>
 	 */
 	public const BINDINGS = [
-		AuthRateLimitCeilingInterface::class => HardeningPolicy::class,
-		SearchTrailRecorderInterface::class => SearchTrailService::class,
+		AuthRateLimitCeilingInterface::class    => HardeningPolicy::class,
+		ReadPurposeGuardInterface::class        => PurposeGuard::class,
+		RegisterAccessChangeLogInterface::class => AuthorizationAuditService::class,
+		SearchTrailRecorderInterface::class     => SearchTrailService::class,
 	];
 }//end class
