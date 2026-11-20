@@ -102,9 +102,7 @@
   "lib/Service/File/FolderManagementHandler.php -> lib/Service/FileHandlerSupportInterface.php",
   "lib/Service/File/ObjectFileFinder.php -> lib/Service/FileHandlerSupportInterface.php",
   "lib/Service/File/PublishedDigestService.php -> lib/Db/AuditTrail.php",
-  "lib/Service/File/ReadFileHandler.php -> lib/Files/Db/FileMapperInterface.php",
   "lib/Service/File/ReadFileHandler.php -> lib/Service/FileHandlerSupportInterface.php",
-  "lib/Service/File/ReadFileSources.php -> lib/Files/Db/FileMapperInterface.php",
   "lib/Service/File/UpdateFileHandler.php -> lib/Files/Db/File.php",
   "lib/Service/File/UpdateFileHandler.php -> lib/Files/Db/FileMapperInterface.php",
   "lib/Service/File/UpdateFileHandler.php -> lib/Service/FileHandlerSupportInterface.php",
@@ -2458,7 +2456,7 @@
  "exposed_loc": {
   "Compliance": 15375,
   "Configuration": 3134,
-  "Core": 64286,
+  "Core": 64287,
   "Files": 2665,
   "Integrations": 18152,
   "Kernel": 8506,
@@ -2930,6 +2928,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10457,
- "total_loc": 461259,
- "violation_degree": 0.0248
+ "total_loc": 461257,
+ "violation_degree": 0.0246
 }
