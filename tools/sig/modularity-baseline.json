@@ -105,7 +105,6 @@
   "lib/Service/GraphQL/ListAggregations.php -> lib/Search/Service/Aggregation/AggregationQuery.php",
   "lib/Service/GraphQL/ListAggregations.php -> lib/Search/Service/Aggregation/TimeseriesRequestValidatorInterface.php",
   "lib/Service/Hinge/IntakeSourceRegistry.php -> lib/Repair/IntakeSourceRegisterSlugsInterface.php",
-  "lib/Service/NotificationServiceInterface.php -> lib/Db/Configuration.php",
   "lib/Service/Object/BulkRowRules.php -> lib/Service/Dmn/DecisionTableBulkGuard.php",
   "lib/Service/Object/BulkRowRules.php -> lib/Service/Flow/FlowRunContext.php",
   "lib/Service/Object/Collaborators/ObjectHistoryServices.php -> lib/Service/Lifecycle/AutoTransitionPass.php",
@@ -2893,5 +2892,5 @@
  ],
  "kernel_loc": 10408,
  "total_loc": 461403,
- "violation_degree": 0.0203
+ "violation_degree": 0.0202
 }
