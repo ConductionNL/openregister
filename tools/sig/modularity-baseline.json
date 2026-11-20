@@ -127,8 +127,6 @@
   "lib/Service/Object/BulkRowRules.php -> lib/Service/Dmn/DecisionTableBulkGuard.php",
   "lib/Service/Object/BulkRowRules.php -> lib/Service/Flow/FlowRunContext.php",
   "lib/Service/Object/Collaborators/ObjectHistoryServices.php -> lib/Service/Lifecycle/AutoTransitionPass.php",
-  "lib/Service/Object/Collaborators/ObjectStorageServices.php -> lib/Service/FileFolderServiceInterface.php",
-  "lib/Service/Object/Collaborators/ObjectStorageServices.php -> lib/Service/SearchTrailService.php",
   "lib/Service/Object/ConflictReport.php -> lib/Db/AuditTrail.php",
   "lib/Service/Object/ConflictReportInterface.php -> lib/Db/AuditTrail.php",
   "lib/Service/Object/FacetableFieldDiscovery.php -> lib/Search/Service/Search/PropertySearchProfile.php",
@@ -181,12 +179,10 @@
   "lib/Service/Object/ViewScopeApplier.php -> lib/Search/Db/ViewMapperInterface.php",
   "lib/Service/ObjectFilesInterface.php -> lib/Service/FileReaderInterface.php",
   "lib/Service/ObjectFilesInterface.php -> lib/Service/FileWriterInterface.php",
-  "lib/Service/ObjectService.php -> lib/Service/FileFolderServiceInterface.php",
   "lib/Service/ObjectService.php -> lib/Service/Interaction/ProcessingListRead.php",
   "lib/Service/ObjectService.php -> lib/Service/Interaction/ReadHistoryService.php",
   "lib/Service/ObjectService.php -> lib/Service/Lifecycle/AutoTransitionPass.php",
   "lib/Service/ObjectService.php -> lib/Service/SchemaDeletionService.php",
-  "lib/Service/ObjectService.php -> lib/Service/SearchTrailService.php",
   "lib/Service/ObjectService.php -> lib/Service/SettingsService.php",
   "lib/Service/ObjectSource/CalendarEventObjectSourceProvider.php -> lib/Service/CalendarEventService.php",
   "lib/Service/ObjectSource/ObjectSourceWiring.php -> lib/Service/CalendarEventService.php",
@@ -867,6 +863,7 @@
   "lib/Kernel/Contracts/Core/MigrationPackDefinitionsInterface.php",
   "lib/Kernel/Contracts/Core/ObjectAuditEntry.php",
   "lib/Kernel/Contracts/Core/ObjectFileRecordsInterface.php",
+  "lib/Kernel/Contracts/Core/ObjectFolderAccessInterface.php",
   "lib/Kernel/Contracts/Core/ObjectFolderLookupInterface.php",
   "lib/Kernel/Contracts/Core/ObjectPresenceInterface.php",
   "lib/Kernel/Contracts/Core/ObjectPreviewCacheInterface.php",
@@ -2466,8 +2463,8 @@
  "exposed_loc": {
   "Compliance": 15375,
   "Configuration": 3134,
-  "Core": 64120,
-  "Files": 2667,
+  "Core": 64126,
+  "Files": 2665,
   "Integrations": 18152,
   "Kernel": 8506,
   "Notifications": 2049,
@@ -2938,6 +2935,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10457,
- "total_loc": 461238,
- "violation_degree": 0.0259
+ "total_loc": 461241,
+ "violation_degree": 0.0255
 }
