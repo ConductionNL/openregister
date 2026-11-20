@@ -20,7 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Service\Notification;
 
-use OCA\OpenRegister\Service\Flow\Timer\SlaCalculatorInterface;
+use OCA\OpenRegister\Kernel\Contracts\Notifications\TimerUnits;
 
 /**
  * Validates a reminder declared on a notification rule, at schema save.
@@ -146,13 +146,13 @@ final class NotificationReminderValidator {
 			return [$this->error(rule: $rule, field: $field, value: $amount, message: sprintf('%s.value must be above zero', $field))];
 		}
 
-		if (in_array($unit, SlaCalculatorInterface::UNITS, true) === false) {
+		if (in_array($unit, TimerUnits::UNITS, true) === false) {
 			return [
 				$this->error(
 					rule: $rule,
 					field: $field,
 					value: $amount,
-					message: sprintf('%s.unit must be one of [%s]', $field, implode(', ', SlaCalculatorInterface::UNITS))
+					message: sprintf('%s.unit must be one of [%s]', $field, implode(', ', TimerUnits::UNITS))
 				),
 			];
 		}
