@@ -19,6 +19,7 @@ use OCA\OpenRegister\Service\Object\Permission\PermissionDerivedGrantServices;
 use OCA\OpenRegister\Service\Object\Permission\PermissionGrantServices;
 use OCA\OpenRegister\Service\Object\Permission\PermissionRuleServices;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionWriteElevation;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
 use OCA\OpenRegister\Service\Rbac\DerivedGrantResolver;
@@ -107,6 +108,7 @@ final class PermissionHandlerFactory {
 				eventDispatcher: $eventDispatcher,
 				objectScopeResolver: $objectScopeResolver,
 				objectGrantResolver: $objectGrantResolver,
+				writeElevation: new ObjectActionWriteElevation(),
 			),
 			new PermissionGrantServices(
 				deny: new PermissionDenyServices(
