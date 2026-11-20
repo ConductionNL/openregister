@@ -66,8 +66,6 @@
   "lib/Db/SchemaMapper/AdvisoryAnnotationChecks.php -> lib/Search/Service/SearchAnnotationValidators.php",
   "lib/Db/SchemaMapper/AdvisoryAnnotationChecks.php -> lib/Service/Party/PartyAnnotationValidator.php",
   "lib/Db/SchemaMapper/ExchangeAnnotationRefusals.php -> lib/Mcp/Service/Mcp/McpAnnotationValidators.php",
-  "lib/Db/SchemaMapper/RecordAnnotationRefusals.php -> lib/Search/Service/SearchAnnotationValidators.php",
-  "lib/Db/SchemaMapper/RecordAnnotationRefusals.php -> lib/Service/Archival/InheritedAppraisal.php",
   "lib/Db/SequenceMapperInterface.php -> lib/Db/Sequence.php",
   "lib/Db/SourceMapperInterface.php -> lib/Db/Source.php",
   "lib/Db/TaskAuditMapper.php -> lib/Db/TaskAuditMapperInterface.php",
@@ -1272,7 +1270,6 @@
   "lib/Service/Archival/DestructionServiceInterface.php",
   "lib/Service/Archival/ElementMappingValidator.php",
   "lib/Service/Archival/ElementMappingValidatorInterface.php",
-  "lib/Service/Archival/InheritedAppraisal.php",
   "lib/Service/Archival/LegalHoldService.php",
   "lib/Service/Archival/LegalHoldServiceInterface.php",
   "lib/Service/Archival/RetentionEvaluator.php",
@@ -2327,6 +2324,7 @@
   "lib/Service/Schemas/ReferenceOptionsReader.php",
   "lib/Service/Schemas/ReferenceOptionsReaderInterface.php",
   "lib/Service/Schemas/RequiredWhenDeclaration.php",
+  "lib/Service/Schemas/RetentionAnnotationValidator.php",
   "lib/Service/Schemas/SchemaCacheHandler.php",
   "lib/Service/Schemas/SchemaCacheHandlerInterface.php",
   "lib/Service/Schemas/SemanticRoleHandler.php",
@@ -2495,9 +2493,9 @@
   "lib/Twig/MappingTwigInstallerInterface.php"
  ],
  "exposed_loc": {
-  "Compliance": 15428,
-  "Configuration": 3601,
-  "Core": 64390,
+  "Compliance": 15316,
+  "Configuration": 3604,
+  "Core": 64429,
   "Files": 2667,
   "Integrations": 18251,
   "Kernel": 8506,
@@ -2969,6 +2967,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10457,
- "total_loc": 461025,
- "violation_degree": 0.0326
+ "total_loc": 461075,
+ "violation_degree": 0.0323
 }

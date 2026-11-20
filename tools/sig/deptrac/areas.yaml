@@ -3200,7 +3200,7 @@ deptrac:
         - type: directory
           value: 'lib/Db/Translation/[^/]*$'
         - type: directory
-          value: 'lib/Listener/(RedactionPolicyCacheListener|ShareableConfigTypeRegistrationListener)[.]php$'
+          value: 'lib/Listener/(RedactionPolicyCacheListener|ReferenceCardDeclarationCheckListener|ShareableConfigTypeRegistrationListener)[.]php$'
         - type: directory
           value: 'lib/Notifications/Service/ExampleSet/[^/]*$'
         - type: directory
@@ -4472,7 +4472,7 @@ deptrac:
         - type: directory
           value: 'lib/Db/SearchTrail/[^/]*$'
         - type: directory
-          value: 'lib/Listener/(ViewAlertAudience|ViewAlertMail)[.]php$'
+          value: 'lib/Listener/(UniqueHintDeclarationCheckListener|ViewAlertAudience|ViewAlertMail)[.]php$'
         - type: directory
           value: 'lib/Search/ObjectsProvider[.]php$'
         - type: directory
