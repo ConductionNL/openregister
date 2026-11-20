@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapper\SchemaDeclarationChecksEvent;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Listener\Registrar\ConfigurationListenerRegistrar;
 use OCA\OpenRegister\Listener\ReferenceCardDeclarationCheckListener;
 use OCA\OpenRegister\Service\Configuration\CacheHandler as ConfigurationCacheHandler;
 use OCA\OpenRegister\Service\Configuration\ExportHandler as ConfigurationExportHandler;
@@ -129,11 +130,13 @@ final class ConfigurationServiceRegistrar {
 	];
 
 	/**
-	 * Register configuration-related services.
+	 * Register configuration-related services, and the Configuration area's own listeners.
 	 *
 	 * @param IRegistrationContext $context The registration context
 	 *
 	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) The component listener registrar is static; there is no instance to inject at registration time.
 	 *
 	 * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
 	 */
@@ -164,6 +167,10 @@ final class ConfigurationServiceRegistrar {
 
 		// The reference-card declaration check runs inside the schema save, in its slot of SchemaDeclarationOrder.
 		$context->registerEventListener(SchemaDeclarationChecksEvent::class, ReferenceCardDeclarationCheckListener::class);
+
+		// The Configuration area subscribes its own listeners here, from its own
+		// registrar: their events have no listener from another area.
+		ConfigurationListenerRegistrar::register(context: $context);
 	}//end register()
 
 	/**

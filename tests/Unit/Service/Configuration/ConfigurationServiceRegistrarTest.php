@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Configuration;
 
+use OCA\OpenRegister\Listener\Registrar\ConfigurationListenerRegistrar;
 use OCA\OpenRegister\Kernel\Contracts\Search\SearchBackendSettingsInterface;
 use OCA\OpenRegister\Db\SchemaMapper\SchemaDeclarationChecksEvent;
 use OCA\OpenRegister\Listener\ReferenceCardDeclarationCheckListener;
@@ -87,6 +88,7 @@ class ConfigurationServiceRegistrarTest extends TestCase {
 	}//end testEveryFactoryBuildsItsService()
 
 	/**
+	 * The registrar subscribes Configuration's own listeners: its schema declaration check, then ConfigurationListenerRegistrar's.
 	 * Search's settings port resolves to the search backend handler, which implements it; it is the only alias.
 	 *
 	 * @return void
@@ -105,18 +107,27 @@ class ConfigurationServiceRegistrarTest extends TestCase {
 	/**
 	 * The only listener the registrar registers is Configuration's own schema declaration check.
 	 *
-	 * Every other listener stays with ListenerRegistrar; this one is Configuration's
-	 * contribution to the schema save, bound in Configuration's own registrar.
+	 * Every other listener stays with ListenerRegistrar.
 	 *
 	 * @return void
 	 */
-	public function testRegistersOnlyTheReferenceCardCheckListener(): void {
+	public function testRegistersOnlyTheConfigurationListeners(): void {
 		$context = new RecordingRegistrationContext();
 		ConfigurationServiceRegistrar::register(context: $context);
 
+		$own = new RecordingRegistrationContext();
+		ConfigurationListenerRegistrar::register(context: $own);
+
 		$this->assertSame(
-			expected: [['event' => SchemaDeclarationChecksEvent::class, 'listener' => ReferenceCardDeclarationCheckListener::class]],
+			expected: [
+				['event' => SchemaDeclarationChecksEvent::class, 'listener' => ReferenceCardDeclarationCheckListener::class],
+				[
+					'event' => 'OCA\OpenRegister\Service\Config\RegisterShareableConfigTypesEvent',
+					'listener' => 'OCA\OpenRegister\Listener\ShareableConfigTypeRegistrationListener',
+				],
+			],
 			actual: $context->listeners
 		);
-	}//end testRegistersOnlyTheReferenceCardCheckListener()
+		$this->assertSame(expected: $own->listeners, actual: array_slice($context->listeners, 1));
+	}//end testRegistersOnlyTheConfigurationListeners()
 }//end class

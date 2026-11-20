@@ -27,8 +27,6 @@
   "lib/Db/SequenceMapperInterface.php -> lib/Db/Sequence.php",
   "lib/Db/SourceMapperInterface.php -> lib/Db/Source.php",
   "lib/Db/TaskAuditMapper.php -> lib/Db/TaskAuditMapperInterface.php",
-  "lib/Listener/Registrar/ConfigurationListenerRegistrar.php -> lib/Listener/ShareableConfigTypeRegistrationListener.php",
-  "lib/Listener/Registrar/ConfigurationListenerRegistrar.php -> lib/Service/Config/RegisterShareableConfigTypesEvent.php",
   "lib/Search/Db/View.php -> lib/Db/Configuration.php",
   "lib/Search/Db/View.php -> lib/Db/Task.php",
   "lib/Search/Db/View.php -> lib/Mcp/Db/Agent.php",
@@ -930,7 +928,6 @@
   "lib/Listener/RelatedRetentionRecalculationListener.php",
   "lib/Listener/SchemaAuthorizationAuditListener.php",
   "lib/Listener/SchemaFlowImportListenerInterface.php",
-  "lib/Listener/ShareableConfigTypeRegistrationListener.php",
   "lib/Listener/StateHistoryProjectionListener.php",
   "lib/Listener/Support/ConflictVeto.php",
   "lib/Listener/Support/EventSchemaLookup.php",
@@ -1259,7 +1256,6 @@
   "lib/Service/CollectiveLinkService.php",
   "lib/Service/CollectiveLinkServiceInterface.php",
   "lib/Service/ComplianceServiceRegistrar.php",
-  "lib/Service/Config/RegisterShareableConfigTypesEvent.php",
   "lib/Service/ConfigLookup.php",
   "lib/Service/Configuration/AppSettingsAccess.php",
   "lib/Service/Configuration/ConfigurationServiceRegistrar.php",
@@ -2302,14 +2298,14 @@
  ],
  "exposed_loc": {
   "Compliance": 14875,
-  "Configuration": 1523,
+  "Configuration": 1482,
   "Core": 63402,
   "Files": 1458,
   "Integrations": 17990,
   "Kernel": 8464,
   "Notifications": 2057,
   "Platform": 61,
-  "Processes": 27285,
+  "Processes": 27284,
   "Search": 2028
  },
  "kernel_files": [
@@ -2773,6 +2769,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10402,
- "total_loc": 461806,
- "violation_degree": 0.0105
+ "total_loc": 461807,
+ "violation_degree": 0.0102
 }
