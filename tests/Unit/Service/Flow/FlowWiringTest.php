@@ -23,6 +23,9 @@ use OCA\OpenRegister\Service\Interaction\UnreadCountCalculator;
 use OCA\OpenRegister\Service\Quota\ObjectQuotaService;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\BulkRowRefusalsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\DependentValueCheckInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ContactMatchCacheInterface;
 use OCA\OpenRegister\Kernel\Contracts\Compliance\TransitionInFlightInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\CurrentFlowRunInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionDefaultsInterface;
@@ -84,6 +87,9 @@ use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionWriteElevation;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
+use OCA\OpenRegister\Listener\DependentValueListener;
+use OCA\OpenRegister\Service\Dmn\DecisionTableBulkGuard;
+use OCA\OpenRegister\Service\ContactMatchingService;
 use OCA\OpenRegister\Service\Party\PartyRecipients;
 use OCA\OpenRegister\Service\Party\PartyIndicatorGuard;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaults;
@@ -316,9 +322,29 @@ final class FlowWiringTest extends TestCase {
 	}//end testTheExpressionDefaultsPortIsAnsweredByTheRulesEngine()
 
 	/**
+	 * The Core save-rule ports are answered by the decision-table guard and the dependent-value rule.
+	 *
+	 * @return void
+	 */
+	public function testTheSaveRulePortsAreAnsweredByTheRulesEngine(): void {
+		self::assertSame(expected: DecisionTableBulkGuard::class, actual: ($this->aliases[BulkRowRefusalsInterface::class] ?? null));
+		self::assertTrue(condition: is_a(DecisionTableBulkGuard::class, BulkRowRefusalsInterface::class, true));
+		self::assertSame(expected: DependentValueListener::class, actual: ($this->aliases[DependentValueCheckInterface::class] ?? null));
+		self::assertTrue(condition: is_a(DependentValueListener::class, DependentValueCheckInterface::class, true));
+	}//end testTheSaveRulePortsAreAnsweredByTheRulesEngine()
+
+	/**
+	 * The schedule flow store, the current-run port, the calendar link, transition-in-flight, write elevation, date events, task row,
+	 * watcher and run-record ports, the schema rename and form dependents checks, the built-in tool providers, the save-rule ports,
+	 * the lifecycle transition and expression-defaults ports and the area's own interfaces are bound, and only these aliases are registered.
+	 * The contact-match cache a save clears is answered by contact matching itself.
+	public function testTheContactMatchCachePortIsAnsweredByContactMatching(): void {
+		self::assertSame(expected: ContactMatchingService::class, actual: ($this->aliases[ContactMatchCacheInterface::class] ?? null));
+		self::assertTrue(condition: is_a(ContactMatchingService::class, ContactMatchCacheInterface::class, true));
+	}//end testTheContactMatchCachePortIsAnsweredByContactMatching()
+	 * watcher and run-record ports, the schema rename and form dependents checks, the built-in tool providers, the contact-match cache,
 	 * The schedule flow store, the current-run port, the calendar link, user calendar events, task gauge, transition-in-flight, write elevation,
 	 * date events, task row, watcher and run-record ports, the schema rename and form dependents checks, the built-in tool providers,
-	 * the lifecycle transition and expression-defaults ports and the area's own interfaces are bound, and only these aliases are registered.
 	 * The schedule flow store, the current-run port, the read history, the write elevation, the expression-defaults port and the area's own interfaces are bound, and only these aliases are registered.
 	 * The schedule flow store, the current-run port and every port the area answers for another (task rows, overdue tasks, watchers, run records, schema change checks, calendars, tool providers, write elevation, expression defaults) are bound, and only these aliases are registered.
 	 * The schedule flow store, the current-run port, the expression-defaults port, the area's own interfaces and the lifecycle transition port are bound, and only these aliases are registered.
@@ -368,6 +394,9 @@ final class FlowWiringTest extends TestCase {
 				LinkedFlowOperationsInterface::class       => FlowLinkServiceInterface::class,
 				LifecycleTransitionInterface::class        => TransitionEngine::class,
 				ExpressionDefaultsInterface::class         => ExpressionDefaults::class,
+				BulkRowRefusalsInterface::class            => DecisionTableBulkGuard::class,
+				DependentValueCheckInterface::class        => DependentValueListener::class,
+				ContactMatchCacheInterface::class          => ContactMatchingService::class,
 				ObjectQuotaInterface::class                => ObjectQuotaService::class,
 				PartyParentInterface::class                => PartyParent::class,
 				LifecycleStatesKeeperInterface::class      => LifecycleStatesKeeper::class,

@@ -45,7 +45,7 @@ class ViewScopeApplierTest extends TestCase {
 
 	private function applier(): ViewScopeApplier {
 		return new ViewScopeApplier(
-			$this->viewMapper,
+			new \OCA\OpenRegister\Search\Service\StoredViewQueries($this->viewMapper, $this->createMock(\OCA\OpenRegister\Search\Service\ViewService::class)),
 			$this->createMock(LoggerInterface::class)
 		);
 	}//end applier()
