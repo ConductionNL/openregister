@@ -13,7 +13,6 @@
   "lib/Controller/SchemasController.php -> lib/Service/AuthorizationAuditService.php",
   "lib/Controller/SchemasController.php -> lib/Service/Task/ApprovalPositionFormGuard.php",
   "lib/Controller/SettingsController.php -> lib/Service/Settings/SearchBackendHandler.php",
-  "lib/Controller/Support/DsarCaseCases.php -> lib/Service/Lifecycle/TransitionEngine.php",
   "lib/Controller/Support/GeoServices.php -> lib/Search/Service/Geo/GeoFeatureCollectionBuilderInterface.php",
   "lib/Controller/Support/TagsControllerServices.php -> lib/Service/FileServiceInterface.php",
   "lib/Controller/Support/TranslationControllerServices.php -> lib/Service/TranslationStatusServiceInterface.php",
@@ -1768,7 +1767,6 @@
   "lib/Service/Lifecycle/StateFieldRules.php",
   "lib/Service/Lifecycle/StateFieldRulesInterface.php",
   "lib/Service/Lifecycle/TransitionActor.php",
-  "lib/Service/Lifecycle/TransitionEngine.php",
   "lib/Service/Lifecycle/TransitionMove.php",
   "lib/Service/LinkPageWindow.php",
   "lib/Service/LinkServiceRuntime.php",
@@ -2366,7 +2364,7 @@
   "Kernel": 8470,
   "Notifications": 2057,
   "Platform": 61,
-  "Processes": 28333,
+  "Processes": 27382,
   "Search": 2020
  },
  "kernel_files": [
@@ -2831,5 +2829,5 @@
  ],
  "kernel_loc": 10408,
  "total_loc": 461684,
- "violation_degree": 0.015
+ "violation_degree": 0.0149
 }
