@@ -3006,6 +3006,8 @@ deptrac:
         - type: directory
           value: 'lib/Notifications/Service/ExampleSet/[^/]*$'
         - type: directory
+          value: 'lib/Search/Service/ExampleSet/[^/]*$'
+        - type: directory
           value: 'lib/Service/(AppRegisterImportRunner|ApplicationMove|ApplicationService|ApplicationServiceInterface|BulkTranslationService|ConfigurationService|ConfigurationServiceInterface|ConfigurationTransferInterface|ConfigurationUpdateNotice|ContractBindings|ContractBindingsRegistrar|CountedRegisterImport|DemoDataService|DescriptorImportTarget|DescriptorReimportRun|ExportService|ImportService|LanguageGapScan|LanguageService|LanguageServiceInterface|ManifestProfile|ManifestService|MassValidationRun|McpCatalogSummaries|McpDiscoveryService|MigrationPackService|MigrationPackServiceInterface|MigrationService|MockImportRun|NotificationService|OperationsConsoleService|PropertyDiscoveryRun|PropertyTranslation|RegisterDescriptorService|RegisterImporters|RunningNumbers|ScheduledReportExporters|ScheduledReportRun|ScheduledReportService|SchemaApplicationMigrator|SchemaService|SchemaSplitRun|SequenceService|SettingsService|SharedSchemaDedupeService|SharedSchemaPlanRun|SharedSchemaUse|SourceLanguageLookup|TranslationProjectionService|TranslationProjectionServiceInterface|TranslationSearch|TranslationStatusService|TranslationStatusServiceInterface|TranslationStores|ValidationChunkResult|VocabularyImportService)[.]php$'
         - type: directory
           value: 'lib/Service/Capability/ToolGrantCodec[.]php$'
@@ -4275,8 +4277,6 @@ deptrac:
           value: 'lib/Search/Service/[^/]*$'
         - type: directory
           value: 'lib/Search/Service/Aggregation/[^/]*$'
-        - type: directory
-          value: 'lib/Search/Service/ExampleSet/[^/]*$'
         - type: directory
           value: 'lib/Search/Service/Geo/[^/]*$'
         - type: directory

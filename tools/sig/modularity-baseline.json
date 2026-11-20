@@ -154,9 +154,6 @@
   "lib/Search/Db/ViewFormatting.php -> lib/Db/Configuration.php",
   "lib/Search/Db/ViewMapper.php -> lib/Db/Configuration.php",
   "lib/Search/Service/DashboardSizes.php -> lib/Db/AuditTrail.php",
-  "lib/Search/Service/ExampleSet/ExampleSetViewRowsInterface.php -> lib/Service/ExampleSet/ExampleSetEngineRows.php",
-  "lib/Search/Service/ExampleSet/ExampleSetViews.php -> lib/Service/ExampleSet/ExampleSetEngineRows.php",
-  "lib/Search/Service/ExampleSet/ExampleSetViews.php -> lib/Service/ExampleSet/ExampleSetRow.php",
   "lib/Search/Service/Quality/NearDuplicateScope.php -> lib/Files/Db/FileMapperInterface.php",
   "lib/Search/Service/Quality/NearDuplicateScope.php -> lib/Files/Service/File/FileReadScope.php",
   "lib/Search/Service/Quality/ObjectTextSimilarity.php -> lib/Files/Db/FileMapperInterface.php",
@@ -1274,7 +1271,6 @@
   "lib/Search/Service/Aggregation/AggregationSlot.php",
   "lib/Search/Service/Aggregation/CrossSchemaTarget.php",
   "lib/Search/Service/Aggregation/TimeseriesRequestValidatorInterface.php",
-  "lib/Search/Service/ExampleSet/ExampleSetViewRowsInterface.php",
   "lib/Search/Service/Geo/FeatureShape.php",
   "lib/Search/Service/Geo/GeoFeatureCollectionBuilderInterface.php",
   "lib/Search/Service/Geo/GeoResponseCrsFactory.php",
@@ -1294,6 +1290,9 @@
   "lib/Search/Service/Vectorization/SemanticSearchRequest.php",
   "lib/Search/Service/Vectorization/VectorEmbeddingsInterface.php",
   "lib/Search/Service/VectorizationServiceInterface.php",
+  "lib/Search/Service/ViewAudience.php",
+  "lib/Search/Service/ViewDefinition.php",
+  "lib/Search/Service/ViewEdit.php",
   "lib/Search/Service/ViewService.php",
   "lib/Service/ActivityEntriesOptions.php",
   "lib/Service/ActivityFilter.php",
@@ -1630,8 +1629,6 @@
   "lib/Service/EndpointService.php",
   "lib/Service/EndpointServiceInterface.php",
   "lib/Service/EntryScripts.php",
-  "lib/Service/ExampleSet/ExampleSetEngineRows.php",
-  "lib/Service/ExampleSet/ExampleSetRow.php",
   "lib/Service/ExecutedDestruction.php",
   "lib/Service/Export/ExportAuditRecorderInterface.php",
   "lib/Service/Export/ExportPage.php",
@@ -2593,7 +2590,7 @@
  ],
  "exposed_loc": {
   "Compliance": 15514,
-  "Configuration": 4293,
+  "Configuration": 4164,
   "Core": 64534,
   "Files": 3592,
   "Integrations": 18231,
@@ -2601,7 +2598,7 @@
   "Notifications": 2008,
   "Platform": 313,
   "Processes": 30216,
-  "Search": 2001
+  "Search": 2027
  },
  "kernel_files": [
   "lib/BulkAction/BulkActionInterface.php",
@@ -3064,5 +3061,5 @@
  ],
  "kernel_loc": 10414,
  "total_loc": 460617,
- "violation_degree": 0.0442
+ "violation_degree": 0.0431
 }
