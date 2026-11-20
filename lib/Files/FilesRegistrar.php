@@ -55,10 +55,12 @@ use OCA\OpenRegister\Files\Service\NoteVersionService;
 use OCA\OpenRegister\Files\Service\RiskLevelService;
 use OCA\OpenRegister\Files\Service\RiskLevelServiceInterface;
 use OCA\OpenRegister\Files\Service\Sharing\AccessLinkReader;
+use OCA\OpenRegister\Files\Service\TextExtraction\PatternSet\PatternSetVersion;
 use OCA\OpenRegister\Files\Service\TextExtractionService;
 use OCA\OpenRegister\Files\Service\UploadService;
 use OCA\OpenRegister\Kernel\Contracts\AccessLinkReaderInterface;
 use OCA\OpenRegister\Kernel\Contracts\ChunkMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\DetectionPatternsVersionInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FileAccountInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FileReadRestrictionInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\RegisterFolderRecordsInterface;
@@ -88,6 +90,7 @@ final class FilesRegistrar
         ChunkMapperInterface::class               => ChunkMapper::class,
         ChunkSourceReaderInterface::class         => ChunkMapper::class,
         ChunkStoreInterface::class                => ChunkMapper::class,
+        DetectionPatternsVersionInterface::class  => PatternSetVersion::class,
         DocumentProcessingHandlerInterface::class => DocumentProcessingHandler::class,
         FileAccountInterface::class               => FileOwnershipHandler::class,
         FileAuditHandlerInterface::class          => FileAuditHandler::class,

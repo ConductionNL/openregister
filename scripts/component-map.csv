@@ -4584,3 +4584,5 @@ Service/Party/PartyParent.php,,Service,,,,,Processes
 Service/Lifecycle/LifecycleStatesKeeper.php,,Service,,,,,Processes
 Service/AcceptLanguageHeader.php,,Service,,,,,Core
 Controller/Support/VerwerkingsactiviteitenControllerServices.php,,Controller,,,,,Compliance
+Files/Service/File/PipelineStepImplementers.php,,Files,,,,,Files
+Files/Service/TextExtraction/PatternSet/PatternSetVersion.php,,Files,,,,,Files
