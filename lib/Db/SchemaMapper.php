@@ -1287,7 +1287,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	}//end checkBehaviourDeclarations()
 
 	/**
-	 * What the data of this schema means: quality, dedup, merge, party and retention; Compliance adds the archival check.
+	 * What the data of this schema means: quality, dedup, merge, party and retention; Compliance adds the archival check, Search the widgets.
 	 *
 	 * @param Schema $schema The schema being saved.
 	 *
@@ -1394,7 +1394,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	}//end behaviourSteps()
 
 	/**
-	 * What the data of this schema means: quality, dedup, merge, party and retention; Compliance adds the archival check.
+	 * What the data of this schema means: quality, dedup, merge, party and retention; Compliance adds the archival check, Search the widgets.
 	 *
 	 * @param Schema $schema The schema being saved.
 	 *
@@ -1410,7 +1410,6 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 			SchemaDeclarationOrder::HINGE => static fn () => $advisory->checkHinge(schema: $schema),
 			SchemaDeclarationOrder::SURVIVORSHIP => static fn () => $advisory->checkSurvivorship(schema: $schema),
 			SchemaDeclarationOrder::MERGE => static fn () => $advisory->checkMerge(schema: $schema),
-			SchemaDeclarationOrder::WIDGETS => static fn () => $records->checkWidgets(schema: $schema),
 			SchemaDeclarationOrder::SEARCH_RESULT => static fn () => $records->checkSearchResult(schema: $schema),
 		];
 	}//end dataSteps()
