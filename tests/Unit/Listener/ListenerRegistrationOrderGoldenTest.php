@@ -28,15 +28,16 @@ class ListenerRegistrationOrderGoldenTest extends TestCase {
 	/**
 	 * The number of event listener registrations.
 	 */
-	private const LISTENER_COUNT = 255;
+	private const LISTENER_COUNT = 256;
 
 	/**
 	 * The sha256 of every registration call, one `method|arg|arg...` line each, in order.
 	 *
-	 * Last changed when the NotifyPushBatchInterface alias moved to ListenerBootstrap; the
-	 * listener registrations themselves are unchanged.
+	 * Last changed when PersonalTokenGrantRevokedListener started listening to
+	 * TokenInvalidatedEvent (one registration), on top of the SearchDeclarationChecksListener
+	 * registration on SchemaDeclarationChecksEvent; every other registration is unchanged.
 	 */
-	private const SEQUENCE_SHA256 = '60fd798385e12567c27bdd5e40c332e1e6399796ef02abb4ef08a097f2e8eb7f';
+	private const SEQUENCE_SHA256 = '3870d142bb19f940676c6cc07b3c12a2c0c56084350f38e9b5d2ac529d3ed206';
 
 	/**
 	 * The registration calls, in call order, with every argument.

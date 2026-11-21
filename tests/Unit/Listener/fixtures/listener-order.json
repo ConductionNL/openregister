@@ -7,7 +7,8 @@
 		"OCA\\OpenRegister\\Listener\\ArchivalDeclarationChecksListener",
 		"OCA\\OpenRegister\\Listener\\HandoffDeclarationChecksListener",
 		"OCA\\OpenRegister\\Notifications\\Listener\\NotificationDeclarationCheckListener",
-		"OCA\\OpenRegister\\Mcp\\Listener\\McpDeclarationChecksListener"
+		"OCA\\OpenRegister\\Mcp\\Listener\\McpDeclarationChecksListener",
+		"OCA\\OpenRegister\\Search\\Listener\\SearchDeclarationChecksListener"
 	],
 	"OCA\\OpenRegister\\Event\\AgentCreatedEvent": [
 		"OCA\\OpenRegister\\Notifications\\Listener\\SystemEntityNotificationListener"
