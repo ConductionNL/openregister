@@ -25,10 +25,12 @@ namespace OCA\OpenRegister\Tests\Unit\Db\Schema;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Exception\ObjectSourceQueryRefusedException;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @covers \OCA\OpenRegister\Db\Schema
  */
 final class ObjectSourceQueryGuardOnSaveTest extends TestCase {
 
@@ -109,4 +111,41 @@ final class ObjectSourceQueryGuardOnSaveTest extends TestCase {
 
 		$this->assertSame('people', $schema->getObjectSource()['config']['table']);
 	}//end testATableSourceWithoutAQueryIsSaved()
+	public function testHydrateFailsOnARefusedQueryAndKeepsTheStoredConfiguration(): void {
+		// The create/update path (SchemaMapper -> Schema::hydrate) must not
+		// turn the refusal into a null configuration: the schema would lose
+		// its object source and read as an ordinary, writable one.
+		$schema = new Schema();
+		$schema->setConfiguration(['x-openregister-object-source' => ['provider' => 'dbal-source', 'config' => ['sourceId' => 4, 'table' => 'people']]]);
+
+		try {
+			$schema->hydrate(['configuration' => self::sourced('SELECT 1; DROP TABLE people')]);
+			$this->fail('hydrate() must refuse a query that is not a single read.');
+		} catch (ObjectSourceQueryRefusedException $e) {
+			$this->assertStringStartsWith('x-openregister-object-source.config.query was refused: ', $e->getMessage());
+		}
+
+		$this->assertSame('people', $schema->getObjectSource()['config']['table'], 'The stored source is left as it was.');
+		$this->assertArrayNotHasKey('query', $schema->getObjectSource()['config']);
+	}//end testHydrateFailsOnARefusedQueryAndKeepsTheStoredConfiguration()
+
+	public function testHydrateFromJsonTextAlsoFailsOnARefusedQuery(): void {
+		$this->expectException(ObjectSourceQueryRefusedException::class);
+
+		(new Schema())->hydrate(['configuration' => json_encode(self::sourced('UPDATE people SET name = 1'))]);
+	}//end testHydrateFromJsonTextAlsoFailsOnARefusedQuery()
+
+	public function testHydrateStillSavesAReadQuery(): void {
+		$query = 'SELECT id, name FROM people';
+		$schema = (new Schema())->hydrate(['configuration' => self::sourced($query)]);
+
+		$this->assertSame($query, $schema->getObjectSource()['config']['query']);
+	}//end testHydrateStillSavesAReadQuery()
+
+	public function testHydrateStillNullsAnUnreadableConfiguration(): void {
+		$schema = (new Schema())->hydrate(['configuration' => '{not json']);
+
+		$this->assertNull($schema->getConfiguration());
+	}//end testHydrateStillNullsAnUnreadableConfiguration()
+
 }//end class

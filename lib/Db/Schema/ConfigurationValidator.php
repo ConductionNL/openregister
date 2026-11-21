@@ -21,6 +21,7 @@ namespace OCA\OpenRegister\Db\Schema;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\CalendarDateKindException;
+use OCA\OpenRegister\Exception\ObjectSourceQueryRefusedException;
 use OCA\OpenRegister\Service\Dbal\ReadOnlyQueryGuard;
 
 /**
@@ -158,7 +159,7 @@ final class ConfigurationValidator {
 	 *
 	 * @param mixed $source The `x-openregister-object-source` value.
 	 *
-	 * @throws \InvalidArgumentException When the query is not a single read.
+	 * @throws ObjectSourceQueryRefusedException When the query is not a single read.
 	 *
 	 * @return void
 	 *
@@ -177,7 +178,7 @@ final class ConfigurationValidator {
 		try {
 			(new ReadOnlyQueryGuard())->assert(sql: $query, platform: 'mysql');
 		} catch (InvalidArgumentException $e) {
-			throw new InvalidArgumentException(
+			throw new ObjectSourceQueryRefusedException(
 				sprintf('%s.config.query was refused: %s', self::OBJECT_SOURCE_ANNOTATION, $e->getMessage()),
 				0,
 				$e
