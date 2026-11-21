@@ -42,7 +42,7 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
-use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\ArchivalSettingsInterface;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\Notification\IManager as INotificationManager;
@@ -169,7 +169,7 @@ final class DestructionListRun {
 		private readonly LoggerInterface $logger,
 	) {
 		$this->retentionService     = $container->get(RetentionServiceInterface::class);
-		$settingsHandler            = $container->get(ArchivalSettingsReaderInterface::class);
+		$settingsHandler            = $container->get(ArchivalSettingsInterface::class);
 		$this->objectMapper         = $container->get(MagicMapperInterface::class);
 		$this->auditMapper          = $container->get(AuditTrailMapperInterface::class);
 		$this->deleteObject         = $container->get(DeleteObject::class);

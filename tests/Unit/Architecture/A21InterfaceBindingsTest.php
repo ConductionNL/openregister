@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarTasksInterface;
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolverInterface;
 use OCA\OpenRegister\Service\TaskService;
@@ -114,8 +115,8 @@ final class A21InterfaceBindingsTest extends TestCase {
 		$class = self::BINDINGS[$contract];
 		$this->assertTrue(interface_exists($contract), $contract . ' exists');
 		$this->assertContains($contract, class_implements($class), $class . ' implements ' . $contract);
-		$this->assertArrayHasKey($contract, ContractBindings::BINDINGS);
-		$this->assertSame($class, ContractBindings::BINDINGS[$contract]);
+		$this->assertArrayHasKey($contract, (ContractBindings::BINDINGS + CoreServiceBindings::BINDINGS));
+		$this->assertSame($class, (ContractBindings::BINDINGS + CoreServiceBindings::BINDINGS)[$contract]);
 	}//end testTheInterfaceIsImplementedAndBound()
 
 	/**

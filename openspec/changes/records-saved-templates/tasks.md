@@ -9,7 +9,8 @@
 
 ## 2. Interface
 
-- [ ] 2.1 "Save as template" on the record menu with the field picker. Verify: `tests/e2e/record-templates.spec.ts` saves a template from a melding.
+- [x] 2.1 "Save as template" on the record menu with the field picker. Verify: `tests/e2e/record-templates.spec.ts` saves a template from a melding.
+  - built (third pass): "Save as template" on the objects list row and card menus (`src/views/search/SearchIndex.vue`) opens `src/modals/object/SaveRecordTemplate.vue`: the record's fields with a value, identity, dates, relations and files unticked (`templateFieldChoices()` / `belongsToOneRecord()` in `src/services/recordTemplates.js`, design D-3), a name, a description, and only me, one group (`read` share) or everyone; saved through `POST /api/record-templates`, which checks the create right. Unit tests: `src/services/recordTemplates.spec.js` and `src/modals/object/SaveRecordTemplate.spec.js`. Strings in en, nl and de. Open: the e2e (live pass).
 - [x] 2.2 "Start from a template" in the create dialog, dropping values that no longer fit and saying which. Verify: same e2e creates a melding from the template and a unit test covers the dropped value.
   - built (second pass): `src/components/object/RecordTemplatePicker.vue` on the create dialog (`ViewObject.vue`, new records only) lists the templates of the register and schema (`GET /api/record-templates`, reach and create right applied by the server) and applies one through `applyTemplate()` in `src/services/recordTemplates.js`: a value whose property is gone or whose type no longer matches is dropped and named in a warning; the rest seeds a blank record, saved through the normal save. Unit tests: `src/services/recordTemplates.spec.js` (the dropped value) and `src/components/object/RecordTemplatePicker.spec.js`. Strings in en, nl and de. Open: the e2e (live pass).
 - [ ] 2.3 nextcloud-vue create form template picker so leaf apps get it. Verify: component test in nextcloud-vue.

@@ -34,10 +34,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\GitHubIssueDraft;
 use OCA\OpenRegister\Controller\Support\GitHubIssueListing;
 use OCA\OpenRegister\Controller\Support\GitHubIssuesControllerServices;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
 use OCA\OpenRegister\Service\Configuration\GitHubGuardsInterface;
 use OCA\OpenRegister\Service\Configuration\GitHubRequestValidatorInterface;
@@ -123,7 +123,7 @@ class GitHubIssuesController extends Controller {
 		IRequest $request,
 		GitHubIssuesControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->services = $services;
 		$this->guards = $services->domain->guards;
 		$this->validator = $services->domain->validator;

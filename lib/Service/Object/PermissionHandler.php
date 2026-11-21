@@ -31,13 +31,19 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Service\Rbac\ReadRuleTenancy;
-use OCA\OpenRegister\Service\ObjectAction\ElevatedWrite;
+use OCA\OpenRegister\Service\Rbac\ClassificationCaller;
+use OCA\OpenRegister\Service\Rbac\ClassificationReadGate;
+use OCA\OpenRegister\Service\Rbac\ClassificationScale;
+use OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation;
+use OCA\OpenRegister\Service\Rbac\ClearanceResolver;
+use OCA\OpenRegister\Service\Rbac\ObjectClassification;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\Schema\DeclaredActions;
 use OCP\IUser;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ActionEvaluatedEvent;
@@ -50,7 +56,6 @@ use OCA\OpenRegister\Service\Object\Permission\PermissionCallerServices;
 use OCA\OpenRegister\Service\Object\Permission\PermissionDataServices;
 use OCA\OpenRegister\Service\Object\Permission\PermissionGrantServices;
 use OCA\OpenRegister\Service\Object\Permission\PermissionRuleServices;
-use OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope;
 use OCA\OpenRegister\Service\OrganisationContext;
 use OCA\OpenRegister\Service\Rbac\DenyQuestion;
 use OCA\OpenRegister\Service\Rbac\GrantLookup;
@@ -621,9 +626,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * @param bool          $verdict The person's own verdict.
 	 * @param PermissionAsk $ask     The question, with the schema, register and verb written to.
 	 *
-	 * @return bool The verdict after elevation.
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectActionElevationScope is the request-scoped frame the run opened.
+	 * @return bool The verdict after elevation; without an elevation port the person's own verdict stands.
 	 *
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/declared-actions/spec.md#requirement-elevation-is-declared-scoped-and-attributed
 	 */
@@ -632,9 +635,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 			return $verdict;
 		}
 
-		return ObjectActionElevationScope::permits(
-			write: new ElevatedWrite(schemaId: $ask->schema->getId(), registerId: $ask->register, verb: $ask->action)
-		);
+		return ($this->rules->writeElevation?->permits(ask: $ask) ?? false);
 	}//end elevated()
 
 	/**
@@ -909,11 +910,51 @@ class PermissionHandler implements PermissionHandlerInterface {
 			return false;
 		}
 
+		if ($this->classificationRefuses(ask: $ask) === true) {
+			$this->lastRefusalFinal = true;
+			return false;
+		}
+
 		$verdict = $this->grantVerdict(check: $check);
 		$this->lastRefusalFinal = false;
 
 		return $verdict;
 	}//end evaluatePermission()
+
+	/**
+	 * Whether the schema's classification block refuses this caller this object.
+	 *
+	 * Checked before any grant, so neither a schema rule, a per-object grant nor
+	 * an elevation re-opens it (the refusal is final). Only an ask about one
+	 * object is checked; the list path compiles the same comparison into its query.
+	 *
+	 * @param PermissionAsk $ask The question.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/classification-clearance-on-an-object/specs/classification-clearance/spec.md#requirement-read-above-a-callers-clearance-is-refused-on-both-layers
+	 */
+	private function classificationRefuses(PermissionAsk $ask): bool {
+		if ($ask->object === null
+			|| is_array((new SchemaAnnotation(schema: $ask->schema, key: ClassificationScale::ANNOTATION))->value()) === false
+		) {
+			return false;
+		}
+
+		$userId = $this->callerId(userId: $ask->userId);
+		$logger = $this->data->logger;
+		$gate   = new ClassificationReadGate(
+			classification: new ObjectClassification(logger: $logger),
+			clearances: new ClearanceResolver(logger: $logger),
+			logger: $logger
+		);
+
+		return $gate->refusal(
+			schema: $ask->schema,
+			object: $ask->object,
+			caller: new ClassificationCaller(userId: $userId, groups: $this->groupsOf(userId: $userId), action: $ask->action)
+		) !== null;
+	}//end classificationRefuses()
 
 	/**
 	 * The chain after the deny pass: the private scope, the caller, the administrator bypass, derived groups, custom verbs and the grants.
@@ -2967,7 +3008,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 		}
 
 		try {
-			$compiler = new DepartmentMatrixCompiler(declaredActions: $schema->declaredActionNames());
+			$compiler = new DepartmentMatrixCompiler(declaredActions: (new DeclaredActions())->names(configuration: $schema->getConfiguration()));
 			$compiled = $this->compiledMatrixRules(compiler: $compiler, matrix: $this->matrixRowsFromApps()->withAppRows(schema: $schema, matrix: $matrix));
 			return $compiler->merge(authorization: $authorization, compiled: $compiled);
 		} catch (\Throwable $e) {
@@ -3035,7 +3076,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 			return ['values' => [], 'scopes' => []];
 		}
 
-		$compiler = new DepartmentMatrixCompiler(declaredActions: $schema->declaredActionNames());
+		$compiler = new DepartmentMatrixCompiler(declaredActions: (new DeclaredActions())->names(configuration: $schema->getConfiguration()));
 		$matrix = $this->matrixRowsFromApps()->withAppRows(schema: $schema, matrix: $matrix);
 		$values = $this->matrixOwnValues(compiler: $compiler, matrix: $matrix, userId: $user->getUID());
 

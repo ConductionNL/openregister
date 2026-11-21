@@ -33,13 +33,13 @@ use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ReadHistoryInterface;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper\MagicListRequest;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\Interaction\ReadHistoryService;
 use OCP\AppFramework\Db\DoesNotExistException;
 
 /**
@@ -63,7 +63,7 @@ class GetObject
      *
      * @param MagicObjectFinderInterface $objectMapper     Object entity data mapper.
      * @param AuditTrailMapperInterface  $auditTrailMapper Audit trail mapper for logs.
-     * @param ReadHistoryService         $readHistory      The one read registration (audit trail and AVG log).
+     * @param ReadHistoryInterface       $readHistory      The one read registration (audit trail and AVG log).
      * @param GetObjectSources           $sources          Object-source registry and the logger for its warnings.
      *
      * @spec openspec/specs/object-lifecycle/spec.md
@@ -71,7 +71,7 @@ class GetObject
     public function __construct(
         private readonly MagicObjectFinderInterface $objectMapper,
         private readonly AuditTrailMapperInterface $auditTrailMapper,
-        private readonly ReadHistoryService $readHistory,
+        private readonly ReadHistoryInterface $readHistory,
         private readonly GetObjectSources $sources
     ) {
     }//end __construct()
