@@ -53,9 +53,9 @@ deptrac:
             - type: directory
               value: 'lib/Dto/DeletionEffects[.]php$'
             - type: directory
-              value: 'lib/Event/(AbstractAgentEvent|AbstractApplicationEvent|AbstractConfigurationEvent|AbstractConversationEvent|AbstractObjectEntityEvent|AbstractObjectFileEvent|AbstractPersonLinkEvent|AbstractPreWriteObjectEvent|AbstractRegisterEvent|AbstractSchemaEvent|AbstractSourceEvent|AbstractTaskEvent|AbstractViewEvent|AgentCreatedEvent|AgentDeletedEvent|AgentUpdatedEvent|AppWebhookEvents|ApplicationCreatedEvent|ApplicationDeletedEvent|ApplicationUpdatedEvent|ConfigurationCreatedEvent|ConfigurationDeletedEvent|ConfigurationUpdatedEvent|ConversationCreatedEvent|ConversationDeletedEvent|ConversationUpdatedEvent|CredentialRelinkRequiredEvent|DeepLinkCollectorInterface|DeepLinkRegistrationEvent|DraftCreatedEvent|DraftDeletedEvent|DraftUpdatedEvent|FileCopiedEvent|FileLockedEvent|FileMovedEvent|FileRenamedEvent|FileRestrictionAdmitEvent|FileUnlockedEvent|FileVersionRestoredEvent|FlowRunTerminalEvent|HandoffExecutedEvent|HandoffExecutedSource|HandoffExecutedTarget|ObjectCreatedEvent|ObjectCreatingEvent|ObjectDeletedEvent|ObjectDeletingEvent|ObjectLockedEvent|ObjectNoteAddedEvent|ObjectRevertedEvent|ObjectTransitionedEvent|ObjectUnlockedEvent|ObjectUpdatedEvent|ObjectUpdatingEvent|ObjectsMergedEvent|PermissionVerb|PermissionsDeclaringEvent|PersonLinkUpdatedEvent|PersonLinkedEvent|PersonUnlinkedEvent|RegisterCreatedEvent|RegisterDeletedEvent|RegisterUpdatedEvent|SchemaCreatedEvent|SchemaDeletedEvent|SchemaUpdatedEvent|SourceCreatedEvent|SourceDeletedEvent|SourceUpdatedEvent|TaskTerminalEvent|ViewAlertCrossedEvent|ViewCreatedEvent|ViewDeletedEvent|ViewUpdatedEvent|WriteVetoState)[.]php$'
+              value: 'lib/Event/(AbstractAgentEvent|AbstractApplicationEvent|AbstractConfigurationEvent|AbstractConversationEvent|AbstractObjectEntityEvent|AbstractPreWriteObjectEvent|AbstractRegisterEvent|AbstractSchemaEvent|AbstractSourceEvent|AbstractTaskEvent|AbstractViewEvent|AgentCreatedEvent|AgentDeletedEvent|AgentUpdatedEvent|AppWebhookEvents|ApplicationCreatedEvent|ApplicationDeletedEvent|ApplicationUpdatedEvent|ConfigurationCreatedEvent|ConfigurationDeletedEvent|ConfigurationUpdatedEvent|ConversationCreatedEvent|ConversationDeletedEvent|ConversationUpdatedEvent|DeepLinkCollectorInterface|DraftCreatedEvent|DraftDeletedEvent|DraftUpdatedEvent|FlowRunTerminalEvent|ObjectCreatedEvent|ObjectCreatingEvent|ObjectDeletedEvent|ObjectDeletingEvent|ObjectLockedEvent|ObjectRevertedEvent|ObjectTransitionedEvent|ObjectUnlockedEvent|ObjectUpdatedEvent|ObjectUpdatingEvent|ObjectsMergedEvent|PermissionVerb|PermissionsDeclaringEvent|RegisterCreatedEvent|RegisterDeletedEvent|RegisterUpdatedEvent|SchemaCreatedEvent|SchemaDeletedEvent|SchemaUpdatedEvent|SourceCreatedEvent|SourceDeletedEvent|SourceUpdatedEvent|TaskTerminalEvent|ViewAlertCrossedEvent|ViewCreatedEvent|ViewDeletedEvent|ViewUpdatedEvent|WriteVetoState)[.]php$'
             - type: directory
-              value: 'lib/Exception/(AnalyzeRequestRejectedException|ArchivalImmutableException|AuthenticationException|AuthorizationUnresolvableException|BuiltinPackSlugLockedException|CalendarDateKindException|ChunkMatcherException|ConditionGroupException|ConfidenceThresholdOutOfRangeException|ConsistencyCheckWouldWriteException|CorrectionRefusedException|CustomValidationException|DatabaseErrorChain|DecisionConflictException|DraftAlreadyLeftException|DuplicateBlockedException|EmlParseException|EncryptedFieldFilterException|ExplicitRevealQueryException|ExportTooLargeException|FlowRunRefused|FolderAccessDeniedException|HandoffException|HookStoppedException|InvalidNoteParentException|InvalidPackDefinitionException|InvalidViewAlertException|JobRunRefusedException|LockedException|ManualEntityException|MergeDecisionException|MergeNotFullyReadableException|MigrationPackRefusedException|MigrationPackRequestException|NoVtodoCalendarException|NotAuthorizedException|NotImplementedException|NoteEditForbiddenException|NoteLockedException|NoteWriteRefusedException|ObjectExistsException|ObjectFileAccessDeniedException|ObjectFolderConflictException|ObjectStateMarker|ObjectStateWriteException|OfficeOpenRefusedException|OfficeServerRequiredException|PackChangedException|PackSlugExistsException|PdfAnonymisationException|PropertyAlreadySetException|ProviderUnavailableException|RecordTemplateRefused|ReferentialIntegrityException|RegisterNotFoundException|RelatedRowFilterNotSupportedException|RepairRefusedException|RuleRefusedException|SanitizationException|SchemaNotInRegisterException|TaskAccessDeniedException|TaskConflictException|TaskValidationException|UniqueHintException|UnknownMaskFormException|UnknownMetadataFieldException|UnknownPatternSetException|ValidationException)[.]php$'
+              value: 'lib/Exception/(AnalyzeRequestRejectedException|ArchivalImmutableException|AuthorizationUnresolvableException|CalendarDateKindException|ConditionGroupException|ConfidenceThresholdOutOfRangeException|CorrectionRefusedException|CustomValidationException|DatabaseErrorChain|DecisionConflictException|DraftAlreadyLeftException|DuplicateBlockedException|EncryptedFieldFilterException|ExplicitRevealQueryException|ExportTooLargeException|FlowRunRefused|FolderAccessDeniedException|HandoffException|HookStoppedException|InvalidNoteParentException|InvalidViewAlertException|LockedException|MergeDecisionException|MergeNotFullyReadableException|NoVtodoCalendarException|NotAuthorizedException|NotImplementedException|NoteEditForbiddenException|NoteLockedException|NoteWriteRefusedException|ObjectExistsException|ObjectStateMarker|ObjectStateWriteException|OfficeServerRequiredException|PropertyAlreadySetException|ReferentialIntegrityException|RegisterNotFoundException|RelatedRowFilterNotSupportedException|RuleRefusedException|SchemaNotInRegisterException|TaskAccessDeniedException|TaskConflictException|TaskValidationException|UniqueHintException|UnknownMaskFormException|UnknownMetadataFieldException|UnknownPatternSetException|ValidationException)[.]php$'
             - type: directory
               value: 'lib/Formats/[^/]*$'
             - type: directory
@@ -64,10 +64,6 @@ deptrac:
               value: 'lib/Lifecycle/GuardResult[.]php$'
             - type: directory
               value: 'lib/Lifecycle/LifecycleGuardInterface[.]php$'
-            - type: directory
-              value: 'lib/Service/Handoff/HandoffRequest[.]php$'
-            - type: directory
-              value: 'lib/Service/Handoff/HandoffSourceRef[.]php$'
             - type: directory
               value: 'lib/Service/Lifecycle/TransitionActor[.]php$'
             - type: directory
@@ -3402,6 +3398,8 @@ deptrac:
         - type: directory
           value: 'lib/Db/JobRun/[^/]*$'
         - type: directory
+          value: 'lib/Exception/(BuiltinPackSlugLockedException|ConsistencyCheckWouldWriteException|InvalidPackDefinitionException|JobRunRefusedException|MigrationPackRefusedException|MigrationPackRequestException|PackChangedException|PackSlugExistsException|RecordTemplateRefused|RepairRefusedException)[.]php$'
+        - type: directory
           value: 'lib/Listener/(RedactionPolicyCacheListener|ReferenceCardDeclarationCheckListener|ShareableConfigTypeRegistrationListener)[.]php$'
         - type: directory
           value: 'lib/Listener/Registrar/ConfigurationListenerRegistrar[.]php$'
@@ -4316,7 +4314,9 @@ deptrac:
         - type: directory
           value: 'lib/Db/WebhookLog/[^/]*$'
         - type: directory
-          value: 'lib/Event/(RegisterLeafProvidersEvent|ToolRegistrationEvent)[.]php$'
+          value: 'lib/Event/(AbstractPersonLinkEvent|CredentialRelinkRequiredEvent|DeepLinkRegistrationEvent|HandoffExecutedEvent|HandoffExecutedSource|HandoffExecutedTarget|PersonLinkUpdatedEvent|PersonLinkedEvent|PersonUnlinkedEvent|RegisterLeafProvidersEvent|ToolRegistrationEvent)[.]php$'
+        - type: directory
+          value: 'lib/Exception/(AuthenticationException|ProviderUnavailableException)[.]php$'
         - type: directory
           value: 'lib/Federation/[^/]*$'
         - type: directory
@@ -4446,49 +4446,7 @@ deptrac:
         - type: directory
           value: 'lib/Service/Federation/RemoteShareNotification[.]php$'
         - type: directory
-          value: 'lib/Service/Handoff/HandoffAnnotationEntry[.]php$'
-        - type: directory
-          value: 'lib/Service/Handoff/HandoffAnnotationValidator[.]php$'
-        - type: directory
-          value: 'lib/Service/Handoff/HandoffAnnotationValidatorInterface[.]php$'
-        - type: directory
-          value: 'lib/Service/Handoff/HandoffContractBindingValidator[.]php$'
-        - type: directory
-          value: 'lib/Service/Handoff/HandoffContractBindingValidatorInterface[.]php$'
-        - type: directory
-          value: 'lib/Service/Handoff/HandoffKindBinding[.]php$'
-        - type: directory
-          value: 'lib/Service/Handoff/HandoffKindContract[.]php$'
-        - type: directory
-          value: 'lib/Service/Handoff/HandoffKindContracts[.]php$'
-        - type: directory
-          value: 'lib/Service/Handoff/HandoffLedger[.]php$'
-        - type: directory
-          value: 'lib/Service/Handoff/HandoffMappingChecks[.]php$'
-        - type: directory
-          value: 'lib/Service/Handoff/HandoffMappingEvaluator[.]php$'
-        - type: directory
-          value: 'lib/Service/Handoff/HandoffMappingSource[.]php$'
-        - type: directory
-          value: 'lib/Service/Handoff/HandoffObjectAccess[.]php$'
-        - type: directory
-          value: 'lib/Service/Handoff/HandoffPlan[.]php$'
-        - type: directory
-          value: 'lib/Service/Handoff/HandoffProviders[.]php$'
-        - type: directory
-          value: 'lib/Service/Handoff/HandoffRequesters[.]php$'
-        - type: directory
-          value: 'lib/Service/Handoff/HandoffRun[.]php$'
-        - type: directory
-          value: 'lib/Service/Handoff/HandoffService[.]php$'
-        - type: directory
-          value: 'lib/Service/Handoff/HandoffServiceInterface[.]php$'
-        - type: directory
-          value: 'lib/Service/Handoff/HandoffSourceRestore[.]php$'
-        - type: directory
-          value: 'lib/Service/Handoff/HandoffSuccessUpdateChecks[.]php$'
-        - type: directory
-          value: 'lib/Service/Handoff/HandoffTarget[.]php$'
+          value: 'lib/Service/Handoff/[^/]*$'
         - type: directory
           value: 'lib/Service/Integration/[^/]*$'
         - type: directory
@@ -4525,6 +4483,10 @@ deptrac:
           value: 'lib/Controller/(FileDisclosuresController)[.]php$'
         - type: directory
           value: 'lib/Db/(DecisionMetadataChange|EntityRelationMapper|FileDigest|FileDigestMapper|FilesMapperBindings|FilesMapperRegistrar)[.]php$'
+        - type: directory
+          value: 'lib/Event/(AbstractObjectFileEvent|FileCopiedEvent|FileLockedEvent|FileMovedEvent|FileRenamedEvent|FileRestrictionAdmitEvent|FileUnlockedEvent|FileVersionRestoredEvent|ObjectNoteAddedEvent)[.]php$'
+        - type: directory
+          value: 'lib/Exception/(ChunkMatcherException|EmlParseException|ManualEntityException|ObjectFileAccessDeniedException|ObjectFolderConflictException|OfficeOpenRefusedException|PdfAnonymisationException|SanitizationException)[.]php$'
         - type: directory
           value: 'lib/Files/[^/]*$'
         - type: directory
