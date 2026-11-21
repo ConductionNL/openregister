@@ -1261,7 +1261,7 @@ class ObjectsControllerIntegrationTest extends TestCase {
 	/**
 	 * Test logs returns audit trail for an object
 	 *
-	 * The logs() method calls objectService->find() which may fail on test fixtures
+	 * The route (AuditTrailController::objectLogs()) calls objectService->find() which may fail on test fixtures
 	 * without magic tables. Either way, the controller code paths are exercised.
 	 *
 	 * @return void
@@ -1272,7 +1272,7 @@ class ObjectsControllerIntegrationTest extends TestCase {
 		$this->setupRequest();
 
 		try {
-			$result = $this->controller->logs(
+			$result = $this->resolveController(class: \OCA\OpenRegister\Controller\AuditTrailController::class)->objectLogs(
 				$obj->getUuid(),
 				$this->registerId(),
 				$this->schemaId(),
@@ -1302,7 +1302,7 @@ class ObjectsControllerIntegrationTest extends TestCase {
 		$this->setupRequest();
 
 		try {
-			$result = $this->controller->logs(
+			$result = $this->resolveController(class: \OCA\OpenRegister\Controller\AuditTrailController::class)->objectLogs(
 				Uuid::v4()->toRfc4122(),
 				$this->registerId(),
 				$this->schemaId(),
