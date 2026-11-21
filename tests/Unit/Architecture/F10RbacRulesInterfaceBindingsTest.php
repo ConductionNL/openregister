@@ -25,7 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
-use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\Rbac\AggregateVisibility;
 use OCA\OpenRegister\Service\Rbac\AggregateVisibilityInterface;
 use OCA\OpenRegister\Service\Rbac\CrossOrganisationMarkerChange;
@@ -60,8 +60,8 @@ final class F10RbacRulesInterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{class-string, class-string}>
 	 */
 	private const CLASSES = [
-		DefinitionWriteRights::class => [DefinitionWriteRightsInterface::class, ContractBindings::class],
-		GrantChangeAuditor::class => [GrantChangeAuditorInterface::class, ContractBindings::class],
+		DefinitionWriteRights::class => [DefinitionWriteRightsInterface::class, CoreServiceBindings::class],
+		GrantChangeAuditor::class => [GrantChangeAuditorInterface::class, CoreServiceBindings::class],
 	];
 
 	/**
