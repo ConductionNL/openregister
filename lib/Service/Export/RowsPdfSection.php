@@ -88,7 +88,7 @@ class RowsPdfSection {
 	}//end headerCells()
 
 	/**
-	 * One table row per data row, one truncated cell per column.
+	 * One table row per data row, one cell per column, truncated unless the table asks for whole cells.
 	 *
 	 * @param RowsTable                $table   The table.
 	 * @param array<int|string, mixed> $columns The column labels, keyed as the rows are.
@@ -101,7 +101,11 @@ class RowsPdfSection {
 			$html .= '<tr>';
 			foreach (array_keys($columns) as $key) {
 				$cell = $this->cellText(value: $this->cellOf(row: $row, key: $key));
-				$html .= '<td>' . htmlspecialchars($this->truncate(value: $cell), ENT_QUOTES, 'UTF-8') . '</td>';
+				if ($table->wholeCells === false) {
+					$cell = $this->truncate(value: $cell);
+				}
+
+				$html .= '<td>' . htmlspecialchars((string) $cell, ENT_QUOTES, 'UTF-8') . '</td>';
 			}
 
 			$html .= '</tr>';
