@@ -63,6 +63,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setNextRetryAt(?DateTime $nextRetryAt)
  * @method DateTime getCreated()
  * @method void setCreated(DateTime $created)
+ * @method int|null getDurationMs()
+ * @method void setDurationMs(?int $durationMs)
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
@@ -159,6 +161,13 @@ class WebhookLog extends Entity implements JsonSerializable {
 	 * @var DateTime
 	 */
 	protected DateTime $created;
+
+	/**
+	 * How long the delivery request took, in milliseconds; null for rows written before it was recorded
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $durationMs = null;
 
 	/**
 	 * Constructor

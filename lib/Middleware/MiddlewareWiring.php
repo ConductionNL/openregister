@@ -156,6 +156,13 @@ final class MiddlewareWiring {
 		// read and list responses (schema-breaking-change-notice).
 		$context->registerMiddleware(\OCA\OpenRegister\Middleware\SchemaChangeHeaderMiddleware::class);
 
+		// Counts, times and classifies each request for the request metrics
+		// (production-observability). Registered as the last app-scoped
+		// middleware: Nextcloud runs afterException in reverse order, so it
+		// sees an exception before any other middleware turns it into a
+		// response, and its afterController gets the response it became.
+		$context->registerMiddleware(RequestMetricsMiddleware::class);
+
 		// An anonymous caller gets no user ids in a record's `@self`. Global, because
 		// other apps answer public requests with OpenRegister's records too.
 		$context->registerMiddleware(AnonymousEnvelopeMiddleware::class, global: true);

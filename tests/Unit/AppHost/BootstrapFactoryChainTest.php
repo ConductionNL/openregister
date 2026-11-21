@@ -32,6 +32,7 @@ use OCA\OpenRegister\AppHost\Controller\GenericSettingsController;
 use OCA\OpenRegister\AppHost\Listener\GenericDeepLinkRegistrationListener;
 use OCA\OpenRegister\AppHost\Observability\HealthCheckExecutor;
 use OCA\OpenRegister\AppHost\Observability\ManifestLoader;
+use OCA\OpenRegister\AppHost\Observability\MetricsAccessGuard;
 use OCA\OpenRegister\AppHost\Observability\MetricsEngine;
 use OCA\OpenRegister\AppHost\Repair\GenericInitializeActions;
 use OCA\OpenRegister\AppHost\Repair\GenericInitializeSettings;
@@ -90,6 +91,7 @@ class BootstrapFactoryChainTest extends TestCase {
 		$map[ManifestLoader::class] = $this->createMock(ManifestLoader::class);
 		$map[HealthCheckExecutor::class] = $this->createMock(HealthCheckExecutor::class);
 		$map[MetricsEngine::class] = $this->createMock(MetricsEngine::class);
+		$map[MetricsAccessGuard::class] = $this->createMock(MetricsAccessGuard::class);
 
 		// The InitializeSettings factory injects the credential-broker app
 		// registry for the D-G manifest auto-onboarding hook

@@ -21,6 +21,7 @@ return array (
     'attempt' => 'integer',
     'nextRetryAt' => 'datetime',
     'created' => 'datetime',
+    'durationMs' => 'integer',
   ),
   'empty' => 
   array (
@@ -40,6 +41,7 @@ return array (
     'attempt' => 1,
     'nextRetryAt' => NULL,
     'created' => 'now',
+    'durationMs' => NULL,
   ),
   'filled' => 
   array (
@@ -59,6 +61,7 @@ return array (
     'attempt' => 7,
     'nextRetryAt' => '2026-01-02T03:04:05+00:00',
     'created' => '2026-01-02T03:04:05+00:00',
+    'durationMs' => 10,
   ),
   'filledUpdated' => 
   array (
@@ -76,6 +79,7 @@ return array (
     11 => 'attempt',
     12 => 'nextRetryAt',
     13 => 'created',
+    14 => 'durationMs',
   ),
   'refused' => 
   array (

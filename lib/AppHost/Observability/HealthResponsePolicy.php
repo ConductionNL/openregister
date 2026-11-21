@@ -37,10 +37,12 @@ final readonly class HealthResponsePolicy {
 	 *
 	 * @param string $statusCodePolicy adr006|always200.
 	 * @param bool $cors Emit CORS headers when true.
+	 * @param bool $upFollowsHealth The `up` gauge reports 0 unless health is "ok".
 	 */
 	public function __construct(
 		public string $statusCodePolicy = ObservabilityManifest::POLICY_ADR006,
 		public bool $cors = false,
+		public bool $upFollowsHealth = false,
 	) {
 	}//end __construct()
 }//end class

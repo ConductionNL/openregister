@@ -53,6 +53,16 @@ class ObservabilityManifestTest extends TestCase {
 		$this->assertTrue($m->cors);
 	}
 
+	public function testUpFollowsHealthIsOptIn(): void {
+		$on = ObservabilityManifest::fromManifest('myapp', ['observability' => ['health' => ['upFollowsHealth' => true]]]);
+		$off = ObservabilityManifest::fromManifest('myapp', ['observability' => ['health' => ['upFollowsHealth' => 'yes']]]);
+
+		$this->assertTrue($on->upFollowsHealth);
+		$this->assertFalse($off->upFollowsHealth);
+		$this->assertFalse(ObservabilityManifest::fromManifest('myapp', ['observability' => []])->upFollowsHealth);
+		$this->assertFalse(ObservabilityManifest::defaults('myapp', [])->upFollowsHealth);
+	}
+
 	public function testInvalidPolicyFallsBackToAdr006(): void {
 		$m = ObservabilityManifest::fromManifest('app', [
 			'observability' => ['health' => ['statusCodePolicy' => 'whatever', 'checks' => [['type' => 'database']]]],

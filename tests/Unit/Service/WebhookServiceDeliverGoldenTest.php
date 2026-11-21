@@ -146,6 +146,11 @@ class WebhookServiceDeliverGoldenTest extends TestCase {
 		$logMapper->method('insert')->willReturnCallback(function (WebhookLog $log): WebhookLog {
 			$row = $log->jsonSerialize();
 			unset($row['created']);
+			// The request duration is clock-bound: record only that a non-negative millisecond count was stamped.
+			if (is_int($row['durationMs']) === true && $row['durationMs'] >= 0) {
+				$row['durationMs'] = '<ms>';
+			}
+
 			$row['payloadRaw'] = $log->getPayload();
 			$this->calls[] = ['webhookLogMapper.insert', $row];
 			return $log;

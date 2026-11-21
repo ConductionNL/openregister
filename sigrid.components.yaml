@@ -51,7 +51,7 @@ components:
   - name: Core
     include:
       - ".*/lib/Kernel/Contracts/Core/.*"
-      - ".*/lib/BackgroundJob/(AbstractRetentionJob|ActorForwardedJob|ConfiguredJobRuntime|DbalIntrospectionJob|DeferredObjectEventJob|DraftExpiryJob|GroupReconcilerJob|JobHandles|JobRuntime|ObjectCleanupJob|RecordedJobRuntime|RecordedQueuedJob|RecordsItsRuns|SchemaChangeNoticeJob|SchemaRunJob|StateHistoryRebuildJob|TenantDeprovisionJob|TenantPurgeJob|TenantUsageSyncJob)[.]php"
+      - ".*/lib/BackgroundJob/(AbstractRetentionJob|ActorForwardedJob|ConfiguredJobRuntime|DbalIntrospectionJob|DeferredObjectEventJob|DraftExpiryJob|GroupReconcilerJob|JobHandles|JobRuntime|ObjectCleanupJob|RecordedJobRuntime|RecordedQueuedJob|RecordsItsRuns|RequestAlertJob|SchemaChangeNoticeJob|SchemaRunJob|StateHistoryRebuildJob|TenantDeprovisionJob|TenantPurgeJob|TenantUsageSyncJob)[.]php"
       - ".*/lib/BackgroundJob/Support/ActorForwardingServices[.]php"
       - ".*/lib/BackgroundJob/Support/DeferredObjectEventActor[.]php"
       - ".*/lib/BackgroundJob/Support/DeferredObjectEventLookup[.]php"

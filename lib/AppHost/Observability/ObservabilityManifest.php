@@ -85,6 +85,16 @@ final class ObservabilityManifest {
 	public readonly bool $cors;
 
 	/**
+	 * Whether the implicit `{app}_up` gauge reports 0 when health is not "ok".
+	 *
+	 * Opt-in through `observability.health.upFollowsHealth: true`; without it
+	 * `up` stays a constant 1, as before.
+	 *
+	 * @var bool
+	 */
+	public readonly bool $upFollowsHealth;
+
+	/**
 	 * Validation diagnostics (block fell back to defaults).
 	 *
 	 * @var string[]
@@ -110,6 +120,7 @@ final class ObservabilityManifest {
 		$this->metrics          = $probes->metrics;
 		$this->statusCodePolicy = $response->statusCodePolicy;
 		$this->cors             = $response->cors;
+		$this->upFollowsHealth  = $response->upFollowsHealth;
 		$this->diagnostics      = $diagnostics;
 	}//end __construct()
 
@@ -147,7 +158,11 @@ final class ObservabilityManifest {
 		return new self(
 			appId: $appId,
 			probes: new ObservabilityProbes(checks: $checks, metrics: $metrics),
-			response: new HealthResponsePolicy(statusCodePolicy: $health['statusCodePolicy'], cors: $health['cors']),
+			response: new HealthResponsePolicy(
+				statusCodePolicy: $health['statusCodePolicy'],
+				cors: $health['cors'],
+				upFollowsHealth: $health['upFollowsHealth']
+			),
 			diagnostics: $diagnostics
 		);
 	}//end fromManifest()
@@ -158,10 +173,10 @@ final class ObservabilityManifest {
 	 * @param mixed    $health      The `observability.health` value.
 	 * @param string[] $diagnostics Diagnostics collected so far; appended to.
 	 *
-	 * @return array{statusCodePolicy: string, cors: bool, checks: HealthCheckDescriptor[], valid: bool}
+	 * @return array{statusCodePolicy: string, cors: bool, upFollowsHealth: bool, checks: HealthCheckDescriptor[], valid: bool}
 	 */
 	private static function parseHealth(mixed $health, array &$diagnostics): array {
-		$result = ['statusCodePolicy' => self::POLICY_ADR006, 'cors' => false, 'checks' => [], 'valid' => true];
+		$result = ['statusCodePolicy' => self::POLICY_ADR006, 'cors' => false, 'upFollowsHealth' => false, 'checks' => [], 'valid' => true];
 		if (is_array($health) === false) {
 			return $result;
 		}
@@ -171,6 +186,7 @@ final class ObservabilityManifest {
 			diagnostics: $diagnostics
 		);
 		$result['cors'] = ($health['cors'] ?? false) === true;
+		$result['upFollowsHealth'] = ($health['upFollowsHealth'] ?? false) === true;
 
 		return array_merge($result, self::parseChecks(rawChecks: ($health['checks'] ?? []), diagnostics: $diagnostics));
 	}//end parseHealth()

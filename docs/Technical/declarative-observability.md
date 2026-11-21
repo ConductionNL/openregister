@@ -33,6 +33,7 @@ the ADR-035 provider-alias discovery pattern for the escape hatch.
     "statusCodePolicy": "adr006",   // "adr006" (default): 503 when any critical check fails, 200 otherwise
                                      // "always200": always HTTP 200, status field carries ok|degraded|error
     "cors": false,                  // true adds Access-Control-Allow-* headers (reverse-proxy probe contract)
+    "upFollowsHealth": false,       // true: the implicit {app}_up gauge is 0 whenever health is not "ok"
     "checks": [
       { "id": "database",     "type": "database" },
       { "id": "filesystem",   "type": "filesystem", "severity": "degraded" },
@@ -118,8 +119,16 @@ the engine only ever emits aggregate counts — never row data.
 ## Engine-owned contract
 
 - The **health endpoint is public** (`#[PublicPage]` + `#[NoCSRFRequired]`); the
-  **metrics endpoint is admin-only**. Leaf apps cannot drift this through the
-  manifest.
+  **metrics endpoint is admin-only by default**. Leaf apps cannot drift this through the
+  manifest. An admin can let a Prometheus scraper in per app, without a Nextcloud
+  session, through two app config values read by `MetricsAccessGuard`:
+  - `metrics_api_token`: requests with `Authorization: Bearer <token>` equal to it are
+    served; any other bearer token gets 403 and is throttled.
+  - `metrics_allowed_ips`: comma-separated address ranges (e.g. `10.0.0.0/8,172.16.0.0/12`)
+    whose callers are served; other unauthenticated callers get 403.
+
+  For example `occ config:app:set <app> metrics_api_token --value=<random token>`. With
+  neither set, a non-admin session gets 403 and an anonymous caller 401.
 - The **exposition format** is Prometheus text 0.0.4 (`# HELP` / `# TYPE`,
   `{app}_` prefix sanitised, label escaping), `Content-Type:
   text/plain; version=0.0.4`.

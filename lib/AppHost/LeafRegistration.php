@@ -77,6 +77,7 @@ final class LeafRegistration {
 	private const OBSERVABILITY_MANIFEST_LOADER = 'OCA\\OpenRegister\\AppHost\\Observability\\ManifestLoader';
 	private const OBSERVABILITY_EXECUTOR = 'OCA\\OpenRegister\\AppHost\\Observability\\HealthCheckExecutor';
 	private const OBSERVABILITY_METRICS_ENGINE = 'OCA\\OpenRegister\\AppHost\\Observability\\MetricsEngine';
+	private const OBSERVABILITY_METRICS_ACCESS_GUARD = 'OCA\\OpenRegister\\AppHost\\Observability\\MetricsAccessGuard';
 
 	private const DEEPLINK_EVENT = 'OCA\\OpenRegister\\Event\\DeepLinkRegistrationEvent';
 
@@ -410,7 +411,8 @@ final class LeafRegistration {
 				appName: $appId,
 				request: $c->get('OCP\\IRequest'),
 				manifestLoader: $c->get(self::OBSERVABILITY_MANIFEST_LOADER),
-				engine: $c->get(self::OBSERVABILITY_METRICS_ENGINE)
+				engine: $c->get(self::OBSERVABILITY_METRICS_ENGINE),
+				accessGuard: $c->get(self::OBSERVABILITY_METRICS_ACCESS_GUARD)
 			);
 		};
 	}//end metricsControllerFactory()
