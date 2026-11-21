@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Dto;
 
 use OCA\OpenRegister\Dto\BulkSaveOutcome;
+use OCA\OpenRegister\Dto\BulkSaveOutcomes;
 use OCA\OpenRegister\Dto\StreamedRowCount;
 use OCA\OpenRegister\Service\Object\BatchOperationStatusInterface;
 use PHPUnit\Framework\TestCase;
@@ -57,12 +58,12 @@ class BulkSaveOutcomeStreamedBatchTest extends TestCase {
 	}//end testAccountedBatchAddsNoCollectiveFailure()
 
 	/**
-	 * The three-count signature answers the same as the row-count one.
+	 * The BulkSaveOutcomes factory answers the same as the named constructor.
 	 *
 	 * @return void
 	 */
 	public function testOldSignatureDelegates(): void {
-		$old = BulkSaveOutcome::fromBatchStatus(status: $this->statusWithOneFailure(), requestedCount: 5, accountedCount: 2);
+		$old = BulkSaveOutcomes::fromBatchStatus(status: $this->statusWithOneFailure(), rows: new StreamedRowCount(requested: 5, accounted: 2));
 		$new = BulkSaveOutcome::fromStreamedBatch(status: $this->statusWithOneFailure(), rows: new StreamedRowCount(requested: 5, accounted: 2));
 
 		$this->assertSame($new->failedCount, $old->failedCount);

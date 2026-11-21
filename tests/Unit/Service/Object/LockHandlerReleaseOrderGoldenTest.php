@@ -15,7 +15,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
-use OCA\OpenRegister\Service\Object\UnlockRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -26,9 +26,11 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\AdvisoryLockStore;
 use OCA\OpenRegister\Service\Object\LockAuthorization;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Object\LockHandler;
 use OCA\OpenRegister\Service\Object\LockStores;
 use OCA\OpenRegister\Service\Object\RunLockRegistry;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -74,12 +76,12 @@ final class LockHandlerReleaseOrderGoldenTest extends TestCase {
 	 */
 	private function handler(): LockHandler {
 		$audit = $this->createMock(AuditTrailMapper::class);
-		$audit->method('createAuditTrailEntry')->willReturnCallback(
+		$audit->method('writeObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
 			function (ObjectEntity $object, string $action, array $context): AuditTrail {
 				$this->events[] = 'entry:' . $action . ':' . json_encode($context);
 				return new AuditTrail();
 			}
-		);
+		));
 		$audit->method('createAuditTrail')->willReturnCallback(
 			function (?ObjectEntity $old=null, ?ObjectEntity $new=null, ?string $action='update'): AuditTrail {
 				$this->events[] = 'trail:' . $action . ':' . ($old?->getUuid()) . '>' . ($new?->getUuid());
@@ -111,7 +113,7 @@ final class LockHandlerReleaseOrderGoldenTest extends TestCase {
 		return new LockHandler(
 			new LockStores(magicMapper: $this->magic, auditTrailMapper: $audit, advisory: $advisory, runLocks: $runLocks),
 			$logger,
-			new LockAuthorization($this->session, $this->groups, $this->createMock(SchemaMapper::class))
+			new LockAuthorization($this->session, $this->groups, $this->createMock(SchemaMapper::class), $this->createMock(PermissionHandlerInterface::class))
 		);
 	}//end handler()
 

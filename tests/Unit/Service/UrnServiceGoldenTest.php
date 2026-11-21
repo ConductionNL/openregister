@@ -41,6 +41,11 @@ use Throwable;
 
 /**
  * @covers \OCA\OpenRegister\Service\UrnService
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
  */
 class UrnServiceGoldenTest extends TestCase {
 
@@ -103,7 +108,8 @@ class UrnServiceGoldenTest extends TestCase {
 			new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper(), schemas: $this->schemaMapper(), tables: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class)),
 			$this->urlGenerator($options['base']),
 			$this->appConfig($options['config']),
-			$this->logger()
+			$this->logger(),
+			$this->createMock(\OCA\OpenRegister\Db\AuditTrailMapperInterface::class)
 		);
 
 		$results = [];

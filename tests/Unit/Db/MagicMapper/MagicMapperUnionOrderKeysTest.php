@@ -21,12 +21,15 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
+use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicSequentialOrder;
 use OCA\OpenRegister\Db\MagicMapper\MagicUnionOrder;
+use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use ReflectionMethod;
+use ReflectionProperty;
 
 /**
  * @covers \OCA\OpenRegister\Db\MagicMapper
@@ -40,6 +43,9 @@ use ReflectionMethod;
 class MagicMapperUnionOrderKeysTest extends TestCase {
 	private function call(string $method, array $args): mixed {
 		$mapper = (new ReflectionClass(MagicMapper::class))->newInstanceWithoutConstructor();
+		$db     = $this->createMock(IDBConnection::class);
+		$db->method('getDatabasePlatform')->willReturn($this->createMock(AbstractMySQLPlatform::class));
+		(new ReflectionProperty(MagicMapper::class, 'db'))->setValue($mapper, $db);
 
 		return (new ReflectionMethod(MagicMapper::class, $method))->invokeArgs($mapper, $args);
 	}//end call()
@@ -63,7 +69,10 @@ class MagicMapperUnionOrderKeysTest extends TestCase {
 	}//end testRelevanceWithoutASearchTermIsLeftOut()
 
 	public function testAnUnderscoreFieldStaysUnquoted(): void {
-		$this->assertSame(['row' => '_name', 'sql' => '_name', 'dir' => 'DESC'], $this->keys(['_order' => ['_name' => 'desc']])[0]);
+		// `_name` is text, so it orders lower-cased first (REQ-CIO-001); both keys keep the column unquoted.
+		$keys = $this->keys(['_order' => ['_name' => 'desc']]);
+		$this->assertSame(['row' => '_name', 'sql' => 'LOWER(CAST(_name AS TEXT))', 'dir' => 'DESC', 'fold' => true], $keys[0]);
+		$this->assertSame(['row' => '_name', 'sql' => '_name', 'dir' => 'DESC'], $keys[1]);
 	}//end testAnUnderscoreFieldStaysUnquoted()
 
 	public function testAPropertyFieldIsQuotedOnItsColumn(): void {
@@ -145,7 +154,7 @@ class MagicMapperUnionOrderKeysTest extends TestCase {
 	public function testAMissingColumnSortsBeforeAZero(): void {
 		$rows = [['_uuid' => 'a', 'rank' => 0], ['_uuid' => 'b']];
 
-		$merged = $this->call('mergeUnionBatchRows', ['rows' => $rows, 'query' => ['_order' => ['rank' => 'ASC']], 'isPostgres' => false]);
+		$merged = $this->call('mergeUnionBatchRows', ['rows' => $rows, 'query' => ['_order' => ['rank' => 'ASC']]]);
 
 		$this->assertSame(['b', 'a'], array_column($merged, '_uuid'));
 	}//end testAMissingColumnSortsBeforeAZero()

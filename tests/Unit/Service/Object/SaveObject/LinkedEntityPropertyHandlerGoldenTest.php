@@ -27,6 +27,9 @@ use Psr\Log\LoggerInterface;
  * Pins which ids land in which metadata column, their order, merging and the debug log.
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityIds
  */
 class LinkedEntityPropertyHandlerGoldenTest extends TestCase {
 
@@ -45,7 +48,8 @@ class LinkedEntityPropertyHandlerGoldenTest extends TestCase {
 		$schema->setProperties($properties);
 		$object ??= new ObjectEntity();
 		$handler = new LinkedEntityPropertyHandler($logger ?? $this->createMock(LoggerInterface::class));
-		$result = $handler->extractAndPopulate($object, $schema, $data);
+		$object->setObject($data);
+		$result = $handler->extractAndPopulate($object, $schema);
 		$this->assertSame($object, $result);
 
 		return $result;

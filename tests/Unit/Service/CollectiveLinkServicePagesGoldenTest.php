@@ -31,6 +31,7 @@ use RuntimeException;
  *
  * @covers \OCA\OpenRegister\Service\CollectiveLinkService
  * @uses   \OCA\OpenRegister\Service\PageSearch
+ * @uses \OCA\OpenRegister\Service\LinkServiceRuntime
  */
 class CollectiveLinkServicePagesGoldenTest extends TestCase {
 

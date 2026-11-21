@@ -21,7 +21,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-reviewers-decision-is-changed-only-by-that-reviewer-or-a-supervisor-req-rod-001
+ * @spec openspec/specs/entity-relation-grondslagen/spec.md
  */
 
 declare(strict_types=1);
@@ -29,6 +29,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Decision;
 
 use OCA\OpenRegister\Db\Decision;
+use OCA\OpenRegister\Db\DecisionMetadataEdit;
 use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\DecisionConflictException;
@@ -38,7 +39,7 @@ use Throwable;
 /**
  * Applies a decision to a relation and records it as a decision object.
  *
- * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-reviewers-decision-is-changed-only-by-that-reviewer-or-a-supervisor-req-rod-001
+ * @spec openspec/specs/entity-relation-grondslagen/spec.md
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The decision flow meets the relation, its mapper, the decision
  * store, the policies and the ownership check; the conflict exception is the compare-and-swap's one extra collaborator.
@@ -92,7 +93,7 @@ class RelationDecisionService implements RelationDecisionServiceInterface {
 	 * @throws DecisionOwnedException When the decision belongs to someone else, its record is missing, or another reviewer decided first.
 	 * @throws CustomValidationException When the body is malformed.
 	 *
-	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-reviewers-decision-is-changed-only-by-that-reviewer-or-a-supervisor-req-rod-001
+	 * @spec openspec/specs/entity-relation-grondslagen/spec.md
 	 */
 	public function decide(EntityRelation $relation, array $body, IUser $actor): array {
 		$given      = $this->givenOf(body: $body);
@@ -136,7 +137,9 @@ class RelationDecisionService implements RelationDecisionServiceInterface {
 
 		$this->stores->db->beginTransaction();
 		try {
-			$run->relation = $this->stores->relationMapper->updateDecisionMetadata(relation: $run->relation, fields: $given->fields, actingUser: $run->actor);
+			$run->relation = $this->stores->relationMapper->updateDecisionMetadata(
+				edit: new DecisionMetadataEdit(relation: $run->relation, fields: $given->fields, actingUser: $run->actor)
+			);
 			// On a decided relation a change of verdict or grounds is always a new decision.
 			$changed = ($run->current !== null && $before !== [$run->relation->getBases(), $run->relation->getSkipAnonymization()]);
 			if ($changed === false && $this->isNewDecision(current: $run->current, given: $given) === false) {
@@ -207,13 +210,7 @@ class RelationDecisionService implements RelationDecisionServiceInterface {
 	 * @throws DecisionOwnedException When the decision belongs to someone else.
 	 */
 	private function assertMayChange(DecisionRun $run): void {
-		$owned = $run->current;
-		if ($owned === null && $run->linkedUuid !== null && $run->linkedUuid !== '') {
-			$owned = new Decision();
-			$owned->setUuid($run->linkedUuid);
-			$owned->setDecidedBy('');
-		}
-
+		$owned = self::ownedDecisionOf(run: $run);
 		if ($owned === null) {
 			return;
 		}
@@ -225,6 +222,30 @@ class RelationDecisionService implements RelationDecisionServiceInterface {
 			throw new DecisionOwnedException(refusal: $refusal);
 		}
 	}//end assertMayChange()
+
+	/**
+	 * The decision whose ownership the change must respect: the current one, else
+	 * a placeholder for the linked decision row (owned by nobody named), else none.
+	 *
+	 * @param DecisionRun $run The decide pass, before any write.
+	 *
+	 * @return Decision|null The owned decision.
+	 */
+	private static function ownedDecisionOf(DecisionRun $run): Decision|null {
+		if ($run->current !== null) {
+			return $run->current;
+		}
+
+		if ($run->linkedUuid === null || $run->linkedUuid === '') {
+			return null;
+		}
+
+		$owned = new Decision();
+		$owned->setUuid($run->linkedUuid);
+		$owned->setDecidedBy('');
+
+		return $owned;
+	}//end ownedDecisionOf()
 
 	/**
 	 * Whether a write that left the verdict and grounds as they were is still a decision worth recording.
@@ -272,7 +293,7 @@ class RelationDecisionService implements RelationDecisionServiceInterface {
 	 *
 	 * @throws CustomValidationException When the note is not a string.
 	 */
-	private function noteFrom(array $body): ?string {
+	private function noteFrom(array $body): string|null {
 		$note = ($body[self::NOTE_FIELD] ?? null);
 		if ($note !== null && is_string($note) === false) {
 			throw new CustomValidationException(

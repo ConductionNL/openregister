@@ -65,5 +65,11 @@ final class CapabilityRegistrar {
 
 		$context->registerCapability(UrnCapability::class);
 		$context->registerCapability(IntegrationsCapability::class);
+		// PlatformCapability — versions, limits, deep link patterns and the
+		// platform integrations, with a block per claiming app (platform-capability).
+		$context->registerCapability(PlatformCapability::class);
+		// SearchScopesCapability — the scopes the unified search provider
+		// accepts for the current user (content-search-index D-2).
+		$context->registerCapability(SearchScopesCapability::class);
 	}//end register()
 }//end class

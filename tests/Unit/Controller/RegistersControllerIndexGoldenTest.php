@@ -9,6 +9,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\RegistersController;
 use OCA\OpenRegister\Db\MagicMapper\StatisticsScope;
+use OCA\OpenRegister\Tests\Support\AuditStatisticsCalls;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\RegistersControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -62,6 +63,15 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\Rbac\ReadRuleTenancy
+ * @uses \OCA\OpenRegister\Controller\Support\RequestListPage
+ * @uses \OCA\OpenRegister\Db\AuditTrail\AuditStatisticsScope
+ * @uses \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses \OCA\OpenRegister\Db\Register\RegisterJson
+ * @uses \OCA\OpenRegister\Db\Register\RegisterSchemaIds
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Service\Serializer\RegisterExpansion
+ * @uses \OCA\OpenRegister\Service\Serializer\RegisterListExtension
+ * @uses \OCA\OpenRegister\Service\Serializer\SchemaObjectCounts
  */
 class RegistersControllerIndexGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/registers-index-golden.json';
@@ -136,10 +146,10 @@ class RegistersControllerIndexGoldenTest extends TestCase {
 			return ['total' => 1, 'size' => 2];
 		});
 		$auditTrailMapper = $this->createMock(AuditTrailMapper::class);
-		$auditTrailMapper->method('getStatistics')->willReturnCallback(function (...$args) {
+		$auditTrailMapper->method('statisticsTotals')->willReturnCallback(AuditStatisticsCalls::positional(function (...$args) {
 			$this->calls[] = ['auditTrailMapper.getStatistics' => $args];
 			return ['total' => 3];
-		});
+		}));
 
 		$groupManager = $this->createMock(IGroupManager::class);
 		$groupManager->method('isAdmin')->willReturn($case['admin'] ?? true);

@@ -34,10 +34,12 @@ use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\Rbac\GrantManageGuard;
 use OCA\OpenRegister\Service\Rbac\InheritedGrantLister;
 use OCA\OpenRegister\Service\Rbac\ObjectAuthorizationWriter;
+use OCA\OpenRegister\Service\Rbac\AuthorizationAssignment;
 use OCA\OpenRegister\Service\Rbac\ObjectGrantRecords;
 use OCA\OpenRegister\Service\Rbac\ObjectGrantResolver;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use OCA\OpenRegister\Service\Rbac\ObjectShareSurface;
+use OCA\OpenRegister\Service\Rbac\SharerFolderAccess;
 use OCA\OpenRegister\Service\Rbac\ObjectSharingContext;
 use OCA\OpenRegister\Service\Rbac\ObjectSharingService;
 use OCA\OpenRegister\Service\Rbac\OrganisationSpecialRights;
@@ -51,6 +53,28 @@ use Psr\Log\NullLogger;
 
 /**
  * @covers \OCA\OpenRegister\Service\Rbac\ObjectSharingService
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Rbac\AuthorizationAssignment
+ * @uses \OCA\OpenRegister\Service\Rbac\GrantManageGuard
+ * @uses \OCA\OpenRegister\Service\Rbac\ObjectGrantRecords
+ * @uses \OCA\OpenRegister\Service\Rbac\ObjectScopeResolver
+ * @uses \OCA\OpenRegister\Service\Rbac\ObjectShareSurface
+ * @uses \OCA\OpenRegister\Service\Rbac\ObjectSharingContext
+ * @uses \OCA\OpenRegister\Service\Rbac\ScopeChange
+ * @uses   \OCA\OpenRegister\Db\ObjectEntity
+ * @uses   \OCA\OpenRegister\Db\Register
+ * @uses   \OCA\OpenRegister\Db\RegisterSchema
+ * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses   \OCA\OpenRegister\Service\Rbac\AuthorizationAssignment
+ * @uses   \OCA\OpenRegister\Service\Rbac\GrantManageGuard
+ * @uses   \OCA\OpenRegister\Service\Rbac\ObjectGrantRecords
+ * @uses   \OCA\OpenRegister\Service\Rbac\ObjectScopeResolver
+ * @uses   \OCA\OpenRegister\Service\Rbac\ObjectShareSurface
+ * @uses   \OCA\OpenRegister\Service\Rbac\ObjectSharingContext
+ * @uses   \OCA\OpenRegister\Service\Rbac\ScopeChange
  */
 final class ObjectSharingServiceScopeGoldenTest extends TestCase {
 
@@ -101,8 +125,8 @@ final class ObjectSharingServiceScopeGoldenTest extends TestCase {
 		$writes = [];
 		$writer = $this->createMock(ObjectAuthorizationWriter::class);
 		$writer->method('writeAuthorizationBlock')->willReturnCallback(
-			function (Register $register, Schema $schema, string $objectUuid, array $block) use (&$writes): void {
-				$writes[] = [$register->getSlug(), $schema->getSlug(), $objectUuid, $block];
+			function (RegisterSchema $table, AuthorizationAssignment $assignment) use (&$writes): void {
+				$writes[] = [$table->register->getSlug(), $table->schema->getSlug(), $assignment->objectUuid, $assignment->block];
 			}
 		);
 
@@ -146,7 +170,7 @@ final class ObjectSharingServiceScopeGoldenTest extends TestCase {
 		$groups->method('getUserGroupIds')->willReturn($spec[1] ?? []);
 
 		return new ObjectSharingService(
-			shares: new ObjectShareSurface(folders: $this->createMock(FolderManagementHandler::class), shareManager: $this->createMock(IManager::class)),
+			shares: new ObjectShareSurface(folders: $this->createMock(FolderManagementHandler::class), shareManager: $this->createMock(IManager::class), sharerAccess: $this->createMock(SharerFolderAccess::class)),
 			records: new ObjectGrantRecords(authorizationWriter: $writer, scopeResolver: new ObjectScopeResolver(), grantResolver: $this->createMock(ObjectGrantResolver::class), inheritedGrants: $this->createMock(InheritedGrantLister::class)),
 			context: new ObjectSharingContext(userSession: $session, groupManager: $groups, logger: new NullLogger()),
 			grantManage: new GrantManageGuard(scopeResolver: new ObjectScopeResolver(), specialRights: $this->createMock(OrganisationSpecialRights::class))

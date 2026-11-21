@@ -26,10 +26,13 @@
 namespace OCA\OpenRegister\Service;
 
 use Exception;
+use OCA\OpenRegister\Db\CatalogueScope;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\EntityFolderInterface;
 use OCA\OpenRegister\Service\Serializer\RegisterExpansion;
+use OCA\OpenRegister\Service\Serializer\RegisterListExtension;
 use OCA\OpenRegister\Service\Serializer\RegisterSerializer;
 use OCP\Files\Node;
 use OCP\IDBConnection;
@@ -107,9 +110,9 @@ class RegisterService implements RegisterServiceInterface {
 	/**
 	 * File service for file operations.
 	 *
-	 * @var FileFolderServiceInterface
+	 * @var EntityFolderInterface
 	 */
-	private readonly FileFolderServiceInterface $fileService;
+	private readonly EntityFolderInterface $fileService;
 
 	/**
 	 * Applies `_extend` post-processing (`schemas`, `@self.stats`).
@@ -312,7 +315,7 @@ class RegisterService implements RegisterServiceInterface {
 	 * Companion to {@see findAll()} that returns serialized arrays with
 	 * `_extend` honored. When `schemas` + `@self.stats` are both
 	 * requested, per-register stats are pre-computed and handed to the
-	 * serializer via `serializeMany()`.
+	 * serializer via `serializePage()`.
 	 *
 	 * @param int|null $limit Maximum number of results.
 	 * @param int|null $offset Pagination offset.
@@ -350,7 +353,10 @@ class RegisterService implements RegisterServiceInterface {
 			_multitenancy: $_multitenancy
 		);
 
-		return $this->registerSerializer->serializeMany($registers, $_extend, $this->statsByRegisterId(registers: $registers, _extend: $_extend));
+		return $this->registerSerializer->serializePage(
+			registers: $registers,
+			extension: new RegisterListExtension(extend: $_extend, schemaStatsByRegisterId: $this->statsByRegisterId(registers: $registers, _extend: $_extend))
+		);
 	}//end findAllSerialized()
 
 	/**
@@ -878,7 +884,7 @@ class RegisterService implements RegisterServiceInterface {
 		$this->magicTableNames = [];
 
 		$sql  = 'SELECT table_name FROM information_schema.tables';
-		$sql .= ' WHERE table_name LIKE :pattern';
+		$sql .= ' WHERE table_name LIKE :pattern AND ' . (new CatalogueScope(db: $this->db))->condition();
 
 		$stmt = $this->db->prepare($sql);
 		$stmt->bindValue('pattern', '%openregister\_table\_%');

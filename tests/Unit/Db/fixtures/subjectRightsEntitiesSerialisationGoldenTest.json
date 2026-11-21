@@ -1,0 +1,117 @@
+{
+    "OCA\\OpenRegister\\Db\\ErasurePreview": {
+        "types": {
+            "id": "integer",
+            "uuid": "string",
+            "subject": "string",
+            "subjectType": "string",
+            "eraseMode": "string",
+            "requestId": "string",
+            "digest": "string",
+            "report": "json",
+            "outcome": "json",
+            "status": "string",
+            "createdBy": "string",
+            "approvedBy": "string",
+            "approvedAt": "datetime",
+            "consumedAt": "datetime",
+            "created": "datetime",
+            "updated": "datetime"
+        },
+        "empty": {
+            "id": null,
+            "uuid": null,
+            "subject": null,
+            "subjectType": null,
+            "eraseMode": null,
+            "requestId": null,
+            "digest": null,
+            "report": [],
+            "outcome": [],
+            "status": "pending",
+            "createdBy": null,
+            "approvedBy": null,
+            "approvedAt": null,
+            "consumedAt": null,
+            "created": null,
+            "updated": null
+        },
+        "filled": {
+            "id": 7,
+            "uuid": "s1",
+            "subject": "s2",
+            "subjectType": "s3",
+            "eraseMode": "s4",
+            "requestId": "s5",
+            "digest": "s6",
+            "report": {
+                "k7": "v7"
+            },
+            "outcome": {
+                "k8": "v8"
+            },
+            "status": "s9",
+            "createdBy": "s10",
+            "approvedBy": "s11",
+            "approvedAt": "2026-04-12T02:04:05+00:00",
+            "consumedAt": "2026-05-13T03:04:05+01:00",
+            "created": "2026-06-14T04:04:05+02:00",
+            "updated": "2026-07-15T05:04:05+00:00"
+        }
+    },
+    "OCA\\OpenRegister\\Db\\SubjectExport": {
+        "types": {
+            "id": "integer",
+            "uuid": "string",
+            "subject": "string",
+            "subjectType": "string",
+            "status": "string",
+            "requestedBy": "string",
+            "requestId": "string",
+            "objectCount": "integer",
+            "contentHash": "string",
+            "error": "string",
+            "readyAt": "datetime",
+            "expiresAt": "datetime",
+            "deliveredAt": "datetime",
+            "created": "datetime",
+            "updated": "datetime"
+        },
+        "empty": {
+            "id": null,
+            "uuid": null,
+            "subject": null,
+            "subjectType": null,
+            "status": "pending",
+            "requestedBy": null,
+            "requestId": null,
+            "objectCount": 0,
+            "contentHash": null,
+            "error": null,
+            "readyAt": null,
+            "expiresAt": null,
+            "deliveredAt": null,
+            "downloadable": false,
+            "created": null,
+            "updated": null
+        },
+        "filled": {
+            "id": 7,
+            "uuid": "s1",
+            "subject": "s2",
+            "subjectType": "s3",
+            "status": "s4",
+            "requestedBy": "s5",
+            "requestId": "s6",
+            "objectCount": 107,
+            "contentHash": "s8",
+            "error": "s9",
+            "readyAt": "2026-02-10T00:04:05+01:00",
+            "expiresAt": "2026-03-11T01:04:05+02:00",
+            "deliveredAt": "2026-04-12T02:04:05+00:00",
+            "downloadable": false,
+            "created": "2026-05-13T03:04:05+01:00",
+            "updated": "2026-06-14T04:04:05+02:00"
+        }
+    }
+}

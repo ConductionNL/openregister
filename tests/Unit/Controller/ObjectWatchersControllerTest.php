@@ -41,6 +41,9 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Notifications\Controller\ObjectWatchersController
  * @uses \OCA\OpenRegister\Notifications\Db\Watcher
  * @uses \OCA\OpenRegister\Exception\NotAuthorizedException
+ * @uses \OCA\OpenRegister\Notifications\Controller\Support\ObjectWatchersControllerServices
+ * @uses \OCA\OpenRegister\Notifications\Controller\Support\ReadableObject
+ * @uses \OCA\OpenRegister\Service\Interaction\AddressedObject
  */
 class ObjectWatchersControllerTest extends TestCase {
 

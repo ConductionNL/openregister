@@ -42,7 +42,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Task\ApprovalPositionForm;
 use OCA\OpenRegister\Service\Task\ApprovingOutcomeSet;
+use OCA\OpenRegister\Service\Task\ChangeGateDeclaration;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -109,6 +111,32 @@ class ApprovalChainAnnotationInstaller implements IEventListener {
 	 * @spec openspec/specs/approval-workflow/spec.md#req-006
 	 */
 	public function handle(Event $event): void {
+		$schema = $this->savedSchema(event: $event);
+		if ($schema === null) {
+			return;
+		}
+
+		$chains = $this->declaredChains(schema: $schema);
+		if ($chains === null) {
+			return;
+		}
+
+		foreach (array_keys($chains) as $chainKey) {
+			if (is_string($chainKey) === true && $this->compile(schema: $schema, chainKey: $chainKey) === null) {
+				$this->warnUnusableChain(schema: $schema, chainKey: $chainKey);
+			}
+		}
+	}//end handle()
+
+
+	/**
+	 * The schema a create or update event saved.
+	 *
+	 * @param Event $event The event carrying the saved schema.
+	 *
+	 * @return Schema|null The schema, or null when the event carries none.
+	 */
+	private function savedSchema(Event $event): ?Schema {
 		$schema = null;
 		if (method_exists($event, 'getSchema') === true) {
 			$schema = $event->getSchema();
@@ -117,31 +145,46 @@ class ApprovalChainAnnotationInstaller implements IEventListener {
 		}
 
 		if (($schema instanceof Schema) === false) {
-			return;
+			return null;
 		}
 
+		return $schema;
+	}//end savedSchema()
+
+	/**
+	 * The chains a schema declares under `x-openregister-approval-chains`.
+	 *
+	 * @param Schema $schema The schema carrying the declaration.
+	 *
+	 * @return array<mixed>|null The declared chains by key, or null when none are declared.
+	 */
+	private function declaredChains(Schema $schema): ?array {
 		$config = ($schema->getConfiguration() ?? []);
 		$chains = ($config['x-openregister-approval-chains'] ?? null);
 		if (is_array($chains) === false) {
-			return;
+			return null;
 		}
 
-		foreach (array_keys($chains) as $chainKey) {
-			if (is_string($chainKey) === false) {
-				continue;
-			}
+		return $chains;
+	}//end declaredChains()
 
-			if ($this->compile(schema: $schema, chainKey: $chainKey) === null) {
-				$this->logger->warning(
-					sprintf(
-						'[ApprovalChainAnnotationInstaller] chain "%s" on schema %s declares no usable approver; its gate will refuse the transition as misconfigured.',
-						$chainKey,
-						(string)$schema->getId()
-					)
-				);
-			}
-		}
-	}//end handle()
+	/**
+	 * Warn that a declared chain will fail its gate closed.
+	 *
+	 * @param Schema $schema   The schema carrying the declaration.
+	 * @param string $chainKey The declarative chain key.
+	 *
+	 * @return void
+	 */
+	private function warnUnusableChain(Schema $schema, string $chainKey): void {
+		$this->logger->warning(
+			sprintf(
+				'[ApprovalChainAnnotationInstaller] chain "%s" on schema %s declares no usable approver; its gate will refuse the transition as misconfigured.',
+				$chainKey,
+				(string)$schema->getId()
+			)
+		);
+	}//end warnUnusableChain()
 
 	/**
 	 * Compile ONE declared chain into a task template.
@@ -158,30 +201,126 @@ class ApprovalChainAnnotationInstaller implements IEventListener {
 	 * @spec openspec/specs/approval-workflow/spec.md#req-006
 	 */
 	public function compile(Schema $schema, string $chainKey): ?array {
-		$schemaId = $schema->getId();
-		if ($schemaId === null) {
+		$spec = $this->declaredChain(schema: $schema, chainKey: $chainKey);
+		if ($spec === null) {
 			return null;
 		}
 
-		$config = ($schema->getConfiguration() ?? []);
-		$chains = ($config['x-openregister-approval-chains'] ?? null);
-		if (is_array($chains) === false) {
+		$body = $this->templateBody(spec: $spec, chainKey: $chainKey, schemaId: (int)$schema->getId());
+		if ($body === null) {
 			return null;
 		}
 
-		$spec = ($chains[$chainKey] ?? null);
+		$template = $this->templateHead(schemaId: (int)$schema->getId(), chainKey: $chainKey) + $body;
+		$template['templateVersion'] = self::templateVersionOf(positions: $body['positions']);
+
+		return $this->withApprovingOutcomes(template: $template, spec: $spec);
+	}//end compile()
+
+
+	/**
+	 * One declared chain of a saved schema.
+	 *
+	 * @param Schema $schema   The schema carrying the declaration.
+	 * @param string $chainKey The declarative chain key.
+	 *
+	 * @return array<string, mixed>|null The chain, or null when the schema has no id or the chain is undeclared or not an array.
+	 */
+	private function declaredChain(Schema $schema, string $chainKey): ?array {
+		if ($schema->getId() === null) {
+			return null;
+		}
+
+		$spec = ($this->declaredChains(schema: $schema)[$chainKey] ?? null);
 		if (is_array($spec) === false) {
 			return null;
 		}
 
-		$positions = $this->compilePositions(approvers: (array)($spec['approvers'] ?? []));
+		return $spec;
+	}//end declaredChain()
+
+	/**
+	 * The rules and positions of a chain's template.
+	 *
+	 * @param array<string, mixed> $spec     The declared chain.
+	 * @param string               $chainKey The declarative chain key.
+	 * @param int                  $schemaId The owning schema id, the subject of a position's form.
+	 *
+	 * @return array<string, mixed>|null The rules and positions, or null when the chain has no usable approver or an unknown tiers mode.
+	 */
+	private function templateBody(array $spec, string $chainKey, int $schemaId): ?array {
+		$positions = $this->compilePositions(approvers: (array)($spec['approvers'] ?? []), schemaId: $schemaId);
 		if ($positions === []) {
 			return null;
 		}
 
-		// How amount tiers combine: `highest` (the one tier with the highest
-		// minAmount at or below the amount) or `cumulative` (every tier at or
-		// below it). An unknown mode is a misconfiguration: fail closed.
+		$tiers = $this->tiersMode(spec: $spec, chainKey: $chainKey);
+		if ($tiers === null) {
+			return null;
+		}
+
+		$body = $this->templateRules(spec: $spec, tiers: $tiers) + ['positions' => $positions];
+		if (ChangeGateDeclaration::declaredIn(chain: $spec) === false) {
+			return $body;
+		}
+
+		$changeGate = $this->changeGate(spec: $spec, chainKey: $chainKey);
+		if ($changeGate === null) {
+			return null;
+		}
+
+		$body['changeGate'] = $changeGate->toArray();
+
+		return $body;
+	}//end templateBody()
+
+	/**
+	 * The change gate a chain declares, when it is usable.
+	 *
+	 * A chain gates either a transition or a change, never both: one sequence
+	 * cannot both hold a write and release a lifecycle step. A malformed gate
+	 * or an entry that names both is a misconfiguration and fails closed.
+	 *
+	 * @param array<string, mixed> $spec     The declared chain.
+	 * @param string               $chainKey The declarative chain key.
+	 *
+	 * @return ChangeGateDeclaration|null The gate, or null when it is malformed or combined with a transition (logged).
+	 *
+	 * @spec openspec/changes/records-change-held-for-approval/specs/approval-workflow/spec.md#requirement-an-approval-chain-can-hold-a-change-until-it-is-approved
+	 */
+	private function changeGate(array $spec, string $chainKey): ?ChangeGateDeclaration {
+		if ((string)($spec['transition'] ?? '') !== '') {
+			$this->logger->error(
+				message: '[ApprovalChainAnnotationInstaller] A chain gates either a transition or a change, not both; the chain is not compiled.',
+				context: ['chain' => $chainKey]
+			);
+			return null;
+		}
+
+		$gate = ChangeGateDeclaration::fromChain(chain: $spec);
+		if ($gate === null) {
+			$this->logger->error(
+				message: '[ApprovalChainAnnotationInstaller] Malformed change gate; the chain is not compiled.',
+				context: ['chain' => $chainKey]
+			);
+		}
+
+		return $gate;
+	}//end changeGate()
+
+	/**
+	 * How a chain's amount tiers combine.
+	 *
+	 * `highest` (the one tier with the highest minAmount at or below the
+	 * amount) or `cumulative` (every tier at or below it). An unknown mode is
+	 * a misconfiguration: fail closed.
+	 *
+	 * @param array<string, mixed> $spec     The declared chain.
+	 * @param string               $chainKey The declarative chain key.
+	 *
+	 * @return string|null The mode, or null when it is unknown (logged).
+	 */
+	private function tiersMode(array $spec, string $chainKey): ?string {
 		$tiers = (string)($spec['tiers'] ?? self::TIERS_HIGHEST);
 		if (in_array($tiers, [self::TIERS_HIGHEST, self::TIERS_CUMULATIVE], true) === false) {
 			$this->logger->error(
@@ -191,63 +330,165 @@ class ApprovalChainAnnotationInstaller implements IEventListener {
 			return null;
 		}
 
-		$template = [
-			'templateId' => $this->templateIdFor(schemaId: (int)$schemaId, chainKey: $chainKey),
+		return $tiers;
+	}//end tiersMode()
+
+	/**
+	 * The identity of a chain's template.
+	 *
+	 * @param int    $schemaId The owning schema id.
+	 * @param string $chainKey The declarative chain key.
+	 *
+	 * @return array<string, mixed> The template id, version, name and schema id.
+	 */
+	private function templateHead(int $schemaId, string $chainKey): array {
+		return [
+			'templateId' => $this->templateIdFor(schemaId: $schemaId, chainKey: $chainKey),
 			'templateVersion' => self::TEMPLATE_VERSION,
 			'name' => $chainKey,
-			'schemaId' => (int)$schemaId,
+			'schemaId' => $schemaId,
+		];
+	}//end templateHead()
+
+	/**
+	 * The transition rules a chain declares.
+	 *
+	 * @param array<string, mixed> $spec  The declared chain.
+	 * @param string               $tiers The tiers mode.
+	 *
+	 * @return array<string, mixed> The rules.
+	 */
+	private function templateRules(array $spec, string $tiers): array {
+		return [
 			'transition' => (string)($spec['transition'] ?? ''),
 			'separationOfDuties' => (($spec['separationOfDuties'] ?? true) !== false),
 			'onApprove' => (string)($spec['onApprove'] ?? ''),
 			'amountField' => (string)($spec['amountField'] ?? ''),
 			'tiers' => $tiers,
-			'positions' => $positions,
 		];
+	}//end templateRules()
 
+	/**
+	 * Add the declared approving outcomes, when there are any.
+	 *
+	 * @param array<string, mixed> $template The compiled template.
+	 * @param array<string, mixed> $spec     The declared chain.
+	 *
+	 * @return array<string, mixed> The template.
+	 */
+	private function withApprovingOutcomes(array $template, array $spec): array {
 		$approving = (new ApprovingOutcomeSet(declared: ($spec['approvingOutcomes'] ?? null)))->entries();
 		if ($approving !== []) {
 			$template['approvingOutcomes'] = $approving;
 		}
 
 		return $template;
-	}//end compile()
+	}//end withApprovingOutcomes()
 
 	/**
 	 * One ordered position per usable `approvers` entry.
 	 *
 	 * @param array<int, mixed> $approvers The declared approver tiers.
+	 * @param int               $schemaId  The owning schema id, the subject of a position's form.
 	 *
 	 * @return array<int, array<string, mixed>> The ordered positions.
+	 *
+	 * @spec openspec/changes/approval-position-task-form/specs/flow-approval-consolidation/spec.md#requirement-an-approval-position-may-declare-the-form-its-task-presents
 	 */
-	private function compilePositions(array $approvers): array {
+	private function compilePositions(array $approvers, int $schemaId): array {
 		$positions = [];
-		$order = 1;
 		foreach ($approvers as $tier) {
-			if (is_array($tier) === false) {
-				continue;
+			$position = $this->position(tier: $tier, order: (count($positions) + 1), schemaId: $schemaId);
+			if ($position !== null) {
+				$positions[] = $position;
 			}
-
-			$role = trim((string)($tier['role'] ?? ''));
-			if ($role === '') {
-				continue;
-			}
-
-			$position = [
-				'order' => $order,
-				'role' => $role,
-			];
-			foreach (['min', 'minAmount', 'statusOnApprove', 'statusOnReject'] as $carry) {
-				if (array_key_exists($carry, $tier) === true) {
-					$position[$carry] = $tier[$carry];
-				}
-			}
-
-			$positions[] = $position;
-			$order++;
-		}//end foreach
+		}
 
 		return $positions;
 	}//end compilePositions()
+
+
+	/**
+	 * One position from a declared approver tier.
+	 *
+	 * @param mixed $tier     The declared tier.
+	 * @param int   $order    The position's place in the chain.
+	 * @param int   $schemaId The owning schema id, the subject of a position's form.
+	 *
+	 * @return array<string, mixed>|null The position, or null when the tier is not an array or names no role.
+	 */
+	private function position(mixed $tier, int $order, int $schemaId): ?array {
+		if (is_array($tier) === false) {
+			return null;
+		}
+
+		$role = trim((string)($tier['role'] ?? ''));
+		if ($role === '') {
+			return null;
+		}
+
+		$position = [
+			'order' => $order,
+			'role' => $role,
+		];
+
+		$position = $this->withCarriedFields(position: $position, tier: $tier);
+		$form     = ApprovalPositionForm::record(declared: ($tier['form'] ?? null), schemaId: $schemaId);
+		if ($form !== null) {
+			$position['form'] = $form;
+		}
+
+		return $position;
+	}//end position()
+
+	/**
+	 * The template version: 1 for a chain without forms, else one per distinct set of forms.
+	 *
+	 * The template is a pure function of the declaration, and a position's
+	 * form is part of it (design D-3): a changed form is a different version,
+	 * while a chain without any form keeps the version it always had.
+	 *
+	 * @param array<int, array<string, mixed>> $positions The compiled positions.
+	 *
+	 * @return int The version.
+	 *
+	 * @spec openspec/changes/approval-position-task-form/specs/flow-approval-consolidation/spec.md#requirement-an-approval-position-may-declare-the-form-its-task-presents
+	 */
+	public static function templateVersionOf(array $positions): int {
+		$forms = [];
+		foreach ($positions as $position) {
+			if (isset($position['form']) === true) {
+				$forms[(int)($position['order'] ?? 0)] = $position['form'];
+			}
+		}
+
+		if ($forms === []) {
+			return self::TEMPLATE_VERSION;
+		}
+
+		// Kept below 2^30 so it fits a signed 32-bit integer column, and
+		// above 1 so it never equals the form-less version.
+		return ((crc32((string)json_encode($forms)) & 0x3FFFFFFF) + (self::TEMPLATE_VERSION + 1));
+	}//end templateVersionOf()
+
+
+	/**
+	 * Carry the tier's threshold and status fields onto its position, when declared.
+	 *
+	 * @param array<string, mixed> $position The position.
+	 * @param array<string, mixed> $tier     The declared tier.
+	 *
+	 * @return array<string, mixed> The position.
+	 */
+	private function withCarriedFields(array $position, array $tier): array {
+		foreach (['min', 'minAmount', 'statusOnApprove', 'statusOnReject'] as $carry) {
+			if (array_key_exists($carry, $tier) === true) {
+				$position[$carry] = $tier[$carry];
+			}
+		}
+
+		return $position;
+	}//end withCarriedFields()
 
 	/**
 	 * The deterministic template id for a (schema, chain key) pair.
@@ -265,6 +506,7 @@ class ApprovalChainAnnotationInstaller implements IEventListener {
 	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-every-in-flight-approval-survives-the-migration-at-the-same-position
 	 */
 	public function templateIdFor(int $schemaId, string $chainKey): string {
+		// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- The hash only derives a stable identifier, not a security value.
 		$hash = md5(self::TEMPLATE_ID_NS . ':' . $schemaId . ':' . $chainKey);
 
 		return sprintf(

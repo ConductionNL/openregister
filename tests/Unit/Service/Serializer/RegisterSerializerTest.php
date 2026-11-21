@@ -282,7 +282,7 @@ class RegisterSerializerTest extends TestCase {
 	}//end makeSchema()
 
 	/**
-	 * Registers share schemas, and serializeMany() expands the schemas of EVERY register.
+	 * Registers share schemas, and serializePage() expands the schemas of EVERY register.
 	 * Each schema used to be re-fetched once per register that referenced it — and
 	 * SchemaMapper::find() resolves an identifier with `WHERE uuid = ? OR slug = ? OR
 	 * id = ?`, which no index covers. On a dev instance (76 registers, 1,231 schemas) that

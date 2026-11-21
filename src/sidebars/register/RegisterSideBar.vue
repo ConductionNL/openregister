@@ -4,7 +4,6 @@ import {
 	dashboardStore,
 	navigationStore,
 	registerStore,
-	schemaStore,
 } from '../../store/store.js'
 </script>
 
@@ -219,6 +218,7 @@ import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
 import EditRegisterFormDialog from '../../modals/register/EditRegisterFormDialog.vue'
 import formatBytes from '../../services/formatBytes.js'
 import { downloadRegisterOas, viewRegisterOas } from '../../services/registerOas.js'
+import { findActiveRegister } from '../../views/register/activeRegister.js'
 
 export default {
 	name: 'RegisterSideBar',
@@ -260,18 +260,7 @@ export default {
 		 * @return {object|undefined} The active register record
 		 */
 		register() {
-			// Find the register in the dashboard store using the ID from the register
-			// store, falling back to the route param on a deep link / page refresh.
-			// Mirrors RegisterDetail.register — the whole sidebar is v-if'd on this.
-			const registerId =
-				registerStore.getRegisterItem?.id || this.$route.params.id
-			if (!registerId) {
-				return undefined
-			}
-			// Route params are strings, the API returns numeric ids — compare as strings.
-			return dashboardStore.registers.find(
-				(r) => String(r.id) === String(registerId),
-			)
+			return findActiveRegister(this.$route)
 		},
 
 		activeTab: {

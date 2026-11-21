@@ -126,36 +126,80 @@ class ContextChatReindexCommand extends Command {
 			return Command::SUCCESS;
 		}
 
-		$registerId = null;
-		$registerRef = $input->getOption('register');
-		if ($registerRef !== null) {
-			try {
-				$registerId = (int)$this->catalog->registers()->find(id: $registerRef, _rbac: false, _multitenancy: false)->getId();
-			} catch (Throwable $e) {
-				$output->writeln('<error>Register not found: ' . $e->getMessage() . '</error>');
-				return Command::FAILURE;
-			}
-		}
-
-		$schemaId = null;
-		$schemaRef = $input->getOption('schema');
-		if ($schemaRef !== null) {
-			try {
-				$schemaId = (int)$this->catalog->schemas()->find(id: $schemaRef, _rbac: false, _multitenancy: false)->getId();
-			} catch (Throwable $e) {
-				$output->writeln('<error>Schema not found: ' . $e->getMessage() . '</error>');
-				return Command::FAILURE;
-			}
+		$scope = $this->resolveScope(input: $input, output: $output);
+		if ($scope === null) {
+			return Command::FAILURE;
 		}
 
 		$output->writeln('<info>Reindexing OpenRegister objects into Context Chat…</info>');
 
+		return $this->reindex(scope: $scope, output: $output);
+	}//end execute()
+
+	/**
+	 * Resolve the optional register and schema options; null (reported) when one is not found.
+	 *
+	 * @param InputInterface  $input  Console input.
+	 * @param OutputInterface $output Console output stream.
+	 *
+	 * @return ReindexScope|null
+	 */
+	private function resolveScope(InputInterface $input, OutputInterface $output): ?ReindexScope {
+		try {
+			$registerId = $this->scopeId(input: $input, option: 'register');
+		} catch (Throwable $e) {
+			$output->writeln('<error>Register not found: ' . $e->getMessage() . '</error>');
+			return null;
+		}
+
+		try {
+			$schemaId = $this->scopeId(input: $input, option: 'schema');
+		} catch (Throwable $e) {
+			$output->writeln('<error>Schema not found: ' . $e->getMessage() . '</error>');
+			return null;
+		}
+
+		return new ReindexScope(registerId: $registerId, schemaId: $schemaId);
+	}//end resolveScope()
+
+	/**
+	 * The id of the register or schema an option names (slug, uuid or id), across tenants; null when not given.
+	 *
+	 * @param InputInterface $input  Console input.
+	 * @param string         $option `register` or `schema`.
+	 *
+	 * @return int|null
+	 *
+	 * @throws Throwable When the register or schema is not found.
+	 */
+	private function scopeId(InputInterface $input, string $option): ?int {
+		$ref = $input->getOption($option);
+		if ($ref === null) {
+			return null;
+		}
+
+		if ($option === 'register') {
+			return (int)$this->catalog->registers()->find(id: $ref, _rbac: false, _multitenancy: false)->getId();
+		}
+
+		return (int)$this->catalog->schemas()->find(id: $ref, _rbac: false, _multitenancy: false)->getId();
+	}//end scopeId()
+
+	/**
+	 * Submit the scoped objects to Context Chat and report the count.
+	 *
+	 * @param ReindexScope    $scope  The register and schema to reindex.
+	 * @param OutputInterface $output Console output stream.
+	 *
+	 * @return int Symfony command exit code.
+	 */
+	private function reindex(ReindexScope $scope, OutputInterface $output): int {
 		try {
 			// Resolved here, not in the constructor — this is the first point
 			// at which loading ContentProvider is safe. See the constructor.
 			$contentProvider = $this->container->get(ContentProviderInterface::class);
 
-			$submitted = $contentProvider->reindex(registerId: $registerId, schemaId: $schemaId);
+			$submitted = $contentProvider->reindex(registerId: $scope->registerId, schemaId: $scope->schemaId);
 		} catch (Throwable $e) {
 			$output->writeln('<error>Reindex failed: ' . $e->getMessage() . '</error>');
 			return Command::FAILURE;
@@ -164,5 +208,5 @@ class ContextChatReindexCommand extends Command {
 		$output->writeln(sprintf('<info>Submitted %d object(s).</info>', $submitted));
 
 		return Command::SUCCESS;
-	}//end execute()
+	}//end reindex()
 }//end class

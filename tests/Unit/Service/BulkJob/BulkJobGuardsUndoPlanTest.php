@@ -32,6 +32,7 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Service\BulkJob\BulkJobGuards
  * @uses   \OCA\OpenRegister\Exception\BulkJobRefusedException
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\BulkJob\RehearsedJob
  */
 class BulkJobGuardsUndoPlanTest extends TestCase
 {

@@ -17,10 +17,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Search\Controller\SearchController;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicListRequest;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -201,23 +201,17 @@ class IntegrationTest extends TestCase {
 
 		// Mock: Audit trail query with organisation filtering.
 		$this->auditTrailMapper->expects($this->once())
-			->method('findAll')
+			->method('findTrail')
 			->with(
-				$this->anything(),
-				$this->anything(),
-				$this->callback(function ($filters) {
-					return isset($filters['organisation'])
-						   && $filters['organisation'] === 'audit-org-uuid';
+				$this->callback(function (ListQuery $query) {
+					return isset($query->filters['organisation'])
+						   && $query->filters['organisation'] === 'audit-org-uuid';
 				})
 			)
 			->willReturn($auditEntries);
 
 		// Act: Get audit trails for organisation context.
-		$trails = $this->auditTrailMapper->findAll(
-			null, // limit
-			null, // offset
-			['organisation' => 'audit-org-uuid'] // Organisation context
-		);
+		$trails = $this->auditTrailMapper->findTrail(ListQuery::unbounded(['organisation' => 'audit-org-uuid']));
 
 		// Assert: Audit trails include organisation context.
 		$this->assertCount(3, $trails);

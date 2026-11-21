@@ -36,6 +36,9 @@ use PHPUnit\Framework\TestCase;
  * regenerate the fixture.
  *
  * @covers \OCA\OpenRegister\Notifications\Service\Notification\TaskObjectAdapter
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Task
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\TaskPayloadOptions
  */
 final class TaskObjectAdapterGoldenTest extends TestCase {
 

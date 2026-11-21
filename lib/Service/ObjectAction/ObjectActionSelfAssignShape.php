@@ -21,7 +21,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/declared-self-assign-action/specs/declared-actions/spec.md
+ * @spec openspec/specs/declared-actions/spec.md
  */
 
 declare(strict_types=1);
@@ -33,7 +33,7 @@ use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
 /**
  * Reads and shape-checks `selfAssign` bodies.
  *
- * @spec openspec/changes/declared-self-assign-action/specs/declared-actions/spec.md
+ * @spec openspec/specs/declared-actions/spec.md
  */
 final class ObjectActionSelfAssignShape {
 
@@ -48,7 +48,7 @@ final class ObjectActionSelfAssignShape {
 	 *
 	 * @return list<string> The refusals.
 	 *
-	 * @spec openspec/changes/declared-self-assign-action/specs/declared-actions/spec.md
+	 * @spec openspec/specs/declared-actions/spec.md
 	 */
 	public static function refusals(string $key, array $definition): array {
 		if (isset(PermissionCatalogue::CANONICAL[$key]) === true || in_array($key, PermissionCatalogue::CONTROL_KEYS, true) === true) {
@@ -60,11 +60,7 @@ final class ObjectActionSelfAssignShape {
 			return [sprintf('Action "%s": "selfAssign" must be {"field": "<property>"} and nothing else.', $key)];
 		}
 
-		$extra = array_values(array_intersect(['inputs', 'elevate'], array_keys($definition)));
-		if (($definition['mode'] ?? 'sync') !== 'sync') {
-			$extra[] = 'mode';
-		}
-
+		$extra = self::extraKeys(definition: $definition);
 		if ($extra !== []) {
 			return [sprintf('Action "%s": a self-assign action takes no %s.', $key, implode(' or ', $extra))];
 		}
@@ -73,13 +69,29 @@ final class ObjectActionSelfAssignShape {
 	}//end refusals()
 
 	/**
+	 * The keys a self-assign action may not carry: inputs, an elevation, or a mode other than sync.
+	 *
+	 * @param array<string, mixed> $definition The action definition.
+	 *
+	 * @return array<int, string> The offending keys, in that order.
+	 */
+	private static function extraKeys(array $definition): array {
+		$extra = array_values(array_intersect(['inputs', 'elevate'], array_keys($definition)));
+		if (($definition['mode'] ?? 'sync') !== 'sync') {
+			$extra[] = 'mode';
+		}
+
+		return $extra;
+	}//end extraKeys()
+
+	/**
 	 * The property a `selfAssign` body names, or null when it names none.
 	 *
 	 * @param array<string, mixed> $body The body.
 	 *
 	 * @return string|null The property name.
 	 *
-	 * @spec openspec/changes/declared-self-assign-action/specs/declared-actions/spec.md
+	 * @spec openspec/specs/declared-actions/spec.md
 	 */
 	public static function fieldOf(array $body): ?string {
 		$field = ($body['field'] ?? null);

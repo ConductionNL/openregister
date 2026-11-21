@@ -103,20 +103,13 @@ class MacroActionValidator {
 	 * @spec openspec/specs/declared-actions/spec.md#requirement-a-macro-can-name-a-flow-its-schema-declares
 	 */
 	private function declaredRefusalFor(MacroActionBinding $binding, array $configuration): ?string {
-		$declared = ($configuration['x-openregister-flows'] ?? []);
-		if (is_array($declared) === false) {
-			$declared = [];
-		}
-
-		foreach ($declared as $flow) {
+		foreach (self::declaredFlows(configuration: $configuration) as $flow) {
 			if (is_array($flow) === false || trim((string)($flow['name'] ?? '')) !== $binding->flow) {
 				continue;
 			}
 
-			foreach ((array)($flow['nodes'] ?? []) as $node) {
-				if (is_array($node) === true && (string)($node['type'] ?? '') === FlowNextHint::MANUAL_TRIGGER) {
-					return null;
-				}
+			if (self::declaresManualTrigger(flow: $flow) === true) {
+				return null;
 			}
 
 			return $this->refusal(binding: $binding, why: 'has no manual trigger, so nothing in it starts when the action is invoked.');
@@ -124,6 +117,39 @@ class MacroActionValidator {
 
 		return null;
 	}//end declaredRefusalFor()
+
+	/**
+	 * Whether a declared flow has a manual trigger node.
+	 *
+	 * @param array<string, mixed> $flow The declared flow.
+	 *
+	 * @return boolean Whether invoking the action starts something in it.
+	 */
+	private static function declaresManualTrigger(array $flow): bool {
+		foreach ((array)($flow['nodes'] ?? []) as $node) {
+			if (is_array($node) === true && (string)($node['type'] ?? '') === FlowNextHint::MANUAL_TRIGGER) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end declaresManualTrigger()
+
+	/**
+	 * The flows the schema configuration declares, or none.
+	 *
+	 * @param array<string, mixed> $configuration The schema configuration.
+	 *
+	 * @return array The declared flows.
+	 */
+	private static function declaredFlows(array $configuration): array {
+		$declared = ($configuration['x-openregister-flows'] ?? []);
+		if (is_array($declared) === false) {
+			return [];
+		}
+
+		return $declared;
+	}//end declaredFlows()
 
 	/**
 	 * Whether the schema declares a flow by the name the binding gives.
@@ -162,11 +188,7 @@ class MacroActionValidator {
 		try {
 			$flow = $this->flows->findByUuid($binding->flow);
 		} catch (\Throwable) {
-			if ($this->declaresByName(binding: $binding, configuration: $configuration) === true) {
-				return $this->declaredRefusalFor(binding: $binding, configuration: $configuration);
-			}
-
-			return $this->refusal(binding: $binding, why: 'does not exist.');
+			return $this->unstoredFlowRefusal(binding: $binding, configuration: $configuration);
 		}
 
 		if ($this->isPublished(flow: $flow) === false) {
@@ -179,6 +201,22 @@ class MacroActionValidator {
 
 		return null;
 	}//end refusalFor()
+
+	/**
+	 * The refusal for a bound flow that is not stored: judged from the schema's own declaration, or absent.
+	 *
+	 * @param MacroActionBinding   $binding       The binding.
+	 * @param array<string, mixed> $configuration The schema configuration.
+	 *
+	 * @return string|null The refusal, or null.
+	 */
+	private function unstoredFlowRefusal(MacroActionBinding $binding, array $configuration): ?string {
+		if ($this->declaresByName(binding: $binding, configuration: $configuration) === true) {
+			return $this->declaredRefusalFor(binding: $binding, configuration: $configuration);
+		}
+
+		return $this->refusal(binding: $binding, why: 'does not exist.');
+	}//end unstoredFlowRefusal()
 
 	/**
 	 * One refusal sentence about the binding's flow.

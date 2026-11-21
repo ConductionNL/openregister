@@ -41,6 +41,13 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Service\Case\CaseSentryMoment
  * @uses \OCA\OpenRegister\Service\Flow\EventCatalogService
  * @uses \OCA\OpenRegister\Service\Flow\FlowExpression
+ * @uses \OCA\OpenRegister\Service\Case\CaseDefinitionNode
+ * @uses \OCA\OpenRegister\Service\Case\CasePlanValidation
+ * @uses \OCA\OpenRegister\Service\Flow\FlowExpressionDataOptions
+ * @uses \OCA\OpenRegister\Service\Case\CaseAnchor
+ * @uses \OCA\OpenRegister\Service\Case\CasePlanInsertion
+ * @uses \OCA\OpenRegister\Service\Case\CasePlanPlacement
+ * @uses \OCA\OpenRegister\Service\Case\CasePlanProvenance
  */
 class CasePlanDefinitionTest extends TestCase {
 

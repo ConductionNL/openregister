@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCP\EventDispatcher\IEventDispatcher;
+use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -38,6 +39,7 @@ final class BulkSaveReporting {
 	 * @param LoggerInterface                $logger           Logger for error and debug logging
 	 * @param IEventDispatcher|null          $eventDispatcher  Event dispatcher for object lifecycle events
 	 * @param AuditTrailMapperInterface|null $auditTrailMapper Audit trail mapper for logging bulk changes
+	 * @param IDBConnection|null             $db               Connection a system write runs its chunk and audit rows in
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
@@ -45,6 +47,7 @@ final class BulkSaveReporting {
 		public readonly LoggerInterface $logger,
 		public readonly ?IEventDispatcher $eventDispatcher = null,
 		public readonly ?AuditTrailMapperInterface $auditTrailMapper = null,
+		public readonly ?IDBConnection $db = null,
 	) {
 	}//end __construct()
 }//end class

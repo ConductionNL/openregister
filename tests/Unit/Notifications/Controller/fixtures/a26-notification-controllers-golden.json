@@ -221,8 +221,8 @@
             }
         },
         "calls": [
-            "NotificationPreferencesInterface::setOverride([\"alice\",\"case\",\"assigned\",{\"enabled\":false,\"channels\":[\"email\"]},\"s\"])",
-            "NotificationPreferencesInterface::getOverride([\"alice\",\"case\",\"assigned\",\"s\"])"
+            "NotificationPreferencesInterface::storeOverride([{\"party\":\"alice\",\"address\":{\"schemaSlug\":\"case\",\"notificationKey\":\"assigned\",\"scope\":\"s\"},\"value\":{\"enabled\":false,\"channels\":[\"email\"]}}])",
+            "NotificationPreferencesInterface::overrideAt([\"alice\",{\"schemaSlug\":\"case\",\"notificationKey\":\"assigned\",\"scope\":\"s\"}])"
         ]
     },
     "prefs update as member": {
@@ -236,8 +236,8 @@
             }
         },
         "calls": [
-            "NotificationPreferencesInterface::setOverride([\"alice\",\"case\",\"assigned\",{\"enabled\":false,\"channels\":[\"email\"]},\"s\"])",
-            "NotificationPreferencesInterface::getOverride([\"alice\",\"case\",\"assigned\",\"s\"])"
+            "NotificationPreferencesInterface::storeOverride([{\"party\":\"alice\",\"address\":{\"schemaSlug\":\"case\",\"notificationKey\":\"assigned\",\"scope\":\"s\"},\"value\":{\"enabled\":false,\"channels\":[\"email\"]}}])",
+            "NotificationPreferencesInterface::overrideAt([\"alice\",{\"schemaSlug\":\"case\",\"notificationKey\":\"assigned\",\"scope\":\"s\"}])"
         ]
     },
     "prefs update as subadmin": {
@@ -251,8 +251,8 @@
             }
         },
         "calls": [
-            "NotificationPreferencesInterface::setOverride([\"alice\",\"case\",\"assigned\",{\"enabled\":false,\"channels\":[\"email\"]},\"s\"])",
-            "NotificationPreferencesInterface::getOverride([\"alice\",\"case\",\"assigned\",\"s\"])"
+            "NotificationPreferencesInterface::storeOverride([{\"party\":\"alice\",\"address\":{\"schemaSlug\":\"case\",\"notificationKey\":\"assigned\",\"scope\":\"s\"},\"value\":{\"enabled\":false,\"channels\":[\"email\"]}}])",
+            "NotificationPreferencesInterface::overrideAt([\"alice\",{\"schemaSlug\":\"case\",\"notificationKey\":\"assigned\",\"scope\":\"s\"}])"
         ]
     },
     "prefs update as admin": {
@@ -266,8 +266,8 @@
             }
         },
         "calls": [
-            "NotificationPreferencesInterface::setOverride([\"root\",\"case\",\"assigned\",{\"enabled\":false,\"channels\":[\"email\"]},\"s\"])",
-            "NotificationPreferencesInterface::getOverride([\"root\",\"case\",\"assigned\",\"s\"])"
+            "NotificationPreferencesInterface::storeOverride([{\"party\":\"root\",\"address\":{\"schemaSlug\":\"case\",\"notificationKey\":\"assigned\",\"scope\":\"s\"},\"value\":{\"enabled\":false,\"channels\":[\"email\"]}}])",
+            "NotificationPreferencesInterface::overrideAt([\"root\",{\"schemaSlug\":\"case\",\"notificationKey\":\"assigned\",\"scope\":\"s\"}])"
         ]
     },
     "prefs update scalar chan as anonymous": {
@@ -288,8 +288,8 @@
             }
         },
         "calls": [
-            "NotificationPreferencesInterface::setOverride([\"alice\",\"case\",\"assigned\",{\"enabled\":true},null])",
-            "NotificationPreferencesInterface::getOverride([\"alice\",\"case\",\"assigned\",null])"
+            "NotificationPreferencesInterface::storeOverride([{\"party\":\"alice\",\"address\":{\"schemaSlug\":\"case\",\"notificationKey\":\"assigned\",\"scope\":null},\"value\":{\"enabled\":true}}])",
+            "NotificationPreferencesInterface::overrideAt([\"alice\",{\"schemaSlug\":\"case\",\"notificationKey\":\"assigned\",\"scope\":null}])"
         ]
     },
     "prefs update scalar chan as member": {
@@ -303,8 +303,8 @@
             }
         },
         "calls": [
-            "NotificationPreferencesInterface::setOverride([\"alice\",\"case\",\"assigned\",{\"enabled\":true},null])",
-            "NotificationPreferencesInterface::getOverride([\"alice\",\"case\",\"assigned\",null])"
+            "NotificationPreferencesInterface::storeOverride([{\"party\":\"alice\",\"address\":{\"schemaSlug\":\"case\",\"notificationKey\":\"assigned\",\"scope\":null},\"value\":{\"enabled\":true}}])",
+            "NotificationPreferencesInterface::overrideAt([\"alice\",{\"schemaSlug\":\"case\",\"notificationKey\":\"assigned\",\"scope\":null}])"
         ]
     },
     "prefs update scalar chan as subadmin": {
@@ -318,8 +318,8 @@
             }
         },
         "calls": [
-            "NotificationPreferencesInterface::setOverride([\"alice\",\"case\",\"assigned\",{\"enabled\":true},null])",
-            "NotificationPreferencesInterface::getOverride([\"alice\",\"case\",\"assigned\",null])"
+            "NotificationPreferencesInterface::storeOverride([{\"party\":\"alice\",\"address\":{\"schemaSlug\":\"case\",\"notificationKey\":\"assigned\",\"scope\":null},\"value\":{\"enabled\":true}}])",
+            "NotificationPreferencesInterface::overrideAt([\"alice\",{\"schemaSlug\":\"case\",\"notificationKey\":\"assigned\",\"scope\":null}])"
         ]
     },
     "prefs update scalar chan as admin": {
@@ -333,8 +333,8 @@
             }
         },
         "calls": [
-            "NotificationPreferencesInterface::setOverride([\"root\",\"case\",\"assigned\",{\"enabled\":true},null])",
-            "NotificationPreferencesInterface::getOverride([\"root\",\"case\",\"assigned\",null])"
+            "NotificationPreferencesInterface::storeOverride([{\"party\":\"root\",\"address\":{\"schemaSlug\":\"case\",\"notificationKey\":\"assigned\",\"scope\":null},\"value\":{\"enabled\":true}}])",
+            "NotificationPreferencesInterface::overrideAt([\"root\",{\"schemaSlug\":\"case\",\"notificationKey\":\"assigned\",\"scope\":null}])"
         ]
     },
     "prefs reset bool as anonymous": {
@@ -353,7 +353,7 @@
             "override": null
         },
         "calls": [
-            "NotificationPreferencesInterface::setOverride([\"alice\",\"case\",\"assigned\",null,null])"
+            "NotificationPreferencesInterface::storeOverride([{\"party\":\"alice\",\"address\":{\"schemaSlug\":\"case\",\"notificationKey\":\"assigned\",\"scope\":null},\"value\":null}])"
         ]
     },
     "prefs reset bool as member": {
@@ -365,7 +365,7 @@
             "override": null
         },
         "calls": [
-            "NotificationPreferencesInterface::setOverride([\"alice\",\"case\",\"assigned\",null,null])"
+            "NotificationPreferencesInterface::storeOverride([{\"party\":\"alice\",\"address\":{\"schemaSlug\":\"case\",\"notificationKey\":\"assigned\",\"scope\":null},\"value\":null}])"
         ]
     },
     "prefs reset bool as subadmin": {
@@ -377,7 +377,7 @@
             "override": null
         },
         "calls": [
-            "NotificationPreferencesInterface::setOverride([\"alice\",\"case\",\"assigned\",null,null])"
+            "NotificationPreferencesInterface::storeOverride([{\"party\":\"alice\",\"address\":{\"schemaSlug\":\"case\",\"notificationKey\":\"assigned\",\"scope\":null},\"value\":null}])"
         ]
     },
     "prefs reset bool as admin": {
@@ -389,7 +389,7 @@
             "override": null
         },
         "calls": [
-            "NotificationPreferencesInterface::setOverride([\"root\",\"case\",\"assigned\",null,null])"
+            "NotificationPreferencesInterface::storeOverride([{\"party\":\"root\",\"address\":{\"schemaSlug\":\"case\",\"notificationKey\":\"assigned\",\"scope\":null},\"value\":null}])"
         ]
     },
     "prefs reset string as anonymous": {
@@ -408,7 +408,7 @@
             "override": null
         },
         "calls": [
-            "NotificationPreferencesInterface::setOverride([\"alice\",\"case\",\"assigned\",null,\"s\"])"
+            "NotificationPreferencesInterface::storeOverride([{\"party\":\"alice\",\"address\":{\"schemaSlug\":\"case\",\"notificationKey\":\"assigned\",\"scope\":\"s\"},\"value\":null}])"
         ]
     },
     "prefs reset string as member": {
@@ -420,7 +420,7 @@
             "override": null
         },
         "calls": [
-            "NotificationPreferencesInterface::setOverride([\"alice\",\"case\",\"assigned\",null,\"s\"])"
+            "NotificationPreferencesInterface::storeOverride([{\"party\":\"alice\",\"address\":{\"schemaSlug\":\"case\",\"notificationKey\":\"assigned\",\"scope\":\"s\"},\"value\":null}])"
         ]
     },
     "prefs reset string as subadmin": {
@@ -432,7 +432,7 @@
             "override": null
         },
         "calls": [
-            "NotificationPreferencesInterface::setOverride([\"alice\",\"case\",\"assigned\",null,\"s\"])"
+            "NotificationPreferencesInterface::storeOverride([{\"party\":\"alice\",\"address\":{\"schemaSlug\":\"case\",\"notificationKey\":\"assigned\",\"scope\":\"s\"},\"value\":null}])"
         ]
     },
     "prefs reset string as admin": {
@@ -444,7 +444,7 @@
             "override": null
         },
         "calls": [
-            "NotificationPreferencesInterface::setOverride([\"root\",\"case\",\"assigned\",null,\"s\"])"
+            "NotificationPreferencesInterface::storeOverride([{\"party\":\"root\",\"address\":{\"schemaSlug\":\"case\",\"notificationKey\":\"assigned\",\"scope\":\"s\"},\"value\":null}])"
         ]
     },
     "prefs reset other as anonymous": {
@@ -465,8 +465,8 @@
             }
         },
         "calls": [
-            "NotificationPreferencesInterface::setOverride([\"alice\",\"case\",\"assigned\",{\"enabled\":true},null])",
-            "NotificationPreferencesInterface::getOverride([\"alice\",\"case\",\"assigned\",null])"
+            "NotificationPreferencesInterface::storeOverride([{\"party\":\"alice\",\"address\":{\"schemaSlug\":\"case\",\"notificationKey\":\"assigned\",\"scope\":null},\"value\":{\"enabled\":true}}])",
+            "NotificationPreferencesInterface::overrideAt([\"alice\",{\"schemaSlug\":\"case\",\"notificationKey\":\"assigned\",\"scope\":null}])"
         ]
     },
     "prefs reset other as member": {
@@ -480,8 +480,8 @@
             }
         },
         "calls": [
-            "NotificationPreferencesInterface::setOverride([\"alice\",\"case\",\"assigned\",{\"enabled\":true},null])",
-            "NotificationPreferencesInterface::getOverride([\"alice\",\"case\",\"assigned\",null])"
+            "NotificationPreferencesInterface::storeOverride([{\"party\":\"alice\",\"address\":{\"schemaSlug\":\"case\",\"notificationKey\":\"assigned\",\"scope\":null},\"value\":{\"enabled\":true}}])",
+            "NotificationPreferencesInterface::overrideAt([\"alice\",{\"schemaSlug\":\"case\",\"notificationKey\":\"assigned\",\"scope\":null}])"
         ]
     },
     "prefs reset other as subadmin": {
@@ -495,8 +495,8 @@
             }
         },
         "calls": [
-            "NotificationPreferencesInterface::setOverride([\"alice\",\"case\",\"assigned\",{\"enabled\":true},null])",
-            "NotificationPreferencesInterface::getOverride([\"alice\",\"case\",\"assigned\",null])"
+            "NotificationPreferencesInterface::storeOverride([{\"party\":\"alice\",\"address\":{\"schemaSlug\":\"case\",\"notificationKey\":\"assigned\",\"scope\":null},\"value\":{\"enabled\":true}}])",
+            "NotificationPreferencesInterface::overrideAt([\"alice\",{\"schemaSlug\":\"case\",\"notificationKey\":\"assigned\",\"scope\":null}])"
         ]
     },
     "prefs reset other as admin": {
@@ -510,8 +510,8 @@
             }
         },
         "calls": [
-            "NotificationPreferencesInterface::setOverride([\"root\",\"case\",\"assigned\",{\"enabled\":true},null])",
-            "NotificationPreferencesInterface::getOverride([\"root\",\"case\",\"assigned\",null])"
+            "NotificationPreferencesInterface::storeOverride([{\"party\":\"root\",\"address\":{\"schemaSlug\":\"case\",\"notificationKey\":\"assigned\",\"scope\":null},\"value\":{\"enabled\":true}}])",
+            "NotificationPreferencesInterface::overrideAt([\"root\",{\"schemaSlug\":\"case\",\"notificationKey\":\"assigned\",\"scope\":null}])"
         ]
     },
     "group index no group as anonymous": {
@@ -656,10 +656,10 @@
             "IGroupManager::get([\"staff\"])",
             "IGroup::inGroup([\"IUser:alice\"])",
             "SchemaMapperInterface::findAll([null,null,[],[],[],[],true,true])",
-            "NotificationPreferencesInterface::getGroupDefault([\"staff\",\"case\",\"assigned\",\"s\"])",
-            "NotificationPreferencesInterface::getGroupDefault([\"staff\",\"case\",\"quiet\",\"s\"])",
-            "NotificationPreferencesInterface::getGroupDefault([\"staff\",\"case\",\"7\",\"s\"])",
-            "NotificationPreferencesInterface::getGroupDefault([\"staff\",\"4\",\"done\",\"s\"])"
+            "NotificationPreferencesInterface::groupDefaultAt([\"staff\",{\"schemaSlug\":\"case\",\"notificationKey\":\"assigned\",\"scope\":\"s\"}])",
+            "NotificationPreferencesInterface::groupDefaultAt([\"staff\",{\"schemaSlug\":\"case\",\"notificationKey\":\"quiet\",\"scope\":\"s\"}])",
+            "NotificationPreferencesInterface::groupDefaultAt([\"staff\",{\"schemaSlug\":\"case\",\"notificationKey\":\"7\",\"scope\":\"s\"}])",
+            "NotificationPreferencesInterface::groupDefaultAt([\"staff\",{\"schemaSlug\":\"4\",\"notificationKey\":\"done\",\"scope\":\"s\"}])"
         ]
     },
     "group index as subadmin": {
@@ -709,10 +709,10 @@
             "IGroupManager::get([\"staff\"])",
             "ISubAdmin::isSubAdminOfGroup([\"IUser:alice\",\"IGroup\"])",
             "SchemaMapperInterface::findAll([null,null,[],[],[],[],true,true])",
-            "NotificationPreferencesInterface::getGroupDefault([\"staff\",\"case\",\"assigned\",\"s\"])",
-            "NotificationPreferencesInterface::getGroupDefault([\"staff\",\"case\",\"quiet\",\"s\"])",
-            "NotificationPreferencesInterface::getGroupDefault([\"staff\",\"case\",\"7\",\"s\"])",
-            "NotificationPreferencesInterface::getGroupDefault([\"staff\",\"4\",\"done\",\"s\"])"
+            "NotificationPreferencesInterface::groupDefaultAt([\"staff\",{\"schemaSlug\":\"case\",\"notificationKey\":\"assigned\",\"scope\":\"s\"}])",
+            "NotificationPreferencesInterface::groupDefaultAt([\"staff\",{\"schemaSlug\":\"case\",\"notificationKey\":\"quiet\",\"scope\":\"s\"}])",
+            "NotificationPreferencesInterface::groupDefaultAt([\"staff\",{\"schemaSlug\":\"case\",\"notificationKey\":\"7\",\"scope\":\"s\"}])",
+            "NotificationPreferencesInterface::groupDefaultAt([\"staff\",{\"schemaSlug\":\"4\",\"notificationKey\":\"done\",\"scope\":\"s\"}])"
         ]
     },
     "group index as admin": {
@@ -760,10 +760,10 @@
             "IGroup::inGroup([\"IUser:root\"])",
             "IGroupManager::isAdmin([\"root\"])",
             "SchemaMapperInterface::findAll([null,null,[],[],[],[],true,true])",
-            "NotificationPreferencesInterface::getGroupDefault([\"staff\",\"case\",\"assigned\",\"s\"])",
-            "NotificationPreferencesInterface::getGroupDefault([\"staff\",\"case\",\"quiet\",\"s\"])",
-            "NotificationPreferencesInterface::getGroupDefault([\"staff\",\"case\",\"7\",\"s\"])",
-            "NotificationPreferencesInterface::getGroupDefault([\"staff\",\"4\",\"done\",\"s\"])"
+            "NotificationPreferencesInterface::groupDefaultAt([\"staff\",{\"schemaSlug\":\"case\",\"notificationKey\":\"assigned\",\"scope\":\"s\"}])",
+            "NotificationPreferencesInterface::groupDefaultAt([\"staff\",{\"schemaSlug\":\"case\",\"notificationKey\":\"quiet\",\"scope\":\"s\"}])",
+            "NotificationPreferencesInterface::groupDefaultAt([\"staff\",{\"schemaSlug\":\"case\",\"notificationKey\":\"7\",\"scope\":\"s\"}])",
+            "NotificationPreferencesInterface::groupDefaultAt([\"staff\",{\"schemaSlug\":\"4\",\"notificationKey\":\"done\",\"scope\":\"s\"}])"
         ]
     },
     "group update missing as anonymous": {
@@ -893,8 +893,8 @@
             "IGroupManager::isAdmin([\"alice\"])",
             "IGroupManager::get([\"staff\"])",
             "ISubAdmin::isSubAdminOfGroup([\"IUser:alice\",\"IGroup\"])",
-            "NotificationPreferencesInterface::setGroupDefault([\"staff\",\"case\",\"assigned\",{\"enabled\":false,\"channels\":[\"push\"]},null])",
-            "NotificationPreferencesInterface::getGroupDefault([\"staff\",\"case\",\"assigned\",null])"
+            "NotificationPreferencesInterface::storeGroupDefault([{\"party\":\"staff\",\"address\":{\"schemaSlug\":\"case\",\"notificationKey\":\"assigned\",\"scope\":null},\"value\":{\"enabled\":false,\"channels\":[\"push\"]}}])",
+            "NotificationPreferencesInterface::groupDefaultAt([\"staff\",{\"schemaSlug\":\"case\",\"notificationKey\":\"assigned\",\"scope\":null}])"
         ]
     },
     "group update as admin": {
@@ -913,8 +913,8 @@
         "calls": [
             "IGroupManager::get([\"staff\"])",
             "IGroupManager::isAdmin([\"root\"])",
-            "NotificationPreferencesInterface::setGroupDefault([\"staff\",\"case\",\"assigned\",{\"enabled\":false,\"channels\":[\"push\"]},null])",
-            "NotificationPreferencesInterface::getGroupDefault([\"staff\",\"case\",\"assigned\",null])"
+            "NotificationPreferencesInterface::storeGroupDefault([{\"party\":\"staff\",\"address\":{\"schemaSlug\":\"case\",\"notificationKey\":\"assigned\",\"scope\":null},\"value\":{\"enabled\":false,\"channels\":[\"push\"]}}])",
+            "NotificationPreferencesInterface::groupDefaultAt([\"staff\",{\"schemaSlug\":\"case\",\"notificationKey\":\"assigned\",\"scope\":null}])"
         ]
     },
     "group reset as anonymous": {
@@ -966,8 +966,8 @@
             "IGroupManager::isAdmin([\"alice\"])",
             "IGroupManager::get([\"staff\"])",
             "ISubAdmin::isSubAdminOfGroup([\"IUser:alice\",\"IGroup\"])",
-            "NotificationPreferencesInterface::setGroupDefault([\"staff\",\"case\",\"assigned\",null,\"s\"])",
-            "NotificationPreferencesInterface::getGroupDefault([\"staff\",\"case\",\"assigned\",\"s\"])"
+            "NotificationPreferencesInterface::storeGroupDefault([{\"party\":\"staff\",\"address\":{\"schemaSlug\":\"case\",\"notificationKey\":\"assigned\",\"scope\":\"s\"},\"value\":null}])",
+            "NotificationPreferencesInterface::groupDefaultAt([\"staff\",{\"schemaSlug\":\"case\",\"notificationKey\":\"assigned\",\"scope\":\"s\"}])"
         ]
     },
     "group reset as admin": {
@@ -986,8 +986,8 @@
         "calls": [
             "IGroupManager::get([\"staff\"])",
             "IGroupManager::isAdmin([\"root\"])",
-            "NotificationPreferencesInterface::setGroupDefault([\"staff\",\"case\",\"assigned\",null,\"s\"])",
-            "NotificationPreferencesInterface::getGroupDefault([\"staff\",\"case\",\"assigned\",\"s\"])"
+            "NotificationPreferencesInterface::storeGroupDefault([{\"party\":\"staff\",\"address\":{\"schemaSlug\":\"case\",\"notificationKey\":\"assigned\",\"scope\":\"s\"},\"value\":null}])",
+            "NotificationPreferencesInterface::groupDefaultAt([\"staff\",{\"schemaSlug\":\"case\",\"notificationKey\":\"assigned\",\"scope\":\"s\"}])"
         ]
     },
     "broadcast index as anonymous": {

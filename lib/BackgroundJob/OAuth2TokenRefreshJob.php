@@ -128,51 +128,105 @@ class OAuth2TokenRefreshJob extends TimedJob {
 	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-a-daily-job-refreshes-active-token-sets-before-they-expire
 	 */
 	protected function run($argument): void {
-		try {
-			$credentials = $this->activeTokenSetCredentials();
-		} catch (Throwable $listFailure) {
-			$this->logger->warning('[OAuth2TokenRefreshJob] could not list credentials: ' . $listFailure->getMessage());
+		$credentials = $this->listedCredentials();
+		if ($credentials === null) {
 			return;
 		}
 
-		$refreshed = 0;
-		$failed = 0;
+		$tally = ['refreshed' => 0, 'failed' => 0];
 		foreach ($credentials as $credentialId => $data) {
-			try {
-				$provider = $this->catalogue->get((string)($data['provider'] ?? ''));
-				if ($provider === null || (string)($provider['kind'] ?? '') !== self::KIND) {
-					continue;
-				}
+			$outcome = $this->sweepOne(credentialId: $credentialId, data: $data);
+			if ($outcome !== null) {
+				$tally[$outcome]++;
+			}
+		}
 
-				$didRefresh = $this->refresh->sweepCredential(
-					credential: $data,
-					provider: $provider,
-					credentialId: (string)$credentialId,
-					scope: (string)($data['scope'] ?? 'personal')
-				);
-
-				if ($didRefresh === true) {
-					$refreshed++;
-				}
-			} catch (CredentialRelinkRequiredException $relink) {
-				// Already recorded on the credential and already notified to its
-				// owner by the refresh service. Counting it as a failure here would
-				// make a healthy sweep of a dead grant look like a broken sweep.
-				$this->logger->info('[OAuth2TokenRefreshJob] credential ' . $credentialId . ' needs re-authorisation');
-			} catch (Throwable $failure) {
-				// One credential's provider being down must not stop the others.
-				$failed++;
-				$this->logger->warning(
-					'[OAuth2TokenRefreshJob] refresh failed for ' . $credentialId . ': ' . $failure->getMessage()
-				);
-			}//end try
-		}//end foreach
-
-		$this->logger->info(
-			'[OAuth2TokenRefreshJob] swept ' . count($credentials) . ' connection(s), refreshed ' . $refreshed
-			. ', failed ' . $failed
-		);
+		$this->logSwept(swept: count($credentials), tally: $tally);
 	}//end run()
+
+	/**
+	 * The credentials to sweep; null, logged, when they cannot be listed.
+	 *
+	 * @return array<string, array<string, mixed>>|null
+	 */
+	private function listedCredentials(): ?array {
+		try {
+			return $this->activeTokenSetCredentials();
+		} catch (Throwable $listFailure) {
+			$this->logger->warning('[OAuth2TokenRefreshJob] could not list credentials: ' . $listFailure->getMessage());
+			return null;
+		}
+	}//end listedCredentials()
+
+	/**
+	 * Sweep one credential, containing its failure.
+	 *
+	 * @param int|string           $credentialId The credential id.
+	 * @param array<string, mixed> $data         The stored credential.
+	 *
+	 * @return string|null `refreshed` or `failed`; null when nothing was refreshed
+	 *                     (not a token set, not due, or it needs re-authorisation).
+	 */
+	private function sweepOne(int|string $credentialId, array $data): ?string {
+		try {
+			if ($this->refreshCredential(credentialId: $credentialId, data: $data) === true) {
+				return 'refreshed';
+			}
+		} catch (CredentialRelinkRequiredException $relink) {
+			// Already recorded on the credential and already notified to its
+			// owner by the refresh service. Counting it as a failure here would
+			// make a healthy sweep of a dead grant look like a broken sweep.
+			$this->logger->info('[OAuth2TokenRefreshJob] credential ' . $credentialId . ' needs re-authorisation');
+		} catch (Throwable $failure) {
+			// One credential's provider being down must not stop the others.
+			$this->logger->warning(
+				'[OAuth2TokenRefreshJob] refresh failed for ' . $credentialId . ': ' . $failure->getMessage()
+			);
+			return 'failed';
+		}//end try
+
+		return null;
+	}//end sweepOne()
+
+	/**
+	 * Refresh one credential when its provider issues token sets.
+	 *
+	 * @param int|string           $credentialId The credential id.
+	 * @param array<string, mixed> $data         The stored credential.
+	 *
+	 * @return bool Whether the token set was refreshed.
+	 *
+	 * @throws CredentialRelinkRequiredException When the grant needs re-authorisation.
+	 * @throws Throwable When the refresh fails.
+	 */
+	private function refreshCredential(int|string $credentialId, array $data): bool {
+		$provider = $this->catalogue->get((string)($data['provider'] ?? ''));
+		if ($provider === null || (string)($provider['kind'] ?? '') !== self::KIND) {
+			return false;
+		}
+
+		return $this->refresh->sweepCredential(
+			credential: $data,
+			provider: $provider,
+			credentialId: (string)$credentialId,
+			scope: (string)($data['scope'] ?? 'personal')
+		) === true;
+	}//end refreshCredential()
+
+	/**
+	 * Log the outcome of a sweep.
+	 *
+	 * @param int                $swept How many connections were swept.
+	 * @param array<string, int> $tally How many were refreshed and how many failed.
+	 *
+	 * @return void
+	 */
+	private function logSwept(int $swept, array $tally): void {
+		$this->logger->info(
+			'[OAuth2TokenRefreshJob] swept ' . $swept . ' connection(s), refreshed ' . $tally['refreshed']
+			. ', failed ' . $tally['failed']
+		);
+	}//end logSwept()
 
 	/**
 	 * List the credentials this sweep is allowed to touch, keyed by UUID.
