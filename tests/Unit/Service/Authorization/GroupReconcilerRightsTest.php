@@ -237,6 +237,40 @@ class GroupReconcilerRightsTest extends TestCase {
 		$this->assertCount(3, $this->audited);
 	}
 
+	public function testRemovingEveryUndeclaredRightNeverLeavesAnOpenBlock(): void {
+		$repair = $this->rightsReconciler()->repairBlock(
+			live: ['read' => ['woo-redactie'], 'update' => ['woo-redactie']],
+			declared: [],
+			managed: ['woo-redactie']
+		);
+
+		// An empty block would be open to everyone; both actions stay, refused to all.
+		$this->assertSame(['read' => [], 'update' => []], $repair['block']);
+		$this->assertSame(
+			[['woo-redactie', 'read', 'removed'], ['woo-redactie', 'update', 'removed']],
+			array_map(static fn (array $c): array => [$c['group'], $c['action'], $c['direction']], $repair['changes'])
+		);
+	}
+
+	public function testAnUndeclaredActionGoesBackToAbsentWhenOtherRulesRemain(): void {
+		$repair = $this->rightsReconciler()->repairBlock(
+			live: ['read' => ['public'], 'delete' => ['woo-redactie']],
+			declared: ['read' => ['public']],
+			managed: ['woo-redactie']
+		);
+
+		$this->assertSame(['read' => ['public']], $repair['block']);
+	}
+
+	private function rightsReconciler(): GroupRightsReconciler {
+		return new GroupRightsReconciler(
+			$this->sources($this->createMock(IAppConfig::class)),
+			new DeclaredGroupRights(new RbacGroupCollector()),
+			$this->createMock(IEventDispatcher::class),
+			new NullLogger()
+		);
+	}
+
 	public function testAnUndeclaredGroupIsNotTouched(): void {
 		$live = [
 			'read'   => ['public', 'team-noord'],

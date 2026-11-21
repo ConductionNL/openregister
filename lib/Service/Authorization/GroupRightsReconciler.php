@@ -152,6 +152,7 @@ class GroupRightsReconciler {
 	public function repairBlock(array $live, array $declared, array $managed): array {
 		$block = $live;
 		$changes = [];
+		$emptied = [];
 		$actions = array_unique(array_merge(array_keys($live), array_keys($declared)));
 		foreach ($actions as $action) {
 			if (self::isRightsAction(action: $action, live: $live) === false) {
@@ -167,6 +168,7 @@ class GroupRightsReconciler {
 			if ($repair['rules'] === [] && array_key_exists($action, $declared) === false) {
 				// The action was not declared at all: it goes back to absent, not to an empty list.
 				unset($block[$action]);
+				$emptied[] = $action;
 			}
 
 			$changes = array_merge(
@@ -175,6 +177,11 @@ class GroupRightsReconciler {
 				$this->describe(rules: $repair['removed'], action: $action, direction: self::REMOVED)
 			);
 		}//end foreach
+
+		if ($block === [] && $emptied !== []) {
+			// An empty block is open to everyone: the emptied actions stay as empty lists, refused to all.
+			$block = array_fill_keys($emptied, []);
+		}
 
 		return ['block' => $block, 'changes' => $changes];
 	}//end repairBlock()
