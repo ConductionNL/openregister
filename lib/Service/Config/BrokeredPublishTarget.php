@@ -46,14 +46,23 @@ final class BrokeredPublishTarget {
 	public readonly string $credentialId;
 
 	/**
+	 * Who the brokered calls are made for
+	 *
+	 * @var BrokerIdentity
+	 */
+	public readonly BrokerIdentity $identity;
+
+	/**
 	 * Constructor
 	 *
 	 * @param ConfigPublishTarget $target       Where to publish
 	 * @param string              $credentialId The broker credential id
+	 * @param BrokerIdentity|null $identity     Who the calls are made for; OpenRegister when null
 	 */
-	public function __construct(ConfigPublishTarget $target, string $credentialId) {
+	public function __construct(ConfigPublishTarget $target, string $credentialId, ?BrokerIdentity $identity = null) {
 		$this->target = $target;
 		$this->credentialId = $credentialId;
+		$this->identity = ($identity ?? BrokerIdentity::of());
 	}//end __construct()
 
 	/**
@@ -68,13 +77,18 @@ final class BrokeredPublishTarget {
 	}//end ownerAndName()
 
 	/**
-	 * The JSON body of a repo-create call for this target.
+	 * The JSON body of a repo-create call for this target, with its description when it has one.
 	 *
 	 * @return string
 	 *
 	 * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
 	 */
 	public function createBody(): string {
-		return (string) json_encode(['name' => $this->ownerAndName()[1], 'private' => $this->target->private, 'auto_init' => true]);
+		$body = ['name' => $this->ownerAndName()[1], 'private' => $this->target->private, 'auto_init' => true];
+		if ($this->target->description() !== '') {
+			$body['description'] = $this->target->description();
+		}
+
+		return (string) json_encode($body);
 	}//end createBody()
 }//end class

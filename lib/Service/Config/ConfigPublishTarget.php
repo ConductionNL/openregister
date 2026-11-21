@@ -32,6 +32,20 @@ namespace OCA\OpenRegister\Service\Config;
 final class ConfigPublishTarget {
 
 	/**
+	 * Whether a missing repository may be created under `/user/repos` when the organisation create fails.
+	 *
+	 * @var bool
+	 */
+	private bool $userNamespaceFallback = true;
+
+	/**
+	 * The description a repository created on demand gets; '' sets none.
+	 *
+	 * @var string
+	 */
+	private string $description = '';
+
+	/**
 	 * Name the target.
 	 *
 	 * @param string $repo    The `owner/repo` to publish into.
@@ -48,4 +62,63 @@ final class ConfigPublishTarget {
 		public readonly bool $private=false,
 	) {
 	}//end __construct()
+
+	/**
+	 * This target with the fallback to the authenticated user's namespace switched off.
+	 *
+	 * Creating a missing repository tries the owner organisation first and then
+	 * `/user/repos`. A publisher that must land in the named owner, or nowhere,
+	 * turns the second attempt off: the repository is then created under the
+	 * organisation or not at all.
+	 *
+	 * @return self A copy of this target without the fallback.
+	 *
+	 * @spec openspec/specs/federated-config-sharing/spec.md
+	 */
+	public function withoutUserNamespaceFallback(): self {
+		$copy = clone $this;
+		$copy->userNamespaceFallback = false;
+
+		return $copy;
+	}//end withoutUserNamespaceFallback()
+
+	/**
+	 * Whether creating a missing repository may fall back to the authenticated user's namespace.
+	 *
+	 * @return bool True unless withoutUserNamespaceFallback() switched it off.
+	 *
+	 * @spec openspec/specs/federated-config-sharing/spec.md
+	 */
+	public function allowsUserNamespaceFallback(): bool {
+		return $this->userNamespaceFallback;
+	}//end allowsUserNamespaceFallback()
+
+	/**
+	 * This target with a description for a repository created on demand.
+	 *
+	 * An existing repository keeps its own description.
+	 *
+	 * @param string $description The repository description.
+	 *
+	 * @return self A copy of this target with the description.
+	 *
+	 * @spec openspec/changes/store-through-federated-config
+	 */
+	public function withDescription(string $description): self {
+		$copy = clone $this;
+		$copy->description = trim($description);
+
+		return $copy;
+	}//end withDescription()
+
+	/**
+	 * The description a repository created on demand gets; '' for none.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/store-through-federated-config
+	 */
+	public function description(): string {
+		return $this->description;
+	}//end description()
 }//end class
