@@ -31,9 +31,7 @@ use Closure;
 use DateTime;
 use DateTimeImmutable;
 use DateTimeInterface;
-use OCA\OpenRegister\Db\AutomationRecord;
 use OCA\OpenRegister\Notifications\Db\DuplicateDispatchException;
-use OCA\OpenRegister\Service\AutomationRecordWriter;
 use OCA\OpenRegister\Notifications\Db\NotificationDispatchLogMapper;
 use OCA\OpenRegister\Notifications\Db\HistoryDelivery;
 use OCA\OpenRegister\Notifications\Db\HistoryEntry;
@@ -41,6 +39,8 @@ use OCA\OpenRegister\Notifications\Db\HistoryNotice;
 use OCA\OpenRegister\Notifications\Db\HistoryTarget;
 use OCA\OpenRegister\Notifications\Db\NotificationHistoryMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Notifications\NotificationRun;
+use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
 use OCA\OpenRegister\Notifications\Db\QueuedNotification;
 use OCA\OpenRegister\Notifications\Db\QueuedNotificationMapper;
 use OCA\OpenRegister\Db\Register;
@@ -49,7 +49,6 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Notifications\Service\Party\PartyMessage;
 use OCA\OpenRegister\Notifications\Service\Party\PartyNotificationService;
-use OCA\OpenRegister\Service\Task\TaskStateRules;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\Activity\IManager as IActivityManager;
 use OCP\App\IAppManager;
@@ -229,7 +228,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 		$this->lazyActionLinks ??= new ActionLinkResolver(
 			routes: $routes,
 			tasks: new TaskActionLinks(
-				isRejecting: static fn (string $outcome): bool => TaskStateRules::isRejectingOutcome(outcome: $outcome),
+				isRejecting: static fn (string $outcome): bool => in_array(strtolower(trim($outcome)), TaskInterface::REJECTING_OUTCOMES, true),
 				urlGenerator: $this->urlGenerator
 			),
 			objects: new ObjectDetailLinks(
@@ -410,23 +409,25 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 			return;
 		}
 
-		$record = AutomationRecordWriter::draft(
-			kind: AutomationRecord::KIND_NOTIFICATION,
-			key: ($firing->spec['key'] ?? null),
-			name: $firing->ruleId,
-			object: $firing->object
-		);
-		$record->setEventId(self::storedId(value: $firing->eventId));
-		$record->setOutcome($firing->tally->outcome());
-		$record->setReason($firing->tally->reason());
+		$outcome = $firing->tally->outcome();
+		$reason  = $firing->tally->reason();
 		if ($failure !== null) {
-			$record->setOutcome(NotificationRunTally::FAILED);
-			$record->setReason(null);
-			$record->setMessage($failure);
+			$outcome = NotificationRunTally::FAILED;
+			$reason  = null;
 		}
 
-		$record->setChannels((string)json_encode($firing->tally->counts()));
-		$this->ledger->runRecords->write($record);
+		$this->ledger->runRecords->recordNotificationRun(
+			new NotificationRun(
+				key: ($firing->spec['key'] ?? null),
+				name: $firing->ruleId,
+				object: $firing->object,
+				eventId: self::storedId(value: $firing->eventId),
+				outcome: $outcome,
+				reason: $reason,
+				message: $failure,
+				channels: (string)json_encode($firing->tally->counts())
+			)
+		);
 	}//end recordRun()
 
 	/**
@@ -1807,21 +1808,35 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	/**
 	 * POST the firing to a declared, non-persistent webhook with a valid URL.
 	 *
-	 * The URL must be http or https. The call goes through Nextcloud's HTTP client,
-	 * which pins the address it resolves and refuses local and private addresses at
-	 * connect time, so the address checked is the address called; redirects are not
-	 * followed.
+	 * The URL is the rule's `webhook.url`, or, when the rule names a
+	 * `webhook.urlField`, the value of that property on the object that fired, so
+	 * each object can carry its own callback. The URL must be http or https. The
+	 * call goes through Nextcloud's HTTP client, which pins the address it
+	 * resolves and refuses local and private addresses at connect time, so the
+	 * address checked is the address called; redirects are not followed.
 	 *
 	 * @param array<string, mixed> $hook   The rule's `webhook` block.
 	 * @param RuleFiring           $firing The rule, the object, its recipients and the default-locale subject.
 	 *
 	 * @return string|null Why the call did not land, or null when it did.
+	 *
+	 * @spec openspec/changes/webhook-url-from-object-field/specs/notificatie-engine/spec.md#requirement-a-webhook-rule-may-take-its-url-from-the-object-req-nrg-020
 	 */
 	private function postWebhook(array $hook, RuleFiring $firing): ?string {
-		$url = (string)($hook['url'] ?? '');
+		$url = $this->webhookUrl(hook: $hook, firing: $firing);
 		if ($url === '' || filter_var($url, FILTER_VALIDATE_URL) === false) {
-			return 'webhook url missing or malformed';
+			$reason = 'webhook url missing or malformed';
+			if ($this->webhookUrlField(hook: $hook) !== '') {
+				$reason = sprintf('webhook url field %s missing or malformed on the object', $this->webhookUrlField(hook: $hook));
+				$this->logger->info(
+					sprintf('[AnnotationNotificationDispatcher] rule %s: %s, nothing sent', $firing->ruleId, $reason)
+				);
+			}
+
+			return $reason;
 		}
+
+		$hook['url'] = $url;
 
 		$scheme = strtolower((string)parse_url($url, PHP_URL_SCHEME));
 		if ($scheme !== 'http' && $scheme !== 'https') {
@@ -1830,6 +1845,48 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 
 		return $this->sendWebhook(hook: $hook, options: $this->webhookOptions(hook: $hook, firing: $firing));
 	}//end postWebhook()
+
+	/**
+	 * The URL a webhook call goes to: the object's `webhook.urlField` property
+	 * when the rule names one, else the rule's own `webhook.url`.
+	 *
+	 * @param array<string, mixed> $hook   The rule's `webhook` block.
+	 * @param RuleFiring           $firing The rule and the object that fired.
+	 *
+	 * @return string The URL (the object's value trimmed); '' when there is none.
+	 *
+	 * @spec openspec/changes/webhook-url-from-object-field/specs/notificatie-engine/spec.md#requirement-a-webhook-rule-may-take-its-url-from-the-object-req-nrg-020
+	 */
+	private function webhookUrl(array $hook, RuleFiring $firing): string {
+		$field = $this->webhookUrlField(hook: $hook);
+		if ($field === '') {
+			return (string)($hook['url'] ?? '');
+		}
+
+		$data  = ($firing->object->getObject() ?? []);
+		$value = ($data[$field] ?? null);
+		if (is_string($value) === false) {
+			return '';
+		}
+
+		return trim($value);
+	}//end webhookUrl()
+
+	/**
+	 * The object property a rule takes its webhook URL from, or ''.
+	 *
+	 * @param array<string, mixed> $hook The rule's `webhook` block.
+	 *
+	 * @return string The property name.
+	 */
+	private function webhookUrlField(array $hook): string {
+		$field = ($hook['urlField'] ?? null);
+		if (is_string($field) === false) {
+			return '';
+		}
+
+		return trim($field);
+	}//end webhookUrlField()
 
 	/**
 	 * The request options of a webhook call: the JSON payload, the headers and the timeout.

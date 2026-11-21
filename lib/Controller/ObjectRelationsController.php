@@ -32,8 +32,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Export\SpreadsheetCell;
-use OCA\OpenRegister\AppInfo\Application;
 use InvalidArgumentException;
 use OCA\OpenRegister\Controller\Support\DerivedLineage;
 use OCA\OpenRegister\Controller\Support\ObjectDerivation;
@@ -44,9 +44,9 @@ use OCA\OpenRegister\Controller\Support\ObjectRelationsRequest;
 use OCA\OpenRegister\Controller\Support\ProseReference;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectRelation;
+use OCA\OpenRegister\Kernel\Contracts\Core\ExportGuardInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
-use OCA\OpenRegister\Service\Export\ExportGateInterface;
 use OCA\OpenRegister\Service\Object\ObjectReadAccessInterface;
 use OCA\OpenRegister\Service\Relation\GraphExportOptions;
 use OCA\OpenRegister\Service\Relation\Derivation;
@@ -118,9 +118,9 @@ class ObjectRelationsController extends Controller {
 	/**
 	 * The export verb, checked before the graph leaves.
 	 *
-	 * @var ExportGateInterface
+	 * @var ExportGuardInterface
 	 */
-	private readonly ExportGateInterface $exportGate;
+	private readonly ExportGuardInterface $exportGate;
 
 	/**
 	 * Resolves an object under the caller's own RBAC.
@@ -160,7 +160,7 @@ class ObjectRelationsController extends Controller {
 		IRequest $request,
 		ObjectRelationsControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->relations = $services->graph->relations;
 		$this->graphs = $services->graph->graphs;
 		$this->objectService = $services->graph->objectService;

@@ -22,12 +22,15 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\NodeRightsMapInterface;
 use OCP\IUser;
 
 /**
  * Which right a step needs, and whether an author may save a flow holding it.
+ *
+ * The administrator's node map itself is the Core port it extends.
  */
-interface FlowNodeRightsGuardInterface {
+interface FlowNodeRightsGuardInterface extends NodeRightsMapInterface {
 
 	/**
 	 * The right a step of this type and configuration needs, or null.
@@ -76,26 +79,4 @@ interface FlowNodeRightsGuardInterface {
 	 * @spec openspec/changes/flow-powerful-steps-need-a-right/specs/flow-engine/spec.md#requirement-the-action-rights-are-administered-and-published
 	 */
 	public function nodeRights(): array;
-
-	/**
-	 * The administrator's map of node type to right (null lifts a node's own right).
-	 *
-	 * @return array<string, string|null>
-	 *
-	 * @spec openspec/changes/flow-powerful-steps-need-a-right/specs/flow-engine/spec.md#requirement-a-flow-step-type-can-require-a-named-right
-	 */
-	public function adminMap(): array;
-
-	/**
-	 * Store the administrator's map of node type to right.
-	 *
-	 * The caller MUST have checked that the user is an administrator.
-	 *
-	 * @param array<string, string|null> $map The map.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/flow-powerful-steps-need-a-right/specs/flow-engine/spec.md#requirement-a-flow-step-type-can-require-a-named-right
-	 */
-	public function setAdminMap(array $map): void;
 }//end interface

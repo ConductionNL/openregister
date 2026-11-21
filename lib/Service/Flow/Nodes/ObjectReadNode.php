@@ -75,6 +75,7 @@ use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowValueTemplate;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -88,7 +89,9 @@ use UnexpectedValueException;
 /**
  * Reads objects from a register into the run.
  */
-class ObjectReadNode extends ObjectNodeBase implements IFlowNode, ObjectReadNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
+class ObjectReadNode extends ObjectNodeBase implements IFlowNode, ObjectReadNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy,
+	IFlowNodeConfigForm
+{
 
 	/**
 	 * The step type.
@@ -182,6 +185,62 @@ class ObjectReadNode extends ObjectNodeBase implements IFlowNode, ObjectReadNode
 	public function configKeys(): array {
 		return ['register', 'schema', 'filters', 'fanOut', 'limit', 'output'];
 	}//end configKeys()
+
+	/**
+	 * The fields of an object-read step.
+	 *
+	 * `filters` is keyed by the schema's own property names, a shape the field
+	 * vocabulary cannot describe: it stays in the JSON pane.
+	 *
+	 * @return array<int, array<string, mixed>> The field descriptions.
+	 *
+	 * @spec openspec/changes/flow-node-config-forms/tasks.md
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-type-declares-its-own-form-and-its-own-run-log-actions
+	 */
+	public function configForm(): array {
+		return [
+			[
+				'key' => 'register',
+				'label' => $this->presentation->l10n->t('Register'),
+				'type' => 'select',
+				'help' => $this->presentation->l10n->t('The register the objects are read from.'),
+				'required' => true,
+				'optionsFrom' => '/apps/openregister/api/registers',
+			],
+			[
+				'key' => 'schema',
+				'label' => $this->presentation->l10n->t('Schema'),
+				'type' => 'select',
+				'help' => $this->presentation->l10n->t(
+					'The schema of the objects to read. The filters are edited in the JSON pane as property/value pairs; '
+						. 'placeholders such as {{uuid}} are filled in from each item, and one that comes out empty fails the step.'
+				),
+				'required' => true,
+				'optionsFrom' => '/apps/openregister/api/schemas',
+			],
+			[
+				'key' => 'fanOut',
+				'label' => $this->presentation->l10n->t('One item per object'),
+				'type' => 'boolean',
+				'help' => $this->presentation->l10n->t(
+					'Emit each object as its own item, so the next steps act on every one. Off, the matches land as one '
+						. 'list on the item.'
+				),
+			],
+			[
+				'key' => 'limit',
+				'label' => $this->presentation->l10n->t('At most this many objects'),
+				'type' => 'number',
+				'help' => $this->presentation->l10n->t('Defaults to 100, and is capped at 1000.'),
+			],
+			[
+				'key' => 'output',
+				'label' => $this->presentation->l10n->t('Put the list under'),
+				'type' => 'text',
+				'help' => $this->presentation->l10n->t('Without "One item per object": the item field the list lands in. Defaults to "objects".'),
+			],
+		];
+	}//end configForm()
 
 	/**
 	 * Refuse a step that cannot name what it reads.

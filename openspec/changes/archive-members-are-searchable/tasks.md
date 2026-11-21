@@ -6,13 +6,13 @@
 
 ## 2. Extraction and search (REQ-AMS-002)
 
-- [ ] 2.1 Teach `FileHandler` / `TextExtractionService` to treat a zip as an archive (not a generic type) and extract members with the existing extractors in memory, writing chunks with `positionReference.member`. Verify: `tests/Unit/Service/TextExtraction/ArchiveMemberExtractionTest.php::testEachMemberGetsItsOwnChunks` through `TextExtractionService::extractFile()`, the path the background job takes.
+- [x] 2.1 Teach `FileHandler` / `TextExtractionService` to treat a zip as an archive (not a generic type) and extract members with the existing extractors in memory, writing chunks with `positionReference.member`. Verify: `tests/Unit/Service/TextExtraction/ArchiveMemberExtractionTest.php::testEachMemberGetsItsOwnChunks` through `TextExtractionService::extractFile()`, the path the background job takes.
 - [ ] 2.2 Run detection per member and store relations with the member path. Verify: `ArchiveMemberExtractionTest::testDetectionRunsPerMember`.
 - [ ] 2.3 Return member hits from the file search API and `lib/Search/` unified search provider with archive file id, member path and owning object, under the archive's read rights. Verify: `tests/Unit/Service/ArchiveMemberSearchTest.php::testAMemberHitNamesItsPath`, `testAMemberHitObeysTheArchiveFileRights`.
 
 ## 3. Reporting (REQ-AMS-003)
 
-- [ ] 3.1 Set `partial` status and list refused, encrypted, over-bound and unsupported members on `GET /api/files/{fileId}/extraction-status` (`FileSidebarController::getExtractionStatus`). Verify: `testAnEncryptedMemberMakesThePartialStatus`, `testATarIsReportedUnsupportedAndKeepsItsMetadata`.
+- [x] 3.1 Set `partial` status and list refused, encrypted, over-bound and unsupported members on `GET /api/files/{fileId}/extraction-status` (`FileSidebarController::getExtractionStatus`). Verify: `testAnEncryptedMemberMakesThePartialStatus`, `testATarIsReportedUnsupportedAndKeepsItsMetadata`.
 - [ ] 3.2 End to end: `tests/e2e/ci/archive-members-search.spec.ts` uploads a zip fixture to an object, waits for extraction through the API, searches a phrase from one member and reads the member path in the result.
 
 ## 4. Shared with the malware scan

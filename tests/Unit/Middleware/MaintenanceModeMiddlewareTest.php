@@ -134,6 +134,39 @@ final class MaintenanceModeMiddlewareTest extends TestCase {
 	}
 
 	/**
+	 * Of every controller in lib/Controller, exactly the console, the
+	 * maintenance verbs and the consistency check stay reachable while the
+	 * mode holds; every other controller is refused.
+	 *
+	 * Pins the reachable set over the whole controller directory, so changing
+	 * how the middleware recognises those three neither opens nor closes
+	 * another controller.
+	 *
+	 * @spec openspec/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
+	 *
+	 * @return void
+	 */
+	public function testExactlyTheThreeOperationsControllersStayReachable(): void {
+		$reachable = [];
+		foreach (glob(__DIR__.'/../../../lib/Controller/*Controller.php') as $path) {
+			$class = 'OCA\\OpenRegister\\Controller\\'.basename($path, '.php');
+			if ($this->refusalOf($this->middleware(true), $class, 'index') === null) {
+				$reachable[] = $class;
+			}
+		}
+
+		sort($reachable);
+		$this->assertSame(
+			[
+				'OCA\\OpenRegister\\Controller\\OperationsConsistencyController',
+				'OCA\\OpenRegister\\Controller\\OperationsConsoleController',
+				'OCA\\OpenRegister\\Controller\\OperationsMaintenanceController',
+			],
+			$reachable
+		);
+	}
+
+	/**
 	 * With the mode off, nothing is refused.
 	 *
 	 * @spec openspec/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
@@ -145,6 +178,40 @@ final class MaintenanceModeMiddlewareTest extends TestCase {
 
 		// Pair: testAReadIsRefusedWithTheAdministeredMessage, same read, mode held.
 		$this->assertNull($refused, 'An open instance refused an ordinary read.');
+	}
+
+	/**
+	 * A mode that cannot be read does not close the instance: the read goes
+	 * through and the message is never asked for.
+	 *
+	 * @spec openspec/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
+	 *
+	 * @return void
+	 */
+	public function testAnUnreadableModeDoesNotCloseTheInstance(): void {
+		$maintenance = $this->createMock(MaintenanceModeService::class);
+		$maintenance->expects($this->once())->method('holds')->willThrowException(new RuntimeException('config unavailable'));
+		$maintenance->expects($this->never())->method('message');
+
+		$refused = $this->refusalOf(new MaintenanceModeMiddleware($maintenance), ObjectsController::class, 'index');
+
+		$this->assertNull($refused, 'An unreadable mode closed the instance.');
+	}
+
+	/**
+	 * A controller passed as an instance is matched by its class: the console
+	 * instance stays reachable, the mode is not even consulted.
+	 *
+	 * @spec openspec/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
+	 *
+	 * @return void
+	 */
+	public function testAControllerInstanceIsMatchedByItsClass(): void {
+		$maintenance = $this->createMock(MaintenanceModeService::class);
+		$maintenance->expects($this->never())->method('holds');
+
+		$console = (new \ReflectionClass(OperationsConsoleController::class))->newInstanceWithoutConstructor();
+		(new MaintenanceModeMiddleware($maintenance))->beforeController($console, 'index');
 	}
 
 	/**
