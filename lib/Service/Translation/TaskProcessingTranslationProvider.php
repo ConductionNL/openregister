@@ -41,7 +41,7 @@ use Throwable;
  *
  * @spec openspec/changes/ai-translation-with-a-glossary/specs
  */
-class TaskProcessingTranslationProvider implements TranslationProviderInterface {
+class TaskProcessingTranslationProvider implements DetailedTranslationProviderInterface {
 
 	/**
 	 * The provider identifier.
@@ -90,6 +90,28 @@ class TaskProcessingTranslationProvider implements TranslationProviderInterface 
 	public function getIdentifier(): string {
 		return self::IDENTIFIER;
 	}//end getIdentifier()
+
+	/**
+	 * The names of the Task Processing providers Nextcloud prefers for the two
+	 * task types this provider runs, as `task type => provider name`; a type
+	 * without a provider is left out.
+	 *
+	 * @return array<string, string>
+	 *
+	 * @spec openspec/changes/ai-translation-with-a-glossary/specs
+	 */
+	public function providerNames(): array {
+		$names = [];
+		foreach ([TextToTextTranslate::ID, TextToText::ID] as $taskTypeId) {
+			try {
+				$names[$taskTypeId] = (string) $this->taskProcessing->getPreferredProvider($taskTypeId)->getName();
+			} catch (Throwable $failure) {
+				continue;
+			}
+		}
+
+		return $names;
+	}//end providerNames()
 
 	/**
 	 * Translate a text and report the matched glossary terms the translation

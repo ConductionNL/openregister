@@ -30,11 +30,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
 use DateTime;
 use OCA\OpenRegister\Notifications\Controller\Support\NotificationHistoryControllerServices;
 use OCA\OpenRegister\Notifications\Db\NotificationHistoryMapper;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationClearingService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -126,7 +126,7 @@ class NotificationHistoryController extends Controller {
 		IRequest $request,
 		NotificationHistoryControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 
 		$this->mapper = $services->mapper;
 		$this->userSession = $services->userSession;

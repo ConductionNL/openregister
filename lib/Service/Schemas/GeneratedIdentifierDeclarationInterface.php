@@ -76,12 +76,20 @@ interface GeneratedIdentifierDeclarationInterface {
 	 *
 	 * @param int $sequenceValue The number taken from the counter.
 	 * @param DateTimeInterface $moment The moment the object is being created.
+	 * @param string|null $randomKey The permutation key; required for a random sequence.
 	 *
 	 * @return string The rendered identifier.
 	 *
 	 * @spec openspec/changes/generated-identifier/specs/computed-fields/spec.md#requirement-a-property-declares-a-generated-identifier-from-a-sequence-and-a-format
 	 */
-	public function render(int $sequenceValue, DateTimeInterface $moment): string;
+	public function render(int $sequenceValue, DateTimeInterface $moment, ?string $randomKey=null): string;
+
+	/**
+	 * Whether this identifier is drawn from a random sequence.
+	 *
+	 * @return bool
+	 */
+	public function isRandom(): bool;
 
 	/**
 	 * Read back the sequence number and period a value was rendered from.

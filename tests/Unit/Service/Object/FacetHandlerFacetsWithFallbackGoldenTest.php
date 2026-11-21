@@ -149,7 +149,8 @@ class FacetHandlerFacetsWithFallbackGoldenTest extends TestCase {
 		$handler = new FacetHandler(
 			new FacetLookups($mapper, $this->createMock(SchemaMapper::class)),
 			$this->createMock(FacetResponseCache::class),
-			$logger
+			$logger,
+			new \OCA\OpenRegister\Search\Service\Search\PropertySearchProfile()
 		);
 
 		$method = new ReflectionMethod(FacetHandler::class, 'calculateFacetsWithFallback');
