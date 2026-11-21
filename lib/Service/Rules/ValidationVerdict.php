@@ -33,10 +33,13 @@ final class ValidationVerdict {
 	 *
 	 * @param array<string, mixed> $entry   The outcome entry: validation, severity, properties, message, unevaluable.
 	 * @param string               $verdict The verdict to record when the check could be evaluated.
+	 * @param string|null          $decidedBy Which side of the write the verdict turned on: `transition`,
+	 *                                        `after` or `unchanged` ({@see TransitionDocument::decidedBy()}).
 	 */
 	public function __construct(
 		public readonly array $entry,
 		public readonly string $verdict,
+		public readonly ?string $decidedBy = null,
 	) {
 	}//end __construct()
 
@@ -64,9 +67,13 @@ final class ValidationVerdict {
 			$verdict = RuleVocabulary::VERDICT_ERROR;
 		}
 
+		// The operand is the properties the message points at; its value
+		// records which side of the write decided (REQ-RCT-002), so a run log
+		// cannot send somebody looking for a move that never happened.
 		return new RuleTrace(
 			verdict: $verdict,
 			operand: implode(', ', ($this->entry['properties'] ?? [])),
+			operandValue: $this->decidedBy,
 			message: (string)($this->entry['message'] ?? '')
 		);
 	}//end trace()

@@ -35,11 +35,13 @@ final class ConditionEvaluation {
 	 * @param array<string, mixed> $document The evaluation document.
 	 * @param array<string, mixed> $library  The named conditions in scope.
 	 * @param int                  $depth    The composition depth so far.
+	 * @param string|null          $organisation The object's organisation, for the calendar a `$age` counts in.
 	 */
 	public function __construct(
 		public readonly array $document,
 		public readonly array $library,
 		public readonly int $depth,
+		public readonly ?string $organisation = null,
 	) {
 	}//end __construct()
 
@@ -51,6 +53,6 @@ final class ConditionEvaluation {
 	 * @spec openspec/changes/rules-compose-read-transitions-and-time/specs/flow-engine/spec.md
 	 */
 	public function deeper(): self {
-		return new self(document: $this->document, library: $this->library, depth: ($this->depth + 1));
+		return new self(document: $this->document, library: $this->library, depth: ($this->depth + 1), organisation: $this->organisation);
 	}//end deeper()
 }//end class

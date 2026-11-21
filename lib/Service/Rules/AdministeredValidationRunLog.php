@@ -60,13 +60,14 @@ class AdministeredValidationRunLog {
 	 *
 	 * @param ValidatedWrite       $write The object being saved and its schema.
 	 * @param array<string, mixed> $entry The outcome.
+	 * @param string|null          $decidedBy Which side of the write the verdict turned on.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/rules-compose-read-transitions-and-time/specs/object-lifecycle/spec.md
 	 */
-	public function recordWarning(ValidatedWrite $write, array $entry): void {
-		$this->record(write: $write, verdict: new ValidationVerdict(entry: $entry, verdict: RuleVocabulary::VERDICT_FIRED));
+	public function recordWarning(ValidatedWrite $write, array $entry, ?string $decidedBy = null): void {
+		$this->record(write: $write, verdict: new ValidationVerdict(entry: $entry, verdict: RuleVocabulary::VERDICT_FIRED, decidedBy: $decidedBy));
 	}//end recordWarning()
 
 	/**
@@ -74,13 +75,14 @@ class AdministeredValidationRunLog {
 	 *
 	 * @param ValidatedWrite       $write The object being saved and its schema.
 	 * @param array<string, mixed> $entry The outcome.
+	 * @param string|null          $decidedBy Which side of the write the verdict turned on.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/rules-compose-read-transitions-and-time/specs/object-lifecycle/spec.md
 	 */
-	public function recordRefusal(ValidatedWrite $write, array $entry): void {
-		$this->record(write: $write, verdict: new ValidationVerdict(entry: $entry, verdict: RuleVocabulary::VERDICT_REFUSED));
+	public function recordRefusal(ValidatedWrite $write, array $entry, ?string $decidedBy = null): void {
+		$this->record(write: $write, verdict: new ValidationVerdict(entry: $entry, verdict: RuleVocabulary::VERDICT_REFUSED, decidedBy: $decidedBy));
 	}//end recordRefusal()
 
 	/**

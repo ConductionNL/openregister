@@ -4349,6 +4349,7 @@ BackgroundJob/PublishedDigestVerifyJob.php,,BackgroundJob,,,,,Files
 Collaboration/ObjectCollections.php,,Collaboration,,,,,Platform
 Controller/ObjectCollectionsController.php,,Controller,,,,,Platform
 Controller/VersionsController.php,310,Controller,Service,Service/Controller/VersionsController.php,0,,Core
+Db/SchemaMapper/AdministeredValidationCheck.php,,Db,,,,,Processes
 Db/SchemaMapper/NamedConditionCheck.php,,Db,,,,,Processes
 Db/SchemaMapper/NotificationAnnotationCheck.php,,Db,,,0,,Notifications
 Service/Import/RecordImport/ColumnMapper.php,,Service,,,,,Core
@@ -4370,6 +4371,13 @@ Db/SchemaMapper/ReferenceLoopCheck.php,29,Db,,,0,,Processes
 Db/SchemaMapper/SchemaDeclarationChecksEvent.php,14,Db,,,0,,Core
 Db/SchemaMapper/SchemaDeclarationOrder.php,43,Db,,,0,,Core
 Service/Configuration/SeedReferenceResolver.php,,Service,,,,,Configuration
+Service/Rules/NamedConditionScope.php,,Service,,,,,Processes
+Service/Rules/RelativeTimeEvaluation.php,,Service,,,,,Processes
+Db/SchemaMapper/RelativeTimeCalendarCheck.php,,Db,,,,,Processes
+Middleware/SaveWarningsMiddleware.php,,Middleware,,,,,Platform
+Service/Rules/SaveWarnings.php,,Service,,,,,Processes
+Service/Rules/SaveWarningsInterface.php,,Service,,,,,Processes
+Service/Rules/RelativeTimeSweep.php,,Service,,,,,Processes
 Service/Archival/DestructionListConflictRefresh.php,160,Service,Compliance,Compliance/Service/Archival/DestructionListConflictRefresh.php,0,,Compliance
 Service/Archival/LinkConflictsNotAcknowledgedException.php,75,Service,Compliance,Compliance/Service/Archival/LinkConflictsNotAcknowledgedException.php,0,,Compliance
 Migration/Version1Date20261114120000.php,,Migration,,,,,Platform

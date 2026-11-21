@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Service\Lifecycle;
 
 use OCA\OpenRegister\Db\Flow;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Rules\NamedConditionScope;
 
 /**
  * Selection, and only selection: which automatic transition may fire.
@@ -79,7 +80,12 @@ class AutoTransitionSelector implements AutoTransitionSelectorInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function select(array $annotation, AutoTransitionWrite $write): ?AutoTransitionCandidate {
-		$read = ['objectData' => $write->objectData, 'previous' => $write->previous, 'schemaSlug' => $write->schemaSlug];
+		$read = [
+			'objectData' => $write->objectData,
+			'previous' => $write->previous,
+			'schemaSlug' => $write->schemaSlug,
+			'conditions' => NamedConditionScope::libraryOf(annotation: $annotation),
+		];
 		return $this->selectIn(context: self::contextFor(annotation: $annotation, write: $read));
 	}//end select()
 
@@ -110,7 +116,7 @@ class AutoTransitionSelector implements AutoTransitionSelectorInterface {
 	 * @param array<string, mixed> $annotation The schema's x-openregister-lifecycle block.
 	 * @param array<string, mixed> $write      The object after and before the write, and the schema's slug.
 	 *
-	 * @phpstan-param array{objectData: array<string, mixed>, previous: array<string, mixed>, schemaSlug: string} $write
+	 * @phpstan-param array{objectData: array<string, mixed>, previous: array<string, mixed>, schemaSlug: string, conditions?: array<mixed>} $write
 	 *
 	 * @return AutoTransitionContext|null The context.
 	 */
@@ -325,7 +331,8 @@ class AutoTransitionSelector implements AutoTransitionSelectorInterface {
 					schemaSlug: $context->schemaSlug,
 					field: $context->field
 				),
-				move: new TransitionMove(action: $candidate['action'], from: $context->current, to: $candidate['to'])
+				move: new TransitionMove(action: $candidate['action'], from: $context->current, to: $candidate['to']),
+				conditions: $context->conditions
 			)
 		);
 	}//end ruleHolds()

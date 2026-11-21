@@ -85,6 +85,20 @@ final class SchemaDeclarationOrder {
 	public const NAMED_CONDITIONS = 100;
 
 	/**
+	 * The administered validations' shape (Processes).
+	 *
+	 * @spec openspec/changes/rules-compose-read-transitions-and-time/specs/flow-engine/spec.md
+	 */
+	public const ADMINISTERED_VALIDATIONS = 102;
+
+	/**
+	 * The calendars of relative-time conditions (Processes).
+	 *
+	 * @spec openspec/changes/rules-compose-read-transitions-and-time/specs/flow-engine/spec.md
+	 */
+	public const RELATIVE_TIME_CALENDARS = 104;
+
+	/**
 	 * The quality annotation, advisory.
 	 */
 	public const QUALITY = 110;
@@ -227,7 +241,7 @@ final class SchemaDeclarationOrder {
 	/**
 	 * The first and last slot of what objects of a schema do.
 	 */
-	public const BEHAVIOUR = [self::LIFECYCLE, self::NAMED_CONDITIONS];
+	public const BEHAVIOUR = [self::LIFECYCLE, self::RELATIVE_TIME_CALENDARS];
 
 	/**
 	 * The first and last slot of what the data of a schema means.

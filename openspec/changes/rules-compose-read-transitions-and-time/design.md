@@ -79,3 +79,4 @@ API, an import, a flow node or a bulk job.
 3. **The sweep (task 3.3b).** `compile()` returns `{property, operator, value}` for an indexed query, but no job runs relative-time rules over a schema.
    - Proposed: a TimedJob per schema with `$age` rules that selects due objects with the compiled comparison through `MagicRbacHandler` and fires the rule's action once per object (recorded, so it does not fire again).
    - Options: (a) as proposed; (b) no sweep: `$age` only on save and read, so escalation needs a later change; (c) reuse flow timers instead of a new job.
+   - Decided (16 Nov): the query half of (a) in this change — `RelativeTimeSweep` selects the due objects of one register, schema and organisation with the compiled comparison through the object search. The TimedJob that applies an `autoWhen` to them (system actor, once per object) is built with the transition engine in a follow-up change, not beside it here.
