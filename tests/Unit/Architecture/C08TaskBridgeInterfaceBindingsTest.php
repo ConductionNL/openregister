@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
-use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\ProcessesServiceBindings;
 use OCA\OpenRegister\Service\Flow\FlowTaskBridge;
 use OCA\OpenRegister\Service\Flow\FlowTaskBridgeInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -48,7 +48,7 @@ final class C08TaskBridgeInterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{class-string, class-string}>
 	 */
 	private const CLASSES = [
-		FlowTaskBridge::class => [FlowTaskBridgeInterface::class, ContractBindings::class],
+		FlowTaskBridge::class => [FlowTaskBridgeInterface::class, ProcessesServiceBindings::class],
 	];
 
 	/**

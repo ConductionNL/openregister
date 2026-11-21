@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Kernel\Contracts\Core\RetentionSettingsInterface;
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\ProcessesServiceBindings;
 use OCA\OpenRegister\Kernel\Contracts\Compliance\ArchivalSettingsInterface;
 use OCA\OpenRegister\Service\Party\PartySchemaCatalogueInterface;
 use OCA\OpenRegister\Service\Party\PartyService;
@@ -49,7 +50,7 @@ final class A18InterfaceBindingsTest extends TestCase {
 	private const LIB = __DIR__ . '/../../../lib';
 
 	/**
-	 * Interface => the class ContractBindings binds it to.
+	 * Interface => the class ContractBindings or ProcessesServiceBindings binds it to.
 	 *
 	 * @var array<class-string, class-string>
 	 */
@@ -81,7 +82,6 @@ final class A18InterfaceBindingsTest extends TestCase {
 		],
 		PartyService::class => [
 			'Notifications/Service/ExampleSet/ExampleSetTimelineEntries.php',
-			'Service/ContractBindings.php',
 			'Service/ExampleSet/ExampleSetAppointments.php',
 			'Service/ExampleSet/ExampleSetAuditEntries.php',
 			'Service/ExampleSet/ExampleSetCasePlans.php',
@@ -90,6 +90,7 @@ final class A18InterfaceBindingsTest extends TestCase {
 			'Service/ExampleSet/ExampleSetGrants.php',
 			'Service/ExampleSet/ExampleSetParties.php',
 			'Service/ExampleSet/ExampleSetTalkConversations.php',
+			'Service/ProcessesServiceBindings.php',
 		],
 	];
 
@@ -122,7 +123,7 @@ final class A18InterfaceBindingsTest extends TestCase {
 	}//end classes()
 
 	/**
-	 * The class implements the interface, and ContractBindings binds it.
+	 * The class implements the interface, and its area's map binds it.
 	 *
 	 * @param class-string $contract The interface.
 	 *
@@ -133,8 +134,8 @@ final class A18InterfaceBindingsTest extends TestCase {
 		$class = self::INTERFACES[$contract];
 		$this->assertTrue(interface_exists($contract), $contract . ' exists');
 		$this->assertContains($contract, class_implements($class), $class . ' implements ' . $contract);
-		$this->assertArrayHasKey($contract, ContractBindings::BINDINGS);
-		$this->assertSame($class, ContractBindings::BINDINGS[$contract]);
+		$this->assertArrayHasKey($contract, (ContractBindings::BINDINGS + ProcessesServiceBindings::BINDINGS));
+		$this->assertSame($class, (ContractBindings::BINDINGS + ProcessesServiceBindings::BINDINGS)[$contract]);
 	}//end testTheInterfaceIsImplementedAndBound()
 
 	/**

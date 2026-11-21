@@ -24,7 +24,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Kernel;
 
 use OCA\OpenRegister\Kernel\Contracts\Core\NodeRightsMapInterface;
-use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\ProcessesServiceBindings;
 use OCA\OpenRegister\Service\Flow\FlowNodeRightsGuard;
 use OCA\OpenRegister\Service\Flow\FlowNodeRightsGuardInterface;
 use OCA\OpenRegister\Service\Flow\FlowWiring;
@@ -38,7 +38,7 @@ final class NodeRightsMapBindingTest extends TestCase {
 
 	public function testThePortAndTheGuardInterfaceResolveToTheSameGuard(): void {
 		$this->assertSame(FlowNodeRightsGuard::class, FlowWiring::BINDINGS[NodeRightsMapInterface::class] ?? null);
-		$this->assertSame(FlowNodeRightsGuard::class, ContractBindings::BINDINGS[FlowNodeRightsGuardInterface::class] ?? null);
+		$this->assertSame(FlowNodeRightsGuard::class, ProcessesServiceBindings::BINDINGS[FlowNodeRightsGuardInterface::class] ?? null);
 	}
 
 	public function testTheGuardInterfaceIsThePort(): void {

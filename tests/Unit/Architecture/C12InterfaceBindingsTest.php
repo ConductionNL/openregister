@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\ProcessesServiceBindings;
 use OCA\OpenRegister\Service\CoreServiceBindings;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -124,12 +125,12 @@ final class C12InterfaceBindingsTest extends TestCase {
 	public function testTheInterfaceIsBound(string $class): void {
 		$contract = self::cases()['classes'][$class];
 		if ($contract === null) {
-			$this->assertNotContains($class, (ContractBindings::BINDINGS + CoreServiceBindings::BINDINGS), $class . ' is reached through a builder, not bound');
+			$this->assertNotContains($class, (ContractBindings::BINDINGS + CoreServiceBindings::BINDINGS + ProcessesServiceBindings::BINDINGS), $class . ' is reached through a builder, not bound');
 			return;
 		}
 
-		$this->assertArrayHasKey($contract, (ContractBindings::BINDINGS + CoreServiceBindings::BINDINGS));
-		$this->assertSame($class, (ContractBindings::BINDINGS + CoreServiceBindings::BINDINGS)[$contract]);
+		$this->assertArrayHasKey($contract, (ContractBindings::BINDINGS + CoreServiceBindings::BINDINGS + ProcessesServiceBindings::BINDINGS));
+		$this->assertSame($class, (ContractBindings::BINDINGS + CoreServiceBindings::BINDINGS + ProcessesServiceBindings::BINDINGS)[$contract]);
 	}//end testTheInterfaceIsBound()
 
 	/**

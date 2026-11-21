@@ -32,6 +32,7 @@ use OCA\OpenRegister\Service\Calendar\CalendarFeedTokenServiceInterface;
 use OCA\OpenRegister\Service\CaseTokenService;
 use OCA\OpenRegister\Service\CaseTokenServiceInterface;
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\ProcessesServiceBindings;
 use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\FederationShareService;
 use OCA\OpenRegister\Service\FederationShareServiceInterface;
@@ -64,8 +65,8 @@ final class C01SharingInterfaceBindingsTest extends TestCase {
 	private const CLASSES = [
 		AccessLinkMintGuard::class => [AccessLinkMintGuardInterface::class, CoreServiceBindings::class],
 		AccessLinkService::class => [AccessLinkServiceInterface::class, CoreServiceBindings::class],
-		AppointmentAttendeeService::class => [AppointmentAttendeeServiceInterface::class, ContractBindings::class],
-		CalendarFeedTokenService::class => [CalendarFeedTokenServiceInterface::class, ContractBindings::class],
+		AppointmentAttendeeService::class => [AppointmentAttendeeServiceInterface::class, ProcessesServiceBindings::class],
+		CalendarFeedTokenService::class => [CalendarFeedTokenServiceInterface::class, ProcessesServiceBindings::class],
 		CaseTokenService::class => [CaseTokenServiceInterface::class, ContractBindings::class],
 		FederatedShareMapper::class => [FederatedShareMapperInterface::class, IntegrationsMapperRegistrar::class],
 		FederationShareService::class => [FederationShareServiceInterface::class, ContractBindings::class],
