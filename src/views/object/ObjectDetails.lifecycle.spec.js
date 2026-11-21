@@ -57,7 +57,7 @@ function mockModule(name) {
 	return { __esModule: true, default: { name, render: () => null } }
 }
 
-const LOADERS = ['getFiles', 'getAuditTrails', 'getRelations', 'countOpenTasks', 'syncLiveSubscription', 'markReadAfterRender', 'releaseLiveSubscription']
+const LOADERS = ['getFiles', 'getAuditTrails', 'getRelations', 'countOpenTasks', 'syncLiveSubscription', 'markReadAfterRender', 'loadFollowContext', 'releaseLiveSubscription']
 
 /**
  * A view context whose loaders are spies.
@@ -98,7 +98,7 @@ describe('ObjectDetails — switching objects', () => {
 		ObjectDetails.updated.call(ctx)
 
 		expect(ctx.currentActiveObject).toBe('b')
-		for (const name of ['getFiles', 'getAuditTrails', 'getRelations', 'countOpenTasks', 'syncLiveSubscription', 'markReadAfterRender']) {
+		for (const name of ['getFiles', 'getAuditTrails', 'getRelations', 'countOpenTasks', 'syncLiveSubscription', 'markReadAfterRender', 'loadFollowContext']) {
 			expect(ctx[name]).toHaveBeenCalledTimes(1)
 		}
 	})
@@ -111,6 +111,7 @@ describe('ObjectDetails — switching objects', () => {
 
 		expect(ctx.getFiles).not.toHaveBeenCalled()
 		expect(ctx.syncLiveSubscription).not.toHaveBeenCalled()
+		expect(ctx.loadFollowContext).not.toHaveBeenCalled()
 	})
 
 	it('releases the live subscription on teardown', () => {
