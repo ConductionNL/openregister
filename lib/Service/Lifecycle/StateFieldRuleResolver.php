@@ -28,6 +28,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Lifecycle;
 
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
 use OCA\OpenRegister\Service\Rules\ConditionDialect;
 use OCA\OpenRegister\Service\Rules\ConditionEvaluation;
 use OCA\OpenRegister\Service\Rules\ConditionRefusedException;
@@ -61,7 +62,7 @@ use OCP\IUserSession;
  *   across classes would put the schema's grammar in two places, which is the drift the
  *   single-reading rule in the docblock above exists to prevent.
  */
-class StateFieldRuleResolver implements StateFieldRuleResolverInterface {
+class StateFieldRuleResolver implements StateFieldRuleResolverInterface, FieldRulesSourceInterface {
 
 	/**
 	 * The three rule kinds a state's `fields` block may declare.

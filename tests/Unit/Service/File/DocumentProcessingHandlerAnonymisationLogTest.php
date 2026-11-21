@@ -67,6 +67,9 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\DocumentAnonymisationRequest
  * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\WordReplacementRequest
  * @uses \OCA\OpenRegister\Service\Anonymisation\PipelineSteps
+ * @uses   \OCA\OpenRegister\Files\Service\File\MaskForm
+ * @uses   \OCA\OpenRegister\Files\Service\File\PlaceholderText
+ * @uses   \OCA\OpenRegister\Service\File\OfficeMediaBurner
  */
 class DocumentProcessingHandlerAnonymisationLogTest extends TestCase {
 

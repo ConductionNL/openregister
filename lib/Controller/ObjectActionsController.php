@@ -36,7 +36,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ObjectActionsControllerServices;
 use OCA\OpenRegister\Controller\Support\ObjectActionsSelection;
 use OCA\OpenRegister\Db\BulkJob;
@@ -45,6 +44,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\BulkJobRefusedException;
 use OCA\OpenRegister\Exception\LifecycleProviderException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Flow\FlowNextHintsInterface;
 use OCA\OpenRegister\Service\Flow\MacroActionResolver;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionBulkInterface;
@@ -150,7 +150,7 @@ class ObjectActionsController extends Controller {
 		IRequest $request,
 		ObjectActionsControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->objects = $services->catalogue->objects;
 		$this->macros = $services->catalogue->macros;
 		$this->definitions = $services->catalogue->definitions;

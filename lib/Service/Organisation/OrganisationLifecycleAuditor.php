@@ -32,9 +32,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Organisation;
 
-use DateTime;
-use OCA\OpenRegister\Db\AuditTrail;
-use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use DateTimeImmutable;
+use OCA\OpenRegister\Kernel\Contracts\Core\AuditEntry;
+use OCA\OpenRegister\Kernel\Contracts\Core\AuditEntryWriterInterface;
 use OCA\OpenRegister\Db\Organisation;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -65,12 +65,12 @@ class OrganisationLifecycleAuditor implements OrganisationEditAuditorInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param AuditTrailMapperInterface $mapper      The trail, which seals every row it writes.
-	 * @param IUserSession     $userSession Who made the change.
-	 * @param LoggerInterface  $logger      The logger.
+	 * @param AuditEntryWriterInterface $auditEntries The audit trail, which seals every entry it writes.
+	 * @param IUserSession              $userSession  Who made the change.
+	 * @param LoggerInterface           $logger       The logger.
 	 */
 	public function __construct(
-		private readonly AuditTrailMapperInterface $mapper,
+		private readonly AuditEntryWriterInterface $auditEntries,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
 	) {
@@ -144,37 +144,36 @@ class OrganisationLifecycleAuditor implements OrganisationEditAuditorInterface {
 	 * @return void
 	 */
 	private function write(Organisation $organisation, OrganisationChange $change): void {
-		$row = $this->rowFor(organisation: $organisation, change: $change);
+		$entry = $this->entryFor(organisation: $organisation, change: $change);
 
 		try {
-			$this->mapper->insertAuditTrails(entries: [$row]);
+			$this->auditEntries->writeAuditEntries(entries: [$entry]);
 		} catch (Throwable $e) {
-			$this->reportUnwritten(row: $row, error: $e);
+			$this->reportUnwritten(entry: $entry, error: $e);
 		}
 	}//end write()
 
 	/**
-	 * The audit row for one change, attributed to the session user or the system.
+	 * The audit entry for one change, attributed to the session user or the system.
 	 *
 	 * @param Organisation       $organisation The organisation.
 	 * @param OrganisationChange $change       The typed action and what changed.
 	 *
-	 * @return AuditTrail The row to write.
+	 * @return AuditEntry The entry to write.
 	 */
-	private function rowFor(Organisation $organisation, OrganisationChange $change): AuditTrail {
+	private function entryFor(Organisation $organisation, OrganisationChange $change): AuditEntry {
 		$actor = $this->actor();
 
-		$row = new AuditTrail();
-		$row->setUuid(Uuid::v4()->toRfc4122());
-		$row->setObjectUuid($organisation->getUuid());
-		$row->setAction($change->action);
-		$row->setUser($actor['id']);
-		$row->setUserName($actor['name']);
-		$row->setChanged($change->changed);
-		$row->setCreated(new DateTime());
-
-		return $row;
-	}//end rowFor()
+		return new AuditEntry(
+			uuid: Uuid::v4()->toRfc4122(),
+			action: $change->action,
+			user: $actor['id'],
+			userName: $actor['name'],
+			changed: $change->changed,
+			created: new DateTimeImmutable(),
+			objectUuid: $organisation->getUuid(),
+		);
+	}//end entryFor()
 
 	/**
 	 * Who made the change: the session user, or the system when there is none.
@@ -191,21 +190,21 @@ class OrganisationLifecycleAuditor implements OrganisationEditAuditorInterface {
 	}//end actor()
 
 	/**
-	 * Log a row that could not be written; the change itself was stored.
+	 * Log an entry that could not be written; the change itself was stored.
 	 *
-	 * @param AuditTrail $row   The row that was not written.
+	 * @param AuditEntry $entry The entry that was not written.
 	 * @param Throwable  $error Why.
 	 *
 	 * @return void
 	 */
-	private function reportUnwritten(AuditTrail $row, Throwable $error): void {
+	private function reportUnwritten(AuditEntry $entry, Throwable $error): void {
 		$this->logger->error(
 			message: '[OrganisationLifecycleAuditor] Could not record a change of an organisation; the change itself was stored',
 			context: [
 				'file'      => __FILE__,
 				'line'      => __LINE__,
-				'action'    => $row->getAction(),
-				'uuid'      => $row->getObjectUuid(),
+				'action'    => $entry->action,
+				'uuid'      => $entry->objectUuid,
 				'exception' => $error->getMessage(),
 			]
 		);
