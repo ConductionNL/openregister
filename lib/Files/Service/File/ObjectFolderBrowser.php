@@ -15,7 +15,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/object-folder-in-files-browser/specs/file-actions/spec.md#requirement-listing-an-objects-folder-and-its-subfolders-follows-the-objects-read-rule
+ * @spec openspec/specs/file-actions/spec.md
  */
 
 declare(strict_types=1);
@@ -25,12 +25,15 @@ namespace OCA\OpenRegister\Files\Service\File;
 use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\File\FileUpload;
+use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Exception\ObjectFolderConflictException;
 use OCA\OpenRegister\Service\FileServiceInterface;
 use OCP\Files\File;
 use OCP\Files\Folder;
 use OCP\Files\Node;
 use OCP\Files\NotFoundException;
+use OCA\OpenRegister\Service\File\FileRename;
 
 /**
  * The object folder as a small tree the files browser can walk.
@@ -46,7 +49,7 @@ use OCP\Files\NotFoundException;
  * upload's executable block and object tag, a file rename's or delete's lock
  * check), so a file in a subfolder is treated exactly like one at the top.
  *
- * @spec openspec/changes/object-folder-in-files-browser/specs/file-actions/spec.md#requirement-listing-an-objects-folder-and-its-subfolders-follows-the-objects-read-rule
+ * @spec openspec/specs/file-actions/spec.md
  */
 class ObjectFolderBrowser {
 
@@ -101,7 +104,7 @@ class ObjectFolderBrowser {
 	 * @throws InvalidArgumentException When the path could leave the object folder.
 	 * @throws NotFoundException        When the object has no folder or the path is not a folder of it.
 	 *
-	 * @spec openspec/changes/object-folder-in-files-browser/specs/file-actions/spec.md#requirement-listing-an-objects-folder-and-its-subfolders-follows-the-objects-read-rule
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function listFolder(ObjectEntity $object, string $path = ''): array {
 		$root = $this->objectFolder(object: $object);
@@ -134,7 +137,7 @@ class ObjectFolderBrowser {
 	 * @throws NotFoundException             When the path is not a folder of the object.
 	 * @throws ObjectFolderConflictException When the name is taken.
 	 *
-	 * @spec openspec/changes/object-folder-in-files-browser/specs/file-actions/spec.md#requirement-changing-an-objects-folder-and-its-subfolders-follows-the-objects-update-rule
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function createFolder(ObjectEntity $object, string $path, string $name): array {
 		$root = $this->objectFolder(object: $object);
@@ -157,7 +160,7 @@ class ObjectFolderBrowser {
 	 * @throws ObjectFolderConflictException When the name is taken.
 	 * @throws Exception                     When the pipeline refuses the file (an executable, a write failure).
 	 *
-	 * @spec openspec/changes/object-folder-in-files-browser/specs/file-actions/spec.md#requirement-changing-an-objects-folder-and-its-subfolders-follows-the-objects-update-rule
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function upload(FolderUpload $upload): array {
 		$object = $upload->folder->object;
@@ -174,7 +177,10 @@ class ObjectFolderBrowser {
 			$fileName = $relative . '/' . $name;
 		}
 
-		$file = $this->fileService->addFile(objectEntity: $object, fileName: $fileName, content: $upload->content);
+		$file = $this->fileService->addFile(
+			target: new FileTarget(object: $object),
+			upload: new FileUpload(fileName: $fileName, content: $upload->content, share: false)
+		);
 
 		return $this->describe(root: $root, node: $file);
 	}//end upload()
@@ -193,7 +199,7 @@ class ObjectFolderBrowser {
 	 * @throws ObjectFolderConflictException When the name is taken or a file below a folder is locked by someone else.
 	 * @throws Exception                     When the rename fails.
 	 *
-	 * @spec openspec/changes/object-folder-in-files-browser/specs/file-actions/spec.md#requirement-changing-an-objects-folder-and-its-subfolders-follows-the-objects-update-rule
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function rename(ObjectEntity $object, int $nodeId, string $name): array {
 		$root = $this->objectFolder(object: $object);
@@ -221,7 +227,9 @@ class ObjectFolderBrowser {
 		$this->assertFree(folder: $node->getParent(), name: $rename->name);
 		if ($node instanceof File === true) {
 			// A file keeps FileService's rename: its lock check and name rules.
-			return $this->fileService->renameFile(object: $rename->object, fileId: (int)$node->getId(), newName: $rename->name);
+			return $this->fileService->renameAttachedFile(
+				rename: new FileRename(object: $rename->object, fileId: (int)$node->getId(), newName: $rename->name)
+			);
 		}
 
 		$this->assertNothingLockedBelow(node: $node);
@@ -240,7 +248,7 @@ class ObjectFolderBrowser {
 	 * @throws ObjectFolderConflictException When a file below a folder is locked by someone else.
 	 * @throws Exception                     When the delete fails.
 	 *
-	 * @spec openspec/changes/object-folder-in-files-browser/specs/file-actions/spec.md#requirement-changing-an-objects-folder-and-its-subfolders-follows-the-objects-update-rule
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function delete(ObjectEntity $object, int $nodeId): void {
 		$root = $this->objectFolder(object: $object);

@@ -32,10 +32,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
 use Exception;
 use OCA\OpenRegister\Controller\Support\ActivityLinksControllerServices;
 use OCA\OpenRegister\Controller\Trait\ResolvesLinkedObjectTrait;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\ActivityEntriesOptions;
 use OCA\OpenRegister\Service\ActivityFilter;
 use OCA\OpenRegister\Service\ActivityFilterServiceInterface;
@@ -87,7 +87,7 @@ class ActivityLinksController extends Controller {
 		IRequest $request,
 		ActivityLinksControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->filterService = $services->filterService;
 		$this->objectService = $services->objectService;
 		$this->visibility = $services->visibility;
@@ -131,7 +131,7 @@ class ActivityLinksController extends Controller {
 		}
 
 		try {
-			$object = $this->validateObject(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id);
+			$object = $this->resolveLinkedObject(ref: new ObjectRef(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id));
 			if ($object === null) {
 				return new JSONResponse(['error' => 'Object not found'], 404);
 			}
@@ -224,7 +224,7 @@ class ActivityLinksController extends Controller {
 		}
 
 		try {
-			$resolved = $this->validateObject(register: $parts[0], schema: $parts[1], id: $parts[2]);
+			$resolved = $this->resolveLinkedObject(ref: new ObjectRef(register: $parts[0], schema: $parts[1], id: $parts[2]));
 			if ($resolved === null) {
 				return new JSONResponse(['error' => 'Object not found'], 404);
 			}

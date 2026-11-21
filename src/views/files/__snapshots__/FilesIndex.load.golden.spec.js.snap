@@ -1,0 +1,225 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`FilesIndex.loadFiles asks for the page with every filter 1`] = `
+{
+  "during": [
+    {
+      "args": [
+        "/gen/apps/openregister/api/files",
+        {
+          "params": {
+            "limit": 25,
+            "offset": 50,
+            "order": "asc",
+            "riskLevel": "high",
+            "search": "report",
+            "sort": "name",
+            "status": "done",
+          },
+        },
+      ],
+      "loading": true,
+    },
+  ],
+  "logged": [],
+  "page": {
+    "filesList": [
+      {
+        "id": 1,
+      },
+    ],
+    "limit": 25,
+    "loading": false,
+    "offset": 50,
+    "riskLevelFilter": "high",
+    "searchQuery": "report",
+    "sortField": "name",
+    "sortOrder": "asc",
+    "statusFilter": "done",
+    "totalFiles": 80,
+  },
+  "shown": [],
+}
+`;
+
+exports[`FilesIndex.loadFiles asks for the page with every filter: parameter order 1`] = `
+[
+  "limit",
+  "offset",
+  "sort",
+  "order",
+  "search",
+  "status",
+  "riskLevel",
+]
+`;
+
+exports[`FilesIndex.loadFiles asks for the page without filters 1`] = `
+{
+  "during": [
+    {
+      "args": [
+        "/gen/apps/openregister/api/files",
+        {
+          "params": {
+            "limit": 25,
+            "offset": 50,
+            "order": "asc",
+            "sort": "name",
+          },
+        },
+      ],
+      "loading": true,
+    },
+  ],
+  "logged": [],
+  "page": {
+    "filesList": [
+      {
+        "id": 1,
+      },
+    ],
+    "limit": 25,
+    "loading": false,
+    "offset": 50,
+    "riskLevelFilter": null,
+    "searchQuery": "",
+    "sortField": "name",
+    "sortOrder": "asc",
+    "statusFilter": null,
+    "totalFiles": 80,
+  },
+  "shown": [],
+}
+`;
+
+exports[`FilesIndex.loadFiles asks for the page without filters: parameter order 1`] = `
+[
+  "limit",
+  "offset",
+  "sort",
+  "order",
+]
+`;
+
+exports[`FilesIndex.loadFiles handles a success without a count 1`] = `
+{
+  "during": [
+    {
+      "args": [
+        "/gen/apps/openregister/api/files",
+        {
+          "params": {
+            "limit": 25,
+            "offset": 50,
+            "order": "asc",
+            "sort": "name",
+          },
+        },
+      ],
+      "loading": true,
+    },
+  ],
+  "logged": [],
+  "page": {
+    "filesList": [
+      {
+        "id": 1,
+      },
+      {
+        "id": 2,
+      },
+    ],
+    "limit": 25,
+    "loading": false,
+    "offset": 50,
+    "riskLevelFilter": null,
+    "searchQuery": "",
+    "sortField": "name",
+    "sortOrder": "asc",
+    "statusFilter": null,
+    "totalFiles": 2,
+  },
+  "shown": [],
+}
+`;
+
+exports[`FilesIndex.loadFiles handles an unsuccessful answer 1`] = `
+{
+  "during": [
+    {
+      "args": [
+        "/gen/apps/openregister/api/files",
+        {
+          "params": {
+            "limit": 25,
+            "offset": 50,
+            "order": "asc",
+            "sort": "name",
+          },
+        },
+      ],
+      "loading": true,
+    },
+  ],
+  "logged": [],
+  "page": {
+    "filesList": [
+      "old",
+    ],
+    "limit": 25,
+    "loading": false,
+    "offset": 50,
+    "riskLevelFilter": null,
+    "searchQuery": "",
+    "sortField": "name",
+    "sortOrder": "asc",
+    "statusFilter": null,
+    "totalFiles": 9,
+  },
+  "shown": [],
+}
+`;
+
+exports[`FilesIndex.loadFiles shows and logs a failure 1`] = `
+{
+  "during": [
+    {
+      "args": [
+        "/gen/apps/openregister/api/files",
+        {
+          "params": {
+            "limit": 25,
+            "offset": 50,
+            "order": "asc",
+            "sort": "name",
+          },
+        },
+      ],
+      "loading": true,
+    },
+  ],
+  "logged": [
+    "Failed to load files:",
+  ],
+  "page": {
+    "filesList": [
+      "old",
+    ],
+    "limit": 25,
+    "loading": false,
+    "offset": 50,
+    "riskLevelFilter": null,
+    "searchQuery": "",
+    "sortField": "name",
+    "sortOrder": "asc",
+    "statusFilter": null,
+    "totalFiles": 9,
+  },
+  "shown": [
+    [
+      "t:Failed to load files",
+    ],
+  ],
+}
+`;

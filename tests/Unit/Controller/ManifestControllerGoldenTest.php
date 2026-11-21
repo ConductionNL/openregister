@@ -135,7 +135,7 @@ class ManifestControllerGoldenTest extends TestCase {
 
 		$this->assertSame(200, $response->getStatus());
 		$this->assertSame($enriched, $response->getData());
-		$this->assertSame(md5('{"version":"1.0.0","menu":[],"runtime":{"user":null}}'), $response->getETag());
+		$this->assertSame(hash(algo: 'xxh128', data: '{"version":"1.0.0","menu":[],"runtime":{"user":null}}'), $response->getETag());
 		$this->assertSame('private, no-cache', $response->getHeaders()['Cache-Control']);
 	}
 

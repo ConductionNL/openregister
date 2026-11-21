@@ -24,6 +24,7 @@ use OCA\OpenRegister\Db\CaseItem;
 use OCA\OpenRegister\Db\CaseItemMapperInterface;
 use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Db\FlowTimerMapperInterface;
+use OCA\OpenRegister\Db\FlowTimer\TimerSubject;
 use OCA\OpenRegister\Service\Case\CasePlanItemTimers;
 use OCA\OpenRegister\Service\Case\CasePlanService;
 use OCA\OpenRegister\Service\Case\CasePlanTimerRearm;
@@ -91,7 +92,7 @@ class CasePlanTimerRearmOutcomesTest extends TestCase {
 		$item = $this->item('i-1');
 		$this->items->method('findByUuid')->with('i-1')->willReturn($item);
 		$this->timerRows->method('findBySubject')
-			->with(CasePlanItemTimers::SUBJECT_TYPE, 'i-1', [FlowTimer::STATE_ARMED, FlowTimer::STATE_SUSPENDED])
+			->with(new TimerSubject(CasePlanItemTimers::SUBJECT_TYPE, 'i-1'), [FlowTimer::STATE_ARMED, FlowTimer::STATE_SUSPENDED])
 			->willReturn([$this->timer(FlowTimer::PURPOSE_DUE)]);
 		$this->timers->expects($this->once())->method('rearmStatutoryExpiry')
 			->with($item, $this->callback(static fn ($act): bool => $act->actor === null && $act->now->format('Y-m-d') === '2026-02-01'))

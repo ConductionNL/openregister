@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+ * @spec openspec/specs/flow-bpmn-interchange/spec.md
  */
 
 declare(strict_types=1);
@@ -33,7 +33,7 @@ use DOMXPath;
  * verdict attached, and none of it changes if the file carries no
  * coordinates at all.
  *
- * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+ * @spec openspec/specs/flow-bpmn-interchange/spec.md
  */
 class BpmnDiagramLayout {
 
@@ -44,16 +44,11 @@ class BpmnDiagramLayout {
 	 *
 	 * @return array<string, array{x: int, y: int}> The positions.
 	 *
-	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 * @spec openspec/specs/flow-bpmn-interchange/spec.md
 	 */
 	public function positions(DOMXPath $xpath): array {
 		$positions = [];
-		$shapes = $xpath->query('//bpmndi:BPMNShape');
-		if ($shapes === false) {
-			$shapes = [];
-		}
-
-		foreach ($shapes as $shape) {
+		foreach ($this->shapesIn(xpath: $xpath) as $shape) {
 			if (($shape instanceof DOMElement) === false) {
 				continue;
 			}
@@ -63,14 +58,41 @@ class BpmnDiagramLayout {
 				continue;
 			}
 
-			$positions[trim($shape->getAttribute('bpmnElement'))] = [
-				'x' => (int)$bound->getAttribute('x'),
-				'y' => (int)$bound->getAttribute('y'),
-			];
+			$positions[trim($shape->getAttribute('bpmnElement'))] = self::pointOf(bound: $bound);
 		}
 
 		return $positions;
 	}//end positions()
+
+	/**
+	 * The x and y a shape's bounds place it at.
+	 *
+	 * @param DOMElement $bound The shape's `dc:Bounds`.
+	 *
+	 * @return array{x: int, y: int} The position.
+	 */
+	private static function pointOf(DOMElement $bound): array {
+		return [
+			'x' => (int)$bound->getAttribute('x'),
+			'y' => (int)$bound->getAttribute('y'),
+		];
+	}//end pointOf()
+
+	/**
+	 * The document's BPMN shapes, or none when the query fails.
+	 *
+	 * @param DOMXPath $xpath The document's XPath.
+	 *
+	 * @return iterable The shapes.
+	 */
+	private function shapesIn(DOMXPath $xpath): iterable {
+		$shapes = $xpath->query('//bpmndi:BPMNShape');
+		if ($shapes === false) {
+			return [];
+		}
+
+		return $shapes;
+	}//end shapesIn()
 
 	/**
 	 * A shape's first `dc:Bounds` element, or null when it has none.
@@ -80,7 +102,7 @@ class BpmnDiagramLayout {
 	 *
 	 * @return DOMElement|null The bounds.
 	 *
-	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 * @spec openspec/specs/flow-bpmn-interchange/spec.md
 	 */
 	private function boundsOf(DOMXPath $xpath, DOMElement $shape): ?DOMElement {
 		$bounds = $xpath->query('./dc:Bounds', $shape);
@@ -109,7 +131,7 @@ class BpmnDiagramLayout {
 	 *
 	 * @return array<int, array<string, mixed>> The nodes.
 	 *
-	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 * @spec openspec/specs/flow-bpmn-interchange/spec.md
 	 */
 	public function laidOut(array $nodes, array $positions): array {
 		foreach ($nodes as $index => $node) {

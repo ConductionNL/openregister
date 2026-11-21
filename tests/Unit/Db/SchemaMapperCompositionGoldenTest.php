@@ -33,6 +33,8 @@ use OCP\IGroupManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Db\SchemaMapper\SchemaMapperServices;
+use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 
 /**
  * @covers \OCA\OpenRegister\Db\SchemaMapper
@@ -49,7 +51,6 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Db\SchemaMapper\DeclaredActionCheck
  * @uses \OCA\OpenRegister\Db\SchemaMapper\ReferenceLoopCheck
  * @uses \OCA\OpenRegister\Db\SchemaMapper\ReferenceLoops
- * @uses \OCA\OpenRegister\Db\SchemaMapper\ExchangeAnnotationRefusals
  * @uses \OCA\OpenRegister\Db\SchemaMapper\LifecycleAnnotationCheck
  * @uses \OCA\OpenRegister\Db\SchemaMapper\PropertyDeclarationRefusals
  * @uses \OCA\OpenRegister\Db\SchemaMapper\RecordAnnotationRefusals
@@ -83,6 +84,30 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Db\SchemaMapper\AccessDeclarationChecks
  * @uses \OCA\OpenRegister\Db\SchemaMapper\SubjectDeclarationRefusals
  * @uses \OCA\OpenRegister\Db\SchemaMapper\AuthorizationBlockCheck
+ * @uses \OCA\OpenRegister\Db\MappingMapper
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaLookup
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaMapperServices
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaReadTrace
+ * @uses \OCA\OpenRegister\Db\Tenancy\OrganisationFilterOptions
+ * @uses \OCA\OpenRegister\Db\Tenancy\TenancyServices
+ * @uses \OCA\OpenRegister\Service\WritePhase
+ * @uses \OCA\OpenRegister\Db\Tenancy\OrganisationFilterTrait
+ * @uses \OCA\OpenRegister\Db\Tenancy\TenancyIdentityTrait
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\NotificationAnnotationCheck
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValueRules
+ * @uses \OCA\OpenRegister\Db\Tenancy\EntityRbacTrait
+ * @uses \OCA\OpenRegister\Db\Tenancy\OrganisationWriteGuardTrait
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionDeclarationReader
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionDeclarations
+ * @uses \OCA\OpenRegister\Service\ObjectAction\SchemaRules
+ * @uses \OCA\OpenRegister\Service\Rbac\AuthorizationEdit
+ * @uses \OCA\OpenRegister\Service\Rbac\RbacChecks
+ * @uses \OCA\OpenRegister\Service\Rbac\SchemaSave
+ * @uses \OCA\OpenRegister\Service\Relation\DeclaredProperty
+ * @uses \OCA\OpenRegister\Service\Rules\ExpressionDefaultDeclarations
+ * @uses \OCA\OpenRegister\Service\Schemas\SchemaDeclarationValidators
  */
 class SchemaMapperCompositionGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;
@@ -97,6 +122,17 @@ class SchemaMapperCompositionGoldenTest extends TestCase {
 
 		return $row;
 	}//end row()
+
+	/**
+	 * A schema already in hand, with the identifiers the composition search matches on.
+	 */
+	private static function known(?int $id, ?string $uuid, ?string $slug): Schema {
+		$schema = new Schema();
+		$schema->setId($id);
+		$schema->setUuid($uuid);
+		$schema->setSlug($slug);
+		return $schema;
+	}//end known()
 
 	private static function parent(int $id = 2, array $properties = ['name' => self::NAME], array $required = ['name']): array {
 		return self::row($id, 'parent-' . $id, ['properties' => $properties, 'required' => $required]);
@@ -234,12 +270,12 @@ class SchemaMapperCompositionGoldenTest extends TestCase {
 	public function testExtendedByMatchesGolden(): void {
 		$found = [['uuid' => 'a'], ['uuid' => null], ['uuid' => 'b']];
 		$cases = [
-			'known uuid and slug' => [[$found], [5, 'u', 's']],
-			'known uuid' => [[$found], [5, 'u', null]],
-			'known slug' => [[$found], ['5', null, 's']],
-			'known empty' => [[$found], ['', '', '']],
-			'looked up' => [[[self::row(7, 'seven')], $found], ['seven', null, null]],
-			'lookup finds nothing' => [[[]], ['gone', null, null]],
+			'known uuid and slug' => [[$found], [self::known(5, 'u', 's')]],
+			'known uuid' => [[$found], [self::known(5, 'u', null)]],
+			'known slug' => [[$found], [self::known(5, null, 's')]],
+			'known empty' => [[$found], [self::known(null, '', '')]],
+			'looked up' => [[[self::row(7, 'seven')], $found], ['seven']],
+			'lookup finds nothing' => [[[]], ['gone']],
 		];
 		$actual = [];
 		foreach ($cases as $name => [$queue, $args]) {
@@ -354,14 +390,18 @@ class SchemaMapperCompositionGoldenTest extends TestCase {
 		$db->method('getQueryBuilder')->willReturnCallback(fn () => $this->recordingBuilder());
 
 		return new SchemaMapper(
-			$db,
-			$this->createMock(IEventDispatcher::class),
-			$this->createMock(PropertyValidatorHandler::class),
-			$this->createMock(OrganisationMapper::class),
-			$this->createMock(IUserSession::class),
-			$this->createMock(IGroupManager::class),
-			$this->createMock(IAppConfig::class),
-			$this->createMock(LoggerInterface::class)
+			db: $db,
+			tenancy: new TenancyServices(
+				organisationMapper: $this->createMock(OrganisationMapper::class),
+				userSession: $this->createMock(IUserSession::class),
+				groupManager: $this->createMock(IGroupManager::class)
+			),
+			appConfig: $this->createMock(IAppConfig::class),
+			services: new SchemaMapperServices(
+				eventDispatcher: $this->createMock(IEventDispatcher::class),
+				validator: $this->createMock(PropertyValidatorHandler::class),
+				logger: $this->createMock(LoggerInterface::class)
+			)
 		);
 	}//end makeMapper()
 }//end class

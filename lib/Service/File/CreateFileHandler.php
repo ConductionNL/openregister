@@ -29,7 +29,7 @@ use OCP\Files\File;
 use OCP\Files\Folder;
 use OCP\Files\NotPermittedException;
 use Psr\Log\LoggerInterface;
-use OCA\OpenRegister\Files\Service\File\FileOwnershipHandlerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\FileAccountInterface;
 
 /**
  * Handles file creation operations with Single Responsibility.
@@ -99,14 +99,16 @@ class CreateFileHandler {
 	/**
 	 * Constructor for CreateFileHandler.
 	 *
-	 * @param CreateFileSources             $sources              The object folders, the object mapper and the logger a create works with.
-	 * @param FileValidationHandler         $fileValidHandler     File validation handler.
-	 * @param FileOwnershipHandlerInterface $fileOwnershipHandler File ownership handler.
+	 * @param CreateFileSources     $sources              The object folders, the object mapper and the logger a create works with.
+	 * @param FileValidationHandler $fileValidHandler     File validation handler.
+	 * @param FileAccountInterface  $fileOwnershipHandler Openregister's file account, which a new file moves into.
+	 * @param FileChecksum|null     $checksum             Records the SHA-256 of the written file.
 	 */
 	public function __construct(
 		CreateFileSources $sources,
 		private readonly FileValidationHandler $fileValidHandler,
-		private readonly FileOwnershipHandlerInterface $fileOwnershipHandler,
+		private readonly FileAccountInterface $fileOwnershipHandler,
+		private readonly ?FileChecksum $checksum = null,
 	) {
 		$this->folderMgmtHandler = $sources->folderMgmtHandler;
 		$this->objectEntityMapper = $sources->objectEntityMapper;
@@ -206,7 +208,9 @@ class CreateFileHandler {
 			}
 
 			// Update the existing file - pass the object so updateFile can find it in the object folder.
-			return $this->fileService->updateFile(filePath: $existingFile->getId(), content: $upload->content, tags: $upload->tags, object: $objectEntity);
+			return $this->fileService->overwriteFile(
+				overwrite: new FileOverwrite(filePath: $existingFile->getId(), content: $upload->content, tags: $upload->tags, object: $objectEntity)
+			);
 		} catch (Exception $e) {
 			throw $this->failure(error: $e, run: $run);
 		}
@@ -343,6 +347,7 @@ class CreateFileHandler {
 		$this->fileValidHandler->checkOwnership($file);
 		$file->putContent($run->content);
 		$this->fileOwnershipHandler->transferFileOwnershipIfNeeded($file);
+		$this->checksum?->record(file: $file);
 		return $file;
 	}//end writeNewFile()
 
@@ -356,7 +361,7 @@ class CreateFileHandler {
 	 */
 	private function shareIfRequested(File $file, bool $share): void {
 		if ($share === true) {
-			$this->fileService->createShareLink(path: $file->getPath());
+			$this->fileService->createShareLink(request: new ShareLinkRequest(path: $file->getPath()));
 		}
 	}//end shareIfRequested()
 

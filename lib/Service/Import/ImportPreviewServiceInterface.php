@@ -85,8 +85,7 @@ interface ImportPreviewServiceInterface {
 	 * written (D-1).
 	 *
 	 * @param ImportPreview $preview The previewed preview.
-	 * @param string|null $sourceHash The sha256 of the file being committed.
-	 * @param IUser|null $currentUser The actor.
+	 * @param ImportCommit  $commit  The sha256 of the file being committed, and the actor.
 	 *
 	 * @return ImportPreview The preview, in state committed.
 	 *
@@ -94,5 +93,5 @@ interface ImportPreviewServiceInterface {
 	 *
 	 * @spec openspec/changes/import-preview-and-conflict-policy/specs/data-import-export/spec.md
 	 */
-	public function commit(ImportPreview $preview, ?string $sourceHash, ?IUser $currentUser = null): ImportPreview;
+	public function commit(ImportPreview $preview, ImportCommit $commit): ImportPreview;
 }//end interface

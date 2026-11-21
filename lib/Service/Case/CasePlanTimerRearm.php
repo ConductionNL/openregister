@@ -34,6 +34,7 @@ use DateTimeImmutable;
 use DateTimeInterface;
 use OCA\OpenRegister\Db\CaseItem;
 use OCA\OpenRegister\Db\FlowTimer;
+use OCA\OpenRegister\Db\FlowTimer\TimerSubject;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerAct;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Log\LoggerInterface;
@@ -216,8 +217,7 @@ class CasePlanTimerRearm implements CasePlanTimerRearmInterface {
 	 */
 	private function hasOpenExpiry(CaseItem $item): bool {
 		$open = $this->sources->timerRows->findBySubject(
-			subjectType: CasePlanItemTimers::SUBJECT_TYPE,
-			subjectUuid: (string)$item->getUuid(),
+			subject: new TimerSubject(type: CasePlanItemTimers::SUBJECT_TYPE, uuid: (string)$item->getUuid()),
 			states: [FlowTimer::STATE_ARMED, FlowTimer::STATE_SUSPENDED]
 		);
 		foreach ($open as $timer) {

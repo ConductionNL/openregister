@@ -67,19 +67,19 @@ final class B15GuardedControllersGoldenTest extends TestCase {
 			HardeningController::class => [
 				'report' => ['NoCSRFRequired'],
 				'floors' => ['NoCSRFRequired'],
-				'updateControls' => ['NoCSRFRequired'],
-				'updateFloors' => ['NoCSRFRequired'],
-				'elevate' => ['NoCSRFRequired', 'BruteForceProtection'],
+				'updateControls' => [],
+				'updateFloors' => [],
+				'elevate' => ['BruteForceProtection'],
 			],
 			HardeningStatementController::class => [
 				'statement' => ['NoAdminRequired', 'NoCSRFRequired'],
-				'acceptStatement' => ['NoAdminRequired', 'NoCSRFRequired'],
-				'publishStatement' => ['NoCSRFRequired'],
-				'withdrawStatement' => ['NoCSRFRequired'],
+				'acceptStatement' => ['NoAdminRequired'],
+				'publishStatement' => [],
+				'withdrawStatement' => [],
 			],
 			FlowRunMigrationController::class => [
-				'migrate' => ['NoAdminRequired', 'NoCSRFRequired'],
-				'migrateRuns' => ['NoAdminRequired', 'NoCSRFRequired'],
+				'migrate' => ['NoAdminRequired'],
+				'migrateRuns' => ['NoAdminRequired'],
 			],
 			FlowTestRunController::class => [
 				'test' => ['NoAdminRequired'],

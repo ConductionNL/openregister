@@ -28,10 +28,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Service\TableDeletionOptions;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\SchemaDeletionService;
+use OCA\OpenRegister\Service\SchemaTeardownInterface;
 use OCP\AppFramework\IAppContainer;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
@@ -55,14 +56,14 @@ class ObjectServiceDeleteByRegisterTest extends TestCase {
 
 		$result = ['deleted_count' => 2, 'deleted_uuids' => ['u1', 'u2'], 'register_id' => 7];
 
-		$deletion = $this->createMock(SchemaDeletionService::class);
+		$deletion = $this->createMock(SchemaTeardownInterface::class);
 		$deletion->expects($this->once())
 			->method('deleteObjectsByRegister')
-			->with($register, true)
+			->with($register, new TableDeletionOptions(true))
 			->willReturn($result);
 
 		$container = $this->createMock(IAppContainer::class);
-		$container->method('get')->with(SchemaDeletionService::class)->willReturn($deletion);
+		$container->method('get')->with(SchemaTeardownInterface::class)->willReturn($deletion);
 
 		$service = (new ReflectionClass(ObjectService::class))->newInstanceWithoutConstructor();
 		foreach (['registerMapper' => $registerMapper, 'container' => $container] as $name => $value) {

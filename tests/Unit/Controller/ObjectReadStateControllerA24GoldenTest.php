@@ -30,11 +30,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\ObjectReadStateController;
+use OCA\OpenRegister\Service\Interaction\AddressedObject;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectReadState;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Notifications\Service\Notification\NotificationClearingServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ReadNoticeClearingInterface;
 use OCA\OpenRegister\Service\Interaction\ReadStateService;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -65,9 +66,9 @@ class ObjectReadStateControllerA24GoldenTest extends TestCase {
 	/**
 	 * Notice clearing mock.
 	 *
-	 * @var NotificationClearingServiceInterface&MockObject
+	 * @var ReadNoticeClearingInterface&MockObject
 	 */
-	private NotificationClearingServiceInterface&MockObject $clearing;
+	private ReadNoticeClearingInterface&MockObject $clearing;
 
 	/**
 	 * Logger mock.
@@ -79,7 +80,7 @@ class ObjectReadStateControllerA24GoldenTest extends TestCase {
 	protected function setUp(): void {
 		parent::setUp();
 		$this->readState = $this->createMock(ReadStateService::class);
-		$this->clearing = $this->createMock(NotificationClearingServiceInterface::class);
+		$this->clearing = $this->createMock(ReadNoticeClearingInterface::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 	}
 
@@ -163,7 +164,7 @@ class ObjectReadStateControllerA24GoldenTest extends TestCase {
 	}
 
 	public function testMarkReadOutcomes(): void {
-		$this->readState->method('markRead')->with($this->anything(), 'r', 's', null)->willReturnOnConsecutiveCalls(
+		$this->readState->method('markRead')->with($this->callback(static fn (AddressedObject $t): bool => [$t->register, $t->schema] === ['r', 's']), null)->willReturnOnConsecutiveCalls(
 			$this->row(),
 			$this->throwException(new NotAuthorizedException('Sign in first')),
 			$this->throwException(new \InvalidArgumentException('bad'))
@@ -182,7 +183,7 @@ class ObjectReadStateControllerA24GoldenTest extends TestCase {
 
 	public function testMarkReadOnASubResourceClearsThatTab(): void {
 		$this->params = ['subResource' => 'files'];
-		$this->readState->expects($this->once())->method('markRead')->with($this->anything(), 'r', 's', 'files')->willReturn($this->row());
+		$this->readState->expects($this->once())->method('markRead')->with($this->callback(static fn (AddressedObject $t): bool => [$t->register, $t->schema] === ['r', 's']), 'files')->willReturn($this->row());
 		$this->clearing->expects($this->once())->method('clearForSubResource')
 			->with('11111111-1111-4111-8111-111111111111', 'files')->willReturn(1);
 

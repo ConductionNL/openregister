@@ -52,12 +52,12 @@ final class MetricSample {
 	}//end __construct()
 
 	/**
-	 * Convenience factory for a single unlabelled sample.
+	 * A metric with one sample.
 	 *
-	 * @param string $name Metric name.
-	 * @param string $type Prometheus type.
-	 * @param string $help HELP text.
-	 * @param float|int $value Sample value.
+	 * @param string                $name   Metric name.
+	 * @param string                $type   Prometheus type.
+	 * @param string                $help   HELP text.
+	 * @param float|int             $value  Sample value.
 	 * @param array<string, string> $labels Optional labels.
 	 *
 	 * @return self

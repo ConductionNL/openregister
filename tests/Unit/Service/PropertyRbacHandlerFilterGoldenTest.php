@@ -36,6 +36,7 @@ use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldLists;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRules;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Service\Rbac\OmittedWriteOnly;
 use OCA\OpenRegister\Service\Rbac\PropertyReveal;
 use OCA\OpenRegister\Service\Rbac\RevealCollector;
 use OCP\IGroupManager;
@@ -47,6 +48,20 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Service\PropertyRbacHandler
+ * @uses \OCA\OpenRegister\Service\Lifecycle\StateFieldLists
+ * @uses \OCA\OpenRegister\Service\Lifecycle\StateFieldRules
+ * @uses \OCA\OpenRegister\Service\PropertyAccessRequest
+ * @uses \OCA\OpenRegister\Service\PropertyRbacCaller
+ * @uses \OCA\OpenRegister\Service\PropertyRbacRules
+ * @uses \OCA\OpenRegister\Service\PropertyWriteCheck
+ * @uses \OCA\OpenRegister\Service\ProtectedCarryForward
+ * @uses \OCA\OpenRegister\Service\ProtectedPropertyRead
+ * @uses \OCA\OpenRegister\Service\Rbac\ExplicitReveal
+ * @uses \OCA\OpenRegister\Service\Rbac\OmittedWriteOnly
+ * @uses \OCA\OpenRegister\Service\Rbac\PropertyReveal
+ * @uses \OCA\OpenRegister\Service\Rbac\WriteOnlyPathWalker
+ * @uses \OCA\OpenRegister\Service\Rbac\WriteOnlyValue
+ * @uses \OCA\OpenRegister\Service\SchemaProperty
  */
 final class PropertyRbacHandlerFilterGoldenTest extends TestCase {
 
@@ -145,8 +160,8 @@ final class PropertyRbacHandlerFilterGoldenTest extends TestCase {
 		$actual['omittedWriteOnly'] = $omitted;
 		$actual['omittedProtected'] = [$handler->collectOmittedProtectedProperties(update: new ProtectedCarryForward(schema: $schema, incoming: ['status' => $status], stored: $object)), $log];
 		$log = [];
-		$actual['restore'] = $handler->restoreWriteOnlyValues(prepared: $incoming, stored: $object, omittedPaths: [...$omitted, 'nowhere.at.all']);
-		$actual['restoreScalar'] = $handler->restoreWriteOnlyValues(prepared: ['cfg' => 'flat'], stored: $object, omittedPaths: ['cfg.auth.secret']);
+		$actual['restore'] = $handler->restoreWriteOnlyValues(prepared: $incoming, omitted: new OmittedWriteOnly(stored: $object, paths: [...$omitted, 'nowhere.at.all']));
+		$actual['restoreScalar'] = $handler->restoreWriteOnlyValues(prepared: ['cfg' => 'flat'], omitted: new OmittedWriteOnly(stored: $object, paths: ['cfg.auth.secret']));
 		$actual['couldRead'] = array_map(
 			fn (string $p): bool => $handler->couldReadProperty(schema: $schema, property: $p),
 			array_combine(array_keys(self::AUTH), array_keys(self::AUTH))

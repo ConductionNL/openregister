@@ -90,19 +90,27 @@ class HandoffQueueDrainJob extends TimedJob {
 	 */
 	protected function run($argument): void {
 		try {
-			$summary = $this->handoffService->drainParked();
-			if ($summary['drained'] > 0 || $summary['failed'] > 0) {
-				$this->logger->info(
-					message: '[HandoffQueueDrainJob] Fallback drain sweep completed',
-					context: ['file' => __FILE__, 'line' => __LINE__, 'summary' => $summary]
-				);
-			}
+			$this->drain();
 		} catch (\Throwable $e) {
 			$this->logger->error(
 				message: '[HandoffQueueDrainJob] Fallback drain sweep failed: ' . $e->getMessage(),
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
 		}
-
 	}//end run()
+
+	/**
+	 * Drain the parked handoffs and log a sweep that moved or failed any.
+	 *
+	 * @return void
+	 */
+	private function drain(): void {
+		$summary = $this->handoffService->drainParked();
+		if ($summary['drained'] > 0 || $summary['failed'] > 0) {
+			$this->logger->info(
+				message: '[HandoffQueueDrainJob] Fallback drain sweep completed',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'summary' => $summary]
+			);
+		}
+	}//end drain()
 }//end class

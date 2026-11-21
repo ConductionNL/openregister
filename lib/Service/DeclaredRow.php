@@ -32,12 +32,12 @@ final class DeclaredRow {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $table Either SharedMasterDataService::REGISTERS or ::SCHEMAS.
-	 * @param int    $id    The row id.
+	 * @param string   $table Either SharedMasterDataService::REGISTERS or ::SCHEMAS.
+	 * @param int|null $id    The row id; null when not known, which matches no declaration.
 	 */
 	public function __construct(
 		public readonly string $table,
-		public readonly int $id,
+		public readonly ?int $id,
 	) {
 	}//end __construct()
 }//end class

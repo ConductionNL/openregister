@@ -22,6 +22,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -231,7 +232,7 @@ class PermissionHandlerZaaktypeTest extends TestCase {
 
 		$this->expectException(NotAuthorizedException::class);
 		$this->expectExceptionMessageMatches('/does not have permission/');
-		$this->handler->checkPermission($schema, 'read', 'random');
+		$this->handler->checkPermission($schema, 'read', new PermissionCheckOptions(userId: 'random'));
 	}
 
 	// === Malformed override entries fail closed ===

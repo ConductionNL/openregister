@@ -47,11 +47,11 @@ namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Rbac\WriteOnlyValue;
+use OCA\OpenRegister\Service\Rbac\OmittedWriteOnly;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Service\Rbac\PropertyReveal;
 use OCA\OpenRegister\Service\Rbac\RevealCollector;
 use OCA\OpenRegister\Service\Rbac\WriteOnlyPathWalker;
-use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRules;
 use OCP\IGroupManager;
 use OCP\IUserSession;
@@ -97,19 +97,18 @@ class PropertyRbacHandler implements PropertyRbacHandlerInterface {
 	/**
 	 * Check if the current user can read a specific property
 	 *
-	 * @param Schema $schema Schema containing property definition
-	 * @param string $property Property name to check
-	 * @param array $object Object data (for conditional matching)
+	 * @param SchemaProperty        $property The schema and the property name to check
+	 * @param PropertyAccessRequest $request  The object data (for conditional matching)
 	 *
 	 * @return bool True if user can read the property
 	 *
 	 * @spec openspec/specs/row-field-level-security/spec.md#field-level-security (property-level read authorization:
 	 *       evaluates the property's read rules against the current user's groups + object conditions)
 	 */
-	public function canReadProperty(Schema $schema, string $property, array $object): bool {
+	public function canReadProperty(SchemaProperty $property, PropertyAccessRequest $request): bool {
 		return $this->checkPropertyAccess(
-			rules: $this->actionRules(schema: $schema, property: $property)['read'] ?? [],
-			request: new PropertyAccessRequest(object: $object)
+			rules: $this->actionRules(schema: $property->schema, property: $property->name)['read'] ?? [],
+			request: $request
 		);
 	}//end canReadProperty()
 
@@ -210,7 +209,12 @@ class PropertyRbacHandler implements PropertyRbacHandlerInterface {
 		// applied above). Explicit-reveal masking is not done here: the
 		// ExplicitRevealMasker applies it on the render routes, admins included.
 		// A schema with no property-level authorization is returned as-is.
-		if ($this->isAdmin() === true || $schema->hasPropertyAuthorization() === false) {
+		if ($schema->hasPropertyAuthorization() === false) {
+			return $object;
+		}
+
+		if ($this->isAdmin() === true) {
+			$this->countBypassedReveals(schema: $schema, object: $object);
 			return $object;
 		}
 
@@ -227,6 +231,34 @@ class PropertyRbacHandler implements PropertyRbacHandlerInterface {
 	}//end filterReadableProperties()
 
 	/**
+	 * Count, for an internal run in progress, the audited values an administrator's read passes unfiltered.
+	 *
+	 * The filtered path counts through recordReveal(); this covers the bypass, so
+	 * an export or job run by an administrator is recorded too.
+	 *
+	 * @param Schema               $schema The schema.
+	 * @param array<string, mixed> $object The object as returned.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/sensitive-field-reveal-audit/specs/row-field-level-security/spec.md
+	 */
+	private function countBypassedReveals(Schema $schema, array $object): void {
+		if ($this->reveals?->inProcess() !== true) {
+			return;
+		}
+
+		$revealed = 0;
+		foreach ($schema->getPropertiesWithAuthorization() as $propertyName => $authorization) {
+			if (array_key_exists($propertyName, $object) === true && $this->revealIsAudited(authorization: $authorization) === true) {
+				$revealed++;
+			}
+		}
+
+		$this->reveals->countProcessReveals(revealed: $revealed);
+	}//end countBypassedReveals()
+
+	/**
 	 * Drop one property the user cannot read; record the reveal of one they can.
 	 *
 	 * @param ProtectedPropertyRead $read The schema, property, its authorization block and the object.
@@ -236,7 +268,7 @@ class PropertyRbacHandler implements PropertyRbacHandlerInterface {
 	private function keepIfReadable(ProtectedPropertyRead $read): array {
 		$object = $read->object;
 		$property = $read->property;
-		if ($this->canReadProperty(schema: $read->schema, property: $property, object: $object) === false) {
+		if ($this->canReadProperty(property: new SchemaProperty(schema: $read->schema, name: $property), request: new PropertyAccessRequest(object: $object)) === false) {
 			unset($object[$property]);
 			$this->logger->debug(
 				message: '[PropertyRbacHandler] Filtered unreadable property',
@@ -503,7 +535,7 @@ class PropertyRbacHandler implements PropertyRbacHandlerInterface {
 			return false;
 		}
 
-		return $this->canReadProperty(schema: $update->schema, property: $property, object: $stored) === false
+		return $this->canReadProperty(property: new SchemaProperty(schema: $update->schema, name: $property), request: new PropertyAccessRequest(object: $stored)) === false
 			|| $this->canUpdateProperty(
 				property: new SchemaProperty(schema: $update->schema, name: $property),
 				request: new PropertyAccessRequest(object: $stored)
@@ -537,19 +569,20 @@ class PropertyRbacHandler implements PropertyRbacHandlerInterface {
 	 * FieldEncryptionHandler::encryptProperties() — restoring ciphertext before encryption
 	 * would double-encrypt it and corrupt the secret beyond recovery.
 	 *
-	 * @param array $prepared The prepared update payload, mutated copy returned.
-	 * @param array $stored The RAW stored object (never a rendered one).
-	 * @param array<int, string> $omittedPaths Declared paths absent from the incoming payload.
+	 * @param array            $prepared The prepared update payload, mutated copy returned.
+	 * @param OmittedWriteOnly $omitted  The RAW stored object (never a rendered one) and the declared paths absent
+	 *                                   from the incoming payload.
 	 *
 	 * @return array The payload with omitted write-only values carried forward.
 	 *
 	 * @spec openspec/specs/row-field-level-security/spec.md#requirement-an-omitted-writeonly-value-must-be-preserved-on-save
 	 */
-	public function restoreWriteOnlyValues(array $prepared, array $stored, array $omittedPaths): array {
+	public function restoreWriteOnlyValues(array $prepared, OmittedWriteOnly $omitted): array {
+		$stored = $omitted->stored;
 		// Nothing stored at a location: the value was never set. Restoring would
 		// invent a key that never existed, so leave the payload alone there and
 		// let normal PUT semantics apply.
-		foreach (array_filter($omittedPaths, fn ($path): bool => $this->paths->exists(path: $path, object: $stored)) as $path) {
+		foreach (array_filter($omitted->paths, fn ($path): bool => $this->paths->exists(path: $path, object: $stored)) as $path) {
 			$prepared = $this->paths->restore(
 				prepared: $prepared,
 				stored: new WriteOnlyValue(path: $path, value: $this->paths->read(path: $path, object: $stored))

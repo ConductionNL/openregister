@@ -43,6 +43,11 @@ use ReflectionMethod;
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Service\Relation\RelationTypeResolver
  * @uses   \OCA\OpenRegister\Service\Relation\RelationAnnotationValidator
+ * @uses \OCA\OpenRegister\Service\Relation\DescribeRun
+ * @uses \OCA\OpenRegister\Service\Relation\RelationGraphShapes
+ * @uses \OCA\OpenRegister\Service\Relation\RelationGraphSources
+ * @uses \OCA\OpenRegister\Service\Relation\RelationValueReader
+ * @uses   \OCA\OpenRegister\Db\HydrationKey
  */
 class RelationGraphEdgesGoldenTest extends TestCase {
 

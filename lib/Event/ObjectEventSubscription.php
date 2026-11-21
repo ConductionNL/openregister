@@ -24,7 +24,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Event;
 
-use OCA\OpenRegister\Listener\ListenerClassesInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCP\EventDispatcher\IEventDispatcher;
 
@@ -91,6 +90,18 @@ use OCP\EventDispatcher\IEventDispatcher;
  * @spec openspec/specs/event-driven-architecture/spec.md
  */
 final class ObjectEventSubscription {
+
+	/**
+	 * The service name of the proxy listener every filtered subscription shares.
+	 *
+	 * The dispatcher resolves this name from the server container; this class only
+	 * registers it. Its value is the Core ObjectEventProxyListener's class name,
+	 * which Listener\ListenerClassesInterface::OBJECT_EVENT_PROXY defines as this
+	 * constant.
+	 *
+	 * @var string
+	 */
+	public const PROXY_LISTENER = 'OCA\\OpenRegister\\Listener\\ObjectEventProxyListener';
 
 	/**
 	 * Declared subscriptions, keyed by event class name.
@@ -174,7 +185,7 @@ final class ObjectEventSubscription {
 		?array $schemas = null,
 	): void {
 		if (self::needsProxy(event: $event) === true) {
-			$context->registerEventListener($event, ListenerClassesInterface::OBJECT_EVENT_PROXY);
+			$context->registerEventListener($event, self::PROXY_LISTENER);
 			self::$proxied[$event] = true;
 		}
 
@@ -215,7 +226,7 @@ final class ObjectEventSubscription {
 		?array $schemas = null,
 	): void {
 		if (self::needsProxy(event: $event) === true) {
-			$dispatcher->addServiceListener($event, ListenerClassesInterface::OBJECT_EVENT_PROXY);
+			$dispatcher->addServiceListener($event, self::PROXY_LISTENER);
 			self::$proxied[$event] = true;
 		}
 

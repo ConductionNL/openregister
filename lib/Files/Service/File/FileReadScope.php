@@ -19,6 +19,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Service\File;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\ReadableFileHitsInterface;
 use OCA\OpenRegister\Service\FileReaderInterface;
 use OCP\Files\Folder;
 use Psr\Log\LoggerInterface;
@@ -40,9 +41,9 @@ use Throwable;
  * well rather than served without the object's own read check.
  *
  * @spec openspec/changes/archive/2026-10-05-hybrid-document-search/tasks.md
- * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-reading-an-objects-files-follows-the-objects-read-rule-req-ofoa-002
+ * @spec openspec/specs/file-actions/spec.md
  */
-class FileReadScope {
+class FileReadScope implements ReadableFileHitsInterface {
 
 	/**
 	 * Wire the file tree and the session.
@@ -115,7 +116,7 @@ class FileReadScope {
 	 *
 	 * @return bool True when the caller may read it.
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-reading-an-objects-files-follows-the-objects-read-rule-req-ofoa-002
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function mayReadFile(int $fileId): bool {
 		$user = $this->tree->userSession->getUser();
@@ -194,7 +195,7 @@ class FileReadScope {
 	 *
 	 * @return bool|null True or false for an object's file, null when the file is not one.
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-reading-an-objects-files-follows-the-objects-read-rule-req-ofoa-002
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	private function managedFileVerdict(int $fileId): ?bool {
 		if ($this->fileService === null || $this->rules->objectFileAccess === null) {

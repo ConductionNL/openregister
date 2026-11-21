@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob\Support;
 
+use OCA\OpenRegister\Db\Source;
 use OCA\OpenRegister\Db\SourceMapperInterface;
 use OCA\OpenRegister\Service\Sync\HarvestPipelineServiceInterface;
 use OCA\OpenRegister\Service\Sync\SourceFetcherLookupInterface;
@@ -36,7 +37,7 @@ final readonly class SyncDataServices {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param SourceMapperInterface           $sourceMapper    Source store.
+	 * @param SourceMapperInterface<Source>   $sourceMapper    Source store.
 	 * @param SyncScheduleInterface           $scheduleService Selects the due sources.
 	 * @param SourceFetcherLookupInterface    $fetcherRegistry Fetcher per source type.
 	 * @param HarvestPipelineServiceInterface $pipeline        Runs one harvest.

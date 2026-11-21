@@ -69,10 +69,10 @@ interface DuplicateDetectionServiceInterface {
 	 * has no bucket to sit in and therefore no match — the same treatment
 	 * {@see partition()} gives a stored object with an empty token.
 	 *
-	 * @param int|string $register Register id, uuid or slug — the boundary the schema resolves inside.
-	 * @param int|string $schema Schema id, uuid or slug.
+	 * @param DedupRun             $request   The register (id, uuid or slug: the boundary the schema resolves inside),
+	 *                                        the schema (id, uuid or slug) and the optional cut-off (the annotation's,
+	 *                                        then {@see DEFAULT_THRESHOLD}, when null), unresolved.
 	 * @param array<string, mixed> $candidate The unsaved body.
-	 * @param float|null $threshold Optional cut-off; the annotation's, then {@see DEFAULT_THRESHOLD}, when null.
 	 *
 	 * @return array<int, array{
 	 *   uuid: string,
@@ -83,7 +83,7 @@ interface DuplicateDetectionServiceInterface {
 	 *
 	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-candidate-can-be-checked-against-the-stored-objects-before-it-is-saved
 	 */
-	public function checkCandidate($register, $schema, array $candidate, ?float $threshold = null): array;
+	public function checkCandidate(DedupRun $request, array $candidate): array;
 
 	/**
 	 * The cut-off a register/schema applies, so a caller that needs to know
@@ -149,4 +149,22 @@ interface DuplicateDetectionServiceInterface {
 	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
 	 */
 	public function effectiveRules($register, $schema): array;
+
+	/**
+	 * Group files whose text is near-identical, by their stored MinHash signatures.
+	 *
+	 * @param list<int>  $fileIds   The files, already limited to those the caller may read.
+	 * @param float|null $threshold The similarity at or above which files group (0.5 to 1), or null for the
+	 *                              `duplicates.textThreshold` setting, default 0.9.
+	 *
+	 * @return array{
+	 *     groups: list<array{representative: int, members: list<array{fileId: int, similarity: float, identicalText: bool}>}>,
+	 *     notCompared: list<array{fileId: int, reason: string}>
+	 * } The groups and the files not compared.
+	 *
+	 * @throws \InvalidArgumentException When the threshold lies outside 0.5 to 1.
+	 *
+	 * @spec openspec/changes/near-duplicate-documents-by-text/specs/duplicate-detection/spec.md#requirement-near-identical-documents-are-grouped-by-their-text-req-ndt-002
+	 */
+	public function findTextGroups(array $fileIds, ?float $threshold=null): array;
 }//end interface

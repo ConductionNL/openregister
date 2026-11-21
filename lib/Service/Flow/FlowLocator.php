@@ -39,6 +39,8 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Service\Flow\Nodes\TriggerScheduleNode;
 use OCA\OpenRegister\Service\WriteCause;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -145,8 +147,7 @@ class FlowLocator implements FlowLocatorInterface {
 		try {
 			$object = WriteCause::asLookup(fn () => $this->objectService->find(
 				id: $ref->id,
-				register: $ref->register,
-				schema: $ref->schema,
+				options: new ObjectFindOptions(register: $ref->register, schema: $ref->schema),
 				_rbac: false,
 				_multitenancy: false
 			));
@@ -218,7 +219,10 @@ class FlowLocator implements FlowLocatorInterface {
 	private function triggerIndex(string $event, RegisterSchemaRef $table): array {
 		$indexed = [];
 		try {
-			$indexed = $this->stores->triggerMapper->flowUuidsFor(event: $event, register: (string)$table->register, schema: (string)$table->schema);
+			$indexed = $this->stores->triggerMapper->flowUuidsSubscribedTo(
+				event: $event,
+				table: new RegisterSchemaRef(register: (string)$table->register, schema: (string)$table->schema)
+			);
 			$converted = array_flip($this->stores->triggerMapper->representedFlowUuids());
 		} catch (Throwable $e) {
 			$this->logger->warning(
@@ -435,8 +439,27 @@ class FlowLocator implements FlowLocatorInterface {
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
 	 */
 	public function scheduledFlows(): array {
+		$candidates = [];
+		foreach ($this->findScheduled() as $flow) {
+			if ($flow->canDispatch() === false) {
+				$this->warnNotDispatched(flow: $flow);
+				continue;
+			}
+
+			$candidates[] = $this->scheduleCandidate(flow: $flow);
+		}
+
+		return $candidates;
+	}//end scheduledFlows()
+
+	/**
+	 * The flows stored with a schedule trigger, or none when they cannot be listed.
+	 *
+	 * @return array<int, Flow> The flows.
+	 */
+	private function findScheduled(): array {
 		try {
-			$flows = $this->stores->mapper->findScheduled();
+			return $this->stores->mapper->findScheduled();
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				message: '[FlowLocator] Could not list scheduled flows: ' . $e->getMessage(),
@@ -444,32 +467,81 @@ class FlowLocator implements FlowLocatorInterface {
 			);
 			return [];
 		}
+	}//end findScheduled()
 
-		$candidates = [];
-		foreach ($flows as $flow) {
-			if ($flow->canDispatch() === false) {
-				$this->logger->warning(
-					message: '[FlowLocator] Scheduled flow "' . $flow->getUuid()
-						. '" was not dispatched: it is disabled, or its definition has no owner and is therefore '
-						. 'an orphan that cannot be listed, found or edited either. This is not the identity '
-						. 'check — whose rights a run uses comes from the schedule trigger node\'s runAs.',
-					context: ['file' => __FILE__, 'line' => __LINE__, 'flow' => $flow->getUuid()]
-				);
+	/**
+	 * Say why a scheduled flow is not dispatched.
+	 *
+	 * @param Flow $flow The flow that cannot dispatch.
+	 *
+	 * @return void
+	 */
+	private function warnNotDispatched(Flow $flow): void {
+		$this->logger->warning(
+			message: '[FlowLocator] Scheduled flow "' . $flow->getUuid()
+				. '" was not dispatched: it is disabled, or its definition has no owner and is therefore '
+				. 'an orphan that cannot be listed, found or edited either. This is not the identity '
+				. 'check — whose rights a run uses comes from the schedule trigger node\'s runAs.',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'flow' => $flow->getUuid()]
+		);
+	}//end warnNotDispatched()
+
+	/**
+	 * The scheduler's view of one dispatchable flow.
+	 *
+	 * @param Flow $flow The flow.
+	 *
+	 * @return array{id: string, enabled: bool, trigger: string, cron: string, owner: string|null, since: string, timezone: string} The candidate.
+	 */
+	private function scheduleCandidate(Flow $flow): array {
+		return [
+			'id' => (string)$flow->getUuid(),
+			'enabled' => (bool)$flow->getEnabled(),
+			'trigger' => (string)($flow->getTrigger() ?? ''),
+			'cron' => (string)($flow->getCron() ?? ''),
+			'owner' => $flow->getOwner(),
+			'since' => $this->savedAt(flow: $flow),
+			'timezone' => $this->scheduleTimezoneOf(flow: $flow),
+		];
+	}//end scheduleCandidate()
+
+	/**
+	 * The timezone the flow's schedule trigger reads its cron in, or ''.
+	 *
+	 * Read from the first schedule trigger node that names one. The cron
+	 * itself is the flow's `cron` column; the timezone has no column and
+	 * lives only in the node's config.
+	 *
+	 * @param Flow $flow The flow.
+	 *
+	 * @return string The timezone identifier, or '' for the server's timezone.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
+	 */
+	private function scheduleTimezoneOf(Flow $flow): string {
+		$nodes = $flow->getNodes();
+		if (is_array($nodes) === false) {
+			return '';
+		}
+
+		foreach ($nodes as $node) {
+			if (is_array($node) === false || (string)($node['type'] ?? '') !== 'openregister.trigger-schedule') {
 				continue;
 			}
 
-			$candidates[] = [
-				'id' => (string)$flow->getUuid(),
-				'enabled' => (bool)$flow->getEnabled(),
-				'trigger' => (string)($flow->getTrigger() ?? ''),
-				'cron' => (string)($flow->getCron() ?? ''),
-				'owner' => $flow->getOwner(),
-				'since' => $this->savedAt(flow: $flow),
-			];
-		}//end foreach
+			$config = $node['config'] ?? [];
+			$timezone = '';
+			if (is_array($config) === true) {
+				$timezone = trim((string)($config[TriggerScheduleNode::CONFIG_TIMEZONE] ?? ''));
+			}
 
-		return $candidates;
-	}//end scheduledFlows()
+			if ($timezone !== '') {
+				return $timezone;
+			}
+		}
+
+		return '';
+	}//end scheduleTimezoneOf()
 
 	/**
 	 * When a flow was last saved, as an ATOM timestamp, or the empty string.

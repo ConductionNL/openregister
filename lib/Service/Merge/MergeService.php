@@ -11,7 +11,7 @@
  * annotation. Every object read/write goes through `ObjectService` (RBAC +
  * tenant scoped, audited).
  *
- * `previewMerge` is side-effect-free. `executeMerge` is one server-authoritative
+ * `previewMerge` is side-effect-free. `merge` is one server-authoritative
  * unit of work: snapshot -> relink -> recompute -> status flip -> persist
  * mergeOperation -> dispatch event. `reverseMerge` restores the snapshot
  * within `reversalWindowDays`, best-effort per source-record link (an
@@ -41,6 +41,11 @@ namespace OCA\OpenRegister\Service\Merge;
 use DateInterval;
 use DateTimeImmutable;
 use Exception;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\MergeInstruction;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
+use OCA\OpenRegister\Service\PropertyAccessRequest;
+use OCA\OpenRegister\Service\SchemaProperty;
 use OCA\OpenRegister\Kernel\Contracts\ObjectMergerInterface;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -51,6 +56,8 @@ use OCA\OpenRegister\Exception\MergeDecisionException;
 use OCA\OpenRegister\Exception\MergeNotFullyReadableException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Service\Survivorship\MasterRecord;
+use OCA\OpenRegister\Service\Survivorship\GoldenRecordRequest;
 use OCA\OpenRegister\Service\Survivorship\SourceRecordResolver;
 use OCA\OpenRegister\Service\Survivorship\SurvivorshipResolver;
 use OCA\OpenRegister\Service\Survivorship\SurvivorshipTrustLookup;
@@ -60,6 +67,8 @@ use OCP\EventDispatcher\IEventDispatcher;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Server-authoritative, reversible merge engine driven by
@@ -199,6 +208,7 @@ class MergeService implements ObjectMergerInterface {
 	 * @param PropertyRbacHandler $propertyRbac Field-level security, to refuse a merge the caller cannot fully see.
 	 * @param MergeSurvivorshipServices $survivorship Schema lookup and the survivorship, trust-tier and source-record resolvers.
 	 * @param MergeReportingServices $reporting Event dispatcher, audit writer and logger.
+	 * @param ReferenceRelinker|null    $relinker     Moves every other reference to the loser onto the survivor; null keeps only the configured relink.
 	 *
 	 * @spec openspec/changes/mdm-merge-engine/tasks.md#4.1
 	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#3.1
@@ -208,6 +218,7 @@ class MergeService implements ObjectMergerInterface {
 		private readonly PropertyRbacHandler $propertyRbac,
 		MergeSurvivorshipServices $survivorship,
 		MergeReportingServices $reporting,
+		private readonly ?ReferenceRelinker $relinker=null,
 	) {
 		$this->schemaMapper         = $survivorship->schemaMapper;
 		$this->resolver             = $survivorship->resolver;
@@ -260,43 +271,28 @@ class MergeService implements ObjectMergerInterface {
 			'attributeProvenance' => $resolution['attributeProvenance'],
 			'fieldChoices' => $this->fieldChoices(pair: $pair, goldenRecord: $resolution['goldenRecord']),
 			'reversalDeadline' => $this->reversalDeadline(mergedAt: $now->format(DATE_ATOM), config: $config),
+			'references' => $this->referencePreview(from: $from, into: $into),
 		];
 	}//end previewMerge()
 
 	/**
-	 * Execute a merge atomically (server-authoritative): snapshot both
-	 * objects, relink the losing object's source records onto the survivor,
-	 * recompute the survivor via `SurvivorshipResolver`, flip statuses,
-	 * persist a `mergeOperation` row, and dispatch `ObjectsMergedEvent`.
+	 * The references a merge would move, by schema and count; none without a relinker.
 	 *
-	 * @param string $from Uuid of the object being merged away.
-	 * @param string $into Uuid of the surviving object.
-	 * @param string $reason Steward-supplied merge reason.
-	 * @param string $mergedBy Acting user uid.
-	 * @param array<string, mixed>|null $decisions Per-property choices (`property => 'from' | 'into'`).
-	 *                                            Null keeps the pre-existing behaviour exactly: the
-	 *                                            resolver's proposal applies and no payload property
-	 *                                            is rewritten.
+	 * @param string $from The record that would go away.
+	 * @param string $into The record that would stay.
 	 *
-	 * @return array<string, mixed> The persisted `mergeOperation` row.
+	 * @return array<int, array{schema: string, count: int}>
 	 *
-	 * @throws RuntimeException When self-merge, already-merged, or the survivor is not active.
-	 * @throws MergeDecisionException When the decision map does not describe the preview it approves.
-	 * @throws MergeNotFullyReadableException When either object carries a property the caller may not read.
-	 *
-	 * @spec openspec/changes/mdm-merge-engine/tasks.md#4.3
+	 * @spec openspec/changes/mdm-merge-relinks-every-reference/specs/mdm-merge/spec.md#requirement-a-merge-relinks-every-reference-to-the-losing-record
 	 */
-	public function executeMerge(
-		string $from,
-		string $into,
-		string $reason,
-		string $mergedBy,
-		?array $decisions = null,
-	): array {
-		$instruction = new MergeInstruction(from: $from, into: $into, reason: $reason, mergedBy: $mergedBy);
+	private function referencePreview(string $from, string $into): array {
+		if ($this->relinker === null) {
+			return [];
+		}
 
-		return $this->merge(instruction: $instruction, decisions: $decisions);
-	}//end executeMerge()
+		return $this->referencePlan(from: $from, into: $into)->references();
+	}//end referencePreview()
+
 
 	/**
 	 * Execute a merge (server-authoritative), in order: snapshot both objects,
@@ -319,8 +315,10 @@ class MergeService implements ObjectMergerInterface {
 	public function merge(MergeInstruction $instruction, ?array $decisions = null): array {
 		$run            = $this->startMerge(instruction: $instruction);
 		$run->overrides = $this->decidedOverrides(run: $run, decisions: $decisions);
+		$this->guardReferenceCap(run: $run);
 
 		$this->relink(run: $run);
+		$this->relinkReferences(run: $run);
 		$this->markMerged(run: $run);
 		$this->saveSurvivor(run: $run);
 
@@ -329,9 +327,100 @@ class MergeService implements ObjectMergerInterface {
 
 		$operationData       = ($savedOperation->getObject() ?? []);
 		$operationData['id'] = $savedOperation->getUuid();
+		$operationData['references'] = $run->movedReferences;
+		$operationData['skippedReferences'] = $run->skippedReferences;
 
 		return $operationData;
 	}//end merge()
+
+	/**
+	 * The relinker's plan without the survivor's own fields: the merge saves the
+	 * survivor from its own recomputed payload, which would overwrite a move made
+	 * on it here.
+	 *
+	 * @param string $from The record that goes away.
+	 * @param string $into The record that stays.
+	 *
+	 * @return ReferenceRelinkPlan
+	 *
+	 * @spec openspec/changes/mdm-merge-relinks-every-reference/specs/mdm-merge/spec.md#requirement-a-merge-relinks-every-reference-to-the-losing-record
+	 */
+	private function referencePlan(string $from, string $into): ReferenceRelinkPlan {
+		if ($this->relinker === null) {
+			return new ReferenceRelinkPlan(moves: [], cap: ReferenceRelinker::DEFAULT_CAP);
+		}
+
+		$plan  = $this->relinker->plan(loserUuid: $from, survivorUuid: $into);
+		$moves = array_values(array_filter($plan->moves, static fn (ReferenceMove $move): bool => $move->objectUuid !== $into));
+
+		return new ReferenceRelinkPlan(moves: $moves, cap: $plan->cap, exceedsCap: $plan->exceedsCap);
+	}//end referencePlan()
+
+	/**
+	 * Refuse a merge whose loser is referenced from more places than the relinker may move, before anything is written.
+	 *
+	 * @param MergeRun $run The merge.
+	 *
+	 * @return void
+	 *
+	 * @throws RuntimeException When the references exceed the cap.
+	 *
+	 * @spec openspec/changes/mdm-merge-relinks-every-reference/specs/mdm-merge/spec.md#requirement-a-merge-relinks-every-reference-to-the-losing-record
+	 */
+	private function guardReferenceCap(MergeRun $run): void {
+		if ($this->relinker === null) {
+			return;
+		}
+
+		$plan = $this->referencePlan(from: $run->instruction->from, into: $run->instruction->into);
+		if ($plan->exceedsCap === true) {
+			throw new RuntimeException(
+				sprintf(
+					'"%s" is referenced from more than %d places. Merge it with a bulk job instead.',
+					$run->instruction->from,
+					$plan->cap
+				)
+			);
+		}
+	}//end guardReferenceCap()
+
+	/**
+	 * Move every reference to the loser that the configured relink left onto the
+	 * survivor, as the merging user, and keep each move in the snapshot.
+	 *
+	 * Planned after the configured relink, so a move that relink made is no
+	 * longer a reference to the loser and is not made twice.
+	 *
+	 * @param MergeRun $run The merge; its snapshot, moved and skipped references are set.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/mdm-merge-relinks-every-reference/specs/mdm-merge/spec.md#requirement-a-merge-relinks-every-reference-to-the-losing-record
+	 */
+	private function relinkReferences(MergeRun $run): void {
+		if ($this->relinker === null) {
+			return;
+		}
+
+		$plan   = $this->referencePlan(from: $run->instruction->from, into: $run->instruction->into);
+		$result = $this->relinker->apply(plan: $plan, actor: (string)$run->instruction->mergedBy);
+
+		$run->snapshot['referenceMoves'] = $result['applied'];
+		$run->skippedReferences = $result['skipped'];
+
+		$written = [];
+		foreach ($result['applied'] as $applied) {
+			$written[$applied['object'] . "\0" . $applied['path']] = true;
+		}
+
+		$moved = array_values(
+			array_filter(
+				$plan->moves,
+				static fn (ReferenceMove $move): bool => isset($written[$move->objectUuid . "\0" . $move->path]) === true
+			)
+		);
+		$run->movedReferences = (new ReferenceRelinkPlan(moves: $moved, cap: $plan->cap))->references();
+	}//end relinkReferences()
 
 	/**
 	 * Load and guard both objects, refuse a merge that may not run, and snapshot the pair.
@@ -369,7 +458,7 @@ class MergeService implements ObjectMergerInterface {
 	 * The resolver overrides a decision map stands for, or null without one.
 	 *
 	 * A decision map is turned into resolver OVERRIDES, which is the whole
-	 * of design D-1: `SurvivorshipResolver::resolveGoldenRecord()` has
+	 * of design D-1: `SurvivorshipResolver::resolve()` has
 	 * always taken an `$overrides` argument and nothing ever passed one, so
 	 * the human's choice rides the mechanism that already existed rather
 	 * than a second execution path beside it. The overrides are also
@@ -444,9 +533,10 @@ class MergeService implements ObjectMergerInterface {
 		$fromObject->setObject($run->fromData);
 		$this->objectService->saveObject(
 			object: $fromObject,
-			register: $fromObject->getRegister(),
-			schema: $fromObject->getSchema(),
-			uuid: $fromObject->getUuid()
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $fromObject->getRegister(), schema: $fromObject->getSchema()),
+				uuid: $fromObject->getUuid()
+			)
 		);
 	}//end markMerged()
 
@@ -464,9 +554,10 @@ class MergeService implements ObjectMergerInterface {
 		$intoObject->setObject($this->survivorPayload(run: $run));
 		$run->survivor = $this->objectService->saveObject(
 			object: $intoObject,
-			register: $intoObject->getRegister(),
-			schema: $intoObject->getSchema(),
-			uuid: $intoObject->getUuid()
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $intoObject->getRegister(), schema: $intoObject->getSchema()),
+				uuid: $intoObject->getUuid()
+			)
 		);
 	}//end saveSurvivor()
 
@@ -481,11 +572,13 @@ class MergeService implements ObjectMergerInterface {
 	 */
 	private function survivorPayload(MergeRun $run): array {
 		$survivorshipConfig = $this->getSurvivorshipConfig(schema: $run->pair->schema);
-		$resolution         = $this->resolver->resolveGoldenRecord(
-			sourceRecords: $this->survivorSources(pair: $run->pair, intoData: $run->intoData),
-			config: $survivorshipConfig,
-			trust: $this->survivorTrust(pair: $run->pair),
-			overrides: $run->overrides
+		$resolution         = $this->resolver->resolve(
+			request: new GoldenRecordRequest(
+				sourceRecords: $this->survivorSources(pair: $run->pair, intoData: $run->intoData),
+				config: $survivorshipConfig,
+				trust: $this->survivorTrust(pair: $run->pair),
+				overrides: $run->overrides
+			)
 		);
 
 		foreach (($run->overrides ?? []) as $property => $override) {
@@ -528,7 +621,12 @@ class MergeService implements ObjectMergerInterface {
 			$mergeOperation['fieldDecisions'] = $decisions;
 		}
 
-		return $this->objectService->saveObject(object: $mergeOperation, register: self::MERGE_REGISTER, schema: self::MERGE_SCHEMA);
+		return $this->objectService->saveObject(
+			object: $mergeOperation,
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::MERGE_REGISTER, schema: self::MERGE_SCHEMA)
+			)
+		);
 	}//end persistOperation()
 
 	/**
@@ -615,7 +713,10 @@ class MergeService implements ObjectMergerInterface {
 	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	public function reverseMerge(string $mergeOperationId, string $reversedBy): array {
-		$operationEntity = WriteCause::asLookup(fn () => $this->objectService->find(id: $mergeOperationId, schema: self::MERGE_SCHEMA));
+		$operationEntity = WriteCause::asLookup(fn () => $this->objectService->find(
+			id: $mergeOperationId,
+			options: new ObjectFindOptions(schema: self::MERGE_SCHEMA)
+		));
 		if ($operationEntity === null) {
 			throw new RuntimeException('Merge operation not found.');
 		}
@@ -639,6 +740,15 @@ class MergeService implements ObjectMergerInterface {
 			}
 		}
 
+		// Put back every reference the relinker moved, where the field still
+		// holds what the merge wrote; a later edit wins and is reported.
+		$keptReferenceEdits = [];
+		foreach (($snapshot['referenceMoves'] ?? []) as $move) {
+			if (is_array($move) === true && $this->restoreReferenceMove(move: $move) === false) {
+				$keptReferenceEdits[] = ['object' => (string)($move['object'] ?? ''), 'path' => (string)($move['path'] ?? '')];
+			}
+		}
+
 		// 2. Restore each object's golden record, provenance and status (best-effort).
 		foreach ($snapshot['objects'] as $uuid => $state) {
 			$this->restoreObjectState(uuid: (string)$uuid, state: $state);
@@ -657,9 +767,10 @@ class MergeService implements ObjectMergerInterface {
 		$operationEntity->setObject($operation);
 		$savedOperation = $this->objectService->saveObject(
 			object: $operationEntity,
-			register: self::MERGE_REGISTER,
-			schema: self::MERGE_SCHEMA,
-			uuid: $operationEntity->getUuid()
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::MERGE_REGISTER, schema: self::MERGE_SCHEMA),
+				uuid: $operationEntity->getUuid()
+			)
 		);
 
 		$this->logger->info(
@@ -678,9 +789,60 @@ class MergeService implements ObjectMergerInterface {
 
 		$result = ($savedOperation->getObject() ?? []);
 		$result['id'] = $savedOperation->getUuid();
+		$result['keptReferenceEdits'] = $keptReferenceEdits;
 
 		return $result;
 	}//end reverseMerge()
+
+	/**
+	 * Put one moved reference back, when its field still holds what the merge wrote.
+	 *
+	 * @param array<string, mixed> $move The snapshot move: object, path, before and after.
+	 *
+	 * @return bool True when restored or nothing was left to restore; false when the field was edited since, or the restore failed.
+	 *
+	 * @spec openspec/changes/mdm-merge-relinks-every-reference/specs/mdm-merge/spec.md#requirement-a-merge-relinks-every-reference-to-the-losing-record
+	 */
+	private function restoreReferenceMove(array $move): bool {
+		$objectUuid = (string)($move['object'] ?? '');
+		$path       = (string)($move['path'] ?? '');
+		if ($objectUuid === '' || $path === '') {
+			return true;
+		}
+
+		try {
+			$entity = WriteCause::asLookup(fn () => $this->objectService->find(id: $objectUuid, _rbac: true, _multitenancy: true));
+			if ($entity === null) {
+				return false;
+			}
+
+			$data = ($entity->getObject() ?? []);
+			if (($data[$path] ?? null) !== ($move['after'] ?? null)) {
+				$this->logger->info(
+					sprintf('Merge reversal kept "%s" on "%s": it was edited after the merge.', $path, $objectUuid)
+				);
+				return false;
+			}
+
+			$data = self::normaliseRoundTripDates(data: $data);
+			$data[$path] = ($move['before'] ?? null);
+			$entity->setObject($data);
+			$this->objectService->saveObject(
+				object: $entity,
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: $entity->getRegister(), schema: $entity->getSchema()),
+					uuid: $entity->getUuid()
+				)
+			);
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				sprintf('Merge reversal could not restore reference "%s" on "%s": %s', $path, $objectUuid, $e->getMessage())
+			);
+			return false;
+		}//end try
+
+		return true;
+	}//end restoreReferenceMove()
 
 	/**
 	 * Determine whether a `mergeOperation` is still reversible: `reversible`
@@ -901,9 +1063,10 @@ class MergeService implements ObjectMergerInterface {
 			try {
 				$this->objectService->saveObject(
 					object: $object,
-					register: $object->getRegister(),
-					schema: $object->getSchema(),
-					uuid: $object->getUuid()
+					options: new ObjectSaveOptions(
+						target: new ObjectFindTarget(register: $object->getRegister(), schema: $object->getSchema()),
+						uuid: $object->getUuid()
+					)
 				);
 				$moves[] = [
 					'sourceUuid' => (string)$object->getUuid(),
@@ -966,11 +1129,12 @@ class MergeService implements ObjectMergerInterface {
 	 * @spec openspec/changes/mdm-merge-engine/tasks.md#4.2
 	 */
 	private function recomputeSurvivor(MergePair $pair): array {
-		return $this->resolver->resolveGoldenRecord(
-			sourceRecords: $this->survivorSources(pair: $pair, intoData: ($pair->intoObject->getObject() ?? [])),
-			config: $this->getSurvivorshipConfig(schema: $pair->schema),
-			trust: $this->survivorTrust(pair: $pair),
-			overrides: null
+		return $this->resolver->resolve(
+			request: new GoldenRecordRequest(
+				sourceRecords: $this->survivorSources(pair: $pair, intoData: ($pair->intoObject->getObject() ?? [])),
+				config: $this->getSurvivorshipConfig(schema: $pair->schema),
+				trust: $this->survivorTrust(pair: $pair)
+			)
 		);
 	}//end recomputeSurvivor()
 
@@ -995,16 +1159,16 @@ class MergeService implements ObjectMergerInterface {
 
 		return array_merge(
 			$this->sourceRecordResolver->resolveSources(
-				masterData: $intoData,
-				masterUuid: (string)$pair->intoObject->getUuid(),
-				config: $survivorshipConfig,
-				masterRegister: (string)$pair->intoObject->getRegister()
+				master: new MasterRecord(data: $intoData, uuid: (string)$pair->intoObject->getUuid(), register: (string)$pair->intoObject->getRegister()),
+				config: $survivorshipConfig
 			),
 			$this->sourceRecordResolver->resolveSources(
-				masterData: ($pair->fromObject->getObject() ?? []),
-				masterUuid: (string)$pair->fromObject->getUuid(),
-				config: $survivorshipConfig,
-				masterRegister: (string)$pair->fromObject->getRegister()
+				master: new MasterRecord(
+					data: ($pair->fromObject->getObject() ?? []),
+					uuid: (string)$pair->fromObject->getUuid(),
+					register: (string)$pair->fromObject->getRegister()
+				),
+				config: $survivorshipConfig
 			)
 		);
 	}//end survivorSources()
@@ -1055,9 +1219,10 @@ class MergeService implements ObjectMergerInterface {
 			$entity->setObject($state);
 			$this->objectService->saveObject(
 				object: $entity,
-				register: $entity->getRegister(),
-				schema: $entity->getSchema(),
-				uuid: $entity->getUuid()
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: $entity->getRegister(), schema: $entity->getSchema()),
+					uuid: $entity->getUuid()
+				)
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning(
@@ -1129,9 +1294,10 @@ class MergeService implements ObjectMergerInterface {
 			$entity->setObject($data);
 			$this->objectService->saveObject(
 				object: $entity,
-				register: $entity->getRegister(),
-				schema: $entity->getSchema(),
-				uuid: $entity->getUuid()
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: $entity->getRegister(), schema: $entity->getSchema()),
+					uuid: $entity->getUuid()
+				)
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning(
@@ -1243,7 +1409,7 @@ class MergeService implements ObjectMergerInterface {
 				continue;
 			}
 
-			if ($this->propertyRbac->canReadProperty(schema: $schema, property: $property, object: $record) === true) {
+			if ($this->propertyRbac->canReadProperty(property: new SchemaProperty(schema: $schema, name: $property), request: new PropertyAccessRequest(object: $record)) === true) {
 				continue;
 			}
 
@@ -1273,9 +1439,9 @@ class MergeService implements ObjectMergerInterface {
 		try {
 			return WriteCause::asLookup(fn () => $this->objectService->find(
 				id: $uuid,
+				options: new ObjectFindOptions(render: false),
 				_rbac: true,
-				_multitenancy: true,
-				_render: false
+				_multitenancy: true
 			));
 		} catch (Throwable $e) {
 			$this->logger->warning('[MergeService] unrendered read failed: ' . $e->getMessage());
@@ -1305,10 +1471,12 @@ class MergeService implements ObjectMergerInterface {
 
 		foreach ([$pair->fromObject, $pair->intoObject] as $subject) {
 			try {
-				$this->auditTrailMapper->createAuditTrailEntry(
-					object: $subject,
-					action: self::MERGE_REFUSED_ACTION,
-					context: $context
+				$this->auditTrailMapper->recordObjectEvent(
+					event: new ObjectAuditEvent(
+						object: $subject,
+						action: self::MERGE_REFUSED_ACTION,
+						context: $context
+					)
 				);
 			} catch (Throwable $e) {
 				$this->logger->warning('[MergeService] attempted-merge audit failed: ' . $e->getMessage());
