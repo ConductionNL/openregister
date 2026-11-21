@@ -3458,3 +3458,14 @@
 8456 d664aeb06ea502230c62322ebb76af87a9c2d5e7 REVERIFY or-fix-2: merged main, fixed ListQuery import (moved to Kernel\Contracts) and the listing golden test's EntityEventsInterface; Db, Config, Controller, Architecture green beyond inherited AreaMapperRegistrarsTest; review needed
 8344 68024e9b6cecf071cb32b3ce945a13cc7f58b0ee REVERIFY or-fix-1: merged main (TransitionEngine: actor runAs, graph forms, reopen declaringAction), fixed private runAsSystem name tripping the elevation guard and missing component rows; Lifecycle, Architecture green; review needed
 9163 6de2c185aee640541596622faa6aea4da92289f4 REVERIFY or-fix-1: merged main, parked specs now pass (full jest green: 8700 passed; eslint clean on touched files); review needed
+9199 ad5a35d5c2fd3c57c937aa225af3ee708041026b REVERIFY or-fix-1: merged main, parked specs now pass (full jest green: 8707 passed, 8707 total; eslint clean on touched files); review needed
+9066 cadf92c022e8aa9a4487d492a7d92a384490ba4f REVERIFY or-fix-0: merged main, fixed class-aliases.json entry for moved ChatMessageRequest (ClassAliasMapTest); review needed
+9370 307a6742991c7633658b2070d02352681363538b REVERIFY or-fix-1: merged main, parked specs now pass (full jest green: 8690 passed; eslint 0 errors on touched files); review needed
+8819 09e4df01698744661d946d515ac8fa22c689ce54 REVERIFY or-fix-2: merged main (kept PendingReviewQuery signature, took main's RecordArchivalReading delegation and passed it an AnnotatedRow), fixed 3 evaluator tests main added; Archival, Audit, BackgroundJob, Controller, Architecture green; review needed
+9445 0f88b2965a82dd503b58dc1c2ec197f8a934ffc1 REVERIFY or-fix-1: merged main, parked specs now pass (full jest green: 8690 passed, 8690 total; eslint clean on touched files); review needed
+9219 e065ed619dba642d8e866137ac61249f6dc05ebd REVERIFY or-fix-0: merged main (add/add account section specs: main's kept, branch's renamed *.golden.spec.js), full jest 8707 green; review needed
+9472 be4d48019397cbc74205a12e5a4cc2eff2689beb REVERIFY or-fix-1: merged main, parked specs now pass (full jest green: 8691 passed, 8691 total; eslint clean on touched files); review needed
+9555 1d7eb7d0a69f6b78791a6f11e3d5d848a5c8d545 REVERIFY or-fix-0: merged main (ObjectsTab conflict: helper kept, main's files-multipart route adopted, golden snapshot updated), full jest green; review needed
+9709 20db8fd87e58d914711b9d2f277f5645f994c13d REVERIFY or-fix-1: merged main, parked specs now pass (full jest green: 8690 passed, 8690 total; eslint clean on touched files); review needed
+9594 cd8742186ef24444d681700258d222e3c1b51824 REVERIFY or-fix-0: merged main (clean); parked specs (AvgIndex, pageShell, migrationPackTables) and full jest 8690 now green, no code change needed; review needed
+9565 cc100593c90bd49380ce8b89a06de33a3ad2c68e REVERIFY or-fix-1: merged main, fixed listPages golden spec stubbing the new toggleAction (snapshots unchanged); full jest green; review needed
