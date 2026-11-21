@@ -33,6 +33,7 @@ use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Registry\RegistrySubscriptionService;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\RegistrySubscriptionControllerFactory;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -100,7 +101,7 @@ class RegistrySubscriptionControllerA24GoldenTest extends TestCase {
 		$this->object->setSchema('5');
 		$this->schema = new Schema();
 		$this->objects = $this->createMock(ObjectService::class);
-		$this->objects->method('find')->with('o-1', [], false, 'reg', 'sch', true, true, false)->willReturn($this->object);
+		$this->objects->method('find')->with(...FindCallShape::findArgs('o-1', [], false, 'reg', 'sch', true, true, false))->willReturn($this->object);
 		$this->schemas = $this->createMock(SchemaMapper::class);
 		$this->schemas->method('find')->with('5')->willReturn($this->schema);
 		$this->permissions = $this->createMock(PermissionHandler::class);

@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
+ * @spec openspec/specs/zoeken-filteren/spec.md
  */
 
 declare(strict_types=1);
@@ -53,7 +53,7 @@ use InvalidArgumentException;
  *     _related[caseProperty][case][0][propertyDefinition]=pd-7
  *     _related[caseProperty][case][1][propertyDefinition]=pd-9
  *
- * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
+ * @spec openspec/specs/zoeken-filteren/spec.md
  */
 class RelatedRowFilterParser {
 
@@ -107,7 +107,7 @@ class RelatedRowFilterParser {
 	 *
 	 * @throws InvalidArgumentException When a block is unusable.
 	 *
-	 * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
+	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 * @spec openspec/changes/query-referenced-schema-rows/specs/zoeken-filteren/spec.md
 	 */
 	public function parse(array $query): array {
@@ -201,7 +201,7 @@ class RelatedRowFilterParser {
 	 *
 	 * @throws InvalidArgumentException When a foreign key block is unusable.
 	 *
-	 * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
+	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	private function filtersForSchema(string $schemaSlug, array $byForeignKey): array {
 		$filters = [];
@@ -394,7 +394,7 @@ class RelatedRowFilterParser {
 	 *
 	 * @throws InvalidArgumentException When the condition is unusable.
 	 *
-	 * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
+	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	private function conditionsFor(RelatedRowBlockField $field, mixed $value): array {
 		if (is_array($value) === false) {

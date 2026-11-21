@@ -28,12 +28,27 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\VocabularyImportService;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * @covers \OCA\OpenRegister\Service\VocabularyImportService
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses \OCA\OpenRegister\Service\CauseFrame
+ * @uses \OCA\OpenRegister\Service\SkosNodeReader
+ * @uses \OCA\OpenRegister\Service\VocabularyConceptEdges
+ * @uses \OCA\OpenRegister\Service\VocabularyCsvReader
+ * @uses \OCA\OpenRegister\Service\VocabularyImportTally
+ * @uses \OCA\OpenRegister\Service\VocabularyObjectStore
+ * @uses \OCA\OpenRegister\Service\WriteCause
  */
 class VocabularyImportServiceGoldenTest extends TestCase {
 
@@ -290,14 +305,18 @@ class VocabularyImportServiceGoldenTest extends TestCase {
 			}
 		);
 		$objects->method('find')->willReturnCallback(
-			function ($id, $extend = [], $files = false, $register = null, $schema = null) {
+			function (...$args) {
+				[$id, $extend, $files, $register, $schema] = FindCallShape::find(args: $args);
 				$this->log[] = ['find', $id, $register, $schema];
 				$data = ($this->store[$schema][$id] ?? null);
 				return $data === null ? null : $this->entity((string)$id, $data);
 			}
 		);
 		$objects->method('saveObject')->willReturnCallback(
-			function ($object, $extend = [], $register = null, $schema = null, $uuid = null) {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$this->log[] = ['saveObject', $object, $register, $schema, $uuid];
 				$uuid = ($uuid ?? 'uuid-'.(++$this->sequence));
 				$this->store[$schema][$uuid] = $object;

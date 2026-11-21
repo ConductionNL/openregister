@@ -243,7 +243,7 @@ class FlowRunAttribution {
 	 *
 	 * @return boolean True when the run may not act as that identity.
 	 *
-	 * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	private function leftItsTenant(?object $flow, ?string $runAs): bool {
 		if (($flow instanceof Flow) === false || $runAs === null || $flow->getApp() !== Flow::APP_MANIFEST_SCHEDULE) {

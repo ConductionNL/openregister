@@ -122,16 +122,7 @@ import { navigationStore, organisationStore } from '../../store/store.js'
 		</div>
 
 		<template #actions>
-			<NcButton @click="closeModal">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{
-					success
-						? t('openregister', 'Close')
-						: t('openregister', 'Cancel')
-				}}
-			</NcButton>
+			<CloseCancelButton :success="success" @click="closeModal" />
 			<NcButton
 				v-if="!success"
 				variant="primary"
@@ -156,7 +147,7 @@ import {
 	NcSelect,
 } from '@nextcloud/vue'
 import AccountPlus from 'vue-material-design-icons/AccountPlus.vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
+import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 import { fetchUserOptions, organisationOption } from './joinOptions.js'
 
 /**
@@ -185,9 +176,9 @@ export default {
 		NcButton,
 		NcLoadingIcon,
 		NcNoteCard,
+		CloseCancelButton,
 		// Icons
 		AccountPlus,
-		Cancel,
 	},
 
 	data() {

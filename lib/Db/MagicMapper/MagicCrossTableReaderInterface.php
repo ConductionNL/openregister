@@ -81,12 +81,19 @@ interface MagicCrossTableReaderInterface {
 	 * @param int|null $offset Rows to skip (pagination).
 	 * @param bool $_rbac Apply the schema's read rules for the caller (false only for an admin or system caller).
 	 * @param bool $_multitenancy Apply the organisation boundary for the caller.
+	 * @param DeletedFilter|null $filter Only this register, schema and deletion window; null reads the whole bin.
 	 *
 	 * @return ObjectEntity[] Soft-deleted objects across all magic tables.
 	 *
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
-	public function findDeletedAcrossAllMagicTables(?int $limit = null, ?int $offset = null, bool $_rbac = true, bool $_multitenancy = true): array;
+	public function findDeletedAcrossAllMagicTables(
+		?int $limit = null,
+		?int $offset = null,
+		bool $_rbac = true,
+		bool $_multitenancy = true,
+		?DeletedFilter $filter = null,
+	): array;
 
 	/**
 	 * Count all soft-deleted objects across ALL magic tables.
@@ -96,12 +103,13 @@ interface MagicCrossTableReaderInterface {
 	 *
 	 * @param bool $_rbac Apply the schema's read rules for the caller (false only for an admin or system caller).
 	 * @param bool $_multitenancy Apply the organisation boundary for the caller.
+	 * @param DeletedFilter|null $filter The same filter the listing applies, so the total matches its rows.
 	 *
 	 * @return int Total soft-deleted object count.
 	 *
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
-	public function countDeletedAcrossAllMagicTables(bool $_rbac = true, bool $_multitenancy = true): int;
+	public function countDeletedAcrossAllMagicTables(bool $_rbac = true, bool $_multitenancy = true, ?DeletedFilter $filter = null): int;
 
 	/**
 	 * Find all objects across ALL magic tables that have the given UUID in their relations.
@@ -134,6 +142,17 @@ interface MagicCrossTableReaderInterface {
 	 * @spec openspec/specs/organisation-usage-measured/spec.md
 	 */
 	public function findFolderIdsByOrganisation(string $organisationUuid): array;
+
+	/**
+	 * The stored folder file id of each live object, by uuid.
+	 *
+	 * @param string[] $uuids The object uuids.
+	 *
+	 * @return array<string, int> Uuid => folder file id; objects without a numeric folder are absent.
+	 *
+	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/object-level-sharing/spec.md
+	 */
+	public function findFolderIdsByUuids(array $uuids): array;
 
 	/**
 	 * Count an organisation's live objects across the magic tables, of the

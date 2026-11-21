@@ -23,6 +23,11 @@ use RuntimeException;
  * Pins what the two refusals of the register-scoped resolver carry.
  *
  * @covers \OCA\OpenRegister\Service\RegisterScopedSchemaResolver
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Register\RegisterSchemaIds
+ * @uses \OCA\OpenRegister\Exception\SchemaNotInRegisterException
+ * @uses \OCA\OpenRegister\Formats\UuidFormat
+ * @uses \OCA\OpenRegister\Exception\RegisterNotFoundException
  */
 class RegisterScopedSchemaResolverRefusalTest extends TestCase {
 

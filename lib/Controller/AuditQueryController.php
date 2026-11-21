@@ -30,10 +30,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Service\Export\SpreadsheetCell;
 use DateTime;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\AdministratorOnlyGate;
 use OCA\OpenRegister\Controller\Support\AuditQueryControllerServices;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\AuditQueryServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\DataDownloadResponse;
@@ -87,7 +88,7 @@ class AuditQueryController extends Controller {
 		IRequest $request,
 		AuditQueryControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->auditQueryService = $services->auditQueryService;
 		$this->userSession = $services->userSession;
 		$this->groupManager = $services->groupManager;
@@ -210,7 +211,7 @@ class AuditQueryController extends Controller {
 		foreach ($entries as $entry) {
 			fputcsv(
 				$handle,
-				[
+				SpreadsheetCell::csvRow(row: [
 					($entry['id'] ?? ''),
 					($entry['registerId'] ?? ''),
 					($entry['schemaId'] ?? ''),
@@ -218,7 +219,7 @@ class AuditQueryController extends Controller {
 					json_encode($entry['data'] ?? []),
 					($entry['created'] ?? ''),
 					($entry['userId'] ?? ''),
-				]
+				])
 			);
 		}
 

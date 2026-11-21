@@ -46,7 +46,7 @@ class ObjectServiceCollaboratorsWiringTest extends TestCase {
 		$service    = new ObjectService(...$args);
 		$reflection = new ReflectionClass(ObjectService::class);
 
-		$this->assertCount(expectedCount: 40, haystack: $leaves);
+		$this->assertCount(expectedCount: 38, haystack: $leaves);
 		foreach ($leaves as $name => $leaf) {
 			$this->assertTrue(condition: $reflection->hasProperty($name), message: 'ObjectService has no property ' . $name);
 			$this->assertSame(expected: $leaf, actual: $reflection->getProperty($name)->getValue($service), message: 'ObjectService loses ' . $name);

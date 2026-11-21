@@ -22,9 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\SpatialFilterInterface;
 use OCA\OpenRegister\Search\Service\Geo\GeoFeatureCollectionBuilderInterface;
-use OCA\OpenRegister\Search\Service\Geo\GeoFilterApplierInterface;
-use OCA\OpenRegister\Search\Service\Geo\GeoFilterParserInterface;
 use OCA\OpenRegister\Service\Geo\PdokGeocoderInterface;
 
 /**
@@ -36,16 +35,14 @@ final class GeoServices {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param ?GeoFilterParserInterface             $geoFilterParser   The geo filter parser.
-	 * @param ?GeoFilterApplierInterface            $geoFilterApplier  The geo post-filter.
+	 * @param ?SpatialFilterInterface               $spatialFilter     Parses geo filters and post-filters rows by them.
 	 * @param ?GeoFeatureCollectionBuilderInterface $geoFeatureBuilder The GeoJSON feature builder.
-	 * @param ?PdokGeocoderInterface                         $pdokGeocoder      The geocoder.
+	 * @param ?PdokGeocoderInterface                $pdokGeocoder      The geocoder.
 	 *
 	 * @spec openspec/specs/geo-metadata-kaart/spec.md
 	 */
 	public function __construct(
-		public readonly ?GeoFilterParserInterface $geoFilterParser = null,
-		public readonly ?GeoFilterApplierInterface $geoFilterApplier = null,
+		public readonly ?SpatialFilterInterface $spatialFilter = null,
 		public readonly ?GeoFeatureCollectionBuilderInterface $geoFeatureBuilder = null,
 		public readonly ?PdokGeocoderInterface $pdokGeocoder = null,
 	) {

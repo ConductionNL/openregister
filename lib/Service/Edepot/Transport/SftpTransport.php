@@ -26,10 +26,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Edepot\Transport;
 
-use phpseclib3\Crypt\PublicKeyLoader;
-use phpseclib3\Net\SFTP;
+use phpseclib4\Crypt\PublicKeyLoader;
+use phpseclib4\Net\SFTP;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use Throwable;
 
 /**
  * SFTP transport for e-Depot SIP packages.
@@ -113,8 +114,10 @@ class SftpTransport implements SftpTransportInterface {
 	private function put(string $sipFilePath, array $config): array {
 		$remotePath = rtrim(($config['remotePath'] ?? '/'), '/') . '/' . basename($sipFilePath);
 		$sftp = $this->createSftpConnection(config: $config);
-		if ($sftp->put($remotePath, $sipFilePath, SFTP::SOURCE_LOCAL_FILE) === false) {
-			throw new RuntimeException('SFTP upload failed: ' . $sftp->getLastSFTPError());
+		try {
+			$sftp->put($remotePath, $sipFilePath, SFTP::SOURCE_LOCAL_FILE);
+		} catch (Throwable $e) {
+			throw new RuntimeException('SFTP upload failed: ' . $e->getMessage(), 0, $e);
 		}
 
 		return [$remotePath, $sftp->filesize($remotePath)];
@@ -181,7 +184,7 @@ class SftpTransport implements SftpTransportInterface {
 	 *
 	 * @param array<string,mixed> $config SFTP configuration.
 	 *
-	 * @return \phpseclib3\Net\SFTP The SFTP connection.
+	 * @return \phpseclib4\Net\SFTP The SFTP connection.
 	 *
 	 * @throws RuntimeException If connection fails.
 	 *
@@ -200,24 +203,33 @@ class SftpTransport implements SftpTransportInterface {
 	}//end createSftpConnection()
 
 	/**
-	 * Refuse a server whose host key differs from `hostKeyFingerprint`, before any
-	 * credential is sent. Without a configured fingerprint the server is not verified.
+	 * Refuse a server whose host key is not the pinned `hostKeyFingerprint`, before
+	 * any credential is sent. Without a configured fingerprint every server is refused;
+	 * the refusal names the key the server presented, so an administrator can verify
+	 * it out of band and pin it.
 	 *
 	 * @param SFTP $sftp The connection.
 	 * @param array<string,mixed> $config SFTP configuration.
 	 *
 	 * @return void
 	 *
-	 * @throws RuntimeException When the host key differs.
+	 * @throws RuntimeException When no fingerprint is pinned or the host key differs.
 	 */
 	private function assertHostKey(SFTP $sftp, array $config): void {
 		$pinned = (string)($config['hostKeyFingerprint'] ?? '');
+		$presented = $this->fingerprint(hostKey: $sftp->getServerPublicHostKey());
 		if ($pinned === '') {
-			$this->logger->warning(message: '[SftpTransport] No hostKeyFingerprint configured, server identity not verified');
-			return;
+			$this->logger->warning(
+				message: '[SftpTransport] No hostKeyFingerprint configured, refusing the connection',
+				context: ['presented' => $presented]
+			);
+			throw new RuntimeException(
+				'SFTP hostKeyFingerprint is not configured; the server presented '.$presented
+				.'. Verify it with the depot and set it as hostKeyFingerprint.'
+			);
 		}
 
-		if (hash_equals($pinned, $this->fingerprint(hostKey: $sftp->getServerPublicHostKey())) === false) {
+		if (hash_equals($pinned, $presented) === false) {
 			throw new RuntimeException('SFTP host key does not match hostKeyFingerprint');
 		}
 	}//end assertHostKey()

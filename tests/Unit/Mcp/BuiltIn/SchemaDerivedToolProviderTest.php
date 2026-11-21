@@ -32,11 +32,13 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Mcp\BuiltIn\SchemaDerivedToolProvider;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use OCA\OpenRegister\Mcp\BuiltIn\SchemaDerivedToolServices;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
@@ -272,6 +274,38 @@ class SchemaDerivedToolProviderTest extends TestCase {
 
 	}//end testMcpHintsArePassedThrough()
 
+	/**
+	 * A verb's declared reach is carried on its descriptor; an undeclared one adds no key.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/mcp-reach-annotation/specs/ai-mcp/spec.md#requirement-a-derived-tool-entry-may-declare-its-reach
+	 */
+	public function testDeclaredReachIsCarriedOnTheDescriptor(): void {
+		$schema = $this->mockSchema(
+			id: 1,
+			slug: 'lead',
+			mcpBlock: [
+				'enabled' => true,
+				'tools' => [
+					'get' => ['scope' => 'read', 'reach' => 'user'],
+					'update' => ['scope' => 'update', 'reach' => 'instance'],
+					'delete' => ['scope' => 'delete'],
+				],
+			]
+		);
+
+		$byVerb = [];
+		foreach ($this->provider([['schema' => $schema, 'register' => null]])->getTools() as $tool) {
+			$byVerb[$tool['action']] = $tool;
+		}
+
+		$this->assertSame('user', $byVerb['get']['reach']);
+		$this->assertSame('instance', $byVerb['update']['reach']);
+		$this->assertArrayNotHasKey('reach', $byVerb['delete'], 'no reach is invented for a verb that declares none');
+
+	}//end testDeclaredReachIsCarriedOnTheDescriptor()
+
 	// ── invokeTool: unknown ids ─────────────────────────────────────
 
 	public function testInvokeUnknownToolIdThrows(): void {
@@ -421,7 +455,7 @@ class SchemaDerivedToolProviderTest extends TestCase {
 
 		$this->objectService->expects($this->once())
 			->method('find')
-			->with('uuid-1', [], false, null, $entry['schema'], true, true)
+			->with(...FindCallShape::findArgs('uuid-1', [], false, null, $entry['schema'], true, true))
 			->willReturn($this->mockObject(['id' => 'uuid-1']));
 
 		$result = $provider->invokeTool('pipelinq.lead.get', ['id' => 'uuid-1']);
@@ -447,7 +481,7 @@ class SchemaDerivedToolProviderTest extends TestCase {
 		$captured = null;
 		$this->objectService->expects($this->once())
 			->method('saveObject')
-			->willReturnCallback(function (mixed $object) use (&$captured) {
+			->willReturnCallback(function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$captured) {
 				$captured = $object;
 				return $this->mockObject(['id' => 'new-uuid', 'name' => 'X']);
 			});
@@ -466,7 +500,8 @@ class SchemaDerivedToolProviderTest extends TestCase {
 		$capturedArgs = null;
 		$this->objectService->expects($this->once())
 			->method('saveObject')
-			->willReturnCallback(function (mixed ...$args) use (&$capturedArgs) {
+			->willReturnCallback(function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$capturedArgs) {
+				$args = [$object, $options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
 				$capturedArgs = $args;
 				return $this->mockObject(['id' => 'uuid-2', 'name' => 'Edited']);
 			});

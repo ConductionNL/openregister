@@ -46,6 +46,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Deferral\DeferredEntryObjectResolverInterface;
 use OCA\OpenRegister\Service\Deferral\DeferredListenerContext;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
+use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\QueuedJob;
 use OCP\IUser;
@@ -189,13 +190,37 @@ abstract class ActorForwardedJob extends QueuedJob {
 
 		try {
 			$this->logOrganisationDrift(context: $context);
-			$this->runDeferred(context: $context);
+			$this->runUnderCause(context: $context);
 		} finally {
 			// ALWAYS restore — also on exceptions — so the cron process
 			// never carries this job's identity into the next job.
 			$this->userSession->setUser($previousUser);
 		}
 	}//end runUnderActor()
+
+	/**
+	 * Run the deferred work under the cause of the write that deferred it.
+	 *
+	 * A job deferred by an import writes as that import, not as a person
+	 * (REQ-RCN-002). A job deferred by a person's write carries no cause and
+	 * runs with no frame, which reads as the person's, as before. The frame is
+	 * popped by WriteCause::runAs() in a `finally`, so it never outlives the job.
+	 *
+	 * @param DeferredListenerContext $context The captured context.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/runs-recorded-and-causes-named/specs/enhanced-audit-trail/spec.md
+	 */
+	private function runUnderCause(DeferredListenerContext $context): void {
+		$cause = $context->getCause();
+		if ($cause === null) {
+			$this->runDeferred(context: $context);
+			return;
+		}
+
+		WriteCause::runAs(frame: $cause, operation: fn () => $this->runDeferred(context: $context));
+	}//end runUnderCause()
 
 	/**
 	 * The deferred listener work, executed under the re-established actor.

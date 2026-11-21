@@ -34,6 +34,10 @@ use Stringable;
  * @covers \OCA\OpenRegister\Service\Object\CacheHandler
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Service\Object\ObjectChange
+ * @uses \OCA\OpenRegister\Service\Object\CacheHandlerRuntime
+ * @uses \OCA\OpenRegister\Service\Object\CacheHandlerStores
+ * @uses \OCA\OpenRegister\Service\Object\CacheNameScopeSources
+ * @uses \OCA\OpenRegister\Service\Object\CachedName
  */
 class CacheHandlerClearingGoldenTest extends TestCase {
 

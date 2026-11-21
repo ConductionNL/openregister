@@ -28,6 +28,8 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetRecord
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFollowedEntry
+ * @uses \OCA\OpenRegister\Service\ExampleSet\RecordLedger
  */
 class ExampleSetRecordHoldTest extends TestCase {
 	/**

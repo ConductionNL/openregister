@@ -22,12 +22,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ContentReportControllerServices;
 use OCA\OpenRegister\Db\ContentReport;
 use OCA\OpenRegister\Db\ContentReportMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Audit\ContentReportServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -86,7 +86,7 @@ class ContentReportController extends Controller {
 		IRequest $request,
 		ContentReportControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->reports = $services->reports;
 		$this->service = $services->service;
 		$this->objects = $services->objects;
@@ -103,7 +103,6 @@ class ContentReportController extends Controller {
 	 * @return JSONResponse The filed report, or the refusal.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
@@ -279,7 +278,6 @@ class ContentReportController extends Controller {
 	 * @return JSONResponse The report, or the refusal.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 * @no-admin-idor-exempt Guarded by the reviewer-group check below. Reviewing is the
 	 *   only write this endpoint allows, and it is the reviewer group's job by definition.
 	 *

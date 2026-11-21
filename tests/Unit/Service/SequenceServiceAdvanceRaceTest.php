@@ -25,6 +25,8 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\SequenceService
+ * @uses \OCA\OpenRegister\Db\Sequence
+ * @uses \OCA\OpenRegister\Service\SequenceScope
  */
 final class SequenceServiceAdvanceRaceTest extends TestCase {
 

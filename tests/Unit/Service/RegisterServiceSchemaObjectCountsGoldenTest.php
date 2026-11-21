@@ -32,6 +32,10 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\OpenRegister\Service\RegisterService
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Service\Serializer\RegisterSerializer
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Service\RegisterServiceHelpers
+ * @uses \OCA\OpenRegister\Service\RegisterServiceStorage
+ * @uses \OCA\OpenRegister\Service\SchemaObjectTally
  */
 class RegisterServiceSchemaObjectCountsGoldenTest extends TestCase {
 
