@@ -53,7 +53,7 @@ class ExportRunsController extends Controller {
 	 *
 	 * @var array<int, string>
 	 */
-	private const FILTER_KEYS = ['register', 'schema', 'profile', 'source', 'status', 'actor', 'from', 'until'];
+	private const FILTER_KEYS = ['register', 'schema', 'profile', 'source', 'status', 'format', 'actor', 'from', 'until'];
 
 	/**
 	 * The filters that bound the period the export was produced in; they must parse as dates.

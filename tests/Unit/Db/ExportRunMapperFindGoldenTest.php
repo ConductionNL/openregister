@@ -95,6 +95,15 @@ final class ExportRunMapperFindGoldenTest extends TestCase {
 		$this->assertContains('#1 expr.eq(actor, :p1, NULL)', $scoped['queries']);
 	}//end testAnActorReadIsScopedAndAnAdministratorReadIsNot()
 
+	public function testTheFormatFilterNarrowsTheListing(): void {
+		$unfiltered = $this->outcome(args: ['actor' => null]);
+		$filtered = $this->outcome(args: ['actor' => null, 'filters' => ['format' => 'csv']]);
+
+		$this->assertNotSame($unfiltered['queries'], $filtered['queries']);
+		$this->assertContains('#1 param :p1 = csv, 2', $filtered['queries']);
+		$this->assertContains('#1 expr.eq(format, :p1, NULL)', $filtered['queries']);
+	}//end testTheFormatFilterNarrowsTheListing()
+
 	/**
 	 * Run listForActor() against a recording connection.
 	 *
