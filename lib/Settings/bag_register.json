@@ -3,7 +3,7 @@
   "info": {
     "title": "BAG Mock Register",
     "description": "Mock BAG (Basisregistratie Adressen en Gebouwen) register with realistic Dutch address and building data from PDOK",
-    "version": "1.0.0"
+    "version": "1.1.0"
   },
   "x-wire-standard": {
     "standard": "BAG — Basisregistratie Adressen en Gebouwen (PDOK)",
@@ -35,7 +35,7 @@
       "nummeraanduiding": {
         "slug": "nummeraanduiding",
         "title": "Nummeraanduiding",
-        "version": "0.1.0",
+        "version": "0.2.0",
         "published": "2025-01-01T00:00:00+00:00",
         "summary": "A BAG address designation (house number + postal code combination)",
         "description": "A nummeraanduiding is the official BAG object that assigns a house number (with optional letter and addition) and postal code to an addressable object. It links a human-readable address to a verblijfsobject, standplaats, or ligplaats via the BAG identification system.",
@@ -69,14 +69,16 @@
           },
           "huisletter": {
             "type": "string",
-            "description": "Optional letter suffix (a-z, A-Z)",
+            "description": "Optional letter suffix, stored as one upper case letter",
+            "pattern": "^[A-Z]$",
             "maxLength": 1,
             "facetable": false,
             "title": "House Letter"
           },
           "huisnummertoevoeging": {
             "type": "string",
-            "description": "Optional house number addition (e.g. 'bis', 'I', 'M')",
+            "description": "Optional house number addition, stored in upper case (e.g. 'BIS', 'I', 'M')",
+            "pattern": "^[A-Z0-9]{1,4}$",
             "maxLength": 4,
             "facetable": false,
             "title": "House Number Addition"
@@ -84,7 +86,7 @@
           "postcode": {
             "type": "string",
             "description": "Dutch postal code (4 digits + 2 letters)",
-            "pattern": "^[0-9]{4}[A-Z]{2}$",
+            "pattern": "^[1-9][0-9]{3}[A-Z]{2}$",
             "minLength": 6,
             "maxLength": 6,
             "facetable": true,
@@ -124,6 +126,15 @@
             "maxLength": 80,
             "facetable": true,
             "title": "City Name"
+          },
+          "adresseerbaarObject": {
+            "type": "string",
+            "description": "BAG identification of the verblijfsobject, standplaats or ligplaats this address is assigned to",
+            "pattern": "^[0-9]{16}$",
+            "minLength": 16,
+            "maxLength": 16,
+            "facetable": false,
+            "title": "Addressable Object"
           }
         },
         "hardValidation": false,
@@ -132,7 +143,10 @@
           "read": [
             {"group": "public", "crossOrganisation": true}
           ]
-        }
+        },
+        "x-openregister-indexes": [
+          ["postcode", "huisnummer"]
+        ]
       },
       "verblijfsobject": {
         "slug": "verblijfsobject",
@@ -713,7 +727,7 @@
         },
         "identificatie": "0935200000047048",
         "huisnummer": 6,
-        "huisletter": "a",
+        "huisletter": "A",
         "postcode": "6221CX",
         "status": "Naamgeving uitgegeven",
         "typeAdresseerbaarObject": "Verblijfsobject",
@@ -728,7 +742,7 @@
         },
         "identificatie": "0599200000300303",
         "huisnummer": 550,
-        "huisletter": "a",
+        "huisletter": "A",
         "postcode": "3072AD",
         "status": "Naamgeving uitgegeven",
         "typeAdresseerbaarObject": "Verblijfsobject",

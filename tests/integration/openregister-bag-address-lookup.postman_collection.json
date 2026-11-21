@@ -1,0 +1,250 @@
+{
+  "info": {
+    "_postman_id": "or-bag-address-lookup-2026-11-14",
+    "name": "OpenRegister BAG address lookup",
+    "description": "GET /api/bag/addresses (bag-address-lookup-by-postcode, REQ-BAG-002): a hit with normalised input, a 404 without a match, a 400 for input that is no address, and the anonymous throttle of 60 lookups a minute. Needs the bag register loaded (the BAG mock register seeds 3077AW 31). Run the throttle request last: it uses up the client's limit for a minute.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. A postcode with a space and in lower case finds the address",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200 with the address', function () {",
+              "    pm.response.to.have.status(200);",
+              "    var json = pm.response.json();",
+              "    pm.expect(json.total).to.be.at.least(1);",
+              "    var hit = json.results[0];",
+              "    pm.expect(hit.postcode).to.eql('3077AW');",
+              "    pm.expect(hit.huisnummer).to.eql(31);",
+              "    pm.expect(hit.straat).to.eql('Boterdiep');",
+              "    pm.expect(hit.plaats).to.eql('Rotterdam');",
+              "    pm.expect(hit.nummeraanduiding).to.match(/^[0-9]{16}$/);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/bag/addresses?postcode=3077%20aw&huisnummer=31",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "bag",
+            "addresses"
+          ],
+          "query": [
+            {
+              "key": "postcode",
+              "value": "3077%20aw"
+            },
+            {
+              "key": "huisnummer",
+              "value": "31"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "2. An address that does not exist answers 404",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('404 with an empty list', function () {",
+              "    pm.response.to.have.status(404);",
+              "    var json = pm.response.json();",
+              "    pm.expect(json.total).to.eql(0);",
+              "    pm.expect(json.results).to.eql([]);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/bag/addresses?postcode=9999ZZ&huisnummer=99999",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "bag",
+            "addresses"
+          ],
+          "query": [
+            {
+              "key": "postcode",
+              "value": "9999ZZ"
+            },
+            {
+              "key": "huisnummer",
+              "value": "99999"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "3. Input that is no address answers 400",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('400 invalid_address', function () {",
+              "    pm.response.to.have.status(400);",
+              "    pm.expect(pm.response.json().error).to.eql('invalid_address');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/bag/addresses?postcode=abc&huisnummer=12",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "bag",
+            "addresses"
+          ],
+          "query": [
+            {
+              "key": "postcode",
+              "value": "abc"
+            },
+            {
+              "key": "huisnummer",
+              "value": "12"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "4. More than 60 lookups a minute from one client are throttled",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// Use up the anonymous limit of 60 a minute; the request itself is then over it.",
+              "var url = pm.variables.get('baseUrl') + '/index.php/apps/openregister/api/bag/addresses?postcode=9999ZZ&huisnummer=1';",
+              "for (var i = 0; i < 61; i++) {",
+              "    pm.sendRequest({ url: url, method: 'GET', header: { Accept: 'application/json' } }, function () {});",
+              "}"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the request after 60 in a minute is throttled', function () {",
+              "    pm.response.to.have.status(429);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/bag/addresses?postcode=9999ZZ&huisnummer=1",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "bag",
+            "addresses"
+          ],
+          "query": [
+            {
+              "key": "postcode",
+              "value": "9999ZZ"
+            },
+            {
+              "key": "huisnummer",
+              "value": "1"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
