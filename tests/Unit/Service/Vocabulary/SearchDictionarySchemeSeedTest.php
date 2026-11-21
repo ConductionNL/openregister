@@ -22,6 +22,7 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\VocabularyImporterInterface;
 use OCA\OpenRegister\Repair\RegisterDescriptorImport;
 use OCA\OpenRegister\Repair\SeedVocabularyRegister;
+use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Service\ConfigurationService;
 use OCA\OpenRegister\Service\Search\SearchDictionaryProvider;
 use OCA\OpenRegister\Service\VocabularyImportService;
@@ -125,9 +126,11 @@ final class SearchDictionarySchemeSeedTest extends TestCase {
 	public function testTheRepairStepSeedsBothSchemesAndContinuesPastAFailure(): void {
 		$importer = $this->createMock(VocabularyImporterInterface::class);
 		$asked = [];
+		$system = [];
 		$importer->method('ensureScheme')->willReturnCallback(
-			static function (array $scheme) use (&$asked): array {
+			static function (array $scheme) use (&$asked, &$system): array {
 				$asked[] = $scheme['uri'];
+				$system[] = SystemOperationContext::isActive();
 				if ($scheme['uri'] === SearchDictionaryProvider::SYNONYM_SCHEME) {
 					throw new RuntimeException('register not imported yet');
 				}
@@ -150,6 +153,8 @@ final class SearchDictionarySchemeSeedTest extends TestCase {
 		))->run($output);
 
 		$this->assertSame([SearchDictionaryProvider::SYNONYM_SCHEME, SearchDictionaryProvider::STOPWORD_SCHEME], $asked);
+		$this->assertSame([true, true], $system, 'each scheme is ensured inside the trusted system scope');
+		$this->assertFalse(SystemOperationContext::isActive(), 'the scope is closed again after the step');
 		$this->assertContains('Search dictionary scheme skipped ('.SearchDictionaryProvider::SYNONYM_SCHEME.'): register not imported yet', $warnings);
 		$this->assertContains('Created empty search dictionary scheme '.SearchDictionaryProvider::STOPWORD_SCHEME, $infos);
 	}

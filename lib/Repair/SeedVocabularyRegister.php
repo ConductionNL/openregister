@@ -166,7 +166,12 @@ class SeedVocabularyRegister implements IRepairStep {
 	private function seedDictionarySchemes(IOutput $output): void {
 		foreach (self::DICTIONARY_SCHEMES as $scheme) {
 			try {
-				$result = $this->importService->ensureScheme(schemeMeta: $scheme);
+				// Same trusted scope as seedFixture(): repair steps run without a user
+				// session and the vocabulary schemas' writes are admin-gated.
+				// NOSEMGREP: php.lang.security.exec-use.exec-use -- SystemOperationContext is a scope flag, no process is started.
+				$result = SystemOperationContext::run(
+					fn (): array => $this->importService->ensureScheme(schemeMeta: $scheme)
+				);
 			} catch (Throwable $e) {
 				$this->descriptors->logger->warning('[SeedVocabularyRegister] dictionary scheme not seeded (' . $scheme['uri'] . '): ' . $e->getMessage());
 				$output->warning('Search dictionary scheme skipped (' . $scheme['uri'] . '): ' . $e->getMessage());
