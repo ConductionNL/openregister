@@ -301,3 +301,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: FileServiceConstructorGoldenTest (or a sibling *ConstructorGoldenTest) UnknownTypeException 'Class or interface "?OCA\...\X" does not exist'.
 - Cause: the golden's argumentsFor() uses (string)$parameter->getType(), which yields '?X' for a nullable param the PR added to a platform bundle.
 - Fix: read ReflectionNamedType::getName() (fallback (string) for unions); rerun with UPDATE_GOLDEN=1 and check the fixture diff is only the PR's new property (#10451 35eb59e9).
+
+## Stale component dependency baseline after a main merge (or-fix-4)
+- Symptom: ComponentDependencyRulesTest::testNoComponentEdgeBeyondTheBaseline red on a PR that ships tests/Unit/Architecture/component-dependency-baseline.json (#8084).
+- Cause: every modularity merge on main changes the module edge set; the committed baseline goes stale on each main merge.
+- Fix: on the merged branch run python3 scripts/component-deps.py --write-baseline, check the test is green, commit the json alone (see #8084 7459edd3).
