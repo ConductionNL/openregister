@@ -150,3 +150,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: after merging main: phpstan argument.unknown/argument.missing, 'Unknown named parameter $x', 'Parameter count ... is too low', or callback doubles with the old parameter list failing.
 - Cause: the PR moved a method to a value-object parameter (SearchOptions, RegisterSchemaRef, ExampleSetInstallInput...) while main added new callers/tests on the old form.
 - Fix: phpstan on all of lib (about 1 min) diffed against main's output finds every lib caller; the whole unit suite runs in about 3 min per top dir with xargs -P4 (Architecture about 8 min) and finds the doubles. Migrate them to the PR's form, keep main's booleans and semantics.
+
+## Migration version taken on main, or a migration step fails SchemaReuseHygieneTest (or-fix-14)
+- Symptom: add/add conflict on lib/Migration/Version1DateXXXX.php, or SchemaReuseHygieneTest (return null / not targeted) red after merging main.
+- Cause: main landed another step with the same class name; main now requires steps after 2.10 to extend TargetedMigrationStep (protected changeTargetedSchema) and every return to be `return $schema;`.
+- Fix: keep main's file, move the PR's step (and its test, tasks.md mention, component-map row) to a new unused Version1Date<today>; extend TargetedMigrationStep, rename changeSchema to protected changeTargetedSchema, turn `return null;` into `return $schema;` and assertNull into assertSame($schema, ...).
