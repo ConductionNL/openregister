@@ -4626,3 +4626,5 @@ Notifications/Service/Webhook/WebhookInterceptionCacheInterface.php,,Notificatio
 Service/Interaction/FavouriteServiceInterface.php,,Service,,,,,Notifications
 Notifications/Controller/Support/ReadableObject.php,,Notifications,,,,,Core
 Search/Listener/SearchDeclarationChecksListener.php,,Search,,,,,Search
+Service/ProcessesServiceBindings.php,,Service,,,,,Processes
+Service/ProcessesServiceRegistrar.php,,Service,,,,,Processes
