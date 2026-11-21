@@ -41,7 +41,6 @@ use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCP\IGroupManager;
-use OCP\IUserManager;
 use PhpOffice\PhpSpreadsheet\Reader\Csv as CsvReader;
 use PHPUnit\Framework\TestCase;
 
@@ -62,7 +61,6 @@ class ExportServiceTsvTest extends TestCase {
 
 		$this->service = new ExportService(
 			$this->createMock(RegisterMapper::class),
-			$this->createMock(IUserManager::class),
 			$this->createMock(IGroupManager::class),
 			$this->objectService,
 			$this->createMock(CacheHandler::class),
