@@ -22,10 +22,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Files\Db\TextDisclosure;
 use OCA\OpenRegister\Files\Db\TextDisclosureMapper;
 use OCA\OpenRegister\Files\Service\File\CallerFileAccess;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -51,7 +51,7 @@ class FileDisclosuresController extends Controller {
 		private readonly TextDisclosureMapper $mapper,
 		private readonly CallerFileAccess $fileAccess,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**

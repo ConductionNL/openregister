@@ -29,7 +29,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\Interaction\ReadHistoryService;
+use OCA\OpenRegister\Kernel\Contracts\Core\ReadHistoryInterface;
 use OCA\OpenRegister\Service\Object\GetObject;
 use OCA\OpenRegister\Service\Object\ObjectFindRequest;
 use OCA\OpenRegister\Service\Object\ReadScope;
@@ -67,7 +67,7 @@ class GetObjectFindGoldenTest extends TestCase {
 			}
 		);
 
-		$readHistory = $this->createMock(ReadHistoryService::class);
+		$readHistory = $this->createMock(ReadHistoryInterface::class);
 		$readHistory->method('registerAuditRead')->willReturnCallback(
 			function (ObjectEntity $object, bool $audit = true): ?AuditTrail {
 				$this->calls[] = ['audit', $object->getUuid(), $audit];

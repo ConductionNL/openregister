@@ -213,12 +213,7 @@ class ShippedBaselineResetService implements ShippedBaselineResetServiceInterfac
 	 * @return array<string, mixed> The live definition.
 	 */
 	private function live(Schema $schema): array {
-		return [
-			'properties' => $schema->getProperties(),
-			'required' => $schema->getRequired(),
-			'authorization' => ($schema->getAuthorization() ?? []),
-			GuardedAnnotations::PART => (new GuardedAnnotations())->ofStored(configuration: $schema->getConfiguration()),
-		];
+		return LiveDescriptor::of(schema: $schema);
 	}//end live()
 
 	/**

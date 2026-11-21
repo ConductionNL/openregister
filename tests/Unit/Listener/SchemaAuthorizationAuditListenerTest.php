@@ -28,6 +28,10 @@ use RuntimeException;
 /**
  * @covers \OCA\OpenRegister\Listener\SchemaAuthorizationAuditListener
  * @uses   \OCA\OpenRegister\Service\Rbac\AuditRowWriter
+ * @uses   \OCA\OpenRegister\Db\AuditTrail
+ * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses   \OCA\OpenRegister\Event\SchemaUpdatedEvent
+ * @uses   \OCA\OpenRegister\Event\AbstractSchemaEvent
  */
 final class SchemaAuthorizationAuditListenerTest extends TestCase {
 

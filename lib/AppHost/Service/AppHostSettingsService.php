@@ -218,7 +218,7 @@ class AppHostSettingsService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/settings-change-audit/specs/audit-trail-immutable/spec.md
+	 * @spec openspec/specs/audit-trail-immutable/spec.md
 	 */
 	private function auditSettingsChange(array $before, array $after): void {
 		try {
@@ -555,7 +555,7 @@ class AppHostSettingsService {
 	 *
 	 * @return array<int, string> The secret keys.
 	 *
-	 * @spec openspec/changes/settings-change-audit/specs/audit-trail-immutable/spec.md
+	 * @spec openspec/specs/audit-trail-immutable/spec.md
 	 */
 	protected function secretConfigKeys(): array {
 		return [];
@@ -603,6 +603,9 @@ class AppHostSettingsService {
 	/**
 	 * Read the app's register JSON and import it through the ConfigurationService.
 	 *
+	 * The service is reached through the Core import contract it implements,
+	 * AppConfigurationImporterInterface, bound to the same ConfigurationService.
+	 *
 	 * @param bool $force Force re-import even when already configured.
 	 *
 	 * @return array<string, mixed> Result with `success`, `message`, and `version`.
@@ -613,7 +616,7 @@ class AppHostSettingsService {
 			return $this->registerJsonNotFound();
 		}
 
-		$configurationService = $this->container->get('OCA\OpenRegister\Service\ConfigurationServiceInterface');
+		$configurationService = $this->container->get('OCA\OpenRegister\Service\AppConfigurationImporterInterface');
 		$before = $this->getSettings();
 		$result = $configurationService->importFromApp(appId: $this->appId, data: $data, version: $version, force: $force);
 

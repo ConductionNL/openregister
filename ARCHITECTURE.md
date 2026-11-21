@@ -60,7 +60,7 @@ Other top-level directories hold no code that Sigrid analyses. `tests/` is test 
 
 `lib/` is one component. Inside it the code keeps the Nextcloud layout: controllers, services, mappers, events and listeners. ADR-013 sets the rules for that layering: a controller calls services, a service calls mappers, nothing calls back up a layer, and events replace upward calls. The architecture tests in `tests/Unit/Architecture/` check these rules, and ADR-013 adds one test that checks the whole dependency graph.
 
-The table groups the backend by what the code does. A controller, its service and its mapper for one capability belong to the same area. These areas are an internal view, not SIG components.
+The table groups the backend by what the code does. A controller, its service and its mapper for one capability belong to the same area. These areas are an internal view, not SIG components. [docs/sig/component-analysis.md](docs/sig/component-analysis.md) measures the dependencies in both views, with `tools/sig/analyse_dependencies.py` and deptrac.
 
 | Area | What it covers | PHP lines |
 |---|---|---|

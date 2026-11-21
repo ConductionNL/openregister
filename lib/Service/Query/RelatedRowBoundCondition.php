@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
+ * @spec openspec/specs/zoeken-filteren/spec.md
  */
 
 declare(strict_types=1);
@@ -30,7 +30,7 @@ namespace OCA\OpenRegister\Service\Query;
  * bound under. `operator` is the parser's operator (`eq`, `gte`, `in`, ...),
  * not the SQL one: the renderer refuses an operator it has no SQL for.
  *
- * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
+ * @spec openspec/specs/zoeken-filteren/spec.md
  */
 final readonly class RelatedRowBoundCondition {
 

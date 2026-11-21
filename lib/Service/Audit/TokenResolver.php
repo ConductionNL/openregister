@@ -22,8 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Audit;
 
-use OCA\OpenRegister\Db\Consumer;
-use OCA\OpenRegister\Db\ConsumerMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\AccountConsumerInterface;
 use OCP\Authentication\Token\IProvider as ITokenProvider;
 use OCP\Authentication\Token\IToken;
 use OCP\ISession;
@@ -59,16 +58,16 @@ class TokenResolver {
 	/**
 	 * Constructor.
 	 *
-	 * @param ISession       $session       The current session.
-	 * @param ITokenProvider $tokenProvider Resolves an app password to its token record.
-	 * @param IUserSession   $userSession   The authenticated principal.
-	 * @param ConsumerMapperInterface $consumerMapper Registered API consumers.
+	 * @param ISession                 $session       The current session.
+	 * @param ITokenProvider           $tokenProvider Resolves an app password to its token record.
+	 * @param IUserSession             $userSession   The authenticated principal.
+	 * @param AccountConsumerInterface $consumers     Names the registered API consumer an account is.
 	 */
 	public function __construct(
 		private readonly ISession $session,
 		private readonly ITokenProvider $tokenProvider,
 		private readonly IUserSession $userSession,
-		private readonly ConsumerMapperInterface $consumerMapper,
+		private readonly AccountConsumerInterface $consumers,
 	) {
 	}//end __construct()
 
@@ -232,53 +231,15 @@ class TokenResolver {
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	private function withConsumer(TokenIdentity $identity, ?string $ownerUid): TokenIdentity {
-		$consumer = $this->findConsumer(ownerUid: $ownerUid);
+		if ($ownerUid === null) {
+			return $identity;
+		}
+
+		$consumer = $this->consumers->soleConsumerOf(ownerUid: $ownerUid);
 		if ($consumer === null) {
 			return $identity;
 		}
 
-		return $identity->withConsumer(consumer: new NamedIdentifier(id: $consumer->getUuid(), name: $consumer->getName()));
+		return $identity->withConsumer(consumer: $consumer);
 	}//end withConsumer()
-
-	/**
-	 * The single registered consumer running as this user, if exactly one does.
-	 *
-	 * @param string|null $ownerUid The token owner's uid.
-	 *
-	 * @return Consumer|null The consumer, or null when there is no unambiguous one.
-	 *
-	 * @spec openspec/specs/enhanced-audit-trail/spec.md
-	 */
-	private function findConsumer(?string $ownerUid): ?Consumer {
-		if ($ownerUid === null) {
-			return null;
-		}
-
-		$consumers = $this->consumersOf(ownerUid: $ownerUid);
-		if (count($consumers) !== 1) {
-			return null;
-		}
-
-		$consumer = $consumers[0];
-		if (($consumer instanceof Consumer) === false) {
-			return null;
-		}
-
-		return $consumer;
-	}//end findConsumer()
-
-	/**
-	 * The consumers registered for a user, or none when the lookup fails.
-	 *
-	 * @param string $ownerUid The token owner.
-	 *
-	 * @return array<int, mixed> The consumers.
-	 */
-	private function consumersOf(string $ownerUid): array {
-		try {
-			return $this->consumerMapper->findAll(filters: ['user_id' => $ownerUid]);
-		} catch (Throwable $lookupFailed) {
-			return [];
-		}
-	}//end consumersOf()
 }//end class

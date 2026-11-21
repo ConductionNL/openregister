@@ -25,9 +25,9 @@ use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Files\Db\RegisterFolderRecorder;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Exception\FolderAccessDeniedException;
+use OCA\OpenRegister\Kernel\Contracts\Core\RegisterFolderRecordsInterface;
 use OCA\OpenRegister\Service\FileHandlerSupportInterface;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCP\Files\Config\IUserMountCache;
@@ -89,8 +89,8 @@ class FolderManagementHandler {
 	 * @param AuditTrailMapperInterface $auditTrailMapper Mapper for writing forensic audit-trail entries on folder-access denials.
 	 * @param IUserMountCache $mountCache Mount cache, used to recognise a folder OpenRegister manages
 	 *                                    without setting up the owning user's mounts.
-	 * @param RegisterFolderRecorder $folderRecorder Records a register's folder id as bookkeeping, so a
-	 *                                               first upload needs no register-update permission.
+	 * @param RegisterFolderRecordsInterface $folderRecorder Records a register's folder id as bookkeeping, so a
+	 *                                                       first upload needs no register-update permission.
 	 * @param FileHandlerSupportInterface|null $fileService File service facade for cross-handler coordination
 	 *                                      (injected lazily to avoid circular dependency).
 	 * @param ContainerInterface|null $container Resolves the facade on first use when nothing
@@ -107,7 +107,7 @@ class FolderManagementHandler {
 		private readonly LoggerInterface $logger,
 		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly IUserMountCache $mountCache,
-		private readonly RegisterFolderRecorder $folderRecorder,
+		private readonly RegisterFolderRecordsInterface $folderRecorder,
 		private ?FileHandlerSupportInterface $fileService = null,
 		private readonly ?ContainerInterface $container = null,
 		private readonly ?DocumentStore $documentStore = null,
@@ -160,7 +160,7 @@ class FolderManagementHandler {
 	 *
 	 * @return FileHandlerSupportInterface|null The facade, or null when it cannot be resolved.
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-openregisters-own-account-holds-every-managed-folder-req-ofoa-001
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	private function fileService(): ?FileHandlerSupportInterface {
 		if ($this->fileService !== null || $this->container === null) {
@@ -250,7 +250,7 @@ class FolderManagementHandler {
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 * @spec openspec/specs/file-actions/spec.md#requirement-a-registers-folder-is-created-on-its-first-upload-by-whoever-uploads-req-rffu-001
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-openregisters-own-account-holds-every-managed-folder-req-ofoa-001
+	 * @spec openspec/specs/file-actions/spec.md
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) $currentUser stays for callers; nobody gets a share any more.
 	 */
@@ -940,7 +940,7 @@ class FolderManagementHandler {
 	 * @psalm-return   Folder
 	 * @phpstan-return Folder
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-openregisters-own-account-holds-every-managed-folder-req-ofoa-001
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function getOpenRegisterUserFolder(): Folder {
 		try {
@@ -1045,7 +1045,7 @@ class FolderManagementHandler {
 	 *
 	 * @return Node|null The managed node, or null.
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-openregisters-own-account-holds-every-managed-folder-req-ofoa-001
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function getManagedNodeById(int $nodeId): ?Node {
 		try {
@@ -1068,7 +1068,7 @@ class FolderManagementHandler {
 	 *
 	 * @return bool True when it is under `Open Registers/` in some home.
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-openregisters-own-account-holds-every-managed-folder-req-ofoa-001
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function isManagedNode(Node $node): bool {
 		try {
@@ -1092,7 +1092,7 @@ class FolderManagementHandler {
 	 *
 	 * @return ObjectEntity|null The object, or null when no object owns the file.
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-reading-an-objects-files-follows-the-objects-read-rule-req-ofoa-002
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function getObjectForFile(Node $file): ?ObjectEntity {
 		try {

@@ -26,8 +26,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Settings;
 
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\EdepotSettingsControllerServices;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Connection\ConnectionReporterInterface;
 use OCA\OpenRegister\Service\Edepot\EdepotTransferServiceInterface;
 use OCA\OpenRegister\Service\Edepot\Transport\OpenConnectorTransportInterface;
@@ -139,7 +139,7 @@ class EdepotSettingsController extends Controller {
 		IRequest $request,
 		EdepotSettingsControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->appConfig = $services->platform->appConfig;
 		$this->transferService = $services->domain->transferService;
 		$this->sftpTransport = $services->domain->sftpTransport;
@@ -406,7 +406,7 @@ class EdepotSettingsController extends Controller {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
+	 * @spec openspec/specs/app-connections/spec.md
 	 */
 	private function reportTest(bool $passed, string $transport): void {
 		if ($passed === true) {

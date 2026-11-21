@@ -17,28 +17,31 @@
 
 ## Step and end nodes (15 remaining — AwaitSignalNode already implements)
 
-- [ ] `ObjectReadNode` / `ObjectWriteNode` — register/schema selects,
+- [x] `ObjectReadNode` / `ObjectWriteNode` — register/schema selects,
       filter/data fields; mark templated fields' help with the value-template
       syntax (`FlowValueTemplate`).
-- [ ] `SetFieldsNode`, `MapNode`, `FilterNode` — expression/field-list fields
-      with help pointing at the expression dialect (`FlowExpression`). (Filter done; SetFields and Map open.)
-- [ ] `SwitchNode`, `RouterNode` — branch/condition configuration; where the
+- [x] `SetFieldsNode`, `MapNode`, `FilterNode` — expression/field-list fields
+      with help pointing at the expression dialect (`FlowExpression`). (All three done; SetFields keeps its four field maps in the JSON pane.)
+- [x] `SwitchNode`, `RouterNode` — branch/condition configuration; where the
       shape is a keyed structure the form covers the scalar keys and the help
       text says the branch table is edited in the JSON pane (partial form,
       per the interface's own doc).
-- [ ] `MergeNode`, `ExplodeNode`, `IterateNode`, `LoopNode` (`openregister.batch`),
+- [x] `MergeNode`, `ExplodeNode`, `IterateNode`, `LoopNode` (`openregister.batch`),
       `FlowStateNode`, `WaitNode` — full forms; each key from `configKeys()`
       either gets a field or is named in a code comment saying why not.
-      (Merge, Explode, Iterate and Wait done; Loop and FlowState open.)
+      (All done; FlowState keeps `default`, `value` and `record` in the JSON pane, as its code comment says.)
 - [x] `SubFlowNode` — flow select fed from the flow store via `optionsFrom`.
 - [x] `EndNode` — `error` boolean with help ("failing is an outcome, not the
       absence of one").
 
 ## Guard rails
 
-- [ ] Registry sweep test: every palette entry whose type id starts with
+- [x] Registry sweep test: every palette entry whose type id starts with
       `openregister.` carries a non-null form declaration — enumerating the
-      registry, not a hand-kept list.
+      registry, not a hand-kept list. (`tests/Unit/Service/Flow/FlowNodeFormSweepTest.php`:
+      the real registration listener over the real node classes; it also
+      covers ActionInputs, LinkObject and Transition, and asserts every label
+      and help string comes through IL10N.)
 - [x] Per-node unit test: every declared field's `key` is in that node's
       `configKeys()`; positive control with a deliberately bogus field proving
       the assertion can fail. (`tests/Unit/Service/Flow/FlowNodeConfigFormKeysTest.php`,
@@ -48,7 +51,7 @@
       an un-covered key survives a form edit; malformed JSON is refused at the
       pane naming the parse error. If any of these does not already hold,
       the fix lands in nextcloud-vue as this change's dependency.
-- [ ] All labels and help strings through `IL10N` — they are shown to
+- [x] All labels and help strings through `IL10N` — they are shown to
       operators (AwaitSignalNode is the pattern).
 
 ## Out of scope (recorded, not tasked)
