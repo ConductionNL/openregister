@@ -38,6 +38,8 @@ use OCA\OpenRegister\Db\Tenancy\TenancyServices;
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Db\MultiTenancyTrait
  * @uses   \OCA\OpenRegister\Db\ColumnFiltersTrait
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaMapperServices
+ * @uses \OCA\OpenRegister\Db\Tenancy\TenancyServices
  */
 class SchemaReferenceSearchBoundaryTest extends TestCase {
 	/**

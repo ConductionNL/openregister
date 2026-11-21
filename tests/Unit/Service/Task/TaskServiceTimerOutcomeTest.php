@@ -51,6 +51,14 @@ use Psr\Log\NullLogger;
  * @covers \OCA\OpenRegister\Db\Task
  * @covers \OCA\OpenRegister\Db\TaskAudit
  * @covers \OCA\OpenRegister\Service\Task\TaskState
+ * @uses \OCA\OpenRegister\Service\Task\TaskAct
+ * @uses \OCA\OpenRegister\Service\Task\TaskClosing
+ * @uses \OCA\OpenRegister\Service\Task\TaskCommit
+ * @uses \OCA\OpenRegister\Service\Task\TaskIntake
+ * @uses \OCA\OpenRegister\Service\Task\TaskLifecycleServices
+ * @uses \OCA\OpenRegister\Service\Task\TaskTables
+ * @uses \OCA\OpenRegister\Service\Task\TaskTrigger
+ * @uses \OCA\OpenRegister\Service\Task\TimerOutcome
  */
 class TaskServiceTimerOutcomeTest extends TestCase {
 
@@ -171,4 +179,31 @@ class TaskServiceTimerOutcomeTest extends TestCase {
 		$this->expectException(TaskConflictException::class);
 		$this->service()->applyTimerOutcome(uuid: 't-1', outcome: new TimerOutcome(outcome: 'skip', trigger: new TaskTrigger(source: 's', reason: 'r')));
 	}//end testALostRaceSurfacesAsAConflict()
+
+	public function testTheReleaseFormOfApplyTimerOutcomeRecordsTheSameOutcome(): void {
+		$tasks = [];
+		$this->tasks->method('findByUuid')->willReturnCallback(function (string $uuid) use (&$tasks): Task {
+			$tasks[$uuid] = $this->openTask($uuid);
+
+			return $tasks[$uuid];
+		});
+		$this->tasks->method('updateIfOpen')->willReturn(true);
+		$service = $this->service();
+
+		$main       = $service->applyTimerOutcome(uuid: 't-main', outcome: new TimerOutcome(outcome: 'skip', trigger: new TaskTrigger(source: 'flow-timer:abc', reason: 'deadline reached')));
+		$named      = $service->applyTimerOutcome(uuid: 't-named', outcome: 'skip', source: 'flow-timer:abc', reason: 'deadline reached');
+		$positional = $service->applyTimerOutcome('t-positional', 'skip', 'flow-timer:abc', 'deadline reached');
+
+		foreach ([$named, $positional] as $task) {
+			self::assertSame($main->getState() . '/' . $main->getOutcome(), $task->getState() . '/' . $task->getOutcome());
+			self::assertSame($main->getCompletedBy(), $task->getCompletedBy());
+		}
+
+		self::assertSame([['flow-timer:abc', 'deadline reached']], array_values(array_unique(array_map(static fn (TaskAudit $a): array => [$a->getActor(), $a->getReason()], $this->audited), SORT_REGULAR)));
+	}
+
+	public function testTheReleaseFormWithoutASourceIsRefused(): void {
+		$this->expectException(\OCA\OpenRegister\Exception\TaskValidationException::class);
+		$this->service()->applyTimerOutcome(uuid: 't-1', outcome: 'skip');
+	}
 }//end class

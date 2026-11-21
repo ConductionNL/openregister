@@ -28,6 +28,7 @@ use PHPUnit\Framework\TestCase;
  * Golden period lookup of TenantUsageMapper.
  *
  * @covers \OCA\OpenRegister\Db\TenantUsageMapper
+ * @uses \OCA\OpenRegister\Db\TenantUsage
  */
 final class TenantUsageMapperPeriodLookupGoldenTest extends TestCase {
 	use RecordsQueries;

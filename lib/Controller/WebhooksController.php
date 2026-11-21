@@ -37,6 +37,7 @@ use OCA\OpenRegister\Controller\Support\WebhooksControllerServices;
 use OCA\OpenRegister\Controller\Support\WebhookLogQuery;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\Webhook;
+use OCA\OpenRegister\Event\AppWebhookEvents;
 use OCA\OpenRegister\Db\WebhookLog;
 use OCA\OpenRegister\Db\WebhookLogMapperInterface;
 use OCA\OpenRegister\Db\WebhookMapperInterface;
@@ -657,12 +658,9 @@ class WebhooksController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function create(): JSONResponse {
 		// Webhooks let the holder direct outbound HTTP from the server,
 		// so write access is admin-only (wave-3 C10).
@@ -737,12 +735,9 @@ class WebhooksController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function update(int $id): JSONResponse {
 		// Webhook reconfiguration is admin-only (wave-3 C10).
 		if ($this->isCurrentUserAdmin() === false) {
@@ -794,8 +789,6 @@ class WebhooksController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @psalm-return JSONResponse<
 	 *     204,
 	 *     null,
@@ -809,7 +802,6 @@ class WebhooksController extends Controller {
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function destroy(int $id): JSONResponse {
 		// Webhook deletion is admin-only (wave-3 C10).
 		if ($this->isCurrentUserAdmin() === false) {
@@ -858,12 +850,9 @@ class WebhooksController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function preview(): JSONResponse {
 		// A mapping can read any field of the event, so the preview is as
 		// privileged as editing the webhook.
@@ -919,12 +908,9 @@ class WebhooksController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function test(int $id): JSONResponse {
 		// The /test endpoint actually fires an outbound HTTP request to the
 		// configured URL, so it triggers the same SSRF surface as a normal
@@ -993,15 +979,17 @@ class WebhooksController extends Controller {
 	 * @NoAdminRequired
 	 *
 	 * @NoCSRFRequired
-	 * @no-admin-idor-exempt No per-object resource: returns the static catalogue of available webhook event-type definitions
-	 *   (identical for every install); no tenant data.
+	 * @no-admin-idor-exempt No per-object resource: returns the catalogue of available webhook event-type definitions
+	 *   (the built-in ones plus those the installed apps declare); no tenant data.
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md
+	 * @spec openspec/changes/connect-document-webhooks/specs/app-declared-webhook-events/spec.md#requirement-the-event-catalogue-lists-declared-events
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function events(): JSONResponse {
-		$events = self::EVENT_CATALOGUE;
+		// Built-in events first, then the events other apps declared.
+		$events = array_merge(self::EVENT_CATALOGUE, AppWebhookEvents::catalogue());
 
 		return new JSONResponse(
 			data: [
@@ -1257,12 +1245,9 @@ class WebhooksController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function retry(int $logId): JSONResponse {
 		// The retry() endpoint re-fires an outbound webhook delivery, so it
 		// shares the outbound-HTTP surface of test(). Admin-only (wave-3 C10).

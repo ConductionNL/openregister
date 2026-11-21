@@ -22,6 +22,7 @@ namespace Unit\Service\JsonLd;
 
 use DateTime;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\JsonLd\JsonLdContextService;
 use OCA\OpenRegister\Service\JsonLd\JsonLdSerializer;
@@ -80,7 +81,10 @@ class JsonLdSerializerTest extends TestCase {
 			]
 		);
 
-		$doc = $this->serializer->serialize($object, $this->schema, $this->register);
+		$doc = $this->serializer->serializeIn(
+			renderedObject: $object,
+			table: new RegisterSchema(register: $this->register, schema: $this->schema)
+		);
 
 		$this->assertSame('https://nc.test/api/contexts/personen/persoon', $doc['@context']);
 		$this->assertSame('https://nc.test/api/objects/personen/persoon/550e8400', $doc['@id']);
@@ -97,7 +101,10 @@ class JsonLdSerializerTest extends TestCase {
 	public function testMissingUriFallsBackToShowRoute(): void {
 		$object = $this->rendered(['id' => 'abc-123', 'register' => 'personen', 'schema' => 'persoon']);
 
-		$doc = $this->serializer->serialize($object, $this->schema, $this->register);
+		$doc = $this->serializer->serializeIn(
+			renderedObject: $object,
+			table: new RegisterSchema(register: $this->register, schema: $this->schema)
+		);
 
 		$this->assertSame('https://nc.test/api/objects/personen/persoon/abc-123', $doc['@id']);
 	}
@@ -108,7 +115,10 @@ class JsonLdSerializerTest extends TestCase {
 			['name' => 'Jansen', '@weird' => 'value']
 		);
 
-		$doc = $this->serializer->serialize($object, $this->schema, $this->register);
+		$doc = $this->serializer->serializeIn(
+			renderedObject: $object,
+			table: new RegisterSchema(register: $this->register, schema: $this->schema)
+		);
 
 		$this->assertArrayNotHasKey('@weird', $doc);
 		$this->assertSame('value', $doc['or:raw#weird']);
@@ -126,7 +136,10 @@ class JsonLdSerializerTest extends TestCase {
 			'limit' => 20,
 		];
 
-		$doc = $this->serializer->serializeCollection($result, $this->schema, $this->register);
+		$doc = $this->serializer->serializeCollectionIn(
+			paginatedResult: $result,
+			table: new RegisterSchema(register: $this->register, schema: $this->schema)
+		);
 
 		$this->assertSame('https://nc.test/api/contexts/personen/persoon', $doc['@context']);
 		$this->assertCount(2, $doc['@graph']);
@@ -148,7 +161,10 @@ class JsonLdSerializerTest extends TestCase {
 			'@self' => ['self' => 'https://nc.test/api/objects/personen/persoon?_limit=20'],
 		];
 
-		$doc = $this->serializer->serializeCollection($result, $this->schema, $this->register);
+		$doc = $this->serializer->serializeCollectionIn(
+			paginatedResult: $result,
+			table: new RegisterSchema(register: $this->register, schema: $this->schema)
+		);
 
 		$this->assertSame('https://nc.test/api/objects/personen/persoon?_limit=20&_page=2', $doc['or:next']);
 	}

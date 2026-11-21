@@ -33,6 +33,8 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Re-saves objects in batches, serially or in chunks of batches, and collects the counts,
@@ -569,10 +571,11 @@ final class MassValidationRun {
 			// Re-saving triggers all business logic; saveObject() signals failure by throwing.
 			$this->objectService()->saveObject(
 				object: $object->getObject(),
-				extend: [],
-				register: $object->getRegister(),
-				schema: $object->getSchema(),
-				uuid: $object->getUuid()
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: $object->getRegister(), schema: $object->getSchema()),
+					uuid: $object->getUuid(),
+					extend: []
+				)
 			);
 			return null;
 		} catch (Exception $e) {

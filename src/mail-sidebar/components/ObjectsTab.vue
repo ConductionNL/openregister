@@ -94,7 +94,7 @@ import { showError, showSuccess } from '@nextcloud/dialogs'
 /**
  * Objects tab — linked-objects list inside the three-tab sidebar; also acts
  * as the drop target for Mail attachments (drops upload the file to the
- * linked OR object via /api/objects/{r}/{s}/{id}/filesMultipart).
+ * linked OR object via /api/objects/{r}/{s}/{id}/files-multipart).
  *
  * @spec openspec/specs/mail-sidebar/spec.md
  * @spec openspec/specs/mail-sidebar/spec.md
@@ -360,7 +360,7 @@ export default {
 			const formData = new FormData()
 			formData.append('files[]', file)
 			const uploadUrl = generateUrl(
-				'/apps/openregister/api/objects/{register}/{schema}/{id}/filesMultipart',
+				'/apps/openregister/api/objects/{register}/{schema}/{id}/files-multipart',
 				{
 					register: target.register,
 					schema: target.schema,

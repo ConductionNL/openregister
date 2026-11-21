@@ -28,6 +28,8 @@ use Exception;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Exception\OrganisationSlugConflictException;
+use OCA\OpenRegister\Service\Organisation\NewOrganisation;
+use OCA\OpenRegister\Service\Rbac\OrganisationSpecialRightsInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IAppConfig;
 use OCP\IConfig;
@@ -473,8 +475,7 @@ class OrganisationService implements OrganisationServiceInterface {
 	private function createDefaultOrganisation(): Organisation {
 		try {
 			return $this->createOrganisation(
-				name: 'Default Organisation',
-				description: 'Auto-generated default organisation',
+				details: new NewOrganisation(name: 'Default Organisation', description: 'Auto-generated default organisation'),
 				addCurrentUser: false
 			);
 		} catch (OrganisationSlugConflictException $e) {
@@ -634,8 +635,9 @@ class OrganisationService implements OrganisationServiceInterface {
 	/**
 	 * The organisation an organisation context acts for.
 	 *
-	 * Memoised per request by uuid. An organisation that does not exist answers
-	 * null, so the organisation filter admits nothing.
+	 * Memoised per request by uuid. A merged-away organisation answers with the
+	 * organisation it was merged into. One that does not exist or is not active
+	 * answers null, so the organisation filter admits nothing.
 	 *
 	 * @param string $uuid The organisation uuid the context names.
 	 *
@@ -649,8 +651,12 @@ class OrganisationService implements OrganisationServiceInterface {
 		}
 
 		try {
-			$organisation = $this->organisationMapper->findByUuid($uuid);
+			$organisation = $this->followMerge(organisation: $this->organisationMapper->findByUuid($uuid));
 		} catch (DoesNotExistException $e) {
+			$organisation = null;
+		}
+
+		if ($organisation !== null && $organisation->isActive() === false) {
 			$organisation = null;
 		}
 
@@ -917,10 +923,8 @@ class OrganisationService implements OrganisationServiceInterface {
 	/**
 	 * Create a new organisation
 	 *
-	 * @param string $name Organisation name
-	 * @param string $description Organisation description
-	 * @param bool $addCurrentUser Whether to add current user as owner and member
-	 * @param string $uuid Optional specific UUID to use
+	 * @param NewOrganisation $details        The name, description and optional UUID.
+	 * @param bool            $addCurrentUser Whether to add current user as owner and member
 	 *
 	 * @return Organisation The created organisation
 	 *
@@ -933,12 +937,9 @@ class OrganisationService implements OrganisationServiceInterface {
 	 *
 	 * @spec openspec/specs/saas-multi-tenant/spec.md
 	 */
-	public function createOrganisation(
-		string $name,
-		string $description = '',
-		bool $addCurrentUser = true,
-		string $uuid = '',
-	): Organisation {
+	public function createOrganisation(NewOrganisation $details, bool $addCurrentUser = true): Organisation {
+		$name = $details->name;
+		$uuid = $details->uuid;
 		$user = $this->getCurrentUser();
 		$userId = null;
 
@@ -949,7 +950,7 @@ class OrganisationService implements OrganisationServiceInterface {
 
 		$organisation = new Organisation();
 		$organisation->setName($name);
-		$organisation->setDescription($description);
+		$organisation->setDescription($details->description);
 
 		// Auto-generate slug from name if not provided.
 		$organisation->setSlug($this->generateSlug(name: $name));
@@ -975,9 +976,11 @@ class OrganisationService implements OrganisationServiceInterface {
 
 		$saved = $this->organisationMapper->save($organisation);
 
-		// If there's no default organisation set, make this one the default.
+		// With no default organisation set, one created by an admin or by the
+		// system becomes the default. Records without an organisation land in
+		// the default, so a regular user's organisation never becomes it.
 		$defaultOrgId = $this->appConfig->getValueString('openregister', 'defaultOrganisation', '');
-		if ($defaultOrgId === '') {
+		if ($defaultOrgId === '' && ($user === null || $this->groupManager->isAdmin($user->getUID()) === true)) {
 			$this->appConfig->setValueString('openregister', 'defaultOrganisation', $saved->getUuid());
 		}
 
@@ -1014,24 +1017,105 @@ class OrganisationService implements OrganisationServiceInterface {
 	 * @spec openspec/specs/saas-multi-tenant/spec.md
 	 */
 	public function hasAccessToOrganisation(string $organisationUuid): bool {
-		try {
-			$organisation = $this->organisationMapper->findByUuid($organisationUuid);
-			$user = $this->getCurrentUser();
-
-			if ($user === null) {
-				return false;
-			}
-
-			// Admin users have access to all organisations.
-			if ($this->groupManager->isAdmin($user->getUID()) === true) {
-				return true;
-			}
-
-			return $organisation->hasUser($user->getUID());
-		} catch (DoesNotExistException $e) {
+		$user = $this->getCurrentUser();
+		if ($user === null) {
 			return false;
 		}
+
+		return $this->userHasAccessToOrganisation(organisationUuid: $organisationUuid, userId: $user->getUID());
 	}//end hasAccessToOrganisation()
+
+	/**
+	 * Check whether a named user has access to an organisation.
+	 *
+	 * The rule {@see hasAccessToOrganisation()} applies to the session user, which
+	 * delegates here: a Nextcloud administrator reaches every organisation, anyone
+	 * else only an organisation that lists them as a member. It reads no session.
+	 *
+	 * @param string $organisationUuid The organisation UUID to check.
+	 * @param string $userId           The user to check. An empty id never has access.
+	 *
+	 * @return bool True when the user is an administrator or a member of the organisation.
+	 *
+	 * @spec openspec/changes/broker-acts-for-an-organisation-member/specs/credential-broker/spec.md#requirement-background-acting-user-resolution
+	 */
+	public function userHasAccessToOrganisation(string $organisationUuid, string $userId): bool {
+		$organisation = $this->organisationFor(organisationUuid: $organisationUuid, userId: $userId);
+		if ($organisation === null) {
+			return false;
+		}
+
+		if ($this->groupManager->isAdmin($userId) === true) {
+			return true;
+		}
+
+		return $organisation->hasUser($userId);
+	}//end userHasAccessToOrganisation()
+
+	/**
+	 * Check whether a named user is on an organisation's own member list.
+	 *
+	 * Unlike {@see userHasAccessToOrganisation()}, a Nextcloud administrator gets no
+	 * blanket pass: the credential broker uses this for a sessionless call acting for
+	 * a background task's user, where an administrator's task must not spend every
+	 * organisation's key.
+	 *
+	 * @param string $organisationUuid The organisation UUID to check.
+	 * @param string $userId           The user to check. An empty id is never a member.
+	 *
+	 * @return bool True only when the organisation lists the user as a member.
+	 *
+	 * @spec openspec/changes/broker-acts-for-an-organisation-member/specs/credential-broker/spec.md#requirement-background-acting-user-resolution
+	 */
+	public function isMemberOfOrganisation(string $organisationUuid, string $userId): bool {
+		return $this->organisationFor(organisationUuid: $organisationUuid, userId: $userId)?->hasUser($userId) === true;
+	}//end isMemberOfOrganisation()
+
+	/**
+	 * The organisations a user may manage shared resources for.
+	 *
+	 * The same authority as {@see isOrganisationAdmin()}: a Nextcloud administrator
+	 * manages every organisation, anyone else the organisations they own. The create
+	 * endpoint still re-checks {@see isOrganisationAdmin()} for the organisation a
+	 * client sends.
+	 *
+	 * @param string $userId The user.
+	 *
+	 * @return Organisation[] The organisations.
+	 *
+	 * @spec openspec/changes/broker-acts-for-an-organisation-member/specs/credential-broker/spec.md#requirement-an-organisation-credential-names-and-lets-the-admin-choose-its-organisation
+	 */
+	public function getManageableOrganisations(string $userId): array {
+		if ($userId === '') {
+			return [];
+		}
+
+		if ($this->groupManager->isAdmin($userId) === true) {
+			return $this->organisationMapper->findAll(limit: 1000);
+		}
+
+		return $this->organisationMapper->findAll(limit: 1000, filters: ['owner' => $userId]);
+	}//end getManageableOrganisations()
+
+	/**
+	 * The organisation to check a named user against, or null when there is nothing to check.
+	 *
+	 * @param string $organisationUuid The organisation UUID.
+	 * @param string $userId           The user; an empty id yields null.
+	 *
+	 * @return Organisation|null The organisation, or null for an empty id or an unknown organisation.
+	 */
+	private function organisationFor(string $organisationUuid, string $userId): ?Organisation {
+		if ($userId === '' || $organisationUuid === '') {
+			return null;
+		}
+
+		try {
+			return $this->organisationMapper->findByUuid($organisationUuid);
+		} catch (DoesNotExistException $e) {
+			return null;
+		}
+	}//end organisationFor()
 
 	/**
 	 * Whether a user administers an organisation (may manage its shared resources).
@@ -1281,7 +1365,7 @@ class OrganisationService implements OrganisationServiceInterface {
 		}
 
 		// Add admin group to special permissions.
-		$specialPermissions = ['object_publish', 'agent_use', 'dashboard_view', 'llm_use'];
+		$specialPermissions = OrganisationSpecialRightsInterface::OPEN_BY_DEFAULT;
 		foreach ($specialPermissions as $permission) {
 			if (($authorization[$permission] ?? null) !== null && is_array($authorization[$permission]) === true) {
 				if (in_array($adminGroupId, $authorization[$permission], true) === false) {
@@ -1334,7 +1418,7 @@ class OrganisationService implements OrganisationServiceInterface {
 		}
 
 		// Check special permissions.
-		$specialPermissions = ['object_publish', 'agent_use', 'dashboard_view', 'llm_use'];
+		$specialPermissions = OrganisationSpecialRightsInterface::OPEN_BY_DEFAULT;
 		foreach ($specialPermissions as $permission) {
 			if (($authorization[$permission] ?? null) !== null && is_array($authorization[$permission]) === true) {
 				if (in_array($adminGroupId, $authorization[$permission], true) === true) {

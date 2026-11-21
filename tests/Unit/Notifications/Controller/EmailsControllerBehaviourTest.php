@@ -57,6 +57,9 @@ use OCA\OpenRegister\Notifications\Service\EmailLinkRequest;
 #[UsesClass(EmailLink::class)]
 #[UsesClass(ObjectEntity::class)]
 #[UsesClass(Schema::class)]
+#[UsesClass(\OCA\OpenRegister\Kernel\Contracts\ListQuery::class)]
+#[UsesClass(\OCA\OpenRegister\Kernel\Contracts\ObjectRef::class)]
+#[UsesClass(\OCA\OpenRegister\Notifications\Service\EmailLinkRequest::class)]
 class EmailsControllerBehaviourTest extends TestCase {
 
 	private EmailService&MockObject $emails;

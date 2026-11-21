@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Stand-ins for phpseclib3, for tests that run in a separate process.
+ * Stand-ins for phpseclib4, for tests that run in a separate process.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
@@ -9,7 +9,7 @@
 
 declare(strict_types=1);
 
-namespace phpseclib3\Crypt {
+namespace phpseclib4\Crypt {
 
 	class PublicKeyLoader {
 
@@ -26,7 +26,7 @@ namespace phpseclib3\Crypt {
 	}//end class
 }
 
-namespace phpseclib3\Net {
+namespace phpseclib4\Net {
 
 	class SFTP {
 
@@ -59,9 +59,11 @@ namespace phpseclib3\Net {
 			return self::$loginResult;
 		}
 
-		public function put(string $remote, string $local, int $mode): bool {
+		public function put(string $remote, string $local, int $mode): void {
 			self::$calls[] = ['put', $remote, $local, $mode];
-			return self::$putResult;
+			if (self::$putResult === false) {
+				throw new \RuntimeException('disk full');
+			}
 		}
 
 		public function filesize(string $remote): mixed {
@@ -72,10 +74,6 @@ namespace phpseclib3\Net {
 		public function pwd(): string {
 			self::$calls[] = ['pwd'];
 			return '/';
-		}
-
-		public function getLastSFTPError(): string {
-			return 'disk full';
 		}
 	}//end class
 }

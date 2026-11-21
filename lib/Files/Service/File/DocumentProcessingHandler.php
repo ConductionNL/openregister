@@ -30,6 +30,10 @@ use OCA\OpenRegister\Exception\SanitizationException;
 use OCA\OpenRegister\Files\Service\File\Pdf\PdfTextReplacer;
 use OCA\OpenRegister\Files\Service\File\Pdf\RedactionPlan;
 use OCA\OpenRegister\Kernel\Contracts\StructurePreservation;
+use OCA\OpenRegister\Service\Anonymisation\PipelineSteps;
+use OCA\OpenRegister\Service\File\ImageRedactionService;
+use OCA\OpenRegister\Service\File\ImageRegionNotBurnableException;
+use OCA\OpenRegister\Service\File\OfficeMediaBurner;
 use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler;
 use OCA\OpenRegister\Files\Service\TextExtraction\PdfExtractor;
 use OCP\Files\File;
@@ -41,6 +45,8 @@ use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Throwable;
 use ZipArchive;
+use OCA\OpenRegister\Kernel\Contracts\Value\DocumentAnonymisationRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\WordReplacementRequest;
 
 /**
  * Handles document processing operations.
@@ -84,6 +90,7 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 		EntityRecognitionHandler::ENTITY_TYPE_IBAN,
 		EntityRecognitionHandler::ENTITY_TYPE_SSN,
 		EntityRecognitionHandler::ENTITY_TYPE_IP_ADDRESS,
+		EntityRecognitionHandler::ENTITY_TYPE_LICENSE_PLATE,
 	];
 
 	/**
@@ -115,7 +122,7 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 	 * The `structurePreservation` result block from the most recent PDF
 	 * redaction (best-effort accessibility-structure preservation).
 	 *
-	 * Populated only when {@see anonymizeDocument()} / {@see replaceWords()}
+	 * Populated only when {@see anonymize()} / {@see replaceWords()}
 	 * took the PDF branch; null for DOCX/ODT/text redactions (no PDF
 	 * structure tree is involved) and before the first PDF run.
 	 *
@@ -140,6 +147,13 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 	 * @var array<int|string, string>
 	 */
 	private array $lastPlaceholderMap = [];
+
+	/**
+	 * The content-altering steps that ran in the current anonymisation run.
+	 *
+	 * @var list<string>
+	 */
+	private array $stepsRan = [];
 
 	/**
 	 * Constructor for DocumentProcessingHandler.
@@ -198,7 +212,7 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 	}//end getLastStructurePreservation()
 
 	/**
-	 * Per-entity placeholder map from the most recent anonymizeDocument() call.
+	 * Per-entity placeholder map from the most recent anonymize() call.
 	 *
 	 * Maps the internal global entity id (stringified) to the exact placeholder
 	 * string emitted into the document (e.g. `"7" => "[PERSOON: 1]"`), so the
@@ -220,23 +234,10 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 	 * For Word documents, replacements are applied recursively across all sections, headers,
 	 * footers, tables, and lists.
 	 *
-	 * @param Node $node The file node to process.
-	 * @param array $replacements Array of replacement mappings (search => replace).
-	 * @param string|null $outputName Optional name for the output file.
-	 * @param bool $strict PDF only: when true (entity anonymisation), an
-	 *                     output that cannot be re-read for the residual
-	 *                     check is refused instead of written unchecked.
-	 * @param bool|null $preserveStructure PDF only (REQ-ORTPR-004): tri-state structure-
-	 *                                     preservation option — null/absent = auto (preserve
-	 *                                     iff the input is a tagged PDF), true = attempt,
-	 *                                     false = skip but still measure. Ignored for
-	 *                                     DOCX/ODT/text (no PDF structure tree involved).
+	 * @param WordReplacementRequest $request The node, the replacements (search => replace), the output
+	 *                                         name and the PDF validation options.
 	 *
 	 * @throws Exception If node is not a file or replacement fails.
-	 *
-	 * @phpstan-param array<string, string> $replacements
-	 *
-	 * @psalm-param array<string, string> $replacements
 	 *
 	 * @return File
 	 *
@@ -244,21 +245,17 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 	 *
 	 * @psalm-return File
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) $strict selects strict vs lenient validation per the entity-anonymisation contract.
-	 *
 	 * @spec openspec/specs/file-actions/spec.md
-	 * @spec openspec/changes/tag-preserving-redaction/specs/tag-preserving-redaction/spec.md
+	 * @spec openspec/specs/tag-preserving-redaction/spec.md
 	 */
-	public function replaceWords(
-		Node $node,
-		array $replacements,
-		?string $outputName = null,
-		bool $strict = false,
-		?bool $preserveStructure = null,
-	): File {
-		$file = $this->requireFile(node: $node);
-		$job = new DocumentReplacement(node: $file, replacements: $replacements, outputName: $outputName ?? $this->replacedNameFor(file: $file));
-		return $this->replaceDocument(job: $job->withPdfOptions(strict: $strict, preserveStructure: $preserveStructure));
+	public function replaceWords(WordReplacementRequest $request): File {
+		$file = $this->requireFile(node: $request->node);
+		$job = new DocumentReplacement(
+			node: $file,
+			replacements: $request->replacements,
+			outputName: $request->outputName ?? $this->replacedNameFor(file: $file)
+		);
+		return $this->replaceDocument(job: $job->withPdfOptions(strict: $request->strict, preserveStructure: $request->preserveStructure));
 	}//end replaceWords()
 
 	/**
@@ -324,65 +321,42 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 	}//end replacedNameFor()
 
 	/**
-	 * Anonymize a document by replacing entity values.
-	 *
-	 * This method anonymizes a document by replacing detected entities with placeholders
-	 * in the format [ENTITY_TYPE: key]. It builds a replacement mapping from entity detection
-	 * results and applies them using the replaceWords method.
-	 *
-	 * @param Node $node The file node to anonymize.
-	 * @param array $entities Array of detected entities with 'text', 'entityType', and 'key' fields.
-	 * @param string $scope Placeholder-numbering scope: 'document' (default — counter restarts
-	 *                      per run, no persistence) or 'dossier' (counter consistent across all
-	 *                      files in the dossier folder, recomputed deterministically).
-	 * @param string|null $fileKey Stable folder id identifying the dossier when $scope='dossier'.
-	 *                             When absent (and scope='dossier') the file's parent folder is used.
-	 *                             Ignored for the per-document scope.
-	 * @param bool|null $preserveStructure PDF only (REQ-ORTPR-004): tri-state structure-preservation
-	 *                                     option forwarded to {@see replaceWords()} — null/absent = auto
-	 *                                     (preserve iff the input is a tagged PDF), true = attempt,
-	 *                                     false = skip but still measure.
-	 *
-	 * @throws Exception If anonymization fails.
-	 *
-	 * @phpstan-param array<int, array{text?: string, entityType?: string, key?: string}> $entities
-	 *
-	 * @psalm-param array<int, array{text?: string, entityType?: string, key?: string}> $entities
-	 *
-	 * @return File The anonymized document file.
-	 *
-	 * @spec openspec/specs/file-actions/spec.md
-	 * @spec openspec/changes/tag-preserving-redaction/specs/tag-preserving-redaction/spec.md
-	 */
-	public function anonymizeDocument(
-		Node $node,
-		array $entities,
-		string $scope = 'document',
-		?string $fileKey = null,
-		?bool $preserveStructure = null,
-	): File {
-		$options = new DocumentAnonymisationOptions(scope: $scope, fileKey: $fileKey, preserveStructure: $preserveStructure);
-		return $this->anonymize(request: new DocumentAnonymisationRequest(node: $node, entities: $entities, options: $options));
-	}//end anonymizeDocument()
-
-	/**
 	 * Anonymize a document by replacing entity values with placeholders.
 	 *
-	 * See {@see anonymizeDocument()} for the placeholder scopes and the
-	 * structure-preservation option.
+	 * Detected entities are replaced with placeholders in the format
+	 * [ENTITY_TYPE: key], built from the entity detection results and applied
+	 * through {@see replaceWords()}. Placeholder numbering follows the options'
+	 * scope: 'document' (default, the counter restarts per run, no persistence)
+	 * or 'dossier' (consistent across all files in the dossier folder named by
+	 * the file key, or the file's parent folder, recomputed deterministically).
+	 * The PDF-only structure-preservation option (REQ-ORTPR-004) is tri-state:
+	 * null = auto (preserve iff the input is a tagged PDF), true = attempt,
+	 * false = skip but still measure.
 	 *
-	 * @param DocumentAnonymisationRequest $request The node, the detected entities and the options.
+	 * @param DocumentAnonymisationRequest $request The node, the detected entities
+	 *                                              (`text`, `entityType`, `key`) and the options.
 	 *
 	 * @throws Exception If anonymization fails.
 	 *
 	 * @return File The anonymized document file.
 	 *
+	 * A standalone image (PNG, JPEG, TIFF, WebP) never takes the text path: its
+	 * decided regions are burned into the pixels through the image seam
+	 * (REQ-AIS-004), see {@see anonymizeImage()}.
+	 *
 	 * @spec openspec/specs/file-actions/spec.md
-	 * @spec openspec/changes/tag-preserving-redaction/specs/tag-preserving-redaction/spec.md
+	 * @spec openspec/specs/tag-preserving-redaction/spec.md
+	 * @spec openspec/changes/anonymisation-image-seam/specs/image-anonymisation/spec.md#requirement-every-redaction-path-reaches-the-seam-req-ais-004
 	 */
 	public function anonymize(DocumentAnonymisationRequest $request): File {
 		$node = $request->node;
 		$this->resetRunState();
+
+		if (($node instanceof File) === true
+			&& in_array((string)$node->getMimeType(), ImageRedactionService::STANDALONE_TYPES, true) === true
+		) {
+			return $this->anonymizeImage(file: $node);
+		}
 
 		// Resolve the source file id once — the substitution placeholder
 		// format and the post-redaction audit flag both key off it.
@@ -393,9 +367,11 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 		// `[<TYPE>: <entity_id>]` placeholders, so a re-run is idempotent.
 		$skippedValues = [];
 		$entityRows = [];
+		$grounds = [];
 		if ($fileId > 0) {
 			$skippedValues = $this->redaction->entityRelationMapper->findSkippedEntityValuesForFile($fileId);
 			$entityRows = $this->redaction->entityRelationMapper->findEntityIdsByValueForFile($fileId);
+			$grounds = $this->groundsByValue(fileId: $fileId);
 		}
 
 		// Scope-local placeholder numbering (Decision 1 + 3): per document by
@@ -408,7 +384,13 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 
 		$replacements = $this->replacementsFor(
 			entities: $request->entities,
-			lookup: new PlaceholderLookup(skippedValues: $skippedValues, entityRows: $entityRows, translator: $translator)
+			lookup: new PlaceholderLookup(
+				skippedValues: $skippedValues,
+				entityRows: $entityRows,
+				translator: $translator,
+				grounds: $grounds,
+				maskForms: ($this->redaction->fileSettings?->maskForms() ?? [])
+			)
 		);
 		$anonymizedFileName = $this->anonymizedNameFor(node: $node);
 
@@ -420,18 +402,27 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 		// written and reported back, but a PDF output that cannot be re-read
 		// for that check is refused rather than written as '_anonymized'.
 		$anonymizedFile = $this->replaceWords(
-			node: $node,
-			replacements: $replacements,
-			outputName: $anonymizedFileName,
-			strict: true,
-			preserveStructure: $request->options->preserveStructure
+			request: new WordReplacementRequest(
+				node: $node,
+				replacements: $replacements,
+				outputName: $anonymizedFileName,
+				strict: true,
+				preserveStructure: $request->options->preserveStructure
+			)
 		);
+		$this->markStepRan(step: PipelineSteps::ANONYMISER);
 		if (($node instanceof File) === true
 			&& $this->redaction->sanitizer->isSanitizable($node->getMimeType()) === true
 		) {
 			$anonymizedFile = $this->anonymizeSanitizableDocument(
 				job: new DocumentReplacement(node: $node, replacements: $replacements, outputName: $anonymizedFileName)
 			);
+		}
+
+		// The images inside a DOCX or ODT go through the image seam in the same
+		// call, so the output carries replaced text and burned images (REQ-AIS-004).
+		if (($node instanceof File) === true && OfficeMediaBurner::handles(mimeType: (string)$node->getMimeType()) === true) {
+			$this->burnOfficeImages(source: $node, output: $anonymizedFile);
 		}
 
 		// Flip the source's EntityRelation rows to `anonymized = 1` so the
@@ -456,10 +447,93 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 		// plain-text runs intentionally leave `sanitization = null` per
 		// spec `office-document-sanitization`. The log write is best-effort
 		// — a persistence failure MUST NOT mask a successful redaction.
-		$this->persistAnonymisationLog(node: $node, replacements: $replacements);
+		$this->persistAnonymisationLog(node: $node, replacements: count($replacements));
 
 		return $anonymizedFile;
 	}//end anonymize()
+
+	/**
+	 * Anonymise a standalone image: burn its decided regions into the pixels.
+	 *
+	 * The regions are the file's entity relations that carry a box and are not
+	 * marked skipAnonymization, so an OCR-located name and a detector's region go
+	 * through the same decision as a text finding. Nothing is written unless every
+	 * region was burned, and an image is refused rather than text-replaced when the
+	 * seam is not available.
+	 *
+	 * @param File $file The image.
+	 *
+	 * @throws Exception When the image seam is not available.
+	 * @throws \OCA\OpenRegister\Service\File\ImageRegionNotBurnableException When a region cannot be burned.
+	 *
+	 * @return File The `_anonymized` sibling.
+	 *
+	 * @spec openspec/changes/anonymisation-image-seam/specs/image-anonymisation/spec.md#requirement-every-redaction-path-reaches-the-seam-req-ais-004
+	 */
+	private function anonymizeImage(File $file): File {
+		$images = $this->redaction->images;
+		if ($images === null) {
+			throw new Exception(
+				sprintf('%s is an image, and images can only be anonymised through the image redaction seam, which is not available.', $file->getName())
+			);
+		}
+
+		$regions = $images->decidedRegions(file: $file);
+		$anonymized = $images->redactImage(file: $file, regions: $regions);
+		$this->markStepRan(step: PipelineSteps::IMAGE_BURNER);
+
+		$fileId = $this->sourceFileId(node: $file);
+		if ($fileId > 0 && $regions !== []) {
+			$this->markAnonymized(fileId: $fileId);
+		}
+
+		$this->persistAnonymisationLog(node: $file, replacements: count($regions));
+
+		return $anonymized;
+	}//end anonymizeImage()
+
+	/**
+	 * Burn the decided image regions of a DOCX or ODT into its `_anonymized` output.
+	 *
+	 * Without the image seam, or without decided regions, the output stays as the
+	 * text path wrote it. When a region cannot be burned, the output is deleted
+	 * before the refusal is rethrown, so no half-redacted copy is left behind.
+	 *
+	 * @param File $source The office file.
+	 * @param File $output Its `_anonymized` sibling, as the text path wrote it.
+	 *
+	 * @throws \OCA\OpenRegister\Service\File\ImageRegionNotBurnableException When a region cannot be burned.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/anonymisation-image-seam/specs/image-anonymisation/spec.md#requirement-every-redaction-path-reaches-the-seam-req-ais-004
+	 */
+	private function burnOfficeImages(File $source, File $output): void {
+		$images = $this->redaction->images;
+		if ($images === null) {
+			return;
+		}
+
+		$regions = $images->decidedRegions(file: $source);
+		if ($regions === []) {
+			return;
+		}
+
+		try {
+			$burned = $images->burnOfficeMedia(
+				bytes: (string)$output->getContent(),
+				mimeType: (string)$source->getMimeType(),
+				regions: $regions,
+				fileName: $source->getName()
+			);
+		} catch (ImageRegionNotBurnableException $e) {
+			$output->delete();
+			throw $e;
+		}
+
+		$output->putContent($burned);
+		$this->markStepRan(step: PipelineSteps::IMAGE_BURNER);
+	}//end burnOfficeImages()
 
 	/**
 	 * Reset any report/residuals/placeholder-map/structure-result from a
@@ -472,7 +546,23 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 		$this->lastResidualEntities = [];
 		$this->lastPlaceholderMap = [];
 		$this->lastStructurePreservation = null;
+		$this->stepsRan = [];
 	}//end resetRunState()
+
+	/**
+	 * Note that a content-altering step ran in this run.
+	 *
+	 * @param string $step One of the PipelineSteps ids.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/anonymisation-discloses-itself-pipeline/specs/anonymisation-disclosure/spec.md#requirement-every-content-altering-step-reports-its-state-req-adi-006
+	 */
+	private function markStepRan(string $step): void {
+		if (in_array($step, $this->stepsRan, true) === false) {
+			$this->stepsRan[] = $step;
+		}
+	}//end markStepRan()
 
 	/**
 	 * The replacement map of an anonymisation: trimmed entity text to its
@@ -526,28 +616,92 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 	 *
 	 * An entity with a stable row on the file gets its scope-local number,
 	 * recorded in the placeholder map against the global entity id; any other
-	 * entity gets its key, or a random UUID prefix when it has none.
+	 * entity gets its key, or a random UUID prefix when it has none. The
+	 * relation's exception grounds follow the number (`[PERSOON: 3; 5.1.2e]`),
+	 * and a mask form set for the entity type replaces the placeholder with
+	 * the masked value, its grounds after it in brackets.
 	 *
 	 * @param array{text?: string, entityType?: string, key?: string} $entity The entity.
-	 * @param PlaceholderLookup                                       $lookup Entity rows and numbering.
+	 * @param PlaceholderLookup                                       $lookup Entity rows, numbering, grounds and mask forms.
 	 *
-	 * @return string The placeholder, e.g. `[PERSOON: 3]`.
+	 * @return string The placeholder, e.g. `[PERSOON: 3]`, or the masked value.
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
+	 * @spec openspec/changes/anonymisation-placeholder-id-scope/specs/entity-relation-grondslagen/spec.md#requirement-a-detection-may-be-masked-in-part-with-the-form-set-per-entity-type-req-pis-010
+	 * @spec openspec/changes/anonymisation-placeholder-id-scope/specs/entity-relation-grondslagen/spec.md#requirement-the-placeholder-carries-the-exception-ground-where-it-applies-req-pis-011
 	 */
 	private function placeholderFor(array $entity, PlaceholderLookup $lookup): string {
-		$localizedType = $this->localizeEntityType(entityType: ($entity['entityType'] ?? 'UNKNOWN'));
-		$row = $lookup->rowFor(text: ($entity['text'] ?? ''));
-		if ($row === null) {
-			$key = $entity['key'] ?? substr(\Symfony\Component\Uid\Uuid::v4()->toRfc4122(), 0, 8);
-			return '[' . $localizedType . ': ' . $key . ']';
+		$entityType = ($entity['entityType'] ?? 'UNKNOWN');
+		$localizedType = $this->localizeEntityType(entityType: $entityType);
+		$text = ($entity['text'] ?? '');
+		$grounds = $lookup->groundsFor(text: $text);
+		$row = $lookup->rowFor(text: $text);
+
+		// A mask form set for the type replaces the placeholder (REQ-PIS-010);
+		// a mask that would show too much yields null and the placeholder stays.
+		$masked = MaskForm::apply(value: trim((string) $text), form: $lookup->maskFormFor(entityType: (string) $entityType));
+		if ($masked !== null) {
+			$emitted = PlaceholderText::masked(masked: $masked, grounds: $grounds);
+			if ($row !== null) {
+				$this->lastPlaceholderMap[(string)$row['id']] = $emitted;
+			}
+
+			return $emitted;
 		}
 
-		$placeholder = '[' . $localizedType . ': ' . $lookup->translator->translate(entityId: $row['id']) . ']';
+		if ($row === null) {
+			$key = $entity['key'] ?? substr(\Symfony\Component\Uid\Uuid::v4()->toRfc4122(), 0, 8);
+			return PlaceholderText::placeholder(label: $localizedType, number: (string) $key, grounds: $grounds);
+		}
+
+		$placeholder = PlaceholderText::placeholder(
+			label: $localizedType,
+			number: (string) $lookup->translator->translate(entityId: $row['id']),
+			grounds: $grounds
+		);
 		$this->lastPlaceholderMap[(string)$row['id']] = $placeholder;
 
 		return $placeholder;
 	}//end placeholderFor()
+
+	/**
+	 * The exception grounds of each detected value on a file, from the
+	 * relations' stored `bases` (REQ-PIS-011).
+	 *
+	 * A value with several relations carries the grounds of all of them, each
+	 * once, in the order the relations and their bases are stored. A failed
+	 * read prints no grounds; the placeholder itself still redacts the value.
+	 *
+	 * @param int $fileId The source file id.
+	 *
+	 * @return array<string, array<int, string>> Trimmed value to grounds.
+	 *
+	 * @spec openspec/changes/anonymisation-placeholder-id-scope/specs/entity-relation-grondslagen/spec.md#requirement-the-placeholder-carries-the-exception-ground-where-it-applies-req-pis-011
+	 */
+	private function groundsByValue(int $fileId): array {
+		try {
+			$rows = $this->redaction->entityRelationMapper->findEntitiesForAnonymization($fileId);
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				'DocumentProcessingHandler: reading the exception grounds failed, placeholders carry none',
+				['fileId' => $fileId, 'error' => $e->getMessage()]
+			);
+			return [];
+		}
+
+		$grounds = [];
+		foreach ($rows as $row) {
+			$value = trim((string) ($row['entity_value'] ?? ''));
+			$rowGrounds = PlaceholderText::groundsOf(bases: ($row['bases'] ?? null));
+			if ($value === '' || $rowGrounds === []) {
+				continue;
+			}
+
+			$grounds[$value] = array_values(array_unique(array_merge(($grounds[$value] ?? []), $rowGrounds)));
+		}
+
+		return $grounds;
+	}//end groundsByValue()
 
 	/**
 	 * The output name of an anonymised copy: `<name>_anonymized.<ext>`.
@@ -750,13 +904,13 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 	 * runs leave `sanitization = null` (spec invariant).
 	 *
 	 * @param Node $node The source file node; its id (0 when absent) keys the row.
-	 * @param array<string, string> $replacements The substitution map applied.
+	 * @param int  $replacements The number of substitutions applied, or of regions burned.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/office-document-sanitization/spec.md
 	 */
-	private function persistAnonymisationLog(Node $node, array $replacements): void {
+	private function persistAnonymisationLog(Node $node, int $replacements): void {
 		if ($this->redaction->anonymisationLogMapper === null) {
 			return;
 		}
@@ -769,7 +923,13 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 		$entity->setMimeType($mimeType);
 		$entity->setEngine($this->resolveEngineName(mimeType: $mimeType));
 		$entity->setStatus(AnonymisationLog::STATUS_SUCCESS);
-		$entity->setReplacements(count($replacements));
+		$entity->setReplacements($replacements);
+
+		// Every content-altering step: ran, skipped with the reason, or not-applicable (REQ-ADI-006).
+		$steps = json_encode((new PipelineSteps())->outcomes(ran: $this->stepsRan, mimeType: $mimeType));
+		if (is_string($steps) === true) {
+			$entity->setSteps($steps);
+		}
 
 		if ($this->lastSanitizationReport !== null) {
 			$encoded = json_encode($this->lastSanitizationReport->jsonSerialize());
@@ -845,6 +1005,10 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 			return 'PdfTextReplacer';
 		}
 
+		if (in_array($mimeType, ImageRedactionService::STANDALONE_TYPES, true) === true) {
+			return 'ImageBurner';
+		}
+
 		return 'TextReplacer';
 	}//end resolveEngineName()
 
@@ -886,6 +1050,7 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 		}//end try
 
 		$this->lastSanitizationReport = $result->report;
+		$this->markStepRan(step: $this->sanitiserStep(node: $job->node));
 
 		$fileExtension = strtolower(pathinfo($job->node->getName(), PATHINFO_EXTENSION));
 
@@ -897,6 +1062,21 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 
 		return $this->replaceWordsInOfficeContainer(job: $job->withSanitizedSource(path: $result->path));
 	}//end anonymizeSanitizableDocument()
+
+	/**
+	 * The sanitiser step of an Office document: DOCX by its MIME type, else ODT.
+	 *
+	 * @param Node $node The source file.
+	 *
+	 * @return string The step id.
+	 */
+	private function sanitiserStep(Node $node): string {
+		if ($this->logMimeType(node: $node) === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+			return PipelineSteps::DOCX_SANITISER;
+		}
+
+		return PipelineSteps::ODT_SANITISER;
+	}//end sanitiserStep()
 
 	/**
 	 * Replace words inside a sanitised Office ZIP container's text parts.
@@ -1134,7 +1314,7 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 	 * @return File The anonymised PDF.
 	 *
 	 * @spec openspec/specs/pdf-anonymisation/spec.md
-	 * @spec openspec/changes/tag-preserving-redaction/specs/tag-preserving-redaction/spec.md
+	 * @spec openspec/specs/tag-preserving-redaction/spec.md
 	 */
 	private function replaceWordsInPdfDocument(DocumentReplacement $job): File {
 		// File::getContent() returns the content string and throws on failure
@@ -1165,6 +1345,7 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 		// `replaceInPdf` already reflects the accessibility structure of the
 		// bytes this method goes on to write.
 		$this->lastStructurePreservation = $redaction->structurePreservation;
+		$this->markStepRan(step: PipelineSteps::PDF_TEXT_REPLACER);
 
 		if (empty($redaction->residualEntities) === false) {
 			$this->lastResidualEntities = $this->residualEntityRecords(
@@ -1174,6 +1355,7 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 		}
 
 		$replacedBytes = $this->sanitizePdfMetadata(replacer: $replacer, pdfBytes: $redaction->bytes);
+		$this->markStepRan(step: PipelineSteps::PDF_METADATA_SANITISER);
 
 		$this->removeExistingOutput(job: $job);
 		$newFile = $job->node->getParent()->newFile(path: $job->outputName, content: $replacedBytes);
@@ -1267,7 +1449,8 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 	/**
 	 * Map residual needles back to entity records via the placeholder map.
 	 *
-	 * Placeholders have the form `[<TYPE>: <id>]`; anything else yields type
+	 * Placeholders have the form `[<TYPE>: <id>]` or `[<TYPE>: <id>; <ground>, ...]`;
+	 * anything else (a masked value among them) yields type
 	 * `UNKNOWN` and an empty id. Logs stay PII-free (ADR-005); the text is
 	 * carried only to the authenticated anonymise response for the
 	 * operator's review/iterate UI.
@@ -1283,9 +1466,10 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 			$placeholder = $replacements[$needle] ?? '';
 			$type = 'UNKNOWN';
 			$id = '';
-			if (preg_match('/^\[([^:\]]+):\s*([^\]]*)\]$/', $placeholder, $m) === 1) {
-				$type = trim($m[1]);
-				$id = trim($m[2]);
+			$parts = PlaceholderText::parse(placeholder: $placeholder);
+			if ($parts !== null) {
+				$type = $parts['type'];
+				$id = $parts['id'];
 			}
 
 			$records[] = ['text' => (string)$needle, 'type' => $type, 'id' => $id];

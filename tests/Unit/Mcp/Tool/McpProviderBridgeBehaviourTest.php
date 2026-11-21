@@ -33,6 +33,7 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Mcp\Tool\McpProviderBridge
+ * @uses \OCA\OpenRegister\Mcp\Tool\ToolCall
  */
 class McpProviderBridgeBehaviourTest extends TestCase {
 

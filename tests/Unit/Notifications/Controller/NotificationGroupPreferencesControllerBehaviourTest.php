@@ -48,6 +48,8 @@ use RuntimeException;
 #[UsesClass(\OCA\OpenRegister\Db\Schema\ConfigurationValidator::class)]
 #[UsesClass(Schema::class)]
 #[UsesClass(NotificationGroupPreferencesControllerServices::class)]
+#[UsesClass(\OCA\OpenRegister\Kernel\Contracts\PreferenceAddress::class)]
+#[UsesClass(\OCA\OpenRegister\Kernel\Contracts\PreferenceWrite::class)]
 class NotificationGroupPreferencesControllerBehaviourTest extends TestCase {
 
 	private NotificationPreferencesInterface&MockObject $prefs;

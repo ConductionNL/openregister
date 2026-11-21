@@ -43,6 +43,17 @@ use Stringable;
  * List cascade failure handling, without a database.
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObject
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\CascadeItem
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\CascadeRules
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\NestedObjectTarget
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ReferenceText
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveLookups
  */
 final class SaveObjectCascadeListFailuresTest extends TestCase {
 
@@ -64,7 +75,7 @@ final class SaveObjectCascadeListFailuresTest extends TestCase {
 			->onlyMethods(['saveObject', 'assertMayCascadeCreate'])
 			->getMock();
 		$handler->method('saveObject')->willReturnCallback(
-			function ($register, $schema, array $data): ObjectEntity {
+			function (array $data): ObjectEntity {
 				if (($data['text'] ?? null) === 'boom') {
 					throw new Exception('storage');
 				}
