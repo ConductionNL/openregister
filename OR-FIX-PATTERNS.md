@@ -202,3 +202,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 ## Listener golden after a merge (ListenerRegistrationOrderGoldenTest)
 - Symptom: conflict in LISTENER_COUNT / SEQUENCE_SHA256, or 'actual size N matches expected size M'.
 - Fix: take main's test, dump the registration sequence (patch the test to file_put_contents the calls), check that dropping the PR's listener lines reproduces main's sha, then set count and sha to the merged values.
+
+## Constructor reshaped on the PR, main added a test using the old signature
+- Symptom: TypeError in a test file the PR never touched (e.g. 'Argument #4 must be of type ?X, MockObject_Y given').
+- Cause: main added a test after the PR branched, calling the old positional constructor.
+- Fix: update that main test to the PR's new signature (grep tests/ for 'new <Class>('), in the PR branch after the main merge. (or-fix-4, #9824)
