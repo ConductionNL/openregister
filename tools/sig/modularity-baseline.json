@@ -22,11 +22,6 @@
   "lib/Db/Schema.php -> lib/Service/Schemas/UniqueConstraintEvaluator.php",
   "lib/Db/Schema/ConfigurationValueRules.php -> lib/Service/Calendar/CalendarDateDeclarationCheck.php",
   "lib/Db/SequenceMapperInterface.php -> lib/Db/Sequence.php",
-  "lib/Search/Db/View.php -> lib/Db/Configuration.php",
-  "lib/Search/Db/View.php -> lib/Db/Task.php",
-  "lib/Search/Db/View.php -> lib/Mcp/Db/Agent.php",
-  "lib/Search/Db/ViewFormatting.php -> lib/Db/Configuration.php",
-  "lib/Search/Db/ViewMapper.php -> lib/Db/Configuration.php",
   "lib/Service/Aggregation/AdhocAggregationRun.php -> lib/Search/Service/Aggregation/AggregationQuery.php",
   "lib/Service/Aggregation/AggregationRunner.php -> lib/Search/Service/Aggregation/AggregationCacheInterface.php",
   "lib/Service/Aggregation/AggregationRunner.php -> lib/Search/Service/Aggregation/AggregationQuery.php",
@@ -231,7 +226,6 @@
   "lib/Db/CaseTokenMapperInterface.php",
   "lib/Db/ColumnFiltersTrait.php",
   "lib/Db/ComplianceMapperRegistrar.php",
-  "lib/Db/Configuration.php",
   "lib/Db/ConfigurationMapperRegistrar.php",
   "lib/Db/ContactLink.php",
   "lib/Db/ContactLinkMapperInterface.php",
@@ -2230,7 +2224,7 @@
  ],
  "exposed_loc": {
   "Compliance": 14297,
-  "Configuration": 997,
+  "Configuration": 892,
   "Core": 57249,
   "Files": 1458,
   "Integrations": 17733,
@@ -2238,7 +2232,7 @@
   "Notifications": 1759,
   "Platform": 61,
   "Processes": 27064,
-  "Search": 1344
+  "Search": 1343
  },
  "kernel_files": [
   "lib/BulkAction/BulkActionInterface.php",
@@ -2701,6 +2695,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10402,
- "total_loc": 462011,
- "violation_degree": 0.0069
+ "total_loc": 462009,
+ "violation_degree": 0.0064
 }
