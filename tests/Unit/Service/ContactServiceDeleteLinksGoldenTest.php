@@ -24,6 +24,7 @@ use Psr\Log\LoggerInterface;
  *
  * @covers \OCA\OpenRegister\Service\ContactService
  * @uses   \OCA\OpenRegister\Db\ContactLink
+ * @uses \OCA\OpenRegister\Service\LinkSessionRuntime
  */
 class ContactServiceDeleteLinksGoldenTest extends TestCase {
 

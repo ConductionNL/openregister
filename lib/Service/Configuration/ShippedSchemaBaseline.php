@@ -27,6 +27,7 @@ use OCA\OpenRegister\Service\ShippedBaseline\SchemaUpgrade;
 use OCA\OpenRegister\Service\ShippedBaseline\SchemaUpgradeOptions;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedConfigurationGuard;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedDefinition;
+use OCA\OpenRegister\Service\ShippedBaseline\GuardedAnnotations;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -42,11 +43,12 @@ final class ShippedSchemaBaseline
 {
 
 	/**
-	 * The schema parts the guard protects.
+	 * The schema parts the guard protects, beside the annotations.
 	 *
-	 * Annotations are not guarded: `setConfiguration()` drops an unknown
-	 * `x-openregister-*` key, so a guarded annotation would read as removed on
-	 * every import and conflict with itself forever.
+	 * Annotations are guarded as one more part, `configuration`, holding only
+	 * the keys of the annotation vocabulary: an unknown `x-openregister-*` key
+	 * is dropped by `setConfiguration()`, so guarding it would read as a
+	 * removal on every import. See GuardedAnnotations.
 	 *
 	 * @var array<int, string>
 	 */
@@ -60,6 +62,13 @@ final class ShippedSchemaBaseline
 	private array $keptLocal = [];
 
 	/**
+	 * Reads and writes the guarded annotations.
+	 *
+	 * @var GuardedAnnotations
+	 */
+	private readonly GuardedAnnotations $annotations;
+
+	/**
 	 * Build the baseline step.
 	 *
 	 * @param ShippedConfigurationGuard|null $guard  The guard, null when none is wired.
@@ -69,6 +78,7 @@ final class ShippedSchemaBaseline
 		private readonly ?ShippedConfigurationGuard $guard,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->annotations = new GuardedAnnotations();
 	}//end __construct()
 
 	/**
@@ -171,7 +181,7 @@ final class ShippedSchemaBaseline
 		return $this->guard?->guardUpgrade(
 			upgrade: new SchemaUpgrade(
 				slug: $slug,
-				live: $this->liveParts(schema: $update->existing),
+				live: $this->liveParts(schema: $update->existing, data: $update->data),
 				incoming: new ShippedDefinition(definition: $this->shippedParts(data: $update->data), app: $options->appId, appVersion: ($options->version ?? ''))
 			),
 			options: new SchemaUpgradeOptions(record: false)
@@ -193,17 +203,27 @@ final class ShippedSchemaBaseline
 	/**
 	 * The guarded parts of the stored schema.
 	 *
-	 * @param Schema $schema The stored schema.
+	 * The annotations only when the incoming definition declares any: an app
+	 * that ships none leaves the stored ones exactly as an import always has,
+	 * rather than having them read as removed upstream.
+	 *
+	 * @param Schema               $schema The stored schema.
+	 * @param array<string, mixed> $data   The incoming definition.
 	 *
 	 * @return array<string, mixed>
 	 */
-	private function liveParts(Schema $schema): array
+	private function liveParts(Schema $schema, array $data): array
 	{
-		return [
+		$parts = [
 			'properties'    => $schema->getProperties(),
 			'required'      => $schema->getRequired(),
 			'authorization' => ($schema->getAuthorization() ?? []),
 		];
+		if ($this->annotations->isDeclaredIn(data: $data) === true) {
+			$parts[GuardedAnnotations::PART] = $this->annotations->ofStored(configuration: $schema->getConfiguration());
+		}
+
+		return $parts;
 	}//end liveParts()
 
 	/**
@@ -220,6 +240,10 @@ final class ShippedSchemaBaseline
 			if (array_key_exists($part, $data) === true) {
 				$parts[$part] = $data[$part];
 			}
+		}
+
+		if ($this->annotations->isDeclaredIn(data: $data) === true) {
+			$parts[GuardedAnnotations::PART] = $this->annotations->ofShipped(data: $data);
 		}
 
 		return $parts;
@@ -240,7 +264,15 @@ final class ShippedSchemaBaseline
 		}
 
 		$this->noteKeptLocal(slug: $pending->slug, conflicts: $result['conflicts']);
-		$data = array_replace($pending->data, $this->shippedParts(data: $result['definition']));
+		$merged = $this->shippedParts(data: $result['definition']);
+		unset($merged[GuardedAnnotations::PART]);
+		$data = array_replace($pending->data, $merged);
+		if ($this->annotations->isDeclaredIn(data: $pending->data) === true) {
+			$data = $this->annotations->intoShipped(
+				data: $data,
+				guarded: (array) ($result['definition'][GuardedAnnotations::PART] ?? [])
+			);
+		}
 
 		return new PendingSchemaBaseline(data: $data, baseline: $pending->baseline, slug: $pending->slug);
 	}//end merged()

@@ -64,7 +64,7 @@ class SubscriptionGateTest extends TestCase {
 	 */
 	private function notified(array $uids, array $subscribed): array {
 		$resolver = $this->createMock(NotificationRecipientResolver::class);
-		$resolver->method('resolveWithDiagnostics')->willReturn(['uids' => $uids, 'unresolved' => []]);
+		$resolver->method('resolveFromSource')->willReturn(['uids' => $uids, 'unresolved' => []]);
 
 		$subscriptions = $this->createMock(NotificationSubscriptionMapper::class);
 		$subscriptions->method('findSubscribedUids')->with(4, 9)->willReturn($subscribed);

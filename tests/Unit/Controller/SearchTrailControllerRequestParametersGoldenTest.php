@@ -28,6 +28,8 @@ use OCA\OpenRegister\Tests\Unit\Controller\Support\SearchTrailControllerFactory;
  * as ISO 8601 text. Set UPDATE_GOLDEN=1 to rewrite the fixture.
  *
  * @covers \OCA\OpenRegister\Controller\SearchTrailController
+ * @uses \OCA\OpenRegister\Controller\Support\SearchTrailControllerServices
+ * @uses \OCA\OpenRegister\Controller\Support\SessionPrincipal
  */
 class SearchTrailControllerRequestParametersGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/search-trail-request-parameters-golden.json';

@@ -33,6 +33,7 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Db\ImportPreviewRowMapper
  * @uses   \OCA\OpenRegister\Db\ImportPreviewRow
  * @uses   \OCA\OpenRegister\Db\QueryPage
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 class ImportPreviewRowMapperTest extends TestCase {
 	use RecordsQueries;

@@ -28,6 +28,7 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Object\DraftExpiry;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * The pair a pass builds names the register, the schema and the cutoff the lists are asked with;
@@ -36,6 +37,22 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\OpenRegister\Service\Object\DraftExpiry
  * @covers \OCA\OpenRegister\Service\Object\DraftExpiryPair
  * @covers \OCA\OpenRegister\Service\Object\DraftExpiryBatch
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Register\RegisterSchemaIds
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\Schema\ObjectSourceDeclaration
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Service\Object\DraftStatusPolicy
+ * @uses \OCA\OpenRegister\Service\Object\ExpiredDraftListRun
+ * @uses \OCA\OpenRegister\Service\Object\ExpiredDraftTally
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
  */
 class DraftExpiryCutoffTest extends TestCase {
 
@@ -74,7 +91,8 @@ class DraftExpiryCutoffTest extends TestCase {
 		);
 		$objects->method('find')->willReturn($stale);
 		$objects->method('deleteObject')->willReturnCallback(
-			function (string $uuid): bool {
+			function (ObjectDeletion $deletion, bool $_rbac = true, bool $_multitenancy = true, bool $_retentionSweep = false): bool {
+				$uuid = $deletion->uuid;
 				$this->deleted[] = $uuid;
 				return true;
 			}

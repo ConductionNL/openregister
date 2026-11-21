@@ -27,6 +27,7 @@ use ReflectionProperty;
  * Golden hydration for Source.
  *
  * @covers \OCA\OpenRegister\Db\Source
+ * @uses \OCA\OpenRegister\Db\EmptyJsonHydration
  */
 final class SourceHydrateGoldenTest extends TestCase {
 

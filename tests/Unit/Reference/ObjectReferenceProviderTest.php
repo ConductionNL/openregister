@@ -51,6 +51,9 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\WriteCause
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses \OCA\OpenRegister\Service\CauseFrame
+ * @uses \OCA\OpenRegister\Service\Reference\ObjectPreviewSources
  */
 class ObjectReferenceProviderTest extends TestCase {
 

@@ -28,6 +28,7 @@ use OCA\OpenRegister\Notifications\Service\Notification\NcNotificationSender;
 use OCA\OpenRegister\Notifications\Service\Notification\PushRideAlong;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationChannelPolicy;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationPreferenceService;
+use OCA\OpenRegister\Notifications\Service\Notification\PreferenceResolution;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolver;
 use OCA\OpenRegister\Notifications\Service\Notification\RecipientSource;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationTemplating;
@@ -64,6 +65,29 @@ use OCA\OpenRegister\Notifications\Service\Notification\OptOutQuestion;
  * @uses \OCA\OpenRegister\Service\Flow\FlowItems
  * @uses \OCA\OpenRegister\Event\FlowEmailSentEvent
  * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Event\FlowEmailItem
+ * @uses \OCA\OpenRegister\Event\FlowEmailMessage
+ * @uses \OCA\OpenRegister\Event\FlowEmailOrigin
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\InAppNotice
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\MailAddressee
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\MailContent
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\NoticeContent
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\NoticeRule
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\OptOutQuestion
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\PlaceholderValues
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\PreferenceResolution
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\PreferenceTopic
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\PushRideAlong
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\RecipientSource
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\TalkMessage
+ * @uses \OCA\OpenRegister\Service\Flow\ExternalRecipientPolicy
+ * @uses \OCA\OpenRegister\Service\Flow\FlowMessagingChannels
+ * @uses \OCA\OpenRegister\Service\Flow\FlowMessagingOverrides
+ * @uses \OCA\OpenRegister\Service\Flow\FlowMessagingPlatform
+ * @uses \OCA\OpenRegister\Service\Flow\FlowMessagingRecipients
+ * @uses \OCA\OpenRegister\Service\Flow\FlowScalarText
+ * @uses \OCA\OpenRegister\Service\Flow\MessageSend
+ * @uses \OCA\OpenRegister\Service\Flow\RecipientLookup
  */
 class FlowMessagingServiceGoldenTest extends TestCase {
 
@@ -376,7 +400,7 @@ class FlowMessagingServiceGoldenTest extends TestCase {
 	 */
 	private function preferences(): NotificationPreferenceService {
 		$preferences = $this->createMock(NotificationPreferenceService::class);
-		$preferences->method('resolveEffective')->willReturnCallback(fn (array $schemaDefault, string $userId): array => match ($userId) {
+		$preferences->method('resolve')->willReturnCallback(fn (PreferenceResolution $resolution): array => match ($resolution->userId) {
 			'dave' => ['enabled' => false, 'channels' => null],
 			'carol' => ['enabled' => true, 'channels' => ['talk']],
 			default => ['enabled' => true, 'channels' => null],

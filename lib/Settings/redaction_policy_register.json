@@ -1,0 +1,410 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Redaction Policy",
+    "description": "Redaction policy as data the organisation owns: always and never-redact term rules, detection patterns beside the model, and named redaction profiles bound to document types. Objects shipped by OpenRegister carry layer base and a stable slug; the organisation's own carry layer local and are never written by an update.",
+    "version": "1.0.0"
+  },
+  "x-openregister": {
+    "type": "core",
+    "app": "openregister",
+    "openregister": "^v0.2.10",
+    "description": "Redaction-policy register shipped by OpenRegister (term rules, detection patterns, redaction profiles); the shipped Woo profile is its base layer."
+  },
+  "paths": {},
+  "components": {
+    "registers": {
+      "redaction-policy": {
+        "slug": "redaction-policy",
+        "title": "Redaction Policy",
+        "version": "1.0.0",
+        "description": "Term rules, detection patterns and redaction profiles the anonymisation engine applies on every path.",
+        "published": "2026-11-13T00:00:00+00:00",
+        "schemas": [
+          "termRule",
+          "detectionPattern",
+          "redactionProfile"
+        ],
+        "folder": "Open Registers/Redaction Policy"
+      }
+    },
+    "schemas": {
+      "termRule": {
+        "slug": "termRule",
+        "title": "Term rule",
+        "version": "1.0.0",
+        "published": "2026-11-13T00:00:00+00:00",
+        "summary": "A term the engine must always or must never redact.",
+        "description": "One entry of the organisation's always-redact or never-redact list. Every detection is matched against both lists; an always match wins. Match types are exactly exact, normalized (case and accent folded), bsn and kvk (the value, or * for any resolved number); any other type is refused at write time.",
+        "required": [
+          "list",
+          "matchRules"
+        ],
+        "properties": {
+          "list": {
+            "type": "string",
+            "description": "always: the matching text is redacted; never: it is released.",
+            "enum": [
+              "always",
+              "never"
+            ],
+            "facetable": true,
+            "title": "List"
+          },
+          "entityType": {
+            "type": "string",
+            "description": "Entity type the rule applies to (PERSON, BSN, ORGANIZATION, ...); OTHER or empty applies to every type.",
+            "maxLength": 64,
+            "facetable": true,
+            "title": "Entity type"
+          },
+          "matchRules": {
+            "type": "array",
+            "minItems": 1,
+            "title": "Match rules",
+            "description": "How the rule matches a detection; one matching entry is enough.",
+            "items": {
+              "type": "object",
+              "required": [
+                "type",
+                "value"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "description": "exact, normalized, bsn or kvk.",
+                  "enum": [
+                    "exact",
+                    "normalized",
+                    "bsn",
+                    "kvk"
+                  ]
+                },
+                "value": {
+                  "type": "string",
+                  "description": "The term, or the number (* for any) for bsn and kvk.",
+                  "minLength": 1,
+                  "maxLength": 500
+                }
+              }
+            }
+          },
+          "reason": {
+            "type": "string",
+            "description": "Why the term is on the list.",
+            "maxLength": 2000,
+            "title": "Reason"
+          },
+          "legalAuthority": {
+            "type": "string",
+            "description": "The decision or provision the rule rests on.",
+            "maxLength": 500,
+            "title": "Legal authority"
+          },
+          "bases": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 64
+            },
+            "description": "Exception-ground identifiers (dossiq's list; stored as text, never resolved here) written into a detection's empty grounds.",
+            "title": "Grounds"
+          },
+          "validFrom": {
+            "type": "string",
+            "description": "The rule applies from this moment.",
+            "format": "date-time",
+            "title": "Valid from"
+          },
+          "validUntil": {
+            "type": "string",
+            "description": "The rule applies until this moment.",
+            "format": "date-time",
+            "title": "Valid until"
+          },
+          "active": {
+            "type": "boolean",
+            "default": true,
+            "description": "An inactive object does not apply.",
+            "facetable": true,
+            "title": "Active"
+          },
+          "scope": {
+            "type": "string",
+            "description": "organisation: every call; request: only calls whose policyContext.requestRef equals requestRef.",
+            "enum": [
+              "organisation",
+              "request"
+            ],
+            "default": "organisation",
+            "facetable": true,
+            "title": "Scope"
+          },
+          "requestRef": {
+            "type": "string",
+            "description": "The request a request-scoped rule belongs to.",
+            "maxLength": 255,
+            "facetable": true,
+            "title": "Request"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 64
+            },
+            "description": "Tags a profile selects term rules by (termRuleTags).",
+            "title": "Tags"
+          },
+          "source": {
+            "type": "string",
+            "description": "The uuid of the object this rule was imported from (e.g. a filinq prohibition).",
+            "maxLength": 64,
+            "title": "Source"
+          },
+          "layer": {
+            "type": "string",
+            "description": "base: shipped by OpenRegister and re-imported by slug on every update; local: the organisation's own, never written by an update.",
+            "enum": [
+              "base",
+              "local"
+            ],
+            "default": "local",
+            "facetable": true,
+            "title": "Layer"
+          },
+          "overrides": {
+            "type": "string",
+            "description": "Slug of a base object this local object overrides; with active false it switches that base object off.",
+            "maxLength": 255,
+            "title": "Overrides"
+          }
+        }
+      },
+      "detectionPattern": {
+        "slug": "detectionPattern",
+        "title": "Detection pattern",
+        "version": "1.0.0",
+        "published": "2026-11-13T00:00:00+00:00",
+        "summary": "A pattern of the organisation's own that runs as a detection rule beside the model.",
+        "description": "A regex or a literal term with the entity type its matches are detected as. Runs on every detection method; its detections carry detectionMethod pattern:<slug>.",
+        "required": [
+          "kind",
+          "pattern",
+          "entityType"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "description": "regex or term.",
+            "enum": [
+              "regex",
+              "term"
+            ],
+            "facetable": true,
+            "title": "Kind"
+          },
+          "pattern": {
+            "type": "string",
+            "description": "The regular expression (without delimiters) or the literal term.",
+            "minLength": 1,
+            "maxLength": 500,
+            "title": "Pattern"
+          },
+          "entityType": {
+            "type": "string",
+            "description": "The entity type a match is detected as.",
+            "maxLength": 64,
+            "facetable": true,
+            "title": "Entity type"
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "default": 1,
+            "description": "The confidence a match is reported with.",
+            "title": "Confidence"
+          },
+          "bases": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 64
+            },
+            "description": "Exception-ground identifiers (dossiq's list; stored as text, never resolved here) written into a detection's empty grounds.",
+            "title": "Grounds"
+          },
+          "active": {
+            "type": "boolean",
+            "default": true,
+            "description": "An inactive object does not apply.",
+            "facetable": true,
+            "title": "Active"
+          },
+          "layer": {
+            "type": "string",
+            "description": "base: shipped by OpenRegister and re-imported by slug on every update; local: the organisation's own, never written by an update.",
+            "enum": [
+              "base",
+              "local"
+            ],
+            "default": "local",
+            "facetable": true,
+            "title": "Layer"
+          },
+          "overrides": {
+            "type": "string",
+            "description": "Slug of a base object this local object overrides; with active false it switches that base object off.",
+            "maxLength": 255,
+            "title": "Overrides"
+          }
+        }
+      },
+      "redactionProfile": {
+        "slug": "redactionProfile",
+        "title": "Redaction profile",
+        "version": "1.0.0",
+        "published": "2026-11-13T00:00:00+00:00",
+        "summary": "A named redaction policy applied without restating it.",
+        "description": "Which entity types are redacted and kept, how they are replaced, the grounds per entity type and the document types the profile is bound to. Chosen in this order: named in the call, bound to the document type, the organisation default, the shipped Woo profile.",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The profile's name.",
+            "maxLength": 255,
+            "title": "Name"
+          },
+          "redact": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 64
+            },
+            "description": "Entity types replaced in the output.",
+            "title": "Redact"
+          },
+          "keep": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 64
+            },
+            "description": "Entity types left visible in the output.",
+            "title": "Keep"
+          },
+          "termRuleTags": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 64
+            },
+            "description": "Term rules carrying one of these tags apply under this profile.",
+            "title": "Term rule tags"
+          },
+          "method": {
+            "type": "string",
+            "description": "placeholder or mask.",
+            "enum": [
+              "placeholder",
+              "mask"
+            ],
+            "default": "placeholder",
+            "title": "Method"
+          },
+          "maskForms": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Mask form per entity type (e.g. IBAN: last4).",
+            "title": "Mask forms"
+          },
+          "basesByEntityType": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "maxLength": 64
+              }
+            },
+            "description": "Ground identifiers per entity type, written into a detection's empty grounds.",
+            "title": "Grounds by entity type"
+          },
+          "documentTypes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 255
+            },
+            "description": "Document types this profile is bound to.",
+            "title": "Document types"
+          },
+          "isDefault": {
+            "type": "boolean",
+            "default": false,
+            "description": "The organisation's default profile.",
+            "title": "Default"
+          },
+          "active": {
+            "type": "boolean",
+            "default": true,
+            "description": "An inactive object does not apply.",
+            "facetable": true,
+            "title": "Active"
+          },
+          "layer": {
+            "type": "string",
+            "description": "base: shipped by OpenRegister and re-imported by slug on every update; local: the organisation's own, never written by an update.",
+            "enum": [
+              "base",
+              "local"
+            ],
+            "default": "local",
+            "facetable": true,
+            "title": "Layer"
+          },
+          "overrides": {
+            "type": "string",
+            "description": "Slug of a base object this local object overrides; with active false it switches that base object off.",
+            "maxLength": 255,
+            "title": "Overrides"
+          }
+        }
+      }
+    },
+    "objects": [
+      {
+        "@self": {
+          "register": "redaction-policy",
+          "schema": "redactionProfile",
+          "slug": "woo",
+          "version": "1.0.0"
+        },
+        "name": "Woo",
+        "redact": [
+          "PERSON",
+          "BSN",
+          "PHONE",
+          "EMAIL",
+          "IBAN",
+          "ADDRESS"
+        ],
+        "keep": [
+          "ORGANIZATION",
+          "LOCATION",
+          "DATE"
+        ],
+        "method": "placeholder",
+        "layer": "base",
+        "active": true,
+        "isDefault": false
+      }
+    ]
+  }
+}

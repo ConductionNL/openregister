@@ -53,6 +53,14 @@ use Stringable;
  * @uses \OCA\OpenRegister\Service\Calculation\CalculationEvaluator
  * @uses \OCA\OpenRegister\Search\Service\Search\PlaceholderResolver
  * @uses \OCA\OpenRegister\Service\Flow\FlowExpression
+ * @uses \OCA\OpenRegister\Service\Lifecycle\AutoTransitionWrite
+ * @uses \OCA\OpenRegister\Service\Lifecycle\ConditionUser
+ * @uses \OCA\OpenRegister\Service\Lifecycle\LifecycleConditionReporting
+ * @uses \OCA\OpenRegister\Service\Lifecycle\LifecycleRuleCaller
+ * @uses \OCA\OpenRegister\Service\Lifecycle\LifecycleRuleCheck
+ * @uses \OCA\OpenRegister\Service\Lifecycle\LifecycleWrite
+ * @uses \OCA\OpenRegister\Service\Lifecycle\TransitionAttempt
+ * @uses \OCA\OpenRegister\Service\Lifecycle\TransitionMove
  */
 class AutoTransitionSelectorGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/auto-transition-golden.json';

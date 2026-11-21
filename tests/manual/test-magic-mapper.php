@@ -78,8 +78,7 @@ function testMagicMapper(): void {
 			// Test enableMagicMappingForSchema.
 			$register->enableMagicMappingForSchema(
 				schemaId: 999,
-				autoCreateTable: true,
-				comment: 'Test schema for magic mapper'
+				options: new \OCA\OpenRegister\Kernel\Contracts\Value\MagicMappingOptions(autoCreateTable: true, comment: 'Test schema for magic mapper')
 			);
 			$enabledAfter = $register->isMagicMappingEnabledForSchema(schemaId: 999);
 			echo '✓ enableMagicMappingForSchema(999): ' . ($enabledAfter ? 'true' : 'false') . "\n";

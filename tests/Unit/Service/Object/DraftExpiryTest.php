@@ -31,6 +31,7 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
   * Decisions 216 and 228: one sweep for every schema, 30 days unless the schema says otherwise.
@@ -44,6 +45,27 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Db\AuditTrail
+ * @uses \OCA\OpenRegister\Db\AuditTrail\NamedActor
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions
+ * @uses \OCA\OpenRegister\Db\Register\RegisterSchemaIds
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValueRules
+ * @uses \OCA\OpenRegister\Db\Schema\ObjectSourceDeclaration
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Service\Object\DraftExpiryBatch
+ * @uses \OCA\OpenRegister\Service\Object\DraftExpiryPair
+ * @uses \OCA\OpenRegister\Service\Object\ExpiredDraftListRun
+ * @uses \OCA\OpenRegister\Service\Object\ExpiredDraftTally
+ * @uses \OCA\OpenRegister\Service\Object\RemovedDraft
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
  */
 class DraftExpiryTest extends TestCase {
 
@@ -162,7 +184,11 @@ class DraftExpiryTest extends TestCase {
 			}
 		);
 		$objects->method('deleteObject')->willReturnCallback(
-			function (string $uuid, $register = null, $schema = null, bool $_rbac = true, bool $_multitenancy = true, bool $_retentionSweep = false, $currentUser = null, bool $permanent = false): bool {
+			function (ObjectDeletion $deletion, bool $_rbac = true, bool $_multitenancy = true, bool $_retentionSweep = false): bool {
+				$uuid = $deletion->uuid;
+				$register = $deletion->target->register;
+				$schema = $deletion->target->schema;
+				$permanent = $deletion->permanent;
 				$this->deletes[] = [
 					'uuid' => $uuid,
 					'register' => $register,
@@ -174,7 +200,7 @@ class DraftExpiryTest extends TestCase {
 				];
 								// What the real delete path does for a draft: ask the removal record to write its entry.
 				$audit = $this->createMock(AuditTrailMapper::class);
-				$audit->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
+				$audit->method('writeObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
 					function (ObjectEntity $object, string $action, array $context = [], ?string $actorId = null): AuditTrail {
 						$this->actors[] = $actorId;
 

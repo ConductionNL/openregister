@@ -16,6 +16,7 @@ declare(strict_types=1);
 namespace Unit\Calendar;
 
 use OCA\OpenRegister\Calendar\CalendarEventTransformer;
+use OCA\OpenRegister\Calendar\DeclaredDateCalendars;
 use OCA\OpenRegister\Calendar\RegisterCalendar;
 use OCA\OpenRegister\Calendar\RegisterCalendarProvider;
 use OCA\OpenRegister\Calendar\RegisterCalendarSources;
@@ -47,7 +48,8 @@ class RegisterCalendarProviderTest extends TestCase {
 				new SchemaCatalog($this->registerMapper, $this->schemaMapper, $this->magicMapper),
 				$this->transformer,
 				$this->logger
-			)
+			),
+			$this->createMock(DeclaredDateCalendars::class)
 		);
 	}
 

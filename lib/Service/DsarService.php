@@ -65,7 +65,7 @@ class DsarService implements DsarServiceInterface {
 	 * Operators register one Verwerkingsactiviteit (typically with
 	 * code `dsar`) describing the legal basis + purpose of DSAR
 	 * handling itself, then point this app-config key at it. All audit
-	 * rows produced by `eraseObjectsForSubject` /
+	 * rows produced by `eraseObjectsFor` /
 	 * `rectifyObjectForSubject` will be attributed to that activity.
 	 *
 	 * @var string
@@ -222,21 +222,6 @@ class DsarService implements DsarServiceInterface {
 	 *     ...
 	 *   ]
 	 *
-	 * @param string $subject Subject identifier value (email, BSN, …).
-	 * @param string|null $type Optional GdprEntity type filter (e.g. `email`).
-	 * @param string $mode `exact` (default) or `ilike`.
-	 *
-	 * @return array<int, array{object: array, gdprEntities: array}>
-	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-11
-	 */
-	public function findObjectsForSubject(string $subject, ?string $type = null, string $mode = 'exact'): array {
-		return $this->findObjectsFor(query: new DsarSubjectQuery(subject: $subject, type: $type, mode: $mode));
-	}//end findObjectsForSubject()
-
-	/**
-	 * Find every object that contains personal data for a data subject, as {@see findObjectsForSubject()} describes.
-	 *
 	 * @param DsarSubjectQuery $query The subject identifier, optional GdprEntity type filter and match mode.
 	 *
 	 * @return array<int, array{object: array, gdprEntities: array}>
@@ -323,23 +308,6 @@ class DsarService implements DsarServiceInterface {
 	 * Withholding one record never blocks the rest: every non-archival match in
 	 * the same request is still erased. A run that withheld anything reports
 	 * `complete: false`, because the data is still there.
-	 *
-	 * @param string $subject Subject identifier.
-	 * @param string|null $type Optional GdprEntity type filter.
-	 * @param bool $dryRun When true, returns matches without erasing.
-	 *
-	 * @return array<string, mixed>
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
-	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-11
-	 */
-	public function eraseObjectsForSubject(string $subject, ?string $type = null, bool $dryRun = false): array {
-		return $this->eraseObjectsFor(query: new DsarSubjectQuery(subject: $subject, type: $type, mode: 'exact'), dryRun: $dryRun);
-	}//end eraseObjectsForSubject()
-
-	/**
-	 * Erase every object that matches a data subject, as {@see eraseObjectsForSubject()} describes.
 	 *
 	 * @param DsarSubjectQuery $query  The subject identifier and optional GdprEntity type filter (exact match).
 	 * @param bool             $dryRun When true, returns matches without erasing.
@@ -887,7 +855,7 @@ class DsarService implements DsarServiceInterface {
 		// `vergetelheid` endpoint is admin-gated) could pass
 		// `subject=%@%` or `subject=_` to match every PII row in
 		// `openregister_entities.value` — combined with the downstream
-		// `eraseObjectsForSubject()` chain, that's a one-call wildcard
+		// `eraseObjectsFor()` chain, that's a one-call wildcard
 		// erase well beyond legitimate DSAR semantics.
 		$pattern = $this->db->escapeLikeParameter($query->subject);
 		if ($query->mode === 'ilike') {
