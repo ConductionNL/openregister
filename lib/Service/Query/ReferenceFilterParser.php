@@ -108,6 +108,60 @@ final class ReferenceFilterParser {
 	}//end parse()
 
 	/**
+	 * The referenced schema of a facet over `_ref[<property>][<field>]`, refusing what the filter refuses.
+	 *
+	 * A facet over a referenced field takes the same names as the filter, so it
+	 * refuses the same things the same way: an unknown property, a property
+	 * that is not a reference, a field the referenced schema lacks and a chain
+	 * each throw, naming the part (D-2).
+	 *
+	 * @param string $property The reference property of the queried schema.
+	 * @param string $field    The field of the referenced schema.
+	 * @param Schema $schema   The schema being queried.
+	 *
+	 * @return Schema The referenced schema.
+	 *
+	 * @throws InvalidArgumentException When the property or field is unusable.
+	 *
+	 * @spec openspec/changes/query-filter-through-a-reference/specs/zoeken-filteren/spec.md
+	 */
+	public function facetTarget(string $property, string $field, Schema $schema): Schema {
+		$path = sprintf('_facets[%s][%s]', self::KEY, $property);
+		$name = self::propertyName(key: $property);
+		if (str_contains($property, self::SUFFIX_SEPARATOR) === true) {
+			throw new InvalidArgumentException(sprintf('%s: a facet names the property without a suffix.', $path));
+		}
+
+		$referenced = $this->referencedSchema(property: $name, schema: $schema, path: $path);
+		$this->assertFields(block: [$field => null], referenced: $referenced, path: $path);
+
+		return $referenced;
+	}//end facetTarget()
+
+	/**
+	 * The register a reference property reads its referenced schema in, when it names one.
+	 *
+	 * The same key the save path reads to check a reference (`register` on the
+	 * property, or on its `items` for a list of references). Null means the
+	 * queried register (D-4).
+	 *
+	 * @param array<string, mixed> $config The reference property's declaration.
+	 *
+	 * @return string|null The register id or slug, or null when the property names none.
+	 *
+	 * @spec openspec/changes/query-filter-through-a-reference/specs/zoeken-filteren/spec.md
+	 */
+	public static function registerOf(array $config): ?string {
+		foreach ([($config['register'] ?? null), ($config['items']['register'] ?? null)] as $register) {
+			if ((is_string($register) === true && trim($register) !== '') || is_int($register) === true) {
+				return trim((string)$register);
+			}
+		}
+
+		return null;
+	}//end registerOf()
+
+	/**
 	 * The filter one `_ref[<property>]` block asks for.
 	 *
 	 * @param string $key    The block key: the property, optionally with a `:n` suffix.
