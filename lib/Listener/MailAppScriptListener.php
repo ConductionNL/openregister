@@ -32,6 +32,7 @@ use OCP\AppFramework\Http\Events\BeforeTemplateRenderedEvent;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
+use OCP\IUser;
 use OCP\IUserSession;
 use OCP\Util;
 use Psr\Log\LoggerInterface;
@@ -72,40 +73,74 @@ class MailAppScriptListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess)
-	 *
 	 * @spec openspec/specs/mail-sidebar/spec.md#requirement-mail-app-script-injection-via-event-listener
 	 * @spec openspec/specs/mail-sidebar/spec.md
 	 */
 	public function handle(Event $event): void {
-		// Only handle the core BeforeTemplateRenderedEvent rendered by the Mail app.
-		if ($event instanceof BeforeTemplateRenderedEvent === false) {
+		if ($this->isMailPage(event: $event) === false) {
 			return;
 		}
 
-		// The getResponse() accessor is declared to return TemplateResponse, so the
-		// instanceof bail-out that used to sit here was unreachable.
-		$response = $event->getResponse();
-		if ($response->getApp() !== 'mail') {
-			return;
-		}
-
-		// Check Mail app is enabled.
-		$user = $this->userSession->getUser();
+		$user = $this->eligibleUser();
 		if ($user === null) {
 			return;
 		}
 
+		$this->injectSidebar(user: $user);
+	}//end handle()
+
+	/**
+	 * Whether the event is the core BeforeTemplateRenderedEvent of a page the Mail app renders.
+	 *
+	 * @param Event $event The event.
+	 *
+	 * @return bool
+	 */
+	private function isMailPage(Event $event): bool {
+		// Only handle the core BeforeTemplateRenderedEvent rendered by the Mail app.
+		if ($event instanceof BeforeTemplateRenderedEvent === false) {
+			return false;
+		}
+
+		// The getResponse() accessor is declared to return TemplateResponse, so the
+		// instanceof bail-out that used to sit here was unreachable.
+		return $event->getResponse()->getApp() === 'mail';
+	}//end isMailPage()
+
+	/**
+	 * The signed-in user when Mail is enabled for them and they can see a register; else null.
+	 *
+	 * @return IUser|null
+	 */
+	private function eligibleUser(): ?IUser {
+		// Check Mail app is enabled.
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return null;
+		}
+
 		if ($this->appManager->isEnabledForUser('mail', $user) === false) {
-			return;
+			return null;
 		}
 
 		// Check user has access to at least one register.
 		if ($this->userHasRegisterAccess() === false) {
-			return;
+			return null;
 		}
 
-		// Inject the sidebar script (only if compiled JS exists).
+		return $user;
+	}//end eligibleUser()
+
+	/**
+	 * Inject the sidebar script and style (only if the compiled JS exists), and log it.
+	 *
+	 * @param IUser $user The eligible user.
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess)
+	 */
+	private function injectSidebar(IUser $user): void {
 		$jsPath = __DIR__ . '/../../js/openregister-mail-sidebar.js';
 		if (file_exists($jsPath) === true) {
 			EntryScripts::add(appId: 'openregister', entry: 'mailSidebar', fallbackScript: 'openregister-mail-sidebar');
@@ -118,7 +153,7 @@ class MailAppScriptListener implements IEventListener {
 				'user' => $user->getUID(),
 			]
 		);
-	}//end handle()
+	}//end injectSidebar()
 
 	/**
 	 * Check if the current user has access to any OpenRegister register.
