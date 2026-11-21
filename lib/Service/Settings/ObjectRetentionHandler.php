@@ -90,6 +90,10 @@ class ObjectRetentionHandler implements ArchivalSettingsReaderInterface, Retenti
 		'destructionListRegister' => null,
 		'destructionListSchema' => null,
 		'archivalRegister' => null,
+		// An absolute directory outside the application where each object's
+		// restorable copy is written before it is destroyed; null writes none
+		// (import-preview-and-conflict-policy REQ-IPC-004).
+		'destructionCopyLocation' => null,
 	];
 
 	/**

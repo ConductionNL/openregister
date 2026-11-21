@@ -31,6 +31,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Reference;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\RegisterSchemaLabelsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectPreviewCacheInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -58,7 +60,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
-final class ObjectPreviewFormatter implements ObjectPreviewFormatterInterface {
+final class ObjectPreviewFormatter implements ObjectPreviewFormatterInterface, RegisterSchemaLabelsInterface, ObjectPreviewCacheInterface {
 
 	/**
 	 * Internal fields to exclude from preview properties.

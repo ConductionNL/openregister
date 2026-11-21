@@ -133,6 +133,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         // The bulk route lives under `/api/ownership` rather than `/api/objects`
         // on purpose: `/api/objects/ownership/reassign` would be matched by the
         // two-segment `/api/objects/{register}/{schema}` create route first.
+        // platform-collaboration-resources: the Nextcloud collections an object belongs to.
+        ['name' => 'objectCollections#index', 'url' => '/api/objects/{register}/{schema}/{id}/collections', 'verb' => 'GET', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
         ['name' => 'objectOwnership#show',          'url' => '/api/objects/{register}/{schema}/{id}/ownership',       'verb' => 'GET',  'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
         ['name' => 'objectOwnership#claim',         'url' => '/api/objects/{register}/{schema}/{id}/ownership/claim', 'verb' => 'POST', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
         ['name' => 'objectOwnership#assign',        'url' => '/api/objects/{register}/{schema}/{id}/ownership',       'verb' => 'PUT',  'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
@@ -144,6 +146,12 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         // nothing leaves draft by accident. A plain Controller, so a refusal
         // keeps its status (OCSMiddleware would turn a 403 into a 200).
         ['name' => 'objectDraft#activate', 'url' => '/api/objects/{register}/{schema}/{id}/activate', 'verb' => 'POST', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
+        // Named drafts of an object beside the published one (records-draft-versions 2.2).
+        ['name' => 'versions#index', 'url' => '/api/objects/{register}/{schema}/{id}/versions', 'verb' => 'GET', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
+        ['name' => 'versions#create', 'url' => '/api/objects/{register}/{schema}/{id}/versions', 'verb' => 'POST', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
+        ['name' => 'versions#show', 'url' => '/api/objects/{register}/{schema}/{id}/versions/{key}', 'verb' => 'GET', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'key' => '[^/]+']],
+        ['name' => 'versions#update', 'url' => '/api/objects/{register}/{schema}/{id}/versions/{key}', 'verb' => 'PUT', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'key' => '[^/]+']],
+        ['name' => 'versions#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/versions/{key}', 'verb' => 'DELETE', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'key' => '[^/]+']],
 
         // Who holds which right on one object, and how that set changed. The
         // other direction of `/api/scopes`: that one answers a caller about
@@ -266,6 +274,7 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         // Virtual registers over DBAL — connection test + introspection (dbal-virtual-registers spec).
         ['name' => 'sources#testConnection', 'url' => '/api/sources/{id}/test-connection', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'sources#introspect',     'url' => '/api/sources/{id}/introspect',      'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'sources#queryPreview',   'url' => '/api/sources/{id}/query-preview',   'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
 
         ['name' => 'configurations#patch', 'url' => '/api/configurations/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'applications#patch', 'url' => '/api/applications/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
@@ -316,9 +325,13 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
 
         // Settings - Focused endpoints for better performance.
         ['name' => 'settings#getSearchBackend', 'url' => '/api/settings/search-backend', 'verb' => 'GET'],
+        ['name' => 'settings#updateSearchBackend', 'url' => '/api/settings/search-backend', 'verb' => 'PATCH'],
         ['name' => 'settings#getSearchIndexStatus', 'url' => '/api/settings/search-index', 'verb' => 'GET'],
+        ['name' => 'settings#queueSearchIndexRun', 'url' => '/api/settings/search-index/run', 'verb' => 'POST'],
         // The last report of the operator's seed directory (administrator only).
         ['name' => 'Settings\SeedReport#show', 'url' => '/api/settings/seed', 'verb' => 'GET'],
+        ['name' => 'Settings\TranslationSettings#show', 'url' => '/api/settings/translation', 'verb' => 'GET'],
+        ['name' => 'Settings\TranslationSettings#update', 'url' => '/api/settings/translation', 'verb' => 'PUT'],
         // Magic Table Sync endpoints.
         ['name' => 'tables#sync', 'url' => '/api/tables/sync/{registerId}/{schemaId}', 'verb' => 'POST', 'requirements' => ['registerId' => '[^/]+', 'schemaId' => '[^/]+']],
         ['name' => 'tables#syncAll', 'url' => '/api/tables/sync', 'verb' => 'POST'],
@@ -386,6 +399,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'fileExtraction#extractAll', 'url' => '/api/files/extract', 'verb' => 'POST'],
         ['name' => 'fileExtraction#retryFailed', 'url' => '/api/files/retry-failed', 'verb' => 'POST'],
         ['name' => 'fileExtraction#cleanup', 'url' => '/api/files/cleanup', 'verb' => 'POST'],
+        // near-duplicate-documents-by-text (REQ-NDT-002): before /api/files/{id}, which would take the literal.
+        ['name' => 'duplicate#nearDuplicates', 'url' => '/api/files/near-duplicates', 'verb' => 'GET'],
         ['name' => 'fileExtraction#show', 'url' => '/api/files/{id}', 'verb' => 'GET'],
         ['name' => 'fileExtraction#extract', 'url' => '/api/files/{id}/extract', 'verb' => 'POST'],
 
@@ -1252,7 +1267,7 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'forms#draft', 'url' => '/api/forms/{formId}/draft', 'verb' => 'POST'],
         // A form open to visitors without an account (`access: anonymous`), on a page that needs no account.
         ['name' => 'publicFormPage#show', 'url' => '/forms/{formId}', 'verb' => 'GET'],
-        ['name' => 'objects#export', 'url' => '/api/objects/{register}/{schema}/export', 'verb' => 'GET'],
+        ['name' => 'objectExport#export', 'url' => '/api/objects/{register}/{schema}/export', 'verb' => 'GET'],
         // BEFORE objects#show, because `{id}` matches `[^/]+` and a route with
         // a longer path must be declared first or the generic one swallows it.
         // Address an object by its schema's declared identity. BEFORE objects#show for the same reason.
@@ -1336,6 +1351,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
             // and the timers, silently, which is what closing and refiling
             // does today.
         ['name' => 'objects#move', 'url' => '/api/objects/{register}/{schema}/{id}/move', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        // A copy is a new identity with its own trail (records-copy-with-links).
+        ['name' => 'objects#copy', 'url' => '/api/objects/{register}/{schema}/{id}/copy', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#lock', 'url' => '/api/objects/{register}/{schema}/{id}/lock', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#unlock', 'url' => '/api/objects/{register}/{schema}/{id}/unlock', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
             // 🔴 THE SAME RELEASE, REACHED BY DELETING THE LOCK. A lock is a
@@ -1427,11 +1444,21 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         // Import preview and conflict policy — an import says what it would
         // create, update, skip and refuse before it writes anything.
         // The static routes come before the parameterised {id} ones.
+        ['name' => 'qualityAudit#index', 'url' => '/api/quality-audits', 'verb' => 'GET'],
+        ['name' => 'qualityAudit#create', 'url' => '/api/quality-audits', 'verb' => 'POST'],
+        ['name' => 'qualityAudit#show', 'url' => '/api/quality-audits/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
+        ['name' => 'qualityAudit#update', 'url' => '/api/quality-audits/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '\\d+']],
+        ['name' => 'qualityAudit#destroy', 'url' => '/api/quality-audits/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\\d+']],
+        ['name' => 'qualityAudit#run', 'url' => '/api/quality-audits/{id}/run', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
+        ['name' => 'qualityAudit#runs', 'url' => '/api/quality-audits/{id}/runs', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
+        ['name' => 'qualityAudit#failures', 'url' => '/api/quality-audit-runs/{id}/failures', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
+        ['name' => 'qualityAudit#failuresCsv', 'url' => '/api/quality-audit-runs/{id}/failures.csv', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
         ['name' => 'importPreview#policies', 'url' => '/api/import-previews/policies', 'verb' => 'GET'],
         ['name' => 'importPreview#index', 'url' => '/api/import-previews', 'verb' => 'GET'],
         ['name' => 'importPreview#create', 'url' => '/api/import-previews', 'verb' => 'POST'],
         ['name' => 'importPreview#show', 'url' => '/api/import-previews/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
         ['name' => 'importPreview#rows', 'url' => '/api/import-previews/{id}/rows', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
+        ['name' => 'importPreview#failed', 'url' => '/api/import-previews/{id}/failed', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
         ['name' => 'importPreview#commit', 'url' => '/api/import-previews/{id}/commit', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
         // Audit Trails — specific routes MUST come before parameterized {id} routes.
         ['name' => 'auditTrail#objects', 'url' => '/api/objects/{register}/{schema}/{id}/audit-trails', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
@@ -1623,11 +1650,28 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ],
         ['name' => 'notes#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/notes/{noteId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'noteId' => '[^/]+']],
         ['name' => 'notes#lock', 'url' => '/api/objects/{register}/{schema}/{id}/notes/{noteId}/lock', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+', 'noteId' => '[^/]+']],
+        ['name' => 'notes#journal', 'url' => '/api/objects/{register}/{schema}/{id}/notes-journal', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
 
         // Timeline entries under objects: the entry as a record, with its
         // kind, its fields, the pin, the follow-up and the raw inbound
         // source. All #[NoAdminRequired] with a per-object RBAC guard in the
         // method body (ADR-005/016/029); CSRF stays enabled on the writes.
+        // Messages bound to an object: list, and cancel a scheduled one
+        // (send-at-on-the-messaging-leaf). #[NoAdminRequired] with the object
+        // resolved under the caller's read access in the method body; cancel
+        // also checks author or `update`. CSRF stays enabled on the cancel.
+        [
+            'name' => 'scheduledMessages#index',
+            'url' => '/api/objects/{register}/{schema}/{id}/messages',
+            'verb' => 'GET',
+            'requirements' => ['id' => '[^/]+'],
+        ],
+        [
+            'name' => 'scheduledMessages#cancel',
+            'url' => '/api/objects/{register}/{schema}/{id}/messages/{messageId}/cancel',
+            'verb' => 'POST',
+            'requirements' => ['id' => '[^/]+', 'messageId' => '[0-9]+'],
+        ],
         [
             'name' => 'timelineEntries#index',
             'url' => '/api/objects/{register}/{schema}/{id}/timeline',
@@ -1748,6 +1792,7 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
             'requirements' => ['id' => '[^/]+'],
         ],
         ['name' => 'schemas#stats', 'url' => '/api/schemas/{id}/stats', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'schemas#indexes', 'url' => '/api/schemas/{id}/indexes', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'schemas#explore', 'url' => '/api/schemas/{id}/explore', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'schemas#updateFromExploration', 'url' => '/api/schemas/{id}/update-from-exploration', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         // Schema versioning & object migration (schema-versioning-and-object-migration).
@@ -1971,6 +2016,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
 
 		// Entity Relations - Decision-metadata PATCH (bases + skipAnonymization). See `entity-relation-grondslagen`.
 		['name' => 'entityRelations#update', 'url' => '/api/entity-relations/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '\\d+']],
+		// Entity Relations - the findings of one file, as the caller may see them (woo-document-assessment-screen).
+		['name' => 'fileEntityRelations#index', 'url' => '/api/entity-relations', 'verb' => 'GET'],
 
 		// GDPR Entities - Manage detected PII entities.
 		['name' => 'gdprEntities#index', 'url' => '/api/entities', 'verb' => 'GET'],
@@ -2033,6 +2080,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
 
 		// User - Profile management and authentication.
 		['name' => 'user#me', 'url' => '/api/user/me', 'verb' => 'GET'],
+		// Scoped API tokens: the calling principal and the grant its token carries.
+		['name' => 'whoami#show', 'url' => '/api/whoami', 'verb' => 'GET'],
 		['name' => 'user#updateMe', 'url' => '/api/user/me', 'verb' => 'PUT'],
 		['name' => 'user#login', 'url' => '/api/user/login', 'verb' => 'POST'],
 		['name' => 'user#logout', 'url' => '/api/user/logout', 'verb' => 'POST'],

@@ -195,10 +195,17 @@ survives even where the priority moved.
 
 ## Phase 2 — the write itself
 
-- [ ] **Task 5 — stop probing `information_schema.tables` per insert.**
+- [x] **Task 5 — stop probing `information_schema.tables` per insert.**
       9 probes, 4.7 ms per create, asking whether a magic table exists. The
       answer changes only when a register/schema pair is created or dropped.
       Cache it for the request and invalidate on table create/drop.
+      > 2026-11-13: `checkTableExistsInDatabase()` already remembers a positive answer per
+      > request (`tableExistsMemo`), and `invalidateTableMemos()` clears it on create. The
+      > drop half was missing: `dropTable()` left the table remembered as existing, so a
+      > probe later in the same request said "exists" for a dropped table. It now takes the
+      > table out of the memo and drops the enumeration memo. Pinned in
+      > `tests/Unit/Db/MagicMapper/MagicMapperTableExistsMemoTest` (one probe for an existing
+      > table, a missing one asked again, a dropped one asked again).
 
 - [ ] **Task 6 — one transaction per write.**
       ~135 commits → **1**. Wrap the create/update path in a single
