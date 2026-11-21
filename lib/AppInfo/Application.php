@@ -39,6 +39,7 @@ use OCA\OpenRegister\Db\MapperRegistrar;
 use OCA\OpenRegister\Db\PlatformMapperRegistrar;
 use OCA\OpenRegister\Db\ConfigurationMapperRegistrar;
 use OCA\OpenRegister\Db\ComplianceMapperRegistrar;
+use OCA\OpenRegister\Db\FilesMapperRegistrar;
 use OCA\OpenRegister\Db\IntegrationsMapperRegistrar;
 use OCA\OpenRegister\Db\ProcessesMapperRegistrar;
 use OCA\OpenRegister\Db\Register;
@@ -193,7 +194,7 @@ class Application extends App implements IBootstrap {
 
 		FlowRegistrar::register(context: $context);
 		RbacRegistrar::register(context: $context);
-		ServiceBootstrap::registerGdpr(context: $context);
+		ComplianceServiceRegistrar::registerGdpr(context: $context);
 
 		// The contracts other components type-hint, bound to their services.
 		ContractBindingsRegistrar::register(context: $context);
@@ -204,6 +205,7 @@ class Application extends App implements IBootstrap {
 		PlatformMapperRegistrar::register(context: $context);
 		ConfigurationMapperRegistrar::register(context: $context);
 		ComplianceMapperRegistrar::register(context: $context);
+		FilesMapperRegistrar::register(context: $context);
 		IntegrationsMapperRegistrar::register(context: $context);
 		ProcessesMapperRegistrar::register(context: $context);
 

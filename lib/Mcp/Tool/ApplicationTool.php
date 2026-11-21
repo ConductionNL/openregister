@@ -27,8 +27,10 @@ namespace OCA\OpenRegister\Mcp\Tool;
 
 use OCA\OpenRegister\Mcp\Db\Agent;
 use OCA\OpenRegister\Db\ApplicationMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ApplicationInterface;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\AppFramework\Db\Entity;
 
 /**
  * ApplicationTool
@@ -46,7 +48,7 @@ class ApplicationTool extends AbstractTool implements ToolInterface {
 	 * Constructor
 	 *
 	 * @param ToolCallTrail $trail The session that names the caller and the log of each call.
-	 * @param ApplicationMapperInterface $applicationMapper Application mapper instance
+	 * @param ApplicationMapperInterface<ApplicationInterface&Entity> $applicationMapper Application mapper instance
 	 */
 	public function __construct(
 		ToolCallTrail $trail,
