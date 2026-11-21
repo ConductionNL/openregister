@@ -1503,7 +1503,7 @@ class ValidateObjectTest extends TestCase {
 		// Count returns 0.
 		$this->objectMapper->expects($this->once())
 			->method('countAll')
-			->with(['name' => 'Unique'], $schema)
+			->with(['name' => 'Unique', '@self' => ['organisation' => ['isnull' => true]], '_rbac' => false, '_multitenancy' => false], $schema)
 			->willReturn(0);
 
 		$this->invokePrivate('validateUniqueFields', [['name' => 'Unique'], $schema]);
@@ -2156,7 +2156,7 @@ class ValidateObjectTest extends TestCase {
 
 		$this->objectMapper->expects($this->once())
 			->method('countAll')
-			->with(['firstName' => 'Unique', 'lastName' => 'Person'], $schema)
+			->with(['firstName' => 'Unique', 'lastName' => 'Person', '@self' => ['organisation' => ['isnull' => true]], '_rbac' => false, '_multitenancy' => false], $schema)
 			->willReturn(0);
 
 		$this->invokePrivate('validateUniqueFields', [
@@ -2813,7 +2813,7 @@ class ValidateObjectTest extends TestCase {
 		// Count returns 0 — no duplicate.
 		$this->objectMapper->expects($this->once())
 			->method('countAll')
-			->with(['firstName' => 'John', 'lastName' => 'Doe'], $schema)
+			->with(['firstName' => 'John', 'lastName' => 'Doe', '@self' => ['organisation' => ['isnull' => true]], '_rbac' => false, '_multitenancy' => false], $schema)
 			->willReturn(0);
 
 		$this->invokePrivate('validateUniqueFields', [
@@ -3064,7 +3064,7 @@ class ValidateObjectTest extends TestCase {
 
 		$this->objectMapper->expects($this->once())
 			->method('countAll')
-			->with(['email' => 'test@example.com'], $schema)
+			->with(['email' => 'test@example.com', '@self' => ['organisation' => ['isnull' => true]], '_rbac' => false, '_multitenancy' => false], $schema)
 			->willReturn(0);
 
 		// Should not throw when count is 0.

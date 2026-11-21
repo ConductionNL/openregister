@@ -12,6 +12,7 @@ use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Service\Object\ObjectSelection;
 use OCA\OpenRegister\Service\Object\PerformanceOptimizationHandler;
 use OCA\OpenRegister\Service\Object\QueryHandler;
+use OCA\OpenRegister\Service\OrganisationContext;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use ReflectionParameter;
@@ -23,6 +24,11 @@ use ReflectionParameter;
  * @uses \OCA\OpenRegister\Service\Object\SearchPaging
  * @uses \OCA\OpenRegister\Service\Object\SearchResponseReports
  * @uses \OCA\OpenRegister\Service\Object\SearchRenderNeed
+ * @uses \OCA\OpenRegister\Service\Object\ObjectSelection
+ * @uses \OCA\OpenRegister\Service\Object\QueryHandlers
+ * @uses \OCA\OpenRegister\Service\Object\QueryPlatform
+ * @uses \OCA\OpenRegister\Service\Object\QueryRefinements
+ * @uses \OCA\OpenRegister\Service\OrganisationContext
  */
 class QueryHandlerCountScopeTest extends TestCase {
 	public function testACountUnderMultitenancyPassesTheActiveOrganisation(): void {
@@ -44,6 +50,17 @@ class QueryHandlerCountScopeTest extends TestCase {
 
 		$this->assertSame(10, $this->handler($mapper, 'org-uuid-123')->countSearchObjects([], false, false));
 	}//end testACountWithoutMultitenancyPassesNoOrganisation()
+
+	public function testACountActingForAnOrganisationStaysInsideItWhateverTheFlag(): void {
+		$mapper = $this->createMock(MagicMapper::class);
+		$mapper->expects($this->once())
+			->method('countSearchObjects')
+			->with([], 'org-uuid-123', false, true, null, null)
+			->willReturn(3);
+		$handler = $this->handler($mapper, 'org-uuid-123');
+
+		$this->assertSame(3, OrganisationContext::run('org-uuid-123', static fn (): int => $handler->countSearchObjects([], false, false)));
+	}//end testACountActingForAnOrganisationStaysInsideItWhateverTheFlag()
 
 	private function handler(MagicMapper $mapper, string $organisation): QueryHandler {
 		$performance = $this->createStub(PerformanceOptimizationHandler::class);

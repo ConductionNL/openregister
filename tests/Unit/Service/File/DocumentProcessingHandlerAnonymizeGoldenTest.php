@@ -53,6 +53,19 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Files\Service\File\PlaceholderIdTranslator
  * @uses   \OCA\OpenRegister\Files\Service\File\PlaceholderLookup
  * @uses   \OCA\OpenRegister\Files\Service\File\DocumentReplacement
+ * @uses \OCA\OpenRegister\Files\Service\File\DocumentProcessingPlatform
+ * @uses \OCA\OpenRegister\Files\Service\File\DocumentRedactionServices
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\DocumentAnonymisationOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\DocumentAnonymisationRequest
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\WordReplacementRequest
+ * @uses   \OCA\OpenRegister\Files\Service\File\DocumentProcessingPlatform
+ * @uses   \OCA\OpenRegister\Files\Service\File\DocumentRedactionServices
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\DocumentAnonymisationOptions
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\DocumentAnonymisationRequest
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\WordReplacementRequest
+ * @uses   \OCA\OpenRegister\Files\Service\File\MaskForm
+ * @uses   \OCA\OpenRegister\Files\Service\File\PlaceholderText
+ * @uses   \OCA\OpenRegister\Service\File\OfficeMediaBurner
  */
 class DocumentProcessingHandlerAnonymizeGoldenTest extends TestCase {
 

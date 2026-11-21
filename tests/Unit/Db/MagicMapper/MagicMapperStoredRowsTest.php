@@ -47,12 +47,16 @@ use ReflectionClass;
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicColumnSql
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicMetadataColumn
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicPgTrgmProbe
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicUnaccentProbe
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\SearchFolding
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicSchemaColumns
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicTableCreator
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicTableIndexer
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
+ * @uses \OCA\OpenRegister\Db\MagicMapper\UuidBatchLookup
  */
 class MagicMapperStoredRowsTest extends TestCase {
 	use RecordingQueryBuilderTrait;

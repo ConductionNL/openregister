@@ -76,7 +76,8 @@ exports[`file configuration settings load golden loads empty 1`] = `
  "openAnonymiserApiEndpoint": "",
  "openAnonymiserSource": "internal",
  "openAnonymiserUsername": "",
- "openAnonymiserPasswordSet": false
+ "openAnonymiserPasswordSet": false,
+ "entityPatternSets": null
 }",
   "fileTypes": [
     {
@@ -277,7 +278,8 @@ exports[`file configuration settings load golden loads known objects 1`] = `
  "openAnonymiserApiEndpoint": "",
  "openAnonymiserSource": "internal",
  "openAnonymiserUsername": "",
- "openAnonymiserPasswordSet": false
+ "openAnonymiserPasswordSet": false,
+ "entityPatternSets": null
 }",
   "fileTypes": [
     {
@@ -472,7 +474,8 @@ exports[`file configuration settings load golden loads none 1`] = `
  "openAnonymiserApiEndpoint": "",
  "openAnonymiserSource": "internal",
  "openAnonymiserUsername": "",
- "openAnonymiserPasswordSet": false
+ "openAnonymiserPasswordSet": false,
+ "entityPatternSets": null
 }",
   "fileTypes": [
     {
@@ -673,7 +676,8 @@ exports[`file configuration settings load golden loads objects and unknown ids 1
  "openAnonymiserApiEndpoint": "",
  "openAnonymiserSource": "internal",
  "openAnonymiserUsername": "",
- "openAnonymiserPasswordSet": false
+ "openAnonymiserPasswordSet": false,
+ "entityPatternSets": null
 }",
   "fileTypes": [
     {
@@ -866,7 +870,8 @@ exports[`file configuration settings load golden loads rejected 1`] = `
  "openAnonymiserApiEndpoint": "",
  "openAnonymiserSource": "internal",
  "openAnonymiserUsername": "",
- "openAnonymiserPasswordSet": false
+ "openAnonymiserPasswordSet": false,
+ "entityPatternSets": null
 }",
   "fileTypes": [
     {
@@ -1072,7 +1077,8 @@ exports[`file configuration settings load golden loads strings 1`] = `
  "openAnonymiserApiEndpoint": "http://o",
  "openAnonymiserSource": "external",
  "openAnonymiserUsername": "u",
- "openAnonymiserPasswordSet": true
+ "openAnonymiserPasswordSet": true,
+ "entityPatternSets": null
 }",
   "fileTypes": [
     {

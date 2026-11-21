@@ -40,6 +40,10 @@ use OCA\OpenRegister\Kernel\Contracts\PreferenceAddress;
  *
  * @covers \OCA\OpenRegister\Notifications\Service\Notification\NotificationPreferenceService
  * @covers \OCA\OpenRegister\Notifications\Service\Notification\PreferenceLookup
+ * @uses \OCA\OpenRegister\Kernel\Contracts\PreferenceAddress
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\PreferenceResolution
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\PreferenceTopic
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\UserGroupServices
  */
 final class NotificationPreferenceResolveGoldenTest extends TestCase {
 

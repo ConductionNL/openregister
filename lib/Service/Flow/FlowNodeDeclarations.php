@@ -20,7 +20,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 
 declare(strict_types=1);
@@ -43,7 +43,7 @@ final class FlowNodeDeclarations {
 	 *
 	 * @throws InvalidArgumentException When a node has no usable id, or ids collide.
 	 *
-	 * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function extract(array $flow): array {
 		$nodes = [];
@@ -143,7 +143,7 @@ final class FlowNodeDeclarations {
 	 *
 	 * @throws InvalidArgumentException When a branching node has no else.
 	 *
-	 * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function assertExitsCanAlwaysBeTaken(array $node, string $id): void {
 		$exits = ($node['exits'] ?? []);

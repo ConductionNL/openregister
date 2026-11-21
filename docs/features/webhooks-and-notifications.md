@@ -241,6 +241,41 @@ The `updated` trigger's field-change `only_if_changed` filter — documented ear
 
 In-app subjects are rendered by `AnnotationNotifier` (`object_created` / `object_updated` / `object_transitioned`), localised nl/en, with a primary action linking to the object detail view. A schema's per-locale `subject` wins; otherwise a canonical localised string is used. `Notifier` keeps `configuration_update_available` — the two notifiers are mutually exclusive by subject. Push needs no extra code: `notify_push` auto-intercepts the same `INotificationManager::notify()` call.
 
+### Automation run records
+
+A notification declaration (and a lifecycle action, see [Workflow automation](workflow-automation.md)) MAY carry a `key`. It is metadata: it changes nothing about the dispatch, and an app that compiles automations into declarations uses it to find their runs again.
+
+```json
+"x-openregister-notifications": {
+  "case-assigned": { "key": "aut-7f3a", "trigger": { "type": "updated" }, "channels": ["email"], "recipients": [ ... ] }
+}
+```
+
+Every evaluation of a declared notification for one object event writes one record: the key (empty when none), the notification slug, schema, register, object, event id, time, counts per channel and an outcome:
+
+| Outcome | When |
+| --- | --- |
+| `sent` | every delivery went out |
+| `partial` | some went out, some failed or were held by a gate |
+| `failed` | none went out and some failed, or the dispatch threw |
+| `skipped` | nothing was attempted; `reason` names why: `duplicate`, `no-recipients`, `rate-limit`, `quiet-hours`, `preference`, `coalesced` |
+
+A rule whose trigger or organisation gate does not match the event was not evaluated and leaves no record. Recipients are counted, never named.
+
+Read them with `GET /api/automation-records`:
+
+| Parameter | Meaning |
+| --- | --- |
+| `kind` | `notification` or `lifecycle-action`; both when absent |
+| `key` | key prefix, e.g. `aut-` |
+| `schema`, `object` | schema id, object uuid |
+| `since`, `until` | ISO 8601 moments, inclusive |
+| `limit`, `offset` | page; `limit` at most 500 (default 50), `offset` counts stored records |
+
+The response is `{ "results": [...], "limit": n, "offset": n }`, newest first. An admin sees every record; anyone else sees only records of objects they may read. An app in the same server reads the same way through `OCA\OpenRegister\Service\AutomationRecordService::find()`, under the current user.
+
+Records are kept 90 days, set by app config `automation_record_retention_days`, and pruned daily. The dedup log keeps its own, shorter window.
+
 ### User Notification Preferences
 
 Notification **rules** live ONLY in the schema annotation (no rule table) — the dispatcher evaluates them from the already-loaded schema at dispatch time. Per-user **preferences** are stored as **override-only** values in Nextcloud per-user app config under the `openregister` app, keyed `notification_pref/<schema>/<notification>`. An override only flips the schema-declared default (on/off, optionally narrowing channels) for one `(schema, notification)` pair; when a user has no override the schema default applies. This gives a **zero-migration** property: adding a schema — or a notification to an existing schema — works immediately with no per-user backfill.

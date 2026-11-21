@@ -38,6 +38,7 @@ use OCP\IAppConfig;
 use OCP\IUser;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Runs importListedObject() over a fixed corpus and compares the result
@@ -61,6 +62,17 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\Configuration\RejectedSchemaReport
  * @uses \OCA\OpenRegister\Service\Configuration\ForeignSeedSchema
  * @uses \OCA\OpenRegister\Service\Configuration\ArrayStructure
+ * @uses \OCA\OpenRegister\Db\Configuration
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses \OCA\OpenRegister\Service\Configuration\ConfigurationImportRecords
+ * @uses \OCA\OpenRegister\Service\Configuration\ImportRun
+ * @uses \OCA\OpenRegister\Service\Configuration\SchemaImportSteps
+ * @uses \OCA\OpenRegister\Service\Configuration\ShippedSeed
+ * @uses \OCA\OpenRegister\Db\Register\RegisterSchemaIds
  */
 class ImportHandlerListedObjectGoldenTest extends TestCase {
 
@@ -250,7 +262,12 @@ class ImportHandlerListedObjectGoldenTest extends TestCase {
 			}
 		);
 		$objectService->method('saveObject')->willReturnCallback(
-			function (array $object, ?array $extend, mixed $register, mixed $schema, ?string $uuid, ...$rest): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
+				$extend = $options->extend;
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
+				$rest = [$_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
 				$rest = array_map(fn ($value) => $value instanceof IUser ? 'user' : $value, $rest);
 				$this->calls[] = ['saveObject', $object, $extend, $register->getId(), $schema->getId(), $uuid, $rest];
 				$saved = new ObjectEntity();

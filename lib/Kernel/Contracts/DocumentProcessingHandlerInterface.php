@@ -91,7 +91,7 @@ interface DocumentProcessingHandlerInterface {
 	 * @psalm-return File
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
-	 * @spec openspec/changes/tag-preserving-redaction/specs/tag-preserving-redaction/spec.md
+	 * @spec openspec/specs/tag-preserving-redaction/spec.md
 	 */
 	public function replaceWords(WordReplacementRequest $request): File;
 
@@ -116,7 +116,7 @@ interface DocumentProcessingHandlerInterface {
 	 * @return File The anonymized document file.
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
-	 * @spec openspec/changes/tag-preserving-redaction/specs/tag-preserving-redaction/spec.md
+	 * @spec openspec/specs/tag-preserving-redaction/spec.md
 	 */
 	public function anonymize(DocumentAnonymisationRequest $request): File;
 }//end interface

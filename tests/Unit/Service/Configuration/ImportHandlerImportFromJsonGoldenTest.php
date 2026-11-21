@@ -66,6 +66,18 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Service\Configuration\RejectedSchemaReport
  * @uses \OCA\OpenRegister\Service\Configuration\ForeignSeedSchema
  * @uses \OCA\OpenRegister\Service\Configuration\ArrayStructure
+ * @uses \OCA\OpenRegister\Db\Register\ExactKeyHydration
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Db\Schema\TopLevelAnnotationFold
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses \OCA\OpenRegister\Service\Configuration\ConfigurationImportRecords
+ * @uses \OCA\OpenRegister\Service\Configuration\ImportedSchemaLookup
+ * @uses \OCA\OpenRegister\Service\Configuration\SchemaImportSteps
+ * @uses \OCA\OpenRegister\Service\Configuration\SeedImport
  */
 class ImportHandlerImportFromJsonGoldenTest extends TestCase {
 
@@ -82,6 +94,20 @@ class ImportHandlerImportFromJsonGoldenTest extends TestCase {
 	 * @var integer
 	 */
 	private int $nextId = 100;
+
+	/**
+	 * Per schema slug, what the mapper reports its save ignored.
+	 *
+	 * @var array<string, list<array<string, mixed>>>
+	 */
+	private array $discardedBySlug = [];
+
+	/**
+	 * The slug of the schema the mapper saved last.
+	 *
+	 * @var string
+	 */
+	private string $lastSaved = '';
 
 	/**
 	 * Path of the golden file.
@@ -182,6 +208,38 @@ class ImportHandlerImportFromJsonGoldenTest extends TestCase {
 	}//end testImportFromJsonMatchesGolden()
 
 	/**
+	 * The advisory annotations each schema's save ignored reach the import result as
+	 * `warnings`, and the schemas are imported all the same (aggregation-dialect-repair, Fix 4).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/aggregation-dialect-repair/specs/annotation-validation-surfacing/spec.md
+	 */
+	public function testDiscardedAnnotationsReachTheImportResult(): void {
+		$this->discardedBySlug = [
+			'alpha' => [['family' => 'aggregations', 'schema' => 'alpha', 'messages' => ['Unknown filter field "x".']]],
+			'gamma' => [
+				['family' => 'calculations', 'schema' => 'gamma', 'messages' => ['Unknown op.']],
+				['family' => 'quality', 'schema' => 'gamma', 'messages' => ['Bad weight.']],
+			],
+		];
+		$data = self::configuration();
+		$handler = $this->handler(stored: ['kind' => 'none', 'data' => $data]);
+
+		$result = $handler->importFromJson(data: $data, configuration: new Configuration(), owner: 'owner', appId: 'app', version: '1.0.0', force: false);
+
+		self::assertSame(
+			[
+				['family' => 'aggregations', 'schema' => 'alpha', 'messages' => ['Unknown filter field "x".']],
+				['family' => 'calculations', 'schema' => 'gamma', 'messages' => ['Unknown op.']],
+				['family' => 'quality', 'schema' => 'gamma', 'messages' => ['Bad weight.']],
+			],
+			$result['warnings']
+		);
+		self::assertContains('alpha', array_map(static fn (Schema $schema): string => (string)$schema->getSlug(), $result['schemas']));
+	}//end testDiscardedAnnotationsReachTheImportResult()
+
+	/**
 	 * Run one case and return what it recorded.
 	 *
 	 * @param array $case [appId, version, force, stored hash kind].
@@ -259,7 +317,11 @@ class ImportHandlerImportFromJsonGoldenTest extends TestCase {
 		$schemaMapper->method('findByApplicationAndSlug')->willReturn(null);
 		$schemaMapper->method('createFromArray')->willReturnCallback(fn (array $d): Schema => $this->schema(op: 'schema.create', data: $d));
 		$schemaMapper->method('updateFromArray')->willReturnCallback(fn (int $id, array $d): Schema => $this->schema(op: 'schema.update', data: $d + ['id' => $id]));
-		$schemaMapper->method('update')->willReturnArgument(0);
+		$schemaMapper->method('update')->willReturnCallback(function (Schema $schema): Schema {
+			$this->lastSaved = (string)$schema->getSlug();
+			return $schema;
+		});
+		$schemaMapper->method('discardedAnnotations')->willReturnCallback(fn (): array => $this->discardedBySlug[$this->lastSaved] ?? []);
 		$registerMapper->method('createFromArray')->willReturnCallback(function (array $d): Register {
 			$this->calls[] = ['register.create' => $d];
 			$register = new Register();

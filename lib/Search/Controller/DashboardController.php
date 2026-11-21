@@ -21,8 +21,8 @@
 namespace OCA\OpenRegister\Search\Controller;
 
 use DateTime;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Search\Service\ActivityWindow;
 use OCA\OpenRegister\Search\Service\DashboardScope;
 use OCA\OpenRegister\Search\Service\DashboardService;
@@ -30,7 +30,6 @@ use OCA\OpenRegister\Search\Controller\Support\DashboardControllerServices;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
-use OCP\AppFramework\Http\ContentSecurityPolicy;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\IRequest;
@@ -85,7 +84,7 @@ class DashboardController extends Controller {
 	 * @param DashboardControllerServices $services The dashboard API services.
 	 */
 	public function __construct(IRequest $request, DashboardControllerServices $services) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 
 		$this->dashboardService = $services->dashboardService;
 		$this->session          = $services->session;
@@ -149,11 +148,6 @@ class DashboardController extends Controller {
 			params: []
 		);
 
-		// Configure Content Security Policy to allow API connections.
-		// This is necessary for the frontend to make API calls.
-		$csp = new ContentSecurityPolicy();
-		$csp->addAllowedConnectDomain('*');
-		$response->setContentSecurityPolicy($csp);
 
 		// Return successful template response.
 		return $response;
@@ -344,8 +338,6 @@ class DashboardController extends Controller {
 	 * @param int|null $schemaId Optional schema ID to filter calculations by
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with calculation results
 	 *

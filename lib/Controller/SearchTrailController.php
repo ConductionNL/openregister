@@ -25,8 +25,8 @@
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Service\Export\SpreadsheetCell;
 use DateTime;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\AdministratorOnlyGate;
 use OCA\OpenRegister\Controller\Support\ResultWindow;
 use OCA\OpenRegister\Controller\Support\SearchTrailPageLinks;
@@ -41,6 +41,7 @@ use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
 use OCA\OpenRegister\Controller\Support\SearchTrailControllerServices;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 
 /**
  * Class SearchTrailController
@@ -127,7 +128,7 @@ class SearchTrailController extends Controller {
 		IRequest $request,
 		SearchTrailControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->searchTrailService = $services->searchTrailService;
 		$this->searchTrailMapper = $services->searchTrailMapper;
 		$this->userSession = $services->userSession;
@@ -738,8 +739,6 @@ class SearchTrailController extends Controller {
 	 *
 	 * @return JSONResponse JSON response containing cleanup operation results
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @psalm-return JSONResponse<
 	 *     200|400|500,
 	 *     array{
@@ -898,8 +897,6 @@ class SearchTrailController extends Controller {
 	 *
 	 * @param int $id The search trail ID to delete
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with deletion result
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-3
@@ -935,8 +932,6 @@ class SearchTrailController extends Controller {
 	/**
 	 * Delete multiple search trail logs based on filters or specific IDs
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with multiple deletion result
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-view-based-search-composition
@@ -971,9 +966,9 @@ class SearchTrailController extends Controller {
 
 		$output = fopen('php://temp', 'r+');
 		// Add headers, then the data rows.
-		fputcsv($output, array_keys($data[0]));
+		fputcsv($output, SpreadsheetCell::csvRow(row: array_keys($data[0])));
 		foreach ($data as $row) {
-			fputcsv($output, array_map(static fn ($cell) => self::csvCell(cell: $cell), $row));
+			fputcsv($output, SpreadsheetCell::csvRow(row: array_map(static fn ($cell) => self::csvCell(cell: $cell), $row)));
 		}
 
 		rewind($output);
@@ -1005,8 +1000,6 @@ class SearchTrailController extends Controller {
 	 * Clear all search trail logs
 	 *
 	 * @return JSONResponse A JSON response indicating success or failure
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-3
 	 */

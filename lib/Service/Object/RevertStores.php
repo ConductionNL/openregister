@@ -4,7 +4,8 @@
  * OpenRegister RevertStores
  *
  * The stores a revert reads and writes: the audit trail it reverts from, the
- * object mapper it saves through and the validator the save path uses.
+ * object mapper it finds the object with, the validator the save path uses and
+ * the save path's update it writes through.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -31,14 +32,18 @@ final class RevertStores {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param AuditTrailMapperInterface $auditTrailMapper   Audit trail mapper.
-	 * @param MagicMapperInterface      $objectEntityMapper Object entity mapper.
-	 * @param ObjectValidatorInterface  $validateHandler    Schema validator of the save path.
+	 * @param AuditTrailMapperInterface  $auditTrailMapper   Audit trail mapper.
+	 * @param MagicMapperInterface       $objectEntityMapper Object entity mapper.
+	 * @param ObjectValidatorInterface   $validateHandler    Schema validator of the save path.
+	 * @param SaveObjectUpdaterInterface $saveObject         The save path; a revert is written as its update.
+	 *
+	 * @spec openspec/changes/history-revert-through-the-save-path/specs/content-versioning/spec.md
 	 */
 	public function __construct(
 		public readonly AuditTrailMapperInterface $auditTrailMapper,
 		public readonly MagicMapperInterface $objectEntityMapper,
 		public readonly ObjectValidatorInterface $validateHandler,
+		public readonly SaveObjectUpdaterInterface $saveObject,
 	) {
 	}//end __construct()
 }//end class

@@ -58,6 +58,16 @@ use OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport;
  * @uses   \OCA\OpenRegister\Service\Rbac\DenyEntryMatcher
  * @uses   \OCA\OpenRegister\Service\Rbac\DenyResolver
  * @uses   \OCA\OpenRegister\Service\Rbac\ObjectScopeResolver
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport
+ * @uses \OCA\OpenRegister\Db\MagicMapper\RbacPermissionAsk
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\Rbac\DenyQuestion
+ * @uses \OCA\OpenRegister\Service\Rbac\GrantLookup
+ * @uses \OCA\OpenRegister\Service\Rbac\McpScope
+ * @uses \OCA\OpenRegister\Service\Rbac\RbacCollaborators
+ * @uses \OCA\OpenRegister\Service\Rbac\RbacFallbacks
  */
 class MagicRbacHandlerHasPermissionGoldenTest extends TestCase {
 
