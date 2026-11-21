@@ -56,6 +56,8 @@ use OCP\IDBConnection;
  * @spec openspec/specs/flow-queue-fairness/spec.md
  */
 class FlowRunMapper extends QBMapper implements FlowRunMapperInterface {
+	use StoredMomentTrait;
+
 	/**
 	 * Constructor.
 	 *
@@ -1583,4 +1585,96 @@ class FlowRunMapper extends QBMapper implements FlowRunMapperInterface {
 			$qb->createNamedParameter($before, IQueryBuilder::PARAM_DATETIME_MUTABLE)
 		);
 	}//end untouchedSince()
+
+	/**
+	 * Per flow, how many of its runs created in the window ended in each status.
+	 *
+	 * One grouped query over (flow_id, created), index `or_flowrun_flow_created_idx`,
+	 * whatever the number of runs. Only the window's organisation is counted.
+	 *
+	 * @param array<int, string> $flowIds      The flows to count.
+	 * @param string             $organisation Count only this organisation's runs.
+	 * @param DateTime           $from         Runs created from this moment.
+	 * @param DateTime           $to           Runs created up to this moment.
+	 *
+	 * @return array<string, array<string, int>> Run counts by status, keyed by flow id; flows without runs are absent.
+	 *
+	 * @spec openspec/changes/tasks-progress-report/specs/flow-progress-report/spec.md#requirement-a-flow-reports-its-progress-per-step
+	 */
+	public function countByStatusInWindow(array $flowIds, string $organisation, DateTime $from, DateTime $to): array {
+		if ($flowIds === []) {
+			return [];
+		}
+
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('flow_id', 'status')
+			->selectAlias($qb->func()->count('id'), 'total')
+			->from($this->getTableName());
+		$this->narrowToProgressWindow(qb: $qb, flowIds: $flowIds, organisation: $organisation, between: [$from, $to]);
+		$qb->groupBy('flow_id', 'status');
+
+		$counts = [];
+		$result = $qb->executeQuery();
+		while (($row = $result->fetch()) !== false) {
+			$counts[(string)$row['flow_id']][(string)$row['status']] = (int)$row['total'];
+		}
+
+		$result->closeCursor();
+
+		return $counts;
+	}//end countByStatusInWindow()
+
+	/**
+	 * When each completed run of the window was created, by run uuid.
+	 *
+	 * The start half of a run's duration; the end half is its last step
+	 * ({@see FlowRunStepMapper::lastFinishedByRun()}). Reads two columns, one
+	 * query.
+	 *
+	 * @param string   $flowId       The flow.
+	 * @param string   $organisation Count only this organisation's runs.
+	 * @param DateTime $from         Runs created from this moment.
+	 * @param DateTime $to           Runs created up to this moment.
+	 *
+	 * @return array<string, DateTime> Creation moment keyed by run uuid.
+	 *
+	 * @spec openspec/changes/tasks-progress-report/specs/flow-progress-report/spec.md#requirement-a-flow-reports-its-progress-per-step
+	 */
+	public function completedRunStartsInWindow(string $flowId, string $organisation, DateTime $from, DateTime $to): array {
+
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('uuid', 'created')->from($this->getTableName());
+		$this->narrowToProgressWindow(qb: $qb, flowIds: [$flowId], organisation: $organisation, between: [$from, $to]);
+		$qb->andWhere($qb->expr()->eq('status', $qb->createNamedParameter(FlowRun::STATUS_COMPLETED)));
+
+		$starts = [];
+		$result = $qb->executeQuery();
+		while (($row = $result->fetch()) !== false) {
+			$created = $this->storedMoment(value: $row['created'] ?? null);
+			if ($created !== null && (string)($row['uuid'] ?? '') !== '') {
+				$starts[(string)$row['uuid']] = $created;
+			}
+		}
+
+		$result->closeCursor();
+
+		return $starts;
+	}//end completedRunStartsInWindow()
+
+	/**
+	 * Narrow a run query to the window's flows, organisation and creation window.
+	 *
+	 * @param IQueryBuilder             $qb           The query being built.
+	 * @param array<int, string>        $flowIds      The flows.
+	 * @param string                    $organisation The organisation.
+	 * @param array{0: DateTime, 1: DateTime} $between The window's first and last moment.
+	 *
+	 * @return void
+	 */
+	private function narrowToProgressWindow(IQueryBuilder $qb, array $flowIds, string $organisation, array $between): void {
+		$qb->where($qb->expr()->in('flow_id', $qb->createNamedParameter($flowIds, IQueryBuilder::PARAM_STR_ARRAY)))
+			->andWhere($qb->expr()->eq('organisation', $qb->createNamedParameter($organisation)))
+			->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($between[0], IQueryBuilder::PARAM_DATETIME_MUTABLE)))
+			->andWhere($qb->expr()->lte('created', $qb->createNamedParameter($between[1], IQueryBuilder::PARAM_DATETIME_MUTABLE)));
+	}//end narrowToProgressWindow()
 }//end class

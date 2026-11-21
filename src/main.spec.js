@@ -194,7 +194,8 @@ describe('main entry', () => {
 			expect(byPath['/flow-tasks/:uuid']).toMatchObject({ name: 'flow-task-detail', props: true })
 			expect(byPath['/flow-runs/:uuid']).toMatchObject({ name: 'flow-run-detail', props: true })
 			expect(byPath['/flows/:id/overview']).toMatchObject({ name: 'flow-overview', props: true })
-			expect(routerOpts.routes).toHaveLength(6)
+			expect(byPath['/flows/:id/progress']).toMatchObject({ name: 'flow-progress', props: true })
+			expect(routerOpts.routes).toHaveLength(7)
 		})
 
 		it('lazily loads each deep-link view', async () => {

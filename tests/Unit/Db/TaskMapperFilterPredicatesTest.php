@@ -172,6 +172,38 @@ class TaskMapperFilterPredicatesTest extends TestCase {
 	 *
 	 * @return void
 	 */
+	/**
+	 * The flow filter reads the run table through a subquery on run_uuid, and
+	 * the node filter is one equality on node_id.
+	 *
+	 * @spec openspec/changes/tasks-progress-report/specs/flow-progress-report/spec.md#requirement-a-person-sees-the-report-on-the-flow
+	 */
+	public function testFlowAndNodeFiltersNarrowToOneStepOfOneFlow(): void {
+		$node = new TaskInboxSelection(anchor: new TaskInboxAnchor(nodeId: 'legal-review'));
+		$this->assertSame(['param "legal-review" 2', 'expr.eq node_id', 'andWhere'], $this->logOf('applyFilters', [self::criteria($node)]));
+
+		$this->calls = [];
+		$flow = new TaskInboxSelection(anchor: new TaskInboxAnchor(flowId: 'flow-1'));
+		$this->assertSame(
+			['param "flow-1" 2', 'function SELECT subquery', 'expr.in run_uuid', 'andWhere'],
+			$this->logOf('applyFilters', [self::criteria($flow)])
+		);
+		$this->assertTrue($this->saw('from', 'openregister_flow_runs'), 'the subquery reads the runs');
+		$this->assertTrue($this->saw('expr.eq', 'flowrun.flow_id'), 'the subquery narrows to the flow');
+	}//end testFlowAndNodeFiltersNarrowToOneStepOfOneFlow()
+
+	/**
+	 * A flow or node filter is not an anchor: the blocked exclusion still applies.
+	 *
+	 * @spec openspec/changes/tasks-progress-report/specs/flow-progress-report/spec.md#requirement-a-person-sees-the-report-on-the-flow
+	 */
+	public function testAFlowFilterKeepsTheInboxRules(): void {
+		$criteria = self::criteria(new TaskInboxSelection(anchor: new TaskInboxAnchor(flowId: 'flow-1', nodeId: 'n-1')));
+
+		$this->assertSame(['flow-1', 'n-1'], [$criteria->flowId, $criteria->nodeId]);
+		$this->assertContains('expr.isNull blocked_by', $this->logOf('applyBlockedExclusion', [$criteria]));
+	}//end testAFlowFilterKeepsTheInboxRules()
+
 	public function testAllFiltersLandInAFixedOrder(): void {
 		$selection = new TaskInboxSelection(
 			filter: new TaskInboxFilter(states: ['active', 'enabled'], isTerminal: false, priority: 'low', kind: 'form'),

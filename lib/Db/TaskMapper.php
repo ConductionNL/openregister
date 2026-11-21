@@ -69,6 +69,7 @@ use OCP\IDBConnection;
  * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
  */
 class TaskMapper extends QBMapper {
+	use StoredMomentTrait;
 
 	/**
 	 * The inbox's equality filters, in the order their predicates are added:
@@ -87,7 +88,15 @@ class TaskMapper extends QBMapper {
 		'kind' => ['kind', IQueryBuilder::PARAM_STR],
 		'objectUuid' => ['object_uuid', IQueryBuilder::PARAM_STR],
 		'runUuid' => ['run_uuid', IQueryBuilder::PARAM_STR],
+		'nodeId' => ['node_id', IQueryBuilder::PARAM_STR],
 	];
+
+	/**
+	 * The table that holds flow runs, read to restrict tasks to one flow.
+	 *
+	 * @var string
+	 */
+	private const RUNS_TABLE = 'openregister_flow_runs';
 
 	/**
 	 * Constructor.
@@ -888,6 +897,7 @@ class TaskMapper extends QBMapper {
 		}
 
 		$this->applyEqualityFilters(qb: $qb, criteria: $criteria);
+		$this->applyFlowFilter(qb: $qb, flowId: $criteria->flowId);
 
 		if ($criteria->overdueAt !== null) {
 			$this->applyOverdue(qb: $qb, now: $criteria->overdueAt);
@@ -896,6 +906,195 @@ class TaskMapper extends QBMapper {
 		$this->applyDueWindow(qb: $qb, criteria: $criteria);
 		$this->applyTerm(qb: $qb, term: $criteria->term);
 	}//end applyFilters()
+
+	/**
+	 * The inbox count of `countInbox()`, grouped by the task's flow node and
+	 * limited to one organisation.
+	 *
+	 * The SAME predicates as the inbox (scope, visibility, filters, the
+	 * external and blocked exclusions, and `applyOverdue()` for overdue), so
+	 * a progress report's number per step is the number of rows the inbox
+	 * lists for that flow and node. One grouped query, whatever the number
+	 * of tasks.
+	 *
+	 * @param TaskInboxCriteria $criteria     The inbox read, normally narrowed to one flow.
+	 * @param string            $organisation Count only this organisation's tasks.
+	 *
+	 * @return array<string, int> Task count keyed by node id; nodes without tasks are absent.
+	 *
+	 * @spec openspec/changes/tasks-progress-report/specs/flow-progress-report/spec.md#requirement-a-flow-reports-its-progress-per-step
+	 */
+	public function countInboxByNode(TaskInboxCriteria $criteria, string $organisation): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('node_id')
+			->selectAlias($qb->func()->count('id'), 'total')
+			->from($this->getTableName());
+		$this->applyInboxPredicates(qb: $qb, criteria: $criteria);
+		$qb->andWhere($qb->expr()->eq('organisation', $qb->createNamedParameter($organisation)));
+		$qb->groupBy('node_id');
+
+		return $this->countsByColumn(qb: $qb, column: 'node_id');
+	}//end countInboxByNode()
+
+	/**
+	 * The inbox count of `countInbox()`, grouped by the flow whose run raised
+	 * the task, for a set of flows and one organisation.
+	 *
+	 * @param TaskInboxCriteria  $criteria     The inbox read (its flow filter unset).
+	 * @param array<int, string> $flowIds      The flows to count.
+	 * @param string             $organisation Count only this organisation's tasks.
+	 *
+	 * @return array<string, int> Task count keyed by flow id; flows without tasks are absent.
+	 *
+	 * @spec openspec/changes/tasks-progress-report/specs/flow-progress-report/spec.md#requirement-all-flows-can-be-compared-on-one-list
+	 */
+	public function countInboxByFlow(TaskInboxCriteria $criteria, array $flowIds, string $organisation): array {
+		if ($flowIds === []) {
+			return [];
+		}
+
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('progressrun.flow_id')
+			->selectAlias($qb->func()->count('task.id'), 'total')
+			->from($this->getTableName(), 'task')
+			->innerJoin('task', self::RUNS_TABLE, 'progressrun', $qb->expr()->eq('progressrun.uuid', 'task.run_uuid'));
+		$this->applyInboxPredicates(qb: $qb, criteria: $criteria);
+		$qb->andWhere($qb->expr()->in('progressrun.flow_id', $qb->createNamedParameter($flowIds, IQueryBuilder::PARAM_STR_ARRAY)));
+		$qb->andWhere($qb->expr()->eq('task.organisation', $qb->createNamedParameter($organisation)));
+		$qb->groupBy('progressrun.flow_id');
+
+		return $this->countsByColumn(qb: $qb, column: 'flow_id');
+	}//end countInboxByFlow()
+
+	/**
+	 * Per node of one flow: how many tasks were finished inside the window and
+	 * how long they took on average, from creation to completion.
+	 *
+	 * Reads two timestamps per finished task of the window, no content.
+	 *
+	 * @param string   $flowId       The flow.
+	 * @param string   $organisation Count only this organisation's tasks.
+	 * @param DateTime $from         Tasks completed from this moment.
+	 * @param DateTime $to           Tasks completed up to this moment.
+	 *
+	 * @return array<string, array{done: int, averageSeconds: float|null}> Keyed by node id.
+	 *
+	 * @spec openspec/changes/tasks-progress-report/specs/flow-progress-report/spec.md#requirement-a-flow-reports-its-progress-per-step
+	 */
+	public function finishedByNodeInWindow(string $flowId, string $organisation, DateTime $from, DateTime $to): array {
+
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('node_id', 'created', 'completed_at')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('is_terminal', $qb->createNamedParameter(true, IQueryBuilder::PARAM_BOOL)))
+			->andWhere($qb->expr()->eq('organisation', $qb->createNamedParameter($organisation)))
+			->andWhere($qb->expr()->gte('completed_at', $qb->createNamedParameter($from, IQueryBuilder::PARAM_DATETIME_MUTABLE)))
+			->andWhere($qb->expr()->lte('completed_at', $qb->createNamedParameter($to, IQueryBuilder::PARAM_DATETIME_MUTABLE)));
+		$this->applyFlowFilter(qb: $qb, flowId: $flowId);
+
+		$totals = [];
+		$result = $qb->executeQuery();
+		while (($row = $result->fetch()) !== false) {
+			$this->addFinished(totals: $totals, row: $row);
+		}
+
+		$result->closeCursor();
+
+		return $this->averagedFinished(totals: $totals);
+	}//end finishedByNodeInWindow()
+
+	/**
+	 * Add one finished task to its node's running totals.
+	 *
+	 * @param array<string, array{done: int, timed: int, seconds: int}> $totals The totals so far.
+	 * @param array<string, mixed>                                      $row    The row.
+	 *
+	 * @return void
+	 */
+	private function addFinished(array &$totals, array $row): void {
+		$node = (string)($row['node_id'] ?? '');
+		if (isset($totals[$node]) === false) {
+			$totals[$node] = ['done' => 0, 'timed' => 0, 'seconds' => 0];
+		}
+
+		$totals[$node]['done']++;
+		$created = $this->storedMoment(value: $row['created'] ?? null);
+		$completed = $this->storedMoment(value: $row['completed_at'] ?? null);
+		if ($created === null || $completed === null) {
+			return;
+		}
+
+		$totals[$node]['timed']++;
+		$totals[$node]['seconds'] += max(0, $completed->getTimestamp() - $created->getTimestamp());
+	}//end addFinished()
+
+	/**
+	 * Running totals to counts and averages; a node without a timed task has no average.
+	 *
+	 * @param array<string, array{done: int, timed: int, seconds: int}> $totals The totals.
+	 *
+	 * @return array<string, array{done: int, averageSeconds: float|null}> Keyed by node id.
+	 */
+	private function averagedFinished(array $totals): array {
+		$finished = [];
+		foreach ($totals as $node => $total) {
+			$average = null;
+			if ($total['timed'] > 0) {
+				$average = (float)($total['seconds'] / $total['timed']);
+			}
+
+			$finished[$node] = ['done' => $total['done'], 'averageSeconds' => $average];
+		}
+
+		return $finished;
+	}//end averagedFinished()
+
+	/**
+	 * Run a grouped count query into counts keyed by one column.
+	 *
+	 * @param IQueryBuilder $qb     A query selecting the column and `total`.
+	 * @param string        $column The grouping column as the row names it.
+	 *
+	 * @return array<string, int> The counts.
+	 */
+	private function countsByColumn(IQueryBuilder $qb, string $column): array {
+		$counts = [];
+		$result = $qb->executeQuery();
+		while (($row = $result->fetch()) !== false) {
+			$counts[(string)($row[$column] ?? '')] = (int)$row['total'];
+		}
+
+		$result->closeCursor();
+
+		return $counts;
+	}//end countsByColumn()
+
+	/**
+	 * Restrict to the tasks the runs of one flow raised.
+	 *
+	 * A task knows its run, a run knows its flow: the predicate reads the run
+	 * table through a subquery on `run_uuid` (index `or_tasks_run`), so the
+	 * selected columns stay the task's own.
+	 *
+	 * @param IQueryBuilder $qb     The query under construction.
+	 * @param string|null   $flowId The flow uuid, or null for no restriction.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/tasks-progress-report/specs/flow-progress-report/spec.md#requirement-a-person-sees-the-report-on-the-flow
+	 */
+	private function applyFlowFilter(IQueryBuilder $qb, ?string $flowId): void {
+		if ($flowId === null) {
+			return;
+		}
+
+		$runs = $this->db->getQueryBuilder();
+		$runs->select('flowrun.uuid')
+			->from(self::RUNS_TABLE, 'flowrun')
+			->where($runs->expr()->eq('flowrun.flow_id', $qb->createNamedParameter($flowId)));
+
+		$qb->andWhere($qb->expr()->in('run_uuid', $qb->createFunction($runs->getSQL())));
+	}//end applyFlowFilter()
 
 	/**
 	 * The text filter: every word of the term in the title or the description,
@@ -1021,6 +1220,38 @@ class TaskMapper extends QBMapper {
 
 		return $this->totalOf(qb: $qb);
 	}//end countOverdueOpen()
+
+	/**
+	 * How many OPEN tasks each flow has, instance-wide, optionally only the overdue ones.
+	 *
+	 * The per-flow companion of `countOverdueOpen()`: no visibility predicate,
+	 * openness is `is_terminal = false`, overdue is `applyOverdue()`. The flow
+	 * is the one whose run raised the task; a task no run raised is in no flow.
+	 *
+	 * @param DateTime|null $overdueAt Only tasks overdue at this instant, or null for every open task.
+	 *
+	 * @return array<string, int> Open task count keyed by flow id, the largest first.
+	 *
+	 * @spec openspec/changes/tasks-progress-report/specs/flow-progress-report/spec.md#requirement-operators-can-chart-open-and-overdue-work-per-flow
+	 */
+	public function countOpenByFlow(?DateTime $overdueAt): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('progressrun.flow_id')
+			->selectAlias($qb->func()->count('task.id'), 'total')
+			->from($this->getTableName(), 'task')
+			->innerJoin('task', self::RUNS_TABLE, 'progressrun', $qb->expr()->eq('progressrun.uuid', 'task.run_uuid'))
+			->where($qb->expr()->eq('task.is_terminal', $qb->createNamedParameter(false, IQueryBuilder::PARAM_BOOL)));
+		if ($overdueAt !== null) {
+			$this->applyOverdue(qb: $qb, now: $overdueAt);
+		}
+
+		$qb->groupBy('progressrun.flow_id');
+
+		$counts = $this->countsByColumn(qb: $qb, column: 'flow_id');
+		arsort($counts);
+
+		return $counts;
+	}//end countOpenByFlow()
 
 	/**
 	 * A due WINDOW, over the same effective deadline the overdue filter and
