@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Search;
 use OCA\OpenRegister\Db\SchemaMapper\SchemaDeclarationChecksEvent;
 use OCA\OpenRegister\Listener\UniqueHintDeclarationCheckListener;
 use OCA\OpenRegister\Search\Db\ViewMapper;
+use OCA\OpenRegister\Search\Listener\AggregationDeclarationCheckListener;
 use OCA\OpenRegister\Kernel\Contracts\EmbeddingGeneratorInterface;
 use OCA\OpenRegister\Kernel\Contracts\MetricsRetentionInterface;
 use OCA\OpenRegister\Search\Db\ViewMapperInterface;
@@ -66,9 +67,12 @@ use OCA\OpenRegister\Kernel\Contracts\PropertySearchProfileInterface;
 use OCA\OpenRegister\Search\Service\Search\PropertySearchProfile;
 use OCA\OpenRegister\Service\Vectorization\Strategies\FileVectorizationStrategyInterface;
 use OCA\OpenRegister\Service\Vectorization\Strategies\ObjectVectorizationStrategyInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\StoredViewQueriesInterface;
+use OCA\OpenRegister\Search\Service\StoredViewQueries;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+
 
 /**
  * The wiring behind SearchRegistrar.
@@ -107,10 +111,11 @@ final class SearchWiring {
 		ViewMapperInterface::class => ViewMapper::class,
 		ChunkVectorFactoryInterface::class => ChunkVectorFactory::class,
 		PropertySearchProfileInterface::class => PropertySearchProfile::class,
+		StoredViewQueriesInterface::class => StoredViewQueries::class,
 	];
 
 	/**
-	 * Register the Search component's services.
+	 * Register the Search component's services and its schema-save listener.
 	 *
 	 * @param IRegistrationContext $context The registration context.
 	 *
@@ -124,6 +129,10 @@ final class SearchWiring {
 		foreach (self::BINDINGS as $contract => $service) {
 			$context->registerServiceAlias($contract, $service);
 		}
+
+		// The aggregations declaration check runs inside the schema save, in the
+		// AGGREGATIONS slot of SchemaDeclarationOrder the mapper keeps for it.
+		$context->registerEventListener(SchemaDeclarationChecksEvent::class, AggregationDeclarationCheckListener::class);
 
 		// The unique-hint declaration check runs inside the schema save, in its slot of SchemaDeclarationOrder.
 		$context->registerEventListener(SchemaDeclarationChecksEvent::class, UniqueHintDeclarationCheckListener::class);

@@ -26,9 +26,12 @@ namespace OCA\OpenRegister\Controller;
 
 use Exception;
 use GuzzleHttp\Exception\GuzzleException;
+use OCA\OpenRegister\Kernel\Contracts\Core\ApprovalPositionFormCheckInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\DeclarationRefusalInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\SchemaAccessChangeLogInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\SchemaFormDependentsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\SchemaRenameWarningsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\EnvelopedDefinitionControllerInterface;
 use OCA\OpenRegister\Controller\Support\SchemaRemoval;
 use OCA\OpenRegister\Controller\Support\SchemasControllerServices;
 use OCA\OpenRegister\Db\AuditTrail\AuditStatisticsScope;
@@ -56,7 +59,6 @@ use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaImportException;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
 use OCA\OpenRegister\Service\Rbac\RbacRuleChecks;
-use OCA\OpenRegister\Service\AuthorizationAuditService;
 use OCA\OpenRegister\Service\AuthorizationChange;
 use OCA\OpenRegister\Service\Rbac\RbacChecks;
 use OCA\OpenRegister\Service\Rbac\ReadRuleTenancy;
@@ -78,6 +80,7 @@ use OCA\OpenRegister\Service\SchemaTeardownInterface;
 use OCA\OpenRegister\Service\SchemaImport\GgmUpload;
 use OCA\OpenRegister\Service\SchemaImport\ImportOptions;
 use OCA\OpenRegister\Service\SchemaImport\SchemaImportServiceInterface;
+use OCA\OpenRegister\Service\Schemas\ApprovalChainDeclarations;
 use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearerInterface;
 use OCA\OpenRegister\Exception\UniqueHintException;
 use OCA\OpenRegister\Service\Schemas\PropertyTitles;
@@ -87,7 +90,6 @@ use OCA\OpenRegister\Service\Schemas\ReferenceFilterOperandGuard;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandlerInterface;
 use OCA\OpenRegister\Service\Schemas\SemanticRoleHandlerInterface;
 use OCA\OpenRegister\Service\SemanticTypeResolverInterface;
-use OCA\OpenRegister\Service\Task\ApprovalPositionFormGuard;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
@@ -132,7 +134,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @spec openspec/specs/openapi-generation/spec.md
  */
-class SchemasController extends Controller {
+class SchemasController extends Controller implements EnvelopedDefinitionControllerInterface {
 
 	/**
 	 * The exceptions that answer 422 with the errors of the declaration.
@@ -1247,11 +1249,11 @@ class SchemasController extends Controller {
 	 * @spec openspec/changes/approval-position-task-form/specs/flow-approval-consolidation/spec.md#requirement-an-approval-position-may-declare-the-form-its-task-presents
 	 */
 	private function validateApprovalPositionForms(array $data): ?JSONResponse {
-		if (ApprovalPositionFormGuard::declaresForms(data: $data) === false) {
+		if (ApprovalChainDeclarations::declaresForms(data: $data) === false) {
 			return null;
 		}
 
-		$errors = $this->container->get(ApprovalPositionFormGuard::class)->violations(data: $data);
+		$errors = $this->container->get(ApprovalPositionFormCheckInterface::class)->violations(data: $data);
 		if ($errors === []) {
 			return null;
 		}
@@ -1995,7 +1997,7 @@ class SchemasController extends Controller {
 	 */
 	private function auditSchemaAuthorizationChange(Schema $schema, mixed $oldAuthorization): void {
 		try {
-			$auditService = $this->container->get(AuthorizationAuditService::class);
+			$auditService = $this->container->get(SchemaAccessChangeLogInterface::class);
 			$auditService->recordSchemaChange(
 				change: new AuthorizationChange(
 					entityId: $schema->getId(),

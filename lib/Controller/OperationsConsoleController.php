@@ -56,13 +56,14 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCA\OpenRegister\Controller\Support\OperationsConsoleControllerServices;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
+use OCA\OpenRegister\Kernel\Contracts\Configuration\MaintenanceReachableInterface;
 
 /**
  * OperationsConsoleController.
  *
  * @spec openspec/specs/operations-console/spec.md
  */
-class OperationsConsoleController extends Controller {
+class OperationsConsoleController extends Controller implements MaintenanceReachableInterface {
 
 	/**
 	 * The acting administrator and the parameter readers.
