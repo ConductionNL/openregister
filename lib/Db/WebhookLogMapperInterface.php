@@ -24,15 +24,17 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\Search\WebhookLogStatisticsInterface;
 use OCP\AppFramework\Db\Entity;
 
 /**
  * The methods of WebhookLogMapper that callers outside the Db component use.
  *
  * Callers type against this interface and resolve it from the container; the
- * registrar binds it to WebhookLogMapper.
+ * registrar binds it to WebhookLogMapper. getStatistics() is declared on the
+ * Search contract this interface extends.
  */
-interface WebhookLogMapperInterface {
+interface WebhookLogMapperInterface extends WebhookLogStatisticsInterface {
 
 	/**
 	 * Find a webhook log by ID
@@ -89,17 +91,6 @@ interface WebhookLogMapperInterface {
 	 * @return int The count.
 	 */
 	public function countPendingRetries(DateTime $now): int;
-
-	/**
-	 * Get statistics for a webhook
-	 *
-	 * @param int $webhookId Webhook ID (0 for all webhooks)
-	 *
-	 * @return int[] Statistics
-	 *
-	 * @psalm-return array{total: int, successful: int, failed: int}
-	 */
-	public function getStatistics(int $webhookId): array;
 
 	/**
 	 * Insert a new webhook log

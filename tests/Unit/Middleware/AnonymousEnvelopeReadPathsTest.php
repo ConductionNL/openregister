@@ -27,6 +27,7 @@ use DateTime;
 use GraphQL\GraphQL;
 use OCA\OpenRegister\Controller\FederationController;
 use OCA\OpenRegister\Controller\McpController;
+use OCA\OpenRegister\Controller\ObjectExportController;
 use OCA\OpenRegister\Controller\ObjectsController;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectsControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -44,6 +45,7 @@ use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\FederationShareService;
 use OCA\OpenRegister\Service\GraphQL\GraphQLResolver;
 use OCA\OpenRegister\Service\GraphQL\GraphQLResolverShaping;
+use OCA\OpenRegister\Service\GraphQL\ListAggregations;
 use OCA\OpenRegister\Service\GraphQL\GraphQLResolverRights;
 use OCA\OpenRegister\Service\GraphQL\GraphQLResolverObjects;
 use OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator;
@@ -381,8 +383,7 @@ class AnonymousEnvelopeReadPathsTest extends TestCase {
 			),
 			new GraphQLResolverShaping(
 				$translation,
-				$this->createMock(AggregationRunner::class),
-				new TimeseriesRequestValidator()
+				new ListAggregations(runner: $this->createMock(AggregationRunner::class), validator: new TimeseriesRequestValidator())
 			),
 			$this->createMock(LoggerInterface::class)
 		);
@@ -537,7 +538,7 @@ class AnonymousEnvelopeReadPathsTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheExportIsPublicOnlyWithItsOwnLimit(): void {
-		$route = new ReflectionMethod(ObjectsController::class, 'export');
+		$route = new ReflectionMethod(ObjectExportController::class, 'export');
 
 		$this->assertStringContainsString(needle: '@PublicPage', haystack: (string)$route->getDocComment());
 		$limits = $route->getAttributes(\OCP\AppFramework\Http\Attribute\AnonRateLimit::class);

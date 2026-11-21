@@ -35,14 +35,13 @@ use Closure;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\Types;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Create the job run log.
  *
  * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
  */
-class Version1Date20260918210700 extends SimpleMigrationStep {
+class Version1Date20260918210700 extends TargetedMigrationStep {
 
 	/**
 	 * The run log table.
@@ -62,7 +61,7 @@ class Version1Date20260918210700 extends SimpleMigrationStep {
 	 *
 	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		/*
 		 * @var ISchemaWrapper $schema
 		 */
@@ -99,5 +98,5 @@ class Version1Date20260918210700 extends SimpleMigrationStep {
 
 		return $schema;
 
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 }//end class

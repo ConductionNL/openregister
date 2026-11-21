@@ -35,17 +35,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Notifications\BackgroundJob;
 
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
 use DateTime;
 use OCA\OpenRegister\Notifications\Db\DedupeSighting;
 use OCA\OpenRegister\Notifications\Db\NotificationDedupeKey;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\Task;
-use OCA\OpenRegister\Db\TaskInboxAudience;
-use OCA\OpenRegister\Db\TaskInboxDueWindow;
-use OCA\OpenRegister\Db\TaskInboxFilter;
-use OCA\OpenRegister\Db\TaskInboxOrder;
-use OCA\OpenRegister\Db\TaskInboxSelection;
-use OCA\OpenRegister\Db\TaskInboxCriteria;
 use OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterEvaluator;
 use OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterTarget;
 use OCA\OpenRegister\Notifications\Service\Notification\TaskObjectAdapter;
@@ -81,12 +75,6 @@ class TaskScheduledNotificationJob extends TimedJob {
 	 * stored schema; this constant is the registry's stand-in.
 	 */
 	public const DEDUPE_SCHEMA_ID = -1;
-
-	/**
-	 * The uid the sweep queries as: an administrator's view, which the inbox
-	 * does not narrow. It is never a recipient.
-	 */
-	private const SWEEP_UID = '__openregister_task_sweep__';
 
 	/**
 	 * Constructor.
@@ -217,12 +205,12 @@ class TaskScheduledNotificationJob extends TimedJob {
 	/**
 	 * Evaluate one candidate task: filter, dedupe, then dispatch.
 	 *
-	 * @param Task         $task The candidate task.
-	 * @param TaskSweepRun $run  The sweep; its tally is updated.
+	 * @param TaskInterface $task The candidate task.
+	 * @param TaskSweepRun  $run  The sweep; its tally is updated.
 	 *
 	 * @return void
 	 */
-	private function fireTask(Task $task, TaskSweepRun $run): void {
+	private function fireTask(TaskInterface $task, TaskSweepRun $run): void {
 		$adapter = new TaskObjectAdapter(task: $task, row: $this->candidates->inbox->enrich(task: $task));
 		$payload = ($adapter->getObject() ?? []);
 
@@ -287,22 +275,13 @@ class TaskScheduledNotificationJob extends TimedJob {
 	 * @param DateTime $now The clock instant.
 	 * @param int $offset Page offset.
 	 *
-	 * @return array<int, Task> The page.
+	 * @return array<int, TaskInterface> The page.
 	 *
 	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-deadline-notifications-filter-on-the-derived-predicate
 	 */
 	private function candidates(DateTime $now, int $offset): array {
-		$criteria = new TaskInboxCriteria(
-			audience: new TaskInboxAudience(uid: self::SWEEP_UID, isAdmin: true, scope: TaskInboxCriteria::SCOPE_ALL),
-			selection: new TaskInboxSelection(
-				filter: new TaskInboxFilter(isTerminal: false),
-				window: new TaskInboxDueWindow(overdueAt: $now),
-				order: new TaskInboxOrder(sort: TaskInboxCriteria::SORT_CREATED)
-			)
-		);
-
 		try {
-			return $this->candidates->tasks->findInbox(criteria: $criteria, page: new ListQuery(limit: self::PAGE, offset: $offset));
+			return $this->candidates->tasks->overdueOpenTasks(now: $now, page: new ListQuery(limit: self::PAGE, offset: $offset));
 		} catch (Throwable $failure) {
 			$this->delivery->logger->warning('[TaskScheduledNotificationJob] Candidate query failed: ' . $failure->getMessage());
 
