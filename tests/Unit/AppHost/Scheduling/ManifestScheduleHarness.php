@@ -479,7 +479,8 @@ abstract class ManifestScheduleHarness extends TestCase {
 				return match ($id) {
 					\OCA\OpenRegister\Db\FlowVersionMapperInterface::class => $versions,
 					FlowTenantMembership::class => $membership,
-					'OCA\OpenRegister\Db\FlowMapper' => $flowMapper,
+					'OCA\OpenRegister\Db\FlowMapper',
+					\OCA\OpenRegister\Db\FlowMapperInterface::class => $flowMapper,
 					IUserSession::class => $this->createConfiguredMock(IUserSession::class, ['getUser' => $this->user()]),
 					default => throw new DoesNotExistException($id),
 				};
