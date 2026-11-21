@@ -43,8 +43,8 @@ namespace OCA\OpenRegister\Service\Deletion;
 use DateInterval;
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Verwerkingsactiviteit;
-use OCA\OpenRegister\Db\VerwerkingsactiviteitMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\RetainingActivityInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\RetainingActivityResolverInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -75,13 +75,13 @@ class RetentionClockService {
 	/**
 	 * Wire the processing-activity catalogue.
 	 *
-	 * @param VerwerkingsactiviteitMapperInterface $activityMapper Resolves the object's processing activity.
-	 * @param LoggerInterface             $logger         PSR logger.
+	 * @param RetainingActivityResolverInterface $activityMapper Resolves the object's processing activity.
+	 * @param LoggerInterface                    $logger         PSR logger.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly VerwerkingsactiviteitMapperInterface $activityMapper,
+		private readonly RetainingActivityResolverInterface $activityMapper,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -194,12 +194,12 @@ class RetentionClockService {
 	/**
 	 * The rule an AVG clock names: which processing activity keeps the data, and for how long.
 	 *
-	 * @param object $activity The retaining processing activity.
-	 * @param string $period   Its retention period.
+	 * @param RetainingActivityInterface $activity The retaining processing activity.
+	 * @param string                     $period   Its retention period.
 	 *
 	 * @return string The rule.
 	 */
-	private function avgRule(object $activity, string $period): string {
+	private function avgRule(RetainingActivityInterface $activity, string $period): string {
 		return 'verwerkingsactiviteit ' . (string)$activity->getUuid()
 			. ' keeps this data for ' . $period . ' after the last processing';
 	}//end avgRule()
@@ -209,10 +209,10 @@ class RetentionClockService {
 	 *
 	 * @param string $reference The object's processing activity reference.
 	 *
-	 * @return Verwerkingsactiviteit|null The activity, or null when none is linked,
+	 * @return RetainingActivityInterface|null The activity, or null when none is linked,
 	 *                                    resolvable or keeping a period.
 	 */
-	private function retainingActivity(string $reference): ?Verwerkingsactiviteit {
+	private function retainingActivity(string $reference): ?RetainingActivityInterface {
 		if ($reference === '') {
 			return null;
 		}
@@ -230,9 +230,9 @@ class RetentionClockService {
 	 *
 	 * @param string $reference The processing activity reference.
 	 *
-	 * @return Verwerkingsactiviteit|null The activity, or null when it cannot be resolved.
+	 * @return RetainingActivityInterface|null The activity, or null when it cannot be resolved.
 	 */
-	private function resolveActivity(string $reference): ?Verwerkingsactiviteit {
+	private function resolveActivity(string $reference): ?RetainingActivityInterface {
 		try {
 			return $this->activityMapper->resolveReference($reference);
 		} catch (Throwable $e) {

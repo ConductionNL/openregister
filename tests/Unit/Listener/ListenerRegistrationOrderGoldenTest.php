@@ -28,12 +28,15 @@ class ListenerRegistrationOrderGoldenTest extends TestCase {
 	/**
 	 * The number of event listener registrations.
 	 */
-	private const LISTENER_COUNT = 252;
+	private const LISTENER_COUNT = 256;
 
 	/**
 	 * The sha256 of every registration call, one `method|arg|arg...` line each, in order.
+	 *
+	 * Last changed when AccessListenerRegistrar added the two owner-webhook listeners
+	 * (webhooks-for-owners).
 	 */
-	private const SEQUENCE_SHA256 = '063d8a1f0e5338f9298e68a2c988f06a088ad8d40ff31a404862fd3259dfea49';
+	private const SEQUENCE_SHA256 = '35417d8504e71f19d846e471db7262de0e9cc15450897bb87695256a49965c9a';
 
 	/**
 	 * The registration calls, in call order, with every argument.

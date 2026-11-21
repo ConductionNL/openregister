@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Db\DbRegistrar;
+use OCA\OpenRegister\Db\ConfigurationMapperRegistrar;
 use OCA\OpenRegister\Db\ImportPreviewFinderInterface;
 use OCA\OpenRegister\Db\ImportPreviewMapper;
 use OCA\OpenRegister\Db\SchemaRunMapper;
@@ -67,7 +68,7 @@ final class C07JobInterfaceBindingsTest extends TestCase {
 	 */
 	private const CLASSES = [
 		ExampleSetDailyRefresh::class => [ExampleSetDailyRefreshInterface::class, ContractBindings::class],
-		ImportPreviewMapper::class => [ImportPreviewFinderInterface::class, DbRegistrar::class],
+		ImportPreviewMapper::class => [ImportPreviewFinderInterface::class, ConfigurationMapperRegistrar::class],
 		MasterRecomputeService::class => [MasterRecomputeInterface::class, ContractBindings::class],
 		SchemaMigrationService::class => [SchemaBatchMigratorInterface::class, ContractBindings::class],
 		SchemaRunMapper::class => [SchemaRunStoreInterface::class, DbRegistrar::class],

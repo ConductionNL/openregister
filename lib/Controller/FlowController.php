@@ -37,7 +37,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\FlowLifecycleRefusalTrait;
 use OCA\OpenRegister\Controller\Support\FlowControllerServices;
 use OCA\OpenRegister\Db\Flow;
@@ -45,6 +44,7 @@ use OCA\OpenRegister\Db\FlowStateMapperInterface;
 use OCA\OpenRegister\Exception\BpmnImportRefused;
 use OCA\OpenRegister\Exception\BpmnSchemaInvalid;
 use OCA\OpenRegister\Exception\FlowRunRefused;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Flow\Bpmn\FlowBpmnInterchangeInterface;
 use OCA\OpenRegister\Service\Flow\EventCatalogServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowAccessInterface;
@@ -197,7 +197,7 @@ class FlowController extends Controller {
 		IRequest $request,
 		FlowControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->eventCatalog = $services->catalogue->eventCatalog;
 		$this->nodes = $services->catalogue->nodes;
 		$this->flowState = $services->catalogue->flowState;
