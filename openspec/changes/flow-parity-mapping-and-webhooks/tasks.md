@@ -32,7 +32,7 @@ list is long.
       identifier. Do NOT pass items through unchanged.
 - [x] 2.4 Unit-test both paths, including the negative: assert the failure, and (verified: lib/Service/Flow/Nodes/MapNode.php, tests/Unit/Service/Flow/Nodes/MapNodeTest.php)
       assert the items were not silently forwarded.
-- [ ] 2.5 Add it to the node catalogue endpoint so the authoring palette offers it.
+- [x] 2.5 Add it to the node catalogue endpoint so the authoring palette offers it. (verified: the palette lists every registered node; tests/Unit/Service/Flow/FlowNodeCatalogueParityNodesTest.php)
 
 ## 3. Webhook request binding
 
@@ -73,7 +73,7 @@ silently completing) when it cannot do its work.
 
 - [ ] 6.1 `openregister.extend-input`
 - [ ] 6.2 `openregister.locking`
-- [ ] 6.3 `openregister.audit-trail`
+- [x] 6.3 `openregister.audit-trail` (lib/Service/Flow/Nodes/AuditTrailNode.php, tests/Unit/Service/Flow/Nodes/AuditTrailNodeTest.php)
 - [ ] 6.4 `openregister.write-file`
 - [ ] 6.5 `openregister.javascript` — sandboxing decided and written down BEFORE
       implementation; this one executes caller-supplied code.
