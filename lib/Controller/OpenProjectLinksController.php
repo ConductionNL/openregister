@@ -38,7 +38,6 @@ namespace OCA\OpenRegister\Controller;
 
 use Closure;
 use Exception;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\OpenProjectLinksControllerServices;
 use OCA\OpenRegister\Controller\Trait\ObjectLinkActionsTrait;
 use OCA\OpenRegister\Controller\Support\LinkedSourceActions;
@@ -47,6 +46,7 @@ use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Db\OpenProjectLink;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\WorkPackageDraft;
 use OCA\OpenRegister\Service\OpenProjectLinkServiceInterface;
@@ -87,7 +87,7 @@ class OpenProjectLinksController extends Controller {
 		IRequest $request,
 		OpenProjectLinksControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->linkService = $services->linkService;
 		$this->objectService = $services->objectService;
 	}//end __construct()

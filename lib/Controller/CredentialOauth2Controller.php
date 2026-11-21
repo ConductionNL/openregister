@@ -48,10 +48,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\CredentialOauth2ControllerServices;
 use OCA\OpenRegister\Controller\Support\OAuth2StartRequest;
 use OCA\OpenRegister\Controller\Support\OAuth2StartRun;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Credential\CredentialAccessDeniedException;
 use OCA\OpenRegister\Service\Credential\OAuth2ClientNotConfiguredException;
 use OCA\OpenRegister\Service\Credential\OAuth2ConnectionRecord;
@@ -201,7 +201,7 @@ class CredentialOauth2Controller extends Controller {
 		CredentialOauth2ControllerServices $services,
 		OAuth2InstanceHostInterface $instanceHost,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->connect = $services->domain->connect;
 		$this->states = $services->domain->states;
 		$this->relay = $services->domain->relay;
