@@ -24,8 +24,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\JobRunRecordingInterface;
+use OCA\OpenRegister\Service\Operations\JobRunStart;
 use OCA\OpenRegister\Service\Operations\JobRunContext;
-use OCA\OpenRegister\Service\Operations\JobRunRecorderInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\QueuedJob;
 
@@ -43,12 +44,12 @@ abstract class RecordedQueuedJob extends QueuedJob implements RecordsItsRuns {
 	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory   $time     Time factory for the parent job class.
-	 * @param JobRunRecorderInterface $recorder The wrapper that writes the run row.
+	 * @param ITimeFactory             $time     Time factory for the parent job class.
+	 * @param JobRunRecordingInterface $recorder The wrapper that writes the run row.
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		protected readonly JobRunRecorderInterface $recorder,
+		protected readonly JobRunRecordingInterface $recorder,
 	) {
 		parent::__construct(time: $time);
 
@@ -65,15 +66,17 @@ abstract class RecordedQueuedJob extends QueuedJob implements RecordsItsRuns {
 	 */
 	final protected function run($argument): void {
 		$this->recorder->around(
-			jobClass: static::class,
+			start: new JobRunStart(
+				jobClass: static::class,
+				context: new JobRunContext(
+					cause: $this->causeOf(argument: $argument),
+					actor: $this->actorOf(argument: $argument),
+					argument: $argument
+				)
+			),
 			work: function () use ($argument): void {
 				$this->runRecorded(argument: $argument);
-			},
-			context: new JobRunContext(
-				cause: $this->causeOf(argument: $argument),
-				actor: $this->actorOf(argument: $argument),
-				argument: $argument
-			)
+			}
 		);
 
 	}//end run()
@@ -88,14 +91,14 @@ abstract class RecordedQueuedJob extends QueuedJob implements RecordsItsRuns {
 	 *
 	 * @param mixed $argument The job argument.
 	 *
-	 * @return string One of the JobRun CAUSE_ constants.
+	 * @return string One of the JobRunContext CAUSE_ constants.
 	 */
 	private function causeOf(mixed $argument): string {
 		if (is_array($argument) === true && ($argument['actor'] ?? null) !== null) {
-			return \OCA\OpenRegister\Db\JobRun::CAUSE_MANUAL;
+			return JobRunContext::CAUSE_MANUAL;
 		}
 
-		return \OCA\OpenRegister\Db\JobRun::CAUSE_SCHEDULE;
+		return JobRunContext::CAUSE_SCHEDULE;
 
 	}//end causeOf()
 

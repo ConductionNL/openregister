@@ -45,7 +45,8 @@ namespace OCA\OpenRegister\Service\Archival;
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\Lifecycle\LifecycleFinalStateResolver;
+use OCA\OpenRegister\Service\RetentionClock;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\LifecycleFinalStatesInterface;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -121,15 +122,15 @@ class ArchivalNominationService implements ArchivalNominationServiceInterface, A
 	/**
 	 * Constructor.
 	 *
-	 * @param RetentionServiceInterface            $retentionService Owns the selectielijst lookup and the date arithmetic.
-	 * @param LoggerInterface             $logger           Where an unnominatable record is reported.
-	 * @param LifecycleFinalStateResolver $finalStates      Answers whether a referenced state row is an end.
-	 * @param ArchivalDeclarationReader   $declarations     Reads both places a schema can declare archiving.
+	 * @param RetentionServiceInterface     $retentionService Owns the selectielijst lookup and the date arithmetic.
+	 * @param LoggerInterface               $logger           Where an unnominatable record is reported.
+	 * @param LifecycleFinalStatesInterface $finalStates      Answers whether a declared `final` ends at a state.
+	 * @param ArchivalDeclarationReader     $declarations     Reads both places a schema can declare archiving.
 	 */
 	public function __construct(
 		private readonly RetentionServiceInterface $retentionService,
 		private readonly LoggerInterface $logger,
-		private readonly LifecycleFinalStateResolver $finalStates,
+		private readonly LifecycleFinalStatesInterface $finalStates,
 		private readonly ArchivalDeclarationReader $declarations,
 	) {
 	}//end __construct()
@@ -148,7 +149,7 @@ class ArchivalNominationService implements ArchivalNominationServiceInterface, A
 	 * schema names nothing and NOTHING IS EVER TERMINAL: no error, no log, no
 	 * nomination, and a closed dossier with no archival future. So `final` also
 	 * takes `{ from: <schema>, field: <property> }`, resolved against the
-	 * referenced row; see {@see LifecycleFinalStateResolver}. A graph-mode
+	 * referenced row; see {@see LifecycleFinalStatesInterface}. A graph-mode
 	 * annotation already says the same thing in `graph.schema` and
 	 * `graph.finalField`, so it is read there rather than declared twice.
 	 *
@@ -170,11 +171,7 @@ class ArchivalNominationService implements ArchivalNominationServiceInterface, A
 			return false;
 		}
 
-		if ($this->finalStates->isReferenceForm($final) === true) {
-			return $this->finalStates->isFinalByReference(declaration: $final, state: $state);
-		}
-
-		return in_array($state, $final, true);
+		return $this->finalStates->isFinalState(final: $final, state: $state);
 	}//end isTerminalState()
 
 	/**
@@ -223,18 +220,15 @@ class ArchivalNominationService implements ArchivalNominationServiceInterface, A
 	 *
 	 * The trigger written on the block is `recompute`, with who asked and why.
 	 *
-	 * @param ObjectEntity $object The record.
-	 * @param Schema       $schema Its schema, holding the archive block.
-	 * @param string|null  $actor  Who asked.
-	 * @param string|null  $reason Why they asked.
+	 * @param NominationRecompute $request The record, its schema (holding the archive block), who asked and why.
 	 *
 	 * @return array<string, mixed> The nomination block that was written.
 	 *
 	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
 	 */
-	public function recompute(ObjectEntity $object, Schema $schema, ?string $actor, ?string $reason): array {
-		$cause = new NominationCause(trigger: 'recompute', actor: $actor, reason: $reason);
-		return $this->nominateFor(run: new NominationRun(object: $object, schema: $schema), cause: $cause);
+	public function recompute(NominationRecompute $request): array {
+		$cause = new NominationCause(trigger: 'recompute', actor: $request->actor, reason: $request->reason);
+		return $this->nominateFor(run: new NominationRun(object: $request->object, schema: $request->schema), cause: $cause);
 	}//end recompute()
 
 	/**
@@ -251,6 +245,18 @@ class ArchivalNominationService implements ArchivalNominationServiceInterface, A
 			return ['status' => self::STATUS_NOT_APPLICABLE, 'unnominatableReason' => self::NOTHING_DECLARES_ARCHIVING];
 		}
 
+		return $this->nominateDeclared(run: $run, cause: $cause);
+	}//end nominateFor()
+
+	/**
+	 * Derive and record the nomination of an object whose schema declares archiving.
+	 *
+	 * @param NominationRun   $run   The run, with the object's archive declaration read.
+	 * @param NominationCause $cause Why the nomination is (re)computed.
+	 *
+	 * @return array<string, mixed> The written nomination block.
+	 */
+	private function nominateDeclared(NominationRun $run, NominationCause $cause): array {
 		$derived = $this->derive(run: $run);
 		$block = $this->openBlock(status: $derived['status'], cause: $cause);
 		if ($derived['status'] === self::STATUS_UNNOMINATABLE) {
@@ -263,7 +269,7 @@ class ArchivalNominationService implements ArchivalNominationServiceInterface, A
 		$this->write(run: $run, block: $block);
 
 		return $block;
-	}//end nominateFor()
+	}//end nominateDeclared()
 
 	/**
 	 * Name the rule that decided, and the selectielijst row when one did.
@@ -338,7 +344,8 @@ class ArchivalNominationService implements ArchivalNominationServiceInterface, A
 		// row 48). The same resolver decides it at creation, so a record is
 		// created and nominated under one category.
 		$archive = $run->archive;
-		$classification = (new ClassificationOverride())->effective(archive: $archive, data: ($run->object->getObject() ?? []));
+		$declaration = new CategoryDeclaration(archive: $archive);
+		$classification = (new ClassificationOverride())->effective(declaration: $declaration, data: ($run->object->getObject() ?? []));
 		$run->classification = $classification;
 
 		$found = $this->fromSelectionList(classification: $classification);
@@ -448,7 +455,9 @@ class ArchivalNominationService implements ArchivalNominationServiceInterface, A
 		$period = $found['period'];
 		$disposalDate = null;
 		if ($period !== null) {
-			$disposalDate = $this->retentionService->calculateArchiveActionDate(object: $run->object, schema: $run->schema, retentionPeriod: $period);
+			$disposalDate = $this->retentionService->calculateArchiveActionDate(
+				clock: new RetentionClock(object: $run->object, schema: $run->schema, retentionPeriod: $period)
+			);
 		}
 
 		if ($this->cannotBeCounted(found: $found, disposalDate: $disposalDate) === true) {

@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\FlowRun;
@@ -47,6 +48,13 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Db\TaskInboxCriteria
  * @covers \OCA\OpenRegister\Db\Task
  * @uses \OCA\OpenRegister\Db\FlowRun
+ * @uses \OCA\OpenRegister\Db\TaskInboxAnchor
+ * @uses \OCA\OpenRegister\Db\TaskInboxAudience
+ * @uses \OCA\OpenRegister\Db\TaskInboxDueWindow
+ * @uses \OCA\OpenRegister\Db\TaskInboxFilter
+ * @uses \OCA\OpenRegister\Db\TaskInboxOrder
+ * @uses \OCA\OpenRegister\Db\TaskInboxSelection
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 class TaskMapperQueriesTest extends TestCase {
 	use FluentQueryBuilderTrait;
@@ -242,7 +250,7 @@ class TaskMapperQueriesTest extends TestCase {
 		$mapper = new TaskMapper(db: $this->connectionWith(rows: [$this->row()]));
 		$criteria = new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'alice', groupIds: ['reviewers'], isAdmin: false));
 
-		$page = $mapper->findInbox(criteria: $criteria, limit: 25, offset: 50);
+		$page = $mapper->findInbox(criteria: $criteria, page: new ListQuery(limit: 25, offset: 50));
 
 		$this->assertCount(1, $page);
 		// An IN, not an eq: a typed assignee is stored as `type:id`, so the

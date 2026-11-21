@@ -53,6 +53,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use Exception;
+use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
@@ -61,14 +62,21 @@ use OCA\OpenRegister\Service\File\CreateFileHandler;
 use OCA\OpenRegister\Service\File\FileRename;
 use OCA\OpenRegister\Service\File\FileTransfer;
 use OCA\OpenRegister\Service\File\FileUpload;
+use OCA\OpenRegister\Service\File\DocumentAnonymization;
+use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Service\File\ShareLinkRequest;
 use OCA\OpenRegister\Service\File\DeleteFileHandler;
 use OCA\OpenRegister\Kernel\Contracts\DocumentProcessingHandlerInterface;
-use OCA\OpenRegister\Files\Service\File\FileAuditHandler;
+use OCA\OpenRegister\Kernel\Contracts\Value\DocumentAnonymisationOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\DocumentAnonymisationRequest;
+use OCA\OpenRegister\Files\Service\File\FileAuditHandlerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\WordReplacementRequest;
 use OCA\OpenRegister\Service\File\FileBatchHandler;
 use OCA\OpenRegister\Service\File\FileOverwrite;
 use OCA\OpenRegister\Service\File\FileContentHandlers;
 use OCA\OpenRegister\Service\File\FileFormattingHandler;
+use OCA\OpenRegister\Service\File\FolderAccessCheck;
+use OCA\OpenRegister\Service\File\ObjectFolderOptions;
 use OCA\OpenRegister\Service\File\FileListOptions;
 use OCA\OpenRegister\Service\File\FileMetadataChange;
 use OCA\OpenRegister\Service\File\FileLifecycleHandlers;
@@ -84,9 +92,10 @@ use OCA\OpenRegister\Service\File\FileVersioningHandler;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Kernel\Contracts\StructurePreservation;
 use OCA\OpenRegister\Service\File\ReadFileHandler;
-use OCA\OpenRegister\Files\Service\File\ShareUrlBuilderInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ShareLinkUrlInterface;
 use OCA\OpenRegister\Kernel\Contracts\TaggingHandlerInterface;
 use OCA\OpenRegister\Service\File\UpdateFileHandler;
+use OCA\OpenRegister\Support\ContentDisposition;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\StreamResponse;
 use OCP\Files\File;
@@ -116,6 +125,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.TooManyFields)            File service orchestrates many handler classes
  * @SuppressWarnings(PHPMD.LongVariable)             Handler properties use descriptive names for clarity
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-006
  */
 class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 
@@ -148,9 +158,9 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 	/**
 	 * Builds share links for the host the visitor used
 	 *
-	 * @var ShareUrlBuilderInterface
+	 * @var ShareLinkUrlInterface
 	 */
-	private ShareUrlBuilderInterface $shareUrls;
+	private ShareLinkUrlInterface $shareUrls;
 
 
 	/**
@@ -275,9 +285,9 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 	/**
 	 * File audit handler (Single Responsibility: Download audit logging)
 	 *
-	 * @var FileAuditHandler
+	 * @var FileAuditHandlerInterface
 	 */
-	private FileAuditHandler $fileAuditHandler;
+	private FileAuditHandlerInterface $fileAuditHandler;
 
 	/**
 	 * Per-request memoization for the defense-in-depth folder-access
@@ -297,15 +307,6 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 	 * @var array<string, true>
 	 */
 	private array $folderAccessRevalidationCache = [];
-
-	/**
-	 * Root folder name for all OpenRegister files.
-	 *
-	 * @var string
-	 * @readonly
-	 * @psalm-readonly
-	 */
-	private const ROOT_FOLDER = 'Open Registers';
 
 	/**
 	 * Application group name.
@@ -655,7 +656,7 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 	private function createObjectFolderById(ObjectEntity|string $objectEntity, ?IUser $currentUser=null): Node {
 		return $this->folderManagementHandler->createObjectFolderById(
 			objectEntity: $objectEntity,
-			currentUser: $currentUser
+			options: new ObjectFolderOptions(currentUser: $currentUser)
 		);
 	}//end createObjectFolderById()
 
@@ -846,9 +847,7 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 		// pointing outside `Open Registers/` is still refused; see that method
 		// for the full rationale and the accepted residual case.
 		$this->folderManagementHandler->assertManagedFolderIsAccessible(
-			folderId: (string)$folder,
-			currentUser: $currentUser,
-			objectEntity: $object
+			check: new FolderAccessCheck(folderId: (string)$folder, currentUser: $currentUser, objectEntity: $object)
 		);
 
 		// Only cache successes — failures re-throw and re-check on retry.
@@ -1120,38 +1119,43 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 	}//end getCurrentUser()
 
 	/**
-	 * Creates and returns a share link for a file (or folder).
+	 * Creates and returns a share link for a file or folder.
 	 *
 	 * See https://docs.nextcloud.com/server/latest/developer_manual/client_apis/OCS/ocs-share-api.html#create-a-new-share.
 	 *
-	 * @param string $path Path (from root) to the file/folder which should be shared
-	 * @param int|null $shareType The share type (0=user, 1=group, 3=public link, 4=email, etc.)
-	 * @param int|null $permissions Permissions (1=read, 2=update, 4=create, 8=delete, 16=share, 31=all)
+	 * Takes main's ShareLinkRequest, or the separate arguments of the published contract, by name
+	 * or by position (a path in the first slot); a ShareLinkRequest wins.
+	 *
+	 * @param ShareLinkRequest|string|null $request     The path (from root), the share type (0=user, 1=group, 3=public link, 4=email,
+	 *                                                  etc.) and the permissions (1=read, 2=update, 4=create, 8=delete, 16=share, 31=all);
+	 *                                                  a string here is the release's positional `$path`.
+	 * @param int|null                     $shareType   0=user, 1=group, 3=public link, 4=email, etc.
+	 * @param int|null                     $permissions 1=read, 2=update, 4=create, 8=delete, 16=share, 31=all;
+	 *                                                  null for read on a public link and all otherwise.
+	 * @param string|null                  $path        The path from root.
 	 *
 	 * @throws Exception If creating the share link fails
 	 *
 	 * @return string The share link
 	 *
-	 * @psalm-suppress PossiblyUnusedReturnValue
-	 *
 	 * @spec exclude Public share-link creation; deferred to the file-actions FileSharingHandler follow-up pass (see file-actions tasks.md DROP list).
 	 */
-	public function createShareLink(string $path, ?int $shareType = 3, ?int $permissions = null): string {
-		return $this->createShareLinkFor(request: new ShareLinkRequest(path: $path, shareType: $shareType, permissions: $permissions));
-	}//end createShareLink()
+	public function createShareLink(
+		ShareLinkRequest|string|null $request = null,
+		?int $shareType = 3,
+		?int $permissions = null,
+		?string $path = null,
+	): string {
+		if (is_string($request) === true) {
+			$path ??= $request;
+			$request = null;
+		}
 
-	/**
-	 * Creates and returns a share link for a file or folder, as one share link request.
-	 *
-	 * @param ShareLinkRequest $request The path, share type and permissions.
-	 *
-	 * @throws Exception If creating the share link fails
-	 *
-	 * @return string The share link
-	 *
-	 * @spec exclude Public share-link creation; deferred to the file-actions FileSharingHandler follow-up pass (see file-actions tasks.md DROP list).
-	 */
-	public function createShareLinkFor(ShareLinkRequest $request): string {
+		if ($request === null && $path === null) {
+			throw new InvalidArgumentException('createShareLink() needs a path or a ShareLinkRequest.');
+		}
+
+		$request ??= new ShareLinkRequest(path: (string) $path, shareType: $shareType, permissions: $permissions);
 		$path = trim(string: $request->path, characters: '/');
 
 		try {
@@ -1198,7 +1202,7 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 			);
 			throw new Exception('Can\'t create share link.');
 		}
-	}//end createShareLinkFor()
+	}//end createShareLink()
 
 	/**
 	 * Creates a new folder in NextCloud, unless it already exists.
@@ -1221,33 +1225,6 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 	 *
 	 * Delegates to UpdateFileHandler for single-responsibility file update operations.
 	 *
-	 * @param string|int $filePath The path (from root) where to save the file,
-	 *                             including filename and extension, or file ID.
-	 * @param string|resource|null $content Optional content of the file: a byte string, or a
-	 *                                      readable stream resource (streamed straight to storage
-	 *                                      via OCP\Files\File::putContent()).
-	 *                                      If null, only metadata like tags will be updated.
-	 * @param array $tags Optional array of tags to attach to the file
-	 *                    (excluding object tags which are preserved).
-	 * @param ObjectEntity|null $object Optional object entity to search in object folder first.
-	 *
-	 * @throws Exception If the file doesn't exist or if file operations fail.
-	 *
-	 * @return File The updated file.
-	 *
-	 * @phpstan-param array<int, string> $tags
-	 * @psalm-param   array<int, string> $tags
-	 *
-	 * @spec openspec/specs/file-actions/spec.md#file-update-guards-locks-preserves-object-tags-and-persists-or-side-metadata-separately
-	 *   (updates a file's content and tags within an object's folder)
-	 */
-	public function updateFile(string|int $filePath, mixed $content = null, array $tags = [], ?ObjectEntity $object = null): File {
-		return $this->overwriteFile(overwrite: new FileOverwrite(filePath: $filePath, content: $content, tags: $tags, object: $object));
-	}//end updateFile()
-
-	/**
-	 * Overwrite an existing file in NextCloud, as one overwrite.
-	 *
 	 * @param FileOverwrite $overwrite The file, its new content, its tags and the object searched first.
 	 *
 	 * @throws Exception If the file is locked, doesn't exist or if file operations fail.
@@ -1265,41 +1242,15 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 			$this->fileLockHandler->assertCanModify($overwrite->filePath);
 		}
 
-		return $this->updateFileHandler->updateFile(
-			filePath: $overwrite->filePath,
-			content: $overwrite->content,
-			tags: $overwrite->tags,
-			object: $overwrite->object
-		);
+		return $this->updateFileHandler->updateFile(overwrite: $overwrite);
 	}//end overwriteFile()
 
 	/**
 	 * Update a file's OpenRegister-side metadata.
 	 *
 	 * Fronts `UpdateFileHandler::updateFileMetadata()` the same way this
-	 * service already fronts `updateFile()`, so the controller keeps talking to
+	 * service already fronts `overwriteFile()`, so the controller keeps talking to
 	 * one collaborator instead of reaching through this one to the handler.
-	 *
-	 * @param integer       $fileId      The Nextcloud filecache fileid.
-	 * @param string|null   $description New description; '' clears, null skips.
-	 * @param string|null   $category    New category; '' clears, null skips.
-	 * @param string[]|null $labels      New labels; [] clears, null skips.
-	 *
-	 * @return \OCA\OpenRegister\Files\Db\File The persisted metadata row.
-	 *
-	 * @spec openspec/specs/file-actions/spec.md
-	 */
-	public function updateFileMetadata(
-		int $fileId,
-		?string $description = null,
-		?string $category = null,
-		?array $labels = null,
-	): \OCA\OpenRegister\Files\Db\File {
-		return $this->changeFileMetadata(change: new FileMetadataChange(fileId: $fileId, description: $description, category: $category, labels: $labels));
-	}//end updateFileMetadata()
-
-	/**
-	 * Update a file's OpenRegister-side metadata, as one metadata change.
 	 *
 	 * @param FileMetadataChange $change The file id and the description, category and labels to write.
 	 *
@@ -1408,43 +1359,65 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 	 *
 	 * Delegates to CreateFileHandler for single-responsibility file creation operations.
 	 *
-	 * @param ObjectEntity|string $objectEntity The object entity to add the file to.
-	 * @param string $fileName The name of the file to create.
-	 * @param string|resource $content File content: a byte string, or a readable stream resource.
-	 * @param bool $share Whether to create a share link for the file.
-	 * @param array $tags Optional array of tags to attach to the file.
-	 * @param int|string|Schema|null $_schema The register of the object to add the file to.
-	 * @param int|string|Register|null $_register The register of the object to add the file to.
-	 * @param int|string|null $registerId The registerId of the object to add the file to.
+	 * Takes main's FileTarget and FileUpload, or the separate arguments of the published contract,
+	 * by name or by position (an object or id and a file name in the first two slots); value
+	 * objects win. `$_schema` and `$_register` are accepted for the published contract and not
+	 * read, as before.
+	 *
+	 * @param FileTarget|ObjectEntity|string|null $target       The object (or its id) and, when the object does not name it, its
+	 *                                                          register; an object or id here is the release's positional `$objectEntity`.
+	 * @param FileUpload|string|null              $upload       The file name, content, share toggle and tags; a string here is the
+	 *                                                          release's positional `$fileName`.
+	 * @param mixed                               $content      The file content.
+	 * @param bool                                $share        Whether to share the file.
+	 * @param array                               $tags         Tags for the file.
+	 * @param int|string|Schema|null              $_schema      Not read.
+	 * @param int|string|Register|null            $_register    Not read.
+	 * @param int|string|null                     $registerId   The register, when the object does not name it.
+	 * @param ObjectEntity|string|null            $objectEntity The object (or its id).
+	 * @param string|null                         $fileName     The file name.
 	 *
 	 * @return File The created file.
 	 *
 	 * @throws NotPermittedException If file creation fails due to permissions.
 	 * @throws Exception If file creation fails for other reasons.
 	 *
-	 * @phpstan-param array<int, string> $tags
-	 * @psalm-param   array<int, string> $tags
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flag is intentional for simple share toggle
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) $_schema and $_register stay in this fixed public signature; moved here from CreateFileHandler.
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The published contract's share flag.
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Main's value objects plus the published separate arguments.
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) $_schema and $_register are kept for the published contract.
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-29
 	 */
 	public function addFile(
-		ObjectEntity|string $objectEntity,
-		string $fileName,
-		mixed $content,
+		FileTarget|ObjectEntity|string|null $target = null,
+		FileUpload|string|null $upload = null,
+		mixed $content = null,
 		bool $share = false,
 		array $tags = [],
 		int|string|Schema|null $_schema = null,
 		int|string|Register|null $_register = null,
 		int|string|null $registerId = null,
+		ObjectEntity|string|null $objectEntity = null,
+		?string $fileName = null,
 	): File {
-		return $this->createFileHandler->addFile(
-			objectEntity: $objectEntity,
-			upload: new FileUpload(fileName: $fileName, content: $content, share: $share, tags: $tags),
-			registerId: $registerId
-		);
+		if ($target !== null && ($target instanceof FileTarget) === false) {
+			$objectEntity ??= $target;
+			$target = null;
+		}
+
+		if (is_string($upload) === true) {
+			$fileName ??= $upload;
+			$upload = null;
+		}
+
+		if (($target === null && $objectEntity === null) || ($upload === null && $fileName === null)) {
+			throw new InvalidArgumentException('addFile() needs an object and a file name, or a FileTarget and a FileUpload.');
+		}
+
+		$target ??= new FileTarget(object: $objectEntity, registerId: $registerId);
+		$upload ??= new FileUpload(fileName: (string) $fileName, content: $content, share: $share, tags: $tags);
+
+		return $this->createFileHandler->addFile(target: $target, upload: $upload);
 	}//end addFile()
 
 	/**
@@ -1452,36 +1425,47 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 	 *
 	 * Delegates to CreateFileHandler for single-responsibility upsert operations.
 	 *
-	 * @param ObjectEntity $objectEntity The object entity to save the file to.
-	 * @param string $fileName The name of the file to save.
-	 * @param string|resource $content File content: a byte string, or a readable stream resource.
-	 * @param bool $share Whether to create a share link for the file (only for new files).
-	 * @param array $tags Optional array of tags to attach to the file.
+	 * Takes main's FileUpload, or the separate arguments of the published contract, by name or by
+	 * position (a file name in the second slot); a FileUpload wins.
+	 *
+	 * @param ObjectEntity           $objectEntity The object entity to save the file to.
+	 * @param FileUpload|string|null $upload       The file name, content, share toggle (new files only) and tags; a string
+	 *                                             here is the release's positional `$fileName`.
+	 * @param mixed                  $content      The file content.
+	 * @param bool                   $share        Whether to share a new file.
+	 * @param array                  $tags         Tags for the file.
+	 * @param string|null            $fileName     The file name.
 	 *
 	 * @return File The saved file.
 	 *
 	 * @throws NotPermittedException If file operations fail due to permissions.
 	 * @throws Exception If file operations fail for other reasons.
 	 *
-	 * @phpstan-param array<int, string> $tags
-	 * @psalm-param   array<int, string> $tags
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flag is intentional for simple share toggle
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The published contract's share flag.
 	 *
 	 * @spec openspec/specs/file-actions/spec.md#file-creation-and-upsert-run-a-fixed-validate-write-own-tag-pipeline
 	 *   (creates/writes a file into an object's folder with optional tags and share toggle)
 	 */
 	public function saveFile(
 		ObjectEntity $objectEntity,
-		string $fileName,
-		mixed $content,
+		FileUpload|string|null $upload = null,
+		mixed $content = null,
 		bool $share = false,
 		array $tags = [],
+		?string $fileName = null,
 	): File {
-		return $this->createFileHandler->saveFile(
-			objectEntity: $objectEntity,
-			upload: new FileUpload(fileName: $fileName, content: $content, share: $share, tags: $tags)
-		);
+		if (is_string($upload) === true) {
+			$fileName ??= $upload;
+			$upload = null;
+		}
+
+		if ($upload === null && $fileName === null) {
+			throw new InvalidArgumentException('saveFile() needs a file name or a FileUpload.');
+		}
+
+		$upload ??= new FileUpload(fileName: (string) $fileName, content: $content, share: $share, tags: $tags);
+
+		return $this->createFileHandler->saveFile(objectEntity: $objectEntity, upload: $upload);
 	}//end saveFile()
 
 	/**
@@ -1584,7 +1568,7 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 	 *
 	 * @spec openspec/specs/file-actions/spec.md#file-retrieval-resolves-by-id-or-name-and-projects-nodes-to-metadata
 	 *   (resolves a single file node by NC file id, null on miss)
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-reading-an-objects-files-follows-the-objects-read-rule-req-ofoa-002
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function getFileById(int $fileId): ?File {
 		try {
@@ -1634,7 +1618,7 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 	 *
 	 * @return bool True when it is an object's or a register's file or folder.
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-reading-an-objects-files-follows-the-objects-read-rule-req-ofoa-002
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function isManagedFile(Node $node): bool {
 		return $this->folderManagementHandler->isManagedNode(node: $node);
@@ -1647,7 +1631,7 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 	 *
 	 * @return ObjectEntity|null The owning object.
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-reading-an-objects-files-follows-the-objects-read-rule-req-ofoa-002
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function findObjectForFile(Node $file): ?ObjectEntity {
 		return $this->folderManagementHandler->getObjectForFile(file: $file);
@@ -1681,41 +1665,12 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 		// response splitting via quotes, control chars, or non-ASCII bytes.
 		$response->addHeader(
 			'Content-Disposition',
-			$this->buildContentDisposition(disposition: 'attachment', filename: $file->getName())
+			(new ContentDisposition(disposition: 'attachment', filename: $file->getName()))->headerValue()
 		);
 		$response->addHeader('Content-Length', (string)$file->getSize());
 
 		return $response;
 	}//end streamFile()
-
-	/**
-	 * Build an RFC 6266 compliant Content-Disposition header value.
-	 *
-	 * SEC-CTRL-9: emits a sanitised ASCII `filename="..."` fallback plus a UTF-8
-	 * `filename*` parameter so a hostile or non-ASCII filename cannot split the
-	 * header or corrupt the response.
-	 *
-	 * @param string $disposition Either 'inline' or 'attachment'.
-	 * @param string $filename The raw file name.
-	 *
-	 * @return string The encoded Content-Disposition header value.
-	 */
-	private function buildContentDisposition(string $disposition, string $filename): string {
-		$clean = preg_replace('/[\x00-\x1F\x7F]/', '', $filename);
-		if ($clean === null) {
-			$clean = '';
-		}
-
-		$ascii = preg_replace('/[^\x20-\x7E]/', '_', $clean);
-		if ($ascii === null) {
-			$ascii = '';
-		}
-
-		$ascii = str_replace(['\\', '"'], '_', $ascii);
-		$encoded = rawurlencode($clean);
-
-		return $disposition . '; filename="' . $ascii . '"; filename*=UTF-8\'\'' . $encoded;
-	}//end buildContentDisposition()
 
 	/**
 	 * Publish a file by creating a public share link using direct database operations.
@@ -1839,9 +1794,7 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 	 */
 	public function replaceWords(Node $node, array $replacements, ?string $outputName = null): File {
 		return $this->documentProcessingHandler->replaceWords(
-			node: $node,
-			replacements: $replacements,
-			outputName: $outputName
+			request: new WordReplacementRequest(node: $node, replacements: $replacements, outputName: $outputName)
 		);
 	}//end replaceWords()
 
@@ -1851,34 +1804,51 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 	 * This is a convenience method that creates replacement mappings
 	 * from entity detection results and applies them to a document.
 	 *
-	 * @param Node $node The file node to anonymize.
-	 * @param array $entities Array of detected entities with 'text' and 'key' fields.
-	 * @param string $scope Placeholder-numbering scope: 'document' (default) or 'dossier'.
-	 * @param string|null $fileKey Stable folder id of the dossier (per-dossier scope); null falls
-	 *                             back to the file's parent folder.
-	 * @param bool|null $preserveStructure PDF only (REQ-ORTPR-004): tri-state structure-preservation
-	 *                                     option — null/absent = auto (preserve iff the input is a
-	 *                                     tagged PDF), true = attempt, false = skip but still measure.
+	 * Takes main's DocumentAnonymization, or the published entities, scope, file key and structure
+	 * option, by name or by position (an entity list in the second slot).
+	 *
+	 * @param Node                             $node              The file node to anonymize.
+	 * @param DocumentAnonymization|array|null $anonymization     The entities, the placeholder scope and the PDF structure option;
+	 *                                                            an array here is the release's positional `$entities`.
+	 * @param string                           $scope             The placeholder scope.
+	 * @param string|null                      $fileKey           The file key placeholders are numbered under.
+	 * @param bool|null                        $preserveStructure Whether to keep a PDF's structure.
+	 * @param array|null                       $entities          The detected entities.
 	 *
 	 * @throws Exception If anonymization fails.
 	 *
 	 * @return Node The anonymized file node.
 	 *
-	 * @spec exclude One-line delegation to DocumentProcessingHandler::anonymizeDocument; no facade-owned logic.
+	 * @spec exclude Delegation to DocumentProcessingHandler::anonymize; no facade-owned logic.
 	 */
 	public function anonymizeDocument(
 		Node $node,
-		array $entities,
+		DocumentAnonymization|array|null $anonymization = null,
 		string $scope = 'document',
 		?string $fileKey = null,
 		?bool $preserveStructure = null,
+		?array $entities = null,
 	): Node {
-		return $this->documentProcessingHandler->anonymizeDocument(
-			node: $node,
-			entities: $entities,
-			scope: $scope,
-			fileKey: $fileKey,
-			preserveStructure: $preserveStructure
+		if (is_array($anonymization) === true) {
+			$entities ??= $anonymization;
+			$anonymization = null;
+		}
+
+		if ($anonymization === null) {
+			if ($entities === null) {
+				throw new InvalidArgumentException('anonymizeDocument() needs entities or a DocumentAnonymization.');
+			}
+
+			$anonymization = new DocumentAnonymization(entities: $entities, scope: $scope, fileKey: $fileKey, preserveStructure: $preserveStructure);
+		}
+
+		$options = new DocumentAnonymisationOptions(
+			scope: $anonymization->scope,
+			fileKey: $anonymization->fileKey,
+			preserveStructure: $anonymization->preserveStructure
+		);
+		return $this->documentProcessingHandler->anonymize(
+			request: new DocumentAnonymisationRequest(node: $node, entities: $anonymization->entities, options: $options)
 		);
 	}//end anonymizeDocument()
 
@@ -1969,31 +1939,14 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 	/**
 	 * Get the file audit handler.
 	 *
-	 * @return FileAuditHandler The audit handler.
+	 * @return FileAuditHandlerInterface The audit handler.
 	 */
-	public function getAuditHandler(): FileAuditHandler {
+	public function getAuditHandler(): FileAuditHandlerInterface {
 		return $this->fileAuditHandler;
 	}//end getAuditHandler()
 
 	/**
 	 * Rename a file attached to an object.
-	 *
-	 * @param ObjectEntity $object The parent object entity.
-	 * @param int $fileId The file ID.
-	 * @param string $newName The new file name.
-	 *
-	 * @return File The renamed file.
-	 *
-	 * @throws Exception If the rename fails.
-	 *
-	 * @spec openspec/specs/file-actions/spec.md
-	 */
-	public function renameFile(ObjectEntity $object, int $fileId, string $newName): File {
-		return $this->renameAttachedFile(rename: new FileRename(object: $object, fileId: $fileId, newName: $newName));
-	}//end renameFile()
-
-	/**
-	 * Rename a file attached to an object, as one rename.
 	 *
 	 * @param FileRename $rename The object, the file id and the new name.
 	 *
@@ -2067,11 +2020,13 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 	}//end assertNameIsFree()
 
 	/**
-	 * Copy a file to another object.
+	 * Copy a file to another object, by separate arguments.
 	 *
-	 * @param ObjectEntity $sourceObject The source object entity.
-	 * @param int $fileId The source file ID.
-	 * @param ObjectEntity $targetObject The target object entity.
+	 * The published call; copyAttachedFile() takes the same as one FileTransfer.
+	 *
+	 * @param ObjectEntity $sourceObject The object the file is attached to.
+	 * @param int          $fileId       The file.
+	 * @param ObjectEntity $targetObject The object to copy it to.
 	 *
 	 * @return File The new file copy.
 	 *
@@ -2131,7 +2086,7 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 
 		// Use CreateFileHandler to create the file in target object folder.
 		$newFile = $this->createFileHandler->addFile(
-			objectEntity: $transfer->target,
+			target: new FileTarget(object: $transfer->target),
 			upload: new FileUpload(fileName: $resolvedName, content: $content, share: false)
 		);
 
@@ -2184,11 +2139,13 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 	}//end resolveCopyTargetName()
 
 	/**
-	 * Move a file to another object (copy + delete source).
+	 * Move a file to another object, by separate arguments.
 	 *
-	 * @param ObjectEntity $sourceObject The source object entity.
-	 * @param int $fileId The source file ID.
-	 * @param ObjectEntity $targetObject The target object entity.
+	 * The published call; moveAttachedFile() takes the same as one FileTransfer.
+	 *
+	 * @param ObjectEntity $sourceObject The object the file is attached to.
+	 * @param int          $fileId       The file.
+	 * @param ObjectEntity $targetObject The object to move it to.
 	 *
 	 * @return File The moved file.
 	 *
@@ -2201,7 +2158,7 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 	}//end moveFile()
 
 	/**
-	 * Move a file to another object (copy + delete source), as one transfer.
+	 * Move a file to another object (copy + delete source).
 	 *
 	 * @param FileTransfer $transfer The source object, the file id and the target object.
 	 *

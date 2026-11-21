@@ -105,7 +105,7 @@ class MultiTenancyTraitApplyActiveOrgFilterTest extends TestCase {
 			'sharedIds' => [],
 			'sharedIdColumn' => 'id',
 		];
-		$method->invoke($this->mapper, $qb, $user, $scope);
+		$method->invoke($this->mapper, $qb, $scope + ['user' => $user]);
 	}//end invokeApplyActiveOrgFilter()
 
 	/**

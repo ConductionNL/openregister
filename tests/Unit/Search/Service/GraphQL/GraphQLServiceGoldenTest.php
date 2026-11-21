@@ -54,6 +54,14 @@ use ReflectionNamedType;
  * of the collaborators below, so the pin survives regrouping them.
  *
  * @covers \OCA\OpenRegister\Search\Service\GraphQL\GraphQLService
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Search\Service\GraphQL\GraphQLAccessServices
+ * @uses \OCA\OpenRegister\Search\Service\GraphQL\GraphQLContextFactory
+ * @uses \OCA\OpenRegister\Search\Service\GraphQL\GraphQLDataServices
+ * @uses \OCA\OpenRegister\Search\Service\GraphQL\GraphQLRequest
+ * @uses \OCA\OpenRegister\Search\Service\GraphQL\GraphQLRequestGuard
+ * @uses \OCA\OpenRegister\Search\Service\GraphQL\GraphQLSchemaServices
+ * @uses \OCA\OpenRegister\Service\Object\PermissionCheckOptions
  */
 class GraphQLServiceGoldenTest extends TestCase {
 
@@ -158,6 +166,11 @@ class GraphQLServiceGoldenTest extends TestCase {
 			IUserSession::class              => $session,
 			LoggerInterface::class           => $logger,
 		];
+		$this->deps[\OCA\OpenRegister\Db\SchemaCatalogInterface::class] = new \OCA\OpenRegister\Db\SchemaCatalog(
+			registers: $this->deps[RegisterMapperInterface::class],
+			schemas: $this->deps[SchemaMapperInterface::class],
+			tables: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class)
+		);
 
 		// High enough that an APCu-enabled build never reaches the limit.
 		$this->config = ['graphql_rate_limit' => '100000'];

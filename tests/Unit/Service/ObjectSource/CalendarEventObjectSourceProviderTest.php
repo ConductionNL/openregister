@@ -28,9 +28,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ObjectSource;
 
+use OCA\OpenRegister\Db\RegisterSchema;
+use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\CalendarEventService;
+use OCA\OpenRegister\Kernel\Contracts\Core\UserCalendarEventsInterface;
 use OCA\OpenRegister\Service\ObjectSource\CalendarEventObjectSourceProvider;
 use OCP\App\IAppManager;
 use PHPUnit\Framework\TestCase;
@@ -49,7 +51,7 @@ class CalendarEventObjectSourceProviderTest extends TestCase {
 	 * @return CalendarEventObjectSourceProvider The provider under test.
 	 */
 	private function provider(array $events, bool $appsThere = true): CalendarEventObjectSourceProvider {
-		$service = $this->createMock(CalendarEventService::class);
+		$service = $this->createMock(UserCalendarEventsInterface::class);
 		$service->method('getAllUserEvents')->willReturn(['results' => $events, 'total' => count($events)]);
 
 		$appManager = $this->createMock(IAppManager::class);
@@ -124,7 +126,7 @@ class CalendarEventObjectSourceProviderTest extends TestCase {
 	public function testFindAllMapsEvents(): void {
 		[$register, $schema] = $this->binding();
 
-		$objects = $this->provider($this->events())->findAll($register, $schema);
+		$objects = $this->provider($this->events())->findAll(new SourcedTable(new RegisterSchema($register, $schema)));
 
 		$this->assertCount(2, $objects);
 		$first = $objects[0]->getObject();
@@ -146,8 +148,8 @@ class CalendarEventObjectSourceProviderTest extends TestCase {
 		[$register, $schema] = $this->binding();
 		$provider = $this->provider($this->events());
 
-		$this->assertSame('Retro', $provider->find($register, $schema, 'event-2')?->getObject()['summary']);
-		$this->assertNull($provider->find($register, $schema, 'ghost'));
+		$this->assertSame('Retro', $provider->find(new SourcedTable(new RegisterSchema($register, $schema)), 'event-2')?->getObject()['summary']);
+		$this->assertNull($provider->find(new SourcedTable(new RegisterSchema($register, $schema)), 'ghost'));
 	}//end testFindByUid()
 
 	/**
@@ -157,6 +159,6 @@ class CalendarEventObjectSourceProviderTest extends TestCase {
 	 */
 	public function testCount(): void {
 		[$register, $schema] = $this->binding();
-		$this->assertSame(2, $this->provider($this->events())->count($register, $schema));
+		$this->assertSame(2, $this->provider($this->events())->count(new SourcedTable(new RegisterSchema($register, $schema))));
 	}//end testCount()
 }//end class

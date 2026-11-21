@@ -265,8 +265,8 @@ class ObjectEventProxyListenerGoldenTest extends TestCase {
 		$this->assertSame([['schema', ['Person', 'other']], ['register', ['main']]], $this->slugQueries);
 		$this->assertSame(
 			[
-				['s:' . md5('Person,other'), json_encode(['person' => ['9'], 'other' => ['3']]), 60],
-				['r:' . md5('main'), json_encode(['main' => ['7']]), 60],
+				['s:' . hash(algo: 'xxh128', data: 'Person,other'), json_encode(['person' => ['9'], 'other' => ['3']]), 60],
+				['r:' . hash(algo: 'xxh128', data: 'main'), json_encode(['main' => ['7']]), 60],
 			],
 			$this->cacheWrites
 		);

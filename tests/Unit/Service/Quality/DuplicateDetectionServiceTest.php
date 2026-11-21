@@ -16,6 +16,7 @@ use OCA\OpenRegister\Search\Service\Quality\SimilarityCalculator;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Search\Service\Quality\DedupRun;
 
 class DuplicateDetectionServiceTest extends TestCase {
 	/** @var ObjectService&MockObject */
@@ -47,7 +48,8 @@ class DuplicateDetectionServiceTest extends TestCase {
 			$this->objectService,
 			new \OCA\OpenRegister\Search\Service\Quality\DedupScoringSources(new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class)), new SimilarityCalculator()),
 			$this->dismissals,
-			$this->createMock(LoggerInterface::class)
+			$this->createMock(LoggerInterface::class),
+			$this->createMock(\OCA\OpenRegister\Search\Service\Quality\TextGroupFinder::class)
 		);
 	}
 
@@ -100,7 +102,7 @@ class DuplicateDetectionServiceTest extends TestCase {
 			['field' => 'name', 'method' => 'normalized', 'weight' => 0.5],
 		];
 
-		$pairs = $this->service->findDuplicates(1, 1, $rules, 0.85);
+		$pairs = $this->service->findDuplicates(request: new DedupRun(register: 1, schema: 1, matchRules: $rules, threshold: 0.85));
 
 		$this->assertCount(1, $pairs);
 		$this->assertSame(1.0, $pairs[0]['score']);
@@ -122,13 +124,13 @@ class DuplicateDetectionServiceTest extends TestCase {
 			['field' => 'name', 'method' => 'normalized'],
 		];
 
-		$this->assertSame([], $this->service->findDuplicates(1, 1, $rules, 0.85));
+		$this->assertSame([], $this->service->findDuplicates(request: new DedupRun(register: 1, schema: 1, matchRules: $rules, threshold: 0.85)));
 	}
 
 	public function testEmptyWhenFewerThanTwoObjects(): void {
 		$this->objectService->method('findAll')->willReturn([$this->makeObject('a', ['name' => 'x'])]);
 		$rules = [['field' => 'name', 'method' => 'exact']];
-		$this->assertSame([], $this->service->findDuplicates(1, 1, $rules, 0.85));
+		$this->assertSame([], $this->service->findDuplicates(request: new DedupRun(register: 1, schema: 1, matchRules: $rules, threshold: 0.85)));
 	}
 
 	public function testRulesFromAnnotationWhenNoneSupplied(): void {
@@ -149,7 +151,7 @@ class DuplicateDetectionServiceTest extends TestCase {
 		$this->stubScopedSchema($schema);
 
 		// No caller rules — service must fall back to annotation rules.
-		$pairs = $this->service->findDuplicates(1, 1, null);
+		$pairs = $this->service->findDuplicates(request: new DedupRun(register: 1, schema: 1, matchRules: null));
 
 		$this->assertCount(1, $pairs);
 		$this->assertSame(1.0, $pairs[0]['score']);
@@ -172,7 +174,7 @@ class DuplicateDetectionServiceTest extends TestCase {
 		]);
 		$this->stubScopedSchema($schema);
 
-		$this->assertSame([], $this->service->findDuplicates(1, 1, null));
+		$this->assertSame([], $this->service->findDuplicates(request: new DedupRun(register: 1, schema: 1, matchRules: null)));
 	}
 
 	public function testNoRulesAnywhereReturnsEmpty(): void {
@@ -180,7 +182,7 @@ class DuplicateDetectionServiceTest extends TestCase {
 		$schema->method('getConfiguration')->willReturn([]);
 		$this->stubScopedSchema($schema);
 
-		$this->assertSame([], $this->service->findDuplicates(1, 1, null));
+		$this->assertSame([], $this->service->findDuplicates(request: new DedupRun(register: 1, schema: 1, matchRules: null)));
 	}
 
 	public function testNestedDotPathMatchRuleFindsDuplicate(): void {
@@ -202,7 +204,7 @@ class DuplicateDetectionServiceTest extends TestCase {
 			['field' => 'goldenRecord.name', 'method' => 'normalized', 'weight' => 0.5],
 		];
 
-		$pairs = $this->service->findDuplicates(1, 1, $rules, 0.85);
+		$pairs = $this->service->findDuplicates(request: new DedupRun(register: 1, schema: 1, matchRules: $rules, threshold: 0.85));
 
 		$this->assertCount(1, $pairs);
 		$this->assertSame(1.0, $pairs[0]['score']);
@@ -227,7 +229,7 @@ class DuplicateDetectionServiceTest extends TestCase {
 		]);
 		$this->stubScopedSchema($schema);
 
-		$this->assertSame([], $this->service->findDuplicates(1, 1, null));
+		$this->assertSame([], $this->service->findDuplicates(request: new DedupRun(register: 1, schema: 1, matchRules: null)));
 	}
 
 	public function testMissingNestedSegmentResolvesToNullWithoutThrowing(): void {
@@ -243,7 +245,7 @@ class DuplicateDetectionServiceTest extends TestCase {
 			['field' => 'goldenRecord.email', 'method' => 'exact', 'weight' => 1],
 		];
 
-		$pairs = $this->service->findDuplicates(1, 1, $rules, 0.85);
+		$pairs = $this->service->findDuplicates(request: new DedupRun(register: 1, schema: 1, matchRules: $rules, threshold: 0.85));
 
 		$this->assertSame([], $pairs);
 	}
@@ -269,7 +271,7 @@ class DuplicateDetectionServiceTest extends TestCase {
 		]);
 		$this->stubScopedSchema($schema);
 
-		$pairs = $this->service->findDuplicates(1, 1, null);
+		$pairs = $this->service->findDuplicates(request: new DedupRun(register: 1, schema: 1, matchRules: null));
 
 		$this->assertCount(1, $pairs);
 		$this->assertSame(1.0, $pairs[0]['score']);

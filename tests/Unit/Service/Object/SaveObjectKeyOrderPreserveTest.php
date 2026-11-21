@@ -17,6 +17,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\SaveObject\UpdatePreparation;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectPayload;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -76,10 +78,8 @@ class SaveObjectKeyOrderPreserveTest extends TestCase {
 			services: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices(
 				persistence: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence(
 					mappers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers(
-						objectEntityMapper: $this->createMock(MagicMapper::class),
-						unifiedObjectMapper: $this->createMock(MagicMapper::class),
-						schemaMapper: $this->schemaMapper,
-						registerMapper: $this->createMock(RegisterMapper::class)
+						catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->schemaMapper, tables: $this->createMock(MagicMapper::class)),
+						unifiedObjectMapper: $this->createMock(MagicMapper::class)
 					),
 					records: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords(
 						auditTrailMapper: $this->createMock(AuditTrailMapper::class),
@@ -158,10 +158,15 @@ class SaveObjectKeyOrderPreserveTest extends TestCase {
 		$method = new ReflectionMethod(SaveObject::class, 'prepareObjectForUpdate');
 		$method->setAccessible(true);
 
+		$preparation = new UpdatePreparation(
+			existingObject: $existing,
+			schema: $schema,
+			payload: new ObjectPayload(data: $data, selfData: [])
+		);
 		/** @var ObjectEntity $prepared */
 		$prepared = $method->invokeArgs(
 			$this->handler,
-			[$existing, $schema, new \OCA\OpenRegister\Service\Object\SaveObject\ObjectPayload($data, []), null]
+			[$preparation]
 		);
 
 		return $prepared->getObject();

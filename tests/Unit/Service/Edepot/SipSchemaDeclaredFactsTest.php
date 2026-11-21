@@ -36,6 +36,7 @@ use OCP\ITempManager;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use ZipArchive;
+use OCA\OpenRegister\Service\Edepot\TransferPackageRequest;
 
 /**
  * A fact a SCHEMA declares must reach the document inside the SIP.
@@ -170,7 +171,7 @@ class SipSchemaDeclaredFactsTest extends TestCase {
 			new NullLogger()
 		);
 
-		$result = $builder->build('transfer-facts', [['object' => $this->object(), 'files' => []]], 0, 'zip');
+		$result = $builder->package(new TransferPackageRequest('transfer-facts', [['object' => $this->object(), 'files' => []]], 0, 'zip'));
 
 		$zip = new ZipArchive();
 		$this->assertTrue(condition: $zip->open($result[0]) === true, message: 'The SIP could not be opened');

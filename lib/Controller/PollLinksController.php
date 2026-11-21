@@ -30,13 +30,13 @@ namespace OCA\OpenRegister\Controller;
 use DateTime;
 use Closure;
 use Exception;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\PollLinksControllerServices;
 use OCA\OpenRegister\Controller\Trait\ObjectLinkActionsTrait;
 use OCA\OpenRegister\Controller\Support\LinkedSourceActions;
 use OCA\OpenRegister\Controller\Support\LinkedSourceResponses;
 use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\PollLinkServiceInterface;
@@ -79,7 +79,7 @@ class PollLinksController extends Controller {
 		IRequest $request,
 		PollLinksControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->pollLinkService = $services->pollLinkService;
 		$this->objectService = $services->objectService;
 	}//end __construct()
@@ -130,7 +130,6 @@ class PollLinksController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
@@ -149,8 +148,7 @@ class PollLinksController extends Controller {
 		return $this->whenPollsInstalled(
 			answer: fn (): JSONResponse => $this->onLinkedObject(
 				route: new ObjectLinkRoute(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id),
-				action: LinkedSourceActions::linkById(
-					request: $this->request,
+				action: (new LinkedSourceActions(request: $this->request))->linkById(
 					param: 'pollId',
 					link: fn (ObjectEntity $object, int $pollId) => $this->pollLinkService->linkPoll($this->linkTargetOf(object: $object), $pollId)
 				)
@@ -171,7 +169,6 @@ class PollLinksController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
@@ -206,7 +203,6 @@ class PollLinksController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */

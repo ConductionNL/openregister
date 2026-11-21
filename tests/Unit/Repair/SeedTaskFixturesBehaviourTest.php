@@ -26,9 +26,12 @@ use OCA\OpenRegister\Db\TaskAuditMapperInterface;
 use OCA\OpenRegister\Db\TaskCandidateMapperInterface;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Repair\SeedTaskFixtures;
-use OCA\OpenRegister\Repair\TaskFixtureMappers;
+use OCA\OpenRegister\Db\TaskSequenceMapperInterface;
+use OCA\OpenRegister\Repair\Support\ApprovalTaskStores;
+use OCA\OpenRegister\Repair\Support\RepairPlatform;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IAppConfig;
+use OCP\IDBConnection;
 use OCP\Migration\IOutput;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -36,7 +39,8 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Repair\SeedTaskFixtures
- * @uses   \OCA\OpenRegister\Repair\TaskFixtureMappers
+ * @uses   \OCA\OpenRegister\Repair\Support\ApprovalTaskStores
+ * @uses   \OCA\OpenRegister\Repair\Support\RepairPlatform
  * @uses   \OCA\OpenRegister\Db\Task
  * @uses   \OCA\OpenRegister\Db\TaskAudit
  */
@@ -65,7 +69,10 @@ final class SeedTaskFixturesBehaviourTest extends TestCase {
 	private function step(bool $enabled = true): SeedTaskFixtures {
 		$config = $this->createMock(IAppConfig::class);
 		$config->method('getValueBool')->with('openregister', SeedTaskFixtures::FLAG, false)->willReturn($enabled);
-		return new SeedTaskFixtures($config, new TaskFixtureMappers($this->tasks, $this->candidates, $this->audits), $this->logger);
+		return new SeedTaskFixtures(
+			new RepairPlatform($this->createMock(IDBConnection::class), $config, $this->logger),
+			new ApprovalTaskStores($this->tasks, $this->candidates, $this->audits, $this->createMock(TaskSequenceMapperInterface::class))
+		);
 	}
 
 	public function testDisabledFlagSkipsWithoutReadingTheTable(): void {

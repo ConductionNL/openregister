@@ -48,6 +48,14 @@ use Throwable;
 
 /**
  * @covers \OCA\OpenRegister\Files\Service\TextExtraction\ObjectHandler
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\ObjectTextPath
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionObjects
+ * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\ObjectTextPath
+ * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionObjects
  */
 class ObjectHandlerGoldenTest extends TestCase {
 
@@ -227,7 +235,7 @@ class ObjectHandlerGoldenTest extends TestCase {
 			return $handler->getSourceType();
 		}
 
-		return $handler->extractText(11, ['ignored' => true], false);
+		return $handler->extractText(11, ['ignored' => true]);
 	}//end invoke()
 
 	/**

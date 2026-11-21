@@ -119,7 +119,7 @@ final class FlowRunStart {
 	 *
 	 * @return self This start, or a copy that starts at the node.
 	 *
-	 * @spec openspec/changes/or-flow-partial-run/specs/flow-partial-run/spec.md
+	 * @spec openspec/specs/flow-partial-run/spec.md
 	 */
 	public function startingAt(?string $node): self {
 		if (($node ?? '') === '') {
@@ -182,7 +182,7 @@ final class FlowRunStart {
 	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-independent-branches-of-one-run-must-advance-independently
 	 */
 	public function streamPass(Workflow $workflow, FlowStreamWalk $streams): FlowStreamPass {
-		$pass = new FlowStreamPass(start: $this, workflow: $workflow, streams: $streams);
+		$pass = new FlowStreamPass(start: $this->withStreams(streams: $streams), workflow: $workflow);
 		$pass->items = $this->items;
 		$pass->placeItems = $this->placeItems;
 

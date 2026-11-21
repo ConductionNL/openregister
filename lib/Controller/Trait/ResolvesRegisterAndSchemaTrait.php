@@ -58,24 +58,6 @@ use OCP\AppFramework\Db\DoesNotExistException;
  */
 trait ResolvesRegisterAndSchemaTrait {
 	/**
-	 * Resolve a register/schema path pair to numeric ids.
-	 *
-	 * @param string        $register      Register slug, uuid or numeric id.
-	 * @param string        $schema        Schema slug, uuid or numeric id.
-	 * @param ObjectOperationsInterface $objectService The request's object service.
-	 *
-	 * @return array{register: mixed, schema: mixed, registerEntity: mixed, schemaEntity: mixed}
-	 *
-	 * @throws RegisterNotFoundException When the register itself does not resolve.
-	 * @throws SchemaNotFoundException   When the schema does not resolve in it.
-	 *
-	 * @spec openspec/specs/register-scoped-slug-resolution/spec.md
-	 */
-	protected function resolveRegisterAndSchema(string $register, string $schema, ObjectOperationsInterface $objectService): array {
-		return $this->resolveRegisterSchemaRef(ref: new RegisterSchemaRef(register: $register, schema: $schema), objectService: $objectService);
-	}//end resolveRegisterAndSchema()
-
-	/**
 	 * Resolve a register/schema path pair, given as one reference, to numeric ids.
 	 *
 	 * @param RegisterSchemaRef         $ref           The register and schema slugs, uuids or numeric ids from the path.

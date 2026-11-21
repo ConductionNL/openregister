@@ -38,6 +38,7 @@ namespace OCA\OpenRegister\Db;
 use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Kernel\Contracts\EntityEventsInterface;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -68,6 +69,25 @@ use OCP\IDBConnection;
  * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
  */
 class TaskMapper extends QBMapper {
+
+	/**
+	 * The inbox's equality filters, in the order their predicates are added:
+	 * criteria property => [column, parameter type].
+	 *
+	 * @var array<string, array{0: string, 1: int|string}>
+	 */
+	/**
+	 * Most words of a search term that become predicates.
+	 */
+	public const MAX_TERM_WORDS = 8;
+
+	private const EQUALITY_FILTERS = [
+		'isTerminal' => ['is_terminal', IQueryBuilder::PARAM_BOOL],
+		'priority' => ['priority', IQueryBuilder::PARAM_STR],
+		'kind' => ['kind', IQueryBuilder::PARAM_STR],
+		'objectUuid' => ['object_uuid', IQueryBuilder::PARAM_STR],
+		'runUuid' => ['run_uuid', IQueryBuilder::PARAM_STR],
+	];
 
 	/**
 	 * Constructor.
@@ -145,7 +165,7 @@ class TaskMapper extends QBMapper {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
 	 */
 	private function announceTerminality(Task $task): void {
 		if ($this->entityEvents === null || $task->isInTerminalState() === false) {
@@ -523,19 +543,18 @@ class TaskMapper extends QBMapper {
 	 * One page of the inbox, filtered, sorted and paginated IN the datastore.
 	 *
 	 * @param TaskInboxCriteria $criteria What to list, for whom.
-	 * @param int $limit Page size.
-	 * @param int $offset Page offset.
+	 * @param ListQuery         $page     The page size and offset (25 from the start when omitted).
 	 *
 	 * @return array<int, Task> The page.
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
 	 */
-	public function findInbox(TaskInboxCriteria $criteria, int $limit = 25, int $offset = 0): array {
+	public function findInbox(TaskInboxCriteria $criteria, ListQuery $page = new ListQuery(limit: 25, offset: 0)): array {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')->from($this->getTableName());
 		$this->applyInboxPredicates(qb: $qb, criteria: $criteria);
 		$this->applyInboxOrder(qb: $qb, criteria: $criteria);
-		$qb->setMaxResults($limit)->setFirstResult($offset);
+		$qb->setMaxResults($page->limit)->setFirstResult($page->offset ?? 0);
 
 		return $this->findEntities(query: $qb);
 	}//end findInbox()
@@ -558,15 +577,7 @@ class TaskMapper extends QBMapper {
 		$qb->selectAlias($qb->func()->count('id'), 'total')->from($this->getTableName());
 		$this->applyInboxPredicates(qb: $qb, criteria: $criteria);
 
-		$result = $qb->executeQuery();
-		$row = $result->fetch();
-		$result->closeCursor();
-
-		if ($row === false) {
-			return 0;
-		}
-
-		return (int)$row['total'];
+		return $this->totalOf(qb: $qb);
 	}//end countInbox()
 
 	/**
@@ -614,8 +625,8 @@ class TaskMapper extends QBMapper {
 	 *
 	 * @spec openspec/changes/a-task-may-wait-on-another-task/specs/flow-tasks/spec.md#requirement-a-task-may-wait-on-another-task-and-waits-out-of-sight
 	 */
-	private function applyBlockedExclusion(IQueryBuilder $qb, ?TaskInboxCriteria $criteria = null): void {
-		if ($criteria !== null && ($criteria->includeBlocked === true || $criteria->objectUuid !== null || $criteria->runUuid !== null)) {
+	private function applyBlockedExclusion(IQueryBuilder $qb, TaskInboxCriteria|null $criteria = null): void {
+		if ($criteria !== null && $this->keepsBlockedTasks(criteria: $criteria) === true) {
 			return;
 		}
 
@@ -632,6 +643,20 @@ class TaskMapper extends QBMapper {
 			)
 		);
 	}//end applyBlockedExclusion()
+
+	/**
+	 * Whether a read keeps blocked tasks: it asked for them, or it is anchored
+	 * to an object or a run.
+	 *
+	 * @param TaskInboxCriteria $criteria Carries the anchors and `includeBlocked`.
+	 *
+	 * @return bool True when the blocker exclusion stands aside.
+	 *
+	 * @spec openspec/changes/a-task-may-wait-on-another-task/specs/flow-tasks/spec.md#requirement-a-task-may-wait-on-another-task-and-waits-out-of-sight
+	 */
+	private function keepsBlockedTasks(TaskInboxCriteria $criteria): bool {
+		return $criteria->includeBlocked === true || $criteria->objectUuid !== null || $criteria->runUuid !== null;
+	}//end keepsBlockedTasks()
 
 	/**
 	 * An EXTERNAL task is in nobody's Nextcloud inbox and in nobody's total.
@@ -677,20 +702,19 @@ class TaskMapper extends QBMapper {
 	 * so a page and its count (see {@see countOpenExternalForParty()}) agree
 	 * by construction and no other subject's row is ever fetched.
 	 *
-	 * @param string $partyReference The stored party reference (`party:<ref>`).
-	 * @param int $limit Page size.
-	 * @param int $offset Page offset.
+	 * @param string    $partyReference The stored party reference (`party:<ref>`).
+	 * @param ListQuery $page           The page size and offset (25 from the start when omitted).
 	 *
 	 * @return array<int, Task> The page.
 	 *
 	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-delivery-rides-the-portal-contribution-surface-and-nothing-else
 	 */
-	public function findOpenExternalForParty(string $partyReference, int $limit = 25, int $offset = 0): array {
+	public function findOpenExternalForParty(string $partyReference, ListQuery $page = new ListQuery(limit: 25, offset: 0)): array {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')->from($this->getTableName());
 		$this->applyPartyPredicates(qb: $qb, partyReference: $partyReference);
 		$qb->orderBy('created', 'ASC')->addOrderBy('id', 'ASC');
-		$qb->setMaxResults($limit)->setFirstResult($offset);
+		$qb->setMaxResults($page->limit)->setFirstResult($page->offset ?? 0);
 
 		return $this->findEntities(query: $qb);
 	}//end findOpenExternalForParty()
@@ -709,6 +733,17 @@ class TaskMapper extends QBMapper {
 		$qb->selectAlias($qb->func()->count('id'), 'total')->from($this->getTableName());
 		$this->applyPartyPredicates(qb: $qb, partyReference: $partyReference);
 
+		return $this->totalOf(qb: $qb);
+	}//end countOpenExternalForParty()
+
+	/**
+	 * Run a count query and read its `total`, 0 when it returns no row.
+	 *
+	 * @param IQueryBuilder $qb The count query.
+	 *
+	 * @return int The total.
+	 */
+	private function totalOf(IQueryBuilder $qb): int {
 		$result = $qb->executeQuery();
 		$row = $result->fetch();
 		$result->closeCursor();
@@ -718,7 +753,7 @@ class TaskMapper extends QBMapper {
 		}
 
 		return (int)$row['total'];
-	}//end countOpenExternalForParty()
+	}//end totalOf()
 
 	/**
 	 * The portal seam's predicate: this party's, external, still open, and not held back by an open blocker.
@@ -852,32 +887,84 @@ class TaskMapper extends QBMapper {
 			$qb->andWhere($qb->expr()->in('state', $qb->createNamedParameter($criteria->states, IQueryBuilder::PARAM_STR_ARRAY)));
 		}
 
-		if ($criteria->isTerminal !== null) {
-			$qb->andWhere($qb->expr()->eq('is_terminal', $qb->createNamedParameter($criteria->isTerminal, IQueryBuilder::PARAM_BOOL)));
-		}
-
-		if ($criteria->priority !== null) {
-			$qb->andWhere($qb->expr()->eq('priority', $qb->createNamedParameter($criteria->priority)));
-		}
-
-		if ($criteria->kind !== null) {
-			$qb->andWhere($qb->expr()->eq('kind', $qb->createNamedParameter($criteria->kind)));
-		}
-
-		if ($criteria->objectUuid !== null) {
-			$qb->andWhere($qb->expr()->eq('object_uuid', $qb->createNamedParameter($criteria->objectUuid)));
-		}
-
-		if ($criteria->runUuid !== null) {
-			$qb->andWhere($qb->expr()->eq('run_uuid', $qb->createNamedParameter($criteria->runUuid)));
-		}
+		$this->applyEqualityFilters(qb: $qb, criteria: $criteria);
 
 		if ($criteria->overdueAt !== null) {
 			$this->applyOverdue(qb: $qb, now: $criteria->overdueAt);
 		}
 
 		$this->applyDueWindow(qb: $qb, criteria: $criteria);
+		$this->applyTerm(qb: $qb, term: $criteria->term);
 	}//end applyFilters()
+
+	/**
+	 * The text filter: every word of the term in the title or the description,
+	 * case insensitively, in the WHERE clause like every other filter.
+	 *
+	 * Word by word, so "terugbellen jansen" finds "Terugbellen mevrouw Jansen".
+	 * Accents fold where the column's collation folds them (MariaDB and MySQL
+	 * by default); the shared folding helper of `search-accent-insensitive`
+	 * takes over here once it exists.
+	 *
+	 * @param IQueryBuilder $qb   The query under construction.
+	 * @param string|null   $term The term, or null for none.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-task-search-provider/tasks.md#task-1.1
+	 */
+	private function applyTerm(IQueryBuilder $qb, ?string $term): void {
+		foreach (self::termWords(term: $term) as $word) {
+			$pattern = '%' . $this->db->escapeLikeParameter($word) . '%';
+			$qb->andWhere(
+				$qb->expr()->orX(
+					$qb->expr()->iLike('title', $qb->createNamedParameter($pattern)),
+					$qb->expr()->iLike('description', $qb->createNamedParameter($pattern))
+				)
+			);
+		}
+	}//end applyTerm()
+
+	/**
+	 * The distinct words of a term, at most MAX_TERM_WORDS of them.
+	 *
+	 * @param string|null $term The term.
+	 *
+	 * @return array<int, string>
+	 *
+	 * @spec openspec/changes/flow-task-search-provider/tasks.md#task-1.1
+	 */
+	public static function termWords(?string $term): array {
+		$words = preg_split('/\s+/u', trim((string) $term), -1, PREG_SPLIT_NO_EMPTY);
+		if ($words === false) {
+			return [];
+		}
+
+		$unique = array_values(array_unique(array_map(static fn (string $w): string => mb_strtolower($w), $words)));
+
+		return array_slice($unique, 0, self::MAX_TERM_WORDS);
+	}//end termWords()
+
+	/**
+	 * One `column = :value` predicate per set equality filter, in EQUALITY_FILTERS order.
+	 *
+	 * @param IQueryBuilder $qb The query under construction.
+	 * @param TaskInboxCriteria $criteria Carries the filters.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+	 */
+	private function applyEqualityFilters(IQueryBuilder $qb, TaskInboxCriteria $criteria): void {
+		foreach (self::EQUALITY_FILTERS as $property => [$column, $type]) {
+			$value = $criteria->$property;
+			if ($value === null) {
+				continue;
+			}
+
+			$qb->andWhere($qb->expr()->eq($column, $qb->createNamedParameter($value, $type)));
+		}
+	}//end applyEqualityFilters()
 
 	/**
 	 * Derived overdue as a predicate: the SAME comparison
@@ -932,15 +1019,7 @@ class TaskMapper extends QBMapper {
 		$qb->andWhere($qb->expr()->eq('is_terminal', $qb->createNamedParameter(false, IQueryBuilder::PARAM_BOOL)));
 		$this->applyOverdue(qb: $qb, now: $now);
 
-		$result = $qb->executeQuery();
-		$row = $result->fetch();
-		$result->closeCursor();
-
-		if ($row === false) {
-			return 0;
-		}
-
-		return (int)$row['total'];
+		return $this->totalOf(qb: $qb);
 	}//end countOverdueOpen()
 
 	/**

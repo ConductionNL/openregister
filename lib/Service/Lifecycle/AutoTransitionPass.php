@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Lifecycle;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Core\SaveBoundaryInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use Psr\Log\LoggerInterface;
 
@@ -69,7 +70,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/object-lifecycle/spec.md
  */
-class AutoTransitionPass implements AutoTransitionPassInterface {
+class AutoTransitionPass implements AutoTransitionPassInterface, SaveBoundaryInterface {
 
 	/**
 	 * The most automatic moves one object may make in one pass.
@@ -257,21 +258,6 @@ class AutoTransitionPass implements AutoTransitionPassInterface {
 	public function preferAutomatic(ObjectEntity $saved, array $applied): ObjectEntity {
 		return ($applied[(string)$saved->getUuid()] ?? $saved);
 	}//end preferAutomatic()
-
-	/**
-	 * Continue a pass that was carried into a background job.
-	 *
-	 * @param string $uuid The object whose lineage is being restored.
-	 * @param int $moves How many automatic moves the pass had already made.
-	 * @param array<int, string> $visited The states the object has occupied in this pass.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	public function resume(string $uuid, int $moves, array $visited): void {
-		$this->resumeLineage(uuid: $uuid, lineage: new CarriedLineage(moves: $moves, visited: $visited));
-	}//end resume()
 
 	/**
 	 * Continue a pass that was carried into a background job, from the lineage it carried.

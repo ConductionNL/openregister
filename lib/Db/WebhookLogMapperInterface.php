@@ -23,15 +23,18 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\Search\WebhookLogStatisticsInterface;
 use OCP\AppFramework\Db\Entity;
 
 /**
  * The methods of WebhookLogMapper that callers outside the Db component use.
  *
  * Callers type against this interface and resolve it from the container; the
- * registrar binds it to WebhookLogMapper.
+ * registrar binds it to WebhookLogMapper. getStatistics() is declared on the
+ * Search contract this interface extends.
  */
-interface WebhookLogMapperInterface {
+interface WebhookLogMapperInterface extends WebhookLogStatisticsInterface {
 
 	/**
 	 * Find a webhook log by ID
@@ -61,14 +64,13 @@ interface WebhookLogMapperInterface {
 	 * Find logs for a specific webhook
 	 *
 	 * @param int $webhookId Webhook ID
-	 * @param int|null $limit Limit results
-	 * @param int|null $offset Offset results
+	 * @param ListQuery $page The page (limit, offset); unbounded by default. Other fields are ignored.
 	 *
 	 * @return WebhookLog[]
 	 *
 	 * @psalm-return list<\OCA\OpenRegister\Db\WebhookLog>
 	 */
-	public function findByWebhook(int $webhookId, ?int $limit = null, ?int $offset = null): array;
+	public function findByWebhook(int $webhookId, ListQuery $page=new ListQuery(limit: ListQuery::UNBOUNDED)): array;
 
 	/**
 	 * Find failed logs that need retry
@@ -82,15 +84,13 @@ interface WebhookLogMapperInterface {
 	public function findFailedForRetry(DateTime $before): array;
 
 	/**
-	 * Get statistics for a webhook
+	 * How many failed deliveries are waiting for a retry that is not yet due.
 	 *
-	 * @param int $webhookId Webhook ID (0 for all webhooks)
+	 * @param DateTime $now The clock instant.
 	 *
-	 * @return int[] Statistics
-	 *
-	 * @psalm-return array{total: int, successful: int, failed: int}
+	 * @return int The count.
 	 */
-	public function getStatistics(int $webhookId): array;
+	public function countPendingRetries(DateTime $now): int;
 
 	/**
 	 * Insert a new webhook log

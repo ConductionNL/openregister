@@ -109,28 +109,6 @@ final class RegisterResolverService implements RegisterResolverServiceInterface 
 	}//end __construct()
 
 	/**
-	 * Read the configured slug/UUID for a register from app config.
-	 *
-	 * Honours the documented naming convention (`<context>_register`
-	 * preferred; bare `register` grandfathered).
-	 *
-	 * @param string $appId Consumer app id.
-	 * @param string $configKey Config key to read.
-	 * @param string|null $default Fallback value if config unset.
-	 * @param string|null $organisationUuid Optional org override (unused here, kept for signature parity).
-	 *
-	 * @return string The configured slug or UUID.
-	 *
-	 * @throws MissingConfigException If the config is unset and no default was provided.
-	 *
-	 * @spec openspec/specs/register-resolver-service/spec.md
-	 *   (Requirement: resolveRegisterId)
-	 */
-	public function resolveRegisterId(string $appId, string $configKey, ?string $default = null, ?string $organisationUuid = null): string {
-		return $this->lookupId(lookup: new ConfigLookup(appId: $appId, configKey: $configKey, default: $default, organisationUuid: $organisationUuid));
-	}//end resolveRegisterId()
-
-	/**
 	 * Read the configured slug/UUID/name of a lookup from app config.
 	 *
 	 * @param ConfigLookup $lookup The app, config key and fallback to read.
@@ -167,76 +145,6 @@ final class RegisterResolverService implements RegisterResolverServiceInterface 
 
 		throw new MissingConfigException(appId: $lookup->appId, configKey: $lookup->configKey);
 	}//end defaultOrThrow()
-
-	/**
-	 * Read the configured slug/UUID for a schema from app config.
-	 *
-	 * @param string $appId Consumer app id.
-	 * @param string $configKey Config key to read.
-	 * @param string|null $default Fallback value if config unset.
-	 * @param string|null $organisationUuid Optional org override (unused here, kept for signature parity).
-	 *
-	 * @return string The configured slug or UUID.
-	 *
-	 * @throws MissingConfigException If the config is unset and no default was provided.
-	 *
-	 * @spec openspec/specs/register-resolver-service/spec.md
-	 *   (Requirement: resolveSchemaId)
-	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The organisationUuid parameter is reserved for
-	 * signature parity with resolveSchema; pure id reads never need it.
-	 */
-	public function resolveSchemaId(string $appId, string $configKey, ?string $default = null, ?string $organisationUuid = null): string {
-		return $this->lookupId(lookup: new ConfigLookup(appId: $appId, configKey: $configKey, default: $default));
-	}//end resolveSchemaId()
-
-	/**
-	 * Read the configured slug/UUID/name for a schema property from app config.
-	 *
-	 * Honours the documented naming convention (`<context>_property`
-	 * preferred). Apps storing a property identifier (slug, UUID, or
-	 * canonical name) in app config can resolve it through the same
-	 * resolver surface they already use for registers and schemas.
-	 *
-	 * @param string $appId Consumer app id.
-	 * @param string $configKey Config key to read (e.g. `swc_type_property`).
-	 * @param string|null $default Fallback value if config unset.
-	 * @param string|null $organisationUuid Optional org override (unused here, kept for signature parity).
-	 *
-	 * @return string The configured slug, UUID, or name.
-	 *
-	 * @throws MissingConfigException If the config is unset and no default was provided.
-	 *
-	 * @spec openspec/specs/register-resolver-service/spec.md
-	 *   (Requirement: resolvePropertyId)
-	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The organisationUuid parameter is reserved for
-	 * signature parity with resolveSchema; pure id reads never need it.
-	 */
-	public function resolvePropertyId(string $appId, string $configKey, ?string $default = null, ?string $organisationUuid = null): string {
-		return $this->lookupId(lookup: new ConfigLookup(appId: $appId, configKey: $configKey, default: $default));
-	}//end resolvePropertyId()
-
-	/**
-	 * Resolve `<context>_register` config to a hydrated Register entity.
-	 *
-	 * @param string $appId Consumer app id.
-	 * @param string $configKey Config key to read.
-	 * @param string|null $default Fallback slug/UUID if config unset.
-	 * @param string|null $organisationUuid Optional explicit-tenant override.
-	 *
-	 * @return Register The hydrated Register entity.
-	 *
-	 * @throws MissingConfigException If config is unset and no default.
-	 * @throws RegisterNotFoundException If the value does not resolve in the caller tenant.
-	 *
-	 * @spec openspec/specs/register-resolver-service/spec.md
-	 *   (Requirement: resolveRegister)
-	 */
-	public function resolveRegister(string $appId, string $configKey, ?string $default = null, ?string $organisationUuid = null): Register {
-		$lookup = new ConfigLookup(appId: $appId, configKey: $configKey, default: $default, organisationUuid: $organisationUuid);
-		return $this->lookupRegister(lookup: $lookup);
-	}//end resolveRegister()
 
 	/**
 	 * Resolve a configured register lookup to a hydrated Register entity, cached per request.
@@ -314,27 +222,6 @@ final class RegisterResolverService implements RegisterResolverServiceInterface 
 	}//end ownedElsewhere()
 
 	/**
-	 * Resolve `<context>_schema` config to a hydrated Schema entity.
-	 *
-	 * @param string $appId Consumer app id.
-	 * @param string $configKey Config key to read.
-	 * @param string|null $default Fallback slug/UUID if config unset.
-	 * @param string|null $organisationUuid Optional explicit-tenant override.
-	 *
-	 * @return Schema The hydrated Schema entity.
-	 *
-	 * @throws MissingConfigException If config is unset and no default.
-	 * @throws SchemaNotFoundException If the value does not resolve in the caller tenant.
-	 *
-	 * @spec openspec/specs/register-resolver-service/spec.md
-	 *   (Requirement: resolveSchema)
-	 */
-	public function resolveSchema(string $appId, string $configKey, ?string $default = null, ?string $organisationUuid = null): Schema {
-		$lookup = new ConfigLookup(appId: $appId, configKey: $configKey, default: $default, organisationUuid: $organisationUuid);
-		return $this->lookupSchema(lookup: $lookup);
-	}//end resolveSchema()
-
-	/**
 	 * Resolve a configured schema lookup to a hydrated Schema entity, cached per request.
 	 *
 	 * @param ConfigLookup $lookup The app, config key, fallback and explicit tenant.
@@ -394,52 +281,7 @@ final class RegisterResolverService implements RegisterResolverServiceInterface 
 	}//end findSchema()
 
 	/**
-	 * Resolve a schema property by configured identifier.
-	 *
-	 * Combines `resolvePropertyId` with a schema lookup, then locates
-	 * the matching property on the resolved schema. The configured
-	 * property identifier is matched against the property's array key,
-	 * its `slug`, its `name`, or its `id` (in that order) so apps can
-	 * store any stable identifier they prefer.
-	 *
-	 * Pattern mirrors `resolveRegister` / `resolveSchema`: read config,
-	 * hydrate, throw if absent. Returned shape is the raw property
-	 * definition array from `Schema::getProperties()[$key]` — callers
-	 * read whatever field they need (`id`, `type`, `format`, etc.).
-	 *
-	 * @param string $appId Consumer app id.
-	 * @param string $schemaConfigKey Config key for the schema (e.g. `swc_schema`).
-	 * @param string $propertyConfigKey Config key for the property (e.g. `swc_type_property`).
-	 * @param string|null $propertyDefault Fallback property id if config unset.
-	 * @param string|null $schemaDefault Fallback schema id if config unset.
-	 * @param string|null $organisationUuid Optional explicit-tenant override.
-	 *
-	 * @return array{0: string, 1: array<string, mixed>} Tuple of the resolved property key + the property
-	 *                                                   definition array. The key is the property's array
-	 *                                                   key on `Schema::getProperties()`, which is also
-	 *                                                   the canonical name used in object payloads.
-	 *
-	 * @throws MissingConfigException If either config is unset and no default given.
-	 * @throws SchemaNotFoundException If the schema id does not resolve.
-	 * @throws PropertyNotFoundException If the property id does not match any property on the schema.
-	 *
-	 * @spec openspec/specs/register-resolver-service/spec.md
-	 *   (Requirement: resolveProperty)
-	 */
-	public function resolveProperty(
-		string $appId,
-		string $schemaConfigKey,
-		string $propertyConfigKey,
-		?string $propertyDefault = null,
-		?string $schemaDefault = null,
-		?string $organisationUuid = null,
-	): array {
-		$schema = new ConfigLookup(appId: $appId, configKey: $schemaConfigKey, default: $schemaDefault, organisationUuid: $organisationUuid);
-		return $this->lookupProperty(schema: $schema, property: new ConfigLookup(appId: $appId, configKey: $propertyConfigKey, default: $propertyDefault));
-	}//end resolveProperty()
-
-	/**
-	 * Resolve a schema property by configured identifier (see resolveProperty()).
+	 * Resolve a schema property by configured identifier: array key, then slug, name or id.
 	 *
 	 * @param ConfigLookup $schema   The lookup of the schema, with the explicit tenant.
 	 * @param ConfigLookup $property The lookup of the property identifier on that schema.
@@ -545,28 +387,6 @@ final class RegisterResolverService implements RegisterResolverServiceInterface 
 	private function schemaIdentifier(Schema $schema): string {
 		return (string)($schema->getSlug() ?? $schema->getUuid() ?? '');
 	}//end schemaIdentifier()
-
-	/**
-	 * Convenience: resolve a register and schema in a single call.
-	 *
-	 * @param string $appId Consumer app id.
-	 * @param string $registerKey Config key for the register.
-	 * @param string $schemaKey Config key for the schema.
-	 * @param string|null $organisationUuid Optional explicit-tenant override.
-	 *
-	 * @return RegisterSchemaPair Pair of resolved entities + raw ids.
-	 *
-	 * @throws MissingConfigException If either config is unset.
-	 * @throws RegisterNotFoundException If the register cannot be resolved.
-	 * @throws SchemaNotFoundException If the schema cannot be resolved.
-	 *
-	 * @spec openspec/specs/register-resolver-service/spec.md
-	 *   (Requirement: resolvePair)
-	 */
-	public function resolvePair(string $appId, string $registerKey, string $schemaKey, ?string $organisationUuid = null): RegisterSchemaPair {
-		$register = new ConfigLookup(appId: $appId, configKey: $registerKey, organisationUuid: $organisationUuid);
-		return $this->lookupPair(register: $register, schema: new ConfigLookup(appId: $appId, configKey: $schemaKey, organisationUuid: $organisationUuid));
-	}//end resolvePair()
 
 	/**
 	 * Resolve a register and a schema lookup in a single call.

@@ -154,30 +154,23 @@ class ProvenanceResolver {
 	 * cascade resolves in and an answer that named a broader rule than the one
 	 * that actually decided would send an administrator to the wrong screen.
 	 *
-	 * @param array<int, string>              $actions    The verbs to report on, for the caller of forPrincipals().
-	 * @param array<string, mixed>            $blocks     Keys: object, schema, register, roleDefinitions.
-	 * @param array<string, array|null>       $denials    The denial per action, where there is one.
-	 * @param bool                            $enforced   Whether a denial changes an answer yet.
+	 * @param array<int, string> $actions The verbs to report on, for the caller of forPrincipals().
+	 * @param ProvenanceOptions  $options The cascade blocks, the denial per action and whether denials decide yet.
 	 *
 	 * @return array<string, array<string, mixed>> The provenance, keyed by action.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function forActions(
-		array $actions,
-		array $blocks = [],
-		array $denials = [],
-		bool $enforced = true,
-	): array {
+	public function forActions(array $actions, ProvenanceOptions $options = new ProvenanceOptions()): array {
 		$provenance = [];
 		foreach ($actions as $action) {
-			$grant = $this->grantFor(action: $action, blocks: $blocks);
-			if ($enforced === true) {
-				$provenance[$action] = $this->withDenial(grant: $grant, denial: ($denials[$action] ?? null));
+			$grant = $this->grantFor(action: $action, blocks: $options->blocks);
+			if ($options->enforced === true) {
+				$provenance[$action] = $this->withDenial(grant: $grant, denial: ($options->denials[$action] ?? null));
 				continue;
 			}
 
-			$provenance[$action] = $this->withStagedDenial(grant: $grant, denial: ($denials[$action] ?? null));
+			$provenance[$action] = $this->withStagedDenial(grant: $grant, denial: ($options->denials[$action] ?? null));
 		}
 
 		return $provenance;

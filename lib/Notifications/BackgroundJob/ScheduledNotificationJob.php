@@ -38,8 +38,11 @@ use DateTimeZone;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Notifications\Db\DedupeSighting;
 use OCA\OpenRegister\Notifications\Db\NotificationDedupeKey;
 use OCA\OpenRegister\Notifications\Db\NotificationDedupeStateMapper;
+use OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterGrammar;
+use OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterTarget;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use OCP\ICache;
@@ -49,6 +52,8 @@ use OCP\ICacheFactory;
  * Scheduled notification background job.
  *
  * @psalm-suppress UnusedClass
+ *
+ * @spec openspec/specs/notificatie-engine/spec.md
  */
 final class ScheduledNotificationJob extends TimedJob {
 
@@ -301,7 +306,13 @@ final class ScheduledNotificationJob extends TimedJob {
 		try {
 			$this->stateCache->set($this->stateKey(fire: $fire), $fire->nowDt->getTimestamp(), (60 * 60 * 24 * 30));
 		} catch (\Throwable $e) {
-			// Don't escalate.
+			// The cache only suppresses repeats; a lost write is not escalated.
+			$this->delivery->logger->debug(
+				message: '[ScheduledNotificationJob] Could not mark the fire in the state cache',
+				context: [
+					'exception' => $e->getMessage(),
+				]
+			);
 		}
 	}//end markFired()
 
@@ -442,7 +453,8 @@ final class ScheduledNotificationJob extends TimedJob {
 		}
 
 		$objectData = (array)($object->getObject() ?? []);
-		if ($this->sources->filterEvaluator->matches(objectData: $objectData, filter: $fire->filter, now: $fire->nowDt) === true) {
+		$target     = new ScheduledFilterTarget(objectData: $objectData, now: $fire->nowDt);
+		if ($this->sources->filterEvaluator->matchesTarget(filter: $fire->filter, target: $target) === true) {
 			$fire->matched++;
 			$this->fireOnMatch(fire: $fire, object: $object);
 		}
@@ -476,7 +488,8 @@ final class ScheduledNotificationJob extends TimedJob {
 	 * @return void
 	 */
 	private function dispatchUnlessUnchanged(ScheduledFire $fire, ObjectEntity $object): void {
-		$existing = $this->delivery->dedupeMapper->findOne(schemaId: $fire->schemaId, ruleKey: $fire->name, objectUuid: $fire->objectUuid);
+		$key      = new NotificationDedupeKey(schemaId: $fire->schemaId, ruleKey: $fire->name, objectUuid: $fire->objectUuid);
+		$existing = $this->delivery->dedupeMapper->findByKey(key: $key);
 		if ($existing === null || (string)$existing->getFingerprint() !== $fire->fingerprint) {
 			$this->dispatch(fire: $fire, object: $object);
 			return;
@@ -487,6 +500,13 @@ final class ScheduledNotificationJob extends TimedJob {
 			$this->upsertState(fire: $fire, dispatched: false);
 		} catch (\Throwable $e) {
 			// Non-fatal — sweep will reclaim eventually.
+			$this->delivery->logger->warning(
+				message: '[ScheduledNotificationJob] Could not touch the dedupe state, the sweep reclaims it',
+				context: [
+					'objectUuid' => $fire->objectUuid,
+					'exception' => $e->getMessage(),
+				]
+			);
 		}
 
 		$fire->deduplicated++;
@@ -522,9 +542,7 @@ final class ScheduledNotificationJob extends TimedJob {
 	private function upsertState(ScheduledFire $fire, bool $dispatched): void {
 		$this->delivery->dedupeMapper->upsert(
 			key: new NotificationDedupeKey(schemaId: $fire->schemaId, ruleKey: $fire->name, objectUuid: $fire->objectUuid),
-			fingerprint: $fire->fingerprint,
-			now: $fire->seenAt,
-			dispatched: $dispatched
+			sighting: new DedupeSighting(fingerprint: $fire->fingerprint, now: $fire->seenAt, dispatched: $dispatched)
 		);
 	}//end upsertState()
 
@@ -571,6 +589,9 @@ final class ScheduledNotificationJob extends TimedJob {
 	/**
 	 * The filter fields that use a time-window operator (`withinNext`, `olderThan`).
 	 *
+	 * The operator set is `ScheduledFilterGrammar::DURATION_OPERATORS`, so the
+	 * grammar stays enumerated in one place.
+	 *
 	 * @param array<string, mixed> $trigger Scheduled trigger
 	 *
 	 * @return string[]
@@ -582,7 +603,7 @@ final class ScheduledNotificationJob extends TimedJob {
 				continue;
 			}
 
-			if (in_array((string)($spec['operator'] ?? ''), ['withinNext', 'olderThan'], true) === true) {
+			if (in_array((string)($spec['operator'] ?? ''), ScheduledFilterGrammar::DURATION_OPERATORS, true) === true) {
 				$fields[] = $field;
 			}
 		}
@@ -618,6 +639,7 @@ final class ScheduledNotificationJob extends TimedJob {
 	 */
 	private function computeFingerprint(array $objectData, array $watchedFields): string {
 		if ($watchedFields === []) {
+			// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- The hash only fingerprints content to detect a change, not a security value.
 			return sha1('constant');
 		}
 
@@ -632,6 +654,7 @@ final class ScheduledNotificationJob extends TimedJob {
 			$encoded = var_export($payload, true);
 		}
 
+		// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- The hash only fingerprints content to detect a change, not a security value.
 		return sha1($encoded);
 	}//end computeFingerprint()
 }//end class

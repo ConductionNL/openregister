@@ -43,6 +43,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Search\Service\Quality\CreateCandidate;
 
 /**
  * SaveObject::scanForRelations(): which values the schema makes relations,
@@ -72,6 +73,38 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugSource
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugStore
  * @uses \OCA\OpenRegister\Service\OrganisationContext
+ * @uses   \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\NestedSaveTransaction
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\RelationScanLevel
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\RelationScanner
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectHandlers
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPlatform
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPropertyHandlers
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRuntime
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectTenancy
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectValueHandlers
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses   \OCA\OpenRegister\Db\Schema\SchemaPropertyDocument
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses   \OCA\OpenRegister\Service\Object\PermissionCheckOptions
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\RelationScanLevel
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\RelationScanner
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectHandlers
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPlatform
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPropertyHandlers
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRuntime
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectTenancy
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectValueHandlers
+ * @uses \OCA\OpenRegister\Db\Schema\SchemaPropertyDocument
  */
 final class SaveObjectScanForRelationsTest extends TestCase {
 
@@ -125,10 +158,8 @@ final class SaveObjectScanForRelationsTest extends TestCase {
 			services: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices(
 				persistence: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence(
 					mappers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers(
-						objectEntityMapper: $this->objectEntityMapper,
-						unifiedObjectMapper: $this->unifiedObjectMapper,
-						schemaMapper: $this->createMock(SchemaMapper::class),
-						registerMapper: $this->createMock(RegisterMapper::class)
+						catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $this->objectEntityMapper),
+						unifiedObjectMapper: $this->unifiedObjectMapper
 					),
 					records: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords(
 						auditTrailMapper: $this->createMock(AuditTrailMapper::class),
@@ -186,8 +217,8 @@ final class SaveObjectScanForRelationsTest extends TestCase {
 	private function stoppingDedupPolicy(array &$seen): void {
 		$policy = $this->createMock(DedupCreatePolicy::class);
 		$policy->method('guardCreate')->willReturnCallback(
-			static function ($register, $schema, array $data, bool $overrideRequested) use (&$seen): array {
-				$seen = ['register' => $register, 'schema' => $schema, 'data' => $data, 'override' => $overrideRequested];
+			static function (CreateCandidate $candidate) use (&$seen): array {
+				$seen = ['register' => $candidate->register, 'schema' => $candidate->schema, 'data' => $candidate->data, 'override' => $candidate->overrideRequested];
 				throw new RuntimeException('stop');
 			}
 		);

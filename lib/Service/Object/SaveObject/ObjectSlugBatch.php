@@ -120,7 +120,8 @@ class ObjectSlugBatch {
 		$stamp = $this->batchStamp(scope: $scope);
 		$plan = [];
 		foreach ($rows as $index => $row) {
-			$candidate = $this->handler->candidate(objectData: $row['data'], schema: $scope->schema, clientSlug: $row['clientSlug']);
+			$candidate = $this->handler->clientCandidate(clientSlug: $row['clientSlug'])
+				?? $this->handler->candidate(objectData: $row['data'], schema: $scope->schema);
 			$plan[$index] = [
 				'uuid' => $this->nonEmpty(uuid: $row['uuid']),
 				'clientSlug' => $row['clientSlug'],

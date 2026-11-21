@@ -31,6 +31,7 @@ use RuntimeException;
 use PHPUnit\Framework\TestCase;
 use OCA\OpenRegister\Service\Archival\SelectielijstStorage;
 use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\SaveObjectArgs;
 
 /**
  * Golden outcomes of SelectionListSeeder.
@@ -48,11 +49,11 @@ class SelectionListSeederGoldenTest extends TestCase {
 	 * @return SelectionListSeeder The seeder.
 	 */
 	private function seeder(array $settings = ['selectielijstRegister' => 4, 'selectielijstSchema' => 6]): SelectionListSeeder {
-		$objectMapper = $this->getMockBuilder(MagicMapper::class)->disableOriginalConstructor()->onlyMethods(['findAll'])->getMock();
-		$objectMapper->method('findAll')->willReturnCallback(fn (): array => array_values($this->rows));
+		$objectMapper = $this->getMockBuilder(MagicMapper::class)->disableOriginalConstructor()->onlyMethods(['findAllListed'])->getMock();
+		$objectMapper->method('findAllListed')->willReturnCallback(fn (): array => array_values($this->rows));
 		$saveObject = $this->createMock(SaveObject::class);
 		$saveObject->method('saveObject')->willReturnCallback(
-			function ($register, $schema, array $data, ?string $uuid = null): ObjectEntity {
+			SaveObjectArgs::callback(callback: function ($register, $schema, array $data, ?string $uuid = null): ObjectEntity {
 				if (($data['categorie'] ?? null) === 'boom') {
 					throw new RuntimeException('disk full');
 				}
@@ -63,7 +64,7 @@ class SelectionListSeederGoldenTest extends TestCase {
 				$row->setObject($data);
 				$this->rows[$uuid] = $row;
 				return $row;
-			}
+			})
 		);
 		$handler = $this->createMock(ObjectRetentionHandler::class);
 		$handler->method('getArchivalSettingsOnly')->willReturn($settings);

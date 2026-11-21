@@ -35,6 +35,7 @@ use OCA\OpenRegister\Tests\Unit\Controller\Support\GitHubIssuesControllerFactory
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\ICache;
 use OCP\ICacheFactory;
+use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -103,7 +104,8 @@ class GitHubIssuesReadGuardsGoldenTest extends TestCase {
 			rateLimiter: $this->createMock(RateLimiterService::class),
 			userSession: $this->createMock(IUserSession::class),
 			cacheFactory: $cacheFactory,
-			logger: $this->createMock(LoggerInterface::class)
+			logger: $this->createMock(LoggerInterface::class),
+			groupManager: $this->createMock(IGroupManager::class)
 		);
 		$this->assertInstanceOf(GitHubIssuesController::class, $controller);
 

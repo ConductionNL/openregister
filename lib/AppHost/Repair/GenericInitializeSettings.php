@@ -212,19 +212,7 @@ class GenericInitializeSettings implements IRepairStep {
 	 */
 	private function registerBrokerAppKey(IOutput $output): void {
 		try {
-			$tokenService = ($this->tokenService ?? Server::get(CredentialAppTokenServiceInterface::class));
-
-			if ($tokenService->isRegistered($this->appId) === true) {
-				// Never rotate an existing signing secret from an auto-run.
-				$this->logger->debug(
-					sprintf('[AppHost:%s] already registered with the credential broker — not rotating', $this->appId)
-				);
-				return;
-			}
-
-			// The returned secret is intentionally unused (see docblock).
-			$tokenService->registerApp($this->appId);
-			$output->info(sprintf('%s registered with the credential broker (manifest declares credentials).', $this->appId));
+			$this->registerWithBroker(output: $output);
 		} catch (Throwable $e) {
 			$output->warning(sprintf('Credential-broker registration for %s skipped: %s', $this->appId, $e->getMessage()));
 			$this->logger->warning(
@@ -233,6 +221,29 @@ class GenericInitializeSettings implements IRepairStep {
 			);
 		}//end try
 	}//end registerBrokerAppKey()
+
+	/**
+	 * Register the app with the credential broker unless it already is.
+	 *
+	 * @param IOutput $output Repair output channel.
+	 *
+	 * @return void
+	 */
+	private function registerWithBroker(IOutput $output): void {
+		$tokenService = ($this->tokenService ?? Server::get(CredentialAppTokenServiceInterface::class));
+
+		if ($tokenService->isRegistered($this->appId) === true) {
+			// Never rotate an existing signing secret from an auto-run.
+			$this->logger->debug(
+				sprintf('[AppHost:%s] already registered with the credential broker — not rotating', $this->appId)
+			);
+			return;
+		}
+
+		// The returned secret is intentionally unused (see registerBrokerAppKey).
+		$tokenService->registerApp($this->appId);
+		$output->info(sprintf('%s registered with the credential broker (manifest declares credentials).', $this->appId));
+	}//end registerWithBroker()
 
 	/**
 	 * Register the consuming app as its own identity-only Doriath `Application`.
@@ -261,14 +272,8 @@ class GenericInitializeSettings implements IRepairStep {
 	 * @spec openspec/specs/credential-broker/spec.md
 	 */
 	protected function manifestDescription(): ?string {
-		try {
-			$appManager = ($this->appManager ?? Server::get(IAppManager::class));
-			$manifestPath = $appManager->getAppPath($this->appId) . '/src/manifest.json';
-		} catch (Throwable $e) {
-			return null;
-		}
-
-		if (is_readable($manifestPath) === false) {
+		$manifestPath = $this->readableManifestPath();
+		if ($manifestPath === null) {
 			return null;
 		}
 
@@ -284,6 +289,26 @@ class GenericInitializeSettings implements IRepairStep {
 
 		return null;
 	}//end manifestDescription()
+
+	/**
+	 * The path of the app's readable src/manifest.json; null when there is none.
+	 *
+	 * @return string|null
+	 */
+	private function readableManifestPath(): ?string {
+		try {
+			$appManager   = ($this->appManager ?? Server::get(IAppManager::class));
+			$manifestPath = $appManager->getAppPath($this->appId) . '/src/manifest.json';
+		} catch (Throwable $e) {
+			return null;
+		}
+
+		if (is_readable($manifestPath) === false) {
+			return null;
+		}
+
+		return $manifestPath;
+	}//end readableManifestPath()
 
 	/**
 	 * Whether the leaf's bundled `src/manifest.json` declares `credentials[]`.

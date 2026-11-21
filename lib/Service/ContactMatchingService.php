@@ -25,10 +25,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
-use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ContactDetails;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ContactMatcherInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ContactMatchCacheInterface;
 use OCP\ICache;
 use OCP\ICacheFactory;
 use Psr\Log\LoggerInterface;
@@ -43,7 +43,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.LongVariable)
  */
-class ContactMatchingService implements ContactMatcherInterface {
+class ContactMatchingService implements ContactMatcherInterface, ContactMatchCacheInterface {
 
 	/**
 	 * Cache TTL in seconds.
@@ -111,39 +111,11 @@ class ContactMatchingService implements ContactMatcherInterface {
 	];
 
 	/**
-	 * The object service for searching entities.
-	 *
-	 * @var ObjectOperationsInterface
-	 */
-	private readonly ObjectOperationsInterface $objectService;
-
-	/**
-	 * The schema mapper for schema lookups.
-	 *
-	 * @var SchemaMapperInterface
-	 */
-	private readonly SchemaMapperInterface $schemaMapper;
-
-	/**
-	 * The register mapper for register lookups.
-	 *
-	 * @var RegisterMapperInterface
-	 */
-	private readonly RegisterMapperInterface $registerMapper;
-
-	/**
 	 * The distributed cache instance.
 	 *
 	 * @var ICache|null
 	 */
 	private readonly ?ICache $cache;
-
-	/**
-	 * Logger for debugging.
-	 *
-	 * @var LoggerInterface
-	 */
-	private readonly LoggerInterface $logger;
 
 	/**
 	 * Constructor for ContactMatchingService.
@@ -156,26 +128,22 @@ class ContactMatchingService implements ContactMatcherInterface {
 	 * @return void
 	 */
 	public function __construct(
-		ObjectOperationsInterface $objectService,
-		ContactMatchingMappers $mappers,
+		private readonly ObjectOperationsInterface $objectService,
+		private readonly ContactMatchingMappers $mappers,
 		ICacheFactory $cacheFactory,
-		LoggerInterface $logger,
+		private readonly LoggerInterface $logger,
 	) {
-		$this->objectService = $objectService;
-		$this->schemaMapper = $mappers->schemaMapper;
-		$this->registerMapper = $mappers->registerMapper;
-		$this->logger = $logger;
-		$this->cache = $this->distributedCache(cacheFactory: $cacheFactory);
+		$this->cache = $this->openCache(cacheFactory: $cacheFactory);
 	}//end __construct()
 
 	/**
-	 * The distributed cache for match results, or null when it cannot be created.
+	 * The distributed contact-match cache, or null when it cannot be created.
 	 *
-	 * @param ICacheFactory $cacheFactory The cache factory
+	 * @param ICacheFactory $cacheFactory Cache factory.
 	 *
 	 * @return ICache|null The cache, or null (matching then runs uncached).
 	 */
-	private function distributedCache(ICacheFactory $cacheFactory): ?ICache {
+	private function openCache(ICacheFactory $cacheFactory): ?ICache {
 		try {
 			return $cacheFactory->createDistributed('openregister_contacts');
 		} catch (\Exception $e) {
@@ -185,7 +153,7 @@ class ContactMatchingService implements ContactMatcherInterface {
 			);
 			return null;
 		}
-	}//end distributedCache()
+	}//end openCache()
 
 	/**
 	 * Match a contact by email address (highest confidence).
@@ -326,23 +294,17 @@ class ContactMatchingService implements ContactMatcherInterface {
 	 * Calls matchByEmail first, then matchByName and matchByOrganization if provided.
 	 * Deduplicates by object UUID, keeping the highest confidence match.
 	 *
-	 * @param string $email The email address (required)
-	 * @param string|null $name The display name (optional)
-	 * @param string|null $organization The organization name (optional)
+	 * @param ContactDetails $contact The email address (required), display name and organization name (optional).
 	 *
 	 * @return array Combined, deduplicated match results sorted by confidence
 	 *
 	 * @spec openspec/specs/contacts-actions/spec.md
 	 */
-	public function matchContact(
-		string $email,
-		?string $name = null,
-		?string $organization = null,
-	): array {
+	public function matchContact(ContactDetails $contact): array {
 		// Email matching (highest confidence), then name (medium), then organization (lowest).
-		$allMatches = $this->byUuid(matches: $this->matchByEmail(email: $email));
-		$allMatches = $this->withNameMatches(allMatches: $allMatches, name: $name);
-		$allMatches = $this->withOrganizationMatches(allMatches: $allMatches, organization: $organization);
+		$allMatches = $this->byUuid(matches: $this->matchByEmail(email: $contact->email));
+		$allMatches = $this->withNameMatches(allMatches: $allMatches, name: $contact->name);
+		$allMatches = $this->withOrganizationMatches(allMatches: $allMatches, organization: $contact->organization);
 
 		return $this->byConfidence(matches: $allMatches);
 	}//end matchContact()
@@ -469,7 +431,7 @@ class ContactMatchingService implements ContactMatcherInterface {
 	/**
 	 * Invalidate cache for all email-like property values in an object.
 	 *
-	 * @param array $object The object data array
+	 * @param array<string, mixed> $object The object data array
 	 *
 	 * @return void
 	 *
@@ -543,7 +505,7 @@ class ContactMatchingService implements ContactMatcherInterface {
 		}
 
 		try {
-			$schemas = $this->schemaMapper->findAll(_multitenancy: false);
+			$schemas = $this->mappers->schemaMapper->findAll(_multitenancy: false);
 			foreach ($schemas as $schema) {
 				$linkedTypes = $schema->getLinkedTypes();
 				if (in_array('contact', $linkedTypes, true) === true) {
@@ -815,7 +777,7 @@ class ContactMatchingService implements ContactMatcherInterface {
 
 		$schemaId = (int)$result['@self']['schema'];
 		try {
-			$schema = $this->schemaMapper->find($schemaId);
+			$schema = $this->mappers->schemaMapper->find($schemaId);
 			return [
 				'id' => $schemaId,
 				'title' => $schema->getTitle() ?? $schema->getName() ?? 'Unknown',
@@ -839,7 +801,7 @@ class ContactMatchingService implements ContactMatcherInterface {
 
 		$registerId = (int)$result['@self']['register'];
 		try {
-			$register = $this->registerMapper->find($registerId);
+			$register = $this->mappers->registerMapper->find($registerId);
 			return [
 				'id' => $registerId,
 				'title' => $register->getTitle() ?? $register->getName() ?? 'Unknown',

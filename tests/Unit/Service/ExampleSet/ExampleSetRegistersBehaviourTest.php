@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Service\ShippedRegister;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
@@ -34,11 +35,23 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetRegisters
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\AuditTrail\AuditedObject
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Service\ShippedRegister
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses   \OCA\OpenRegister\Service\ShippedRegister
  */
 class ExampleSetRegistersBehaviourTest extends TestCase {
 
@@ -141,7 +154,7 @@ class ExampleSetRegistersBehaviourTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnImportRecordsItsJob(): void {
-		$this->descriptors->expects($this->once())->method('reimport')->with('openregister', 'cases', 'example set install')
+		$this->descriptors->expects($this->once())->method('reimportShipped')->with(new ShippedRegister('openregister', 'cases'), 'example set install')
 			->willReturn(['outcome' => 'imported', 'importJobId' => 'job-1', 'importAppId' => 'alpha']);
 
 		$this->assertSame(['error' => '', 'jobs' => [['appId' => 'alpha', 'jobId' => 'job-1']]], $this->subject->import(slug: 'cases'));
@@ -166,7 +179,7 @@ class ExampleSetRegistersBehaviourTest extends TestCase {
 	 * @return void
 	 */
 	public function testAFailedImportReportsWhy(): void {
-		$this->descriptors->method('reimport')->willReturnOnConsecutiveCalls(
+		$this->descriptors->method('reimportShipped')->willReturnOnConsecutiveCalls(
 			['outcome' => 'failed', 'reason' => 'schema conflict', 'importJobId' => 'job-3'],
 			['outcome' => 'failed'],
 			$this->throwException(new RuntimeException('descriptor unreadable'))
@@ -183,7 +196,7 @@ class ExampleSetRegistersBehaviourTest extends TestCase {
 	 * @return void
 	 */
 	public function testIsBehindAsksTheDescriptorService(): void {
-		$this->descriptors->expects($this->exactly(2))->method('isBehind')->with('openregister', 'cases', true)
+		$this->descriptors->expects($this->exactly(2))->method('isShippedBehind')->with(new ShippedRegister('openregister', 'cases'), true)
 			->willReturnOnConsecutiveCalls(true, $this->throwException(new RuntimeException('x')));
 
 		$this->assertTrue($this->subject->isBehind(slug: 'cases', mock: true));
@@ -199,7 +212,8 @@ class ExampleSetRegistersBehaviourTest extends TestCase {
 		$this->audit->method('objectUuidsByImportJobId')->with('job-1')->willReturn(['u1', 'u2']);
 		$deleted = [];
 		$this->objects->method('deleteObject')->willReturnCallback(
-			function (string $uuid, mixed $register=null, mixed $schema=null, bool $_rbac=true, bool $_multitenancy=true) use (&$deleted): bool {
+			function (ObjectDeletion $deletion, bool $_rbac = true, bool $_multitenancy = true, bool $_retentionSweep = false) use (&$deleted): bool {
+				$uuid = $deletion->uuid;
 				$deleted[] = [$uuid, $_rbac, $_multitenancy];
 				return true;
 			}

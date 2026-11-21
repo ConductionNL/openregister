@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 use Doctrine\DBAL\Platforms\MySQLPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicColumnDrift;
 use OCA\OpenRegister\Db\MagicMapper\MagicSchemaColumns;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -185,7 +186,7 @@ class MagicMapperNumberColumnTest extends TestCase {
 		$required = ['weight' => $this->column('weight', ['type' => 'number'])];
 
 		$this->assertSame(['weight'], $mapper->findDecimalColumnsNeedingWiden(currentColumns: $current, requiredColumns: $required));
-		$this->assertSame(['weight'], $mapper->widenDecimalColumns(tableName: 'openregister_table_ab', currentColumns: $current, requiredColumns: $required));
+		$this->assertSame(['weight'], $mapper->widenDecimalColumns(tableName: 'openregister_table_ab', columns: new MagicColumnDrift(current: $current, required: $required)));
 		$this->assertSame(['ALTER TABLE "oc_openregister_table_ab" ALTER COLUMN "weight" TYPE DECIMAL(20,6)'], $statements);
 	}//end testAnOldTwoDecimalColumnIsWidenedOnPostgres()
 
@@ -201,7 +202,7 @@ class MagicMapperNumberColumnTest extends TestCase {
 		$current = ['weight' => ['name' => 'weight', 'type' => 'decimal', 'precision' => 10, 'scale' => 2, 'nullable' => false, 'default' => null]];
 		$required = ['weight' => $this->column('weight', ['type' => 'number', 'required' => true])];
 
-		$mapper->widenDecimalColumns(tableName: 'openregister_table_ab', currentColumns: $current, requiredColumns: $required);
+		$mapper->widenDecimalColumns(tableName: 'openregister_table_ab', columns: new MagicColumnDrift(current: $current, required: $required));
 
 		$this->assertSame(['ALTER TABLE `oc_openregister_table_ab` MODIFY `weight` DECIMAL(20,6) NOT NULL'], $statements);
 	}//end testAnOldTwoDecimalColumnIsWidenedOnMysqlKeepingNotNull()

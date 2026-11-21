@@ -258,11 +258,13 @@ class EdepotTransferService implements EdepotTransferServiceInterface, EdepotTra
 	 * @throws \Exception When a package cannot be built.
 	 */
 	private function buildPackages(TransferAttempt $run): array {
-		return $this->sipBuilder->build(
-			transferId: (string)$run->transferList['uuid'],
-			objectsWithFiles: $run->objectsWithFiles,
-			maxPackageSize: 0,
-			format: TransferContext::formatOf(transferList: $run->transferList)
+		return $this->sipBuilder->package(
+			request: new TransferPackageRequest(
+				transferId: (string)$run->transferList['uuid'],
+				objectsWithFiles: $run->objectsWithFiles,
+				maxPackageSize: 0,
+				format: TransferContext::formatOf(transferList: $run->transferList)
+			)
 		);
 	}//end buildPackages()
 
@@ -330,6 +332,7 @@ class EdepotTransferService implements EdepotTransferServiceInterface, EdepotTra
 		foreach ($sipFiles as $sipFile) {
 			$results[] = $transport->send($sipFile, $config);
 			if (file_exists($sipFile) === true) {
+				// NOSEMGREP: php.lang.security.unlink-use.unlink-use -- The path is a package file this service generated.
 				unlink($sipFile);
 			}
 		}

@@ -19,6 +19,7 @@ use ReflectionClass;
  * FileService turns an object into the identifier its tag is built from.
  *
  * @covers \OCA\OpenRegister\Service\FileService
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
  */
 class FileServiceObjectTagTest extends TestCase {
 

@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Db\Flow\FlowTriggerSet;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 
 /**
@@ -60,23 +61,6 @@ interface FlowTriggerMapperInterface {
 	public function findBySchema(string $schemaSlug): array;
 
 	/**
-	 * The UUIDs of enabled flows subscribed to one object event.
-	 *
-	 * ONE indexed read, whatever the number of flows or the number of triggers
-	 * each carries. `register` and `schema` are matched exactly — a trigger node
-	 * cannot express "any", so there is no unscoped row to also match.
-	 *
-	 * @param string $event The event id.
-	 * @param string $register The register slug the event fired on.
-	 * @param string $schema The schema slug the event fired on.
-	 *
-	 * @return array<int, string> The flow UUIDs, each at most once.
-	 *
-	 * @spec openspec/specs/flow-engine/spec.md#requirement-trigger-matching-must-not-scale-with-the-number-of-flows
-	 */
-	public function flowUuidsFor(string $event, string $register, string $schema): array;
-
-	/**
 	 * The UUIDs of enabled flows subscribed to one event on one register and schema.
 	 *
 	 * @param string            $event The event id.
@@ -96,15 +80,13 @@ interface FlowTriggerMapperInterface {
 	 * edited — getting that wrong leaves a flow subscribed to an event it no
 	 * longer declares, which is the one outcome worse than not being subscribed.
 	 *
-	 * @param string $flowUuid The flow's UUID.
-	 * @param array $triggers The derived triggers, each event/register/schema.
-	 * @param bool $enabled Whether the flow is enabled.
+	 * @param FlowTriggerSet $set The flow's UUID, its derived triggers (each event/register/schema) and whether it is enabled.
 	 *
 	 * @return int The number of rows written.
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-trigger-matching-must-not-scale-with-the-number-of-flows
 	 */
-	public function replaceFor(string $flowUuid, array $triggers, bool $enabled): int;
+	public function replaceFor(FlowTriggerSet $set): int;
 
 	/**
 	 * The UUIDs of every flow represented in the index.

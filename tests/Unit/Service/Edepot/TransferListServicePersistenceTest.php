@@ -37,6 +37,7 @@ use RuntimeException;
 /**
  * @covers \OCA\OpenRegister\Service\Edepot\TransferListService
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\Edepot\TransferStores
  */
 class TransferListServicePersistenceTest extends TestCase {
 
@@ -78,7 +79,7 @@ class TransferListServicePersistenceTest extends TestCase {
 	 * @return TransferListService
 	 */
 	private function service(): TransferListService {
-		return new TransferListService($this->records, $this->config, $this->createMock(INotificationManager::class), $this->logger);
+		return new TransferListService(new \OCA\OpenRegister\Service\Edepot\TransferStores(objects: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class), records: $this->records, settings: $this->config, logger: $this->logger), $this->createMock(INotificationManager::class));
 	}//end service()
 
 	/**

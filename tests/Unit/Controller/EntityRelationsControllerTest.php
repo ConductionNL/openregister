@@ -19,6 +19,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Db\DecisionMetadataEdit;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\EntityRelationsControllerFactory;
 use OCA\OpenRegister\Controller\EntityRelationsController;
 use OCA\OpenRegister\Db\EmailLinkMapper;
@@ -157,7 +158,8 @@ class EntityRelationsControllerTest extends TestCase {
 			$this->emailLinkMapper,
 			$this->logger,
 			$this->relationDecisions,
-			$this->visibleAsIs()
+			$this->visibleAsIs(),
+			$this->createMock(IGroupManager::class)
 		);
 	}//end makeController()
 
@@ -297,9 +299,11 @@ class EntityRelationsControllerTest extends TestCase {
 			->expects($this->once())
 			->method('updateDecisionMetadata')
 			->with(
-				$this->identicalTo($relation),
-				$this->equalTo(['bases' => ['uuid-a']]),
-				$this->identicalTo($this->user)
+				$this->callback(
+					fn (DecisionMetadataEdit $edit): bool => $edit->relation === $relation
+						&& $edit->fields === ['bases' => ['uuid-a']]
+						&& $edit->actingUser === $this->user
+				)
 			)
 			->willReturn($updatedRelation);
 

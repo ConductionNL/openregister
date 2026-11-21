@@ -57,7 +57,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+ * @spec openspec/specs/flow-nodes/spec.md
  */
 
 declare(strict_types=1);
@@ -69,15 +69,16 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowValueTemplate;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCP\IL10N;
-use OCP\IURLGenerator;
 use OCP\IUser;
 use OCP\IUserManager;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
@@ -88,7 +89,9 @@ use UnexpectedValueException;
 /**
  * Reads objects from a register into the run.
  */
-class ObjectReadNode extends ObjectNodeBase implements IFlowNode, ObjectReadNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
+class ObjectReadNode extends ObjectNodeBase implements IFlowNode, ObjectReadNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy,
+	IFlowNodeConfigForm
+{
 
 	/**
 	 * The step type.
@@ -125,16 +128,14 @@ class ObjectReadNode extends ObjectNodeBase implements IFlowNode, ObjectReadNode
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectNodeSources $sources     Object reads (RBAC-enforcing) and the register and schema mappers.
-	 * @param IUserManager      $userManager Resolves the run owner.
-	 * @param IL10N             $l10n        Translations.
-	 * @param IURLGenerator     $urls        For the palette icon.
+	 * @param ObjectNodeSources    $sources      Object reads (RBAC-enforcing) and the register and schema mappers.
+	 * @param IUserManager         $userManager  Resolves the run owner.
+	 * @param FlowNodePresentation $presentation Translations and the palette icon.
 	 */
 	public function __construct(
 		private readonly ObjectNodeSources $sources,
 		private readonly IUserManager $userManager,
-		private readonly IL10N $l10n,
-		private readonly IURLGenerator $urls,
+		private readonly FlowNodePresentation $presentation,
 	) {
 	}//end __construct()
 
@@ -153,7 +154,7 @@ class ObjectReadNode extends ObjectNodeBase implements IFlowNode, ObjectReadNode
 	 * @return string The display name.
 	 */
 	public function getDisplayName(): string {
-		return $this->l10n->t('Read objects');
+		return $this->presentation->l10n->t('Read objects');
 	}//end getDisplayName()
 
 	/**
@@ -162,7 +163,7 @@ class ObjectReadNode extends ObjectNodeBase implements IFlowNode, ObjectReadNode
 	 * @return string The description.
 	 */
 	public function getDescription(): string {
-		return $this->l10n->t('Find objects in a register and put them on the item.');
+		return $this->presentation->l10n->t('Find objects in a register and put them on the item.');
 	}//end getDescription()
 
 	/**
@@ -171,7 +172,7 @@ class ObjectReadNode extends ObjectNodeBase implements IFlowNode, ObjectReadNode
 	 * @return string The icon URL.
 	 */
 	public function getIcon(): string {
-		return $this->urls->imagePath('core', 'actions/search.svg');
+		return $this->presentation->urls->imagePath('core', 'actions/search.svg');
 	}//end getIcon()
 
 	/**
@@ -179,11 +180,67 @@ class ObjectReadNode extends ObjectNodeBase implements IFlowNode, ObjectReadNode
 	 *
 	 * @return array<int, string> The accepted config keys.
 	 *
-	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 * @spec openspec/specs/flow-preflight/spec.md
 	 */
 	public function configKeys(): array {
 		return ['register', 'schema', 'filters', 'fanOut', 'limit', 'output'];
 	}//end configKeys()
+
+	/**
+	 * The fields of an object-read step.
+	 *
+	 * `filters` is keyed by the schema's own property names, a shape the field
+	 * vocabulary cannot describe: it stays in the JSON pane.
+	 *
+	 * @return array<int, array<string, mixed>> The field descriptions.
+	 *
+	 * @spec openspec/changes/flow-node-config-forms/tasks.md
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-type-declares-its-own-form-and-its-own-run-log-actions
+	 */
+	public function configForm(): array {
+		return [
+			[
+				'key' => 'register',
+				'label' => $this->presentation->l10n->t('Register'),
+				'type' => 'select',
+				'help' => $this->presentation->l10n->t('The register the objects are read from.'),
+				'required' => true,
+				'optionsFrom' => '/apps/openregister/api/registers',
+			],
+			[
+				'key' => 'schema',
+				'label' => $this->presentation->l10n->t('Schema'),
+				'type' => 'select',
+				'help' => $this->presentation->l10n->t(
+					'The schema of the objects to read. The filters are edited in the JSON pane as property/value pairs; '
+						. 'placeholders such as {{uuid}} are filled in from each item, and one that comes out empty fails the step.'
+				),
+				'required' => true,
+				'optionsFrom' => '/apps/openregister/api/schemas',
+			],
+			[
+				'key' => 'fanOut',
+				'label' => $this->presentation->l10n->t('One item per object'),
+				'type' => 'boolean',
+				'help' => $this->presentation->l10n->t(
+					'Emit each object as its own item, so the next steps act on every one. Off, the matches land as one '
+						. 'list on the item.'
+				),
+			],
+			[
+				'key' => 'limit',
+				'label' => $this->presentation->l10n->t('At most this many objects'),
+				'type' => 'number',
+				'help' => $this->presentation->l10n->t('Defaults to 100, and is capped at 1000.'),
+			],
+			[
+				'key' => 'output',
+				'label' => $this->presentation->l10n->t('Put the list under'),
+				'type' => 'text',
+				'help' => $this->presentation->l10n->t('Without "One item per object": the item field the list lands in. Defaults to "objects".'),
+			],
+		];
+	}//end configForm()
 
 	/**
 	 * Refuse a step that cannot name what it reads.
@@ -196,15 +253,15 @@ class ObjectReadNode extends ObjectNodeBase implements IFlowNode, ObjectReadNode
 	 */
 	public function validateConfig(array $config): void {
 		if (trim((string)($config['register'] ?? '')) === '') {
-			throw new UnexpectedValueException($this->l10n->t('An object-read step needs a register.'));
+			throw new UnexpectedValueException($this->presentation->l10n->t('An object-read step needs a register.'));
 		}
 
 		if (trim((string)($config['schema'] ?? '')) === '') {
-			throw new UnexpectedValueException($this->l10n->t('An object-read step needs a schema.'));
+			throw new UnexpectedValueException($this->presentation->l10n->t('An object-read step needs a schema.'));
 		}
 
 		if (array_key_exists('filters', $config) === true && is_array($config['filters']) === false) {
-			throw new UnexpectedValueException($this->l10n->t('An object-read step\'s filters must be an object.'));
+			throw new UnexpectedValueException($this->presentation->l10n->t('An object-read step\'s filters must be an object.'));
 		}
 
 	}//end validateConfig()
@@ -217,16 +274,17 @@ class ObjectReadNode extends ObjectNodeBase implements IFlowNode, ObjectReadNode
 	 * their own answers. It is the same contract every other item-driven node
 	 * follows.
 	 *
-	 * @param array $items The input items.
-	 * @param array $config The step configuration.
-	 * @param array $context Run-level metadata (carries the triggering user).
+	 * @param FlowNodeCall $call The input items, the step configuration and the run context.
 	 *
 	 * @return array The items, each with the read's results added.
 	 *
 	 * @throws RuntimeException When the run has no resolvable owner.
 	 * @throws UnexpectedValueException When the register or schema does not resolve.
 	 */
-	public function execute(array $items, array $config, array $context): array {
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
+		$config = $call->config;
+		$context = $call->context;
 		return $this->readEach(step: new NodeInvocation(items: $items, config: $config, context: $context));
 	}//end execute()
 
@@ -311,7 +369,10 @@ class ObjectReadNode extends ObjectNodeBase implements IFlowNode, ObjectReadNode
 			// not an error: "nothing to reap" is the ordinary case.
 			return array_values(
 				array_map(
-					static fn (array $record): array => FlowItems::item(json: array_merge($json, $record), binary: $binary, fromItemIndex: (int)$index),
+					static fn (array $record): array => FlowItems::item(
+						json: array_merge($json, $record),
+						options: new FlowItemOptions(binary: $binary, fromItemIndex: (int)$index)
+					),
 					$records
 				)
 			);
@@ -319,7 +380,7 @@ class ObjectReadNode extends ObjectNodeBase implements IFlowNode, ObjectReadNode
 
 		$json[$this->outputKey(config: $run->step->config)] = $records;
 
-		return [FlowItems::item(json: $json, binary: $binary, fromItemIndex: (int)$index)];
+		return [FlowItems::item(json: $json, options: new FlowItemOptions(binary: $binary, fromItemIndex: (int)$index))];
 	}//end itemsFor()
 
 	/**
@@ -374,7 +435,7 @@ class ObjectReadNode extends ObjectNodeBase implements IFlowNode, ObjectReadNode
 	 *
 	 * @throws RuntimeException When a filter placeholder renders empty.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	private function renderFilters(array $config, array $json): array {
 		$rendered = FlowValueTemplate::renderTracked(
@@ -384,7 +445,7 @@ class ObjectReadNode extends ObjectNodeBase implements IFlowNode, ObjectReadNode
 
 		if ($rendered['unresolved'] !== []) {
 			throw new RuntimeException(
-				$this->l10n->t(
+				$this->presentation->l10n->t(
 					'The object-read step\'s filter could not be rendered: %s resolved to nothing on this item. '
 					. 'A filter that renders empty matches nothing, so the step would report success having read no objects.',
 					[implode(', ', $rendered['unresolved'])]
@@ -434,7 +495,7 @@ class ObjectReadNode extends ObjectNodeBase implements IFlowNode, ObjectReadNode
 			);
 		} catch (Throwable $e) {
 			throw new RuntimeException(
-				$this->l10n->t('The object-read step could not read from the register: %s', [$e->getMessage()]),
+				$this->presentation->l10n->t('The object-read step could not read from the register: %s', [$e->getMessage()]),
 				0,
 				$e
 			);
@@ -492,14 +553,14 @@ class ObjectReadNode extends ObjectNodeBase implements IFlowNode, ObjectReadNode
 		$uid = ($context[FlowRunServiceInterface::RUN_AS_CONTEXT_KEY] ?? null);
 		if (is_string($uid) === false || trim($uid) === '') {
 			throw new RuntimeException(
-				$this->l10n->t('This flow run has no acting identity (runAs); an object read must be attributable.')
+				$this->presentation->l10n->t('This flow run has no acting identity (runAs); an object read must be attributable.')
 			);
 		}
 
 		$user = $this->userManager->get(trim($uid));
 		if ($user === null) {
 			throw new RuntimeException(
-				$this->l10n->t(
+				$this->presentation->l10n->t(
 					'This flow run\'s acting identity "%s" (runAs) is not a user account; an object read must be attributable.',
 					[trim($uid)]
 				)
@@ -515,7 +576,7 @@ class ObjectReadNode extends ObjectNodeBase implements IFlowNode, ObjectReadNode
 		// unnoticed for as long as the run lives.
 		if ($user->isEnabled() === false) {
 			throw new RuntimeException(
-				$this->l10n->t(
+				$this->presentation->l10n->t(
 					'This flow run\'s acting identity "%s" (runAs) is a disabled account; an object read is refused rather than performed on their behalf.',
 					[trim($uid)]
 				)
@@ -541,7 +602,7 @@ class ObjectReadNode extends ObjectNodeBase implements IFlowNode, ObjectReadNode
 			return $this->sources->registers->find(id: $identifier, _rbac: false, _multitenancy: false);
 		} catch (Throwable $e) {
 			throw new UnexpectedValueException(
-				$this->l10n->t('The register "%s" could not be resolved.', [$identifier]),
+				$this->presentation->l10n->t('The register "%s" could not be resolved.', [$identifier]),
 				0,
 				$e
 			);
@@ -595,7 +656,7 @@ class ObjectReadNode extends ObjectNodeBase implements IFlowNode, ObjectReadNode
 			return $this->sources->schemas->find(id: $identifier, _rbac: false, _multitenancy: false);
 		} catch (Throwable $e) {
 			throw new UnexpectedValueException(
-				$this->l10n->t('The schema "%s" could not be resolved.', [$identifier]),
+				$this->presentation->l10n->t('The schema "%s" could not be resolved.', [$identifier]),
 				0,
 				$e
 			);

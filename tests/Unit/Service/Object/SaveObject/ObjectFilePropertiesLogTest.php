@@ -30,6 +30,9 @@ use Stringable;
 /**
  * @covers \OCA\OpenRegister\Service\Object\SaveObject\ObjectFileProperties
  * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ObjectFileWrite
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
  */
 final class ObjectFilePropertiesLogTest extends TestCase {
 
@@ -83,12 +86,12 @@ final class ObjectFilePropertiesLogTest extends TestCase {
 	 */
 	private function storeOneFile(): ObjectEntity {
 		$files = $this->createMock(FilePropertyHandler::class);
-		$files->method('isFileProperty')->willReturnCallback(
-			static fn ($value, $schema, $propertyName): bool => $propertyName === 'file'
+		$files->method('isFileInSchema')->willReturnCallback(
+			static fn ($schema, $propertyName): bool => $propertyName === 'file'
 		);
 		$files->method('handleFileProperty')->willReturnCallback(
-			static function ($objectEntity, array &$object, string $propertyName): void {
-				$object[$propertyName] = 42;
+			static function (ObjectFileWrite $write, string $propertyName): void {
+				$write->data[$propertyName] = 42;
 			}
 		);
 

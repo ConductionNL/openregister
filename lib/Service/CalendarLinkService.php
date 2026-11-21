@@ -79,26 +79,6 @@ class CalendarLinkService implements CalendarLinkServiceInterface {
 	 * not own the VEVENT). Re-fetches event details from CalDAV to
 	 * populate cached fields (summary/dtstart/dtend/location).
 	 *
-	 * @param string $objectUuid Object UUID.
-	 * @param int $registerId Register id.
-	 * @param int $schemaId Schema id.
-	 * @param string $calendarUri Calendar URI (per-user CalDAV path component).
-	 * @param string $eventUid VEVENT UID.
-	 *
-	 * @return CalendarLink The persisted link row.
-	 *
-	 * @throws Exception When no user is logged in or the event cannot be located.
-	 *
-	 * @spec openspec/specs/generic-integrations/spec.md
-	 */
-	public function linkEvent(string $objectUuid, int $registerId, int $schemaId, string $calendarUri, string $eventUid): CalendarLink {
-		$target = (new LinkTarget(objectUuid: $objectUuid, registerId: $registerId))->inSchema(schemaId: $schemaId);
-		return $this->linkLocatedEvent(target: $target, key: new CalendarEventKey(calendarUri: $calendarUri, eventUid: $eventUid));
-	}//end linkEvent()
-
-	/**
-	 * Insert a link-table row for an existing VEVENT, with its cacheable fields.
-	 *
 	 * @param LinkTarget       $target The object, register and schema to link to.
 	 * @param CalendarEventKey $key    The calendar URI and event UID.
 	 *
@@ -107,9 +87,21 @@ class CalendarLinkService implements CalendarLinkServiceInterface {
 	 * @throws Exception When no user, or the event is not on that calendar.
 	 *
 	 * @spec openspec/specs/generic-integrations/spec.md
+	 * @spec openspec/changes/calendar-leaf-inbound/specs/integration-calendar/spec.md#requirement-linking-is-idempotent-req-cal-inb-003
 	 */
 	public function linkLocatedEvent(LinkTarget $target, CalendarEventKey $key): CalendarLink {
 		$user = $this->requireUser();
+
+		// Linking is idempotent: the same object, event and calendar return the
+		// row that is already there (REQ-CAL-INB-003).
+		$existing = $this->linkMapper->findLink(
+			objectUuid: $target->objectUuid,
+			eventUid: $key->eventUid,
+			calendarUri: $key->calendarUri
+		);
+		if ($existing !== null) {
+			return $existing;
+		}
 
 		// Locate the VEVENT on the named calendar so we can cache summary/dtstart/etc.
 		$located = $this->locateEventOnCalendar(userId: $user->getUID(), key: $key);
@@ -178,29 +170,6 @@ class CalendarLinkService implements CalendarLinkServiceInterface {
 	}//end stampLinkedBy()
 
 	/**
-	 * Create a new VEVENT through CalendarEventService and record a link-table row.
-	 *
-	 * Delegates the VEVENT write (which adds X-OPENREGISTER-* properties)
-	 * to {@see CalendarEventService::createEvent()} then mirrors the
-	 * linkage in the link table with `taggedWithXor=true`.
-	 *
-	 * @param string $objectUuid Object UUID.
-	 * @param int $registerId Register id.
-	 * @param int $schemaId Schema id.
-	 * @param array<string,mixed> $eventData Event data (summary, dtstart, dtend, location, ...).
-	 *
-	 * @return CalendarLink The persisted link row.
-	 *
-	 * @throws Exception On creation failure.
-	 *
-	 * @spec openspec/specs/generic-integrations/spec.md
-	 */
-	public function createAndLinkEvent(string $objectUuid, int $registerId, int $schemaId, array $eventData): CalendarLink {
-		$target = (new LinkTarget(objectUuid: $objectUuid, registerId: $registerId))->inSchema(schemaId: $schemaId);
-		return $this->createLinkedEvent(target: $target, eventData: $eventData);
-	}//end createAndLinkEvent()
-
-	/**
 	 * Create a VEVENT through CalendarEventService and insert its link-table mirror row.
 	 *
 	 * @param LinkTarget          $target    The object, register and schema to link to.
@@ -211,6 +180,7 @@ class CalendarLinkService implements CalendarLinkServiceInterface {
 	 * @throws Exception When no user, or the event could not be created.
 	 *
 	 * @spec openspec/specs/generic-integrations/spec.md
+	 * @spec openspec/changes/calendar-leaf-inbound/specs/integration-calendar/spec.md#requirement-linking-is-idempotent-req-cal-inb-003
 	 */
 	public function createLinkedEvent(LinkTarget $target, array $eventData): CalendarLink {
 		$user = $this->requireUser();
@@ -239,8 +209,40 @@ class CalendarLinkService implements CalendarLinkServiceInterface {
 		$this->stampLinkedBy(link: $link, uid: $user->getUID());
 		$link->setTaggedWithXor(true);
 
+		// A row for this object, event and calendar may already exist (another
+		// writer linked it first): return it instead of a second row (REQ-CAL-INB-003).
+		$existing = $this->linkMapper->findLink(
+			objectUuid: $target->objectUuid,
+			eventUid: (string)$link->getEventUid(),
+			calendarUri: (string)$link->getCalendarUri()
+		);
+		if ($existing !== null) {
+			return $existing;
+		}
+
 		return $this->linkMapper->insert(entity: $link);
 	}//end createLinkedEvent()
+
+	/**
+	 * The link rows attached to a VEVENT, and so the objects it belongs to.
+	 *
+	 * Scoped to one calendar when `$calendarUri` is given, so a UID reused on
+	 * another calendar does not match.
+	 *
+	 * @param string      $eventUid    The VEVENT UID.
+	 * @param string|null $calendarUri The calendar URI, or null for every calendar.
+	 *
+	 * @return CalendarLink[] The link rows, oldest first; empty for a blank UID.
+	 *
+	 * @spec openspec/changes/calendar-leaf-inbound/specs/integration-calendar/spec.md#requirement-reverse-event-to-objects-lookup-req-cal-inb-002
+	 */
+	public function getObjectsForEvent(string $eventUid, ?string $calendarUri=null): array {
+		if (trim($eventUid) === '') {
+			return [];
+		}
+
+		return $this->linkMapper->findByEventUid(eventUid: $eventUid, calendarUri: $calendarUri);
+	}//end getObjectsForEvent()
 
 	/**
 	 * Copy the uid, uri, summary, dates and location of a created event onto its link row.
@@ -576,9 +578,8 @@ class CalendarLinkService implements CalendarLinkServiceInterface {
 	/**
 	 * List recent events on a named calendar — picker step 2.
 	 *
-	 * @param string $calendarUri Calendar URI.
-	 * @param int|null $limit Max rows (default 100).
-	 * @param DateTimeInterface|null $after Only include events with dtstart >= $after.
+	 * @param string               $calendarUri Calendar URI.
+	 * @param CalendarPickerWindow $window      The earliest start and the row cap.
 	 *
 	 * @return array<int,array<string,mixed>>
 	 *
@@ -586,10 +587,10 @@ class CalendarLinkService implements CalendarLinkServiceInterface {
 	 *
 	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
-	public function getEventsForCalendar(string $calendarUri, ?int $limit = 100, ?DateTimeInterface $after = null): array {
-		$results = $this->pickerRows(scan: $this->pickerScan(calendarUri: $calendarUri, after: $after));
+	public function getEventsForCalendar(string $calendarUri, CalendarPickerWindow $window): array {
+		$results = $this->pickerRows(scan: $this->pickerScan(calendarUri: $calendarUri, after: $window->after));
 
-		return $this->limitRows(rows: $this->sortedByStart(rows: $results), limit: $limit ?? 0);
+		return $this->limitRows(rows: $this->sortedByStart(rows: $results), limit: $window->limit ?? 0);
 	}//end getEventsForCalendar()
 
 	/**

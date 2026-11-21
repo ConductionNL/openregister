@@ -50,11 +50,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Integration\Providers;
 
+use InvalidArgumentException;
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
+use OCA\OpenRegister\Service\Integration\UpstreamRequest;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
-use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouterInterface;
-use OCP\App\IAppManager;
-use OCP\IL10N;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -121,19 +121,16 @@ class MessageDispatchProvider extends AbstractIntegrationProvider implements Mes
 	/**
 	 * Constructor.
 	 *
-	 * @param ExternalIntegrationRouterInterface $router External-call router.
-	 * @param IAppManager $appManager NC app manager (isEnabled check).
-	 * @param IL10N $l10n Localisation.
-	 * @param LoggerInterface $logger Logger for degraded paths.
+	 * @param ConnectorRouting $routing The router, app manager (isEnabled check) and localisation.
+	 * @param LoggerInterface  $logger  Logger for degraded paths.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private ExternalIntegrationRouterInterface $router,
-		private IAppManager $appManager,
-		private IL10N $l10n,
+		ConnectorRouting $routing,
 		private LoggerInterface $logger,
 	) {
+		$this->useRouting(routing: $routing);
 	}//end __construct()
 
 	/**
@@ -199,9 +196,7 @@ class MessageDispatchProvider extends AbstractIntegrationProvider implements Mes
 	 * set (the registry contract requires the method; the dispatch surface is
 	 * {@see dispatch()}).
 	 *
-	 * @param string $register Ignored (send-only leaf).
-	 * @param string $schema Ignored (send-only leaf).
-	 * @param string $objectId Ignored (send-only leaf).
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param array<string,mixed> $filters Ignored (send-only leaf).
 	 *
 	 * @return array<int,array<string,mixed>>
@@ -212,7 +207,7 @@ class MessageDispatchProvider extends AbstractIntegrationProvider implements Mes
 	 *   filters are mandated by the IntegrationProvider contract; this leaf is
 	 *   send-only so they are intentionally unused.
 	 */
-	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
+	public function list(ObjectRef $ref, array $filters = []): array {
 		return [];
 	}//end list()
 
@@ -228,26 +223,47 @@ class MessageDispatchProvider extends AbstractIntegrationProvider implements Mes
 	 * rather than throwing, so a consuming app never fatals on a missing/down
 	 * source (AD-23).
 	 *
-	 * @param string $source The seeded source slug to send through
-	 *                       (MUST be in {@see ALLOWED_SOURCES}).
-	 * @param array<string,mixed> $body The provider-shaped request body the
-	 *                                  consuming app composed.
-	 * @param string $path Path relative to the source base URL
-	 *                     (e.g. `2010-04-01/Accounts/{SID}/Messages.json`,
-	 *                     `{PhoneNumberID}/messages`, `message`).
-	 * @param array<string,string> $headers Optional extra request headers
-	 *                                      (e.g. a per-call Content-Type).
+	 * Takes main's OutboundMessage, or the release's body, path and headers, by name or by position
+	 * (a body array in the second slot); a message wins.
+	 *
+	 * @param string                     $source  The seeded source slug to send through.
+	 * @param OutboundMessage|array|null $message The path relative to the source base URL, the body and the headers; an array here is the release's
+	 *                                            positional `$body`.
+	 * @param string|null                $path    The path relative to the source base URL.
+	 * @param array                      $headers Extra request headers.
+	 * @param array|null                 $body    The request body.
 	 *
 	 * @return array<string,mixed> `{ status: 'sent', response }` on success, or
 	 *                             `{ unavailable: true, cause }` when the source
 	 *                             is unconfigured/down or the slug is rejected.
 	 *
+	 * @throws InvalidArgumentException When neither a message nor a path and body is given.
+	 *
 	 * @spec openspec/changes/archive/2026-10-05-messaging-dispatch-leaf/tasks.md
 	 */
-	public function dispatch(string $source, array $body, string $path, array $headers = []): array {
-		$options = ['body' => $body, 'headers' => $this->withJsonAccept(headers: $headers)];
+	public function dispatch(
+		string $source,
+		OutboundMessage|array|null $message = null,
+		string|null $path = null,
+		array $headers = [],
+		array|null $body = null,
+	): array {
+		if (is_array($message) === true) {
+			$body  ??= $message;
+			$message = null;
+		}
 
-		return $this->sendThrough(source: trim($source), send: fn (): array => $this->send(path: $path, options: $options));
+		if ($message === null) {
+			if ($path === null || $body === null) {
+				throw new InvalidArgumentException('dispatch() needs a path and a body, or an OutboundMessage.');
+			}
+
+			$message = new OutboundMessage(path: $path, body: $body, headers: $headers);
+		}
+
+		$options = ['body' => $message->body, 'headers' => $this->withJsonAccept(headers: $message->headers)];
+
+		return $this->sendThrough(source: trim($source), send: fn (): array => $this->send(path: $message->path, options: $options));
 	}//end dispatch()
 
 	/**
@@ -295,7 +311,7 @@ class MessageDispatchProvider extends AbstractIntegrationProvider implements Mes
 	 */
 	private function send(string $path, array $options): array {
 		try {
-			$response = $this->router->call(provider: $this, method: 'POST', path: ltrim($path, '/'), options: $options);
+			$response = $this->router->call(provider: $this, request: new UpstreamRequest(method: 'POST', path: ltrim($path, '/'), options: $options));
 		} catch (ProviderUnavailableException $e) {
 			return $this->degraded(cause: $e->getCause());
 		} catch (Throwable $e) {

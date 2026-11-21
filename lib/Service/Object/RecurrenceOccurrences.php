@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCA\OpenRegister\Formats\RecurrenceWindow;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Formats\ExtendedFieldTypeValidatorInterface;
 use OCA\OpenRegister\Formats\FormatFactory;
@@ -69,7 +70,7 @@ final class RecurrenceOccurrences {
 		$validator = FormatFactory::extendedFieldTypes();
 		foreach ($rules as $propertyName => $rrule) {
 			$key = self::occurrencesKey(propertyName: $propertyName, ruleCount: count($rules));
-			$objectData[$key] = $validator->materialiseOccurrences(rrule: $rrule, count: $count);
+			$objectData[$key] = $validator->occurrencesIn(window: new RecurrenceWindow(rrule: $rrule, count: $count));
 		}
 
 		return $objectData;

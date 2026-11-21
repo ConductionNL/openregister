@@ -45,8 +45,10 @@ namespace OCA\OpenRegister\AppHost\Controller;
 
 use OCA\OpenRegister\AppHost\Controller\Support\GenericStoreControllerServices;
 use OCA\OpenRegister\AppHost\Service\GenericStoreService;
+use OCA\OpenRegister\AppHost\Service\StoreSearch;
 use OCA\OpenRegister\AppHost\Service\StoreDescriptor;
 use OCA\OpenRegister\AppHost\Store\StoreActionAuthorizer;
+use OCA\OpenRegister\AppHost\Store\StoreActionCheck;
 use OCA\OpenRegister\AppHost\Store\StoreManifest;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -212,7 +214,7 @@ class GenericStoreController extends Controller {
 
 	/**
 	 * The filter kinds a search answers with: the app's declared kinds, or a
-	 * federated store's declared type ids when it names no kinds of its own.
+	 * federated store's offered type ids when it names no kinds of its own.
 	 *
 	 * @param StoreManifest $store The declared store block.
 	 *
@@ -220,11 +222,41 @@ class GenericStoreController extends Controller {
 	 */
 	private function searchKinds(StoreManifest $store): array {
 		if ($store->kinds === [] && $store->isFederated() === true) {
-			return $store->declaredTypes();
+			return $this->offeredTypes(store: $store);
 		}
 
 		return $store->kinds;
 	}//end searchKinds()
+
+	/**
+	 * The declared type ids this store offers: those an installed app owns.
+	 *
+	 * A type an optional app registers (`nldesign.theme`) is left out while
+	 * that app is disabled, so its chip does not appear and no search walks
+	 * it. When the store owns none of its declared types the declared list is
+	 * kept, so the store stays on the configuration path and the catalogue
+	 * still names the manifest error, rather than silently falling back to
+	 * the objects API.
+	 *
+	 * @param StoreManifest $store The declared store block.
+	 *
+	 * @return array<int, string>
+	 *
+	 * @spec openspec/changes/federated-config-sharing
+	 */
+	private function offeredTypes(StoreManifest $store): array {
+		$declared = $store->declaredTypes();
+		if ($declared === []) {
+			return [];
+		}
+
+		$owned = $this->services->sources->catalog->ownedTypes(typeIds: $declared);
+		if ($owned === []) {
+			return $declared;
+		}
+
+		return $owned;
+	}//end offeredTypes()
 
 	/**
 	 * Install one store item into this instance.
@@ -397,7 +429,7 @@ class GenericStoreController extends Controller {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/store-plane-action-auth/specs/apphost-store-plane/spec.md#requirement-an-action-posture-must-resolve-against-the-declaring-app
+	 * @spec openspec/specs/apphost-store-plane/spec.md#requirement-an-action-posture-must-resolve-against-the-declaring-app
 	 */
 	private function mayInstall(StoreManifest $store, ?IUser $user): bool {
 		$action = $store->installAction();
@@ -405,7 +437,7 @@ class GenericStoreController extends Controller {
 			// StoreManifest answers false for an action posture by design, so
 			// this is the only arm that can grant one.
 			return ($user !== null
-				&& $this->services->install->actionAuthorizer->can(appId: $this->appName, action: $action, user: $user));
+				&& $this->services->install->actionAuthorizer->permits(check: new StoreActionCheck(appId: $this->appName, action: $action, user: $user)));
 		}
 
 		return $store->permitsInstall(
@@ -442,7 +474,7 @@ class GenericStoreController extends Controller {
 		}
 
 		if ($descriptor->isFederated() === true) {
-			return $this->services->sources->catalog->search(descriptor: $descriptor, query: $query, kind: $kind);
+			return $this->services->sources->catalog->search(descriptor: $descriptor, search: new StoreSearch(query: $query, kind: $kind));
 		}
 
 		return $this->services->sources->storeService->search(descriptor: $descriptor, query: $query, kind: $kind);
@@ -543,7 +575,7 @@ class GenericStoreController extends Controller {
 			schema: $store->schema,
 			defaultRegister: $store->register,
 			cardFields: $store->cardFields,
-			types: $store->declaredTypes(),
+			types: $this->offeredTypes(store: $store),
 			publishFields: $store->publishFields,
 			publishGroups: $store->publishGroups
 		);

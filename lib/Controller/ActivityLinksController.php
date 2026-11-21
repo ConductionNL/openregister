@@ -32,10 +32,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
 use Exception;
 use OCA\OpenRegister\Controller\Support\ActivityLinksControllerServices;
 use OCA\OpenRegister\Controller\Trait\ResolvesLinkedObjectTrait;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
+use OCA\OpenRegister\Service\ActivityEntriesOptions;
+use OCA\OpenRegister\Service\ActivityFilter;
 use OCA\OpenRegister\Service\ActivityFilterServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
@@ -85,7 +87,7 @@ class ActivityLinksController extends Controller {
 		IRequest $request,
 		ActivityLinksControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->filterService = $services->filterService;
 		$this->objectService = $services->objectService;
 		$this->visibility = $services->visibility;
@@ -129,7 +131,7 @@ class ActivityLinksController extends Controller {
 		}
 
 		try {
-			$object = $this->validateObject(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id);
+			$object = $this->resolveLinkedObject(ref: new ObjectRef(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id));
 			if ($object === null) {
 				return new JSONResponse(['error' => 'Object not found'], 404);
 			}
@@ -140,14 +142,15 @@ class ActivityLinksController extends Controller {
 				requested: $this->nullableString(name: 'visibility')
 			);
 
-			$result = $this->filterService->getActivityEntries(
+			$entries = new ActivityFilter(
 				objectUuid: $object->getUuid(),
 				type: $this->nullableString(name: 'type'),
 				actor: $this->nullableString(name: 'actor'),
-				after: $this->nullableInt(name: 'after'),
-				limit: (int)$this->request->getParam('limit', 100),
-				cursor: $this->nullableInt(name: 'cursor'),
-				visibility: $filter
+				after: $this->nullableInt(name: 'after')
+			);
+			$result  = $this->filterService->getActivityEntries(
+				filter: $entries->withCursor(cursor: $this->nullableInt(name: 'cursor')),
+				options: new ActivityEntriesOptions(limit: (int)$this->request->getParam('limit', 100), visibility: $filter)
 			);
 
 			return new JSONResponse(
@@ -221,7 +224,7 @@ class ActivityLinksController extends Controller {
 		}
 
 		try {
-			$resolved = $this->validateObject(register: $parts[0], schema: $parts[1], id: $parts[2]);
+			$resolved = $this->resolveLinkedObject(ref: new ObjectRef(register: $parts[0], schema: $parts[1], id: $parts[2]));
 			if ($resolved === null) {
 				return new JSONResponse(['error' => 'Object not found'], 404);
 			}

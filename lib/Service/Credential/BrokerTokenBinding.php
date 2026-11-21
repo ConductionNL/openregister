@@ -41,8 +41,8 @@ final class BrokerTokenBinding {
 	 * @param string|null $path   The provider-relative path, or null.
 	 */
 	public function __construct(
-		public readonly ?string $method,
-		public readonly ?string $path,
+		public readonly ?string $method = null,
+		public readonly ?string $path = null,
 	) {
 	}//end __construct()
 

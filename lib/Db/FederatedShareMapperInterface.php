@@ -22,6 +22,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCP\AppFramework\Db\Entity;
+
 /**
  * The federated share lookup the federation endpoints use.
  *
@@ -51,15 +54,14 @@ interface FederatedShareMapperInterface {
 	/**
 	 * Find all federated shares, optionally filtered.
 	 *
-	 * @param int|null $limit Maximum number of results.
-	 * @param int|null $offset Result offset.
-	 * @param array<string, mixed>|null $filters Column => value equality filters.
+	 * @param ListQuery|null $query The page (unbounded for every row) and the column => value equality filters;
+	 *                              null for every share.
 	 *
 	 * @return FederatedShare[] The matching shares.
 	 *
 	 * @psalm-return list<FederatedShare>
 	 */
-	public function findAll(?int $limit = null, ?int $offset = null, ?array $filters = []): array;
+	public function findAll(?ListQuery $query = null): array;
 
 	/**
 	 * Find a federated share by its scoped share token.
@@ -97,4 +99,16 @@ interface FederatedShareMapperInterface {
 	 * @return FederatedShare The updated share.
 	 */
 	public function updateFromArray(int $id, array $data): FederatedShare;
+
+	/**
+	 * Store a share already in hand, refreshing its updated timestamp.
+	 *
+	 * Writes without the organisation filter: the caller found the share by a
+	 * credential, not through a session.
+	 *
+	 * @param Entity $entity The share to update.
+	 *
+	 * @return FederatedShare The updated share.
+	 */
+	public function update(Entity $entity): FederatedShare;
 }//end interface

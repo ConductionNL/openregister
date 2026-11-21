@@ -38,6 +38,8 @@ namespace OCA\OpenRegister\Service\Archival;
 
 use DateTime;
 use Exception;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\Db\MagicMapper\MagicListRequest;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterSchema;
 use Psr\Log\LoggerInterface;
@@ -135,23 +137,35 @@ class SelectielijstResolver {
 		$settings = $this->storage->settings->getArchivalSettingsOnly();
 
 		$registerId = $settings['selectielijstRegister'] ?? null;
-		$schemaId = $settings['selectielijstSchema'] ?? null;
+		$schemaId   = $settings['selectielijstSchema'] ?? null;
 
 		if ($registerId === null || $schemaId === null) {
 			return null;
 		}
 
 		try {
-			$catalog = $this->storage->catalog;
-			$table = new RegisterSchema(register: $catalog->registers()->find((int)$registerId), schema: $catalog->schemas()->find((int)$schemaId));
-			$results = $this->rowsFor(category: $category, table: $table);
+			$table = $this->selectielijstTable(registerId: (int)$registerId, schemaId: (int)$schemaId);
 
-			return $this->pickApplicableRow(results: $results);
+			return $this->pickApplicableRow(results: $this->rowsFor(category: $category, table: $table));
 		} catch (Exception $e) {
 			$this->logger->warning('[RetentionService] Failed to lookup selectielijst entry for ' . $category, ['exception' => $e]);
 			return null;
 		}
 	}//end findSelectielijstEntry()
+
+	/**
+	 * The configured selectielijst register and schema.
+	 *
+	 * @param int $registerId The configured register id.
+	 * @param int $schemaId   The configured schema id.
+	 *
+	 * @return RegisterSchema The table the selectielijst rows live in.
+	 */
+	private function selectielijstTable(int $registerId, int $schemaId): RegisterSchema {
+		$catalog = $this->storage->catalog;
+
+		return new RegisterSchema(register: $catalog->registers()->find($registerId), schema: $catalog->schemas()->find($schemaId));
+	}//end selectielijstTable()
 
 	/**
 	 * Every stored row of a category, up to the cap.
@@ -173,11 +187,11 @@ class SelectielijstResolver {
 	 * @throws Exception When the register, the schema or the rows cannot be read.
 	 */
 	private function rowsFor(string $category, RegisterSchema $table): array {
-		return $this->storage->catalog->tables()->findAll(
-			limit: self::SELECTION_LIST_ROW_CAP,
-			filters: ['object->categorie' => $category],
-			register: $table->register,
-			schema: $table->schema
+		return $this->storage->catalog->tables()->findAllListed(
+			request: new MagicListRequest(
+				table: $table,
+				query: new ListQuery(limit: self::SELECTION_LIST_ROW_CAP, filters: ['object->categorie' => $category])
+			)
 		);
 	}//end rowsFor()
 

@@ -27,7 +27,9 @@
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\MagicMapper\MagicListRequest;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Db\Register;
@@ -1792,11 +1794,25 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 			_rbac: false,
 			_multitenancy: false
 		);
-		$object = ($result['object'] ?? null);
-		if ($object === null) {
+		if (($result['object'] ?? null) === null) {
 			return null;
 		}
 
+		return $this->foundObjectName(identifier: $identifier, result: $result);
+	}//end objectSingleName()
+
+	/**
+	 * The name of a found object, cached under the identifier asked for and its UUID, when the caller may read it.
+	 *
+	 * @param string|int           $identifier The identifier asked for.
+	 * @param array<string, mixed> $result     The cross-source lookup's result, its object set.
+	 *
+	 * @return string|null The name, or null when nameless, sourceless or not readable.
+	 *
+	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
+	 */
+	private function foundObjectName(string|int $identifier, array $result): ?string {
+		$object = $result['object'];
 		$name = $object->getName() ?? $object->getUuid();
 		$source = $this->foundObjectNameSource(result: $result, object: $object);
 		if ($name === null || $source === null) {
@@ -1810,7 +1826,7 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 		}
 
 		return ($this->visibleNames(candidates: [$uuid => $name])[$uuid] ?? null);
-	}//end objectSingleName()
+	}//end foundObjectName()
 
 	/**
 	 * The name source of a found object: the register and schema it was found in, else its own.
@@ -2295,7 +2311,7 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function warmObjectTableNames(): int {
-		$objects = $this->getObjectMapper()->findAll();
+		$objects = $this->getObjectMapper()->findAllListed(request: new MagicListRequest(table: null, query: ListQuery::unbounded()));
 		array_walk($objects, fn (ObjectEntity $object) => $this->warmObjectName(object: $object));
 
 		return count($objects);
@@ -2606,6 +2622,10 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 	/**
 	 * Try one name column; a missing column is not an error, the next one is tried.
 	 *
+	 * Inside an open transaction the probe runs in a savepoint: on PostgreSQL a
+	 * failed statement aborts the whole transaction, so every later query of the
+	 * caller would fail too.
+	 *
 	 * @param NameTableQuery $query  The query.
 	 * @param string         $column The name column.
 	 *
@@ -2614,13 +2634,26 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
 	 */
 	private function readsNamesFromColumn(NameTableQuery $query, string $column): bool {
+		$nested = ($this->stores->db?->inTransaction() === true);
+		if ($nested === true) {
+			$this->stores->db->beginTransaction();
+		}
+
 		try {
 			$this->readNameColumn(query: $query, column: $column);
+			if ($nested === true) {
+				$this->stores->db->commit();
+			}
+
 			return empty($query->names) === false;
 		} catch (\Exception $e) {
 			// Column doesn't exist, try next one.
+			if ($nested === true) {
+				$this->stores->db->rollBack();
+			}
+
 			return false;
-		}
+		}//end try
 	}//end readsNamesFromColumn()
 
 	/**

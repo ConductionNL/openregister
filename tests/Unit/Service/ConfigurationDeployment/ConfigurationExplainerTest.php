@@ -37,6 +37,7 @@ use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationSnapshot;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationValueStore;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationScope;
 
 final class ConfigurationExplainerTest extends TestCase {
 
@@ -52,7 +53,7 @@ final class ConfigurationExplainerTest extends TestCase {
 		$store = $this->createMock(ConfigurationValueStore::class);
 		$store->method('read')->willReturnCallback(
 			static function (string $layer, ?string $ref, string $key) use ($byLayer): ConfigurationSnapshot {
-				return ($byLayer[$layer] ?? ConfigurationSnapshot::absent($layer, $ref, $key));
+				return ($byLayer[$layer] ?? ConfigurationSnapshot::absent(new ConfigurationAddress($layer, $ref, $key)));
 			}
 		);
 
@@ -85,7 +86,7 @@ final class ConfigurationExplainerTest extends TestCase {
 			$this->deployment('dep-register', 'zaken mail relay')
 		);
 
-		$answer = $explainer->explain('integration.mail', 'zaken');
+		$answer = $explainer->explain('integration.mail', new ConfigurationScope('zaken'));
 
 		$this->assertTrue($answer['found']);
 		$this->assertSame(['relay' => 'zaken-smtp'], $answer['value']);
@@ -125,7 +126,7 @@ final class ConfigurationExplainerTest extends TestCase {
 			ConfigurationLayer::SUBJECT => new ConfigurationSnapshot(new ConfigurationAddress(ConfigurationLayer::SUBJECT, 'zaak', 'lifecycle.stage'), 'subject', true, new ConfigurationProvenance(null)),
 		];
 
-		$answer = $this->explainer($byLayer)->explain('lifecycle.stage', 'zaken', 'standaard', 'zaak');
+		$answer = $this->explainer($byLayer)->explain('lifecycle.stage', new ConfigurationScope('zaken', 'standaard', 'zaak'));
 
 		$this->assertSame('subject', $answer['value']);
 		$this->assertSame(ConfigurationLayer::SUBJECT, $answer['layer']);
@@ -146,7 +147,7 @@ final class ConfigurationExplainerTest extends TestCase {
 	}//end testALayerTheCallerDidNotNameIsLeftOutOfTheChain()
 
 	public function testASettingNoLayerHoldsIsReportedAsNotFound(): void {
-		$answer = $this->explainer([])->explain('integration.mail', 'zaken');
+		$answer = $this->explainer([])->explain('integration.mail', new ConfigurationScope('zaken'));
 
 		$this->assertFalse($answer['found']);
 		$this->assertNull($answer['value']);
@@ -155,7 +156,7 @@ final class ConfigurationExplainerTest extends TestCase {
 	}//end testASettingNoLayerHoldsIsReportedAsNotFound()
 
 	public function testTheNotFoundAnswerIsPinnedKeyForKey(): void {
-		$answer = $this->explainer([])->explain('integration.mail', 'zaken');
+		$answer = $this->explainer([])->explain('integration.mail', new ConfigurationScope('zaken'));
 
 		$this->assertSame(
 			['key', 'found', 'value', 'layer', 'layerRef', 'deployment', 'predatesFirstDeployment', 'explanation', 'chain'],
@@ -174,7 +175,7 @@ final class ConfigurationExplainerTest extends TestCase {
 				ConfigurationLayer::REGISTER => new ConfigurationSnapshot(new ConfigurationAddress(ConfigurationLayer::REGISTER, 'zaken', 'integration.mail'), ['relay' => 'smtp'], true, new ConfigurationProvenance('dep-9')),
 			],
 			$this->deployment('dep-9', 'mail relay')
-		)->explain('integration.mail', 'zaken');
+		)->explain('integration.mail', new ConfigurationScope('zaken'));
 
 		$this->assertSame(
 			['key', 'found', 'value', 'layer', 'layerRef', 'deployment', 'predatesFirstDeployment', 'explanation', 'chain'],

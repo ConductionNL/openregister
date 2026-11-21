@@ -70,26 +70,8 @@ class RedactionWriteService implements RedactionWriteServiceInterface {
 	 * `field` / `before` / `after` / `ground`. Persists once (audited). It does
 	 * NOT call the erase pseudonymise path.
 	 *
-	 * @param string $caseUuid The case object uuid.
-	 * @param string $field The case field being redacted.
-	 * @param string $after The redacted replacement value.
-	 * @param string $ground The generic ground key the redaction was applied under.
-	 *
-	 * @return array{caseUuid: string, field: string, before: string, after: string, ground: string, recordType: string}
-	 *
-	 * @throws RuntimeException When the case cannot be loaded (absent or unauthorised).
-	 *
-	 * @spec openspec/specs/dsar-redaction-write/spec.md
-	 */
-	public function applyRedaction(string $caseUuid, string $field, string $after, string $ground): array {
-		return $this->redact(caseUuid: $caseUuid, redaction: new FieldRedaction(field: $field, after: $after, ground: $ground));
-	}//end applyRedaction()
-
-	/**
-	 * Apply one field redaction to a case, recording the redaction entry.
-	 *
 	 * @param string         $caseUuid  The case object uuid.
-	 * @param FieldRedaction $redaction The field, its replacement value and the ground.
+	 * @param FieldRedaction $redaction The field, its redacted replacement value and the generic ground key.
 	 *
 	 * @return array{caseUuid: string, field: string, before: string, after: string, ground: string, recordType: string}
 	 *
@@ -97,7 +79,7 @@ class RedactionWriteService implements RedactionWriteServiceInterface {
 	 *
 	 * @spec openspec/specs/dsar-redaction-write/spec.md
 	 */
-	private function redact(string $caseUuid, FieldRedaction $redaction): array {
+	public function applyRedaction(string $caseUuid, FieldRedaction $redaction): array {
 		$case = CasePayload::loaded(case: $this->accessor->load(caseUuid: $caseUuid), caseUuid: $caseUuid);
 		$data = $case->getObject();
 
@@ -119,7 +101,7 @@ class RedactionWriteService implements RedactionWriteServiceInterface {
 		$this->accessor->save(case: $case, data: $data);
 
 		return ['caseUuid' => $caseUuid] + $entry;
-	}//end redact()
+	}//end applyRedaction()
 
 	/**
 	 * A field's current scalar value as a string; '' when absent or non-scalar.

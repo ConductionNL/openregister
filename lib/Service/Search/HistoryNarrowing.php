@@ -32,6 +32,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Search;
 
+use OCA\OpenRegister\Db\StateChangePeriod;
 use OCA\OpenRegister\Db\StateHistoryMapperInterface;
 use Psr\Log\LoggerInterface;
 
@@ -97,8 +98,18 @@ class HistoryNarrowing {
 	 * @psalm-return list<string>|null
 	 */
 	private function candidatesFor(HistoryPredicate $predicate): ?array {
-		$candidates = null;
+		return $this->narrowedByChanges(predicate: $predicate, candidates: $this->wasEverCandidates(predicate: $predicate));
+	}//end candidatesFor()
 
+	/**
+	 * The candidates every was-ever filter leaves.
+	 *
+	 * @param HistoryPredicate $predicate The parsed predicate.
+	 *
+	 * @return string[]|null The candidates, or null when it has no was-ever filter.
+	 */
+	private function wasEverCandidates(HistoryPredicate $predicate): ?array {
+		$candidates = null;
 		foreach ($predicate->wasEver() as $property => $value) {
 			$candidates = $this->intersect(
 				current: $candidates,
@@ -106,19 +117,30 @@ class HistoryNarrowing {
 			);
 		}
 
+		return $candidates;
+	}//end wasEverCandidates()
+
+	/**
+	 * The candidates narrowed by every changed-between filter.
+	 *
+	 * @param HistoryPredicate $predicate  The parsed predicate.
+	 * @param string[]|null    $candidates The candidates so far, or null before the first filter.
+	 *
+	 * @return string[]|null The candidates, or null when no filter read.
+	 */
+	private function narrowedByChanges(HistoryPredicate $predicate, ?array $candidates): ?array {
 		foreach ($predicate->changedBetween() as $property => $period) {
 			$candidates = $this->intersect(
 				current: $candidates,
 				next: $this->mapper->findObjectUuidsChangedBetween(
 					property: $property,
-					after: $period['after'],
-					before: $period['before']
+					period: new StateChangePeriod(after: $period['after'], before: $period['before'])
 				)
 			);
 		}
 
 		return $candidates;
-	}//end candidatesFor()
+	}//end narrowedByChanges()
 
 	/**
 	 * Intersect two candidate sets, treating "not yet set" as "everything".

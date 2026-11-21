@@ -37,6 +37,7 @@ use OCA\OpenRegister\Exception\CodedValueException;
 use OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclaration;
 use OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclarationFactory;
 use OCA\OpenRegister\Service\Vocabulary\CodedValueGuard;
+use OCA\OpenRegister\Service\Vocabulary\CodedValueWrite;
 use OCA\OpenRegister\Service\Vocabulary\ConceptHierarchy;
 use OCA\OpenRegister\Service\Vocabulary\ConceptLifecycle;
 use OCA\OpenRegister\Service\Vocabulary\ConceptRepository;
@@ -146,7 +147,7 @@ class CodedValueGuardGoldenTest extends TestCase {
 		foreach (self::objects() as $name => $object) {
 			$violations = $this->guard->collectViolations(new \OCA\OpenRegister\Service\Vocabulary\CodedValueWrite($object, self::schema(), $at));
 			try {
-				$this->guard->enforce($object, self::schema(), $at);
+				$this->guard->enforce(new CodedValueWrite(object: $object, schema: self::schema(), at: $at));
 				$thrown = null;
 			} catch (CodedValueException $e) {
 				$thrown = [$e->getMessage(), $e->getErrors()];
@@ -246,22 +247,32 @@ class CodedValueGuardGoldenTest extends TestCase {
 					],
 				],
 			],
+			// property-code-list-from-concept-scheme: a value the scheme does not hold is
+			// refused naming the property and the scheme; it used to be skipped.
 			'skipped values' => [
-				[],
-				NULL,
+				[
+					'resultaat' => 'The value "urn:unknown" on "resultaat" is not a concept of the scheme urn:s1.',
+				],
+				[
+					'The value "urn:unknown" on "resultaat" is not a concept of the scheme urn:s1.',
+					[
+						'resultaat' => 'The value "urn:unknown" on "resultaat" is not a concept of the scheme urn:s1.',
+					],
+				],
 			],
 			'missing uri falls back to value' => [
 				[],
 				NULL,
 			],
+			// The last refusal of a property stands, and urn:unknown is its last value.
 			'scored' => [
 				[
-					'score' => 'The values "Regulier" and "Regulier" both belong to the group "urgentie", of which only one may be held.',
+					'score' => 'The value "urn:unknown" on "score" is not a concept of the scheme urn:s1.',
 				],
 				[
-					'The values "Regulier" and "Regulier" both belong to the group "urgentie", of which only one may be held.',
+					'The value "urn:unknown" on "score" is not a concept of the scheme urn:s1.',
 					[
-						'score' => 'The values "Regulier" and "Regulier" both belong to the group "urgentie", of which only one may be held.',
+						'score' => 'The value "urn:unknown" on "score" is not a concept of the scheme urn:s1.',
 					],
 				],
 			],

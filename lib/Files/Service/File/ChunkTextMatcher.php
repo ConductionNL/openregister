@@ -44,27 +44,6 @@ use OCA\OpenRegister\Exception\ChunkMatcherException;
  */
 class ChunkTextMatcher {
 	/**
-	 * Find every occurrence of the request's value in `$chunks`, deduped by
-	 * absolute position across chunk boundaries.
-	 *
-	 * Matches are returned in document order. Empty when no match found.
-	 *
-	 * @param Chunk[] $chunks Chunks for the target file, ordered by chunkIndex.
-	 * @param ManualEntityRequest $request The operator-supplied value (the needle) and its
-	 *                                     whole-word and case-sensitive match options.
-	 * @param int $chunkOverlap Configured chunk overlap (chars). Needles longer than this
-	 *                          cannot reliably be matched per-chunk and are rejected.
-	 *
-	 * @return array<int, array{chunkId: int, positionStart: int, positionEnd: int, context: string}>
-	 *
-	 * @throws ChunkMatcherException When the needle is longer than `$chunkOverlap` or the
-	 *                               regex pattern fails to compile.
-	 */
-	public function match(array $chunks, ManualEntityRequest $request, int $chunkOverlap): array {
-		return $this->search(search: new ChunkSearch(chunks: $chunks, request: $request, chunkOverlap: $chunkOverlap));
-	}//end match()
-
-	/**
 	 * Find every occurrence of the searched value in the chunks, deduped by
 	 * absolute position across chunk boundaries, in document order.
 	 *

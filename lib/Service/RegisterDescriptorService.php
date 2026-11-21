@@ -277,30 +277,15 @@ class RegisterDescriptorService implements RegisterDescriptorServiceInterface {
 	 * return value differs per app and says what it processed, not what
 	 * changed; the counts compare what the instance holds.
 	 *
-	 * @param string $appId The app that ships the configuration.
-	 * @param string $slug  A register slug the configuration declares.
-	 * @param string $via   Who asked, recorded with every authorization block the decision replaces.
+	 * @param ShippedRegister $register The app that ships the configuration and a register slug it declares.
+	 * @param string          $via      Who asked, recorded with every authorization block the decision replaces.
 	 *
 	 * @return array<string, mixed> outcome, reason, path, via, version, counts{registers, schemas, authorizationReplaced}, replaced,
 	 *                              and, when the import recorded a job, importJobId and importAppId (the configuration id it ran under).
 	 *
 	 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
 	 */
-	public function reimport(string $appId, string $slug, string $via = self::VIA_OCC): array {
-		return $this->reimportShipped(register: new ShippedRegister(appId: $appId, slug: $slug), via: $via);
-	}//end reimport()
-
-	/**
-	 * Re-import the real configuration that declares a register, as {@see reimport()} describes.
-	 *
-	 * @param ShippedRegister $register The app and the register slug its configuration declares.
-	 * @param string          $via      Who asked, recorded with every authorization block the decision replaces.
-	 *
-	 * @return array<string, mixed> The counted outcome, as {@see reimport()} returns it.
-	 *
-	 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
-	 */
-	public function reimportShipped(ShippedRegister $register, string $via): array {
+	public function reimportShipped(ShippedRegister $register, string $via = self::VIA_OCC): array {
 		$document = $this->importRunner->document(appId: $register->appId);
 		$declared = [];
 		if ($document['data'] !== null) {
@@ -309,19 +294,18 @@ class RegisterDescriptorService implements RegisterDescriptorServiceInterface {
 
 		if (in_array(strtolower($register->slug), $declared, true) === true) {
 			// The app's base document with its fragments, through the app's own forced import.
-			return $this->counted->run(
-				slug: $register->slug,
-				slugs: $declared,
-				version: $document['version'],
-				fragments: $document['fragments'],
-				via: $via,
-				import: fn (): array => $this->importRunner->run(appId: $register->appId)
+			return $this->counted->runCall(
+				document: (new RegisterImportDocument(slug: $register->slug, slugs: $declared))
+					->release(version: $document['version'], fragments: $document['fragments']),
+				call: new RegisterImportCall(
+					via: $via,
+					operation: fn (): array => $this->importRunner->run(appId: $register->appId)
+				)
 			);
 		}
 
 		return $this->reimportDescriptor(run: new DescriptorReimportRun(register: $register, declared: $declared, via: $via));
 	}//end reimportShipped()
-
 
 	/**
 	 * Re-import the one non-mock descriptor declaring a slug.
@@ -341,13 +325,13 @@ class RegisterDescriptorService implements RegisterDescriptorServiceInterface {
 			return $this->undeclaredFailure(run: $run);
 		}
 
-		return $this->counted->run(
-			slug: $run->register->slug,
-			slugs: $this->declaredSlugs(document: $descriptor['data']),
-			version: $this->versionOf(descriptor: $descriptor),
-			fragments: 0,
-			via: $run->via,
-			import: fn (): array => $this->importDescriptorFile(appId: $run->register->appId, descriptor: $descriptor)
+		return $this->counted->runCall(
+			document: (new RegisterImportDocument(slug: $run->register->slug, slugs: $this->declaredSlugs(document: $descriptor['data'])))
+				->release(version: $this->versionOf(descriptor: $descriptor), fragments: 0),
+			call: new RegisterImportCall(
+				via: $run->via,
+				operation: fn (): array => $this->importDescriptorFile(appId: $run->register->appId, descriptor: $descriptor)
+			)
 		);
 	}//end reimportDescriptor()
 
@@ -673,21 +657,6 @@ class RegisterDescriptorService implements RegisterDescriptorServiceInterface {
 	 * A register that is not on the instance, or that no descriptor of the
 	 * kind declares, is not behind: there is nothing to bring up to date.
 	 *
-	 * @param string $appId The app whose descriptors are read.
-	 * @param string $slug  The register slug.
-	 * @param bool   $mock  True for the mock descriptor, false for the real one.
-	 *
-	 * @return bool True when the shipped version is newer than the installed one.
-	 *
-	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
-	 */
-	public function isBehind(string $appId, string $slug, bool $mock): bool {
-		return $this->isShippedBehind(register: new ShippedRegister(appId: $appId, slug: $slug), mock: $mock);
-	}//end isBehind()
-
-	/**
-	 * Whether the instance holds an older version of a shipped register, as {@see isBehind()} describes.
-	 *
 	 * @param ShippedRegister $register The app whose descriptors are read and the register slug.
 	 * @param bool            $mock     True for the mock descriptor, false for the real one.
 	 *
@@ -710,7 +679,6 @@ class RegisterDescriptorService implements RegisterDescriptorServiceInterface {
 
 		return false;
 	}//end isShippedBehind()
-
 
 	/**
 	 * Slug (lowercased) to version for every register that exists.

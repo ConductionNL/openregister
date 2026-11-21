@@ -36,16 +36,17 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Notifications\Db\NotificationSubscriptionMapper;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCP\IUserSession;
 use OCA\OpenRegister\Notifications\Controller\Support\NotificationRequestTrait;
 use OCA\OpenRegister\Notifications\Controller\Support\NotificationSubscriptionsControllerServices;
+use OCA\OpenRegister\Notifications\Db\SubscriptionKey;
 
 /**
  * DEPRECATED per-user (register, schema) notification subscription surface.
@@ -100,7 +101,7 @@ class NotificationSubscriptionsController extends Controller {
 		IRequest $request,
 		NotificationSubscriptionsControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 
 		$this->mapper         = $services->mapper;
 		$this->registerMapper = $services->registerMapper;
@@ -141,7 +142,6 @@ class NotificationSubscriptionsController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md "Users MUST be able to manage their notification preferences"
 	 */
@@ -219,7 +219,8 @@ class NotificationSubscriptionsController extends Controller {
 	 */
 	private function subscribe(?int $registerId, ?int $schemaId): JSONResponse {
 		try {
-			$entity = $this->mapper->subscribe(userId: (string)$this->resolveUserId(), registerId: $registerId, schemaId: $schemaId);
+			$key    = new SubscriptionKey(userId: (string)$this->resolveUserId(), registerId: $registerId, schemaId: $schemaId);
+			$entity = $this->mapper->subscribeTo(key: $key);
 		} catch (\InvalidArgumentException $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 422);
 		}
@@ -235,7 +236,6 @@ class NotificationSubscriptionsController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md "Users MUST be able to manage their notification preferences"
 	 */
@@ -248,10 +248,8 @@ class NotificationSubscriptionsController extends Controller {
 		$registerId = $this->coerceNullableInt(value: $this->request->getParam('registerId'));
 		$schemaId = $this->coerceNullableInt(value: $this->request->getParam('schemaId'));
 
-		$deleted = $this->mapper->unsubscribe(
-			userId: $userId,
-			registerId: $registerId,
-			schemaId: $schemaId
+		$deleted = $this->mapper->unsubscribeFrom(
+			key: new SubscriptionKey(userId: $userId, registerId: $registerId, schemaId: $schemaId)
 		);
 
 		return new JSONResponse(data: ['deleted' => $deleted]);

@@ -116,14 +116,25 @@ function eventSelections(item) {
 	if (Array.isArray(item.events) && item.events.length > 0) {
 		selections.selectedEvent = item.events[0]
 	}
-	const configuration = item.configuration
-	if (configuration) {
-		selections.configuration = { ...configuration }
-		if (configuration.eventProperty) {
-			selections.selectedEventProperty = {
-				value: configuration.eventProperty,
-				label: configuration.eventProperty,
-			}
+	if (item.configuration) {
+		Object.assign(selections, configurationSelections(item.configuration))
+	}
+	return selections
+}
+
+/**
+ * The edit form's selections for a stored webhook configuration: a copy of
+ * it, and the event property it filters on when it names one.
+ *
+ * @param {object} configuration The stored configuration
+ * @return {object} The selections
+ */
+function configurationSelections(configuration) {
+	const selections = { configuration: { ...configuration } }
+	if (configuration.eventProperty) {
+		selections.selectedEventProperty = {
+			value: configuration.eventProperty,
+			label: configuration.eventProperty,
 		}
 	}
 	return selections

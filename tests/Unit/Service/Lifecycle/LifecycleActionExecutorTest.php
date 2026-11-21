@@ -30,6 +30,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Lifecycle;
 
 use OCA\OpenRegister\Lifecycle\Action\SetFieldsAction;
+use OCA\OpenRegister\Lifecycle\LifecycleActionContext;
+use OCA\OpenRegister\Lifecycle\ContextLifecycleActionInterface;
 use OCA\OpenRegister\Lifecycle\LifecycleActionInterface;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionExecutor;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionRegistry;
@@ -99,8 +101,10 @@ class LifecycleActionExecutorTest extends TestCase {
 	 * A `@previous`-scoped condition that holds runs the action.
 	 */
 	public function testPreviousConditionTrueRunsAction(): void {
-		$handler = $this->createMock(LifecycleActionInterface::class);
-		$handler->expects($this->once())->method('execute')->willReturnArgument(0);
+		$handler = $this->createMock(ContextLifecycleActionInterface::class);
+		$handler->expects($this->once())->method('execute')->willReturnCallback(
+			static fn (LifecycleActionContext $context): array => $context->objectData
+		);
 		$this->registry->method('resolve')->with('create-offset-move')->willReturn($handler);
 
 		$actions = [

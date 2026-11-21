@@ -26,6 +26,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use Symfony\Component\Console\Tester\CommandTester;
+use OCA\OpenRegister\Search\Service\Search\SearchIndexPass;
 
 /**
  * Behaviour of the `openregister:tables:search-index` command.
@@ -62,12 +63,36 @@ class SearchIndexCommandTest extends TestCase {
 		$this->assertTrue($definition->getOption('file')->isValueRequired());
 	}
 
+	public function testTheDefinitionTextIsPinned(): void {
+		$command = new SearchIndexCommand($this->maintenance);
+		$definition = $command->getDefinition();
+
+		$this->assertSame(
+			'Rebuild, snapshot or restore the indexes behind object search. A rebuild builds '
+			. 'each replacement beside the index in use and swaps when it is complete, so '
+			. 'search keeps answering while it runs.',
+			$command->getDescription()
+		);
+		$this->assertSame(['action'], array_keys($definition->getArguments()));
+		$this->assertSame('rebuild, snapshot, restore or status', $definition->getArgument('action')->getDescription());
+		$this->assertSame(['apply', 'register', 'file'], array_keys($definition->getOptions()));
+		$this->assertSame(
+			'Do the work. Without this flag rebuild and restore report what they would do and change nothing.',
+			$definition->getOption('apply')->getDescription()
+		);
+		$this->assertSame('Limit rebuild and snapshot to one register id.', $definition->getOption('register')->getDescription());
+		$this->assertSame('The snapshot file to write or read.', $definition->getOption('file')->getDescription());
+		foreach (['apply', 'register', 'file'] as $name) {
+			$this->assertNull($definition->getOption($name)->getShortcut());
+		}
+	}
+
 	public function testRebuildDryRunPassesNoRegisterAndReportsDryRun(): void {
 		$this->maintenance->expects($this->once())->method('rebuild')
-			->with(null, false, $this->isType('callable'))
+			->with(null, $this->callback(static fn (SearchIndexPass $pass): bool => $pass->apply === false))
 			->willReturnCallback(
-				static function (?int $registerId, bool $apply, callable $progress): array {
-					$progress('oc_or_r1_s1', 'idx_name', 1, 2);
+				static function (?int $registerId, SearchIndexPass $pass): array {
+					$pass->announce(['oc_or_r1_s1', 'idx_name', 1, 2]);
 					return ['state' => 'dry-run', 'tables' => 1, 'indexes' => 2, 'rebuilt' => 0, 'failed' => 3];
 				}
 			);
@@ -82,9 +107,27 @@ class SearchIndexCommandTest extends TestCase {
 		$this->assertStringNotContainsString('still answering', $display);
 	}
 
+	public function testRebuildPrintsEachIndexAsItGoes(): void {
+		$this->maintenance->method('rebuild')->willReturnCallback(
+			static function (?int $registerId, SearchIndexPass $pass): array {
+				$pass->announce(['oc_t', 'idx_a', 1, 2]);
+				$pass->announce(['oc_t', 'idx_b', 2, 2]);
+				return ['state' => 'completed', 'tables' => 1, 'indexes' => 2, 'rebuilt' => 0, 'failed' => 0, 'failures' => []];
+			}
+		);
+
+		$this->tester->execute(['action' => 'rebuild']);
+
+		$this->assertSame(
+			"  [1/2] oc_t · idx_a\n  [2/2] oc_t · idx_b\n\nTables: 1, indexes: 2, rebuilt: 0\n"
+			. "Dry run. Nothing was rebuilt. Add --apply.\n",
+			$this->tester->getDisplay()
+		);
+	}
+
 	public function testRebuildApplyCastsRegisterAndSucceedsWithoutFailures(): void {
 		$this->maintenance->expects($this->once())->method('rebuild')
-			->with(7, true, $this->isType('callable'))
+			->with(7, $this->callback(static fn (SearchIndexPass $pass): bool => $pass->apply === true))
 			->willReturn(['state' => 'completed', 'tables' => 3, 'indexes' => 4, 'rebuilt' => 4, 'failed' => 0, 'failures' => []]);
 
 		$code = $this->tester->execute(['action' => 'rebuild', '--apply' => true, '--register' => '7']);

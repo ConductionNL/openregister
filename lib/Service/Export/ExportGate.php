@@ -81,20 +81,30 @@ class ExportGate implements ExportGateInterface {
 			return null;
 		}
 
-		try {
-			$this->recorder->recordRefused(
-				profile: $profile,
-				rule: $refusal->getRule(),
-				reason: $refusal->getMessage(),
-				register: $registerId,
-				schema: $schema?->getId()
-			);
-		} catch (Throwable $exception) {
-			// The refusal below stands whether or not the trail took it.
-		}
+		$this->recordWithoutFailing(
+			refusal: new ExportRefusal(profile: $profile, rule: $refusal->getRule(), reason: $refusal->getMessage()),
+			scope: new ExportScope(register: $registerId, schema: $schema?->getId(), actorId: null)
+		);
 
 		return new JSONResponse(data: $refusal->toResponseBody(), statusCode: $refusal->getStatusCode());
 
 	}//end refusalFor()
+
+	/**
+	 * Record a refusal on the trail, letting nothing the trail throws reach the caller.
+	 *
+	 * @param ExportRefusal $refusal What was refused, under which rule, and why.
+	 * @param ExportScope   $scope   The register and schema the export addressed.
+	 *
+	 * @return void
+	 */
+	private function recordWithoutFailing(ExportRefusal $refusal, ExportScope $scope): void {
+		try {
+			$this->recorder->recordRefusal(refusal: $refusal, scope: $scope);
+		} catch (Throwable $exception) {
+			// The refusal below stands whether or not the trail took it.
+		}
+
+	}//end recordWithoutFailing()
 
 }//end class

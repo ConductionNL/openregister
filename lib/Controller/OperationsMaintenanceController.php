@@ -22,7 +22,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Service\Operations\MaintenanceModeServiceInterface;
 use OCA\OpenRegister\Service\Operations\SupportBundleServiceInterface;
 use OCA\OpenRegister\Controller\Support\OperationsActingRequest;
@@ -30,8 +29,9 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
-use OCP\IUserSession;
 use OCA\OpenRegister\Controller\Support\OperationsMaintenanceControllerServices;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
+use OCA\OpenRegister\Kernel\Contracts\Configuration\MaintenanceReachableInterface;
 
 /**
  * Closing the instance, and saying what it is made of.
@@ -44,7 +44,7 @@ use OCA\OpenRegister\Controller\Support\OperationsMaintenanceControllerServices;
  *
  * @spec openspec/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
  */
-class OperationsMaintenanceController extends Controller {
+class OperationsMaintenanceController extends Controller implements MaintenanceReachableInterface {
 
 	/**
 	 * The acting administrator and the parameter readers.
@@ -72,17 +72,15 @@ class OperationsMaintenanceController extends Controller {
 	 *
 	 * @param IRequest               $request     HTTP request.
 	 * @param OperationsMaintenanceControllerServices $services The services, bundled.
-	 * @param IUserSession           $userSession Names the administrator acting.
 	 */
 	public function __construct(
 		IRequest $request,
 		OperationsMaintenanceControllerServices $services,
-		IUserSession $userSession,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->maintenance = $services->maintenance;
 		$this->bundle = $services->bundle;
-		$this->acting = new OperationsActingRequest(request: $request, userSession: $userSession);
+		$this->acting = new OperationsActingRequest(request: $request, userSession: $services->userSession);
 	}//end __construct()
 
 	/**

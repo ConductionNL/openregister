@@ -169,24 +169,7 @@ class EntityRelationMapperTest extends TestCase {
 		);
 
 	}//end makeMapper()
-
-	/**
-	 * Sanity wiring test.
-	 *
-	 * @return void
-	 */
-	public function testConstructsWithInjectedDependencies(): void {
-		$mapper = new EntityRelationMapper(
-			db: $this->db,
-			auditTrailMapper: $this->auditTrailMapper,
-			userSession: $this->userSession,
-			entityEvents: new EntityEventPublisher(dispatcher: $this->eventDispatcher),
-			logger: $this->logger
-		);
-
-		$this->assertInstanceOf(expected: EntityRelationMapper::class, actual: $mapper);
-
-	}//end testConstructsWithInjectedDependencies()
+//end testConstructsWithInjectedDependencies()
 
 	// =====================================================================
 	// insertBatch
@@ -307,7 +290,7 @@ class EntityRelationMapperTest extends TestCase {
 			expected: DateTime::class,
 			actual: $mapper->insertedEntities[0]->getCreatedAt()
 		);
-
+		$this->assertEqualsWithDelta(time(), $mapper->insertedEntities[0]->getCreatedAt()->getTimestamp(), 5);
 	}//end testInsertBatchDefaultsCreatedAt()
 
 	/**

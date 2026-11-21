@@ -295,18 +295,28 @@ class LinkedEntityEnricher {
 			return $this->notFoundResult(id: $id);
 		}
 
-		$query = new LinkedEntityQuery(
-			sql: self::MAIL_SQL,
-			params: [(int)$parts[1]],
-			failure: '[LinkedEntityEnricher] Mail enrichment failed'
-		);
-		$row = $this->lookup(id: $id, query: $query);
+		$row = $this->lookup(id: $id, query: self::mailQuery(messageId: $parts[1]));
 		if ($row === false) {
 			return $this->notFoundResult(id: $id);
 		}
 
 		return ['id' => $id, 'subject' => $row['subject'] ?? '', 'sender' => $row['sender'] ?? '', 'date' => $row['sent_at'] ?? null];
 	}//end mailEntry()
+
+	/**
+	 * The lookup of one Mail message.
+	 *
+	 * @param string $messageId The message id part of the linked id.
+	 *
+	 * @return LinkedEntityQuery
+	 */
+	private static function mailQuery(string $messageId): LinkedEntityQuery {
+		return new LinkedEntityQuery(
+			sql: self::MAIL_SQL,
+			params: [(int)$messageId],
+			failure: '[LinkedEntityEnricher] Mail enrichment failed'
+		);
+	}//end mailQuery()
 
 	/**
 	 * The entry of one contact UID, read from its minimal vCard data.

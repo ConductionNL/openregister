@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace Unit\Service\File;
 
 use OCA\OpenRegister\Files\Db\Chunk;
+use OCA\OpenRegister\Files\Service\File\ChunkSearch;
 use OCA\OpenRegister\Files\Service\File\ChunkTextMatcher;
 use OCA\OpenRegister\Files\Service\File\ManualEntityRequest;
 use OCP\IUser;
@@ -74,14 +75,14 @@ class ChunkTextMatcherContextTest extends TestCase {
 	 */
 	public function testContextWindowsAndShape(): void {
 		$long = str_repeat('a', 40) . 'XY' . str_repeat('b', 40);
-		$matches = (new ChunkTextMatcher())->match(
+		$matches = (new ChunkTextMatcher())->search(new ChunkSearch(
 			chunks: [
 				$this->chunk(7, $long, 100, 1),
 				$this->chunk(5, 'xy at start', 0, 0),
 			],
 			request: $this->request('xy'),
 			chunkOverlap: 10
-		);
+		));
 
 		self::assertSame(
 			[
@@ -98,11 +99,11 @@ class ChunkTextMatcherContextTest extends TestCase {
 	 * @return void
 	 */
 	public function testNeedleAsLongAsOverlapIsAccepted(): void {
-		$matches = (new ChunkTextMatcher())->match(
+		$matches = (new ChunkTextMatcher())->search(new ChunkSearch(
 			chunks: [$this->chunk(1, 'abc', 0, 0)],
 			request: $this->request('abc'),
 			chunkOverlap: 3
-		);
+		));
 
 		self::assertCount(1, $matches);
 	}//end testNeedleAsLongAsOverlapIsAccepted()

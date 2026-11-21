@@ -33,6 +33,8 @@ use PHPUnit\Framework\TestCase;
  * The clock is fixed and every date carries an explicit offset.
  *
  * @covers \OCA\OpenRegister\Service\Rbac\GrantConstraints
+ * @uses \OCA\OpenRegister\Service\Rbac\ConstraintPoint
+ * @uses   \OCA\OpenRegister\Service\Rbac\ConstraintPoint
  */
 class GrantConstraintsShapeTest extends TestCase {
 
@@ -69,14 +71,14 @@ class GrantConstraintsShapeTest extends TestCase {
 		$constraints = new GrantConstraints();
 		$area        = ['register' => 'zaken', 'schema' => 'zaak'];
 
-		$this->assertFalse($constraints->reaches(entry: ['group' => 'g', 'scopedTo' => 'zaken'], area: $area, now: $this->now()));
-		$this->assertFalse($constraints->reaches(entry: ['group' => 'g', 'scopedTo' => []], area: $area, now: $this->now()));
-		$this->assertFalse($constraints->reaches(entry: ['group' => 'g', 'scopedTo' => ['registers' => [], 'other' => ['x']]], area: $area, now: $this->now()));
-		$this->assertFalse($constraints->reaches(entry: ['group' => 'g', 'scopedTo' => ['registers' => ['zaken']]], area: ['register' => ['', null]], now: $this->now()));
-		$this->assertFalse($constraints->reaches(entry: ['group' => 'g', 'until' => ' '], area: $area, now: $this->now()));
-		$this->assertFalse($constraints->reaches(entry: ['group' => 'g', 'until' => 20260601], area: $area, now: $this->now()));
-		$this->assertTrue($constraints->reaches(entry: 'staff', area: $area, now: $this->now()));
-		$this->assertTrue($constraints->reaches(entry: ['group' => 'g', 'scopedTo' => ['registers' => ['zaken', 7]]], area: $area, now: $this->now()));
+		$this->assertFalse($constraints->reaches(entry: ['group' => 'g', 'scopedTo' => 'zaken'], point: new ConstraintPoint(area: $area, now: $this->now())));
+		$this->assertFalse($constraints->reaches(entry: ['group' => 'g', 'scopedTo' => []], point: new ConstraintPoint(area: $area, now: $this->now())));
+		$this->assertFalse($constraints->reaches(entry: ['group' => 'g', 'scopedTo' => ['registers' => [], 'other' => ['x']]], point: new ConstraintPoint(area: $area, now: $this->now())));
+		$this->assertFalse($constraints->reaches(entry: ['group' => 'g', 'scopedTo' => ['registers' => ['zaken']]], point: new ConstraintPoint(area: ['register' => ['', null]], now: $this->now())));
+		$this->assertFalse($constraints->reaches(entry: ['group' => 'g', 'until' => ' '], point: new ConstraintPoint(area: $area, now: $this->now())));
+		$this->assertFalse($constraints->reaches(entry: ['group' => 'g', 'until' => 20260601], point: new ConstraintPoint(area: $area, now: $this->now())));
+		$this->assertTrue($constraints->reaches(entry: 'staff', point: new ConstraintPoint(area: $area, now: $this->now())));
+		$this->assertTrue($constraints->reaches(entry: ['group' => 'g', 'scopedTo' => ['registers' => ['zaken', 7]]], point: new ConstraintPoint(area: $area, now: $this->now())));
 	}//end testMalformedConstraintsFailClosed()
 
 	/**

@@ -38,22 +38,6 @@ use Exception;
 final class VeventCodec {
 
 	/**
-	 * The iCalendar text of a new event.
-	 *
-	 * @param string   $uid     The event UID.
-	 * @param DateTime $dtstart The start time.
-	 * @param array    $data    Event data: summary, dtend, location, description, attendees.
-	 * @param array    $link    The linked object: registerId, schemaId, objectUuid, objectTitle.
-	 *
-	 * @return string The CRLF-terminated iCalendar text.
-	 *
-	 * @spec openspec/specs/calendar-integration/spec.md
-	 */
-	public function calendarData(string $uid, DateTime $dtstart, array $data, array $link): string {
-		return $this->calendarDataOf(draft: new VeventDraft(uid: $uid, dtstart: $dtstart, data: $data, link: $link));
-	}//end calendarData()
-
-	/**
 	 * The iCalendar text of a new event, as calendarData() builds it.
 	 *
 	 * @param VeventDraft $draft The UID, start, event data and linked object.
@@ -68,6 +52,7 @@ final class VeventCodec {
 			$this->eventStartLines(summary: ($draft->data['summary'] ?? 'Untitled event'), dtstart: $draft->dtstart),
 			$this->eventDetailLines(data: $draft->data),
 			$this->eventLinkLines(link: $draft->link),
+			$this->eventAlarmLines(data: $draft->data),
 			['END:VEVENT', 'END:VCALENDAR']
 		);
 
@@ -94,10 +79,7 @@ final class VeventCodec {
 	 */
 	public function requiredStart(array $data): DateTime {
 		if (empty($data['dtstart']) === true) {
-			throw new Exception(
-				'Event start time (dtstart) is required: a calendar event without '
-				. 'DTSTART cannot be displayed or deleted by any client.'
-			);
+			throw $this->missingStart();
 		}
 
 		try {
@@ -109,6 +91,18 @@ final class VeventCodec {
 			);
 		}
 	}//end requiredStart()
+
+	/**
+	 * The refusal for an event without a start.
+	 *
+	 * @return Exception The refusal.
+	 */
+	private function missingStart(): Exception {
+		return new Exception(
+			'Event start time (dtstart) is required: a calendar event without '
+			. 'DTSTART cannot be displayed or deleted by any client.'
+		);
+	}//end missingStart()
 
 	/**
 	 * The opening lines of a new event, up to and including DTSTAMP.
@@ -184,6 +178,35 @@ final class VeventCodec {
 	}//end attendeeLines()
 
 	/**
+	 * The VALARM lines of a new event, when it asks for a reminder.
+	 *
+	 * A positive integer `reminderMinutesBefore` emits one display alarm that
+	 * fires that many minutes before DTSTART (`TRIGGER:-PT{n}M`), described by
+	 * the event summary. Anything else writes no alarm: delivery is the
+	 * calendar stack's, the leaf only authors the component (REQ-CAL-INB-005).
+	 *
+	 * @param array<string, mixed> $data The event data.
+	 *
+	 * @return array<int, string> The VALARM lines, empty when no reminder is asked.
+	 *
+	 * @spec openspec/changes/calendar-leaf-inbound/specs/integration-calendar/spec.md#requirement-created-events-can-carry-a-reminder-req-cal-inb-005
+	 */
+	private function eventAlarmLines(array $data): array {
+		$minutes = ($data['reminderMinutesBefore'] ?? null);
+		if (is_int($minutes) === false || $minutes <= 0) {
+			return [];
+		}
+
+		return [
+			'BEGIN:VALARM',
+			'ACTION:DISPLAY',
+			'TRIGGER:-PT' . $minutes . 'M',
+			'DESCRIPTION:' . $this->escapeIcalText(text: ($data['summary'] ?? 'Reminder')),
+			'END:VALARM',
+		];
+	}//end eventAlarmLines()
+
+	/**
 	 * The X-OPENREGISTER-* properties and the RFC 9253 LINK of a new event.
 	 *
 	 * @param array $link The linked object: registerId, schemaId, objectUuid, objectTitle.
@@ -216,21 +239,6 @@ final class VeventCodec {
 
 		return $text;
 	}//end escapeIcalText()
-	/**
-	 * The event array of a VEVENT.
-	 *
-	 * @param mixed  $vevent     The VEVENT component.
-	 * @param string $calendarId The calendar ID.
-	 * @param string $uri        The calendar object URI.
-	 *
-	 * @return array<string, mixed> The event.
-	 *
-	 * @spec openspec/specs/calendar-integration/spec.md
-	 */
-	public function eventArray(mixed $vevent, string $calendarId, string $uri): array {
-		return $this->eventArrayAt(vevent: $vevent, address: new CalendarObjectAddress(calendarId: $calendarId, uri: $uri));
-	}//end eventArray()
-
 	/**
 	 * The event array of a VEVENT stored at one calendar object address.
 	 *
@@ -269,8 +277,37 @@ final class VeventCodec {
 			'description' => $this->veventText(vevent: $vevent, property: 'DESCRIPTION') ?? '',
 			'attendees' => $this->veventAttendees(vevent: $vevent),
 			'status' => $this->veventStatus(vevent: $vevent),
+			'reminderMinutesBefore' => $this->veventReminderMinutes(vevent: $vevent),
 		];
 	}//end veventFields()
+
+	/**
+	 * The minutes before DTSTART a display alarm fires, or null when the event
+	 * carries no readable display reminder (REQ-CAL-INB-005).
+	 *
+	 * Reads the first VALARM whose ACTION is DISPLAY and whose TRIGGER is a
+	 * `-PT{n}M` offset; a positive-minute, negative (before-start) trigger is
+	 * the only shape the leaf authors and the only one it reports back.
+	 *
+	 * @param mixed $vevent The VEVENT component.
+	 *
+	 * @return int|null The minutes before start, or null.
+	 *
+	 * @spec openspec/changes/calendar-leaf-inbound/specs/integration-calendar/spec.md#requirement-created-events-can-carry-a-reminder-req-cal-inb-005
+	 */
+	private function veventReminderMinutes(mixed $vevent): ?int {
+		foreach (($vevent->VALARM ?? []) as $alarm) {
+			if (strtoupper((string)($alarm->ACTION ?? '')) !== 'DISPLAY') {
+				continue;
+			}
+
+			if (preg_match('/^-PT(\\d+)M$/', (string)($alarm->TRIGGER ?? ''), $match) === 1) {
+				return (int) $match[1];
+			}
+		}
+
+		return null;
+	}//end veventReminderMinutes()
 
 	/**
 	 * The lower-cased STATUS of a VEVENT, or null when the event does not have one.

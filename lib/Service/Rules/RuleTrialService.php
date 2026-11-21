@@ -91,17 +91,15 @@ final class RuleTrialService implements RuleTrialServiceInterface {
 	/**
 	 * Evaluate a rule against a sample payload, committing nothing.
 	 *
-	 * @param Schema $schema The schema the rule belongs to.
-	 * @param string $ruleId The derived rule id.
-	 * @param array<string, mixed> $sample The object payload to evaluate against.
-	 * @param array<string, mixed>|null $override An unsaved declaration to try in the rule's place.
+	 * @param RuleTrialRequest     $request The rule to try: schema, rule id and optional unsaved declaration.
+	 * @param array<string, mixed> $sample  The object payload to evaluate against.
 	 *
 	 * @return array<string, mixed> The verdict, the trace and the writes it would make.
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
-	public function trySample(Schema $schema, string $ruleId, array $sample, ?array $override = null): array {
-		$rule = $this->resolve(request: new RuleTrialRequest(schema: $schema, ruleId: $ruleId, override: $override));
+	public function trySample(RuleTrialRequest $request, array $sample): array {
+		$rule = $this->resolve(request: $request);
 		if ($rule instanceof RuleDescriptor === false) {
 			return $rule;
 		}
@@ -116,35 +114,14 @@ final class RuleTrialService implements RuleTrialServiceInterface {
 	 * caller who may not read it gets a not-found refusal rather than its
 	 * values. That lookup is this path's per-object authorisation guard.
 	 *
-	 * @param Schema $schema The schema the rule belongs to.
-	 * @param string $ruleId The derived rule id.
-	 * @param string $register Register id, uuid or slug.
-	 * @param string $objectId Object id, uuid, slug or uri.
-	 * @param array<string, mixed>|null $override An unsaved declaration to try in the rule's place.
-	 *
-	 * @return array<string, mixed> The verdict, the trace and the writes it would make.
-	 *
-	 * @spec openspec/specs/flow-engine/spec.md
-	 */
-	public function tryObject(Schema $schema, string $ruleId, string $register, string $objectId,
-		?array $override = null): array {
-		return $this->tryStored(
-			request: new RuleTrialRequest(schema: $schema, ruleId: $ruleId, override: $override),
-			ref: new ObjectRef(register: $register, schema: (string)($schema->getId() ?? ''), id: $objectId)
-		);
-	}//end tryObject()
-
-	/**
-	 * Evaluate a rule against a stored object, committing nothing.
-	 *
 	 * @param RuleTrialRequest $request The rule to try.
-	 * @param ObjectRef $ref The register and object to read; the schema is the request's.
+	 * @param ObjectRef        $ref     The register and object to read; the schema is the request's.
 	 *
 	 * @return array<string, mixed> The verdict, the trace and the writes it would make.
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
-	private function tryStored(RuleTrialRequest $request, ObjectRef $ref): array {
+	public function tryObject(RuleTrialRequest $request, ObjectRef $ref): array {
 		$rule = $this->resolve(request: $request);
 		if ($rule instanceof RuleDescriptor === false) {
 			return $rule;
@@ -157,7 +134,7 @@ final class RuleTrialService implements RuleTrialServiceInterface {
 		}
 
 		return $this->run(run: new RuleTrialRun(rule: $rule, payload: ($object->getObject() ?? []), objectUuid: ($object->getUuid() ?? null)));
-	}//end tryStored()
+	}//end tryObject()
 
 	/**
 	 * The stored object to try a rule against, read through the scoped mappers.
@@ -309,7 +286,7 @@ final class RuleTrialService implements RuleTrialServiceInterface {
 			$verdict = RuleVocabulary::VERDICT_FIRED;
 		}
 
-		return $this->result(run: $run, trace: $this->engine->tracer->trace(condition: $condition, document: $document, verdict: $verdict));
+		return $this->result(run: $run, trace: $this->engine->tracer->trace(judgement: new ConditionJudgement(condition: $condition, document: $document, verdict: $verdict)));
 	}//end runCondition()
 
 	/**

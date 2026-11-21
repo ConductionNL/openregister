@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclaration;
 use OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclarationFactory;
 use OCA\OpenRegister\Service\Vocabulary\CodedSchemaTables;
+use OCA\OpenRegister\Service\Vocabulary\DeclarationLookup;
 use OCA\OpenRegister\Service\Vocabulary\VocabularyDeclarationResolver;
 use OCP\IRequest;
 use PHPUnit\Framework\TestCase;
@@ -42,6 +43,13 @@ use RuntimeException;
  * The declarations the resolver answers, pinned.
  *
  * @covers \OCA\OpenRegister\Service\Vocabulary\VocabularyDeclarationResolver
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Vocabulary\CodedNarrowing
+ * @uses \OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclaration
+ * @uses \OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclarationFactory
+ * @uses \OCA\OpenRegister\Service\Vocabulary\CodedSchemaTables
+ * @uses \OCA\OpenRegister\Service\Vocabulary\CodedValueRules
+ * @uses \OCA\OpenRegister\Service\Vocabulary\DeclarationLookup
  */
 final class VocabularyDeclarationResolverGoldenTest extends TestCase {
 
@@ -64,7 +72,7 @@ final class VocabularyDeclarationResolverGoldenTest extends TestCase {
 
 		$actual = [];
 		foreach ($cases as $name => [$arguments, $params]) {
-			$declaration = $this->resolver(params: $params)->resolveDeclaration(...$arguments);
+			$declaration = $this->resolver(params: $params)->resolveDeclaration(new DeclarationLookup(...$arguments));
 			$actual[$name] = self::fields(declaration: $declaration);
 		}
 

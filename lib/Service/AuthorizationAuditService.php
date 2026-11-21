@@ -26,6 +26,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\SchemaAccessChangeLogInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\RegisterAccessChangeLogInterface;
 
 /**
  * Audit service for authorization configuration changes
@@ -34,14 +36,14 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
  * Each log entry includes who made the change, what changed, and the
  * old and new values for full audit trail compliance.
  */
-class AuthorizationAuditService {
+class AuthorizationAuditService implements RegisterAccessChangeLogInterface, SchemaAccessChangeLogInterface {
 
 	/**
 	 * Log event type for authorization changes.
 	 *
 	 * @var string
 	 */
-	public const EVENT_TYPE = 'openregister_authorization';
+	public const EVENT_TYPE = SchemaAccessChangeLogInterface::EVENT_TYPE;
 
 	/**
 	 * Constructor.
@@ -54,61 +56,6 @@ class AuthorizationAuditService {
 		private readonly RegisterMapperInterface $registerMapper,
 	) {
 	}//end __construct()
-
-	/**
-	 * Log a schema authorization change.
-	 *
-	 * @param int $schemaId The schema ID.
-	 * @param string $schemaTitle The schema title.
-	 * @param array|null $oldAuthorization The previous authorization value.
-	 * @param array|null $newAuthorization The new authorization value.
-	 *
-	 * @return void
-	 *
-	 * @spec exclude Facade plumbing: emits one structured audit log line; sibling of logRegisterAuthorizationChange
-	 *              (rbac-scopes REQ-002), no distinct behavioral contract.
-	 */
-	public function logSchemaAuthorizationChange(int $schemaId, string $schemaTitle, ?array $oldAuthorization, ?array $newAuthorization): void {
-		$change = new AuthorizationChange(entityId: $schemaId, entityTitle: $schemaTitle, before: $oldAuthorization, after: $newAuthorization);
-		$this->recordSchemaChange(change: $change);
-	}//end logSchemaAuthorizationChange()
-
-	/**
-	 * Log a register authorization change.
-	 *
-	 * Includes the count of schemas affected by the cascade.
-	 *
-	 * @param int $registerId The register ID.
-	 * @param string $registerTitle The register title.
-	 * @param array|null $oldAuthorization The previous authorization value.
-	 * @param array|null $newAuthorization The new authorization value.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/rbac-scopes/spec.md#requirement-register-level-authorization-cascade
-	 */
-	public function logRegisterAuthorizationChange(int $registerId, string $registerTitle, ?array $oldAuthorization, ?array $newAuthorization): void {
-		$change = new AuthorizationChange(entityId: $registerId, entityTitle: $registerTitle, before: $oldAuthorization, after: $newAuthorization);
-		$this->recordRegisterChange(change: $change);
-	}//end logRegisterAuthorizationChange()
-
-	/**
-	 * Log a role definition change on a register.
-	 *
-	 * @param int $registerId The register ID.
-	 * @param string $registerTitle The register title.
-	 * @param array|null $oldRoles The previous role definitions.
-	 * @param array|null $newRoles The new role definitions.
-	 *
-	 * @return void
-	 *
-	 * @spec exclude Facade plumbing: emits one structured audit log line for a role-definition change; sibling of
-	 *              logRegisterAuthorizationChange, no distinct behavioral contract.
-	 */
-	public function logRoleDefinitionChange(int $registerId, string $registerTitle, ?array $oldRoles, ?array $newRoles): void {
-		$change = new AuthorizationChange(entityId: $registerId, entityTitle: $registerTitle, before: $oldRoles, after: $newRoles);
-		$this->recordRoleChange(change: $change);
-	}//end logRoleDefinitionChange()
 
 	/**
 	 * Record a change to a schema's authorization.
@@ -152,7 +99,7 @@ class AuthorizationAuditService {
 	 *
 	 * @return void
 	 *
-	 * @spec exclude Facade plumbing: the value-object form of logRoleDefinitionChange.
+	 * @spec exclude Facade plumbing: a role-definition change on a register.
 	 */
 	public function recordRoleChange(AuthorizationChange $change): void {
 		$this->logChange(
@@ -223,7 +170,14 @@ class AuthorizationAuditService {
 				$affectedSchemaCount = count($schemas);
 			}
 		} catch (\Throwable $e) {
-			// Could not count affected schemas.
+			// The count is informational; an unreadable register reports zero.
+			$this->runtime->logger->debug(
+				message: '[AuthorizationAuditService] Could not count the schemas of a register',
+				context: [
+					'registerId' => $registerId,
+					'exception' => $e->getMessage(),
+				]
+			);
 		}
 
 		return $affectedSchemaCount;

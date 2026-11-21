@@ -46,8 +46,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use DateTimeImmutable;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\Gdpr\Case\CaseObjectAccessorInterface;
+use OCA\OpenRegister\Service\Gdpr\DpiaDetectionRequest;
 use OCA\OpenRegister\Service\Gdpr\DpiaPatternDetectorInterface;
 use OCA\OpenRegister\Service\Gdpr\Policy\DsarPolicyPackResolverInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -56,6 +59,8 @@ use OCP\BackgroundJob\TimedJob;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\BackgroundJob\Support\DsarDpiaDetectionServices;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Daily DPIA pattern-detection sweep over DSAR cases.
@@ -255,7 +260,8 @@ class DsarDpiaDetectionJob extends TimedJob {
 				continue;
 			}
 
-			$groups = $this->detectionService->detect(cases: $partitionCases, config: $config, now: $now);
+			$request = new DpiaDetectionRequest(cases: $partitionCases, config: $config, now: $now);
+			$groups = $this->detectionService->detect(request: $request);
 			foreach ($groups as $group) {
 				$summary['groupsTriggered']++;
 				$outcome = $this->flagGroup(group: $group, config: $config);
@@ -286,8 +292,7 @@ class DsarDpiaDetectionJob extends TimedJob {
 			try {
 				$entity = WriteCause::asLookup(fn () => $this->objectService->find(
 					id: $uuid,
-					register: CaseObjectAccessorInterface::REGISTER_SLUG,
-					schema: CaseObjectAccessorInterface::SCHEMA_SLUG,
+					options: new ObjectFindOptions(register: CaseObjectAccessorInterface::REGISTER_SLUG, schema: CaseObjectAccessorInterface::SCHEMA_SLUG),
 					_rbac: false,
 					_multitenancy: false
 				));
@@ -306,23 +311,26 @@ class DsarDpiaDetectionJob extends TimedJob {
 
 				$saved = $this->objectService->saveObject(
 					object: $data,
-					register: CaseObjectAccessorInterface::REGISTER_SLUG,
-					schema: CaseObjectAccessorInterface::SCHEMA_SLUG,
-					uuid: $entity->getUuid(),
+					options: new ObjectSaveOptions(
+						target: new ObjectFindTarget(register: CaseObjectAccessorInterface::REGISTER_SLUG, schema: CaseObjectAccessorInterface::SCHEMA_SLUG),
+						uuid: $entity->getUuid()
+					),
 					_rbac: false,
 					_multitenancy: false
 				);
 
-				$this->auditTrailMapper->createAuditTrailEntry(
-					object: $saved,
-					action: self::AUDIT_ACTION,
-					context: [
-						'rule' => 'dpia-pattern-detection',
-						'groupKey' => $group['key'],
-						'windowDays' => (int)($config['windowDays'] ?? 0),
-						'threshold' => (int)($config['threshold'] ?? 0),
-						'count' => $group['count'],
-					]
+				$this->auditTrailMapper->recordObjectEvent(
+					event: new ObjectAuditEvent(
+						object: $saved,
+						action: self::AUDIT_ACTION,
+						context: [
+							'rule' => 'dpia-pattern-detection',
+							'groupKey' => $group['key'],
+							'windowDays' => (int)($config['windowDays'] ?? 0),
+							'threshold' => (int)($config['threshold'] ?? 0),
+							'count' => $group['count'],
+						]
+					)
 				);
 
 				$outcome['flagged']++;

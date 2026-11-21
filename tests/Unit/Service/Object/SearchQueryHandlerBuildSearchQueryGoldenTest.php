@@ -19,7 +19,6 @@ use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\Vocabulary\CodedFilterExpander;
 use OCP\AppFramework\Db\DoesNotExistException;
-use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
@@ -40,9 +39,16 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Service\Object\DottedParamTree
  * @uses   \OCA\OpenRegister\Service\Object\SearchQueryParts
  * @uses \OCA\OpenRegister\Service\Object\SearchScopeFilters
+ * @uses \OCA\OpenRegister\Service\Object\SearchLenses
  * @uses \OCA\OpenRegister\Service\Object\SearchReferenceText
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Db\Schema\ObjectSourceDeclaration
  *
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Db\Schema\ObjectSourceDeclaration
  */
 class SearchQueryHandlerBuildSearchQueryGoldenTest extends TestCase {
 
@@ -171,7 +177,6 @@ class SearchQueryHandlerBuildSearchQueryGoldenTest extends TestCase {
 			$schemaMapper,
 			$this->createMock(SettingsService::class),
 			$this->createMock(LoggerInterface::class),
-			$this->createMock(IRequest::class),
 			$this->createMock(SearchTrailService::class),
 			$session,
 			$expander

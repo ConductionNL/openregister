@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
 use OCA\OpenRegister\Exception\OfficeOpenRefusedException;
+use OCA\OpenRegister\Files\Service\File\OfficeOpenRequest;
 use OCA\OpenRegister\Files\Service\File\OfficeSessionService;
 use OCA\OpenRegister\Files\Service\File\OfficeSessionSettings;
 use OCP\App\IAppManager;
@@ -122,7 +123,7 @@ class OfficeSessionServiceTest extends TestCase {
 	}//end file()
 
 	public function testTheTokenIsOwnedByOpenRegisterAndNamesTheEditor(): void {
-		$session = $this->service(enabled: true)->open($this->file(), 'behandelaar', 'Behandelaar', true);
+		$session = $this->service(enabled: true)->openSession(new OfficeOpenRequest($this->file(), 'behandelaar', 'Behandelaar', true));
 
 		$this->assertSame('77', $this->tokenArgs[0]);
 		$this->assertSame('openregister', $this->tokenArgs[1]);
@@ -136,14 +137,14 @@ class OfficeSessionServiceTest extends TestCase {
 	}//end testTheTokenIsOwnedByOpenRegisterAndNamesTheEditor()
 
 	public function testAReaderGetsAReadOnlyToken(): void {
-		$session = $this->service(enabled: true)->open($this->file(), 'lezer', 'Lezer', false);
+		$session = $this->service(enabled: true)->openSession(new OfficeOpenRequest($this->file(), 'lezer', 'Lezer', false));
 
 		$this->assertFalse($this->tokenArgs[4]);
 		$this->assertTrue($session->readOnly);
 	}//end testAReaderGetsAReadOnlyToken()
 
 	public function testTheOfficeEditSettingStillApplies(): void {
-		$session = $this->service(enabled: true, userCanEdit: false)->open($this->file(), 'behandelaar', 'Behandelaar', true);
+		$session = $this->service(enabled: true, userCanEdit: false)->openSession(new OfficeOpenRequest($this->file(), 'behandelaar', 'Behandelaar', true));
 
 		$this->assertTrue($session->readOnly);
 	}//end testTheOfficeEditSettingStillApplies()
@@ -152,13 +153,13 @@ class OfficeSessionServiceTest extends TestCase {
 		$this->expectException(OfficeOpenRefusedException::class);
 		$this->expectExceptionCode(409);
 
-		$this->service(enabled: false)->open($this->file(), 'behandelaar', 'Behandelaar', true);
+		$this->service(enabled: false)->openSession(new OfficeOpenRequest($this->file(), 'behandelaar', 'Behandelaar', true));
 	}//end testWithoutOfficeTheAnswerIs409()
 
 	public function testAFileTypeOfficeCannotOpenIs415(): void {
 		$this->expectException(OfficeOpenRefusedException::class);
 		$this->expectExceptionCode(415);
 
-		$this->service(enabled: true, urlSrc: null)->open($this->file(), 'behandelaar', 'Behandelaar', true);
+		$this->service(enabled: true, urlSrc: null)->openSession(new OfficeOpenRequest($this->file(), 'behandelaar', 'Behandelaar', true));
 	}//end testAFileTypeOfficeCannotOpenIs415()
 }//end class

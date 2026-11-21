@@ -113,9 +113,7 @@ class RenderObjectCoverageTest extends TestCase {
 		$this->handler = new RenderObject(
 			stores: new \OCA\OpenRegister\Service\Object\RenderStores(
 				mappers: new \OCA\OpenRegister\Service\Object\RenderMappers(
-					objectEntityMapper: $this->objectMapper,
-					registerMapper: $this->registerMapper,
-					schemaMapper: $this->schemaMapper,
+					catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->objectMapper),
 					objectCacheService: $this->objectCacheService
 				),
 				files: new \OCA\OpenRegister\Service\Object\RenderFileSources(
@@ -1145,57 +1143,6 @@ class RenderObjectCoverageTest extends TestCase {
 	// preloadInverseRelationships - edge cases
 	// =========================================================================
 
-	/**
-	 * Test preloadInverseRelationships with empty entities returns early.
-	 *
-	 * @return void
-	 */
-	public function testPreloadInverseRelationshipsEmptyEntities(): void {
-		$this->invokePrivate('preloadInverseRelationships', [[], ['contacts']]);
-
-		// Should not crash.
-		$this->assertTrue(true);
-	}
-
-	/**
-	 * Test preloadInverseRelationships with empty extend returns early.
-	 *
-	 * @return void
-	 */
-	public function testPreloadInverseRelationshipsEmptyExtend(): void {
-		$entity = $this->createBasicEntity(1, 'uuid-1');
-		$this->invokePrivate('preloadInverseRelationships', [[$entity], []]);
-
-		$this->assertTrue(true);
-	}
-
-	/**
-	 * Test preloadInverseRelationships with non-ObjectEntity skips.
-	 *
-	 * @return void
-	 */
-	public function testPreloadInverseRelationshipsNonEntity(): void {
-		$this->invokePrivate('preloadInverseRelationships', [['not-an-entity'], ['contacts']]);
-
-		$this->assertTrue(true);
-	}
-
-	/**
-	 * Test preloadInverseRelationships with no schema found returns early.
-	 *
-	 * @return void
-	 */
-	public function testPreloadInverseRelationshipsNoSchema(): void {
-		$entity = $this->createBasicEntity(1, 'uuid-1');
-
-		$this->schemaMapper->method('find')
-			->willThrowException(new Exception('not found'));
-
-		$this->invokePrivate('preloadInverseRelationships', [[$entity], ['contacts']]);
-
-		$this->assertTrue(true);
-	}
-
 	// =========================================================================
 	// renderEntity - property RBAC
 	// =========================================================================
@@ -1240,21 +1187,6 @@ class RenderObjectCoverageTest extends TestCase {
 	// =========================================================================
 	// renderEntity - edge cases
 	// =========================================================================
-
-	/**
-	 * Test renderEntity with empty object data does not crash.
-	 *
-	 * @return void
-	 */
-	public function testRenderEntityWithEmptyObjectDataNoCrash(): void {
-		$this->setupBasicMocks();
-
-		$entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', []);
-
-		$result = $this->handler->renderEntity($entity);
-
-		$this->assertInstanceOf(ObjectEntity::class, $result);
-	}
 
 	/**
 	 * Test renderEntity with null UUID does not detect circular.

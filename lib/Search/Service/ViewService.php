@@ -31,6 +31,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Search\Db\View;
 use OCA\OpenRegister\Search\Db\ViewMapperInterface;
+use OCA\OpenRegister\Service\Rbac\AccessDeclarationValidators;
 use OCA\OpenRegister\Service\Rbac\ViewerReach;
 use OCA\OpenRegister\Service\View\ViewAlert;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -165,31 +166,9 @@ class ViewService {
 	}//end findAllFor()
 
 	/**
-	 * Create a new view
-	 *
-	 * Creates a new view entity with specified properties. If view is set as default,
-	 * clears any existing default view for the user. Validates and stores view in database.
-	 *
-	 * @param ViewDefinition $definition The name, description, query and presentation of the view
-	 * @param ViewAudience   $audience   The owner, public and default flags and the group shares of the view
-	 * @param array|null     $alert      The declared count alert; null or `[]` = none
-	 *
-	 * @return View The created view entity
-	 *
-	 * @throws Exception If view creation fails (database error, validation error, etc.)
-	 * @throws InvalidArgumentException If the presentation config cannot render (REQ-VIEW-PRES-01)
-	 *
-	 * @spec openspec/specs/saved-search-views/spec.md#requirement-views-persist-a-validated-presentation-config-req-view-pres-01
-	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-8
-	 */
-	public function create(ViewDefinition $definition, ViewAudience $audience, ?array $alert = null): View {
-		return $this->createView(edit: new ViewEdit(definition: $definition, audience: $audience, alert: $alert));
-	}//end create()
-
-	/**
 	 * Create a new view from one edit.
 	 *
-	 * If the view is set as default, clears any existing default view for the owner first.
+	 * Validates and stores the view. If the view is set as default, clears any existing default view for the owner first.
 	 * Nobody favours a new view, whatever the edit says.
 	 *
 	 * @param ViewEdit $edit The definition, audience and count alert of the new view
@@ -201,7 +180,7 @@ class ViewService {
 	 *
 	 * @spec openspec/specs/saved-search-views/spec.md#requirement-views-persist-a-validated-presentation-config-req-view-pres-01
 	 */
-	public function createView(ViewEdit $edit): View {
+	public function create(ViewEdit $edit): View {
 		try {
 			return $this->viewMapper->insert($this->newViewFor(edit: $edit));
 		} catch (Exception $e) {
@@ -212,7 +191,7 @@ class ViewService {
 			);
 			throw $e;
 		}
-	}//end createView()
+	}//end create()
 
 	/**
 	 * Validate an edit and build the unsaved view it creates, clearing the owner's old default when it is one.
@@ -258,50 +237,6 @@ class ViewService {
 		$view->setSharedWith(array_values($audience->sharedWith ?? []));
 		return $view;
 	}//end newView()
-
-	/**
-	 * Update an existing view.
-	 *
-	 * @param int|string $id The ID of the view to update
-	 * @param string $name The name of the view
-	 * @param string $description The description of the view
-	 * @param string $owner The owner user ID (for access control)
-	 * @param bool $isPublic Whether the view is public
-	 * @param bool $isDefault Whether the view is default
-	 * @param array $query The query parameters
-	 * @param array|null $favoredBy Array of user IDs who favor this view
-	 * @param array|null $presentation Presentation config (viewType + kanban/calendar config); null leaves the existing value untouched
-	 * @param array|null $sharedWith Validated group shares, `[{group, mode}]`; null leaves the existing shares untouched
-	 * @param array|null $alert The declared count alert; null leaves it untouched, `[]` clears it
-	 *
-	 * @return View The updated view
-	 *
-	 * @throws Exception If update fails
-	 * @throws InvalidArgumentException If the presentation config cannot render (REQ-VIEW-PRES-01)
-	 *
-	 * @spec openspec/specs/saved-search-views/spec.md#requirement-views-persist-a-validated-presentation-config-req-view-pres-01
-	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-8
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Each optional field is null-means-untouched; a bag would lose that per field.
-	 */
-	public function update(
-		int|string $id,
-		string $name,
-		string $description,
-		string $owner,
-		bool $isPublic,
-		bool $isDefault,
-		array $query,
-		?array $favoredBy = null,
-		?array $presentation = null,
-		?array $sharedWith = null,
-		?array $alert = null,
-	): View {
-		$definition = new ViewDefinition(name: $name, description: $description, query: $query, presentation: $presentation);
-		$audience = new ViewAudience(owner: $owner, isPublic: $isPublic, isDefault: $isDefault, sharedWith: $sharedWith);
-		$edit = new ViewEdit(definition: $definition, audience: $audience, favoredBy: $favoredBy, alert: $alert);
-		return $this->revise(id: $id, edit: $edit);
-	}//end update()
 
 	/**
 	 * Apply one edit to an existing view the edit's owner may read.
@@ -496,7 +431,9 @@ class ViewService {
 	 * `table` has no field to check. A `kanban` presentation must declare a
 	 * `groupByField`, and a `calendar` presentation a `dateField` (with an
 	 * optional `endDateField`); each declared field MUST be a real property
-	 * on the view's (first configured) schema, or the save is rejected.
+	 * on the view's (first configured) schema, or the save is rejected. A
+	 * `tree` presentation additionally needs a schema that declares a
+	 * hierarchy.
 	 *
 	 * @param array|null $presentation The presentation config to validate, or null
 	 * @param array<string, mixed> $query The view's query (used to resolve its schema)
@@ -519,6 +456,8 @@ class ViewService {
 			'table' => null,
 			'kanban' => $this->assertRequiredField(check: $check, path: 'kanban.groupByField'),
 			'calendar' => $this->validateCalendarPresentation(check: $check),
+			'gallery' => $this->validateGalleryPresentation(check: $check),
+			'tree' => $this->validateTreePresentation(check: $check),
 			default => throw new InvalidArgumentException('Unknown presentation viewType: ' . (string)$viewType),
 		};
 	}//end validatePresentationConfig()
@@ -547,6 +486,139 @@ class ViewService {
 
 		$this->assertFieldExistsOnViewSchema(check: $check, path: 'calendar.endDateField');
 	}//end validateCalendarPresentation()
+
+	/**
+	 * A gallery presentation must declare a titleField; its coverField, when
+	 * given, must be a file or image property, every cardFields entry a
+	 * property, and cardSize small, medium or large. Without a coverField
+	 * the schema's objectImageField is the cover.
+	 *
+	 * @param PresentationCheck $check The presentation and the view's query
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException If the presentation cannot render
+	 *
+	 * @spec openspec/changes/records-gallery-view/specs/saved-search-views/spec.md#requirement-a-saved-view-can-present-records-as-a-gallery
+	 */
+	private function validateGalleryPresentation(PresentationCheck $check): void {
+		$this->assertRequiredField(check: $check, path: 'gallery.titleField');
+
+		$cover = $check->declared(path: 'gallery.coverField');
+		if ($cover !== null) {
+			$this->assertRequiredField(check: $check, path: 'gallery.coverField');
+			$property = ($this->viewSchema(check: $check, label: 'gallery.coverField')->getProperties()[$cover] ?? []);
+			if (self::isFileOrImageProperty(property: $property) === false) {
+				throw new InvalidArgumentException(
+					'Presentation gallery.coverField "' . $cover . '" is not a file or image property of the view\'s schema'
+				);
+			}
+		}
+
+		$this->assertGalleryCardFields(check: $check);
+
+		$size = $check->declared(path: 'gallery.cardSize');
+		if ($size !== null && in_array($size, ['small', 'medium', 'large'], true) === false) {
+			throw new InvalidArgumentException('Presentation gallery.cardSize must be small, medium or large');
+		}
+	}//end validateGalleryPresentation()
+
+	/**
+	 * Every gallery card field must be a property of the view's schema.
+	 *
+	 * @param PresentationCheck $check The presentation and the view's query
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException If cardFields is not a list of the schema's properties
+	 *
+	 * @spec openspec/changes/records-gallery-view/specs/saved-search-views/spec.md#requirement-a-saved-view-can-present-records-as-a-gallery
+	 */
+	private function assertGalleryCardFields(PresentationCheck $check): void {
+		$this->assertOptionalPropertyList(check: $check, path: 'gallery.cardFields');
+	}//end assertGalleryCardFields()
+
+	/**
+	 * A tree presentation needs a schema that declares a hierarchy, a labelField,
+	 * and optionally a list of extra fields per node, each a property of that schema.
+	 *
+	 * The hierarchy is read through AccessDeclarationValidators::hierarchyParentOf(),
+	 * the same reader access inheritance uses, so a schema declares it once.
+	 *
+	 * @param PresentationCheck $check The presentation and the view's query
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException If the schema has no hierarchy or a field is missing or unknown
+	 *
+	 * @spec openspec/changes/records-tree-view/specs/saved-search-views/spec.md#requirement-a-saved-view-can-present-hierarchical-records-as-a-tree
+	 */
+	private function validateTreePresentation(PresentationCheck $check): void {
+		$schema = $this->viewSchema(check: $check, label: 'tree');
+		if (AccessDeclarationValidators::hierarchyParentOf(schema: $schema) === null) {
+			throw new InvalidArgumentException(
+				'A tree presentation requires a schema that declares '
+				. AccessDeclarationValidators::HIERARCHY_ANNOTATION . '; the view\'s schema declares no hierarchy'
+			);
+		}
+
+		$this->assertRequiredField(check: $check, path: 'tree.labelField');
+		$this->assertOptionalPropertyList(check: $check, path: 'tree.fields');
+	}//end validateTreePresentation()
+
+	/**
+	 * An optional list of field names at a path must, when given, name properties of the view's schema.
+	 *
+	 * @param PresentationCheck $check The presentation and the view's query
+	 * @param string            $path  The list's dotted path, also its label in the error message
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException If the value is not a list of the schema's properties
+	 *
+	 * @spec openspec/changes/records-tree-view/specs/saved-search-views/spec.md#requirement-a-saved-view-can-present-hierarchical-records-as-a-tree
+	 */
+	private function assertOptionalPropertyList(PresentationCheck $check, string $path): void {
+		$fields = $check->declared(path: $path);
+		if ($fields === null) {
+			return;
+		}
+
+		if (is_array($fields) === false || array_is_list($fields) === false) {
+			throw new InvalidArgumentException('Presentation ' . $path . ' must be a list of property names');
+		}
+
+		$properties = $this->viewSchema(check: $check, label: $path)->getProperties();
+		foreach ($fields as $field) {
+			if (is_string($field) === false || array_key_exists($field, $properties) === false) {
+				throw new InvalidArgumentException(
+					'Presentation ' . $path . ' "' . (string)json_encode($field) . '" is not a property of the view\'s schema'
+				);
+			}
+		}
+	}//end assertOptionalPropertyList()
+
+	/**
+	 * Whether a schema property holds a file or an image: type `file`, a list of files, or format `image`.
+	 *
+	 * @param mixed $property The property definition.
+	 *
+	 * @return bool True when it can be a gallery cover.
+	 *
+	 * @spec openspec/changes/records-gallery-view/specs/saved-search-views/spec.md#requirement-a-saved-view-can-present-records-as-a-gallery
+	 */
+	private static function isFileOrImageProperty(mixed $property): bool {
+		if (is_array($property) === false) {
+			return false;
+		}
+
+		$type = ($property['type'] ?? '');
+		if ($type === 'file' || ($property['format'] ?? '') === 'image') {
+			return true;
+		}
+
+		return $type === 'array' && is_array($property['items'] ?? null) === true && (($property['items']['type'] ?? '') === 'file');
+	}//end isFileOrImageProperty()
 
 	/**
 	 * A required presentation field (kanban.groupByField, calendar.dateField) must be declared and on the view's schema.

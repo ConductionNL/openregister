@@ -29,11 +29,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
+use DateTimeImmutable;
 use OCA\OpenRegister\Db\CaseItem;
 use OCA\OpenRegister\Event\CaseItemTransitionedEvent;
 use OCA\OpenRegister\Event\FlowTimerFiredEvent;
 use OCA\OpenRegister\Service\Case\CasePlanItemTimersInterface;
 use OCA\OpenRegister\Service\Case\CasePlanServiceInterface;
+use OCA\OpenRegister\Service\Flow\Timer\FlowTimerAct;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 
@@ -90,9 +92,15 @@ class CaseItemTimerListener implements IEventListener {
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-deadlines-run-on-the-shared-clock
 	 */
 	private function onTransitioned(CaseItemTransitionedEvent $event): void {
+		// The event carries the Kernel read contract; only the plan engine's own
+		// CaseItem row is ever dispatched, and the timers arm on that row.
 		$item = $event->getItem();
+		if ($item instanceof CaseItem === false) {
+			return;
+		}
+
 		if ($item->getState() === CaseItem::STATE_ACTIVE) {
-			$this->timers->onEntered(item: $item, actor: null);
+			$this->timers->onEntered(item: $item, act: new FlowTimerAct(actor: null, now: new DateTimeImmutable()));
 		}
 
 		if ($item->isInTerminalState() === true) {

@@ -35,7 +35,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Vocabulary;
 
-use DateTimeInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\CodedValueException;
 
@@ -72,9 +71,7 @@ class CodedValueGuard implements CodedValueGuardInterface {
 	 * behind `hardValidation`: an expiry that only applies to schemas with
 	 * hard validation on is an expiry a gemeente cannot rely on.
 	 *
-	 * @param array<string,mixed> $object The submitted object data.
-	 * @param Schema $schema The schema being written against.
-	 * @param DateTimeInterface|null $at The instant to judge windows at; now when null.
+	 * @param CodedValueWrite $write The submitted object data, the schema it is written against and the instant to judge windows at (now when null).
 	 *
 	 * @return void
 	 *
@@ -82,8 +79,8 @@ class CodedValueGuard implements CodedValueGuardInterface {
 	 *
 	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
-	public function enforce(array $object, Schema $schema, ?DateTimeInterface $at = null): void {
-		$this->refuse(errors: $this->collectViolations(write: new CodedValueWrite(object: $object, schema: $schema, at: $at)));
+	public function enforce(CodedValueWrite $write): void {
+		$this->refuse(errors: $this->collectViolations(write: $write));
 	}//end enforce()
 
 	/**
@@ -201,14 +198,18 @@ class CodedValueGuard implements CodedValueGuardInterface {
 	private function lastViolation(CodedValueSubject $subject, array $values): ?string {
 		$violation = null;
 		foreach ($values as $value) {
-			// An unresolved value is skipped: scheme membership is refused by
-			// `property-code-list-from-concept-scheme`, and saying it twice
-			// would give one mistake two different messages.
+			// A value the (readable) scheme does not hold is refused here, naming the
+			// property and the scheme (property-code-list-from-concept-scheme). This
+			// is the only place scheme membership is judged, so one mistake gets one
+			// message.
 			$concept = $this->resolve(declaration: $subject->declaration, value: $value);
-			if ($concept !== null) {
-				$match = $subject->matched(value: $value, concept: $concept);
-				$violation = ($this->refusals->violationFor(subject: $subject, match: $match) ?? $violation);
+			if ($concept === null) {
+				$violation = $this->refusals->notInScheme(subject: $subject, value: $value);
+				continue;
 			}
+
+			$match = $subject->matched(value: $value, concept: $concept);
+			$violation = ($this->refusals->violationFor(subject: $subject, match: $match) ?? $violation);
 		}
 
 		return $violation;

@@ -28,6 +28,9 @@ use Throwable;
  * @covers \OCA\OpenRegister\Service\ConfigurationService
  * @uses   \OCA\OpenRegister\Service\Configuration\FetchHandler
  * @uses   \OCA\OpenRegister\Db\Configuration
+ * @uses \OCA\OpenRegister\Service\Configuration\ConfigurationGitHosts
+ * @uses \OCA\OpenRegister\Service\Configuration\ConfigurationServicePlatform
+ * @uses \OCA\OpenRegister\Service\Configuration\ConfigurationTransferHandlers
  */
 class ConfigurationServiceCheckRemoteVersionGoldenTest extends TestCase {
 

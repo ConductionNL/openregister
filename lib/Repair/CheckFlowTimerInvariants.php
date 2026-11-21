@@ -23,7 +23,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
+ * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
  */
 
 declare(strict_types=1);
@@ -32,6 +32,7 @@ namespace OCA\OpenRegister\Repair;
 
 use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Db\FlowTimerMapperInterface;
+use OCA\OpenRegister\Db\IdCursor;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\Migration\IOutput;
@@ -71,7 +72,7 @@ class CheckFlowTimerInvariants implements IRepairStep {
 	 *
 	 * @return string The step name.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
 	 */
 	public function getName(): string {
 		return 'Check business-timer invariants (armed fire_at, suspended NULLs, orphaned timers) and report defects';
@@ -84,7 +85,7 @@ class CheckFlowTimerInvariants implements IRepairStep {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
 	 */
 	public function run(IOutput $output): void {
 		try {
@@ -97,50 +98,89 @@ class CheckFlowTimerInvariants implements IRepairStep {
 			return;
 		}
 
-		$defects = array_sum($counts);
-		$message = sprintf(
+		if (array_sum($counts) === 0) {
+			$output->info(self::summary(counts: $counts));
+
+			return;
+		}
+
+		$this->reportDefects(counts: $counts, output: $output);
+	}//end run()
+
+	/**
+	 * The counts line.
+	 *
+	 * @param array{armedWithoutFireAt: int, suspendedWithClock: int, orphaned: int} $counts The defect counts.
+	 *
+	 * @return string The line.
+	 *
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
+	 */
+	private static function summary(array $counts): string {
+		return sprintf(
 			'Business-timer invariants: %d armed without fire_at, %d suspended with fire_at or running_since, %d orphaned (subject terminal or absent).',
 			$counts['armedWithoutFireAt'],
 			$counts['suspendedWithClock'],
 			$counts['orphaned']
 		);
+	}//end summary()
 
-		if ($defects === 0) {
-			$output->info($message);
-
-			return;
-		}
-
+	/**
+	 * Warn about the defects and log them with their counts; nothing is cancelled.
+	 *
+	 * @param array{armedWithoutFireAt: int, suspendedWithClock: int, orphaned: int} $counts The defect counts.
+	 * @param IOutput                                                                 $output Migration output handle.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
+	 */
+	private function reportDefects(array $counts, IOutput $output): void {
+		$message = self::summary(counts: $counts);
 		$output->warning($message . ' These are DEFECTS in whoever completed the subject; they are reported, not cancelled.');
 		$this->logger->warning('[CheckFlowTimerInvariants] ' . $message, $counts);
-	}//end run()
+	}//end reportDefects()
 
 	/**
 	 * Count the defects across the armed and suspended timers.
 	 *
 	 * @return array{armedWithoutFireAt: int, suspendedWithClock: int, orphaned: int} The counts.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
 	 */
 	public function measure(): array {
 		$counts = ['armedWithoutFireAt' => 0, 'suspendedWithClock' => 0, 'orphaned' => 0];
 
 		foreach ([FlowTimer::STATE_ARMED, FlowTimer::STATE_SUSPENDED] as $state) {
-			$afterId = 0;
-			$more = true;
-			while ($more === true) {
-				$page = $this->timers->findByStatePaged(state: $state, afterId: $afterId, limit: self::PAGE);
-				foreach ($page as $timer) {
-					$afterId = (int)$timer->getId();
-					$this->inspect(timer: $timer, counts: $counts);
-				}
-
-				$more = (count($page) === self::PAGE);
-			}
+			$this->inspectState(state: $state, counts: $counts);
 		}
 
 		return $counts;
 	}//end measure()
+
+	/**
+	 * Inspect every timer in one state, page by page.
+	 *
+	 * @param string                                                               $state  The timer state.
+	 * @param array{armedWithoutFireAt: int, suspendedWithClock: int, orphaned: int} $counts The running counts, by reference.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
+	 */
+	private function inspectState(string $state, array &$counts): void {
+		$afterId = 0;
+		$more = true;
+		while ($more === true) {
+			$page = $this->timers->findByStatePaged(state: $state, cursor: new IdCursor(afterId: $afterId, limit: self::PAGE));
+			foreach ($page as $timer) {
+				$afterId = (int)$timer->getId();
+				$this->inspect(timer: $timer, counts: $counts);
+			}
+
+			$more = (count($page) === self::PAGE);
+		}
+	}//end inspectState()
 
 	/**
 	 * Inspect one open timer against the invariants.

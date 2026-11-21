@@ -7,17 +7,22 @@ declare(strict_types=1);
 
 namespace Unit\Service\Aggregation;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationSlot;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
+use OCA\OpenRegister\Service\Aggregation\NamedAggregationRef;
+use OCA\OpenRegister\Service\Aggregation\NamedAggregationOptions;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
@@ -100,6 +105,10 @@ class AggregationRunnerRunGoldenTest extends TestCase {
 		$cases['native-grouped-bypass'] = [['spec' => $native, 'platform' => 'sqlite', 'nativeRows' => $nativeRows, 'bypass' => true] + $base];
 		$cases['native-grouped-user'] = [['spec' => $native, 'platform' => 'sqlite', 'nativeRows' => $nativeRows, 'user' => 'alice', 'org' => 'org-2'] + $base];
 		$cases['from-empty'] = [['spec' => ['agg' => ['metric' => 'count', 'from' => '']]] + $base];
+		// aggregation-dialect-repair Fix 1: a `schema` key naming this schema
+		// counts this schema; one naming another schema counts that one.
+		$cases['schema-key-self'] = [['spec' => ['agg' => ['metric' => 'count', 'schema' => 'Things']]] + $base];
+		$cases['schema-key-other'] = [['spec' => ['agg' => ['metric' => 'count', 'schema' => 'participants', 'where' => ['meeting' => '@self.id']]]] + $base];
 		$cases['row-cap'] = [['spec' => $sum, 'rows' => array_fill(0, 10000, ['amount' => 1])] + $base];
 		$cases['current-user-placeholder'] = [['spec' => ['agg' => ['metric' => 'count', 'where' => ['owner' => '$currentUser']]], 'user' => 'alice'] + $base];
 
@@ -126,6 +135,40 @@ class AggregationRunnerRunGoldenTest extends TestCase {
 	}//end testRunMatchesTheGolden()
 
 	/**
+	 * A `schema` key that names the declaring schema (in any case) runs
+	 * exactly as the same spec without it: same reads, same answer.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/aggregation-dialect-repair/specs/aggregation-api/spec.md#requirement-the-named-annotation-aggregation-surface-must-validate-filtergroupby-fields-against-the-schema-that-owns-them
+	 */
+	public function testASchemaKeyNamingThisSchemaCountsThisSchema(): void {
+		$cases = self::cases();
+
+		$this->assertSame(json_encode($this->observe(case: $cases['count-metric'][0])), json_encode($this->observe(case: $cases['schema-key-self'][0])));
+	}//end testASchemaKeyNamingThisSchemaCountsThisSchema()
+
+	/**
+	 * A `schema` key that names another schema is run as a cross-schema
+	 * count of that schema, as `from` is: it never counts the declaring
+	 * schema's own rows.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/aggregation-dialect-repair/specs/aggregation-api/spec.md#requirement-the-named-annotation-aggregation-surface-must-validate-filtergroupby-fields-against-the-schema-that-owns-them
+	 */
+	public function testASchemaKeyNamingAnotherSchemaCountsThatSchema(): void {
+		$cases = self::cases();
+		$asSchema = $this->observe(case: $cases['schema-key-other'][0]);
+
+		$asFrom = $cases['schema-key-other'][0];
+		$asFrom['spec'] = ['agg' => ['metric' => 'count', 'from' => 'participants', 'where' => ['meeting' => '@self.id']]];
+
+		$this->assertSame(json_encode($this->observe(case: $asFrom)), json_encode($asSchema), 'a `schema` key must run as `from` does');
+		$this->assertNotContains(['table' => ['reg', 'things', null]], $asSchema['calls'], 'the declaring schema was counted');
+	}//end testASchemaKeyNamingAnotherSchemaCountsThatSchema()
+
+	/**
 	 * @param array<string, mixed> $case
 	 *
 	 * @return array<string, mixed>
@@ -135,11 +178,8 @@ class AggregationRunnerRunGoldenTest extends TestCase {
 		$runner = $this->runner(case: $case);
 		try {
 			$result = $runner->run(
-				registerRef: 'reg',
-				schemaRef: 'things',
-				name: $case['name'],
-				bypassRbac: $case['bypass'],
-				extraFilter: $case['extra']
+				ref: new NamedAggregationRef(register: 'reg', schema: 'things', name: $case['name']),
+				options: new NamedAggregationOptions(bypassRbac: $case['bypass'], extraFilter: $case['extra'])
 			);
 			$outcome = ['result' => $result];
 		} catch (Throwable $e) {
@@ -180,7 +220,8 @@ class AggregationRunnerRunGoldenTest extends TestCase {
 			}
 		);
 		$magic->method('findAllInRegisterSchemaTable')->willReturnCallback(
-			function (Register $register, Schema $schema, ?int $limit = null) use ($case): array {
+			function (RegisterSchema $table, ListQuery $listing) use ($case): array {
+				[$register, $schema, $limit] = [$table->register, $table->schema, $listing->limitOrNull()];
 				$this->calls[] = ['table' => [$register->getSlug(), $schema->getSlug(), $limit]];
 				$entities = [];
 				foreach ($case['rows'] as $row) {
@@ -193,14 +234,14 @@ class AggregationRunnerRunGoldenTest extends TestCase {
 
 		$cache = $this->createMock(AggregationCache::class);
 		$cache->method('get')->willReturnCallback(
-			function (string $registerSlug, string $schemaSlug, string $name, array $filter) use ($case): ?array {
-				$this->calls[] = ['cacheGet' => [$registerSlug, $schemaSlug, $name, $filter]];
+			function (AggregationSlot $slot) use ($case): ?array {
+				$this->calls[] = ['cacheGet' => [$slot->registerSlug, $slot->schemaSlug, $slot->name, $slot->filter]];
 				return $case['cached'];
 			}
 		);
 		$cache->method('set')->willReturnCallback(
-			function (string $registerSlug, string $schemaSlug, string $name, array $filter, array $result): void {
-				$this->calls[] = ['cacheSet' => [$registerSlug, $schemaSlug, $name, $filter, $result]];
+			function (AggregationSlot $slot, array $result): void {
+				$this->calls[] = ['cacheSet' => [$slot->registerSlug, $slot->schemaSlug, $slot->name, $slot->filter, $result]];
 			}
 		);
 

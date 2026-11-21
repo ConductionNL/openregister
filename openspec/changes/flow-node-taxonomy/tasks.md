@@ -18,13 +18,13 @@
 ## 3. Catalog and palette
 
 - [x] 3.1 The registry applies the defaults; the catalog serves both fields.
-- [ ] 3.2 The palette groups by category in a fixed order, never registration order.
+- [x] 3.2 The palette groups by category in a fixed order, never registration order. (verified: lib/Service/Flow/FlowNodeTaxonomyResolver.php, tests/Unit/Service/Flow/FlowNodeTaxonomyTest.php)
 - [ ] 3.3 nc-vue: grouped palette, jest spec seen RED first, en/nl for the category labels with the `writing` skill loaded first.
 
 ## 4. The gate
 
-- [ ] 4.1 A hydra gate refusing a node in THIS repository's node directory that declares neither. Scoped by path (D-3 trap), never by interface.
-- [ ] 4.2 An acceptance fixture with a planted undeclared node, so the gate is proven to refuse rather than assumed to.
+- [x] 4.1 A hydra gate refusing a node in THIS repository's node directory that declares neither. Scoped by path (D-3 trap), never by interface. (verified 13 Nov: gate-111 `flow-node-taxonomy`, `hydra-gates/scripts/lib/check_flow_node_taxonomy.py`, run by `run-hydra-gates.sh`; on this tree it checks 110 flow node files with no finding)
+- [x] 4.2 An acceptance fixture with a planted undeclared node, so the gate is proven to refuse rather than assumed to. (verified 13 Nov: `test-fixtures/gate-acceptance/flow-node-taxonomy/{clean,planted,no-nodes}`; `lib/test_gate111_flow_node_taxonomy.sh` passes: clean rc=0, planted rc=1 with one finding, no-nodes rc=4 not applicable)
 
 ## 5. Proof
 

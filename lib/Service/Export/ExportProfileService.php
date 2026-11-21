@@ -166,21 +166,17 @@ class ExportProfileService implements ExportProfileServiceInterface {
 	/**
 	 * Refuse a caller who is neither the owner nor an administrator.
 	 *
-	 * @param ExportProfile $profile       The profile.
-	 * @param string        $callerUid     The caller.
-	 * @param bool          $callerIsAdmin Whether the caller is an administrator.
+	 * @param ExportProfile       $profile The profile.
+	 * @param ExportProfileCaller $caller  The caller's uid, and whether they are an administrator.
 	 *
 	 * @return void
 	 *
 	 * @throws ExportRefusedException When the caller may not touch the profile.
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The administrator bypass is
-	 *     a property of the caller, not a second code path.
 	 */
-	public function assertOwnerOrAdmin(ExportProfile $profile, string $callerUid, bool $callerIsAdmin): void {
-		if ($callerIsAdmin === true || $profile->getOwner() === $callerUid) {
+	public function assertOwnerOrAdmin(ExportProfile $profile, ExportProfileCaller $caller): void {
+		if ($caller->isAdmin === true || $profile->getOwner() === $caller->uid) {
 			return;
 		}
 
@@ -204,45 +200,84 @@ class ExportProfileService implements ExportProfileServiceInterface {
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function run(ExportProfile $profile, string $actorUid): array {
+		$run = new ProfileExportRun(profile: $profile, actorUid: $actorUid);
 		$register = $this->registerOf(profile: $profile);
-		$schema = $this->schemaOf(profile: $profile);
-
-		$refusal = $this->rightService->refusalForUid(schema: $schema, userId: $actorUid);
-		if ($refusal !== null) {
-			$this->recorder->recordRefused(
-				profile: ($profile->getName() ?? ''),
-				rule: $refusal->getRule(),
-				reason: $refusal->getMessage(),
-				register: $profile->getRegisterId(),
-				schema: $profile->getSchemaId(),
-				actorId: $actorUid
-			);
-
-			throw $refusal;
-		}
+		$schema = $this->permittedSchema(run: $run);
 
 		$objects = $this->steps->exportService->fetchExportObjects(
-			register: $register,
-			schema: $schema,
-			filters: $profile->getFiltersArray()
+			request: new ExportRequest(register: $register, schema: $schema, filters: $profile->getFiltersArray())
 		);
 
-		$written = $this->steps->writer->write(profile: $profile, objects: $objects, schema: $schema);
+		$written = $this->steps->writer->write(projection: new ProfileProjection(profile: $profile, schema: $schema), objects: $objects);
 
-		$this->recorder->recordCompleted(
-			profile: ($profile->getName() ?? ''),
-			rowCount: $written['rowCount'],
-			format: ($profile->getFormat() ?? 'csv'),
-			valueMode: ($profile->getValueMode() ?? ExportProfile::MODE_STORED),
-			register: $profile->getRegisterId(),
-			schema: $profile->getSchemaId(),
-			actorId: $actorUid
-		);
+		$this->recordCompletion(run: $run, rowCount: $written['rowCount']);
 
 		$written['filename'] = $this->filenameFor(profile: $profile);
 
 		return $written;
 	}//end run()
+
+	/**
+	 * The profile's schema, once the principal is known to hold the export verb on it.
+	 *
+	 * @param ProfileExportRun $run The profile and the principal it runs as.
+	 *
+	 * @return Schema|null The schema, or null when the profile has none or it no longer exists.
+	 *
+	 * @throws ExportRefusedException When the principal does not hold the export verb; the refusal is recorded first.
+	 */
+	private function permittedSchema(ProfileExportRun $run): ?Schema {
+		$schema = $this->schemaOf(profile: $run->profile);
+
+		$refusal = $this->rightService->refusalForUid(schema: $schema, userId: $run->actorUid);
+		if ($refusal !== null) {
+			$this->recordRefusal(run: $run, refusal: $refusal);
+
+			throw $refusal;
+		}
+
+		return $schema;
+	}//end permittedSchema()
+
+	/**
+	 * Record that a profile run was refused.
+	 *
+	 * @param ProfileExportRun       $run     The profile and the principal it runs as.
+	 * @param ExportRefusedException $refusal Why it was refused.
+	 *
+	 * @return void
+	 */
+	private function recordRefusal(ProfileExportRun $run, ExportRefusedException $refusal): void {
+		$this->recorder->recordRefused(
+			profile: ($run->profile->getName() ?? ''),
+			rule: $refusal->getRule(),
+			reason: $refusal->getMessage(),
+			register: $run->profile->getRegisterId(),
+			schema: $run->profile->getSchemaId(),
+			actorId: $run->actorUid
+		);
+	}//end recordRefusal()
+
+	/**
+	 * Record what a completed profile run let leave.
+	 *
+	 * @param ProfileExportRun $run      The profile and the principal it ran as.
+	 * @param integer          $rowCount The rows written.
+	 *
+	 * @return void
+	 */
+	private function recordCompletion(ProfileExportRun $run, int $rowCount): void {
+		$profile = $run->profile;
+		$this->recorder->recordCompleted(
+			profile: ($profile->getName() ?? ''),
+			rowCount: $rowCount,
+			format: ($profile->getFormat() ?? 'csv'),
+			valueMode: ($profile->getValueMode() ?? ExportProfile::MODE_STORED),
+			register: $profile->getRegisterId(),
+			schema: $profile->getSchemaId(),
+			actorId: $run->actorUid
+		);
+	}//end recordCompletion()
 
 	/**
 	 * The filename a profile writes under.
@@ -363,27 +398,50 @@ class ExportProfileService implements ExportProfileServiceInterface {
 		}
 
 		if (array_key_exists('schemaId', $data) === true) {
-			$schemaId = null;
-			if ($data['schemaId'] !== null) {
-				$schemaId = (int)$data['schemaId'];
-			}
-
-			$profile->setSchemaId($schemaId);
+			$this->applySchemaId(profile: $profile, schemaId: $data['schemaId']);
 		}
 
 		if (array_key_exists('filters', $data) === true) {
-			$filters = null;
-			if ($data['filters'] !== null) {
-				$filters = (string)json_encode($data['filters']);
-			}
-
-			$profile->setFilters($filters);
+			$this->applyFilters(profile: $profile, filters: $data['filters']);
 		}
 
 		if (array_key_exists('wholeSet', $data) === true) {
 			$profile->setWholeSet((bool)$data['wholeSet']);
 		}
 	}//end applyScope()
+
+	/**
+	 * Set the submitted schema id; null clears it.
+	 *
+	 * @param ExportProfile $profile  The entity.
+	 * @param mixed         $schemaId The submitted value.
+	 *
+	 * @return void
+	 */
+	private function applySchemaId(ExportProfile $profile, mixed $schemaId): void {
+		if ($schemaId !== null) {
+			$schemaId = (int)$schemaId;
+		}
+
+		$profile->setSchemaId($schemaId);
+	}//end applySchemaId()
+
+	/**
+	 * Set the submitted filters, stored as JSON; null clears them.
+	 *
+	 * @param ExportProfile $profile The entity.
+	 * @param mixed         $filters The submitted value.
+	 *
+	 * @return void
+	 */
+	private function applyFilters(ExportProfile $profile, mixed $filters): void {
+		$encoded = null;
+		if ($filters !== null) {
+			$encoded = (string)json_encode($filters);
+		}
+
+		$profile->setFilters($encoded);
+	}//end applyFilters()
 
 	/**
 	 * What the file looks like: the field order, the value mode and the format.

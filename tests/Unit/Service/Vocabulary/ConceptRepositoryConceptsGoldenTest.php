@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclaration;
 use OCA\OpenRegister\Service\Vocabulary\CodedValueRules;
@@ -43,6 +44,13 @@ use PHPUnit\Framework\TestCase;
  * The concept read and the stored-value resolve of the concept repository, pinned.
  *
  * @covers \OCA\OpenRegister\Service\Vocabulary\ConceptRepository
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Service\Vocabulary\CodedNarrowing
+ * @uses \OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclaration
+ * @uses \OCA\OpenRegister\Service\Vocabulary\CodedValueRules
  */
 final class ConceptRepositoryConceptsGoldenTest extends TestCase {
 
@@ -141,7 +149,7 @@ final class ConceptRepositoryConceptsGoldenTest extends TestCase {
 			}
 		);
 
-		return new ConceptRepository($objects, $registers, $schemas);
+		return new ConceptRepository(new SchemaCatalog(registers: $registers, schemas: $schemas, tables: $this->createMock(MagicMapperInterface::class)), $objects);
 	}//end repository()
 
 	/**

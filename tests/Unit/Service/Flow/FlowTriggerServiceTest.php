@@ -17,6 +17,8 @@ use OCA\OpenRegister\Service\Flow\FlowRunStores;
 use OCA\OpenRegister\Service\Flow\FlowRunWalkServices;
 use OCA\OpenRegister\Service\Flow\FlowTriggerService;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Flow\FlowRunOrigin;
+use OCA\OpenRegister\Service\Flow\FlowRunPass;
 
 /**
  * The trigger service's contract: a fired event queues one run per wired flow,
@@ -39,7 +41,7 @@ class FlowTriggerServiceTest extends TestCase {
 	 */
 	private function locatorReturning(array $ids): FlowLocator {
 		$locator = $this->createMock(FlowLocator::class);
-		$locator->method('flowsForTrigger')->willReturn($ids);
+		$locator->method('flowsForEvent')->willReturn($ids);
 
 		return $locator;
 	}//end locatorReturning()
@@ -102,7 +104,7 @@ class FlowTriggerServiceTest extends TestCase {
 
 	public function testAnEventWithNoWiredFlowQueuesNothing(): void {
 		$runner = $this->createMock(FlowRunService::class);
-		$runner->expects($this->never())->method('queue');
+		$runner->expects($this->never())->method('queueRun');
 
 		$service = new FlowTriggerService(new \OCA\OpenRegister\Service\Flow\FlowExecution($this->locatorReturning([]), $runner, new \Psr\Log\NullLogger()));
 
@@ -120,7 +122,7 @@ class FlowTriggerServiceTest extends TestCase {
 	public function testOneUnpublishedFlowDoesNotAbortTheFanOutForItsSiblings(): void {
 		$queued = [];
 		$runner = $this->createMock(FlowRunService::class);
-		$runner->method('queue')->willReturnCallback(
+		$runner->method('queueRun')->willReturnCallback(
 			function (string $flowId) use (&$queued): FlowRun {
 				if ($flowId === 'unpublished') {
 					throw new \OCA\OpenRegister\Service\Flow\FlowLifecycleRefused(
@@ -159,9 +161,9 @@ class FlowTriggerServiceTest extends TestCase {
 	 */
 	public function testALocatorFailureIsSwallowedAsZero(): void {
 		$locator = $this->createMock(FlowLocator::class);
-		$locator->method('flowsForTrigger')->willThrowException(new \RuntimeException('index gone'));
+		$locator->method('flowsForEvent')->willThrowException(new \RuntimeException('index gone'));
 		$runner = $this->createMock(FlowRunService::class);
-		$runner->expects($this->never())->method('queue');
+		$runner->expects($this->never())->method('queueRun');
 
 		$service = new FlowTriggerService(new \OCA\OpenRegister\Service\Flow\FlowExecution($locator, $runner, new \Psr\Log\NullLogger()));
 
@@ -175,15 +177,15 @@ class FlowTriggerServiceTest extends TestCase {
 	 */
 	public function testAnInlineFailureKeepsTheQueuedRunCounted(): void {
 		$locator = $this->createMock(FlowLocator::class);
-		$locator->method('flowsForTrigger')->willReturn(['sync-1']);
+		$locator->method('flowsForEvent')->willReturn(['sync-1']);
 		$locator->method('resolveFlow')->willReturn(['id' => 'sync-1', 'executionMode' => 'sync']);
-		$locator->method('resolveSubject')->willReturn(new \stdClass());
+		$locator->method('resolveObject')->willReturn(new \stdClass());
 
 		$runner = $this->createMock(FlowRunService::class);
 		$run = new FlowRun();
 		$run->setUuid('run-sync-1');
-		$runner->method('queue')->willReturn($run);
-		$runner->method('execute')->willThrowException(new \RuntimeException('step blew up'));
+		$runner->method('queueRun')->willReturn($run);
+		$runner->method('executePass')->willThrowException(new \RuntimeException('step blew up'));
 
 		$service = new FlowTriggerService(new \OCA\OpenRegister\Service\Flow\FlowExecution($locator, $runner, new \Psr\Log\NullLogger()));
 
@@ -200,7 +202,7 @@ class FlowTriggerServiceTest extends TestCase {
 	 */
 	public function testASubjectlessSyncFlowSeedsFromThePayload(): void {
 		$locator = $this->createMock(FlowLocator::class);
-		$locator->method('flowsForTrigger')->willReturn(['sync-1']);
+		$locator->method('flowsForEvent')->willReturn(['sync-1']);
 		$locator->method('resolveFlow')->willReturn(['id' => 'sync-1', 'executionMode' => 'sync']);
 
 		$run = new FlowRun();
@@ -209,10 +211,10 @@ class FlowTriggerServiceTest extends TestCase {
 
 		$seen = null;
 		$runner = $this->createMock(FlowRunService::class);
-		$runner->method('queue')->willReturn($run);
-		$runner->expects($this->once())->method('execute')->willReturnCallback(
-			function () use (&$seen, $run): FlowRun {
-				$seen = func_get_args();
+		$runner->method('queueRun')->willReturn($run);
+		$runner->expects($this->once())->method('executePass')->willReturnCallback(
+			function (FlowRunPass $pass, FlowRunOrigin $origin) use (&$seen, $run): FlowRun {
+				$seen = $origin->items;
 				return $run;
 			}
 		);
@@ -220,8 +222,8 @@ class FlowTriggerServiceTest extends TestCase {
 		$service = new FlowTriggerService(new \OCA\OpenRegister\Service\Flow\FlowExecution($locator, $runner, new \Psr\Log\NullLogger()));
 
 		$this->assertSame(1, $service->fire(event: 'file.created'));
-		// execute(run, flow, subject, seedItems): the seed carries the payload.
-		$this->assertSame('/f.txt', $seen[3][0]['json']['path']);
+		// executePass(pass, origin): the origin's seed items carry the payload.
+		$this->assertSame('/f.txt', $seen[0]['json']['path']);
 	}//end testASubjectlessSyncFlowSeedsFromThePayload()
 
 	/**
@@ -230,18 +232,88 @@ class FlowTriggerServiceTest extends TestCase {
 	 */
 	public function testAnUnresolvableSubjectLeavesTheSyncRunToTheWorker(): void {
 		$locator = $this->createMock(FlowLocator::class);
-		$locator->method('flowsForTrigger')->willReturn(['sync-1']);
+		$locator->method('flowsForEvent')->willReturn(['sync-1']);
 		$locator->method('resolveFlow')->willReturn(['id' => 'sync-1', 'executionMode' => 'sync']);
-		$locator->method('resolveSubject')->willReturn(null);
+		$locator->method('resolveObject')->willReturn(null);
 
 		$runner = $this->createMock(FlowRunService::class);
-		$runner->method('queue')->willReturn(new FlowRun());
-		$runner->expects($this->never())->method('execute');
+		$runner->method('queueRun')->willReturn(new FlowRun());
+		$runner->expects($this->never())->method('executePass');
 
 		$service = new FlowTriggerService(new \OCA\OpenRegister\Service\Flow\FlowExecution($locator, $runner, new \Psr\Log\NullLogger()));
 
 		$this->assertSame(1, $service->fire(event: 'object.created', subject: ['uuid' => 'gone']));
 	}//end testAnUnresolvableSubjectLeavesTheSyncRunToTheWorker()
+
+	/**
+	 * `object.deleted` is the one event whose subject can never be
+	 * re-resolved — the object is already gone. A `sync` flow wired to it must
+	 * still run INLINE, from the snapshot `FlowTriggerListener` recorded as
+	 * `payload`, rather than silently falling through to the worker and
+	 * breaking `sync`'s one guarantee (it runs inside the triggering call) for
+	 * this trigger only.
+	 */
+	public function testADeletedSubjectWithASnapshotStillRunsInlineFromThePayload(): void {
+		$locator = $this->createMock(FlowLocator::class);
+		$locator->method('flowsForEvent')->willReturn(['sync-1']);
+		$locator->method('resolveFlow')->willReturn(['id' => 'sync-1', 'executionMode' => 'sync']);
+		$locator->method('resolveObject')->willReturn(null);
+
+		$run = new FlowRun();
+		$run->setUuid('run-sync-3');
+		$run->setTrigger('object.deleted');
+		$run->setContext(['payload' => ['uuid' => 'gone', 'kenmerk' => 'K-1']]);
+
+		$seen = null;
+		$runner = $this->createMock(FlowRunService::class);
+		$runner->method('queueRun')->willReturn($run);
+		$runner->expects($this->once())->method('executePass')->willReturnCallback(
+			function (FlowRunPass $pass, FlowRunOrigin $origin) use (&$seen, $run): FlowRun {
+				$seen = $origin->items;
+				return $run;
+			}
+		);
+
+		$service = new FlowTriggerService(new \OCA\OpenRegister\Service\Flow\FlowExecution($locator, $runner, new \Psr\Log\NullLogger()));
+
+		$this->assertSame(
+			1,
+			$service->fire(event: 'object.deleted', subject: ['uuid' => 'gone', 'register' => 'woo', 'schema' => 'convenanten'])
+		);
+		// executePass(pass, origin): the origin's seed items carry the snapshot.
+		$this->assertSame('K-1', $seen[0]['json']['kenmerk']);
+	}//end testADeletedSubjectWithASnapshotStillRunsInlineFromThePayload()
+
+	/**
+	 * The payload fallback is scoped to `object.deleted` specifically, not to
+	 * "any trigger with an unresolved subject and a payload". A sub-flow
+	 * fire-and-forget child, for instance, queues with both a real subject
+	 * and a payload snapshot; on another trigger, an unresolved subject is a
+	 * genuine resolution failure and must still fall through to the worker's
+	 * ordinary (failing) handling rather than run inline on stale data.
+	 */
+	public function testAnUnresolvableSubjectWithAPayloadOnAnotherTriggerStillLeavesItToTheWorker(): void {
+		$locator = $this->createMock(FlowLocator::class);
+		$locator->method('flowsForEvent')->willReturn(['sync-1']);
+		$locator->method('resolveFlow')->willReturn(['id' => 'sync-1', 'executionMode' => 'sync']);
+		$locator->method('resolveObject')->willReturn(null);
+
+		$run = new FlowRun();
+		$run->setUuid('run-sync-4');
+		$run->setTrigger('object.updated');
+		$run->setContext(['payload' => ['uuid' => 'gone', 'kenmerk' => 'K-1']]);
+
+		$runner = $this->createMock(FlowRunService::class);
+		$runner->method('queueRun')->willReturn($run);
+		$runner->expects($this->never())->method('executePass');
+
+		$service = new FlowTriggerService(new \OCA\OpenRegister\Service\Flow\FlowExecution($locator, $runner, new \Psr\Log\NullLogger()));
+
+		$this->assertSame(
+			1,
+			$service->fire(event: 'object.updated', subject: ['uuid' => 'gone', 'register' => 'woo', 'schema' => 'convenanten'])
+		);
+	}//end testAnUnresolvableSubjectWithAPayloadOnAnotherTriggerStillLeavesItToTheWorker()
 
 	/**
 	 * A trigger runs inside a user's save; a failure to queue must be swallowed,
@@ -250,7 +322,7 @@ class FlowTriggerServiceTest extends TestCase {
 	 */
 	public function testAQueueFailureIsSwallowed(): void {
 		$runner = $this->createMock(FlowRunService::class);
-		$runner->method('queue')->willThrowException(new \RuntimeException('db down'));
+		$runner->method('queueRun')->willThrowException(new \RuntimeException('db down'));
 
 		$service = new FlowTriggerService(new \OCA\OpenRegister\Service\Flow\FlowExecution($this->locatorReturning(['f1']), $runner, new \Psr\Log\NullLogger()));
 

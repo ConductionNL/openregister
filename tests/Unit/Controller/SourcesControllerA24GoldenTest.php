@@ -187,7 +187,7 @@ class SourcesControllerA24GoldenTest extends TestCase {
 		$controller = $this->controller(isAdmin: false);
 		$source = $this->databaseSource();
 		$this->request->method('getParams')->willReturn([]);
-		$this->sourceMapper->method('findAll')->willReturn([$source]);
+		$this->sourceMapper->method('findList')->willReturn([$source]);
 		$this->sourceMapper->method('find')->willReturn($source);
 
 		$listed = $controller->index()->getData()['results'][0];

@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Reference;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
@@ -37,6 +38,7 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter;
 use OCA\OpenRegister\Service\Reference\ObjectPreviewSources;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -106,7 +108,7 @@ final class ObjectPreviewFormatterBehaviourTest extends TestCase {
 
 	public function testAReferenceIsComposedFromTheObjectItsSchemaRegisterAndDeepLink(): void {
 		$this->objects->expects($this->once())->method('find')
-			->with(self::UUID, [], false, 3, 4)
+			->with(...FindCallShape::findArgs(self::UUID, [], false, 3, 4))
 			->willReturn($this->object([
 				'@self' => ['name' => 'Melding 12', 'updated' => '2026-01-01T00:00:00+00:00', 'owner' => 'anna'],
 				'id' => 'internal',
@@ -221,7 +223,7 @@ final class ObjectPreviewFormatterBehaviourTest extends TestCase {
 	}
 
 	public function testEveryCanonicalUrlParsesBackToItsParts(): void {
-		$urls = $this->formatter->buildCanonicalUrls(7, 8, self::UUID);
+		$urls = $this->formatter->buildCanonicalUrls(new ObjectRef(7, 8, self::UUID));
 
 		$this->assertCount(3, $urls);
 		foreach ($urls as $url) {

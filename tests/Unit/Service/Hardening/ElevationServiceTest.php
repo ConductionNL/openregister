@@ -33,6 +33,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Hardening;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 // phpcs:disable Squiz.Commenting.VariableComment.Missing -- typed mock fixtures; the declaration IS the description.
 
+use OCA\OpenRegister\Service\Hardening\HardeningFact;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Service\Hardening\PlatformSecurityReader;
@@ -56,6 +57,10 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Service\Hardening\ElevationService
  * @uses \OCA\OpenRegister\Service\Hardening\ElevationRequiredException
  * @uses \OCA\OpenRegister\Service\Hardening\HardeningPolicy
+ * @uses \OCA\OpenRegister\Service\Hardening\ElevationIdentity
+ * @uses \OCA\OpenRegister\Service\Hardening\HardeningFact
+ * @uses \OCA\OpenRegister\Service\Hardening\HardeningPosture
+ * @uses \OCA\OpenRegister\Service\Hardening\HardeningSettingsStore
  */
 class ElevationServiceTest extends TestCase {
 
@@ -200,11 +205,7 @@ class ElevationServiceTest extends TestCase {
 		$this->users->method('checkPassword')->willReturn($this->createMock(IUser::class));
 		$this->audit->expects($this->once())
 			->method('accepted')
-			->with(
-				'elevation.granted',
-				'',
-				['user' => 'beheerder', 'periodSeconds' => 900]
-			);
+			->with(new HardeningFact(fact: 'elevation.granted', before: '', after: ['user' => 'beheerder', 'periodSeconds' => 900]));
 
 		$this->service->elevate(password: 'correct horse');
 	}
@@ -212,7 +213,7 @@ class ElevationServiceTest extends TestCase {
 	public function testALapsedWriteAttemptIsWrittenToTheAuditTrail(): void {
 		$this->audit->expects($this->once())
 			->method('refused')
-			->with('elevation.lapsed', '', 'beheerder', $this->stringContains('lapsed'));
+			->with(new HardeningFact(fact: 'elevation.lapsed', before: '', after: 'beheerder'), $this->stringContains('lapsed'));
 
 		try {
 			$this->service->requireElevated();

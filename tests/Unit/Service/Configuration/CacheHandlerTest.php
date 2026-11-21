@@ -116,4 +116,28 @@ class CacheHandlerTest extends TestCase {
 
 		$this->assertCount(2, $result);
 	}
+
+	/**
+	 * A session value that is not a list of configurations is not used: the handler reads the database instead.
+	 *
+	 * @return void
+	 */
+	public function testACachedValueThatIsNoConfigurationListIsNotUsed(): void {
+		$org = new Organisation();
+		$org->setUuid('org-uuid-789');
+		$this->organisationService->method('getActiveOrganisation')->willReturn($org);
+
+		$fromDatabase = [new Configuration()];
+		$this->configurationMapper->method('findAll')->willReturn($fromDatabase);
+
+		foreach ([serialize([new \stdClass()]), serialize('text'), serialize([new \DateTime()])] as $blob) {
+			$session = $this->createMock(ISession::class);
+			$session->method('get')->willReturn($blob);
+			$handler = new CacheHandler(session: $session, configurationMapper: $this->configurationMapper, organisationService: $this->organisationService);
+
+			$result = $handler->getConfigurationsForActiveOrganisation();
+
+			$this->assertSame($fromDatabase, $result, 'the database answers when the session holds: '.$blob);
+		}
+	}
 }

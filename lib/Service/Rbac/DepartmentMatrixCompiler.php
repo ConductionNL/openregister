@@ -258,7 +258,7 @@ class DepartmentMatrixCompiler {
 	 */
 	private function hasLapsed(array $row, DateTimeInterface $now): bool {
 		return array_key_exists(GrantConstraints::UNTIL_KEY, $row) === true
-			&& (new GrantConstraints())->reaches(entry: [GrantConstraints::UNTIL_KEY => $row[GrantConstraints::UNTIL_KEY]], area: [], now: $now) === false;
+			&& (new GrantConstraints())->reaches(entry: [GrantConstraints::UNTIL_KEY => $row[GrantConstraints::UNTIL_KEY]], point: new ConstraintPoint(area: [], now: $now)) === false;
 	}//end hasLapsed()
 
 	/**

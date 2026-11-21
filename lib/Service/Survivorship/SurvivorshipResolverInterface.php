@@ -38,23 +38,11 @@ interface SurvivorshipResolverInterface {
 	 * abort the whole resolution. Likewise a malformed override map (or
 	 * malformed override entry) is skipped without throwing.
 	 *
-	 * @param array<int, array<string, mixed>> $sourceRecords Linked source records.
-	 * @param array<string, mixed> $config The `x-openregister-survivorship` annotation.
-	 * @param SurvivorshipTrustLookup $trust Entity type (never hardcoded), trust rows, trust engine
-	 *                                       and reference instant for effectiveFrom + decay.
-	 * @param mixed $overrides Optional per-object attribute-override map
-	 *                         (`attribute => {value, overriddenBy, rationale?}`
-	 *                         or a bare `attribute => value` shorthand);
-	 *                         untrusted input, validated defensively.
+	 * @param GoldenRecordRequest $request The source records, annotation, trust lookup and overrides.
 	 *
 	 * @return array{goldenRecord: array<string, mixed>, attributeProvenance: array<string, mixed>}
 	 *
 	 * @spec openspec/changes/mdm-survivorship-override/tasks.md#1.1
 	 */
-	public function resolveGoldenRecord(
-		array $sourceRecords,
-		array $config,
-		SurvivorshipTrustLookup $trust,
-		mixed $overrides = null,
-	): array;
+	public function resolve(GoldenRecordRequest $request): array;
 }//end interface

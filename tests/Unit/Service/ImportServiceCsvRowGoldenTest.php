@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Golden test for ImportService::transformCsvRowToObject.
+ * Golden test for ImportService::transformCsvRow.
  *
  * Records the object built from each row, for an admin, a regular user and no user,
  * in fixtures/import-csv-row-golden.json. Set UPDATE_GOLDEN=1 to rewrite it.
@@ -22,9 +22,11 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Import\ImportTarget;
+use OCA\OpenRegister\Service\Import\RowImportTarget;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\MigrationPack\MappingEngine;
 use OCA\OpenRegister\Service\Object\ValidateObject;
@@ -46,6 +48,13 @@ use Throwable;
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Service\MigrationPack\MappingEngine
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
+ * @uses \OCA\OpenRegister\Service\Import\ImportServiceCodecs
+ * @uses \OCA\OpenRegister\Service\Import\ImportServiceRuntime
+ * @uses \OCA\OpenRegister\Service\Import\ImportServiceStores
+ * @uses \OCA\OpenRegister\Service\Import\ImportTarget
+ * @uses \OCA\OpenRegister\Service\Import\RowImportTarget
+ * @uses \OCA\OpenRegister\Service\MigrationPack\MappingTransformer
  */
 class ImportServiceCsvRowGoldenTest extends TestCase {
 	use PassThroughL10nTrait;
@@ -124,7 +133,7 @@ class ImportServiceCsvRowGoldenTest extends TestCase {
 		$actual = [];
 		foreach (self::rows() as $label => $row) {
 			try {
-				$actual[$label] = $service->transformCsvRowToObject($row, $register, $schema, $user);
+				$actual[$label] = $service->transformCsvRow($row, new RowImportTarget(new RegisterSchema($register, $schema), $user));
 			} catch (Throwable $e) {
 				$actual[$label] = ['error' => [get_class($e), $e->getMessage()]];
 			}

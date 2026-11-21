@@ -22,19 +22,17 @@
 
 namespace OCA\OpenRegister\Service\Object;
 
-use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\AuditTrail\RevertOptions;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\Core\CurrentFlowRunInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Event\ObjectRevertedEvent;
 use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Exception\ValidationException;
-use OCA\OpenRegister\Service\SettingsService;
-use OCA\OpenRegister\Service\SettingsServiceInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\EventDispatcher\IEventDispatcher;
 use Psr\Container\ContainerInterface;
@@ -52,48 +50,6 @@ use Psr\Container\ContainerInterface;
 class RevertHandler implements RevertHandlerInterface {
 
 	/**
-	 * Audit trail mapper
-	 *
-	 * @var AuditTrailMapperInterface
-	 */
-	private AuditTrailMapperInterface $auditTrailMapper;
-
-	/**
-	 * Container
-	 *
-	 * @var ContainerInterface
-	 */
-	private ContainerInterface $container;
-
-	/**
-	 * Event dispatcher
-	 *
-	 * @var IEventDispatcher
-	 */
-	private IEventDispatcher $eventDispatcher;
-
-	/**
-	 * Object entity mapper
-	 *
-	 * @var MagicMapperInterface
-	 */
-	private MagicMapperInterface $objectEntityMapper;
-
-	/**
-	 * Permission handler for RBAC enforcement
-	 *
-	 * @var PermissionCheckInterface
-	 */
-	private PermissionCheckInterface $permissionHandler;
-
-	/**
-	 * Validator the save path uses, so a revert meets the same schema.
-	 *
-	 * @var ObjectValidatorInterface
-	 */
-	private ObjectValidatorInterface $validateHandler;
-
-	/**
 	 * RevertHandler constructor.
 	 *
 	 * @param RevertStores $stores The audit trail, the object mapper and the save-path validator.
@@ -102,17 +58,11 @@ class RevertHandler implements RevertHandlerInterface {
 	 * @param PermissionCheckInterface $permissionHandler Permission handler for RBAC.
 	 */
 	public function __construct(
-		RevertStores $stores,
-		ContainerInterface $container,
-		IEventDispatcher $eventDispatcher,
-		PermissionCheckInterface $permissionHandler,
+		private readonly RevertStores $stores,
+		private readonly ContainerInterface $container,
+		private readonly IEventDispatcher $eventDispatcher,
+		private readonly PermissionCheckInterface $permissionHandler,
 	) {
-		$this->auditTrailMapper = $stores->auditTrailMapper;
-		$this->container = $container;
-		$this->eventDispatcher = $eventDispatcher;
-		$this->objectEntityMapper = $stores->objectEntityMapper;
-		$this->permissionHandler = $permissionHandler;
-		$this->validateHandler = $stores->validateHandler;
 	}//end __construct()
 
 	/**
@@ -152,17 +102,16 @@ class RevertHandler implements RevertHandlerInterface {
 	 */
 	private function revertAt(ObjectRef $ref, RevertPoint $point): ObjectEntity {
 		// Get the object with RBAC and multitenancy enforced (tenant-scoped find).
-		$context = $this->objectEntityMapper->findAcrossAllSources(identifier: $ref->id, includeDeleted: false);
+		$context = $this->stores->objectEntityMapper->findAcrossAllSources(identifier: $ref->id, includeDeleted: false);
 		$this->assertAddressed(ref: $ref, context: $context);
 		$this->assertMayRevert(context: $context);
 
 		// Revert from the object just checked: looked up again, the URL id could name another row.
-		$revertedObject = $this->auditTrailMapper->revertObject(
+		$revertedObject = $this->stores->auditTrailMapper->revertObjectWith(
 			identifier: $context['object'],
-			until: $point->until,
-			overwriteVersion: $point->overwriteVersion
+			options: RevertOptions::forPoint(until: $point->until, overwriteVersion: $point->overwriteVersion)
 		);
-		$savedObject = $this->saveReverted(reverted: $revertedObject, context: $context);
+		$savedObject = $this->saveReverted(reverted: $revertedObject, context: $context, point: $point);
 
 		$this->eventDispatcher->dispatchTyped(new ObjectRevertedEvent(object: $savedObject, until: $point->until));
 
@@ -226,27 +175,69 @@ class RevertHandler implements RevertHandlerInterface {
 	}//end assertMayRevert()
 
 	/**
-	 * Validate the restored state against the current schema, write it, and
-	 * record a `revert` audit row (the mapper writes none) when audit trails are on.
+	 * Validate the restored state against the current schema and write it
+	 * through the save path as an update with origin `revert`.
 	 *
 	 * Old data can come back in a shape the schema no longer allows, so it
-	 * meets the current schema before it is written, as a save does.
+	 * meets the current schema before anything is written, as a save does.
+	 * The save path's update then runs the update listeners, advances the
+	 * version, and writes one audit row with action `revert` naming the point
+	 * restored to (when audit trails are on).
 	 *
 	 * @param ObjectEntity $reverted The restored state
 	 * @param array        $context  The object, register and schema from the lookup
+	 * @param RevertPoint  $point    The point restored to
 	 *
 	 * @return ObjectEntity The saved object
+	 *
+	 * @throws ValidationException If the restored data fails the current schema; nothing is written.
+	 *
+	 * @spec openspec/changes/history-revert-through-the-save-path/specs/content-versioning/spec.md
 	 */
-	private function saveReverted(ObjectEntity $reverted, array $context): ObjectEntity {
+	private function saveReverted(ObjectEntity $reverted, array $context, RevertPoint $point): ObjectEntity {
 		$this->validateAgainstCurrentSchema(object: $reverted, schema: $context['schema']);
-		$savedObject = $this->objectEntityMapper->update(entity: $reverted, register: $context['register'], schema: $context['schema']);
 
-		if ($this->isAuditTrailsEnabled() === true) {
-			$this->auditTrailMapper->createAuditTrail(old: $context['object'], new: $savedObject, action: 'revert');
+		$stored = $context['object'];
+
+		return $this->stores->saveObject->updateObject(
+			update: new StoredObjectUpdate(
+				register: $context['register'],
+				schema: $context['schema'],
+				data: ($reverted->getObject() ?? []),
+				existingObject: $stored
+			),
+			options: new ObjectUpdateOptions(
+				oldObject: clone $stored,
+				origin: 'revert',
+				marks: self::revertMarks(point: $point, reverted: $reverted)
+			)
+		);
+	}//end saveReverted()
+
+	/**
+	 * The markers the `revert` audit row carries: the point restored to as the
+	 * request named it, and the version restored to when the point is a version.
+	 *
+	 * @param RevertPoint  $point    The point restored to.
+	 * @param ObjectEntity $reverted The restored state.
+	 *
+	 * @return array{revertedTo: string, revertedToVersion?: string} The markers.
+	 *
+	 * @spec openspec/changes/history-revert-through-the-save-path/specs/content-versioning/spec.md
+	 */
+	private static function revertMarks(RevertPoint $point, ObjectEntity $reverted): array {
+		$until = $point->until;
+		if ($until instanceof \DateTimeInterface) {
+			return ['revertedTo' => $until->format(\DateTimeInterface::ATOM)];
 		}
 
-		return $savedObject;
-	}//end saveReverted()
+		$marks = ['revertedTo' => (string) $until];
+		if (is_string($until) === true && preg_match('/^\d+\.\d+\.\d+$/', $until) === 1) {
+			$marks['revertedToVersion'] = $until;
+		}
+
+		return $marks;
+	}//end revertMarks()
 
 	/**
 	 * The names a route may use for a stored register or schema: its stored id,
@@ -295,7 +286,7 @@ class RevertHandler implements RevertHandlerInterface {
 
 		$notSupplied = new NotSuppliedHandler();
 		$data = ($object->getObject() ?? []);
-		$result = $this->validateHandler->validateObject(
+		$result = $this->stores->validateHandler->validateObject(
 			object: $notSupplied->stripForValidation(object: $data),
 			schema: $schema,
 			notSupplied: $notSupplied->declared(object: $data)
@@ -303,33 +294,11 @@ class RevertHandler implements RevertHandlerInterface {
 
 		if ($result->isValid() === false) {
 			throw new ValidationException(
-				message: $this->validateHandler->generateErrorMessage(result: $result),
+				message: $this->stores->validateHandler->generateErrorMessage(result: $result),
 				errors: $result->error()
 			);
 		}
 	}//end validateAgainstCurrentSchema()
-
-	/**
-	 * Whether audit trails are switched on, read as the save path reads it.
-	 *
-	 * Resolved from the container because SettingsService is a wide service
-	 * this handler needs for one flag. Anything that goes wrong answers true:
-	 * an extra audit row is the safe direction, a missing one is the defect.
-	 *
-	 * @return bool True when a revert must be recorded.
-	 */
-	private function isAuditTrailsEnabled(): bool {
-		try {
-			$settings = $this->container->get(SettingsServiceInterface::class);
-			if (($settings instanceof SettingsService) === false) {
-				return true;
-			}
-
-			return ($settings->getRetentionSettingsOnly()['auditTrailsEnabled'] ?? true) !== false;
-		} catch (\Throwable $unavailable) {
-			return true;
-		}
-	}//end isAuditTrailsEnabled()
 
 	/**
 	 * The flow run this write is being made for, or null when a person is
@@ -350,12 +319,12 @@ class RevertHandler implements RevertHandlerInterface {
 	 */
 	private function callerRunUuid(): ?string {
 		try {
-			$flowContext = $this->container->get(\OCA\OpenRegister\Service\Flow\FlowRunContext::class);
+			$flowContext = $this->container->get(CurrentFlowRunInterface::class);
 		} catch (\Throwable $unavailable) {
 			return null;
 		}
 
-		if ($flowContext instanceof \OCA\OpenRegister\Service\Flow\FlowRunContext === false) {
+		if ($flowContext instanceof CurrentFlowRunInterface === false) {
 			return null;
 		}
 

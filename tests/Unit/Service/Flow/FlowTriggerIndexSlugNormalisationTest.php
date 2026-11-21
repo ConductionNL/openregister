@@ -34,6 +34,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Flow;
 
+use OCA\OpenRegister\Db\Flow\FlowTriggerSet;
 use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Flow;
@@ -59,6 +60,9 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\Flow\FlowTriggerDerivation
+ * @uses \OCA\OpenRegister\Db\Flow\FlowTriggerSet
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Service\Flow\FlowTriggerSources
  */
 class FlowTriggerIndexSlugNormalisationTest extends TestCase {
 
@@ -76,7 +80,8 @@ class FlowTriggerIndexSlugNormalisationTest extends TestCase {
 	private function index(array $nodes): FlowTriggerIndex {
 		$mapper = $this->createMock(FlowTriggerMapper::class);
 		$mapper->method('replaceFor')->willReturnCallback(
-			function (string $flowUuid, array $triggers, bool $enabled): int {
+			function (FlowTriggerSet $set): int {
+				[$flowUuid, $triggers, $enabled] = [$set->flowUuid, $set->triggers, $set->enabled];
 				$this->written[] = ['flow' => $flowUuid, 'triggers' => $triggers, 'enabled' => $enabled];
 
 				return count($triggers);

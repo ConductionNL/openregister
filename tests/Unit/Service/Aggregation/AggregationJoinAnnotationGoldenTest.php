@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Aggregation;
 
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationJoinAnnotationValidator;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationSpecEntry;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -33,6 +34,9 @@ use PHPUnit\Framework\TestCase;
  *
  * @covers \OCA\OpenRegister\Search\Service\Aggregation\AggregationJoinAnnotationValidator
  * @uses   \OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery
+ * @uses \OCA\OpenRegister\Search\Service\Aggregation\AggregationQueryShape
+ * @uses \OCA\OpenRegister\Search\Service\Aggregation\AggregationSpecEntry
+ * @uses \OCA\OpenRegister\Search\Service\Aggregation\JoinClause
  */
 class AggregationJoinAnnotationGoldenTest extends TestCase {
 
@@ -89,7 +93,7 @@ class AggregationJoinAnnotationGoldenTest extends TestCase {
 		$validator = new AggregationJoinAnnotationValidator();
 		$actual    = [];
 		foreach (self::cases() as $name => $spec) {
-			$actual[$name] = $validator->validate('agg-' . count($actual), $spec, self::PROPS);
+			$actual[$name] = $validator->validate(new AggregationSpecEntry('agg-' . count($actual), $spec), self::PROPS);
 		}
 
 		if (getenv('UPDATE_GOLDEN') === '1') {

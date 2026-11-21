@@ -24,9 +24,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use Exception;
-use OCA\OpenRegister\Controller\TalkLinksController;
 use OCA\OpenRegister\Controller\Support\TalkLinksControllerServices;
+use OCA\OpenRegister\Controller\TalkLinksController;
 use OCA\OpenRegister\Db\TalkLink;
+use OCA\OpenRegister\Service\TalkLink\LinkedObject;
+use OCA\OpenRegister\Service\TalkLink\RoomCreation;
 use OCA\OpenRegister\Service\TalkLinkServiceInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -129,7 +131,7 @@ class TalkLinksControllerA24GoldenTest extends LinkedSourceGoldenTestCase {
 		$this->givenObject();
 		$this->params = ['roomToken' => ' '];
 		$link         = $this->link();
-		$this->service->expects($this->once())->method('linkRoom')->with('abc-123', 1, 2, ' ')->willReturn($link);
+		$this->service->expects($this->once())->method('linkRoom')->with(new LinkedObject('abc-123', 1, 2), ' ')->willReturn($link);
 
 		$this->assertResponse(201, $link->jsonSerialize(), $this->controller->link('r', 's', 'o'));
 	}
@@ -148,7 +150,7 @@ class TalkLinksControllerA24GoldenTest extends LinkedSourceGoldenTestCase {
 		$this->givenObject();
 		$this->params = ['name' => ' Room '];
 		$link         = $this->link();
-		$this->service->expects($this->once())->method('createAndLinkRoom')->with('abc-123', 1, 2, 'Room', null, 2)->willReturn($link);
+		$this->service->expects($this->once())->method('createAndLinkRoom')->with(new RoomCreation(new LinkedObject('abc-123', 1, 2), 'Room', null, 2))->willReturn($link);
 
 		$this->assertResponse(201, $link->jsonSerialize(), $this->controller->createNew('r', 's', 'o'));
 	}
@@ -158,7 +160,7 @@ class TalkLinksControllerA24GoldenTest extends LinkedSourceGoldenTestCase {
 		$this->givenObject();
 		$this->params = ['name' => 'Room', 'description' => 42, 'type' => '3'];
 		$link         = $this->link();
-		$this->service->expects($this->once())->method('createAndLinkRoom')->with('abc-123', 1, 2, 'Room', '42', 3)->willReturn($link);
+		$this->service->expects($this->once())->method('createAndLinkRoom')->with(new RoomCreation(new LinkedObject('abc-123', 1, 2), 'Room', '42', 3))->willReturn($link);
 
 		$this->assertResponse(201, $link->jsonSerialize(), $this->controller->createNew('r', 's', 'o'));
 	}

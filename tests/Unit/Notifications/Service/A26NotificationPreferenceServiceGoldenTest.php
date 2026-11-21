@@ -26,7 +26,10 @@ namespace OCA\OpenRegister\Tests\Unit\Notifications\Service;
 
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\PreferenceWrite;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationPreferenceService;
+use OCA\OpenRegister\Notifications\Service\Notification\PreferenceResolution;
+use OCA\OpenRegister\Notifications\Service\Notification\PreferenceTopic;
 use OCA\OpenRegister\Notifications\Service\Notification\UserGroupServices;
 use OCA\OpenRegister\Notifications\Service\Notification\SystemSchemaRules;
 use OCA\OpenRegister\Notifications\Service\Notification\TaskNotificationRules;
@@ -37,11 +40,22 @@ use OCP\IUserManager;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\PreferenceAddress;
 
 /**
  * @covers \OCA\OpenRegister\Notifications\Service\Notification\NotificationPreferenceService
  * @covers \OCA\OpenRegister\Notifications\Service\Notification\SystemSchemaRules
  * @covers \OCA\OpenRegister\Notifications\Service\Notification\TaskNotificationRules
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Kernel\Contracts\PreferenceAddress
+ * @uses \OCA\OpenRegister\Kernel\Contracts\PreferenceWrite
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\DeclaredNotification
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\PreferenceLookup
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\PreferenceResolution
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\PreferenceTopic
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\UserGroupServices
  */
 class A26NotificationPreferenceServiceGoldenTest extends TestCase {
 
@@ -89,12 +103,12 @@ class A26NotificationPreferenceServiceGoldenTest extends TestCase {
 		$out['keys'] = [
 			$service->configKey('case', 'assigned'),
 			$service->configKey($long, 'assigned-to-you'),
-			$service->scopedConfigKey('register:1', 'case', 'assigned'),
-			$service->scopedConfigKey('register:1', $long, 'assigned'),
-			$service->scopedConfigKey('domain:x', 'case', 'assigned', 'staff'),
-			$service->scopedConfigKey('domain:x', $long, 'assigned', 'staff'),
-			$service->groupConfigKey('staff', 'case', 'assigned'),
-			$service->groupConfigKey('staff', 'case', 'assigned', 'schema:2'),
+			$service->scopedKeyFor(new PreferenceAddress('case', 'assigned', 'register:1')),
+			$service->scopedKeyFor(new PreferenceAddress($long, 'assigned', 'register:1')),
+			$service->scopedKeyFor(new PreferenceAddress('case', 'assigned', 'domain:x'), 'staff'),
+			$service->scopedKeyFor(new PreferenceAddress($long, 'assigned', 'domain:x'), 'staff'),
+			$service->groupKeyFor('staff', new PreferenceAddress('case', 'assigned')),
+			$service->groupKeyFor('staff', new PreferenceAddress('case', 'assigned', 'schema:2')),
 		];
 		return $out;
 	}//end staticCases()
@@ -103,26 +117,26 @@ class A26NotificationPreferenceServiceGoldenTest extends TestCase {
 		$service = $this->service(groups: ['staff']);
 		$out = [];
 		$steps = [
-			'override missing'       => fn (): mixed => $service->getOverride('alice', 'case', 'assigned'),
-			'override set'           => fn (): mixed => $service->setOverride('alice', 'case', 'assigned', ['enabled' => 0, 'channels' => ['email', '', 3, 'push'], 'x' => 1]),
-			'override read'          => fn (): mixed => $service->getOverride('alice', 'case', 'assigned'),
-			'override set scoped'    => fn (): mixed => $service->setOverride('alice', 'case', 'assigned', ['channels' => 'email'], 'register:1'),
-			'override read scoped'   => fn (): mixed => $service->getOverride('alice', 'case', 'assigned', 'register:1'),
-			'override reset'         => fn (): mixed => $service->setOverride('alice', 'case', 'assigned', null),
-			'override reset scoped'  => fn (): mixed => $service->setOverride('alice', 'case', 'assigned', null, 'register:1'),
+			'override missing'       => fn (): mixed => $service->overrideAt(userId: 'alice', address: new PreferenceAddress(schemaSlug: 'case', notificationKey: 'assigned')),
+			'override set'           => fn (): mixed => $service->storeOverride(write: new PreferenceWrite(party: 'alice', address: new PreferenceAddress(schemaSlug: 'case', notificationKey: 'assigned'), value: ['enabled' => 0, 'channels' => ['email', '', 3, 'push'], 'x' => 1])),
+			'override read'          => fn (): mixed => $service->overrideAt(userId: 'alice', address: new PreferenceAddress(schemaSlug: 'case', notificationKey: 'assigned')),
+			'override set scoped'    => fn (): mixed => $service->storeOverride(write: new PreferenceWrite(party: 'alice', address: new PreferenceAddress(schemaSlug: 'case', notificationKey: 'assigned', scope: 'register:1'), value: ['channels' => 'email'])),
+			'override read scoped'   => fn (): mixed => $service->overrideAt(userId: 'alice', address: new PreferenceAddress(schemaSlug: 'case', notificationKey: 'assigned', scope: 'register:1')),
+			'override reset'         => fn (): mixed => $service->storeOverride(write: new PreferenceWrite(party: 'alice', address: new PreferenceAddress(schemaSlug: 'case', notificationKey: 'assigned'), value: null)),
+			'override reset scoped'  => fn (): mixed => $service->storeOverride(write: new PreferenceWrite(party: 'alice', address: new PreferenceAddress(schemaSlug: 'case', notificationKey: 'assigned', scope: 'register:1'), value: null)),
 			'override corrupt'       => function () use ($service): mixed {
 				$this->store['user/bob/notification_pref/case/assigned'] = '"text"';
-				return $service->getOverride('bob', 'case', 'assigned');
+				return $service->overrideAt(userId: 'bob', address: new PreferenceAddress(schemaSlug: 'case', notificationKey: 'assigned'));
 			},
-			'group missing'          => fn (): mixed => $service->getGroupDefault('staff', 'case', 'assigned'),
-			'group set'              => fn (): mixed => $service->setGroupDefault('staff', 'case', 'assigned', ['enabled' => false]),
-			'group read'             => fn (): mixed => $service->getGroupDefault('staff', 'case', 'assigned'),
-			'group set scoped'       => fn (): mixed => $service->setGroupDefault('staff', 'case', 'assigned', ['enabled' => true, 'channels' => ['email']], 'schema:2'),
-			'group read scoped'      => fn (): mixed => $service->getGroupDefault('staff', 'case', 'assigned', 'schema:2'),
-			'group reset'            => fn (): mixed => $service->setGroupDefault('staff', 'case', 'assigned', null),
+			'group missing'          => fn (): mixed => $service->groupDefaultAt(groupId: 'staff', address: new PreferenceAddress(schemaSlug: 'case', notificationKey: 'assigned')),
+			'group set'              => fn (): mixed => $service->storeGroupDefault(write: new PreferenceWrite(party: 'staff', address: new PreferenceAddress(schemaSlug: 'case', notificationKey: 'assigned'), value: ['enabled' => false])),
+			'group read'             => fn (): mixed => $service->groupDefaultAt(groupId: 'staff', address: new PreferenceAddress(schemaSlug: 'case', notificationKey: 'assigned')),
+			'group set scoped'       => fn (): mixed => $service->storeGroupDefault(write: new PreferenceWrite(party: 'staff', address: new PreferenceAddress(schemaSlug: 'case', notificationKey: 'assigned', scope: 'schema:2'), value: ['enabled' => true, 'channels' => ['email']])),
+			'group read scoped'      => fn (): mixed => $service->groupDefaultAt(groupId: 'staff', address: new PreferenceAddress(schemaSlug: 'case', notificationKey: 'assigned', scope: 'schema:2')),
+			'group reset'            => fn (): mixed => $service->storeGroupDefault(write: new PreferenceWrite(party: 'staff', address: new PreferenceAddress(schemaSlug: 'case', notificationKey: 'assigned'), value: null)),
 			'group corrupt'          => function () use ($service): mixed {
 				$this->store['app/notif_grp_pref/staff/global/case/assigned'] = '{bad';
-				return $service->getGroupDefault('staff', 'case', 'assigned');
+				return $service->groupDefaultAt(groupId: 'staff', address: new PreferenceAddress(schemaSlug: 'case', notificationKey: 'assigned'));
 			},
 			'groupsOf'               => fn (): mixed => $service->groupsOf('alice'),
 			'groupsOf cached'        => fn (): mixed => $service->groupsOf('alice'),
@@ -164,7 +178,14 @@ class A26NotificationPreferenceServiceGoldenTest extends TestCase {
 				$schemaDefault = [];
 			}
 
-			$out['effective ' . $name] = $this->capture(step: fn (): mixed => $service->resolveEffective($schemaDefault, $user, 'case', 'assigned', $scopes, $groupIds));
+			$out['effective ' . $name] = $this->capture(step: fn (): mixed => $service->resolve(
+				resolution: new PreferenceResolution(
+					schemaDefault: $schemaDefault,
+					userId: $user,
+					topic: new PreferenceTopic(schemaSlug: 'case', notificationKey: 'assigned', scopes: $scopes),
+					groupIds: $groupIds
+				)
+			));
 		}
 
 		$this->store = $seed;

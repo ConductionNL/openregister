@@ -33,6 +33,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Service\PropertyAccessRequest;
+use OCA\OpenRegister\Service\SchemaProperty;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -47,6 +49,16 @@ use ReflectionMethod;
  * The generated description and the read rule.
  *
  * @covers \OCA\OpenRegister\Service\OasService
+ * @uses \OCA\OpenRegister\Service\Oas\NlGovConformance
+ * @uses \OCA\OpenRegister\Service\Oas\NlGovDocumentRules
+ * @uses \OCA\OpenRegister\Service\Oas\NlGovFindings
+ * @uses \OCA\OpenRegister\Service\Oas\NlGovDateTimeRules
+ * @uses \OCA\OpenRegister\Service\Oas\NlGovErrorRules
+ * @uses \OCA\OpenRegister\Service\Oas\NlGovDocumentInfoRules
+ * @uses \OCA\OpenRegister\Service\Oas\NlGovMarker
+ * @uses \OCA\OpenRegister\Service\Oas\NlGovRuleCatalogue
+ * @uses \OCA\OpenRegister\Formats\SemVerFormat
+ * @uses \OCA\OpenRegister\Formats\FormatFactory
  * @uses \OCA\OpenRegister\Service\Oas\OasNames
  * @uses \OCA\OpenRegister\Service\Oas\OasPropertySanitizer
  * @uses \OCA\OpenRegister\Service\Oas\OasReferenceRepair
@@ -55,6 +67,10 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Service\Rbac\AggregateVisibility
  * @uses \OCA\OpenRegister\Service\Rbac\EffectiveAuthorization
  * @uses \OCA\OpenRegister\Service\Schemas\ScopedPropertyDeclaration
+ * @uses \OCA\OpenRegister\Db\Schema\PropertyAuthorization
+ * @uses \OCA\OpenRegister\Service\OasSources
+ * @uses \OCA\OpenRegister\Service\PropertyAccessRequest
+ * @uses \OCA\OpenRegister\Service\SchemaProperty
  */
 class SchemaShapeExposureTest extends TestCase {
 
@@ -71,8 +87,8 @@ class SchemaShapeExposureTest extends TestCase {
 		if ($reads !== null) {
 			$rbac = $this->createMock(PropertyRbacHandler::class);
 			$rbac->method('canReadProperty')->willReturnCallback(
-				static function (Schema $schema, string $property) use ($reads): bool {
-					return ($reads[$property] ?? true);
+				static function (SchemaProperty $read, PropertyAccessRequest $request) use ($reads): bool {
+					return ($reads[$read->name] ?? true);
 				}
 			);
 		}

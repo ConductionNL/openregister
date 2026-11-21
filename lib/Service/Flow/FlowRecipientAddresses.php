@@ -30,6 +30,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow;
 
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolverInterface;
+use OCA\OpenRegister\Notifications\Service\Notification\RecipientSource;
 
 /**
  * Recipient address rules for the flow send nodes.
@@ -77,14 +78,14 @@ class FlowRecipientAddresses {
 
 		if ($this->recipientResolver->groupExists(gid: $entry) === true) {
 			$out['uids'] = array_values(
-				$this->recipientResolver->resolveWithDiagnostics(
+				$this->recipientResolver->resolveFromSource(
 					recipientsSpec: [
 						[
 							'kind' => 'groups',
 							'groups' => [$entry],
 						],
 					],
-					data: []
+					source: self::sourceOf(data: [])
 				)['uids']
 			);
 			return $out;
@@ -123,14 +124,14 @@ class FlowRecipientAddresses {
 			$addresses = $split['addresses'];
 		}
 
-		$resolved = $this->recipientResolver->resolveWithDiagnostics(
+		$resolved = $this->recipientResolver->resolveFromSource(
 			recipientsSpec: [
 				[
 					'kind' => 'relation',
 					'relation' => $field,
 				],
 			],
-			data: [$field => $value]
+			source: self::sourceOf(data: [$field => $value])
 		)['uids'];
 		$candidates = $this->recipientResolver->extractUidsFromRelation(value: $value);
 
@@ -173,6 +174,20 @@ class FlowRecipientAddresses {
 	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
 	 */
 	public function screenAddresses(array $addresses, array $json, string $mode): array {
+		return self::screenUnder(addresses: $addresses, policy: $this->policyFor(json: $json, mode: $mode));
+	}//end screenAddresses()
+
+	/**
+	 * The allowlist one item's candidate addresses are screened under.
+	 *
+	 * @param array  $json The item's json.
+	 * @param string $mode The allowlist mode.
+	 *
+	 * @return ExternalRecipientPolicy The mode, and the item's addresses when the mode reads them.
+	 *
+	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
+	 */
+	public function policyFor(array $json, string $mode): ExternalRecipientPolicy {
 		// Only the object mode reads the item; collecting its addresses is a
 		// pure read, so doing it once up front changes no outcome.
 		$onItem = [];
@@ -180,8 +195,8 @@ class FlowRecipientAddresses {
 			$onItem = $this->addressesOnItem(value: $json);
 		}
 
-		return self::screenUnder(addresses: $addresses, policy: new ExternalRecipientPolicy(mode: $mode, onItem: $onItem));
-	}//end screenAddresses()
+		return new ExternalRecipientPolicy(mode: $mode, onItem: $onItem);
+	}//end policyFor()
 
 	/**
 	 * Split the candidates into the allowed and the refused under one policy.
@@ -385,70 +400,20 @@ class FlowRecipientAddresses {
 	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
 	 */
 	private function mappedAddressOf(array $entry): ?array {
-		if ($this->stringOrNull(value: ($entry['userId'] ?? $entry['uid'] ?? $entry['user_id'] ?? null)) !== null) {
+		if (FlowScalarText::orNull(value: ($entry['userId'] ?? $entry['uid'] ?? $entry['user_id'] ?? null)) !== null) {
 			return null;
 		}
 
-		$address = $this->stringOrNull(value: ($entry['email'] ?? $entry['emailAddress'] ?? null));
+		$address = FlowScalarText::orNull(value: ($entry['email'] ?? $entry['emailAddress'] ?? null));
 		if ($address === null) {
 			return null;
 		}
 
 		return [
 			'address' => $address,
-			'name' => (string)($this->stringOrNull(value: ($entry['name'] ?? $entry['displayName'] ?? null)) ?? ''),
+			'name' => (string)(FlowScalarText::orNull(value: ($entry['name'] ?? $entry['displayName'] ?? null)) ?? ''),
 		];
 	}//end mappedAddressOf()
-
-	/**
-	 * A scalar as a non-empty string, or null.
-	 *
-	 * @param mixed $value The value.
-	 *
-	 * @return string|null The string, or null when empty or not scalar.
-	 */
-	private function stringOrNull(mixed $value): ?string {
-		if (is_scalar($value) === false) {
-			return null;
-		}
-
-		$value = trim((string)$value);
-		if ($value === '') {
-			return null;
-		}
-
-		return $value;
-	}//end stringOrNull()
-
-	/**
-	 * Resolve a node's recipients config against one item.
-	 *
-	 * Entries are literal user or group ids, or a template resolving a field
-	 * on the item (`{{ assignee }}` / `{{ item.assignee }}`). Resolution goes
-	 * through the subsystem's recipient resolver — groups expanded, every uid
-	 * verified — and unknown ids are returned for the run log rather than
-	 * silently dropped.
-	 *
-	 * With `$acceptAddresses` (the email channel), an entry that is not a
-	 * user or group but holds an `@` is a candidate address, and so is a
-	 * field value that is one, or an object carrying `email` /
-	 * `emailAddress`. Candidates are screened by the caller; this method only
-	 * sorts them out.
-	 *
-	 * @param mixed $recipients The config value.
-	 * @param array $json The item's json.
-	 * @param bool $acceptAddresses Whether addresses are candidates (email) or unknowns.
-	 *
-	 * @return array{uids: array<int, string>, addresses: array<int, array{address: string, name: string}>, unknown: array<int, string>}
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Whether the channel takes addresses is a
-	 * fact about the channel, not a mode of this method's own.
-	 *
-	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
-	 */
-	public function resolveRecipients(mixed $recipients, array $json, bool $acceptAddresses = false): array {
-		return $this->resolveAll(recipients: $recipients, lookup: new RecipientLookup(json: $json, acceptAddresses: $acceptAddresses));
-	}//end resolveRecipients()
 
 	/**
 	 * Resolve every recipient entry against one item, de-duplicated.
@@ -460,7 +425,7 @@ class FlowRecipientAddresses {
 	 *
 	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
 	 */
-	private function resolveAll(mixed $recipients, RecipientLookup $lookup): array {
+	public function resolveAll(mixed $recipients, RecipientLookup $lookup): array {
 		$uids = [];
 		$addresses = [];
 		$unknown = [];
@@ -502,4 +467,15 @@ class FlowRecipientAddresses {
 
 		return $this->resolveLiteral(entry: $entry, acceptAddresses: $lookup->acceptAddresses);
 	}//end resolveEntry()
+
+	/**
+	 * A recipient source carrying only data: no object, no trigger context, no role assignment.
+	 *
+	 * @param array<string, mixed> $data The data the spec reads.
+	 *
+	 * @return RecipientSource The source.
+	 */
+	private static function sourceOf(array $data): RecipientSource {
+		return new RecipientSource(data: $data, object: null, context: [], roleGroups: []);
+	}//end sourceOf()
 }//end class

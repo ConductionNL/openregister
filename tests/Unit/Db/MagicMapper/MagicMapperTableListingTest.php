@@ -18,9 +18,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicListRequest;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -28,7 +31,7 @@ use Psr\Log\NullLogger;
 use ReflectionProperty;
 
 /**
- * Pins what findAll(), findAllInRegisterSchemaTable() and saveObjectsToRegisterSchemaTable()
+ * Pins what findAllListed(), findAllInRegisterSchemaTable() and saveObjectsToRegisterSchemaTable()
  * hand to the per-table search and save.
  */
 class MagicMapperTableListingTest extends TestCase {
@@ -80,16 +83,13 @@ class MagicMapperTableListingTest extends TestCase {
 
 	public function testFindAllThreadsPageSortIdsSearchAndUses(): void {
 		[$register, $schema] = $this->table();
-		$found = $this->mapper()->findAll(
-			limit: 10,
-			offset: 5,
-			filters: ['name' => 'x'],
-			sort: ['name' => 'ASC'],
-			search: 'term',
-			ids: ['u-1'],
-			uses: 'rel-1',
-			register: $register,
-			schema: $schema
+		$found = $this->mapper()->findAllListed(
+			new MagicListRequest(
+				table: new RegisterSchema(register: $register, schema: $schema),
+				query: new ListQuery(limit: 10, offset: 5, filters: ['name' => 'x'], sort: ['name' => 'ASC'], search: 'term'),
+				ids: ['u-1'],
+				uses: 'rel-1'
+			)
 		);
 
 		$this->assertCount(1, $found);
@@ -102,7 +102,13 @@ class MagicMapperTableListingTest extends TestCase {
 
 	public function testFindAllWithoutLimitOrFiltersAsksForEveryRow(): void {
 		[$register, $schema] = $this->table();
-		$this->mapper()->findAll(register: $register, schema: $schema, search: '  ', ids: []);
+		$this->mapper()->findAllListed(
+			new MagicListRequest(
+				table: new RegisterSchema(register: $register, schema: $schema),
+				query: new ListQuery(limit: ListQuery::UNBOUNDED, search: '  '),
+				ids: []
+			)
+		);
 
 		$this->assertSame([[]], $this->queries);
 	}//end testFindAllWithoutLimitOrFiltersAsksForEveryRow()
@@ -110,14 +116,14 @@ class MagicMapperTableListingTest extends TestCase {
 	public function testFindAllWithoutSchemaFindsNothing(): void {
 		[$register] = $this->table();
 
-		$this->assertSame([], $this->mapper()->findAll(limit: 3, register: $register));
+		$this->assertSame([], $this->mapper()->findAllListed(new MagicListRequest(table: null, query: new ListQuery(limit: 3))));
 		$this->assertSame([], $this->queries);
 	}//end testFindAllWithoutSchemaFindsNothing()
 
 	public function testFindAllInRegisterSchemaTablePassesZeroLimitAndOffset(): void {
 		[$register, $schema] = $this->table();
-		$this->mapper()->findAllInRegisterSchemaTable($register, $schema, 0, 0, null, []);
-		$this->mapper()->findAllInRegisterSchemaTable($register, $schema, null, null, ['a' => 1], ['b' => 'DESC']);
+		$this->mapper()->findAllInRegisterSchemaTable(new RegisterSchema($register, $schema), new ListQuery(0, 0));
+		$this->mapper()->findAllInRegisterSchemaTable(new RegisterSchema($register, $schema), new ListQuery(ListQuery::UNBOUNDED, null, ['a' => 1], ['b' => 'DESC']));
 
 		$this->assertSame([['_limit' => 0, '_offset' => 0], ['_order' => ['b' => 'DESC'], 'a' => 1]], $this->queries);
 	}//end testFindAllInRegisterSchemaTablePassesZeroLimitAndOffset()

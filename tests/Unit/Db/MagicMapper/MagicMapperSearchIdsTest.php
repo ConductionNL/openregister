@@ -17,13 +17,16 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicListRequest;
 use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
 use OCA\OpenRegister\Db\MagicMapper\MagicMapperLookups;
 use OCA\OpenRegister\Db\MagicMapper\MagicMapperRuntime;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
@@ -42,7 +45,7 @@ use OCP\IUserManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use OCA\OpenRegister\Service\Audit\PurposeGuard;
-use OCA\OpenRegister\Service\Audit\PurposeGuardInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ReadPurposeGuardInterface;
 use OCA\OpenRegister\Service\Audit\PurposeRefusedException;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -114,7 +117,7 @@ class MagicMapperSearchIdsTest extends TestCase {
 			DateTimeNormalizerInterface::class => $this->createMock(DateTimeNormalizer::class),
 			ConditionMatcher::class => $this->createMock(ConditionMatcher::class),
 			SchemaTypeConverterInterface::class => $this->createMock(SchemaTypeConverter::class),
-			PurposeGuardInterface::class => ($this->purposeGuard ?? $this->permissiveGuard()),
+			ReadPurposeGuardInterface::class => ($this->purposeGuard ?? $this->permissiveGuard()),
 		];
 		$container->method('get')->willReturnCallback(static fn (string $id) => ($services[$id] ?? null));
 
@@ -251,6 +254,18 @@ class MagicMapperSearchIdsTest extends TestCase {
 	 *
 	 * @return void
 	 */
+	public function testASearchNamingSeveralSchemasLeavesTheSingleTablePath(): void {
+		$results = $this->mapper()->searchObjects(query: ['@self' => ['register' => 7, 'schema' => [9, 10]]], ids: ['a']);
+
+		$this->assertSame([[], 0], [$this->tableIds(), count($results)]);
+	}//end testASearchNamingSeveralSchemasLeavesTheSingleTablePath()
+
+	public function testACountNamingSeveralSchemasLeavesTheSingleTablePath(): void {
+		$total = $this->mapper()->countSearchObjects(query: ['@self' => ['register' => 7, 'schema' => [9, 10]]], ids: ['a']);
+
+		$this->assertSame([[], 0], [$this->tableIds(), $total]);
+	}//end testACountNamingSeveralSchemasLeavesTheSingleTablePath()
+
 	public function testIdsNarrowTheQuerysOwnIds(): void {
 		$this->mapper()->searchObjects(query: (self::SCOPE + ['_ids' => ['a', 'b']]), ids: ['b', 'c']);
 
@@ -340,7 +355,8 @@ class MagicMapperSearchIdsTest extends TestCase {
 	 * @return void
 	 */
 	public function testAFindAllKeepsToWhatUsesTheObject(): void {
-		$this->mapper()->findAll(uses: 'u', register: new Register(), schema: new Schema());
+		$table = new RegisterSchema(register: new Register(), schema: new Schema());
+		$this->mapper()->findAllListed(new MagicListRequest(table: $table, query: ListQuery::unbounded(), uses: 'u'));
 
 		$this->assertSame(['u'], $this->tableUses());
 	}//end testAFindAllKeepsToWhatUsesTheObject()

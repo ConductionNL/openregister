@@ -28,11 +28,13 @@ namespace OCA\OpenRegister\Mcp\Controller;
 use BadMethodCallException;
 use Exception;
 use InvalidArgumentException;
-use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Mcp\Controller\Support\JsonRpcCall;
 use OCA\OpenRegister\Mcp\Controller\Support\JsonRpcError;
 use OCA\OpenRegister\Mcp\Controller\Support\McpServerControllerServices;
 use OCA\OpenRegister\Service\Mcp\McpAgentScope;
+use OCA\OpenRegister\Service\Mcp\McpSessionCaller;
+use OCA\OpenRegister\Service\Mcp\ToolCall;
 use OCA\OpenRegister\Mcp\Service\Mcp\McpProtocolService;
 use OCA\OpenRegister\Mcp\Service\Mcp\McpResourcesService;
 use OCA\OpenRegister\Mcp\Service\Mcp\McpToolsService;
@@ -157,7 +159,7 @@ class McpServerController extends Controller {
 		IRequest $request,
 		McpServerControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->protocolService = $services->domain->protocolService;
 		$this->toolsService = $services->domain->toolsService;
 		$this->resourcesService = $services->domain->resourcesService;
@@ -467,8 +469,7 @@ class McpServerController extends Controller {
 		return match ($call->method) {
 			'ping' => $this->protocolService->ping(),
 			'tools/list' => $this->agentScope->filterListing(
-				sessionId: $sessionId,
-				userId: $call->userId,
+				caller: new McpSessionCaller(sessionId: $sessionId, userId: $call->userId),
 				listing: $this->toolsService->listTools()
 			),
 			'tools/call' => $this->handleToolCall(call: $call, sessionId: $sessionId),
@@ -496,10 +497,8 @@ class McpServerController extends Controller {
 		}
 
 		$this->agentScope->assertMayCall(
-			sessionId: $sessionId,
-			userId: $call->userId,
-			name: (string) $params['name'],
-			arguments: (array) ($params['arguments'] ?? [])
+			caller: new McpSessionCaller(sessionId: $sessionId, userId: $call->userId),
+			call: new ToolCall(name: (string) $params['name'], arguments: (array) ($params['arguments'] ?? []))
 		);
 
 		return $this->toolsService->callTool(name: $params['name'], arguments: $params['arguments'] ?? []);

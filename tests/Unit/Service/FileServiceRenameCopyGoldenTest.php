@@ -37,9 +37,11 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionProperty;
+use OCA\OpenRegister\Service\File\FileRename;
+use OCA\OpenRegister\Service\File\FileTransfer;
 
 /**
- * Pins the allowed and refused outcomes of FileService::renameFile(), copyFile() and moveFile().
+ * Pins the allowed and refused outcomes of FileService::renameAttachedFile(), copyAttachedFile() and moveAttachedFile().
  */
 class FileServiceRenameCopyGoldenTest extends TestCase {
 
@@ -171,7 +173,7 @@ class FileServiceRenameCopyGoldenTest extends TestCase {
 		$this->locks->method('assertCanModify')->willThrowException(new Exception('locked'));
 		$this->reader->expects($this->never())->method('getFile');
 
-		$this->assertSame('locked', $this->refusal(call: fn () => $service->renameFile(object: $this->object(uuid: 'a'), fileId: 7, newName: 'new.pdf')));
+		$this->assertSame('locked', $this->refusal(call: fn () => $service->renameAttachedFile(rename: new FileRename(object: $this->object(uuid: 'a'), fileId: 7, newName: 'new.pdf'))));
 	}//end testRenameOfALockedFileIsRefused()
 
 	/**
@@ -187,7 +189,7 @@ class FileServiceRenameCopyGoldenTest extends TestCase {
 		$this->reader->method('getFile')->willReturnOnConsecutiveCalls(null, $file, $file, $file);
 
 		$object = $this->object(uuid: 'a');
-		$rename = fn (string $name) => fn () => $service->renameFile(object: $object, fileId: 7, newName: $name);
+		$rename = fn (string $name) => fn () => $service->renameAttachedFile(rename: new FileRename(object: $object, fileId: 7, newName: $name));
 		$this->assertSame('File not found', $this->refusal(call: $rename('x.pdf')));
 		$this->assertSame('File name is required', $this->refusal(call: $rename('  ')));
 		$this->assertSame('File name contains invalid characters', $this->refusal(call: $rename('a/b.pdf')));
@@ -205,7 +207,7 @@ class FileServiceRenameCopyGoldenTest extends TestCase {
 		$file->expects($this->once())->method('move')->with('/admin/files/obj/new.pdf');
 		$this->reader->expects($this->once())->method('getFile')->with($this->anything(), 7)->willReturn($file);
 
-		$this->assertSame($file, $service->renameFile(object: $this->object(uuid: 'a'), fileId: 7, newName: 'new.pdf'));
+		$this->assertSame($file, $service->renameAttachedFile(rename: new FileRename(object: $this->object(uuid: 'a'), fileId: 7, newName: 'new.pdf')));
 	}//end testRenameMovesTheFileWithinItsFolder()
 
 	/**
@@ -218,7 +220,7 @@ class FileServiceRenameCopyGoldenTest extends TestCase {
 		$this->locks->expects($this->never())->method('assertCanModify');
 		$this->creator->expects($this->never())->method('addFile');
 
-		$message = $this->refusal(call: fn () => $service->copyFile(sourceObject: $this->object(uuid: 'a'), fileId: 7, targetObject: new ObjectEntity()));
+		$message = $this->refusal(call: fn () => $service->copyAttachedFile(transfer: new FileTransfer(source: $this->object(uuid: 'a'), fileId: 7, target: new ObjectEntity())));
 		$this->assertSame('Target object has no UUID; cannot resolve target folder for file copy', $message);
 	}//end testCopyToATargetWithoutUuidIsRefused()
 
@@ -241,7 +243,7 @@ class FileServiceRenameCopyGoldenTest extends TestCase {
 		$this->reader->method('getFile')->willReturn(null);
 		$this->creator->expects($this->never())->method('addFile');
 
-		$copy = fn () => $service->copyFile(sourceObject: $this->object(uuid: 'a'), fileId: 7, targetObject: $this->object(uuid: 'b'));
+		$copy = fn () => $service->copyAttachedFile(transfer: new FileTransfer(source: $this->object(uuid: 'a'), fileId: 7, target: $this->object(uuid: 'b')));
 		$this->assertSame('locked', $this->refusal(call: $copy));
 		$this->assertSame('Source file not found', $this->refusal(call: $copy));
 	}//end testCopyOfALockedOrMissingSourceIsRefused()
@@ -260,10 +262,10 @@ class FileServiceRenameCopyGoldenTest extends TestCase {
 		$this->folders->method('getObjectFolder')->with($target)->willReturn($folder);
 		$copy = $this->createMock(File::class);
 		$this->creator->expects($this->once())->method('addFile')
-			->with($target, new FileUpload(fileName: 'report (2).pdf', content: 'bytes', share: false))
+			->with(new \OCA\OpenRegister\Service\File\FileTarget(object: $target), new FileUpload(fileName: 'report (2).pdf', content: 'bytes', share: false))
 			->willReturn($copy);
 
-		$this->assertSame($copy, $service->copyFile(sourceObject: $this->object(uuid: 'a'), fileId: 7, targetObject: $target));
+		$this->assertSame($copy, $service->copyAttachedFile(transfer: new FileTransfer(source: $this->object(uuid: 'a'), fileId: 7, target: $target)));
 	}//end testCopyAddsTheFileUnderAFreeName()
 
 	/**
@@ -276,7 +278,7 @@ class FileServiceRenameCopyGoldenTest extends TestCase {
 		$this->locks->method('assertCanModify')->willThrowException(new Exception('locked'));
 		$this->creator->expects($this->never())->method('addFile');
 
-		$move = fn () => $service->moveFile(sourceObject: $this->object(uuid: 'a'), fileId: 7, targetObject: $this->object(uuid: 'b'));
+		$move = fn () => $service->moveAttachedFile(transfer: new FileTransfer(source: $this->object(uuid: 'a'), fileId: 7, target: $this->object(uuid: 'b')));
 		$this->assertSame('locked', $this->refusal(call: $move));
 	}//end testMoveOfALockedFileIsRefused()
 }//end class

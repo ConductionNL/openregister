@@ -117,16 +117,16 @@ class DedupeSharedSchemasCommandGoldenTest extends TestCase {
 				return $plan;
 			}
 		);
-		$dedupe->method('applySplit')->willReturnCallback(
-			function (array $entry, int $target, bool $strict): array {
-				$this->calls[] = 'applySplit '.$entry['schemaId'].' -> '.$target.' strict='.var_export($strict, true);
-				if ($target === 99) {
-					throw new RuntimeException('lock timeout');
-				}
-
-				return ['newSchemaId' => 500, 'rows' => 3, 'unmapped' => [], 'backup' => null];
+		$split = function (array $entry, int $target, bool $strict): array {
+			$this->calls[] = 'applySplit '.$entry['schemaId'].' -> '.$target.' strict='.var_export($strict, true);
+			if ($target === 99) {
+				throw new RuntimeException('lock timeout');
 			}
-		);
+
+			return ['newSchemaId' => 500, 'rows' => 3, 'unmapped' => [], 'backup' => null];
+		};
+		$dedupe->method('applySplit')->willReturnCallback(fn (array $entry, int $target): array => $split($entry, $target, false));
+		$dedupe->method('applySplitStrictly')->willReturnCallback(fn (array $entry, int $target): array => $split($entry, $target, true));
 
 		$tester = new CommandTester(new DedupeSharedSchemasCommand($dedupe));
 		$code   = $tester->execute($input);

@@ -52,6 +52,7 @@ use OCA\OpenRegister\Db\ProcessingLogMapperInterface;
 use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Db\Verwerkingsactiviteit;
 use OCA\OpenRegister\Db\VerwerkingsactiviteitMapperInterface;
+use OCA\OpenRegister\Service\Gdpr\ProcessingAnnotationReader;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
@@ -69,14 +70,14 @@ class ProcessingLogService {
 	 *
 	 * @var string
 	 */
-	public const ANNOTATION_KEY = 'x-openregister-processing';
+	public const ANNOTATION_KEY = ProcessingAnnotationReader::ANNOTATION_KEY;
 
 	/**
 	 * Legacy single-string attribution annotation (shorthand).
 	 *
 	 * @var string
 	 */
-	public const LEGACY_ANNOTATION_KEY = 'x-openregister-processing-activity';
+	public const LEGACY_ANNOTATION_KEY = ProcessingAnnotationReader::LEGACY_ANNOTATION_KEY;
 
 	/**
 	 * Code of the per-organisation seeded flagged fallback activity.
@@ -117,30 +118,6 @@ class ProcessingLogService {
 	) {
 
 	}//end __construct()
-
-	/**
-	 * Record a single object read/export if its schema opts in.
-	 *
-	 * Fail-soft: never throws. Buffers the entry; nothing is written to
-	 * the database until `flush()` runs.
-	 *
-	 * @param ObjectEntity $object The object being processed.
-	 * @param string $action `read` | `export`.
-	 * @param string|null $channel Access channel; defaults from the request shape.
-	 * @param string|null $actor Explicit actor (e.g. API client id) or null for the NC user.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/avg-verwerkingsregister/spec.md
-	 */
-	public function logRead(
-		ObjectEntity $object,
-		string $action = 'read',
-		?string $channel = null,
-		?string $actor = null,
-	): void {
-		$this->recordRead(object: $object, read: new ProcessingRead(action: $action, channel: $channel, actor: $actor));
-	}//end logRead()
 
 	/**
 	 * Record a single object read/export if its schema opts in.
@@ -251,34 +228,6 @@ class ProcessingLogService {
 
 	/**
 	 * Record a single collapsed entry for a list/search result.
-	 *
-	 * A list response produces ONE entry carrying `objectCount` and the
-	 * query parameters — never one row per scanned object. When the result
-	 * set holds LIST_IDENTIFIER_LIMIT objects or fewer, the entry also
-	 * carries every object's uuid and the subject identifiers found.
-	 *
-	 * @param array<int, ObjectEntity> $objects The list result.
-	 * @param string $action `read` | `export`.
-	 * @param string|null $channel Access channel.
-	 * @param string|null $actor Explicit actor or null.
-	 * @param array<string, mixed> $query The query parameters of the list or search.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/avg-verwerkingsregister/spec.md
-	 */
-	public function logReadList(
-		array $objects,
-		string $action = 'read',
-		?string $channel = null,
-		?string $actor = null,
-		array $query = [],
-	): void {
-		$this->recordReadList(objects: $objects, read: new ProcessingRead(action: $action, channel: $channel, actor: $actor, query: $query));
-	}//end logReadList()
-
-	/**
-	 * Record a single collapsed entry for a list/search result (see logReadList()).
 	 *
 	 * Fail-soft: never throws.
 	 *
@@ -444,48 +393,15 @@ class ProcessingLogService {
 
 	/**
 	 * Normalise an annotation block from either the new dialect or the
-	 * legacy single-string key.
+	 * legacy single-string key, through the reader data subject discovery uses too.
 	 *
 	 * @param callable $loader Returns the raw configuration array or null.
 	 *
 	 * @return array<string, mixed>|null
 	 */
 	private function readAnnotation(callable $loader): ?array {
-		$config = $loader();
-		if (is_array($config) === false) {
-			return null;
-		}
-
-		$dialect = ($config[self::ANNOTATION_KEY] ?? null);
-		if (is_array($dialect) === true) {
-			return [
-				'logReads' => (($dialect['logReads'] ?? false) === true),
-				'attribution' => $this->asArray(value: ($dialect['attribution'] ?? null)),
-				'subjectIdFields' => $this->asArray(value: ($dialect['subjectIdFields'] ?? null)),
-			];
-		}
-
-		return $this->legacyAnnotation(legacy: ($config[self::LEGACY_ANNOTATION_KEY] ?? null));
+		return (new ProcessingAnnotationReader())->read(config: $loader());
 	}//end readAnnotation()
-
-	/**
-	 * The legacy shorthand: a single attribution reference, reads off; null when absent.
-	 *
-	 * @param mixed $legacy The legacy annotation value.
-	 *
-	 * @return array{logReads: false, attribution: array{default: string}, subjectIdFields: array{}}|null
-	 */
-	private function legacyAnnotation(mixed $legacy): ?array {
-		if (is_string($legacy) === false || $legacy === '') {
-			return null;
-		}
-
-		return [
-			'logReads' => false,
-			'attribution' => ['default' => $legacy],
-			'subjectIdFields' => [],
-		];
-	}//end legacyAnnotation()
 
 	/**
 	 * Resolve the attributed activity uuid for the run's action, falling back

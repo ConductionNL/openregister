@@ -14,6 +14,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
+use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCP\IConfig;
+use OCA\OpenRegister\Db\MagicMapper\MagicTableSql;
 use Doctrine\DBAL\Platforms\PostgreSQL120Platform;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
@@ -21,6 +25,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
 use OCA\OpenRegister\Db\MagicMapper\SortRequest;
 use OCA\OpenRegister\Db\MagicMapper\MagicStatisticsHandler;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -36,7 +41,6 @@ use ReflectionMethod;
 use OCA\OpenRegister\Db\MagicMapper\ConditionSqlRun;
 use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
 use OCA\OpenRegister\Db\MagicMapper\TableSearch;
-use OCA\OpenRegister\Db\RegisterSchema;
 
 class LastUserActivityMetadataTest extends TestCase {
 
@@ -163,20 +167,17 @@ class LastUserActivityMetadataTest extends TestCase {
 	public function testTheFindPathReadsItBack(): void {
 		$logger = $this->createMock(LoggerInterface::class);
 		$statistics = new MagicStatisticsHandler(
-			db: $this->createMock(IDBConnection::class),
-			logger: $logger,
-			registerMapper: $this->createMock(RegisterMapper::class),
-			schemaMapper: $this->createMock(SchemaMapper::class),
+			sql: new MagicTableSql(db: $this->createMock(IDBConnection::class), config: $this->createMock(IConfig::class), logger: $logger),
+			catalog: new SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $this->createMock(MagicMapperInterface::class)),
 			dateTimeNormalizer: new DateTimeNormalizer($logger),
 			schemaTypeConverter: new SchemaTypeConverter()
 		);
 		$register = new Register();
 		$register->setId(1);
 
-		$entity = $statistics->convertRowToObjectEntity(
+		$entity = $statistics->toObjectEntity(
 			['_uuid' => 'u-1', '_id' => 1, '_last_user_activity' => '2026-09-01 10:00:00'],
-			$register,
-			$this->makeSchema()
+			new RegisterSchema($register, $this->makeSchema())
 		);
 
 		$this->assertSame('2026-09-01 10:00:00', $entity->getLastUserActivity()->format('Y-m-d H:i:s'));

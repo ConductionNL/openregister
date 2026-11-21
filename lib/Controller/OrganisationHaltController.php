@@ -24,7 +24,8 @@ namespace OCA\OpenRegister\Controller;
 
 use Closure;
 use InvalidArgumentException;
-use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
+use OCA\OpenRegister\Service\Flow\Oversight\HaltRequest;
 use OCA\OpenRegister\Service\Flow\Oversight\OrganisationHaltServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -49,7 +50,7 @@ class OrganisationHaltController extends Controller {
 		IRequest $request,
 		private readonly OrganisationHaltServiceInterface $halts,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**
@@ -83,7 +84,8 @@ class OrganisationHaltController extends Controller {
 	 * @spec openspec/changes/organisation-capability-halt/specs/flow-engine/spec.md
 	 */
 	public function create(string $uuid, string $app='', string $reason='', ?string $nodeTypePrefix=null): JSONResponse {
-		$engage = fn (): array => $this->halts->engage(organisation: $uuid, app: $app, reason: $reason, nodeTypePrefix: $nodeTypePrefix);
+		$request = new HaltRequest(organisation: $uuid, app: $app, reason: $reason, nodeTypePrefix: (string)$nodeTypePrefix);
+		$engage = fn (): array => $this->halts->engage(request: $request);
 
 		return $this->engaged(engage: $engage);
 	}//end create()

@@ -52,6 +52,8 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\TaskAuditEntry;
+use OCA\OpenRegister\Kernel\Contracts\Value\TaskActorRef;
 
 /**
  * Creates the node's task, reads it back, and continues the run it parked.
@@ -200,12 +202,11 @@ class FlowTaskBridge implements FlowTaskBridgeInterface {
 		}
 
 		return $this->tasks->offer(
-			uuid: (string)$task->getUuid(),
+			ref: new TaskActorRef(uuid: (string)$task->getUuid(), actor: $request->actor),
 			pool: [
 				'routingStrategy' => $strategy,
 				'routingFallback' => ($request->data['routingFallback'] ?? null),
 			],
-			actor: $request->actor
 		);
 	}//end routed()
 
@@ -215,17 +216,14 @@ class FlowTaskBridge implements FlowTaskBridgeInterface {
 	 * the reference it froze. Delegates to the task service, which owns the
 	 * audit's shape.
 	 *
-	 * @param string $uuid The task.
-	 * @param string $action The audited action name.
-	 * @param string|null $actor The run's acting identity.
-	 * @param string $reason What is being recorded.
+	 * @param TaskAuditEntry $entry The task, the action, the acting identity and what is recorded.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-the-matched-party-comes-from-the-case-and-is-frozen-at-creation
 	 */
-	public function record(string $uuid, string $action, ?string $actor, string $reason): void {
-		$this->tasks->record(uuid: $uuid, action: $action, actor: $actor, reason: $reason);
+	public function record(TaskAuditEntry $entry): void {
+		$this->tasks->record(entry: $entry);
 	}//end record()
 
 	/**
@@ -253,12 +251,14 @@ class FlowTaskBridge implements FlowTaskBridgeInterface {
 	public function recordHeartbeatRecovery(Task $task): void {
 		try {
 			$this->tasks->record(
-				uuid: (string)$task->getUuid(),
-				action: 'heartbeat-recovered',
-				actor: $task->getCompletedBy(),
-				reason: sprintf(
-					'The completion signal never reached run %s; the heartbeat re-read this task and applied its outcome.',
-					(string)$task->getRunUuid()
+				entry: new TaskAuditEntry(
+					uuid: (string)$task->getUuid(),
+					action: 'heartbeat-recovered',
+					actor: $task->getCompletedBy(),
+					reason: sprintf(
+						'The completion signal never reached run %s; the heartbeat re-read this task and applied its outcome.',
+						(string)$task->getRunUuid()
+					)
 				)
 			);
 

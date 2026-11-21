@@ -59,6 +59,34 @@ interface LifecycleConditionEvaluatorInterface {
 	public function document(array $newData, array $oldData, string $action, string $from, string $to): array;
 
 	/**
+	 * Build the document a condition is evaluated against, for one attempt.
+	 *
+	 * The value-object form of {@see document()}; same document, same reasons.
+	 *
+	 * @param TransitionAttempt $attempt The write (object after and before) and the move.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md
+	 */
+	public function documentOf(TransitionAttempt $attempt): array;
+
+	/**
+	 * The refusal for a transition attempt, or null when its condition lets it through.
+	 *
+	 * The value-object form of {@see refusal()}. A transition declaring no
+	 * condition always yields null.
+	 *
+	 * @param array<string, mixed> $spec    The matched transition's spec.
+	 * @param TransitionAttempt    $attempt The write and the transition it attempts.
+	 *
+	 * @return array{code: string, field: string, action: string, message: string}|null
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function refusalOf(array $spec, TransitionAttempt $attempt): ?array;
+
+	/**
 	 * The refusal for a transition, or null when its condition lets it through.
 	 *
 	 * A transition declaring no condition always yields null.

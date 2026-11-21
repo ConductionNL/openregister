@@ -126,7 +126,9 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunSubjectRecorder;
 use OCA\OpenRegister\Service\Flow\FlowSubjectCandidates;
@@ -135,6 +137,7 @@ use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodePreview;
+use OCA\OpenRegister\Service\Flow\IFlowNodeRequiresRight;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\IAppConfig;
@@ -146,6 +149,12 @@ use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
 use RuntimeException;
 use Throwable;
 use UnexpectedValueException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
+use OCA\OpenRegister\Kernel\Contracts\Value\SaveActor;
 
 /**
  * Writes one OpenRegister object per flow item, as the run's owner.
@@ -156,7 +165,7 @@ use UnexpectedValueException;
  * @SuppressWarnings(PHPMD.TooManyMethods)           One small, named method per guard and per operation; merging them would bury the delete guards.
  */
 class ObjectWriteNode extends ObjectNodeBase implements IFlowNode, ObjectWriteNodeInterface,
-	IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeTaxonomy, IFlowNodePreview
+	IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeTaxonomy, IFlowNodePreview, IFlowNodeRequiresRight
 {
 
 	/**
@@ -165,6 +174,11 @@ class ObjectWriteNode extends ObjectNodeBase implements IFlowNode, ObjectWriteNo
 	 * @var string
 	 */
 	public const OP_CREATE = 'create';
+
+	/**
+	 * The right an author needs to put a deleting object-write step in a flow.
+	 */
+	public const RIGHT_DELETE = 'flow.node.object-delete';
 
 	/**
 	 * Patch an existing object resolved through the configured match.
@@ -368,15 +382,14 @@ class ObjectWriteNode extends ObjectNodeBase implements IFlowNode, ObjectWriteNo
 	 * The operation, where it would write, and the fields it would set as the
 	 * step configures them.
 	 *
-	 * @param array $items The input items.
-	 * @param array $config The step configuration.
-	 * @param array $context Run-level metadata.
+	 * @param FlowNodeCall $call The input items, the step configuration and the run context.
 	 *
 	 * @return array `summary` and `changes` (`[{field, value}]`).
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-can-say-what-it-would-do
 	 */
-	public function preview(array $items, array $config, array $context): array {
+	public function preview(FlowNodeCall $call): array {
+		$config = $call->config;
 		return $this->previewOf(config: $config);
 	}//end preview()
 
@@ -412,7 +425,7 @@ class ObjectWriteNode extends ObjectNodeBase implements IFlowNode, ObjectWriteNo
 	 *
 	 * @return array<int, string> The accepted config keys.
 	 *
-	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 * @spec openspec/specs/flow-preflight/spec.md
 	 */
 	public function configKeys(): array {
 		return self::CONFIG_KEYS;
@@ -459,9 +472,7 @@ class ObjectWriteNode extends ObjectNodeBase implements IFlowNode, ObjectWriteNo
 	 * exception, and a run that reports success having written nothing is a
 	 * worse outcome than a run that fails loudly.
 	 *
-	 * @param array $items The input items.
-	 * @param array $config The step configuration.
-	 * @param array $context Run-level metadata; carries `triggeredBy`.
+	 * @param FlowNodeCall $call The input items, the step configuration and the run context.
 	 *
 	 * @return array One output item per input item.
 	 *
@@ -471,7 +482,10 @@ class ObjectWriteNode extends ObjectNodeBase implements IFlowNode, ObjectWriteNo
 	 *
 	 * @spec openspec/changes/or-flow-object-write-node/specs/flow-object-write-node/spec.md
 	 */
-	public function execute(array $items, array $config, array $context): array {
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
+		$config = $call->config;
+		$context = $call->context;
 		$this->validateConfig(config: $config);
 
 		if ($items === []) {
@@ -510,7 +524,10 @@ class ObjectWriteNode extends ObjectNodeBase implements IFlowNode, ObjectWriteNo
 		}
 
 		return array_map(
-			static fn (array $item): array => FlowItems::item(...$item),
+			static fn (array $item): array => FlowItems::item(
+				json: $item['json'],
+				options: new FlowItemOptions(binary: $item['binary'], fromItemIndex: $item['fromItemIndex'])
+			),
 			$this->bulk()->write(items: $items, plan: $plan)
 		);
 	}//end writeAll()
@@ -662,7 +679,7 @@ class ObjectWriteNode extends ObjectNodeBase implements IFlowNode, ObjectWriteNo
 	 */
 	private function writeItem(ObjectWritePlan $plan, ObjectWriteItem $item): array {
 		if ($this->payloads()->template->isSkipped(path: $plan->skipWhen, json: $item->json) === true) {
-			return FlowItems::item(json: $item->json, binary: $item->binary, fromItemIndex: $item->index);
+			return FlowItems::item(json: $item->json, options: new FlowItemOptions(binary: $item->binary, fromItemIndex: $item->index));
 		}
 
 		if ($plan->operation === self::OP_DELETE) {
@@ -698,8 +715,7 @@ class ObjectWriteNode extends ObjectNodeBase implements IFlowNode, ObjectWriteNo
 
 		return FlowItems::item(
 			json: $plan->shaped(incoming: $item->json, written: $this->writtenJson(saved: $saved, plan: $plan)),
-			binary: $item->binary,
-			fromItemIndex: $item->index
+			options: new FlowItemOptions(binary: $item->binary, fromItemIndex: $item->index)
 		);
 	}//end saveItem()
 
@@ -789,8 +805,7 @@ class ObjectWriteNode extends ObjectNodeBase implements IFlowNode, ObjectWriteNo
 		// its incoming record forward under `output` like any other write.
 		return FlowItems::item(
 			json: $plan->shaped(incoming: $item->json, written: $plan->deleteRecord(uuid: $uuid, deleted: $deleted)),
-			binary: $item->binary,
-			fromItemIndex: $item->index
+			options: new FlowItemOptions(binary: $item->binary, fromItemIndex: $item->index)
 		);
 	}//end executeDelete()
 
@@ -807,11 +822,12 @@ class ObjectWriteNode extends ObjectNodeBase implements IFlowNode, ObjectWriteNo
 	 */
 	private function deleteMatched(ObjectWritePlan $plan, string $uuid): bool {
 		return $this->objects->deleteObject(
-			uuid: $uuid,
-			register: $plan->register,
-			schema: $plan->schema,
-			currentUser: $plan->owner,
-			permanent: $this->permanenceOf(config: $plan->config)
+			deletion: new ObjectDeletion(
+				uuid: $uuid,
+				target: new ObjectFindTarget(register: $plan->register, schema: $plan->schema),
+				currentUser: $plan->owner,
+				permanent: $this->permanenceOf(config: $plan->config)
+			)
 		);
 	}//end deleteMatched()
 
@@ -847,7 +863,7 @@ class ObjectWriteNode extends ObjectNodeBase implements IFlowNode, ObjectWriteNo
 			$json[$outputKey] = ['deleted' => false];
 		}
 
-		return FlowItems::item(json: $json, binary: $item->binary, fromItemIndex: $item->index);
+		return FlowItems::item(json: $json, options: new FlowItemOptions(binary: $item->binary, fromItemIndex: $item->index));
 	}//end unmatchedDelete()
 
 	/**
@@ -872,11 +888,12 @@ class ObjectWriteNode extends ObjectNodeBase implements IFlowNode, ObjectWriteNo
 		}
 
 		return $this->objects->patchObject(
-			objectId: (string)$item->matched->getUuid(),
-			data: $item->payload,
-			register: $plan->register,
-			schema: $plan->schema,
-			currentUser: $plan->owner
+			patch: new ObjectPatch(
+				objectId: (string)$item->matched->getUuid(),
+				data: $item->payload,
+				target: new ObjectFindTarget(register: $plan->register, schema: $plan->schema),
+				currentUser: $plan->owner
+			)
 		);
 	}//end persist()
 
@@ -891,10 +908,11 @@ class ObjectWriteNode extends ObjectNodeBase implements IFlowNode, ObjectWriteNo
 	private function replaceMatched(ObjectWritePlan $plan, ObjectWriteItem $item): ObjectEntity {
 		return $this->objects->saveObject(
 			object: $item->payload,
-			register: $plan->register,
-			schema: $plan->schema,
-			uuid: (string)$item->matched->getUuid(),
-			currentUser: $plan->owner
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $plan->register, schema: $plan->schema),
+				uuid: (string)$item->matched->getUuid(),
+				actor: new SaveActor(currentUser: $plan->owner)
+			)
 		);
 	}//end replaceMatched()
 
@@ -914,10 +932,11 @@ class ObjectWriteNode extends ObjectNodeBase implements IFlowNode, ObjectWriteNo
 	private function insert(ObjectWritePlan $plan, ObjectWriteItem $item): ObjectEntity {
 		return $this->objects->saveObject(
 			object: $item->payload,
-			register: $plan->register,
-			schema: $plan->schema,
-			currentUser: $plan->owner,
-			failIfExists: ($plan->onConflict === ObjectWriteOptions::ON_CONFLICT_FAIL)
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $plan->register, schema: $plan->schema),
+				policy: new SavePolicy(failIfExists: ($plan->onConflict === ObjectWriteOptions::ON_CONFLICT_FAIL)),
+				actor: new SaveActor(currentUser: $plan->owner)
+			)
 		);
 	}//end insert()
 
@@ -1260,4 +1279,32 @@ class ObjectWriteNode extends ObjectNodeBase implements IFlowNode, ObjectWriteNo
 	private function validator(): ObjectWriteConfigValidator {
 		return new ObjectWriteConfigValidator(l10n: $this->l10n);
 	}//end validator()
+
+	/**
+	 * The right an author needs to put this step in a flow.
+	 *
+	 * @param array<string, mixed> $config The step's configuration.
+	 *
+	 * @return string|null The right, or null.
+	 *
+	 * @spec openspec/changes/flow-powerful-steps-need-a-right/specs/flow-engine/spec.md#requirement-a-flow-step-type-can-require-a-named-right
+	 */
+	public function requiredRight(array $config): ?string {
+		if (trim((string) ($config['operation'] ?? self::OP_CREATE)) === self::OP_DELETE) {
+			return self::RIGHT_DELETE;
+		}
+
+		return null;
+	}//end requiredRight()
+
+	/**
+	 * Every right this step can require, with its description.
+	 *
+	 * @return array<string, string>
+	 *
+	 * @spec openspec/changes/flow-powerful-steps-need-a-right/specs/flow-engine/spec.md#requirement-a-flow-step-type-can-require-a-named-right
+	 */
+	public function declaredRights(): array {
+		return [self::RIGHT_DELETE => 'Put a step that deletes objects in a flow.'];
+	}//end declaredRights()
 }//end class

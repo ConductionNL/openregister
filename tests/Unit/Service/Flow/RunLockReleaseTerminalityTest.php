@@ -35,6 +35,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
 use OCA\OpenRegister\Db\FlowClaim;
+use OCA\OpenRegister\Service\Flow\FlowRunOrigin;
 use OCA\OpenRegister\Db\FlowClaimMapper;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
@@ -189,6 +190,31 @@ class LockLifecycleDispatcher implements FlowStepDispatcher {
  * @uses \OCA\OpenRegister\Service\Flow\FlowWalkPass
  * @uses \OCA\OpenRegister\Service\Flow\FlowNodeDeclarations
  * @uses \OCA\OpenRegister\Service\Flow\LoweredFlow
+ * @uses \OCA\OpenRegister\Service\Flow\ClaimPass
+ * @uses \OCA\OpenRegister\Service\Flow\EdgeArrival
+ * @uses \OCA\OpenRegister\Service\Flow\FiringClaim
+ * @uses \OCA\OpenRegister\Service\Flow\FlowCommitWrite
+ * @uses \OCA\OpenRegister\Service\Flow\FlowEngineServices
+ * @uses \OCA\OpenRegister\Service\Flow\FlowExitChoice
+ * @uses \OCA\OpenRegister\Service\Flow\FlowExpression
+ * @uses \OCA\OpenRegister\Service\Flow\FlowExpressionDataOptions
+ * @uses \OCA\OpenRegister\Service\Flow\FlowFiringCommitRun
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItemOptions
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItemShape
+ * @uses \OCA\OpenRegister\Service\Flow\FlowNodeExits
+ * @uses \OCA\OpenRegister\Service\Flow\FlowPassFiring
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunCommitRows
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunEnding
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunOrigin
+ * @uses \OCA\OpenRegister\Service\Flow\FlowStepOutcome
+ * @uses \OCA\OpenRegister\Service\Flow\FlowStepOutput
+ * @uses \OCA\OpenRegister\Service\Flow\FlowStreamWalkLimits
+ * @uses \OCA\OpenRegister\Service\Flow\FlowStreamWalkParts
+ * @uses \OCA\OpenRegister\Service\Flow\ItemFiring
+ * @uses \OCA\OpenRegister\Service\Flow\ItemSeed
+ * @uses \OCA\OpenRegister\Service\Registers\EntityEventPublisher
+ * @uses \OCA\OpenRegister\Service\Flow\FlowStateDelta
+ * @uses \OCA\OpenRegister\Service\Flow\FlowErrorPolicy
  */
 class RunLockReleaseTerminalityTest extends TestCase {
 	use FluentQueryBuilderTrait;
@@ -353,7 +379,9 @@ class RunLockReleaseTerminalityTest extends TestCase {
 	private function walkFlow(FlowStepDispatcher $dispatcher): array {
 		return $this->engine->run(
 			start: (new FlowRunStart(flow: $this->flow(), store: new FlowRunMarkingStore(run: $this->row), subject: new stdClass(), dispatcher: $dispatcher))->withStreams(streams: $this->walk),
-			items: [FlowItems::item(json: ['n' => 1])]
+			origin: new FlowRunOrigin(
+				items: [FlowItems::item(json: ['n' => 1])]
+			)
 		);
 	}//end walkFlow()
 
@@ -410,7 +438,9 @@ class RunLockReleaseTerminalityTest extends TestCase {
 
 			$result = $this->engine->run(
 				start: (new FlowRunStart(flow: $flow, store: new FlowRunMarkingStore(run: $this->row), subject: new stdClass(), dispatcher: $drivers[$status]()))->withStreams(streams: $this->walk),
-				items: [FlowItems::item(json: ['n' => 1])]
+				origin: new FlowRunOrigin(
+					items: [FlowItems::item(json: ['n' => 1])]
+				)
 			);
 
 			$this->assertSame($status, $result['status'], 'the walk did not reach ' . $status);

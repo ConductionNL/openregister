@@ -64,7 +64,7 @@ class TransferOutcomeRecorderBehaviourTest extends TestCase {
 
 	private function recorder(): TransferOutcomeRecorder {
 		$auditLog = new TransferAuditLog(new \OCA\OpenRegister\Service\Edepot\AuditRecording($this->auditTrail, $this->logger), new TransferSettings($this->createMock(IAppConfig::class), $this->logger), $this->createMock(INotificationManager::class));
-		return new TransferOutcomeRecorder($this->mapper, $this->records, $auditLog, $this->logger);
+		return new TransferOutcomeRecorder(new \OCA\OpenRegister\Service\Edepot\TransferStores(objects: $this->mapper, records: $this->records, settings: $this->createMock(\OCP\IAppConfig::class), logger: $this->logger), $auditLog);
 	}//end recorder()
 
 	private static function object(array $retention=[]): ObjectEntity {
@@ -88,6 +88,18 @@ class TransferOutcomeRecorderBehaviourTest extends TestCase {
 			['archiefstatus' => 'active', 'transferErrors' => [['error' => 'nope', 'timestamp' => self::AT]]],
 			$object->getRetention()
 		);
+	}
+
+	public function testARefusedObjectGetsNoProofAndNoTransferMark(): void {
+		$object = self::object(['archiefstatus' => 'active']);
+		$this->records->expects($this->never())->method('createProof');
+		$this->records->expects($this->never())->method('findProof');
+
+		$this->recorder()->recordRefused($object, 'nope', self::AT);
+
+		$this->assertArrayNotHasKey('eDepotReferentie', $object->getRetention());
+		$this->assertArrayNotHasKey('transferProof', $object->getRetention());
+		$this->assertSame('active', $object->getRetention()['archiefstatus']);
 	}
 
 	public function testRecordRefusedAppendsToAnExistingErrorList(): void {

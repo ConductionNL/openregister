@@ -150,13 +150,12 @@ trait MultiTenancyTrait {
 	 * @return void
 	 */
 	private function applyScopedFilter(IQueryBuilder $qb, array $scope): void {
-		$user = $scope['user'];
 		if (empty($scope['activeOrgUuids']) === true) {
-			$this->applyNoActiveOrgFilter(qb: $qb, user: $user, allowNullOrg: $scope['allowNullOrg'], organisationColumn: $scope['organisationColumn']);
+			$this->applyNoActiveOrgFilter(qb: $qb, scope: $scope);
 			return;
 		}
 
-		$this->applyActiveOrgFilter(qb: $qb, user: $user, scope: $scope);
+		$this->applyActiveOrgFilter(qb: $qb, scope: $scope);
 	}//end applyScopedFilter()
 
 	/**

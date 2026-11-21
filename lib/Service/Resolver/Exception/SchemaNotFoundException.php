@@ -47,7 +47,7 @@ class SchemaNotFoundException extends UnresolvedValueException {
 		parent::__construct(
 			config: new ResolverConfigKey(appId: $appId, configKey: $configKey),
 			resolvedValue: $resolvedValue,
-			message: self::notInTenant(kind: 'Schema', appId: $appId, configKey: $configKey, resolvedValue: $resolvedValue),
+			message: (new ResolverConfigKey(appId: $appId, configKey: $configKey))->notInTenant(kind: 'Schema', resolvedValue: $resolvedValue),
 			previous: $previous
 		);
 	}//end __construct()

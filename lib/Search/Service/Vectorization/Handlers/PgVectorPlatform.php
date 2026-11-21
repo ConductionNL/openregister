@@ -106,40 +106,68 @@ class PgVectorPlatform implements VectorSidecarTableInterface {
 			return $this->columnDimension;
 		}
 
+		$this->columnDimension = $this->lookUpColumnDimension();
+		return $this->columnDimension;
+	}//end getVectorColumnDimension()
+
+	/**
+	 * Ask the catalog for the sidecar embedding column's dimension.
+	 *
+	 * @return int|null The dimension, or null off PostgreSQL or when the sidecar is unavailable (logged at debug).
+	 */
+	private function lookUpColumnDimension(): ?int {
 		if ($this->isPostgres() === false) {
-			$this->columnDimension = null;
 			return null;
 		}
 
 		try {
-			$result = $this->db->executeQuery(
-				'SELECT a.atttypmod FROM pg_attribute a '
-				. "WHERE a.attrelid = '" . self::SIDECAR_TABLE . "'::regclass "
-				. "AND a.attname = 'embedding' AND NOT a.attisdropped"
-			);
-			$typmod = $result->fetchOne();
-			$result->closeCursor();
-
-			if ($typmod === false || (int)$typmod <= 0) {
-				$this->columnDimension = null;
-				return null;
-			}
-
-			$this->columnDimension = (int)$typmod;
-			return $this->columnDimension;
+			return $this->readColumnDimension();
 		} catch (Exception $e) {
-			$this->logger->debug(
-				message: '[PgVectorPlatform] pgvector ANN sidecar unavailable',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'error' => $e->getMessage(),
-				]
-			);
-			$this->columnDimension = null;
+			$this->logSidecarUnavailable(error: $e);
 			return null;
 		}//end try
-	}//end getVectorColumnDimension()
+	}//end lookUpColumnDimension()
+
+	/**
+	 * Log, at debug level, that the ANN sidecar could not be looked up.
+	 *
+	 * @param Exception $error Why the catalog lookup failed.
+	 *
+	 * @return void
+	 */
+	private function logSidecarUnavailable(Exception $error): void {
+		$this->logger->debug(
+			message: '[PgVectorPlatform] pgvector ANN sidecar unavailable',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'error' => $error->getMessage(),
+			]
+		);
+	}//end logSidecarUnavailable()
+
+	/**
+	 * Read the sidecar embedding column's typmod, which for pgvector is the dimension itself.
+	 *
+	 * @return int|null The dimension, or null when the column has no positive typmod.
+	 *
+	 * @throws Exception When the sidecar table does not exist.
+	 */
+	private function readColumnDimension(): ?int {
+		$result = $this->db->executeQuery(
+			'SELECT a.atttypmod FROM pg_attribute a '
+			. "WHERE a.attrelid = '" . self::SIDECAR_TABLE . "'::regclass "
+			. "AND a.attname = 'embedding' AND NOT a.attisdropped"
+		);
+		$typmod = $result->fetchOne();
+		$result->closeCursor();
+
+		if ($typmod === false || (int)$typmod <= 0) {
+			return null;
+		}
+
+		return (int)$typmod;
+	}//end readColumnDimension()
 
 	/**
 	 * Format a float array as a pgvector literal ('[0.1,0.2,...]').

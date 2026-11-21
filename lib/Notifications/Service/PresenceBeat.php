@@ -43,4 +43,15 @@ final class PresenceBeat {
 		public readonly DateTimeInterface $now,
 	) {
 	}//end __construct()
+
+	/**
+	 * The same beat with the reader and object trimmed.
+	 *
+	 * @return self
+	 *
+	 * @spec openspec/changes/object-presence/specs/realtime-updates/spec.md#requirement-an-object-knows-who-has-it-open
+	 */
+	public function trimmed(): self {
+		return new self(userId: trim($this->userId), objectUuid: trim($this->objectUuid), now: $this->now);
+	}//end trimmed()
 }//end class

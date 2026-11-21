@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Service\SequenceScope;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -35,13 +36,11 @@ interface SequenceMapperInterface {
 	/**
 	 * Find the sequence row for a scope, or null when absent.
 	 *
-	 * @param int $registerId The register the sequence is scoped to.
-	 * @param int $schemaId The schema the sequence is scoped to.
-	 * @param string $scopeKey The scope discriminator.
+	 * @param SequenceScope $scope The register, schema and scope key of the counter.
 	 *
 	 * @return Sequence|null The row, or null when absent.
 	 */
-	public function findForScope(int $registerId, int $schemaId, string $scopeKey): ?Sequence;
+	public function findForScope(SequenceScope $scope): ?Sequence;
 
 	/**
 	 * Atomically increment the scope row's `next_value` by one.
@@ -53,13 +52,11 @@ interface SequenceMapperInterface {
 	 * what serialises the hand-out and prevents two callers ever reading the
 	 * same post-increment value.
 	 *
-	 * @param int $registerId The register the sequence is scoped to.
-	 * @param int $schemaId The schema the sequence is scoped to.
-	 * @param string $scopeKey The scope discriminator.
+	 * @param SequenceScope $scope The register, schema and scope key of the counter.
 	 *
 	 * @return int The number of affected rows (1 when the scope row exists, 0 otherwise).
 	 */
-	public function incrementScope(int $registerId, int $schemaId, string $scopeKey): int;
+	public function incrementScope(SequenceScope $scope): int;
 
 	/**
 	 * Raise a scope row's `next_value` so it is at least the given number.
@@ -69,16 +66,14 @@ interface SequenceMapperInterface {
 	 * that supplied an OLD number push the counter backwards, and the next create
 	 * would then re-issue a number already printed on a record.
 	 *
-	 * @param int $registerId The register the sequence is scoped to.
-	 * @param int $schemaId The schema the sequence is scoped to.
-	 * @param string $scopeKey The scope discriminator.
+	 * @param SequenceScope $scope The register, schema and scope key of the counter.
 	 * @param int $minNextValue The value `next_value` must reach.
 	 *
 	 * @return int Affected rows: 1 when the row moved, 0 when it was already high enough or absent.
 	 *
 	 * @spec openspec/changes/generated-identifier/specs/computed-fields/spec.md#requirement-a-generated-identifier-is-frozen-after-creation
 	 */
-	public function raiseTo(int $registerId, int $schemaId, string $scopeKey, int $minNextValue): int;
+	public function raiseTo(SequenceScope $scope, int $minNextValue): int;
 
 	/**
 	 * Insert one row.

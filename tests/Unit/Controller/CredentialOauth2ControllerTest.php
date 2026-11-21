@@ -53,6 +53,8 @@ use OCP\Security\Bruteforce\IThrottler;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\Credential\OAuth2ClientRegistration;
+use OCA\OpenRegister\Service\Credential\OAuth2Revocation;
 
 /**
  * @covers \OCA\OpenRegister\Controller\CredentialOauth2Controller
@@ -62,6 +64,14 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Controller\Support\CredentialOauth2ControllerServices
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Service\Credential\OAuth2Endpoints
+ * @uses \OCA\OpenRegister\Controller\Support\OAuth2StartRequest
+ * @uses \OCA\OpenRegister\Controller\Support\OAuth2StartRun
+ * @uses \OCA\OpenRegister\Service\Credential\OAuth2AuthorizationRequest
+ * @uses \OCA\OpenRegister\Service\Credential\OAuth2ClientRegistration
+ * @uses \OCA\OpenRegister\Service\Credential\OAuth2CodeGrant
+ * @uses \OCA\OpenRegister\Service\Credential\OAuth2ConnectionRecord
+ * @uses \OCA\OpenRegister\Service\Credential\OAuth2Revocation
+ * @uses \OCA\OpenRegister\Service\Credential\TokenSetAddress
  */
 class CredentialOauth2ControllerTest extends TestCase {
 	/** @var string This instance's own callback URL. */
@@ -628,7 +638,8 @@ class CredentialOauth2ControllerTest extends TestCase {
 			$connect->method('ensureInstanceClient')->willThrowException($startThrows['ensureInstanceClient']);
 		} else {
 			$connect->method('ensureInstanceClient')->willReturnCallback(
-				static function (array $provider, array $claims) use ($mintsClient): array {
+				static function (OAuth2ClientRegistration $registration) use ($mintsClient): array {
+					$claims = $registration->claims;
 					if ($mintsClient === null) {
 						return $claims;
 					}
@@ -661,8 +672,8 @@ class CredentialOauth2ControllerTest extends TestCase {
 			$connections->method('gatedOrganisation')->willThrowException($startThrows['gatedOrganisation']);
 		}
 		$connect->method('revokeUpstream')->willReturnCallback(
-			function (...$args) use ($revokeResult): string {
-				$this->revokedFor[] = ($args['credentialId'] ?? $args[2] ?? null);
+			function (OAuth2Revocation $revocation) use ($revokeResult): string {
+				$this->revokedFor[] = $revocation->address->credentialId;
 				if ($revokeResult === null) {
 					throw new RuntimeException('the provider is unreachable');
 				}

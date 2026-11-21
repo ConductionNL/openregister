@@ -41,14 +41,11 @@ interface FlowRunMigrationServiceInterface {
 	/**
 	 * Move every run of one version onto another, bounded.
 	 *
-	 * @param string                 $flowId        The flow.
-	 * @param integer                $sourceVersion The version to move off.
-	 * @param FlowRunMigrationTarget $target        The version to move onto, why, who asked and one mapping for all of them.
-	 * @param integer                $limit         The batch bound.
+	 * @param VersionRunsMigration $request The flow, the version to move off, the target and the batch bound.
 	 *
 	 * @return array{migrated: int, skipped: int, results: array<int, array<string, mixed>>}
 	 */
-	public function migrateRunsOfVersion(string $flowId, int $sourceVersion, FlowRunMigrationTarget $target, int $limit = 100): array;
+	public function migrateRunsOfVersion(VersionRunsMigration $request): array;
 
 	/**
 	 * Answer what migrating one run would do, without moving it.

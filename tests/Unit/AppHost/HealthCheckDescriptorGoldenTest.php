@@ -21,6 +21,8 @@ use PHPUnit\Framework\TestCase;
 /**
  * @covers \OCA\OpenRegister\AppHost\Observability\HealthCheckDescriptor
  * @uses \OCA\OpenRegister\AppHost\Observability\ObservabilityValidationException
+ * @uses \OCA\OpenRegister\AppHost\Observability\DescriptorValue
+ * @uses \OCA\OpenRegister\AppHost\Observability\HealthCheckTarget
  *
  * @spec openspec/changes/apphost-observability-engine/tasks.md#task-1.1
  */

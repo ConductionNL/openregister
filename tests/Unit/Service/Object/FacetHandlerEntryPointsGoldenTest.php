@@ -36,6 +36,12 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Service\Rbac\AggregateVisibility
  * @uses   \OCA\OpenRegister\Search\Service\Search\PropertySearchProfile
+ * @uses   \OCA\OpenRegister\Db\Schema\PropertyAuthorization
+ * @uses   \OCA\OpenRegister\Service\Object\FacetLookups
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Db\Schema\PropertyAuthorization
+ * @uses \OCA\OpenRegister\Service\Object\FacetLookups
  */
 class FacetHandlerEntryPointsGoldenTest extends TestCase {
 
@@ -224,7 +230,7 @@ class FacetHandlerEntryPointsGoldenTest extends TestCase {
 			);
 		}
 
-		return new FacetHandler(new FacetLookups($mapper, $schemas), $cache, $logger);
+		return new FacetHandler(new FacetLookups($mapper, $schemas), $cache, $logger, new \OCA\OpenRegister\Search\Service\Search\PropertySearchProfile());
 	}//end handler()
 
 	/**

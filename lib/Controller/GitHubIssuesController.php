@@ -34,10 +34,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\GitHubIssueDraft;
 use OCA\OpenRegister\Controller\Support\GitHubIssueListing;
 use OCA\OpenRegister\Controller\Support\GitHubIssuesControllerServices;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
 use OCA\OpenRegister\Service\Configuration\GitHubGuardsInterface;
 use OCA\OpenRegister\Service\Configuration\GitHubRequestValidatorInterface;
@@ -51,6 +51,9 @@ use OCP\ICache;
 use OCP\IRequest;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\GitHubIssueSelection;
+use OCA\OpenRegister\Kernel\Contracts\Value\GitHubIssueSubmission;
+use OCA\OpenRegister\Kernel\Contracts\Value\GitHubIssueText;
 
 /**
  * Class GitHubIssuesController.
@@ -120,7 +123,7 @@ class GitHubIssuesController extends Controller {
 		IRequest $request,
 		GitHubIssuesControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->services = $services;
 		$this->guards = $services->domain->guards;
 		$this->validator = $services->domain->validator;
@@ -211,12 +214,14 @@ class GitHubIssuesController extends Controller {
 
 		try {
 			$result = $this->services->domain->githubHandler->listIssues(
-				owner: $owner,
-				repo: $repoName,
-				state: $listing->state,
-				sort: $listing->sort,
-				perPage: $listing->perPage,
-				labels: $labels
+				selection: new GitHubIssueSelection(
+					owner: $owner,
+					repo: $repoName,
+					state: $listing->state,
+					sort: $listing->sort,
+					perPage: $listing->perPage,
+					labels: $labels
+				)
 			);
 		} catch (Exception $e) {
 			return $this->mapHandlerException(exception: $e, isRead: true);
@@ -249,7 +254,7 @@ class GitHubIssuesController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function create(): JSONResponse {
-		$user = $this->services->platform->userSession->getUser();
+		$user = $this->services->platform->session->userSession->getUser();
 		if ($user === null) {
 			return new JSONResponse(['error' => 'unauthenticated'], Http::STATUS_UNAUTHORIZED);
 		}
@@ -300,12 +305,8 @@ class GitHubIssuesController extends Controller {
 
 		try {
 			$result = $this->services->domain->githubHandler->createIssue(
-				owner: $owner,
-				repo: $repoName,
-				title: $draft->title,
-				body: $draft->body,
-				specRef: $draft->specRef,
-				userId: $uid
+				submission: new GitHubIssueSubmission(owner: $owner, repo: $repoName, userId: $uid, specRef: $draft->specRef),
+				text: new GitHubIssueText(title: $draft->title, body: $draft->body)
 			);
 		} catch (Exception $e) {
 			return $this->mapHandlerException(exception: $e, isRead: false);
@@ -466,7 +467,7 @@ class GitHubIssuesController extends Controller {
 			}
 		}
 
-		$this->services->platform->logger->error(
+		$this->services->platform->session->logger->error(
 			message: '[GitHubIssuesController] GitHub proxy error',
 			context: ['file' => __FILE__, 'line' => __LINE__, 'error_class' => $exception::class]
 		);

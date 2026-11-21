@@ -41,6 +41,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Search\Db\ViewMapper;
 use OCA\OpenRegister\Service\Calendar\AppointmentAttendeeService;
+use OCA\OpenRegister\Service\Calendar\AttendeeResponse;
 use OCA\OpenRegister\Service\Calendar\DeadlineDateResolver;
 use OCA\OpenRegister\Service\Calendar\DeadlineLookup;
 use OCA\OpenRegister\Service\Calendar\CalendarYearSpan;
@@ -61,6 +62,7 @@ use OCP\IUserManager;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
@@ -91,19 +93,18 @@ class CalendarCharacterisationTest extends TestCase {
 							&& count($data[AppointmentAttendeeService::RESPONSES_PROPERTY]) === 1;
 					}
 				),
-				[],
-				'7',
-				'9',
-				'object-uuid'
+				$this->callback(static fn (ObjectSaveOptions $options): bool => $options->extend == [] && $options->target->register == '7' && $options->target->schema == '9' && $options->uuid == 'object-uuid')
 			)
 			->willReturn($this->attendeeObject());
 
 		$service = new AppointmentAttendeeService(objects: $objects);
-		$responses = $service->recordResponse(
-			objectUuid: 'object-uuid',
-			attendee: '  ana@example.org ',
-			status: ' tentative ',
-			respondedBy: null
+		$responses = $service->recordAttendeeResponse(
+			response: new AttendeeResponse(
+				objectUuid: 'object-uuid',
+				attendee: '  ana@example.org ',
+				status: ' tentative ',
+				respondedBy: null
+			)
 		);
 
 		$this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/', $responses[0]['respondedAt']);
@@ -126,7 +127,9 @@ class CalendarCharacterisationTest extends TestCase {
 		$objects->method('saveObject')->willReturn($this->attendeeObject());
 
 		$service = new AppointmentAttendeeService(objects: $objects);
-		$responses = $service->recordResponse(objectUuid: 'object-uuid', attendee: 'ana', status: 'ACCEPTED');
+		$responses = $service->recordAttendeeResponse(
+			response: new AttendeeResponse(objectUuid: 'object-uuid', attendee: 'ana', status: 'ACCEPTED')
+		);
 
 		$this->assertMatchesRegularExpression(
 			'/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/',
@@ -143,7 +146,13 @@ class CalendarCharacterisationTest extends TestCase {
 		$messages = [];
 		foreach ([['', 'ACCEPTED'], ['ana', 'maybe'], ['ana', 'ACCEPTED']] as [$attendee, $status]) {
 			try {
-				$service->recordResponse(objectUuid: 'missing', attendee: $attendee, status: $status);
+				$service->recordAttendeeResponse(
+					response: new AttendeeResponse(
+						objectUuid: 'missing',
+						attendee: $attendee,
+						status: $status
+					)
+				);
 			} catch (InvalidArgumentException $refused) {
 				$messages[] = $refused->getMessage();
 			}
@@ -455,7 +464,6 @@ class CalendarCharacterisationTest extends TestCase {
 		}
 
 		return new ObjectDateEventBuilder(
-			writer: new IcalendarWriter(),
 			deadlines: $this->createMock(DeadlineDateResolver::class),
 			attendees: $attendees
 		);

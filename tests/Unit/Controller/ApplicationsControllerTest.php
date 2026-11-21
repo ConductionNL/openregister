@@ -42,6 +42,8 @@ class ApplicationsControllerTest extends TestCase {
 	public function testPage(): void {
 		$result = $this->controller->page();
 		$this->assertInstanceOf(TemplateResponse::class, $result);
+		$this->assertSame('index', $result->getTemplateName());
+		$this->assertSame('openregister', $result->getApp());
 	}
 
 	public function testIndexSuccess(): void {

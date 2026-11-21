@@ -36,6 +36,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\RenderObject;
+use OCA\OpenRegister\Service\Rbac\HierarchyLevel;
 use OCA\OpenRegister\Service\Rbac\HierarchyDescender;
 use OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander;
 use OCA\OpenRegister\Service\Relation\ObjectTreeQuery;
@@ -101,7 +102,8 @@ class ObjectTreeServiceAccessGoldenTest extends TestCase {
 			->onlyMethods(['childrenOf'])
 			->getMock();
 		$descender->method('childrenOf')->willReturnCallback(
-			function (string $table, string $parentColumn, array $parentUuids, ?int $limit = null) use ($levelFails): array {
+			function (HierarchyLevel $level, array $parentUuids) use ($levelFails): array {
+				[$table, $parentColumn, $limit] = [$level->table, $level->parentColumn, $level->limit];
 				$this->calls[] = 'children '.implode(separator: ',', array: $parentUuids).' limit '.(string)$limit;
 				if ($levelFails === true) {
 					throw new RuntimeException('level unreadable');
@@ -214,7 +216,8 @@ class ObjectTreeServiceAccessGoldenTest extends TestCase {
 			sources: new ObjectTreeSources(
 				descender: $collaborators['descender'],
 				hierarchies: $collaborators['hierarchies'],
-				graphs: $collaborators['graphs']
+				graphs: $collaborators['graphs'],
+				parties: new \OCA\OpenRegister\Service\Party\PartyParent()
 			),
 			catalog: new SchemaCatalog(
 				registers: $collaborators['registerMapper'],
@@ -343,8 +346,7 @@ class ObjectTreeServiceAccessGoldenTest extends TestCase {
 		bool $rbac
 	): void {
 		$tree = $this->service(readable: $readable, accessFails: $accessFails, cap: $cap, levelFails: $levelFails)->tree(
-			root: self::entity(uuid: $root),
-			query: new ObjectTreeQuery(direction: $direction, depth: $depth, fields: $fields),
+			query: new ObjectTreeQuery(root: self::entity(uuid: $root), direction: $direction, depth: $depth, fields: $fields),
 			_rbac: $rbac
 		);
 

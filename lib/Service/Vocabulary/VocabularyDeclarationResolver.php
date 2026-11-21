@@ -63,25 +63,23 @@ class VocabularyDeclarationResolver implements VocabularyDeclarationResolverInte
 	 * the person choosing a branch is choosing it FROM that tree, so they need
 	 * it before the save rather than after.
 	 *
-	 * @param string $schemaRef The schema id or slug, empty when none was given.
-	 * @param string $property The property name, empty when none was given.
-	 * @param string $schemeUri The scheme uri for the unsaved path, empty when none was given.
+	 * @param DeclarationLookup $lookup The schema and property of a saved declaration, and the scheme uri for the unsaved path.
 	 *
 	 * @return CodedPropertyDeclaration|null The declaration, or null when neither source yields one.
 	 *
 	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
-	public function resolveDeclaration(string $schemaRef, string $property, string $schemeUri): ?CodedPropertyDeclaration {
-		if ($schemaRef === '' || $property === '') {
-			return $this->unsavedDeclaration(schemeUri: $schemeUri);
+	public function resolveDeclaration(DeclarationLookup $lookup): ?CodedPropertyDeclaration {
+		if ($lookup->schemaRef === '' || $lookup->property === '') {
+			return $this->unsavedDeclaration(schemeUri: $lookup->schemeUri);
 		}
 
-		$schema = $this->findSchema(schemaRef: $schemaRef);
+		$schema = $this->findSchema(schemaRef: $lookup->schemaRef);
 		if ($schema === null) {
 			return null;
 		}
 
-		return ($this->savedDeclaration(schema: $schema, property: $property) ?? $this->unsavedDeclaration(schemeUri: $schemeUri));
+		return ($this->savedDeclaration(schema: $schema, property: $lookup->property) ?? $this->unsavedDeclaration(schemeUri: $lookup->schemeUri));
 	}//end resolveDeclaration()
 
 	/**
@@ -142,32 +140,55 @@ class VocabularyDeclarationResolver implements VocabularyDeclarationResolverInte
 	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	private function declarationFromQuery(string $scheme): array {
-		$declaration = ['scheme' => $scheme];
-
-		$branch = trim((string)$this->request->getParam('branch', ''));
-		if ($branch !== '') {
-			$declaration['branch'] = $branch;
-		}
-
-		$store = trim((string)$this->request->getParam('store', ''));
-		if ($store !== '') {
-			$declaration['store'] = $store;
-		}
-
-		$maxDepth = $this->request->getParam('maxDepth', null);
-		if (is_numeric($maxDepth) === true) {
-			$declaration['maxDepth'] = (int)$maxDepth;
-		}
-
-		$declaration['leafOnly'] = filter_var(
-			$this->request->getParam('leafOnly', false),
-			FILTER_VALIDATE_BOOLEAN
-		);
-		$declaration['allowDeprecated'] = filter_var(
-			$this->request->getParam('allowDeprecated', false),
-			FILTER_VALIDATE_BOOLEAN
-		);
-
-		return $declaration;
+		return array_merge(['scheme' => $scheme], $this->textParams(), $this->depthParam(), $this->flagParams());
 	}//end declarationFromQuery()
+
+	/**
+	 * The `branch` and `store` parameters, trimmed, each only when it is not blank.
+	 *
+	 * @return array<string,string> The parameters.
+	 */
+	private function textParams(): array {
+		$params = [];
+		foreach (['branch', 'store'] as $name) {
+			$value = trim((string)$this->request->getParam($name, ''));
+			if ($value !== '') {
+				$params[$name] = $value;
+			}
+		}
+
+		return $params;
+	}//end textParams()
+
+	/**
+	 * The `maxDepth` parameter as an int, only when it is numeric.
+	 *
+	 * @return array<string,int> The parameter.
+	 */
+	private function depthParam(): array {
+		$maxDepth = $this->request->getParam('maxDepth', null);
+		if (is_numeric($maxDepth) === false) {
+			return [];
+		}
+
+		return ['maxDepth' => (int)$maxDepth];
+	}//end depthParam()
+
+	/**
+	 * The `leafOnly` and `allowDeprecated` flags, read as booleans.
+	 *
+	 * @return array<string,bool> The flags.
+	 */
+	private function flagParams(): array {
+		return [
+			'leafOnly' => filter_var(
+				$this->request->getParam('leafOnly', false),
+				FILTER_VALIDATE_BOOLEAN
+			),
+			'allowDeprecated' => filter_var(
+				$this->request->getParam('allowDeprecated', false),
+				FILTER_VALIDATE_BOOLEAN
+			),
+		];
+	}//end flagParams()
 }//end class

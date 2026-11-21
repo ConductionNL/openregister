@@ -20,18 +20,20 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use InvalidArgumentException;
 use DateTime;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\DecisionConflictException;
 use OCA\OpenRegister\Files\Db\EntityMention;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\EntityEventsInterface;
+use OCA\OpenRegister\Kernel\Contracts\RelationDecisionUpdate;
+use OCP\IUser;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\ICompositeExpression;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
-use OCP\IUser;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
@@ -158,6 +160,66 @@ class EntityRelationMapper extends QBMapper implements EntityRelationMapperInter
 
 		return $this->findEntities(query: $qb);
 	}//end findByFileId()
+
+	/**
+	 * One page of the ids of the files that hold detected entities, ascending.
+	 *
+	 * For callers that report across every file with entities, such as a
+	 * personal data overview: they read page after page with the last file id
+	 * they saw until a page comes back shorter than the limit. Ids only: the
+	 * caller decides per file whether its reader may see it.
+	 *
+	 * @param int $afterFileId Only files with an id above this one.
+	 * @param int $limit       The page size, 1 to 1000.
+	 *
+	 * @return int[] The distinct file ids, lowest first.
+	 */
+	public function findFileIdsWithEntities(int $afterFileId=0, int $limit=500): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->selectDistinct('file_id')
+			->from($this->getTableName())
+			->where($qb->expr()->isNotNull('file_id'))
+			->andWhere($qb->expr()->gt('file_id', $qb->createNamedParameter($afterFileId, IQueryBuilder::PARAM_INT)))
+			->orderBy('file_id', 'ASC')
+			->setMaxResults(max(1, min($limit, self::MAX_IN_LIST_SIZE)));
+
+		$result = $qb->executeQuery();
+		$rows   = $result->fetchAll();
+		$result->closeCursor();
+
+		$ids = [];
+		foreach ($rows as $row) {
+			$ids[] = (int) ($row['file_id'] ?? 0);
+		}
+
+		return $ids;
+	}//end findFileIdsWithEntities()
+
+	/**
+	 * One page of the entity relations that carry bases, in id order.
+	 *
+	 * For callers that walk every recorded basis once, such as an upgrade
+	 * step that re-points stored grounds to new codes: they read page after
+	 * page with the last id they saw until a page comes back empty.
+	 *
+	 * @param int $afterId Only relations with an id above this one.
+	 * @param int $limit   The page size, 1 to 1000.
+	 *
+	 * @return EntityRelation[] The relations, lowest id first.
+	 *
+	 * @spec openspec/specs/entity-relation-grondslagen/spec.md
+	 */
+	public function findWithBases(int $afterId=0, int $limit=500): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->isNotNull('bases'))
+			->andWhere($qb->expr()->gt('id', $qb->createNamedParameter($afterId, IQueryBuilder::PARAM_INT)))
+			->orderBy('id', 'ASC')
+			->setMaxResults(max(1, min($limit, self::MAX_IN_LIST_SIZE)));
+
+		return $this->findEntities(query: $qb);
+	}//end findWithBases()
 
 	/**
 	 * Find entity relations by entity ID.
@@ -631,10 +693,16 @@ class EntityRelationMapper extends QBMapper implements EntityRelationMapperInter
 	 *
 	 * @param int $fileId The file ID.
 	 *
+	 * Each row also carries the relation's `bases`, the exception grounds the
+	 * placeholder prints (REQ-PIS-011).
+	 *
 	 * @return array<int, array<string, mixed>> Array of entity rows joined with their Entity record.
+	 *
+	 * @spec openspec/changes/anonymisation-placeholder-id-scope/specs/entity-relation-grondslagen/spec.md#requirement-the-placeholder-carries-the-exception-ground-where-it-applies-req-pis-011
 	 */
 	public function findEntitiesForAnonymization(int $fileId): array {
 		$qb = $this->selectFileEntities(fileId: $fileId);
+		$qb->addSelect('r.bases');
 		$qb->andWhere($qb->expr()->eq('r.skip_anonymization', $qb->createNamedParameter(false, IQueryBuilder::PARAM_BOOL)))
 			->orderBy('r.position_start', 'ASC');
 
@@ -719,78 +787,129 @@ class EntityRelationMapper extends QBMapper implements EntityRelationMapperInter
 	 * timestamp, the subject (table + row id), and only the fields that
 	 * actually changed.
 	 *
-	 * @param EntityRelation $relation Pre-loaded relation row (callers handle find/404).
-	 * @param array $fields Subset of whitelist keys with new values.
-	 * @param IUser|null $actingUser Optional explicit acting user; falls back
-	 *                               to the session user. If null and no
-	 *                               session user, the audit entry records the
-	 *                               actor as 'system'.
+	 * Takes main's DecisionMetadataEdit, or the release's relation, fields and acting user, by name or
+	 * by position (a relation in the first slot); an edit wins.
+	 *
+	 * @param DecisionMetadataEdit|EntityRelation|null $edit       The pre-loaded relation row (callers handle find/404), the fields and the acting
+	 *                                                             user; a relation here is the release's positional `$relation`.
+	 * @param array|null                               $fields     The decision fields to change.
+	 * @param IUser|null                               $actingUser The user making the change.
+	 * @param EntityRelation|null                      $relation   The pre-loaded relation row.
 	 *
 	 * @return EntityRelation The (possibly unchanged) row.
 	 *
 	 * @throws CustomValidationException When a whitelist or shape violation
 	 *                                   is detected.
+	 *
+	 * @throws InvalidArgumentException When neither an edit nor a relation and fields is given.
 	 */
-	public function updateDecisionMetadata(EntityRelation $relation, array $fields, ?IUser $actingUser = null): EntityRelation {
-		self::assertDecisionFieldsValid(fields: $fields);
-		$changedFields = self::applyDecisionChanges(relation: $relation, fields: $fields);
-
-		if (count($changedFields) === 0) {
-			return $relation;
+	public function updateDecisionMetadata(
+		DecisionMetadataEdit|EntityRelation|null $edit = null,
+		array|null $fields = null,
+		IUser|null $actingUser = null,
+		EntityRelation|null $relation = null,
+	): EntityRelation {
+		if ($edit instanceof EntityRelation) {
+			$relation ??= $edit;
+			$edit       = null;
 		}
 
-		// Audit-invariant: every persisted state change MUST have an
-		// audit-trail entry. Both writes go in a single transaction so a
-		// failed audit-INSERT rolls back the row UPDATE — clients see
-		// HTTP 500 instead of an undetectable audit gap. The downstream
-		// event dispatch stays OUTSIDE the transaction (post-commit,
-		// informational; listener failures must not roll back).
+		if ($edit === null) {
+			if ($relation === null || $fields === null) {
+				throw new InvalidArgumentException('updateDecisionMetadata() needs a relation and fields, or a DecisionMetadataEdit.');
+			}
+
+			$edit = new DecisionMetadataEdit(relation: $relation, fields: $fields, actingUser: $actingUser);
+		}
+
+		self::assertDecisionFieldsValid(fields: $edit->fields);
+		$changedFields = self::applyDecisionChanges(relation: $edit->relation, fields: $edit->fields);
+		if (count($changedFields) === 0) {
+			return $edit->relation;
+		}
+
+		$actingUser = ($edit->actingUser ?? $this->userSession->getUser());
+		$change     = new DecisionMetadataChange(relation: $edit->relation, changedFields: $changedFields, actingUser: $actingUser);
+		return $this->recordDecisionChange(change: $change);
+	}//end updateDecisionMetadata()
+
+	/**
+	 * Store a decision-metadata change with its audit entry, then notify listeners.
+	 *
+	 * Audit-invariant: every persisted state change MUST have an audit-trail
+	 * entry. Both writes go in a single transaction so a failed audit INSERT
+	 * rolls back the row UPDATE: clients see HTTP 500 instead of an
+	 * undetectable audit gap. The event dispatch stays OUTSIDE the
+	 * transaction (post-commit, informational; listener failures must not
+	 * roll back).
+	 *
+	 * @param DecisionMetadataChange $change The relation, its changed fields and the acting user.
+	 *
+	 * @return EntityRelation The stored relation.
+	 */
+	private function recordDecisionChange(DecisionMetadataChange $change): EntityRelation {
 		$this->db->beginTransaction();
 		try {
-			$relation = $this->update(entity: $relation);
-			$relationId = (int)$relation->getId();
-			$actingUser = ($actingUser ?? $this->userSession->getUser());
-			$this->emitDecisionMetadataAuditEntry(relation: $relation, changedFields: $changedFields, actingUser: $actingUser);
+			$relation = $this->update(entity: $change->relation);
+			$this->emitDecisionMetadataAuditEntry(relation: $relation, change: $change);
 			$this->db->commit();
 		} catch (\Throwable $writeError) {
 			$this->db->rollBack();
-			$this->logger->error(
-				message: '[EntityRelationMapper] Transactional decision-metadata write failed, rolled back',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'relation_id' => (int)$relation->getId(),
-					'changedKeys' => array_keys($changedFields),
-					'error' => $writeError->getMessage(),
-				]
-			);
+			$message = '[EntityRelationMapper] Transactional decision-metadata write failed, rolled back';
+			$this->logDecisionFailure(message: $message, change: $change, error: $writeError);
 			throw $writeError;
-		}//end try
+		}
 
-		// Notify listeners (downstream apps — e.g. DocuDesk's
-		// publication-clearance-via-anonymise change subscribes here to
-		// create a publicationConsent record whenever skipAnonymization
-		// flips false → true, so the 28-day Woo clock starts ticking at
-		// decision time rather than at anonymise time). Failure to
-		// dispatch / listener failure MUST NOT roll back the persisted
-		// state change — log and continue, same contract as audit.
-		try {
-			$this->entityEvents->entityRelationDecisionUpdated(relation: $relation, changedFields: $changedFields, actingUser: $actingUser);
-		} catch (\Throwable $dispatchError) {
-			$this->logger->error(
-				message: '[EntityRelationMapper] Failed to dispatch EntityRelationDecisionUpdatedEvent',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'relation_id' => $relationId,
-					'changedKeys' => array_keys($changedFields),
-					'error' => $dispatchError->getMessage(),
-				]
-			);
-		}//end try
-
+		$this->notifyDecisionUpdated(relation: $relation, change: $change);
 		return $relation;
-	}//end updateDecisionMetadata()
+	}//end recordDecisionChange()
+
+	/**
+	 * Tell listeners a relation's decision metadata changed.
+	 *
+	 * Downstream apps subscribe here (DocuDesk's publication-clearance-via-
+	 * anonymise change creates a publicationConsent record whenever
+	 * skipAnonymization flips false to true, so the 28-day Woo clock starts at
+	 * decision time). A dispatch or listener failure MUST NOT roll back the
+	 * persisted change: it is logged and the write stands, same contract as audit.
+	 *
+	 * @param EntityRelation         $relation The stored relation.
+	 * @param DecisionMetadataChange $change   The change that was stored.
+	 *
+	 * @return void
+	 */
+	private function notifyDecisionUpdated(EntityRelation $relation, DecisionMetadataChange $change): void {
+		try {
+			$this->entityEvents->entityRelationDecisionUpdated(
+				update: new RelationDecisionUpdate(relation: $relation, changedFields: $change->changedFields, actingUser: $change->actingUser)
+			);
+		} catch (\Throwable $dispatchError) {
+			$message = '[EntityRelationMapper] Failed to dispatch EntityRelationDecisionUpdatedEvent';
+			$this->logDecisionFailure(message: $message, change: $change, error: $dispatchError);
+		}
+	}//end notifyDecisionUpdated()
+
+	/**
+	 * Log a failed decision-metadata write or dispatch with the relation and the changed keys.
+	 *
+	 * @param string                 $message The log message.
+	 * @param DecisionMetadataChange $change  The change being stored.
+	 * @param \Throwable             $error   The failure.
+	 *
+	 * @return void
+	 */
+	private function logDecisionFailure(string $message, DecisionMetadataChange $change, \Throwable $error): void {
+		$this->logger->error(
+			message: $message,
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'relation_id' => (int)$change->relation->getId(),
+				'changedKeys' => array_keys($change->changedFields),
+				'error' => $error->getMessage(),
+			]
+		);
+	}//end logDecisionFailure()
 
 	/**
 	 * Reject decision-metadata fields outside the whitelist or of the wrong shape.
@@ -926,14 +1045,13 @@ class EntityRelationMapper extends QBMapper implements EntityRelationMapperInter
 	 * encode the subject (table + row id) inside the `changed` JSON
 	 * payload alongside the per-field diff.
 	 *
-	 * @param EntityRelation $relation The relation as stored now.
-	 * @param array<string, array{previous: mixed, new: mixed}> $changedFields Only the fields that changed.
-	 * @param IUser|null $actingUser The acting user (already resolved to the session user).
+	 * @param EntityRelation         $relation The relation as stored now.
+	 * @param DecisionMetadataChange $change   The changed fields and the acting user (already resolved to the session user).
 	 *
 	 * @return void
 	 */
-	private function emitDecisionMetadataAuditEntry(EntityRelation $relation, array $changedFields, ?IUser $actingUser): void {
-		$user = $actingUser;
+	private function emitDecisionMetadataAuditEntry(EntityRelation $relation, DecisionMetadataChange $change): void {
+		$user = $change->actingUser;
 		$userId = 'system';
 		if ($user !== null) {
 			$userId = $user->getUID();
@@ -951,7 +1069,7 @@ class EntityRelationMapper extends QBMapper implements EntityRelationMapperInter
 			[
 				'subjectType' => 'openregister_entity_relations',
 				'subjectId' => (int)$relation->getId(),
-				'fields' => $changedFields,
+				'fields' => $change->changedFields,
 			]
 		);
 

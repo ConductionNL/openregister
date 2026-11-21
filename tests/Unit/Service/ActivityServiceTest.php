@@ -58,7 +58,7 @@ class ActivityServiceTest extends TestCase {
 		$this->urlGenerator = $this->createMock(IURLGenerator::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
-		$this->service = new ActivityService($this->activityManager, $this->userSession, new \OCA\OpenRegister\Notifications\Service\ActivityEntries($this->urlGenerator, $this->logger), $this->logger);
+		$this->service = new ActivityService($this->activityManager, $this->userSession, new \OCA\OpenRegister\Notifications\Service\ActivityEntries(new \OCA\OpenRegister\Notifications\Service\ObjectDeepLinks($this->urlGenerator), $this->logger), $this->logger);
 	}
 
 	/**
@@ -287,7 +287,7 @@ class ActivityServiceTest extends TestCase {
 			->with('12', $this->anything(), false, false)
 			->willReturn($this->createSchema(title: 'Client'));
 
-		$service = new ActivityService($this->activityManager, $this->userSession, new \OCA\OpenRegister\Notifications\Service\ActivityEntries($this->urlGenerator, $this->logger, $schemaMapper), $this->logger);
+		$service = new ActivityService($this->activityManager, $this->userSession, new \OCA\OpenRegister\Notifications\Service\ActivityEntries(new \OCA\OpenRegister\Notifications\Service\ObjectDeepLinks($this->urlGenerator), $this->logger, $schemaMapper), $this->logger);
 		$this->userSession->method('getUser')->willReturn($this->mockUser('admin'));
 		$this->urlGenerator->method('linkToRouteAbsolute')->willReturn('https://example.com/apps/openregister/');
 
@@ -307,7 +307,7 @@ class ActivityServiceTest extends TestCase {
 		$schemaMapper = $this->createMock(SchemaMapper::class);
 		$schemaMapper->method('find')->willThrowException(new DoesNotExistException('gone'));
 
-		$service = new ActivityService($this->activityManager, $this->userSession, new \OCA\OpenRegister\Notifications\Service\ActivityEntries($this->urlGenerator, $this->logger, $schemaMapper), $this->logger);
+		$service = new ActivityService($this->activityManager, $this->userSession, new \OCA\OpenRegister\Notifications\Service\ActivityEntries(new \OCA\OpenRegister\Notifications\Service\ObjectDeepLinks($this->urlGenerator), $this->logger, $schemaMapper), $this->logger);
 		$this->userSession->method('getUser')->willReturn($this->mockUser('admin'));
 		$this->urlGenerator->method('linkToRouteAbsolute')->willReturn('https://example.com/apps/openregister/');
 
@@ -353,8 +353,7 @@ class ActivityServiceTest extends TestCase {
 		);
 		$this->activityManager->method('generateEvent')->willReturn($event);
 
-		$service = new ActivityService($this->activityManager, $this->userSession, new \OCA\OpenRegister\Notifications\Service\ActivityEntries($this->urlGenerator, $this->logger, null,
-			$deepLinks,), $this->logger);
+		$service = new ActivityService($this->activityManager, $this->userSession, new \OCA\OpenRegister\Notifications\Service\ActivityEntries(new \OCA\OpenRegister\Notifications\Service\ObjectDeepLinks($this->urlGenerator, $deepLinks), $this->logger), $this->logger);
 		$service->publishObjectUpdated($this->createObjectEntity());
 
 		return $link;

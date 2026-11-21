@@ -52,6 +52,14 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Service\Rbac\ExplicitReveal
  * @uses   \OCA\OpenRegister\Service\Rules\ConditionDialect
  * @uses   \OCA\OpenRegister\Search\Service\Search\PlaceholderResolver
+ * @uses \OCA\OpenRegister\Db\MagicMapper\DateHistogramUnion
+ * @uses \OCA\OpenRegister\Db\MagicMapper\FacetResults
+ * @uses \OCA\OpenRegister\Db\Schema\PropertyAuthorization
+ * @uses \OCA\OpenRegister\Service\PropertyRbacCaller
+ * @uses \OCA\OpenRegister\Service\PropertyRbacRules
+ * @uses \OCA\OpenRegister\Service\Rbac\ExplicitRevealMasks
+ * @uses \OCA\OpenRegister\Service\Rbac\WriteOnlyPathWalker
+ * @uses \OCA\OpenRegister\Service\SchemaProperty
  */
 class MagicFacetHandlerUnionFacetsGoldenTest extends TestCase {
 	use BuildsStateFieldRuleResolver;
@@ -179,6 +187,6 @@ class MagicFacetHandlerUnionFacetsGoldenTest extends TestCase {
 			);
 		}
 
-		return new MagicFacetHandler($db, $logger, null, null, null, $container, null);
+		return new MagicFacetHandler($db, $logger, null, $container);
 	}//end handler()
 }//end class

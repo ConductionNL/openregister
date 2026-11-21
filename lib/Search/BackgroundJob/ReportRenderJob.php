@@ -33,22 +33,22 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Search\BackgroundJob;
 
 use DateTime;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableRowReaderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Search\BackgroundJob\Support\DashboardRenderRun;
 use OCA\OpenRegister\Search\BackgroundJob\Support\ReportRenderDelivery;
 use OCA\OpenRegister\Search\BackgroundJob\Support\ReportRenderPlatform;
 use OCA\OpenRegister\Search\BackgroundJob\Support\ReportRenderSources;
+use OCA\OpenRegister\Search\BackgroundJob\Support\ScheduledRenderPassRun;
 use OCA\OpenRegister\Search\Service\Reporting\ReportRenderService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
-use OCP\Files\IRootFolder;
+use OCP\Files\Folder;
+use OCP\Files\Node;
 use OCP\Files\NotFoundException;
-use OCP\IAppConfig;
-use Psr\Log\LoggerInterface;
 
 /**
  * Daily scheduled-report renderer.
@@ -127,53 +127,11 @@ class ReportRenderJob extends TimedJob {
 	private const DASHBOARD_SCAN_LIMIT = 200;
 
 	/**
-	 * Register lookup.
-	 *
-	 * @var RegisterMapperInterface
-	 */
-	private readonly RegisterMapperInterface $registerMapper;
-
-	/**
-	 * Schema lookup for the register's schemas.
-	 *
-	 * @var SchemaMapperInterface
-	 */
-	private readonly SchemaMapperInterface $schemaMapper;
-
-	/**
 	 * Object loader.
 	 *
 	 * @var MagicTableRowReaderInterface
 	 */
 	private readonly MagicTableRowReaderInterface $objectMapper;
-
-	/**
-	 * Render composer.
-	 *
-	 * @var ReportRenderService
-	 */
-	private readonly ReportRenderService $renderService;
-
-	/**
-	 * Files root.
-	 *
-	 * @var IRootFolder
-	 */
-	private readonly IRootFolder $rootFolder;
-
-	/**
-	 * App-config reader.
-	 *
-	 * @var IAppConfig
-	 */
-	private readonly IAppConfig $appConfig;
-
-	/**
-	 * Logger.
-	 *
-	 * @var LoggerInterface
-	 */
-	private readonly LoggerInterface $logger;
 
 	/**
 	 * Constructor.
@@ -187,18 +145,12 @@ class ReportRenderJob extends TimedJob {
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		ReportRenderSources $sources,
-		ReportRenderDelivery $delivery,
-		ReportRenderPlatform $platform,
+		private readonly ReportRenderSources $sources,
+		private readonly ReportRenderDelivery $delivery,
+		private readonly ReportRenderPlatform $platform,
 	) {
 		parent::__construct(time: $time);
-		$this->registerMapper = $sources->registerMapper;
-		$this->schemaMapper = $sources->schemaMapper;
 		$this->objectMapper = $sources->objectMapper;
-		$this->renderService = $delivery->renderService;
-		$this->rootFolder = $delivery->rootFolder;
-		$this->appConfig = $platform->appConfig;
-		$this->logger = $platform->logger;
 		$this->setInterval(seconds: self::RUN_INTERVAL_SECONDS);
 	}//end __construct()
 
@@ -214,70 +166,132 @@ class ReportRenderJob extends TimedJob {
 	 * @spec openspec/specs/rapportage-bi-export/spec.md
 	 */
 	protected function run($argument): void {
-		$enabled = filter_var(
-			$this->appConfig->getValueString(
-				app: self::APP_ID,
-				key: self::CONFIG_KEY_ENABLED,
-				default: 'true'
-			),
-			FILTER_VALIDATE_BOOLEAN
-		);
-		if ($enabled === false) {
-			$this->logger->info(
+		if ($this->scheduledRendersEnabled() === false) {
+			$this->platform->logger->info(
 				message: '[ReportRenderJob] Scheduled renders disabled (kill switch on), skipping',
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
 			return;
 		}
 
+		$register = $this->findReportsRegister();
+		if ($register !== null) {
+			$this->renderDueDashboards(register: $register);
+		}
+	}//end run()
+
+	/**
+	 * Whether scheduled renders are switched on (the kill switch is off).
+	 *
+	 * @return bool
+	 */
+	private function scheduledRendersEnabled(): bool {
+		return filter_var(
+			$this->platform->appConfig->getValueString(
+				app: self::APP_ID,
+				key: self::CONFIG_KEY_ENABLED,
+				default: 'true'
+			),
+			FILTER_VALIDATE_BOOLEAN
+		);
+	}//end scheduledRendersEnabled()
+
+	/**
+	 * The `reports` register, or null (logged) when the bundle is not imported.
+	 *
+	 * @return Register|null
+	 */
+	private function findReportsRegister(): ?Register {
 		try {
-			$register = $this->loadReportsRegister();
+			return $this->loadReportsRegister();
 		} catch (\Throwable $e) {
-			$this->logger->info(
+			$this->platform->logger->info(
 				message: '[ReportRenderJob] No `reports` register found — bundle not imported, skipping',
 				context: ['error' => $e->getMessage()]
 			);
-			return;
+			return null;
+		}
+	}//end findReportsRegister()
+
+	/**
+	 * Render every due dashboard of the reports register and log the pass.
+	 *
+	 * @param Register $register Reports register.
+	 *
+	 * @return void
+	 */
+	private function renderDueDashboards(Register $register): void {
+		$candidates = $this->loadDashboards(register: $register);
+		$pass = new ScheduledRenderPassRun(now: new DateTime());
+		foreach ($candidates as $dashboard) {
+			$this->renderIfDue(dashboard: $dashboard, pass: $pass);
 		}
 
-		$candidates = $this->loadDashboards(register: $register);
-		$now = new DateTime();
-		$rendered = 0;
-		$skipped = 0;
-		foreach ($candidates as $dashboard) {
-			$payload = $dashboard->getObject() ?? [];
-			$dashboardRun = new DashboardRenderRun(dashboard: $dashboard, payload: $payload);
-			if ($this->shouldRender(run: $dashboardRun, now: $now) === false) {
-				$skipped++;
-				continue;
-			}
+		$this->logPassComplete(pass: $pass, candidates: count($candidates));
+	}//end renderDueDashboards()
 
-			try {
-				$this->renderAndDeliver(run: $dashboardRun);
-				$rendered++;
-			} catch (\Throwable $e) {
-				$this->logger->warning(
-					message: '[ReportRenderJob] Render failed for dashboard',
-					context: [
-						'dashboard' => ($payload['titel'] ?? $dashboard->getUuid()),
-						'error' => $e->getMessage(),
-					]
-				);
-			}
-		}//end foreach
-
-		$this->logger->info(
+	/**
+	 * Log the counts of a finished pass.
+	 *
+	 * @param ScheduledRenderPassRun $pass       The finished pass.
+	 * @param int                    $candidates How many dashboards the pass looked at.
+	 *
+	 * @return void
+	 */
+	private function logPassComplete(ScheduledRenderPassRun $pass, int $candidates): void {
+		$this->platform->logger->info(
 			message: '[ReportRenderJob] Scheduled-render pass complete',
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,
-				'candidates' => count($candidates),
-				'rendered' => $rendered,
-				'skipped' => $skipped,
+				'candidates' => $candidates,
+				'rendered' => $pass->rendered,
+				'skipped' => $pass->skipped,
 			]
 		);
+	}//end logPassComplete()
 
-	}//end run()
+	/**
+	 * Render and deliver one dashboard when it is due, counting it in the pass.
+	 *
+	 * @param ObjectEntity           $dashboard The dashboard object.
+	 * @param ScheduledRenderPassRun $pass      The pass it is part of.
+	 *
+	 * @return void
+	 */
+	private function renderIfDue(ObjectEntity $dashboard, ScheduledRenderPassRun $pass): void {
+		$payload = $dashboard->getObject() ?? [];
+		$dashboardRun = new DashboardRenderRun(dashboard: $dashboard, payload: $payload);
+		if ($this->shouldRender(run: $dashboardRun, now: $pass->now) === false) {
+			$pass->skipped++;
+			return;
+		}
+
+		try {
+			$this->renderAndDeliver(run: $dashboardRun);
+			$pass->rendered++;
+		} catch (\Throwable $e) {
+			$this->logRenderFailure(run: $dashboardRun, error: $e);
+		}
+	}//end renderIfDue()
+
+	/**
+	 * Log a dashboard whose render or delivery failed.
+	 *
+	 * @param DashboardRenderRun $run   The dashboard and its data.
+	 * @param \Throwable         $error The failure.
+	 *
+	 * @return void
+	 */
+	private function logRenderFailure(DashboardRenderRun $run, \Throwable $error): void {
+		$this->platform->logger->warning(
+			message: '[ReportRenderJob] Render failed for dashboard',
+			context: [
+				'dashboard' => ($run->payload['titel'] ?? $run->dashboard->getUuid()),
+				'error' => $error->getMessage(),
+			]
+		);
+	}//end logRenderFailure()
 
 	/**
 	 * Should the dashboard be rendered now?
@@ -288,36 +302,62 @@ class ReportRenderJob extends TimedJob {
 	 * @return bool
 	 */
 	private function shouldRender(DashboardRenderRun $run, DateTime $now): bool {
-		$schedule = $run->schedule();
-		if (is_array($schedule) === false) {
-			return false;
-		}
-
-		$active = filter_var($schedule['active'] ?? false, FILTER_VALIDATE_BOOLEAN);
-		if ($active === false) {
-			return false;
-		}
-
-		$intervalSec = (int)($schedule['intervalSec'] ?? 0);
+		$intervalSec = self::scheduledIntervalOf(run: $run);
 		if ($intervalSec <= 0) {
 			return false;
 		}
 
-		$lastRendered = ($run->payload['lastRenderedAt'] ?? null);
-		if (is_string($lastRendered) === true && $lastRendered !== '') {
-			try {
-				$last = new DateTime($lastRendered);
-				$diff = ($now->getTimestamp() - $last->getTimestamp());
-				return $diff >= $intervalSec;
-			} catch (\Throwable $e) {
-				// Malformed timestamp — fall through to render.
-				return true;
-			}
+		// Never rendered, or a malformed timestamp → fire now.
+		$last = self::lastRenderedAt(run: $run);
+		if ($last === null) {
+			return true;
 		}
 
-		// Never rendered → fire now.
-		return true;
+		$diff = ($now->getTimestamp() - $last->getTimestamp());
+		return $diff >= $intervalSec;
 	}//end shouldRender()
+
+	/**
+	 * The render interval of an active schedule, in seconds; 0 without an active schedule.
+	 *
+	 * @param DashboardRenderRun $run The dashboard and its data.
+	 *
+	 * @return int
+	 */
+	private static function scheduledIntervalOf(DashboardRenderRun $run): int {
+		$schedule = $run->schedule();
+		if (is_array($schedule) === false) {
+			return 0;
+		}
+
+		$active = filter_var($schedule['active'] ?? false, FILTER_VALIDATE_BOOLEAN);
+		if ($active === false) {
+			return 0;
+		}
+
+		return (int)($schedule['intervalSec'] ?? 0);
+	}//end scheduledIntervalOf()
+
+	/**
+	 * When the dashboard was last rendered; null when never or unreadable.
+	 *
+	 * @param DashboardRenderRun $run The dashboard and its data.
+	 *
+	 * @return DateTime|null
+	 */
+	private static function lastRenderedAt(DashboardRenderRun $run): ?DateTime {
+		$lastRendered = ($run->payload['lastRenderedAt'] ?? null);
+		if (is_string($lastRendered) === false || $lastRendered === '') {
+			return null;
+		}
+
+		try {
+			return new DateTime($lastRendered);
+		} catch (\Throwable $e) {
+			// Malformed timestamp — fall through to render.
+			return null;
+		}
+	}//end lastRenderedAt()
 
 	/**
 	 * Render + deliver a single dashboard.
@@ -333,7 +373,7 @@ class ReportRenderJob extends TimedJob {
 			$format = 'xlsx';
 		}
 
-		$rendered = $this->renderService->render(
+		$rendered = $this->delivery->renderService->render(
 			dashboard: $run->dashboard,
 			format: $format
 		);
@@ -359,58 +399,139 @@ class ReportRenderJob extends TimedJob {
 	 * @return void
 	 */
 	private function writeToFiles(DashboardRenderRun $run, array $rendered): void {
-		$dashboard = $run->dashboard;
-		// SECURITY: refuse to fall back to 'admin' when the dashboard
-		// owner is null. The previous default dropped attacker-controlled
-		// bytes (rendered HTML/PDF derived from a user-writable
-		// ObjectEntity) into admin's Files share, where admin would see
-		// them on next login — a phishing/redirect persistence vector.
-		// Without an owner we have no honest "who runs this job", so
-		// skip delivery and surface the misconfiguration in logs.
-		$owner = $dashboard->getOwner();
-		if ($owner === null || $owner === '') {
-			$this->logger->warning(
-				message: '[ReportRenderJob] Dashboard owner missing — skipping Files delivery',
-				context: ['dashboardUuid' => $dashboard->getUuid()]
-			);
+		$userFolder = $this->ownerHome(run: $run);
+		if ($userFolder === null) {
 			return;
+		}
+
+		$folderPath = $this->safeDeliveryFolder(run: $run);
+		if ($folderPath !== null) {
+			$folder = self::deliveryFolder(userFolder: $userFolder, folderPath: $folderPath);
+			$this->writeRendered(folder: $folder, rendered: $rendered);
+		}
+	}//end writeToFiles()
+
+	/**
+	 * The dashboard owner the files are delivered to, or null (logged) when it is missing.
+	 *
+	 * SECURITY: refuse to fall back to 'admin' when the dashboard
+	 * owner is null. The previous default dropped attacker-controlled
+	 * bytes (rendered HTML/PDF derived from a user-writable
+	 * ObjectEntity) into admin's Files share, where admin would see
+	 * them on next login — a phishing/redirect persistence vector.
+	 * Without an owner we have no honest "who runs this job", so
+	 * skip delivery and surface the misconfiguration in logs.
+	 *
+	 * @param DashboardRenderRun $run The dashboard and its data.
+	 *
+	 * @return string|null
+	 */
+	private function deliveryOwner(DashboardRenderRun $run): ?string {
+		$owner = $run->dashboard->getOwner();
+		if ($owner === null || $owner === '') {
+			$this->platform->logger->warning(
+				message: '[ReportRenderJob] Dashboard owner missing — skipping Files delivery',
+				context: ['dashboardUuid' => $run->dashboard->getUuid()]
+			);
+			return null;
+		}
+
+		return $owner;
+	}//end deliveryOwner()
+
+	/**
+	 * The dashboard owner's home folder, or null (logged) when the owner is
+	 * missing or their home is unavailable.
+	 *
+	 * @param DashboardRenderRun $run The dashboard and its data.
+	 *
+	 * @return Folder|null
+	 */
+	private function ownerHome(DashboardRenderRun $run): ?Folder {
+		$owner = $this->deliveryOwner(run: $run);
+		if ($owner === null) {
+			return null;
 		}
 
 		try {
-			$userFolder = $this->rootFolder->getUserFolder(userId: $owner);
+			return $this->delivery->rootFolder->getUserFolder(userId: $owner);
 		} catch (NotFoundException $e) {
-			$this->logger->warning(
+			$this->platform->logger->warning(
 				message: '[ReportRenderJob] User folder unavailable, skipping delivery',
 				context: ['owner' => $owner, 'error' => $e->getMessage()]
 			);
-			return;
+			return null;
+		}
+	}//end ownerHome()
+
+	/**
+	 * The delivery folder relative to the owner's home, or null (logged) when it is unsafe.
+	 *
+	 * SECURITY: $delivery['filesFolder'] comes from the dashboard
+	 * payload (user-controlled JSON). Restrict to a relative path
+	 * under the owner's home — strip leading slashes and reject any
+	 * segment that escapes the home root (`..`) or addresses an
+	 * absolute filesystem path.
+	 *
+	 * @param DashboardRenderRun $run The dashboard, its data and delivery descriptor.
+	 *
+	 * @return string|null
+	 */
+	private function safeDeliveryFolder(DashboardRenderRun $run): ?string {
+		$folderPath = ltrim($this->deliveryFolderPath(run: $run), '/');
+		if ($folderPath === '' || str_contains($folderPath, '..') === true) {
+			$this->platform->logger->warning(
+				message: '[ReportRenderJob] Rejected delivery folder containing path traversal',
+				context: ['folder' => $folderPath, 'owner' => $run->dashboard->getOwner()]
+			);
+			return null;
 		}
 
+		return $folderPath;
+	}//end safeDeliveryFolder()
+
+	/**
+	 * The configured delivery folder, or `Reports/<dashboard-slug>` when none is set.
+	 *
+	 * @param DashboardRenderRun $run The dashboard, its data and delivery descriptor.
+	 *
+	 * @return string
+	 */
+	private function deliveryFolderPath(DashboardRenderRun $run): string {
 		$folderPath = (string)($run->delivery()['filesFolder'] ?? '');
 		if ($folderPath === '') {
 			$slug = $this->slugify(value: (string)($run->payload['titel'] ?? 'dashboard'));
 			$folderPath = sprintf('Reports/%s', $slug);
 		}
 
-		// SECURITY: $delivery['filesFolder'] comes from the dashboard
-		// payload (user-controlled JSON). Restrict to a relative path
-		// under the owner's home — strip leading slashes and reject any
-		// segment that escapes the home root (`..`) or addresses an
-		// absolute filesystem path.
-		$folderPath = ltrim($folderPath, '/');
-		if ($folderPath === '' || str_contains($folderPath, '..') === true) {
-			$this->logger->warning(
-				message: '[ReportRenderJob] Rejected delivery folder containing path traversal',
-				context: ['folder' => $folderPath, 'owner' => $owner]
-			);
-			return;
-		}
+		return $folderPath;
+	}//end deliveryFolderPath()
 
+	/**
+	 * The delivery folder under the owner's home, created when it does not exist.
+	 *
+	 * @param Folder $userFolder The owner's home folder.
+	 * @param string $folderPath The delivery folder, relative to the home.
+	 *
+	 * @return Node
+	 */
+	private static function deliveryFolder(Folder $userFolder, string $folderPath): Node {
 		if ($userFolder->nodeExists(path: $folderPath) === false) {
 			$userFolder->newFolder(path: $folderPath);
 		}
 
-		$folder = $userFolder->get(path: $folderPath);
+		return $userFolder->get(path: $folderPath);
+	}//end deliveryFolder()
+
+	/**
+	 * Write the rendered bytes into the delivery folder, overwriting an existing file.
+	 *
+	 * @param Node                 $folder   The delivery folder.
+	 * @param array<string, mixed> $rendered ReportRenderService::render output.
+	 *
+	 * @return void
+	 */
+	private function writeRendered(Node $folder, array $rendered): void {
 		$filename = (string)$rendered['filename'];
 		if ($folder->nodeExists(path: $filename) === true) {
 			$existing = $folder->get(path: $filename);
@@ -419,8 +540,7 @@ class ReportRenderJob extends TimedJob {
 		}
 
 		$folder->newFile(path: $filename, content: (string)$rendered['bytes']);
-
-	}//end writeToFiles()
+	}//end writeRendered()
 
 	/**
 	 * Resolve the `reports` register.
@@ -428,7 +548,7 @@ class ReportRenderJob extends TimedJob {
 	 * @return Register
 	 */
 	private function loadReportsRegister(): Register {
-		return $this->registerMapper->find(
+		return $this->sources->registerMapper->find(
 			self::REPORTS_REGISTER_SLUG,
 			_rbac: false,
 			_multitenancy: false
@@ -472,14 +592,14 @@ class ReportRenderJob extends TimedJob {
 	 * @psalm-return list<ObjectEntity>
 	 */
 	private function loadDashboards(Register $register): array {
-		$schemas = $this->schemaMapper->findMultiple(
+		$schemas = $this->sources->schemaMapper->findMultiple(
 			ids: $register->getSchemas(),
 			_rbac: false,
 			_multitenancy: false
 		);
 
 		if (empty($schemas) === true) {
-			$this->logger->warning(
+			$this->platform->logger->warning(
 				message: '[ReportRenderJob] Reports register has no resolvable schemas',
 				context: [
 					'file' => __FILE__,
@@ -495,18 +615,16 @@ class ReportRenderJob extends TimedJob {
 		foreach ($schemas as $schema) {
 			try {
 				$found = $this->objectMapper->findAllInRegisterSchemaTable(
-					register: $register,
-					schema: $schema,
-					limit: self::DASHBOARD_SCAN_LIMIT,
-					offset: 0,
-					filters: [
+					table: new RegisterSchema(register: $register, schema: $schema),
+					listing: new ListQuery(
+						limit: self::DASHBOARD_SCAN_LIMIT,
+						offset: 0,
 						// Reserved query params — see the class docblock.
-						'_rbac' => false,
-						'_multitenancy' => false,
-					]
+						filters: ['_rbac' => false, '_multitenancy' => false]
+					)
 				);
 			} catch (\Throwable $e) {
-				$this->logger->warning(
+				$this->platform->logger->warning(
 					message: '[ReportRenderJob] Failed to enumerate dashboards for schema',
 					context: [
 						'registerId' => $register->getId(),

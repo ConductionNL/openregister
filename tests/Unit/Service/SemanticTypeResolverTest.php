@@ -371,7 +371,7 @@ class SemanticTypeResolverTest extends TestCase {
 			appManager: $appManager
 		);
 
-		$this->assertNotNull($resolver->resolveSchemaByImplements(uri: self::ORG_URI));
+		$this->assertSame($payee, $resolver->resolveSchemaByImplements(uri: self::ORG_URI));
 
 	}//end testCoreOpenregisterAppNotFilteredOut()
 

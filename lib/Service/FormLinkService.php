@@ -216,10 +216,8 @@ class FormLinkService implements FormLinkServiceInterface {
 	 * `(objectUuid, formId)` pair, the existing row is returned (no
 	 * duplicate is inserted, no exception is raised).
 	 *
-	 * @param string $objectUuid The OR object UUID.
-	 * @param integer $registerId The OR register id.
-	 * @param integer $formId The NC Forms form id.
-	 * @param integer $schemaId Optional OR schema id.
+	 * @param FormLinkScope $scope  The object, register and schema.
+	 * @param integer       $formId The NC Forms form id.
 	 *
 	 * @return FormLink The created (or existing) link row.
 	 *
@@ -227,27 +225,7 @@ class FormLinkService implements FormLinkServiceInterface {
 	 *
 	 * @spec exclude ADR-019 Tier-2 integration link-service facade; the form-link contract is owned by the integration-forms capability.
 	 */
-	public function linkForm(
-		string $objectUuid,
-		int $registerId,
-		int $formId,
-		?int $schemaId = null,
-	): FormLink {
-		$scope = (new FormLinkScope(objectUuid: $objectUuid, registerId: $registerId))->inSchema(schemaId: $schemaId);
-		return $this->linkFormTo(scope: $scope, formId: $formId);
-	}//end linkForm()
-
-	/**
-	 * Link a form to the scope's object, returning the existing form-level link when there is one.
-	 *
-	 * @param FormLinkScope $scope  The object, register and schema.
-	 * @param integer       $formId The NC Forms form id.
-	 *
-	 * @return FormLink The created (or existing) link row.
-	 *
-	 * @throws Exception If no user is logged in.
-	 */
-	private function linkFormTo(FormLinkScope $scope, int $formId): FormLink {
+	public function linkFormTo(FormLinkScope $scope, int $formId): FormLink {
 		$uid = $this->requireUid();
 
 		$existing = $this->formLinkMapper->findFormLink($scope->objectUuid, $formId);
@@ -261,27 +239,7 @@ class FormLinkService implements FormLinkServiceInterface {
 	}//end linkFormTo()
 
 	/**
-	 * Link a specific NC Forms submission to an OR object.
-	 *
-	 * @param string $objectUuid The OR object UUID.
-	 * @param integer $registerId The OR register id.
-	 * @param integer $formId The parent form id.
-	 * @param integer $submissionId The submission id.
-	 * @param integer $schemaId Optional OR schema id.
-	 *
-	 * @return FormLink The created (or existing) link row.
-	 *
-	 * @throws Exception If no user is logged in.
-	 *
-	 * @spec exclude ADR-019 Tier-2 integration link-service facade; the submission-link contract is owned by the integration-forms capability.
-	 */
-	public function linkFormSubmission(string $objectUuid, int $registerId, int $formId, int $submissionId, ?int $schemaId = null): FormLink {
-		$scope = (new FormLinkScope(objectUuid: $objectUuid, registerId: $registerId))->inSchema(schemaId: $schemaId);
-		return $this->linkSubmissionTo(scope: $scope, submission: new FormSubmissionRef(formId: $formId, submissionId: $submissionId));
-	}//end linkFormSubmission()
-
-	/**
-	 * Link a submission to the scope's object, returning the existing submission link when there is one.
+	 * Link a specific NC Forms submission to an OR object, returning the existing submission link when there is one.
 	 *
 	 * @param FormLinkScope     $scope      The object, register and schema.
 	 * @param FormSubmissionRef $submission The form and submission ids.
@@ -289,8 +247,10 @@ class FormLinkService implements FormLinkServiceInterface {
 	 * @return FormLink The created (or existing) link row.
 	 *
 	 * @throws Exception If no user is logged in.
+	 *
+	 * @spec exclude ADR-019 Tier-2 integration link-service facade; the submission-link contract is owned by the integration-forms capability.
 	 */
-	private function linkSubmissionTo(FormLinkScope $scope, FormSubmissionRef $submission): FormLink {
+	public function linkSubmissionTo(FormLinkScope $scope, FormSubmissionRef $submission): FormLink {
 		$uid = $this->requireUid();
 
 		$existing = $this->formLinkMapper->findSubmissionLink(objectUuid: $scope->objectUuid, submission: $submission);
@@ -361,27 +321,14 @@ class FormLinkService implements FormLinkServiceInterface {
 	 *
 	 * Form-level row (if any) is left untouched.
 	 *
-	 * @param string $objectUuid The OR object UUID.
-	 * @param integer $formId The parent form id.
-	 * @param integer $submissionId The submission id.
+	 * @param string            $objectUuid The OR object UUID.
+	 * @param FormSubmissionRef $submission The parent form and the submission ids.
 	 *
 	 * @return boolean True when a row was removed, false when none existed.
 	 *
 	 * @spec exclude ADR-019 Tier-2 integration link-service facade; the unlink-submission contract is owned by the integration-forms capability.
 	 */
-	public function unlinkSubmission(string $objectUuid, int $formId, int $submissionId): bool {
-		return $this->unlinkSubmissionRef(objectUuid: $objectUuid, submission: new FormSubmissionRef(formId: $formId, submissionId: $submissionId));
-	}//end unlinkSubmission()
-
-	/**
-	 * Remove the link of one submission from an object, when there is one.
-	 *
-	 * @param string            $objectUuid The OR object UUID.
-	 * @param FormSubmissionRef $submission The form and submission ids.
-	 *
-	 * @return boolean True when a row was removed, false when none existed.
-	 */
-	private function unlinkSubmissionRef(string $objectUuid, FormSubmissionRef $submission): bool {
+	public function unlinkSubmission(string $objectUuid, FormSubmissionRef $submission): bool {
 		$link = $this->formLinkMapper->findSubmissionLink(objectUuid: $objectUuid, submission: $submission);
 		if ($link === null) {
 			return false;
@@ -389,7 +336,7 @@ class FormLinkService implements FormLinkServiceInterface {
 
 		$this->formLinkMapper->delete($link);
 		return true;
-	}//end unlinkSubmissionRef()
+	}//end unlinkSubmission()
 
 	/**
 	 * Create a new NC Forms form via the FormMapper and immediately
@@ -405,11 +352,8 @@ class FormLinkService implements FormLinkServiceInterface {
 	 * `FormMapper` not on the classpath), an exception is thrown so
 	 * the caller can return a clean 503/501.
 	 *
-	 * @param string $objectUuid The OR object UUID.
-	 * @param integer $registerId The OR register id.
-	 * @param string $title Initial form title.
-	 * @param string $description Initial form description.
-	 * @param integer $schemaId Optional OR schema id.
+	 * @param FormLinkScope $scope The object, register and schema.
+	 * @param NewForm       $form  The initial title and description.
 	 *
 	 * @return FormLink The link row pointing at the freshly-created form.
 	 *
@@ -417,36 +361,16 @@ class FormLinkService implements FormLinkServiceInterface {
 	 *
 	 * @spec exclude ADR-019 Tier-2 integration link-service facade; the create-and-link contract is owned by the integration-forms capability.
 	 */
-	public function createAndLinkForm(
-		string $objectUuid,
-		int $registerId,
-		string $title,
-		string $description = '',
-		?int $schemaId = null,
-	): FormLink {
-		$scope = (new FormLinkScope(objectUuid: $objectUuid, registerId: $registerId))->inSchema(schemaId: $schemaId);
-		return $this->createAndLinkTo(scope: $scope, form: ['title' => $title, 'description' => $description]);
-	}//end createAndLinkForm()
-
-	/**
-	 * Create a new NC Forms form owned by the current user and link it to the scope's object.
-	 *
-	 * @param FormLinkScope                            $scope The object, register and schema.
-	 * @param array{title:string, description:string} $form  The initial title and description.
-	 *
-	 * @return FormLink The link row pointing at the freshly-created form.
-	 *
-	 * @throws Exception When no user is logged in, the Forms app is missing or the create fails.
-	 */
-	private function createAndLinkTo(FormLinkScope $scope, array $form): FormLink {
+	public function createAndLinkForm(FormLinkScope $scope, NewForm $form): FormLink {
 		$uid      = $this->requireUid();
 		$services = $this->resolveFormsServices();
 		// Mirror NC Forms' own ApiController::newForm shape.
-		$entity = $this->draftForm(services: $services, fields: ['ownerId' => $uid] + $form);
+		$fields = ['ownerId' => $uid, 'title' => $form->title, 'description' => $form->description];
+		$entity = $this->draftForm(services: $services, fields: $fields);
 		$services['mapper']->insert($entity);
 
 		return $this->linkFormTo(scope: $scope, formId: (int)$entity->getId());
-	}//end createAndLinkTo()
+	}//end createAndLinkForm()
 
 	/**
 	 * NC Forms' FormMapper and FormsService plus a new Form entity, or an exception when Forms cannot be reached.
@@ -635,9 +559,9 @@ class FormLinkService implements FormLinkServiceInterface {
 			'hash' => (string)($row['hash'] ?? ''),
 			'title' => (string)($row['title'] ?? ''),
 			'description' => (string)($row['description'] ?? ''),
-			'status' => $this->stateToStatus(state: (int)($row['state'] ?? 0), expires: $expires),
+			'status' => FormsAppRows::status(state: (int)($row['state'] ?? 0), expires: $expires),
 			'expiresAt' => $this->atomExpiry(expires: $expires),
-			'submissionCount' => $this->countSubmissions(formId: $formId),
+			'submissionCount' => FormsAppRows::submissionCount(db: $this->db, formId: $formId),
 			'linked' => isset($linkedSet[$formId]),
 		];
 	}//end pickerRow()
@@ -719,67 +643,8 @@ class FormLinkService implements FormLinkServiceInterface {
 		return [
 			'title' => (string)($row['title'] ?? ''),
 			'hash' => (string)($row['hash'] ?? ''),
-			'status' => $this->stateToStatus(state: (int)($row['state'] ?? 0), expires: $expires),
+			'status' => FormsAppRows::status(state: (int)($row['state'] ?? 0), expires: $expires),
 			'expiresAt' => $expiresAt,
 		];
 	}//end metadataFromRow()
-
-	/**
-	 * Map NC Forms' numeric `state` column + expiry timestamp onto
-	 * the canonical `open` / `closed` / `draft` / `archived` strings
-	 * used by the registry leaf row contract.
-	 *
-	 * NC Forms `state` values:
-	 *   0 -> active (open)
-	 *   1 -> archived (closed)
-	 *   2 -> draft
-	 *
-	 * `expires > now()` also forces `closed`.
-	 *
-	 * @param integer $state NC Forms `state` column.
-	 * @param integer $expires NC Forms `expires` epoch (0 = no expiry).
-	 *
-	 * @return string Canonical status.
-	 */
-	private function stateToStatus(int $state, int $expires): string {
-		if ($state === 1) {
-			return 'archived';
-		}
-
-		if ($state === 2) {
-			return 'draft';
-		}
-
-		if ($expires > 0 && $expires <= time()) {
-			return 'closed';
-		}
-
-		return 'open';
-	}//end stateToStatus()
-
-	/**
-	 * Best-effort submission count for a given form id. Used by the
-	 * available-forms picker so the row can show "12 submissions".
-	 *
-	 * Defensive: returns 0 when the query fails.
-	 *
-	 * @param integer $formId The NC Forms form id.
-	 *
-	 * @return integer
-	 */
-	private function countSubmissions(int $formId): int {
-		try {
-			$qb = $this->db->getQueryBuilder();
-			$qb->select($qb->createFunction('COUNT(*)'))
-				->from('forms_v2_submissions')
-				->where($qb->expr()->eq('form_id', $qb->createNamedParameter($formId)));
-			$result = $qb->executeQuery();
-			$count = (int)$result->fetchOne();
-			$result->closeCursor();
-			return $count;
-		} catch (Throwable $e) {
-			return 0;
-		}
-
-	}//end countSubmissions()
 }//end class

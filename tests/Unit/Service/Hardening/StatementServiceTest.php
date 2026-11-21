@@ -35,7 +35,9 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Hardening;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Service\Hardening\HardeningAuditWriter;
+use OCA\OpenRegister\Service\Hardening\HardeningFact;
 use OCA\OpenRegister\Service\Hardening\PlatformConfiguration;
+use OCA\OpenRegister\Service\Hardening\StatementPublication;
 use OCA\OpenRegister\Service\Hardening\StatementService;
 use OCP\App\IAppManager;
 use OCP\IAppConfig;
@@ -45,6 +47,9 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\Hardening\StatementService
+ * @uses \OCA\OpenRegister\Service\Hardening\HardeningFact
+ * @uses \OCA\OpenRegister\Service\Hardening\PlatformConfiguration
+ * @uses \OCA\OpenRegister\Service\Hardening\StatementPublication
  */
 class StatementServiceTest extends TestCase {
 
@@ -101,13 +106,13 @@ class StatementServiceTest extends TestCase {
 	}
 
 	public function testAPublishedStatementIsAskedOfAUserWhoAcceptedNothing(): void {
-		$this->service->publish(version: '2', body: 'How we process your data', title: 'Verwerking', userId: 'admin');
+		$this->service->publish(new StatementPublication(version: '2', body: 'How we process your data', title: 'Verwerking', publishedBy: 'admin'));
 
 		$this->assertTrue($this->service->needsAcceptance(userId: 'medewerker'));
 	}
 
 	public function testAnAcceptanceRecordsTheUserTheVersionAndTheTime(): void {
-		$this->service->publish(version: '2', body: 'text', userId: 'admin');
+		$this->service->publish(new StatementPublication(version: '2', body: 'text', publishedBy: 'admin'));
 
 		$acceptance = $this->service->accept(userId: 'medewerker', version: '2');
 
@@ -120,10 +125,10 @@ class StatementServiceTest extends TestCase {
 	// ---- Task 1.3: a new version asks everybody again. ---------------------
 
 	public function testANewVersionAsksAUserWhoAcceptedTheOldOne(): void {
-		$this->service->publish(version: '2', body: 'text', userId: 'admin');
+		$this->service->publish(new StatementPublication(version: '2', body: 'text', publishedBy: 'admin'));
 		$this->service->accept(userId: 'medewerker', version: '2');
 
-		$this->service->publish(version: '3', body: 'text, revised', userId: 'admin');
+		$this->service->publish(new StatementPublication(version: '3', body: 'text, revised', publishedBy: 'admin'));
 
 		$this->assertTrue(
 			$this->service->needsAcceptance(userId: 'medewerker'),
@@ -137,8 +142,8 @@ class StatementServiceTest extends TestCase {
 	 * was never shown.
 	 */
 	public function testAcceptingAVersionThatIsNoLongerInForceIsRefusedAndAudited(): void {
-		$this->service->publish(version: '2', body: 'text', userId: 'admin');
-		$this->service->publish(version: '3', body: 'text, revised', userId: 'admin');
+		$this->service->publish(new StatementPublication(version: '2', body: 'text', publishedBy: 'admin'));
+		$this->service->publish(new StatementPublication(version: '3', body: 'text, revised', publishedBy: 'admin'));
 
 		$this->audit->expects($this->atLeastOnce())->method('refused');
 		$this->expectException(InvalidArgumentException::class);
@@ -147,7 +152,7 @@ class StatementServiceTest extends TestCase {
 	}
 
 	public function testAWithdrawnStatementAsksNothing(): void {
-		$this->service->publish(version: '2', body: 'text', userId: 'admin');
+		$this->service->publish(new StatementPublication(version: '2', body: 'text', publishedBy: 'admin'));
 		$this->service->withdraw();
 
 		$this->assertNull($this->service->published());
@@ -158,7 +163,7 @@ class StatementServiceTest extends TestCase {
 
 	public function testAStatementWithoutAVersionOrABodyIsNotPublished(): void {
 		$this->expectException(InvalidArgumentException::class);
-		$this->service->publish(version: '', body: 'text', userId: 'admin');
+		$this->service->publish(new StatementPublication(version: '', body: 'text', publishedBy: 'admin'));
 	}
 
 	public function testAStoredStatementThatCannotBeDecodedReadsAsNoStatement(): void {
@@ -168,7 +173,7 @@ class StatementServiceTest extends TestCase {
 	}
 
 	public function testAnAnonymousCallerIsNeverAskedAndCannotAccept(): void {
-		$this->service->publish(version: '2', body: 'text', userId: 'admin');
+		$this->service->publish(new StatementPublication(version: '2', body: 'text', publishedBy: 'admin'));
 
 		$this->assertFalse($this->service->needsAcceptance(userId: ''));
 
@@ -179,7 +184,7 @@ class StatementServiceTest extends TestCase {
 	// ---- Characterisation of publish(), pinned before it took an operation object. ----
 
 	public function testPublishTrimsTheTextAndReturnsTheStatementItStored(): void {
-		$statement = $this->service->publish(version: ' 4 ', body: ' The text ', title: ' Heading ', userId: 'admin');
+		$statement = $this->service->publish(new StatementPublication(version: ' 4 ', body: ' The text ', title: ' Heading ', publishedBy: 'admin'));
 
 		$this->assertSame(['version', 'title', 'body', 'publishedAt', 'publishedBy'], array_keys($statement));
 		$this->assertSame(['4', 'Heading', 'The text', 'admin'], [$statement['version'], $statement['title'], $statement['body'], $statement['publishedBy']]);
@@ -191,7 +196,7 @@ class StatementServiceTest extends TestCase {
 		$this->audit->expects($this->never())->method('accepted');
 
 		try {
-			$this->service->publish(version: '4', body: '   ', userId: 'admin');
+			$this->service->publish(new StatementPublication(version: '4', body: '   ', publishedBy: 'admin'));
 			$this->fail('A statement without a body was published.');
 		} catch (InvalidArgumentException $refusal) {
 			$this->assertStringContainsString('text a user is asked to accept', $refusal->getMessage());
@@ -202,19 +207,19 @@ class StatementServiceTest extends TestCase {
 
 	public function testAStatementWithoutAVersionIsRefusedBeforeTheBodyIsChecked(): void {
 		$this->expectExceptionMessage('carries a version');
-		$this->service->publish(version: ' ', body: '');
+		$this->service->publish(new StatementPublication(version: ' ', body: ''));
 	}
 
 	public function testPublishingAuditsTheVersionItReplaces(): void {
 		$facts = [];
 		$this->audit->method('accepted')->willReturnCallback(
-			function (string $fact, $before, $after) use (&$facts): void {
-				$facts[] = [$fact, $before, $after];
+			function (HardeningFact $change) use (&$facts): void {
+				$facts[] = [$change->fact, $change->before, $change->after];
 			}
 		);
 
-		$this->service->publish(version: '2', body: 'text', userId: 'admin');
-		$this->service->publish(version: '3', body: 'text, revised');
+		$this->service->publish(new StatementPublication(version: '2', body: 'text', publishedBy: 'admin'));
+		$this->service->publish(new StatementPublication(version: '3', body: 'text, revised'));
 
 		$this->assertSame([['statement.published', '', '2'], ['statement.published', '2', '3']], $facts);
 		$this->assertSame('', $this->service->published()['publishedBy']);
