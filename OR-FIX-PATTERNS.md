@@ -311,3 +311,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: merge with main reports no conflict in a controller, but php -l fails 'Cannot use ... because the name is already in use' or 'Cannot redeclare ...::$logger'; tests error on load.
 - Cause: main and the PR each added the same dependency (e.g. a logger) through different bundles (main: AuditTrailLog->logger, PR: AuditTrailControllerServices->logger); git merges both property blocks and both assignments.
 - Fix: php -l every PR-touched lib file after the merge; keep main's wiring (required, non-null), drop the PR's duplicate property, import, assignment and bundle param, and the factory arg in tests. HandlesExceptionsTrait reads any $logger property. See #10553.
+
+## Migration added without an info.xml version move (or-fix-18)
+- Symptom: php scripts/check-migration-version-bump.php --base=origin/main exits 1 ('adds N migration(s) but does not move the app version'); no unit test catches it.
+- Cause: build PRs add a lib/Migration/Version*.php and leave appinfo/info.xml <version> at main's value, so occ upgrade would never run the step.
+- Fix: after merging main, bump <version> one step past main's (e.g. 2.2.0-dev.3 -> 2.2.0-dev.4) in its own commit, rerun the check (see #10398, #10518). Two PRs bumping to the same value conflict on info.xml later: take the higher and bump once more.
