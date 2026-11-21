@@ -109,6 +109,10 @@ use OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest;
  * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
  * @uses \OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest
  * @uses \OCA\OpenRegister\Service\WritePhase
+ * @uses   \OCA\OpenRegister\Controller\Support\WriteFailureAnswer
+ * @uses   \OCA\OpenRegister\Exception\DatabaseErrorChain
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions
  */
 class ObjectsControllerUpdateGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/objects-update-golden.json';

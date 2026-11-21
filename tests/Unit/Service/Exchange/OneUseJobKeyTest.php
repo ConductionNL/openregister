@@ -57,6 +57,7 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
  * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
  * @uses   \OCA\OpenRegister\Service\WriteCause
+ * @uses   \OCA\OpenRegister\Service\CauseFrame
  */
 class OneUseJobKeyTest extends TestCase {
 
