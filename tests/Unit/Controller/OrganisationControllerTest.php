@@ -2278,4 +2278,30 @@ class OrganisationControllerTest extends TestCase {
 		$this->assertSame(Http::STATUS_CONFLICT, $result->getStatus());
 		$this->assertSame('retained', $org->getStatus());
 	}
+
+	/**
+	 * A lifecycle action answers an exception's code when it is an HTTP error, else 500.
+	 *
+	 * @return array<string, array{0: string, 1: int, 2: int}>
+	 */
+	public static function lifecycleFailures(): array {
+		return [
+			'deprovision, coded' => ['deprovision', 404, 404],
+			'deprovision, uncoded' => ['deprovision', 0, 500],
+			'retain, uncoded' => ['retain', 7, 500],
+			'activate, coded' => ['activate', 409, 409],
+		];
+	}
+
+	/**
+	 * @dataProvider lifecycleFailures
+	 */
+	public function testLifecycleFailureAnswersTheErrorWithItsStatus(string $action, int $code, int $status): void {
+		$this->organisationMapper->method('findByUuid')->willThrowException(new \Exception('no such organisation', $code));
+
+		$result = $this->controller->$action('org-1');
+
+		$this->assertSame($status, $result->getStatus());
+		$this->assertSame(['error' => 'no such organisation'], $result->getData());
+	}
 }
