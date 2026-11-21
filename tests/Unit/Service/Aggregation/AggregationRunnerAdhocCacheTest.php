@@ -33,6 +33,10 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
+use OCA\OpenRegister\Service\Aggregation\AggregationAccess;
+use OCA\OpenRegister\Service\Aggregation\AggregationCaller;
+use OCA\OpenRegister\Service\Aggregation\AggregationPresentation;
+use OCA\OpenRegister\Service\Aggregation\AggregationSources;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
@@ -105,16 +109,24 @@ class AggregationRunnerAdhocCacheTest extends TestCase {
 		$this->magicMapper->method('findAllInRegisterSchemaTable')->willReturn([]);
 
 		$this->runner = new AggregationRunner(
-			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->magicMapper),
-			placeholders: $this->placeholderResolver,
-			db: $this->db,
-			cache: $this->cache,
-			permissionHandler: $this->permissionHandler,
-			userSession: $this->userSession,
-			organisationService: $this->organisationService,
-			organizationHandler: $this->orgHandlerScopedTo('__no_active_org__'),
-			translationHandler: $this->translationHandler,
-			languageService: $this->languageService,
+			sources: new AggregationSources(
+				catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->magicMapper),
+				db: $this->db,
+				cache: $this->cache
+			),
+			access: new AggregationAccess(
+				permissionHandler: $this->permissionHandler,
+				organizationHandler: $this->orgHandlerScopedTo('__no_active_org__')
+			),
+			caller: new AggregationCaller(
+				userSession: $this->userSession,
+				organisationService: $this->organisationService,
+				placeholders: $this->placeholderResolver
+			),
+			presentation: new AggregationPresentation(
+				translationHandler: $this->translationHandler,
+				languageService: $this->languageService
+			)
 		);
 
 	}//end setUp()
@@ -230,16 +242,24 @@ class AggregationRunnerAdhocCacheTest extends TestCase {
 		);
 
 		$runner = new AggregationRunner(
-			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->magicMapper),
-			placeholders: $this->placeholderResolver,
-			db: $this->db,
-			cache: $this->cache,
-			permissionHandler: $this->permissionHandler,
-			userSession: $this->userSession,
-			organisationService: $this->organisationService,
-			organizationHandler: $this->orgHandlerScopedTo('__no_active_org__'),
-			translationHandler: $translationHandler,
-			languageService: $languageService,
+			sources: new AggregationSources(
+				catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->magicMapper),
+				db: $this->db,
+				cache: $this->cache
+			),
+			access: new AggregationAccess(
+				permissionHandler: $this->permissionHandler,
+				organizationHandler: $this->orgHandlerScopedTo('__no_active_org__')
+			),
+			caller: new AggregationCaller(
+				userSession: $this->userSession,
+				organisationService: $this->organisationService,
+				placeholders: $this->placeholderResolver
+			),
+			presentation: new AggregationPresentation(
+				translationHandler: $translationHandler,
+				languageService: $languageService
+			)
 		);
 
 		// Group keys come back raw from the DB: native SQL as a JSON string,
