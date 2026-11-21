@@ -24,6 +24,13 @@ use stdClass;
  * @covers \OCA\OpenRegister\Service\Flow\FlowTriggerService
  * @uses \OCA\OpenRegister\Db\FlowRun
  * @uses \OCA\OpenRegister\Service\Flow\FlowItems
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
+ * @uses \OCA\OpenRegister\Service\Flow\FlowExecution
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunOrigin
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunPass
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunQueueOptions
+ * @uses \OCA\OpenRegister\Service\Flow\FlowTrigger
  */
 class FlowTriggerExecutionModeTest extends TestCase {
 
@@ -62,7 +69,7 @@ class FlowTriggerExecutionModeTest extends TestCase {
 		);
 
 		$this->resolvers->method('flowsForEvent')->willReturn(['flow-1']);
-		$this->runs->method('queue')->willReturn(new FlowRun());
+		$this->runs->method('queueRun')->willReturn(new FlowRun());
 		$this->resolvers->method('resolveObject')->willReturn(new stdClass());
 
 	}//end setUp()
@@ -74,7 +81,7 @@ class FlowTriggerExecutionModeTest extends TestCase {
 	 */
 	public function testAFlowWithoutAModeIsOnlyQueued(): void {
 		$this->resolvers->method('resolveFlow')->willReturn(['id' => 'flow-1', 'edges' => []]);
-		$this->runs->expects($this->never())->method('execute');
+		$this->runs->expects($this->never())->method('executePass');
 
 		$this->assertSame(1, $this->service->fire('object.created', ['uuid' => 'u-1']));
 
@@ -87,7 +94,7 @@ class FlowTriggerExecutionModeTest extends TestCase {
 	 */
 	public function testAnAsyncFlowIsOnlyQueued(): void {
 		$this->resolvers->method('resolveFlow')->willReturn(['id' => 'flow-1', 'executionMode' => 'async']);
-		$this->runs->expects($this->never())->method('execute');
+		$this->runs->expects($this->never())->method('executePass');
 
 		$this->service->fire('object.created', ['uuid' => 'u-1']);
 
@@ -100,7 +107,7 @@ class FlowTriggerExecutionModeTest extends TestCase {
 	 */
 	public function testAnInvalidModeFallsBackToQueueing(): void {
 		$this->resolvers->method('resolveFlow')->willReturn(['id' => 'flow-1', 'executionMode' => 'immediately']);
-		$this->runs->expects($this->never())->method('execute');
+		$this->runs->expects($this->never())->method('executePass');
 
 		$this->service->fire('object.created', ['uuid' => 'u-1']);
 
@@ -113,7 +120,7 @@ class FlowTriggerExecutionModeTest extends TestCase {
 	 */
 	public function testASyncFlowIsExecutedInline(): void {
 		$this->resolvers->method('resolveFlow')->willReturn(['id' => 'flow-1', 'executionMode' => 'sync']);
-		$this->runs->expects($this->once())->method('execute')->willReturn(new FlowRun());
+		$this->runs->expects($this->once())->method('executePass')->willReturn(new FlowRun());
 
 		$this->assertSame(1, $this->service->fire('object.created', ['uuid' => 'u-1']));
 
@@ -126,7 +133,7 @@ class FlowTriggerExecutionModeTest extends TestCase {
 	 */
 	public function testTheModeIsCaseInsensitive(): void {
 		$this->resolvers->method('resolveFlow')->willReturn(['id' => 'flow-1', 'executionMode' => ' SYNC ']);
-		$this->runs->expects($this->once())->method('execute')->willReturn(new FlowRun());
+		$this->runs->expects($this->once())->method('executePass')->willReturn(new FlowRun());
 
 		$this->service->fire('object.created', ['uuid' => 'u-1']);
 
@@ -147,7 +154,7 @@ class FlowTriggerExecutionModeTest extends TestCase {
 	 */
 	public function testAThrowingSyncFlowDoesNotEscapeTheTrigger(): void {
 		$this->resolvers->method('resolveFlow')->willReturn(['id' => 'flow-1', 'executionMode' => 'sync']);
-		$this->runs->method('execute')->willThrowException(new RuntimeException('step blew up'));
+		$this->runs->method('executePass')->willThrowException(new RuntimeException('step blew up'));
 
 		// Swallowed; the queued run is still counted, because it still runs.
 		$this->assertSame(1, $this->service->fire('object.created', ['uuid' => 'u-1']));
@@ -161,7 +168,7 @@ class FlowTriggerExecutionModeTest extends TestCase {
 	 */
 	public function testAnUnresolvableFlowIsLeftForTheWorker(): void {
 		$this->resolvers->method('resolveFlow')->willReturn(null);
-		$this->runs->expects($this->never())->method('execute');
+		$this->runs->expects($this->never())->method('executePass');
 
 		$this->assertSame(1, $this->service->fire('object.created', ['uuid' => 'u-1']));
 

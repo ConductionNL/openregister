@@ -82,9 +82,7 @@ class RenderObjectPropertyReadCopiesTest extends TestCase {
 		return new RenderObject(
 			stores: new \OCA\OpenRegister\Service\Object\RenderStores(
 				mappers: new \OCA\OpenRegister\Service\Object\RenderMappers(
-					objectEntityMapper: $this->createMock(\OCA\OpenRegister\Db\MagicMapper::class),
-					registerMapper: $this->createMock(\OCA\OpenRegister\Db\RegisterMapper::class),
-					schemaMapper: $schemaMapper,
+					catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(\OCA\OpenRegister\Db\RegisterMapper::class), schemas: $schemaMapper, tables: $this->createMock(\OCA\OpenRegister\Db\MagicMapper::class)),
 					objectCacheService: $this->createMock(\OCA\OpenRegister\Service\Object\CacheHandler::class)
 				),
 				files: new \OCA\OpenRegister\Service\Object\RenderFileSources(

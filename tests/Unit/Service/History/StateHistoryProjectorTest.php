@@ -24,7 +24,9 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\StateHistory;
 use OCA\OpenRegister\Db\StateHistoryMapper;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Service\History\StateHistoryProjector;
+use OCA\OpenRegister\Service\Lifecycle\TransitionMove;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -57,7 +59,7 @@ class StateHistoryProjectorTest extends TestCase {
 	private function move(): ObjectTransitionedEvent {
 		$object = new ObjectEntity();
 		$object->setUuid('uuid-1');
-		return new ObjectTransitionedEvent($object, 'appeal', 'open', 'bezwaar', null, 'zaken', 'zaak');
+		return new ObjectTransitionedEvent(object: $object, move: new TransitionMove(action: 'appeal', from: 'open', to: 'bezwaar'), scope: new RegisterSchemaRef(register: 'zaken', schema: 'zaak'));
 	}//end move()
 
 	/**

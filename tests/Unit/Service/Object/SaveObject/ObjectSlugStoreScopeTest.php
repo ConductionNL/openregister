@@ -20,6 +20,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject;
 use OCA\OpenRegister\Db\MagicMapper\MagicSlugStoreInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugLog;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugScope;
@@ -32,6 +33,12 @@ use PHPUnit\Framework\TestCase;
  * With one, the store is asked for that register and schema.
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugStore
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugClaims
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugScope
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugWant
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
  */
 class ObjectSlugStoreScopeTest extends TestCase {
 
@@ -91,11 +98,11 @@ class ObjectSlugStoreScopeTest extends TestCase {
 		$schema   = new Schema();
 		$this->magic->expects($this->once())
 			->method('findSlugHolders')
-			->with($register, $schema, 'jan', 'u-1')
+			->with(new RegisterSchema($register, $schema), 'jan', 'u-1')
 			->willReturn(['u-9', 'u-8']);
 		$this->magic->expects($this->once())
 			->method('findSlugState')
-			->with($register, $schema, ['jan'], ['u-1'])
+			->with(new RegisterSchema($register, $schema), ['jan'], ['u-1'])
 			->willReturn(['holders' => ['jan' => 'u-9'], 'stored' => []]);
 		$scope = new ObjectSlugScope($register, $schema);
 

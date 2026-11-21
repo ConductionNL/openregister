@@ -47,13 +47,26 @@ final class MagicUnionOrder {
 	private const SCORE = '_search_score';
 
 	/**
+	 * The metadata columns a person reads as text, ordered case-insensitively
+	 * on every path (the single-schema search reads this list too).
+	 *
+	 * @var array<int, string>
+	 */
+	public const TEXT_METADATA_COLUMNS = ['_name', '_description', '_summary'];
+
+	/**
 	 * Constructor.
 	 *
-	 * @param bool $isPostgres Whether the platform is PostgreSQL (identifier quoting).
+	 * @param bool          $isPostgres  Whether the platform is PostgreSQL (identifier quoting).
+	 * @param array<string> $textColumns The property columns that hold text in every schema of the search.
 	 *
 	 * @spec openspec/specs/objects-crud/spec.md#requirement-a-multi-schema-search-orders-the-same-on-every-path
+	 * @spec openspec/changes/case-insensitive-ordering/specs/zoeken-filteren/spec.md#requirement-ordering-on-a-string-property-ignores-letter-case-on-every-supported-database-req-cio-001
 	 */
-	public function __construct(private readonly bool $isPostgres) {
+	public function __construct(
+		private readonly bool $isPostgres,
+		private readonly array $textColumns = [],
+	) {
 	}//end __construct()
 
 	/**
@@ -173,19 +186,60 @@ final class MagicUnionOrder {
 	 * @param array<array-key, string> $order     Field => direction.
 	 * @param bool                     $hasSearch Whether the query searches.
 	 *
-	 * @return array<int, array{row: string, sql: string, dir: string}>
+	 * @return array<int, array{row: string, sql: string, dir: string, fold?: bool}>
 	 */
 	private function requestedKeys(array $order, bool $hasSearch): array {
 		$keys = [];
 		foreach ($order as $field => $direction) {
 			$key = $this->fieldKey(field: (string) $field, hasSearch: $hasSearch);
-			if ($key !== null) {
-				$keys[] = $key + ['dir' => $direction];
+			if ($key === null) {
+				continue;
 			}
+
+			if ($this->isText(column: $key['row']) === true) {
+				// Text orders by its lower-cased value first, then by the raw
+				// value, so two values that lower-case alike still order totally
+				// (REQ-CIO-001), as the single-schema search does.
+				$keys[] = ['row' => $key['row'], 'sql' => $this->lowerSql(expression: $key['sql']), 'dir' => $direction, 'fold' => true];
+			}
+
+			$keys[] = $key + ['dir' => $direction];
 		}
 
 		return $keys;
 	}//end requestedKeys()
+
+	/**
+	 * Whether a union column holds text: a property column that is text in every
+	 * schema of the search, or a text metadata column.
+	 *
+	 * @param string $column The union column.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/case-insensitive-ordering/specs/zoeken-filteren/spec.md#requirement-ordering-on-a-string-property-ignores-letter-case-on-every-supported-database-req-cio-001
+	 */
+	private function isText(string $column): bool {
+		return in_array($column, self::TEXT_METADATA_COLUMNS, true) === true
+			|| in_array($column, $this->textColumns, true) === true;
+	}//end isText()
+
+	/**
+	 * The lower-cased form of an order expression; PostgreSQL casts first, as LOWER() takes text only.
+	 *
+	 * @param string $expression The column expression.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/case-insensitive-ordering/specs/zoeken-filteren/spec.md#requirement-ordering-on-a-string-property-ignores-letter-case-on-every-supported-database-req-cio-001
+	 */
+	private function lowerSql(string $expression): string {
+		if ($this->isPostgres === true) {
+			return "LOWER(CAST({$expression} AS TEXT))";
+		}
+
+		return "LOWER({$expression})";
+	}//end lowerSql()
 
 	/**
 	 * The row key and SQL of one ordered field, or null when it is left out.
@@ -272,7 +326,15 @@ final class MagicUnionOrder {
 			// Compared as strings: PHP compares two numeric strings numerically, so a score of
 			// "0.9" still beats "0.75" and "1.0E-5" still loses to "0.0001", while a missing
 			// column (null, cast to "") is compared as text instead of silently becoming zero.
-			$comparison = ((string)($pair[0][$key['row']] ?? null) <=> (string)($pair[1][$key['row']] ?? null));
+			$left  = (string)($pair[0][$key['row']] ?? null);
+			$right = (string)($pair[1][$key['row']] ?? null);
+			if (($key['fold'] ?? false) === true) {
+				// The lower-cased key, as the SQL's LOWER() orders it.
+				$left  = mb_strtolower($left);
+				$right = mb_strtolower($right);
+			}
+
+			$comparison = ($left <=> $right);
 			if ($comparison !== 0) {
 				return $this->directed(comparison: $comparison, direction: $key['dir']);
 			}

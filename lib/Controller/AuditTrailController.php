@@ -32,15 +32,17 @@
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
-use OCA\OpenRegister\BackgroundJob\JobHandles;
+use OCA\OpenRegister\BackgroundJob\ComplianceJobHandlesInterface;
+use OCA\OpenRegister\Controller\Support\AdministratorOnlyGate;
 use OCA\OpenRegister\Controller\Support\AuditObjectRef;
 use OCA\OpenRegister\Controller\Support\AuditTrailControllerServices;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Audit\AuditTrailPageServiceInterface;
 use OCA\OpenRegister\Service\Audit\ObjectHistoryForReadersInterface;
 use OCA\OpenRegister\Service\Audit\PurposeRefusedException;
 use OCA\OpenRegister\Service\Audit\ReadableAuditTrailListerInterface;
+use OCA\OpenRegister\Service\Audit\TrailPageOptions;
 use OCA\OpenRegister\Service\AuditHashServiceInterface;
 use OCA\OpenRegister\Service\LogService;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMaskerInterface;
@@ -48,6 +50,7 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 
 /**
  * Class AuditTrailController
@@ -139,7 +142,7 @@ class AuditTrailController extends Controller {
 		IRequest $request,
 		AuditTrailControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->logService = $services->log->logService;
 		$this->auditTrailMapper = $services->mappers->auditTrailMapper;
 		$this->auditHashService = $services->log->auditHashService;
@@ -170,22 +173,9 @@ class AuditTrailController extends Controller {
 	 * @return JSONResponse|null 401/403 response when blocked, null when allowed.
 	 */
 	private function requireAdmin(): ?JSONResponse {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return new JSONResponse(
-				data: ['error' => 'Authentication required'],
-				statusCode: 401
-			);
-		}
+		$gate = new AdministratorOnlyGate(userSession: $this->userSession, groupManager: $this->groupManager);
 
-		if ($this->groupManager->isAdmin($user->getUID()) === false) {
-			return new JSONResponse(
-				data: ['error' => 'Forbidden: this audit-trail operation is admin-only'],
-				statusCode: 403
-			);
-		}
-
-		return null;
+		return $gate->refusal(forbidden: 'Forbidden: this audit-trail operation is admin-only');
 	}//end requireAdmin()
 
 	/**
@@ -378,7 +368,8 @@ class AuditTrailController extends Controller {
 	 * The audit page's filters, read from the request.
 	 *
 	 * Actor, period, action, register, schema and object. `user` is accepted
-	 * as a synonym of `actor`.
+	 * as a synonym of `actor`. `tool`, `actionPrefix` and `toolPrefix` narrow
+	 * the list to assistant tool calls (an exact tool id, or a prefix).
 	 *
 	 * @return array<string, mixed> The filters for AuditTrailPageQuery.
 	 *
@@ -391,7 +382,7 @@ class AuditTrailController extends Controller {
 			'from' => ($params['from'] ?? null),
 			'to' => ($params['to'] ?? null),
 		];
-		foreach (['action', 'register', 'schema', 'object'] as $key) {
+		foreach (['action', 'register', 'schema', 'object', 'tool', 'actionPrefix', 'toolPrefix'] as $key) {
 			$filters[$key] = ($params[$key] ?? null);
 		}
 
@@ -536,13 +527,38 @@ class AuditTrailController extends Controller {
 
 		$page = $this->readableLister->page(
 			userId: $user->getUID(),
-			limit: (int)$params['limit'],
-			cursor: $cursor,
-			query: $this->readableLister->query(filters: ($params['filters'] ?? []), search: ($params['search'] ?? null))
+			options: new TrailPageOptions(
+				limit: (int)$params['limit'],
+				cursor: $cursor,
+				query: $this->readableLister->query(filters: $this->readableFilters(filters: ($params['filters'] ?? [])), search: ($params['search'] ?? null))
+			)
 		);
 
 		return new JSONResponse(data: $page);
 	}//end readable()
+
+	/**
+	 * The scoped list's column filters, with `register` when it names a register id.
+	 *
+	 * The shared parameter reader leaves `register` out of the column filters,
+	 * so an app that lists the entries of its own register passes its register
+	 * id here. Anything other than a whole number is ignored, as before. It
+	 * narrows the list only: every row still passes the caller's read scope.
+	 *
+	 * @param array<string, mixed> $filters The column filters from the request.
+	 *
+	 * @return array<string, mixed> The filters, with the register id when one was given.
+	 *
+	 * @spec openspec/changes/record-history-on-every-detail-page/specs/audit-trail-immutable/spec.md#requirement-the-readable-audit-list-can-be-narrowed-to-one-register
+	 */
+	private function readableFilters(array $filters): array {
+		$register = $this->request->getParam(key: 'register');
+		if (is_scalar($register) === true && ctype_digit((string)$register) === true) {
+			$filters['register'] = (int)$register;
+		}
+
+		return $filters;
+	}//end readableFilters()
 
 	/**
 	 * Get lifetime audit trail counts, optionally scoped to a register/schema
@@ -638,7 +654,6 @@ class AuditTrailController extends Controller {
 	 * @return JSONResponse HTTP 405 Method Not Allowed
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @no-admin-idor-exempt Immutability stub: returns HTTP 405 unconditionally and
 	 *   performs no object read or write, so there is no per-object resource to guard.
@@ -805,9 +820,7 @@ class AuditTrailController extends Controller {
 	private function objectsForReader(AuditObjectRef $object): JSONResponse {
 		try {
 			$page = $this->historyForReaders->page(
-				register: $object->register,
-				schema: $object->schema,
-				id: $object->id,
+				ref: new ObjectRef(register: $object->register, schema: $object->schema, id: $object->id),
 				params: $this->extractRequestParameters()
 			);
 		} catch (PurposeRefusedException $refusal) {
@@ -953,8 +966,8 @@ class AuditTrailController extends Controller {
 					'queued' => true,
 					'message' => sprintf(
 						'More than %d entries match. The export runs in the background and you get a notification when the file is in your Files under "%s".',
-						JobHandles::AUDIT_TRAIL_EXPORT_INLINE_LIMIT,
-						JobHandles::AUDIT_TRAIL_EXPORT_FOLDER
+						ComplianceJobHandlesInterface::AUDIT_TRAIL_EXPORT_INLINE_LIMIT,
+						ComplianceJobHandlesInterface::AUDIT_TRAIL_EXPORT_FOLDER
 					),
 				],
 				statusCode: Http::STATUS_ACCEPTED
@@ -985,7 +998,6 @@ class AuditTrailController extends Controller {
 	 * @return JSONResponse HTTP 405 Method Not Allowed
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @no-admin-idor-exempt Immutability stub: returns HTTP 405 unconditionally and
 	 *   performs no object read or write, so there is no per-object resource to guard.
@@ -1008,7 +1020,6 @@ class AuditTrailController extends Controller {
 	 * @return JSONResponse HTTP 405 Method Not Allowed
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @no-admin-idor-exempt Immutability stub: returns HTTP 405 unconditionally and
 	 *   performs no object read or write, so there is no per-object resource to guard.
@@ -1027,8 +1038,6 @@ class AuditTrailController extends Controller {
 	 *
 	 * Admin-only at the framework level (no @NoAdminRequired). Body
 	 * `requireAdmin()` stays as defence-in-depth.
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response confirming clear or error
 	 *

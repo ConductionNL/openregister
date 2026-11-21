@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Notifications\Service;
 
 use Exception;
 use OCA\OpenRegister\Db\EmailLink;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 
 /**
  * Every public method of EmailService. Callers depend on this interface, not on the class.

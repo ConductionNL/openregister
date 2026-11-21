@@ -1555,45 +1555,10 @@
         },
         "calls": [
             {
-                "cacheGet": [
-                    "reg",
-                    "things",
-                    {
-                        "metric": "sum",
-                        "field": "amount",
-                        "filter": [],
-                        "groupBy": null,
-                        "dateBucket": null,
-                        "metrics": null,
-                        "cumulative": false
-                    }
-                ]
-            },
-            {
                 "table": [
                     "reg",
                     "things",
                     10000
-                ]
-            },
-            {
-                "cacheSet": [
-                    "reg",
-                    "things",
-                    {
-                        "metric": "sum",
-                        "field": "amount",
-                        "filter": [],
-                        "groupBy": null,
-                        "dateBucket": null,
-                        "metrics": null,
-                        "cumulative": false
-                    },
-                    {
-                        "value": 51,
-                        "backend": "php-fallback",
-                        "cached": false
-                    }
                 ]
             }
         ]
@@ -2404,45 +2369,10 @@
         },
         "calls": [
             {
-                "cacheGet": [
-                    "reg",
-                    "things",
-                    {
-                        "metric": "count",
-                        "field": null,
-                        "filter": [],
-                        "groupBy": null,
-                        "dateBucket": null,
-                        "metrics": null,
-                        "cumulative": false
-                    }
-                ]
-            },
-            {
                 "table": [
                     "reg",
                     "things",
                     10000
-                ]
-            },
-            {
-                "cacheSet": [
-                    "reg",
-                    "things",
-                    {
-                        "metric": "count",
-                        "field": null,
-                        "filter": [],
-                        "groupBy": null,
-                        "dateBucket": null,
-                        "metrics": null,
-                        "cumulative": false
-                    },
-                    {
-                        "value": 5,
-                        "backend": "php-fallback",
-                        "cached": false
-                    }
                 ]
             }
         ]

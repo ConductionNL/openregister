@@ -41,6 +41,7 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Formats\FormatFactory;
+use OCA\OpenRegister\Service\SystemOperationContext;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
 use OCP\IURLGenerator;
@@ -116,7 +117,8 @@ class ValidateObject implements ValidateObjectInterface {
 
 	/**
 	 * Custom OpenRegister types and the JSON Schema type they validate as. File references are
-	 * integer file ids, data URIs or null; the others are stored as strings.
+	 * integer file ids, data URIs or null; a calendar range is an object, an image a URL or an
+	 * object; the others are stored as strings.
 	 *
 	 * @var array<string, string|array<int, string>>
 	 */
@@ -131,6 +133,8 @@ class ValidateObject implements ValidateObjectInterface {
 		'phone' => 'string',
 		'color' => 'string',
 		'recurrence' => 'string',
+		'calendar-range' => 'object',
+		'image-url' => ['string', 'object'],
 	];
 
 	/**
@@ -149,7 +153,7 @@ class ValidateObject implements ValidateObjectInterface {
 
 	/**
 	 * Account ids a caller declared it writes before the object, accepted by
-	 * the `user` format for the length of one validateObjectWithPlannedUsers() call.
+	 * the `user` format for the length of one validateWithPlannedAccounts() call.
 	 *
 	 * @var array<int, string>
 	 */
@@ -195,27 +199,18 @@ class ValidateObject implements ValidateObjectInterface {
 	 * MUST throw `ValidationException` (or return an equivalent 422 response) when
 	 * this method returns a non-empty list.
 	 *
-	 * @param array $incomingObject The candidate object data (top-level keys
-	 *                              are property names).
-	 * @param array $existingObject The previously-stored object data (same
-	 *                              shape). Pass the empty array `[]` to
-	 *                              opt out (CREATE / no existing record).
-	 * @param Schema $schema The schema whose `readOnly` declarations
-	 *                       drive enforcement.
+	 * @param WriteConstraintCheck $check  The candidate and the previously-stored object data. An empty
+	 *                                     stored side opts out (CREATE / no existing record).
+	 * @param Schema               $schema The schema whose `readOnly` declarations drive enforcement.
 	 *
 	 * @return array<int, array{property: string, attempted: mixed, stored: mixed, message: string}>
 	 */
-	public function validateReadOnlyConstraints(
-		array $incomingObject,
-		array $existingObject,
-		Schema $schema,
-	): array {
-		if ($existingObject === []) {
+	public function validateReadOnlyConstraints(WriteConstraintCheck $check, Schema $schema): array {
+		if ($check->hasStored() === false) {
 			return [];
 		}
 
-		return (new WriteConstraintCheck(incoming: $incomingObject, stored: $existingObject))
-			->readOnlyViolations(names: self::flaggedProperties(schema: $schema, keyword: 'readOnly'));
+		return $check->readOnlyViolations(names: self::flaggedProperties(schema: $schema, keyword: 'readOnly'));
 	}//end validateReadOnlyConstraints()
 
 	/**
@@ -236,26 +231,20 @@ class ValidateObject implements ValidateObjectInterface {
 	 * Returns the list of violations, empty when the update is compliant.
 	 * Callers MUST refuse the write when this returns a non-empty list.
 	 *
-	 * @param array $incomingObject The candidate object data.
-	 * @param array $existingObject The previously-stored object data. Pass `[]`
-	 *                              to opt out (CREATE / no existing record).
-	 * @param Schema $schema The schema whose declarations drive enforcement.
+	 * @param WriteConstraintCheck $check  The candidate and the previously-stored object data. An empty
+	 *                                     stored side opts out (CREATE / no existing record).
+	 * @param Schema               $schema The schema whose declarations drive enforcement.
 	 *
 	 * @return array<int, array{property: string, attempted: mixed, stored: mixed, message: string}>
 	 *
 	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
 	 */
-	public function validateImmutableConstraints(
-		array $incomingObject,
-		array $existingObject,
-		Schema $schema,
-	): array {
-		if ($existingObject === []) {
+	public function validateImmutableConstraints(WriteConstraintCheck $check, Schema $schema): array {
+		if ($check->hasStored() === false) {
 			return [];
 		}
 
-		return (new WriteConstraintCheck(incoming: $incomingObject, stored: $existingObject))
-			->immutableViolations(names: self::flaggedProperties(schema: $schema, keyword: Schema::IMMUTABLE_PROPERTY_KEYWORD));
+		return $check->immutableViolations(names: self::flaggedProperties(schema: $schema, keyword: Schema::IMMUTABLE_PROPERTY_KEYWORD));
 	}//end validateImmutableConstraints()
 
 	/**
@@ -1359,33 +1348,11 @@ class ValidateObject implements ValidateObjectInterface {
 	}//end refIdOf()
 
 	/**
-	 * Validates an object against a schema, letting a `user` format accept the given account ids.
+	 * Validates an object against a schema, letting a `user` format accept the accounts a check plans to create.
 	 *
 	 * For a caller that writes those accounts before the object, such as an
 	 * example set's check. Every other account id is still asked of the user
 	 * manager, and the ids are accepted for this one call only.
-	 *
-	 * @param array                     $object       The object to validate.
-	 * @param Schema|int|null           $schema       The schema or schema ID to validate against.
-	 * @param object                    $schemaObject A custom schema object for validation.
-	 * @param array<int, string>        $plannedUsers Account ids to accept although they do not exist yet.
-	 *
-	 * @return ValidationResult The result of the validation.
-	 *
-	 * @spec openspec/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
-	 */
-	public function validateObjectWithPlannedUsers(
-		array $object,
-		Schema|int|null $schema = null,
-		object $schemaObject = new stdClass(),
-		array $plannedUsers = [],
-	): ValidationResult {
-		$check = new PlannedAccountsCheck(schema: $schema, schemaObject: $schemaObject, plannedUsers: $plannedUsers);
-		return $this->validateWithPlannedAccounts(object: $object, check: $check);
-	}//end validateObjectWithPlannedUsers()
-
-	/**
-	 * Validates an object against a schema, letting a `user` format accept the accounts a check plans to create.
 	 *
 	 * @param array                $object The object to validate.
 	 * @param PlannedAccountsCheck $check  The schema to validate against and the account ids to accept.
@@ -1409,19 +1376,18 @@ class ValidateObject implements ValidateObjectInterface {
 	 * @param array $object The object to validate.
 	 * @param Schema|int|null $schema The schema or schema ID to validate against.
 	 * @param object $schemaObject A custom schema object for validation.
-	 * @param int $_depth The depth level for validation (unused).
 	 * @param array<string, string> $notSupplied Properties recorded as not supplied, mapped to their reason codes.
 	 *
 	 * @return ValidationResult The result of the validation.
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 * @spec openspec/specs/objects-crud/spec.md
 	 */
 	public function validateObject(
 		array $object,
 		Schema|int|string|null $schema = null,
 		object $schemaObject = new stdClass(),
-		int $_depth = 0,
 		array $notSupplied = [],
 	): ValidationResult {
 		$schema = $this->schemaEntity(schema: $schema);
@@ -2191,6 +2157,7 @@ class ValidateObject implements ValidateObjectInterface {
 	 * @return string A meaningful error message.
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 * @spec openspec/specs/objects-crud/spec.md
 	 */
 	public function generateErrorMessage(ValidationResult $result): string {
 		return (new ValidationErrorMessages())->forResult(result: $result);
@@ -2256,7 +2223,8 @@ class ValidateObject implements ValidateObjectInterface {
 	}//end handleValidationException()
 
 	/**
-	 * Check of the value of a parameter, or a combination of parameters, is unique
+	 * Check of the value of a parameter, or a combination of parameters, is unique within the organisation
+	 * the write lands in (see UniqueFieldScope)
 	 *
 	 * @param array $object The object to check
 	 * @param Schema $schema The schema of the object
@@ -2272,8 +2240,21 @@ class ValidateObject implements ValidateObjectInterface {
 			return;
 		}
 
-		$filters = self::uniqueFilters(object: $object, uniqueFields: $uniqueFields);
-		if ($this->lookups->objectMapper->countAll(_filters: $filters, schema: $schema) !== 0) {
+		$scope   = new UniqueFieldScope(organisations: $this->lookups->organisations());
+		$unique  = self::uniqueFilters(object: $object, uniqueFields: $uniqueFields);
+		$filters = $scope->countFilters(object: $object, uniqueFilters: $unique);
+		// Counted as a system operation, so a property read or reveal rule cannot refuse the filter and count 0.
+		$existing = SystemOperationContext::run(
+			function () use ($scope, $unique, $filters, $schema): int {
+				$count = $this->lookups->objectMapper->countAll(_filters: $filters, schema: $schema);
+				if ($count === 0 && $scope->countsOrganisationlessSeparately() === true) {
+					$count = $this->lookups->objectMapper->countOrganisationless(filters: $unique, schema: $schema);
+				}
+
+				return $count;
+			}
+		);
+		if ($existing !== 0) {
 			throw self::notUniqueException(object: $object, uniqueFields: $uniqueFields);
 		}
 	}//end validateUniqueFields()

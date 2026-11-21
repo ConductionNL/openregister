@@ -26,7 +26,7 @@ namespace OCA\OpenRegister\Service\Object;
 
 use DateTimeInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionEvaluatorInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -41,13 +41,13 @@ final class VirtualCalculations {
 	/**
 	 * Constructor.
 	 *
-	 * @param CalculationEvaluatorInterface $evaluator Evaluates an expression.
+	 * @param ExpressionEvaluatorInterface  $evaluator Evaluates an expression.
 	 * @param LoggerInterface               $logger    Logs a calculation that failed.
 	 *
 	 * @spec openspec/specs/computed-fields/spec.md
 	 */
 	public function __construct(
-		private readonly CalculationEvaluatorInterface $evaluator,
+		private readonly ExpressionEvaluatorInterface $evaluator,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
+ * @spec openspec/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
  */
 
 declare(strict_types=1);
@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Service\Flow\Timer;
 
 use DateTimeImmutable;
 use DateTimeInterface;
+use OCA\OpenRegister\Kernel\Contracts\Notifications\TimerUnits;
 
 /**
  * The unit and roll vocabulary and the SLA operations of {@see SlaCalculator}.
@@ -36,18 +37,18 @@ interface SlaCalculatorInterface {
 	/**
 	 * The unit vocabulary, shared by the SLA and the escalation offsets.
 	 */
-	public const UNIT_HOURS = 'hours';
+	public const UNIT_HOURS = TimerUnits::UNIT_HOURS;
 
-	public const UNIT_BUSINESS_DAYS = 'businessDays';
+	public const UNIT_BUSINESS_DAYS = TimerUnits::UNIT_BUSINESS_DAYS;
 
-	public const UNIT_CALENDAR_DAYS = 'calendarDays';
+	public const UNIT_CALENDAR_DAYS = TimerUnits::UNIT_CALENDAR_DAYS;
 
 	/**
 	 * Every accepted unit.
 	 *
 	 * @var array<int, string>
 	 */
-	public const UNITS = [self::UNIT_HOURS, self::UNIT_BUSINESS_DAYS, self::UNIT_CALENDAR_DAYS];
+	public const UNITS = TimerUnits::UNITS;
 
 	/**
 	 * The end date is left where the budget put it. THE DEFAULT, and it is the
@@ -101,7 +102,7 @@ interface SlaCalculatorInterface {
 	 *
 	 * @throws \OCA\OpenRegister\Exception\FlowTimerValidationException When the shape, the range or the unit is refused.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
 	 */
 	public function validateSla(mixed $sla): array;
 
@@ -114,7 +115,7 @@ interface SlaCalculatorInterface {
 	 *
 	 * @throws \OCA\OpenRegister\Exception\FlowTimerValidationException On an unknown unit.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
 	 */
 	public function validateUnit(mixed $unit): string;
 
@@ -126,24 +127,22 @@ interface SlaCalculatorInterface {
 	 *
 	 * @return array{at: DateTimeImmutable, unrolledAt: ?DateTimeImmutable, rolledBy: ?string} Where it ended up.
 	 *
-	 * @spec openspec/changes/end-date-roll-on-the-calendar/specs/flow-business-timers/spec.md#requirement-a-budget-may-roll-its-end-date-to-a-working-day
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-budget-may-roll-its-end-date-to-a-working-day
 	 */
 	public function roll(DateTimeInterface $moment, RollRule $rule): array;
 
 	/**
 	 * Add an amount of business time to an instant.
 	 *
-	 * @param DateTimeInterface $from The start instant.
-	 * @param float $value The amount; negative subtracts.
-	 * @param string $unit The unit.
-	 * @param WorkingCalendar|null $calendar The resolved calendar; required for business units and
-	 *        refused when absent, ignored for hours and calendar days.
+	 * @param SlaAddition $addition The start instant, the amount (negative subtracts), the unit, and the
+	 *                              resolved calendar: required for business units and refused when absent,
+	 *                              ignored for hours and calendar days.
 	 *
 	 * @return DateTimeImmutable The resulting instant.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
 	 */
-	public function add(DateTimeInterface $from, float $value, string $unit, ?WorkingCalendar $calendar): DateTimeImmutable;
+	public function add(SlaAddition $addition): DateTimeImmutable;
 
 	/**
 	 * Add an amount of business time to an instant, recording the walk when someone is watching.
@@ -167,7 +166,7 @@ interface SlaCalculatorInterface {
 	 *
 	 * @return DateTimeImmutable The resulting instant.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-an-escalation-rule-is-validated-against-its-sla-in-commensurable-units
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-an-escalation-rule-is-validated-against-its-sla-in-commensurable-units
 	 */
 	public function sub(DateTimeInterface $from, float $value, string $unit, ?WorkingCalendar $calendar): DateTimeImmutable;
 
@@ -179,7 +178,7 @@ interface SlaCalculatorInterface {
 	 *
 	 * @return float The amount in the unit.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-suspended-deadline-holds-elapsed-time-not-a-moment
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-suspended-deadline-holds-elapsed-time-not-a-moment
 	 */
 	public function measure(CalendarSpan $span, string $unit): float;
 
@@ -205,11 +204,8 @@ interface SlaCalculatorInterface {
 	 *
 	 * Negative when `to` precedes `from`, like `measure()`.
 	 *
-	 * @param DateTimeInterface $from The start.
-	 * @param DateTimeInterface $to The end.
-	 * @param WorkingCalendar $calendar The resolved calendar, which supplies the
-	 *                                  working weekdays, the non-working dates
-	 *                                  and the hours of the day.
+	 * @param CalendarSpan $span The start, the end, and the resolved calendar, which supplies
+	 *                          the working weekdays, the non-working dates and the hours of the day.
 	 *
 	 * @return float The working hours between the two instants.
 	 *
@@ -217,7 +213,7 @@ interface SlaCalculatorInterface {
 	 *
 	 * @spec openspec/specs/flow-business-timers/spec.md
 	 */
-	public function elapsedBusinessHours(DateTimeInterface $from, DateTimeInterface $to, WorkingCalendar $calendar): float;
+	public function elapsedBusinessHours(CalendarSpan $span): float;
 
 	/**
 	 * Convert an amount between units, through hours as the pivot: one business
@@ -227,7 +223,7 @@ interface SlaCalculatorInterface {
 	 *
 	 * @return float The converted amount.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-an-extension-is-bounded-and-may-only-be-granted-before-expiry
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-an-extension-is-bounded-and-may-only-be-granted-before-expiry
 	 */
 	public function convert(UnitConversion $conversion): float;
 }//end interface

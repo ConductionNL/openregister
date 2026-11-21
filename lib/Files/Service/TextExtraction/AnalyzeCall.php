@@ -22,6 +22,8 @@
 
 namespace OCA\OpenRegister\Files\Service\TextExtraction;
 
+use OCA\OpenRegister\Service\Anonymisation\TextDisclosureSource;
+
 /**
  * One analyze request: where it goes, what it sends and how it is logged.
  *
@@ -35,12 +37,14 @@ final readonly class AnalyzeCall {
 	 * @param array              $requestBody  The request body to JSON-encode.
 	 * @param string             $serviceName  Human-readable service name for log messages.
 	 * @param array<int, string> $extraHeaders Additional header lines, such as credentials.
+	 * @param TextDisclosureSource|null $source The document the text belongs to, recorded before the call.
 	 */
 	public function __construct(
 		public string $url,
 		public array $requestBody,
 		public string $serviceName,
 		public array $extraHeaders=[],
+		public ?TextDisclosureSource $source=null,
 	) {
 	}//end __construct()
 }//end class

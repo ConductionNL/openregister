@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow\Nodes;
 
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowStepDispatcher;
 use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
 use OCA\OpenRegister\Service\Flow\Nodes\IterateNode;
@@ -99,14 +100,14 @@ class IterateNodeTest extends TestCase {
 			}
 		);
 
-		$out = $this->node->execute(
-			[],
-			[
+		$out = $this->node->execute(new FlowNodeCall(
+			items: [],
+			config: [
 				'source' => ['type' => 'src'],
 				'body' => [['type' => 'body']],
 			],
-			[]
-		);
+			context: []
+		));
 
 		$this->assertCount(3, $out, 'every page must survive, not just the last');
 
@@ -128,7 +129,7 @@ class IterateNodeTest extends TestCase {
 			}
 		);
 
-		$out = $this->node->execute([], ['source' => ['type' => 'src'], 'body' => [['type' => 'body']]], []);
+		$out = $this->node->execute(new FlowNodeCall(items: [], config: ['source' => ['type' => 'src'], 'body' => [['type' => 'body']]], context: []));
 		$this->assertSame([], $out);
 
 	}//end testAnEmptySourceRunsTheBodyNotAtAll()
@@ -153,7 +154,7 @@ class IterateNodeTest extends TestCase {
 			}
 		);
 
-		$this->node->execute([], ['source' => ['type' => 'src'], 'body' => [['type' => 'b']]], []);
+		$this->node->execute(new FlowNodeCall(items: [], config: ['source' => ['type' => 'src'], 'body' => [['type' => 'b']]], context: []));
 
 		$this->assertSame([0, 1, 2], $seen, 'the source must be able to ask for the right page');
 
@@ -172,15 +173,15 @@ class IterateNodeTest extends TestCase {
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessageMatches('/did not finish within 5 iterations/');
 
-		$this->node->execute(
-			[],
-			[
+		$this->node->execute(new FlowNodeCall(
+			items: [],
+			config: [
 				'source' => ['type' => 'src'],
 				'body' => [['type' => 'b']],
 				'maxIterations' => 5,
 			],
-			[]
-		);
+			context: []
+		));
 
 	}//end testANonConvergingLoopFails()
 
@@ -194,16 +195,16 @@ class IterateNodeTest extends TestCase {
 			static fn (array $step, array $items, array $context): array => [FlowItems::item(json: [])]
 		);
 
-		$out = $this->node->execute(
-			[],
-			[
+		$out = $this->node->execute(new FlowNodeCall(
+			items: [],
+			config: [
 				'source' => ['type' => 'src'],
 				'body' => [['type' => 'b']],
 				'maxIterations' => 4,
 				'onLimit' => IterateNode::ON_LIMIT_STOP,
 			],
-			[]
-		);
+			context: []
+		));
 
 		$this->assertCount(4, $out);
 
@@ -230,14 +231,14 @@ class IterateNodeTest extends TestCase {
 			}
 		);
 
-		$this->node->execute(
-			[],
-			[
+		$this->node->execute(new FlowNodeCall(
+			items: [],
+			config: [
 				'source' => ['type' => 'src'],
 				'body' => [['type' => 'one'], ['type' => 'two'], ['type' => 'three']],
 			],
-			[]
-		);
+			context: []
+		));
 
 		$this->assertSame(['one', 'two', 'three'], $order);
 

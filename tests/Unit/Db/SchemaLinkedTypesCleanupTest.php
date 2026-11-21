@@ -37,6 +37,10 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Service\Integration\LeafBundle
  * @uses \OCA\OpenRegister\Service\Integration\LeafRegistry
  * @uses \OCA\OpenRegister\Service\Integration\IntegrationRegistrar
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValueRules
+ * @uses \OCA\OpenRegister\Db\Schema\LinkedTypesRule
  */
 class SchemaLinkedTypesCleanupTest extends TestCase {
 

@@ -32,7 +32,7 @@ use ArrayObject;
 final class SearchPageRun {
 
 	/**
-	 * The rbac, multitenancy, ids, uses, narrowedToNothing and activeOrgUuid of the search.
+	 * The rbac, multitenancy, ids, uses, narrowedToNothing and activeOrgUuid of the search, with its limit, offset and page.
 	 *
 	 * @var array<string, mixed>
 	 */

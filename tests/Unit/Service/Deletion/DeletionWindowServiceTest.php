@@ -33,6 +33,7 @@ use OCA\OpenRegister\Service\Deletion\DeletionWindowService;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Service\Deletion\DeletionWindowQuery;
 
 final class DeletionWindowServiceTest extends TestCase {
 	private function service(?int $instanceMilliseconds = null): DeletionWindowService {
@@ -107,7 +108,7 @@ final class DeletionWindowServiceTest extends TestCase {
 			array_merge(['deletedAt' => $deletedAt->format(DATE_ATOM), 'deletedBy' => 'admin'], $metadata)
 		);
 
-		$window = $service->windowFor($object, null, $deletedAt);
+		$window = $service->windowOf(new DeletionWindowQuery($object, null, $deletedAt));
 		self::assertNotNull($window);
 		self::assertSame(30, $window->daysRemaining());
 		self::assertSame('2026-04-18T09:00:00+00:00', $window->destroyableFrom()->format(DATE_ATOM));
@@ -124,7 +125,7 @@ final class DeletionWindowServiceTest extends TestCase {
 			)
 		);
 
-		$window = $service->windowFor($object, null, new DateTimeImmutable('2026-05-01T09:00:00+00:00'));
+		$window = $service->windowOf(new DeletionWindowQuery($object, null, new DateTimeImmutable('2026-05-01T09:00:00+00:00')));
 		self::assertNotNull($window);
 		self::assertSame(0, $window->daysRemaining());
 		self::assertTrue($window->hasLapsed());
@@ -134,14 +135,14 @@ final class DeletionWindowServiceTest extends TestCase {
 		$object = new ObjectEntity();
 		$object->setUuid('melding-2');
 
-		self::assertNull($this->service(2592000000)->windowFor($object));
+		self::assertNull($this->service(2592000000)->windowOf(new DeletionWindowQuery($object)));
 	}//end testALiveObjectHasNoWindow()
 
 	public function testALegacyRowWithoutAWindowStillGetsOne(): void {
 		$deletedAt = new DateTimeImmutable('2026-03-19T09:00:00+00:00');
 		$object = $this->deletedObject(['deletedAt' => $deletedAt->format(DATE_ATOM), 'deletedBy' => 'admin']);
 
-		$window = $this->service(2592000000)->windowFor($object, null, $deletedAt);
+		$window = $this->service(2592000000)->windowOf(new DeletionWindowQuery($object, null, $deletedAt));
 		self::assertNotNull($window);
 		self::assertSame(30, $window->daysRemaining());
 		self::assertSame(DeletionWindow::SOURCE_INSTANCE, $window->source());

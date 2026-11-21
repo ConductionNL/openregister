@@ -52,18 +52,7 @@
 									json: true,
 								})
 							">
-							<option
-								v-if="booleanChoice(row) === ''"
-								value=""
-								disabled>
-								{{ t('openregister', 'Choose yes or no') }}
-							</option>
-							<option value="true">
-								{{ t('openregister', 'Yes') }}
-							</option>
-							<option value="false">
-								{{ t('openregister', 'No') }}
-							</option>
+							<YesNoOptions :choice="booleanChoice(row)" />
 						</select>
 					</td>
 					<td v-else>
@@ -122,6 +111,7 @@
 import { NcButton } from '@nextcloud/vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
+import YesNoOptions from './YesNoOptions.vue'
 import { t } from '../../views/migrationPack/l10n.js'
 import {
 	isBooleanCell,
@@ -131,7 +121,7 @@ import {
 
 export default {
 	name: 'KeyValueRows',
-	components: { NcButton, Plus, TrashCanOutline },
+	components: { NcButton, Plus, TrashCanOutline, YesNoOptions },
 	props: {
 		rows: { type: Array, required: true },
 		keyLabel: { type: String, required: true },

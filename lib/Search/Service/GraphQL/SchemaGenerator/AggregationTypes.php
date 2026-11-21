@@ -56,6 +56,34 @@ use GraphQL\Type\Definition\Type;
 class AggregationTypes {
 
 	/**
+	 * The TimeInterval enum's values, finest first. Each name is also its value.
+	 *
+	 * @var list<string>
+	 */
+	private const TIME_INTERVALS = [
+		'MINUTE',
+		'HOUR',
+		'DAY',
+		'WEEK',
+		'MONTH',
+		'QUARTER',
+		'YEAR',
+	];
+
+	/**
+	 * The AggregationMetric enum's values. Each name is also its value.
+	 *
+	 * @var list<string>
+	 */
+	private const AGGREGATION_METRICS = [
+		'COUNT',
+		'SUM',
+		'AVG',
+		'MIN',
+		'MAX',
+	];
+
+	/**
 	 * Shared GroupByInput input type. Backs the optional `groupBy`
 	 * argument on every auto-generated list query. See the
 	 * `add-time-bucket-aggregation` change for the spec contract.
@@ -130,48 +158,86 @@ class AggregationTypes {
 			[
 				'name' => 'GroupBucket',
 				'description' => 'A single bucket in an aggregation result.',
-				'fields' => [
-					// NULLABLE, and it was not.
-					//
-					// `key: String!` forced the resolver to coerce a null group
-					// key to '' — a row whose group field is null became
-					// indistinguishable from one whose value is genuinely the
-					// empty string. The engine returns null there and means it.
-					'key' => [
-						'type' => Type::string(),
-						'description' => 'Group key for a single-field grouping. '
-							. 'NULL when the grouped field is null on those rows — which is not the '
-							. 'same as an empty string. Null for a composite grouping; use `keys`.',
-					],
-					// ALSO NULLABLE. A multi-metric result carries `values` and
-					// no `value` at all, so `Float!` would have forced 0.0 —
-					// reporting zero for every bucket rather than admitting the
-					// figure lives elsewhere.
-					'value' => [
-						'type' => Type::float(),
-						'description' => 'Single-metric value. NULL for a multi-metric grouping; use `values`.',
-					],
-					'keys' => [
-						'type' => $this->scalars['JSON'],
-						'description' => 'Composite group key as a {field: value} map. '
-							. 'Present when the aggregation groups on more than one field.',
-					],
-					'values' => [
-						'type' => $this->scalars['JSON'],
-						'description' => 'Figure per response key, for a multi-metric aggregation '
-							. '(`sum_amount`, or an `as` alias such as `totalDebit`).',
-					],
-					'joined' => [
-						'type' => $this->scalars['JSON'],
-						'description' => 'Figures pulled from a joined schema, keyed '
-							. '`<Schema>.<field>`. Present only when the aggregation declares a join.',
-					],
-				],
+				'fields' => array_merge($this->groupBucketSingleFields(), $this->groupBucketMapFields()),
 			]
 		);
 
 		return $this->groupBucketType;
 	}//end getGroupBucketType()
+
+	/**
+	 * The GroupBucket fields of a single-field, single-metric bucket: `key` and `value`.
+	 *
+	 * @return array<string, array<string, mixed>> The field definitions, in schema order.
+	 */
+	private function groupBucketSingleFields(): array {
+		return [
+			// NULLABLE, and it was not.
+			//
+			// `key: String!` forced the resolver to coerce a null group
+			// key to '' — a row whose group field is null became
+			// indistinguishable from one whose value is genuinely the
+			// empty string. The engine returns null there and means it.
+			'key' => [
+				'type' => Type::string(),
+				'description' => 'Group key for a single-field grouping. '
+					. 'NULL when the grouped field is null on those rows — which is not the '
+					. 'same as an empty string. Null for a composite grouping; use `keys`.',
+			],
+			// ALSO NULLABLE. A multi-metric result carries `values` and
+			// no `value` at all, so `Float!` would have forced 0.0 —
+			// reporting zero for every bucket rather than admitting the
+			// figure lives elsewhere.
+			'value' => [
+				'type' => Type::float(),
+				'description' => 'Single-metric value. NULL for a multi-metric grouping; use `values`.',
+			],
+		];
+	}//end groupBucketSingleFields()
+
+	/**
+	 * The GroupBucket fields that carry a JSON map: `keys`, `values` and `joined`.
+	 *
+	 * @return array<string, array<string, mixed>> The field definitions, in schema order.
+	 */
+	private function groupBucketMapFields(): array {
+		return array_merge($this->groupBucketCompositeFields(), $this->groupBucketJoinedField());
+	}//end groupBucketMapFields()
+
+	/**
+	 * The GroupBucket fields that carry a composite key or several figures: `keys` and `values`.
+	 *
+	 * @return array<string, array<string, mixed>> The field definitions, in schema order.
+	 */
+	private function groupBucketCompositeFields(): array {
+		return [
+			'keys' => [
+				'type' => $this->scalars['JSON'],
+				'description' => 'Composite group key as a {field: value} map. '
+					. 'Present when the aggregation groups on more than one field.',
+			],
+			'values' => [
+				'type' => $this->scalars['JSON'],
+				'description' => 'Figure per response key, for a multi-metric aggregation '
+					. '(`sum_amount`, or an `as` alias such as `totalDebit`).',
+			],
+		];
+	}//end groupBucketCompositeFields()
+
+	/**
+	 * The GroupBucket field that carries figures from a joined schema: `joined`.
+	 *
+	 * @return array<string, array<string, mixed>> The field definition.
+	 */
+	private function groupBucketJoinedField(): array {
+		return [
+			'joined' => [
+				'type' => $this->scalars['JSON'],
+				'description' => 'Figures pulled from a joined schema, keyed '
+					. '`<Schema>.<field>`. Present only when the aggregation declares a join.',
+			],
+		];
+	}//end groupBucketJoinedField()
 
 	/**
 	 * Get (or lazily build) the shared TimeInterval enum.
@@ -189,15 +255,7 @@ class AggregationTypes {
 			[
 				'name' => 'TimeInterval',
 				'description' => 'Bucketing interval for ad-hoc time-bucket aggregations.',
-				'values' => [
-					'MINUTE' => ['value' => 'MINUTE'],
-					'HOUR' => ['value' => 'HOUR'],
-					'DAY' => ['value' => 'DAY'],
-					'WEEK' => ['value' => 'WEEK'],
-					'MONTH' => ['value' => 'MONTH'],
-					'QUARTER' => ['value' => 'QUARTER'],
-					'YEAR' => ['value' => 'YEAR'],
-				],
+				'values' => $this->enumValues(names: self::TIME_INTERVALS),
 			]
 		);
 
@@ -220,18 +278,28 @@ class AggregationTypes {
 			[
 				'name' => 'AggregationMetric',
 				'description' => 'Metric for ad-hoc aggregations.',
-				'values' => [
-					'COUNT' => ['value' => 'COUNT'],
-					'SUM' => ['value' => 'SUM'],
-					'AVG' => ['value' => 'AVG'],
-					'MIN' => ['value' => 'MIN'],
-					'MAX' => ['value' => 'MAX'],
-				],
+				'values' => $this->enumValues(names: self::AGGREGATION_METRICS),
 			]
 		);
 
 		return $this->aggMetricType;
 	}//end getAggregationMetricType()
+
+	/**
+	 * Spell a list of enum names as graphql-php enum values, each name its own value.
+	 *
+	 * @param list<string> $names The enum names, in schema order.
+	 *
+	 * @return array<string, array{value: string}> The enum value definitions.
+	 */
+	private function enumValues(array $names): array {
+		$values = [];
+		foreach ($names as $name) {
+			$values[$name] = ['value' => $name];
+		}
+
+		return $values;
+	}//end enumValues()
 
 	/**
 	 * Get (or lazily build) the shared GroupByInput input type.
@@ -249,54 +317,111 @@ class AggregationTypes {
 			[
 				'name' => 'GroupByInput',
 				'description' => 'Ad-hoc aggregation arg; `interval` set => time-bucketed, otherwise categorical groupBy.',
-				'fields' => [
-					'field' => [
-						'type' => Type::nonNull(Type::string()),
-						'description' => 'Field to group on. Must be a declared schema property or magic metadata column.',
-					],
-					'interval' => [
-						'type' => $this->getTimeIntervalType(),
-						'description' => 'Optional bucketing interval. When supplied, requires `from` + `to`.',
-					],
-					'from' => [
-						'type' => Type::string(),
-						'description' => 'ISO-8601 lower bound, inclusive. Required when `interval` is set.',
-					],
-					'to' => [
-						'type' => Type::string(),
-						'description' => 'ISO-8601 upper bound, exclusive. Required when `interval` is set.',
-					],
-					'metric' => [
-						'type' => $this->getAggregationMetricType(),
-						'defaultValue' => 'COUNT',
-						'description' => 'Aggregation metric. Default COUNT.',
-					],
-					'metricField' => [
-						'type' => Type::string(),
-						'description' => 'Field to aggregate over. Required when metric != COUNT.',
-					],
-					// Composite grouping. `field` above stays required and
-					// remains the single-field spelling; `fields` is the
-					// multi-field one, and a bucket then carries `keys` rather
-					// than `key`.
-					'fields' => [
-						'type' => Type::listOf(Type::nonNull(Type::string())),
-						'description' => 'Group on several fields (cross-tab). Each bucket then carries '
-							. '`keys` as a {field: value} map, and `key` is null.',
-					],
-					// Several figures over one grouping. Each bucket then
-					// carries `values`, and `value` is null.
-					'metrics' => [
-						'type' => Type::listOf(Type::nonNull($this->getAggregationMetricInputType())),
-						'description' => 'Several figures over one grouping. Each bucket then carries '
-							. '`values` keyed by response key or `as` alias, and `value` is null.',
-					],
-				],
+				'fields' => array_merge($this->groupByGroupingFields(), $this->groupByMetricFields()),
 			]
 		);
 
 		return $this->groupByInputType;
 	}//end getGroupByInputType()
+
+	/**
+	 * The GroupByInput fields that say how rows are grouped: `field`, `interval`, `from` and `to`.
+	 *
+	 * @return array<string, array<string, mixed>> The field definitions, in schema order.
+	 */
+	private function groupByGroupingFields(): array {
+		return array_merge($this->groupByFieldAndInterval(), $this->groupByTimeRange());
+	}//end groupByGroupingFields()
+
+	/**
+	 * The GroupByInput fields that say what is computed per group: `metric`, `metricField`, `fields` and `metrics`.
+	 *
+	 * @return array<string, array<string, mixed>> The field definitions, in schema order.
+	 */
+	private function groupByMetricFields(): array {
+		return array_merge($this->groupBySingleMetric(), $this->groupByCompositeFields());
+	}//end groupByMetricFields()
+
+	/**
+	 * The GroupByInput fields naming what to group on: `field` and `interval`.
+	 *
+	 * @return array<string, array<string, mixed>> The field definitions, in schema order.
+	 */
+	private function groupByFieldAndInterval(): array {
+		return [
+			'field' => [
+				'type' => Type::nonNull(Type::string()),
+				'description' => 'Field to group on. Must be a declared schema property or magic metadata column.',
+			],
+			'interval' => [
+				'type' => $this->getTimeIntervalType(),
+				'description' => 'Optional bucketing interval. When supplied, requires `from` + `to`.',
+			],
+		];
+	}//end groupByFieldAndInterval()
+
+	/**
+	 * The GroupByInput fields bounding a time-bucketed grouping: `from` and `to`.
+	 *
+	 * @return array<string, array<string, mixed>> The field definitions, in schema order.
+	 */
+	private function groupByTimeRange(): array {
+		return [
+			'from' => [
+				'type' => Type::string(),
+				'description' => 'ISO-8601 lower bound, inclusive. Required when `interval` is set.',
+			],
+			'to' => [
+				'type' => Type::string(),
+				'description' => 'ISO-8601 upper bound, exclusive. Required when `interval` is set.',
+			],
+		];
+	}//end groupByTimeRange()
+
+	/**
+	 * The GroupByInput fields of a single-metric grouping: `metric` and `metricField`.
+	 *
+	 * @return array<string, array<string, mixed>> The field definitions, in schema order.
+	 */
+	private function groupBySingleMetric(): array {
+		return [
+			'metric' => [
+				'type' => $this->getAggregationMetricType(),
+				'defaultValue' => 'COUNT',
+				'description' => 'Aggregation metric. Default COUNT.',
+			],
+			'metricField' => [
+				'type' => Type::string(),
+				'description' => 'Field to aggregate over. Required when metric != COUNT.',
+			],
+		];
+	}//end groupBySingleMetric()
+
+	/**
+	 * The GroupByInput fields of a cross-tab or multi-metric grouping: `fields` and `metrics`.
+	 *
+	 * @return array<string, array<string, mixed>> The field definitions, in schema order.
+	 */
+	private function groupByCompositeFields(): array {
+		return [
+			// Composite grouping. `field` above stays required and
+			// remains the single-field spelling; `fields` is the
+			// multi-field one, and a bucket then carries `keys` rather
+			// than `key`.
+			'fields' => [
+				'type' => Type::listOf(Type::nonNull(Type::string())),
+				'description' => 'Group on several fields (cross-tab). Each bucket then carries '
+					. '`keys` as a {field: value} map, and `key` is null.',
+			],
+			// Several figures over one grouping. Each bucket then
+			// carries `values`, and `value` is null.
+			'metrics' => [
+				'type' => Type::listOf(Type::nonNull($this->getAggregationMetricInputType())),
+				'description' => 'Several figures over one grouping. Each bucket then carries '
+					. '`values` keyed by response key or `as` alias, and `value` is null.',
+			],
+		];
+	}//end groupByCompositeFields()
 
 	/**
 	 * Get (or lazily build) the AggregationMetricInput type.
@@ -324,30 +449,49 @@ class AggregationTypes {
 			[
 				'name' => 'AggregationMetricInput',
 				'description' => 'One figure in a multi-metric aggregation.',
-				'fields' => [
-					'metric' => [
-						'type' => Type::nonNull($this->getAggregationMetricType()),
-						'description' => 'The metric to compute.',
-					],
-					'field' => [
-						'type' => Type::string(),
-						'description' => 'Field to aggregate. Required for every metric except COUNT.',
-					],
-					'condition' => [
-						'type' => $this->scalars['JSON'],
-						'description' => 'Filter object scoping THIS figure to a subset of the grouped '
-							. 'rows, e.g. {"side": "debit"}. Same shape as the aggregation filter.',
-					],
-					'as' => [
-						'type' => Type::string(),
-						'description' => 'Response key for this figure. Required in practice whenever two '
-							. 'entries share a metric+field pair, since both derive the same default key.',
-					],
-				],
+				'fields' => array_merge($this->metricInputFigureFields(), $this->metricInputScopeFields()),
 			]
 		);
 
 		return $this->metricInputType;
 	}//end getAggregationMetricInputType()
+
+	/**
+	 * The AggregationMetricInput fields naming the figure: `metric` and `field`.
+	 *
+	 * @return array<string, array<string, mixed>> The field definitions, in schema order.
+	 */
+	private function metricInputFigureFields(): array {
+		return [
+			'metric' => [
+				'type' => Type::nonNull($this->getAggregationMetricType()),
+				'description' => 'The metric to compute.',
+			],
+			'field' => [
+				'type' => Type::string(),
+				'description' => 'Field to aggregate. Required for every metric except COUNT.',
+			],
+		];
+	}//end metricInputFigureFields()
+
+	/**
+	 * The AggregationMetricInput fields scoping and naming the figure: `condition` and `as`.
+	 *
+	 * @return array<string, array<string, mixed>> The field definitions, in schema order.
+	 */
+	private function metricInputScopeFields(): array {
+		return [
+			'condition' => [
+				'type' => $this->scalars['JSON'],
+				'description' => 'Filter object scoping THIS figure to a subset of the grouped '
+					. 'rows, e.g. {"side": "debit"}. Same shape as the aggregation filter.',
+			],
+			'as' => [
+				'type' => Type::string(),
+				'description' => 'Response key for this figure. Required in practice whenever two '
+					. 'entries share a metric+field pair, since both derive the same default key.',
+			],
+		];
+	}//end metricInputScopeFields()
 
 }//end class

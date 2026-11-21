@@ -45,12 +45,21 @@ use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ImportPreview;
 use OCA\OpenRegister\Db\ImportPreviewRow;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\CauseFrame;
+use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IUser;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
+use OCA\OpenRegister\Kernel\Contracts\Value\SaveActor;
 
 /**
  * Previews an import, then commits the preview.
@@ -127,6 +136,7 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 		$policy = ConflictPolicy::resolve(policy: ($params['policy'] ?? null));
 		$matchKey = MatchResolver::normaliseKey(matchKey: ($params['matchKey'] ?? null));
 		$packSlug = $this->checkedPackSlug(packSlug: ($params['packSlug'] ?? null), schema: $schema);
+		$causeRun = $this->checkedCauseRun(causeRun: ($params['causeRun'] ?? null));
 
 		return $this->store->previewMapper->createFromArray(
 			data: [
@@ -141,9 +151,37 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 				'sourcePath' => $filePath,
 				'state' => ImportPreview::STATE_PENDING,
 				'createdBy' => $currentUser?->getUID(),
+				'causeRun' => $causeRun,
 			]
 		);
 	}//end createPreview()
+
+	/**
+	 * The run a retry names as its cause, checked to exist.
+	 *
+	 * A retry is a new run that names the original and never changes it
+	 * (D-6). The caller decides the caller may read the original; this only
+	 * refuses a cause that names no run, so a retry cannot point at nothing.
+	 *
+	 * @param mixed $causeRun The original run's uuid, or null for a first load.
+	 *
+	 * @return string|null The uuid, or null when none is named.
+	 *
+	 * @throws InvalidArgumentException When the uuid names no run.
+	 *
+	 * @spec openspec/changes/runs-recorded-and-causes-named/specs/data-import-export/spec.md#requirement-the-failed-rows-of-an-import-are-exportable-and-retryable-req-rcn-006
+	 */
+	private function checkedCauseRun(mixed $causeRun): ?string {
+		if ($causeRun === null || $causeRun === '') {
+			return null;
+		}
+
+		try {
+			return (string)$this->store->previewMapper->findByUuid(uuid: (string)$causeRun)->getUuid();
+		} catch (DoesNotExistException) {
+			throw new InvalidArgumentException('The import run "'.(string)$causeRun.'" a retry names does not exist.');
+		}
+	}//end checkedCauseRun()
 
 	/**
 	 * The declared source format, or the one the source name implies.
@@ -277,6 +315,7 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 			return;
 		}
 
+		// NOSEMGREP: php.lang.security.unlink-use.unlink-use -- The path is a copy this app staged in the temp dir; only a staged path is removed.
 		if (is_file((string)$path) === true && unlink((string)$path) === false) {
 			$this->store->logger->warning(
 				message: '[ImportPreviewService] The staged source could not be removed',
@@ -311,8 +350,7 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 	 * written (D-1).
 	 *
 	 * @param ImportPreview $preview The previewed preview.
-	 * @param string|null $sourceHash The sha256 of the file being committed.
-	 * @param IUser|null $currentUser The actor.
+	 * @param ImportCommit  $commit  The sha256 of the file being committed, and the actor.
 	 *
 	 * @return ImportPreview The preview, in state committed.
 	 *
@@ -320,9 +358,16 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 	 *
 	 * @spec openspec/changes/import-preview-and-conflict-policy/specs/data-import-export/spec.md
 	 */
-	public function commit(ImportPreview $preview, ?string $sourceHash, ?IUser $currentUser = null): ImportPreview {
-		$this->assertCommittable(preview: $preview, sourceHash: $sourceHash);
-		return $this->applyDecisions(run: $this->commitRun(preview: $preview, currentUser: $currentUser));
+	public function commit(ImportPreview $preview, ImportCommit $commit): ImportPreview {
+		$this->assertCommittable(preview: $preview, sourceHash: $commit->sourceHash);
+		$run = $this->commitRun(preview: $preview, currentUser: $commit->currentUser);
+
+		// The writes of a run are caused by that run: every audit entry the
+		// commit produces names the import and this run's uuid (REQ-RCN-006).
+		return WriteCause::runAs(
+			frame: new CauseFrame(cause: WriteCause::IMPORT, run: $preview->getUuid()),
+			operation: fn (): ImportPreview => $this->applyDecisions(run: $run)
+		);
 	}//end commit()
 
 	/**
@@ -455,10 +500,11 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 		try {
 			$result = $this->targets->objectService->saveObjects(
 				objects: $objects,
-				register: $destination->register,
-				schema: $destination->schema,
-				validation: false,
-				events: false
+				options: new BulkSaveOptions(
+					defaults: new BulkBatchDefaults(register: $destination->register, schema: $destination->schema),
+					validation: false,
+					events: false
+				)
 			);
 
 			$refused = $this->refusalsIn(batch: $batch, invalid: ($result['invalid'] ?? []));
@@ -525,10 +571,11 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 		try {
 			$this->targets->objectService->saveObject(
 				object: ($row->getPayload() ?? []),
-				register: $run->destination->register,
-				schema: $run->destination->schema,
-				_validation: false,
-				currentUser: $run->currentUser
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: $run->destination->register, schema: $run->destination->schema),
+					policy: new SavePolicy(validation: false),
+					actor: new SaveActor(currentUser: $run->currentUser)
+				)
 			);
 
 			$this->stampApplied(preview: $run->preview, rows: [$row]);
@@ -572,6 +619,7 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 	 */
 	private function stampFailed(ImportPreview $preview, ImportPreviewRow $row): void {
 		$row->setAppliedAt(new DateTime());
+		$row->setOutcome(ImportPreviewRow::OUTCOME_FAILED);
 		$this->store->rowMapper->persist(row: $row);
 		$preview->setFailed(($preview->getFailed() + 1));
 	}//end stampFailed()
@@ -589,6 +637,13 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 
 		foreach ($rows as $row) {
 			$row->setAppliedAt($now);
+			$row->setOutcome(ImportPreviewRow::OUTCOME_WRITTEN);
+			if ($row->getTargetUuid() === null) {
+				// A create row's uuid was fixed at preview time on its payload;
+				// naming it on the row makes the created object reachable from it.
+				$row->setTargetUuid(ImportRowPayload::idOf(object: ($row->getPayload() ?? [])));
+			}
+
 			$this->store->rowMapper->persist(row: $row);
 		}
 
@@ -711,6 +766,7 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 		$entity->setTargetUuid($decision['targetUuid']);
 		$entity->setCandidates($decision['candidates']);
 		$entity->setPayload($decision['payload']);
+		$entity->setSource($row['data']);
 
 		$this->store->rowMapper->persist(row: $entity);
 
@@ -734,7 +790,7 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 
 		foreach ($this->store->rowMapper->findByPreview(
 			previewId: (int)$preview->getId(),
-			decision: ImportPreviewRow::DECISION_REFUSE
+			query: ListQuery::unbounded(filters: ['decision' => ImportPreviewRow::DECISION_REFUSE])
 		) as $row) {
 			$refusals[] = [
 				'row' => $row->getSourceRow(),

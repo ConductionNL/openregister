@@ -96,12 +96,12 @@ class ToolGrantResolverWildcardGoldenTest extends TestCase {
 		$sets = ['pipelinq.lead.update' => [['status' => ['mode' => 'pin', 'values' => ['won']]]], 'pipelinq.lead.delete' => [[]]];
 
 		$outcomes = [];
-		$outcomes[] = ToolGrantResolver::waives(waivedSets: $sets, toolId: 'pipelinq.lead.update', arguments: ['status' => 'won']);
-		$outcomes[] = ToolGrantResolver::waives(waivedSets: $sets, toolId: 'pipelinq.lead.update', arguments: ['status' => 'lost']);
-		$outcomes[] = ToolGrantResolver::waives(waivedSets: $sets, toolId: 'pipelinq.lead.update', arguments: []);
-		$outcomes[] = ToolGrantResolver::waives(waivedSets: $sets, toolId: 'pipelinq.lead.delete', arguments: ['id' => 'x']);
-		$outcomes[] = ToolGrantResolver::waives(waivedSets: $sets, toolId: 'pipelinq.lead.get', arguments: []);
-		$outcomes[] = ToolGrantResolver::waives(waivedSets: ['pipelinq.lead.get' => []], toolId: 'pipelinq.lead.get', arguments: []);
+		$outcomes[] = ToolGrantResolver::waivedBy(alternatives: $sets['pipelinq.lead.update'] ?? [], arguments: ['status' => 'won']);
+		$outcomes[] = ToolGrantResolver::waivedBy(alternatives: $sets['pipelinq.lead.update'] ?? [], arguments: ['status' => 'lost']);
+		$outcomes[] = ToolGrantResolver::waivedBy(alternatives: $sets['pipelinq.lead.update'] ?? [], arguments: []);
+		$outcomes[] = ToolGrantResolver::waivedBy(alternatives: $sets['pipelinq.lead.delete'] ?? [], arguments: ['id' => 'x']);
+		$outcomes[] = ToolGrantResolver::waivedBy(alternatives: $sets['pipelinq.lead.get'] ?? [], arguments: []);
+		$outcomes[] = ToolGrantResolver::waivedBy(alternatives: [], arguments: []);
 
 		$this->assertSame([true, false, false, true, false, false], $outcomes);
 	}//end testWaiverAppliesOnlyToASatisfiedWaivedAlternative()

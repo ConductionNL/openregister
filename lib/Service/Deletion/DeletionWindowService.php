@@ -36,7 +36,8 @@ namespace OCA\OpenRegister\Service\Deletion;
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\Settings\RetentionSettingsReaderInterface;
+use OCA\OpenRegister\Db\SoftDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Core\RetentionSettingsInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -55,7 +56,7 @@ class DeletionWindowService {
 	 *
 	 * @var int
 	 */
-	public const DEFAULT_RETENTION_DAYS = 30;
+	public const DEFAULT_RETENTION_DAYS = SoftDeletion::DEFAULT_RETENTION_DAYS;
 
 	/**
 	 * Milliseconds in a day, for reading the instance setting.
@@ -67,13 +68,13 @@ class DeletionWindowService {
 	/**
 	 * Wire the retention settings reader.
 	 *
-	 * @param RetentionSettingsReaderInterface $retentionHandler Reads `objectDeleteRetention`.
-	 * @param LoggerInterface        $logger           PSR logger.
+	 * @param RetentionSettingsInterface $retentionHandler Reads `objectDeleteRetention`.
+	 * @param LoggerInterface            $logger           PSR logger.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly RetentionSettingsReaderInterface $retentionHandler,
+		private readonly RetentionSettingsInterface $retentionHandler,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -93,16 +94,45 @@ class DeletionWindowService {
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function retentionFor(?Schema $schema): array {
-		if ($schema !== null) {
-			$declared = ($schema->getArchive()['deleteRetention'] ?? null);
-			if (is_numeric($declared) === true && (int)$declared > 0) {
-				return [
-					'days' => (int)$declared,
-					'source' => DeletionWindow::SOURCE_SCHEMA,
-				];
-			}
+		$days = self::schemaRetentionDays(schema: $schema);
+		if ($days > 0) {
+			return self::retention(days: $days, source: DeletionWindow::SOURCE_SCHEMA);
 		}
 
+		$days = $this->instanceRetentionDays();
+		if ($days > 0) {
+			return self::retention(days: $days, source: DeletionWindow::SOURCE_INSTANCE);
+		}
+
+		return self::retention(days: self::DEFAULT_RETENTION_DAYS, source: DeletionWindow::SOURCE_DEFAULT);
+	}//end retentionFor()
+
+	/**
+	 * The retention in days a schema declares, or zero when it declares no window.
+	 *
+	 * @param Schema|null $schema The object's schema, when it resolves.
+	 *
+	 * @return int The days, zero when absent, not numeric or not positive.
+	 */
+	private static function schemaRetentionDays(?Schema $schema): int {
+		if ($schema === null) {
+			return 0;
+		}
+
+		$declared = ($schema->getArchive()['deleteRetention'] ?? null);
+		if (is_numeric($declared) === true && (int)$declared > 0) {
+			return (int)$declared;
+		}
+
+		return 0;
+	}//end schemaRetentionDays()
+
+	/**
+	 * The retention in whole days the instance setting configures, or zero when it configures no window.
+	 *
+	 * @return int The days, zero when unset, unreadable, not numeric or under a day.
+	 */
+	private function instanceRetentionDays(): int {
 		$configured = null;
 		try {
 			$configured = ($this->retentionHandler->getRetentionSettingsOnly()['objectDeleteRetention'] ?? null);
@@ -116,20 +146,26 @@ class DeletionWindowService {
 		}
 
 		if (is_numeric($configured) === true && (int)$configured > 0) {
-			$days = (int)floor(((int)$configured / self::MS_PER_DAY));
-			if ($days > 0) {
-				return [
-					'days' => $days,
-					'source' => DeletionWindow::SOURCE_INSTANCE,
-				];
-			}
+			return (int)floor(((int)$configured / self::MS_PER_DAY));
 		}
 
+		return 0;
+	}//end instanceRetentionDays()
+
+	/**
+	 * A retention and the rule that produced it.
+	 *
+	 * @param int    $days   The retention in days.
+	 * @param string $source The rule that produced it.
+	 *
+	 * @return array{days: int, source: string} The retention and its rule.
+	 */
+	private static function retention(int $days, string $source): array {
 		return [
-			'days' => self::DEFAULT_RETENTION_DAYS,
-			'source' => DeletionWindow::SOURCE_DEFAULT,
+			'days' => $days,
+			'source' => $source,
 		];
-	}//end retentionFor()
+	}//end retention()
 
 	/**
 	 * The window keys to merge into an object's deletion metadata when it is
@@ -157,27 +193,6 @@ class DeletionWindowService {
 			'destroyableFrom' => $destroyableFrom->format(DATE_ATOM),
 		];
 	}//end openWindow()
-
-	/**
-	 * The window of a soft-deleted object, or null when it is not in the trash.
-	 *
-	 * Facade over {@see self::windowOf()} for callers that pass the parts.
-	 *
-	 * @param ObjectEntity           $object The object to describe.
-	 * @param Schema|null            $schema The object's schema, when it resolves.
-	 * @param DateTimeImmutable|null $now    Reference moment, now when omitted.
-	 *
-	 * @return DeletionWindow|null The window, or null when the object is live.
-	 *
-	 * @spec openspec/specs/deletion-audit-trail/spec.md
-	 */
-	public function windowFor(
-		ObjectEntity $object,
-		?Schema $schema=null,
-		?DateTimeImmutable $now=null,
-	): ?DeletionWindow {
-		return $this->windowOf(query: new DeletionWindowQuery(object: $object, schema: $schema, now: $now));
-	}//end windowFor()
 
 	/**
 	 * The window of a soft-deleted object, or null when it is not in the trash.
@@ -257,7 +272,7 @@ class DeletionWindowService {
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function refusalBody(ObjectEntity $object, ?Schema $schema = null): array {
-		$window = $this->windowFor(object: $object, schema: $schema);
+		$window = $this->windowOf(query: new DeletionWindowQuery(object: $object, schema: $schema));
 		if ($window === null) {
 			return [
 				'error' => 'Object with id ' . (string)$object->getUuid() . ' not found',

@@ -166,8 +166,21 @@ class PrincipalResolverRegistry implements PrincipalResolverRegistryInterface {
 			return [];
 		}
 
+		return $this->cleanIds(ids: $this->idsFrom(resolver: $resolver, reference: $reference));
+
+	}//end resolve()
+
+	/**
+	 * The ids one resolver gives for a reference, or none when it throws.
+	 *
+	 * @param IPrincipalResolver $resolver  The resolver for the reference's type.
+	 * @param PrincipalReference $reference The reference.
+	 *
+	 * @return array The ids as the resolver gave them.
+	 */
+	private function idsFrom(IPrincipalResolver $resolver, PrincipalReference $reference): array {
 		try {
-			$ids = $resolver->resolve(id: $reference->id);
+			return $resolver->resolve(id: $reference->id);
 		} catch (Throwable $e) {
 			// A resolver that throws must not take the answer verb down with
 			// it. Refusing the answer is the safe direction: the alternative
@@ -179,9 +192,18 @@ class PrincipalResolverRegistry implements PrincipalResolverRegistryInterface {
 
 			return [];
 		}
+	}//end idsFrom()
 
+	/**
+	 * The ids trimmed, blanks dropped, each once.
+	 *
+	 * @param array $ids The ids as a resolver gave them.
+	 *
+	 * @return array<int, string> The clean ids.
+	 */
+	private function cleanIds(array $ids): array {
 		$clean = [];
-        foreach ($ids as $id) {
+		foreach ($ids as $id) {
 			$uid = trim((string)$id);
 			if ($uid !== '') {
 				$clean[] = $uid;
@@ -189,8 +211,7 @@ class PrincipalResolverRegistry implements PrincipalResolverRegistryInterface {
 		}
 
 		return array_values(array_unique($clean));
-
-	}//end resolve()
+	}//end cleanIds()
 
 	/**
 	 * The union of what a list of references means.

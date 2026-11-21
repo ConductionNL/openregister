@@ -1,0 +1,45 @@
+{
+    "OCA\\OpenRegister\\Db\\JobRun": {
+        "types": {
+            "id": "integer",
+            "jobClass": "string",
+            "argumentDigest": "string",
+            "started": "datetime",
+            "ended": "datetime",
+            "durationMs": "integer",
+            "outcome": "string",
+            "message": "string",
+            "details": "string",
+            "cause": "string",
+            "actor": "string"
+        },
+        "empty": {
+            "id": null,
+            "job": null,
+            "name": "",
+            "argumentDigest": null,
+            "started": null,
+            "ended": null,
+            "durationMs": null,
+            "outcome": null,
+            "message": null,
+            "details": null,
+            "cause": null,
+            "actor": null
+        },
+        "filled": {
+            "id": 7,
+            "job": "s1",
+            "name": "s1",
+            "argumentDigest": "s2",
+            "started": "2026-04-13T03:04:05+00:00",
+            "ended": "2026-05-14T04:04:05+01:00",
+            "durationMs": 105,
+            "outcome": "s6",
+            "message": "s7",
+            "details": null,
+            "cause": "s9",
+            "actor": "s10"
+        }
+    }
+}

@@ -116,7 +116,7 @@ class FlowStepReport {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-step-log-lines/specs/flow-step-log-lines/spec.md
+	 * @spec openspec/specs/flow-step-log-lines/spec.md
 	 */
 	public function line(string $level, string $message): void {
 		$lines = ($this->detail['lines'] ?? []);
@@ -125,27 +125,50 @@ class FlowStepReport {
 		}
 
 		if (count($lines) >= self::MAX_LINES) {
-			$this->dropped++;
-			$lines[self::MAX_LINES - 1] = [
-				'at' => $this->now(),
-				'level' => 'info',
-				'message' => sprintf('%d more lines left out.', $this->dropped + 1),
-			];
-			$this->detail['lines'] = $lines;
+			$this->noteDroppedLine(lines: $lines);
 			return;
 		}
 
+		$lines[] = $this->entry(level: $level, message: $message);
+		$this->detail['lines'] = $lines;
+	}//end line()
+
+	/**
+	 * Count a line that no longer fits, and say how many were left out in the last slot.
+	 *
+	 * @param array<int, array<string, string>> $lines The lines kept so far, at the limit.
+	 *
+	 * @return void
+	 */
+	private function noteDroppedLine(array $lines): void {
+		$this->dropped++;
+		$lines[self::MAX_LINES - 1] = [
+			'at' => $this->now(),
+			'level' => 'info',
+			'message' => sprintf('%d more lines left out.', $this->dropped + 1),
+		];
+		$this->detail['lines'] = $lines;
+	}//end noteDroppedLine()
+
+	/**
+	 * One report line, stamped now; an unknown level reads as info.
+	 *
+	 * @param string $level   The level.
+	 * @param string $message The message.
+	 *
+	 * @return array{at: string, level: string, message: string} The line.
+	 */
+	private function entry(string $level, string $message): array {
 		if (in_array($level, self::LEVELS, true) === false) {
 			$level = 'info';
 		}
 
-		$lines[] = [
+		return [
 			'at' => $this->now(),
 			'level' => $level,
 			'message' => $this->bounded(message: $message),
 		];
-		$this->detail['lines'] = $lines;
-	}//end line()
+	}//end entry()
 
 	/**
 	 * The message, cut to {@see self::MAX_MESSAGE_LENGTH} characters with a marker when it is longer.
@@ -171,7 +194,7 @@ class FlowStepReport {
 	 *
 	 * @return string The moment.
 	 *
-	 * @spec openspec/changes/flow-step-log-lines/specs/flow-step-log-lines/spec.md
+	 * @spec openspec/specs/flow-step-log-lines/spec.md
 	 */
 	private function now(): string {
 		$moment = DateTimeImmutable::createFromFormat('U.u', sprintf('%.6F', microtime(true)), new DateTimeZone('UTC'));

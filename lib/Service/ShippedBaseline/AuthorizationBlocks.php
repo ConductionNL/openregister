@@ -113,6 +113,30 @@ class AuthorizationBlocks {
 	 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
 	 */
 	public function settle(array $states, array $decisions): array {
+		$blocks = [];
+		foreach ($this->statesByRoot(states: $states) as $root => $memberStates) {
+			$state = $this->blockState(memberStates: $memberStates);
+			if ($state === null) {
+				continue;
+			}
+
+			$blocks[$root] = self::settled(state: $state);
+			if (in_array($root, $decisions, true) === true) {
+				$blocks[$root] = self::takenUpstream(block: $blocks[$root]);
+			}
+		}
+
+		return $blocks;
+	}//end settle()
+
+	/**
+	 * The states of the authorization-block keys, grouped by block root.
+	 *
+	 * @param array<string, string> $states Path to state.
+	 *
+	 * @return array<string, array<int, string>> Block root to the states of its keys.
+	 */
+	private function statesByRoot(array $states): array {
 		$members = [];
 		foreach ($states as $path => $state) {
 			$root = $this->rootOf(path: (string)$path);
@@ -121,26 +145,37 @@ class AuthorizationBlocks {
 			}
 		}
 
-		$blocks = [];
-		foreach ($members as $root => $memberStates) {
-			$state = $this->blockState(memberStates: $memberStates);
-			if ($state === null) {
-				continue;
-			}
+		return $members;
+	}//end statesByRoot()
 
-			$decided = in_array($root, $decisions, true);
-			$blocks[$root] = [
-				'state'      => $state,
-				'decided'    => $decided,
-				'localMoved' => ($state !== DivergenceComparator::UPSTREAM),
-			];
-			if ($decided === true) {
-				$blocks[$root]['state'] = DivergenceComparator::UPSTREAM;
-			}
-		}
+	/**
+	 * A block's settlement before any decision: its state, and whether its local side moved.
+	 *
+	 * @param string $state UPSTREAM, LOCAL or BOTH.
+	 *
+	 * @return array{state: string, decided: bool, localMoved: bool} The settlement.
+	 */
+	private static function settled(string $state): array {
+		return [
+			'state'      => $state,
+			'decided'    => false,
+			'localMoved' => ($state !== DivergenceComparator::UPSTREAM),
+		];
+	}//end settled()
 
-		return $blocks;
-	}//end settle()
+	/**
+	 * A settlement an administrator decided to take from upstream.
+	 *
+	 * @param array{state: string, decided: bool, localMoved: bool} $block The settlement.
+	 *
+	 * @return array{state: string, decided: bool, localMoved: bool} The decided settlement.
+	 */
+	private static function takenUpstream(array $block): array {
+		$block['decided'] = true;
+		$block['state'] = DivergenceComparator::UPSTREAM;
+
+		return $block;
+	}//end takenUpstream()
 
 	/**
 	 * What the settled blocks applied, replaced over a local change, and left in conflict.
@@ -166,20 +201,33 @@ class AuthorizationBlocks {
 			}
 
 			if ($block['state'] === DivergenceComparator::BOTH) {
-				$shipped = $this->subtree(parts: $sources['incoming'], root: (string)$root);
-				$live    = $this->subtree(parts: $sources['live'], root: (string)$root);
-				$outcome['conflicts'][] = [
-					'path'           => $root,
-					'shipped'        => $shipped,
-					'live'           => $live,
-					'shippedPresent' => ($shipped !== null),
-					'livePresent'    => ($live !== null),
-				];
+				$outcome['conflicts'][] = $this->conflictAt(root: (string)$root, sources: $sources);
 			}
 		}
 
 		return $outcome;
 	}//end outcome()
+
+	/**
+	 * A block in conflict, reported on its root with both sides as trees.
+	 *
+	 * @param string                                  $root    The block root.
+	 * @param array<string, array<string|int, mixed>> $sources The flattened definitions.
+	 *
+	 * @return array<string, mixed> The conflict.
+	 */
+	private function conflictAt(string $root, array $sources): array {
+		$shipped = $this->subtree(parts: $sources['incoming'], root: $root);
+		$live    = $this->subtree(parts: $sources['live'], root: $root);
+
+		return [
+			'path'           => $root,
+			'shipped'        => $shipped,
+			'live'           => $live,
+			'shippedPresent' => ($shipped !== null),
+			'livePresent'    => ($live !== null),
+		];
+	}//end conflictAt()
 
 	/**
 	 * One block's state from the states of its keys: null when nothing moved.

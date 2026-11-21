@@ -47,6 +47,9 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\Hardening\StatementService
+ * @uses \OCA\OpenRegister\Service\Hardening\HardeningFact
+ * @uses \OCA\OpenRegister\Service\Hardening\PlatformConfiguration
+ * @uses \OCA\OpenRegister\Service\Hardening\StatementPublication
  */
 class StatementServiceTest extends TestCase {
 

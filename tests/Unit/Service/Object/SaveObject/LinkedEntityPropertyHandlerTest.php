@@ -85,7 +85,8 @@ class LinkedEntityPropertyHandlerTest extends TestCase {
 			}
 		);
 
-		$result = (new LinkedEntityPropertyHandler($logger))->extractAndPopulate($object, $this->schema(properties: $properties), $data);
+		$object->setObject($data);
+		$result = (new LinkedEntityPropertyHandler($logger))->extractAndPopulate($object, $this->schema(properties: $properties));
 
 		$this->assertSame($object, $result);
 		$this->assertSame(['ad-hoc', '1/6', '2/9'], $object->getMail());
@@ -111,7 +112,8 @@ class LinkedEntityPropertyHandlerTest extends TestCase {
 		$logger->expects($this->never())->method('debug');
 		$properties = ['files' => ['type' => 'array', 'items' => ['type' => 'NcFile']], 'talk' => ['type' => 'NcTalk']];
 
-		(new LinkedEntityPropertyHandler($logger))->extractAndPopulate($object, $this->schema(properties: $properties), ['files' => 'one-file']);
+		$object->setObject(['files' => 'one-file']);
+		(new LinkedEntityPropertyHandler($logger))->extractAndPopulate($object, $this->schema(properties: $properties));
 
 		$this->assertSame([], $object->getFiles() ?? []);
 		$this->assertSame([], $object->getTalk() ?? []);
