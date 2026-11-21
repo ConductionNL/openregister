@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\InvalidTransitionInputException;
 use OCA\OpenRegister\Exception\LifecycleProviderException;
@@ -82,16 +83,14 @@ class TransitionController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName The application name.
 	 * @param IRequest $request The current request.
 	 * @param TransitionEngine $engine The transition engine.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		private readonly TransitionEngine $engine,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 	}//end __construct()
 
 	/**

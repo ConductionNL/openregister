@@ -353,7 +353,6 @@ class SchemasControllerWriteGoldenTest extends TestCase {
 		});
 
 		return SchemasControllerFactory::create(
-			'openregister',
 			$request,
 			$this->createMock(IAppConfig::class),
 			$schemaMapper,

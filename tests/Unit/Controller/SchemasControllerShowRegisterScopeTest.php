@@ -91,7 +91,6 @@ class SchemasControllerShowRegisterScopeTest extends TestCase {
 		);
 
 		$this->controller = SchemasControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->createMock(IAppConfig::class),
 			$this->schemaMapper,

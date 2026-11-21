@@ -102,7 +102,6 @@ class SchemasControllerApprovalPositionFormTest extends TestCase {
 
 		$urlGenerator = $this->createMock(IURLGenerator::class);
 		$this->controller = SchemasControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->createMock(IAppConfig::class),
 			$this->schemaMapper,

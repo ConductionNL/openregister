@@ -133,7 +133,6 @@ class DeletedControllerSyncFilterTest extends TestCase {
 		);
 
 		return new DeletedController(
-			'openregister',
 			$request,
 			new DeletedControllerServices(
 				store: new DeletedStore(

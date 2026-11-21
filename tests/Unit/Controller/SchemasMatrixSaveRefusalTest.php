@@ -135,7 +135,6 @@ final class SchemasMatrixSaveRefusalTest extends TestCase {
 		);
 
 		return SchemasControllerFactory::create(
-			'openregister',
 			$request,
 			$this->createMock(IAppConfig::class),
 			$this->schemaMapper,

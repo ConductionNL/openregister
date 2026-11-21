@@ -63,7 +63,6 @@ class SchemasControllerIndexesTest extends TestCase {
 		$this->magicMapper    = $this->createMock(MagicMapper::class);
 
 		$this->controller = SchemasControllerFactory::create(
-			'openregister',
 			$this->createMock(IRequest::class),
 			$this->createMock(IAppConfig::class),
 			$this->schemaMapper,
