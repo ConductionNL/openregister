@@ -4468,6 +4468,7 @@ Service/PlatformServiceRegistrar.php,,Service,,,,,Platform
 Service/Config/ShareableConfigCatalogue.php,,Service,,,,,Configuration
 Service/ComplianceServiceBindings.php,,Service,,,,,Compliance
 Service/ComplianceServiceRegistrar.php,,Service,,,,,Compliance
+Service/CoreServiceBindings.php,,Service,,,,,Core
 Files/Service/File/FileScopeReader.php,,Files,,,,,Files
 Service/Task/OverdueOpenTasks.php,,Service,,,,,Processes
 Event/ObjectWriteRequestEvent.php,,Event,,,,,Core

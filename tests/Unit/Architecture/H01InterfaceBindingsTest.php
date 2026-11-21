@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\Flow\FlowWiring;
 use OCA\OpenRegister\Service\Party\PartySearchInterface;
 use OCA\OpenRegister\Service\Party\PartySearchService;
@@ -74,7 +75,7 @@ final class H01InterfaceBindingsTest extends TestCase {
 	 */
 	public function testTheFallbacksBuildTheBoundClasses(): void {
 		$this->assertSame(
-			ContractBindings::BINDINGS[ObjectScopeResolverInterface::class],
+			CoreServiceBindings::BINDINGS[ObjectScopeResolverInterface::class],
 			get_class(RbacFallbacks::objectScope())
 		);
 		$this->assertInstanceOf(
