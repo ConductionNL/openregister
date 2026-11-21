@@ -2769,6 +2769,8 @@ Service/Object/MigrationSide.php,14,Service,Service,Service/Object/MigrationSide
 Service/Object/MoveAddress.php,15,Service,Service,Service/Object/MoveAddress.php,0,,Core
 Service/Object/MoveObject.php,191,Service,Service,Service/Object/MoveObject.php,0,,Core
 Service/Object/CopyPayload.php,,Service,,,,,Core
+Service/Object/CopyObject.php,,Service,,,,,Core
+Service/Object/CopyFiles.php,,Service,,,,,Core
 Service/Object/DraftService.php,133,Service,Service,Service/Object/DraftService.php,0,,Core
 Service/Object/MovedObjectLookup.php,71,Service,Service,Service/Object/MovedObjectLookup.php,0,,Core
 Service/Object/MovedObjectLookupInterface.php,6,Service,Service,Service/Object/MovedObjectLookupInterface.php,0,,Core
@@ -4349,6 +4351,7 @@ BackgroundJob/PublishedDigestVerifyJob.php,,BackgroundJob,,,,,Files
 Collaboration/ObjectCollections.php,,Collaboration,,,,,Platform
 Controller/ObjectCollectionsController.php,,Controller,,,,,Platform
 Controller/VersionsController.php,310,Controller,Service,Service/Controller/VersionsController.php,0,,Core
+Controller/Support/CopyRun.php,,Controller,,,,,Core
 Db/SchemaMapper/NamedConditionCheck.php,,Db,,,,,Processes
 Db/SchemaMapper/NotificationAnnotationCheck.php,,Db,,,0,,Notifications
 Service/Import/RecordImport/ColumnMapper.php,,Service,,,,,Core
