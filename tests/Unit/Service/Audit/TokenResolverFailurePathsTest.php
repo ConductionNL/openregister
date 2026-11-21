@@ -29,6 +29,7 @@ use OCA\OpenRegister\Db\ConsumerMapperInterface;
 use OCA\OpenRegister\Service\Audit\NamedIdentifier;
 use OCA\OpenRegister\Service\Audit\TokenIdentity;
 use OCA\OpenRegister\Service\Audit\TokenResolver;
+use OCA\OpenRegister\Service\Consumer\AccountConsumerLookup;
 use OCP\Authentication\Token\IProvider as ITokenProvider;
 use OCP\Authentication\Token\IToken;
 use OCP\ISession;
@@ -42,6 +43,7 @@ use RuntimeException;
 #[CoversClass(TokenResolver::class)]
 #[UsesClass(TokenIdentity::class)]
 #[UsesClass(NamedIdentifier::class)]
+#[UsesClass(AccountConsumerLookup::class)]
 final class TokenResolverFailurePathsTest extends TestCase {
 
 	private function session(string $password): ISession {
@@ -61,7 +63,7 @@ final class TokenResolverFailurePathsTest extends TestCase {
 			$session,
 			$tokens,
 			($users ?? $this->createMock(IUserSession::class)),
-			($consumers ?? $this->createMock(ConsumerMapperInterface::class))
+			new AccountConsumerLookup(($consumers ?? $this->createMock(ConsumerMapperInterface::class)))
 		);
 	}//end resolver()
 
