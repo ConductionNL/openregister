@@ -35,6 +35,7 @@ use DateTime;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskRelation;
 use OCA\OpenRegister\Exception\TaskValidationException;
+use OCA\OpenRegister\Service\Rbac\PermissionCatalogueInterface;
 use Symfony\Component\Uid\Uuid;
 use Throwable;
 
@@ -118,6 +119,23 @@ class TaskBuilder {
 	];
 
 	/**
+	 * Constructor.
+	 *
+	 * @param PermissionCatalogueInterface|null $catalogue The grantable verbs a
+	 *                                            `requiredMandate` must name.
+	 *                                            Absent, a task that names a
+	 *                                            mandate is refused: a verb
+	 *                                            nobody can check is not one
+	 *                                            to store.
+	 *
+	 * @spec openspec/changes/tasks-delegation-and-substitution/specs/flow-tasks/spec.md#requirement-a-task-may-name-the-mandate-its-performer-needs
+	 */
+	public function __construct(
+		private readonly ?PermissionCatalogueInterface $catalogue = null,
+	) {
+	}//end __construct()
+
+	/**
 	 * Build and validate a new task from boundary data. Unsaved.
 	 *
 	 * @param array<string, mixed> $data The incoming fields.
@@ -148,6 +166,7 @@ class TaskBuilder {
 		// Plain carried fields.
 		$task->setUuid((string)($data['uuid'] ?? Uuid::v4()->toRfc4122()));
 		$this->carryFields(task: $task, data: $data);
+		$task->setRequiredMandate($this->validRequiredMandate(value: ($data['requiredMandate'] ?? null)));
 		$task->setCreatedBy($actor);
 
 		return $task;
@@ -252,6 +271,37 @@ class TaskBuilder {
 		$task->setOnTimeout($onTimeout);
 		$task->setOnReject($this->validBehaviour(value: ($data['onReject'] ?? null), field: 'onReject'));
 	}//end applyBehaviours()
+
+	/**
+	 * The mandate verb a delegate or stand-in must hold, refused unless the
+	 * permission catalogue names it.
+	 *
+	 * Refused at creation so a typo cannot make every later delegation of the
+	 * task fail; refused too when the catalogue cannot be asked, because an
+	 * unchecked verb is exactly that typo waiting to happen.
+	 *
+	 * @param mixed $value The incoming `requiredMandate`.
+	 *
+	 * @return string|null The verb, or null when none was given.
+	 *
+	 * @throws TaskValidationException When the verb is not grantable here.
+	 *
+	 * @spec openspec/changes/tasks-delegation-and-substitution/specs/flow-tasks/spec.md#requirement-a-task-may-name-the-mandate-its-performer-needs
+	 */
+	private function validRequiredMandate(mixed $value): ?string {
+		$verb = $this->stringOrNull(value: $value);
+		if ($verb === null) {
+			return null;
+		}
+
+		if ($this->catalogue === null || $this->catalogue->isGrantable(verb: $verb) === false) {
+			throw new TaskValidationException(
+				message: sprintf("Unknown mandate '%s': requiredMandate must name a permission from the permission catalogue.", $verb)
+			);
+		}
+
+		return $verb;
+	}//end validRequiredMandate()
 
 	/**
 	 * Copy the plain carried fields, each through its own normaliser.

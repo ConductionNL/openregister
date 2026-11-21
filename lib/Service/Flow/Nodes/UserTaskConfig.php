@@ -236,6 +236,7 @@ final class UserTaskConfig {
 			'expiresAt' => $this->common->renderedOrNull(value: ($config['expiresAt'] ?? null), json: $json),
 			'onTimeout' => $this->nullIfEmpty(value: trim((string)($config['onTimeout'] ?? ''))),
 			'onReject' => $this->nullIfEmpty(value: trim((string)($config['onReject'] ?? ''))),
+			'requiredMandate' => $this->nullIfEmpty(value: trim((string)($config['requiredMandate'] ?? ''))),
 			'metadata' => [
 				'flowNodeType' => $nodeType,
 				'flowNode' => $step->nodeId,

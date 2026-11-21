@@ -472,6 +472,33 @@ class TaskMapper extends QBMapper {
 	}//end findOpenByRunUuid()
 
 	/**
+	 * One page of a person's open tasks, in id order after a watermark.
+	 *
+	 * Reads the `(assignee, is_terminal, due_at)` index; the substitution job
+	 * pages through a person's work with it, a bounded number per run.
+	 *
+	 * @param string $uid     The assignee.
+	 * @param int    $afterId Only tasks with a larger id (0 for the first page).
+	 * @param int    $limit   The page size.
+	 *
+	 * @return array<int, Task> The open tasks, ascending by id.
+	 *
+	 * @spec openspec/changes/tasks-delegation-and-substitution/specs/flow-tasks/spec.md#requirement-a-task-goes-to-the-stand-in-of-an-absent-assignee
+	 */
+	public function findOpenAssignedTo(string $uid, int $afterId, int $limit): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('assignee', $qb->createNamedParameter($uid)))
+			->andWhere($qb->expr()->eq('is_terminal', $qb->createNamedParameter(false, IQueryBuilder::PARAM_BOOL)))
+			->andWhere($qb->expr()->gt('id', $qb->createNamedParameter($afterId, IQueryBuilder::PARAM_INT)))
+			->orderBy('id', 'ASC')
+			->setMaxResults($limit);
+
+		return $this->findEntities(query: $qb);
+	}//end findOpenAssignedTo()
+
+	/**
 	 * Open-task counts per assignee, for the `least-loaded` strategy.
 	 *
 	 * @param array<int, string> $uids The candidate uids.
