@@ -22,6 +22,7 @@ namespace OCA\OpenRegister\Notifications\BackgroundJob;
 
 use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterEvaluator;
+use OCA\OpenRegister\Service\Flow\Timer\SlaCalculatorInterface;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarService;
 
 /**
@@ -36,11 +37,13 @@ final readonly class ScheduledObjectSources {
 	 * @param SchemaCatalogInterface   $catalog         The schema mapper (schema lookup) and the magic mapper (objects).
 	 * @param ScheduledFilterEvaluator $filterEvaluator Operator-aware filter evaluator.
 	 * @param WorkingCalendarService|null $calendars    The working calendars a reminder counts business days on.
+	 * @param SlaCalculatorInterface|null $calculator   The business-time calculator a reminder counts its offsets with.
 	 */
 	public function __construct(
 		public SchemaCatalogInterface $catalog,
 		public ScheduledFilterEvaluator $filterEvaluator,
 		public ?WorkingCalendarService $calendars = null,
+		public ?SlaCalculatorInterface $calculator = null,
 	) {
 	}//end __construct()
 }//end class

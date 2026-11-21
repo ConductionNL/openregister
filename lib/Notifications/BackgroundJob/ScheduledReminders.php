@@ -26,7 +26,8 @@ use OCA\OpenRegister\Notifications\Db\ReminderProgress;
 use OCA\OpenRegister\Notifications\Service\Notification\ReminderDecision;
 use OCA\OpenRegister\Notifications\Service\Notification\ReminderPlan;
 use OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterTarget;
-use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar;
+use OCA\OpenRegister\Service\Flow\Timer\SlaCalculatorInterface;
+use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarInterface;
 
 /**
  * Arms, sends, repeats and stops the reminder of one scheduled rule on one object.
@@ -69,7 +70,7 @@ final class ScheduledReminders {
 			return;
 		}
 
-		$plan = new ReminderPlan(reminder: $fire->reminder);
+		$plan = new ReminderPlan(reminder: $fire->reminder, calculator: $this->calculator());
 		$key  = new NotificationDedupeKey(schemaId: $fire->schemaId, ruleKey: $fire->name, objectUuid: $uuid);
 		$data = (array)($object->getObject() ?? []);
 
@@ -166,11 +167,11 @@ final class ScheduledReminders {
 	 * @param ReminderPlan $plan   The plan.
 	 * @param ObjectEntity $object The object, whose organisation picks the calendar.
 	 *
-	 * @return WorkingCalendar|null The calendar.
+	 * @return WorkingCalendarInterface|null The calendar.
 	 *
 	 * @throws \RuntimeException When the plan counts business days and no calendar service is wired.
 	 */
-	private function calendar(ReminderPlan $plan, ObjectEntity $object): ?WorkingCalendar {
+	private function calendar(ReminderPlan $plan, ObjectEntity $object): ?WorkingCalendarInterface {
 		if ($plan->needsCalendar() === false) {
 			return null;
 		}
@@ -181,4 +182,19 @@ final class ScheduledReminders {
 
 		return $this->sources->calendars->resolve(calendarSlug: null, organisation: $object->getOrganisation());
 	}//end calendar()
+
+	/**
+	 * The business-time calculator the plan counts its offsets with.
+	 *
+	 * @return SlaCalculatorInterface The calculator.
+	 *
+	 * @throws \RuntimeException When no calculator is wired.
+	 */
+	private function calculator(): SlaCalculatorInterface {
+		if ($this->sources->calculator === null) {
+			throw new \RuntimeException('it counts its offsets and no business-time calculator is available');
+		}
+
+		return $this->sources->calculator;
+	}//end calculator()
 }//end class

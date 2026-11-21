@@ -38,11 +38,11 @@ final class ServiceHoursFrame {
 	/**
 	 * Constructor.
 	 *
-	 * @param WorkingCalendar $calendar The calendar deciding the days.
+	 * @param WorkingCalendarInterface $calendar The calendar deciding the days.
 	 * @param ServiceHours    $windows  Its declared windows.
 	 */
 	public function __construct(
-		public readonly WorkingCalendar $calendar,
+		public readonly WorkingCalendarInterface $calendar,
 		public readonly ServiceHours $windows,
 	) {
 	}//end __construct()

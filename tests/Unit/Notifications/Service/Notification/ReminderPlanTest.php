@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Notifications\Service\Notification;
 
 use DateTimeImmutable;
+use OCA\OpenRegister\Service\Flow\Timer\SlaCalculator;
 use OCA\OpenRegister\Notifications\Db\ReminderProgress;
 use OCA\OpenRegister\Notifications\Service\Notification\ReminderDecision;
 use OCA\OpenRegister\Notifications\Service\Notification\ReminderPlan;
@@ -41,7 +42,7 @@ class ReminderPlanTest extends TestCase {
 	}//end calendar()
 
 	public function testAReminderCountsBusinessDaysBeforeTheHearing(): void {
-		$plan = new ReminderPlan(reminder: ['anchor' => 'hearingDate', 'offset' => ['value' => -3, 'unit' => 'businessDays']]);
+		$plan = new ReminderPlan(reminder: ['anchor' => 'hearingDate', 'offset' => ['value' => -3, 'unit' => 'businessDays']], calculator: new SlaCalculator());
 
 		// Hearing on Monday 15 March 2027: three business days before is Wednesday 10 March.
 		$decision = $plan->decide(anchorValue: '2027-03-15', stored: null, now: self::at('2027-03-10T12:00:00Z'), calendar: self::calendar());
@@ -53,7 +54,7 @@ class ReminderPlanTest extends TestCase {
 	}//end testAReminderCountsBusinessDaysBeforeTheHearing()
 
 	public function testNotYetDueWaits(): void {
-		$plan     = new ReminderPlan(reminder: self::CHASE);
+		$plan     = new ReminderPlan(reminder: self::CHASE, calculator: new SlaCalculator());
 		$decision = $plan->decide(anchorValue: '2027-03-01', stored: null, now: self::at('2027-03-07T23:59:00Z'), calendar: null);
 
 		$this->assertSame(ReminderDecision::WAIT, $decision->kind);
@@ -61,7 +62,7 @@ class ReminderPlanTest extends TestCase {
 	}//end testNotYetDueWaits()
 
 	public function testAChaseRunsThreeTimesSevenDaysApartAndStops(): void {
-		$plan   = new ReminderPlan(reminder: self::CHASE);
+		$plan   = new ReminderPlan(reminder: self::CHASE, calculator: new SlaCalculator());
 		$stored = null;
 		$sent   = [];
 		// A daily sweep for a month while the condition stays unmet.
@@ -80,7 +81,7 @@ class ReminderPlanTest extends TestCase {
 	}//end testAChaseRunsThreeTimesSevenDaysApartAndStops()
 
 	public function testWithoutARepeatOneReminderIsSent(): void {
-		$plan   = new ReminderPlan(reminder: ['anchor' => 'd', 'offset' => ['value' => 1, 'unit' => 'calendarDays']]);
+		$plan   = new ReminderPlan(reminder: ['anchor' => 'd', 'offset' => ['value' => 1, 'unit' => 'calendarDays']], calculator: new SlaCalculator());
 		$sent   = new ReminderProgress(fingerprint: sha1('2027-03-01'), sent: 1);
 
 		$this->assertSame(1, $plan->total());
@@ -88,7 +89,7 @@ class ReminderPlanTest extends TestCase {
 	}//end testWithoutARepeatOneReminderIsSent()
 
 	public function testAMovedAnchorReArmsFromTheNewDate(): void {
-		$plan   = new ReminderPlan(reminder: self::CHASE);
+		$plan   = new ReminderPlan(reminder: self::CHASE, calculator: new SlaCalculator());
 		$stored = new ReminderProgress(fingerprint: sha1('2027-03-01'), sent: 3);
 
 		// The hearing moved two weeks later: the count starts over from the new date.
@@ -102,7 +103,7 @@ class ReminderPlanTest extends TestCase {
 	}//end testAMovedAnchorReArmsFromTheNewDate()
 
 	public function testAStoppedReminderDoesNotReArm(): void {
-		$plan    = new ReminderPlan(reminder: self::CHASE);
+		$plan    = new ReminderPlan(reminder: self::CHASE, calculator: new SlaCalculator());
 		$stopped = new ReminderProgress(fingerprint: sha1('2027-03-01'), sent: 1, stopped: $plan->stopReason());
 
 		foreach (['2027-03-01', '2027-04-01'] as $anchor) {
@@ -113,7 +114,7 @@ class ReminderPlanTest extends TestCase {
 	}//end testAStoppedReminderDoesNotReArm()
 
 	public function testAClearedAnchorArmsNothing(): void {
-		$plan = new ReminderPlan(reminder: self::CHASE);
+		$plan = new ReminderPlan(reminder: self::CHASE, calculator: new SlaCalculator());
 
 		foreach ([null, '', 'someday', '2027-02-30', 12] as $value) {
 			$this->assertSame(ReminderDecision::NO_ANCHOR, $plan->decide(anchorValue: $value, stored: null, now: self::at('2027-05-01T00:00:00Z'), calendar: null)->kind);
@@ -121,7 +122,7 @@ class ReminderPlanTest extends TestCase {
 	}//end testAClearedAnchorArmsNothing()
 
 	public function testTheStopReasonNamesTheCondition(): void {
-		$plan = new ReminderPlan(reminder: self::CHASE);
+		$plan = new ReminderPlan(reminder: self::CHASE, calculator: new SlaCalculator());
 
 		$this->assertSame('stopWhen {"attachment":{"operator":"exists"}}', $plan->stopReason());
 		$this->assertSame(['attachment' => ['operator' => 'exists']], $plan->stopWhen());
@@ -129,7 +130,7 @@ class ReminderPlanTest extends TestCase {
 	}//end testTheStopReasonNamesTheCondition()
 
 	public function testBusinessDaysWithoutACalendarAreRefused(): void {
-		$plan = new ReminderPlan(reminder: ['anchor' => 'd', 'offset' => ['value' => -3, 'unit' => 'businessDays']]);
+		$plan = new ReminderPlan(reminder: ['anchor' => 'd', 'offset' => ['value' => -3, 'unit' => 'businessDays']], calculator: new SlaCalculator());
 
 		$this->expectException(\Throwable::class);
 		$plan->decide(anchorValue: '2027-03-15', stored: null, now: self::at('2027-03-15T00:00:00Z'), calendar: null);
