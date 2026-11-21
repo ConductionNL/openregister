@@ -94,6 +94,16 @@ final class ValidationErrorMessages {
 	];
 
 	/**
+	 * Build the message builder for one request.
+	 *
+	 * @param string|null $language The language the request resolved to, for declared messages.
+	 *
+	 * @spec openspec/changes/modelling-validation-messages/specs/schema-validation-messages/spec.md#requirement-a-failed-rule-returns-the-declared-message-in-the-request-language
+	 */
+	public function __construct(private readonly ?string $language=null) {
+	}//end __construct()
+
+	/**
 	 * The message for a validation result: its primary error, or that it passed.
 	 *
 	 * @param ValidationResult $result The validation result from Opis JsonSchema.
@@ -131,6 +141,12 @@ final class ValidationErrorMessages {
 	 * @return string The message.
 	 */
 	private function forError(ValidationError $error): string {
+		// What the schema declares wins; without a declaration the message is today's.
+		$declared = (new DeclaredErrorMessage(language: $this->language))->forError(error: $error);
+		if ($declared !== null) {
+			return $declared;
+		}
+
 		$keyword = $error->keyword();
 		$path    = $this->propertyPath(error: $error);
 

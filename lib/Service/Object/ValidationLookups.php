@@ -23,9 +23,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\IUserManager;
 use Psr\Container\ContainerInterface;
+use Throwable;
 
 /**
  * What a validation looks existing objects and users up in.
@@ -49,6 +51,25 @@ final class ValidationLookups {
 		private readonly ?ContainerInterface $container = null,
 	) {
 	}//end __construct()
+
+	/**
+	 * The language this request resolved to, or null without a container or a resolver.
+	 *
+	 * @return string|null The BCP 47 tag.
+	 *
+	 * @spec openspec/changes/modelling-validation-messages/specs/schema-validation-messages/spec.md#requirement-a-failed-rule-returns-the-declared-message-in-the-request-language
+	 */
+	public function preferredLanguage(): ?string {
+		if ($this->container === null) {
+			return null;
+		}
+
+		try {
+			return $this->container->get(LanguageService::class)->getPreferredLanguage();
+		} catch (Throwable $e) {
+			return null;
+		}
+	}//end preferredLanguage()
 
 	/**
 	 * The organisation service, or null without a container.

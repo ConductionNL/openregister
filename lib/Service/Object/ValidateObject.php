@@ -2160,7 +2160,7 @@ class ValidateObject implements ValidateObjectInterface {
 	 * @spec openspec/specs/objects-crud/spec.md
 	 */
 	public function generateErrorMessage(ValidationResult $result): string {
-		return (new ValidationErrorMessages())->forResult(result: $result);
+		return (new ValidationErrorMessages(language: $this->lookups->preferredLanguage()))->forResult(result: $result);
 	}//end generateErrorMessage()
 
 	/**
