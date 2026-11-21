@@ -3,7 +3,7 @@
 /**
  * PermissionHandler is reached through its interface.
  *
- * Callers type against PermissionHandlerInterface and ContractBindings aliases it
+ * Callers type against PermissionHandlerInterface and the Core map aliases it
  * to PermissionHandler, so the heavily referenced file is the small interface. A
  * missing alias is a runtime 500 that no other unit test sees, so this test pins
  * the binding, the implementation and the only callers still allowed to name the
@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
-use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use PHPUnit\Framework\TestCase;
@@ -61,12 +61,12 @@ final class PermissionHandlerInterfaceBindingTest extends TestCase {
 	}//end testTheClassImplementsTheInterface()
 
 	/**
-	 * ContractBindings aliases the interface to the class.
+	 * The Core map aliases the interface to the class.
 	 *
 	 * @return void
 	 */
 	public function testTheInterfaceIsBound(): void {
-		$this->assertSame(expected: PermissionHandler::class, actual: ContractBindings::BINDINGS[PermissionHandlerInterface::class] ?? null);
+		$this->assertSame(expected: PermissionHandler::class, actual: CoreServiceBindings::BINDINGS[PermissionHandlerInterface::class] ?? null);
 	}//end testTheInterfaceIsBound()
 
 	/**
@@ -79,7 +79,7 @@ final class PermissionHandlerInterfaceBindingTest extends TestCase {
 		$files  = new RecursiveIteratorIterator(new RecursiveDirectoryIterator(self::LIB));
 		foreach ($files as $file) {
 			$path = substr($file->getPathname(), strlen(self::LIB) + 1);
-			if ($file->getExtension() !== 'php' || str_starts_with($path, 'Service/Object/') === true || $path === 'Service/ContractBindings.php') {
+			if ($file->getExtension() !== 'php' || str_starts_with($path, 'Service/Object/') === true || $path === 'Service/CoreServiceBindings.php') {
 				continue;
 			}
 
