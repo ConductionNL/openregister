@@ -23,7 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Search\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Search\Controller\Support\ContactSearchControllerServices;
 use OCA\OpenRegister\Search\Service\Integration\ContactSearch;
 use OCP\AppFramework\Controller;
@@ -50,7 +50,7 @@ class ContactSearchController extends Controller {
 		IRequest $request,
 		private readonly ContactSearchControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**

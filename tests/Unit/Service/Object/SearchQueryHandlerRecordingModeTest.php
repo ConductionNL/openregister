@@ -35,6 +35,7 @@ use RuntimeException;
  * What the retention settings mean for recording a search, and the failures it survives.
  *
  * @covers \OCA\OpenRegister\Service\Object\SearchQueryHandler
+ * @uses \OCA\OpenRegister\Service\SearchMeasurement
  */
 final class SearchQueryHandlerRecordingModeTest extends TestCase {
 	/**
