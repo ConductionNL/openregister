@@ -11,15 +11,15 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
-use OCA\OpenRegister\Db\DbRegistrar;
+use OCA\OpenRegister\Tests\Unit\Db\DbBindingMaps;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
  * A missing binding is a 500 at the first request that resolves the
  * interface, which no other unit test catches. So every lib/Db interface
- * whose docblock says it is guarded here is checked for its DbRegistrar
- * binding, for its bound mapper implementing it, and for no lib/ file
+ * whose docblock says it is guarded here is checked for its binding in
+ * DbRegistrar or its area's mapper registrar, for its bound mapper implementing it, and for no lib/ file
  * outside lib/Db naming that mapper again.
  *
  * The rows are discovered from the interfaces rather than listed, so every
@@ -44,7 +44,7 @@ final class C04InterfaceBindingsTest extends TestCase {
 	private const MARKER = 'Guarded by C04InterfaceBindingsTest.';
 
 	/**
-	 * One row per guarded interface: [interface, the class DbRegistrar binds it to].
+	 * One row per guarded interface: [interface, the class it is bound to].
 	 *
 	 * @return array<string, array{0: class-string, 1: string|null}>
 	 */
@@ -61,7 +61,7 @@ final class C04InterfaceBindingsTest extends TestCase {
 			}
 
 			$interface        = 'OCA\\OpenRegister\\Db\\' . basename($path, '.php');
-			$rows[$interface] = [$interface, DbRegistrar::BINDINGS[$interface] ?? null];
+			$rows[$interface] = [$interface, DbBindingMaps::all()[$interface] ?? null];
 		}
 
 		ksort($rows);
@@ -78,17 +78,17 @@ final class C04InterfaceBindingsTest extends TestCase {
 	}//end testSomeInterfaceIsGuarded()
 
 	/**
-	 * DbRegistrar binds the interface to a Db class that implements it.
+	 * A registrar binds the interface to a Db class that implements it.
 	 *
 	 * @param class-string $interface The guarded interface.
-	 * @param string|null  $class     The class DbRegistrar binds it to.
+	 * @param string|null  $class     The class it is bound to.
 	 *
 	 * @return void
 	 */
 	#[DataProvider('guardedInterfaces')]
 	public function testDbRegistrarBindsTheInterfaceToItsMapper(string $interface, ?string $class): void {
 		$this->assertTrue(condition: interface_exists(interface: $interface), message: $interface . ' exists');
-		$this->assertNotNull(actual: $class, message: $interface . ' is bound in DbRegistrar');
+		$this->assertNotNull(actual: $class, message: $interface . ' is bound');
 		$this->assertStringStartsWith(prefix: 'OCA\\OpenRegister\\Db\\', string: (string)$class);
 		$this->assertTrue(condition: is_subclass_of(object_or_class: (string)$class, class: $interface), message: $class . ' implements ' . $interface);
 	}//end testDbRegistrarBindsTheInterfaceToItsMapper()
@@ -97,7 +97,7 @@ final class C04InterfaceBindingsTest extends TestCase {
 	 * No lib/ file outside lib/Db names the bound mapper, in code or as a container id string.
 	 *
 	 * @param class-string $interface The guarded interface.
-	 * @param string|null  $class     The class DbRegistrar binds it to.
+	 * @param string|null  $class     The class it is bound to.
 	 *
 	 * @return void
 	 */

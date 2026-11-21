@@ -216,7 +216,8 @@ class ObjectTreeServiceAccessGoldenTest extends TestCase {
 			sources: new ObjectTreeSources(
 				descender: $collaborators['descender'],
 				hierarchies: $collaborators['hierarchies'],
-				graphs: $collaborators['graphs']
+				graphs: $collaborators['graphs'],
+				parties: new \OCA\OpenRegister\Service\Party\PartyParent()
 			),
 			catalog: new SchemaCatalog(
 				registers: $collaborators['registerMapper'],

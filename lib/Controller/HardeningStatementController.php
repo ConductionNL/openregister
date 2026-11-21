@@ -23,8 +23,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\HardeningStatementControllerServices;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Hardening\ElevationRequiredExceptionInterface;
 use OCA\OpenRegister\Service\Hardening\ElevationServiceInterface;
 use OCA\OpenRegister\Service\Hardening\StatementPublication;
@@ -90,7 +90,7 @@ class HardeningStatementController extends Controller {
 		IRequest $request,
 		HardeningStatementControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->statements = $services->statements;
 		$this->elevation = $services->elevation;
 		$this->userSession = $services->userSession;
