@@ -34,6 +34,8 @@ use OCA\OpenRegister\Service\Object\GroupRuleRequest;
 use OCA\OpenRegister\Service\AuthorizationService;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Consumer\ConsumerSource;
+use OCA\OpenRegister\Service\Consumer\ConsumerAuthorization;
+use OCA\OpenRegister\Service\Consumer\ConsumerIdentity;
 use OCA\OpenRegister\Service\Consumer\ResolvedConsumer;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Rbac\TokenGrantUse;
@@ -119,12 +121,12 @@ class AuthorizationServiceConsumerGrantTest extends TestCase {
 		}
 
 		$consumer = new ResolvedConsumer(
-			source: 'openregister',
-			uuid: 'c0ffee00-0000-4000-8000-000000000001',
-			name: 'leverancier',
-			userId: 'leverancier',
-			authorizationType: 'apiKey',
-			configuration: $configuration,
+			identity: new ConsumerIdentity(source: 'openregister', uuid: 'c0ffee00-0000-4000-8000-000000000001', name: 'leverancier'),
+			authorization: new ConsumerAuthorization(
+				userId: 'leverancier',
+				authorizationType: 'apiKey',
+				configuration: $configuration
+			),
 			record: null
 		);
 
