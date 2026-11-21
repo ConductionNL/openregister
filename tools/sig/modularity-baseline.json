@@ -25,7 +25,6 @@
   "lib/Service/Aggregation/AggregationRunner.php -> lib/Search/Service/Aggregation/AggregationSlot.php",
   "lib/Service/Aggregation/AggregationRunner.php -> lib/Search/Service/Aggregation/CrossSchemaTarget.php",
   "lib/Service/Aggregation/AggregationRunnerInterface.php -> lib/Search/Service/Aggregation/AggregationQuery.php",
-  "lib/Service/Audit/AuditTrailCollaborators.php -> lib/Service/ObjectAction/ObjectActionElevationScope.php",
   "lib/Service/File/FolderAccessDenial.php -> lib/Db/AuditTrail.php",
   "lib/Service/File/FolderManagementHandler.php -> lib/Service/FileHandlerSupportInterface.php",
   "lib/Service/GraphQL/ListAggregations.php -> lib/Search/Service/Aggregation/AggregationQuery.php",
@@ -39,7 +38,6 @@
   "lib/Service/Object/SaveObject.php -> lib/Search/Service/Quality/CreateCandidate.php",
   "lib/Service/Object/SaveObject.php -> lib/Search/Service/Quality/DedupCreatePolicyInterface.php",
   "lib/Service/Object/SaveObject.php -> lib/Service/RetentionServiceInterface.php",
-  "lib/Service/ObjectSource/ObjectSourceWiring.php -> lib/Service/CalendarEventService.php",
   "lib/Service/OrganisationUsageService.php -> lib/Files/Db/FileMapperInterface.php",
   "lib/Service/RegisterService.php -> lib/Service/FileFolderServiceInterface.php",
   "lib/Service/RegisterServiceHelpers.php -> lib/Service/FileFolderServiceInterface.php"
@@ -622,6 +620,7 @@
   "lib/Kernel/Contracts/Compliance/AuditProcessContextInterface.php",
   "lib/Kernel/Contracts/Compliance/ConnectionStatusReporterInterface.php",
   "lib/Kernel/Contracts/Compliance/DetectionPatternsVersionInterface.php",
+  "lib/Kernel/Contracts/Compliance/ElevationAttributionInterface.php",
   "lib/Kernel/Contracts/Compliance/LifecycleFinalStatesInterface.php",
   "lib/Kernel/Contracts/Compliance/LifecycleTransitionInterface.php",
   "lib/Kernel/Contracts/Compliance/TransitionInFlightInterface.php",
@@ -1788,7 +1787,6 @@
   "lib/Service/ObjectAction/ObjectActionDefinitionInterface.php",
   "lib/Service/ObjectAction/ObjectActionDefinitions.php",
   "lib/Service/ObjectAction/ObjectActionDefinitionsInterface.php",
-  "lib/Service/ObjectAction/ObjectActionElevationScope.php",
   "lib/Service/ObjectAction/ObjectActionHistory.php",
   "lib/Service/ObjectAction/ObjectActionHistoryInterface.php",
   "lib/Service/ObjectAction/ObjectActionList.php",
@@ -2218,7 +2216,7 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "exposed_loc": {
-  "Compliance": 14297,
+  "Compliance": 14300,
   "Configuration": 874,
   "Core": 57302,
   "Files": 1262,
@@ -2226,7 +2224,7 @@
   "Kernel": 8464,
   "Notifications": 1760,
   "Platform": 61,
-  "Processes": 27093,
+  "Processes": 27040,
   "Search": 1344
  },
  "kernel_files": [
@@ -2690,6 +2688,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10402,
- "total_loc": 462083,
- "violation_degree": 0.0054
+ "total_loc": 462110,
+ "violation_degree": 0.0052
 }

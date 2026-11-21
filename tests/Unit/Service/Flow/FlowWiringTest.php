@@ -20,6 +20,8 @@ use OCA\OpenRegister\Service\Lifecycle\LifecycleStatesKeeper;
 use OCA\OpenRegister\Service\Party\PartyParent;
 use OCA\OpenRegister\Kernel\Contracts\Core\UnreadCountsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\SaveBoundaryInterface;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\ElevationAttributionInterface;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationAttribution;
 use OCA\OpenRegister\Service\Interaction\UnreadCountCalculator;
 use OCA\OpenRegister\Service\Quota\ObjectQuotaService;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
@@ -432,6 +434,7 @@ final class FlowWiringTest extends TestCase {
 				LifecycleStatesKeeperInterface::class      => LifecycleStatesKeeper::class,
 				UnreadCountsInterface::class               => UnreadCountCalculator::class,
 				SaveBoundaryInterface::class               => AutoTransitionPass::class,
+				ElevationAttributionInterface::class       => ObjectActionElevationAttribution::class,
 			],
 			actual: $this->aliases
 		);
@@ -458,6 +461,16 @@ final class FlowWiringTest extends TestCase {
 		self::assertArrayHasKey(key: AutoTransitionPass::class, array: $this->factories);
 		self::assertTrue(condition: is_a(AutoTransitionPass::class, SaveBoundaryInterface::class, true));
 	}//end testTheSaveBoundaryPortIsAnsweredByTheSharedAutoTransitionPass()
+
+	/**
+	 * The audit trail's elevation port is answered by the object-action run, from the frame it opened.
+	 *
+	 * @return void
+	 */
+	public function testTheElevationAttributionPortIsAnsweredByTheActionRun(): void {
+		self::assertSame(expected: ObjectActionElevationAttribution::class, actual: ($this->aliases[ElevationAttributionInterface::class] ?? null));
+		self::assertTrue(condition: is_a(ObjectActionElevationAttribution::class, ElevationAttributionInterface::class, true));
+	}//end testTheElevationAttributionPortIsAnsweredByTheActionRun()
 
 	/**
 	 * The MCP discovery's port for contributed built-in tool providers is answered by the flow tools.
