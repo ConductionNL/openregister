@@ -29,7 +29,7 @@ namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Event\SchemaCreatedEvent;
 use OCA\OpenRegister\Event\SchemaUpdatedEvent;
-use OCA\OpenRegister\Service\Notification\NotificationsAnnotationInstallerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Notifications\DeclaredWebhookInstallerInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 
@@ -43,10 +43,10 @@ final class NotificationsAnnotationInstallListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param NotificationsAnnotationInstallerInterface $installer Synchronises the declared webhooks.
+	 * @param DeclaredWebhookInstallerInterface $installer Synchronises the declared webhooks.
 	 */
 	public function __construct(
-		private readonly NotificationsAnnotationInstallerInterface $installer,
+		private readonly DeclaredWebhookInstallerInterface $installer,
 	) {
 	}//end __construct()
 

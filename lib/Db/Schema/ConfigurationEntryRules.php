@@ -47,12 +47,16 @@ final class ConfigurationEntryRules {
 	// ObjectSlugHandler: true appends a UTC date-time suffix to a colliding slug.
 	// `fireEventsOnBulkWrites` is read by BulkWriteEvents: whether a bulk write
 	// runs the save events per row. `orphanCleanup` is read by SaveObject: a removed
-	// reference soft-deletes the child the parent owns.
+	// reference soft-deletes the child the parent owns. `platformSharing` is read
+	// by PlatformShareGate: true offers the schema's objects for platform sharing.
+// `federatable` is read by ShareGrantor: true lets the schema's objects be shared
+// with another instance (platform-cloud-federation-provider); absent means not.
 	private const CONFIG_BOOL_FIELDS = [
 		'allowFiles',
 		'autoShare',
 		'defaultAutoShare',
 		'exportable',
+		'federatable',
 		'staging',
 		'additionalProperties',
 		'draftsVisible',
@@ -60,6 +64,7 @@ final class ConfigurationEntryRules {
 		'fireEventsOnBulkWrites',
 		'objectSlugSuffix',
 		'orphanCleanup',
+		'platformSharing',
 	];
 	// `implements` + `x-schema-org` carry the cross-app semantic-type
 	// markers (ADR-048); they must round-trip through the configuration

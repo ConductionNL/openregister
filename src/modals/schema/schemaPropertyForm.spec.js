@@ -10,6 +10,8 @@ import {
 	emptyFacetConfig,
 	emptyPropertyDefinition,
 	formatSelect,
+	GEO_FORMATS,
+	hasFormatChoice,
 	itemsTypeSelect,
 	propertyTypeSelect,
 } from './schemaPropertyForm.js'
@@ -68,5 +70,33 @@ describe('schemaPropertyForm', () => {
 		expect(propertyTypeSelect().options).not.toContain('bogus')
 		expect(formatSelect().options.length).toBeGreaterThan(0)
 		expect(formatSelect().options).toContain('color-hsla')
+	})
+
+	it('offers the five geometry formats for an object and the string formats otherwise', () => {
+		expect(formatSelect('object').options).toEqual([
+			'geo:point',
+			'geo:linestring',
+			'geo:polygon',
+			'geo:multipolygon',
+			'geo:geometry',
+		])
+		expect(formatSelect('string').options).toContain('date-time')
+		expect(formatSelect('string').options).not.toContain('geo:point')
+		expect(formatSelect().options).toEqual(formatSelect('string').options)
+	})
+
+	it('hands out a copy of the geometry formats', () => {
+		formatSelect('object').options.length = 0
+
+		expect(formatSelect('object').options).toHaveLength(5)
+		expect(Object.isFrozen(GEO_FORMATS)).toBe(true)
+	})
+
+	it('offers a format choice for strings and objects only', () => {
+		expect(hasFormatChoice('string')).toBe(true)
+		expect(hasFormatChoice('object')).toBe(true)
+		expect(hasFormatChoice('number')).toBe(false)
+		expect(hasFormatChoice('array')).toBe(false)
+		expect(hasFormatChoice(undefined)).toBe(false)
 	})
 })

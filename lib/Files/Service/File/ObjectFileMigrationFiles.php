@@ -28,7 +28,7 @@ use OCP\IUserManager;
 /**
  * The file tree, user manager, ownership handler and share re-owner the object file migration moves files with.
  *
- * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-existing-files-move-into-openregisters-own-account-req-ofoa-004
+ * @spec openspec/specs/file-actions/spec.md
  */
 final class ObjectFileMigrationFiles {
 	/**
@@ -39,7 +39,7 @@ final class ObjectFileMigrationFiles {
 	 * @param FileOwnershipHandlerInterface   $ownership    Resolves the openregister account.
 	 * @param ObjectFileShareReowner $shareReowner Re-owns published link shares.
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-existing-files-move-into-openregisters-own-account-req-ofoa-004
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function __construct(
 		public readonly IRootFolder $rootFolder,

@@ -171,6 +171,35 @@ interface NoteServiceInterface {
 	public function editNote(int $noteId, NoteEdit $edit): array;
 
 	/**
+	 * Lock a note: from now on nobody can edit or delete it. There is no unlock.
+	 *
+	 * Locking an already locked note changes nothing and answers it as it is.
+	 *
+	 * @param int  $noteId    The note to lock.
+	 * @param bool $mayManage Whether the caller manages the object the note hangs on.
+	 *
+	 * @throws Exception If no user is logged in or the note does not exist.
+	 * @throws NoteEditForbiddenException If the caller is neither the author nor a manager of the object.
+	 *
+	 * @return array<string, mixed> The locked note.
+	 *
+	 * @spec openspec/changes/notes-leaf-rich-text-lock-export/specs/object-interactions/spec.md#requirement-a-note-can-be-locked-and-a-locked-note-is-immutable
+	 */
+	public function lockNote(int $noteId, bool $mayManage): array;
+
+	/**
+	 * Write the note-locked entry on the object's audit trail.
+	 *
+	 * @param ObjectEntityInterface $object The object the note hangs on
+	 * @param array<string, mixed>  $note   The locked note as lockNote() returned it
+	 *
+	 * @return bool True when an audit entry was written
+	 *
+	 * @spec openspec/changes/notes-leaf-rich-text-lock-export/specs/object-interactions/spec.md#requirement-a-note-can-be-locked-and-a-locked-note-is-immutable
+	 */
+	public function auditLock(ObjectEntityInterface $object, array $note): bool;
+
+	/**
 	 * Delete a note by its ID.
 	 *
 	 * @param int $noteId The ID of the note to delete
@@ -182,6 +211,20 @@ interface NoteServiceInterface {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-9
 	 */
 	public function deleteNote(int $noteId): void;
+
+	/**
+	 * Refuse a note that does not hang on the given object.
+	 *
+	 * @param string $objectUuid The object the caller addressed.
+	 * @param int    $noteId     The note the caller named.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception With code 404 when the note is elsewhere or does not exist.
+	 *
+	 * @spec openspec/specs/generic-integrations/spec.md
+	 */
+	public function requireNoteOf(string $objectUuid, int $noteId): void;
 
 	/**
 	 * Count the notes on an object.

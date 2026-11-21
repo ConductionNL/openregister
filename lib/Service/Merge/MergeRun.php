@@ -64,6 +64,20 @@ final class MergeRun {
 	public int $relinkedCount = 0;
 
 	/**
+	 * The references moved onto the survivor, by schema and count.
+	 *
+	 * @var array<int, array{schema: string, count: int}>
+	 */
+	public array $movedReferences = [];
+
+	/**
+	 * The references the merging user may not update, left pointing at the loser.
+	 *
+	 * @var array<int, array{object: string, path: string}>
+	 */
+	public array $skippedReferences = [];
+
+	/**
 	 * The resolver overrides a decision map produced, or null when there was none.
 	 *
 	 * @var array<string, mixed>|null

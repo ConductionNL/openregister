@@ -3,7 +3,7 @@
 ## 1. Data
 
 - [ ] 1.1 Migration adding nullable `rule_digest` (char 64) and `rule_version` (string) to the audit trail table, and the two fields on `AuditTrail`. Verify: migration test on an existing table.
-- [ ] 1.2 One `RuleDigest` helper: SHA-256 over the rule's canonical JSON, using the hash chain's canonical JSON. Verify: unit tests that key order does not change the digest and a changed rule does.
+- [x] 1.2 One `RuleDigest` helper: SHA-256 over the rule's canonical JSON, using the hash chain's canonical JSON. Verify: unit tests that key order does not change the digest and a changed rule does. (`lib/Service/Audit/RuleDigest.php`: `RuleDigest::of(array)` recursively sorts associative keys, keeps list order, and encodes with the chain's `JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE` before `sha256`. `RuleDigestTest`.)
 
 ## 2. Writing the digest
 

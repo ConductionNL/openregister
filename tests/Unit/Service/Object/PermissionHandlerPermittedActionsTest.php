@@ -88,6 +88,8 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\Object\VerbListing
  * @uses \OCA\OpenRegister\Service\Rbac\DenyQuestion
  * @uses \OCA\OpenRegister\Service\Rbac\McpScope
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation
+ * @uses \OCA\OpenRegister\Service\Rbac\UndecidablePosture
  */
 class PermissionHandlerPermittedActionsTest extends TestCase {
 

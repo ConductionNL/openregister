@@ -37,6 +37,7 @@ namespace OCA\OpenRegister\Service\Task;
 
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Exception\TaskValidationException;
+use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
 
 /**
  * Resolves any fleet status vocabulary onto the six CMMN states.
@@ -95,7 +96,7 @@ final class TaskState {
 	 *
 	 * @var array<int, string>
 	 */
-	public const REJECTING_OUTCOMES = ['rejected', 'returned', 'declined', 'denied'];
+	public const REJECTING_OUTCOMES = TaskInterface::REJECTING_OUTCOMES;
 
 	/**
 	 * Outcomes that approve a sequence position when its template declares none.
@@ -207,7 +208,7 @@ final class TaskState {
 	 *
 	 * @return boolean True when the outcome is in the set and does not reject.
 	 *
-	 * @spec openspec/changes/a-sequence-advances-only-on-an-approving-outcome/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
+	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
 	 */
 	public static function isApprovingOutcome(?string $outcome, array $approving = self::APPROVING_OUTCOMES): bool {
 		if ($outcome === null || self::isRejectingOutcome(outcome: $outcome) === true) {
@@ -224,7 +225,7 @@ final class TaskState {
 	 *
 	 * @return array<int, string> The usable entries; empty when there are none.
 	 *
-	 * @spec openspec/changes/a-sequence-advances-only-on-an-approving-outcome/specs/flow-approval-consolidation/spec.md#requirement-a-completion-that-neither-approves-nor-rejects-ends-the-sequence-as-undecided
+	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-a-completion-that-neither-approves-nor-rejects-ends-the-sequence-as-undecided
 	 */
 	public static function approvingSet(mixed $declared): array {
 		return (new ApprovingOutcomeSet(declared: $declared))->entries();
@@ -238,7 +239,7 @@ final class TaskState {
 	 *
 	 * @return array<int, string> The approving set, never empty.
 	 *
-	 * @spec openspec/changes/consume-follows-the-approving-rule/specs/flow-approval-consolidation/spec.md#requirement-a-human-in-the-loop-semantic-is-not-retired-until-it-has-a-named-home
+	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-a-human-in-the-loop-semantic-is-not-retired-until-it-has-a-named-home
 	 */
 	public static function approvingSetOrDefault(mixed $declared): array {
 		$declaredSet = self::approvingSet(declared: $declared);

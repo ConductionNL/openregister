@@ -28,7 +28,7 @@ use Psr\Log\LoggerInterface;
  * Consumed by the trigger service, the run advancer and the sub-flow step,
  * which each resolve a flow (and its subject) and hand it to the run service.
  *
- * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+ * @spec openspec/specs/flow-runs/spec.md
  */
 final class FlowExecution {
 	/**

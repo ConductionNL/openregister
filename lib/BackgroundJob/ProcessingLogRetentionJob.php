@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/processing-activity-register/specs/avg-verwerkingsregister/spec.md
+ * @spec openspec/specs/avg-verwerkingsregister/spec.md
  */
 
 declare(strict_types=1);
@@ -38,7 +38,7 @@ use OCA\OpenRegister\BackgroundJob\Support\ProcessingLogRetentionStores;
 /**
  * Daily prune of `openregister_processing_log` by the `created` index.
  *
- * @spec openspec/changes/processing-activity-register/specs/avg-verwerkingsregister/spec.md
+ * @spec openspec/specs/avg-verwerkingsregister/spec.md
  */
 class ProcessingLogRetentionJob extends TimedJob {
 	/**
@@ -126,7 +126,7 @@ class ProcessingLogRetentionJob extends TimedJob {
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 *
-	 * @spec openspec/changes/processing-activity-register/specs/avg-verwerkingsregister/spec.md
+	 * @spec openspec/specs/avg-verwerkingsregister/spec.md
 	 */
 	protected function run($argument): void {
 		$retention = $this->retention();
