@@ -183,3 +183,18 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: a PR's test fails on a fresh checkout with 'cannot be read: <file>.csv' (or file not found) while it passed for its author.
 - Cause: .gitignore ignores *.csv (and similar) repo-wide; the author's local fixture was never committed.
 - Fix: git check-ignore -v <path>; recreate the fixture to what the tests assert and commit it with git add -f (see #10139).
+
+## Listener registration conflict in ListenerRegistrar after the area split
+- Symptom: conflict in lib/Listener/ListenerRegistrar.php where main has ComplianceListenerRegistrar::<slot>(context: $context) (or another Registrar/*ListenerRegistrar).
+- Fix: take main's call; add the PR's registrations inside that area slot method in lib/Listener/Registrar/, update its slot test (tests/Unit/Listener/<Area>ListenerRegistrarTest) and ListenerRegistrationOrderGoldenTest count+sha (run it, copy the actual sha).
+
+## Audit rows built with new AuditTrail() + mapper vs main's Core audit port
+- Symptom: conflict in a *Auditor (new AuditTrail()/AuditTrailMapperInterface vs new AuditEntry()/AuditEntryWriterInterface), or a test failing 'Unknown named parameter $mapper'.
+- Fix: take main's AuditEntry; per-row fields the port lacks (e.g. category) come from AuditTrailMapper::insertAuditTrails/stampCategory; tests construct the auditor with trail: new AuditEntryWriter(mapper: <mock>).
+
+## Organisation events return OrganisationInterface on main
+- Symptom: phpstan argument.type 'OrganisationInterface&Entity given' where Db\\Organisation expected.
+- Fix: narrow with instanceof Db\\Organisation in the caller (only implementor) and skip otherwise; never change the event signature.
+
+## ComponentDefinitionTest: new lib file matches no component / yaml disagrees
+- Fix: add the scripts/component-map.csv row the message names, then run python3 scripts/component-patterns.py and commit the regenerated yaml.
