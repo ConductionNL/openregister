@@ -156,12 +156,23 @@ class GitHubRequestValidator implements GitHubRequestValidatorInterface {
 			return null;
 		}
 
-		if (strlen($specRef) > self::SPECREF_MAX_LENGTH || preg_match(self::SPECREF_REGEX, $specRef) !== 1) {
+		if ($this->isValidSpecRef(specRef: $specRef) === false) {
 			return $this->badRequest(error: 'specref_invalid_format');
 		}
 
 		return null;
 	}//end validateSpecRef()
+
+	/**
+	 * Whether a specRef is at most SPECREF_MAX_LENGTH long and matches SPECREF_REGEX.
+	 *
+	 * @param string $specRef Caller-supplied slug.
+	 *
+	 * @return bool
+	 */
+	private function isValidSpecRef(string $specRef): bool {
+		return strlen($specRef) <= self::SPECREF_MAX_LENGTH && preg_match(self::SPECREF_REGEX, $specRef) === 1;
+	}//end isValidSpecRef()
 
 	/**
 	 * Validate the GET `sort` parameter (task 1.20).
@@ -194,13 +205,24 @@ class GitHubRequestValidator implements GitHubRequestValidatorInterface {
 			return null;
 		}
 
+		return $this->labelsErrorResponse(labels: $labels);
+	}//end validateLabels()
+
+	/**
+	 * The 400 response for a non-empty label list that is invalid, or null when it is valid.
+	 *
+	 * @param array<string> $labels Parsed label list.
+	 *
+	 * @return JSONResponse|null
+	 */
+	private function labelsErrorResponse(array $labels): ?JSONResponse {
 		$error = $this->labelsError(labels: $labels);
 		if ($error === null) {
 			return null;
 		}
 
 		return $this->badRequest(error: $error);
-	}//end validateLabels()
+	}//end labelsErrorResponse()
 
 	/**
 	 * The error code of a non-empty label list: too many labels, or one that is invalid.

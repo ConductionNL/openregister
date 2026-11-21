@@ -29,6 +29,10 @@ use OCA\OpenRegister\Service\Object\SaveObject\TemplateSource;
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler
  * @uses   \OCA\OpenRegister\Service\Object\SaveObject\TemplateSource
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\FieldValue
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\MapFilterDefinition
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\RelationPropertyShape
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\UuidReference
  */
 class MetadataTemplateGoldenTest extends TestCase {
 

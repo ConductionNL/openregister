@@ -51,6 +51,8 @@ use OCA\OpenRegister\Db\FlowRunSubjectScope;
 use OCA\OpenRegister\Db\FlowRunViewer;
 use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Db\FlowTimerMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\TimerAnchorMove;
+use OCA\OpenRegister\Kernel\Contracts\TimerChange;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -566,7 +568,10 @@ class FlowRunMigrationService implements FlowRunMigrationServiceInterface {
 	private function supersede(FlowTimer $timer, FlowRunMigration $migration): bool {
 		$uuid = (string)$timer->getUuid();
 		try {
-			$this->timers->timerService->supersede(uuid: $uuid, anchorEventAt: new DateTime(), reason: self::LOG_ENTRY, actor: $migration->actor);
+			$this->timers->timerService->supersede(
+				move: new TimerAnchorMove(uuid: $uuid, anchorEventAt: new DateTime()),
+				change: new TimerChange(reason: self::LOG_ENTRY, actor: $migration->actor)
+			);
 		} catch (Throwable $e) {
 			$this->logger->error(
 				message: '[FlowRunMigrationService] run ' . $migration->runUuid . ' migrated, but timer '

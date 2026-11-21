@@ -2,6 +2,8 @@
 
 The Objects API provides comprehensive search and management capabilities for objects within registers and schemas.
 
+**Write requests and the request token.** POST, PUT, PATCH and DELETE run Nextcloud's request-token check. A client that uses basic auth or an app password sends `OCS-APIRequest: true`; without it the answer is `412 Precondition Failed`. The browser UI sends the `requesttoken` header instead. See [Request token on write routes](../Technical/request-token-on-write-routes.md).
+
 ## Endpoints
 
 ### Search Objects
@@ -71,6 +73,45 @@ a confidently empty result.
 
 ##### Search
 - **`_search`**: Full-text search term
+
+##### Condition groups
+- **`_where`**: AND/OR groups of filters, as URL-encoded JSON on the query
+  string, or as an object in a POST search body. Flat filters can only be
+  combined with AND; `_where` can say "in Zuiddrecht, OR without an industry".
+
+```json
+{
+  "type": "AND",
+  "children": [
+    { "field": "place", "operator": "eq", "value": "Zuiddrecht" },
+    {
+      "type": "OR",
+      "children": [
+        { "field": "industry", "operator": "in", "value": ["horeca"] },
+        { "field": "industry", "operator": "isnull", "value": true }
+      ]
+    }
+  ]
+}
+```
+
+  - A group has a `type` (`AND` or `OR`) and at least one child. A child is a
+    group or a leaf: `field` (a property the schema declares, or a path inside
+    one), `operator` and `value`.
+  - A leaf takes the operators of a flat filter: `eq` (the flat filter without
+    an operator, `?place=Zuiddrecht`), `ne`, `gt`, `gte`, `lt`, `lte`, `in`,
+    `notIn`, `isnull`, `like` and `inOrEmpty`. A leaf returns exactly what the
+    same flat filter returns.
+  - The tree is added beside the flat filters, the counts and the facets. Access
+    control and organisation scoping stay outside it, so an `OR` can never widen
+    what you may read.
+  - Refused with `400` and `{"error": "...", "path": "$.children[1].children[0]"}`
+    naming the node: invalid JSON, a group without children or with another
+    `type`, an unknown operator, more than 5 groups deep or more than 200
+    leaves, and a leaf on a property the schema does not declare, on an
+    encrypted property, or on an `@self.` metadata column (not supported yet).
+  - `GET /api/capabilities` answers `"listQuery": {"where": true}` on an
+    instance that accepts `_where`.
 
 ##### Rendering
 - **`_extend`**: Properties to extend (comma-separated or array)
@@ -394,7 +435,7 @@ Creates a new object in the specified register and schema.
 ##### JSON
 
 ```bash
-curl -X POST /api/objects/1/3 \
+curl -H 'OCS-APIRequest: true' -X POST /api/objects/1/3 \
   -H "Content-Type: application/json" \
   -d '{
     "naam": "New Object",
@@ -408,7 +449,7 @@ curl -X POST /api/objects/1/3 \
 Use `multipart/form-data` to upload files alongside object data. Each form field maps to a schema property. Files are automatically stored in Nextcloud and linked to the object.
 
 ```bash
-curl -X POST /api/objects/1/3 \
+curl -H 'OCS-APIRequest: true' -X POST /api/objects/1/3 \
   -F "naam=New Object" \
   -F "type=Leverancier" \
   -F "logo=@/path/to/logo.png" \
@@ -457,7 +498,7 @@ curl -X POST /api/objects/1/3 \
 An integration that knows a record by its own key, and not by its uuid, can send the record once and let Open Register decide. Add `_upsertOn` with the name of a uniqueness constraint the schema declares with action `refuse`:
 
 ```bash
-curl -X POST "/api/objects/zaken/zaak?_upsertOn=zaaksleutel" \
+curl -H 'OCS-APIRequest: true' -X POST "/api/objects/zaken/zaak?_upsertOn=zaaksleutel" \
   -u "<USER>:<API_KEY>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -506,7 +547,7 @@ Replaces all fields of an existing object. Fields not included in the request bo
 > **Note:** PUT does not support multipart file uploads due to a PHP limitation (`$_FILES` is only populated for POST requests). Use JSON for PUT requests, or use the POST-as-PATCH endpoint below for file uploads on existing objects.
 
 ```bash
-curl -X PUT /api/objects/1/3/uuid \
+curl -H 'OCS-APIRequest: true' -X PUT /api/objects/1/3/uuid \
   -u admin:admin \
   -H "Content-Type: application/json" \
   -d '{
@@ -529,7 +570,7 @@ Partially updates an existing object. Only the fields included in the request bo
 > **Note:** PATCH does not support multipart file uploads due to the same PHP limitation as PUT. Use the POST-as-PATCH endpoint below for file uploads on existing objects.
 
 ```bash
-curl -X PATCH /api/objects/1/3/uuid \
+curl -H 'OCS-APIRequest: true' -X PATCH /api/objects/1/3/uuid \
   -u admin:admin \
   -H "Content-Type: application/json" \
   -d '{"naam": "Patched Name"}'
@@ -556,16 +597,16 @@ Use this endpoint instead of PUT/PATCH when you need to:
 
 ```bash
 # Update name and upload a new logo (no authentication needed)
-curl -X POST /api/objects/1/3/uuid \
+curl -H 'OCS-APIRequest: true' -X POST /api/objects/1/3/uuid \
   -F "naam=Updated Name" \
   -F "logo=@/path/to/new-logo.png"
 
 # Update only the logo file
-curl -X POST /api/objects/1/3/uuid \
+curl -H 'OCS-APIRequest: true' -X POST /api/objects/1/3/uuid \
   -F "logo=@/path/to/new-logo.png"
 
 # With authentication
-curl -X POST /api/objects/1/3/uuid \
+curl -H 'OCS-APIRequest: true' -X POST /api/objects/1/3/uuid \
   -u admin:admin \
   -F "naam=Updated Name" \
   -F "logo=@/path/to/new-logo.png"
@@ -589,7 +630,7 @@ Deletes an existing object.
 **Authentication:** Required (user must be logged in).
 
 ```bash
-curl -X DELETE /api/objects/1/3/uuid -u admin:admin
+curl -H 'OCS-APIRequest: true' -X DELETE /api/objects/1/3/uuid -u admin:admin
 ```
 
 **Status:** `200 OK`

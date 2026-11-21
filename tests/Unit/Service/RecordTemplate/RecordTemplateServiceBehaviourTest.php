@@ -29,7 +29,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\RecordTemplate;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\RecordTemplate;
 use OCA\OpenRegister\Db\RecordTemplateMapperInterface;
 use OCA\OpenRegister\Db\Schema;
@@ -38,6 +38,8 @@ use OCA\OpenRegister\Exception\RecordTemplateRefused;
 use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
 use OCA\OpenRegister\Service\Rbac\ViewerReach;
 use OCA\OpenRegister\Service\Rbac\ViewerReachResolver;
+use OCA\OpenRegister\Service\RecordTemplate\TemplateListOptions;
+use OCA\OpenRegister\Service\RecordTemplate\TemplateChange;
 use OCA\OpenRegister\Service\RecordTemplate\RecordTemplateCollaborators;
 use OCA\OpenRegister\Service\RecordTemplate\RecordTemplateService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -196,7 +198,7 @@ final class RecordTemplateServiceBehaviourTest extends TestCase {
 			->with('anna', ListQuery::unbounded(filters: ['register' => 'zaken', 'schema' => 'meldingen']))
 			->willReturn([$first, $second, $other]);
 
-		$listed = $service->listFor($this->reach('anna'), 'zaken', 'meldingen');
+		$listed = $service->listFor($this->reach('anna'), new TemplateListOptions('zaken', 'meldingen'));
 
 		$this->assertSame([$first, $second], $listed);
 		$this->assertSame(['anna|meldingen' => 1, 'anna|vergunningen' => 1], $this->asked);
@@ -222,7 +224,7 @@ final class RecordTemplateServiceBehaviourTest extends TestCase {
 		$this->mapper->expects($this->never())->method('update');
 
 		try {
-			$service->change('tpl-1', ['schema' => 'geheim'], $this->reach('anna'), true);
+			$service->change(new TemplateChange('tpl-1', ['schema' => 'geheim'], true), $this->reach('anna'));
 			$this->fail('Moving into a schema without create rights must be refused.');
 		} catch (RecordTemplateRefused $e) {
 			$this->assertSame(403, $e->getCode());
@@ -237,7 +239,7 @@ final class RecordTemplateServiceBehaviourTest extends TestCase {
 		$this->row = $this->template('anna', 'meldingen');
 		$this->mapper->expects($this->once())->method('update');
 
-		$changed = $service->change('tpl-1', ['schema' => 'vergunningen'], $this->reach('anna'), true);
+		$changed = $service->change(new TemplateChange('tpl-1', ['schema' => 'vergunningen'], true), $this->reach('anna'));
 
 		$this->assertSame('vergunningen', $changed->getSchema());
 		$this->assertSame('owner', $changed->getAccess());
@@ -249,7 +251,7 @@ final class RecordTemplateServiceBehaviourTest extends TestCase {
 		$service = $this->service();
 		$this->row = $this->template('anna', 'meldingen');
 
-		$changed = $service->change('tpl-1', ['schema' => 'meldingen', 'name' => 'Nieuw'], $this->reach('anna'), true);
+		$changed = $service->change(new TemplateChange('tpl-1', ['schema' => 'meldingen', 'name' => 'Nieuw'], true), $this->reach('anna'));
 
 		$this->assertSame('Nieuw', $changed->getName());
 		$this->assertSame(['anna|meldingen' => 1], $this->asked);

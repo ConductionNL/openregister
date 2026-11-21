@@ -73,7 +73,7 @@ class AssigneeFollowListenerAccessGoldenTest extends TestCase {
 		$watchers = $this->createMock(WatcherService::class);
 		$watchers->method('followAssigned')->willReturnCallback(
 			static function (...$args) use (&$calls): void {
-				$calls[] = ['followAssigned', $args[0]->getUuid(), $args[1], $args[2], $args[3]];
+				$calls[] = ['followAssigned', $args[0]->object->getUuid(), $args[1], $args[0]->register, $args[0]->schema];
 			}
 		);
 

@@ -78,14 +78,10 @@ class RepointMovedBackgroundJobs implements IRepairStep {
 	 * @spec exclude Upgrade plumbing for moved job classes; no capability spec covers the job list.
 	 */
 	public function run(IOutput $output): void {
-		foreach ($this->map->entries() as $old => $entry) {
-			if (is_subclass_of($entry['class'], IJob::class) === false) {
-				continue;
-			}
-
+		foreach ($this->movedJobs() as $old => $class) {
 			try {
-				$this->repoint(old: $old, new: $entry['class']);
-				$output->info('Repointed background job '.$old.' to '.$entry['class']);
+				$this->repoint(old: $old, new: $class);
+				$output->info('Repointed background job '.$old.' to '.$class);
 			} catch (Throwable $e) {
 				$this->logger->warning(
 					'[RepointMovedBackgroundJobs] Could not repoint '.$old.': '.$e->getMessage(),
@@ -95,6 +91,24 @@ class RepointMovedBackgroundJobs implements IRepairStep {
 			}
 		}
 	}//end run()
+
+	/**
+	 * The moved classes that are background jobs: old class name => new class name, in map order.
+	 *
+	 * @return array<string, string> The moves to repoint.
+	 *
+	 * @spec exclude Upgrade plumbing for moved job classes; no capability spec covers the job list.
+	 */
+	private function movedJobs(): array {
+		$moves = [];
+		foreach ($this->map->entries() as $old => $entry) {
+			if (is_subclass_of($entry['class'], IJob::class) === true) {
+				$moves[$old] = $entry['class'];
+			}
+		}
+
+		return $moves;
+	}//end movedJobs()
 
 	/**
 	 * Re-add every row of one old class under the new class, then drop the old rows.

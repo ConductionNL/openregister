@@ -14,8 +14,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\RefusedDeletion;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Tests\Unit\Support\IntegrityAuditTrailDouble;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -36,6 +38,17 @@ use OCA\OpenRegister\Db\MagicMapperInterface;
 
 /**
  * @covers \OCA\OpenRegister\Service\Object\ReferentialIntegrityService
+ * @uses \OCA\OpenRegister\Db\AuditTrail
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Dto\DeletionAnalysis
+ * @uses \OCA\OpenRegister\Dto\DeletionEffects
+ * @uses \OCA\OpenRegister\Service\Object\IntegrityAuditEntry
+ * @uses \OCA\OpenRegister\Service\Object\IntegrityCascadeControls
+ * @uses \OCA\OpenRegister\Service\Object\IntegrityRelationIndex
+ * @uses \OCA\OpenRegister\Service\Object\IntegrityStorage
+ * @uses \OCA\OpenRegister\Service\Object\RefusedDeletion
+ * @uses \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 class ReferentialIntegrityAuditLogGoldenTest extends TestCase {
 
@@ -53,7 +66,7 @@ class ReferentialIntegrityAuditLogGoldenTest extends TestCase {
 			]
 		);
 
-		$this->service()->logRestrictBlock('obj-1', '12', $analysis, 'anna');
+		$this->service()->logRestrictBlock(new RefusedDeletion(objectUuid: 'obj-1', schemaId: '12', userId: 'anna'), $analysis);
 
 		$this->assertCount(1, $this->inserted);
 		$row = $this->inserted[0];
@@ -69,7 +82,10 @@ class ReferentialIntegrityAuditLogGoldenTest extends TestCase {
 	}//end testARestrictBlockIsAuditedWithItsFirstBlocker()
 
 	public function testARestrictBlockWithoutBlockersNamesNothing(): void {
-		$this->service()->logRestrictBlock('obj-2', null, new DeletionAnalysis(deletable: false), 'bob');
+		$this->service()->logRestrictBlock(
+			new RefusedDeletion(objectUuid: 'obj-2', schemaId: null, userId: 'bob'),
+			new DeletionAnalysis(deletable: false)
+		);
 
 		$this->assertSame(
 			['blockerCount' => 0, 'blockerSchema' => 'unknown', 'blockerProperty' => 'unknown', 'reason' => 'RESTRICT constraint prevents deletion'],
@@ -79,7 +95,10 @@ class ReferentialIntegrityAuditLogGoldenTest extends TestCase {
 	}//end testARestrictBlockWithoutBlockersNamesNothing()
 
 	public function testAFailedAuditInsertIsLoggedNotThrown(): void {
-		$this->service(insertFails: true)->logRestrictBlock('obj-3', '5', new DeletionAnalysis(deletable: false), 'anna');
+		$this->service(insertFails: true)->logRestrictBlock(
+			new RefusedDeletion(objectUuid: 'obj-3', schemaId: '5', userId: 'anna'),
+			new DeletionAnalysis(deletable: false)
+		);
 
 		$this->assertSame(
 			[[
@@ -112,7 +131,7 @@ class ReferentialIntegrityAuditLogGoldenTest extends TestCase {
 	}//end testRetainedTargetsAreReportedOnceAndLogged()
 
 	private function service(bool $insertFails = false): ReferentialIntegrityService {
-		$audit = $this->createMock(AuditTrailMapper::class);
+		$audit = IntegrityAuditTrailDouble::create(test: $this);
 		$audit->method('insert')->willReturnCallback(function (AuditTrail $row) use ($insertFails): AuditTrail {
 			if ($insertFails === true) {
 				throw new RuntimeException('insert failed');

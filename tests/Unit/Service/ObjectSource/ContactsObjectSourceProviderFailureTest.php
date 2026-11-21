@@ -19,6 +19,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ObjectSource;
 
+use OCA\OpenRegister\Db\RegisterSchema;
+use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ObjectSource\ContactsObjectSourceProvider;
@@ -45,8 +47,8 @@ class ContactsObjectSourceProviderFailureTest extends TestCase {
 		$logger->expects($this->exactly(2))->method('warning')->with('[ObjectSource:contacts-source] could not list contacts: dav down');
 		$provider = new ContactsObjectSourceProvider(contactsManager: $manager, app: new \OCA\OpenRegister\Service\ObjectSource\OptionalAppBridge(appManager: $this->createMock(IAppManager::class), container: $this->createMock(\Psr\Container\ContainerInterface::class), logger: $logger));
 
-		$this->assertSame([], $provider->findAll(register: new Register(), schema: new Schema()));
-		$this->assertNull($provider->find(register: new Register(), schema: new Schema(), id: 'c-1'));
+		$this->assertSame([], $provider->findAll(source: new SourcedTable(new RegisterSchema(new Register(), new Schema()))));
+		$this->assertNull($provider->find(source: new SourcedTable(new RegisterSchema(new Register(), new Schema())), id: 'c-1'));
 	}//end testAFailingContactsManagerReadsAsNoContacts()
 
 	/**
@@ -67,7 +69,7 @@ class ContactsObjectSourceProviderFailureTest extends TestCase {
 		);
 		$provider = new ContactsObjectSourceProvider(contactsManager: $manager, app: new \OCA\OpenRegister\Service\ObjectSource\OptionalAppBridge(appManager: $this->createMock(IAppManager::class), container: $this->createMock(\Psr\Container\ContainerInterface::class), logger: $this->createMock(LoggerInterface::class)));
 
-		$emails = array_map(static fn ($object): string => $object->getObject()['email'], $provider->findAll(register: new Register(), schema: new Schema()));
+		$emails = array_map(static fn ($object): string => $object->getObject()['email'], $provider->findAll(source: new SourcedTable(new RegisterSchema(new Register(), new Schema()))));
 
 		$this->assertSame(['a@example.org', 'b1@example.org', '', ''], $emails);
 	}//end testEveryEmailShapeBecomesOneAddress()

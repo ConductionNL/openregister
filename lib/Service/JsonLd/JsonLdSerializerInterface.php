@@ -22,8 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\JsonLd;
 
-use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCP\IRequest;
 
 /**
@@ -50,28 +49,26 @@ interface JsonLdSerializerInterface {
 	public function wantsJsonLd(IRequest $request): bool;
 
 	/**
-	 * Serialize a single rendered object array as a JSON-LD node document.
+	 * Serialize a single rendered object of one register and schema as a JSON-LD node document.
 	 *
 	 * @param array<string, mixed> $renderedObject The rendered object (top-level data + `@self`).
-	 * @param Schema $schema The object's schema.
-	 * @param Register $register The object's register.
+	 * @param RegisterSchema       $table          The object's register and schema.
 	 *
 	 * @return array<string, mixed> The JSON-LD document.
 	 *
 	 * @spec openspec/specs/json-ld-output/spec.md
 	 */
-	public function serialize(array $renderedObject, Schema $schema, Register $register): array;
+	public function serializeIn(array $renderedObject, RegisterSchema $table): array;
 
 	/**
-	 * Serialize a paginated collection result as a JSON-LD `@graph` document.
+	 * Serialize a paginated collection of one register and schema as a JSON-LD `@graph` document.
 	 *
 	 * @param array<string, mixed> $paginatedResult The `index()` result (results/total/page/...).
-	 * @param Schema $schema The collection's schema.
-	 * @param Register $register The collection's register.
+	 * @param RegisterSchema       $table           The collection's register and schema.
 	 *
 	 * @return array<string, mixed> The JSON-LD `@graph` document.
 	 *
 	 * @spec openspec/specs/json-ld-output/spec.md
 	 */
-	public function serializeCollection(array $paginatedResult, Schema $schema, Register $register): array;
+	public function serializeCollectionIn(array $paginatedResult, RegisterSchema $table): array;
 }//end interface

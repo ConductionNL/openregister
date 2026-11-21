@@ -36,6 +36,11 @@ use Symfony\Component\Console\Tester\CommandTester;
  * The per-schema drift pass, end to end over mocks.
  *
  * @covers \OCA\OpenRegister\Command\ReconcileMagicTablesCommand
+ * @uses \OCA\OpenRegister\Command\MetadataReconcileRun
+ * @uses \OCA\OpenRegister\Command\Support\SchemaColumnDriftPass
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicColumnDrift
  */
 class ReconcileMagicTablesCommandGoldenTest extends TestCase {
 

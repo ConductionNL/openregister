@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\SaveObject\SelfSubmission;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\FolderAccessDeniedException;
@@ -89,7 +90,7 @@ final class SaveObjectSelfFolderGoldenTest extends TestCase {
 
 		$refused = false;
 		try {
-			$saveClass->getMethod('setSelfMetadata')->invoke($handler, $entity, $selfData, [], $acting);
+			$saveClass->getMethod('setSelfMetadata')->invoke($handler, $entity, new SelfSubmission(selfData: $selfData, actingUser: $acting));
 		} catch (FolderAccessDeniedException $e) {
 			$refused = true;
 		}

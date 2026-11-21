@@ -28,6 +28,7 @@ use Psr\Log\LoggerInterface;
  * A parallel run logs the start and the end of each chunk of up to four batches.
  *
  * @covers \OCA\OpenRegister\Service\MassValidationRun
+ * @uses \OCA\OpenRegister\Service\ValidationChunkResult
  */
 class MassValidationRunParallelLogTest extends TestCase {
 
@@ -38,8 +39,9 @@ class MassValidationRunParallelLogTest extends TestCase {
 	 */
 	public function testEachChunkLogsItsStartAndEnd(): void {
 		$mapper = $this->createMock(MagicMapperInterface::class);
+		$mapper->method('getAllRegisterSchemaPairs')->willReturn([['registerId' => 1, 'schemaId' => 2]]);
 		$mapper->method('countSearchObjects')->willReturn(6);
-		$mapper->method('findAllListed')->willReturn([]);
+		$mapper->method('searchObjects')->willReturn([]);
 
 		$starts = [];
 		$ends   = [];

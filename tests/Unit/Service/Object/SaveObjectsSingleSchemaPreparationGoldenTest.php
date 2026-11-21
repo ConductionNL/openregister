@@ -48,6 +48,31 @@ use ReflectionMethod;
  * @uses   \OCA\OpenRegister\Service\Object\SaveObject\BulkObjectSlugs
  * @uses   \OCA\OpenRegister\Service\Object\SaveObjects\BulkObjectDefaults
  * @uses   \OCA\OpenRegister\Service\Object\SaveObjects\BulkObjectOwnership
+ * @uses   \OCA\OpenRegister\Db\EmptyJsonHydration
+ * @uses   \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses   \OCA\OpenRegister\Service\Object\BulkRowChecks
+ * @uses   \OCA\OpenRegister\Service\Object\BulkSaveReporting
+ * @uses   \OCA\OpenRegister\Service\Object\BulkSaveSession
+ * @uses   \OCA\OpenRegister\Service\Object\BulkSaveStores
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\RelationScanLevel
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObjects\BulkInverseRelations
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObjects\BulkRelationScanner
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObjects\BulkSchemaAnalysis
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses   \OCA\OpenRegister\Service\Object\ObjectUpdateOptions
+ * @uses \OCA\OpenRegister\Db\EmptyJsonHydration
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Service\Object\BulkRowChecks
+ * @uses \OCA\OpenRegister\Service\Object\BulkSaveReporting
+ * @uses \OCA\OpenRegister\Service\Object\BulkSaveSession
+ * @uses \OCA\OpenRegister\Service\Object\BulkSaveStores
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\RelationScanLevel
+ * @uses \OCA\OpenRegister\Service\Object\SaveObjects\BulkInverseRelations
+ * @uses \OCA\OpenRegister\Service\Object\SaveObjects\BulkRelationScanner
+ * @uses \OCA\OpenRegister\Service\Object\SaveObjects\BulkSchemaAnalysis
+ * @uses \OCA\OpenRegister\Db\HydrationKey
+ * @uses \OCA\OpenRegister\Service\Rbac\ExplicitReveal
  */
 class SaveObjectsSingleSchemaPreparationGoldenTest extends TestCase {
 
@@ -83,7 +108,7 @@ class SaveObjectsSingleSchemaPreparationGoldenTest extends TestCase {
 		);
 
 		$handler = new SaveObjects(
-			stores: new BulkSaveStores(objectEntityMapper: $this->createMock(MagicMapper::class), schemaMapper: $this->createMock(SchemaMapper::class), registerMapper: $this->createMock(RegisterMapper::class), saveHandler: $save),
+			stores: new BulkSaveStores(catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $this->createMock(MagicMapper::class)), saveHandler: $save),
 			session: new BulkSaveSession(userSession: $session, organisationService: $organisations),
 			reporting: new BulkSaveReporting(logger: $this->createMock(LoggerInterface::class)),
 			checks: new BulkRowChecks()

@@ -60,6 +60,7 @@ use RuntimeException;
 use stdClass;
 use OCA\OpenRegister\Service\Flow\PlacesPruning;
 use OCA\OpenRegister\Service\Flow\FlowRunFrame;
+use Symfony\Component\Workflow\Transition;
 
 /**
  * A dispatcher whose behaviour per step id is configured by the case.
@@ -121,6 +122,7 @@ class GoldenWalkLogger extends AbstractLogger {
  * The golden master.
  *
  * @covers \OCA\OpenRegister\Service\Flow\FlowEngine
+ * @uses \OCA\OpenRegister\Service\Flow\FlowErrorPolicy
  * @uses \OCA\OpenRegister\Service\Flow\FlowHopAdvance
  * @uses \OCA\OpenRegister\Service\Flow\FlowHopRouting
  * @uses \OCA\OpenRegister\Service\Flow\FlowHopPlan
@@ -148,6 +150,23 @@ class GoldenWalkLogger extends AbstractLogger {
  * @uses \OCA\OpenRegister\Service\Flow\FlowStreamHalt
  * @uses \OCA\OpenRegister\Service\Flow\FlowNodeDeclarations
  * @uses \OCA\OpenRegister\Service\Flow\LoweredFlow
+ * @uses \OCA\OpenRegister\Service\Flow\EdgeArrival
+ * @uses \OCA\OpenRegister\Service\Flow\FlowEngineServices
+ * @uses \OCA\OpenRegister\Service\Flow\FlowExitChoice
+ * @uses \OCA\OpenRegister\Service\Flow\FlowExpressionDataOptions
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItemOptions
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItemShape
+ * @uses \OCA\OpenRegister\Service\Flow\FlowNodeExits
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunCommit
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunFrame
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunOrigin
+ * @uses \OCA\OpenRegister\Service\Flow\FlowStepOutput
+ * @uses \OCA\OpenRegister\Service\Flow\FlowTokenWithdrawal
+ * @uses \OCA\OpenRegister\Service\Flow\ItemFiring
+ * @uses \OCA\OpenRegister\Service\Flow\ItemSeed
+ * @uses \OCA\OpenRegister\Service\Flow\PlacesPruning
+ * @uses \OCA\OpenRegister\Service\Flow\FlowStateDelta
+ * @uses \OCA\OpenRegister\Service\Flow\FlowExpressionOperators
  */
 class FlowEngineWalkGoldenTest extends TestCase {
 
@@ -542,7 +561,9 @@ class FlowEngineWalkGoldenTest extends TestCase {
 			$trace(['exhaust', $id]);
 			$exhausted[$id] = true;
 		});
-		$walk->method('claim')->willReturnCallback(function (string $id, string $transition, array $places) use (&$refused, $refuse, $trace): ?array {
+		$walk->method('claim')->willReturnCallback(function (string $id, Transition $firing) use (&$refused, $refuse, $trace): ?array {
+			$transition = $firing->getName();
+			$places     = array_map('strval', array_merge($firing->getFroms(), $firing->getTos()));
 			$trace(['claim', $id, $transition, $places]);
 			if (in_array($transition, $refuse, true) === true) {
 				$refused[$id] = true;

@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+ * @spec openspec/specs/flow-runs/spec.md
  */
 
 declare(strict_types=1);
@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Service\Flow;
 /**
  * The seed items and the start node of a fresh run; a resumed run ignores both.
  *
- * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+ * @spec openspec/specs/flow-runs/spec.md
  */
 final class FlowRunOrigin {
 

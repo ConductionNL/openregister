@@ -26,6 +26,7 @@ use OCA\OpenRegister\Service\Case\CasePlanService;
 use OCA\OpenRegister\Service\Case\Nodes\CaseAdvanceNode;
 use OCA\OpenRegister\Service\Case\Nodes\CaseStepRunner;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowRunAsScope;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCP\IL10N;
@@ -76,11 +77,11 @@ class CaseAdvanceNodeRealisationTest extends TestCase
             new \OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation($this->createMock(IL10N::class), $this->createMock(IURLGenerator::class))
         );
 
-        $out = $node->execute(
-            [[FlowItems::JSON => ['uuid' => 'obj-1']]],
-            ['item' => 'review', 'to' => CaseItem::STATE_COMPLETED],
-            [FlowRunService::RUN_AS_CONTEXT_KEY => 'alice']
-        );
+        $out = $node->execute(new FlowNodeCall(
+            items: [[FlowItems::JSON => ['uuid' => 'obj-1']]],
+            config: ['item' => 'review', 'to' => CaseItem::STATE_COMPLETED],
+            context: [FlowRunService::RUN_AS_CONTEXT_KEY => 'alice']
+        ));
 
         $this->assertSame(['item' => 'review', 'state' => CaseItem::STATE_COMPLETED], $out[0][FlowItems::JSON]['case']);
     }//end testTheLiveRealisationOfTheKeyIsAdvanced()

@@ -22,7 +22,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow\Nodes;
 
+use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowStepDispatcher;
 use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
 use OCA\OpenRegister\Service\Flow\Nodes\IterateNode;
@@ -38,6 +40,11 @@ use UnexpectedValueException;
  * @uses \OCA\OpenRegister\Service\Flow\FlowItemShape
  * @uses \OCA\OpenRegister\Service\Flow\FlowItems
  * @uses \OCA\OpenRegister\Service\Flow\Nodes\LogicNodeBase
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItemOptions
+ * @uses \OCA\OpenRegister\Service\Flow\FlowNodeCall
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\IterationRun
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\NodeInvocation
  */
 class IterateNodeSeedBehaviourTest extends TestCase {
 
@@ -72,11 +79,11 @@ class IterateNodeSeedBehaviourTest extends TestCase {
 			}
 		);
 
-		$out = $this->node->execute(
-			[FlowItems::item(json: ['cursor' => 'abc'], binary: ['f' => ['name' => 'x']]), FlowItems::item(json: ['cursor' => 'def'])],
-			['source' => ['type' => 'src'], 'body' => [['type' => 'body']]],
-			[]
-		);
+		$out = $this->node->execute(new FlowNodeCall(
+			items: [FlowItems::item(json: ['cursor' => 'abc'], options: new FlowItemOptions(binary: ['f' => ['name' => 'x']])), FlowItems::item(json: ['cursor' => 'def'])],
+			config: ['source' => ['type' => 'src'], 'body' => [['type' => 'body']]],
+			context: []
+		));
 
 		self::assertCount(2, $seeds[0], 'every incoming item seeds the first pass');
 		self::assertSame(['cursor' => 'abc', 'iteration' => ['index' => 0, 'first' => true]], $seeds[0][0][FlowItems::JSON]);

@@ -79,4 +79,23 @@ trait SelectByColumnTrait {
 			return null;
 		}
 	}//end findOneOrNull()
+	/**
+	 * The one entity whose column equals a value, or null when the value is empty or nothing matches.
+	 *
+	 * An empty value answers null without a query.
+	 *
+	 * @param string $name  The column name.
+	 * @param string $value The value to match.
+	 *
+	 * @return Entity|null The entity.
+	 *
+	 * @spec exclude shared mapper plumbing, not a capability of its own
+	 */
+	private function findOneByFilledColumn(string $name, string $value): ?Entity {
+		if ($value === '') {
+			return null;
+		}
+
+		return $this->findOneOrNull(query: $this->selectWhere(column: new LinkColumn(name: $name, value: $value)));
+	}//end findOneByFilledColumn()
 }//end trait

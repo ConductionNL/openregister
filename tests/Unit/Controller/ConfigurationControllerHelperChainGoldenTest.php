@@ -28,6 +28,8 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\GitHubFileLocation;
+use OCA\OpenRegister\Kernel\Contracts\Value\GitHubFileWrite;
 
 /**
  * Pins what the shared helpers of ConfigurationController produce: the
@@ -202,13 +204,13 @@ class ConfigurationControllerHelperChainGoldenTest extends TestCase {
 			return ['x-openregister' => ['sourceType' => 'local']];
 		});
 		$this->apps->method('getAppVersion')->willReturn('9.9');
-		$this->github->method('getFileSha')->willReturnCallback(function (string $owner, string $repo, string $path, string $branch): string {
-			$this->calls[] = "sha {$owner} {$repo} {$path} {$branch}";
+		$this->github->method('getFileSha')->willReturnCallback(function (GitHubFileLocation $file): string {
+			$this->calls[] = "sha {$file->owner} {$file->repo} {$file->path} {$file->branch}";
 			return 'old';
 		});
 		$this->github->method('publishConfiguration')->willReturnCallback(
-			function (string $owner, string $repo, string $path, string $branch, string $content, string $commitMessage, ?string $fileSha): array {
-				$this->calls[] = "publish {$owner} {$repo} {$path} {$branch} {$commitMessage} {$fileSha} " . md5($content);
+			function (GitHubFileLocation $file, GitHubFileWrite $write): array {
+				$this->calls[] = "publish {$file->owner} {$file->repo} {$file->path} {$file->branch} {$write->commitMessage} {$write->fileSha} " . md5($write->content);
 				return ['commit_sha' => 'c1', 'commit_url' => 'cu', 'file_url' => 'fu'];
 			}
 		);

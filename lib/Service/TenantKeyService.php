@@ -3,7 +3,9 @@
 /**
  * Tenant HMAC Key Service
  *
- * Manages per-tenant HMAC signing keys for the audit-trail hash-chain.
+ * Manages per-tenant HMAC keys, kept for audit-trail evidence signing.
+ * The audit-trail hash chain itself (AuditHashService) is not keyed with
+ * them: it is a plain SHA-256 chain.
  * Each tenant has exactly one active 256-bit key at a time. On first
  * access a fresh key is generated, encrypted at rest via ICrypto, and
  * persisted. Annual rotation is driven by admin action or cron; this
@@ -11,8 +13,8 @@
  *
  * Security design:
  * - Keys are NEVER exposed through any REST endpoint.
- * - Storage is encrypted via OCP\Security\ICrypto (AES-256-GCM + HMAC
- *   with the instance secret as the wrapping key).
+ * - Storage is encrypted via OCP\Security\ICrypto (AES-CBC with an
+ *   HMAC-SHA512, keyed off the instance secret).
  * - This service is an internal server-side API only; it is not wired
  *   into any HTTP controller.
  *
@@ -117,7 +119,9 @@ class TenantKeyService implements TenantKeyRotationInterface {
 	 *
 	 * The old key is retained in the table (status = 'retired') so that
 	 * verifiers can still re-check evidence records signed under it.
-	 * A fresh key is inserted with status = 'active'.
+	 * A fresh key is inserted with status = 'active'. Both happen in one
+	 * transaction, so a failed insert never leaves the tenant without an
+	 * active key.
 	 *
 	 * Returns metadata ONLY — never the plaintext key material. Callers that
 	 * legitimately need the new active key after rotation must call
@@ -141,10 +145,16 @@ class TenantKeyService implements TenantKeyRotationInterface {
 	 * @spec openspec/specs/saas-multi-tenant/spec.md#new-active-keys-must-be-stored-encrypted-with-status-active
 	 */
 	public function rotateTenantKey(string $tenantId): array {
-		$retiredKeyId = $this->retireActiveKey(tenantId: $tenantId);
-
 		$rotatedAt = (new DateTime())->format('c');
-		$this->insertKey(tenantId: $tenantId, createdAt: $rotatedAt);
+		$this->db->beginTransaction();
+		try {
+			$retiredKeyId = $this->retireActiveKey(tenantId: $tenantId);
+			$this->insertKey(tenantId: $tenantId, createdAt: $rotatedAt);
+			$this->db->commit();
+		} catch (\Throwable $e) {
+			$this->db->rollBack();
+			throw $e;
+		}
 
 		$this->logger->info('Rotated tenant HMAC key', ['tenant_id' => $tenantId, 'rotated_at' => $rotatedAt]);
 

@@ -44,6 +44,7 @@ final class BulkActionWiring {
 		RestorePriorValuesActionInterface::class => RestorePriorValuesAction::class,
 		RunActionActionInterface::class => RunActionAction::class,
 		SetPropertiesActionInterface::class => SetPropertiesAction::class,
+		TransitionActionInterface::class => TransitionAction::class,
 	];
 
 	/**

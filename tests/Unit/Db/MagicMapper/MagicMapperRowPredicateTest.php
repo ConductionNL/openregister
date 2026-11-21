@@ -22,6 +22,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\RbacAccessCall;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use PHPUnit\Framework\TestCase;
@@ -51,7 +52,7 @@ class MagicMapperRowPredicateTest extends TestCase {
 		$rbac = $this->createMock(MagicRbacHandler::class);
 		$rbac->expects($this->once())
 			->method('buildRbacRowPredicateSql')
-			->with($schema, 'read', $tableName)
+			->with($this->callback(fn (RbacAccessCall $call): bool => $call->schema === $schema && $call->action === 'read' && $call->tableName === $tableName && $call->columnPrefix === ''))
 			->willReturn($predicate);
 		(new ReflectionProperty(MagicMapper::class, 'rbacHandler'))->setValue($mapper, $rbac);
 

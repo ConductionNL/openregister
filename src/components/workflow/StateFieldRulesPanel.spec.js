@@ -94,3 +94,32 @@ describe('StateFieldRulesPanel', () => {
 		expect(wrapper.find('.state-field-rules-panel__off').exists()).toBe(false)
 	})
 })
+
+describe('StateFieldRulesPanel rules (golden)', () => {
+	it('reads every spelling of a rule, in kind and declaration order', () => {
+		const rules = StateFieldRulesPanel.methods.rulesOf({
+			required: [{ field: 'b', groups: 'g1' }, { fields: [] }],
+			hidden: [
+				{ fields: ['x', 'y'], groups: ['a', 'b'], when: { eq: 1 } },
+				null,
+				'not a rule',
+				{ field: 'z' },
+				{ fields: 'w', condition: 'c' },
+			],
+			readOnly: 'not a list',
+			extra: [{ field: 'ignored' }],
+		})
+		expect(JSON.stringify(rules)).toBe(
+			JSON.stringify([
+				{ id: 'hidden-0', kind: 'hidden', fields: ['x', 'y'], groups: ['a', 'b'], conditional: true },
+				{ id: 'hidden-3', kind: 'hidden', fields: ['z'], groups: [], conditional: false },
+				{ id: 'hidden-4', kind: 'hidden', fields: ['w'], groups: [], conditional: true },
+				{ id: 'required-0', kind: 'required', fields: ['b'], groups: ['g1'], conditional: false },
+			]),
+		)
+	})
+
+	it.each([null, undefined, 'x', 3])('reads no rules from %p', (fields) => {
+		expect(StateFieldRulesPanel.methods.rulesOf(fields)).toEqual([])
+	})
+})

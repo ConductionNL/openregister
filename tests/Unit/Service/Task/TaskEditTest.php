@@ -45,6 +45,7 @@ use OCP\IGroupManager;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Kernel\Contracts\Value\TaskActorRef;
 
 /**
  * @covers \OCA\OpenRegister\Service\Task\TaskService::edit
@@ -54,6 +55,14 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Db\TaskAudit
  * @uses \OCA\OpenRegister\Service\Task\TaskPriority
  * @uses \OCA\OpenRegister\Service\Task\TaskService
+ * @uses \OCA\OpenRegister\Service\Task\Authorization\FailClosedGroups
+ * @uses \OCA\OpenRegister\Service\Task\Authorization\TaskVerbAttempt
+ * @uses \OCA\OpenRegister\Service\Task\TaskAct
+ * @uses \OCA\OpenRegister\Service\Task\TaskCommit
+ * @uses \OCA\OpenRegister\Service\Task\TaskIntake
+ * @uses \OCA\OpenRegister\Service\Task\TaskLifecycleServices
+ * @uses \OCA\OpenRegister\Service\Task\TaskTables
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\TaskActorRef
  */
 class TaskEditTest extends TestCase {
 
@@ -203,9 +212,8 @@ class TaskEditTest extends TestCase {
 		$this->db->expects($this->once())->method('commit');
 
 		$edited = $this->service()->edit(
-			uuid: 't-7',
+			ref: new TaskActorRef(uuid: 't-7', actor: 'alice'),
 			changes: ['title' => 'Hoorzitting plannen', 'priority' => 'high', 'dueAt' => '2026-10-28', 'description' => null],
-			actor: 'alice'
 		);
 
 		$this->assertSame('Hoorzitting plannen', $edited->getTitle());
@@ -234,7 +242,7 @@ class TaskEditTest extends TestCase {
 		$this->db->expects($this->never())->method('beginTransaction');
 
 		try {
-			$this->service()->edit(uuid: 't-7', changes: ['title' => 'Mine now', 'priority' => 'urgent'], actor: 'mallory');
+			$this->service()->edit(ref: new TaskActorRef(uuid: 't-7', actor: 'mallory'), changes: ['title' => 'Mine now', 'priority' => 'urgent']);
 			$this->fail('A stranger edited the task.');
 		} catch (TaskAccessDeniedException) {
 			// Expected.
@@ -264,7 +272,7 @@ class TaskEditTest extends TestCase {
 		];
 		foreach ($invalid as $changes) {
 			try {
-				$this->service()->edit(uuid: 't-7', changes: $changes, actor: 'alice');
+				$this->service()->edit(ref: new TaskActorRef(uuid: 't-7', actor: 'alice'), changes: $changes);
 				$this->fail('Accepted: ' . json_encode($changes));
 			} catch (TaskValidationException) {
 				$this->assertTrue(true);
@@ -283,6 +291,6 @@ class TaskEditTest extends TestCase {
 		$this->tasks->method('findByUuid')->willReturn($task);
 
 		$this->expectException(TaskValidationException::class);
-		$this->service()->edit(uuid: 't-7', changes: ['dueAt' => '2026-10-30'], actor: 'alice');
+		$this->service()->edit(ref: new TaskActorRef(uuid: 't-7', actor: 'alice'), changes: ['dueAt' => '2026-10-30']);
 	}//end testADueDatePastTheExpiryIsRefused()
 }//end class

@@ -33,6 +33,9 @@ use PHPUnit\Framework\TestCase;
  * grid depends neither on today's date nor on the default timezone.
  *
  * @covers \OCA\OpenRegister\Service\Schema\SchemaMigrationPlanner
+ * @uses \OCA\OpenRegister\Service\Schema\MigrationPlanResult
+ * @uses \OCA\OpenRegister\Service\Schema\CastTarget
+ * @uses \OCA\OpenRegister\Service\Schema\MigrationValueCaster
  */
 class SchemaMigrationPlannerGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/schema-migration-planner-golden.json';
