@@ -20,6 +20,11 @@
             "type": "openregister.switch",
             "note": ""
         },
+        "parallelGateway": {
+            "verdict": "mapped",
+            "type": "openregister.merge",
+            "note": ""
+        },
         "intermediateCatchEvent:message": {
             "verdict": "mapped",
             "type": "openregister.await-signal",

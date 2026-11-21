@@ -293,11 +293,20 @@
                     }
                 },
                 {
+                    "id": "g3",
+                    "name": "",
+                    "type": "openregister.merge",
+                    "position": {
+                        "x": 180,
+                        "y": 140
+                    }
+                },
+                {
                     "id": "c1",
                     "name": "",
                     "type": "openregister.await-signal",
                     "position": {
-                        "x": 180,
+                        "x": 360,
                         "y": 140
                     }
                 },
@@ -306,7 +315,7 @@
                     "name": "",
                     "type": "openregister.wait",
                     "position": {
-                        "x": 360,
+                        "x": 540,
                         "y": 140
                     }
                 },
@@ -315,7 +324,7 @@
                     "name": "Sub",
                     "type": "openregister.sub-flow",
                     "position": {
-                        "x": 540,
+                        "x": 720,
                         "y": 140
                     }
                 },
@@ -324,7 +333,7 @@
                     "name": "Einde",
                     "type": "openregister.end",
                     "position": {
-                        "x": 720,
+                        "x": 900,
                         "y": 140
                     }
                 },
@@ -333,8 +342,8 @@
                     "name": "",
                     "type": "openregister.end",
                     "position": {
-                        "x": 900,
-                        "y": 140
+                        "x": 0,
+                        "y": 280
                     }
                 }
             ],
@@ -359,9 +368,9 @@
         },
         "report": {
             "summary": {
-                "mapped": 8,
+                "mapped": 9,
                 "approximated": 4,
-                "refused": 10
+                "refused": 9
             },
             "lostSomething": true,
             "entries": [
@@ -422,8 +431,8 @@
                 {
                     "elementId": "g3",
                     "kind": "parallelGateway",
-                    "verdict": "refused",
-                    "action": "\"parallelGateway\" is not a construct this importer reads; it was dropped."
+                    "verdict": "mapped",
+                    "action": ""
                 },
                 {
                     "elementId": "c1",
@@ -505,9 +514,9 @@
         "message": "The file contains constructs this importer refuses, and strict was requested, so no flow was created.",
         "report": {
             "summary": {
-                "mapped": 8,
+                "mapped": 9,
                 "approximated": 4,
-                "refused": 10
+                "refused": 9
             },
             "lostSomething": true,
             "entries": [
@@ -568,8 +577,8 @@
                 {
                     "elementId": "g3",
                     "kind": "parallelGateway",
-                    "verdict": "refused",
-                    "action": "\"parallelGateway\" is not a construct this importer reads; it was dropped."
+                    "verdict": "mapped",
+                    "action": ""
                 },
                 {
                     "elementId": "c1",
