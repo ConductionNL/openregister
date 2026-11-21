@@ -380,7 +380,7 @@ class ObjectServiceSearchBySlugTest extends TestCase {
 				}
 			);
 
-		$this->service->searchObjectsBySlug('document', 'anonymizationLink', []);
+		$this->service->searchObjectsBySlug(target: new RegisterSchemaRef(register: 'document', schema: 'anonymizationLink'), filters: []);
 
 		$this->assertSame(
 			expected: ['register' => 6, 'schema' => 9177],

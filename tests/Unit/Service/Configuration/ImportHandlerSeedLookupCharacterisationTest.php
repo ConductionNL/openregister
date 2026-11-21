@@ -291,7 +291,7 @@ class ImportHandlerSeedLookupCharacterisationTest extends TestCase {
 	public function testTheSeedSearchIsScopedToRegisterSchemaAndSlug(): void {
 		$this->seedUuid([]);
 		$this->assertSame(
-			['search [{"@self":{"register":4,"schema":5,"slug":"home"},"_limit":1},false,false,null,null,null,false]'],
+			['search [{"@self":{"register":4,"schema":5,"slug":"home"},"_limit":1},false,false,{"selection":{"ids":null,"uses":null},"views":null,"viewScopeRequired":false,"deleted":false}]'],
 			$this->calls
 		);
 	}//end testTheSeedSearchIsScopedToRegisterSchemaAndSlug()
