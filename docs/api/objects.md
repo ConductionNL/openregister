@@ -74,6 +74,45 @@ a confidently empty result.
 ##### Search
 - **`_search`**: Full-text search term
 
+##### Condition groups
+- **`_where`**: AND/OR groups of filters, as URL-encoded JSON on the query
+  string, or as an object in a POST search body. Flat filters can only be
+  combined with AND; `_where` can say "in Zuiddrecht, OR without an industry".
+
+```json
+{
+  "type": "AND",
+  "children": [
+    { "field": "place", "operator": "eq", "value": "Zuiddrecht" },
+    {
+      "type": "OR",
+      "children": [
+        { "field": "industry", "operator": "in", "value": ["horeca"] },
+        { "field": "industry", "operator": "isnull", "value": true }
+      ]
+    }
+  ]
+}
+```
+
+  - A group has a `type` (`AND` or `OR`) and at least one child. A child is a
+    group or a leaf: `field` (a property the schema declares, or a path inside
+    one), `operator` and `value`.
+  - A leaf takes the operators of a flat filter: `eq` (the flat filter without
+    an operator, `?place=Zuiddrecht`), `ne`, `gt`, `gte`, `lt`, `lte`, `in`,
+    `notIn`, `isnull`, `like` and `inOrEmpty`. A leaf returns exactly what the
+    same flat filter returns.
+  - The tree is added beside the flat filters, the counts and the facets. Access
+    control and organisation scoping stay outside it, so an `OR` can never widen
+    what you may read.
+  - Refused with `400` and `{"error": "...", "path": "$.children[1].children[0]"}`
+    naming the node: invalid JSON, a group without children or with another
+    `type`, an unknown operator, more than 5 groups deep or more than 200
+    leaves, and a leaf on a property the schema does not declare, on an
+    encrypted property, or on an `@self.` metadata column (not supported yet).
+  - `GET /api/capabilities` answers `"listQuery": {"where": true}` on an
+    instance that accepts `_where`.
+
 ##### Rendering
 - **`_extend`**: Properties to extend (comma-separated or array)
   - Extend object properties by fetching related objects

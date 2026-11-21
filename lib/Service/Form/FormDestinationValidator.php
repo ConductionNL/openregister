@@ -42,7 +42,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Form;
 
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\Schemas\GeneratedIdentifierDeclaration;
+use OCA\OpenRegister\Service\Object\ServerFilledProperty;
 use OCP\IL10N;
 
 /**
@@ -73,14 +73,14 @@ class FormDestinationValidator implements FormDestinationValidatorInterface {
 	 *
 	 * @var string
 	 */
-	public const DIALECT = 'x-openregister';
+	public const DIALECT = ServerFilledProperty::DIALECT;
 
 	/**
 	 * Marker: a listener or the server fills this property, so no field needs to.
 	 *
 	 * @var string
 	 */
-	public const MARKER_SERVER_SET = 'serverSet';
+	public const MARKER_SERVER_SET = ServerFilledProperty::MARKER_SERVER_SET;
 
 	/**
 	 * Marker: the submit response returns this property to the submitter.
@@ -664,9 +664,10 @@ class FormDestinationValidator implements FormDestinationValidatorInterface {
 	/**
 	 * Whether the server fills a property: a default, a computation, a generated identifier, or the serverSet marker.
 	 *
-	 * The one definition of "no field needs to": the form's mapping check and
-	 * the draft policy's `required` excusals both ask it, so a draft that one
-	 * accepts the other accepts too.
+	 * The one definition of "no field needs to" lives in the save path's
+	 * ServerFilledProperty; the form's mapping check and the draft policy's
+	 * `required` excusals both ask it, so a draft that one accepts the other
+	 * accepts too.
 	 *
 	 * @param array<string, mixed> $property The schema property.
 	 *
@@ -675,17 +676,7 @@ class FormDestinationValidator implements FormDestinationValidatorInterface {
 	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-drafts-owner-must-be-able-to-make-it-definitive-through-the-object-api
 	 */
 	public static function isServerFilled(array $property): bool {
-		if (array_key_exists('default', $property) === true || isset($property['computed']) === true) {
-			return true;
-		}
-
-		// An `x-openregister-generated` identifier is issued by the creating
-		// listener, and on the save that leaves draft (decision 227).
-		if (array_key_exists(GeneratedIdentifierDeclaration::ANNOTATION, $property) === true) {
-			return true;
-		}
-
-		return self::marker(property: $property, name: self::MARKER_SERVER_SET);
+		return ServerFilledProperty::isServerFilled(property: $property);
 	}//end isServerFilled()
 
 	/**

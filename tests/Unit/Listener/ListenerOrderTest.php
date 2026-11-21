@@ -12,6 +12,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Listener;
 
 use OCA\OpenRegister\Listener\ListenerRegistrar;
+use OCA\OpenRegister\Listener\Registrar\ConfigurationListenerRegistrar;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
 use PHPUnit\Framework\TestCase;
 
@@ -20,6 +21,10 @@ use PHPUnit\Framework\TestCase;
  * spread over ListenerRegistrar and the component registrars. This pins the
  * order per event, so moving a registration between registrars cannot change
  * it silently. A deliberate change updates fixtures/listener-order.json.
+ *
+ * ConfigurationListenerRegistrar is called by the Configuration area's own
+ * registrar (ConfigurationServiceRegistrar), not by ListenerRegistrar, so the
+ * app's listeners are ListenerRegistrar's plus that registrar's.
  *
  * @covers \OCA\OpenRegister\Listener\ListenerRegistrar
  * @uses   \OCA\OpenRegister\Listener\Registrar\AccessListenerRegistrar
@@ -42,6 +47,7 @@ class ListenerOrderTest extends TestCase {
 	public function testEveryEventHasThePinnedListenersInOrder(): void {
 		$context = new RecordingRegistrationContext();
 		ListenerRegistrar::register(context: $context);
+		ConfigurationListenerRegistrar::register(context: $context);
 
 		$actual = [];
 		foreach ($context->listeners as $registration) {
@@ -58,12 +64,20 @@ class ListenerOrderTest extends TestCase {
 	/**
 	 * A component registrar only takes events no other registrar listens to.
 	 *
+	 * A slot registrar (no register(), only positioned slots) is not a
+	 * component registrar: ListenerRegistrar calls its slots inside the one
+	 * ordered list, so its events are shared by design and pinned there.
+	 *
 	 * @return void
 	 */
 	public function testAComponentRegistrarOwnsItsEventsAlone(): void {
 		$owners = [];
 		foreach (glob(__DIR__.'/../../../lib/{,*/}Listener/Registrar/*ListenerRegistrar.php', GLOB_BRACE) as $path) {
 			$class   = 'OCA\\OpenRegister\\'.str_replace('/', '\\', substr($path, strpos($path, 'lib/') + 4, -4));
+			if (method_exists($class, 'register') === false) {
+				continue;
+			}
+
 			$context = new RecordingRegistrationContext();
 			$class::register(context: $context);
 			foreach ($context->listeners as $registration) {
@@ -73,6 +87,7 @@ class ListenerOrderTest extends TestCase {
 
 		$all = new RecordingRegistrationContext();
 		ListenerRegistrar::register(context: $all);
+		ConfigurationListenerRegistrar::register(context: $all);
 		$counts = [];
 		foreach ($all->listeners as $registration) {
 			$counts[$registration['event']] = ($counts[$registration['event']] ?? 0) + 1;
