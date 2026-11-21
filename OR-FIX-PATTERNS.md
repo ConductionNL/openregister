@@ -135,3 +135,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: Architecture ComponentDefinitionTest testEveryFileMatchesExactlyOneComponent / testEveryFileHasACsvRowAndTheYamlAgrees name a new lib/ file.
 - Cause: main maps every lib file to a component; a PR (or your fix) adds a file without a scripts/component-map.csv row.
 - Fix: add the row (copy a sibling's area/component), run python3 scripts/component-patterns.py, commit the regenerated components yaml with it. On merge, component-map.csv conflicts at its tail: keep both sides' rows.
+
+## Migration version taken on main (or-fix-18)
+- Symptom: add/add conflict on lib/Migration/Version1Date<ts>.php and its test; or SchemaReuseHygieneTest::testEveryStepAfterRelease210IsTargeted names the PR's step.
+- Cause: main shipped a different step under the same version; and every step after 2.1.0 must extend TargetedMigrationStep (changeTargetedSchema, not changeSchema).
+- Fix: keep main's file, move the PR's step (class, test, component-map row) to a fresh version newer than main's newest, extend TargetedMigrationStep and rename changeSchema to protected changeTargetedSchema; the test calling changeSchema() keeps working. See #10398.
