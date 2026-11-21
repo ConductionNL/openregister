@@ -20,36 +20,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Kernel\Contracts\Value;
 
-use OCA\OpenRegister\Kernel\Contracts\RegisterInterface;
-use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
-
 /**
- * The optional part of a single-object read: find() and findSilent().
+ * The published ObjectFindOptions, under the name openregister used before it was published.
  *
- * Without a register and schema the read searches every table. `render` and
- * `audit` apply to find() only; findSilent() never renders or audits.
+ * @deprecated Use \OCA\OpenRegister\Contract\ObjectFindOptions, the published contract (task 7.2).
+ *             This name keeps every construction, instanceof and type hint working.
  *
  * @spec exclude ADR-011 parameter object of the object read, not a capability of its own
  */
-final class ObjectFindOptions {
-
-	/**
-	 * Constructor
-	 *
-	 * @param RegisterInterface|string|int|null $register The register, or its id, uuid or slug.
-	 * @param SchemaInterface|string|int|null   $schema   The schema, or its id, uuid or slug.
-	 * @param array|null                        $extend   Properties to extend the object with.
-	 * @param bool                              $files    Include file information.
-	 * @param bool                              $render   Render the entity before returning it.
-	 * @param bool                              $audit    Write an audit-trail row for this read.
-	 */
-	public function __construct(
-		public readonly RegisterInterface|string|int|null $register=null,
-		public readonly SchemaInterface|string|int|null $schema=null,
-		public readonly ?array $extend=[],
-		public readonly bool $files=false,
-		public readonly bool $render=true,
-		public readonly bool $audit=true,
-	) {
-	}//end __construct()
+final class ObjectFindOptions extends \OCA\OpenRegister\Contract\ObjectFindOptions {
 }//end class
