@@ -198,43 +198,70 @@ final class ScheduledFilterParser {
 
 		$operator = (string) $spec['operator'];
 		if (ScheduledFilterGrammar::isOperator($operator) === false) {
-			return [
-				$position->error(
-					code: 'notification-scheduled-bad-filter-operator',
-					issue: [
-						'field'   => $position->field(suffix: '.operator'),
-						'value'   => $operator,
-						'message' => $position->message(
-							diagnosis: sprintf(
-								'.operator must be one of [%s]; got "%s".',
-								implode(', ', ScheduledFilterGrammar::OPERATORS),
-								$operator
-							)
-						),
-					]
-				),
-			];
+			return [$this->unknownOperatorError(operator: $operator, position: $position)];
 		}
 
-		$operandKey = ScheduledFilterGrammar::operandKey($operator);
-		if (array_key_exists($operandKey, $spec) === true) {
+		if (array_key_exists(ScheduledFilterGrammar::operandKey($operator), $spec) === true) {
 			return [];
 		}
 
-		return [
-			$position->error(
-				code: 'notification-scheduled-bad-filter-missing-value',
-				issue: [
-					'field'   => $position->field(suffix: '.'.$operandKey),
-					'value'   => null,
-					'message' => $position->message(
-						diagnosis: sprintf(' uses operator "%s" and therefore requires a "%s" key.', $operator, $operandKey)
-					),
-				]
-			),
-		];
+		return [$this->missingOperandError(operator: $operator, position: $position)];
 
 	}//end operatorErrors()
+
+	/**
+	 * The error for an operator object whose `operator` is not a known operator.
+	 *
+	 * @param string                  $operator The operator as written.
+	 * @param ScheduledFilterPosition $position The entry.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 */
+	private function unknownOperatorError(string $operator, ScheduledFilterPosition $position): array {
+		return $position->error(
+			code: 'notification-scheduled-bad-filter-operator',
+			issue: [
+				'field'   => $position->field(suffix: '.operator'),
+				'value'   => $operator,
+				'message' => $position->message(
+					diagnosis: sprintf(
+						'.operator must be one of [%s]; got "%s".',
+						implode(', ', ScheduledFilterGrammar::OPERATORS),
+						$operator
+					)
+				),
+			]
+		);
+
+	}//end unknownOperatorError()
+
+	/**
+	 * The error for an operator object without the operand key its operator requires.
+	 *
+	 * @param string                  $operator The known operator.
+	 * @param ScheduledFilterPosition $position The entry.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 */
+	private function missingOperandError(string $operator, ScheduledFilterPosition $position): array {
+		$operandKey = ScheduledFilterGrammar::operandKey($operator);
+
+		return $position->error(
+			code: 'notification-scheduled-bad-filter-missing-value',
+			issue: [
+				'field'   => $position->field(suffix: '.'.$operandKey),
+				'value'   => null,
+				'message' => $position->message(
+					diagnosis: sprintf(' uses operator "%s" and therefore requires a "%s" key.', $operator, $operandKey)
+				),
+			]
+		);
+
+	}//end missingOperandError()
 
 	/**
 	 * The error for an operator object without an `operator` key.
@@ -459,18 +486,7 @@ final class ScheduledFilterParser {
 	 */
 	private function parseCombinator($spec, ScheduledFilterPosition $position): array {
 		if ($position->depth > ScheduledFilterGrammar::MAX_DEPTH) {
-			return $this->reject(
-				error: $position->error(
-					code: 'notification-scheduled-filter-too-deep',
-					issue: [
-						'field'   => $position->field(),
-						'value'   => $position->depth,
-						'message' => $position->message(
-							diagnosis: sprintf(' nests combinators deeper than %d levels.', ScheduledFilterGrammar::MAX_DEPTH)
-						),
-					]
-				)
-			);
+			return $this->reject(error: $this->tooDeepError(position: $position));
 		}
 
 		if (is_array($spec) === false || array_is_list($spec) === false) {
@@ -486,6 +502,44 @@ final class ScheduledFilterParser {
 			);
 		}
 
+		return $this->parseClauseList(spec: $spec, position: $position);
+
+	}//end parseCombinator()
+
+	/**
+	 * The error for a combinator nested deeper than the grammar allows.
+	 *
+	 * @param ScheduledFilterPosition $position The combinator entry.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 */
+	private function tooDeepError(ScheduledFilterPosition $position): array {
+		return $position->error(
+			code: 'notification-scheduled-filter-too-deep',
+			issue: [
+				'field'   => $position->field(),
+				'value'   => $position->depth,
+				'message' => $position->message(
+					diagnosis: sprintf(' nests combinators deeper than %d levels.', ScheduledFilterGrammar::MAX_DEPTH)
+				),
+			]
+		);
+
+	}//end tooDeepError()
+
+	/**
+	 * Parse a combinator's clause list into one node, or every clause error.
+	 *
+	 * @param array<int, mixed>       $spec     The clause list.
+	 * @param ScheduledFilterPosition $position The entry, keyed by its combinator (`all` or `any`).
+	 *
+	 * @return array{node: ?array<string, mixed>, errors: array<int, array<string, mixed>>}
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 */
+	private function parseClauseList(array $spec, ScheduledFilterPosition $position): array {
 		$errors  = [];
 		$clauses = [];
 
@@ -502,7 +556,7 @@ final class ScheduledFilterParser {
 
 		return $this->accept(node: ['type' => $position->key, 'clauses' => $clauses]);
 
-	}//end parseCombinator()
+	}//end parseClauseList()
 
 	/**
 	 * Parse one clause inside a combinator.
@@ -518,19 +572,16 @@ final class ScheduledFilterParser {
 	 */
 	private function parseClause($clause, ScheduledFilterPosition $position): array {
 		if (is_array($clause) === false) {
-			return [
-				'nodes'  => [],
-				'errors' => [
-					$position->error(
-						code: 'notification-scheduled-bad-clause',
-						issue: [
-							'field'   => $position->field(),
-							'value'   => $clause,
-							'message' => $position->message(diagnosis: ' must be a clause object.'),
-						]
-					),
-				],
-			];
+			return $this->clauseFailure(
+				error: $position->error(
+					code: 'notification-scheduled-bad-clause',
+					issue: [
+						'field'   => $position->field(),
+						'value'   => $clause,
+						'message' => $position->message(diagnosis: ' must be a clause object.'),
+					]
+				)
+			);
 		}
 
 		// A clause may itself be a nested combinator.
@@ -539,20 +590,32 @@ final class ScheduledFilterParser {
 			return $this->parseNestedCombinators(clause: $clause, position: $position);
 		}
 
+		return $this->parseFieldClause(clause: $clause, position: $position);
+
+	}//end parseClause()
+
+	/**
+	 * Parse a `{field, operator, …}` clause, refusing one without a string `field`.
+	 *
+	 * @param array<string, mixed>    $clause   The clause, not a nested combinator.
+	 * @param ScheduledFilterPosition $position The clause, at the depth of its combinator.
+	 *
+	 * @return array{nodes: array<int, array<string, mixed>>, errors: array<int, array<string, mixed>>}
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 */
+	private function parseFieldClause(array $clause, ScheduledFilterPosition $position): array {
 		if (array_key_exists('field', $clause) === false || is_string($clause['field']) === false) {
-			return [
-				'nodes'  => [],
-				'errors' => [
-					$position->error(
-						code: 'notification-scheduled-bad-clause-field',
-						issue: [
-							'field'   => $position->field(suffix: '.field'),
-							'value'   => ($clause['field'] ?? null),
-							'message' => $position->message(diagnosis: ' requires a string "field".'),
-						]
-					),
-				],
-			];
+			return $this->clauseFailure(
+				error: $position->error(
+					code: 'notification-scheduled-bad-clause-field',
+					issue: [
+						'field'   => $position->field(suffix: '.field'),
+						'value'   => ($clause['field'] ?? null),
+						'message' => $position->message(diagnosis: ' requires a string "field".'),
+					]
+				)
+			);
 		}
 
 		$parsed = $this->parseOperatorObject(spec: $clause, position: $position->testing(field: (string) $clause['field']));
@@ -564,7 +627,24 @@ final class ScheduledFilterParser {
 
 		return ['nodes' => $nodes, 'errors' => $parsed['errors']];
 
-	}//end parseClause()
+	}//end parseFieldClause()
+
+	/**
+	 * The result of a clause that failed with one error.
+	 *
+	 * @param array<string, mixed> $error The clause's error.
+	 *
+	 * @return array{nodes: array<int, array<string, mixed>>, errors: array<int, array<string, mixed>>}
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 */
+	private function clauseFailure(array $error): array {
+		return [
+			'nodes'  => [],
+			'errors' => [$error],
+		];
+
+	}//end clauseFailure()
 
 	/**
 	 * Parse every combinator a clause names, one level deeper.

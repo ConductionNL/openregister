@@ -28,10 +28,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Closure;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ObjectStateControllerServices;
 use OCA\OpenRegister\Exception\ArchiveNotOfferedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Object\ArchiveHandlerInterface;
 use OCA\OpenRegister\Service\Object\ObjectStateRequest;
@@ -82,7 +82,7 @@ class ObjectStateController extends Controller {
 		IRequest $request,
 		ObjectStateControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->archiveHandler = $services->archiveHandler;
 		$this->userSession = $services->userSession;
 	}//end __construct()
@@ -95,8 +95,6 @@ class ObjectStateController extends Controller {
 	 * @param string $id The id or uuid of the object to archive.
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse The stored archive marker.
 	 *
@@ -119,8 +117,6 @@ class ObjectStateController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse The cleared archive marker.
 	 *
 	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
@@ -141,8 +137,6 @@ class ObjectStateController extends Controller {
 	 * @param string $id The id or uuid of the object to freeze.
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse The stored freeze marker.
 	 *
@@ -186,8 +180,6 @@ class ObjectStateController extends Controller {
 	 * @param string $id The id or uuid of the object to unfreeze.
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse The cleared freeze marker.
 	 *

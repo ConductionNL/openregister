@@ -22,14 +22,13 @@
 
 namespace OCA\OpenRegister\Notifications\Db;
 
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
-use OCA\OpenRegister\Mcp\Db\Conversation;
 
 /**
  * MessageMapper handles database operations for Message entities

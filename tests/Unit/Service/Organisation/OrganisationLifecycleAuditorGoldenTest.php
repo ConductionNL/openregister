@@ -22,9 +22,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Organisation;
 
+use OCA\OpenRegister\Service\Organisation\OrganisationEdit;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\Organisation;
+use OCA\OpenRegister\Service\Audit\AuditEntryWriter;
 use OCA\OpenRegister\Service\Organisation\OrganisationLifecycleAuditor;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -63,7 +65,7 @@ class OrganisationLifecycleAuditorGoldenTest extends TestCase {
 
 		$this->logger = $this->createMock(LoggerInterface::class);
 
-		return new OrganisationLifecycleAuditor(mapper: $mapper, userSession: $session, logger: $this->logger);
+		return new OrganisationLifecycleAuditor(auditEntries: new AuditEntryWriter(mapper: $mapper), userSession: $session, logger: $this->logger);
 	}//end auditor()
 
 	private function user(): IUser {
@@ -95,11 +97,7 @@ class OrganisationLifecycleAuditorGoldenTest extends TestCase {
 	}//end testAStatusChangeIsRecordedAgainstTheSessionUser()
 
 	public function testAnUpdateRecordsOnlyTheFieldsThatDiffer(): void {
-		$this->auditor(user: null)->recordUpdate(
-			organisation: $this->organisation(status: 'active'),
-			before: ['name' => 'A', 'slug' => 'a', 'quota' => 1],
-			after: ['name' => 'B', 'slug' => 'a', 'quota' => '1', 'new' => 'x']
-		);
+		$this->auditor(user: null)->recordUpdate(organisation: $this->organisation(status: 'active'), edit: new OrganisationEdit(before: ['name' => 'A', 'slug' => 'a', 'quota' => 1], after: ['name' => 'B', 'slug' => 'a', 'quota' => '1', 'new' => 'x']));
 
 		$this->assertCount(1, $this->rows);
 		$row = $this->rows[0];
@@ -127,7 +125,7 @@ class OrganisationLifecycleAuditorGoldenTest extends TestCase {
 			)
 		);
 
-		$auditor->recordUpdate(organisation: $this->organisation(status: 'active'), before: [], after: ['name' => 'B']);
+		$auditor->recordUpdate(organisation: $this->organisation(status: 'active'), edit: new OrganisationEdit(before: [], after: ['name' => 'B']));
 
 		$this->assertSame([], $this->rows);
 	}//end testAFailedWriteIsLoggedAndNotThrown()

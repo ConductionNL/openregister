@@ -38,6 +38,10 @@ use OCA\OpenRegister\Service\ApiCaller\ApiCallObservation;
 /**
  * @covers \OCA\OpenRegister\Service\ApiCaller\ApiCallRecorder
  * @covers \OCA\OpenRegister\Db\ApiCallRecord
+ * @uses \OCA\OpenRegister\Db\ApiCallKey
+ * @uses \OCA\OpenRegister\Db\ApiCallKeys
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
+ * @uses \OCA\OpenRegister\Service\ApiCaller\ApiCallObservation
  */
 class ApiCallRecorderTest extends TestCase {
 

@@ -24,7 +24,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+ * @spec openspec/specs/flow-nodes/spec.md
  */
 
 declare(strict_types=1);
@@ -142,7 +142,7 @@ class FlowNodeRegistry implements FlowNodeCatalogueInterface {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	public function register(IFlowNode $node): void {
 		$id = $node->getId();
@@ -155,16 +155,7 @@ class FlowNodeRegistry implements FlowNodeCatalogueInterface {
 		}
 
 		if (isset($this->nodes[$id]) === true) {
-			$this->logger->warning(
-				message: '[FlowNodeRegistry] Refusing a duplicate flow node type',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'type' => $id,
-					'existing' => get_class($this->nodes[$id]),
-					'rejected' => get_class($node),
-				]
-			);
+			$this->warnDuplicate(node: $node);
 			return;
 		}
 
@@ -173,13 +164,34 @@ class FlowNodeRegistry implements FlowNodeCatalogueInterface {
 	}//end register()
 
 	/**
+	 * Say that a node type was refused because its id is already registered.
+	 *
+	 * @param IFlowNode $node The rejected node, whose id is taken.
+	 *
+	 * @return void
+	 */
+	private function warnDuplicate(IFlowNode $node): void {
+		$id = $node->getId();
+		$this->logger->warning(
+			message: '[FlowNodeRegistry] Refusing a duplicate flow node type',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'type' => $id,
+				'existing' => get_class($this->nodes[$id]),
+				'rejected' => get_class($node),
+			]
+		);
+	}//end warnDuplicate()
+
+	/**
 	 * Every registered node type, optionally narrowed to one scope.
 	 *
 	 * @param int|null $scope A Nextcloud `IManager::SCOPE_*` constant, or null for all.
 	 *
 	 * @return array<string, IFlowNode> Nodes keyed by type id.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	public function all(?int $scope = null): array {
 		$this->load();
@@ -208,7 +220,7 @@ class FlowNodeRegistry implements FlowNodeCatalogueInterface {
 	 *
 	 * @return array<int, array<string, mixed>> One entry per available node.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	public function palette(int $scope = IManager::SCOPE_ADMIN): array {
 		$palette = [];
@@ -279,6 +291,12 @@ class FlowNodeRegistry implements FlowNodeCatalogueInterface {
 			// files. Published rather than duplicated in each editor,
 			// so the map has one home.
 			'aliases' => $this->aliasesFor(type: $id),
+			// The right an author needs to place this step, as the node
+			// declares it for a step with no configuration; null when it
+			// needs none. The administrator's map and the caller's `locked`
+			// are applied by FlowNodeRightsGuard, which also checks every
+			// save, so this is advice and never the control.
+			'requiresRight' => $this->requiredRightOf(node: $node),
 		];
 
 		// The node's config vocabulary, when it declares one. This is
@@ -311,6 +329,23 @@ class FlowNodeRegistry implements FlowNodeCatalogueInterface {
 	}//end paletteEntry()
 
 	/**
+	 * The right a node declares for a step with no configuration, or null.
+	 *
+	 * @param IFlowNode $node The node.
+	 *
+	 * @return string|null The right.
+	 *
+	 * @spec openspec/changes/flow-powerful-steps-need-a-right/specs/flow-engine/spec.md#requirement-a-flow-step-type-can-require-a-named-right
+	 */
+	private function requiredRightOf(IFlowNode $node): ?string {
+		if (($node instanceof IFlowNodeRequiresRight) === false) {
+			return null;
+		}
+
+		return $node->requiredRight(config: []);
+	}//end requiredRightOf()
+
+	/**
 	 * A node's icon, or the app's own when the node's does not resolve.
 	 *
 	 * 🔴 A MISSING ICON USED TO DELETE THE NODE. `IURLGenerator::imagePath()`
@@ -333,7 +368,7 @@ class FlowNodeRegistry implements FlowNodeCatalogueInterface {
 	 *
 	 * @return string|null The icon path, the app's icon, or null when neither resolves.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	private function iconFor(IFlowNode $node, string $type): ?string {
 		try {
@@ -416,7 +451,7 @@ class FlowNodeRegistry implements FlowNodeCatalogueInterface {
 	 *
 	 * @throws UnexpectedValueException When no app provides that type.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	public function get(string $type): IFlowNode {
 		$this->load();
@@ -564,7 +599,7 @@ class FlowNodeRegistry implements FlowNodeCatalogueInterface {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	private function load(): void {
 		if ($this->loaded === true) {

@@ -23,8 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Rbac;
 
 use OCA\OpenRegister\Db\MagicMapperInterface;
-use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 
@@ -65,18 +64,15 @@ class ObjectAuthorizationWriter {
 	 * the stored value forward, which is what stops a routine update from
 	 * destroying per-object RBAC.
 	 *
-	 * @param Register $register The register.
-	 * @param Schema $schema The schema.
-	 * @param string $objectUuid The object UUID.
-	 * @param array<string, mixed> $block The block to store.
+	 * @param RegisterSchema          $table      The register and schema the object is stored under.
+	 * @param AuthorizationAssignment $assignment The object UUID and the block to store.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/object-level-sharing/spec.md
 	 */
-	public function writeAuthorizationBlock(Register $register, Schema $schema, string $objectUuid, array $block): void {
-		$table = $this->mapper->getTableNameForRegisterSchema($register, $schema);
-		$this->writeBlockTo(table: $table, assignment: new AuthorizationAssignment(objectUuid: $objectUuid, block: $block));
+	public function writeAuthorizationBlock(RegisterSchema $table, AuthorizationAssignment $assignment): void {
+		$this->writeBlockTo(table: $this->mapper->getTableNameForRegisterSchema($table->register, $table->schema), assignment: $assignment);
 	}//end writeAuthorizationBlock()
 
 	/**

@@ -20,7 +20,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+ * @spec openspec/specs/apphost-scheduling/spec.md
  */
 
 declare(strict_types=1);
@@ -30,7 +30,7 @@ namespace OCA\OpenRegister\AppHost\Scheduling;
 /**
  * Turns seconds into the cron expression firing at exactly that interval.
  *
- * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+ * @spec openspec/specs/apphost-scheduling/spec.md
  */
 final class IntervalCron {
 	private const MINUTE = 60;
@@ -39,21 +39,25 @@ final class IntervalCron {
 	private const WEEK = 604800;
 
 	/**
+	 * The intervals a fixed daily or weekly expression fires at, by seconds.
+	 */
+	private const CALENDAR = [
+		self::WEEK => '0 0 * * 0',
+		self::DAY  => '0 0 * * *',
+	];
+
+	/**
 	 * The cron expression for an interval, or null when none fires at exactly it.
 	 *
 	 * @param int $seconds The interval in seconds.
 	 *
 	 * @return string|null The five-field cron expression.
 	 *
-	 * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	public function cronFor(int $seconds): ?string {
-		if ($seconds === self::WEEK) {
-			return '0 0 * * 0';
-		}
-
-		if ($seconds === self::DAY) {
-			return '0 0 * * *';
+		if (isset(self::CALENDAR[$seconds]) === true) {
+			return self::CALENDAR[$seconds];
 		}
 
 		if ($seconds % self::HOUR === 0) {

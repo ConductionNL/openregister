@@ -157,15 +157,7 @@ final class DbalListClauses {
 			return;
 		}
 
-		// LIKE only exists for text operands: on PostgreSQL `integer LIKE
-		// text` raises "operator does not exist" (observed live), so every
-		// column is CAST to the platform's text type first. MySQL spells the
-		// cast target CHAR; PostgreSQL and SQLite use TEXT.
-		$castType = 'TEXT';
-		if ($this->statement->connection->getDatabasePlatform() instanceof AbstractMySQLPlatform === true) {
-			$castType = 'CHAR';
-		}
-
+		$castType = $this->textCastType();
 		$param = $this->statement->qb->createNamedParameter('%' . $search . '%');
 		$ors   = [];
 		foreach ($this->filterable as $column) {
@@ -174,6 +166,25 @@ final class DbalListClauses {
 
 		$this->statement->qb->andWhere('(' . implode(' OR ', $ors) . ')');
 	}//end search()
+
+	/**
+	 * The platform's text type for a CAST.
+	 *
+	 * LIKE only exists for text operands: on PostgreSQL `integer LIKE
+	 * text` raises "operator does not exist" (observed live), so every
+	 * column is CAST to the platform's text type first. MySQL spells the
+	 * cast target CHAR; PostgreSQL and SQLite use TEXT.
+	 *
+	 * @return string
+	 */
+	private function textCastType(): string {
+		$castType = 'TEXT';
+		if ($this->statement->connection->getDatabasePlatform() instanceof AbstractMySQLPlatform === true) {
+			$castType = 'CHAR';
+		}
+
+		return $castType;
+	}//end textCastType()
 
 	/**
 	 * Apply a validated sort column/direction.

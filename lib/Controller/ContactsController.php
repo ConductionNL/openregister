@@ -22,9 +22,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ContactsControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
+use OCA\OpenRegister\Kernel\Contracts\ContactDetails;
 use OCA\OpenRegister\Kernel\Contracts\ContactMatcherInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
@@ -89,7 +90,7 @@ class ContactsController extends Controller {
 		IRequest $request,
 		ContactsControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->services = $services;
 
 		$this->contactService = $services->domain->contactService;
@@ -135,7 +136,6 @@ class ContactsController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 *
@@ -164,7 +164,6 @@ class ContactsController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-16
 	 */
@@ -516,7 +515,6 @@ class ContactsController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) Route-bound; method 501 pending role updates.
 	 *
@@ -546,7 +544,6 @@ class ContactsController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/contacts-actions/spec.md
 	 */
@@ -641,9 +638,7 @@ class ContactsController extends Controller {
 			}
 
 			$matches = $this->services->domain->matchingService->matchContact(
-				(string)$email,
-				$nameValue,
-				$organizationValue
+				contact: new ContactDetails(email: (string)$email, name: $nameValue, organization: $organizationValue)
 			);
 			$enrichedMatches = $this->enrichMatches(matches: $matches);
 

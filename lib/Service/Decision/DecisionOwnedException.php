@@ -17,7 +17,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-reviewers-decision-is-changed-only-by-that-reviewer-or-a-supervisor-req-rod-001
+ * @spec openspec/specs/entity-relation-grondslagen/spec.md
  */
 
 declare(strict_types=1);
@@ -30,7 +30,7 @@ use Exception;
  * Raised when someone other than the decider, a supervisor or an
  * administrator tries to change a decider-owned decision.
  *
- * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-reviewers-decision-is-changed-only-by-that-reviewer-or-a-supervisor-req-rod-001
+ * @spec openspec/specs/entity-relation-grondslagen/spec.md
  */
 final class DecisionOwnedException extends Exception {
 	/**
@@ -39,7 +39,7 @@ final class DecisionOwnedException extends Exception {
 	 * @param array<string, mixed> $refusal The refusal body: error, decision and, unless
 	 *                                      hideOthers is on, decidedBy and decidedAt.
 	 *
-	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-reviewers-decision-is-changed-only-by-that-reviewer-or-a-supervisor-req-rod-001
+	 * @spec openspec/specs/entity-relation-grondslagen/spec.md
 	 */
 	public function __construct(private readonly array $refusal) {
 		parent::__construct(message: 'This decision belongs to '.(string)($refusal['decidedBy'] ?? 'another reviewer').'.');
@@ -50,7 +50,7 @@ final class DecisionOwnedException extends Exception {
 	 *
 	 * @return array<string, mixed> error, decision and, unless hideOthers is on, decidedBy and decidedAt.
 	 *
-	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-reviewers-decision-is-changed-only-by-that-reviewer-or-a-supervisor-req-rod-001
+	 * @spec openspec/specs/entity-relation-grondslagen/spec.md
 	 */
 	public function getRefusal(): array {
 		return $this->refusal;

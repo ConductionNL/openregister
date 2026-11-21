@@ -38,6 +38,7 @@ namespace OCA\OpenRegister\Service\Notification;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Kernel\Contracts\NotificationTemplatesInterface;
+use OCA\OpenRegister\Kernel\Contracts\TemplateRendering;
 use OCP\IConfig;
 
 /**
@@ -444,30 +445,9 @@ class NotificationTemplateRegistry implements NotificationTemplatesInterface {
 	}//end templateFor()
 
 	/**
-	 * Render one event's subject and body in a locale, or nothing.
-	 *
-	 * Returns null rather than a generic line when the event has no template.
-	 * A caller that gets null must say so or fall back to something it wrote
-	 * itself; what it must never do is print a sentence that reads like the
-	 * template somebody forgot to write, because then nobody finds out.
-	 *
-	 * @param string $event The event name.
-	 * @param string|null $locale The reader's locale, or null for the default.
-	 * @param array<string, mixed> $variables Values for the template's variables.
-	 *
-	 * @return array{subject: string, body: string}|null The rendered text, or null when the event has no template.
-	 *
-	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-every-platform-event-ships-an-editable-template-req-nrg-006
-	 */
-	public function render(string $event, ?string $locale, array $variables = []): ?array {
-		return $this->renderFor(rendering: new TemplateRendering(event: $event, locale: $locale, variables: $variables));
-	}//end render()
-
-	/**
 	 * Render one event's subject and body for a rendering request, or nothing.
 	 *
-	 * Same answer as {@see render()}: null, never a generic line, when the
-	 * event has no template.
+	 * Null, never a generic line, when the event has no template.
 	 *
 	 * @param TemplateRendering $rendering The event, the reader's locale and the variable values.
 	 *

@@ -30,7 +30,7 @@ foreach ($queries as $query) {
 
 	try {
 		// Perform semantic search.
-		$results = $vectorService->semanticSearch($query, 5, []);
+		$results = $vectorService->semanticSearch(new \OCA\OpenRegister\Search\Service\Vectorization\SemanticSearchRequest($query, 5, []));
 
 		echo 'Found ' . count($results) . " results:\n\n";
 

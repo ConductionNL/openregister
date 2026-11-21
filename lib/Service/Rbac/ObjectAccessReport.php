@@ -127,9 +127,8 @@ class ObjectAccessReport implements ObjectAccessReportInterface {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function historyFor(ObjectEntity $object, ?string $moment): array {
-		$entries = $this->sources->auditTrailMapper->findForObjectByAction(
+		$entries = $this->sources->auditTrail->objectTrail(
 			objectUuid: (string)$object->getUuid(),
-			actions: [],
 			limit: self::HISTORY_LIMIT
 		);
 

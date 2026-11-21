@@ -33,7 +33,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/specs/archival-annotation-vocabulary/spec.md#requirement-get-on-an-archival-schema-row-surfaces-_retention-block
+ * @spec openspec/specs/archival-annotation-vocabulary/spec.md#requirement-get-on-an-archival-schema-row-surfaces-retention-block
  */
 
 declare(strict_types=1);
@@ -63,7 +63,7 @@ final class UnestablishedValues {
      *
      * @return array<array-key, mixed> The members that establish something.
      *
-     * @spec openspec/specs/archival-annotation-vocabulary/spec.md#requirement-get-on-an-archival-schema-row-surfaces-_retention-block
+     * @spec openspec/specs/archival-annotation-vocabulary/spec.md#requirement-get-on-an-archival-schema-row-surfaces-retention-block
      */
     public function without(array $values): array {
         $kept = [];
@@ -93,7 +93,7 @@ final class UnestablishedValues {
      *
      * @return array<array-key, mixed> The pruned member, possibly empty.
      *
-     * @spec openspec/specs/archival-annotation-vocabulary/spec.md#requirement-get-on-an-archival-schema-row-surfaces-_retention-block
+     * @spec openspec/specs/archival-annotation-vocabulary/spec.md#requirement-get-on-an-archival-schema-row-surfaces-retention-block
      */
     private function prunedMember(array $value): array {
         if (array_is_list($value) === false) {

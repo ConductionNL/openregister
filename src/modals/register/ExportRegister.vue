@@ -87,6 +87,71 @@ function exportSlugs(register, schema) {
 	return [register.slug || register.id, schema.slug || schema.id]
 }
 
+/**
+ * The formats the dialog offers, with the extension a download without a
+ * server file name gets (export-open-formats-and-public-download, task 3.1).
+ * Format names are product and file-type names, the same in every language.
+ *
+ * @spec openspec/changes/export-open-formats-and-public-download/tasks.md#3.1
+ */
+const EXPORT_FORMATS = [
+	{ label: 'Excel', value: 'excel', extension: 'xlsx' },
+	{ label: 'CSV', value: 'csv', extension: 'csv' },
+	{ label: 'TSV', value: 'tsv', extension: 'tsv' },
+	{ label: 'JSON', value: 'json', extension: 'json' },
+	{ label: 'XML', value: 'xml', extension: 'xml' },
+]
+
+/**
+ * The file extension of a format; Excel's when the format is unknown, as the
+ * server answers an unknown format with Excel.
+ *
+ * @param {string} format The export format
+ * @return {string} The extension
+ * @spec openspec/changes/export-open-formats-and-public-download/tasks.md#3.1
+ */
+export function exportExtension(format) {
+	return (EXPORT_FORMATS.find((entry) => entry.value === format) || EXPORT_FORMATS[0]).extension
+}
+
+/**
+ * Download the objects of a register and schema in the given format.
+ *
+ * @param {Array<string>} slugs The register and schema slugs
+ * @param {string} format The export format
+ * @return {Promise<object>} The blob response
+ */
+function requestExport(slugs, format) {
+	const url = generateUrl(
+		`/apps/openregister/api/objects/${slugs[0]}/${slugs[1]}/export`,
+	)
+	const params = {
+		type: format,
+	}
+
+	return axios({
+		url,
+		method: 'GET',
+		params,
+		responseType: 'blob',
+	})
+}
+
+/**
+ * Why the export failed: the server's error, the error's message, or a
+ * generic one.
+ *
+ * @param {Error} error What went wrong
+ * @return {string} The message
+ */
+function exportFailureMessage(error) {
+	return (
+		error.response?.data?.error
+		|| error.message
+		|| t('openregister', 'Failed to export objects')
+	)
+}
+
 export default {
 	name: 'ExportRegister',
 	components: {
@@ -104,10 +169,7 @@ export default {
 			loading: false,
 			error: null,
 			exportFormat: 'excel',
-			exportFormats: [
-				{ label: 'Excel', value: 'excel' },
-				{ label: 'CSV', value: 'csv' },
-			],
+			exportFormats: EXPORT_FORMATS.map(({ label, value }) => ({ label, value })),
 		}
 	},
 
@@ -144,10 +206,7 @@ export default {
 		 * @spec exclude Export handler triggering the objects export endpoint download; UI orchestration plumbing.
 		 */
 		async exportObjects() {
-			const register = registerStore.registerItem
-			const schema = schemaStore.schemaItem
-
-			if (!hasIds(register, schema)) {
+			if (!hasIds(registerStore.registerItem, schemaStore.schemaItem)) {
 				this.error = t('openregister', 'Register and schema are required')
 				return
 			}
@@ -156,31 +215,28 @@ export default {
 			this.error = null
 
 			try {
-				const slugs = exportSlugs(register, schema)
-				const url = generateUrl(
-					`/apps/openregister/api/objects/${slugs[0]}/${slugs[1]}/export`,
-				)
-				const params = {
-					type: this.exportFormat,
-				}
-
-				const response = await axios({
-					url,
-					method: 'GET',
-					params,
-					responseType: 'blob',
-				})
-
-				this.saveExport(response, slugs)
-				this.closeModal()
+				await this.downloadExport()
 			} catch (error) {
-				this.error =
-					error.response?.data?.error
-					|| error.message
-					|| t('openregister', 'Failed to export objects')
+				this.error = exportFailureMessage(error)
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * Download the export of the current register and schema, save it
+		 * and close.
+		 *
+		 * @return {Promise<void>}
+		 */
+		async downloadExport() {
+			const slugs = exportSlugs(
+				registerStore.registerItem,
+				schemaStore.schemaItem,
+			)
+			const response = await requestExport(slugs, this.exportFormat)
+			this.saveExport(response, slugs)
+			this.closeModal()
 		},
 
 		/**
@@ -219,7 +275,7 @@ export default {
 			if (contentDisposition) {
 				return contentDisposition.split('filename=')[1].replace(/"/g, '')
 			}
-			const extension = this.exportFormat === 'excel' ? 'xlsx' : 'csv'
+			const extension = exportExtension(this.exportFormat)
 			return `${slugs[0]}_${slugs[1]}_${new Date().toISOString().split('T')[0]}.${extension}`
 		},
 	},

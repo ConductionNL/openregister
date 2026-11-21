@@ -80,4 +80,65 @@ class MigrateSchemaApplicationCommandRunTest extends TestCase {
 		$this->assertStringContainsString('Moved 3 schema(s) and 2 register(s) from "procest" to "dossiq".', $result[1]);
 		$this->assertStringNotContainsString('Refusing', $result[1]);
 	}//end testACompletedRunReportsWhatMoved()
+
+	/**
+	 * A missing or unchanged application id is refused before anything is counted.
+	 *
+	 * @return void
+	 */
+	public function testTheIdsMustBothBeGivenAndDiffer(): void {
+		$migrator = $this->createMock(SchemaApplicationMigratorInterface::class);
+		$migrator->expects($this->never())->method('countFor');
+		$migrator->expects($this->never())->method('migrate');
+		$tester = new CommandTester(new MigrateSchemaApplicationCommand($migrator));
+
+		foreach ([['from' => '', 'to' => 'dossiq'], ['from' => 'procest', 'to' => ''], ['from' => 'procest', 'to' => 'procest']] as $arguments) {
+			$this->assertSame(1, $tester->execute($arguments));
+			$this->assertSame('`from` and `to` must both be given and must differ.'."\n", $tester->getDisplay());
+		}
+	}//end testTheIdsMustBothBeGivenAndDiffer()
+
+	/**
+	 * Nothing owned by the old id says how much the new id owns, exits 0 and migrates nothing, dry run or not.
+	 *
+	 * @return void
+	 */
+	public function testNothingOwnedSaysWhatTheNewIdOwns(): void {
+		$migrator = $this->createMock(SchemaApplicationMigratorInterface::class);
+		$migrator->method('countFor')->willReturnMap(
+			[
+				['openregister_schemas', 'procest', 0],
+				['openregister_registers', 'procest', 0],
+				['openregister_schemas', 'dossiq', 4],
+			]
+		);
+		$migrator->expects($this->never())->method('migrate');
+		$migrator->expects($this->never())->method('collidingSlugs');
+		$tester = new CommandTester(new MigrateSchemaApplicationCommand($migrator));
+
+		foreach ([[], ['--dry-run' => true]] as $options) {
+			$this->assertSame(0, $tester->execute(['from' => 'procest', 'to' => 'dossiq'] + $options));
+			$this->assertSame(
+				'Application "procest" currently owns 0 schema(s) and 0 register(s).'."\n"
+				.'Nothing owned by "procest". "dossiq" owns 4 schema(s).'."\n",
+				$tester->getDisplay()
+			);
+		}
+	}//end testNothingOwnedSaysWhatTheNewIdOwns()
+
+	/**
+	 * A completed run prints exactly the ownership line, the move line and the objects note.
+	 *
+	 * @return void
+	 */
+	public function testACompletedRunPrintsExactlyThreeLines(): void {
+		$result = $this->migrateFor(['ok' => true, 'schemas' => 3, 'registers' => 2]);
+
+		$this->assertSame(
+			'Application "procest" currently owns 1 schema(s) and 1 register(s).'."\n"
+			.'Moved 3 schema(s) and 2 register(s) from "procest" to "dossiq".'."\n"
+			.'Objects are unaffected: they reference their schema by id, which does not change here.'."\n",
+			$result[1]
+		);
+	}//end testACompletedRunPrintsExactlyThreeLines()
 }//end class

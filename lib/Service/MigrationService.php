@@ -110,23 +110,34 @@ class MigrationService implements MigrationServiceInterface {
 	 * @spec exclude Reporting shim: assembles register/schema/magic-table-count read into a response array; no business rule.
 	 */
 	public function getStorageStatus(Register $register, Schema $schema): array {
-		$magicTableExists = $this->catalog->tables()->existsTableForRegisterSchema(
-			register: $register,
-			schema: $schema
-		);
-
 		return [
 			'register' => $this->identity(entity: $register),
 			'schema' => $this->identity(entity: $schema),
-			'magicTable' => [
-				'exists' => $magicTableExists,
-				'count' => $this->magicCount(
-					table: new RegisterSchema(register: $register, schema: $schema),
-					exists: $magicTableExists
-				),
-			],
+			'magicTable' => $this->magicTableStatus(table: new RegisterSchema(register: $register, schema: $schema)),
 		];
 	}//end getStorageStatus()
+
+	/**
+	 * Whether a register and schema have a magic table, and how many rows it holds.
+	 *
+	 * @param RegisterSchema $table The register and schema.
+	 *
+	 * @return array{exists: bool, count: int}
+	 */
+	private function magicTableStatus(RegisterSchema $table): array {
+		$magicTableExists = $this->catalog->tables()->existsTableForRegisterSchema(
+			register: $table->register,
+			schema: $table->schema
+		);
+
+		return [
+			'exists' => $magicTableExists,
+			'count' => $this->magicCount(
+				table: $table,
+				exists: $magicTableExists
+			),
+		];
+	}//end magicTableStatus()
 
 	/**
 	 * Migrate objects from blob storage to a magic table.

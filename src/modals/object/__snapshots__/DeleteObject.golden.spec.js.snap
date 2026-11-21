@@ -1,0 +1,347 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`DeleteObject::deleteObject (golden) deletes complete, answering deleted 1`] = `
+{
+  "closing": true,
+  "error": false,
+  "loading": false,
+  "success": true,
+  "trace": [
+    [
+      "register",
+      "object-2-3",
+      3,
+      2,
+    ],
+    [
+      "delete",
+      "object-2-3",
+      "o1",
+    ],
+    [
+      "refetch",
+    ],
+  ],
+}
+`;
+
+exports[`DeleteObject::deleteObject (golden) deletes complete, answering refusedPlain 1`] = `
+{
+  "closing": false,
+  "error": "Failed to delete object",
+  "loading": false,
+  "success": false,
+  "trace": [
+    [
+      "register",
+      "object-2-3",
+      3,
+      2,
+    ],
+    [
+      "delete",
+      "object-2-3",
+      "o1",
+    ],
+  ],
+}
+`;
+
+exports[`DeleteObject::deleteObject (golden) deletes complete, answering refusedWithError 1`] = `
+{
+  "closing": false,
+  "error": "locked",
+  "loading": false,
+  "success": false,
+  "trace": [
+    [
+      "register",
+      "object-2-3",
+      3,
+      2,
+    ],
+    [
+      "delete",
+      "object-2-3",
+      "o1",
+    ],
+  ],
+}
+`;
+
+exports[`DeleteObject::deleteObject (golden) deletes complete, answering thrown 1`] = `
+{
+  "closing": false,
+  "error": "gone",
+  "loading": false,
+  "success": false,
+  "trace": [
+    [
+      "register",
+      "object-2-3",
+      3,
+      2,
+    ],
+    [
+      "delete",
+      "object-2-3",
+      "o1",
+    ],
+  ],
+}
+`;
+
+exports[`DeleteObject::deleteObject (golden) deletes complete, answering thrownNoMessage 1`] = `
+{
+  "closing": false,
+  "error": "An error occurred while deleting the object",
+  "loading": false,
+  "success": false,
+  "trace": [
+    [
+      "register",
+      "object-2-3",
+      3,
+      2,
+    ],
+    [
+      "delete",
+      "object-2-3",
+      "o1",
+    ],
+  ],
+}
+`;
+
+exports[`DeleteObject::deleteObject (golden) deletes knownType, answering deleted 1`] = `
+{
+  "closing": true,
+  "error": false,
+  "loading": false,
+  "success": true,
+  "trace": [
+    [
+      "delete",
+      "object-2-4",
+      "o2",
+    ],
+    [
+      "refetch",
+    ],
+  ],
+}
+`;
+
+exports[`DeleteObject::deleteObject (golden) deletes knownType, answering refusedPlain 1`] = `
+{
+  "closing": false,
+  "error": "Failed to delete object",
+  "loading": false,
+  "success": false,
+  "trace": [
+    [
+      "delete",
+      "object-2-4",
+      "o2",
+    ],
+  ],
+}
+`;
+
+exports[`DeleteObject::deleteObject (golden) deletes knownType, answering refusedWithError 1`] = `
+{
+  "closing": false,
+  "error": "held",
+  "loading": false,
+  "success": false,
+  "trace": [
+    [
+      "delete",
+      "object-2-4",
+      "o2",
+    ],
+  ],
+}
+`;
+
+exports[`DeleteObject::deleteObject (golden) deletes knownType, answering thrown 1`] = `
+{
+  "closing": false,
+  "error": "gone",
+  "loading": false,
+  "success": false,
+  "trace": [
+    [
+      "delete",
+      "object-2-4",
+      "o2",
+    ],
+  ],
+}
+`;
+
+exports[`DeleteObject::deleteObject (golden) deletes knownType, answering thrownNoMessage 1`] = `
+{
+  "closing": false,
+  "error": "An error occurred while deleting the object",
+  "loading": false,
+  "success": false,
+  "trace": [
+    [
+      "delete",
+      "object-2-4",
+      "o2",
+    ],
+  ],
+}
+`;
+
+exports[`DeleteObject::deleteObject (golden) deletes noId, answering deleted 1`] = `
+{
+  "closing": false,
+  "error": "Object is missing required metadata (register, schema, or id)",
+  "loading": false,
+  "success": false,
+  "trace": [],
+}
+`;
+
+exports[`DeleteObject::deleteObject (golden) deletes noId, answering refusedPlain 1`] = `
+{
+  "closing": false,
+  "error": "Object is missing required metadata (register, schema, or id)",
+  "loading": false,
+  "success": false,
+  "trace": [],
+}
+`;
+
+exports[`DeleteObject::deleteObject (golden) deletes noId, answering refusedWithError 1`] = `
+{
+  "closing": false,
+  "error": "Object is missing required metadata (register, schema, or id)",
+  "loading": false,
+  "success": false,
+  "trace": [],
+}
+`;
+
+exports[`DeleteObject::deleteObject (golden) deletes noId, answering thrown 1`] = `
+{
+  "closing": false,
+  "error": "Object is missing required metadata (register, schema, or id)",
+  "loading": false,
+  "success": false,
+  "trace": [],
+}
+`;
+
+exports[`DeleteObject::deleteObject (golden) deletes noId, answering thrownNoMessage 1`] = `
+{
+  "closing": false,
+  "error": "Object is missing required metadata (register, schema, or id)",
+  "loading": false,
+  "success": false,
+  "trace": [],
+}
+`;
+
+exports[`DeleteObject::deleteObject (golden) deletes noSelf, answering deleted 1`] = `
+{
+  "closing": false,
+  "error": "Object is missing required metadata (register, schema, or id)",
+  "loading": false,
+  "success": false,
+  "trace": [],
+}
+`;
+
+exports[`DeleteObject::deleteObject (golden) deletes noSelf, answering refusedPlain 1`] = `
+{
+  "closing": false,
+  "error": "Object is missing required metadata (register, schema, or id)",
+  "loading": false,
+  "success": false,
+  "trace": [],
+}
+`;
+
+exports[`DeleteObject::deleteObject (golden) deletes noSelf, answering refusedWithError 1`] = `
+{
+  "closing": false,
+  "error": "Object is missing required metadata (register, schema, or id)",
+  "loading": false,
+  "success": false,
+  "trace": [],
+}
+`;
+
+exports[`DeleteObject::deleteObject (golden) deletes noSelf, answering thrown 1`] = `
+{
+  "closing": false,
+  "error": "Object is missing required metadata (register, schema, or id)",
+  "loading": false,
+  "success": false,
+  "trace": [],
+}
+`;
+
+exports[`DeleteObject::deleteObject (golden) deletes noSelf, answering thrownNoMessage 1`] = `
+{
+  "closing": false,
+  "error": "Object is missing required metadata (register, schema, or id)",
+  "loading": false,
+  "success": false,
+  "trace": [],
+}
+`;
+
+exports[`DeleteObject::deleteObject (golden) deletes none, answering deleted 1`] = `
+{
+  "closing": false,
+  "error": "Object is missing required metadata (register, schema, or id)",
+  "loading": false,
+  "success": false,
+  "trace": [],
+}
+`;
+
+exports[`DeleteObject::deleteObject (golden) deletes none, answering refusedPlain 1`] = `
+{
+  "closing": false,
+  "error": "Object is missing required metadata (register, schema, or id)",
+  "loading": false,
+  "success": false,
+  "trace": [],
+}
+`;
+
+exports[`DeleteObject::deleteObject (golden) deletes none, answering refusedWithError 1`] = `
+{
+  "closing": false,
+  "error": "Object is missing required metadata (register, schema, or id)",
+  "loading": false,
+  "success": false,
+  "trace": [],
+}
+`;
+
+exports[`DeleteObject::deleteObject (golden) deletes none, answering thrown 1`] = `
+{
+  "closing": false,
+  "error": "Object is missing required metadata (register, schema, or id)",
+  "loading": false,
+  "success": false,
+  "trace": [],
+}
+`;
+
+exports[`DeleteObject::deleteObject (golden) deletes none, answering thrownNoMessage 1`] = `
+{
+  "closing": false,
+  "error": "Object is missing required metadata (register, schema, or id)",
+  "loading": false,
+  "success": false,
+  "trace": [],
+}
+`;

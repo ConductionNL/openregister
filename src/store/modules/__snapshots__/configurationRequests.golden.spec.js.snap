@@ -426,6 +426,7 @@ exports[`configuration importFromGitHub golden error with text 1`] = `
         "body": "{"owner":"o","repo":"r"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -461,6 +462,7 @@ exports[`configuration importFromGitHub golden error without text 1`] = `
         "body": "{"owner":"o","repo":"r"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -496,6 +498,7 @@ exports[`configuration importFromGitHub golden network failure 1`] = `
         "body": "{"owner":"o","repo":"r"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -526,6 +529,7 @@ exports[`configuration importFromGitHub golden ok empty object 1`] = `
         "body": "{"owner":"o","repo":"r"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -584,6 +588,7 @@ exports[`configuration importFromGitHub golden ok null 1`] = `
         "body": "{"owner":"o","repo":"r"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -656,6 +661,7 @@ exports[`configuration importFromGitHub golden ok object 1`] = `
         "body": "{"owner":"o","repo":"r"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -714,6 +720,7 @@ exports[`configuration importFromGitHub golden ok string 1`] = `
         "body": "{"owner":"o","repo":"r"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -777,6 +784,7 @@ exports[`configuration importFromGitLab golden error with text 1`] = `
         "body": "{"project":"p"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -812,6 +820,7 @@ exports[`configuration importFromGitLab golden error without text 1`] = `
         "body": "{"project":"p"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -847,6 +856,7 @@ exports[`configuration importFromGitLab golden network failure 1`] = `
         "body": "{"project":"p"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -877,6 +887,7 @@ exports[`configuration importFromGitLab golden ok empty object 1`] = `
         "body": "{"project":"p"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -935,6 +946,7 @@ exports[`configuration importFromGitLab golden ok null 1`] = `
         "body": "{"project":"p"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -1007,6 +1019,7 @@ exports[`configuration importFromGitLab golden ok object 1`] = `
         "body": "{"project":"p"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -1065,6 +1078,7 @@ exports[`configuration importFromGitLab golden ok string 1`] = `
         "body": "{"project":"p"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -1128,6 +1142,7 @@ exports[`configuration importFromUrl golden error with text 1`] = `
         "body": "{"url":"https://example.com/c.json"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -1163,6 +1178,7 @@ exports[`configuration importFromUrl golden error without text 1`] = `
         "body": "{"url":"https://example.com/c.json"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -1198,6 +1214,7 @@ exports[`configuration importFromUrl golden network failure 1`] = `
         "body": "{"url":"https://example.com/c.json"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -1228,6 +1245,7 @@ exports[`configuration importFromUrl golden ok empty object 1`] = `
         "body": "{"url":"https://example.com/c.json"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -1286,6 +1304,7 @@ exports[`configuration importFromUrl golden ok null 1`] = `
         "body": "{"url":"https://example.com/c.json"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -1358,6 +1377,7 @@ exports[`configuration importFromUrl golden ok object 1`] = `
         "body": "{"url":"https://example.com/c.json"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -1416,6 +1436,7 @@ exports[`configuration importFromUrl golden ok string 1`] = `
         "body": "{"url":"https://example.com/c.json"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -1480,6 +1501,7 @@ exports[`configuration saveConfiguration existing golden error with text 1`] = `
         "body": "{"title":"e"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "PUT",
       },
@@ -1516,6 +1538,7 @@ exports[`configuration saveConfiguration existing golden error without text 1`] 
         "body": "{"title":"e"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "PUT",
       },
@@ -1552,6 +1575,7 @@ exports[`configuration saveConfiguration existing golden network failure 1`] = `
         "body": "{"title":"e"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "PUT",
       },
@@ -1608,6 +1632,7 @@ exports[`configuration saveConfiguration existing golden ok empty object 1`] = `
         "body": "{"title":"e"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "PUT",
       },
@@ -1692,6 +1717,7 @@ exports[`configuration saveConfiguration existing golden ok null 1`] = `
         "body": "{"title":"e"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "PUT",
       },
@@ -1748,6 +1774,7 @@ exports[`configuration saveConfiguration existing golden ok object 1`] = `
         "body": "{"title":"e"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "PUT",
       },
@@ -1832,6 +1859,7 @@ exports[`configuration saveConfiguration existing golden ok string 1`] = `
         "body": "{"title":"e"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "PUT",
       },
@@ -2021,6 +2049,7 @@ exports[`configuration saveConfiguration new golden error with text 1`] = `
         "body": "{"title":"n"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -2125,6 +2154,7 @@ exports[`configuration saveConfiguration new golden error without text 1`] = `
         "body": "{"title":"n"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -2229,6 +2259,7 @@ exports[`configuration saveConfiguration new golden network failure 1`] = `
         "body": "{"title":"n"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -2333,6 +2364,7 @@ exports[`configuration saveConfiguration new golden ok empty object 1`] = `
         "body": "{"title":"n"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -2437,6 +2469,7 @@ exports[`configuration saveConfiguration new golden ok null 1`] = `
         "body": "{"title":"n"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -2541,6 +2574,7 @@ exports[`configuration saveConfiguration new golden ok object 1`] = `
         "body": "{"title":"n"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -2645,6 +2679,7 @@ exports[`configuration saveConfiguration new golden ok string 1`] = `
         "body": "{"title":"n"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -2729,6 +2764,7 @@ exports[`configuration uploadConfiguration existing golden error with text 1`] =
         "body": "{"json":"{}"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "PUT",
       },
@@ -2767,6 +2803,7 @@ exports[`configuration uploadConfiguration existing golden error without text 1`
         "body": "{"json":"{}"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "PUT",
       },
@@ -2805,6 +2842,7 @@ exports[`configuration uploadConfiguration existing golden network failure 1`] =
         "body": "{"json":"{}"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "PUT",
       },
@@ -2863,6 +2901,7 @@ exports[`configuration uploadConfiguration existing golden ok empty object 1`] =
         "body": "{"json":"{}"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "PUT",
       },
@@ -2947,6 +2986,7 @@ exports[`configuration uploadConfiguration existing golden ok null 1`] = `
         "body": "{"json":"{}"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "PUT",
       },
@@ -3005,6 +3045,7 @@ exports[`configuration uploadConfiguration existing golden ok object 1`] = `
         "body": "{"json":"{}"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "PUT",
       },
@@ -3089,6 +3130,7 @@ exports[`configuration uploadConfiguration existing golden ok string 1`] = `
         "body": "{"json":"{}"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "PUT",
       },
@@ -3260,6 +3302,7 @@ exports[`configuration uploadConfiguration new golden error with text 1`] = `
         "body": "{"json":"{}"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -3296,6 +3339,7 @@ exports[`configuration uploadConfiguration new golden error without text 1`] = `
         "body": "{"json":"{}"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -3332,6 +3376,7 @@ exports[`configuration uploadConfiguration new golden network failure 1`] = `
         "body": "{"json":"{}"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -3388,6 +3433,7 @@ exports[`configuration uploadConfiguration new golden ok empty object 1`] = `
         "body": "{"json":"{}"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -3472,6 +3518,7 @@ exports[`configuration uploadConfiguration new golden ok null 1`] = `
         "body": "{"json":"{}"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -3528,6 +3575,7 @@ exports[`configuration uploadConfiguration new golden ok object 1`] = `
         "body": "{"json":"{}"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -3612,6 +3660,7 @@ exports[`configuration uploadConfiguration new golden ok string 1`] = `
         "body": "{"json":"{}"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },

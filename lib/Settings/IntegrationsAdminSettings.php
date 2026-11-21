@@ -133,22 +133,29 @@ class IntegrationsAdminSettings implements ISettings {
 	 * @return array<string,mixed>
 	 */
 	private function describe(IntegrationProvider $provider): array {
-		$requiredApp = $provider->getRequiredApp();
-		$isExternal = ($provider->getStorageStrategy() === 'external');
 		$health = $this->probeHealth(provider: $provider);
-		$openConnSource = $provider->getOpenConnectorSource();
-		$configureUrl = null;
-		if ($isExternal === true && $openConnSource !== null) {
-			$configureUrl = $this->buildOpenConnectorConfigureUrl(sourceId: $openConnSource);
-		}
+		$links = $this->linksOf(provider: $provider);
 
-		$testConnectionUrl = null;
-		if ($isExternal === true) {
-			$testConnectionUrl = $this->links->urlGenerator->linkToOCSRouteAbsolute(
-				'openregister.integrations.show',
-				['id' => $provider->getId()]
-			);
-		}
+		return array_merge(
+			$this->identityOf(provider: $provider),
+			[
+				'authStatus' => $health['authStatus'],
+				'status' => $health['status'],
+				'message' => $health['message'],
+			],
+			$links
+		);
+	}//end describe()
+
+	/**
+	 * The provider's identity, storage and required-app columns of its row.
+	 *
+	 * @param IntegrationProvider $provider Provider.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function identityOf(IntegrationProvider $provider): array {
+		$requiredApp = $provider->getRequiredApp();
 
 		return [
 			'id' => $provider->getId(),
@@ -158,15 +165,61 @@ class IntegrationsAdminSettings implements ISettings {
 			'requiredApp' => $requiredApp,
 			'requiredAppOk' => ($requiredApp === null || $this->links->appManager->isInstalled($requiredApp)),
 			'enabled' => $provider->isEnabled(),
-			'isExternal' => $isExternal,
-			'openConnectorSource' => $openConnSource,
-			'authStatus' => $health['authStatus'],
-			'status' => $health['status'],
-			'message' => $health['message'],
-			'configureUrl' => $configureUrl,
-			'testConnectionUrl' => $testConnectionUrl,
+			'isExternal' => self::isExternal(provider: $provider),
+			'openConnectorSource' => $provider->getOpenConnectorSource(),
 		];
-	}//end describe()
+	}//end identityOf()
+
+	/**
+	 * The configure and test-connection links of the row; both null for a native provider.
+	 *
+	 * @param IntegrationProvider $provider Provider.
+	 *
+	 * @return array{configureUrl: ?string, testConnectionUrl: ?string}
+	 */
+	private function linksOf(IntegrationProvider $provider): array {
+		if (self::isExternal(provider: $provider) === false) {
+			return [
+				'configureUrl' => null,
+				'testConnectionUrl' => null,
+			];
+		}
+
+		return [
+			'configureUrl' => $this->configureUrlOf(provider: $provider),
+			'testConnectionUrl' => $this->links->urlGenerator->linkToOCSRouteAbsolute(
+				'openregister.integrations.show',
+				['id' => $provider->getId()]
+			),
+		];
+	}//end linksOf()
+
+	/**
+	 * The deep-link into the provider's OpenConnector source, or null when it names none.
+	 *
+	 * @param IntegrationProvider $provider An external provider.
+	 *
+	 * @return string|null
+	 */
+	private function configureUrlOf(IntegrationProvider $provider): ?string {
+		$sourceId = $provider->getOpenConnectorSource();
+		if ($sourceId === null) {
+			return null;
+		}
+
+		return $this->buildOpenConnectorConfigureUrl(sourceId: $sourceId);
+	}//end configureUrlOf()
+
+	/**
+	 * Whether the provider stores its data in an external system.
+	 *
+	 * @param IntegrationProvider $provider Provider.
+	 *
+	 * @return bool
+	 */
+	private static function isExternal(IntegrationProvider $provider): bool {
+		return ($provider->getStorageStrategy() === 'external');
+	}//end isExternal()
 
 	/**
 	 * Resolve the provider's health descriptor.

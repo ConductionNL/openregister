@@ -126,13 +126,13 @@
             "message": "Authentication required"
         }
     },
-    "getCategories member scoped to own organisations": {
+    "getCategories member scoped to the active organisation": {
         "calls": [
             {
                 "groupManager.isAdmin": "bob"
             },
             {
-                "organisationService.getUserOrganisations": "bob"
+                "organisationService.getActiveOrganisation": "bob"
             },
             {
                 "qb1.selectDistinct": [
@@ -155,7 +155,6 @@
                 "param": [
                     ":p1",
                     [
-                        "org-b1",
                         "org-b2"
                     ],
                     102
@@ -180,6 +179,21 @@
                 "first",
                 "second"
             ]
+        }
+    },
+    "getCategories member with a blank active organisation": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "dave"
+            },
+            {
+                "organisationService.getActiveOrganisation": "dave"
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "data": []
         }
     },
     "getCategories member with forged identity": {
@@ -188,7 +202,7 @@
                 "groupManager.isAdmin": "bob"
             },
             {
-                "organisationService.getUserOrganisations": "bob"
+                "organisationService.getActiveOrganisation": "bob"
             },
             {
                 "qb1.selectDistinct": [
@@ -211,7 +225,6 @@
                 "param": [
                     ":p1",
                     [
-                        "org-b1",
                         "org-b2"
                     ],
                     102
@@ -238,13 +251,13 @@
             ]
         }
     },
-    "getCategories member with only blank organisation": {
+    "getCategories member without an active organisation": {
         "calls": [
             {
-                "groupManager.isAdmin": "dave"
+                "groupManager.isAdmin": "carol"
             },
             {
-                "organisationService.getUserOrganisations": "dave"
+                "organisationService.getActiveOrganisation": "carol"
             }
         ],
         "status": 200,
@@ -253,28 +266,13 @@
             "data": []
         }
     },
-    "getCategories member without organisations": {
+    "getCategories member without an active organisation, forged identity": {
         "calls": [
             {
                 "groupManager.isAdmin": "carol"
             },
             {
-                "organisationService.getUserOrganisations": "carol"
-            }
-        ],
-        "status": 200,
-        "data": {
-            "success": true,
-            "data": []
-        }
-    },
-    "getCategories member without organisations, forged identity": {
-        "calls": [
-            {
-                "groupManager.isAdmin": "carol"
-            },
-            {
-                "organisationService.getUserOrganisations": "carol"
+                "organisationService.getActiveOrganisation": "carol"
             }
         ],
         "status": 200,
@@ -289,7 +287,7 @@
                 "groupManager.isAdmin": "bob"
             },
             {
-                "organisationService.getUserOrganisations": "bob"
+                "organisationService.getActiveOrganisation": "bob"
             },
             {
                 "qb1.selectDistinct": [
@@ -312,7 +310,6 @@
                 "param": [
                     ":p1",
                     [
-                        "org-b1",
                         "org-b2"
                     ],
                     102
@@ -724,13 +721,13 @@
             "message": "Authentication required"
         }
     },
-    "getStats member scoped to own organisations": {
+    "getStats member scoped to the active organisation": {
         "calls": [
             {
                 "groupManager.isAdmin": "bob"
             },
             {
-                "organisationService.getUserOrganisations": "bob"
+                "organisationService.getActiveOrganisation": "bob"
             },
             {
                 "qb1.select": [
@@ -747,7 +744,6 @@
                 "param": [
                     ":p1",
                     [
-                        "org-b1",
                         "org-b2"
                     ],
                     102
@@ -796,7 +792,6 @@
                 "param": [
                     ":p2",
                     [
-                        "org-b1",
                         "org-b2"
                     ],
                     102
@@ -845,7 +840,6 @@
                 "param": [
                     ":p3",
                     [
-                        "org-b1",
                         "org-b2"
                     ],
                     102
@@ -885,7 +879,6 @@
                 "param": [
                     ":p4",
                     [
-                        "org-b1",
                         "org-b2"
                     ],
                     102
@@ -917,6 +910,26 @@
                     "pii": 5,
                     "special": 1
                 }
+            }
+        }
+    },
+    "getStats member with a blank active organisation": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "dave"
+            },
+            {
+                "organisationService.getActiveOrganisation": "dave"
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "data": {
+                "totalEntities": 0,
+                "totalRelations": 0,
+                "byType": [],
+                "byCategory": []
             }
         }
     },
@@ -926,7 +939,7 @@
                 "groupManager.isAdmin": "bob"
             },
             {
-                "organisationService.getUserOrganisations": "bob"
+                "organisationService.getActiveOrganisation": "bob"
             },
             {
                 "qb1.select": [
@@ -943,7 +956,6 @@
                 "param": [
                     ":p1",
                     [
-                        "org-b1",
                         "org-b2"
                     ],
                     102
@@ -992,7 +1004,6 @@
                 "param": [
                     ":p2",
                     [
-                        "org-b1",
                         "org-b2"
                     ],
                     102
@@ -1041,7 +1052,6 @@
                 "param": [
                     ":p3",
                     [
-                        "org-b1",
                         "org-b2"
                     ],
                     102
@@ -1081,7 +1091,6 @@
                 "param": [
                     ":p4",
                     [
-                        "org-b1",
                         "org-b2"
                     ],
                     102
@@ -1116,13 +1125,13 @@
             }
         }
     },
-    "getStats member with only blank organisation": {
+    "getStats member without an active organisation": {
         "calls": [
             {
-                "groupManager.isAdmin": "dave"
+                "groupManager.isAdmin": "carol"
             },
             {
-                "organisationService.getUserOrganisations": "dave"
+                "organisationService.getActiveOrganisation": "carol"
             }
         ],
         "status": 200,
@@ -1136,33 +1145,13 @@
             }
         }
     },
-    "getStats member without organisations": {
+    "getStats member without an active organisation, forged identity": {
         "calls": [
             {
                 "groupManager.isAdmin": "carol"
             },
             {
-                "organisationService.getUserOrganisations": "carol"
-            }
-        ],
-        "status": 200,
-        "data": {
-            "success": true,
-            "data": {
-                "totalEntities": 0,
-                "totalRelations": 0,
-                "byType": [],
-                "byCategory": []
-            }
-        }
-    },
-    "getStats member without organisations, forged identity": {
-        "calls": [
-            {
-                "groupManager.isAdmin": "carol"
-            },
-            {
-                "organisationService.getUserOrganisations": "carol"
+                "organisationService.getActiveOrganisation": "carol"
             }
         ],
         "status": 200,
@@ -1182,7 +1171,7 @@
                 "groupManager.isAdmin": "bob"
             },
             {
-                "organisationService.getUserOrganisations": "bob"
+                "organisationService.getActiveOrganisation": "bob"
             },
             {
                 "qb1.select": [
@@ -1199,7 +1188,6 @@
                 "param": [
                     ":p1",
                     [
-                        "org-b1",
                         "org-b2"
                     ],
                     102
@@ -1353,13 +1341,13 @@
             "message": "Authentication required"
         }
     },
-    "getTypes member scoped to own organisations": {
+    "getTypes member scoped to the active organisation": {
         "calls": [
             {
                 "groupManager.isAdmin": "bob"
             },
             {
-                "organisationService.getUserOrganisations": "bob"
+                "organisationService.getActiveOrganisation": "bob"
             },
             {
                 "qb1.selectDistinct": [
@@ -1382,7 +1370,6 @@
                 "param": [
                     ":p1",
                     [
-                        "org-b1",
                         "org-b2"
                     ],
                     102
@@ -1407,6 +1394,21 @@
                 "first",
                 "second"
             ]
+        }
+    },
+    "getTypes member with a blank active organisation": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "dave"
+            },
+            {
+                "organisationService.getActiveOrganisation": "dave"
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "data": []
         }
     },
     "getTypes member with forged identity": {
@@ -1415,7 +1417,7 @@
                 "groupManager.isAdmin": "bob"
             },
             {
-                "organisationService.getUserOrganisations": "bob"
+                "organisationService.getActiveOrganisation": "bob"
             },
             {
                 "qb1.selectDistinct": [
@@ -1438,7 +1440,6 @@
                 "param": [
                     ":p1",
                     [
-                        "org-b1",
                         "org-b2"
                     ],
                     102
@@ -1465,13 +1466,13 @@
             ]
         }
     },
-    "getTypes member with only blank organisation": {
+    "getTypes member without an active organisation": {
         "calls": [
             {
-                "groupManager.isAdmin": "dave"
+                "groupManager.isAdmin": "carol"
             },
             {
-                "organisationService.getUserOrganisations": "dave"
+                "organisationService.getActiveOrganisation": "carol"
             }
         ],
         "status": 200,
@@ -1480,28 +1481,13 @@
             "data": []
         }
     },
-    "getTypes member without organisations": {
+    "getTypes member without an active organisation, forged identity": {
         "calls": [
             {
                 "groupManager.isAdmin": "carol"
             },
             {
-                "organisationService.getUserOrganisations": "carol"
-            }
-        ],
-        "status": 200,
-        "data": {
-            "success": true,
-            "data": []
-        }
-    },
-    "getTypes member without organisations, forged identity": {
-        "calls": [
-            {
-                "groupManager.isAdmin": "carol"
-            },
-            {
-                "organisationService.getUserOrganisations": "carol"
+                "organisationService.getActiveOrganisation": "carol"
             }
         ],
         "status": 200,
@@ -1516,7 +1502,7 @@
                 "groupManager.isAdmin": "bob"
             },
             {
-                "organisationService.getUserOrganisations": "bob"
+                "organisationService.getActiveOrganisation": "bob"
             },
             {
                 "qb1.selectDistinct": [
@@ -1539,7 +1525,6 @@
                 "param": [
                     ":p1",
                     [
-                        "org-b1",
                         "org-b2"
                     ],
                     102
@@ -2026,7 +2011,7 @@
                 "groupManager.isAdmin": "bob"
             },
             {
-                "organisationService.getUserOrganisations": "bob"
+                "organisationService.getActiveOrganisation": "bob"
             },
             {
                 "request.getParam": "limit"
@@ -2086,7 +2071,6 @@
                 "param": [
                     ":p1",
                     [
-                        "org-b1",
                         "org-b2"
                     ],
                     102
@@ -2112,7 +2096,6 @@
                 "param": [
                     ":p2",
                     [
-                        "org-b1",
                         "org-b2"
                     ],
                     102
@@ -2182,13 +2165,13 @@
             "offset": 0
         }
     },
-    "index member scoped to own organisations": {
+    "index member scoped to the active organisation": {
         "calls": [
             {
                 "groupManager.isAdmin": "bob"
             },
             {
-                "organisationService.getUserOrganisations": "bob"
+                "organisationService.getActiveOrganisation": "bob"
             },
             {
                 "request.getParam": "limit"
@@ -2248,7 +2231,6 @@
                 "param": [
                     ":p1",
                     [
-                        "org-b1",
                         "org-b2"
                     ],
                     102
@@ -2310,7 +2292,6 @@
                 "param": [
                     ":p5",
                     [
-                        "org-b1",
                         "org-b2"
                     ],
                     102
@@ -2416,247 +2397,13 @@
             "offset": 10
         }
     },
-    "index member with forged identity": {
-        "calls": [
-            {
-                "groupManager.isAdmin": "bob"
-            },
-            {
-                "organisationService.getUserOrganisations": "bob"
-            },
-            {
-                "request.getParam": "limit"
-            },
-            {
-                "request.getParam": "offset"
-            },
-            {
-                "request.getParam": "search"
-            },
-            {
-                "request.getParam": "type"
-            },
-            {
-                "request.getParam": "category"
-            },
-            {
-                "qb2.select": [
-                    "COUNT(*)"
-                ]
-            },
-            {
-                "qb2.from": [
-                    "openregister_entity_relations",
-                    "r"
-                ]
-            },
-            {
-                "qb2.where": [
-                    "eq(r.entity_id, e.id)"
-                ]
-            },
-            {
-                "qb1.select": [
-                    "e.id",
-                    "e.uuid",
-                    "e.type",
-                    "e.value",
-                    "e.category",
-                    "e.detected_at",
-                    "e.updated_at"
-                ]
-            },
-            {
-                "qb1.selectAlias": [
-                    "FN[(SQL<qb2>)]",
-                    "relation_count"
-                ]
-            },
-            {
-                "qb1.from": [
-                    "openregister_entities",
-                    "e"
-                ]
-            },
-            {
-                "param": [
-                    ":p1",
-                    [
-                        "org-b1",
-                        "org-b2"
-                    ],
-                    102
-                ]
-            },
-            {
-                "qb1.andWhere": [
-                    "in(e.organisation, :p1)"
-                ]
-            },
-            {
-                "param": [
-                    ":p2",
-                    "%jan%",
-                    2
-                ]
-            },
-            {
-                "qb1.andWhere": [
-                    "iLike(e.value, :p2)"
-                ]
-            },
-            {
-                "param": [
-                    ":p3",
-                    "EMAIL",
-                    2
-                ]
-            },
-            {
-                "qb1.andWhere": [
-                    "eq(e.type, :p3)"
-                ]
-            },
-            {
-                "param": [
-                    ":p4",
-                    "pii",
-                    2
-                ]
-            },
-            {
-                "qb1.andWhere": [
-                    "eq(e.category, :p4)"
-                ]
-            },
-            {
-                "qb3.select": [
-                    "COUNT(*) AS total"
-                ]
-            },
-            {
-                "qb3.from": [
-                    "openregister_entities",
-                    "e"
-                ]
-            },
-            {
-                "param": [
-                    ":p5",
-                    [
-                        "org-b1",
-                        "org-b2"
-                    ],
-                    102
-                ]
-            },
-            {
-                "qb3.andWhere": [
-                    "in(e.organisation, :p5)"
-                ]
-            },
-            {
-                "param": [
-                    ":p6",
-                    "%jan%",
-                    2
-                ]
-            },
-            {
-                "qb3.andWhere": [
-                    "iLike(e.value, :p6)"
-                ]
-            },
-            {
-                "param": [
-                    ":p7",
-                    "EMAIL",
-                    2
-                ]
-            },
-            {
-                "qb3.andWhere": [
-                    "eq(e.type, :p7)"
-                ]
-            },
-            {
-                "param": [
-                    ":p8",
-                    "pii",
-                    2
-                ]
-            },
-            {
-                "qb3.andWhere": [
-                    "eq(e.category, :p8)"
-                ]
-            },
-            {
-                "qb3.executeQuery": true
-            },
-            {
-                "closeCursor": true
-            },
-            {
-                "qb1.orderBy": [
-                    "e.detected_at",
-                    "DESC"
-                ]
-            },
-            {
-                "qb1.setMaxResults": [
-                    5
-                ]
-            },
-            {
-                "qb1.setFirstResult": [
-                    10
-                ]
-            },
-            {
-                "qb1.executeQuery": true
-            },
-            {
-                "closeCursor": true
-            }
-        ],
-        "status": 200,
-        "data": {
-            "success": true,
-            "data": [
-                {
-                    "id": 11,
-                    "uuid": "u-11",
-                    "type": "EMAIL",
-                    "value": "a@b.nl",
-                    "category": "pii",
-                    "detectedAt": "d1",
-                    "updatedAt": "u1",
-                    "relationCount": 2
-                },
-                {
-                    "id": 12,
-                    "uuid": "u-12",
-                    "type": "NAME",
-                    "value": "Jan",
-                    "category": "pii",
-                    "detectedAt": "d2",
-                    "updatedAt": null,
-                    "relationCount": 0
-                }
-            ],
-            "count": 7,
-            "limit": 5,
-            "offset": 10
-        }
-    },
-    "index member with only blank organisation": {
+    "index member with a blank active organisation": {
         "calls": [
             {
                 "groupManager.isAdmin": "dave"
             },
             {
-                "organisationService.getUserOrganisations": "dave"
+                "organisationService.getActiveOrganisation": "dave"
             },
             {
                 "request.getParam": "limit"
@@ -2674,13 +2421,245 @@
             "offset": 0
         }
     },
-    "index member without organisations": {
+    "index member with forged identity": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "bob"
+            },
+            {
+                "organisationService.getActiveOrganisation": "bob"
+            },
+            {
+                "request.getParam": "limit"
+            },
+            {
+                "request.getParam": "offset"
+            },
+            {
+                "request.getParam": "search"
+            },
+            {
+                "request.getParam": "type"
+            },
+            {
+                "request.getParam": "category"
+            },
+            {
+                "qb2.select": [
+                    "COUNT(*)"
+                ]
+            },
+            {
+                "qb2.from": [
+                    "openregister_entity_relations",
+                    "r"
+                ]
+            },
+            {
+                "qb2.where": [
+                    "eq(r.entity_id, e.id)"
+                ]
+            },
+            {
+                "qb1.select": [
+                    "e.id",
+                    "e.uuid",
+                    "e.type",
+                    "e.value",
+                    "e.category",
+                    "e.detected_at",
+                    "e.updated_at"
+                ]
+            },
+            {
+                "qb1.selectAlias": [
+                    "FN[(SQL<qb2>)]",
+                    "relation_count"
+                ]
+            },
+            {
+                "qb1.from": [
+                    "openregister_entities",
+                    "e"
+                ]
+            },
+            {
+                "param": [
+                    ":p1",
+                    [
+                        "org-b2"
+                    ],
+                    102
+                ]
+            },
+            {
+                "qb1.andWhere": [
+                    "in(e.organisation, :p1)"
+                ]
+            },
+            {
+                "param": [
+                    ":p2",
+                    "%jan%",
+                    2
+                ]
+            },
+            {
+                "qb1.andWhere": [
+                    "iLike(e.value, :p2)"
+                ]
+            },
+            {
+                "param": [
+                    ":p3",
+                    "EMAIL",
+                    2
+                ]
+            },
+            {
+                "qb1.andWhere": [
+                    "eq(e.type, :p3)"
+                ]
+            },
+            {
+                "param": [
+                    ":p4",
+                    "pii",
+                    2
+                ]
+            },
+            {
+                "qb1.andWhere": [
+                    "eq(e.category, :p4)"
+                ]
+            },
+            {
+                "qb3.select": [
+                    "COUNT(*) AS total"
+                ]
+            },
+            {
+                "qb3.from": [
+                    "openregister_entities",
+                    "e"
+                ]
+            },
+            {
+                "param": [
+                    ":p5",
+                    [
+                        "org-b2"
+                    ],
+                    102
+                ]
+            },
+            {
+                "qb3.andWhere": [
+                    "in(e.organisation, :p5)"
+                ]
+            },
+            {
+                "param": [
+                    ":p6",
+                    "%jan%",
+                    2
+                ]
+            },
+            {
+                "qb3.andWhere": [
+                    "iLike(e.value, :p6)"
+                ]
+            },
+            {
+                "param": [
+                    ":p7",
+                    "EMAIL",
+                    2
+                ]
+            },
+            {
+                "qb3.andWhere": [
+                    "eq(e.type, :p7)"
+                ]
+            },
+            {
+                "param": [
+                    ":p8",
+                    "pii",
+                    2
+                ]
+            },
+            {
+                "qb3.andWhere": [
+                    "eq(e.category, :p8)"
+                ]
+            },
+            {
+                "qb3.executeQuery": true
+            },
+            {
+                "closeCursor": true
+            },
+            {
+                "qb1.orderBy": [
+                    "e.detected_at",
+                    "DESC"
+                ]
+            },
+            {
+                "qb1.setMaxResults": [
+                    5
+                ]
+            },
+            {
+                "qb1.setFirstResult": [
+                    10
+                ]
+            },
+            {
+                "qb1.executeQuery": true
+            },
+            {
+                "closeCursor": true
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "data": [
+                {
+                    "id": 11,
+                    "uuid": "u-11",
+                    "type": "EMAIL",
+                    "value": "a@b.nl",
+                    "category": "pii",
+                    "detectedAt": "d1",
+                    "updatedAt": "u1",
+                    "relationCount": 2
+                },
+                {
+                    "id": 12,
+                    "uuid": "u-12",
+                    "type": "NAME",
+                    "value": "Jan",
+                    "category": "pii",
+                    "detectedAt": "d2",
+                    "updatedAt": null,
+                    "relationCount": 0
+                }
+            ],
+            "count": 7,
+            "limit": 5,
+            "offset": 10
+        }
+    },
+    "index member without an active organisation": {
         "calls": [
             {
                 "groupManager.isAdmin": "carol"
             },
             {
-                "organisationService.getUserOrganisations": "carol"
+                "organisationService.getActiveOrganisation": "carol"
             },
             {
                 "request.getParam": "limit"
@@ -2698,13 +2677,13 @@
             "offset": 10
         }
     },
-    "index member without organisations, forged identity": {
+    "index member without an active organisation, forged identity": {
         "calls": [
             {
                 "groupManager.isAdmin": "carol"
             },
             {
-                "organisationService.getUserOrganisations": "carol"
+                "organisationService.getActiveOrganisation": "carol"
             },
             {
                 "request.getParam": "limit"
@@ -2728,7 +2707,7 @@
                 "groupManager.isAdmin": "bob"
             },
             {
-                "organisationService.getUserOrganisations": "bob"
+                "organisationService.getActiveOrganisation": "bob"
             },
             {
                 "request.getParam": "limit"
@@ -2788,7 +2767,6 @@
                 "param": [
                     ":p1",
                     [
-                        "org-b1",
                         "org-b2"
                     ],
                     102
@@ -2814,7 +2792,6 @@
                 "param": [
                     ":p2",
                     [
-                        "org-b1",
                         "org-b2"
                     ],
                     102

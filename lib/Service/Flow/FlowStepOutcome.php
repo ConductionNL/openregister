@@ -41,7 +41,8 @@ final class FlowStepOutcome {
 	 * column: a thrown step and a deliberately stopped one are each something
 	 * a person needs to read back. The output is what the node produced, minus
 	 * the items themselves — a step row is an index into the run, not a second
-	 * copy of its data.
+	 * copy of its data. So of the hop's state delta it keeps the NAMES of the
+	 * keys each item gained or changed; the values stay in the run log.
 	 *
 	 * @param FlowRunStep          $step  The row being written.
 	 * @param array<string, mixed> $entry The engine's log entry.
@@ -58,9 +59,38 @@ final class FlowStepOutcome {
 					'itemsIn' => ($entry['itemsIn'] ?? null),
 					'itemsOut' => ($entry['itemsOut'] ?? null),
 					'checkId' => ($entry['checkId'] ?? null),
+					'produced' => self::producedKeys(produced: ($entry['produced'] ?? null)),
 				],
 				static fn ($v): bool => $v !== null
 			)
 		);
 	}//end stamp()
+
+	/**
+	 * The names of the keys each sampled item gained or changed, or null when
+	 * the entry carries no delta (a failed, stopped or pinned hop).
+	 *
+	 * @param mixed $produced The entry's `produced` member (FlowStateDelta::produced()).
+	 *
+	 * @return list<list<string>>|null
+	 *
+	 * @spec openspec/changes/flow-engine-unification/specs/flow-execution-history/spec.md
+	 */
+	private static function producedKeys(mixed $produced): ?array {
+		if (is_array($produced) === false) {
+			return null;
+		}
+
+		$keys = [];
+		foreach ($produced as $delta) {
+			$names = [];
+			if (is_array($delta) === true) {
+				$names = array_map(static fn (int|string $key): string => (string) $key, array_keys($delta));
+			}
+
+			$keys[] = $names;
+		}
+
+		return $keys;
+	}//end producedKeys()
 }//end class

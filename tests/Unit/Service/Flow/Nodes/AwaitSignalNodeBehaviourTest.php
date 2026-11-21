@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow\Nodes;
 
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;
 use OCA\OpenRegister\Service\Flow\FlowResumeState;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
@@ -42,6 +43,10 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Service\Flow\FlowSuspension
  * @uses \OCA\OpenRegister\Service\Flow\FlowValueRenderer
  * @uses \OCA\OpenRegister\Service\Flow\FlowValueTemplate
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItemOptions
+ * @uses \OCA\OpenRegister\Service\Flow\FlowNodeCall
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\EveryItemField
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\NodeInvocation
  */
 class AwaitSignalNodeBehaviourTest extends TestCase {
 
@@ -67,7 +72,7 @@ class AwaitSignalNodeBehaviourTest extends TestCase {
 	private function suspend(array $items, array $config): array {
 		$state = (new FlowResumeState())->forNode(nodeId: 'approval');
 		try {
-			$this->node->execute($items, array_merge(['question' => 'Close the vote?'], $config), [FlowNodeResumeState::CONTEXT_KEY => $state]);
+			$this->node->execute(new FlowNodeCall(items: $items, config: array_merge(['question' => 'Close the vote?'], $config), context: [FlowNodeResumeState::CONTEXT_KEY => $state]));
 		} catch (FlowSuspension $suspension) {
 			return [$suspension, $state];
 		}
@@ -118,11 +123,11 @@ class AwaitSignalNodeBehaviourTest extends TestCase {
 	}//end testTheHeartbeatIsNeverSoonerThanFiveMinutes()
 
 	public function testAnAnswerLeavesANonItemEntryAsItIs(): void {
-		$out = $this->node->execute(
-			['marker', FlowItems::item(json: ['id' => 1])],
-			['question' => 'Close the vote?'],
-			[FlowRunServiceInterface::SIGNAL_CONTEXT_KEY => ['decision' => 'approve']]
-		);
+		$out = $this->node->execute(new FlowNodeCall(
+			items: ['marker', FlowItems::item(json: ['id' => 1])],
+			config: ['question' => 'Close the vote?'],
+			context: [FlowRunServiceInterface::SIGNAL_CONTEXT_KEY => ['decision' => 'approve']]
+		));
 
 		self::assertSame('marker', $out[0]);
 		self::assertSame(['decision' => 'approve'], $out[1][FlowItems::JSON]['signal']);

@@ -112,6 +112,14 @@ final class AggregationAnnotationValidator implements AggregationAnnotationValid
 	private CrossSchemaAggregationValidator $crossSchemaValidator;
 
 	/**
+	 * Reads a `schema` key naming another schema as `from`, the same way the
+	 * runner does, so a spec validates as the schema it will count.
+	 *
+	 * @var CrossSchemaTarget
+	 */
+	private CrossSchemaTarget $crossSchemaTarget;
+
+	/**
 	 * Constructor.
 	 *
 	 * Plain `new` rather than injection: all three classes are pure shape
@@ -122,6 +130,7 @@ final class AggregationAnnotationValidator implements AggregationAnnotationValid
 		$this->joinValidator = new AggregationJoinAnnotationValidator();
 		$this->metricsValidator = new AggregationMetricsAnnotationValidator();
 		$this->crossSchemaValidator = new CrossSchemaAggregationValidator();
+		$this->crossSchemaTarget = new CrossSchemaTarget();
 	}//end __construct()
 
 	/**
@@ -151,7 +160,11 @@ final class AggregationAnnotationValidator implements AggregationAnnotationValid
 			$propKeys = array_keys($properties);
 		}
 
-		return $this->validateAggregations(aggregations: $schema['x-openregister-aggregations'], propKeys: $propKeys);
+		// The declaring schema's own names, so a `schema` key naming another
+		// schema counts as `from` (aggregation-dialect-repair, Fix 1).
+		$ownNames = [($schema['slug'] ?? null), ($schema['title'] ?? null)];
+
+		return $this->validateAggregations(aggregations: $schema['x-openregister-aggregations'], propKeys: $propKeys, ownNames: $ownNames);
 	}//end validate()
 
 	/**
@@ -159,10 +172,13 @@ final class AggregationAnnotationValidator implements AggregationAnnotationValid
 	 *
 	 * @param mixed             $aggregations The annotation value.
 	 * @param array<int, mixed> $propKeys     Declared schema property names.
+	 * @param array<int, mixed> $ownNames     The declaring schema's slug and title.
 	 *
 	 * @return array<int, array{code: string, message: string}> Validation error list.
+	 *
+	 * @spec openspec/changes/aggregation-dialect-repair/specs/aggregation-api/spec.md#requirement-the-named-annotation-aggregation-surface-must-validate-filtergroupby-fields-against-the-schema-that-owns-them
 	 */
-	private function validateAggregations(mixed $aggregations, array $propKeys): array {
+	private function validateAggregations(mixed $aggregations, array $propKeys, array $ownNames=[]): array {
 		if (is_array($aggregations) === false || count($aggregations) === 0) {
 			return [$this->error(code: 'aggregations-empty', message: 'x-openregister-aggregations must declare at least one aggregation.')];
 		}
@@ -172,6 +188,7 @@ final class AggregationAnnotationValidator implements AggregationAnnotationValid
 			$shapeError = $this->entryShapeError(name: $name, spec: $spec);
 			$entryErrors = [$shapeError];
 			if ($shapeError === null) {
+				$spec = $this->crossSchemaTarget->resolve(spec: $spec, ownNames: $ownNames);
 				$entryErrors = $this->validateEntry(entry: new AggregationSpecEntry(name: $name, spec: $spec), propKeys: $propKeys);
 			}
 			$errors = array_merge($errors, $entryErrors);

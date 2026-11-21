@@ -33,6 +33,9 @@ namespace Unit\Service\Credential;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Credential\CredentialAccessDeniedException;
 use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
+use OCA\OpenRegister\Service\Credential\CredentialOutbound;
+use OCA\OpenRegister\Service\Credential\CredentialPrincipals;
+use OCA\OpenRegister\Service\Credential\CredentialSources;
 use OCA\OpenRegister\Service\Credential\CredentialStore;
 use OCA\OpenRegister\Service\Credential\ProviderCatalogue;
 use OCA\OpenRegister\Service\ObjectService;
@@ -49,6 +52,11 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\OpenRegister\Service\Credential\CredentialBrokerService
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Service\WriteCause
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses \OCA\OpenRegister\Service\CauseFrame
+ * @uses \OCA\OpenRegister\Service\Credential\CredentialOutbound
+ * @uses \OCA\OpenRegister\Service\Credential\CredentialPrincipals
+ * @uses \OCA\OpenRegister\Service\Credential\CredentialSources
  */
 class CredentialBrokerOrganisationScopeTest extends TestCase {
 	private const UUID = 'cred-org-1';
@@ -290,13 +298,19 @@ class CredentialBrokerOrganisationScopeTest extends TestCase {
 		$clientService->method('newClient')->willReturn($client);
 
 		return new CredentialBrokerService(
-			$objectService,
-			$store,
-			$catalogue,
-			$session,
-			$clientService,
-			$this->createMock(LoggerInterface::class),
-			$orgService
+			sources: new CredentialSources(
+				objectService: $objectService,
+				credentialStore: $store,
+				catalogue: $catalogue
+			),
+			principals: new CredentialPrincipals(
+				userSession: $session,
+				organisationService: $orgService
+			),
+			outbound: new CredentialOutbound(
+				clientService: $clientService,
+				logger: $this->createMock(LoggerInterface::class)
+			)
 		);
 	}
 

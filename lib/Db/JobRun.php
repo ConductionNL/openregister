@@ -26,6 +26,8 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use JsonSerializable;
+use OCA\OpenRegister\Db\JobRun\JobRunFieldTypes;
+use OCA\OpenRegister\Service\Operations\JobRunContext;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -91,18 +93,18 @@ class JobRun extends Entity implements JsonSerializable {
 	public const OUTCOME_FAILED = 'failed';
 
 	/**
-	 * The run came from the cron schedule.
+	 * The run came from the cron schedule. The value is the job-run context's.
 	 *
 	 * @var string
 	 */
-	public const CAUSE_SCHEDULE = 'schedule';
+	public const CAUSE_SCHEDULE = JobRunContext::CAUSE_SCHEDULE;
 
 	/**
-	 * The run came from an administrator, and `actor` names them.
+	 * The run came from an administrator, and `actor` names them. The value is the job-run context's.
 	 *
 	 * @var string
 	 */
-	public const CAUSE_MANUAL = 'manual';
+	public const CAUSE_MANUAL = JobRunContext::CAUSE_MANUAL;
 
 	/**
 	 * The fully qualified class of the job that ran.
@@ -180,17 +182,9 @@ class JobRun extends Entity implements JsonSerializable {
 	 * Constructor.
 	 */
 	public function __construct() {
-		$this->addType(fieldName: 'jobClass', type: 'string');
-		$this->addType(fieldName: 'argumentDigest', type: 'string');
-		$this->addType(fieldName: 'started', type: 'datetime');
-		$this->addType(fieldName: 'ended', type: 'datetime');
-		$this->addType(fieldName: 'durationMs', type: 'integer');
-		$this->addType(fieldName: 'outcome', type: 'string');
-		$this->addType(fieldName: 'message', type: 'string');
-		$this->addType(fieldName: 'details', type: 'string');
-		$this->addType(fieldName: 'cause', type: 'string');
-		$this->addType(fieldName: 'actor', type: 'string');
-
+		foreach (JobRunFieldTypes::TYPES as $fieldName => $type) {
+			$this->addType(fieldName: $fieldName, type: $type);
+		}
 	}//end __construct()
 
 	/**
@@ -219,29 +213,31 @@ class JobRun extends Entity implements JsonSerializable {
 	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
 	 */
 	public function jsonSerialize(): array {
-		$details = null;
+		$typed = new TypedFieldsJson();
+		$json = array_merge(
+			$typed->serialise(fieldTypes: $this->getFieldTypes(), values: get_object_vars($this)),
+			['details' => $this->decodedDetails()]
+		);
+		$json = $typed->inserted(json: $json, entriesAfter: ['jobClass' => ['name' => $this->shortName()]]);
 
-		if ($this->details !== null && $this->details !== '') {
-			$decoded = json_decode($this->details, true);
-			if (is_array($decoded) === true) {
-				$details = $decoded;
-			}
+		return $typed->renamed(json: $json, names: ['jobClass' => 'job']);
+	}//end jsonSerialize()
+
+	/**
+	 * The stored details decoded, or null when they are empty or not a JSON object or list.
+	 *
+	 * @return array|null
+	 */
+	private function decodedDetails(): ?array {
+		if ($this->details === null || $this->details === '') {
+			return null;
 		}
 
-		return [
-			'id' => $this->id,
-			'job' => $this->jobClass,
-			'name' => $this->shortName(),
-			'argumentDigest' => $this->argumentDigest,
-			'started' => $this->started?->format(DateTime::ATOM),
-			'ended' => $this->ended?->format(DateTime::ATOM),
-			'durationMs' => $this->durationMs,
-			'outcome' => $this->outcome,
-			'message' => $this->message,
-			'details' => $details,
-			'cause' => $this->cause,
-			'actor' => $this->actor,
-		];
+		$decoded = json_decode($this->details, true);
+		if (is_array($decoded) === true) {
+			return $decoded;
+		}
 
-	}//end jsonSerialize()
+		return null;
+	}//end decodedDetails()
 }//end class

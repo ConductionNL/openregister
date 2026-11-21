@@ -26,6 +26,7 @@ use OCA\OpenRegister\Service\Object\DraftOwner;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * Decision 195: a draft is discarded by its asserted owner only.
@@ -36,6 +37,12 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Service\Object\DiscardDraftRequest
+ * @uses \OCA\OpenRegister\Service\Object\DraftAddress
  */
 class DraftDiscardTest extends TestCase {
 
@@ -70,7 +77,11 @@ class DraftDiscardTest extends TestCase {
 			fn (string|int $id, ...$rest): ?ObjectEntity => ($this->stored[(string)$id] ?? null)
 		);
 		$objects->method('deleteObject')->willReturnCallback(
-			function (string $uuid, $register = null, $schema = null, bool $_rbac = true, bool $_multitenancy = true, bool $_retentionSweep = false, $currentUser = null, bool $permanent = false): bool {
+			function (ObjectDeletion $deletion, bool $_rbac = true, bool $_multitenancy = true, bool $_retentionSweep = false): bool {
+				$uuid = $deletion->uuid;
+				$register = $deletion->target->register;
+				$schema = $deletion->target->schema;
+				$permanent = $deletion->permanent;
 				if ($uuid === 'stuck') {
 					throw new RuntimeException('database gone');
 				}

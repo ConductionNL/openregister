@@ -44,6 +44,14 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Mcp\Tool\ObjectsTool
  * @covers \OCA\OpenRegister\Mcp\Tool\AgentTool
  * @covers \OCA\OpenRegister\Mcp\Tool\ApplicationTool
+ * @uses \OCA\OpenRegister\AppInfo\ClassAliasMap
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Mcp\Db\Agent
+ * @uses \OCA\OpenRegister\Mcp\Tool\ToolCall
+ * @uses \OCA\OpenRegister\Mcp\Tool\ToolCallTrail
+ * @uses \OCA\OpenRegister\Mcp\Tool\ToolLogOptions
+ * @uses \OCA\OpenRegister\Service\CauseFrame
+ * @uses \OCA\OpenRegister\Service\WriteCause
  */
 class ToolDispatchGoldenTest extends TestCase
 {
