@@ -35,6 +35,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
 use OCA\OpenRegister\Db\MagicMapper\OrganisationBoundary;
+use OCA\OpenRegister\Db\MagicMapper\RbacAccessCall;
 use OCA\OpenRegister\Db\MagicMapper\TableFilterRun;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
@@ -86,9 +87,9 @@ class MagicSearchHandlerAccessConditionsGoldenTest extends TestCase {
 		$rbac->method('hasCrossOrganisationBranch')->willReturn($state['cross'] ?? false);
 		$rbac->method('getCrossOrganisationBranchSql')->willReturn('cross_branch');
 		$rbac->method('buildRbacConditionsSql')->willReturnCallback(
-			static fn (Schema $schema, string $action = 'read', string $columnPrefix = '', ?string $tableName = null): array => [
+			static fn (RbacAccessCall $call): array => [
 				'bypass'     => ($state['rbacSql'] ?? 'bypass') === 'bypass',
-				'conditions' => ($state['rbacSql'] ?? 'bypass') === 'conditions' ? ["rbac_a({$action},{$tableName})", 'rbac_b'] : [],
+				'conditions' => ($state['rbacSql'] ?? 'bypass') === 'conditions' ? ["rbac_a({$call->action},{$call->tableName})", 'rbac_b'] : [],
 			]
 		);
 		$rbac->method('admitsOrganisationlessRowsThroughCascade')->willReturn($state['orgless'] ?? false);
