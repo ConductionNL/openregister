@@ -27,10 +27,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\UserMigration;
 
+use OCA\OpenRegister\Db\CalendarFeedToken;
+use OCA\OpenRegister\Notifications\Db\TimelineEntry;
 use OCA\OpenRegister\Notifications\Db\Watcher;
 use OCA\OpenRegister\Notifications\Db\WatcherMapperInterface;
 use OCA\OpenRegister\Search\Db\View;
+use OCA\OpenRegister\Service\Interaction\ReadHistoryService;
 use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCP\IConfig;
 use OCP\IDBConnection;
 
 /**
@@ -48,14 +52,155 @@ class PersonalStateReader {
 	public const VIEWS_TABLE = 'openregister_views';
 
 	/**
+	 * The table of calendar feed tokens.
+	 *
+	 * @var string
+	 */
+	public const FEED_TOKENS_TABLE = 'openregister_calendar_feeds';
+
+	/**
+	 * The table of timeline entries.
+	 *
+	 * @var string
+	 */
+	public const TIMELINE_TABLE = 'openregister_timeline_entries';
+
+	/**
+	 * Nextcloud's comments table, where OpenRegister notes live.
+	 *
+	 * @var string
+	 */
+	public const COMMENTS_TABLE = 'comments';
+
+	/**
+	 * The comments object type OpenRegister notes carry.
+	 *
+	 * @var string
+	 */
+	public const NOTES_OBJECT_TYPE = 'openregister';
+
+	/**
+	 * The app whose user values hold the notification preferences.
+	 *
+	 * @var string
+	 */
+	public const PREFERENCES_APP = 'openregister';
+
+	/**
+	 * The user-value key prefixes of a user's own notification preferences:
+	 * the global value and the value pinned to a scope. Group defaults are the
+	 * group's, stored in app config, and never part of a user's export.
+	 *
+	 * @var list<string>
+	 */
+	public const PREFERENCE_PREFIXES = ['notification_pref/', 'notif_pref_s/'];
+
+	/**
+	 * The longest user-value key Nextcloud stores.
+	 *
+	 * @var int
+	 */
+	public const MAX_PREFERENCE_KEY_LENGTH = 64;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param IDBConnection $db The database.
+	 * @param IDBConnection           $db          The database.
+	 * @param IConfig|null            $config      The user values holding the notification preferences.
+	 * @param ReadHistoryService|null $readHistory The read history behind "recently opened".
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,
+		private readonly ?IConfig $config = null,
+		private readonly ?ReadHistoryService $readHistory = null,
 	) {
 	}//end __construct()
+
+	/**
+	 * The objects the user opened most recently, newest first: uuid and moment, never the object.
+	 *
+	 * Read from the audit trail as the `_recent` lens reads it; an audit trail
+	 * that is off or unreadable answers none.
+	 *
+	 * @param string $userId The user.
+	 *
+	 * @return list<array{objectUuid: string, openedAt: string}>
+	 *
+	 * @spec openspec/changes/platform-user-migrator/tasks.md#task-1.2
+	 */
+	public function recents(string $userId): array {
+		if ($userId === '' || $this->readHistory === null) {
+			return [];
+		}
+
+		$lens = $this->readHistory->resolveRecentLens(userId: $userId);
+		if (($lens['available'] ?? false) !== true) {
+			return [];
+		}
+
+		$recents = [];
+		foreach (($lens['views'] ?? []) as $uuid => $openedAt) {
+			$recents[] = ['objectUuid' => (string)$uuid, 'openedAt' => (string)$openedAt];
+		}
+
+		return $recents;
+	}//end recents()
+
+	/**
+	 * The user's own notification preferences: each stored override, global or scoped, by its key.
+	 *
+	 * A value that is not a JSON object or list is not a preference and is left out.
+	 *
+	 * @param string $userId The user.
+	 *
+	 * @return list<array{key: string, value: array<mixed>}>
+	 *
+	 * @spec openspec/changes/platform-user-migrator/tasks.md#task-1.2
+	 */
+	public function notificationPreferences(string $userId): array {
+		if ($userId === '' || $this->config === null) {
+			return [];
+		}
+
+		$preferences = [];
+		foreach ($this->config->getUserKeys($userId, self::PREFERENCES_APP) as $key) {
+			if (self::isPreferenceKey(key: (string)$key) === false) {
+				continue;
+			}
+
+			$value = json_decode($this->config->getUserValue($userId, self::PREFERENCES_APP, (string)$key, ''), true);
+			if (is_array($value) === false) {
+				continue;
+			}
+
+			$preferences[] = ['key' => (string)$key, 'value' => $value];
+		}
+
+		return $preferences;
+	}//end notificationPreferences()
+
+	/**
+	 * Whether a user-value key is one of a user's own notification preferences.
+	 *
+	 * @param string $key The key.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/platform-user-migrator/tasks.md#task-1.2
+	 */
+	public static function isPreferenceKey(string $key): bool {
+		if (strlen($key) > self::MAX_PREFERENCE_KEY_LENGTH) {
+			return false;
+		}
+
+		foreach (self::PREFERENCE_PREFIXES as $prefix) {
+			if (strlen($key) > strlen($prefix) && str_starts_with($key, $prefix) === true) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end isPreferenceKey()
 
 	/**
 	 * The views this user owns, oldest first.
@@ -92,6 +237,94 @@ class PersonalStateReader {
 
 		return $watches;
 	}//end watches()
+
+	/**
+	 * The calendar feed tokens the user created, revoked ones included.
+	 *
+	 * @param string $userId The user.
+	 *
+	 * @return list<CalendarFeedToken>
+	 *
+	 * @spec openspec/changes/platform-user-migrator/tasks.md#task-1.3
+	 */
+	public function feedTokens(string $userId): array {
+		$tokens = [];
+		foreach ($this->rowsOf(table: self::FEED_TOKENS_TABLE, column: 'user_id', userId: $userId) as $row) {
+			$tokens[] = CalendarFeedToken::fromRow($row);
+		}
+
+		return $tokens;
+	}//end feedTokens()
+
+	/**
+	 * The timeline entries the user wrote.
+	 *
+	 * @param string $userId The user.
+	 *
+	 * @return list<TimelineEntry>
+	 *
+	 * @spec openspec/changes/platform-user-migrator/tasks.md#task-1.4
+	 */
+	public function timelineEntries(string $userId): array {
+		$entries = [];
+		foreach ($this->rowsOf(table: self::TIMELINE_TABLE, column: 'author', userId: $userId) as $row) {
+			$entries[] = TimelineEntry::fromRow($row);
+		}
+
+		return $entries;
+	}//end timelineEntries()
+
+	/**
+	 * The notes the user wrote on OpenRegister objects: their comments of the notes object type.
+	 *
+	 * @param string $userId The user.
+	 *
+	 * @return list<array{objectUuid: string, message: string, createdAt: string|null}>
+	 *
+	 * @spec openspec/changes/platform-user-migrator/tasks.md#task-1.4
+	 */
+	public function notes(string $userId): array {
+		if ($userId === '') {
+			return [];
+		}
+
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('object_id', 'message', 'creation_timestamp')
+			->from(self::COMMENTS_TABLE)
+			->where($qb->expr()->eq('object_type', $qb->createNamedParameter(self::NOTES_OBJECT_TYPE, IQueryBuilder::PARAM_STR)))
+			->andWhere($qb->expr()->eq('actor_type', $qb->createNamedParameter('users', IQueryBuilder::PARAM_STR)))
+			->andWhere($qb->expr()->eq('actor_id', $qb->createNamedParameter($userId, IQueryBuilder::PARAM_STR)))
+			->orderBy('id', 'ASC');
+
+		$result = $qb->executeQuery();
+		$notes = [];
+		while (($row = $result->fetch()) !== false) {
+			$notes[] = [
+				'objectUuid' => (string)$row['object_id'],
+				'message' => (string)$row['message'],
+				'createdAt' => self::stringOrNull(value: ($row['creation_timestamp'] ?? null)),
+			];
+		}
+
+		$result->closeCursor();
+
+		return $notes;
+	}//end notes()
+
+	/**
+	 * A stored value as a string, or null.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return string|null
+	 */
+	private static function stringOrNull(mixed $value): ?string {
+		if ($value === null || $value === '') {
+			return null;
+		}
+
+		return (string)$value;
+	}//end stringOrNull()
 
 	/**
 	 * The rows of a table that belong to the user, by id.
