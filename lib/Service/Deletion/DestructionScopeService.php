@@ -369,7 +369,7 @@ class DestructionScopeService {
 	 * @return int The number destroyed.
 	 */
 	private function destroyFiles(ObjectEntity $object, int $expected): int {
-		$folder = $this->companions->fileService?->getObjectFolder(objectEntity: $object);
+		$folder = $this->companions->objectFolders()?->getObjectFolder(objectEntity: $object);
 		if ($folder === null) {
 			return 0;
 		}

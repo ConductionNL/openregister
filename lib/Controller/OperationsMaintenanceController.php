@@ -31,6 +31,7 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCA\OpenRegister\Controller\Support\OperationsMaintenanceControllerServices;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
+use OCA\OpenRegister\Kernel\Contracts\Configuration\MaintenanceReachableInterface;
 
 /**
  * Closing the instance, and saying what it is made of.
@@ -43,7 +44,7 @@ use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
  *
  * @spec openspec/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
  */
-class OperationsMaintenanceController extends Controller {
+class OperationsMaintenanceController extends Controller implements MaintenanceReachableInterface {
 
 	/**
 	 * The acting administrator and the parameter readers.
