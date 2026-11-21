@@ -33,10 +33,12 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Object\DraftExpiry;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * Branch coverage for the draft-lifetime sweep.
@@ -54,6 +56,16 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValueRules
  * @uses \OCA\OpenRegister\Db\Schema\ObjectSourceDeclaration
  * @uses \OCA\OpenRegister\Db\Schema\AnnotationVocabulary
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Service\Object\ExpiredDraftListRun
+ * @uses \OCA\OpenRegister\Service\Object\ExpiredDraftTally
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
  */
 class DraftExpiryBranchesTest extends TestCase {
 
@@ -278,10 +290,10 @@ class DraftExpiryBranchesTest extends TestCase {
 			[]
 		);
 		$this->objects->expects($this->once())->method('find')
-			->with('old', [], false, $this->isInstanceOf(Register::class), $this->isInstanceOf(Schema::class), false, false, false, false)
+			->with(...FindCallShape::findArgs('old', [], false, $this->isInstanceOf(Register::class), $this->isInstanceOf(Schema::class), false, false, false, false))
 			->willReturn($old);
 		$this->objects->expects($this->once())->method('deleteObject')
-			->with('old', $this->isInstanceOf(Register::class), $this->isInstanceOf(Schema::class), false, false)
+			->with($this->callback(static fn (ObjectDeletion $deletion): bool => $deletion->uuid == 'old' && $deletion->target->register instanceof Register && $deletion->target->schema instanceof Schema), false, false)
 			->willReturn(true);
 
 		$counts = $this->expiry()->sweep(now: $this->now);
@@ -318,7 +330,8 @@ class DraftExpiryBranchesTest extends TestCase {
 			}
 		);
 		$this->objects->method('deleteObject')->willReturnCallback(
-			function (string $uuid): bool {
+			function (ObjectDeletion $deletion, bool $_rbac = true, bool $_multitenancy = true, bool $_retentionSweep = false): bool {
+				$uuid = $deletion->uuid;
 				if ($uuid === 'c') {
 					throw new RuntimeException('append-only');
 				}

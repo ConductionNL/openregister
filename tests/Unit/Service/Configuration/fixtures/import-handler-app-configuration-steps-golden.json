@@ -1,0 +1,127 @@
+{
+    "findAppConfigurationByApp": {
+        "lookup fails": {
+            "found": null,
+            "calls": [
+                "configuration.findByApp [\"zaakapp\",50,0,true]",
+                "debug [ImportHandler] No existing configuration found for app zaakapp, will create new one {\"file\":\"ImportHandler.php\"}"
+            ]
+        },
+        "none stored": {
+            "found": null,
+            "calls": [
+                "configuration.findByApp [\"zaakapp\",50,0,true]"
+            ]
+        },
+        "found, newer import": {
+            "found": 5,
+            "calls": [
+                "configuration.findByApp [\"zaakapp\",50,0,true]",
+                "debug [ImportHandler] Found existing configuration for app zaakapp {\"file\":\"ImportHandler.php\",\"configurationId\":5,\"currentVersion\":\"1.0.0\"}"
+            ]
+        },
+        "found, same version": {
+            "found": 5,
+            "calls": [
+                "configuration.findByApp [\"zaakapp\",50,0,true]",
+                "debug [ImportHandler] Found existing configuration for app zaakapp {\"file\":\"ImportHandler.php\",\"configurationId\":5,\"currentVersion\":\"2.0.0\"}",
+                "debug [ImportHandler] Config version (2.0.0) up-to-date, checking seedData {\"file\":\"ImportHandler.php\",\"app\":\"zaakapp\",\"force\":false}"
+            ]
+        },
+        "found, older import": {
+            "found": 5,
+            "calls": [
+                "configuration.findByApp [\"zaakapp\",50,0,true]",
+                "debug [ImportHandler] Found existing configuration for app zaakapp {\"file\":\"ImportHandler.php\",\"configurationId\":5,\"currentVersion\":\"2.0.0\"}",
+                "debug [ImportHandler] Config version (2.0.0) up-to-date, checking seedData {\"file\":\"ImportHandler.php\",\"app\":\"zaakapp\",\"force\":false}"
+            ]
+        },
+        "found, forced": {
+            "found": 5,
+            "calls": [
+                "configuration.findByApp [\"zaakapp\",50,0,true]",
+                "debug [ImportHandler] Found existing configuration for app zaakapp {\"file\":\"ImportHandler.php\",\"configurationId\":5,\"currentVersion\":\"2.0.0\"}"
+            ]
+        },
+        "found, no stored version": {
+            "found": 5,
+            "calls": [
+                "configuration.findByApp [\"zaakapp\",50,0,true]",
+                "debug [ImportHandler] Found existing configuration for app zaakapp {\"file\":\"ImportHandler.php\",\"configurationId\":5,\"currentVersion\":null}",
+                "debug [ImportHandler] Config version (0.0.0) up-to-date, checking seedData {\"file\":\"ImportHandler.php\",\"app\":\"zaakapp\",\"force\":false}"
+            ]
+        }
+    },
+    "isUnchangedConfiguration": {
+        "no app": {
+            "unchanged": false,
+            "calls": []
+        },
+        "no version": {
+            "unchanged": false,
+            "calls": []
+        },
+        "forced": {
+            "unchanged": false,
+            "calls": []
+        },
+        "nothing stored": {
+            "unchanged": false,
+            "calls": [
+                "appConfig.get imported_config_zaakapp_version",
+                "appConfig.get imported_config_zaakapp_hash"
+            ]
+        },
+        "empty stored hash, empty definition hash": {
+            "unchanged": false,
+            "calls": [
+                "appConfig.get imported_config_zaakapp_version",
+                "appConfig.get imported_config_zaakapp_hash"
+            ]
+        },
+        "different hash": {
+            "unchanged": false,
+            "calls": [
+                "appConfig.get imported_config_zaakapp_version",
+                "appConfig.get imported_config_zaakapp_hash"
+            ]
+        },
+        "unchanged": {
+            "unchanged": true,
+            "calls": [
+                "appConfig.get imported_config_zaakapp_version",
+                "appConfig.get imported_config_zaakapp_hash",
+                "debug [ImportHandler] Skipping zaakapp: config content unchanged (v1.0.0, stored v0.9.0) {\"file\":\"ImportHandler.php\"}"
+            ]
+        }
+    },
+    "importMappingComponents": {
+        "no mappings": {
+            "mappings": 0,
+            "slugsAndIdsMap": [],
+            "calls": []
+        },
+        "mappings not a list": {
+            "mappings": 0,
+            "slugsAndIdsMap": [],
+            "calls": []
+        },
+        "named by key, own name kept, failure": {
+            "mappings": 3,
+            "slugsAndIdsMap": [],
+            "calls": [
+                "mapping.slugToIdMap [true]",
+                "debug [ImportHandler] Starting mapping import {\"file\":\"ImportHandler.php\",\"totalMappings\":4,\"mappingKeys\":[\"adres\",\"own\",\"broken\",3]}",
+                "mapping.create {\"slug\":\"adres\",\"name\":\"adres\",\"configurations\":[null],\"version\":\"0.0.1\"}",
+                "debug [ImportHandler] Mapping imported successfully {\"file\":\"ImportHandler.php\",\"mappingSlug\":\"adres\",\"mappingId\":3}",
+                "mapping.create {\"name\":\"Eigen\",\"slug\":\"own\",\"configurations\":[null],\"version\":\"0.0.1\"}",
+                "debug [ImportHandler] Mapping imported successfully {\"file\":\"ImportHandler.php\",\"mappingSlug\":\"own\",\"mappingId\":5}",
+                "mapping.create {\"slug\":\"broken\",\"name\":\"broken\",\"configurations\":[null],\"version\":\"0.0.1\"}",
+                "error [ImportHandler] Failed to import mapping {\"file\":\"ImportHandler.php\",\"mappingKey\":\"broken\",\"error\":\"mapping refused\"}",
+                "mapping.create {\"slug\":\"numbered\",\"configurations\":[null],\"version\":\"0.0.1\"}",
+                "debug [ImportHandler] Mapping imported successfully {\"file\":\"ImportHandler.php\",\"mappingSlug\":\"numbered\",\"mappingId\":9}",
+                "debug [ImportHandler] Mapping import completed {\"file\":\"ImportHandler.php\",\"importedCount\":3}"
+            ]
+        }
+    }
+}

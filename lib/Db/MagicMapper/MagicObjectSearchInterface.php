@@ -83,7 +83,7 @@ interface MagicObjectSearchInterface {
 	 * @return array<string, mixed>
 	 *
 	 *
-	 * @spec openspec/changes/unified-search-index/specs/unified-search-provider/spec.md
+	 * @spec openspec/specs/unified-search-provider/spec.md
 	 */
 	public function searchObjectsPaginated(
 		array $searchQuery = [], array $countQuery = [], ?string $_activeOrgUuid = null, bool $_rbac = true, bool $_multitenancy = true,
@@ -100,6 +100,20 @@ interface MagicObjectSearchInterface {
 	 * @return int Object count
 	 */
 	public function countAll(?array $_filters = null, ?Schema $schema = null, ?Register $register = null): int;
+
+	/**
+	 * Count the rows with no organisation in every table of a schema that match the filters.
+	 *
+	 * Ignores RBAC and any active organisation context.
+	 *
+	 * @param array  $filters The filters.
+	 * @param Schema $schema  The schema.
+	 *
+	 * @return int The count.
+	 *
+	 * @spec openspec/specs/object-validation/spec.md
+	 */
+	public function countOrganisationless(array $filters, Schema $schema): int;
 
 	/**
 	 * Get simple facets.

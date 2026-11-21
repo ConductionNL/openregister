@@ -185,7 +185,8 @@ class CalendarFeedTokenServiceTest extends TestCase {
 		$rows = $this->service->listForUser(userId: 'caseworker');
 
 		$this->assertCount(1, $rows);
-		$this->assertStringContainsString('calendar-feeds', $rows[0]['url']);
+		$this->assertNull($rows[0]['token'], 'Only the hash is stored, and the hash is not handed out');
+		$this->assertNull($rows[0]['url']);
 	}
 
 	public function testAnAnonymousCallerListsNothing(): void {

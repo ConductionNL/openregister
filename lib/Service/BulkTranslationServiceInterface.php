@@ -22,8 +22,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
-use OCA\OpenRegister\Db\ObjectEntity;
-
 /**
  * The methods of BulkTranslationService that callers outside the Service component use.
  */
@@ -45,20 +43,13 @@ interface BulkTranslationServiceInterface {
 	 * persists the object. Callers who don't want that immediate
 	 * write should invoke the provider directly.
 	 *
-	 * @param ObjectEntity $object The object to translate.
-	 * @param string $fromLong Source language code.
-	 * @param string $toLong Target language code.
-	 * @param string[]|null $properties Optional whitelist of property
-	 *                                  names to translate; null = all.
+	 * @param ObjectTranslationRequest $request    The object to translate and the source and target language codes.
+	 * @param string[]|null            $properties Optional whitelist of property
+	 *                                             names to translate; null = all.
 	 *
 	 * @return array{translated: array<string, string>, skipped: array<string, string>}
 	 *
 	 * @spec openspec/specs/register-i18n/spec.md
 	 */
-	public function translateObject(
-		ObjectEntity $object,
-		string $fromLong,
-		string $toLong,
-		?array $properties = null,
-	): array;
+	public function translate(ObjectTranslationRequest $request, ?array $properties = null): array;
 }//end interface

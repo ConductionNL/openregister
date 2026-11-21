@@ -202,20 +202,50 @@ class ContentScanService {
 	 * @return array{safe: bool, severity: string, findings: array<int, array<string, string>>, scannedBytes: int, truncated: bool}
 	 */
 	public function scan(string $content, array $metadata = []): array {
-		$haystack = $content;
+		$haystack = $this->haystack(content: $content, metadata: $metadata);
+		$truncated = (strlen($haystack) > self::MAX_SCAN_BYTES);
+		$haystack = substr($haystack, 0, self::MAX_SCAN_BYTES);
+
+		$findings = $this->findings(normalised: $this->normalise(text: $haystack));
+		$severity = $this->worstSeverity(findings: $findings);
+		$this->logFlagged(severity: $severity, findings: $findings);
+
+		return [
+			'safe' => ($severity === self::SEVERITY_CLEAN),
+			'severity' => $severity,
+			'findings' => $findings,
+			'scannedBytes' => strlen($haystack),
+			'truncated' => $truncated,
+		];
+	}//end scan()
+
+
+	/**
+	 * The text to scan: the content, then the flattened metadata when there is any.
+	 *
+	 * @param string               $content  The primary text to scan.
+	 * @param array<string, mixed> $metadata Structured metadata to fold in.
+	 *
+	 * @return string The untruncated text.
+	 */
+	private function haystack(string $content, array $metadata): string {
 		$flattened = $this->flattenMetadata(metadata: $metadata);
-		if ($flattened !== '') {
-			$haystack .= "\n" . $flattened;
+		if ($flattened === '') {
+			return $content;
 		}
 
-		$truncated = false;
-		if (strlen($haystack) > self::MAX_SCAN_BYTES) {
-			$haystack = substr($haystack, 0, self::MAX_SCAN_BYTES);
-			$truncated = true;
-		}
+		return $content . "\n" . $flattened;
+	}//end haystack()
 
+	/**
+	 * One finding per rule that matches the normalised text.
+	 *
+	 * @param string $normalised The normalised text.
+	 *
+	 * @return array<int, array<string, string>> The findings, in rule order.
+	 */
+	private function findings(string $normalised): array {
 		$findings = [];
-		$normalised = $this->normalise(text: $haystack);
 		foreach ($this->rules() as $rule) {
 			if (preg_match($rule['pattern'], $normalised, $matches) !== 1) {
 				continue;
@@ -227,26 +257,27 @@ class ContentScanService {
 				'reason' => $rule['reason'],
 				'excerpt' => $this->excerpt(match: (string)($matches[0] ?? '')),
 			];
-		}//end foreach
+		}
 
-		$severity = $this->worstSeverity(findings: $findings);
+		return $findings;
+	}//end findings()
 
+	/**
+	 * Log a scan that flagged anything.
+	 *
+	 * @param string                             $severity The worst severity.
+	 * @param array<int, array<string, string>> $findings The findings.
+	 *
+	 * @return void
+	 */
+	private function logFlagged(string $severity, array $findings): void {
 		if ($severity !== self::SEVERITY_CLEAN) {
 			$this->logger->info(
 				'[ContentScanService] content scan flagged patterns',
 				['severity' => $severity, 'findingCount' => count($findings)]
 			);
 		}
-
-		return [
-			'safe' => ($severity === self::SEVERITY_CLEAN),
-			'severity' => $severity,
-			'findings' => $findings,
-			'scannedBytes' => strlen($haystack),
-			'truncated' => $truncated,
-		];
-
-	}//end scan()
+	}//end logFlagged()
 
 	/**
 	 * The heuristic rule table. Each rule is a case-insensitive regex plus a category,

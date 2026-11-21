@@ -19,10 +19,9 @@ use OCA\OpenRegister\Files\Db\FileMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\File\FilePublishingHandler;
-use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
-use OCA\OpenRegister\Files\Service\File\FileRestrictionGuardInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\FileReadRestrictionInterface;
 use OCA\OpenRegister\Service\FileService;
-use OCA\OpenRegister\Service\Party\PartyIndicatorGuard;
+use OCA\OpenRegister\Kernel\Contracts\Core\PublicationRefusalInterface;
 use OCP\Files\File;
 use OCP\Files\Folder;
 use OCP\Files\NotFoundException;
@@ -40,6 +39,7 @@ use Psr\Log\LoggerInterface;
  * and ZIP archive creation for object files.
  */
 class FilePublishingHandlerTest extends TestCase {
+	use PassThroughDigestsTrait;
 	/** @var FilePublishingHandler */
 	private FilePublishingHandler $handler;
 
@@ -58,15 +58,15 @@ class FilePublishingHandlerTest extends TestCase {
 	/** @var IServerContainer&MockObject */
 	private IServerContainer $container;
 
-	private FileRestrictionGuard&MockObject $restrictions;
+	private FileReadRestrictionInterface&MockObject $restrictions;
 
 	/**
 	 * The party indicator guard the handler resolves before it publishes.
 	 * Permissive by default; one test makes it refuse.
 	 *
-	 * @var PartyIndicatorGuard&MockObject
+	 * @var PublicationRefusalInterface&MockObject
 	 */
-	private PartyIndicatorGuard $partyIndicators;
+	private PublicationRefusalInterface $partyIndicators;
 
 	protected function setUp(): void {
 		parent::setUp();
@@ -79,21 +79,24 @@ class FilePublishingHandlerTest extends TestCase {
 		// The handler resolves the guard at the act rather than taking it in
 		// its constructor: a constructor dependency on the party model would
 		// close the cycle FileService is already set through a setter to avoid.
-		$this->partyIndicators = $this->createMock(PartyIndicatorGuard::class);
+		$this->partyIndicators = $this->createMock(PublicationRefusalInterface::class);
 		$this->container = $this->createMock(IServerContainer::class);
-		$this->restrictions = $this->createMock(FileRestrictionGuard::class);
+		$this->restrictions = $this->createMock(FileReadRestrictionInterface::class);
 		$this->restrictions->method('readableNodes')->willReturnArgument(0);
-		$services = [FileRestrictionGuardInterface::class => $this->restrictions];
-		$partyIndicators = $this->partyIndicators;
+		$services = [
+			FileReadRestrictionInterface::class => $this->restrictions,
+			PublicationRefusalInterface::class   => $this->partyIndicators,
+		];
 		$this->container->method('get')->willReturnCallback(
-			static fn (string $id): object => ($services[$id] ?? $partyIndicators)
+			static fn (string $id): object => ($services[$id] ?? throw new \RuntimeException('Unexpected service ' . $id))
 		);
 
 		$this->handler = new FilePublishingHandler(
 			$this->objectEntityMapper,
 			$this->fileMapper,
 			$this->logger,
-			$this->container
+			$this->container,
+			$this->passThroughDigests()
 		);
 
 		// Most tests need the file service
@@ -122,7 +125,8 @@ class FilePublishingHandlerTest extends TestCase {
 			$this->objectEntityMapper,
 			$this->fileMapper,
 			$this->logger,
-			$this->container
+			$this->container,
+			$this->passThroughDigests()
 		);
 
 		// Should not throw

@@ -29,6 +29,8 @@ use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Flow\FlowRunQueueOptions;
+use OCA\OpenRegister\Service\Flow\FlowRunOrigin;
 
 /**
  * The flow editor's "Test" button: run a flow now and hand back the trace.
@@ -167,20 +169,17 @@ class FlowTestRunControllerTest extends TestCase {
 
 		$queued = new FlowRun();
 		$queued->setStatus(FlowRun::STATUS_QUEUED);
-		$this->runner->method('queue')->willReturn($queued);
+		$this->runner->method('queueRun')->willReturn($queued);
 
 		$done = new FlowRun();
 		$done->setStatus(FlowRun::STATUS_COMPLETED);
 		$done->setLog([['transition' => 'second', 'status' => 'completed']]);
 
-		// The controller must pass the parsed startAt through to execute().
-		$this->runner->expects($this->once())->method('execute')
+		// The controller must pass the parsed startAt through to executePass().
+		$this->runner->expects($this->once())->method('executePass')
 			->with(
 				$this->anything(),
-				$this->anything(),
-				$this->anything(),
-				$this->anything(),
-				'middle'
+				$this->callback(fn (FlowRunOrigin $origin): bool => $origin->startAt === 'middle')
 			)
 			->willReturn($done);
 
@@ -196,18 +195,13 @@ class FlowTestRunControllerTest extends TestCase {
 		$this->params(['flowId' => 'f1', 'pins' => $pins]);
 		$this->resolvers->method('resolveFlow')->willReturn(['id' => 'f1']);
 
-		// Queue() must receive the pins on the context so the engine can read them.
-		$this->runner->expects($this->once())->method('queue')
-			->with(
-				'f1',
-				$this->anything(),
-				'test',
-				['pins' => $pins]
-			)
+		// queueRun() must receive the pins on the context so the engine can read them.
+		$this->runner->expects($this->once())->method('queueRun')
+			->with('f1', $this->callback(fn (FlowRunQueueOptions $o): bool => $o->trigger == 'test' && $o->context == ['pins' => $pins]))
 			->willReturn(new FlowRun());
 		$done = new FlowRun();
 		$done->setStatus(FlowRun::STATUS_COMPLETED);
-		$this->runner->method('execute')->willReturn($done);
+		$this->runner->method('executePass')->willReturn($done);
 
 		$this->controller->test();
 	}//end testTestPassesPinsOnTheRunContext()
@@ -240,7 +234,7 @@ class FlowTestRunControllerTest extends TestCase {
 	 */
 	public function testARefusedTestRunIs409WithAReason(): void {
 		$this->aTestRunOf('flow-1');
-		$this->runner->method('queue')->willThrowException(
+		$this->runner->method('queueRun')->willThrowException(
 			new FlowLifecycleRefused(
 				reason: FlowLifecycleRefused::REASON_NO_PUBLISHED_VERSION,
 				flowId: 'flow-1',
@@ -272,7 +266,7 @@ class FlowTestRunControllerTest extends TestCase {
 	 */
 	public function testADeadEndTestRunIs409NamingTheDefect(): void {
 		$this->aTestRunOf('flow-2');
-		$this->runner->method('queue')->willThrowException(
+		$this->runner->method('queueRun')->willThrowException(
 			new FlowDeadEnd(nodeIds: ['step-a'])
 		);
 
@@ -317,7 +311,7 @@ class FlowTestRunControllerTest extends TestCase {
 
 		$controller = $this->controllerWith(access: $this->access);
 
-		$this->runner->expects($this->never())->method('queue');
+		$this->runner->expects($this->never())->method('queueRun');
 
 		$response = $controller->test();
 
@@ -343,7 +337,7 @@ class FlowTestRunControllerTest extends TestCase {
 
 		$controller = $this->controllerWith(access: $this->access);
 
-		$this->runner->expects($this->never())->method('queue');
+		$this->runner->expects($this->never())->method('queueRun');
 
 		$response = $controller->test();
 
@@ -362,7 +356,7 @@ class FlowTestRunControllerTest extends TestCase {
 		$this->aTestRunOf('flow-1');
 		$controller = $this->controllerWith(access: null);
 
-		$this->runner->expects($this->never())->method('queue');
+		$this->runner->expects($this->never())->method('queueRun');
 
 		$response = $controller->test();
 

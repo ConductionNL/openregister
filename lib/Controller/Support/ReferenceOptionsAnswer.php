@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Controller\Support;
 
 
 use Closure;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Schemas\ReferenceFilterException;

@@ -46,6 +46,10 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Db\OrganisationMapper
+ * @uses \OCA\OpenRegister\Db\Organisation
+ * @uses \OCA\OpenRegister\Db\Support\ConfigServices
+ * @uses \OCA\OpenRegister\Exception\OrganisationSlugConflictException
+ * @uses \OCA\OpenRegister\Service\Registers\EntityEventPublisher
  */
 final class OrganisationMapperTenancyGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;

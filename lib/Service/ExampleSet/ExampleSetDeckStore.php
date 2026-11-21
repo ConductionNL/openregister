@@ -183,15 +183,32 @@ class ExampleSetDeckStore {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-deck-cards-on-its-objects
 	 */
 	public function label(int $board, string $title, string $color): array {
-		$found = $this->labelId(label: new DeckTitled(parent: $board, title: $title));
+		return $this->labelOn(label: new DeckTitled(parent: $board, title: $title), color: $color);
+	}//end label()
+
+	/**
+	 * The board's label with this title, written in this colour when absent.
+	 *
+	 * @param DeckTitled $label The board id and the label title.
+	 * @param string     $color The colour of a label written now, hex without '#'.
+	 *
+	 * @return array{id: int, created: bool}
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-deck-cards-on-its-objects
+	 */
+	private function labelOn(DeckTitled $label, string $color): array {
+		$found = $this->labelId(label: $label);
 		if ($found !== null) {
 			return ['id' => $found, 'created' => false];
 		}
 
-		$id = $this->insert(table: 'deck_labels', values: ['title' => $title, 'color' => $color, 'board_id' => $board, 'last_modified' => time()]);
+		$id = $this->insert(
+			table: 'deck_labels',
+			values: ['title' => $label->title, 'color' => $color, 'board_id' => $label->parent, 'last_modified' => time()]
+		);
 
 		return ['id' => $id, 'created' => true];
-	}//end label()
+	}//end labelOn()
 
 	/**
 	 * The id of the board's label with this title, or null when it has none.

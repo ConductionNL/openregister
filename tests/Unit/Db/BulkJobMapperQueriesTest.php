@@ -20,6 +20,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 use DateTime;
 use OCA\OpenRegister\Db\BulkJob;
 use OCA\OpenRegister\Db\BulkJobMapper;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use PHPUnit\Framework\TestCase;
@@ -133,26 +134,26 @@ class BulkJobMapperQueriesTest extends TestCase {
 	}//end testFindByActorWithStateAndPage()
 
 	/**
-	 * findAllJobs() lists everything when no state is given.
+	 * findJobs() lists everything when no state is given.
 	 *
 	 * @return void
 	 */
 	public function testFindAllJobsWithoutState(): void {
-		$this->mapper->findAllJobs();
+		$this->mapper->findJobs(ListQuery::unbounded(['state' => null]));
 
 		$this->assertSame('select(*) from(openregister_bulk_jobs) orderBy(id, DESC) executeQuery()', $this->sql());
 		$this->assertSame([], $this->params);
 	}//end testFindAllJobsWithoutState()
 
 	/**
-	 * findAllJobs() narrows to a state and pages.
+	 * findJobs() narrows to a state and pages.
 	 *
 	 * @return void
 	 */
 	public function testFindAllJobsWithStateAndPage(): void {
 		$this->results[] = [['id' => 1, 'state' => 'failed']];
 
-		$jobs = $this->mapper->findAllJobs('failed', 5, 0);
+		$jobs = $this->mapper->findJobs(new ListQuery(5, 0, ['state' => 'failed']));
 
 		$this->assertSame('failed', $jobs[0]->getState());
 		$this->assertSame(

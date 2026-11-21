@@ -1,7 +1,7 @@
 <?php
 
 /**
- * GET requests against the configured GitLab API.
+ * Requests against the configured GitLab API.
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -27,7 +27,7 @@ use OCP\Http\Client\IClient;
 use OCP\Http\Client\IClientService;
 
 /**
- * Sends authenticated GET requests to the GitLab API and decodes their JSON bodies.
+ * Sends authenticated requests to the GitLab API and decodes their JSON bodies.
  *
  * The base URL is resolved once, when the client is built.
  *
@@ -89,4 +89,22 @@ class GitLabApiClient {
 		$response = $this->client->request('GET', $this->apiBase.$path, $options + ['headers' => $this->settings->headers()]);
 		return json_decode($response->getBody(), true);
 	}//end getJson()
+
+	/**
+	 * Send a JSON body with a write method (POST, PUT) to a path of the API and decode the JSON answer.
+	 *
+	 * @param string               $method The HTTP method.
+	 * @param string               $path   The path after the API base.
+	 * @param array<string, mixed> $body   The JSON body.
+	 *
+	 * @return mixed The decoded body.
+	 *
+	 * @throws GuzzleException If the request fails.
+	 *
+	 * @spec openspec/changes/capability-rows-verified-b/specs/data-import-export/spec.md
+	 */
+	public function sendJson(string $method, string $path, array $body): mixed {
+		$response = $this->client->request($method, $this->apiBase.$path, ['json' => $body, 'headers' => $this->settings->headers()]);
+		return json_decode($response->getBody(), true);
+	}//end sendJson()
 }//end class

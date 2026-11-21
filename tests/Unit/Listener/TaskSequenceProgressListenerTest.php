@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Listener;
 
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Event\TaskTerminalEvent;
+use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
 use OCA\OpenRegister\Listener\TaskSequenceProgressListener;
 use OCA\OpenRegister\Service\Task\TaskSequenceService;
 use OCP\EventDispatcher\Event;
@@ -36,6 +37,7 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Listener\TaskSequenceProgressListener
  * @uses \OCA\OpenRegister\Db\Task
  * @uses \OCA\OpenRegister\Event\TaskTerminalEvent
+ * @uses \OCA\OpenRegister\Event\AbstractTaskEvent
  */
 class TaskSequenceProgressListenerTest extends TestCase {
 
@@ -76,6 +78,18 @@ class TaskSequenceProgressListenerTest extends TestCase {
 		$this->sequences->expects(self::never())->method('onTaskTerminal');
 		$this->listener->handle(new Event());
 	}//end testAnUnrelatedEventIsIgnored()
+
+	public function testATaskContractThatIsNoTaskRowIsIgnored(): void {
+		// Only a task row can sit in a sequence; the event now carries the Kernel contract.
+		$this->sequences->expects(self::never())->method('onTaskTerminal');
+		$this->listener->handle(new TaskTerminalEvent(task: $this->createMock(TaskInterface::class), committed: true));
+	}//end testATaskContractThatIsNoTaskRowIsIgnored()
+
+	public function testTheSequenceReceivesTheTaskRowTheEventCarries(): void {
+		$task = $this->terminalTask();
+		$this->sequences->expects(self::once())->method('onTaskTerminal')->with(self::identicalTo($task));
+		$this->listener->handle(new TaskTerminalEvent(task: $task, committed: true));
+	}//end testTheSequenceReceivesTheTaskRowTheEventCarries()
 
 	public function testAProgressionFailureIsLoggedNotRethrown(): void {
 		$this->sequences->method('onTaskTerminal')->willThrowException(new RuntimeException('cursor clash'));

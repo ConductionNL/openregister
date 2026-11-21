@@ -28,6 +28,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ObjectSource;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion helpers take positional args by convention.
 
+use OCA\OpenRegister\Db\RegisterSchema;
+use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Driver\Exception as DriverExceptionContract;
 use Doctrine\DBAL\DriverManager;
@@ -227,10 +229,8 @@ class DbalObjectSourceProviderWriteGoldenTest extends TestCase {
 	 */
 	public function testCallerSuppliedKeyIsWrittenAndReRead(): void {
 		$created = $this->provider()->insert(
-			register: $this->register(),
-			schema: $this->schema(),
-			data: ['id' => 500, 'name' => 'Given Key', 'status' => 'active'],
-			config: $this->config()
+			source: new SourcedTable(new RegisterSchema($this->register(), $this->schema()), $this->config()),
+			data: ['id' => 500, 'name' => 'Given Key', 'status' => 'active']
 		);
 
 		// The synthetic `id` key is stripped from the payload, so the database generates the key.
@@ -238,10 +238,8 @@ class DbalObjectSourceProviderWriteGoldenTest extends TestCase {
 		$this->assertNotSame('500', (string)$created->getUuid());
 
 		$explicit = $this->provider()->insert(
-			register: $this->register(),
-			schema: $this->schema(),
-			data: ['name' => 'Coded', 'status' => 'active'],
-			config: $this->config(overrides: ['idColumn' => 'name'])
+			source: new SourcedTable(new RegisterSchema($this->register(), $this->schema()), $this->config(overrides: ['idColumn' => 'name'])),
+			data: ['name' => 'Coded', 'status' => 'active']
 		);
 		$this->assertSame('Coded', (string)$explicit->getUuid());
 	}//end testCallerSuppliedKeyIsWrittenAndReRead()
@@ -254,11 +252,9 @@ class DbalObjectSourceProviderWriteGoldenTest extends TestCase {
 	public function testUpdateOfKeyColumnsOnlyIsRefused(): void {
 		$failure = $this->writeFailure(
 			fn () => $this->provider()->update(
-				register: $this->register(),
-				schema: $this->schema(),
+				source: new SourcedTable(new RegisterSchema($this->register(), $this->schema()), $this->config()),
 				id: '1',
-				data: ['id' => 1],
-				config: $this->config()
+				data: ['id' => 1]
 			)
 		);
 		$this->assertSame([400, 'The update contains no writable columns.'], $failure);
@@ -271,10 +267,8 @@ class DbalObjectSourceProviderWriteGoldenTest extends TestCase {
 	 */
 	public function testNoKeyInsertEchoesValues(): void {
 		$created = $this->provider()->insert(
-			register: $this->register(),
-			schema: $this->schema(),
-			data: ['name' => 'Appended', 'status' => 'inactive'],
-			config: $this->config(overrides: ['idColumn' => null])
+			source: new SourcedTable(new RegisterSchema($this->register(), $this->schema()), $this->config(overrides: ['idColumn' => null])),
+			data: ['name' => 'Appended', 'status' => 'inactive']
 		);
 		$this->assertSame('Appended', $created->getObject()['name']);
 		$this->assertSame('inactive', $created->getObject()['status']);
@@ -298,10 +292,8 @@ class DbalObjectSourceProviderWriteGoldenTest extends TestCase {
 		);
 
 		$created = $this->provider(factory: $this->factoryReturning(connections: [$connection]))->insert(
-			register: $this->register(),
-			schema: $this->schema(),
-			data: ['name' => 'Pg', 'status' => 'active'],
-			config: $this->config()
+			source: new SourcedTable(new RegisterSchema($this->register(), $this->schema()), $this->config()),
+			data: ['name' => 'Pg', 'status' => 'active']
 		);
 
 		$this->assertSame(
@@ -352,10 +344,8 @@ class DbalObjectSourceProviderWriteGoldenTest extends TestCase {
 
 		return $this->writeFailure(
 			fn () => $this->provider(factory: $this->factoryReturning(connections: [$connection]))->insert(
-				register: $this->register(),
-				schema: $this->schema(),
-				data: ['name' => 'X', 'status' => 'active'],
-				config: $this->config()
+				source: new SourcedTable(new RegisterSchema($this->register(), $this->schema()), $this->config()),
+				data: ['name' => 'X', 'status' => 'active']
 			)
 		);
 	}//end insertFailingWith()
@@ -380,7 +370,7 @@ class DbalObjectSourceProviderWriteGoldenTest extends TestCase {
 	public function testFindAnswersNullWhenUnreachable(): void {
 		$provider = $this->provider(factory: $this->factoryReturning(connections: []));
 		$this->assertNull(
-			$provider->find(register: $this->register(), schema: $this->schema(), id: '1', config: $this->config())
+			$provider->find(source: new SourcedTable(new RegisterSchema($this->register(), $this->schema()), $this->config()), id: '1')
 		);
 	}//end testFindAnswersNullWhenUnreachable()
 
@@ -392,10 +382,8 @@ class DbalObjectSourceProviderWriteGoldenTest extends TestCase {
 	public function testFindQueryErrorIs502(): void {
 		try {
 			$this->provider()->find(
-				register: $this->register(),
-				schema: $this->schema(),
-				id: '1',
-				config: $this->config(overrides: ['table' => 'no_such_table'])
+				source: new SourcedTable(new RegisterSchema($this->register(), $this->schema()), $this->config(overrides: ['table' => 'no_such_table'])),
+				id: '1'
 			);
 			$this->fail('Expected DbalObjectSourceException');
 		} catch (DbalObjectSourceException $e) {
@@ -411,10 +399,8 @@ class DbalObjectSourceProviderWriteGoldenTest extends TestCase {
 	public function testFindWithoutSourceIsNull(): void {
 		$this->assertNull(
 			$this->provider()->find(
-				register: $this->register(),
-				schema: $this->schema(),
-				id: '1',
-				config: $this->config(overrides: ['sourceId' => ''])
+				source: new SourcedTable(new RegisterSchema($this->register(), $this->schema()), $this->config(overrides: ['sourceId' => ''])),
+				id: '1'
 			)
 		);
 	}//end testFindWithoutSourceIsNull()

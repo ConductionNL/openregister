@@ -141,7 +141,46 @@ class WebhookServiceTest extends TestCase {
 		);
 
 		$this->reflection = new \ReflectionClass($this->service);
+		$this->useOfflineResolver(service: $this->service);
 	}//end setUp()
+
+	/**
+	 * Give a service an address guard that resolves without the network.
+	 *
+	 * Delivery tests target public example hosts; resolving them for real makes
+	 * the suite pass or fail with the machine's DNS. Here `localhost` is
+	 * loopback, a `.invalid` host does not resolve, and any other name resolves
+	 * to one public address. Tests that need another answer use resolveHostTo().
+	 *
+	 * @param WebhookService $service The service under test.
+	 *
+	 * @return void
+	 */
+	private function useOfflineResolver(WebhookService $service): void {
+		$guard = new class extends OutboundAddressGuard {
+			/**
+			 * Fixed resolution: loopback for localhost, none for .invalid, else one public address.
+			 *
+			 * @param string $host The host.
+			 *
+			 * @return array<int, string> The addresses.
+			 */
+			protected function resolve(string $host): array {
+				if ($host === 'localhost') {
+					return ['127.0.0.1'];
+				}
+
+				if (str_ends_with($host, '.invalid') === true) {
+					return [];
+				}
+
+				return ['93.184.215.14'];
+			}//end resolve()
+		};
+
+		$property = new \ReflectionProperty(WebhookService::class, 'addressGuard');
+		$property->setValue($service, $guard);
+	}//end useOfflineResolver()
 
 	// ─── Helper methods ──────────────────────────────────────────────
 
@@ -650,7 +689,7 @@ class WebhookServiceTest extends TestCase {
 		// No delivery should happen
 		$this->webhookLogMapper->expects($this->never())->method('insert');
 
-		$this->service->dispatchEvent($event, 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent', ['test' => 'data']);
+		$this->service->dispatchEvent('OCA\\OpenRegister\\Event\\ObjectCreatedEvent', ['test' => 'data']);
 	}
 
 	public function testDispatchEventWithExceptionOnFindForEvent(): void {
@@ -662,7 +701,24 @@ class WebhookServiceTest extends TestCase {
 		// Should silently skip
 		$this->webhookLogMapper->expects($this->never())->method('insert');
 
-		$this->service->dispatchEvent($event, 'SomeEvent', ['test' => 'data']);
+		$this->service->dispatchEvent('SomeEvent', ['test' => 'data']);
+	}
+
+	public function testHasWebhooksForAsksTheMapperForThatEvent(): void {
+		$this->webhookMapper->expects($this->exactly(2))
+			->method('findForEvent')
+			->with('OCA\\OpenRegister\\Event\\ObjectCreatedEvent')
+			->willReturnOnConsecutiveCalls([$this->createTestWebhook(id: 1)], []);
+
+		$this->assertTrue($this->service->hasWebhooksFor('OCA\\OpenRegister\\Event\\ObjectCreatedEvent'));
+		$this->assertFalse($this->service->hasWebhooksFor('OCA\\OpenRegister\\Event\\ObjectCreatedEvent'));
+	}
+
+	public function testHasWebhooksForIsFalseWhenTheWebhookTableIsMissing(): void {
+		$this->webhookMapper->method('findForEvent')
+			->willThrowException(new \Exception('Table not found'));
+
+		$this->assertFalse($this->service->hasWebhooksFor('SomeEvent'));
 	}
 
 	public function testDispatchEventEnqueuesDeliveryJobPerWebhookAndDoesNotDeliverSynchronously(): void {
@@ -687,7 +743,6 @@ class WebhookServiceTest extends TestCase {
 			});
 
 		$this->service->dispatchEvent(
-			$event,
 			'OCA\\OpenRegister\\Event\\ObjectCreatedEvent',
 			['test' => 'data']
 		);
@@ -714,7 +769,7 @@ class WebhookServiceTest extends TestCase {
 		$this->logger->expects($this->atLeastOnce())->method('error')
 			->with($this->stringContains('could not be enqueued'), $this->callback(static fn (array $context): bool => $context['webhook_id'] === 1));
 
-		$this->service->dispatchEvent($event, 'SomeEvent', ['test' => str_repeat('x', 5000)]);
+		$this->service->dispatchEvent('SomeEvent', ['test' => str_repeat('x', 5000)]);
 
 		$this->assertSame([2], $enqueued, 'the refusal is contained to the one delivery');
 	}
@@ -801,6 +856,36 @@ class WebhookServiceTest extends TestCase {
 			'payload' => ['action' => 'delete'],
 		]);
 		$this->assertFalse($resultNoMatch);
+	}
+
+	public function testPassesFiltersOnBothStatesMatchesOnlyTheChangingUpdate(): void {
+		$webhook = $this->createTestWebhook();
+		$webhook->setFilters(json_encode(['oldObject.status' => 'draft', 'newObject.status' => 'final']));
+
+		$payloads = [];
+		$service = $this->createMock(WebhookService::class);
+		$service->method('hasWebhooksFor')->willReturn(true);
+		$service->method('dispatchEvent')->willReturnCallback(
+			function (string $eventName, array $payload) use (&$payloads): void {
+				$payloads[] = $payload;
+			}
+		);
+		$listener = new \OCA\OpenRegister\Listener\WebhookEventListener($service, $this->createMock(\Psr\Log\LoggerInterface::class));
+		$states = [['status' => 'draft'], ['status' => 'draft'], ['status' => 'final'], ['status' => 'final']];
+		for ($i = 1; $i < count($states); $i++) {
+			$old = new \OCA\OpenRegister\Db\ObjectEntity();
+			$old->setObject($states[$i - 1]);
+			$new = new \OCA\OpenRegister\Db\ObjectEntity();
+			$new->setObject($states[$i]);
+			$listener->handle(new \OCA\OpenRegister\Event\ObjectUpdatedEvent($new, $old));
+		}
+
+		$passes = [];
+		foreach ($payloads as $payload) {
+			$passes[] = $this->invokePrivateMethod('passesFilters', ['webhook' => $webhook, 'payload' => $payload]);
+		}
+
+		$this->assertSame([false, true, false], $passes);
 	}
 
 	// ─── getNestedValue tests (via reflection) ───────────────────────
@@ -1646,7 +1731,7 @@ class WebhookServiceTest extends TestCase {
 				$this->anything()
 			);
 
-		$this->service->dispatchEvent($event, 'SomeEvent', ['data' => 'test']);
+		$this->service->dispatchEvent('SomeEvent', ['data' => 'test']);
 	}//end testDispatchEventLogsDebugForNoWebhooks()
 
 	/**
@@ -1669,7 +1754,7 @@ class WebhookServiceTest extends TestCase {
 				})
 			);
 
-		$this->service->dispatchEvent($event, 'SomeEvent', ['data' => 'test']);
+		$this->service->dispatchEvent('SomeEvent', ['data' => 'test']);
 	}//end testDispatchEventLogsInfoWhenWebhooksFound()
 
 	// ─── interceptRequest with CloudEventFormatter ──────────────────

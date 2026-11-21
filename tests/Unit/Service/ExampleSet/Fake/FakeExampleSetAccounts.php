@@ -63,7 +63,8 @@ class FakeExampleSetAccounts extends ExampleSetAccounts {
 		return 'generated-'.$this->passwords;
 	}
 
-	public function createUser(string $uid, string $displayName, string $email, string $password): string {
+	public function createAccount(\OCA\OpenRegister\Service\ExampleSet\ExampleSetNewAccount $account): string {
+		[$uid, $displayName, $email, $password] = [$account->uid, $account->displayName, $account->email, $account->password];
 		if (in_array($uid, $this->unseenUsers, true) === true) {
 			$this->unseenUsers = array_values(array_diff($this->unseenUsers, [$uid]));
 			$this->users[$uid] = ['displayName' => $displayName, 'email' => $email, 'password' => 'theirs'];

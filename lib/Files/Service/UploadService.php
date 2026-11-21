@@ -36,7 +36,8 @@ use OCA\OpenRegister\Kernel\Contracts\UploadServiceInterface;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use OCP\AppFramework\Http\JSONResponse;
-use Symfony\Component\Yaml\Yaml;
+use Psr\Http\Message\ResponseInterface;
+use Symfony\Component\Yaml\Parser;
 use OCA\OpenRegister\Service\Security\SafeFetchUrl;
 
 /**
@@ -253,7 +254,7 @@ class UploadService implements UploadServiceInterface {
 	 *
 	 * @throws GuzzleException If HTTP request fails
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) Yaml::parse is standard Symfony Yaml pattern
+	 * @SuppressWarnings(PHPMD.StaticAccess) SafeFetchUrl::assert is the shared static SSRF guard
 	 */
 	private function getJSONfromURL(string $url): array|JSONResponse {
 		// Anti-SSRF: reject non-public/loopback/private hosts before fetching (SEC-SVC-1).
@@ -263,45 +264,74 @@ class UploadService implements UploadServiceInterface {
 			return new JSONResponse(data: ['error' => 'URL is not allowed: ' . $e->getMessage()], statusCode: 400);
 		}
 
+		$response = $this->fetch(url: $url);
+		if ($response instanceof JSONResponse) {
+			return $response;
+		}
+
+		return self::decodedBody(response: $response);
+	}//end getJSONfromURL()
+
+	/**
+	 * GET the URL without following redirects.
+	 *
+	 * @param string $url The validated URL.
+	 *
+	 * @return ResponseInterface|JSONResponse The response, or a 400 when the request fails.
+	 *
+	 * @throws GuzzleException If HTTP request fails other than with a bad response
+	 */
+	private function fetch(string $url): ResponseInterface|JSONResponse {
 		try {
 			// Step 1: Make HTTP GET request to fetch data from URL.
 			// Redirects are disabled so the validated host cannot be swapped
 			// for a private/internal target via a 3xx Location header.
-			$response = $this->client->request('GET', $url, ['allow_redirects' => false]);
+			return $this->client->request('GET', $url, ['allow_redirects' => false]);
 		} catch (\GuzzleHttp\Exception\BadResponseException $e) {
 			// Return error response if HTTP request fails.
 			$errorMsg = 'Failed to do a GET api-call on url: ' . $url . ' ' . $e->getMessage();
 			return new JSONResponse(data: ['error' => $errorMsg], statusCode: 400);
 		}
+	}//end fetch()
 
-		// Step 2: Get response body content as string.
-		$responseBody = $response->getBody()->getContents();
-
-		// Step 3: Use Content-Type header to determine the data format.
-		// Supports JSON and YAML formats based on Content-Type.
-		$contentType = $response->getHeaderLine('Content-Type');
-		switch ($contentType) {
-			case 'application/json':
-				$phpArray = json_decode(json: $responseBody, associative: true);
-				break;
-			case 'application/yaml':
-				$phpArray = Yaml::parse(input: $responseBody);
-				break;
-			default:
-				// If Content-Type is not specified or not recognized, try to parse as JSON first, then YAML.
-				$phpArray = json_decode(json: $responseBody, associative: true);
-				if ($phpArray === null) {
-					$phpArray = Yaml::parse(input: $responseBody);
-				}
-				break;
-		}
-
+	/**
+	 * The response body as a PHP array, or a 400 when it parses as neither JSON nor YAML.
+	 *
+	 * @param ResponseInterface $response The response.
+	 *
+	 * @return array<string, mixed>|JSONResponse
+	 */
+	private static function decodedBody(ResponseInterface $response): array|JSONResponse {
+		$phpArray = self::parsedBody(response: $response);
 		if ($phpArray === null || $phpArray === false) {
 			return new JSONResponse(data: ['error' => 'Failed to parse response body as JSON or YAML.'], statusCode: 400);
 		}
 
 		return $phpArray;
-	}//end getJSONfromURL()
+	}//end decodedBody()
+
+	/**
+	 * Parse the response body as the Content-Type says.
+	 *
+	 * Supports JSON and YAML formats based on Content-Type. If Content-Type is
+	 * not specified or not recognized, try to parse as JSON first, then YAML.
+	 * YAML is parsed by a Symfony Yaml Parser, as Yaml::parse() itself does.
+	 *
+	 * @param ResponseInterface $response The response.
+	 *
+	 * @return mixed The parsed body; null or false when it does not parse.
+	 */
+	private static function parsedBody(ResponseInterface $response): mixed {
+		// Step 2: Get response body content as string.
+		$responseBody = $response->getBody()->getContents();
+
+		// Step 3: Use Content-Type header to determine the data format.
+		return match ($response->getHeaderLine('Content-Type')) {
+			'application/json' => json_decode(json: $responseBody, associative: true),
+			'application/yaml' => (new Parser())->parse(value: $responseBody),
+			default => (json_decode(json: $responseBody, associative: true) ?? (new Parser())->parse(value: $responseBody)),
+		};
+	}//end parsedBody()
 
 	/**
 	 * Gets JSON content from an uploaded file.

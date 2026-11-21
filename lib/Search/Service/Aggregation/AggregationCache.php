@@ -269,11 +269,7 @@ class AggregationCache implements AggregationCacheInterface {
 			// outlives the data TTL so a bump can never be undone by expiry while
 			// stale data is still live.
 			$versionKey = $this->versionKey(registerSlug: $registerSlug, schemaSlug: $schemaSlug);
-			$current = $this->cache->get($versionKey);
-			$next = 1;
-			if (is_numeric($current) === true) {
-				$next = ((int)$current + 1);
-			}
+			$next = $this->nextVersion(current: $this->cache->get($versionKey));
 
 			// TTL well beyond the data TTL (self::TTL) so the bump persists.
 			$this->cache->set($versionKey, $next, (self::TTL * 60));
@@ -283,6 +279,21 @@ class AggregationCache implements AggregationCacheInterface {
 			);
 		}
 	}//end evictForSchema()
+
+	/**
+	 * The version after the cached one; 1 when none (or nothing numeric) is cached.
+	 *
+	 * @param mixed $current The cached version counter.
+	 *
+	 * @return int
+	 */
+	private function nextVersion(mixed $current): int {
+		if (is_numeric($current) === true) {
+			return ((int)$current + 1);
+		}
+
+		return 1;
+	}//end nextVersion()
 
 	/**
 	 * Build the cache key. Hashes the filter and the RBAC scope so that:
@@ -316,6 +327,7 @@ class AggregationCache implements AggregationCacheInterface {
 			$slot->schemaSlug,
 			$version,
 			$slot->name,
+			// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- The hash only builds a cache, lock or settings key, not a security value.
 			sha1($filterStr),
 			$this->rbacScopeHash()
 		);
@@ -371,6 +383,7 @@ class AggregationCache implements AggregationCacheInterface {
 			$orgId = $org->getUuid();
 		}
 
+		// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- The hash only builds a cache, lock or settings key, not a security value.
 		return sha1($uid . ':' . $orgId);
 	}//end rbacScopeHash()
 }//end class

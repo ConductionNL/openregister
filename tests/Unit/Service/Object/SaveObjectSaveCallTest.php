@@ -45,6 +45,9 @@ use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use OCA\OpenRegister\Search\Service\Quality\CreateCandidate;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
 
 /**
  * The branches of SaveObject::saveObject() that decide between update, create
@@ -75,6 +78,67 @@ use OCA\OpenRegister\Search\Service\Quality\CreateCandidate;
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugSource
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugStore
  * @uses \OCA\OpenRegister\Service\OrganisationContext
+ * @uses   \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses   \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses   \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses   \OCA\OpenRegister\Db\Schema\ObjectSourceDeclaration
+ * @uses   \OCA\OpenRegister\Db\Schema\PropertyAuthorization
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses   \OCA\OpenRegister\Search\Service\Quality\CreateCandidate
+ * @uses   \OCA\OpenRegister\Service\AnonymousEvaluationContext
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\CascadeRules
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\NestedSaveTransaction
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ObjectWriteTarget
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectHandlers
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPlatform
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPropertyHandlers
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRuntime
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectTenancy
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectValueHandlers
+ * @uses   \OCA\OpenRegister\Service\Object\TranslationScope
+ * @uses   \OCA\OpenRegister\Service\PropertyAccessRequest
+ * @uses   \OCA\OpenRegister\Service\PropertyWriteCheck
+ * @uses   \OCA\OpenRegister\Service\Quality\UniqueHintCandidate
+ * @uses   \OCA\OpenRegister\Service\Quality\UniqueHintScope
+ * @uses   \OCA\OpenRegister\Service\SystemOperationContext
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses   \OCA\OpenRegister\Service\Object\PermissionCheckOptions
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Db\Schema\ObjectSourceDeclaration
+ * @uses \OCA\OpenRegister\Db\Schema\PropertyAuthorization
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses \OCA\OpenRegister\Search\Service\Quality\CreateCandidate
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectWriteTarget
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectHandlers
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPlatform
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPropertyHandlers
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRuntime
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectTenancy
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectValueHandlers
+ * @uses \OCA\OpenRegister\Service\Object\TranslationScope
+ * @uses \OCA\OpenRegister\Service\PropertyAccessRequest
+ * @uses \OCA\OpenRegister\Service\PropertyWriteCheck
+ * @uses \OCA\OpenRegister\Service\Quality\UniqueHintCandidate
+ * @uses \OCA\OpenRegister\Service\Quality\UniqueHintScope
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ClassificationFloorGuard
  */
 final class SaveObjectSaveCallTest extends TestCase {
 
@@ -202,13 +266,10 @@ final class SaveObjectSaveCallTest extends TestCase {
 		$this->expectExceptionMessage('An object with identifier "' . self::UUID . '" already exists.');
 
 		$this->saveObject()->saveObject(
-			register: $this->register,
-			schema: $this->schema,
 			data: ['name' => 'New'],
-			uuid: self::UUID,
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->register, schema: $this->schema), uuid: self::UUID, policy: new SavePolicy(failIfExists: true)),
 			_rbac: false,
-			persist: false,
-			failIfExists: true
+			persist: false
 		);
 	}
 
@@ -218,9 +279,8 @@ final class SaveObjectSaveCallTest extends TestCase {
 
 		try {
 			$this->saveObject()->saveObject(
-				register: $this->register,
-				schema: $this->schema,
 				data: ['name' => 'New', DedupCreatePolicy::OVERRIDE_KEY => 'true'],
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->register, schema: $this->schema)),
 				_rbac: false
 			);
 			$this->fail('the dedup guard was not reached');
@@ -240,9 +300,8 @@ final class SaveObjectSaveCallTest extends TestCase {
 
 		try {
 			$this->saveObject()->saveObject(
-				register: $this->register,
-				schema: $this->schema,
 				data: ['name' => 'New', DedupCreatePolicy::OVERRIDE_KEY => 'no'],
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->register, schema: $this->schema)),
 				_rbac: false
 			);
 		} catch (RuntimeException $e) {
@@ -259,11 +318,9 @@ final class SaveObjectSaveCallTest extends TestCase {
 
 		try {
 			$this->saveObject()->saveObject(
-				register: $this->register,
-				schema: $this->schema,
 				data: ['name' => 'New'],
-				_rbac: false,
-				_dedupOverride: true
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->register, schema: $this->schema), policy: new SavePolicy(dedupOverride: true)),
+				_rbac: false
 			);
 		} catch (RuntimeException $e) {
 			$this->assertSame('stop', $e->getMessage());
@@ -277,15 +334,15 @@ final class SaveObjectSaveCallTest extends TestCase {
 		$seen = null;
 		$hints = $this->createMock(UniqueHintChecker::class);
 		$hints->expects($this->once())->method('check')->willReturnCallback(
-			static function (array $configuration, \OCA\OpenRegister\Service\Quality\UniqueHintScope $scope, array $data) use (&$seen): void {
-				$seen = [$configuration, $scope->register, $scope->schema, $data];
+			static function (array $configuration, \OCA\OpenRegister\Service\Quality\UniqueHintCandidate $candidate) use (&$seen): void {
+				$seen = [$configuration, $candidate->scope->register, $candidate->scope->schema, $candidate->data];
 				throw new RuntimeException('stop');
 			}
 		);
 		$this->services[UniqueHintChecker::class] = $hints;
 
 		try {
-			$this->saveObject()->saveObject(register: $this->register, schema: $this->schema, data: ['name' => 'New'], _rbac: false);
+			$this->saveObject()->saveObject(data: ['name' => 'New'], options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->register, schema: $this->schema)), _rbac: false);
 		} catch (RuntimeException $e) {
 			$this->assertSame('stop', $e->getMessage());
 		}
@@ -307,7 +364,7 @@ final class SaveObjectSaveCallTest extends TestCase {
 
 		$this->expectExceptionMessage('You are not authorized to modify the following properties: name');
 		try {
-			$this->saveObject()->saveObject(register: $this->register, schema: $this->schema, data: ['name' => 'New'], uuid: self::UUID);
+			$this->saveObject()->saveObject(data: ['name' => 'New'], options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->register, schema: $this->schema), uuid: self::UUID));
 		} finally {
 			$this->assertSame([[], ['name' => 'New'], true], $seen);
 		}
@@ -327,7 +384,7 @@ final class SaveObjectSaveCallTest extends TestCase {
 		);
 
 		try {
-			$this->saveObject()->saveObject(register: $this->register, schema: $this->schema, data: ['name' => 'New'], uuid: self::UUID);
+			$this->saveObject()->saveObject(data: ['name' => 'New'], options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->register, schema: $this->schema), uuid: self::UUID));
 			$this->fail('the property check did not refuse');
 		} catch (\Exception $e) {
 			$this->assertStringContainsString('following properties: name', $e->getMessage());
@@ -343,10 +400,8 @@ final class SaveObjectSaveCallTest extends TestCase {
 
 		try {
 			$this->saveObject()->saveObject(
-				register: $this->register,
-				schema: $this->schema,
 				data: ['name' => 'New'],
-				uuid: self::UUID,
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->register, schema: $this->schema), uuid: self::UUID),
 				_rbac: false
 			);
 		} catch (RuntimeException $e) {
@@ -364,10 +419,8 @@ final class SaveObjectSaveCallTest extends TestCase {
 
 		$this->expectExceptionCode(409);
 		$this->saveObject()->saveObject(
-			register: $this->register,
-			schema: $this->schema,
 			data: ['name' => 'New', '@self' => ['_autoGeneratedUuid' => true]],
-			uuid: self::UUID,
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->register, schema: $this->schema), uuid: self::UUID),
 			_rbac: false
 		);
 	}

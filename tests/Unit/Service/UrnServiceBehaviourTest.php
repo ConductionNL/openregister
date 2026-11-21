@@ -44,6 +44,11 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Service\UrnService
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
  */
 class UrnServiceBehaviourTest extends TestCase {
 
@@ -91,7 +96,8 @@ class UrnServiceBehaviourTest extends TestCase {
 			new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registers, schemas: $this->schemas, tables: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class)),
 			$urls ?? $this->urls,
 			$config ?? $this->config,
-			$this->logger
+			$this->logger,
+			$this->createMock(\OCA\OpenRegister\Db\AuditTrailMapperInterface::class)
 		);
 	}
 

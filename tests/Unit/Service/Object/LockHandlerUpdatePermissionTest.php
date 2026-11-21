@@ -24,8 +24,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
-use OCA\OpenRegister\Service\Object\LockRunStep;
-use OCA\OpenRegister\Service\Object\LockRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\LockRunStep;
+use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\Object\AdvisoryLockStore;
 use OCA\OpenRegister\Service\Object\LockAuthorization;
 use OCA\OpenRegister\Service\Object\LockHandler;
@@ -47,6 +48,11 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\OpenRegister\Service\Object\LockHandler
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Exception\NotAuthorizedException
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\LockRequest
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\LockRunStep
+ * @uses \OCA\OpenRegister\Service\Object\LockAuthorization
+ * @uses \OCA\OpenRegister\Service\Object\LockStores
+ * @uses \OCA\OpenRegister\Service\Object\PermissionCheckOptions
  */
 final class LockHandlerUpdatePermissionTest extends TestCase {
 
@@ -138,10 +144,8 @@ final class LockHandlerUpdatePermissionTest extends TestCase {
 			->with(
 				$this->schema,
 				'update',
-				null,
-				'owner-uid',
-				true,
-				$this->object
+				new PermissionCheckOptions(objectOwner: 'owner-uid', object: $this->object),
+				true
 			)
 			->willThrowException(new NotAuthorizedException(message: 'No update permission'));
 		$this->magic->expects($this->never())->method('lockObjectEntity');
@@ -181,10 +185,8 @@ final class LockHandlerUpdatePermissionTest extends TestCase {
 			->with(
 				$this->schema,
 				'update',
-				null,
-				'owner-uid',
-				true,
-				$this->object
+				new PermissionCheckOptions(objectOwner: 'owner-uid', object: $this->object),
+				true
 			)
 			->willThrowException(new NotAuthorizedException(message: 'No update permission'));
 		$this->magic->expects($this->never())->method('lockObjectEntity');

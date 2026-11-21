@@ -41,6 +41,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setEnabled(bool $enabled)
  * @method string|null getOrganisation()
  * @method void setOrganisation(?string $organisation)
+ * @method string|null getOwner()
+ * @method void setOwner(?string $owner)
  * @method string|null getFilters()
  * @method void setFilters(?string $filters)
  * @method string getRetryPolicy()
@@ -159,6 +161,16 @@ class Webhook extends Entity implements JsonSerializable {
 	 * @var string|null
 	 */
 	protected ?string $organisation = null;
+
+	/**
+	 * The user who owns this webhook, or null for an administrator's webhook.
+	 *
+	 * Set by the server, never from a request body: it is deliberately not in
+	 * HYDRATED_FIELDS.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $owner = null;
 
 	/**
 	 * Filters
@@ -424,7 +436,7 @@ class Webhook extends Entity implements JsonSerializable {
 	 * @psalm-return array{id: int, uuid: string, name: string, url: string,
 	 *     method: string, events: array, headers: array,
 	 *     secret: '***'|null, enabled: bool, organisation: null|string,
-	 *     filters: array, retryPolicy: string, maxRetries: int, timeout: int,
+	 *     owner: null|string, filters: array, retryPolicy: string, maxRetries: int, timeout: int,
 	 *     lastTriggeredAt: null|string, lastSuccessAt: null|string,
 	 *     lastFailureAt: null|string, totalDeliveries: int,
 	 *     successfulDeliveries: int, failedDeliveries: int,
@@ -462,6 +474,7 @@ class Webhook extends Entity implements JsonSerializable {
 			'secret' => $this->maskedSecret(),
 			'enabled' => $this->enabled,
 			'organisation' => $this->organisation,
+			'owner' => $this->owner,
 			'filters' => $this->getFiltersArray(),
 		];
 	}//end subscriptionJson()

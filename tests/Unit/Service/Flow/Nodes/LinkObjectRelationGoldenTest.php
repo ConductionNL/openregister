@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Flow\Nodes;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\Nodes\LinkObjectNode;
 use OCA\OpenRegister\Service\Handoff\HandoffService;
 use OCA\OpenRegister\Service\ObjectService;
@@ -32,6 +33,7 @@ use OCP\IURLGenerator;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 class LinkObjectRelationGoldenTest extends TestCase {
 
@@ -49,7 +51,8 @@ class LinkObjectRelationGoldenTest extends TestCase {
 
 		$this->objects = $this->createMock(ObjectService::class);
 		$this->objects->method('saveObject')->willReturnCallback(
-			function (...$args): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
+				$args = [$object, $options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
 				$this->saved[] = $args;
 				return $this->object('n-1', []);
 			}
@@ -72,11 +75,11 @@ class LinkObjectRelationGoldenTest extends TestCase {
 	}//end object()
 
 	private function linkOne(): array {
-		return $this->link()->execute(
-			[FlowItems::item(json: ['uuid' => 'req-1', '@self' => ['register' => '3', 'schema' => '7']])],
-			['register' => 'notes', 'schema' => 'note', 'data' => [], 'relation' => 'note'],
-			[]
-		);
+		return $this->link()->execute(new FlowNodeCall(
+			items: [FlowItems::item(json: ['uuid' => 'req-1', '@self' => ['register' => '3', 'schema' => '7']])],
+			config: ['register' => 'notes', 'schema' => 'note', 'data' => [], 'relation' => 'note'],
+			context: []
+		));
 	}//end linkOne()
 
 	public function testAScalarRelationIsReplacedByTheNewUuid(): void {

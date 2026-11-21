@@ -29,7 +29,9 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion helpers take positional args by convention.
 
 use DateTimeImmutable;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Exception\NotImplementedException;
+use OCA\OpenRegister\Service\CaseTokenTarget;
 use OCA\OpenRegister\Service\Integration\Providers\SharesProvider;
 use OCP\Files\Folder;
 use OCP\Files\Node;
@@ -175,7 +177,7 @@ class SharesProviderGoldenTest extends TestCase {
 		);
 
 		$rows = $this->provider(services: $this->walkServices(manager: $manager, nodes: [$node], uid: 'bob'))
-			->list(register: 'r', schema: 's', objectId: 'o');
+			->list(ref: new ObjectRef(register: 'r', schema: 's', id: 'o'));
 
 		$this->assertSame(
 			[
@@ -235,7 +237,7 @@ class SharesProviderGoldenTest extends TestCase {
 		);
 
 		$rows = $this->provider(services: $this->walkServices(manager: $manager, nodes: $nodes, uid: 'bob'))
-			->list(register: 'r', schema: 's', objectId: 'o');
+			->list(ref: new ObjectRef(register: 'r', schema: 's', id: 'o'));
 
 		$this->assertSame(['dup', 'zero'], array_column($rows, 'id'));
 		$this->assertSame('/index.php/apps/files', $rows[1]['url']);
@@ -255,7 +257,7 @@ class SharesProviderGoldenTest extends TestCase {
 		$this->assertSame(
 			[],
 			$this->provider(services: $this->walkServices(manager: $manager, nodes: [$this->node(id: 1)], uid: null))
-				->list(register: 'r', schema: 's', objectId: 'o')
+				->list(ref: new ObjectRef(register: 'r', schema: 's', id: 'o'))
 		);
 	}//end testAnonymousListsNothing()
 
@@ -288,7 +290,7 @@ class SharesProviderGoldenTest extends TestCase {
 		};
 
 		$rows = $this->provider(services: ['OCA\\OpenRegister\\Service\\ShareLinkService' => $service])
-			->list(register: 'r', schema: 's', objectId: 'o');
+			->list(ref: new ObjectRef(register: 'r', schema: 's', id: 'o'));
 		$this->assertSame(
 			[
 				[
@@ -320,7 +322,7 @@ class SharesProviderGoldenTest extends TestCase {
 		$services = $this->walkServices(manager: $manager, nodes: [$node], uid: 'bob');
 		$services['OCA\\OpenRegister\\Service\\ShareLinkService'] = $service;
 
-		$this->assertSame(['w1'], array_column($this->provider(services: $services)->list(register: 'r', schema: 's', objectId: 'o'), 'id'));
+		$this->assertSame(['w1'], array_column($this->provider(services: $services)->list(ref: new ObjectRef(register: 'r', schema: 's', id: 'o')), 'id'));
 	}//end testServiceDelegateAndFallback()
 
 	/**
@@ -341,7 +343,7 @@ class SharesProviderGoldenTest extends TestCase {
 			}//end getObjectFolder()
 		};
 
-		$this->assertSame([], $this->provider(services: $services)->list(register: 'r', schema: 's', objectId: 'o'));
+		$this->assertSame([], $this->provider(services: $services)->list(ref: new ObjectRef(register: 'r', schema: 's', id: 'o')));
 	}//end testWalkFailureListsNothing()
 
 	/**
@@ -359,21 +361,21 @@ class SharesProviderGoldenTest extends TestCase {
 			 */
 			public array $args = [];
 
-			public function mint(string $objectUuid, ?int $registerId, ?int $schemaId, ?string $label, ?int $ttlSeconds): array {
-				$this->args = [$objectUuid, $registerId, $schemaId, $label, $ttlSeconds];
+			public function mintFor(CaseTokenTarget $target, ?int $ttlSeconds): array {
+				$this->args = [$target->objectUuid, $target->registerId, $target->schemaId, $target->label, $ttlSeconds];
 				return ['ok' => true];
-			}//end mint()
+			}//end mintFor()
 		};
 		$provider = $this->provider(services: ['OCA\\OpenRegister\\Service\\CaseTokenService' => $service]);
 
-		$this->assertSame(['ok' => true], $provider->create(register: 'reg', schema: '4', objectId: 'o', payload: ['label' => 12, 'ttlSeconds' => 'soon']));
+		$this->assertSame(['ok' => true], $provider->create(ref: new ObjectRef(register: 'reg', schema: '4', id: 'o'), payload: ['label' => 12, 'ttlSeconds' => 'soon']));
 		$this->assertSame(['o', null, 4, '12', null], $service->args);
 
-		$provider->create(register: '1', schema: 's', objectId: 'o', payload: ['ttlSeconds' => '60']);
+		$provider->create(ref: new ObjectRef(register: '1', schema: 's', id: 'o'), payload: ['ttlSeconds' => '60']);
 		$this->assertSame(['o', 1, null, null, 60], $service->args);
 
 		$this->expectException(NotImplementedException::class);
-		$provider->create(register: '1', schema: 's', objectId: 'o', payload: ['type' => 'file']);
+		$provider->create(ref: new ObjectRef(register: '1', schema: 's', id: 'o'), payload: ['type' => 'file']);
 	}//end testCreateOptions()
 
 	/**
@@ -397,10 +399,10 @@ class SharesProviderGoldenTest extends TestCase {
 		};
 		$provider = $this->provider(services: ['OCA\\OpenRegister\\Service\\ShareLinkService' => $links]);
 
-		$provider->delete(register: 'r', schema: 's', objectId: 'o', entityId: '42');
+		$provider->delete(ref: new ObjectRef(register: 'r', schema: 's', id: 'o'), entityId: '42');
 		$this->assertSame([['o', '42']], $links->revoked);
 
 		$this->expectException(NotImplementedException::class);
-		$provider->delete(register: 'r', schema: 's', objectId: 'o', entityId: 'token:abc');
+		$provider->delete(ref: new ObjectRef(register: 'r', schema: 's', id: 'o'), entityId: 'token:abc');
 	}//end testDeleteRouting()
 }//end class

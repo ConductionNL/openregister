@@ -28,6 +28,7 @@ use DateTime;
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Db\FlowTimerMapperInterface;
+use OCA\OpenRegister\Db\FlowTimer\TimerSubject;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerProjection;
@@ -70,7 +71,7 @@ class FlowTimerProjectionBehaviourTest extends TestCase {
 		$task = new Task();
 		$this->tasks->method('findByUuid')->with('task-1')->willReturn($task);
 		$this->timers->expects($this->once())->method('findBySubject')
-			->with('task', 'task-1', [FlowTimer::STATE_ARMED, FlowTimer::STATE_SUSPENDED])
+			->with(new TimerSubject('task', 'task-1'), [FlowTimer::STATE_ARMED, FlowTimer::STATE_SUSPENDED])
 			->willReturn(
 				[
 					$this->timer('task', 'due', '2026-05-10T12:00:00+00:00'),

@@ -65,6 +65,7 @@ use OCA\OpenRegister\Controller\Support\TaskEventsControllerServices;
 use OCA\OpenRegister\Controller\Support\TaskLeafGuard;
 use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarEventsInterface;
 use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
+use OCA\OpenRegister\Service\CalendarEventKey;
 use OCA\OpenRegister\Service\CalendarLinkServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -160,7 +161,6 @@ class TaskEventsController extends Controller {
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function create(string $uuid): JSONResponse {
 		return $this->guard->withReadableTask(uuid: $uuid, action: $this->createEvent(...));
 	}//end create()
@@ -176,7 +176,6 @@ class TaskEventsController extends Controller {
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function link(string $uuid): JSONResponse {
 		return $this->guard->withReadableTask(uuid: $uuid, action: $this->linkEvent(...));
 	}//end link()
@@ -193,7 +192,6 @@ class TaskEventsController extends Controller {
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function unlink(string $uuid, string $eventUid): JSONResponse {
 		return $this->guard->withReadableTask(
 			uuid: $uuid,
@@ -220,7 +218,6 @@ class TaskEventsController extends Controller {
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function destroy(string $uuid, string $eventId): JSONResponse {
 		return $this->guard->withReadableTask(
 			uuid: $uuid,
@@ -286,12 +283,10 @@ class TaskEventsController extends Controller {
 		}
 
 		return $this->linked(
-			write: fn () => $this->links->linkEvent(
-				objectUuid: (string)$task->getUuid(),
-				registerId: (int)$task->getRegisterId(),
-				schemaId: (int)$task->getSchemaId(),
-				calendarUri: $named['calendarUri'],
-				eventUid: $named['eventUid']
+			write: fn () => $this->links->linkLocatedEvent(
+				target: (new LinkTarget(objectUuid: (string)$task->getUuid(), registerId: (int)$task->getRegisterId()))
+					->inSchema(schemaId: (int)$task->getSchemaId()),
+				key: new CalendarEventKey(calendarUri: $named['calendarUri'], eventUid: $named['eventUid'])
 			)
 		);
 	}//end linkEvent()
