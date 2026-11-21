@@ -94,26 +94,34 @@ final class SearchDictionary {
 	public static function fromDeclarations(array $concepts, array $stopwords): self {
 		$groups = [];
 		foreach ($concepts as $concept) {
-			if (is_array($concept) === false) {
-				continue;
+			$terms = self::groupOf(concept: $concept);
+			if (count($terms) >= 2) {
+				$groups[] = $terms;
 			}
-
-			$terms = self::normaliseTerms(
-				raw: array_merge(
-					[($concept['prefLabel'] ?? null)],
-					(array)($concept['altLabel'] ?? [])
-				)
-			);
-
-			if (count($terms) < 2) {
-				continue;
-			}
-
-			$groups[] = $terms;
 		}
 
 		return new self(groups: $groups, stopwords: self::normaliseTerms(raw: $stopwords));
 	}//end fromDeclarations()
+
+	/**
+	 * A concept's preferred and alternative labels as normalised terms; none for a concept that is not an object.
+	 *
+	 * @param mixed $concept One synonym concept.
+	 *
+	 * @return array<int, string> The terms.
+	 */
+	private static function groupOf(mixed $concept): array {
+		if (is_array($concept) === false) {
+			return [];
+		}
+
+		return self::normaliseTerms(
+			raw: array_merge(
+				[($concept['prefLabel'] ?? null)],
+				(array)($concept['altLabel'] ?? [])
+			)
+		);
+	}//end groupOf()
 
 	/**
 	 * Whether this dictionary can change any query at all.

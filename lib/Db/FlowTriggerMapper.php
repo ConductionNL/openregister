@@ -58,25 +58,6 @@ class FlowTriggerMapper implements FlowTriggerMapperInterface {
 	}//end __construct()
 
 	/**
-	 * The UUIDs of enabled flows subscribed to one object event.
-	 *
-	 * ONE indexed read, whatever the number of flows or the number of triggers
-	 * each carries. `register` and `schema` are matched exactly — a trigger node
-	 * cannot express "any", so there is no unscoped row to also match.
-	 *
-	 * @param string $event The event id.
-	 * @param string $register The register slug the event fired on.
-	 * @param string $schema The schema slug the event fired on.
-	 *
-	 * @return array<int, string> The flow UUIDs, each at most once.
-	 *
-	 * @spec openspec/specs/flow-engine/spec.md#requirement-trigger-matching-must-not-scale-with-the-number-of-flows
-	 */
-	public function flowUuidsFor(string $event, string $register, string $schema): array {
-		return $this->flowUuidsSubscribedTo(event: $event, table: new RegisterSchemaRef(register: $register, schema: $schema));
-	}//end flowUuidsFor()
-
-	/**
 	 * The UUIDs of enabled flows subscribed to one event on one register and schema.
 	 *
 	 * ONE indexed read, whatever the number of flows or the number of triggers
@@ -145,18 +126,29 @@ class FlowTriggerMapper implements FlowTriggerMapperInterface {
 		$result = $qb->executeQuery();
 		$rows = [];
 		while (($row = $result->fetch()) !== false) {
-			$rows[] = [
-				'flow_uuid' => (string)$row['flow_uuid'],
-				'event' => (string)$row['event'],
-				'register' => (string)$row['register'],
-				'enabled' => (bool)$row['enabled'],
-			];
+			$rows[] = $this->typedTriggerRow(row: $row);
 		}
 
 		$result->closeCursor();
 
 		return $rows;
 	}//end findBySchema()
+
+	/**
+	 * A trigger row with its values typed.
+	 *
+	 * @param array<string, mixed> $row The stored row.
+	 *
+	 * @return array{flow_uuid: string, event: string, register: string, enabled: bool}
+	 */
+	private function typedTriggerRow(array $row): array {
+		return [
+			'flow_uuid' => (string)$row['flow_uuid'],
+			'event' => (string)$row['event'],
+			'register' => (string)$row['register'],
+			'enabled' => (bool)$row['enabled'],
+		];
+	}//end typedTriggerRow()
 
 	/**
 	 * The UUIDs of every flow represented in the index.

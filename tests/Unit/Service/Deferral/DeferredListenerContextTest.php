@@ -6,6 +6,7 @@ namespace Unit\Service\Deferral;
 
 use OCA\OpenRegister\Service\Deferral\DeferredListenerContext;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\CauseFrame;
 
 /**
  * Round-trip and tolerance tests for the deferral context value object.
@@ -72,5 +73,39 @@ class DeferredListenerContextTest extends TestCase {
 		$this->assertNull($rebuilt->getUserId());
 		$this->assertNull($rebuilt->getOrganisationUuid());
 		$this->assertSame([['uuid' => 'ok']], $rebuilt->getEntries());
+	}
+
+	public function testAnEntryListThatIsNotAListIsEmpty(): void {
+		$rebuilt = DeferredListenerContext::fromJobArguments(['userId' => 'bob', 'entries' => 'not-a-list']);
+
+		$this->assertSame('bob', $rebuilt->getUserId());
+		$this->assertNull($rebuilt->getOrganisationUuid());
+		$this->assertSame([], $rebuilt->getEntries());
+	}
+
+	public function testACauseOtherThanAPersonRoundTripsWithItsRun(): void {
+		$context = new DeferredListenerContext(userId: null, orgUuid: null, entries: [['uuid' => 'u']], cause: new CauseFrame(cause: 'import', run: 'run-7'));
+
+		$wire = json_decode(json_encode($context->toJobArguments()), true);
+		$rebuilt = DeferredListenerContext::fromJobArguments($wire);
+
+		$this->assertSame('import', $wire['cause']);
+		$this->assertSame('import', $rebuilt->getCause()?->cause);
+		$this->assertSame('run-7', $rebuilt->getCause()?->run);
+	}
+
+	public function testNoCauseLeavesTheJobArgumentAsItWas(): void {
+		$context = new DeferredListenerContext(userId: 'alice', orgUuid: 'org-1', entries: [['uuid' => 'u']]);
+
+		$this->assertSame(['userId', 'organisationUuid', 'entries'], array_keys($context->toJobArguments()));
+		$this->assertNull(DeferredListenerContext::fromJobArguments($context->toJobArguments())->getCause());
+	}
+
+	public function testAnUnknownOrPersonCauseWordReadsAsNoCause(): void {
+		$base = ['userId' => null, 'organisationUuid' => null, 'entries' => []];
+
+		$this->assertNull(DeferredListenerContext::fromJobArguments($base + ['cause' => 'cleanup'])->getCause());
+		$this->assertNull(DeferredListenerContext::fromJobArguments($base + ['cause' => 'person', 'causeRun' => 'x'])->getCause());
+		$this->assertSame('rule', DeferredListenerContext::fromJobArguments($base + ['cause' => ' RULE '])->getCause()?->cause);
 	}
 }

@@ -17,6 +17,7 @@ use OCA\OpenRegister\Files\Service\File\PreviewSize;
 use OCA\OpenRegister\Service\File\FileVersioningHandler;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\Files\File;
@@ -781,7 +782,7 @@ class FilesControllerFileActionsTest extends TestCase {
 		$object = $this->createObjectMock();
 		$this->objectService->expects($this->once())
 			->method('find')
-			->with('hello-world', [], false, 'reg', 'sch', false, false, true, false)
+			->with(...FindCallShape::findArgs('hello-world', [], false, 'reg', 'sch', false, false, true, false))
 			->willReturn($object);
 		$this->fileService->expects($this->once())
 			->method('getFiles')

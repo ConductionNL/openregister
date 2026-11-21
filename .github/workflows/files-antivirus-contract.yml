@@ -1,0 +1,85 @@
+name: Files Antivirus Contract
+
+# WHY THIS EXISTS
+#
+# Every OpenRegister upload is scanned through Nextcloud's files_antivirus
+# (upload-malware-scan, REQ-UMS-001), by AntivirusScannerAdapter. That adapter
+# calls files_antivirus classes that are NOT Nextcloud's public API:
+# Scanner\ScannerFactory::getScanner(), the scanner's scanString() and Status.
+# A files_antivirus release can change any of them, and every upload would
+# then be refused as "no scan could be made", with nothing in OpenRegister
+# noticing until an instance updated.
+#
+# tests/Contract/FilesAntivirus runs against a REAL files_antivirus release
+# tarball and goes red on the first change the adapter relies on. `latest` is
+# resolved at run time, and the schedule runs it when files_antivirus
+# releases, not only when OpenRegister changes. Add a pinned leg once the scan
+# has been verified against a live instance on a named release.
+#
+# Same shape as richdocuments-contract.yml, for the same reasons: the suite
+# needs the release tarball and no Nextcloud server.
+on:
+  pull_request:
+    branches: [main, 'stable*']
+  push:
+    branches: [main, 'stable*']
+  schedule:
+    - cron: '43 5 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: files-antivirus-contract-${{ github.event_name }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    name: files_antivirus ${{ matrix.files_antivirus }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        files_antivirus: [latest]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+        with:
+          php-version: '8.3'
+          tools: composer:v2
+          coverage: none
+
+      - name: Install composer dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Download files_antivirus ${{ matrix.files_antivirus }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WANTED: ${{ matrix.files_antivirus }}
+        run: |
+          set -euo pipefail
+          if [ "$WANTED" = "latest" ]; then
+            TAG=$(gh release view --repo nextcloud-releases/files_antivirus --json tagName -q .tagName)
+          else
+            TAG="$WANTED"
+          fi
+          # An empty tag is a failed lookup, never "nothing to test".
+          if [ -z "$TAG" ]; then
+            echo "::error::Could not resolve the files_antivirus release for '$WANTED'."
+            exit 1
+          fi
+          echo "Testing against files_antivirus $TAG"
+          mkdir -p "$RUNNER_TEMP/av"
+          gh release download "$TAG" --repo nextcloud-releases/files_antivirus \
+            --pattern "files_antivirus-$TAG.tar.gz" --dir "$RUNNER_TEMP/av"
+          tar -xzf "$RUNNER_TEMP/av/files_antivirus-$TAG.tar.gz" -C "$RUNNER_TEMP/av"
+          test -f "$RUNNER_TEMP/av/files_antivirus/appinfo/info.xml"
+          echo "FILES_ANTIVIRUS_PATH=$RUNNER_TEMP/av/files_antivirus" >> "$GITHUB_ENV"
+          echo "### files_antivirus contract: $TAG" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Run the contract suite
+        run: composer test:files-antivirus-contract

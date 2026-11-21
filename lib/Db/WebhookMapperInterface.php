@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
@@ -29,7 +30,7 @@ use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 /**
  * The webhook queries and writes that callers outside lib/Db use.
  *
- * Bound to WebhookMapper in DbRegistrar.
+ * Bound to WebhookMapper in IntegrationsMapperRegistrar.
  */
 interface WebhookMapperInterface {
 

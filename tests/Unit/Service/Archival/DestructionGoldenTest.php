@@ -56,6 +56,7 @@ use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Service\Archival\ReviewerAssignment;
 use OCA\OpenRegister\Service\Archival\PendingReviewQuery;
 use DateTimeImmutable;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Golden outcomes of the destruction workflow.
@@ -227,7 +228,7 @@ class DestructionGoldenTest extends TestCase {
 					'not-an-entry',
 				],
 				'decisions' => $this->decidedList()['decisions'],
-				'approvals' => [['userId' => 'approver-1', 'approvedAt' => self::NOW, 'action' => 'approve_all']],
+				'approvals' => [['userId' => 'approver-1', 'approvedAt' => self::NOW, 'action' => 'approve_all', 'destroyedOverConflict' => 0]],
 				'excludedObjects' => [
 					[
 						'uuid' => 'keep',
@@ -267,7 +268,7 @@ class DestructionGoldenTest extends TestCase {
 					['uuid' => 'b', 'status' => 'uitgezonderd', 'exclusionReason' => 'Geen reden opgegeven'],
 					['uuid' => 'keep', 'decision' => 'retain', 'status' => 'uitgezonderd', 'exclusionReason' => 'Review decision "retain"'],
 				],
-				'approvals' => [['userId' => 'approver-1', 'approvedAt' => self::NOW, 'action' => 'approve_partial']],
+				'approvals' => [['userId' => 'approver-1', 'approvedAt' => self::NOW, 'action' => 'approve_partial', 'destroyedOverConflict' => 0]],
 				'objectCount' => 1,
 				'status' => 'approved',
 			],
@@ -331,8 +332,8 @@ class DestructionGoldenTest extends TestCase {
 		$this->assertSame('approved', $second['status']);
 		$this->assertSame(
 			[
-				['userId' => 'approver-1', 'approvedAt' => self::NOW, 'action' => 'approve_all'],
-				['userId' => 'system', 'approvedAt' => self::NOW, 'action' => 'approve_all'],
+				['userId' => 'approver-1', 'approvedAt' => self::NOW, 'action' => 'approve_all', 'destroyedOverConflict' => 0],
+				['userId' => 'system', 'approvedAt' => self::NOW, 'action' => 'approve_all', 'destroyedOverConflict' => 0],
 			],
 			$second['approvals']
 		);
@@ -413,7 +414,12 @@ class DestructionGoldenTest extends TestCase {
 		$saved->setUuid('new-list');
 		$save = $this->createMock(SaveObjectInterface::class);
 		$save->expects($this->once())->method('saveObject')
-			->with(7, 9, ['objects' => [['uuid' => 'ok-1'], ['uuid' => 'ok-2']]], null, false, false, true, true)
+			->with(
+				['objects' => [['uuid' => 'ok-1'], ['uuid' => 'ok-2']]],
+				$this->callback(static fn (ObjectSaveOptions $options): bool => $options->target->register === 7 && $options->target->schema === 9 && $options->uuid === null && $options->policy->silent === true),
+				false,
+				false
+			)
 			->willReturn($saved);
 
 		$result = $this->creator(retention: $retention, save: $save)->createFor([' ok-1', 'ok-1 ', 'held', '', 'nope', 'ok-2']);

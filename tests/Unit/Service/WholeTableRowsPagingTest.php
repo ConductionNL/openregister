@@ -28,7 +28,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 // phpcs:disable Squiz.Commenting.VariableComment.Missing -- typed mock fixtures; the declaration IS the description.
 
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -43,6 +43,15 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\WholeTableRows
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Exception\LockedException
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Service\Object\FileWriteGuard
+ * @uses \OCA\OpenRegister\Exception\ObjectStateMarker
+ * @uses \OCA\OpenRegister\Exception\ObjectStateWriteException
  */
 class WholeTableRowsPagingTest extends TestCase {
 

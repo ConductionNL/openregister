@@ -54,6 +54,8 @@ final class EntityRelationFieldTypes {
 		'bases' => 'json',
 		'skipAnonymization' => 'boolean',
 		'decisionUuid' => 'string',
+		'page' => 'integer',
+		'box' => 'json',
 		'createdAt' => 'datetime',
 	];
 }//end class

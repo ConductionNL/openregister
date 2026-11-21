@@ -104,11 +104,7 @@ class MigrationPackRequestReader implements MigrationPackRequestReaderInterface 
 			return $params['definition'];
 		}
 
-		$definition = array_filter(
-			$params,
-			static fn ($key): bool => str_starts_with((string)$key, '_') === false,
-			ARRAY_FILTER_USE_KEY
-		);
+		$definition = $this->bodyDefinition(params: $params);
 
 		$routeParams = $this->routeParams(request: $request);
 		if (array_key_exists('id', $routeParams) === false
@@ -118,6 +114,34 @@ class MigrationPackRequestReader implements MigrationPackRequestReaderInterface 
 			return $definition;
 		}
 
+		$this->refuseRowIdInBody(definition: $definition);
+	}//end definition()
+
+	/**
+	 * The pack sent as the body itself: every parameter that is not framework-internal.
+	 *
+	 * @param array<string, mixed> $params The request parameters.
+	 *
+	 * @return array<string, mixed> The definition.
+	 */
+	private function bodyDefinition(array $params): array {
+		return array_filter(
+			$params,
+			static fn ($key): bool => str_starts_with((string)$key, '_') === false,
+			ARRAY_FILTER_USE_KEY
+		);
+	}//end bodyDefinition()
+
+	/**
+	 * Refuse a body whose `id` equals the row id in the URL, with the rest of its errors.
+	 *
+	 * @param array<string, mixed> $definition The body definition, carrying that id.
+	 *
+	 * @return never
+	 *
+	 * @throws InvalidPackDefinitionException Always.
+	 */
+	private function refuseRowIdInBody(array $definition): never {
 		unset($definition['id']);
 		$errors   = $this->validator->validate(definition: $definition);
 		$errors[] = $this->l10n->t('An "id" in the request body that equals the row id in the URL cannot be told apart from it.')
@@ -125,7 +149,7 @@ class MigrationPackRequestReader implements MigrationPackRequestReaderInterface 
 			. $this->l10n->t('Send the pack as {"definition": {...}} to keep that id.');
 
 		throw new InvalidPackDefinitionException(errors: $errors);
-	}//end definition()
+	}//end refuseRowIdInBody()
 
 	/**
 	 * The `updatedAt` an update was based on, from the envelope's `expectedUpdatedAt`.

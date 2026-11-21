@@ -22,7 +22,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/declared-self-assign-action/specs/declared-actions/spec.md
+ * @spec openspec/specs/declared-actions/spec.md
  */
 
 declare(strict_types=1);
@@ -35,13 +35,15 @@ use OCA\OpenRegister\Exception\PropertyAlreadySetException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\IUserSession;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * The write of a self-assign action.
  *
  * @SuppressWarnings(PHPMD.StaticAccess) EmptyPropertyClaim is the request-scoped claim the mapper reads, as DraftStatusPolicy is.
  *
- * @spec openspec/changes/declared-self-assign-action/specs/declared-actions/spec.md
+ * @spec openspec/specs/declared-actions/spec.md
  */
 class ObjectActionSelfAssign {
 
@@ -68,7 +70,7 @@ class ObjectActionSelfAssign {
 	 * @throws RuntimeException When there is no caller or the action is not a self-assign.
 	 * @throws PropertyAlreadySetException When another caller filled the property after it was read as empty.
 	 *
-	 * @spec openspec/changes/declared-self-assign-action/specs/declared-actions/spec.md
+	 * @spec openspec/specs/declared-actions/spec.md
 	 */
 	public function assign(ObjectEntity $object, ObjectActionDefinition $definition): ObjectEntity {
 		$user = $this->userSession->getUser();
@@ -81,12 +83,13 @@ class ObjectActionSelfAssign {
 		EmptyPropertyClaim::hold(uuid: $uuid, property: $field);
 		try {
 			return $this->objects->patchObject(
-				objectId: $uuid,
-				data: [$field => $user->getUID()],
-				register: $object->getRegister(),
-				schema: $object->getSchema(),
-				_rbac: false,
-				currentUser: $user
+				patch: new ObjectPatch(
+					objectId: $uuid,
+					data: [$field => $user->getUID()],
+					target: new ObjectFindTarget(register: $object->getRegister(), schema: $object->getSchema()),
+					currentUser: $user
+				),
+				_rbac: false
 			);
 		} finally {
 			EmptyPropertyClaim::consume(uuid: $uuid);

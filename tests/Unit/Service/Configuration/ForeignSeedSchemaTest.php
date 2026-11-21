@@ -22,6 +22,7 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\OpenRegister\Service\Configuration\ForeignSeedSchema
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\Register\RegisterSchemaIds
  */
 class ForeignSeedSchemaTest extends TestCase {
 

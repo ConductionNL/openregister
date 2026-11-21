@@ -29,7 +29,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RunObjectLock;
 use OCA\OpenRegister\Db\RunObjectLockMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\Object\LockRunStep;
+use OCA\OpenRegister\Kernel\Contracts\Value\LockRunStep;
 use OCA\OpenRegister\Service\Object\RunLockRegistry;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -41,6 +41,12 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Service\Object\RunLockRegistry
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\RunObjectLock
+ * @uses \OCA\OpenRegister\Db\LockTerms
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\LockRunStep
+ * @uses \OCA\OpenRegister\Service\Object\ObjectChangeRecording
+ * @uses \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\MagicMappingOptions
  */
 final class RunLockRegistryTest extends TestCase {
 

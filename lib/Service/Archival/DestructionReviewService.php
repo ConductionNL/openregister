@@ -65,10 +65,12 @@ class DestructionReviewService implements DestructionReviewServiceInterface, Des
 	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory|null $clock Tells the moment a decision is recorded; the system clock when null.
+	 * @param ITimeFactory|null                   $clock     Tells the moment a decision is recorded; the system clock when null.
+	 * @param DestructionListConflictRefresh|null $conflicts Recomputes an entry's link conflicts before a destroy; no check when null.
 	 */
 	public function __construct(
 		private readonly ?ITimeFactory $clock = null,
+		private readonly ?DestructionListConflictRefresh $conflicts = null,
 	) {
 	}//end __construct()
 
@@ -224,17 +226,69 @@ class DestructionReviewService implements DestructionReviewServiceInterface, Des
 	 *                                          answer), the new archiefactiedatum a retention requires, and
 	 *                                          the reviewer, who must be the one assigned.
 	 * @param string|null          $transferRef The transfer list this entry was handed to, if any.
+	 * @param array<int, array<string, mixed>> $overriddenConflicts The link conflicts an acknowledged destroy
+	 *                                          overrides; recorded on the decision when not empty.
 	 *
 	 * @return array<string, mixed> The list data, with the entry decided and the history appended.
 	 *
 	 * @throws InvalidArgumentException When the answer, the entry, the reviewer or the reason is wrong.
 	 *
 	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
+	 * @spec openspec/changes/retention-linked-destruction-conflict/specs/archival-destruction-workflow/spec.md#requirement-destroying-over-a-conflict-needs-an-explicit-acknowledgement
 	 */
-	public function recordAnswer(array $listData, string $entryUuid, ReviewerAnswer $given, ?string $transferRef = null): array {
+	public function recordAnswer(
+		array $listData,
+		string $entryUuid,
+		ReviewerAnswer $given,
+		?string $transferRef = null,
+		array $overriddenConflicts = []
+	): array {
 		$answer = new ReviewAnswer(answer: $given->answer, reason: $given->reason, newDate: $given->newDate, transferRef: $transferRef);
-		return $this->record(listData: $listData, decided: new DecidedEntry(entryUuid: $entryUuid, given: $given, answer: $answer));
+		$listData = $this->record(listData: $listData, decided: new DecidedEntry(entryUuid: $entryUuid, given: $given, answer: $answer));
+		if ($overriddenConflicts === [] || $given->answer !== self::ANSWER_DESTROY) {
+			return $listData;
+		}
+
+		$last = (count($listData['decisions']) - 1);
+		$listData['decisions'][$last]['overriddenConflicts'] = array_values($overriddenConflicts);
+
+		return $listData;
 	}//end recordAnswer()
+
+	/**
+	 * Refuse a destroy answer over link conflicts the reviewer did not acknowledge.
+	 *
+	 * Recomputes the entry's conflicts now, because a date may have moved since
+	 * the list was made (design D-4). An entry whose conflicts could not all be
+	 * established (`truncated`) needs the acknowledgement too: a check that
+	 * could not run must not read as "nothing to override".
+	 *
+	 * @param string $entryUuid    The uuid of the record the entry is about.
+	 * @param string $answer       The answer given.
+	 * @param bool   $acknowledged Whether the request carries `acknowledgeConflicts: true`.
+	 *
+	 * @return array<int, array<string, mixed>> The conflicts an acknowledged destroy overrides; empty when none.
+	 *
+	 * @throws LinkConflictsNotAcknowledgedException When the entry has conflicts and they were not acknowledged.
+	 *
+	 * @spec openspec/changes/retention-linked-destruction-conflict/specs/archival-destruction-workflow/spec.md#requirement-destroying-over-a-conflict-needs-an-explicit-acknowledgement
+	 */
+	public function assertConflictsAcknowledged(string $entryUuid, string $answer, bool $acknowledged): array {
+		if ($answer !== self::ANSWER_DESTROY || $this->conflicts === null) {
+			return [];
+		}
+
+		$found = $this->conflicts->forEntry(entryUuid: $entryUuid);
+		if ($found['conflicts'] === [] && $found['truncated'] === false) {
+			return [];
+		}
+
+		if ($acknowledged === false) {
+			throw new LinkConflictsNotAcknowledgedException(conflicts: $found['conflicts'], truncated: $found['truncated']);
+		}
+
+		return $found['conflicts'];
+	}//end assertConflictsAcknowledged()
 
 	/**
 	 * Record one decided entry in the list's one decision history.
@@ -380,7 +434,7 @@ class DestructionReviewService implements DestructionReviewServiceInterface, Des
 		}
 
 		return $pending;
-	}//end pending()
+	}//end pendingEntries()
 
 	/**
 	 * The entries that are assigned, unanswered and this reviewer's, in list order.

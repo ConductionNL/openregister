@@ -280,18 +280,24 @@ import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue
 import Database from 'vue-material-design-icons/Database.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import Shield from 'vue-material-design-icons/Shield.vue'
-import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 import RbacTable from '../../components/RbacTable.vue'
+import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 import GroupSelect from '../../components/shared/GroupSelect.vue'
 import AppTab from '../../components/tabs/AppTab.vue'
 import AppTabs from '../../components/tabs/AppTabs.vue'
 import OrganisationMembers from './OrganisationMembers.vue'
 import RemoveUserDialog from './RemoveUserDialog.vue'
 import SpecialRightsTable from './SpecialRightsTable.vue'
-import { entityTabs, SPECIAL_RIGHTS } from './organisationRights.js'
 import { searchGroupsDebounced } from '../../services/groupSearch.js'
 import { freshState } from '../../services/initialState.js'
 import { quotaFields, unlimitedQuota } from '../../services/quotaFields.js'
+import { withRequestToken } from '../../services/requestToken.js'
+import {
+	entityTabs,
+	EVERYONE,
+	everyoneOption,
+	SPECIAL_RIGHTS,
+} from './organisationRights.js'
 
 /**
  * The state every instance of this component starts from.
@@ -312,9 +318,7 @@ const INITIAL_STATE = {
 	loadingGroups: false,
 	groupSearchDebounce: null,
 	selectedSpecialRights: {
-		object_publish: [],
 		agent_use: [],
-		dashboard_view: [],
 		llm_use: [],
 	},
 
@@ -351,11 +355,11 @@ const NEXT_FORM = {
  * @return {Promise<Response>} The response
  */
 function postLeave(uuid, userId) {
-	return fetch(`/index.php/apps/openregister/api/organisations/${uuid}/leave`, {
+	return fetch(`/index.php/apps/openregister/api/organisations/${uuid}/leave`, withRequestToken({
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify({ userId }),
-	})
+	}))
 }
 
 export default {
@@ -897,7 +901,7 @@ export default {
 		 * Update special right
 		 *
 		 * @param {object} update The change
-		 * @param {string} update.right The special right (object_publish, agent_use, dashboard_view, llm_use)
+		 * @param {string} update.right The special right (agent_use, llm_use)
 		 * @param {Array} update.groups Array of group objects with {id, name}
 		 * @return {void}
 		 * @spec exclude Reactive setter writing a special-right's group IDs to the local authorization model; UI form plumbing.
@@ -934,14 +938,17 @@ export default {
 		},
 
 		/**
-		 * The group a special right names. A group the groups API did not
-		 * return is still shown, as a placeholder.
+		 * The group a special right names, or everyone for `*`. A group the
+		 * groups API did not return is still shown, as a placeholder.
 		 *
 		 * @param {string} groupId The group id
 		 * @return {object} The group
 		 * @spec exclude Resolves a stored group id for display; UI plumbing.
 		 */
 		specialRightGroup(groupId) {
+			if (groupId === EVERYONE) {
+				return everyoneOption()
+			}
 			const group = this.availableGroups.find((g) => g.id === groupId)
 			return group || { id: groupId, name: groupId }
 		},

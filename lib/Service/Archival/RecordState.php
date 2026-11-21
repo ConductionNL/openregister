@@ -92,12 +92,8 @@ final class RecordState implements RecordStateInterface {
 	 */
 	public const SEMI_STATIC_ALIASES = ['semi_static', 'semi_statisch', 'gearchiveerd'];
 
-	/**
-	 * Every spelling that means TRANSFERRED.
-	 *
-	 * @var string[]
-	 */
-	public const TRANSFERRED_ALIASES = ['transferred', 'overgebracht'];
+	// TRANSFERRED_ALIASES is inherited from TransferredRecordStatesInterface
+	// (through RecordStateInterface): the delete path in Core reads it there.
 
 	/**
 	 * Every spelling that means DESTROYED.

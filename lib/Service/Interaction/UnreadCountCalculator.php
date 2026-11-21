@@ -35,12 +35,13 @@ use DateTime;
 use OCA\OpenRegister\Files\Db\FileMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectReadState;
+use OCA\OpenRegister\Kernel\Contracts\Core\UnreadCountsInterface;
 use Psr\Log\LoggerInterface;
 
 /**
  * Count what is unread per sub-resource, for one already-resolved reader.
  */
-class UnreadCountCalculator {
+class UnreadCountCalculator implements UnreadCountsInterface {
 
 	/**
 	 * Constructor.
@@ -180,17 +181,44 @@ class UnreadCountCalculator {
 	 * @return integer The unread file count.
 	 */
 	private function countFilesSince(ObjectEntity $object, ?DateTime $since): int {
+		$files = $this->filesOf(object: $object);
+		if ($files === null) {
+			return 0;
+		}
+
+		return $this->countChangedSince(files: $files, since: $since);
+
+	}//end countFilesSince()
+
+	/**
+	 * The object's files, or null when its folder cannot be read.
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return array|null The files.
+	 */
+	private function filesOf(ObjectEntity $object): ?array {
 		try {
-			$files = $this->fileMapper->getFilesForObject(object: $object);
+			return $this->fileMapper->getFilesForObject(object: $object);
 		} catch (\Throwable $e) {
 			// A folder lookup must never take out an object read. An absent
 			// count reads as nought, which under-badges rather than failing.
 			$this->logger->debug(
 				sprintf('[ReadStateService] file count skipped for %s: %s', (string)$object->getUuid(), $e->getMessage())
 			);
-			return 0;
+			return null;
 		}
+	}//end filesOf()
 
+	/**
+	 * How many of the files changed after the moment.
+	 *
+	 * @param array         $files The files.
+	 * @param DateTime|null $since The moment, or null for ever.
+	 *
+	 * @return integer The count.
+	 */
+	private function countChangedSince(array $files, ?DateTime $since): int {
 		$count = 0;
 		foreach ($files as $file) {
 			if (is_array($file) === false) {
@@ -203,8 +231,7 @@ class UnreadCountCalculator {
 		}
 
 		return $count;
-
-	}//end countFilesSince()
+	}//end countChangedSince()
 
 	/**
 	 * Whether a stored moment is later than the seen moment.

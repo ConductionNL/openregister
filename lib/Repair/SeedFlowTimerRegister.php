@@ -25,7 +25,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
+ * @spec openspec/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
  */
 
 declare(strict_types=1);
@@ -60,11 +60,13 @@ class SeedFlowTimerRegister implements IRepairStep, FlowTimerRegisterPathInterfa
 	 * working calendar and stops requiring `rules`: until it landed, an
 	 * administrator's opening hours were dropped by the object store because
 	 * the schema had never heard of the property, and a calendar without a
-	 * holiday list could not be saved at all.
+	 * holiday list could not be saved at all. 1.4.0 declares `blackouts` and
+	 * `firstWeekOfYear` on the working calendar, which the object store would
+	 * otherwise drop on save.
 	 *
 	 * @var string
 	 */
-	private const REGISTER_VERSION = '1.2.0';
+	private const REGISTER_VERSION = '1.4.0';
 
 	/**
 	 * Constructor.
@@ -81,7 +83,7 @@ class SeedFlowTimerRegister implements IRepairStep, FlowTimerRegisterPathInterfa
 	 *
 	 * @return string The step name.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
 	 */
 	public function getName(): string {
 		return 'Seed the flow-timers register (working calendars + escalation ladders)';
@@ -94,30 +96,17 @@ class SeedFlowTimerRegister implements IRepairStep, FlowTimerRegisterPathInterfa
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
 	 */
 	public function run(IOutput $output): void {
 		try {
-			$path = $this->descriptors->appManager->getAppPath('openregister') . self::REGISTER_PATH;
-			if (is_file($path) === false) {
-				$output->warning('Flow-timers register descriptor not found: ' . $path);
+			$descriptor = new AppRegisterDescriptor(descriptors: $this->descriptors, label: 'Flow-timers');
+			$data = $descriptor->read(relativePath: self::REGISTER_PATH, output: $output);
+			if ($data === null) {
 				return;
 			}
 
-			$data = json_decode((string)file_get_contents($path), true);
-			if (is_array($data) === false) {
-				$output->warning('Flow-timers register descriptor is not valid JSON: ' . $path);
-				return;
-			}
-
-			// The importer takes the DECODED descriptor; force: false keeps
-			// the import idempotent and leaves administrator edits in place.
-			$this->descriptors->configurationService->importFromApp(
-				appId: 'openregister',
-				data: $data,
-				version: self::REGISTER_VERSION,
-				force: false
-			);
+			$descriptor->import(data: $data, version: self::REGISTER_VERSION);
 
 			$output->info('Flow-timers register imported (working-calendar + escalation-ladder schemas and seeded defaults)');
 		} catch (Throwable $e) {

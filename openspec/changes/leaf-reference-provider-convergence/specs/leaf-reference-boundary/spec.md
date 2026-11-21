@@ -7,10 +7,8 @@ remain separate, independently registered mechanisms. This decision introduces
 no adapter, migration, or shared registration path between them, and app-local
 read leaves MUST NOT be reimplemented as IReferenceProvider implementations.
 
-The two are not redundant: a data-provider leaf is object-collection scoped with
-an optional append, while an IReferenceProvider resolves a single read-only
-preview from a string. Because those shapes do not map onto each other,
-convergence is rejected and coexistence is the standing decision.
+A leaf is object-collection scoped with an optional append; an
+IReferenceProvider resolves one read-only preview from a string.
 
 #### Scenario: A leaf is not required to become a reference provider
 
@@ -74,11 +72,9 @@ Authors MUST resolve the one overlap between the mechanisms, rendering a single
 read-only linked entity identified by a URL or id, by context, and SHALL NOT
 implement it twice for the same surface.
 
-When the entity hangs off an OpenRegister object as that object's linked-entity
-render, it is the leaf single-entity surface; when it is an inline preview of a
-bare URL in free text, it is an IReferenceProvider. A future bridge that lets a
-reference also render as the leaf single-entity surface is a named but unadopted
-option and SHALL NOT be assumed to exist.
+An object-anchored linked-entity render is the leaf single-entity surface; an
+inline preview of a bare URL in free text is an IReferenceProvider. No bridge
+between them SHALL be assumed to exist.
 
 #### Scenario: Object-anchored single entity is a leaf surface
 

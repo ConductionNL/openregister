@@ -16,6 +16,7 @@ declare(strict_types=1);
 namespace Unit\Calendar;
 
 use OCA\OpenRegister\Calendar\CalendarEventTransformer;
+use OCA\OpenRegister\Calendar\DeclaredDateCalendars;
 use OCA\OpenRegister\Calendar\RegisterCalendar;
 use OCA\OpenRegister\Calendar\RegisterCalendarProvider;
 use OCA\OpenRegister\Calendar\RegisterCalendarSources;
@@ -47,7 +48,8 @@ class RegisterCalendarProviderTest extends TestCase {
 				new SchemaCatalog($this->registerMapper, $this->schemaMapper, $this->magicMapper),
 				$this->transformer,
 				$this->logger
-			)
+			),
+			$this->createMock(DeclaredDateCalendars::class)
 		);
 	}
 
@@ -149,5 +151,36 @@ class RegisterCalendarProviderTest extends TestCase {
 
 		$this->provider->getCalendars('principals/users/admin');
 		$this->provider->getCalendars('principals/users/admin');
+	}
+	public function testASchemaLoadFailureIsLoggedOnceAndRemembered(): void {
+		$failure = new \RuntimeException('DB error');
+		$this->schemaMapper->expects($this->once())->method('findAll')->willThrowException($failure);
+		$this->logger->expects($this->once())->method('warning')
+			->with('[RegisterCalendarProvider] Failed to load schemas: DB error', ['exception' => $failure]);
+
+		$this->assertSame([], $this->provider->getCalendars('principals/users/admin'));
+		$this->assertSame([], $this->provider->getCalendars('principals/users/admin'));
+	}
+
+	public function testOnlyConfiguredSchemasInRequestedOrderBecomeCalendars(): void {
+		$schemas = [];
+		foreach ([3, 4, 5] as $id) {
+			$schema = new Schema();
+			$schema->setId($id);
+			if ($id !== 4) {
+				$schema->setConfiguration(['calendarProvider' => ['enabled' => true, 'dtstart' => 'datum', 'titleTemplate' => '{naam}']]);
+			}
+
+			$schemas[] = $schema;
+		}
+
+		$this->schemaMapper->method('findAll')->willReturn($schemas);
+
+		$all = $this->provider->getCalendars('principals/users/admin');
+		$picked = $this->provider->getCalendars('principals/users/admin', ['openregister-schema-5', 'openregister-schema-4', 'nope']);
+
+		$this->assertSame(['openregister-schema-3', 'openregister-schema-5'], array_map(static fn ($c) => $c->getKey(), $all));
+		$this->assertSame(['openregister-schema-5'], array_map(static fn ($c) => $c->getKey(), $picked));
+		$this->assertSame([], $this->provider->getCalendars('principals/users/admin', ['openregister-schema-4']));
 	}
 }

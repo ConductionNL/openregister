@@ -2,14 +2,22 @@
 
 ## 1. Disclosure per document (REQ-ADI-005)
 
-- [ ] 1.1 Add `TextDisclosure` entity, mapper and migration (`file_id`, `service`, `host`, `at`, `bytes`) and `TextDisclosureRecorder`, called from every outbound site in `EntityRecognitionHandler` (Presidio, OpenAnonymiser external, LLM) and the Dolphin extraction client before the request is sent. Verify: `tests/Unit/Service/Anonymisation/TextDisclosureRecorderTest.php::testEveryOutboundSiteRecords` enumerates the outbound clients by reflection so a new client without a record fails; `testAFailingRecordStopsTheExternalCall`.
-- [ ] 1.2 Route `GET /api/files/{fileId}/anonymisation/disclosures` (`#[NoAdminRequired]`, file read access checked in the method). Verify: `tests/Unit/Controller/FileDisclosuresControllerTest.php` with 200 for a reader and 403 for a non-reader; Newman request in `tests/newman/`; hydra gates route-auth and no-admin-idor pass.
+- [x] 1.1 Add `TextDisclosure` entity, mapper and migration (`file_id`, `service`, `host`, `at`, `bytes`) and `TextDisclosureRecorder`, called from every outbound site in `EntityRecognitionHandler` (Presidio, OpenAnonymiser external, LLM) and the Dolphin extraction client before the request is sent. Verify: `tests/Unit/Service/Anonymisation/TextDisclosureRecorderTest.php::testEveryOutboundSiteRecords` enumerates the outbound clients by reflection so a new client without a record fails; `testAFailingRecordStopsTheExternalCall`.
+- [x] 1.2 Route `GET /api/files/{fileId}/anonymisation/disclosures` (`#[NoAdminRequired]`, file read access checked in the method). Verify: `tests/Unit/Controller/FileDisclosuresControllerTest.php` with 200 for a reader and 403 for a non-reader; Newman request in `tests/newman/`; hydra gates route-auth and no-admin-idor pass.
+
+Build note (1.1): the only outbound call that carries text today is `EntityRecognitionHandler::postAnalyzeRequest` (Presidio, external OpenAnonymiser). LLM detection falls back to regex and no Dolphin client exists in `lib/`, so neither sends text yet; the reflection test fails the moment either opens an HTTP client without recording.
+
+Build note (1.2): route, controller and `FileDisclosuresControllerTest` are done. The Newman requests are in `tests/newman/openregister-anonymisation-disclosures.postman_collection.json` (reader 200, non-reader 403, anonymous 401, and the admin pipeline report with a non-admin 403), registered in `tests/newman/run-all.sh`; they have not been run against a live instance yet.
 
 ## 2. Pipeline report (REQ-ADI-006)
 
-- [ ] 2.1 Add `ContentPipelineReport` listing every step with its state and the setting that controls it; route `GET /api/admin/anonymisation/pipeline` (admin only). Verify: `tests/Unit/Service/Anonymisation/PipelineStepReportTest.php::testEveryRegisteredStepHasAReportEntry` and `testAnOffStepNamesItsSetting`.
-- [ ] 2.2 Record each step's outcome on the `AnonymisationLog` run from the real anonymise path. Verify: `testARunRecordsEveryStepOutcome` through `DocumentProcessingHandler::anonymizeDocument()` with a DOCX fixture.
+- [x] 2.1 Add `ContentPipelineReport` listing every step with its state and the setting that controls it; route `GET /api/admin/anonymisation/pipeline` (admin only). Verify: `tests/Unit/Service/Anonymisation/PipelineStepReportTest.php::testEveryRegisteredStepHasAReportEntry` and `testAnOffStepNamesItsSetting`.
+- [x] 2.2 Record each step's outcome on the `AnonymisationLog` run from the real anonymise path. Verify: `testARunRecordsEveryStepOutcome` through `DocumentProcessingHandler::anonymizeDocument()` with a DOCX fixture.
 - [ ] 2.3 Show the list on the file configuration page. Verify: `tests/e2e/ci/anonymisation-disclosure.spec.ts` opens the page, switches the PDF metadata sanitiser off and sees it reported off; the same spec covers REQ-ADI-005's details view. The spec file exists from `anonymisation-discloses-itself`; extend it.
+
+Build note (2.1): the PDF text replacer, the PDF metadata sanitiser and the DOCX and ODT sanitisers have no setting that turns them off, so they report `always-on`; the anonymiser reports `on`/`off` by `entityRecognitionEnabled`.
+
+Build note (2.3): the list is on the file configuration page (`AnonymisationPipelineList.vue`, an "Anonymisation pipeline" card read again after every settings save), with its strings in all 37 locales and `AnonymisationPipelineList.spec.js`. The e2e spec is a browser check and is not written yet, so the task stays open.
 
 ## V. Verification and done
 

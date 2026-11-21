@@ -109,6 +109,29 @@ use OCA\OpenRegister\Service\Lifecycle\TransitionPayload;
  * @uses   \OCA\OpenRegister\Service\Rules\RuleTrace
  * @uses   \OCA\OpenRegister\Service\SystemOperationContext
  * @uses   \OCA\OpenRegister\Service\Task\ApprovingOutcomeSet
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Event\AbstractObjectEntityEvent
+ * @uses \OCA\OpenRegister\Listener\Support\ApprovalChainSequences
+ * @uses \OCA\OpenRegister\Listener\Support\LifecycleTransitionAccess
+ * @uses \OCA\OpenRegister\Listener\Support\LifecycleTransitionChecks
+ * @uses \OCA\OpenRegister\Service\Lifecycle\ConditionUser
+ * @uses \OCA\OpenRegister\Service\Lifecycle\ContainerLookup
+ * @uses \OCA\OpenRegister\Service\Lifecycle\LifecycleConditionReporting
+ * @uses \OCA\OpenRegister\Service\Lifecycle\LifecycleRuleCaller
+ * @uses \OCA\OpenRegister\Service\Lifecycle\LifecycleRuleCheck
+ * @uses \OCA\OpenRegister\Service\Lifecycle\LifecycleWrite
+ * @uses \OCA\OpenRegister\Service\Lifecycle\SchemaReading
+ * @uses \OCA\OpenRegister\Service\Lifecycle\StateMove
+ * @uses \OCA\OpenRegister\Service\Lifecycle\TransitionAttempt
+ * @uses \OCA\OpenRegister\Service\Lifecycle\TransitionMove
+ * @uses \OCA\OpenRegister\Service\Lifecycle\TransitionPayload
+ * @uses \OCA\OpenRegister\Service\Object\TransitionGate
+ * @uses \OCA\OpenRegister\Service\Task\ResolvedChain
+ * @uses \OCA\OpenRegister\Service\Task\SequenceAnchor
+ * @uses \OCA\OpenRegister\Service\Rules\ConditionJudgement
+ * @uses \OCA\OpenRegister\Service\Rules\RuleRunSubject
+ * @uses \OCA\OpenRegister\Service\Rules\RuleTraceValue
  */
 class LifecycleListenersGoldenTest extends TestCase {
 	private SchemaMapper&MockObject $schemaMapper;
@@ -186,7 +209,7 @@ class LifecycleListenersGoldenTest extends TestCase {
 
 		return new LifecycleValidationListener(
 			new LifecycleTransitionAccess(new \OCA\OpenRegister\Listener\LifecycleEditReader(new \OCA\OpenRegister\Service\Lifecycle\SchemaReading($this->schemaMapper, $this->logger), $this->resolver()), $this->userSession, $this->permission),
-			new LifecycleTransitionChecks(new LifecycleGuardRegistry(new \OCA\OpenRegister\Service\Lifecycle\ContainerLookup($this->guards, $server, $this->logger)), new LifecycleConditionEvaluator($this->userSession, $groups, new LifecycleConditionReporting($l10n, $this->logger), $dialect), new ConditionTracer(dialect: $dialect)),
+			new LifecycleTransitionChecks(new LifecycleGuardRegistry(new \OCA\OpenRegister\Service\Lifecycle\ContainerLookup($this->guards, $server, $this->logger)), new LifecycleConditionEvaluator(new LifecycleConditionReporting($l10n, $this->logger), new \OCA\OpenRegister\Service\Lifecycle\LifecycleRuleCheck($dialect, new \OCA\OpenRegister\Service\Lifecycle\LifecycleRuleCaller($this->userSession, $groups))), new ConditionTracer(dialect: $dialect)),
 			$this->ruleRuns
 		);
 	}//end validationListener()
@@ -450,11 +473,11 @@ class LifecycleListenersGoldenTest extends TestCase {
 				],
 			]
 		);
+		$event = $this->update(['status' => 'draft'], ['status' => 'sent']);
 		$this->executor->expects($this->once())->method('run')
-			->with($actions, new TransitionPayload('submit', ['id' => 'obj-1', 'status' => 'sent'], ['id' => 'obj-1', 'status' => 'draft']))
+			->with($actions, new TransitionPayload('submit', ['id' => 'obj-1', 'status' => 'sent'], ['id' => 'obj-1', 'status' => 'draft'], $event->getNewObject()))
 			->willReturn(['id' => 'obj-1', 'status' => 'sent', 'stamped' => true]);
 
-		$event = $this->update(['status' => 'draft'], ['status' => 'sent']);
 		$this->actionListener()->handle($event);
 
 		$this->assertSame(['status' => 'sent', 'stamped' => true], $this->data($event->getNewObject()));

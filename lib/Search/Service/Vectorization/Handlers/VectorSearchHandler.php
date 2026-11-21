@@ -113,62 +113,135 @@ class VectorSearchHandler {
 	 */
 	public function semanticSearch(VectorQuery $query): array {
 		$startTime = microtime(true);
-		$filters   = $query->filters;
+		$this->logSemanticSearchStarted(query: $query);
 
+		try {
+			return $this->bestPathResults(query: $query, startTime: $startTime);
+		} catch (Exception $e) {
+			$this->failSemanticSearch(error: $e, startTime: $startTime);
+		}
+	}//end semanticSearch()
+
+	/**
+	 * Log the start of a semantic search.
+	 *
+	 * @param VectorQuery $query The query limit and filters.
+	 *
+	 * @return void
+	 */
+	private function logSemanticSearchStarted(VectorQuery $query): void {
 		$this->logger->info(
 			message: '[VectorSearchHandler] Performing semantic search',
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,
 				'limit' => $query->limit,
+				'filters' => $query->filters,
+			]
+		);
+	}//end logSemanticSearchStarted()
+
+	/**
+	 * Answer a semantic search from the pgvector KNN path, falling back to the PHP cosine loop.
+	 *
+	 * @param VectorQuery $query     The query embedding, limit and filters.
+	 * @param float       $startTime When the search started (microtime).
+	 *
+	 * @return array<int,array<string,mixed>> Search results
+	 *
+	 * @throws \Exception If a path fails
+	 */
+	private function bestPathResults(VectorQuery $query, float $startTime): array {
+		// Primary path: index-backed SQL KNN on PostgreSQL/pgvector.
+		$knnResults = $this->knnSearch(query: $query);
+
+		if ($knnResults !== null && $knnResults !== []) {
+			$this->logSemanticSearchCompleted(path: 'pgvector KNN path', run: ['results' => $knnResults, 'startTime' => $startTime]);
+			return $knnResults;
+		}
+
+		return $this->fallbackResults(query: $query, startTime: $startTime);
+	}//end bestPathResults()
+
+	/**
+	 * Fallback path: score candidate BLOB rows with the PHP cosine loop.
+	 *
+	 * @param VectorQuery $query     The query embedding, limit and filters.
+	 * @param float       $startTime When the search started (microtime).
+	 *
+	 * @return array<int,array<string,mixed>> Search results, most similar first
+	 *
+	 * @throws \Exception If fetching the rows fails
+	 */
+	private function fallbackResults(VectorQuery $query, float $startTime): array {
+		$vectors = $this->fetchVectors(filters: $query->filters);
+
+		if ($vectors === []) {
+			$this->logNoVectorsFound(filters: $query->filters);
+			return [];
+		}
+
+		$results = array_slice($this->rankVectors(queryEmbedding: $query->embedding, vectors: $vectors), 0, $query->limit);
+
+		$this->logSemanticSearchCompleted(path: 'PHP fallback path', run: ['results' => $results, 'startTime' => $startTime]);
+
+		return $results;
+	}//end fallbackResults()
+
+	/**
+	 * Log that the fallback found no vector rows.
+	 *
+	 * @param array<string, mixed> $filters The fetch filters.
+	 *
+	 * @return void
+	 */
+	private function logNoVectorsFound(array $filters): void {
+		$this->logger->warning(
+			message: '[VectorSearchHandler] No vectors found in database',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
 				'filters' => $filters,
 			]
 		);
+	}//end logNoVectorsFound()
 
-		try {
-			// Primary path: index-backed SQL KNN on PostgreSQL/pgvector.
-			$knnResults = $this->knnSearch(query: $query);
+	/**
+	 * Log a failed semantic search and rethrow it wrapped.
+	 *
+	 * @param Exception $error     Why the search failed.
+	 * @param float     $startTime When the search started (microtime).
+	 *
+	 * @return never
+	 *
+	 * @throws \Exception Always: "Semantic search failed: <reason>".
+	 */
+	private function failSemanticSearch(Exception $error, float $startTime): never {
+		$this->logger->error(
+			message: '[VectorSearchHandler] Semantic search failed',
+			context: $this->failureContext(error: $error, startTime: $startTime)
+		);
+		throw new Exception('Semantic search failed: ' . $error->getMessage());
+	}//end failSemanticSearch()
 
-			if ($knnResults !== null && $knnResults !== []) {
-				$this->logSemanticSearchCompleted(path: 'pgvector KNN path', run: ['results' => $knnResults, 'startTime' => $startTime]);
-				return $knnResults;
-			}
+	/**
+	 * The log context of a failed search: where, why, and how long it ran.
+	 *
+	 * @param Exception $error     Why the search failed.
+	 * @param float     $startTime When the search started (microtime).
+	 *
+	 * @return array<string, mixed> The log context.
+	 */
+	private function failureContext(Exception $error, float $startTime): array {
+		$searchTime = round((microtime(true) - $startTime) * 1000, 2);
 
-			// Fallback path: PHP cosine loop over candidate BLOB rows.
-			$vectors = $this->fetchVectors(filters: $filters);
-
-			if ($vectors === []) {
-				$this->logger->warning(
-					message: '[VectorSearchHandler] No vectors found in database',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'filters' => $filters,
-					]
-				);
-				return [];
-			}
-
-			$results = array_slice($this->rankVectors(queryEmbedding: $query->embedding, vectors: $vectors), 0, $query->limit);
-
-			$this->logSemanticSearchCompleted(path: 'PHP fallback path', run: ['results' => $results, 'startTime' => $startTime]);
-
-			return $results;
-		} catch (Exception $e) {
-			$searchTime = round((microtime(true) - $startTime) * 1000, 2);
-
-			$this->logger->error(
-				message: '[VectorSearchHandler] Semantic search failed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'error' => $e->getMessage(),
-					'search_time_ms' => $searchTime,
-				]
-			);
-			throw new Exception('Semantic search failed: ' . $e->getMessage());
-		}//end try
-	}//end semanticSearch()
+		return [
+			'file' => __FILE__,
+			'line' => __LINE__,
+			'error' => $error->getMessage(),
+			'search_time_ms' => $searchTime,
+		];
+	}//end failureContext()
 
 	/**
 	 * Log a completed semantic search.
@@ -233,36 +306,71 @@ class VectorSearchHandler {
 				vector2: $storedEmbedding
 			);
 
-			$metadata = [];
-			if (empty($vector['metadata']) === false) {
-				$metadata = json_decode($vector['metadata'], true) ?? [];
-			}
-
-			return [
-				'vector_id' => $vector['id'],
-				'entity_type' => $vector['entity_type'],
-				'entity_id' => $vector['entity_id'],
-				'similarity' => $similarity,
-				'chunk_index' => $vector['chunk_index'],
-				'total_chunks' => $vector['total_chunks'],
-				'chunk_text' => $vector['chunk_text'],
-				'metadata' => $metadata,
-				'model' => $vector['embedding_model'],
-				'dimensions' => $vector['embedding_dimensions'],
-			];
+			return $this->vectorResult(vector: $vector, similarity: $similarity);
 		} catch (Exception $e) {
-			$this->logger->warning(
-				message: '[VectorSearchHandler] Failed to process vector',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'vector_id' => $vector['id'],
-					'error' => $e->getMessage(),
-				]
-			);
+			$this->logUnusableVector(vector: $vector, error: $e);
 			return null;
 		}//end try
 	}//end scoreVectorRow()
+
+	/**
+	 * The search result for one scored vector row.
+	 *
+	 * @param array<string, mixed> $vector     Stored vector row.
+	 * @param float                $similarity Its cosine similarity to the query.
+	 *
+	 * @return array<string, mixed> The result.
+	 */
+	private function vectorResult(array $vector, float $similarity): array {
+		return [
+			'vector_id' => $vector['id'],
+			'entity_type' => $vector['entity_type'],
+			'entity_id' => $vector['entity_id'],
+			'similarity' => $similarity,
+			'chunk_index' => $vector['chunk_index'],
+			'total_chunks' => $vector['total_chunks'],
+			'chunk_text' => $vector['chunk_text'],
+			'metadata' => $this->decodedMetadata(vector: $vector),
+			'model' => $vector['embedding_model'],
+			'dimensions' => $vector['embedding_dimensions'],
+		];
+	}//end vectorResult()
+
+	/**
+	 * A vector row's metadata, decoded; empty when it has none.
+	 *
+	 * @param array<string, mixed> $vector Stored vector row.
+	 *
+	 * @return mixed The decoded metadata.
+	 */
+	private function decodedMetadata(array $vector): mixed {
+		$metadata = [];
+		if (empty($vector['metadata']) === false) {
+			$metadata = json_decode($vector['metadata'], true) ?? [];
+		}
+
+		return $metadata;
+	}//end decodedMetadata()
+
+	/**
+	 * Log a vector row that could not be scored.
+	 *
+	 * @param array<string, mixed> $vector Stored vector row.
+	 * @param Exception            $error  Why scoring failed.
+	 *
+	 * @return void
+	 */
+	private function logUnusableVector(array $vector, Exception $error): void {
+		$this->logger->warning(
+			message: '[VectorSearchHandler] Failed to process vector',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'vector_id' => $vector['id'],
+				'error' => $error->getMessage(),
+			]
+		);
+	}//end logUnusableVector()
 
 	/**
 	 * The embedding stored in a vector row, or null when it holds none.
@@ -500,20 +608,8 @@ class VectorSearchHandler {
 		try {
 			$weight = $this->normalisedWeights(keyword: $keyword);
 
-			// No vector side when its weight is zero.
-			$vectorResults = [];
-			if ($weight['vector'] > 0) {
-				$vectorResults = $this->hybridVectorResults(query: $query);
-			}
-
-			// Combine results using Reciprocal Rank Fusion (RRF).
-			$combined = $this->reciprocalRankFusion(
-				vector: new RankedResults(results: $vectorResults, weight: $weight['vector']),
-				keyword: new RankedResults(results: $keyword->results, weight: $weight['keyword'])
-			);
-
 			// Return top N results.
-			$finalResults = array_slice($combined, 0, $query->limit);
+			$finalResults = array_slice($this->fusedResults(query: $query, keyword: $keyword), 0, $query->limit);
 
 			return [
 				'results' => $finalResults,
@@ -523,20 +619,65 @@ class VectorSearchHandler {
 				'weights' => $weight,
 			];
 		} catch (Exception $e) {
-			$searchTime = round((microtime(true) - $startTime) * 1000, 2);
-
-			$this->logger->error(
-				message: '[VectorSearchHandler] Hybrid search failed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'error' => $e->getMessage(),
-					'search_time_ms' => $searchTime,
-				]
-			);
-			throw new Exception('Hybrid search failed: ' . $e->getMessage());
+			$this->failHybridSearch(error: $e, startTime: $startTime);
 		}//end try
 	}//end hybridSearch()
+
+	/**
+	 * The vector and keyword results fused with Reciprocal Rank Fusion, best first.
+	 *
+	 * The weights are the same normalised weights the response reports.
+	 *
+	 * @param VectorQuery   $query   Query embedding vector and the maximum number of results.
+	 * @param KeywordFusion $keyword Keyword results and the requested weights.
+	 *
+	 * @return array<int, array<string, mixed>> Every fused result.
+	 */
+	private function fusedResults(VectorQuery $query, KeywordFusion $keyword): array {
+		$weight = $this->normalisedWeights(keyword: $keyword);
+
+		// Combine results using Reciprocal Rank Fusion (RRF).
+		return $this->reciprocalRankFusion(
+			vector: $this->vectorSide(query: $query, weight: $weight['vector']),
+			keyword: new RankedResults(results: $keyword->results, weight: $weight['keyword'])
+		);
+	}//end fusedResults()
+
+	/**
+	 * The vector side of a hybrid search, ranked with its weight; none when its weight is zero.
+	 *
+	 * @param VectorQuery $query  Query embedding vector and the hybrid limit.
+	 * @param mixed       $weight The normalised vector weight.
+	 *
+	 * @return RankedResults The vector results and their weight.
+	 */
+	private function vectorSide(VectorQuery $query, mixed $weight): RankedResults {
+		// No vector side when its weight is zero.
+		$vectorResults = [];
+		if ($weight > 0) {
+			$vectorResults = $this->hybridVectorResults(query: $query);
+		}
+
+		return new RankedResults(results: $vectorResults, weight: $weight);
+	}//end vectorSide()
+
+	/**
+	 * Log a failed hybrid search and rethrow it wrapped.
+	 *
+	 * @param Exception $error     Why the search failed.
+	 * @param float     $startTime When the search started (microtime).
+	 *
+	 * @return never
+	 *
+	 * @throws \Exception Always: "Hybrid search failed: <reason>".
+	 */
+	private function failHybridSearch(Exception $error, float $startTime): never {
+		$this->logger->error(
+			message: '[VectorSearchHandler] Hybrid search failed',
+			context: $this->failureContext(error: $error, startTime: $startTime)
+		);
+		throw new Exception('Hybrid search failed: ' . $error->getMessage());
+	}//end failHybridSearch()
 
 	/**
 	 * The keyword and vector weights, scaled to sum to one when positive;

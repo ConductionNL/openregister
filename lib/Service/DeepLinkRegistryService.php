@@ -36,6 +36,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Dto\DeepLinkRegistration;
 use OCA\OpenRegister\Event\DeepLinkRegistrationEvent;
+use OCA\OpenRegister\Kernel\Contracts\Core\AppDeepLinksInterface;
 use OCP\EventDispatcher\IEventDispatcher;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -50,7 +51,7 @@ use Psr\Log\LoggerInterface;
  * Registrations are in-memory only (static array) and populated fresh
  * on each request via app boot cycles.
  */
-class DeepLinkRegistryService implements DeepLinkRegistryServiceInterface {
+class DeepLinkRegistryService implements DeepLinkRegistryServiceInterface, AppDeepLinksInterface {
 
 	/**
 	 * In-memory registry keyed by "registerSlug::schemaSlug".
@@ -138,7 +139,8 @@ class DeepLinkRegistryService implements DeepLinkRegistryServiceInterface {
 			schemaSlug: $registration->schemaSlug,
 			urlTemplate: $registration->urlTemplate,
 			icon: $this->effectiveIcon(appId: $registration->appId, icon: ''),
-			displayName: $registration->displayName
+			displayName: $registration->displayName,
+			taskUrlTemplate: $registration->taskUrlTemplate
 		);
 	}//end withEffectiveIcon()
 
@@ -153,19 +155,43 @@ class DeepLinkRegistryService implements DeepLinkRegistryServiceInterface {
 		$key = $registration->registerSlug . '::' . $registration->schemaSlug;
 
 		if (isset(self::$registrations[$key]) === true) {
-			$this->logger->debug(
-				'[DeepLinkRegistry] Ignoring duplicate registration for {key} from {appId} (already claimed by {existing})',
-				[
-					'key' => $key,
-					'appId' => $registration->appId,
-					'existing' => self::$registrations[$key]->appId,
-				]
-			);
+			$this->logDuplicate(registration: $registration, key: $key);
 			return;
 		}
 
 		self::$registrations[$key] = $registration;
 
+		$this->logRegistered(registration: $registration, key: $key);
+	}//end store()
+
+	/**
+	 * Log a registration ignored because another app already claimed its register and schema.
+	 *
+	 * @param DeepLinkRegistration $registration The ignored registration.
+	 * @param string               $key          Its register::schema key.
+	 *
+	 * @return void
+	 */
+	private function logDuplicate(DeepLinkRegistration $registration, string $key): void {
+		$this->logger->debug(
+			'[DeepLinkRegistry] Ignoring duplicate registration for {key} from {appId} (already claimed by {existing})',
+			[
+				'key' => $key,
+				'appId' => $registration->appId,
+				'existing' => self::$registrations[$key]->appId,
+			]
+		);
+	}//end logDuplicate()
+
+	/**
+	 * Log a stored registration.
+	 *
+	 * @param DeepLinkRegistration $registration The registration.
+	 * @param string               $key          Its register::schema key.
+	 *
+	 * @return void
+	 */
+	private function logRegistered(DeepLinkRegistration $registration, string $key): void {
 		$this->logger->debug(
 			'[DeepLinkRegistry] Registered deep link for {key} → {appId} ({template})',
 			[
@@ -174,7 +200,7 @@ class DeepLinkRegistryService implements DeepLinkRegistryServiceInterface {
 				'template' => $registration->urlTemplate,
 			]
 		);
-	}//end store()
+	}//end logRegistered()
 
 	/**
 	 * The icon of a registration: the given one, or "icon-{appId}" when none is given.
@@ -263,6 +289,25 @@ class DeepLinkRegistryService implements DeepLinkRegistryServiceInterface {
 	}//end resolveUrl()
 
 	/**
+	 * The owning app's own route for a task about an object of this register and schema.
+	 *
+	 * Null when no app claimed the pair or the app that did registered no task route;
+	 * the caller then links OpenRegister's task page.
+	 *
+	 * @param int                  $registerId The subject's register id.
+	 * @param int                  $schemaId   The subject's schema id.
+	 * @param array<string, mixed> $taskData   The task row (uuid, objectUuid, registerId, schemaId).
+	 *
+	 * @return string|null The URL, or null.
+	 *
+	 * @spec openspec/changes/flow-task-search-provider/specs/unified-search-provider/spec.md#requirement-nextcloud-search-finds-the-flow-tasks-a-user-may-see
+	 */
+	public function resolveTaskUrl(int $registerId, int $schemaId, array $taskData): ?string {
+		$registration = $this->resolve(registerId: $registerId, schemaId: $schemaId);
+		return $registration?->resolveTaskUrl(taskData: $taskData);
+	}//end resolveTaskUrl()
+
+	/**
 	 * Get the icon for a registered deep link, or null if no registration.
 	 *
 	 * @param int $registerId The register database ID
@@ -307,6 +352,40 @@ class DeepLinkRegistryService implements DeepLinkRegistryServiceInterface {
 	}//end resolveDisplayName()
 
 	/**
+	 * Every registration, one per claimed (register, schema) combination.
+	 *
+	 * Like resolve(), a process that never booted OpenRegister asks the apps
+	 * for their registrations first.
+	 *
+	 * @return array<int,DeepLinkRegistration> The registrations, in the order they were added.
+	 *
+	 * @spec openspec/changes/platform-comments-entity/tasks.md#task-1.1
+	 */
+	public function registrations(): array {
+		if (empty(self::$registrations) === true) {
+			$this->requestRegistrations();
+		}
+
+		return array_values(self::$registrations);
+
+	}//end registrations()
+
+	/**
+	 * The app that claimed a register and schema.
+	 *
+	 * @param int $registerId The register's id.
+	 * @param int $schemaId   The schema's id.
+	 *
+	 * @return string|null The claiming app's id, or null when no app claimed the pair.
+	 *
+	 * @spec openspec/changes/platform-comments-entity/tasks.md#task-1.2
+	 */
+	public function resolveAppId(int $registerId, int $schemaId): ?string {
+		return $this->resolve(registerId: $registerId, schemaId: $schemaId)?->appId;
+
+	}//end resolveAppId()
+
+	/**
 	 * Ask the apps for their deep links, once per process.
 	 *
 	 * OpenRegister's boot() calls this with its dispatcher. A process that
@@ -326,6 +405,17 @@ class DeepLinkRegistryService implements DeepLinkRegistryServiceInterface {
 
 		self::$appsAsked = true;
 
+		$this->dispatchRegistrationEvent(dispatcher: $dispatcher);
+	}//end requestRegistrations()
+
+	/**
+	 * Ask the apps for their deep links; a failure is logged, not thrown.
+	 *
+	 * @param IEventDispatcher|null $dispatcher The dispatcher, or null to take the container's.
+	 *
+	 * @return void
+	 */
+	private function dispatchRegistrationEvent(?IEventDispatcher $dispatcher): void {
 		try {
 			$dispatcher ??= $this->containerDispatcher();
 			if ($dispatcher === null) {
@@ -339,7 +429,7 @@ class DeepLinkRegistryService implements DeepLinkRegistryServiceInterface {
 				['error' => $e->getMessage()]
 			);
 		}
-	}//end requestRegistrations()
+	}//end dispatchRegistrationEvent()
 
 	/**
 	 * The event dispatcher from the app container, or null when it serves something else.

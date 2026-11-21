@@ -42,6 +42,13 @@ use ReflectionMethod;
  * Ordered predicate log of applyFilters() and applyBlockedExclusion().
  *
  * @covers \OCA\OpenRegister\Db\TaskMapper
+ * @uses \OCA\OpenRegister\Db\TaskInboxAnchor
+ * @uses \OCA\OpenRegister\Db\TaskInboxAudience
+ * @uses \OCA\OpenRegister\Db\TaskInboxCriteria
+ * @uses \OCA\OpenRegister\Db\TaskInboxDueWindow
+ * @uses \OCA\OpenRegister\Db\TaskInboxFilter
+ * @uses \OCA\OpenRegister\Db\TaskInboxOrder
+ * @uses \OCA\OpenRegister\Db\TaskInboxSelection
  */
 class TaskMapperFilterPredicatesTest extends TestCase {
 	use FluentQueryBuilderTrait;
@@ -61,7 +68,7 @@ class TaskMapperFilterPredicatesTest extends TestCase {
 	private function loggingBuilder(): IQueryBuilder {
 		$qb = $this->createMock(IQueryBuilder::class);
 		$expr = $this->createMock(IExpressionBuilder::class);
-		foreach (['eq', 'in', 'lt', 'gte', 'lte', 'isNull', 'notIn'] as $method) {
+		foreach (['eq', 'in', 'lt', 'gte', 'lte', 'isNull', 'notIn', 'iLike'] as $method) {
 			$expr->method($method)->willReturnCallback(
 				function (mixed ...$args) use ($method): string {
 					$this->log[] = 'expr.' . $method . ' ' . (string) $args[0];
@@ -200,4 +207,36 @@ class TaskMapperFilterPredicatesTest extends TestCase {
 		$this->assertSame([], $this->logOf('applyBlockedExclusion', [self::criteria(new TaskInboxSelection(anchor: new TaskInboxAnchor(objectUuid: 'o-3')))]), 'object anchor');
 		$this->assertSame([], $this->logOf('applyBlockedExclusion', [self::criteria(new TaskInboxSelection(anchor: new TaskInboxAnchor(runUuid: 'r-3')))]), 'run anchor');
 	}//end testTheBlockerExclusionAppliesOnlyToAnUnanchoredRead()
+	/**
+	 * A term adds, per distinct word, title-or-description ILIKE with the escaped word.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-task-search-provider/tasks.md#task-1.1
+	 */
+	public function testATermMatchesEveryWordInTitleOrDescription(): void {
+		$log = $this->logOf('applyFilters', [self::criteria(new TaskInboxSelection(filter: new TaskInboxFilter(term: '  Terugbellen   jansen terugbellen ')))]);
+
+		$this->assertSame(
+			[
+				'param "%terugbellen%" 2', 'expr.iLike title', 'param "%terugbellen%" 2', 'expr.iLike description', 'expr.orX', 'andWhere',
+				'param "%jansen%" 2', 'expr.iLike title', 'param "%jansen%" 2', 'expr.iLike description', 'expr.orX', 'andWhere',
+			],
+			$log
+		);
+	}//end testATermMatchesEveryWordInTitleOrDescription()
+
+	/**
+	 * A blank term adds nothing, and a term is cut to MAX_TERM_WORDS distinct lower-cased words.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-task-search-provider/tasks.md#task-1.1
+	 */
+	public function testTermWords(): void {
+		$this->assertSame([], $this->logOf('applyFilters', [self::criteria(new TaskInboxSelection(filter: new TaskInboxFilter(term: '   ')))]));
+		$this->assertSame([], TaskMapper::termWords(null));
+		$this->assertSame(['réünie', 'café'], TaskMapper::termWords("Réünie\tCAFÉ réünie"));
+		$this->assertCount(TaskMapper::MAX_TERM_WORDS, TaskMapper::termWords('a b c d e f g h i j'));
+	}//end testTermWords()
 }//end class

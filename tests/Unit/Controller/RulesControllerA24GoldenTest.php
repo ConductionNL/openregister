@@ -37,6 +37,7 @@ use OCA\OpenRegister\Service\Rules\RuleCeilingException;
 use OCA\OpenRegister\Service\Rules\RuleEnablementServiceInterface;
 use OCA\OpenRegister\Service\Rules\RuleInventoryServiceInterface;
 use OCA\OpenRegister\Service\Rules\RuleReplayServiceInterface;
+use OCA\OpenRegister\Service\Rules\RuleSwitch;
 use OCA\OpenRegister\Service\Rules\RuleInventoryOptions;
 use OCA\OpenRegister\Service\Rules\RuleTrialServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
@@ -173,8 +174,10 @@ class RulesControllerA24GoldenTest extends TestCase {
 		$schema = $this->schema();
 		$this->params = ['idleDays' => '7', 'scope' => 'nope'];
 		$this->inventory->expects($this->once())->method('inventory')->with($schema, new RuleInventoryOptions(7, null, []))->willReturn([['key' => 'a']]);
+		$conditions = [['name' => 'spoedeisend', 'description' => '', 'declared' => true, 'usedBy' => ['a']]];
+		$this->inventory->expects($this->once())->method('namedConditions')->with($schema)->willReturn($conditions);
 
-		$this->assertSame([200, ['schema' => 'zaak', 'rules' => [['key' => 'a']]]], $this->pair($this->controller->index('zaak')));
+		$this->assertSame([200, ['schema' => 'zaak', 'rules' => [['key' => 'a']], 'conditions' => $conditions]], $this->pair($this->controller->index('zaak')));
 	}
 
 	public function testSetEnabledNeedsABooleanAndMapsTheResult(): void {
@@ -187,7 +190,7 @@ class RulesControllerA24GoldenTest extends TestCase {
 
 		$this->params = ['enabled' => false];
 		$unknown = ['ok' => false, 'error' => ['code' => RuleEnablementServiceInterface::CODE_UNKNOWN_RULE]];
-		$this->enablement->method('setEnabled')->with($schema, 'r', false)->willReturnOnConsecutiveCalls(['ok' => true], $unknown, ['ok' => false]);
+		$this->enablement->method('setEnabled')->with(new RuleSwitch($schema, 'r', false))->willReturnOnConsecutiveCalls(['ok' => true], $unknown, ['ok' => false]);
 		$this->assertSame([200, ['ok' => true]], $this->pair($this->controller->setEnabled('zaak', 'r')));
 		$this->assertSame([404, $unknown], $this->pair($this->controller->setEnabled('zaak', 'r')));
 		$this->assertSame([422, ['ok' => false]], $this->pair($this->controller->setEnabled('zaak', 'r')));
