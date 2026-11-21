@@ -21,7 +21,6 @@
   "lib/Db/Schema.php -> lib/Db/Schema/VocabularyEntries.php",
   "lib/Db/Schema.php -> lib/Service/Schemas/UniqueConstraintEvaluator.php",
   "lib/Db/Schema/ConfigurationValueRules.php -> lib/Service/Calendar/CalendarDateDeclarationCheck.php",
-  "lib/Db/SequenceMapperInterface.php -> lib/Db/Sequence.php",
   "lib/Service/Aggregation/AdhocAggregationRun.php -> lib/Search/Service/Aggregation/AggregationQuery.php",
   "lib/Service/Aggregation/AggregationRunner.php -> lib/Search/Service/Aggregation/AggregationCacheInterface.php",
   "lib/Service/Aggregation/AggregationRunner.php -> lib/Search/Service/Aggregation/AggregationQuery.php",
@@ -340,7 +339,7 @@
   "lib/Db/SchemaRunEntryMapperInterface.php",
   "lib/Db/SchemaRunMapperInterface.php",
   "lib/Db/SelectByColumnTrait.php",
-  "lib/Db/Sequence.php",
+  "lib/Db/SequenceMapper.php",
   "lib/Db/SequenceMapperInterface.php",
   "lib/Db/SoftDeletion.php",
   "lib/Db/SourceMapperInterface.php",
@@ -2223,14 +2222,14 @@
  ],
  "exposed_loc": {
   "Compliance": 14297,
-  "Configuration": 892,
+  "Configuration": 874,
   "Core": 57248,
   "Files": 1458,
   "Integrations": 17733,
   "Kernel": 8464,
   "Notifications": 1759,
   "Platform": 61,
-  "Processes": 27058,
+  "Processes": 27101,
   "Search": 1343
  },
  "kernel_files": [
@@ -2694,6 +2693,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10402,
- "total_loc": 462009,
- "violation_degree": 0.0064
+ "total_loc": 462014,
+ "violation_degree": 0.0062
 }

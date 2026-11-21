@@ -99,6 +99,8 @@ use OCA\OpenRegister\Service\Rules\ExpressionDefaults;
 use OCA\OpenRegister\Service\Party\PartySearchInterface;
 use OCA\OpenRegister\Service\Party\PartySearchService;
 use OCA\OpenRegister\Service\Portal\PortalPartyResolver;
+use OCA\OpenRegister\Service\SequenceService;
+use OCA\OpenRegister\Service\SequenceServiceInterface;
 use OCA\OpenRegister\Service\Task\ApprovalPositionFormGuard;
 use OCA\OpenRegister\Service\Task\TaskCalendarDocument;
 use OCA\OpenRegister\Service\Task\TaskCalendarDocumentInterface;
@@ -359,6 +361,7 @@ final class FlowWiringTest extends TestCase {
 				ObjectCalendarLinkInterface::class         => CalendarEventService::class,
 				CurrentFlowRunInterface::class             => FlowRunContext::class,
 				ScheduleFlowStoreInterface::class          => ScheduleFlowStore::class,
+				SequenceServiceInterface::class            => SequenceService::class,
 				ProcessingReadsInterface::class            => ReadHistoryService::class,
 				UserCalendarEventsInterface::class         => CalendarEventService::class,
 				TaskGaugeInterface::class                  => TaskMetricsProvider::class,

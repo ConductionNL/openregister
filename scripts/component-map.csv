@@ -873,8 +873,8 @@ Db/SchemaRunMapper.php,60,Db,Service,Service/Db/SchemaRunMapper.php,0,349,Core
 Db/SearchTrail.php,149,Db,Compliance,Compliance/Db/SearchTrail.php,0,,Compliance
 Db/SearchTrailMapper.php,570,Db,Compliance,Compliance/Db/SearchTrailMapper.php,0,32,Compliance
 Db/SelectByColumnTrait.php,22,Db,Integrations,Integrations/Db/SelectByColumnTrait.php,0,,Core
-Db/Sequence.php,26,Db,Configuration,Configuration/Db/Sequence.php,0,,Configuration
-Db/SequenceMapper.php,44,Db,Configuration,Configuration/Db/SequenceMapper.php,0,,Configuration
+Db/Sequence.php,26,Db,Configuration,Configuration/Db/Sequence.php,0,,Processes
+Db/SequenceMapper.php,44,Db,Configuration,Configuration/Db/SequenceMapper.php,0,,Processes
 Db/SlugIdLookupTrait.php,51,Db,Db,Db/SlugIdLookupTrait.php,0,,Core
 Db/Source.php,157,Db,Integrations,Integrations/Db/Source.php,0,142,Integrations
 Db/SourceMapper.php,143,Db,Integrations,Integrations/Db/SourceMapper.php,0,184,Integrations
@@ -3220,7 +3220,7 @@ Service/SearchTrailService.php,511,Service,Compliance,Compliance/Service/SearchT
 Service/Security/OutboundAddressGuard.php,106,Service,Integrations,Integrations/Service/Security/OutboundAddressGuard.php,0,262,Core
 Service/SecurityService.php,391,Service,Service,Service/SecurityService.php,3,56,Core
 Service/SemanticTypeResolver.php,210,Service,Service,Service/SemanticTypeResolver.php,2,107,Core
-Service/SequenceService.php,107,Service,Configuration,Configuration/Service/SequenceService.php,1,259,Configuration
+Service/SequenceService.php,107,Service,Configuration,Configuration/Service/SequenceService.php,1,259,Processes
 Service/Serializer/RegisterSerializer.php,110,Service,Service,Service/Serializer/RegisterSerializer.php,0,,Core
 Service/ServiceRegistrar.php,209,Service,Access,Access/Service/ServiceRegistrar.php,0,,Core
 Service/Settings/CacheSettingsHandler.php,414,Service,Configuration,Configuration/Service/Settings/CacheSettingsHandler.php,0,,Configuration
