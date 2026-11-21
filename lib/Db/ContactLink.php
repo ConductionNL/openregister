@@ -26,6 +26,7 @@ use DateTime;
 use JsonSerializable;
 use OCA\OpenRegister\Db\ContactLink\ContactLinkFieldTypes;
 use OCA\OpenRegister\Db\ContactLink\ContactLinkJson;
+use OCA\OpenRegister\Kernel\Contracts\ContactLinkInterface;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -81,7 +82,7 @@ use OCP\AppFramework\Db\Entity;
  * @SuppressWarnings(PHPMD.TooManyFields) One field per column of the link table; the four
  *                                        people-on-objects columns (user, validity, note) took it past fifteen.
  */
-class ContactLink extends Entity implements JsonSerializable {
+class ContactLink extends Entity implements JsonSerializable, ContactLinkInterface {
 
 	/**
 	 * The object uuid.
@@ -313,7 +314,7 @@ class ContactLink extends Entity implements JsonSerializable {
 	 *
 	 * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md#requirement-a-link-on-an-object-is-a-user-or-a-contact-in-a-role-for-a-period
 	 */
-	public function isActiveOn(?DateTime $today = null): bool {
+	public function isActiveOn(DateTime|null $today = null): bool {
 		$day = ($today ?? new DateTime('today'))->format('Y-m-d');
 		if ($this->validFrom !== null && $this->validFrom->format('Y-m-d') > $day) {
 			return false;

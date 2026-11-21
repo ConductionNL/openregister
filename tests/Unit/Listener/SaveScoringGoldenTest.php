@@ -36,6 +36,8 @@ use OCA\OpenRegister\Listener\QualityScoreOnSaveListener;
 use OCA\OpenRegister\Service\Object\ObjectEventGateInterface;
 use OCA\OpenRegister\Service\Quality\QualityScorerInterface;
 use OCA\OpenRegister\Service\Schemas\GeneratedIdentifierDeclaration;
+use OCA\OpenRegister\Service\RunningNumbers;
+use OCA\OpenRegister\Service\SequenceScope;
 use OCA\OpenRegister\Service\SequenceServiceInterface;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -194,7 +196,7 @@ class SaveScoringGoldenTest extends TestCase {
 		$gate = $this->createMock(ObjectEventGateInterface::class);
 		$gate->method('holdsCreation')->willReturn(false);
 		$gate->method('leavesDraft')->willReturn(false);
-		return new GeneratedIdentifierListener($this->schemas([], $properties), $sequences, $this->logger(), $gate);
+		return new GeneratedIdentifierListener($this->schemas([], $properties), new RunningNumbers($sequences), $this->logger(), $gate);
 	}//end numbering()
 
 	/**
@@ -252,13 +254,15 @@ class SaveScoringGoldenTest extends TestCase {
 		$sequences = $this->createMock(SequenceServiceInterface::class);
 		$calls = [];
 		$sequences->method('reserveNext')->willReturnCallback(
-			function (int $registerId, int $schemaId, string $scopeKey) use (&$calls): int {
+			function (SequenceScope $sequence) use (&$calls): int {
+				[$registerId, $schemaId, $scopeKey] = [$sequence->registerId, $sequence->schemaId, $sequence->scopeKey];
 				$calls[] = 'reserve:'.$registerId.':'.$schemaId.':'.$scopeKey;
 				return count($calls);
 			}
 		);
 		$sequences->method('advanceTo')->willReturnCallback(
-			function (int $registerId, int $schemaId, string $scopeKey, int $reserved) use (&$calls): void {
+			function (SequenceScope $sequence, int $reserved) use (&$calls): void {
+				[$registerId, $schemaId, $scopeKey] = [$sequence->registerId, $sequence->schemaId, $sequence->scopeKey];
 				$calls[] = 'advance:'.$registerId.':'.$schemaId.':'.$scopeKey.':'.$reserved;
 			}
 		);

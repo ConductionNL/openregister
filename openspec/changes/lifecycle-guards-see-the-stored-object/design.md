@@ -80,6 +80,9 @@ as an update. That needs a change inside `MagicMapper::insertObjectEntity()`,
 which #5404 also changes, so it follows as its own change once #5404 is
 merged.
 
+Done: #5404 merged and the order landed as change
+`create-over-taken-identifier-runs-update-path` (archived 2026-11-12).
+
 ## D-4: guards that should move to the stored object
 
 Found with a grep of `$object['…']` reads in `lib/Lifecycle/*Guard.php`

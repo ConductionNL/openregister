@@ -27,6 +27,7 @@ use DateTime;
 use JsonSerializable;
 use OCA\OpenRegister\Db\Source\SourceFieldTypes;
 use OCA\OpenRegister\Db\Source\SourceJson;
+use OCA\OpenRegister\Kernel\Contracts\SourceInterface;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -83,7 +84,7 @@ use OCP\AppFramework\Db\Entity;
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
-class Source extends Entity implements JsonSerializable {
+class Source extends Entity implements JsonSerializable, SourceInterface {
 	use JsonFieldsTrait;
 	use OrganisationFieldTrait;
 	use ManagedByConfigurationTrait;
@@ -272,25 +273,7 @@ class Source extends Entity implements JsonSerializable {
 	 * @spec exclude entity plumbing, not a capability of its own
 	 */
 	public function hydrate(array $object): static {
-		$jsonFields = $this->getJsonFields();
-
-		if (isset($object['metadata']) === false) {
-			$object['metadata'] = [];
-		}
-
-		foreach ($object as $key => $value) {
-			if (in_array($key, $jsonFields) === true && $value === []) {
-				$value = null;
-			}
-
-			$method = 'set' . ucfirst($key);
-
-			try {
-				$this->$method($value);
-			} catch (\Exception $exception) {
-				// Silently ignore invalid properties.
-			}
-		}
+		(new EmptyJsonHydration())->hydrate(entity: $this, object: $object);
 
 		return $this;
 	}//end hydrate()
@@ -327,14 +310,12 @@ class Source extends Entity implements JsonSerializable {
 	}//end __toString()
 
 	/**
-	 * The ids a configuration lists as its sources, see ManagedByConfigurationTrait.
+	 * The member list a configuration keeps its sources in, see ManagedByConfigurationTrait.
 	 *
-	 * @param Configuration $configuration The configuration.
-	 *
-	 * @return array|null
+	 * @return string
 	 */
-	protected function configurationMembers(Configuration $configuration): ?array {
-		return $configuration->getSources();
-	}//end configurationMembers()
+	protected function configurationMemberKind(): string {
+		return 'sources';
+	}//end configurationMemberKind()
 
 }//end class

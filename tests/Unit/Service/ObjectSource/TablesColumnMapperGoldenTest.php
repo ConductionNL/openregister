@@ -29,6 +29,9 @@ use Psr\Log\AbstractLogger;
 
 /**
  * @covers \OCA\OpenRegister\Service\ObjectSource\TablesColumnMapper
+ * @uses \OCA\OpenRegister\Service\ObjectSource\TablesCell
+ * @uses \OCA\OpenRegister\Service\ObjectSource\TablesRowProjection
+ * @uses \OCA\OpenRegister\Service\ObjectSource\TablesUuidDeriver
  */
 final class TablesColumnMapperGoldenTest extends TestCase {
 

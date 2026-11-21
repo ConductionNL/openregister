@@ -26,6 +26,7 @@ use Doctrine\DBAL\Platforms\MySQLPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
+use OCA\OpenRegister\Db\MagicMapper\WhereClauseRequest;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\CacheHandler;
@@ -49,6 +50,12 @@ use Psr\Container\ContainerInterface;
  * @uses   \OCA\OpenRegister\Service\Rbac\ExplicitReveal
  * @uses   \OCA\OpenRegister\Db\MagicMapper\TermsFacetUnion
  * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\MagicMapper\FacetResults
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicReadTable
+ * @uses \OCA\OpenRegister\Db\MagicMapper\WhereClauseRequest
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
+ * @uses \OCA\OpenRegister\Db\Schema\PropertyAuthorization
+ * @uses \OCA\OpenRegister\Service\Rbac\ExplicitRevealMasks
  */
 class MagicFacetHandlerTermsUnionTest extends TestCase {
 
@@ -156,10 +163,10 @@ class MagicFacetHandlerTermsUnionTest extends TestCase {
 		$searchHandler = null;
 		if (isset($world['conditions']) === true) {
 			$searchHandler = $this->createMock(MagicSearchHandler::class);
-			$searchHandler->method('buildWhereConditionsSql')->willReturnCallback(
-				function (array $query, Schema $schema, ?array $existingColumns = null, ?int $registerId = null, ?string $tableName = null) use ($world): array {
-					$this->conditionCalls[] = [$registerId, $tableName, $query];
-					return $world['conditions'][$tableName] ?? [];
+			$searchHandler->method('buildWhereClause')->willReturnCallback(
+				function (WhereClauseRequest $request) use ($world): array {
+					$this->conditionCalls[] = [$request->table->registerId, $request->table->tableName, $request->query];
+					return $world['conditions'][$request->table->tableName] ?? [];
 				}
 			);
 		}
@@ -259,7 +266,7 @@ class MagicFacetHandlerTermsUnionTest extends TestCase {
 			],
 			$this->withoutMetrics($facets)
 		);
-		$probe = 'SELECT LOWER(column_name) as col FROM information_schema.columns WHERE table_name = ?';
+		$probe = 'SELECT LOWER(column_name) as col FROM information_schema.columns WHERE table_name = ? AND table_schema = current_schema()';
 		$this->assertSame(
 			[
 				$probe,

@@ -20,8 +20,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Settings;
 
 use Exception;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ConfigurationSettingsControllerServices;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -66,7 +66,7 @@ class ConfigurationSettingsController extends Controller {
 		IRequest $request,
 		ConfigurationSettingsControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->settingsService = $services->settingsService;
 		$this->logger = $services->logger;
 	}//end __construct()
@@ -91,8 +91,6 @@ class ConfigurationSettingsController extends Controller {
 
 	/**
 	 * Update RBAC settings only
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with updated RBAC settings
 	 *
@@ -129,8 +127,6 @@ class ConfigurationSettingsController extends Controller {
 	/**
 	 * Update Organisation settings only
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with updated organisation settings
 	 *
 	 * @spec openspec/specs/tenant-lifecycle/spec.md
@@ -166,8 +162,6 @@ class ConfigurationSettingsController extends Controller {
 	/**
 	 * Update Multitenancy settings only
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with updated multitenancy settings
 	 *
 	 * @spec openspec/specs/tenant-lifecycle/spec.md
@@ -202,8 +196,6 @@ class ConfigurationSettingsController extends Controller {
 
 	/**
 	 * Update Object Management settings
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with updated object settings
 	 *
@@ -250,8 +242,6 @@ class ConfigurationSettingsController extends Controller {
 	/**
 	 * PATCH Object settings (delegates to updateObjectSettings)
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with patched object settings
 	 *
 	 * @spec openspec/specs/production-observability/spec.md
@@ -280,8 +270,6 @@ class ConfigurationSettingsController extends Controller {
 
 	/**
 	 * Update Retention settings only
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with updated retention settings
 	 *
@@ -317,8 +305,6 @@ class ConfigurationSettingsController extends Controller {
 
 	/**
 	 * Update archival settings
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with updated archival settings
 	 *

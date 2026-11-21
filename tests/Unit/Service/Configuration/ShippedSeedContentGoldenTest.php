@@ -29,6 +29,7 @@ use OCA\OpenRegister\Service\Configuration\ShippedSeed;
 
 /**
  * @covers \OCA\OpenRegister\Service\Configuration\ShippedSeedContent
+ * @uses \OCA\OpenRegister\Service\Configuration\ShippedSeed
  */
 class ShippedSeedContentGoldenTest extends TestCase {
 	/**

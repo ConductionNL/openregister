@@ -46,6 +46,16 @@ use Twig\TwigFunction;
  * Pins what the mapping engine allows and refuses, and how it caches.
  *
  * @covers \OCA\OpenRegister\Service\MappingService
+ * @uses \OCA\OpenRegister\Db\Mapping
+ * @uses \OCA\OpenRegister\Db\Mapping\MappingSlug
+ * @uses \OCA\OpenRegister\Db\SubjectExport
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
+ * @uses \OCA\OpenRegister\Service\MappingKeyRewrite
+ * @uses \OCA\OpenRegister\Service\MappingTwigSandbox
+ * @uses \OCA\OpenRegister\Twig\MappingExtension
+ * @uses \OCA\OpenRegister\Twig\MappingRuntimeLoader
+ * @uses \OCA\OpenRegister\Twig\MappingTwigInstaller
+ * @uses \OCA\OpenRegister\Service\RegisterMappingFunctionsEvent
  */
 class MappingServiceSandboxGoldenTest extends TestCase {
 
@@ -197,7 +207,8 @@ class MappingServiceSandboxGoldenTest extends TestCase {
 
 	public function testCoordinateStringToArrayEdgeCases(): void {
 		$service = $this->service();
-		$this->assertSame([''], $service->coordinateStringToArray(''));
+		$this->assertSame([], $service->coordinateStringToArray(''));
+		$this->assertSame([], $service->coordinateStringToArray('  '));
 		$this->assertSame(['1'], $service->coordinateStringToArray('1'));
 		$this->assertSame(['1', '2'], $service->coordinateStringToArray('1 2'));
 		$this->assertSame([['1', '2'], ['3']], $service->coordinateStringToArray('1 2 3'));

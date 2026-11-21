@@ -29,6 +29,7 @@ namespace OCA\OpenRegister\Contacts;
 
 use OCA\OpenRegister\Contacts\Support\ContactsMenuPlatform;
 use OCA\OpenRegister\Contacts\Support\ContactsMenuSources;
+use OCA\OpenRegister\Kernel\Contracts\ContactDetails;
 use OCA\OpenRegister\Kernel\Contracts\ContactMatcherInterface;
 use OCA\OpenRegister\Service\DeepLinkResolverInterface;
 use OCP\Contacts\ContactsMenu\IActionFactory;
@@ -164,9 +165,7 @@ class ContactsMenuProvider implements IProvider {
 		}
 
 		$matches = $this->matchingService->matchContact(
-			$primaryEmail,
-			$fullName,
-			$organizationString
+			contact: new ContactDetails(email: $primaryEmail, name: $fullName, organization: $organizationString)
 		);
 
 		if (empty($matches) === true) {
@@ -200,19 +199,8 @@ class ContactsMenuProvider implements IProvider {
 	 */
 	private function injectCountBadge(ContactMenuRun $run): void {
 		$counts = $this->matchingService->getRelatedObjectCounts($run->matches);
-
-		// Build human-readable count string.
-		$parts = [];
-		foreach ($counts as $schemaTitle => $count) {
-			$parts[] = $count . ' ' . $schemaTitle;
-		}
-
-		$countText = implode(', ', $parts);
-
-		// Build search URL filtered by email.
-		$searchUrl = $this->urlGenerator->linkToRouteAbsolute(
-			'openregister.dashboard.index'
-		) . '#/search?_search=' . urlencode($run->primaryEmail);
+		$countText = $this->countText(counts: $counts);
+		$searchUrl = $this->searchUrl(email: $run->primaryEmail);
 
 		$action = $this->actionFactory->newLinkAction(
 			$this->urlGenerator->imagePath('openregister', 'app-dark.svg'),
@@ -224,6 +212,35 @@ class ContactsMenuProvider implements IProvider {
 
 		$run->entry->addAction($action);
 	}//end injectCountBadge()
+
+	/**
+	 * The human-readable related-object counts, such as "2 Cases, 1 Document".
+	 *
+	 * @param array<string, int> $counts Count per schema title.
+	 *
+	 * @return string The count text.
+	 */
+	private function countText(array $counts): string {
+		$parts = [];
+		foreach ($counts as $schemaTitle => $count) {
+			$parts[] = $count . ' ' . $schemaTitle;
+		}
+
+		return implode(', ', $parts);
+	}//end countText()
+
+	/**
+	 * The OpenRegister search URL filtered by an email address.
+	 *
+	 * @param string $email The email address.
+	 *
+	 * @return string The search URL.
+	 */
+	private function searchUrl(string $email): string {
+		return $this->urlGenerator->linkToRouteAbsolute(
+			'openregister.dashboard.index'
+		) . '#/search?_search=' . urlencode($email);
+	}//end searchUrl()
 
 	/**
 	 * Inject the action for one matched entity.
@@ -240,8 +257,7 @@ class ContactsMenuProvider implements IProvider {
 		$schemaId = (int)($match['schema']['id'] ?? 0);
 		$url = $this->entityUrl(run: $run, match: $match);
 
-		$resolvedIcon = $this->deepLinkRegistry->resolveIcon($registerId, $schemaId);
-		$icon = $resolvedIcon ?? $this->urlGenerator->imagePath('openregister', 'app-dark.svg');
+		$icon = $this->entityIcon(registerId: $registerId, schemaId: $schemaId);
 
 		$label = $this->l10n->t('View in OpenRegister') . ' (' . ($match['title'] ?? 'Unknown') . ')';
 
@@ -257,6 +273,20 @@ class ContactsMenuProvider implements IProvider {
 	}//end injectEntityAction()
 
 	/**
+	 * The icon a consuming app registered for a register and schema, or OpenRegister's own.
+	 *
+	 * @param int $registerId The register id.
+	 * @param int $schemaId   The schema id.
+	 *
+	 * @return string The icon URL.
+	 */
+	private function entityIcon(int $registerId, int $schemaId): string {
+		$resolvedIcon = $this->deepLinkRegistry->resolveIcon($registerId, $schemaId);
+
+		return $resolvedIcon ?? $this->urlGenerator->imagePath('openregister', 'app-dark.svg');
+	}//end entityIcon()
+
+	/**
 	 * Resolve the URL of one matched entity: the app's deep link, else OpenRegister's object detail.
 	 *
 	 * @param ContactMenuRun $run   The contact (its context is handed to the deep-link resolver)
@@ -268,11 +298,7 @@ class ContactsMenuProvider implements IProvider {
 	 */
 	private function entityUrl(ContactMenuRun $run, array $match): string {
 		$uuid = $match['uuid'] ?? '';
-		$contactContext = [
-			'contactId' => $run->entry->getProperty('UID') ?? '',
-			'contactEmail' => $run->primaryEmail,
-			'contactName' => $run->fullName,
-		];
+		$contactContext = $this->contactContextOf(run: $run);
 
 		$url = $this->deepLinkRegistry->resolveUrl(
 			(int)($match['register']['id'] ?? 0),
@@ -283,11 +309,37 @@ class ContactsMenuProvider implements IProvider {
 
 		if ($url === null) {
 			// Fallback to OpenRegister's generic object detail route.
-			$url = $this->urlGenerator->linkToRouteAbsolute(
-				'openregister.dashboard.index'
-			) . '#/objects/' . urlencode($uuid);
+			$url = $this->objectDetailUrl(uuid: $uuid);
 		}
 
 		return $url;
 	}//end entityUrl()
+
+	/**
+	 * The contact placeholders a deep link may use: its UID, email and name.
+	 *
+	 * @param ContactMenuRun $run The contact being processed.
+	 *
+	 * @return array{contactId: mixed, contactEmail: string, contactName: string}
+	 */
+	private function contactContextOf(ContactMenuRun $run): array {
+		return [
+			'contactId' => $run->entry->getProperty('UID') ?? '',
+			'contactEmail' => $run->primaryEmail,
+			'contactName' => $run->fullName,
+		];
+	}//end contactContextOf()
+
+	/**
+	 * OpenRegister's own object detail URL.
+	 *
+	 * @param mixed $uuid The object uuid.
+	 *
+	 * @return string The URL.
+	 */
+	private function objectDetailUrl(mixed $uuid): string {
+		return $this->urlGenerator->linkToRouteAbsolute(
+			'openregister.dashboard.index'
+		) . '#/objects/' . urlencode($uuid);
+	}//end objectDetailUrl()
 }//end class

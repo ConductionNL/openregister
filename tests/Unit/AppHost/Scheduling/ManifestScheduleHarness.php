@@ -18,6 +18,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\AppHost\Scheduling;
 
 use DateTimeImmutable;
+use OCA\OpenRegister\Service\Flow\FlowPublishOptions;
 use OCA\OpenRegister\AppHost\Listener\ApplicationPublishListener;
 use OCA\OpenRegister\AppHost\Scheduling\ApplicationRegister;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleAuditTrail;
@@ -29,6 +30,7 @@ use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\Flow;
+use OCA\OpenRegister\Db\Flow\FlowSelection;
 use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
@@ -301,11 +303,11 @@ abstract class ManifestScheduleHarness extends TestCase {
 		$mapper->method('insert')->willReturnCallback($store);
 		$mapper->method('update')->willReturnCallback($store);
 		$mapper->method('findAllFlows')->willReturnCallback(
-			fn (?string $app = null, ?string $applicationSlug = null) => array_values(
+			fn (FlowSelection $selection) => array_values(
 				array_filter(
 					$this->flows,
-					static fn (Flow $flow) => ($app === null || $flow->getApp() === $app)
-						&& ($applicationSlug === null || $flow->getApplicationSlug() === $applicationSlug)
+					static fn (Flow $flow) => ($selection->app === null || $flow->getApp() === $selection->app)
+						&& ($selection->applicationSlug === null || $flow->getApplicationSlug() === $selection->applicationSlug)
 				)
 			)
 		);
@@ -327,7 +329,8 @@ abstract class ManifestScheduleHarness extends TestCase {
 	private function flowVersionService(): FlowVersionService&MockObject {
 		$versions = $this->createMock(FlowVersionService::class);
 		$versions->method('publish')->willReturnCallback(
-			function (Flow $flow, ?string $by): FlowVersion {
+			function (Flow $flow, FlowPublishOptions $options): FlowVersion {
+				$by = $options->publishedBy;
 				$flow->setLifecycleStatus(FlowVersion::STATUS_PUBLISHED);
 				$this->published[] = [(string)$flow->getUuid(), $by];
 				return new FlowVersion();

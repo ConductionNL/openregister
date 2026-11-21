@@ -30,6 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Capabilities;
 
+use OCA\OpenRegister\Service\Integration\IntegrationAdminView;
 use OCA\OpenRegister\Service\Integration\IntegrationProvider;
 use OCA\OpenRegister\Service\Integration\IntegrationCatalogueInterface;
 use OCP\Capabilities\ICapability;
@@ -78,12 +79,7 @@ class IntegrationsCapability implements ICapability {
 	 * @return array<string,mixed>
 	 */
 	public function getCapabilities(): array {
-		$isAdmin = $this->currentUserIsAdmin();
-		$rows = [];
-
-		foreach ($this->registry->list() as $provider) {
-			$rows[] = $this->describe(provider: $provider, isAdmin: $isAdmin);
-		}
+		$rows = $this->providerRows();
 
 		return [
 			'openregister' => [
@@ -114,6 +110,22 @@ class IntegrationsCapability implements ICapability {
 	}//end getCapabilities()
 
 	/**
+	 * The role-redacted descriptor of every registered provider.
+	 *
+	 * @return array<int, array<string, mixed>> One descriptor per provider
+	 */
+	private function providerRows(): array {
+		$isAdmin = $this->currentUserIsAdmin();
+		$rows = [];
+
+		foreach ($this->registry->list() as $provider) {
+			$rows[] = $this->describe(provider: $provider, isAdmin: $isAdmin);
+		}
+
+		return $rows;
+	}//end providerRows()
+
+	/**
 	 * Build the role-redacted descriptor for one provider.
 	 *
 	 * @param IntegrationProvider $provider Provider.
@@ -122,9 +134,26 @@ class IntegrationsCapability implements ICapability {
 	 * @return array<string,mixed>
 	 */
 	private function describe(IntegrationProvider $provider, bool $isAdmin): array {
+		$row = $this->publicDescriptor(provider: $provider);
+
+		if ($isAdmin === false) {
+			return $row;
+		}
+
+		return IntegrationAdminView::withAdminFields(row: $row, provider: $provider);
+	}//end describe()
+
+	/**
+	 * The descriptor fields every caller sees.
+	 *
+	 * @param IntegrationProvider $provider Provider.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function publicDescriptor(IntegrationProvider $provider): array {
 		$requiredApp = $provider->getRequiredApp();
 
-		$row = [
+		return [
 			'id' => $provider->getId(),
 			'label' => $provider->getLabel(),
 			'group' => $provider->getGroup(),
@@ -139,26 +168,7 @@ class IntegrationsCapability implements ICapability {
 			'storageStrategy' => $provider->getStorageStrategy(),
 			'surfaces' => ['user-dashboard', 'app-dashboard', 'detail-page', 'single-entity'],
 		];
-
-		if ($isAdmin === false) {
-			return $row;
-		}
-
-		$row['requiresPermission'] = $provider->requiresPermission();
-		$row['openConnectorSource'] = $provider->getOpenConnectorSource();
-
-		try {
-			$row['authStatus'] = $provider->health();
-		} catch (\Throwable $e) {
-			$row['authStatus'] = [
-				'status' => 'unavailable',
-				'authStatus' => 'unknown',
-				'message' => 'Provider health check threw',
-			];
-		}
-
-		return $row;
-	}//end describe()
+	}//end publicDescriptor()
 
 	/**
 	 * Whether the NC app backing an integration is installed and enabled.
@@ -184,11 +194,6 @@ class IntegrationsCapability implements ICapability {
 	 * @return bool
 	 */
 	private function currentUserIsAdmin(): bool {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return false;
-		}
-
-		return $this->groupManager->isAdmin($user->getUID());
+		return IntegrationAdminView::callerIsAdmin(userSession: $this->userSession, groupManager: $this->groupManager);
 	}//end currentUserIsAdmin()
 }//end class

@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\Flow\FlowSelection;
 use OCA\OpenRegister\Db\Flow\TriggerLookup;
 use OCP\AppFramework\Db\Entity;
@@ -58,19 +59,12 @@ interface FlowMapperInterface {
 	/**
 	 * List flows, newest first.
 	 *
-	 * @param string|null  $app             Restrict to one owning app id.
-	 * @param string|null  $applicationSlug Restrict to one OpenBuild virtual-app slug.
-	 * @param string|null  $organisation    Restrict to one organisation uuid.
-	 * @param boolean|null $enabled         Restrict to enabled or disabled flows.
-	 * @param integer      $limit           Page size.
-	 * @param integer      $offset          Page offset.
+	 * @param FlowSelection $selection Which flows: owning app id, OpenBuild virtual-app slug, organisation uuid and enabled state.
+	 * @param ListQuery     $query     The page size and offset.
 	 *
 	 * @return array<int, Flow> The flows.
 	 */
-	public function findAllFlows(
-		?string $app = null, ?string $applicationSlug = null, ?string $organisation = null,
-		?bool $enabled = null, int $limit = 100, int $offset = 0,
-	): array;
+	public function findAllFlows(FlowSelection $selection=new FlowSelection(), ListQuery $query=new ListQuery(limit: 100, offset: 0)): array;
 
 	/**
 	 * Count flows matching the same scoping as findAllFlows().

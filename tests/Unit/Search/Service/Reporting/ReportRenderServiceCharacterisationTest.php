@@ -43,6 +43,15 @@ use RuntimeException;
  * refused format. The filename stamp is matched by pattern, never by clock.
  *
  * @covers \OCA\OpenRegister\Search\Service\Reporting\ReportRenderService
+ * @uses \OCA\OpenRegister\Search\Service\Reporting\ReportContent
+ * @uses \OCA\OpenRegister\Search\Service\Reporting\ReportWriters
+ * @uses \OCA\OpenRegister\Service\Aggregation\NamedAggregationOptions
+ * @uses \OCA\OpenRegister\Service\Aggregation\NamedAggregationRef
+ * @uses \OCA\OpenRegister\Search\Service\Reporting\HtmlReportWriter
+ * @uses \OCA\OpenRegister\Search\Service\Reporting\ReportWidgetEntry
+ * @uses \OCA\OpenRegister\Search\Service\Reporting\SheetHeading
+ * @uses \OCA\OpenRegister\Search\Service\Reporting\SpreadsheetReportWriter
+ * @uses \OCA\OpenRegister\Service\Export\SpreadsheetCell
  */
 class ReportRenderServiceCharacterisationTest extends TestCase {
 
@@ -142,6 +151,27 @@ class ReportRenderServiceCharacterisationTest extends TestCase {
 		$this->assertSame('application/vnd.oasis.opendocument.spreadsheet', $service->render($this->dashboard(), 'ods')['mime']);
 		$this->assertSame('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', $service->render($this->dashboard(), 'xlsx')['mime']);
 	}//end testHtmlAndSpreadsheetFormats()
+
+	public function testIncompleteDataSourcesResolveToNoDataWithoutACall(): void {
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->never())->method('warning');
+		$dashboard = [
+			'titel' => null,
+			'title' => 'Fallback Title',
+			'widgets' => [
+				['dataSource' => ['register' => 'zaken', 'schema' => 'zaak', 'aggregation' => '']],
+				['dataSource' => ['mode' => 'aggregation', 'register' => '', 'schema' => 'zaak', 'aggregation' => 'x']],
+				['dataSource' => ['mode' => 'graphql', 'graphqlQuery' => '']],
+				['dataSource' => ['mode' => 'graphql']],
+				['dataSource' => 'not-an-array'],
+			],
+		];
+
+		$rendered = $this->service($logger)->render($dashboard, 'pdf');
+
+		$this->assertMatchesRegularExpression('/^fallback-title_\d{4}-\d{2}-\d{2}_\d{6}\.pdf$/', $rendered['filename']);
+		$this->assertSame('%PDF ' . json_encode([null, [null, null, null, null, null]]), $rendered['bytes']);
+	}//end testIncompleteDataSourcesResolveToNoDataWithoutACall()
 
 	public function testUntitledDashboardIsNamedDashboard(): void {
 		$rendered = $this->service()->render(['widgets' => []], 'csv');

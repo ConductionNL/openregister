@@ -9,6 +9,7 @@
 namespace OCA\OpenRegister\Tests\Unit\Service\Integration;
 
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Integration\IntegrationProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -40,7 +41,7 @@ class ConcreteTestProvider extends AbstractIntegrationProvider {
 		return 'local';
 	}
 
-	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
+	public function list(ObjectRef $ref, array $filters = []): array {
 		return [];
 	}
 }

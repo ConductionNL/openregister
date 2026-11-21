@@ -7,7 +7,7 @@
 
 ## 2. The refusal
 
-- [~] 2.1 `LeafRegistry` REPORTS a render surface whose app ships no bundle,
+- [x] 2.1 `LeafRegistry` REPORTS a render surface whose app ships no bundle,
       naming the leaf, the app and the file to build.
   - 🔴 IT REFUSED, AND THAT WAS UNSOUND. Corrected the same evening. hermiq is
     the proof: it ships no `hermiq-leaves.js` and its leaf is NOT dark. It loads
@@ -28,14 +28,19 @@
 
 ## 3. What this does not do
 
-- [ ] 3.1 Fix the three dark leaves. buildiq, decidiq and hermiq each need a
+- [ ] 3.1 (not openregister code: buildiq, decidiq and hermiq lanes) Fix the three dark leaves. buildiq, decidiq and hermiq each need a
       `leaves` webpack entry in their own repository, which is their lane's
       work, not this one's. hermiq's is the smallest: it already builds the
       bundle and needs the entry renamed to the name the loader reads.
-- [ ] 3.3 A sound refusal, which needs a DECLARATION rather than a guess: the
+- [x] 3.3 A sound refusal, which needs a DECLARATION rather than a guess: the
       descriptor saying it relies on the shared `leaves` entry, so an app that
       loads its own bundle is never refused and one that relies on the entry can
       be. Named rather than guessed at.
-- [ ] 3.2 A fleet gate. This refuses at runtime, where the instance knows which
+      DONE (#3956, 58e829a4c8): `LeafDescriptor::claimsSharedEntry()`; `LeafRegistry::judgeMissingBundle()`
+      refuses a leaf that declares the shared entry its app does not ship, and reports a silent one.
+      Tests: `LeafRegistryTest::testALeafClaimingTheSharedEntryWithNoBundleIsRefused`,
+      `::testALeafThatLoadsItsOwnScriptIsNotRefused`, `::testALeafThatHasNotSaidHowItLoadsIsNotRefused`.
+      REQ-LPR-020's "refused" scenario holds for a leaf that claims the shared entry; 2.1's report covers the rest.
+- [ ] 3.2 (not openregister code: a hydra-gates change) A fleet gate. This refuses at runtime, where the instance knows which
       apps are installed. A build-time gate cannot see that, and would have to
       guess.

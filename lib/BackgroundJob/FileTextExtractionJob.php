@@ -70,6 +70,6 @@ class FileTextExtractionJob extends AbstractTextExtractionJob {
 	 * @spec openspec/specs/search-index/spec.md
 	 */
 	protected function extract(int $id): void {
-		$this->textExtractor->extractFile(fileId: $id, forceReExtract: false);
+		$this->textExtractor->extractFile(fileId: $id);
 	}//end extract()
 }//end class

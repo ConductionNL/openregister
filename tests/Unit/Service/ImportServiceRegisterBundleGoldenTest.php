@@ -42,6 +42,9 @@ use RuntimeException;
 /**
  * @covers \OCA\OpenRegister\Service\ImportService
  * @uses   \OCA\OpenRegister\Exception\RegisterNotFoundException
+ * @uses \OCA\OpenRegister\Service\Import\ImportServiceCodecs
+ * @uses \OCA\OpenRegister\Service\Import\ImportServiceRuntime
+ * @uses \OCA\OpenRegister\Service\Import\ImportServiceStores
  */
 class ImportServiceRegisterBundleGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/import-register-bundle-golden.json';

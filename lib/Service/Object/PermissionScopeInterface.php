@@ -76,29 +76,14 @@ interface PermissionScopeInterface {
 	 *   interpreter of the same rule grammar — it produces SQL WHERE fragments
 	 *   instead of PHP verdicts. Do not introduce a fourth match evaluator here.
 	 *
-	 * @param array|null $authorization The schema's authorization array
-	 * @param string $groupId The group ID to check
-	 * @param string $action The CRUD action (create, read, update, delete)
-	 * @param string|null $userId Optional user ID for owner check
-	 * @param string|null $userGroup Optional user group for admin check
-	 * @param string|null $objectOwner Optional object owner for ownership check
-	 * @param array|null $objectData Optional object data for conditional matching
-	 * @param string|null $objectOrganisation Optional object organisation (folded into @self.organisation)
+	 * @param GroupRuleRequest $request The authorization block and action, the group and the caller's
+	 *                                  group, the user and object owner, and the object data and organisation.
 	 *
 	 * @return bool True if the group has permission
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function hasGroupPermission(
-		?array $authorization,
-		string $groupId,
-		string $action,
-		?string $userId = null,
-		?string $userGroup = null,
-		?string $objectOwner = null,
-		?array $objectData = null,
-		?string $objectOrganisation = null,
-	): bool;
+	public function hasGroupPermission(GroupRuleRequest $request): bool;
 
 	/**
 	 * Get all groups that have permission for a specific action

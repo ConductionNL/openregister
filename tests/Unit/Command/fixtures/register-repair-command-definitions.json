@@ -1,0 +1,72 @@
+{
+    "relink": {
+        "name": "openregister:registers:relink-schemas",
+        "description": "Rebuild a register's schemas list from its physical object tables (dry run by default)",
+        "help": "",
+        "arguments": [],
+        "options": [
+            [
+                "write",
+                null,
+                false,
+                false,
+                false,
+                "Apply the changes. Without this flag nothing is modified.",
+                false
+            ],
+            [
+                "register",
+                null,
+                true,
+                true,
+                false,
+                "Limit to a single register id.",
+                null
+            ]
+        ]
+    },
+    "dedupe": {
+        "name": "openregister:registers:dedupe-shared-schemas",
+        "description": "Split schema entities shared by several registers so each owns its own (dry run by default)",
+        "help": "",
+        "arguments": [],
+        "options": [
+            [
+                "write",
+                null,
+                false,
+                false,
+                false,
+                "Apply the changes. Without this flag nothing is modified.",
+                false
+            ],
+            [
+                "register",
+                null,
+                true,
+                true,
+                false,
+                "Limit to shared schemas involving this register id.",
+                null
+            ],
+            [
+                "keep",
+                null,
+                true,
+                true,
+                true,
+                "Name the owner of a schema attribution could not settle: <schemaId>:<registerId>, or a bare <registerId> for all of them. Repeatable.",
+                []
+            ],
+            [
+                "strict",
+                null,
+                false,
+                false,
+                false,
+                "Refuse any split whose source table has a column with no destination.",
+                false
+            ]
+        ]
+    }
+}

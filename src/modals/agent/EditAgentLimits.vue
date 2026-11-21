@@ -64,8 +64,60 @@ import { NcButton, NcModal, NcNoteCard, NcSelect } from '@nextcloud/vue'
  * @return {Array<{id: string, label: string}>} The selected options
  */
 export function toSelected(ids, options) {
-	return (Array.isArray(ids) ? ids : []).map(
-		(id) => options.find((o) => o.id === id) || { id, label: id },
+	return (Array.isArray(ids) ? ids : []).map((id) => optionFor(id, options))
+}
+
+/**
+ * The known option for an id, or one labelled with the id itself.
+ *
+ * @param {string} id The stored id
+ * @param {Array<{id: string, label: string}>} options The known options
+ * @return {{id: string, label: string}} The option
+ */
+function optionFor(id, options) {
+	const known = options.find((o) => o.id === id)
+	return known || { id, label: id }
+}
+
+/**
+ * The tool and view grant to store, as ids.
+ *
+ * @param {Array<{id: string}>} tools The chosen tools
+ * @param {Array<{id: string}>} views The chosen views
+ * @return {{tools: Array<string>, views: Array<string>}} The grant
+ */
+function limitsOf(tools, views) {
+	return {
+		tools: tools.map((o) => o.id),
+		views: views.map((o) => o.id),
+	}
+}
+
+/**
+ * Store a grant on an agent.
+ *
+ * @param {number|string} id The agent id
+ * @param {object} limits The grant
+ * @return {Promise<object>} The axios response
+ */
+function patchAgent(id, limits) {
+	return axios.patch(
+		generateUrl('/apps/openregister/api/agents/{id}', {
+			id,
+		}),
+		limits,
+	)
+}
+
+/**
+ * Why a save failed: the API's refusal, else a general message.
+ *
+ * @param {Error} e What went wrong
+ * @return {string} The message
+ */
+function saveFailedText(e) {
+	return (
+		e?.response?.data?.error || t('openregister', 'Could not save the limits')
 	)
 }
 
@@ -102,20 +154,11 @@ export default {
 			this.saving = true
 			this.error = ''
 			try {
-				const { data } = await axios.patch(
-					generateUrl('/apps/openregister/api/agents/{id}', {
-						id: this.agent.id,
-					}),
-					{
-						tools: this.selectedTools.map((o) => o.id),
-						views: this.selectedViews.map((o) => o.id),
-					},
-				)
+				const limits = limitsOf(this.selectedTools, this.selectedViews)
+				const { data } = await patchAgent(this.agent.id, limits)
 				this.$emit('saved', data)
 			} catch (e) {
-				this.error =
-					e?.response?.data?.error
-					|| t('openregister', 'Could not save the limits')
+				this.error = saveFailedText(e)
 			} finally {
 				this.saving = false
 			}

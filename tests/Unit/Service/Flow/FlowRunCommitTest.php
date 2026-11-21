@@ -41,6 +41,7 @@ use OCA\OpenRegister\Db\FlowStream;
 use OCA\OpenRegister\Db\FlowStreamMapper;
 use OCA\OpenRegister\Service\Flow\FlowFiring;
 use OCA\OpenRegister\Service\Flow\FlowHopAudit;
+use OCA\OpenRegister\Service\Flow\FlowPassFiring;
 use OCA\OpenRegister\Service\Flow\FlowRunCommit;
 use OCA\OpenRegister\Service\Flow\FlowRunCommitRows;
 use OCA\OpenRegister\Service\Flow\FlowStreamClosure;
@@ -241,7 +242,7 @@ class FlowRunCommitTest extends TestCase {
 			}
 		);
 
-		$this->commit->commitFiring(run: clone $this->row, firing: $this->firing('sA', 'T1', ['a'], ['c']), owner: 'A');
+		$this->commit->commitFiring(run: clone $this->row, firing: new FlowPassFiring(firing: $this->firing('sA', 'T1', ['a'], ['c']), owner: 'A'));
 
 		$this->assertSame('run-1', $audited[0]);
 		$this->assertSame($this->steps[0], $audited[1]);
@@ -254,7 +255,7 @@ class FlowRunCommitTest extends TestCase {
 		$this->hopAudit->expects($this->never())->method('record');
 
 		$this->expectException(RuntimeException::class);
-		$this->commit->commitFiring(run: clone $this->row, firing: $this->firing('sA', 'T1', ['a'], ['c']), owner: 'A');
+		$this->commit->commitFiring(run: clone $this->row, firing: new FlowPassFiring(firing: $this->firing('sA', 'T1', ['a'], ['c']), owner: 'A'));
 	}//end testAFiringThatRolledBackIsNotAudited()
 
 	public function testTwoInterleavedCommitsKeepBothEffects(): void {
@@ -271,10 +272,10 @@ class FlowRunCommitTest extends TestCase {
 		$runA = clone $this->row;
 		$runB = clone $this->row;
 
-		$resultB = $this->commit->commitFiring(run: $runB, firing: $this->firing('sB', 'T2', ['b'], ['d']), owner: 'B');
+		$resultB = $this->commit->commitFiring(run: $runB, firing: new FlowPassFiring(firing: $this->firing('sB', 'T2', ['b'], ['d']), owner: 'B'));
 		$this->assertEqualsCanonicalizing(['a' => 1, 'd' => 1], $resultB->marking);
 
-		$resultA = $this->commit->commitFiring(run: $runA, firing: $this->firing('sA', 'T1', ['a'], ['c']), owner: 'A');
+		$resultA = $this->commit->commitFiring(run: $runA, firing: new FlowPassFiring(firing: $this->firing('sA', 'T1', ['a'], ['c']), owner: 'A'));
 
 		// Both consumed, both successors marked, nothing neither produced.
 		$this->assertEqualsCanonicalizing(['c' => 1, 'd' => 1], $resultA->marking);
@@ -301,7 +302,7 @@ class FlowRunCommitTest extends TestCase {
 		$this->row->setMarking(['s' => 1]);
 		$this->stream('root', '0001', 's');
 
-		$this->commit->commitFiring(run: $this->row, firing: $this->firing('root', 'split', ['s'], ['x', 'y'], true), owner: 'W');
+		$this->commit->commitFiring(run: $this->row, firing: new FlowPassFiring(firing: $this->firing('root', 'split', ['s'], ['x', 'y'], true), owner: 'W'));
 
 		$paths = array_map(static fn (FlowStream $s): string => (string)$s->getOrdinalPath(), array_values($this->streams));
 		sort($paths);
@@ -316,8 +317,8 @@ class FlowRunCommitTest extends TestCase {
 		// Both branches arrive at the join's two input places, then the join
 		// fires ONCE consuming both, and folds onto the common prefix — the
 		// root — resuming ITS sequence.
-		$this->commit->commitFiring(run: $this->row, firing: $this->firing($childX, 'ex', ['x'], ['j#e1'], false), owner: 'W');
-		$this->commit->commitFiring(run: $this->row, firing: $this->firing($childY, 'ey', ['y'], ['j#e2'], true), owner: 'W');
+		$this->commit->commitFiring(run: $this->row, firing: new FlowPassFiring(firing: $this->firing($childX, 'ex', ['x'], ['j#e1'], false), owner: 'W'));
+		$this->commit->commitFiring(run: $this->row, firing: new FlowPassFiring(firing: $this->firing($childY, 'ey', ['y'], ['j#e2'], true), owner: 'W'));
 		$this->assertEqualsCanonicalizing(['j#e1' => 1, 'j#e2' => 1], $this->row->getMarking());
 
 		$join = (new FlowFiring(streamId: $childX, transition: 'j', froms: ['j#e1', 'j#e2'], taken: ['after']))
@@ -325,7 +326,7 @@ class FlowRunCommitTest extends TestCase {
 			->withClaimedPlaces(claimedPlaces: ['j#e1', 'j#e2', 'after'])
 			->withConsumedStreamIds(consumedStreamIds: [$childY])
 			->withLogEntry(logEntry: ['transition' => 'j', 'status' => 'completed'], enabledAfter: false);
-		$this->commit->commitFiring(run: $this->row, firing: $join, owner: 'W');
+		$this->commit->commitFiring(run: $this->row, firing: new FlowPassFiring(firing: $join, owner: 'W'));
 
 		$this->assertSame(['after' => 1], $this->row->getMarking());
 		$this->assertSame(FlowRun::STATUS_RUNNING, $this->streams['root']->getStatus());
