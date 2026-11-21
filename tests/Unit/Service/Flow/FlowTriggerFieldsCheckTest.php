@@ -36,6 +36,7 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Service\Flow\FlowLifecycleRefused
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\Register\RegisterSchemaIds
  */
 final class FlowTriggerFieldsCheckTest extends TestCase {
 
