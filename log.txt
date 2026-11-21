@@ -3530,3 +3530,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-21T19:03:21Z session-20261121T182238-96a42795 or-fix-13: run done; fixed 10513 (911bd30b) 10533 (5960b961) 10553 (562b241d); 9053 10493 10633 merge clean and green, skipped
 2026-11-21T19:06:13Z session-20261121T190612-4bb372f4 or-fix-10 start
 2026-11-21T19:06:45Z or-fix-11: fixed #9131 ce28adff (csv/yaml), #10451 35eb59e9 (FileService golden nullable param), #10531 d75816ad (csv/yaml, info.xml bump); #10631 skipped (dbal 4 question open); #8951 #9011 #10491 green on main 119cb2b8
+2026-11-21T19:10:01Z or-fix-19 done: merged main into #9059 #10239 #10499 (component-map/yaml conflicts), REVERIFY recorded; #10539 #10519 #10139 #9419 #8999 #8819 merge clean and green (Architecture, touched tests, phpstan); #9219 #9199 frontend, main unchanged in src; #10979 #10639 deps approved
