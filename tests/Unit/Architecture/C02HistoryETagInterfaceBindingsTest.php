@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\Oas\OasETagComputer;
 use OCA\OpenRegister\Service\Oas\OasETagComputerInterface;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionHistory;
@@ -91,7 +92,7 @@ final class C02HistoryETagInterfaceBindingsTest extends TestCase {
 		foreach (self::CLASSES[$class] as $contract) {
 			$this->assertTrue(condition: interface_exists($contract), message: $contract . ' exists');
 			$this->assertContains(needle: $contract, haystack: class_implements($class), message: $class . ' implements ' . $contract);
-			$this->assertSame(expected: $class, actual: ContractBindings::BINDINGS[$contract] ?? null, message: $contract . ' is bound');
+			$this->assertSame(expected: $class, actual: (ContractBindings::BINDINGS + CoreServiceBindings::BINDINGS)[$contract] ?? null, message: $contract . ' is bound');
 		}
 	}//end testEachInterfaceIsImplementedAndBound()
 
