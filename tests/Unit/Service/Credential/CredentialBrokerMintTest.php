@@ -67,6 +67,7 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
  * @uses \OCA\OpenRegister\Service\Credential\CredentialOutbound
  * @uses \OCA\OpenRegister\Service\Credential\CredentialPrincipals
  * @uses \OCA\OpenRegister\Service\Credential\CredentialSources
+ * @uses \OCA\OpenRegister\Service\Credential\OutsideCustody
  */
 class CredentialBrokerMintTest extends TestCase {
 	/** @var array<string, mixed>|null Captured saveObject() property bag. */

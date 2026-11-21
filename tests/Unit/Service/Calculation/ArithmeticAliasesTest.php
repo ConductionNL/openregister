@@ -34,6 +34,8 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Service\Calculation\CalculationAnnotationValidator
  * @uses   \OCA\OpenRegister\Service\Calculation\OperatorCatalogue
  * @uses   \OCA\OpenRegister\Search\Service\Search\PlaceholderResolver
+ * @uses \OCA\OpenRegister\Service\Calculation\CalculationWalk
+ * @uses \OCA\OpenRegister\Service\Calculation\DependencyCycleFinder
  */
 class ArithmeticAliasesTest extends TestCase {
 

@@ -50,6 +50,7 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Notifications\Service\Notification\RecipientEntry
  * @uses \OCA\OpenRegister\Db\SchemaMapper\AdvisoryAnnotationChecks
  * @uses \OCA\OpenRegister\Db\SchemaMapper\RecordAnnotationRefusals
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\NotificationReminderValidator
  */
 final class NotificationActionHrefRefusalTest extends TestCase {
 

@@ -45,6 +45,13 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\SaveActor;
+use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
+use OCA\OpenRegister\Service\CauseFrame;
+use OCA\OpenRegister\Service\Credential\InjectableSecretRequest;
+use OCA\OpenRegister\Service\WriteCause;
 
 #[CoversClass(OutsideCustody::class)]
 #[CoversClass(CredentialBrokerService::class)]
@@ -56,6 +63,15 @@ use Psr\Log\LoggerInterface;
 #[UsesClass(CredentialPrincipals::class)]
 #[UsesClass(CredentialMint::class)]
 #[UsesClass(CredentialMintOptions::class)]
+#[UsesClass(ObjectEntity::class)]
+#[UsesClass(ObjectFindOptions::class)]
+#[UsesClass(ObjectFindTarget::class)]
+#[UsesClass(ObjectSaveOptions::class)]
+#[UsesClass(SaveActor::class)]
+#[UsesClass(SavePolicy::class)]
+#[UsesClass(CauseFrame::class)]
+#[UsesClass(InjectableSecretRequest::class)]
+#[UsesClass(WriteCause::class)]
 class CredentialBrokerOutsideVaultTest extends TestCase {
 
 	/**

@@ -55,6 +55,11 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Service\Credential\ProviderCatalogue
  * @uses   \OCA\OpenRegister\Service\Credential\DeclaredProviderResolver
  * @uses   \OCA\OpenRegister\Service\Credential\InjectableSecretRequest
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses \OCA\OpenRegister\Service\CauseFrame
+ * @uses \OCA\OpenRegister\Service\Credential\OutsideCustody
+ * @uses \OCA\OpenRegister\Service\WriteCause
  */
 class CredentialBrokerDeclaredProviderTest extends TestCase {
 

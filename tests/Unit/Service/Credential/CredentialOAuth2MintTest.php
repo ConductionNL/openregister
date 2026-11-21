@@ -67,6 +67,7 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
  * @uses \OCA\OpenRegister\Service\Credential\OAuth2Issuance
  * @uses \OCA\OpenRegister\Service\Credential\OAuth2Tokens
  * @uses \OCA\OpenRegister\Service\Credential\TokenResponseOptions
+ * @uses \OCA\OpenRegister\Service\Credential\OutsideCustody
  */
 class CredentialOAuth2MintTest extends TestCase {
 	/** @var array<string, mixed>|null The property bag that reached saveObject(). */

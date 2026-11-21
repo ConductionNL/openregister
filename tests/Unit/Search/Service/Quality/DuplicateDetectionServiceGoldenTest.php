@@ -63,6 +63,7 @@ use OCA\OpenRegister\Search\Service\Quality\DedupRun;
  * @uses \OCA\OpenRegister\Search\Service\Quality\SimilarityCalculator
  * @uses \OCA\OpenRegister\Service\RegisterScopedSchemaResolver
  * @uses \OCA\OpenRegister\Service\RegisterScopedSchemaResolvers
+ * @uses \OCA\OpenRegister\Search\Service\Quality\ObjectTextSimilarity
  */
 class DuplicateDetectionServiceGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/duplicate-detection-golden.json';
