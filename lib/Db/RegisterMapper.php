@@ -288,53 +288,48 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 			]
 		);
 
-		$qb = $this->buildFindByIdentifierQuery(id: $lookup->id);
-		$existsBeforeFilter = $this->probeRegisterBeforeFilters(qb: $qb, id: $lookup->id);
+		// One column per query, in preference order: an exact id for a numeric
+		// identifier, then the uuid, then the slug. A disjunction over three
+		// columns cannot use the index on any of them, so the old single query
+		// scanned the register table on every miss of the request map. Within an
+		// arm the oldest (lowest-id) register wins, so env churn that leaves
+		// several rows sharing a slug still resolves deterministically instead of
+		// raising MultipleObjectsReturnedException; `openregister:registers:dedupe`
+		// merges the duplicates. The before-filter probe only runs on a miss: on a
+		// hit there is nothing to diagnose.
+		$miss = null;
+		foreach (SchemaMapper::identifierArms(id: $lookup->id) as $arm) {
+			$qb = $this->armQuery(arm: $arm, id: $lookup->id);
+			$this->applyOrganisationFilter(
+				qb: $qb,
+				columnName: 'organisation',
+				allowNullOrg: true,
+				multiTenancyEnabled: $lookup->multitenancy
+			);
+			$qb->orderBy('id', 'ASC');
+			$qb->setMaxResults(1);
 
-		$this->applyOrganisationFilter(
-			qb: $qb,
-			columnName: 'organisation',
-			allowNullOrg: true,
-			multiTenancyEnabled: $lookup->multitenancy
-		);
-
-		// Deterministic slug/uuid resolution: env churn can leave several rows
-		// sharing a slug, which would make findEntity() raise
-		// MultipleObjectsReturnedException (a 500 fleet-wide). The oldest
-		// (lowest-id) register wins; `openregister:registers:dedupe` merges
-		// the duplicates.
-		$qb->orderBy('id', 'ASC');
-		$qb->setMaxResults(1);
-
-		try {
-			return $this->findEntity(query: $qb);
-		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-			// `existsBeforeFilter` separates "no such row" from "the row matched
-			// and then a filter removed it": a bad identifier versus a scoping bug.
-			// Only the scoping bug is an error. A register that does not exist is an
-			// ordinary miss: callers such as ExternalIntegrationRouter probe several
-			// spellings of a register slug and catch this exception, and the probe
-			// above has already logged the absence at warning level, so this line is
-			// debug to avoid reporting the same miss twice.
-			if ($existsBeforeFilter === false) {
-				$this->logger->debug(
-					message: '[RegisterMapper] Register does not exist',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'identifier' => $lookup->id,
-						'existsBeforeFilter' => $existsBeforeFilter,
-						'multiEnabled' => $lookup->multitenancy,
-						'rbacEnabled' => $lookup->rbac,
-						'error' => $e->getMessage(),
-					]
-				);
-
-				throw $e;
+			try {
+				return $this->findEntity(query: $qb);
+			} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+				$miss = $e;
 			}
+		}
 
-			$this->logger->error(
-				message: '[RegisterMapper] Register not found after filters',
+		$existsBeforeFilter = $this->existsBeforeFilters(id: $lookup->id);
+
+		// The arm list is never empty, so a miss always carries findEntity()'s own exception.
+		$e = $miss ?? new \OCP\AppFramework\Db\DoesNotExistException('Did expect one result but found none when executing');
+		// `existsBeforeFilter` separates "no such row" from "the row matched
+		// and then a filter removed it": a bad identifier versus a scoping bug.
+		// Only the scoping bug is an error. A register that does not exist is an
+		// ordinary miss: callers such as ExternalIntegrationRouter probe several
+		// spellings of a register slug and catch this exception, and the probe
+		// above has already logged the absence at warning level, so this line is
+		// debug to avoid reporting the same miss twice.
+		if ($existsBeforeFilter === false) {
+			$this->logger->debug(
+				message: '[RegisterMapper] Register does not exist',
 				context: [
 					'file' => __FILE__,
 					'line' => __LINE__,
@@ -347,7 +342,22 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 			);
 
 			throw $e;
-		}//end try
+		}
+
+		$this->logger->error(
+			message: '[RegisterMapper] Register not found after filters',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'identifier' => $lookup->id,
+				'existsBeforeFilter' => $existsBeforeFilter,
+				'multiEnabled' => $lookup->multitenancy,
+				'rbacEnabled' => $lookup->rbac,
+				'error' => $e->getMessage(),
+			]
+		);
+
+		throw $e;
 	}//end findFiltered()
 
 	/**
@@ -392,83 +402,86 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 	}//end cacheRegisterByIdentifiers()
 
 	/**
-	 * A query for the register whose uuid, slug (case-insensitive) or, for a
-	 * numeric identifier, id matches. The id comparison is left out for a
-	 * non-numeric identifier because PostgreSQL types it strictly.
+	 * A query for the registers whose one column matches the identifier.
 	 *
-	 * @param int|string $id The identifier.
+	 * The slug is matched case-insensitively. The id arm is only offered for a
+	 * numeric identifier ({@see SchemaMapper::identifierArms()}), because
+	 * PostgreSQL types that column strictly.
 	 *
-	 * @return IQueryBuilder The query, without filters.
+	 * @param string     $arm `id`, `uuid` or `slug`.
+	 * @param int|string $id  The identifier.
 	 *
-	 * @spec openspec/specs/register-slug-resolution/spec.md
+	 * @return IQueryBuilder The query, without filters or ordering.
+	 *
+	 * @spec openspec/changes/object-write-sub-500ms/tasks.md
 	 */
-	private function buildFindByIdentifierQuery(string|int $id): IQueryBuilder {
+	private function armQuery(string $arm, string|int $id): IQueryBuilder {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from('openregister_registers');
 
-		$orConditions = $qb->expr()->orX(
-			$qb->expr()->eq('uuid', $qb->createNamedParameter($id, IQueryBuilder::PARAM_STR)),
-			$qb->expr()->eq(
+		$qb->where(match ($arm) {
+			'id' => $qb->expr()->eq('id', $qb->createNamedParameter((int)$id, IQueryBuilder::PARAM_INT)),
+			'uuid' => $qb->expr()->eq('uuid', $qb->createNamedParameter((string)$id, IQueryBuilder::PARAM_STR)),
+			default => $qb->expr()->eq(
 				$qb->func()->lower('slug'),
 				$qb->createNamedParameter(strtolower((string)$id), IQueryBuilder::PARAM_STR)
-			)
-		);
-
-		if (is_numeric($id) === true) {
-			$orConditions->add($qb->expr()->eq('id', $qb->createNamedParameter((int)$id, IQueryBuilder::PARAM_INT)));
-		}
-
-		$qb->where($orConditions);
+			),
+		});
 
 		return $qb;
-	}//end buildFindByIdentifierQuery()
+	}//end armQuery()
 
 	/**
 	 * Whether the register exists before the organisation filter, for the
-	 * not-found diagnostics. The probe is capped to one row in id order, so
+	 * not-found diagnostics. Each arm is capped to one row in id order, so
 	 * duplicate slugs cannot raise MultipleObjectsReturnedException out of it.
 	 *
-	 * @param IQueryBuilder $qb The unfiltered lookup query; it is cloned, not changed.
-	 * @param int|string    $id The identifier, for the log.
+	 * @param int|string $id The identifier.
 	 *
-	 * @return bool Whether a row matched.
+	 * @return bool Whether a row matched any arm.
 	 *
-	 * @spec openspec/specs/register-slug-resolution/spec.md
+	 * @spec openspec/changes/object-write-sub-500ms/tasks.md
 	 */
-	private function probeRegisterBeforeFilters(IQueryBuilder $qb, string|int $id): bool {
-		$qbBeforeFilter = clone $qb;
-		$qbBeforeFilter->orderBy('id', 'ASC');
-		$qbBeforeFilter->setMaxResults(1);
-		try {
-			$testResult = $this->findEntity(query: $qbBeforeFilter);
-		} catch (\OCP\AppFramework\Db\DoesNotExistException|\OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
-			// The exception class is recorded in `cause` rather than hedged in
-			// prose: absence and duplication have different fixes (learniq#620).
-			$this->logger->warning(
-				message: '[RegisterMapper] Register not resolvable before filters',
+	private function existsBeforeFilters(string|int $id): bool {
+		$cause = \OCP\AppFramework\Db\DoesNotExistException::class;
+		foreach (SchemaMapper::identifierArms(id: $id) as $arm) {
+			$qb = $this->armQuery(arm: $arm, id: $id);
+			$qb->orderBy('id', 'ASC');
+			$qb->setMaxResults(1);
+			try {
+				$testResult = $this->findEntity(query: $qb);
+			} catch (\OCP\AppFramework\Db\DoesNotExistException|\OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
+				$cause = $e::class;
+				continue;
+			}
+
+			$this->logger->debug(
+				message: '[RegisterMapper] Register exists before filters',
 				context: [
 					'file' => __FILE__,
 					'line' => __LINE__,
 					'identifier' => $id,
-					'cause' => $e::class,
+					'registerId' => $testResult->getId(),
+					'organisation' => $testResult->getOrganisation(),
 				]
 			);
-			return false;
-		}//end try
+			return true;
+		}//end foreach
 
-		$this->logger->debug(
-			message: '[RegisterMapper] Register exists before filters',
+		// The exception class is recorded in `cause` rather than hedged in
+		// prose: absence and duplication have different fixes (learniq#620).
+		$this->logger->warning(
+			message: '[RegisterMapper] Register not resolvable before filters',
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,
 				'identifier' => $id,
-				'registerId' => $testResult->getId(),
-				'organisation' => $testResult->getOrganisation(),
+				'cause' => $cause,
 			]
 		);
-		return true;
-	}//end probeRegisterBeforeFilters()
+		return false;
+	}//end existsBeforeFilters()
 
 	/**
 	 * Clear the request-scoped find cache for a specific register
