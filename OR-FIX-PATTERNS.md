@@ -91,3 +91,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: content conflict in the repo-root *.components.yaml (huge alternation lines).
 - Cause: generated from scripts/component-map.csv; main and the PR both regenerated it.
 - Fix: resolve scripts/component-map.csv (keep both sides' rows), then python3 scripts/component-patterns.py and --check; never hand-merge the yaml (see #10537).
+
+## Test builds a class with a mapper where main now injects a Kernel port (or-fix-7)
+- Symptom: TypeError in a test constructor, e.g. TokenResolver argument #4 must be AccountConsumerInterface, ConsumerMapperInterface mock given.
+- Cause: main put a Kernel/Contracts port between the class and the mapper (e.g. AccountConsumerInterface, implemented by Service/Consumer/AccountConsumerLookup).
+- Fix: keep the test's mapper mock and wrap it in the real port implementation (new AccountConsumerLookup($mapperMock)), add #[UsesClass] for it, so the test still drives the same failure paths.
