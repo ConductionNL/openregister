@@ -282,3 +282,4 @@
 2026-11-21T17:02:16Z dev=b85c154e31 prs=7667,8397,8996,9277,9340,9370,9445,9472 Tests: 63414, Assertions: 222413, Errors: 7, Failures: 4, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24. front=ok
 2026-11-21T17:12:49Z dev=b85c154e31 prs=10630 Tests: 63363, Assertions: 221697, Errors: 7, Failures: 4, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24. front=ok
 2026-11-21T17:25:35Z dev=b85c154e31 prs=8819,9092,9163,9219,9236,9532,9555,9565 Tests: 63363, Assertions: 221697, Errors: 7, Failures: 4, Warnings: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24. front=ok
+2026-11-21T17:37:47Z dev=b85c154e31 prs=10632 Tests: 63363, Assertions: 221697, Errors: 7, Failures: 4, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24. front=ok
