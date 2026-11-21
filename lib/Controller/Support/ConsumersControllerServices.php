@@ -26,6 +26,7 @@ use OCA\OpenRegister\Db\ConsumerMapperInterface;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogueInterface;
 use OCA\OpenRegister\Service\Rbac\TokenGrantValidator;
 use OCP\IL10N;
+use OCP\IUserSession;
 
 /**
  * The collaborators of ConsumersController, wired by DI autowiring.
@@ -40,12 +41,14 @@ final class ConsumersControllerServices {
 	 * @param IL10N                   $l10n           The localization service
 	 * @param TokenGrantValidator     $grantValidator Refuses a token grant that cannot be issued
 	 * @param PermissionCatalogueInterface $catalogue The verbs this instance knows
+	 * @param IUserSession|null       $userSession    Who is changing a consumer, for the recorded renewal
 	 */
 	public function __construct(
 		public readonly ConsumerMapperInterface $consumerMapper,
 		public readonly IL10N $l10n,
 		public readonly TokenGrantValidator $grantValidator,
 		public readonly PermissionCatalogueInterface $catalogue,
+		public readonly ?IUserSession $userSession = null,
 	) {
 	}//end __construct()
 }//end class

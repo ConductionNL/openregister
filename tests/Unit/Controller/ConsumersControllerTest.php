@@ -14,6 +14,8 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IL10N;
 use OCP\IRequest;
+use OCP\IUser;
+use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -42,7 +44,8 @@ class ConsumersControllerTest extends TestCase {
 				$this->consumerMapper,
 				$l10n,
 				new TokenGrantValidator($catalogue),
-				$catalogue
+				$catalogue,
+				$this->userSession()
 			)
 		);
 	}
@@ -185,5 +188,65 @@ class ConsumersControllerTest extends TestCase {
 		$this->consumerMapper->expects($this->once())->method('createFromArray')->willReturn(new Consumer());
 
 		$this->assertSame(201, $this->controller->create()->getStatus());
+	}
+
+	private function userSession(): IUserSession {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('admin');
+		$session = $this->createMock(IUserSession::class);
+		$session->method('getUser')->willReturn($user);
+
+		return $session;
+	}
+
+	#[\PHPUnit\Framework\Attributes\DataProvider('refusedGrants')]
+	public function testUpdateRefusesAGrantUnderTheEnforcedKey(mixed $grant): void {
+		$this->request->method('getParams')->willReturn(['authorizationConfiguration' => ['grant' => $grant]]);
+		$this->consumerMapper->expects($this->never())->method('updateFromArray');
+
+		$this->assertSame(400, $this->controller->update(1)->getStatus());
+	}
+
+	#[\PHPUnit\Framework\Attributes\DataProvider('refusedGrants')]
+	public function testCreateRefusesAGrantUnderTheEnforcedKey(mixed $grant): void {
+		$this->request->method('getParams')->willReturn(['name' => 'c', 'authorizationConfiguration' => ['grant' => $grant]]);
+		$this->consumerMapper->expects($this->never())->method('createFromArray');
+
+		$this->assertSame(400, $this->controller->create()->getStatus());
+	}
+
+	public function testUpdateRecordsTheRenewalOfAChangedEndDate(): void {
+		$stored = new Consumer();
+		$stored->setAuthorizationConfiguration(['grant' => ['verbs' => ['read'], 'expiresAt' => '2998-01-01T00:00:00+00:00'], 'publicKey' => 'k']);
+		$this->consumerMapper->method('find')->with(4)->willReturn($stored);
+
+		$grant = ['verbs' => ['read'], 'expiresAt' => '2999-01-01T00:00:00+00:00'];
+		$this->request->method('getParams')->willReturn(['authorizationConfiguration' => ['grant' => $grant, 'publicKey' => 'k']]);
+
+		$this->consumerMapper->expects($this->once())->method('updateFromArray')
+			->with(4, $this->callback(function (array $data) use ($grant): bool {
+				$configuration = $data['authorizationConfiguration'];
+				$renewal = $configuration['grantRenewals'][0];
+
+				return $configuration['grant'] === $grant
+					&& $configuration['publicKey'] === 'k'
+					&& count($configuration['grantRenewals']) === 1
+					&& $renewal['by'] === 'admin'
+					&& $renewal['from'] === '2998-01-01T00:00:00+00:00'
+					&& $renewal['expiresAt'] === '2999-01-01T00:00:00+00:00';
+			}))
+			->willReturn(new Consumer());
+
+		$this->assertSame(200, $this->controller->update(4)->getStatus());
+	}
+
+	public function testUpdateWithoutAGrantDoesNotReadTheStoredConsumer(): void {
+		$this->request->method('getParams')->willReturn(['name' => 'renamed']);
+		$this->consumerMapper->expects($this->never())->method('find');
+		$this->consumerMapper->expects($this->once())->method('updateFromArray')
+			->with(4, $this->callback(fn (array $data): bool => array_key_exists('authorizationConfiguration', $data) === false))
+			->willReturn(new Consumer());
+
+		$this->assertSame(200, $this->controller->update(4)->getStatus());
 	}
 }

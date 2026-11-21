@@ -70,7 +70,32 @@ jest.mock('../../../modals/account/CreatedTokenModal.vue', () => {
 	}
 })
 
+jest.mock('../../../modals/account/TokenGrantModal.vue', () => {
+	const { h } = require('vue')
+	return {
+		__esModule: true,
+		default: {
+			name: 'TokenGrantModal',
+			props: { granted: Object },
+			emits: ['close', 'saved'],
+			render() {
+				return h('div', { class: 'grant-modal', 'data-token': this.granted ? this.granted.tokenId : '' })
+			},
+		},
+	}
+})
+
 const TOKENS = '/index.php/apps/openregister/api/user/me/tokens'
+const GRANTS = '/index.php/apps/openregister/api/tokens/grants'
+
+/**
+ * How often the personal token list was loaded.
+ *
+ * @return {number} The number of loads.
+ */
+function tokenLoads() {
+	return axios.get.mock.calls.filter(([url]) => url === TOKENS).length
+}
 
 /**
  * Mount with the token list answering.
@@ -162,7 +187,7 @@ describe('TokensSection', () => {
 		expect(wrapper.find('.created-modal').attributes('data-token')).toBe('secret-123')
 		expect(wrapper.vm.newTokenName).toBe('')
 		expect(wrapper.vm.newTokenExpires).toBe('')
-		expect(axios.get).toHaveBeenCalledTimes(2)
+		expect(tokenLoads()).toBe(2)
 		expect(wrapper.findAll('.tokens-section__item')).toHaveLength(1)
 	})
 
@@ -208,7 +233,7 @@ describe('TokensSection', () => {
 		await wrapper.vm.revokeToken(7)
 		await wrapper.vm.$nextTick()
 		expect(wrapper.find('.section__error').text()).toBe('Failed to revoke token')
-		expect(axios.get).toHaveBeenCalledTimes(1)
+		expect(tokenLoads()).toBe(1)
 	})
 
 	it('copies the revealed token and closes the reveal modal', async () => {
@@ -239,5 +264,66 @@ describe('TokensSection', () => {
 		const wrapper = await mountWith([])
 		expect(wrapper.vm.formatDate('')).toBe('')
 		expect(wrapper.vm.formatDate(null)).toBe('')
+	})
+
+	describe('scoped app passwords', () => {
+		const granted = [
+			{ tokenId: '42', label: 'Supplier sync', grant: { verbs: ['read', 'update'], expiresAt: '2027-03-01T23:59:59+00:00' } },
+			{ tokenId: '7', label: null, grant: { verbs: ['read'] } },
+		]
+
+		/**
+		 * Mount with the granted-token list answering.
+		 *
+		 * @return {Promise<object>} The wrapper.
+		 */
+		async function mountGranted() {
+			axios.get.mockImplementation((url) => Promise.resolve({ data: url === GRANTS ? { results: granted } : [] }))
+			const wrapper = mount(TokensSection)
+			await flushPromises()
+			return wrapper
+		}
+
+		it('lists the granted app passwords with their actions and end date', async () => {
+			const wrapper = await mountGranted()
+			const rows = wrapper.findAll('.tokens-section__granted')
+			expect(rows).toHaveLength(2)
+			expect(rows[0].find('strong').text()).toBe('Supplier sync')
+			expect(rows[0].find('.tokens-section__preview').text()).toBe('read, update')
+			expect(rows[0].find('.tokens-section__expires').text()).toContain(new Date('2027-03-01T23:59:59+00:00').toLocaleDateString())
+			expect(rows[1].find('strong').text()).toBe('App password 7')
+			expect(rows[1].find('.tokens-section__expires').exists()).toBe(false)
+			expect(wrapper.text()).not.toContain('No app password carries a grant yet.')
+		})
+
+		it('shows the empty notice when the list cannot be read', async () => {
+			axios.get.mockImplementation((url) => (url === GRANTS ? Promise.reject(new Error('down')) : Promise.resolve({ data: [] })))
+			const wrapper = mount(TokensSection)
+			await flushPromises()
+			expect(wrapper.text()).toContain('No app password carries a grant yet.')
+		})
+
+		it('opens the editor to find a token, and on a granted one', async () => {
+			const wrapper = await mountGranted()
+			await wrapper.find('[data-action="scope"]').trigger('click')
+			expect(wrapper.find('.grant-modal').attributes('data-token')).toBe('')
+
+			wrapper.findComponent({ name: 'TokenGrantModal' }).vm.$emit('close')
+			await wrapper.vm.$nextTick()
+			expect(wrapper.find('.grant-modal').exists()).toBe(false)
+
+			await wrapper.find('[data-granted="42"] button').trigger('click')
+			expect(wrapper.find('.grant-modal').attributes('data-token')).toBe('42')
+		})
+
+		it('closes the editor after a save, says so and reloads the list', async () => {
+			const wrapper = await mountGranted()
+			await wrapper.find('[data-action="scope"]').trigger('click')
+			wrapper.findComponent({ name: 'TokenGrantModal' }).vm.$emit('saved', 'Grant saved')
+			await flushPromises()
+			expect(wrapper.find('.grant-modal').exists()).toBe(false)
+			expect(wrapper.text()).toContain('Grant saved')
+			expect(axios.get.mock.calls.filter(([url]) => url === GRANTS)).toHaveLength(2)
+		})
 	})
 })

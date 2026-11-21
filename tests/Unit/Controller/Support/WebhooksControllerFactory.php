@@ -38,6 +38,7 @@ final class WebhooksControllerFactory {
 		\Psr\Log\LoggerInterface $logger,
 		?\OCP\IUserSession $userSession = null,
 		?\OCP\IGroupManager $groupManager = null,
+		?\OCA\OpenRegister\Service\Outbound\OutboundAllowlist $allowlist = null,
 	): array {
 		return [
 			$appName,
@@ -53,6 +54,7 @@ final class WebhooksControllerFactory {
 					userSession: $userSession,
 					groupManager: $groupManager,
 				),
+				allowlist: $allowlist,
 			),
 		];
 	}

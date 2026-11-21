@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Audit;
 
 use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Service\Rbac\TokenGrantSource;
 use Psr\Container\ContainerInterface;
 use Throwable;
 
@@ -100,6 +101,8 @@ class TokenAttribution implements TokenAttributionInterface {
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function apply(AuditTrail $auditTrail): void {
+		$this->applyActorVia(auditTrail: $auditTrail);
+
 		$identity = $this->attributableIdentity();
 		if ($identity === null) {
 			return;
@@ -111,6 +114,36 @@ class TokenAttribution implements TokenAttributionInterface {
 		// invocation both already write here, and neither may be erased.
 		(new AuditRowAttribution())->mergeIntoSummary(auditTrail: $auditTrail, entries: ['token' => $identity->toArray()]);
 	}//end apply()
+
+	/**
+	 * Name the granted token or Consumer behind a write as `actorVia`.
+	 *
+	 * The user stays the actor; `actorVia` says which narrowed credential
+	 * acted for them, so an auditor can tell which token wrote. Written only
+	 * when a grant with an id is bound to the request, so an interactive
+	 * session or an ungranted token carries no `actorVia` key. Fail-soft,
+	 * like the rest of the attribution.
+	 *
+	 * @param AuditTrail $auditTrail The row being built.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/scoped-api-tokens/specs/auth-system/spec.md#requirement-the-effective-grant-is-visible-and-writes-name-the-token
+	 */
+	private function applyActorVia(AuditTrail $auditTrail): void {
+		$rows   = new AuditRowAttribution();
+		$source = $rows->requestContext(container: $this->container, class: TokenGrantSource::class);
+		if ($source === null) {
+			return;
+		}
+
+		$grant = $source->current();
+		if ($grant === null || $grant->tokenId === '') {
+			return;
+		}
+
+		$rows->mergeIntoSummary(auditTrail: $auditTrail, entries: ['actorVia' => $grant->tokenId]);
+	}//end applyActorVia()
 
 	/**
 	 * The calling token, when the request-scoped context resolves it and it can be attributed.
