@@ -3465,3 +3465,4 @@
 9445 0f88b2965a82dd503b58dc1c2ec197f8a934ffc1 REVERIFY or-fix-1: merged main, parked specs now pass (full jest green: 8690 passed, 8690 total; eslint clean on touched files); review needed
 9219 e065ed619dba642d8e866137ac61249f6dc05ebd REVERIFY or-fix-0: merged main (add/add account section specs: main's kept, branch's renamed *.golden.spec.js), full jest 8707 green; review needed
 9472 be4d48019397cbc74205a12e5a4cc2eff2689beb REVERIFY or-fix-1: merged main, parked specs now pass (full jest green: 8691 passed, 8691 total; eslint clean on touched files); review needed
+9555 1d7eb7d0a69f6b78791a6f11e3d5d848a5c8d545 REVERIFY or-fix-0: merged main (ObjectsTab conflict: helper kept, main's files-multipart route adopted, golden snapshot updated), full jest green; review needed
